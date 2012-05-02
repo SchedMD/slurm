@@ -161,6 +161,8 @@ static void _compute_start_times(void)
 		}
 
 		/* Determine minimum and maximum node counts */
+		/* On BlueGene systems don't adjust the min/max node limits
+		   here.  We are working on midplane values. */
 		min_nodes = MAX(job_ptr->details->min_nodes,
 				part_ptr->min_nodes);
 

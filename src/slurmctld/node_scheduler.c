@@ -1207,6 +1207,14 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	List preemptee_job_list = NULL;
 	slurmdb_association_rec_t *assoc_ptr = NULL;
 	slurmdb_qos_rec_t *qos_ptr = NULL;
+	uint32_t job_min_nodes, job_max_nodes;
+	uint32_t part_min_nodes, part_max_nodes;
+#ifdef HAVE_BG
+	static uint16_t cpus_per_node = 0;
+	if (!cpus_per_node)
+		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
+					&cpus_per_node);
+#endif
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -1227,6 +1235,17 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		      job_ptr->job_id, job_ptr->partition);
 	}
 
+#ifdef HAVE_BG
+	job_min_nodes = job_ptr->details->min_cpus / cpus_per_node;
+	job_max_nodes = job_ptr->details->max_cpus / cpus_per_node;
+	part_min_nodes = part_ptr->min_nodes_orig;
+	part_max_nodes = part_ptr->max_nodes_orig;
+#else
+	job_min_nodes = job_ptr->details->min_nodes;
+	job_max_nodes = job_ptr->details->max_nodes;
+	part_min_nodes = part_ptr->min_nodes;
+	part_max_nodes = part_ptr->max_nodes;
+#endif
 	/* Confirm that partition is up and has compatible nodes limits */
 	fail_reason = WAIT_NO_REASON;
 	if (part_ptr->state_up == PARTITION_DOWN)
@@ -1242,11 +1261,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		   (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
 		 			     QOS_FLAG_PART_TIME_LIMIT))))
 		fail_reason = WAIT_PART_TIME_LIMIT;
-	else if (((job_ptr->details->max_nodes != 0) &&
-	          ((job_ptr->details->max_nodes < part_ptr->min_nodes) &&
+	else if (((job_max_nodes != 0) &&
+	          ((job_max_nodes < part_min_nodes) &&
 		   (!qos_ptr || (qos_ptr && !(qos_ptr->flags
 					      & QOS_FLAG_PART_MIN_NODE))))) ||
-	         ((job_ptr->details->min_nodes > part_ptr->max_nodes) &&
+	         ((job_min_nodes > part_max_nodes) &&
 		  (!qos_ptr || (qos_ptr && !(qos_ptr->flags
 					     & QOS_FLAG_PART_MAX_NODE)))))
 		fail_reason = WAIT_PART_NODE_LIMIT;
@@ -1305,6 +1324,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	/* info("req: %u-%u, %u", job_ptr->details->min_nodes, */
 	/*    job_ptr->details->max_nodes, part_ptr->max_nodes); */
 
+	/* On BlueGene systems don't adjust the min/max node limits
+	   here.  We are working on midplane values. */
 	if (qos_ptr && (qos_ptr->flags & QOS_FLAG_PART_MIN_NODE))
 		min_nodes = job_ptr->details->min_nodes;
 	else

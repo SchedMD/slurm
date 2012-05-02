@@ -288,10 +288,18 @@ extern void set_job_elig_time(void)
 	ListIterator job_iterator;
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+#ifdef HAVE_BG
+	static uint16_t cpus_per_node = 0;
+	if (!cpus_per_node)
+		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
+					&cpus_per_node);
+#endif
 
 	lock_slurmctld(job_write_lock);
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		uint32_t job_min_nodes, job_max_nodes;
+		uint32_t part_min_nodes, part_max_nodes;
 		part_ptr = job_ptr->part_ptr;
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;
@@ -304,9 +312,20 @@ extern void set_job_elig_time(void)
 		if ((job_ptr->time_limit != NO_VAL) &&
 		    (job_ptr->time_limit > part_ptr->max_time))
 			continue;
-		if ((job_ptr->details->max_nodes != 0) &&
-		    ((job_ptr->details->max_nodes < part_ptr->min_nodes) ||
-		     (job_ptr->details->min_nodes > part_ptr->max_nodes)))
+#ifdef HAVE_BG
+		job_min_nodes = job_ptr->details->min_cpus / cpus_per_node;
+		job_max_nodes = job_ptr->details->max_cpus / cpus_per_node;
+		part_min_nodes = part_ptr->min_nodes_orig;
+		part_max_nodes = part_ptr->max_nodes_orig;
+#else
+		job_min_nodes = job_ptr->details->min_nodes;
+		job_max_nodes = job_ptr->details->max_nodes;
+		part_min_nodes = part_ptr->min_nodes;
+		part_max_nodes = part_ptr->max_nodes;
+#endif
+		if ((job_max_nodes != 0) &&
+		    ((job_max_nodes < part_min_nodes) ||
+		     (job_min_nodes > part_max_nodes)))
 			continue;
 		/* Job's eligible time is set in job_independent() */
 		if (!job_independent(job_ptr, 0))
@@ -1443,6 +1462,8 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	bit_and(avail_bitmap, avail_node_bitmap);
 
 	if (rc == SLURM_SUCCESS) {
+		/* On BlueGene systems don't adjust the min/max node limits
+		   here.  We are working on midplane values. */
 		min_nodes = MAX(job_ptr->details->min_nodes,
 				part_ptr->min_nodes);
 		if (job_ptr->details->max_nodes == 0)
