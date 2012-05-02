@@ -493,13 +493,12 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap, int mode,
 			struct part_res_record *cr_part_ptr,
 			struct node_use_record *node_usage)
 {
-	int error_code = SLURM_SUCCESS, ll; /* ll = layout array index */
+	int error_code = SLURM_SUCCESS;
 	uint16_t *layout_ptr = NULL;
 	bitstr_t *orig_map, *avail_cores, *free_cores;
-	bitstr_t *tmpcore = NULL, *reqmap = NULL;
+	bitstr_t *tmpcore = NULL;
 	bool test_only;
-	uint32_t c, i, k, n, csize, total_cpus, save_mem = 0;
-	int32_t build_cnt;
+	uint32_t c, i, j, k, n, csize, save_mem = 0;
 	job_resources_t *job_res;
 	struct job_details *details_ptr;
 	struct part_res_record *p_ptr, *jp_ptr;
@@ -507,7 +506,6 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap, int mode,
 
 	details_ptr = job_ptr->details;
 	layout_ptr  = details_ptr->req_node_layout;
-	reqmap      = details_ptr->req_node_bitmap;
 
 	free_job_resources(&job_ptr->job_resrcs);
 
@@ -859,6 +857,13 @@ alloc_job:
 		return error_code;
 	}
 
+	n = bit_ffs(bitmap);
+	if (n < 0) {
+		FREE_NULL_BITMAP(free_cores);
+		xfree(cpu_count);
+		return error_code;
+	}
+
 	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
 		info("cons_res: cr_job_test: distributing job %u",
 		     job_ptr->job_id);
@@ -896,64 +901,32 @@ alloc_job:
 		return error_code;
 	}
 
-	/* sync up cpus with layout_ptr, total up
-	 * all cpus, and load the core_bitmap */
-	ll = -1;
-	total_cpus = 0;
 	c = 0;
 	csize = bit_size(job_res->core_bitmap);
-	for (i = 0, n = 0; n < cr_node_cnt; n++) {
-		uint32_t j;
-		if (layout_ptr && reqmap && bit_test(reqmap,n))
-			ll++;
-		if (bit_test(bitmap, n) == 0)
+	j = cr_get_coremap_offset(n);
+	k = cr_get_coremap_offset(n + 1);
+	for (; j < k; j++, c++) {
+		if (!bit_test(free_cores, j))
 			continue;
-		j = cr_get_coremap_offset(n);
-		k = cr_get_coremap_offset(n + 1);
-		for (; j < k; j++, c++) {
-			if (bit_test(free_cores, j)) {
-				if (c >= csize)	{
-					error("cons_res: cr_job_test "
-					      "core_bitmap index error on "
-					      "node %s", 
-					      select_node_record[n].node_ptr->
-					      name);
-					drain_nodes(select_node_record[n].
-						    node_ptr->name,
-						    "Bad core count",
-						    getuid());
-					free_job_resources(&job_res);
-					FREE_NULL_BITMAP(free_cores);
-					return SLURM_ERROR;
-				}
-				bit_set(job_res->core_bitmap, c);
-			}
+		if (c >= csize)	{
+			error("select/serial: cr_job_test "
+			      "core_bitmap index error on node %s", 
+			      select_node_record[n].node_ptr->name);
+			drain_nodes(select_node_record[n].node_ptr->name,
+				    "Bad core count", getuid());
+			free_job_resources(&job_res);
+			FREE_NULL_BITMAP(free_cores);
+			return SLURM_ERROR;
 		}
-
-		if (layout_ptr && reqmap && bit_test(reqmap, n)) {
-			job_res->cpus[i] = MIN(job_res->cpus[i],
-					       layout_ptr[ll]);
-		} else if (layout_ptr) {
-			job_res->cpus[i] = 0;
-		}
-		total_cpus += job_res->cpus[i];
-		i++;
+		bit_set(job_res->core_bitmap, c);
+		break;
 	}
 
-	/* When 'srun --overcommit' is used, ncpus is set to a minimum value
-	 * in order to allocate the appropriate number of nodes based on the
-	 * job request.
-	 * For cons_res, all available logical processors will be allocated on
-	 * each allocated node in order to accommodate the overcommit request.
-	 */
-	if (details_ptr->overcommit && details_ptr->num_tasks)
-		job_res->ncpus = MIN(total_cpus, details_ptr->num_tasks);
-
 	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
-		info("cons_res: cr_job_test: job %u ncpus %u cbits "
-		     "%u/%u nbits %u", job_ptr->job_id,
-		     job_res->ncpus, bit_set_count(free_cores),
-		     bit_set_count(job_res->core_bitmap), job_res->nhosts);
+		info("select/serial: cr_job_test: job %u ncpus %u cbits %u/%d "
+		     "nbits %u", job_ptr->job_id,
+		     job_res->ncpus, bit_set_count(free_cores), 1,
+		     job_res->nhosts);
 	}
 	FREE_NULL_BITMAP(free_cores);
 
@@ -966,11 +939,7 @@ alloc_job:
 	}
 
 	/* translate job_res->cpus array into format with rep count */
-	build_cnt = build_job_resources_cpu_array(job_res);
-	if (build_cnt >= 0)
-		job_ptr->total_cpus = build_cnt;
-	else
-		job_ptr->total_cpus = total_cpus;	/* best guess */
+	job_ptr->total_cpus = build_job_resources_cpu_array(job_res);
 
 	if (!(cr_type & CR_MEMORY))
 		return error_code;
@@ -980,15 +949,10 @@ alloc_job:
 	if (save_mem & MEM_PER_CPU) {
 		/* memory is per-cpu */
 		save_mem &= (~MEM_PER_CPU);
-		for (i = 0; i < job_res->nhosts; i++) {
-			job_res->memory_allocated[i] = job_res->cpus[i] *
-						       save_mem;
-		}
+		job_res->memory_allocated[0] = job_res->cpus[0] * save_mem;
 	} else {
 		/* memory is per-node */
-		for (i = 0; i < job_res->nhosts; i++) {
-			job_res->memory_allocated[i] = save_mem;
-		}
+		job_res->memory_allocated[0] = save_mem;
 	}
 	return error_code;
 }
