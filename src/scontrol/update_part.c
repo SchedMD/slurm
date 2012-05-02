@@ -112,8 +112,7 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 		}
 		else if (strncasecmp(tag, "MinNodes", MAX(taglen, 2)) == 0) {
 			min = 1;
-			get_resource_arg_range(val,
-				"MinNodes", &min, &max, true);
+			verify_node_count(val, &min, &max);
 			part_msg_ptr->min_nodes = min;
 			(*update_cnt_ptr)++;
 		}

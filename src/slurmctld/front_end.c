@@ -793,7 +793,8 @@ extern void sync_front_end_state(void)
 
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
-		if (IS_NODE_IDLE(front_end_ptr) &&
+		if ((IS_NODE_IDLE(front_end_ptr) ||
+		     IS_NODE_UNKNOWN(front_end_ptr)) &&
 		    (front_end_ptr->job_cnt_run != 0)) {
 			state_flags = front_end_ptr->node_state &
 				      NODE_STATE_FLAGS;

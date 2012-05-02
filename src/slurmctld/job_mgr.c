@@ -3660,6 +3660,13 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		rc = ESLURM_INVALID_NODE_COUNT;
 		goto fini;
 	}
+#ifndef HAVE_FRONT_END
+	if ((job_desc->min_nodes == 0) && (job_desc->script == NULL)) {
+		info("_valid_job_part: min_nodes==0 for non-batch job");
+		rc = ESLURM_INVALID_NODE_COUNT;
+		goto fini;
+	}
+#endif
 
 	if ((job_desc->time_limit   == NO_VAL) &&
 	    (part_ptr->default_time != NO_VAL))

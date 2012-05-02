@@ -809,7 +809,6 @@ int read_slurm_conf(int recover, bool reconfig)
 		sync_job_priorities();
 	}
 
-	sync_front_end_state();
 	_sync_part_prio();
 	_build_bitmaps_pre_select();
 	if ((select_g_node_init(node_record_table_ptr, node_record_count)
@@ -1432,9 +1431,11 @@ static int _sync_nodes_to_jobs(void)
 	}
 	list_iterator_destroy(job_iterator);
 
-	if (update_cnt)
+	if (update_cnt) {
 		info("_sync_nodes_to_jobs updated state of %d nodes",
 		     update_cnt);
+	}
+	sync_front_end_state();
 	return update_cnt;
 }
 

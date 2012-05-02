@@ -280,7 +280,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 			job_ptr->cpu_cnt  = 0;
 			job_ptr->node_cnt = 0;
 		} else {
-			front_end_ptr->job_cnt_comp++;
+			bool set_fe_comp = false;
 			if (front_end_ptr->job_cnt_run)
 				front_end_ptr->job_cnt_run--;
 			else {
@@ -291,7 +291,6 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 				uint16_t state_flags;
 				state_flags = front_end_ptr->node_state &
 					      NODE_STATE_FLAGS;
-				state_flags |= NODE_STATE_COMPLETING;
 				front_end_ptr->node_state = NODE_STATE_IDLE |
 							    state_flags;
 			}
@@ -300,6 +299,12 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 				if (!bit_test(job_ptr->node_bitmap, i))
 					continue;
 				make_node_comp(node_ptr, job_ptr, suspended);
+				set_fe_comp = true;
+			}
+			if (set_fe_comp) {
+				front_end_ptr->job_cnt_comp++;
+				front_end_ptr->node_state |=
+					NODE_STATE_COMPLETING;
 			}
 		}
 
