@@ -269,13 +269,13 @@ extern void parse_command_line(int argc, char *argv[])
 		} else if ( params.node_flag ) {
 			params.node_field_flag = true;	/* compute size later */
 			params.format = params.long_output ?
-			  "%N %.6D %.9P %.11T %.4c %.8z %.6m %.8d %.6w %.8f %20R" :
+			  "%N %.6D %.9P %.11T %.4c %.8z %.6m %.8d %.6w %.8f %20E" :
 			  "%N %.6D %.9P %6t";
 
 		} else if (params.list_reasons) {
 			params.format = params.long_output ?
-			  "%20R %12U %19H %6t %N" :
-			  "%20R %9u %19H %N";
+			  "%20E %12U %19H %6t %N" :
+			  "%20E %9u %19H %N";
 
 		} else if ((env_val = getenv ("SINFO_FORMAT"))) {
 			params.format = xstrdup(env_val);
