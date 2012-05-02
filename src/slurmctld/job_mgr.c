@@ -3904,6 +3904,15 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 #endif
 		}
 	}
+#ifdef HAVE_CRAY
+	if ((job_desc->max_nodes == 0) && (job_desc->script == NULL)) {
+#else
+	if (job_desc->max_nodes == 0) {
+#endif
+		info("_job_create: max_nodes == 0");
+		error_code = ESLURM_INVALID_NODE_COUNT;
+		goto cleanup_fail;
+	}
 
 	error_code = _valid_job_part(job_desc, submit_uid, req_bitmap,
 				     &part_ptr, &part_ptr_list);

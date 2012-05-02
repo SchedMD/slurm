@@ -623,7 +623,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->exc_nodes = opt.exc_nodes;
 	desc->partition = opt.partition;
 	desc->min_nodes = opt.min_nodes;
-	if (opt.max_nodes)
+	if (opt.nodes_set)
 		desc->max_nodes = opt.max_nodes;
 	desc->user_id = opt.uid;
 	desc->group_id = opt.gid;
