@@ -56,9 +56,6 @@
 #include "src/common/slurm_resource_info.h"
 #include "src/slurmctld/slurmctld.h"
 
-
-/* _job_test - does most of the real work for select_p_job_test(), which
- *	pretty much just handles load-leveling and max_share logic */
 int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		int mode, uint16_t cr_type,
 		enum node_cr_state job_node_req, uint32_t cr_node_cnt,
