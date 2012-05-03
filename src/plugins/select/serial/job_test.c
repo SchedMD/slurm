@@ -840,7 +840,7 @@ alloc_job:
 		/* we were sent here to cleanup and exit */
 		FREE_NULL_BITMAP(free_cores);
 		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
-			info("cons_res: exiting cr_job_test with no "
+			info("select/serial: exiting cr_job_test with no "
 			     "allocation");
 		}
 		return SLURM_ERROR;
@@ -870,7 +870,7 @@ alloc_job:
 	}
 
 	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
-		info("cons_res: cr_job_test: distributing job %u",
+		info("select/serial: cr_job_test: distributing job %u",
 		     job_ptr->job_id);
 	}
 
