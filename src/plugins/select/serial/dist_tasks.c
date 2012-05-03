@@ -42,11 +42,11 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	job_resources_t *job_res = job_ptr->job_resrcs;
 
 	if (!job_res || !job_res->cpus) {
-		error("cons_res: _compute_c_b_task_dist given NULL job_res");
+		error("select/serial: _compute_c_b_task_dist job_res==NULL");
 		return SLURM_ERROR;
 	}
 	if (job_res->nhosts != 1) {
-		error("cons_res: _compute_c_b_task_dist given nhosts==%u",
+		error("select/serial: _compute_c_b_task_dist given nhosts==%u",
 		      job_res->nhosts);
 		return SLURM_ERROR;
 	}
