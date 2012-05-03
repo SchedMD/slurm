@@ -72,9 +72,6 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 			free_core_count++;
 	}
 
-	if (free_core_count < 1)
-		bit_nclear(core_map, core_begin, core_end - 1);
-
 	return free_core_count;
 }
 
@@ -234,16 +231,20 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			      enum node_cr_state job_node_req)
 {
 	struct node_record *node_ptr;
-	uint32_t i, free_mem, gres_cpus, min_mem, size;
+	uint32_t i, free_mem, gres_cpus, min_mem;
+	int i_first, i_last;
 	List gres_list;
 
-	if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
+	if (job_ptr->details->pn_min_memory & MEM_PER_CPU)
 		min_mem = job_ptr->details->pn_min_memory & (~MEM_PER_CPU);
-	} else {
+	else
 		min_mem = job_ptr->details->pn_min_memory;
-	}
-	size = bit_size(bitmap);
-	for (i = 0; i < size; i++) {
+	i_first = bit_ffs(bitmap);
+	if (i_first >= 0)
+		i_last  = bit_fls(bitmap);
+	else
+		i_last = -2;
+	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(bitmap, i))
 			continue;
 		node_ptr = select_node_record[i].node_ptr;
@@ -332,12 +333,12 @@ clear_bit:	/* This node is not usable by this job */
 	return SLURM_SUCCESS;
 }
 
-
 /* given an "avail" node_bitmap, return a corresponding "avail" core_bitmap */
 bitstr_t *_make_core_bitmap(bitstr_t *node_map)
 {
 	uint32_t n, c, nodes, size;
 	uint32_t coff;
+	int i_first, i_last;
 
 	nodes = bit_size(node_map);
 	size = cr_get_coremap_offset(nodes);
@@ -345,10 +346,14 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map)
 	if (!core_map)
 		fatal("bit_alloc: malloc failure");
 
-	nodes = bit_size(node_map);
-	for (n = 0, c = 0; n < nodes; n++) {
+	i_first = bit_ffs(node_map);
+	if (i_first >= 0)
+		i_last  = bit_fls(node_map);
+	else
+		i_last = -2;
+	for (n = i_first, c = 0; n <= i_last; n++) {
 		if (bit_test(node_map, n)) {
-			coff = cr_get_coremap_offset(n+1);
+			coff = cr_get_coremap_offset(n + 1);
 			while (c < coff) {
 				bit_set(core_map, c++);
 			}
