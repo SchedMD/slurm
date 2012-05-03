@@ -142,17 +142,14 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			    struct node_use_record *node_usage,
 			    struct job_record *job_ptr, int action);
 static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
-		    uint32_t min_nodes, uint32_t max_nodes,
-		    uint32_t req_nodes, uint16_t job_node_share,
+		    uint16_t job_node_share,
 		    List preemptee_candidates, List *preemptee_job_list);
 static int _sort_usable_nodes_dec(struct job_record *job_a,
 				  struct job_record *job_b);
 static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
-		      uint32_t min_nodes, uint32_t max_nodes,
-		      uint32_t req_nodes, uint16_t job_node_share);
+		      uint16_t job_node_share);
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			  uint32_t min_nodes, uint32_t max_nodes,
-			  uint32_t req_nodes, uint16_t job_node_req,
+			  uint16_t job_node_req,
 			  List preemptee_candidates, List *preemptee_job_list);
 
 static void _dump_job_res(struct job_resources *job) {
@@ -1087,8 +1084,7 @@ static bool _is_preemptable(struct job_record *job_ptr,
 
 /* Determine if a job can ever run */
 static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
-		      uint32_t min_nodes, uint32_t max_nodes,
-		      uint32_t req_nodes, uint16_t job_node_share)
+		      uint16_t job_node_share)
 {
 	int rc;
 
@@ -1116,8 +1112,7 @@ static int _sort_usable_nodes_dec(struct job_record *job_a,
 
 /* Allocate resources for a job now, if possible */
 static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
-		    uint32_t min_nodes, uint32_t max_nodes,
-		    uint32_t req_nodes, uint16_t job_node_share,
+		    uint16_t job_node_share,
 		    List preemptee_candidates, List *preemptee_job_list)
 {
 	int rc;
@@ -1261,8 +1256,7 @@ top:	orig_map = bit_copy(save_bitmap);
  *	jobs from node table at termination time and run _test_job() after
  *	each one. Used by SLURM's sched/backfill plugin and Moab. */
 static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			  uint32_t min_nodes, uint32_t max_nodes,
-			  uint32_t req_nodes, uint16_t job_node_share,
+			  uint16_t job_node_share,
 			  List preemptee_candidates, List *preemptee_job_list)
 {
 	struct part_res_record *future_part;
@@ -1671,15 +1665,12 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		_dump_state(select_part_record);
 	}
 	if (mode == SELECT_MODE_WILL_RUN) {
-		rc = _will_run_test(job_ptr, bitmap, min_nodes, max_nodes,
-				    req_nodes, job_node_share,
+		rc = _will_run_test(job_ptr, bitmap, job_node_share,
 				    preemptee_candidates, preemptee_job_list);
 	} else if (mode == SELECT_MODE_TEST_ONLY) {
-		rc = _test_only(job_ptr, bitmap, min_nodes, max_nodes,
-				req_nodes, job_node_share);
+		rc = _test_only(job_ptr, bitmap, job_node_share);
 	} else if (mode == SELECT_MODE_RUN_NOW) {
-		rc = _run_now(job_ptr, bitmap, min_nodes, max_nodes,
-			      req_nodes, job_node_share,
+		rc = _run_now(job_ptr, bitmap, job_node_share,
 			      preemptee_candidates, preemptee_job_list);
 	} else
 		fatal("select_p_job_test: Mode %d is invalid", mode);
