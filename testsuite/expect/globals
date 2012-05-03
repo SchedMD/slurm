@@ -1277,6 +1277,36 @@ proc test_cray { } {
 
 ################################################################
 #
+# Proc: test_serial
+#
+# Purpose: Determine if the system runs only serial jobs
+#
+# Returns 1 if the system is serial, 0 otherwise
+#
+################################################################
+
+proc test_serial { } {
+	global scontrol bin_bash bin_grep
+
+	log_user 0
+	set serial 0
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectType"
+	expect {
+		"select/serial" {
+			set serial 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $serial
+}
+
+################################################################
+#
 # Proc: test_emulated
 #
 # Purpose: Determine if the system is emulated (not running on
