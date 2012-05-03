@@ -101,7 +101,7 @@
  *                    messages that this plugin can accept
  */
 const char plugin_name[]       	= "auth plugin for Munge "
-				  "(http://home.gna.org/munge/)";
+				  "(http://code.google.com/p/munge/)";
 const char plugin_type[]       	= "auth/munge";
 const uint32_t plugin_version   = 10;
 const uint32_t min_plug_version = 10; /* minimum version accepted */
