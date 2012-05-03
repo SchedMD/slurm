@@ -1045,6 +1045,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			fatal("bit_alloc malloc failure");
 	}
 
+	/* In case we are in relative mode, do not look for idle nodes
+	 * as we will not try to get idle nodes first but try to get
+	 * the relative node first */
 	if (step_spec->relative != (uint16_t)NO_VAL) {
 		/* Remove first (step_spec->relative) nodes from
 		 * available list */
@@ -1118,7 +1121,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	}
 
 	if (step_spec->min_nodes) {
-		int cpus_needed, node_avail_cnt, nodes_needed;
+		int cpus_needed, node_avail_cnt, node_idle_cnt, nodes_needed;
 
 		if (usable_cpu_cnt == NULL) {
 			usable_cpu_cnt = xmalloc(sizeof(uint32_t) *
@@ -1168,6 +1171,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				nodes_needed = 0;
 			}
 		}
+		if (nodes_idle)
+			node_idle_cnt = bit_set_count(nodes_idle);
+		else
+			node_idle_cnt = 0;
 		if (nodes_avail)
 			node_avail_cnt = bit_set_count(nodes_avail);
 		else
@@ -1187,8 +1194,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 							 usable_cpu_cnt);
 			if (node_tmp == NULL) {
 				int avail_node_cnt = bit_set_count(nodes_avail);
-				if ((avail_node_cnt <
-				     bit_set_count(nodes_idle)) &&
+				if ((avail_node_cnt < node_idle_cnt) &&
 				    (step_spec->min_nodes <=
 				     (avail_node_cnt + nodes_picked_cnt +
 				      mem_blocked_nodes))) {

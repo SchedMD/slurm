@@ -39,6 +39,8 @@ documents those changes that are of interest to users and admins.
  -- Fix to job preemption logic to preempt multiple jobs at the same time.
  -- Fix minor issue where uid and gid were switched in sview for submitting
     batch jobs.
+ -- Fix possible illegal memory reference in slurmctld for job step with
+    relative option. Work by Matthieu Hautreux (CEA).
 
 * Changes in SLURM 2.3.4
 ========================
