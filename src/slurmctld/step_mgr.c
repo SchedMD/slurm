@@ -1052,7 +1052,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		/* Remove first (step_spec->relative) nodes from
 		 * available list */
 		bitstr_t *relative_nodes = NULL;
-		relative_nodes = bit_pick_cnt(nodes_avail,
+		relative_nodes = bit_pick_cnt(job_ptr->node_bitmap,
 					      step_spec->relative);
 		if (relative_nodes == NULL) {
 			info ("_pick_step_nodes: "
