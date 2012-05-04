@@ -46,6 +46,8 @@ documents those changes that are of interest to users and admins.
     processing.
  -- Support for cyclic distribution of cpus in task/cgroup plugin from Martin
     Perry, Bull.
+ -- GrpMEM limit for QOSes and associations added Patch from Bjørn-Helge Mevik,
+    University of Oslo.
 
 * Changes in SLURM 2.4.0.pre4
 =============================

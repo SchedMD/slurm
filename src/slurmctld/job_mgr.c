@@ -3838,15 +3838,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	bool valid;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr;
 	uint32_t user_submit_priority;
-	uint16_t limit_set_max_cpus = 0;
-	uint16_t limit_set_max_nodes = 0;
-	uint16_t limit_set_min_cpus = 0;
-	uint16_t limit_set_min_nodes = 0;
-	uint16_t limit_set_pn_min_memory = 0;
-	uint16_t limit_set_time = 0;
-	uint16_t limit_set_qos = 0;
 	static uint32_t node_scaling = 1;
 	static uint32_t cpus_per_mp = 1;
+	acct_policy_limit_set_t acct_policy_limit_set;
 
 #ifdef HAVE_BG
 	uint16_t geo[SYSTEM_DIMENSIONS];
@@ -3864,6 +3858,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			sub_mp_system = 1;
 	}
 #endif
+	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
 
 	*job_pptr = (struct job_record *) NULL;
 	/*
@@ -3979,10 +3974,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    (!acct_policy_validate(job_desc, part_ptr,
 				   assoc_ptr, qos_ptr, NULL,
-				   &limit_set_max_cpus,
-				   &limit_set_max_nodes,
-				   limit_set_pn_min_memory,
-				   &limit_set_time, 0))) {
+				   &acct_policy_limit_set, 0))) {
 		info("_job_create: exceeded association/qos's limit "
 		     "for user %u", job_desc->user_id);
 		error_code = ESLURM_ACCOUNTING_POLICY;
@@ -4137,13 +4129,13 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	job_ptr->limit_set_max_cpus = limit_set_max_cpus;
-	job_ptr->limit_set_max_nodes = limit_set_max_nodes;
-	job_ptr->limit_set_min_cpus = limit_set_min_cpus;
-	job_ptr->limit_set_min_nodes = limit_set_min_nodes;
-	job_ptr->limit_set_pn_min_memory = limit_set_pn_min_memory;
-	job_ptr->limit_set_time = limit_set_time;
-	job_ptr->limit_set_qos = limit_set_qos;
+	job_ptr->limit_set_max_cpus = acct_policy_limit_set.max_cpus;
+	job_ptr->limit_set_max_nodes = acct_policy_limit_set.max_nodes;
+	job_ptr->limit_set_min_cpus = acct_policy_limit_set.min_cpus;
+	job_ptr->limit_set_min_nodes = acct_policy_limit_set.min_nodes;
+	job_ptr->limit_set_pn_min_memory = acct_policy_limit_set.pn_min_memory;
+	job_ptr->limit_set_time = acct_policy_limit_set.time;
+	job_ptr->limit_set_qos = acct_policy_limit_set.qos;
 
 	job_ptr->assoc_id = assoc_rec.id;
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
@@ -6663,12 +6655,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	time_t now = time(NULL);
 	multi_core_data_t *mc_ptr = NULL;
 	bool update_accounting = false;
-	uint16_t limit_set_max_cpus = 0;
-	uint16_t limit_set_max_nodes = 0;
-	uint16_t limit_set_min_cpus = 0;
-	uint16_t limit_set_min_nodes = 0;
-	uint16_t limit_set_pn_min_memory = 0;
-	uint16_t limit_set_time = 0;
+	acct_policy_limit_set_t acct_policy_limit_set;
 
 #ifdef HAVE_BG
 	uint16_t conn_type = (uint16_t) NO_VAL;
@@ -6685,6 +6672,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
 					&cpus_per_node);
 #endif
+	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
 
 	/* Make sure anything that may be put in the database will be
 	   lower case */
@@ -7013,10 +7001,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (!authorized && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
 		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
-					  NULL, &limit_set_max_cpus,
-					  &limit_set_max_nodes,
-					  limit_set_pn_min_memory,
-					  &limit_set_time, 1)) {
+					  NULL, &acct_policy_limit_set, 1)) {
 			info("update_job: exceeded association's cpu, node, "
 			     "memory or time limit for user %u",
 			     job_specs->user_id);
@@ -7027,28 +7012,34 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		/* Perhaps the limit was removed, so we will remove it
 		   since it was imposed previously.
 		*/
-		if (!limit_set_max_cpus && (job_ptr->limit_set_max_cpus == 1))
+		if (!acct_policy_limit_set.max_cpus
+		    && (job_ptr->limit_set_max_cpus == 1))
 			job_ptr->details->max_cpus = NO_VAL;
 
-		if (!limit_set_max_nodes && (job_ptr->limit_set_max_nodes == 1))
+		if (!acct_policy_limit_set.max_nodes
+		    && (job_ptr->limit_set_max_nodes == 1))
 			job_ptr->details->max_nodes = NO_VAL;
 
-		if (!limit_set_time && (job_ptr->limit_set_time == 1))
+		if (!acct_policy_limit_set.time
+		    && (job_ptr->limit_set_time == 1))
 			job_ptr->time_limit = NO_VAL;
 
 		if (job_ptr->limit_set_max_cpus != ADMIN_SET_LIMIT)
-			job_ptr->limit_set_max_cpus = limit_set_max_cpus;
+			job_ptr->limit_set_max_cpus =
+				acct_policy_limit_set.max_cpus;
 		if (job_ptr->limit_set_max_nodes != ADMIN_SET_LIMIT)
-			job_ptr->limit_set_max_nodes = limit_set_max_nodes;
+			job_ptr->limit_set_max_nodes =
+				acct_policy_limit_set.max_nodes;
 		if (job_ptr->limit_set_time != ADMIN_SET_LIMIT)
-			job_ptr->limit_set_time = limit_set_time;
+			job_ptr->limit_set_time = acct_policy_limit_set.time;
 	} else if (authorized) {
-		limit_set_max_cpus = ADMIN_SET_LIMIT;
-		limit_set_max_nodes = ADMIN_SET_LIMIT;
-		limit_set_min_cpus = ADMIN_SET_LIMIT;
-		limit_set_min_nodes = ADMIN_SET_LIMIT;
-		limit_set_pn_min_memory = ADMIN_SET_LIMIT;
-		limit_set_time = ADMIN_SET_LIMIT;
+		acct_policy_limit_set.max_cpus = ADMIN_SET_LIMIT;
+		acct_policy_limit_set.max_nodes = ADMIN_SET_LIMIT;
+		acct_policy_limit_set.min_cpus = ADMIN_SET_LIMIT;
+		acct_policy_limit_set.min_nodes = ADMIN_SET_LIMIT;
+		acct_policy_limit_set.pn_min_memory = ADMIN_SET_LIMIT;
+		acct_policy_limit_set.time = ADMIN_SET_LIMIT;
+		acct_policy_limit_set.qos = ADMIN_SET_LIMIT;
 	}
 
 
@@ -7119,16 +7110,16 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		info("update_job: setting min_cpus from "
 		     "%u to %u for job_id %u",
 		     save_min_cpus, detail_ptr->min_cpus, job_specs->job_id);
-		job_ptr->limit_set_min_cpus = limit_set_min_cpus;
+		job_ptr->limit_set_min_cpus = acct_policy_limit_set.min_cpus;
 		update_accounting = true;
 	}
 	if (save_max_cpus && (detail_ptr->max_cpus != save_max_cpus)) {
 		info("update_job: setting max_cpus from "
 		     "%u to %u for job_id %u",
 		     save_max_cpus, detail_ptr->max_cpus, job_specs->job_id);
-		/* Always use the limit_set_* since if set by a
+		/* Always use the acct_policy_limit_set.* since if set by a
 		 * super user it be set correctly */
-		job_ptr->limit_set_max_cpus = limit_set_max_cpus;
+		job_ptr->limit_set_max_cpus = acct_policy_limit_set.max_cpus;
 		update_accounting = true;
 	}
 
@@ -7184,13 +7175,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 					     "min_cpus to %u for "
 					     "job_id %u", detail_ptr->min_cpus,
 					     job_specs->job_id);
-					/* Always use the limit_set_*
+					/* Always use the
+					 * acct_policy_limit_set.*
 					 * since if set by a
 					 * super user it be set correctly */
 					job_ptr->limit_set_min_cpus =
-						limit_set_min_cpus;
+						acct_policy_limit_set.min_cpus;
 					job_ptr->limit_set_max_cpus =
-						limit_set_max_cpus;
+						acct_policy_limit_set.max_cpus;
 				}
 			}
 		}
@@ -7244,16 +7236,16 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		info("update_job: setting min_nodes from "
 		     "%u to %u for job_id %u",
 		     save_min_nodes, detail_ptr->min_nodes, job_specs->job_id);
-		job_ptr->limit_set_min_nodes = limit_set_min_nodes;
+		job_ptr->limit_set_min_nodes = acct_policy_limit_set.min_nodes;
 		update_accounting = true;
 	}
 	if (save_max_nodes && (save_max_nodes != detail_ptr->max_nodes)) {
 		info("update_job: setting max_nodes from "
 		     "%u to %u for job_id %u",
 		     save_max_nodes, detail_ptr->max_nodes, job_specs->job_id);
-		/* Always use the limit_set_* since if set by a
+		/* Always use the acct_policy_limit_set.* since if set by a
 		 * super user it be set correctly */
-		job_ptr->limit_set_max_nodes = limit_set_max_nodes;
+		job_ptr->limit_set_max_nodes = acct_policy_limit_set.max_nodes;
 		update_accounting = true;
 	}
 
@@ -7292,9 +7284,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: update_job: setting time_limit to %u for "
 			     "job_id %u", job_specs->time_limit,
 			     job_specs->job_id);
-			/* Always use the limit_set_* since if set by a
-			 * super user it be set correctly */
-			job_ptr->limit_set_time = limit_set_time;
+			/* Always use the acct_policy_limit_set.*
+			 * since if set by a super user it be set correctly */
+			job_ptr->limit_set_time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else if (IS_JOB_PENDING(job_ptr) && job_ptr->part_ptr &&
 			   (job_ptr->part_ptr->max_time >=
@@ -7303,9 +7295,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: update_job: setting time_limit to %u for "
 			     "job_id %u", job_specs->time_limit,
 			     job_specs->job_id);
-			/* Always use the limit_set_* since if set by a
-			 * super user it be set correctly */
-			job_ptr->limit_set_time = limit_set_time;
+			/* Always use the acct_policy_limit_set.*
+			 * since if set by a super user it be set correctly */
+			job_ptr->limit_set_time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else {
 			info("sched: Attempt to increase time limit for job %u",
@@ -7347,9 +7339,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: update_job: setting time_limit to %u for "
 			     "job_id %u", job_ptr->time_limit,
 			     job_specs->job_id);
-			/* Always use the limit_set_* since if set by a
-			 * super user it be set correctly */
-			job_ptr->limit_set_time = limit_set_time;
+			/* Always use the acct_policy_limit_set.*
+			 * since if set by a super user it be set correctly */
+			job_ptr->limit_set_time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else {
 			info("sched: Attempt to extend end time for job %u",
@@ -7496,10 +7488,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     "for job_id %u", entity,
 			     (job_specs->pn_min_memory & (~MEM_PER_CPU)),
 			     job_specs->job_id);
-			/* Always use the limit_set_* since if set by a
-			 * super user it be set correctly */
-			job_ptr->limit_set_pn_min_memory = 
-			  limit_set_pn_min_memory;
+			/* Always use the acct_policy_limit_set.*
+			 * since if set by a super user it be set correctly */
+			job_ptr->limit_set_pn_min_memory =
+				acct_policy_limit_set.pn_min_memory;
 		} else {
 			error("sched: Attempt to increase pn_min_memory for "
 			      "job %u", job_specs->job_id);

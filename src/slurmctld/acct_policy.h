@@ -41,6 +41,16 @@
 
 #define ADMIN_SET_LIMIT 0xffff
 
+typedef struct {
+	uint16_t max_cpus;
+	uint16_t max_nodes;
+	uint16_t min_cpus;
+	uint16_t min_nodes;
+	uint16_t pn_min_memory;
+	uint16_t qos;
+	uint16_t time;
+} acct_policy_limit_set_t;
+
 /*
  * acct_policy_add_job_submit - Note that a job has been submitted for
  *	accounting policy purposes.
@@ -71,10 +81,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 slurmdb_association_rec_t *assoc_in,
 				 slurmdb_qos_rec_t *qos_ptr,
 				 uint16_t *state_reason,
-				 uint16_t *limit_set_max_cpus,
-				 uint16_t *limit_set_max_nodes,
-				 uint16_t limit_set_pn_min_memory,
-				 uint16_t *limit_set_time, bool update_call);
+				 acct_policy_limit_set_t *acct_policy_limit_set,
+				 bool update_call);
 
 /*
  * acct_policy_job_runnable - Determine of the specified job can execute
