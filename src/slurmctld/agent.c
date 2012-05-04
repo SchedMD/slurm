@@ -818,6 +818,7 @@ static void *_thread_per_group_rpc(void *args)
 	xsignal(SIGUSR1, _sig_handler);
 	xsignal_unblock(sig_array);
 	is_kill_msg = (	(msg_type == REQUEST_KILL_TIMELIMIT)	||
+			(msg_type == REQUEST_KILL_PREEMPTED)	||
 			(msg_type == REQUEST_TERMINATE_JOB) );
 	srun_agent = (	(msg_type == SRUN_PING)			||
 			(msg_type == SRUN_EXEC)			||
