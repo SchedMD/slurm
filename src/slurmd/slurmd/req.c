@@ -3380,6 +3380,107 @@ _rpc_abort_job(slurm_msg_t *msg)
 	xfree(resv_id);
 }
 
+/* This is a variant of _rpc_terminate_job for use with select/serial */
+static void
+_rpc_terminate_batch_job(uint32_t job_id)
+{
+	int             rc     = SLURM_SUCCESS;
+	int             nsteps = 0;
+	int		delay;
+	time_t		now = time(NULL);
+	slurm_ctl_conf_t *cf;
+
+	slurmd_release_resources(job_id);
+
+	if (_waiter_init(job_id) == SLURM_ERROR)
+		return;
+
+	/*
+	 * "revoke" all future credentials for this jobid
+	 */
+	if (slurm_cred_revoke(conf->vctx, job_id, now, now) < 0) {
+		debug("revoking cred for job %u: %m", job_id);
+	} else {
+		save_cred_state(conf->vctx);
+		debug("credential for job %u revoked", job_id);
+	}
+
+	/*
+	 * Tasks might be stopped (possibly by a debugger)
+	 * so send SIGCONT first.
+	 */
+	_kill_all_active_steps(job_id, SIGCONT, true);
+	if (errno == ESLURMD_STEP_SUSPENDED) {
+		/*
+		 * If the job step is currently suspended, we don't
+		 * bother with a "nice" termination.
+		 */
+		debug2("Job is currently suspended, terminating");
+		nsteps = _terminate_all_steps(job_id, true);
+	} else {
+		nsteps = _kill_all_active_steps(job_id, SIGTERM, true);
+	}
+
+#ifndef HAVE_AIX
+	if ((nsteps == 0) && !conf->epilog) {
+		slurm_cred_begin_expiration(conf->vctx, job_id);
+		save_cred_state(conf->vctx);
+		_waiter_complete(job_id);
+		_epilog_complete(job_id, rc);
+		return;
+	}
+#endif
+
+	/*
+	 *  Check for corpses
+	 */
+	cf = slurm_conf_lock();
+	delay = MAX(cf->kill_wait, 5);
+	slurm_conf_unlock();
+	if (!_pause_for_job_completion(job_id, NULL, delay) &&
+	     _terminate_all_steps(job_id, true) ) {
+		/*
+		 *  Block until all user processes are complete.
+		 */
+		_pause_for_job_completion(job_id, NULL, 0);
+	}
+
+	/*
+	 *  Begin expiration period for cached information about job.
+	 *   If expiration period has already begun, then do not run
+	 *   the epilog again, as that script has already been executed
+	 *   for this job.
+	 */
+	if (slurm_cred_begin_expiration(conf->vctx, job_id) < 0) {
+		debug("Not running epilog for jobid %d: %m", job_id);
+		goto done;
+	}
+
+	save_cred_state(conf->vctx);
+
+	/* NOTE: We lack the job's UID and SPANK environment variables */
+	rc = _run_epilog(job_id, 0, NULL, NULL, 0);
+	if (rc) {
+		int term_sig, exit_status;
+		if (WIFSIGNALED(rc)) {
+			exit_status = 0;
+			term_sig    = WTERMSIG(rc);
+		} else {
+			exit_status = WEXITSTATUS(rc);
+			term_sig    = 0;
+		}
+		error("[job %u] epilog failed status=%d:%d",
+		      job_id, exit_status, term_sig);
+		rc = ESLURMD_EPILOG_FAILED;
+	} else
+		debug("completed epilog for jobid %u", job_id);
+
+    done:
+	_wait_state_completed(job_id, 5);
+	_waiter_complete(job_id);
+	_epilog_complete(job_id, rc);
+}
+
 /* This complete batch RPC came from slurmstepd because we have select/serial
  * configured. Terminate the job here. Forward the batch completion RPC to
  * slurmctld and possible get a new batch launch RPC in response. */
@@ -3398,9 +3499,11 @@ _rpc_complete_batch(slurm_msg_t *msg)
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
-	slurm_send_rc_msg (msg, SLURM_SUCCESS);
 
-/* FIXME: Call _rpc_terminate_job() logic */
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+/* FIXME: Add UID to RPC and pass as argument here for _run_epilog() */
+	_rpc_terminate_batch_job(req->job_id);
+
 	slurm_msg_t_init(&req_msg);
 /* FIXME: Change to new enum */
 	req_msg.msg_type= REQUEST_COMPLETE_BATCH_SCRIPT;
