@@ -538,14 +538,12 @@ cleanup:
 extern int
 send_registration_msg(uint32_t status, bool startup)
 {
-	int ret_val = SLURM_SUCCESS;
+	int rc, ret_val = SLURM_SUCCESS;
 	slurm_msg_t req;
-	slurm_msg_t resp;
 	slurm_node_registration_status_msg_t *msg =
 		xmalloc (sizeof (slurm_node_registration_status_msg_t));
 
 	slurm_msg_t_init(&req);
-	slurm_msg_t_init(&resp);
 
 	msg->startup = (uint16_t) startup;
 	_fill_registration_msg(msg);
@@ -554,17 +552,13 @@ send_registration_msg(uint32_t status, bool startup)
 	req.msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
 	req.data     = msg;
 
-	if (slurm_send_recv_controller_msg(&req, &resp) < 0) {
+	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0) {
 		error("Unable to register: %m");
 		ret_val = SLURM_FAILURE;
 	} else {
 		sent_reg_time = time(NULL);
-		slurm_free_return_code_msg(resp.data);
 	}
 	slurm_free_node_registration_status_msg (msg);
-
-	/* XXX look at response msg
-	 */
 
 	return ret_val;
 }

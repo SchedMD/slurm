@@ -1284,18 +1284,19 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug2("Processing RPC: MESSAGE_EPILOG_COMPLETE uid=%d", uid);
-	lock_slurmctld(job_write_lock);
 	if (!validate_slurm_user(uid)) {
-		unlock_slurmctld(job_write_lock);
 		error("Security violation, EPILOG_COMPLETE RPC from uid=%d",
 		      uid);
+		slurm_send_rc_msg(msg, SLURM_ERROR);
 		return;
 	}
 
+	lock_slurmctld(job_write_lock);
 	if (job_epilog_complete(epilog_msg->job_id, epilog_msg->node_name,
 				epilog_msg->return_code))
 		run_scheduler = true;
 	unlock_slurmctld(job_write_lock);
+slurm_send_rc_msg(msg, SLURM_SUCCESS);	/* FIXME: Placeholder for now */
 	END_TIMER2("_slurm_rpc_epilog_complete");
 
 	if (epilog_msg->return_code)

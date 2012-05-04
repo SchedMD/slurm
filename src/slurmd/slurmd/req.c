@@ -237,6 +237,7 @@ slurmd_req(slurm_msg_t *msg)
 
 	switch(msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
+		debug2("Processing RPC: REQUEST_BATCH_JOB_LAUNCH");
 		/* Mutex locking moved into _rpc_batch_job() due to
 		 * very slow prolog on Blue Gene system. Only batch
 		 * jobs are supported on Blue Gene (no job steps). */
@@ -289,6 +290,7 @@ slurmd_req(slurm_msg_t *msg)
 		slurm_free_signal_job_msg(msg->data);
 		break;
 	case REQUEST_SUSPEND:
+		debug2("Processing RPC: REQUEST_SUSPEND");
 		_rpc_suspend_job(msg);
 		last_slurmctld_msg = time(NULL);
 		slurm_free_suspend_msg(msg->data);
@@ -306,24 +308,29 @@ slurmd_req(slurm_msg_t *msg)
 		slurm_free_kill_job_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_JOB_TIME:
+		debug2("Processing RPC: REQUEST_UPDATE_JOB_TIME");
 		_rpc_update_time(msg);
 		last_slurmctld_msg = time(NULL);
 		slurm_free_update_job_time_msg(msg->data);
 		break;
 	case REQUEST_SHUTDOWN:
+		debug2("Processing RPC: REQUEST_SHUTDOWN");
 		_rpc_shutdown(msg);
 		slurm_free_shutdown_msg(msg->data);
 		break;
 	case REQUEST_RECONFIGURE:
+		debug2("Processing RPC: REQUEST_RECONFIGURE");
 		_rpc_reconfig(msg);
 		last_slurmctld_msg = time(NULL);
 		/* No body to free */
 		break;
 	case REQUEST_REBOOT_NODES:
+		debug2("Processing RPC: REQUEST_REBOOT_NODES");
 		_rpc_reboot(msg);
 		slurm_free_reboot_msg(msg->data);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
+		debug2("Processing RPC: REQUEST_NODE_REGISTRATION_STATUS");
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
 		rc = _rpc_ping(msg);
 		last_slurmctld_msg = time(NULL);
@@ -338,6 +345,7 @@ slurmd_req(slurm_msg_t *msg)
 		/* No body to free */
 		break;
 	case REQUEST_HEALTH_CHECK:
+		debug2("Processing RPC: REQUEST_HEALTH_CHECK");
 		_rpc_health_check(msg);
 		last_slurmctld_msg = time(NULL);
 		/* No body to free */
@@ -2964,10 +2972,11 @@ static int
 _epilog_complete(uint32_t jobid, int rc)
 {
 	int                    ret = SLURM_SUCCESS;
-	slurm_msg_t            msg;
+	slurm_msg_t            msg, resp;
 	epilog_complete_msg_t  req;
 
 	slurm_msg_t_init(&msg);
+	slurm_msg_t_init(&resp);
 
 	req.job_id      = jobid;
 	req.return_code = rc;
@@ -2980,13 +2989,12 @@ _epilog_complete(uint32_t jobid, int rc)
 	msg.msg_type    = MESSAGE_EPILOG_COMPLETE;
 	msg.data        = &req;
 
-	/* Note: No return code to message, slurmctld will resend
-	 * TERMINATE_JOB request if message send fails */
-	if (slurm_send_only_controller_msg(&msg) < 0) {
+	if (slurm_send_recv_controller_msg(&msg, &resp) < 0) {
 		error("Unable to send epilog complete message: %m");
 		ret = SLURM_ERROR;
-	} else
+	} else {
 		debug ("Job %u: sent epilog complete msg: rc = %d", jobid, rc);
+	}
 
 	switch_g_free_node_info(&req.switch_nodeinfo);
 	return ret;
