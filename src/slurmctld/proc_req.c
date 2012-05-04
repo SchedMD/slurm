@@ -1287,7 +1287,6 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 	if (!validate_slurm_user(uid)) {
 		error("Security violation, EPILOG_COMPLETE RPC from uid=%d",
 		      uid);
-		slurm_send_rc_msg(msg, SLURM_ERROR);
 		return;
 	}
 
@@ -1296,7 +1295,6 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 				epilog_msg->return_code))
 		run_scheduler = true;
 	unlock_slurmctld(job_write_lock);
-slurm_send_rc_msg(msg, SLURM_SUCCESS);	/* FIXME: Placeholder for now */
 	END_TIMER2("_slurm_rpc_epilog_complete");
 
 	if (epilog_msg->return_code)

@@ -2972,11 +2972,10 @@ static int
 _epilog_complete(uint32_t jobid, int rc)
 {
 	int                    ret = SLURM_SUCCESS;
-	slurm_msg_t            msg, resp;
+	slurm_msg_t            msg;
 	epilog_complete_msg_t  req;
 
 	slurm_msg_t_init(&msg);
-	slurm_msg_t_init(&resp);
 
 	req.job_id      = jobid;
 	req.return_code = rc;
@@ -2989,7 +2988,9 @@ _epilog_complete(uint32_t jobid, int rc)
 	msg.msg_type    = MESSAGE_EPILOG_COMPLETE;
 	msg.data        = &req;
 
-	if (slurm_send_recv_controller_msg(&msg, &resp) < 0) {
+	/* Note: No return code to message, slurmctld will resend
+	 * TERMINATE_JOB request if message send fails */
+	if (slurm_send_only_controller_msg(&msg) < 0) {
 		error("Unable to send epilog complete message: %m");
 		ret = SLURM_ERROR;
 	} else {
