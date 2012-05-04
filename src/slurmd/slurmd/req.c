@@ -3426,7 +3426,6 @@ _rpc_terminate_batch_job(uint32_t job_id)
 		slurm_cred_begin_expiration(conf->vctx, job_id);
 		save_cred_state(conf->vctx);
 		_waiter_complete(job_id);
-		_epilog_complete(job_id, rc);
 		return;
 	}
 #endif
@@ -3478,7 +3477,6 @@ _rpc_terminate_batch_job(uint32_t job_id)
     done:
 	_wait_state_completed(job_id, 5);
 	_waiter_complete(job_id);
-	_epilog_complete(job_id, rc);
 }
 
 /* This complete batch RPC came from slurmstepd because we have select/serial
@@ -3501,12 +3499,11 @@ _rpc_complete_batch(slurm_msg_t *msg)
 	}
 
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
-/* FIXME: Add UID to RPC and pass as argument here for _run_epilog() */
+/* FIXME: Add UID to RPC and pass as argument here for _run_epilog()  */
 	_rpc_terminate_batch_job(req->job_id);
 
 	slurm_msg_t_init(&req_msg);
-/* FIXME: Change to new enum */
-	req_msg.msg_type= REQUEST_COMPLETE_BATCH_SCRIPT;
+	req_msg.msg_type= REQUEST_COMPLETE_BATCH_JOB;
 	req_msg.data	= msg->data;
 	for (i = 0; i <= MAX_RETRY; i++) {
 		msg_rc = slurm_send_recv_controller_rc_msg(&req_msg, &rc);
@@ -3517,7 +3514,7 @@ _rpc_complete_batch(slurm_msg_t *msg)
 	}
 	if (i > MAX_RETRY)
 		error("Unable to send job complete message: %m");
-/* FIXME: Get response and optionally launch batch job */
+/* FIXME: Get response and optionally launch batch job  */
 }
 
 static void

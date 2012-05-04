@@ -904,6 +904,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			(complete_job_allocation_msg_t *)msg->data, buffer,
 			msg->protocol_version);
 		break;
+	case REQUEST_COMPLETE_BATCH_JOB:
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
 		_pack_complete_batch_script_msg(
 			(complete_batch_script_msg_t *)msg->data, buffer,
@@ -1441,6 +1442,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			(complete_job_allocation_msg_t **)&msg->data, buffer,
 			msg->protocol_version);
 		break;
+	case REQUEST_COMPLETE_BATCH_JOB:
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
 		rc = _unpack_complete_batch_script_msg(
 			(complete_batch_script_msg_t **)&msg->data, buffer,
