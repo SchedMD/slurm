@@ -92,6 +92,9 @@
 
 #define _LIMIT_INFO 0
 
+#define RETRY_DELAY 15		/* retry every 15 seconds */
+#define MAX_RETRY   240		/* retry 240 times (one hour max) */
+
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
 #endif
@@ -141,6 +144,7 @@ static void _rpc_batch_job(slurm_msg_t *);
 static void _rpc_job_notify(slurm_msg_t *);
 static void _rpc_signal_tasks(slurm_msg_t *);
 static void _rpc_checkpoint_tasks(slurm_msg_t *);
+static void _rpc_complete_batch(slurm_msg_t *);
 static void _rpc_terminate_tasks(slurm_msg_t *);
 static void _rpc_timelimit(slurm_msg_t *);
 static void _rpc_reattach_tasks(slurm_msg_t *);
@@ -306,6 +310,11 @@ slurmd_req(slurm_msg_t *msg)
 		last_slurmctld_msg = time(NULL);
 		_rpc_terminate_job(msg);
 		slurm_free_kill_job_msg(msg->data);
+		break;
+	case REQUEST_COMPLETE_BATCH_SCRIPT:
+		debug2("Processing RPC: REQUEST_COMPLETE_BATCH_SCRIPT");
+		_rpc_complete_batch(msg);
+		slurm_free_complete_batch_script_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_JOB_TIME:
 		debug2("Processing RPC: REQUEST_UPDATE_JOB_TIME");
@@ -3369,6 +3378,43 @@ _rpc_abort_job(slurm_msg_t *msg)
 	_run_epilog(req->job_id, req->job_uid, resv_id,
 		    req->spank_job_env, req->spank_job_env_size);
 	xfree(resv_id);
+}
+
+/* This complete batch RPC came from slurmstepd because we have select/serial
+ * configured. Terminate the job here. Forward the batch completion RPC to
+ * slurmctld and possible get a new batch launch RPC in response. */
+static void
+_rpc_complete_batch(slurm_msg_t *msg)
+{
+	int		i, rc, msg_rc;
+	slurm_msg_t	req_msg;
+	uid_t           uid    = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	complete_batch_script_msg_t *req = msg->data;
+
+	if (!_slurm_authorized_user(uid)) {
+		error("Security violation: kill_job(%u) from uid %d",
+		      req->job_id, uid);
+		if (msg->conn_fd >= 0)
+			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
+	}
+	slurm_send_rc_msg (msg, SLURM_SUCCESS);
+
+/* FIXME: Call _rpc_terminate_job() logic */
+	slurm_msg_t_init(&req_msg);
+/* FIXME: Change to new enum */
+	req_msg.msg_type= REQUEST_COMPLETE_BATCH_SCRIPT;
+	req_msg.data	= msg->data;
+	for (i = 0; i <= MAX_RETRY; i++) {
+		msg_rc = slurm_send_recv_controller_rc_msg(&req_msg, &rc);
+		if (msg_rc == SLURM_SUCCESS)
+			break;
+		info("Retrying job complete RPC for job %u", req->job_id);
+		sleep(RETRY_DELAY);
+	}
+	if (i > MAX_RETRY)
+		error("Unable to send job complete message: %m");
+/* FIXME: Get response and optionally launch batch job */
 }
 
 static void

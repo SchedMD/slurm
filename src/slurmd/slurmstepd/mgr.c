@@ -1962,9 +1962,15 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 static int
 _send_complete_batch_script_msg(slurmd_job_t *job, int err, int status)
 {
-	int		rc, i;
+	int		rc, i, msg_rc;
 	slurm_msg_t	req_msg;
 	complete_batch_script_msg_t req;
+	char *		select_type;
+	bool		msg_to_ctld;
+
+	select_type = slurm_get_select_type();
+	msg_to_ctld = strcmp(select_type, "select/serial");
+	xfree(select_type);
 
 	req.job_id	= job->jobid;
 	req.job_rc      = status;
@@ -1978,8 +1984,19 @@ _send_complete_batch_script_msg(slurmd_job_t *job, int err, int status)
 	info("sending REQUEST_COMPLETE_BATCH_SCRIPT, error:%u", err);
 
 	/* Note: these log messages don't go to slurmd.log from here */
-	for (i=0; i<=MAX_RETRY; i++) {
-		if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) == 0)
+	for (i = 0; i <= MAX_RETRY; i++) {
+		if (msg_to_ctld) {
+			msg_rc = slurm_send_recv_controller_rc_msg(&req_msg,
+								   &rc);
+		} else {
+			if (i == 0) {
+				slurm_set_addr_char(&req_msg.address,
+						    conf->port, "localhost");
+			}
+			msg_rc = slurm_send_recv_rc_msg_only_one(&req_msg,
+								 &rc, 0);
+		}
+		if (msg_rc == SLURM_SUCCESS)
 			break;
 		info("Retrying job complete RPC for %u.%u",
 		     job->jobid, job->stepid);
