@@ -30,7 +30,13 @@
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
+source ./globals
 source ./globals_accounting
+
+source ./inc22.1.1
+source ./inc22.1.2
+source ./inc22.1.3
+source ./inc22.1.4
 
 set test_id     "test22.1"
 set test_nu     "test22-1"
@@ -51,6 +57,7 @@ set user2      [format "%s%s" $test_nu "user2"]
 set users      [format "%s,%s" $user1 $user2]
 set node0      [format "%s%d" $cluster 0]
 set node1      [format "%s%d" $cluster 1]
+set node_list  [format "%s%s" $cluster "\[0-1\]"]
 set node0_cpus 2
 set node1_cpus 2
 set cluster_cpus [expr $node0_cpus + $node1_cpus]
@@ -139,6 +146,7 @@ if { [test_account_storage] == 0 } {
 	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
 	exit 0
 }
+
 set wc_key_track [test_track_wckey]
 if { $wc_key_track == 0 } {
 	send_user "\nWARNING: Portions of this test will not work without TrackWCKey\n"
@@ -194,7 +202,7 @@ set user2acct3 0
 set my_pid [eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster format="User,account,id"]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	-re "$user1.$account1.($number)." {
@@ -246,7 +254,7 @@ set user2wckey1 0
 set my_pid [eval spawn $sacctmgr -n -p list wckeys users=$users wckeys=$wckey1 cluster=$cluster format="user,wckey,id"]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	-re "$user1.$wckey1.($number)." {
@@ -279,16 +287,19 @@ if {!$user1wckey1 || !$user1wckey1} {
 exec $bin_rm -f $sql_in
 set file [open $sql_in "w"]
 
+
+
 # DON'T MESS WITH THIS UNLESS YOU REALLY UNDERSTAND WHAT YOU ARE DOING!!!!!
 # THIS COULD SERIOUSLY MESS UP YOUR DATABASE IF YOU ALTER THIS INCORRECTLY
 # JUST A FRIENDLY REMINDER ;)
 
 # put in the cluster for back in the day before accounting was made here for us we are using 'Tue Jan  1 00:00:00 2008' = 1199174400 as the start
-puts $file "insert into cluster_event_table (node_name, cluster, cpu_count, period_start, period_end, reason) values"
-puts $file "('', '$cluster', $cluster_cpus, $period_start, $period_end, 'Cluster processor count')"
+
+puts $file "insert into cluster_event_table (node_name, cluster, cpu_count, period_start, period_end, reason, cluster_nodes) values"
+puts $file "('', '$cluster', $cluster_cpus, $period_start, $period_end, 'Cluster processor count', '$node_list' )"
 
 #put a node down for 30 minutes starting at 45 minutes after the start to make sure our rollups work so we should get 15 minutes on one hour and 15 on the other
-puts $file ", ('$node0', '$cluster', $node0_cpus, $node0_down_start, $node0_down_end, 'down')"
+puts $file ", ('$node0', '$cluster', $node0_cpus, $node0_down_start, $node0_down_end, 'down','')"
 #puts $file ", ('$node1', '$cluster', $node1_cpus, $period_start, $period_end, 'down')"
 puts $file "on duplicate key update period_start=VALUES(period_start), period_end=VALUES(period_end);"
 
@@ -330,6 +341,7 @@ if { $exit_code } {
 	exit $exit_code
 }
 
+
 #
 # Use sacct to see if the job loaded
 #
@@ -337,7 +349,7 @@ set matches 0
 set my_pid [eval spawn $sacct -p -C $cluster --fields=cluster,account,associd,wckey,wckeyid,start,end,elapsed --noheader --start=$start_str --end=$end_str]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	-re "$cluster.$account1.$user1acct1.$wckey1.$user1wckey1.$job1_start_str.$job1_end_str.$job1_diff_str." {
@@ -379,7 +391,6 @@ if { $exit_code } {
 	exit $exit_code
 }
 
-
 #
 # Use sacctmgr to roll up that time period
 #
@@ -387,7 +398,7 @@ set matches 0
 set my_pid [eval spawn $sacctmgr -i roll $start_str $end_str]
 expect {
 	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
 	-re "$cluster" {
@@ -421,1063 +432,16 @@ if { $exit_code } {
 	exit $exit_code
 }
 
-# Use sreport to get cluster usage for the first hour
 #
-
-# Mon Dec 31 23:00:00 2007
-set period_start 1199170800
-
-# Tue Jan 1 00:00:00 2008
-set period_end  1199174400
-set start_str [timestamp -format %Y-%m-%dT%X -seconds $period_start]
-set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]
-
-set reported [expr ($period_end - $period_start) * $cluster_cpus]
-set down [expr ($period_end-$node0_down_start) * $node0_cpus]
-set alloc_sec [expr ($period_end-$job1_start) * $node1_cpus]
-set wckey_alloc_sec $alloc_sec
-set resv 0
-set idle [expr $reported - ($down + $alloc_sec + $resv)]
-
-set down [format "%d\\\(%.2f%%\\\)" $down [expr double($down * 100)/$reported]]
-set alloc [format "%d\\\(%.2f%%\\\)" $alloc_sec [expr double($alloc_sec * 100)/$reported]]
-set resv [format "%d\\\(%.2f%%\\\)" $resv  [expr double($resv * 100)/$reported]]
-set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]]
-set reported [format "%d\\\(%.2f%%\\\)" $reported 100]
-
-send_user "\nTesting sreport for first hour\n"
-set matches 0
-set my_pid [eval spawn $sreport cluster utilization cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,idle,down,alloc,res,reported]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$idle.$down.$alloc.$resv.$reported." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the UserUtilizationByAccount report
-set matches 0
-set my_pid [eval spawn $sreport cluster UserUtilizationByAccount cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,login,account,used]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$user1.$account1.$alloc." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 2.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the AccountUtilizationByUser report
-set matches 0
-set my_pid [eval spawn $sreport cluster AccountUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.root..$alloc." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$account1..$alloc." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$account1.$user1.$alloc." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 3} {
-	send_user "\nFAILURE:  sreport didn't give good info 3.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the UserUtilizationByWcKey report
-set matches 0
-set my_pid [eval spawn $sreport cluster UserUtilizationByWckey cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,login,wckey,used]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$user1.$wckey1.$alloc." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$wc_key_track == 1 && $matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 4.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the WckeyUtilizationByUser report
-set matches 0
-set my_pid [eval spawn $sreport cluster WckeyUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,wckey,login,used]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$wckey1..$alloc." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$wckey1.$user1.$alloc." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sreport not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$wc_key_track == 1 && $matches != 2} {
-	send_user "\nFAILURE:  sreport didn't give good info 5.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the User Top report
-set matches 0
-set my_pid [eval spawn $sreport user top cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$account1.$user1.$alloc." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 6.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the Job Size report
-set matches 0
-set my_pid [eval spawn $sreport job size grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$account1.0.$alloc_sec.0." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 7 $matches.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the Job Size by wckey report
-set matches 0
-set my_pid [eval spawn $sreport job sizesbywckey grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$wckey1.0.$wckey_alloc_sec.0." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 8 $matches.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# Use sreport to get cluster usage for the second hour
+# Execute sub-test
 #
+inc22_1_1
 
-# Tue Jan 1 00:00:00 2008
-set period_start 1199174400
+inc22_1_2
 
-# Tue Jan 1 01:00:00 2008
-set period_end  1199178000
-set start_str [timestamp -format %Y-%m-%dT%X -seconds $period_start]
-set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]
+inc22_1_3
 
-set reported [expr ($period_end - $period_start) * $cluster_cpus]
-set down [expr ($node0_down_end-$period_start) * $node0_cpus]
-set alloc_sec [expr ($job1_end-$period_start) * $job1_cpus]
-set wckey_alloc_sec $alloc_sec
-set resv [expr ($period_end - $job2_elig) * $job2_cpus]
-set idle [expr $reported - ($down + $alloc_sec + $resv)]
-# do the same logic inside the plugin to figure out the correct
-# idle time and resv time
-if {$idle < 0 } {
-	set resv [expr $resv + $idle]
-	set idle 0
-	if {$resv < 0} {
-		set resv 0
-	}
-}
-set down [format "%d\\\(%.2f%%\\\)" $down [expr double($down * 100)/$reported]]
-set alloc [format "%d\\\(%.2f%%\\\)" $alloc_sec [expr double($alloc_sec * 100)/$reported]]
-set resv [format "%d\\\(%.2f%%\\\)" $resv  [expr double($resv * 100)/$reported]]
-set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]]
-set reported [format "%d\\\(%.2f%%\\\)" $reported 100]
-
-send_user "\nTesting sreport for second hour\n"
-set matches 0
-set my_pid [eval spawn $sreport cluster utilization cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,idle,down,alloc,res,reported]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$idle.$down.$alloc.$resv.$reported." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 9 $matches.\n"
-	send_user "we are looking for $cluster.$idle.$down.$alloc.$resv.$reported.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the UserUtilizationByAccount report
-set matches 0
-set my_pid [eval spawn $sreport cluster UserUtilizationByAccount cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,login,account,used]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$user1.$account1.$alloc." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 10.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the AccountUtilizationByUser report
-set matches 0
-set my_pid [eval spawn $sreport cluster AccountUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.root..$alloc." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$account1..$alloc." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$account1.$user1.$alloc." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 3} {
-	send_user "\nFAILURE:  sreport didn't give good info 11.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the UserUtilizationByWckey report
-set matches 0
-set my_pid [eval spawn $sreport cluster UserUtilizationByWckey cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,login,wckey,used]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$user1.$wckey1.$alloc." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$wc_key_track == 1 && $matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 12.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the WckeyUtilizationByUser report
-set matches 0
-set my_pid [eval spawn $sreport cluster WckeyUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,wckey,login,used]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$wckey1..$alloc." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$wckey1.$user1.$alloc." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$wc_key_track == 1 && $matches != 2} {
-	send_user "\nFAILURE:  sreport didn't give good info 13.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the User Top report
-set matches 0
-set my_pid [eval spawn $sreport user top cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$account1.$user1.$alloc." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 14.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the Job Size report
-set matches 0
-set my_pid [eval spawn $sreport job size grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$account1.0.$alloc_sec.0." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 15 $matches.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the Job Size by wckey report
-set matches 0
-set my_pid [eval spawn $sreport job sizesbywckey grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$wckey1.0.$wckey_alloc_sec.0." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 16 $matches.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# Use sreport to get cluster usage for the first 3 days
-#
-
-# Mon Dec 31 23:00:00 2007
-set period_start 1199170800
-
-# Tue Jan 3 00:00:00 2008
-set period_end 1199347200
-set start_str [timestamp -format %Y-%m-%dT%X -seconds $period_start]
-set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]
-
-set reported [expr ($period_end - $period_start) * $cluster_cpus]
-set down [expr ($node0_down_end - $node0_down_start) * $node0_cpus]
-set alloc_sec [expr ($job1_end-$job1_start) * $job1_cpus]
-set alloc_sec [expr $alloc_sec + (($job2_end-$job2_start) * $job2_cpus)]
-set alloc_sec [expr $alloc_sec + (($job3_end-$job3_start) * $job3_cpus)]
-set wckey_alloc_sec1 [expr $job1_alloc + $job3_alloc]
-set wckey_alloc_sec2 $job2_alloc
-set resv [expr ($job2_start - $job2_elig) * $job2_cpus]
-set resv [expr $resv + (($job3_start - $job3_elig) * $job3_cpus)]
-# I didn't have time to do the correct math here so I am just putting in 9000 which should be the correct value of over commit
-set over 9000
-set resv [expr $resv - $over]
-set idle [expr $reported - ($down + $alloc_sec + $resv)]
-# do the same logic inside the plugin to figure out the correct
-# idle time and resv time
-if {$idle < 0 } {
-	set resv [expr $resv + $idle]
-	set idle 0
-	if {$resv < 0} {
-		set resv 0
-	}
-}
-set down [format "%d\\\(%.2f%%\\\)" $down [expr double($down * 100)/$reported]]
-set alloc [format "%d\\\(%.2f%%\\\)" $alloc_sec [expr double($alloc_sec * 100)/$reported]]
-set resv [format "%d\\\(%.2f%%\\\)" $resv  [expr double($resv * 100)/$reported]]
-set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]]
-set over [format "%d\\\(%.2f%%\\\)" $over [expr double($over * 100)/$reported]]
-
-set job1_alloc_str [format "%d\\\(%.2f%%\\\)" $job1_alloc [expr double($job1_alloc * 100)/$reported]]
-set job2_alloc_str [format "%d\\\(%.2f%%\\\)" $job2_alloc [expr double($job2_alloc * 100)/$reported]]
-set job3_alloc_str [format "%d\\\(%.2f%%\\\)" $job3_alloc [expr double($job3_alloc * 100)/$reported]]
-set total_alloc_str [format "%d\\\(%.2f%%\\\)" $total_alloc [expr double($total_alloc * 100)/$reported]]
-set acct1_alloc_str [format "%d\\\(%.2f%%\\\)" $acct1_alloc [expr double($acct1_alloc * 100)/$reported]]
-set acct2_alloc_str [format "%d\\\(%.2f%%\\\)" $acct2_alloc [expr double($acct2_alloc * 100)/$reported]]
-set acct3_alloc_str [format "%d\\\(%.2f%%\\\)" $acct3_alloc [expr double($acct3_alloc * 100)/$reported]]
-set wckey1_alloc_str [format "%d\\\(%.2f%%\\\)" $wckey1_alloc [expr double($wckey1_alloc * 100)/$reported]]
-set user1_wckey1_alloc_str [format "%d\\\(%.2f%%\\\)" $user1_wckey1_alloc [expr double($user1_wckey1_alloc * 100)/$reported]]
-set user2_wckey1_alloc_str [format "%d\\\(%.2f%%\\\)" $user2_wckey1_alloc [expr double($user2_wckey1_alloc * 100)/$reported]]
-
-set reported [format "%d\\\(%.2f%%\\\)" $reported 100]
-
-
-send_user "\nTesting sreport for 3 days\n"
-set matches 0
-set my_pid [eval spawn $sreport cluster utilization cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,idle,down,alloc,res,over,reported]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$idle.$down.$alloc.$resv.$over.$reported." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 17 $matches.\n"
-	send_user "we are looking for $cluster.$idle.$down.$alloc.$resv.$over.$reported.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the UserUtilizationByAccount report
-set matches 0
-set my_pid [eval spawn $sreport cluster UserUtilizationByAccount cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,login,account,used]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$user2.$account3.$job2_alloc_str." {
-		send_user "got 2\n"
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$user1.$account1.$job1_alloc_str." {
-		send_user "got 1\n"
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$user1.$account2.$job3_alloc_str." {
-		send_user "got 3\n"
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 3} {
-	send_user "\nFAILURE:  sreport didn't give good info 18 $matches.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the AccountUtilizationByUser report
-set matches 0
-set my_pid [eval spawn $sreport cluster AccountUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.root..$total_alloc_str." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$account1..$acct1_alloc_str." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$account1.$user1.$job1_alloc_str." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$account2..$acct2_alloc_str." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$account2.$user1.$job3_alloc_str." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$account3..$acct3_alloc_str." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$account3.$user2.$job2_alloc_str." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 7} {
-	send_user "\nFAILURE:  sreport didn't give good info 19 $matches.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the UserUtilizationByWckey report
-set matches 0
-set my_pid [eval spawn $sreport cluster UserUtilizationByWckey cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,login,wckey,used]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$user2.$wckey1.$user2_wckey1_alloc_str." {
-		send_user "got 2\n"
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$user1.$wckey1.$user1_wckey1_alloc_str." {
-		send_user "got 1\n"
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$wc_key_track == 1 && $matches != 2} {
-	send_user "\nFAILURE:  sreport didn't give good info 20 $matches.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the WckeyUtilizationByUser report
-set matches 0
-set my_pid [eval spawn $sreport cluster WckeyUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,wckey,login,used]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$wckey1..$wckey1_alloc_str." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$wckey1.$user1.$user1_wckey1_alloc_str." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$wckey1.$user2.$user2_wckey1_alloc_str." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$wc_key_track == 1 && $matches != 3} {
-	send_user "\nFAILURE:  sreport didn't give good info 21 $matches.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the User Top report
-set matches 0
-set my_pid [eval spawn $sreport user top cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$account3.$user2.$job2_alloc_str." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$account1.$user1.$job1_alloc_str." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$account2.$user1.$job3_alloc_str." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 3} {
-	send_user "\nFAILURE:  sreport didn't give good info 22 $matches.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the Job Size report
-set matches 0
-set my_pid [eval spawn $sreport job size grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$account1.0.$job1_alloc.0." {
-		incr matches
-		exp_continue
-	}
-	-re "$cluster.$account2.0.$job3_alloc.$job2_alloc." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 2} {
-	send_user "\nFAILURE:  sreport didn't give good info 23 $matches.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the Job Size report down a level
-set matches 0
-set my_pid [eval spawn $sreport job size grouping=2,4 cluster='$cluster' account='$account2' start=$start_str end=$end_str -tsec -p -n]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$account3.0.0.$job2_alloc." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 24 $matches.\n"
-	incr exit_code 1
-}
-
-if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" $users
-	remove_acct "" $accounts
-	remove_cluster "$cluster"
-	exit $exit_code
-}
-
-# test the Job Size by wckey report
-set matches 0
-set my_pid [eval spawn $sreport job sizesbywckey grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n]
-expect {
-	-re "There was a problem" {
-	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
-	    	incr exit_code 1
-	}
-	-re "$cluster.$wckey1.0.$wckey_alloc_sec1.$wckey_alloc_sec2." {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr archive load not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+inc22_1_4
 
 if {$matches != 1} {
 	send_user "\nFAILURE:  sreport didn't give good info 25 $matches.\n"
@@ -1500,7 +464,7 @@ if {$exit_code == 0} {
 
  	exec $bin_rm -f $sql_in
  	exec $bin_rm -f $sql_rem
-        if {$exit_code == 0} {
+	if {$exit_code == 0} {
 		send_user "\nSUCCESS\n"
 	} else {
 		send_user "\nFAILURE\n"
@@ -1508,4 +472,5 @@ if {$exit_code == 0} {
 } else {
 	send_user "\nFAILURE\n"
 }
+
 exit $exit_code
