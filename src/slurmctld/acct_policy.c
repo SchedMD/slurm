@@ -130,6 +130,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 	uint64_t unused_cpu_run_secs = 0;
 	uint64_t used_cpu_run_secs = 0;
+	uint32_t job_memory = 0;
 
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
 	    || !_valid_job_assoc(job_ptr))
@@ -140,6 +141,22 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 	else if (type == ACCT_POLICY_JOB_BEGIN)
 		used_cpu_run_secs = (uint64_t)job_ptr->total_cpus
 			* (uint64_t)job_ptr->time_limit * 60;
+
+	if (job_ptr->details && job_ptr->details->pn_min_memory) {
+		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
+			job_memory = (job_ptr->details->pn_min_memory & (~MEM_PER_CPU))
+				* job_ptr->total_cpus;
+			debug2("_adjust_limit_usage: job %u: MPC: "
+			       "job_memory set to %u", job_ptr->job_id,
+			       job_memory);
+		} else {
+			job_memory = (job_ptr->details->pn_min_memory)
+				* job_ptr->node_cnt;
+			debug2("_adjust_limit_usage: job %u: MPN: "
+			       "job_memory set to %u", job_ptr->job_id,
+			       job_memory);
+		}
+	}
 
 	assoc_mgr_lock(&locks);
 	if (job_ptr->qos_ptr && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)) {
@@ -183,6 +200,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 		case ACCT_POLICY_JOB_BEGIN:
 			qos_ptr->usage->grp_used_jobs++;
 			qos_ptr->usage->grp_used_cpus += job_ptr->total_cpus;
+			qos_ptr->usage->grp_used_mem += job_memory;
 			qos_ptr->usage->grp_used_nodes += job_ptr->node_cnt;
 			qos_ptr->usage->grp_used_cpu_run_secs +=
 				used_cpu_run_secs;
@@ -203,6 +221,13 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 			if ((int32_t)qos_ptr->usage->grp_used_cpus < 0) {
 				qos_ptr->usage->grp_used_cpus = 0;
 				debug2("acct_policy_job_fini: grp_used_cpus "
+				       "underflow for qos %s", qos_ptr->name);
+			}
+
+			qos_ptr->usage->grp_used_mem -= job_memory;
+			if((int32_t)qos_ptr->usage->grp_used_mem < 0) {
+				qos_ptr->usage->grp_used_mem = 0;
+				debug2("acct_policy_job_fini: grp_used_mem "
 				       "underflow for qos %s", qos_ptr->name);
 			}
 
@@ -276,6 +301,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 		case ACCT_POLICY_JOB_BEGIN:
 			assoc_ptr->usage->used_jobs++;
 			assoc_ptr->usage->grp_used_cpus += job_ptr->total_cpus;
+			assoc_ptr->usage->grp_used_mem += job_memory;
 			assoc_ptr->usage->grp_used_nodes += job_ptr->node_cnt;
 			assoc_ptr->usage->grp_used_cpu_run_secs +=
 				used_cpu_run_secs;
@@ -296,6 +322,14 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 			if ((int32_t)assoc_ptr->usage->grp_used_cpus < 0) {
 				assoc_ptr->usage->grp_used_cpus = 0;
 				debug2("acct_policy_job_fini: grp_used_cpus "
+				       "underflow for account %s",
+				       assoc_ptr->acct);
+			}
+
+			assoc_ptr->usage->grp_used_mem -= job_memory;
+			if ((int32_t)assoc_ptr->usage->grp_used_mem < 0) {
+				assoc_ptr->usage->grp_used_mem = 0;
+				debug2("acct_policy_job_fini: grp_used_mem "
 				       "underflow for account %s",
 				       assoc_ptr->acct);
 			}
@@ -384,6 +418,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 uint16_t *reason,
 				 uint16_t *limit_set_max_cpus,
 				 uint16_t *limit_set_max_nodes,
+				 uint16_t limit_set_pn_min_memory,
 				 uint16_t *limit_set_time, bool update_call)
 {
 	uint32_t time_limit;
@@ -393,6 +428,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	bool rc = true;
 	uint32_t qos_max_cpus_limit = INFINITE;
 	uint32_t qos_max_nodes_limit = INFINITE;
+	uint32_t job_memory = 0;
+	bool admin_set_memory_limit = false;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
@@ -405,6 +442,27 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		return false;
 	}
 	user_name = assoc_ptr->user;
+
+	if (job_desc->pn_min_memory != NO_VAL) {
+		if ((job_desc->pn_min_memory & MEM_PER_CPU)
+		    && (job_desc->min_cpus != NO_VAL)) {
+			job_memory = (job_desc->pn_min_memory & (~MEM_PER_CPU))
+				* job_desc->min_cpus;
+			admin_set_memory_limit =
+				(limit_set_pn_min_memory == ADMIN_SET_LIMIT)
+				|| ((*limit_set_max_cpus) == ADMIN_SET_LIMIT);
+			debug2("acct_policy_validate: MPC: "
+			       "job_memory set to %u", job_memory);
+		} else if (job_desc->min_nodes != NO_VAL) {
+			job_memory = (job_desc->pn_min_memory)
+				* job_desc->min_nodes;
+			admin_set_memory_limit =
+				(limit_set_pn_min_memory == ADMIN_SET_LIMIT)
+				|| ((*limit_set_max_nodes) == ADMIN_SET_LIMIT);
+			debug2("acct_policy_validate: MPN: "
+			       "job_memory set to %u", job_memory);
+		}
+	}
 
 	assoc_mgr_lock(&locks);
 
@@ -469,6 +527,22 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		/* for validation we don't need to look at
 		 * qos_ptr->grp_jobs.
 		 */
+
+		if (!admin_set_memory_limit
+		    && (qos_ptr->grp_mem != INFINITE)
+		    && (job_memory > qos_ptr->grp_mem)) {
+			*reason = WAIT_QOS_JOB_LIMIT;
+			debug2("job submit for user %s(%u): "
+			       "min memory request %u exceeds "
+			       "group max memory limit %u for qos '%s'",
+			       user_name,
+			       job_desc->user_id,
+			       job_memory,
+			       qos_ptr->grp_mem,
+			       qos_ptr->name);
+			rc = false;
+			goto end_it;
+		}
 
 		qos_max_nodes_limit =
 			MIN(qos_ptr->grp_nodes, qos_ptr->max_nodes_pu);
@@ -719,6 +793,22 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		 * assoc_ptr->grp_jobs.
 		 */
 
+		if (!admin_set_memory_limit
+		    && (!qos_ptr || (qos_ptr->grp_mem == INFINITE))
+		    && (assoc_ptr->grp_mem != INFINITE)
+		    && (job_memory > assoc_ptr->grp_mem)) {
+			debug2("job submit for user %s(%u): "
+			       "min memory request %u exceeds "
+			       "group max memory limit %u for account %s",
+			       user_name,
+			       job_desc->user_id,
+			       job_memory,
+			       assoc_ptr->grp_mem,
+			       assoc_ptr->acct);
+			rc = false;
+			break;
+		}
+
 		if (((*limit_set_max_nodes) == ADMIN_SET_LIMIT)
 		    || (qos_ptr && (qos_ptr->grp_nodes != INFINITE))
 		    || (assoc_ptr->grp_nodes == INFINITE)
@@ -952,6 +1042,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	bool rc = true;
 	uint64_t usage_mins;
 	uint32_t wall_mins;
+	uint32_t job_memory = 0;
+	bool admin_set_memory_limit = false;
 	int parent = 0; /*flag to tell us if we are looking at the
 			 * parent or not
 			 */
@@ -977,6 +1069,28 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 
 	job_cpu_time_limit = (uint64_t)job_ptr->time_limit
 		* (uint64_t)job_ptr->details->min_cpus;
+
+	if (job_ptr->details->pn_min_memory) {
+		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
+			job_memory = (job_ptr->details->pn_min_memory & (~MEM_PER_CPU))
+				* job_ptr->details->min_cpus;
+			admin_set_memory_limit =
+				(job_ptr->limit_set_pn_min_memory == ADMIN_SET_LIMIT)
+				|| (job_ptr->limit_set_min_cpus == ADMIN_SET_LIMIT);
+			debug2("acct_policy_job_runnable: job %u: MPC: "
+			       "job_memory set to %u", job_ptr->job_id,
+			       job_memory);
+		} else {
+			job_memory = (job_ptr->details->pn_min_memory)
+				* job_ptr->details->min_nodes;
+			admin_set_memory_limit =
+				(job_ptr->limit_set_pn_min_memory == ADMIN_SET_LIMIT)
+				|| (job_ptr->limit_set_min_nodes == ADMIN_SET_LIMIT);
+			debug2("acct_policy_job_runnable: job %u: MPN: "
+			       "job_memory set to %u", job_ptr->job_id,
+			       job_memory);
+		}
+	}
 
 	assoc_mgr_lock(&locks);
 	qos_ptr = job_ptr->qos_ptr;
@@ -1042,6 +1156,43 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				       qos_ptr->grp_cpus,
 				       qos_ptr->usage->grp_used_cpus,
 				       job_ptr->details->min_cpus,
+				       qos_ptr->name);
+				rc = false;
+				goto end_it;
+			}
+		}
+
+		if (!admin_set_memory_limit
+		    && (qos_ptr->grp_mem != INFINITE)) {
+			if (job_memory > qos_ptr->grp_mem) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = WAIT_QOS_JOB_LIMIT;
+				info("job %u is being held, "
+				     "memory request %u exceeds "
+				     "group max memory limit %u for "
+				     "qos '%s'",
+				     job_ptr->job_id,
+				     job_memory,
+				     qos_ptr->grp_mem,
+				     qos_ptr->name);
+				rc = false;
+				goto end_it;
+			}
+
+			if ((qos_ptr->usage->grp_used_mem +
+			     job_memory) > qos_ptr->grp_mem) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason =
+					WAIT_QOS_RESOURCE_LIMIT;
+				debug2("job %u being held, "
+				       "the job is at or exceeds "
+				       "group memory limit %u "
+				       "with already used %u + requested %u "
+				       "for qos %s",
+				       job_ptr->job_id,
+				       qos_ptr->grp_mem,
+				       qos_ptr->usage->grp_used_mem,
+				       job_memory,
 				       qos_ptr->name);
 				rc = false;
 				goto end_it;
@@ -1400,6 +1551,47 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			}
 		}
 
+		if (!admin_set_memory_limit
+		    && (!qos_ptr ||
+			(qos_ptr && qos_ptr->grp_mem == INFINITE))
+		    && (assoc_ptr->grp_mem != INFINITE)) {
+			if (job_memory > assoc_ptr->grp_mem) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason =
+					WAIT_ASSOC_RESOURCE_LIMIT;
+				info("job %u being held, "
+				     "memory request %u exceeds "
+				     "group memory limit %u for "
+				     "account %s",
+				     job_ptr->job_id,
+				     job_memory,
+				     assoc_ptr->grp_mem,
+				     assoc_ptr->acct);
+				rc = false;
+				goto end_it;
+			}
+
+			if ((assoc_ptr->usage->grp_used_mem +
+				    job_memory) >
+				   assoc_ptr->grp_mem) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason =
+					WAIT_ASSOC_RESOURCE_LIMIT;
+				debug2("job %u being held, "
+				       "assoc %u is at or exceeds "
+				       "group memory limit %u "
+				       "with already used %u + requested %u "
+				       "for account %s",
+				       job_ptr->job_id, assoc_ptr->id,
+				       assoc_ptr->grp_mem,
+				       assoc_ptr->usage->grp_used_mem,
+				       job_memory,
+				       assoc_ptr->acct);
+				rc = false;
+				goto end_it;
+			}
+		}
+
 		if ((!qos_ptr ||
 		     (qos_ptr && qos_ptr->grp_jobs == INFINITE)) &&
 		    (assoc_ptr->grp_jobs != INFINITE) &&
@@ -1667,6 +1859,8 @@ extern int acct_policy_update_pending_job(struct job_record *job_ptr)
 	else
 		job_desc.max_nodes = 0;
 
+	job_desc.pn_min_memory = details_ptr->pn_min_memory;
+
 	/* Only set this value if not set from a limit */
 	if (job_ptr->limit_set_time == ADMIN_SET_LIMIT)
 		limit_set_time = job_ptr->limit_set_time;
@@ -1678,9 +1872,10 @@ extern int acct_policy_update_pending_job(struct job_record *job_ptr)
 				  &job_ptr->state_reason,
 				  &limit_set_max_cpus,
 				  &limit_set_max_nodes,
+				  job_ptr->limit_set_pn_min_memory,
 				  &limit_set_time, 0)) {
 		info("acct_policy_update_pending_job: exceeded "
-		     "association/qos's cpu, node or "
+		     "association/qos's cpu, node, memory or "
 		     "time limit for job %d", job_ptr->job_id);
 		return SLURM_ERROR;
 	}

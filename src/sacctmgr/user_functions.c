@@ -1065,6 +1065,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 						start_assoc.grp_cpu_mins;
 					assoc->grp_cpus = start_assoc.grp_cpus;
 					assoc->grp_jobs = start_assoc.grp_jobs;
+					assoc->grp_mem = start_assoc.grp_mem;
 					assoc->grp_nodes =
 						start_assoc.grp_nodes;
 					assoc->grp_submit_jobs =
@@ -1133,6 +1134,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					start_assoc.grp_cpu_mins;
 				assoc->grp_cpus = start_assoc.grp_cpus;
 				assoc->grp_jobs = start_assoc.grp_jobs;
+				assoc->grp_mem = start_assoc.grp_mem;
 				assoc->grp_nodes = start_assoc.grp_nodes;
 				assoc->grp_submit_jobs =
 					start_assoc.grp_submit_jobs;

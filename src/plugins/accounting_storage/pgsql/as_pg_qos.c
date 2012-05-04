@@ -60,6 +60,7 @@ static storage_field_t qos_table_fields[] = {
 	{ "grp_jobs", "INTEGER DEFAULT NULL" },
 	{ "grp_submit_jobs", "INTEGER DEFAULT NULL" },
 	{ "grp_cpus", "INTEGER DEFAULT NULL" },
+	{ "grp_mem", "INTEGER DEFAULT NULL" },
 	{ "grp_nodes", "INTEGER DEFAULT NULL" },
 	{ "grp_wall", "INTEGER DEFAULT NULL" },
 	{ "grp_cpu_mins", "BIGINT DEFAULT NULL" },
@@ -96,7 +97,7 @@ _create_function_add_qos(PGconn *db_conn)
 		"        max_submit_jobs_per_user, max_cpus_per_job, "
 		"        max_nodes_per_job, max_wall_duration_per_job, "
 		"        max_cpu_mins_per_job, max_cpu_run_mins_per_user, "
-		"        grp_jobs, grp_submit_jobs, grp_cpus, grp_nodes, "
+		"        grp_jobs, grp_submit_jobs, grp_cpus, grp_mem, grp_nodes, "
 		"        grp_wall, grp_cpu_mins, grp_cpu_run_mins, preempt, "
 		"        preempt_mode, priority, usage_factor) "
 		"      VALUES (rec.creation_time, rec.mod_time, "
@@ -107,7 +108,7 @@ _create_function_add_qos(PGconn *db_conn)
 		"        rec.max_wall_duration_per_job, "
 		"        rec.max_cpu_mins_per_job, "
 		"        rec.max_cpu_run_mins_per_user, "
-		"        rec.grp_jobs, rec.grp_submit_jobs, rec.grp_cpus, "
+		"        rec.grp_jobs, rec.grp_submit_jobs, rec.grp_cpus, rec.grp_mem, "
 		"        rec.grp_nodes, rec.grp_wall, rec.grp_cpu_mins, "
 		"        rec.grp_cpu_run_mins, rec.preempt, rec.preempt_mode, "
 		"        rec.priority, rec.usage_factor) "
@@ -119,7 +120,7 @@ _create_function_add_qos(PGconn *db_conn)
 		"         max_submit_jobs_per_user, max_cpus_per_job, "
 		"         max_nodes_per_job, max_wall_duration_per_job, "
 		"         max_cpu_mins_per_job, max_cpu_run_mins_per_user, "
-		"         grp_jobs, grp_submit_jobs, grp_cpus, grp_nodes, "
+		"         grp_jobs, grp_submit_jobs, grp_cpus, grp_mem, grp_nodes, "
 		"         grp_wall, grp_cpu_mins, grp_cpu_run_mins, "
 		"         preempt, preempt_mode, priority, usage_factor) = "
 		"        (0, rec.mod_time, rec.description, "
@@ -129,7 +130,7 @@ _create_function_add_qos(PGconn *db_conn)
 		"         rec.max_wall_duration_per_job, "
 		"         rec.max_cpu_mins_per_job, "
 		"         rec.max_cpu_run_mins_per_user, "
-		"         rec.grp_jobs, rec.grp_submit_jobs, rec.grp_cpus, "
+		"         rec.grp_jobs, rec.grp_submit_jobs, rec.grp_cpus, rec.grp_mem, "
 		"         rec.grp_nodes, rec.grp_wall, rec.grp_cpu_mins, "
 		"         rec.grp_cpu_run_mins, rec.preempt, rec.preempt_mode, "
 		"         rec.priority, rec.usage_factor) "
@@ -176,6 +177,7 @@ _make_qos_record_for_add(slurmdb_qos_rec_t *object, time_t now,
 	concat_limit_32("grp_jobs", object->grp_jobs, rec, txn);
 	concat_limit_32("grp_submit_jobs", object->grp_submit_jobs, rec, txn);
 	concat_limit_32("grp_cpus", object->grp_cpus, rec, txn);
+	concat_limit_32("grp_mem", object->grp_mem, rec, txn);
 	concat_limit_32("grp_nodes", object->grp_nodes, rec, txn);
 	concat_limit_32("grp_wall", object->grp_wall, rec, txn);
 	concat_limit_64("grp_cpu_mins", object->grp_cpu_mins, rec, txn);
@@ -287,6 +289,7 @@ _make_qos_vals_for_modify(slurmdb_qos_rec_t *qos, char **vals,
 	concat_limit_32("grp_jobs", qos->grp_jobs, NULL, vals);
 	concat_limit_32("grp_submit_jobs", qos->grp_submit_jobs, NULL, vals);
 	concat_limit_32("grp_cpus", qos->grp_cpus, NULL, vals);
+	concat_limit_32("grp_mem", qos->grp_mem, NULL, vals);
 	concat_limit_32("grp_nodes", qos->grp_nodes, NULL, vals);
 	concat_limit_32("grp_wall", qos->grp_wall, NULL, vals);
 	concat_limit_64("grp_cpu_mins", qos->grp_cpu_mins, NULL, vals);
@@ -626,6 +629,7 @@ as_pg_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 		qos_rec->grp_cpu_mins = qos->grp_cpu_mins;
 		qos_rec->grp_cpu_run_mins = qos->grp_cpu_run_mins;
 		qos_rec->grp_jobs = qos->grp_jobs;
+		qos_rec->grp_mem = qos->grp_mem;
 		qos_rec->grp_nodes = qos->grp_nodes;
 		qos_rec->grp_submit_jobs = qos->grp_submit_jobs;
 		qos_rec->grp_wall = qos->grp_wall;
@@ -868,7 +872,7 @@ as_pg_get_qos(pgsql_conn_t *pg_conn, uid_t uid,
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *gq_fields = "name,description,id_qos,grp_cpu_mins,"
-		"grp_cpu_run_mins,grp_cpus,grp_jobs,grp_nodes,grp_submit_jobs,"
+		"grp_cpu_run_mins,grp_cpus,grp_jobs,grp_mem,grp_nodes,grp_submit_jobs,"
 		"grp_wall,max_cpu_mins_per_job,max_cpu_run_mins_per_user,"
 		"max_cpus_per_job,max_jobs_per_user,max_nodes_per_job,"
 		"max_submit_jobs_per_user,max_wall_duration_per_job,preempt,"
@@ -881,6 +885,7 @@ as_pg_get_qos(pgsql_conn_t *pg_conn, uid_t uid,
 		F_GCRM,
 		F_GC,
 		F_GJ,
+		F_GMEM,
 		F_GN,
 		F_GSJ,
 		F_GW,
@@ -952,6 +957,10 @@ as_pg_get_qos(pgsql_conn_t *pg_conn, uid_t uid,
 			qos->grp_jobs = atoi(ROW(F_GJ));
 		else
 			qos->grp_jobs = INFINITE;
+		if(! ISNULL(F_GMEM))
+			qos->grp_mem = atoi(ROW(F_GMEM));
+		else
+			qos->grp_mem = INFINITE;
 		if(! ISNULL(F_GN))
 			qos->grp_nodes = atoi(ROW(F_GN));
 		else

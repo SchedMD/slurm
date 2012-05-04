@@ -652,6 +652,8 @@ extern void slurmdb_destroy_association_cond(void *object)
 			list_destroy(slurmdb_association->grp_cpus_list);
 		if(slurmdb_association->grp_jobs_list)
 			list_destroy(slurmdb_association->grp_jobs_list);
+		if(slurmdb_association->grp_mem_list)
+			list_destroy(slurmdb_association->grp_mem_list);
 		if(slurmdb_association->grp_nodes_list)
 			list_destroy(slurmdb_association->grp_nodes_list);
 		if(slurmdb_association->grp_submit_jobs_list)
@@ -1031,6 +1033,7 @@ extern void slurmdb_init_association_rec(slurmdb_association_rec_t *assoc,
 	assoc->grp_cpu_run_mins = (uint64_t)NO_VAL;
 	assoc->grp_cpus = NO_VAL;
 	assoc->grp_jobs = NO_VAL;
+	assoc->grp_mem = NO_VAL;
 	assoc->grp_nodes = NO_VAL;
 	assoc->grp_submit_jobs = NO_VAL;
 	assoc->grp_wall = NO_VAL;
@@ -1086,6 +1089,7 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it)
 	qos->grp_cpu_run_mins = (uint64_t)NO_VAL;
 	qos->grp_cpus = NO_VAL;
 	qos->grp_jobs = NO_VAL;
+	qos->grp_mem = NO_VAL;
 	qos->grp_nodes = NO_VAL;
 	qos->grp_submit_jobs = NO_VAL;
 	qos->grp_wall = NO_VAL;
@@ -1717,6 +1721,11 @@ extern void log_assoc_rec(slurmdb_association_rec_t *assoc_ptr,
 		debug2("  GrpJobs          : NONE");
 	else if(assoc_ptr->grp_jobs != NO_VAL)
 		debug2("  GrpJobs          : %u", assoc_ptr->grp_jobs);
+
+	if(assoc_ptr->grp_mem == INFINITE)
+		debug2("  GrpMemory        : NONE");
+	else if(assoc_ptr->grp_mem != NO_VAL)
+		debug2("  GrpMemory        : %u", assoc_ptr->grp_mem);
 
 	if(assoc_ptr->grp_nodes == INFINITE)
 		debug2("  GrpNodes         : NONE");

@@ -54,6 +54,7 @@ typedef struct {
 	uint64_t grp_cpu_mins;
 	uint32_t grp_cpus;
 	uint32_t grp_jobs;
+	uint32_t grp_mem;
 	uint32_t grp_nodes;
 	uint32_t grp_submit_jobs;
 	uint32_t grp_wall;
@@ -94,6 +95,7 @@ static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
 	file_opts->grp_cpu_mins = (uint64_t)NO_VAL;
 	file_opts->grp_cpus = NO_VAL;
 	file_opts->grp_jobs = NO_VAL;
+	file_opts->grp_mem = NO_VAL;
 	file_opts->grp_nodes = NO_VAL;
 	file_opts->grp_submit_jobs = NO_VAL;
 	file_opts->grp_wall = NO_VAL;
@@ -376,6 +378,16 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
+		} else if (!strncasecmp (sub, "GrpMemory",
+					 MAX(command_len, 4))) {
+			if (get_uint(option, &file_opts->grp_mem,
+				     "GrpMemory") != SLURM_SUCCESS) {
+				exit_code=1;
+				fprintf(stderr,
+					" Bad GrpMemory value: %s\n", option);
+				_destroy_sacctmgr_file_opts(file_opts);
+				break;
+			}
 		} else if (!strncasecmp (sub, "GrpNodes",
 					 MAX(command_len, 4))) {
 			if (get_uint(option, &file_opts->grp_nodes,
@@ -558,8 +570,8 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 		slurm_addto_char_list(format_list,
 				      "Account,ParentName");
 	slurm_addto_char_list(format_list,
-			      "Share,GrpCPUM,GrpCPUs,"
-			      "GrpJ,GrpN,GrpS,GrpW,MaxCPUM,MaxCPUs,"
+			      "Share,GrpCPUM,GrpCPUs,GrpJ,"
+			      "GrpMEM,GrpN,GrpS,GrpW,MaxCPUM,MaxCPUs,"
 			      "MaxJ,MaxS,MaxN,MaxW,QOS,DefaultQOS");
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
@@ -606,6 +618,10 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 			case PRINT_GRPJ:
 				field->print_routine(field,
 						     assoc->grp_jobs);
+				break;
+			case PRINT_GRPMEM:
+				field->print_routine(field,
+						     assoc->grp_mem);
 				break;
 			case PRINT_GRPN:
 				field->print_routine(field,
@@ -767,6 +783,18 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   type, name,
 			   assoc->grp_jobs,
 			   file_opts->grp_jobs);
+	}
+
+	if((file_opts->grp_mem != NO_VAL)
+	   && (assoc->grp_mem != file_opts->grp_mem)) {
+		mod_assoc.grp_mem = file_opts->grp_mem;
+		changed = 1;
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed GrpMemory",
+			   type, name,
+			   assoc->grp_mem,
+			   file_opts->grp_mem);
 	}
 
 	if ((file_opts->grp_nodes != NO_VAL)
@@ -1253,8 +1281,8 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		int first = 1;
 		notice_thread_init();
 		(void) acct_storage_g_add_coord(db_conn, my_uid,
-					        file_opts->coord_list,
-					        &user_cond);
+						file_opts->coord_list,
+						&user_cond);
 		notice_thread_fini();
 
 		user->coord_accts = list_create(slurmdb_destroy_coord_rec);
@@ -1494,7 +1522,7 @@ static slurmdb_account_rec_t *_set_acct_up(sacctmgr_file_opts_t *file_opts,
 	else
 		acct->organization = xstrdup(file_opts->name);
 	/* info("adding account %s (%s) (%s)", */
-/* 	        acct->name, acct->description, */
+/* 		acct->name, acct->description, */
 /* 		acct->organization); */
 
 	return acct;
@@ -1551,6 +1579,7 @@ static slurmdb_association_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 	assoc->grp_cpu_mins = file_opts->grp_cpu_mins;
 	assoc->grp_cpus = file_opts->grp_cpus;
 	assoc->grp_jobs = file_opts->grp_jobs;
+	assoc->grp_mem = file_opts->grp_mem;
 	assoc->grp_nodes = file_opts->grp_nodes;
 	assoc->grp_submit_jobs = file_opts->grp_submit_jobs;
 	assoc->grp_wall = file_opts->grp_wall;
@@ -1728,6 +1757,9 @@ extern int print_file_add_limits_to_line(char **line,
 
 	if (assoc->grp_jobs != INFINITE)
 		xstrfmtcat(*line, ":GrpJobs=%u", assoc->grp_jobs);
+
+	if(assoc->grp_mem != INFINITE)
+		xstrfmtcat(*line, ":GrpMemory=%u", assoc->grp_mem);
 
 	if (assoc->grp_nodes != INFINITE)
 		xstrfmtcat(*line, ":GrpNodes=%u", assoc->grp_nodes);

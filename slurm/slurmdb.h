@@ -206,6 +206,7 @@ typedef struct {
 	List grp_cpu_run_mins_list; /* list of char * */
 	List grp_cpus_list; /* list of char * */
 	List grp_jobs_list;	/* list of char * */
+	List grp_mem_list;	/* list of char * */
 	List grp_nodes_list; /* list of char * */
 	List grp_submit_jobs_list; /* list of char * */
 	List grp_wall_list; /* list of char * */
@@ -379,6 +380,9 @@ typedef struct {
 	uint32_t grp_jobs;	   /* max number of jobs the
 				    * underlying group of associations can run
 				    * at one time */
+	uint32_t grp_mem;          /* max amount of memory the
+				    * underlying group of
+				    * associations can allocate at once */
 	uint32_t grp_nodes;        /* max number of nodes the
 				    * underlying group of
 				    * associations can allocate at once */
@@ -583,6 +587,8 @@ typedef struct {
 			      can allocate at one time */
 	uint32_t grp_jobs;	/* max number of jobs this qos can run
 				 * at one time */
+	uint32_t grp_mem; /* max amount of memory this qos
+			     can allocate at one time */
 	uint32_t grp_nodes; /* max number of nodes this qos
 			       can allocate at once */
 	uint32_t grp_submit_jobs; /* max number of jobs this qos can submit at

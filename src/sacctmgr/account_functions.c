@@ -602,6 +602,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			assoc->grp_cpu_mins = start_assoc->grp_cpu_mins;
 			assoc->grp_cpus = start_assoc->grp_cpus;
 			assoc->grp_jobs = start_assoc->grp_jobs;
+			assoc->grp_mem = start_assoc->grp_mem;
 			assoc->grp_nodes = start_assoc->grp_nodes;
 			assoc->grp_submit_jobs = start_assoc->grp_submit_jobs;
 			assoc->grp_wall = start_assoc->grp_wall;
@@ -755,7 +756,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		if(acct_cond->with_assocs)
 			slurm_addto_char_list(format_list,
 					      "Cl,ParentN,U,Share,GrpJ,GrpN,"
-					      "GrpCPUs,GrpS,GrpWall,GrpCPUMins,"
+					      "GrpCPUs,GrpMEM,GrpS,GrpWall,GrpCPUMins,"
 					      "MaxJ,MaxN,MaxCPUs,MaxS,MaxW,"
 					      "MaxCPUMins,QOS,DefaultQOS");
 

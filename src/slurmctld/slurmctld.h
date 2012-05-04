@@ -519,6 +519,8 @@ struct job_record {
 					 * a limit false if user set */
         uint16_t limit_set_min_nodes;	/* if max_nodes was set from
 					 * a limit false if user set */
+	uint16_t limit_set_pn_min_memory; /* if pn_min_memory was set from
+					 * a limit false if user set */
 	uint16_t limit_set_time;    	/* if time_limit was set from
 					 * a limit false if user set */
 	uint16_t limit_set_qos;    	/* if qos_limit was set from

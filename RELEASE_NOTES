@@ -101,6 +101,9 @@ block_info_t:		cnode_err_cnt added
 slurm_ctl_conf_t	priority_flags, reboot_program and reconfig_flags added
 trigger_info_t:		flags added
 update_node_msg_t:	node_addr and node_hostname added
+slurmdb_association_cond_t:	  grp_mem_list added
+slurmdb_association_rec_t:	  grp_mem added
+slurmdb_qos_rec_t:		  grp_mem added
 
 Changed the following enums and #defines
 ========================================

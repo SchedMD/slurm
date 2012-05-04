@@ -67,6 +67,7 @@ static storage_field_t assoc_table_fields[] = {
 	{ "grp_jobs", "INTEGER DEFAULT NULL" },
 	{ "grp_submit_jobs", "INTEGER DEFAULT NULL" },
 	{ "grp_cpus", "INTEGER DEFAULT NULL" },
+	{ "grp_mem", "INTEGER DEFAULT NULL" },
 	{ "grp_nodes", "INTEGER DEFAULT NULL" },
 	{ "grp_wall", "INTEGER DEFAULT NULL" },
 	{ "grp_cpu_mins", "BIGINT DEFAULT NULL" },
@@ -250,7 +251,7 @@ _create_function_add_assoc(PGconn *db_conn, char *cluster)
 		"        lft, rgt, shares, max_jobs, max_submit_jobs, "
 		"        max_cpus_pj, max_nodes_pj, "
 		"        max_wall_pj, max_cpu_mins_pj, "
-		"        grp_jobs, grp_submit_jobs, grp_cpus, grp_nodes, "
+		"        grp_jobs, grp_submit_jobs, grp_cpus, grp_mem, grp_nodes, "
 		"        grp_wall, grp_cpu_mins, qos, delta_qos) "
 		"      VALUES (na.creation_time, na.mod_time, na.deleted, "
 		"        DEFAULT, na.acct, na.user_name,"
@@ -259,7 +260,7 @@ _create_function_add_assoc(PGconn *db_conn, char *cluster)
 		"        na.max_cpus_pj, na.max_nodes_pj, "
 		"        na.max_wall_pj, "
 		"        na.max_cpu_mins_pj, na.grp_jobs, "
-		"        na.grp_submit_jobs, na.grp_cpus, na.grp_nodes, "
+		"        na.grp_submit_jobs, na.grp_cpus, na.grp_mem, na.grp_nodes, "
 		"        na.grp_wall, na.grp_cpu_mins, na.qos, na.delta_qos) "
 		"      RETURNING id_assoc INTO na_id;"
 		"    RETURN na_id; "
@@ -275,7 +276,7 @@ _create_function_add_assoc(PGconn *db_conn, char *cluster)
 		"        max_cpu_mins_pj=na.max_cpu_mins_pj, "
 		"        grp_jobs=na.grp_jobs, "
 		"        grp_submit_jobs=na.grp_submit_jobs, "
-		"        grp_cpus=na.grp_cpus, grp_nodes=na.grp_nodes, "
+		"        grp_cpus=na.grp_cpus, grp_mem=na.grp_mem, grp_nodes=na.grp_nodes, "
 		"        grp_wall=na.grp_wall, grp_cpu_mins=na.grp_cpu_mins, "
 		"        qos=na.qos, delta_qos=na.delta_qos "
 		"      WHERE acct=na.acct AND "
@@ -313,7 +314,7 @@ _create_function_add_assoc_update(PGconn *db_conn, char *cluster)
 		"    max_cpu_mins_pj=assoc.max_cpu_mins_pj, "
 		"    grp_jobs=assoc.grp_jobs, "
 		"    grp_submit_jobs=assoc.grp_submit_jobs, "
-		"    grp_cpus=assoc.grp_cpus, grp_nodes=assoc.grp_nodes, "
+		"    grp_cpus=assoc.grp_cpus, grp_mem=assoc.grp_mem, grp_nodes=assoc.grp_nodes, "
 		"    grp_wall=assoc.grp_wall, grp_cpu_mins=assoc.grp_cpu_mins, "
 		"    qos=assoc.qos, delta_qos=assoc.delta_qos "
 		"  WHERE acct=assoc.acct AND "
@@ -544,6 +545,7 @@ _make_assoc_rec(slurmdb_association_rec_t *assoc, time_t now, int deleted,
 	concat_limit_32("grp_jobs", assoc->grp_jobs, rec, txn);
 	concat_limit_32("grp_submit_jobs", assoc->grp_submit_jobs, rec, txn);
 	concat_limit_32("grp_cpus", assoc->grp_cpus, rec, txn);
+	concat_limit_32("grp_mem", assoc->grp_mem, rec, txn);
 	concat_limit_32("grp_nodes", assoc->grp_nodes, rec, txn);
 	concat_limit_32("grp_wall", assoc->grp_wall, rec, txn);
 	concat_limit_64("grp_cpu_mins", assoc->grp_cpu_mins, rec, txn);
@@ -625,6 +627,7 @@ _make_cluster_root_assoc_rec(time_t now, slurmdb_cluster_rec_t *cluster,
 			   "NULL, "     /* grp_jobs */
 			   "NULL, "     /* grp_submit_jobs */
 			   "NULL, "     /* grp_cpus */
+			   "NULL, "     /* grp_mem */
 			   "NULL, "     /* grp_nodes */
 			   "NULL, "     /* grp_wall */
 			   "NULL, "     /* grp_cpu_mins */
@@ -658,6 +661,7 @@ _make_cluster_root_assoc_rec(time_t now, slurmdb_cluster_rec_t *cluster,
 		concat_limit_32("grp_submit_jobs",
 				ra->grp_submit_jobs, rec, txn);
 		concat_limit_32("grp_cpus", ra->grp_cpus, rec, txn);
+		concat_limit_32("grp_mem", ra->grp_mem, rec, txn);
 		concat_limit_32("grp_nodes", ra->grp_nodes, rec, txn);
 		concat_limit_32("grp_wall", ra->grp_wall, rec, txn);
 		concat_limit_64("grp_cpu_mins", ra->grp_cpu_mins, rec, txn);
@@ -963,6 +967,8 @@ _make_assoc_cond(slurmdb_association_cond_t *assoc_cond)
 			 prefix, "grp_cpus", &cond);
 	concat_cond_list(assoc_cond->grp_jobs_list,
 			 prefix, "grp_jobs", &cond);
+	concat_cond_list(assoc_cond->grp_mem_list,
+			 prefix, "grp_mem", &cond);
 	concat_cond_list(assoc_cond->grp_nodes_list,
 			 prefix, "grp_nodes", &cond);
 	concat_cond_list(assoc_cond->grp_submit_jobs_list,
@@ -1032,6 +1038,7 @@ _make_assoc_limit_vals(slurmdb_association_rec_t *assoc, char **vals)
 			&tmp, vals);
 	concat_limit_32("grp_cpus", assoc->grp_cpus, &tmp, vals);
 	concat_limit_32("grp_jobs", assoc->grp_jobs, &tmp, vals);
+	concat_limit_32("grp_mem", assoc->grp_mem, &tmp, vals);
 	concat_limit_32("grp_nodes", assoc->grp_nodes, &tmp, vals);
 	concat_limit_32("grp_submit_jobs", assoc->grp_submit_jobs, &tmp, vals);
 	concat_limit_32("grp_wall", assoc->grp_wall, &tmp, vals);
@@ -1063,6 +1070,7 @@ _copy_assoc_limits(slurmdb_association_rec_t *dest, slurmdb_association_rec_t *s
 	dest->grp_cpu_mins = src->grp_cpu_mins;
 	dest->grp_cpu_run_mins = src->grp_cpu_run_mins;
 	dest->grp_jobs = src->grp_jobs;
+	dest->grp_mem = src->grp_mem;
 	dest->grp_nodes = src->grp_nodes;
 	dest->grp_submit_jobs = src->grp_submit_jobs;
 	dest->grp_wall = src->grp_wall;
@@ -1489,7 +1497,7 @@ _cluster_get_assocs(pgsql_conn_t *pg_conn, char *cluster,
 	/* if this changes you will need to edit the corresponding enum */
 	char *ga_fields = "t1.id_assoc, t1.lft, t1.rgt, t1.user_name, t1.acct,"
 		"t1.partition, t1.shares, t1.grp_cpu_mins, t1.grp_cpu_run_mins,"
-		"t1.grp_cpus, t1.grp_jobs, t1.grp_nodes, t1.grp_submit_jobs,"
+		"t1.grp_cpus, t1.grp_jobs, t1.grp_mem, t1.grp_nodes, t1.grp_submit_jobs,"
 		"t1.grp_wall, t1.max_cpu_mins_pj, t1.max_cpu_run_mins, "
 		"t1.max_cpus_pj, t1.max_jobs, t1.max_nodes_pj, "
 		"t1.max_submit_jobs, t1.max_wall_pj, t1.parent_acct, "
@@ -1506,6 +1514,7 @@ _cluster_get_assocs(pgsql_conn_t *pg_conn, char *cluster,
 		F_GCRM,
 		F_GC,
 		F_GJ,
+		F_GMEM,
 		F_GN,
 		F_GSJ,
 		F_GW,
@@ -1567,6 +1576,7 @@ _cluster_get_assocs(pgsql_conn_t *pg_conn, char *cluster,
 
 		assoc->grp_jobs = ISNULL(F_GJ) ? INFINITE : atoi(ROW(F_GJ));
 		assoc->grp_cpus = ISNULL(F_GC) ? INFINITE : atoi(ROW(F_GC));
+		assoc->grp_mem = ISNULL(F_GMEM) ? INFINITE : atoi(ROW(F_GMEM));
 		assoc->grp_nodes = ISNULL(F_GN) ? INFINITE : atoi(ROW(F_GN));
 		assoc->grp_wall = ISNULL(F_GW) ? INFINITE : atoll(ROW(F_GW));
 		assoc->grp_submit_jobs = ISNULL(F_GSJ) ? INFINITE : atoi(ROW(F_GSJ));

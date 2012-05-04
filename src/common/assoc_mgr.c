@@ -99,6 +99,7 @@ static int _addto_used_info(slurmdb_association_rec_t *assoc1,
 		return SLURM_ERROR;
 
 	assoc1->usage->grp_used_cpus += assoc2->usage->grp_used_cpus;
+	assoc1->usage->grp_used_mem += assoc2->usage->grp_used_mem;
 	assoc1->usage->grp_used_nodes += assoc2->usage->grp_used_nodes;
 	assoc1->usage->grp_used_wall += assoc2->usage->grp_used_wall;
 	assoc1->usage->grp_used_cpu_run_secs +=
@@ -117,6 +118,7 @@ static int _clear_used_assoc_info(slurmdb_association_rec_t *assoc)
 		return SLURM_ERROR;
 
 	assoc->usage->grp_used_cpus = 0;
+	assoc->usage->grp_used_mem = 0;
 	assoc->usage->grp_used_nodes = 0;
 	assoc->usage->grp_used_cpu_run_secs = 0;
 
@@ -163,6 +165,7 @@ static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
 		return SLURM_ERROR;
 
 	qos->usage->grp_used_cpus = 0;
+	qos->usage->grp_used_mem = 0;
 	qos->usage->grp_used_nodes = 0;
 	qos->usage->grp_used_cpu_run_secs = 0;
 
@@ -1505,6 +1508,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	assoc->grp_cpu_run_mins= ret_assoc->grp_cpu_run_mins;
 	assoc->grp_cpus        = ret_assoc->grp_cpus;
 	assoc->grp_jobs        = ret_assoc->grp_jobs;
+	assoc->grp_mem         = ret_assoc->grp_mem;
 	assoc->grp_nodes       = ret_assoc->grp_nodes;
 	assoc->grp_submit_jobs = ret_assoc->grp_submit_jobs;
 	assoc->grp_wall        = ret_assoc->grp_wall;
@@ -1700,6 +1704,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	qos->grp_cpu_run_mins= found_qos->grp_cpu_run_mins;
 	qos->grp_cpus        = found_qos->grp_cpus;
 	qos->grp_jobs        = found_qos->grp_jobs;
+	qos->grp_mem         = found_qos->grp_mem;
 	qos->grp_nodes       = found_qos->grp_nodes;
 	qos->grp_submit_jobs = found_qos->grp_submit_jobs;
 	qos->grp_wall        = found_qos->grp_wall;
@@ -2342,6 +2347,10 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update)
 			}
 			if (object->grp_jobs != NO_VAL)
 				rec->grp_jobs = object->grp_jobs;
+			if (object->grp_mem != NO_VAL) {
+				update_jobs = true;
+				rec->grp_mem = object->grp_mem;
+			}
 			if (object->grp_nodes != NO_VAL) {
 				update_jobs = true;
 				rec->grp_nodes = object->grp_nodes;
@@ -2973,6 +2982,10 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update)
 			}
 			if (object->grp_jobs != NO_VAL)
 				rec->grp_jobs = object->grp_jobs;
+			if (object->grp_mem != NO_VAL) {
+				update_jobs = true;
+				rec->grp_mem = object->grp_mem;
+			}
 			if (object->grp_nodes != NO_VAL) {
 				update_jobs = true;
 				rec->grp_nodes = object->grp_nodes;

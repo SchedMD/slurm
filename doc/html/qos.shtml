@@ -81,6 +81,7 @@ QOS</P>
 <LI><b>MaxCpusPerUser</b> Maximum number of CPU's any user with this QOS can be allocated.
 <LI><b>GrpJobs</b> Maximum number of jobs that can run with this QOS.
 <LI><b>MaxJobsPerUser</b> Maximum number of jobs a user can run with this QOS.
+<LI><b>GrpMemory</b> Maximum amount of memory (MB) all jobs with this QOS can be allocated.
 <LI><b>GrpNodes</b> Maximum number of nodes that can be allocated to all jobs with this QOS.
 <LI><b>MaxNodesPerJob</b> Maximum number of nodes that can be allocated to any job with this QOS.
 <LI><b>MaxNodesPerUser</b> Maximum number of nodes that can be allocated to any user with this QOS.

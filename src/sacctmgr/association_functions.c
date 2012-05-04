@@ -319,6 +319,13 @@ extern int sacctmgr_set_association_cond(slurmdb_association_cond_t *assoc_cond,
 		if (slurm_addto_char_list(assoc_cond->grp_jobs_list,
 					 value))
 			set = 1;
+	} else if (!strncasecmp (type, "GrpMemory", MAX(command_len, 4))) {
+		if (!assoc_cond->grp_mem_list)
+			assoc_cond->grp_mem_list =
+				list_create(slurm_destroy_char);
+		if (slurm_addto_char_list(assoc_cond->grp_mem_list,
+					 value))
+			set = 1;
 	} else if (!strncasecmp (type, "GrpNodes", MAX(command_len, 4))) {
 		if (!assoc_cond->grp_nodes_list)
 			assoc_cond->grp_nodes_list =
@@ -474,6 +481,10 @@ extern int sacctmgr_set_association_rec(slurmdb_association_rec_t *assoc,
 		if (get_uint(value, &assoc->grp_jobs,
 			     "GrpJobs") == SLURM_SUCCESS)
 			set = 1;
+	} else if (!strncasecmp(type, "GrpMemory", MAX(command_len, 4))) {
+		if (get_uint(value, &assoc->grp_mem,
+			     "GrpMemory") == SLURM_SUCCESS)
+			set = 1;
 	} else if (!strncasecmp(type, "GrpNodes", MAX(command_len, 4))) {
 		if (get_uint(value, &assoc->grp_nodes,
 			     "GrpNodes") == SLURM_SUCCESS)
@@ -613,6 +624,9 @@ extern void sacctmgr_print_association_rec(slurmdb_association_rec_t *assoc,
 	case PRINT_GRPJ:
 		field->print_routine(field, assoc->grp_jobs, last);
 		break;
+	case PRINT_GRPMEM:
+		field->print_routine(field, assoc->grp_mem, last);
+		break;
 	case PRINT_GRPN:
 		field->print_routine(field, assoc->grp_nodes, last);
 		break;
@@ -716,7 +730,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		slurm_addto_char_list(format_list, "Cluster,Account,User,Part");
 		if (!assoc_cond->without_parent_limits)
 			slurm_addto_char_list(format_list,
-					      "Share,GrpJ,GrpN,GrpCPUs,"
+					      "Share,GrpJ,GrpN,GrpCPUs,GrpMEM,"
 					      "GrpS,GrpWall,GrpCPUMins,MaxJ,"
 					      "MaxN,MaxCPUs,MaxS,MaxW,"
 					      "MaxCPUMins,QOS,DefaultQOS");

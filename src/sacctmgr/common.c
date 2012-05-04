@@ -298,6 +298,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("GrpJobs");
 		field->len = 7;
 		field->print_routine = print_fields_uint;
+	} else if (!strncasecmp("GrpMemory", object, MAX(command_len, 4))) {
+		field->type = PRINT_GRPMEM;
+		field->name = xstrdup("GrpMem");
+		field->len = 7;
+		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("GrpNodes", object, MAX(command_len, 4))) {
 		field->type = PRINT_GRPN;
 		field->name = xstrdup("GrpNodes");
@@ -1333,6 +1338,11 @@ extern void sacctmgr_print_assoc_limits(slurmdb_association_rec_t *assoc)
 	else if (assoc->grp_jobs != NO_VAL)
 		printf("  GrpJobs       = %u\n", assoc->grp_jobs);
 
+	if (assoc->grp_mem == INFINITE)
+		printf("  GrpMemory     = NONE\n");
+	else if (assoc->grp_mem != NO_VAL)
+		printf("  GrpMemory     = %u\n", assoc->grp_mem);
+
 	if (assoc->grp_nodes == INFINITE)
 		printf("  GrpNodes      = NONE\n");
 	else if (assoc->grp_nodes != NO_VAL)
@@ -1430,6 +1440,11 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		printf("  GrpJobs        = NONE\n");
 	else if (qos->grp_jobs != NO_VAL)
 		printf("  GrpJobs        = %u\n", qos->grp_jobs);
+
+	if (qos->grp_mem == INFINITE)
+		printf("  GrpMemory      = NONE\n");
+	else if (qos->grp_mem != NO_VAL)
+		printf("  GrpMemory      = %u\n", qos->grp_mem);
 
 	if (qos->grp_nodes == INFINITE)
 		printf("  GrpNodes       = NONE\n");

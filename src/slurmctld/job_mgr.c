@@ -795,6 +795,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->limit_set_max_nodes, buffer);
 	pack16(dump_job_ptr->limit_set_min_cpus, buffer);
 	pack16(dump_job_ptr->limit_set_min_nodes, buffer);
+	pack16(dump_job_ptr->limit_set_pn_min_memory, buffer);
 	pack16(dump_job_ptr->limit_set_time, buffer);
 	pack16(dump_job_ptr->limit_set_qos, buffer);
 
@@ -878,6 +879,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint16_t wait_all_nodes, warn_signal, warn_time;
 	uint16_t limit_set_max_cpus = 0, limit_set_max_nodes = 0;
 	uint16_t limit_set_min_cpus = 0, limit_set_min_nodes = 0;
+	uint16_t limit_set_pn_min_memory = 0;
 	uint16_t limit_set_time = 0, limit_set_qos = 0;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
@@ -959,6 +961,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&limit_set_max_nodes, buffer);
 		safe_unpack16(&limit_set_min_cpus, buffer);
 		safe_unpack16(&limit_set_min_nodes, buffer);
+		safe_unpack16(&limit_set_pn_min_memory, buffer);
 		safe_unpack16(&limit_set_time, buffer);
 		safe_unpack16(&limit_set_qos, buffer);
 
@@ -1612,6 +1615,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->limit_set_max_nodes = limit_set_max_nodes;
 	job_ptr->limit_set_min_cpus  = limit_set_min_cpus;
 	job_ptr->limit_set_min_nodes = limit_set_min_nodes;
+	job_ptr->limit_set_pn_min_memory = limit_set_pn_min_memory;
 	job_ptr->limit_set_time      = limit_set_time;
 	job_ptr->limit_set_qos       = limit_set_qos;
 	job_ptr->req_switch      = req_switch;
@@ -3838,6 +3842,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	uint16_t limit_set_max_nodes = 0;
 	uint16_t limit_set_min_cpus = 0;
 	uint16_t limit_set_min_nodes = 0;
+	uint16_t limit_set_pn_min_memory = 0;
 	uint16_t limit_set_time = 0;
 	uint16_t limit_set_qos = 0;
 	static uint32_t node_scaling = 1;
@@ -3976,6 +3981,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 				   assoc_ptr, qos_ptr, NULL,
 				   &limit_set_max_cpus,
 				   &limit_set_max_nodes,
+				   limit_set_pn_min_memory,
 				   &limit_set_time, 0))) {
 		info("_job_create: exceeded association/qos's limit "
 		     "for user %u", job_desc->user_id);
@@ -4135,6 +4141,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr->limit_set_max_nodes = limit_set_max_nodes;
 	job_ptr->limit_set_min_cpus = limit_set_min_cpus;
 	job_ptr->limit_set_min_nodes = limit_set_min_nodes;
+	job_ptr->limit_set_pn_min_memory = limit_set_pn_min_memory;
 	job_ptr->limit_set_time = limit_set_time;
 	job_ptr->limit_set_qos = limit_set_qos;
 
@@ -6660,6 +6667,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	uint16_t limit_set_max_nodes = 0;
 	uint16_t limit_set_min_cpus = 0;
 	uint16_t limit_set_min_nodes = 0;
+	uint16_t limit_set_pn_min_memory = 0;
 	uint16_t limit_set_time = 0;
 
 #ifdef HAVE_BG
@@ -7007,9 +7015,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
 					  NULL, &limit_set_max_cpus,
 					  &limit_set_max_nodes,
+					  limit_set_pn_min_memory,
 					  &limit_set_time, 1)) {
-			info("update_job: exceeded association's cpu, node or "
-			     "time limit for user %u", job_specs->user_id);
+			info("update_job: exceeded association's cpu, node, "
+			     "memory or time limit for user %u",
+			     job_specs->user_id);
 			error_code = ESLURM_ACCOUNTING_POLICY;
 			goto fini;
 		}
@@ -7037,6 +7047,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		limit_set_max_nodes = ADMIN_SET_LIMIT;
 		limit_set_min_cpus = ADMIN_SET_LIMIT;
 		limit_set_min_nodes = ADMIN_SET_LIMIT;
+		limit_set_pn_min_memory = ADMIN_SET_LIMIT;
 		limit_set_time = ADMIN_SET_LIMIT;
 	}
 
@@ -7469,6 +7480,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->pn_min_memory != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
+		else if (job_specs->pn_min_memory
+			 == detail_ptr->pn_min_memory)
+			debug("sched: update_job: new memory limit identical "
+			      "to old limit for job %u", job_specs->job_id);
 		else if (authorized) {
 			char *entity;
 			if (job_specs->pn_min_memory & MEM_PER_CPU)
@@ -7481,6 +7496,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     "for job_id %u", entity,
 			     (job_specs->pn_min_memory & (~MEM_PER_CPU)),
 			     job_specs->job_id);
+			/* Always use the limit_set_* since if set by a
+			 * super user it be set correctly */
+			job_ptr->limit_set_pn_min_memory = 
+			  limit_set_pn_min_memory;
 		} else {
 			error("sched: Attempt to increase pn_min_memory for "
 			      "job %u", job_specs->job_id);

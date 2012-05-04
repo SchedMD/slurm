@@ -321,6 +321,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 
 		cluster->root_assoc->grp_cpus = start_assoc.grp_cpus;
 		cluster->root_assoc->grp_jobs = start_assoc.grp_jobs;
+		cluster->root_assoc->grp_mem = start_assoc.grp_mem;
 		cluster->root_assoc->grp_nodes = start_assoc.grp_nodes;
 		cluster->root_assoc->grp_submit_jobs =
 			start_assoc.grp_submit_jobs;
@@ -533,6 +534,11 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			case PRINT_GRPJ:
 				field->print_routine(field,
 						     assoc->grp_jobs,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_GRPMEM:
+				field->print_routine(field,
+						     assoc->grp_mem,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_GRPN:

@@ -316,6 +316,13 @@ static int _set_rec(int *start, int argc, char *argv[],
 			if (get_uint(argv[i]+end, &qos->grp_jobs,
 			    "GrpJobs") == SLURM_SUCCESS)
 				set = 1;
+		} else if (!strncasecmp (argv[i], "GrpMemory",
+					 MAX(command_len, 4))) {
+			if(!qos)
+				continue;
+			if (get_uint(argv[i]+end, &qos->grp_mem,
+				     "GrpMemory") == SLURM_SUCCESS)
+				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpNodes",
 					 MAX(command_len, 4))) {
 			if(!qos)
@@ -622,6 +629,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 			qos->grp_cpu_mins = start_qos->grp_cpu_mins;
 			qos->grp_cpus = start_qos->grp_cpus;
 			qos->grp_jobs = start_qos->grp_jobs;
+			qos->grp_mem = start_qos->grp_mem;
 			qos->grp_nodes = start_qos->grp_nodes;
 			qos->grp_submit_jobs = start_qos->grp_submit_jobs;
 			qos->grp_wall = start_qos->grp_wall;
@@ -730,7 +738,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 		slurm_addto_char_list(format_list,
 				      "Name,Prio,GraceT,Preempt,PreemptM,"
 				      "Flags%40,UsageThres,GrpCPUs,GrpCPUMins,"
-				      "GrpJ,GrpN,GrpS,GrpW,"
+				      "GrpJ,GrpMEM,GrpN,GrpS,GrpW,"
 				      "MaxCPUs,MaxCPUMins,MaxJ,MaxN,MaxS,MaxW");
 	}
 
@@ -806,6 +814,11 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 			case PRINT_GRPJ:
 				field->print_routine(field,
 						     qos->grp_jobs,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_GRPMEM:
+				field->print_routine(field,
+						     qos->grp_mem,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_GRPN:

@@ -74,6 +74,7 @@ hv_to_assoc_cond(HV* hv, slurmdb_association_cond_t* assoc_cond)
     FETCH_LIST_FIELD(hv, assoc_cond, grp_cpu_run_mins_list);
     FETCH_LIST_FIELD(hv, assoc_cond, grp_cpus_list);
     FETCH_LIST_FIELD(hv, assoc_cond, grp_jobs_list);
+    FETCH_LIST_FIELD(hv, assoc_cond, grp_mem_list);
     FETCH_LIST_FIELD(hv, assoc_cond, grp_nodes_list);
     FETCH_LIST_FIELD(hv, assoc_cond, grp_submit_jobs_list);
     FETCH_LIST_FIELD(hv, assoc_cond, grp_wall_list);

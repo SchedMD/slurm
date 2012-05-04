@@ -102,6 +102,8 @@ struct assoc_mgr_association_usage {
 
 	uint32_t grp_used_cpus; /* count of active jobs in the group
 				 * (DON'T PACK) */
+	uint32_t grp_used_mem; /* count of active memory in the group
+				 * (DON'T PACK) */
 	uint32_t grp_used_nodes; /* count of active jobs in the group
 				  * (DON'T PACK) */
 	double grp_used_wall;   /* group count of time used in
@@ -139,6 +141,8 @@ struct assoc_mgr_qos_usage {
 	uint64_t grp_used_cpu_run_secs; /* count of running cpu secs
 					 * (DON'T PACK) */
 	uint32_t grp_used_jobs;	/* count of active jobs (DON'T PACK) */
+	uint32_t grp_used_mem; /* count of memory in use in this qos
+				* (DON'T PACK) */
 	uint32_t grp_used_nodes; /* count of nodes in use in this qos
 				  * (DON'T PACK) */
 	uint32_t grp_used_submit_jobs; /* count of jobs pending or running

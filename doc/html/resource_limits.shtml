@@ -133,6 +133,12 @@ specified then no limit will apply.</p>
   run after previous jobs complete from this group.
 </li>
 
+<li><b>GrpMemory=</b> The total amount of memory (MB) able to be used
+  at any given time from jobs running from this association and its
+  children.  If this limit is reached new jobs will be queued but only
+  allowed to run after resources have been relinquished from this group.
+</li>
+
 <li><b>GrpNodes=</b> The total count of nodes able to be used at any given
   time from jobs running from this association and its children.  If
   this limit is reached new jobs will be queued but only allowed to

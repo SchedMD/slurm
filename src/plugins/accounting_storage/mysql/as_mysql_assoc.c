@@ -53,6 +53,7 @@ char *assoc_req_inx[] = {
 	"grp_cpu_run_mins",
 	"grp_cpus",
 	"grp_jobs",
+	"grp_mem",
 	"grp_nodes",
 	"grp_submit_jobs",
 	"grp_wall",
@@ -81,6 +82,7 @@ enum {
 	ASSOC_REQ_GCRM,
 	ASSOC_REQ_GC,
 	ASSOC_REQ_GJ,
+	ASSOC_REQ_GMEM,
 	ASSOC_REQ_GN,
 	ASSOC_REQ_GSJ,
 	ASSOC_REQ_GW,
@@ -1140,6 +1142,22 @@ static int _setup_association_cond_limits(
 		xstrcat(*extra, ")");
 	}
 
+	if (assoc_cond->grp_mem_list
+	    && list_count(assoc_cond->grp_mem_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->grp_mem_list);
+		while ((object = list_next(itr))) {
+			if (set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.grp_mem='%s'",
+				   prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
 	if (assoc_cond->grp_nodes_list
 	    && list_count(assoc_cond->grp_nodes_list)) {
 		set = 0;
@@ -1590,6 +1608,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		mod_assoc->grp_cpu_mins = assoc->grp_cpu_mins;
 		mod_assoc->grp_cpu_run_mins = assoc->grp_cpu_run_mins;
 		mod_assoc->grp_jobs = assoc->grp_jobs;
+		mod_assoc->grp_mem = assoc->grp_mem;
 		mod_assoc->grp_nodes = assoc->grp_nodes;
 		mod_assoc->grp_submit_jobs = assoc->grp_submit_jobs;
 		mod_assoc->grp_wall = assoc->grp_wall;
@@ -2055,6 +2074,11 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			assoc->grp_cpus = slurm_atoul(row[ASSOC_REQ_GC]);
 		else
 			assoc->grp_cpus = INFINITE;
+
+		if (row[ASSOC_REQ_GMEM])
+			assoc->grp_mem = slurm_atoul(row[ASSOC_REQ_GMEM]);
+		else
+			assoc->grp_mem = INFINITE;
 
 		if (row[ASSOC_REQ_GN])
 			assoc->grp_nodes = slurm_atoul(row[ASSOC_REQ_GN]);

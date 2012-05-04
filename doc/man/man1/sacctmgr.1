@@ -287,6 +287,16 @@ this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
+\fIGrpMemory\fP=<max memory (MB) >
+Maximum amount of memory running jobs are able to be allocated in aggregate for
+this association and all associations which are children of this association.
+To clear a previously set value use the modify command with a new
+value of \-1.
+.P
+NOTE: This limit only applies fully when using the Select Consumable
+Resource plugin.
+
+.TP
 \fIGrpNodes\fP=<max nodes>
 Maximum number of nodes running jobs are able to be allocated in aggregate for
 this association and all associations which are children of this association.
