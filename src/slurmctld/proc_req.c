@@ -1631,6 +1631,9 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		slurmctld_diag_stats.jobs_completed++;
 		dump_job = true;
 	}
+
+	if (msg->msg_type == REQUEST_COMPLETE_BATCH_JOB)
+		(void) schedule(0);
 	if (dump_job)
 		(void) schedule_job_save();	/* Has own locking */
 	if (dump_node)
