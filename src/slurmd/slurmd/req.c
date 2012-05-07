@@ -3486,12 +3486,12 @@ static void
 _rpc_complete_batch(slurm_msg_t *msg)
 {
 	int		i, rc, msg_rc;
-	slurm_msg_t	req_msg;
+	slurm_msg_t	req_msg, resp_msg;
 	uid_t           uid    = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	complete_batch_script_msg_t *req = msg->data;
 
 	if (!_slurm_authorized_user(uid)) {
-		error("Security violation: kill_job(%u) from uid %d",
+		error("Security violation: complete_batch(%u) from uid %d",
 		      req->job_id, uid);
 		if (msg->conn_fd >= 0)
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
@@ -3505,15 +3505,39 @@ _rpc_complete_batch(slurm_msg_t *msg)
 	req_msg.msg_type= REQUEST_COMPLETE_BATCH_JOB;
 	req_msg.data	= msg->data;
 	for (i = 0; i <= MAX_RETRY; i++) {
-		msg_rc = slurm_send_recv_controller_rc_msg(&req_msg, &rc);
+		msg_rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
 		if (msg_rc == SLURM_SUCCESS)
 			break;
 		info("Retrying job complete RPC for job %u", req->job_id);
 		sleep(RETRY_DELAY);
 	}
-	if (i > MAX_RETRY)
+	if (i > MAX_RETRY) {
 		error("Unable to send job complete message: %m");
-/* FIXME: Get response and optionally launch batch job  */
+		return;
+	}
+
+	if (resp_msg.msg_type == RESPONSE_SLURM_RC) {
+		last_slurmctld_msg = time(NULL);
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		if (rc) {
+			error("complete_batch for job %u: %s", req->job_id,
+			      slurm_strerror(rc));
+		}
+		return;
+	}
+
+	if (resp_msg.msg_type != REQUEST_BATCH_JOB_LAUNCH) {
+		error("Invalid response msg_type (%u) to complete_batch RPC "
+		      "for job %u", resp_msg.msg_type, req->job_id);
+		return;
+	}
+
+	/* (resp_msg.msg_type == REQUEST_BATCH_JOB_LAUNCH) */
+	debug2("Processing RPC: REQUEST_BATCH_JOB_LAUNCH");
+	last_slurmctld_msg = time(NULL);
+	_rpc_batch_job(&resp_msg);
+	slurm_free_job_launch_msg(resp_msg.data);
 }
 
 static void
