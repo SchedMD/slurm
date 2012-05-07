@@ -766,14 +766,10 @@ extern int sort_job_queue2(void *x, void *y)
 	return 0;
 }
 
-/*
- * launch_job - send an RPC to a slurmd to initiate a batch job
- * IN job_ptr - pointer to job that will be initiated
- */
-extern void launch_job(struct job_record *job_ptr)
+/* Given a scheduled job, return a pointer to it batch_job_launch_msg_t data */
+extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr)
 {
 	batch_job_launch_msg_t *launch_msg_ptr;
-	agent_arg_t *agent_arg_ptr;
 
 	/* Initialization of data structures */
 	launch_msg_ptr = (batch_job_launch_msg_t *)
@@ -799,9 +795,10 @@ extern void launch_job(struct job_record *job_ptr)
 		 * too deep into the job launch to gracefully clean up. */
 		job_ptr->end_time    = time(NULL);
 		job_ptr->time_limit = 0;
+		xfree(launch_msg_ptr->alias_list);
 		xfree(launch_msg_ptr->nodes);
 		xfree(launch_msg_ptr);
-		return;
+		return NULL;
 	}
 
 	launch_msg_ptr->std_err = xstrdup(job_ptr->details->std_err);
@@ -833,7 +830,23 @@ extern void launch_job(struct job_record *job_ptr)
 	       (sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt));
 
 	launch_msg_ptr->select_jobinfo = select_g_select_jobinfo_copy(
-			job_ptr->select_jobinfo);
+					 job_ptr->select_jobinfo);
+
+	return launch_msg_ptr;
+}
+
+/*
+ * launch_job - send an RPC to a slurmd to initiate a batch job
+ * IN job_ptr - pointer to job that will be initiated
+ */
+extern void launch_job(struct job_record *job_ptr)
+{
+	batch_job_launch_msg_t *launch_msg_ptr;
+	agent_arg_t *agent_arg_ptr;
+
+	launch_msg_ptr = build_launch_job_msg(job_ptr);
+	if (launch_msg_ptr == NULL)
+		return;
 
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->node_count = 1;
