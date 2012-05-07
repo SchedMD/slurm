@@ -3382,7 +3382,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 
 /* This is a variant of _rpc_terminate_job for use with select/serial */
 static void
-_rpc_terminate_batch_job(uint32_t job_id)
+_rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id)
 {
 	int             rc     = SLURM_SUCCESS;
 	int             nsteps = 0;
@@ -3457,8 +3457,8 @@ _rpc_terminate_batch_job(uint32_t job_id)
 
 	save_cred_state(conf->vctx);
 
-	/* NOTE: We lack the job's UID and SPANK environment variables */
-	rc = _run_epilog(job_id, 0, NULL, NULL, 0);
+	/* NOTE: We lack the job's SPANK environment variables */
+	rc = _run_epilog(job_id, (uid_t) user_id, NULL, NULL, 0);
 	if (rc) {
 		int term_sig, exit_status;
 		if (WIFSIGNALED(rc)) {
@@ -3499,8 +3499,7 @@ _rpc_complete_batch(slurm_msg_t *msg)
 	}
 
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
-/* FIXME: Add UID to RPC and pass as argument here for _run_epilog()  */
-	_rpc_terminate_batch_job(req->job_id);
+	_rpc_terminate_batch_job(req->job_id, req->user_id);
 
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type= REQUEST_COMPLETE_BATCH_JOB;

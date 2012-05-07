@@ -540,6 +540,7 @@ typedef struct complete_batch_script {
 	uint32_t job_rc;
 	uint32_t slurm_rc;
 	char *node_name;
+	uint32_t user_id;	/* user the job runs as */
 } complete_batch_script_msg_t;
 
 typedef struct step_complete_msg {
