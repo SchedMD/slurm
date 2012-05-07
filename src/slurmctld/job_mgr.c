@@ -6325,8 +6325,10 @@ extern void sync_job_priorities(void)
 		return;
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator)))
-		job_ptr->priority += prio_boost;
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (job_ptr->priority > 1)
+			job_ptr->priority += prio_boost;
+	}
 	list_iterator_destroy(job_iterator);
 	lowest_prio += prio_boost;
 }
