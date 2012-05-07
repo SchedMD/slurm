@@ -91,6 +91,18 @@ jobs or less) and <b>interval</b> to 30 seconds or more will limit the
 overhead of backfill scheduling (NOTE: the default values are fine for both
 of these parameters).</li>
 </ul></li>
+<li><b>SelectType</b>:
+If only serial jobs (single CPU jobs) are to be executed, use of the
+<i>select/serial</i> plugin is recommended. This plugin eliminates much of
+the logic found in other select plugins to optimize job allocations with
+respect to network topology. It also reduces communications required to
+executed batch jobs by 75 percent through the use of a "pull" model, where
+the completeion of each job by the <i>slurmd</i> daemon initiates a single
+message to the <i>slurmctld</i> daemon upon completion of the job's epilog
+script. The response to this message can be information required to initiate
+another job utilizing the resources just released by the previous job.
+<b>NOTE:</b> The use of <i>select/serial</i> prevents the job's <i>Epilog</i>
+program from being initiated with any SPANK environment variables.</li>
 <li><b>SlurmctldPort</b>:
 It is desirable to configure the <b>slurmctld</b> daemon to accept incoming
 messages on more than one port in order to avoid having incoming messages
@@ -101,6 +113,6 @@ numbers of simultaneous requests are to be supported.</li>
 appropriate for your environment.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 30 August 2010</p>
+<p style="text-align:center;">Last modified 7 March 2012</p>
 
 <!--#include virtual="footer.txt"-->
