@@ -345,6 +345,63 @@ static void do_diag_stats(struct timeval tv1, struct timeval tv2)
 
 
 /*
+ * Given that one batch job just completed, attempt to launch a suitable
+ * replacement batch job in a response messge as a REQUEST_BATCH_JOB_LAUNCH
+ * message type, alternately send a return code fo SLURM_SUCCESS
+ * msg IN - The original message from slurmd
+ * fini_job_ptr IN - Pointer to job that just completed and needs replacement
+ */
+extern void replace_batch_job(slurm_msg_t * msg, void *fini_job)
+{
+	/* Locks: Read config, write job, write node, read partition */
+	slurmctld_lock_t job_write_lock =
+	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	struct job_record *job_ptr;
+	struct job_record *fini_job_ptr = (struct job_record *) fini_job;
+	ListIterator job_iterator;
+	batch_job_launch_msg_t *launch_msg = NULL;
+	int error_code;
+
+	lock_slurmctld(job_write_lock);
+	if (!avail_front_end())
+		goto no_test;
+	job_iterator = list_iterator_create(job_list);
+	if (job_iterator == NULL)
+		fatal("list_iterator_create memory allocation failure");
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (!IS_JOB_PENDING(job_ptr) || (job_ptr->priority == 0))
+			continue;
+/* FIXME: LOTS OF JOB VALIDATION, PROLOG, ETC. NEEDS TO HAPPEN HERE */
+/* FIXME: select_nodes() can be vastly streamlined to only use the resources
+ *	  just released by fini_job */
+		if (!job_ptr->batch_flag)
+			continue;
+		error_code = select_nodes(job_ptr, false, NULL);
+		if (error_code == SLURM_SUCCESS) {
+			last_job_update = now;
+			info("sched: Allocate JobId=%u NodeList=%s #CPUs=%u",
+			     job_ptr->job_id, job_ptr->nodes,
+			     job_ptr->total_cpus);
+			launch_msg = build_launch_job_msg(job_ptr);
+		}
+		break;
+	}
+no_test: unlock_slurmctld(job_write_lock);
+
+	if (launch_msg) {
+		slurm_msg_t response_msg;
+		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
+		response_msg.protocol_version = msg->protocol_version;
+		response_msg.address = msg->address;
+		response_msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
+		response_msg.data = launch_msg;
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+	} else
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+}
+
+/*
  * schedule - attempt to schedule all pending jobs
  *	pending jobs for each partition will be scheduled in priority
  *	order until a request fails

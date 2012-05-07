@@ -140,7 +140,7 @@ static int  _step_limits_match(void *x, void *key);
 static int  _terminate_all_steps(uint32_t jobid, bool batch);
 static void _rpc_launch_tasks(slurm_msg_t *);
 static void _rpc_abort_job(slurm_msg_t *);
-static void _rpc_batch_job(slurm_msg_t *);
+static void _rpc_batch_job(slurm_msg_t *msg, bool new_msg);
 static void _rpc_job_notify(slurm_msg_t *);
 static void _rpc_signal_tasks(slurm_msg_t *);
 static void _rpc_checkpoint_tasks(slurm_msg_t *);
@@ -245,7 +245,7 @@ slurmd_req(slurm_msg_t *msg)
 		/* Mutex locking moved into _rpc_batch_job() due to
 		 * very slow prolog on Blue Gene system. Only batch
 		 * jobs are supported on Blue Gene (no job steps). */
-		_rpc_batch_job(msg);
+		_rpc_batch_job(msg, true);
 		last_slurmctld_msg = time(NULL);
 		slurm_free_job_launch_msg(msg->data);
 		break;
@@ -1255,21 +1255,23 @@ _set_batch_job_limits(slurm_msg_t *msg)
 }
 
 static void
-_rpc_batch_job(slurm_msg_t *msg)
+_rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 {
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
 	bool     first_job_run = true;
 	int      rc = SLURM_SUCCESS;
-	uid_t    req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	char    *resv_id = NULL;
 	bool	 replied = false;
 	slurm_addr_t *cli = &msg->orig_addr;
 
-	if (!_slurm_authorized_user(req_uid)) {
-		error("Security violation, batch launch RPC from uid %d",
-		      req_uid);
-		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
-		goto done;
+	if (new_msg) {
+		uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+		if (!_slurm_authorized_user(req_uid)) {
+			error("Security violation, batch launch RPC from uid %d",
+			      req_uid);
+			rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
+			goto done;
+		}
 	}
 	slurm_cred_handle_reissue(conf->vctx, req->cred);
 	if (slurm_cred_revoked(conf->vctx, req->cred)) {
@@ -1295,7 +1297,7 @@ _rpc_batch_job(slurm_msg_t *msg)
 		 * Just reply now and send a separate kill job request if the
 		 * prolog or launch fail. */
 		replied = true;
-		if (slurm_send_rc_msg(msg, rc) < 1) {
+		if (new_msg && (slurm_send_rc_msg(msg, rc) < 1)) {
 			/* The slurmctld is no longer waiting for a reply.
 			 * This typically indicates that the slurmd was
 			 * blocked from memory and/or CPUs and the slurmctld
@@ -1381,7 +1383,7 @@ _rpc_batch_job(slurm_msg_t *msg)
 
 done:
 	if (!replied) {
-		if (slurm_send_rc_msg(msg, rc) < 1) {
+		if (new_msg && (slurm_send_rc_msg(msg, rc) < 1)) {
 			/* The slurmctld is no longer waiting for a reply.
 			 * This typically indicates that the slurmd was
 			 * blocked from memory and/or CPUs and the slurmctld
@@ -3536,7 +3538,7 @@ _rpc_complete_batch(slurm_msg_t *msg)
 	/* (resp_msg.msg_type == REQUEST_BATCH_JOB_LAUNCH) */
 	debug2("Processing RPC: REQUEST_BATCH_JOB_LAUNCH");
 	last_slurmctld_msg = time(NULL);
-	_rpc_batch_job(&resp_msg);
+	_rpc_batch_job(&resp_msg, false);
 	slurm_free_job_launch_msg(resp_msg.data);
 }
 

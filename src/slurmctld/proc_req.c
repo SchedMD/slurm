@@ -1627,13 +1627,12 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	} else {
 		debug2("_slurm_rpc_complete_batch_script JobId=%u %s",
 		       comp_msg->job_id, TIME_STR);
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		slurmctld_diag_stats.jobs_completed++;
 		dump_job = true;
+		if (msg->msg_type == REQUEST_COMPLETE_BATCH_JOB)
+			replace_batch_job(msg, job_ptr);
 	}
 
-	if (msg->msg_type == REQUEST_COMPLETE_BATCH_JOB)
-		(void) schedule(0);
 	if (dump_job)
 		(void) schedule_job_save();	/* Has own locking */
 	if (dump_node)
