@@ -378,7 +378,7 @@ extern void replace_batch_job(slurm_msg_t * msg, void *fini_job)
 			continue;
 		error_code = select_nodes(job_ptr, false, NULL);
 		if (error_code == SLURM_SUCCESS) {
-			last_job_update = now;
+			last_job_update = time(NULL);
 			info("sched: Allocate JobId=%u NodeList=%s #CPUs=%u",
 			     job_ptr->job_id, job_ptr->nodes,
 			     job_ptr->total_cpus);
