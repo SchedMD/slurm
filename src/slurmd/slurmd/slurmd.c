@@ -986,6 +986,7 @@ _read_config(void)
 	_massage_pathname(&conf->spooldir);
 	_free_and_set(&conf->pidfile,  xstrdup(cf->slurmd_pidfile));
 	_massage_pathname(&conf->pidfile);
+	_free_and_set(&conf->select_type, xstrdup(cf->select_type));
 	_free_and_set(&conf->task_prolog, xstrdup(cf->task_prolog));
 	_free_and_set(&conf->task_epilog, xstrdup(cf->task_epilog));
 	_free_and_set(&conf->pubkey,   path_pubkey);
@@ -1190,7 +1191,7 @@ _init_conf(void)
 static void
 _destroy_conf(void)
 {
-	if(conf) {
+	if (conf) {
 		xfree(conf->block_map);
 		xfree(conf->block_map_inv);
 		xfree(conf->conffile);
@@ -1205,6 +1206,7 @@ _destroy_conf(void)
 		xfree(conf->pidfile);
 		xfree(conf->prolog);
 		xfree(conf->pubkey);
+		xfree(conf->select_type);
 		xfree(conf->spooldir);
 		xfree(conf->stepd_loc);
 		xfree(conf->task_prolog);
@@ -1450,6 +1452,11 @@ _slurmd_init(void)
 	 */
 	if (!(conf->vctx = slurm_cred_verifier_ctx_create(conf->pubkey)))
 		return SLURM_FAILURE;
+	if (!strcmp(conf->select_type, "select/serial")) {
+		/* Only cache credential for 5 seconds with select/serial
+		 * for shorter cache searches and higher throughput */
+		slurm_cred_ctx_set(conf->vctx, SLURM_CRED_OPT_EXPIRY_WINDOW, 2);
+	}
 
 	/*
 	 * Create slurmd spool directory if necessary.

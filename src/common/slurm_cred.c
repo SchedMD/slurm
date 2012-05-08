@@ -78,6 +78,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
  */
 #define DEFAULT_EXPIRATION_WINDOW 1200
 
+#define EXTREME_DEBUG   0
 #define MAX_TIME 0x7fffffff
 #define SBCAST_CACHE_SIZE 64
 
@@ -408,6 +409,9 @@ static int _slurm_crypto_init(void)
 {
 	char	*crypto_type = NULL;
 	int	retval = SLURM_SUCCESS;
+
+	if ( g_crypto_context )	/* mostly avoid locks for better speed */
+		return SLURM_SUCCESS;
 
 	slurm_mutex_lock( &g_crypto_context_lock );
 	if ( g_crypto_context )
@@ -1635,7 +1639,7 @@ _slurm_cred_alloc(void)
 }
 
 
-#ifdef EXTREME_DEBUG
+#if EXTREME_DEBUG
 static void
 _print_data(char *data, int datalen)
 {
@@ -1913,14 +1917,16 @@ _job_state_destroy(job_state_t *j)
 static void
 _clear_expired_job_states(slurm_cred_ctx_t ctx)
 {
-	char          t1[64], t2[64], t3[64];
 	time_t        now = time(NULL);
 	ListIterator  i   = NULL;
 	job_state_t  *j   = NULL;
 
 	i = list_iterator_create(ctx->job_list);
-
+	if (!i)
+		fatal("list_iterator_create: malloc failure");
 	while ((j = list_next(i))) {
+#if EXTREME_DEBUG
+		char t1[64], t2[64], t3[64];
 		if (j->revoked) {
 			strcpy(t2, " revoked:");
 			timestr(&j->revoked, (t2+9), (64-9));
@@ -1935,7 +1941,7 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 		}
 		debug3("state for jobid %u: ctime:%s%s%s",
 		       j->jobid, timestr(&j->ctime, t1, 64), t2, t3);
-
+#endif
 		if (j->revoked && (now > j->expiration)) {
 			list_delete_item(i);
 		}
