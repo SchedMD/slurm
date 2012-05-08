@@ -1667,7 +1667,7 @@ static void _opt_args(int argc, char **argv)
 
 #endif
 
-	launch_g_setup_srun_opt(rest);
+	command_pos = launch_g_setup_srun_opt(rest);
 
 	/* Since this is needed on an emulated system don't put this code in
 	 * the launch plugin.
