@@ -362,7 +362,7 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 	struct job_record *fini_job_ptr = (struct job_record *) fini_job;
 	ListIterator job_iterator;
 	batch_job_launch_msg_t *launch_msg = NULL;
-	bitstr_t *orig_req_bitmap = NULL;
+	bitstr_t *orig_exc_bitmap = NULL;
 	bool have_node_bitmaps;
 	time_t now = time(NULL);
 	int error_code;
@@ -373,7 +373,7 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 		else
 			select_serial = 1;
 	}
-	if (select_serial != 1)
+	if ((select_serial != 1) || (fini_job_ptr == NULL))
 		return false;
 
 	lock_slurmctld(job_write_lock);
@@ -464,35 +464,34 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 			 * very rare. */
 			info("sched: JobId=%u has invalid account",
 			     job_ptr->job_id);
-			last_job_update = now);
+			last_job_update = now;
 			job_ptr->state_reason = FAIL_ACCOUNT;
 			xfree(job_ptr->state_desc);
 			continue;
 		}
 
-		if (job_ptr->details && job_ptr->details->req_node_bitmap)
+		if (job_ptr->details && job_ptr->details->exc_node_bitmap)
 			have_node_bitmaps = true;
 		else
 			have_node_bitmaps = false;
 		if (have_node_bitmaps &&
-		    (bit_overlap(job_ptr->details->req_node_bitmap,
-				 fini_job_ptr->job_resrcs->node_bitmap) == 0))
+		    (bit_overlap(job_ptr->details->exc_node_bitmap,
+				 fini_job_ptr->job_resrcs->node_bitmap) != 0))
 			break;
 
 		if (!job_ptr->batch_flag)   /* Can't pull interactive jobs */
 			break;
 
 		if (have_node_bitmaps)
-			orig_req_bitmap = job_ptr->details->req_node_bitmap;
+			orig_exc_bitmap = job_ptr->details->exc_node_bitmap;
 		else
-			orig_req_bitmap = NULL;
-		job_ptr->details->req_node_bitmap =
+			orig_exc_bitmap = NULL;
+		job_ptr->details->exc_node_bitmap =
 			bit_copy(fini_job_ptr->job_resrcs->node_bitmap);
-/* FIXME: select_nodes() can be vastly streamlined to only use the resources
- *	  just released by fini_job  */
+		bit_not(job_ptr->details->exc_node_bitmap);
 		error_code = select_nodes(job_ptr, false, NULL);
-		bit_free(job_ptr->details->req_node_bitmap);
-		job_ptr->details->req_node_bitmap = orig_req_bitmap;
+		bit_free(job_ptr->details->exc_node_bitmap);
+		job_ptr->details->exc_node_bitmap = orig_exc_bitmap;
 		if (error_code == SLURM_SUCCESS) {
 			last_job_update = now;
 			info("sched: Allocate JobId=%u NodeList=%s #CPUs=%u",
