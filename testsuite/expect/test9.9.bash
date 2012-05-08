@@ -24,7 +24,8 @@ do
 	$sbatch -J $job_name -o /dev/null --wrap $prog &
 	$sbatch -J $job_name -o /dev/null --wrap $prog &
 	$sbatch -J $job_name -o /dev/null --wrap $prog &
-	$sbatch -J $job_name -o /dev/null --wrap $prog
+	$sbatch -J $job_name -o /dev/null --wrap $prog &
+	wait
 	inx=$((inx+1))
 done
 
