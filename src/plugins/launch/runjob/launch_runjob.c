@@ -227,6 +227,8 @@ extern int fini(void)
 
 extern int launch_p_setup_srun_opt(char **rest)
 {
+	int command_pos = 0;
+
 	if (opt.reboot) {
 		info("WARNING: If your job is smaller than the block "
 		     "it is going to run on and other jobs are "
@@ -347,6 +349,7 @@ extern int launch_p_setup_srun_opt(char **rest)
 			opt.job_name = xstrdup(rest[0]);
 		}
 	}
+	return command_pos;
 }
 
 extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,

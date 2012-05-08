@@ -369,7 +369,7 @@ extern int launch_p_setup_srun_opt(char **rest)
 
 	opt.argv = (char **) xmalloc((opt.argc + 1) * sizeof(char *));
 
-	return SLURM_SUCCESS;
+	return 0;
 }
 
 extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
