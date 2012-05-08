@@ -374,13 +374,15 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 			select_serial = 1;
 	}
 	if ((select_serial != 1) || (fini_job_ptr == NULL))
-		return false;
+		goto send_reply;
 
 	lock_slurmctld(job_write_lock);
 	xassert(fini_job_ptr->job_resrcs);
 	xassert(fini_job_ptr->job_resrcs->node_bitmap);
-	if (!avail_front_end())
-		goto no_test;
+	if (!avail_front_end()) {
+		unlock_slurmctld(job_write_lock);
+		goto send_reply;
+	}
 	job_iterator = list_iterator_create(job_list);
 	if (job_iterator == NULL)
 		fatal("list_iterator_create memory allocation failure");
@@ -502,8 +504,9 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 		}
 		break;
 	}
-no_test: unlock_slurmctld(job_write_lock);
+	unlock_slurmctld(job_write_lock);
 
+send_reply:
 	if (launch_msg) {
 		slurm_msg_t response_msg;
 		slurm_msg_t_init(&response_msg);
