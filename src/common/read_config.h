@@ -85,6 +85,13 @@ extern char *default_plugstack;
 #define DEFAULT_KILL_ON_BAD_EXIT    0
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30
+
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+#  define DEFAULT_LAUNCH_TYPE         "launch/runjob"
+#else
+#  define DEFAULT_LAUNCH_TYPE         "launch/slurm"
+#endif
+
 #define DEFAULT_MAIL_PROG           "/bin/mail"
 #define DEFAULT_MAX_JOB_COUNT       10000
 #define DEFAULT_MAX_JOB_ID          0xffff0000

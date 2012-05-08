@@ -443,6 +443,12 @@ uint32_t slurm_get_accounting_storage_port(void);
  */
 int slurm_set_accounting_storage_port(uint32_t storage_port);
 
+/* slurm_get_launch_type
+ * get launch_type from slurmctld_conf object
+ * RET char *   - launch_type, MUST be xfreed by caller
+ */
+char *slurm_get_launch_type(void);
+
 /* slurm_get_preempt_mode
  * returns the PreemptMode value from slurmctld_conf object
  * RET uint16_t   - PreemptMode value (See PREEMPT_MODE_* in slurm.h)

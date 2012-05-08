@@ -1851,6 +1851,7 @@ typedef struct slurm_ctl_conf {
 				    * the processes is aborted or crashed */
 	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL
 				 * on job termination */
+	char *launch_type;	/* type of step launcher to use */
 	char *licenses;		/* licenses available on this cluster */
 	char *mail_prog;	/* pathname of mail program */
 	uint32_t max_job_cnt;	/* maximum number of active jobs */

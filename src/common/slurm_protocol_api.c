@@ -1504,6 +1504,25 @@ int slurm_set_jobcomp_port(uint32_t port)
 	return 0;
 }
 
+/* slurm_get_launch_type
+ * get launch_type from slurmctld_conf object
+ * RET char *   - launch_type, MUST be xfreed by caller
+ */
+char *slurm_get_launch_type(void)
+{
+	char *launch_type = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		launch_type = xstrdup(conf->launch_type);
+		slurm_conf_unlock();
+	}
+	return launch_type;
+}
+
+
 /* slurm_get_preempt_type
  * get PreemptType from slurmctld_conf object
  * RET char *   - preempt type, MUST be xfreed by caller
