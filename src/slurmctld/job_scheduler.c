@@ -354,6 +354,7 @@ static void do_diag_stats(struct timeval tv1, struct timeval tv2)
  */
 extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 {
+	static int select_serial = -1;
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
 	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
@@ -361,9 +362,23 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 	struct job_record *fini_job_ptr = (struct job_record *) fini_job;
 	ListIterator job_iterator;
 	batch_job_launch_msg_t *launch_msg = NULL;
+	bitstr_t *orig_req_bitmap = NULL;
+	bool have_node_bitmaps;
+	time_t now = time(NULL);
 	int error_code;
 
+	if (select_serial == -1) {
+		if (strcmp(slurmctld_conf.select_type, "select/serial"))
+			select_serial = 0;
+		else
+			select_serial = 1;
+	}
+	if (select_serial != 1)
+		return false;
+
 	lock_slurmctld(job_write_lock);
+	xassert(fini_job_ptr->job_resrcs);
+	xassert(fini_job_ptr->job_resrcs->node_bitmap);
 	if (!avail_front_end())
 		goto no_test;
 	job_iterator = list_iterator_create(job_list);
@@ -372,18 +387,119 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!IS_JOB_PENDING(job_ptr) || (job_ptr->priority == 0))
 			continue;
-/* FIXME: LOTS OF JOB VALIDATION, PROLOG, ETC. NEEDS TO HAPPEN HERE  */
-/* FIXME: select_nodes() can be vastly streamlined to only use the resources
- *	  just released by fini_job  */
+
+		/* Tests dependencies, begin time and reservations */
+		if (!job_independent(job_ptr, 0))
+			continue;
+
+		/* Test for valid account, QOS and required nodes on each pass */
+		if (job_ptr->state_reason == FAIL_ACCOUNT) {
+			slurmdb_association_rec_t assoc_rec;
+			memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
+			assoc_rec.acct      = job_ptr->account;
+			if (job_ptr->part_ptr)
+				assoc_rec.partition = job_ptr->part_ptr->name;
+			assoc_rec.uid       = job_ptr->user_id;
+	
+			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+						    accounting_enforce,
+						    (slurmdb_association_rec_t **)
+						    &job_ptr->assoc_ptr)) {
+				job_ptr->state_reason = WAIT_NO_REASON;
+				job_ptr->assoc_id = assoc_rec.id;
+			} else {
+				continue;
+			}
+		}
+		if (job_ptr->qos_id) {
+			slurmdb_association_rec_t *assoc_ptr;
+			assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+			if (assoc_ptr &&
+			    !bit_test(assoc_ptr->usage->valid_qos,
+				      job_ptr->qos_id)) {
+				info("sched: JobId=%u has invalid QOS",
+					job_ptr->job_id);
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = FAIL_QOS;
+				continue;
+			} else if (job_ptr->state_reason == FAIL_QOS) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = WAIT_NO_REASON;
+			}
+		}
+
+		if ((job_ptr->state_reason == WAIT_QOS_JOB_LIMIT) ||
+		    (job_ptr->state_reason == WAIT_QOS_RESOURCE_LIMIT) ||
+		    (job_ptr->state_reason == WAIT_QOS_TIME_LIMIT)) {
+			job_ptr->state_reason = WAIT_NO_REASON;
+			acct_policy_job_runnable(job_ptr);
+		}
+
+		if ((job_ptr->state_reason == WAIT_NODE_NOT_AVAIL) &&
+		    job_ptr->details && job_ptr->details->req_node_bitmap &&
+		    !bit_super_set(job_ptr->details->req_node_bitmap,
+				   avail_node_bitmap)) {
+			continue;
+		}
+
+		if (bit_overlap(avail_node_bitmap,
+				job_ptr->part_ptr->node_bitmap) == 0) {
+			/* All nodes DRAIN, DOWN, or
+			 * reserved for jobs in higher priority partition */
+			job_ptr->state_reason = WAIT_RESOURCES;
+			continue;
+		}
+		if (license_job_test(job_ptr, now) != SLURM_SUCCESS) {
+			job_ptr->state_reason = WAIT_LICENSES;
+			xfree(job_ptr->state_desc);
+			continue;
+		}
+
+		if (assoc_mgr_validate_assoc_id(acct_db_conn,
+						job_ptr->assoc_id,
+						accounting_enforce)) {
+			/* NOTE: This only happens if a user's account is
+			 * disabled between when the job was submitted and
+			 * the time we consider running it. It should be
+			 * very rare. */
+			info("sched: JobId=%u has invalid account",
+			     job_ptr->job_id);
+			last_job_update = now);
+			job_ptr->state_reason = FAIL_ACCOUNT;
+			xfree(job_ptr->state_desc);
+			continue;
+		}
+
+		if (job_ptr->details && job_ptr->details->req_node_bitmap)
+			have_node_bitmaps = true;
+		else
+			have_node_bitmaps = false;
+		if (have_node_bitmaps &&
+		    (bit_overlap(job_ptr->details->req_node_bitmap,
+				 fini_job_ptr->job_resrcs->node_bitmap) == 0))
+			break;
+
 		if (!job_ptr->batch_flag)   /* Can't pull interactive jobs */
 			break;
+
+		if (have_node_bitmaps)
+			orig_req_bitmap = job_ptr->details->req_node_bitmap;
+		else
+			orig_req_bitmap = NULL;
+		job_ptr->details->req_node_bitmap =
+			bit_copy(fini_job_ptr->job_resrcs->node_bitmap);
+/* FIXME: select_nodes() can be vastly streamlined to only use the resources
+ *	  just released by fini_job  */
 		error_code = select_nodes(job_ptr, false, NULL);
+		bit_free(job_ptr->details->req_node_bitmap);
+		job_ptr->details->req_node_bitmap = orig_req_bitmap;
 		if (error_code == SLURM_SUCCESS) {
-			last_job_update = time(NULL);
+			last_job_update = now;
 			info("sched: Allocate JobId=%u NodeList=%s #CPUs=%u",
 			     job_ptr->job_id, job_ptr->nodes,
 			     job_ptr->total_cpus);
-			launch_msg = build_launch_job_msg(job_ptr);
+			if (job_ptr->details->prolog_running == 0)
+				launch_msg = build_launch_job_msg(job_ptr);
 		}
 		break;
 	}
