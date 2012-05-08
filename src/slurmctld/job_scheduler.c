@@ -350,7 +350,7 @@ static void do_diag_stats(struct timeval tv1, struct timeval tv2)
  * message type, alternately send a return code fo SLURM_SUCCESS
  * msg IN - The original message from slurmd
  * fini_job_ptr IN - Pointer to job that just completed and needs replacement
- * RET true if job has been scheduled
+ * RET true if there are pending jobs that might use the resources
  */
 extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 {
@@ -363,7 +363,7 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 	ListIterator job_iterator;
 	batch_job_launch_msg_t *launch_msg = NULL;
 	bitstr_t *orig_exc_bitmap = NULL;
-	bool have_node_bitmaps;
+	bool have_node_bitmaps, pending_jobs = false;
 	time_t now = time(NULL);
 	int error_code;
 
@@ -451,6 +451,7 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 			job_ptr->state_reason = WAIT_RESOURCES;
 			continue;
 		}
+
 		if (license_job_test(job_ptr, now) != SLURM_SUCCESS) {
 			job_ptr->state_reason = WAIT_LICENSES;
 			xfree(job_ptr->state_desc);
@@ -479,10 +480,12 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 		if (have_node_bitmaps &&
 		    (bit_overlap(job_ptr->details->exc_node_bitmap,
 				 fini_job_ptr->job_resrcs->node_bitmap) != 0))
-			break;
+			continue;
 
-		if (!job_ptr->batch_flag)   /* Can't pull interactive jobs */
+		if (!job_ptr->batch_flag) {  /* Can't pull interactive jobs */
+			pending_jobs = true;
 			break;
+		}
 
 		if (have_node_bitmaps)
 			orig_exc_bitmap = job_ptr->details->exc_node_bitmap;
@@ -516,10 +519,10 @@ send_reply:
 		response_msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
 		response_msg.data = launch_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		return true;
+		return false;
 	}
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
-	return false;
+	return pending_jobs;
 }
 
 /*
@@ -554,6 +557,7 @@ extern int schedule(uint32_t job_limit)
 #endif
 	static time_t sched_update = 0;
 	static bool wiki_sched = false;
+	static bool fifo_sched = false;
 	static int sched_timeout = 0;
 	static int def_job_limit = 100;
 	time_t now = time(NULL), sched_start;
@@ -570,6 +574,8 @@ extern int schedule(uint32_t job_limit)
 		if (strcmp(sched_type, "sched/backfill") == 0)
 			backfill_sched = true;
 #endif
+		if (strcmp(sched_type, "sched/builtin") == 0)
+			fifo_sched = true;
 		/* Disable avoiding of fragmentation with sched/wiki */
 		if ((strcmp(sched_type, "sched/wiki") == 0) ||
 		    (strcmp(sched_type, "sched/wiki2") == 0))
@@ -645,9 +651,20 @@ extern int schedule(uint32_t job_limit)
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 
 	debug("sched: Running job scheduler");
+	/* NOTE: If a job is submitted to multiple partitions then
+	 * build_job_queue will return a separate record for each
+	 * job:partition pair */
 	job_queue = build_job_queue(false);
 	slurmctld_diag_stats.schedule_queue_len = list_count(job_queue);
-	while ((job_queue_rec = list_pop_bottom(job_queue, sort_job_queue2))) {
+	while (1) {
+		if (fifo_sched) {
+			job_queue_rec = list_pop(job_queue);
+		} else {
+			job_queue_rec = list_pop_bottom(job_queue,
+							sort_job_queue2);
+		}
+		if (!job_queue_rec)
+			break;
 		job_ptr  = job_queue_rec->job_ptr;
 		part_ptr = job_queue_rec->part_ptr;
 		/* Cycle through partitions usable for this job */

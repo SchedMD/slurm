@@ -1488,10 +1488,10 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 
 
 	lock_slurmctld(job_write_lock);
+	job_ptr = find_job_record(comp_msg->job_id);
 
 	/* Send batch step info to accounting */
-	if (association_based_accounting &&
-	    (job_ptr = find_job_record(comp_msg->job_id))) {
+	if (association_based_accounting && job_ptr) {
 		struct step_record batch_step;
 		memset(&batch_step, 0, sizeof(struct step_record));
 		batch_step.job_ptr = job_ptr;
@@ -1515,8 +1515,6 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	}
 
 #ifdef HAVE_FRONT_END
-	if (!job_ptr)
-		job_ptr = find_job_record(comp_msg->job_id);
 	if (job_ptr && job_ptr->front_end_ptr)
 		nodes = job_ptr->front_end_ptr->name;
 	msg_title = "front_end";
@@ -1630,7 +1628,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		slurmctld_diag_stats.jobs_completed++;
 		dump_job = true;
 		if ((msg->msg_type == REQUEST_COMPLETE_BATCH_JOB) &&
-		    !replace_batch_job(msg, job_ptr))
+		    replace_batch_job(msg, job_ptr))
 			run_sched = true;
 	}
 
