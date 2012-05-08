@@ -36,6 +36,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@HAVE_NRT_TRUE@@REAL_BGQ_LOADED_FALSE@am__append_1 = poe
 subdir = src/plugins/launch
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -97,7 +98,7 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = $(SUBDIRS)
+DIST_SUBDIRS = slurm poe runjob
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -233,6 +234,7 @@ PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_LIBS = @PTHREAD_LIBS@
 RANLIB = @RANLIB@
 READLINE_LIBS = @READLINE_LIBS@
+REAL_BGQ_LOADED = @REAL_BGQ_LOADED@
 REAL_BG_L_P_LOADED = @REAL_BG_L_P_LOADED@
 RELEASE = @RELEASE@
 RUNJOB_LDFLAGS = @RUNJOB_LDFLAGS@
@@ -323,7 +325,8 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = poe runjob slurm
+@REAL_BGQ_LOADED_FALSE@SUBDIRS = slurm $(am__append_1)
+@REAL_BGQ_LOADED_TRUE@SUBDIRS = runjob $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:

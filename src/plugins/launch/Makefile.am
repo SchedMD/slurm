@@ -1,3 +1,10 @@
 # Makefile for launch plugins
 
-SUBDIRS = poe runjob slurm
+if REAL_BGQ_LOADED
+SUBDIRS = runjob
+else
+SUBDIRS = slurm
+if HAVE_NRT
+SUBDIRS += poe
+endif
+endif

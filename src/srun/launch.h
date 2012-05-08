@@ -43,9 +43,15 @@
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
+
+#include "src/common/xstring.h"
+
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
-#include "src/srun/task_state.h"
+#include "src/srun/debugger.h"
+
+extern slurm_step_layout_t *launch_common_get_slurm_step_layout(
+	srun_job_t *job);
 
 extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 					 void (*signal_function)(int),
@@ -53,9 +59,19 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 extern int launch_init(void);
 extern int launch_fini(void);
+extern int launch_p_setup_srun_opt(char **rest);
+
 extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
 				    sig_atomic_t *destroy_job);
-extern int launch_g_step_launch(srun_job_t *job, task_state_t *task_state);
+extern int launch_g_step_launch(
+	srun_job_t *job, slurm_step_io_fds_t *cio_fds,
+	uint32_t *global_rc, bool got_alloc, bool *srun_shutdown);
+
+extern int launch_g_step_terminate(void);
+
+extern void launch_g_print_status(void);
+
+extern void launch_g_fwd_signal(int signal);
 
 #endif /* _LAUNCH_H */

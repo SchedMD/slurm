@@ -34,20 +34,28 @@
 \*****************************************************************************/
 
 #include <stdlib.h>
+#include <fcntl.h>
 
 #include "src/srun/launch.h"
-#include "src/srun/debugger.h"
 
 #include "src/common/env.h"
 #include "src/common/xstring.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/xsignal.h"
 
 typedef struct {
+	int (*setup_srun_opt)      (char **rest);
 	int (*create_job_step)     (srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
 				    sig_atomic_t *destroy_job);
-	int (*step_launch)         (srun_job_t *job, task_state_t *task_state);
+	int (*step_launch)         (srun_job_t *job,
+				    slurm_step_io_fds_t *cio_fds,
+				    uint32_t *global_rc, bool got_alloc,
+				    bool *srun_shutdown);
+	int (*step_terminate)      (void);
+	void (*print_status)       (void);
+	void (*fwd_signal)         (int signal);
 } plugin_ops_t;
 
 typedef struct {
@@ -68,13 +76,18 @@ static pthread_mutex_t	 plugin_context_lock =
 static plugin_ops_t * _get_ops(plugin_context_t *c)
 {
 	/*
-	 * Must be synchronized with slurm_acct_storage_ops_t above.
+	 * Must be synchronized with plugin_ops_t above.
 	 */
 	static const char *syms[] = {
+		"launch_p_setup_srun_opt",
 		"launch_p_create_job_step",
-		"launch_p_step_launch"
+		"launch_p_step_launch",
+		"launch_p_step_terminate",
+		"launch_p_print_status",
+		"launch_p_fwd_signal"
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
+	char *plugin_type = "launch";
 
 	/* Find the correct plugin. */
 	c->cur_plugin = plugin_load_and_link(c->type, n_syms, syms,
@@ -100,7 +113,7 @@ static plugin_ops_t * _get_ops(plugin_context_t *c)
 			error("cannot create plugin manager");
 			return NULL;
 		}
-		plugrack_set_major_type(c->plugin_list, "launch");
+		plugrack_set_major_type(c->plugin_list, plugin_type);
 		plugrack_set_paranoia(c->plugin_list,
 				      PLUGRACK_PARANOIA_NONE,
 				      0);
@@ -111,14 +124,14 @@ static plugin_ops_t * _get_ops(plugin_context_t *c)
 
 	c->cur_plugin = plugrack_use_by_type(c->plugin_list, c->type);
 	if (c->cur_plugin == PLUGIN_INVALID_HANDLE) {
-		error("cannot find accounting_storage plugin for %s", c->type);
+		error("cannot find %s plugin for %s", plugin_type, c->type);
 		return NULL;
 	}
 
 	/* Dereference the API. */
 	if (plugin_get_syms(c->cur_plugin, n_syms, syms,
 			    (void **) &c->ops) < n_syms ) {
-		error("incomplete acct_storage plugin detected");
+		error("incomplete %s plugin detected", plugin_type);
 		return NULL;
 	}
 
@@ -169,7 +182,7 @@ static int _context_destroy(plugin_context_t *c)
 }
 
 /*
- * Initialize context for acct_storage plugin
+ * Initialize context for plugin
  */
 extern int launch_init(void)
 {
@@ -180,10 +193,10 @@ extern int launch_init(void)
 
 	if (plugin_context)
 		goto done;
-	type = slurm_get_accounting_storage_type();
+	type = slurm_get_launch_type();
 
 	if (!(plugin_context = _context_create(type))) {
-		error("cannot create acct_storage context for %s", type);
+		error("cannot create launch context for %s", type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
@@ -215,6 +228,19 @@ extern int location_fini(void)
 	return rc;
 }
 
+extern slurm_step_layout_t *launch_common_get_slurm_step_layout(srun_job_t *job)
+{
+	job_step_create_response_msg_t *resp;
+
+	if (!job || !job->step_ctx)
+		return (NULL);
+
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &resp);
+	if (!resp)
+	    return (NULL);
+	return (resp->step_layout);
+}
+
 extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 					 void (*signal_function)(int),
 					 sig_atomic_t *destroy_job)
@@ -232,13 +258,6 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	job->ctx_params.job_id = job->jobid;
 	job->ctx_params.uid = opt.uid;
 
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
-	/* On a Q and onward this we don't add this. */
-#else
-	/* set the jobid for totalview */
-	totalview_jobid = NULL;
-	xstrfmtcat(totalview_jobid, "%u", job->ctx_params.job_id);
-#endif
 	/* Validate minimum and maximum node counts */
 	if (opt.min_nodes && opt.max_nodes &&
 	    (opt.min_nodes > opt.max_nodes)) {
@@ -410,6 +429,14 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	return SLURM_SUCCESS;
 }
 
+extern int launch_g_setup_srun_opt(char **rest)
+{
+	if (launch_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(plugin_context->ops.setup_srun_opt))(rest);
+}
+
 extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
 				    sig_atomic_t *destroy_job)
@@ -422,10 +449,37 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 							destroy_job);
 }
 
-extern int launch_g_step_launch(srun_job_t *job, task_state_t *task_state)
+extern int launch_g_step_launch(
+	srun_job_t *job, slurm_step_io_fds_t *cio_fds,
+	uint32_t *global_rc, bool got_alloc, bool *srun_shutdown)
 {
 	if (launch_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(plugin_context->ops.step_launch))(job, task_state);
+	return (*(plugin_context->ops.step_launch))(job, cio_fds, global_rc,
+						    got_alloc, srun_shutdown);
+}
+
+extern int launch_g_step_terminate(void)
+{
+	if (launch_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(plugin_context->ops.step_terminate))();
+}
+
+extern void launch_g_print_status(void)
+{
+	if (launch_init() < 0)
+		return;
+
+	(*(plugin_context->ops.print_status))();
+}
+
+extern void launch_g_fwd_signal(int signal)
+{
+	if (launch_init() < 0)
+		return;
+
+	(*(plugin_context->ops.fwd_signal))(signal);
 }
