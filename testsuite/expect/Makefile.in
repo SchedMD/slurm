@@ -513,6 +513,7 @@ EXTRA_DIST = \
 	test9.7.bash			\
 	test9.8				\
 	test9.9				\
+	test9.9.bash			\
 	test10.1			\
 	test10.2			\
 	test10.3			\

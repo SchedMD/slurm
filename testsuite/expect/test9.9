@@ -31,37 +31,23 @@ source ./globals
 
 set test_id	"9.9"
 set exit_code   0
-set job_cnt   2000
+set job_cnt     2000
+set test_script "./test$test_id.bash"
 
 print_header $test_id
 
-# if {[test_front_end] != 0 || $enable_memory_leak_debug != 0} {
-# 	set job_cnt 2
-# }
+if {[test_front_end] != 0 || $enable_memory_leak_debug != 0} {
+	set job_cnt 2
+}
 
 proc _submit_jobs { job_name test_file } {
-	global exit_code job_cnt sbatch srun number
+	global exit_code job_cnt sbatch test_script
 
 	log_user 0
-	for {set inx 0} {$inx < $job_cnt} {incr inx} {
-		spawn -nottyinit -nottycopy $sbatch -J $job_name -o $test_file --wrap $job_name
-		#spawn $srun -J $job_name -o $test_file $job_name
-		expect {
-# 			-re "Submitted batch job ($number)" {
-# 				exp_continue
-# 			}
-# 			-re "Unable to contact" {
-# 				send_user "\nFAILURE: slurm appears to be down\n"
-# 				exp_continue
-# 			}
-# 			timeout {
-# 				send_user "\nFAILURE: sbatch not responding\n"
-# 				slow_kill $sbatch_pid
-# 				set exit_code 1
-# 			}
-			eof {
-				wait
-			}
+	spawn -nottyinit -nottycopy $test_script $sbatch "/bin/hostname" $job_name $job_cnt
+	expect {
+		eof {
+			wait
 		}
 	}
 	log_user 1
