@@ -755,6 +755,9 @@ CMD_LDFLAGS
 BLUEGENE_LOADED
 BLUEGENE_LOADED_FALSE
 BLUEGENE_LOADED_TRUE
+REAL_BGQ_LOADED
+REAL_BGQ_LOADED_FALSE
+REAL_BGQ_LOADED_TRUE
 BGQ_LOADED
 BGQ_LOADED_FALSE
 BGQ_LOADED_TRUE
@@ -5327,6 +5330,17 @@ else
   BGQ_LOADED_TRUE='#'
   BGQ_LOADED_FALSE=
 fi
+
+
+
+ if test "x$ac_real_bluegene_loaded" = "xyes"; then
+  REAL_BGQ_LOADED_TRUE=
+  REAL_BGQ_LOADED_FALSE='#'
+else
+  REAL_BGQ_LOADED_TRUE='#'
+  REAL_BGQ_LOADED_FALSE=
+fi
+
 
 
 
@@ -22131,6 +22145,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BGQ_LOADED_TRUE}" && test -z "${BGQ_LOADED_FALSE}"; then
   as_fn_error $? "conditional \"BGQ_LOADED\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${REAL_BGQ_LOADED_TRUE}" && test -z "${REAL_BGQ_LOADED_FALSE}"; then
+  as_fn_error $? "conditional \"REAL_BGQ_LOADED\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BLUEGENE_LOADED_TRUE}" && test -z "${BLUEGENE_LOADED_FALSE}"; then
