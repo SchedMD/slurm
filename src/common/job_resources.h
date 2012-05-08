@@ -154,15 +154,6 @@ extern int build_job_resources_cpu_array(job_resources_t *job_resrcs_ptr);
  * Return total CPU count or -1 on error */
 extern int build_job_resources_cpus_array(job_resources_t *job_resrcs_ptr);
 
-/*
- * Given that one batch job just completed, attempt to launch a suitable
- * replacement batch job in a response messge as a REQUEST_BATCH_JOB_LAUNCH
- * message type, alternately send a return code fo SLURM_SUCCESS
- * msg IN - The original message from slurmd
- * fini_job_ptr IN - Pointer to job that just completed and needs replacement
- */
-extern void replace_batch_job(slurm_msg_t * msg, void *fini_job_ptr);
-
 /* Validate a job_resources data structure originally built using
  * build_job_resources() is still valid based upon slurmctld state.
  * NOTE: Reset the node_bitmap field before calling this function.

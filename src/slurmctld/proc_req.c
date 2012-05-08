@@ -1464,7 +1464,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	};
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	bool job_requeue = false;
-	bool dump_job = false, dump_node = false;
+	bool dump_job = false, dump_node = false, run_sched = false;
 	struct job_record *job_ptr = NULL;
 	char *msg_title = "node(s)";
 	char *nodes = comp_msg->node_name;
@@ -1629,10 +1629,13 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		       comp_msg->job_id, TIME_STR);
 		slurmctld_diag_stats.jobs_completed++;
 		dump_job = true;
-		if (msg->msg_type == REQUEST_COMPLETE_BATCH_JOB)
-			replace_batch_job(msg, job_ptr);
+		if ((msg->msg_type == REQUEST_COMPLETE_BATCH_JOB) &&
+		    !replace_batch_job(msg, job_ptr))
+			run_sched = true;
 	}
 
+	if (run_sched)
+		(void) schedule(0);
 	if (dump_job)
 		(void) schedule_job_save();	/* Has own locking */
 	if (dump_node)

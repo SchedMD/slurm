@@ -350,8 +350,9 @@ static void do_diag_stats(struct timeval tv1, struct timeval tv2)
  * message type, alternately send a return code fo SLURM_SUCCESS
  * msg IN - The original message from slurmd
  * fini_job_ptr IN - Pointer to job that just completed and needs replacement
+ * RET true if job has been scheduled
  */
-extern void replace_batch_job(slurm_msg_t * msg, void *fini_job)
+extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 {
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
@@ -371,11 +372,11 @@ extern void replace_batch_job(slurm_msg_t * msg, void *fini_job)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!IS_JOB_PENDING(job_ptr) || (job_ptr->priority == 0))
 			continue;
-/* FIXME: LOTS OF JOB VALIDATION, PROLOG, ETC. NEEDS TO HAPPEN HERE */
+/* FIXME: LOTS OF JOB VALIDATION, PROLOG, ETC. NEEDS TO HAPPEN HERE  */
 /* FIXME: select_nodes() can be vastly streamlined to only use the resources
- *	  just released by fini_job */
-		if (!job_ptr->batch_flag)
-			continue;
+ *	  just released by fini_job  */
+		if (!job_ptr->batch_flag)   /* Can't pull interactive jobs */
+			break;
 		error_code = select_nodes(job_ptr, false, NULL);
 		if (error_code == SLURM_SUCCESS) {
 			last_job_update = time(NULL);
@@ -397,8 +398,10 @@ no_test: unlock_slurmctld(job_write_lock);
 		response_msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
 		response_msg.data = launch_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-	} else
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		return true;
+	}
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	return false;
 }
 
 /*

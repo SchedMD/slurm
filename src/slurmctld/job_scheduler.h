@@ -124,6 +124,16 @@ extern int prolog_slurmctld(struct job_record *job_ptr);
 extern void rebuild_job_part_list(struct job_record *job_ptr);
 
 /*
+ * Given that one batch job just completed, attempt to launch a suitable
+ * replacement batch job in a response messge as a REQUEST_BATCH_JOB_LAUNCH
+ * message type, alternately send a return code fo SLURM_SUCCESS
+ * msg IN - The original message from slurmd
+ * fini_job_ptr IN - Pointer to job that just completed and needs replacement
+ * RET true if job has been scheduled
+ */
+extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job);
+
+/*
  * schedule - attempt to schedule all pending jobs
  *	pending jobs for each partition will be scheduled in priority
  *	order until a request fails
