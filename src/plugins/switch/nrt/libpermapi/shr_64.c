@@ -53,11 +53,9 @@
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
 #include "src/srun/allocate.h"
-#include "src/srun/task_state.h"
 
 void *my_handle = NULL;
 srun_job_t *job = NULL;
-task_state_t task_state;
 
 extern char **environ;
 
@@ -208,7 +206,6 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 
 	info("got pe_rm_connect called %p %d", rm_sockfds, rm_sockfds[0]);
 
-	task_state = task_state_create(1);
 	slurm_step_launch_params_t_init(&launch_params);
 	launch_params.gid = opt.gid;
 	launch_params.alias_list = job->alias_list;
@@ -584,6 +581,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	resource_allocation_response_msg_t *resp;
 	job_request_t *pe_job_req = NULL;
 	job_info_t *pe_job_info = NULL;
+	char *myargv[2] = { "poe", NULL };
 
 	info("got pe_rm_submit_job called %d", job_cmd.job_format);
 	if (job_cmd.job_format != 1) {
@@ -595,87 +593,43 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	pe_job_req = (job_request_t *)job_cmd.job_command;
 
 	info("job_type\t= %d", pe_job_req->job_type);
+
 	info("num_nodes\t= %d", pe_job_req->num_nodes);
+	if (pe_job_req->num_nodes != -1)
+		opt.max_nodes = opt.min_nodes = pe_job_req->num_nodes;
+
 	info("tasks_per_node\t= %d", pe_job_req->tasks_per_node);
+	if (pe_job_req->tasks_per_node != -1)
+		opt.ntasks_per_node = pe_job_req->tasks_per_node;
+
 	info("total_tasks\t= %d", pe_job_req->total_tasks);
+	if (pe_job_req->total_tasks != -1) {
+		opt.ntasks_set = true;
+		opt.ntasks = pe_job_req->total_tasks;
+	}
+
 	info("usage_mode\t= %d", pe_job_req->node_usage);
+
 	//info("netowrk_usage\t= %d", pe_job_req->network_usage);
+
 	info("check_pointable\t= %d", pe_job_req->check_pointable);
+
 	info("check_dir\t= %s", pe_job_req->check_dir);
+
 	info("task_affinity\t= %s", pe_job_req->task_affinity);
+
 	info("pthreads\t= %d", pe_job_req->parallel_threads);
-	info("pool\t= %s", pe_job_req->pool);
+
+	/* info("pool\t= %s", pe_job_req->pool); */
+	/* opt.partition = xstrdup(pe_job_req->pool); */
+
 	info("save_job\t= %s", pe_job_req->save_job_file);
+
 	info("require\t= %s", pe_job_req->requirements);
+
 	info("node_topology\t= %s", pe_job_req->node_topology);
+	initialize_and_process_args(1, myargv);
 
-	int i;
-	char *saved_argv = getenv("MP_I_SAVED_ARGV"),
-		*tmp_char = NULL, *walking_char = NULL;
-	int my_argc = 1;
-	char **my_argv;
-	tmp_char = saved_argv;
-	i = 0;
-	while (tmp_char[i]) {
-		if (tmp_char[i] != ' ') {
-			i++;
-			continue;
-		}
-		i++;
-		while (tmp_char[i] && tmp_char[i] == ' ') {
-			i++;
-		}
-		my_argc++;
-	}
-	my_argv = (char **) xmalloc((my_argc + 1) * sizeof(char *));
-	tmp_char = xstrdup(saved_argv);
-	walking_char = tmp_char;
-	my_argc = 0;
-	i = 0;
-	while (tmp_char[i]) {
-		if (tmp_char[i] != ' ') {
-			i++;
-			continue;
-		}
-		tmp_char[i] = '\0';
-		i++;
-		my_argv[my_argc] = xstrdup(walking_char);
-		my_argc++;
-
-		while (tmp_char[i] && tmp_char[i] == ' ')
-			i++;
-		walking_char = tmp_char + i;
-	}
-	if (walking_char) {
-		my_argv[my_argc] = xstrdup(walking_char);
-		my_argc++;
-	}
-	xfree(tmp_char);
-
-	/* if (environ == NULL) { */
-	/* 	error("no environ"); */
-	/* 	return 1; */
-	/* } */
-	/* for (i=0; environ[i]; i++) { */
-	/* 	info("%s", environ[i]); */
-	/* } */
-
-	initialize_and_process_args(my_argc, my_argv);
-	i = 0;
-	while(my_argv[i]) {
-		//info("freeing %s", my_argv[i]);
-		xfree(my_argv[i]);
-		i++;
-	}
-	xfree(my_argv);
-
-	/* opt.min_nodes = pe_job_req->num_nodes; */
-	/* if (pe_job_req->tasks_per_node != -1) */
-	/* 	opt.ntasks_per_node = pe_job_req->tasks_per_node; */
-	/* opt.ntasks = pe_job_req->total_tasks; */
-	info("got part of %s", opt.partition);
-	if (!opt.partition)
-		opt.partition = xstrdup(pe_job_req->pool);
 /* 	/\* now global "opt" should be filled in and available, */
 /* 	 * create a job from opt */
 /* 	 *\/ */
@@ -693,42 +647,42 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 /* 		if (create_job_step(job, false) < 0) { */
 /* 			exit(error_exit); */
 /* 		} */
-/* 	} else if ((resp = existing_allocation())) { */
-/* 		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, */
-/* 					&resp->node_cnt); */
-/* 		if (opt.nodes_set_env && !opt.nodes_set_opt && */
-/* 		    (opt.min_nodes > resp->node_cnt)) { */
-/* 			/\* This signifies the job used the --no-kill option */
-/* 			 * and a node went DOWN or it used a node count range */
-/* 			 * specification, was checkpointed from one size and */
-/* 			 * restarted at a different size *\/ */
-/* 			error("SLURM_NNODES environment varariable " */
-/* 			      "conflicts with allocated node count (%u!=%u).", */
-/* 			      opt.min_nodes, resp->node_cnt); */
-/* 			/\* Modify options to match resource allocation. */
-/* 			 * NOTE: Some options are not supported *\/ */
-/* 			opt.min_nodes = resp->node_cnt; */
-/* 			xfree(opt.alloc_nodelist); */
-/* 			if (!opt.ntasks_set) */
-/* 				opt.ntasks = opt.min_nodes; */
-/* 		} */
-/* 		if (opt.alloc_nodelist == NULL) */
-/* 			opt.alloc_nodelist = xstrdup(resp->node_list); */
-/* 		if (opt.exclusive) */
-/* 			_step_opt_exclusive(); */
-/* 		_set_env_vars(resp); */
-/* 		if (_validate_relative(resp)) */
-/* 			exit(error_exit); */
-/* 		job = job_step_create_allocation(resp); */
-/* 		slurm_free_resource_allocation_response_msg(resp); */
+	/* if ((resp = existing_allocation())) { */
+	/* 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, */
+	/* 				&resp->node_cnt); */
+	/* 	if (opt.nodes_set_env && !opt.nodes_set_opt && */
+	/* 	    (opt.min_nodes > resp->node_cnt)) { */
+	/* 		/\* This signifies the job used the --no-kill option */
+	/* 		 * and a node went DOWN or it used a node count range */
+	/* 		 * specification, was checkpointed from one size and */
+	/* 		 * restarted at a different size *\/ */
+	/* 		error("SLURM_NNODES environment varariable " */
+	/* 		      "conflicts with allocated node count (%u!=%u).", */
+	/* 		      opt.min_nodes, resp->node_cnt); */
+	/* 		/\* Modify options to match resource allocation. */
+	/* 		 * NOTE: Some options are not supported *\/ */
+	/* 		opt.min_nodes = resp->node_cnt; */
+	/* 		xfree(opt.alloc_nodelist); */
+	/* 		if (!opt.ntasks_set) */
+	/* 			opt.ntasks = opt.min_nodes; */
+	/* 	} */
+	/* 	if (opt.alloc_nodelist == NULL) */
+	/* 		opt.alloc_nodelist = xstrdup(resp->node_list); */
+	/* 	if (opt.exclusive) */
+	/* 		_step_opt_exclusive(); */
+	/* 	_set_env_vars(resp); */
+	/* 	if (_validate_relative(resp)) */
+	/* 		exit(error_exit); */
+	/* 	job = job_step_create_allocation(resp); */
+	/* 	slurm_free_resource_allocation_response_msg(resp); */
 
-/* 		if (opt.begin != 0) { */
-/* 			error("--begin is ignored because nodes" */
-/* 			      " are already allocated."); */
-/* 		} */
-/* 		if (!job || create_job_step(job, false) < 0) */
-/* 			exit(error_exit); */
-/* 	} else { */
+	/* 	if (opt.begin != 0) { */
+	/* 		error("--begin is ignored because nodes" */
+	/* 		      " are already allocated."); */
+	/* 	} */
+	/* 	if (!job || create_job_step(job, false) < 0) */
+	/* 		exit(error_exit); */
+	/* } else { */
 /* 		/\* Combined job allocation and job step launch *\/ */
 /* #if defined HAVE_FRONT_END && (!defined HAVE_BG || defined HAVE_BG_L_P || !defined HAVE_BG_FILES) */
 /* 		uid_t my_uid = getuid(); */
