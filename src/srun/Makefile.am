@@ -3,7 +3,7 @@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 
-INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
+INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = srun
 
@@ -20,7 +20,6 @@ srun_SOURCES = \
 	allocate.h  \
 	launch.c launch.h \
 	multi_prog.c multi_prog.h \
-	task_state.c task_state.h \
 	srun.wrapper.c
 
 
@@ -35,7 +34,8 @@ srun_LDADD = \
 srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 if BGQ_LOADED
-srun_SOURCES += runjob_interface.cc
+# because totalview needs the libraries on load we link in srun
+# and not in the launch plugin.
 srun_LDFLAGS += $(RUNJOB_LDFLAGS)
 endif
 

@@ -25,8 +25,7 @@ libpermapi_la_SOURCES = shr_64.c \
 	$(srun_dir)/debugger.c    \
 	$(srun_dir)/fname.c     \
 	$(srun_dir)/allocate.c  \
-	$(srun_dir)/multi_prog.c \
-	$(srun_dir)/task_state.c
+	$(srun_dir)/multi_prog.c
 
 libpermapi_la_LDFLAGS = -export-dynamic $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
 	$(convenience_libs)
