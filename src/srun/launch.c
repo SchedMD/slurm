@@ -193,8 +193,8 @@ extern int launch_init(void)
 
 	if (plugin_context)
 		goto done;
-	type = slurm_get_launch_type();
 
+	type = slurm_get_launch_type();
 	if (!(plugin_context = _context_create(type))) {
 		error("cannot create launch context for %s", type);
 		retval = SLURM_ERROR;
