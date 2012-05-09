@@ -1455,7 +1455,7 @@ _slurmd_init(void)
 	if (!strcmp(conf->select_type, "select/serial")) {
 		/* Only cache credential for 5 seconds with select/serial
 		 * for shorter cache searches and higher throughput */
-		slurm_cred_ctx_set(conf->vctx, SLURM_CRED_OPT_EXPIRY_WINDOW, 2);
+		slurm_cred_ctx_set(conf->vctx, SLURM_CRED_OPT_EXPIRY_WINDOW, 5);
 	}
 
 	/*
