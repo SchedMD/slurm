@@ -834,11 +834,12 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->max_nodes = (uint32_t)temp_int;
 		break;
 	case SORTID_MEM_MIN:
-		temp_int = strtol(new_text, (char **)NULL, 10);
-		if (*p == 'k' || *p == 'K')
+		temp_int = strtol(new_text, &p, 10);
+		if (*p == 'g' || *p == 'G')
 			temp_int *= 1024;
-		else if (*p == 'm' || *p == 'M')
+		else if (*p == 't' || *p == 'T')
 			temp_int *= 1048576;
+
 		p = slurm_strcasestr((char *)new_text, "cpu");
 		if (p)
 			type = "min memory per cpu";
@@ -852,10 +853,10 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			job_msg->pn_min_memory |= MEM_PER_CPU;
 		break;
 	case SORTID_TMP_DISK:
-		temp_int = strtol(new_text, (char **)NULL, 10);
-		if (*p == 'k' || *p == 'K')
+		temp_int = strtol(new_text, &p, 10);
+		if (*p == 'g' || *p == 'G')
 			temp_int *= 1024;
-		else if (*p == 'm' || *p == 'M')
+		else if (*p == 't' || *p == 'T')
 			temp_int *= 1048576;
 
 		type = "min tmp disk per node";
