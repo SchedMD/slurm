@@ -31,7 +31,7 @@ source ./globals
 
 set test_id	"9.9"
 set exit_code   0
-set job_cnt     2000
+set job_cnt     5000
 set test_script "./test$test_id.bash"
 
 print_header $test_id
@@ -59,9 +59,8 @@ proc _submit_jobs { job_name test_file } {
 }
 
 set time_took [string trim [time {_submit_jobs "hostname" "/dev/null"}] " per iteration microseconds"]
-set time_took_sec [expr $time_took / 1000000]
-set time_per_job [expr $job_cnt / $time_took_sec]
-send_user "test 1 took $time_took microseconds == $time_took_sec seconds, $time_per_job jobs a sec\n"
+set jobs_per_sec [expr $job_cnt * 1000000 / $time_took]
+send_user "Ran $job_cnt jobs in $time_took microseconds or $jobs_per_sec jobs per second\n"
 
 if { $exit_code != 0 } {
 	exit $exit_code
