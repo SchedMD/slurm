@@ -700,9 +700,8 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
 				    sig_atomic_t *destroy_job)
 {
-	info("partition = %s", opt.partition);
 	poe_cmd_line = _build_poe_command(job->jobid);
-	info("command built");
+
  	return SLURM_SUCCESS;
 }
 
