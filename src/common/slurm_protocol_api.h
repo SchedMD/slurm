@@ -449,6 +449,12 @@ int slurm_set_accounting_storage_port(uint32_t storage_port);
  */
 char *slurm_get_launch_type(void);
 
+/* slurm_set_launch_type
+ * set launch_type in slurmctld_conf object
+ * RET 0 or error code
+ */
+int slurm_set_launch_type(char *launch_type);
+
 /* slurm_get_preempt_mode
  * returns the PreemptMode value from slurmctld_conf object
  * RET uint16_t   - PreemptMode value (See PREEMPT_MODE_* in slurm.h)

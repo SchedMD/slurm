@@ -1522,6 +1522,24 @@ char *slurm_get_launch_type(void)
 	return launch_type;
 }
 
+/* slurm_set_launch_type
+ * set launch_type in slurmctld_conf object
+ * RET 0 or error code
+ */
+int slurm_set_launch_type(char *launch_type)
+{
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		xfree(conf->launch_type);
+		conf->launch_type = xstrdup(launch_type);
+		slurm_conf_unlock();
+	}
+	return 0;
+}
+
 
 /* slurm_get_preempt_type
  * get PreemptType from slurmctld_conf object
