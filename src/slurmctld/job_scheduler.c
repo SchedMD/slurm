@@ -364,7 +364,7 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 	batch_job_launch_msg_t *launch_msg = NULL;
 	bitstr_t *orig_exc_bitmap = NULL;
 	bool have_node_bitmaps, pending_jobs = false;
-	time_t now = time(NULL);
+	time_t now, min_age;
 	int error_code;
 
 	if (select_serial == -1) {
@@ -376,6 +376,8 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 	if ((select_serial != 1) || (fini_job_ptr == NULL))
 		goto send_reply;
 
+	now = time(NULL);
+	min_age = now - slurmctld_conf.min_job_age;
 	lock_slurmctld(job_write_lock);
 	xassert(fini_job_ptr->job_resrcs);
 	xassert(fini_job_ptr->job_resrcs->node_bitmap);
@@ -387,7 +389,27 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 	if (job_iterator == NULL)
 		fatal("list_iterator_create memory allocation failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (!IS_JOB_PENDING(job_ptr) || (job_ptr->priority == 0))
+		if (job_ptr == fini_job_ptr)
+			continue;
+
+		if (!IS_JOB_PENDING(job_ptr)) {
+			if (IS_JOB_FINISHED(job_ptr)  &&
+			    (job_ptr == fini_job_ptr) &&
+			    (job_ptr->end_time <= min_age)) {
+				/* If we don't have a db_index by now and we
+				 * are running with the slurmdbd lets put it on
+				 * the list to be handled later when it comes
+				 * back up since we won't get another chance */
+				if (with_slurmdbd && !job_ptr->db_index) {
+					jobacct_storage_g_job_start(acct_db_conn,
+								    job_ptr);
+				}
+				list_delete_item(job_iterator);
+			}
+			continue;
+		}
+
+		if (job_ptr->priority == 0)
 			continue;
 
 		/* Tests dependencies, begin time and reservations */
@@ -446,9 +468,7 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 
 		if (bit_overlap(avail_node_bitmap,
 				job_ptr->part_ptr->node_bitmap) == 0) {
-			/* All nodes DRAIN, DOWN, or
-			 * reserved for jobs in higher priority partition */
-			job_ptr->state_reason = WAIT_RESOURCES;
+			/* This node DRAIN or DOWN */
 			continue;
 		}
 
