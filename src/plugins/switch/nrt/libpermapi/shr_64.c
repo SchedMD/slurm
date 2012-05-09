@@ -45,15 +45,19 @@
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
-#include <slurm/slurm.h>
 
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
 #include "src/srun/allocate.h"
+#include "src/srun/launch.h"
 
 void *my_handle = NULL;
 srun_job_t *job = NULL;
@@ -416,16 +420,20 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 			      char ** error_msg)
 {
 	job_info_t *ret_info = xmalloc(sizeof(job_info_t));
+	int i, j, task_id = 0;
+	slurm_step_layout_t *step_layout;
+	hostlist_t hl;
+	char *host;
 
 	info("got pe_rm_get_job_info called %p %p", job_info, *job_info);
 
 	*job_info = ret_info;
 
-	ret_info->job_name = xstrdup("hostname");
+	ret_info->job_name = xstrdup(opt.job_name);
 	ret_info->rm_id = NULL;
-	ret_info->procs = 1;
+	ret_info->procs = job->ntasks;
 	ret_info->max_instances = 1;
-	ret_info->job_key = 1;
+	ret_info->job_key = job->stepid;
 	ret_info->check_pointable = 0;
 	ret_info->protocol = xmalloc(sizeof(char *)*2);
 	ret_info->protocol[0] = xstrdup("mpi");
@@ -436,22 +444,30 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	ret_info->devicename = xmalloc(sizeof(char *)*2);
 	ret_info->devicename[0] = xstrdup("sn_all");
 	ret_info->num_network = 1;
-	ret_info->host_count = 1;
+	ret_info->host_count = job->nhosts;
 
-	ret_info->hosts = xmalloc(sizeof(host_usage_t));
-	ret_info->hosts->task_count = 1;
-	ret_info->hosts->task_ids = xmalloc(sizeof(int));
-	*ret_info->hosts->task_ids = 0;
-	ret_info->hosts->host_name = xstrdup("localhost");
-	ret_info->hosts->virtual_ip = xstrdup("127.0.0.1");
-	ret_info->hosts->host_address = xstrdup("127.0.0.1");
+	step_layout = launch_common_get_slurm_step_layout(job);
 
-	ret_info->rset_name = NULL;
-	ret_info->master_virtual_ip = xstrdup("127.0.0.1");
-	ret_info->mdcr_jobid = 1;
-	ret_info->mdcr_netmask = NULL;
-	ret_info->ckptdir = NULL;
-	info("sending %d and %s", ret_info->instance[0], ret_info->devicename[0]);
+	ret_info->hosts = xmalloc(sizeof(host_usage_t) * ret_info->host_count);
+	i=0;
+	hl = hostlist_create(step_layout->node_list);
+	while ((host = hostlist_shift(hl))) {
+		ret_info->hosts->host_name = host;
+		ret_info->hosts->host_address =
+			xstrdup_printf("192.168.1.5%d", i+1);
+		ret_info->hosts->task_count = step_layout->tasks[i];
+		ret_info->hosts->task_ids =
+			xmalloc(sizeof(int) * ret_info->hosts->task_count);
+		for (j=0; j<ret_info->hosts->task_count; j++)
+			ret_info->hosts->task_ids[j] = task_id++;
+		i++;
+		if (i > ret_info->host_count) {
+			error("we have more nodes that we bargined for.");
+			break;
+		}
+	}
+	hostlist_destroy(hl);
+
 	return 0;
 }
 
@@ -597,6 +613,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 
 	pe_job_req = (job_request_t *)job_cmd.job_command;
 
+	initialize_and_process_args(2, myargv);
 	info("job_type\t= %d", pe_job_req->job_type);
 
 	info("num_nodes\t= %d", pe_job_req->num_nodes);
@@ -615,7 +632,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 
 	info("usage_mode\t= %d", pe_job_req->node_usage);
 
-	//info("netowrk_usage\t= %d", pe_job_req->network_usage);
+	info("netowrk_usage\t= %d", pe_job_req->network_usage);
 
 	info("check_pointable\t= %d", pe_job_req->check_pointable);
 
@@ -633,8 +650,6 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	info("require\t= %s", pe_job_req->requirements);
 
 	info("node_topology\t= %s", pe_job_req->node_topology);
-	initialize_and_process_args(2, myargv);
-
 /* 	/\* now global "opt" should be filled in and available, */
 /* 	 * create a job from opt */
 /* 	 *\/ */
@@ -652,9 +667,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 /* 		if (create_job_step(job, false) < 0) { */
 /* 			exit(error_exit); */
 /* 		} */
-	info("looking for existing alloc");
 	if ((resp = existing_allocation())) {
-		info("got an allocation");
 		if (opt.nodes_set_env && !opt.nodes_set_opt &&
 		    (opt.min_nodes > resp->node_cnt)) {
 			/* This signifies the job used the --no-kill option
@@ -678,7 +691,6 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		//_set_env_vars(resp);
 		//if (_validate_relative(resp))
 		//	exit(error_exit);
-		info("here before create");
 		job = job_step_create_allocation(resp);
 		slurm_free_resource_allocation_response_msg(resp);
 
@@ -686,11 +698,9 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 			error("--begin is ignored because nodes"
 			      " are already allocated.");
 		}
-		info("here before step create");
 		if (!job || create_job_step(job, false) < 0)
 			exit(error_exit);
 	} else {
-		info("new alloc needed");
 		/* Combined job allocation and job step launch */
 		if (opt.relative_set && opt.relative) {
 			fatal("--relative option invalid for job allocation "
