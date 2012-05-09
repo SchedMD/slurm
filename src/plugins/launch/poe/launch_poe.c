@@ -435,9 +435,9 @@ static char *_build_poe_command(uint32_t job_id)
 	if (opt.multi_prog) {
 		protocol = "multi";
 	} else {
-		protocol = _get_cmd_protocol(opt.argv[0]);
+		protocol = _get_cmd_protocol(opt.argv[1]);
 	}
-	debug("cmd:%s protcol:%s", opt.argv[0], protocol);
+	debug("cmd:%s protcol:%s", opt.argv[1], protocol);
 
 	step_id = _get_next_stepid(job_id, dname, sizeof(dname));
 
@@ -458,13 +458,13 @@ static char *_build_poe_command(uint32_t job_id)
 			fatal("creat(%s): %m", cmd_fname);
 		}
 
-		i = strlen(opt.argv[0]) + 128;
+		i = strlen(opt.argv[1]) + 128;
 		buf = xmalloc(i);
 		if (opt.multi_prog) {
 			char in_line[512];
-			FILE *fp = fopen(opt.argv[0], "r");
+			FILE *fp = fopen(opt.argv[1], "r");
 			if (!fp)
-				fatal("fopen(%s): %m", opt.argv[0]);
+				fatal("fopen(%s): %m", opt.argv[1]);
 			/* Read and parse SLURM MPMD format file here */
 			while (fgets(in_line, sizeof(in_line), fp))
 				_multi_prog_parse(in_line, 512, -1);
@@ -475,9 +475,9 @@ static char *_build_poe_command(uint32_t job_id)
 		} else {
 			/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args...>*/
 			xstrfmtcat(buf, "%s@%d%c%d%c%s:%d",
-				   opt.argv[0], step_id, '%',
+				   opt.argv[1], step_id, '%',
 				   opt.ntasks, '%', protocol, opt.ntasks);
-			for (i = 1; i < opt.argc; i++) /* start at argv[1] */
+			for (i = 2; i < opt.argc; i++) /* start at argv[2] */
 				xstrfmtcat(buf, " %s", opt.argv[i]);
 			xstrfmtcat(buf, "\n");
 		}
@@ -496,10 +496,10 @@ static char *_build_poe_command(uint32_t job_id)
 		setenv("MP_NEWJOB", "parallel", 1);
 		setenv("MP_CMDFILE", cmd_fname, 1);
 	} else {
-		xstrfmtcat(cmd_line, " %s", opt.argv[0]);
+		xstrfmtcat(cmd_line, " %s", opt.argv[1]);
 		/* Each token gets double quotes around it in case any
 		 * arguments contain spaces */
-		for (i = 1; i < opt.argc; i++) {
+		for (i = 2; i < opt.argc; i++) {
 			xstrfmtcat(cmd_line, " \"%s\"", opt.argv[i]);
 		}
 	}
@@ -681,9 +681,13 @@ extern int launch_p_setup_srun_opt(char **rest)
 		exit (1);
 	}
 
+	opt.argc++;
+
 	opt.argv = (char **) xmalloc((opt.argc + 1) * sizeof(char *));
 
-	return 0;
+	opt.argv[0] = xstrdup("poe");
+
+	return 1;
 }
 
 extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
@@ -711,11 +715,21 @@ extern int launch_p_step_launch(
 		error("pipe: %m");
 		return 1;
 	}
+	info("calling %s", opt.argv[0]);
 	pid = fork();
 	if (pid < 0) {
+		/* (void) close(stdin_pipe[0]); */
+		/* (void) close(stdin_pipe[1]); */
+		/* (void) close(stdout_pipe[0]); */
+		/* (void) close(stdout_pipe[1]); */
+		/* (void) close(stderr_pipe[0]); */
+		/* (void) close(stderr_pipe[1]); */
 		error("fork: %m");
 		return 1;
-	} else if (pid == 0) {
+	} else if (pid > 0) {
+		if (waitpid(pid, NULL, 0) < 0)
+			error("Unable to reap slurmd child process");
+	} else {
 		/* if ((dup2(stdin_pipe[0],  0) == -1) || */
 		/*     (dup2(stdout_pipe[1], 1) == -1) || */
 		/*     (dup2(stderr_pipe[1], 2) == -1)) { */
@@ -730,7 +744,7 @@ extern int launch_p_step_launch(
 		/* (void) close(stdout_pipe[0]); */
 		/* (void) close(stdout_pipe[1]); */
 
-		execvp("poe", opt.argv);
+		execvp(opt.argv[0], opt.argv);
 		error("execv(poe) error: %m");
 		return 1;
 	}
