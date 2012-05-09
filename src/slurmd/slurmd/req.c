@@ -1370,7 +1370,10 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 
 	/* On a busy system, slurmstepd may take a while to respond,
 	 * if the job was cancelled in the interim, run through the
-	 * abort logic below */
+	 * abort logic below.
+	 *
+	 * Alternately the job could have ended almost immediately and with
+	 * select/serial sent a REQUEST_COMPLETE_BATCH_SCRIPT RPC already */
 	if (slurm_cred_revoked(conf->vctx, req->cred)) {
 		info("Job %u killed while launch was in progress",
 		     req->job_id);
@@ -3305,7 +3308,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	}
 }
 
-/* Job shouldn't even be runnin here, abort it immediately */
+/* Job shouldn't even be running here, abort it immediately */
 static void
 _rpc_abort_job(slurm_msg_t *msg)
 {
