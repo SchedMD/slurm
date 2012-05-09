@@ -1261,7 +1261,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 	bool     first_job_run = true;
 	int      rc = SLURM_SUCCESS;
 	char    *resv_id = NULL;
-	bool	 replied = false;
+	bool	 replied = false, revoked;
 	slurm_addr_t *cli = &msg->orig_addr;
 
 	if (new_msg) {
@@ -1370,11 +1370,15 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 
 	/* On a busy system, slurmstepd may take a while to respond,
 	 * if the job was cancelled in the interim, run through the
-	 * abort logic below.
-	 *
-	 * Alternately the job could have ended almost immediately and with
-	 * select/serial sent a REQUEST_COMPLETE_BATCH_SCRIPT RPC already */
-	if (slurm_cred_revoked(conf->vctx, req->cred)) {
+	 * abort logic below. */
+	revoked = slurm_cred_revoked(conf->vctx, req->cred);
+	if (revoked && !strcmp(conf->select_type, "select/serial")) {
+		/* Assume REQUEST_COMPLETE_BATCH_SCRIPT already processed
+		 * and we do not need to repeat the termination logic and
+		 * send another response RPC */
+		revoked = false;
+	}
+	if (revoked) {
 		info("Job %u killed while launch was in progress",
 		     req->job_id);
 		sleep(1);	/* give slurmstepd time to create
