@@ -686,6 +686,12 @@ extern int launch_p_setup_srun_opt(char **rest)
 	opt.argv = (char **) xmalloc((opt.argc + 1) * sizeof(char *));
 
 	opt.argv[0] = xstrdup("poe");
+	/* Set default job name to the executable name rather than
+	 * "runjob" */
+	if (!opt.job_name_set_cmd && (1 < opt.argc)) {
+		opt.job_name_set_cmd = true;
+		opt.job_name = xstrdup(rest[0]);
+	}
 
 	return 1;
 }
