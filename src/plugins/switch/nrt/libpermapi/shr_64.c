@@ -40,6 +40,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <arpa/inet.h>
 
 #include "src/common/slurm_xlator.h"
 #ifdef HAVE_CONFIG_H
@@ -58,6 +59,7 @@
 #include "src/srun/opt.h"
 #include "src/srun/allocate.h"
 #include "src/srun/launch.h"
+#include "src/plugins/switch/nrt/nrt_keys.h"
 
 void *my_handle = NULL;
 srun_job_t *job = NULL;
@@ -179,6 +181,21 @@ _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 			}
 		}
 	}
+}
+
+static nrt_job_key_t _get_nrt_job_key(srun_job_t *job)
+{
+	job_step_create_response_msg_t *resp;
+	nrt_job_key_t job_key;
+
+	if (!job || !job->step_ctx)
+		return NO_VAL;
+
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &resp);
+	if (!resp)
+	    return NO_VAL;
+	slurm_jobinfo_ctx_get(resp->switch_job, NRT_JOBINFO_KEY, &job_key);
+	return job_key;
 }
 
 /* The connection communicates information to and from the resource
@@ -433,14 +450,15 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	ret_info->rm_id = NULL;
 	ret_info->procs = job->ntasks;
 	ret_info->max_instances = 1;
-	ret_info->job_key = job->stepid;
+	ret_info->job_key = _get_nrt_job_key(job);
 	ret_info->check_pointable = 0;
 	ret_info->protocol = xmalloc(sizeof(char *)*2);
-	ret_info->protocol[0] = xstrdup("mpi");
+	ret_info->protocol[0] = xstrdup(opt.mpi_type);
 	ret_info->mode = xmalloc(sizeof(char *)*2);
-	ret_info->mode[0] = xstrdup("IP/US");
+	ret_info->mode[0] = xstrdup(opt.network);
 	ret_info->instance = xmalloc(sizeof(int));
 	*ret_info->instance = 1;
+/* FIXME: not sure how to handle devicename yet */
 	ret_info->devicename = xmalloc(sizeof(char *)*2);
 	ret_info->devicename[0] = xstrdup("sn_all");
 	ret_info->num_network = 1;
@@ -452,9 +470,15 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	i=0;
 	hl = hostlist_create(step_layout->node_list);
 	while ((host = hostlist_shift(hl))) {
+		slurm_addr_t addr;
 		ret_info->hosts->host_name = host;
-		ret_info->hosts->host_address =
-			xstrdup_printf("192.168.1.5%d", i+1);
+/* FIXME: not sure how to handle host_address yet we are guessing the
+ * below will do what we need. */
+		/* ret_info->hosts->host_address = */
+		/* 	xstrdup_printf("10.0.0.5%d", i+1); */
+		slurm_conf_get_addr(host, &addr);
+		ret_info->hosts->host_address = inet_ntoa(addr.sin_addr);
+		info("%s = %s", ret_info->hosts->host_name, ret_info->hosts->host_address);
 		ret_info->hosts->task_count = step_layout->tasks[i];
 		ret_info->hosts->task_ids =
 			xmalloc(sizeof(int) * ret_info->hosts->task_count);
@@ -632,7 +656,14 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 
 	info("usage_mode\t= %d", pe_job_req->node_usage);
 
-	info("netowrk_usage\t= %d", pe_job_req->network_usage);
+	info("network_usage protocols\t= %s", pe_job_req->network_usage.protocols);
+	opt.mpi_type = xstrdup(pe_job_req->network_usage.protocols);
+	info("network_usage adapter_usage\t= %s", pe_job_req->network_usage.adapter_usage);
+	info("network_usage adapter_type\t= %s", pe_job_req->network_usage.adapter_type);
+	info("network_usage mode\t= %s", pe_job_req->network_usage.mode);
+	opt.network = xstrdup(pe_job_req->network_usage.mode);
+	info("network_usage instance\t= %s", pe_job_req->network_usage.instances);
+	info("network_usage dev_type\t= %s", pe_job_req->network_usage.dev_type);
 
 	info("check_pointable\t= %d", pe_job_req->check_pointable);
 
