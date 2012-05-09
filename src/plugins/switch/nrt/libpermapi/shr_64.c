@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
+#include "src/common/slurm_xlator.h"
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
@@ -538,7 +539,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 
 	/* Set up slurmctld message handler */
 	slurmctld_msg_init();
-
+	slurm_set_launch_type("launch/slurm");
 	return 0;
 }
 
@@ -585,7 +586,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	resource_allocation_response_msg_t *resp;
 	job_request_t *pe_job_req = NULL;
 	job_info_t *pe_job_info = NULL;
-	char *myargv[2] = { "poe", NULL };
+	char *myargv[3] = { "poe", "poe", NULL };
 
 	info("got pe_rm_submit_job called %d", job_cmd.job_format);
 	if (job_cmd.job_format != 1) {
@@ -632,7 +633,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	info("require\t= %s", pe_job_req->requirements);
 
 	info("node_topology\t= %s", pe_job_req->node_topology);
-	initialize_and_process_args(1, myargv);
+	initialize_and_process_args(2, myargv);
 
 /* 	/\* now global "opt" should be filled in and available, */
 /* 	 * create a job from opt */
@@ -651,51 +652,46 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 /* 		if (create_job_step(job, false) < 0) { */
 /* 			exit(error_exit); */
 /* 		} */
-	/* if ((resp = existing_allocation())) { */
-	/* 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, */
-	/* 				&resp->node_cnt); */
-	/* 	if (opt.nodes_set_env && !opt.nodes_set_opt && */
-	/* 	    (opt.min_nodes > resp->node_cnt)) { */
-	/* 		/\* This signifies the job used the --no-kill option */
-	/* 		 * and a node went DOWN or it used a node count range */
-	/* 		 * specification, was checkpointed from one size and */
-	/* 		 * restarted at a different size *\/ */
-	/* 		error("SLURM_NNODES environment varariable " */
-	/* 		      "conflicts with allocated node count (%u!=%u).", */
-	/* 		      opt.min_nodes, resp->node_cnt); */
-	/* 		/\* Modify options to match resource allocation. */
-	/* 		 * NOTE: Some options are not supported *\/ */
-	/* 		opt.min_nodes = resp->node_cnt; */
-	/* 		xfree(opt.alloc_nodelist); */
-	/* 		if (!opt.ntasks_set) */
-	/* 			opt.ntasks = opt.min_nodes; */
-	/* 	} */
-	/* 	if (opt.alloc_nodelist == NULL) */
-	/* 		opt.alloc_nodelist = xstrdup(resp->node_list); */
-	/* 	if (opt.exclusive) */
-	/* 		_step_opt_exclusive(); */
-	/* 	_set_env_vars(resp); */
-	/* 	if (_validate_relative(resp)) */
-	/* 		exit(error_exit); */
-	/* 	job = job_step_create_allocation(resp); */
-	/* 	slurm_free_resource_allocation_response_msg(resp); */
+	info("looking for existing alloc");
+	if ((resp = existing_allocation())) {
+		info("got an allocation");
+		if (opt.nodes_set_env && !opt.nodes_set_opt &&
+		    (opt.min_nodes > resp->node_cnt)) {
+			/* This signifies the job used the --no-kill option
+			 * and a node went DOWN or it used a node count range
+			 * specification, was checkpointed from one size and
+			 * restarted at a different size */
+			error("SLURM_NNODES environment varariable "
+			      "conflicts with allocated node count (%u!=%u).",
+			      opt.min_nodes, resp->node_cnt);
+			/* Modify options to match resource allocation.
+			 * NOTE: Some options are not supported */
+			opt.min_nodes = resp->node_cnt;
+			xfree(opt.alloc_nodelist);
+			if (!opt.ntasks_set)
+				opt.ntasks = opt.min_nodes;
+		}
+		if (opt.alloc_nodelist == NULL)
+			opt.alloc_nodelist = xstrdup(resp->node_list);
+		/* if (opt.exclusive) */
+		/* 	_step_opt_exclusive(); */
+		//_set_env_vars(resp);
+		//if (_validate_relative(resp))
+		//	exit(error_exit);
+		info("here before create");
+		job = job_step_create_allocation(resp);
+		slurm_free_resource_allocation_response_msg(resp);
 
-	/* 	if (opt.begin != 0) { */
-	/* 		error("--begin is ignored because nodes" */
-	/* 		      " are already allocated."); */
-	/* 	} */
-	/* 	if (!job || create_job_step(job, false) < 0) */
-	/* 		exit(error_exit); */
-	/* } else { */
-/* 		/\* Combined job allocation and job step launch *\/ */
-/* #if defined HAVE_FRONT_END && (!defined HAVE_BG || defined HAVE_BG_L_P || !defined HAVE_BG_FILES) */
-/* 		uid_t my_uid = getuid(); */
-/* 		if ((my_uid != 0) && */
-/* 		    (my_uid != slurm_get_slurm_user_id())) { */
-/* 			error("srun task launch not supported on this system"); */
-/* 			exit(error_exit); */
-/* 		} */
-/* #endif */
+		if (opt.begin != 0) {
+			error("--begin is ignored because nodes"
+			      " are already allocated.");
+		}
+		info("here before step create");
+		if (!job || create_job_step(job, false) < 0)
+			exit(error_exit);
+	} else {
+		info("new alloc needed");
+		/* Combined job allocation and job step launch */
 		if (opt.relative_set && opt.relative) {
 			fatal("--relative option invalid for job allocation "
 			      "request");
@@ -738,7 +734,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		}
 
 		slurm_free_resource_allocation_response_msg(resp);
-	/* } */
+	}
 		//*resource_mgr = (void *)job;
 	return 0;
 }
