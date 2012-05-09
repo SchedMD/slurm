@@ -264,6 +264,8 @@ documents those changes that are of interest to users and admins.
     batch jobs.
  -- Fix possible illegal memory reference in slurmctld for job step with
     relative option. Work by Matthieu Hautreux (CEA).
+ -- Reset priority of system held jobs when dependency is satisfied. Work by
+    Don Lipari, LLNL.
 
 * Changes in SLURM 2.3.4
 ========================

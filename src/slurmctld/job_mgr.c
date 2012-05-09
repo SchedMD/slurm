@@ -9006,6 +9006,7 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 	struct job_details *detail_ptr = job_ptr->details;
 	time_t now = time(NULL);
 	int depend_rc;
+	bool independent = false;
 
 	/* Test dependencies first so we can cancel jobs before dependent
 	 * job records get purged (e.g. afterok, afternotok) */
@@ -9046,11 +9047,14 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 	/* Job is eligible to start now */
 	if (job_ptr->state_reason == WAIT_DEPENDENCY) {
 		job_ptr->state_reason = WAIT_NO_REASON;
+		independent = true;
 		xfree(job_ptr->state_desc);
 	}
 	if ((detail_ptr && (detail_ptr->begin_time == 0) &&
 	    (job_ptr->priority != 0))) {
 		detail_ptr->begin_time = now;
+		if (independent)
+			_set_job_prio(job_ptr);
 	} else if (job_ptr->state_reason == WAIT_TIME) {
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
