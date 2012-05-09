@@ -100,8 +100,9 @@ for use by other jobs.</P>
 
 <P>Job steps can be allocated generic resources from those allocated to the
 job using the <I>--gres</I> option with the <I>srun</I> command as described
-above. By default, a job step will be allocated none of the generic resources
-allocated to the job, but must explicitly request desired generic resources.
+above. By default, a job step will be allocated all of the generic resources
+allocated to the job. If desired, the job step may explicitly specify a
+different generic resource count than the job.
 This design choice was based upon a scenario where each job executes many
 job steps. If job steps were granted access to all generic resources by
 default, some job steps would need to explicitly specify zero generic resource
@@ -149,6 +150,6 @@ JobStep=1234.2 CUDA_VISIBLE_DEVICES=3
 file and insure they are in the increasing numeric order.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 1 August 2011</p>
+<p style="text-align: center;">Last modified 8 May 2012</p>
 
 </body></html>
