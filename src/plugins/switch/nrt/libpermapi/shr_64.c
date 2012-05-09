@@ -57,6 +57,10 @@
 void *my_handle = NULL;
 srun_job_t *job = NULL;
 
+int sig_array[] = {
+	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGHUP,
+	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0 };
+
 extern char **environ;
 
 static int
