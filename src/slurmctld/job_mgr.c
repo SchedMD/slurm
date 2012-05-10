@@ -141,10 +141,8 @@ static char *_copy_nodelist_no_dup(char *node_list);
 static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
-				char *resv_name,
-				slurmdb_association_rec_t *assoc_ptr,
-				bool admin, slurmdb_qos_rec_t *qos_rec,
-				int *error_code);
+	char *resv_name, slurmdb_association_rec_t *assoc_ptr,
+	bool admin, slurmdb_qos_rec_t *qos_rec,	int *error_code);
 static void _dump_job_details(struct job_details *detail_ptr,
 			      Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
@@ -3990,8 +3988,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			qos_rec.name = "standby";
 	}
 
-	qos_ptr = _determine_and_validate_qos(job_desc->reservation,
-			  assoc_ptr, false, &qos_rec, &qos_error);
+	qos_ptr = _determine_and_validate_qos(
+		job_desc->reservation, assoc_ptr, false, &qos_rec, &qos_error);
 
 	if (qos_error != SLURM_SUCCESS) {
 		error_code = qos_error;
