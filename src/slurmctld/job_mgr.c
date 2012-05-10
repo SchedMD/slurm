@@ -350,7 +350,6 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	bool admin, slurmdb_qos_rec_t *qos_rec, int *error_code)
 {
 	slurmdb_qos_rec_t *qos_ptr = NULL;
-	size_t resv_name_leng = 0;
 
 	/* If enforcing associations make sure this is a valid qos
 	   with the association.  If not just fill in the qos and
@@ -401,13 +400,10 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 		return NULL;
 	}
 
-	if (resv_name != NULL) {
-		resv_name_leng = strlen(resv_name);
-	}	
-	if((qos_ptr != NULL) && (qos_ptr->flags & QOS_FLAG_REQ_RESV) &&
-	   ((resv_name == NULL) || (resv_name_leng == 0))) {
-		error ("qos %s can only be used in a reservation",
-			   qos_rec->name);
+	if (qos_ptr && (qos_ptr->flags & QOS_FLAG_REQ_RESV) &&
+	    (!resv_name || !strlen(resv_name))) {
+		error("qos %s can only be used in a reservation",
+		      qos_rec->name);
 		*error_code = ESLURM_INVALID_QOS;
 		return NULL;
 	}
@@ -3486,15 +3482,9 @@ static int _part_access_check(struct part_record *part_ptr,
 			      uid_t submit_uid)
 {
 	uint32_t total_nodes;
-	size_t resv_name_leng = 0;
-
-	if (job_desc->reservation != NULL) {
-		resv_name_leng = strlen(job_desc->reservation);
-	}
 
 	if ((part_ptr->flags & PART_FLAG_REQ_RESV) &&
-		((job_desc->reservation == NULL) ||
-		(resv_name_leng == 0))) {
+	    (!job_desc->reservation || !strlen(job_desc->reservation))) {
 		info("_part_access_check: uid %u access to partition %s "
 		     "denied, requires reservation",
 		     (unsigned int) submit_uid, part_ptr->name);
