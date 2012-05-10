@@ -456,7 +456,7 @@ int load_all_part_state(void)
 	uint32_t max_time, default_time, max_nodes, min_nodes;
 	uint32_t grace_time = 0;
 	time_t time;
-	uint16_t def_part_flag, flags, hidden, root_only;
+	uint16_t def_part_flag, flags, hidden, root_only, req_resv;
 	uint16_t max_share, preempt_mode, priority, state_up;
 	struct part_record *part_ptr;
 	uint32_t data_size = 0, name_len;
@@ -550,7 +550,8 @@ int load_all_part_state(void)
 			if ((flags & PART_FLAG_DEFAULT_CLR) ||
 			    (flags & PART_FLAG_HIDDEN_CLR)  ||
 			    (flags & PART_FLAG_NO_ROOT_CLR) ||
-			    (flags & PART_FLAG_ROOT_ONLY_CLR)) {
+			    (flags & PART_FLAG_ROOT_ONLY_CLR) ||
+			    (flags & PART_FLAG_REQ_RESV_CLR)) {
 				error("Invalid data for partition %s: flags=%u",
 				      part_name, flags);
 				error_code = EINVAL;
@@ -1018,7 +1019,8 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		packstr(part_ptr->nodes, buffer);
 		pack_bit_fmt(part_ptr->node_bitmap, buffer);
 	} else {
-		uint16_t default_part_flag, hidden, no_root, root_only, state;
+		uint16_t default_part_flag, hidden, no_root, root_only, state,
+			req_resv;
 		if (default_part_loc == part_ptr)
 			default_part_flag = 1;
 		else
@@ -1035,6 +1037,10 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 			root_only = 1;
 		else
 			root_only = 0;
+		if (part_ptr->flags & PART_FLAG_REQ_RESV)
+			req_resv = 1;
+		else
+			req_resv = 0;
 
 		packstr(part_ptr->name, buffer);
 		pack32(part_ptr->max_time, buffer);
@@ -1049,6 +1055,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		pack16(no_root,              buffer);
 		pack16(hidden,               buffer);
 		pack16(root_only,            buffer);
+		pack16(req_resv,             buffer);
 		pack16(part_ptr->max_share,  buffer);
 		pack16(part_ptr->priority,   buffer);
 
@@ -1157,6 +1164,16 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		info("update_part: clearing hidden for partition %s",
 		     part_desc->name);
 		part_ptr->flags &= (~PART_FLAG_HIDDEN);
+	}
+
+	if (part_desc->flags & PART_FLAG_REQ_RESV) {
+		info("update_part: setting req_resv for partition %s",
+		     part_desc->name);
+		part_ptr->flags |= PART_FLAG_REQ_RESV;
+	} else if (part_desc->flags & PART_FLAG_REQ_RESV_CLR) {
+		info("update_part: clearing req_resv for partition %s",
+		     part_desc->name);
+		part_ptr->flags &= (~PART_FLAG_REQ_RESV);
 	}
 
 	if (part_desc->flags & PART_FLAG_ROOT_ONLY) {

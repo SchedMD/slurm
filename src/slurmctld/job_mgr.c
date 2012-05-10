@@ -141,6 +141,7 @@ static char *_copy_nodelist_no_dup(char *node_list);
 static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
+				char *resv_name,
 				slurmdb_association_rec_t *assoc_ptr,
 				bool admin, slurmdb_qos_rec_t *qos_rec,
 				int *error_code);
@@ -345,11 +346,11 @@ static uint32_t _max_switch_wait(uint32_t input_wait)
 }
 
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
-	slurmdb_association_rec_t *assoc_ptr, bool admin,
-	slurmdb_qos_rec_t *qos_rec,
-	int *error_code)
+	char *resv_name, slurmdb_association_rec_t *assoc_ptr,
+	bool admin, slurmdb_qos_rec_t *qos_rec, int *error_code)
 {
 	slurmdb_qos_rec_t *qos_ptr = NULL;
+	size_t resv_name_leng = 0;
 
 	/* If enforcing associations make sure this is a valid qos
 	   with the association.  If not just fill in the qos and
@@ -396,6 +397,17 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 		      "access to qos %s",
 		      assoc_ptr->id, assoc_ptr->acct, assoc_ptr->user,
 		      assoc_ptr->partition, qos_rec->name);
+		*error_code = ESLURM_INVALID_QOS;
+		return NULL;
+	}
+
+	if (resv_name != NULL) {
+		resv_name_leng = strlen(resv_name);
+	}	
+	if((qos_ptr != NULL) && (qos_ptr->flags & QOS_FLAG_REQ_RESV) &&
+	   ((resv_name == NULL) || (resv_name_leng == 0))) {
+		error ("qos %s can only be used in a reservation",
+			   qos_rec->name);
 		*error_code = ESLURM_INVALID_QOS;
 		return NULL;
 	}
@@ -1678,7 +1690,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 		qos_rec.id = job_ptr->qos_id;
 		job_ptr->qos_ptr = _determine_and_validate_qos(
-			job_ptr->assoc_ptr, false, &qos_rec, &qos_error);
+			job_ptr->resv_name, job_ptr->assoc_ptr, false, &qos_rec,
+			&qos_error);
 		if ((qos_error != SLURM_SUCCESS) && !job_ptr->limit_set_qos) {
 			info("Holding job %u with invalid qos", job_id);
 			xfree(job_ptr->state_desc);
@@ -3473,6 +3486,20 @@ static int _part_access_check(struct part_record *part_ptr,
 			      uid_t submit_uid)
 {
 	uint32_t total_nodes;
+	size_t resv_name_leng = 0;
+
+	if (job_desc->reservation != NULL) {
+		resv_name_leng = strlen(job_desc->reservation);
+	}
+
+	if ((part_ptr->flags & PART_FLAG_REQ_RESV) &&
+		((job_desc->reservation == NULL) ||
+		(resv_name_leng == 0))) {
+		info("_part_access_check: uid %u access to partition %s "
+		     "denied, requires reservation",
+		     (unsigned int) submit_uid, part_ptr->name);
+		return ESLURM_ACCESS_DENIED;
+	}
 
 	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && (submit_uid != 0) &&
 	    (submit_uid != slurmctld_conf.slurm_user_id)) {
@@ -3973,8 +4000,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			qos_rec.name = "standby";
 	}
 
-	qos_ptr = _determine_and_validate_qos(assoc_ptr, false, &qos_rec,
-					      &qos_error);
+	qos_ptr = _determine_and_validate_qos(job_desc->reservation,
+			  assoc_ptr, false, &qos_rec, &qos_error);
+
 	if (qos_error != SLURM_SUCCESS) {
 		error_code = qos_error;
 		goto cleanup_fail;
@@ -6966,8 +6994,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 					qos_rec.name = "standby";
 
 				job_ptr->qos_ptr = _determine_and_validate_qos(
-					job_ptr->assoc_ptr, admin, &qos_rec,
-					&error_code);
+					job_ptr->resv_name, job_ptr->assoc_ptr,
+					admin, &qos_rec, &error_code);
 				if (error_code == SLURM_SUCCESS) {
 					job_ptr->qos_id = qos_rec.id;
 					update_accounting = true;
@@ -6992,8 +7020,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 			save_qos_id = job_ptr->qos_id;
 			job_ptr->qos_ptr = _determine_and_validate_qos(
-				job_ptr->assoc_ptr, admin, &qos_rec,
-				&error_code);
+				job_ptr->resv_name, job_ptr->assoc_ptr,
+				admin, &qos_rec, &error_code);
 			if (error_code == SLURM_SUCCESS) {
 				job_ptr->qos_id = qos_rec.id;
 				if ((save_qos_id != job_ptr->qos_id) && admin){

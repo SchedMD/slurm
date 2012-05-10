@@ -1011,6 +1011,13 @@ This can be used to restrict control of the partition to some meta\-scheduler.
 Possible values are "YES" and "NO".
 
 .TP
+\fIReqResv\fP=<yes|no>
+Specify if only allocation requests designating a reservation will be
+satisfied.  This is used to restrict partition usage to be allowed only
+within a reservation.
+Possible values are "YES" and "NO".
+
+.TP
 \fIShared\fP=<yes|no|exclusive|force>[:<job_count>]
 Specify if nodes in this partition can be shared by multiple jobs.
 Possible values are "YES", "NO", "EXCLUSIVE" and "FORCE".

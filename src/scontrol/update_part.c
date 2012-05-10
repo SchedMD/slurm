@@ -158,7 +158,7 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "RootOnly", MAX(taglen, 1)) == 0) {
+		else if (strncasecmp(tag, "RootOnly", MAX(taglen, 3)) == 0) {
 			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_ROOT_ONLY_CLR;
 			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
@@ -167,6 +167,20 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
 				error("Acceptable RootOnly values "
+					"are YES and NO");
+				return -1;
+			}
+			(*update_cnt_ptr)++;
+		}
+		else if (strncasecmp(tag, "ReqResv", MAX(taglen, 3)) == 0) {
+			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
+				part_msg_ptr->flags |= PART_FLAG_REQ_RESV_CLR;
+			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
+				part_msg_ptr->flags |= PART_FLAG_REQ_RESV;
+			else {
+				exit_code = 1;
+				error("Invalid input: %s", argv[i]);
+				error("Acceptable ReqResv values "
 					"are YES and NO");
 				return -1;
 			}

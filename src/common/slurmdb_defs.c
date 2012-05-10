@@ -314,6 +314,9 @@ static uint32_t _str_2_qos_flags(char *flags)
 	if (slurm_strcasestr(flags, "PartitionTimeLimit"))
 		return QOS_FLAG_PART_TIME_LIMIT;
 
+	if (slurm_strcasestr(flags, "RequiresReservation"))
+		return QOS_FLAG_REQ_RESV;
+
 	if (slurm_strcasestr(flags, "NoReserve"))
 		return QOS_FLAG_NO_RESERVE;
 
@@ -1208,6 +1211,8 @@ extern char *slurmdb_qos_flags_str(uint32_t flags)
 		xstrcat(qos_flags, "PartitionMinNodes,");
 	if (flags & QOS_FLAG_PART_TIME_LIMIT)
 		xstrcat(qos_flags, "PartitionTimeLimit,");
+	if (flags & QOS_FLAG_REQ_RESV)
+		xstrcat(qos_flags, "RequiresReservation,");
 
 	if (qos_flags)
 		qos_flags[strlen(qos_flags)-1] = '\0';

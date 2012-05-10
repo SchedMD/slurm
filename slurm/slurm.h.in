@@ -1474,6 +1474,7 @@ typedef struct job_alloc_info_msg {
 #define PART_FLAG_HIDDEN	0x0002	/* Set if partition is hidden */
 #define PART_FLAG_NO_ROOT	0x0004	/* Set if user root jobs disabled */
 #define PART_FLAG_ROOT_ONLY	0x0008	/* Set if only root can submit jobs */
+#define PART_FLAG_REQ_RESV	0x0010	/* Set if reservation is required */
 /* Used with slurm_update_partition() to clear flags associated with existing
  * partitions. For example, if a partition is currently hidden and you want
  * to make it visible then set flags to PART_FLAG_HIDDEN_CLR and call
@@ -1482,6 +1483,7 @@ typedef struct job_alloc_info_msg {
 #define PART_FLAG_HIDDEN_CLR	0x0200	/* Clear HIDDEN partition flag */
 #define PART_FLAG_NO_ROOT_CLR	0x0400	/* Clear NO_ROOT partition flag */
 #define PART_FLAG_ROOT_ONLY_CLR	0x0800	/* Clear ROOT_ONLY partition flag */
+#define PART_FLAG_REQ_RESV_CLR	0x1000	/* Clear RES_REQ partition flag */
 
 typedef struct partition_info {
 	char *allow_alloc_nodes;/* list names of allowed allocating nodes */

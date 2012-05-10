@@ -539,6 +539,8 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		part_ptr->flags |= PART_FLAG_HIDDEN;
 	if (part->root_only_flag)
 		part_ptr->flags |= PART_FLAG_ROOT_ONLY;
+	if (part->req_resv_flag)
+		part_ptr->flags |= PART_FLAG_REQ_RESV;
 	part_ptr->max_time       = part->max_time;
 	part_ptr->def_mem_per_cpu = part->def_mem_per_cpu;
 	part_ptr->default_time   = part->default_time;
@@ -1170,6 +1172,15 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 					part_ptr->flags |= PART_FLAG_ROOT_ONLY;
 				else
 					part_ptr->flags &= (~PART_FLAG_ROOT_ONLY);
+			}
+			if ((part_ptr->flags & PART_FLAG_REQ_RESV) !=
+			    (old_part_ptr->flags & PART_FLAG_REQ_RESV)) {
+				error("Partition %s ReqResv differs from "
+				      "slurm.conf", part_ptr->name);
+				if (old_part_ptr->flags & PART_FLAG_REQ_RESV)
+					part_ptr->flags |= PART_FLAG_REQ_RESV;
+				else
+					part_ptr->flags &= (~PART_FLAG_REQ_RESV);
 			}
 			if (part_ptr->max_nodes_orig !=
 			    old_part_ptr->max_nodes_orig) {

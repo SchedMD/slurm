@@ -208,6 +208,7 @@ typedef struct slurm_conf_partition {
 	uint16_t priority;	/* scheduling priority for jobs */
 	bool     root_only_flag;/* 1 if allocate/submit RPC can only be
 				   issued by user root */
+	bool     req_resv_flag;/* 1 if partition can only be used in a reservation*/
 	uint16_t state_up;	/* for states see PARTITION_* in slurm.h */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */

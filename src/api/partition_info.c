@@ -256,6 +256,11 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		sprintf(tmp_line, " RootOnly=NO");
 	xstrcat(out, tmp_line);
+	if (part_ptr->flags & PART_FLAG_REQ_RESV)
+		sprintf(tmp_line, " ReqResv=YES");
+	else
+		sprintf(tmp_line, " ReqResv=NO");
+	xstrcat(out, tmp_line);
 
 	force = part_ptr->max_share & SHARED_FORCE;
 	val = part_ptr->max_share & (~SHARED_FORCE);

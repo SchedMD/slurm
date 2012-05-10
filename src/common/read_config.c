@@ -812,6 +812,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"PreemptMode", S_P_STRING},
 		{"Priority", S_P_UINT16},
 		{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
+		{"ReqResv", S_P_BOOLEAN}, /* YES or NO */
 		{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
 		{"State", S_P_STRING}, /* UP, DOWN, INACTIVE or DRAIN */
 		{NULL}
@@ -954,6 +955,10 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_boolean(&p->root_only_flag, "RootOnly", tbl)
 		    && !s_p_get_boolean(&p->root_only_flag, "RootOnly", dflt))
 			p->root_only_flag = false;
+
+		if (!s_p_get_boolean(&p->req_resv_flag, "ReqResv", tbl)
+		    && !s_p_get_boolean(&p->req_resv_flag, "ReqResv", dflt))
+			p->req_resv_flag = false;
 
 		if (s_p_get_string(&tmp, "PreemptMode", tbl) ||
 		    s_p_get_string(&tmp, "PreemptMode", dflt)) {

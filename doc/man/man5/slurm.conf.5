@@ -2822,6 +2822,14 @@ Note that a partition's priority takes precedence over a job's
 priority.
 The value may not exceed 65533.
 
+.TP
+\fBReqResv\fR
+Specifies users of this partition are required to designate a reservation
+when submitting a job. This option can be useful in restricting usage 
+of a partition that may have higher priority or additional resources to be
+allowed only within a reservation. 
+Possible values are "YES" and "NO".
+The default value is "NO".
 
 .TP
 \fBRootOnly\fR
