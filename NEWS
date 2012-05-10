@@ -30,7 +30,6 @@ documents those changes that are of interest to users and admins.
  -- BGQ - fixed issue where if a user asked for a specific node count and more
     tasks than possible without overcommit the request would be allowed on more
     nodes than requested.
- -- Improved throughput rate for short-lived jobs..
  -- Add support for new SchedulerParameters of bf_max_job_user, maximum number
     of jobs to attempt backfilling per user. Work by Bjørn-Helge Mevik,
     University of Oslo.
@@ -48,6 +47,9 @@ documents those changes that are of interest to users and admins.
     Perry, Bull.
  -- GrpMEM limit for QOSes and associations added Patch from Bjørn-Helge Mevik,
     University of Oslo.
+ -- Various performance improvements for up to 500% higher throughput depending
+    upon configuration. Work supported by the Oak Ridge National Laboratory
+    Extreme Scale Systems Center.
 
 * Changes in SLURM 2.4.0.pre4
 =============================

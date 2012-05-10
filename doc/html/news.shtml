@@ -72,6 +72,8 @@ in version 2.2).</li>
 <p>SLURM Version 2.4 release is planned for June 2012.
 Major enhancements currently planned include:
 <ul>
+<li>Major improvement in job throuhgput: Up to 500 jobs per second (actual
+throughput depends upon configuration, hardware, etc.).<li>
 <li>Support for BlueGene/Q computers (fully implemented).</li>
 <li>Resource reservations with a node count specification will select
 those nodes optimized for the system topology.</li>
@@ -124,6 +126,6 @@ trojan library, then that library will be used by the SLURM daemon with
 unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 3 February 2012</p>
+<p style="text-align:center;">Last modified 10 May 2012</p>
 
 <!--#include virtual="footer.txt"-->

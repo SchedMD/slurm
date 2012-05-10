@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.4
-9 April 2012
+10 May 2012
 
 
 IMPORTANT NOTE:
@@ -24,12 +24,12 @@ other state information.
 
 HIGHLIGHTS
 ==========
+* Up to 500% higher throughput for short-lived jobs (depending upon
+  configuration).
 * Major modifications to support IBM BlueGene/Q systems.
 * New SPANK callbacks added to slurmd: slurm_spank_slurmd_{init,exit} and
   job epilog/prolog: slurm_spank_job_{prolog,epilog}.
 * Added MPI plugin, mpi/pmi2, which supports MPI_Comm_spawn() function.
-* Improved throughput rate for short-lived jobs.
-
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
