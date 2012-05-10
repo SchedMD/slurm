@@ -76,7 +76,7 @@ static char * _process_plus_minus(char plus_or_minus, char *src)
 
 /*
  *  _parse_flags  is used to parse the Flags= option.  It handles
- *  daily, weekly, and maint, optionally preceded by + or -,
+ *  daily, weekly, static_alloc, and maint, optionally preceded by + or -,
  *  separated by a comma but no spaces.
  */
 static uint32_t _parse_flags(const char *flagstr, const char *msg)
@@ -137,6 +137,13 @@ static uint32_t _parse_flags(const char *flagstr, const char *msg)
 				outflags |= RESERVE_FLAG_NO_LIC_ONLY;
 			else
 				outflags |= RESERVE_FLAG_LIC_ONLY;
+		} else if (strncasecmp(curr, "Static_Alloc", MAX(taglen,1))
+			   == 0) {
+			curr += taglen;
+			if (flip)
+				outflags |= RESERVE_FLAG_NO_STATIC_ALLOC;
+			else
+				outflags |= RESERVE_FLAG_STATIC_ALLOC;
 		} else {
 			error("Error parsing flags %s.  %s", flagstr, msg);
 			return 0xffffffff;

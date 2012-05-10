@@ -1238,7 +1238,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					RESERVE_FLAG_IGN_JOBS |
 					RESERVE_FLAG_DAILY    |
 					RESERVE_FLAG_WEEKLY   |
-					RESERVE_FLAG_LIC_ONLY;
+					RESERVE_FLAG_LIC_ONLY |
+					RESERVE_FLAG_STATIC_ALLOC;
 	}
 	if (resv_desc_ptr->partition) {
 		part_ptr = find_part_record(resv_desc_ptr->partition);
@@ -1528,6 +1529,10 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_ptr->flags |= RESERVE_FLAG_LIC_ONLY;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_LIC_ONLY)
 			resv_ptr->flags &= (~RESERVE_FLAG_LIC_ONLY);
+		if (resv_desc_ptr->flags & RESERVE_FLAG_STATIC_ALLOC)
+			resv_ptr->flags |= RESERVE_FLAG_STATIC_ALLOC;
+		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_STATIC_ALLOC)
+			resv_ptr->flags &= (~RESERVE_FLAG_STATIC_ALLOC);
 	}
 	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')){
 		/* Clear the partition */
@@ -2139,7 +2144,8 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	int i;
 	resv_desc_msg_t resv_desc;
 
-	if (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES)
+	if (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES ||
+	    resv_ptr->flags & RESERVE_FLAG_STATIC_ALLOC)
 		return;
 
 	i = bit_overlap(resv_ptr->node_bitmap, avail_node_bitmap);
@@ -2373,6 +2379,7 @@ extern int validate_job_resv(struct job_record *job_ptr)
 		job_ptr->resv_id    = resv_ptr->resv_id;
 		job_ptr->resv_flags = resv_ptr->flags;
 		job_ptr->resv_ptr   = resv_ptr;
+		_validate_node_choice(resv_ptr);
 	}
 	return rc;
 }

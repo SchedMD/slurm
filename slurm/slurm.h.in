@@ -1677,6 +1677,8 @@ void slurm_init_update_block_msg PARAMS((update_block_msg_t *update_block_msg));
 #define RESERVE_FLAG_NO_IGN_JOB	0x0080	/* Clear ignore running jobs */
 #define RESERVE_FLAG_LIC_ONLY	0x0100	/* Reserve licenses only, any nodes */
 #define RESERVE_FLAG_NO_LIC_ONLY 0x0200	/* Clear reserve licenses only flag */
+#define RESERVE_FLAG_STATIC_ALLOC 0x0400 /* Static node allocation */
+#define RESERVE_FLAG_NO_STATIC_ALLOC 0x800 /* Clear static node allocation */
 #define RESERVE_FLAG_OVERLAP	0x4000	/* Permit to overlap others */
 #define RESERVE_FLAG_SPEC_NODES	0x8000	/* Contains specific nodes */
 
