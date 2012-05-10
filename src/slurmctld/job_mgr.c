@@ -398,8 +398,8 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 		return NULL;
 	}
 
-	if (qos_ptr && (qos_ptr->flags & QOS_FLAG_REQ_RESV) &&
-	    (!resv_name || !strlen(resv_name))) {
+	if (qos_ptr && (qos_ptr->flags & QOS_FLAG_REQ_RESV)
+	    && (!resv_name || resv_name[0] == '\0')) {
 		error("qos %s can only be used in a reservation",
 		      qos_rec->name);
 		*error_code = ESLURM_INVALID_QOS;
@@ -6892,33 +6892,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		     job_ptr->wait4switch, job_specs->job_id);
 	}
 
-	/* this needs to be before partition and before qos checks */
-	if (job_specs->reservation) {
-		if (!IS_JOB_PENDING(job_ptr) && !IS_JOB_RUNNING(job_ptr)) {
-			error_code = ESLURM_DISABLED;
-		} else {
-			int rc;
-			char *save_resv_name = job_ptr->resv_name;
-			job_ptr->resv_name = job_specs->reservation;
-			job_specs->reservation = NULL;	/* Nothing to free */
-			rc = validate_job_resv(job_ptr);
-			if (rc == SLURM_SUCCESS) {
-				info("sched: update_job: setting reservation "
-				     "to %s for job_id %u", job_ptr->resv_name,
-				     job_ptr->job_id);
-				xfree(save_resv_name);
-				update_accounting = true;
-			} else {
-				/* Restore reservation info */
-				job_specs->reservation = job_ptr->resv_name;
-				job_ptr->resv_name = save_resv_name;
-				error_code = rc;
-			}
-		}
-		if (error_code != SLURM_SUCCESS)
-			goto fini;
-	}
-
 	if (job_specs->partition) {
 		List part_ptr_list = NULL;
 		bool old_res = false;
@@ -6939,8 +6912,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (job_specs->time_limit == NO_VAL)
 			job_specs->time_limit = job_ptr->time_limit;
 		if (!job_specs->reservation
-		    || !strlen(job_specs->reservation)) {
-			/* just incase the reservation is '' */
+		    || job_specs->reservation[0] == '\0') {
+			/* just incase the reservation is '\0' */
 			xfree(job_specs->reservation);
 			job_specs->reservation = job_ptr->resv_name;
 			old_res = true;
@@ -7013,6 +6986,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			if (!IS_JOB_PENDING(job_ptr))
 				error_code = ESLURM_DISABLED;
 			else {
+				char *resv_name;
+				if (job_specs->reservation
+				    && job_specs->reservation[0] != '\0')
+					resv_name = job_specs->reservation;
+				else
+					resv_name = job_ptr->resv_name;
+
 				memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 				if (strstr(job_ptr->comment,
 					   "FLAGS:PREEMPTOR"))
@@ -7022,7 +7002,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 					qos_rec.name = "standby";
 
 				job_ptr->qos_ptr = _determine_and_validate_qos(
-					job_ptr->resv_name, job_ptr->assoc_ptr,
+					resv_name, job_ptr->assoc_ptr,
 					admin, &qos_rec, &error_code);
 				if (error_code == SLURM_SUCCESS) {
 					job_ptr->qos_id = qos_rec.id;
@@ -7040,17 +7020,24 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
 		else {
-			info("update_job: setting qos to %s for job_id %u",
-			     job_specs->qos, job_specs->job_id);
+			char *resv_name;
+			if (job_specs->reservation
+			    && job_specs->reservation[0] != '\0')
+				resv_name = job_specs->reservation;
+			else
+				resv_name = job_ptr->resv_name;
 
 			memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 			qos_rec.name = job_specs->qos;
 
 			save_qos_id = job_ptr->qos_id;
 			job_ptr->qos_ptr = _determine_and_validate_qos(
-				job_ptr->resv_name, job_ptr->assoc_ptr,
+				resv_name, job_ptr->assoc_ptr,
 				admin, &qos_rec, &error_code);
 			if (error_code == SLURM_SUCCESS) {
+				info("update_job: setting qos to %s "
+				     "for job_id %u",
+				     job_specs->qos, job_specs->job_id);
 				job_ptr->qos_id = qos_rec.id;
 				if ((save_qos_id != job_ptr->qos_id) && admin){
 					job_ptr->limit_set_qos =
@@ -7414,6 +7401,55 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: Attempt to extend end time for job %u",
 			     job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
+		}
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
+	/* this needs to be after partition and qos checks */
+	if (job_specs->reservation) {
+		if (!IS_JOB_PENDING(job_ptr) && !IS_JOB_RUNNING(job_ptr)) {
+			error_code = ESLURM_DISABLED;
+		} else {
+			int rc;
+			char *save_resv_name = job_ptr->resv_name;
+			slurmctld_resv_t *save_resv_ptr = job_ptr->resv_ptr;
+
+			job_ptr->resv_name = job_specs->reservation;
+			job_specs->reservation = NULL;	/* Nothing to free */
+			rc = validate_job_resv(job_ptr);
+			/* Make sure this job isn't using a partition
+			   or qos that requires it to be in a
+			   reservation.
+			*/
+			if (rc == SLURM_SUCCESS && !job_ptr->resv_name) {
+				struct part_record *part_ptr =
+					job_ptr->part_ptr;
+				slurmdb_qos_rec_t *qos_ptr =
+					(slurmdb_qos_rec_t *)job_ptr->qos_ptr;
+
+				if (part_ptr
+				    && part_ptr->flags & PART_FLAG_REQ_RESV)
+					rc = ESLURM_ACCESS_DENIED;
+
+				if (qos_ptr
+				    && qos_ptr->flags & QOS_FLAG_REQ_RESV)
+					rc = ESLURM_INVALID_QOS;
+			}
+
+			if (rc == SLURM_SUCCESS) {
+				info("sched: update_job: setting reservation "
+				     "to %s for job_id %u", job_ptr->resv_name,
+				     job_ptr->job_id);
+				xfree(save_resv_name);
+				update_accounting = true;
+			} else {
+				/* Restore reservation info */
+				job_specs->reservation = job_ptr->resv_name;
+				job_ptr->resv_name = save_resv_name;
+				job_ptr->resv_ptr = save_resv_ptr;
+				error_code = rc;
+			}
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
