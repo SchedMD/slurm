@@ -6892,6 +6892,33 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		     job_ptr->wait4switch, job_specs->job_id);
 	}
 
+	/* this needs to be before partition and before qos checks */
+	if (job_specs->reservation) {
+		if (!IS_JOB_PENDING(job_ptr) && !IS_JOB_RUNNING(job_ptr)) {
+			error_code = ESLURM_DISABLED;
+		} else {
+			int rc;
+			char *save_resv_name = job_ptr->resv_name;
+			job_ptr->resv_name = job_specs->reservation;
+			job_specs->reservation = NULL;	/* Nothing to free */
+			rc = validate_job_resv(job_ptr);
+			if (rc == SLURM_SUCCESS) {
+				info("sched: update_job: setting reservation "
+				     "to %s for job_id %u", job_ptr->resv_name,
+				     job_ptr->job_id);
+				xfree(save_resv_name);
+				update_accounting = true;
+			} else {
+				/* Restore reservation info */
+				job_specs->reservation = job_ptr->resv_name;
+				job_ptr->resv_name = save_resv_name;
+				error_code = rc;
+			}
+		}
+		if (error_code != SLURM_SUCCESS)
+			goto fini;
+	}
+
 	if (job_specs->partition) {
 		List part_ptr_list = NULL;
 
@@ -7374,32 +7401,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: Attempt to extend end time for job %u",
 			     job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
-		}
-	}
-	if (error_code != SLURM_SUCCESS)
-		goto fini;
-
-	if (job_specs->reservation) {
-		if (!IS_JOB_PENDING(job_ptr) && !IS_JOB_RUNNING(job_ptr)) {
-			error_code = ESLURM_DISABLED;
-		} else {
-			int rc;
-			char *save_resv_name = job_ptr->resv_name;
-			job_ptr->resv_name = job_specs->reservation;
-			job_specs->reservation = NULL;	/* Nothing to free */
-			rc = validate_job_resv(job_ptr);
-			if (rc == SLURM_SUCCESS) {
-				info("sched: update_job: setting reservation "
-				     "to %s for job_id %u", job_ptr->resv_name,
-				     job_ptr->job_id);
-				xfree(save_resv_name);
-				update_accounting = true;
-			} else {
-				/* Restore reservation info */
-				job_specs->reservation = job_ptr->resv_name;
-				job_ptr->resv_name = save_resv_name;
-				error_code = rc;
-			}
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
