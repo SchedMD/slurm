@@ -1627,8 +1627,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		       comp_msg->job_id, TIME_STR);
 		slurmctld_diag_stats.jobs_completed++;
 		dump_job = true;
-		if ((msg->msg_type == REQUEST_COMPLETE_BATCH_JOB) &&
-		    replace_batch_job(msg, job_ptr))
+		if (replace_batch_job(msg, job_ptr))
 			run_sched = true;
 	}
 

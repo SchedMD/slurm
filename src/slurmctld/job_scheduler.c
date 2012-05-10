@@ -373,7 +373,8 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 		else
 			select_serial = 1;
 	}
-	if ((select_serial != 1) || (fini_job_ptr == NULL))
+	if ((select_serial != 1) || (fini_job_ptr == NULL) ||
+	    (msg->msg_type != REQUEST_COMPLETE_BATCH_JOB))
 		goto send_reply;
 
 	now = time(NULL);
