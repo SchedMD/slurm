@@ -6921,6 +6921,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->partition) {
 		List part_ptr_list = NULL;
+		bool old_res = false;
 
 		if (!IS_JOB_PENDING(job_ptr)) {
 			error_code = ESLURM_DISABLED;
@@ -6937,9 +6938,21 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_specs->time_min = job_ptr->time_min;
 		if (job_specs->time_limit == NO_VAL)
 			job_specs->time_limit = job_ptr->time_limit;
+		if (!job_specs->reservation
+		    || !strlen(job_specs->reservation)) {
+			/* just incase the reservation is '' */
+			xfree(job_specs->reservation);
+			job_specs->reservation = job_ptr->resv_name;
+			old_res = true;
+		}
+
 		error_code = _valid_job_part(job_specs, uid,
 					     job_ptr->details->req_node_bitmap,
 					     &tmp_part_ptr, &part_ptr_list);
+
+		if (old_res)
+			job_specs->reservation = NULL;
+
 		if (error_code != SLURM_SUCCESS)
 			;
 		else if ((tmp_part_ptr->state_up & PARTITION_SUBMIT) == 0)
