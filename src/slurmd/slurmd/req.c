@@ -132,10 +132,12 @@ static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _destroy_env(char **env);
 static int  _get_grouplist(uid_t my_uid, gid_t my_gid, int *ngroups,
 			   gid_t **groups);
+static bool _is_batch_job_finished(uint32_t job_id);
 static void _job_limits_free(void *x);
 static int  _job_limits_match(void *x, void *key);
 static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
+static void _note_batch_job_finished(uint32_t job_id);
 static int  _step_limits_match(void *x, void *key);
 static int  _terminate_all_steps(uint32_t jobid, bool batch);
 static void _rpc_launch_tasks(slurm_msg_t *);
@@ -208,6 +210,11 @@ static time_t last_slurmctld_msg = 0;
 static pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
 static List job_limits_list = NULL;
 static bool job_limits_loaded = false;
+
+#define FINI_JOB_CNT 32
+static pthread_mutex_t fini_mutex = PTHREAD_MUTEX_INITIALIZER;
+static uint32_t fini_job_id[FINI_JOB_CNT];
+static int next_fini_job_inx = 0;
 
 /* NUM_PARALLEL_SUSPEND controls the number of jobs suspended/resumed
  * at one time as well as the number of jobsteps per job that can be
@@ -1254,6 +1261,34 @@ _set_batch_job_limits(slurm_msg_t *msg)
 	slurm_cred_free_args(&arg);
 }
 
+/* These functions prevent a possible race condition if the batch script's
+ * complete RPC is processed before it's launch_successful response. This
+ *  */
+static bool _is_batch_job_finished(uint32_t job_id)
+{
+	bool found_job = false;
+	int i;
+
+	slurm_mutex_lock(&fini_mutex);
+	for (i = 0; i < FINI_JOB_CNT; i++) {
+		if (fini_job_id[i] == job_id) {
+			found_job = true;
+			break;
+		}
+	}
+	slurm_mutex_unlock(&fini_mutex);
+
+	return found_job;
+}
+static void _note_batch_job_finished(uint32_t job_id)
+{
+	slurm_mutex_lock(&fini_mutex);
+	fini_job_id[next_fini_job_inx] = job_id;
+	if (++next_fini_job_inx >= FINI_JOB_CNT)
+		next_fini_job_inx = 0;
+	slurm_mutex_unlock(&fini_mutex);
+}
+
 static void
 _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 {
@@ -1372,10 +1407,11 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 	 * if the job was cancelled in the interim, run through the
 	 * abort logic below. */
 	revoked = slurm_cred_revoked(conf->vctx, req->cred);
-	if (revoked && !strcmp(conf->select_type, "select/serial")) {
-		/* Assume REQUEST_COMPLETE_BATCH_SCRIPT already processed
-		 * and we do not need to repeat the termination logic and
-		 * send another response RPC */
+	if (revoked && _is_batch_job_finished(req->job_id)) {
+		/* If configured with select/serial and the batch job already
+		 * completed, consider the job sucessfully launched and do
+		 * not repeat termination logic below, which in the worst case
+		 * just slows things down with another message. */
 		revoked = false;
 	}
 	if (revoked) {
@@ -3407,6 +3443,7 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id)
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
+	_note_batch_job_finished(job_id);
 	if (slurm_cred_revoke(conf->vctx, job_id, now, now) < 0) {
 		debug("revoking cred for job %u: %m", job_id);
 	} else {
