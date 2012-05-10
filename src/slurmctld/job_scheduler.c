@@ -389,12 +389,9 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 	if (job_iterator == NULL)
 		fatal("list_iterator_create memory allocation failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (job_ptr == fini_job_ptr)
-			continue;
-
 		if (!IS_JOB_PENDING(job_ptr)) {
 			if (IS_JOB_FINISHED(job_ptr)  &&
-			    (job_ptr == fini_job_ptr) &&
+			    (job_ptr != fini_job_ptr) &&
 			    (job_ptr->end_time <= min_age)) {
 				/* If we don't have a db_index by now and we
 				 * are running with the slurmdbd lets put it on
@@ -408,6 +405,9 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 			}
 			continue;
 		}
+
+		if (job_ptr == fini_job_ptr)
+			continue;
 
 		if (job_ptr->priority == 0)
 			continue;
@@ -883,7 +883,7 @@ extern int schedule(uint32_t job_limit)
 			select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 						    SELECT_JOBDATA_IONODES,
 						    &ionodes);
-			if(ionodes) {
+			if (ionodes) {
 				sprintf(tmp_char,"%s[%s]",
 					job_ptr->nodes, ionodes);
 			} else {
