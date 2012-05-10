@@ -141,9 +141,9 @@ static uint32_t _parse_flags(const char *flagstr, const char *msg)
 			   == 0) {
 			curr += taglen;
 			if (flip)
-				outflags |= RESERVE_FLAG_NO_STATIC_ALLOC;
+				outflags |= RESERVE_FLAG_NO_STATIC;
 			else
-				outflags |= RESERVE_FLAG_STATIC_ALLOC;
+				outflags |= RESERVE_FLAG_STATIC;
 		} else {
 			error("Error parsing flags %s.  %s", flagstr, msg);
 			return 0xffffffff;
