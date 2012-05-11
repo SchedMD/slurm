@@ -1176,6 +1176,11 @@ Repeat the reservation at the same time every week
 .TP
 \fISPEC_NODES\fR
 Reservation is for specific nodes (output only)
+.TP
+\fISTATIC_ALLOC\fR
+Make it so after the nodes are selected for a reservation they don't
+change.  Without this option when nodes are selected for a reservation
+and one goes down the reservation will select a new node to fill the spot.
 .RE
 
 .TP
