@@ -40,6 +40,8 @@ set env_name_debug   "SLURM_DEBUG"
 set env_valu_debug   1
 set env_name_nnodes  "SLURM_NNODES"
 
+print_header $test_id
+
 if { [test_bluegene] } {
 	set min_nodes        1
 	set max_nodes        1024
@@ -48,6 +50,13 @@ if { [test_bluegene] } {
 	} else {
 		set env_valu_nprocs  32
 	}
+} elseif {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+} elseif {[test_serial]} {
+	set min_nodes        1
+	set max_nodes        1
+	set env_valu_nprocs  1
 } else {
 	set min_nodes        1
 	set max_nodes        2
@@ -63,20 +72,10 @@ set exit_code        0
 set job_id           0
 set timeout          $max_job_delay
 
-global env
-set env($env_name_debug) $env_valu_debug
-
-print_header $test_id
-
-# if the srun -o option worked this test would work.
-if {[test_cray]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-}
-
 #
 # Set target environment variables
 #
+global env
 set env($env_name_debug)   $env_valu_debug
 set env($env_name_nnodes)  $env_valu_nnodes
 send_user "$env_valu_nnodes $env_valu_nprocs\n";

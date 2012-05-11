@@ -36,14 +36,14 @@ source ./globals
 
 set test_id     "1.22"
 set exit_code   0
+set task_num    32
 
 print_header $test_id
 
 if {[test_bluegene]} {
 	send_user "\nWARNING: This test is incompatible with Bluegene systems\n"
 	exit $exit_code
-}
-if {[test_cray]} {
+} elseif {[test_cray]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
 	exit $exit_code
 }
@@ -53,14 +53,13 @@ if {[test_cray]} {
 #
 set host_0      ""
 set timeout $max_job_delay
-if { [test_bluegene] } {
-	set node_cnt 32-32k
+if { [test_xcpu] } {
+	set node_cnt 1-1
+} elseif {[test_serial]} {
+	set node_cnt 1
+	set task_num 1
 } else {
-	if { [test_xcpu] } {
-		set node_cnt 1-1
-	} else {
-		set node_cnt 1-64
-	}
+	set node_cnt 1-64
 }
 
 set srun_pid [spawn $srun -N$node_cnt -l --threads=1 -t1 $bin_printenv SLURMD_NODENAME]
@@ -92,7 +91,7 @@ if {[string compare $host_0 ""] == 0} {
 #
 set host_0      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N$node_cnt -n32 -O -l --threads=32 -t1 $bin_printenv SLURMD_NODENAME]
+set srun_pid [spawn $srun -N$node_cnt -n$task_num -l --threads=32 -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Memory required by task is not available" {
 		send_user "\nWARNING: DefMemPerTask is configured too high for this test\n"
