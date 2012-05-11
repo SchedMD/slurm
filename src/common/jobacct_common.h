@@ -62,6 +62,7 @@
 #include "src/common/list.h"
 #include "src/common/xstring.h"
 #include "src/common/node_select.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 
 #include <ctype.h>
@@ -72,6 +73,7 @@
 typedef struct {
 	uint16_t taskid; /* contains which task number it was on */
 	uint32_t nodeid; /* contains which node number it was on */
+	slurmd_job_t *job; /* contains slurmd job pointer */
 } jobacct_id_t;
 
 struct jobacctinfo {
@@ -94,8 +96,7 @@ struct jobacctinfo {
 			     (used to figure out ave later) */
 	uint32_t min_cpu; /* min cpu time */
 	jobacct_id_t min_cpu_id; /* contains which task it was on */
-	uint32_t tot_cpu; /* total cpu time
-				 (used to figure out ave later) */
+	uint32_t tot_cpu; /* total cpu time(used to figure out ave later) */
 };
 
 /* Define jobacctinfo_t below to avoid including extraneous slurm headers */

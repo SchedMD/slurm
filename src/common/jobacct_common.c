@@ -297,8 +297,9 @@ extern void jobacct_common_aggregate(struct jobacctinfo *dest,
 		dest->max_pages_id = from->max_pages_id;
 	}
 	dest->tot_pages += from->tot_pages;
-	if ((dest->min_cpu > from->min_cpu)
-	    || (dest->min_cpu == (uint32_t)NO_VAL)) {
+
+	if((dest->min_cpu > from->min_cpu)
+	   || (dest->min_cpu == (uint32_t)NO_VAL)) {
 		if(from->min_cpu == (uint32_t)NO_VAL)
 			from->min_cpu = 0;
 		dest->min_cpu = from->min_cpu;
@@ -433,6 +434,9 @@ extern int jobacct_common_unpack(struct jobacctinfo **jobacct,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	debug2("jobacct_common_unpack:"
+		"unpack_error: size_buf(buffer) %u",
+	size_buf(buffer));
 	xfree(*jobacct);
        	return SLURM_ERROR;
 }

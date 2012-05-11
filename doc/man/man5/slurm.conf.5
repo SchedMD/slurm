@@ -579,11 +579,18 @@ The default value is unlimited (zero) and may not exceed 65533 seconds.
 \fBJobAcctGatherType\fR
 The job accounting mechanism type.
 Acceptable values at present include "jobacct_gather/aix" (for AIX operating
-system), "jobacct_gather/linux" (for Linux operating system) and "jobacct_gather/none"
+system), "jobacct_gather/linux" (for Linux operating system),
+"jobacct_gather/cgroup (experimental) and "jobacct_gather/none"
 (no accounting data collected).
 The default value is "jobacct_gather/none".
-In order to use the \fBsstat\fR tool, "jobacct_gather/aix" or "jobacct_gather/linux"
-must be configured.
+"jobacct_gather/cgroup" is an experimental plugin for the Linux operating system
+that uses cgroups to collect accounting statistics. The plugin collects the
+following statistics: From the cgroup memory subsystem: memory.usage_in_bytes 
+(reported as 'pages') and rss from memory.stat (reported as 'rss'). From the
+cgroup cpuacct subsystem: user cpu time and system cpu time. No value
+is provided by cgroups for virtual memory size ('vsize').
+In order to use the \fBsstat\fR tool, "jobacct_gather/aix", "jobacct_gather/linux",
+or "jobacct_gather/cgroup" must be configured.
 
 .TP
 \fBJobAcctGatherFrequency\fR
@@ -1600,7 +1607,10 @@ Without this option, by default one task will be allocated per
 thread on nodes with more than one \fBThreadsPerCore\fR configured.
 .TP
 \fBCR_CORE_DEFAULT_DIST_BLOCK\fR
-Allocate cores using block distribution by default.
+Allocate cores within a node using block distribution by default.
+This is a pseudo-best-fit algorithm that minimizes the number of
+boards and minimizes the number of sockets (within minimum boards)
+used for the allocation. 
 This default behavior can be overridden specifying a particular 
 "\-m" parameter with srun/salloc/sbatch.
 Without this option, cores will be allocated cyclicly across the sockets.
@@ -2324,6 +2334,14 @@ By default, the \fBNodeAddr\fR will be identical in value to
 \fBNodeName\fR.
 
 .TP
+\fBBoards\fR
+Number of Baseboards in nodes with a baseboard controller.
+Note that when Boards is specified, SocketsPerBoard,
+CoresPerSocket, and ThreadsPerCore should be specified.
+Boards and CPUs are mutully exclusive.
+The default value is 1.
+
+.TP
 \fBCoresPerSocket\fR
 Number of cores in a single physical processor socket (e.g. "2").
 The CoresPerSocket value describes physical cores, not the
@@ -2337,6 +2355,7 @@ The default value is 1.
 Number of logical processors on the node (e.g. "2").
 If \fBCPUs\fR is omitted, it will set equal to the product of
 \fBSockets\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
+CPUs and Boards are mutually exclusive.
 The default value is 1.
 
 .TP
@@ -2391,6 +2410,15 @@ If Sockets is omitted, it will be inferred from
 \fBCPUs\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
 \fBNOTE\fR: If you have multi\-core processors, you will likely
 need to specify these parameters.
+Sockets and SocketsPerBoard are mutually exclusive.
+If Sockets is specified when Boards is also used,
+Sockets is interpreted as SocketsPerBoard rather than total sockets.
+The default value is 1.
+
+.TP
+\fBSocketsPerBoard\fR
+Number of physical processor sockets/chips on a baseboard.
+Sockets and SocketsPerBoard are mutually exclusive.
 The default value is 1.
 
 .TP
@@ -3364,6 +3392,14 @@ See the \fBlogrotate\fR man page for more details.
 }
 .br
 
+.TP
+\fBReqResv\fR
+Specifies users of this partition are required to designate a reservation
+when submitting a job. This option can be useful in restricting usage 
+of a partition that may have higher priority or additional resources to be
+allowed only within a reservation. 
+Possible values are "YES" and "NO".
+The default value is "NO".
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.

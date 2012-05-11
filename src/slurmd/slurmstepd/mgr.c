@@ -1456,6 +1456,7 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 		}
 		jobacct_id.nodeid = job->nodeid;
 		jobacct_id.taskid = job->task[i]->gtid;
+		jobacct_id.job    = job;
 		jobacct_gather_g_add_task(job->task[i]->pid,
 				   &jobacct_id);
 

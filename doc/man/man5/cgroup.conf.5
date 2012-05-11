@@ -70,6 +70,25 @@ ProctrackType=proctrack/cgroup
 No particular cgroup.conf parameter is defined to control the behavior
 of this particular plugin.
 
+.SH "JOBACCT_GATHER/CGROUP PLUGIN"
+
+Slurm \fBjobacct_gather/cgroup\fP plugin is an experimental plugin
+that uses cgroups to generate accounting statistics instead of the linux
+/proc table.  The plugin creates a hierarchical set of
+directories for each task.
+.LP
+This directory structure is like the following:
+.br 
+/cgroup/cpuacct/uid_%uid/job_%jobid/step_%stepid/task_%taskid
+.LP
+Slurm cgroup jobacct_gather plugin is enabled with the following parameter
+in slurm.conf:
+.br 
+JobAcctGatherType=jobacct_gather/cgroup
+
+.LP
+No particular cgroup.conf parameter is defined to control the behavior
+of this particular plugin.
 
 .SH "TASK/CGROUP PLUGIN"
 
