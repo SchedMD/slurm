@@ -472,9 +472,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
+extern int select_p_select_nodeinfo_set_all(void)
 {
-	return other_select_nodeinfo_set_all(last_query_time);
+	return other_select_nodeinfo_set_all();
 }
 
 extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)

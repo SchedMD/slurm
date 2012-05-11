@@ -2236,8 +2236,8 @@ extern int select_p_select_nodeinfo_set_all(void)
 	select_nodeinfo_t *nodeinfo = NULL;
 
 	/* only set this once when the last_node_update is newer than
-	   the last time we set things up. */
-	if(last_set_all && (last_node_update < last_set_all)) {
+	 * the last time we set things up. */
+	if (last_set_all && (last_node_update < last_set_all)) {
 		debug2("Node select info for set all hasn't "
 		       "changed since %ld",
 		       (long)last_set_all);

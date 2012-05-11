@@ -1188,7 +1188,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 		return;
 	}
 
-	select_g_select_nodeinfo_set_all(node_req_msg->last_update - 1);
+	select_g_select_nodeinfo_set_all();
 
 	if ((node_req_msg->last_update - 1) >= last_node_update) {
 		unlock_slurmctld(node_write_lock);

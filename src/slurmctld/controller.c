@@ -468,7 +468,7 @@ int main(int argc, char *argv[])
 					slurm_strerror(error_code));
 			}
 			unlock_slurmctld(config_write_lock);
-			select_g_select_nodeinfo_set_all(time(NULL));
+			select_g_select_nodeinfo_set_all();
 
 			if (recover == 0)
 				_accounting_mark_all_nodes_down("cold-start");

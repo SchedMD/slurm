@@ -905,13 +905,13 @@ extern int select_g_select_nodeinfo_free(dynamic_plugin_data_t *nodeinfo)
 	return rc;
 }
 
-extern int select_g_select_nodeinfo_set_all(time_t last_query_time)
+extern int select_g_select_nodeinfo_set_all(void)
 {
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(select_context[select_context_default].ops.nodeinfo_set_all))
-		(last_query_time);
+		();
 }
 
 extern int select_g_select_nodeinfo_set(struct job_record *job_ptr)

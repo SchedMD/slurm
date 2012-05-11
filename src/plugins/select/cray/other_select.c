@@ -573,12 +573,12 @@ extern int other_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 	return (*(other_select_context->ops.nodeinfo_free))(nodeinfo);
 }
 
-extern int other_select_nodeinfo_set_all(time_t last_query_time)
+extern int other_select_nodeinfo_set_all(void)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(other_select_context->ops.nodeinfo_set_all))(last_query_time);
+	return (*(other_select_context->ops.nodeinfo_set_all))();
 }
 
 extern int other_select_nodeinfo_set(struct job_record *job_ptr)

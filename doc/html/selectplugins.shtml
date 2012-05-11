@@ -226,13 +226,9 @@ to the updated job.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
-<p class="commandline">int select_p_select_nodeinfo_set_all(time_t last_query_time);</p>
+<p class="commandline">int select_p_select_nodeinfo_set_all(void);</p>
 <p style="margin-left:.2in"><b>Description</b>: Update select plugin specific
 information about every node as needed.</p>
-<p style="margin-left:.2in"><b>Argument</b>:
-<span class="commandline"> last_query_time</span>&nbsp; &nbsp;&nbsp;(input) Time
-of previous node state query. Only update the information if data has changed
-since this time.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
@@ -742,6 +738,6 @@ to maintain data format compatibility across different versions of the plugin.</
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 3 August 2011</p>
+<p style="text-align:center;">Last modified 11 May 2012</p>
 
 <!--#include virtual="footer.txt"-->
