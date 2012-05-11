@@ -61,6 +61,7 @@ pthread_mutex_t jobacct_lock __attribute__((weak_import));
 uint32_t jobacct_mem_limit __attribute__((weak_import));
 uint32_t jobacct_step_id __attribute__((weak_import));
 uint32_t jobacct_vmem_limit __attribute__((weak_import));
+slurmd_conf_t *conf __attribute__((weak_import));
 int bg_recover __attribute__((weak_import)) = NOT_FROM_CONTROLLER;
 #else
 uint32_t jobacct_job_id;
@@ -68,6 +69,7 @@ pthread_mutex_t jobacct_lock;
 uint32_t jobacct_mem_limit;
 uint32_t jobacct_step_id;
 uint32_t jobacct_vmem_limit;
+slurmd_conf_t *conf;
 int bg_recover = NOT_FROM_CONTROLLER;
 #endif
 
