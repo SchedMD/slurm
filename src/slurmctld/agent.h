@@ -108,4 +108,11 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type);
 /* Return length of agent's retry_list */
 extern int retry_list_size(void);
 
+/* slurmctld_free_batch_job_launch_msg is a variant of
+ *	slurm_free_job_launch_msg because all environment variables currently
+ *	loaded in one xmalloc buffer (see get_job_env()), which is different
+ *	from how slurmd assembles the data from a message
+ */
+extern void slurmctld_free_batch_job_launch_msg(batch_job_launch_msg_t * msg);
+
 #endif /* !_AGENT_H */

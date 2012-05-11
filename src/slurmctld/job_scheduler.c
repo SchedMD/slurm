@@ -540,7 +540,7 @@ send_reply:
 		response_msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
 		response_msg.data = launch_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		slurm_free_job_launch_msg(launch_msg);
+		slurmctld_free_batch_job_launch_msg(launch_msg);
 		return false;
 	}
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
