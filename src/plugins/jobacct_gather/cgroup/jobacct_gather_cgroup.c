@@ -102,7 +102,6 @@ uint32_t jobacct_vmem_limit;
 const char plugin_name[] = "Job accounting gather cgroup plugin";
 const char plugin_type[] = "jobacct_gather/cgroup";
 const uint32_t plugin_version = 100;
-static int cpunfo_frequency = 0;
 
 /* Other useful declarations */
 
@@ -136,79 +135,6 @@ static int  _is_a_lwp(uint32_t pid);
 static void _get_process_data(void);
 static int  _get_process_data_line(int in, prec_t *prec);
 static void *_watch_tasks(void *arg);
-static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
-					char *sbuf);
-
-static char * skipdot(char *str)
-{
-	int pntr = 0;
-	while (str[pntr]) {
-		if (str[pntr] == '.') {
-			str[pntr] = '0';
-			break;
-		}
-		pntr++;
-	}
-	str[pntr+3] = '\0';
-	return str;
-}
-
-static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
-					char * sbuf)
-{
-	int num_read, fd;
-	FILE *sys_fp = NULL;
-	char freq_file[80];
-	int cpunfo_frqline= 6;
-	char cpunfo_line [128];
-	char cpufreq_line [10];
-
-	if (cpunfo_frequency)
-		/*scling not enabled,static freq obtained*/
-		return 1;
-
-	snprintf(freq_file, 79,
-		 "/sys/devices/system/cpu/cpu%d/cpufreq/%s",
-		 cpu, filename);
-	debug2("_get_sys_interface_freq_line: filename = %s ", freq_file);
-	if ((sys_fp = fopen(freq_file, "r"))!= NULL) {
-		/*frequency scaling enabled*/
-		fd = fileno(sys_fp);
-		fcntl(fd, F_SETFD, FD_CLOEXEC);
-		num_read = read(fd, sbuf, (sizeof(sbuf) - 1));
-		if (num_read > 0) {
-			sbuf[num_read] = '\0';
-			debug2(" cpu %d freq= %s", cpu, sbuf);
-		}
-		fclose(sys_fp);
-	} else {
-		/*frequency scaling not enabled*/
-		if (!cpunfo_frequency){
-			snprintf(freq_file, 14,
-				 "/proc/cpuinfo");
-			debug2("_get_sys_interface_freq_line: filename = %s ",
-			       freq_file);
-			if ((sys_fp = fopen(freq_file, "r"))!=NULL) {
-				while (fgets(cpunfo_line, sizeof cpunfo_line,
-					     sys_fp) != NULL) {
-					if (strstr(cpunfo_line, "cpu MHz") ||
-					    strstr(cpunfo_line,
-						   "cpu GHz")) {
-						break;
-					}
-				}
-				strncpy(cpufreq_line, cpunfo_line+11, 8);
-				skipdot(cpufreq_line);
-				sscanf(cpufreq_line, "%d", &cpunfo_frequency);
-				debug2(" cpunfo_frequency= %d",
-				       cpunfo_frequency);
-				fclose(sys_fp);
-			}
-		}
-		return 1;
-	}
-	return 0;
-}
 
 /*
  * _get_process_data() - Build a table of all current processes
@@ -246,7 +172,6 @@ static void _get_process_data(void)
 	char *cpu_time, *memory_stat, *ptr;
 	size_t cpu_time_size, memory_stat_size;
 	int utime, stime, total_rss, total_pgpgin, page_size;
-	char	sbuf[72];
 
 	page_size = getpagesize();
 	if (!pgid_plugin && cont_id == (uint64_t)NO_VAL) {
