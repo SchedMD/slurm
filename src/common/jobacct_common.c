@@ -298,9 +298,9 @@ extern void jobacct_common_aggregate(struct jobacctinfo *dest,
 	}
 	dest->tot_pages += from->tot_pages;
 
-	if((dest->min_cpu > from->min_cpu)
-	   || (dest->min_cpu == (uint32_t)NO_VAL)) {
-		if(from->min_cpu == (uint32_t)NO_VAL)
+	if ((dest->min_cpu > from->min_cpu)
+	    || (dest->min_cpu == (uint32_t)NO_VAL)) {
+		if (from->min_cpu == (uint32_t)NO_VAL)
 			from->min_cpu = 0;
 		dest->min_cpu = from->min_cpu;
 		dest->min_cpu_id = from->min_cpu_id;
