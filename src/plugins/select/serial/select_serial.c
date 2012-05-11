@@ -1486,7 +1486,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	int i, tot_core;
 
 	info("cons_res: select_p_node_init");
-	if ((cr_type & (CR_CPU | CR_SOCKET | CR_CORE)) == 0) {
+	if ((cr_type & (CR_CPU | CR_CORE)) == 0) {
 		fatal("Invalid SelectTypeParameter: %s",
 		      sched_param_type_string(cr_type));
 	}
