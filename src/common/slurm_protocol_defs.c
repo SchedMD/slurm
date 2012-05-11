@@ -1381,6 +1381,16 @@ extern char *reservation_flags_string(uint16_t flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "NO_LICENSE_ONLY");
 	}
+	if (flags & RESERVE_FLAG_STATIC) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "STATIC");
+	}
+	if (flags & RESERVE_FLAG_NO_STATIC) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "NO_STATIC");
+	}
 	return flag_str;
 }
 
