@@ -137,9 +137,9 @@ static void _get_process_data(void);
 static int  _get_process_data_line(int in, prec_t *prec);
 static void *_watch_tasks(void *arg);
 static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
-		char *sbuf );
+					char *sbuf);
 
-static char * skipdot (char *str)
+static char * skipdot(char *str)
 {
 	int pntr = 0;
 	while (str[pntr]) {
@@ -154,8 +154,8 @@ static char * skipdot (char *str)
 }
 
 static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
-		char * sbuf ) {
-
+					char * sbuf)
+{
 	int num_read, fd;
 	FILE *sys_fp = NULL;
 	char freq_file[80];
@@ -164,7 +164,7 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 	char cpufreq_line [10];
 
 	if (cpunfo_frequency)
-			/*scling not enabled,static freq obtained*/
+		/*scling not enabled,static freq obtained*/
 		return 1;
 
 	snprintf(freq_file, 79,
@@ -185,15 +185,15 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 		/*frequency scaling not enabled*/
 		if (!cpunfo_frequency){
 			snprintf(freq_file, 14,
-					"/proc/cpuinfo");
+				 "/proc/cpuinfo");
 			debug2("_get_sys_interface_freq_line: filename = %s ",
 			       freq_file);
 			if ((sys_fp = fopen(freq_file, "r"))!=NULL) {
 				while (fgets(cpunfo_line, sizeof cpunfo_line,
-					sys_fp ) != NULL) {
+					     sys_fp) != NULL) {
 					if (strstr(cpunfo_line, "cpu MHz") ||
-						strstr(cpunfo_line,
-						"cpu GHz")) {
+					    strstr(cpunfo_line,
+						   "cpu GHz")) {
 						break;
 					}
 				}
@@ -208,7 +208,6 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 		return 1;
 	}
 	return 0;
-
 }
 
 /*
@@ -250,12 +249,12 @@ static void _get_process_data(void)
 	char	sbuf[72];
 
 	page_size = getpagesize();
-	if(!pgid_plugin && cont_id == (uint64_t)NO_VAL) {
+	if (!pgid_plugin && cont_id == (uint64_t)NO_VAL) {
 		debug("cont_id hasn't been set yet not running poll");
 		return;
 	}
 
-	if(processing) {
+	if (processing) {
 		debug("already running, returning");
 		return;
 	}
@@ -268,16 +267,15 @@ static void _get_process_data(void)
 		hertz = 100;	/* default on many systems */
 	}
 
-	if(!pgid_plugin) {
+	if (!pgid_plugin) {
 		/* get only the processes in the proctrack container */
 		slurm_container_get_pids(cont_id, &pids, &npids);
-		if(!npids) {
+		if (!npids) {
 			debug4("no pids in this container %"PRIu64"", cont_id);
 			goto finished;
 		}
 		for (i = 0; i < npids; i++) {
-			snprintf(proc_stat_file, 256,
-				 "/proc/%d/stat", pids[i]);
+			snprintf(proc_stat_file, 256, "/proc/%d/stat", pids[i]);
 			if ((stat_fp = fopen(proc_stat_file, "r"))==NULL)
 				continue;  /* Assume the process went away */
 			/*
@@ -296,17 +294,17 @@ static void _get_process_data(void)
 			prec = xmalloc(sizeof(prec_t));
 			if (_get_process_data_line(fd, prec)) {
 				xcgroup_get_param(&task_cpuacct_cg,
-						"cpuacct.stat",
-						&cpu_time, &cpu_time_size);
+						  "cpuacct.stat",
+						  &cpu_time, &cpu_time_size);
 				sscanf(cpu_time, "%*s %d %*s %d", &utime,
-					&stime);
+				       &stime);
 				prec->usec = utime;
 				prec->ssec = stime;
 				prec->vsize = 0;
 				xcgroup_get_param(&task_memory_cg,
-						"memory.stat",
-						&memory_stat,
-						&memory_stat_size);
+						  "memory.stat",
+						  &memory_stat,
+						  &memory_stat_size);
 				ptr = strstr(memory_stat, "total_rss");
 				sscanf(ptr, "total_rss %u", &total_rss);
 				ptr = strstr(memory_stat, "total_pgpgin");
@@ -314,8 +312,7 @@ static void _get_process_data(void)
 				prec->pages = total_pgpgin;
 				prec->rss = total_rss / page_size;
 				list_append(prec_list, prec);
-			}
-			else
+			} else
 				xfree(prec);
 			fclose(stat_fp);
 		}
@@ -338,23 +335,23 @@ static void _get_process_data(void)
 		while ((slash_proc_entry = readdir(slash_proc))) {
 
 			/* Save a few cyles by simulating
-			strcat(statFileName, slash_proc_entry->d_name);
-			strcat(statFileName, "/stat");
-			while checking for a numeric filename (which really
-			should be a pid).
+			   strcat(statFileName, slash_proc_entry->d_name);
+			   strcat(statFileName, "/stat");
+			   while checking for a numeric filename (which really
+			   should be a pid).
 			*/
 			optr = proc_stat_file + sizeof("/proc");
 			iptr = slash_proc_entry->d_name;
 			i = 0;
 			do {
-				if((*iptr < '0')
-					|| ((*optr++ = *iptr++) > '9')) {
+				if ((*iptr < '0')
+				    || ((*optr++ = *iptr++) > '9')) {
 					i = -1;
 					break;
 				}
 			} while (*iptr);
 
-			if(i == -1)
+			if (i == -1)
 				continue;
 			iptr = (char*)"/stat";
 
@@ -381,15 +378,16 @@ static void _get_process_data(void)
 			prec = xmalloc(sizeof(prec_t));
 			if (_get_process_data_line(fd, prec)) {
 				xcgroup_get_param(&task_cpuacct_cg,
-						"cpuacct.stat",
-						&cpu_time, &cpu_time_size);
+						  "cpuacct.stat",
+						  &cpu_time, &cpu_time_size);
 				sscanf(cpu_time, "%*s %d %*s %d", &utime,
-					&stime);
+				       &stime);
 				prec->usec = utime;
 				prec->ssec = stime;
 				prec->vsize = 0;
 				xcgroup_get_param(&task_memory_cg,"memory.stat",
-					&memory_stat, &memory_stat_size);
+						  &memory_stat,
+						  &memory_stat_size);
 				ptr = strstr(memory_stat, "total_rss");
 				sscanf(ptr, "total_rss %u", &total_rss);
 				ptr = strstr(memory_stat, "total_pgpgin");
@@ -411,15 +409,15 @@ static void _get_process_data(void)
 	}
 
 	slurm_mutex_lock(&jobacct_lock);
-	if(!task_list || !list_count(task_list)) {
+	if (!task_list || !list_count(task_list)) {
 		slurm_mutex_unlock(&jobacct_lock);
 		goto finished;
 	}
 
 	itr = list_iterator_create(task_list);
-	while((jobacct = list_next(itr))) {
+	while ((jobacct = list_next(itr))) {
 		itr2 = list_iterator_create(prec_list);
-		while((prec = list_next(itr2))) {
+		while ((prec = list_next(itr2))) {
 			if (prec->pid == jobacct->pid) {
 #if _DEBUG
 				info("pid:%u ppid:%u rss:%d KB",
@@ -436,8 +434,8 @@ static void _get_process_data(void)
 					MAX(jobacct->max_pages, prec->pages);
 				jobacct->min_cpu = jobacct->tot_cpu =
 					MAX(jobacct->min_cpu,
-						(prec->ssec / hertz +
-						prec->usec / hertz));
+					    (prec->ssec / hertz +
+					     prec->usec / hertz));
 				debug2("%d mem size %u %u time %u(%u+%u) ",
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
@@ -453,8 +451,7 @@ static void _get_process_data(void)
 	if (jobacct_mem_limit) {
 		if (jobacct_step_id == NO_VAL) {
 			debug("Job %u memory used:%u limit:%u KB",
-			      jobacct_job_id, total_job_mem,
-			      jobacct_mem_limit);
+			      jobacct_job_id, total_job_mem, jobacct_mem_limit);
 		} else {
 			debug("Step %u.%u memory used:%u limit:%u KB",
 			      jobacct_job_id, jobacct_step_id,
@@ -473,7 +470,7 @@ static void _get_process_data(void)
 		}
 		_acct_kill_step();
 	} else if (jobacct_job_id && jobacct_vmem_limit &&
-		(total_job_vsize > jobacct_vmem_limit)) {
+		   (total_job_vsize > jobacct_vmem_limit)) {
 		if (jobacct_step_id == NO_VAL) {
 			error("Job %u exceeded %u KB virtual memory limit, "
 			      "being killed", jobacct_job_id,
@@ -527,13 +524,12 @@ static int _is_a_lwp(uint32_t pid) {
 	uint32_t	tgid;
 	int		rc;
 
-	if ( snprintf(proc_status_file, 256,
-		"/proc/%d/status",pid) > 256 ) {
+	if (snprintf(proc_status_file, 256, "/proc/%d/status", pid) > 256) {
  		debug("jobacct_gather_cgroup: unable to build proc_status "
 		      "fpath");
 		return -1;
 	}
-	if ((status_fp = fopen(proc_status_file, "r"))==NULL) {
+	if (!(status_fp = fopen(proc_status_file, "r"))) {
 		debug3("jobacct_gather_cgroup: unable to open %s",
 		       proc_status_file);
 		return -1;
@@ -542,26 +538,25 @@ static int _is_a_lwp(uint32_t pid) {
 
 	do {
 		rc = fscanf(status_fp,
-			"Name:\t%*s\n%*[ \ta-zA-Z0-9:()]\nTgid:\t%d\n",
-			&tgid);
-	} while ( rc < 0 && errno == EINTR );
+			    "Name:\t%*s\n%*[ \ta-zA-Z0-9:()]\nTgid:\t%d\n",
+			    &tgid);
+	} while (rc < 0 && errno == EINTR);
 	fclose(status_fp);
 
 	/* unable to read /proc/[pid]/status content */
-	if ( rc != 1 ) {
+	if (rc != 1) {
 		debug3("jobacct_gather_cgroup: unable to read requested "
 		       "pattern in %s",proc_status_file);
 		return -1;
 	}
 
 	/* if tgid differs from pid, this is a LWP (Thread POSIX) */
-	if ( (uint32_t) tgid != (uint32_t) pid ) {
+	if ((uint32_t) tgid != (uint32_t) pid) {
 		debug3("jobacct_gather_cgroup: pid=%d is a lightweight process",
 		       tgid);
 		return 1;
 	} else
 		return 0;
-
 }
 
 /* _get_process_data_line() - get line of data from /proc/<pid>/stat
@@ -602,25 +597,27 @@ static int _get_process_data_line(int in, prec_t *prec) {
 		return 0;
 
 	nvals = sscanf(tmp + 2,		/* skip space after ')' too */
-			"%c %d %d %d %d %d "
-			"%lu %lu %lu %lu %lu "
-			"%lu %lu %ld %ld %ld %ld "
-			"%ld %ld %lu %lu %ld "
-			"%lu %lu %lu %lu %lu "
-			"%lu %lu %lu %lu %lu "
-			"%lu %lu %lu %ld %ld ",
-		state, &ppid, &pgrp, &session, &tty_nr, &tpgid,
-		&flags, &minflt, &cminflt, &majflt, &cmajflt,
-		&utime, &stime, &cutime, &cstime, &priority, &nice,
-		&timeout, &itrealvalue, &starttime, &vsize, &rss,
-		&f1, &f2, &f3, &f4, &f5 ,&f6, &f7, &f8, &f9, &f10, &f11,
-		&f12, &f13, &f14, &lastcpu);
+		       "%c %d %d %d %d %d "
+		       "%lu %lu %lu %lu %lu "
+		       "%lu %lu %ld %ld %ld %ld "
+		       "%ld %ld %lu %lu %ld "
+		       "%lu %lu %lu %lu %lu "
+		       "%lu %lu %lu %lu %lu "
+		       "%lu %lu %lu %ld %ld ",
+		       state, &ppid, &pgrp, &session, &tty_nr, &tpgid,
+		       &flags, &minflt, &cminflt, &majflt, &cmajflt,
+		       &utime, &stime, &cutime, &cstime, &priority, &nice,
+		       &timeout, &itrealvalue, &starttime, &vsize, &rss,
+		       &f1, &f2, &f3, &f4, &f5 ,&f6, &f7, &f8, &f9, &f10, &f11,
+		       &f12, &f13, &f14, &lastcpu);
 	/* There are some additional fields, which we do not scan or use */
 	if ((nvals < 37) || (rss < 0))
 		return 0;
 
-	/* If current pid corresponds to a Light Weight Process (Thread POSIX) */
-	/* skip it, we will only account the original process (pid==tgid) */
+	/* If current pid corresponds to a Light Weight Process
+	 * (Thread POSIX) skip it, we will only account the original
+	 * process (pid==tgid)
+	 */
 	if (_is_a_lwp(prec->pid) > 0)
   		return 0;
 
@@ -649,10 +646,9 @@ static void *_watch_tasks(void *arg)
 	 * with some systems */
 	_task_sleep(1);
 
-	while(!jobacct_shutdown) {  /* Do this until shutdown is requested */
-		if(!jobacct_suspended) {
+	while (!jobacct_shutdown) {  /* Do this until shutdown is requested */
+		if (!jobacct_suspended)
 			_get_process_data();	/* Update the data */
-		}
 		_task_sleep(freq);
 	}
 	return NULL;
@@ -670,36 +666,36 @@ static void _destroy_prec(void *object)
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-extern int init ( void )
+extern int init (void)
 {
 	/* read cgroup configuration */
-	if ( read_slurm_cgroup_conf(&slurm_cgroup_conf) )
+	if (read_slurm_cgroup_conf(&slurm_cgroup_conf))
 		return SLURM_ERROR;
 
 	/* initialize cpuinfo internal data */
-	if ( xcpuinfo_init() != XCPUINFO_SUCCESS ) {
+	if (xcpuinfo_init() != XCPUINFO_SUCCESS) {
 		free_slurm_cgroup_conf(&slurm_cgroup_conf);
 		return SLURM_ERROR;
 	}
 
 	/* enable cpuacct cgroup subsystem */
-	if ( jobacct_gather_cgroup_cpuacct_init(&slurm_cgroup_conf)
-		!= SLURM_SUCCESS ) {
+	if (jobacct_gather_cgroup_cpuacct_init(&slurm_cgroup_conf) !=
+	    SLURM_SUCCESS) {
 		xcpuinfo_fini();
 		free_slurm_cgroup_conf(&slurm_cgroup_conf);
 		return SLURM_ERROR;
    	}
 
 	/* enable memory cgroup subsystem */
-	if ( jobacct_gather_cgroup_memory_init(&slurm_cgroup_conf)
-		!= SLURM_SUCCESS ) {
+	if (jobacct_gather_cgroup_memory_init(&slurm_cgroup_conf) !=
+	    SLURM_SUCCESS) {
 		xcpuinfo_fini();
 		free_slurm_cgroup_conf(&slurm_cgroup_conf);
 		return SLURM_ERROR;
 	}
 
 	char *temp = slurm_get_proctrack_type();
-	if(!strcasecmp(temp, "proctrack/pgid")) {
+	if (!strcasecmp(temp, "proctrack/pgid")) {
 		info("WARNING: We will use a much slower algorithm with "
 		     "proctrack/pgid, use Proctracktype=proctrack/linuxproc "
 		     "or Proctracktype=proctrack/rms with %s",
@@ -709,7 +705,7 @@ extern int init ( void )
 
 	xfree(temp);
 	temp = slurm_get_accounting_storage_type();
-	if(!strcasecmp(temp, ACCOUNTING_STORAGE_TYPE_NONE)) {
+	if (!strcasecmp(temp, ACCOUNTING_STORAGE_TYPE_NONE)) {
 		error("WARNING: Even though we are collecting accounting "
 		      "information you have asked for it not to be stored "
 		      "(%s) if this is not what you have in mind you will "
@@ -720,7 +716,7 @@ extern int init ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int fini ( void )
+extern int fini (void)
 {
 	jobacct_gather_cgroup_cpuacct_fini(&slurm_cgroup_conf);
 	jobacct_gather_cgroup_memory_fini(&slurm_cgroup_conf);
@@ -741,31 +737,31 @@ extern void jobacct_gather_p_destroy(struct jobacctinfo *jobacct)
 }
 
 extern int jobacct_gather_p_setinfo(struct jobacctinfo *jobacct,
-		enum jobacct_data_type type, void *data)
+				    enum jobacct_data_type type, void *data)
 {
 	return jobacct_common_setinfo(jobacct, type, data);
 }
 
 extern int jobacct_gather_p_getinfo(struct jobacctinfo *jobacct,
-		enum jobacct_data_type type, void *data)
+				    enum jobacct_data_type type, void *data)
 {
 	return jobacct_common_getinfo(jobacct, type, data);
 }
 
 extern void jobacct_gather_p_pack(struct jobacctinfo *jobacct,
-		uint16_t rpc_version,  Buf buffer)
+				  uint16_t rpc_version,  Buf buffer)
 {
 	jobacct_common_pack(jobacct, rpc_version, buffer);
 }
 
 extern int jobacct_gather_p_unpack(struct jobacctinfo **jobacct,
-		uint16_t rpc_version, Buf buffer)
+				   uint16_t rpc_version, Buf buffer)
 {
 	return jobacct_common_unpack(jobacct, rpc_version, buffer);
 }
 
 extern void jobacct_gather_p_aggregate(struct jobacctinfo *dest,
-		struct jobacctinfo *from)
+				       struct jobacctinfo *from)
 {
 	jobacct_common_aggregate(dest, from);
 }
@@ -802,8 +798,8 @@ extern int jobacct_gather_p_startpoll(uint16_t frequency)
 	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
 		error("pthread_attr_setdetachstate error %m");
 
-	if  (pthread_create(&_watch_tasks_thread_id, &attr,
-		&_watch_tasks, NULL)) {
+	if (pthread_create(&_watch_tasks_thread_id, &attr,
+			   &_watch_tasks, NULL)) {
 		debug("jobacct-gather failed to create _watch_tasks "
 		      "thread: %m");
 		frequency = 0;
@@ -819,7 +815,7 @@ extern int jobacct_gather_p_endpoll()
 {
 	jobacct_shutdown = true;
 	slurm_mutex_lock(&jobacct_lock);
-	if(task_list)
+	if (task_list)
 		list_destroy(task_list);
 	task_list = NULL;
 	slurm_mutex_unlock(&jobacct_lock);
@@ -836,22 +832,21 @@ extern int jobacct_gather_p_endpoll()
 
 extern void jobacct_gather_p_change_poll(uint16_t frequency)
 {
-	if(freq == 0 && frequency != 0) {
+	if (freq == 0 && frequency != 0) {
 		pthread_attr_t attr;
 		pthread_t _watch_tasks_thread_id;
 		/* create polling thread */
 		slurm_attr_init(&attr);
 		if (pthread_attr_setdetachstate(&attr,
-			PTHREAD_CREATE_DETACHED))
+						PTHREAD_CREATE_DETACHED))
 			error("pthread_attr_setdetachstate error %m");
 
 		if (pthread_create(&_watch_tasks_thread_id, &attr,
-			&_watch_tasks, NULL)) {
+				   &_watch_tasks, NULL)) {
 			debug("jobacct-gather failed to create _watch_tasks "
 			      "thread: %m");
 			frequency = 0;
-		}
-		else
+		} else
 			debug3("jobacct-gather cgroup dynamic logging "
 			       "enabled");
 		slurm_attr_destroy(&attr);
@@ -901,17 +896,17 @@ extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 	if (jobacct_shutdown)
 		return SLURM_ERROR;
 	if ((rc = jobacct_common_add_task(pid, jobacct_id, task_list)) !=
-		SLURM_SUCCESS)
+	    SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if (jobacct_gather_cgroup_cpuacct_attach_task(pid, jobacct_id)
-		!= SLURM_SUCCESS) {
+	if (jobacct_gather_cgroup_cpuacct_attach_task(pid, jobacct_id) !=
+	    SLURM_SUCCESS)
 		return SLURM_ERROR;
-	}
-	if (jobacct_gather_cgroup_memory_attach_task(pid, jobacct_id)
-		!= SLURM_SUCCESS) {
+
+	if (jobacct_gather_cgroup_memory_attach_task(pid, jobacct_id) !=
+	    SLURM_SUCCESS)
 		return SLURM_ERROR;
-	}
+
 	return rc;
 }
 
@@ -950,14 +945,14 @@ extern void jobacct_gather_p_2_stats(slurmdb_stats_t *stats,
 	jobacct_common_2_stats(stats, jobacct);
 }
 
-extern char* jobacct_cgroup_create_slurm_cg (xcgroup_ns_t* ns) {
-
+extern char* jobacct_cgroup_create_slurm_cg(xcgroup_ns_t* ns)
+ {
 	/* we do it here as we do not have access to the conf structure */
 	/* in libslurm (src/common/xcgroup.c) */
 	xcgroup_t slurm_cg;
 	char* pre = (char*) xstrdup(slurm_cgroup_conf.cgroup_prepend);
 #ifdef MULTIPLE_SLURMD
-	if ( conf->node_name != NULL )
+	if (conf->node_name != NULL)
 		xstrsubstitute(pre,"%n", conf->node_name);
 	else {
 		xfree(pre);
@@ -976,8 +971,7 @@ extern char* jobacct_cgroup_create_slurm_cg (xcgroup_ns_t* ns) {
 		      ns->subsystems);
 		xcgroup_destroy(&slurm_cg);
 		return pre;
-	}
-	else {
+	} else {
 		debug3("slurm cgroup %s successfully created for ns %s: %m",
 		       pre,ns->subsystems);
 		xcgroup_destroy(&slurm_cg);

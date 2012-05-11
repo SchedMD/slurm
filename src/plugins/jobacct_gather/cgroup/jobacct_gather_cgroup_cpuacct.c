@@ -66,8 +66,8 @@ static xcgroup_t job_cpuacct_cg;
 static xcgroup_t step_cpuacct_cg;
 xcgroup_t task_cpuacct_cg;
 
-extern int jobacct_gather_cgroup_cpuacct_init(slurm_cgroup_conf_t
-		*slurm_cgroup_conf)
+extern int jobacct_gather_cgroup_cpuacct_init(
+	slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
 	char release_agent_path[PATH_MAX];
 
@@ -78,23 +78,23 @@ extern int jobacct_gather_cgroup_cpuacct_init(slurm_cgroup_conf_t
 
 	/* initialize cpuacct cgroup namespace */
 	release_agent_path[0]='\0';
-	if (snprintf(release_agent_path,PATH_MAX,"%s/release_cpuacct",
-			slurm_cgroup_conf->cgroup_release_agent) >= PATH_MAX) {
+	if (snprintf(release_agent_path, PATH_MAX, "%s/release_cpuacct",
+		     slurm_cgroup_conf->cgroup_release_agent) >= PATH_MAX) {
 		error("jobacct_gather/cgroup: unable to build cpuacct release "
 		      "agent path");
 		goto error;
 	}
 
-	if (xcgroup_ns_create(slurm_cgroup_conf, &cpuacct_ns,"/cpuacct","",
-				"cpuacct",release_agent_path) !=
-				XCGROUP_SUCCESS) {
+	if (xcgroup_ns_create(slurm_cgroup_conf, &cpuacct_ns, "/cpuacct", "",
+			      "cpuacct", release_agent_path) !=
+	    XCGROUP_SUCCESS) {
 		error("jobacct_gather/cgroup: unable to create cpuacct "
 		      "namespace");
 		goto error;
 	}
 
 	/* check that cpuacct cgroup namespace is available */
-	if (! xcgroup_ns_is_available(&cpuacct_ns)) {
+	if (!xcgroup_ns_is_available(&cpuacct_ns)) {
 		if (slurm_cgroup_conf->cgroup_automount) {
 			if (xcgroup_ns_mount(&cpuacct_ns)) {
 				error("jobacct_gather/cgroup: unable to mount "
@@ -118,14 +118,14 @@ error:
 	return SLURM_ERROR;
 }
 
-extern int jobacct_gather_cgroup_cpuacct_fini(slurm_cgroup_conf_t
-		*slurm_cgroup_conf)
+extern int jobacct_gather_cgroup_cpuacct_fini(
+	slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
 	xcgroup_t cpuacct_cg;
 
 	if (user_cgroup_path[0] == '\0' ||
-		job_cgroup_path[0] == '\0' ||
-		jobstep_cgroup_path[0] == '\0')
+	    job_cgroup_path[0] == '\0' ||
+	    jobstep_cgroup_path[0] == '\0')
 		return SLURM_SUCCESS;
 
 	/*
@@ -133,8 +133,9 @@ extern int jobacct_gather_cgroup_cpuacct_fini(slurm_cgroup_conf_t
 	 * The release_agent will asynchroneously be called for the step
 	 * cgroup. It will do the necessary cleanup.
 	 */
-	if (xcgroup_create(&cpuacct_ns,&cpuacct_cg,"",0,0) == XCGROUP_SUCCESS) {
-		xcgroup_set_uint32_param(&cpuacct_cg,"tasks",getpid());
+	if (xcgroup_create(&cpuacct_ns, &cpuacct_cg, "", 0, 0)
+	    == XCGROUP_SUCCESS) {
+		xcgroup_set_uint32_param(&cpuacct_cg, "tasks", getpid());
 		xcgroup_destroy(&cpuacct_cg);
 	}
 
@@ -150,8 +151,8 @@ extern int jobacct_gather_cgroup_cpuacct_fini(slurm_cgroup_conf_t
 	return SLURM_SUCCESS;
 }
 
-extern int jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid,
-		jobacct_id_t *jobacct_id)
+extern int jobacct_gather_cgroup_cpuacct_attach_task(
+	pid_t pid, jobacct_id_t *jobacct_id)
 {
 	xcgroup_t cpuacct_cg;
 	slurmd_job_t *job;
@@ -173,14 +174,14 @@ extern int jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid,
 
 	/* create slurm root cg in this cg namespace */
 	slurm_cgpath = jobacct_cgroup_create_slurm_cg(&cpuacct_ns);
-	if ( slurm_cgpath == NULL ) {
+	if (!slurm_cgpath) {
 		return SLURM_ERROR;
 	}
 
 	/* build user cgroup relative path if not set (may not be) */
 	if (*user_cgroup_path == '\0') {
 		if (snprintf(user_cgroup_path, PATH_MAX,
-				"%s/uid_%u", slurm_cgpath, uid) >= PATH_MAX) {
+			     "%s/uid_%u", slurm_cgpath, uid) >= PATH_MAX) {
 			error("jobacct_gather/cgroup: unable to build uid %u "
 			      "cgroup relative path", uid);
 			xfree(slurm_cgpath);
@@ -190,29 +191,29 @@ extern int jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid,
 
 	/* build job cgroup relative path if not set (may not be) */
 	if (*job_cgroup_path == '\0') {
-		if (snprintf(job_cgroup_path,PATH_MAX,"%s/job_%u",
-				user_cgroup_path,jobid) >= PATH_MAX) {
+		if (snprintf(job_cgroup_path, PATH_MAX, "%s/job_%u",
+			     user_cgroup_path, jobid) >= PATH_MAX) {
 			error("jobacct_gather/cgroup: unable to build job %u "
-			      "cpuacct cg relative path : %m",jobid);
+			      "cpuacct cg relative path : %m", jobid);
 			return SLURM_ERROR;
 		}
 	}
 
 	/* build job step cgroup relative path if not set (may not be) */
 	if (*jobstep_cgroup_path == '\0') {
-		if (snprintf(jobstep_cgroup_path,PATH_MAX,"%s/step_%u",
-				job_cgroup_path,stepid) >= PATH_MAX) {
+		if (snprintf(jobstep_cgroup_path, PATH_MAX, "%s/step_%u",
+			     job_cgroup_path, stepid) >= PATH_MAX) {
 			error("jobacct_gather/cgroup: unable to build job step "
-			      "%u cpuacct cg relative path : %m",stepid);
+			      "%u cpuacct cg relative path : %m", stepid);
 			return SLURM_ERROR;
 		}
 	}
 
 	/* build task cgroup relative path */
-	if (snprintf(task_cgroup_path,PATH_MAX,"%s/task_%u",
-		jobstep_cgroup_path,taskid) >= PATH_MAX) {
-			error("jobacct_gather/cgroup: unable to build task %u "
-			      "cpuacct cg relative path : %m",taskid);
+	if (snprintf(task_cgroup_path, PATH_MAX, "%s/task_%u",
+		     jobstep_cgroup_path, taskid) >= PATH_MAX) {
+		error("jobacct_gather/cgroup: unable to build task %u "
+		      "cpuacct cg relative path : %m", taskid);
 		return SLURM_ERROR;
 	}
 
@@ -231,7 +232,8 @@ extern int jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid,
 	 * to avoid this scenario.
 	 */
 
-	if (xcgroup_create(&cpuacct_ns,&cpuacct_cg,"",0,0) != XCGROUP_SUCCESS) {
+	if (xcgroup_create(&cpuacct_ns, &cpuacct_cg, "", 0, 0)
+	    != XCGROUP_SUCCESS) {
 		error("jobacct_gather/cgroup: unable to create root cpuacct "
 		      "xcgroup");
 		return SLURM_ERROR;
@@ -245,11 +247,11 @@ extern int jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid,
 	/*
 	 * Create user cgroup in the cpuacct ns (it could already exist)
 	 */
-	if (xcgroup_create(&cpuacct_ns,&user_cpuacct_cg,
-				user_cgroup_path,
-				uid,gid) != XCGROUP_SUCCESS) {
+	if (xcgroup_create(&cpuacct_ns, &user_cpuacct_cg,
+			   user_cgroup_path,
+			   uid, gid) != XCGROUP_SUCCESS) {
 		error("jobacct_gather/cgroup: unable to create user %u cpuacct "
-		      "cgroup",uid);
+		      "cgroup", uid);
 		fstatus = SLURM_ERROR;
 		goto error;
 	}
@@ -257,7 +259,7 @@ extern int jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid,
 	if (xcgroup_instanciate(&user_cpuacct_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuacct_cg);
 		error("jobacct_gather/cgroup: unable to instanciate user %u "
-		      "cpuacct cgroup",uid);
+		      "cpuacct cgroup", uid);
 		fstatus = SLURM_ERROR;
 		goto error;
 	}
@@ -265,12 +267,12 @@ extern int jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid,
 	/*
 	 * Create job cgroup in the cpuacct ns (it could already exist)
 	 */
-	if (xcgroup_create(&cpuacct_ns,&job_cpuacct_cg,
-				job_cgroup_path,
-				uid,gid) != XCGROUP_SUCCESS) {
+	if (xcgroup_create(&cpuacct_ns, &job_cpuacct_cg,
+			   job_cgroup_path,
+			   uid, gid) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuacct_cg);
 		error("jobacct_gather/cgroup: unable to create job %u cpuacct "
-		      "cgroup",jobid);
+		      "cgroup", jobid);
 		fstatus = SLURM_ERROR;
 		goto error;
 	}
@@ -279,7 +281,7 @@ extern int jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid,
 		xcgroup_destroy(&user_cpuacct_cg);
 		xcgroup_destroy(&job_cpuacct_cg);
 		error("jobacct_gather/cgroup: unable to instanciate job %u "
-		      "cpuacct cgroup",jobid);
+		      "cpuacct cgroup", jobid);
 		fstatus = SLURM_ERROR;
 		goto error;
 	}
@@ -287,15 +289,15 @@ extern int jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid,
 	/*
 	 * Create step cgroup in the cpuacct ns (it could already exist)
 	 */
-	if (xcgroup_create(&cpuacct_ns,&step_cpuacct_cg,
-				jobstep_cgroup_path,
-				uid,gid) != XCGROUP_SUCCESS) {
+	if (xcgroup_create(&cpuacct_ns, &step_cpuacct_cg,
+			   jobstep_cgroup_path,
+			   uid, gid) != XCGROUP_SUCCESS) {
 		/* do not delete user/job cgroup as they can exist for other
 		 * steps, but release cgroup structures */
 		xcgroup_destroy(&user_cpuacct_cg);
 		xcgroup_destroy(&job_cpuacct_cg);
 		error("jobacct_gather/cgroup: unable to create jobstep %u.%u "
-		      "cpuacct cgroup",jobid, stepid);
+		      "cpuacct cgroup", jobid, stepid);
 		fstatus = SLURM_ERROR;
 		goto error;
 	}
@@ -305,7 +307,7 @@ extern int jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid,
 		xcgroup_destroy(&job_cpuacct_cg);
 		xcgroup_destroy(&step_cpuacct_cg);
 		error("jobacct_gather/cgroup: unable to instantiate jobstep "
-		      "%u.%u cpuacct cgroup",jobid, stepid);
+		      "%u.%u cpuacct cgroup", jobid, stepid);
 		fstatus = SLURM_ERROR;
 		goto error;
 	}
@@ -313,15 +315,15 @@ extern int jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid,
 	/*
 	 * Create task cgroup in the cpuacct ns
 	 */
-	if (xcgroup_create(&cpuacct_ns,&task_cpuacct_cg,
-				task_cgroup_path,
-				uid,gid) != XCGROUP_SUCCESS) {
+	if (xcgroup_create(&cpuacct_ns, &task_cpuacct_cg,
+			   task_cgroup_path,
+			   uid, gid) != XCGROUP_SUCCESS) {
 		/* do not delete user/job cgroup as they can exist for other
 		 * steps, but release cgroup structures */
 		xcgroup_destroy(&user_cpuacct_cg);
 		xcgroup_destroy(&job_cpuacct_cg);
 		error("jobacct_gather/cgroup: unable to create jobstep %u.%u "
-		      "task %u cpuacct cgroup",jobid, stepid, taskid);
+		      "task %u cpuacct cgroup", jobid, stepid, taskid);
 		fstatus = SLURM_ERROR;
 		goto error;
 	}
@@ -331,7 +333,7 @@ extern int jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid,
 		xcgroup_destroy(&job_cpuacct_cg);
 		xcgroup_destroy(&step_cpuacct_cg);
 		error("jobacct_gather/cgroup: unable to instantiate jobstep "
-		      "%u.%u task %u cpuacct cgroup",jobid, stepid, taskid);
+		      "%u.%u task %u cpuacct cgroup", jobid, stepid, taskid);
 		fstatus = SLURM_ERROR;
 		goto error;
 	}
@@ -339,7 +341,7 @@ extern int jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid,
 	/*
 	 * Attach the slurmstepd to the task cpuacct cgroup
 	 */
-	rc = xcgroup_add_pids(&task_cpuacct_cg,&pid,1);
+	rc = xcgroup_add_pids(&task_cpuacct_cg, &pid, 1);
 	if (rc != XCGROUP_SUCCESS) {
 		error("jobacct_gather/cgroup: unable to add slurmstepd to "
 		      "cpuacct cg '%s'", task_cpuacct_cg.path);
