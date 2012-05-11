@@ -350,9 +350,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 			error("Job %u allocated no nodes to be killed on",
 			      job_ptr->job_id);
 		}
-		xfree(kill_job->nodes);
-		select_g_select_jobinfo_free(kill_job->select_jobinfo);
-		xfree(kill_job);
+		slurm_free_kill_job_msg(kill_job);
 		hostlist_destroy(agent_args->hostlist);
 		xfree(agent_args);
 		return;
