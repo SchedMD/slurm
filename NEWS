@@ -50,6 +50,9 @@ documents those changes that are of interest to users and admins.
  -- Various performance improvements for up to 500% higher throughput depending
     upon configuration. Work supported by the Oak Ridge National Laboratory
     Extreme Scale Systems Center.
+ -- Added jobacct_gather/cgroup plugin.  It is not advised to use this in
+    production as it isn't currently complete and doesn't provide an equivalent
+    substitution for jobacct_gather/linux yet. Work by Martin Perry, Bull.
 
 * Changes in SLURM 2.4.0.pre4
 =============================
