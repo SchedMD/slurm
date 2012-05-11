@@ -61,12 +61,14 @@ pthread_mutex_t jobacct_lock __attribute__((weak_import));
 uint32_t jobacct_mem_limit __attribute__((weak_import));
 uint32_t jobacct_step_id __attribute__((weak_import));
 uint32_t jobacct_vmem_limit __attribute__((weak_import));
+int bg_recover __attribute__((weak_import)) = NOT_FROM_CONTROLLER;
 #else
 uint32_t jobacct_job_id;
 pthread_mutex_t jobacct_lock;
 uint32_t jobacct_mem_limit;
 uint32_t jobacct_step_id;
 uint32_t jobacct_vmem_limit;
+int bg_recover = NOT_FROM_CONTROLLER;
 #endif
 
 
@@ -593,33 +595,40 @@ static void _destroy_prec(void *object)
  */
 extern int init (void)
 {
-	/* read cgroup configuration */
-	if (read_slurm_cgroup_conf(&slurm_cgroup_conf))
-		return SLURM_ERROR;
+	char *temp;
 
-	/* initialize cpuinfo internal data */
-	if (xcpuinfo_init() != XCPUINFO_SUCCESS) {
-		free_slurm_cgroup_conf(&slurm_cgroup_conf);
-		return SLURM_ERROR;
+	/* If running on the slurmctld don't do any of this since it
+	   isn't needed.
+	*/
+	if (bg_recover == NOT_FROM_CONTROLLER) {
+		/* read cgroup configuration */
+		if (read_slurm_cgroup_conf(&slurm_cgroup_conf))
+			return SLURM_ERROR;
+
+		/* initialize cpuinfo internal data */
+		if (xcpuinfo_init() != XCPUINFO_SUCCESS) {
+			free_slurm_cgroup_conf(&slurm_cgroup_conf);
+			return SLURM_ERROR;
+		}
+
+		/* enable cpuacct cgroup subsystem */
+		if (jobacct_gather_cgroup_cpuacct_init(&slurm_cgroup_conf) !=
+		    SLURM_SUCCESS) {
+			xcpuinfo_fini();
+			free_slurm_cgroup_conf(&slurm_cgroup_conf);
+			return SLURM_ERROR;
+		}
+
+		/* enable memory cgroup subsystem */
+		if (jobacct_gather_cgroup_memory_init(&slurm_cgroup_conf) !=
+		    SLURM_SUCCESS) {
+			xcpuinfo_fini();
+			free_slurm_cgroup_conf(&slurm_cgroup_conf);
+			return SLURM_ERROR;
+		}
 	}
 
-	/* enable cpuacct cgroup subsystem */
-	if (jobacct_gather_cgroup_cpuacct_init(&slurm_cgroup_conf) !=
-	    SLURM_SUCCESS) {
-		xcpuinfo_fini();
-		free_slurm_cgroup_conf(&slurm_cgroup_conf);
-		return SLURM_ERROR;
-   	}
-
-	/* enable memory cgroup subsystem */
-	if (jobacct_gather_cgroup_memory_init(&slurm_cgroup_conf) !=
-	    SLURM_SUCCESS) {
-		xcpuinfo_fini();
-		free_slurm_cgroup_conf(&slurm_cgroup_conf);
-		return SLURM_ERROR;
-	}
-
-	char *temp = slurm_get_proctrack_type();
+	temp = slurm_get_proctrack_type();
 	if (!strcasecmp(temp, "proctrack/pgid")) {
 		info("WARNING: We will use a much slower algorithm with "
 		     "proctrack/pgid, use Proctracktype=proctrack/linuxproc "
@@ -637,6 +646,7 @@ extern int init (void)
 		      "need to change it.", ACCOUNTING_STORAGE_TYPE_NONE);
 	}
 	xfree(temp);
+
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
