@@ -296,14 +296,6 @@ main (int argc, char *argv[])
 		fatal("Unable to clear interconnect state.");
 	switch_g_slurmd_init();
 
-	/* Make sure we can load the jobacct_gather plugin so if there
-	   is a problem we don't have to wait for the slurm_stepd to
-	   figure it out.
-	*/
-	if (slurm_jobacct_gather_init() != SLURM_SUCCESS)
-		fatal("Unable to initialize jobacct_gather plugin.  "
-		      "This is manditory for pack/unpack jobs.");
-	slurm_jobacct_gather_fini();
 	_create_msg_socket();
 
 	conf->pid = getpid();
@@ -1430,6 +1422,8 @@ _slurmd_init(void)
 	_set_topo_info();
 
 	_print_conf();
+	if (slurm_jobacct_gather_init() != SLURM_SUCCESS)
+		return SLURM_FAILURE;
 	if (slurm_proctrack_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 	if (slurmd_task_init() != SLURM_SUCCESS)
