@@ -277,7 +277,7 @@ expect {
 
 
 # Start Test 1
-inc3_11_1 
+inc3_11_1
 spawn $scontrol show res
 
 # Start Test 2
