@@ -1108,7 +1108,6 @@ error:
 int
 slurm_cred_begin_expiration(slurm_cred_ctx_t ctx, uint32_t jobid)
 {
-	char buf[64];
 	job_state_t  *j = NULL;
 
 	xassert(ctx != NULL);
@@ -1131,10 +1130,13 @@ slurm_cred_begin_expiration(slurm_cred_ctx_t ctx, uint32_t jobid)
 	}
 
 	j->expiration  = time(NULL) + ctx->expiry_window;
-
-	debug2 ("set revoke expiration for jobid %u to %s",
+#if EXTREME_DEBUG
+{
+	char buf[64];
+	debug2("set revoke expiration for jobid %u to %s",
 		j->jobid, timestr (&j->expiration, buf, 64) );
-
+}
+#endif
 	slurm_mutex_unlock(&ctx->mutex);
 	return SLURM_SUCCESS;
 
@@ -1852,9 +1854,11 @@ _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 	}
 
 	if (cred->ctime <= j->revoked) {
+#if EXTREME_DEBUG
 		char buf[64];
-		debug ("cred for %u revoked. expires at %s",
-		       j->jobid, timestr (&j->expiration, buf, 64));
+		debug3("cred for %u revoked. expires at %s",
+		       j->jobid, timestr(&j->expiration, buf, 64));
+#endif
 		return true;
 	}
 
@@ -1917,9 +1921,14 @@ _job_state_destroy(job_state_t *j)
 static void
 _clear_expired_job_states(slurm_cred_ctx_t ctx)
 {
+	static time_t last_scan = 0;
 	time_t        now = time(NULL);
 	ListIterator  i   = NULL;
 	job_state_t  *j   = NULL;
+
+	if ((now - last_scan) < 2)	/* Reduces slurmd overhead */
+		return;
+	last_scan = now;
 
 	i = list_iterator_create(ctx->job_list);
 	if (!i)
@@ -1954,17 +1963,20 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 static void
 _clear_expired_credential_states(slurm_cred_ctx_t ctx)
 {
+	static time_t last_scan = 0;
 	time_t        now = time(NULL);
 	ListIterator  i   = NULL;
 	cred_state_t *s   = NULL;
 
-	i = list_iterator_create(ctx->state_list);
+	if ((now - last_scan) < 2)	/* Reduces slurmd overhead */
+		return;
+	last_scan = now;
 
+	i = list_iterator_create(ctx->state_list);
 	while ((s = list_next(i))) {
 		if (now > s->expiration)
 			list_delete_item(i);
 	}
-
 	list_iterator_destroy(i);
 }
 
