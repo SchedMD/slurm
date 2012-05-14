@@ -628,6 +628,9 @@ extern int init (void)
 			free_slurm_cgroup_conf(&slurm_cgroup_conf);
 			return SLURM_ERROR;
 		}
+		info("WARNING: The %s plugin is experimental, and should "
+		     "not currently be used in production environments.",
+		     plugin_name);
 	}
 
 	temp = slurm_get_proctrack_type();
