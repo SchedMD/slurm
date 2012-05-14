@@ -355,7 +355,7 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map)
  * IN: cr_type     - resource type
  * OUT: cpu_cnt    - number of cpus that can be used by this job
  * IN: test_only   - ignore allocated memory check
- * RET SLURM_SUCCESS if resource found for job
+ * RET SLURM_SUCCESS index of selected node or -1 if none
  */
 static int _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 			   bitstr_t *core_map, uint32_t cr_node_cnt,
@@ -366,7 +366,7 @@ static int _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 	uint16_t *cpu_cnt;
 	uint32_t n;
 	int i_first, i_last;
-	int rc = SLURM_ERROR;
+	int node_inx = -1;
 
 	if (cr_node_cnt != node_record_count) {
 		error("select/serial: node count inconsistent with slurmctld");
@@ -389,12 +389,12 @@ static int _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 		if (cpu_cnt[n]) {
 			bit_nclear(node_map, 0, (node_record_count - 1));
 			bit_set(node_map, n);
-			rc = SLURM_SUCCESS;
+			node_inx = n;
 			break;	/* select/serial: only need one node */
 		}
 	}
 	*cpu_cnt_ptr = cpu_cnt;
-	return rc;
+	return node_inx;
 }
 
 
@@ -413,35 +413,29 @@ static uint16_t *_select_nodes(struct job_record *job_ptr,
 				struct node_use_record *node_usage,
 				uint16_t cr_type, bool test_only)
 {
-	int rc;
+	int node_inx;
 	uint16_t *cpu_cnt, *cpus = NULL;
-	uint32_t start, n, a;
 
 	if (bit_set_count(node_map) == 0)
 		return NULL;
 
 	/* get resource usage for this job from first available node */
-	rc = _get_res_usage(job_ptr, node_map, core_map, cr_node_cnt,
-			    node_usage, cr_type, &cpu_cnt, test_only);
+	node_inx = _get_res_usage(job_ptr, node_map, core_map, cr_node_cnt,
+				  node_usage, cr_type, &cpu_cnt, test_only);
 
 	/* if successful, sync up the core_map with the node_map, and
 	 * create a cpus array */
-	if (rc == SLURM_SUCCESS) {
+	if (node_inx  >= 0) {
 		cpus = xmalloc(sizeof(uint16_t));
-		start = 0;
-		a = 0;
-		for (n = 0; n < cr_node_cnt; n++) {
-			if (bit_test(node_map, n)) {
-				cpus[a++] = cpu_cnt[n];
-				if (cr_get_coremap_offset(n) != start) {
-					bit_nclear(core_map, start,
-						   (cr_get_coremap_offset(n))-1);
-				}
-				start = cr_get_coremap_offset(n + 1);
-			}
+		cpus[0] = cpu_cnt[node_inx];
+		if (node_inx != 0) {
+			bit_nclear(core_map, 0,
+				   (cr_get_coremap_offset(node_inx))-1);
 		}
-		if (cr_get_coremap_offset(n) != start) {
-			bit_nclear(core_map, start, cr_get_coremap_offset(n)-1);
+		if (node_inx < (cr_node_cnt - 1)) {
+			bit_nclear(core_map,
+				   (cr_get_coremap_offset(node_inx + 1)),
+				   (cr_get_coremap_offset(cr_node_cnt) - 1));
 		}
 	}
 
