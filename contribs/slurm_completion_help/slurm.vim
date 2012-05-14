@@ -36,7 +36,7 @@ endif
 " ===================
 " Slurm SBATCH comments are one liners beginning with #SBATCH and containing
 " the keyword (i.e.SBATCH), one option (here only options starting with -- are
-" considered), and one optional value. 
+" considered), and one optional value.
 syn region	shSlurmComment start="^#SBATCH" end="\n" oneline contains=shSlurmKeyword,shSlurmOption,shSlurmValue
 " all shSlurmString are suspect; they probably could be narrowed down to more
 " specific regular expressions. Typical example is --mail-type or --begin
@@ -58,9 +58,9 @@ syn match    	shSlurmOption	contained	'--cpus-per-task=' nextgroup=shSlurmNumber
 syn match    	shSlurmOption	contained	'--dependency=' nextgroup=shSlurmString
 syn match    	shSlurmOption	contained	'--workdir=' nextgroup=shSlurmString
 syn match    	shSlurmOption	contained	'--error=' nextgroup=shSlurmString
-syn match    	shSlurmOption	contained	'--exclusive' 
+syn match    	shSlurmOption	contained	'--exclusive'
 syn match    	shSlurmOption	contained	'--nodefile=' nextgroup=shSlurmString
-syn match    	shSlurmOption	contained	'--get-user-env' 
+syn match    	shSlurmOption	contained	'--get-user-env'
 syn match    	shSlurmOption	contained	'--get-user-env=' nextgroup=shSlurmEnv
 syn match    	shSlurmOption	contained	'--gid=' nextgroup=shSlurmString
 syn match    	shSlurmOption	contained	'--hint=' nextgroup=shSlurmHint
@@ -68,7 +68,7 @@ syn match    	shSlurmOption	contained	'--immediate' nextgroup=shSlurmNumber
 syn match    	shSlurmOption	contained	'--input=' nextgroup=shSlurmString
 syn match    	shSlurmOption	contained	'--job-name=' nextgroup=shSlurmString
 syn match    	shSlurmOption	contained	'--job-id=' nextgroup=shSlurmNumber
-syn match    	shSlurmOption	contained	'--no-kill' 
+syn match    	shSlurmOption	contained	'--no-kill'
 syn match    	shSlurmOption	contained	'--licences=' nextgroup=shSlurmString
 syn match    	shSlurmOption	contained	'--distribution=' nextgroup=shSlurmDist
 syn match 	shSlurmOption	contained	'--mail-user=' nextgroup=shSlurmEmail
@@ -89,16 +89,16 @@ syn match    	shSlurmOption	contained	'--no-requeue'
 syn match 	shSlurmOption	contained	'--ntasks-per-core=' nextgroup=shSlurmNumber
 syn match    	shSlurmOption	contained	'--ntasks-per-socket=' nextgroup=shSlurmNumber
 syn match    	shSlurmOption	contained	'--ntasls-per-node=' nextgroup=shSlurmNumber
-syn match    	shSlurmOption	contained	'--overcommit' 
+syn match    	shSlurmOption	contained	'--overcommit'
 syn match    	shSlurmOption	contained	'--output=' nextgroup=shSlurmString
 syn match    	shSlurmOption	contained	'--open-mode=' nextgroup=shSlurmMode
 syn match    	shSlurmOption	contained	'--partition=' nextgroup=shSlurmString
-syn match    	shSlurmOption	contained	'--propagate' 
+syn match    	shSlurmOption	contained	'--propagate'
 syn match    	shSlurmOption	contained	'--propagate=' nextgroup=shSlurmPropag
-syn match    	shSlurmOption	contained	'--quiet' 
+syn match    	shSlurmOption	contained	'--quiet'
 syn match    	shSlurmOption	contained	'--requeue'
 syn match    	shSlurmOption	contained	'--reservation=' nextgroup=shSlurmString
-syn match    	shSlurmOption	contained	'--share' 
+syn match    	shSlurmOption	contained	'--share'
 syn match    	shSlurmOption	contained	'--signal=' nextgroup=shSlurmString
 syn match    	shSlurmOption	contained	'--time=' nextgroup=shSlurmDuration
 syn match    	shSlurmOption	contained	'--tasks-per-node=' nextgroup=shSlurmNumber
@@ -143,4 +143,3 @@ hi def link shSlurmPropag	Special
 hi def link shSlurmInterval	Special
 hi def link shSlurmDist	Special
 hi def link shSlurmEmail	Special
-
