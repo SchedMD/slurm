@@ -355,8 +355,9 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map)
  * IN: cr_type     - resource type
  * OUT: cpu_cnt    - number of cpus that can be used by this job
  * IN: test_only   - ignore allocated memory check
+ * RET SLURM_SUCCESS if resource found for job
  */
-static void _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
+static int _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 			   bitstr_t *core_map, uint32_t cr_node_cnt,
 			   struct node_use_record *node_usage,
 			   uint16_t cr_type, uint16_t **cpu_cnt_ptr, 
@@ -365,7 +366,14 @@ static void _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 	uint16_t *cpu_cnt;
 	uint32_t n;
 	int i_first, i_last;
+	int rc = SLURM_ERROR;
 
+	if (cr_node_cnt != node_record_count) {
+		error("select/serial: node count inconsistent with slurmctld");
+		return SLURM_ERROR;
+	}
+	if (job_ptr->details && job_ptr->details->req_node_bitmap)
+		bit_and(node_map, job_ptr->details->req_node_bitmap);
 	cpu_cnt = xmalloc(cr_node_cnt * sizeof(uint16_t));
 	i_first = bit_ffs(node_map);
 	if (i_first >= 0)
@@ -378,39 +386,15 @@ static void _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 		cpu_cnt[n] = _can_job_run_on_node(job_ptr, core_map, n,
 						  node_usage, cr_type,
 						  test_only);
-		if (cpu_cnt[n])
+		if (cpu_cnt[n]) {
+			bit_nclear(node_map, 0, (node_record_count - 1));
+			bit_set(node_map, n);
+			rc = SLURM_SUCCESS;
 			break;	/* select/serial: only need one node */
+		}
 	}
 	*cpu_cnt_ptr = cpu_cnt;
-}
-
-/* this is the heart of the selection process */
-static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
-			 uint32_t cr_node_cnt, uint16_t *cpu_cnt)
-{
-	int i;
-	struct job_details *details_ptr = job_ptr->details;
-
-	xassert(cpu_cnt);
-	xassert(node_map);
-	if (cr_node_cnt != node_record_count) {
-		error("select/serial: node count inconsistent with slurmctld");
-		return SLURM_ERROR;
-	}
-	if (details_ptr->req_node_bitmap)
-		bit_or(node_map, details_ptr->req_node_bitmap);
-	i = bit_ffs(node_map);
-	if (i < 0)
-		return SLURM_ERROR;
-	for ( ; i < node_record_count; i++) {
-		if (cpu_cnt[i])
-			break;	/* select/serial: only need one node */
-	}
-	if (i >= node_record_count)
-		return SLURM_ERROR;
-	bit_nclear(node_map, 0, (node_record_count - 1));
-	bit_set(node_map, i);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 
@@ -436,17 +420,14 @@ static uint16_t *_select_nodes(struct job_record *job_ptr,
 	if (bit_set_count(node_map) == 0)
 		return NULL;
 
-	/* get resource usage for this job from each available node */
-	_get_res_usage(job_ptr, node_map, core_map, cr_node_cnt,
-		       node_usage, cr_type, &cpu_cnt, test_only);
-
-	/* choose first node for the job */
-	rc = _choose_nodes(job_ptr, node_map, cr_node_cnt, cpu_cnt);
+	/* get resource usage for this job from first available node */
+	rc = _get_res_usage(job_ptr, node_map, core_map, cr_node_cnt,
+			    node_usage, cr_type, &cpu_cnt, test_only);
 
 	/* if successful, sync up the core_map with the node_map, and
 	 * create a cpus array */
 	if (rc == SLURM_SUCCESS) {
-		cpus = xmalloc(bit_set_count(node_map) * sizeof(uint16_t));
+		cpus = xmalloc(sizeof(uint16_t));
 		start = 0;
 		a = 0;
 		for (n = 0; n < cr_node_cnt; n++) {
