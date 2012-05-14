@@ -87,6 +87,10 @@ of the SLURM contribs distribution follows:
      API to SLURM using perl.  Making available all SLURM command that exist
      in the SLURM proper API.
 
+  phpext    	     [ PHP API to SLURM source ]
+     API to SLURM using php.  Not a complete API, but offers quite a few
+     interfaces to existing SLURM proper APIs.
+
   ptrace.patch       [ Linux Kernel patch required to for TotalView use ]
      0. This has been fixed on most recent Linux kernels. Older versions of
      Linux may need this patch support TotalView.
@@ -112,6 +116,9 @@ of the SLURM contribs distribution follows:
      Hilbert number. If the computer is not a perfect square or cube with
      power of two size, then collapse the node list maintaining the numeric
      order based upon the Hilbert number.
+
+  slurm_completion_help	     [shell script, vim file]
+     Scripts to help in option completion when using slurm commands.
 
   slurmdb-direct     [ Perl program ]
      Program that permits writing directly to SlurmDBD (SLURM DataBase Daemon).
