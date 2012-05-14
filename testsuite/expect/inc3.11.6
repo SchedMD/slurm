@@ -3,69 +3,68 @@
 
 
 proc inc3_11_6 {} {
-		
-	global def_node user_name def_partition exit_code res_name
+	global user_name exit_code res_name file_in bin_rm
 
 
-# TEST 6
-# Test time reservation conflict
-#
-send_user "\n+++++ STARTING TEST 6 +++++\n"
-# Make the reservation
-set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=ALL user=$user_name" 0]
-if {$ret_code != 0} {
-	send_user "\nFAILURE: Unable to create a valid reservation\n"
-	exit $ret_code
-}
+	# TEST 6
+	# Test time reservation conflict
+	#
+	send_user "\n+++++ STARTING TEST 6 +++++\n"
+	# Make the reservation
+	set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=ALL user=$user_name" 0]
+	if {$ret_code != 0} {
+		send_user "\nFAILURE: Unable to create a valid reservation\n"
+		exit $ret_code
+	}
 
-set res_name_save $res_name
+	set res_name_save $res_name
 
-# Test for time reservation conflict (front overlap)
-set ret_code [create_res "StartTime=now+30minutes Duration=60 Nodes=ALL user=$user_name" 1]
-if {$ret_code == 0} {
-        send_user "\nFAILURE: Reservation $test did not fail but should have\n"
-        delete_res $res_name
-        exit 1
-} else {
-        send_user "Expected error.  You can turn that frown upside-down.\n"
-}
+	# Test for time reservation conflict (front overlap)
+	set ret_code [create_res "StartTime=now+30minutes Duration=60 Nodes=ALL user=$user_name" 1]
+	if {$ret_code == 0} {
+		send_user "\nFAILURE: Reservation $test did not fail but should have\n"
+		delete_res $res_name
+		exit 1
+	} else {
+		send_user "Expected error.  You can turn that frown upside-down.\n"
+	}
 
-# Delete the reservation
-set ret_code [delete_res $res_name_save]
-if {$ret_code != 0} {
-        exit $ret_code
-}
+	# Delete the reservation
+	set ret_code [delete_res $res_name_save]
+	if {$ret_code != 0} {
+		exit $ret_code
+	}
 
 
-# Make the reservation
-set ret_code [create_res "StartTime=now+30minutes Duration=60 Nodes=ALL user=$user_name" 0]
-if {$ret_code != 0} {
-	send_user "\nFAILURE: Unable to create a valid reservation\n"
-	exit $ret_code
-}
+	# Make the reservation
+	set ret_code [create_res "StartTime=now+30minutes Duration=60 Nodes=ALL user=$user_name" 0]
+	if {$ret_code != 0} {
+		send_user "\nFAILURE: Unable to create a valid reservation\n"
+		exit $ret_code
+	}
 
-set res_name_save $res_name
+	set res_name_save $res_name
 
-# Test for time reservation conflict (trail overlap)
-set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=ALL user=$user_name" 1]
-if {$ret_code == 0} {
-        send_user "\nFAILURE: Reservation $test did not fail but should have\n"
-        delete_res $res_name
-        exit 1
-} else {
-        send_user "Expected error.  You can turn that frown upside-down.\n"
-}
-# Delete the reservation
-set ret_code [delete_res $res_name_save]
-if {$ret_code != 0} {
-        exit $ret_code
-}
+	# Test for time reservation conflict (trail overlap)
+	set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=ALL user=$user_name" 1]
+	if {$ret_code == 0} {
+		send_user "\nFAILURE: Reservation $test did not fail but should have\n"
+		delete_res $res_name
+		exit 1
+	} else {
+		send_user "Expected error.  You can turn that frown upside-down.\n"
+	}
+	# Delete the reservation
+	set ret_code [delete_res $res_name_save]
+	if {$ret_code != 0} {
+		exit $ret_code
+	}
 
-#
-# Remove the temporary job script
-exec $bin_rm -f $file_in
+	#
+	# Remove the temporary job script
+	exec $bin_rm -f $file_in
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-}
+	if {$exit_code == 0} {
+		send_user "\nSUCCESS\n"
+	}
 }
