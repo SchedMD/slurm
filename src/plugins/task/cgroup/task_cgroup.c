@@ -106,7 +106,11 @@ extern int init (void)
 	/* enable subsystems based on conf */
 	if (slurm_cgroup_conf.constrain_cores) {
 		use_cpuset = true;
-		task_cgroup_cpuset_init(&slurm_cgroup_conf);
+		if (task_cgroup_cpuset_init(&slurm_cgroup_conf) !=
+		    SLURM_SUCCESS) {
+			free_slurm_cgroup_conf(&slurm_cgroup_conf);
+			return SLURM_ERROR;
+		}
 		debug("%s: now constraining jobs allocated cores",
 		      plugin_type);
 	}
@@ -114,7 +118,11 @@ extern int init (void)
 	if (slurm_cgroup_conf.constrain_ram_space ||
 	     slurm_cgroup_conf.constrain_swap_space) {
 		use_memory = true;
-		task_cgroup_memory_init(&slurm_cgroup_conf);
+		if (task_cgroup_memory_init(&slurm_cgroup_conf) !=
+		    SLURM_SUCCESS) {
+			free_slurm_cgroup_conf(&slurm_cgroup_conf);
+			return SLURM_ERROR;
+		}
 		debug("%s: now constraining jobs allocated memory",
 		      plugin_type);
 	}
