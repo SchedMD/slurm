@@ -613,7 +613,7 @@ extern int schedule(uint32_t job_limit)
 				error("ignoring SchedulerParameters: "
 				      "default_queue_depth value of %d", i);
 			} else {
-				      def_job_limit = i;
+				def_job_limit = i;
 			}
 		}
 		xfree(sched_params);
@@ -680,6 +680,7 @@ extern int schedule(uint32_t job_limit)
 	slurmctld_diag_stats.schedule_queue_len = list_count(job_queue);
 	while (1) {
 		if (fifo_sched) {
+			/* Eliminates sort for FIFO */
 			job_queue_rec = list_pop(job_queue);
 		} else {
 			job_queue_rec = list_pop_bottom(job_queue,
@@ -706,15 +707,6 @@ extern int schedule(uint32_t job_limit)
 
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;	/* started in other partition */
-		if (job_ptr->priority == 0)	{ /* held */
-			debug3("sched: JobId=%u. State=%s. Reason=%s. "
-			       "Priority=%u.",
-			       job_ptr->job_id,
-			       job_state_string(job_ptr->job_state),
-			       job_reason_string(job_ptr->state_reason),
-			       job_ptr->priority);
-			continue;
-		}
 
 		/* Test for valid account, QOS and required nodes on each pass */
 		if (job_ptr->state_reason == FAIL_ACCOUNT) {
