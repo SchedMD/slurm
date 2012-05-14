@@ -1,0 +1,90 @@
+#!/usr/bin/expect
+
+
+proc inc3_11_3 {} {
+		
+	global def_node user_name def_partition exit_code res_name
+
+
+# TEST 3
+# Make a reservation, submit a job to it, confirm that the job is paired
+# with the reservation.
+#
+send_user "\n+++++ STARTING TEST 3 +++++\n"
+# Make the reservation
+set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name" 0]
+if {$ret_code != 0} {
+	send_user "\nFAILURE: Unable to create a valid reservation\n"
+	exit $ret_code
+}
+
+# Make the job script
+exec $bin_rm -f $file_in
+make_bash_script $file_in "$bin_sleep 10"
+
+# Submit the batch job
+set sbatch_pid [spawn $sbatch -N1 --reservation=$res_name $file_in]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+
+# Show the job, make sure reservation tag is right
+spawn $scontrol show job $job_id
+expect {
+	-re "Reservation=($alpha_numeric_under)" {
+		set tmp_res_name $expect_out(1,string)
+		if {$tmp_res_name != $res_name} {
+			send_user "\nFAILURE: problem submitting a job to a "
+			send_user "reservation.  Job $job_id is running on "
+			send_user "reservation $tmp_res_name, not $res_name\n"
+			set exit_code 1
+			exp_continue
+		}
+	}
+	-re "Invalid job id specified" {
+		send_user "\nFAILURE: Job $job_id not found\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Cancel the job
+spawn $scancel -v $job_id
+expect {
+	-re "Invalid job_id" {
+		send_user "\nFAILURE: Error cancelling the job submitted "
+		send_user "to the reservation.  Job $job_id not found\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scancel not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+}
