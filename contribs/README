@@ -1,4 +1,4 @@
-This is the contribs dir for SLURM.  
+This is the contribs dir for SLURM.
 
 SOURCE DISTRIBUTION HIERARCHY
 -----------------------------
@@ -11,46 +11,46 @@ of the SLURM contribs distribution follows:
      README                - Description of the arrayrun tool and its use
      arrayrun              - Command used to submit job arrays
      arrayrun_worker       - Back-end to the arrayrun command responsible for
-                             spawning the jobs in the array
+			     spawning the jobs in the array
 
   cray                [Tools for use on Cray systems]
      etc_init_d_munge      - /etc/init.d/munge script for use with Munge
      etc_sysconfig_slurm   - /etc/sysconfig/slurm for Cray XT/XE systems
      libalps_test_programs.tar.gz - set of tools to verify ALPS/BASIL support
-                             logic. Note that this currently requires:
-                             * hardcoding in libsdb/basil_mysql_routines.c:
-                               mysql_real_connect(handle, "localhost", NULL, NULL, "XT5istanbul"
-                             * suitable /etc/my.cnf, containing at least the lines
-                               [client]
-                               user=basic
-                               password=basic
-                             * setting the APBASIL in the libalps/Makefile, e.g.
-                               APBASIL := slurm/alps_simulator/apbasil.sh
-                             To use, extract the files then:
-                             > cd libasil/
-                             > make -C alps_tests all   # runs basil parser tests
-                             > make -C sdb_tests  all   # checks if database routines work
-                             A tool named tuxadmin is also also included. When
-                             executed with the -s or --slurm.conf option, this
-                             contact the SDB to generate system-specific information
-                             needed in slurm.conf (e.g. "NodeName=nid..." and
-                             "PartitionName= Nodes=nid... MaxNodes=...".
+			     logic. Note that this currently requires:
+			     * hardcoding in libsdb/basil_mysql_routines.c:
+			       mysql_real_connect(handle, "localhost", NULL, NULL, "XT5istanbul"
+			     * suitable /etc/my.cnf, containing at least the lines
+			       [client]
+			       user=basic
+			       password=basic
+			     * setting the APBASIL in the libalps/Makefile, e.g.
+			       APBASIL := slurm/alps_simulator/apbasil.sh
+			     To use, extract the files then:
+			     > cd libasil/
+			     > make -C alps_tests all   # runs basil parser tests
+			     > make -C sdb_tests  all   # checks if database routines work
+			     A tool named tuxadmin is also also included. When
+			     executed with the -s or --slurm.conf option, this
+			     contact the SDB to generate system-specific information
+			     needed in slurm.conf (e.g. "NodeName=nid..." and
+			     "PartitionName= Nodes=nid... MaxNodes=...".
      munge_build_script.sh - script to build Munge from sources for Cray system
      opt_modulefiles_slurm - enables use of Munge as soon as built
      slurm-build-script.sh - script to build SLURM from sources for Cray system.
-                             set LIBROOT and SLURM_SRC environment variables
-                             before use, for example:
-                             LIBROOT=/ufs/slurm/build
-                             SLURM_SRC=${SLURM_SRC:-${LIBROOT}/slurm-2.3.0-0.pre4}
+			     set LIBROOT and SLURM_SRC environment variables
+			     before use, for example:
+			     LIBROOT=/ufs/slurm/build
+			     SLURM_SRC=${SLURM_SRC:-${LIBROOT}/slurm-2.3.0-0.pre4}
      srun.pl               - A perl wrapper for the aprun command. Use of this
-                             wrapper requires that SLURM's perlapi be installed.
-                             Execute configure with the --with-srun2aprun option
-                             to build and install this instead of SLURM's normal
-                             srun command.
+			     wrapper requires that SLURM's perlapi be installed.
+			     Execute configure with the --with-srun2aprun option
+			     to build and install this instead of SLURM's normal
+			     srun command.
 
   env_cache_builder.c [C program]
-     This program will build an environment variable cache file for specific 
-     users or all users on the system. This can be used to prevent the aborting 
+     This program will build an environment variable cache file for specific
+     users or all users on the system. This can be used to prevent the aborting
      of jobs submitted by Moab using the srun/sbatch --get-user-env option.
      Build with "make -f /dev/null env_cache_builder" and execute as user root
      on the node where the moab daemon runs.
@@ -58,11 +58,11 @@ of the SLURM contribs distribution follows:
   lua                [ LUA scripts ]
      Example LUA scripts that can serve as SLURM plugins.
      job_submit.lua - job_submit plugin that can set a job's default partition
-                      using a very simple algorithm
+		      using a very simple algorithm
      job_submit_license.lua - job_submit plugin that can set a job's use of
-                      system licenses
+		      system licenses
      proctrack.lua  - proctrack (process tracking) plugin that implements a
-                      very simple job step container using CPUSETs
+		      very simple job step container using CPUSETs
 
   make.slurm.patch   [ Patch to "make" command for parallel build ]
      This patch will use SLURM to launch tasks across a job's current resource
@@ -74,10 +74,10 @@ of the SLURM contribs distribution follows:
      will be unchanged. Designed for GNU make-3.81.
 
   mpich1.slurm.patch [ Patch to mpich1/p4 library for SLURM job task launch ]
-     For SLURM based job initiations (from srun command), get the parameters 
-     from environment variables as needed. This allows for a truly parallel 
-     job launch using the existing "execer" mode of operation with slight 
-     modification.  
+     For SLURM based job initiations (from srun command), get the parameters
+     from environment variables as needed. This allows for a truly parallel
+     job launch using the existing "execer" mode of operation with slight
+     modification.
 
   pam                [ PAM (Pluggable Authentication Module) for SLURM ]
      This PAM module will restrict who can login to a node to users who have
@@ -94,9 +94,9 @@ of the SLURM contribs distribution follows:
   ptrace.patch       [ Linux Kernel patch required to for TotalView use ]
      0. This has been fixed on most recent Linux kernels. Older versions of
      Linux may need this patch support TotalView.
-     1. gdb and other tools cannot attach to a stopped process. The wait that 
+     1. gdb and other tools cannot attach to a stopped process. The wait that
      follows the PTRACE_ATTACH will block indefinitely.
-     2. It is not possible to use PTRACE_DETACH to leave a process stopped, 
+     2. It is not possible to use PTRACE_DETACH to leave a process stopped,
      because ptrace ignores SIGSTOPs sent by the tracing process.
 
   sjobexit/          [ Perl programs ]
@@ -108,8 +108,8 @@ of the SLURM contribs distribution follows:
   skilling.c         [ C program ]
      This program can be used to order the hostnames in a 2+ dimensional
      architecture for use in the slurm.conf file. It is used to generate
-     the Hilbert number based upon a node's physical location in the 
-     computer. Nodes close together in their Hilbert number will also be 
+     the Hilbert number based upon a node's physical location in the
+     computer. Nodes close together in their Hilbert number will also be
      physically close in 2-D or 3-D space, so we can reduce the 2-D or 3-D
      job placement problem to a 1-D problem that SLURM can easily handle
      by defining the node names in the slurm.conf file in order of their
@@ -129,10 +129,10 @@ of the SLURM contribs distribution follows:
 
   time_login.c       [ C program ]
      This program will report how long a pseudo-login will take for specific
-     users or all users on the system. Users identified by this program 
+     users or all users on the system. Users identified by this program
      will not have their environment properly set for jobs submitted through
-     Moab. Build with "make -f /dev/null time_login" and execute as user root. 
+     Moab. Build with "make -f /dev/null time_login" and execute as user root.
 
   torque/            [ Wrapper Scripts for Torque migration to SLURM ]
-     Helpful scripts to make transition to SLURM easier from PBS or Torque.  
+     Helpful scripts to make transition to SLURM easier from PBS or Torque.
      These scripts are easily updatable if there is functionality missing.
