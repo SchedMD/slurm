@@ -62,6 +62,8 @@ if { [test_bluegene] } {
 	} else {
 		set task_cnt 10
 	}
+} elseif { [test_serial] } {
+	set task_cnt 1
 } else {
 	set task_cnt 10
 }
@@ -93,6 +95,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 	cancel_job $job_id
 	set exit_code 1
 }
+
 set matches     0
 set tasks       0
 if {[wait_for_file $file_out] == 0} {
@@ -116,12 +119,13 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$matches != 2} {
-	send_user "\nFAILURE: Did not set desired allocation env vars\n"
+	send_user "\nFAILURE: Did not set desired allocation env vars: "
+	send_user "($matches != 2)\n"
 	set exit_code 1
 }
-if {$task_cnt != $tasks} {
+if {$tasks != $task_cnt} {
 	send_user "\nFAILURE: Did not get proper number of tasks: "
-	send_user "($task_cnt != $tasks)\n"
+	send_user "($task != $task_cnt)\n"
 	set exit_code 1
 }
 
