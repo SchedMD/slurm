@@ -154,6 +154,9 @@ SLURM's PAM module has also been packaged for
 <ul>
 <li><a href="http://www.sdsc.edu/catalina/">Catalina</a> a scheduler supporting the
 <a href="http://www.ogf.org/">Open Grid Forum</a> Advance Reservation API</li>
+<li><a href="http://web.mit.edu/star/cluster/docs/latest/index.html">StarCluster</a>
+cloud computing toolkit has a
+<a href="https://github.com/jlafon/StarCluster">SLURM port available</a>.
 <li><a href="http://www.platform.com/">Load Sharing Facility (LSF)</a></li>
 <li><a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
 Maui Scheduler</a></li>
@@ -215,6 +218,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 6 March 2012</p>
+<p style="text-align:center;">Last modified 15 May 2012</p>
 
 <!--#include virtual="footer.txt"-->

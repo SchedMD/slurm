@@ -29,13 +29,13 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="configurator.html">Configuration Tool (Full version)</a></li>
 <li><a href="configurator.easy.html">Configuration Tool (Simplified version)</a></li>
 <li><a href="cpu_management.html">CPU Management User and Administrator Guide</a></li>
-<li><a href="elastic_computing.html">Elastic Computing</a></li>
 <li><a href="big_sys.html">Large Cluster Administration Guide</a></li>
 <li><a href="power_save.html">Power Saving Guide</a></li>
 <li><a href="troubleshoot.html">Troubleshooting Guide</a></li>
 <li>SLURM Scheduling</li>
 <ul>
 <li><a href="cons_res.html">Consumable Resources Guide</a></li>
+<li><a href="elastic_computing.html">Elastic Computing</a></li>
 <li><a href="gang_scheduling.html">Gang Scheduling</a></li>
 <li><a href="gres.html">Generic Resource (GRES) Scheduling</a></li>
 <li><a href="high_throughput.html">High Throughput Computing Guide</a></li>
@@ -95,6 +95,6 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 2 April 2012</p>
+<p style="text-align:center;">Last modified 15 May 2012</p>
 
 <!--#include virtual="footer.txt"-->
