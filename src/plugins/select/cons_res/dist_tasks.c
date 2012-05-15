@@ -499,7 +499,11 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 			}
 			if (prev_cpus == cpus) {
 				/* we're stuck! */
-				fatal("cons_res: sync loop not progressing");
+				job_ptr->priority = 0;
+				job_ptr->state_reason = WAIT_HELD;
+				error("cons_res: sync loop not progressing, "
+				      "job %u", job_ptr->job_id);
+				return -1;
 			}
 		}
 		/* clear the rest of the cores in each socket
