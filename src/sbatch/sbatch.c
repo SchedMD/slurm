@@ -360,6 +360,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->overcommit = opt.overcommit;
 	} else if (opt.cpus_set)
 		desc->min_cpus = opt.ntasks * opt.cpus_per_task;
+	else if (opt.nodes_set && (opt.min_nodes == 0))
+		desc->min_cpus = 0;
 	else
 		desc->min_cpus = opt.ntasks;
 

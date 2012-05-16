@@ -584,9 +584,11 @@ extern int schedule(uint32_t job_limit)
 			       job_ptr->partition);
 			continue;
 		}
-		if (bit_overlap(avail_node_bitmap,
-				job_ptr->part_ptr->node_bitmap) == 0) {
-			/* All nodes DRAIN, DOWN, or
+		i = bit_overlap(avail_node_bitmap,
+				job_ptr->part_ptr->node_bitmap);
+		if (( job_ptr->details && (i < job_ptr->details->max_nodes)) ||
+		    (!job_ptr->details && (i == 0))) {
+			/* Too many nodes DRAIN, DOWN, or
 			 * reserved for jobs in higher priority partition */
 			job_ptr->state_reason = WAIT_RESOURCES;
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
