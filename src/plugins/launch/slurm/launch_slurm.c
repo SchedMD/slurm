@@ -398,7 +398,6 @@ extern int launch_p_step_launch(
 
 	local_srun_job = job;
 	local_global_rc = global_rc;
-	memcpy(&launch_params.local_fds, cio_fds, sizeof(slurm_step_io_fds_t));
 
 	task_state = task_state_create(opt.ntasks);
 
@@ -435,6 +434,8 @@ extern int launch_p_step_launch(
 	launch_params.preserve_env      = opt.preserve_env;
 	launch_params.spank_job_env     = opt.spank_job_env;
 	launch_params.spank_job_env_size = opt.spank_job_env_size;
+
+	memcpy(&launch_params.local_fds, cio_fds, sizeof(slurm_step_io_fds_t));
 
 	if (MPIR_being_debugged) {
 		launch_params.parallel_debug = true;
