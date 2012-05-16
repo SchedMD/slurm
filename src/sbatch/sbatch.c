@@ -262,7 +262,7 @@ static int _check_cluster_specific_settings(job_desc_msg_t *req)
 /* Returns 0 on success, -1 on failure */
 static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
-		int i;
+	int i;
 	extern char **environ;
 
 	if (opt.jobid_set)
@@ -360,6 +360,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->overcommit = opt.overcommit;
 	} else if (opt.cpus_set)
 		desc->min_cpus = opt.ntasks * opt.cpus_per_task;
+	else if (opt.nodes_set && (opt.min_nodes == 0))
+		desc->min_cpus = 0;
 	else
 		desc->min_cpus = opt.ntasks;
 
@@ -416,7 +418,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 				    "SLURM_GET_USER_ENV", "1");
 	}
 
-	if(opt.distribution == SLURM_DIST_ARBITRARY) {
+	if (opt.distribution == SLURM_DIST_ARBITRARY) {
 		env_array_overwrite_fmt(&desc->environment,
 					"SLURM_ARBITRARY_NODELIST",
 					"%s", desc->req_nodes);

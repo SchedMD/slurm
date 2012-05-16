@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.4.0.rc2
 =============================
+ -- Cray - Improve support for zero compute note resource allocations.
+    Partition used can now be configured with no nodes nodes.
 
 * Changes in SLURM 2.4.0.rc1
 =============================

@@ -761,7 +761,26 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	else
 		select_mode = SELECT_MODE_RUN_NOW;
 
-	if (node_set_size == 0) {
+	if ((job_ptr->details->min_nodes == 0) &&
+	    (job_ptr->details->max_nodes == 0)) {
+		avail_bitmap = bit_alloc(node_record_count);
+		if (!avail_bitmap)
+			fatal("bit_alloc: malloc failure");
+		pick_code = select_g_job_test(job_ptr,
+					      avail_bitmap,
+					      0, 0, 0,
+					      select_mode,
+					      preemptee_candidates,
+					      preemptee_job_list);
+
+		if (pick_code == SLURM_SUCCESS) {
+			*select_bitmap = avail_bitmap;
+			return SLURM_SUCCESS;
+		} else {
+			bit_free(avail_bitmap);
+			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+		}
+	} else if (node_set_size == 0) {
 		info("_pick_best_nodes: empty node set for selection");
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
@@ -1768,6 +1787,12 @@ static int _build_node_list(struct job_record *job_ptr,
 			/* Required nodes outside of the reservation */
 			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		}
+	}
+	if ((job_ptr->details->min_nodes == 0) &&
+	    (job_ptr->details->max_nodes == 0)) {
+		*node_set_pptr = NULL;
+		*node_set_size = 0;
+		return SLURM_SUCCESS;
 	}
 
 	node_set_inx = 0;
