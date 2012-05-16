@@ -42,7 +42,6 @@
 #endif
 
 #include <string.h>		/* strcpy, strncasecmp */
-#include <math.h>
 
 #ifdef HAVE_STRINGS_H
 #  include <strings.h>
@@ -1675,8 +1674,8 @@ static void _opt_args(int argc, char **argv)
 			   there is a fraction so we try to stay in
 			   the allocation requested.
 			*/
-			opt.ntasks_per_node = ceil((double)opt.ntasks
-						   / (double)node_cnt);
+			opt.ntasks_per_node =
+				(opt.ntasks + node_cnt - 1) / node_cnt;
 			figured = true;
 		}
 
