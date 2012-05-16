@@ -1684,7 +1684,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 		qos_rec.id = job_ptr->qos_id;
 		job_ptr->qos_ptr = _determine_and_validate_qos(
-			job_ptr->resv_name, job_ptr->assoc_ptr, false, &qos_rec,
+			job_ptr->resv_name, job_ptr->assoc_ptr,
+			job_ptr->limit_set_qos, &qos_rec,
 			&qos_error);
 		if ((qos_error != SLURM_SUCCESS) && !job_ptr->limit_set_qos) {
 			info("Holding job %u with invalid qos", job_id);
@@ -6982,10 +6983,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		     job_ptr->comment, job_specs->job_id);
 
 		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
-			slurmdb_qos_rec_t qos_rec;
 			if (!IS_JOB_PENDING(job_ptr))
 				error_code = ESLURM_DISABLED;
 			else {
+				slurmdb_qos_rec_t qos_rec;
+				slurmdb_qos_rec_t *new_qos_ptr;
 				char *resv_name;
 				if (job_specs->reservation
 				    && job_specs->reservation[0] != '\0')
@@ -7001,12 +7003,24 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 						"FLAGS:PREEMPTEE"))
 					qos_rec.name = "standby";
 
-				job_ptr->qos_ptr = _determine_and_validate_qos(
+				new_qos_ptr = _determine_and_validate_qos(
 					resv_name, job_ptr->assoc_ptr,
-					admin, &qos_rec, &error_code);
+					authorized, &qos_rec, &error_code);
 				if (error_code == SLURM_SUCCESS) {
-					job_ptr->qos_id = qos_rec.id;
-					update_accounting = true;
+					info("update_job: setting qos to %s "
+					     "for job_id %u",
+					     job_specs->qos, job_specs->job_id);
+					if (job_ptr->qos_id != qos_rec.id) {
+						job_ptr->qos_id = qos_rec.id;
+						job_ptr->qos_ptr = new_qos_ptr;
+						if (authorized)
+							job_ptr->limit_set_qos =
+								ADMIN_SET_LIMIT;
+						else
+							job_ptr->limit_set_qos
+								= 0;
+						update_accounting = true;
+					}
 				}
 			}
 		}
@@ -7015,12 +7029,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		goto fini;
 
 	if (job_specs->qos) {
-		slurmdb_qos_rec_t qos_rec;
-		uint16_t save_qos_id;
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
 		else {
+			slurmdb_qos_rec_t qos_rec;
+			slurmdb_qos_rec_t *new_qos_ptr;
 			char *resv_name;
+
 			if (job_specs->reservation
 			    && job_specs->reservation[0] != '\0')
 				resv_name = job_specs->reservation;
@@ -7030,22 +7045,23 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 			qos_rec.name = job_specs->qos;
 
-			save_qos_id = job_ptr->qos_id;
-			job_ptr->qos_ptr = _determine_and_validate_qos(
+			new_qos_ptr = _determine_and_validate_qos(
 				resv_name, job_ptr->assoc_ptr,
-				admin, &qos_rec, &error_code);
+				authorized, &qos_rec, &error_code);
 			if (error_code == SLURM_SUCCESS) {
 				info("update_job: setting qos to %s "
 				     "for job_id %u",
 				     job_specs->qos, job_specs->job_id);
-				job_ptr->qos_id = qos_rec.id;
-				if ((save_qos_id != job_ptr->qos_id) && admin){
-					job_ptr->limit_set_qos =
-						ADMIN_SET_LIMIT;
-				} else {
-					job_ptr->limit_set_qos = 0;
+				if (job_ptr->qos_id != qos_rec.id) {
+					job_ptr->qos_id = qos_rec.id;
+					job_ptr->qos_ptr = new_qos_ptr;
+					if (authorized)
+						job_ptr->limit_set_qos =
+							ADMIN_SET_LIMIT;
+					else
+						job_ptr->limit_set_qos = 0;
+					update_accounting = true;
 				}
-				update_accounting = true;
 			}
 		}
 	}
