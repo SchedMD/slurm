@@ -402,7 +402,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
  * The CPU array contains the distribution of CPUs, which can include
  * virtual CPUs (hyperthreads)
  */
-static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
+static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				     const uint16_t cr_type)
 {
 	uint32_t c, i, j, s, n, *sock_start, *sock_end, size, csize, core_cnt;
@@ -411,9 +411,10 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 	bitstr_t *core_map;
 	bool *sock_used, alloc_cores = false, alloc_sockets = false;
 	uint16_t ntasks_per_core = 0xffff;
+	int error_code = SLURM_SUCCESS;
 
 	if ((job_res == NULL) || (job_res->core_bitmap == NULL))
-		return;
+		return error_code;
 
 	if (cr_type & CR_CORE)
 		alloc_cores = true;
@@ -502,8 +503,9 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				job_ptr->priority = 0;
 				job_ptr->state_reason = WAIT_HELD;
 				error("cons_res: sync loop not progressing, "
-				      "job %u", job_ptr->job_id);
-				return -1;
+				      "holding job %u", job_ptr->job_id);
+				error_code = SLURM_ERROR;
+				goto fini;
 			}
 		}
 		/* clear the rest of the cores in each socket
@@ -532,9 +534,10 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		/* advance 'c' to the beginning of the next node */
 		c += sockets * cps;
 	}
-	xfree(sock_start);
+fini:	xfree(sock_start);
 	xfree(sock_end);
 	xfree(sock_used);
+	return error_code;
 }
 
 
@@ -640,11 +643,11 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
 	case SLURM_DIST_BLOCK_CYCLIC:
 	case SLURM_DIST_CYCLIC_CYCLIC:
 	case SLURM_DIST_UNKNOWN:
-		_cyclic_sync_core_bitmap(job_ptr, cr_type);
+		error_code = _cyclic_sync_core_bitmap(job_ptr, cr_type);
 		break;
 	default:
 		error("select/cons_res: invalid task_dist entry");
 		return SLURM_ERROR;
 	}
-	return SLURM_SUCCESS;
+	return error_code;
 }
