@@ -4,7 +4,10 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.5.0.pre1
 =============================
 
-* Changes in SLURM 2.4.0.pre5
+* Changes in SLURM 2.4.0.rc2
+=============================
+
+* Changes in SLURM 2.4.0.rc1
 =============================
  -- Improve task binding logic by making fuller use of HWLOC library,
     especially with respect to Opteron 6000 series processors. Work contributed
@@ -231,6 +234,9 @@ documents those changes that are of interest to users and admins.
     in treating missing a GID or UID as a fatal error.
  -- If job time limit exceeds partition maximum, but job's minimum time limit
     does not, set job's time limit to partition maximum at allocation time.
+
+* Changes in SLURM 2.3.6
+========================
 
 * Changes in SLURM 2.3.5
 ========================
