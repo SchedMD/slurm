@@ -761,7 +761,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	else
 		select_mode = SELECT_MODE_RUN_NOW;
 
-	if (job_ptr->details->max_nodes == 0) {
+	if ((job_ptr->details->min_nodes == 0) &&
+	    (job_ptr->details->max_nodes == 0)) {
 		avail_bitmap = bit_alloc(node_record_count);
 		if (!avail_bitmap)
 			fatal("bit_alloc: malloc failure");
@@ -1787,8 +1788,8 @@ static int _build_node_list(struct job_record *job_ptr,
 			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		}
 	}
-
-	if (job_ptr->details->max_nodes == 0) {
+	if ((job_ptr->details->min_nodes == 0) &&
+	    (job_ptr->details->max_nodes == 0)) {
 		*node_set_pptr = NULL;
 		*node_set_size = 0;
 		return SLURM_SUCCESS;
