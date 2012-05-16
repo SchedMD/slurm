@@ -89,9 +89,10 @@
 
 #include "src/api/pmi_server.h"
 
+#include "src/srun/debugger.h"
+#include "src/srun/launch.h"
 #include "src/srun/multi_prog.h"
 #include "src/srun/opt.h"
-#include "src/srun/debugger.h"
 
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE        0x00

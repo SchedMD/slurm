@@ -625,7 +625,6 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 {
 	resource_allocation_response_msg_t *resp;
 	job_request_t *pe_job_req = NULL;
-	job_info_t *pe_job_info = NULL;
 	char *myargv[3] = { "poe", "poe", NULL };
 
 	info("got pe_rm_submit_job called %d", job_cmd.job_format);

@@ -59,7 +59,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 extern int launch_init(void);
 extern int launch_fini(void);
-extern int launch_p_setup_srun_opt(char **rest);
+extern int launch_g_setup_srun_opt(char **rest);
 
 extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),

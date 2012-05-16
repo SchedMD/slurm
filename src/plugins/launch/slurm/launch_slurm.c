@@ -43,7 +43,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "src/api/pmi_server.h"
+#include "src/srun/allocate.h"
 #include "src/srun/launch.h"
+#include "src/srun/multi_prog.h"
 
 #include "src/plugins/launch/slurm/task_state.h"
 
@@ -309,7 +312,7 @@ static void _task_finish(task_exit_msg_t *msg)
 			*local_global_rc = msg->return_code;
 	}
 	else if (WIFSIGNALED(msg->return_code)) {
-		const char *signal_str = strsignal(TERMSIG(msg->return_code));
+		const char *signal_str = strsignal(WTERMSIG(msg->return_code));
 		char * core_str = "";
 #ifdef WCOREDUMP
 		if (WCOREDUMP(msg->return_code))

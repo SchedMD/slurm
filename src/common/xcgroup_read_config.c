@@ -34,6 +34,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#ifndef   _ISOC99_SOURCE
+#  define _ISOC99_SOURCE /* strtof() */
+#endif
+
 #include <pwd.h>
 #include <stdlib.h>
 #include <string.h>

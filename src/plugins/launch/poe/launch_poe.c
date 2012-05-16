@@ -38,8 +38,11 @@
 #  include "config.h"
 #endif
 
-#include <sys/file.h>
+#include <ctype.h>
 #include <stdlib.h>
+#include <sys/file.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "src/srun/launch.h"
 #include "src/common/env.h"

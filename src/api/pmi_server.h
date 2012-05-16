@@ -30,6 +30,7 @@
 #define _PMI_SERVER_H
 
 #include "src/api/slurm_pmi.h"
+#include "src/common/slurm_protocol_defs.h"
 
 /* Put the supplied kvs values into the common store */
 extern int pmi_kvs_put(struct kvs_comm_set *kvs_set_ptr);
