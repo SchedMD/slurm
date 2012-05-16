@@ -1,7 +1,7 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 2.4.0.pre5
+* Changes in SLURM 2.4.0.rc1
 =============================
  -- Improve task binding logic by making fuller use of HWLOC library,
     especially with respect to Opteron 6000 series processors. Work contributed
