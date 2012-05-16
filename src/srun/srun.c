@@ -196,7 +196,7 @@ int srun(int ac, char **av)
 	pthread_t signal_thread = (pthread_t) 0;
 	bool got_alloc = false;
 	int shepard_fd = -1;
-	slurm_step_io_fds_t cio_fds;
+	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
 
 	env->stepid = -1;
 	env->procid = -1;
@@ -470,7 +470,7 @@ relaunch:
 		error("Failure in local plugin stack");
 		exit(error_exit);
 	}
-	memset(&cio_fds, 0, sizeof(slurm_step_io_fds_t));
+
 	_set_stdio_fds(job, &cio_fds);
 
 	if (launch_g_step_launch(job, &cio_fds, &global_rc,
