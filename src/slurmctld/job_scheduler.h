@@ -65,6 +65,9 @@ extern int build_feature_list(struct job_record *job_ptr);
  */
 extern List build_job_queue(bool clear_start);
 
+/* Given a scheduled job, return a pointer to it batch_job_launch_msg_t data */
+extern batch_job_launch_msg_t *build_launch_job_msg(
+					struct job_record *job_ptr);
 /*
  * epilog_slurmctld - execute the prolog_slurmctld for a job that has just
  *	terminated.
@@ -119,6 +122,16 @@ extern int prolog_slurmctld(struct job_record *job_ptr);
 /* If a job can run in multiple partitions, make sure that the one 
  * actually used is first in the string. Needed for job state save/restore */
 extern void rebuild_job_part_list(struct job_record *job_ptr);
+
+/*
+ * Given that one batch job just completed, attempt to launch a suitable
+ * replacement batch job in a response messge as a REQUEST_BATCH_JOB_LAUNCH
+ * message type, alternately send a return code fo SLURM_SUCCESS
+ * msg IN - The original message from slurmd
+ * fini_job_ptr IN - Pointer to job that just completed and needs replacement
+ * RET true if there are pending jobs that might use the resources
+ */
+extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job);
 
 /*
  * schedule - attempt to schedule all pending jobs

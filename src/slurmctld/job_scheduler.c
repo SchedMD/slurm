@@ -364,6 +364,209 @@ static void do_diag_stats(struct timeval tv1, struct timeval tv2)
 
 
 /*
+ * Given that one batch job just completed, attempt to launch a suitable
+ * replacement batch job in a response messge as a REQUEST_BATCH_JOB_LAUNCH
+ * message type, alternately send a return code fo SLURM_SUCCESS
+ * msg IN - The original message from slurmd
+ * fini_job_ptr IN - Pointer to job that just completed and needs replacement
+ * RET true if there are pending jobs that might use the resources
+ */
+extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
+{
+	static int select_serial = -1;
+	/* Locks: Read config, write job, write node, read partition */
+	slurmctld_lock_t job_write_lock =
+	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	struct job_record *job_ptr;
+	struct job_record *fini_job_ptr = (struct job_record *) fini_job;
+	ListIterator job_iterator;
+	batch_job_launch_msg_t *launch_msg = NULL;
+	bitstr_t *orig_exc_bitmap = NULL;
+	bool have_node_bitmaps, pending_jobs = false;
+	time_t now, min_age;
+	int error_code;
+
+	if (select_serial == -1) {
+		if (strcmp(slurmctld_conf.select_type, "select/serial"))
+			select_serial = 0;
+		else
+			select_serial = 1;
+	}
+	if ((select_serial != 1) || (fini_job_ptr == NULL) ||
+	    (msg->msg_type != REQUEST_COMPLETE_BATCH_JOB))
+		goto send_reply;
+
+	now = time(NULL);
+	min_age = now - slurmctld_conf.min_job_age;
+	lock_slurmctld(job_write_lock);
+	xassert(fini_job_ptr->job_resrcs);
+	xassert(fini_job_ptr->job_resrcs->node_bitmap);
+	if (!avail_front_end()) {
+		unlock_slurmctld(job_write_lock);
+		goto send_reply;
+	}
+	job_iterator = list_iterator_create(job_list);
+	if (job_iterator == NULL)
+		fatal("list_iterator_create memory allocation failure");
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (!IS_JOB_PENDING(job_ptr)) {
+			if (IS_JOB_FINISHED(job_ptr)  &&
+			    (job_ptr != fini_job_ptr) &&
+			    (job_ptr->end_time <= min_age)) {
+				/* If we don't have a db_index by now and we
+				 * are running with the slurmdbd lets put it on
+				 * the list to be handled later when it comes
+				 * back up since we won't get another chance */
+				if (with_slurmdbd && !job_ptr->db_index) {
+					jobacct_storage_g_job_start(acct_db_conn,
+								    job_ptr);
+				}
+				list_delete_item(job_iterator);
+			}
+			continue;
+		}
+
+		if (job_ptr == fini_job_ptr)
+			continue;
+
+		if (job_ptr->priority == 0)
+			continue;
+
+		/* Tests dependencies, begin time and reservations */
+		if (!job_independent(job_ptr, 0))
+			continue;
+
+		/* Test for valid account, QOS and required nodes on each pass */
+		if (job_ptr->state_reason == FAIL_ACCOUNT) {
+			slurmdb_association_rec_t assoc_rec;
+			memset(&assoc_rec, 0, sizeof(slurmdb_association_rec_t));
+			assoc_rec.acct      = job_ptr->account;
+			if (job_ptr->part_ptr)
+				assoc_rec.partition = job_ptr->part_ptr->name;
+			assoc_rec.uid       = job_ptr->user_id;
+	
+			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+						    accounting_enforce,
+						    (slurmdb_association_rec_t **)
+						    &job_ptr->assoc_ptr)) {
+				job_ptr->state_reason = WAIT_NO_REASON;
+				job_ptr->assoc_id = assoc_rec.id;
+			} else {
+				continue;
+			}
+		}
+		if (job_ptr->qos_id) {
+			slurmdb_association_rec_t *assoc_ptr;
+			assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
+			if (assoc_ptr &&
+			    !bit_test(assoc_ptr->usage->valid_qos,
+				      job_ptr->qos_id)) {
+				info("sched: JobId=%u has invalid QOS",
+					job_ptr->job_id);
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = FAIL_QOS;
+				continue;
+			} else if (job_ptr->state_reason == FAIL_QOS) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = WAIT_NO_REASON;
+			}
+		}
+
+		if ((job_ptr->state_reason == WAIT_QOS_JOB_LIMIT) ||
+		    (job_ptr->state_reason == WAIT_QOS_RESOURCE_LIMIT) ||
+		    (job_ptr->state_reason == WAIT_QOS_TIME_LIMIT)) {
+			job_ptr->state_reason = WAIT_NO_REASON;
+			acct_policy_job_runnable(job_ptr);
+		}
+
+		if ((job_ptr->state_reason == WAIT_NODE_NOT_AVAIL) &&
+		    job_ptr->details && job_ptr->details->req_node_bitmap &&
+		    !bit_super_set(job_ptr->details->req_node_bitmap,
+				   avail_node_bitmap)) {
+			continue;
+		}
+
+		if (bit_overlap(avail_node_bitmap,
+				job_ptr->part_ptr->node_bitmap) == 0) {
+			/* This node DRAIN or DOWN */
+			continue;
+		}
+
+		if (license_job_test(job_ptr, now) != SLURM_SUCCESS) {
+			job_ptr->state_reason = WAIT_LICENSES;
+			xfree(job_ptr->state_desc);
+			continue;
+		}
+
+		if (assoc_mgr_validate_assoc_id(acct_db_conn,
+						job_ptr->assoc_id,
+						accounting_enforce)) {
+			/* NOTE: This only happens if a user's account is
+			 * disabled between when the job was submitted and
+			 * the time we consider running it. It should be
+			 * very rare. */
+			info("sched: JobId=%u has invalid account",
+			     job_ptr->job_id);
+			last_job_update = now;
+			job_ptr->state_reason = FAIL_ACCOUNT;
+			xfree(job_ptr->state_desc);
+			continue;
+		}
+
+		if (job_ptr->details && job_ptr->details->exc_node_bitmap)
+			have_node_bitmaps = true;
+		else
+			have_node_bitmaps = false;
+		if (have_node_bitmaps &&
+		    (bit_overlap(job_ptr->details->exc_node_bitmap,
+				 fini_job_ptr->job_resrcs->node_bitmap) != 0))
+			continue;
+
+		if (!job_ptr->batch_flag) {  /* Can't pull interactive jobs */
+			pending_jobs = true;
+			break;
+		}
+
+		if (have_node_bitmaps)
+			orig_exc_bitmap = job_ptr->details->exc_node_bitmap;
+		else
+			orig_exc_bitmap = NULL;
+		job_ptr->details->exc_node_bitmap =
+			bit_copy(fini_job_ptr->job_resrcs->node_bitmap);
+		bit_not(job_ptr->details->exc_node_bitmap);
+		error_code = select_nodes(job_ptr, false, NULL);
+		bit_free(job_ptr->details->exc_node_bitmap);
+		job_ptr->details->exc_node_bitmap = orig_exc_bitmap;
+		if (error_code == SLURM_SUCCESS) {
+			last_job_update = now;
+			info("sched: Allocate JobId=%u NodeList=%s #CPUs=%u",
+			     job_ptr->job_id, job_ptr->nodes,
+			     job_ptr->total_cpus);
+			if (job_ptr->details->prolog_running == 0)
+				launch_msg = build_launch_job_msg(job_ptr);
+		}
+		break;
+	}
+	unlock_slurmctld(job_write_lock);
+
+send_reply:
+	if (launch_msg) {
+		slurm_msg_t response_msg;
+		slurm_msg_t_init(&response_msg);
+		response_msg.flags = msg->flags;
+		response_msg.protocol_version = msg->protocol_version;
+		response_msg.address = msg->address;
+		response_msg.msg_type = REQUEST_BATCH_JOB_LAUNCH;
+		response_msg.data = launch_msg;
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		slurmctld_free_batch_job_launch_msg(launch_msg);
+		return false;
+	}
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	return pending_jobs;
+}
+
+/*
  * schedule - attempt to schedule all pending jobs
  *	pending jobs for each partition will be scheduled in priority
  *	order until a request fails
@@ -395,6 +598,7 @@ extern int schedule(uint32_t job_limit)
 #endif
 	static time_t sched_update = 0;
 	static bool wiki_sched = false;
+	static bool fifo_sched = false;
 	static int sched_timeout = 0;
 	static int def_job_limit = 100;
 	time_t now = time(NULL), sched_start;
@@ -411,6 +615,8 @@ extern int schedule(uint32_t job_limit)
 		if (strcmp(sched_type, "sched/backfill") == 0)
 			backfill_sched = true;
 #endif
+		if (strcmp(sched_type, "sched/builtin") == 0)
+			fifo_sched = true;
 		/* Disable avoiding of fragmentation with sched/wiki */
 		if ((strcmp(sched_type, "sched/wiki") == 0) ||
 		    (strcmp(sched_type, "sched/wiki2") == 0))
@@ -426,7 +632,7 @@ extern int schedule(uint32_t job_limit)
 				error("ignoring SchedulerParameters: "
 				      "default_queue_depth value of %d", i);
 			} else {
-				      def_job_limit = i;
+				def_job_limit = i;
 			}
 		}
 		xfree(sched_params);
@@ -486,9 +692,21 @@ extern int schedule(uint32_t job_limit)
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 
 	debug("sched: Running job scheduler");
+	/* NOTE: If a job is submitted to multiple partitions then
+	 * build_job_queue will return a separate record for each
+	 * job:partition pair */
 	job_queue = build_job_queue(false);
 	slurmctld_diag_stats.schedule_queue_len = list_count(job_queue);
-	while ((job_queue_rec = list_pop_bottom(job_queue, sort_job_queue2))) {
+	while (1) {
+		if (fifo_sched) {
+			/* Eliminates sort for FIFO */
+			job_queue_rec = list_pop(job_queue);
+		} else {
+			job_queue_rec = list_pop_bottom(job_queue,
+							sort_job_queue2);
+		}
+		if (!job_queue_rec)
+			break;
 		job_ptr  = job_queue_rec->job_ptr;
 		part_ptr = job_queue_rec->part_ptr;
 		/* Cycle through partitions usable for this job */
@@ -508,15 +726,6 @@ extern int schedule(uint32_t job_limit)
 
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;	/* started in other partition */
-		if (job_ptr->priority == 0)	{ /* held */
-			debug3("sched: JobId=%u. State=%s. Reason=%s. "
-			       "Priority=%u.",
-			       job_ptr->job_id,
-			       job_state_string(job_ptr->job_state),
-			       job_reason_string(job_ptr->state_reason),
-			       job_ptr->priority);
-			continue;
-		}
 
 		/* Test for valid account, QOS and required nodes on each pass */
 		if (job_ptr->state_reason == FAIL_ACCOUNT) {
@@ -689,7 +898,7 @@ extern int schedule(uint32_t job_limit)
 			select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 						    SELECT_JOBDATA_IONODES,
 						    &ionodes);
-			if(ionodes) {
+			if (ionodes) {
 				sprintf(tmp_char,"%s[%s]",
 					job_ptr->nodes, ionodes);
 			} else {
@@ -787,14 +996,10 @@ extern int sort_job_queue2(void *x, void *y)
 	return 0;
 }
 
-/*
- * launch_job - send an RPC to a slurmd to initiate a batch job
- * IN job_ptr - pointer to job that will be initiated
- */
-extern void launch_job(struct job_record *job_ptr)
+/* Given a scheduled job, return a pointer to it batch_job_launch_msg_t data */
+extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr)
 {
 	batch_job_launch_msg_t *launch_msg_ptr;
-	agent_arg_t *agent_arg_ptr;
 
 	/* Initialization of data structures */
 	launch_msg_ptr = (batch_job_launch_msg_t *)
@@ -820,9 +1025,10 @@ extern void launch_job(struct job_record *job_ptr)
 		 * too deep into the job launch to gracefully clean up. */
 		job_ptr->end_time    = time(NULL);
 		job_ptr->time_limit = 0;
+		xfree(launch_msg_ptr->alias_list);
 		xfree(launch_msg_ptr->nodes);
 		xfree(launch_msg_ptr);
-		return;
+		return NULL;
 	}
 
 	launch_msg_ptr->std_err = xstrdup(job_ptr->details->std_err);
@@ -854,7 +1060,23 @@ extern void launch_job(struct job_record *job_ptr)
 	       (sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt));
 
 	launch_msg_ptr->select_jobinfo = select_g_select_jobinfo_copy(
-			job_ptr->select_jobinfo);
+					 job_ptr->select_jobinfo);
+
+	return launch_msg_ptr;
+}
+
+/*
+ * launch_job - send an RPC to a slurmd to initiate a batch job
+ * IN job_ptr - pointer to job that will be initiated
+ */
+extern void launch_job(struct job_record *job_ptr)
+{
+	batch_job_launch_msg_t *launch_msg_ptr;
+	agent_arg_t *agent_arg_ptr;
+
+	launch_msg_ptr = build_launch_job_msg(job_ptr);
+	if (launch_msg_ptr == NULL)
+		return;
 
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->node_count = 1;

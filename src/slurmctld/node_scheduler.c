@@ -213,6 +213,7 @@ extern void set_job_alias_list(struct job_record *job_ptr)
 extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		bool suspended, bool preempted)
 {
+	static int select_serial = -1;
 	int i;
 	kill_job_msg_t *kill_job = NULL;
 	agent_arg_t *agent_args = NULL;
@@ -224,6 +225,13 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
+
+	if (select_serial == -1) {
+		if (strcmp(slurmctld_conf.select_type, "select/serial"))
+			select_serial = 0;
+		else
+			select_serial = 1;
+	}
 
 	license_job_return(job_ptr);
 	acct_policy_job_fini(job_ptr);
@@ -342,13 +350,12 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	}
 
 	if (agent_args->node_count == 0) {
-		if (job_ptr->details->expanding_jobid == 0) {
+		if ((job_ptr->details->expanding_jobid == 0) &&
+		    (select_serial == 0)) {
 			error("Job %u allocated no nodes to be killed on",
 			      job_ptr->job_id);
 		}
-		xfree(kill_job->nodes);
-		select_g_select_jobinfo_free(kill_job->select_jobinfo);
-		xfree(kill_job);
+		slurm_free_kill_job_msg(kill_job);
 		hostlist_destroy(agent_args->hostlist);
 		xfree(agent_args);
 		return;

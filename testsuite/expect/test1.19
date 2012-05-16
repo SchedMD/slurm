@@ -45,12 +45,14 @@ set job_id           0
 
 print_header $test_id
 
-if {[test_cray]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-}
+
 if {[test_bluegene]} {
 	# We never launch more than one task on emulated Bluegene
+	set task_cnt 1
+} elseif {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+} elseif {[test_serial]} {
 	set task_cnt 1
 } else {
 	set task_cnt 5
@@ -184,7 +186,7 @@ set file_out_n_glob  "test$test_id.n.$node_id.output"
 exec $bin_rm -f $file_out_n_glob
 
 set job_id   0
-set srun_pid [spawn $srun --output=$file_out_n -N1 -n2 -O -v -t1 $bin_printenv SLURMD_NODENAME]
+set srun_pid [spawn $srun --output=$file_out_n -N1 -n$task_cnt -O -v -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
@@ -242,12 +244,14 @@ for {set step_id 0} {$step_id < 4} {incr step_id} {
 if { [test_bluegene] } {
 	set node_cnt 32-2048
 	set task_cnt 32
+} elseif { [test_serial] } {
+	set node_cnt 1-1
+	set task_cnt 1
+} elseif { [test_xcpu] } {
+	set node_cnt 1-1
+	set task_cnt 4
 } else {
-	if { [test_xcpu] } {
-		set node_cnt 1-1
-	} else {
-		set node_cnt 1-4
-	}
+	set node_cnt 1-4
 	set task_cnt 4
 }
 

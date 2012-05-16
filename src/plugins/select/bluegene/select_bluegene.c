@@ -2195,12 +2195,12 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 	return select_nodeinfo_free(nodeinfo);
 }
 
-extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
+extern int select_p_select_nodeinfo_set_all(void)
 {
         if (bg_recover != NOT_FROM_CONTROLLER)
                 bridge_status_init();
 
-	return select_nodeinfo_set_all(last_query_time);
+	return select_nodeinfo_set_all();
 }
 
 extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)

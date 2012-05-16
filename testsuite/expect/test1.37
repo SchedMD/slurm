@@ -33,13 +33,18 @@
 source ./globals
 
 set test_id     "1.37"
-set exit_code    0
+set exit_code   0
+set task_num    0
 
 print_header $test_id
 
 if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit $exit_code
+} elseif {[test_serial]} {
+	set task_num 1
+} else {
+	set task_num 2
 }
 
 #
@@ -47,7 +52,7 @@ if {[test_front_end]} {
 #
 set task_output 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 --tasks-per-node=2 -O -l $bin_id]
+set srun_pid [spawn $srun -N1 --tasks-per-node=$task_num -O -l $bin_id]
 expect {
 	-re "($number): uid=" {
 		incr task_output
@@ -63,7 +68,7 @@ expect {
 	}
 }
 
-if {$task_output != 2} {
+if {$task_output != $task_num} {
 	send_user "\nFAILURE: failed to get output from all tasks\n"
 	set exit_code 1
 }

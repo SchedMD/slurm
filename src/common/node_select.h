@@ -170,7 +170,7 @@ typedef struct slurm_select_ops {
 						 uint16_t protocol_version);
 	select_nodeinfo_t *(*nodeinfo_alloc)	(void);
 	int		(*nodeinfo_free)	(select_nodeinfo_t *nodeinfo);
-	int		(*nodeinfo_set_all)	(time_t last_query_time);
+	int		(*nodeinfo_set_all)	(void);
 	int		(*nodeinfo_set)		(struct job_record *job_ptr);
 	int		(*nodeinfo_get)		(select_nodeinfo_t *nodeinfo,
 						 enum
@@ -336,9 +336,8 @@ extern int select_g_select_nodeinfo_free(dynamic_plugin_data_t *nodeinfo);
 extern int select_g_select_nodeinfo_set(struct job_record *job_ptr);
 
 /* Update slect plugin information about every node as needed (if changed since
- * previous query)
- * IN query_time - Time of previous update */
-extern int select_g_select_nodeinfo_set_all(time_t last_query_time);
+ * previous query) */
+extern int select_g_select_nodeinfo_set_all(void);
 
 /*
  * Get information from a slect plugin node record

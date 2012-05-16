@@ -1,11 +1,7 @@
 /*****************************************************************************\
- *  bg_node_info.h - definitions of functions used for the select_nodeinfo_t
- *              structure
+ *  dist_tasks.c - Assign specific CPUs to the job
  *****************************************************************************
- *  Copyright (C) 2009-2011 Lawrence Livermore National Security.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov> et. al.
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) 2012 SchedMD LLC.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.schedmd.com/slurmdocs/>.
@@ -37,51 +33,55 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_SELECT_NODEINFO_H
-#define _HAVE_SELECT_NODEINFO_H
+#include "select_serial.h"
+#include "dist_tasks.h"
 
-#include "src/common/node_select.h"
-#include "ba_common.h"
-#define NODEINFO_MAGIC 0x85ac
+/* Compute the number of CPUs to use on each node */
+static int _compute_c_b_task_dist(struct job_record *job_ptr)
+{
+	job_resources_t *job_res = job_ptr->job_resrcs;
 
-typedef struct {
-	bitstr_t *bitmap;
-	uint16_t cnode_cnt;
-	int *inx;
-	enum node_states state;
-	char *str;
-} node_subgrp_t;
+	if (!job_res || !job_res->cpus) {
+		error("select/serial: _compute_c_b_task_dist job_res==NULL");
+		return SLURM_ERROR;
+	}
+	if (job_res->nhosts != 1) {
+		error("select/serial: _compute_c_b_task_dist given nhosts==%u",
+		      job_res->nhosts);
+		return SLURM_ERROR;
+	}
 
-struct select_nodeinfo {
-	ba_mp_t *ba_mp;
-	uint16_t bitmap_size;
-	char *extra_info;       /* Currently used to tell if a cable
-				   is in an error state.
-				*/
-	char *failed_cnodes;   /* Currently used to any cnodes are in
-				   an SoftwareFailure state.
-				*/
-	uint16_t magic;		/* magic number */
-	char *rack_mp;          /* name of midplane in rack - midplane
-				   format */
-	List subgrp_list;
-};
+	xfree(job_res->cpus);
+	job_res->cpus = xmalloc(sizeof(uint16_t));
+	job_res->cpus[0] = 1;
 
-extern int select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, Buf buffer,
-				uint16_t protocol_version);
+	return SLURM_SUCCESS;
+}
 
-extern int select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, Buf buffer,
-				  uint16_t protocol_version);
+/* Select the specific cores in the job's allocation */
+static void _block_sync_core_bitmap(struct job_record *job_ptr,
+				    const uint16_t cr_type)
+{
+	job_resources_t *job_res = job_ptr->job_resrcs;
+	int c_first, c_size;
 
-extern select_nodeinfo_t *select_nodeinfo_alloc(uint32_t size);
+	if (!job_res || !job_res->core_bitmap)
+		return;
 
-extern int select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
+	c_size  = bit_size(job_res->core_bitmap);
+	c_first = bit_ffs(job_res->core_bitmap);
+	bit_nclear(job_res->core_bitmap, 0, c_size - 1);
+	bit_set(job_res->core_bitmap, c_first);
+}
 
-extern int select_nodeinfo_set_all(void);
+extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type)
+{
+	int error_code;
 
-extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
-			       enum select_nodedata_type dinfo,
-			       enum node_states state,
-			       void *data);
+	error_code = _compute_c_b_task_dist(job_ptr);
+	if (error_code != SLURM_SUCCESS)
+		return error_code;
 
-#endif
+	_block_sync_core_bitmap(job_ptr, cr_type);
+	return SLURM_SUCCESS;
+}

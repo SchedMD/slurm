@@ -343,7 +343,7 @@ extern select_nodeinfo_t *other_select_nodeinfo_alloc(void);
 
 extern int other_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
-extern int other_select_nodeinfo_set_all(time_t last_query_time);
+extern int other_select_nodeinfo_set_all(void);
 
 extern int other_select_nodeinfo_set(struct job_record *job_ptr);
 

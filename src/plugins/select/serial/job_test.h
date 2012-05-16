@@ -1,10 +1,8 @@
 /*****************************************************************************\
- *  bg_node_info.h - definitions of functions used for the select_nodeinfo_t
- *              structure
+ *  job_test.h
  *****************************************************************************
- *  Copyright (C) 2009-2011 Lawrence Livermore National Security.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov> et. al.
+ *  Copyright (C) 2006 Hewlett-Packard Development Company, L.P.
+ *  Written by Susanne M. Balle, <susanne.balle@hp.com>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
@@ -37,51 +35,31 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_SELECT_NODEINFO_H
-#define _HAVE_SELECT_NODEINFO_H
+#ifndef _SERIAL_JOB_TEST_H
+#define _SERIAL_JOB_TEST_H
 
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+
+#include "src/common/list.h"
+#include "src/common/log.h"
 #include "src/common/node_select.h"
-#include "ba_common.h"
-#define NODEINFO_MAGIC 0x85ac
+#include "src/common/pack.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/common/slurm_resource_info.h"
+#include "src/slurmctld/slurmctld.h"
 
-typedef struct {
-	bitstr_t *bitmap;
-	uint16_t cnode_cnt;
-	int *inx;
-	enum node_states state;
-	char *str;
-} node_subgrp_t;
+int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
+		int mode, uint16_t cr_type,
+		enum node_cr_state job_node_req, uint32_t cr_node_cnt,
+		struct part_res_record *cr_part_ptr,
+		struct node_use_record *node_usage);
 
-struct select_nodeinfo {
-	ba_mp_t *ba_mp;
-	uint16_t bitmap_size;
-	char *extra_info;       /* Currently used to tell if a cable
-				   is in an error state.
-				*/
-	char *failed_cnodes;   /* Currently used to any cnodes are in
-				   an SoftwareFailure state.
-				*/
-	uint16_t magic;		/* magic number */
-	char *rack_mp;          /* name of midplane in rack - midplane
-				   format */
-	List subgrp_list;
-};
-
-extern int select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, Buf buffer,
-				uint16_t protocol_version);
-
-extern int select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, Buf buffer,
-				  uint16_t protocol_version);
-
-extern select_nodeinfo_t *select_nodeinfo_alloc(uint32_t size);
-
-extern int select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
-
-extern int select_nodeinfo_set_all(void);
-
-extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
-			       enum select_nodedata_type dinfo,
-			       enum node_states state,
-			       void *data);
-
-#endif
+#endif /* !_SERIAL_JOB_TEST_H */

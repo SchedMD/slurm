@@ -105,7 +105,7 @@ static void _my_sleep(int secs)
 
 static void _load_config(void)
 {
-	char *sched_params, *tmp_ptr;
+	char *sched_params, *select_type, *tmp_ptr;
 
 	sched_timeout = slurm_get_msg_timeout() / 2;
 	sched_timeout = MAX(sched_timeout, 1);
@@ -127,6 +127,15 @@ static void _load_config(void)
 		      max_backfill_job_cnt);
 	}
 	xfree(sched_params);
+
+	select_type = slurm_get_select_type();
+	if (!strcmp(select_type, "select/serial")) {
+		/* Do not spend time computing expected start time for
+		 * pending jobs */
+		max_backfill_job_cnt = 0;
+		stop_builtin_agent();
+	}
+	xfree(select_type);
 }
 
 static void _compute_start_times(void)

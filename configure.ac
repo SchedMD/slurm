@@ -521,6 +521,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/cray/libalps/Makefile
 		 src/plugins/select/cray/libemulate/Makefile
 		 src/plugins/select/linear/Makefile
+		 src/plugins/select/serial/Makefile
 		 src/plugins/switch/Makefile
 		 src/plugins/switch/elan/Makefile
 		 src/plugins/switch/none/Makefile

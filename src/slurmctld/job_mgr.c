@@ -8224,6 +8224,7 @@ fini:
 
 static void _send_job_kill(struct job_record *job_ptr)
 {
+	static int select_serial = -1;
 	kill_job_msg_t *kill_job = NULL;
 	agent_arg_t *agent_args = NULL;
 #ifdef HAVE_FRONT_END
@@ -8232,6 +8233,13 @@ static void _send_job_kill(struct job_record *job_ptr)
 	int i;
 	struct node_record *node_ptr;
 #endif
+
+	if (select_serial == -1) {
+		if (strcmp(slurmctld_conf.select_type, "select/serial"))
+			select_serial = 0;
+		else
+			select_serial = 1;
+	}
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
@@ -8273,7 +8281,8 @@ static void _send_job_kill(struct job_record *job_ptr)
 	}
 #endif
 	if (agent_args->node_count == 0) {
-		if (job_ptr->details->expanding_jobid == 0) {
+		if ((job_ptr->details->expanding_jobid == 0) &&
+		    (select_serial == 0)) {
 			error("Job %u allocated no nodes to be killed on",
 			      job_ptr->job_id);
 		}

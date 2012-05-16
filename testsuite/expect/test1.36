@@ -33,23 +33,14 @@
 source ./globals
 
 set test_id     "1.36"
-
 set exit_code    0
-set mult         4
-set task_output  0
-if {[test_aix]} {
-    set task_cnt 3
-} else {
-    set task_cnt 4
-}
 
 print_header $test_id
 
 if {[test_bluegene]} {
 	send_user "\nWARNING: This test is incompatible with Bluegene systems\n"
 	exit $exit_code
-}
-if {[test_cray]} {
+} elseif {[test_cray]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
 	exit $exit_code
 }
@@ -57,14 +48,23 @@ if {[test_cray]} {
 #
 # Spawn srun with $task_cnt tasks each of which runs a $mult way /bin/id
 #
-set timeout $max_job_delay
-
-if { [test_xcpu] } {
+set mult         4
+set task_output  0
+if {[test_aix]} {
+	set task_cnt 3
+	set node_cnt 1-4
+} elseif {[test_serial]} {
+	set task_cnt 1
+	set node_cnt 1-1
+} elseif { [test_xcpu] } {
+	set task_cnt 4
 	set node_cnt 1-1
 } else {
+	set task_cnt 4
 	set node_cnt 1-4
 }
 
+set timeout $max_job_delay
 set srun_pid [spawn $srun -N$node_cnt -n$task_cnt -O -t1 $srun -l -n$mult -O $bin_id]
 expect {
 	-re "($number): uid=" {

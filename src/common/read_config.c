@@ -2606,6 +2606,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->min_job_age, "MinJobAge", hashtbl))
 		conf->min_job_age = DEFAULT_MIN_JOB_AGE;
+	else if (conf->min_job_age < 5) {
+		info("WARNING: MinJobAge must be at least 5");
+		conf->min_job_age = 5;
+	}
 
 	if (!s_p_get_string(&conf->mpi_default, "MpiDefault", hashtbl))
 		conf->mpi_default = xstrdup(DEFAULT_MPI_DEFAULT);

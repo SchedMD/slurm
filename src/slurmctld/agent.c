@@ -178,7 +178,6 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr);
 static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count);
 static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 			  int count, int *spot);
-static void _slurmctld_free_batch_job_launch_msg(batch_job_launch_msg_t * msg);
 static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr);
 static void *_thread_per_group_rpc(void *args);
 static int   _valid_agent_arg(agent_arg_t *agent_arg_ptr);
@@ -818,6 +817,7 @@ static void *_thread_per_group_rpc(void *args)
 	xsignal(SIGUSR1, _sig_handler);
 	xsignal_unblock(sig_array);
 	is_kill_msg = (	(msg_type == REQUEST_KILL_TIMELIMIT)	||
+			(msg_type == REQUEST_KILL_PREEMPTED)	||
 			(msg_type == REQUEST_TERMINATE_JOB) );
 	srun_agent = (	(msg_type == SRUN_PING)			||
 			(msg_type == SRUN_EXEC)			||
@@ -1328,12 +1328,12 @@ static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr)
 	slurm_attr_destroy(&attr_agent);
 }
 
-/* _slurmctld_free_batch_job_launch_msg is a variant of
+/* slurmctld_free_batch_job_launch_msg is a variant of
  *	slurm_free_job_launch_msg because all environment variables currently
  *	loaded in one xmalloc buffer (see get_job_env()), which is different
  *	from how slurmd assembles the data from a message
  */
-static void _slurmctld_free_batch_job_launch_msg(batch_job_launch_msg_t * msg)
+extern void slurmctld_free_batch_job_launch_msg(batch_job_launch_msg_t * msg)
 {
 	if (msg) {
 		if (msg->environment) {
@@ -1374,8 +1374,8 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 	xfree(agent_arg_ptr->addr);
 	if (agent_arg_ptr->msg_args) {
 		if (agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH)
-			_slurmctld_free_batch_job_launch_msg(
-				agent_arg_ptr->msg_args);
+			slurmctld_free_batch_job_launch_msg(agent_arg_ptr->
+							    msg_args);
 		else if (agent_arg_ptr->msg_type ==
 				RESPONSE_RESOURCE_ALLOCATION)
 			slurm_free_resource_allocation_response_msg(

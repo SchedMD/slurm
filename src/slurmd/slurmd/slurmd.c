@@ -538,14 +538,12 @@ cleanup:
 extern int
 send_registration_msg(uint32_t status, bool startup)
 {
-	int ret_val = SLURM_SUCCESS;
+	int rc, ret_val = SLURM_SUCCESS;
 	slurm_msg_t req;
-	slurm_msg_t resp;
 	slurm_node_registration_status_msg_t *msg =
 		xmalloc (sizeof (slurm_node_registration_status_msg_t));
 
 	slurm_msg_t_init(&req);
-	slurm_msg_t_init(&resp);
 
 	msg->startup = (uint16_t) startup;
 	_fill_registration_msg(msg);
@@ -554,17 +552,13 @@ send_registration_msg(uint32_t status, bool startup)
 	req.msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
 	req.data     = msg;
 
-	if (slurm_send_recv_controller_msg(&req, &resp) < 0) {
+	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0) {
 		error("Unable to register: %m");
 		ret_val = SLURM_FAILURE;
 	} else {
 		sent_reg_time = time(NULL);
-		slurm_free_return_code_msg(resp.data);
 	}
 	slurm_free_node_registration_status_msg (msg);
-
-	/* XXX look at response msg
-	 */
 
 	return ret_val;
 }
@@ -992,6 +986,7 @@ _read_config(void)
 	_massage_pathname(&conf->spooldir);
 	_free_and_set(&conf->pidfile,  xstrdup(cf->slurmd_pidfile));
 	_massage_pathname(&conf->pidfile);
+	_free_and_set(&conf->select_type, xstrdup(cf->select_type));
 	_free_and_set(&conf->task_prolog, xstrdup(cf->task_prolog));
 	_free_and_set(&conf->task_epilog, xstrdup(cf->task_epilog));
 	_free_and_set(&conf->pubkey,   path_pubkey);
@@ -1196,7 +1191,7 @@ _init_conf(void)
 static void
 _destroy_conf(void)
 {
-	if(conf) {
+	if (conf) {
 		xfree(conf->block_map);
 		xfree(conf->block_map_inv);
 		xfree(conf->conffile);
@@ -1211,6 +1206,7 @@ _destroy_conf(void)
 		xfree(conf->pidfile);
 		xfree(conf->prolog);
 		xfree(conf->pubkey);
+		xfree(conf->select_type);
 		xfree(conf->spooldir);
 		xfree(conf->stepd_loc);
 		xfree(conf->task_prolog);
@@ -1458,6 +1454,11 @@ _slurmd_init(void)
 	 */
 	if (!(conf->vctx = slurm_cred_verifier_ctx_create(conf->pubkey)))
 		return SLURM_FAILURE;
+	if (!strcmp(conf->select_type, "select/serial")) {
+		/* Only cache credential for 5 seconds with select/serial
+		 * for shorter cache searches and higher throughput */
+		slurm_cred_ctx_set(conf->vctx, SLURM_CRED_OPT_EXPIRY_WINDOW, 5);
+	}
 
 	/*
 	 * Create slurmd spool directory if necessary.

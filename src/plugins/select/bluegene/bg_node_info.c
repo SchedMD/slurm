@@ -289,7 +289,7 @@ extern int select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 	return SLURM_SUCCESS;
 }
 
-extern int select_nodeinfo_set_all(time_t last_query_time)
+extern int select_nodeinfo_set_all(void)
 {
 	ListIterator itr = NULL;
 	struct node_record *node_ptr = NULL;

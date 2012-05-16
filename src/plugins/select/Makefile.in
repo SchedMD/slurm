@@ -99,7 +99,7 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = bluegene cons_res cray linear
+DIST_SUBDIRS = bluegene cons_res cray linear serial
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -328,7 +328,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 @WITH_CXX_TRUE@BLUEGENE = bluegene
-SUBDIRS = $(BLUEGENE) cons_res cray linear
+SUBDIRS = $(BLUEGENE) cons_res cray linear serial
 all: all-recursive
 
 .SUFFIXES:
@@ -685,6 +685,7 @@ uninstall-am:
 # bgq		  = 103
 # cray + linear   = 104
 # cray + cons_res = 105 ==> Not current possible on Cray with ALPS/BASIL.
+# serial          = 106
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

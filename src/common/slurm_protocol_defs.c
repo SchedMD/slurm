@@ -2424,6 +2424,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
 		slurm_free_complete_job_allocation_msg(data);
 		break;
+	case REQUEST_COMPLETE_BATCH_JOB:
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
 		slurm_free_complete_batch_script_msg(data);
 		break;

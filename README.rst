@@ -66,12 +66,12 @@ COMPILING AND INSTALLING THE DISTRIBUTION
 -----------------------------------------
 
 Please see the instructions at 
-  http://www.llnl.gov/linux/slurm/quickstart_admin.html
+  http://www.schedmd.com/slurmdocs/quickstart_admin.html
 Extensive documentation is available from our home page at 
-  http://www.llnl.gov/linux/slurm
+  http://www.schedmd.com/slurmdocs/slurm.html
 
 PROBLEMS
 --------
 
-If you experience problems compiling, installing, or running SLURM
-please send e-mail to either slurm-dev@lists.llnl.gov.
+If you experience problems compiling, installing, or running SLURM, see
+   http://www.schedmd.com/slurmdocs/help.html

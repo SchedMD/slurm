@@ -31,41 +31,26 @@ source ./globals
 
 set test_id	"9.9"
 set exit_code   0
-set job_cnt   2000
+set job_cnt     5000
+set test_script "./test$test_id.bash"
 
 print_header $test_id
 
-# if {[test_front_end] != 0 || $enable_memory_leak_debug != 0} {
-# 	set job_cnt 2
-# }
+if {[test_front_end] != 0 || $enable_memory_leak_debug != 0} {
+	set job_cnt 2
+}
 
 proc _submit_jobs { job_name test_file } {
-	global exit_code job_cnt sbatch srun number
+	global exit_code job_cnt sbatch test_script
 
 	log_user 0
-	for {set inx 0} {$inx < $job_cnt} {incr inx} {
-		spawn -nottyinit -nottycopy $sbatch -J $job_name -o $test_file --wrap $job_name
-		#spawn $srun -J $job_name -o $test_file $job_name
-		expect {
-# 			-re "Submitted batch job ($number)" {
-# 				exp_continue
-# 			}
-# 			-re "Unable to contact" {
-# 				send_user "\nFAILURE: slurm appears to be down\n"
-# 				exp_continue
-# 			}
-# 			timeout {
-# 				send_user "\nFAILURE: sbatch not responding\n"
-# 				slow_kill $sbatch_pid
-# 				set exit_code 1
-# 			}
-			eof {
-				wait
-			}
+	spawn -nottyinit -nottycopy $test_script $sbatch "/bin/hostname" $job_name $job_cnt
+	expect {
+		eof {
+			wait
 		}
 	}
 	log_user 1
-	sleep 1
 	if {[wait_for_all_jobs $job_name 0] != 0} {
 		send_user "\nFAILURE: some submitted jobs failed to terminate\n"
 		set exit_code 1
@@ -73,9 +58,8 @@ proc _submit_jobs { job_name test_file } {
 }
 
 set time_took [string trim [time {_submit_jobs "hostname" "/dev/null"}] " per iteration microseconds"]
-set time_took_sec [expr $time_took / 1000000]
-set time_per_job [expr $job_cnt / $time_took_sec]
-send_user "test 1 took $time_took microseconds == $time_took_sec seconds, $time_per_job jobs a sec\n"
+set jobs_per_sec [expr $job_cnt * 1000000 / $time_took]
+send_user "Ran $job_cnt jobs in $time_took microseconds or $jobs_per_sec jobs per second\n"
 
 if { $exit_code != 0 } {
 	exit $exit_code
