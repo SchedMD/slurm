@@ -686,7 +686,10 @@ extern int launch_p_setup_srun_opt(char **rest)
 
 	opt.argc++;
 
-	opt.argv = (char **) xmalloc((opt.argc + 1) * sizeof(char *));
+	/* We need to do +2 here just incase multi-prog is needed (we
+	   add an extra argv on so just make space for it).
+	*/
+	opt.argv = (char **) xmalloc((opt.argc + 2) * sizeof(char *));
 
 	opt.argv[0] = xstrdup("poe");
 	/* Set default job name to the executable name rather than

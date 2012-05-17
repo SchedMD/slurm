@@ -369,7 +369,10 @@ extern int launch_p_setup_srun_opt(char **rest)
 	if (opt.debugger_test && opt.parallel_debug)
 		MPIR_being_debugged  = 1;
 
-	opt.argv = (char **) xmalloc((opt.argc + 1) * sizeof(char *));
+	/* We need to do +2 here just incase multi-prog is needed (we
+	   add an extra argv on so just make space for it).
+	*/
+	opt.argv = (char **) xmalloc((opt.argc + 2) * sizeof(char *));
 
 	return 0;
 }
