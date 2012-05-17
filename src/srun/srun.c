@@ -93,7 +93,6 @@
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
 #include "src/srun/debugger.h"
-#include "src/srun/srun.h"
 #include "src/srun/srun_pty.h"
 #include "src/srun/multi_prog.h"
 #include "src/api/pmi_server.h"

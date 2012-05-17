@@ -8,7 +8,7 @@ INCLUDES = -I$(top_srcdir)
 bin_PROGRAMS = srun
 
 srun_SOURCES = \
-	srun.c srun.h \
+	srun.c \
 	opt.c opt.h \
 	srun_job.c srun_job.h \
 	srun_pty.c srun_pty.h \
