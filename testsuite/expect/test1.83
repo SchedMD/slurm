@@ -48,13 +48,14 @@ if {[test_wiki_sched] == 1} {
 	send_user "\nWARNING: not compatable with sched/wiki (Maui)\n"
 	send_user "         or sched/wiki2 (Moab) schedulers\n"
 	exit $exit_code
-}
-if {[test_front_end] != 0} {
+} elseif {[test_front_end]} {
 	send_user "\nWARNING: This test is incompatible with front-end systems\n"
 	exit 0
-}
-if {[test_topology] != 0} {
+} elseif {[test_topology]} {
 	send_user "\nWARNING: This test is incompatible topology configured systems\n"
+	exit 0
+} elseif {[test_serial]} {
+	send_user "\nWARNING: This test is incompatible with a serial system\n"
 	exit 0
 }
 
