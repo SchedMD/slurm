@@ -1549,7 +1549,6 @@ static void _load_multi(int *argc, char **argv)
 	}
 	close(config_fd);
 
-	argv[*argc+1] = (char *) xmalloc(sizeof(char *));
 	for (i = *argc+1; i > 1; i--)
 		argv[i] = argv[i-1];
 	argv[1] = data_buf;
@@ -1761,7 +1760,9 @@ static void _opt_args(int argc, char **argv)
 
 #endif
 
-	opt.argv = (char **) xmalloc((opt.argc + 1) * sizeof(char *));
+	/* One extra pointer is for a trailing NULL and a
+	 * second extra pointer is for arguments from the multi-prog file */
+	opt.argv = (char **) xmalloc((opt.argc + 2) * sizeof(char *));
 
 #if defined HAVE_BG && !defined HAVE_BG_L_P
 #if defined HAVE_BG_FILES
