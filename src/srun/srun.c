@@ -119,15 +119,9 @@
 #define	TYPE_TEXT	1
 #define	TYPE_SCRIPT	2
 
-mpi_plugin_client_info_t mpi_job_info[1];
 static struct termios termdefaults;
-uint32_t global_rc = 0;
-srun_job_t *job = NULL;
-
-#define MAX_STEP_RETRIES 4
-time_t launch_start_time;
-bool   retry_step_begin = false;
-int    retry_step_cnt = 0;
+static uint32_t global_rc = 0;
+static srun_job_t *job = NULL;
 
 bool srun_max_timer = false;
 bool srun_shutdown  = false;

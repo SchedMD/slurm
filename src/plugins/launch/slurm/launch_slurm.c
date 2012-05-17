@@ -94,7 +94,6 @@ static srun_job_t *local_srun_job = NULL;
 static uint32_t *local_global_rc = NULL;
 
 static task_state_t task_state;
-static bool srun_max_timer = false;
 static time_t launch_start_time;
 static bool retry_step_begin = false;
 static int  retry_step_cnt = 0;

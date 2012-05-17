@@ -232,6 +232,8 @@ extern opt_t opt;
 
 extern int error_exit;		/* exit code for slurm errors */
 extern int immediate_exit;	/* exit code for --imediate option & busy */
+extern bool srun_max_timer;
+extern bool srun_shutdown;
 extern int sig_array[];
 
 /* return whether any constraints were specified by the user
