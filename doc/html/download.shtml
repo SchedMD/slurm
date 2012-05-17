@@ -125,6 +125,7 @@ http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2</a></li><br>
 <ul>
 <li><a href="http://www.mpi-softtech.com/">ChaMPIon, MPI Software Technology</a></li>
 <li><a href="http://www.hp.com/go/mpi">HP-MPI</a></li>
+<li><a href="http://software.intel.com/en-us/articles/intel-mpi-library/">Intel-MPI</a></li>
 <li><a href="http://www.lam-mpi.org/">LAM/MPI</a></li>
 <li><a href="http://www-unix.mcs.anl.gov/mpi/mpich1/">MPICH1</a></li>
 <li><a href="http://www.mcs.anl.gov/research/projects/mpich2/">MPICH2</a></li>
@@ -218,6 +219,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 15 May 2012</p>
+<p style="text-align:center;">Last modified 17 May 2012</p>
 
 <!--#include virtual="footer.txt"-->

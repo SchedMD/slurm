@@ -4,59 +4,16 @@
 
 <h2>Index</h2>
 <ul>
-<li><a href="#21">SLURM Version 2.1, January 2010</a></li>
-<li><a href="#22">SLURM Version 2.2, December 2010</a></li>
 <li><a href="#23">SLURM Version 2.3, September 2011</a></li>
-<li><a href="#24">SLURM Version 2.4, planned June 2012</a></li>
-<li><a href="#25">SLURM Version 2.5 and beyond2</a></li>
+<li><a href="#24">SLURM Version 2.4, June 2012</a></li>
+<li><a href="#25">SLURM Version 2.5, scheduled for November 2012</a></li>
+<li><a href="#26">SLURM Version 2.6 and beyond</a></li>
 <li><a href="#security">Security Patches</a></li>
-</ul>
-
-<h2><a name="21">Major Updates in SLURM Version 2.1</a></h2>
-<p>SLURM Version 2.1 was released in January 2010.
-Major enhancements include:
-<ul>
-<li>Optimized resource allocation based upon network topology (e.g.
-hierarchical switches).</li>
-<li>Support for job preemption based upon job Quality of Service (QOS) in
-addition to queue priority.</li>
-<li>Support for time limits on individual job steps (in addition to the
-job time limit).</li>
-<li>Improve fault-tolerance in recognizing compute node reboots.</li>
-<li>Add sinfo and squeue information about specific cores allocated.</li>
-<li>Support for Solaris (OpenSolaris build 119).</li>
-</ul>
-
-<h2><a name="22">Major Updates in SLURM Version 2.2</a></h2>
-<p>SLURM Version 2.2 was released in December 2010.
-Major enhancements include:
-<ul>
-<li>Permit resource allocations (jobs) to shrink in size.</li>
-<li>Add support for job time limit range. The job's time limit will get it's
-maximum time limit unless reducing it to a lower value within the range will
-permit it to start earlier via backfill scheduling.</li>
-<li>Add support for allocation of generic resources (e.g. GPUs).</li>
-<li>Add a job submission plugin that can be use to set site-specific default
-job parameters including default partition (based upon job size, etc.).</li>
-<li>Add support for TotalView partitial attach (debugger attach to selected
-tasks only).</li>
-<li>Add support for draining partitions (job queues) with alternate partition
-specification available.</li>
-<li>The MySQL database has been restructured for a 50-75% performance
-improvement.</li>
-<li>RPCs have been modified to prevent job loss on SLURM upgrades and permit
-different versions of the commands and deamons to interoperate.</li>
-<li>Major enhancements made to PostGreSQL database plugin (still beta).</li>
-<li>Permit SLURM commands to operate between clusters (e.g. status jobs on a
-different cluster or submit a job on one cluster to run on another).</li>
-<li>Major enhancements for high-throughput computing. Job throughput
-rates now exceed 120,000 jobs per hour with bursts of job submissions at
-several times that rate.</li>
 </ul>
 
 <h2><a name="23">Major Updates in SLURM Version 2.3</a></h2>
 <p>SLURM Version 2.2 was released in September 2011.
-Major enhancements currently planned include:
+Major enhancements include:
 <ul>
 <li>Support for Cray XT and XE computers (integration with ALPS/BASIL).</li>
 <li>Support for BlueGene/Q computers (partially implemented).</li>
@@ -69,22 +26,37 @@ in version 2.2).</li>
 </ul>
 
 <h2><a name="24">Major Updates in SLURM Version 2.4</a></h2>
-<p>SLURM Version 2.4 release is planned for June 2012.
-Major enhancements currently planned include:
+<p>SLURM Version 2.4 was release in June 2012.
+Major enhancements include:
 <ul>
 <li>Major improvement in job throuhgput: Up to 500 jobs per second (actual
 throughput depends upon configuration, hardware, etc.).<li>
 <li>Support for BlueGene/Q computers (fully implemented).</li>
 <li>Resource reservations with a node count specification will select
 those nodes optimized for the system topology.</li>
-<li>Support for SLURM commands operating over a LoadLeveler resource manager.</li>
 <li>Support for job and step constraints with resource counts (e.g. a job
 request for two nodes with a feature of "Intel" plus four nodes with a feature
 of "AMD").</li>
 <li>New tool <i>sdiag</i> reports scheduling statistics.</li>
+<li>Support for SLURM commands operating over a LoadLeveler resource manager
+(in branch of SLURM code, not in main release).</li>
 </ul>
 
-<h2><a name="25">Major Updates in SLURM Version 2.5 and beyond</a></h2>
+<h2><a name="25">Major Updates in SLURM Version 2.5</a></h2>
+<p>SLURM Version 2.5 is scheduled for release in November 2012.
+Major enhancements planned include:
+<ul>
+<li>Recording power usage information for each job.</li>
+<li>Job specification of desired CPU frequency, which will effect it's
+power usage and possibly its execution cost.</li>
+<li>Integration with FlexLM license management.</li>
+<li>Integration with IBM's Parallel Environment including POE (Parallel
+Operating Environment) and NRT (Network Resource Table) API.</li>
+<li>Highly optimized thoughput for serial jobs in a new "select/serial"
+plugin.</li>
+</ul>
+
+<h2><a name="26">Major Updates in SLURM Version 2.6 and beyond</a></h2>
 <p> Detailed plans for release dates and contents of additional SLURM releases
 have not been finalized. Anyone desiring to perform SLURM development should
 notify <a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>
@@ -93,7 +65,6 @@ to coordinate activities. Future development plans includes:
 <li>Faster and more powerful job step management support  (e.g. step
 dependencies).</li>
 <li>Improved user support for fault-tolerance (e.g. "hot spare" resources).</li>
-<li>Integration with FlexLM license management.</li>
 <li>Numerous enhancements to advanced resource reservations (e.g. start or
 end the reservation early depending upon the workload).</li>
 <li>Add Kerberos credential support including credential forwarding
@@ -126,6 +97,6 @@ trojan library, then that library will be used by the SLURM daemon with
 unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 10 May 2012</p>
+<p style="text-align:center;">Last modified 17 May 2012</p>
 
 <!--#include virtual="footer.txt"-->
