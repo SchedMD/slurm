@@ -466,8 +466,7 @@ relaunch:
 
 	_set_stdio_fds(job, &cio_fds);
 
-	if (launch_g_step_launch(job, &cio_fds, &global_rc,
-				 got_alloc, &srun_shutdown) == -1)
+	if (launch_g_step_launch(job, &cio_fds, &global_rc, got_alloc) == -1)
 		goto relaunch;
 
 	if (got_alloc) {

@@ -66,7 +66,7 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    sig_atomic_t *destroy_job);
 extern int launch_g_step_launch(
 	srun_job_t *job, slurm_step_io_fds_t *cio_fds,
-	uint32_t *global_rc, bool got_alloc, bool *srun_shutdown);
+	uint32_t *global_rc, bool got_alloc);
 
 extern int launch_g_step_terminate(void);
 

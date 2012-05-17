@@ -81,7 +81,6 @@ const char plugin_type[]        = "launch/runjob";
 const uint32_t plugin_version   = 101;
 
 static srun_job_t *local_srun_job = NULL;
-static bool *local_srun_shutdown = NULL;
 
 static void _send_step_complete_rpc(int step_rc)
 {
@@ -164,7 +163,7 @@ static void *_msg_thr_internal(void *arg)
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	while (!*local_srun_shutdown) {
+	while (!srun_shutdown) {
 		newsockfd = slurm_accept_msg_conn(*slurmctld_fd_ptr, &cli_addr);
 		if (newsockfd == SLURM_SOCKET_ERROR) {
 			if (errno != EINTR)
@@ -363,12 +362,11 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 extern int launch_p_step_launch(
 	srun_job_t *job, slurm_step_io_fds_t *cio_fds,
-	uint32_t *global_rc, bool got_alloc, bool *srun_shutdown)
+	uint32_t *global_rc, bool got_alloc)
 {
 	pthread_t msg_thread;
 
 	local_srun_job = job;
-	local_srun_shutdown = srun_shutdown;
 
 	msg_thread = _spawn_msg_handler();
 
@@ -378,7 +376,7 @@ extern int launch_p_step_launch(
 				   cio_fds->err.fd);
 	_send_step_complete_rpc(*global_rc);
 	if (msg_thread) {
-		*local_srun_shutdown = true;
+		srun_shutdown = true;
 		pthread_cancel(msg_thread);
 		pthread_join(msg_thread, NULL);
 	}
