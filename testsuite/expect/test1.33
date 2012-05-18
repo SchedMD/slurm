@@ -42,10 +42,17 @@ print_header $test_id
 if {[test_bluegene]} {
 	send_user "\nWARNING: This test is incompatible with Bluegene systems\n"
 	exit $exit_code
-}
-if {[test_cray]} {
+} elseif {[test_cray]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
 	exit $exit_code
+} elseif {[test_serial]} {
+	set task_cnt	1
+	set sum1	10
+	set key2	"srun_exit_code_10"
+} else {
+	set task_cnt	2
+	set sum1	21
+	set key2	"srun_exit_code_11"
 }
 
 #
@@ -57,7 +64,7 @@ make_bash_script $exit_script "
 "
 
 make_bash_script $test_script "
-  $srun -N1 -n2 -O $exit_script
+  $srun -N1 -n $task_cnt -O $exit_script
   echo srun_exit_code_\$?
 "
 
@@ -66,7 +73,7 @@ make_bash_script $test_script "
 #
 set sum 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -n2 -O $exit_script]
+set srun_pid [spawn $srun -N1 -n $task_cnt -O $exit_script]
 expect {
 	-re "exit code ($number)" {
 		send_user "This error is expected, no worries\n"
@@ -82,8 +89,8 @@ expect {
 		wait
 	}
 }
-if {$sum != 21} {
-	send_user "\nFAILURE: srun failed to report exit code\n"
+if {$sum != $sum1} {
+	send_user "\nFAILURE: srun failed to report exit code ($sum != $sum1)\n"
 	set exit_code 1
 }
 
@@ -93,7 +100,7 @@ if {$sum != 21} {
 set matches 0
 spawn $test_script
 expect {
-	-re "srun_exit_code_11" {
+	-re "$key2" {
 		send_user "Above error are expected, no worries\n"
 		incr matches
 		exp_continue
