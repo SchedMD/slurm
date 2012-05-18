@@ -6,6 +6,8 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jay Windley <jwindley@lnxi.com>.
  *  CODE-OCEC-09-009. All rights reserved.
+ *  Portions Copyright (C) 2012 SchedMD LLC.
+ *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.schedmd.com/slurmdocs/>.
@@ -49,7 +51,7 @@
 
 #include "src/common/xmalloc.h"
 #include "src/common/log.h"
-#include "src/common/plugin.h"
+#include "src/common/plugrack.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_protocol_api.h"
 #include "slurm/slurm_errno.h"
@@ -356,3 +358,102 @@ plugin_get_syms( plugin_handle_t plug,
 	return count;
 }
 
+/*
+ * Create a priority context
+ */
+extern plugin_context_t *plugin_context_create(
+	const char *plugin_type, const char *uler_type,
+	void *ptrs[], const char *names[], size_t names_size)
+{
+	plugin_context_t *c;
+	int n_names;
+
+	if (!uler_type) {
+		debug3("plugin_context_create: no uler type");
+		return NULL;
+	} else if (!plugin_type) {
+		debug3("plugin_context_create: no plugin type");
+		return NULL;
+	} else if (!names) {
+		error("plugin_context_create: no symbols given for plugin %s",
+		      plugin_type);
+		return NULL;
+	} else if (!ptrs) {
+		error("plugin_context_create: no ptrs given for plugin %s",
+		      plugin_type);
+		return NULL;
+	}
+
+	c = xmalloc(sizeof(plugin_context_t));
+	c->type = xstrdup(uler_type);
+	c->cur_plugin = PLUGIN_INVALID_HANDLE;
+
+	n_names = names_size / sizeof(char *);
+
+	/* Find the correct plugin. */
+	c->cur_plugin = plugin_load_and_link(c->type, n_names, names, ptrs);
+	if (c->cur_plugin != PLUGIN_INVALID_HANDLE)
+		return c;
+
+	if (errno != EPLUGIN_NOTFOUND) {
+		error("Couldn't load specified plugin name for %s: %s",
+		      c->type, plugin_strerror(errno));
+		return NULL;
+	}
+
+	error("Couldn't find the specified plugin name for %s "
+	      "looking at all files",
+	      c->type);
+
+	/* Get plugin list. */
+	if (!c->plugin_list) {
+		char *plugin_dir;
+		c->plugin_list = plugrack_create();
+		if (!c->plugin_list) {
+			error("cannot create plugin manager");
+			return NULL;
+		}
+		plugrack_set_major_type(c->plugin_list, plugin_type);
+		plugrack_set_paranoia(
+			c->plugin_list, PLUGRACK_PARANOIA_NONE, 0);
+		plugin_dir = slurm_get_plugin_dir();
+		plugrack_read_dir(c->plugin_list, plugin_dir);
+		xfree(plugin_dir);
+	}
+
+	c->cur_plugin = plugrack_use_by_type(c->plugin_list, c->type);
+	if (c->cur_plugin == PLUGIN_INVALID_HANDLE) {
+		error("cannot find %s plugin for %s", plugin_type, c->type);
+		return NULL;
+	}
+
+	/* Dereference the API. */
+	if (plugin_get_syms(c->cur_plugin, n_names, names, ptrs) < n_names) {
+		error("incomplete %s plugin detected", plugin_type);
+		return NULL;
+	}
+
+	return c;
+}
+
+/*
+ * Destroy a context
+ */
+extern int plugin_context_destroy(plugin_context_t *c)
+{
+	int rc = SLURM_SUCCESS;
+	/*
+	 * Must check return code here because plugins might still
+	 * be loaded and active.
+	 */
+	if (c->plugin_list) {
+		if (plugrack_destroy(c->plugin_list) != SLURM_SUCCESS)
+			rc = SLURM_ERROR;
+	} else
+		plugin_unload(c->cur_plugin);
+
+	xfree(c->type);
+	xfree(c);
+
+	return rc;
+}
