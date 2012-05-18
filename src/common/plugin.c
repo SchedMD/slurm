@@ -398,7 +398,7 @@ extern plugin_context_t *plugin_context_create(
 	if (errno != EPLUGIN_NOTFOUND) {
 		error("Couldn't load specified plugin name for %s: %s",
 		      c->type, plugin_strerror(errno));
-		return NULL;
+		goto fail;
 	}
 
 	error("Couldn't find the specified plugin name for %s "
@@ -411,7 +411,7 @@ extern plugin_context_t *plugin_context_create(
 		c->plugin_list = plugrack_create();
 		if (!c->plugin_list) {
 			error("cannot create plugin manager");
-			return NULL;
+			goto fail;
 		}
 		plugrack_set_major_type(c->plugin_list, plugin_type);
 		plugrack_set_paranoia(
@@ -424,16 +424,19 @@ extern plugin_context_t *plugin_context_create(
 	c->cur_plugin = plugrack_use_by_type(c->plugin_list, c->type);
 	if (c->cur_plugin == PLUGIN_INVALID_HANDLE) {
 		error("cannot find %s plugin for %s", plugin_type, c->type);
-		return NULL;
+		goto fail;
 	}
 
 	/* Dereference the API. */
 	if (plugin_get_syms(c->cur_plugin, n_names, names, ptrs) < n_names) {
 		error("incomplete %s plugin detected", plugin_type);
-		return NULL;
+		goto fail;
 	}
 
 	return c;
+fail:
+	plugin_context_destroy(c);
+	return NULL;
 }
 
 /*
