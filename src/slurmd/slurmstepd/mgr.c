@@ -1440,7 +1440,8 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 			 *   children in any process groups or containers
 			 *   before they make a call to exec(2).
 			 */
-			exec_wait_child_wait_for_parent (ei);
+			if (exec_wait_child_wait_for_parent (ei) < 0)
+				exit (1);
 
 			exec_task(job, i);
 		}
