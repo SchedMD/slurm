@@ -1148,8 +1148,10 @@ static void exec_wait_info_destroy (struct exec_wait_info *e)
 	if (e == NULL)
 		return;
 
-	close (e->parentfd);
-	close (e->childfd);
+	if (e->parentfd >= 0)
+		close (e->parentfd);
+	if (e->childfd >= 0)
+		close (e->childfd);
 	e->id = -1;
 	e->pid = -1;
 }
@@ -1172,9 +1174,17 @@ static struct exec_wait_info * fork_child_with_wait_info (int id)
 		exec_wait_info_destroy (e);
 		return (NULL);
 	}
-	else if (e->pid == 0)  /* In child, close parent fd */
+	/*
+	 *  Close parentfd in child, and childfd in parent:
+	 */
+	if (e->pid == 0) {
 		close (e->parentfd);
-
+		e->parentfd = -1;
+	}
+	else {
+		close (e->childfd);
+		e->childfd = -1;
+	}
 	return (e);
 }
 
