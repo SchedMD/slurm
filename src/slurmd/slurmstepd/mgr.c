@@ -1216,6 +1216,47 @@ static int exec_wait_signal (struct exec_wait_info *e, slurmd_job_t *job)
 	return (0);
 }
 
+/*
+ *  Send SIGKILL to child in exec_wait_info 'e'
+ *  Returns 0 for success, -1 for failure.
+ */
+static int exec_wait_kill_child (struct exec_wait_info *e)
+{
+	if (e->pid < 0)
+		return (-1);
+	if (kill (e->pid, SIGKILL) < 0)
+		return (-1);
+	e->pid = -1;
+	return (0);
+}
+
+/*
+ *  Send all children in exec_wait_list SIGKILL.
+ *  Returns 0 for success or  < 0 on failure.
+ */
+static int exec_wait_kill_children (List exec_wait_list)
+{
+	int rc = 0;
+	int count;
+	struct exec_wait_info *e;
+	ListIterator i;
+
+	if ((count = list_count (exec_wait_list)) == 0)
+		return (0);
+
+	verbose ("Killing %d remaining child%s",
+		 count, (count > 1 ? "ren" : ""));
+
+	i = list_iterator_create (exec_wait_list);
+	if (i == NULL)
+		return error ("exec_wait_kill_children: iterator_create: %m");
+
+	while ((e = list_next (i)))
+		rc += exec_wait_kill_child (e);
+	list_iterator_destroy (i);
+	return (rc);
+}
+
 static void prepare_stdio (slurmd_job_t *job, slurmd_task_info_t *task)
 {
 #ifdef HAVE_PTY_H
@@ -1347,6 +1388,7 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 
 		if ((ei = fork_child_with_wait_info (i)) == NULL) {
 			error("child fork: %m");
+			exec_wait_kill_children (exec_wait_list);
 			rc = SLURM_ERROR;
 			goto fail4;
 		} else if ((pid = exec_wait_get_pid (ei)) == 0)  { /* child */
