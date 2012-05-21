@@ -125,7 +125,7 @@ struct slurm_nrt_libstate {
 	slurm_nrt_nodeinfo_t *node_list;
 	uint32_t hash_max;
 	slurm_nrt_nodeinfo_t **hash_table;
-	uint16_t key_index;
+	nrt_job_key_t key_index;
 };
 
 struct slurm_nrt_jobinfo {
@@ -215,7 +215,7 @@ static int	_wait_for_window_unloaded(char *adapter_name,
 static char *	_win_state_str(win_state_t state);
 static int	_window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 				  char *hostname, int task_id,
-				  win_state_t state, uint16_t job_key);
+				  win_state_t state, nrt_job_key_t job_key);
 
 /* The _lock() and _unlock() functions are used to lock/unlock a
  * global mutex.  Used to serialize access to the global library
@@ -446,7 +446,7 @@ _free_windows_by_job_key(uint16_t job_key, char *node_name)
 	slurm_nrt_window_t *window;
 	int i, j;
 
-	/* debug3("_free_windows_by_job_key(%hu, %s)", job_key, node_name); */
+	/* debug3("_free_windows_by_job_key(%u, %s)", job_key, node_name); */
 	if ((node = _find_node(nrt_state, node_name)) == NULL)
 		return;
 
@@ -563,7 +563,7 @@ _job_step_window_state(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 static int
 _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 		  char *hostname, int task_id, win_state_t state,
-		  uint16_t job_key)
+		  nrt_job_key_t job_key)
 {
 	slurm_nrt_nodeinfo_t *node = NULL;
 	slurm_nrt_adapter_t *adapter = NULL;
@@ -1057,7 +1057,7 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 #endif
 			info("      window %hu: %s", w[j].window_id,
 			     _win_state_str(w->state));
-			info("      job_key %hu", w[j].job_key);
+			info("      job_key %u", w[j].job_key);
 		}
 	}
 	info("--End Node Info--");
@@ -1076,7 +1076,7 @@ _print_libstate(const slurm_nrt_libstate_t *l)
 	info("  node_count = %u", l->node_count);
 	info("  node_max = %u", l->node_max);
 	info("  hash_max = %u", l->hash_max);
-	info("  key_index = %hu", l->key_index);
+	info("  key_index = %u", l->key_index);
 	for (i = 0; i < l->node_count; i++) {
 		_print_nodeinfo(&l->node_list[i]);
 	}
@@ -1226,7 +1226,7 @@ _alloc_libstate(void)
 	tmp->hash_table = NULL;
 	/* Start key from random point, old key values are cached,
 	 * which seems to prevent re-use for a while */
-	tmp->key_index = (uint16_t) time(NULL);
+	tmp->key_index = (nrt_job_key_t) time(NULL);
 
 	return tmp;
 }
@@ -1292,7 +1292,7 @@ nrt_alloc_jobinfo(slurm_nrt_jobinfo_t **j)
 	assert(j != NULL);
 	new = (slurm_nrt_jobinfo_t *) xmalloc(sizeof(slurm_nrt_jobinfo_t));
 	new->magic = NRT_JOBINFO_MAGIC;
-	new->job_key = -1;
+	new->job_key = (nrt_job_key_t) -1;
 	new->tables_per_task = 0;
 	new->tableinfo = NULL;
 	*j = new;
@@ -1449,6 +1449,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				window_ptr->window_id = (*status_array)[k].
 							window_id;
 				window_ptr->state = (*status_array)[k].state;
+/* FIXME: This appears to be bad */
 				window_ptr->job_key = (*status_array)[k].
 						      client_pid;
 			}
@@ -1938,7 +1939,7 @@ nrt_job_step_allocated(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
 static nrt_job_key_t
 _next_key(void)
 {
-	uint16_t key;
+	nrt_job_key_t key;
 
 	assert(nrt_state);
 
@@ -1946,7 +1947,7 @@ _next_key(void)
 	key = nrt_state->key_index;
 	if (key == 0)
 		key++;
-	nrt_state->key_index = key + 1;
+	nrt_state->key_index = (nrt_job_key_t) (key + 1);
 	_unlock();
 
 	return key;
@@ -2599,7 +2600,7 @@ static int
 _check_rdma_job_count(char *adapter_name, nrt_adapter_t adapter_type)
 {
 	uint16_t job_count = 0;
-	uint16_t *job_keys = NULL;
+	nrt_job_key_t *job_keys = NULL;
 	int err, i;
 
 #if 1
@@ -2618,7 +2619,7 @@ _check_rdma_job_count(char *adapter_name, nrt_adapter_t adapter_type)
 	info("adapter_name:%s adapter_type:%s", adapter_name,
 	     _adapter_type_str(adapter_type));
 	for (i = 0; i < job_count; i++)
-		info("  job_keys[%d]:%hu", i, job_keys[i]);
+		info("  job_keys[%d]:%u", i, job_keys[i]);
 #endif
 	if (job_keys)
 		free(job_keys);
@@ -2772,7 +2773,7 @@ _unload_window(char *adapter_name, nrt_adapter_t adapter_type,
 				  &unload_window);
 		if (err == NRT_SUCCESS)
 			return SLURM_SUCCESS;
-		debug("Unable to unload window for job_key %hu, "
+		debug("Unable to unload window for job_key %u, "
 		      "nrt_unload_window(%s, %u): %s",
 		      job_key, adapter_name, adapter_type, nrt_err_str(err));
 
@@ -2786,7 +2787,7 @@ _unload_window(char *adapter_name, nrt_adapter_t adapter_type,
 				  &clean_window);
 		if (err == NRT_SUCCESS)
 			return SLURM_SUCCESS;
-		error("Unable to clean window for job_key %hu, "
+		error("Unable to clean window for job_key %u, "
 		      "nrt_clean_window(%s, %u): %s",
 		      job_key, adapter_name, adapter_type, nrt_err_str(err));
 		if (err != NRT_EAGAIN)
@@ -2890,7 +2891,7 @@ _pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
 	for (i = 0; i < lp->node_count; i++)
 		(void)nrt_pack_nodeinfo(&lp->node_list[i], buffer);
 	/* don't pack hash_table, we'll just rebuild on restore */
-	pack16(lp->key_index, buffer);
+	pack32(lp->key_index, buffer);
 
 	return(get_buf_offset(buffer) - offset);
 }
@@ -2933,7 +2934,7 @@ _unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
 		      lp->node_count, node_count);
 		return SLURM_ERROR;
 	}
-	safe_unpack16(&lp->key_index, buffer);
+	safe_unpack32(&lp->key_index, buffer);
 #if NRT_DEBUG
  	info("_unpack_libstate");
 	_print_libstate(lp);
