@@ -221,13 +221,12 @@ typedef struct slurm_select_ops {
 
 } slurm_select_ops_t;
 
-typedef struct slurm_select_context {
-	char		*select_type;
-	plugrack_t	plugin_list;
-	plugin_handle_t	cur_plugin;
-	int		select_errno;
-	slurm_select_ops_t ops;
-} slurm_select_context_t;
+/*
+ * Defined in node_select.c Must be synchronized with slurm_select_ops_t above.
+ * Also must be synchronized with the other_plugin.c in
+ * the select/cray plugin.
+ */
+extern const char *node_select_syms[];
 
 /* Convert a node coordinate character into its equivalent number:
  * '0' = 0; '9' = 9; 'A' = 10; etc. */
