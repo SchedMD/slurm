@@ -42,15 +42,17 @@ set prompt      "PROMPT: "
 
 print_header $test_id
 
-if {[test_front_end] != 0} {
+if {[test_front_end]} {
 	send_user "\nWARNING: This test is incompatible with front-end systems\n"
+	exit 0
+} elseif {[test_multiple_slurmd] != 0} {
+	send_user "\nWARNING: This test is incompatible with multiple slurmd systems\n"
+	exit 0
+} elseif {[test_serial]} {
+	send_user "\nWARNING: This test is incompatible with a serial system\n"
 	exit 0
 }
 
-if {[test_multiple_slurmd] != 0} {
-	send_user "\nWARNING: This test is incompatible with multiple slurmd systems\n"
-	exit 0
-}
 
 #
 # Build input script file
