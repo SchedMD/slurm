@@ -281,6 +281,9 @@ extern int slurm_select_init(bool only_default)
 	struct dirent *e;
 	char *dir_array = NULL, *head = NULL;
 
+	if ( select_context )
+		return retval;
+
 	slurm_mutex_lock( &select_context_lock );
 
 	if ( select_context )

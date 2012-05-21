@@ -207,6 +207,9 @@ slurm_topo_init( void )
 	int retval = SLURM_SUCCESS;
 	char *topo_type = NULL;
 
+	if ( g_topo_context )
+		return retval;
+
 	slurm_mutex_lock( &g_topo_context_lock );
 
 	if ( g_topo_context )

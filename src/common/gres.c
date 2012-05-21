@@ -338,6 +338,9 @@ extern int gres_plugin_init(void)
 	int i, j, rc = SLURM_SUCCESS;
 	char *last = NULL, *names, *one_name, *full_name;
 
+	if (gres_context_cnt >= 0)
+		return rc;
+
 	slurm_mutex_lock(&gres_context_lock);
 	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
 		gres_debug = true;

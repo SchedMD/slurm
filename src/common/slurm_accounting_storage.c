@@ -388,6 +388,9 @@ extern int slurm_acct_storage_init(char *loc)
 	int retval = SLURM_SUCCESS;
 	char *acct_storage_type = NULL;
 
+	if ( g_acct_storage_context )
+		return retval;
+
 	slurm_mutex_lock( &g_acct_storage_context_lock );
 
 	if ( g_acct_storage_context )

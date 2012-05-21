@@ -288,6 +288,9 @@ extern int switch_init( void )
 	int retval = SLURM_SUCCESS;
 	char *switch_type = NULL;
 
+	if ( g_context )
+		return retval;
+
 	slurm_mutex_lock( &context_lock );
 
 	if ( g_context )

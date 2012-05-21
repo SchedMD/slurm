@@ -211,6 +211,9 @@ int _mpi_init (char *mpi_type)
 	char *full_type = NULL;
 	int got_default = 0;
 
+	if ( g_context )
+		return retval;
+
 	slurm_mutex_lock( &context_lock );
 
 	if ( g_context )

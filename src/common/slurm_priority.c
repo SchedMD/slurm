@@ -198,6 +198,9 @@ extern int slurm_priority_init(void)
 	int retval = SLURM_SUCCESS;
 	char *priority_type = NULL;
 
+	if ( g_priority_context )
+		return retval;
+
 	slurm_mutex_lock( &g_priority_context_lock );
 
 	if ( g_priority_context )

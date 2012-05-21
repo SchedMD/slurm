@@ -258,6 +258,9 @@ static int _slurm_jobacct_gather_init(void)
 	char	*jobacct_gather_type = NULL;
 	int	retval=SLURM_SUCCESS;
 
+	if ( g_jobacct_gather_context )
+		return(retval);
+
 	slurm_mutex_lock( &g_jobacct_gather_context_lock );
 	if ( g_jobacct_gather_context )
 		goto done;

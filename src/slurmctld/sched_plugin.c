@@ -225,6 +225,9 @@ slurm_sched_init( void )
 	int retval = SLURM_SUCCESS;
 	char *sched_type = NULL;
 
+	if ( g_sched_context )
+		return retval;
+
 	slurm_mutex_lock( &g_sched_context_lock );
 
 	if ( g_sched_context )

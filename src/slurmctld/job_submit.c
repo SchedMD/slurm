@@ -196,6 +196,9 @@ extern int job_submit_plugin_init(void)
 	int rc = SLURM_SUCCESS;
 	char *last = NULL, *names, *one_name;
 
+	if (submit_context_cnt >= 0)
+		return rc;
+
 	slurm_mutex_lock(&submit_context_lock);
 	if (submit_context_cnt >= 0)
 		goto fini;

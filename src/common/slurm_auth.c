@@ -315,6 +315,9 @@ extern int slurm_auth_init( char *auth_type )
         int retval = SLURM_SUCCESS;
 	char *auth_type_local = NULL;
 
+        if ( g_context )
+		return retval;
+
         slurm_mutex_lock( &context_lock );
 
         if ( g_context )
