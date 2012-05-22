@@ -1,0 +1,70 @@
+############################################################################
+# Purpose: Test for accounting records of specific job names with their ID
+############################################################################
+# Copyright (C) 2012 SchedMD LLC.
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.schedmd.com/slurmdocs/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+#
+# Tesing maxwall+1
+#
+
+proc inc21_21_4 {maxwall } {
+
+	global number bin_id ta srun exit_code
+
+	#
+	# Spawn a job testing maxwall+1
+	#
+	spawn $srun -t[expr $maxwall + 1] --account=$ta $bin_id
+	expect {
+		-re "Job violates accounting policy" {
+			send_user "\nThis error is expected, not a problem\n"
+			exp_continue
+		}
+		-re "launching ($number)" {
+			send_user "\nFAILURE: job should not have run.\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { $exit_code } {
+		return $exit_code
+	}
+
+
+
+
+}
+
+
+
+
+
+
