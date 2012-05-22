@@ -732,7 +732,8 @@ extern int schedule(uint32_t job_limit)
 	}
 	while (1) {
 		if (fifo_sched) {
-			if (job_ptr && part_iterator)
+			if (job_ptr && part_iterator &&
+			    IS_JOB_PENDING(job_ptr))/* started in other part */
 				goto next_part;
 			job_ptr = (struct job_record *) list_next(job_iterator);
 			if (!job_ptr)
@@ -769,6 +770,8 @@ next_part:			part_ptr = (struct part_record *)
 			part_ptr = job_queue_rec->part_ptr;
 			job_ptr->part_ptr = part_ptr;
 			xfree(job_queue_rec);
+			if (!IS_JOB_PENDING(job_ptr))
+				continue;  /* started in other partition */
 		}
 		if ((time(NULL) - sched_start) >= sched_timeout) {
 			debug("sched: loop taking too long, breaking out");
@@ -781,9 +784,6 @@ next_part:			part_ptr = (struct part_record *)
 		}
 
 		slurmctld_diag_stats.schedule_cycle_depth++;
-
-		if (!IS_JOB_PENDING(job_ptr))
-			continue;	/* started in other partition */
 
 		/* Test for valid account, QOS and required nodes on each pass */
 		if (job_ptr->state_reason == FAIL_ACCOUNT) {
