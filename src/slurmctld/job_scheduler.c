@@ -396,9 +396,10 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
 	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
-	struct job_record *job_ptr;
+	struct job_record *job_ptr = NULL;
 	struct job_record *fini_job_ptr = (struct job_record *) fini_job;
-	ListIterator job_iterator;
+	struct part_record *part_ptr;
+	ListIterator job_iterator = NULL, part_iterator = NULL;
 	batch_job_launch_msg_t *launch_msg = NULL;
 	bitstr_t *orig_exc_bitmap = NULL;
 	bool have_node_bitmaps, pending_jobs = false;
@@ -427,7 +428,20 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 	job_iterator = list_iterator_create(job_list);
 	if (job_iterator == NULL)
 		fatal("list_iterator_create memory allocation failure");
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while (1) {
+		if (job_ptr && part_iterator)
+			goto next_part;
+
+		job_ptr = (struct job_record *) list_next(job_iterator);
+		if (!job_ptr)
+			break;
+
+		if (job_ptr == fini_job_ptr)
+			continue;
+
+		if (job_ptr->priority == 0)
+			continue;
+
 		if (!IS_JOB_PENDING(job_ptr)) {
 			if (IS_JOB_FINISHED(job_ptr)  &&
 			    (job_ptr != fini_job_ptr) &&
@@ -445,15 +459,25 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 			continue;
 		}
 
-		if (job_ptr == fini_job_ptr)
-			continue;
-
-		if (job_ptr->priority == 0)
-			continue;
-
 		/* Tests dependencies, begin time and reservations */
 		if (!job_independent(job_ptr, 0))
 			continue;
+
+		if (job_ptr->part_ptr_list) {
+			part_iterator = list_iterator_create(job_ptr->
+							     part_ptr_list);
+			if (!part_iterator)
+				fatal("list_iterator_create: malloc failure");
+next_part:		part_ptr = (struct part_record *)
+				   list_next(part_iterator);
+			if (part_ptr) {
+				job_ptr->part_ptr = part_ptr;
+			} else {
+				list_iterator_destroy(part_iterator);
+				part_iterator = NULL;
+				continue;
+			}
+		}
 
 		/* Test for valid account, QOS and required nodes on each pass */
 		if (job_ptr->state_reason == FAIL_ACCOUNT) {
@@ -567,6 +591,10 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 		break;
 	}
 	unlock_slurmctld(job_write_lock);
+	if (job_iterator)
+		list_iterator_destroy(job_iterator);
+	if (part_iterator)
+		list_iterator_destroy(part_iterator);
 
 send_reply:
 	if (launch_msg) {
