@@ -571,12 +571,17 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 			case 'T': 	/* "%T" => "dd Mon yyyy hh:mm:ss off" */
 				xstrftimecat(buf, "%a %d %b %Y %H:%M:%S %z");
 				break;
-#ifdef USE_ISO_8601
-			case 'M':       /* "%M" => "yyyy-mm-ddThh:mm:ss"          */
+#if defined USE_USEC_CLOCK
+			case 'M':       /* "%M" => "usec"                    */
+				snprintf(tmp, sizeof(tmp), "%ld", clock());
+				xstrcat(buf, tmp);
+				break;
+#elif defined USE_ISO_8601
+			case 'M':       /* "%M" => "yyyy-mm-ddThh:mm:ss"     */
 				xstrftimecat(buf, "%Y-%m-%dT%T");
 				break;
 #else
-			case 'M':       /* "%M" => "Mon DD hh:mm:ss"          */
+			case 'M':       /* "%M" => "Mon DD hh:mm:ss"         */
 				xstrftimecat(buf, "%b %d %T");
 				break;
 #endif
