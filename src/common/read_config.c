@@ -1837,6 +1837,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	xfree (ctl_conf_ptr->job_submit_plugins);
+	xfree (ctl_conf_ptr->launch_type);
 	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_prog);
 	xfree (ctl_conf_ptr->mpi_default);
@@ -1945,6 +1946,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->job_requeue		= (uint16_t) NO_VAL;
 	xfree(ctl_conf_ptr->job_submit_plugins);
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
+	xfree (ctl_conf_ptr->launch_type);
 	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_prog);
 	ctl_conf_ptr->max_job_cnt		= (uint32_t) NO_VAL;
