@@ -865,7 +865,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			    s_p_get_uint32(&p->def_mem_per_cpu,
 					   "DefMemPerCPU", dflt)) {
 				p->def_mem_per_cpu |= MEM_PER_CPU;
-			} {
+			} else {
 				p->def_mem_per_cpu = 0;
 			}
 		}
