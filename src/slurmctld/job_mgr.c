@@ -186,7 +186,6 @@ static void _signal_job(struct job_record *job_ptr, int signal);
 static void _suspend_job(struct job_record *job_ptr, uint16_t op);
 static int  _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp);
 static bool _top_priority(struct job_record *job_ptr);
-static int  _validate_job_create_req(job_desc_msg_t * job_desc);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			       uid_t submit_uid, struct part_record *part_ptr);
 static void _validate_job_files(List batch_dirs);
@@ -4134,9 +4133,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	if ((error_code =_validate_job_create_req(job_desc)))
-		goto cleanup;
-
 	if ((error_code = _copy_job_desc_to_job_record(job_desc,
 						       job_pptr,
 						       &req_bitmap,
@@ -4242,7 +4238,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		xfree(job_ptr->state_desc);
 	}
 
-cleanup:
 	FREE_NULL_LIST(license_list);
 	FREE_NULL_BITMAP(req_bitmap);
 	FREE_NULL_BITMAP(exc_bitmap);
@@ -4281,7 +4276,7 @@ static int _test_strlen(char *test_str, char *str_name, int max_str_len)
 /* Perform some size checks on strings we store to prevent
  * malicious user filling slurmctld's memory
  * RET 0 or error code */
-static int _validate_job_create_req(job_desc_msg_t * job_desc)
+extern int validate_job_create_req(job_desc_msg_t * job_desc)
 {
 	if (_test_strlen(job_desc->account, "account", 1024)		||
 	    _test_strlen(job_desc->alloc_node, "alloc_node", 1024)	||

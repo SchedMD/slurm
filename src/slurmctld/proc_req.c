@@ -793,6 +793,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		error("REQUEST_RESOURCE_ALLOCATE lacks alloc_node from uid=%d",
 		      uid);
 	}
+	if (error_code == SLURM_SUCCESS)
+		error_code = validate_job_create_req(job_desc_msg);
 #if HAVE_CRAY
 	/*
 	 * Catch attempts to nest salloc sessions. It is not possible to use an
@@ -1826,6 +1828,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 		error_code = ESLURM_INVALID_NODE_NAME;
 		error("REQUEST_JOB_WILL_RUN lacks alloc_node from uid=%d", uid);
 	}
+	if (error_code == SLURM_SUCCESS)
+		error_code = validate_job_create_req(job_desc_msg);
 	slurm_get_peer_addr(msg->conn_fd, &resp_addr);
 	job_desc_msg->resp_host = xmalloc(16);
 	slurm_get_ip_str(&resp_addr, &port, job_desc_msg->resp_host, 16);
@@ -2559,6 +2563,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		error_code = ESLURM_INVALID_NODE_NAME;
 		error("REQUEST_SUBMIT_BATCH_JOB lacks alloc_node from uid=%d", uid);
 	}
+	if (error_code == SLURM_SUCCESS)
+		error_code = validate_job_create_req(job_desc_msg);
 	dump_job_desc(job_desc_msg);
 	if (error_code == SLURM_SUCCESS) {
 		lock_slurmctld(job_write_lock);
