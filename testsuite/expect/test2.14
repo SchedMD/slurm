@@ -39,20 +39,22 @@ set file_in          "test$test_id.input"
 set file_out         "test$test_id.output"
 set file_out2        "test$test_id.output2"
 set job_id           0
+set node_cnt         2
 
 print_header $test_id
 
 if { [test_xcpu] } {
 	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
 	exit 0
-}
-
-if {[test_front_end]} {
+} elseif {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit $exit_code
+} elseif {[test_serial]} {
+	send_user "\nWARNING: This test is incompatible with serial systems\n"
+	exit $exit_code
 }
 
-set node_cnt 2
+
 set available [available_nodes [default_partition]]
 if {$available < $node_cnt} {
     send_user "\nWARNING: not enough nodes currently available ($available avail, $node_cnt needed)\n"
@@ -64,14 +66,14 @@ if {$available < $node_cnt} {
 #
 exec $bin_rm -f $file_in $file_out $file_out2
 make_bash_script $file_in "
-$srun -l $bin_id
-$scontrol show job \${SLURM_JOBID} >${file_out2}
-$scontrol update JobId=\${SLURM_JOBID} NumNodes=1
-. slurm_job_\${SLURM_JOBID}_resize.sh
-$scontrol show job \${SLURM_JOBID} >>${file_out2}
-$srun -l $bin_id
-$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.csh
-$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.sh"
+	$srun -l $bin_id
+	$scontrol show job \${SLURM_JOBID} >${file_out2}
+	$scontrol update JobId=\${SLURM_JOBID} NumNodes=1
+	. slurm_job_\${SLURM_JOBID}_resize.sh
+	$scontrol show job \${SLURM_JOBID} >>${file_out2}
+	$srun -l $bin_id
+	$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.csh
+	$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.sh"
 
 #
 # Run job to determine what nodes are available
