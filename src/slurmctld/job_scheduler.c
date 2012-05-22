@@ -489,9 +489,9 @@ next_part:		part_ptr = (struct part_record *)
 			assoc_rec.uid       = job_ptr->user_id;
 	
 			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-						    accounting_enforce,
-						    (slurmdb_association_rec_t **)
-						    &job_ptr->assoc_ptr)) {
+						     accounting_enforce,
+						     (slurmdb_association_rec_t **)
+						     &job_ptr->assoc_ptr)) {
 				job_ptr->state_reason = WAIT_NO_REASON;
 				job_ptr->assoc_id = assoc_rec.id;
 			} else {
