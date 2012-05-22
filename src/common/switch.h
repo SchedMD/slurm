@@ -124,8 +124,8 @@ extern int  switch_alloc_jobinfo (switch_jobinfo_t **jobinfo);
  * NOTE: storage must be freed using g_switch_free_jobinfo
  */
 extern int  switch_build_jobinfo (switch_jobinfo_t *jobinfo,
-		char *nodelist, uint16_t *tasks_per_node,
-		int cyclic_alloc, char *network);
+		char *nodelist, uint16_t *tasks_per_node, uint32_t **tids,
+		char *network);
 
 /* copy a switch job credential
  * IN jobinfo - the switch job credential to be copied
@@ -271,7 +271,8 @@ extern int interconnect_preinit(switch_jobinfo_t *jobinfo);
  * than the process executing interconnect_fini() [e.g. QsNet])
  *
  */
-extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid);
+extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid,
+			     char *job_name);
 
 /*
  * This function is run from the same process as interconnect_init()

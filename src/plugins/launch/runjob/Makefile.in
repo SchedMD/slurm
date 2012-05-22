@@ -15,7 +15,7 @@
 
 @SET_MAKE@
 
-# Makefile for switch/federation plugin
+# Makefile for launch/runjob plugin
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -37,7 +37,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/switch/federation
+@BGQ_LOADED_TRUE@am__append_1 = runjob_interface.cc
+subdir = src/plugins/launch/runjob
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -57,9 +58,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
 	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
-	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
-	$(top_srcdir)/auxdir/x_ac_federation.m4 \
 	$(top_srcdir)/auxdir/x_ac_gpl_licensed.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_iso.m4 \
@@ -67,6 +66,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
+	$(top_srcdir)/auxdir/x_ac_nrt.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
 	$(top_srcdir)/auxdir/x_ac_printf_null.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
@@ -107,19 +107,15 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-switch_federation_la_LIBADD =
-am__switch_federation_la_SOURCES_DIST = federation.c federation.h \
-	federation_keys.h switch_federation.c
-@HAVE_FEDERATION_TRUE@am_switch_federation_la_OBJECTS = federation.lo \
-@HAVE_FEDERATION_TRUE@	switch_federation.lo
-am__EXTRA_switch_federation_la_SOURCES_DIST = federation.c \
-	federation.h federation_keys.h switch_federation.c
-switch_federation_la_OBJECTS = $(am_switch_federation_la_OBJECTS)
-switch_federation_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(switch_federation_la_LDFLAGS) $(LDFLAGS) -o $@
-@HAVE_FEDERATION_TRUE@am_switch_federation_la_rpath = -rpath \
-@HAVE_FEDERATION_TRUE@	$(pkglibdir)
+launch_runjob_la_LIBADD =
+am__launch_runjob_la_SOURCES_DIST = launch_runjob.c \
+	runjob_interface.cc
+@BGQ_LOADED_TRUE@am__objects_1 = runjob_interface.lo
+am_launch_runjob_la_OBJECTS = launch_runjob.lo $(am__objects_1)
+launch_runjob_la_OBJECTS = $(am_launch_runjob_la_OBJECTS)
+launch_runjob_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
+	$(CXXFLAGS) $(launch_runjob_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -133,10 +129,17 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(switch_federation_la_SOURCES) \
-	$(EXTRA_switch_federation_la_SOURCES)
-DIST_SOURCES = $(am__switch_federation_la_SOURCES_DIST) \
-	$(am__EXTRA_switch_federation_la_SOURCES_DIST)
+CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+LTCXXCOMPILE = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+CXXLD = $(CXX)
+CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+SOURCES = $(launch_runjob_la_SOURCES)
+DIST_SOURCES = $(am__launch_runjob_la_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -180,9 +183,7 @@ ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
-ELAN_LIBS = @ELAN_LIBS@
 EXEEXT = @EXEEXT@
-FEDERATION_LDFLAGS = @FEDERATION_LDFLAGS@
 FGREP = @FGREP@
 GREP = @GREP@
 GTK_CFLAGS = @GTK_CFLAGS@
@@ -190,9 +191,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
+HAVE_NRT = @HAVE_NRT@
 HAVE_OPENSSL = @HAVE_OPENSSL@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
@@ -224,6 +224,8 @@ MYSQL_LIBS = @MYSQL_LIBS@
 NCURSES = @NCURSES@
 NM = @NM@
 NMEDIT = @NMEDIT@
+NRT_CPPFLAGS = @NRT_CPPFLAGS@
+NRT_LDFLAGS = @NRT_LDFLAGS@
 NUMA_LIBS = @NUMA_LIBS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
@@ -251,6 +253,7 @@ PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_LIBS = @PTHREAD_LIBS@
 RANLIB = @RANLIB@
 READLINE_LIBS = @READLINE_LIBS@
+REAL_BGQ_LOADED = @REAL_BGQ_LOADED@
 REAL_BG_L_P_LOADED = @REAL_BG_L_P_LOADED@
 RELEASE = @RELEASE@
 RUNJOB_LDFLAGS = @RUNJOB_LDFLAGS@
@@ -341,32 +344,18 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = -DFEDERATION_CONFIG_FILE=\"$(sysconfdir)/federation.conf\"
 AUTOMAKE_OPTIONS = foreign
-@HAVE_FEDERATION_FALSE@federation_lib = 
-@HAVE_FEDERATION_TRUE@federation_lib = switch_federation.la
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = $(federation_lib)
-
-# Federation switch plugin.
-@HAVE_FEDERATION_TRUE@switch_federation_la_SOURCES = \
-@HAVE_FEDERATION_TRUE@	federation.c federation.h \
-@HAVE_FEDERATION_TRUE@	federation_keys.h \
-@HAVE_FEDERATION_TRUE@	switch_federation.c
-
-@HAVE_FEDERATION_TRUE@switch_federation_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
-@HAVE_FEDERATION_TRUE@	 $(FEDERATION_LDFLAGS)
-
-@HAVE_FEDERATION_FALSE@EXTRA_switch_federation_la_SOURCES = \
-@HAVE_FEDERATION_FALSE@	federation.c federation.h \
-@HAVE_FEDERATION_FALSE@	federation_keys.h \
-@HAVE_FEDERATION_FALSE@	switch_federation.c
-
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
+pkglib_LTLIBRARIES = launch_runjob.la
+launch_runjob_la_SOURCES = launch_runjob.c $(am__append_1)
+# because totalview needs the libraries on load we link in srun and not here.
+#launch_runjob_la_LDFLAGS += $(RUNJOB_LDFLAGS)
+launch_runjob_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .o .obj
+.SUFFIXES: .c .cc .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -376,9 +365,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/switch/federation/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/launch/runjob/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/plugins/switch/federation/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/launch/runjob/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -428,8 +417,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-switch_federation.la: $(switch_federation_la_OBJECTS) $(switch_federation_la_DEPENDENCIES) 
-	$(switch_federation_la_LINK) $(am_switch_federation_la_rpath) $(switch_federation_la_OBJECTS) $(switch_federation_la_LIBADD) $(LIBS)
+launch_runjob.la: $(launch_runjob_la_OBJECTS) $(launch_runjob_la_DEPENDENCIES) 
+	$(launch_runjob_la_LINK) -rpath $(pkglibdir) $(launch_runjob_la_OBJECTS) $(launch_runjob_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -437,8 +426,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/federation.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch_federation.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/launch_runjob.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/runjob_interface.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -460,6 +449,27 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
+
+.cc.o:
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
+
+.cc.obj:
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.cc.lo:
+@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
 mostlyclean-libtool:
 	-rm -f *.lo

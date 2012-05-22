@@ -1,9 +1,10 @@
 /***************************************************************************** \
- *  switch_federation.c - Library routines for initiating jobs on IBM
- *	Federation
+ *  switch_nrt.c - Swtich plugin interface, This calls functions in nrt.c
+ *	which contains the interface to IBM's NRT (Network Routing Table) API
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2011-2012 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jason King <jking@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -50,13 +51,13 @@
 #include <stdlib.h>
 
 #include "slurm/slurm_errno.h"
-#include "src/common/macros.h"
 #include "src/common/slurm_xlator.h"
-#include "src/plugins/switch/federation/federation.h"
+#include "src/common/macros.h"
+#include "src/plugins/switch/nrt/slurm_nrt.h"
 
-#define FED_BUF_SIZE 4096
+#define NRT_BUF_SIZE 4096
 
-bool fed_need_state_save = false;
+bool nrt_need_state_save = false;
 
 static void _spawn_state_save_thread(char *dir);
 static int  _switch_p_libstate_save(char * dir_name, bool free_flag);
@@ -71,7 +72,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{0, "No error"},
 	{-1, "Unspecified error"},
 
-	/* Federation routine error codes */
+	/* switch/nrt routine error codes */
 
 	{ ESTATUS,
 	  "Cannot get adapter status" },
@@ -79,12 +80,12 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Open of adapter failed" },
 	{ ENOADAPTER,
 	  "No adapters found" },
-	{ EBADMAGIC_FEDNODEINFO,
-	  "Bad magic in Federation nodeinfo" },
-	{ EBADMAGIC_FEDJOBINFO,
-	  "Bad magic in Federation jobinfo" },
-	{ EBADMAGIC_FEDLIBSTATE,
-	  "Bad magic in Federation libstate" },
+	{ EBADMAGIC_NRT_NODEINFO,
+	  "Bad magic in NRT nodeinfo" },
+	{ EBADMAGIC_NRT_JOBINFO,
+	  "Bad magic in NRT jobinfo" },
+	{ EBADMAGIC_NRT_LIBSTATE,
+	  "Bad magic in NRT libstate" },
 	{ EUNPACK,
 	  "Error during unpack" },
 	{ EHOSTNAME,
@@ -126,39 +127,48 @@ static slurm_errtab_t slurm_errtab[] = {
  * as 100 or 1000.  Various SLURM versions will likely require a certain
  * minimum version for their plugins as this API matures.
  */
-const char plugin_name[]        = "switch FEDERATION plugin";
-const char plugin_type[]        = "switch/federation";
+const char plugin_name[]        = "switch NRT plugin";
+const char plugin_type[]        = "switch/nrt";
 const uint32_t plugin_version   = 100;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-int init ( void )
+extern int init ( void )
 {
 	verbose("%s loaded", plugin_name);
 
 	return SLURM_SUCCESS;
 }
 
-int fini ( void )
+extern int fini ( void )
 {
-	return fed_fini();
+	return nrt_fini();
 }
 
-int switch_p_slurmctld_init( void )
+extern int switch_p_slurmctld_init( void )
 {
-	return fed_slurmctld_init();
+#if NRT_DEBUG
+	info("switch_p_slurmctld_init()");
+#endif
+	return nrt_slurmctld_init();
 }
 
-int switch_p_slurmd_init( void )
+extern int switch_p_slurmd_init( void )
 {
-	return fed_slurmd_init();
+#if NRT_DEBUG
+	info("switch_p_slurmd_init()");
+#endif
+	return nrt_slurmd_init();
 }
 
-int switch_p_slurmd_step_init( void )
+extern int switch_p_slurmd_step_init( void )
 {
-	return fed_slurmd_step_init();
+#if NRT_DEBUG
+	info("switch_p_slurmd_step_init()");
+#endif
+	return nrt_slurmd_step_init();
 }
 
 /*
@@ -166,8 +176,11 @@ int switch_p_slurmd_step_init( void )
  * NOTE: Clears current switch state as needed for backup
  * controller to repeatedly assume control primary server
  */
-int switch_p_libstate_save ( char * dir_name )
+extern int switch_p_libstate_save ( char * dir_name )
 {
+#if NRT_DEBUG
+	info("switch_p_libstate_save()");
+#endif
 	return _switch_p_libstate_save(dir_name, true);
 }
 
@@ -179,27 +192,27 @@ static int _switch_p_libstate_save ( char * dir_name, bool free_flag )
 	int ret = SLURM_SUCCESS;
 	int state_fd;
 
-	buffer = init_buf(FED_LIBSTATE_LEN);
-	(void)fed_libstate_save(buffer, free_flag);
+	buffer = init_buf(NRT_LIBSTATE_LEN);
+	(void) nrt_libstate_save(buffer, free_flag);
 	file_name = xstrdup(dir_name);
-	xstrcat(file_name, "/fed_state");
-	(void)unlink(file_name);
+	xstrcat(file_name, "/nrt_state");
+	(void) unlink(file_name);
 	state_fd = creat(file_name, 0600);
-	if(state_fd < 0) {
-		error ("Can't save state, error creating file %s %m",
-			file_name);
+	if (state_fd < 0) {
+		error("Can't save state, error creating file %s %m",
+		      file_name);
 		ret = SLURM_ERROR;
 	} else {
 		char  *buf = get_buf_data(buffer);
-		size_t len =get_buf_offset(buffer);
-		while(1) {
+		size_t len = get_buf_offset(buffer);
+		while (1) {
         		int wrote = write (state_fd, buf, len);
         		if ((wrote < 0) && (errno == EINTR))
                 		continue;
         		if (wrote == 0)
                 		break;
         		if (wrote < 0) {
-				error ("Can't save switch state: %m");
+				error("Can't save switch state: %m");
 				ret = SLURM_ERROR;
 				break;
 			}
@@ -210,7 +223,7 @@ static int _switch_p_libstate_save ( char * dir_name, bool free_flag )
 	}
 	xfree(file_name);
 
-	if(buffer)
+	if (buffer)
 		free_buf(buffer);
 
 	return ret;
@@ -221,10 +234,10 @@ static int _switch_p_libstate_save ( char * dir_name, bool free_flag )
  * Restore global nodeinfo from a file.
  *
  * NOTE: switch_p_libstate_restore is only called by slurmctld, and only
- * once at start-up.  We exploit (abuse?) this fact to spawn a pthread to
+ * once at start-up.  We exploit this fact to spawn a pthread to
  * periodically call _switch_p_libstate_save().
  */
-int switch_p_libstate_restore ( char * dir_name, bool recover )
+extern int switch_p_libstate_restore ( char * dir_name, bool recover )
 {
 	char *data = NULL, *file_name;
 	Buf buffer = NULL;
@@ -233,19 +246,22 @@ int switch_p_libstate_restore ( char * dir_name, bool recover )
 
 	xassert(dir_name != NULL);
 
+#if NRT_DEBUG
+	info("switch_p_libstate_restore()");
+#endif
 	_spawn_state_save_thread(xstrdup(dir_name));
 	if (!recover)   /* clean start, no recovery */
-		return fed_init();
+		return nrt_init();
 
 	file_name = xstrdup(dir_name);
-	xstrcat(file_name, "/fed_state");
+	xstrcat(file_name, "/nrt_state");
 	state_fd = open (file_name, O_RDONLY);
 	if (state_fd >= 0) {
-		data_allocated = FED_BUF_SIZE;
+		data_allocated = NRT_BUF_SIZE;
 		data = xmalloc(data_allocated);
 		while (1) {
 			data_read = read (state_fd, &data[data_size],
-					  FED_BUF_SIZE);
+					  NRT_BUF_SIZE);
 			if ((data_read < 0) && (errno == EINTR))
 				continue;
 			if (data_read < 0) {
@@ -261,16 +277,16 @@ int switch_p_libstate_restore ( char * dir_name, bool recover )
 		close (state_fd);
 		xfree(file_name);
 	} else {
-		error("No %s file for Federation state recovery", file_name);
-		error("Starting Federation with clean state");
+		error("No %s file for switch/nrt state recovery", file_name);
+		error("Starting switch/nrt with clean state");
 		xfree(file_name);
-		return fed_init();
+		return nrt_init();
 	}
 
         if (error_code == SLURM_SUCCESS) {
 		buffer = create_buf (data, data_size);
 		data = NULL;    /* now in buffer, don't xfree() */
-		if (fed_libstate_restore(buffer) < 0)
+		if (nrt_libstate_restore(buffer) < 0)
 			error_code = SLURM_ERROR;
         }
 
@@ -281,198 +297,226 @@ int switch_p_libstate_restore ( char * dir_name, bool recover )
         return error_code;
 }
 
-int switch_p_libstate_clear(void)
+extern int switch_p_libstate_clear(void)
 {
-	return fed_libstate_clear();
+#if NRT_DEBUG
+	info("switch_p_libstate_clear()");
+#endif
+	return nrt_libstate_clear();
 }
 
-/*
+/*****************************************************************************
  * switch state monitoring functions
- */
+ *****************************************************************************/
 /* NOTE:  we assume that once the switch state is cleared,
  * notification of this will be forwarded to slurmctld.  We do not
  * enforce that in this function.
  */
-/* FIX ME! - should use adapter name from federation.conf file now that
- *           we have that file support.
- */
-#define ZERO 48
-int switch_p_clear_node_state(void)
+extern int switch_p_clear_node_state(void)
 {
-	int i, j;
-	ADAPTER_RESOURCES res;
-	char name[] = "sniN";
-	int err;
-
-	for(i = 0; i < FED_MAXADAPTERS; i++) {
-		name[3] = i + ZERO;
-		err = ntbl_adapter_resources(NTBL_VERSION, name, &res);
-		if(err != NTBL_SUCCESS)
-			continue;
-		for(j = 0; j < res.window_count; j++)
-			ntbl_clean_window(NTBL_VERSION, name,
-				ALWAYS_KILL, res.window_list[j]);
-		free(res.window_list);
-	}
-
-	return SLURM_SUCCESS;
+#if NRT_DEBUG
+	info("switch_p_clear_node_state()");
+#endif
+	return nrt_clear_node_state();
 }
 
-int switch_p_alloc_node_info(switch_node_info_t **switch_node)
+extern int switch_p_alloc_node_info(switch_node_info_t **switch_node)
 {
-	return fed_alloc_nodeinfo((fed_nodeinfo_t **)switch_node);
+#if NRT_DEBUG
+	info("switch_p_alloc_node_info()");
+#endif
+	return nrt_alloc_nodeinfo((slurm_nrt_nodeinfo_t **)switch_node);
 }
 
-int switch_p_build_node_info(switch_node_info_t *switch_node)
+extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 {
 	char hostname[256];
 	char *tmp;
 
-	if(gethostname(hostname, 256) < 0)
+#if NRT_DEBUG
+	info("switch_p_build_node_info()");
+#endif
+	if (gethostname(hostname, 256) < 0)
 		slurm_seterrno_ret(EHOSTNAME);
 	/* remove the domain portion, if necessary */
 	tmp = strstr(hostname, ".");
-	if(tmp)
+	if (tmp)
 		*tmp = '\0';
-	return fed_build_nodeinfo((fed_nodeinfo_t *)switch_node, hostname);
+	return nrt_build_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node,
+				  hostname);
 }
 
-int switch_p_pack_node_info(switch_node_info_t *switch_node, Buf buffer)
+extern int switch_p_pack_node_info(switch_node_info_t *switch_node, Buf buffer)
 {
-	return fed_pack_nodeinfo((fed_nodeinfo_t *)switch_node, buffer);
+#if NRT_DEBUG
+	info("switch_p_pack_node_info()");
+#endif
+	return nrt_pack_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node, buffer);
 }
 
-int switch_p_unpack_node_info(switch_node_info_t *switch_node, Buf buffer)
+extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
+				     Buf buffer)
 {
-	return fed_unpack_nodeinfo((fed_nodeinfo_t *)switch_node, buffer);
+#if NRT_DEBUG
+	info("switch_p_unpack_node_info()");
+#endif
+	return nrt_unpack_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node, buffer);
 }
 
-void switch_p_free_node_info(switch_node_info_t **switch_node)
+extern void switch_p_free_node_info(switch_node_info_t **switch_node)
 {
-	if(switch_node)
-		fed_free_nodeinfo((fed_nodeinfo_t *)*switch_node, false);
+#if NRT_DEBUG
+	info("switch_p_free_node_info()");
+#endif
+	if (switch_node)
+		nrt_free_nodeinfo((slurm_nrt_nodeinfo_t *)*switch_node, false);
 }
 
-char * switch_p_sprintf_node_info(switch_node_info_t *switch_node,
-		char *buf, size_t size)
+extern char * switch_p_sprintf_node_info(switch_node_info_t *switch_node,
+					 char *buf, size_t size)
 {
-	return fed_print_nodeinfo((fed_nodeinfo_t *)switch_node, buf, size);
+	return nrt_print_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node, buf, size);
 }
 
 /*
  * switch functions for job step specific credential
  */
-int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job)
+extern int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job)
 {
-	return fed_alloc_jobinfo((fed_jobinfo_t **)switch_job);
+#if NRT_DEBUG
+	info("switch_p_alloc_jobinfo()");
+#endif
+	return nrt_alloc_jobinfo((slurm_nrt_jobinfo_t **)switch_job);
 }
 
-static char *adapter_name_check(char *network)
-{
-	regex_t re;
-	char *pattern = "(sni[[:digit:]])";
-        size_t nmatch = 5;
-        regmatch_t pmatch[5];
-        char *name;
-
-	if (regcomp(&re, pattern, REG_EXTENDED) != 0) {
-                error("sockname regex compilation failed");
-                return NULL;
-        }
-	memset(pmatch, 0, sizeof(regmatch_t)*nmatch);
-	if (regexec(&re, network, nmatch, pmatch, 0) == REG_NOMATCH) {
-		return NULL;
-	}
-	name = strndup(network + pmatch[1].rm_so,
-		       (size_t)(pmatch[1].rm_eo - pmatch[1].rm_so));
-	regfree(&re);
-
-	return name;
-}
-
-int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
-			uint16_t *tasks_per_node, int cyclic_alloc,
-			char *network)
+extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
+				  uint16_t *tasks_per_node, uint32_t **tids,
+				  char *network)
 {
 	hostlist_t list = NULL;
+	bool bulk_xfer = false, ip_v4 = true, user_space = false;
 	bool sn_all;
-	int i, err, nprocs = 0;
-	int bulk_xfer = 0;
-	char *adapter_name = NULL;
+	int err;
+	char *adapter_name = NULL, *protocol = "mpi";
 
+#if NRT_DEBUG
+	info("switch_p_build_jobinfo(): nodelist:%s network:%s",
+	     nodelist, network);
+#else
 	debug3("network = \"%s\"", network);
-	if(strstr(network, "ip") || strstr(network, "IP")) {
-		debug2("federation: \"ip\" found in network string, "
-		       "no network tables allocated");
-		return SLURM_SUCCESS;
-	} else {
-		if (strstr(network, "sn_all")
-		    || strstr(network, "SN_ALL")) {
-			debug3("Found sn_all in network string");
-			sn_all = true;
-		} else if (strstr(network, "sn_single")
-			   || strstr(network, "SN_SINGLE")) {
-			debug3("Found sn_single in network string");
-			sn_all = false;
-		} else if ((adapter_name = adapter_name_check(network))) {
-			debug3("Found adapter %s in network string",
-			       adapter_name);
-			sn_all = false;
-		} else {
-			/* default to sn_all */
-			sn_all = true;
-		}
+#endif
 
-		list = hostlist_create(nodelist);
-		if(!list)
-			fatal("hostlist_create(%s): %m", nodelist);
-		for (i = 0; i < hostlist_count(list); i++)
-			nprocs += tasks_per_node[i];
+	list = hostlist_create(nodelist);
+	if (!list)
+		fatal("hostlist_create(%s): %m", nodelist);
 
-		if (strstr(network, "bulk_xfer")
-		    || strstr(network, "BULK_XFER"))
-			bulk_xfer = 1;
-		err = fed_build_jobinfo((fed_jobinfo_t *)switch_job, list,
-					nprocs,	sn_all, adapter_name,
-					bulk_xfer);
-		hostlist_destroy(list);
-		if (adapter_name)
-			free(adapter_name);
+	if (network &&
+	    (strstr(network, "bulk_xfer") ||
+	     strstr(network, "BULK_XFER")))
+		bulk_xfer = true;
 
-		return err;
+	if (network &&
+	    (strstr(network, "ipv4") ||
+	     strstr(network, "IPV4"))) {
+		ip_v4 = true;
+		user_space = false;
 	}
+
+	if (network &&
+	    (strstr(network, "ipv6") ||
+	     strstr(network, "IPV6"))) {
+		ip_v4 = false;
+		user_space = false;
+	}
+
+	if (network &&
+	    (strstr(network, "us") ||
+	     strstr(network, "US")))
+		user_space = true;
+
+	if (network &&
+	    (strstr(network, "pami") ||
+	     strstr(network, "PAMI")))
+		protocol = "pami";
+	if (network &&
+	    (strstr(network, "lapi") ||
+	     strstr(network, "LAPI")))
+		protocol = "lapi";
+
+	if (!network) {
+		/* default to sn_all */
+		sn_all = true;
+	} else if (strstr(network, "sn_all") ||
+	           strstr(network, "SN_ALL")) {
+		debug3("Found sn_all in network string");
+		sn_all = true;
+	} else if (strstr(network, "sn_single") ||
+		   strstr(network, "SN_SINGLE")) {
+		debug3("Found sn_single in network string");
+		sn_all = false;
+	} else if ((adapter_name = nrt_adapter_name_check(network, list))) {
+		info("Found adapter %s in network string", adapter_name);
+		sn_all = false;
+	} else {
+		/* default to sn_all */
+		sn_all = true;
+	}
+
+	err = nrt_build_jobinfo((slurm_nrt_jobinfo_t *)switch_job, list,
+				tasks_per_node, tids, sn_all, adapter_name,
+				bulk_xfer, ip_v4, user_space, protocol);
+
+	hostlist_destroy(list);
+	xfree(adapter_name);
+
+	return err;
 }
 
-switch_jobinfo_t *switch_p_copy_jobinfo(switch_jobinfo_t *switch_job)
+extern switch_jobinfo_t *switch_p_copy_jobinfo(switch_jobinfo_t *switch_job)
 {
 	switch_jobinfo_t *j;
 
-	j = (switch_jobinfo_t *)fed_copy_jobinfo((fed_jobinfo_t *)switch_job);
+#if NRT_DEBUG
+	info("switch_p_copy_jobinfo()");
+#endif
+	j = (switch_jobinfo_t *)nrt_copy_jobinfo((slurm_nrt_jobinfo_t *)switch_job);
 	if (!j)
-		error("fed_copy_jobinfo failed");
+		error("nrt_copy_jobinfo failed");
 
 	return j;
 }
 
-void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
+extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 {
-	return fed_free_jobinfo((fed_jobinfo_t *)switch_job);
+#if NRT_DEBUG
+	info("switch_p_free_jobinfo()");
+#endif
+	return nrt_free_jobinfo((slurm_nrt_jobinfo_t *)switch_job);
 }
 
-int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
+extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
 {
-	return fed_pack_jobinfo((fed_jobinfo_t *)switch_job, buffer);
+#if NRT_DEBUG
+	info("switch_p_pack_jobinfo()");
+#endif
+	return nrt_pack_jobinfo((slurm_nrt_jobinfo_t *)switch_job, buffer);
 }
 
-int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
+extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
 {
-	return fed_unpack_jobinfo((fed_jobinfo_t *)switch_job, buffer);
+#if NRT_DEBUG
+	info("switch_p_unpack_jobinfo()");
+#endif
+	return nrt_unpack_jobinfo((slurm_nrt_jobinfo_t *)switch_job, buffer);
 }
 
 extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job, int key,
 				void *resulting_data)
 {
-	return fed_get_jobinfo((fed_jobinfo_t *)switch_job, key,
+#if NRT_DEBUG
+	info("switch_p_get_jobinfo()");
+#endif
+	return nrt_get_jobinfo((slurm_nrt_jobinfo_t *)switch_job, key,
 			       resulting_data);
 }
 
@@ -482,7 +526,7 @@ static inline int _make_step_comp(switch_jobinfo_t *jobinfo, char *nodelist)
 	int rc;
 
 	list = hostlist_create(nodelist);
-	rc = fed_job_step_complete((fed_jobinfo_t *)jobinfo, list);
+	rc = nrt_job_step_complete((slurm_nrt_jobinfo_t *)jobinfo, list);
 	hostlist_destroy(list);
 
 	return rc;
@@ -490,17 +534,26 @@ static inline int _make_step_comp(switch_jobinfo_t *jobinfo, char *nodelist)
 
 extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo, char *nodelist)
 {
+#if NRT_DEBUG
+	info("switch_p_job_step_complete()");
+#endif
 	return _make_step_comp(jobinfo, nodelist);
 }
 
 extern int switch_p_job_step_part_comp(switch_jobinfo_t *jobinfo,
 				       char *nodelist)
 {
+#if NRT_DEBUG
+	info("switch_p_job_step_part_comp()");
+#endif
 	return _make_step_comp(jobinfo, nodelist);
 }
 
 extern bool switch_p_part_comp(void)
 {
+#if NRT_DEBUG
+	info("switch_p_part_comp()");
+#endif
 	return true;
 }
 
@@ -509,20 +562,23 @@ extern int switch_p_job_step_allocated(switch_jobinfo_t *jobinfo, char *nodelist
 	hostlist_t list = NULL;
 	int rc;
 
+#if NRT_DEBUG
+	info("switch_p_job_step_allocated()");
+#endif
 	list = hostlist_create(nodelist);
-	rc = fed_job_step_allocated((fed_jobinfo_t *)jobinfo, list);
+	rc = nrt_job_step_allocated((slurm_nrt_jobinfo_t *)jobinfo, list);
 	hostlist_destroy(list);
 
 	return rc;
 }
 
-void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
+extern void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
 {
 	return;
 }
 
-char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo, char *buf,
-		size_t size)
+extern char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo,
+				     char *buf, size_t size)
 {
 	return NULL;
 }
@@ -530,9 +586,9 @@ char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo, char *buf,
 /*
  * switch functions for job initiation
  */
-static int _ntbl_version_ok(void)
+static int _nrt_version_ok(void)
 {
-	return((ntbl_version() == NTBL_VERSION) ? 1 : 0);
+	return ((NRT_VERSION == 1100) ? 1 : 0);
 }
 
 int switch_p_node_init(void)
@@ -540,69 +596,77 @@ int switch_p_node_init(void)
 	/* check to make sure the version of the library we compiled with
 	 * matches the one dynamically linked
 	 */
-	if(!_ntbl_version_ok()) {
+	if (!_nrt_version_ok()) {
 		slurm_seterrno_ret(EVERSION);
 	}
 
 	return SLURM_SUCCESS;
 }
 
-int switch_p_node_fini(void)
+extern int switch_p_node_fini(void)
 {
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_preinit(switch_jobinfo_t *jobinfo)
+extern int switch_p_job_preinit(switch_jobinfo_t *jobinfo)
 {
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid)
+extern int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid,
+			      char *job_name)
 {
 	pid_t pid;
 
+#if NRT_DEBUG
+	info("switch_p_job_init()");
+#endif
 	pid = getpid();
-	return fed_load_table((fed_jobinfo_t *)jobinfo, uid, pid);
+	return nrt_load_table((slurm_nrt_jobinfo_t *)jobinfo, uid, pid,
+			      job_name);
 }
 
-int switch_p_job_fini (switch_jobinfo_t *jobinfo)
+extern int switch_p_job_fini (switch_jobinfo_t *jobinfo)
 {
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
-				uint32_t job_id, uint32_t step_id)
+extern int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
+				 uint32_t job_id, uint32_t step_id)
 {
 	int err;
 
+#if NRT_DEBUG
+	info("switch_p_job_postfini()");
+#endif
 	/*
 	 *  Kill all processes in the job's session
 	 */
-	if(pgid) {
+	if (pgid) {
 		debug2("Sending SIGKILL to pgid %lu",
 			(unsigned long) pgid);
 		kill(-pgid, SIGKILL);
 	} else
-		debug("Job %u.%u: Bad pid valud %lu", job_id,
-		      step_id, (unsigned long) pgid);
+		debug("Job %u.%u: pgid value is zero", job_id, step_id);
 
-	err = fed_unload_table((fed_jobinfo_t *)jobinfo);
-	if(err != SLURM_SUCCESS)
+	err = nrt_unload_table((slurm_nrt_jobinfo_t *)jobinfo);
+	if (err != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
-			uint32_t nodeid, uint32_t procid, uint32_t nnodes,
-			uint32_t nprocs, uint32_t rank)
+extern int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
+			       uint32_t nodeid, uint32_t procid,
+			       uint32_t nnodes, uint32_t nprocs, uint32_t rank)
 {
-#if 0
-	printf("nodeid = %u\n", nodeid);
-	printf("procid = %u\n", procid);
-	printf("nnodes = %u\n", nnodes);
-	printf("nprocs = %u\n", nprocs);
-	printf("rank = %u\n", rank);
+#if NRT_DEBUG
+	info("switch_p_job_attach()");
+	info("nodeid = %u", nodeid);
+	info("procid = %u", procid);
+	info("nnodes = %u", nnodes);
+	info("nprocs = %u", nprocs);
+	info("rank = %u", rank);
 #endif
 	return SLURM_SUCCESS;
 }
@@ -639,7 +703,7 @@ extern int switch_p_get_errno(void)
 	return SLURM_SUCCESS;
 }
 
-char *switch_p_strerror(int errnum)
+extern char *switch_p_strerror(int errnum)
 {
 	char *res = _lookup_slurm_api_errtab(errnum);
 	return (res ? res : strerror(errnum));
@@ -652,11 +716,12 @@ static void *_state_save_thread(void *arg)
 
 	while (1) {
 		sleep(300);
-		if (fed_need_state_save) {
-			fed_need_state_save = false;
+		if (nrt_need_state_save) {
+			nrt_need_state_save = false;
 			_switch_p_libstate_save(dir_name, false);
 		}
 	}
+	return NULL;
 }
 
 static void _spawn_state_save_thread(char *dir)
@@ -667,7 +732,7 @@ static void _spawn_state_save_thread(char *dir)
 	slurm_attr_init(&attr);
 
 	if (pthread_create(&id, &attr, &_state_save_thread, (void *)dir) != 0)
-		error("Could not start federation state saving pthread");
+		error("Could not start switch/nrt state saving pthread");
 
 	slurm_attr_destroy(&attr);
 }

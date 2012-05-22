@@ -64,7 +64,7 @@ typedef struct slurm_switch_ops {
 	int          (*build_jobinfo)     ( switch_jobinfo_t *jobinfo,
 					    char *nodelist,
 					    uint16_t *tasks_per_node,
-					    int cyclic_alloc,
+					    uint32_t **tids,
 					    char *network);
 	switch_jobinfo_t *(*copy_jobinfo)  ( switch_jobinfo_t *jobinfo );
 	void         (*free_jobinfo)      ( switch_jobinfo_t *jobinfo );
@@ -82,7 +82,7 @@ typedef struct slurm_switch_ops {
 	int          (*node_fini)         ( void );
 	int          (*job_preinit)       ( switch_jobinfo_t *jobinfo );
 	int          (*job_init)          ( switch_jobinfo_t *jobinfo,
-					    uid_t uid );
+					    uid_t uid, char *job_name );
 	int          (*job_fini)          ( switch_jobinfo_t *jobinfo );
 	int          (*job_postfini)      ( switch_jobinfo_t *jobinfo,
 					    uid_t pgid,
@@ -238,13 +238,13 @@ extern int  switch_alloc_jobinfo(switch_jobinfo_t **jobinfo)
 
 extern int  switch_build_jobinfo(switch_jobinfo_t *jobinfo,
 				 char *nodelist, uint16_t *tasks_per_node,
-				 int cyclic_alloc, char *network)
+				 uint32_t **tids, char *network)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
 	return (*(ops.build_jobinfo))( jobinfo, nodelist,
-				       tasks_per_node, cyclic_alloc, network );
+				       tasks_per_node, tids, network );
 }
 
 extern switch_jobinfo_t *switch_copy_jobinfo(switch_jobinfo_t *jobinfo)
@@ -329,12 +329,13 @@ extern int interconnect_preinit(switch_jobinfo_t *jobinfo)
 	return (*(ops.job_preinit)) (jobinfo);
 }
 
-extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid)
+extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid,
+			     char *job_name)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(ops.job_init)) (jobinfo, uid);
+	return (*(ops.job_init)) (jobinfo, uid, job_name);
 }
 
 extern int interconnect_fini(switch_jobinfo_t *jobinfo)
@@ -356,8 +357,8 @@ extern int interconnect_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 }
 
 extern int interconnect_attach(switch_jobinfo_t *jobinfo, char ***env,
-			       uint32_t nodeid, uint32_t procid, uint32_t nnodes,
-			       uint32_t nprocs, uint32_t gid)
+			       uint32_t nodeid, uint32_t procid,
+			       uint32_t nnodes, uint32_t nprocs, uint32_t gid)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;

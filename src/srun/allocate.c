@@ -60,7 +60,7 @@
 
 #include "src/srun/allocate.h"
 #include "src/srun/opt.h"
-#include "src/srun/debugger.h"
+#include "src/srun/launch.h"
 
 #ifdef HAVE_BG
 #include "src/common/node_select.h"
@@ -81,10 +81,6 @@ struct pollfd global_fds[1];
 extern char **environ;
 
 static uint32_t pending_job_id = 0;
-
-static int sig_array[] = {
-	SIGHUP,  SIGINT,  SIGQUIT, SIGPIPE,
-	SIGTERM, SIGUSR1, SIGUSR2, 0 };
 
 /*
  * Static Prototypes
@@ -742,190 +738,9 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 extern int
 create_job_step(srun_job_t *job, bool use_all_cpus)
 {
-	int i, rc;
-	unsigned long my_sleep = 0;
-	time_t begin_time;
-
-	slurm_step_ctx_params_t_init(&job->ctx_params);
-	job->ctx_params.job_id = job->jobid;
-	job->ctx_params.uid = opt.uid;
-
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
-	/* On a Q and onward this we don't add this. */
-#else
-	/* set the jobid for totalview */
-	totalview_jobid = NULL;
-	xstrfmtcat(totalview_jobid, "%u", job->ctx_params.job_id);
-#endif
-	/* Validate minimum and maximum node counts */
-	if (opt.min_nodes && opt.max_nodes &&
-	    (opt.min_nodes > opt.max_nodes)) {
-		error ("Minimum node count > maximum node count (%d > %d)",
-		       opt.min_nodes, opt.max_nodes);
-		return -1;
-	}
-#if !defined HAVE_FRONT_END || (defined HAVE_BGQ)
-//#if !defined HAVE_FRONT_END || (defined HAVE_BGQ && defined HAVE_BG_FILES)
-	if (opt.min_nodes && (opt.min_nodes > job->nhosts)) {
-		error ("Minimum node count > allocated node count (%d > %d)",
-		       opt.min_nodes, job->nhosts);
-		return -1;
-	}
-#endif
-	job->ctx_params.min_nodes = job->nhosts;
-	if (opt.min_nodes && (opt.min_nodes < job->ctx_params.min_nodes))
-		job->ctx_params.min_nodes = opt.min_nodes;
-	job->ctx_params.max_nodes = job->nhosts;
-	if (opt.max_nodes && (opt.max_nodes < job->ctx_params.max_nodes))
-		job->ctx_params.max_nodes = opt.max_nodes;
-
-	if (!opt.ntasks_set && (opt.ntasks_per_node != NO_VAL))
-		job->ntasks = opt.ntasks = job->nhosts * opt.ntasks_per_node;
-	job->ctx_params.task_count = opt.ntasks;
-
-	if (opt.mem_per_cpu != NO_VAL)
-		job->ctx_params.mem_per_cpu = opt.mem_per_cpu;
-	if (opt.gres)
-		job->ctx_params.gres = opt.gres;
-	else
-		job->ctx_params.gres = getenv("SLURM_STEP_GRES");
-
-	if (use_all_cpus)
-		job->ctx_params.cpu_count = job->cpu_count;
-	else if (opt.overcommit)
-		job->ctx_params.cpu_count = job->ctx_params.min_nodes;
-	else if (opt.cpus_set)
-		job->ctx_params.cpu_count = opt.ntasks * opt.cpus_per_task;
-	else
-		job->ctx_params.cpu_count = opt.ntasks;
-
-	job->ctx_params.relative = (uint16_t)opt.relative;
-	job->ctx_params.ckpt_interval = (uint16_t)opt.ckpt_interval;
-	job->ctx_params.ckpt_dir = opt.ckpt_dir;
-	job->ctx_params.exclusive = (uint16_t)opt.exclusive;
-	if (opt.immediate == 1)
-		job->ctx_params.immediate = (uint16_t)opt.immediate;
-	if (opt.time_limit != NO_VAL)
-		job->ctx_params.time_limit = (uint32_t)opt.time_limit;
-	job->ctx_params.verbose_level = (uint16_t)_verbose;
-	if (opt.resv_port_cnt != NO_VAL)
-		job->ctx_params.resv_port_cnt = (uint16_t) opt.resv_port_cnt;
-
-	switch (opt.distribution) {
-	case SLURM_DIST_BLOCK:
-	case SLURM_DIST_ARBITRARY:
-	case SLURM_DIST_CYCLIC:
-	case SLURM_DIST_CYCLIC_CYCLIC:
-	case SLURM_DIST_CYCLIC_BLOCK:
-	case SLURM_DIST_BLOCK_CYCLIC:
-	case SLURM_DIST_BLOCK_BLOCK:
-		job->ctx_params.task_dist = opt.distribution;
-		break;
-	case SLURM_DIST_PLANE:
-		job->ctx_params.task_dist = SLURM_DIST_PLANE;
-		job->ctx_params.plane_size = opt.plane_size;
-		break;
-	default:
-		job->ctx_params.task_dist = (job->ctx_params.task_count <=
-					     job->ctx_params.min_nodes)
-			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
-		opt.distribution = job->ctx_params.task_dist;
-		break;
-
-	}
-	job->ctx_params.overcommit = opt.overcommit ? 1 : 0;
-
-	job->ctx_params.node_list = opt.nodelist;
-
-	job->ctx_params.network = opt.network;
-	job->ctx_params.no_kill = opt.no_kill;
-	if (opt.job_name_set_cmd && opt.job_name)
-		job->ctx_params.name = opt.job_name;
-	else
-		job->ctx_params.name = opt.cmd_name;
-	job->ctx_params.features = opt.constraints;
-
-	debug("requesting job %u, user %u, nodes %u including (%s)",
-	      job->ctx_params.job_id, job->ctx_params.uid,
-	      job->ctx_params.min_nodes, job->ctx_params.node_list);
-	debug("cpus %u, tasks %u, name %s, relative %u",
-	      job->ctx_params.cpu_count, job->ctx_params.task_count,
-	      job->ctx_params.name, job->ctx_params.relative);
-	begin_time = time(NULL);
-
-	for (i=0; (!destroy_job); i++) {
-		if (opt.no_alloc) {
-			job->step_ctx = slurm_step_ctx_create_no_alloc(
-				&job->ctx_params, job->stepid);
-		} else
-			job->step_ctx = slurm_step_ctx_create(
-				&job->ctx_params);
-		if (job->step_ctx != NULL) {
-			if (i > 0)
-				info("Job step created");
-
-			break;
-		}
-		rc = slurm_get_errno();
-
-		if (((opt.immediate != 0) &&
-		     ((opt.immediate == 1) ||
-		      (difftime(time(NULL), begin_time) > opt.immediate))) ||
-		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_PORTS_BUSY) &&
-		     (rc != ESLURM_PROLOG_RUNNING) &&
-		     (rc != SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT) &&
-		     (rc != ESLURM_DISABLED))) {
-			error ("Unable to create job step: %m");
-			return -1;
-		}
-
-		if (i == 0) {
-			if (rc == ESLURM_PROLOG_RUNNING) {
-				verbose("Resources allocated for job %u and "
-					"being configured, please wait",
-					job->ctx_params.job_id);
-			} else {
-				info("Job step creation temporarily disabled, "
-				     "retrying");
-			}
-			xsignal_unblock(sig_array);
-			for (i = 0; sig_array[i]; i++)
-				xsignal(sig_array[i], _signal_while_allocating);
-
-			my_sleep = (getpid() % 1000) * 100 + 100000;
-		} else {
-			verbose("Job step creation still disabled, retrying");
-			my_sleep = MIN((my_sleep * 2), 29000000);
-		}
-		/* sleep 0.1 to 29 secs with exponential back-off */
-		usleep(my_sleep);
-		if (destroy_job) {
-			/* cancelled by signal */
-			break;
-		}
-	}
-	if (i > 0) {
-		xsignal_block(sig_array);
-		if (destroy_job) {
-			info("Cancelled pending job step");
-			return -1;
-		}
-	}
-
-	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_STEPID, &job->stepid);
-	/*  Number of hosts in job may not have been initialized yet if
-	 *    --jobid was used or only SLURM_JOB_ID was set in user env.
-	 *    Reset the value here just in case.
-	 */
-	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_NUM_HOSTS,
-			   &job->nhosts);
-
-	/*
-	 * Recreate filenames which may depend upon step id
-	 */
-	job_update_io_fnames(job);
-
-	return 0;
+	return launch_g_create_job_step(job, use_all_cpus,
+					_signal_while_allocating,
+					&destroy_job);
 }
 
 

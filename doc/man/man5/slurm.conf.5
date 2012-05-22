@@ -1954,6 +1954,8 @@ Acceptable values include
 "switch/none" for switches not requiring special processing for job launch
 or termination (Myrinet, Ethernet, and InfiniBand),
 "switch/elan" for Quadrics Elan 3 or Elan 4 interconnect.
+"switch/federation" for IBM's Federation switch.
+"switch/nrt" for IBM's Network Resource Table API.
 The default value is "switch/none".
 All SLURM daemons, commands and running jobs must be restarted for a
 change in \fBSwitchType\fR to take effect.
@@ -2295,7 +2297,7 @@ settings.  Note that if the short form of the hostname is not used, it
 may prevent use of hostlist expressions (the numeric portion in brackets
 must be at the end of the string).
 Only short hostname forms are compatible with the
-switch/elan and switch/federation plugins at this time.
+switch/elan, switch/federation and switch/nrt plugins at this time.
 It may also be an arbitrary string if \fBNodeHostname\fR is specified.
 If the \fBNodeName\fR is "DEFAULT", the values specified
 with that record will apply to subsequent node specifications
@@ -2317,7 +2319,7 @@ settings.  Note that if the short form of the hostname is not used, it
 may prevent use of hostlist expressions (the numeric portion in brackets
 must be at the end of the string).
 Only short hostname forms are compatible with the
-switch/elan and switch/federation plugins at this time.
+switch/elan, switch/federation and switch/nrt plugins at this time.
 A node range expression can be used to specify a set of nodes.
 If an expression is used, the number of nodes identified by
 \fBNodeHostname\fR on a line in the configuration file must
