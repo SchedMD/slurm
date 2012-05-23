@@ -564,8 +564,9 @@ static int _reboot_nodes(char *node_list)
 
 	conf = slurm_conf_lock();
 	if (conf->reboot_program == NULL) {
-		fprintf (stderr, "RebootProgram isn't defined");
+		error("RebootProgram isn't defined");
 		slurm_conf_unlock();
+		slurm_seterrno(SLURM_ERROR);
 		return SLURM_ERROR;
 	}
 	slurm_conf_unlock();
