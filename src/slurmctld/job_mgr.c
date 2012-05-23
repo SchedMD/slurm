@@ -8885,7 +8885,13 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		if (base_state == NODE_STATE_DOWN) {
 			debug("Epilog complete response for job %u from DOWN "
 			      "node %s", job_id, node_name);
+		} else if (job_ptr->restart_cnt) {
+			/* Duplicate epilog complete can be due to race
+			 * condition, especially with select/serial */
+			debug("Duplicate epilog complete response for job %u",
+			      job_id, node_name);
 		} else {
+
 			error("Epilog complete response for non-running job "
 			      "%u, slurmctld and slurmd out of sync", job_id);
 		}
