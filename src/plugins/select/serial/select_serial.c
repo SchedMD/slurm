@@ -1563,6 +1563,7 @@ static bool _is_job_spec_serial(struct job_record *job_ptr)
 		if ((details_ptr->min_nodes > 1) &&
 		    (details_ptr->min_nodes != NO_VAL))
 			return false;
+		details_ptr->max_nodes = 1;
 		if ((details_ptr->ntasks_per_node > 1) &&
 		    (details_ptr->ntasks_per_node != (uint16_t) NO_VAL))
 			return false;
