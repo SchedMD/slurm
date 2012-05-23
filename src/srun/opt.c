@@ -1745,7 +1745,7 @@ static void _opt_args(int argc, char **argv)
 		if (_verbose)
 			command_pos += 2;
 		if (opt.ifname) {
-			if (parse_uint32(opt.ifname, &taskid)
+			if (!parse_uint32(opt.ifname, &taskid)
 			    && ((int) taskid < opt.ntasks)) {
 				command_pos += 2;
 			}
