@@ -1381,8 +1381,15 @@ standard input of \fBsrun\fR to all remote tasks.
 If stdin is only to be read by a subset of the spawned tasks, specifying a
 file to read from rather than forwarding stdin from the \fBsrun\fR command may
 be preferable as it avoids moving and storing data that will never be read.
+.PP
 For OS X, the poll() function does not support stdin, so input from
 a terminal is not possible.
+.PP
+For BGQ srun only supports stdin to 1 task running on the system.  By
+default it is taskid 0 but can be changed with the \-i<taskid> as
+described below, or \-\-runjob\-opt="\-\-stdinrank<taskid>".  Outside
+of the taskid option none of the options below are available for a BGQ system.
+.PP
 This behavior may be changed with the
 \fB\-\-output\fR, \fB\-\-error\fR, and \fB\-\-input\fR
 (\fB\-o\fR, \fB\-e\fR, \fB\-i\fR) options. Valid format specifications
