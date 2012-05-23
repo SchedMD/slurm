@@ -1722,7 +1722,7 @@ static void _opt_args(int argc, char **argv)
 	}
 
 #if defined HAVE_BG_FILES
-	uint32_t taskid = 0;
+	uint32_t taskid = NO_VAL;
 	if (!opt.test_only) {
 	 	/* Since we need the opt.argc to allocate the opt.argv array
 		 * we need to do this before actually messing with
@@ -1812,7 +1812,7 @@ static void _opt_args(int argc, char **argv)
 			opt.argv[i++]  = xstrdup_printf("%d", _verbose);
 		}
 
-		if (taskid) {
+		if (taskid != NO_VAL) {
 			opt.argv[i++]  = xstrdup("--stdinrank");
 			opt.argv[i++]  = xstrdup_printf("%u", taskid);
 		}
