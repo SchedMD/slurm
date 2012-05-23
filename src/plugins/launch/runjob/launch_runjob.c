@@ -262,7 +262,7 @@ extern int launch_p_setup_srun_opt(char **rest)
 		if (_verbose)
 			command_pos += 2;
 		if (opt.ifname) {
-			if (parse_uint32(opt.ifname, &taskid)
+			if (!parse_uint32(opt.ifname, &taskid)
 			    && ((int) taskid < opt.ntasks)) {
 				command_pos += 2;
 			}
