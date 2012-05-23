@@ -788,13 +788,14 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		      job_ptr->job_id);
 		i_last = -2;
 	} else {
-	i_last  = bit_fls(job->node_bitmap);
+		i_last  = bit_fls(job->node_bitmap);
 		if (i_first != i_last) {
 			error("select/serial: job %u allocated more than one "
 			      "node", job_ptr->job_id);
 		}
 	}
-	for (i = i_first, n = -1; i < i_last; i++) {
+
+	for (i = i_first, n = -1; i <= i_last; i++) {
 		if (!bit_test(job->node_bitmap, i))
 			continue;
 		n++;
@@ -896,6 +897,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 	int i, n;
 	List gres_list;
 
+
 	if (select_state_initializing) {
 		/* Ignore job removal until select/cons_res data structures
 		 * values are set by select_p_reconfigure() */
@@ -942,7 +944,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			if (node_usage[i].alloc_memory <
 			    job->memory_allocated[n]) {
 				error("select/serial: node %s memory is "
-				      "under-allocated (%u-%u) for job %u",
+				      "under-allocated (%u<%u) for job %u",
 				      node_ptr->name,
 				      node_usage[i].alloc_memory,
 				      job->memory_allocated[n],
