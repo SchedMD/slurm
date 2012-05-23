@@ -1312,11 +1312,13 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 	xassert(assoc->uid != NO_VAL);
 	xassert(assoc_list);
 
-	if (!assoc_mgr_association_list) {
-		if (_get_assoc_mgr_association_list(db_conn, enforce)
-		    == SLURM_ERROR)
+	/* Call assoc_mgr_refresh_lists instead of just getting the
+	   association list because we need qos and user lists before
+	   the association list can be made.
+	*/
+	if (!assoc_mgr_association_list)
+		if (assoc_mgr_refresh_lists(db_conn, NULL) == SLURM_ERROR)
 			return SLURM_ERROR;
-	}
 
 	if ((!assoc_mgr_association_list
 	     || !list_count(assoc_mgr_association_list))
@@ -1359,11 +1361,15 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 
 	if (assoc_pptr)
 		*assoc_pptr = NULL;
-	if (!assoc_mgr_association_list) {
-		if (_get_assoc_mgr_association_list(db_conn, enforce)
-		    == SLURM_ERROR)
+
+	/* Call assoc_mgr_refresh_lists instead of just getting the
+	   association list because we need qos and user lists before
+	   the association list can be made.
+	*/
+	if (!assoc_mgr_association_list)
+		if (assoc_mgr_refresh_lists(db_conn, NULL) == SLURM_ERROR)
 			return SLURM_ERROR;
-	}
+
 	if ((!assoc_mgr_association_list
 	     || !list_count(assoc_mgr_association_list))
 	    && !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
@@ -3160,9 +3166,12 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
+	/* Call assoc_mgr_refresh_lists instead of just getting the
+	   association list because we need qos and user lists before
+	   the association list can be made.
+	*/
 	if (!assoc_mgr_association_list)
-		if (_get_assoc_mgr_association_list(db_conn, enforce)
-		    == SLURM_ERROR)
+		if (assoc_mgr_refresh_lists(db_conn, NULL) == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	if ((!assoc_mgr_association_list
