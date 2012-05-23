@@ -1226,14 +1226,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	List preemptee_job_list = NULL;
 	slurmdb_association_rec_t *assoc_ptr = NULL;
 	slurmdb_qos_rec_t *qos_ptr = NULL;
-	uint32_t job_min_nodes, job_max_nodes;
-	uint32_t part_min_nodes, part_max_nodes;
-#ifdef HAVE_BG
-	static uint16_t cpus_per_node = 0;
-	if (!cpus_per_node)
-		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
-					&cpus_per_node);
-#endif
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -1254,60 +1246,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		      job_ptr->job_id, job_ptr->partition);
 	}
 
-#ifdef HAVE_BG
-	job_min_nodes = job_ptr->details->min_cpus / cpus_per_node;
-	job_max_nodes = job_ptr->details->max_cpus / cpus_per_node;
-	part_min_nodes = part_ptr->min_nodes_orig;
-	part_max_nodes = part_ptr->max_nodes_orig;
-#else
-	job_min_nodes = job_ptr->details->min_nodes;
-	job_max_nodes = job_ptr->details->max_nodes;
-	part_min_nodes = part_ptr->min_nodes;
-	part_max_nodes = part_ptr->max_nodes;
-#endif
 	/* Confirm that partition is up and has compatible nodes limits */
-	fail_reason = WAIT_NO_REASON;
-	if (part_ptr->state_up == PARTITION_DOWN)
-		fail_reason = WAIT_PART_DOWN;
-	else if (part_ptr->state_up == PARTITION_INACTIVE)
-		fail_reason = WAIT_PART_INACTIVE;
-	else if (job_ptr->priority == 0)       /* user or administrator hold */
-		fail_reason = WAIT_HELD;
-	else if ((((job_ptr->time_limit != NO_VAL) &&
-		   (job_ptr->time_limit > part_ptr->max_time)) ||
-		  ((job_ptr->time_min   != NO_VAL) &&
-		   (job_ptr->time_min   > part_ptr->max_time))) &&
-		   (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
-		 			     QOS_FLAG_PART_TIME_LIMIT))))
-		fail_reason = WAIT_PART_TIME_LIMIT;
-	else if (((job_max_nodes != 0) &&
-	          ((job_max_nodes < part_min_nodes) &&
-		   (!qos_ptr || (qos_ptr && !(qos_ptr->flags
-					      & QOS_FLAG_PART_MIN_NODE))))) ||
-	         ((job_min_nodes > part_max_nodes) &&
-		  (!qos_ptr || (qos_ptr && !(qos_ptr->flags
-					     & QOS_FLAG_PART_MAX_NODE)))))
-		fail_reason = WAIT_PART_NODE_LIMIT;
-	else if (qos_ptr && assoc_ptr &&
-		 (qos_ptr->flags & QOS_FLAG_ENFORCE_USAGE_THRES) &&
-		 (!fuzzy_equal(qos_ptr->usage_thres, NO_VAL))) {
-		if (!job_ptr->prio_factors)
-			job_ptr->prio_factors =
-				xmalloc(sizeof(priority_factors_object_t));
-
-		if (!job_ptr->prio_factors->priority_fs) {
-			if (fuzzy_equal(assoc_ptr->usage->usage_efctv, NO_VAL))
-				priority_g_set_assoc_usage(assoc_ptr);
-			job_ptr->prio_factors->priority_fs =
-				priority_g_calc_fs_factor(
-					assoc_ptr->usage->usage_efctv,
-					(long double)assoc_ptr->usage->
-					shares_norm);
-		}
-		if (job_ptr->prio_factors->priority_fs < qos_ptr->usage_thres)
-			fail_reason = WAIT_QOS_THRES;
-	}
-
+	fail_reason = job_limits_check(&job_ptr);
 	if (fail_reason != WAIT_NO_REASON) {
 		last_job_update = now;
 		xfree(job_ptr->state_desc);

@@ -3770,27 +3770,27 @@ extern int job_limits_check(struct job_record **job_pptr)
 	if ((job_min_nodes > part_max_nodes) &&
 	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
 				       & QOS_FLAG_PART_MAX_NODE)))) {
-		info("Job %u requested too many nodes (%u) of "
-		     "partition %s(MaxNodes %u)",
-		     job_ptr->job_id, job_min_nodes,
-		     part_ptr->name, part_max_nodes);
+		debug("Job %u requested too many nodes (%u) of "
+		      "partition %s(MaxNodes %u)",
+		      job_ptr->job_id, job_min_nodes,
+		      part_ptr->name, part_max_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
 	} else if ((job_max_nodes != 0) &&  /* no max_nodes for job */
 		   ((job_max_nodes < part_min_nodes) &&
 		    (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
 					       QOS_FLAG_PART_MIN_NODE))))) {
-		info("Job %u requested too few nodes (%u) of "
-		     "partition %s(MinNodes %u)",
-		     job_ptr->job_id, job_max_nodes,
-		     part_ptr->name, part_min_nodes);
+		debug("Job %u requested too few nodes (%u) of "
+		      "partition %s(MinNodes %u)",
+		      job_ptr->job_id, job_max_nodes,
+		      part_ptr->name, part_min_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
 	} else if (part_ptr->state_up == PARTITION_DOWN) {
-		info("Job %u requested down partition %s",
-		     job_ptr->job_id, part_ptr->name);
+		debug("Job %u requested down partition %s",
+		      job_ptr->job_id, part_ptr->name);
 		fail_reason = WAIT_PART_DOWN;
 	} else if (part_ptr->state_up == PARTITION_INACTIVE) {
-		info("Job %u requested inactive partition %s",
-		     job_ptr->job_id, part_ptr->name);
+		debug("Job %u requested inactive partition %s",
+		      job_ptr->job_id, part_ptr->name);
 		fail_reason = WAIT_PART_INACTIVE;
 	} else if ((((job_ptr->time_limit != NO_VAL) &&
 		     (job_ptr->time_limit > part_ptr->max_time)) ||
@@ -3798,15 +3798,15 @@ extern int job_limits_check(struct job_record **job_pptr)
 		     (job_ptr->time_min   > part_ptr->max_time))) &&
 		     (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
 		 			       QOS_FLAG_PART_TIME_LIMIT)))) {
-		info("Job %u exceeds partition time limit", job_ptr->job_id);
+		debug("Job %u exceeds partition time limit", job_ptr->job_id);
 		fail_reason = WAIT_PART_TIME_LIMIT;
 	} else if (qos_ptr && assoc_ptr &&
 		   (qos_ptr->flags & QOS_FLAG_ENFORCE_USAGE_THRES) &&
 		   (!fuzzy_equal(qos_ptr->usage_thres, NO_VAL))) {
-		if (!job_ptr->prio_factors)
+		if (!job_ptr->prio_factors) {
 			job_ptr->prio_factors =
 				xmalloc(sizeof(priority_factors_object_t));
-
+		}
 		if (!job_ptr->prio_factors->priority_fs) {
 			if (fuzzy_equal(assoc_ptr->usage->usage_efctv, NO_VAL))
 				priority_g_set_assoc_usage(assoc_ptr);
@@ -3816,10 +3816,13 @@ extern int job_limits_check(struct job_record **job_pptr)
 					(long double)assoc_ptr->usage->
 					shares_norm);
 		}
-		if (job_ptr->prio_factors->priority_fs < qos_ptr->usage_thres) {
-			info("Job %u exceeds usage threahold", job_ptr->job_id);
+		if (job_ptr->prio_factors->priority_fs < qos_ptr->usage_thres){
+			debug("Job %u exceeds usage threahold",
+			      job_ptr->job_id);
 			fail_reason = WAIT_QOS_THRES;
 		}
+	} else if (job_ptr->priority == 0)    /* user or administrator hold */
+		fail_reason = WAIT_HELD;
 	}
 
 	return (fail_reason);
