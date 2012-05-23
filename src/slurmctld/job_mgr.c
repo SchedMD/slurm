@@ -8889,7 +8889,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 			/* Duplicate epilog complete can be due to race
 			 * condition, especially with select/serial */
 			debug("Duplicate epilog complete response for job %u",
-			      job_id, node_name);
+			      job_id);
 		} else {
 
 			error("Epilog complete response for non-running job "
