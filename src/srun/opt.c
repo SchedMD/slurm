@@ -1722,6 +1722,7 @@ static void _opt_args(int argc, char **argv)
 	}
 
 #if defined HAVE_BG_FILES
+	uint32_t taskid = 0;
 	if (!opt.test_only) {
 	 	/* Since we need the opt.argc to allocate the opt.argv array
 		 * we need to do this before actually messing with
@@ -1743,6 +1744,13 @@ static void _opt_args(int argc, char **argv)
 			command_pos += 2;
 		if (_verbose)
 			command_pos += 2;
+		if (opt.ifname) {
+			char *p;
+			taskid = strtoul(opt.ifname, &p, 10);
+			if ((*p == '\0') && ((int) taskid < opt.ntasks)) {
+				command_pos += 2;
+			}
+		}
 		if (opt.runjob_opts) {
 			char *save_ptr = NULL, *tok;
 			char *tmp = xstrdup(opt.runjob_opts);
@@ -1802,6 +1810,11 @@ static void _opt_args(int argc, char **argv)
 		if (_verbose) {
 			opt.argv[i++]  = xstrdup("--verbose");
 			opt.argv[i++]  = xstrdup_printf("%d", _verbose);
+		}
+
+		if (taskid) {
+			opt.argv[i++]  = xstrdup("--stdinrank");
+			opt.argv[i++]  = xstrdup_printf("%u", taskid);
 		}
 
 		if (opt.runjob_opts) {
