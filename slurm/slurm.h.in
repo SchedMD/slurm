@@ -1856,6 +1856,7 @@ typedef struct slurm_ctl_conf {
 				 * on job termination */
 	char *launch_type;	/* type of step launcher to use */
 	char *licenses;		/* licenses available on this cluster */
+	char *licenses_used;	/* licenses used on this cluster */
 	char *mail_prog;	/* pathname of mail program */
 	uint32_t max_job_cnt;	/* maximum number of active jobs */
 	uint32_t max_job_id;	/* maximum job id before using first_job_id */

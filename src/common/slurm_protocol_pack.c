@@ -4601,6 +4601,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		packstr(build_ptr->launch_type, buffer);
 		packstr(build_ptr->licenses, buffer);
+		packstr(build_ptr->licenses_used, buffer);
 
 		packstr(build_ptr->mail_prog, buffer);
 		pack32(build_ptr->max_job_cnt, buffer);
@@ -5635,8 +5636,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpackstr_xmalloc(&build_ptr->launch_type,
 				       &uint32_tmp, buffer);
-
 		safe_unpackstr_xmalloc(&build_ptr->licenses,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->licenses_used,
 				       &uint32_tmp, buffer);
 
 		safe_unpackstr_xmalloc(&build_ptr->mail_prog,

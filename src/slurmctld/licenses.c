@@ -189,6 +189,32 @@ static char * _build_license_string(List license_list)
 	return licenses;
 }
 
+/* Get string of used license information. Caller must xfree return value */
+extern char *get_licenses_used(void)
+{
+	char *licenses_used = NULL;
+	licenses_t *license_entry;
+	ListIterator iter;
+
+	slurm_mutex_lock(&license_mutex);
+	if (license_list) {
+		iter = list_iterator_create(license_list);
+		if (iter == NULL)
+			fatal("malloc failure from list_iterator_create");
+		while ((license_entry = (licenses_t *) list_next(iter))) {
+			if (licenses_used)
+				xstrcat(licenses_used, ",");
+			xstrfmtcat(licenses_used, "%s:%u/%u",
+				   license_entry->name, license_entry->used,
+				   license_entry->total);
+		}
+		list_iterator_destroy(iter);
+	}
+	slurm_mutex_unlock(&license_mutex);
+
+	return licenses_used;
+}
+
 /* Initialize licenses on this system based upon slurm.conf */
 extern int license_init(char *licenses)
 {
