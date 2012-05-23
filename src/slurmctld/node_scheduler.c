@@ -1224,7 +1224,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	time_t now = time(NULL);
 	bool configuring = false;
 	List preemptee_job_list = NULL;
-	slurmdb_association_rec_t *assoc_ptr = NULL;
 	slurmdb_qos_rec_t *qos_ptr = NULL;
 
 	xassert(job_ptr);
@@ -1234,7 +1233,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		return ESLURM_ACCOUNTING_POLICY;
 
 	part_ptr = job_ptr->part_ptr;
-	assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
 	qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
 
 	/* identify partition */
