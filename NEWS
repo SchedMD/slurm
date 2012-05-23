@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Cray - Improve support for zero compute note resource allocations.
     Partition used can now be configured with no nodes nodes.
+ -- BGQ - make it so srun -i<taskid> works correctly
 
 * Changes in SLURM 2.4.0.rc1
 =============================
@@ -243,6 +244,9 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fix DefMemPerCPU for partition definitions.
  -- Fix to create a reservation with licenses and no nodes.
+ -- Fix issue with assoc_mgr if a bad state file is given and the database
+    isn't up at the time the slurmctld starts, not running the
+    priority/multifactor plugin, and then the database is started up later.
 
 * Changes in SLURM 2.3.5
 ========================

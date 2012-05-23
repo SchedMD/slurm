@@ -227,6 +227,7 @@ extern int fini(void)
 extern int launch_p_setup_srun_opt(char **rest)
 {
 	int command_pos = 0;
+	uint32_t taskid = NO_VAL;
 
 	if (opt.reboot) {
 		info("WARNING: If your job is smaller than the block "
@@ -260,6 +261,13 @@ extern int launch_p_setup_srun_opt(char **rest)
 			command_pos += 2;
 		if (_verbose)
 			command_pos += 2;
+		if (opt.ifname) {
+			char *p;
+			taskid = strtoul(opt.ifname, &p, 10);
+			if ((*p == '\0') && ((int) taskid < opt.ntasks)) {
+				command_pos += 2;
+			}
+		}
 		if (opt.runjob_opts) {
 			char *save_ptr = NULL, *tok;
 			char *tmp = xstrdup(opt.runjob_opts);
@@ -315,6 +323,11 @@ extern int launch_p_setup_srun_opt(char **rest)
 		if (_verbose) {
 			opt.argv[i++]  = xstrdup("--verbose");
 			opt.argv[i++]  = xstrdup_printf("%d", _verbose);
+		}
+
+		if (taskid != NO_VAL) {
+			opt.argv[i++]  = xstrdup("--stdinrank");
+			opt.argv[i++]  = xstrdup_printf("%u", taskid);
 		}
 
 		if (opt.runjob_opts) {
