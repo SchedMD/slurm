@@ -237,6 +237,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.3.6
 ========================
  -- Fix DefMemPerCPU for partition definitions.
+ -- Fix to create a reservation with licenses and no nodes.
 
 * Changes in SLURM 2.3.5
 ========================
