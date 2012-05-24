@@ -2050,7 +2050,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	/* Allocate memory for each nrt_tableinfo_t */
 	jp->tableinfo = (nrt_tableinfo_t *) xmalloc(jp->tables_per_task *
 						    sizeof(nrt_tableinfo_t));
-	if (!jp->user_space)
+	if (!jp->user_space || (adapter_type == NRT_IPONLY))
 		table_rec_len = sizeof(nrt_ip_task_info_t);
 	else if (adapter_type == NRT_IB)
 		table_rec_len = sizeof(nrt_ib_task_info_t);
