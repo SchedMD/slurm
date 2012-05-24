@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- Fix parse_uint32/16 to complain if a non-digit is given.
  -- Add SUBMITHOST to job state passed to Moab vial sched/wiki2. Patch by Jon
     Bringhurst (LANL).
+ -- BGQ - Fix issue when running with AllowSubBlockAllocations=Yes without
+    compiling with --enable-debug
 
 * Changes in SLURM 2.4.0.rc1
 =============================

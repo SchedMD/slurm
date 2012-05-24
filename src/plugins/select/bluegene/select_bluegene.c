@@ -1953,8 +1953,8 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 			if (jobinfo->units_avail)
 				used_bitmap = jobinfo->units_used;
 			else {
-				xassert((ba_mp = list_peek(
-						 bg_record->ba_mp_list)));
+				ba_mp = list_peek(bg_record->ba_mp_list);
+				xassert(ba_mp);
 				if (!ba_mp->cnode_bitmap)
 					ba_mp->cnode_bitmap =
 						ba_create_ba_mp_cnode_bitmap(
@@ -1970,7 +1970,8 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		step_jobinfo->ionode_str = xstrdup(jobinfo->ionode_str);
 	} else if (jobinfo->units_avail) {
 		bitstr_t *total_bitmap = jobinfo->units_used;
-		xassert((ba_mp = list_peek(bg_record->ba_mp_list)));
+		ba_mp = list_peek(bg_record->ba_mp_list);
+		xassert(ba_mp);
 		if (ba_mp->cnode_err_bitmap) {
 			total_bitmap = bit_copy(jobinfo->units_used);
 			bit_or(total_bitmap, ba_mp->cnode_err_bitmap);

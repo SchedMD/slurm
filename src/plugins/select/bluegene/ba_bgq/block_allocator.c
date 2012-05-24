@@ -1553,7 +1553,8 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 	if (!bg_record->job_list)
 		return NULL;
 
-	xassert((ba_mp = list_peek(bg_record->ba_mp_list)));
+	ba_mp = list_peek(bg_record->ba_mp_list);
+	xassert(ba_mp);
 
 	if (in_job_ptr && in_job_ptr->magic != JOB_MAGIC) {
 		/* This can happen if the mmcs job hangs out in the system
