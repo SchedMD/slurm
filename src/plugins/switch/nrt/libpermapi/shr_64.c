@@ -54,6 +54,7 @@
 #include "src/common/xstring.h"
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
+#include "src/common/plugstack.h"
 
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
@@ -61,8 +62,10 @@
 #include "src/srun/launch.h"
 #include "src/plugins/switch/nrt/nrt_keys.h"
 
-void *my_handle = NULL;
-srun_job_t *job = NULL;
+bool srun_max_timer = false;
+
+static void *my_handle = NULL;
+static srun_job_t *job = NULL;
 
 int sig_array[] = {
 	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGHUP,
@@ -227,8 +230,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	srun_job_t *job = *job_ptr;
 	slurm_step_launch_params_t launch_params;
 	int my_argc = 1;
-	char **my_argv = xmalloc(sizeof(char *)*my_argc+1);
-	my_argv[0] = xstrdup("/etc/pmdv12");
+	char *my_argv[2] = { "/etc/pmdv12", NULL };
 
 	info("got pe_rm_connect called %p %d", rm_sockfds, rm_sockfds[0]);
 
@@ -286,8 +288,6 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		     job->jobid, job->stepid);
 	}
 cleanup:
-	xfree(my_argv[0]);
-	xfree(my_argv);
 	info("done launching");
 	return 0;
 }
@@ -441,6 +441,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	slurm_step_layout_t *step_layout;
 	hostlist_t hl;
 	char *host;
+	host_usage_t *host_ptr;
 
 	info("got pe_rm_get_job_info called %p %p", job_info, *job_info);
 
@@ -467,28 +468,30 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	step_layout = launch_common_get_slurm_step_layout(job);
 
 	ret_info->hosts = xmalloc(sizeof(host_usage_t) * ret_info->host_count);
+	host_ptr = ret_info->hosts;
 	i=0;
 	hl = hostlist_create(step_layout->node_list);
 	while ((host = hostlist_shift(hl))) {
 		slurm_addr_t addr;
-		ret_info->hosts->host_name = host;
+		host_ptr->host_name = host;
 /* FIXME: not sure how to handle host_address yet we are guessing the
  * below will do what we need. */
-		/* ret_info->hosts->host_address = */
+		/* host_ptr->host_address = */
 		/* 	xstrdup_printf("10.0.0.5%d", i+1); */
 		slurm_conf_get_addr(host, &addr);
-		ret_info->hosts->host_address = inet_ntoa(addr.sin_addr);
-		info("%s = %s", ret_info->hosts->host_name, ret_info->hosts->host_address);
-		ret_info->hosts->task_count = step_layout->tasks[i];
-		ret_info->hosts->task_ids =
-			xmalloc(sizeof(int) * ret_info->hosts->task_count);
-		for (j=0; j<ret_info->hosts->task_count; j++)
-			ret_info->hosts->task_ids[j] = task_id++;
+		host_ptr->host_address = xstrdup(inet_ntoa(addr.sin_addr));
+		info("%s = %s", host_ptr->host_name, host_ptr->host_address);
+		host_ptr->task_count = step_layout->tasks[i];
+		host_ptr->task_ids =
+			xmalloc(sizeof(int) * host_ptr->task_count);
+		for (j=0; j<host_ptr->task_count; j++)
+			host_ptr->task_ids[j] = task_id++;
 		i++;
 		if (i > ret_info->host_count) {
 			error("we have more nodes that we bargined for.");
 			break;
 		}
+		host_ptr++;
 	}
 	hostlist_destroy(hl);
 
@@ -634,10 +637,22 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		return 1;
 	}
 
+	/* Initialize plugin stack, read options from plugins, etc.
+	 */
+	init_spank_env();
+	if (spank_init(NULL) < 0) {
+		error("Plug-in initialization failed");
+		exit(error_exit);
+	}
+
 	pe_job_req = (job_request_t *)job_cmd.job_command;
 
 	initialize_and_process_args(2, myargv);
-	info("job_type\t= %d", pe_job_req->job_type);
+
+	if (spank_init_post_opt() < 0) {
+		error("Plugin stack post-option processing failed.");
+		exit(error_exit);
+	}
 
 	info("num_nodes\t= %d", pe_job_req->num_nodes);
 	if (pe_job_req->num_nodes != -1)
