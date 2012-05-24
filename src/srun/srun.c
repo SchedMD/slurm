@@ -135,7 +135,6 @@ int sig_array[] = {
 static int   _become_user (void);
 static int   _call_spank_local_user (srun_job_t *job);
 static void  _default_sigaction(int sig);
-static void  _define_symbols(void);
 static void  _handle_intr(void);
 static void  _handle_pipe(void);
 static void  _print_job_information(resource_allocation_response_msg_t *resp);
@@ -223,7 +222,6 @@ int srun(int ac, char **av)
 	if (spank_init(NULL) < 0) {
 		error("Plug-in initialization failed");
 		exit(error_exit);
-		_define_symbols();
 	}
 
 	/* Be sure to call spank_fini when srun exits.
@@ -1005,17 +1003,6 @@ _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 			}
 		}
 	}
-}
-
-/* Plugins must be able to resolve symbols.
- * Since srun statically links with src/api/libslurmhelper rather than
- * dynamicaly linking with libslurm, we need to reference all needed
- * symbols within srun. None of the functions below are actually
- * used, but we need to load the symbols. */
-static void _define_symbols(void)
-{
-	/* needed by mvapich and mpichgm */
-	slurm_signal_job_step(NO_VAL, NO_VAL, 0);
 }
 
 static void _pty_restore(void)
