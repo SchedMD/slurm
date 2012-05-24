@@ -62,255 +62,134 @@ typedef struct slurm_switch_ops {
 
 	int          (*alloc_jobinfo)     ( switch_jobinfo_t **jobinfo );
 	int          (*build_jobinfo)     ( switch_jobinfo_t *jobinfo,
-						char *nodelist,
-						uint16_t *tasks_per_node,
-						int cyclic_alloc,
-						char *network);
+					    char *nodelist,
+					    uint16_t *tasks_per_node,
+					    uint32_t **tids,
+					    char *network);
 	switch_jobinfo_t *(*copy_jobinfo)  ( switch_jobinfo_t *jobinfo );
 	void         (*free_jobinfo)      ( switch_jobinfo_t *jobinfo );
 	int          (*pack_jobinfo)      ( switch_jobinfo_t *jobinfo,
-						Buf buffer );
+					    Buf buffer );
 	int          (*unpack_jobinfo)    ( switch_jobinfo_t *jobinfo,
-						Buf buffer );
+					    Buf buffer );
 	int          (*get_jobinfo)       ( switch_jobinfo_t *switch_job,
-						int key, void *data);
+					    int key, void *data);
 	void         (*print_jobinfo)     ( FILE *fp,
-						switch_jobinfo_t *jobinfo );
+					    switch_jobinfo_t *jobinfo );
 	char *       (*string_jobinfo)    ( switch_jobinfo_t *jobinfo,
-						char *buf, size_t size);
+					    char *buf, size_t size);
 	int          (*node_init)         ( void );
 	int          (*node_fini)         ( void );
 	int          (*job_preinit)       ( switch_jobinfo_t *jobinfo );
 	int          (*job_init)          ( switch_jobinfo_t *jobinfo,
-						uid_t uid );
+					    uid_t uid, char *job_name );
 	int          (*job_fini)          ( switch_jobinfo_t *jobinfo );
 	int          (*job_postfini)      ( switch_jobinfo_t *jobinfo,
-						uid_t pgid,
-						uint32_t job_id,
-						uint32_t step_id );
+					    uid_t pgid,
+					    uint32_t job_id,
+					    uint32_t step_id );
 	int          (*job_attach)        ( switch_jobinfo_t *jobinfo,
-						char ***env, uint32_t nodeid,
-						uint32_t procid, uint32_t nnodes,
-						uint32_t nprocs, uint32_t rank);
+					    char ***env, uint32_t nodeid,
+					    uint32_t procid, uint32_t nnodes,
+					    uint32_t nprocs, uint32_t rank);
 	char *	     (*switch_strerror)   ( int errnum );
 	int          (*switch_errno)      ( void );
 	int          (*clear_node)        ( void );
 	int          (*alloc_nodeinfo)    ( switch_node_info_t **nodeinfo );
 	int          (*build_nodeinfo)    ( switch_node_info_t *nodeinfo );
 	int          (*pack_nodeinfo)     ( switch_node_info_t *nodeinfo,
-						Buf buffer );
+					    Buf buffer );
 	int          (*unpack_nodeinfo)   ( switch_node_info_t *nodeinfo,
-						Buf buffer );
+					    Buf buffer );
 	int          (*free_nodeinfo)     ( switch_node_info_t **nodeinfo );
 	char *       (*sprintf_nodeinfo)  ( switch_node_info_t *nodeinfo,
-						char *buf, size_t size );
+					    char *buf, size_t size );
 	int          (*step_complete)     ( switch_jobinfo_t *jobinfo,
-						char *nodelist );
+					    char *nodelist );
 	int          (*step_part_comp)    ( switch_jobinfo_t *jobinfo,
-						char *nodelist );
+					    char *nodelist );
 	bool         (*part_comp)         ( void );
 	int          (*step_allocated)    ( switch_jobinfo_t *jobinfo,
-					        char *nodelist );
+					    char *nodelist );
 	int          (*state_clear)       ( void );
 	int          (*slurmctld_init)    ( void );
 	int          (*slurmd_init)       ( void );
 	int          (*slurmd_step_init)  ( void );
 } slurm_switch_ops_t;
 
-struct slurm_switch_context {
-	char *			switch_type;
-	plugrack_t              plugin_list;
-	plugin_handle_t         cur_plugin;
-	int                     switch_errno;
-	slurm_switch_ops_t	ops;
+/*
+ * These strings must be kept in the same order as the fields
+ * declared for slurm_switch_ops_t.
+ */
+static const char *syms[] = {
+	"switch_p_libstate_save",
+	"switch_p_libstate_restore",
+	"switch_p_alloc_jobinfo",
+	"switch_p_build_jobinfo",
+	"switch_p_copy_jobinfo",
+	"switch_p_free_jobinfo",
+	"switch_p_pack_jobinfo",
+	"switch_p_unpack_jobinfo",
+	"switch_p_get_jobinfo",
+	"switch_p_print_jobinfo",
+	"switch_p_sprint_jobinfo",
+	"switch_p_node_init",
+	"switch_p_node_fini",
+	"switch_p_job_preinit",
+	"switch_p_job_init",
+	"switch_p_job_fini",
+	"switch_p_job_postfini",
+	"switch_p_job_attach",
+	"switch_p_strerror",
+	"switch_p_get_errno",
+	"switch_p_clear_node_state",
+	"switch_p_alloc_node_info",
+	"switch_p_build_node_info",
+	"switch_p_pack_node_info",
+	"switch_p_unpack_node_info",
+	"switch_p_free_node_info",
+	"switch_p_sprintf_node_info",
+	"switch_p_job_step_complete",
+	"switch_p_job_step_part_comp",
+	"switch_p_part_comp",
+	"switch_p_job_step_allocated",
+	"switch_p_libstate_clear",
+	"switch_p_slurmctld_init",
+	"switch_p_slurmd_init",
+	"switch_p_slurmd_step_init"
 };
 
-static slurm_switch_context_t *g_context = NULL;
+static slurm_switch_ops_t ops;
+static plugin_context_t *g_context = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
-
-
-static slurm_switch_context_t *
-_slurm_switch_context_create(const char *switch_type)
-{
-	slurm_switch_context_t *c;
-
-	if ( switch_type == NULL ) {
-		debug3( "_slurm_switch_context_create: no switch type" );
-		return NULL;
-	}
-
-	c = xmalloc( sizeof( struct slurm_switch_context ) );
-
-	c->switch_errno = SLURM_SUCCESS;
-
-	/* Copy the job completion authentication type. */
-	c->switch_type = xstrdup( switch_type );
-	if (c->switch_type == NULL ) {
-		debug3( "can't make local copy of switch type" );
-		xfree( c );
-		return NULL;
-	}
-
-	/* Plugin rack is demand-loaded on first reference. */
-	c->plugin_list = NULL;
-	c->cur_plugin = PLUGIN_INVALID_HANDLE;
-
-	return c;
-}
-
-static int
-_slurm_switch_context_destroy( slurm_switch_context_t *c )
-{
-	int rc = SLURM_SUCCESS;
-	/*
-	 * Must check return code here because plugins might still
-	 * be loaded and active.
-	 */
-	if ( c->plugin_list ) {
-		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
-			rc = SLURM_ERROR;
-		}
-	} else {
-		plugin_unload(c->cur_plugin);
-	}
-
-	xfree( c->switch_type );
-	xfree( c );
-
-	return rc;
-}
-
-/*
- * Resolve the operations from the plugin.
- */
-static slurm_switch_ops_t *
-_slurm_switch_get_ops( slurm_switch_context_t *c )
-{
-	/*
-	 * These strings must be kept in the same order as the fields
-	 * declared for slurm_switch_ops_t.
-	 */
-	static const char *syms[] = {
-		"switch_p_libstate_save",
-		"switch_p_libstate_restore",
-		"switch_p_alloc_jobinfo",
-		"switch_p_build_jobinfo",
-		"switch_p_copy_jobinfo",
-		"switch_p_free_jobinfo",
-		"switch_p_pack_jobinfo",
-		"switch_p_unpack_jobinfo",
-		"switch_p_get_jobinfo",
-		"switch_p_print_jobinfo",
-		"switch_p_sprint_jobinfo",
-		"switch_p_node_init",
-		"switch_p_node_fini",
-		"switch_p_job_preinit",
-		"switch_p_job_init",
-		"switch_p_job_fini",
-		"switch_p_job_postfini",
-		"switch_p_job_attach",
-		"switch_p_strerror",
-		"switch_p_get_errno",
-		"switch_p_clear_node_state",
-		"switch_p_alloc_node_info",
-		"switch_p_build_node_info",
-		"switch_p_pack_node_info",
-		"switch_p_unpack_node_info",
-		"switch_p_free_node_info",
-		"switch_p_sprintf_node_info",
-		"switch_p_job_step_complete",
-		"switch_p_job_step_part_comp",
-		"switch_p_part_comp",
-		"switch_p_job_step_allocated",
-		"switch_p_libstate_clear",
-		"switch_p_slurmctld_init",
-		"switch_p_slurmd_init",
-		"switch_p_slurmd_step_init"
-	};
-	int n_syms = sizeof( syms ) / sizeof( char * );
-
-	/* Find the correct plugin. */
-        c->cur_plugin = plugin_load_and_link(c->switch_type, n_syms, syms,
-					     (void **) &c->ops);
-        if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
-        	return &c->ops;
-
-	if(errno != EPLUGIN_NOTFOUND) {
-		error("Couldn't load specified plugin name for %s: %s",
-		      c->switch_type, plugin_strerror(errno));
-		return NULL;
-	}
-
-	error("Couldn't find the specified plugin name for %s "
-	      "looking at all files",
-	      c->switch_type);
-
-	/* Get the plugin list, if needed. */
-	if ( c->plugin_list == NULL ) {
-		char *plugin_dir;
-		c->plugin_list = plugrack_create();
-		if ( c->plugin_list == NULL ) {
-			verbose( "Unable to create a plugin manager" );
-			return NULL;
-		}
-
-		plugrack_set_major_type( c->plugin_list, "switch" );
-		plugrack_set_paranoia( c->plugin_list,
-				PLUGRACK_PARANOIA_NONE,
-				 0 );
-		plugin_dir = slurm_get_plugin_dir();
-		plugrack_read_dir( c->plugin_list, plugin_dir );
-		xfree(plugin_dir);
-	}
-
-	/* Find the correct plugin. */
-	c->cur_plugin =
-		plugrack_use_by_type( c->plugin_list, c->switch_type );
-	if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
-		verbose( "can't find a plugin for type %s", c->switch_type );
-		return NULL;
-	}
-
-	/* Dereference the API. */
-	if ( plugin_get_syms( c->cur_plugin,
-				n_syms,
-				syms,
-				(void **) &c->ops ) < n_syms ) {
-		verbose( "incomplete switch plugin detected" );
-		return NULL;
-	}
-
-	return &c->ops;
-}
 
 extern int switch_init( void )
 {
 	int retval = SLURM_SUCCESS;
-	char *switch_type = NULL;
+	char *plugin_type = "switch";
+	char *type = NULL;
+
+	if ( g_context )
+		return retval;
 
 	slurm_mutex_lock( &context_lock );
 
 	if ( g_context )
 		goto done;
 
-	switch_type = slurm_get_switch_type();
-	g_context = _slurm_switch_context_create( switch_type );
-	if ( g_context == NULL ) {
-		error( "cannot create a context for %s", switch_type );
+	type = slurm_get_switch_type();
+	g_context = plugin_context_create(
+		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+
+	if (!g_context) {
+		error("cannot create %s context for %s", plugin_type, type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
 
-	if ( _slurm_switch_get_ops( g_context ) == NULL ) {
-		error( "cannot resolve plugin operations for %s", switch_type );
-		_slurm_switch_context_destroy( g_context );
-		g_context = NULL;
-		retval = SLURM_ERROR;
-	}
-
-      done:
+done:
 	slurm_mutex_unlock( &context_lock );
-	xfree(switch_type);
+	xfree(type);
 	return retval;
 }
 
@@ -321,7 +200,7 @@ extern int switch_fini(void)
 	if (!g_context)
 		return SLURM_SUCCESS;
 
-	rc = _slurm_switch_context_destroy(g_context);
+	rc = plugin_context_destroy(g_context);
 	return rc;
 }
 
@@ -330,7 +209,7 @@ extern int  switch_save(char *dir_name)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.state_save))( dir_name );
+	return (*(ops.state_save))( dir_name );
 }
 
 extern int  switch_restore(char *dir_name, bool recover)
@@ -338,7 +217,7 @@ extern int  switch_restore(char *dir_name, bool recover)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.state_restore))( dir_name, recover );
+	return (*(ops.state_restore))( dir_name, recover );
 }
 
 extern int  switch_clear(void)
@@ -346,7 +225,7 @@ extern int  switch_clear(void)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.state_clear))( );
+	return (*(ops.state_clear))( );
 }
 
 extern int  switch_alloc_jobinfo(switch_jobinfo_t **jobinfo)
@@ -354,18 +233,18 @@ extern int  switch_alloc_jobinfo(switch_jobinfo_t **jobinfo)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.alloc_jobinfo))( jobinfo );
+	return (*(ops.alloc_jobinfo))( jobinfo );
 }
 
 extern int  switch_build_jobinfo(switch_jobinfo_t *jobinfo,
-		char *nodelist, uint16_t *tasks_per_node,
-		int cyclic_alloc, char *network)
+				 char *nodelist, uint16_t *tasks_per_node,
+				 uint32_t **tids, char *network)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.build_jobinfo))( jobinfo, nodelist,
-			tasks_per_node, cyclic_alloc, network );
+	return (*(ops.build_jobinfo))( jobinfo, nodelist,
+				       tasks_per_node, tids, network );
 }
 
 extern switch_jobinfo_t *switch_copy_jobinfo(switch_jobinfo_t *jobinfo)
@@ -373,7 +252,7 @@ extern switch_jobinfo_t *switch_copy_jobinfo(switch_jobinfo_t *jobinfo)
 	if ( switch_init() < 0 )
 		return NULL;
 
-	return (*(g_context->ops.copy_jobinfo))( jobinfo );
+	return (*(ops.copy_jobinfo))( jobinfo );
 }
 
 extern void switch_free_jobinfo(switch_jobinfo_t *jobinfo)
@@ -381,7 +260,7 @@ extern void switch_free_jobinfo(switch_jobinfo_t *jobinfo)
 	if ( switch_init() < 0 )
 		return;
 
-	(*(g_context->ops.free_jobinfo))( jobinfo );
+	(*(ops.free_jobinfo))( jobinfo );
 }
 
 extern int switch_pack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer)
@@ -389,7 +268,7 @@ extern int switch_pack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.pack_jobinfo))( jobinfo, buffer );
+	return (*(ops.pack_jobinfo))( jobinfo, buffer );
 }
 
 extern int switch_unpack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer)
@@ -397,16 +276,16 @@ extern int switch_unpack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.unpack_jobinfo))( jobinfo, buffer );
+	return (*(ops.unpack_jobinfo))( jobinfo, buffer );
 }
 
 extern int  switch_g_get_jobinfo(switch_jobinfo_t *jobinfo,
-	int data_type, void *data)
+				 int data_type, void *data)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.get_jobinfo))( jobinfo, data_type, data);
+	return (*(ops.get_jobinfo))( jobinfo, data_type, data);
 }
 
 extern void switch_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
@@ -414,16 +293,16 @@ extern void switch_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
 	if ( switch_init() < 0 )
 		return;
 
-	(*(g_context->ops.print_jobinfo)) (fp, jobinfo);
+	(*(ops.print_jobinfo)) (fp, jobinfo);
 }
 
 extern char *switch_sprint_jobinfo( switch_jobinfo_t *jobinfo,
-	       char *buf, size_t size)
+				    char *buf, size_t size)
 {
 	if ( switch_init() < 0 )
 		return NULL;
 
-	return (*(g_context->ops.string_jobinfo)) (jobinfo, buf, size);
+	return (*(ops.string_jobinfo)) (jobinfo, buf, size);
 }
 
 extern int interconnect_node_init(void)
@@ -431,7 +310,7 @@ extern int interconnect_node_init(void)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.node_init)) ();
+	return (*(ops.node_init)) ();
 }
 
 extern int interconnect_node_fini(void)
@@ -439,7 +318,7 @@ extern int interconnect_node_fini(void)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.node_fini)) ();
+	return (*(ops.node_fini)) ();
 }
 
 extern int interconnect_preinit(switch_jobinfo_t *jobinfo)
@@ -447,15 +326,16 @@ extern int interconnect_preinit(switch_jobinfo_t *jobinfo)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.job_preinit)) (jobinfo);
+	return (*(ops.job_preinit)) (jobinfo);
 }
 
-extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid)
+extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid,
+			     char *job_name)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.job_init)) (jobinfo, uid);
+	return (*(ops.job_init)) (jobinfo, uid, job_name);
 }
 
 extern int interconnect_fini(switch_jobinfo_t *jobinfo)
@@ -463,28 +343,28 @@ extern int interconnect_fini(switch_jobinfo_t *jobinfo)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.job_fini)) (jobinfo);
+	return (*(ops.job_fini)) (jobinfo);
 }
 
 extern int interconnect_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
-				uint32_t job_id, uint32_t step_id )
+				 uint32_t job_id, uint32_t step_id )
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.job_postfini)) (jobinfo, pgid,
-		job_id, step_id);
+	return (*(ops.job_postfini)) (jobinfo, pgid,
+				      job_id, step_id);
 }
 
 extern int interconnect_attach(switch_jobinfo_t *jobinfo, char ***env,
-		uint32_t nodeid, uint32_t procid, uint32_t nnodes,
-		uint32_t nprocs, uint32_t gid)
+			       uint32_t nodeid, uint32_t procid,
+			       uint32_t nnodes, uint32_t nprocs, uint32_t gid)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.job_attach)) (jobinfo, env,
-		nodeid, procid, nnodes, nprocs, gid);
+	return (*(ops.job_attach)) (jobinfo, env,
+				    nodeid, procid, nnodes, nprocs, gid);
 }
 
 extern int switch_get_errno(void)
@@ -492,7 +372,7 @@ extern int switch_get_errno(void)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.switch_errno))( );
+	return (*(ops.switch_errno))( );
 }
 
 extern char *switch_strerror(int errnum)
@@ -500,7 +380,7 @@ extern char *switch_strerror(int errnum)
 	if ( switch_init() < 0 )
 		return NULL;
 
-	return (*(g_context->ops.switch_strerror))( errnum );
+	return (*(ops.switch_strerror))( errnum );
 }
 
 
@@ -513,7 +393,7 @@ extern int switch_g_clear_node_state(void)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.clear_node))();
+	return (*(ops.clear_node))();
 }
 
 extern int switch_g_alloc_node_info(switch_node_info_t **switch_node)
@@ -521,7 +401,7 @@ extern int switch_g_alloc_node_info(switch_node_info_t **switch_node)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.alloc_nodeinfo))( switch_node );
+	return (*(ops.alloc_nodeinfo))( switch_node );
 }
 
 extern int switch_g_build_node_info(switch_node_info_t *switch_node)
@@ -529,25 +409,25 @@ extern int switch_g_build_node_info(switch_node_info_t *switch_node)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.build_nodeinfo))( switch_node );
+	return (*(ops.build_nodeinfo))( switch_node );
 }
 
 extern int switch_g_pack_node_info(switch_node_info_t *switch_node,
-	Buf buffer)
+				   Buf buffer)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.pack_nodeinfo))( switch_node, buffer );
+	return (*(ops.pack_nodeinfo))( switch_node, buffer );
 }
 
 extern int switch_g_unpack_node_info(switch_node_info_t *switch_node,
-	Buf buffer)
+				     Buf buffer)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.unpack_nodeinfo))( switch_node, buffer );
+	return (*(ops.unpack_nodeinfo))( switch_node, buffer );
 }
 
 extern int switch_g_free_node_info(switch_node_info_t **switch_node)
@@ -555,34 +435,34 @@ extern int switch_g_free_node_info(switch_node_info_t **switch_node)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.free_nodeinfo))( switch_node );
+	return (*(ops.free_nodeinfo))( switch_node );
 }
 
 extern char*switch_g_sprintf_node_info(switch_node_info_t *switch_node,
-	char *buf, size_t size)
+				       char *buf, size_t size)
 {
 	if ( switch_init() < 0 )
 		return NULL;
 
-	return (*(g_context->ops.sprintf_nodeinfo))( switch_node, buf, size );
+	return (*(ops.sprintf_nodeinfo))( switch_node, buf, size );
 }
 
 extern int switch_g_job_step_complete(switch_jobinfo_t *jobinfo,
-	char *nodelist)
+				      char *nodelist)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.step_complete))( jobinfo, nodelist );
+	return (*(ops.step_complete))( jobinfo, nodelist );
 }
 
 extern int switch_g_job_step_part_comp(switch_jobinfo_t *jobinfo,
-	char *nodelist)
+				       char *nodelist)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.step_part_comp))( jobinfo, nodelist );
+	return (*(ops.step_part_comp))( jobinfo, nodelist );
 }
 
 extern bool switch_g_part_comp(void)
@@ -590,17 +470,17 @@ extern bool switch_g_part_comp(void)
 	if ( switch_init() < 0 )
 		return false;
 
-	return (*(g_context->ops.part_comp))( );
+	return (*(ops.part_comp))( );
 }
 
 
 extern int switch_g_job_step_allocated(switch_jobinfo_t *jobinfo,
-	char *nodelist)
+				       char *nodelist)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.step_allocated))( jobinfo, nodelist );
+	return (*(ops.step_allocated))( jobinfo, nodelist );
 }
 
 extern int switch_g_slurmctld_init(void)
@@ -608,7 +488,7 @@ extern int switch_g_slurmctld_init(void)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.slurmctld_init)) ();
+	return (*(ops.slurmctld_init)) ();
 }
 
 extern int switch_g_slurmd_init(void)
@@ -616,7 +496,7 @@ extern int switch_g_slurmd_init(void)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.slurmd_init)) ();
+	return (*(ops.slurmd_init)) ();
 }
 
 extern int switch_g_slurmd_step_init(void)
@@ -624,5 +504,5 @@ extern int switch_g_slurmd_step_init(void)
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.slurmd_step_init)) ();
+	return (*(ops.slurmd_step_init)) ();
 }

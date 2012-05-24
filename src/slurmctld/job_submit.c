@@ -72,6 +72,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/job_submit.h"
 
 typedef struct slurm_submit_ops {
 	int		(*submit)	( struct job_descriptor *job_desc,
@@ -81,110 +82,19 @@ typedef struct slurm_submit_ops {
 					  uint32_t submit_uid );
 } slurm_submit_ops_t;
 
-typedef struct slurm_submit_context {
-	char	       	*sched_type;
-	plugrack_t     	plugin_list;
-	plugin_handle_t	cur_plugin;
-	int		sched_errno;
-	slurm_submit_ops_t ops;
-} slurm_submit_context_t;
+/*
+ * Must be synchronized with slurm_submit_ops_t above.
+ */
+static const char *syms[] = {
+	"job_submit",
+	"job_modify"
+};
 
-static int submit_context_cnt = -1;
-static slurm_submit_context_t *submit_context = NULL;
+static int g_context_cnt = -1;
+static slurm_submit_ops_t *ops = NULL;
+static plugin_context_t **g_context = NULL;
 static char *submit_plugin_list = NULL;
-static pthread_mutex_t submit_context_lock = PTHREAD_MUTEX_INITIALIZER;
-
-static int _load_submit_plugin(char *plugin_name,
-			       slurm_submit_context_t *plugin_context)
-{
-	/*
-	 * Must be synchronized with slurm_submit_ops_t above.
-	 */
-	static const char *syms[] = {
-		"job_submit",
-		"job_modify"
-	};
-	int n_syms = sizeof(syms) / sizeof(char *);
-
-	/* Find the correct plugin */
-	plugin_context->sched_type	= xstrdup("job_submit/");
-	xstrcat(plugin_context->sched_type, plugin_name);
-	plugin_context->plugin_list	= NULL;
-	plugin_context->cur_plugin	= PLUGIN_INVALID_HANDLE;
-	plugin_context->sched_errno 	= SLURM_SUCCESS;
-
-	plugin_context->cur_plugin = plugin_load_and_link(
-					plugin_context->sched_type,
-					n_syms, syms,
-					(void **) &plugin_context->ops);
-	if (plugin_context->cur_plugin != PLUGIN_INVALID_HANDLE)
-		return SLURM_SUCCESS;
-
-	if(errno != EPLUGIN_NOTFOUND) {
-		error("job_submit: Couldn't load specified plugin name "
-		      "for %s: %s",
-		      plugin_context->sched_type, plugin_strerror(errno));
-		return SLURM_ERROR;
-	}
-
-	error("job_submit: Couldn't find the specified plugin name for %s "
-	      "looking at all files",
-	      plugin_context->sched_type);
-
-	/* Get plugin list */
-	if (plugin_context->plugin_list == NULL) {
-		char *plugin_dir;
-		plugin_context->plugin_list = plugrack_create();
-		if (plugin_context->plugin_list == NULL) {
-			error("job_submit: cannot create plugin manager");
-			return SLURM_ERROR;
-		}
-		plugrack_set_major_type(plugin_context->plugin_list,
-					"job_submit");
-		plugrack_set_paranoia(plugin_context->plugin_list,
-				      PLUGRACK_PARANOIA_NONE, 0);
-		plugin_dir = slurm_get_plugin_dir();
-		plugrack_read_dir(plugin_context->plugin_list, plugin_dir);
-		xfree(plugin_dir);
-	}
-
-	plugin_context->cur_plugin = plugrack_use_by_type(
-					plugin_context->plugin_list,
-					plugin_context->sched_type );
-	if (plugin_context->cur_plugin == PLUGIN_INVALID_HANDLE) {
-		error("job_submit: cannot find scheduler plugin for %s",
-		       plugin_context->sched_type);
-		return SLURM_ERROR;
-	}
-
-	/* Dereference the API. */
-	if (plugin_get_syms(plugin_context->cur_plugin,
-			    n_syms, syms,
-			    (void **) &plugin_context->ops ) < n_syms ) {
-		error("job_submit: incomplete plugin detected");
-		return SLURM_ERROR;
-	}
-	return SLURM_SUCCESS;
-}
-
-static int _unload_submit_plugin(slurm_submit_context_t *plugin_context)
-{
-	int rc;
-
-	/*
-	 * Must check return code here because plugins might still
-	 * be loaded and active.
-	 */
-	if (plugin_context->plugin_list)
-		rc = plugrack_destroy(plugin_context->plugin_list);
-	else {
-		rc = SLURM_SUCCESS;
-		plugin_unload(plugin_context->cur_plugin);
-	}
-	xfree(plugin_context->sched_type);
-
-	return rc;
-}
+static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * Initialize the job submit plugin.
@@ -194,33 +104,53 @@ static int _unload_submit_plugin(slurm_submit_context_t *plugin_context)
 extern int job_submit_plugin_init(void)
 {
 	int rc = SLURM_SUCCESS;
-	char *last = NULL, *names, *one_name;
+	char *last = NULL, *names;
+	char *plugin_type = "job_submit";
+	char *type;
 
-	slurm_mutex_lock(&submit_context_lock);
-	if (submit_context_cnt >= 0)
+	if (g_context_cnt >= 0)
+		return rc;
+
+	slurm_mutex_lock(&g_context_lock);
+	if (g_context_cnt >= 0)
 		goto fini;
 
 	submit_plugin_list = slurm_get_job_submit_plugins();
-	submit_context_cnt = 0;
+	g_context_cnt = 0;
 	if ((submit_plugin_list == NULL) || (submit_plugin_list[0] == '\0'))
 		goto fini;
 
-	submit_context_cnt = 0;
-	names = xstrdup(submit_plugin_list);
-	one_name = strtok_r(names, ",", &last);
-	while (one_name) {
-		xrealloc(submit_context, (sizeof(slurm_submit_context_t) *
-			 (submit_context_cnt + 1)));
-		rc = _load_submit_plugin(one_name,
-					 submit_context + submit_context_cnt);
-		if (rc != SLURM_SUCCESS)
+	names = submit_plugin_list;
+	while ((type = strtok_r(names, ",", &last))) {
+		xrealloc(ops,
+			 (sizeof(slurm_submit_ops_t) * (g_context_cnt + 1)));
+		xrealloc(g_context,
+			 (sizeof(plugin_context_t *) * (g_context_cnt + 1)));
+		if (strncmp(type, "job_submit/", 11) == 0)
+			type += 11; /* backward compatibility */
+		type = xstrdup_printf("job_submit/%s", type);
+		g_context[g_context_cnt] = plugin_context_create(
+			plugin_type, type, (void **)&ops[g_context_cnt],
+			syms, sizeof(syms));
+		if (!g_context[g_context_cnt]) {
+			error("cannot create %s context for %s",
+			      plugin_type, type);
+			rc = SLURM_ERROR;
+			xfree(type);
 			break;
-		submit_context_cnt++;
-		one_name = strtok_r(NULL, ",", &last);
-	}
-	xfree(names);
+		}
 
-fini:	slurm_mutex_unlock(&submit_context_lock);
+		xfree(type);
+		g_context_cnt++;
+		names = NULL; /* for next iteration */
+	}
+
+fini:
+	slurm_mutex_unlock(&g_context_lock);
+
+	if (rc != SLURM_SUCCESS)
+		job_submit_plugin_fini();
+
 	return rc;
 }
 
@@ -233,20 +163,23 @@ extern int job_submit_plugin_fini(void)
 {
 	int i, j, rc = SLURM_SUCCESS;
 
-	slurm_mutex_lock(&submit_context_lock);
-	if (submit_context_cnt < 0)
+	slurm_mutex_lock(&g_context_lock);
+	if (g_context_cnt < 0)
 		goto fini;
 
-	for (i=0; i<submit_context_cnt; i++) {
-		j = _unload_submit_plugin(submit_context + i);
-		if (j != SLURM_SUCCESS)
-			rc = j;
+	for (i=0; i<g_context_cnt; i++) {
+		if (g_context[i]) {
+			j = plugin_context_destroy(g_context[i]);
+			if (j != SLURM_SUCCESS)
+				rc = j;
+		}
 	}
-	xfree(submit_context);
+	xfree(ops);
+	xfree(g_context);
 	xfree(submit_plugin_list);
-	submit_context_cnt = -1;
+	g_context_cnt = -1;
 
-fini:	slurm_mutex_unlock(&submit_context_lock);
+fini:	slurm_mutex_unlock(&g_context_lock);
 	return rc;
 }
 
@@ -268,13 +201,13 @@ extern int job_submit_plugin_reconfig(void)
 	if (!plugin_names && !submit_plugin_list)
 		return rc;
 
-	slurm_mutex_lock(&submit_context_lock);
+	slurm_mutex_lock(&g_context_lock);
 	if (plugin_names && submit_plugin_list &&
 	    strcmp(plugin_names, submit_plugin_list))
 		plugin_change = true;
 	else
 		plugin_change = false;
-	slurm_mutex_unlock(&submit_context_lock);
+	slurm_mutex_unlock(&g_context_lock);
 
 	if (plugin_change) {
 		info("JobSubmitPlugins changed to %s", plugin_names);
@@ -298,10 +231,10 @@ extern int job_submit_plugin_submit(struct job_descriptor *job_desc,
 	int i, rc;
 
 	rc = job_submit_plugin_init();
-	slurm_mutex_lock(&submit_context_lock);
-	for (i=0; ((i < submit_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(submit_context[i].ops.submit))(job_desc, submit_uid);
-	slurm_mutex_unlock(&submit_context_lock);
+	slurm_mutex_lock(&g_context_lock);
+	for (i=0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
+		rc = (*(ops[i].submit))(job_desc, submit_uid);
+	slurm_mutex_unlock(&g_context_lock);
 	return rc;
 }
 
@@ -317,10 +250,10 @@ extern int job_submit_plugin_modify(struct job_descriptor *job_desc,
 	int i, rc;
 
 	rc = job_submit_plugin_init();
-	slurm_mutex_lock(&submit_context_lock);
-	for (i=0; ((i < submit_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(submit_context[i].ops.modify))(job_desc, job_ptr,
+	slurm_mutex_lock(&g_context_lock);
+	for (i=0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
+		rc = (*(ops[i].modify))(job_desc, job_ptr,
 						       submit_uid);
-	slurm_mutex_unlock(&submit_context_lock);
+	slurm_mutex_unlock(&g_context_lock);
 	return rc;
 }

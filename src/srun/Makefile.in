@@ -38,8 +38,10 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 bin_PROGRAMS = srun$(EXEEXT)
-@BGQ_LOADED_TRUE@am__append_1 = runjob_interface.cc
-@BGQ_LOADED_TRUE@am__append_2 = $(RUNJOB_LDFLAGS)
+
+# because totalview needs the libraries on load we link in srun
+# and not in the launch plugin.
+@BGQ_LOADED_TRUE@am__append_1 = $(RUNJOB_LDFLAGS)
 subdir = src/srun
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -60,9 +62,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
 	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
-	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
-	$(top_srcdir)/auxdir/x_ac_federation.m4 \
 	$(top_srcdir)/auxdir/x_ac_gpl_licensed.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_iso.m4 \
@@ -70,6 +70,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
+	$(top_srcdir)/auxdir/x_ac_nrt.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
 	$(top_srcdir)/auxdir/x_ac_printf_null.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
@@ -89,23 +90,18 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am__srun_SOURCES_DIST = srun.c srun.h opt.c opt.h srun_job.c \
-	srun_job.h srun_pty.c srun_pty.h debugger.h debugger.c fname.c \
-	fname.h allocate.c allocate.h multi_prog.c multi_prog.h \
-	task_state.c task_state.h srun.wrapper.c runjob_interface.cc
-@BGQ_LOADED_TRUE@am__objects_1 = runjob_interface.$(OBJEXT)
 am_srun_OBJECTS = srun.$(OBJEXT) opt.$(OBJEXT) srun_job.$(OBJEXT) \
 	srun_pty.$(OBJEXT) debugger.$(OBJEXT) fname.$(OBJEXT) \
-	allocate.$(OBJEXT) multi_prog.$(OBJEXT) task_state.$(OBJEXT) \
-	srun.wrapper.$(OBJEXT) $(am__objects_1)
+	allocate.$(OBJEXT) launch.$(OBJEXT) multi_prog.$(OBJEXT) \
+	srun.wrapper.$(OBJEXT)
 srun_OBJECTS = $(am_srun_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurm.o \
 	$(am__DEPENDENCIES_1)
 srun_DEPENDENCIES = $(am__DEPENDENCIES_2)
-srun_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
-	$(srun_LDFLAGS) $(LDFLAGS) -o $@
+srun_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(srun_LDFLAGS) \
+	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -119,17 +115,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
-	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
-LTCXXCOMPILE = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
-	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
-CXXLD = $(CXX)
-CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
-	$(LDFLAGS) -o $@
 SOURCES = $(srun_SOURCES)
-DIST_SOURCES = $(am__srun_SOURCES_DIST)
+DIST_SOURCES = $(srun_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -173,9 +160,7 @@ ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
-ELAN_LIBS = @ELAN_LIBS@
 EXEEXT = @EXEEXT@
-FEDERATION_LDFLAGS = @FEDERATION_LDFLAGS@
 FGREP = @FGREP@
 GREP = @GREP@
 GTK_CFLAGS = @GTK_CFLAGS@
@@ -183,9 +168,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
+HAVE_NRT = @HAVE_NRT@
 HAVE_OPENSSL = @HAVE_OPENSSL@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
@@ -217,6 +201,8 @@ MYSQL_LIBS = @MYSQL_LIBS@
 NCURSES = @NCURSES@
 NM = @NM@
 NMEDIT = @NMEDIT@
+NRT_CPPFLAGS = @NRT_CPPFLAGS@
+NRT_LDFLAGS = @NRT_LDFLAGS@
 NUMA_LIBS = @NUMA_LIBS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
@@ -244,6 +230,7 @@ PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_LIBS = @PTHREAD_LIBS@
 RANLIB = @RANLIB@
 READLINE_LIBS = @READLINE_LIBS@
+REAL_BGQ_LOADED = @REAL_BGQ_LOADED@
 REAL_BG_L_P_LOADED = @REAL_BG_L_P_LOADED@
 RELEASE = @RELEASE@
 RUNJOB_LDFLAGS = @RUNJOB_LDFLAGS@
@@ -336,11 +323,22 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
-INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
-srun_SOURCES = srun.c srun.h opt.c opt.h srun_job.c srun_job.h \
-	srun_pty.c srun_pty.h debugger.h debugger.c fname.c fname.h \
-	allocate.c allocate.h multi_prog.c multi_prog.h task_state.c \
-	task_state.h srun.wrapper.c $(am__append_1)
+INCLUDES = -I$(top_srcdir)
+srun_SOURCES = \
+	srun.c \
+	opt.c opt.h \
+	srun_job.c srun_job.h \
+	srun_pty.c srun_pty.h \
+	debugger.h    \
+	debugger.c    \
+	fname.c     \
+	fname.h     \
+	allocate.c  \
+	allocate.h  \
+	launch.c launch.h \
+	multi_prog.c multi_prog.h \
+	srun.wrapper.c
+
 
 # pthread is needed for compiling with g++ (which is used for linking
 # no matter if on a BGQ or not because of mentioning a .cc file
@@ -350,11 +348,11 @@ convenience_libs = \
 srun_LDADD = \
 	$(convenience_libs)
 
-srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(am__append_2)
+srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(am__append_1)
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .cc .lo .o .obj
+.SUFFIXES: .c .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -441,14 +439,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/allocate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/debugger.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fname.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/launch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multi_prog.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opt.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/runjob_interface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun.wrapper.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun_job.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun_pty.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task_state.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -470,27 +467,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
-
-.cc.o:
-@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
-
-.cc.obj:
-@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-.cc.lo:
-@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
 mostlyclean-libtool:
 	-rm -f *.lo

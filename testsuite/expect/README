@@ -194,6 +194,7 @@ test1.91   Test of CPU affinity for multi-core systems.
 test1.92   Test of task distribution support on multi-core systems.
 test1.93   Test of LAM-MPI functionality
 test1.94   Test of MPICH2 task spawn logic
+test1.95   Basic UPC (Unified Parallel C) test via srun.
 **NOTE**   The above tests for mutliple processor/partition systems only
 
 test2.#    Testing of scontrol options (to be run as unprivileged user).

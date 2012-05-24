@@ -1,10 +1,8 @@
 /*****************************************************************************\
- *  src/srun/srun.h - header for external functions in srun.c
+ *  test1.95.prog.upc - Basic UPC (Unified Parallel C) test via srun.
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <mgrondona@llnl.gov>.
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) 2012 SchedMD LLC
+ *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.schedmd.com/slurmdocs/>.
@@ -22,22 +20,24 @@
  *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
- *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_SRUN_H
-#define _HAVE_SRUN_H
+#include <stdio.h>
+#include <upc.h>
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+shared int inx[THREADS];
 
-#include <sys/types.h>
-#include <unistd.h>
-
-#include "src/api/step_io.h"
-#include "src/srun/srun_job.h"
-
-void srun_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds);
-
-#endif /* !_HAVE_SRUN_H */
+int main(int argc, char * argv[])
+{
+	printf("Hello from %d of %d\n", MYTHREAD, THREADS);
+	inx[MYTHREAD] = MYTHREAD;
+	upc_barrier;
+	if (MYTHREAD == 0) {
+		int i, total = 0;
+		for (i = 0; i < THREADS; i++)
+			total += inx[i];
+		printf("Total is %d\n", total);
+	}
+	return 0;
+}

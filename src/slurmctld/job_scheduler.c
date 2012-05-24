@@ -86,6 +86,9 @@ static void	_feature_list_delete(void *x);
 static void	_job_queue_append(List job_queue, struct job_record *job_ptr,
 				  struct part_record *part_ptr);
 static void	_job_queue_rec_del(void *x);
+static bool	_job_runnable_test1(struct job_record *job_ptr,
+				    bool clear_start);
+static bool	_job_runnable_test2(struct job_record *job_ptr);
 static void *	_run_epilog(void *arg);
 static void *	_run_prolog(void *arg);
 static bool	_scan_depend(List dependency_list, uint32_t job_id);
@@ -146,6 +149,59 @@ static void _job_queue_rec_del(void *x)
 	xfree(x);
 }
 
+/* Job test for ability to run now, excludes partition specific tests */
+static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
+{
+	bool job_indepen = false;
+
+	xassert(job_ptr->magic == JOB_MAGIC);
+	if (!IS_JOB_PENDING(job_ptr) || IS_JOB_COMPLETING(job_ptr))
+		return false;
+
+	job_indepen = job_independent(job_ptr, 0);
+	if (clear_start)
+		job_ptr->start_time = (time_t) 0;
+	if (job_ptr->priority == 0)	{ /* held */
+		if ((job_ptr->state_reason != WAIT_HELD) &&
+		    (job_ptr->state_reason != WAIT_HELD_USER)) {
+			job_ptr->state_reason = WAIT_HELD;
+			xfree(job_ptr->state_desc);
+		}
+		debug3("sched: JobId=%u. State=%s. Reason=%s. Priority=%u.",
+		       job_ptr->job_id,
+		       job_state_string(job_ptr->job_state),
+		       job_reason_string(job_ptr->state_reason),
+		       job_ptr->priority);
+		return false;
+	}
+
+	if (!job_indepen &&
+	    ((job_ptr->state_reason == WAIT_HELD) ||
+	     (job_ptr->state_reason == WAIT_HELD_USER))) {
+		/* released behind active dependency? */
+		job_ptr->state_reason = WAIT_DEPENDENCY;
+		xfree(job_ptr->state_desc);
+	}
+
+	if (!job_indepen)	/* can not run now */
+		return false;
+	return true;
+}
+
+/* Job and partition tests for ability to run now */
+static bool _job_runnable_test2(struct job_record *job_ptr)
+{
+	if (!part_policy_job_runnable_state(job_ptr)) {
+		if (job_limits_check(&job_ptr) == WAIT_NO_REASON) {
+			job_ptr->state_reason = WAIT_NO_REASON;
+			xfree(job_ptr->state_desc);
+		} else {
+			return false;
+		}
+	}
+	return true;
+}
+
 /*
  * build_job_queue - build (non-priority ordered) list of pending jobs
  * IN clear_start - if set then clear the start_time for pending jobs
@@ -158,8 +214,6 @@ extern List build_job_queue(bool clear_start)
 	ListIterator job_iterator, part_iterator;
 	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr;
-	bool job_is_pending;
-	bool job_indepen = false;
 
 	job_queue = list_create(_job_queue_rec_del);
 	if (job_queue == NULL)
@@ -168,37 +222,9 @@ extern List build_job_queue(bool clear_start)
 	if (job_iterator == NULL)
 		fatal("list_iterator_create memory allocation failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		xassert (job_ptr->magic == JOB_MAGIC);
-		job_is_pending = IS_JOB_PENDING(job_ptr);
-		if (!job_is_pending || IS_JOB_COMPLETING(job_ptr))
+		if (!_job_runnable_test1(job_ptr, clear_start))
 			continue;
-		/* ensure dependency shows current values behind a hold */
-		job_indepen = job_independent(job_ptr, 0);
-		if (job_is_pending && clear_start)
-			job_ptr->start_time = (time_t) 0;
-		if (job_ptr->priority == 0)	{ /* held */
-			if ((job_ptr->state_reason != WAIT_HELD) &&
-			    (job_ptr->state_reason != WAIT_HELD_USER)) {
-				job_ptr->state_reason = WAIT_HELD;
-				xfree(job_ptr->state_desc);
-			}
-			debug3("sched: JobId=%u. State=%s. Reason=%s. "
-			       "Priority=%u.",
-			       job_ptr->job_id,
-			       job_state_string(job_ptr->job_state),
-			       job_reason_string(job_ptr->state_reason),
-			       job_ptr->priority);
-			continue;
-		} else if (!job_indepen &&
-			   ((job_ptr->state_reason == WAIT_HELD) ||
-			    (job_ptr->state_reason == WAIT_HELD_USER))) {
-			/* released behind active dependency? */
-			job_ptr->state_reason = WAIT_DEPENDENCY;
-			xfree(job_ptr->state_desc);
-		}
 
-		if (!job_indepen)	/* can not run now */
-			continue;
 		if (job_ptr->part_ptr_list) {
 			part_iterator = list_iterator_create(job_ptr->
 							     part_ptr_list);
@@ -227,15 +253,8 @@ extern List build_job_queue(bool clear_start)
 				      "part %s", job_ptr->job_id,
 				      job_ptr->partition);
 			}
-			if (!part_policy_job_runnable_state(job_ptr)) {
-				if (job_limits_check(&job_ptr) ==
-				    WAIT_NO_REASON) {
-					job_ptr->state_reason = WAIT_NO_REASON;
-					xfree(job_ptr->state_desc);
-				} else {
-					continue;
-				}
-			}
+			if (!_job_runnable_test2(job_ptr))
+				continue;
 			_job_queue_append(job_queue, job_ptr,
 					  job_ptr->part_ptr);
 		}
@@ -377,9 +396,10 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
 	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
-	struct job_record *job_ptr;
+	struct job_record *job_ptr = NULL;
 	struct job_record *fini_job_ptr = (struct job_record *) fini_job;
-	ListIterator job_iterator;
+	struct part_record *part_ptr;
+	ListIterator job_iterator = NULL, part_iterator = NULL;
 	batch_job_launch_msg_t *launch_msg = NULL;
 	bitstr_t *orig_exc_bitmap = NULL;
 	bool have_node_bitmaps, pending_jobs = false;
@@ -408,7 +428,20 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 	job_iterator = list_iterator_create(job_list);
 	if (job_iterator == NULL)
 		fatal("list_iterator_create memory allocation failure");
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while (1) {
+		if (job_ptr && part_iterator)
+			goto next_part;
+
+		job_ptr = (struct job_record *) list_next(job_iterator);
+		if (!job_ptr)
+			break;
+
+		if (job_ptr == fini_job_ptr)
+			continue;
+
+		if (job_ptr->priority == 0)
+			continue;
+
 		if (!IS_JOB_PENDING(job_ptr)) {
 			if (IS_JOB_FINISHED(job_ptr)  &&
 			    (job_ptr != fini_job_ptr) &&
@@ -426,15 +459,25 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 			continue;
 		}
 
-		if (job_ptr == fini_job_ptr)
-			continue;
-
-		if (job_ptr->priority == 0)
-			continue;
-
 		/* Tests dependencies, begin time and reservations */
 		if (!job_independent(job_ptr, 0))
 			continue;
+
+		if (job_ptr->part_ptr_list) {
+			part_iterator = list_iterator_create(job_ptr->
+							     part_ptr_list);
+			if (!part_iterator)
+				fatal("list_iterator_create: malloc failure");
+next_part:		part_ptr = (struct part_record *)
+				   list_next(part_iterator);
+			if (part_ptr) {
+				job_ptr->part_ptr = part_ptr;
+			} else {
+				list_iterator_destroy(part_iterator);
+				part_iterator = NULL;
+				continue;
+			}
+		}
 
 		/* Test for valid account, QOS and required nodes on each pass */
 		if (job_ptr->state_reason == FAIL_ACCOUNT) {
@@ -446,9 +489,9 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 			assoc_rec.uid       = job_ptr->user_id;
 	
 			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-						    accounting_enforce,
-						    (slurmdb_association_rec_t **)
-						    &job_ptr->assoc_ptr)) {
+						     accounting_enforce,
+						     (slurmdb_association_rec_t **)
+						     &job_ptr->assoc_ptr)) {
 				job_ptr->state_reason = WAIT_NO_REASON;
 				job_ptr->assoc_id = assoc_rec.id;
 			} else {
@@ -548,6 +591,10 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 		break;
 	}
 	unlock_slurmctld(job_write_lock);
+	if (job_iterator)
+		list_iterator_destroy(job_iterator);
+	if (part_iterator)
+		list_iterator_destroy(part_iterator);
 
 send_reply:
 	if (launch_msg) {
@@ -581,11 +628,12 @@ send_reply:
  */
 extern int schedule(uint32_t job_limit)
 {
+	ListIterator job_iterator = NULL, part_iterator = NULL;
 	List job_queue = NULL;
 	int error_code, failed_part_cnt = 0, job_cnt = 0, i;
 	uint32_t job_depth = 0;
 	job_queue_rec_t *job_queue_rec;
-	struct job_record *job_ptr;
+	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr, **failed_parts = NULL;
 	bitstr_t *save_avail_node_bitmap;
 	/* Locks: Read config, write job, write node, read partition */
@@ -692,26 +740,67 @@ extern int schedule(uint32_t job_limit)
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 
 	debug("sched: Running job scheduler");
-	/* NOTE: If a job is submitted to multiple partitions then
-	 * build_job_queue will return a separate record for each
-	 * job:partition pair */
-	job_queue = build_job_queue(false);
-	slurmctld_diag_stats.schedule_queue_len = list_count(job_queue);
+	/*
+	 * If we are doing FIFO scheduling, use the job records right off the
+	 * job list.
+	 *
+	 * If a job is submitted to multiple partitions then build_job_queue()
+	 * will return a separate record for each job:partition pair.
+	 *
+	 * In both cases, we test each partition associated with the job.
+	 */
+	if (fifo_sched) {
+		slurmctld_diag_stats.schedule_queue_len = list_count(job_list);
+		job_iterator = list_iterator_create(job_list);
+		if (job_iterator == NULL)
+			fatal("list_iterator_create memory allocation failure");
+	} else {
+		job_queue = build_job_queue(false);
+		slurmctld_diag_stats.schedule_queue_len = list_count(job_queue);
+	}
 	while (1) {
 		if (fifo_sched) {
-			/* Eliminates sort for FIFO */
-			job_queue_rec = list_pop(job_queue);
+			if (job_ptr && part_iterator &&
+			    IS_JOB_PENDING(job_ptr))/* started in other part */
+				goto next_part;
+			job_ptr = (struct job_record *) list_next(job_iterator);
+			if (!job_ptr)
+				break;
+			if (!_job_runnable_test1(job_ptr, false))
+				continue;
+			if (job_ptr->part_ptr_list) {
+				part_iterator = list_iterator_create(
+							job_ptr->part_ptr_list);
+				if (!part_iterator)
+					fatal("list_iterator_create: malloc failure");
+next_part:			part_ptr = (struct part_record *)
+					   list_next(part_iterator);
+				if (part_ptr) {
+					job_ptr->part_ptr = part_ptr;
+					if (job_limits_check(&job_ptr) !=
+					    WAIT_NO_REASON)
+						continue;
+				} else {
+					list_iterator_destroy(part_iterator);
+					part_iterator = NULL;
+					continue;
+				}
+			} else {
+				if (!_job_runnable_test2(job_ptr))
+					continue;
+			}
 		} else {
 			job_queue_rec = list_pop_bottom(job_queue,
 							sort_job_queue2);
+			if (!job_queue_rec)
+				break;
+			job_ptr  = job_queue_rec->job_ptr;
+			part_ptr = job_queue_rec->part_ptr;
+			job_ptr->part_ptr = part_ptr;
+			xfree(job_queue_rec);
+			if (!IS_JOB_PENDING(job_ptr))
+				continue;  /* started in other partition */
 		}
-		if (!job_queue_rec)
-			break;
-		job_ptr  = job_queue_rec->job_ptr;
-		part_ptr = job_queue_rec->part_ptr;
-		/* Cycle through partitions usable for this job */
-		job_ptr->part_ptr = part_ptr;
-		xfree(job_queue_rec);
 		if ((time(NULL) - sched_start) >= sched_timeout) {
 			debug("sched: loop taking too long, breaking out");
 			break;
@@ -723,9 +812,6 @@ extern int schedule(uint32_t job_limit)
 		}
 
 		slurmctld_diag_stats.schedule_cycle_depth++;
-
-		if (!IS_JOB_PENDING(job_ptr))
-			continue;	/* started in other partition */
 
 		/* Test for valid account, QOS and required nodes on each pass */
 		if (job_ptr->state_reason == FAIL_ACCOUNT) {
@@ -941,7 +1027,14 @@ extern int schedule(uint32_t job_limit)
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	avail_node_bitmap = save_avail_node_bitmap;
 	xfree(failed_parts);
-	list_destroy(job_queue);
+	if (fifo_sched) {
+		if (job_iterator)
+			list_iterator_destroy(job_iterator);
+		if (part_iterator)
+			list_iterator_destroy(part_iterator);
+	} else {
+		FREE_NULL_LIST(job_queue);
+	}
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("schedule");
 

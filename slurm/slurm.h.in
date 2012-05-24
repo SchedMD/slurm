@@ -1120,12 +1120,24 @@ typedef struct job_info {
 	uint32_t wait4switch;   /* Maximum time to wait for minimum switches */
 	char *wckey;            /* wckey for job */
 	char *work_dir;		/* pathname of working directory */
-} job_info_t;
+} slurm_job_info_t;
+
+#ifndef __PERMAPI__H__
+/* If on an IBM PERCS machine the libpermapi.so file we generate in
+ * the switch/nrt plugin will need to link to this file and the
+ * permapi.h file which both have a job_info_t structure defined in
+ * it.  So to avoid conflict only define job_info_t if we haven't
+ * included that file first.  Then when in the libpermapi environment
+ * we can use slurm_job_info_t to access the job_info_t data.  If not
+ * in that environment we should never know anything changed.
+ */
+typedef slurm_job_info_t job_info_t;
+#endif
 
 typedef struct job_info_msg {
 	time_t last_update;	/* time of latest info */
 	uint32_t record_count;	/* number of records */
-	job_info_t *job_array;	/* the job records */
+	slurm_job_info_t *job_array;	/* the job records */
 } job_info_msg_t;
 
 typedef struct step_update_request_msg {
@@ -1842,7 +1854,9 @@ typedef struct slurm_ctl_conf {
 				    * the processes is aborted or crashed */
 	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL
 				 * on job termination */
+	char *launch_type;	/* type of step launcher to use */
 	char *licenses;		/* licenses available on this cluster */
+	char *licenses_used;	/* licenses used on this cluster */
 	char *mail_prog;	/* pathname of mail program */
 	uint32_t max_job_cnt;	/* maximum number of active jobs */
 	uint32_t max_job_id;	/* maximum job id before using first_job_id */
@@ -2702,7 +2716,7 @@ extern int slurm_pid2jobid PARAMS((pid_t job_pid, uint32_t * job_id_ptr));
  * IN job_ptr - an individual job information record pointer
  * IN one_liner - print as a single line if true
  */
-extern void slurm_print_job_info PARAMS((FILE*, job_info_t * job_ptr,
+extern void slurm_print_job_info PARAMS((FILE*, slurm_job_info_t * job_ptr,
 					 int one_liner));
 
 /*
@@ -2723,7 +2737,7 @@ extern void slurm_print_job_info_msg PARAMS(
  * RET out - char * containing formatted output (must be freed after call)
  *           NULL is returned on failure.
  */
-extern char *slurm_sprint_job_info PARAMS((job_info_t * job_ptr,
+extern char *slurm_sprint_job_info PARAMS((slurm_job_info_t * job_ptr,
 					   int one_liner));
 
 /*

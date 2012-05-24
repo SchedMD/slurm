@@ -1,17 +1,15 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of MPICH2 task spawn logic
+#          Basic UPC (Unified Parallel C) test via srun.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "WARNING: ..." with an explanation of why the test can't be made, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
-# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Morris Jette <jette1@llnl.gov>
-# CODE-OCEC-09-009. All rights reserved.
+# Copyright (C) 2012 SchedMD LLC.
+# Written by Morris Jette <jette@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.schedmd.com/slurmdocs/>.
@@ -33,61 +31,43 @@
 ############################################################################
 source ./globals
 
-set test_id            "1.94"
+set test_id            "1.95"
 set exit_code          0
 set file_in            "test$test_id.input"
 set file_out           "test$test_id.output"
 set file_err           "test$test_id.error"
-set master_prog        "test$test_id.master"
-set slave_prog         "test$test_id.slave"
+set test_prog          "test$test_id.prog"
 set job_id             0
+set task_cnt           6
 
 print_header $test_id
 
 #
-# Test for existence of mpi compiler
+# Test for existence of UPC compiler
 #
-if {[info exists mpicc] == 0} {
-	send_user "\nWARNING: mpicc not defined, can't perform mpi testing\n"
+if {[info exists upcc] == 0} {
+	send_user "\nWARNING: upcc not defined, can't perform mpi testing\n"
 	exit 0
 }
-if {[file executable $mpicc] == 0} {
-	send_user "\nWARNING: $mpicc does not exists\n"
+if {[file executable $upcc] == 0} {
+	send_user "\nWARNING: $upcc does not exists\n"
 	exit 0
 }
-#
-# Test is only works with mpi/pmi2 plugin.
-#
-set invalid 1
-log_user 0
-spawn $scontrol show config
-expect {
-	-re "pmi2" {
-		set invalid 0
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
+if {[test_front_end] != 0} {
+	send_user "\nWARNING: This test is incompatible with front-end systems\n"
+	exit 0
 }
-log_user 1
-if {$invalid == 1} {
-	send_user "\nWARNING: test compatible only with mpi/pmi2\n"
-	exit $exit_code
+if {[test_aix] == 1} {
+	send_user "WARNING: Test is incompatible with AIX\n"
+	exit 0
 }
 
 #
 # Delete left-over program and rebuild it
 #
-exec $bin_rm -f $file_in $file_out $file_err
-exec $bin_rm -f $master_prog ${master_prog}.o
-exec $bin_rm -f $slave_prog  ${slave_prog}.o
-exec $mpicc -o $master_prog  ${master_prog}.c
-exec $mpicc -o $slave_prog   ${slave_prog}.c
+exec $bin_rm -f $test_prog ${test_prog}.o
+exec $upcc -o $test_prog ${test_prog}.upc
+
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -96,7 +76,7 @@ file delete $file_out $file_err
 # Build input script file
 #
 make_bash_script $file_in "
-  $srun -n1 $master_prog $slave_prog
+  $srun -n $task_cnt $test_prog
 "
 
 #
@@ -104,7 +84,7 @@ make_bash_script $file_in "
 #
 set timeout $max_job_delay
 set no_start 0
-set sbatch_pid [spawn $sbatch -n4 --output=$file_out --error=$file_err -t1 $file_in]
+set sbatch_pid [spawn $sbatch -N1-3 -n $task_cnt --output=$file_out --error=$file_err -t1 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -151,35 +131,38 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 #
 # Check for desired output in stdout
 #
-set expected_msg 4
-set expected_sum 12
 if {[wait_for_file $file_out] == 0} {
-	set complete 0
-	set matches  0
-	set rank_sum 0
+	set matches  0 
+	set sum      0
+	set total    0
 	spawn $bin_cat $file_out
 	expect {
-                -re "Rank.($number). on $alpha_numeric_under just received msg from Rank ($number)" {
-			incr rank_sum $expect_out(1,string)
-			incr rank_sum $expect_out(2,string)
+		-re "Hello from ($number) of $task_cnt" {
 			incr matches
-                        exp_continue
-                }
-                eof {
+			incr sum $expect_out(1,string)
+			exp_continue
+		}
+		-re "Total is ($number)" {
+			set total $expect_out(1,string)
+			exp_continue
+		}
+		-re "Failed to mmap" {
+			send_user "\nFAILURE: insufficient shared memory. "
+			send_user "Rebuild UPCC with --disable-pshm option.\n"
+			exp_continue
+		}
+		eof {
 			wait
-                }
-        }
+		}
+	}
 	if {$matches == 0} {
-		send_user "\nFAILURE: No MPI communications occurred\n"
-		send_user "  The version of MPI you are using may be incompatible "
-		send_user "with the configured switch\n"
-		send_user "  Core files may be present from failed MPI tasks\n\n"
+		send_user "\nFAILURE: No UPC communications occurred\n"
 		set exit_code 1
-	} elseif {$matches != $expected_msg} {
-		send_user "\nFAILURE: unexpected output ($matches of $expected_msg)\n"
+	} elseif {$matches != $task_cnt} {
+		send_user "\nFAILURE: unexpected output ($matches of $task_cnt)\n"
 		set exit_code 1
-	} elseif {$rank_sum != $expected_sum} {
-		send_user "\nFAILURE: Invalid rank values ($rank_sum != $expected_sum)\n"
+	} elseif {$sum != $total} {
+		send_user "\nFAILURE: Problem with global variables ($sum != $total)\n"
 		set exit_code 1
 	}
 } else {
@@ -187,29 +170,10 @@ if {[wait_for_file $file_out] == 0} {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_err
-	exec $bin_rm -f $master_prog ${master_prog}.o
-	exec $bin_rm -f $slave_prog  ${slave_prog}.o
+	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
 	send_user "\nSUCCESS\n"
 } else {
-	set matches 0
-	spawn head $file_err
-	expect {
-		-re "Error creating CQ" {
-			incr matches
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	if {$matches != 0} {
-		send_user "WARNING: If using MVAPICH then\n"
-		send_user "         Configure \"PropagateResourceLimitsExcept=MEMLOCK\"\n"
-		send_user "         Also start slurmd with \"ulimit -l unlimited\"\n"
-	} else {
-		send_user "Check contents of $file_err\n"
-	}
+	send_user "Check contents of $file_err\n"
 }
 
 exit $exit_code

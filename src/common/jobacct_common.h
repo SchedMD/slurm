@@ -134,7 +134,7 @@ extern struct jobacctinfo *jobacct_common_remove_task(pid_t pid,
 /***************************************************************/
 
 
-/* defined in common_jobacct.c */
+/* defined in jobacct_common.c */
 extern pthread_mutex_t jobacct_lock;
 extern uint32_t jobacct_job_id;
 extern uint32_t jobacct_step_id;

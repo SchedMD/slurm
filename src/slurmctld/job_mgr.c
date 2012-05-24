@@ -186,7 +186,6 @@ static void _signal_job(struct job_record *job_ptr, int signal);
 static void _suspend_job(struct job_record *job_ptr, uint16_t op);
 static int  _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp);
 static bool _top_priority(struct job_record *job_ptr);
-static int  _validate_job_create_req(job_desc_msg_t * job_desc);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			       uid_t submit_uid, struct part_record *part_ptr);
 static void _validate_job_files(List batch_dirs);
@@ -3672,7 +3671,6 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 
 	if ((job_desc->max_nodes != NO_VAL) &&
 	    slurmctld_conf.enforce_part_limits &&
-	    job_desc->max_nodes &&
 	    (job_desc->max_nodes < min_nodes_orig)) {
 		info("_valid_job_part: job's max nodes less than partition's "
 		     "min nodes (%u < %u)",
@@ -3771,27 +3769,27 @@ extern int job_limits_check(struct job_record **job_pptr)
 	if ((job_min_nodes > part_max_nodes) &&
 	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
 				       & QOS_FLAG_PART_MAX_NODE)))) {
-		info("Job %u requested too many nodes (%u) of "
-		     "partition %s(MaxNodes %u)",
-		     job_ptr->job_id, job_min_nodes,
-		     part_ptr->name, part_max_nodes);
+		debug("Job %u requested too many nodes (%u) of "
+		      "partition %s(MaxNodes %u)",
+		      job_ptr->job_id, job_min_nodes,
+		      part_ptr->name, part_max_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
 	} else if ((job_max_nodes != 0) &&  /* no max_nodes for job */
 		   ((job_max_nodes < part_min_nodes) &&
 		    (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
 					       QOS_FLAG_PART_MIN_NODE))))) {
-		info("Job %u requested too few nodes (%u) of "
-		     "partition %s(MinNodes %u)",
-		     job_ptr->job_id, job_max_nodes,
-		     part_ptr->name, part_min_nodes);
+		debug("Job %u requested too few nodes (%u) of "
+		      "partition %s(MinNodes %u)",
+		      job_ptr->job_id, job_max_nodes,
+		      part_ptr->name, part_min_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
 	} else if (part_ptr->state_up == PARTITION_DOWN) {
-		info("Job %u requested down partition %s",
-		     job_ptr->job_id, part_ptr->name);
+		debug("Job %u requested down partition %s",
+		      job_ptr->job_id, part_ptr->name);
 		fail_reason = WAIT_PART_DOWN;
 	} else if (part_ptr->state_up == PARTITION_INACTIVE) {
-		info("Job %u requested inactive partition %s",
-		     job_ptr->job_id, part_ptr->name);
+		debug("Job %u requested inactive partition %s",
+		      job_ptr->job_id, part_ptr->name);
 		fail_reason = WAIT_PART_INACTIVE;
 	} else if ((((job_ptr->time_limit != NO_VAL) &&
 		     (job_ptr->time_limit > part_ptr->max_time)) ||
@@ -3799,15 +3797,15 @@ extern int job_limits_check(struct job_record **job_pptr)
 		     (job_ptr->time_min   > part_ptr->max_time))) &&
 		     (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
 		 			       QOS_FLAG_PART_TIME_LIMIT)))) {
-		info("Job %u exceeds partition time limit", job_ptr->job_id);
+		debug("Job %u exceeds partition time limit", job_ptr->job_id);
 		fail_reason = WAIT_PART_TIME_LIMIT;
 	} else if (qos_ptr && assoc_ptr &&
 		   (qos_ptr->flags & QOS_FLAG_ENFORCE_USAGE_THRES) &&
 		   (!fuzzy_equal(qos_ptr->usage_thres, NO_VAL))) {
-		if (!job_ptr->prio_factors)
+		if (!job_ptr->prio_factors) {
 			job_ptr->prio_factors =
 				xmalloc(sizeof(priority_factors_object_t));
-
+		}
 		if (!job_ptr->prio_factors->priority_fs) {
 			if (fuzzy_equal(assoc_ptr->usage->usage_efctv, NO_VAL))
 				priority_g_set_assoc_usage(assoc_ptr);
@@ -3817,10 +3815,13 @@ extern int job_limits_check(struct job_record **job_pptr)
 					(long double)assoc_ptr->usage->
 					shares_norm);
 		}
-		if (job_ptr->prio_factors->priority_fs < qos_ptr->usage_thres) {
-			info("Job %u exceeds usage threahold", job_ptr->job_id);
+		if (job_ptr->prio_factors->priority_fs < qos_ptr->usage_thres){
+			debug("Job %u exceeds usage threahold",
+			      job_ptr->job_id);
 			fail_reason = WAIT_QOS_THRES;
 		}
+	} else if (job_ptr->priority == 0) {   /* user or administrator hold */
+		fail_reason = WAIT_HELD;
 	}
 
 	return (fail_reason);
@@ -4135,9 +4136,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	if ((error_code =_validate_job_create_req(job_desc)))
-		goto cleanup;
-
 	if ((error_code = _copy_job_desc_to_job_record(job_desc,
 						       job_pptr,
 						       &req_bitmap,
@@ -4243,7 +4241,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		xfree(job_ptr->state_desc);
 	}
 
-cleanup:
 	FREE_NULL_LIST(license_list);
 	FREE_NULL_BITMAP(req_bitmap);
 	FREE_NULL_BITMAP(exc_bitmap);
@@ -4282,7 +4279,7 @@ static int _test_strlen(char *test_str, char *str_name, int max_str_len)
 /* Perform some size checks on strings we store to prevent
  * malicious user filling slurmctld's memory
  * RET 0 or error code */
-static int _validate_job_create_req(job_desc_msg_t * job_desc)
+extern int validate_job_create_req(job_desc_msg_t * job_desc)
 {
 	if (_test_strlen(job_desc->account, "account", 1024)		||
 	    _test_strlen(job_desc->alloc_node, "alloc_node", 1024)	||
@@ -8891,7 +8888,13 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		if (base_state == NODE_STATE_DOWN) {
 			debug("Epilog complete response for job %u from DOWN "
 			      "node %s", job_id, node_name);
+		} else if (job_ptr->restart_cnt) {
+			/* Duplicate epilog complete can be due to race
+			 * condition, especially with select/serial */
+			debug("Duplicate epilog complete response for job %u",
+			      job_id);
 		} else {
+
 			error("Epilog complete response for non-running job "
 			      "%u, slurmctld and slurmd out of sync", job_id);
 		}

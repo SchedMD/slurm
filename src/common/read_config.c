@@ -204,6 +204,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobSubmitPlugins", S_P_STRING},
 	{"KillOnBadExit", S_P_UINT16},
 	{"KillWait", S_P_UINT16},
+	{"LaunchType", S_P_STRING},
 	{"Licenses", S_P_STRING},
 	{"MailProg", S_P_STRING},
 	{"MaxJobCount", S_P_UINT32},
@@ -870,7 +871,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			    s_p_get_uint32(&p->def_mem_per_cpu,
 					   "DefMemPerCPU", dflt)) {
 				p->def_mem_per_cpu |= MEM_PER_CPU;
-			} {
+			} else {
 				p->def_mem_per_cpu = 0;
 			}
 		}
@@ -1836,7 +1837,9 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	xfree (ctl_conf_ptr->job_submit_plugins);
+	xfree (ctl_conf_ptr->launch_type);
 	xfree (ctl_conf_ptr->licenses);
+	xfree (ctl_conf_ptr->licenses_used);
 	xfree (ctl_conf_ptr->mail_prog);
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->mpi_params);
@@ -1857,7 +1860,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->sched_params);
 	xfree (ctl_conf_ptr->schedtype);
 	xfree (ctl_conf_ptr->select_type);
-	if(ctl_conf_ptr->select_conf_key_pairs)
+	if (ctl_conf_ptr->select_conf_key_pairs)
 		list_destroy((List)ctl_conf_ptr->select_conf_key_pairs);
 	xfree (ctl_conf_ptr->slurm_conf);
 	xfree (ctl_conf_ptr->slurm_user_name);
@@ -1944,6 +1947,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->job_requeue		= (uint16_t) NO_VAL;
 	xfree(ctl_conf_ptr->job_submit_plugins);
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
+	xfree (ctl_conf_ptr->launch_type);
 	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_prog);
 	ctl_conf_ptr->max_job_cnt		= (uint32_t) NO_VAL;
@@ -2570,6 +2574,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->kill_wait, "KillWait", hashtbl))
 		conf->kill_wait = DEFAULT_KILL_WAIT;
 
+	if (!s_p_get_string(&conf->launch_type, "LaunchType", hashtbl))
+		conf->launch_type = xstrdup(DEFAULT_LAUNCH_TYPE);
+
 	s_p_get_string(&conf->licenses, "Licenses", hashtbl);
 
 	if (!s_p_get_string(&conf->mail_prog, "MailProg", hashtbl))
@@ -2606,9 +2613,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->min_job_age, "MinJobAge", hashtbl))
 		conf->min_job_age = DEFAULT_MIN_JOB_AGE;
-	else if (conf->min_job_age < 5) {
-		info("WARNING: MinJobAge must be at least 5");
-		conf->min_job_age = 5;
+	else if (conf->min_job_age < 2) {
+		info("WARNING: MinJobAge must be at least 2");
+		conf->min_job_age = 2;
 	}
 
 	if (!s_p_get_string(&conf->mpi_default, "MpiDefault", hashtbl))

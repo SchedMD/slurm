@@ -89,9 +89,10 @@
 
 #include "src/api/pmi_server.h"
 
+#include "src/srun/debugger.h"
+#include "src/srun/launch.h"
 #include "src/srun/multi_prog.h"
 #include "src/srun/opt.h"
-#include "src/srun/debugger.h"
 
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE        0x00
@@ -1226,13 +1227,6 @@ static void set_options(const int argc, char **argv)
 			/* make other parameters look like debugger
 			 * is really attached */
 			opt.parallel_debug   = true;
-#if defined HAVE_BG_FILES && !defined HAVE_BGL && !defined HAVE_BGP
-			/* Use symbols from the runjob.so library provided by
-			 * IBM. Do NOT use debugger symbols local to the srun
-			 * command */
-#else
-			MPIR_being_debugged  = 1;
-#endif
 			opt.max_launch_time = 120;
 			opt.max_threads     = 1;
 			pmi_server_max_threads(opt.max_threads);
@@ -1396,13 +1390,6 @@ static void set_options(const int argc, char **argv)
 			opt.ramdiskimage = xstrdup(optarg);
 			break;
 		case LONG_OPT_REBOOT:
-#if defined HAVE_BG && !defined HAVE_BG_L_P
-			info("WARNING: If your job is smaller than the block "
-			     "it is going to run on and other jobs are "
-			     "running on it the --reboot option will not be "
-			     "honored.  If this is the case, contact your "
-			     "admin to reboot the block for you.");
-#endif
 			opt.reboot = true;
 			break;
 		case LONG_OPT_GET_USER_ENV:
@@ -1635,10 +1622,10 @@ static void _opt_args(int argc, char **argv)
 			opt.argc++;
 	}
 
+	/* Since this is needed on an emulated system don't put this code in
+	 * the launch plugin.
+	 */
 #if defined HAVE_BG && !defined HAVE_BG_L_P
-	/* A bit of setup for IBM's runjob.  runjob only has so many
-	   options, so it isn't that bad.
-	*/
 	int32_t node_cnt;
 	if (opt.max_nodes)
 		node_cnt = opt.max_nodes;
@@ -1721,124 +1708,14 @@ static void _opt_args(int argc, char **argv)
 		}
 	}
 
-#if defined HAVE_BG_FILES
-	if (!opt.test_only) {
-	 	/* Since we need the opt.argc to allocate the opt.argv array
-		 * we need to do this before actually messing with
-		 * things. All the extra options added to argv will be
-		 * handled after the allocation. */
-
-		/* Default location of the actual command to be ran. We always
-		 * have to add 3 options (calling prog, '--env-all' and ':') no
-		 * matter what. */
-		command_pos = 3;
-
-		if (opt.ntasks_per_node != NO_VAL)
-			command_pos += 2;
-		if (opt.ntasks_set)
-			command_pos += 2;
-		if (opt.cwd_set)
-			command_pos += 2;
-		if (opt.labelio)
-			command_pos += 2;
-		if (_verbose)
-			command_pos += 2;
-		if (opt.runjob_opts) {
-			char *save_ptr = NULL, *tok;
-			char *tmp = xstrdup(opt.runjob_opts);
-			tok = strtok_r(tmp, " ", &save_ptr);
-			while (tok) {
-				command_pos++;
-				tok = strtok_r(NULL, " ", &save_ptr);
-			}
-			xfree(tmp);
-		}
-
-		opt.argc += command_pos;
-	}
 #endif
 
-#endif
+	command_pos = launch_g_setup_srun_opt(rest);
 
-	/* One extra pointer is for a trailing NULL and a
-	 * second extra pointer is for arguments from the multi-prog file */
-	opt.argv = (char **) xmalloc((opt.argc + 2) * sizeof(char *));
-
+	/* Since this is needed on an emulated system don't put this code in
+	 * the launch plugin.
+	 */
 #if defined HAVE_BG && !defined HAVE_BG_L_P
-#if defined HAVE_BG_FILES
-	if (!opt.test_only) {
-		i = 0;
-		/* First arg has to be something when sending it to the
-		   runjob api.  This can be anything, srun seemed most
-		   logical, but it doesn't matter.
-		*/
-		opt.argv[i++] = xstrdup("srun");
-		/* srun launches tasks using runjob API. Slurmd is not used */
-		if (opt.ntasks_per_node != NO_VAL) {
-			opt.argv[i++]  = xstrdup("-p");
-			opt.argv[i++]  = xstrdup_printf("%d",
-							opt.ntasks_per_node);
-		}
-
-		if (opt.ntasks_set) {
-			opt.argv[i++]  = xstrdup("--np");
-			opt.argv[i++]  = xstrdup_printf("%d", opt.ntasks);
-		}
-
-		if (opt.cwd_set) {
-			opt.argv[i++]  = xstrdup("--cwd");
-			opt.argv[i++]  = xstrdup(opt.cwd);
-		}
-
-		if (opt.labelio) {
-			opt.argv[i++]  = xstrdup("--label");
-			opt.argv[i++]  = xstrdup("short");
-			/* Since we are getting labels from runjob. and we
-			 * don't want 2 sets (slurm's will always be 000)
-			 * remove it case. */
-			opt.labelio = 0;
-		}
-
-		if (_verbose) {
-			opt.argv[i++]  = xstrdup("--verbose");
-			opt.argv[i++]  = xstrdup_printf("%d", _verbose);
-		}
-
-		if (opt.runjob_opts) {
-			char *save_ptr = NULL, *tok;
-			char *tmp = xstrdup(opt.runjob_opts);
-			tok = strtok_r(tmp, " ", &save_ptr);
-			while (tok) {
-				opt.argv[i++]  = xstrdup(tok);
-				tok = strtok_r(NULL, " ", &save_ptr);
-			}
-			xfree(tmp);
-		}
-
-		/* Export all the environment so the runjob_mux will get the
-		 * correct info about the job, namely the block. */
-		opt.argv[i++] = xstrdup("--env-all");
-
-		/* With runjob anything after a ':' is treated as the actual
-		 * job, which in this case is exactly what it is.  So, very
-		 * sweet. */
-		opt.argv[i++] = xstrdup(":");
-
-		/* Sanity check to make sure we set it up correctly. */
-		if (i != command_pos) {
-			fatal ("command_pos is set to %d but we are going to "
-			       "put it at %d, please update src/srun/opt.c",
-			       command_pos, i);
-		}
-
-		/* Set default job name to the executable name rather than
-		 * "runjob" */
-		if (!opt.job_name_set_cmd && (command_pos < opt.argc)) {
-			opt.job_name_set_cmd = true;
-			opt.job_name = xstrdup(rest[0]);
-		}
-	}
-#endif
 	if (opt.test_only && !opt.jobid_set && (opt.jobid != NO_VAL)) {
 		/* Do not perform allocate test, only disable use of "runjob" */
 		opt.test_only = false;
@@ -2532,7 +2409,7 @@ static void _opt_list(void)
 /* Determine if srun is under the control of a parallel debugger or not */
 static bool _under_parallel_debugger (void)
 {
-#if defined HAVE_BG_FILES && !defined HAVE_BGL && !defined HAVE_BGP
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
 	/* Use symbols from the runjob.so library provided by IBM.
 	 * Do NOT use debugger symbols local to the srun command */
 	return false;

@@ -831,18 +831,41 @@ that the \fB\-\-cpus\-per\-task\fR option will change this default.
 .TP
 \fB\-\-network\fR=<\fItype\fR>
 Specify the communication protocol to be used.
-This option is supported on AIX systems.
-Since POE is used to launch tasks, this option is not normally used or
-is specified using the \fBSLURM_NETWORK\fR environment variable.
 The interpretation of \fItype\fR is system dependent.
-For systems with an IBM Federation switch, the following
-comma\-separated and case insensitive types are recognized:
-\fBIP\fR (the default is user\-space), \fBSN_ALL\fR, \fBSN_SINGLE\fR,
-\fBBULK_XFER\fR and adapter names  (e.g. \fBSNI0\fR and \fBSNI1\fR).
-For more information, on IBM systems see \fIpoe\fR documentation on
-the environment variables \fBMP_EUIDEVICE\fR and \fBMP_USE_BULK_XFER\fR.
-Note that only four jobs steps may be active at once on a node with the
-\fBBULK_XFER\fR option due to limitations in the Federation switch driver.
+This option is current supported on systems with IBM's Parallel Environment (PE).
+See IBM's LoadLeveler job command keyword documentation about the keyword
+"network" for more information.
+Multiple values may be specified in a comma separated list.
+Supported values include:
+.RS
+.TP 12
+\fBBULK_XFER\fR
+Enable bulk transfer of data using Remote Direct-Memory Access (RDMA)
+.TP
+\fBIPV4\fR
+Use Internet Protocol (IP) version 4 communications (default)
+.TP
+\fBIPV6\fR
+Use Internet Protocol (IP) version 6 communications
+.TP
+\fBLAPI\fR
+Use the LAPI protocol
+.TP
+\fBPAMI\fR
+Use the PAMI protocol
+.TP
+\fBSN_ALL\fR
+Use all available switch networks (default)
+.TP
+\fBSN_SINGLE\fR
+Use one available switch networks
+.TP
+\fBUS\fR
+Use User Space communications
+.TP
+Specific adapter name
+One specific adapter name may be specified (e.g. "eth0")
+.RE
 
 .TP
 \fB\-\-nice\fR[=\fIadjustment\fR]
@@ -1381,8 +1404,15 @@ standard input of \fBsrun\fR to all remote tasks.
 If stdin is only to be read by a subset of the spawned tasks, specifying a
 file to read from rather than forwarding stdin from the \fBsrun\fR command may
 be preferable as it avoids moving and storing data that will never be read.
+.PP
 For OS X, the poll() function does not support stdin, so input from
 a terminal is not possible.
+.PP
+For BGQ srun only supports stdin to 1 task running on the system.  By
+default it is taskid 0 but can be changed with the \-i<taskid> as
+described below, or \-\-runjob\-opt="\-\-stdinrank=<taskid>".  Outside
+of the taskid option none of the options below are available for a BGQ system.
+.PP
 This behavior may be changed with the
 \fB\-\-output\fR, \fB\-\-error\fR, and \fB\-\-input\fR
 (\fB\-o\fR, \fB\-e\fR, \fB\-i\fR) options. Valid format specifications
@@ -1397,14 +1427,14 @@ stdin is broadcast to all remote tasks.
 stdout and stderr is not received from any task.
 stdin is not sent to any task (stdin is closed).
 .TP
-\fItaskid\fR
+\fBtaskid\fR
 stdout and/or stderr are redirected from only the task with relative
 id equal to \fItaskid\fR, where 0 <= \fItaskid\fR <= \fIntasks\fR,
 where \fIntasks\fR is the total number of tasks in the current job step.
 stdin is redirected from the stdin of \fBsrun\fR to this same task.
 This file will be written on the node executing the task.
 .TP
-\fIfilename\fR
+\fBfilename\fR
 \fBsrun\fR will redirect stdout and/or stderr to the named file from
 all tasks.
 stdin will be redirected from the named file and broadcast to all
@@ -1413,7 +1443,7 @@ that runs \fBsrun\fR.  Depending on the cluster's file system layout,
 this may result in the output appearing in different places depending
 on whether the job is run in batch mode.
 .TP
-format string
+\fBformat string\fR
 \fBsrun\fR allows for a format string to be used to generate the
 named IO file
 described above. The following list of format specifiers may be

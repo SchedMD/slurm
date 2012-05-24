@@ -45,6 +45,9 @@ print_header $test_id
 if {[test_front_end] != 0} {
 	send_user "\nWARNING: This test is incompatible with front-end systems\n"
 	exit 0
+} elseif {[test_serial]} {
+	send_user "\nWARNING: This test is incomatible with front-end systems\n"
+	exit 0
 }
 
 #

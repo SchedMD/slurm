@@ -1,11 +1,8 @@
 /*****************************************************************************\
- **  federation_keys.h - Key definitions used by the get_jobinfo functions
- **  $Id$
+ *  launch.h - Define job launch plugin functions.
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Jason King <jking@llnl.gov>
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) 2012 SchedMD LLC
+ *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.schedmd.com/slurmdocs/>.
@@ -37,25 +34,44 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _FEDERATION_KEYS_INCLUDED
-#define _FEDERATION_KEYS_INCLUDED
+#ifndef _LAUNCH_H
+#define _LAUNCH_H
 
-#define FED_ADAPTERNAME_LEN 5
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif /* HAVE_CONFIG_H */
 
-enum {
-	/* Federation specific get_jobinfo keys */
-	FED_JOBINFO_TABLEINFO,
-	FED_JOBINFO_TABLESPERTASK,
-	FED_JOBINFO_KEY,
-	FED_JOBINFO_PROTOCOL,
-	FED_JOBINFO_MODE
-};
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
-/* Information shared between slurm_ll_api and the slurm federation driver */
-typedef struct fed_tableinfo {
-	uint32_t table_length;
-	NTBL **table;
-	char adapter_name[FED_ADAPTERNAME_LEN];
-} fed_tableinfo_t;
+#include "src/common/xstring.h"
 
-#endif /* _FEDERATION_KEYS_INCLUDED */
+#include "src/srun/srun_job.h"
+#include "src/srun/opt.h"
+#include "src/srun/debugger.h"
+
+extern slurm_step_layout_t *launch_common_get_slurm_step_layout(
+	srun_job_t *job);
+
+extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
+					 void (*signal_function)(int),
+					 sig_atomic_t *destroy_job);
+
+extern int launch_init(void);
+extern int launch_fini(void);
+extern int launch_g_setup_srun_opt(char **rest);
+
+extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
+				    void (*signal_function)(int),
+				    sig_atomic_t *destroy_job);
+extern int launch_g_step_launch(
+	srun_job_t *job, slurm_step_io_fds_t *cio_fds,
+	uint32_t *global_rc, bool got_alloc);
+
+extern int launch_g_step_terminate(void);
+
+extern void launch_g_print_status(void);
+
+extern void launch_g_fwd_signal(int signal);
+
+#endif /* _LAUNCH_H */

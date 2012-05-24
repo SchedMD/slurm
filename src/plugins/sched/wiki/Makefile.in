@@ -57,9 +57,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
 	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
-	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
-	$(top_srcdir)/auxdir/x_ac_federation.m4 \
 	$(top_srcdir)/auxdir/x_ac_gpl_licensed.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_iso.m4 \
@@ -67,6 +65,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
+	$(top_srcdir)/auxdir/x_ac_nrt.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
 	$(top_srcdir)/auxdir/x_ac_printf_null.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
@@ -173,9 +172,7 @@ ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
-ELAN_LIBS = @ELAN_LIBS@
 EXEEXT = @EXEEXT@
-FEDERATION_LDFLAGS = @FEDERATION_LDFLAGS@
 FGREP = @FGREP@
 GREP = @GREP@
 GTK_CFLAGS = @GTK_CFLAGS@
@@ -183,9 +180,8 @@ GTK_LIBS = @GTK_LIBS@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
-HAVE_ELAN = @HAVE_ELAN@
-HAVE_FEDERATION = @HAVE_FEDERATION@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
+HAVE_NRT = @HAVE_NRT@
 HAVE_OPENSSL = @HAVE_OPENSSL@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
@@ -217,6 +213,8 @@ MYSQL_LIBS = @MYSQL_LIBS@
 NCURSES = @NCURSES@
 NM = @NM@
 NMEDIT = @NMEDIT@
+NRT_CPPFLAGS = @NRT_CPPFLAGS@
+NRT_LDFLAGS = @NRT_LDFLAGS@
 NUMA_LIBS = @NUMA_LIBS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
@@ -244,6 +242,7 @@ PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_LIBS = @PTHREAD_LIBS@
 RANLIB = @RANLIB@
 READLINE_LIBS = @READLINE_LIBS@
+REAL_BGQ_LOADED = @REAL_BGQ_LOADED@
 REAL_BG_L_P_LOADED = @REAL_BG_L_P_LOADED@
 RELEASE = @RELEASE@
 RUNJOB_LDFLAGS = @RUNJOB_LDFLAGS@

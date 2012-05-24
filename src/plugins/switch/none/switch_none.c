@@ -120,7 +120,7 @@ int switch_p_alloc_jobinfo ( switch_jobinfo_t **switch_job )
 }
 
 int switch_p_build_jobinfo ( switch_jobinfo_t *switch_job, char *nodelist,
-		uint16_t *tasks_per_node, int cyclic_alloc, char *network)
+		uint16_t *tasks_per_node,  uint32_t **tids, char *network )
 {
 	return SLURM_SUCCESS;
 }
@@ -179,7 +179,8 @@ int switch_p_job_preinit ( switch_jobinfo_t *jobinfo )
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_init ( switch_jobinfo_t *jobinfo, uid_t uid )
+extern int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid,
+			      char *job_name)
 {
 	return SLURM_SUCCESS;
 }

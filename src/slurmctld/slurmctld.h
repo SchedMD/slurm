@@ -1820,6 +1820,11 @@ extern int validate_alloc_node(struct part_record *part_ptr, char* alloc_node);
  */
 extern int validate_group (struct part_record *part_ptr, uid_t run_uid);
 
+/* Perform some size checks on strings we store to prevent
+ * malicious user filling slurmctld's memory
+ * RET 0 or error code */
+extern int validate_job_create_req(job_desc_msg_t * job_desc);
+
 /*
  * validate_jobs_on_node - validate that any jobs that should be on the node
  *	are actually running, if not clean up the job records and/or node

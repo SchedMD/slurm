@@ -150,7 +150,8 @@ int check_header_version(header_t * header)
 		case REQUEST_UPDATE_NODE:
 		case REQUEST_UPDATE_PARTITION:
 		case REQUEST_UPDATE_RESERVATION:
-			if ((header->version == SLURM_2_3_PROTOCOL_VERSION) ||
+			if ((header->version == SLURM_2_4_PROTOCOL_VERSION) ||
+			    (header->version == SLURM_2_3_PROTOCOL_VERSION) ||
 			    (header->version == SLURM_2_2_PROTOCOL_VERSION) ||
 			    (header->version == SLURM_2_1_PROTOCOL_VERSION))
 				break;

@@ -105,6 +105,7 @@ cset partition ""
 # OR for other versions of MPICH, use this
 cset mpicc       "/usr/local/bin/mpicc"
 cset use_pmi	0
+cset upcc       "/usr/local/bin/upcc"
 
 # If using XCPU job launch, specify directory location as needed
 cset xcpu_dir	"/mnt/xcpu"

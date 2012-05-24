@@ -78,182 +78,58 @@ typedef struct slurm_checkpoint_ops {
 					uint16_t protocol_version);
 	int     (*ckpt_stepd_prefork) (void *slurmd_job);
 	int     (*ckpt_signal_tasks) (void *slurmd_job, char *image_dir);
-	int     (*ckpt_restart_task) (void *slurmd_job, char *image_dir, int gtid);
+	int     (*ckpt_restart_task) (void *slurmd_job, char *image_dir,
+				      int gtid);
 } slurm_checkpoint_ops_t;
 
 /*
- * A global job completion context.  "Global" in the sense that there's
- * only one, with static bindings.  We don't export it.
+ * These strings must be kept in the same order as the fields
+ * declared for slurm_checkpoint_ops_t.
  */
-
-struct slurm_checkpoint_context {
-	char *			checkpoint_type;
-	plugrack_t		plugin_list;
-	plugin_handle_t		cur_plugin;
-	int			checkpoint_errno;
-	slurm_checkpoint_ops_t	ops;
+static const char *syms[] = {
+	"slurm_ckpt_op",
+	"slurm_ckpt_comp",
+	"slurm_ckpt_task_comp",
+	"slurm_ckpt_alloc_job",
+	"slurm_ckpt_free_job",
+	"slurm_ckpt_pack_job",
+	"slurm_ckpt_unpack_job",
+	"slurm_ckpt_stepd_prefork",
+	"slurm_ckpt_signal_tasks",
+	"slurm_ckpt_restart_task"
 };
 
-static slurm_checkpoint_context_t g_context = NULL;
+static slurm_checkpoint_ops_t ops;
+static plugin_context_t *g_context = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
-
-static slurm_checkpoint_context_t
-_slurm_checkpoint_context_create( const char *checkpoint_type )
-{
-	slurm_checkpoint_context_t c;
-
-	if ( checkpoint_type == NULL ) {
-		debug3( "_slurm_checkpoint_context_create: no checkpoint type");
-		return NULL;
-	}
-
-	c = xmalloc( sizeof( struct slurm_checkpoint_context ) );
-
-	c->checkpoint_errno = SLURM_SUCCESS;
-
-	/* Copy the job completion job completion type. */
-	c->checkpoint_type = xstrdup( checkpoint_type );
-	if ( c->checkpoint_type == NULL ) {
-		debug3( "can't make local copy of checkpoint type" );
-		xfree( c );
-		return NULL;
-	}
-
-	/* Plugin rack is demand-loaded on first reference. */
-	c->plugin_list = NULL;
-	c->cur_plugin = PLUGIN_INVALID_HANDLE;
-
-	return c;
-}
-
-static int
-_slurm_checkpoint_context_destroy( slurm_checkpoint_context_t c )
-{
-	int rc = SLURM_SUCCESS;
-	/*
-	 * Must check return code here because plugins might still
-	 * be loaded and active.
-	 */
-	if ( c->plugin_list ) {
-		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
-			rc = SLURM_ERROR;
-		}
-	} else {
-		plugin_unload(c->cur_plugin);
-	}
-
-	xfree( c->checkpoint_type );
-	xfree( c );
-
-	return rc;
-}
-
-/*
- * Resolve the operations from the plugin.
- */
-static slurm_checkpoint_ops_t *
-_slurm_checkpoint_get_ops( slurm_checkpoint_context_t c )
-{
-        /*
-         * These strings must be kept in the same order as the fields
-         * declared for slurm_checkpoint_ops_t.
-         */
-	static const char *syms[] = {
-		"slurm_ckpt_op",
-		"slurm_ckpt_comp",
-		"slurm_ckpt_task_comp",
-		"slurm_ckpt_alloc_job",
-		"slurm_ckpt_free_job",
-		"slurm_ckpt_pack_job",
-		"slurm_ckpt_unpack_job",
-		"slurm_ckpt_stepd_prefork",
-		"slurm_ckpt_signal_tasks",
-		"slurm_ckpt_restart_task"
-	};
-        int n_syms = sizeof( syms ) / sizeof( char * );
-
-	/* Find the correct plugin. */
-        c->cur_plugin = plugin_load_and_link(c->checkpoint_type, n_syms, syms,
-					     (void **) &c->ops);
-        if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
-        	return &c->ops;
-
-	if(errno != EPLUGIN_NOTFOUND) {
-		error("Couldn't load specified plugin name for %s: %s",
-		      c->checkpoint_type, plugin_strerror(errno));
-		return NULL;
-	}
-
-	error("Couldn't find the specified plugin name for %s "
-	      "looking at all files",
-	      c->checkpoint_type);
-
-        /* Get the plugin list, if needed. */
-        if ( c->plugin_list == NULL ) {
-		char *plugin_dir;
-                c->plugin_list = plugrack_create();
-                if ( c->plugin_list == NULL ) {
-                        error( "Unable to create a plugin manager" );
-                        return NULL;
-                }
-
-                plugrack_set_major_type( c->plugin_list, "checkpoint" );
-                plugrack_set_paranoia( c->plugin_list,
-				       PLUGRACK_PARANOIA_NONE,
-				       0 );
-		plugin_dir = slurm_get_plugin_dir();
-                plugrack_read_dir( c->plugin_list, plugin_dir );
-		xfree(plugin_dir);
-        }
-
-        /* Find the correct plugin. */
-        c->cur_plugin =
-		plugrack_use_by_type( c->plugin_list, c->checkpoint_type );
-        if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
-                error( "can't find a plugin for type %s", c->checkpoint_type );
-                return NULL;
-        }
-
-        /* Dereference the API. */
-        if ( plugin_get_syms( c->cur_plugin,
-                              n_syms,
-                              syms,
-                              (void **) &c->ops ) < n_syms ) {
-                error( "incomplete checkpoint plugin detected" );
-                return NULL;
-        }
-
-        return &c->ops;
-}
 
 /* initialize checkpoint plugin */
 extern int
-checkpoint_init(char *checkpoint_type)
+checkpoint_init(char *type)
 {
 	int retval = SLURM_SUCCESS;
+	char *plugin_type = "checkpoint";
 
-	slurm_mutex_lock( &context_lock );
+	if (g_context)
+		return retval;
 
-	if ( g_context )
-		_slurm_checkpoint_context_destroy(g_context);
-	g_context = _slurm_checkpoint_context_create( checkpoint_type );
-	if ( g_context == NULL ) {
-		error( "cannot create a context for %s", checkpoint_type );
-		xfree(checkpoint_type);
+	slurm_mutex_lock(&context_lock);
+
+	if (g_context)
+		plugin_context_destroy(g_context);
+
+	g_context = plugin_context_create(
+		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+
+	if (!g_context) {
+		error("cannot create %s context for %s", plugin_type, type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
 
-	if ( _slurm_checkpoint_get_ops( g_context ) == NULL ) {
-		error( "cannot resolve checkpoint plugin operations" );
-		_slurm_checkpoint_context_destroy( g_context );
-		g_context = NULL;
-		retval = SLURM_ERROR;
-	}
-	verbose("Checkpoint plugin loaded: %s", checkpoint_type);
-
+	verbose("Checkpoint plugin loaded: %s", type);
 done:
-	slurm_mutex_unlock( &context_lock );
+	slurm_mutex_unlock(&context_lock);
 	return retval;
 }
 
@@ -263,12 +139,12 @@ checkpoint_fini(void)
 {
 	int rc;
 
-	if ( !g_context )
+	if (!g_context)
 		return SLURM_SUCCESS;
 
-	slurm_mutex_lock( &context_lock );
-	rc =_slurm_checkpoint_context_destroy(g_context);
-	slurm_mutex_unlock( &context_lock );
+	slurm_mutex_lock(&context_lock);
+	rc = plugin_context_destroy(g_context);
+	slurm_mutex_unlock(&context_lock);
 	return rc;
 }
 
@@ -284,7 +160,7 @@ checkpoint_op(uint32_t job_id, uint32_t step_id,
 
 	slurm_mutex_lock( &context_lock );
 	if ( g_context ) {
-		retval = (*(g_context->ops.ckpt_op))(
+		retval = (*(ops.ckpt_op))(
 			job_id, step_id,
 			(struct step_record *) step_ptr,
 			op, data, image_dir,
@@ -305,7 +181,7 @@ checkpoint_comp(void * step_ptr, time_t event_time, uint32_t error_code,
 
 	slurm_mutex_lock( &context_lock );
 	if ( g_context )
-		retval = (*(g_context->ops.ckpt_comp))(
+		retval = (*(ops.ckpt_comp))(
 			(struct step_record *) step_ptr,
 			event_time, error_code, error_msg);
 	else {
@@ -324,7 +200,7 @@ checkpoint_task_comp(void * step_ptr, uint32_t task_id, time_t event_time,
 
 	slurm_mutex_lock( &context_lock );
 	if ( g_context )
-		retval = (*(g_context->ops.ckpt_task_comp))(
+		retval = (*(ops.ckpt_task_comp))(
 			(struct step_record *) step_ptr, task_id,
 			event_time, error_code, error_msg);
 	else {
@@ -342,8 +218,7 @@ extern int checkpoint_alloc_jobinfo(check_jobinfo_t *jobinfo)
 
 	slurm_mutex_lock( &context_lock );
 	if ( g_context )
-		retval = (*(g_context->ops.ckpt_alloc_jobinfo))(
-			jobinfo);
+		retval = (*(ops.ckpt_alloc_jobinfo))(jobinfo);
 	else {
 		error ("slurm_checkpoint plugin context not initialized");
 		retval = ENOENT;
@@ -359,8 +234,7 @@ extern int checkpoint_free_jobinfo(check_jobinfo_t jobinfo)
 
 	slurm_mutex_lock( &context_lock );
 	if ( g_context )
-		retval = (*(g_context->ops.ckpt_free_jobinfo))(
-			jobinfo);
+		retval = (*(ops.ckpt_free_jobinfo))(jobinfo);
 	else {
 		error ("slurm_checkpoint plugin context not initialized");
 		retval = ENOENT;
@@ -377,7 +251,7 @@ extern int  checkpoint_pack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer,
 
 	slurm_mutex_lock( &context_lock );
 	if ( g_context )
-		retval = (*(g_context->ops.ckpt_pack_jobinfo))(
+		retval = (*(ops.ckpt_pack_jobinfo))(
 			jobinfo, buffer, protocol_version);
 	else {
 		error ("slurm_checkpoint plugin context not initialized");
@@ -394,7 +268,7 @@ extern int  checkpoint_unpack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer,
 
 	slurm_mutex_lock( &context_lock );
 	if ( g_context )
-		retval = (*(g_context->ops.ckpt_unpack_jobinfo))(
+		retval = (*(ops.ckpt_unpack_jobinfo))(
 			jobinfo, buffer, protocol_version);
 	else {
 		error ("slurm_checkpoint plugin context not initialized");
@@ -410,7 +284,7 @@ extern int checkpoint_stepd_prefork (void *job)
 
         slurm_mutex_lock( &context_lock );
         if ( g_context )
-                retval = (*(g_context->ops.ckpt_stepd_prefork))(job);
+                retval = (*(ops.ckpt_stepd_prefork))(job);
         else {
                 error ("slurm_checkpoint plugin context not initialized");
                 retval = ENOENT;
@@ -425,7 +299,7 @@ extern int checkpoint_signal_tasks (void *job, char *image_dir)
 
         slurm_mutex_lock( &context_lock );
         if ( g_context )
-                retval = (*(g_context->ops.ckpt_signal_tasks))(job, image_dir);
+                retval = (*(ops.ckpt_signal_tasks))(job, image_dir);
         else {
                 error ("slurm_checkpoint plugin context not initialized");
                 retval = ENOENT;
@@ -441,8 +315,7 @@ extern int checkpoint_restart_task (void *job, char *image_dir, int gtid)
 
         slurm_mutex_lock( &context_lock );
         if ( g_context ) {
-                retval = (*(g_context->ops.ckpt_restart_task))(job, image_dir,
-							       gtid);
+                retval = (*(ops.ckpt_restart_task))(job, image_dir, gtid);
         } else {
                 error ("slurm_checkpoint plugin context not initialized");
                 retval = ENOENT;

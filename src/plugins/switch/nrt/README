@@ -1,0 +1,26 @@
+1. Configuration file nrt.conf
+1A. Add nrt.conf man page
+1B. Add nrt.conf example
+1C. Modify nrt.conf parsing and data structures to support adapter_type
+
+2. NRT APIs
+2A. Convert all Federation switch API calls to Torrent switch API calls
+    (largely completed as part of evaluation, but largely untested)
+2B. Convert Federation switch data structures to Torrent switch data structures
+    Add adapter type
+    In the adapter resources, how "spigot" used?
+    "lid" and "network_id" are now arrays, how are they used?
+    Resolve window state incompatabilities (data structure union, IB or HPCE)
+    Remove adapter memory specifications (done)
+    Many window and adapter fields that do remain have different sizes
+    We have no details about the differences in data structures between IB and HPCE,
+       but code changes for that will clearly be needed
+    (started as part of evaluation, but the work is untested)
+
+3. POE support
+3A. Data structures needed to allocate resources to job are similar, but require some mods
+    Minor changes needed to job credential
+3B. Task launch completely new
+    Pass window allocation information using socket
+3C. Elimination of POE would require IBM to expose details of network communications
+    Likely major effort and not possible without close cooperation with IBM

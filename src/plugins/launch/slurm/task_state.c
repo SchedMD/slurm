@@ -47,7 +47,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/xassert.h"
 
-#include "src/srun/task_state.h"
+#include "src/plugins/launch/slurm/task_state.h"
 
 struct task_state_struct {
 	int n_tasks;

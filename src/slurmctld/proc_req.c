@@ -77,6 +77,7 @@
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_scheduler.h"
+#include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
@@ -528,7 +529,9 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->kill_wait           = conf->kill_wait;
 	conf_ptr->kill_on_bad_exit    = conf->kill_on_bad_exit;
 
+	conf_ptr->launch_type         = xstrdup(conf->launch_type);
 	conf_ptr->licenses            = xstrdup(conf->licenses);
+	conf_ptr->licenses_used       = get_licenses_used();
 
 	conf_ptr->mail_prog           = xstrdup(conf->mail_prog);
 	conf_ptr->max_job_cnt         = conf->max_job_cnt;
@@ -793,6 +796,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		error("REQUEST_RESOURCE_ALLOCATE lacks alloc_node from uid=%d",
 		      uid);
 	}
+	if (error_code == SLURM_SUCCESS)
+		error_code = validate_job_create_req(job_desc_msg);
 #if HAVE_CRAY
 	/*
 	 * Catch attempts to nest salloc sessions. It is not possible to use an
@@ -1632,7 +1637,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	}
 
 	if (run_sched)
-		(void) schedule(0);
+		(void) schedule(0);		/* Has own locking */
 	if (dump_job)
 		(void) schedule_job_save();	/* Has own locking */
 	if (dump_node)
@@ -1826,6 +1831,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 		error_code = ESLURM_INVALID_NODE_NAME;
 		error("REQUEST_JOB_WILL_RUN lacks alloc_node from uid=%d", uid);
 	}
+	if (error_code == SLURM_SUCCESS)
+		error_code = validate_job_create_req(job_desc_msg);
 	slurm_get_peer_addr(msg->conn_fd, &resp_addr);
 	job_desc_msg->resp_host = xmalloc(16);
 	slurm_get_ip_str(&resp_addr, &port, job_desc_msg->resp_host, 16);
@@ -2559,6 +2566,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		error_code = ESLURM_INVALID_NODE_NAME;
 		error("REQUEST_SUBMIT_BATCH_JOB lacks alloc_node from uid=%d", uid);
 	}
+	if (error_code == SLURM_SUCCESS)
+		error_code = validate_job_create_req(job_desc_msg);
 	dump_job_desc(job_desc_msg);
 	if (error_code == SLURM_SUCCESS) {
 		lock_slurmctld(job_write_lock);
@@ -2665,7 +2674,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		schedule(0);		/* has own locks */
+		schedule(2);		/* has own locks */
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
 	}

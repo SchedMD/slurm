@@ -205,7 +205,6 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 	int sock = -1;
 	short port = 0;
 	int errnum = 0;
-	int cyclic = (step_params->task_dist == SLURM_DIST_CYCLIC);
 
 	/* First copy the user's step_params into a step request struct */
 	step_req = _create_step_request(step_params);
@@ -238,7 +237,8 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 	if (switch_build_jobinfo(step_resp->switch_job,
 				 step_resp->step_layout->node_list,
 				 step_resp->step_layout->tasks,
-				 cyclic, step_req->network) < 0)
+				 step_resp->step_layout->tids,
+				 step_req->network) < 0)
 		fatal("switch_build_jobinfo: %m");
 
 
