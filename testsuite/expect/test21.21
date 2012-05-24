@@ -45,6 +45,11 @@ set ta		slurm_test-account.1
 set timeout 60
 print_header $test_id
 
+if {[test_serial]} {
+	send_user "\nWARNING: This test is not compatible with serial system\n"
+	exit 0
+}
+
 proc _test_limits { } {
 	global file_in srun sbatch squeue scancel bin_id number bin_sleep bin_rm ta
 	# test maxcpumin maxcpu maxjob maxnode maxsubmit maxwall
@@ -135,7 +140,7 @@ proc _test_limits { } {
 			exp_continue
 		}
 		-re "Submitted batch job ($number)" {
-			send_user "\nFAILURE: job should not have run.\n"
+			send_user "\nFAILURE: job should not have run 3.\n"
 			set exit_code 1
 			exp_continue
 		}
