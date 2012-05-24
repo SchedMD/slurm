@@ -54,12 +54,14 @@ if {[file executable $mpicc] == 0} {
 	send_user "\nWARNING: $mpicc does not exists\n"
 	exit 0
 }
-if {[test_front_end] != 0} {
+if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit 0
-}
-if {[test_aix] == 1} {
+} elseif {[test_aix]} {
 	send_user "WARNING: Test is incompatible with AIX\n"
+	exit 0
+} elseif {[test_serial]} {
+	send_user "WARNING: Test is incompatible with serial system\n"
 	exit 0
 }
 
