@@ -726,7 +726,7 @@ extern int launch_p_step_launch(
 		error("pipe: %m");
 		return 1;
 	}
-	info("calling %s", opt.argv[0]);
+
 	pid = fork();
 	if (pid < 0) {
 		/* (void) close(stdin_pipe[0]); */
@@ -764,10 +764,8 @@ extern int launch_p_step_launch(
 	(void) close(stdout_pipe[1]);
 	(void) close(stderr_pipe[1]);
 
-	info("partition = %s", opt.partition);
 	/* NOTE: dummy_pipe is only used to wake the select() function in the
 	 * loop below when the spawned process terminates */
-	info("done with exec");
 	return rc;
 }
 
@@ -777,7 +775,6 @@ extern int launch_p_step_terminate(void)
 		(void) unlink(cmd_fname);
 	if (stepid_fname)
 		(void) unlink(stepid_fname);
-	info("finishing");
 	return SLURM_SUCCESS;
 }
 
