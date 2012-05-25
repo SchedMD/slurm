@@ -45,6 +45,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   300 seconds.
 * Added new "SchedulerParameters" of "bf_max_job_user", maximum number of jobs
   to attempt backfilling per user.
+* Modify SchedulerParamters option to match documentation: "bf_res="
+  changed to "bf_resolution=".
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
