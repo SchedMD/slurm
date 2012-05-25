@@ -526,6 +526,7 @@ enum node_states {
  * Values can be can be ORed */
 #define SHOW_ALL	0x0001	/* Show info for "hidden" partitions */
 #define SHOW_DETAIL	0x0002	/* Show detailed resource information */
+#define SHOW_DETAIL2	0x0004	/* Show batch script listing */
 
 /* Define keys for ctx_key argument of slurm_step_ctx_get() */
 enum ctx_keys {
