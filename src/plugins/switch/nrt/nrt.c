@@ -813,7 +813,6 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 			ib_table += task_id;
 			strncpy(ib_table->device_name, adapter->adapter_name,
 				NRT_MAX_DEVICENAME_SIZE);
-			ib_table += task_id;
 			ib_table->base_lid = base_lid;
 			ib_table->port_id  = 1;
 			ib_table->lmc      = 0;
