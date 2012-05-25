@@ -2415,7 +2415,10 @@ nrt_copy_jobinfo(slurm_nrt_jobinfo_t *job)
 	new->tableinfo = (nrt_tableinfo_t *) xmalloc(job->tables_per_task *
 						     sizeof(nrt_table_info_t));
 	for (i = 0; i < job->tables_per_task; i++) {
-		if (job->tableinfo->adapter_type == NRT_IB) {
+		if (!job->user_space ||
+		    (job->tableinfo->adapter_type == NRT_IPONLY)) {
+			base_size = sizeof(nrt_ip_task_info_t);
+		} else if (job->tableinfo->adapter_type == NRT_IB) {
 			base_size = sizeof(nrt_ib_task_info_t);
 		} else if (job->tableinfo->adapter_type == NRT_HFI) {
 			base_size = sizeof(nrt_hfi_task_info_t);
