@@ -2175,6 +2175,7 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, nrt_adapter_t adapter_type,
 				NRT_MAX_DEVICENAME_SIZE, buf);
 			pack32(ib_tbl_ptr->base_lid, buf);
 			pack8(ib_tbl_ptr->lmc, buf);
+			pack32(ib_tbl_ptr->node_number, buf);
 			pack8(ib_tbl_ptr->port_id, buf);
 			pack32(ib_tbl_ptr->task_id, buf);
 			pack16(ib_tbl_ptr->win_id, buf);
@@ -2276,6 +2277,7 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, nrt_adapter_t adapter_type,
 				goto unpack_error;
 			safe_unpack32(&ib_tbl_ptr->base_lid, buf);
 			safe_unpack8(&ib_tbl_ptr->lmc, buf);
+			safe_unpack32(&ib_tbl_ptr->node_number, buf);
 			safe_unpack8(&ib_tbl_ptr->port_id, buf);
 			safe_unpack32(&ib_tbl_ptr->task_id, buf);
 			safe_unpack16(&ib_tbl_ptr->win_id, buf);
