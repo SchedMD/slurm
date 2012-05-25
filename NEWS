@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     Bringhurst (LANL).
  -- BGQ - Fix issue when running with AllowSubBlockAllocations=Yes without
     compiling with --enable-debug
+ -- Modify scontrol to require "-dd" option to report batch job's script. Patch
+    from Don Albert, Bull.
 
 * Changes in SLURM 2.4.0.rc1
 =============================

@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.4
-10 May 2012
+25 May 2012
 
 
 IMPORTANT NOTE:
@@ -70,6 +70,8 @@ COMMAND CHANGES (see man pages for details)
   was specified. Added output format of "%R" to print partition name only
   without identifying the default partition with "*").
 * Added cpu_run_min to the output of sshare --long.
+* Modify scontrol to require "-dd" option to report batch job's script.
+
 
 OTHER CHANGES
 =============
