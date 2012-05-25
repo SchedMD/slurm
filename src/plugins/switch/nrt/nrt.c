@@ -160,13 +160,13 @@ static nrt_cache_entry_t lid_cache[NRT_MAX_ADAPTERS];
 static char *	_adapter_type_str(nrt_adapter_t type);
 static int	_allocate_windows_all(int adapter_cnt,
 			nrt_tableinfo_t *tableinfo, char *hostname,
-			int node_id, nrt_task_id_t task_id,
+			uint32_t node_id, nrt_task_id_t task_id,
 			nrt_job_key_t job_key,
 			nrt_adapter_t adapter_type, nrt_logical_id_t base_lid,
 			bool user_space, bool ip_v4);
 static int	_allocate_window_single(char *adapter_name,
 			nrt_tableinfo_t *tableinfo, char *hostname,
-			int node_id, nrt_task_id_t task_id,
+			uint32_t node_id, nrt_task_id_t task_id,
 			nrt_job_key_t job_key,
 			nrt_adapter_t adapter_type, nrt_logical_id_t base_lid,
 			bool user_space, bool ip_v4);
@@ -744,10 +744,11 @@ _find_free_window(slurm_nrt_adapter_t *adapter)
  */
 static int
 _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
-		      char *hostname, int node_id, nrt_task_id_t task_id,
+		      char *hostname, uint32_t node_id, nrt_task_id_t task_id,
 		      nrt_job_key_t job_key, nrt_adapter_t adapter_type,
 		      nrt_logical_id_t base_lid, bool user_space, bool ip_v4)
 {
+	nrt_node_number_t node_number;
 	slurm_nrt_nodeinfo_t *node;
 	slurm_nrt_adapter_t *adapter;
 	slurm_nrt_window_t *window;
@@ -761,6 +762,19 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 	if (node == NULL) {
 		error("Failed to find node in node_list: %s", hostname);
 		return SLURM_ERROR;
+	}
+
+	/* From Bill LePera, IBM, 4/18/2012:
+	 * The node_number field is normally set to the 32-bit IPv4 address
+	 * of the local node's host name. */
+	node_number = node_id;	/* Default value is sequence number */
+	for (i = 0; i < node->adapter_count; i++) {
+		adapter = &node->adapter_list[i];
+		if (adapter->adapter_type == NRT_IPONLY) {
+			memcpy(&node_number, &adapter->ipv4_addr,
+			       sizeof(node_number));
+			break;
+		}
 	}
 
 	/* Reserve a window on each adapter for this task */
@@ -783,7 +797,7 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 			nrt_ip_task_info_t *ip_table;
 			ip_table = (nrt_ip_task_info_t *) tableinfo[i].table;
 			ip_table += task_id;
-			ip_table->node_number  = node_id;
+			ip_table->node_number  = node_number;
 			ip_table->task_id      = task_id;
 			if (ip_v4) {
 				memcpy(&ip_table->ip.ipv4_addr,
@@ -803,12 +817,12 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 			ib_table->base_lid = base_lid;
 			ib_table->port_id  = 1;
 			ib_table->lmc      = 0;
+			ib_table->node_number = node_number;
 			ib_table->task_id  = task_id;
 			ib_table->win_id   = window->window_id;
 		} else if (adapter_type == NRT_HFI) {
 			nrt_hfi_task_info_t *hfi_table;
 			hfi_table = (nrt_hfi_task_info_t *) tableinfo[i].table;
-			hfi_table += task_id;
 			hfi_table += task_id;
 			hfi_table->task_id = task_id;
 			hfi_table->win_id = window->window_id;
@@ -835,10 +849,12 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
  */
 static int
 _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
-			char *hostname, int node_id, nrt_task_id_t task_id,
-			nrt_job_key_t job_key, nrt_adapter_t adapter_type,
-			nrt_logical_id_t base_lid, bool user_space, bool ip_v4)
+			char *hostname, uint32_t node_id,
+			nrt_task_id_t task_id, nrt_job_key_t job_key,
+			nrt_adapter_t adapter_type, nrt_logical_id_t base_lid,
+			bool user_space, bool ip_v4)
 {
+	nrt_node_number_t node_number;
 	slurm_nrt_nodeinfo_t *node;
 	slurm_nrt_adapter_t *adapter = NULL;
 	slurm_nrt_window_t *window;
@@ -852,6 +868,19 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 	if (node == NULL) {
 		error("Failed to find node in node_list: %s", hostname);
 		return SLURM_ERROR;
+	}
+
+	/* From Bill LePera, IBM, 4/18/2012:
+	 * The node_number field is normally set to the 32-bit IPv4 address
+	 * of the local node's host name. */
+	node_number = node_id;	/* Default value is sequence number */
+	for (i = 0; i < node->adapter_count; i++) {
+		adapter = &node->adapter_list[i];
+		if (adapter->adapter_type == NRT_IPONLY) {
+			memcpy(&node_number, &adapter->ipv4_addr,
+			       sizeof(node_number));
+			break;
+		}
 	}
 
 	/* find the adapter */
@@ -887,7 +916,7 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 		nrt_ip_task_info_t *ip_table;
 		ip_table = (nrt_ip_task_info_t *) tableinfo[0].table;
 		ip_table += task_id;
-		ip_table->node_number  = node_id;
+		ip_table->node_number  = node_number;
 		ip_table->task_id      = task_id;
 		if (ip_v4) {
 			memcpy(&ip_table->ip.ipv4_addr,
@@ -906,12 +935,12 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 		ib_table->base_lid = base_lid;
 		ib_table->port_id  = 1;
 		ib_table->lmc      = 0;
+		ib_table->node_number = node_number;
 		ib_table->task_id  = task_id;
 		ib_table->win_id   = window->window_id;
 	} else if (adapter_type == NRT_HFI) {
 		nrt_hfi_task_info_t *hfi_table;
 		hfi_table = (nrt_hfi_task_info_t *) tableinfo[0].table;
-		hfi_table += task_id;
 		hfi_table += task_id;
 		hfi_table->task_id = task_id;
 		hfi_table->win_id = window->window_id;
@@ -1086,6 +1115,7 @@ _print_libstate(const slurm_nrt_libstate_t *l)
 static void
 _print_table(void *table, int size, nrt_adapter_t adapter_type, bool ip_v4)
 {
+	char addr_str[128];
 	int i;
 
 	assert(table);
@@ -1099,6 +1129,9 @@ _print_table(void *table, int size, nrt_adapter_t adapter_type, bool ip_v4)
 			ib_tbl_ptr += i;
 			info("  task_id: %u", ib_tbl_ptr->task_id);
 			info("  win_id: %hu", ib_tbl_ptr->win_id);
+			inet_ntop(AF_INET, &ib_tbl_ptr->node_number, addr_str,
+				  sizeof(addr_str));
+			info("  node_number: %s", addr_str);
 			info("  node_number: %u", ib_tbl_ptr->node_number);
 			info("  device_name: %s", ib_tbl_ptr->device_name);
 			info("  base_lid: %u", ib_tbl_ptr->base_lid);
@@ -1120,6 +1153,9 @@ _print_table(void *table, int size, nrt_adapter_t adapter_type, bool ip_v4)
 			ip_tbl_ptr = table;
 			ip_tbl_ptr += i;
 			info("  task_id: %u", ip_tbl_ptr->task_id);
+			inet_ntop(AF_INET, &ip_tbl_ptr->node_number, addr_str,
+				  sizeof(addr_str));
+			info("  node_number: %s", addr_str);
 			info("  node_number: %u", ip_tbl_ptr->node_number);
 			if (ip_v4) {
 				inet_ntop(AF_INET, &ip_tbl_ptr->ip.ipv4_addr,
