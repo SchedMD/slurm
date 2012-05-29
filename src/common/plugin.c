@@ -100,8 +100,11 @@ const char * plugin_strerror(plugin_err_t e)
 			return ("Dlopen of plugin file failed");
 		case EPLUGIN_INIT_FAILED:
 			return ("Plugin init() callback failed");
-		case EPLUGIN_MISSING_SYMBOL:
+		case EPLUGIN_MISSING_NAME:
 			return ("Plugin name/type/version symbol missing");
+		case EPLUGIN_MISSING_SYMBOL:
+			return ("Plugin missing a required symbol use "
+				"debug3 to see");
 	}
 	return ("Unknown error");
 }
@@ -188,7 +191,7 @@ plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 	    (dlsym(plug, PLUGIN_TYPE) == NULL) ||
 	    (dlsym(plug, PLUGIN_VERSION) == NULL)) {
 		dlclose (plug);
-		return EPLUGIN_MISSING_SYMBOL;
+		return EPLUGIN_MISSING_NAME;
 	}
 
 	/*
