@@ -53,12 +53,14 @@ if {[file executable $upcc] == 0} {
 	send_user "\nWARNING: $upcc does not exists\n"
 	exit 0
 }
-if {[test_front_end] != 0} {
+if {[test_front_end]} {
 	send_user "\nWARNING: This test is incompatible with front-end systems\n"
 	exit 0
-}
-if {[test_aix] == 1} {
+} elseif {[test_aix]} {
 	send_user "WARNING: Test is incompatible with AIX\n"
+	exit 0
+} elseif {[test_serial]} {
+	send_user "WARNING: Test is incompatible with serial system\n"
 	exit 0
 }
 
@@ -67,7 +69,6 @@ if {[test_aix] == 1} {
 #
 exec $bin_rm -f $test_prog ${test_prog}.o
 exec $upcc -o $test_prog ${test_prog}.upc
-
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err

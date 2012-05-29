@@ -1,17 +1,15 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Basic test of MPI functionality via srun
+#          Basic SHMEM test via srun.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "WARNING: ..." with an explanation of why the test can't be made, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
-# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Morris Jette <jette1@llnl.gov>
-# CODE-OCEC-09-009. All rights reserved.
+# Copyright (C) 2012 SchedMD LLC.
+# Written by Morris Jette <jette@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.schedmd.com/slurmdocs/>.
@@ -33,35 +31,28 @@
 ############################################################################
 source ./globals
 
-set test_id            "1.88"
+set test_id            "1.96"
 set exit_code          0
 set file_in            "test$test_id.input"
 set file_out           "test$test_id.output"
 set file_err           "test$test_id.error"
 set test_prog          "test$test_id.prog"
 set job_id             0
+set task_cnt           4
 
 print_header $test_id
 
-#
-# Test for existence of mpi compiler
-#
-if {[info exists mpicc] == 0} {
-	send_user "\nWARNING: mpicc not defined, can't perform mpi testing\n"
-	exit 0
-}
-if {[file executable $mpicc] == 0} {
-	send_user "\nWARNING: $mpicc does not exists\n"
-	exit 0
-}
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit 0
+	send_user "\nWARNING: This test is incompatible with front-end systems\n"
+	exit 0
 } elseif {[test_aix]} {
 	send_user "WARNING: Test is incompatible with AIX\n"
 	exit 0
 } elseif {[test_serial]} {
 	send_user "WARNING: Test is incompatible with serial system\n"
+	exit 0
+} elseif {![file exists /usr/include/mpp/shmem.h]} {
+	send_user "\nWARNING: /usr/include/mpp/shmem.h does not exists\n"
 	exit 0
 }
 
@@ -69,13 +60,7 @@ if {[test_front_end]} {
 # Delete left-over program and rebuild it
 #
 exec $bin_rm -f $test_prog ${test_prog}.o
-if {$use_pmi} {
-	set pmi_link "-rpath $slurm_dir/lib -L $slurm_dir/lib -lpmi"
-	exec $mpicc -Xlinker $pmi_link -o $test_prog ${test_prog}.c
-} else {
-	exec $mpicc -o $test_prog ${test_prog}.c
-}
-
+exec $bin_cc -o $test_prog ${test_prog}.c -lshmem
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -84,24 +69,7 @@ file delete $file_out $file_err
 # Build input script file
 #
 make_bash_script $file_in "
-  $bin_date
-  $bin_echo test1_N3_n6_cyclic
-  $srun -n6 --distribution=cyclic $test_prog
-
-  $bin_date
-  $bin_echo test2_n6_block
-  $srun -n6 --distribution=block  $test_prog
-
-  $bin_date
-  $bin_echo test3_n4_cyclic
-  $srun -n4 --distribution=cyclic $test_prog
-
-  $bin_date
-  $bin_echo test4_n4_block
-  $srun -n4 --distribution=block  $test_prog
-
-  $bin_date
-  $bin_echo TEST_COMPLETE
+  $srun -n $task_cnt $test_prog
 "
 
 #
@@ -109,7 +77,7 @@ make_bash_script $file_in "
 #
 set timeout $max_job_delay
 set no_start 0
-set sbatch_pid [spawn $sbatch -N3 -n6 --output=$file_out --error=$file_err -t1 $file_in]
+set sbatch_pid [spawn $sbatch -N1 -n $task_cnt --output=$file_out --error=$file_err -t1 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -156,42 +124,22 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 #
 # Check for desired output in stdout
 #
-set expected_msg [expr 6 + 6 + 4 + 4]
-set expected_sum [expr 30 + 30 + 12 + 12]
 if {[wait_for_file $file_out] == 0} {
-	set complete 0
-	set matches  0
-	set rank_sum 0
+	set matches 0
+
 	spawn $bin_cat $file_out
 	expect {
-                -re "Rank.($number). on $alpha_numeric_under just received msg from Rank ($number)" {
-			incr rank_sum $expect_out(1,string)
-			incr rank_sum $expect_out(2,string)
+		-re "PE ($number): 1,2,3,4,5,6,7,8" {
 			incr matches
-                        exp_continue
-                }
-		-re "TEST_COMPLETE" {
-			incr complete
 			exp_continue
 		}
-                eof {
+		eof {
 			wait
-                }
-        }
-	if {$matches == 0} {
-		send_user "\nFAILURE: No MPI communications occurred\n"
-		send_user "  The version of MPI you are using may be incompatible "
-		send_user "with the configured switch\n"
-		send_user "  Core files may be present from failed MPI tasks\n\n"
-		set exit_code 1
-	} elseif {$matches != $expected_msg} {
-		send_user "\nFAILURE: unexpected output ($matches of $expected_msg)\n"
-		set exit_code 1
-	} elseif {$complete == 0} {
-		send_user "\nFAILURE: test failed to complete\n"
-		set exit_code 1
-	} elseif {$rank_sum != $expected_sum} {
-		send_user "\nFAILURE: Invalid rank values ($rank_sum != $expected_sum)\n"
+		}
+	}
+	incr task_cnt -1
+	if {$matches != $task_cnt} {
+		send_user "\nFAILURE: unexpected output ($matches of $task_cnt)\n"
 		set exit_code 1
 	}
 } else {
@@ -202,24 +150,7 @@ if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
 	send_user "\nSUCCESS\n"
 } else {
-	set matches 0
-	spawn head $file_err
-	expect {
-		-re "Error creating CQ" {
-			incr matches
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	if {$matches != 0} {
-		send_user "WARNING: If using MVAPICH then\n"
-		send_user "         Configure \"PropagateResourceLimitsExcept=MEMLOCK\"\n"
-		send_user "         Also start slurmd with \"ulimit -l unlimited\"\n"
-	} else {
-		send_user "Check contents of $file_err\n"
-	}
+	send_user "Check contents of $file_err\n"
 }
 
 exit $exit_code

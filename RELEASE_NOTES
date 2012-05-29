@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.4
-10 May 2012
+25 May 2012
 
 
 IMPORTANT NOTE:
@@ -45,6 +45,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   300 seconds.
 * Added new "SchedulerParameters" of "bf_max_job_user", maximum number of jobs
   to attempt backfilling per user.
+* Modify SchedulerParamters option to match documentation: "bf_res="
+  changed to "bf_resolution=".
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
@@ -70,6 +72,8 @@ COMMAND CHANGES (see man pages for details)
   was specified. Added output format of "%R" to print partition name only
   without identifying the default partition with "*").
 * Added cpu_run_min to the output of sshare --long.
+* Modify scontrol to require "-dd" option to report batch job's script.
+
 
 OTHER CHANGES
 =============

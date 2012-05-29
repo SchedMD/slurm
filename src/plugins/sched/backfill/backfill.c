@@ -379,8 +379,12 @@ static void _load_config(void)
 		fatal("Invalid backfill scheduler max_job_bf: %d",
 		      max_backfill_job_cnt);
 	}
+	/* "bf_res=" is vestigial from version 2.3 and can be removed later.
+	 * Only "bf_resolution=" is documented. */
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_res=")))
 		backfill_resolution = atoi(tmp_ptr + 7);
+	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_resolution=")))
+		backfill_resolution = atoi(tmp_ptr + 14);
 	if (backfill_resolution < 1) {
 		fatal("Invalid backfill scheduler resolution: %d",
 		      backfill_resolution);

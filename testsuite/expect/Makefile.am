@@ -107,6 +107,8 @@ EXTRA_DIST = \
 	test1.94.slave.c		\
 	test1.95			\
 	test1.95.prog.upc		\
+	test1.96			\
+	test1.96.prog.c			\
 	test2.1				\
 	test2.2				\
 	test2.3				\

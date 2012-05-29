@@ -18,6 +18,11 @@ documents those changes that are of interest to users and admins.
     Bringhurst (LANL).
  -- BGQ - Fix issue when running with AllowSubBlockAllocations=Yes without
     compiling with --enable-debug
+ -- Modify scontrol to require "-dd" option to report batch job's script. Patch
+    from Don Albert, Bull.
+ -- Modify SchedulerParamters option to match documentation: "bf_res="
+    changed to "bf_resolution=". Patch from Rod Schultz, Bull.
+ -- Fix bug that clears job pending reason field. Patch fron Don Lipari, LLNL.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
