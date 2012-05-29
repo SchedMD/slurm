@@ -53,6 +53,7 @@
 #include "src/common/list.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"

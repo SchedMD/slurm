@@ -38,6 +38,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <sys/stat.h>
+
 #include "src/sacctmgr/sacctmgr.h"
 #include <sys/param.h>		/* MAXPATHLEN */
 #include "src/common/proc_args.h"

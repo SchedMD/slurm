@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Add new output to "scontrol show configuration" of LicensesUsed. Output is
     "name:used/total"
+ -- Changed jobacct_gather plugin infrastructure to be cleaner and easier to
+    maintain.
 
 * Changes in SLURM 2.4.0.rc2
 =============================

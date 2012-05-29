@@ -41,7 +41,7 @@
 
 #include "src/common/xcgroup.h"
 #include "src/common/xcpuinfo.h"
-#include "src/common/jobacct_common.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/xcgroup_read_config.h"
 
 extern xcgroup_t task_memory_cg;

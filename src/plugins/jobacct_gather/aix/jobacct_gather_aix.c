@@ -42,7 +42,7 @@
 
 #include <signal.h>
 #include "src/common/slurm_xlator.h"
-#include "src/common/jobacct_common.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmd/common/proctrack.h"
@@ -52,16 +52,6 @@
 #include <sys/types.h>
 #define NPROCS 5000
 #endif
-
-/* These are defined here so when we link with something other than
- * the slurmd we will have these symbols defined.  They will get
- * overwritten when linking with the slurmd.
- */
-uint32_t jobacct_job_id;
-pthread_mutex_t jobacct_lock;
-uint32_t jobacct_mem_limit;
-uint32_t jobacct_step_id;
-uint32_t jobacct_vmem_limit;
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -94,14 +84,10 @@ uint32_t jobacct_vmem_limit;
  */
 const char plugin_name[] = "Job accounting gather AIX plugin";
 const char plugin_type[] = "jobacct_gather/aix";
-const uint32_t plugin_version = 100;
+const uint32_t plugin_version = 200;
 
 /* Other useful declarations */
-static bool jobacct_shutdown = 0;
-static bool jobacct_suspended = 0;
-static List task_list = NULL;
-static uint64_t cont_id = (uint64_t)NO_VAL;
-static bool pgid_plugin = false;
+static int pagesize = 0;
 
 #ifdef HAVE_AIX
 typedef struct prec {	/* process record */
@@ -114,15 +100,9 @@ typedef struct prec {	/* process record */
 	float	vsize;	/* max virtual size */
 } prec_t;
 
-static int freq = 0;
-static int pagesize = 0;
-
 /* Finally, pre-define all the routines. */
 
-static void _acct_kill_step(void);
 static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
-static void _get_process_data();
-static void *_watch_tasks(void *arg);
 static void _destroy_prec(void *object);
 
 /* system call to get process table */
@@ -179,20 +159,24 @@ static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid)
 }
 
 /*
- * _get_process_data() - Build a table of all current processes
+ * jobacct_gather_p_poll_data() - Build a table of all current processes
  *
- * IN:	pid.
+ * IN/OUT: task_list - list containing current processes.
+ * IN: pgid_plugin - if we are running with the pgid plugin.
+ * IN: cont_id - container id of processes if not running with pgid.
  *
  * OUT:	none
  *
-  * THREADSAFE! Only one thread ever gets here.
+ * THREADSAFE! Only one thread ever gets here.  It is locked in
+ * slurm_jobacct_gather.
  *
  * Assumption:
  *    Any file with a name of the form "/proc/[0-9]+/stat"
  *    is a Linux-style stat entry. We disregard the data if they look
  *    wrong.
  */
-static void _get_process_data(void)
+extern void jobacct_gather_p_poll_data(
+	List task_list, bool pgid_plugin, uint64_t cont_id)
 {
 	struct procsinfo proc;
 	pid_t *pids = NULL;
@@ -229,7 +213,7 @@ static void _get_process_data(void)
 		}
 		for (i = 0; i < npids; i++) {
 			pid = pids[i];
-			if(!getprocs(&proc, sizeof(proc), 0, 0, &pid, 1))
+			if (!getprocs(&proc, sizeof(proc), 0, 0, &pid, 1))
 				continue; /* Assume the process went away */
 			prec = xmalloc(sizeof(prec_t));
 			list_append(prec_list, prec);
@@ -249,7 +233,7 @@ static void _get_process_data(void)
 /*    		      prec->vsize, proc.pi_tsize, proc.pi_dvm, pagesize);  */
 		}
 	} else {
-		while(getprocs(&proc, sizeof(proc), 0, 0, &pid, 1) == 1) {
+		while (getprocs(&proc, sizeof(proc), 0, 0, &pid, 1) == 1) {
 			prec = xmalloc(sizeof(prec_t));
 			list_append(prec_list, prec);
 			prec->pid = proc.pi_pid;
@@ -268,18 +252,18 @@ static void _get_process_data(void)
 /*    		      prec->vsize, proc.pi_tsize, proc.pi_dvm, pagesize);  */
 		}
 	}
-	if(!list_count(prec_list))
+	if (!list_count(prec_list))
 		goto finished;
 
 	slurm_mutex_lock(&jobacct_lock);
-	if(!task_list || !list_count(task_list)) {
+	if (!task_list || !list_count(task_list)) {
 		slurm_mutex_unlock(&jobacct_lock);
 		goto finished;
 	}
 	itr = list_iterator_create(task_list);
-	while((jobacct = list_next(itr))) {
+	while ((jobacct = list_next(itr))) {
 		itr2 = list_iterator_create(prec_list);
-		while((prec = list_next(itr2))) {
+		while ((prec = list_next(itr2))) {
 			//debug2("pid %d ? %d", prec->ppid, jobacct->pid);
 			if (prec->pid == jobacct->pid) {
 				/* find all my descendents */
@@ -309,37 +293,8 @@ static void _get_process_data(void)
 		list_iterator_destroy(itr2);
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&jobacct_lock);
 
-	if (jobacct_mem_limit) {
-		debug("Step %u.%u memory used:%u limit:%u KB",
-		      jobacct_job_id, jobacct_step_id, 
-		      total_job_mem, jobacct_mem_limit);
-	}
-	if (jobacct_job_id && jobacct_mem_limit &&
-	    (total_job_mem > jobacct_mem_limit)) {
-		if (jobacct_step_id == NO_VAL) {
-			error("Job %u exceeded %u KB memory limit, being "
- 			      "killed", jobacct_job_id, jobacct_mem_limit);
-		} else {
-			error("Step %u.%u exceeded %u KB memory limit, being "
-			      "killed", jobacct_job_id, jobacct_step_id, 
-			      jobacct_mem_limit);
-		}
-		_acct_kill_step();
-	} else if (jobacct_job_id && jobacct_vmem_limit &&
-	    (total_job_vsize > jobacct_vmem_limit)) {
-		if (jobacct_step_id == NO_VAL) {
-			error("Job %u exceeded %u KB virtual memory limit, "
-			      "being killed", jobacct_job_id, 
-			      jobacct_vmem_limit);
-		} else {
-			error("Step %u.%u exceeded %u KB virtual memory "
-			      "limit, being killed", jobacct_job_id, 
-			      jobacct_step_id, jobacct_vmem_limit);
-		}
-		_acct_kill_step();
-	}
+	jobacct_gather_handle_mem_limit(total_job_mem, total_job_vsize);
 
 finished:
 	list_destroy(prec_list);
@@ -347,44 +302,6 @@ finished:
 
 	return;
 }
-
-/* _acct_kill_step() issue RPC to kill a slurm job step */
-static void _acct_kill_step(void)
-{
-	slurm_msg_t msg;
-	job_step_kill_msg_t req;
-
-	slurm_msg_t_init(&msg);
-	/*
-	 * Request message:
-	 */
-	req.job_id      = jobacct_job_id;
-	req.job_step_id = jobacct_step_id;
-	req.signal      = SIGKILL;
-	req.batch_flag  = 0;
-	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
-	msg.data        = &req;
-
-	slurm_send_only_controller_msg(&msg);
-}
-
-/* _watch_tasks() -- monitor slurm jobs and track their memory usage
- *
- * IN, OUT:	Irrelevant; this is invoked by pthread_create()
- */
-
-static void *_watch_tasks(void *arg)
-{
-
-	while (!jobacct_shutdown) { /* Do this until shutdown is requested */
-		if (!jobacct_suspended) {
-			_get_process_data();	/* Update the data */
-		}
-		sleep(freq);
-	}
-	return NULL;
-}
-
 
 static void _destroy_prec(void *object)
 {
@@ -401,22 +318,7 @@ static void _destroy_prec(void *object)
  */
 extern int init ( void )
 {
-	char *temp = slurm_get_proctrack_type();
-	if(!strcasecmp(temp, "proctrack/pgid")) {
-		info("WARNING: We will use a much slower algorithm with "
-		     "proctrack/pgid, use Proctracktype=proctrack/aix "
-		     "with %s", plugin_name);
-		pgid_plugin = true;
-	}
-	xfree(temp);
-	temp = slurm_get_accounting_storage_type();
-	if(!strcasecmp(temp, ACCOUNTING_STORAGE_TYPE_NONE)) {
-		error("WARNING: Even though we are collecting accounting "
-		      "information you have asked for it not to be stored "
-		      "(%s) if this is not what you have in mind you will "
-		      "need to change it.", ACCOUNTING_STORAGE_TYPE_NONE);
-	}
-	xfree(temp);
+	pagesize = getpagesize()/1024;
 
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
@@ -427,199 +329,13 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern struct jobacctinfo *jobacct_gather_p_create(jobacct_id_t *jobacct_id)
-{
-	return jobacct_common_alloc_jobacct(jobacct_id);
-}
-
-extern void jobacct_gather_p_destroy(struct jobacctinfo *jobacct)
-{
-	jobacct_common_free_jobacct(jobacct);
-}
-
-extern int jobacct_gather_p_setinfo(struct jobacctinfo *jobacct,
-				    enum jobacct_data_type type, void *data)
-{
-	return jobacct_common_setinfo(jobacct, type, data);
-
-}
-
-extern int jobacct_gather_p_getinfo(struct jobacctinfo *jobacct,
-				    enum jobacct_data_type type, void *data)
-{
-	return jobacct_common_getinfo(jobacct, type, data);
-}
-
-extern void jobacct_gather_p_pack(struct jobacctinfo *jobacct,
-				  uint16_t rpc_version, Buf buffer)
-{
-	jobacct_common_pack(jobacct, rpc_version, buffer);
-}
-
-extern int jobacct_gather_p_unpack(struct jobacctinfo **jobacct,
-				   uint16_t rpc_version, Buf buffer)
-{
-	return jobacct_common_unpack(jobacct, rpc_version, buffer);
-}
-
-extern void jobacct_gather_p_aggregate(struct jobacctinfo *dest,
-				       struct jobacctinfo *from)
-{
-	jobacct_common_aggregate(dest, from);
-}
-
-/*
- * jobacct_startpoll() is called when the plugin is loaded by
- * slurmd, before any other functions are called.  Put global
- * initialization here.
- */
-
-extern int jobacct_gather_p_startpoll(uint16_t frequency)
-{
-	int rc = SLURM_SUCCESS;
-
-#ifdef HAVE_AIX
-	pthread_attr_t attr;
-	pthread_t _watch_tasks_thread_id;
-
-	debug("%s loaded", plugin_name);
-
-	debug("jobacct-gather: frequency = %d", frequency);
-
-	jobacct_shutdown = false;
-
-	freq = frequency;
-	pagesize = getpagesize()/1024;
-	task_list = list_create(jobacct_common_free_jobacct);
-	if (frequency == 0) {	/* don't want dynamic monitoring? */
-		debug2("jobacct AIX dynamic logging disabled");
-		return rc;
-	}
-
-	/* create polling thread */
-	slurm_attr_init(&attr);
-	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-
-	if  (pthread_create(&_watch_tasks_thread_id, &attr,
-			    &_watch_tasks, NULL)) {
-		debug("jobacct-gather failed to create _watch_tasks "
-		      "thread: %m");
-		frequency = 0;
-	} else
-		debug3("jobacct-gather AIX dynamic logging enabled");
-	slurm_attr_destroy(&attr);
-#else
-	error("jobacct-gather AIX not loaded, not an aix system, "
-	      "check slurm.conf");
-#endif
-	return rc;
-}
-
 extern int jobacct_gather_p_endpoll()
 {
-	jobacct_shutdown = true;
-#ifdef HAVE_AIX
-	slurm_mutex_lock(&jobacct_lock);
-	if(task_list)
-		list_destroy(task_list);
-	task_list = NULL;
-	slurm_mutex_unlock(&jobacct_lock);
-#endif
-
 	return SLURM_SUCCESS;
 }
 
-extern void jobacct_gather_p_change_poll(uint16_t frequency)
-{
-#ifdef HAVE_AIX
-	if(freq == 0 && frequency != 0) {
-		pthread_attr_t attr;
-		pthread_t _watch_tasks_thread_id;
-		/* create polling thread */
-		slurm_attr_init(&attr);
-		if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
-			error("pthread_attr_setdetachstate error %m");
-
-		if  (pthread_create(&_watch_tasks_thread_id, &attr,
-				    &_watch_tasks, NULL)) {
-			debug("jobacct-gather failed to create _watch_tasks "
-			      "thread: %m");
-			frequency = 0;
-		} else
-			debug3("jobacct-gather AIX dynamic logging enabled");
-		slurm_attr_destroy(&attr);
-		jobacct_shutdown = false;
-	}
-
-	freq = frequency;
-	debug("jobacct-gather: frequency changed = %d", frequency);
-	if (freq == 0)
-		jobacct_shutdown = true;
-#endif
-	return;
-}
-
-extern void jobacct_gather_p_suspend_poll()
-{
-	jobacct_suspended = true;
-}
-
-extern void jobacct_gather_p_resume_poll()
-{
-	jobacct_suspended = false;
-}
-
-extern int jobacct_gather_p_set_proctrack_container_id(uint64_t id)
-{
-	if (pgid_plugin)
-		return SLURM_SUCCESS;
-
-	if (cont_id != (uint64_t)NO_VAL)
-		info("Warning: jobacct: set_proctrack_container_id: cont_id "
-		     "is already set to %"PRIu64" you are setting it to "
-		     "%"PRIu64"", cont_id, id);
-	if (id <= 0) {
-		error("jobacct: set_proctrack_container_id: "
-		      "I was given most likely an unset cont_id %"PRIu64"",
-		      id);
-		return SLURM_ERROR;
-	}
-	cont_id = id;
-
-	return SLURM_SUCCESS;
-}
 
 extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
-	if (jobacct_shutdown)
-		return SLURM_ERROR;
-	return jobacct_common_add_task(pid, jobacct_id, task_list);
-}
-
-extern struct jobacctinfo *jobacct_gather_p_stat_task(pid_t pid)
-{
-	if (jobacct_shutdown)
-		return NULL;
-
-#ifdef HAVE_AIX
-	_get_process_data();
-#endif
-	if(pid)
-		return jobacct_common_stat_task(pid, task_list);
-	else
-		return NULL;
-}
-
-extern struct jobacctinfo *jobacct_gather_p_remove_task(pid_t pid)
-{
-	if (jobacct_shutdown)
-		return NULL;
-	return jobacct_common_remove_task(pid, task_list);
-}
-
-extern void jobacct_gather_p_2_stats(slurmdb_stats_t *stats,
-				     struct jobacctinfo *jobacct)
-{
-	jobacct_common_2_stats(stats, jobacct);
+	return SLURM_SUCCESS;
 }

@@ -41,8 +41,11 @@
 #include "as_mysql_usage.h"
 #include "as_mysql_wckey.h"
 
+#include "src/common/node_select.h"
 #include "src/common/parse_time.h"
-#include "src/common/jobacct_common.h"
+#include "src/common/slurm_jobacct_gather.h"
+
+#define BUFFER_SIZE 4096
 
 /* Used in job functions for getting the database index based off the
  * submit time, job and assoc id.  0 is returned if none is found

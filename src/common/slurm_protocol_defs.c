@@ -57,6 +57,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/common/job_options.h"
 #include "src/common/forward.h"
 #include "src/common/slurm_jobacct_gather.h"
@@ -600,7 +601,7 @@ extern void slurm_free_complete_batch_script_msg(
 		complete_batch_script_msg_t * msg)
 {
 	if (msg) {
-		jobacct_gather_g_destroy(msg->jobacct);
+		jobacctinfo_destroy(msg->jobacct);
 		xfree(msg->node_name);
 		xfree(msg);
 	}
@@ -2218,7 +2219,7 @@ extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
 extern void slurm_free_step_complete_msg(step_complete_msg_t *msg)
 {
 	if (msg) {
-		jobacct_gather_g_destroy(msg->jobacct);
+		jobacctinfo_destroy(msg->jobacct);
 		xfree(msg);
 	}
 }
@@ -2227,7 +2228,7 @@ extern void slurm_free_job_step_stat(void *object)
 {
 	job_step_stat_t *msg = (job_step_stat_t *)object;
 	if (msg) {
-		jobacct_gather_g_destroy(msg->jobacct);
+		jobacctinfo_destroy(msg->jobacct);
 		slurm_free_job_step_pids(msg->step_pids);
 		xfree(msg);
 	}

@@ -62,7 +62,6 @@
 #include "src/common/forward.h"
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
-#include "src/common/jobacct_common.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -1353,7 +1352,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 					    SELECT_JOBDATA_BLOCK_ID, &resv_id);
 #elif defined(HAVE_CRAY)
 		resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
-					    SELECT_PRINT_RESV_ID);
+							  SELECT_PRINT_RESV_ID);
 #endif
 		rc = _run_prolog(req->job_id, req->uid, resv_id,
 				 req->spank_job_env, req->spank_job_env_size);
@@ -1550,12 +1549,12 @@ _abort_step(uint32_t job_id, uint32_t step_id)
 	resp.range_first  = 0;
 	resp.range_last   = 0;
 	resp.step_rc      = 1;
-	resp.jobacct      = jobacct_gather_g_create(NULL);
+	resp.jobacct      = jobacctinfo_create(NULL);
 	resp_msg.msg_type = REQUEST_STEP_COMPLETE;
 	resp_msg.data     = &resp;
 	rc2 = slurm_send_recv_controller_rc_msg(&resp_msg, &rc);
 	/* Note: we are ignoring the RPC return code */
-	jobacct_gather_g_destroy(resp.jobacct);
+	jobacctinfo_destroy(resp.jobacct);
 	return rc2;
 }
 
@@ -1814,14 +1813,14 @@ _enforce_job_mem_limit(void)
 		if ((!stepd_stat_jobacct(fd, &acct_req, resp)) &&
 		    (resp->jobacct)) {
 			/* resp->jobacct is NULL if account is disabled */
-			jobacct_common_getinfo((struct jobacctinfo *)
-					       resp->jobacct,
-					       JOBACCT_DATA_TOT_RSS,
-					       &step_rss);
-			jobacct_common_getinfo((struct jobacctinfo *)
-					       resp->jobacct,
-					       JOBACCT_DATA_TOT_VSIZE,
-					       &step_vsize);
+			jobacctinfo_getinfo((struct jobacctinfo *)
+					    resp->jobacct,
+					    JOBACCT_DATA_TOT_RSS,
+					    &step_rss);
+			jobacctinfo_getinfo((struct jobacctinfo *)
+					    resp->jobacct,
+					    JOBACCT_DATA_TOT_VSIZE,
+					    &step_vsize);
 #if _LIMIT_INFO
 			info("Step:%u.%u RSS:%u KB VSIZE:%u KB",
 			     stepd->jobid, stepd->stepid,
@@ -3418,7 +3417,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 				    &resv_id);
 #elif defined(HAVE_CRAY)
 	resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
-				    SELECT_PRINT_RESV_ID);
+						  SELECT_PRINT_RESV_ID);
 #endif
 	_run_epilog(req->job_id, req->job_uid, resv_id,
 		    req->spank_job_env, req->spank_job_env_size);
@@ -3767,7 +3766,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 				    &resv_id);
 #elif defined(HAVE_CRAY)
 	resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
-				    SELECT_PRINT_RESV_ID);
+						  SELECT_PRINT_RESV_ID);
 #endif
 	rc = _run_epilog(req->job_id, req->job_uid, resv_id,
 			 req->spank_job_env, req->spank_job_env_size);

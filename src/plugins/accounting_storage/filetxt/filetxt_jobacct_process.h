@@ -44,9 +44,15 @@
 #ifndef _HAVE_FILETXT_JOBSLURMDB_PROCESS_H
 #define _HAVE_FILETXT_JOBSLURMDB_PROCESS_H
 
-#include "src/common/jobacct_common.h"
+#include <ctype.h>
+#include <sys/stat.h>
+
+#include "src/common/xstring.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/slurmdbd/read_config.h"
+
+#define BUFFER_SIZE 4096
 
 extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond);
 extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond);

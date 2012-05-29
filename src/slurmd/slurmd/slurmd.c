@@ -1418,7 +1418,7 @@ _slurmd_init(void)
 	_set_topo_info();
 
 	_print_conf();
-	if (slurm_jobacct_gather_init() != SLURM_SUCCESS)
+	if (jobacct_gather_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 	if (slurm_proctrack_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
@@ -1604,7 +1604,7 @@ _slurmd_fini(void)
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	fini_setproctitle();
 	slurm_select_fini();
-	slurm_jobacct_gather_fini();
+	jobacct_gather_fini();
 	spank_slurmd_exit();
 	return SLURM_SUCCESS;
 }

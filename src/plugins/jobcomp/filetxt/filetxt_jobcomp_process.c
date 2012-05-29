@@ -44,10 +44,11 @@
 #include <ctype.h>
 #include <sys/stat.h>
 
-#include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/common/slurm_jobcomp.h"
 #include "filetxt_jobcomp_process.h"
+
+#define BUFFER_SIZE 4096
 
 typedef struct {
 	char *name;

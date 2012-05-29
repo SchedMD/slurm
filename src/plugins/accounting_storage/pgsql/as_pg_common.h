@@ -46,7 +46,7 @@
 #include "src/database/pgsql_common.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/common/slurmdbd_defs.h"
-#include "src/common/jobacct_common.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/uid.h"
 #include "src/plugins/accounting_storage/common/common_as.h"
 

@@ -36,11 +36,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/xstring.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_accounting_storage.h"
-#include "src/common/jobacct_common.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"

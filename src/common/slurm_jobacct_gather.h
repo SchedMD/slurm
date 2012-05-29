@@ -76,40 +76,83 @@
 #include "src/common/pack.h"
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
-#include "src/common/jobacct_common.h"
+#include "src/common/read_config.h"
 
-extern int slurm_jobacct_gather_init(void); /* load the plugin */
-extern int slurm_jobacct_gather_fini(void); /* unload the plugin */
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-extern jobacctinfo_t *jobacct_gather_g_create(jobacct_id_t *jobacct_id);
-extern void jobacct_gather_g_destroy(jobacctinfo_t *jobacct);
-extern int jobacct_gather_g_setinfo(jobacctinfo_t *jobacct,
+#define FDUMP_FLAG 0x04
+
+typedef struct {
+	uint16_t taskid; /* contains which task number it was on */
+	uint32_t nodeid; /* contains which node number it was on */
+	slurmd_job_t *job; /* contains slurmd job pointer */
+} jobacct_id_t;
+
+struct jobacctinfo {
+	pid_t pid;
+	uint32_t sys_cpu_sec;
+	uint32_t sys_cpu_usec;
+	uint32_t user_cpu_sec;
+	uint32_t user_cpu_usec;
+	uint32_t max_vsize; /* max size of virtual memory */
+	jobacct_id_t max_vsize_id; /* contains which task number it was on */
+	uint32_t tot_vsize; /* total virtual memory
+			       (used to figure out ave later) */
+	uint32_t max_rss; /* max Resident Set Size */
+	jobacct_id_t max_rss_id; /* contains which task it was on */
+	uint32_t tot_rss; /* total rss
+			     (used to figure out ave later) */
+	uint32_t max_pages; /* max pages */
+	jobacct_id_t max_pages_id; /* contains which task it was on */
+	uint32_t tot_pages; /* total pages
+			     (used to figure out ave later) */
+	uint32_t min_cpu; /* min cpu time */
+	jobacct_id_t min_cpu_id; /* contains which task it was on */
+	uint32_t tot_cpu; /* total cpu time(used to figure out ave later) */
+};
+
+/* Define jobacctinfo_t below to avoid including extraneous slurm headers */
+#ifndef __jobacctinfo_t_defined
+#  define  __jobacctinfo_t_defined
+   typedef struct jobacctinfo jobacctinfo_t;     /* opaque data type */
+#endif
+
+extern int jobacct_gather_init(void); /* load the plugin */
+extern int jobacct_gather_fini(void); /* unload the plugin */
+
+extern int  jobacct_gather_startpoll(uint16_t frequency);
+extern int  jobacct_gather_endpoll();
+extern void jobacct_gather_change_poll(uint16_t frequency);
+extern void jobacct_gather_suspend_poll();
+extern void jobacct_gather_resume_poll();
+
+extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id);
+/* must free jobacctinfo_t if not NULL */
+extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid);
+/* must free jobacctinfo_t if not NULL */
+extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid);
+
+extern int jobacct_gather_set_proctrack_container_id(uint64_t id);
+extern int jobacct_gather_set_mem_limit(uint32_t job_id, uint32_t step_id,
+					uint32_t mem_limit);
+extern void jobacct_gather_handle_mem_limit(
+	uint32_t total_job_mem, uint32_t total_job_vsize);
+
+extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id);
+extern void jobacctinfo_destroy(void *object);
+extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
+			       enum jobacct_data_type type, void *data);
+extern int jobacctinfo_getinfo(jobacctinfo_t *jobacct,
 				    enum jobacct_data_type type, void *data);
-extern int jobacct_gather_g_getinfo(jobacctinfo_t *jobacct,
-				    enum jobacct_data_type type, void *data);
-extern void jobacct_gather_g_pack(jobacctinfo_t *jobacct,
+extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 				  uint16_t rpc_version, Buf buffer);
-extern int jobacct_gather_g_unpack(jobacctinfo_t **jobacct,
+extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 				   uint16_t rpc_version, Buf buffer);
 
-extern void jobacct_gather_g_aggregate(jobacctinfo_t *dest,
+extern void jobacctinfo_aggregate(jobacctinfo_t *dest,
 				       jobacctinfo_t *from);
 
-extern void jobacct_gather_g_change_poll(uint16_t frequency);
-extern int  jobacct_gather_g_startpoll(uint16_t frequency);
-extern int  jobacct_gather_g_endpoll();
-extern void jobacct_gather_g_suspend_poll();
-extern void jobacct_gather_g_resume_poll();
-
-extern int jobacct_gather_g_set_proctrack_container_id(uint64_t id);
-extern int jobacct_gather_g_add_task(pid_t pid, jobacct_id_t *jobacct_id);
-/* must free jobacctinfo_t if not NULL */
-extern jobacctinfo_t *jobacct_gather_g_stat_task(pid_t pid);
-/* must free jobacctinfo_t if not NULL */
-extern jobacctinfo_t *jobacct_gather_g_remove_task(pid_t pid);
-
-extern void jobacct_gather_g_2_stats(slurmdb_stats_t *stats,
-				     jobacctinfo_t *jobacct);
+extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct);
 
 
 #endif /*__SLURM_JOBACCT_GATHER_H__*/

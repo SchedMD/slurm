@@ -39,6 +39,8 @@
 \*****************************************************************************/
 #include "as_pg_common.h"
 
+#define BUFFER_SIZE 4096
+
 char *job_table = "job_table";
 static storage_field_t job_table_fields[] = {
 	{ "job_db_inx", "SERIAL" },

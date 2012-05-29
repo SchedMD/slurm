@@ -437,7 +437,7 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize checkpoint plugin" );
 	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
 		fatal( "failed to initialize accounting_storage plugin");
-	if (slurm_jobacct_gather_init() != SLURM_SUCCESS )
+	if (jobacct_gather_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize jobacct_gather plugin");
 	if (job_submit_plugin_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize job_submit plugin");
@@ -653,7 +653,7 @@ int main(int argc, char *argv[])
 	job_submit_plugin_fini();
 	slurm_preempt_fini();
 	g_slurm_jobcomp_fini();
-	slurm_jobacct_gather_fini();
+	jobacct_gather_fini();
 	slurm_select_fini();
 	slurm_topo_fini();
 	checkpoint_fini();
