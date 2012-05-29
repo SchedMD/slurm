@@ -1063,7 +1063,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		return true;
 
 	/* clear old state reason */
-	if (acct_policy_job_runnable_state(job_ptr))
+	if (!acct_policy_job_runnable_state(job_ptr))
 		job_ptr->state_reason = WAIT_NO_REASON;
 
 	job_cpu_time_limit = (uint64_t)job_ptr->time_limit

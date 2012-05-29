@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
     from Don Albert, Bull.
  -- Modify SchedulerParamters option to match documentation: "bf_res="
     changed to "bf_resolution=". Patch from Rod Schultz, Bull.
+ -- Fix bug that clears job pending reason field. Patch fron Don Lipari, LLNL.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
