@@ -407,7 +407,7 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid)
 {
 	if (jobacct_shutdown)
 		return NULL;
-	else if(pid) {
+	else if (pid) {
 		struct jobacctinfo *jobacct = NULL;
 		struct jobacctinfo *ret_jobacct = NULL;
 		ListIterator itr = NULL;
