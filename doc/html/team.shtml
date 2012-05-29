@@ -36,6 +36,7 @@ organizations. Lead SLURM developers are:
 <li>Joey Ekstrom (Lawrence Livermore National Laboratory/Bringham Young University)</li>
 <li>Josh England (TGS Management Corporation)</li>
 <li>Kent Engstr&ouml;m  (National Supercomputer Centre, Sweden)</li>
+<li>Damien Fran&ccedil;ois (Universit&eacute; catholique de Louvain, Belgium)</li>
 <li>Jim Garlick (Lawrence Livermore National Laboratory)</li>
 <li>Didier Gazen (Laboratoire d'Aerologie, France)</li>
 <li>Raphael Geissert (Debian)</li>
@@ -106,9 +107,9 @@ organizations. Lead SLURM developers are:
 <li>Jay Windley (Linux NetworX)</li>
 <li>Anne-Marie Wunderlin (Bull)</li>
 <li>Nathan Yee (SchedMD)</li>
-<li>Damien François (UCL)</li>
+<!-- PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 14 May 2012</p>
+<p style="text-align:center;">Last modified 29 May 2012</p>
 
 <!--#include virtual="footer.txt"-->
