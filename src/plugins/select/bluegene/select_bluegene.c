@@ -1961,9 +1961,13 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 							bg_record);
 				used_bitmap = ba_mp->cnode_bitmap;
 			}
+			/* units_used and units_avail will be the
+			   same, the exact opposite of used_bitmap.
+			*/
 			step_jobinfo->units_used = bit_copy(used_bitmap);
-			step_jobinfo->units_avail = bit_copy(used_bitmap);
 			bit_not(step_jobinfo->units_used);
+			step_jobinfo->units_avail =
+				bit_copy(step_jobinfo->units_used);
 			bit_or(used_bitmap, step_jobinfo->units_used);
 		}
 

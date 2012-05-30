@@ -19,6 +19,9 @@ documents those changes that are of interest to users and admins.
  -- In etc/init.d/slurm move check for scontrol after sourcing
     /etc/sysconfig/slurm. Patch from Andy Wettstein, University of Chicago.
  -- Fix in scheduling logic that can delay jobs with min/max node counts.
+ -- BGQ - fix issue where if a step uses the entire allocation and then
+    the next step in the allocation only uses part of the allocation it gets
+    the correct cnodes.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
