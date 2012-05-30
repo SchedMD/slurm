@@ -128,7 +128,10 @@ static List _build_license_list(char *licenses, bool *valid)
 				*valid = false;
 				break;
 			}
-			if (token[i] == '*') {
+			/* ':' is used as a separator in version 2.5 or later
+			 * '*' is used as a separator in version 2.4 or earlier
+			 */
+			if ((token[i] == ':') || (token[i] == '*')) {
 				token[i++] = '\0';
 				num = (uint32_t)strtol(&token[i], &end_num,10);
 			}

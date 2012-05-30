@@ -733,10 +733,10 @@ The value may not exceed 65533.
 \fBLicenses\fR
 Specification of licenses (or other resources available on all
 nodes of the cluster) which can be allocated to jobs.
-License names can optionally be followed by an asterisk
+License names can optionally be followed by a colon
 and count with a default count of one.
 Multiple license names should be comma separated (e.g.
-"Licenses=foo*4,bar").
+"Licenses=foo:4,bar").
 Note that SLURM prevents jobs from being scheduled if their
 required license specification is not available.
 SLURM does not prevent jobs from using licenses that are

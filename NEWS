@@ -7,6 +7,9 @@ documents those changes that are of interest to users and admins.
     "name:used/total"
  -- Changed jobacct_gather plugin infrastructure to be cleaner and easier to
     maintain.
+ -- Change license option count separator from "*" to ":" for consistency with
+    the gres option (e.g. "--licenses=foo:2 --gres=gpu:2"). The "*" will still
+    be accepted, but is no longer documented.
 
 * Changes in SLURM 2.4.0.rc2
 =============================
