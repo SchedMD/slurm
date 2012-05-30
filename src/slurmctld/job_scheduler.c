@@ -876,7 +876,9 @@ next_part:			part_ptr = (struct part_record *)
 		}
 		i = bit_overlap(avail_node_bitmap,
 				job_ptr->part_ptr->node_bitmap);
-		if (( job_ptr->details && (i < job_ptr->details->max_nodes)) ||
+		if ((job_ptr->details &&
+		    (job_ptr->details->min_nodes != NO_VAL) &&
+		    (job_ptr->details->min_nodes >  i)) ||
 		    (!job_ptr->details && (i == 0))) {
 			/* Too many nodes DRAIN, DOWN, or
 			 * reserved for jobs in higher priority partition */
