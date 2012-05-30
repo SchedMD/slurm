@@ -199,7 +199,6 @@ static int	_pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static void	_pack_tableinfo(nrt_tableinfo_t *tableinfo,
 				nrt_adapter_t adapter_type, Buf buf,
 				bool ip_v4);
-static char *	_port_status_str(nrt_port_status_t status);
 static void	_unlock(void);
 static int	_unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static int	_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf,
@@ -954,22 +953,6 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 }
 
 static char *
-_port_status_str(nrt_port_status_t status)
-{
-	if (status == 0)
-		return "Down";
-	else if (status == 1)
-		return "Up";
-	else if (status == 2)
-		return "Unconfig";
-	else {
-		static char buf[16];
-		snprintf(buf, sizeof(buf), "%d", status);
-		return buf;
-	}
-}
-
-static char *
 _win_state_str(win_state_t state)
 {
 	if (state == NRT_WIN_UNAVAILABLE)
@@ -1016,6 +999,22 @@ _adapter_type_str(nrt_adapter_t type)
 }
 
 #if NRT_DEBUG
+static char *
+_port_status_str(nrt_port_status_t status)
+{
+	if (status == 0)
+		return "Down";
+	else if (status == 1)
+		return "Up";
+	else if (status == 2)
+		return "Unconfig";
+	else {
+		static char buf[16];
+		snprintf(buf, sizeof(buf), "%d", status);
+		return buf;
+	}
+}
+
 /* Used by: slurmd */
 static void
 _print_adapter_status(nrt_cmd_status_adapter_t *status_adapter)
@@ -2675,7 +2674,10 @@ _check_rdma_job_count(char *adapter_name, nrt_adapter_t adapter_type)
 {
 	uint16_t job_count = 0;
 	nrt_job_key_t *job_keys = NULL;
-	int err, i;
+	int err;
+#if NRT_DEBUG
+	int i;
+#endif
 
 #if 1
 	err = NRT_SUCCESS;
