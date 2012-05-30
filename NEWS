@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug that clears job pending reason field. Patch fron Don Lipari, LLNL.
  -- In etc/init.d/slurm move check for scontrol after sourcing
     /etc/sysconfig/slurm. Patch from Andy Wettstein, University of Chicago.
+ -- Fix in scheduling logic that can delay jobs with min/max node counts.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
