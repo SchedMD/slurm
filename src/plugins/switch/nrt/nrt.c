@@ -1023,7 +1023,12 @@ _print_adapter_status(nrt_cmd_status_adapter_t *status_adapter)
 	int i;
 	nrt_window_id_t window_cnt;
 	nrt_status_t *status = *(status_adapter->status_array);
+	char window_str[128];
+	hostset_t hs;
 
+	hs = hostset_create("");
+	if (hs == NULL)
+		fatal("hostset_create malloc failure");
 	info("--Begin Adapter Status--");
 	info("  adapter_name: %s", status_adapter->adapter_name);
 	info("  adapter_type: %s",
@@ -1031,21 +1036,33 @@ _print_adapter_status(nrt_cmd_status_adapter_t *status_adapter)
 	window_cnt = *(status_adapter->window_count);
 	info("  window_count: %hu", window_cnt);
 	info("  --------");
-	for (i = 0; i < MIN(window_cnt, NRT_DEBUG_CNT); i++) {
-		info("  bulk_xfer: %hu", status[i].bulk_transfer);
-		info("  client_pid: %u", (uint32_t)status[i].client_pid);
-		info("  rcontext_blocks: %u", status[i].rcontext_blocks);
-		info("  state: %s", _win_state_str(status[i].state));
-		info("  uid: %u", (uint32_t) status[i].uid);
+	for (i = 0; i < window_cnt; i++) {
+		if ((status[i].state == NRT_WIN_AVAILABLE) &&
+		    (i >= NRT_DEBUG_CNT)) {
+			snprintf(window_str, sizeof(window_str), "%d",
+				 status[i].window_id);
+			hostset_insert(hs, window_str);
+			continue;
+		}
 		info("  window_id: %hu", status[i].window_id);
+		info("  state: %s", _win_state_str(status[i].state));
+		if (status[i].state >= NRT_WIN_RESERVED) {
+			info("  bulk_xfer: %hu", status[i].bulk_transfer);
+			info("  client_pid: %u",
+			     (uint32_t)status[i].client_pid);
+			info("  rcontext_blocks: %u",
+			     status[i].rcontext_blocks);
+			info("  uid: %u", (uint32_t) status[i].uid);
+		}
 		info("  --------");
 	}
-	if (i < window_cnt) {
-		info("  suppress data for windows %hu through %hu",
-		     status[i].window_id, status[--window_cnt].window_id);
+	if (hostset_count(hs) > 0) {
+		hostset_ranged_string(hs, sizeof(window_str), window_str);
+		info("  suppress data for available windows %s", window_str);
 		info("  --------");
 	}
 	info("--End Adapter Status--");
+	hostset_destroy(hs);
 }
 
 /* Used by: slurmd, slurmctld */
@@ -1056,6 +1073,8 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 	struct slurm_nrt_adapter *a;
 	slurm_nrt_window_t *w;
 	char addr_str[128];
+	char window_str[128];
+	hostset_t hs;
 
 	assert(n);
 	assert(n->magic == NRT_NODEINFO_MAGIC);
@@ -1077,16 +1096,31 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 		info("    port_id: %hu", a->port_id);
 		info("    special: %lu", a->special);
 		info("    window_count: %hu", a->window_count);
+		hs = hostset_create("");
+		if (hs == NULL)
+			fatal("hostset_create malloc failure");
 		w = a->window_list;
-		for (j = 0; j < MIN(a->window_count, NRT_DEBUG_CNT); j++) {
-#if (NRT_DEBUG < 2)
-			if (w[j].state != NRT_WIN_AVAILABLE)
+		for (j = 0; j < a->window_count; j++) {
+			if ((w[j].state == NRT_WIN_AVAILABLE) &&
+			    (j >= NRT_DEBUG_CNT)) {
+				snprintf(window_str, sizeof(window_str), "%d",
+					 w[j].window_id);
+				hostset_insert(hs, window_str);
 				continue;
-#endif
-			info("      window %hu: %s", w[j].window_id,
-			     _win_state_str(w->state));
-			info("      job_key %u", w[j].job_key);
+			}
+			info("      window:  %hu", w[j].window_id);
+			info("      state:   %s", _win_state_str(w[j].state));
+			info("      job_key: %u", w[j].job_key);
+			info("      -------- ");
 		}
+		if (hostset_count(hs) > 0) {
+			hostset_ranged_string(hs, sizeof(window_str),
+					      window_str);
+			info("      suppress data for available windows %s",
+			     window_str);
+			info("      -------- ");
+		}
+		hostset_destroy(hs);
 	}
 	info("--End Node Info--");
 }
@@ -3061,8 +3095,10 @@ nrt_clear_node_state(void)
 	nrt_window_id_t window_count;
 	nrt_status_t **status_array = NULL;
 	nrt_cmd_clean_window_t clean_window;
-
 #if NRT_DEBUG
+	char window_str[128];
+	hostset_t hs;
+
 	info("nrt_clear_node_state: begin");
 #endif
 	adapter_types.num_adapter_types = &num_adapter_types;
@@ -3146,13 +3182,16 @@ nrt_clear_node_state(void)
 			     adapter_status.adapter_name,
 			     _adapter_type_str(adapter_status.adapter_type),
 			     window_count);
-			/* Only log first NRT_DEBUG_CNT windows here */
-			for (k = 0; k < MIN(window_count, NRT_DEBUG_CNT); k++){
+			for (k = 0; k < window_count; k++) {
+				win_state_t state = (*status_array)[k].state;
+				if ((state == NRT_WIN_AVAILABLE) &&
+				    (k >= NRT_DEBUG_CNT))
+					continue;
 				info("window_id:%d uid:%d pid:%d state:%s",
 				     (*status_array)[k].window_id,
 				     (*status_array)[k].uid,
 				     (*status_array)[k].client_pid,
-				     _win_state_str((*status_array)[k].state));
+				     _win_state_str(state));
 			}
 #endif
 			if (window_count > max_windows) {
@@ -3164,6 +3203,11 @@ nrt_clear_node_state(void)
 				      window_count, max_windows);
 				window_count = max_windows;
 			}
+#if NRT_DEBUG
+			hs = hostset_create("");
+			if (hs == NULL)
+				fatal("hostset_create malloc failure");
+#endif
 			for (k = 0; k < window_count; k++) {
 				clean_window.adapter_name = adapter_names.
 							    adapter_names[j];
@@ -3187,16 +3231,23 @@ nrt_clear_node_state(void)
 					continue;
 				}
 #if NRT_DEBUG
-				if (k < NRT_DEBUG_CNT) {
-					info("nrt_command(clean_window, "
-					     "%s, %s, %u)",
-					     clean_window.adapter_name,
-					     _adapter_type_str(clean_window.
-							       adapter_type),
-					     clean_window.window_id);
-				}
+				snprintf(window_str, sizeof(window_str), "%d",
+					 clean_window.window_id);
+				hostset_insert(hs, window_str);
 #endif
 			}
+#if NRT_DEBUG
+			if (hostset_count(hs) > 0) {
+				hostset_ranged_string(hs, sizeof(window_str),
+						      window_str);
+				info("nrt_command(clean_window, %s, %s, %s)",
+				     adapter_names.adapter_names[j],
+				     _adapter_type_str(adapter_names.
+						       adapter_type),
+				     window_str);
+			}
+			hostset_destroy(hs);
+#endif
 		}
 		for (j = 0; j < max_windows; j++) {
 			free(status_array[j]);
