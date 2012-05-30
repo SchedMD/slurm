@@ -51,6 +51,12 @@ if {[test_front_end]} {
         exit $exit_code
 }
 
+set switch [switch_type]
+if {[string compare $switch "none"]} {
+        send_user "\nWARNING: This test is incompatible with switch/$switch\n"
+        exit $exit_code
+}
+
 #
 # Submit a 1 node job and record the node name
 #
