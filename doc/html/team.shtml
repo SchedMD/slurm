@@ -101,6 +101,7 @@ organizations. Lead SLURM developers are:
 <li>Adam Todorski (Rensselaer Polytechnic Institute)</li>
 <li>Stephen Trofinoff (Swiss National Supercomputing Centre)</li>
 <li>Nathan Weeks (Iowa State University)</li>
+<li>Andy Wettstein (University of Chicago)</li>
 <li>Tim Wickberg (Rensselaer Polytechnic Institute)</li>
 <li>Ramiro Brito Willmersdorf (Universidade Federal de Pemambuco, Brazil)</li>
 <li>Jay Windley (Linux NetworX)</li>
@@ -109,6 +110,6 @@ organizations. Lead SLURM developers are:
 <li>Damien François (UCL)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 14 May 2012</p>
+<p style="text-align:center;">Last modified 30 May 2012</p>
 
 <!--#include virtual="footer.txt"-->
