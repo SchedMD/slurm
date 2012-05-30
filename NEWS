@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
  -- Modify SchedulerParamters option to match documentation: "bf_res="
     changed to "bf_resolution=". Patch from Rod Schultz, Bull.
  -- Fix bug that clears job pending reason field. Patch fron Don Lipari, LLNL.
+ -- In etc/init.d/slurm move check for scontrol after sourcing
+    /etc/sysconfig/slurm. Patch from Andy Wettstein, University of Chicago.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
