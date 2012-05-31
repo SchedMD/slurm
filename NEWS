@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
     the correct cnodes.
  -- BGQ - Fix checking for IO on a block with new IBM driver V1R1M1 previous
     function didn't always work correctly.
+ -- BGQ - Fix issue when a nodeboard goes down and you want to combine blocks
+    to make a larger small block and are running with sub-blocks.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
