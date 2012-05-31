@@ -63,6 +63,9 @@
 /* Define to 1 if emulating or running on Blue Gene/L or P system */
 #undef HAVE_BG_L_P
 
+/* Define to 1 if using code with new iocheck */
+#undef HAVE_BG_NEW_IO_CHECK
+
 /* Define to 1 if you have the `cfmakeraw' function. */
 #undef HAVE_CFMAKERAW
 

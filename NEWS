@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
  -- BGQ - fix issue where if a step uses the entire allocation and then
     the next step in the allocation only uses part of the allocation it gets
     the correct cnodes.
+ -- BGQ - Fix checking for IO on a block with new IBM driver V1R1M1 previous
+    function didn't always work correctly.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
