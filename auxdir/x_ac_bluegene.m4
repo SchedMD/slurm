@@ -295,6 +295,15 @@ AC_DEFUN([X_AC_BGQ],
  log4cxx::LoggerPtr logger_ptr(log4cxx::Logger::getLogger( "ibm" ));]])],
 			        [have_bgq_files=yes],
 				[AC_MSG_ERROR(There is a problem linking to the BG/Q api.)])
+		# In later versions of the driver IBM added a better function
+		# to see if blocks were IO connected or not.  Here is a check
+		# to not break backwards compatibility
+		AC_LINK_IFELSE([AC_LANG_PROGRAM(
+                                [[#include <bgsched/bgsched.h>
+				#include <bgsched/Block.h>]],
+				[[ bgsched::Block::checkIO("", NULL, NULL);]])],
+			        [have_bgq_new_io_check=yes],
+				[AC_MSG_RESULT(Using old iocheck.)])
 		AC_LANG_POP(C++)
 		LDFLAGS="$saved_LDFLAGS"
    	fi
@@ -312,6 +321,9 @@ AC_DEFUN([X_AC_BGQ],
       		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
 		AC_DEFINE(HAVE_BG_FILES, 1, [Define to 1 if have Blue Gene files])
 		#AC_DEFINE_UNQUOTED(BG_BRIDGE_SO, "$soloc", [Define the BG_BRIDGE_SO value])
+		if test ! -z "$have_bgq_new_io_check" ; then
+			AC_DEFINE(HAVE_BG_NEW_IO_CHECK, 1, [Define to 1 if using code with new iocheck])
+		fi
 
     		AC_MSG_NOTICE([Running on a legitimate BG/Q system])
 		# AC_MSG_CHECKING(for BG serial value)
