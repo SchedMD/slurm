@@ -45,10 +45,12 @@ print_header $test_id
 if {[test_cray]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
 	exit $exit_code
-}
-if { [test_xcpu] } {
+} elseif {[test_serial]} {
+	send_user "\nWARNING: This test is incompatible with serial systems\n"
+	exit $exit_code
+} elseif { [test_xcpu] } {
 	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
-	exit 0
+	exit $exit_code
 }
 
 #
