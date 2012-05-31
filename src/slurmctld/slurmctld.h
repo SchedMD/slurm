@@ -957,7 +957,7 @@ extern int job_alloc_info(uint32_t uid, uint32_t job_id,
  * IN will_run - don't initiate the job if set, just test if it could run
  *	now or later
  * OUT resp - will run response (includes start location, time, etc.)
- * IN allocate - resource allocation request if set, not a full job
+ * IN allocate - resource allocation request only if set, batch job if zero
  * IN submit_uid -uid of user issuing the request
  * OUT job_pptr - set to pointer to job record
  * RET 0 or an error code. If the job would only be able to execute with

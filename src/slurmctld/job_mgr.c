@@ -2900,7 +2900,7 @@ extern void rehash_jobs(void)
  * IN will_run - don't initiate the job if set, just test if it could run
  *	now or later
  * OUT resp - will run response (includes start location, time, etc.)
- * IN allocate - resource allocation request if set, not a full job
+ * IN allocate - resource allocation request only if set, batch job if zero
  * IN submit_uid -uid of user issuing the request
  * OUT job_pptr - set to pointer to job record
  * RET 0 or an error code. If the job would only be able to execute with
@@ -3009,14 +3009,13 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	test_only = will_run || (allocate == 0);
 
 	no_alloc = test_only || too_fragmented ||
-		(!top_prio) || (!independent);
+		   (!top_prio) || (!independent);
 	if (!no_alloc && !avail_front_end()) {
 		debug("sched: job_allocate() returning, no front end nodes "
 		       "are available");
 		error_code = ESLURM_NODES_BUSY;
 	} else
 		error_code = select_nodes(job_ptr, no_alloc, NULL);
-
 	if (!test_only) {
 		last_job_update = now;
 		slurm_sched_schedule();	/* work for external scheduler */
