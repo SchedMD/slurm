@@ -3935,11 +3935,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
 
-	/* Make sure anything that may be put in the database will be
-	   lower case */
-	xstrtolower(job_desc->account);
-	xstrtolower(job_desc->wckey);
-
 	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid,
 					     part_ptr))) {
 		error_code = error_code;
@@ -4309,6 +4304,11 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->wckey, "wckey", 1024)		||
 	    _test_strlen(job_desc->work_dir, "work_dir", 1024))
 		return ESLURM_PATHNAME_TOO_LONG;
+
+	/* Make sure anything that may be put in the database will be
+	 * lower case */
+	xstrtolower(job_desc->account);
+	xstrtolower(job_desc->wckey);
 
 	return SLURM_SUCCESS;
 }
