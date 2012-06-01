@@ -655,10 +655,15 @@ proc wait_for_all_jobs { job_name incr_sleep } {
 	global scancel squeue bin_sleep
 
 	set matches 0
-	set sleep_time  1
 	set my_delay    0
 	set last_matches 0
 	set timeout 30
+
+	if {$incr_sleep == 0} {
+		set sleep_time  0.2
+	} else {
+		set sleep_time  1
+	}
 	send_user "Waiting for all jobs to terminate\n"
 	for {set inx 0} {$inx < 600} {incr inx} {
 		log_user 0
