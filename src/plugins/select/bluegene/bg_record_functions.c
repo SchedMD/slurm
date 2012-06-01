@@ -1271,7 +1271,6 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			if (bit_overlap(bg_record->ionode_bitmap,
 					tmp_record.ionode_bitmap)) {
 				if (bg_record->cnode_cnt == 256) {
-					info("found remove record");
 					print_bg_record(bg_record);
 					rem_record = bg_record;
 					list_remove(itr);
@@ -1290,7 +1289,6 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 					continue;
 				if (!bit_overlap(bg_record->ionode_bitmap,
 						 rem_record->ionode_bitmap)) {
-					info("removing");
 					print_bg_record(bg_record);
 					list_delete_item(itr);
 				}
