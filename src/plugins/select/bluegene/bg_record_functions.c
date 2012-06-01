@@ -1202,9 +1202,10 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 		if (create_size != bg_conf->nodecard_cnode_cnt) {
 			blockreq.small128 = blockreq.small32 / 4;
 			blockreq.small32 = 0;
-			io_start = 0;
-		} else if ((io_start =
-			    bit_ffs(smallest_bg_record->ionode_bitmap)) == -1)
+		}
+
+		if ((io_start =
+		     bit_ffs(smallest_bg_record->ionode_bitmap)) == -1)
 			/* set the start to be the same as the start of the
 			   ionode_bitmap.  If no ionodes set (not a small
 			   block) set io_start = 0. */
