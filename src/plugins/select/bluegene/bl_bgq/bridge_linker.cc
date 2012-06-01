@@ -692,7 +692,6 @@ extern int bridge_block_create(bg_record_t *bg_record)
 extern int bridge_block_boot(bg_record_t *bg_record)
 {
 	int rc = SLURM_SUCCESS;
-	char *function_name;
 
 	if (bg_record->magic != BLOCK_MAGIC) {
 		error("boot_block: magic was bad");
@@ -706,6 +705,7 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 		return SLURM_ERROR;
 
 #ifdef HAVE_BG_FILES
+	char *function_name;
 	/* Lets see if we are connected to the IO. */
 	try {
 		uint32_t avail, unavail;
