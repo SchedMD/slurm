@@ -31,8 +31,13 @@ source ./globals
 
 set test_id	"9.9"
 set exit_code   0
-set job_cnt     5000
 set test_script "./test$test_id.bash"
+
+#   job_blocks  Submit jobs in blocks of this size (job count)
+set job_blocks  5000
+
+#   job_cnt     Number of batch jobs to be submitted
+set job_cnt     5000
 
 print_header $test_id
 
@@ -40,15 +45,27 @@ if {[test_front_end] != 0 || $enable_memory_leak_debug != 0} {
 	set job_cnt 2
 }
 
+# NOTE: test9.9.bash seems to have trouble running out of process IDs when
+# more than about 5000 jobs are submitted at one time, so we execute the
+# script multiple times if necessary. A more reliable alternative would be
+# to catch the fork() failures and retry.
 proc _submit_jobs { job_name test_file } {
-	global exit_code job_cnt sbatch test_script
+	global exit_code job_blocks job_cnt sbatch test_script
 
 	log_user 0
-	spawn -nottyinit -nottycopy $test_script $sbatch "/bin/hostname" $job_name $job_cnt
-	expect {
-		eof {
-			wait
+	for {set jobs_rem $job_cnt} {$jobs_rem > 0} { } {
+		if {$jobs_rem > $job_blocks} {
+			set submit_cnt $job_blocks
+		} else {
+			set submit_cnt $jobs_rem
 		}
+		spawn -nottyinit -nottycopy $test_script $sbatch "/bin/hostname" $job_name $submit_cnt
+		expect {
+			eof {
+				wait
+			}
+		}
+		set jobs_rem [expr $jobs_rem - $job_blocks]
 	}
 	log_user 1
 	if {[wait_for_all_jobs $job_name 0] != 0} {
