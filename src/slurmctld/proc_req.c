@@ -2674,7 +2674,12 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		schedule(2);		/* has own locks */
+		/* We need to use schedule() to initiate a batch job in order
+		 * to run the various prologs, boot the node, etc.
+		 * We also run schedule() even if this job could not start,
+		 * say due to a higher priority job, since the locks are
+		 * released above and we might start some other job here. */
+		schedule(1);		/* has own locks */
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
 	}

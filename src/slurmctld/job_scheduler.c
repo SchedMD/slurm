@@ -419,8 +419,14 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 	now = time(NULL);
 	min_age = now - slurmctld_conf.min_job_age;
 	lock_slurmctld(job_write_lock);
-	xassert(fini_job_ptr->job_resrcs);
-	xassert(fini_job_ptr->job_resrcs->node_bitmap);
+	if (!fini_job_ptr->job_resrcs ||
+	    !fini_job_ptr->job_resrcs->node_bitmap) {
+		/* This should never happen, but if it does, avoid using
+		 * a bad pointer below. */
+		error("job_resrcs empty for job %u", fini_job_ptr->job_id);
+		unlock_slurmctld(job_write_lock);
+		goto send_reply;
+	}
 	if (!avail_front_end()) {
 		unlock_slurmctld(job_write_lock);
 		goto send_reply;
@@ -759,7 +765,7 @@ extern int schedule(uint32_t job_limit)
 	while (1) {
 		if (fifo_sched) {
 			if (job_ptr && part_iterator &&
-			    IS_JOB_PENDING(job_ptr))/* started in other part */
+			    IS_JOB_PENDING(job_ptr)) /*started in other part?*/
 				goto next_part;
 			job_ptr = (struct job_record *) list_next(job_iterator);
 			if (!job_ptr)
