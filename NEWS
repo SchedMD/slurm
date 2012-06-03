@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
  -- Change license option count separator from "*" to ":" for consistency with
     the gres option (e.g. "--licenses=foo:2 --gres=gpu:2"). The "*" will still
     be accepted, but is no longer documented.
+ -- Permit more than 100 jobs to be scheduled per node (new limit is 10,000
+    jobs).
 
 * Changes in SLURM 2.4.0.rc2
 =============================
