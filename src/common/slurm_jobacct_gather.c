@@ -222,8 +222,11 @@ extern int jobacct_gather_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
-	plugin_type = type;
 
+	if (!strcasecmp(type, "jobacct_gather/none"))
+		goto done;
+
+	plugin_type = type;
 	type = slurm_get_proctrack_type();
 	if(!strcasecmp(type, "proctrack/pgid")) {
 		info("WARNING: We will use a much slower algorithm with "
