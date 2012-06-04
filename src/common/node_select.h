@@ -203,6 +203,7 @@ typedef struct slurm_select_ops {
 						 *block_desc_ptr);
 	int		(*update_sub_node)	(update_block_msg_t
 						 *block_desc_ptr);
+	int             (*fail_cnode)           (struct step_record *step_ptr);
 	int		(*get_info_from_plugin)	(enum
 						 select_plugindata_info dinfo,
 						 struct job_record *job_ptr,
@@ -400,6 +401,13 @@ extern int select_g_update_sub_node (update_block_msg_t *block_desc_ptr);
  * IN block_desc_ptr - information about the block
  */
 extern int select_g_update_block (update_block_msg_t *block_desc_ptr);
+
+/*
+ * Fail certain cnodes in a blocks midplane (usually comes from the
+ *        IBM runjob mux)
+ * IN step_ptr - step with failed cnodes
+ */
+extern int select_g_fail_cnode (struct step_record *step_ptr);
 
 /******************************************************\
  * JOB SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *

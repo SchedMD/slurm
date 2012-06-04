@@ -782,6 +782,11 @@ extern int select_p_update_sub_node(update_block_msg_t *block_desc_ptr)
 	return other_update_sub_node(block_desc_ptr);
 }
 
+extern int select_p_fail_cnode(struct step_record *step_ptr)
+{
+	return other_fail_cnode(step_ptr);
+}
+
 extern int select_p_get_info_from_plugin(enum select_jobdata_type info,
 					 struct job_record *job_ptr,
 					 void *data)

@@ -117,6 +117,7 @@ static int _select_get_ops(char *select_type,
   		"select_p_select_jobinfo_xstrdup",
     		"select_p_update_block",
 		"select_p_update_sub_node",
+		"select_p_fail_cnode",
 		"select_p_get_info_from_plugin",
 		"select_p_update_node_config",
 		"select_p_update_node_state",
@@ -1198,6 +1199,20 @@ extern int select_g_update_sub_node (update_block_msg_t *block_desc_ptr)
 
 	return (*(select_context[select_context_default].ops.
 		  update_sub_node))(block_desc_ptr);
+}
+
+/*
+ * Fail certain cnodes in a blocks midplane (usually comes from the
+ *        IBM runjob mux)
+ * IN step_ptr - step that has failed cnodes
+ */
+extern int select_g_fail_cnode (struct step_record *step_ptr)
+{
+	if (slurm_select_init(0) < 0)
+		return SLURM_ERROR;
+
+	return (*(select_context[select_context_default].ops.
+		  fail_cnode))(step_ptr);
 }
 
 /*

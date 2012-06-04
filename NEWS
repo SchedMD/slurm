@@ -27,6 +27,9 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Fix issue when a nodeboard goes down and you want to combine blocks
     to make a larger small block and are running with sub-blocks.
  -- BLUEGENE - Better logic for making small blocks around bad nodeboard/card.
+ -- BGQ - When using an old IBM driver cnodes that go into error because of
+    a job kill timeout aren't always reported to the system.  This is now
+    handled by the runjob_mux plugin.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
