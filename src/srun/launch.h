@@ -57,6 +57,10 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 					 void (*signal_function)(int),
 					 sig_atomic_t *destroy_job);
 
+extern void launch_common_set_stdio_fds(srun_job_t *job,
+					slurm_step_io_fds_t *cio_fds);
+
+
 extern int launch_init(void);
 extern int launch_fini(void);
 extern int launch_g_setup_srun_opt(char **rest);

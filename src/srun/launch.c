@@ -75,6 +75,18 @@ static plugin_ops_t ops;
 static plugin_context_t *plugin_context = NULL;
 static pthread_mutex_t plugin_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
+static int
+_is_local_file (fname_t *fname)
+{
+	if (fname->name == NULL)
+		return 1;
+
+	if (fname->taskid != -1)
+		return 1;
+
+	return ((fname->type != IO_PER_TASK) && (fname->type != IO_ONE));
+}
+
 /*
  * Initialize context for plugin
  */
@@ -321,6 +333,93 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	job_update_io_fnames(job);
 
 	return SLURM_SUCCESS;
+}
+
+extern void launch_common_set_stdio_fds(srun_job_t *job,
+					slurm_step_io_fds_t *cio_fds)
+{
+	bool err_shares_out = false;
+	int file_flags;
+
+	if (opt.open_mode == OPEN_MODE_APPEND)
+		file_flags = O_CREAT|O_WRONLY|O_APPEND;
+	else if (opt.open_mode == OPEN_MODE_TRUNCATE)
+		file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
+	else {
+		slurm_ctl_conf_t *conf;
+		conf = slurm_conf_lock();
+		if (conf->job_file_append)
+			file_flags = O_CREAT|O_WRONLY|O_APPEND;
+		else
+			file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
+		slurm_conf_unlock();
+	}
+
+	/*
+	 * create stdin file descriptor
+	 */
+	if (_is_local_file(job->ifname)) {
+		if ((job->ifname->name == NULL) ||
+		    (job->ifname->taskid != -1)) {
+			cio_fds->in.fd = STDIN_FILENO;
+		} else {
+			cio_fds->in.fd = open(job->ifname->name, O_RDONLY);
+			if (cio_fds->in.fd == -1) {
+				error("Could not open stdin file: %m");
+				exit(error_exit);
+			}
+		}
+		if (job->ifname->type == IO_ONE) {
+			cio_fds->in.taskid = job->ifname->taskid;
+			cio_fds->in.nodeid = slurm_step_layout_host_id(
+				launch_common_get_slurm_step_layout(job),
+				job->ifname->taskid);
+		}
+	}
+
+	/*
+	 * create stdout file descriptor
+	 */
+	if (_is_local_file(job->ofname)) {
+		if ((job->ofname->name == NULL) ||
+		    (job->ofname->taskid != -1)) {
+			cio_fds->out.fd = STDOUT_FILENO;
+		} else {
+			cio_fds->out.fd = open(job->ofname->name,
+					       file_flags, 0644);
+			if (cio_fds->out.fd == -1) {
+				error("Could not open stdout file: %m");
+				exit(error_exit);
+			}
+		}
+		if (job->ofname->name != NULL
+		    && job->efname->name != NULL
+		    && !strcmp(job->ofname->name, job->efname->name)) {
+			err_shares_out = true;
+		}
+	}
+
+	/*
+	 * create seperate stderr file descriptor only if stderr is not sharing
+	 * the stdout file descriptor
+	 */
+	if (err_shares_out) {
+		debug3("stdout and stderr sharing a file");
+		cio_fds->err.fd = cio_fds->out.fd;
+		cio_fds->err.taskid = cio_fds->out.taskid;
+	} else if (_is_local_file(job->efname)) {
+		if ((job->efname->name == NULL) ||
+		    (job->efname->taskid != -1)) {
+			cio_fds->err.fd = STDERR_FILENO;
+		} else {
+			cio_fds->err.fd = open(job->efname->name,
+					       file_flags, 0644);
+			if (cio_fds->err.fd == -1) {
+				error("Could not open stderr file: %m");
+				exit(error_exit);
+			}
+		}
+	}
 }
 
 extern int launch_g_setup_srun_opt(char **rest)
