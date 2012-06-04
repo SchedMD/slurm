@@ -65,6 +65,7 @@ extern List create_dynamic_block(List block_list,
 	bitstr_t *my_bitmap = NULL;
 	select_ba_request_t blockreq;
 	int cnodes = request->procs / bg_conf->cpu_ratio;
+	int orig_cnodes = cnodes;
 	uint16_t start_geo[SYSTEM_DIMENSIONS];
 
 	if (bg_conf->sub_blocks && (cnodes < bg_conf->mp_cnode_cnt)) {
@@ -205,6 +206,7 @@ extern List create_dynamic_block(List block_list,
 	if (request->avail_mp_bitmap)
 		ba_set_removable_mps(request->avail_mp_bitmap, 1);
 
+try_small_again:
 	if (request->size==1 && cnodes < bg_conf->mp_cnode_cnt) {
 		switch(cnodes) {
 #ifdef HAVE_BGL
@@ -440,6 +442,11 @@ setup_records:
 	}
 
 finished:
+	if (!new_blocks && orig_cnodes != cnodes) {
+		cnodes = orig_cnodes;
+		goto try_small_again;
+	}
+
 	if (request->avail_mp_bitmap
 	    && (bit_ffc(request->avail_mp_bitmap) == -1))
 		ba_reset_all_removed_mps();
@@ -453,12 +460,15 @@ finished:
 	}
 	list_iterator_destroy(itr);
 
-
 	xfree(request->save_name);
 
-	if (results)
+	if (results) {
 		list_destroy(results);
+		results = NULL;
+	}
+
 	errno = rc;
+
 	return new_blocks;
 }
 

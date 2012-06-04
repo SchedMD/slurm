@@ -1202,9 +1202,10 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 		if (create_size != bg_conf->nodecard_cnode_cnt) {
 			blockreq.small128 = blockreq.small32 / 4;
 			blockreq.small32 = 0;
-			io_start = 0;
-		} else if ((io_start =
-			    bit_ffs(smallest_bg_record->ionode_bitmap)) == -1)
+		}
+
+		if ((io_start =
+		     bit_ffs(smallest_bg_record->ionode_bitmap)) == -1)
 			/* set the start to be the same as the start of the
 			   ionode_bitmap.  If no ionodes set (not a small
 			   block) set io_start = 0. */
@@ -1248,13 +1249,54 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 		   smallest block that takes up the entire midplane. */
 	}
 
-
 	/* Here we need to add blocks that take up nodecards on this
 	   midplane.  Since Slurm only keeps track of midplanes
 	   natively this is the only want to handle this case.
 	*/
 	requests = list_create(destroy_bg_record);
 	add_bg_record(requests, NULL, &blockreq, 1, io_start);
+
+	if (bg_conf->sub_blocks
+	    && (!smallest_bg_record
+		|| smallest_bg_record->cnode_cnt == bg_conf->mp_cnode_cnt)) {
+		bg_record_t *rem_record = NULL;
+		memset(&blockreq, 0, sizeof(select_ba_request_t));
+		blockreq.conn_type[0] = SELECT_SMALL;
+		blockreq.save_name = mp_name;
+		blockreq.small256 = 2;
+		add_bg_record(requests, NULL, &blockreq, 1, io_start);
+
+		itr = list_iterator_create(requests);
+		while ((bg_record = list_next(itr))) {
+			if (bit_overlap(bg_record->ionode_bitmap,
+					tmp_record.ionode_bitmap)) {
+				if (bg_record->cnode_cnt == 256) {
+					print_bg_record(bg_record);
+					rem_record = bg_record;
+					list_remove(itr);
+					break;
+				}
+			}
+		}
+		if (!rem_record) {
+			/* this should never happen */
+			error("down_nodecard: something bad happened "
+			      "with creation of 256 block");
+		} else {
+			list_iterator_reset(itr);
+			while ((bg_record = list_next(itr))) {
+				if (bg_record->cnode_cnt == 256)
+					continue;
+				if (!bit_overlap(bg_record->ionode_bitmap,
+						 rem_record->ionode_bitmap)) {
+					print_bg_record(bg_record);
+					list_delete_item(itr);
+				}
+			}
+			destroy_bg_record(rem_record);
+		}
+		list_iterator_destroy(itr);
+	}
 
 	slurm_mutex_lock(&block_state_mutex);
 	delete_list = list_create(NULL);
