@@ -997,12 +997,15 @@ slurm_cred_begin_expiration(slurm_cred_ctx_t ctx, uint32_t jobid)
 	}
 
 	j->expiration  = time(NULL) + ctx->expiry_window;
-#if EXTREME_DEBUG
+#if DEBUG_TIME
 	{
 		char buf[64];
 		debug2("set revoke expiration for jobid %u to %s",
-		       j->jobid, timestr (&j->expiration, buf, 64) );
+		       j->jobid, timestr(&j->expiration, buf, 64));
 	}
+#else
+	debug2("set revoke expiration for jobid %u to %"PRIu64" UTS",
+	       j->jobid, (uint64_t) j->expiration);
 #endif
 	slurm_mutex_unlock(&ctx->mutex);
 	return SLURM_SUCCESS;
@@ -1665,7 +1668,7 @@ extern char * timestr (const time_t *tp, char *buf, size_t n)
 #ifdef DISABLE_LOCALTIME
 	static int disabled = 0;
 	if (buf == NULL)
-		disabled=1;
+		disabled = 1;
 	if (disabled)
 		return NULL;
 #endif
@@ -1721,10 +1724,13 @@ _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 	}
 
 	if (cred->ctime <= j->revoked) {
-#if EXTREME_DEBUG
+#if DEBUG_TIME
 		char buf[64];
 		debug3("cred for %u revoked. expires at %s",
 		       j->jobid, timestr(&j->expiration, buf, 64));
+#else
+		debug3("cred for %u revoked. expires at %"PRIu64" UTS",
+		       j->jobid, (uint64_t) j->expiration);
 #endif
 		return true;
 	}
@@ -1801,7 +1807,7 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 	if (!i)
 		fatal("list_iterator_create: malloc failure");
 	while ((j = list_next(i))) {
-#if EXTREME_DEBUG
+#if DEBUG_TIME
 		char t1[64], t2[64], t3[64];
 		if (j->revoked) {
 			strcpy(t2, " revoked:");
@@ -1817,6 +1823,11 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 		}
 		debug3("state for jobid %u: ctime:%s%s%s",
 		       j->jobid, timestr(&j->ctime, t1, 64), t2, t3);
+#else
+		debug3("state for jobid %u: ctime:%"PRIu64" revoked:%"PRIu64" "
+		       "expires:%"PRIu64"",
+		       j->jobid, (uint64_t)j->ctime, (uint64_t)j->revoked,
+		       (uint64_t)j->revoked);
 #endif
 		if (j->revoked && (now > j->expiration)) {
 			list_delete_item(i);
