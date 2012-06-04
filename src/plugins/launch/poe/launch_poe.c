@@ -712,8 +712,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 }
 
 extern int launch_p_step_launch(
-	srun_job_t *job, slurm_step_io_fds_t *cio_fds,
-	uint32_t *global_rc, bool got_alloc)
+	srun_job_t *job, slurm_step_io_fds_t *cio_fds, uint32_t *global_rc)
 {
 	int rc = 0;
 	pid_t pid;
@@ -767,6 +766,11 @@ extern int launch_p_step_launch(
 	/* NOTE: dummy_pipe is only used to wake the select() function in the
 	 * loop below when the spawned process terminates */
 	return rc;
+}
+
+extern int launch_p_step_wait(srun_job_t *job, bool got_alloc)
+{
+	return 0;
 }
 
 extern int launch_p_step_terminate(void)

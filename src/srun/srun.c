@@ -465,8 +465,10 @@ relaunch:
 
 	_set_stdio_fds(job, &cio_fds);
 
-	if (launch_g_step_launch(job, &cio_fds, &global_rc, got_alloc) == -1)
-		goto relaunch;
+	if (!launch_g_step_launch(job, &cio_fds, &global_rc)) {
+		if (launch_g_step_wait(job, got_alloc) == -1)
+			goto relaunch;
+	}
 
 	if (got_alloc) {
 		cleanup_allocation();

@@ -376,8 +376,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 }
 
 extern int launch_p_step_launch(
-	srun_job_t *job, slurm_step_io_fds_t *cio_fds,
-	uint32_t *global_rc, bool got_alloc)
+	srun_job_t *job, slurm_step_io_fds_t *cio_fds, uint32_t *global_rc)
 {
 	pthread_t msg_thread;
 
@@ -396,6 +395,11 @@ extern int launch_p_step_launch(
 		pthread_join(msg_thread, NULL);
 	}
 
+	return 0;
+}
+
+extern int launch_p_step_wait(srun_job_t *job, bool got_alloc)
+{
 	return 0;
 }
 

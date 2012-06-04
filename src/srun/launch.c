@@ -52,6 +52,7 @@ typedef struct {
 	int (*step_launch)         (srun_job_t *job,
 				    slurm_step_io_fds_t *cio_fds,
 				    uint32_t *global_rc, bool got_alloc);
+	int (*step_wait)           (srun_job_t *job);
 	int (*step_terminate)      (void);
 	void (*print_status)       (void);
 	void (*fwd_signal)         (int signal);
@@ -64,6 +65,7 @@ static const char *syms[] = {
 	"launch_p_setup_srun_opt",
 	"launch_p_create_job_step",
 	"launch_p_step_launch",
+	"launch_p_step_wait",
 	"launch_p_step_terminate",
 	"launch_p_print_status",
 	"launch_p_fwd_signal"
@@ -350,6 +352,13 @@ extern int launch_g_step_launch(
 
 	return (*(ops.step_launch))(job, cio_fds, global_rc,
 						    got_alloc);
+
+extern int launch_g_step_wait(srun_job_t *job)
+{
+	if (launch_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(ops.step_wait))(job);
 }
 
 extern int launch_g_step_terminate(void)
