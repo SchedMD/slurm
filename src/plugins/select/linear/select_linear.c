@@ -3295,6 +3295,11 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 	return SLURM_SUCCESS;
 }
 
+extern int select_p_fail_cnode(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo,
 					  struct job_record *job_ptr,
 					  void *data)

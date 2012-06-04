@@ -342,6 +342,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 {
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
+	int rc = SLURM_SUCCESS;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -349,9 +350,11 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if (IS_JOB_FINISHED(job_ptr))
-		return ESLURM_ALREADY_DONE;
-	if (!IS_JOB_RUNNING(job_ptr)) {
+	if (IS_JOB_FINISHED(job_ptr)) {
+		rc = ESLURM_ALREADY_DONE;
+		if (signal != SIG_NODE_FAIL)
+			return rc;
+	} else if (!IS_JOB_RUNNING(job_ptr)) {
 		verbose("job_step_signal: step %u.%u can not be sent signal "
 			"%u from state=%s", job_id, step_id, signal,
 			job_state_string(job_ptr->job_state));
@@ -371,7 +374,17 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P	
+	/* If SIG_NODE_FAIL codes through it means we had nodes failed
+	   so handle that in the select plugin and switch the signal
+	   to KILL afterwards.
+	*/
+	if (signal == SIG_NODE_FAIL) {
+		select_g_fail_cnode(step_ptr);
+		signal = SIGKILL;
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	}
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
 	srun_step_signal(step_ptr, signal);
 #endif
 

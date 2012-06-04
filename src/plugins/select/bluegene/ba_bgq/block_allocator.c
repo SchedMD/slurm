@@ -1718,6 +1718,10 @@ extern int ba_translate_coord2nc(uint16_t *cnode_coords)
 	return nc_loc;
 }
 
+extern ba_mp_t *ba_inx2ba_mp(int inx)
+{
+	return ba_main_grid_array[inx];
+}
 
 static char *_copy_from_main(List main_mps, List ret_list)
 {
