@@ -592,25 +592,33 @@ _print_job_information(resource_allocation_response_msg_t *resp)
 	xfree(str);
 }
 
-/* Set SLURM_UMASK environment variable with current state */
+/* Set some environment variables with current state */
 static int _set_umask_env(void)
 {
-	char mask_char[5];
-	mode_t mask;
+	if (!getenv("SRUN_DEBUG")) {	/* do not change current value */
+		/* NOTE: Default debug level is 3 (info) */
+		int log_level = LOG_LEVEL_INFO + _verbose - opt.quiet;
 
-	if (getenv("SLURM_UMASK"))	/* use this value */
-		return SLURM_SUCCESS;
-
-	mask = (int)umask(0);
-	umask(mask);
-
-	sprintf(mask_char, "0%d%d%d",
-		((mask>>6)&07), ((mask>>3)&07), mask&07);
-	if (setenvf(NULL, "SLURM_UMASK", "%s", mask_char) < 0) {
-		error ("unable to set SLURM_UMASK in environment");
-		return SLURM_FAILURE;
+		if (setenvf(NULL, "SRUN_DEBUG", "%d", log_level) < 0)
+			error ("unable to set SRUN_DEBUG in environment");
 	}
-	debug ("propagating UMASK=%s", mask_char);
+
+	if (!getenv("SLURM_UMASK")) {	/* do not change current value */
+		char mask_char[5];
+		mode_t mask;
+
+		mask = (int)umask(0);
+		umask(mask);
+
+		sprintf(mask_char, "0%d%d%d",
+			((mask>>6)&07), ((mask>>3)&07), mask&07);
+		if (setenvf(NULL, "SLURM_UMASK", "%s", mask_char) < 0) {
+			error ("unable to set SLURM_UMASK in environment");
+			return SLURM_FAILURE;
+		}
+		debug ("propagating UMASK=%s", mask_char);
+	}
+
 	return SLURM_SUCCESS;
 }
 
