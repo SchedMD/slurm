@@ -121,7 +121,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
 	uint32_t global_rc = 0;
 
-	info("got pe_rm_connect called %p %d", rm_sockfds, rm_sockfds[0]);
+	debug("got pe_rm_connect called %p %d", rm_sockfds, rm_sockfds[0]);
 
 	opt.argc = my_argc;
 	opt.argv = my_argv;
@@ -153,7 +153,7 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 	resource_mgr = NULL;
 
 	dlclose(my_handle);
-	info("got pe_rm_free called");
+	debug("got pe_rm_free called");
 
 }
 
@@ -168,7 +168,7 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
  */
 extern int pe_rm_free_event(rmhandle_t resource_mgr, job_event_t ** job_event)
 {
-	info("got pe_rm_free_event called");
+	debug("got pe_rm_free_event called");
 	if (job_event) {
 		xfree(*job_event);
 	}
@@ -238,8 +238,8 @@ extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 {
 	job_event_t *ret_event = NULL;
 	int *state;
-	info("got pe_rm_get_event called %d %p %p", rm_timeout,
-	     job_event, *job_event);
+	debug("got pe_rm_get_event called %d %p %p",
+	      rm_timeout, job_event, *job_event);
 
 	ret_event = xmalloc(sizeof(job_event_t));
 	*job_event = ret_event;
@@ -290,7 +290,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	char *host;
 	host_usage_t *host_ptr;
 
-	info("got pe_rm_get_job_info called %p %p", job_info, *job_info);
+	debug("got pe_rm_get_job_info called %p %p", job_info, *job_info);
 
 	*job_info = ret_info;
 
@@ -327,7 +327,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		/* 	xstrdup_printf("10.0.0.5%d", i+1); */
 		slurm_conf_get_addr(host, &addr);
 		host_ptr->host_address = xstrdup(inet_ntoa(addr.sin_addr));
-		//info("%s = %s", host_ptr->host_name, host_ptr->host_address);
+		debug3("%s = %s", host_ptr->host_name, host_ptr->host_address);
 		host_ptr->task_count = step_layout->tasks[i];
 		host_ptr->task_ids =
 			xmalloc(sizeof(int) * host_ptr->task_count);
@@ -429,7 +429,10 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 #else
 	fatal("I haven't been told where I am.  This should never happen.");
 #endif
-	info("got pe_rm_init called %s", rm_id);
+	debug("got pe_rm_init called %s", rm_id);
+
+	if (slurm_select_init(1) != SLURM_SUCCESS )
+		fatal( "failed to initialize node selection plugin" );
 
 	/* Set up slurmctld message handler */
 	slurmctld_msg_init();
@@ -467,7 +470,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 extern int pe_rm_send_event(rmhandle_t resource_mgr, job_event_t *job_event,
 			    char ** error_msg)
 {
-	info("got pe_rm_send_event called");
+	debug("got pe_rm_send_event called");
 	return 0;
 }
 
@@ -492,7 +495,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	job_request_t *pe_job_req = NULL;
 	char *myargv[3] = { "poe", "poe", NULL };
 
-	info("got pe_rm_submit_job called %d", job_cmd.job_format);
+	debug("got pe_rm_submit_job called %d", job_cmd.job_format);
 	if (job_cmd.job_format != 1) {
 		/* We don't handle files */
 		error("SLURM doesn't handle files to submit_job");
@@ -516,31 +519,29 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		exit(error_exit);
 	}
 
-	/* info("num_nodes\t= %d", pe_job_req->num_nodes); */
-	/* info("tasks_per_node\t= %d", pe_job_req->tasks_per_node); */
-	/* info("total_tasks\t= %d", pe_job_req->total_tasks); */
-	/* info("usage_mode\t= %d", pe_job_req->node_usage); */
-	/* info("network_usage protocols\t= %s", pe_job_req->network_usage.protocols); */
-	/* info("network_usage adapter_usage\t= %s", pe_job_req->network_usage.adapter_usage); */
-	/* info("network_usage adapter_type\t= %s", pe_job_req->network_usage.adapter_type); */
-	/* info("network_usage mode\t= %s", pe_job_req->network_usage.mode); */
-	/* info("network_usage instance\t= %s", pe_job_req->network_usage.instances); */
-	/* info("network_usage dev_type\t= %s", pe_job_req->network_usage.dev_type); */
-
-	/* info("check_pointable\t= %d", pe_job_req->check_pointable); */
-
-	/* info("check_dir\t= %s", pe_job_req->check_dir); */
-
-	/* info("task_affinity\t= %s", pe_job_req->task_affinity); */
-
-	/* info("pthreads\t= %d", pe_job_req->parallel_threads); */
-	/* info("save_job\t= %s", pe_job_req->save_job_file); */
-
-	/* info("require\t= %s", pe_job_req->requirements); */
-
-	/* info("node_topology\t= %s", pe_job_req->node_topology); */
-
-	/* info("pool\t= %s", pe_job_req->pool); */
+	debug2("num_nodes\t= %d", pe_job_req->num_nodes);
+	debug2("tasks_per_node\t= %d", pe_job_req->tasks_per_node);
+	debug2("total_tasks\t= %d", pe_job_req->total_tasks);
+	debug2("usage_mode\t= %d", pe_job_req->node_usage);
+	debug2("network_usage protocols\t= %s",
+	       pe_job_req->network_usage.protocols);
+	debug2("network_usage adapter_usage\t= %s",
+	       pe_job_req->network_usage.adapter_usage);
+	debug2("network_usage adapter_type\t= %s",
+	       pe_job_req->network_usage.adapter_type);
+	debug2("network_usage mode\t= %s", pe_job_req->network_usage.mode);
+	debug2("network_usage instance\t= %s",
+	       pe_job_req->network_usage.instances);
+	debug2("network_usage dev_type\t= %s",
+	       pe_job_req->network_usage.dev_type);
+	debug2("check_pointable\t= %d", pe_job_req->check_pointable);
+	debug2("check_dir\t= %s", pe_job_req->check_dir);
+	debug2("task_affinity\t= %s", pe_job_req->task_affinity);
+	debug2("pthreads\t= %d", pe_job_req->parallel_threads);
+	debug2("save_job\t= %s", pe_job_req->save_job_file);
+	debug2("require\t= %s", pe_job_req->requirements);
+	debug2("node_topology\t= %s", pe_job_req->node_topology);
+	debug2("pool\t= %s", pe_job_req->pool);
 
 	if (pe_job_req->num_nodes != -1)
 		opt.max_nodes = opt.min_nodes = pe_job_req->num_nodes;
