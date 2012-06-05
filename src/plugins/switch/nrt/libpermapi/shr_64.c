@@ -407,6 +407,10 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		      char** error_msg)
 {
+	log_options_t log_opts = LOG_OPTS_INITIALIZER;
+	int debug_level = 0;
+	char *srun_debug = NULL;
+
 	/* SLURM was originally written against 1300, so we will
 	 * return that, no matter what comes in so we always work.
 	 */
@@ -430,6 +434,17 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	/* Set up slurmctld message handler */
 	slurmctld_msg_init();
 	slurm_set_launch_type("launch/slurm");
+
+	if ((srun_debug = getenv("SRUN_DEBUG")))
+		debug_level = atoi(srun_debug);
+	if (debug_level) {
+		log_opts.stderr_level  = debug_level;
+		log_opts.logfile_level = debug_level;
+		log_opts.syslog_level  = debug_level;
+
+		log_alter(log_opts, LOG_DAEMON, "/dev/null");
+	}
+
 	return 0;
 }
 
