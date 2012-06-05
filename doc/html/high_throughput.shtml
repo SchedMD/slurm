@@ -11,7 +11,7 @@ for this material.</p>
 
 <h2>Performance Results</h2>
 
-<p>SLURM has also been validated to process 100,000 jobs and job steps per hour
+<p>SLURM has also been validated to execute 500 simple batch jobs per second
 on a sustained basis with short bursts of activity at a much higher level.
 Actual performance depends upon the jobs to be executed plus the hardware and
 configuration used.</p>
@@ -53,13 +53,26 @@ be set quite high for memory size, open file count and stack size.</p>
 <h2>SLURM Configuration</h2>
 
 <p>Several SLURM configuration parameters should be adjusted to
-reflect the needs of high throughput computing.</p>
+reflect the needs of high throughput computing. The changes described below
+will not be possible in all environments, but these are the configuration
+options that you may want to consider for higher throughput.</p>
 
 <ul>
+<li><b>AccountingStorageType</b>:
+Disabling accounting will improve job throughput. Disable storing of
+accounting by using the <i>accounting_storage/none</i> plugin.</li>
+<li><b>JobAcctGatherType</b>:
+Disabling the collection of job accounting information will improve job
+throughput. Disable collection of accounting by using the
+<i>jobacct_gather/none</i> plugin.</li>
+<li><b>JobCompType</b>:
+Disabling recording of job completion information will improve job
+throughput. Disable recording of job completion information by using the
+<i>jobcomp/none</i> plugin.</li>
 <li><b>MaxJobCount</b>:
 Controls how many jobs may be in the <b>slurmctld</b> daemon records at any
 point in time (pending, running, suspended or completed[temporarily]).
-The default value is 10,000</li>
+The default value is 10,000.</li>
 <li><b>MessageTimeout</b>:
 Controls how long to wait for a response to messages.
 The default value is 10 seconds.
@@ -91,6 +104,10 @@ jobs or less) and <b>interval</b> to 30 seconds or more will limit the
 overhead of backfill scheduling (NOTE: the default values are fine for both
 of these parameters).</li>
 </ul></li>
+<li><b>SchedulerType</b>:
+If most jobs are short lived then use of the <i>sched/builtin</i> plugin is
+recomended. This manages a queue of jobs on a First-In-First-Out (FIFO) basis
+and eliminates logic used to sort the queue by priority.
 <li><b>SelectType</b>:
 If only serial jobs (single CPU jobs) are to be executed, use of the
 <i>select/serial</i> plugin is recommended. This plugin eliminates much of
@@ -113,6 +130,6 @@ numbers of simultaneous requests are to be supported.</li>
 appropriate for your environment.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 7 March 2012</p>
+<p style="text-align:center;">Last modified 5 June 2012</p>
 
 <!--#include virtual="footer.txt"-->
