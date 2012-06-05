@@ -327,7 +327,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		/* 	xstrdup_printf("10.0.0.5%d", i+1); */
 		slurm_conf_get_addr(host, &addr);
 		host_ptr->host_address = xstrdup(inet_ntoa(addr.sin_addr));
-		info("%s = %s", host_ptr->host_name, host_ptr->host_address);
+		//info("%s = %s", host_ptr->host_name, host_ptr->host_address);
 		host_ptr->task_count = step_layout->tasks[i];
 		host_ptr->task_ids =
 			xmalloc(sizeof(int) * host_ptr->task_count);
@@ -516,47 +516,50 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		exit(error_exit);
 	}
 
-	info("num_nodes\t= %d", pe_job_req->num_nodes);
+	/* info("num_nodes\t= %d", pe_job_req->num_nodes); */
+	/* info("tasks_per_node\t= %d", pe_job_req->tasks_per_node); */
+	/* info("total_tasks\t= %d", pe_job_req->total_tasks); */
+	/* info("usage_mode\t= %d", pe_job_req->node_usage); */
+	/* info("network_usage protocols\t= %s", pe_job_req->network_usage.protocols); */
+	/* info("network_usage adapter_usage\t= %s", pe_job_req->network_usage.adapter_usage); */
+	/* info("network_usage adapter_type\t= %s", pe_job_req->network_usage.adapter_type); */
+	/* info("network_usage mode\t= %s", pe_job_req->network_usage.mode); */
+	/* info("network_usage instance\t= %s", pe_job_req->network_usage.instances); */
+	/* info("network_usage dev_type\t= %s", pe_job_req->network_usage.dev_type); */
+
+	/* info("check_pointable\t= %d", pe_job_req->check_pointable); */
+
+	/* info("check_dir\t= %s", pe_job_req->check_dir); */
+
+	/* info("task_affinity\t= %s", pe_job_req->task_affinity); */
+
+	/* info("pthreads\t= %d", pe_job_req->parallel_threads); */
+	/* info("save_job\t= %s", pe_job_req->save_job_file); */
+
+	/* info("require\t= %s", pe_job_req->requirements); */
+
+	/* info("node_topology\t= %s", pe_job_req->node_topology); */
+
+	/* info("pool\t= %s", pe_job_req->pool); */
+
 	if (pe_job_req->num_nodes != -1)
 		opt.max_nodes = opt.min_nodes = pe_job_req->num_nodes;
 
-	info("tasks_per_node\t= %d", pe_job_req->tasks_per_node);
 	if (pe_job_req->tasks_per_node != -1)
 		opt.ntasks_per_node = pe_job_req->tasks_per_node;
 
-	info("total_tasks\t= %d", pe_job_req->total_tasks);
 	if (pe_job_req->total_tasks != -1) {
 		opt.ntasks_set = true;
 		opt.ntasks = pe_job_req->total_tasks;
 	}
 
-	info("usage_mode\t= %d", pe_job_req->node_usage);
-
-	info("network_usage protocols\t= %s", pe_job_req->network_usage.protocols);
+	xfree(opt.mpi_type);
 	opt.mpi_type = xstrdup(pe_job_req->network_usage.protocols);
-	info("network_usage adapter_usage\t= %s", pe_job_req->network_usage.adapter_usage);
-	info("network_usage adapter_type\t= %s", pe_job_req->network_usage.adapter_type);
-	info("network_usage mode\t= %s", pe_job_req->network_usage.mode);
+	xfree(opt.network);
 	opt.network = xstrdup(pe_job_req->network_usage.mode);
-	info("network_usage instance\t= %s", pe_job_req->network_usage.instances);
-	info("network_usage dev_type\t= %s", pe_job_req->network_usage.dev_type);
 
-	info("check_pointable\t= %d", pe_job_req->check_pointable);
-
-	info("check_dir\t= %s", pe_job_req->check_dir);
-
-	info("task_affinity\t= %s", pe_job_req->task_affinity);
-
-	info("pthreads\t= %d", pe_job_req->parallel_threads);
-
-	/* info("pool\t= %s", pe_job_req->pool); */
 	/* opt.partition = xstrdup(pe_job_req->pool); */
 
-	info("save_job\t= %s", pe_job_req->save_job_file);
-
-	info("require\t= %s", pe_job_req->requirements);
-
-	info("node_topology\t= %s", pe_job_req->node_topology);
 /* 	/\* now global "opt" should be filled in and available, */
 /* 	 * create a job from opt */
 /* 	 *\/ */
@@ -619,7 +622,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		else if (!opt.job_name_set_env && opt.argc)
 			setenvfs("SLURM_JOB_NAME=%s", opt.argv[0]);
 
-		if ( !(resp = allocate_nodes()) )
+		if (!(resp = allocate_nodes()))
 			return error_exit;
 
 		//got_alloc = true;
