@@ -116,26 +116,47 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	srun_job_t **job_ptr = (srun_job_t **)resource_mgr;
 	srun_job_t *job = *job_ptr;
 	int my_argc = 1;
-	char *my_argv[2] = { "/etc/pmdv12", NULL };
+	char *my_argv[2] = { connect_param->executable, NULL };
 //	char *my_argv[2] = { "/bin/hostname", NULL };
 	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
 	uint32_t global_rc = 0;
+	int i, rc, fd_cnt;
+	int *ctx_sockfds = NULL;
 
-	debug("got pe_rm_connect called %p %d", rm_sockfds, rm_sockfds[0]);
+	debug("got pe_rm_connect called");
 
 	opt.argc = my_argc;
 	opt.argv = my_argv;
+	opt.user_managed_io = true;
 
 	launch_common_set_stdio_fds(job, &cio_fds);
 
+	if (slurm_step_ctx_daemon_per_node_hack(job->step_ctx,
+						connect_param->machine_name,
+						connect_param->machine_count)
+	    != SLURM_SUCCESS)
+		return -1;
+
 	if (launch_g_step_launch(job, &cio_fds, &global_rc))
-		return 1;
+		return -1;
 
-	rm_sockfds[0] = cio_fds.in.fd;
-	rm_sockfds[1] = cio_fds.out.fd;
-	rm_sockfds[2] = cio_fds.err.fd;
+	rc = slurm_step_ctx_get(job->step_ctx,
+				SLURM_STEP_CTX_USER_MANAGED_SOCKETS,
+				&fd_cnt, &ctx_sockfds);
+	if (ctx_sockfds == NULL) {
+		error("Unable to get pmd IO socket array %d", rc);
+		return -5;
+	}
+	if (fd_cnt != connect_param->machine_count) {
+		error("looking for %d sockets but got back %d",
+		      connect_param->machine_count, fd_cnt);
+		return -5;
+	}
 
-	info("done launching");
+	for (i=0; i<fd_cnt; i++)
+		rm_sockfds[i] = ctx_sockfds[i];
+
+//	info("done launching");
 	return 0;
 }
 
@@ -558,8 +579,6 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	opt.mpi_type = xstrdup(pe_job_req->network_usage.protocols);
 	xfree(opt.network);
 	opt.network = xstrdup(pe_job_req->network_usage.mode);
-
-	/* opt.partition = xstrdup(pe_job_req->pool); */
 
 /* 	/\* now global "opt" should be filled in and available, */
 /* 	 * create a job from opt */
