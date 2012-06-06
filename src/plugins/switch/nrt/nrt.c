@@ -91,10 +91,16 @@ mode_t			nrt_umask;
  * module.
  */
 
+/* Notes about job_key:
+ * - It must be unique for every job step.
+ * - It is a 32-bit quantity.
+ * - We might use the bottom 16-bits of job ID an step ID, but that could
+ *   result in conflicts for long-lived job steps.
+ */
 typedef struct slurm_nrt_window {
 	nrt_window_id_t window_id;
 	win_state_t state;
-	nrt_job_key_t job_key;  /* FIXME: Perhaps change to uid or client_pid? */
+	nrt_job_key_t job_key;
 } slurm_nrt_window_t;
 
 typedef struct slurm_nrt_adapter {
@@ -2635,7 +2641,9 @@ _wait_for_all_windows(nrt_tableinfo_t *tableinfo)
 		      _adapter_type_str(adapter_names.adapter_type),
 		      nrt_err_str(err));
 		rc = SLURM_ERROR;
-		max_windows = 16;	/* FIXME: What should this be? */
+		/* We will still try to unload the windows. It is unclear what
+		 * the maximum window count is, but 512 is largest seen. */
+		max_windows = 1024;
 	}
 	
 	for (i = 0; i < tableinfo->table_length; i++) {
@@ -2757,8 +2765,6 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 				return rc;
 		}
 
-/* FIXME: Ne need to set a bunch of these paramters appropriately */
-#define TBD0 0
 		bzero(&table_info, sizeof(nrt_table_info_t));
 		table_info.num_tasks = jp->tableinfo[i].table_length;
 		table_info.job_key = jp->job_key;
@@ -2777,7 +2783,8 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 			table_info.is_user_space = 0;
 		}
 		table_info.context_id = 0;
-		table_info.table_id = TBD0;
+/* FIXME: Need to set table_id here */
+		table_info.table_id = 0;
 		if (job_name) {
 			char *sep = strrchr(job_name,'/');
 			if (sep)
@@ -2794,7 +2801,9 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 				NRT_MAX_PROTO_NAME_LEN);
 		}
 		table_info.use_bulk_transfer = jp->bulk_xfer;
-		table_info.bulk_transfer_resources = TBD0;
+/* FIXME: Can not find documentation about bulk_transfer_resources.
+ * Perhaps use a new job --network option? */
+		table_info.bulk_transfer_resources = 0;
 		/* The following fields only apply to Power7 processors
 		 * and have no effect on x86 processors:
 		 * immed_send_slots_per_win
