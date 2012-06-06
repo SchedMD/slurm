@@ -843,8 +843,11 @@ Multiple values may be specified in a comma separated list.
 Supported values include:
 .RS
 .TP 12
-\fBBULK_XFER\fR
-Enable bulk transfer of data using Remote Direct-Memory Access (RDMA)
+\fBBULK_XFER\fR [=<\fIresources\fR>
+Enable bulk transfer of data using Remote Direct-Memory Access (RDMA).
+The optional \fIresources\fR specification is a numeric value which can have
+a suffix of "k", "K", "m", "M", "g" or "G" for kilobytes, megabytes or
+gigabytes.
 .TP
 \fBIPV4\fR
 Use Internet Protocol (IP) version 4 communications (default)
