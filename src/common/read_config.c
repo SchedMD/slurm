@@ -43,16 +43,19 @@
 #  include "config.h"
 #endif
 
+#include <arpa/inet.h>
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <pthread.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
@@ -1496,7 +1499,6 @@ extern char *slurm_conf_get_nodename(const char *node_hostname)
 
 	_init_slurmd_nodehash();
 	idx = _get_hash_idx(node_hostname);
-
 	p = host_to_node_hashtbl[idx];
 	while (p) {
 		if (strcmp(p->hostname, node_hostname) == 0) {
@@ -1578,6 +1580,37 @@ extern char *slurm_conf_get_nodeaddr(const char *node_hostname)
 	slurm_conf_unlock();
 
 	return NULL;
+}
+
+/*
+ * slurm_conf_get_nodename_from_addr - Return the NodeName for given NodeAddr
+ *
+ * NOTE: Call xfree() to release returned value's memory.
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern char *slurm_conf_get_nodename_from_addr(const char *node_addr)
+{
+	unsigned char buf[HOSTENT_SIZE];
+	struct hostent *hptr;
+	unsigned long addr = inet_addr(node_addr);
+	char *start_name, *ret_name = NULL, *dot_ptr;
+
+	if (!(hptr = get_host_by_addr((char *)&addr, sizeof(addr), AF_INET,
+				      buf, sizeof(buf), NULL))) {
+		error("%m");
+		return NULL;
+	}
+
+	start_name = xstrdup(hptr->h_name);
+	dot_ptr = strchr(start_name, '.');
+	if (dot_ptr == NULL)
+		dot_ptr = start_name + strlen(start_name);
+	else
+		dot_ptr[0] = '\0';
+
+	ret_name = slurm_conf_get_aliases(start_name);
+	xfree(start_name);
+	return ret_name;
 }
 
 /*

@@ -367,6 +367,14 @@ extern char *slurm_conf_get_aliases(const char *node_hostname);
 extern char *slurm_conf_get_nodeaddr(const char *node_hostname);
 
 /*
+ * slurm_conf_get_nodename_from_addr - Return the NodeName for given NodeAddr
+ *
+ * NOTE: Call xfree() to release returned value's memory.
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern char *slurm_conf_get_nodename_from_addr(const char *node_addr);
+
+/*
  * slurm_conf_get_aliased_nodename - Return the NodeName matching an alias
  * of the local hostname
  *
