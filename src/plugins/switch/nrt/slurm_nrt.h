@@ -99,7 +99,8 @@ extern int nrt_alloc_jobinfo(slurm_nrt_jobinfo_t **jh);
 extern int nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 			     uint16_t *tasks_per_node, uint32_t **tids,
 			     bool sn_all, char *adapter_name, bool bulk_xfer,
-			     bool ip_v4, bool user_space, char *protocol);
+			     uint32_t bulk_xfer_resources, bool ip_v4,
+			     bool user_space, char *protocol);
 extern int nrt_pack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf);
 extern int nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf);
 extern slurm_nrt_jobinfo_t *nrt_copy_jobinfo(slurm_nrt_jobinfo_t *jp);

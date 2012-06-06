@@ -395,9 +395,10 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 {
 	hostlist_t list = NULL;
 	bool bulk_xfer = false, ip_v4 = true, user_space = false;
+	uint32_t bulk_xfer_resources = 0;
 	bool sn_all;
 	int err;
-	char *adapter_name = NULL, *protocol = "mpi";
+	char *adapter_name = NULL, *protocol = "mpi", *bulk_ptr = NULL;
 
 #if NRT_DEBUG
 	info("switch_p_build_jobinfo(): nodelist:%s network:%s",
@@ -411,9 +412,26 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 		fatal("hostlist_create(%s): %m", nodelist);
 
 	if (network &&
-	    (strstr(network, "bulk_xfer") ||
-	     strstr(network, "BULK_XFER")))
+	    ((bulk_ptr = strstr(network, "bulk_xfer")) ||
+	     (bulk_ptr = strstr(network, "BULK_XFER")))) {
 		bulk_xfer = true;
+		if ((bulk_ptr[9] == '=') &&
+		    (bulk_ptr[10] >= '0') &&
+		    (bulk_ptr[10] <= '9')) {
+			long int resources;
+			char *end_ptr = NULL;
+			bulk_ptr += 10;
+			resources = strtol(bulk_ptr, &end_ptr, 10);
+			if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K'))
+				resources *= 1024;
+			else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M'))
+				resources *= (1024 * 1024);
+			else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G'))
+				resources *= (1024 * 1024 * 1024);
+			if (resources >= 0)
+				bulk_xfer_resources = resources;
+		}
+	}
 
 	if (network &&
 	    (strstr(network, "ipv4") ||
@@ -464,7 +482,8 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 
 	err = nrt_build_jobinfo((slurm_nrt_jobinfo_t *)switch_job, list,
 				tasks_per_node, tids, sn_all, adapter_name,
-				bulk_xfer, ip_v4, user_space, protocol);
+				bulk_xfer, bulk_xfer_resources,
+				ip_v4, user_space, protocol);
 
 	hostlist_destroy(list);
 	xfree(adapter_name);

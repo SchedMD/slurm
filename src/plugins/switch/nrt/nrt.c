@@ -143,6 +143,7 @@ struct slurm_nrt_jobinfo {
 	/* pid from getpid() */
 	nrt_job_key_t job_key;
 	uint8_t bulk_xfer;	/* flag */
+	uint32_t bulk_xfer_resources;
 	uint8_t ip_v4;		/* flag */
 	uint8_t user_space;	/* flag */
 	char *protocol;		/* MPI, UPC, LAPI, PAMI, etc. */
@@ -1229,6 +1230,7 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 	info("  network_id: %lu", j->network_id);
 	info("  table_size: %u", j->tables_per_task);
 	info("  bulk_xfer: %hu", j->bulk_xfer);
+	info("  bulk_xfer_resources: %lu", j->bulk_xfer_resources);
 	info("  ip_v4: %hu", j->ip_v4);
 	info("  user_space: %hu", j->user_space);
 	info("  tables_per_task: %hu", j->tables_per_task);
@@ -2036,7 +2038,8 @@ _next_key(void)
 extern int
 nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		  uint16_t *tasks_per_node, uint32_t **tids, bool sn_all,
-		  char *adapter_name, bool bulk_xfer, bool ip_v4,
+		  char *adapter_name, bool bulk_xfer,
+		  uint32_t bulk_xfer_resources, bool ip_v4,
 		  bool user_space, char *protocol)
 {
 	int nnodes, nprocs = 0;
@@ -2062,6 +2065,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		slurm_seterrno_ret(EINVAL);
 
 	jp->bulk_xfer  = (uint8_t) bulk_xfer;
+	jp->bulk_xfer_resources = bulk_xfer_resources;
 	jp->ip_v4      = (uint8_t) ip_v4;
 	jp->job_key    = _next_key();
 	jp->nodenames  = hostlist_copy(hl);
@@ -2274,6 +2278,7 @@ nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	pack32(j->magic, buf);
 	pack32(j->job_key, buf);
 	pack8(j->bulk_xfer, buf);
+	pack32(j->bulk_xfer_resources, buf);
 	pack8(j->ip_v4, buf);
 	pack8(j->user_space, buf);
 	pack16(j->tables_per_task, buf);
@@ -2391,6 +2396,7 @@ nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	assert(j->magic == NRT_JOBINFO_MAGIC);
 	safe_unpack32(&j->job_key, buf);
 	safe_unpack8(&j->bulk_xfer, buf);
+	safe_unpack32(&j->bulk_xfer_resources, buf);
 	safe_unpack8(&j->ip_v4, buf);
 	safe_unpack8(&j->user_space, buf);
 	safe_unpack16(&j->tables_per_task, buf);
@@ -2801,9 +2807,7 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 				NRT_MAX_PROTO_NAME_LEN);
 		}
 		table_info.use_bulk_transfer = jp->bulk_xfer;
-/* FIXME: Can not find documentation about bulk_transfer_resources.
- * Perhaps use a new job --network option? */
-		table_info.bulk_transfer_resources = 0;
+		table_info.bulk_transfer_resources = jp->bulk_xfer_resources;
 		/* The following fields only apply to Power7 processors
 		 * and have no effect on x86 processors:
 		 * immed_send_slots_per_win
