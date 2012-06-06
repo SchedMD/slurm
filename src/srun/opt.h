@@ -225,6 +225,7 @@ typedef struct srun_options {
 	int spank_job_env_size;	/* size of spank_job_env	*/
 	int req_switch;		/* Minimum number of switches	*/
 	int wait4switch;	/* Maximum time to wait for minimum switches */
+	bool user_managed_io;   /* 0 for "normal" IO, 1 for "user manged" IO */
 	char *runjob_opts;	/* Runjob command options, BGQ only	*/
 } opt_t;
 

@@ -435,6 +435,7 @@ extern int launch_p_step_launch(
 	launch_params.preserve_env      = opt.preserve_env;
 	launch_params.spank_job_env     = opt.spank_job_env;
 	launch_params.spank_job_env_size = opt.spank_job_env_size;
+	launch_params.user_managed_io   = opt.user_managed_io;
 
 	memcpy(&launch_params.local_fds, cio_fds, sizeof(slurm_step_io_fds_t));
 
