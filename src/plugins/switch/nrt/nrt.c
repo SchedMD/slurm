@@ -1230,7 +1230,7 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 	info("  network_id: %lu", j->network_id);
 	info("  table_size: %u", j->tables_per_task);
 	info("  bulk_xfer: %hu", j->bulk_xfer);
-	info("  bulk_xfer_resources: %lu", j->bulk_xfer_resources);
+	info("  bulk_xfer_resources: %u", j->bulk_xfer_resources);
 	info("  ip_v4: %hu", j->ip_v4);
 	info("  user_space: %hu", j->user_space);
 	info("  tables_per_task: %hu", j->tables_per_task);
