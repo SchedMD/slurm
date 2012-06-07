@@ -76,6 +76,7 @@
 #define NRT_NODECOUNT		128
 #define NRT_HASHCOUNT		128
 #define NRT_MAX_ADAPTERS (NRT_MAX_ADAPTERS_PER_TYPE * NRT_MAX_ADAPTER_TYPES)
+#define NRT_MAX_PROTO_CNT	20
 
 pthread_mutex_t		global_lock = PTHREAD_MUTEX_INITIALIZER;
 extern bool		nrt_need_state_save;
@@ -2759,9 +2760,28 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 	int rc;
 	nrt_cmd_load_table_t load_table;
 	nrt_table_info_t table_info;
+	int  protocol_cnt = 0;
+	char protocol_name[NRT_MAX_PROTO_CNT][NRT_MAX_PROTO_NAME_LEN];
 
 	assert(jp);
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
+
+	if (jp->protocol) {
+		char *tok, *save_ptr;
+		char *protocol = xstrdup(jp->protocol);
+		tok = strtok_r(protocol, ",", &save_ptr);
+		while (tok) {
+			if (protocol_cnt >= NRT_MAX_PROTO_CNT) {
+				error("too many protocols for job (%s)",
+				      jp->protocol);
+				break;
+			}
+			strncpy(&protocol_name[protocol_cnt++][0], tok, 
+				NRT_MAX_PROTO_NAME_LEN);
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(protocol);
+	}
 
 #if NRT_DEBUG
 	info("nrt_load_table");

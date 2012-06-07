@@ -398,7 +398,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 	uint32_t bulk_xfer_resources = 0;
 	bool sn_all;
 	int err;
-	char *adapter_name = NULL, *protocol = "mpi", *bulk_ptr = NULL;
+	char *adapter_name = NULL, *bulk_ptr = NULL, *protocol = NULL;
 
 #if NRT_DEBUG
 	info("switch_p_build_jobinfo(): nodelist:%s network:%s",
@@ -453,13 +453,35 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 		user_space = true;
 
 	if (network &&
-	    (strstr(network, "pami") ||
-	     strstr(network, "PAMI")))
-		protocol = "pami";
-	if (network &&
 	    (strstr(network, "lapi") ||
-	     strstr(network, "LAPI")))
-		protocol = "lapi";
+	     strstr(network, "LAPI"))) {
+		if (protocol)
+			xstrcat(protocol, ",");
+		xstrcat(protocol, "lapi");
+	}
+	if (network &&
+	    (strstr(network, "mpi") ||
+	     strstr(network, "MPI"))) {
+		if (protocol)
+			xstrcat(protocol, ",");
+		xstrcat(protocol, "mpi");
+	}
+	if (network &&
+	    (strstr(network, "pami") ||
+	     strstr(network, "PAMI"))) {
+		if (protocol)
+			xstrcat(protocol, ",");
+		xstrcat(protocol, "pami");
+	}
+	if (network &&
+	    (strstr(network, "upc") ||
+	     strstr(network, "UPC"))) {
+		if (protocol)
+			xstrcat(protocol, ",");
+		xstrcat(protocol, "upc");
+	}
+	if (protocol == NULL)
+		xstrcat(protocol, "mpi");
 
 	if (!network) {
 		/* default to sn_all */
@@ -485,6 +507,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 				bulk_xfer, bulk_xfer_resources,
 				ip_v4, user_space, protocol);
 
+	xfree(protocol);
 	hostlist_destroy(list);
 	xfree(adapter_name);
 
