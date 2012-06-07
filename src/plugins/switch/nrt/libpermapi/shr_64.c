@@ -336,8 +336,9 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	ret_info->protocol[0] = xstrdup(opt.mpi_type);
 	ret_info->mode = xmalloc(sizeof(char *)*2);
 	ret_info->mode[0] = xstrdup(opt.network);
-	ret_info->instance = xmalloc(sizeof(int));
-	*ret_info->instance = 1;
+	ret_info->instance = xmalloc(sizeof(int)*3);
+	ret_info->instance[0] = 1;
+	ret_info->instance[1] = -1;
 /* FIXME: not sure how to handle devicename yet */
 	ret_info->devicename = xmalloc(sizeof(char *)*2);
 	ret_info->devicename[0] = xstrdup("sn_all");
