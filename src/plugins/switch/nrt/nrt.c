@@ -2725,6 +2725,30 @@ _check_rdma_job_count(char *adapter_name, nrt_adapter_t adapter_type)
  * for a given adapter, load the table only once for that adapter.
  *
  * Used by: slurmd
+ *
+ * Notes on context_id and table_id from Bill LePera, IBM, 6/7/2012:
+ *
+ * Each NRT is uniquely identified by a combination of three elements: job_key,
+ * context_id, and table_id.  context_id and table_id usually start at zero and
+ * are incremented based on how many NRTs are required to define all the
+ * resources used for a job, based on factors like striping, instances, and
+ * number of protocols.
+ *
+ * For example, a scheduler building an NRT for a job using a single protocol,
+ * single network (no striping), and a single instance would set both
+ * context_id and table_id to zero.  A multi-protocol job (one that used both
+ * MPI and PAMI, for example), would build at least one NRT for each protocol.
+ * In this case, there would be two NRTs, with context_id 0 and 1.  If you are
+ * still using a single network and single instance, the table_id's for both
+ * NRTs would be zero, and these would be the only two NRTs needed for the job.
+ *
+ * The table_id is incremented on a per-protocol basis, based on number of
+ * networks (or stripes) and number of instances.  For example, a single-
+ * protocol job running across two networks using four instances would need
+ * 2 * 4 = 8 NRTs, with context_id set to 0 for each, and table_id 0 - 7.  If
+ * this same job was a multi-protocol job, you would need 16 NRTs total
+ * (2 protocols * 2 networks * 4 instances), with context_id 0 and 1, and
+ * table_id 0-7 within each protocol.
  */
 extern int
 nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
@@ -2788,6 +2812,7 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 			table_info.is_ipv4 = 0;
 			table_info.is_user_space = 0;
 		}
+/* FIXME: Need to set context_id here */
 		table_info.context_id = 0;
 /* FIXME: Need to set table_id here */
 		table_info.table_id = 0;
