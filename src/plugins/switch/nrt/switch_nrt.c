@@ -396,9 +396,11 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 	hostlist_t list = NULL;
 	bool bulk_xfer = false, ip_v4 = true, user_space = false;
 	uint32_t bulk_xfer_resources = 0;
-	bool sn_all;
+	bool sn_all = true;	/* default to sn_all */
 	int err;
-	char *adapter_name = NULL, *bulk_ptr = NULL, *protocol = NULL;
+	char *adapter_name = NULL;
+	char *protocol = NULL;
+	char *network_str = NULL, *token = NULL, *save_ptr = NULL;
 
 #if NRT_DEBUG
 	info("switch_p_build_jobinfo(): nodelist:%s network:%s",
@@ -411,17 +413,16 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 	if (!list)
 		fatal("hostlist_create(%s): %m", nodelist);
 
-	if (network &&
-	    ((bulk_ptr = strstr(network, "bulk_xfer")) ||
-	     (bulk_ptr = strstr(network, "BULK_XFER")))) {
-		bulk_xfer = true;
-		if ((bulk_ptr[9] == '=') &&
-		    (bulk_ptr[10] >= '0') &&
-		    (bulk_ptr[10] <= '9')) {
+	if (network) {
+		network_str = xstrdup(network);
+		token = strtok_r(network_str, ",", &save_ptr);
+	}
+	while (token) {
+		if (!strncasecmp(token, "bulk_xfer=", 10)) {
 			long int resources;
 			char *end_ptr = NULL;
-			bulk_ptr += 10;
-			resources = strtol(bulk_ptr, &end_ptr, 10);
+			bulk_xfer = true;
+			resources = strtol(token+10, &end_ptr, 10);
 			if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K'))
 				resources *= 1024;
 			else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M'))
@@ -430,86 +431,49 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 				resources *= (1024 * 1024 * 1024);
 			if (resources >= 0)
 				bulk_xfer_resources = resources;
+		} else if (!strcasecmp(token, "bulk_xfer")) {
+			bulk_xfer = true;
+
+		} else if (!strcasecmp(token, "ipv4")) {
+			ip_v4 = true;
+		} else if (!strcasecmp(token, "ipv6")) {
+			ip_v4 = false;
+		} else if (!strcasecmp(token, "us")) {
+			user_space = true;
+
+		} else if ((!strncasecmp(token, "lapi", 4)) ||
+			   (!strncasecmp(token, "mpi",  3)) ||
+			   (!strncasecmp(token, "pami", 4)) ||
+			   (!strncasecmp(token, "upc",  3))) {
+			if (protocol)
+				xstrcat(protocol, ",");
+			xstrcat(protocol, token);
+
+		} else if (!strcasecmp(token, "sn_all")) {
+			sn_all = true;
+		} else if (!strcasecmp(token, "sn_single")) {
+			sn_all = false;
+		} else if (nrt_adapter_name_check(token, list)) {
+/* FIXME: Need to propagate to nrt_build_jobinfo() below */
+			info("Found adapter %s in network string", token);
+			adapter_name = xstrdup(token);
+			sn_all = false;
 		}
+		token = strtok_r(NULL, ",", &save_ptr);
 	}
 
-	if (network &&
-	    (strstr(network, "ipv4") ||
-	     strstr(network, "IPV4"))) {
-		ip_v4 = true;
-		user_space = false;
-	}
-
-	if (network &&
-	    (strstr(network, "ipv6") ||
-	     strstr(network, "IPV6"))) {
-		ip_v4 = false;
-		user_space = false;
-	}
-
-	if (network &&
-	    (strstr(network, "us") ||
-	     strstr(network, "US")))
-		user_space = true;
-
-	if (network &&
-	    (strstr(network, "lapi") ||
-	     strstr(network, "LAPI"))) {
-		if (protocol)
-			xstrcat(protocol, ",");
-		xstrcat(protocol, "lapi");
-	}
-	if (network &&
-	    (strstr(network, "mpi") ||
-	     strstr(network, "MPI"))) {
-		if (protocol)
-			xstrcat(protocol, ",");
-		xstrcat(protocol, "mpi");
-	}
-	if (network &&
-	    (strstr(network, "pami") ||
-	     strstr(network, "PAMI"))) {
-		if (protocol)
-			xstrcat(protocol, ",");
-		xstrcat(protocol, "pami");
-	}
-	if (network &&
-	    (strstr(network, "upc") ||
-	     strstr(network, "UPC"))) {
-		if (protocol)
-			xstrcat(protocol, ",");
-		xstrcat(protocol, "upc");
-	}
 	if (protocol == NULL)
 		xstrcat(protocol, "mpi");
-
-	if (!network) {
-		/* default to sn_all */
-		sn_all = true;
-	} else if (strstr(network, "sn_all") ||
-	           strstr(network, "SN_ALL")) {
-		debug3("Found sn_all in network string");
-		sn_all = true;
-	} else if (strstr(network, "sn_single") ||
-		   strstr(network, "SN_SINGLE")) {
-		debug3("Found sn_single in network string");
-		sn_all = false;
-	} else if ((adapter_name = nrt_adapter_name_check(network, list))) {
-		info("Found adapter %s in network string", adapter_name);
-		sn_all = false;
-	} else {
-		/* default to sn_all */
-		sn_all = true;
-	}
 
 	err = nrt_build_jobinfo((slurm_nrt_jobinfo_t *)switch_job, list,
 				tasks_per_node, tids, sn_all, adapter_name,
 				bulk_xfer, bulk_xfer_resources,
 				ip_v4, user_space, protocol);
 
+	xfree(adapter_name);
 	xfree(protocol);
 	hostlist_destroy(list);
-	xfree(adapter_name);
+	xfree(network_str);
 
 	return err;
 }

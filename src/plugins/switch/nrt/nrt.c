@@ -1172,7 +1172,7 @@ _print_table(void *table, int size, nrt_adapter_t adapter_type, bool ip_v4)
 			inet_ntop(AF_INET, &ib_tbl_ptr->node_number, addr_str,
 				  sizeof(addr_str));
 			info("  node_number: %s", addr_str);
-			info("  node_number: %u", ib_tbl_ptr->node_number);
+/*			info("  node_number: %u", ib_tbl_ptr->node_number); */
 			info("  device_name: %s", ib_tbl_ptr->device_name);
 			info("  base_lid: %u", ib_tbl_ptr->base_lid);
 			info("  port_id: %hu", ib_tbl_ptr->port_id);
@@ -1196,7 +1196,7 @@ _print_table(void *table, int size, nrt_adapter_t adapter_type, bool ip_v4)
 			inet_ntop(AF_INET, &ip_tbl_ptr->node_number, addr_str,
 				  sizeof(addr_str));
 			info("  node_number: %s", addr_str);
-			info("  node_number: %u", ip_tbl_ptr->node_number);
+/*			info("  node_number: %u", ip_tbl_ptr->node_number); */
 			if (ip_v4) {
 				inet_ntop(AF_INET, &ip_tbl_ptr->ip.ipv4_addr,
 					  addr_str, sizeof(addr_str));
@@ -1243,6 +1243,8 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 	info("  nodenames: %s (slurmctld internal use only)", buf);
 	info("  num_tasks: %d", j->num_tasks);
 	for (i = 0; i < j->tables_per_task; i++) {
+		info("  adapter_type: %s",
+		     _adapter_type_str(j->tableinfo[i].adapter_type));
 		if (j->user_space)
 			adapter_type = j->tableinfo[i].adapter_type;
 		else
@@ -2028,6 +2030,33 @@ _next_key(void)
 	_unlock();
 
 	return key;
+}
+
+static int _get_protocol_cnt(char *protocol)
+{
+	char *paren_ptr, *protocol_str, *save_ptr = NULL, *token;
+	int protocol_cnt = 0;
+
+	if (!protocol)
+		return 1;
+
+	protocol_str = xstrdup(protocol);
+	token = strtok_r(protocol_str, ",", &save_ptr);
+	while (token) {
+		paren_ptr = strchr(token, '(');
+		if (paren_ptr)
+			protocol_cnt += atoi(paren_ptr+1);
+		else
+			protocol_cnt++;
+		token = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(protocol_str);
+
+	if (protocol_cnt <= 0) {
+		info("Invalid job protocol(%s)", protocol);
+		protocol_cnt = 1;
+	}
+	return protocol_cnt;
 }
 
 /* Setup everything for the job.  Assign tasks across
@@ -3255,6 +3284,7 @@ nrt_clear_node_state(void)
 			}
 #endif
 			if (window_count > max_windows) {
+/* FIXME: Seeing (2 > 0) for eth0 */
 				error("nrt_command(status_adapter, %s, %s): "
 				      "window_count > max_windows (%u > %hu)",
 				      adapter_status.adapter_name,
@@ -3393,20 +3423,20 @@ extern char *nrt_err_str(int rc)
 }
 
 
-/* return an adapter name from within a job's "network" string
- * IN network - job's "network" specification
+/* Determine if a token is the name of an adapter
+ * IN token - token from job's "network" specification
  * IN list - hostlist of allocated nodes
- * RET - A network name, must xfree() or NULL if none found */
-extern char *nrt_adapter_name_check(char *network, hostlist_t hl)
+ * RET - True if token is a adapter name, false otherwise */
+extern bool nrt_adapter_name_check(char *token, hostlist_t hl)
 {
 	int i;
 	hostlist_iterator_t hi;
 	slurm_nrt_nodeinfo_t *node;
-	char *host, *net_str = NULL, *token = NULL, *last = NULL;
-	char *adapter_name = NULL;
+	char *host;
+	bool name_found = false;
 
-	if (!network || !hl)
-		return NULL;
+	if (!token || !hl)
+		return name_found;
 
 	hi = hostlist_iterator_create(hl);
 	host = hostlist_next(hi);
@@ -3414,21 +3444,14 @@ extern char *nrt_adapter_name_check(char *network, hostlist_t hl)
 	_lock();
 	node = _find_node(nrt_state, host);
 	if (node && node->adapter_list) {
-		net_str = xstrdup(network);
-		token = strtok_r(network, ",", &last);
-	}
-	while (token) {
 		for (i = 0; i < node->adapter_count; i++) {
-			if (!strcmp(token,node->adapter_list[i].adapter_name)){
-				adapter_name = xstrdup(token);
-				break;
-			}
-		}
-		if (adapter_name)
+			if (strcmp(token,node->adapter_list[i].adapter_name))
+				continue;
+			name_found = true;
 			break;
-		token = strtok_r(NULL, ",", &last);
+		}
 	}
 	_unlock();
-	xfree(net_str);
-	return adapter_name;
+
+	return name_found;
 }
