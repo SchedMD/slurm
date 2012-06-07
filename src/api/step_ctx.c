@@ -430,10 +430,6 @@ slurm_step_ctx_daemon_per_node_hack(
 	int i;
 	hostlist_t hl = NULL;
 	char *name = NULL;
-	/* Since this could be called lots of times in a single
-	   process we need to make sure it keeps counting up.
-	*/
-	static int task_id = 0;
 
 	if ((ctx == NULL) || (ctx->magic != STEP_CTX_MAGIC)) {
 		slurm_seterrno(EINVAL);
@@ -478,13 +474,19 @@ slurm_step_ctx_daemon_per_node_hack(
 	for (i = 0; i < new_layout->node_cnt; i++) {
 		new_layout->tasks[i] = 1;
 		new_layout->tids[i] = (uint32_t *)xmalloc(sizeof(uint32_t));
-		new_layout->tids[i][0] = task_id++;
+		new_layout->tids[i][0] = i;
 	}
 	ctx->step_resp->step_layout = new_layout;
 
 	/* recreate the launch state structure now that the settings
 	   have changed */
-	step_launch_state_destroy(ctx->launch_state);
+
+
+/* FIXME: currently we have to make multiple calls for this so
+   destroying it does not work.  This isn't a good solution either and
+   should only be viewed as temporary.
+*/
+	//step_launch_state_destroy(ctx->launch_state);
 	ctx->launch_state = step_launch_state_create(ctx);
 
 	return SLURM_SUCCESS;

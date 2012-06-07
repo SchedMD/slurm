@@ -42,7 +42,6 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 
-#include "src/common/slurm_xlator.h"
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
@@ -134,29 +133,41 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	if (slurm_step_ctx_daemon_per_node_hack(job->step_ctx,
 						connect_param->machine_name,
 						connect_param->machine_count)
-	    != SLURM_SUCCESS)
+	    != SLURM_SUCCESS) {
+		*error_msg = xstrdup_printf(
+			"pe_rm_connect: problem with hack");
+		error("%s", *error_msg);
 		return -1;
+	}
 
-	if (launch_g_step_launch(job, &cio_fds, &global_rc))
+	if (launch_g_step_launch(job, &cio_fds, &global_rc)) {
+		*error_msg = xstrdup_printf(
+			"pe_rm_connect: problem with launch");
+		error("%s", *error_msg);
 		return -1;
+	}
 
 	rc = slurm_step_ctx_get(job->step_ctx,
 				SLURM_STEP_CTX_USER_MANAGED_SOCKETS,
 				&fd_cnt, &ctx_sockfds);
 	if (ctx_sockfds == NULL) {
-		error("Unable to get pmd IO socket array %d", rc);
-		return -5;
+		*error_msg = xstrdup_printf(
+			"pe_rm_connect: Unable to get pmd IO socket array %d",
+			rc);
+		error("%s", *error_msg);
+		return -1;
 	}
 	if (fd_cnt != connect_param->machine_count) {
-		error("looking for %d sockets but got back %d",
-		      connect_param->machine_count, fd_cnt);
-		return -5;
+		*error_msg = xstrdup_printf(
+			"pe_rm_connect: looking for %d sockets but got back %d",
+			connect_param->machine_count, fd_cnt);
+		error("%s", *error_msg);
+		return -1;
 	}
 
 	for (i=0; i<fd_cnt; i++)
 		rm_sockfds[i] = ctx_sockfds[i];
 
-//	info("done launching");
 	return 0;
 }
 
@@ -348,12 +359,14 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		/* 	xstrdup_printf("10.0.0.5%d", i+1); */
 		slurm_conf_get_addr(host, &addr);
 		host_ptr->host_address = xstrdup(inet_ntoa(addr.sin_addr));
-		debug3("%s = %s", host_ptr->host_name, host_ptr->host_address);
 		host_ptr->task_count = step_layout->tasks[i];
 		host_ptr->task_ids =
 			xmalloc(sizeof(int) * host_ptr->task_count);
 		for (j=0; j<host_ptr->task_count; j++)
 			host_ptr->task_ids[j] = task_id++;
+		debug3("%s = %s %d tasks",
+		       host_ptr->host_name, host_ptr->host_address,
+		       host_ptr->task_count);
 		i++;
 		if (i > ret_info->host_count) {
 			error("we have more nodes that we bargined for.");
