@@ -2548,9 +2548,10 @@ nrt_free_jobinfo(slurm_nrt_jobinfo_t *jp)
 extern int
 nrt_get_jobinfo(slurm_nrt_jobinfo_t *jp, int key, void *data)
 {
-	nrt_tableinfo_t **tableinfo = (nrt_tableinfo_t **)data;
-	int *tables_per = (int *)data;
-	int *job_key = (int *)data;
+	nrt_comm_table_t **comm_table = (nrt_comm_table_t **) data;
+	nrt_tableinfo_t **tableinfo = (nrt_tableinfo_t **) data;
+	int *tables_per = (int *) data;
+	int *job_key = (int *) data;
 
 	assert(jp);
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
@@ -2560,10 +2561,18 @@ nrt_get_jobinfo(slurm_nrt_jobinfo_t *jp, int key, void *data)
 			*tableinfo = jp->tableinfo;
 			break;
 		case NRT_JOBINFO_TABLESPERTASK:
-			*tables_per = jp->tables_per_task;
+			*tables_per = (int) jp->tables_per_task;
 			break;
 		case NRT_JOBINFO_KEY:
-			*job_key = jp->job_key;
+			*job_key = (int) jp->job_key;
+			break;
+		case NRT_JOBINFO_COMM_INFO:
+			if (jp->tableinfo)
+				*comm_table = jp->tableinfo->comm_table_ptr;
+			else {
+				*comm_table = NULL;
+				slurm_seterrno_ret(EINVAL);
+			}
 			break;
 		default:
 			slurm_seterrno_ret(EINVAL);
@@ -2876,6 +2885,7 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 		} else {
 			table_info.job_name[0] = '\0';
 		}
+/* FIXME: Need to set on a per-table record basis */
 		if (jp->protocol) {
 			strncpy(table_info.protocol_name, jp->protocol,
 				NRT_MAX_PROTO_NAME_LEN);

@@ -1,6 +1,5 @@
 /*****************************************************************************\
  **  nrt_keys.h - Key definitions used by the get_jobinfo functions
- **  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -52,15 +51,30 @@ enum {
 	NRT_JOBINFO_TABLESPERTASK,
 	NRT_JOBINFO_KEY,
 	NRT_JOBINFO_PROTOCOL,
-	NRT_JOBINFO_MODE
+	NRT_JOBINFO_MODE,
+	NRT_JOBINFO_COMM_INFO
 };
 
 /* Information shared between slurm_ll_api and the slurm NRT driver */
+typedef struct nrt_comm_record {
+	nrt_context_id_t context_id;
+	nrt_table_id_t   table_id;
+	char device_name[NRT_MAX_DEVICENAME_SIZE];   /* eth0, mlx4_0, etc. */
+	char protocol_name[NRT_MAX_PROTO_NAME_LEN];  /* MPI, LAPI, UPC, etc. */
+} nrt_comm_record_t;
+
+typedef struct nrt_comm_table {
+	uint16_t nrt_comm_count;
+	nrt_comm_record_t *nrt_comm_ptr;
+} nrt_comm_table_t;
+
 typedef struct nrt_tableinfo {
 	uint32_t table_length;
-	void *table; /* Pointer to nrt_*_task_info_t*/
+	void *table; /* Pointer to nrt_*_task_info_t */
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
 	nrt_adapter_t adapter_type;
+/* FIXME: Need to populate, un/pack, and free this data structure */
+	nrt_comm_table_t *comm_table_ptr;
 } nrt_tableinfo_t;
 
 #endif /* _NRT_KEYS_INCLUDED */
