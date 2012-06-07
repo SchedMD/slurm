@@ -76,7 +76,6 @@
 #include "src/common/pack.h"
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
-#include "src/common/read_config.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
@@ -143,14 +142,13 @@ extern void jobacctinfo_destroy(void *object);
 extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 			       enum jobacct_data_type type, void *data);
 extern int jobacctinfo_getinfo(jobacctinfo_t *jobacct,
-				    enum jobacct_data_type type, void *data);
+			       enum jobacct_data_type type, void *data);
 extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
-				  uint16_t rpc_version, Buf buffer);
+			     uint16_t rpc_version, Buf buffer);
 extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
-				   uint16_t rpc_version, Buf buffer);
+			      uint16_t rpc_version, Buf buffer);
 
-extern void jobacctinfo_aggregate(jobacctinfo_t *dest,
-				       jobacctinfo_t *from);
+extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from);
 
 extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct);
 
