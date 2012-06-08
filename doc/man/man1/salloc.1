@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 2.4" "October 2011" "SLURM Commands"
+.TH "salloc" "1" "SLURM 2.5" "June 2012" "SLURM Commands"
 
 .SH "NAME"
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command,
@@ -738,38 +738,78 @@ This option is current supported on systems with IBM's Parallel Environment (PE)
 See IBM's LoadLeveler job command keyword documentation about the keyword
 "network" for more information.
 Multiple values may be specified in a comma separated list.
+All options are case in\-sensitive.
 Supported values include:
 .RS
 .TP 12
-\fBBULK_XFER\fR [=<\fIresources\fR>
+\fBBULK_XFER\fR [=<\fIresources\fR>]
 Enable bulk transfer of data using Remote Direct-Memory Access (RDMA).
 The optional \fIresources\fR specification is a numeric value which can have
 a suffix of "k", "K", "m", "M", "g" or "G" for kilobytes, megabytes or
 gigabytes.
 .TP
+\fBINSTANCES\fR [=<\fIcount\fR>]
+Specify number of network connections for each task on each network connection.
+The default instance count is 1.
+.TP
 \fBIPV4\fR
-Use Internet Protocol (IP) version 4 communications (default)
+Use Internet Protocol (IP) version 4 communications (default).
 .TP
 \fBIPV6\fR
-Use Internet Protocol (IP) version 6 communications
+Use Internet Protocol (IP) version 6 communications.
 .TP
-\fBLAPI\fR
-Use the LAPI protocol
+\fBLAPI\fR [(\fIcount\fR)]
+Use the LAPI protocol. Optionally specify the number of network connections
+with this protocol for each task. Default count is 1.
 .TP
-\fBPAMI\fR
-Use the PAMI protocol
+\fBMPI\fR [(\fIcount\fR)]
+Use the MPI protocol. Optionally specify the number of network connections
+with this protocol for each task. Default count is 1.
+MPI is the default protocol.
+.TP
+\fBPAMI\fR [(\fIcount\fR)]
+Use the PAMI protocol. Optionally specify the number of network connections
+with this protocol for each task. Default count is 1.
 .TP
 \fBSN_ALL\fR
-Use all available switch networks (default)
+Use all available switch networks (default).
 .TP
 \fBSN_SINGLE\fR
-Use one available switch networks
+Use one available switch network.
+.TP
+\fBUPC\fR [(\fIcount\fR)]
+Use the UPC protocol. Optionally specify the number of network connections
+with this protocol for each task. Default count is 1.
 .TP
 \fBUS\fR
-Use User Space communications
+Use User Space communications.
 .TP
 Specific adapter name
-One specific adapter name may be specified (e.g. "eth0")
+One specific adapter name may be specified (e.g. "eth0" or "mlx4_0").
+.TP
+
+Some examples of network specifications:
+.TP
+\fBInstances=2,US,MPI,SN_ALL\fR
+Create two user space connections for MPI communications on every switch
+network for each task.
+.TP
+\fBUS,MPI(2),SN_ALL\fR
+Create two user space connections for MPI communications on every switch
+network for each task. This is a variation on the above example.
+.TP
+\fBIPV4,LAPI,SN_Single\fR
+Create a IP version 4 connection for LAPI communications on one switch network
+for each task.
+.TP
+\fBInstances=2,US,LAPI,MPI\fR
+Create two user space connections each for LAPI and MPI communcations on every
+switch network for each task. Note that SN_ALL is the default option so every
+switch network is used. Also note that Instances=2 specifies that two
+connections are established for each protocol (LAPI and MPI) and each task.
+If there are two networks and four tasks on the node then a total
+of 32 connections are estabhished (2 instances x 2 protocols x 2 networks x
+4 tasks).
 .RE
 
 .TP
