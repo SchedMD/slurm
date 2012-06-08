@@ -160,6 +160,16 @@ typedef struct {
 	nrt_adapter_t adapter_type;
 } nrt_cache_entry_t;
 
+
+typedef struct nrt_protocol_info {
+	char protocol_name[NRT_MAX_PROTO_NAME_LEN];
+	int  protocol_cnt;	/* Instances of this protocol */
+} nrt_protocol_info_t;
+typedef struct nrt_protocol_table {
+	nrt_protocol_info_t protocol_table[NRT_MAX_PROTO_CNT];
+	int protocol_table_cnt;	/* Count of entries in protocol_table */
+} nrt_protocol_table_t;
+
 static int lid_cache_size = 0;
 static nrt_cache_entry_t lid_cache[NRT_MAX_ADAPTERS];
 
@@ -2032,31 +2042,49 @@ _next_key(void)
 	return key;
 }
 
-static int _get_protocol_cnt(char *protocol)
+/* Translate a protocol string (e.g. "lapi(2),mpi" into a table.
+ * Caller must free returned value. */
+static nrt_protocol_table_t *_get_protocol_table(char *protocol)
 {
+	nrt_protocol_table_t *protocol_table;
 	char *paren_ptr, *protocol_str, *save_ptr = NULL, *token;
-	int protocol_cnt = 0;
+	int protocol_cnt, i;
+
+	protocol_table = xmalloc(sizeof(nrt_protocol_table_t));
 
 	if (!protocol)
-		return 1;
-
+		protocol = "mpi";
 	protocol_str = xstrdup(protocol);
 	token = strtok_r(protocol_str, ",", &save_ptr);
 	while (token) {
 		paren_ptr = strchr(token, '(');
-		if (paren_ptr)
-			protocol_cnt += atoi(paren_ptr+1);
-		else
-			protocol_cnt++;
+		if (paren_ptr) {
+			protocol_cnt = atoi(paren_ptr+1);
+			paren_ptr[0] = '\0';	/* end string before '(' */
+		} else
+			protocol_cnt = 1;
+		for (i = 0; i < protocol_table->protocol_table_cnt; i++) {
+			if (!strcmp(token, protocol_table->protocol_table[i].
+					   protocol_name)) {
+				protocol_table->protocol_table[i].
+					protocol_cnt += protocol_cnt;
+				break;
+			}
+		}
+		if ((i >= protocol_table->protocol_table_cnt) &&
+		    (i < NRT_MAX_PROTO_CNT)) {
+			/* Need to add new protocol type */
+			strncpy(protocol_table->protocol_table[i].protocol_name,
+				token, NRT_MAX_PROTO_NAME_LEN);
+			protocol_table->protocol_table[i].protocol_cnt =
+					protocol_cnt;
+			protocol_table->protocol_table_cnt++;
+		}
 		token = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(protocol_str);
 
-	if (protocol_cnt <= 0) {
-		info("Invalid job protocol(%s)", protocol);
-		protocol_cnt = 1;
-	}
-	return protocol_cnt;
+	return protocol_table;
 }
 
 /* Setup everything for the job.  Assign tasks across
@@ -2070,7 +2098,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		  uint16_t *tasks_per_node, uint32_t **tids, bool sn_all,
 		  char *adapter_name, bool bulk_xfer,
 		  uint32_t bulk_xfer_resources, bool ip_v4,
-		  bool user_space, char *protocol)
+		  bool user_space, char *protocol, int instances)
 {
 	int nnodes, nprocs = 0;
 	hostlist_iterator_t hi;
@@ -2082,6 +2110,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	nrt_logical_id_t base_lid = 0xffffff;
 	int adapter_type_count = 0;
 	int table_rec_len = 0;
+	nrt_protocol_table_t *protocol_table;
 
 	assert(jp);
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
@@ -2101,7 +2130,10 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	jp->nodenames  = hostlist_copy(hl);
 	jp->num_tasks  = nprocs;
 	jp->user_space = (uint8_t) user_space;
+/* FIXME: mutliple protocols per job possible */
 	jp->protocol   = xstrdup(protocol);
+	protocol_table = _get_protocol_table(protocol);
+	xfree(protocol_table);
 
 	hi = hostlist_iterator_create(hl);
 
