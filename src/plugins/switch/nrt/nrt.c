@@ -800,7 +800,8 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 	     ((i < node->adapter_count) && (adapters_set < adapter_cnt));
 	     i++) {
 		adapter = &node->adapter_list[i];
-		if (adapter->adapter_type != adapter_type)
+		if ((adapter_type != NRT_MAX_ADAPTER_TYPES) &&
+		    (adapter->adapter_type != adapter_type))
 			continue;
 		if (user_space) {
 			window = _find_free_window(adapter);
@@ -910,16 +911,24 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 	for (i = 0; i < node->adapter_count; i++) {
 		debug("adapter %s at index %d",
 		      node->adapter_list[i].adapter_name, i);
-		if (strcasecmp(node->adapter_list[i].adapter_name,
-			       adapter_name) == 0) {
+		if (adapter_name) {
+			if (!strcasecmp(node->adapter_list[i].adapter_name,
+					adapter_name)) {
+				adapter = &node->adapter_list[i];
+				break;
+			}
+			continue;
+		}
+		if ((adapter_type != NRT_MAX_ADAPTER_TYPES) &&
+		    (adapter->adapter_type == adapter_type)) {
 			adapter = &node->adapter_list[i];
-			debug("Found adapter %s", adapter_name);
 			break;
 		}
 	}
 	if (adapter == NULL) {
-		error("Failed to find adapter %s on node %s",
-		      adapter_name, hostname);
+		error("Failed to find adapter %s of type %s on node %s",
+		      adapter_name, _adapter_type_str(adapter_type),
+		      hostname);
 		return SLURM_ERROR;
 	}
 
@@ -2121,6 +2130,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	slurm_nrt_nodeinfo_t *node;
 	int rc;
 	nrt_adapter_t adapter_type = NRT_MAX_ADAPTER_TYPES;
+	nrt_adapter_t first_adapter_type = NRT_MAX_ADAPTER_TYPES;
 	nrt_logical_id_t base_lid = 0xffffff;
 	int adapter_type_count = 0;
 	int table_rec_len = 0;
@@ -2129,6 +2139,9 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	assert(jp);
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
 	assert(tasks_per_node);
+
+	if (dev_type != NRT_MAX_ADAPTER_TYPES)
+		adapter_type = dev_type;
 
 	nnodes = hostlist_count(hl);
 	for (i = 0; i < nnodes; i++)
@@ -2163,21 +2176,26 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	if (node && node->adapter_list) {
 		for (i = 0; i < node->adapter_count; i++) {
 			nrt_adapter_t ad_type;
+			/* Match specific adapter name */
 			if (adapter_name &&
 			    strcmp(adapter_name,
 				   node->adapter_list[i].adapter_name)) {
 				continue;
 			}
+			/* Match specific adapter type (IB, HFI, etc) */
 			ad_type = node->adapter_list[i].adapter_type;
-			if ((ad_type == NRT_IPONLY) ||
-			    (ad_type == NRT_HPCE)) {
-				if (jp->user_space)
-					continue;
-			}
-			if (adapter_type == NRT_MAX_ADAPTER_TYPES)
-				adapter_type = ad_type;
-			else if (adapter_type != ad_type)
+			if ((adapter_type != NRT_MAX_ADAPTER_TYPES) &&
+			    (adapter_type != ad_type))
 				continue;
+			if (jp->user_space) {
+				if ((ad_type == NRT_IPONLY) ||
+				    (ad_type == NRT_HPCE))
+					continue;
+				if (adapter_type == NRT_MAX_ADAPTER_TYPES)
+					adapter_type = ad_type;
+			}
+			if (first_adapter_type == NRT_MAX_ADAPTER_TYPES)
+				first_adapter_type = ad_type;
 			adapter_type_count++;
 /* FIXME: It's unclear how this works, each node would have different logical_id
  * although the network_id seems to be common for our IB switches */
@@ -2190,6 +2208,8 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		jp->tables_per_task = adapter_type_count;
 	} else if (adapter_type_count >= 1) {
 		jp->tables_per_task = 1;
+		if (adapter_type == NRT_MAX_ADAPTER_TYPES)
+			adapter_type = first_adapter_type;
 	} else {
 		jp->tables_per_task = 0;
 		info("switch/nrt: no adapter found for job");
@@ -2211,8 +2231,9 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	else if (adapter_type == NRT_HFI)
 		table_rec_len = sizeof(nrt_hfi_task_info_t);
 	else {
-		fatal("Unsupported adapter_type: %s",
-		      _adapter_type_str(adapter_type));
+		info("Unsupported adapter_type: %s",
+		     _adapter_type_str(adapter_type));
++		slurm_seterrno_ret(EINVAL);
 	}
 	for (i = 0; i < jp->tables_per_task; i++) {
 		jp->tableinfo[i].table_length = nprocs;
@@ -2955,6 +2976,9 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 			error("nrt_command(load table): %s", nrt_err_str(err));
 			return SLURM_ERROR;
 		}
+/* FIXME: Must modify to issue one call per job per node.
+ * Do not loop on the load_table call on a per-task basis */
+break;
 	}
 	umask(nrt_umask);
 
