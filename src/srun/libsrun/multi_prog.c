@@ -60,8 +60,9 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/srun/debugger.h"
-#include "src/srun/opt.h"
+
+#include "debugger.h"
+#include "opt.h"
 
 /* Given a program name, translate it to a fully qualified pathname
  * as needed based upon the PATH environment variable */

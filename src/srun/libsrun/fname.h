@@ -1,11 +1,9 @@
 /*****************************************************************************\
- *  debugger.c - Definitions needed for parallel debugger
- *  $Id: debugger.c 11149 2007-03-14 20:53:19Z morrone $
+ * src/srun/fname.c - IO filename type implementation (srun specific)
  *****************************************************************************
- *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
+ *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
@@ -38,42 +36,26 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
+#ifndef _FNAME_H
+#define _FNAME_H
+
+#ifdef HAVE_CONFIG_H
+# include "config.h"
 #endif
 
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
-/* Use symbols from the runjob.so library provided by IBM.
- * Do NOT use debugger symbols local to the srun command */
-
-#else
-
-#include "src/common/log.h"
-
-#include "src/srun/debugger.h"
-#include "src/srun/srun_job.h"
+#include "srun_job.h"
 
 /*
- *  Instantiate extern variables from debugger.h
+ * Create an filename from a (probably user supplied) filename format.
+ * fname_create() will expand the format as much as possible for srun,
+ * leaving node or task specific format specifiers for the remote
+ * slurmd to handle.
  */
-MPIR_PROCDESC *MPIR_proctable;
-int MPIR_proctable_size;
-VOLATILE int MPIR_debug_state;
-int MPIR_being_debugged;
-int MPIR_i_am_starter;
-int MPIR_acquired_pre_main;
-char *totalview_jobid;
-#ifdef DEBUGGER_PARTIAL_ATTACH
-  int MPIR_partial_attach_ok;
-#endif
 
-void MPIR_Breakpoint(srun_job_t *job)
-{
-	/*
-	 * This just notifies parallel debugger that some event of
-	 *  interest occurred.
-	 */
-	debug("In MPIR_Breakpoint");
-	slurm_step_launch_fwd_signal(job->step_ctx, SIG_DEBUG_WAKE);
-}
-#endif
+fname_t *fname_create(srun_job_t *job, char *format);
+void fname_destroy(fname_t *fname);
+
+char * fname_remote_string (fname_t *fname);
+
+#endif /* !_FNAME_H */
+

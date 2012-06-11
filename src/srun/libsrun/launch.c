@@ -36,7 +36,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
-#include "src/srun/launch.h"
+#include "launch.h"
 
 #include "src/common/env.h"
 #include "src/common/xstring.h"

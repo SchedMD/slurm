@@ -58,9 +58,9 @@
 #include "src/common/env.h"
 #include "src/common/fd.h"
 
-#include "src/srun/allocate.h"
-#include "src/srun/opt.h"
-#include "src/srun/launch.h"
+#include "allocate.h"
+#include "opt.h"
+#include "launch.h"
 
 #ifdef HAVE_BG
 #include "src/common/node_select.h"

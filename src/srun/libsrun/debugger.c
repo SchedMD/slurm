@@ -1,8 +1,12 @@
 /*****************************************************************************\
- *  launch.h - Define job launch plugin functions.
+ *  debugger.c - Definitions needed for parallel debugger
+ *  $Id: debugger.c 11149 2007-03-14 20:53:19Z morrone $
  *****************************************************************************
- *  Copyright (C) 2012 SchedMD LLC
- *  Written by Danny Auble <da@schedmd.com>
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
+ *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.schedmd.com/slurmdocs/>.
@@ -34,50 +38,42 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _LAUNCH_H
-#define _LAUNCH_H
-
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #  include "config.h"
-#endif /* HAVE_CONFIG_H */
+#endif
 
-#include "slurm/slurm.h"
-#include "slurm/slurm_errno.h"
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+/* Use symbols from the runjob.so library provided by IBM.
+ * Do NOT use debugger symbols local to the srun command */
 
-#include "src/common/xstring.h"
+#else
 
-#include "src/srun/srun_job.h"
-#include "src/srun/opt.h"
-#include "src/srun/debugger.h"
+#include "src/common/log.h"
 
-extern slurm_step_layout_t *launch_common_get_slurm_step_layout(
-	srun_job_t *job);
+#include "debugger.h"
+#include "srun_job.h"
 
-extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
-					 void (*signal_function)(int),
-					 sig_atomic_t *destroy_job);
+/*
+ *  Instantiate extern variables from debugger.h
+ */
+MPIR_PROCDESC *MPIR_proctable;
+int MPIR_proctable_size;
+VOLATILE int MPIR_debug_state;
+int MPIR_being_debugged;
+int MPIR_i_am_starter;
+int MPIR_acquired_pre_main;
+char *totalview_jobid;
+#ifdef DEBUGGER_PARTIAL_ATTACH
+  int MPIR_partial_attach_ok;
+#endif
 
-extern void launch_common_set_stdio_fds(srun_job_t *job,
-					slurm_step_io_fds_t *cio_fds);
-
-
-extern int launch_init(void);
-extern int launch_fini(void);
-extern int launch_g_setup_srun_opt(char **rest);
-
-extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
-				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job);
-extern int launch_g_step_launch(
-	srun_job_t *job, slurm_step_io_fds_t *cio_fds,
-	uint32_t *global_rc);
-
-extern int launch_g_step_wait(srun_job_t *job, bool got_alloc);
-
-extern int launch_g_step_terminate(void);
-
-extern void launch_g_print_status(void);
-
-extern void launch_g_fwd_signal(int signal);
-
-#endif /* _LAUNCH_H */
+void MPIR_Breakpoint(srun_job_t *job)
+{
+	/*
+	 * This just notifies parallel debugger that some event of
+	 *  interest occurred.
+	 */
+	debug("In MPIR_Breakpoint");
+	slurm_step_launch_fwd_signal(job->step_ctx, SIG_DEBUG_WAKE);
+}
+#endif

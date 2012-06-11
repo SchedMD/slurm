@@ -55,7 +55,8 @@
 
 #include "src/common/macros.h" /* true and false */
 #include "src/common/env.h"
-#include "src/srun/fname.h"
+
+#include "fname.h"
 
 #define DEFAULT_IMMEDIATE	1
 #define MAX_THREADS		60

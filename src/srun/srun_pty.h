@@ -40,7 +40,7 @@
 #ifndef _SIGNALS_H
 #define _SIGNALS_H
 
-#include "src/srun/srun_job.h"
+#include "srun_job.h"
 
 typedef struct srun_job signal_job_t;
 

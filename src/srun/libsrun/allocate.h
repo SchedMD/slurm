@@ -42,7 +42,7 @@
 
 #include "slurm/slurm.h"
 
-#include "src/srun/srun_job.h"
+#include "srun_job.h"
 
 typedef struct slurmctld_communication_addr {
 	uint16_t port;

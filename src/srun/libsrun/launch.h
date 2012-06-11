@@ -1,10 +1,8 @@
 /*****************************************************************************\
- * src/srun/fname.c - IO filename type implementation (srun specific)
+ *  launch.h - Define job launch plugin functions.
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <mgrondona@llnl.gov>.
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) 2012 SchedMD LLC
+ *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.schedmd.com/slurmdocs/>.
@@ -36,26 +34,50 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _FNAME_H
-#define _FNAME_H
+#ifndef _LAUNCH_H
+#define _LAUNCH_H
 
 #ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#  include "config.h"
+#endif /* HAVE_CONFIG_H */
 
-#include "src/srun/srun_job.h"
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
-/*
- * Create an filename from a (probably user supplied) filename format.
- * fname_create() will expand the format as much as possible for srun,
- * leaving node or task specific format specifiers for the remote
- * slurmd to handle.
- */
+#include "src/common/xstring.h"
 
-fname_t *fname_create(srun_job_t *job, char *format);
-void fname_destroy(fname_t *fname);
+#include "srun_job.h"
+#include "opt.h"
+#include "debugger.h"
 
-char * fname_remote_string (fname_t *fname);
+extern slurm_step_layout_t *launch_common_get_slurm_step_layout(
+	srun_job_t *job);
 
-#endif /* !_FNAME_H */
+extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
+					 void (*signal_function)(int),
+					 sig_atomic_t *destroy_job);
 
+extern void launch_common_set_stdio_fds(srun_job_t *job,
+					slurm_step_io_fds_t *cio_fds);
+
+
+extern int launch_init(void);
+extern int launch_fini(void);
+extern int launch_g_setup_srun_opt(char **rest);
+
+extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
+				    void (*signal_function)(int),
+				    sig_atomic_t *destroy_job);
+extern int launch_g_step_launch(
+	srun_job_t *job, slurm_step_io_fds_t *cio_fds,
+	uint32_t *global_rc);
+
+extern int launch_g_step_wait(srun_job_t *job, bool got_alloc);
+
+extern int launch_g_step_terminate(void);
+
+extern void launch_g_print_status(void);
+
+extern void launch_g_fwd_signal(int signal);
+
+#endif /* _LAUNCH_H */

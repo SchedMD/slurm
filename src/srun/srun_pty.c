@@ -64,8 +64,8 @@
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
 
-#include "src/srun/opt.h"
-#include "src/srun/srun_job.h"
+#include "opt.h"
+#include "srun_job.h"
 
 #define MAX_RETRIES 3
 

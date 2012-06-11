@@ -44,7 +44,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "src/srun/launch.h"
+#include "src/srun/libsrun/launch.h"
 #include "src/common/env.h"
 /*
  * These variables are required by the generic plugin interface.  If they

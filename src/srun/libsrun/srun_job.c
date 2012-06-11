@@ -63,10 +63,13 @@
 #include "src/common/forward.h"
 #include "src/common/fd.h"
 
-#include "src/srun/srun_job.h"
-#include "src/srun/opt.h"
-#include "src/srun/fname.h"
-#include "src/srun/debugger.h"
+#include "allocate.h"
+#include "srun_job.h"
+#include "opt.h"
+#include "fname.h"
+#include "debugger.h"
+#include "launch.h"
+#include "multi_prog.h"
 
 /*
  * allocation information structure used to store general information

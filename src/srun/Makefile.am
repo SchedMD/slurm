@@ -1,35 +1,22 @@
 #
 
+SUBDIRS = libsrun
+
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 
-INCLUDES = -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/srun/libsrun
 
 bin_PROGRAMS = srun
 
+convenience_libs = $(top_builddir)/src/srun/libsrun/libsrun.la \
+	$(top_builddir)/src/api/libslurm.o
+
 srun_SOURCES = \
 	srun.c \
-	opt.c opt.h \
-	srun_job.c srun_job.h \
 	srun_pty.c srun_pty.h \
-	debugger.h    \
-	debugger.c    \
-	fname.c     \
-	fname.h     \
-	allocate.c  \
-	allocate.h  \
-	launch.c launch.h \
-	multi_prog.c multi_prog.h \
 	srun.wrapper.c
-
-
-# pthread is needed for compiling with g++ (which is used for linking
-# no matter if on a BGQ or not because of mentioning a .cc file
-convenience_libs = \
-	$(top_builddir)/src/api/libslurm.o -lpthread $(DL_LIBS)
-
-srun_LDADD = \
-	$(convenience_libs)
+srun_LDADD = $(convenience_libs) $(DL_LIBS)
 
 srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
@@ -42,11 +29,6 @@ endif
 force:
 $(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
-
-# debugging information is required for symbols in the debugger
-# module so that a debugger can debugger to spawned tasks
-debugger.o : debugger.c
-	$(COMPILE) -c -g -o debugger.o $(srcdir)/debugger.c
 
 install-exec-local:
 	umask 022; \

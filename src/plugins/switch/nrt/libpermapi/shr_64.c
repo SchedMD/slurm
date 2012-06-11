@@ -55,13 +55,14 @@
 #include "src/common/hostlist.h"
 #include "src/common/plugstack.h"
 
-#include "src/srun/srun_job.h"
-#include "src/srun/opt.h"
-#include "src/srun/allocate.h"
-#include "src/srun/launch.h"
+#include "src/srun/libsrun/srun_job.h"
+#include "src/srun/libsrun/opt.h"
+#include "src/srun/libsrun/allocate.h"
+#include "src/srun/libsrun/launch.h"
 #include "src/plugins/switch/nrt/nrt_keys.h"
 
 bool srun_max_timer = false;
+bool srun_shutdown  = false;
 
 static void *my_handle = NULL;
 static srun_job_t *job = NULL;

@@ -46,10 +46,8 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "src/srun/fname.h"
-#include "src/srun/opt.h"
-#include "src/srun/srun_job.h"
-#include "src/srun/opt.h"
+#include "fname.h"
+#include "opt.h"
 
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
