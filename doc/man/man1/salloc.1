@@ -748,6 +748,13 @@ The optional \fIresources\fR specification is a numeric value which can have
 a suffix of "k", "K", "m", "M", "g" or "G" for kilobytes, megabytes or
 gigabytes.
 .TP
+\fBDEVTYPE\fR [=<\fItype\fR>]
+Specify the device type to use for communications.
+The supported values of \fItype\fR are:
+"IB" (InfiniBand), "HFI" (P7 Host Fabric Interface),
+"IPONLY" (IP-Only interfaces), "HPCE" (HPC Ethernet), and
+"KMUX" (Kernel Emulation of HPCE).
+.TP
 \fBINSTANCES\fR [=<\fIcount\fR>]
 Specify number of network connections for each task on each network connection.
 The default instance count is 1.
@@ -797,6 +804,10 @@ network for each task.
 \fBUS,MPI(2),SN_ALL\fR
 Create two user space connections for MPI communications on every switch
 network for each task. This is a variation on the above example.
+.TP
+\fBUS,MPI(3),IB\fR
+Create three user space connections for MPI communications on every InfiniBand
+network for each task.
 .TP
 \fBIPV4,LAPI,SN_Single\fR
 Create a IP version 4 connection for LAPI communications on one switch network

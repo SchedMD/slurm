@@ -398,6 +398,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 	uint32_t bulk_xfer_resources = 0;
 	bool sn_all = true;	/* default to sn_all */
 	int instances = 1;
+	int dev_type = NRT_ADAP_UNSUPPORTED;
 	int err = SLURM_SUCCESS;
 	char *adapter_name = NULL;
 	char *protocol = NULL;
@@ -439,6 +440,24 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 			}
 		} else if (!strcasecmp(token, "bulk_xfer")) {
 			bulk_xfer = true;
+
+		/* device type options */
+		} else if (!strncasecmp(token, "devtype=", 8)) {
+			char *type_ptr = token + 8;
+			if (!strcasecmp(type_ptr, "ib")) {
+				dev_type = NRT_IB;
+			} else if (!strcasecmp(type_ptr, "hfi")) {
+				dev_type = NRT_HFI;
+			} else if (!strcasecmp(type_ptr, "iponly")) {
+				dev_type = NRT_IPONLY;
+			} else if (!strcasecmp(type_ptr, "hpce")) {
+				dev_type = NRT_HPCE;
+			} else if (!strcasecmp(type_ptr, "kmux")) {
+				dev_type = NRT_KMUX;
+			} else {
+				info("switch/nrt: invalid option: %s", token);
+				err = SLURM_ERROR;
+			}
 
 		/* instances options */
 		} else if (!strncasecmp(token, "instances=", 10)) {
@@ -495,7 +514,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 	if (err == SLURM_SUCCESS) {
 		err = nrt_build_jobinfo((slurm_nrt_jobinfo_t *)switch_job,
 					list, tasks_per_node, tids, sn_all,
-					adapter_name,
+					adapter_name, dev_type,
 					bulk_xfer, bulk_xfer_resources,
 					ip_v4, user_space, protocol,
 					instances);

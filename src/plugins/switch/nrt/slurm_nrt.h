@@ -98,9 +98,10 @@ extern void nrt_free_nodeinfo(slurm_nrt_nodeinfo_t *np, bool ptr_into_array);
 extern int nrt_alloc_jobinfo(slurm_nrt_jobinfo_t **jh);
 extern int nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 			     uint16_t *tasks_per_node, uint32_t **tids,
-			     bool sn_all, char *adapter_name, bool bulk_xfer,
-			     uint32_t bulk_xfer_resources, bool ip_v4,
-			     bool user_space, char *protocol, int instances);
+			     bool sn_all, char *adapter_name, int dev_type,
+			     bool bulk_xfer, uint32_t bulk_xfer_resources,
+			     bool ip_v4, bool user_space, char *protocol,
+			     int instances);
 extern int nrt_pack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf);
 extern int nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf);
 extern slurm_nrt_jobinfo_t *nrt_copy_jobinfo(slurm_nrt_jobinfo_t *jp);
