@@ -769,6 +769,7 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 	slurm_nrt_nodeinfo_t *node;
 	slurm_nrt_adapter_t *adapter;
 	slurm_nrt_window_t *window;
+	int adapters_set = 0;
 	int i;
 
 	assert(tableinfo);
@@ -795,7 +796,9 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 	}
 
 	/* Reserve a window on each adapter for this task */
-	for (i = 0; i < adapter_cnt; i++) {
+	for (i = 0;
+	     ((i < node->adapter_count) && (adapters_set < adapter_cnt));
+	     i++) {
 		adapter = &node->adapter_list[i];
 		if (adapter->adapter_type != adapter_type)
 			continue;
@@ -812,7 +815,8 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 
 		if (!user_space || (adapter_type == NRT_IPONLY)) {
 			nrt_ip_task_info_t *ip_table;
-			ip_table = (nrt_ip_task_info_t *) tableinfo[i].table;
+			ip_table = (nrt_ip_task_info_t *)
+				   tableinfo[adapters_set].table;
 			ip_table += task_id;
 			ip_table->node_number  = node_number;
 			ip_table->task_id      = task_id;
@@ -826,7 +830,8 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 			}
 		} else if (adapter_type == NRT_IB) {
 			nrt_ib_task_info_t *ib_table;
-			ib_table = (nrt_ib_task_info_t *) tableinfo[i].table;
+			ib_table = (nrt_ib_task_info_t *)
+				   tableinfo[adapters_set].table;
 			ib_table += task_id;
 			strncpy(ib_table->device_name, adapter->adapter_name,
 				NRT_MAX_DEVICENAME_SIZE);
@@ -838,7 +843,8 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 			ib_table->win_id   = window->window_id;
 		} else if (adapter_type == NRT_HFI) {
 			nrt_hfi_task_info_t *hfi_table;
-			hfi_table = (nrt_hfi_task_info_t *) tableinfo[i].table;
+			hfi_table = (nrt_hfi_task_info_t *)
+				    tableinfo[adapters_set].table;
 			hfi_table += task_id;
 			hfi_table->task_id = task_id;
 			hfi_table->win_id = window->window_id;
@@ -847,9 +853,10 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 			      adapter_type);
 		}
 
-		strncpy(tableinfo[i].adapter_name, adapter->adapter_name,
-			NRT_MAX_ADAPTER_NAME_LEN);
-		tableinfo[i].adapter_type = adapter_type;
+		strncpy(tableinfo[adapters_set].adapter_name,
+			adapter->adapter_name, NRT_MAX_ADAPTER_NAME_LEN);
+		tableinfo[adapters_set].adapter_type = adapter_type;
+		adapters_set++;
 	}
 
 	return SLURM_SUCCESS;
