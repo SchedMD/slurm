@@ -398,7 +398,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 	uint32_t bulk_xfer_resources = 0;
 	bool sn_all = true;	/* default to sn_all */
 	int instances = 1;
-	int dev_type = NRT_ADAP_UNSUPPORTED;
+	int dev_type = NRT_MAX_ADAPTER_TYPES;
 	int err = SLURM_SUCCESS;
 	char *adapter_name = NULL;
 	char *protocol = NULL;

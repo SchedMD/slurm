@@ -2060,6 +2060,11 @@ static nrt_protocol_table_t *_get_protocol_table(char *protocol)
 		paren_ptr = strchr(token, '(');
 		if (paren_ptr) {
 			protocol_cnt = atoi(paren_ptr+1);
+			if (protocol_cnt == 0) {
+				verbose("switch/nrt: invalid job protocol: %s",
+					protocol);
+				break;
+			}
 			paren_ptr[0] = '\0';	/* end string before '(' */
 		} else
 			protocol_cnt = 1;
@@ -2083,6 +2088,8 @@ static nrt_protocol_table_t *_get_protocol_table(char *protocol)
 		token = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(protocol_str);
+	if (protocol_table->protocol_table_cnt == 0)
+		xfree(protocol_table);
 
 	return protocol_table;
 }
@@ -2096,7 +2103,7 @@ static nrt_protocol_table_t *_get_protocol_table(char *protocol)
 extern int
 nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		  uint16_t *tasks_per_node, uint32_t **tids, bool sn_all,
-		  char *adapter_name, int dev_type,
+		  char *adapter_name, nrt_adapter_t dev_type,
 		  bool bulk_xfer, uint32_t bulk_xfer_resources,
 		  bool ip_v4, bool user_space, char *protocol, int instances)
 {
