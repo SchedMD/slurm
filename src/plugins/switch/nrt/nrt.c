@@ -2233,7 +2233,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	else {
 		info("Unsupported adapter_type: %s",
 		     _adapter_type_str(adapter_type));
-+		slurm_seterrno_ret(EINVAL);
+		slurm_seterrno_ret(EINVAL);
 	}
 	for (i = 0; i < jp->tables_per_task; i++) {
 		jp->tableinfo[i].table_length = nprocs;
