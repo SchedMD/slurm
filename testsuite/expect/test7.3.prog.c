@@ -28,6 +28,8 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+#include <arpa/inet.h>
+#include <netdb.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,6 +44,41 @@
 
 static void _do_task_work(int *fd_array, int tasks);
 
+node_info_msg_t *node_info = NULL;
+static void _load_node_info(void)
+{
+	slurm_load_node(0, &node_info, SHOW_ALL);
+}
+
+static char *_get_host_addr(char *node_name)
+{
+	int i;
+	char *node_addr = NULL;
+	struct hostent *host;
+
+	if (!node_info)
+		return NULL;
+	for (i = 0; i < node_info->record_count; i++) {
+		if (strcmp(node_name, node_info->node_array[i].name))
+			continue;
+		host = gethostbyname2(node_info->node_array[i].node_addr, AF_INET);
+		if (host && host->h_length) {
+			node_addr = calloc(128, 1);
+			inet_ntop(AF_INET, (void *)host->h_addr_list[0],
+				  node_addr, 128);
+		}
+		break;
+	}
+
+	return node_addr;
+}
+
+static void _free_node_info(void)
+{
+	if (node_info)
+		slurm_free_node_info_msg(node_info);
+}
+
 int main (int argc, char *argv[])
 {
 	int i, min_nodes = 1, max_nodes = 1, nodes, tasks = 0, rc = 0;
@@ -51,6 +88,8 @@ int main (int argc, char *argv[])
 	slurm_step_ctx_t *ctx = NULL;
 	slurm_step_launch_params_t launch[1];
 	char *task_argv[3];
+	char **node_addr;
+	hostlist_t hl;
 	int *fd_array = NULL;
 	int num_fd;
 
@@ -141,9 +180,26 @@ int main (int argc, char *argv[])
 	 * Hack to run one task per node, regardless of what we set up
 	 * when we created the job step context.
 	 */
-	if (slurm_step_ctx_daemon_per_node_hack(ctx) != SLURM_SUCCESS) {
+	node_addr = calloc(sizeof(char *), job_resp->node_cnt);
+	hl = slurm_hostlist_create(job_resp->node_list);
+	_load_node_info();
+	for (i = 0; i < nodes; i++) {
+		char *hostname = slurm_hostlist_shift(hl);
+		if (hostname) {
+			node_addr[i] = _get_host_addr(hostname);
+			free(hostname);
+		}
+	}
+	_free_node_info();
+	slurm_hostlist_destroy(hl);
+	rc = slurm_step_ctx_daemon_per_node_hack(ctx, node_addr,
+						 job_resp->node_cnt);
+	for (i = 0; i < nodes; i++) {
+		if (node_addr[i])
+			free(node_addr[i]);
+	}
+	if (rc != SLURM_SUCCESS) {
 		slurm_perror("slurm_step_ctx_daemon_per_node_hack");
-		rc = 1;
 		goto done;
 	}
 
