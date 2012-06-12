@@ -98,9 +98,11 @@ Note that this is a c-node count.</p>
 
 <h3>Task Launch on BlueGene/Q only</h3>
 
-<p>Use SLURM's <i>srun</i> command to launch tasks (<i>srun</i> is a wrapper for IBM's
-<i>runjob</i> command.
-SLURM job step information, including accounting, functions as expected.</p>
+<p>Use SLURM's <i>srun</i> command to launch tasks (<i>srun</i> uses
+  an api interface into IBM's <i>runjob</i> command).
+SLURM job step information, including accounting, functions as
+  expected.  Totalview and other debuggers will also work with srun.
+  IBM's runjob will not work under SLURM.</p>
 
 <h3>Task Launch on BlueGene/L and BlueGene/P only</h3>
 
@@ -279,15 +281,60 @@ plugin = /usr/lib64/slurm/runjob_plugin.so
 plugin_flags = 0x0101 # RTLD_LAZY | RTLD_GLOBAL
 </pre>
 
-<p>After these settings are set (re)start each runjob_mux running on your
-system.</p>
+<p>You also need to set things up so the runjob_mux is ran by the
+  SlurmUser.  This can be done by editting 2 files.</p>
+<p>Back in your bg.properties file alter the [master.user] section.
+<pre>
+[master.user]
+...
+runjob_mux=<b>slurm</b>
+</pre>
+<p>Then in /etc/init.d/bgagent add SlurmUser to the --users line.</p>
+<pre>
+OPTIONS="--users bgqadmin,bgws,bgqsysdb,<b>slurm</b>"
+</pre>
+<p>After these settings are set flush the runjob_server and (re)start
+  each runjob_mux running on your system.</p>
+<pre>
+> /bgsys/drivers/ppcfloor/sbin/master_stop binaries
+stopped
+> sudo /etc/init.d/bgagent restart
+Shutting down bgagentd:                                    [  OK  ]
+Starting bgagentd:
+Startup of bgagentd completed:                             [  OK  ]
+> /bgsys/drivers/ppcfloor/sbin/master_start binaries
+> /bgsys/drivers/ppcfloor/sbin/bgmaster_server_refresh_config
+success!
+> /bgsys/drivers/ppcfloor/sbin/master_start runjob_mux
+started runjob_mux
+> ps aux | grep runjob_mux
+<b>slurm</b>       25461  0.0  0.3 518528 48064 ?        Sl   13:00   0:00 runjob_mux
+</pre>
 
 <p>When a new version of SLURM is installed it is a wise idea to "refresh" the
-runjob_mux with the new plugin.  This can be done with no job loss
-using the IBM <i>runjob_mux_refresh_config</i> command.  This will
-reload the plugin and all should be good afterway.  After doing this
+runjob_mux with the new plugin.  This can be done in one of two ways.
+<ul>
+<li>Stopping and restarting the runjob_mux.  While this
+  option works every time jobs running under the runjob_mux will not
+  survive so plan your updates accordingly.
+<pre>
+> /bgsys/drivers/ppcfloor/sbin/master_stop runjob_mux
+stopped runjob_mux
+> /bgsys/drivers/ppcfloor/sbin/master_start runjob_mux
+started runjob_mux
+</pre>
+</li>
+<li><b>WARNING! As of IBM driver V1R1M1 this
+method did not work.  It appears to in the logs, but loads the old
+plugin (presumably still in memory) other than the new one,
+so use at your own risk and don't complain if it doesn't work.</b>
+<p>This method allows no job loss using the
+IBM <i>runjob_mux_refresh_config</i> command.  This should
+reload the plugin and all should be good afterwards.  After doing this
 you may see some warning/error messages about the current running jobs
-when finishing not being known.  This is expected and can usually be ignored.
+when finishing not being known.  This is expected and can usually be
+ignored.</li>
+</ul></p>
 
 <b>Notes about sub-block allocations:</b>
 <p>
