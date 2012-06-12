@@ -135,7 +135,7 @@ struct slurm_nrt_libstate {
 	nrt_job_key_t key_index;
 };
 
-struct slurm_nrt_jobinfo {
+typedef struct slurm_nrt_jobinfo {
 	uint32_t magic;
 	/* version from nrt_version() */
 	/* adapter from lid in table */
@@ -153,7 +153,7 @@ struct slurm_nrt_jobinfo {
 
 	hostlist_t nodenames;
 	uint32_t num_tasks;
-};
+} slurm_nrt_jobinfo_t;
 
 typedef struct {
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
@@ -176,18 +176,13 @@ static nrt_cache_entry_t lid_cache[NRT_MAX_ADAPTERS];
 
 /* Local functions */
 static char *	_adapter_type_str(nrt_adapter_t type);
-static int	_allocate_windows_all(int adapter_cnt,
-			nrt_tableinfo_t *tableinfo, char *hostname,
+static int	_allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 			uint32_t node_id, nrt_task_id_t task_id,
-			nrt_job_key_t job_key,
-			nrt_adapter_t adapter_type, nrt_logical_id_t base_lid,
-			bool user_space, bool ip_v4);
+			nrt_adapter_t adapter_type, nrt_logical_id_t base_lid);
 static int	_allocate_window_single(char *adapter_name,
-			nrt_tableinfo_t *tableinfo, char *hostname,
+			slurm_nrt_jobinfo_t *jp, char *hostname,
 			uint32_t node_id, nrt_task_id_t task_id,
-			nrt_job_key_t job_key,
-			nrt_adapter_t adapter_type, nrt_logical_id_t base_lid,
-			bool user_space, bool ip_v4);
+			nrt_adapter_t adapter_type, nrt_logical_id_t base_lid);
 static slurm_nrt_libstate_t *_alloc_libstate(void);
 static slurm_nrt_nodeinfo_t *_alloc_node(slurm_nrt_libstate_t *lp, char *name);
 static int	_check_rdma_job_count(char *adapter_name,
@@ -760,11 +755,15 @@ _find_free_window(slurm_nrt_adapter_t *adapter)
  * Used by: slurmctld
  */
 static int
-_allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
-		      char *hostname, uint32_t node_id, nrt_task_id_t task_id,
-		      nrt_job_key_t job_key, nrt_adapter_t adapter_type,
-		      nrt_logical_id_t base_lid, bool user_space, bool ip_v4)
+_allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
+		      uint32_t node_id, nrt_task_id_t task_id,
+		      nrt_adapter_t adapter_type, nrt_logical_id_t base_lid)
 {
+	int adapter_cnt = jp->tables_per_task;
+	nrt_tableinfo_t *tableinfo = jp->tableinfo;
+	nrt_job_key_t job_key = jp->job_key;
+	bool ip_v4 = jp->ip_v4;
+	bool user_space = jp->user_space;
 	nrt_node_number_t node_number;
 	slurm_nrt_nodeinfo_t *node;
 	slurm_nrt_adapter_t *adapter;
@@ -872,12 +871,15 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
  * Used by: slurmctld
  */
 static int
-_allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
+_allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 			char *hostname, uint32_t node_id,
-			nrt_task_id_t task_id, nrt_job_key_t job_key,
-			nrt_adapter_t adapter_type, nrt_logical_id_t base_lid,
-			bool user_space, bool ip_v4)
+			nrt_task_id_t task_id, nrt_adapter_t adapter_type,
+			nrt_logical_id_t base_lid)
 {
+	nrt_tableinfo_t *tableinfo = jp->tableinfo;
+	nrt_job_key_t job_key = jp->job_key;
+	bool ip_v4 = jp->ip_v4;
+	bool user_space = jp->user_space;
 	nrt_node_number_t node_number;
 	slurm_nrt_nodeinfo_t *node;
 	slurm_nrt_adapter_t *adapter = NULL;
@@ -2258,24 +2260,16 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 
 		for (j = 0; j < tasks_per_node[i]; j++) {
 			if (adapter_name == NULL) {
-				rc = _allocate_windows_all(jp->tables_per_task,
-							   jp->tableinfo,
-							   host, i, tids[i][j],
-							   jp->job_key,
+				rc = _allocate_windows_all(jp, host, i,
+							   tids[i][j],
 							   adapter_type,
-							   base_lid,
-							   jp->user_space,
-							   ip_v4);
+							   base_lid);
 			} else {
 				rc = _allocate_window_single(adapter_name,
-							     jp->tableinfo,
-							     host, i,
+							     jp, host, i,
 							     tids[i][j],
-							     jp->job_key,
 							     adapter_type,
-							     base_lid,
-							     jp->user_space,
-							     ip_v4);
+							     base_lid);
 			}
 			if (rc != SLURM_SUCCESS) {
 				_unlock();
