@@ -814,7 +814,7 @@ _allocate_windows_all(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 			window->job_key = job_key;
 		}
 
-		if (!user_space || (adapter_type == NRT_IPONLY)) {
+		if (!user_space) {
 			nrt_ip_task_info_t *ip_table;
 			ip_table = (nrt_ip_task_info_t *)
 				   tableinfo[adapters_set].table;
@@ -944,7 +944,7 @@ _allocate_window_single(char *adapter_name, nrt_tableinfo_t *tableinfo,
 		window->job_key = job_key;
 	}
 
-	if (!user_space || (adapter_type == NRT_IPONLY)) {
+	if (!user_space) {
 		nrt_ip_task_info_t *ip_table;
 		ip_table = (nrt_ip_task_info_t *) tableinfo[0].table;
 		ip_table += task_id;
@@ -2208,8 +2208,12 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		jp->tables_per_task = adapter_type_count;
 	} else if (adapter_type_count >= 1) {
 		jp->tables_per_task = 1;
-		if (adapter_type == NRT_MAX_ADAPTER_TYPES)
+		if (adapter_type == NRT_MAX_ADAPTER_TYPES) {
+			/* Use same adapter type on all nodes even if the
+			 * adapter types are in different orders on different
+			 * nodes allocated to the job */
 			adapter_type = first_adapter_type;
+		}
 	} else {
 		jp->tables_per_task = 0;
 		info("switch/nrt: no adapter found for job");
@@ -2224,7 +2228,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	/* Allocate memory for each nrt_tableinfo_t */
 	jp->tableinfo = (nrt_tableinfo_t *) xmalloc(jp->tables_per_task *
 						    sizeof(nrt_tableinfo_t));
-	if (!jp->user_space || (adapter_type == NRT_IPONLY))
+	if (!jp->user_space)
 		table_rec_len = sizeof(nrt_ip_task_info_t);
 	else if (adapter_type == NRT_IB)
 		table_rec_len = sizeof(nrt_ib_task_info_t);
