@@ -1597,7 +1597,7 @@ extern char *slurm_conf_get_nodename_from_addr(const char *node_addr)
 
 	if (!(hptr = get_host_by_addr((char *)&addr, sizeof(addr), AF_INET,
 				      buf, sizeof(buf), NULL))) {
-		error("%m");
+		error("No node found with addr %s", node_addr);
 		return NULL;
 	}
 

@@ -451,6 +451,7 @@ slurm_step_ctx_daemon_per_node_hack(
 		if (!name) {
 			if (hl)
 				hostlist_destroy(hl);
+			slurm_seterrno(ESLURM_INVALID_NODE_NAME);
 			return SLURM_ERROR;
 		}
 
@@ -460,8 +461,10 @@ slurm_step_ctx_daemon_per_node_hack(
 			hostlist_push_host(hl, name);
 		xfree(name);
 	}
-	if (!hl)
+	if (!hl) {
+		slurm_seterrno(ESLURM_INVALID_NODE_COUNT);
 		return SLURM_ERROR;
+	}
 	hostlist_sort(hl);
 	new_layout->node_list = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
@@ -479,7 +482,7 @@ slurm_step_ctx_daemon_per_node_hack(
 	ctx->step_resp->step_layout = new_layout;
 
 	/* recreate the launch state structure now that the settings
-	   have changed */
+	 * have changed */
 
 
 /* FIXME: currently we have to make multiple calls for this so
