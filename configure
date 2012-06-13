@@ -754,6 +754,8 @@ WITH_CYGWIN_FALSE
 WITH_CYGWIN_TRUE
 USE_LOADLEVELER_FALSE
 USE_LOADLEVELER_TRUE
+HAVE_LLRAPI_H_FALSE
+HAVE_LLRAPI_H_TRUE
 HAVE_LLAPI_H_FALSE
 HAVE_LLAPI_H_TRUE
 LOADLEVELER_INCLUDES
@@ -6056,10 +6058,24 @@ if test "${with_loadleveler+set}" = set; then :
   withval=$with_loadleveler;  if test -f "$withval/lib64/libllapi.so" && test -f "$withval/include/llapi.h"; then
           LDFLAGS="-L$withval/lib64 -lllapi $LDFLAGS"
           LOADLEVELER_INCLUDES="-I$withval/include"
+          ac_with_llapi_h="yes"
 
 $as_echo "#define HAVE_LLAPI_H 1" >>confdefs.h
 
+       elif test -f "$withval/lib64/libllrapi.so" && test -f "$withval/include/llrapi.h"; then
+          LDFLAGS="-L$withval/lib64 -lllrapi $LDFLAGS"
+          LOADLEVELER_INCLUDES="-I$withval/include"
           ac_with_llapi_h="yes"
+          ac_with_llrapi_h="yes"
+
+$as_echo "#define HAVE_LLAPI_H 1" >>confdefs.h
+
+
+$as_echo "#define HAVE_LLRAPI_H 1" >>confdefs.h
+
+       elif echo "$withval" | grep --quiet "/resmgr/" ; then
+          { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: libllrapi.so or llrapi.h not found. Emulating LoadLeveler" >&5
+$as_echo "$as_me: WARNING: libllrapi.so or llrapi.h not found. Emulating LoadLeveler" >&2;}
        else
           { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: libllapi.so or llapi.h not found. Emulating LoadLeveler" >&5
 $as_echo "$as_me: WARNING: libllapi.so or llapi.h not found. Emulating LoadLeveler" >&2;}
@@ -6072,6 +6088,7 @@ $as_echo "#define USE_LOADLEVELER 1" >>confdefs.h
 
 fi
 
+
    if test "x$ac_with_load_leveler" = "xyes"; then
      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
@@ -6080,12 +6097,21 @@ $as_echo "yes" >&6; }
 $as_echo "no" >&6; }
    fi
 
+
     if test "x$ac_with_llapi_h" = "xyes"; then
   HAVE_LLAPI_H_TRUE=
   HAVE_LLAPI_H_FALSE='#'
 else
   HAVE_LLAPI_H_TRUE='#'
   HAVE_LLAPI_H_FALSE=
+fi
+
+    if test "x$ac_with_llrapi_h" = "xyes"; then
+  HAVE_LLRAPI_H_TRUE=
+  HAVE_LLRAPI_H_FALSE='#'
+else
+  HAVE_LLRAPI_H_TRUE='#'
+  HAVE_LLRAPI_H_FALSE=
 fi
 
     if test "x$ac_with_load_leveler" = "xyes"; then
@@ -22568,6 +22594,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_LLAPI_H_TRUE}" && test -z "${HAVE_LLAPI_H_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_LLAPI_H\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_LLRAPI_H_TRUE}" && test -z "${HAVE_LLRAPI_H_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_LLRAPI_H\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${USE_LOADLEVELER_TRUE}" && test -z "${USE_LOADLEVELER_FALSE}"; then

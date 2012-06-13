@@ -75,8 +75,17 @@ AC_DEFUN([X_AC_AIX],
      [ if test -f "$withval/lib64/libllapi.so" && test -f "$withval/include/llapi.h"; then
           LDFLAGS="-L$withval/lib64 -lllapi $LDFLAGS"
           LOADLEVELER_INCLUDES="-I$withval/include"
-          AC_DEFINE(HAVE_LLAPI_H, 1, [Define to 1 if llapi.h found])
           ac_with_llapi_h="yes"
+          AC_DEFINE(HAVE_LLAPI_H, 1, [Define to 1 if llapi.h or llrapi.h found])
+       elif test -f "$withval/lib64/libllrapi.so" && test -f "$withval/include/llrapi.h"; then
+          LDFLAGS="-L$withval/lib64 -lllrapi $LDFLAGS"
+          LOADLEVELER_INCLUDES="-I$withval/include"
+          ac_with_llapi_h="yes"
+          ac_with_llrapi_h="yes"
+          AC_DEFINE(HAVE_LLAPI_H, 1, [Define to 1 if llapi.h or llrapi.h found])
+          AC_DEFINE(HAVE_LLRAPI_H, 1, [Define to 1 if llrapi.h found])
+       elif echo "$withval" | grep --quiet "/resmgr/" ; then
+          AC_MSG_WARN([libllrapi.so or llrapi.h not found. Emulating LoadLeveler])
        else
           AC_MSG_WARN([libllapi.so or llapi.h not found. Emulating LoadLeveler])
        fi
@@ -84,13 +93,16 @@ AC_DEFUN([X_AC_AIX],
        ac_with_load_leveler="yes"
      ]
    )
+
    if test "x$ac_with_load_leveler" = "xyes"; then
      AC_MSG_RESULT([yes])
    else
      AC_MSG_RESULT([no])
    fi
+
    AC_SUBST(LOADLEVELER_INCLUDES)
    AM_CONDITIONAL(HAVE_LLAPI_H,    test "x$ac_with_llapi_h" = "xyes")
+   AM_CONDITIONAL(HAVE_LLRAPI_H,   test "x$ac_with_llrapi_h" = "xyes")
    AM_CONDITIONAL(USE_LOADLEVELER, test "x$ac_with_load_leveler" = "xyes")
 
 ])

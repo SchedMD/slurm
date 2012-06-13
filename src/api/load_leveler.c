@@ -41,7 +41,9 @@
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
-#  ifdef HAVE_LLAPI_H
+#  if defined HAVE_LLRAPI_H
+#    include <llrapi.h>
+#  elif defined HAVE_LLAPI_H
 #    include <llapi.h>
 #  endif
 #endif

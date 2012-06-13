@@ -157,8 +157,11 @@
 /* Define to 1 if you have the <linux/sched.h> header file. */
 #undef HAVE_LINUX_SCHED_H
 
-/* Define to 1 if llapi.h found */
+/* Define to 1 if llapi.h or llrapi.h found */
 #undef HAVE_LLAPI_H
+
+/* Define to 1 if llrapi.h found */
+#undef HAVE_LLRAPI_H
 
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
