@@ -581,6 +581,7 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 	slurm_nrt_adapter_t *adapter = NULL;
 	slurm_nrt_window_t *window = NULL;
 	int i, j;
+	int rc = SLURM_SUCCESS;
 	bool adapter_found;
 	uint16_t win_id = 0;
 
@@ -601,7 +602,8 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 	for (i = 0; i < adapter_cnt; i++) {
 		if (tableinfo[i].table == NULL) {
 			error("tableinfo[%d].table is NULL", i);
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
+			continue;
 		}
 
 		adapter_found = false;
@@ -617,7 +619,8 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 				if (ib_tbl_ptr == NULL) {
 					error("tableinfo[%d].table[%d] is "
 					      "NULL", i, task_id);
-					return SLURM_ERROR;
+					rc = SLURM_ERROR;
+					continue;
 				}
 				if (adapter->lid == ib_tbl_ptr->base_lid) {
 					adapter_found = true;
@@ -637,7 +640,8 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 				if (hfi_tbl_ptr == NULL) {
 					error("tableinfo[%d].table[%d] is "
 					      "NULL", i, task_id);
-					return SLURM_ERROR;
+					rc = SLURM_ERROR;
+					continue;
 				}
 				if (adapter->lid == hfi_tbl_ptr->lid) {
 					adapter_found = true;
@@ -651,17 +655,41 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 					       hfi_tbl_ptr->win_id, task_id);
 					break;
 				}
+			} else if ((adapter->adapter_type == NRT_HPCE) ||
+			           (adapter->adapter_type == NRT_KMUX)) {
+				nrt_hpce_task_info_t *hpce_tbl_ptr;
+				hpce_tbl_ptr = tableinfo[i].table + task_id;
+				if (hpce_tbl_ptr == NULL) {
+					error("tableinfo[%d].table[%d] is "
+					      "NULL", i, task_id);
+					rc = SLURM_ERROR;
+					continue;
+				}
+/* FIXME: These should probably match network_id or something else */
+//				if (adapter->lid == hpce_tbl_ptr->lid) {
+				if (1) {
+					adapter_found = true;
+					win_id = hpce_tbl_ptr->win_id;
+					debug3("Setting status %s adapter %s "
+					       "window %hu for task %d",
+					       state == NRT_WIN_UNAVAILABLE ?
+					       "UNLOADED" : "LOADED",
+					       adapter->adapter_name,
+					       hpce_tbl_ptr->win_id, task_id);
+					break;
+				}
 			} else {
-				fatal("_window_state_set: Missing support for "
-				      "adapter type %hu",
-				      adapter->adapter_type);
+				error("_window_state_set: Missing support for "
+				      "adapter type %s",
+				      _adapter_type_str(adapter->adapter_type));
 
 			}
 		}
 		if (!adapter_found) {
 			error("Did not find adapter %s with lid %hu ",
 			      adapter->adapter_name, adapter->lid);
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
+			continue;
 		}
 
 		window = _find_window(adapter, win_id);
@@ -672,7 +700,7 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 		}
 	}
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 /* If the node is already in the node list then simply return
  * a pointer to it, otherwise dynamically allocate memory to the
@@ -848,9 +876,17 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 			hfi_table += task_id;
 			hfi_table->task_id = task_id;
 			hfi_table->win_id = window->window_id;
+		} else if ((adapter_type == NRT_HPCE) ||
+		           (adapter_type == NRT_KMUX)) {
+			nrt_hpce_task_info_t *hpce_table;
+			hpce_table = (nrt_hpce_task_info_t *)
+				     tableinfo[adapters_set].table;
+			hpce_table += task_id;
+			hpce_table->task_id = task_id;
+			hpce_table->win_id = window->window_id;
 		} else {
-			fatal("Missing support for adapter type %d",
-			      adapter_type);
+			error("Missing support for adapter type %s",
+			      _adapter_type_str(adapter_type));
 		}
 
 		strncpy(tableinfo[adapters_set].adapter_name,
@@ -978,8 +1014,16 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 		hfi_table += task_id;
 		hfi_table->task_id = task_id;
 		hfi_table->win_id = window->window_id;
+	} else if ((adapter_type == NRT_HPCE) ||
+	           (adapter_type == NRT_KMUX)) {
+		nrt_hpce_task_info_t *hpce_table;
+		hpce_table = (nrt_hpce_task_info_t *) tableinfo[0].table;
+		hpce_table += task_id;
+		hpce_table->task_id = task_id;
+		hpce_table->win_id = window->window_id;
 	} else {
-		fatal("Missing support for adapter type %d", adapter_type);
+		error("Missing support for adapter type %s",
+		      _adapter_type_str(adapter_type));
 	}
 
 	strncpy(tableinfo[0].adapter_name, adapter_name,
@@ -1214,8 +1258,19 @@ _print_table(void *table, int size, nrt_adapter_t adapter_type, bool ip_v4)
 			info("  lpar_id: %u", hfi_tbl_ptr->lpar_id);
 			info("  lid: %u", hfi_tbl_ptr->lid);
 			info("  win_id: %hu", hfi_tbl_ptr->win_id);
-		} else if ((adapter_type == NRT_IPONLY) ||
-			   (adapter_type == NRT_HPCE)) {   /* HPC Ethernet */
+		} else if ((adapter_type == NRT_HPCE) ||
+		           (adapter_type == NRT_KMUX)) {
+			nrt_hpce_task_info_t *hpce_tbl_ptr;
+			hpce_tbl_ptr = table;
+			hpce_tbl_ptr += i;
+			info("  task_id: %u", hpce_tbl_ptr->task_id);
+			info("  win_id: %hu", hpce_tbl_ptr->win_id);
+			inet_ntop(AF_INET, &hpce_tbl_ptr->node_number,
+				  addr_str, sizeof(addr_str));
+			info("  node_number: %s", addr_str);
+/*			info("  node_number: %u", hpce_tbl_ptr->node_number); */
+			info("  device_name: %s", hpce_tbl_ptr->device_name);
+		} else if (adapter_type == NRT_IPONLY) {
 			nrt_ip_task_info_t *ip_tbl_ptr;
 			char addr_str[128];
 			ip_tbl_ptr = table;
@@ -2191,7 +2246,8 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 				continue;
 			if (jp->user_space) {
 				if ((ad_type == NRT_IPONLY) ||
-				    (ad_type == NRT_HPCE))
+				    (ad_type == NRT_HPCE)   ||
+				    (ad_type == NRT_KMUX))
 					continue;
 				if (adapter_type == NRT_MAX_ADAPTER_TYPES)
 					adapter_type = ad_type;
@@ -2236,6 +2292,8 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		table_rec_len = sizeof(nrt_ib_task_info_t);
 	else if (adapter_type == NRT_HFI)
 		table_rec_len = sizeof(nrt_hfi_task_info_t);
+	else if ((adapter_type == NRT_HPCE) || (adapter_type == NRT_KMUX))
+		table_rec_len = sizeof(nrt_hpce_task_info_t);
 	else {
 		info("Unsupported adapter_type: %s",
 		     _adapter_type_str(adapter_type));
@@ -2348,9 +2406,20 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, nrt_adapter_t adapter_type,
 			tmp_8 = hfi_tbl_ptr->win_id;
 			pack8(tmp_8, buf);
 		}
+	} else if ((adapter_type == NRT_HPCE) || (adapter_type == NRT_KMUX)) {
+		nrt_hpce_task_info_t *hpce_tbl_ptr;
+		for (i = 0, hpce_tbl_ptr = tableinfo->table;
+		     i < tableinfo->table_length;
+		     i++, hpce_tbl_ptr++) {
+			pack32(hpce_tbl_ptr->task_id, buf);
+			pack16(hpce_tbl_ptr->win_id, buf);
+			pack32(hpce_tbl_ptr->node_number, buf);
+			packmem(hpce_tbl_ptr->device_name,
+				NRT_MAX_DEVICENAME_SIZE, buf);
+		}
 	} else {
-		fatal("_pack_tableinfo: Missing support for adapter type %hu",
-		      adapter_type);
+		error("_pack_tableinfo: Missing support for adapter type %s",
+		      _adapter_type_str(adapter_type));
 	}
 	packmem(tableinfo->adapter_name, NRT_MAX_DEVICENAME_SIZE, buf);
 }
@@ -2460,9 +2529,24 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, nrt_adapter_t adapter_type,
 			safe_unpack8(&tmp_8, buf);
 			hfi_tbl_ptr->win_id = tmp_8;
 		}
+	} else if ((adapter_type == NRT_HPCE) || (adapter_type == NRT_KMUX)) {
+		nrt_hpce_task_info_t *hpce_tbl_ptr;
+		tableinfo->table = (nrt_hpce_task_info_t *)
+				   xmalloc(tableinfo->table_length *
+				   sizeof(nrt_hpce_task_info_t));
+		for (i = 0, hpce_tbl_ptr = tableinfo->table;
+		     i < tableinfo->table_length;
+		     i++, hpce_tbl_ptr++) {
+			safe_unpack32(&hpce_tbl_ptr->task_id, buf);
+			safe_unpack16(&hpce_tbl_ptr->win_id, buf);
+			safe_unpack32(&hpce_tbl_ptr->node_number, buf);
+			safe_unpackmem(hpce_tbl_ptr->device_name, &size, buf);
+			if (size != NRT_MAX_DEVICENAME_SIZE)
+				goto unpack_error;
+		}
 	} else {
-		fatal("_unpack_tableinfo: Missing support for adapter "
-		      "type %hu", adapter_type);
+		error("_unpack_tableinfo: Missing support for adapter type %s",
+		      _adapter_type_str(adapter_type));
 	}
 	safe_unpackmem_ptr(&name_ptr, &size, buf);
 	if (size != NRT_MAX_DEVICENAME_SIZE)
@@ -2561,9 +2645,13 @@ nrt_copy_jobinfo(slurm_nrt_jobinfo_t *job)
 			base_size = sizeof(nrt_ib_task_info_t);
 		} else if (job->tableinfo->adapter_type == NRT_HFI) {
 			base_size = sizeof(nrt_hfi_task_info_t);
+		} else if ((job->tableinfo->adapter_type == NRT_HPCE) ||
+		           (job->tableinfo->adapter_type == NRT_KMUX)) {
+			base_size = sizeof(nrt_hpce_task_info_t);
 		} else {
-			fatal("nrt_copy_jobinfo: Missing support for adapter "
-			      "type %hu", job->tableinfo->adapter_type);
+			error("nrt_copy_jobinfo: Missing support for adapter "
+			      "type %s",
+			      _adapter_type_str(job->tableinfo->adapter_type));
 		}
 		new->tableinfo[i].table_length = job->tableinfo[i].table_length;
 		table_size = base_size * job->tableinfo[i].table_length;
@@ -2767,9 +2855,16 @@ _wait_for_all_windows(nrt_tableinfo_t *tableinfo)
 			hfi_tbl_ptr = (nrt_hfi_task_info_t *) tableinfo->table;
 			hfi_tbl_ptr += i;
 			window_id = hfi_tbl_ptr->win_id;
+		} else if ((adapter_names.adapter_type == NRT_HPCE) ||
+		           (adapter_names.adapter_type == NRT_KMUX)) {
+			nrt_hpce_task_info_t *hpce_tbl_ptr;
+			hpce_tbl_ptr = (nrt_hpce_task_info_t *) tableinfo->
+								table;
+			hpce_tbl_ptr += i;
+			window_id = hpce_tbl_ptr->win_id;
 		} else {
-			fatal("_wait_for_all_windows: Missing support for "
-			      "adapter_type:%s",
+			error("_wait_for_all_windows: Missing support for "
+			      "adapter_type %s",
 			      _adapter_type_str(tableinfo->adapter_type));
 		}
 
@@ -3073,6 +3168,13 @@ nrt_unload_table(slurm_nrt_jobinfo_t *jp)
 					      jp->tableinfo[i].table;
 				hfi_tbl_ptr += j;
 				window_id = hfi_tbl_ptr->win_id;
+			} else if ((jp->tableinfo[i].adapter_type==NRT_HPCE) ||
+			           (jp->tableinfo[i].adapter_type==NRT_KMUX)) {
+				nrt_hpce_task_info_t *hpce_tbl_ptr;
+				hpce_tbl_ptr = (nrt_hpce_task_info_t *)
+					       jp->tableinfo[i].table;
+				hpce_tbl_ptr += j;
+				window_id = hpce_tbl_ptr->win_id;
 			} else {
 				fatal("nrt_unload_table: invalid adapter "
 				      "type: %s",
