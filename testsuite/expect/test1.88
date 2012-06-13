@@ -69,7 +69,7 @@ if {[test_aix] == 1} {
 exec $bin_rm -f $test_prog ${test_prog}.o
 if {$use_pmi} {
 	set pmi_link "-rpath $slurm_dir/lib -L $slurm_dir/lib -lpmi"
-	exec $mpicc -Xlinker $pmi_link -o $test_prog ${test_prog}.c
+	eval exec $mpicc -Xlinker $pmi_link -o $test_prog ${test_prog}.c
 } else {
 	exec $mpicc -o $test_prog ${test_prog}.c
 }
