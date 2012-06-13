@@ -31,6 +31,7 @@ documents those changes that are of interest to users and admins.
     a job kill timeout aren't always reported to the system.  This is now
     handled by the runjob_mux plugin.
  -- BGQ - Added information on how to setup the runjob_mux to run as SlurmUser.
+ -- Improve memory consumption on step layouts with high task count.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
