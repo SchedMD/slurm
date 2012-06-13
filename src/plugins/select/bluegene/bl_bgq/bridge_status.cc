@@ -910,7 +910,7 @@ void event_handler::handleRealtimeStartedRealtimeEvent(
 	if (!rt_running) {
 		uint16_t coords[SYSTEM_DIMENSIONS];
 		slurm_mutex_lock(&rt_mutex);
-		info("RealTime server started backup!");
+		info("RealTime server started back up!");
 		rt_running = 1;
 		/* To make sure we don't have any missing state */
 		if (blocks_are_created)
