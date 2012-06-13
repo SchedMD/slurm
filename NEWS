@@ -32,6 +32,9 @@ documents those changes that are of interest to users and admins.
     handled by the runjob_mux plugin.
  -- BGQ - Added information on how to setup the runjob_mux to run as SlurmUser.
  -- Improve memory consumption on step layouts with high task count.
+ -- BGQ - quiter debug when the real time server comes back but there are
+    still messages we find when we poll but haven't given it back to the real
+    time yet.
 
 * Changes in SLURM 2.4.0.rc1
 =============================

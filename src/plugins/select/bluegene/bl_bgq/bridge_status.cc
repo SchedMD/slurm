@@ -911,12 +911,12 @@ void event_handler::handleRealtimeStartedRealtimeEvent(
 		uint16_t coords[SYSTEM_DIMENSIONS];
 		slurm_mutex_lock(&rt_mutex);
 		info("RealTime server started back up!");
-		rt_running = 1;
 		/* To make sure we don't have any missing state */
 		if (blocks_are_created)
 			_do_block_poll();
 		/* only do every 30 seconds */
 		_do_hardware_poll(0, coords, bridge_get_compute_hardware());
+		rt_running = 1;
 	}
 }
 
