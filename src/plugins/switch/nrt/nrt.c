@@ -209,16 +209,14 @@ static int	_job_step_window_state(slurm_nrt_jobinfo_t *jp,
 static void	_lock(void);
 static nrt_job_key_t _next_key(void);
 static int	_pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
-static void	_pack_tableinfo(nrt_tableinfo_t *tableinfo,
-				nrt_adapter_t adapter_type, Buf buf,
-				bool ip_v4);
+static void	_pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf,
+				slurm_nrt_jobinfo_t *jp);
 static void	_unlock(void);
 static int	_unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static int	_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf,
 				 bool believe_window_status);
 static int	_unpack_tableinfo(nrt_tableinfo_t *tableinfo,
-				  nrt_adapter_t adapter_type, Buf buf,
-				  bool ip_v4);
+				  Buf buf, slurm_nrt_jobinfo_t *jp);
 static int	_wait_for_all_windows(nrt_tableinfo_t *tableinfo);
 static int	_wait_for_window_unloaded(char *adapter_name,
 					  nrt_adapter_t adapter_type,
@@ -891,7 +889,7 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 
 		strncpy(tableinfo[adapters_set].adapter_name,
 			adapter->adapter_name, NRT_MAX_ADAPTER_NAME_LEN);
-		tableinfo[adapters_set].adapter_type = adapter_type;
+		tableinfo[adapters_set].adapter_type = adapter->adapter_type;
 		adapters_set++;
 	}
 
@@ -1028,6 +1026,7 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 
 	strncpy(tableinfo[0].adapter_name, adapter_name,
 		NRT_MAX_ADAPTER_NAME_LEN);
+	tableinfo[0].adapter_type = adapter->adapter_type;
 
 	return SLURM_SUCCESS;
 }
@@ -1326,6 +1325,8 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 	info("  nodenames: %s (slurmctld internal use only)", buf);
 	info("  num_tasks: %d", j->num_tasks);
 	for (i = 0; i < j->tables_per_task; i++) {
+		info("--Header NRT table--");
+		info("  adapter_name: %s", j->tableinfo[i].adapter_name);
 		info("  adapter_type: %s",
 		     _adapter_type_str(j->tableinfo[i].adapter_type));
 		if (j->user_space)
@@ -2355,12 +2356,23 @@ fail:
 }
 
 static void
-_pack_tableinfo(nrt_tableinfo_t *tableinfo, nrt_adapter_t adapter_type,
-		Buf buf, bool ip_v4)
+_pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp)
 {
+	uint32_t adapter_type;
+	bool ip_v4;
 	int i, j;
 
+	xassert(tableinfo);
+	xassert(jp);
+
+	ip_v4 = jp->ip_v4;
+	packmem(tableinfo->adapter_name, NRT_MAX_DEVICENAME_SIZE, buf);
+	adapter_type = tableinfo->adapter_type;
+	pack32(adapter_type, buf);
+	if (!jp->user_space)
+		adapter_type = NRT_IPONLY;
 	pack32(tableinfo->table_length, buf);
+
 	if (adapter_type == NRT_IB) {
 		nrt_ib_task_info_t *ib_tbl_ptr;
 		for (i = 0, ib_tbl_ptr = tableinfo->table;
@@ -2421,7 +2433,6 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, nrt_adapter_t adapter_type,
 		error("_pack_tableinfo: Missing support for adapter type %s",
 		      _adapter_type_str(adapter_type));
 	}
-	packmem(tableinfo->adapter_name, NRT_MAX_DEVICENAME_SIZE, buf);
 }
 
 /* Used by: all */
@@ -2429,7 +2440,6 @@ extern int
 nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 {
 	int i;
-	nrt_adapter_t adapter_type;
 
 	assert(j);
 	assert(j->magic == NRT_JOBINFO_MAGIC);
@@ -2450,27 +2460,37 @@ nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	pack32(j->num_tasks, buf);
 	packstr(j->protocol, buf);
 
-	for (i = 0; i < j->tables_per_task; i++) {
-		if (!j->user_space)
-			adapter_type = NRT_IPONLY;
-		else
-			adapter_type = j->tableinfo[i].adapter_type;
-		_pack_tableinfo(&j->tableinfo[i], adapter_type, buf, j->ip_v4);
-	}
+	for (i = 0; i < j->tables_per_task; i++)
+		_pack_tableinfo(&j->tableinfo[i], buf, j);
 
 	return SLURM_SUCCESS;
 }
 
 /* return 0 on success, -1 on failure */
 static int
-_unpack_tableinfo(nrt_tableinfo_t *tableinfo, nrt_adapter_t adapter_type,
-		  Buf buf, bool ip_v4)
+_unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp)
 {
-	uint32_t size;
+	uint32_t tmp_32, adapter_type;
+	uint16_t tmp_16;
+	uint8_t  tmp_8;
 	char *name_ptr;
 	int i, j;
+	bool ip_v4;
 
+	xassert(jp);
+	xassert(tableinfo);
+
+	safe_unpackmem_ptr(&name_ptr, &tmp_32, buf);
+	if (tmp_32 != NRT_MAX_DEVICENAME_SIZE)
+		goto unpack_error;
+	memcpy(tableinfo->adapter_name, name_ptr, tmp_32);
+	safe_unpack32(&adapter_type, buf);
+	tableinfo->adapter_type = (int) adapter_type;
+	ip_v4 = jp->ip_v4;
+	if (!jp->user_space)
+		adapter_type = NRT_IPONLY;
 	safe_unpack32(&tableinfo->table_length, buf);
+
 	if (adapter_type == NRT_IB) {
 		nrt_ib_task_info_t *ib_tbl_ptr;
 		tableinfo->table = (nrt_ib_task_info_t *)
@@ -2479,8 +2499,8 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, nrt_adapter_t adapter_type,
 		for (i = 0, ib_tbl_ptr = tableinfo->table;
 		     i < tableinfo->table_length;
 		     i++, ib_tbl_ptr++) {
-			safe_unpackmem(ib_tbl_ptr->device_name, &size, buf);
-			if (size != NRT_MAX_DEVICENAME_SIZE)
+			safe_unpackmem(ib_tbl_ptr->device_name, &tmp_32, buf);
+			if (tmp_32 != NRT_MAX_DEVICENAME_SIZE)
 				goto unpack_error;
 			safe_unpack32(&ib_tbl_ptr->base_lid, buf);
 			safe_unpack8(&ib_tbl_ptr->lmc, buf);
@@ -2500,8 +2520,8 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, nrt_adapter_t adapter_type,
 			if (ip_v4) {
 				safe_unpackmem((char *)
 					       &ip_tbl_ptr->ip.ipv4_addr,
-					       &size, buf);
-				if (size != sizeof(in_addr_t))
+					       &tmp_32, buf);
+				if (tmp_32 != sizeof(in_addr_t))
 					goto unpack_error;
 			} else {
 				for (j = 0; j < 4; j++) {
@@ -2521,8 +2541,7 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, nrt_adapter_t adapter_type,
 		for (i = 0, hfi_tbl_ptr = tableinfo->table;
 		     i < tableinfo->table_length;
 		     i++, hfi_tbl_ptr++) {
-			uint16_t tmp_16;
-			uint8_t  tmp_8;
+
 			safe_unpack32(&hfi_tbl_ptr->task_id, buf);
 			safe_unpack16(&tmp_16, buf);
 			hfi_tbl_ptr->lid = tmp_16;
@@ -2540,30 +2559,26 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, nrt_adapter_t adapter_type,
 			safe_unpack32(&hpce_tbl_ptr->task_id, buf);
 			safe_unpack16(&hpce_tbl_ptr->win_id, buf);
 			safe_unpack32(&hpce_tbl_ptr->node_number, buf);
-			safe_unpackmem(hpce_tbl_ptr->device_name, &size, buf);
-			if (size != NRT_MAX_DEVICENAME_SIZE)
+			safe_unpackmem(hpce_tbl_ptr->device_name, &tmp_32,buf);
+			if (tmp_32 != NRT_MAX_DEVICENAME_SIZE)
 				goto unpack_error;
 		}
 	} else {
 		error("_unpack_tableinfo: Missing support for adapter type %s",
 		      _adapter_type_str(adapter_type));
 	}
-	safe_unpackmem_ptr(&name_ptr, &size, buf);
-	if (size != NRT_MAX_DEVICENAME_SIZE)
-		goto unpack_error;
-	memcpy(tableinfo->adapter_name, name_ptr, size);
-	return 0;
+
+	return SLURM_SUCCESS;
 
 unpack_error: /* safe_unpackXX are macros which jump to unpack_error */
 	error("unpack error in _unpack_tableinfo");
-	return -1;
+	return SLURM_ERROR;
 }
 
 /* Used by: all */
 extern int
 nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 {
-	nrt_adapter_t adapter_type;
 	uint32_t uint32_tmp;
 	int i;
 
@@ -2586,12 +2601,7 @@ nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	j->tableinfo = (nrt_tableinfo_t *) xmalloc(j->tables_per_task *
 						   sizeof(nrt_tableinfo_t));
 	for (i = 0; i < j->tables_per_task; i++) {
-		if (!j->user_space)
-			adapter_type = NRT_IPONLY;
-		else
-			adapter_type = j->tableinfo[i].adapter_type;
-		if (_unpack_tableinfo(&j->tableinfo[i], adapter_type, buf,
-				      j->ip_v4))
+		if (_unpack_tableinfo(&j->tableinfo[i], buf, j))
 			goto unpack_error;
 	}
 
