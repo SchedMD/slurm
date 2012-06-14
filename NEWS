@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
     be accepted, but is no longer documented.
  -- Permit more than 100 jobs to be scheduled per node (new limit is 10,000
     jobs).
+ -- Restructure of srun code to allow outside programs to utilize existing
+    logic.
 
 * Changes in SLURM 2.4.0.rc2
 =============================
