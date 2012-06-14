@@ -74,6 +74,7 @@ typedef struct nrt_tableinfo {
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
 	nrt_adapter_t adapter_type;
 	nrt_network_id_t network_id;
+	char protocol_name[NRT_MAX_PROTO_NAME_LEN];  /* MPI, LAPI, UPC, etc. */
 /* FIXME: Need to populate, un/pack, and free this data structure */
 	nrt_comm_table_t *comm_table_ptr;
 } nrt_tableinfo_t;

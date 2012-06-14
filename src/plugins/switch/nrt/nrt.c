@@ -2645,7 +2645,7 @@ nrt_copy_jobinfo(slurm_nrt_jobinfo_t *job)
 	}
 	memcpy(new, job, sizeof(slurm_nrt_jobinfo_t));
 
-	/* table will be empty (and table_size == 0) when the network string
+/* FIXME: table will be empty (and table_size == 0) when the network string
 	 * from poe does not contain "us".
 	 * (See man poe: -euilib or MP_EUILIB)
 	 */
