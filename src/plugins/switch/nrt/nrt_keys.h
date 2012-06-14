@@ -73,6 +73,7 @@ typedef struct nrt_tableinfo {
 	void *table; /* Pointer to nrt_*_task_info_t */
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
 	nrt_adapter_t adapter_type;
+	nrt_network_id_t network_id;
 /* FIXME: Need to populate, un/pack, and free this data structure */
 	nrt_comm_table_t *comm_table_ptr;
 } nrt_tableinfo_t;
