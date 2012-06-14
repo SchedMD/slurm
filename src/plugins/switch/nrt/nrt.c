@@ -896,7 +896,9 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 		tableinfo[adapters_set].network_id = adapter->network_id;
 		strncpy(tableinfo[adapters_set].protocol_name, protocol_name,
 			NRT_MAX_PROTO_NAME_LEN);
-
+/* FIXME: Need to set context_id & table_id */
+		tableinfo[adapters_set].context_id = 0;
+		tableinfo[adapters_set].table_id   = adapters_set;
 		adapters_set++;
 	}
 
@@ -1040,6 +1042,9 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 	tableinfo[0].network_id = adapter->network_id;
 	strncpy(tableinfo[0].protocol_name, protocol_name,
 		NRT_MAX_PROTO_NAME_LEN);
+/* FIXME: Need to set context_id & table_id */
+	tableinfo[0].context_id = 0;
+	tableinfo[0].table_id   = 0;
 
 	return SLURM_SUCCESS;
 }
@@ -1340,8 +1345,10 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 		info("  adapter_name: %s", j->tableinfo[i].adapter_name);
 		info("  adapter_type: %s",
 		     _adapter_type_str(j->tableinfo[i].adapter_type));
+		info("  context_id: %u", j->tableinfo[i].context_id);
 		info("  network_id: %lu", j->tableinfo[i].network_id);
 		info("  protocol_name: %s", j->tableinfo[i].protocol_name);
+		info("  table_id: %u", j->tableinfo[i].table_id);
 		if (j->user_space)
 			adapter_type = j->tableinfo[i].adapter_type;
 		else
@@ -2372,10 +2379,12 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp)
 	packmem(tableinfo->adapter_name, NRT_MAX_ADAPTER_NAME_LEN, buf);
 	adapter_type = tableinfo->adapter_type;
 	pack32(adapter_type, buf);
+	pack16(tableinfo->context_id, buf);
 	pack64(tableinfo->network_id, buf);
 	packmem(tableinfo->protocol_name, NRT_MAX_PROTO_NAME_LEN, buf);
 	if (!jp->user_space)
 		adapter_type = NRT_IPONLY;
+	pack16(tableinfo->table_id, buf);
 	pack32(tableinfo->table_length, buf);
 
 	if (adapter_type == NRT_IB) {
@@ -2489,6 +2498,7 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp)
 	memcpy(tableinfo->adapter_name, name_ptr, tmp_32);
 	safe_unpack32(&adapter_type, buf);
 	tableinfo->adapter_type = (int) adapter_type;
+	safe_unpack16(&tableinfo->context_id, buf);
 	safe_unpack64(&tableinfo->network_id, buf);
 	safe_unpackmem_ptr(&name_ptr, &tmp_32, buf);
 	if (tmp_32 != NRT_MAX_PROTO_NAME_LEN)
@@ -2497,6 +2507,7 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp)
 	ip_v4 = jp->ip_v4;
 	if (!jp->user_space)
 		adapter_type = NRT_IPONLY;
+	safe_unpack16(&tableinfo->table_id, buf);
 	safe_unpack32(&tableinfo->table_length, buf);
 
 	if (adapter_type == NRT_IB) {
@@ -3024,10 +3035,8 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 			table_info.is_ipv4 = 0;
 			table_info.is_user_space = 0;
 		}
-/* FIXME: Need to set context_id here */
-		table_info.context_id = 0;
-/* FIXME: Need to set table_id here */
-		table_info.table_id = 0;
+		table_info.context_id = jp->tableinfo[i].context_id;
+		table_info.table_id = jp->tableinfo[i].table_id;
 		if (job_name) {
 			char *sep = strrchr(job_name,'/');
 			if (sep)

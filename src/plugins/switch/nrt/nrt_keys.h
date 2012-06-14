@@ -69,12 +69,14 @@ typedef struct nrt_comm_table {
 } nrt_comm_table_t;
 
 typedef struct nrt_tableinfo {
-	uint32_t table_length;
-	void *table; /* Pointer to nrt_*_task_info_t */
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
 	nrt_adapter_t adapter_type;
+	nrt_context_id_t context_id;
 	nrt_network_id_t network_id;
 	char protocol_name[NRT_MAX_PROTO_NAME_LEN];  /* MPI, LAPI, UPC, etc. */
+	nrt_table_id_t table_id;
+	uint32_t table_length;
+	void *table; /* Pointer to nrt_*_task_info_t */
 /* FIXME: Need to populate, un/pack, and free this data structure */
 	nrt_comm_table_t *comm_table_ptr;
 } nrt_tableinfo_t;
