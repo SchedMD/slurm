@@ -147,8 +147,8 @@ job_create_noalloc(void)
 	}
 	srand48(getpid());
 	ai->jobid          = MIN_NOALLOC_JOBID +
-				((uint32_t) lrand48() %
-				(MAX_NOALLOC_JOBID - MIN_NOALLOC_JOBID + 1));
+		((uint32_t) lrand48() %
+		 (MAX_NOALLOC_JOBID - MIN_NOALLOC_JOBID + 1));
 	ai->stepid         = (uint32_t) (lrand48());
 	ai->nodelist       = opt.nodelist;
 	ai->nnodes         = hostlist_count(hl);
@@ -166,7 +166,7 @@ job_create_noalloc(void)
 
 	job_update_io_fnames(job);
 
-   error:
+error:
 	xfree(ai);
 	return (job);
 
@@ -786,7 +786,7 @@ _job_create_structure(allocation_info_t *ainfo)
 	job->ntasks  = opt.ntasks;
 	for (i=0; i<ainfo->num_cpu_groups; i++) {
 		job->cpu_count += ainfo->cpus_per_node[i] *
-				  ainfo->cpu_count_reps[i];
+			ainfo->cpu_count_reps[i];
 	}
 
 	job->rc       = -1;
