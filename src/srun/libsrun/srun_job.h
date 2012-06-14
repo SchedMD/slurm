@@ -52,6 +52,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_protocol_defs.h"
+
 #include "src/api/step_io.h"
 
 
@@ -129,8 +130,17 @@ extern srun_job_t *job_step_create_allocation(
 	resource_allocation_response_msg_t *resp);
 extern srun_job_t * job_create_allocation(
 	resource_allocation_response_msg_t *resp);
-extern srun_job_t * job_create_structure(
-	resource_allocation_response_msg_t *resp);
+
+extern void init_srun(int ac, char **av,
+		      log_options_t *logopt, int debug_level,
+		      bool slurm_started);
+
+extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
+			    bool slurm_started);
+extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started);
+
+extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
+		      pthread_t signal_thread, bool slurm_started);
 
 /*
  *  Update job filenames and modes for stderr, stdout, and stdin.

@@ -591,11 +591,11 @@ static char *_build_poe_command(uint32_t job_id)
 	}
 	if (opt.immediate)
 		setenv("MP_RETRY", "0", 1);
-	if (_verbose) {
-		int info_level = MIN((_verbose + 1), 6);
-		snprintf(value, sizeof(value), "%d", info_level);
-		setenv("MP_INFOLEVEL", value, 1);
-	}
+	/* if (_verbose) { */
+	/* 	int info_level = MIN((_verbose + 1), 6); */
+	/* 	snprintf(value, sizeof(value), "%d", info_level); */
+	/* 	setenv("MP_INFOLEVEL", value, 1); */
+	/* } */
 	if (opt.labelio)
 		setenv("MP_LABELIO", "yes", 0);
 	if (!strcmp(protocol, "multi"))
@@ -644,6 +644,7 @@ static char *_build_poe_command(uint32_t job_id)
 	   really needs to have RMPOOL set just set it to something.
 	*/
 	setenv("MP_RMPOOL", "SLURM", 1);
+	setenv("SLURM_STARTED_STEP", "YES", 1);
 	//disable_status = opt.disable_status;
 	//quit_on_intr = opt.quit_on_intr;
 	//srun_jobid = xstrdup(opt.jobid);
