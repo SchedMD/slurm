@@ -1,4 +1,4 @@
-.TH "cgroup.conf" "5" "December 2010" "cgroup.conf 2.2" \
+.TH "cgroup.conf" "5" "June 2012" "cgroup.conf 2.2" \
 "Slurm cgroup configuration file"
 
 .SH "NAME"
@@ -6,7 +6,7 @@ cgroup.conf \- Slurm configuration file for the cgroup support
 
 .SH "DESCRIPTION"
 
-\fBcgroup.conf\fP is an ASCII file which defines parameters used by 
+\fBcgroup.conf\fP is an ASCII file which defines parameters used by
 Slurm's Linux cgroup related plugins.
 The file location can be modified at system build time using the
 DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
@@ -20,9 +20,10 @@ The size of each line in the file is limited to 1024 characters.
 Changes to the configuration file take effect upon restart of
 SLURM daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
+
 .LP
-Two cgroup plugins are currently available in SLURM. The first
-one is a proctrack plugin, the second one a task plugin.
+For general Slurm Cgroups information, see the Cgroups Guide at
+<http://www.schedmd.com/slurmdocs/cgroups.html>.
 
 .LP
 The following cgroup.conf parameters are defined to control the general behavior
@@ -38,77 +39,16 @@ one per subsystem. The default \fIPATH\fR is /cgroup.
 \fBCgroupAutomount\fR=<yes|no>
 Slurm cgroup plugins require valid and functional cgroup subsystem to be mounted
 under /cgroup/<subsystem_name>.
-When launched, plugins check their subsystem availability. If not available, 
-the plugin launch fails unless CgroupAutomount is set to yes. In that case, the 
+When launched, plugins check their subsystem availability. If not available,
+the plugin launch fails unless CgroupAutomount is set to yes. In that case, the
 plugin will first try to mount the required subsystems.
 
 .TP
 \fBCgroupReleaseAgentDir\fR=<path_to_release_agent_directory>
-Used to tune the cgroup system behavior. This parameter identifies the location 
-of the directory containing Slurm cgroup release_agent files. A release_agent file
-is required for each mounted subsystem. The release_agent file name must have the
-following format: release_<subsystem_name>.  For instance, the release_agent file
-for the cpuset subsystem must be named release_cpuset.  See also CLEANUP OF
-CGROUPS below.
-
-.SH "PROCTRACK/CGROUP PLUGIN"
-
-Slurm \fBproctrack/cgroup\fP plugin is used to track processes using the
-freezer control group subsystem. It creates a hierarchical set of
-directories for each step, putting the step tasks into the leaf.
-.LP
-This directory structure is like the following:
-.br 
-/cgroup/freezer/uid_%uid/job_%jobid/step_%stepid
-.LP
-Slurm cgroup proctrack plugin is enabled with the following parameter
-in slurm.conf:
-.br 
-ProctrackType=proctrack/cgroup
-
-.LP
-No particular cgroup.conf parameter is defined to control the behavior
-of this particular plugin.
-
-.SH "JOBACCT_GATHER/CGROUP PLUGIN"
-
-Slurm \fBjobacct_gather/cgroup\fP plugin is an experimental plugin
-that uses cgroups to generate accounting statistics instead of the linux
-/proc table.  The plugin creates a hierarchical set of
-directories for each task.
-.LP
-This directory structure is like the following:
-.br 
-/cgroup/cpuacct/uid_%uid/job_%jobid/step_%stepid/task_%taskid
-.LP
-Slurm cgroup jobacct_gather plugin is enabled with the following parameter
-in slurm.conf:
-.br 
-JobAcctGatherType=jobacct_gather/cgroup
-
-.LP
-No particular cgroup.conf parameter is defined to control the behavior
-of this particular plugin.
+Used to tune the cgroup system behavior. This parameter identifies the location
+of the directory containing Slurm cgroup release_agent files.
 
 .SH "TASK/CGROUP PLUGIN"
-
-.LP
-Slurm \fBtask/cgroup\fP plugin is used to enforce allocated resources 
-constraints, thus avoiding tasks to use unallocated resources. It currently
-only uses cpuset subsystem but could use memory and devices subsystems in a 
-near future too.
-
-.LP
-It creates a hierarchical set of directories for each task and subsystem.
-The directory structure is like the following:
-.br 
-/cgroup/%subsys/uid_%uid/job_%jobid/step_%stepid/task_%taskid
-
-.LP
-Slurm cgroup task plugin is enabled with the following parameter
-in slurm.conf:
-.br
-TaskPlugin=task/cgroup
 
 .LP
 The following cgroup.conf parameters are defined to control the behavior
@@ -116,19 +56,15 @@ of this particular plugin:
 
 .TP
 \fBConstrainCores\fR=<yes|no>
-If configured to "yes" then constrain allowed cores to the subset of 
+If configured to "yes" then constrain allowed cores to the subset of
 allocated resources. It uses the cpuset subsystem.
 The default value is "no".
+
 .TP
 \fBTaskAffinity\fR=<yes|no>
-If configured to "yes" then set a default task affinity to bind each step 
+If configured to "yes" then set a default task affinity to bind each step
 task to a subset of the allocated cores using \fBsched_setaffinity\fP.
 The default value is "no".
-
-.LP
-The following cgroup.conf parameters could be defined to control the behavior
-of this particular plugin in a next version where memory and devices support
-would be added :
 
 .TP
 \fBAllowedRAMSpace\fR=<number>
@@ -190,13 +126,13 @@ The default value is "no".
 
 .TP
 \fBAllowedDevicesFile\fR=<path_to_allowed_devices_file>
-If the ConstrainDevices field is set to "yes" then this file has to be used to declare 
-the devices that need to be allowed by default for all the jobs. The current implementation 
+If the ConstrainDevices field is set to "yes" then this file has to be used to declare
+the devices that need to be allowed by default for all the jobs. The current implementation
 of cgroup devices subsystem works as a whitelist of entries, which means that in order to
 isolate the access of a job upon particular devices we need to allow the access on all
-the devices, supported by default and then deny on those that the job does not have the 
-permission to use. The default value is "/etc/slurm/cgroup_allowed_devices_file.conf". The syntax of 
-the file accepts one device per line and it permits lines like /dev/sda* or /dev/cpu/*/*. 
+the devices, supported by default and then deny on those that the job does not have the
+permission to use. The default value is "/etc/slurm/cgroup_allowed_devices_file.conf". The syntax of
+the file accepts one device per line and it permits lines like /dev/sda* or /dev/cpu/*/*.
 See also an example of this file in etc/allowed_devices_file.conf.example.
 
 
@@ -217,72 +153,8 @@ ConstrainCores=yes
 .br
 #
 
-.SH "NOTES"
-.LP
-Only one instance of a cgroup subsystem is valid at a time in the kernel.
-If you try to mount another cgroup hierarchy that uses the same cpuset 
-subsystem it will fail.
-However you can mount another cgroup hierarchy for a different cpuset 
-subsystem.
-
-.SH CLEANUP OF CGROUPS
-.LP
-To allow cgroups to be removed automatically when they are no longer in use
-the notify_on_release flag is set in each cgroup when the cgroup is
-instantiated. The release_agent file for each subsystem is set up when the
-subsystem is mounted.  The name of each release_agent file is 
-release_<subsystem name>. The directory is specified via the 
-CgroupReleaseAgentDir parameter in cgroup.conf. A simple release agent 
-mechanism to remove slurm cgroups when they become empty may be set up by 
-creating the release agent files for each required subsystem as symbolic 
-links to a common release agent script, as shown in the example below:
-
-[sulu] (slurm) etc> cat cgroup.conf | grep CgroupReleaseAgentDir
-.br
-CgroupReleaseAgentDir="/etc/slurm/cgroup"
-.br
-
-[sulu] (slurm) etc> ls \-al /etc/slurm/cgroup
-.br
-total 12
-.br
-drwxr-xr-x 2 root root 4096 2010-04-23 14:55 .
-.br
-drwxr-xr-x 4 root root 4096 2010-07-22 14:48 ..
-.br
-\-rwxrwxrwx 1 root root  234 2010-04-23 14:52 release_common
-.br
-lrwxrwxrwx 1 root root   32 2010-04-23 11:04 release_cpuset -> /etc/slurm/cgroup/release_common
-.br
-lrwxrwxrwx 1 root root   32 2010-04-23 11:03 release_freezer -> /etc/slurm/cgroup/release_common
-
-[sulu] (slurm) etc> cat /etc/slurm/cgroup/release_common
-.br
-#!/bin/bash
-.br
-base_path=/cgroup
-.br
-progname=$(basename $0)
-.br
-subsystem=${progname##*_}
-.br
-.br
-rmcg=${base_path}/${subsystem}$@
-.br
-uidcg=${rmcg%/job*}
-.br
-if [[ \-d ${base_path}/${subsystem} ]]
-.br
-then
-.br
-     flock \-x ${uidcg} \-c "rmdir ${rmcg}"
-.br
-fi
-.br
-[sulu] (slurm) etc>
-
 .SH "COPYING"
-Copyright (C) 2010 Lawrence Livermore National Security.
+Copyright (C) 2010-2012 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP

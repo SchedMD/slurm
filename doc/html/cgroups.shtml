@@ -1,0 +1,176 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Cgroups Guide</h1>
+<h2>Cgroups Overview</h2>
+For a comprehensive description of Linux Control Groups (cgroups) see the
+<a href="http://www.kernel.org/doc/Documentation/cgroups/cgroups.txt">
+cgroups documentation</A> at kernel.org. Detailed knowledge of cgroups is not
+required to use cgroups in SLURM, but a basic understanding of the
+following features of cgroups is helpful:
+<ul>
+<li><b>Cgroup</b> - a container for a set of processes subject to common
+controls or monitoring, implemented as a directory and a set of files
+(state objects) in the cgroup
+virtual filesystem.</li>
+<li><b>Subsystem</b> - a module, typically a resource controller, that applies
+a set of parameters to the cgroups in a hierarchy.</li>
+<li><b>Hierarchy</b> - a set of cgroups organized in a tree structure, with one
+or more associated subsystems.</li>
+<li><b>State Objects</b> - pseudofiles that represent the state of a cgroup or
+apply controls to a cgroup:
+<ul>
+<li><i>tasks</i> - identifies the processes (PIDs) in the cgroup.
+<li><i>release_agent</i> - specifies the location of the script or program to
+be called when the cgroup becomes empty.</li>
+<li><i>notify_on_release</i> - controls whether the release_agent is called for
+the cgroup.</li>
+<li>additional state objects specific to each subsystem.</li>
+</ul>
+</ul>
+<br>
+<h2>Use of Cgroups in SLURM</h2>
+SLURM provides cgroup versions of a number of plugins.
+<ul>
+<li>proctrack (process tracking)</li>
+<li>task (task management)</li>
+<li>jobacct_gather (job accounting statistics)</li>
+The cgroup plugins can provide a number of benefits over the
+other more standard plugins, as described below.
+</ul>
+<br>
+<h2>SLURM Cgroups Configuration Overview</h2>
+There are several sets of configuration options for SLURM cgroups:
+<ul>
+<li><a href="slurm.conf.html">slurm.conf</a> provides options to enable the
+cgroup plugins. Each plugin may be enabled or disabled independently
+of the others.</li>
+<li><a href="cgroup.conf.html">cgroup.conf</a> provides general options that
+are common to all cgroup plugins, plus additional options that apply only to
+specific plugins.</li>
+<li>Additional configuration is required to enable automatic removal of SLURM
+cgroups when they are no longer in use.
+See <a href="#cleanup">Cleanup of SLURM Cgroups</a> below for details.</li>
+</ul>
+<a name="available"></a>
+<br>
+<h2>Currently Available Cgroup Plugins</h2>
+<h3>proctrack/cgroup plugin</h3>
+The proctrack/cgroup plugin is an alternative to other proctrack
+plugins such as proctrack/linux for process tracking and
+suspend/resume capability. proctrack/cgroup uses the freezer subsystem
+which is more reliable for tracking and control than proctrack/linux.
+<p>
+To enable this plugin, configure the following option in slurm.conf:
+<pre>ProctrackType=proctrack/cgroup</pre>
+</p>
+There are no specific options for this plugin in cgroup.conf, but the general
+options apply. See the <a href="cgroup.conf.html">cgroup.conf</a> man page for
+details.
+<h3>task/cgroup plugin</h3>
+The task/cgroup plugin is an alternative other task plugins such as
+task/affinity plugin for task management. task/cgroup provides the
+following features:
+<ul>
+<li>The ability to confine jobs and steps to their allocated cpuset.</li>
+<li>The ability to bind tasks to sockets, cores and threads within their step's
+allocated cpuset on a node.</li>
+<ul>
+<li>Supports block and cyclic distribution of allocated cpus to tasks for
+binding.</li>
+</ul>
+<li>The ability to confine jobs and steps to specific memory resources.</li>
+<li>The ability to confine jobs to their allocated set of generic resources
+(gres devices).</li>
+</ul>
+The task/cgroup plugin uses the cpuset, memory and devices subsystems.
+<p>
+To enable this plugin, configure the following option in slurm.conf:
+<pre>TaskPlugin=task/cgroup</pre>
+</p>
+There are many specific options for this plugin in cgroup.conf.  The general
+options also apply. See the <a href="cgroup.conf.html">cgroup.conf</a> man page
+for details.
+<h3>jobacct_gather/cgroup plugin</h3>
+<b>At present, jobacct_gather/cgroup should be considered experimental.</b>
+<p>
+The jobacct_gather/cgroup plugin is an alternative to the jobacct_gather/linux
+plugin for the collection of accounting statistics for jobs, steps and tasks.
+The cgroup plugin may provide improved performance over jobacct_gather/linux.
+jobacct_gather/cgroup uses the cpuacct and memory subsystems. Note: the cpu and
+memory statistics collected by this plugin do not represent the same resources
+as the cpu and memory statistics collected by the jobacct_gather/linux plugin
+(sourced from /proc stat).
+<p>
+To enable this plugin, configure the following option in slurm.conf:
+<pre>JobacctGatherType=jobacct_gather/cgroup</pre>
+</p>
+There are no specific options for this plugin in cgroup.conf, but the general
+options apply. See the <a href="cgroup.conf.html">cgroup.conf</a> man page for
+details.
+<br><br>
+<h2>Organization of SLURM Cgroups</h2>
+SLURM cgroups are organized as follows.  A base directory (mount point) is
+created at /cgroup, or as configured by the <i>CgroupMountpoint</I> option in
+<a href="cgroup.conf.html">cgroup.conf</a>. All cgroup
+hierarchies are created below this base directory. A separate hierarchy is
+created for each cgroup subsystem in use. The name of the root cgroup in each
+hierarchy is the subsystem name. A cgroup named <i>slurm</i> is created below
+the root cgroup in each hierarchy. Below each <i>slurm</i> cgroup, cgroups for
+SLURM users, jobs, steps and tasks are created dynamically as needed. The names
+of these cgroups consist of a prefix identifying the SLURM entity (user, job,
+step or task), followed by the relevant numeric id. The following example shows
+the path of the task cgroup in the cpuset hierarchy for taskid#2 of stepid#0 of
+jobid#123 for userid#100, using the default base directory (/cgroup):
+<p><pre>/cgroup/cpuset/slurm/uid_100/job_123/step_0/task_2</pre></p>
+Note that this structure applies to a specific compute node. Jobs that use more
+than one node will have a cgroup structure on each node.
+<a name="cleanup"></a>
+<br><br>
+<h2>Cleanup of SLURM Cgroups</h2>
+Linux provides a mechanism for the automatic removal of a cgroup when its
+state changes from non-empty to empty.  A cgroup is empty when no processes are
+attached to it and it has no child cgroups.  The SLURM cgroups implementation
+allows this mechanism to be used to automatically remove the relevant SLURM
+cgroups when tasks, steps and jobs terminate. To enable this automatic removal
+feature, follow these steps:
+<ul>
+<li>If desired, configure the location of the SLURM Cgroup release agent
+directory. This is done using the <i>CgroupReleaseAgentDir</i> option in
+<a href="cgroup.conf.html">cgroup.conf</a>.
+The default location is /etc/slurm/cgroup.</li>
+<br>
+<pre>
+       [sulu] (slurm) etc> cat cgroup.conf | grep CgroupReleaseAgentDir
+       CgroupReleaseAgentDir="/etc/slurm/cgroup"
+</pre>
+<li>Create the common release agent file.  This file should be named
+<i>release_common</i>.  An example script for this file is provided in the
+SLURM delivery at etc/cgroup.release_common.example. The example script will
+automatically remove user, job, step and task cgroups as they become empty. The
+file must have execute permission for root.</li><br>
+<li>Create release agent files for each cgroup subsystem to be used by SLURM.
+This depends on which cgroup plugins are enabled.  For example, the
+proctrack/cgroup plugin uses the <i>freezer</i> subsystem.  See
+<a href="#available">Currently Available Cgroup Plugins</a> above to find out
+which subsystems are used by each plugin. The name of each release agent file
+must be of the form <i>release_&lt;subsystem name&gt;</i>. These files should
+be created as symbolic links to the common release agent file,
+<i>release_common</i>.  The files must have execute permission for root. See
+the following example.</li>
+<br>
+<pre>
+       [sulu] (slurm) etc> ls -al /etc/slurm/cgroup
+       total 12
+       drwxr-xr-x 2 root root 4096 2010-04-23 14:55 .
+       drwxr-xr-x 4 root root 4096 2010-07-22 14:48 ..
+       -rwxrwxrwx 1 root root  234 2010-04-23 14:52 release_common
+       lrwxrwxrwx 1 root root   32 2010-04-23 11:04 release_cpuset -> /etc/slurm/cgroup/release_common
+       lrwxrwxrwx 1 root root   32 2010-04-23 11:03 release_freezer -> /etc/slurm/cgroup/release_common
+
+</pre>
+</ul>
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 6 June 2012</p>
+
+<!--#include virtual="footer.txt"-->

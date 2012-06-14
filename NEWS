@@ -44,6 +44,11 @@ documents those changes that are of interest to users and admins.
  -- BGQ - When using an old IBM driver cnodes that go into error because of
     a job kill timeout aren't always reported to the system.  This is now
     handled by the runjob_mux plugin.
+ -- BGQ - Added information on how to setup the runjob_mux to run as SlurmUser.
+ -- Improve memory consumption on step layouts with high task count.
+ -- BGQ - quiter debug when the real time server comes back but there are
+    still messages we find when we poll but haven't given it back to the real
+    time yet.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
