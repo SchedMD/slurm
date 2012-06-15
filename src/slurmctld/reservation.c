@@ -114,7 +114,7 @@ static int  _open_resv_state_file(char **state_file);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		       bool internal);
 static bitstr_t *_pick_idle_nodes(bitstr_t *avail_nodes,
-				  resv_desc_msg_t *resv_desc_ptr);
+				  resv_desc_msg_t *resv_desc_ptr,  bitstr_t **core_bitmap);
 static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 				     resv_desc_msg_t *resv_desc_ptr,
 				     uint32_t node_cnt);
@@ -128,7 +128,7 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 			  slurmctld_resv_t *this_resv_ptr);
 static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			  struct part_record **part_ptr,
-			  bitstr_t **resv_bitmap);
+			  bitstr_t **resv_bitmap, bitstr_t **core_bitmap);
 static int  _set_assoc_list(slurmctld_resv_t *resv_ptr);
 static void _set_cpu_cnt(slurmctld_resv_t *resv_ptr);
 static void _set_nodes_maint(slurmctld_resv_t *resv_ptr, time_t now);
@@ -1069,6 +1069,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		pack_time(resv_ptr->start_time_prev,	buffer);
 		pack_time(resv_ptr->start_time,	buffer);
 		pack32(resv_ptr->duration,	buffer);
+		pack_bit_fmt(resv_ptr->core_bitmap, buffer);
 	} else {
 		pack_bit_fmt(resv_ptr->node_bitmap, buffer);
 	}
@@ -1194,6 +1195,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	time_t now = time(NULL);
 	struct part_record *part_ptr = NULL;
 	bitstr_t *node_bitmap = NULL;
+	bitstr_t *core_bitmap = NULL;
 	slurmctld_resv_t *resv_ptr;
 	int account_cnt = 0, user_cnt = 0;
 	char **account_list = NULL;
@@ -1202,6 +1204,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	List license_list = (List) NULL;
 	char *name1, *name2, *val1, *val2;
 	uint32_t total_node_cnt = NO_VAL;
+	char str[100];
 
 	if (!resv_list)
 		resv_list = list_create(_del_resv_rec);
@@ -1364,12 +1367,14 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = ESLURM_NODES_BUSY;
 			goto bad_parse;
 		}
+		resv_desc_ptr->core_cnt = 0; /* We do no allow to request cores when nodelist */
+
 	} else if ((resv_desc_ptr->node_cnt == NULL) ||
 		   (resv_desc_ptr->node_cnt[0] == 0)){
 		info("Reservation request lacks node specification");
 		rc = ESLURM_INVALID_NODE_NAME;
 		goto bad_parse;
-	} else if ((rc = _select_nodes(resv_desc_ptr, &part_ptr, &node_bitmap))
+	} else if ((rc = _select_nodes(resv_desc_ptr, &part_ptr, &node_bitmap, &core_bitmap))
 		   != SLURM_SUCCESS) {
 		goto bad_parse;
 	} else {
@@ -1421,6 +1426,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->node_list	= resv_desc_ptr->node_list;
 	resv_desc_ptr->node_list = NULL;	/* Nothing left to free */
 	resv_ptr->node_bitmap	= node_bitmap;	/* May be unset */
+	resv_ptr->core_bitmap	= core_bitmap;	/* May be unset */
 	resv_ptr->partition	= resv_desc_ptr->partition;
 	resv_desc_ptr->partition = NULL;	/* Nothing left to free */
 	resv_ptr->part_ptr	= part_ptr;
@@ -1432,7 +1438,16 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->user_cnt	= user_cnt;
 	resv_ptr->user_list	= user_list;
 	resv_desc_ptr->users 	= NULL;		/* Nothing left to free */
-	_set_cpu_cnt(resv_ptr);
+
+	if(resv_desc_ptr->core_cnt == 0){
+        debug2("reservation using full nodes");
+        _set_cpu_cnt(resv_ptr);
+        resv_ptr->full_nodes = 1;
+    } else {
+        debug2("reservation using partial nodes: core count %d", resv_desc_ptr->core_cnt);
+        resv_ptr->cpu_cnt = resv_desc_ptr->core_cnt;
+    }
+
 	if((rc = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS)
 		goto bad_parse;
 
@@ -1468,6 +1483,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	if (license_list)
 		list_destroy(license_list);
 	FREE_NULL_BITMAP(node_bitmap);
+	FREE_NULL_BITMAP(core_bitmap);
 	xfree(user_list);
 	return rc;
 }
@@ -1489,6 +1505,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	int error_code = SLURM_SUCCESS, i, rc;
 	char start_time[32], end_time[32];
 	char *name1, *name2, *val1, *val2;
+	char str[100];
 
 	if (!resv_list)
 		resv_list = list_create(_del_resv_rec);
@@ -1660,6 +1677,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		xfree(resv_desc_ptr->node_list);
 		xfree(resv_ptr->node_list);
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
+		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
 		resv_ptr->node_bitmap = bit_alloc(node_record_count);
 		if ((resv_desc_ptr->node_cnt == NULL) ||
 		    (resv_desc_ptr->node_cnt[0] == 0)) {
@@ -1684,6 +1702,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->node_list = resv_desc_ptr->node_list;
 		resv_desc_ptr->node_list = NULL;  /* Nothing left to free */
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
+		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
 		resv_ptr->node_bitmap = node_bitmap;
 		resv_ptr->node_cnt = bit_set_count(resv_ptr->node_bitmap);
 	}
@@ -2161,7 +2180,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	resv_desc.features   = resv_ptr->features;
 	resv_desc.node_cnt   = xmalloc(sizeof(uint32_t) * 2);
 	resv_desc.node_cnt[0]= resv_ptr->node_cnt - i;
-	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp_bitmap);
+	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp_bitmap, NULL);
 	xfree(resv_desc.node_cnt);
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
@@ -2231,6 +2250,8 @@ extern int load_all_resv_state(int recover)
 	int data_allocated, data_read = 0, error_code = 0, state_fd;
 	Buf buffer;
 	slurmctld_resv_t *resv_ptr = NULL;
+    char *core_inx_str = NULL;
+    char str[100];
 
 	last_resv_update = time(NULL);
 	if ((recover == 0) && resv_list) {
@@ -2321,6 +2342,20 @@ extern int load_all_resv_state(int recover)
 		safe_unpack_time(&resv_ptr->start_time_prev, buffer);
 		safe_unpack_time(&resv_ptr->start_time, buffer);
 		safe_unpack32(&resv_ptr->duration,	buffer);
+        safe_unpackstr_xmalloc(&core_inx_str, &uint32_tmp,	buffer);
+        if (core_inx_str == NULL){
+            info("Reservation %s has not core_bitmap", resv_ptr->name);
+            resv_ptr->core_bitmap = NULL;
+        }
+        else 
+        {
+            info("Reservation coremap string: %s", core_inx_str);
+            node_name2bitmap(core_inx_str, false, &resv_ptr->core_bitmap);
+            xfree(core_inx_str);
+            core_inx_str = NULL;
+            bit_fmt(str, (sizeof(str) - 1), resv_ptr->core_bitmap);
+            info("Reservation %s has core_bitmap %s", resv_ptr->name, str);
+        }
 
 		list_append(resv_list, resv_ptr);
 		info("Recovered state of reservation %s", resv_ptr->name);
@@ -2442,7 +2477,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	resv_desc.flags      = resv_ptr->flags;
 	resv_desc.node_cnt   = xmalloc(sizeof(uint32_t) * 2);
 	resv_desc.node_cnt[0]= 0 - delta_node_cnt;
-	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp1_bitmap);
+	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp1_bitmap, NULL);
 	xfree(resv_desc.node_cnt);
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
@@ -2459,7 +2494,8 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 /* Given a reservation create request, select appropriate nodes for use */
 static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			  struct part_record **part_ptr,
-			  bitstr_t **resv_bitmap)
+			  bitstr_t **resv_bitmap,
+			  bitstr_t **core_bitmap)
 {
 	slurmctld_resv_t *resv_ptr;
 	bitstr_t *node_bitmap;
@@ -2573,7 +2609,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	*resv_bitmap = NULL;
 	if (rc == SLURM_SUCCESS)
 		*resv_bitmap = _pick_idle_nodes(node_bitmap,
-						resv_desc_ptr);
+						resv_desc_ptr, core_bitmap);
 	FREE_NULL_BITMAP(node_bitmap);
 	if (*resv_bitmap == NULL) {
 		if (rc == SLURM_SUCCESS)
@@ -2586,12 +2622,13 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 }
 
 static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
-				  resv_desc_msg_t *resv_desc_ptr)
+				  resv_desc_msg_t *resv_desc_ptr,  bitstr_t **core_bitmap)
 {
 	int i;
 	bitstr_t *ret_bitmap = NULL, *tmp_bitmap;
 	uint32_t total_node_cnt = 0;
 	bool resv_debug;
+    char str[100];
 #ifdef HAVE_BG
 	static uint16_t static_blocks = (uint16_t)NO_VAL;
 	if (static_blocks == (uint16_t)NO_VAL) {
@@ -2663,7 +2700,7 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 
 static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 				     resv_desc_msg_t *resv_desc_ptr,
-				     uint32_t node_cnt)
+				     uint32_t node_cnt, bitstr_t **core_bitmap)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
@@ -2678,7 +2715,7 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 	/* First: Try to reserve nodes that are currently IDLE */
 	if (bit_overlap(avail_bitmap, idle_node_bitmap) >= node_cnt) {
 		bit_and(avail_bitmap, idle_node_bitmap);
-		ret_bitmap = select_g_resv_test(avail_bitmap, node_cnt);
+		ret_bitmap = select_g_resv_test(avail_bitmap, node_cnt, resv_desc_ptr->core_cnt);
 		if (ret_bitmap)
 			goto fini;
 	}
@@ -2693,12 +2730,14 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 			continue;
 		if (job_ptr->end_time < resv_desc_ptr->start_time)
 			continue;
+
+        /* TODO: This needs to be based on cores used by job instead of based on nodes */
 		bit_not(job_ptr->node_bitmap);
 		bit_and(avail_bitmap, job_ptr->node_bitmap);
 		bit_not(job_ptr->node_bitmap);
 	}
 	list_iterator_destroy(job_iterator);
-	ret_bitmap = select_g_resv_test(avail_bitmap, node_cnt);
+	ret_bitmap = select_g_resv_test(avail_bitmap, node_cnt, resv_desc_ptr->core_cnt, core_bitmap);
 	if (ret_bitmap)
 		goto fini;
 
@@ -2722,7 +2761,7 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 			if (bit_set_count(tmp_bitmap) > 0) {
 				bit_or(avail_bitmap, tmp_bitmap);
 				ret_bitmap = select_g_resv_test(avail_bitmap,
-								node_cnt);
+								node_cnt, resv_desc_ptr->core_cnt, resv_desc_ptr->core_bitmap);
 			}
 			FREE_NULL_BITMAP(tmp_bitmap);
 			if (ret_bitmap)
@@ -2732,6 +2771,14 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 	}
 
 fini:	FREE_NULL_BITMAP(save_bitmap);
+    if(ret_bitmap){
+        bit_fmt(str, (sizeof(str) - 1), ret_bitmap);
+        info("pick_idle_nodes getting %s from select cons_res", str);
+        if(*core_bitmap){
+            bit_fmt(str, (sizeof(str) - 1), *core_bitmap); 
+            info("pick_idle_nodes getting coremap %s from select cons_res", str); 
+        }
+    }
 	return ret_bitmap;
 }
 
@@ -2972,6 +3019,7 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
  * IN move_time    - if true, then permit the start time to advance from
  *                   "when" as needed IF job has no reservervation
  * OUT node_bitmap - nodes which the job can use, caller must free unless error
+ * OUT exc_core_bitmap - cores which the job can  NOT use, caller must free unless error
  * RET	SLURM_SUCCESS if runable now
  *	ESLURM_RESERVATION_ACCESS access to reservation denied
  *	ESLURM_RESERVATION_INVALID reservation invalid
@@ -2980,7 +3028,7 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
  *			  reserved
  */
 extern int job_test_resv(struct job_record *job_ptr, time_t *when,
-			 bool move_time, bitstr_t **node_bitmap)
+			 bool move_time, bitstr_t **node_bitmap, bitstr_t **exc_core_bitmap)
 {
 	slurmctld_resv_t * resv_ptr, *res2_ptr;
 	time_t job_start_time, job_end_time, lic_resv_time;
@@ -3058,6 +3106,13 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			     job_ptr->job_id, nodes, job_ptr->resv_name);
 			xfree(nodes);
 		}
+
+        /* if reservation is using just partial nodes, this returns coremap to exclude */
+        if(resv_ptr->core_bitmap && exc_core_bitmap){
+            *exc_core_bitmap = bit_copy(resv_ptr->core_bitmap);
+             bit_not(*exc_core_bitmap);
+        }
+
 		return SLURM_SUCCESS;
 	}
 
@@ -3100,9 +3155,22 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				    (lic_resv_time > resv_ptr->end_time))
 					lic_resv_time = resv_ptr->end_time;
 			}
-			bit_not(resv_ptr->node_bitmap);
-			bit_and(*node_bitmap, resv_ptr->node_bitmap);
-			bit_not(resv_ptr->node_bitmap);
+            /* if reservation uses full nodes ... */
+            if(resv_ptr->full_nodes){
+                bit_not(resv_ptr->node_bitmap);
+                bit_and(*node_bitmap, resv_ptr->node_bitmap);
+                bit_not(resv_ptr->node_bitmap);
+            }else{
+                //info("job_test_resv: %s reservation uses partial nodes ...", resv_ptr->name);
+                if(*exc_core_bitmap == NULL){
+                     *exc_core_bitmap = bit_copy(resv_ptr->core_bitmap);
+                }else{
+                    //char str[100];
+                    bit_and(*exc_core_bitmap, resv_ptr->core_bitmap);
+                    //bit_fmt(str, (sizeof(str) - 1), *exc_core_bitmap);
+                    //info("ALEJ: job_test_resv: New exclude core bitmap %s", str);
+                }
+            }
 		}
 		list_iterator_destroy(iter);
 
