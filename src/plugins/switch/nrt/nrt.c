@@ -161,7 +161,6 @@ typedef struct {
 
 typedef struct nrt_protocol_info {
 	char protocol_name[NRT_MAX_PROTO_NAME_LEN];
-	int  protocol_cnt;	/* Instances of this protocol */
 } nrt_protocol_info_t;
 typedef struct nrt_protocol_table {
 	nrt_protocol_info_t protocol_table[NRT_MAX_PROTO_CNT];
@@ -2136,13 +2135,13 @@ _next_key(void)
 	return key;
 }
 
-/* Translate a protocol string (e.g. "lapi(2),mpi" into a table.
+/* Translate a protocol string (e.g. "lapi,mpi" into a table.
  * Caller must free returned value. */
 static nrt_protocol_table_t *_get_protocol_table(char *protocol)
 {
 	nrt_protocol_table_t *protocol_table;
-	char *paren_ptr, *protocol_str, *save_ptr = NULL, *token;
-	int protocol_cnt, i;
+	char *protocol_str, *save_ptr = NULL, *token;
+	int i;
 
 	protocol_table = xmalloc(sizeof(nrt_protocol_table_t));
 
@@ -2151,32 +2150,16 @@ static nrt_protocol_table_t *_get_protocol_table(char *protocol)
 	protocol_str = xstrdup(protocol);
 	token = strtok_r(protocol_str, ",", &save_ptr);
 	while (token) {
-		paren_ptr = strchr(token, '(');
-		if (paren_ptr) {
-			protocol_cnt = atoi(paren_ptr+1);
-			if (protocol_cnt == 0) {
-				verbose("switch/nrt: invalid job protocol: %s",
-					protocol);
-				break;
-			}
-			paren_ptr[0] = '\0';	/* end string before '(' */
-		} else
-			protocol_cnt = 1;
 		for (i = 0; i < protocol_table->protocol_table_cnt; i++) {
 			if (!strcmp(token, protocol_table->protocol_table[i].
-					   protocol_name)) {
-				protocol_table->protocol_table[i].
-					protocol_cnt += protocol_cnt;
+					   protocol_name))
 				break;
-			}
 		}
 		if ((i >= protocol_table->protocol_table_cnt) &&
 		    (i < NRT_MAX_PROTO_CNT)) {
 			/* Need to add new protocol type */
 			strncpy(protocol_table->protocol_table[i].protocol_name,
 				token, NRT_MAX_PROTO_NAME_LEN);
-			protocol_table->protocol_table[i].protocol_cnt =
-					protocol_cnt;
 			protocol_table->protocol_table_cnt++;
 		}
 		token = strtok_r(NULL, ",", &save_ptr);

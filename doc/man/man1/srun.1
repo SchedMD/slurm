@@ -867,18 +867,15 @@ Use Internet Protocol (IP) version 4 communications (default).
 \fBIPV6\fR
 Use Internet Protocol (IP) version 6 communications.
 .TP
-\fBLAPI\fR [(\fIcount\fR)]
-Use the LAPI protocol. Optionally specify the number of network connections
-with this protocol for each task. Default count is 1.
+\fBLAPI\fR
+Use the LAPI protocol.
 .TP
-\fBMPI\fR [(\fIcount\fR)]
-Use the MPI protocol. Optionally specify the number of network connections
-with this protocol for each task. Default count is 1.
+\fBMPI\fR
+Use the MPI protocol.
 MPI is the default protocol.
 .TP
-\fBPAMI\fR [(\fIcount\fR)]
-Use the PAMI protocol. Optionally specify the number of network connections
-with this protocol for each task. Default count is 1.
+\fBPAMI\fR
+Use the PAMI protocol.
 .TP
 \fBSN_ALL\fR
 Use all available switch networks (default).
@@ -886,9 +883,8 @@ Use all available switch networks (default).
 \fBSN_SINGLE\fR
 Use one available switch network.
 .TP
-\fBUPC\fR [(\fIcount\fR)]
-Use the UPC protocol. Optionally specify the number of network connections
-with this protocol for each task. Default count is 1.
+\fBUPC\fR
+Use the UPC protocol.
 .TP
 \fBUS\fR
 Use User Space communications.
@@ -903,11 +899,7 @@ Some examples of network specifications:
 Create two user space connections for MPI communications on every switch
 network for each task.
 .TP
-\fBUS,MPI(2),SN_ALL\fR
-Create two user space connections for MPI communications on every switch
-network for each task. This is a variation on the above example.
-.TP
-\fBUS,MPI(3),IB\fR
+\fBUS,MPI,Instances=3,IB\fR
 Create three user space connections for MPI communications on every InfiniBand
 network for each task.
 .TP
