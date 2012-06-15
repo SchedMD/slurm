@@ -331,6 +331,7 @@ typedef struct slurmctld_resv {
 	char **account_list;	/* list of accounts permitted to use	*/
 	char *assoc_list;	/* list of associations			*/
 	uint32_t cpu_cnt;	/* number of reserved CPUs		*/
+	bitstr_t *core_bitmap; /* bitmap of reserved cores		*/
 	uint32_t duration;	/* time in seconds for this
 				 * reservation to last                  */
 	time_t end_time;	/* end time of reservation		*/
@@ -345,6 +346,7 @@ typedef struct slurmctld_resv {
 	char *name;		/* name of reservation			*/
 	bitstr_t *node_bitmap;	/* bitmap of reserved nodes		*/
 	uint32_t node_cnt;	/* count of nodes required		*/
+	uint32_t full_nodes;	/* when reservation uses full nodes or not */
 	char *node_list;	/* list of reserved nodes or ALL	*/
 	char *partition;	/* name of partition to be used		*/
 	struct part_record *part_ptr;	/* pointer to partition used	*/
