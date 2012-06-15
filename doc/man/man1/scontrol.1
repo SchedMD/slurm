@@ -1211,7 +1211,7 @@ Bluegene systems only!
 \fIBlockName\fP=<name>
 Identify the bluegene block to be updated. This specification is required.
 .TP
-\fIState\fP=<free|error|remove>
+\fIState\fP=<free|error|recreate|remove|resume>
 This will update the state of a bluegene block to either FREE or ERROR.
 (i.e. update BlockName=RMP0 STATE=ERROR) State error will not allow jobs
 to run on the block. \fBWARNING!!!!\fR This will cancel any
