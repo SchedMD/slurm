@@ -2851,8 +2851,23 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 			   "# @ mcm_affinity_options = mcm_mem_req\n");
 	}
 
-	if (req->network)
-		xstrfmtcat(slurm_cmd_file, "# @ network = %s\n", req->network);
+	if (req->network) {
+		char *type = "sn_all", *usage = "shared", *mode = "us";
+		if (strstr(req->network, "sn_single") ||
+		    strstr(req->network, "SN_SINGLE"))
+			type = "sn_single";
+		if (strstr(req->network, "not_shared") ||
+		    strstr(req->network, "NOT_SHARED"))
+			usage = "not_shared";
+		if (strstr(req->network, "ip") ||
+		    strstr(req->network, "IP"))
+			mode = "ip";
+		xstrfmtcat(slurm_cmd_file, "# @ network.mpi = %s,%s,%s\n",
+			   type, usage, mode);
+	} else {
+		xstrfmtcat(slurm_cmd_file,
+			   "# @ network.mpi = sn_all,shared,us\n");
+	}
 
 	if ((req->min_nodes != NO_VAL) && (req->max_nodes != NO_VAL)) {
 		xstrfmtcat(slurm_cmd_file, "# @ node = %u,%u\n",

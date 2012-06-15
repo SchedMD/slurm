@@ -1,8 +1,13 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 2.4.0.pre3
-=============================
+* Changes in SLURM 2.4.0.ll2
+============================
+ -- Fix to setting of LoadLeveler network paramter in batch job submission.
+
+* Changes in SLURM 2.4.0.ll1
+============================
+ -- Let a job be submitted even
  -- Let a job be submitted even if it exceeds a QOS limit. Job will be left
     in a pending state until the QOS limit or job parameters change. Patch by
     Phil Eckert, LLNL.
