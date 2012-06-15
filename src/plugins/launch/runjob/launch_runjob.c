@@ -39,13 +39,14 @@
 #  include "config.h"
 #endif
 
+#include "src/common/proc_args.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_auth.h"
 
 #include "src/api/step_ctx.h"
 #include "src/api/step_launch.h"
 
-#include "src/srun/launch.h"
+#include "src/srun/libsrun/launch.h"
 
 #include "src/plugins/launch/runjob/runjob_interface.h"
 
@@ -94,7 +95,7 @@ static void _send_step_complete_rpc(int step_rc)
 	msg.range_first = 0;
 	msg.range_last = 0;
 	msg.step_rc = step_rc;
-	msg.jobacct = jobacct_gather_g_create(NULL);
+	msg.jobacct = jobacctinfo_create(NULL);
 
 	slurm_msg_t_init(&req);
 	req.msg_type = REQUEST_STEP_COMPLETE;
@@ -104,7 +105,7 @@ static void _send_step_complete_rpc(int step_rc)
 	debug3("Sending step complete RPC to slurmctld");
 	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
 		error("Error sending step complete RPC to slurmctld");
-	jobacct_gather_g_destroy(msg.jobacct);
+	jobacctinfo_destroy(msg.jobacct);
 }
 
 static void
@@ -287,7 +288,7 @@ extern int launch_p_setup_srun_opt(char **rest)
 	opt.argv = (char **) xmalloc((opt.argc + 2) * sizeof(char *));
 
 	if (!opt.test_only) {
-		i = 0;
+		int i = 0;
 		/* First arg has to be something when sending it to the
 		   runjob api.  This can be anything, srun seemed most
 		   logical, but it doesn't matter.
