@@ -181,7 +181,8 @@ static int	_allocate_window_single(char *adapter_name,
 			slurm_nrt_jobinfo_t *jp, char *hostname,
 			uint32_t node_id, nrt_task_id_t task_id,
 			nrt_adapter_t adapter_type, int network_id,
-			char *protocol_name, nrt_logical_id_t base_lid);
+			nrt_protocol_table_t *protocol_table, int instances,
+			nrt_logical_id_t base_lid);
 static slurm_nrt_libstate_t *_alloc_libstate(void);
 static slurm_nrt_nodeinfo_t *_alloc_node(slurm_nrt_libstate_t *lp, char *name);
 static int	_check_rdma_job_count(char *adapter_name,
@@ -916,8 +917,8 @@ static int
 _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 			char *hostname, uint32_t node_id,
 			nrt_task_id_t task_id, nrt_adapter_t adapter_type,
-			int network_id, char *protocol_name,
-			nrt_logical_id_t base_lid)
+			int network_id, nrt_protocol_table_t *protocol_table,
+		        int instances, nrt_logical_id_t base_lid)
 {
 	nrt_tableinfo_t *tableinfo = jp->tableinfo;
 	nrt_job_key_t job_key = jp->job_key;
@@ -927,12 +928,13 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 	slurm_nrt_nodeinfo_t *node;
 	slurm_nrt_adapter_t *adapter = NULL;
 	slurm_nrt_window_t *window;
-	int i;
+	int i, table_inx;
+	nrt_context_id_t context_id;
+	nrt_table_id_t table_id;
 
 	assert(tableinfo);
 	assert(hostname);
 
-	debug("in _allocate_window_single");
 	node = _find_node(nrt_state, hostname);
 	if (node == NULL) {
 		error("Failed to find node in node_list: %s", hostname);
@@ -979,71 +981,87 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 		return SLURM_ERROR;
 	}
 
-	if (user_space) {
-		/* Reserve a window on the adapter for this task */
-		window = _find_free_window(adapter);
-		if (window == NULL) {
-			error("No free windows on node %s adapter %s",
-			      node->name, adapter->adapter_name);
-			return SLURM_ERROR;
-		}
-		window->state = NRT_WIN_UNAVAILABLE;
-		window->job_key = job_key;
-	}
+	table_inx = -1;
+	for (context_id = 0; context_id < protocol_table->protocol_table_cnt;
+	     context_id++) {
+		for (table_id = 0; table_id < instances; table_id++) {
+			table_inx++;
+			if (user_space) {
+				/* Reserve a window on the adapter for task */
+				window = _find_free_window(adapter);
+				if (window == NULL) {
+					error("No free windows on node %s "
+					      "adapter %s",
+					      node->name,
+					      adapter->adapter_name);
+					return SLURM_ERROR;
+				}
+				window->state = NRT_WIN_UNAVAILABLE;
+				window->job_key = job_key;
+			}
 
-	if (!user_space) {
-		nrt_ip_task_info_t *ip_table;
-		ip_table = (nrt_ip_task_info_t *) tableinfo[0].table;
-		ip_table += task_id;
-		ip_table->node_number  = node_number;
-		ip_table->task_id      = task_id;
-		if (ip_v4) {
-			memcpy(&ip_table->ip.ipv4_addr,
-			       &adapter->ipv4_addr, sizeof(in_addr_t));
-		} else {
-			memcpy(&ip_table->ip.ipv6_addr,
-			       &adapter->ipv6_addr, sizeof(struct in6_addr));
-		}
-	} else if (adapter_type == NRT_IB) {
-		nrt_ib_task_info_t *ib_table;
-		ib_table = (nrt_ib_task_info_t *) tableinfo[0].table;
-		ib_table += task_id;
-		strncpy(ib_table->device_name, adapter_name,
-			NRT_MAX_DEVICENAME_SIZE);
-		ib_table += task_id;
-		ib_table->base_lid = base_lid;
-		ib_table->port_id  = 1;
-		ib_table->lmc      = 0;
-		ib_table->node_number = node_number;
-		ib_table->task_id  = task_id;
-		ib_table->win_id   = window->window_id;
-	} else if (adapter_type == NRT_HFI) {
-		nrt_hfi_task_info_t *hfi_table;
-		hfi_table = (nrt_hfi_task_info_t *) tableinfo[0].table;
-		hfi_table += task_id;
-		hfi_table->task_id = task_id;
-		hfi_table->win_id = window->window_id;
-	} else if ((adapter_type == NRT_HPCE) ||
-	           (adapter_type == NRT_KMUX)) {
-		nrt_hpce_task_info_t *hpce_table;
-		hpce_table = (nrt_hpce_task_info_t *) tableinfo[0].table;
-		hpce_table += task_id;
-		hpce_table->task_id = task_id;
-		hpce_table->win_id = window->window_id;
-	} else {
-		error("Missing support for adapter type %s",
-		      _adapter_type_str(adapter_type));
-	}
+			if (!user_space) {
+				nrt_ip_task_info_t *ip_table;
+				ip_table = (nrt_ip_task_info_t *)
+					   tableinfo[table_inx].table;
+				ip_table += task_id;
+				ip_table->node_number  = node_number;
+				ip_table->task_id      = task_id;
+				if (ip_v4) {
+					memcpy(&ip_table->ip.ipv4_addr,
+					       &adapter->ipv4_addr,
+					       sizeof(in_addr_t));
+				} else {
+					memcpy(&ip_table->ip.ipv6_addr,
+					       &adapter->ipv6_addr,
+					       sizeof(struct in6_addr));
+				}
+			} else if (adapter_type == NRT_IB) {
+				nrt_ib_task_info_t *ib_table;
+				ib_table = (nrt_ib_task_info_t *)
+					   tableinfo[table_inx].table;
+				ib_table += task_id;
+				strncpy(ib_table->device_name, adapter_name,
+					NRT_MAX_DEVICENAME_SIZE);
+				ib_table->base_lid = base_lid;
+				ib_table->port_id  = 1;
+				ib_table->lmc      = 0;
+				ib_table->node_number = node_number;
+				ib_table->task_id  = task_id;
+				ib_table->win_id   = window->window_id;
+			} else if (adapter_type == NRT_HFI) {
+				nrt_hfi_task_info_t *hfi_table;
+				hfi_table = (nrt_hfi_task_info_t *)
+					    tableinfo[table_inx].table;
+				hfi_table += task_id;
+				hfi_table->task_id = task_id;
+				hfi_table->win_id = window->window_id;
+			} else if ((adapter_type == NRT_HPCE) ||
+				   (adapter_type == NRT_KMUX)) {
+				nrt_hpce_task_info_t *hpce_table;
+				hpce_table = (nrt_hpce_task_info_t *)
+					     tableinfo[table_inx].table;
+				hpce_table += task_id;
+				hpce_table->task_id = task_id;
+				hpce_table->win_id = window->window_id;
+			} else {
+				error("Missing support for adapter type %s",
+				      _adapter_type_str(adapter_type));
+			}
 
-	strncpy(tableinfo[0].adapter_name, adapter_name,
-		NRT_MAX_ADAPTER_NAME_LEN);
-	tableinfo[0].adapter_type = adapter->adapter_type;
-	tableinfo[0].network_id = adapter->network_id;
-	strncpy(tableinfo[0].protocol_name, protocol_name,
-		NRT_MAX_PROTO_NAME_LEN);
-/* FIXME: Need to set context_id & table_id */
-	tableinfo[0].context_id = 0;
-	tableinfo[0].table_id   = 0;
+			strncpy(tableinfo[table_inx].adapter_name, adapter_name,
+				NRT_MAX_ADAPTER_NAME_LEN);
+			tableinfo[table_inx].adapter_type = adapter->
+							   adapter_type;
+			tableinfo[table_inx].network_id = adapter->network_id;
+			strncpy(tableinfo[table_inx].protocol_name,
+				protocol_table->protocol_table[context_id].
+				protocol_name,
+				NRT_MAX_PROTO_NAME_LEN);
+			tableinfo[table_inx].context_id = context_id;
+			tableinfo[table_inx].table_id   = table_id;
+		}
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -2165,8 +2183,6 @@ static nrt_protocol_table_t *_get_protocol_table(char *protocol)
 		token = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(protocol_str);
-	if (protocol_table->protocol_table_cnt == 0)
-		xfree(protocol_table);
 
 	return protocol_table;
 }
@@ -2195,7 +2211,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	nrt_logical_id_t base_lid = 0xffffff;
 	int adapter_type_count = 0;
 	int table_rec_len = 0;
-	nrt_protocol_table_t *protocol_table;
+	nrt_protocol_table_t *protocol_table = NULL;
 
 	assert(jp);
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
@@ -2218,10 +2234,6 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	jp->nodenames  = hostlist_copy(hl);
 	jp->num_tasks  = nprocs;
 	jp->user_space = (uint8_t) user_space;
-	protocol_table = _get_protocol_table(protocol);
-	xfree(protocol_table);
-
-	hi = hostlist_iterator_create(hl);
 
 	/*
 	 * Peek at the first host to figure out tables_per_task and adapter
@@ -2229,6 +2241,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	 * adapters per node.  Bad things will happen if this assumption is
 	 * incorrect.
 	 */
+	hi = hostlist_iterator_create(hl);
 	host = hostlist_next(hi);
 	_lock();
 	node = _find_node(nrt_state, host);
@@ -2273,6 +2286,23 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	if (jp->tables_per_task == 0)
 		return SLURM_FAILURE;
 
+	if (instances <= 0) {
+		info("switch/nrt: invalid instances specification (%d)",
+		     instances);
+		return SLURM_FAILURE;
+	}
+	jp->tables_per_task *= instances;
+
+	protocol_table = _get_protocol_table(protocol);
+	if ((protocol_table == NULL) ||
+	    (protocol_table->protocol_table_cnt <= 0)) {
+		info("switch/nrt: invalid protcol specification (%s)",
+		     protocol);
+		xfree(protocol_table);
+		return SLURM_FAILURE;
+	}
+	jp->tables_per_task *= protocol_table->protocol_table_cnt;
+
 	/* Allocate memory for each nrt_tableinfo_t */
 	jp->tableinfo = (nrt_tableinfo_t *) xmalloc(jp->tables_per_task *
 						    sizeof(nrt_tableinfo_t));
@@ -2307,6 +2337,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 			error("Failed to get next host");
 
 		for (j = 0; j < tasks_per_node[i]; j++) {
+
 			if (adapter_name == NULL) {
 				rc = _allocate_windows_all(jp, host, i,
 							   tids[i][j],
@@ -2320,7 +2351,8 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 							     tids[i][j],
 							     adapter_type,
 							     network_id,
-							     protocol,
+							     protocol_table,
+							     instances,
 							     base_lid);
 			}
 			if (rc != SLURM_SUCCESS) {
@@ -2339,11 +2371,13 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 #endif
 
 	hostlist_iterator_destroy(hi);
+	xfree(protocol_table);
 	return SLURM_SUCCESS;
 
 fail:
 	free(host);
 	hostlist_iterator_destroy(hi);
+	xfree(protocol_table);
 	/* slurmctld will call nrt_free_jobinfo on jp */
 	return SLURM_FAILURE;
 }
