@@ -117,7 +117,7 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_nodes,
 				  resv_desc_msg_t *resv_desc_ptr,  bitstr_t **core_bitmap);
 static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 				     resv_desc_msg_t *resv_desc_ptr,
-				     uint32_t node_cnt);
+				     uint32_t node_cnt, bitstr_t **core_bitmap);
 static int  _post_resv_create(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_delete(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_update(slurmctld_resv_t *resv_ptr,
@@ -2642,11 +2642,11 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 #endif
 
 	if (resv_desc_ptr->node_cnt == NULL) {
-		return _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr, 0);
+		return _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr, 0, core_bitmap);
 	} else if ((resv_desc_ptr->node_cnt[0] == 0) ||
 		   (resv_desc_ptr->node_cnt[1] == 0)) {
 		return _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr,
-					   resv_desc_ptr->node_cnt[0]);
+					   resv_desc_ptr->node_cnt[0], core_bitmap);
 	}
 
 	/* Try to create a single reservation that can contain all blocks
@@ -2655,7 +2655,7 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 		for (i = 0; resv_desc_ptr->node_cnt[i]; i++)
 			total_node_cnt += resv_desc_ptr->node_cnt[i];
 		tmp_bitmap = _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr,
-						 total_node_cnt);
+						 total_node_cnt, core_bitmap);
 		if (tmp_bitmap) {
 			if (total_node_cnt == bit_set_count(tmp_bitmap))
 				return tmp_bitmap;
@@ -2670,7 +2670,7 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 	resv_debug = slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION;
 	for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
 		tmp_bitmap = _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr,
-						 resv_desc_ptr->node_cnt[i]);
+						 resv_desc_ptr->node_cnt[i], core_bitmap);
 		if (tmp_bitmap == NULL) {	/* allocation failure */
 			if (resv_debug) {
 				info("reservation of %u nodes failed",
@@ -2715,7 +2715,7 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 	/* First: Try to reserve nodes that are currently IDLE */
 	if (bit_overlap(avail_bitmap, idle_node_bitmap) >= node_cnt) {
 		bit_and(avail_bitmap, idle_node_bitmap);
-		ret_bitmap = select_g_resv_test(avail_bitmap, node_cnt, resv_desc_ptr->core_cnt);
+		ret_bitmap = select_g_resv_test(avail_bitmap, node_cnt, resv_desc_ptr->core_cnt, core_bitmap);
 		if (ret_bitmap)
 			goto fini;
 	}
@@ -2761,7 +2761,7 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 			if (bit_set_count(tmp_bitmap) > 0) {
 				bit_or(avail_bitmap, tmp_bitmap);
 				ret_bitmap = select_g_resv_test(avail_bitmap,
-								node_cnt, resv_desc_ptr->core_cnt, resv_desc_ptr->core_bitmap);
+								node_cnt, resv_desc_ptr->core_cnt, core_bitmap);
 			}
 			FREE_NULL_BITMAP(tmp_bitmap);
 			if (ret_bitmap)
@@ -2771,6 +2771,7 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 	}
 
 fini:	FREE_NULL_BITMAP(save_bitmap);
+#if 0
     if(ret_bitmap){
         bit_fmt(str, (sizeof(str) - 1), ret_bitmap);
         info("pick_idle_nodes getting %s from select cons_res", str);
@@ -2779,6 +2780,7 @@ fini:	FREE_NULL_BITMAP(save_bitmap);
             info("pick_idle_nodes getting coremap %s from select cons_res", str); 
         }
     }
+#endif
 	return ret_bitmap;
 }
 
