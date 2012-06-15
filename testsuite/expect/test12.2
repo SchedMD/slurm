@@ -221,7 +221,7 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 }
 
 # Wait for data to get logged
-exec $bin_sleep 5
+exec $bin_sleep 10
 
 if {[_get_mem $sstat] != 0} {
 	set exit_code 1
