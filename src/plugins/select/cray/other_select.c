@@ -829,13 +829,13 @@ extern int other_reconfigure (void)
  * IN node_cnt - count of required nodes
  * RET - nodes selected for use by the reservation
  */
-extern bitstr_t * other_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
+extern bitstr_t * other_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt, bitstr_t **core_bitmap)
 {
 	if (other_select_init() < 0)
 		return NULL;
 
 	return (*(other_select_context->ops.resv_test))
-		(avail_bitmap, node_cnt);
+		(avail_bitmap, node_cnt, 0, NULL);
 }
 
 extern void other_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)

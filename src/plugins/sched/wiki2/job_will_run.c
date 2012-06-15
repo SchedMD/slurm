@@ -129,6 +129,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
+	bitstr_t *exc_core_bitmap = NULL;
 	char *hostlist, *reply_msg = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	int rc;
@@ -173,7 +174,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 
 	/* Enforce reservation: access control, time and nodes */
 	start_res = start_time;
-	rc = job_test_resv(job_ptr, &start_res, true, &resv_bitmap);
+	rc = job_test_resv(job_ptr, &start_res, true, &resv_bitmap, &exc_core_bitmap);
 	if (rc != SLURM_SUCCESS) {
 		*err_code = -730;
 		*err_msg = "Job denied access to reservation";
@@ -253,7 +254,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 	rc = select_g_job_test(job_ptr, avail_bitmap,
 			       min_nodes, max_nodes, req_nodes,
 			       SELECT_MODE_WILL_RUN,
-			       preemptee_candidates, NULL);
+			       preemptee_candidates, NULL, exc_core_bitmap);
 	if (preemptee_candidates)
 		list_destroy(preemptee_candidates);
 
@@ -412,6 +413,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 	struct job_record *job_ptr = NULL, *pre_ptr;
 	struct part_record *part_ptr;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
+	bitstr_t *exc_core_bitmap = NULL;
 	time_t start_res;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	List preemptee_candidates = NULL, preempted_jobs = NULL;
@@ -455,7 +457,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 
 	/* Enforce reservation: access control, time and nodes */
 	start_res = start_time;
-	rc = job_test_resv(job_ptr, &start_res, true, &resv_bitmap);
+	rc = job_test_resv(job_ptr, &start_res, true, &resv_bitmap, &exc_core_bitmap);
 	if (rc != SLURM_SUCCESS) {
 		*err_code = -730;
 		*err_msg = "Job denied access to reservation";
@@ -540,7 +542,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 	orig_start_time = job_ptr->start_time;
 	rc = select_g_job_test(job_ptr, avail_bitmap, min_nodes, max_nodes,
 			       req_nodes, SELECT_MODE_WILL_RUN,
-			       preemptee_candidates, &preempted_jobs);
+			       preemptee_candidates, &preempted_jobs, exc_core_bitmap);
 	if (preemptee_candidates)
 		list_destroy(preemptee_candidates);
 

@@ -66,6 +66,6 @@ int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		int mode, uint16_t cr_type,
 		enum node_cr_state job_node_req, uint32_t cr_node_cnt,
 		struct part_res_record *cr_part_ptr,
-		struct node_use_record *node_usage);
+		struct node_use_record *node_usage, bitstr_t *exc_core_bitmap);
 
 #endif /* !_CR_JOB_TEST_H */

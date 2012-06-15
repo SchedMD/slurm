@@ -283,6 +283,12 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 				tok = strtok_r(NULL, ",", &ptrptr);
 			}
 			xfree(node_cnt);
+
+		} else if (strncasecmp(tag, "CoreCnt", MAX(taglen,5)) == 0 ||
+			   strncasecmp(tag, "CoreCount", MAX(taglen,5)) == 0) {
+			char *endptr = NULL;
+			resv_msg_ptr->core_cnt = strtol(val, &endptr, 10);
+
 		} else if (strncasecmp(tag, "Nodes", MAX(taglen, 5)) == 0) {
 			resv_msg_ptr->node_list = val;
 

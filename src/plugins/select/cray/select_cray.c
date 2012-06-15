@@ -811,9 +811,9 @@ extern int select_p_reconfigure(void)
 	return other_reconfigure();
 }
 
-extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
+extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt, bitstr_t **core_bitmap)
 {
-	return other_resv_test(avail_bitmap, node_cnt);
+	return other_resv_test(avail_bitmap, node_cnt, core_bitmap);
 }
 
 extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)

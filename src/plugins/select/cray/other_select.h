@@ -371,7 +371,7 @@ extern int other_pack_select_info(time_t last_query_time, uint16_t show_flags,
 /* Note reconfiguration or change in partition configuration */
 extern int other_reconfigure(void);
 
-extern bitstr_t * other_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt);
+extern bitstr_t * other_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt, bitstr_t **core_bitmap);
 
 extern void other_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check);
 extern void other_ba_fini(void);
