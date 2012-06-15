@@ -1690,6 +1690,7 @@ typedef struct reserve_info {
 	char *licenses;		/* names of licenses to be reserved */
 	char *name;		/* name of reservation */
 	uint32_t node_cnt;	/* count of nodes required */
+	uint32_t core_cnt;	/* count of nodes required */
 	int *node_inx;		/* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
@@ -1713,6 +1714,7 @@ typedef struct resv_desc_msg {
 	uint16_t flags;		/* see RESERVE_FLAG_* above */
 	char *licenses;		/* names of licenses to be reserved */
 	char *name;		/* name of reservation (optional on create) */
+	uint32_t core_cnt;	/* Count of cores required */
 	uint32_t *node_cnt;	/* Count of nodes required. Specify set of job
 				 * sizes with trailing zero to optimize layout
 				 * for those jobs just specify their total size
