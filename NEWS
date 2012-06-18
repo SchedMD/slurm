@@ -37,6 +37,8 @@ documents those changes that are of interest to users and admins.
     time yet.
  -- BGQ - fix for if a request comes in smaller than the smallest block and
     we must use a small block instead of a shared midplane block.
+ -- Fix issues on large jobs (>64k tasks) to have the correct counter type when
+    packing the step layout structure.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
