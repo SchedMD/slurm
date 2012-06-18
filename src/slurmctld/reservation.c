@@ -1055,6 +1055,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 	pack32(cnode_cnt,	        buffer);
 #else
 	pack32(resv_ptr->node_cnt,	buffer);
+	pack32(resv_ptr->cpu_cnt,	buffer);
 #endif
 	packstr(resv_ptr->node_list,	buffer);
 	packstr(resv_ptr->partition,	buffer);
@@ -1064,7 +1065,6 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 
 	if (internal) {
 		packstr(resv_ptr->assoc_list,	buffer);
-		pack32(resv_ptr->cpu_cnt,	buffer);
 		pack32(resv_ptr->resv_id,	buffer);
 		pack_time(resv_ptr->start_time_prev,	buffer);
 		pack_time(resv_ptr->start_time,	buffer);
@@ -1301,6 +1301,11 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			}
 		}
 	}
+
+    if (resv_desc_ptr->core_cnt == NO_VAL)
+        resv_desc_ptr->core_cnt = 0;
+
+
 
 #ifdef HAVE_BG
 	if (!cnodes_per_bp) {

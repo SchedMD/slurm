@@ -1763,6 +1763,10 @@ static int _build_node_list(struct job_record *job_ptr,
 			xfree(job_ptr->state_desc);
 			if (rc == ESLURM_INVALID_TIME_VALUE)
 				return ESLURM_RESERVATION_NOT_USABLE;
+            
+            if (rc == ESLURM_NODES_BUSY)
+                return ESLURM_NODES_BUSY;
+
 			/* Defunct reservation or accesss denied */
 			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		}

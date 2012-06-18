@@ -129,8 +129,8 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	flag_str = reservation_flags_string(resv_ptr->flags);
 
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "Nodes=%s NodeCnt=%u Features=%s PartitionName=%s Flags=%s",
-		 resv_ptr->node_list, resv_ptr->node_cnt,
+		 "Nodes=%s NodeCnt=%u CoreCnt= %u Features=%s PartitionName=%s Flags=%s",
+		 resv_ptr->node_list, resv_ptr->node_cnt, resv_ptr->core_cnt,
 		 resv_ptr->features,  resv_ptr->partition, flag_str);
 	xfree(flag_str);
 	xstrcat(out, tmp_line);
