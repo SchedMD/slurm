@@ -44,7 +44,7 @@ static int _split_block(List block_list, List new_blocks,
 
 static int _breakup_blocks(List block_list, List new_blocks,
 			   select_ba_request_t *request, List my_block_list,
-			   bool only_free, bool only_small);
+			   int cnodes, bool only_free, bool only_small);
 
 /*
  * create_dynamic_block - create new block(s) to be used for a new
@@ -65,8 +65,12 @@ extern List create_dynamic_block(List block_list,
 	bitstr_t *my_bitmap = NULL;
 	select_ba_request_t blockreq;
 	int cnodes = request->procs / bg_conf->cpu_ratio;
-	int orig_cnodes = cnodes;
+	int orig_cnodes;
 	uint16_t start_geo[SYSTEM_DIMENSIONS];
+
+	if (cnodes < bg_conf->smallest_block)
+		cnodes = bg_conf->smallest_block;
+	orig_cnodes = cnodes;
 
 	if (bg_conf->sub_blocks && (cnodes < bg_conf->mp_cnode_cnt)) {
 		cnodes = bg_conf->mp_cnode_cnt;
@@ -258,21 +262,21 @@ try_small_again:
 		/* check only blocks that are free and small */
 		if (_breakup_blocks(block_list, new_blocks,
 				    request, my_block_list,
-				    true, true)
+				    cnodes, true, true)
 		    == SLURM_SUCCESS)
 			goto finished;
 
 		/* check only blocks that are free and any size */
 		if (_breakup_blocks(block_list, new_blocks,
 				    request, my_block_list,
-				    true, false)
+				    cnodes, true, false)
 		    == SLURM_SUCCESS)
 			goto finished;
 
 		/* check usable blocks that are small with any state */
 		if (_breakup_blocks(block_list, new_blocks,
 				    request, my_block_list,
-				    false, true)
+				    cnodes, false, true)
 		    == SLURM_SUCCESS)
 			goto finished;
 
@@ -284,7 +288,7 @@ try_small_again:
 		*/
 		/* if (_breakup_blocks(block_list, new_blocks, */
 		/* 		    request, my_block_list, */
-		/* 		    false, false) */
+		/* 		    cnodes, false, false) */
 		/*     == SLURM_SUCCESS) */
 		/* 	goto finished; */
 
@@ -778,7 +782,7 @@ finished:
 
 static int _breakup_blocks(List block_list, List new_blocks,
 			   select_ba_request_t *request, List my_block_list,
-			   bool only_free, bool only_small)
+			   int cnodes, bool only_free, bool only_small)
 {
 	int rc = SLURM_ERROR;
 	bg_record_t *bg_record = NULL;
@@ -786,7 +790,6 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	int total_cnode_cnt=0;
 	char start_char[SYSTEM_DIMENSIONS+1];
 	bitstr_t *ionodes = bit_alloc(bg_conf->ionodes_per_mp);
-	int cnodes = request->procs / bg_conf->cpu_ratio;
 	int curr_mp_bit = -1;
 	int dim;
 

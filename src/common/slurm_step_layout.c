@@ -259,7 +259,7 @@ extern slurm_step_layout_t *slurm_step_layout_copy(
 extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 				   Buf buffer, uint16_t protocol_version)
 {
-	uint16_t i = 0;
+	uint32_t i = 0;
 
 	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		if (step_layout)

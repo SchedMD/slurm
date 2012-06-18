@@ -1204,20 +1204,39 @@ E.g.  Users=jones1,smith2.
 A new reservation must specify Users and/or Accounts.
 
 .TP
-\fBSPECIFICATIONS FOR UPDATE, BLOCK \fR
+\fBSPECIFICATIONS FOR UPDATE BLOCK/SUBMP \fR
 .TP
 Bluegene systems only!
 .TP
 \fIBlockName\fP=<name>
 Identify the bluegene block to be updated. This specification is required.
 .TP
-\fIState\fP=<free|error|remove>
-This will update the state of a bluegene block to either FREE or ERROR.
-(i.e. update BlockName=RMP0 STATE=ERROR) State error will not allow jobs
-to run on the block. \fBWARNING!!!!\fR This will cancel any
-running job on the block!  On dynamically laid out systems REMOVE will
-free and remove the block from the system.  If the block is smaller
-than a midplane every block on that midplane will be removed.
+\fIState\fP=<free|error|recreate|remove|resume>
+This will update the state of a bluegene block.
+(i.e. update BlockName=RMP0 STATE=ERROR)
+\fBWARNING!!!!\fR With the exception of the RESUME state, all other
+state values will cancel any running job on the block!
+.RS
+.TP 10
+\fIFREE\fP
+Return the block to a free state.
+.TP
+\fIERROR\fP
+Make it so jobs don't run on the block.
+.TP
+\fIRECREATE\fP
+Destroy the current block and create a new one to take its place.
+.TP
+\fIREMOVE\fP
+Free and remove the block from the system.  If the block is smaller
+than a midplane every block on that midplane will be removed. (only
+available on dynamic laid out systems)
+.TP
+\fIRESUME\fP
+If a block is in ERROR state RESUME will return the block to its
+previous usable state (FREE or READY).
+.RE
+
 .TP
 \fISubMPName\fP=<name>
 Identify the bluegene ionodes to be updated (i.e. bg000[0\-3]). This
