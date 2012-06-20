@@ -18,7 +18,7 @@ We recommend, for example:</p>
 <ul>
 <li><b>aix</b>&#151;AIX system checkpoint.</li>
 <li><b>blcr</b>&#151;
-<a href="https://ftg.lbl.gov/CheckpointRestart/CheckpointRestart.shtml">
+<a href="https://upc-bugs.lbl.gov/blcr/doc/html/">
 Berkeley Lab Checkpoint/Restart (BLCR)</a></li>
 <li><b>none</b>&#151;No job checkpoint.</li>
 <li><b>ompi</b>&#151;OpenMPI checkpoint (requires OpenMPI version 1.3 or higher).</li>
@@ -186,6 +186,6 @@ A checkpoint plugin conveys its ability to implement a particular API
 version using the mechanism outlined for SLURM plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 10 March 2009</p>
+<p style="text-align:center;">Last modified 20 June 2012</p>
 
 <!--#include virtual="footer.txt"-->
