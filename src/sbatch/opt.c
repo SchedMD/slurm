@@ -2365,8 +2365,7 @@ static bool _opt_verify(void)
 		if(!opt.nodes_set) {
 			opt.nodes_set = 1;
 			hostlist_uniq(hl);
-			opt.min_nodes = opt.max_nodes
-				= hostlist_count(hl);
+			opt.min_nodes = opt.max_nodes = hostlist_count(hl);
 		}
 		hostlist_destroy(hl);
 	}

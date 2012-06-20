@@ -2920,10 +2920,11 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	int error_code;
 	bool no_alloc, top_prio, test_only, too_fragmented, independent;
 	struct job_record *job_ptr;
+	time_t now = time(NULL);
+
 	error_code = _job_create(job_specs, allocate, will_run,
 				 &job_ptr, submit_uid);
 	*job_pptr = job_ptr;
-	time_t now = time(NULL);
 
 	if (error_code) {
 		if (job_ptr && (immediate || will_run)) {
