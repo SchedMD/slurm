@@ -2161,7 +2161,7 @@ static bool _opt_verify(void)
 		setenv("SLURM_JOB_NAME", opt.job_name, 0);
 
 	/* check for realistic arguments */
-	if (opt.ntasks <= 0) {
+	if (opt.ntasks < 0) {
 		error("invalid number of tasks (-n %d)", opt.ntasks);
 		verified = false;
 	}
