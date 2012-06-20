@@ -656,7 +656,7 @@ static int _task_layout_cyclic(slurm_step_layout_t *step_layout,
 			   && (taskid<step_layout->task_cnt)); i++) {
 			if ((j<cpus[i]) || over_subscribe) {
 				xrealloc(step_layout->tids[i], sizeof(uint32_t)
-					 * step_layout->tasks[i]+1);
+					 * (step_layout->tasks[i] + 1));
 
 				step_layout->tids[i][step_layout->tasks[i]] =
 					taskid;
