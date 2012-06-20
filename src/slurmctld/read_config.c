@@ -1337,6 +1337,7 @@ static int _update_preempt(uint16_t old_preempt_mode)
 		return gs_fini();
 	}
 
+	error("Invalid gang scheduling mode change");
 	return EINVAL;
 }
 
