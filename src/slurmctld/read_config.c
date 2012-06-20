@@ -115,7 +115,7 @@ static int  _sync_nodes_to_jobs(void);
 static int  _sync_nodes_to_active_job(struct job_record *job_ptr);
 static void _sync_nodes_to_suspended_job(struct job_record *job_ptr);
 static void _sync_part_prio(void);
-static int  _update_preempt(uint16_t old_enable_preempt, bool reconfig);
+static int  _update_preempt(uint16_t old_enable_preempt);
 #ifdef 	HAVE_ELAN
 static void _validate_node_proc_count(void);
 #endif
@@ -748,6 +748,11 @@ int read_slurm_conf(int recover, bool reconfig)
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
 	if (slurm_sched_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize sched plugin");
+	if (!reconfig && (old_preempt_mode & PREEMPT_MODE_GANG) &&
+	    (gs_init() != SLURM_SUCCESS)) {
+		/* gs_init() must immediately follow slurm_sched_init() */
+		fatal("Failed to initialize gang scheduler");
+	}
 	if (switch_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize switch plugin");
 
@@ -877,7 +882,7 @@ int read_slurm_conf(int recover, bool reconfig)
 			fatal( "failed to initialize preempt plugin" );
 	}
 	xfree(old_preempt_type);
-	rc = _update_preempt(old_preempt_mode, reconfig);
+	rc = _update_preempt(old_preempt_mode);
 	error_code = MAX(error_code, rc);	/* not fatal */
 
 	/* Update plugin parameters as possible */
@@ -1318,12 +1323,9 @@ static int  _preserve_select_type_param(slurm_ctl_conf_t *ctl_conf_ptr,
 
 /* Start or stop the gang scheduler module as needed based upon changes in
  *	configuration */
-static int _update_preempt(uint16_t old_preempt_mode, bool reconfig)
+static int _update_preempt(uint16_t old_preempt_mode)
 {
 	uint16_t new_preempt_mode = slurm_get_preempt_mode();
-
-	if (!reconfig && (new_preempt_mode & PREEMPT_MODE_GANG))
-		return gs_init();
 
 	if ((old_preempt_mode & PREEMPT_MODE_GANG) ==
 	    (new_preempt_mode & PREEMPT_MODE_GANG))
