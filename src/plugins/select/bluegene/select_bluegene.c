@@ -3030,6 +3030,11 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 		if (job_desc->min_nodes == (uint32_t) NO_VAL)
 			return SLURM_SUCCESS;
+		else if ((job_desc->min_nodes == 1)
+			 && (job_desc->min_cpus != NO_VAL)
+			 && (job_desc->ntasks_per_node != NO_VAL))
+			job_desc->min_nodes = job_desc->min_cpus
+				/ job_desc->ntasks_per_node;
 
 		get_select_jobinfo(job_desc->select_jobinfo->data,
 				   SELECT_JOBDATA_GEOMETRY, &req_geometry);
