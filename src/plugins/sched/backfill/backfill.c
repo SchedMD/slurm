@@ -550,7 +550,7 @@ static int _attempt_backfill(void)
 		filter_root = true;
 
 	job_queue = build_job_queue(true);
-	if (list_count(job_queue) <= 1) {
+	if (list_count(job_queue) == 0) {
 		debug("backfill: no jobs to backfill");
 		list_destroy(job_queue);
 		return 0;
