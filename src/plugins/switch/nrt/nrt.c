@@ -223,10 +223,8 @@ static int	_wait_for_window_unloaded(char *adapter_name,
 					  nrt_window_id_t window_id, int retry,
 					  unsigned int max_windows);
 static char *	_win_state_str(win_state_t state);
-static int	_window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
-				  char *hostname, int task_id,
-				  win_state_t state, nrt_job_key_t job_key);
-
+static int	_window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname,
+				  win_state_t state);
 /* The _lock() and _unlock() functions are used to lock/unlock a
  * global mutex.  Used to serialize access to the global library
  * state variable nrt_state.
@@ -505,15 +503,7 @@ _job_step_window_state(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 {
 	hostlist_iterator_t hi;
 	char *host;
-	int proc_cnt;
-	int nprocs;
-	int nnodes;
-	int i, j;
 	int err, rc = SLURM_SUCCESS;
-	int task_cnt;
-	int full_node_cnt;
-	int min_procs_per_node;
-	int max_procs_per_node;
 
 	xassert(!hostlist_is_empty(hl));
 	xassert(jp);
@@ -526,44 +516,25 @@ _job_step_window_state(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	    (jp->tableinfo[0].table_length == 0))
 		return SLURM_SUCCESS;
 
-	debug3("jp->tables_per_task = %d", jp->tables_per_task);
-	nprocs = jp->tableinfo[0].table_length;
 	hi = hostlist_iterator_create(hl);
-
-	debug("Finding windows");
-	nnodes = hostlist_count(hl);
-	full_node_cnt = nprocs % nnodes;
-	min_procs_per_node = nprocs / nnodes;
-	max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
-
-	proc_cnt = 0;
 	_lock();
-	for  (i = 0; i < nnodes; i++) {
-		host = hostlist_next(hi);
-		if (!host)
-			error("Failed to get next host");
-
-		if (i < full_node_cnt)
-			task_cnt = max_procs_per_node;
-		else
-			task_cnt = min_procs_per_node;
-
-		for (j = 0; j < task_cnt; j++) {
-			err = _window_state_set(jp->tables_per_task,
-						jp->tableinfo,
-						host, proc_cnt,
-						state, jp->job_key);
-			rc = MAX(rc, err);
-			proc_cnt++;
-		}
+	while ((host = hostlist_next(hi))) {
+		err = _window_state_set(jp, host, state);
+		rc = MAX(rc, err);
 		free(host);
 	}
 	_unlock();
-
 	hostlist_iterator_destroy(hi);
+
 	return rc;
 }
 
+static char *_state_str(win_state_t state)
+{
+	if (state == NRT_WIN_UNAVAILABLE)
+		return "UNLOADED";
+	return "LOADED";
+}
 
 /* Find the correct NRT structs and set the state
  * of the switch windows for the specified task_id.
@@ -571,9 +542,7 @@ _job_step_window_state(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
  * Used by: slurmctld
  */
 static int
-_window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
-		  char *hostname, int task_id, win_state_t state,
-		  nrt_job_key_t job_key)
+_window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 {
 	slurm_nrt_nodeinfo_t *node = NULL;
 	slurm_nrt_adapter_t *adapter = NULL;
@@ -582,10 +551,13 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 	int rc = SLURM_SUCCESS;
 	bool adapter_found;
 	uint16_t win_id = 0;
+	nrt_job_key_t job_key = jp->job_key;
+	nrt_table_id_t table_cnt = jp->tables_per_task;
+	nrt_tableinfo_t *tableinfo = jp->tableinfo;
+	nrt_task_id_t task_id;
 
 	assert(tableinfo);
 	assert(hostname);
-	assert(adapter_cnt <= NRT_MAXADAPTERS);
 
 	node = _find_node(nrt_state, hostname);
 	if (node == NULL) {
@@ -597,7 +569,7 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 		return SLURM_ERROR;
 	}
 
-	for (i = 0; i < adapter_cnt; i++) {
+	for (i = 0; i < table_cnt; i++) {
 		if (tableinfo[i].table == NULL) {
 			error("tableinfo[%d].table is NULL", i);
 			rc = SLURM_ERROR;
@@ -611,92 +583,105 @@ _window_state_set(int adapter_cnt, nrt_tableinfo_t *tableinfo,
 			if (strcasecmp(adapter->adapter_name,
 				       tableinfo[i].adapter_name))
 				continue;
-			if (adapter->adapter_type == NRT_IB) {
-				nrt_ib_task_info_t *ib_tbl_ptr;
-				ib_tbl_ptr = tableinfo[i].table + task_id;
-				if (ib_tbl_ptr == NULL) {
-					error("tableinfo[%d].table[%d] is "
-					      "NULL", i, task_id);
-					rc = SLURM_ERROR;
-					continue;
-				}
-				if (adapter->lid == ib_tbl_ptr->base_lid) {
-					adapter_found = true;
-					win_id = ib_tbl_ptr->win_id;
-					debug3("Setting status %s adapter %s "
-					       "lid %hu window %hu for task %d",
-					       state == NRT_WIN_UNAVAILABLE ?
-					       "UNLOADED" : "LOADED",
-					       adapter->adapter_name,
-					       ib_tbl_ptr->base_lid,
-					       ib_tbl_ptr->win_id, task_id);
-					break;
-				}
-			} else if (adapter->adapter_type == NRT_HFI) {
-				nrt_hfi_task_info_t *hfi_tbl_ptr;
-				hfi_tbl_ptr = tableinfo[i].table + task_id;
-				if (hfi_tbl_ptr == NULL) {
-					error("tableinfo[%d].table[%d] is "
-					      "NULL", i, task_id);
-					rc = SLURM_ERROR;
-					continue;
-				}
-				if (adapter->lid == hfi_tbl_ptr->lid) {
-					adapter_found = true;
-					win_id = hfi_tbl_ptr->win_id;
-					debug3("Setting status %s adapter %s "
-					       "lid %hu window %hu for task %d",
-					       state == NRT_WIN_UNAVAILABLE ?
-					       "UNLOADED" : "LOADED",
-					       adapter->adapter_name,
-					       hfi_tbl_ptr->lid,
-					       hfi_tbl_ptr->win_id, task_id);
-					break;
-				}
-			} else if ((adapter->adapter_type == NRT_HPCE) ||
-			           (adapter->adapter_type == NRT_KMUX)) {
-				nrt_hpce_task_info_t *hpce_tbl_ptr;
-				hpce_tbl_ptr = tableinfo[i].table + task_id;
-				if (hpce_tbl_ptr == NULL) {
-					error("tableinfo[%d].table[%d] is "
-					      "NULL", i, task_id);
-					rc = SLURM_ERROR;
-					continue;
-				}
-/* FIXME: These should probably match network_id or something else */
-//				if (adapter->lid == hpce_tbl_ptr->lid) {
-				if (1) {
-					adapter_found = true;
-					win_id = hpce_tbl_ptr->win_id;
-					debug3("Setting status %s adapter %s "
-					       "window %hu for task %d",
-					       state == NRT_WIN_UNAVAILABLE ?
-					       "UNLOADED" : "LOADED",
-					       adapter->adapter_name,
-					       hpce_tbl_ptr->win_id, task_id);
-					break;
-				}
-			} else {
-				error("_window_state_set: Missing support for "
-				      "adapter type %s",
-				      _adapter_type_str(adapter->adapter_type));
+			for (task_id = 0; task_id < tableinfo[i].table_length;
+			     task_id++) {
+				if (adapter->adapter_type == NRT_IB) {
+					nrt_ib_task_info_t *ib_tbl_ptr;
+					ib_tbl_ptr = tableinfo[i].table +
+						     task_id;
+					if (ib_tbl_ptr == NULL) {
+						error("tableinfo[%d].table[%d]"
+						      " is NULL", i, task_id);
+						rc = SLURM_ERROR;
+						continue;
+					}
+					if (adapter->lid ==
+					    ib_tbl_ptr->base_lid) {
+						adapter_found = true;
+						win_id = ib_tbl_ptr->win_id;
+						debug3("Setting status %s "
+						       "adapter %s lid %hu "
+						       "window %hu for task %d",
+						       _state_str(state),
+						       adapter->adapter_name,
+						       ib_tbl_ptr->base_lid,
+						       ib_tbl_ptr->win_id,
+						       task_id);
+						break;
+					}
+				} else if (adapter->adapter_type == NRT_HFI) {
+					nrt_hfi_task_info_t *hfi_tbl_ptr;
+					hfi_tbl_ptr = tableinfo[i].table +
+						      task_id;
+					if (hfi_tbl_ptr == NULL) {
+						error("tableinfo[%d].table[%d]"
+						      " is NULL", i, task_id);
+						rc = SLURM_ERROR;
+						continue;
+					}
+					if (adapter->lid == hfi_tbl_ptr->lid) {
+						adapter_found = true;
+						win_id = hfi_tbl_ptr->win_id;
+						debug3("Setting status %s "
+						       "adapter %s lid %hu "
+						       "window %hu for task %d",
+						       _state_str(state),
+						       adapter->adapter_name,
+						       hfi_tbl_ptr->lid,
+						       hfi_tbl_ptr->win_id,
+						       task_id);
+						break;
+					}
+				} else if ((adapter->adapter_type==NRT_HPCE) ||
+					   (adapter->adapter_type==NRT_KMUX)) {
+					nrt_hpce_task_info_t *hpce_tbl_ptr;
+					hpce_tbl_ptr = tableinfo[i].table +
+						       task_id;
+					if (hpce_tbl_ptr == NULL) {
+						error("tableinfo[%d].table[%d]"
+						      " is NULL", i, task_id);
+						rc = SLURM_ERROR;
+						continue;
+					}
+	/* FIXME: These should probably match network_id or something else */
+	//				if (adapter->lid == hpce_tbl_ptr->lid) {
+					if (1) {
+						adapter_found = true;
+						win_id = hpce_tbl_ptr->win_id;
+						debug3("Setting status %s "
+						       "adapter %s window %hu "
+						       "for task %d",
+						       _state_str(state),
+						       adapter->adapter_name,
+						       hpce_tbl_ptr->win_id,
+						       task_id);
+						break;
+					}
+				} else {
+					error("_window_state_set: Missing "
+					      "support for adapter type %s",
+					      _adapter_type_str(adapter->
+								adapter_type));
 
+				}
+
+				window = _find_window(adapter, win_id);
+				if (window) {
+					window->state = state;
+					if (state == NRT_WIN_UNAVAILABLE)
+						window->job_key = 0;
+					else
+						window->job_key = job_key;
+				}
+			}  /* for each task */
+			if (!adapter_found) {
+				error("Did not find adapter %s with lid %hu ",
+				      adapter->adapter_name, adapter->lid);
+				rc = SLURM_ERROR;
+				continue;
 			}
-		}
-		if (!adapter_found) {
-			error("Did not find adapter %s with lid %hu ",
-			      adapter->adapter_name, adapter->lid);
-			rc = SLURM_ERROR;
-			continue;
-		}
-
-		window = _find_window(adapter, win_id);
-		if (window) {
-			window->state = state;
-			window->job_key =
-				(state == NRT_WIN_UNAVAILABLE) ? 0 : job_key;
-		}
-	}
+		}  /* for each adapter */
+	}  /* for each table */
 
 	return rc;
 }
@@ -2127,6 +2112,10 @@ nrt_job_step_complete(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
 extern int
 nrt_job_step_allocated(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
 {
+#if NRT_DEBUG
+	info("nrt_job_step_allocated: resetting window state");
+	_print_jobinfo(jp);
+#endif
 	return _job_step_window_state(jp, hl, NRT_WIN_UNAVAILABLE);
 }
 
