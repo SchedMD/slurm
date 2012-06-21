@@ -534,7 +534,7 @@ finished:
 	return;
 }
 
-extern int jobacct_gather_p_endpoll()
+extern int jobacct_gather_p_endpoll(void)
 {
 	if (slash_proc) {
 		slurm_mutex_lock(&reading_mutex);

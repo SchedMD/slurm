@@ -329,7 +329,7 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int jobacct_gather_p_endpoll()
+extern int jobacct_gather_p_endpoll ( void )
 {
 	return SLURM_SUCCESS;
 }
