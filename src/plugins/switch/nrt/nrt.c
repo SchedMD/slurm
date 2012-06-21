@@ -1345,7 +1345,6 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 
 	info("--Begin Jobinfo--");
 	info("  job_key: %u", j->job_key);
-	info("  table_size: %u", j->tables_per_task);
 	info("  bulk_xfer: %hu", j->bulk_xfer);
 	info("  bulk_xfer_resources: %u", j->bulk_xfer_resources);
 	info("  ip_v4: %hu", j->ip_v4);
@@ -3087,9 +3086,6 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 			error("nrt_command(load table): %s", nrt_err_str(err));
 			return SLURM_ERROR;
 		}
-/* FIXME: Must modify to issue one call per job per node.
- * Do not loop on the load_table call on a per-task basis */
-break;
 	}
 	umask(nrt_umask);
 
@@ -3120,16 +3116,18 @@ _unload_window(char *adapter_name, nrt_adapter_t adapter_type,
 			unload_window.window_id = window_id;
 		}
 #if NRT_DEBUG
-		info("nrt_command(unload_window, %s, %u, %u, %hu)",
-		      adapter_name, adapter_type, job_key, window_id);
+		info("nrt_command(unload_window, %s, %s, %u, %hu)",
+		      adapter_name, _adapter_type_str(adapter_type),
+		      job_key, window_id);
 #endif
 		err = nrt_command(NRT_VERSION, NRT_CMD_UNLOAD_WINDOW,
 				  &unload_window);
 		if (err == NRT_SUCCESS)
 			return SLURM_SUCCESS;
 		debug("Unable to unload window for job_key %u, "
-		      "nrt_unload_window(%s, %u): %s",
-		      job_key, adapter_name, adapter_type, nrt_err_str(err));
+		      "nrt_unload_window(%s, %s): %s",
+		      job_key, adapter_name, _adapter_type_str(adapter_type),
+		      nrt_err_str(err));
 
 		if (i == 0) {
 			clean_window.adapter_name = adapter_name;
@@ -3482,7 +3480,7 @@ nrt_clear_node_state(void)
 			}
 #endif
 			if (window_count > max_windows) {
-/* FIXME: Seeing (2 > 0) for eth0 */
+/* FIXME: Seeing max_windows==0 and window_count>0 for ethernet adapter */
 				error("nrt_command(status_adapter, %s, %s): "
 				      "window_count > max_windows (%u > %hu)",
 				      adapter_status.adapter_name,
