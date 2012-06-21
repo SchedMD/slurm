@@ -181,8 +181,7 @@ static int	_allocate_window_single(char *adapter_name,
 			slurm_nrt_jobinfo_t *jp, char *hostname,
 			uint32_t node_id, nrt_task_id_t task_id,
 			nrt_adapter_t adapter_type, int network_id,
-			nrt_protocol_table_t *protocol_table, int instances,
-			nrt_logical_id_t base_lid);
+			nrt_protocol_table_t *protocol_table, int instances);
 static slurm_nrt_libstate_t *_alloc_libstate(void);
 static slurm_nrt_nodeinfo_t *_alloc_node(slurm_nrt_libstate_t *lp, char *name);
 static int	_check_rdma_job_count(char *adapter_name,
@@ -598,8 +597,8 @@ _window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 			     task_id++) {
 				if (adapter->adapter_type == NRT_IB) {
 					nrt_ib_task_info_t *ib_tbl_ptr;
-					ib_tbl_ptr = tableinfo[i].table +
-						     task_id;
+					ib_tbl_ptr  = tableinfo[i].table;
+					ib_tbl_ptr += task_id;
 					if (ib_tbl_ptr == NULL) {
 						error("tableinfo[%d].table[%d]"
 						      " is NULL", i, task_id);
@@ -618,12 +617,11 @@ _window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 						       ib_tbl_ptr->base_lid,
 						       ib_tbl_ptr->win_id,
 						       task_id);
-						break;
 					}
 				} else if (adapter->adapter_type == NRT_HFI) {
 					nrt_hfi_task_info_t *hfi_tbl_ptr;
-					hfi_tbl_ptr = tableinfo[i].table +
-						      task_id;
+					hfi_tbl_ptr  = tableinfo[i].table;
+					hfi_tbl_ptr += task_id;
 					if (hfi_tbl_ptr == NULL) {
 						error("tableinfo[%d].table[%d]"
 						      " is NULL", i, task_id);
@@ -641,13 +639,12 @@ _window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 						       hfi_tbl_ptr->lid,
 						       hfi_tbl_ptr->win_id,
 						       task_id);
-						break;
 					}
 				} else if ((adapter->adapter_type==NRT_HPCE) ||
 					   (adapter->adapter_type==NRT_KMUX)) {
 					nrt_hpce_task_info_t *hpce_tbl_ptr;
-					hpce_tbl_ptr = tableinfo[i].table +
-						       task_id;
+					hpce_tbl_ptr  = tableinfo[i].table;
+					hpce_tbl_ptr += task_id;
 					if (hpce_tbl_ptr == NULL) {
 						error("tableinfo[%d].table[%d]"
 						      " is NULL", i, task_id);
@@ -666,7 +663,6 @@ _window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 						       adapter->adapter_name,
 						       hpce_tbl_ptr->win_id,
 						       task_id);
-						break;
 					}
 				} else {
 					error("_window_state_set: Missing "
@@ -686,8 +682,11 @@ _window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 				}
 			}  /* for each task */
 			if (!adapter_found) {
-				error("Did not find adapter %s with lid %hu ",
-				      adapter->adapter_name, adapter->lid);
+				error("Did not find adapter %s of type %s "
+				      "with lid %hu ",
+				      adapter->adapter_name,
+				      _adapter_type_str(adapter->adapter_type),
+				      adapter->lid);
 				rc = SLURM_ERROR;
 				continue;
 			}
@@ -914,7 +913,7 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 			char *hostname, uint32_t node_id,
 			nrt_task_id_t task_id, nrt_adapter_t adapter_type,
 			int network_id, nrt_protocol_table_t *protocol_table,
-		        int instances, nrt_logical_id_t base_lid)
+		        int instances)
 {
 	nrt_tableinfo_t *tableinfo = jp->tableinfo;
 	nrt_job_key_t job_key = jp->job_key;
@@ -1019,7 +1018,7 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 				ib_table += task_id;
 				strncpy(ib_table->device_name, adapter_name,
 					NRT_MAX_DEVICENAME_SIZE);
-				ib_table->base_lid = base_lid;
+				ib_table->base_lid = adapter->lid;
 				ib_table->port_id  = 1;
 				ib_table->lmc      = 0;
 				ib_table->node_number = node_number;
@@ -1030,6 +1029,7 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 				hfi_table = (nrt_hfi_task_info_t *)
 					    tableinfo[table_inx].table;
 				hfi_table += task_id;
+				hfi_table->lid = adapter->lid;
 				hfi_table->task_id = task_id;
 				hfi_table->win_id = window->window_id;
 			} else if ((adapter_type == NRT_HPCE) ||
@@ -2357,8 +2357,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 							     adapter_type,
 							     network_id,
 							     protocol_table,
-							     instances,
-							     base_lid);
+							     instances);
 			}
 			if (rc != SLURM_SUCCESS) {
 				_unlock();
