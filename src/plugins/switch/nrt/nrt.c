@@ -211,6 +211,7 @@ static nrt_job_key_t _next_key(void);
 static int	_pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static void	_pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf,
 				slurm_nrt_jobinfo_t *jp);
+static char *	_state_str(win_state_t state);
 static void	_unlock(void);
 static int	_unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static int	_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf,
@@ -532,8 +533,18 @@ _job_step_window_state(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 static char *_state_str(win_state_t state)
 {
 	if (state == NRT_WIN_UNAVAILABLE)
-		return "UNLOADED";
-	return "LOADED";
+		return "Unavailable";
+	if (state == NRT_WIN_INVALID)
+		return "Invalid";
+	if (state == NRT_WIN_AVAILABLE)
+		return "Available";
+	if (state == NRT_WIN_RESERVED)
+		return "Reserved";
+	if (state == NRT_WIN_READY)
+		return "Ready";
+	if (state == NRT_WIN_RUNNING)
+		return "Running";
+	return "Unknown";
 }
 
 /* Find the correct NRT structs and set the state
@@ -669,9 +680,9 @@ _window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 				if (window) {
 					window->state = state;
 					if (state == NRT_WIN_UNAVAILABLE)
-						window->job_key = 0;
-					else
 						window->job_key = job_key;
+					else
+						window->job_key = 0;
 				}
 			}  /* for each task */
 			if (!adapter_found) {
@@ -2112,11 +2123,17 @@ nrt_job_step_complete(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
 extern int
 nrt_job_step_allocated(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
 {
+	int rc;
 #if NRT_DEBUG
 	info("nrt_job_step_allocated: resetting window state");
 	_print_jobinfo(jp);
 #endif
-	return _job_step_window_state(jp, hl, NRT_WIN_UNAVAILABLE);
+	rc = _job_step_window_state(jp, hl, NRT_WIN_UNAVAILABLE);
+#if NRT_DEBUG
+	info("nrt_job_step_allocated: window state reset complete");
+	_print_libstate(nrt_state);
+#endif
+	return rc;
 }
 
 /* Assign a unique key to each job.  The key is used later to
