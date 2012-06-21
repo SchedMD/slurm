@@ -2676,15 +2676,6 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 	}
 
 	save_bitmap = bit_copy(avail_bitmap);
-	/* First: Try to reserve nodes that are currently IDLE */
-	if (bit_overlap(avail_bitmap, idle_node_bitmap) >= node_cnt) {
-		bit_and(avail_bitmap, idle_node_bitmap);
-		ret_bitmap = select_g_resv_test(avail_bitmap, node_cnt);
-		if (ret_bitmap)
-			goto fini;
-	}
-
-	/* Second: Try to reserve nodes that are will be IDLE */
 	bit_or(avail_bitmap, save_bitmap);	/* restore avail_bitmap */
 	job_iterator = list_iterator_create(job_list);
 	if (job_iterator == NULL)
