@@ -651,9 +651,8 @@ _window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 						rc = SLURM_ERROR;
 						continue;
 					}
-	/* FIXME: These should probably match network_id or something else */
-	//				if (adapter->lid == hpce_tbl_ptr->lid) {
-					if (1) {
+					if (adapter->network_id ==
+					    tableinfo[i].network_id) {
 						adapter_found = true;
 						win_id = hpce_tbl_ptr->win_id;
 						debug3("Setting status %s "
