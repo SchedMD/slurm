@@ -42,6 +42,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in gang scheduling table initialization.
  -- BGQ - fix issue where if a user was asking for tasks and ntasks-per-node
     but not node count the node count is correctly figured out.
+ -- Move logic to always use the 1st alphanumeric node as the batch host for
+    batch jobs.
 
 * Changes in SLURM 2.4.0.rc1
 =============================

@@ -135,13 +135,6 @@ extern void allocate_nodes(struct job_record *job_ptr)
 	struct node_record *node_ptr;
 	bool has_cloud = false, has_cloud_power_save = false;
 
-	xfree(job_ptr->batch_host);
-#ifdef HAVE_FRONT_END
-	job_ptr->front_end_ptr = assign_front_end();
-	xassert(job_ptr->front_end_ptr);
-	job_ptr->batch_host = xstrdup(job_ptr->front_end_ptr->name);
-#endif
-
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
@@ -153,9 +146,8 @@ extern void allocate_nodes(struct job_record *job_ptr)
 				has_cloud_power_save = true;
 		}
 		make_node_alloc(node_ptr, job_ptr);
-		if (job_ptr->batch_host == NULL)
-			job_ptr->batch_host = xstrdup(node_ptr->name);
 	}
+
 	last_node_update = time(NULL);
 	license_job_get(job_ptr);
 
@@ -2045,6 +2037,12 @@ extern void build_node_details(struct job_record *job_ptr)
 	xrealloc(job_ptr->node_addr,
 		 (sizeof(slurm_addr_t) * job_ptr->node_cnt));
 
+	xfree(job_ptr->batch_host);
+#ifdef HAVE_FRONT_END
+	job_ptr->front_end_ptr = assign_front_end();
+	xassert(job_ptr->front_end_ptr);
+	job_ptr->batch_host = xstrdup(job_ptr->front_end_ptr->name);
+#endif
 	while ((this_node_name = hostlist_shift(host_list))) {
 		if ((node_ptr = find_node_record(this_node_name))) {
 			memcpy(&job_ptr->node_addr[node_inx++],
@@ -2053,6 +2051,8 @@ extern void build_node_details(struct job_record *job_ptr)
 			error("Invalid node %s in JobId=%u",
 			      this_node_name, job_ptr->job_id);
 		}
+		if (job_ptr->batch_host == NULL)
+			job_ptr->batch_host = xstrdup(this_node_name);
 		free(this_node_name);
 	}
 	hostlist_destroy(host_list);
