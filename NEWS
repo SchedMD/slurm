@@ -39,7 +39,6 @@ documents those changes that are of interest to users and admins.
     we must use a small block instead of a shared midplane block.
  -- Fix issues on large jobs (>64k tasks) to have the correct counter type when
     packing the step layout structure.
- -- Fix bug in gang scheduling table initialization.
  -- BGQ - fix issue where if a user was asking for tasks and ntasks-per-node
     but not node count the node count is correctly figured out.
  -- Move logic to always use the 1st alphanumeric node as the batch host for
