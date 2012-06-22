@@ -44,6 +44,9 @@ documents those changes that are of interest to users and admins.
     but not node count the node count is correctly figured out.
  -- Move logic to always use the 1st alphanumeric node as the batch host for
     batch jobs.
+ -- BLUEGENE - fix race condition where if a nodeboard/card goes down at the
+    same time a block is destroyed and that block just happens to be the
+    smallest overlapping block over the bad hardware.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
