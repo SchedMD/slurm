@@ -176,8 +176,7 @@ static char *	_adapter_type_str(nrt_adapter_t type);
 static int	_allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 			uint32_t node_id, nrt_task_id_t task_id,
 			nrt_adapter_t adapter_type, int network_id,
-			nrt_protocol_table_t *protocol_table,
-			nrt_logical_id_t base_lid, int instances);
+			nrt_protocol_table_t *protocol_table, int instances);
 static int	_allocate_window_single(char *adapter_name,
 			slurm_nrt_jobinfo_t *jp, char *hostname,
 			uint32_t node_id, nrt_task_id_t task_id,
@@ -780,10 +779,8 @@ static int
 _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 		      uint32_t node_id, nrt_task_id_t task_id,
 		      nrt_adapter_t adapter_type, int network_id,
-		      nrt_protocol_table_t *protocol_table,
-		      nrt_logical_id_t base_lid, int instances)
+		      nrt_protocol_table_t *protocol_table, int instances)
 {
-/* FIXME: check argument uses, especially base_lid */
 	nrt_tableinfo_t *tableinfo = jp->tableinfo;
 	nrt_job_key_t job_key = jp->job_key;
 	bool ip_v4 = jp->ip_v4;
@@ -831,6 +828,9 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 				continue;
 			if ((network_id >= 0) &&
 			    (adapter->network_id != network_id))
+				continue;
+			if (user_space &&
+			    (adapter->adapter_type == NRT_IPONLY))
 				continue;
 			for (j = 0; j < instances; j++) {
 				table_id++;
@@ -887,7 +887,7 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 					strncpy(ib_table->device_name,
 						adapter->adapter_name,
 						NRT_MAX_DEVICENAME_SIZE);
-					ib_table->base_lid = base_lid;
+					ib_table->base_lid = adapter->lid;
 					ib_table->port_id  = 1;
 					ib_table->lmc      = 0;
 					ib_table->node_number = node_number;
@@ -2277,7 +2277,6 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	int rc;
 	nrt_adapter_t adapter_type = NRT_MAX_ADAPTER_TYPES;
 	int network_id = -1;
-	nrt_logical_id_t base_lid = 0xffffff;
 	int adapter_type_count = 0;
 	nrt_protocol_table_t *protocol_table = NULL;
 
@@ -2330,10 +2329,6 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 			if (jp->user_space && (ad_type == NRT_IPONLY))
 				continue;
 			adapter_type_count++;
-/* FIXME: It's unclear how this works, each node would have different logical_id
- * although the network_id seems to be common for our IB switches */
-			base_lid = MIN(base_lid,
-				       node->adapter_list[i].lid);
 			if (!sn_all) {
 				adapter_type = ad_type;
 				network_id = node->adapter_list[i].network_id;
@@ -2399,7 +2394,6 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 							   adapter_type,
 							   network_id,
 							   protocol_table,
-							   base_lid,
 							   instances);
 			} else {
 				rc = _allocate_window_single(adapter_name,
