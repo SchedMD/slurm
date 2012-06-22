@@ -48,28 +48,15 @@
 enum {
 	/* NRT specific get_jobinfo keys */
 	NRT_JOBINFO_TABLEINFO,
-	NRT_JOBINFO_TABLESPERTASK,
+	NRT_JOBINFO_TABLESPERTASK,	/* Count of nrt_tableinfo records */
 	NRT_JOBINFO_KEY,
 	NRT_JOBINFO_PROTOCOL,
-	NRT_JOBINFO_MODE,
-	NRT_JOBINFO_COMM_INFO
+	NRT_JOBINFO_MODE
 };
 
 /* Information shared between slurm_ll_api and the slurm NRT driver */
-typedef struct nrt_comm_record {
-	nrt_context_id_t context_id;
-	nrt_table_id_t   table_id;
-	char device_name[NRT_MAX_DEVICENAME_SIZE];   /* eth0, mlx4_0, etc. */
-	char protocol_name[NRT_MAX_PROTO_NAME_LEN];  /* MPI, LAPI, UPC, etc. */
-} nrt_comm_record_t;
-
-typedef struct nrt_comm_table {
-	uint16_t nrt_comm_count;
-	nrt_comm_record_t *nrt_comm_ptr;
-} nrt_comm_table_t;
-
 typedef struct nrt_tableinfo {
-	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
+	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN]; /* eth0, mlx4_0, etc. */
 	nrt_adapter_t adapter_type;
 	nrt_context_id_t context_id;
 	nrt_network_id_t network_id;
@@ -77,8 +64,17 @@ typedef struct nrt_tableinfo {
 	nrt_table_id_t table_id;
 	uint32_t table_length;
 	void *table; /* Pointer to nrt_*_task_info_t */
-/* FIXME: Need to populate, un/pack, and free this data structure */
-	nrt_comm_table_t *comm_table_ptr;
 } nrt_tableinfo_t;
+
+/* In order to determine the adapters and protocols in use:
+ * int table_cnt;
+ * nrt_tableinfo_t *tables;
+ * switch_p_get_jobinfo(switch_job_ptr, NRT_JOBINFO_TABLESPERTASK, &table_cnt);
+ * switch_p_get_jobinfo(switch_job_ptr, NRT_JOBINFO_TABLESPERTASK, &table);
+ * for (i=0, table_ptr=table; i<table_cnt; i++, table_ptr++) {
+ *   printf("adapter:%s protocol:%s\n", table_ptr->adapter_name,
+ *          table_ptr->protocol_name);
+ * }
+ */
 
 #endif /* _NRT_KEYS_INCLUDED */

@@ -2792,7 +2792,6 @@ nrt_free_jobinfo(slurm_nrt_jobinfo_t *jp)
 extern int
 nrt_get_jobinfo(slurm_nrt_jobinfo_t *jp, int key, void *data)
 {
-	nrt_comm_table_t **comm_table = (nrt_comm_table_t **) data;
 	nrt_tableinfo_t **tableinfo = (nrt_tableinfo_t **) data;
 	int *tables_per = (int *) data;
 	int *job_key = (int *) data;
@@ -2809,14 +2808,6 @@ nrt_get_jobinfo(slurm_nrt_jobinfo_t *jp, int key, void *data)
 			break;
 		case NRT_JOBINFO_KEY:
 			*job_key = (int) jp->job_key;
-			break;
-		case NRT_JOBINFO_COMM_INFO:
-			if (jp->tableinfo)
-				*comm_table = jp->tableinfo->comm_table_ptr;
-			else {
-				*comm_table = NULL;
-				slurm_seterrno_ret(EINVAL);
-			}
 			break;
 		default:
 			slurm_seterrno_ret(EINVAL);
