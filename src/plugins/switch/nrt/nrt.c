@@ -768,6 +768,32 @@ _find_free_window(slurm_nrt_adapter_t *adapter)
 	return (slurm_nrt_window_t *) NULL;
 }
 
+static void _table_alloc(nrt_tableinfo_t *tableinfo, int table_inx,
+			 nrt_adapter_t adapter_type)
+{
+	int table_size;
+
+	if (tableinfo[table_inx].table)
+		return;
+	if (adapter_type == NRT_IB)
+		table_size = sizeof(nrt_ib_task_info_t);
+	else if (adapter_type == NRT_HFI)
+		table_size = sizeof(nrt_hfi_task_info_t);
+	else if (adapter_type == NRT_IPONLY)
+		table_size = sizeof(nrt_ip_task_info_t);
+	else if ((adapter_type == NRT_HPCE) || (adapter_type == NRT_KMUX))
+		table_size = sizeof(nrt_hpce_task_info_t);
+	else {
+		error("Missing support for adapter type %s",
+		      _adapter_type_str(adapter_type));
+		return;
+	}
+	tableinfo[table_inx].table = xmalloc(table_size *
+					     tableinfo[table_inx].
+					     table_length);
+	return;
+}
+
 /* For a given process, fill out an nrt_creator_per_task_input_t
  * struct (an array of these makes up the network table loaded
  * for each job).  Assign adapters, lids and switch windows to
@@ -854,12 +880,8 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 
 				if (!user_space) {
 					nrt_ip_task_info_t *ip_table;
-/* FIXME: Try to make the xmalloc cleaner and uniform */
-					if (!tableinfo[table_inx].table) {
-						tableinfo[table_inx].table =
-							xmalloc(sizeof(nrt_ip_task_info_t)*
-							tableinfo[table_inx].table_length);
-					}
+					_table_alloc(tableinfo, table_inx,
+						     NRT_IPONLY);
 					ip_table = (nrt_ip_task_info_t *)
 						   tableinfo[table_inx].table;
 					ip_table += task_id;
@@ -876,11 +898,8 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 					}
 				} else if (adapter->adapter_type == NRT_IB) {
 					nrt_ib_task_info_t *ib_table;
-					if (!tableinfo[table_inx].table) {
-						tableinfo[table_inx].table =
-							xmalloc(sizeof(nrt_ib_task_info_t)*
-							tableinfo[table_inx].table_length);
-					}
+					_table_alloc(tableinfo, table_inx,
+						     adapter->adapter_type);
 					ib_table = (nrt_ib_task_info_t *)
 						   tableinfo[table_inx].table;
 					ib_table += task_id;
@@ -895,11 +914,8 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 					ib_table->win_id   = window->window_id;
 				} else if (adapter->adapter_type == NRT_HFI) {
 					nrt_hfi_task_info_t *hfi_table;
-					if (!tableinfo[table_inx].table) {
-						tableinfo[table_inx].table =
-							xmalloc(sizeof(nrt_hfi_task_info_t)*
-							tableinfo[table_inx].table_length);
-					}
+					_table_alloc(tableinfo, table_inx,
+						     adapter->adapter_type);
 					hfi_table = (nrt_hfi_task_info_t *)
 						    tableinfo[table_inx].table;
 					hfi_table += task_id;
@@ -908,11 +924,8 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 				} else if ((adapter->adapter_type == NRT_HPCE)||
 					   (adapter->adapter_type == NRT_KMUX)){
 					nrt_hpce_task_info_t *hpce_table;
-					if (!tableinfo[table_inx].table) {
-						tableinfo[table_inx].table =
-							xmalloc(sizeof(nrt_hpce_task_info_t)*
-							tableinfo[table_inx].table_length);
-					}
+					_table_alloc(tableinfo, table_inx,
+						     adapter->adapter_type);
 					hpce_table = (nrt_hpce_task_info_t *)
 						     tableinfo[table_inx].table;
 					hpce_table += task_id;
@@ -921,7 +934,9 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 				} else {
 					error("Missing support for adapter "
 					      "type %s",
-					      _adapter_type_str(adapter->adapter_type));
+					      _adapter_type_str(adapter->
+								adapter_type));
+					return SLURM_ERROR;
 				}
 
 				strncpy(tableinfo[table_inx].adapter_name,
@@ -932,7 +947,8 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 				tableinfo[table_inx].network_id = adapter->
 								  network_id;
 				strncpy(tableinfo[table_inx].protocol_name,
-					protocol_table->protocol_table[context_id].
+					protocol_table->
+					protocol_table[context_id].
 					protocol_name,
 					NRT_MAX_PROTO_NAME_LEN);
 				tableinfo[table_inx].context_id = context_id;
@@ -1041,11 +1057,7 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 
 			if (!user_space) {
 				nrt_ip_task_info_t *ip_table;
-				if (!tableinfo[table_inx].table) {
-					tableinfo[table_inx].table =
-						xmalloc(sizeof(nrt_ip_task_info_t)*
-						tableinfo[table_inx].table_length);
-				}
+				_table_alloc(tableinfo, table_inx, NRT_IPONLY);
 				ip_table = (nrt_ip_task_info_t *)
 					   tableinfo[table_inx].table;
 				ip_table += task_id;
@@ -1062,11 +1074,8 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 				}
 			} else if (adapter_type == NRT_IB) {
 				nrt_ib_task_info_t *ib_table;
-				if (!tableinfo[table_inx].table) {
-					tableinfo[table_inx].table =
-						xmalloc(sizeof(nrt_ib_task_info_t)*
-						tableinfo[table_inx].table_length);
-				}
+				_table_alloc(tableinfo, table_inx,
+					     adapter_type);
 				ib_table = (nrt_ib_task_info_t *)
 					   tableinfo[table_inx].table;
 				ib_table += task_id;
@@ -1080,11 +1089,8 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 				ib_table->win_id   = window->window_id;
 			} else if (adapter_type == NRT_HFI) {
 				nrt_hfi_task_info_t *hfi_table;
-				if (!tableinfo[table_inx].table) {
-					tableinfo[table_inx].table =
-						xmalloc(sizeof(nrt_hfi_task_info_t)*
-						tableinfo[table_inx].table_length);
-				}
+				_table_alloc(tableinfo, table_inx,
+					     adapter_type);
 				hfi_table = (nrt_hfi_task_info_t *)
 					    tableinfo[table_inx].table;
 				hfi_table += task_id;
@@ -1094,11 +1100,8 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 			} else if ((adapter_type == NRT_HPCE) ||
 				   (adapter_type == NRT_KMUX)) {
 				nrt_hpce_task_info_t *hpce_table;
-				if (!tableinfo[table_inx].table) {
-					tableinfo[table_inx].table =
-						xmalloc(sizeof(nrt_hpce_task_info_t)*
-						tableinfo[table_inx].table_length);
-				}
+				_table_alloc(tableinfo, table_inx,
+					     adapter_type);
 				hpce_table = (nrt_hpce_task_info_t *)
 					     tableinfo[table_inx].table;
 				hpce_table += task_id;
@@ -1107,6 +1110,7 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 			} else {
 				error("Missing support for adapter type %s",
 				      _adapter_type_str(adapter_type));
+				return SLURM_ERROR;
 			}
 
 			strncpy(tableinfo[table_inx].adapter_name, adapter_name,
