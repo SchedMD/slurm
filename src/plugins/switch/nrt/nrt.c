@@ -1712,9 +1712,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				window_ptr->window_id = (*status_array)[k].
 							window_id;
 				window_ptr->state = (*status_array)[k].state;
-/* FIXME: This appears to be bad */
-				window_ptr->job_key = (*status_array)[k].
-						      client_pid;
+				/* window_ptr->job_key = Not_Available */
 			}
 
 			/* Now get adapter info (port_id, network_id, etc.) */
@@ -1804,7 +1802,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 
 /* Assumes a pre-allocated nodeinfo structure and uses _get_adapters
  * to do the dirty work.  We probably collect more information about
- * the adapters on a give node than we need to but it was done
+ * the adapters on a give node than we need to, but it was done
  * in the interest of being prepared for future requirements.
  *
  * Used by: slurmd
@@ -3351,7 +3349,7 @@ _unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
 #if NRT_DEBUG
  	info("_unpack_libstate");
 	_print_libstate(lp);
- #endif
+#endif
 	return SLURM_SUCCESS;
 
 unpack_error:
