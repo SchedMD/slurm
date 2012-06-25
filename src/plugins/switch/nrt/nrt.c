@@ -78,6 +78,9 @@
 #define NRT_MAX_ADAPTERS (NRT_MAX_ADAPTERS_PER_TYPE * NRT_MAX_ADAPTER_TYPES)
 #define NRT_MAX_PROTO_CNT	20
 
+/* Change NRT_STATE_VERSION value when changing the state save format */
+#define NRT_STATE_VERSION      "VER001"
+
 pthread_mutex_t		global_lock = PTHREAD_MUTEX_INITIALIZER;
 extern bool		nrt_need_state_save;
 slurm_nrt_libstate_t *	nrt_state = NULL;
@@ -107,6 +110,7 @@ typedef struct slurm_nrt_window {
 typedef struct slurm_nrt_adapter {
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
 	nrt_adapter_t adapter_type;
+	uint64_t rcontext_block_count;	/* # of RDMA context blocks */
 	in_addr_t ipv4_addr;
 	struct in6_addr ipv6_addr;
 	nrt_logical_id_t lid;
@@ -117,13 +121,14 @@ typedef struct slurm_nrt_adapter {
 	slurm_nrt_window_t *window_list;
 } slurm_nrt_adapter_t;
 
-struct slurm_nrt_nodeinfo {
+typedef struct slurm_nrt_nodeinfo {
 	uint32_t magic;
 	char name[NRT_HOSTLEN];
 	uint32_t adapter_count;
 	struct slurm_nrt_adapter *adapter_list;
 	struct slurm_nrt_nodeinfo *next;
-};
+	nrt_node_number_t node_number;
+} slurm_nrt_nodeinfo_t;
 
 struct slurm_nrt_libstate {
 	uint32_t magic;
@@ -831,15 +836,7 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 	/* From Bill LePera, IBM, 4/18/2012:
 	 * The node_number field is normally set to the 32-bit IPv4 address
 	 * of the local node's host name. */
-	node_number = node_id;	/* Default value is sequence number */
-	for (i = 0; i < node->adapter_count; i++) {
-		adapter = &node->adapter_list[i];
-		if (adapter->adapter_type == NRT_IPONLY) {
-			memcpy(&node_number, &adapter->ipv4_addr,
-			       sizeof(node_number));
-			break;
-		}
-	}
+	node_number = node->node_number;
 
 	/* Reserve a window on each adapter for this task */
 	table_inx = -1;
@@ -998,15 +995,7 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 	/* From Bill LePera, IBM, 4/18/2012:
 	 * The node_number field is normally set to the 32-bit IPv4 address
 	 * of the local node's host name. */
-	node_number = node_id;	/* Default value is sequence number */
-	for (i = 0; i < node->adapter_count; i++) {
-		adapter = &node->adapter_list[i];
-		if (adapter->adapter_type == NRT_IPONLY) {
-			memcpy(&node_number, &adapter->ipv4_addr,
-			       sizeof(node_number));
-			break;
-		}
-	}
+	node_number = node->node_number;
 
 	/* find the adapter */
 	for (i = 0; i < node->adapter_count; i++) {
@@ -1213,7 +1202,6 @@ _print_adapter_info(nrt_adapter_info_t *adapter_info)
 	inet_ntop(AF_INET, &adapter_info->node_number,
 		  addr_v4_str, sizeof(addr_v4_str));
 	info("  node_number: %s", addr_v4_str);
-/* FIXME: Need to forward node_number to slurmctld */
 	info("  num_ports: %hu", adapter_info->num_ports);
 	info("  rcontext_block_count: %"PRIu64"",
 	     adapter_info->rcontext_block_count);
@@ -1240,7 +1228,7 @@ _print_adapter_info(nrt_adapter_info_t *adapter_info)
 #if 0
 	/* This always seems to count up from 0 to window_count-1 */
 	for (i = 0; i < adapter_info->window_count; i++)
-		debug("    window_id: %u", adapter_info->window_list[i]);
+		info("    window_id: %u", adapter_info->window_list[i]);
 #endif
 	info("--End Adapter Info--");
 }
@@ -1310,6 +1298,8 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 
 	info("--Begin Node Info--");
 	info("  node: %s", n->name);
+	inet_ntop(AF_INET, &n->node_number, addr_str,sizeof(addr_str));
+	info("  node_number: %s", addr_str);
 	info("  adapter_count: %u", n->adapter_count);
 	for (i = 0; i < n->adapter_count; i++) {
 		a = n->adapter_list + i;
@@ -1322,6 +1312,7 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 		info("    ipv6_addr: %s", addr_str);
 		info("    lid: %u", a->lid);
 		info("    network_id: %lu", a->network_id);
+
 		info("    port_id: %hu", a->port_id);
 		info("    special: %lu", a->special);
 		info("    window_count: %hu", a->window_count);
@@ -1794,6 +1785,8 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 					       adapter_type));
 			_print_adapter_info(&adapter_info);
 #endif
+			if (adapter_info.node_number != 0)
+				n->node_number = adapter_info.node_number;
 			for (k = 0; k < adapter_info.num_ports; k++) {
 				if (adapter_info.port[k].status != 1)
 					continue;
@@ -1875,6 +1868,7 @@ nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
 	offset = get_buf_offset(buf);
 	pack32(n->magic, buf);
 	packmem(n->name, NRT_HOSTLEN, buf);
+	pack32(n->node_number, buf);
 	pack32(n->adapter_count, buf);
 	for (i = 0; i < n->adapter_count; i++) {
 		a = n->adapter_list + i;
@@ -1917,6 +1911,7 @@ _copy_node(slurm_nrt_nodeinfo_t *dest, slurm_nrt_nodeinfo_t *src)
 	_print_nodeinfo(src);
 #endif
 	strncpy(dest->name, src->name, NRT_HOSTLEN);
+	dest->node_number = src->node_number;
 	dest->adapter_count = src->adapter_count;
 	for (i = 0; i < dest->adapter_count; i++) {
 		sa = src->adapter_list + i;
@@ -2005,6 +2000,7 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	int i, j, rc = SLURM_SUCCESS;
 	struct slurm_nrt_adapter *tmp_a = NULL;
 	slurm_nrt_window_t *tmp_w = NULL;
+	nrt_node_number_t node_number;
 	uint32_t size;
 	slurm_nrt_nodeinfo_t *tmp_n = NULL;
 	char *name_ptr, name[NRT_HOSTLEN];
@@ -2025,6 +2021,7 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	if (size != NRT_HOSTLEN)
 		goto unpack_error;
 	memcpy(name, name_ptr, size);
+	safe_unpack32(&node_number, buf);
 
 	/* When the slurmctld is in normal operating mode (NOT backup mode),
 	 * the global nrt_state structure should NEVER be NULL at the time that
@@ -2052,6 +2049,7 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	if (name != NULL) {
 		tmp_n = _find_node(nrt_state, name);
 		if (tmp_n != NULL) {
+			tmp_n->node_number = node_number;
 			if (_fake_unpack_adapters(buf) != SLURM_SUCCESS) {
 				slurm_seterrno_ret(EUNPACK);
 			} else {
@@ -2067,6 +2065,7 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	if (tmp_n == NULL)
 		return SLURM_ERROR;
 	tmp_n->magic = magic;
+	tmp_n->node_number = node_number;
 	safe_unpack32(&tmp_n->adapter_count, buf);
 	for (i = 0; i < tmp_n->adapter_count; i++) {
 		tmp_a = tmp_n->adapter_list + i;
@@ -3321,6 +3320,7 @@ _pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
 	_print_libstate(lp);
 #endif
 	offset = get_buf_offset(buffer);
+	packstr(NRT_STATE_VERSION, buffer);
 	pack32(lp->magic, buffer);
 	pack32(lp->node_count, buffer);
 	for (i = 0; i < lp->node_count; i++)
@@ -3353,11 +3353,29 @@ nrt_libstate_save(Buf buffer, bool free_flag)
 static int
 _unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
 {
+	char *ver_str = NULL;
+	uint32_t ver_str_len;
+	uint16_t protocol_version = (uint16_t) NO_VAL;
 	uint32_t node_count;
 	int i;
 
-	assert(lp->magic == NRT_LIBSTATE_MAGIC);
+	/* Validate state version */
+	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+	debug3("Version string in job_state header is %s", ver_str);
+	if (ver_str) {
+		if (!strcmp(ver_str, NRT_STATE_VERSION))
+			protocol_version = SLURM_PROTOCOL_VERSION;
+	}
+	if (protocol_version == (uint16_t) NO_VAL) {
+		error("******************************************************");
+		error("Can not recover switch/nrt state, incompatible version");
+		error("******************************************************");
+		xfree(ver_str);
+		return EFAULT;
+	}
+	xfree(ver_str);
 
+	assert(lp->magic == NRT_LIBSTATE_MAGIC);
 	safe_unpack32(&lp->magic, buffer);
 	safe_unpack32(&node_count, buffer);
 	for (i = 0; i < node_count; i++) {
@@ -3386,6 +3404,8 @@ unpack_error:
 extern int
 nrt_libstate_restore(Buf buffer)
 {
+	int rc;
+
 	_lock();
 	assert(!nrt_state);
 
@@ -3395,10 +3415,10 @@ nrt_libstate_restore(Buf buffer)
 		_unlock();
 		return SLURM_FAILURE;
 	}
-	_unpack_libstate(nrt_state, buffer);
+	rc = _unpack_libstate(nrt_state, buffer);
 	_unlock();
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int
@@ -3537,6 +3557,16 @@ nrt_clear_node_state(void)
 				rc = SLURM_ERROR;
 				continue;
 			}
+			if (window_count > max_windows) {
+/* FIXME: Seeing max_windows==0 and window_count>0 for ethernet adapter */
+				error("nrt_command(status_adapter, %s, %s): "
+				      "window_count > max_windows (%u > %hu)",
+				      adapter_status.adapter_name,
+				      _adapter_type_str(adapter_status.
+							adapter_type),
+				      window_count, max_windows);
+				window_count = max_windows;
+			}
 #if NRT_DEBUG
 			info("nrt_command(status_adapter, %s, %s) "
 			     "window_count: %hu",
@@ -3554,18 +3584,7 @@ nrt_clear_node_state(void)
 				     (*status_array)[k].client_pid,
 				     _win_state_str(state));
 			}
-#endif
-			if (window_count > max_windows) {
-/* FIXME: Seeing max_windows==0 and window_count>0 for ethernet adapter */
-				error("nrt_command(status_adapter, %s, %s): "
-				      "window_count > max_windows (%u > %hu)",
-				      adapter_status.adapter_name,
-				      _adapter_type_str(adapter_status.
-							adapter_type),
-				      window_count, max_windows);
-				window_count = max_windows;
-			}
-#if NRT_DEBUG
+
 			hs = hostset_create("");
 			if (hs == NULL)
 				fatal("hostset_create malloc failure");
