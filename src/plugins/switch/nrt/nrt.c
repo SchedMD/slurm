@@ -189,8 +189,6 @@ static int	_allocate_window_single(char *adapter_name,
 			nrt_protocol_table_t *protocol_table, int instances);
 static slurm_nrt_libstate_t *_alloc_libstate(void);
 static slurm_nrt_nodeinfo_t *_alloc_node(slurm_nrt_libstate_t *lp, char *name);
-static int	_check_rdma_job_count(char *adapter_name,
-				      nrt_adapter_t adapter_type);
 static int	_copy_node(slurm_nrt_nodeinfo_t *dest,
 			   slurm_nrt_nodeinfo_t *src);
 static int	_fake_unpack_adapters(Buf buf);
@@ -854,6 +852,18 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 			if (user_space &&
 			    (adapter->adapter_type == NRT_IPONLY))
 				continue;
+			if (jp->bulk_xfer) {
+				if (adapter->rcontext_block_count <
+				    jp->bulk_xfer_resources) {
+					info("Insufficient bulk_xfer resources"
+					    " on adapter %s "
+					     "(%"PRIu64" < %u)",
+					     adapter->adapter_name,
+					     adapter->rcontext_block_count,
+					     jp->bulk_xfer_resources);
+					return SLURM_ERROR;
+				}
+			}
 			for (j = 0; j < instances; j++) {
 				table_id++;
 				table_inx++;
@@ -1018,10 +1028,19 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 		}
 	}
 	if (adapter == NULL) {
-		error("Failed to find adapter %s of type %s on node %s",
-		      adapter_name, _adapter_type_str(adapter_type),
-		      hostname);
+		info("Failed to find adapter %s of type %s on node %s",
+		     adapter_name, _adapter_type_str(adapter_type), hostname);
 		return SLURM_ERROR;
+	}
+	if (jp->bulk_xfer) {
+		if (adapter->rcontext_block_count < jp->bulk_xfer_resources) {
+			info("Insufficient bulk_xfer resources on adapter %s "
+			     "(%"PRIu64" < %u)",
+			     adapter->adapter_name,
+			     adapter->rcontext_block_count,
+			     jp->bulk_xfer_resources);
+			return SLURM_ERROR;
+		}
 	}
 
 	table_inx = -1;
@@ -1041,6 +1060,8 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 				}
 				window->state = NRT_WIN_UNAVAILABLE;
 				window->job_key = job_key;
+/* FIXME: How do these get made available on failure */
+/* FIXME: Track actual use of bulk_xfer resources too */
 			}
 
 			if (!user_space) {
@@ -3006,44 +3027,6 @@ _wait_for_all_windows(nrt_tableinfo_t *tableinfo)
 	return rc;
 }
 
-static int
-_check_rdma_job_count(char *adapter_name, nrt_adapter_t adapter_type)
-{
-	uint16_t job_count = 0;
-	nrt_job_key_t *job_keys = NULL;
-	int err;
-#if NRT_DEBUG
-	int i;
-#endif
-
-#if 1
-	err = NRT_SUCCESS;
-#else
-/* FIXME: Address this later, RDMA jobs are those using bulk transters */
-	err = nrt_rdma_jobs(NRT_VERSION, adapter_name, adapter_type,
-			    &job_count, &job_keys);
-#endif
-	if (err != NRT_SUCCESS) {
-		error("nrt_rdma_jobs(): %s", nrt_err_str(err));
-		return SLURM_ERROR;
-	}
-#if NRT_DEBUG
-	info("_check_rdma_job_count: nrt_rdma_jobs:");
-	info("adapter_name:%s adapter_type:%s", adapter_name,
-	     _adapter_type_str(adapter_type));
-	for (i = 0; i < job_count; i++)
-		info("  job_keys[%d]:%u", i, job_keys[i]);
-#endif
-	if (job_keys)
-		free(job_keys);
-	if (job_count >= 4) {
-		error("RDMA job_count is too high: %hu", job_count);
-		return SLURM_ERROR;
-	}
-
-	return SLURM_SUCCESS;
-}
-
 /* Load a network table on node.  If table contains more than one window
  * for a given adapter, load the table only once for that adapter.
  *
@@ -3110,13 +3093,6 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 
 		if (adapter_name == NULL)
 			continue;
-		if (jp->bulk_xfer && (i == 0)) {
-			rc = _check_rdma_job_count(adapter_name,
-						   jp->tableinfo[i].
-						   adapter_type);
-			if (rc != SLURM_SUCCESS)
-				return rc;
-		}
 
 		bzero(&table_info, sizeof(nrt_table_info_t));
 		table_info.num_tasks = jp->tableinfo[i].table_length;
