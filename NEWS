@@ -49,6 +49,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug when querying accounting looking for a job node size.
  -- BLUEGENE - fix possible race condition if cleaning up a block and the
     removal of the job on the block failed.
+ -- BLUEGENE - fix issue if a cable was in an error state make it so we can
+    check if a block is still makable if the cable wasn't in error.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
