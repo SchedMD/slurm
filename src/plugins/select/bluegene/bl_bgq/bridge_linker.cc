@@ -326,6 +326,7 @@ static int _block_wait_for_jobs(char *bg_block_id, struct job_record *job_ptr)
 static void _remove_jobs_on_block_and_reset(char *block_id,
 					    struct job_record *job_ptr)
 {
+	char *mp_str = NULL;
 	bg_record_t *bg_record = NULL;
 	int job_remove_failed = 0;
 	slurmctld_lock_t job_read_lock =
@@ -352,11 +353,7 @@ static void _remove_jobs_on_block_and_reset(char *block_id,
 	if (bg_record) {
 		if (job_remove_failed) {
 			if (bg_record->mp_str)
-				slurm_drain_nodes(
-					bg_record->mp_str,
-					(char *)
-					"_term_agent: Couldn't remove job",
-					slurm_get_slurm_user_id());
+				mp_str = xstrdup(bg_record->mp_str);
 			else
 				error("Block %s doesn't have a node list.",
 				      block_id);
@@ -372,6 +369,15 @@ static void _remove_jobs_on_block_and_reset(char *block_id,
 	slurm_mutex_unlock(&block_state_mutex);
 	if (job_ptr)
 		unlock_slurmctld(job_read_lock);
+
+	/* avoid locking issues just do this afterwards. */
+	if (mp_str) {
+		slurm_drain_nodes(mp_str,
+				  (char *)"_term_agent: Couldn't remove job",
+				  slurm_get_slurm_user_id());
+		xfree(mp_str);
+	}
+
 }
 
 extern int bridge_init(char *properties_file)
