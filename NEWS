@@ -46,6 +46,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - fix race condition where if a nodeboard/card goes down at the
     same time a block is destroyed and that block just happens to be the
     smallest overlapping block over the bad hardware.
+ -- Fix bug when querying accounting looking for a job node size.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
