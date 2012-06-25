@@ -46,6 +46,8 @@ the <i>slurm-dev</i> mailing list?</a></li>
 running?</a></li>
 <li><a href="#mpi_symbols">Why is my MPIHCH2 or MVAPICH2 job not running with
 SLURM? Why does the DAKOTA program not run with SLURM?</a></li>
+<li><a href="#estimated_start_time">Why does squeue (and "scontrol show
+jobid") sometimes not display a job's estimated start time?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
@@ -816,6 +818,17 @@ rather than the appropriate library, the application will fail. In the case of
 Rename DAKOTA's function and references from regcomp to something else to make
 it work properly.</p>
 
+<p><a name="estimated_start_time"><b>26. Why does squeue (and "scontrol show
+jobid") sometimes not display a job's  estimated start time?</b></a><br>
+When the backfill scheduler is configured, it provides an estimated start time
+for jobs that are candidates for backfill. Pending jobs with dependencies
+will not have an estimate as it is difficult to predict what resources will
+be available when the jobs they are dependent on terminate. Also note that
+the estimate is better for jobs expected to start soon, as most running jobs
+end before their estimated time. There are other restrictions on backfill that
+may apply. See the <a href="#backfill">backfill</a> section for more details.
+</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
 
@@ -1500,6 +1513,6 @@ https://github.com/SchedMD/slurm/commit/91e543d433bed11e0df13ce0499be641774c99a3
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 23 March 2012</p>
+<p style="text-align:center;">Last modified 24 June 2012</p>
 
 <!--#include virtual="footer.txt"-->
