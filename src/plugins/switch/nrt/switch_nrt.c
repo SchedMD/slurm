@@ -510,6 +510,11 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 
 	if (protocol == NULL)
 		xstrcat(protocol, "mpi");
+	if (!user_space) {
+		/* Bulk transfer only supported with user space */
+		bulk_xfer = false;
+		bulk_xfer_resources = 0;
+	}
 
 	if (err == SLURM_SUCCESS) {
 		err = nrt_build_jobinfo((slurm_nrt_jobinfo_t *)switch_job,

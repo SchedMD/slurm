@@ -1744,12 +1744,6 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				rc = SLURM_ERROR;
 				continue;
 			}
-#if NRT_DEBUG
-			info("nrt_command(status_adapter, %s, %s)",
-			     adapter_status.adapter_name,
-			     _adapter_type_str(adapter_status.adapter_type));
-			_print_adapter_status(&adapter_status);
-#endif
 			if (window_count > max_windows) {
 				error("nrt_command(status_adapter, %s, %s): "
 				      "window_count > max_windows (%u > %hu)",
@@ -1757,8 +1751,15 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				      _adapter_type_str(adapter_status.
 							adapter_type),
 				      window_count, max_windows);
+				/* Reset value to avoid logging bad data */
 				window_count = max_windows;
 			}
+#if NRT_DEBUG
+			info("nrt_command(status_adapter, %s, %s)",
+			     adapter_status.adapter_name,
+			     _adapter_type_str(adapter_status.adapter_type));
+			_print_adapter_status(&adapter_status);
+#endif
 			adapter_ptr = &n->adapter_list[n->adapter_count];
 			strncpy(adapter_ptr->adapter_name,
 				adapter_status.adapter_name,
@@ -3543,13 +3544,13 @@ nrt_clear_node_state(void)
 				continue;
 			}
 			if (window_count > max_windows) {
-/* FIXME: Seeing max_windows==0 and window_count>0 for ethernet adapter */
 				error("nrt_command(status_adapter, %s, %s): "
 				      "window_count > max_windows (%u > %hu)",
 				      adapter_status.adapter_name,
 				      _adapter_type_str(adapter_status.
 							adapter_type),
 				      window_count, max_windows);
+				/* Reset value to avoid logging bad data */
 				window_count = max_windows;
 			}
 #if NRT_DEBUG

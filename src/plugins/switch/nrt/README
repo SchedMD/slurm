@@ -18,7 +18,6 @@ Sample tests
 ./srun -N2 --network="sn_all,mpi,lapi" hostname
 ./srun -N2 -n4 --network="sn_all,mpi,lapi,instances=2" hostname
 ./srun -N2 -n4 --network="sn_all,mpi,lapi,instances=3,us" hostname
-
 ./srun -N2 --network="mlx4_0,bulk_xfer=1000,us" hostname
 
 FAILURES
