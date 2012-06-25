@@ -110,12 +110,12 @@ typedef struct slurm_nrt_window {
 typedef struct slurm_nrt_adapter {
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
 	nrt_adapter_t adapter_type;
-	uint64_t rcontext_block_count;	/* # of RDMA context blocks */
 	in_addr_t ipv4_addr;
 	struct in6_addr ipv6_addr;
 	nrt_logical_id_t lid;
 	nrt_network_id_t network_id;
 	nrt_port_id_t port_id;
+	uint64_t rcontext_block_count;	/* # of RDMA context blocks */
 	uint64_t special;
 	nrt_window_id_t window_count;
 	slurm_nrt_window_t *window_list;
@@ -125,7 +125,7 @@ typedef struct slurm_nrt_nodeinfo {
 	uint32_t magic;
 	char name[NRT_HOSTLEN];
 	uint32_t adapter_count;
-	struct slurm_nrt_adapter *adapter_list;
+	slurm_nrt_adapter_t *adapter_list;
 	struct slurm_nrt_nodeinfo *next;
 	nrt_node_number_t node_number;
 } slurm_nrt_nodeinfo_t;
@@ -742,7 +742,7 @@ _alloc_node(slurm_nrt_libstate_t *lp, char *name)
 	n = lp->node_list + (lp->node_count++);
 	n->magic = NRT_NODEINFO_MAGIC;
 	n->name[0] = '\0';
-	n->adapter_list = (struct slurm_nrt_adapter *)
+	n->adapter_list = (slurm_nrt_adapter_t *)
 			  xmalloc(NRT_MAXADAPTERS *
 			  sizeof(struct slurm_nrt_adapter));
 
@@ -1205,7 +1205,6 @@ _print_adapter_info(nrt_adapter_info_t *adapter_info)
 	info("  num_ports: %hu", adapter_info->num_ports);
 	info("  rcontext_block_count: %"PRIu64"",
 	     adapter_info->rcontext_block_count);
-/* FIXME: Need to forward rcontext_block_count to slurmctld */
 	info("  window_count: %hu", adapter_info->window_count);
 	for (i = 0; i < adapter_info->num_ports; i++) {
 		inet_ntop(AF_INET,
@@ -1287,7 +1286,7 @@ static void
 _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 {
 	int i, j;
-	struct slurm_nrt_adapter *a;
+	slurm_nrt_adapter_t *a;
 	slurm_nrt_window_t *w;
 	char addr_str[128];
 	char window_str[128];
@@ -1314,6 +1313,8 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 		info("    network_id: %lu", a->network_id);
 
 		info("    port_id: %hu", a->port_id);
+		info("    rcontext_block_count: %"PRIu64"",
+		     a->rcontext_block_count);
 		info("    special: %lu", a->special);
 		info("    window_count: %hu", a->window_count);
 		hs = hostset_create("");
@@ -1615,8 +1616,8 @@ nrt_alloc_nodeinfo(slurm_nrt_nodeinfo_t **n)
  	assert(n);
 
 	new = (slurm_nrt_nodeinfo_t *) xmalloc(sizeof(slurm_nrt_nodeinfo_t));
-	new->adapter_list = (struct slurm_nrt_adapter *)
-			    xmalloc(sizeof(struct slurm_nrt_adapter) *
+	new->adapter_list = (slurm_nrt_adapter_t *)
+			    xmalloc(sizeof(slurm_nrt_adapter_t) *
 			    NRT_MAX_ADAPTER_TYPES * NRT_MAX_ADAPTERS_PER_TYPE);
 	new->magic = NRT_NODEINFO_MAGIC;
 	new->adapter_count = 0;
@@ -1787,6 +1788,10 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 #endif
 			if (adapter_info.node_number != 0)
 				n->node_number = adapter_info.node_number;
+			adapter_ptr->rcontext_block_count =
+				adapter_info.rcontext_block_count;
+/* FIXME: set rcontext_block_count here for test purposes, value is 0 on SMD cluster */
+adapter_ptr->rcontext_block_count = 10000;
 			for (k = 0; k < adapter_info.num_ports; k++) {
 				if (adapter_info.port[k].status != 1)
 					continue;
@@ -1854,7 +1859,7 @@ nrt_build_nodeinfo(slurm_nrt_nodeinfo_t *n, char *name)
 extern int
 nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
 {
-	struct slurm_nrt_adapter *a;
+	slurm_nrt_adapter_t *a;
 	uint16_t dummy16;
 	int i, j, offset;
 
@@ -1881,6 +1886,7 @@ nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
 		pack32(a->lid, buf);
 		pack64(a->network_id, buf);
 		pack8(a->port_id, buf);
+		pack64(a->rcontext_block_count, buf);
 		pack64(a->special, buf);
 		pack16(a->window_count, buf);
 		for (j = 0; j < a->window_count; j++) {
@@ -1899,8 +1905,8 @@ static int
 _copy_node(slurm_nrt_nodeinfo_t *dest, slurm_nrt_nodeinfo_t *src)
 {
 	int i, j;
-	struct slurm_nrt_adapter *sa = NULL;
-	struct slurm_nrt_adapter *da = NULL;
+	slurm_nrt_adapter_t *sa = NULL;
+	slurm_nrt_adapter_t *da = NULL;
 
 	assert(dest);
 	assert(src);
@@ -1924,6 +1930,7 @@ _copy_node(slurm_nrt_nodeinfo_t *dest, slurm_nrt_nodeinfo_t *src)
 		da->lid          = sa->lid;
 		da->network_id   = sa->network_id;
 		da->port_id      = sa->port_id;
+		da->rcontext_block_count = sa->rcontext_block_count;
 		da->special      = sa->special;
 		da->window_count = sa->window_count;
 		da->window_list = (slurm_nrt_window_t *)
@@ -1964,13 +1971,14 @@ _fake_unpack_adapters(Buf buf)
 		if (dummy32 != NRT_MAX_ADAPTER_NAME_LEN)
 			goto unpack_error;
 		safe_unpack16(&dummy16, buf);
-		safe_unpack32(&dummy32, buf);
+		safe_unpack32(&dummy32, buf);	/* ipv4_addr */
 		for (j = 0; j < 4; j++)
-			safe_unpack32(&dummy32, buf);
-		safe_unpack32(&dummy32, buf);
-		safe_unpack64(&dummy64, buf);
-		safe_unpack8 (&dummy8, buf);
-		safe_unpack64(&dummy64, buf);
+			safe_unpack32(&dummy32, buf); 	/* ipv6_addr */
+		safe_unpack32(&dummy32, buf);	/* lid */
+		safe_unpack64(&dummy64, buf);	/* network_id */
+		safe_unpack8 (&dummy8, buf);	/* port_id */
+		safe_unpack64(&dummy64, buf);	/* rcontext_block_count */
+		safe_unpack64(&dummy64, buf);	/* special */
 		safe_unpack16(&window_count, buf);
 		for (j = 0; j < window_count; j++) {
 			safe_unpack16(&dummy16, buf);
@@ -1998,7 +2006,7 @@ static int
 _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 {
 	int i, j, rc = SLURM_SUCCESS;
-	struct slurm_nrt_adapter *tmp_a = NULL;
+	slurm_nrt_adapter_t *tmp_a = NULL;
 	slurm_nrt_window_t *tmp_w = NULL;
 	nrt_node_number_t node_number;
 	uint32_t size;
@@ -2083,6 +2091,7 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 		safe_unpack32(&tmp_a->lid, buf);
 		safe_unpack64(&tmp_a->network_id, buf);
 		safe_unpack8(&tmp_a->port_id, buf);
+		safe_unpack64(&tmp_a->rcontext_block_count, buf);
 		safe_unpack64(&tmp_a->special, buf);
 		safe_unpack16(&tmp_a->window_count, buf);
 		tmp_w = (slurm_nrt_window_t *)
@@ -2135,7 +2144,7 @@ nrt_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
 extern void
 nrt_free_nodeinfo(slurm_nrt_nodeinfo_t *n, bool ptr_into_array)
 {
-	struct slurm_nrt_adapter *adapter;
+	slurm_nrt_adapter_t *adapter;
 	int i;
 
 	if (!n)
