@@ -1194,6 +1194,59 @@ _port_status_str(nrt_port_status_t status)
 
 /* Used by: slurmd */
 static void
+_print_adapter_info(nrt_adapter_info_t *adapter_info)
+{
+	char addr_v4_str[128], addr_v6_str[128];
+	int i;
+
+	if (!adapter_info) {
+		error("_print_adapter_info with NULL adapter_info");
+		return;
+	}
+
+	info("--Begin Adapter Info--");
+	info("  adapter_name: %s", adapter_info->adapter_name);
+	info("  adapter_type: %s",
+	     _adapter_type_str(adapter_info->adapter_type));
+	info("  cau_indexes_avail: %hu", adapter_info->cau_indexes_avail);
+	info("  immed_slots_avail: %hu", adapter_info->immed_slots_avail);
+	inet_ntop(AF_INET, &adapter_info->node_number,
+		  addr_v4_str, sizeof(addr_v4_str));
+	info("  node_number: %s", addr_v4_str);
+/* FIXME: Need to forward node_number to slurmctld */
+	info("  num_ports: %hu", adapter_info->num_ports);
+	info("  rcontext_block_count: %"PRIu64"",
+	     adapter_info->rcontext_block_count);
+/* FIXME: Need to forward rcontext_block_count to slurmctld */
+	info("  window_count: %hu", adapter_info->window_count);
+	for (i = 0; i < adapter_info->num_ports; i++) {
+		inet_ntop(AF_INET,
+			  &adapter_info->port[i].ipv4_addr,
+			  addr_v4_str, sizeof(addr_v4_str));
+		inet_ntop(AF_INET6,
+			  &adapter_info->port[i].ipv6_addr,
+			  addr_v6_str, sizeof(addr_v6_str));
+		info("    port_id:%hu status:%s lid:%u "
+		     "network_id:%lu special:%lu "
+		     "ipv4_addr:%s ipv6_addr:%s/%hu",
+		     adapter_info->port[i].port_id,
+		     _port_status_str(adapter_info->port[i].status),
+		     adapter_info->port[i].lid,
+		     adapter_info->port[i].network_id,
+		     adapter_info->port[i].special,
+		     addr_v4_str, addr_v6_str,
+		     adapter_info->port[i].ipv6_prefix_len);
+	}
+#if 0
+	/* This always seems to count up from 0 to window_count-1 */
+	for (i = 0; i < adapter_info->window_count; i++)
+		debug("    window_id: %u", adapter_info->window_list[i]);
+#endif
+	info("--End Adapter Info--");
+}
+
+/* Used by: slurmd */
+static void
 _print_adapter_status(nrt_cmd_status_adapter_t *status_adapter)
 {
 	int i;
@@ -1735,30 +1788,11 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				continue;
 			}
 #if NRT_DEBUG
-			info("nrt_command(adapter_info, %s, %s), ports:%hu",
+			info("nrt_command(adapter_info, %s, %s)",
 			     query_adapter_info.adapter_name,
-			     _adapter_type_str(query_adapter_info.adapter_type),
-			     adapter_info.num_ports);
-			for (k = 0; k < adapter_info.num_ports; k++) {
-				char addr_v4_str[128], addr_v6_str[128];
-				inet_ntop(AF_INET,
-					  &adapter_info.port[k].ipv4_addr,
-					  addr_v4_str, sizeof(addr_v4_str));
-				inet_ntop(AF_INET6,
-					  &adapter_info.port[k].ipv6_addr,
-					  addr_v6_str, sizeof(addr_v6_str));
-				info("port_id:%hu status:%s lid:%u "
-				     "network_id:%lu special:%lu "
-				     "ipv4_addr:%s ipv6_addr:%s/%hu",
-				     adapter_info.port[k].port_id,
-				     _port_status_str(adapter_info.port[k].
-						      status),
-				     adapter_info.port[k].lid,
-				     adapter_info.port[k].network_id,
-				     adapter_info.port[k].special,
-				     addr_v4_str, addr_v6_str,
-				     adapter_info.port[k].ipv6_prefix_len);
-			}
+			     _adapter_type_str(query_adapter_info.
+					       adapter_type));
+			_print_adapter_info(&adapter_info);
 #endif
 			for (k = 0; k < adapter_info.num_ports; k++) {
 				if (adapter_info.port[k].status != 1)
@@ -2065,7 +2099,7 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 			}
 		}
 		tmp_a->window_list = tmp_w;
-		tmp_w = NULL;	/* don't free if unpack error on next adapter */
+		tmp_w = NULL;  /* don't free if unpack error on next adapter */
 	}
 #if NRT_DEBUG
 	info("_unpack_nodeinfo");
