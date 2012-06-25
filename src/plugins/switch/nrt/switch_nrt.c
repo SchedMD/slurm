@@ -525,6 +525,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 					instances);
 	}
 
+	nrt_need_state_save = true;
 	xfree(adapter_name);
 	xfree(protocol);
 	hostlist_destroy(list);
@@ -596,19 +597,25 @@ static inline int _make_step_comp(switch_jobinfo_t *jobinfo, char *nodelist)
 extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 				      char *nodelist)
 {
+	int rc;
 #if NRT_DEBUG
 	info("switch_p_job_step_complete()");
 #endif
-	return _make_step_comp(jobinfo, nodelist);
+	rc = _make_step_comp(jobinfo, nodelist);
+	nrt_need_state_save = true;
+	return rc;
 }
 
 extern int switch_p_job_step_part_comp(switch_jobinfo_t *jobinfo,
 				       char *nodelist)
 {
+	int rc;
 #if NRT_DEBUG
 	info("switch_p_job_step_part_comp()");
 #endif
-	return _make_step_comp(jobinfo, nodelist);
+	rc = _make_step_comp(jobinfo, nodelist);
+	nrt_need_state_save = true;
+	return rc;
 }
 
 extern bool switch_p_part_comp(void)
@@ -778,7 +785,7 @@ static void *_state_save_thread(void *arg)
 	char *dir_name = (char *)arg;
 
 	while (1) {
-		sleep(2);
+		sleep(10);
 		if (nrt_need_state_save) {
 			nrt_need_state_save = false;
 			_switch_p_libstate_save(dir_name, false);

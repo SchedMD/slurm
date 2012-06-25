@@ -500,7 +500,7 @@ _free_resources_by_job(slurm_nrt_jobinfo_t *jp, char *node_name)
 			if (window->job_key == jp->job_key) {
 				/* debug3("Freeing adapter %s window %d",
 				   adapter->name, window->id); */
-				window->state = NRT_WIN_UNAVAILABLE;
+				window->state = NRT_WIN_AVAILABLE;
 				window->job_key = 0;
 			}
 		}
@@ -710,6 +710,7 @@ _window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 
 	return rc;
 }
+
 /* If the node is already in the node list then simply return
  * a pointer to it, otherwise dynamically allocate memory to the
  * node list if necessary.
@@ -1879,8 +1880,6 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				n->node_number = adapter_info.node_number;
 			adapter_ptr->rcontext_block_count =
 				adapter_info.rcontext_block_count;
-/* FIXME: set rcontext_block_count here for test purposes, value is 0 on SMD cluster */
-adapter_ptr->rcontext_block_count = 10000;
 			for (k = 0; k < adapter_info.num_ports; k++) {
 				if (adapter_info.port[k].status != 1)
 					continue;
@@ -2854,10 +2853,6 @@ nrt_copy_jobinfo(slurm_nrt_jobinfo_t *job)
 	}
 	memcpy(new, job, sizeof(slurm_nrt_jobinfo_t));
 
-/* FIXME: table will be empty (and table_size == 0) when the network string
-	 * from poe does not contain "us".
-	 * (See man poe: -euilib or MP_EUILIB)
-	 */
 	new->tableinfo = (nrt_tableinfo_t *) xmalloc(job->tables_per_task *
 						     sizeof(nrt_table_info_t));
 	for (i = 0; i < job->tables_per_task; i++) {
