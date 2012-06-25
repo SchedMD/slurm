@@ -99,13 +99,18 @@ mode_t			nrt_umask;
  * - It must be unique for every job step.
  * - It is a 32-bit quantity.
  * - We might use the bottom 16-bits of job ID an step ID, but that could
- *   result in conflicts for long-lived job steps.
+ *   result in conflicts for long-lived jobs or job steps.
  */
 typedef struct slurm_nrt_window {
 	nrt_window_id_t window_id;
 	win_state_t state;
 	nrt_job_key_t job_key;
 } slurm_nrt_window_t;
+
+typedef struct slurm_nrt_block {
+	uint32_t rcontext_block_use;	/* RDMA context blocks used */
+	nrt_job_key_t job_key;
+} slurm_nrt_block_t;
 
 typedef struct slurm_nrt_adapter {
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
@@ -116,6 +121,9 @@ typedef struct slurm_nrt_adapter {
 	nrt_network_id_t network_id;
 	nrt_port_id_t port_id;
 	uint64_t rcontext_block_count;	/* # of RDMA context blocks */
+	uint64_t rcontext_block_used;	/* # of RDMA context blocks used */
+	uint16_t block_count;
+	slurm_nrt_block_t *block_list;
 	uint64_t special;
 	nrt_window_id_t window_count;
 	slurm_nrt_window_t *window_list;
@@ -178,6 +186,8 @@ static nrt_cache_entry_t lid_cache[NRT_MAX_ADAPTERS];
 
 /* Local functions */
 static char *	_adapter_type_str(nrt_adapter_t type);
+static int	_add_block_use(slurm_nrt_jobinfo_t *jp,
+			       slurm_nrt_adapter_t *adapter);
 static int	_allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 			uint32_t node_id, nrt_task_id_t task_id,
 			nrt_adapter_t adapter_type, int network_id,
@@ -199,6 +209,8 @@ static slurm_nrt_window_t *
 		_find_window(slurm_nrt_adapter_t *adapter, uint16_t window_id);
 static slurm_nrt_window_t *_find_free_window(slurm_nrt_adapter_t *adapter);
 static slurm_nrt_nodeinfo_t *_find_node(slurm_nrt_libstate_t *lp, char *name);
+static void	_free_block_use(slurm_nrt_jobinfo_t *jp,
+				slurm_nrt_adapter_t *adapter);
 static void	_free_libstate(slurm_nrt_libstate_t *lp);
 static int	_get_adapters(slurm_nrt_nodeinfo_t *n);
 static void	_hash_add_nodeinfo(slurm_nrt_libstate_t *state,
@@ -446,34 +458,35 @@ _find_window(slurm_nrt_adapter_t *adapter, uint16_t window_id)
 }
 
 /*
- * For one node, free all of the windows belonging to a particular
- * job step (as identified by the job_key).
+ * For one node, free all of the RDMA blocks and windows belonging to a
+ * particular job step (as identified by the job_key).
  */
 static void
-_free_windows_by_job_key(uint16_t job_key, char *node_name)
+_free_resources_by_job(slurm_nrt_jobinfo_t *jp, char *node_name)
 {
 	slurm_nrt_nodeinfo_t *node;
 	slurm_nrt_adapter_t *adapter;
 	slurm_nrt_window_t *window;
 	int i, j;
 
-	/* debug3("_free_windows_by_job_key(%u, %s)", job_key, node_name); */
+	/* debug3("_free_resources_by_job_key(%u, %s)", jp->job_key, node_name); */
 	if ((node = _find_node(nrt_state, node_name)) == NULL)
 		return;
 
 	if (node->adapter_list == NULL) {
-		error("_free_windows_by_job_key, "
+		error("_free_resources_by_job, "
 		      "adapter_list NULL for node %s", node_name);
 		return;
 	}
 	for (i = 0; i < node->adapter_count; i++) {
 		adapter = &node->adapter_list[i];
 		if (adapter->window_list == NULL) {
-			error("_free_windows_by_job_key, "
+			error("_free_resources_by_job, "
 			      "window_list NULL for node %s adapter %s",
 			      node->name, adapter->adapter_name);
 			continue;
 		}
+		_free_block_use(jp, adapter);
 		/* We could check here to see if this adapter's name
 		 * is in the nrt_jobinfo tablinfo list to avoid the next
 		 * loop if the adapter isn't in use by the job step.
@@ -484,7 +497,7 @@ _free_windows_by_job_key(uint16_t job_key, char *node_name)
 		for (j = 0; j < adapter->window_count; j++) {
 			window = &adapter->window_list[j];
 
-			if (window->job_key == job_key) {
+			if (window->job_key == jp->job_key) {
 				/* debug3("Freeing adapter %s window %d",
 				   adapter->name, window->id); */
 				window->state = NRT_WIN_UNAVAILABLE;
@@ -796,6 +809,80 @@ static void _table_alloc(nrt_tableinfo_t *tableinfo, int table_inx,
 	return;
 }
 
+/* Track RDMA blocks allocated to a job on each adapter */
+static int
+_add_block_use(slurm_nrt_jobinfo_t *jp, slurm_nrt_adapter_t *adapter)
+{
+	int i;
+	uint64_t blocks_free;
+	slurm_nrt_block_t *block_ptr, *free_block;
+
+	if (jp->bulk_xfer && jp->bulk_xfer_resources) {
+		blocks_free = adapter->rcontext_block_count -
+			      adapter->rcontext_block_used;
+		if (blocks_free < jp->bulk_xfer_resources) {
+			info("Insufficient bulk_xfer resources on adapter %s "
+			     "(%"PRIu64" < %u)",
+			     adapter->adapter_name, blocks_free,
+			     jp->bulk_xfer_resources);
+			return SLURM_ERROR;
+		}
+
+		free_block = NULL;
+		block_ptr = adapter->block_list;
+		for (i = 0; i < adapter->block_count; i++, block_ptr++) {
+			if (block_ptr->job_key == jp->job_key) {
+				free_block = block_ptr;
+				break;
+			} else if ((block_ptr->job_key == 0) &&
+				   (free_block == 0)) {
+				free_block = block_ptr;
+			}
+		}
+		if (free_block == NULL) {
+			xrealloc(adapter->block_list,
+				 sizeof(slurm_nrt_block_t) * 
+				 (adapter->block_count + 8));
+			free_block = adapter->block_list + adapter->block_count;
+			adapter->block_count += 8;
+		}
+		free_block->job_key = jp->job_key;
+		free_block->rcontext_block_use = jp->bulk_xfer_resources;
+		adapter->rcontext_block_used  += jp->bulk_xfer_resources;
+#if 0
+		block_ptr = adapter->block_list;
+		for (i = 0; i < adapter->block_count; i++, block_ptr++) {
+			if (block_ptr->job_key) {
+				info("adapter:%s block:%d job_key:%u blocks:%u",
+				     adapter->adapter_name, i,
+				     block_ptr->job_key,
+				     free_block->rcontext_block_use);
+			}
+		}
+#endif
+	}
+	return SLURM_SUCCESS;
+}
+static void
+_free_block_use(slurm_nrt_jobinfo_t *jp, slurm_nrt_adapter_t *adapter)
+{
+	int i;
+	slurm_nrt_block_t *block_ptr;
+
+	if ((jp->bulk_xfer == 0) || (jp->bulk_xfer_resources == 0))
+		return;
+
+	block_ptr = adapter->block_list;
+	for (i = 0; i < adapter->block_count; i++, block_ptr++) {
+		if (block_ptr->job_key != jp->job_key)
+			continue;
+		adapter->rcontext_block_used -= block_ptr->rcontext_block_use;
+		block_ptr->job_key = 0;
+		block_ptr->rcontext_block_use = 0;
+		break;
+	}
+}
+
 /* For a given process, fill out an nrt_creator_per_task_input_t
  * struct (an array of these makes up the network table loaded
  * for each job).  Assign adapters, lids and switch windows to
@@ -852,18 +939,8 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 			if (user_space &&
 			    (adapter->adapter_type == NRT_IPONLY))
 				continue;
-			if (jp->bulk_xfer) {
-				if (adapter->rcontext_block_count <
-				    jp->bulk_xfer_resources) {
-					info("Insufficient bulk_xfer resources"
-					    " on adapter %s "
-					     "(%"PRIu64" < %u)",
-					     adapter->adapter_name,
-					     adapter->rcontext_block_count,
-					     jp->bulk_xfer_resources);
-					return SLURM_ERROR;
-				}
-			}
+			if (_add_block_use(jp, adapter))
+				return SLURM_ERROR;
 			for (j = 0; j < instances; j++) {
 				table_id++;
 				table_inx++;
@@ -1032,16 +1109,8 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 		     adapter_name, _adapter_type_str(adapter_type), hostname);
 		return SLURM_ERROR;
 	}
-	if (jp->bulk_xfer) {
-		if (adapter->rcontext_block_count < jp->bulk_xfer_resources) {
-			info("Insufficient bulk_xfer resources on adapter %s "
-			     "(%"PRIu64" < %u)",
-			     adapter->adapter_name,
-			     adapter->rcontext_block_count,
-			     jp->bulk_xfer_resources);
-			return SLURM_ERROR;
-		}
-	}
+	if (_add_block_use(jp, adapter))
+		return SLURM_ERROR;
 
 	table_inx = -1;
 	for (context_id = 0; context_id < protocol_table->protocol_table_cnt;
@@ -1060,8 +1129,6 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 				}
 				window->state = NRT_WIN_UNAVAILABLE;
 				window->job_key = job_key;
-/* FIXME: How do these get made available on failure */
-/* FIXME: Track actual use of bulk_xfer resources too */
 			}
 
 			if (!user_space) {
@@ -2213,7 +2280,7 @@ nrt_job_step_complete(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
 
 	/* The hl hostlist may contain duplicate node_names (poe -hostfile
 	 * triggers duplicates in the hostlist).  Since there
-	 * is no reason to call _free_windows_by_job_key more than once
+	 * is no reason to call _free_resources_by_job more than once
 	 * per node_name, we create a new unique hostlist.
 	 */
 	uniq_hl = hostlist_copy(hl);
@@ -2223,7 +2290,7 @@ nrt_job_step_complete(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
 	_lock();
 	if (nrt_state != NULL) {
 		while ((node_name = hostlist_next(hi)) != NULL) {
-			_free_windows_by_job_key(jp->job_key, node_name);
+			_free_resources_by_job(jp, node_name);
 			free(node_name);
 		}
 	} else { /* nrt_state == NULL */
