@@ -3606,6 +3606,12 @@ nrt_clear_node_state(void)
 				continue;
 			}
 			if (window_count > max_windows) {
+/* FIXME: Investigate this error on eth0? */
+/* FIXME: Check for memory leaks */
+/* FIXME: Investigate slow throughput reported by test9.9 */
+/* FIXME: Replace NRT_DEBUG with DebugFlag */
+/* FIXME: Add tests for new network options */
+/* FIXME: Review and test Torrent logic */
 				error("nrt_command(status_adapter, %s, %s): "
 				      "window_count > max_windows (%u > %hu)",
 				      adapter_status.adapter_name,
