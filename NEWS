@@ -57,6 +57,7 @@ documents those changes that are of interest to users and admins.
     it now receives the grace time.
  -- BGQ - Modified documents to explain new plugin_flags needed in bg.properties
     in order for the runjob_mux to run correctly.
+ -- BGQ - change linking from libslurm.o to libslurmhelper.la to avoid warning.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
