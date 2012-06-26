@@ -71,6 +71,7 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
+#include "src/common/strnatcmp.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/front_end.h"
@@ -132,8 +133,8 @@ static void _reorder_nodes_by_name(void)
 	for (i = 0; i < node_record_count; i++) {
 		min_inx = i;
 		for (j = i + 1; j < node_record_count; j++) {
-			if (strcmp(node_record_table_ptr[j].name,
-				   node_record_table_ptr[min_inx].name) < 0)
+			if (strnatcmp(node_record_table_ptr[j].name,
+				      node_record_table_ptr[min_inx].name) < 0)
 				min_inx = j;
 		}
 

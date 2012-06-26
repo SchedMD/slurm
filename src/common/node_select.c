@@ -390,7 +390,7 @@ extern int slurm_select_fini(void)
 	slurm_mutex_lock(&select_context_lock);
 	if (!select_context)
 		goto fini;
-	
+
 	init_run = false;
 	for (i=0; i<select_context_cnt; i++) {
 		j = plugin_context_destroy(select_context[i]);

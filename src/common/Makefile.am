@@ -40,6 +40,7 @@ libcommon_la_SOURCES = 			\
 	xassert.c xassert.h		\
 	xstring.c xstring.h		\
 	xsignal.c xsignal.h		\
+	strnatcmp.c strnatcmp.h		\
 	forward.c forward.h     	\
 	strlcpy.c strlcpy.h		\
 	list.c list.h 			\
