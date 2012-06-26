@@ -88,6 +88,7 @@ static slurmd_task_ops_t *ops = NULL;
 static plugin_context_t	**g_task_context = NULL;
 static int			g_task_context_num = -1;
 static pthread_mutex_t		g_task_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 /*
  * Initialize the task plugin.
@@ -101,7 +102,7 @@ extern int slurmd_task_init(void)
 	char *task_plugin_type = NULL;
 	char *last = NULL, *task_plugin_list, *type = NULL;
 
-	if ( g_task_context_num >= 0 )
+	if ( init_run && (g_task_context_num >= 0) )
 		return retval;
 
 	slurm_mutex_lock( &g_task_context_lock );
@@ -138,6 +139,7 @@ extern int slurmd_task_init(void)
 		g_task_context_num++;
 		task_plugin_list = NULL; /* for next iteration */
 	}
+	init_run = true;
 
  done:
 	slurm_mutex_unlock( &g_task_context_lock );
@@ -162,6 +164,7 @@ extern int slurmd_task_fini(void)
 	if (!g_task_context)
 		goto done;
 
+	init_run = false;
 	for (i = 0; i < g_task_context_num; i++) {
 		if (g_task_context[i]) {
 			if (plugin_context_destroy(g_task_context[i]) !=

@@ -72,6 +72,7 @@ static const char *syms[] = {
 static slurm_preempt_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t	    g_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 /* *********************************************************************** */
 /*  TAG(                    _preempt_signal                             )  */
@@ -142,7 +143,7 @@ extern int slurm_preempt_init(void)
 	/* This function is called frequently, so it should be as fast as
 	 * possible. The test below will be TRUE almost all of the time and
 	 * is as fast as possible. */
-	if (g_context)
+	if (init_run && g_context)
 		return retval;
 
 	slurm_mutex_lock(&g_context_lock);
@@ -159,6 +160,7 @@ extern int slurm_preempt_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
+	init_run = true;
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
@@ -176,6 +178,7 @@ extern int slurm_preempt_fini(void)
 	if (!g_context)
 		return SLURM_SUCCESS;
 
+	init_run = false;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 	return rc;

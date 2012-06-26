@@ -102,6 +102,7 @@ static const char *syms[] = {
 static slurm_checkpoint_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 /* initialize checkpoint plugin */
 extern int
@@ -110,7 +111,7 @@ checkpoint_init(char *type)
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "checkpoint";
 
-	if (g_context)
+	if (init_run && g_context)
 		return retval;
 
 	slurm_mutex_lock(&context_lock);
@@ -126,6 +127,7 @@ checkpoint_init(char *type)
 		retval = SLURM_ERROR;
 		goto done;
 	}
+	init_run = true;
 
 	verbose("Checkpoint plugin loaded: %s", type);
 done:
@@ -143,6 +145,7 @@ checkpoint_fini(void)
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&context_lock);
+	init_run = false;
 	rc = plugin_context_destroy(g_context);
 	slurm_mutex_unlock(&context_lock);
 	return rc;

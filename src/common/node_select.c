@@ -123,7 +123,7 @@ static int select_context_default = -1;
 static slurm_select_ops_t *ops = NULL;
 static plugin_context_t **select_context = NULL;
 static pthread_mutex_t select_context_lock = PTHREAD_MUTEX_INITIALIZER;
-
+static bool init_run = false;
 /**
  * delete a block request
  */
@@ -196,7 +196,7 @@ extern int slurm_select_init(bool only_default)
 	char *dir_array = NULL, *head = NULL;
 	char *plugin_type = "select";
 
-	if ( select_context )
+	if ( init_run && select_context )
 		return retval;
 
 	slurm_mutex_lock( &select_context_lock );
@@ -352,7 +352,7 @@ extern int slurm_select_init(bool only_default)
 	}
 
 skip_load_all:
-	if(select_context_default == -1)
+	if (select_context_default == -1)
 		fatal("Can't find plugin for %s", type);
 
 	/* Insure that plugin_id is valid and unique */
@@ -374,6 +374,7 @@ skip_load_all:
 		}
 
 	}
+	init_run = true;
 
 done:
 	slurm_mutex_unlock( &select_context_lock );
@@ -389,7 +390,8 @@ extern int slurm_select_fini(void)
 	slurm_mutex_lock(&select_context_lock);
 	if (!select_context)
 		goto fini;
-
+	
+	init_run = false;
 	for (i=0; i<select_context_cnt; i++) {
 		j = plugin_context_destroy(select_context[i]);
 		if (j != SLURM_SUCCESS)

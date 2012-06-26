@@ -53,6 +53,7 @@
 #include "src/common/arg_desc.h"
 
 static bool auth_dummy = false;	/* for security testing */
+static bool init_run = false;
 
 /*
  * WARNING:  Do not change the order of these fields or add additional
@@ -175,7 +176,7 @@ extern int slurm_auth_init( char *auth_type )
 	char *type = NULL;
 	char *plugin_type = "auth";
 
-	if (g_context)
+	if (init_run && g_context)
                 return retval;
 
 	slurm_mutex_lock(&context_lock);
@@ -202,6 +203,7 @@ extern int slurm_auth_init( char *auth_type )
 		retval = SLURM_ERROR;
 		goto done;
 	}
+	init_run = true;
 
 done:
 	xfree(type);
@@ -218,6 +220,7 @@ slurm_auth_fini( void )
 	if (!g_context)
 		return SLURM_SUCCESS;
 
+	init_run = false;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 	return rc;

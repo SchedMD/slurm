@@ -84,7 +84,7 @@ static const char *syms[] = {
 static slurm_mpi_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
-
+static bool init_run = false;
 
 int _mpi_init (char *mpi_type)
 {
@@ -93,7 +93,7 @@ int _mpi_init (char *mpi_type)
 	char *type = NULL;
 	int got_default = 0;
 
-	if ( g_context )
+	if (init_run && g_context)
 		return retval;
 
 	slurm_mutex_lock( &context_lock );
@@ -122,10 +122,11 @@ int _mpi_init (char *mpi_type)
 		retval = SLURM_ERROR;
 		goto done;
 	}
+	init_run = true;
 
 done:
 	xfree(type);
-	if(got_default)
+	if (got_default)
 		xfree(mpi_type);
 	slurm_mutex_unlock( &context_lock );
 	return retval;
@@ -137,7 +138,7 @@ int mpi_hook_slurmstepd_init (char ***env)
 
 	debug("mpi type = %s", mpi_type);
 
-	if(_mpi_init(mpi_type) == SLURM_ERROR)
+	if (_mpi_init(mpi_type) == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	unsetenvp (*env, "SLURM_MPI_TYPE");
@@ -165,7 +166,7 @@ int mpi_hook_client_init (char *mpi_type)
 {
 	debug("mpi type = %s", mpi_type);
 
-	if(_mpi_init(mpi_type) == SLURM_ERROR)
+	if (_mpi_init(mpi_type) == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -210,6 +211,7 @@ int mpi_fini (void)
 	if (!g_context)
 		return SLURM_SUCCESS;
 
+	init_run = false;
 	rc = plugin_context_destroy(g_context);
 	return rc;
 }

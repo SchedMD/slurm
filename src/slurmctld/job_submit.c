@@ -95,6 +95,7 @@ static slurm_submit_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static char *submit_plugin_list = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 /*
  * Initialize the job submit plugin.
@@ -108,7 +109,7 @@ extern int job_submit_plugin_init(void)
 	char *plugin_type = "job_submit";
 	char *type;
 
-	if (g_context_cnt >= 0)
+	if (init_run && (g_context_cnt >= 0))
 		return rc;
 
 	slurm_mutex_lock(&g_context_lock);
@@ -144,6 +145,7 @@ extern int job_submit_plugin_init(void)
 		g_context_cnt++;
 		names = NULL; /* for next iteration */
 	}
+	init_run = true;
 
 fini:
 	slurm_mutex_unlock(&g_context_lock);
@@ -167,6 +169,7 @@ extern int job_submit_plugin_fini(void)
 	if (g_context_cnt < 0)
 		goto fini;
 
+	init_run = false;
 	for (i=0; i<g_context_cnt; i++) {
 		if (g_context[i]) {
 			j = plugin_context_destroy(g_context[i]);

@@ -95,6 +95,7 @@ static const char *syms[] = {
 static slurm_jobacct_gather_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 static int freq = 0;
 static bool pgid_plugin = false;
@@ -206,7 +207,7 @@ extern int jobacct_gather_init(void)
 	char	*type = NULL;
 	int	retval=SLURM_SUCCESS;
 
-	if (g_context)
+	if (init_run && g_context)
 		return retval;
 
 	slurm_mutex_lock(&g_context_lock);
@@ -229,7 +230,7 @@ extern int jobacct_gather_init(void)
 
 	plugin_type = type;
 	type = slurm_get_proctrack_type();
-	if(!strcasecmp(type, "proctrack/pgid")) {
+	if (!strcasecmp(type, "proctrack/pgid")) {
 		info("WARNING: We will use a much slower algorithm with "
 		     "proctrack/pgid, use Proctracktype=proctrack/linuxproc "
 		     "or some other proctrack when using %s",
@@ -240,12 +241,13 @@ extern int jobacct_gather_init(void)
 	xfree(plugin_type);
 
 	type = slurm_get_accounting_storage_type();
-	if(!strcasecmp(type, ACCOUNTING_STORAGE_TYPE_NONE)) {
+	if (!strcasecmp(type, ACCOUNTING_STORAGE_TYPE_NONE)) {
 		error("WARNING: Even though we are collecting accounting "
 		      "information you have asked for it not to be stored "
 		      "(%s) if this is not what you have in mind you will "
 		      "need to change it.", ACCOUNTING_STORAGE_TYPE_NONE);
 	}
+	init_run = true;
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
@@ -260,6 +262,7 @@ extern int jobacct_gather_fini(void)
 
 	slurm_mutex_lock(&g_context_lock);
 	if (g_context) {
+		init_run = false;
 		rc = plugin_context_destroy(g_context);
 		g_context = NULL;
 	}

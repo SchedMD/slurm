@@ -1,3 +1,4 @@
+
 /*****************************************************************************\
  *  slurm_jobcomp.c - implementation-independent job completion logging
  *  functions
@@ -86,6 +87,7 @@ static const char *syms[] = {
 static slurm_jobcomp_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t context_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 extern void
 jobcomp_destroy_job(void *object)
@@ -119,7 +121,7 @@ g_slurm_jobcomp_init( char *jobcomp_loc )
 	char *plugin_type = "jobcomp";
 	char *type;
 
-	if (g_context)
+	if (init_run && g_context)
 		return retval;
 
 	slurm_mutex_lock( &context_lock );
@@ -136,6 +138,7 @@ g_slurm_jobcomp_init( char *jobcomp_loc )
 		retval = SLURM_ERROR;
 		goto done;
 	}
+	init_run = true;
 
 done:
 	xfree(type);
@@ -153,6 +156,7 @@ g_slurm_jobcomp_fini(void)
 	if ( !g_context)
 		goto done;
 
+	init_run = false;
 	plugin_context_destroy ( g_context );
 	g_context = NULL;
 

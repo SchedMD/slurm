@@ -1,3 +1,4 @@
+
 /*****************************************************************************\
  *  slurm_accounting_storage.c - account storage plugin wrapper.
  *
@@ -255,6 +256,7 @@ static const char *syms[] = {
 static slurm_acct_storage_ops_t ops;
 static plugin_context_t *plugin_context = NULL;
 static pthread_mutex_t plugin_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 /*
  * Initialize context for acct_storage plugin
@@ -265,7 +267,7 @@ extern int slurm_acct_storage_init(char *loc)
 	char *plugin_type = "accounting_storage";
 	char *type = NULL;
 
-	if (plugin_context)
+	if (init_run && plugin_context)
 		return retval;
 
 	slurm_mutex_lock(&plugin_context_lock);
@@ -286,6 +288,7 @@ extern int slurm_acct_storage_init(char *loc)
 		retval = SLURM_ERROR;
 		goto done;
 	}
+	init_run = true;
 
 done:
 	slurm_mutex_unlock(&plugin_context_lock);
@@ -300,6 +303,7 @@ extern int slurm_acct_storage_fini(void)
 	if (!plugin_context)
 		return SLURM_SUCCESS;
 
+	init_run = false;
 //	(*(ops.acct_storage_fini))();
 	rc = plugin_context_destroy(plugin_context);
 	plugin_context = NULL;

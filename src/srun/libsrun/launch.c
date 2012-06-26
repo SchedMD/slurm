@@ -74,6 +74,7 @@ static const char *syms[] = {
 static plugin_ops_t ops;
 static plugin_context_t *plugin_context = NULL;
 static pthread_mutex_t plugin_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 static int
 _is_local_file (fname_t *fname)
@@ -96,7 +97,7 @@ extern int launch_init(void)
 	char *plugin_type = "launch";
 	char *type = NULL;
 
-	if (plugin_context)
+	if (init_run && plugin_context)
 		return retval;
 
 	slurm_mutex_lock(&plugin_context_lock);
@@ -113,6 +114,7 @@ extern int launch_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
+	init_run = true;
 
 done:
 	slurm_mutex_unlock(&plugin_context_lock);
@@ -128,6 +130,7 @@ extern int location_fini(void)
 	if (!plugin_context)
 		return SLURM_SUCCESS;
 
+	init_run = false;
 	rc = plugin_context_destroy(plugin_context);
 	plugin_context = NULL;
 
