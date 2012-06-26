@@ -55,6 +55,8 @@ documents those changes that are of interest to users and admins.
  -- If preempted job should have a grace time and preempt mode is not cancel
     but job is going to be canceled because it is interactive or other reason
     it now receives the grace time.
+ -- BGQ - Modified documents to explain new plugin_flags needed in bg.properties
+    in order for the runjob_mux to run correctly.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
