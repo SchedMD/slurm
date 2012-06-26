@@ -50,34 +50,116 @@
 #include "opt.h"
 #include "debugger.h"
 
+/*
+ * launch_common_get_slurm_step_layout() gets the slurm job step layout.
+ *
+ * IN job - the job step layout to get.
+ *
+ * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
+ */
 extern slurm_step_layout_t *launch_common_get_slurm_step_layout(
 	srun_job_t *job);
 
+/*
+ * launch_common_create_job_step() creates the job step with the given info.
+ *
+ * IN job - job to be created into a job step
+ * IN use_all_cpus - the choice to use all the cpus.
+ * IN signal_function - function that handles the signals coming in.
+ * IN destroy_job - pointer to a global flag signifying if the job was
+ *                  canceled while allocating.
+ *
+ * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
+ */
 extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 					 void (*signal_function)(int),
 					 sig_atomic_t *destroy_job);
 
+/*
+ * launch_common_set_stdio_fds() sets the stdio_fds to given info.
+ *
+ * IN job - the job that is set.
+ * IN cio_fds - filling in io descriptors.
+ */
 extern void launch_common_set_stdio_fds(srun_job_t *job,
 					slurm_step_io_fds_t *cio_fds);
 
-
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
 extern int launch_init(void);
+
+/*
+ * fini() is called when the plugin is removed. Clear any allocated
+ * storage here.
+ */
 extern int launch_fini(void);
+
+/*
+ * launch_p_setup_srun_opt() is called when the plugin needs the srun
+ * operation needs to be set up.
+ *
+ * IN rest - extra parameters on the command line not processed by srun
+ */
 extern int launch_g_setup_srun_opt(char **rest);
 
+/*
+ * launch_p_create_job_step() creates the job step.
+ *
+ * IN/OUT job - the job to be created into a job step.
+ * IN use_all_cpus - the choice to use all the cpus.
+ * IN signal_function - function that handles the signals coming in.
+ * IN destroy_job - pointer to a global flag signifying if the job was
+ *                  canceled while allocating.
+ *
+ * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
+ */
 extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
 				    sig_atomic_t *destroy_job);
+
+/*
+ * launch_p_step_launch() is called to launch the job step that
+ * was created.
+ *
+ * IN/OUT job - the job needing to be launched
+ * IN cio_fds - filled in io descriptors.
+ * IN/OUT global_rc - srun global return code.
+ *
+ * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
+ */
 extern int launch_g_step_launch(
 	srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	uint32_t *global_rc);
 
+/*
+ * launch_p_step_wait() is called to wait for the job step to be finished.
+ *
+ * IN/OUT job - the job waiting to finish.
+ * IN got_alloc - if the resource allocation was created inside srun
+ *
+ * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
+ */
 extern int launch_g_step_wait(srun_job_t *job, bool got_alloc);
 
+/*
+ * launch_p_step_terminate() is called to end the job step.
+ *
+ * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
+ */
 extern int launch_g_step_terminate(void);
 
+/*
+ * launch_p_print_status() displays the the status of the job step.
+ */
 extern void launch_g_print_status(void);
 
+/*
+ * launch_p_fwd_signal() send a forward signal to an underlining task.
+ *
+ * IN signal - the signal to forward to the underlying tasks.
+ */
 extern void launch_g_fwd_signal(int signal);
 
 #endif /* _LAUNCH_H */
