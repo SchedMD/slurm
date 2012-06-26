@@ -151,6 +151,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	char *buf = NULL;
 	int count = 0;
 	uint32_t alloc_count = 0;
+	char *step_nodelist = NULL;
 
 	ai->jobid          = job_id;
 	ai->stepid         = NO_VAL;
@@ -213,20 +214,20 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 				opt.min_nodes = ai->nnodes;
 			opt.nodes_set = true;
 		}
-		if(!opt.max_nodes)
+		if (!opt.max_nodes)
 			opt.max_nodes = opt.min_nodes;
-		if((opt.max_nodes > 0) && (opt.max_nodes < ai->nnodes))
+		if ((opt.max_nodes > 0) && (opt.max_nodes < ai->nnodes))
 			ai->nnodes = opt.max_nodes;
 
 		count = hostlist_count(hl);
-		if(!count) {
+		if (!count) {
 			error("Hostlist is now nothing!  Can't run job.");
 			hostlist_destroy(hl);
 			goto error;
 		}
-		if(inc_hl) {
+		if (inc_hl) {
 			count = hostlist_count(inc_hl);
-			if(count < ai->nnodes) {
+			if (count < ai->nnodes) {
 				/* add more nodes to get correct number for
 				   allocation */
 				hostlist_t tmp_hl = hostlist_copy(hl);
@@ -266,15 +267,15 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 			 * know it is less than the number of nodes
 			 * in the allocation
 			 */
-			if(opt.ntasks_set && (opt.ntasks < ai->nnodes))
+			if (opt.ntasks_set && (opt.ntasks < ai->nnodes))
 				opt.min_nodes = opt.ntasks;
 			else
 				opt.min_nodes = ai->nnodes;
 			opt.nodes_set = true;
 		}
-		if(!opt.max_nodes)
+		if (!opt.max_nodes)
 			opt.max_nodes = opt.min_nodes;
-		if((opt.max_nodes > 0) && (opt.max_nodes < ai->nnodes))
+		if ((opt.max_nodes > 0) && (opt.max_nodes < ai->nnodes))
 			ai->nnodes = opt.max_nodes;
 		/* Don't reset the ai->nodelist because that is the
 		 * nodelist we want to say the allocation is under
@@ -285,8 +286,12 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	}
 
 	/* get the correct number of hosts to run tasks on */
-	if (opt.nodelist) {
-		hl = hostlist_create(opt.nodelist);
+	if (opt.nodelist)
+		step_nodelist = opt.nodelist;
+	else if ((opt.distribution == SLURM_DIST_ARBITRARY) && (count == 0))
+		step_nodelist = getenv("SLURM_ARBITRARY_NODELIST");
+	if (step_nodelist) {
+		hl = hostlist_create(step_nodelist);
 		if (opt.distribution != SLURM_DIST_ARBITRARY)
 			hostlist_uniq(hl);
 		if (!hostlist_count(hl)) {
@@ -308,12 +313,11 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		opt.nodelist = buf;
 	}
 
-	if (opt.distribution == SLURM_DIST_ARBITRARY) {
-		if (count != opt.ntasks) {
-			error("You asked for %d tasks but specified %d nodes",
-			      opt.ntasks, count);
-			goto error;
-		}
+	if ((opt.distribution == SLURM_DIST_ARBITRARY) &&
+	    (count != opt.ntasks)) {
+		error("You asked for %d tasks but specified %d nodes",
+		      opt.ntasks, count);
+		goto error;
 	}
 
 	if (ai->nnodes == 0) {
