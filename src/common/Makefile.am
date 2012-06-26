@@ -32,14 +32,15 @@ noinst_LTLIBRARIES = 			\
 	libspank.la
 
 libcommon_la_SOURCES = 			\
- 	xcgroup_read_config.c xcgroup_read_config.h		\
- 	xcgroup.c xcgroup.h 					\
- 	xcpuinfo.c xcpuinfo.h 					\
+	xcgroup_read_config.c xcgroup_read_config.h		\
+	xcgroup.c xcgroup.h 					\
+	xcpuinfo.c xcpuinfo.h 					\
 	assoc_mgr.c assoc_mgr.h 	\
 	xmalloc.c xmalloc.h 		\
 	xassert.c xassert.h		\
 	xstring.c xstring.h		\
 	xsignal.c xsignal.h		\
+	strnatcmp.c strnatcmp.h		\
 	forward.c forward.h     	\
 	strlcpy.c strlcpy.h		\
 	list.c list.h 			\

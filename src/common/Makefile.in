@@ -102,14 +102,14 @@ am__libcommon_la_SOURCES_DIST = xcgroup_read_config.c \
 	xcgroup_read_config.h xcgroup.c xcgroup.h xcpuinfo.c \
 	xcpuinfo.h assoc_mgr.c assoc_mgr.h xmalloc.c xmalloc.h \
 	xassert.c xassert.h xstring.c xstring.h xsignal.c xsignal.h \
-	forward.c forward.h strlcpy.c strlcpy.h list.c list.h net.c \
-	net.h log.c log.h cbuf.c cbuf.h safeopen.c safeopen.h \
-	bitstring.c bitstring.h mpi.c mpi.h pack.c pack.h \
-	parse_config.c parse_config.h parse_spec.c parse_spec.h \
-	plugin.c plugin.h plugrack.c plugrack.h print_fields.c \
-	print_fields.h read_config.c read_config.h node_select.c \
-	node_select.h env.c env.h fd.c fd.h slurm_cred.h slurm_cred.c \
-	slurm_errno.c slurm_priority.c slurm_priority.h \
+	strnatcmp.c strnatcmp.h forward.c forward.h strlcpy.c \
+	strlcpy.h list.c list.h net.c net.h log.c log.h cbuf.c cbuf.h \
+	safeopen.c safeopen.h bitstring.c bitstring.h mpi.c mpi.h \
+	pack.c pack.h parse_config.c parse_config.h parse_spec.c \
+	parse_spec.h plugin.c plugin.h plugrack.c plugrack.h \
+	print_fields.c print_fields.h read_config.c read_config.h \
+	node_select.c node_select.h env.c env.h fd.c fd.h slurm_cred.h \
+	slurm_cred.c slurm_errno.c slurm_priority.c slurm_priority.h \
 	slurm_protocol_api.c slurm_protocol_api.h \
 	slurm_protocol_pack.c slurm_protocol_pack.h \
 	slurm_protocol_util.c slurm_protocol_util.h \
@@ -139,24 +139,24 @@ am__libcommon_la_SOURCES_DIST = xcgroup_read_config.c \
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = xcgroup_read_config.lo xcgroup.lo \
 	xcpuinfo.lo assoc_mgr.lo xmalloc.lo xassert.lo xstring.lo \
-	xsignal.lo forward.lo strlcpy.lo list.lo net.lo log.lo cbuf.lo \
-	safeopen.lo bitstring.lo mpi.lo pack.lo parse_config.lo \
-	parse_spec.lo plugin.lo plugrack.lo print_fields.lo \
-	read_config.lo node_select.lo env.lo fd.lo slurm_cred.lo \
-	slurm_errno.lo slurm_priority.lo slurm_protocol_api.lo \
-	slurm_protocol_pack.lo slurm_protocol_util.lo \
-	slurm_protocol_socket_implementation.lo slurm_protocol_defs.lo \
-	slurm_rlimits_info.lo slurmdb_defs.lo slurmdb_pack.lo \
-	slurmdbd_defs.lo working_cluster.lo uid.lo util-net.lo \
-	slurm_auth.lo jobacct_common.lo slurm_accounting_storage.lo \
-	slurm_jobacct_gather.lo slurm_jobcomp.lo slurm_topology.lo \
-	switch.lo arg_desc.lo malloc.lo getopt.lo getopt1.lo \
-	$(am__objects_1) slurm_selecttype_info.lo \
-	slurm_resource_info.lo hostlist.lo slurm_step_layout.lo \
-	checkpoint.lo job_resources.lo parse_time.lo job_options.lo \
-	global_defaults.lo timers.lo stepd_api.lo \
-	write_labelled_message.lo proc_args.lo slurm_strcasestr.lo \
-	node_conf.lo gres.lo
+	xsignal.lo strnatcmp.lo forward.lo strlcpy.lo list.lo net.lo \
+	log.lo cbuf.lo safeopen.lo bitstring.lo mpi.lo pack.lo \
+	parse_config.lo parse_spec.lo plugin.lo plugrack.lo \
+	print_fields.lo read_config.lo node_select.lo env.lo fd.lo \
+	slurm_cred.lo slurm_errno.lo slurm_priority.lo \
+	slurm_protocol_api.lo slurm_protocol_pack.lo \
+	slurm_protocol_util.lo slurm_protocol_socket_implementation.lo \
+	slurm_protocol_defs.lo slurm_rlimits_info.lo slurmdb_defs.lo \
+	slurmdb_pack.lo slurmdbd_defs.lo working_cluster.lo uid.lo \
+	util-net.lo slurm_auth.lo jobacct_common.lo \
+	slurm_accounting_storage.lo slurm_jobacct_gather.lo \
+	slurm_jobcomp.lo slurm_topology.lo switch.lo arg_desc.lo \
+	malloc.lo getopt.lo getopt1.lo $(am__objects_1) \
+	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
+	slurm_step_layout.lo checkpoint.lo job_resources.lo \
+	parse_time.lo job_options.lo global_defaults.lo timers.lo \
+	stepd_api.lo write_labelled_message.lo proc_args.lo \
+	slurm_strcasestr.lo node_conf.lo gres.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 libcommon_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -422,14 +422,15 @@ noinst_LTLIBRARIES = \
 	libspank.la
 
 libcommon_la_SOURCES = \
- 	xcgroup_read_config.c xcgroup_read_config.h		\
- 	xcgroup.c xcgroup.h 					\
- 	xcpuinfo.c xcpuinfo.h 					\
+	xcgroup_read_config.c xcgroup_read_config.h		\
+	xcgroup.c xcgroup.h 					\
+	xcpuinfo.c xcpuinfo.h 					\
 	assoc_mgr.c assoc_mgr.h 	\
 	xmalloc.c xmalloc.h 		\
 	xassert.c xassert.h		\
 	xstring.c xstring.h		\
 	xsignal.c xsignal.h		\
+	strnatcmp.c strnatcmp.h		\
 	forward.c forward.h     	\
 	strlcpy.c strlcpy.h		\
 	list.c list.h 			\
@@ -664,6 +665,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdbd_defs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stepd_api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strnatcmp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/timers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/uid.Plo@am__quote@
