@@ -75,7 +75,7 @@ typedef struct slurm_topo_context {
 
 static slurm_topo_context_t	*g_topo_context = NULL;
 static pthread_mutex_t		g_topo_context_lock = PTHREAD_MUTEX_INITIALIZER;
-
+static bool init_run = false;
 
 /* ************************************************************************ */
 /*  TAG(                       slurm_topo_get_ops                        )  */
@@ -207,7 +207,7 @@ slurm_topo_init( void )
 	int retval = SLURM_SUCCESS;
 	char *topo_type = NULL;
 
-	if ( g_topo_context )
+	if ( init_run && g_topo_context )
 		return retval;
 
 	slurm_mutex_lock( &g_topo_context_lock );
@@ -229,7 +229,8 @@ slurm_topo_init( void )
 		slurm_topo_context_destroy( g_topo_context );
 		g_topo_context = NULL;
 		retval = SLURM_ERROR;
-	}
+	} else
+		init_run = true;
 
 done:
 	slurm_mutex_unlock( &g_topo_context_lock );
@@ -248,6 +249,7 @@ slurm_topo_fini( void )
 	if (!g_topo_context)
 		return SLURM_SUCCESS;
 
+	init_run = false;
 	rc = slurm_topo_context_destroy(g_topo_context);
 	g_topo_context = NULL;
 	return rc;

@@ -63,6 +63,7 @@ typedef struct slurm_priority_context {
 static slurm_priority_context_t * g_priority_context = NULL;
 static pthread_mutex_t		g_priority_context_lock =
 	PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 /*
  * Local functions
@@ -198,7 +199,7 @@ extern int slurm_priority_init(void)
 	int retval = SLURM_SUCCESS;
 	char *priority_type = NULL;
 
-	if ( g_priority_context )
+	if ( init_run && g_priority_context )
 		return retval;
 
 	slurm_mutex_lock( &g_priority_context_lock );
@@ -221,7 +222,8 @@ extern int slurm_priority_init(void)
 		_priority_context_destroy( g_priority_context );
 		g_priority_context = NULL;
 		retval = SLURM_ERROR;
-	}
+	} else
+		init_run = true;
 
 done:
 	slurm_mutex_unlock( &g_priority_context_lock );
@@ -236,6 +238,7 @@ extern int slurm_priority_fini(void)
 	if (!g_priority_context)
 		return SLURM_SUCCESS;
 
+	init_run = false;
 	rc = _priority_context_destroy( g_priority_context );
 	g_priority_context = NULL;
 	return rc;

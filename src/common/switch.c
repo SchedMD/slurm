@@ -127,7 +127,7 @@ struct slurm_switch_context {
 
 static slurm_switch_context_t *g_context = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
-
+static bool init_run = false;
 
 static slurm_switch_context_t *
 _slurm_switch_context_create(const char *switch_type)
@@ -288,7 +288,7 @@ extern int switch_init( void )
 	int retval = SLURM_SUCCESS;
 	char *switch_type = NULL;
 
-	if ( g_context )
+	if ( init_run && g_context )
 		return retval;
 
 	slurm_mutex_lock( &context_lock );
@@ -309,7 +309,8 @@ extern int switch_init( void )
 		_slurm_switch_context_destroy( g_context );
 		g_context = NULL;
 		retval = SLURM_ERROR;
-	}
+	} else
+		init_run = true;
 
       done:
 	slurm_mutex_unlock( &context_lock );
@@ -324,6 +325,7 @@ extern int switch_fini(void)
 	if (!g_context)
 		return SLURM_SUCCESS;
 
+	init_run = false;
 	rc = _slurm_switch_context_destroy(g_context);
 	return rc;
 }

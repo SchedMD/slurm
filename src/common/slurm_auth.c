@@ -106,6 +106,7 @@ struct slurm_auth_context {
  */
 static slurm_auth_context_t g_context    = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 /*
  * Order of advisory arguments passed to some of the plugins.
@@ -315,7 +316,7 @@ extern int slurm_auth_init( char *auth_type )
         int retval = SLURM_SUCCESS;
 	char *auth_type_local = NULL;
 
-        if ( g_context )
+        if ( init_run && g_context )
 		return retval;
 
         slurm_mutex_lock( &context_lock );
@@ -346,7 +347,8 @@ extern int slurm_auth_init( char *auth_type )
                 _slurm_auth_context_destroy( g_context );
                 g_context = NULL;
                 retval = SLURM_ERROR;
-        }
+        } else
+		init_run = true;
 
 done:
 	xfree(auth_type_local);
@@ -363,6 +365,7 @@ slurm_auth_fini( void )
 	if ( !g_context )
 		return SLURM_SUCCESS;
 
+	init_run = false;
 	rc = _slurm_auth_context_destroy( g_context );
 	g_context = NULL;
 	return rc;

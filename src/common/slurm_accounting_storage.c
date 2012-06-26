@@ -201,6 +201,7 @@ typedef struct slurm_acct_storage_context {
 static slurm_acct_storage_context_t * g_acct_storage_context = NULL;
 static pthread_mutex_t		g_acct_storage_context_lock =
 	PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 /*
  * Local functions
@@ -388,7 +389,7 @@ extern int slurm_acct_storage_init(char *loc)
 	int retval = SLURM_SUCCESS;
 	char *acct_storage_type = NULL;
 
-	if ( g_acct_storage_context )
+	if ( init_run && g_acct_storage_context )
 		return retval;
 
 	slurm_mutex_lock( &g_acct_storage_context_lock );
@@ -414,7 +415,8 @@ extern int slurm_acct_storage_init(char *loc)
 		_acct_storage_context_destroy( g_acct_storage_context );
 		g_acct_storage_context = NULL;
 		retval = SLURM_ERROR;
-	}
+	} else
+		init_run = true;
 
 done:
 	slurm_mutex_unlock( &g_acct_storage_context_lock );
@@ -429,6 +431,7 @@ extern int slurm_acct_storage_fini(void)
 	if (!g_acct_storage_context)
 		return SLURM_SUCCESS;
 
+	init_run = false;
 //	(*(g_acct_storage_context->ops.acct_storage_fini))();
 	rc = _acct_storage_context_destroy( g_acct_storage_context );
 	g_acct_storage_context = NULL;

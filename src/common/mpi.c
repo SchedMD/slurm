@@ -79,6 +79,7 @@ struct slurm_mpi_context {
 
 static slurm_mpi_context_t g_context = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 static slurm_mpi_context_t
 _slurm_mpi_context_create(const char *mpi_type)
@@ -211,7 +212,7 @@ int _mpi_init (char *mpi_type)
 	char *full_type = NULL;
 	int got_default = 0;
 
-	if ( g_context )
+	if ( init_run && g_context )
 		return retval;
 
 	slurm_mutex_lock( &context_lock );
@@ -247,7 +248,7 @@ int _mpi_init (char *mpi_type)
 		g_context = NULL;
 		retval = SLURM_ERROR;
 	}
-
+	init_run = true;
 
 done:
 	if(got_default)
@@ -335,6 +336,7 @@ int mpi_fini (void)
 	if (!g_context)
 		return SLURM_SUCCESS;
 
+	init_run = false;
 	rc = _slurm_mpi_context_destroy(g_context);
 	return rc;
 }

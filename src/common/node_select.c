@@ -66,6 +66,7 @@ static int select_context_default = -1;
 static slurm_select_context_t * select_context = NULL;
 static pthread_mutex_t		select_context_lock =
 	PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 /*
  * Locate and load the appropriate plugin
@@ -282,7 +283,7 @@ extern int slurm_select_init(bool only_default)
 	struct dirent *e;
 	char *dir_array = NULL, *head = NULL;
 
-	if ( select_context )
+	if ( init_run && select_context )
 		return retval;
 
 	slurm_mutex_lock( &select_context_lock );
@@ -453,6 +454,7 @@ skip_load_all:
 		}
 
 	}
+	init_run = true;
 
 done:
 	slurm_mutex_unlock( &select_context_lock );
@@ -469,6 +471,7 @@ extern int slurm_select_fini(void)
 	if (!select_context)
 		goto fini;
 
+	init_run = false;
 	for (i=0; i<select_context_cnt; i++) {
 		j = _select_context_destroy(select_context + i);
 		if (j != SLURM_SUCCESS)

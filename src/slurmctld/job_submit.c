@@ -93,6 +93,7 @@ static int submit_context_cnt = -1;
 static slurm_submit_context_t *submit_context = NULL;
 static char *submit_plugin_list = NULL;
 static pthread_mutex_t submit_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 static int _load_submit_plugin(char *plugin_name,
 			       slurm_submit_context_t *plugin_context)
@@ -196,7 +197,7 @@ extern int job_submit_plugin_init(void)
 	int rc = SLURM_SUCCESS;
 	char *last = NULL, *names, *one_name;
 
-	if (submit_context_cnt >= 0)
+	if (init_run && (submit_context_cnt >= 0))
 		return rc;
 
 	slurm_mutex_lock(&submit_context_lock);
@@ -222,6 +223,7 @@ extern int job_submit_plugin_init(void)
 		one_name = strtok_r(NULL, ",", &last);
 	}
 	xfree(names);
+	init_run = true;
 
 fini:	slurm_mutex_unlock(&submit_context_lock);
 	return rc;
@@ -240,6 +242,7 @@ extern int job_submit_plugin_fini(void)
 	if (submit_context_cnt < 0)
 		goto fini;
 
+	init_run = false;
 	for (i=0; i<submit_context_cnt; i++) {
 		j = _unload_submit_plugin(submit_context + i);
 		if (j != SLURM_SUCCESS)

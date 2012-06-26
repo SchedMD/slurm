@@ -83,7 +83,7 @@ typedef struct slurm_sched_context {
 
 static slurm_sched_context_t	*g_sched_context = NULL;
 static pthread_mutex_t		g_sched_context_lock = PTHREAD_MUTEX_INITIALIZER;
-
+static bool init_run = false;
 
 /* ************************************************************************ */
 /*  TAG(                       slurm_sched_get_ops                       )  */
@@ -225,7 +225,7 @@ slurm_sched_init( void )
 	int retval = SLURM_SUCCESS;
 	char *sched_type = NULL;
 
-	if ( g_sched_context )
+	if ( init_run && g_sched_context )
 		return retval;
 
 	slurm_mutex_lock( &g_sched_context_lock );
@@ -253,6 +253,7 @@ slurm_sched_init( void )
 	if ( (slurm_get_preempt_mode() & PREEMPT_MODE_GANG) &&
 	     (gs_init() != SLURM_SUCCESS))
 		error( "cannot start gang scheduler ");
+	init_run = true;
 
  done:
 	slurm_mutex_unlock( &g_sched_context_lock );
@@ -271,6 +272,7 @@ slurm_sched_fini( void )
 	if (!g_sched_context)
 		return SLURM_SUCCESS;
 
+	init_run = false;
 	rc = slurm_sched_context_destroy(g_sched_context);
 	g_sched_context = NULL;
 
