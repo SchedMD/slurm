@@ -168,7 +168,11 @@ libsched_if64_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(libsched_if64_la_LDFLAGS) $(LDFLAGS) -o $@
 @BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_libsched_if64_la_rpath = -rpath \
 @BGL_LOADED_TRUE@@BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	$(pkglibdir)
-runjob_plugin_la_LIBADD =
+am__DEPENDENCIES_1 =
+am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurmhelper.la \
+	$(am__DEPENDENCIES_1)
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@runjob_plugin_la_DEPENDENCIES =  \
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_2)
 am__runjob_plugin_la_SOURCES_DIST = runjob_plugin.cc
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_runjob_plugin_la_OBJECTS =  \
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	runjob_plugin.lo
@@ -178,11 +182,10 @@ runjob_plugin_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(CXXFLAGS) $(runjob_plugin_la_LDFLAGS) $(LDFLAGS) -o $@
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@am_runjob_plugin_la_rpath =  \
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	-rpath $(pkglibdir)
-am__DEPENDENCIES_1 =
-@BLUEGENE_LOADED_TRUE@am__DEPENDENCIES_2 = $(block_allocator_lib) \
+@BLUEGENE_LOADED_TRUE@am__DEPENDENCIES_3 = $(block_allocator_lib) \
 @BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_1)
 select_bluegene_la_DEPENDENCIES = libba_common.la \
-	$(am__DEPENDENCIES_2)
+	$(am__DEPENDENCIES_3)
 am__select_bluegene_la_SOURCES_DIST = select_bluegene.c bg_job_info.c \
 	bg_job_info.h bg_node_info.c bg_node_info.h bg_core.c \
 	bg_core.h bg_defined_block.c bg_defined_block.h \
@@ -207,10 +210,8 @@ am__slurm_epilog_SOURCES_DIST = slurm_epilog.c
 @BLUEGENE_LOADED_TRUE@am_slurm_epilog_OBJECTS =  \
 @BLUEGENE_LOADED_TRUE@	slurm_epilog.$(OBJEXT)
 slurm_epilog_OBJECTS = $(am_slurm_epilog_OBJECTS)
-am__DEPENDENCIES_3 = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
 @BLUEGENE_LOADED_TRUE@slurm_epilog_DEPENDENCIES =  \
-@BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_3)
+@BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_2)
 slurm_epilog_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurm_epilog_LDFLAGS) $(LDFLAGS) -o $@
@@ -219,7 +220,7 @@ am__slurm_prolog_SOURCES_DIST = slurm_prolog.c
 @BLUEGENE_LOADED_TRUE@	slurm_prolog.$(OBJEXT)
 slurm_prolog_OBJECTS = $(am_slurm_prolog_OBJECTS)
 @BLUEGENE_LOADED_TRUE@slurm_prolog_DEPENDENCIES =  \
-@BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_3)
+@BLUEGENE_LOADED_TRUE@	$(am__DEPENDENCIES_2)
 slurm_prolog_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurm_prolog_LDFLAGS) $(LDFLAGS) -o $@
@@ -508,7 +509,9 @@ INCLUDES = -I$(top_srcdir)  -I$(top_srcdir)/src/common $(BG_INCLUDES)
 pkglib_LTLIBRARIES = select_bluegene.la $(am__append_2) \
 	$(am__append_3) $(am__append_5)
 noinst_LTLIBRARIES = libba_common.la libconfigure_api.la
-convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
+convenience_libs = $(top_builddir)/src/api/libslurmhelper.la \
+	-lpthread $(DL_LIBS)
+
 
 # These are needed for pack/unpack of structures for cross-cluster stuff
 select_bluegene_la_SOURCES = select_bluegene.c bg_job_info.c \
@@ -526,9 +529,8 @@ select_bluegene_la_LIBADD = libba_common.la $(am__append_7)
 @BG_L_P_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@block_allocator_lib = ba/libblock_allocator.la
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@nodist_EXTRA_select_bluegene_la_SOURCES = dummy.cxx
 @BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@runjob_plugin_la_SOURCES = runjob_plugin.cc
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@runjob_plugin_la_LDFLAGS = -export-dynamic $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
-@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@	$(convenience_libs) -lpthread
-
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@runjob_plugin_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@BGQ_LOADED_TRUE@@BLUEGENE_LOADED_TRUE@runjob_plugin_la_LIBADD = $(convenience_libs)
 @BLUEGENE_LOADED_TRUE@slurm_prolog_LDADD = $(convenience_libs)
 @BLUEGENE_LOADED_TRUE@slurm_prolog_SOURCES = slurm_prolog.c
 @BLUEGENE_LOADED_TRUE@slurm_prolog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)

@@ -267,8 +267,9 @@ SLURM plugin for the IBM runjob_mux.  This can
 be done by altering the bg.properties file. In the [runjob.mux]
 section of the bg.properties file change the plugin option to
 <i>$prefix/lib/slurm/runjob_plugin.so</i> and also set the plugin_flags
-option to <i>0x0101</i> (RTLD_LAZY | RTLD_GLOBAL) which allows the
-forwarding of symbols to shared objects like SLURM uses for plugins.</p>
+option to <i>0x0109</i> (RTLD_LAZY | RTLD_GLOBAL | RTLD_DEEPBIND)
+which allows the forwarding of symbols to shared objects like SLURM
+uses for plugins.</p>
 <pre>
 [runjob.mux]
 ...
@@ -278,7 +279,7 @@ plugin = /usr/lib64/slurm/runjob_plugin.so
     # runjob_mux_refresh_config command on the
     # Login Node where a runjob_mux process runs.
 ...
-plugin_flags = 0x0101 # RTLD_LAZY | RTLD_GLOBAL
+plugin_flags = 0x0109 # RTLD_LAZY | RTLD_GLOBAL | RTLD_DEEPBIND
 </pre>
 
 <p>You also need to set things up so the runjob_mux is ran by the

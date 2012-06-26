@@ -60,6 +60,18 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - fix race condition where if a nodeboard/card goes down at the
     same time a block is destroyed and that block just happens to be the
     smallest overlapping block over the bad hardware.
+ -- Fix bug when querying accounting looking for a job node size.
+ -- BLUEGENE - fix possible race condition if cleaning up a block and the
+    removal of the job on the block failed.
+ -- BLUEGENE - fix issue if a cable was in an error state make it so we can
+    check if a block is still makable if the cable wasn't in error.
+ -- Put nodes names in alphabetic order in node table.
+ -- If preempted job should have a grace time and preempt mode is not cancel
+    but job is going to be canceled because it is interactive or other reason
+    it now receives the grace time.
+ -- BGQ - Modified documents to explain new plugin_flags needed in bg.properties
+    in order for the runjob_mux to run correctly.
+ -- BGQ - change linking from libslurm.o to libslurmhelper.la to avoid warning.
 
 * Changes in SLURM 2.4.0.rc1
 =============================

@@ -232,7 +232,7 @@ slurmd_task_info_t * task_info_create(int taskid, int gtaskid,
 static inline slurmd_task_info_t *
 job_task_info_by_pid (slurmd_job_t *job, pid_t pid)
 {
-	int i;
+	uint32_t i;
 	for (i = 0; i < job->node_tasks; i++) {
 		if (job->task[i]->pid == pid)
 			return (job->task[i]);

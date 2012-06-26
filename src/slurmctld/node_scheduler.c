@@ -1175,6 +1175,11 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
 		}
 
 		if (rc != SLURM_SUCCESS) {
+			if ((mode != PREEMPT_MODE_CANCEL)
+			    && (slurm_job_check_grace(job_ptr)
+				== SLURM_SUCCESS))
+				continue;
+
 			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0, true);
 			if (rc == SLURM_SUCCESS)
 				info("preempted job %u had to be killed",
