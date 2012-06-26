@@ -51,6 +51,7 @@ documents those changes that are of interest to users and admins.
     removal of the job on the block failed.
  -- BLUEGENE - fix issue if a cable was in an error state make it so we can
     check if a block is still makable if the cable wasn't in error.
+ -- Put nodes names in alphabetic order in node table.
 
 * Changes in SLURM 2.4.0.rc1
 =============================
