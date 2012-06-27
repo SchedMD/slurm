@@ -631,8 +631,13 @@ Inside the hostfile must contain at minimum the number of hosts
 requested and be one per line or comma separated.  If specifying a
 task count (\fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>), your tasks
 will be laid out on the nodes in the order of the file.
-.TP
+.br
+\fBNOTE:\fR The arbitrary distribution option on a job allocation only
+controls the nodes to be allocated to the job and not the allocation of
+CPUs on those nodes. This option is meant primarily to control a job step's
+task layout in an existing job allocation for the srun command.
 
+.TP
 Second distribution method:
 .TP
 .B block

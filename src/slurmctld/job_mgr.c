@@ -3820,8 +3820,6 @@ extern int job_limits_check(struct job_record **job_pptr)
 			       job_ptr->job_id);
 			fail_reason = WAIT_QOS_THRES;
 		}
-	} else if (job_ptr->priority == 0) {   /* user or administrator hold */
-		fail_reason = WAIT_HELD;
 	}
 
 	return (fail_reason);
