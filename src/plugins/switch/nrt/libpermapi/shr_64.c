@@ -117,8 +117,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 			 rm_connect_param *connect_param,
 			 int *rm_sockfds, int rm_timeout, char **error_msg)
 {
-	srun_job_t **job_ptr = (srun_job_t **)resource_mgr;
-	srun_job_t *job = *job_ptr;
+	srun_job_t *job = *(srun_job_t **)resource_mgr;
 	int my_argc = 1;
 	char *my_argv[2] = { connect_param->executable, NULL };
 //	char *my_argv[2] = { "/bin/hostname", NULL };
@@ -126,6 +125,10 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	uint32_t global_rc = 0;
 	int i, rc, fd_cnt;
 	int *ctx_sockfds = NULL;
+	/* If the PMD calls this and it didn't launch anything we need
+	 * to not do anything here or PMD will crap out on it. */
+	if (!job)
+		return -1;
 
 	debug("got pe_rm_connect called");
 
@@ -184,15 +187,10 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 extern void pe_rm_free(rmhandle_t *resource_mgr)
 {
 	uint32_t rc = 0;
-	srun_job_t **job_ptr;
-	srun_job_t *job;
+	srun_job_t *job = *(srun_job_t **)resource_mgr;
 
 	/* If the PMD calls this and it didn't launch anything we need
 	 * to not do anything here or PMD will crap out on it. */
-	if (!resource_mgr || !*resource_mgr)
-		return;
-	job_ptr = (srun_job_t **)*resource_mgr;
-	job = *job_ptr;
 	if (!job)
 		return;
 
@@ -289,6 +287,7 @@ extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 {
 	job_event_t *ret_event = NULL;
 	int *state;
+
 	debug("got pe_rm_get_event called %d %p %p",
 	      rm_timeout, job_event, *job_event);
 
