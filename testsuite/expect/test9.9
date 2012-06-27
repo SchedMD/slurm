@@ -37,18 +37,24 @@ set test_script "./test$test_id.bash"
 set job_blocks  5000
 
 #   job_cnt     Number of batch jobs to be submitted
-set job_cnt     5000
+set job_cnt     1000
 
 print_header $test_id
 
-if {[test_front_end] != 0 || $enable_memory_leak_debug != 0} {
+if {[test_front_end] || $enable_memory_leak_debug != 0} {
 	set job_cnt 2
+} elseif {[test_serial]} {
+	set job_cnt 5000
 }
 
+#
 # NOTE: test9.9.bash seems to have trouble running out of process IDs when
-# more than about 5000 jobs are submitted at one time, so we execute the
+# more than about 5000 jobs are submitted at one time, so we can execute the
 # script multiple times if necessary. A more reliable alternative would be
 # to catch the fork() failures and retry.
+#
+# NOTE: The throughput rate is highly dependent upon configuration
+#
 proc _submit_jobs { job_name test_file } {
 	global exit_code job_blocks job_cnt sbatch test_script
 

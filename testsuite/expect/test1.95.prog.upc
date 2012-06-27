@@ -37,6 +37,8 @@ int main(int argc, char * argv[])
 		int i, total = 0;
 		for (i = 0; i < THREADS; i++)
 			total += inx[i];
+		/* Make sure "Total" message is last for Expect parsing*/
+		sleep(1);
 		printf("Total is %d\n", total);
 	}
 	return 0;
