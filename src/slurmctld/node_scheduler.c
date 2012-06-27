@@ -1241,18 +1241,19 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		      job_ptr->job_id, job_ptr->partition);
 	}
 
+	if (job_ptr->priority == 0) {	/* user/admin hold */
+		if ((job_ptr->state_reason != WAIT_HELD) &&
+		    (job_ptr->state_reason != WAIT_HELD_USER)) {
+			job_ptr->state_reason = WAIT_HELD;
+		}
+		return ESLURM_JOB_HELD;
+	}
+
 	/* Confirm that partition is up and has compatible nodes limits */
 	fail_reason = job_limits_check(&job_ptr);
 	if (fail_reason != WAIT_NO_REASON) {
 		last_job_update = now;
 		xfree(job_ptr->state_desc);
-		if (job_ptr->priority == 0) {	/* user/admin hold */
-			if ((job_ptr->state_reason != WAIT_HELD) &&
-			    (job_ptr->state_reason != WAIT_HELD_USER)) {
-				job_ptr->state_reason = WAIT_HELD;
-			}
-			return ESLURM_JOB_HELD;
-		}
 		job_ptr->state_reason = fail_reason;
 		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	}
