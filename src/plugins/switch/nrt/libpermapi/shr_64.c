@@ -125,7 +125,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 			 rm_connect_param *connect_param,
 			 int *rm_sockfds, int rm_timeout, char **error_msg)
 {
-	srun_job_t *job = *(srun_job_t **)resource_mgr;
+//	srun_job_t *job = *(srun_job_t **)resource_mgr;
 	int my_argc = 1;
 	char *my_argv[2] = { connect_param->executable, NULL };
 //	char *my_argv[2] = { "/bin/hostname", NULL };
@@ -195,7 +195,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 extern void pe_rm_free(rmhandle_t *resource_mgr)
 {
 	uint32_t rc = 0;
-	srun_job_t *job = *(srun_job_t **)resource_mgr;
+	//srun_job_t *job = *(srun_job_t **)*resource_mgr;
 
 	/* If the PMD calls this and it didn't launch anything we need
 	 * to not do anything here or PMD will crap out on it. */
