@@ -456,7 +456,7 @@ static message_thread_state_t *_msg_thr_create(int num_nodes, int num_tasks)
 	mts->resp_port = xmalloc(sizeof(uint16_t) * mts->num_resp_port);
 	for (i = 0; i < mts->num_resp_port; i++) {
 		if (net_stream_listen(&sock, &port) < 0) {
-			error("unable to intialize step launch"
+			error("unable to initialize step launch"
 			      " listening socket: %m");
 			goto fail;
 		}

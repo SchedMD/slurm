@@ -2385,7 +2385,7 @@ extern int slurm_terminate_job_step PARAMS((uint32_t job_id, uint32_t step_id));
  *	in the structure that you will pass to slurm_step_ctx_create().
  *	This function will NOT allocate any new memory.
  * IN ptr - pointer to a structure allocated by the user.  The structure will
- *      be intialized.
+ *      be initialized.
  */
 extern void slurm_step_ctx_params_t_init PARAMS((slurm_step_ctx_params_t *ptr));
 
@@ -2457,7 +2457,7 @@ extern int slurm_step_ctx_destroy PARAMS((slurm_step_ctx_t *ctx));
  *      slurm_step_launch_params_t structure with default values.
  *	default values.  This function will NOT allocate any new memory.
  * IN ptr - pointer to a structure allocated by the use.  The structure will
- *      be intialized.
+ *      be initialized.
  */
 extern void slurm_step_launch_params_t_init
 PARAMS((slurm_step_launch_params_t *ptr));

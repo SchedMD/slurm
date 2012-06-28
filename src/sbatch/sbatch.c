@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 
 	_set_exit_code();
 	if (spank_init_allocator() < 0) {
-		error("Failed to intialize plugin stack");
+		error("Failed to initialize plugin stack");
 		exit(error_exit);
 	}
 

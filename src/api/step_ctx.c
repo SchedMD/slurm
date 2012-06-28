@@ -157,7 +157,7 @@ slurm_step_ctx_create (const slurm_step_ctx_params_t *step_params)
 	 */
 	if (net_stream_listen(&sock, &port) < 0) {
 		errnum = errno;
-		error("unable to intialize step context socket: %m");
+		error("unable to initialize step context socket: %m");
 		slurm_free_job_step_create_request_msg(step_req);
 		goto fail;
 	}
@@ -216,7 +216,7 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 	 */
 	if (net_stream_listen(&sock, &port) < 0) {
 		errnum = errno;
-		error("unable to intialize step context socket: %m");
+		error("unable to initialize step context socket: %m");
 		slurm_free_job_step_create_request_msg(step_req);
 		goto fail;
 	}
@@ -500,7 +500,7 @@ slurm_step_ctx_daemon_per_node_hack(
  *	in the structure that you will pass to slurm_step_ctx_create().
  *	This function will NOT allocate any new memory.
  * IN ptr - pointer to a structure allocated by the user.  The structure will
- *      be intialized.
+ *      be initialized.
  */
 extern void slurm_step_ctx_params_t_init (slurm_step_ctx_params_t *ptr)
 {

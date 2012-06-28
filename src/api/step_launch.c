@@ -125,7 +125,7 @@ static struct io_operations message_socket_ops = {
  *      slurm_step_launch_params_t structure with default values.
  *	This function will NOT allocate any new memory.
  * IN ptr - pointer to a structure allocated by the user.
- *      The structure will be intialized.
+ *      The structure will be initialized.
  */
 void slurm_step_launch_params_t_init (slurm_step_launch_params_t *ptr)
 {
@@ -834,7 +834,7 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 
 	for (i = 0; i < sls->num_resp_port; i++) {
 		if (net_stream_listen(&sock, &port) < 0) {
-			error("unable to intialize step launch listening "
+			error("unable to initialize step launch listening "
 			      "socket: %m");
 			return SLURM_ERROR;
 		}
