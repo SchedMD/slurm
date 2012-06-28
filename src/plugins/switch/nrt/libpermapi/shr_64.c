@@ -133,11 +133,15 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	uint32_t global_rc = 0;
 	int i, rc, fd_cnt;
 	int *ctx_sockfds = NULL;
-	/* If the PMD calls this and it didn't launch anything we need
-	 * to not do anything here or PMD will crap out on it. */
-	if (!job)
-		return -1;
 
+	if (!job) {
+		/* If the PMD calls this and it didn't launch anything we need
+		 * to not do anything here or PMD will crap out on it. */
+		PMD_LOG("got pe_rm_connect called from PMD, "
+			"we don't handle this yet\n");
+		return -1;
+	}
+	PMD_LOG("got pe_rm_connect called\n");
 	debug("got pe_rm_connect called");
 
 	opt.argc = my_argc;
@@ -199,10 +203,12 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 
 	/* If the PMD calls this and it didn't launch anything we need
 	 * to not do anything here or PMD will crap out on it. */
-	if (!job)
+	if (!job) {
+		PMD_LOG("pe_rm_free: No job\n");
 		return;
-
+	}
 	/* OK we are now really running something */
+	PMD_LOG("got pe_rm_free called\n");
 	debug("got pe_rm_free called %p %p", job, job->step_ctx);
 	if (launch_g_step_wait(job, got_alloc) != -1) {
 		/* We are at the end so don't worry about freeing the
@@ -225,6 +231,7 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
  */
 extern int pe_rm_free_event(rmhandle_t resource_mgr, job_event_t ** job_event)
 {
+	PMD_LOG("pe_rm_free_event called\n");
 	debug("got pe_rm_free_event called");
 	if (job_event) {
 		xfree(*job_event);
@@ -295,7 +302,7 @@ extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 {
 	job_event_t *ret_event = NULL;
 	int *state;
-
+	PMD_LOG("got pe_rm_get_event called\n");
 	debug("got pe_rm_get_event called %d %p %p",
 	      rm_timeout, job_event, *job_event);
 
@@ -348,6 +355,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	char *host;
 	host_usage_t *host_ptr;
 
+	PMD_LOG("got pe_rm_get_job_info called\n");
 	debug("got pe_rm_get_job_info called %p %p", job_info, *job_info);
 
 	*job_info = ret_info;
@@ -470,6 +478,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 {
 	char *srun_debug = NULL;
 
+	PMD_LOG("pe_rm_init called %p %d\n", pmd_lfp, pmdlog);
 	/* SLURM was originally written against 1300, so we will
 	 * return that, no matter what comes in so we always work.
 	 */
@@ -534,6 +543,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 extern int pe_rm_send_event(rmhandle_t resource_mgr, job_event_t *job_event,
 			    char ** error_msg)
 {
+	PMD_LOG("got pe_rm_send_event called\n");
 	debug("got pe_rm_send_event called");
 	return 0;
 }
@@ -561,6 +571,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	if (getenv("SLURM_STARTED_STEP"))
 		slurm_started = true;
 
+	PMD_LOG("got pe_rm_submit_job called\n");
 	debug("got pe_rm_submit_job called %d", job_cmd.job_format);
 	if (job_cmd.job_format != 1) {
 		/* We don't handle files */
