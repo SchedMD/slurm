@@ -76,6 +76,14 @@ int sig_array[] = {
 	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0 };
 
 extern char **environ;
+extern int pmdlog;
+extern FILE *pmd_lfp;
+#define PMD_LOG(fmt, args...)						\
+	if (pmdlog) {							\
+		const char *f_name = strrchr(__FILE__, '/');		\
+		fprintf(pmd_lfp, "[%d@%s]: " fmt , __LINE__, f_name!=NULL?(f_name+1):__FILE__, ##args);	\
+		fflush(pmd_lfp);                                        \
+	}
 
 static nrt_job_key_t _get_nrt_job_key(srun_job_t *job)
 {
