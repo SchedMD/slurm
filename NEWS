@@ -1,8 +1,8 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 2.4.0.rc2
-=============================
+* Changes in SLURM 2.4.0
+========================
  -- Cray - Improve support for zero compute note resource allocations.
     Partition used can now be configured with no nodes nodes.
  -- BGQ - make it so srun -i<taskid> works correctly.
