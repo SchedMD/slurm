@@ -2390,7 +2390,8 @@ The port number that the SLURM compute node daemon, \fBslurmd\fR, listens
 to for work on this particular node. By default there is a single port number
 for all \fBslurmd\fR daemons on all compute nodes as defined by the 
 \fBSlurmdPort\fR configuration parameter. Use of this option is not generally
-recommended except for development or testing purposes.
+recommended except for development or testing purposes. If multiple
+\fBslurmd\fR daemons execute on a node this can specify a range of ports
 
 .TP
 \fBProcs\fR

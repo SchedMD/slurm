@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.5.0.pre2
+=============================
+ -- When running with multiple slurmd daemons per node, enable specifying a
+    range of ports on a single line of the node configuration in slurm.conf.
+
 * Changes in SLURM 2.5.0.pre1
 =============================
  -- Add new output to "scontrol show configuration" of LicensesUsed. Output is
