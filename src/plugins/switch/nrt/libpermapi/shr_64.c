@@ -476,11 +476,12 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	*rmapi_version = 1300;
 	*resource_mgr = (void *)&job;
 #ifdef MYSELF_SO
-	/* Since POE opens this lib without RTLD_LAZY | RTLD_GLOBAL we
-	   just open ourself again with those options and bada bing
+	/* Since POE opens this lib without
+	   RTLD_LAZY | RTLD_GLOBAL | RTLD_DEEPBIND
+	   we just open ourself again with those options and bada bing
 	   bada boom we are good to go with the symbols we need.
 	*/
-	my_handle = dlopen(MYSELF_SO, RTLD_LAZY | RTLD_GLOBAL);
+	my_handle = dlopen(MYSELF_SO, RTLD_LAZY | RTLD_GLOBAL | RTLD_DEEPBIND);
 	if (!my_handle) {
 		debug("%s", dlerror());
 		return 1;
