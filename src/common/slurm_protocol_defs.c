@@ -117,7 +117,7 @@ extern void slurm_msg_t_init(slurm_msg_t *msg)
  *	values from the "src" slurm_msg_t structure.
  * IN src - Pointer to the initialized message from which "dest" will
  *	be initialized.
- * OUT dest - Pointer to the slurm_msg_t which will be intialized.
+ * OUT dest - Pointer to the slurm_msg_t which will be initialized.
  * NOTE: the "dest" structure will contain pointers into the contents of "src".
  */
 extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src)
