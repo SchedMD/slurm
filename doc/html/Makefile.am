@@ -34,6 +34,7 @@ generated_html = \
 	job_launch.html \
 	job_submit_plugins.html \
 	jobcompplugins.html \
+	launch_plugins.html \
 	mail.html \
 	man_index.html \
 	maui.html \

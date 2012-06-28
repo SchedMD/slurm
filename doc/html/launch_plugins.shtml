@@ -1,0 +1,150 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">SLURM Launch Plugin API</a></h1>
+
+<h2> Overview</h2>
+<p> This document describes SLURM launch plugins and the API that
+defines them. It is intended as a resource to programmers wishing to write
+their own SLURM launch plugins.
+
+
+<p><span class="commandline">const char
+plugin_name[]="<i>launch&nbsp;SLURM&nbsp;plugin</i>"</span>
+<p style="margin-left:.2in">
+
+<p><span class="commandline">const char
+plugin_type[]="<i>launch/slurm</i>"</span><br>
+<p style="margin-left:.2in">
+
+<li><b>poe</b> TBD
+<li><b>runjob</b> TBD
+<li><b>slurm</b> TBD<br>
+<p>The programmer is urged to study
+<span class="commandline">src/plugins/launch/slurm/launch_slurm.c</span>
+for a sample implementation of a SLURM launch plugin.
+<p class="footer"><a href="#top">top</a>
+
+<h2>API Functions</h2>
+
+<p class="commandline"> launch_common_get_slurm_step_layout(srun_job_t *job)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+Gets the slurm job step layout.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline"> job:</span> the job step to get.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline"> launch_common_create_job_step(srun_job_t *job,
+  bool use_all_cpus, void (*signal_function)(int), sig_atomic_t
+  *destroy_job)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+creates the job step with the given info.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline"> job:</span> job to be created into a job
+step.
+<span class="commandline"> use_all_cpus:</span> the choice to use all
+the cpus.
+<span class="commandline"> signal_function:</span> function that
+handles the signals coming in.
+<span class="commandline"> destroy_job:</span> pointer to a global
+flag signifying id the job was canceled while allocating.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline"> launch_common_set_stdio_fds(srun_job_t
+  *job,slurm_step_io_fds_t *cio_fds)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+sets the stdio_fds to the given info.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline"> job:</span> the job that is set.
+<span class="commandline"> cio_fds:</span> filling in the io descriptor.
+
+<p class="commandline"> int init(void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Called when the plugin is loaded, before any other functions are
+  called. Put global initialization here.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+  <span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline"> int fini(void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Called when the plugin is removed. Clear any allocated storage here.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+  <span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline"> int launch_p_setup_srun_opt(char **rest)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Sets up the srun operation.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+  <span class="commandline"> rest:</span> Handles all the signals
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+  <span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline"> int launch_p_create_job_step(srun_job_t *job,
+  bool use_all_cpus, void (*signal_function)(int), sig_atomic_t
+  *destroy_job)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Creates the job step.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+  <span class="commandline"> job:</span> the job to run.<br>
+  <span class="commandline"> use_all_cpus:</span> choice whether to use
+  all cpus.<br>
+  <span class="commandline"> signal_function:</span> function that
+  handles the signals coming in.<br>
+  <span class="commandline"> destroy_job:</span> pointer to a global
+  flag signifying if the job was canceled while allocating.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+  <span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline"> launch_p_step_launch(srun_job_t *job,
+  slurm_step_io_fds_t *cio_fds, uint32_t *global_rc)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Launches the job step.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+  <span class="commandline"> job:</span> the job to launch.<br>
+  <span class="commandline"> cio_fds:</span> filled in io descriptors<br>
+  <span class="commandline"> global_rc:</span> srun global return code.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+  <span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline"> int launch_p_step_wait(srun_job_t *job, bool
+  got_alloc)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Waits for the job to be finished.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+  <span class="commandline"> job:</span> the job to wait for.<br>
+  <span class="commandline"> got_alloc:</span> if the resource
+  allocation was created inside srun.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+  <span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline"> int launch_p_step_terminate(void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Terminates the job step.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+  <span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline"> void launch_p_print_status(void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Gets the status of the job.
+
+<p class="commandline"> void launch_p_fwd_signal(int signal)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Sends a forward signal to any underlyning tasks.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+  <span class="commandline"> signal:</span> the signal that needs to be sent.
+
+<p class="footer"><a href="#top">top</a>
+
+<p style="text-align:center;">Last modified 22 June 2012</p>
+
+<!--#include virtual="footer.txt"-->
