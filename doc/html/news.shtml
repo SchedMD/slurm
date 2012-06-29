@@ -4,25 +4,10 @@
 
 <h2>Index</h2>
 <ul>
-<li><a href="#23">SLURM Version 2.3, September 2011</a></li>
 <li><a href="#24">SLURM Version 2.4, June 2012</a></li>
 <li><a href="#25">SLURM Version 2.5, scheduled for November 2012</a></li>
 <li><a href="#26">SLURM Version 2.6 and beyond</a></li>
 <li><a href="#security">Security Patches</a></li>
-</ul>
-
-<h2><a name="23">Major Updates in SLURM Version 2.3</a></h2>
-<p>SLURM Version 2.2 was released in September 2011.
-Major enhancements include:
-<ul>
-<li>Support for Cray XT and XE computers (integration with ALPS/BASIL).</li>
-<li>Support for BlueGene/Q computers (partially implemented).</li>
-<li>Support for multiple front-end nodes running slurmd daemons (for Cray and
-BlueGene architectures, improves performance and fault tolerance).</li>
-<li>Support for Linux cgroup job containers including integration with
-generic resources.</li>
-<li>Support for growing job allocations (support for shrinking jobs was added
-in version 2.2).</li>
 </ul>
 
 <h2><a name="24">Major Updates in SLURM Version 2.4</a></h2>
@@ -30,8 +15,8 @@ in version 2.2).</li>
 Major enhancements include:
 <ul>
 <li>Major improvement in job throuhgput: Up to 500 jobs per second (actual
-throughput depends upon configuration, hardware, etc.).<li>
-<li>Support for BlueGene/Q computers (fully implemented).</li>
+throughput depends upon configuration, hardware, etc.).</li>
+<li>Support for BlueGene/Q computers.</li>
 <li>Resource reservations with a node count specification will select
 those nodes optimized for the system topology.</li>
 <li>Support for job and step constraints with resource counts (e.g. a job
@@ -97,6 +82,6 @@ trojan library, then that library will be used by the SLURM daemon with
 unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 17 May 2012</p>
+<p style="text-align:center;">Last modified 29 June 2012</p>
 
 <!--#include virtual="footer.txt"-->
