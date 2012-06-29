@@ -5,6 +5,10 @@ documents those changes that are of interest to users and admins.
 =============================
  -- When running with multiple slurmd daemons per node, enable specifying a
     range of ports on a single line of the node configuration in slurm.conf.
+ -- Add reservation flag of Part_Nodes to allocate all nodes in a partition to
+    a reservation and automatically change the reservation when nodes are
+    added to or removed from the reservation. Based upon work by
+    Bill Brophy, Bull.
 
 * Changes in SLURM 2.5.0.pre1
 =============================

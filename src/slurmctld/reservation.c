@@ -1239,7 +1239,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					RESERVE_FLAG_DAILY    |
 					RESERVE_FLAG_WEEKLY   |
 					RESERVE_FLAG_LIC_ONLY |
-					RESERVE_FLAG_STATIC;
+					RESERVE_FLAG_STATIC   |
+					RESERVE_FLAG_PART_NODES;
 	}
 	if (resv_desc_ptr->partition) {
 		part_ptr = find_part_record(resv_desc_ptr->partition);
@@ -1249,6 +1250,11 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = ESLURM_INVALID_PARTITION_NAME;
 			goto bad_parse;
 		}
+	} else if (resv_desc_ptr->flags & RESERVE_FLAG_PART_NODES) {
+		info("Reservation request with Part_Nodes flag lacks "
+		     "partition specification");
+		rc = ESLURM_INVALID_PARTITION_NAME;
+		goto bad_parse;
 	}
 	if ((resv_desc_ptr->accounts == NULL) &&
 	    (resv_desc_ptr->users == NULL)) {
@@ -1337,8 +1343,15 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	if (resv_desc_ptr->node_list) {
 		resv_desc_ptr->flags |= RESERVE_FLAG_SPEC_NODES;
 		if (strcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
-			node_bitmap = bit_alloc(node_record_count);
-			bit_nset(node_bitmap, 0, (node_record_count - 1));
+			if ((resv_desc_ptr->partition) &&
+			    (resv_desc_ptr->flags & RESERVE_FLAG_PART_NODES)) {
+				part_ptr = find_part_record(
+					resv_desc_ptr->partition);
+				node_bitmap = bit_copy(part_ptr->node_bitmap);
+			} else {
+				node_bitmap = bit_alloc(node_record_count);
+				bit_nset(node_bitmap, 0,(node_record_count-1));
+			}
 			xfree(resv_desc_ptr->node_list);
 			resv_desc_ptr->node_list =
 				bitmap2node_name(node_bitmap);
@@ -1490,6 +1503,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	int error_code = SLURM_SUCCESS, i, rc;
 	char start_time[32], end_time[32];
 	char *name1, *name2, *val1, *val2;
+	struct part_record *part_ptr = NULL;
 
 	if (!resv_list)
 		resv_list = list_create(_del_resv_rec);
@@ -1534,6 +1548,21 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_ptr->flags |= RESERVE_FLAG_STATIC;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_STATIC)
 			resv_ptr->flags &= (~RESERVE_FLAG_STATIC);
+		if (resv_desc_ptr->flags & RESERVE_FLAG_PART_NODES) {
+			if ((resv_ptr->partition == NULL) &&
+			    (resv_desc_ptr->partition == NULL)) {
+				info("Reservation request can not set "
+				     "Part_Nodes flag without partition");
+				error_code = ESLURM_INVALID_PARTITION_NAME;
+				goto update_failure;
+			}
+			resv_ptr->flags |= RESERVE_FLAG_PART_NODES;
+			/* Explicitly set the node_list to ALL */
+			xfree(resv_desc_ptr->node_list);
+			resv_desc_ptr->node_list = xstrdup("ALL");
+		}
+		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_PART_NODES)
+			resv_ptr->flags &= (~RESERVE_FLAG_PART_NODES);
 	}
 	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')){
 		/* Clear the partition */
@@ -1674,15 +1703,30 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		bitstr_t *node_bitmap;
 		resv_ptr->flags |= RESERVE_FLAG_SPEC_NODES;
 		if (strcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
-			node_bitmap = bit_alloc(node_record_count);
-			bit_nset(node_bitmap, 0, (node_record_count - 1));
-		} else if (node_name2bitmap(resv_desc_ptr->node_list,
+			if ((resv_ptr->partition) &&
+			    (resv_ptr->flags & RESERVE_FLAG_PART_NODES)) {
+				part_ptr = find_part_record(resv_ptr->
+							    partition);
+				node_bitmap = bit_copy(part_ptr->node_bitmap);
+				xfree(resv_ptr->node_list);
+				resv_ptr->node_list = xstrdup(part_ptr->nodes);
+			} else {
+				node_bitmap = bit_alloc(node_record_count);
+				bit_nset(node_bitmap, 0,(node_record_count-1));
+				resv_ptr->flags &= (~RESERVE_FLAG_PART_NODES);
+				xfree(resv_ptr->node_list);
+				resv_ptr->node_list = resv_desc_ptr->node_list;
+			}
+		} else {
+			resv_ptr->flags &= (~RESERVE_FLAG_PART_NODES);
+			if (node_name2bitmap(resv_desc_ptr->node_list,
 					    false, &node_bitmap)) {
-			error_code = ESLURM_INVALID_NODE_NAME;
-			goto update_failure;
+				error_code = ESLURM_INVALID_NODE_NAME;
+				goto update_failure;
+			}
+			xfree(resv_ptr->node_list);
+			resv_ptr->node_list = resv_desc_ptr->node_list;
 		}
-		xfree(resv_ptr->node_list);
-		resv_ptr->node_list = resv_desc_ptr->node_list;
 		resv_desc_ptr->node_list = NULL;  /* Nothing left to free */
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 		resv_ptr->node_bitmap = node_bitmap;
@@ -1690,6 +1734,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	}
 	if (resv_desc_ptr->node_cnt) {
 		uint32_t total_node_cnt = 0;
+		resv_ptr->flags &= (~RESERVE_FLAG_PART_NODES);
 
 #ifdef HAVE_BG
 		if (!cnodes_per_bp) {
@@ -3345,6 +3390,34 @@ extern void update_assocs_in_resvs(void)
 		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = list_next(iter))) {
 		_set_assoc_list(resv_ptr);
+	}
+	list_iterator_destroy(iter);
+}
+
+extern void update_part_nodes_in_resv(struct part_record *part_ptr)
+{
+	ListIterator iter = NULL;
+	struct part_record *parti_ptr = NULL;
+	slurmctld_resv_t *resv_ptr = NULL;
+	xassert(part_ptr);
+
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if ((resv_ptr->flags & RESERVE_FLAG_PART_NODES) &&
+		    (resv_ptr->partition != NULL) &&
+		    (strcmp(resv_ptr->partition, part_ptr->name) == 0)) {
+			parti_ptr = find_part_record(resv_ptr->partition);
+			FREE_NULL_BITMAP(resv_ptr->node_bitmap);
+			resv_ptr->node_bitmap = bit_copy(parti_ptr->
+							 node_bitmap);
+			resv_ptr->node_cnt = bit_set_count(resv_ptr->
+							   node_bitmap); 
+			xfree(resv_ptr->node_list);
+			resv_ptr->node_list = xstrdup(parti_ptr->nodes);
+			last_resv_update = time(NULL);
+		}
 	}
 	list_iterator_destroy(iter);
 }

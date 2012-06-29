@@ -1392,6 +1392,16 @@ extern char *reservation_flags_string(uint16_t flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "NO_STATIC");
 	}
+	if (flags & RESERVE_FLAG_PART_NODES) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "PART_NODES");
+	}
+	if (flags & RESERVE_FLAG_NO_PART_NODES) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "NO_PART_NODES");
+	}
 	return flag_str;
 }
 

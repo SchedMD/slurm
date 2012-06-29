@@ -551,7 +551,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 			"Specify either Accounts or Users.\n\n"
 			"Supported Flags include: Maintenance, Overlap,\n"
 			"Ignore_Jobs, Daily and Weekly, License_Only\n"
-			"and Static_Alloc.\n"
+			"Part_Nodes and Static_Alloc.\n"
 			"All other fields are optional.");
 		resv_msg = xmalloc(sizeof(resv_desc_msg_t));
 		slurm_init_resv_desc_msg(resv_msg);

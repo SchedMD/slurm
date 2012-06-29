@@ -81,6 +81,12 @@ extern bool is_node_in_maint_reservation(int nodenum);
 extern void update_assocs_in_resvs(void);
 
 /*
+ * Update reserved nodes for all reservations using a specific partition if the
+ * resevation has NodeList=ALL and RESERVE_FLAGS_PART_NODES.
+*/
+extern void update_part_nodes_in_resv(struct part_record *part_ptr);
+
+/*
  * Load the reservation state from file, recover on slurmctld restart.
  *	Reset reservation pointers for all jobs.
  *	Execute this after loading the configuration file data.
