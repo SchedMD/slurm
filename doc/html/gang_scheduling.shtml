@@ -69,6 +69,8 @@ It may also be desirable to configure
 <I>MaxMemPerNode</I> (maximum memory per allocated node) in <I>slurm.conf</I>.
 Users can use the <I>--mem</I> or <I>--mem-per-cpu</I> option
 at job submission time to specify their memory requirements.
+Note that in order to gang schedule jobs, all jobs must be able to fit into
+memory at the same time.
 </LI>
 <LI>
 <B>JobAcctGatherType and JobAcctGatherFrequency</B>:
@@ -525,6 +527,6 @@ For now this idea could be experimented with by disabling memory support in
 the selector and submitting appropriately sized jobs.
 </P>
 
-<p style="text-align:center;">Last modified 24 June 2011</p>
+<p style="text-align:center;">Last modified 29 June 2012</p>
 
 <!--#include virtual="footer.txt"-->
