@@ -94,6 +94,14 @@ bitstr_t *idle_node_bitmap  = NULL;	/* bitmap of idle nodes */
 bitstr_t *power_node_bitmap = NULL;	/* bitmap of powered down nodes */
 bitstr_t *share_node_bitmap = NULL;  	/* bitmap of sharable nodes */
 bitstr_t *up_node_bitmap    = NULL;  	/* bitmap of non-down nodes */
+bool load_2_4_state         = false;    /* There was a bug in 2.4.0
+					 * where the job state version
+					 * wasn't incremented
+					 * correctly.  Luckly the node
+					 * state was.  We will use it
+					 * to set the version
+					 * correctly in the job.
+					 */
 
 static void 	_dump_node_state (struct node_record *dump_node_ptr,
 				  Buf buffer);
@@ -342,6 +350,9 @@ extern int load_all_node_state ( bool state_only )
 		return EFAULT;
 	}
 	xfree(ver_str);
+
+	if (protocol_version == SLURM_2_4_PROTOCOL_VERSION)
+		load_2_4_state = true;
 
 	safe_unpack_time (&time_stamp, buffer);
 

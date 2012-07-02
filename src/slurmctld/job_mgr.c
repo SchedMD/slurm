@@ -644,6 +644,13 @@ extern int load_all_job_state(void)
 	}
 	xfree(ver_str);
 
+	/* There was a bug in 2.4.0 where the job state version wasn't
+	 * incremented correctly.  Luckly the node state was.  We will
+	 * use it to set the version correctly in the job.
+	 */
+	if (load_2_4_state && protocol_version == SLURM_2_3_PROTOCOL_VERSION)
+		protocol_version = SLURM_2_4_PROTOCOL_VERSION;
+
 	safe_unpack_time(&buf_time, buffer);
 	safe_unpack32( &saved_job_id, buffer);
 	job_id_sequence = MAX(saved_job_id, job_id_sequence);
