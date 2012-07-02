@@ -1,6 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.4.1
+========================
+ -- Fix bug for job state change from 2.3 -> 2.4 job state can now be preserved
+    correctly when transitioning.  This also applies for 2.4.0 -> 2.4.1, no
+    state will be lost. (Thanks to Carles Fenoy)
+
 * Changes in SLURM 2.4.0
 ========================
  -- Cray - Improve support for zero compute note resource allocations.
