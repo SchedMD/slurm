@@ -1078,6 +1078,12 @@ may use the reserved nodes.
 A new reservation must specify Users and/or Accounts.
 
 .TP
+\fICoreCnt\fP=<num>
+Identify number of cores to be reserved. This should only be used for
+reservations that are less than one node in size. Otherwise use the
+\fINodeCnt\fP option described below.
+
+.TP
 \fILicenses\fP=<license>
 Specification of licenses (or other resources available on all
 nodes of the cluster) which are to be reserved.

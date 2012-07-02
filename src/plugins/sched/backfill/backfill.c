@@ -146,7 +146,7 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 			       uint32_t end_reserve);
 static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
-		       uint32_t req_nodes);
+		       uint32_t req_nodes, bitstr_t *exc_core_bitmap);
 
 /* Log resource allocate table */
 static void _dump_node_space_table(node_space_map_t *node_space_ptr)
@@ -240,11 +240,12 @@ static int _num_feature_count(struct job_record *job_ptr)
 /* Attempt to schedule a specific job on specific available nodes
  * IN job_ptr - job to schedule
  * IN/OUT avail_bitmap - nodes available/selected to use
+ * IN exc_core_bitmap - cores which can not be used
  * RET SLURM_SUCCESS on success, otherwise an error code
  */
 static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
-		       uint32_t req_nodes)
+		       uint32_t req_nodes, bitstr_t *exc_core_bitmap)
 {
 	bitstr_t *tmp_bitmap;
 	int rc = SLURM_SUCCESS;
@@ -289,7 +290,8 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 			rc = select_g_job_test(job_ptr, *avail_bitmap,
 					       high_cnt, max_nodes, req_nodes,
 					       SELECT_MODE_WILL_RUN,
-					       preemptee_candidates, NULL);
+					       preemptee_candidates, NULL,
+					       exc_core_bitmap);
 		}
 
 		/* Restore the feature counts */
@@ -306,15 +308,26 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		 * then on shared nodes (if so configured). */
 		uint16_t orig_shared;
 		time_t now = time(NULL);
+		char str[100];
+
 		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 		orig_shared = job_ptr->details->shared;
 		job_ptr->details->shared = 0;
 		tmp_bitmap = bit_copy(*avail_bitmap);
+
+		if (exc_core_bitmap){
+			bit_fmt(str, (sizeof(str) - 1), exc_core_bitmap);
+			debug2(" _try_sched with exclude core bitmap: %s",str);
+		}
+
 		rc = select_g_job_test(job_ptr, *avail_bitmap, min_nodes,
 				       max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN,
-				       preemptee_candidates, NULL);
+				       preemptee_candidates, NULL,
+				       exc_core_bitmap);
+
 		job_ptr->details->shared = orig_shared;
+
 		if (((rc != SLURM_SUCCESS) || (job_ptr->start_time > now)) &&
 		    (orig_shared != 0)) {
 			FREE_NULL_BITMAP(*avail_bitmap);
@@ -322,7 +335,8 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 			rc = select_g_job_test(job_ptr, *avail_bitmap,
 					       min_nodes, max_nodes, req_nodes,
 					       SELECT_MODE_WILL_RUN,
-					       preemptee_candidates, NULL);
+					       preemptee_candidates, NULL,
+					       exc_core_bitmap);
 		} else
 			FREE_NULL_BITMAP(tmp_bitmap);
 	}
@@ -506,6 +520,7 @@ static int _attempt_backfill(void)
 	uint32_t time_limit, comp_time_limit, orig_time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
+	bitstr_t *exc_core_bitmap = NULL;
 	time_t now, sched_start, later_start, start_res;
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
@@ -686,7 +701,9 @@ static int _attempt_backfill(void)
  TRY_LATER:	FREE_NULL_BITMAP(avail_bitmap);
 		start_res   = later_start;
 		later_start = 0;
-		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap);
+		exc_core_bitmap = NULL;
+		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
+				  &exc_core_bitmap);
 		if (j != SLURM_SUCCESS) {
 			job_ptr->time_limit = orig_time_limit;
 			continue;
@@ -773,10 +790,8 @@ static int _attempt_backfill(void)
 		       job_ptr->job_id);
 
 		slurmctld_diag_stats.bf_last_depth_try++;
-		j = _try_sched(job_ptr, &avail_bitmap,
-			       min_nodes, max_nodes, req_nodes);
-		debug2("backfill: finished _try_sched for job %u.",
-		       job_ptr->job_id);
+		j = _try_sched(job_ptr, &avail_bitmap, min_nodes, max_nodes,
+			       req_nodes, exc_core_bitmap);
 		now = time(NULL);
 		if (j != SLURM_SUCCESS) {
 			job_ptr->time_limit = orig_time_limit;

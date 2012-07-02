@@ -147,6 +147,7 @@ static void _compute_start_times(void)
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	bitstr_t *alloc_bitmap = NULL, *avail_bitmap = NULL;
+	bitstr_t *exc_core_bitmap = NULL;
 	uint32_t max_nodes, min_nodes, req_nodes, time_limit;
 	time_t now = time(NULL), sched_start, last_job_alloc;
 
@@ -193,14 +194,16 @@ static void _compute_start_times(void)
 			continue;
 		}
 
-		j = job_test_resv(job_ptr, &now, true, &avail_bitmap);
+		j = job_test_resv(job_ptr, &now, true, &avail_bitmap,
+				  &exc_core_bitmap);
 		if (j != SLURM_SUCCESS)
 			continue;
 
 		rc = select_g_job_test(job_ptr, avail_bitmap,
 				       min_nodes, max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN,
-				       preemptee_candidates, NULL);
+				       preemptee_candidates, NULL,
+				       exc_core_bitmap);
 		if (rc == SLURM_SUCCESS) {
 			last_job_update = now;
 			if (job_ptr->time_limit == INFINITE)

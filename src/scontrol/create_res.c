@@ -290,6 +290,14 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 				tok = strtok_r(NULL, ",", &ptrptr);
 			}
 			xfree(node_cnt);
+
+		} else if (strncasecmp(tag, "CoreCnt",   MAX(taglen,5)) == 0 ||
+		           strncasecmp(tag, "CoreCount", MAX(taglen,5)) == 0 ||
+		           strncasecmp(tag, "CPUCnt",    MAX(taglen,5)) == 0 ||
+			   strncasecmp(tag, "CPUCount",  MAX(taglen,5)) == 0) {
+			char *endptr = NULL;
+			resv_msg_ptr->core_cnt = strtol(val, &endptr, 10);
+
 		} else if (strncasecmp(tag, "Nodes", MAX(taglen, 5)) == 0) {
 			resv_msg_ptr->node_list = val;
 
@@ -499,13 +507,14 @@ scontrol_create_res(int argc, char *argv[])
 	 * If  the following parameters are null, but a partition is named, then
 	 * make the reservation for the whole partition.
 	 */
-	if ((resv_msg.node_cnt  == NULL || resv_msg.node_cnt[0]  == 0)    &&
+	if ((resv_msg.core_cnt == 0) &&
+	    (resv_msg.node_cnt  == NULL || resv_msg.node_cnt[0]  == 0)    &&
 	    (resv_msg.node_list == NULL || resv_msg.node_list[0] == '\0') &&
 	    (resv_msg.licenses  == NULL || resv_msg.licenses[0]  == '\0')) {
 		if (resv_msg.partition == NULL) {
 			exit_code = 1;
-			error("Nodes, NodeCnt or Licenses must be specified.  "
-			      "No reservation created.");
+			error("CoreCnt, Nodes, NodeCnt or Licenses must be "
+			      "specified. No reservation created.");
 			goto SCONTROL_CREATE_RES_CLEANUP;
 		} else if ((node_count = _partition_node_count(resv_msg.partition))
 			    == NO_VAL) {

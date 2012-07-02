@@ -9,6 +9,11 @@ documents those changes that are of interest to users and admins.
     a reservation and automatically change the reservation when nodes are
     added to or removed from the reservation. Based upon work by
     Bill Brophy, Bull.
+ -- Add support for advanced reservation for specific cores rather than whole
+    nodes. Current limiations: homogeneous cluster, nodes idle when reservation
+    created, and no more than one reservation per node. Code is still under
+    development. Work by Alejandro Lucero Palau, et. al, BSC.
+
 
 * Changes in SLURM 2.5.0.pre1
 =============================

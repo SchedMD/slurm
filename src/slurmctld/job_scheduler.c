@@ -1718,6 +1718,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
+	bitstr_t *exc_core_bitmap = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	int i, rc = SLURM_SUCCESS;
 	time_t now = time(NULL), start_res, orig_start_time = (time_t) 0;
@@ -1772,7 +1773,8 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		start_res = job_ptr->details->begin_time;
 	else
 		start_res = now;
-	i = job_test_resv(job_ptr, &start_res, false, &resv_bitmap);
+	i = job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
+			  &exc_core_bitmap);
 	if (i != SLURM_SUCCESS)
 		return i;
 	bit_and(avail_bitmap, resv_bitmap);
@@ -1809,7 +1811,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 				       min_nodes, max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN,
 				       preemptee_candidates,
-				       &preemptee_job_list);
+				       &preemptee_job_list, exc_core_bitmap);
 	}
 
 	if (rc == SLURM_SUCCESS) {

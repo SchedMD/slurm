@@ -531,13 +531,15 @@ extern int select_g_block_init(List block_list)
  *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  *		Existing list is appended to.
+ * IN exc_core_bitmap - cores used in reservations and not usable
  * RET zero on success, EINVAL otherwise
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes,
 			     uint32_t req_nodes, uint16_t mode,
 			     List preemptee_candidates,
-			     List *preemptee_job_list)
+			     List *preemptee_job_list,
+			     bitstr_t *exc_core_bitmap)
 {
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
@@ -1219,15 +1221,18 @@ extern int select_g_reconfigure (void)
  *	OR the fewest number of consecutive node sets
  * IN avail_bitmap - nodes available for the reservation
  * IN node_cnt - count of required nodes
+ * IN core_cnt - count of required cores
+ * IN core_bitmap - cores to be excluded for this reservation
  * RET - nodes selected for use by the reservation
  */
-extern bitstr_t * select_g_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
+extern bitstr_t * select_g_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
+				     uint32_t core_cnt, bitstr_t **core_bitmap)
 {
 	if (slurm_select_init(0) < 0)
 		return NULL;
 
 	return (*(ops[select_context_default].resv_test))
-		(avail_bitmap, node_cnt);
+		(avail_bitmap, node_cnt, core_cnt, core_bitmap);
 }
 
 extern void select_g_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)

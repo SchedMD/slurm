@@ -214,7 +214,9 @@ typedef struct slurm_select_ops {
 						 void *data);
 	int		(*reconfigure)		(void);
 	bitstr_t *      (*resv_test)            (bitstr_t *avail_bitmap,
-						 uint32_t node_cnt);
+						 uint32_t node_cnt,
+						 uint32_t core_cnt,
+						 bitstr_t **core_bitmap);
 	void            (*ba_init)              (node_info_msg_t *node_info_ptr,
 						 bool sanity_check);
 	void            (*ba_fini)              (void);
@@ -543,13 +545,15 @@ extern char *select_g_select_jobinfo_xstrdup(dynamic_plugin_data_t *jobinfo,
  *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  *		Existing list is appended to.
+ * IN exc_core_bitmap - cores reserved and not usable
  * RET zero on success, EINVAL otherwise
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes,
 			     uint32_t req_nodes, uint16_t mode,
 			     List preemptee_candidates,
-			     List *preemptee_job_list);
+			     List *preemptee_job_list,
+			     bitstr_t *exc_core_bitmap);
 
 /*
  * Note initiation of job is about to begin. Called immediately
@@ -658,9 +662,13 @@ extern int select_g_step_finish(struct step_record *step_ptr);
  *	OR the fewest number of consecutive node sets
  * IN avail_bitmap - nodes available for the reservation
  * IN node_cnt - count of required nodes
+ * IN core_cnt - count of required cores
+ * IN core_bitmap - cores to exclude for this reservation
  * RET - nodes selected for use by the reservation
  */
-extern bitstr_t * select_g_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt);
+extern bitstr_t * select_g_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
+				     uint32_t core_cnt,
+				     bitstr_t **core_bitmap);
 
 /*****************************\
  * GET INFORMATION FUNCTIONS *
