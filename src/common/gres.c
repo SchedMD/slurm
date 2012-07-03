@@ -706,6 +706,10 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			fatal("Invalid gres data for %s, Count does not match "
 			      "File value", p->name);
 		}
+		if ((tmp_long < 0) || (tmp_long >= NO_VAL)) {
+			fatal("Gres %s has invalid count value %ld",
+			      p->name, tmp_long);
+		}
 		p->count = tmp_long;
 		xfree(tmp_str);
 	} else if (p->count == 0)
