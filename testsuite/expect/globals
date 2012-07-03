@@ -1313,6 +1313,35 @@ proc test_serial { } {
 
 ################################################################
 #
+# Proc: test_switch_nrt
+#
+# Purpose: Determine if the system is using switch/nrt.
+#
+# Returns 1 if the system is running swtich/nrt, 0 otherwise
+#
+################################################################
+
+proc test_switch_nrt { } {
+	global scontrol bin_bash bin_grep
+
+	log_user 0
+	set switch_nrt 0
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SwitchType"
+	expect {
+		"switch/nrt" {
+			set switch_nrt 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $switch_nrt
+}
+################################################################
+#
 # Proc: test_emulated
 #
 # Purpose: Determine if the system is emulated (not running on
