@@ -1,3 +1,5 @@
+                         SLURM LICENSE AGREEMENT
+
 All SLURM code and documentation is available under the GNU General Public 
 License. Some tools in the "contribs" directory have other licenses. See 
 the documentation for individual contributed tools for details. 
@@ -13,14 +15,18 @@ wish to do so, delete this exception statement from your version. If you
 delete this exception statement from all source files in the program, then 
 also delete it here.  
 
+NO WARRANTY: Because the program is licensed free of charge, there is no
+warranty for the program. See section 11 below for full details.
+
 =============================================================================
 
 OUR NOTICE AND TERMS OF AND CONDITIONS OF THE GNU GENERAL PUBLIC LICENSE
 
 Auspices
 
-This work performed under the auspices of the U.S. Department of Energy by 
-Lawrence Livermore National Laboratory under Contract DE-AC52-07NA27344.
+Portions of this work were performed under the auspices of the U.S. Department
+of Energy by Lawrence Livermore National Laboratory under Contract
+DE-AC52-07NA27344.
 
 Disclaimer
 
@@ -98,7 +104,7 @@ patent must be licensed for everyone's free use or not licensed at all.
 
   The precise terms and conditions for copying, distribution and
 modification follow.
-
+
 		    GNU GENERAL PUBLIC LICENSE
    TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 
@@ -153,7 +159,7 @@ above, provided that you also meet all of these conditions:
     License.  (Exception: if the Program itself is interactive but
     does not normally print such an announcement, your work based on
     the Program is not required to print an announcement.)
-
+
 These requirements apply to the modified work as a whole.  If
 identifiable sections of that work are not derived from the Program,
 and can be reasonably considered independent and separate works in
