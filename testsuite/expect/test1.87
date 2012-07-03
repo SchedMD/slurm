@@ -79,6 +79,11 @@ expect {
 		slow_kill $srun_pid
 		exit 0
 	}
+	-re "Required node not available" {
+		send_user "\nWARNING: can't test srun task distribution\n"
+		exec $bin_rm -f $file_in
+		exit $exit_code
+	}
 	-re "Unable to contact" {
 		send_user "\nFAILURE: slurm appears to be down\n"
 		exit 1

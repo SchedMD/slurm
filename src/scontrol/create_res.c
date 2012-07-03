@@ -496,9 +496,10 @@ scontrol_create_res(int argc, char *argv[])
 
 	if ((resv_msg.partition == NULL) && (resv_msg.node_list != NULL) &&
 	    (strcasecmp(resv_msg.node_list, "ALL") == 0) &&
+	    (resv_msg.flags != (uint16_t) NO_VAL) &&
 	    (resv_msg.flags & RESERVE_FLAG_PART_NODES)) {
 		exit_code = 1;
-		error("Part_Nodes requires specifying a Partition. "
+		error("Part_Nodes flag requires specifying a Partition. "
 		      "No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
