@@ -956,7 +956,8 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	List requests = NULL;
 	List delete_list = NULL;
 	ListIterator itr = NULL;
-	bg_record_t *bg_record = NULL, *found_record = NULL, tmp_record;
+	bg_record_t *bg_record = NULL, *found_record = NULL,
+		tmp_record, *error_bg_record = NULL;
 	bg_record_t *smallest_bg_record = NULL;
 	struct node_record *node_ptr = NULL;
 	int mp_bit = 0;
@@ -1076,9 +1077,10 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	if (bg_conf->layout_mode != LAYOUT_DYNAMIC) {
 		debug3("running non-dynamic mode");
 		/* This should never happen, but just in case... */
-		if (delete_list)
+		if (delete_list) {
 			list_destroy(delete_list);
-
+			delete_list = NULL;
+		}
 		/* If we found a block that is smaller or equal to a
 		   midplane we will just mark it in an error state as
 		   opposed to draining the node.
@@ -1092,8 +1094,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			}
 
 			slurm_mutex_unlock(&block_state_mutex);
-			rc = put_block_in_error_state(
-				smallest_bg_record, reason);
+			error_bg_record = smallest_bg_record;
 			goto cleanup;
 		}
 
@@ -1117,24 +1118,18 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	if (delete_list) {
 		int cnt_set = 0;
 		bitstr_t *iobitmap = bit_alloc(bg_conf->ionodes_per_mp);
-		/* don't lock here since it is handled inside
-		   the put_block_in_error_state
-		*/
 		itr = list_iterator_create(delete_list);
 		while ((bg_record = list_next(itr))) {
 			debug2("combining smaller than nodecard "
 			       "dynamic block %s",
 			       bg_record->bg_block_id);
-			while ((bg_record->job_running > NO_JOB_RUNNING)
-			       || (bg_record->job_list
-				   && list_count(bg_record->job_list)))
-				sleep(1);
-
 			bit_or(iobitmap, bg_record->ionode_bitmap);
 			cnt_set++;
 		}
 		list_iterator_destroy(itr);
 		list_destroy(delete_list);
+		delete_list = NULL;
+
 		if (!cnt_set) {
 			FREE_NULL_BITMAP(iobitmap);
 			rc = SLURM_ERROR;
@@ -1166,15 +1161,9 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			goto cleanup;
 		}
 
-		while ((smallest_bg_record->job_running > NO_JOB_RUNNING)
-		       || (smallest_bg_record->job_list
-			   && list_count(smallest_bg_record->job_list)))
-			sleep(1);
-
 		if (smallest_bg_record->cnode_cnt == create_size) {
 			slurm_mutex_unlock(&block_state_mutex);
-			rc = put_block_in_error_state(
-				smallest_bg_record, reason);
+			error_bg_record = smallest_bg_record;
 			goto cleanup;
 		}
 
@@ -1184,8 +1173,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			 * block that is already made.
 			 */
 			slurm_mutex_unlock(&block_state_mutex);
-			rc = put_block_in_error_state(
-				smallest_bg_record, reason);
+			error_bg_record = smallest_bg_record;
 			goto cleanup;
 		}
 		debug3("node count is %d", smallest_bg_record->cnode_cnt);
@@ -1337,31 +1325,38 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 				tmp_record.ionode_bitmap)) {
 			/* here we know the error block doesn't exist
 			   so just set the state here */
-			slurm_mutex_unlock(&block_state_mutex);
-			rc = put_block_in_error_state(bg_record, reason);
-			slurm_mutex_lock(&block_state_mutex);
+			error_bg_record = bg_record;
 		}
 	}
 	list_destroy(requests);
 
-	if (delete_list) {
-		bool delete_it = 0;
-		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
-			delete_it = 1;
-		slurm_mutex_unlock(&block_state_mutex);
-		free_block_list(NO_VAL, delete_list, delete_it, 0);
-		list_destroy(delete_list);
-		slurm_mutex_lock(&block_state_mutex);
-	}
 	sort_bg_record_inc_size(bg_lists->main);
-	slurm_mutex_unlock(&block_state_mutex);
 	last_bg_update = time(NULL);
+	slurm_mutex_unlock(&block_state_mutex);
 
 cleanup:
 	if (!slurmctld_locked)
 		unlock_slurmctld(job_write_lock);
 	FREE_NULL_BITMAP(tmp_record.mp_bitmap);
 	FREE_NULL_BITMAP(tmp_record.ionode_bitmap);
+	if (error_bg_record) {
+		/* all locks must be released before going into
+		 * put_block_in_error_state.
+		 */
+		if (slurmctld_locked)
+			unlock_slurmctld(job_write_lock);
+		rc = put_block_in_error_state(error_bg_record, reason);
+		if (slurmctld_locked)
+			lock_slurmctld(job_write_lock);
+	}
+	if (delete_list) {
+		bool delete_it = 0;
+		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
+			delete_it = 1;
+		free_block_list(NO_VAL, delete_list, delete_it, 0);
+		list_destroy(delete_list);
+		delete_list = NULL;
+	}
 
 	return rc;
 

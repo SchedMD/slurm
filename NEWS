@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.4.2
+========================
+ -- BLUEGENE - Correct potential deadlock issue when hardware goes bad and
+    there are jobs running on that hardware.
+
 * Changes in SLURM 2.4.1
 ========================
  -- Fix bug for job state change from 2.3 -> 2.4 job state can now be preserved
