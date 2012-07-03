@@ -1290,7 +1290,8 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 		goto cleanup;
 	}
 
-	if (node_ptr->port_str[0] && (node_ptr->port_str[0] != '[') &&
+	if (node_ptr->port_str && node_ptr->port_str[0] &&
+	    (node_ptr->port_str[0] != '[') &&
 	    (strchr(node_ptr->port_str, '-') ||
 	     strchr(node_ptr->port_str, ','))) {
 		xstrfmtcat(port_str, "[%s]", node_ptr->port_str);
@@ -1358,7 +1359,7 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 			address = hostlist_shift(address_list);
 		if ((hostname_count > 1) || (hostname == NULL))
 			hostname = hostlist_shift(hostname_list);
-		if ((port_count > 1) || (port_str == NULL)) {
+		if ((port_count > 1) && (port_str == NULL)) {
 			int port_int;
 			port_str = hostlist_shift(port_list);
 			port_int = atoi(port_str);

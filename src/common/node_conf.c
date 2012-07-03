@@ -179,7 +179,8 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 		error_code = errno;
 		goto cleanup;
 	}
-	if (node_ptr->port_str[0] && (node_ptr->port_str[0] != '[') &&
+	if (node_ptr->port_str && node_ptr->port_str[0] &&
+	    (node_ptr->port_str[0] != '[') &&
 	    (strchr(node_ptr->port_str, '-') ||
 	     strchr(node_ptr->port_str, ','))) {
 		xstrfmtcat(port_str, "[%s]", node_ptr->port_str);
