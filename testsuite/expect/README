@@ -400,6 +400,7 @@ test12.5   Test sacct --helpformat option.
 test13.#   Testing of switch plugins
 ====================================
 test13.1   Test that we avoid re-using active switch contexts.
+test13.2   Test for switch/nrt's --network options.
 
 
 test14.#   Testing of sbcast options.
