@@ -54,7 +54,7 @@ proc create_nrtparams {nrt_params} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILUR0E: srun not responding\n"
+			send_user "\nFAILURE: srun not responding\n"
 			set exit_code 1
 			exp_continue
 		}
