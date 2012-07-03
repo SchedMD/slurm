@@ -1126,8 +1126,8 @@ requested time limit for a job exceeds the partition's time limit,
 the job will be left in a PENDING state (possibly indefinitely).
 If the requested time limit for a job step exceeds the partition's
 time limit, the job step will not be initiated.  The default time
-limit is the partition's time limit.  When the time limit is reached,
-the job's tasks are sent SIGTERM followed by SIGKILL. If the time
+limit is the partition's default time limit.  When the time limit is reached,
+each task in each job step is sent SIGTERM followed by SIGKILL.  The
 limit is for the job, all job steps are signaled. If the time limit is
 for a single job step within an existing job allocation, only that job
 step will be affected. A job time limit supercedes all job step time
