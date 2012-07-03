@@ -161,7 +161,7 @@ In example of this with a BGQ system of [0000x2333] but only can
 use [2000x2333] you could define it in your slurm.conf like this.
 <pre>
 ...
-NodeName=bgq[0000x1333] sate=down
+NodeName=bgq[0000x1333] state=down
 NodeName=bgq[2000x2333] state=unknown
 ...
 </pre>
@@ -866,6 +866,6 @@ scheduling logic, etc. </p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 26 June 2012</p>
+<p style="text-align:center;">Last modified 3 July 2012</p>
 
 <!--#include virtual="footer.txt"-->
