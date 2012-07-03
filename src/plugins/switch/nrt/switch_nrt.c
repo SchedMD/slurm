@@ -131,6 +131,8 @@ const char plugin_name[]        = "switch NRT plugin";
 const char plugin_type[]        = "switch/nrt";
 const uint32_t plugin_version   = 100;
 
+uint32_t debug_flags = 0;
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -138,6 +140,7 @@ const uint32_t plugin_version   = 100;
 extern int init ( void )
 {
 	verbose("%s loaded", plugin_name);
+	debug_flags = slurm_get_debug_flags();
 
 	return SLURM_SUCCESS;
 }
@@ -149,25 +152,25 @@ extern int fini ( void )
 
 extern int switch_p_slurmctld_init( void )
 {
-#if NRT_DEBUG
-	info("switch_p_slurmctld_init()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_slurmctld_init()");
+
 	return nrt_slurmctld_init();
 }
 
 extern int switch_p_slurmd_init( void )
 {
-#if NRT_DEBUG
-	info("switch_p_slurmd_init()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_slurmd_init()");
+
 	return nrt_slurmd_init();
 }
 
 extern int switch_p_slurmd_step_init( void )
 {
-#if NRT_DEBUG
-	info("switch_p_slurmd_step_init()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_slurmd_step_init()");
+
 	return nrt_slurmd_step_init();
 }
 
@@ -178,9 +181,9 @@ extern int switch_p_slurmd_step_init( void )
  */
 extern int switch_p_libstate_save ( char * dir_name )
 {
-#if NRT_DEBUG
-	info("switch_p_libstate_save()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_libstate_save()");
+
 	return _switch_p_libstate_save(dir_name, true);
 }
 
@@ -246,9 +249,9 @@ extern int switch_p_libstate_restore ( char * dir_name, bool recover )
 
 	xassert(dir_name != NULL);
 
-#if NRT_DEBUG
-	info("switch_p_libstate_restore()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_libstate_restore()");
+
 	_spawn_state_save_thread(xstrdup(dir_name));
 	if (!recover)   /* clean start, no recovery */
 		return nrt_init();
@@ -299,9 +302,9 @@ extern int switch_p_libstate_restore ( char * dir_name, bool recover )
 
 extern int switch_p_libstate_clear(void)
 {
-#if NRT_DEBUG
-	info("switch_p_libstate_clear()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_libstate_clear()");
+
 	return nrt_libstate_clear();
 }
 
@@ -314,17 +317,17 @@ extern int switch_p_libstate_clear(void)
  */
 extern int switch_p_clear_node_state(void)
 {
-#if NRT_DEBUG
-	info("switch_p_clear_node_state()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_clear_node_state()");
+
 	return nrt_clear_node_state();
 }
 
 extern int switch_p_alloc_node_info(switch_node_info_t **switch_node)
 {
-#if NRT_DEBUG
-	info("switch_p_alloc_node_info()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_alloc_node_info()");
+
 	return nrt_alloc_nodeinfo((slurm_nrt_nodeinfo_t **)switch_node);
 }
 
@@ -333,9 +336,9 @@ extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 	char hostname[256];
 	char *tmp;
 
-#if NRT_DEBUG
-	info("switch_p_build_node_info()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_build_node_info()");
+
 	if (gethostname(hostname, 256) < 0)
 		slurm_seterrno_ret(EHOSTNAME);
 	/* remove the domain portion, if necessary */
@@ -348,26 +351,26 @@ extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 
 extern int switch_p_pack_node_info(switch_node_info_t *switch_node, Buf buffer)
 {
-#if NRT_DEBUG
-	info("switch_p_pack_node_info()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_pack_node_info()");
+
 	return nrt_pack_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node, buffer);
 }
 
 extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
 				     Buf buffer)
 {
-#if NRT_DEBUG
-	info("switch_p_unpack_node_info()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_unpack_node_info()");
+
 	return nrt_unpack_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node, buffer);
 }
 
 extern void switch_p_free_node_info(switch_node_info_t **switch_node)
 {
-#if NRT_DEBUG
-	info("switch_p_free_node_info()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_free_node_info()");
+
 	if (switch_node)
 		nrt_free_nodeinfo((slurm_nrt_nodeinfo_t *)*switch_node, false);
 }
@@ -383,9 +386,9 @@ extern char * switch_p_sprintf_node_info(switch_node_info_t *switch_node,
  */
 extern int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job)
 {
-#if NRT_DEBUG
-	info("switch_p_alloc_jobinfo()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_alloc_jobinfo()");
+
 	return nrt_alloc_jobinfo((slurm_nrt_jobinfo_t **)switch_job);
 }
 
@@ -404,12 +407,12 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 	char *protocol = NULL;
 	char *network_str = NULL, *token = NULL, *save_ptr = NULL;
 
-#if NRT_DEBUG
-	info("switch_p_build_jobinfo(): nodelist:%s network:%s",
-	     nodelist, network);
-#else
-	debug3("network = \"%s\"", network);
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH) {
+		info("switch_p_build_jobinfo(): nodelist:%s network:%s",
+		     nodelist, network);
+	} else {
+		debug3("network = \"%s\"", network);
+	}
 
 	list = hostlist_create(nodelist);
 	if (!list)
@@ -538,9 +541,9 @@ extern switch_jobinfo_t *switch_p_copy_jobinfo(switch_jobinfo_t *switch_job)
 {
 	switch_jobinfo_t *j;
 
-#if NRT_DEBUG
-	info("switch_p_copy_jobinfo()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_copy_jobinfo()");
+
 	j = (switch_jobinfo_t *)nrt_copy_jobinfo((slurm_nrt_jobinfo_t *)switch_job);
 	if (!j)
 		error("nrt_copy_jobinfo failed");
@@ -550,34 +553,34 @@ extern switch_jobinfo_t *switch_p_copy_jobinfo(switch_jobinfo_t *switch_job)
 
 extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 {
-#if NRT_DEBUG
-	info("switch_p_free_jobinfo()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_free_jobinfo()");
+
 	return nrt_free_jobinfo((slurm_nrt_jobinfo_t *)switch_job);
 }
 
 extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
 {
-#if NRT_DEBUG
-	info("switch_p_pack_jobinfo()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_pack_jobinfo()");
+
 	return nrt_pack_jobinfo((slurm_nrt_jobinfo_t *)switch_job, buffer);
 }
 
 extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
 {
-#if NRT_DEBUG
-	info("switch_p_unpack_jobinfo()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_unpack_jobinfo()");
+
 	return nrt_unpack_jobinfo((slurm_nrt_jobinfo_t *)switch_job, buffer);
 }
 
 extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job, int key,
 				void *resulting_data)
 {
-#if NRT_DEBUG
-	info("switch_p_get_jobinfo()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_get_jobinfo()");
+
 	return nrt_get_jobinfo((slurm_nrt_jobinfo_t *)switch_job, key,
 			       resulting_data);
 }
@@ -598,9 +601,10 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 				      char *nodelist)
 {
 	int rc;
-#if NRT_DEBUG
-	info("switch_p_job_step_complete()");
-#endif
+
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_step_complete()");
+
 	rc = _make_step_comp(jobinfo, nodelist);
 	nrt_need_state_save = true;
 	return rc;
@@ -610,9 +614,10 @@ extern int switch_p_job_step_part_comp(switch_jobinfo_t *jobinfo,
 				       char *nodelist)
 {
 	int rc;
-#if NRT_DEBUG
-	info("switch_p_job_step_part_comp()");
-#endif
+
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_step_part_comp()");
+
 	rc = _make_step_comp(jobinfo, nodelist);
 	nrt_need_state_save = true;
 	return rc;
@@ -620,9 +625,9 @@ extern int switch_p_job_step_part_comp(switch_jobinfo_t *jobinfo,
 
 extern bool switch_p_part_comp(void)
 {
-#if NRT_DEBUG
-	info("switch_p_part_comp()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_part_comp()");
+
 	return true;
 }
 
@@ -632,9 +637,9 @@ extern int switch_p_job_step_allocated(switch_jobinfo_t *jobinfo,
 	hostlist_t list = NULL;
 	int rc;
 
-#if NRT_DEBUG
-	info("switch_p_job_step_allocated()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_step_allocated()");
+
 	list = hostlist_create(nodelist);
 	rc = nrt_job_step_allocated((slurm_nrt_jobinfo_t *)jobinfo, list);
 	hostlist_destroy(list);
@@ -688,9 +693,9 @@ extern int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid,
 {
 	pid_t pid;
 
-#if NRT_DEBUG
-	info("switch_p_job_init()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_init()");
+
 	pid = getpid();
 	return nrt_load_table((slurm_nrt_jobinfo_t *)jobinfo, uid, pid,
 			      job_name);
@@ -706,9 +711,9 @@ extern int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 {
 	int err;
 
-#if NRT_DEBUG
-	info("switch_p_job_postfini()");
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_postfini()");
+
 	/*
 	 *  Kill all processes in the job's session
 	 */
@@ -730,14 +735,15 @@ extern int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
 			       uint32_t nodeid, uint32_t procid,
 			       uint32_t nnodes, uint32_t nprocs, uint32_t rank)
 {
-#if NRT_DEBUG
-	info("switch_p_job_attach()");
-	info("nodeid = %u", nodeid);
-	info("procid = %u", procid);
-	info("nnodes = %u", nnodes);
-	info("nprocs = %u", nprocs);
-	info("rank = %u", rank);
-#endif
+	if (debug_flags & DEBUG_FLAG_SWITCH) {
+		info("switch_p_job_attach()");
+		info("nodeid = %u", nodeid);
+		info("procid = %u", procid);
+		info("nnodes = %u", nnodes);
+		info("nprocs = %u", nprocs);
+		info("rank = %u", rank);
+	}
+
 	return SLURM_SUCCESS;
 }
 

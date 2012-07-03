@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
     nodes. Current limiations: homogeneous cluster, nodes idle when reservation
     created, and no more than one reservation per node. Code is still under
     development. Work by Alejandro Lucero Palau, et. al, BSC.
+ -- Add DebugFlag of Switch to log switch plugin details.
 
 
 * Changes in SLURM 2.5.0.pre1

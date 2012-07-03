@@ -3481,6 +3481,11 @@ extern char * debug_flags2str(uint32_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Steps");
 	}
+	if (debug_flags & DEBUG_FLAG_SWITCH) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Switch");
+	}
 	if (debug_flags & DEBUG_FLAG_TRIGGERS) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -3537,12 +3542,12 @@ extern uint32_t debug_str2flags(char *debug_flags)
 			rc |= DEBUG_FLAG_PRIO;
 		else if (strcasecmp(tok, "Reservation") == 0)
 			rc |= DEBUG_FLAG_RESERVATION;
-		else if (strcasecmp(tok, "Reservations") == 0)
-			rc |= DEBUG_FLAG_RESERVATION;
 		else if (strcasecmp(tok, "SelectType") == 0)
 			rc |= DEBUG_FLAG_SELECT_TYPE;
 		else if (strcasecmp(tok, "Steps") == 0)
 			rc |= DEBUG_FLAG_STEPS;
+		else if (strcasecmp(tok, "Switch") == 0)
+			rc |= DEBUG_FLAG_SWITCH;
 		else if (strcasecmp(tok, "Trigger") == 0)
 			rc |= DEBUG_FLAG_TRIGGERS;
 		else if (strcasecmp(tok, "Triggers") == 0)

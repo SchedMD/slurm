@@ -632,6 +632,14 @@ static void _get_current_debug_flags(GtkToggleAction *action)
 		gtk_toggle_action_set_active(toggle_action, new_state);
 
 	debug_action = gtk_action_group_get_action(menu_action_group,
+						  "flags_switch");
+	toggle_action = GTK_TOGGLE_ACTION(debug_action);
+	orig_state = gtk_toggle_action_get_active(toggle_action);
+	new_state = debug_flags & DEBUG_FLAG_SWITCH;
+	if (orig_state != new_state)
+		gtk_toggle_action_set_active(toggle_action, new_state);
+
+	debug_action = gtk_action_group_get_action(menu_action_group,
 						  "flags_triggers");
 	toggle_action = GTK_TOGGLE_ACTION(debug_action);
 	orig_state = gtk_toggle_action_get_active(toggle_action);
@@ -750,6 +758,10 @@ static void _set_flags_select_type(GtkToggleAction *action)
 static void _set_flags_steps(GtkToggleAction *action)
 {
 	_set_flags(action, DEBUG_FLAG_STEPS);
+}
+static void _set_flags_switch(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_SWITCH);
 }
 static void _set_flags_triggers(GtkToggleAction *action)
 {
@@ -891,6 +903,7 @@ static char *_get_ui_description()
 		"        <menuitem action='flags_reservation'/>"
 		"        <menuitem action='flags_select_type'/>"
 		"        <menuitem action='flags_steps'/>"
+		"        <menuitem action='flags_switch'/>"
 		"        <menuitem action='flags_triggers'/>"
 		"        <menuitem action='flags_wiki'/>"
 		"      </menu>"
@@ -1134,6 +1147,8 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		 "SelectType", G_CALLBACK(_set_flags_select_type), FALSE},
 		{"flags_steps", NULL, "Steps", NULL,
 		 "Steps", G_CALLBACK(_set_flags_steps), FALSE},
+		{"flags_switch", NULL, "Switch", NULL,
+		 "Switch", G_CALLBACK(_set_flags_switch), FALSE},
 		{"flags_triggers", NULL, "Triggers", NULL,
 		 "Triggers", G_CALLBACK(_set_flags_triggers), FALSE},
 		{"flags_wiki", NULL, "Wiki", NULL,

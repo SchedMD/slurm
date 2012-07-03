@@ -76,12 +76,12 @@ enum {
 	EUNLOAD
 };
 
-/* FIXME: Need to look at performances. Test9.9 running slow on NRT */
-#define NRT_DEBUG 0	/* Enable extra logging. 0=off, 1=on, 2=verbose */
 #define NRT_DEBUG_CNT 0	/* Count of windows, adapters, etc to log
 			 * use this to limit volume of logging */
 #define NRT_MAXADAPTERS 2
 #define NRT_LIBSTATE_LEN (1024 * 1024 * 1)
+
+extern uint32_t debug_flags;
 
 extern bool nrt_adapter_name_check(char *token, hostlist_t hl);
 extern int nrt_clear_node_state(void);
