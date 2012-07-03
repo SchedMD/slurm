@@ -101,7 +101,8 @@
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 
 /* Change JOB_STATE_VERSION value when changing the state save format */
-#define JOB_STATE_VERSION      "VER011"
+#define JOB_STATE_VERSION      "VER012"
+#define JOB_2_4_STATE_VERSION  "VER012"		/* SLURM version 2.4 */
 #define JOB_2_3_STATE_VERSION  "VER011"		/* SLURM version 2.3 */
 #define JOB_2_2_STATE_VERSION  "VER010"		/* SLURM version 2.2 */
 #define JOB_2_1_STATE_VERSION  "VER009"		/* SLURM version 2.1 */
@@ -623,6 +624,8 @@ extern int load_all_job_state(void)
 	if (ver_str) {
 		if (!strcmp(ver_str, JOB_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
+		} else if (!strcmp(ver_str, JOB_2_3_STATE_VERSION)) {
+			protocol_version = SLURM_2_3_PROTOCOL_VERSION;
 		} else if (!strcmp(ver_str, JOB_2_2_STATE_VERSION)) {
 			protocol_version = SLURM_2_2_PROTOCOL_VERSION;
 		} else if (!strcmp(ver_str, JOB_2_1_STATE_VERSION)) {
@@ -639,6 +642,13 @@ extern int load_all_job_state(void)
 		return EFAULT;
 	}
 	xfree(ver_str);
+
+	/* There was a bug in 2.4.0 where the job state version wasn't
+	 * incremented correctly.  Luckly the node state was.  We will
+	 * use it to set the version correctly in the job.
+	 */
+	if (load_2_4_state && protocol_version == SLURM_2_3_PROTOCOL_VERSION)
+		protocol_version = SLURM_2_4_PROTOCOL_VERSION;
 
 	safe_unpack_time(&buf_time, buffer);
 	safe_unpack32( &saved_job_id, buffer);

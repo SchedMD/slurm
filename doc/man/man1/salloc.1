@@ -969,8 +969,8 @@ The default max\-time is the max_switch_wait SchedulerParameter.
 Set a limit on the total run time of the job allocation.  If the
 requested time limit exceeds the partition's time limit, the job will
 be left in a PENDING state (possibly indefinitely).  The default time
-limit is the partition's time limit.  When the time limit is reached,
-the each task in each job step is sent SIGTERM followed by SIGKILL. The
+limit is the partition's default time limit.  When the time limit is reached,
+each task in each job step is sent SIGTERM followed by SIGKILL.  The
 interval between signals is specified by the SLURM configuration
 parameter \fBKillWait\fR.  A time limit of zero requests that no time
 limit be imposed.  Acceptable time formats include "minutes",
