@@ -3941,6 +3941,7 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 	priority_g_reconfig();
 	select_g_reconfigure();
 	(void) slurm_sched_reconfig();
+	(void) switch_g_reconfig();
 
 	unlock_slurmctld (config_write_lock);
 	flag_string = debug_flags2str(debug_flags);

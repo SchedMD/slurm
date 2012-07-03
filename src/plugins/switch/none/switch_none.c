@@ -93,6 +93,11 @@ int fini ( void )
 	return SLURM_SUCCESS;
 }
 
+extern int switch_p_reconfig ( void )
+{
+	return SLURM_SUCCESS;
+}
+
 /*
  * switch functions for global state save/restore
  */

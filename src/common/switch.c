@@ -115,6 +115,7 @@ typedef struct slurm_switch_ops {
 	int          (*slurmctld_init)    ( void );
 	int          (*slurmd_init)       ( void );
 	int          (*slurmd_step_init)  ( void );
+	int          (*reconfig)          ( void );
 } slurm_switch_ops_t;
 
 /*
@@ -156,7 +157,8 @@ static const char *syms[] = {
 	"switch_p_libstate_clear",
 	"switch_p_slurmctld_init",
 	"switch_p_slurmd_init",
-	"switch_p_slurmd_step_init"
+	"switch_p_slurmd_step_init",
+	"switch_p_reconfig"
 };
 
 static slurm_switch_ops_t ops;
@@ -205,6 +207,14 @@ extern int switch_fini(void)
 	init_run = false;
 	rc = plugin_context_destroy(g_context);
 	return rc;
+}
+
+extern int  switch_g_reconfig(void)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(ops.reconfig))( );
 }
 
 extern int  switch_save(char *dir_name)

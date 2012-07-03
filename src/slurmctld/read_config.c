@@ -930,6 +930,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	/* Update plugin parameters as possible */
 	rc = job_submit_plugin_reconfig();
 	error_code = MAX(error_code, rc);	/* not fatal */
+	rc = switch_g_reconfig();
+	error_code = MAX(error_code, rc);	/* not fatal */
 	rc = _preserve_select_type_param(&slurmctld_conf, old_select_type_p);
 	error_code = MAX(error_code, rc);	/* not fatal */
 

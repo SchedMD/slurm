@@ -150,6 +150,12 @@ extern int fini ( void )
 	return nrt_fini();
 }
 
+extern int switch_p_reconfig ( void )
+{
+	debug_flags = slurm_get_debug_flags();
+	return SLURM_SUCCESS;
+}
+
 extern int switch_p_slurmctld_init( void )
 {
 	if (debug_flags & DEBUG_FLAG_SWITCH)
