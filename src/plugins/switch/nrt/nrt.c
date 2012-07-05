@@ -2902,6 +2902,8 @@ nrt_free_jobinfo(slurm_nrt_jobinfo_t *jp)
 		}
 		xfree(jp->tableinfo);
 	}
+	if (jp->nodenames)
+		hostlist_destroy(jp->nodenames);
 
 	xfree(jp);
 	jp = NULL;
@@ -3638,7 +3640,6 @@ nrt_clear_node_state(void)
 				/* This error seems to happen on IP_ONLY
 				 * adapters if the unload_table does not
 				 * occur */
-/* FIXME: Check for memory leaks */
 /* FIXME: Review and test Torrent logic */
 				if (first_use) {
 					error("nrt_command(status_adapter, "

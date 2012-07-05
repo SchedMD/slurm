@@ -57,6 +57,7 @@
 
 #define NRT_BUF_SIZE 4096
 
+char local_dir_path[1024];
 bool nrt_need_state_save = false;
 
 static void _spawn_state_save_thread(char *dir);
@@ -796,6 +797,9 @@ static void *_state_save_thread(void *arg)
 {
 	char *dir_name = (char *)arg;
 
+	strncpy(local_dir_path, dir_name, sizeof(local_dir_path));
+	xfree(dir_name);
+
 	while (1) {
 		sleep(10);
 		if (nrt_need_state_save) {
@@ -803,6 +807,7 @@ static void *_state_save_thread(void *arg)
 			_switch_p_libstate_save(dir_name, false);
 		}
 	}
+
 	return NULL;
 }
 
