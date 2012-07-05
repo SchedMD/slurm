@@ -504,7 +504,7 @@ extern void slurm_free_node_registration_status_msg(
 		xfree(msg->node_name);
 		xfree(msg->os);
 		xfree(msg->step_id);
-		if (msg->startup)
+		if (msg->switch_nodeinfo)
 			switch_g_free_node_info(&msg->switch_nodeinfo);
 		xfree(msg);
 	}

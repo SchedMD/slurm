@@ -1727,7 +1727,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 	nrt_cmd_status_adapter_t adapter_status;
 	nrt_cmd_query_adapter_info_t query_adapter_info;
 	nrt_adapter_info_t adapter_info;
-	nrt_status_t **status_array = NULL;
+	nrt_status_t *status_array = NULL;
 	nrt_window_id_t window_count;
 
 	if (debug_flags & DEBUG_FLAG_SWITCH)
@@ -1780,25 +1780,13 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				      max_windows);
 			}
 		}
-		status_array = xmalloc(sizeof(nrt_status_t *) * max_windows);
-		for (j = 0; j < max_windows; j++) {
-			/*
-			 * WARNING: DO NOT USE xmalloc here!
-			 *	
-			 * The nrt_command(NRT_CMD_STATUS_ADAPTER) function
-			 * changes pointer values and returns memory that is
-			 * allocated with malloc() and deallocated with free()
-			 */
-			status_array[j] = malloc(sizeof(nrt_status_t) *
-						 max_windows);
-		}
 		for (j = 0; j < num_adapter_names; j++) {
 			slurm_nrt_adapter_t *adapter_ptr;
 			adapter_status.adapter_name = adapter_names.
 						      adapter_names[j];
 			adapter_status.adapter_type = adapter_names.
 						      adapter_type;
-			adapter_status.status_array = status_array;
+			adapter_status.status_array = &status_array;
 			adapter_status.window_count = &window_count;
 			err = nrt_command(NRT_VERSION, NRT_CMD_STATUS_ADAPTER,
 					  &adapter_status);
@@ -1843,9 +1831,9 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 			for (k = 0; k < window_count; k++) {
 				slurm_nrt_window_t *window_ptr;
 				window_ptr = adapter_ptr->window_list + k;
-				window_ptr->window_id = (*status_array)[k].
+				window_ptr->window_id = status_array[k].
 							window_id;
-				window_ptr->state = (*status_array)[k].state;
+				window_ptr->state = status_array[k].state;
 				/* window_ptr->job_key = Not_Available */
 			}
 
@@ -1903,12 +1891,6 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				adapter_ptr->ipv6_addr = adapter_info.port[0].
 							 ipv6_addr;
 			}
-		}
-		if (status_array) {
-			for (j = 0; j < max_windows; j++) {
-				free(status_array[j]);
-			}
-			xfree(status_array);
 		}
 		xfree(adapter_info.window_list);
 	}
@@ -2967,23 +2949,12 @@ _wait_for_window_unloaded(char *adapter_name, nrt_adapter_t adapter_type,
 	int err, i, j;
 	int rc = SLURM_ERROR;
 	nrt_cmd_status_adapter_t status_adapter;
-	nrt_status_t **status_array = NULL;
+	nrt_status_t *status_array = NULL;
 	nrt_window_id_t window_count;
 
-	status_array = xmalloc(sizeof(nrt_status_t *) * max_windows);
- 	for (j = 0; j < max_windows; j++) {
-		/*
-		 * WARNING: DO NOT USE xmalloc here!
-		 *	
-		 * The nrt_command(NRT_CMD_STATUS_ADAPTER) function
-		 * changes pointer values and returns memory that is
-		 * allocated with malloc() and deallocated with free()
-		 */
-		status_array[j] = malloc(sizeof(nrt_status_t) * max_windows);
- 	}
 	status_adapter.adapter_name = adapter_name;
 	status_adapter.adapter_type = adapter_type;
-	status_adapter.status_array = status_array;
+	status_adapter.status_array = &status_array;
 	status_adapter.window_count = &window_count;
 
 	for (i = 0; i < retry; i++) {
@@ -3003,7 +2974,7 @@ _wait_for_window_unloaded(char *adapter_name, nrt_adapter_t adapter_type,
 			_print_adapter_status(&status_adapter);
 		}
 		for (j = 0; j < window_count; j++) {
-			if ((*status_array)[j].window_id == window_id)
+			if (status_array[j].window_id == window_id)
 				break;
 		}
 		if (j >= window_count) {
@@ -3013,20 +2984,15 @@ _wait_for_window_unloaded(char *adapter_name, nrt_adapter_t adapter_type,
 			      window_id);
 			break;
 		}
-		if ((*status_array)[j].state == NRT_WIN_AVAILABLE) {
+		if (status_array[j].state == NRT_WIN_AVAILABLE) {
 			rc = SLURM_SUCCESS;
 			break;
 		}
 		debug2("nrt_status_adapter(%s, %s), window %u state %s",
 		       adapter_name,
 		       _adapter_type_str(adapter_type), window_id,
-		       _win_state_str((*status_array)[j].state));
+		       _win_state_str(status_array[j].state));
 	}
-
- 	for (j = 0; j < max_windows; j++) {
-		free(status_array[j]);
- 	}
-	xfree(status_array);
 
 	return rc;
 }
@@ -3579,7 +3545,7 @@ nrt_clear_node_state(void)
 	unsigned int max_windows, num_adapter_names;
 	nrt_cmd_status_adapter_t adapter_status;
 	nrt_window_id_t window_count;
-	nrt_status_t **status_array = NULL;
+	nrt_status_t *status_array = NULL;
 	nrt_cmd_clean_window_t clean_window;
 	char window_str[128];
 	hostset_t hs = NULL;
@@ -3634,24 +3600,12 @@ nrt_clear_node_state(void)
 			}
 		}
 
-		status_array = xmalloc(sizeof(nrt_status_t *) * max_windows);
-		for (j = 0; j < max_windows; j++) {
-			/*
-			 * WARNING: DO NOT USE xmalloc here!
-			 *	
-			 * The nrt_command(NRT_CMD_STATUS_ADAPTER) function
-			 * changes pointer values and returns memory that is
-			 * allocated with malloc() and deallocated with free()
-			 */
-			status_array[j] = malloc(sizeof(nrt_status_t) *
-						 max_windows);
-		}
 		for (j = 0; j < num_adapter_names; j++) {
 			adapter_status.adapter_name = adapter_names.
 						      adapter_names[j];
 			adapter_status.adapter_type = adapter_names.
 						      adapter_type;
-			adapter_status.status_array = status_array;
+			adapter_status.status_array = &status_array;
 			adapter_status.window_count = &window_count;
 			err = nrt_command(NRT_VERSION, NRT_CMD_STATUS_ADAPTER,
 					  &adapter_status);
@@ -3698,16 +3652,16 @@ nrt_clear_node_state(void)
 						       adapter_type),
 				     window_count);
 				for (k = 0; k < window_count; k++) {
-					win_state_t state = (*status_array)
-							    [k].state;
+					win_state_t state = status_array[k].
+							    state;
 					if ((state == NRT_WIN_AVAILABLE) &&
 					    (k >= NRT_DEBUG_CNT))
 						continue;
 					info("window_id:%d uid:%d pid:%d "
 					     "state:%s",
-					     (*status_array)[k].window_id,
-					     (*status_array)[k].uid,
-					     (*status_array)[k].client_pid,
+					     status_array[k].window_id,
+					     status_array[k].uid,
+					     status_array[k].client_pid,
 					     _win_state_str(state));
 				}
 
@@ -3721,7 +3675,7 @@ nrt_clear_node_state(void)
 				clean_window.adapter_type = adapter_names.
 							    adapter_type;
 				clean_window.leave_inuse_or_kill = KILL;
-				clean_window.window_id = (*status_array)[k].
+				clean_window.window_id = status_array[k].
 							 window_id;
 				err = nrt_command(NRT_VERSION,
 						  NRT_CMD_CLEAN_WINDOW,
@@ -3759,10 +3713,6 @@ nrt_clear_node_state(void)
 				hostset_destroy(hs);
 			}
 		}
-		for (j = 0; j < max_windows; j++) {
-			free(status_array[j]);
-		}
-		xfree(status_array);
 	}
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("nrt_clear_node_state: complete:%d", rc);
