@@ -2450,6 +2450,8 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	host = hostlist_next(hi);
 	_lock();
 	node = _find_node(nrt_state, host);
+	if (host != NULL)
+		free(host);
 	if (node && node->adapter_list) {
 		for (i = 0; i < node->adapter_count; i++) {
 			nrt_adapter_t ad_type;
@@ -2481,8 +2483,6 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		info("switch/nrt: no adapter found for job");
 	}
 	_unlock();
-	if (host != NULL)
-		free(host);
 	hostlist_iterator_reset(hi);
 	if (jp->tables_per_task == 0)
 		return SLURM_FAILURE;
@@ -3858,6 +3858,8 @@ extern bool nrt_adapter_name_check(char *token, hostlist_t hl)
 	hostlist_iterator_destroy(hi);
 	_lock();
 	node = _find_node(nrt_state, host);
+	if (host)
+		free(host);
 	if (node && node->adapter_list) {
 		for (i = 0; i < node->adapter_count; i++) {
 			if (strcmp(token,node->adapter_list[i].adapter_name))
