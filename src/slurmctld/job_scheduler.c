@@ -491,8 +491,6 @@ extern int schedule(uint32_t job_limit)
 	while ((job_queue_rec = list_pop_bottom(job_queue, sort_job_queue2))) {
 		job_ptr  = job_queue_rec->job_ptr;
 		part_ptr = job_queue_rec->part_ptr;
-		/* Cycle through partitions usable for this job */
-		job_ptr->part_ptr = part_ptr;
 		xfree(job_queue_rec);
 		if ((time(NULL) - sched_start) >= sched_timeout) {
 			debug("sched: loop taking too long, breaking out");
@@ -508,6 +506,10 @@ extern int schedule(uint32_t job_limit)
 
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;	/* started in other partition */
+
+		/* Cycle through partitions usable for this job */
+		job_ptr->part_ptr = part_ptr;
+
 		if (job_ptr->priority == 0)	{ /* held */
 			debug3("sched: JobId=%u. State=%s. Reason=%s. "
 			       "Priority=%u.",
