@@ -34,6 +34,10 @@ documents those changes that are of interest to users and admins.
 ========================
  -- BLUEGENE - Correct potential deadlock issue when hardware goes bad and
     there are jobs running on that hardware.
+ -- If job is submitted to more than one partition, it's partition pointer can
+    be set to an invalid value. This can result in the count of CPUs allocated
+    on a node being bad, resulting in over- or under-allocation of its CPUs.
+    Patch by Carles Fenoy, BSC.
 
 * Changes in SLURM 2.4.1
 ========================

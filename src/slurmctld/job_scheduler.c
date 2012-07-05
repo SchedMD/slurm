@@ -800,10 +800,10 @@ next_part:			part_ptr = (struct part_record *)
 				break;
 			job_ptr  = job_queue_rec->job_ptr;
 			part_ptr = job_queue_rec->part_ptr;
-			job_ptr->part_ptr = part_ptr;
 			xfree(job_queue_rec);
 			if (!IS_JOB_PENDING(job_ptr))
 				continue;  /* started in other partition */
+			job_ptr->part_ptr = part_ptr;
 		}
 		if ((time(NULL) - sched_start) >= sched_timeout) {
 			debug("sched: loop taking too long, breaking out");
