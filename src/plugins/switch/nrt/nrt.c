@@ -1782,6 +1782,10 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 		}
 		for (j = 0; j < num_adapter_names; j++) {
 			slurm_nrt_adapter_t *adapter_ptr;
+			if (status_array) {
+				free(status_array);
+				status_array = NULL;
+			}
 			adapter_status.adapter_name = adapter_names.
 						      adapter_names[j];
 			adapter_status.adapter_type = adapter_names.
@@ -1894,6 +1898,8 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 		}
 		xfree(adapter_info.window_list);
 	}
+	if (status_array)
+		free(status_array);
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		_print_nodeinfo(n);
 		info("_get_adapters: complete: %d", rc);
@@ -2961,6 +2967,10 @@ _wait_for_window_unloaded(char *adapter_name, nrt_adapter_t adapter_type,
 		if (i > 0)
 			sleep(1);
 
+		if (status_array) {
+			free(status_array);
+			status_array = NULL;
+		}
 		err = nrt_command(NRT_VERSION, NRT_CMD_STATUS_ADAPTER,
 				  &status_adapter);
 		if (err != NRT_SUCCESS) {
@@ -2993,6 +3003,8 @@ _wait_for_window_unloaded(char *adapter_name, nrt_adapter_t adapter_type,
 		       _adapter_type_str(adapter_type), window_id,
 		       _win_state_str(status_array[j].state));
 	}
+	if (status_array)
+		free(status_array);
 
 	return rc;
 }
@@ -3601,6 +3613,10 @@ nrt_clear_node_state(void)
 		}
 
 		for (j = 0; j < num_adapter_names; j++) {
+			if (status_array) {
+				free(status_array);
+				status_array = NULL;
+			}
 			adapter_status.adapter_name = adapter_names.
 						      adapter_names[j];
 			adapter_status.adapter_type = adapter_names.
@@ -3714,6 +3730,8 @@ nrt_clear_node_state(void)
 			}
 		}
 	}
+	if (status_array)
+		free(status_array);
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("nrt_clear_node_state: complete:%d", rc);
 
