@@ -3286,6 +3286,34 @@ _unload_window(char *adapter_name, nrt_adapter_t adapter_type,
 	return SLURM_FAILURE;
 }
 
+static int _unload_job_table(slurm_nrt_jobinfo_t *jp)
+{
+	int err, i, rc = SLURM_SUCCESS;
+	nrt_cmd_unload_table_t unload_table;
+
+	unload_table.job_key = jp->job_key;
+	for (i = 0; i < jp->tables_per_task; i++) {
+		unload_table.context_id = jp->tableinfo[i].context_id;
+		unload_table.table_id   = jp->tableinfo[i].table_id;
+		if (debug_flags & DEBUG_FLAG_SWITCH) {
+			info("Unload table for job_key:%u "
+			     "context_id:%u table_id:%u",
+			     unload_table.job_key, unload_table.context_id,
+			     unload_table.table_id);
+			}
+		err = nrt_command(NRT_VERSION, NRT_CMD_UNLOAD_TABLE,
+				  &unload_table);
+		if (err != NRT_SUCCESS) {
+			error("Unable to unload table for job_key:%u "
+			      "context_id:%u table_id:%u error:%s",
+			      unload_table.job_key, unload_table.context_id,
+			      unload_table.table_id, nrt_err_str(err));
+			rc = SLURM_ERROR;
+		}
+	}
+	return rc;
+}
+
 static int _unload_job_windows(slurm_nrt_jobinfo_t *jp)
 {
 	nrt_window_id_t window_id = 0;
@@ -3314,7 +3342,7 @@ static int _unload_job_windows(slurm_nrt_jobinfo_t *jp)
 				hpce_tbl_ptr += j;
 				window_id = hpce_tbl_ptr->win_id;
 			} else {
-				fatal("nrt_unload_table: invalid adapter "
+				fatal("nrt_unload_window: invalid adapter "
 				      "type: %s",
 				      _adapter_type_str(jp->tableinfo[i].
 							adapter_type));
@@ -3338,8 +3366,7 @@ static int _unload_job_windows(slurm_nrt_jobinfo_t *jp)
 extern int
 nrt_unload_table(slurm_nrt_jobinfo_t *jp)
 {
-	int err, i, j, rc = SLURM_SUCCESS;
-	nrt_cmd_unload_table_t unload_table;
+	int rc = SLURM_SUCCESS;
 
 	assert(jp);
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
@@ -3351,31 +3378,9 @@ nrt_unload_table(slurm_nrt_jobinfo_t *jp)
 
 	if (jp->user_space)
 		rc = _unload_job_windows(jp);
-	unload_table.job_key = jp->job_key;
-	for (i = 0; i < jp->tables_per_task; i++) {
-		for (j = 0; j < jp->tableinfo[i].table_length; j++) {
-			unload_table.context_id = jp->tableinfo[i].context_id;
-			unload_table.table_id   = jp->tableinfo[i].table_id;
-			if (debug_flags & DEBUG_FLAG_SWITCH) {
-				info("Unload table for job_key:%u "
-				     "context_id:%u table_id:%u",
-				     unload_table.job_key,
-				     unload_table.context_id,
-				     unload_table.table_id);
-			}
-			err = nrt_command(NRT_VERSION, NRT_CMD_UNLOAD_TABLE,
-					  &unload_table);
-			if (err != NRT_SUCCESS) {
-				error("Unable to unload table for job_key:%u "
-				      "context_id:%u table_id:%u error:%s",
-				      unload_table.job_key,
-				      unload_table.context_id,
-				      unload_table.table_id,
-				      nrt_err_str(err));
-				rc = SLURM_ERROR;
-			}
-		}
-	}
+	else
+		rc = _unload_job_table(jp);
+
 	return rc;
 }
 
