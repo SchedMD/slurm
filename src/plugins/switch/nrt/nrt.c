@@ -3286,29 +3286,12 @@ _unload_window(char *adapter_name, nrt_adapter_t adapter_type,
 	return SLURM_FAILURE;
 }
 
-
-/* Assumes that, on error, new switch state information will be
- * read from node.
- *
- * Used by: slurmd
- */
-extern int
-nrt_unload_table(slurm_nrt_jobinfo_t *jp)
+static int _unload_job_windows(slurm_nrt_jobinfo_t *jp)
 {
 	nrt_window_id_t window_id = 0;
 	int err, i, j, rc = SLURM_SUCCESS;
 	int retry = 15;
 
-	assert(jp);
-	assert(jp->magic == NRT_JOBINFO_MAGIC);
-
-	if (debug_flags & DEBUG_FLAG_SWITCH) {
-		info("nrt_unload_table");
-		_print_jobinfo(jp);
-	}
-
-	if (!jp->user_space)
-		return rc;
 	for (i = 0; i < jp->tables_per_task; i++) {
 		for (j = 0; j < jp->tableinfo[i].table_length; j++) {
 			if (jp->tableinfo[i].adapter_type == NRT_IB) {
@@ -3342,6 +3325,55 @@ nrt_unload_table(slurm_nrt_jobinfo_t *jp)
 					     window_id, retry);
 			if (err != NRT_SUCCESS)
 				rc = SLURM_ERROR;
+		}
+	}
+	return rc;
+}
+
+/* Assumes that, on error, new switch state information will be
+ * read from node.
+ *
+ * Used by: slurmd
+ */
+extern int
+nrt_unload_table(slurm_nrt_jobinfo_t *jp)
+{
+	int err, i, j, rc = SLURM_SUCCESS;
+	nrt_cmd_unload_table_t unload_table;
+
+	assert(jp);
+	assert(jp->magic == NRT_JOBINFO_MAGIC);
+
+	if (debug_flags & DEBUG_FLAG_SWITCH) {
+		info("nrt_unload_table");
+		_print_jobinfo(jp);
+	}
+
+	if (jp->user_space)
+		rc = _unload_job_windows(jp);
+	unload_table.job_key = jp->job_key;
+	for (i = 0; i < jp->tables_per_task; i++) {
+		for (j = 0; j < jp->tableinfo[i].table_length; j++) {
+			unload_table.context_id = jp->tableinfo[i].context_id;
+			unload_table.table_id   = jp->tableinfo[i].table_id;
+			if (debug_flags & DEBUG_FLAG_SWITCH) {
+				info("Unload table for job_key:%u "
+				     "context_id:%u table_id:%u",
+				     unload_table.job_key,
+				     unload_table.context_id,
+				     unload_table.table_id);
+			}
+			err = nrt_command(NRT_VERSION, NRT_CMD_UNLOAD_TABLE,
+					  &unload_table);
+			if (err != NRT_SUCCESS) {
+				error("Unable to unload table for job_key:%u "
+				      "context_id:%u table_id:%u error:%s",
+				      unload_table.job_key,
+				      unload_table.context_id,
+				      unload_table.table_id,
+				      nrt_err_str(err));
+				rc = SLURM_ERROR;
+			}
 		}
 	}
 	return rc;
@@ -3533,6 +3565,7 @@ nrt_libstate_clear(void)
 extern int
 nrt_clear_node_state(void)
 {
+	static bool first_use = true;
 	int err, i, j, k, rc = SLURM_SUCCESS;
 	nrt_cmd_query_adapter_types_t adapter_types;
 	unsigned int num_adapter_types;
@@ -3627,17 +3660,28 @@ nrt_clear_node_state(void)
 				continue;
 			}
 			if (window_count > max_windows) {
-/* FIXME: Investigate this error on eth0? */
+				/* This error seems to happen on IP_ONLY
+				 * adapters if the unload_table does not
+				 * occur */
 /* FIXME: Check for memory leaks */
-/* FIXME: Investigate slow throughput reported by test9.9 */
-/* FIXME: Add tests for new network options */
 /* FIXME: Review and test Torrent logic */
-				error("nrt_command(status_adapter, %s, %s): "
-				      "window_count > max_windows (%u > %hu)",
-				      adapter_status.adapter_name,
-				      _adapter_type_str(adapter_status.
-							adapter_type),
-				      window_count, max_windows);
+				if (first_use) {
+					error("nrt_command(status_adapter, "
+					      "%s, %s): window_count > "
+					      "max_windows (%u > %hu)",
+					      adapter_status.adapter_name,
+					      _adapter_type_str(adapter_status.
+								adapter_type),
+					      window_count, max_windows);
+				} else {
+					debug("nrt_command(status_adapter, "
+					      "%s, %s): window_count > "
+					      "max_windows (%u > %hu)",
+					      adapter_status.adapter_name,
+					      _adapter_type_str(adapter_status.
+								adapter_type),
+					      window_count, max_windows);
+				}
 				/* Reset value to avoid logging bad data */
 				window_count = max_windows;
 			}
