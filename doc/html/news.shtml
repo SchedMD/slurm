@@ -35,8 +35,9 @@ Major enhancements planned include:
 <li>Job specification of desired CPU frequency, which will effect it's
 power usage and possibly its execution cost.</li>
 <li>Integration with FlexLM license management.</li>
-<li>Integration with IBM's Parallel Environment including POE (Parallel
-Operating Environment) and NRT (Network Resource Table) API.</li>
+<li>Integration with IBM's
+<a href="http://www-03.ibm.com/systems/software/parallel/">Parallel Environment</a>
+including POE (Parallel Operating Environment) and NRT (Network Resource Table) API.</li>
 <li>Highly optimized thoughput for serial jobs in a new "select/serial"
 plugin.</li>
 </ul>
@@ -82,6 +83,6 @@ trojan library, then that library will be used by the SLURM daemon with
 unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 29 June 2012</p>
+<p style="text-align:center;">Last modified 6 July 2012</p>
 
 <!--#include virtual="footer.txt"-->

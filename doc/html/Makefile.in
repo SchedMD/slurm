@@ -361,6 +361,7 @@ generated_html = \
 	multi_cluster.html \
 	news.html \
 	overview.html \
+	poe.html \
 	platforms.html \
 	plugins.html \
 	power_save.html \

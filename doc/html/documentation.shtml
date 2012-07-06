@@ -19,6 +19,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="bluegene.html">Blue Gene User and Administrator Guide</a></li>
 <li><a href="cray.html">Cray User and Administrator Guide</a></li>
 <li><a href="ibm.html">IBM AIX User and Administrator Guide</a></li>
+<li><a href="poe.html">IBM Parallel Environment User and Administrator Guide</a></li>
 </ul>
 </ul>
 
@@ -59,6 +60,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="bluegene.html">Blue Gene User and Administrator Guide</a></li>
 <li><a href="cray.html">Cray User and Administrator Guide</a></li>
 <li><a href="ibm.html">IBM AIX User and Administrator Guide</a></li>
+<li><a href="poe.html">IBM Parallel Environment User and Administrator Guide</a></li>
 <li><a href="sun_const.html">Sun Constellation Aministrator Guide</a></li>
 </ul>
 </ul>
@@ -97,6 +99,6 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 15 May 2012</p>
+<p style="text-align:center;">Last modified 6 July 2012</p>
 
 <!--#include virtual="footer.txt"-->
