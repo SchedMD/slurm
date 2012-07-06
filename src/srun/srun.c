@@ -74,7 +74,6 @@
 #include "src/common/fd.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
-#include "src/common/mpi.h"
 #include "src/common/net.h"
 #include "src/common/plugstack.h"
 #include "src/common/read_config.h"
@@ -182,6 +181,9 @@ int srun(int ac, char **av)
 
 	if (slurm_select_init(1) != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin" );
+
+	if (switch_init() != SLURM_SUCCESS )
+		fatal("failed to initialize switch plugin");
 
 #ifndef HAVE_CRAY_EMULATION
 	if (is_cray_system() || is_cray_select_type()) {

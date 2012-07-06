@@ -196,6 +196,7 @@ int error_exit = 1;
 int immediate_exit = 1;
 
 /*---- forward declarations of static functions  ----*/
+static bool mpi_initialized = false;
 typedef struct env_vars env_vars_t;
 
 
@@ -679,6 +680,7 @@ _process_env_var(env_vars_t *e, const char *val)
 			      e->var, val);
 			exit(error_exit);
 		}
+		mpi_initialized = true;
 		break;
 
 	case OPT_SIGNAL:
@@ -1168,6 +1170,7 @@ static void set_options(const int argc, char **argv)
 				      optarg);
 				exit(error_exit);
 			}
+			mpi_initialized = true;
 			break;
 		case LONG_OPT_RESV_PORTS:
 			if (optarg)
@@ -2114,6 +2117,9 @@ static bool _opt_verify(void)
 	 if (slurm_verify_cpu_bind(NULL, &opt.cpu_bind,
 				   &opt.cpu_bind_type))
 		exit(error_exit);
+
+	if (!mpi_initialized)
+		(void) mpi_hook_client_init(NULL);
 
 	return verified;
 }
