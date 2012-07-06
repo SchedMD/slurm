@@ -83,6 +83,28 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
   </ul>
 </ul>
 
+<p>Examples of network option use:
+<br><br>
+<b>--network=sn_all,mpi</b><br>
+Allocate one switch window per task on each node and every network supporting
+MPI.
+<br><br>
+<b>--network=sn_all,mpi,bulk_xfer=100m,us</b><br>
+Allocate one switch window per task on each node and every network supporting
+MPI and user space communications. Reserve 100 MB for RDMA.
+<br><br>
+<b>--network=sn_all,instances=3,mpi</b><br>
+Allocate three switch window per task on each node and every network supporting
+MPI.
+<br><br>
+<b>--network=sn_all,mpi,pami</b><br>
+Allocate one switch window per task on each node and every network supporting
+MPI and a second window supporting PAMI.
+<br><br>
+<b>--network=devtype=ib,instances=2,lapi,mpi</b><br>
+On every Infiniband network connection, allocate two switch windows each for 
+both lapi and mpi interfaces. If each node has one Infinband network connection,
+this would result in four switch windows per task.
 </p>
 
 <h3>Debugging</h3>

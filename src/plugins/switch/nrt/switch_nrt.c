@@ -451,6 +451,20 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 		} else if (!strcasecmp(token, "bulk_xfer")) {
 			bulk_xfer = true;
 
+		/* device name options */
+		} else if (!strncasecmp(token, "devname=", 8)) {
+			char *name_ptr = token + 8;
+			if (nrt_adapter_name_check(name_ptr, list)) {
+				debug("switch/nrt: Found adapter %s in "
+				      "network string", token);
+				adapter_name = xstrdup(name_ptr);
+				sn_all = false;
+			} else {
+				info("switch/nrt: invalid devname: %s",
+				     name_ptr);
+				err = SLURM_ERROR;
+			}
+
 		/* device type options */
 		} else if (!strncasecmp(token, "devtype=", 8)) {
 			char *type_ptr = token + 8;
@@ -504,10 +518,6 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 		} else if (!strcasecmp(token, "sn_all")) {
 			sn_all = true;
 		} else if (!strcasecmp(token, "sn_single")) {
-			sn_all = false;
-		} else if (nrt_adapter_name_check(token, list)) {
-			debug("Found adapter %s in network string", token);
-			adapter_name = xstrdup(token);
 			sn_all = false;
 
 		/* other */

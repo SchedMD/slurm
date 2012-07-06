@@ -124,15 +124,15 @@ set goodtest "
 {sn_single,devtype=iponly,ipv4}
 {sn_single,devtype=iponly,ipv6}
 {sn_all,ipv6}
-{mlx4_0}
-{eth0}
-{mlx4_0,mpi,lapi}
-{mlx4_0,mpi,lapi,us}
-{mlx4_0,mpi,lapi,instances=3}
+{devname=mlx4_0}
+{devname=eth0}
+{devname=mlx4_0,mpi,lapi}
+{devname=mlx4_0,mpi,lapi,us}
+{devname=mlx4_0,mpi,lapi,instances=3}
 {sn_all}
 {sn_all,mpi,lapi}
 {sn_all,mpi,lapi}
-{mlx4_0,bulk_xfer,us}
+{devname=mlx4_0,bulk_xfer,us}
 "
 
 foreach test $goodtest {
@@ -152,7 +152,7 @@ foreach test $goodtest {
 #
 send_user "\n============Good Tests With 4 Tasks============\n"
 set good4task "
-{mlx4_0,mpi,lapi,us,instances=3}
+{devname=mlx4_0,mpi,lapi,us,instances=3}
 {sn_all,mpi,lapi,instances=2}
 {sn_all,mpi,lapi,instances=3,us}
 "
