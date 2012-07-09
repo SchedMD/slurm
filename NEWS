@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     be set to an invalid value. This can result in the count of CPUs allocated
     on a node being bad, resulting in over- or under-allocation of its CPUs.
     Patch by Carles Fenoy, BSC.
+ -- Fix bug in task layout with select/cons_res plugin and --ntasks-per-node
+    option. Patch by Martin Perry, Bull.
 
 * Changes in SLURM 2.4.1
 ========================

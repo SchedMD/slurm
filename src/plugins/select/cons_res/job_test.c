@@ -383,7 +383,7 @@ fini:
 uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 			 const uint32_t node_i, bool cpu_type)
 {
-	uint16_t cpu_count = 0, avail_cpus = 0, num_tasks = 0;
+	uint16_t avail_cpus = 0, num_tasks = 0;
 	uint32_t core_begin    = cr_get_coremap_offset(node_i);
 	uint32_t core_end      = cr_get_coremap_offset(node_i+1);
 	uint32_t c;
@@ -522,8 +522,6 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	} else {
 		j = avail_cpus / cpus_per_task;
 		num_tasks = MIN(num_tasks, j);
-		if (job_ptr->details->ntasks_per_node)
-			avail_cpus = num_tasks * cpus_per_task;
 	}
 
 	if ((job_ptr->details->ntasks_per_node &&
@@ -545,21 +543,10 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 			bit_clear(core_map, c);
 		else {
 			free_cores[i]--;
-			/* we have to ensure that cpu_count 
-			 * is not bigger than avail_cpus due to 
-			 * hyperthreading or this would break
-			 * the selection logic providing more
-			 * cpus than allowed after task-related data
-			 * processing of stage 3
-			 */
-			if (avail_cpus >= threads_per_core) {
+			if (avail_cpus >= threads_per_core)
 				avail_cpus -= threads_per_core;
-				cpu_count += threads_per_core;
-			}
-			else {
-				cpu_count += avail_cpus;
+			else
 				avail_cpus = 0;
-			}
 		}
 	}
 
@@ -570,10 +557,9 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 fini:
 	if (!num_tasks) {
 		bit_nclear(core_map, core_begin, core_end-1);
-		cpu_count = 0;
 	}
 	xfree(free_cores);
-	return cpu_count;
+	return num_tasks * cpus_per_task;
 }
 
 
