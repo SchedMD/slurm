@@ -817,7 +817,7 @@ static void *_state_save_thread(void *arg)
 		sleep(10);
 		if (nrt_need_state_save) {
 			nrt_need_state_save = false;
-			_switch_p_libstate_save(dir_name, false);
+			_switch_p_libstate_save(local_dir_path, false);
 		}
 	}
 

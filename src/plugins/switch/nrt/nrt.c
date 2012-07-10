@@ -1958,8 +1958,7 @@ nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
 		pack16(dummy16, buf);	/* adapter_type is an int */
 		pack32(a->ipv4_addr, buf);
 		for (j = 0; j < 16; j++)
-			pack32(a->ipv6_addr.s6_addr[j], buf);
-//			pack32(a->ipv6_addr.in6_u.u6_addr32[j], buf);
+			pack8(a->ipv6_addr.s6_addr[j], buf);
 		pack32(a->lid, buf);
 		pack64(a->network_id, buf);
 		pack8(a->port_id, buf);
@@ -2051,8 +2050,8 @@ _fake_unpack_adapters(Buf buf)
 			goto unpack_error;
 		safe_unpack16(&dummy16, buf);
 		safe_unpack32(&dummy32, buf);	/* ipv4_addr */
-		for (j = 0; j < 4; j++)
-			safe_unpack32(&dummy32, buf); 	/* ipv6_addr */
+		for (j = 0; j < 16; j++)
+			safe_unpack8(&dummy8, buf); 	/* ipv6_addr */
 		safe_unpack32(&dummy32, buf);	/* lid */
 		safe_unpack64(&dummy64, buf);	/* network_id */
 		safe_unpack8 (&dummy8, buf);	/* port_id */
@@ -2154,6 +2153,12 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	tmp_n->magic = magic;
 	tmp_n->node_number = node_number;
 	safe_unpack32(&tmp_n->adapter_count, buf);
+	if (tmp_n->adapter_count > NRT_MAXADAPTERS) {
+		error("switch/nrt: More adapters found on node %s than "
+		      "supported. Increase NRT_MAXADAPTERS and rebuild slurm",
+		      name);
+		tmp_n->adapter_count = NRT_MAXADAPTERS;
+	}
 	for (i = 0; i < tmp_n->adapter_count; i++) {
 		tmp_a = tmp_n->adapter_list + i;
 		safe_unpackmem_ptr(&name_ptr, &size, buf);

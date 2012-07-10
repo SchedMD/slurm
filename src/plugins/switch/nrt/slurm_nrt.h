@@ -78,7 +78,7 @@ enum {
 
 #define NRT_DEBUG_CNT 0	/* Count of windows, adapters, etc to log
 			 * use this to limit volume of logging */
-#define NRT_MAXADAPTERS 2
+#define NRT_MAXADAPTERS 8
 #define NRT_LIBSTATE_LEN (1024 * 1024 * 1)
 
 extern uint32_t debug_flags;
