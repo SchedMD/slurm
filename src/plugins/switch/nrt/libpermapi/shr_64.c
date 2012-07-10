@@ -76,14 +76,23 @@ int sig_array[] = {
 	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0 };
 
 extern char **environ;
+
+/* IBM internal definitions to get information on how and who is
+ * calling us.
+ */
+#define PM_POE  0
+#define PM_PMD  1
+extern int pm_type;
 extern int pmdlog;
 extern FILE *pmd_lfp;
+
 #define PMD_LOG(fmt, args...)						\
 	if (pmdlog) {							\
 		const char *f_name = strrchr(__FILE__, '/');		\
 		fprintf(pmd_lfp, "[%d@%s]: " fmt , __LINE__, f_name!=NULL?(f_name+1):__FILE__, ##args);	\
 		fflush(pmd_lfp);                                        \
 	}
+/************************************/
 
 static nrt_job_key_t _get_nrt_job_key(srun_job_t *job)
 {
@@ -134,14 +143,19 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	int i, rc, fd_cnt;
 	int *ctx_sockfds = NULL;
 
-	if (!job) {
+	if (pm_type == PM_PMD) {
 		/* If the PMD calls this and it didn't launch anything we need
 		 * to not do anything here or PMD will crap out on it. */
 		PMD_LOG("got pe_rm_connect called from PMD, "
 			"we don't handle this yet\n");
 		return -1;
+	} else if (pm_type != PM_POE) {
+		error("pe_rm_connect: unknown caller");
+		return -1;
 	}
-	PMD_LOG("got pe_rm_connect called\n");
+
+	xassert(job);
+
 	debug("got pe_rm_connect called");
 
 	opt.argc = my_argc;
@@ -201,12 +215,21 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 	uint32_t rc = 0;
 	//srun_job_t *job = *(srun_job_t **)*resource_mgr;
 
-	/* If the PMD calls this and it didn't launch anything we need
-	 * to not do anything here or PMD will crap out on it. */
-	if (!job) {
-		PMD_LOG("pe_rm_free: No job\n");
+	if (pm_type == PM_PMD) {
+		/* If the PMD calls this and it didn't launch anything we need
+		 * to not do anything here or PMD will crap out on it. */
+		PMD_LOG("got pe_rm_connect called from PMD, "
+			"we don't handle this yet\n");
+		return;
+	} else if (pm_type != PM_POE) {
+		error("pe_rm_connect: unknown caller");
 		return;
 	}
+
+	/* If the PMD calls this and it didn't launch anything we need
+	 * to not do anything here or PMD will crap out on it. */
+	xassert(job);
+
 	/* OK we are now really running something */
 	PMD_LOG("got pe_rm_free called\n");
 	debug("got pe_rm_free called %p %p", job, job->step_ctx);
@@ -231,7 +254,14 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
  */
 extern int pe_rm_free_event(rmhandle_t resource_mgr, job_event_t ** job_event)
 {
-	PMD_LOG("pe_rm_free_event called\n");
+	if (pm_type == PM_PMD) {
+		PMD_LOG("pe_rm_free_event called\n");
+		return 0;
+	} else if (pm_type != PM_POE) {
+		error("pe_rm_free_event: unknown caller");
+		return -1;
+	}
+
 	debug("got pe_rm_free_event called");
 	if (job_event) {
 		xfree(*job_event);
@@ -302,7 +332,14 @@ extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 {
 	job_event_t *ret_event = NULL;
 	int *state;
-	PMD_LOG("got pe_rm_get_event called\n");
+	if (pm_type == PM_PMD) {
+		PMD_LOG("pe_rm_get_event called\n");
+		return 0;
+	} else if (pm_type != PM_POE) {
+		error("pe_rm_get_event: unknown caller");
+		return -1;
+	}
+
 	debug("got pe_rm_get_event called %d %p %p",
 	      rm_timeout, job_event, *job_event);
 
@@ -355,7 +392,14 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	char *host;
 	host_usage_t *host_ptr;
 
-	PMD_LOG("got pe_rm_get_job_info called\n");
+	if (pm_type == PM_PMD) {
+		PMD_LOG("pe_rm_get_job_info called\n");
+		return 0;
+	} else if (pm_type != PM_POE) {
+		error("pe_rm_get_job_info: unknown caller");
+		return -1;
+	}
+
 	debug("got pe_rm_get_job_info called %p %p", job_info, *job_info);
 
 	*job_info = ret_info;
@@ -478,7 +522,6 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 {
 	char *srun_debug = NULL;
 
-	PMD_LOG("pe_rm_init called %p %d\n", pmd_lfp, pmdlog);
 	/* SLURM was originally written against 1300, so we will
 	 * return that, no matter what comes in so we always work.
 	 */
@@ -498,6 +541,14 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 #else
 	fatal("I haven't been told where I am.  This should never happen.");
 #endif
+	if (pm_type == PM_PMD) {
+		PMD_LOG("pe_rm_init called\n");
+		return 0;
+	} else if (pm_type != PM_POE) {
+		error("pe_rm_init: unknown caller");
+		return -1;
+	}
+
 	debug("got pe_rm_init called %s", rm_id);
 
 	if (slurm_select_init(1) != SLURM_SUCCESS )
@@ -543,7 +594,14 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 extern int pe_rm_send_event(rmhandle_t resource_mgr, job_event_t *job_event,
 			    char ** error_msg)
 {
-	PMD_LOG("got pe_rm_send_event called\n");
+	if (pm_type == PM_PMD) {
+		PMD_LOG("pe_rm_send_event called\n");
+		return 0;
+	} else if (pm_type != PM_POE) {
+		error("pe_rm_send_event: unknown caller");
+		return -1;
+	}
+
 	debug("got pe_rm_send_event called");
 	return 0;
 }
@@ -571,7 +629,14 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	if (getenv("SLURM_STARTED_STEP"))
 		slurm_started = true;
 
-	PMD_LOG("got pe_rm_submit_job called\n");
+	if (pm_type == PM_PMD) {
+		PMD_LOG("pe_rm_submit_job called\n");
+		return 0;
+	} else if (pm_type != PM_POE) {
+		error("pe_rm_submit_job: unknown caller");
+		return -1;
+	}
+
 	debug("got pe_rm_submit_job called %d", job_cmd.job_format);
 	if (job_cmd.job_format != 1) {
 		/* We don't handle files */
