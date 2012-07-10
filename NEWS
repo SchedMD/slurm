@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
     created, and no more than one reservation per node. Code is still under
     development. Work by Alejandro Lucero Palau, et. al, BSC.
  -- Add DebugFlag of Switch to log switch plugin details.
+ -- Correct job node_cnt value in job completion plugin when job fails due to
+    down node. Previously was too low by one.
 
 
 * Changes in SLURM 2.5.0.pre1

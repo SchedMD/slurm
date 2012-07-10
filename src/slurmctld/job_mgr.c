@@ -2221,10 +2221,10 @@ extern int kill_job_by_part_name(char *part_name)
 					difftime(now, job_ptr->suspend_time);
 			} else
 				job_ptr->end_time = now;
+			job_completion_logger(job_ptr, false);
 			if (!pending)
 				deallocate_nodes(job_ptr, false, suspended,
 						 false);
-			job_completion_logger(job_ptr, false);
 		} else if (pending) {
 			job_count++;
 			info("Killing job_id %u on defunct partition %s",
@@ -2343,9 +2343,9 @@ extern int kill_job_by_front_end_name(char *node_name)
 				 * job looks like a new job. */
 				job_ptr->job_state  = JOB_NODE_FAIL;
 				build_cg_bitmap(job_ptr);
+				job_completion_logger(job_ptr, true);
 				deallocate_nodes(job_ptr, false, suspended,
 						 false);
-				job_completion_logger(job_ptr, true);
 				job_ptr->db_index = 0;
 				job_ptr->job_state = JOB_PENDING;
 				if (job_ptr->node_cnt)
@@ -2387,9 +2387,9 @@ extern int kill_job_by_front_end_name(char *node_name)
 							 job_ptr->suspend_time);
 				} else
 					job_ptr->end_time = now;
+				job_completion_logger(job_ptr, false);
 				deallocate_nodes(job_ptr, false, suspended,
 						 false);
-				job_completion_logger(job_ptr, false);
 			}
 		}
 	}
@@ -2576,9 +2576,9 @@ extern int kill_running_job_by_node_name(char *node_name)
 				 * job looks like a new job. */
 				job_ptr->job_state  = JOB_NODE_FAIL;
 				build_cg_bitmap(job_ptr);
+				job_completion_logger(job_ptr, true);
 				deallocate_nodes(job_ptr, false, suspended,
 						 false);
-				job_completion_logger(job_ptr, true);
 				job_ptr->db_index = 0;
 				job_ptr->job_state = JOB_PENDING;
 				if (job_ptr->node_cnt)
@@ -2620,9 +2620,9 @@ extern int kill_running_job_by_node_name(char *node_name)
 							 job_ptr->suspend_time);
 				} else
 					job_ptr->end_time = now;
+				job_completion_logger(job_ptr, false);
 				deallocate_nodes(job_ptr, false, suspended,
 						 false);
-				job_completion_logger(job_ptr, false);
 			}
 		}
 
@@ -3130,11 +3130,11 @@ extern int job_fail(uint32_t job_id)
 		job_ptr->exit_code = 1;
 		job_ptr->state_reason = FAIL_LAUNCH;
 		xfree(job_ptr->state_desc);
+		job_completion_logger(job_ptr, false);
 		if (job_ptr->node_bitmap) {
 			build_cg_bitmap(job_ptr);
 			deallocate_nodes(job_ptr, false, suspended, false);
 		}
-		job_completion_logger(job_ptr, false);
 		return SLURM_SUCCESS;
 	}
 	/* All other states */
@@ -3237,8 +3237,8 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		job_ptr->job_state      = job_term_state | JOB_COMPLETING;
 		build_cg_bitmap(job_ptr);
 		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
-		deallocate_nodes(job_ptr, false, true, preempt);
 		job_completion_logger(job_ptr, false);
+		deallocate_nodes(job_ptr, false, true, preempt);
 		verbose("job_signal %u of suspended job %u successful",
 			signal, job_id);
 		return SLURM_SUCCESS;
@@ -3252,8 +3252,8 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 			last_job_update			= now;
 			job_ptr->job_state = job_term_state | JOB_COMPLETING;
 			build_cg_bitmap(job_ptr);
-			deallocate_nodes(job_ptr, false, false, preempt);
 			job_completion_logger(job_ptr, false);
+			deallocate_nodes(job_ptr, false, false, preempt);
 		} else if (batch_flag) {
 			if (job_ptr->batch_flag)
 				_signal_batch_job(job_ptr, signal);
@@ -5308,8 +5308,8 @@ static void _job_timed_out(struct job_record *job_ptr)
 		job_ptr->job_state          = JOB_TIMEOUT | JOB_COMPLETING;
 		build_cg_bitmap(job_ptr);
 		job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
-		deallocate_nodes(job_ptr, true, false, false);
 		job_completion_logger(job_ptr, false);
+		deallocate_nodes(job_ptr, true, false, false);
 	} else
 		job_signal(job_ptr->job_id, SIGKILL, 0, 0, false);
 	return;
@@ -9620,9 +9620,9 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
 	 * job looks like a new job. */
 	job_ptr->job_state  = JOB_CANCELLED;
 	build_cg_bitmap(job_ptr);
+	job_completion_logger(job_ptr, true);
 	deallocate_nodes(job_ptr, false, suspended, preempt);
 	xfree(job_ptr->details->req_node_layout);
-	job_completion_logger(job_ptr, true);
 	job_ptr->db_index = 0;
 	job_ptr->job_state = JOB_PENDING;
 	if (job_ptr->node_cnt)

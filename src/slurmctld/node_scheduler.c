@@ -327,6 +327,11 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 			}
 			bit_clear(job_ptr->node_bitmap_cg, i);
 			job_update_cpu_cnt(job_ptr, i);
+			/* node_cnt indicates how many nodes we are waiting
+			 * to get epilog complete messages from, so do not
+			 * count down nodes. NOTE: The job's node_cnt will not
+			 * match the number of entries in the node string
+			 * during its completion. */
 			job_ptr->node_cnt--;
 		}
 		make_node_comp(node_ptr, job_ptr, suspended);
