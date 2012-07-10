@@ -204,7 +204,7 @@ extern void set_job_alias_list(struct job_record *job_ptr)
  * IN preempted - true if job is being preempted
  */
 extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
-		bool suspended, bool preempted)
+			     bool suspended, bool preempted)
 {
 	static int select_serial = -1;
 	int i;

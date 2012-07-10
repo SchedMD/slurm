@@ -9033,9 +9033,8 @@ extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
 
 #ifdef HAVE_BG
 	/* If on a bluegene system we want to remove the job_resrcs so
-	   we don't get an error message about them already existing
-	   when the job goes to run again.
-	*/
+	 * we don't get an error message about them already existing
+	 * when the job goes to run again. */
 	if (requeue)
 		free_job_resources(&job_ptr->job_resrcs);
 #endif
@@ -9068,7 +9067,7 @@ extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
 	g_slurm_jobcomp_write(job_ptr);
 
 	/* When starting the resized job everything is taken care of
-	   there, so don't call it here. */
+	 * elsewhere, so don't call it here. */
 	if (IS_JOB_RESIZING(job_ptr))
 		return;
 
@@ -9092,7 +9091,7 @@ extern void job_completion_logger(struct job_record  *job_ptr, bool requeue)
 		}
 	}
 
-	if(!with_slurmdbd && !job_ptr->db_index)
+	if (!with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
