@@ -678,9 +678,12 @@ extern char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo,
 /*
  * switch functions for job initiation
  */
-static int _nrt_version_ok(void)
+static bool _nrt_version_ok(void)
 {
-	return ((NRT_VERSION == 1100) ? 1 : 0);
+	if (NRT_VERSION == 1200)
+		return true;
+	error("switch/nrt: Incompatable NRT version");
+	return false;
 }
 
 int switch_p_node_init(void)

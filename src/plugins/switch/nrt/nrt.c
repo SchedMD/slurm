@@ -129,14 +129,14 @@ typedef struct slurm_nrt_adapter {
 	slurm_nrt_window_t *window_list;
 } slurm_nrt_adapter_t;
 
-typedef struct slurm_nrt_nodeinfo {
+struct slurm_nrt_nodeinfo {
 	uint32_t magic;
 	char name[NRT_HOSTLEN];
 	uint32_t adapter_count;
 	slurm_nrt_adapter_t *adapter_list;
 	struct slurm_nrt_nodeinfo *next;
 	nrt_node_number_t node_number;
-} slurm_nrt_nodeinfo_t;
+};
 
 struct slurm_nrt_libstate {
 	uint32_t magic;
@@ -148,7 +148,7 @@ struct slurm_nrt_libstate {
 	nrt_job_key_t key_index;
 };
 
-typedef struct slurm_nrt_jobinfo {
+struct slurm_nrt_jobinfo {
 	uint32_t magic;
 	/* version from nrt_version() */
 	/* adapter from lid in table */
@@ -164,7 +164,7 @@ typedef struct slurm_nrt_jobinfo {
 
 	hostlist_t nodenames;
 	uint32_t num_tasks;
-} slurm_nrt_jobinfo_t;
+};
 
 typedef struct {
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
@@ -1957,8 +1957,9 @@ nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
 		dummy16 = a->adapter_type;
 		pack16(dummy16, buf);	/* adapter_type is an int */
 		pack32(a->ipv4_addr, buf);
-		for (j = 0; j < 4; j++)
-			pack32(a->ipv6_addr.in6_u.u6_addr32[j], buf);
+		for (j = 0; j < 16; j++)
+			pack32(a->ipv6_addr.s6_addr[j], buf);
+//			pack32(a->ipv6_addr.in6_u.u6_addr32[j], buf);
 		pack32(a->lid, buf);
 		pack64(a->network_id, buf);
 		pack8(a->port_id, buf);
@@ -2162,9 +2163,8 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 		safe_unpack16(&dummy16, buf);
 		tmp_a->adapter_type = dummy16;	/* adapter_type is an int */
 		safe_unpack32(&tmp_a->ipv4_addr, buf);
-		for (j = 0; j < 4; j++) {
-			safe_unpack32(&tmp_a->ipv6_addr.in6_u.u6_addr32[j],
-				      buf);
+		for (j = 0; j < 16; j++) {
+			safe_unpack8(&tmp_a->ipv6_addr.s6_addr[j], buf);
 		}
 		safe_unpack32(&tmp_a->lid, buf);
 		safe_unpack64(&tmp_a->network_id, buf);
@@ -2603,9 +2603,9 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp)
 				packmem((char *) &ip_tbl_ptr->ip.ipv4_addr,
 					sizeof(in_addr_t), buf);
 			} else {
-				for (j = 0; j < 4; j++) {
-					pack32(ip_tbl_ptr->ip.ipv6_addr.
-					       in6_u.u6_addr32[j], buf);
+				for (j = 0; j < 16; j++) {
+					pack8(ip_tbl_ptr->ip.ipv6_addr.
+					      s6_addr[j], buf);
 				}
 			}
 			pack32(ip_tbl_ptr->node_number, buf);
@@ -2737,9 +2737,9 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp)
 				if (tmp_32 != sizeof(in_addr_t))
 					goto unpack_error;
 			} else {
-				for (j = 0; j < 4; j++) {
-					safe_unpack32(&ip_tbl_ptr->ip.ipv6_addr.
-						      in6_u.u6_addr32[j], buf);
+				for (j = 0; j < 16; j++) {
+					safe_unpack8(&ip_tbl_ptr->ip.ipv6_addr.
+						     s6_addr[j], buf);
 				}
 			}
 			safe_unpack32(&ip_tbl_ptr->node_number, buf);
