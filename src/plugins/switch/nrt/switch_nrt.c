@@ -498,6 +498,8 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 			}
 
 		/* network options */
+		} else if (!strcasecmp(token, "ip")) {
+			ip_v4 = true;
 		} else if (!strcasecmp(token, "ipv4")) {
 			ip_v4 = true;
 		} else if (!strcasecmp(token, "ipv6")) {

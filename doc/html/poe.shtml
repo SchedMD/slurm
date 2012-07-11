@@ -44,6 +44,7 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
 <ul>
 <li>Network protocol</li>
   <ul>
+  <li><b>ip</b> Internet protocol, version 4</li>
   <li><b>ipv4</b> Internet protocol, version 4 (default)</li>
   <li><b>ipv6</b> Internet protocol, version 6</li>
   <li><b>us</b> User Space protocol, may be combined with ibv4 or ipv6</li>
