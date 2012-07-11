@@ -946,7 +946,7 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 				table_id++;
 				table_inx++;
 				if (table_inx >= jp->tables_per_task) {
-					error("switch/nrt table count bad");
+					error("switch/nrt: table count bad");
 					return SLURM_ERROR;
 				}
 				if (user_space) {
@@ -2463,6 +2463,10 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 				continue;
 			adapter_type_count++;
 			if (!sn_all) {
+				if (!adapter_name) {
+					adapter_name = node->adapter_list[i].
+						       adapter_name;
+				}
 				adapter_type = ad_type;
 				network_id = node->adapter_list[i].network_id;
 				break;
