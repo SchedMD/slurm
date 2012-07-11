@@ -11,6 +11,9 @@ documents those changes that are of interest to users and admins.
     Patch by Carles Fenoy, BSC.
  -- Fix bug in task layout with select/cons_res plugin and --ntasks-per-node
     option. Patch by Martin Perry, Bull.
+ -- BLUEGENE - remove race condition where if a block is removed while waiting
+    for a job to finish on it the number of unused cpus wasn't updated
+    correctly.
 
 * Changes in SLURM 2.4.1
 ========================
