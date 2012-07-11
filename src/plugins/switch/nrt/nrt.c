@@ -1804,9 +1804,10 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				continue;
 			}
 			if (window_count > max_windows) {
+				/* This happens if IP_ONLY devices are
+				 * allocated with tables_per_task > 0 */
 				error("nrt_command(status_adapter, %s, %s): "
-				      "window_count > max_windows (%u > %hu): "
-				      "Known bug in IBM's NRT API",
+				      "window_count > max_windows (%u > %hu)",
 				      adapter_status.adapter_name,
 				      _adapter_type_str(adapter_status.
 							adapter_type),
@@ -2481,13 +2482,23 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		info("switch/nrt: no adapter found for job");
 	}
 	_unlock();
-	hostlist_iterator_reset(hi);
-	if (jp->tables_per_task == 0)
+	if (jp->tables_per_task == 0) {
+		hostlist_iterator_destroy(hi);
 		return SLURM_FAILURE;
+	}
+	hostlist_iterator_reset(hi);
+
+	if (adapter_type == NRT_IPONLY) {
+		/* Without setting tables_per_task == 0, non-existant switch
+		 * windows are allocated resulting in some inconstencies in
+		 * NRT's records. */
+		jp->tables_per_task = 0;
+	}
 
 	if (instances <= 0) {
 		info("switch/nrt: invalid instances specification (%d)",
 		     instances);
+		hostlist_iterator_destroy(hi);
 		return SLURM_FAILURE;
 	}
 	jp->tables_per_task *= instances;
@@ -2498,6 +2509,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		info("switch/nrt: invalid protcol specification (%s)",
 		     protocol);
 		xfree(protocol_table);
+		hostlist_iterator_destroy(hi);
 		return SLURM_FAILURE;
 	}
 	jp->tables_per_task *= protocol_table->protocol_table_cnt;
@@ -2517,38 +2529,41 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		debug("Allocating windows");
 	}
 
-	_lock();
-	for  (i = 0; i < nnodes; i++) {
-		host = hostlist_next(hi);
-		if (!host)
-			error("Failed to get next host");
+	if (jp->tables_per_task) {
+		_lock();
+		for  (i = 0; i < nnodes; i++) {
+			host = hostlist_next(hi);
+			if (!host)
+				error("Failed to get next host");
 
-		for (j = 0; j < tasks_per_node[i]; j++) {
+			for (j = 0; j < tasks_per_node[i]; j++) {
 
-			if (adapter_name == NULL) {
-				rc = _allocate_windows_all(jp, host, i,
-							   tids[i][j],
-							   adapter_type,
-							   network_id,
-							   protocol_table,
-							   instances);
-			} else {
-				rc = _allocate_window_single(adapter_name,
-							     jp, host, i,
-							     tids[i][j],
-							     adapter_type,
-							     network_id,
-							     protocol_table,
-							     instances);
+				if (adapter_name == NULL) {
+					rc = _allocate_windows_all(jp, host, i,
+								tids[i][j],
+								adapter_type,
+								network_id,
+								protocol_table,
+								instances);
+				} else {
+					rc = _allocate_window_single(
+								adapter_name,
+								jp, host, i,
+								tids[i][j],
+								adapter_type,
+								network_id,
+								protocol_table,
+								instances);
+				}
+				if (rc != SLURM_SUCCESS) {
+					_unlock();
+					goto fail;
+				}
 			}
-			if (rc != SLURM_SUCCESS) {
-				_unlock();
-				goto fail;
-			}
+			free(host);
 		}
-		free(host);
+		_unlock();
 	}
-	_unlock();
 
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
