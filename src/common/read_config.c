@@ -761,7 +761,10 @@ int slurm_conf_frontend_array(slurm_conf_frontend_t **ptr_array[])
 				sizeof(hostnames));
 			local_front_end.addresses = addresses;
 			local_front_end.frontends = hostnames;
-			local_front_end.port = node_ptr[0]->port;
+			if (node_ptr[0]->port_str) {
+				local_front_end.port = atoi(node_ptr[0]->
+							    port_str);
+			}
 			local_front_end.reason = NULL;
 			local_front_end.node_state = NODE_STATE_UNKNOWN;
 			local_front_end_array[0] = &local_front_end;
