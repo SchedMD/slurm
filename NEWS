@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.4.0.ll2
 ============================
+ -- Add support for two different sets of locations for LoadLeveler API
+    header and library files.
  -- Fix to setting of LoadLeveler network paramter in batch job submission.
 
 * Changes in SLURM 2.4.0.ll1
