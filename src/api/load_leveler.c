@@ -191,14 +191,43 @@ static void _jobacct_del(void *x)
 /* Load a adapter's information into a job record */
 static void _load_adapter_info_job(LL_element *adapter, job_info_t *job_ptr)
 {
+#if 0
+	/* The job's network information available from the LoadLeveler API
+	 * is completely wrong. Note the llq command reads the information
+	 * directly from the database and NOT from the API. */
 	char *mode;
-	int rc;
+	int rc, usage;
+
+	job_ptr->network = NULL;
+
+	/* The sn_all or sn_single is NOT available via the API */
+	xstrcat(job_ptr->network, "sn_not_available");
+
+	rc = ll_get_data(adapter, LL_AdapterReqUsage, &usage);
+	if (!rc) {
+		if (job_ptr->network)
+			xstrcat(job_ptr->network, ",");
+		if (usage == SHARED)
+			xstrcat(job_ptr->network, "shared");
+		else if (usage == NOT_SHARED)
+			xstrcat(job_ptr->network, "not_shared");
+		else if (usage == SLICE_NOT_SHARED)
+			xstrcat(job_ptr->network, "slice_not_shared");
+		else
+			xstrcat(job_ptr->network, "sharing_unknown");
+	}
 
 	rc = ll_get_data(adapter, LL_AdapterReqMode, &mode);
 	if (!rc) {
-		job_ptr->network = xstrdup(mode);
+		/* IP or US */
+		if (job_ptr->network)
+			xstrcat(job_ptr->network, ",");
+		xstrcat(job_ptr->network, mode);
 		free(mode);
 	}
+#else
+	job_ptr->network = xstrdup("NotAvailable");
+#endif
 }
 
 /* Load a adapter's information into a step record */
