@@ -1155,17 +1155,18 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	} else if (smallest_bg_record) {
 		debug2("smallest dynamic block is %s",
 		       smallest_bg_record->bg_block_id);
-		if (smallest_bg_record->state & BG_BLOCK_ERROR_FLAG) {
-			rc = SLURM_NO_CHANGE_IN_DATA;
-			slurm_mutex_unlock(&block_state_mutex);
-			goto cleanup;
-		}
 
 		if (smallest_bg_record->cnode_cnt == create_size) {
 			slurm_mutex_unlock(&block_state_mutex);
 			error_bg_record = smallest_bg_record;
 			goto cleanup;
 		}
+
+		/* If the block is bigger than the asked for error we
+		   need to resume it to keep accounting correct.
+		*/
+		if (smallest_bg_record->state & BG_BLOCK_ERROR_FLAG)
+			resume_block(smallest_bg_record);
 
 		if (create_size > smallest_bg_record->cnode_cnt) {
 			/* we should never get here.  This means we
