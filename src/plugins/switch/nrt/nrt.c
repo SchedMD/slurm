@@ -1805,7 +1805,8 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 			}
 			if (window_count > max_windows) {
 				error("nrt_command(status_adapter, %s, %s): "
-				      "window_count > max_windows (%u > %hu)",
+				      "window_count > max_windows (%u > %hu): "
+				      "Known bug in IBM's NRT API",
 				      adapter_status.adapter_name,
 				      _adapter_type_str(adapter_status.
 							adapter_type),
