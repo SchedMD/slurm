@@ -182,9 +182,25 @@ For example:</p>
 %_with_libnrt    "/opt/ibmhpc/pecurrent/base/intel/lib64"
 </pre>
 
+<p>The poe command interacts with SLURM by loading a SLURM library providing
+a variety of functions for its use. You must specify the location of that
+library and note that SLURM is the resource manager in the file named
+"/etc/poe.limits".
+The library name is "libpermapi.so" and it is in installed with the other SLURM
+libraries in the subdirectory "lib/slurm". A sample "/etc/poe.limits" file is
+shown below. You will need to modify the value of MP_PE_RMLIB to match SLURM's
+installation location on your system.
+<pre>
+#
+# Sample /etc/poe.limits
+# Modify the path below as appropriate
+#
+MP_PE_RMLIB=/usr/local/lib/slurm/libpermapi.so
+MP_POOL=slurm
+</pre>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 July 2012</p></td>
+<p style="text-align:center;">Last modified 11 July 2012</p></td>
 
 <!--#include virtual="footer.txt"-->
