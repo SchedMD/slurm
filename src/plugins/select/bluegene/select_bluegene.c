@@ -1917,7 +1917,32 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		      "assigned to it, but for some reason we are "
 		      "trying to start a step on it?",
 		      job_ptr->job_id);
-
+	else if (bg_record->magic != BLOCK_MAGIC) {
+		bg_record = find_bg_record_in_list(
+			bg_lists->main, jobinfo->bg_block_id);
+		if (!bg_record || (bg_record->magic != BLOCK_MAGIC)) {
+			int rc;
+			error("select_p_step_pick_nodes: "
+			      "Whoa, some how we got a bad block for job %u, "
+			      "it should be %s but we couldn't find "
+			      "it on the system, no step for you, "
+			      "and ending job.",
+			      job_ptr->job_id, jobinfo->bg_block_id);
+			slurm_mutex_unlock(&block_state_mutex);
+			if ((rc = job_requeue(0, job_ptr->job_id,
+					      -1, (uint16_t)NO_VAL, false))) {
+				error("Couldn't requeue job %u, failing it: %s",
+				      job_ptr->job_id, slurm_strerror(rc));
+				job_fail(job_ptr->job_id);
+			}
+			return NULL;
+		}
+		error("select_p_step_pick_nodes: Whoa, some how we got a "
+		      "bad block for job %u, it should be %s "
+		      "(we found it so no big deal, but strange)",
+		      job_ptr->job_id, jobinfo->bg_block_id);
+		jobinfo->bg_record = bg_record;
+	}
 	xassert(!step_jobinfo->units_used);
 
 	xfree(step_jobinfo->bg_block_id);
@@ -2094,6 +2119,26 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 			      "assigned to it, but for some reason we are "
 			      "trying to end the step?",
 			      step_ptr->job_ptr->job_id, step_ptr->step_id);
+		else if (bg_record->magic != BLOCK_MAGIC) {
+			bg_record = find_bg_record_in_list(
+				bg_lists->main, jobinfo->bg_block_id);
+			if (!bg_record || (bg_record->magic != BLOCK_MAGIC)) {
+				error("select_p_step_finish: "
+				      "Whoa, some how we got a bad block "
+				      "for job %u, it should be %s but "
+				      "we couldn't find it on the system, "
+				      "so no real need to clear it up.",
+				      step_ptr->job_ptr->job_id,
+				      jobinfo->bg_block_id);
+				slurm_mutex_unlock(&block_state_mutex);
+				return SLURM_ERROR;
+			}
+			error("select_p_step_finish: Whoa, some how we "
+			      "got a bad block for job %u, it should be %s "
+			      "(we found it so no big deal, but strange)",
+			      step_ptr->job_ptr->job_id, jobinfo->bg_block_id);
+			jobinfo->bg_record = bg_record;
+		}
 		rc = ba_sub_block_in_record_clear(bg_record, step_ptr);
 		slurm_mutex_unlock(&block_state_mutex);
 	}

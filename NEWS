@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - remove race condition where if a block is removed while waiting
     for a job to finish on it the number of unused cpus wasn't updated
     correctly.
+ -- BGQ - make sure we have a valid block when creating or finishing a step
+    allocation.
 
 * Changes in SLURM 2.4.1
 ========================
