@@ -16,6 +16,9 @@ documents those changes that are of interest to users and admins.
     correctly.
  -- BGQ - make sure we have a valid block when creating or finishing a step
     allocation.
+ -- BLUEGENE - If a large block (> 1 midplane) is in error and underlying
+    hardware is marked bad remove the larger block and create a block over
+    just the bad hardware making the other hardware available to run on.
 
 * Changes in SLURM 2.4.1
 ========================
