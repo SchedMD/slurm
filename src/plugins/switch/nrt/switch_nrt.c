@@ -680,7 +680,7 @@ extern char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo,
  */
 static bool _nrt_version_ok(void)
 {
-	if (NRT_VERSION == 1200)
+	if ((NRT_VERSION >= 1100) && (NRT_VERSION <= 1200))
 		return true;
 	error("switch/nrt: Incompatable NRT version");
 	return false;
