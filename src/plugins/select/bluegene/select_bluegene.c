@@ -2881,6 +2881,10 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 		ba_mp = ba_inx2ba_mp(i);
 		xassert(ba_mp);
 
+		if (!ba_mp->cnode_err_bitmap)
+			ba_mp->cnode_err_bitmap =
+				bit_alloc(bg_conf->mp_cnode_cnt);
+
 		if (jobinfo->units_avail) {
 			bit_or(ba_mp->cnode_err_bitmap,
 			       step_jobinfo->units_used);
