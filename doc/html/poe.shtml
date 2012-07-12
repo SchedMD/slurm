@@ -63,6 +63,10 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
   The optional <i>resources</i> specification is a numeric value which can have
   a suffix of "k", "K", "m", "M", "g" or "G" for kilobytes, megabytes or
   gigabytes.</li>
+  <li><b>cau=<i>count</i></b>
+  Specify the count of Collective Acceleration Units (CAU) required per adapter.
+  Default value is zero.
+  Applies only to IBM Power7 processors.
   <li><b>devname=<i>name</i></b>
   Specify the name of an network adapter to use.
   For example: "eth0" or "mlx4_0".</li>
@@ -72,15 +76,19 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
   "IB" (InfiniBand), "HFI" (P7 Host Fabric Interface),
   "IPONLY" (IP-Only interfaces), "HPCE" (HPC Ethernet), and
   "KMUX" (Kernel Emulation of HPCE).</li>
+  <li><b>immed=<i>count</i></b>
+  Specify the count of immediate send slots per adapter window.
+  Default value is zero.
+  Applies only to IBM Power7 processors.
   <li><b>instances=<i>count</i></b>
   Specify number of network connections for each task on each network connection.
   The default instance count is 1.</li>
-  <li><b>sn_all</b> Use all available switch networks (default).
-  This option can not be combined with <b>sn_single</b>.</li>
-  <li><b>sn_single</b> Use only one switch network.
-  This option can not be combined with <b>sn_all</b>.
-  If multiple networks of different types exist, the <b>devname</b> or
-  <b>devtype</b> option can be used to select one of them.</li>
+  <li><b>sn_all</b> Use all available switch adapters (default).
+  This option can not be combined with sn_single.</li>
+  <li><b>sn_single</b> Use only one switch adapters.
+  This option can not be combined withsn_all.
+  If multiple adapters of different types exist, the devname and/or
+  devtype option can also be used to select one of them.</li>
   </ul>
 </ul>
 
@@ -202,6 +210,6 @@ MP_POOL=slurm
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 11 July 2012</p></td>
+<p style="text-align:center;">Last modified 12 July 2012</p></td>
 
 <!--#include virtual="footer.txt"-->
