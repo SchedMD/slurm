@@ -2528,14 +2528,15 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 					info("Pending job %u on block %s "
 					     "will try to be requeued "
 					     "because overlapping block %s "
-					     "is in an error state.",
+					     "is being removed.",
 					     found_record->job_running,
 					     found_record->bg_block_id,
 					     bg_record->bg_block_id);
 				else
-					info("Failing job %u on block %s "
+					info("Running job %u on block %s "
+					     "will try to be requeued "
 					     "because overlapping block %s "
-					     "is in an error state.",
+					     "is being removed.",
 					     found_record->job_running,
 					     found_record->bg_block_id,
 					     bg_record->bg_block_id);
@@ -2548,7 +2549,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 				struct job_record *job_ptr = NULL;
 				ListIterator job_itr = list_iterator_create(
 					found_record->job_list);
-				while ((job_ptr = list_next(itr))) {
+				while ((job_ptr = list_next(job_itr))) {
 					if (job_ptr->magic != JOB_MAGIC) {
 						error("select_p_update_block: "
 						      "bad magic found when "
@@ -2562,18 +2563,17 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 						info("Pending job %u on "
 						     "block %s "
 						     "will try to be requeued "
-						     "because overlapping "
-						     "block %s "
+						     "because related block %s "
 						     "is in an error state.",
 						     job_ptr->job_id,
 						     found_record->bg_block_id,
 						     bg_record->bg_block_id);
 					else
-						info("Failing job %u on "
+						info("Running job %u on "
 						     "block %s "
-						     "because overlapping "
-						     "block %s "
-						     "is in an error state.",
+						     "will try to be requeued "
+						     "because related block %s "
+						     "is being removed.",
 						     job_ptr->job_id,
 						     found_record->bg_block_id,
 						     bg_record->bg_block_id);
