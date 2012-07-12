@@ -207,7 +207,7 @@ static slurm_nrt_libstate_t *_alloc_libstate(void);
 static slurm_nrt_nodeinfo_t *_alloc_node(slurm_nrt_libstate_t *lp, char *name);
 static int	_copy_node(slurm_nrt_nodeinfo_t *dest,
 			   slurm_nrt_nodeinfo_t *src);
-static int	_fake_unpack_adapters(Buf buf);
+static int	_fake_unpack_adapters(Buf buf, slurm_nrt_nodeinfo_t *n);
 static int	_fill_in_adapter_cache(void);
 static slurm_nrt_nodeinfo_t *
 		_find_node(slurm_nrt_libstate_t *lp, char *name);
@@ -2109,44 +2109,122 @@ _copy_node(slurm_nrt_nodeinfo_t *dest, slurm_nrt_nodeinfo_t *src)
 	return SLURM_SUCCESS;
 }
 
-/* Throw away adapter portion of the nodeinfo.
+static int
+_cmp_ipv6(struct in6_addr *addr1, struct in6_addr *addr2)
+{
+	int i;
+
+	for (i = 0; i < 16; i++) {
+		if (addr1->s6_addr[i] != addr2->s6_addr[i])
+			return 1;
+	}
+
+	return 0;
+}
+
+/* Throw away adapter window portion of the nodeinfo.
  *
  * Used by: _unpack_nodeinfo
  */
 static int
-_fake_unpack_adapters(Buf buf)
+_fake_unpack_adapters(Buf buf, slurm_nrt_nodeinfo_t *n)
 {
-	uint32_t adapter_count;
-	uint16_t window_count;
-	uint8_t  dummy8;
+	slurm_nrt_adapter_t *tmp_a = NULL;
 	uint16_t dummy16;
 	uint32_t dummy32;
-	uint64_t dummy64;
-	char *dummyptr;
-	int i, j;
+	char *name_ptr;
+	uint8_t  port_id;
+	uint16_t adapter_type, cau_indexes_avail, immed_slots_avail;
+	uint16_t window_count;
+	uint32_t adapter_count, ipv4_addr, lid;
+	uint64_t network_id, rcontext_block_count, special;
+	struct in6_addr ipv6_addr;
+	int i, j, k;
 
 	safe_unpack32(&adapter_count, buf);
 	for (i = 0; i < adapter_count; i++) {
-		/* no copy, just advances buf counters */
-		safe_unpackmem_ptr(&dummyptr, &dummy32, buf);
+		safe_unpackmem_ptr(&name_ptr, &dummy32, buf);
 		if (dummy32 != NRT_MAX_ADAPTER_NAME_LEN)
 			goto unpack_error;
-		safe_unpack16(&dummy16, buf);	/* adapter_type */
-		safe_unpack16(&dummy16, buf);	/* cau_indexes_avail */
-		safe_unpack16(&dummy16, buf);	/* immed_slots_avail */
-		safe_unpack32(&dummy32, buf);	/* ipv4_addr */
+		safe_unpack16(&adapter_type, buf);
+		safe_unpack16(&cau_indexes_avail, buf);
+		safe_unpack16(&immed_slots_avail, buf);
+		safe_unpack32(&ipv4_addr, buf);
 		for (j = 0; j < 16; j++)
-			safe_unpack8(&dummy8, buf); 	/* ipv6_addr */
-		safe_unpack32(&dummy32, buf);	/* lid */
-		safe_unpack64(&dummy64, buf);	/* network_id */
-		safe_unpack8 (&dummy8, buf);	/* port_id */
-		safe_unpack64(&dummy64, buf);	/* rcontext_block_count */
-		safe_unpack64(&dummy64, buf);	/* special */
+			safe_unpack8(&ipv6_addr.s6_addr[j], buf);
+		safe_unpack32(&lid, buf);
+		safe_unpack64(&network_id, buf);
+		safe_unpack8 (&port_id, buf);
+		safe_unpack64(&rcontext_block_count, buf);
+		safe_unpack64(&special, buf);
 		safe_unpack16(&window_count, buf);
+
+		/* no copy, just advances buf counters */
 		for (j = 0; j < window_count; j++) {
 			safe_unpack16(&dummy16, buf);
 			safe_unpack32(&dummy32, buf);
 			safe_unpack32(&dummy32, buf);
+		}
+
+		for (j = 0; j < n->adapter_count; j++) {
+			tmp_a = n->adapter_list + j;
+			if (strcmp(tmp_a->adapter_name, name_ptr))
+				continue;
+			if (tmp_a->cau_indexes_avail != cau_indexes_avail) {
+				info("switch/nrt: resetting cau_indexes_avail "
+				     "on node %s adapter %s",
+				     n->name, tmp_a->adapter_name);
+				tmp_a->cau_indexes_avail = cau_indexes_avail;
+			}
+			if (tmp_a->immed_slots_avail != immed_slots_avail) {
+				info("switch/nrt: resetting immed_slots_avail "
+				     "on node %s adapter %s",
+				     n->name, tmp_a->adapter_name);
+				tmp_a->immed_slots_avail = immed_slots_avail;
+			}
+			if (tmp_a->ipv4_addr != ipv4_addr) {
+				info("switch/nrt: resetting ipv4_addr "
+				     "on node %s adapter %s",
+				     n->name, tmp_a->adapter_name);
+				tmp_a->ipv4_addr = ipv4_addr;
+			}
+			if (_cmp_ipv6(&tmp_a->ipv6_addr, &ipv6_addr) != 0) {
+				info("switch/nrt: resetting ipv6_addr "
+				     "on node %s adapter %s",
+				     n->name, tmp_a->adapter_name);
+				for (k = 0; k < 16; k++) {
+					tmp_a->ipv6_addr.s6_addr[k] =
+						ipv6_addr.s6_addr[k];
+				}
+			}
+			if (tmp_a->lid != lid) {
+				info("switch/nrt: resetting lid "
+				     "on node %s adapter %s",
+				     n->name, tmp_a->adapter_name);
+				tmp_a->lid = lid;
+			}
+			if (tmp_a->network_id != network_id) {
+				info("switch/nrt: resetting network_id "
+				     "on node %s adapter %s",
+				     n->name, tmp_a->adapter_name);
+				tmp_a->network_id = network_id;
+			}
+			if (tmp_a->port_id != port_id) {
+				info("switch/nrt: resetting port_id "
+				     "on node %s adapter %s",
+				     n->name, tmp_a->adapter_name);
+				tmp_a->port_id = port_id;
+			}
+			if (tmp_a->rcontext_block_count !=
+			    rcontext_block_count) {
+				info("switch/nrt: resetting "
+				     "rcontext_block_count on node %s "
+				     "adapter %s",
+				     n->name, tmp_a->adapter_name);
+				tmp_a->rcontext_block_count =
+					rcontext_block_count;
+			}
+			break;
 		}
 	}
 
@@ -2205,7 +2283,7 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	 * So, here we just do a fake unpack to advance the buffer pointer.
 	 */
 	if (nrt_state == NULL) {
-		if (_fake_unpack_adapters(buf) != SLURM_SUCCESS) {
+		if (_fake_unpack_adapters(buf, NULL) != SLURM_SUCCESS) {
 			slurm_seterrno_ret(EUNPACK);
 		} else {
 			return SLURM_SUCCESS;
@@ -2221,7 +2299,8 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 		tmp_n = _find_node(nrt_state, name);
 		if (tmp_n != NULL) {
 			tmp_n->node_number = node_number;
-			if (_fake_unpack_adapters(buf) != SLURM_SUCCESS) {
+			if (_fake_unpack_adapters(buf, tmp_n) !=
+			    SLURM_SUCCESS) {
 				slurm_seterrno_ret(EUNPACK);
 			} else {
 				goto copy_node;
