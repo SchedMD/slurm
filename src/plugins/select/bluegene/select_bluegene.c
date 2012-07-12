@@ -2875,6 +2875,9 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 	jobinfo = step_ptr->job_ptr->select_jobinfo->data;
 	step_jobinfo = step_ptr->select_jobinfo->data;
 
+	/* block_state must be locked before ba_system */
+	slurm_mutex_lock(&block_state_mutex);
+	slurm_mutex_lock(&ba_system_mutex);
 	for (i=0; i<bit_size(step_ptr->step_node_bitmap); i++) {
 		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
@@ -2904,10 +2907,11 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 	if (!ba_mp) {
 		error("select_p_fail_cnode: no ba_mp? "
 		      "This should never happen");
+		slurm_mutex_unlock(&ba_system_mutex);
+		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
 	}
 
-	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = (bg_record_t *)list_next(itr))) {
 		if (!bit_overlap(step_ptr->step_node_bitmap,
@@ -2957,6 +2961,7 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 		list_iterator_destroy(itr2);
 	}
 	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&ba_system_mutex);
 	slurm_mutex_unlock(&block_state_mutex);
 #endif
 	return SLURM_SUCCESS;

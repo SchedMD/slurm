@@ -1712,6 +1712,7 @@ extern int ba_translate_coord2nc(uint16_t *cnode_coords)
 	return nc_loc;
 }
 
+/* ba_system_mutex needs to be locked before calling this. */
 extern ba_mp_t *ba_inx2ba_mp(int inx)
 {
 	return ba_main_grid_array[inx];
