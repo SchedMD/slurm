@@ -215,7 +215,7 @@ static slurm_nrt_window_t *
 		_find_window(slurm_nrt_adapter_t *adapter, uint16_t window_id);
 static slurm_nrt_window_t *_find_free_window(slurm_nrt_adapter_t *adapter);
 static slurm_nrt_nodeinfo_t *_find_node(slurm_nrt_libstate_t *lp, char *name);
-static void	_free_block_use(slurm_nrt_jobinfo_t *jp,
+static bool	_free_block_use(slurm_nrt_jobinfo_t *jp,
 				slurm_nrt_adapter_t *adapter);
 static void	_free_libstate(slurm_nrt_libstate_t *lp);
 static int	_get_adapters(slurm_nrt_nodeinfo_t *n);
@@ -486,13 +486,23 @@ _free_resources_by_job(slurm_nrt_jobinfo_t *jp, char *node_name)
 	}
 	for (i = 0; i < node->adapter_count; i++) {
 		adapter = &node->adapter_list[i];
+
+		if (!_free_block_use(jp, adapter)) {
+error("NO FREE");			;  /* No RDMA or CAU for this job no on this adapter */
+		} else if (jp->cau_indexes > adapter->cau_indexes_used) {
+			error("switch/nrt: cau_indexes_used underflow");
+			adapter->cau_indexes_used = 0;
+		} else {
+error("DECR CAU");
+			adapter->cau_indexes_used -= jp->cau_indexes;
+		}
+
 		if (adapter->window_list == NULL) {
 			error("switch/nrt: _free_resources_by_job, "
 			      "window_list NULL for node %s adapter %s",
 			      node->name, adapter->adapter_name);
 			continue;
 		}
-		_free_block_use(jp, adapter);
 		/* We could check here to see if this adapter's name
 		 * is in the nrt_jobinfo tablinfo list to avoid the next
 		 * loop if the adapter isn't in use by the job step.
@@ -713,9 +723,12 @@ _window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 						window->job_key = 0;
 				}
 			}  /* for each task */
-			if (!adapter_found) {
-				error("Did not find adapter %s of type %s "
-				      "with lid %hu ",
+			if (adapter_found) {
+				_add_block_use(jp, adapter);
+				adapter->cau_indexes_used += jp->cau_indexes;
+			} else {
+				error("switch/nrt: Did not find adapter %s of "
+				      "type %s with lid %hu ",
 				      adapter->adapter_name,
 				      _adapter_type_str(adapter->adapter_type),
 				      adapter->lid);
@@ -827,7 +840,7 @@ static void _table_alloc(nrt_tableinfo_t *tableinfo, int table_inx,
 	return;
 }
 
-/* Track RDMA blocks allocated to a job on each adapter */
+/* Track RDMA or CAU resources allocated to a job on each adapter */
 static int
 _add_block_use(slurm_nrt_jobinfo_t *jp, slurm_nrt_adapter_t *adapter)
 {
@@ -835,12 +848,12 @@ _add_block_use(slurm_nrt_jobinfo_t *jp, slurm_nrt_adapter_t *adapter)
 	uint64_t blocks_free;
 	slurm_nrt_block_t *block_ptr, *free_block;
 
-	if (jp->bulk_xfer && jp->bulk_xfer_resources) {
+	if ((jp->bulk_xfer && jp->bulk_xfer_resources) || jp->cau_indexes) {
 		blocks_free = adapter->rcontext_block_count -
 			      adapter->rcontext_block_used;
 		if (blocks_free < jp->bulk_xfer_resources) {
-			info("Insufficient bulk_xfer resources on adapter %s "
-			     "(%"PRIu64" < %u)",
+			info("switch/nrt: Insufficient bulk_xfer resources on "
+			     "adapter %s (%"PRIu64" < %u)",
 			     adapter->adapter_name, blocks_free,
 			     jp->bulk_xfer_resources);
 			return SLURM_ERROR;
@@ -881,24 +894,28 @@ _add_block_use(slurm_nrt_jobinfo_t *jp, slurm_nrt_adapter_t *adapter)
 	}
 	return SLURM_SUCCESS;
 }
-static void
+static bool
 _free_block_use(slurm_nrt_jobinfo_t *jp, slurm_nrt_adapter_t *adapter)
 {
-	int i;
 	slurm_nrt_block_t *block_ptr;
+	bool found_job = false;
+	int i;
 
-	if ((jp->bulk_xfer == 0) || (jp->bulk_xfer_resources == 0))
-		return;
-
-	block_ptr = adapter->block_list;
-	for (i = 0; i < adapter->block_count; i++, block_ptr++) {
-		if (block_ptr->job_key != jp->job_key)
-			continue;
-		adapter->rcontext_block_used -= block_ptr->rcontext_block_use;
-		block_ptr->job_key = 0;
-		block_ptr->rcontext_block_use = 0;
-		break;
+	if ((jp->bulk_xfer && jp->bulk_xfer_resources) || jp->cau_indexes) {
+		block_ptr = adapter->block_list;
+		for (i = 0; i < adapter->block_count; i++, block_ptr++) {
+			if (block_ptr->job_key != jp->job_key)
+				continue;
+			adapter->rcontext_block_used -= block_ptr->
+							rcontext_block_use;
+			block_ptr->job_key = 0;
+			block_ptr->rcontext_block_use = 0;
+			found_job = true;
+			break;
+		}
 	}
+
+	return found_job;
 }
 
 /* For a given process, fill out an nrt_creator_per_task_input_t
@@ -957,8 +974,11 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 			if (user_space &&
 			    (adapter->adapter_type == NRT_IPONLY))
 				continue;
-			if (_add_block_use(jp, adapter))
-				return SLURM_ERROR;
+			if (context_id == 0) {
+				if (_add_block_use(jp, adapter))
+					return SLURM_ERROR;
+				adapter->cau_indexes_used += jp->cau_indexes;
+			}
 			for (j = 0; j < instances; j++) {
 				table_id++;
 				table_inx++;
@@ -1143,12 +1163,15 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 		     adapter_name, _adapter_type_str(adapter_type), hostname);
 		return SLURM_ERROR;
 	}
-	if (_add_block_use(jp, adapter))
-		return SLURM_ERROR;
 
 	table_inx = -1;
 	for (context_id = 0; context_id < protocol_table->protocol_table_cnt;
 	     context_id++) {
+		if (context_id == 0) {
+			if (_add_block_use(jp, adapter))
+				return SLURM_ERROR;
+			adapter->cau_indexes_used += jp->cau_indexes;
+		}
 		for (table_id = 0; table_id < instances; table_id++) {
 			table_inx++;
 			if (user_space) {
