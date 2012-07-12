@@ -161,6 +161,8 @@ struct slurm_nrt_jobinfo {
 	nrt_job_key_t job_key;
 	uint8_t bulk_xfer;	/* flag */
 	uint32_t bulk_xfer_resources;
+	uint16_t cau_indexes;
+	uint16_t immed_slots;
 	uint8_t ip_v4;		/* flag */
 	uint8_t user_space;	/* flag */
 	uint16_t tables_per_task;
@@ -1549,6 +1551,8 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 	info("  job_key: %u", j->job_key);
 	info("  bulk_xfer: %hu", j->bulk_xfer);
 	info("  bulk_xfer_resources: %u", j->bulk_xfer_resources);
+	info("  cau_indexes: %hu", j->cau_indexes);
+	info("  immed_slots: %hu", j->immed_slots);
 	info("  ip_v4: %hu", j->ip_v4);
 	info("  user_space: %hu", j->user_space);
 	info("  tables_per_task: %hu", j->tables_per_task);
@@ -1693,8 +1697,6 @@ nrt_alloc_jobinfo(slurm_nrt_jobinfo_t **j)
 	new = (slurm_nrt_jobinfo_t *) xmalloc(sizeof(slurm_nrt_jobinfo_t));
 	new->magic = NRT_JOBINFO_MAGIC;
 	new->job_key = (nrt_job_key_t) -1;
-	new->tables_per_task = 0;
-	new->tableinfo = NULL;
 	*j = new;
 
 	return 0;
@@ -2446,13 +2448,15 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	if ((nnodes <= 0) || (nprocs <= 0))
 		slurm_seterrno_ret(EINVAL);
 
-	jp->bulk_xfer  = (uint8_t) bulk_xfer;
+	jp->bulk_xfer   = (uint8_t) bulk_xfer;
 	jp->bulk_xfer_resources = bulk_xfer_resources;
-	jp->ip_v4      = (uint8_t) ip_v4;
-	jp->job_key    = _next_key();
-	jp->nodenames  = hostlist_copy(hl);
-	jp->num_tasks  = nprocs;
-	jp->user_space = (uint8_t) user_space;
+	jp->cau_indexes = (uint16_t) cau;
+	jp->immed_slots = (uint16_t) immed;
+	jp->ip_v4       = (uint8_t) ip_v4;
+	jp->job_key     = _next_key();
+	jp->nodenames   = hostlist_copy(hl);
+	jp->num_tasks   = nprocs;
+	jp->user_space  = (uint8_t) user_space;
 
 	/*
 	 * Peek at the first host to figure out tables_per_task and adapter
@@ -2705,6 +2709,8 @@ nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	pack32(j->job_key, buf);
 	pack8(j->bulk_xfer, buf);
 	pack32(j->bulk_xfer_resources, buf);
+	pack16(j->cau_indexes, buf);
+	pack16(j->immed_slots, buf);
 	pack8(j->ip_v4, buf);
 	pack8(j->user_space, buf);
 	pack16(j->tables_per_task, buf);
@@ -2847,6 +2853,8 @@ nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	safe_unpack32(&j->job_key, buf);
 	safe_unpack8(&j->bulk_xfer, buf);
 	safe_unpack32(&j->bulk_xfer_resources, buf);
+	safe_unpack16(&j->cau_indexes, buf);
+	safe_unpack16(&j->immed_slots, buf);
 	safe_unpack8(&j->ip_v4, buf);
 	safe_unpack8(&j->user_space, buf);
 	safe_unpack16(&j->tables_per_task, buf);
@@ -3232,8 +3240,8 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 		 * and have no effect on x86 processors:
 		 * immed_send_slots_per_win
 		 * num_cau_indexes */
-		table_info.immed_send_slots_per_win = 0;
-		table_info.num_cau_indexes = 0;
+		table_info.num_cau_indexes = jp->cau_indexes;
+		table_info.immed_send_slots_per_win = jp->immed_slots;
 		load_table.table_info = &table_info;
 		load_table.per_task_input = jp->tableinfo[i].table;
 
