@@ -52,6 +52,9 @@ be set quite high for memory size, open file count and stack size.</p>
 
 <h2>SLURM Configuration</h2>
 
+<p>NOTE: Substantial changes were made in SLURM version 2.4 to support higher
+throughput rates. Version 2.5 includes more enhancements.</p>
+
 <p>Several SLURM configuration parameters should be adjusted to
 reflect the needs of high throughput computing.</p>
 
@@ -71,6 +74,9 @@ Controls how soon the record of a completed job can be purged from the
 The record of jobs run will be preserved in accounting records and logs.
 The default value is 300 seconds. The value should be reduced to a few
 seconds if possible.</li>
+<li><b>PriorityType</b>:
+The <b>priority/builtin</b> is considerably faster than other options, but
+schedules jobs only on a First In First Out (FIFO) basis.</li>
 <li><b>SchedulerParameters</b>:
 Several scheduling parameters are available.
 <ul>
@@ -91,16 +97,29 @@ jobs or less) and <b>interval</b> to 30 seconds or more will limit the
 overhead of backfill scheduling (NOTE: the default values are fine for both
 of these parameters).</li>
 </ul></li>
+<li><b>SelectType</b>:
+The <b>select/serial</b> plugin is highly optimized if executing only serial
+(single CPU) jobs.</li>
 <li><b>SlurmctldPort</b>:
 It is desirable to configure the <b>slurmctld</b> daemon to accept incoming
 messages on more than one port in order to avoid having incoming messages
 discarded by the operating system due to exceeding the SOMAXCONN limit
 described above. Using between two and ten ports is suggested when large
 numbers of simultaneous requests are to be supported.</li>
+<li><b>SlurmctldDebug</b>:
+More detailed logging will decrease system throughput. Set to 2 (log errors
+only) or 3 (general information logging). Each increment in the logging level
+will increase the number of message by a factor of about 3.</li>
+<li><b>SlurmdDebug</b>:
+More detailed logging will decrease system throughput. Set to 2 (log errors
+only) or 3 (general information logging). Each increment in the logging level
+will increase the number of message by a factor of about 3.</li>
+<li><b>SlurmdLogFile</b>:
+Writing to local storage is recommended.</li>
 <li>Other: Configure logging, accounting and other overhead to a minimum
 appropriate for your environment.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 30 August 2010</p>
+<p style="text-align:center;">Last modified 12 July 2012</p>
 
 <!--#include virtual="footer.txt"-->
