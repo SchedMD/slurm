@@ -10,7 +10,7 @@
 # --with auth_none   %_with_auth_none   1    build auth-none RPM
 # --with blcr        %_with_blcr        1    require blcr support
 # --with bluegene    %_with_bluegene    1    build bluegene RPM
-# --with cray_xt     %_with_cray_xt     1    build for Cray XT system
+# --with cray        %_with_cray        1    build for a Cray system
 # --with debug       %_with_debug       1    enable extra debugging within SLURM
 # --with elan        %_with_elan        1    build switch-elan RPM
 # --with lua         %_with_lua         1    build SLURM lua bindings (proctrack only for now)
@@ -144,6 +144,11 @@ BuildRequires: mysql-devel >= 5.0.0
 
 %if %{slurm_with postgres}
 BuildRequires: postgresql-devel >= 8.0.0
+%endif
+
+%if %{slurm_with cray}
+BuildRequires: cray-MySQL-devel-enterprise
+Requires: cray-MySQL-devel-enterprise
 %endif
 
 %ifnos aix5.3
@@ -383,7 +388,6 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 
 %build
 %configure --program-prefix=%{?_program_prefix:%{_program_prefix}} \
-	%{?slurm_with_cray_xt:--enable-cray-xt} \
 	%{?slurm_with_debug:--enable-debug} \
 	%{?slurm_with_partial_attach:--enable-partial-attach} \
 	%{?slurm_with_sun_const:--enable-sun-const} \
