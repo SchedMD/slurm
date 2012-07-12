@@ -21,6 +21,7 @@ documents those changes that are of interest to users and admins.
     just the bad hardware making the other hardware available to run on.
  -- BLUEGENE - Handle job completion correctly if an admin removes a block
     where other blocks on an overlapping midplane are running jobs.
+ -- BLUEGENE - correctly remove running jobs when freeing a block.
 
 * Changes in SLURM 2.4.1
 ========================

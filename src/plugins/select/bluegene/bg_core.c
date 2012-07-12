@@ -534,7 +534,7 @@ extern int free_block_list(uint32_t job_id, List track_list,
 			itr = list_iterator_create(bg_record->job_list);
 			while ((job_ptr = list_next(itr))) {
 				if ((job_ptr->magic != JOB_MAGIC)
-				    || !IS_JOB_FINISHED(job_ptr))
+				    || IS_JOB_FINISHED(job_ptr))
 					continue;
 				freeit = xmalloc(sizeof(kill_job_struct_t));
 				freeit->jobid = job_ptr->job_id;
