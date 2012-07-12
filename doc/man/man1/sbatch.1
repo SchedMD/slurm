@@ -810,23 +810,33 @@ All options are case in\-sensitive.
 Supported values include:
 .RS
 .TP 12
-\fBBULK_XFER\fR [=<\fIresources\fR>]
+\fBBULK_XFER\fR[=<\fIresources\fR>]
 Enable bulk transfer of data using Remote Direct-Memory Access (RDMA).
 The optional \fIresources\fR specification is a numeric value which can have
 a suffix of "k", "K", "m", "M", "g" or "G" for kilobytes, megabytes or
 gigabytes.
 .TP
-\fBDEVNAME\fR =<\fIname\fR>
+\fBCAU\fR=<\fIcount\fR>
+Number of Collecitve Accelleration Units (CAU) required.
+Applies only to IBM Power7 processors.
+Default value is zero.
+.TP
+\fBDEVNAME\fR=<\fIname\fR>
 Specify the device name to use for communications (e.g. "eth0" or "mlx4_0").
 .TP
-\fBDEVTYPE\fR =<\fItype\fR>
+\fBDEVTYPE\fR=<\fItype\fR>
 Specify the device type to use for communications.
 The supported values of \fItype\fR are:
 "IB" (InfiniBand), "HFI" (P7 Host Fabric Interface),
 "IPONLY" (IP-Only interfaces), "HPCE" (HPC Ethernet), and
 "KMUX" (Kernel Emulation of HPCE).
 .TP
-\fBINSTANCES\fR =<\fIcount\fR>
+\fBIMMED\fR=<\fIcount\fR>
+Number of immediate send slots per window required.
+Applies only to IBM Power7 processors.
+Default value is zero.
+.TP
+\fBINSTANCES\fR=<\fIcount\fR>
 Specify number of network connections for each task on each network connection.
 The default instance count is 1.
 .TP

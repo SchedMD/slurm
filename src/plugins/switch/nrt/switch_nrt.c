@@ -407,7 +407,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 	bool bulk_xfer = false, ip_v4 = true, user_space = false;
 	uint32_t bulk_xfer_resources = 0;
 	bool sn_all = true;	/* default to sn_all */
-	int instances = 1;
+	int cau = 0, immed = 0, instances = 1;
 	int dev_type = NRT_MAX_ADAPTER_TYPES;
 	int err = SLURM_SUCCESS;
 	char *adapter_name = NULL;
@@ -522,6 +522,34 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 		} else if (!strcasecmp(token, "sn_single")) {
 			sn_all = false;
 
+		/* Collective Acceleration Units (CAU) */
+		} else if (!strncasecmp(token, "cau=", 4)) {
+			long int count;
+			char *end_ptr = NULL;
+			count = strtol(token+4, &end_ptr, 10);
+			if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K'))
+				count *= 1024;
+			if (count >= 0)
+				cau = count;
+			else {
+				info("switch/nrt: invalid option: %s", token);
+				err = SLURM_ERROR;
+			}
+
+		/* Immediate Send Slots Per Window */
+		} else if (!strncasecmp(token, "immed=", 6)) {
+			long int count;
+			char *end_ptr = NULL;
+			count = strtol(token+6, &end_ptr, 10);
+			if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K'))
+				count *= 1024;
+			if (count >= 0)
+				immed = count;
+			else {
+				info("switch/nrt: invalid option: %s", token);
+				err = SLURM_ERROR;
+			}
+
 		/* other */
 		} else {
 			info("switch/nrt: invalid option: %s", token);
@@ -544,7 +572,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 					adapter_name, dev_type,
 					bulk_xfer, bulk_xfer_resources,
 					ip_v4, user_space, protocol,
-					instances);
+					instances, cau, immed);
 	}
 
 	nrt_need_state_save = true;

@@ -2400,7 +2400,8 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		  uint16_t *tasks_per_node, uint32_t **tids, bool sn_all,
 		  char *adapter_name, nrt_adapter_t dev_type,
 		  bool bulk_xfer, uint32_t bulk_xfer_resources,
-		  bool ip_v4, bool user_space, char *protocol, int instances)
+		  bool ip_v4, bool user_space, char *protocol, int instances,
+		  int cau, int immed)
 {
 	int nnodes, nprocs = 0;
 	hostlist_iterator_t hi;
@@ -2412,7 +2413,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	int network_id = -1;
 	int adapter_type_count = 0;
 	nrt_protocol_table_t *protocol_table = NULL;
-
+error("cau=%d immed=%d", cau, immed);
 	assert(jp);
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
 	assert(tasks_per_node);

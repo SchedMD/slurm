@@ -102,7 +102,7 @@ extern int nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 			     char *adapter_name, nrt_adapter_t dev_type,
 			     bool bulk_xfer, uint32_t bulk_xfer_resources,
 			     bool ip_v4, bool user_space, char *protocol,
-			     int instances);
+			     int instances, int cau, int immed);
 extern int nrt_pack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf);
 extern int nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf);
 extern slurm_nrt_jobinfo_t *nrt_copy_jobinfo(slurm_nrt_jobinfo_t *jp);
