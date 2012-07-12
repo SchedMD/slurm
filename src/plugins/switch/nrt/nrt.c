@@ -115,6 +115,10 @@ typedef struct slurm_nrt_block {
 typedef struct slurm_nrt_adapter {
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN];
 	nrt_adapter_t adapter_type;
+	nrt_cau_index_t cau_indexes_avail;
+	nrt_cau_index_t cau_indexes_used;
+	nrt_imm_send_slot_t immed_slots_avail;
+	nrt_imm_send_slot_t immed_slots_used;
 	in_addr_t ipv4_addr;
 	struct in6_addr ipv6_addr;
 	nrt_logical_id_t lid;
@@ -1393,6 +1397,8 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 		info("  adapter_name: %s", a->adapter_name);
 		info("    adapter_type: %s",
 		     _adapter_type_str(a->adapter_type));
+		info("    cau_indexes_avail: %hu", a->cau_indexes_avail);
+		info("    immed_slots_avail: %hu", a->immed_slots_avail);
 		inet_ntop(AF_INET, &a->ipv4_addr, addr_str, sizeof(addr_str));
 		info("    ipv4_addr: %s", addr_str);
 		inet_ntop(AF_INET6, &a->ipv6_addr, addr_str, sizeof(addr_str));
@@ -1872,6 +1878,10 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 			}
 			if (adapter_info.node_number != 0)
 				n->node_number = adapter_info.node_number;
+			adapter_ptr->cau_indexes_avail =
+				adapter_info.cau_indexes_avail;
+			adapter_ptr->immed_slots_avail =
+				adapter_info.immed_slots_avail;
 			adapter_ptr->rcontext_block_count =
 				adapter_info.rcontext_block_count;
 			for (k = 0; k < adapter_info.num_ports; k++) {
@@ -1958,6 +1968,8 @@ nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
 		packmem(a->adapter_name, NRT_MAX_ADAPTER_NAME_LEN, buf);
 		dummy16 = a->adapter_type;
 		pack16(dummy16, buf);	/* adapter_type is an int */
+		pack16(a->cau_indexes_avail, buf);
+		pack16(a->immed_slots_avail, buf);
 		pack32(a->ipv4_addr, buf);
 		for (j = 0; j < 16; j++)
 			pack8(a->ipv6_addr.s6_addr[j], buf);
@@ -2005,6 +2017,8 @@ _copy_node(slurm_nrt_nodeinfo_t *dest, slurm_nrt_nodeinfo_t *src)
 		strncpy(da->adapter_name, sa->adapter_name,
 			NRT_MAX_ADAPTER_NAME_LEN);
 		da->adapter_type = sa->adapter_type;
+		da->cau_indexes_avail = sa->cau_indexes_avail;
+		da->immed_slots_avail = sa->immed_slots_avail;
 		da->ipv4_addr    = sa->ipv4_addr;
 		da->ipv6_addr    = sa->ipv6_addr;
 		da->lid          = sa->lid;
@@ -2050,7 +2064,9 @@ _fake_unpack_adapters(Buf buf)
 		safe_unpackmem_ptr(&dummyptr, &dummy32, buf);
 		if (dummy32 != NRT_MAX_ADAPTER_NAME_LEN)
 			goto unpack_error;
-		safe_unpack16(&dummy16, buf);
+		safe_unpack16(&dummy16, buf);	/* adapter_type */
+		safe_unpack16(&dummy16, buf);	/* cau_indexes_avail */
+		safe_unpack16(&dummy16, buf);	/* immed_slots_avail */
 		safe_unpack32(&dummy32, buf);	/* ipv4_addr */
 		for (j = 0; j < 16; j++)
 			safe_unpack8(&dummy8, buf); 	/* ipv6_addr */
@@ -2169,6 +2185,8 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 		memcpy(tmp_a->adapter_name, name_ptr, size);
 		safe_unpack16(&dummy16, buf);
 		tmp_a->adapter_type = dummy16;	/* adapter_type is an int */
+		safe_unpack16(&tmp_a->cau_indexes_avail, buf);
+		safe_unpack16(&tmp_a->immed_slots_avail, buf);
 		safe_unpack32(&tmp_a->ipv4_addr, buf);
 		for (j = 0; j < 16; j++) {
 			safe_unpack8(&tmp_a->ipv6_addr.s6_addr[j], buf);
@@ -2413,7 +2431,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	int network_id = -1;
 	int adapter_type_count = 0;
 	nrt_protocol_table_t *protocol_table = NULL;
-error("cau=%d immed=%d", cau, immed);
+
 	assert(jp);
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
 	assert(tasks_per_node);
