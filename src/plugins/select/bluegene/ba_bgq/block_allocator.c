@@ -1154,17 +1154,8 @@ try_again:
 			break;
 
 		clear_cnt = bit_clear_count(total_bitmap);
+
 		FREE_NULL_BITMAP(total_bitmap);
-		/* User asked for a bad CPU count or we can't place it
-		   here in this small allocation. */
-		if (jobinfo->cnode_cnt < bg_conf->mp_cnode_cnt) {
-			list_iterator_destroy(itr);
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-				info("We couldn't place a sub block of %d",
-				     *node_count);
-			(*node_count)++;
-			goto try_again;
-		}
 
 		/* Grab the most empty midplane to be used later if we
 		   can't find a spot.
