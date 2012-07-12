@@ -480,14 +480,14 @@ _free_resources_by_job(slurm_nrt_jobinfo_t *jp, char *node_name)
 		return;
 
 	if (node->adapter_list == NULL) {
-		error("_free_resources_by_job, "
+		error("switch/nrt: _free_resources_by_job, "
 		      "adapter_list NULL for node %s", node_name);
 		return;
 	}
 	for (i = 0; i < node->adapter_count; i++) {
 		adapter = &node->adapter_list[i];
 		if (adapter->window_list == NULL) {
-			error("_free_resources_by_job, "
+			error("switch/nrt: _free_resources_by_job, "
 			      "window_list NULL for node %s adapter %s",
 			      node->name, adapter->adapter_name);
 			continue;
@@ -508,6 +508,15 @@ _free_resources_by_job(slurm_nrt_jobinfo_t *jp, char *node_name)
 				   adapter->name, window->id); */
 				window->state = NRT_WIN_AVAILABLE;
 				window->job_key = 0;
+				if (jp->immed_slots >
+				    adapter->immed_slots_used) {
+					error("switch/nrt: immed_slots_used "
+					      "underflow");
+					adapter->immed_slots_used = 0;
+				} else {
+					adapter->immed_slots_used -=
+						jp->immed_slots;
+				}
 			}
 		}
 	}
@@ -696,9 +705,11 @@ _window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 				window = _find_window(adapter, win_id);
 				if (window) {
 					window->state = state;
-					if (state == NRT_WIN_UNAVAILABLE)
+					if (state == NRT_WIN_UNAVAILABLE) {
 						window->job_key = job_key;
-					else
+						adapter->immed_slots_used +=
+							jp->immed_slots;
+					} else
 						window->job_key = 0;
 				}
 			}  /* for each task */
@@ -958,10 +969,24 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 				if (user_space) {
 					window = _find_free_window(adapter);
 					if (window == NULL) {
-						error("No free windows on "
-						      "node %s adapter %s",
-						      node->name,
-						      adapter->adapter_name);
+						info("switch/nrt: "
+						      "No free windows on "
+						     "node %s adapter %s",
+						     node->name,
+						     adapter->adapter_name);
+						return SLURM_ERROR;
+					}
+					adapter->immed_slots_used +=
+						jp->immed_slots;
+					if (adapter->immed_slots_used >
+					    adapter->immed_slots_avail) {
+						info("switch/nrt: "
+						     "No free immediate slots "
+						     "on node %s adapter %s",
+						     node->name,
+						     adapter->adapter_name);
+						adapter->immed_slots_used -=
+							jp->immed_slots;
 						return SLURM_ERROR;
 					}
 					window->state = NRT_WIN_UNAVAILABLE;
@@ -1022,8 +1047,8 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 					hpce_table->task_id = task_id;
 					hpce_table->win_id = window->window_id;
 				} else {
-					error("Missing support for adapter "
-					      "type %s",
+					error("switch/nrt: Missing support "
+					      "for adapter type %s",
 					      _adapter_type_str(adapter->
 								adapter_type));
 					return SLURM_ERROR;
@@ -1082,7 +1107,8 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 
 	node = _find_node(nrt_state, hostname);
 	if (node == NULL) {
-		error("Failed to find node in node_list: %s", hostname);
+		error("switch/nrt: Failed to find node in node_list: %s",
+		      hostname);
 		return SLURM_ERROR;
 	}
 
@@ -1112,7 +1138,8 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 		}
 	}
 	if (adapter == NULL) {
-		info("Failed to find adapter %s of type %s on node %s",
+		info("switch/nrt: Failed to find adapter %s of type %s on "
+		     "node %s",
 		     adapter_name, _adapter_type_str(adapter_type), hostname);
 		return SLURM_ERROR;
 	}
@@ -1128,10 +1155,23 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 				/* Reserve a window on the adapter for task */
 				window = _find_free_window(adapter);
 				if (window == NULL) {
-					error("No free windows on node %s "
-					      "adapter %s",
-					      node->name,
-					      adapter->adapter_name);
+					info("switch/nrt: No free windows "
+					     "on node %s adapter %s",
+					     node->name,
+					     adapter->adapter_name);
+					/* FIXME: Should we retry job step? */
+					return SLURM_ERROR;
+				}
+				adapter->immed_slots_used += jp->immed_slots;
+				if (adapter->immed_slots_used >
+				    adapter->immed_slots_avail) {
+					info("switch/nrt: No free immediate "
+					     "slots on node %s adapter %s",
+					     node->name,
+					     adapter->adapter_name);
+					adapter->immed_slots_used -=
+						jp->immed_slots;
+					/* FIXME: Should we retry job step? */
 					return SLURM_ERROR;
 				}
 				window->state = NRT_WIN_UNAVAILABLE;
@@ -1400,7 +1440,9 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 		info("    adapter_type: %s",
 		     _adapter_type_str(a->adapter_type));
 		info("    cau_indexes_avail: %hu", a->cau_indexes_avail);
+		info("    cau_indexes_used:  %hu", a->cau_indexes_used);
 		info("    immed_slots_avail: %hu", a->immed_slots_avail);
+		info("    immed_slots_used:  %hu", a->immed_slots_used);
 		inet_ntop(AF_INET, &a->ipv4_addr, addr_str, sizeof(addr_str));
 		info("    ipv4_addr: %s", addr_str);
 		inet_ntop(AF_INET6, &a->ipv6_addr, addr_str, sizeof(addr_str));
@@ -2515,7 +2557,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		/* Without setting tables_per_task == 0, non-existant switch
 		 * windows are allocated resulting in some inconstencies in
 		 * NRT's records. */
-		jp->tables_per_task = 0;
+/* FIXME	jp->tables_per_task = 0; */
 	}
 
 	if (instances <= 0) {
