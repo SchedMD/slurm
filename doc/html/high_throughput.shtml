@@ -52,6 +52,9 @@ be set quite high for memory size, open file count and stack size.</p>
 
 <h2>SLURM Configuration</h2>
 
+<p>NOTE: Substantial changes were made in SLURM version 2.4 to support higher
+throughput rates. Version 2.5 includes more enhancements.</p>
+
 <p>Several SLURM configuration parameters should be adjusted to
 reflect the needs of high throughput computing. The changes described below
 will not be possible in all environments, but these are the configuration
@@ -83,7 +86,12 @@ Controls how soon the record of a completed job can be purged from the
 <b>slurmctld</b> memory and thus not visible using the <b>squeue</b> command.
 The record of jobs run will be preserved in accounting records and logs.
 The default value is 300 seconds. The value should be reduced to a few
-seconds if possible.</li>
+seconds if possible. Use of accounting records for older jobs can increase
+the job throughput rate compared with retaining old jobs in the memory of
+the slurmctld daemon.</li>
+<li><b>PriorityType</b>:
+The <i>priority/builtin</i> is considerably faster than other options, but
+schedules jobs only on a First In First Out (FIFO) basis.</li>
 <li><b>SchedulerParameters</b>:
 Several scheduling parameters are available.
 <ul>
@@ -126,10 +134,20 @@ messages on more than one port in order to avoid having incoming messages
 discarded by the operating system due to exceeding the SOMAXCONN limit
 described above. Using between two and ten ports is suggested when large
 numbers of simultaneous requests are to be supported.</li>
+<li><b>SlurmctldDebug</b>:
+More detailed logging will decrease system throughput. Set to 2 (log errors
+only) or 3 (general information logging). Each increment in the logging level
+will increase the number of message by a factor of about 3.</li>
+<li><b>SlurmdDebug</b>:
+More detailed logging will decrease system throughput. Set to 2 (log errors
+only) or 3 (general information logging). Each increment in the logging level
+will increase the number of message by a factor of about 3.</li>
+<li><b>SlurmdLogFile</b>:
+Writing to local storage is recommended.</li>
 <li>Other: Configure logging, accounting and other overhead to a minimum
 appropriate for your environment.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 5 June 2012</p>
+<p style="text-align:center;">Last modified 12 July 2012</p>
 
 <!--#include virtual="footer.txt"-->

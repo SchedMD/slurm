@@ -4059,7 +4059,7 @@ run_spank_job_script (const char *mode, char **env)
 
 	fd_set_close_on_exec (pfds[1]);
 
-	info ("Calling %s spank %s", conf->stepd_loc, mode);
+	debug ("Calling %s spank %s", conf->stepd_loc, mode);
 	if ((cpid = fork ()) < 0) {
 		error ("executing spank %s: %m", mode);
 		return (-1);

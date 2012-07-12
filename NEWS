@@ -53,6 +53,10 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Handle job completion correctly if an admin removes a block
     where other blocks on an overlapping midplane are running jobs.
  -- BLUEGENE - correctly remove running jobs when freeing a block.
+ -- BGQ - correct logic to place multiple (< 1 midplane) steps inside a
+    multi midplane block allocation.
+ -- BGQ - Make it possible for a multi midplane allocation to run on more
+    than 1 midplane but not the entire allocation.
 
 * Changes in SLURM 2.4.1
 ========================

@@ -1793,13 +1793,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 #if defined HAVE_BGQ
 	if (step_specs->min_nodes < node_count) {
-		if (step_specs->min_nodes > 512) {
-			error("step asked for more than 512 nodes but "
-			      "less than the allocation, on a "
-			      "bluegene/Q system that isn't allowed.");
-			return ESLURM_INVALID_NODE_COUNT;
-		}
-		/* We are asking for less than we have. */
 		node_count = step_specs->min_nodes;
 
 		step_specs->min_nodes = 1;
