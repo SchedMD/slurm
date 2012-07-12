@@ -2548,7 +2548,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 				struct job_record *job_ptr = NULL;
 				ListIterator job_itr = list_iterator_create(
 					found_record->job_list);
-				while ((job_ptr = list_next(itr))) {
+				while ((job_ptr = list_next(job_itr))) {
 					if (job_ptr->magic != JOB_MAGIC) {
 						error("select_p_update_block: "
 						      "bad magic found when "
