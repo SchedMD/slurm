@@ -1951,8 +1951,10 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 
 	if (((cluster_flags & CLUSTER_FLAG_BGL)
 	     || (cluster_flags & CLUSTER_FLAG_BGP))
-	    || (node_count == bg_record->cnode_cnt)) {
-		/* If we are using the whole block we need to verify
+	    || ((node_count == bg_record->cnode_cnt)
+		|| (node_count > bg_conf->mp_cnode_cnt))) {
+		/* If we are using the whole block (or more than 1
+		   midplane of it) we need to verify
 		   if anything else is used.  If anything else is used
 		   return NULL, else return that we can use the entire
 		   thing.
@@ -1963,7 +1965,8 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		if (list_count(job_ptr->step_list)) {
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 				info("select_p_step_pick_nodes: Looking "
-				     "for the entire block %s for job %u, "
+				     "for more than one midplane of "
+				     "block %s for job %u, "
 				     "but some of it is used.",
 				     bg_record->bg_block_id, job_ptr->job_id);
 			goto end_it;
@@ -1971,9 +1974,22 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		if (!(picked_mps = bit_copy(job_ptr->node_bitmap)))
 			fatal("bit_copy malloc failure");
 
-		if (cluster_flags & CLUSTER_FLAG_BGQ
-		    && (bg_record->mp_count == 1)) {
+		if (cluster_flags & CLUSTER_FLAG_BGQ) {
 			bitstr_t *used_bitmap;
+			if (node_count > bg_conf->mp_cnode_cnt) {
+				/* Here we have to make sure nothing
+				   else is able to run on this block
+				   since we are using more than 1
+				   midplane but potentially not the
+				   entire allocation.
+				*/
+				FREE_NULL_BITMAP(jobinfo->units_avail);
+				FREE_NULL_BITMAP(jobinfo->units_used);
+				jobinfo->units_avail =
+					ba_create_ba_mp_cnode_bitmap(bg_record);
+				jobinfo->units_used =
+					bit_copy(jobinfo->units_avail);
+			}
 
 			if (jobinfo->units_avail)
 				used_bitmap = jobinfo->units_used;
@@ -2091,7 +2107,7 @@ end_it:
 extern int select_p_step_finish(struct step_record *step_ptr)
 {
 	bg_record_t *bg_record = NULL;
-	select_jobinfo_t *jobinfo = NULL;
+	select_jobinfo_t *jobinfo = NULL, *step_jobinfo = NULL;
 	int rc = SLURM_SUCCESS;
 	char *tmp_char = NULL;
 
@@ -2106,10 +2122,18 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 	}
 
 	jobinfo = step_ptr->job_ptr->select_jobinfo->data;
+	step_jobinfo = step_ptr->select_jobinfo->data;
 
-	if (jobinfo->units_avail)
+	if (step_jobinfo->cnode_cnt > bg_conf->mp_cnode_cnt) {
+		/* This means we were using units_avail and units_used
+		   as midplanes not cnodes for either the whole job
+		   allocation or a portion of it.
+		*/
+		FREE_NULL_BITMAP(jobinfo->units_avail);
+		FREE_NULL_BITMAP(jobinfo->units_used);
+	} else if (jobinfo->units_avail)
 		rc = ba_sub_block_in_bitmap_clear(
-			step_ptr->select_jobinfo->data, jobinfo->units_used);
+			step_jobinfo, jobinfo->units_used);
 	else {
 		slurm_mutex_lock(&block_state_mutex);
 		bg_record = jobinfo->bg_record;
