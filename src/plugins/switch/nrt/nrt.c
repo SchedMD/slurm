@@ -1209,7 +1209,6 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 					     "on node %s adapter %s",
 					     node->name,
 					     adapter->adapter_name);
-					/* FIXME: Should we retry job step? */
 					return SLURM_ERROR;
 				}
 				adapter->immed_slots_used += jp->immed_slots;
@@ -1221,7 +1220,6 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 					     adapter->adapter_name);
 					adapter->immed_slots_used -=
 						jp->immed_slots;
-					/* FIXME: Should we retry job step? */
 					return SLURM_ERROR;
 				}
 				window->state = NRT_WIN_UNAVAILABLE;
@@ -2784,7 +2782,9 @@ fail:
 	free(host);
 	hostlist_iterator_destroy(hi);
 	xfree(protocol_table);
-	/* slurmctld will call nrt_free_jobinfo on jp */
+	(void) nrt_job_step_complete(jp, hl);	/* Release resources already
+						 * allocated */
+	/* slurmctld will call nrt_free_jobinfo(jp) to free memory */
 	return SLURM_FAILURE;
 }
 

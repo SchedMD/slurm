@@ -2054,7 +2054,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 					 step_ptr->step_layout->tasks,
 					 step_ptr->step_layout->tids,
 					 step_ptr->network) < 0) {
-			error("switch_build_jobinfo: %m");
 			delete_step_record (job_ptr, step_ptr->step_id);
 			return ESLURM_INTERCONNECT_FAILURE;
 		}
