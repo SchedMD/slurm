@@ -26,6 +26,7 @@ documents those changes that are of interest to users and admins.
     multi midplane block allocation.
  -- BGQ - Make it possible for a multi midplane allocation to run on more
     than 1 midplane but not the entire allocation.
+ -- BGL - Fix for syncing users on block from Tim Wickberg
 
 * Changes in SLURM 2.4.1
 ========================
