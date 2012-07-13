@@ -265,7 +265,8 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 			+ " block="
 			+ boost::lexical_cast<std::string>(block_cnode_cnt);
 		goto deny_job;
-	} else if (step_cnode_cnt < block_cnode_cnt) {
+	} else if ((step_cnode_cnt < block_cnode_cnt)
+		   && (step_cnode_cnt <= 512)) {
 		uint16_t dim;
 		uint16_t tmp_uint16[HIGHEST_DIMENSIONS];
 
