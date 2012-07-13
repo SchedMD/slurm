@@ -1503,7 +1503,10 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 		info("    port_id: %hu", a->port_id);
 		info("    rcontext_block_count: %"PRIu64"",
 		     a->rcontext_block_count);
+		info("    rcontext_block_used:  %"PRIu64"",
+		     a->rcontext_block_used);
 		info("    special: %lu", a->special);
+
 		info("    window_count: %hu", a->window_count);
 		hs = hostset_create("");
 		if (hs == NULL)
@@ -1530,6 +1533,14 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 			info("      -------- ");
 		}
 		hostset_destroy(hs);
+
+		info("    block_count: %hu", a->block_count);
+		for (j = 0; j < a->block_count; j++) {
+			if (a->block_list[j].job_key) {
+				info("      job_key[%d]: %u",
+				     j, a->block_list[j].job_key);
+			}
+		}
 	}
 	info("--End Node Info--");
 }
