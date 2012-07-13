@@ -2374,6 +2374,7 @@ List slurm_receive_msgs(slurm_fd_t fd, int steps, int timeout)
 	/*
 	 * Unpack message body
 	 */
+	msg.protocol_version = header.version;
 	msg.msg_type = header.msg_type;
 	msg.flags = header.flags;
 
@@ -2604,6 +2605,7 @@ int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
 	/*
 	 * Unpack message body
 	 */
+	msg->protocol_version = header.version;
 	msg->msg_type = header.msg_type;
 	msg->flags = header.flags;
 

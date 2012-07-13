@@ -436,6 +436,7 @@ _init_from_slurmd(int sock, char **argv,
 
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
+	msg->protocol_version = SLURM_PROTOCOL_VERSION;
 
 	switch(step_type) {
 	case LAUNCH_BATCH_JOB:

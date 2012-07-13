@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Make it possible for a multi midplane allocation to run on more
     than 1 midplane but not the entire allocation.
  -- BGL - Fix for syncing users on block from Tim Wickberg
+ -- Fix initialization of protocol_version for some messages to make sure it
+    is always set when sending or receiving a message.
 
 * Changes in SLURM 2.4.1
 ========================

@@ -538,6 +538,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	}
 	buffer = init_buf(0);
 	msg.data = req;
+	msg.protocol_version = SLURM_PROTOCOL_VERSION;
 	pack_msg(&msg, buffer);
 	len = get_buf_offset(buffer);
 	safe_write(fd, &len, sizeof(int));
