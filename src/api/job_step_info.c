@@ -195,9 +195,42 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 
 	/****** Line 4 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"ResvPorts=%s Checkpoint=%u CheckpointDir=%s\n\n",
+		"ResvPorts=%s Checkpoint=%u CheckpointDir=%s",
 		 job_step_ptr->resv_ports,
 		 job_step_ptr->ckpt_interval, job_step_ptr->ckpt_dir);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 5 ******/
+	if (job_step_ptr->cpu_freq == NO_VAL)
+		snprintf(tmp_line, sizeof(tmp_line), 
+			 "CPUFreqReq=Default\n\n");
+	else if (job_step_ptr->cpu_freq & CPU_FREQ_RANGE_FLAG) {
+		switch (job_step_ptr->cpu_freq) 
+		{
+		case CPU_FREQ_LOW :
+			snprintf(tmp_line, sizeof(tmp_line),
+				 "CPUFreqReq=Low\n\n");
+			break;
+		case CPU_FREQ_MEDIUM :
+			snprintf(tmp_line, sizeof(tmp_line),
+				 "CPUFreqReq=Medium\n\n");
+			break;
+		case CPU_FREQ_HIGH :
+			snprintf(tmp_line, sizeof(tmp_line),
+				 "CPUFreqReq=High\n\n");
+			break;
+		default :
+			snprintf(tmp_line, sizeof(tmp_line),
+				 "CPUFreqReq=Unknown\n\n");
+		}
+	}
+	else 
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "CPUFreqReq=%u\n\n", job_step_ptr->cpu_freq);
 	xstrcat(out, tmp_line);
 
 	return out;

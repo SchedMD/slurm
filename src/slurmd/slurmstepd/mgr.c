@@ -85,6 +85,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/cbuf.h"
+#include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
@@ -1063,8 +1064,16 @@ fail2:
 		_wait_for_io(job);
 
 	/*
+	 * Reset cpu frequency if it was changed
+	 */
+
+	if (job->cpu_freq != NO_VAL)
+		cpu_freq_reset(job);
+
+	/*
 	 * Warn task plugin that the user's step have terminated
 	 */
+
 	post_step(job);
 
 	/*

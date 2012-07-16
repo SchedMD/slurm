@@ -109,6 +109,7 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->min_nodes = step_params->min_nodes;
 	step_req->max_nodes = step_params->max_nodes;
 	step_req->cpu_count = step_params->cpu_count;
+	step_req->cpu_freq  = step_params->cpu_freq;
 	step_req->num_tasks = step_params->task_count;
 	step_req->relative = step_params->relative;
 	step_req->resv_port_cnt = step_params->resv_port_cnt;

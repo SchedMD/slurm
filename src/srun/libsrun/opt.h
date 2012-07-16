@@ -215,6 +215,7 @@ typedef struct srun_options {
 	char *mail_user;	/* --mail-user			*/
 	uint8_t open_mode;	/* --open-mode=append|truncate	*/
 	int acctg_freq;		/* --acctg-freq=secs		*/
+	uint32_t cpu_freq;     	/* --cpu_freq=kilohertz		*/
 	bool pty;		/* --pty			*/
 	char *restart_dir;	/* --restart                    */
 	int argc;		/* length of argv array		*/

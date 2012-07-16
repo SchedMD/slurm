@@ -72,6 +72,7 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 
+#include "src/common/cpu_frequency.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/mpi.h"
@@ -119,6 +120,7 @@
 #define OPT_WCKEY       0x16
 #define OPT_SIGNAL      0x17
 #define OPT_TIME_VAL    0x18
+#define OPT_CPU_FREQ    0x19
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -186,6 +188,7 @@
 #define LONG_OPT_ALPS            0x152
 #define LONG_OPT_REQ_SWITCH      0x153
 #define LONG_OPT_RUNJOB_OPTS     0x154
+#define LONG_OPT_CPU_FREQ        0x155
 
 extern char **environ;
 
@@ -452,6 +455,7 @@ static void _opt_default()
 	opt.pty = false;
 	opt.open_mode = 0;
 	opt.acctg_freq = -1;
+	opt.cpu_freq = NO_VAL;
 	opt.reservation = NULL;
 	opt.wckey = NULL;
 	opt.req_switch = -1;
@@ -488,6 +492,7 @@ env_vars_t env_vars[] = {
 {"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL             },
 {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set    },
 {"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL             },
+{"SLURM_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL             },
 {"SLURM_DEPENDENCY",    OPT_STRING,     &opt.dependency,    NULL             },
 {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL             },
 {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL             },
@@ -606,6 +611,11 @@ _process_env_var(env_vars_t *e, const char *val)
 		if (slurm_verify_cpu_bind(val, &opt.cpu_bind,
 					  &opt.cpu_bind_type))
 			exit(error_exit);
+		break;
+
+	case OPT_CPU_FREQ:
+		if (cpu_freq_verify_param(val, &opt.cpu_freq))
+			error("Invalid --cpu-freq argument: %s. Ignored", val);
 		break;
 
 	case OPT_MEM_BIND:
@@ -785,6 +795,7 @@ static void set_options(const int argc, char **argv)
 		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
+		{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 		{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 		{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
 		{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
@@ -1438,6 +1449,11 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_ACCTG_FREQ:
 			opt.acctg_freq = _get_int(optarg, "acctg-freq",
                                 false);
+			break;
+		case LONG_OPT_CPU_FREQ:
+		        if (cpu_freq_verify_param(optarg, &opt.cpu_freq))
+				error("Invalid --cpu-freq argument: %s. Ignored",
+				      optarg);
 			break;
 		case LONG_OPT_WCKEY:
 			xfree(opt.wckey);
@@ -2318,6 +2334,7 @@ static void _opt_list(void)
 	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
 	info("mem_bind       : %s",
 	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
+	info("cpu_freq       : %u", opt.cpu_freq);
 	info("verbose        : %d", _verbose);
 	info("slurmd_debug   : %d", opt.slurmd_debug);
 	if (opt.immediate <= 1)

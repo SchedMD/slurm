@@ -45,6 +45,7 @@ typedef struct env_options {
 	cpu_bind_type_t
 		cpu_bind_type;	/* --cpu_bind=			*/
 	char *cpu_bind;		/* binding map for map/mask_cpu	*/
+	uint32_t cpu_freq;	/* cpu_frequency requested */
 	mem_bind_type_t
 		mem_bind_type;	/* --mem_bind=			*/
 	char *mem_bind;		/* binding map for tasks to memory	*/

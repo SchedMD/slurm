@@ -429,6 +429,7 @@ extern int launch_p_step_launch(
 		launch_params.cpus_per_task	= opt.cpus_per_task;
 	else
 		launch_params.cpus_per_task	= 1;
+	launch_params.cpu_freq          = opt.cpu_freq;
 	launch_params.task_dist         = opt.distribution;
 	launch_params.ckpt_dir		= opt.ckpt_dir;
 	launch_params.restart_dir       = opt.restart_dir;

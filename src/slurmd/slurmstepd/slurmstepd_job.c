@@ -220,6 +220,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->cpu_bind = xstrdup(msg->cpu_bind);
 	job->mem_bind_type = msg->mem_bind_type;
 	job->mem_bind = xstrdup(msg->mem_bind);
+	job->cpu_freq = msg->cpu_freq;
 	job->ckpt_dir = xstrdup(msg->ckpt_dir);
 	job->restart_dir = xstrdup(msg->restart_dir);
 	job->cpus_per_task = msg->cpus_per_task;

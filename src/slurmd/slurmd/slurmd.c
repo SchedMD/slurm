@@ -63,6 +63,7 @@
 #endif
 
 #include "src/common/bitstring.h"
+#include "src/common/cpu_frequency.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
@@ -1030,6 +1031,12 @@ _reconfigure(void)
 	slurm_topo_build_config();
 	_set_topo_info();
 
+	/*
+	 * In case the administrator changed the cpu frequency set capabilities
+	 * on this node, rebuild the cpu frequency table information
+	 */
+	cpu_freq_init(conf);
+
 	_print_conf();
 
 	/*
@@ -1417,6 +1424,11 @@ _slurmd_init(void)
 	rehash_node();
 	slurm_topo_build_config();
 	_set_topo_info();
+
+	/*
+	 * Check for cpu frequency set capabilities on this node
+	 */
+	cpu_freq_init(conf);
 
 	_print_conf();
 	if (jobacct_gather_init() != SLURM_SUCCESS)

@@ -49,6 +49,7 @@
 #include <signal.h>
 #include <time.h>
 
+#include "src/common/cpu_frequency.h"
 #include "src/common/fd.h"
 #include "src/common/eio.h"
 #include "src/common/parse_time.h"
@@ -1211,6 +1212,10 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 		}
 		suspended = true;
 	}
+	/* reset the cpu frequencies if cpu_freq option used */
+	if (job->cpu_freq != NO_VAL)
+		cpu_freq_reset(job);
+
 	pthread_mutex_unlock(&suspend_mutex);
 
 done:
@@ -1267,6 +1272,10 @@ _handle_resume(int fd, slurmd_job_t *job, uid_t uid)
 		}
 		suspended = false;
 	}
+	/* set the cpu frequencies if cpu_freq option used */
+	if (job->cpu_freq != NO_VAL)
+		cpu_freq_set(job);
+
 	pthread_mutex_unlock(&suspend_mutex);
 
 done:

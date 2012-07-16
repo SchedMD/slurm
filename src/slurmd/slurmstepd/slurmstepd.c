@@ -47,6 +47,7 @@
 #include <stdlib.h>
 #include <signal.h>
 
+#include "src/common/cpu_frequency.h"
 #include "src/common/gres.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_rlimits_info.h"
@@ -428,6 +429,9 @@ _init_from_slurmd(int sock, char **argv,
 
 	/* Receive GRES information from slurmd */
 	gres_plugin_recv_stepd(sock);
+
+	/* Receive cpu_frequency info from slurmd */
+	cpu_freq_recv_info(sock);
 
 	/* receive req from slurmd */
 	safe_read(sock, &len, sizeof(int));

@@ -57,6 +57,7 @@
 #include <utime.h>
 #include <grp.h>
 
+#include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
@@ -539,6 +540,9 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 
 	/* Send GRES information to slurmstepd */
 	gres_plugin_send_stepd(fd);
+
+	/* send cpu_frequency info to slurmstepd */
+	cpu_freq_send_info(fd);
 
 	/* send req over to slurmstepd */
 	switch(type) {

@@ -316,6 +316,43 @@ Show help message for cpu_bind
 .RE
 
 .TP
+\fB\-\-cpu\-freq\fR =<\fIrequested frequency in kilohertz\fR>
+
+Request that the job step initiated by this srun be run at the
+requested frequency if possible, on the cpus selected for the step on
+the compute node(s).  In addition to specifying a numerical frequency in
+kilohertz, the request can specify \fIlow\fR, \fImedium\fR, or
+\fIhigh\fR for the value. "Low" will select the lowest available
+frequency, "high" will select the highest available frequency, while
+"medium" attempts to set a frequency in the middle of the available
+range. If the numeric value specified does not exactly match a legal
+available frequency, SLURM will attempt to pick a legal frequency
+close to the request.
+
+The following informational environment variable is set in the job
+step when \fB\-\-cpu\-freq\fR option is requested.
+.nf
+        SLURM_CPU_FREQ_REQ
+.fi
+
+This environment variable can also be used to supply the value for the
+cpu frequency request if it is set when the 'srun' command is issued.
+The \fB\-\-cpu\-freq\fR on the command line will override the
+environment variable value.  See the \fBENVIRONMENT VARIABLES\fR
+section for a description of the SLURM_CPU_FREQ_REQ variable.
+
+\fBNOTE\fR: This parameter is treated as a request, not a requirement.
+If the job step's node does not support setting the cpu frequency, or
+the requested value is outside the bounds of the legal frequencies, an
+error is logged, but the job step is allowed to continue.
+
+\fBNOTE\fR: Setting the frequency for just the cpus of the job step
+implies that the tasks are confined to those cpus.  If task
+confinement (i.e., TaskPlugin=task/affinity or
+TaskPlugin=task/cgroup with the "ConstrainCores" option) is not
+configured, this parameter is ignored.
+
+.TP
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR=<\fIncpus\fR>
 Request that \fIncpus\fR be allocated \fBper process\fR. This may be
 useful if the job is multithreaded and requires more than one CPU
@@ -341,6 +378,7 @@ threads per CPU for a total of two tasks.
 \fBWARNING\fR: When srun is executed from within salloc or sbatch,
 there are configurations and options which can result in inconsistent 
 allocations when \-c has a value greater than \-c on salloc or sbatch.
+
 .TP
 \fB\-d\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
 Defer the start of this job until the specified dependencies have been
@@ -1633,6 +1671,16 @@ Same as \fB\-\-conn\-type\fR
 \fBSLURM_CPU_BIND\fR
 Same as \fB\-\-cpu_bind\fR
 .TP
+\fBSLURM_CPU_FREQ_REQ\fR
+Same as \fB\-\-cpu\-freq\fR. Can specify a numerical frequency in
+kilohertz, or the request can specify \fIlow\fR, \fImedium\fR, or
+\fIhigh\fR for the value. "Low" will select the lowest available
+frequency, "high" will select the highest available frequency, while
+"medium" attempts to set a frequency in the middle of the available
+range. If the numeric value specified does not exactly match a legal
+available frequency, SLURM will attempt to pick a legal frequency
+close to the request.
+.TP
 \fBSLURM_CPUS_PER_TASK\fR
 Same as \fB\-c, \-\-cpus\-per\-task\fR
 .TP
@@ -1811,6 +1859,13 @@ if specified on the execute line.
 \fBSLURM_CPU_BIND_LIST\fR
 \-\-cpu_bind map or mask list (<list of IDs or masks for this node>)
 
+.TP
+\fBSLURM_CPU_FREQ_REQ\fR
+Contains the value requested for cpu frequency on the srun command as
+a numerical frequency in kilohertz, or a coded value for a request of
+\fIlow\fR, \fImedium\fR, or \fIhigh\fR for the frequency. See the
+description of the \fB\-\-cpu\-freq\fR option or the
+\fBSLURM_CPU_FREQ_REQ\fR input environment variable.
 .TP
 \fBSLURM_CPUS_ON_NODE\fR
 Count of processors available to the job on this node.

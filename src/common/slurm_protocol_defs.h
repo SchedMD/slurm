@@ -597,6 +597,7 @@ typedef struct job_step_specs {
 	uint16_t ckpt_interval;	/* checkpoint creation interval (minutes) */
 	char *ckpt_dir; 	/* path to store checkpoint image files */
 	uint32_t cpu_count;	/* count of required processors */
+	uint32_t cpu_freq;	/* requested cpu frequency */
 	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
 	char *features;		/* required node features, default NONE */
 	char *gres;		/* generic resources required */
@@ -676,6 +677,7 @@ typedef struct launch_tasks_request_msg {
 	uint8_t open_mode;	/* stdout/err append or truncate */
 	uint8_t pty;		/* use pseudo tty */
 	uint16_t acctg_freq;	/* accounting polling interval */
+	uint32_t cpu_freq;	/* requested cpu frequency */
 
 	/********** START "normal" IO only options **********/
 	/* These options are ignored if user_managed_io is 1 */
@@ -808,6 +810,7 @@ typedef struct batch_job_launch_msg {
 				  * real memory per CPU | MEM_PER_CPU,
 				  * default=0 (no limit) */
 	uint16_t acctg_freq;	/* accounting polling interval	*/
+	uint32_t cpu_freq;	/* requested cpu frequency */
 	uint32_t job_mem;	/* memory limit for job		*/
 	uint16_t restart_cnt;	/* batch job restart count	*/
 	char **spank_job_env;	/* SPANK job environment variables */

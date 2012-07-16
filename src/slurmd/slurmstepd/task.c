@@ -354,6 +354,7 @@ exec_task(slurmd_job_t *job, int i)
 	job->envtp->distribution = job->task_dist;
 	job->envtp->cpu_bind = xstrdup(job->cpu_bind);
 	job->envtp->cpu_bind_type = job->cpu_bind_type;
+	job->envtp->cpu_freq = job->cpu_freq;
 	job->envtp->mem_bind = xstrdup(job->mem_bind);
 	job->envtp->mem_bind_type = job->mem_bind_type;
 	job->envtp->distribution = -1;
