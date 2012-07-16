@@ -1796,16 +1796,13 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 
 	if (slurmctld_conf.fast_schedule != 2) {
-		int boards1, boards2;	/* total boards on node */
 		int sockets1, sockets2;	/* total sockets on node */
 		int cores1, cores2;	/* total cores on node */
 		int threads1, threads2;	/* total threads on node */
 
-		boards1  = reg_msg->boards;
 		sockets1 = reg_msg->sockets;
 		cores1   = sockets1 * reg_msg->cores;
 		threads1 = cores1   * reg_msg->threads;
-		boards2  = config_ptr->boards;
 		sockets2 = config_ptr->sockets;
 		cores2   = sockets2 * config_ptr->cores;
 		threads2 = cores2   * config_ptr->threads;

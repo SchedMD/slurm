@@ -67,12 +67,14 @@
 
 #include "xcpuinfo.h"
 
+#if !defined(HAVE_HWLOC)
 static char* _cpuinfo_path = "/proc/cpuinfo";
 
 static int _compute_block_map(uint16_t numproc,
 			      uint16_t **block_map, uint16_t **block_map_inv);
 static int _chk_cpuinfo_str(char *buffer, char *keyword, char **valptr);
 static int _chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
+#endif
 
 static int _ranges_conv(char* lrange, char** prange, int mode);
 static int _range_to_map(char* range, uint16_t *map, uint16_t map_size,
@@ -173,27 +175,29 @@ get_cpuinfo(uint16_t numproc, uint16_t *p_boards,
 {
 	hwloc_topology_t topology;
 	hwloc_obj_t obj;
-	int depth;
+	int depth, i;
+	int boards, ncores, npu, nsockets;
+
 	/* Allocate and initialize topology object. */
 	hwloc_topology_init(&topology);
 	/* Perform the topology detection. */
 	hwloc_topology_load(topology);
 
-	int boards = 1;
+	boards = 1;
 	depth = hwloc_get_type_depth(topology, HWLOC_OBJ_GROUP);
 	if (depth != HWLOC_TYPE_DEPTH_UNKNOWN) {
 		boards = hwloc_get_nbobjs_by_depth(topology, depth);
 	}
 	*p_boards = boards;
 
-	int nsockets = 1;
+	nsockets = 1;
 	depth = hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET);
 	if (depth != HWLOC_TYPE_DEPTH_UNKNOWN) {
 		nsockets = hwloc_get_nbobjs_by_depth(topology, depth);
 	}
 	*p_sockets = nsockets;
 
-	int ncores = 1;
+	ncores = 1;
 	*p_cores = 1;
 	depth = hwloc_get_type_depth(topology, HWLOC_OBJ_CORE);
 	if (depth != HWLOC_TYPE_DEPTH_UNKNOWN) {
@@ -201,7 +205,7 @@ get_cpuinfo(uint16_t numproc, uint16_t *p_boards,
 	}
 	*p_cores = ncores / nsockets;
 
-	int npu = 1;
+	npu = 1;
 	depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PU);
 	if (depth != HWLOC_TYPE_DEPTH_UNKNOWN) {
 		npu = hwloc_get_nbobjs_by_depth(topology, depth);
@@ -213,12 +217,10 @@ get_cpuinfo(uint16_t numproc, uint16_t *p_boards,
 	 * retval = _compute_block_map(*block_map_size,
 	 *                             block_map, block_map_inv); */
 
-	uint16_t i;
 	/* Compute abstract->machine block mapping (and inverse) */
 	if (block_map) {
 		*block_map = xmalloc(npu * sizeof(uint16_t));
-		for (i=0; i<npu; i++)
-		{
+		for (i = 0; i < npu; i++) {
 			obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_PU, i);
 			(*block_map)[i] = obj->os_index;
 		}

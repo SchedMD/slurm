@@ -38,6 +38,9 @@
 
 #include "src/slurmd/common/slurmstepd_init.h"
 
+/* Assume that the slurmd and slurmstepd are the same version level when slurmd
+ * starts slurmstepd, so we do not need to support different protocol versions
+ * for the different message formats. */
 extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
 {
 	xassert(conf != NULL);
@@ -88,7 +91,8 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 	safe_unpackstr_xmalloc(&conf->task_prolog, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&conf->task_epilog, &uint32_tmp, buffer);
 	safe_unpack16(&conf->job_acct_gather_freq, buffer);
-	safe_unpackstr_xmalloc(&conf->job_acct_gather_type, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&conf->job_acct_gather_type, &uint32_tmp,
+			       buffer);
 	safe_unpack16(&conf->propagate_prio, buffer);
 	safe_unpack32(&conf->debug_flags, buffer);
 	safe_unpack32(&uint32_tmp, buffer);

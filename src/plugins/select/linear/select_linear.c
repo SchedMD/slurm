@@ -488,7 +488,7 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 		threads = node_ptr->config_ptr->threads;
 	} else {
 		cpus    = node_ptr->cpus;
-		boards   = node_ptr->boards;
+		boards  = node_ptr->boards;
 		sockets = node_ptr->sockets;
 		cores   = node_ptr->cores;
 		threads = node_ptr->threads;
@@ -496,7 +496,7 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 
 #if SELECT_DEBUG
 	info("host %s HW_ cpus %u boards %u sockets %u cores %u threads %u ",
-			node_ptr->name, cpus, boards, sockets, cores, threads);
+	     node_ptr->name, cpus, boards, sockets, cores, threads);
 #endif
 
 	avail_cpus = slurm_get_avail_procs(
