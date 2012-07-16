@@ -104,6 +104,7 @@ struct part_res_record {
 struct node_res_record {
 	struct node_record *node_ptr;	/* ptr to the actual node */
 	uint16_t cpus;			/* count of processors configured */
+	uint16_t boards; 		/* count of boards configured */
 	uint16_t sockets;		/* count of sockets configured */
 	uint16_t cores;			/* count of cores configured */
 	uint16_t vpus;			/* count of virtual cpus (hyperthreads)

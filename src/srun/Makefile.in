@@ -368,7 +368,8 @@ srun_SOURCES = \
 	srun.wrapper.c
 
 srun_LDADD = $(convenience_libs) $(DL_LIBS)
-srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(am__append_1)
+srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(HWLOC_LDFLAGS) \
+	$(HWLOC_LIBS) $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:

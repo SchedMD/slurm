@@ -66,6 +66,7 @@
 struct config_record {
 	uint32_t magic;		/* magic cookie to test data integrity */
 	uint16_t cpus;		/* count of processors running on the node */
+	uint16_t boards;	/* count of boards configured */
 	uint16_t sockets;	/* number of sockets per node */
 	uint16_t cores;		/* number of cores per CPU */
 	uint16_t threads;	/* number of threads per core */
@@ -105,6 +106,7 @@ struct node_record {
 	time_t last_response;		/* last response from the node */
 	time_t last_idle;		/* time node last become idle */
 	uint16_t cpus;			/* count of processors on the node */
+	uint16_t boards; 		/* count of boards configured */
 	uint16_t sockets;		/* number of sockets per node */
 	uint16_t cores;			/* number of cores per CPU */
 	uint16_t threads;		/* number of threads per core */

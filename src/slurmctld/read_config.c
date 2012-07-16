@@ -1053,6 +1053,7 @@ static int _restore_node_state(int recover,
 		node_ptr->cpus          = old_node_ptr->cpus;
 		node_ptr->cores         = old_node_ptr->cores;
 		node_ptr->last_idle     = old_node_ptr->last_idle;
+		node_ptr->boards         = old_node_ptr->boards;
 		node_ptr->sockets       = old_node_ptr->sockets;
 		node_ptr->threads       = old_node_ptr->threads;
 		node_ptr->real_memory   = old_node_ptr->real_memory;

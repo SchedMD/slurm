@@ -838,6 +838,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		}
 		host_index = hostset_find(j_hset, conf->node_name);
 		hostset_destroy(j_hset);
+
 		if ((host_index < 0) || (host_index >= arg.job_nhosts)) {
 			error("job cr credential invalid host_index %d for "
 			      "job %u", host_index, arg.jobid);
@@ -2208,6 +2209,7 @@ _rpc_daemon_status(slurm_msg_t *msg)
 
 	resp = xmalloc(sizeof(slurmd_status_t));
 	resp->actual_cpus        = conf->actual_cpus;
+	resp->actual_boards      = conf->actual_boards;
 	resp->actual_sockets     = conf->actual_sockets;
 	resp->actual_cores       = conf->actual_cores;
 	resp->actual_threads     = conf->actual_threads;

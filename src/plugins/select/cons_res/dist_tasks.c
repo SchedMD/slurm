@@ -5,6 +5,8 @@
  *  Copyright (C) 2006-2008 Hewlett-Packard Development Company, L.P.
  *  Written by Susanne M. Balle, <susanne.balle@hp.com>
  *  CODE-OCEC-09-009. All rights reserved.
+ *  Portions copyright (C) 2012 Bull
+ *  Written by Martin Perry <martin.perry@bull.com>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.schedmd.com/slurmdocs/>.
@@ -47,6 +49,68 @@
  */
 #define ALLOCATE_FULL_SOCKET 1
 #endif
+
+/* Max boards supported for best-fit across boards */
+/* Larger board configurations may require new algorithm */
+/* for acceptable performance */
+#define MAX_BOARDS 8
+
+/* Combination counts
+ * comb_counts[n-1][k-1] = number of combinations of
+ *     k items from a set of n items
+ *
+ * Formula is n!/k!(n-k)!
+ */
+uint32_t comb_counts[MAX_BOARDS][MAX_BOARDS] =
+  {{1,0,0,0,0,0,0,0},
+   {2,1,0,0,0,0,0,0},
+   {3,3,1,0,0,0,0,0},
+   {4,6,4,1,0,0,0,0},
+   {5,10,10,5,1,0,0,0},
+   {6,15,20,15,6,1,0,0},
+   {7,21,35,35,21,7,1,0},
+   {8,28,56,70,56,28,8,1}};
+
+/* Generate all combinations of k integers from the
+ * set of integers 0 to n-1.
+ * Return combinations in comb_list.
+ *
+ * Example: For k = 2 and n = 4, there are six
+ *          combinations:
+ *          {0,1},{0,2},{0,3},{1,2},{1,3},{2,3}
+ *
+ */
+void _gen_combs(int *comb_list, int n, int k)
+{
+	int *comb = xmalloc(k * sizeof(int));
+
+	/* Setup comb for the initial combination */
+	int i, b;
+	for (i = 0; i < k; ++i)
+    	comb[i] = i;
+	b = 0;
+
+	/* Generate all the other combinations */
+	while (1) {
+		for (i=0; i < k; i++) {
+			comb_list[b+i] = comb[i];
+		}
+		b+=k;
+		i = k - 1;
+		++comb[i];
+		while ((i >= 0) && (comb[i] >= n - k + 1 + i)) {
+			--i;
+			++comb[i];
+		}
+
+		if (comb[0] > n - k)
+			break; /* No more combinations */
+
+		for (i = i + 1; i < k; ++i)
+			comb[i] = comb[i - 1] + 1;
+	}
+	xfree(comb);
+}
 
 /* _compute_task_c_b_task_dist - compute the number of tasks on each
  * of the node for the cyclic and block distribution. We need to do
@@ -95,7 +159,6 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 		      "setting to 1");
 		maxtasks = 1;
 	}
-
 	if (job_ptr->details->cpus_per_task == 0)
 		job_ptr->details->cpus_per_task = 1;
 	for (tid = 0, i = job_ptr->details->cpus_per_task ; (tid < maxtasks);
@@ -194,7 +257,16 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 }
 
 /* sync up core bitmap with new CPU count using a best-fit approach
- * on the available sockets
+ * on the available resources on each node
+ *
+ * "Best-fit" means:
+ * 1st priority: Use smallest number of boards with sufficient
+ *               available CPUs
+ * 2nd priority: Use smallest number of sockets with sufficient
+ *               available CPUs
+ * 3rd priority: Use board combination with the smallest number
+ *               of available CPUs
+ * 4th priority: Use higher-numbered boards/sockets/cores first
  *
  * The CPU array contains the distribution of CPUs, which can include
  * virtual CPUs (hyperthreads)
@@ -202,19 +274,52 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 static void _block_sync_core_bitmap(struct job_record *job_ptr,
 				    const uint16_t cr_type)
 {
-	uint32_t c, s, i, j, n, size, csize, core_cnt;
+	uint32_t c, s, i, j, n, b, z, size, csize, core_cnt;
 	uint16_t cpus, num_bits, vpus = 1;
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bool alloc_cores = false, alloc_sockets = false;
 	uint16_t ntasks_per_core = 0xffff;
+	int count, cpu_min, b_min, elig, s_min, comb_idx, sock_idx;
+	int elig_idx, comb_brd_idx, sock_list_idx, comb_min, board_num;
+	int* boards_cpu_cnt;
+	int* sort_brds_cpu_cnt;
 	int* sockets_cpu_cnt;
+	int* board_combs;
+	int* socket_list;
+	int* elig_brd_combs;
+	int* elig_cpu_cnt;
 	bool* sockets_used;
+	uint16_t boards_nb;
+	uint16_t nboards_nb;
 	uint16_t sockets_nb;
 	uint16_t ncores_nb;
 	uint16_t nsockets_nb;
+	uint16_t sock_per_brd;
+	uint16_t sock_per_comb;
 	uint16_t req_cpus,best_fit_cpus = 0;
 	uint32_t best_fit_location = 0;
+	uint64_t ncomb_brd;
 	bool sufficient,best_fit_sufficient;
+
+	/* qsort compare function for ascending int list */
+	int _cmp_int_ascend (const void *a, const void *b)
+	{
+		return (*(int*)a - *(int*)b);
+	}
+
+	/* qsort compare function for descending int list */
+	int _cmp_int_descend (const void *a, const void *b)
+	{
+		return (*(int*)b - *(int*)a);
+	}
+
+	/* qsort compare function for board combination socket
+	 * list */
+	int _cmp_sock (const void *a, const void *b)
+	{
+		 return (sockets_cpu_cnt[*(int*)b] -
+				 sockets_cpu_cnt[*(int*)a]);
+	}
 
 	if (!job_res)
 		return;
@@ -246,6 +351,9 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	sockets_nb  = select_node_record[0].sockets;
 	sockets_cpu_cnt = xmalloc(sockets_nb * sizeof(int));
 	sockets_used = xmalloc(sockets_nb * sizeof(bool));
+	boards_nb = select_node_record[0].boards;
+	boards_cpu_cnt = xmalloc(boards_nb * sizeof(int));
+	sort_brds_cpu_cnt = xmalloc(boards_nb * sizeof(int));
 
 	for (c = 0, i = 0, n = 0; n < size; n++) {
 
@@ -255,13 +363,20 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		core_cnt = 0;
 		ncores_nb = select_node_record[n].cores;
 		nsockets_nb = select_node_record[n].sockets;
+		nboards_nb = select_node_record[n].boards;
 		num_bits =  nsockets_nb * ncores_nb;
 
 		if ((c + num_bits) > csize)
-			fatal ("cons_res: _block_sync_core_bitmap index error");
+			fatal("cons_res: _block_sync_core_bitmap index error");
 
 		cpus  = job_res->cpus[i];
 		vpus  = MIN(select_node_record[n].vpus, ntasks_per_core);
+
+		if (nboards_nb > MAX_BOARDS) {
+			debug3("cons_res: node[%u]: exceeds max boards; "
+				"doing best-fit across sockets only", n);
+			nboards_nb = 1;
+		}
 
 		if ( nsockets_nb > sockets_nb) {
 			sockets_nb = nsockets_nb;
@@ -269,19 +384,142 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			xrealloc(sockets_used,sockets_nb * sizeof(bool));
 		}
 
-		/* count cores provided by each socket */
+		if ( nboards_nb > boards_nb) {
+			boards_nb = nboards_nb;
+			xrealloc(boards_cpu_cnt, boards_nb * sizeof(int));
+			xrealloc(sort_brds_cpu_cnt, boards_nb * sizeof(int));
+		}
+
+		/* Count available cores on each socket and board */
+		sock_per_brd = nsockets_nb / nboards_nb;
+		for (b = 0; b < nboards_nb; b++) {
+			boards_cpu_cnt[b] = 0;
+			sort_brds_cpu_cnt[b] = 0;
+		}
 		for (s = 0; s < nsockets_nb; s++) {
 			sockets_cpu_cnt[s]=0;
 			sockets_used[s]=false;
+			b = s/sock_per_brd;
 			for ( j = c + (s * ncores_nb) ;
 			      j < c + ((s+1) * ncores_nb) ;
 			      j++ ) {
-				if ( bit_test(job_res->core_bitmap,j) )
+				if ( bit_test(job_res->core_bitmap,j) ) {
 					sockets_cpu_cnt[s]++;
+					boards_cpu_cnt[b]++;
+					sort_brds_cpu_cnt[b]++;
+				}
 			}
 		}
 
-		/* select cores in the sockets using a best-fit approach */
+		/* Sort boards in descending order of available core count */
+		qsort(sort_brds_cpu_cnt, nboards_nb, sizeof (int),
+				_cmp_int_descend);
+		/* Determine minimum number of boards required for the
+		 * allocation (b_min) */
+		count = 0;
+		for (b = 0; b < nboards_nb; b++) {
+			count+=sort_brds_cpu_cnt[b];
+			if (count >= cpus)
+				break;
+		}
+		b_min = b+1;
+		sock_per_comb = b_min * sock_per_brd;
+
+		/* Allocate space for list of board combinations */
+		ncomb_brd = comb_counts[nboards_nb-1][b_min-1];
+		board_combs = xmalloc(ncomb_brd * b_min * sizeof(int));
+		/* Generate all combinations of b_min boards on the node */
+		_gen_combs(board_combs, nboards_nb, b_min);
+
+		/* Determine which combinations have enough available cores
+		 * for the allocation (eligible board combinations)
+		 */
+		elig_brd_combs = xmalloc(ncomb_brd * sizeof(int));
+		elig_cpu_cnt = xmalloc(ncomb_brd * sizeof(int));
+		elig = 0;
+		for (comb_idx = 0; comb_idx < ncomb_brd; comb_idx++) {
+			count = 0;
+			for (comb_brd_idx = 0; comb_brd_idx < b_min;
+				comb_brd_idx++) {
+				board_num = board_combs[(comb_idx * b_min)
+				                        + comb_brd_idx];
+				count += boards_cpu_cnt[board_num];
+			}
+			if (count >= cpus) {
+				elig_brd_combs[elig] = comb_idx;
+				elig_cpu_cnt[elig] = count;
+				elig++;
+			}
+		}
+
+		/* Allocate space for list of sockets for each eligible board
+		 * combination */
+		socket_list = xmalloc(elig * sock_per_comb * sizeof(int));
+
+		/* Generate sorted list of sockets for each eligible board
+		 * combination, and find combination with minimum number
+		 * of sockets and minimum number of cpus required for the
+		 * allocation
+		 */
+		s_min = sock_per_comb;
+		comb_min = 0;
+		cpu_min = sock_per_comb * ncores_nb;
+		for (elig_idx = 0; elig_idx < elig; elig_idx++) {
+			comb_idx = elig_brd_combs[elig_idx];
+			for (comb_brd_idx = 0; comb_brd_idx < b_min;
+							comb_brd_idx++) {
+				board_num = board_combs[(comb_idx * b_min)
+				                        + comb_brd_idx];
+				sock_list_idx = (elig_idx * sock_per_comb) +
+					(comb_brd_idx * sock_per_brd);
+				for (sock_idx = 0; sock_idx < sock_per_brd;
+								sock_idx++) {
+					socket_list[sock_list_idx + sock_idx]
+						= (board_num * sock_per_brd)
+							+ sock_idx;
+				}
+			}
+			/* Sort this socket list in descending order of
+			 * available core count */
+			qsort(&socket_list[elig_idx*sock_per_comb],
+				sock_per_comb, sizeof (int), _cmp_sock);
+			/* Determine minimum number of sockets required for
+			 * the allocation from this socket list */
+			count = 0;
+			for (b = 0; b < sock_per_comb; b++) {
+				sock_idx =
+				socket_list[(int)((elig_idx*sock_per_comb)+b)];
+				count+=sockets_cpu_cnt[sock_idx];
+				if (count >= cpus)
+					break;
+			}
+			b++;
+			/* Use board combination with minimum number
+			 * of required sockets and minimum number of CPUs
+			 */
+			if ((b < s_min) ||
+				(b == s_min && elig_cpu_cnt[elig_idx]
+				                            <= cpu_min)) {
+				s_min = b;
+				comb_min = elig_idx;
+				cpu_min = elig_cpu_cnt[elig_idx];
+			}
+		}
+		debug3("cons_res: best_fit: node[%u]: required cpus: %u, "
+				"min req boards: %u,", n, cpus, b_min);
+		debug3("cons_res: best_fit: node[%u]: min req sockets: %u, "
+				"min avail cpus: %u", n, s_min, cpu_min);
+		/* Re-sort socket list for best-fit board combination in
+		 * ascending order of socket number */
+		qsort(&socket_list[comb_min * sock_per_comb], sock_per_comb,
+				sizeof (int), _cmp_int_ascend);
+
+		xfree(board_combs);
+		xfree(elig_brd_combs);
+		xfree(elig_cpu_cnt);
+
+		/* select cores from the sockets of the best-fit board
+		 * combination using a best-fit approach */
 		while( cpus > 0 ) {
 
 			best_fit_cpus = 0;
@@ -295,7 +533,8 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			/* search for the best socket, */
 			/* starting from the last one to let more room */
 			/* in the first one for system usage */
-			for ( s = nsockets_nb - 1 ; (int) s >= (int) 0 ; s-- ) {
+			for ( z = sock_per_comb-1; (int) z >= (int) 0; z-- ) {
+				s = socket_list[(comb_min*sock_per_comb)+z];
 				sufficient = sockets_cpu_cnt[s] >= req_cpus ;
 				if ( (best_fit_cpus == 0) ||
 				     (sufficient && !best_fit_sufficient ) ||
@@ -313,9 +552,10 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			if ( best_fit_cpus == 0 )
 				break;
 
-			debug3("dist_task: best_fit : using node[%u]:"
-			       "socket[%u] : %u cores available",
-			       n, best_fit_location,
+			debug3("cons_res: best_fit: using node[%u]: "
+			       "board[%u]: socket[%u]: %u cores available",
+			       n, best_fit_location/sock_per_brd,
+			       best_fit_location,
 			       sockets_cpu_cnt[best_fit_location]);
 
 			/* select socket cores from last to first */
@@ -373,6 +613,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 		}
 
+		xfree(socket_list);
 		if (cpus > 0) {
 			/* cpu count should NEVER be greater than the number
 			 * of set bits in the core bitmap for a given node */
@@ -392,10 +633,11 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 	}
 
+	xfree(boards_cpu_cnt);
+	xfree(sort_brds_cpu_cnt);
 	xfree(sockets_cpu_cnt);
 	xfree(sockets_used);
 }
-
 
 /* Sync up the core_bitmap with the CPU array using cyclic distribution
  *

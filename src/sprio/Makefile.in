@@ -322,7 +322,9 @@ INCLUDES = -I$(top_srcdir)
 sprio_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 noinst_HEADERS = sprio.h print.h
 sprio_SOURCES = sprio.c print.c opts.c
-sprio_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sprio_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+
 all: all-am
 
 .SUFFIXES:

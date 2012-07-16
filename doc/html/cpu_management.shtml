@@ -18,7 +18,7 @@ is divided into the following sections:</p>
 chosen by the SLURM administrator. The interactions between different CPU management options are complex 
 and often difficult to predict. Some experimentation may be required to discover the exact combination 
 of options  needed to produce a desired outcome. Users and administrators should refer to the man pages 
-for <a href="slurm.conf.html">slurm.conf</a>, <a href="cgroup.conf.html">cgroup.conf</a>
+for <a href="slurm.conf.html">slurm.conf</a>, <a href="cgroup.conf.html">cgroup.conf</a>,
 <a href="salloc.html">salloc</a>, 
 <a href="sbatch.html">sbatch</a> and <a href="srun.html">srun</a> for detailed explanations of each 
 option. The following html documents may also be useful:</p>
@@ -32,7 +32,7 @@ Architectures</a><br>
 
 <p>This document describes SLURM CPU management for conventional Linux clusters only.  For
 information on Cray and IBM BlueGene systems, please refer to the appropriate documents.</p>
-<p>The information and examples in this document have been verified on SLURM version 2.3.0. Some
+<p>The information and examples in this document have been verified on SLURM version 2.4.0. Some
 information may not be valid for previous SLURM versions.</p><br>
 <a name="Section1"></a>
 <h2>CPU Management Steps performed by SLURM</h2>
@@ -88,7 +88,7 @@ Step 1 is performed by slurmctld and the select plugin.
 			</td>
 			<td width="60%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">Defines
-				a node. This includes the number and layout of sockets, cores,
+				a node. This includes the number and layout of boards, sockets, cores,
 				threads and processors (logical CPUs) on the node.</font></p>
 			</td>
 		</tr>
@@ -525,7 +525,7 @@ Step 2 is performed by slurmctld and the select plugin.
 			</td>
 			<td width="60%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">Defines
-				a node. This includes the number and layout of sockets, cores,
+				a node. This includes the number and layout of boards, sockets, cores,
 				threads and processors (logical CPUs) on the node.</font></p>
 			</td>
 		</tr>
@@ -3538,6 +3538,6 @@ and binding for this job. For example, task id 2 is bound to CPU id 2.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 26 September 2011</p>
+<p style="text-align:center;">Last modified 7 February 2012</p>
 
 <!--#include virtual="footer.txt"-->

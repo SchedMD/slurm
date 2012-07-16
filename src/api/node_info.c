@@ -239,8 +239,9 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		snprintf(tmp_line, sizeof(tmp_line), "OS=%s ", node_ptr->os);
 		xstrcat(out, tmp_line);
 	}
-	snprintf(tmp_line, sizeof(tmp_line), "RealMemory=%u Sockets=%u",
-		 node_ptr->real_memory, node_ptr->sockets);
+	snprintf(tmp_line, sizeof(tmp_line),
+		 "RealMemory=%u Sockets=%u Boards=%u",
+		 node_ptr->real_memory, node_ptr->sockets,node_ptr->boards);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

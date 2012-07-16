@@ -422,7 +422,8 @@ enum jobacct_data_type {
 	JOBACCT_DATA_TOT_PAGES,	/* data-> uint32_t psize */
 	JOBACCT_DATA_MIN_CPU,	/* data-> uint32_t psize */
 	JOBACCT_DATA_MIN_CPU_ID,	/* data-> jobacct_id_t psize */
-	JOBACCT_DATA_TOT_CPU	/* data-> uint32_t psize */
+	JOBACCT_DATA_TOT_CPU,	/* data-> uint32_t psize */
+	JOBACCT_DATA_CPU_CYCLES /* data-> uint32_t psize */
 };
 
 /* Possible task distributions across the nodes */
@@ -458,6 +459,7 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
 	CPU_BIND_TO_CORES  = 0x04, /* =cores */
 	CPU_BIND_TO_SOCKETS= 0x08, /* =sockets */
 	CPU_BIND_TO_LDOMS  = 0x10, /* locality domains */
+	CPU_BIND_TO_BOARDS = 0x1000, /* =boards */
 	/* the following manual binding flags are mutually exclusive */
 	/* CPU_BIND_NONE needs to be the lowest value among manual bindings */
 	CPU_BIND_NONE	   = 0x20, /* =no */
@@ -561,6 +563,9 @@ enum ctx_keys {
 #define CR_CORE		0x0004	/* Resources are shared down to the core level.
 				 * Jobs will not be co-allocated within a
 				 * core. */
+#define CR_BOARD	0x0008	/* Resources are shared down to the board
+				 * level. Jobs will not be co-allocated
+				 * within a board. */
 #define CR_MEMORY	0x0010	/* Memory as consumable resources. Memory is
 				 * not over-commited when selected as a CR. */
 
@@ -1004,6 +1009,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default=0 */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job,
 				 * default=0 */
+	uint16_t boards_per_node; /* boards per node required by job  */
+	uint16_t sockets_per_board;/* sockets per board required by job */
 	uint16_t sockets_per_node;/* sockets per node required by job */
 	uint16_t cores_per_socket;/* cores per socket required by job */
 	uint16_t threads_per_core;/* threads per core required by job */
@@ -1011,6 +1018,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on
 				    * each socket */
 	uint16_t ntasks_per_core;/* number of tasks to invoke on each core */
+	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */
 	uint16_t pn_min_cpus;    /* minimum # CPUs per node, default=0 */
 	uint32_t pn_min_memory;  /* minimum real memory per node OR
 				  * real memory per CPU | MEM_PER_CPU,
@@ -1075,9 +1083,11 @@ typedef struct job_info {
 	char *licenses;		/* licenses required by the job */
 	uint32_t max_cpus;	/* maximum number of cpus usable by job */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job */
-	uint16_t sockets_per_node;/* sockets per node required by job */
-	uint16_t cores_per_socket;/* cores per socket required by job */
-	uint16_t threads_per_core;/* threads per core required by job */
+	uint16_t boards_per_node;  /* boards per node required by job   */
+	uint16_t sockets_per_board;/* sockets per board required by job */
+	uint16_t sockets_per_node; /* sockets per node required by job  */
+	uint16_t cores_per_socket; /* cores per socket required by job  */
+	uint16_t threads_per_core; /* threads per core required by job  */
 	char *name;		/* name of the job */
 	char *network;		/* network specification */
 	char *nodes;		/* list of nodes allocated to job */
@@ -1087,7 +1097,8 @@ typedef struct job_info {
 				 * start_range_2, .., -1  */
 	uint16_t ntasks_per_core;/* number of tasks to invoke on each core */
 	uint16_t ntasks_per_node;/* number of tasks to invoke on each node */
-	uint16_t ntasks_per_socket;/* number of tasks to invoke on each socket */
+	uint16_t ntasks_per_socket;/* number of tasks to invoke on each socket*/
+	uint16_t ntasks_per_board; /* number of tasks to invoke on each board */
 
 	uint32_t num_nodes;	/* minimum number of nodes required by job */
 	uint32_t num_cpus;	/* minimum number of cpus required by job */
@@ -1414,8 +1425,9 @@ typedef struct {
 
 typedef struct node_info {
 	char *arch;		/* computer architecture */
+	uint16_t boards;        /* total number of boards per node  */
 	time_t boot_time;	/* time of node boot */
-	uint16_t cores;         /* number of cores per CPU */
+	uint16_t cores;         /* number of cores per socket       */
 	uint16_t cpus;		/* configured count of cpus running on
 				 * the node */
 	char *features;		/* list of a node's features */
@@ -1432,7 +1444,7 @@ typedef struct node_info {
 	uint32_t reason_uid;   	/* User that set the reason, ignore if
 				 * no reason is set. */
 	time_t slurmd_start_time;/* time of slurmd startup */
-	uint16_t sockets;       /* number of sockets per node */
+	uint16_t sockets;       /* total number of sockets per node */
 	uint16_t threads;       /* number of threads per core */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
 	uint32_t weight;	/* arbitrary priority of node for scheduling */
@@ -1852,6 +1864,8 @@ typedef struct slurm_ctl_conf {
 				 * inactive resource allocation is released */
 	uint16_t job_acct_gather_freq; /* poll frequency for job accounting
 					* gather plugins */
+	uint16_t xres_access_freq; /* poll frequency for 
+					* external-resource-access thread */
 	char *job_acct_gather_type; /* job accounting gather type */
 	char *job_ckpt_dir;	/* directory saving job record checkpoint */
 	char *job_comp_host;	/* job completion logging host */
@@ -2003,8 +2017,9 @@ typedef struct slurmd_status_msg {
 	time_t last_slurmctld_msg;	/* time of last slurmctld message */
 	uint16_t slurmd_debug;		/* logging level */
 	uint16_t actual_cpus;		/* actual logical processor count */
-	uint16_t actual_sockets;	/* actual sockets count */
-	uint16_t actual_cores;		/* actual core count */
+	uint16_t actual_boards;  	/* actual total boards count      */
+	uint16_t actual_sockets;	/* actual total sockets count     */
+	uint16_t actual_cores;		/* actual core per socket count   */
 	uint16_t actual_threads;	/* actual thread per core count */
 	uint32_t actual_real_mem;	/* actual real memory in MB */
 	uint32_t actual_tmp_disk;	/* actual temp disk space in MB */

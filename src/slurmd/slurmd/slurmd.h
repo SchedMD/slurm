@@ -77,14 +77,17 @@ typedef struct slurmd_config {
 	int          *argc;             /* pointer to argument count       */
 	char         *hostname;	 	/* local hostname		   */
 	uint16_t     cpus;              /* lowest-level logical processors */
-	uint16_t     sockets;           /* sockets count                   */
-	uint16_t     cores;             /* core count                      */
+	uint16_t     boards;            /* total boards count              */
+	uint16_t     sockets;           /* total sockets count             */
+	uint16_t     cores;             /* core per socket  count          */
 	uint16_t     threads;           /* thread per core count           */
 	uint16_t     conf_cpus;         /* conf file logical processors    */
+	uint16_t     conf_boards;       /* conf file boards count          */
 	uint16_t     conf_sockets;      /* conf file sockets count         */
 	uint16_t     conf_cores;        /* conf file core count            */
 	uint16_t     conf_threads;      /* conf file thread per core count */
 	uint16_t     actual_cpus;       /* actual logical processors       */
+	uint16_t     actual_boards;     /* actual boards count             */
 	uint16_t     actual_sockets;    /* actual sockets count            */
 	uint16_t     actual_cores;      /* actual core count               */
 	uint16_t     actual_threads;    /* actual thread per core count    */
@@ -120,7 +123,7 @@ typedef struct slurmd_config {
 	pid_t         pid;		/* server pid                      */
 	log_options_t log_opts;         /* current logging options         */
 	int           debug_level;	/* logging detail level            */
-	uint32_t      debug_flags;	/* DebugFlags configured           */ 
+	uint32_t      debug_flags;	/* DebugFlags configured           */
 	int           daemonize:1;	/* daemonize flag		   */
 	int	      cleanstart:1;     /* clean start requested (-c)      */
 	int           mlock_pages:1;	/* mlock() slurmd  */
@@ -131,6 +134,7 @@ typedef struct slurmd_config {
 	uid_t           slurm_user_id;	/* UID that slurmctld runs as      */
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 	uint16_t        job_acct_gather_freq;
+	char *job_acct_gather_type; /* job accounting gather type */
 	uint16_t	use_pam;
 	uint16_t	task_plugin_param; /* TaskPluginParams, expressed
 					 * using cpu_bind_type_t flags */

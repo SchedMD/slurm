@@ -178,6 +178,7 @@ typedef struct slurm_conf_node {
 	char *feature;		/* arbitrary list of node's features */
 	char *port_str;
 	uint16_t cpus;		/* count of cpus running on the node */
+	uint16_t boards; 	/* number of boards per node */
 	uint16_t sockets;       /* number of sockets per node */
 	uint16_t cores;         /* number of cores per CPU */
 	uint16_t threads;       /* number of threads per core */
@@ -402,15 +403,17 @@ extern uint16_t slurm_conf_get_port(const char *node_name);
 extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address);
 
 /*
- * slurm_conf_get_cpus_sct -
- * Return the cpus, sockets, cores, and threads configured for a given NodeName
+ * slurm_conf_get_cpus_bsct -
+ * Return the cpus, boards, sockets, cores, and threads configured for a
+ * given NodeName
  * Returns SLURM_SUCCESS on success, SLURM_FAILURE on failure.
  *
  * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
-extern int slurm_conf_get_cpus_sct(const char *node_name,
-				   uint16_t *procs, uint16_t *sockets,
-				   uint16_t *cores, uint16_t *threads);
+extern int slurm_conf_get_cpus_bsct(const char *node_name,
+				    uint16_t *cpus, uint16_t *boards,
+				    uint16_t *sockets, uint16_t *cores,
+				    uint16_t *threads);
 
 /*
  * init_slurm_conf - initialize or re-initialize the slurm configuration

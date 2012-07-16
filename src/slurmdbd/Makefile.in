@@ -337,7 +337,9 @@ slurmdbd_SOURCES = \
 	slurmdbd.c  		\
 	slurmdbd.h
 
-slurmdbd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+slurmdbd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+
 all: all-am
 
 .SUFFIXES:

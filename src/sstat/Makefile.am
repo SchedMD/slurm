@@ -19,5 +19,6 @@ force:
 $(sstat_LDADD) : force
 	 @cd `dirname $@` && $(MAKE) `basename $@`
 
-sstat_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sstat_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
 

@@ -452,7 +452,7 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 {
 	struct node_record *node_ptr;
 	uint16_t avail_cpus;
-	uint16_t cpus, sockets, cores, threads;
+	uint16_t cpus, boards, sockets, cores, threads;
 	uint16_t cpus_per_task = 1;
 	uint16_t ntasks_per_node = 0, ntasks_per_socket, ntasks_per_core;
 	uint16_t min_sockets, min_cores, min_threads;
@@ -482,19 +482,21 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	node_ptr = select_node_ptr + index;
 	if (select_fast_schedule) { /* don't bother checking each node */
 		cpus    = node_ptr->config_ptr->cpus;
+		boards  = node_ptr->config_ptr->boards;
 		sockets = node_ptr->config_ptr->sockets;
 		cores   = node_ptr->config_ptr->cores;
 		threads = node_ptr->config_ptr->threads;
 	} else {
 		cpus    = node_ptr->cpus;
+		boards   = node_ptr->boards;
 		sockets = node_ptr->sockets;
 		cores   = node_ptr->cores;
 		threads = node_ptr->threads;
 	}
 
 #if SELECT_DEBUG
-	info("host %s HW_ cpus %u sockets %u cores %u threads %u ",
-	     node_ptr->name, cpus, sockets, cores, threads);
+	info("host %s HW_ cpus %u boards %u sockets %u cores %u threads %u ",
+			node_ptr->name, cpus, boards, sockets, cores, threads);
 #endif
 
 	avail_cpus = slurm_get_avail_procs(

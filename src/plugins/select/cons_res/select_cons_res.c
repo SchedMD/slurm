@@ -1933,6 +1933,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 			struct config_record *config_ptr;
 			config_ptr = node_ptr[i].config_ptr;
 			select_node_record[i].cpus    = config_ptr->cpus;
+			select_node_record[i].boards   = config_ptr->boards;
 			select_node_record[i].sockets = config_ptr->sockets;
 			select_node_record[i].cores   = config_ptr->cores;
 			select_node_record[i].vpus    = config_ptr->threads;
@@ -1940,6 +1941,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 				real_memory;
 		} else {
 			select_node_record[i].cpus    = node_ptr[i].cpus;
+			select_node_record[i].boards = node_ptr[i].boards;
 			select_node_record[i].sockets = node_ptr[i].sockets;
 			select_node_record[i].cores   = node_ptr[i].cores;
 			select_node_record[i].vpus    = node_ptr[i].threads;
