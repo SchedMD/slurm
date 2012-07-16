@@ -579,6 +579,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 
 	msg->node_name   = xstrdup (conf->node_name);
 	msg->cpus	 = conf->cpus;
+	msg->boards	 = conf->boards;
 	msg->sockets	 = conf->sockets;
 	msg->cores	 = conf->cores;
 	msg->threads	 = conf->threads;
@@ -600,15 +601,17 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 
 	if (first_msg) {
 		first_msg = false;
-		info("CPUs=%u Sockets=%u Cores=%u Threads=%u "
+		info("Procs=%u Boards=%u Sockets=%u Cores=%u Threads=%u "
 		     "Memory=%u TmpDisk=%u Uptime=%u",
-		     msg->cpus, msg->sockets, msg->cores, msg->threads,
-		     msg->real_memory, msg->tmp_disk, msg->up_time);
+		     msg->cpus, msg->boards, msg->sockets, msg->cores,
+		     msg->threads, msg->real_memory, msg->tmp_disk,
+		     msg->up_time);
 	} else {
-		debug3("CPUs=%u Sockets=%u Cores=%u Threads=%u "
+		debug3("Procs=%u Boards=%u Sockets=%u Cores=%u Threads=%u "
 		       "Memory=%u TmpDisk=%u Uptime=%u",
-		       msg->cpus, msg->sockets, msg->cores, msg->threads,
-		       msg->real_memory, msg->tmp_disk, msg->up_time);
+		       msg->cpus, msg->boards, msg->sockets, msg->cores,
+		       msg->threads, msg->real_memory, msg->tmp_disk,
+		       msg->up_time);
 	}
 	uname(&buf);
 	if ((arch = getenv("SLURM_ARCH")))
@@ -662,7 +665,6 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
-
 	msg->timestamp = time(NULL);
 
 	return;
@@ -881,9 +883,10 @@ _read_config(void)
 	}
 
 	conf->port = slurm_conf_get_port(conf->node_name);
-	slurm_conf_get_cpus_sct(conf->node_name,
-				&conf->conf_cpus,  &conf->conf_sockets,
-				&conf->conf_cores, &conf->conf_threads);
+	slurm_conf_get_cpus_bsct(conf->node_name,
+				 &conf->conf_cpus, &conf->conf_boards,
+				 &conf->conf_sockets, &conf->conf_cores,
+				 &conf->conf_threads);
 
 	/* store hardware properties in slurmd_config */
 	xfree(conf->block_map);
@@ -904,6 +907,7 @@ _read_config(void)
 #else
 	get_procs(&conf->actual_cpus);
 	get_cpuinfo(conf->actual_cpus,
+			&conf->actual_boards,
 		    &conf->actual_sockets,
 		    &conf->actual_cores,
 		    &conf->actual_threads,
@@ -918,6 +922,7 @@ _read_config(void)
 	 * Report actual hardware configuration, irrespective of FastSchedule.
 	 */
 	conf->cpus    = conf->actual_cpus;
+	conf->boards   = conf->actual_boards;
 	conf->sockets = conf->actual_sockets;
 	conf->cores   = conf->actual_cores;
 	conf->threads = conf->actual_threads;
@@ -932,11 +937,13 @@ _read_config(void)
 	    ((cf->fast_schedule == 1) &&
 	     (conf->actual_cpus < conf->conf_cpus))) {
 		conf->cpus    = conf->actual_cpus;
+		conf->boards   = conf->actual_boards;
 		conf->sockets = conf->actual_sockets;
 		conf->cores   = conf->actual_cores;
 		conf->threads = conf->actual_threads;
 	} else {
 		conf->cpus    = conf->conf_cpus;
+		conf->boards   = conf->conf_boards;
 		conf->sockets = conf->conf_sockets;
 		conf->cores   = conf->conf_cores;
 		conf->threads = conf->conf_threads;
@@ -1109,6 +1116,10 @@ _print_conf(void)
 	       conf->cpus,
 	       conf->conf_cpus,
 	       conf->actual_cpus);
+	debug3("Boards      = %-2u (CF: %2u, HW: %2u)",
+	       conf->boards,
+	       conf->conf_boards,
+	       conf->actual_boards);
 	debug3("Sockets     = %-2u (CF: %2u, HW: %2u)",
 	       conf->sockets,
 	       conf->conf_sockets,
@@ -1251,6 +1262,7 @@ _print_config(void)
 #else
 	get_procs(&conf->actual_cpus);
 	get_cpuinfo(conf->actual_cpus,
+			&conf->actual_boards,
 		    &conf->actual_sockets,
 		    &conf->actual_cores,
 		    &conf->actual_threads,

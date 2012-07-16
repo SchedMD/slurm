@@ -346,7 +346,9 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 @BUILD_SMAP_TRUE@smap_LDADD = $(top_builddir)/src/api/libslurm.o \
 @BUILD_SMAP_TRUE@	$(DL_LIBS) $(am__append_1)
 @BLUEGENE_LOADED_TRUE@@BUILD_SMAP_TRUE@bg_dir = $(top_builddir)/src/plugins/select/bluegene
-@BUILD_SMAP_TRUE@smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@BUILD_SMAP_TRUE@smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+@BUILD_SMAP_TRUE@	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+
 @BUILD_SMAP_FALSE@EXTRA_smap_SOURCES = smap.h smap.c \
 @BUILD_SMAP_FALSE@	job_functions.c partition_functions.c \
 @BUILD_SMAP_FALSE@	configure_functions.c grid_functions.c \

@@ -322,7 +322,9 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 sbcast_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) -lm
 noinst_HEADERS = sbcast.h
 sbcast_SOURCES = agent.c sbcast.c opts.c
-sbcast_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sbcast_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+
 all: all-am
 
 .SUFFIXES:

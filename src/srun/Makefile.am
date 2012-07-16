@@ -18,7 +18,8 @@ srun_SOURCES = \
 	srun.wrapper.c
 srun_LDADD = $(convenience_libs) $(DL_LIBS)
 
-srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
 
 if BGQ_LOADED
 # because totalview needs the libraries on load we link in srun

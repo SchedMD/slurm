@@ -318,7 +318,9 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 sdiag_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 sdiag_SOURCES = sdiag.c opts.c
-sdiag_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sdiag_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+
 all: all-am
 
 .SUFFIXES:

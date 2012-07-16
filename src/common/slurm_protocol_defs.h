@@ -888,10 +888,13 @@ typedef struct file_bcast_msg {
 } file_bcast_msg_t;
 
 typedef struct multi_core_data {
+	uint16_t boards_per_node;	/* boards per node required by job   */
+	uint16_t sockets_per_board;	/* sockets per board required by job */
 	uint16_t sockets_per_node;	/* sockets per node required by job */
 	uint16_t cores_per_socket;	/* cores per cpu required by job */
 	uint16_t threads_per_core;	/* threads per core required by job */
 
+	uint16_t ntasks_per_board;  /* number of tasks to invoke on each board*/
 	uint16_t ntasks_per_socket; /* number of tasks to invoke on each socket */
 	uint16_t ntasks_per_core;   /* number of tasks to invoke on each core */
 	uint16_t plane_size;        /* plane size when task_dist = SLURM_DIST_PLANE */
@@ -929,6 +932,7 @@ typedef struct slurm_node_registration_status_msg {
 	uint32_t job_count;	/* number of associate job_id's */
 	uint32_t *job_id;	/* IDs of running job (if any) */
 	char *node_name;
+	uint16_t boards;
 	char *os;
 	uint32_t real_memory;
 	time_t slurmd_start_time;

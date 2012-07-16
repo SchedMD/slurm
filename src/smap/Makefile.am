@@ -33,7 +33,8 @@ force:
 $(smap_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
 
 else
 

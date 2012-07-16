@@ -101,7 +101,8 @@
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 
 /* Change JOB_STATE_VERSION value when changing the state save format */
-#define JOB_STATE_VERSION      "VER012"
+#define JOB_STATE_VERSION      "VER013"
+#define JOB_2_5_STATE_VERSION  "VER013"		/* SLURM version 2.5 */
 #define JOB_2_4_STATE_VERSION  "VER012"		/* SLURM version 2.4 */
 #define JOB_2_3_STATE_VERSION  "VER011"		/* SLURM version 2.3 */
 #define JOB_2_2_STATE_VERSION  "VER010"		/* SLURM version 2.2 */
@@ -624,6 +625,8 @@ extern int load_all_job_state(void)
 	if (ver_str) {
 		if (!strcmp(ver_str, JOB_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
+		} else if (!strcmp(ver_str, JOB_2_4_STATE_VERSION)) {
+			protocol_version = SLURM_2_4_PROTOCOL_VERSION;
 		} else if (!strcmp(ver_str, JOB_2_3_STATE_VERSION)) {
 			protocol_version = SLURM_2_3_PROTOCOL_VERSION;
 		} else if (!strcmp(ver_str, JOB_2_2_STATE_VERSION)) {
@@ -3490,6 +3493,7 @@ static int _part_access_check(struct part_record *part_ptr,
 			      uid_t submit_uid)
 {
 	uint32_t total_nodes;
+
 
 	if ((part_ptr->flags & PART_FLAG_REQ_RESV) &&
 	    (!job_desc->reservation || !strlen(job_desc->reservation))) {

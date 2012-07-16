@@ -342,11 +342,15 @@ slurmstepd_SOURCES = \
 	multi_prog.c multi_prog.h	\
 	step_terminate_monitor.c step_terminate_monitor.h
 
-@HAVE_AIX_FALSE@slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@HAVE_AIX_FALSE@slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+@HAVE_AIX_FALSE@	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+
 
 # We need to set maxdata back to 0 because this effects the "max memory size"
 # ulimit, and the ulimit is inherited by child processes.
-@HAVE_AIX_TRUE@slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0
+@HAVE_AIX_TRUE@slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+@HAVE_AIX_TRUE@	$(HWLOC_LDFLAGS) $(HWLOC_LIBS) -Wl,-bmaxdata:0x0
+
 all: all-am
 
 .SUFFIXES:

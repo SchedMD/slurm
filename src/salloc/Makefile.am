@@ -18,7 +18,8 @@ if HAVE_REAL_CRAY
   salloc_LDADD += -ljob
 endif
 
-salloc_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+salloc_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
 
 force:
 $(convenience_libs) : force

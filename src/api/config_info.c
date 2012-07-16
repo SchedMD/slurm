@@ -1243,6 +1243,8 @@ void slurm_print_slurmd_status (FILE* out,
 
 	fprintf(out, "Actual CPUs              = %u\n",
 		slurmd_status_ptr->actual_cpus);
+	fprintf(out, "Actual Boards         = %u\n",
+		slurmd_status_ptr->actual_boards);
 	fprintf(out, "Actual sockets           = %u\n",
 		slurmd_status_ptr->actual_sockets);
 	fprintf(out, "Actual cores             = %u\n",

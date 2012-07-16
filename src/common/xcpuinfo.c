@@ -2,6 +2,7 @@
  *  xcpuinfo.c - cpuinfo related primitives
  *****************************************************************************
  *  Copyright (C) 2009 CEA/DAM/DIF
+ *  Portions (hwloc) copyright (C) 2012 Bull, <rod.schultz@bull.com>
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
  *
  *  This file is part of SLURM, a resource management program.
@@ -60,6 +61,10 @@
 #include "src/common/xstring.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
 
+#ifdef HAVE_HWLOC
+#include <hwloc.h>
+#endif
+
 #include "xcpuinfo.h"
 
 static char* _cpuinfo_path = "/proc/cpuinfo";
@@ -75,7 +80,7 @@ static int _range_to_map(char* range, uint16_t *map, uint16_t map_size,
 static int _map_to_range(uint16_t *map, uint16_t map_size, char** prange);
 
 bool     initialized = false;
-uint16_t procs, sockets, cores, threads=1;
+uint16_t procs, boards, sockets, cores, threads=1;
 uint16_t block_map_size;
 uint16_t *block_map, *block_map_inv;
 
@@ -135,7 +140,8 @@ get_procs(uint16_t *procs)
 /*
  * get_cpuinfo - Return detailed cpuinfo on this system
  * Input:  numproc - number of processors on the system
- * Output: p_sockets - number of physical processor sockets
+ * Output: p_boards - number of baseboards (containing sockets)
+ *         p_sockets - number of physical processor sockets
  *         p_cores - total number of physical CPU cores
  *         p_threads - total number of hardware execution threads
  *         block_map - asbtract->physical block distribution map
@@ -143,6 +149,117 @@ get_procs(uint16_t *procs)
  *         return code - 0 if no error, otherwise errno
  * NOTE: User must xfree block_map and block_map_inv
  */
+#ifdef HAVE_HWLOC
+#if DEBUG_DETAIL
+static void hwloc_children(hwloc_topology_t topology, hwloc_obj_t obj,
+                           int depth)
+{
+	char string[128];
+	unsigned i;
+
+	hwloc_obj_snprintf(string, sizeof(string), topology, obj, "#", 0);
+	debug3("%*s%s", 2*depth, "", string);
+	for (i = 0; i < obj->arity; i++) {
+		hwloc_children(topology, obj->children[i], depth + 1);
+	}
+}
+#endif
+
+extern int
+get_cpuinfo(uint16_t numproc, uint16_t *p_boards,
+	    uint16_t *p_sockets, uint16_t *p_cores, uint16_t *p_threads,
+	    uint16_t *block_map_size,
+	    uint16_t **block_map, uint16_t **block_map_inv)
+{
+	hwloc_topology_t topology;
+	hwloc_obj_t obj;
+	int depth;
+	/* Allocate and initialize topology object. */
+	hwloc_topology_init(&topology);
+	/* Perform the topology detection. */
+	hwloc_topology_load(topology);
+
+	int boards = 1;
+	depth = hwloc_get_type_depth(topology, HWLOC_OBJ_GROUP);
+	if (depth != HWLOC_TYPE_DEPTH_UNKNOWN) {
+		boards = hwloc_get_nbobjs_by_depth(topology, depth);
+	}
+	*p_boards = boards;
+
+	int nsockets = 1;
+	depth = hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET);
+	if (depth != HWLOC_TYPE_DEPTH_UNKNOWN) {
+		nsockets = hwloc_get_nbobjs_by_depth(topology, depth);
+	}
+	*p_sockets = nsockets;
+
+	int ncores = 1;
+	*p_cores = 1;
+	depth = hwloc_get_type_depth(topology, HWLOC_OBJ_CORE);
+	if (depth != HWLOC_TYPE_DEPTH_UNKNOWN) {
+		ncores = hwloc_get_nbobjs_by_depth(topology, depth);
+	}
+	*p_cores = ncores / nsockets;
+
+	int npu = 1;
+	depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PU);
+	if (depth != HWLOC_TYPE_DEPTH_UNKNOWN) {
+		npu = hwloc_get_nbobjs_by_depth(topology, depth);
+	}
+	*p_threads = npu / ncores;
+
+	*block_map_size = npu;
+	/* See notes on _compute_block_map for details
+	 * retval = _compute_block_map(*block_map_size,
+	 *                             block_map, block_map_inv); */
+
+	uint16_t i;
+	/* Compute abstract->machine block mapping (and inverse) */
+	if (block_map) {
+		*block_map = xmalloc(npu * sizeof(uint16_t));
+		for (i=0; i<npu; i++)
+		{
+			obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_PU, i);
+			(*block_map)[i] = obj->os_index;
+		}
+		if (block_map_inv) {
+			*block_map_inv = xmalloc(npu * sizeof(uint16_t));
+			for (i = 0; i < npu; i++) {
+				uint16_t idx = (*block_map)[i];
+				(*block_map_inv)[idx] = i;
+			}
+		}
+	}
+
+#if DEBUG_DETAIL
+	/*** Display raw data ***/
+	debug3(" ");
+	debug3("Boards:           %u", *p_sockets);
+	debug3("Sockets:          %u", *p_sockets);
+	debug3("Cores per socket: %u", *p_cores);
+	debug3("Threads per core: %u", *p_threads);
+	debug3(" ");
+	hwloc_children(topology, hwloc_get_root_obj(topology), 0);
+
+	/* Display the mapping tables */
+	if (block_map && block_map_inv) {
+		debug3("");
+		debug3("Abstract -> Machine logical CPU ID block mapping:");
+		debug3("(AbstractId PhysicalId Inverse");
+		for (i = 0; i < numproc; i++) {
+			debug3("   %4d      %4u       %4u",
+				i,  (*block_map)[i],  (*block_map_inv)[i]);
+		}
+		debug3("");
+	}
+	debug3("");
+#endif
+	hwloc_topology_destroy(topology);
+	return 0;
+
+}
+#else
+
 typedef struct cpuinfo {
 	uint16_t seen;
 	uint32_t cpuid;
@@ -156,12 +273,15 @@ typedef struct cpuinfo {
 static cpuinfo_t *cpuinfo = NULL; /* array of CPU information for get_cpuinfo */
 				  /* Note: file static for qsort/_compare_cpus*/
 extern int
-get_cpuinfo(uint16_t numproc,
+get_cpuinfo(uint16_t numproc, uint16_t *p_boards,
 		uint16_t *p_sockets, uint16_t *p_cores, uint16_t *p_threads,
 		uint16_t *block_map_size,
 		uint16_t **block_map, uint16_t **block_map_inv)
 {
 	int retval;
+
+	*p_boards = 1; /* Boards not identified from /proc/cpuinfo */
+
 	uint16_t numcpu	   = 0;		/* number of cpus seen */
 	uint16_t numphys   = 0;		/* number of unique "physical id"s */
 	uint16_t numcores  = 0;		/* number of unique "cores id"s */
@@ -458,7 +578,6 @@ get_cpuinfo(uint16_t numproc,
 
 	return retval;
 }
-
 /* _chk_cpuinfo_str
  *	check a line of cpuinfo data (buffer) for a keyword.  If it
  *	exists, return the string value for that keyword in *valptr.
@@ -601,7 +720,6 @@ static int _compute_block_map(uint16_t numproc,
 			(*block_map_inv)[idx] = i;
 		}
 	}
-
 #if DEBUG_DETAIL
 	/* Display the mapping tables */
 
@@ -659,6 +777,7 @@ static int _compute_block_map(uint16_t numproc,
 #endif
 	return 0;
 }
+#endif
 
 int _ranges_conv(char* lrange,char** prange,int mode);
 
@@ -679,7 +798,7 @@ xcpuinfo_init(void)
 	if ( get_procs(&procs) )
 		return XCPUINFO_ERROR;
 
-	if ( get_cpuinfo(procs,&sockets,&cores,&threads,
+	if ( get_cpuinfo(procs,&boards,&sockets,&cores,&threads,
 			 &block_map_size,&block_map,&block_map_inv) )
 		return XCPUINFO_ERROR;
 

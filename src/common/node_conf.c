@@ -644,6 +644,7 @@ extern int build_all_nodeline_info (bool set_bitmap)
 		config_ptr = create_config_record();
 		config_ptr->nodes = xstrdup(node->nodenames);
 		config_ptr->cpus = node->cpus;
+		config_ptr->boards = node->boards;
 		config_ptr->sockets = node->sockets;
 		config_ptr->cores = node->cores;
 		config_ptr->threads = node->threads;
@@ -778,6 +779,7 @@ extern struct node_record *create_node_record (
 	node_ptr->config_ptr = config_ptr;
 	/* these values will be overwritten when the node actually registers */
 	node_ptr->cpus = config_ptr->cpus;
+	node_ptr->boards = config_ptr->boards;
 	node_ptr->sockets = config_ptr->sockets;
 	node_ptr->cores = config_ptr->cores;
 	node_ptr->threads = config_ptr->threads;

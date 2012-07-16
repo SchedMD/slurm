@@ -30,9 +30,11 @@ slurmstepd_SOURCES = 	        	\
 if HAVE_AIX
 # We need to set maxdata back to 0 because this effects the "max memory size"
 # ulimit, and the ulimit is inherited by child processes.
-slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0
+slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+	$(HWLOC_LDFLAGS) $(HWLOC_LIBS) -Wl,-bmaxdata:0x0
 else
-slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
 endif
 
 force:
