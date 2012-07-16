@@ -678,43 +678,38 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			if (!no_sockets_per_board) {
 				n->sockets = sockets_per_board;
 			}
-		if (!no_cpus    &&	/* infer missing Sockets= */
-		    no_sockets) {
-			n->sockets = n->cpus / (n->cores * n->threads);
-		}
-			if (n->sockets == 0) {
-				/* make sure sockets is non-zero */
-			error("NodeNames=%s Sockets=0 is invalid, "
-			      "reset to 1", n->nodenames);
-			n->sockets = 1;
-		}
-		if (no_cpus) {		/* infer missing CPUs= */
-			n->cpus = n->sockets * n->cores * n->threads;
-		}
+			if (!no_cpus    &&	/* infer missing Sockets= */
+			    no_sockets) {
+				n->sockets = n->cpus / (n->cores * n->threads);
+			}
+			if (n->sockets == 0) { /* make sure sockets != 0 */
+				error("NodeNames=%s Sockets=0 is invalid, "
+				      "reset to 1", n->nodenames);
+				n->sockets = 1;
+			}
+			if (no_cpus) {		/* infer missing CPUs= */
+				n->cpus = n->sockets * n->cores * n->threads;
+			}
 			/* if only CPUs= and Sockets=
 			 * specified check for match */
-		if (!no_cpus    &&
-		    !no_sockets &&
-		    no_cores    &&
-		    no_threads) {
-			if (n->cpus != n->sockets) {
+			if (!no_cpus    && !no_sockets &&
+			     no_cores   &&  no_threads &&
+			     (n->cpus != n->sockets)) {
 				n->sockets = n->cpus;
-					error("NodeNames=%s CPUs "
-					      "doesn't match Sockets, "
-					      "setting Sockets to %d",
+				error("NodeNames=%s CPUs doesn't match "
+				      "Sockets, setting Sockets to %d",
 				      n->nodenames, n->sockets);
 			}
-		}
-		computed_procs = n->sockets * n->cores * n->threads;
-		if ((n->cpus != n->sockets) &&
-		    (n->cpus != n->sockets * n->cores) &&
-		    (n->cpus != computed_procs)) {
-			error("NodeNames=%s CPUs=%d doesn't match "
+			computed_procs = n->sockets * n->cores * n->threads;
+			if ((n->cpus != n->sockets) &&
+			    (n->cpus != n->sockets * n->cores) &&
+			    (n->cpus != computed_procs)) {
+				error("NodeNames=%s CPUs=%d doesn't match "
 				      "Sockets*CoresPerSocket*ThreadsPerCore "
 				      "(%d), resetting CPUs",
-			      n->nodenames, n->cpus, computed_procs);
-			n->cpus = computed_procs;
-		}
+				      n->nodenames, n->cpus, computed_procs);
+				n->cpus = computed_procs;
+			}
 		} else {
 			/* In this case Boards=# is used.
 			 * CPUs=# or Procs=# are ignored.
@@ -754,7 +749,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			} else {
 				n->sockets = n->boards;
 			}
-			// Node boards factored into sockets
+			/* Node boards factored into sockets */
 			n->cpus = n->sockets * n->cores * n->threads;
 		}
 
@@ -2291,7 +2286,7 @@ static void _init_slurm_conf(const char *file_name)
 		if (name == NULL)
 			name = default_slurm_config_file;
 	}
-       	if(conf_initialized) {
+       	if (conf_initialized) {
 		error("the conf_hashtbl is already inited");
 	}
 	conf_hashtbl = s_p_hashtbl_create(slurm_conf_options);
@@ -2516,7 +2511,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	 * the cluster name is lower case since sacctmgr makes sure
 	 * this is the case as well.
 	 */
-	if(conf->cluster_name) {
+	if (conf->cluster_name) {
 		int i;
 		for (i = 0; conf->cluster_name[i] != '\0'; i++)
 			conf->cluster_name[i] =
