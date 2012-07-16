@@ -2697,7 +2697,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 				def_adapter_count++;
 			}
 		}
-		if (!sn_all) {
+		if (!sn_all && (def_adapter_count > 0)) {
 			if (!adapter_name) {
 				adapter_name = node->
 					       adapter_list[def_adapter_inx].
@@ -2707,7 +2707,8 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 				     network_id;
 			def_adapter_count = 1;
 		}
-		if (adapter_type == NRT_MAX_ADAPTER_TYPES)
+		if ((adapter_type == NRT_MAX_ADAPTER_TYPES) &&
+		    (def_adapter_count > 0))
 			adapter_type = def_adapter_type;
 	}
 	if (def_adapter_count >= 1) {
@@ -2726,8 +2727,10 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	if (adapter_type == NRT_IPONLY) {
 		/* Without setting tables_per_task == 0, non-existant switch
 		 * windows are allocated resulting in some inconstencies in
-		 * NRT's records. */
-/* FIXME	jp->tables_per_task = 0; */
+		 * NRT's records. Specifically the IPONLY devices report their
+		 * maximum window count is 0, but then report a non-zero
+		 * current window count. */
+		jp->tables_per_task = 0;
 	}
 
 	if (instances <= 0) {
