@@ -2639,6 +2639,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 					  false, NULL, 0, uid, &job_ptr);
 		unlock_slurmctld(job_write_lock);
 		END_TIMER2("_slurm_rpc_submit_batch_job");
+		if (job_desc_msg->immediate && (error_code != SLURM_SUCCESS))
+			error_code = ESLURM_CAN_NOT_START_IMMEDIATELY;
 	}
 
 	/* return result */
