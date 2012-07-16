@@ -3541,7 +3541,7 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 
 		safe_unpack8(&(tmp_ptr->no_kill), buffer);
 		safe_unpack8(&(tmp_ptr->overcommit), buffer);
-	} else if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
 		safe_unpack32(&(tmp_ptr->job_id), buffer);
 		safe_unpack32(&(tmp_ptr->user_id), buffer);
 		safe_unpack32(&(tmp_ptr->min_nodes), buffer);

@@ -112,11 +112,11 @@ cpu_freq_init(slurmd_conf_t *conf)
 			 "cpu%u/cpufreq/scaling_available_governors", i);
 		if ( ( fp = fopen(path, "r") ) == NULL )
 			continue;
-		if (fgets(value, LINE_LEN, fp) == NULL){
+		if (fgets(value, LINE_LEN, fp) == NULL) {
 			fclose(fp);
 			continue;
 		}
-		if (strstr(value, "userspace") == NULL){
+		if (strstr(value, "userspace") == NULL) {
 			fclose(fp);
 			continue;
 		}
@@ -398,7 +398,7 @@ void
 _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx) {
 
 	unsigned int j, freq_med = 0;
-	uint32_t  freq_list[FREQ_LIST_MAX];
+	uint32_t  freq_list[FREQ_LIST_MAX] =  { 0 };
 	char path[SYSFS_PATH_MAX];
 	FILE *fp;
 
@@ -532,8 +532,8 @@ cpu_freq_verify_param(const char *arg, uint32_t *cpu_freq) {
 	}
 
 	if ( (frequency = strtoul(arg, &end, 10) )) {
-	  *cpu_freq = frequency;
-	  return 0;
+		*cpu_freq = frequency;
+		return 0;
 	}
 
 	if (strncasecmp(arg, "lo", 2) == 0) {

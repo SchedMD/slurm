@@ -279,7 +279,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 void
 dump_step_desc(job_step_create_request_msg_t *step_spec)
 {
-	debug3("StepDesc: user_id=%u job_id=%u node_count=%u-%u, cpu_count=%u",
+	debug3("StepDesc: user_id=%u job_id=%u node_count=%u-%u cpu_count=%u",
 	       step_spec->user_id, step_spec->job_id,
 	       step_spec->min_nodes, step_spec->max_nodes,
 	       step_spec->cpu_count);
