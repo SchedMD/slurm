@@ -49,7 +49,7 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
   <li><b>ipv6</b> Internet protocol, version 6</li>
   <li><b>us</b> User Space protocol, may be combined with ibv4 or ipv6</li>
   </ul>
-<li>Task communication interface</li>
+<li>Programming interface</li>
   <ul>
   <li><b>lapi</b> Low-level Application Programming Interface</li>
   <li><b>mpi</b> Message Passing Interface (default)</li>
@@ -62,11 +62,15 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
   Enable bulk transfer of data using Remote Direct-Memory Access (RDMA).
   The optional <i>resources</i> specification is a numeric value which can have
   a suffix of "k", "K", "m", "M", "g" or "G" for kilobytes, megabytes or
-  gigabytes.</li>
+  gigabytes.
+  <b>NOTE:</b> The <i>resources</i> specification is not supported by the
+  underlying IBM infrastructure as of Parallel Environment version 2.2 and no
+  value should be specified at this time.</li>
   <li><b>cau=<i>count</i></b>
-  Specify the count of Collective Acceleration Units (CAU) required per adapter.
+  Specify the count of Collective Acceleration Units (CAU) required per
+  programming interface.
   Default value is zero.
-  Applies only to IBM Power7 processors.
+  Applies only to IBM Power7-IH processors.
   <li><b>devname=<i>name</i></b>
   Specify the name of an network adapter to use.
   For example: "eth0" or "mlx4_0".</li>
@@ -75,11 +79,15 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
   The supported values of <i>type</i> are:
   "IB" (InfiniBand), "HFI" (P7 Host Fabric Interface),
   "IPONLY" (IP-Only interfaces), "HPCE" (HPC Ethernet), and
-  "KMUX" (Kernel Emulation of HPCE).</li>
+  "KMUX" (Kernel Emulation of HPCE).
+  The devices allocated to a job must all be of the same type.
+  The default value depends upon depends upon what hardware is available and in
+  order of preferences is IPONLY (which is not considered in User Space mode),
+  HFI, IB, HPCE, and KMUX.</li>
   <li><b>immed=<i>count</i></b>
   Specify the count of immediate send slots per adapter window.
   Default value is zero.
-  Applies only to IBM Power7 processors.
+  Applies only to IBM Power7-IH processors.
   <li><b>instances=<i>count</i></b>
   Specify number of network connections for each task on each network connection.
   The default instance count is 1.</li>
@@ -210,6 +218,6 @@ MP_POOL=slurm
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 July 2012</p></td>
+<p style="text-align:center;">Last modified 16 July 2012</p></td>
 
 <!--#include virtual="footer.txt"-->

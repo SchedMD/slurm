@@ -854,11 +854,19 @@ Enable bulk transfer of data using Remote Direct-Memory Access (RDMA).
 The optional \fIresources\fR specification is a numeric value which can have
 a suffix of "k", "K", "m", "M", "g" or "G" for kilobytes, megabytes or
 gigabytes.
+NOTE: The \fIresources\fR specification is not supported by the underlying
+IBM infrastructure as of Parallel Environment version 2.2 and no value should
+be specified at this time.
+The devices allocated to a job must all be of the same type.
+The default value depends upon depends upon what hardware is available and in
+order of preferences is IPONLY (which is not considered in User Space mode),
+HFI, IB, HPCE, and KMUX.
 .TP
 \fBCAU\fR=<\fIcount\fR>
 Number of Collecitve Accelleration Units (CAU) required.
-Applies only to IBM Power7 processors.
+Applies only to IBM Power7-IH processors.
 Default value is zero.
+Independent CAU will be allocated for each programming interface (MPI, LAPI, etc.)
 .TP
 \fBDEVNAME\fR=<\fIname\fR>
 Specify the device name to use for communications (e.g. "eth0" or "mlx4_0").
@@ -869,13 +877,17 @@ The supported values of \fItype\fR are:
 "IB" (InfiniBand), "HFI" (P7 Host Fabric Interface),
 "IPONLY" (IP-Only interfaces), "HPCE" (HPC Ethernet), and
 "KMUX" (Kernel Emulation of HPCE).
+The devices allocated to a job must all be of the same type.
+The default value depends upon depends upon what hardware is available and in
+order of preferences is IPONLY (which is not considered in User Space mode),
+HFI, IB, HPCE, and KMUX.
 .TP
-\fBIMMED\fR=<\fIcount\fR>
+\fBIMMED\fR =<\fIcount\fR>
 Number of immediate send slots per window required.
-Applies only to IBM Power7 processors.
+Applies only to IBM Power7-IH processors.
 Default value is zero.
 .TP
-\fBINSTANCES\fR=<\fIcount\fR>
+\fBINSTANCES\fR =<\fIcount\fR>
 Specify number of network connections for each task on each network connection.
 The default instance count is 1.
 .TP
@@ -886,14 +898,14 @@ Use Internet Protocol (IP) version 4 communications (default).
 Use Internet Protocol (IP) version 6 communications.
 .TP
 \fBLAPI\fR
-Use the LAPI protocol.
+Use the LAPI programming interface.
 .TP
 \fBMPI\fR
-Use the MPI protocol.
-MPI is the default protocol.
+Use the MPI programming interface.
+MPI is the default interface.
 .TP
 \fBPAMI\fR
-Use the PAMI protocol.
+Use the PAMI programming interface.
 .TP
 \fBSN_ALL\fR
 Use all available switch networks (default).
@@ -902,7 +914,7 @@ Use all available switch networks (default).
 Use one available switch network.
 .TP
 \fBUPC\fR
-Use the UPC protocol.
+Use the UPC programming interface.
 .TP
 \fBUS\fR
 Use User Space communications.
