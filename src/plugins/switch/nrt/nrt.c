@@ -2589,6 +2589,23 @@ static nrt_protocol_table_t *_get_protocol_table(char *protocol)
 	return protocol_table;
 }
 
+/* For an adapter type, return it's relative priority to use as a default */
+static inline int
+_adapter_type_pref(nrt_adapter_t adapter_type)
+{
+	if (adapter_type == NRT_IPONLY)
+		return 9;
+	if (adapter_type == NRT_HFI)
+		return 8;
+	if (adapter_type == NRT_IB)
+		return 7;
+	if (adapter_type == NRT_HPCE)
+		return 6;
+	if (adapter_type == NRT_KMUX)
+		return 5;
+	return 0;
+}
+
 /* Setup everything for the job.  Assign tasks across
  * nodes based on the hostlist given and create the network table used
  * on all nodes of the job.
@@ -2611,8 +2628,10 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	int rc;
 	nrt_adapter_t adapter_type = NRT_MAX_ADAPTER_TYPES;
 	int network_id = -1;
-	int adapter_type_count = 0;
 	nrt_protocol_table_t *protocol_table = NULL;
+	nrt_adapter_t def_adapter_type = NRT_ADAP_UNSUPPORTED;
+	int def_adapter_count = 0;
+	int def_adapter_inx   = -1;
 
 	assert(jp);
 	assert(jp->magic == NRT_JOBINFO_MAGIC);
@@ -2666,20 +2685,33 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 				continue;
 			if (jp->user_space && (ad_type == NRT_IPONLY))
 				continue;
-			adapter_type_count++;
-			if (!sn_all) {
-				if (!adapter_name) {
-					adapter_name = node->adapter_list[i].
-						       adapter_name;
-				}
-				adapter_type = ad_type;
-				network_id = node->adapter_list[i].network_id;
-				break;
+
+			/* Identify highest-priority adapter type */
+			if (_adapter_type_pref(def_adapter_type) <
+			    _adapter_type_pref(ad_type)) {
+				def_adapter_type  = ad_type;
+				def_adapter_count = 1;
+				def_adapter_inx   = i;
+			} else if (_adapter_type_pref(def_adapter_type) ==
+			           _adapter_type_pref(ad_type)) {
+				def_adapter_count++;
 			}
 		}
+		if (!sn_all) {
+			if (!adapter_name) {
+				adapter_name = node->
+					       adapter_list[def_adapter_inx].
+					       adapter_name;
+			}
+			network_id = node->adapter_list[def_adapter_inx].
+				     network_id;
+			def_adapter_count = 1;
+		}
+		if (adapter_type == NRT_MAX_ADAPTER_TYPES)
+			adapter_type = def_adapter_type;
 	}
-	if (adapter_type_count >= 1) {
-		jp->tables_per_task = adapter_type_count;
+	if (def_adapter_count >= 1) {
+		jp->tables_per_task = def_adapter_count;
 	} else {
 		jp->tables_per_task = 0;
 		info("switch/nrt: no adapter found for job");
