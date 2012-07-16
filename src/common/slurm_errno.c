@@ -280,6 +280,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Step limit reached for this job"			},
 	{ ESLURM_JOB_SUSPENDED,
 	  "Job is current suspended, requested operation disabled"	},
+	{ ESLURM_CAN_NOT_START_IMMEDIATELY,
+	  "Job can not start immediately"			},
 
 	/* slurmd error codes */
 

@@ -1222,6 +1222,17 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	int rc = SLURM_SUCCESS;
 	msg->data = NULL;	/* Initialize to no data for now */
 
+	/* In older versions of SLURM some RPC's were not initialized
+	   correctly and NO_VAL was sent along as the
+	   protocol_version.  This was fixed in 2.4.2 and was noticed
+	   when upgrading from 2.3 -> 2.5 when REQUEST_STEP_COMPLETE
+	   was called.  It hadn't changed for a while so
+	   SLURM_2_4_PROTOCOL_VERSION should fix the issue when this
+	   happens.
+	*/
+	if (msg->protocol_version == (uint16_t)NO_VAL)
+		msg->protocol_version = SLURM_2_4_PROTOCOL_VERSION;
+
 	switch (msg->msg_type) {
 	case REQUEST_NODE_INFO:
 		rc = _unpack_node_info_request_msg((node_info_request_msg_t **)

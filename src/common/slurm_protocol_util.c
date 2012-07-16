@@ -180,15 +180,17 @@ void init_header(header_t *header, slurm_msg_t *msg, uint16_t flags)
 	if (msg->protocol_version != (uint16_t)NO_VAL)
 		header->version = msg->protocol_version;
 	else if (working_cluster_rec)
-		header->version = _get_slurm_version(
+		msg->protocol_version = header->version = _get_slurm_version(
 			working_cluster_rec->rpc_version);
 	else if ((msg->msg_type == ACCOUNTING_UPDATE_MSG) ||
 	         (msg->msg_type == ACCOUNTING_FIRST_REG)) {
 		uint32_t rpc_version =
 			((accounting_update_msg_t *)msg->data)->rpc_version;
-		header->version = _get_slurm_version(rpc_version);
+		msg->protocol_version = header->version =
+			_get_slurm_version(rpc_version);
 	} else
-		header->version = SLURM_PROTOCOL_VERSION;
+		msg->protocol_version = header->version =
+			SLURM_PROTOCOL_VERSION;
 
 	header->flags = flags;
 	header->msg_type = msg->msg_type;
