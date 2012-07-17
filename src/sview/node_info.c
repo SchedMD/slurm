@@ -391,7 +391,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, &sview_node_info_ptr->iter_ptr,
 			   SORTID_ARCH,      node_ptr->arch,
-			   SORTID_BOARDS,     node_ptr->boards,
+			   SORTID_BOARDS,    node_ptr->boards,
 			   SORTID_BOOT_TIME, sview_node_info_ptr->boot_time,
 			   SORTID_COLOR,
 				sview_colors[sview_node_info_ptr->pos

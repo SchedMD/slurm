@@ -57,7 +57,7 @@
 
 /* Combination counts
  * comb_counts[n-1][k-1] = number of combinations of
- *     k items from a set of n items
+ *   k items from a set of n items
  *
  * Formula is n!/k!(n-k)!
  */
@@ -87,7 +87,7 @@ void _gen_combs(int *comb_list, int n, int k)
 	/* Setup comb for the initial combination */
 	int i, b;
 	for (i = 0; i < k; ++i)
-    	comb[i] = i;
+		comb[i] = i;
 	b = 0;
 
 	/* Generate all the other combinations */

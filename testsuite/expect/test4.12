@@ -348,10 +348,10 @@ set inode_threads_per_core 0
 set fd [open "|$scontrol --oneliner show node $def_hostlist"]
 exp_internal 1
 while {[gets $fd line] != -1} {
-	if {[regexp {NodeName=(\w+).*CoresPerSocket=(\d+).*CPUTot=(\d+)(K?).*Sockets=(\d+) State=IDLE ThreadsPerCore=(\d+)} $line frag inode_name inode_cores_per_socket inode_procs units inode_sockets inode_threads_per_core] == 1} {
+	if {[regexp {NodeName=(\w+).*CoresPerSocket=(\d+).*CPUTot=(\d+)(K?).*Sockets=(\d+).*Boards=(\d+) State=IDLE ThreadsPerCore=(\d+)} $line frag inode_name inode_cores_per_socket inode_procs units inode_sockets inode_threads_per_core] == 1} {
 		break
 	}
-	if {[regexp {NodeName=(\w+).*CoresPerSocket=(\d+).*CPUTot=(\d+)(K?).*Sockets=(\d+) State=IDLE.CLOUD ThreadsPerCore=(\d+)} $line frag inode_name inode_cores_per_socket inode_procs units inode_sockets inode_threads_per_core] == 1} {
+	if {[regexp {NodeName=(\w+).*CoresPerSocket=(\d+).*CPUTot=(\d+)(K?).*Sockets=(\d+).*Boards=(\d+) State=IDLE.CLOUD ThreadsPerCore=(\d+)} $line frag inode_name inode_cores_per_socket inode_procs units inode_sockets inode_threads_per_core] == 1} {
 		break
 	}
 }
