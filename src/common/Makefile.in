@@ -96,7 +96,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am__libcommon_la_SOURCES_DIST = xcgroup_read_config.c \
 	xcgroup_read_config.h xcgroup.c xcgroup.h xcpuinfo.c \
 	xcpuinfo.h cpu_frequency.c cpu_frequency.h assoc_mgr.c \
@@ -522,8 +523,8 @@ libspank_la_SOURCES = \
 	plugstack.c plugstack.h \
 	optz.c      optz.h
 
-libcommon_la_LIBADD = $(DL_LIBS)
-libcommon_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
+libcommon_la_LIBADD = $(DL_LIBS) $(HWLOC_LIBS)
+libcommon_la_LDFLAGS = $(HWLOC_LDFLAGS) $(LIB_LDFLAGS) -module --export-dynamic
 
 # This was made so we could export all symbols from libcommon
 # on multiple platforms

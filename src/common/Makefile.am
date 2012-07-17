@@ -133,9 +133,9 @@ libspank_la_SOURCES = \
 	plugstack.c plugstack.h \
 	optz.c      optz.h
 
-libcommon_la_LIBADD   = $(DL_LIBS)
+libcommon_la_LIBADD   = $(DL_LIBS) $(HWLOC_LIBS)
 
-libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
+libcommon_la_LDFLAGS  = $(HWLOC_LDFLAGS) $(LIB_LDFLAGS) -module --export-dynamic
 
 # This was made so we could export all symbols from libcommon
 # on multiple platforms
