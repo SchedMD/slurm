@@ -49,7 +49,10 @@ Requests a comma separated list of job ids to display.  Defaults to all jobs.
 The \fB\-\-jobs=<job_id_list>\fR option may be used in conjunction with the
 \fB\-\-steps\fR option to print step information about specific jobs.
 Note: If a list of job ids is provided, the jobs are displayed even if
-they are on hidden partitions.
+they are on hidden partitions. Since this option's argument is optional,
+for proper parsing the single letter option must be followed immediately
+with the value and not include a space between them. For example "\-j1008"
+and not "\-j 1008". 
 
 .TP
 \fB\-l\fR, \fB\-\-long\fR
@@ -354,7 +357,11 @@ Specify the reservation of the jobs to view.
 \fB\-s\fR, \fB\-\-steps\fR
 Specify the job steps to view.  This flag indicates that a comma separated list
 of job steps to view follows without an equal sign (see examples).
-The job step format is "job_id.step_id". Defaults to all job steps.
+The job step format is "job_id.step_id". Defaults to all job
+steps. Since this option's argument is optional, for proper parsing
+the single letter option must be followed immediately with the value
+and not include a space between them. For example "\-s1008.0" and not
+"\-s 1008.0". 
 
 .TP
 \fB\-S <sort_list>\fR, \fB\-\-sort=<sort_list>\fR

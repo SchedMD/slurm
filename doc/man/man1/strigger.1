@@ -168,7 +168,10 @@ with the \fB\-\-jobid\fR option. When the \fB\-\-jobid\fR option is
 used in conjunction with the \fB\-\-up\fR, \fB\-\-down\fR or
 \fB\-\-drained\fR option,
 all nodes allocated to that job will considered the nodes used as a
-trigger event.
+trigger event.Since this option's argument is optional, for proper
+parsing the single letter option must be followed immediately with
+the value and not include a space between them. For example "\-ntux"
+and not "\-n tux".
 
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
