@@ -1656,15 +1656,20 @@ extern char *slurm_conf_get_nodename_from_addr(const char *node_addr)
 		return NULL;
 	}
 
-	start_name = xstrdup(hptr->h_name);
-	dot_ptr = strchr(start_name, '.');
-	if (dot_ptr == NULL)
-		dot_ptr = start_name + strlen(start_name);
-	else
-		dot_ptr[0] = '\0';
+	if (!strcmp(hptr->h_name, "localhost")) {
+		start_name = xshort_hostname();
+	} else {
+		start_name = xstrdup(hptr->h_name);
+		dot_ptr = strchr(start_name, '.');
+		if (dot_ptr == NULL)
+			dot_ptr = start_name + strlen(start_name);
+		else
+			dot_ptr[0] = '\0';
+	}
 
 	ret_name = slurm_conf_get_aliases(start_name);
 	xfree(start_name);
+
 	return ret_name;
 }
 
