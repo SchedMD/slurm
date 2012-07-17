@@ -655,7 +655,9 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
-	if (env->cpu_freq != NO_VAL) {
+	if ((env->cpu_freq != NO_VAL) && /* Default value from srun */
+	    (env->cpu_freq != 0)) {      /* Default value from slurmstepd
+					  * for batch jobs */
 		int sts;
 		char *str;
 
