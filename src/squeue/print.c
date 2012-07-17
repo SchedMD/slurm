@@ -751,7 +751,6 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 static int _get_node_cnt(job_info_t * job)
 {
 	int node_cnt = 0, round;
-	uint16_t base_job_state = job->job_state & (~JOB_COMPLETING);
 
 	/*  For PENDING jobs, return the maximum of the requested nodelist,
 	 *   requested maximum number of nodes, or requested CPUs rounded
@@ -763,7 +762,7 @@ static int _get_node_cnt(job_info_t * job)
 	 *   allocated to this job.
 	 */
 
-	if (base_job_state == JOB_PENDING) {
+	if (IS_JOB_PENDING(job)) {
 		node_cnt = _nodes_in_list(job->req_nodes);
 		node_cnt = MAX(node_cnt, job->num_nodes);
 		round  = job->num_cpus + params.max_cpus - 1;
