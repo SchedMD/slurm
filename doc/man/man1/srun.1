@@ -10,8 +10,8 @@ srun \- Run parallel jobs
 Run a parallel job on cluster managed by SLURM.  If necessary, srun will
 first create a resource allocation in which to run the parallel job.
 
-The following document describes the the influence of various options on the 
-allocation of cpus to jobs and tasks. 
+The following document describes the the influence of various options on the
+allocation of cpus to jobs and tasks.
 .br
 http://www.schedmd.com/slurmdocs/cpu_management.html
 
@@ -132,7 +132,7 @@ Users can specify which of these \fBfeatures\fR are required by their job
 using the constraint option.
 Only nodes having features matching the job constraints will be used to
 satisfy the request.
-Multiple constraints may be specified with AND, OR, exclusive OR, 
+Multiple constraints may be specified with AND, OR, exclusive OR,
 resource counts, etc.
 Supported \fbconstraint\fR options include:
 .PD 1
@@ -171,7 +171,7 @@ Specific counts of multiple resources may be specified by using the AND
 operator and enclosing the options within square brackets.
 For example: "\fB\-\-constraint=[rack1*2&rack2*4]"\fR might
 be used to specify that two nodes must be allocated from nodes with the feature
-of "rack1" and four nodes must be allocated from nodes with the feature 
+of "rack1" and four nodes must be allocated from nodes with the feature
 "rack2".
 .RE
 
@@ -205,9 +205,9 @@ the SLURM_CPU_BIND environment variable value to "verbose".
 The following informational environment variables are set when \fB\-\-cpu_bind\fR
 is in use:
 .nf
-        SLURM_CPU_BIND_VERBOSE
-        SLURM_CPU_BIND_TYPE
-        SLURM_CPU_BIND_LIST
+	SLURM_CPU_BIND_VERBOSE
+	SLURM_CPU_BIND_TYPE
+	SLURM_CPU_BIND_LIST
 .fi
 
 See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
@@ -339,7 +339,7 @@ allocation will include four CPUs. The job step allocation will then launch two
 threads per CPU for a total of two tasks.
 
 \fBWARNING\fR: When srun is executed from within salloc or sbatch,
-there are configurations and options which can result in inconsistent 
+there are configurations and options which can result in inconsistent
 allocations when \-c has a value greater than \-c on salloc or sbatch.
 .TP
 \fB\-d\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
@@ -493,7 +493,10 @@ time period specified.
 If no argument is given, resources must be available immediately
 for the request to succeed.
 By default, \fB\-\-immediate\fR is off, and the command
-will block until resources become available.
+will block until resources become available. Since this option's
+argument is optional, for proper parsing the single letter option
+must be followed immediately with the value and not include a
+space between them. For example "\-I60" and not "\-I 60".
 
 .TP
 \fB\-i\fR, \fB\-\-input\fR=<\fImode\fR>
@@ -508,10 +511,10 @@ a terminal is not possible.
 \fB\-J\fR, \fB\-\-job\-name\fR=<\fIjobname\fR>
 Specify a name for the job. The specified name will appear along with
 the job id number when querying running jobs on the system. The default
-is the supplied \fBexecutable\fR program's name. NOTE: This information 
+is the supplied \fBexecutable\fR program's name. NOTE: This information
 may be written to the slurm_jobacct.log file. This file is space delimited
-so if a space is used in the \fIjobname\fR name it will cause problems in 
-properly displaying the contents of the slurm_jobacct.log file when the 
+so if a space is used in the \fIjobname\fR name it will cause problems in
+properly displaying the contents of the slurm_jobacct.log file when the
 \fBsacct\fR command is used.
 
 .TP
@@ -530,18 +533,21 @@ argument of zero will not terminate the job. A non\-zero argument or no
 argument will terminate the job.
 Note: This option takes precedence over the \fB\-W\fR, \fB\-\-wait\fR option
 to terminate the job immediately if a task exits with a non\-zero exit code.
+Since this option's argument is optional, for proper parsing the
+single letter option must be followed immediately with the value and
+not include a space between them. For example "\-K1" and not "\-K 1".
 
 .TP
 \fB\-k\fR, \fB\-\-no\-kill\fR
 Do not automatically terminate a job of one of the nodes it has been
 allocated fails.  This option is only recognized on a job allocation,
 not for the submission of individual job steps.
-The job will assume all responsibilities for fault\-tolerance. 
+The job will assume all responsibilities for fault\-tolerance.
 Tasks launch using this option will not be considered terminated
 (e.g. \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR and
 \fB\-W\fR, \fB\-\-wait\fR options will have no effect upon the job step).
 The active job step (MPI job) will likely suffer a fatal error,
-but subsequent job steps may be run if this option is specified. 
+but subsequent job steps may be run if this option is specified.
 The default action is to terminate the job upon node failure.
 
 .TP
@@ -668,7 +674,7 @@ Also see \fB\-\-mem\-per\-cpu\fR.
 \fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
 NOTE: Enforcement of memory limits currently requires enabling of
 accounting, which samples memory use on a periodic basis (data need
-not be stored, just collected). A task may exceed the memory limit 
+not be stored, just collected). A task may exceed the memory limit
 until the next periodic accounting sample.
 
 .TP
@@ -680,7 +686,7 @@ seen using the \fBscontrol show config\fR command.
 Note that if the job's \fB\-\-mem\-per\-cpu\fR value exceeds the configured
 \fBMaxMemPerCPU\fR, then the user's limit will be treated as a memory limit
 per task; \fB\-\-mem\-per\-cpu\fR will be reduced to a value no larger than
-\fBMaxMemPerCPU\fR; \fB\-\-cpus\-per\-task\fR will be set and value of 
+\fBMaxMemPerCPU\fR; \fB\-\-cpus\-per\-task\fR will be set and value of
 \fB\-\-cpus\-per\-task\fR multiplied by the new \fB\-\-mem\-per\-cpu\fR
 value will equal the original \fB\-\-mem\-per\-cpu\fR value specified by
 the user.
@@ -711,9 +717,9 @@ The following informational environment variables are set when
 \fB\-\-mem_bind\fR is in use:
 
 .nf
-        SLURM_MEM_BIND_VERBOSE
-        SLURM_MEM_BIND_TYPE
-        SLURM_MEM_BIND_LIST
+	SLURM_MEM_BIND_VERBOSE
+	SLURM_MEM_BIND_TYPE
+	SLURM_MEM_BIND_LIST
 .fi
 
 See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
@@ -907,9 +913,9 @@ NOTE: This option is not supported unless
 Overcommit resources. Normally, \fBsrun\fR
 will not allocate more than one process per CPU. By specifying
 \fB\-\-overcommit\fR you are explicitly allowing more than one process
-per CPU. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are 
-permitted to execute per node.  NOTE: \fBMAX_TASKS_PER_NODE\fR is 
-defined in the file \fIslurm.h\fR and is not a variable, it is set at 
+per CPU. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are
+permitted to execute per node.  NOTE: \fBMAX_TASKS_PER_NODE\fR is
+defined in the file \fIslurm.h\fR and is not a variable, it is set at
 SLURM build time.
 
 .TP
@@ -975,7 +981,7 @@ The maximum size of a process's data segment
 .TP
 \fBFSIZE\fR
 The maximum size of files created. Note that if the user sets FSIZE to less
-than the current size of the slurmd.log, job launches will fail with 
+than the current size of the slurmd.log, job launches will fail with
 a 'File size limit exceeded' error.
 .TP
 \fBMEMLOCK\fR
@@ -999,7 +1005,7 @@ The maximum stack size
 Execute task zero in pseudo terminal mode.
 Implicitly sets \fB\-\-unbuffered\fR.
 Implicitly sets \fB\-\-error\fR and \fB\-\-output\fR to /dev/null
-for all tasks except task zero, which may cause those tasks to 
+for all tasks except task zero, which may cause those tasks to
 exit immediately (e.g. shells will typically exit immediately
 in that situation).
 Not currently supported on AIX platforms.
@@ -1030,7 +1036,7 @@ This option may be used to spread several job steps out among the
 nodes of the current job. If \fB\-r\fR is used, the current job
 step will begin at node \fIn\fR of the allocated nodelist, where
 the first node is considered node 0.  The \fB\-r\fR option is not
-permitted with \fB\-w\fR or \fB\-x\fR option and will result in a 
+permitted with \fB\-w\fR or \fB\-x\fR option and will result in a
 fatal error when not running within a prior allocation (i.e. when
 SLURM_JOB_ID is not set). The default for \fIn\fR is 0. If the
 value of \fB\-\-nodes\fR exceeds the number of nodes identified
@@ -1098,7 +1104,7 @@ When a tree topology is used, this defines the maximum count of switches
 desired for the job allocation and optionally the maximum time to wait
 for that number of switches. If SLURM finds an allocation containing more
 switches than the count specified, the job remains pending until it either finds
-an allocation with desired switch count or the time limit expires. 
+an allocation with desired switch count or the time limit expires.
 It there is no switch count limit, there is no delay in starting the job.
 Acceptable time formats include "minutes", "minutes:seconds",
 "hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
@@ -1177,12 +1183,12 @@ above when task/affinity plugin is enabled.
 Set a minimum time limit on the job allocation.
 If specified, the job may have it's \fB\-\-time\fR limit lowered to a value
 no lower than \fB\-\-time\-min\fR if doing so permits the job to begin
-execution earlier than otherwise possible. 
+execution earlier than otherwise possible.
 The job's time limit will not be changed after the job is allocated resources.
-This is performed by a backfill scheduling algorithm to allocate resources 
+This is performed by a backfill scheduling algorithm to allocate resources
 otherwise reserved for higher priority jobs.
-Acceptable time formats include "minutes", "minutes:seconds", 
-"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
+Acceptable time formats include "minutes", "minutes:seconds",
+"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
 "days\-hours:minutes:seconds".
 
 .TP
@@ -1227,7 +1233,7 @@ parameter in the slurm configuration file (see \fBslurm.conf(5)\fR). This
 option can be useful to insure that a job is terminated in a timely fashion
 in the event that one or more tasks terminate prematurely.
 Note: The \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR option takes precedence
-over \fB\-W\fR, \fB\-\-wait\fR to terminate the job immediately if a task 
+over \fB\-W\fR, \fB\-\-wait\fR to terminate the job immediately if a task
 exits with a non\-zero exit code.
 
 .TP
@@ -1263,8 +1269,8 @@ if it contains a "/"character.
 \fB\-Z\fR, \fB\-\-no\-allocate\fR
 Run the specified tasks on a set of nodes without creating a SLURM
 "job" in the SLURM queue structure, bypassing the normal resource
-allocation step.  The list of nodes must be specified with the 
-\fB\-w\fR, \fB\-\-nodelist\fR option.  This is a privileged option 
+allocation step.  The list of nodes must be specified with the
+\fB\-w\fR, \fB\-\-nodelist\fR option.  This is a privileged option
 only available for the users "SlurmUser" and "root".
 
 .PP
