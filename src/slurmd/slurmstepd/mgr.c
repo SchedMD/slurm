@@ -1148,8 +1148,10 @@ static void exec_wait_info_destroy (struct exec_wait_info *e)
 	if (e == NULL)
 		return;
 
-	close (e->parentfd);
-	close (e->childfd);
+	if (e->parentfd >= 0)
+		close (e->parentfd);
+	if (e->childfd >= 0)
+		close (e->childfd);
 	e->id = -1;
 	e->pid = -1;
 }
@@ -1172,9 +1174,17 @@ static struct exec_wait_info * fork_child_with_wait_info (int id)
 		exec_wait_info_destroy (e);
 		return (NULL);
 	}
-	else if (e->pid == 0)  /* In child, close parent fd */
+	/*
+	 *  Close parentfd in child, and childfd in parent:
+	 */
+	if (e->pid == 0) {
 		close (e->parentfd);
-
+		e->parentfd = -1;
+	}
+	else {
+		close (e->childfd);
+		e->childfd = -1;
+	}
 	return (e);
 }
 
@@ -1204,6 +1214,47 @@ static int exec_wait_signal (struct exec_wait_info *e, slurmd_job_t *job)
 	        job->jobid, job->stepid, e->id, e->parentfd);
 	exec_wait_signal_child (e);
 	return (0);
+}
+
+/*
+ *  Send SIGKILL to child in exec_wait_info 'e'
+ *  Returns 0 for success, -1 for failure.
+ */
+static int exec_wait_kill_child (struct exec_wait_info *e)
+{
+	if (e->pid < 0)
+		return (-1);
+	if (kill (e->pid, SIGKILL) < 0)
+		return (-1);
+	e->pid = -1;
+	return (0);
+}
+
+/*
+ *  Send all children in exec_wait_list SIGKILL.
+ *  Returns 0 for success or  < 0 on failure.
+ */
+static int exec_wait_kill_children (List exec_wait_list)
+{
+	int rc = 0;
+	int count;
+	struct exec_wait_info *e;
+	ListIterator i;
+
+	if ((count = list_count (exec_wait_list)) == 0)
+		return (0);
+
+	verbose ("Killing %d remaining child%s",
+		 count, (count > 1 ? "ren" : ""));
+
+	i = list_iterator_create (exec_wait_list);
+	if (i == NULL)
+		return error ("exec_wait_kill_children: iterator_create: %m");
+
+	while ((e = list_next (i)))
+		rc += exec_wait_kill_child (e);
+	list_iterator_destroy (i);
+	return (rc);
 }
 
 static void prepare_stdio (slurmd_job_t *job, slurmd_task_info_t *task)
@@ -1337,6 +1388,7 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 
 		if ((ei = fork_child_with_wait_info (i)) == NULL) {
 			error("child fork: %m");
+			exec_wait_kill_children (exec_wait_list);
 			rc = SLURM_ERROR;
 			goto fail4;
 		} else if ((pid = exec_wait_get_pid (ei)) == 0)  { /* child */
@@ -1388,7 +1440,8 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 			 *   children in any process groups or containers
 			 *   before they make a call to exec(2).
 			 */
-			exec_wait_child_wait_for_parent (ei);
+			if (exec_wait_child_wait_for_parent (ei) < 0)
+				exit (1);
 
 			exec_task(job, i);
 		}
