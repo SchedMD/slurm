@@ -907,7 +907,7 @@ _read_config(void)
 #else
 	get_procs(&conf->actual_cpus);
 	get_cpuinfo(conf->actual_cpus,
-			&conf->actual_boards,
+		    &conf->actual_boards,
 		    &conf->actual_sockets,
 		    &conf->actual_cores,
 		    &conf->actual_threads,
