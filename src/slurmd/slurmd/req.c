@@ -4011,6 +4011,7 @@ _build_env(uint32_t jobid, uid_t uid, char *resv_id,
 	if (spank_job_env_size)
 		env_array_merge(&env, (const char **) spank_job_env);
 
+	setenvf(&env, "SLURM_CONF", conf->conffile);
 	setenvf(&env, "SLURM_JOB_ID", "%u", jobid);
 	setenvf(&env, "SLURM_JOB_UID",   "%u", uid);
 	name = uid_to_string(uid);
@@ -4078,9 +4079,6 @@ run_spank_job_script (const char *mode, char **env)
 			"spank",
 			(char *) mode,
 			NULL };
-
-		/* Set the correct slurm.conf location */
-		setenvf (&env, "SLURM_CONF", conf->conffile);
 
 		if (dup2 (pfds[0], STDIN_FILENO) < 0)
 			fatal ("dup2: %m");
