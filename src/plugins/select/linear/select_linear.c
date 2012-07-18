@@ -2741,6 +2741,7 @@ extern int select_p_block_init(List block_list)
  * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
  *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
+ * IN exc_core_bitmap - bitmap of cores being reserved.
  * RET zero on success, EINVAL otherwise
  * globals (passed via select_p_node_init):
  *	node_record_count - count of nodes configured
@@ -2756,7 +2757,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes,
 			     uint32_t req_nodes, uint16_t mode,
 			     List preemptee_candidates,
-			     List *preemptee_job_list)
+			     List *preemptee_job_list,
+			     bitstr_t *exc_core_bitmap)
 {
 	int max_share = 0, rc = EINVAL;
 

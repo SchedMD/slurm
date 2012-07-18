@@ -548,8 +548,8 @@ extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		(job_ptr, bitmap,
 		 min_nodes, max_nodes,
 		 req_nodes, mode,
-		 preemptee_candidates,
-		 preemptee_job_list);
+		 preemptee_candidates, preemptee_job_list,
+		 exc_core_bitmap);
 }
 
 /*
