@@ -1895,6 +1895,9 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 		xfree(cpu_cnt);
 		return NULL;
 	}
+    
+    //bit_fmt(str, (sizeof(str) - 1), node_map);
+    //info("ALEJ: _select_nodes nodemap: %s", str);
 
 	//bit_fmt(str, (sizeof(str) - 1), node_map);
 	//info("ALEJ: _select_nodes nodemap: %s", str);

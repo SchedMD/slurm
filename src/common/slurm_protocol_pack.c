@@ -3319,6 +3319,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, Buf buffer,
 		} else
 			array_len = 0;
 		pack32_array(msg->node_cnt, array_len, buffer);
+		pack32(msg->core_cnt,      buffer);
 		packstr(msg->node_list,    buffer);
 		packstr(msg->features,     buffer);
 		packstr(msg->licenses,     buffer);
@@ -3403,6 +3404,7 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, Buf buffer,
 			/* This avoids a pointer to a zero length buffer */
 			xfree(tmp_ptr->node_cnt);
 		}
+		safe_unpack32(&tmp_ptr->core_cnt,      buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->node_list,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->features,
@@ -4240,6 +4242,7 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer,
 		safe_unpackstr_xmalloc(&resv->licenses, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&resv->name,	&uint32_tmp, buffer);
 		safe_unpack32(&resv->node_cnt,		buffer);
+		safe_unpack32(&resv->core_cnt,		buffer);
 		safe_unpackstr_xmalloc(&resv->node_list,&uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&resv->partition,&uint32_tmp, buffer);
 		safe_unpack_time(&resv->start_time,	buffer);
