@@ -3310,8 +3310,8 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 					lic_resv_time = resv_ptr->end_time;
 			}
 
-			if (resv_ptr->cpu_cnt == 0) {
-				/* reservation uses full nodes */
+			if ((resv_ptr->cpu_cnt == 0) || (!job_ptr->details->shared)) {
+				/* reservation uses full nodes or job will not share nodes */
 				bit_not(resv_ptr->node_bitmap);
 				bit_and(*node_bitmap, resv_ptr->node_bitmap);
 				bit_not(resv_ptr->node_bitmap);
