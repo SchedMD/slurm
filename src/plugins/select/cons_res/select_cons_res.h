@@ -75,13 +75,15 @@
  * - Caution with NODE_CR_AVAILABLE: a Sharing partition could be full.
  *
  * - these values are staggered so that they can be incremented as multiple
- * jobs are allocated to each node. This is needed to be able to support
- * preemption, which can override these protections.
+ *   jobs are allocated to each node. This is needed to be able to support
+ *   preemption, which can override these protections.
+ * - An 8-bit field is used to store these values, so we can't run more than
+ *   254 jobs per node (NO_VAL)
  */
 enum node_cr_state {
 	NODE_CR_AVAILABLE = 0,    /* The node may be IDLE or IN USE (shared) */
 	NODE_CR_ONE_ROW = 1,      /* node is in use by Shared=NO part */
-	NODE_CR_RESERVED = 10000, /* node is in use by Shared=EXCLUSIVE part */
+	NODE_CR_RESERVED = 250,   /* node is in use by Shared=EXCLUSIVE part */
 };
 
 /* a partition's per-row CPU allocation data */
