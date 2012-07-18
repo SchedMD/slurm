@@ -480,8 +480,8 @@ int dump_all_job_state(void)
 			error("The modification time of %s moved backwards "
 			      "by %d seconds",
 			      reg_file, (0-delta_t));
-			error("There could be a problem with your clock or "
-			      "file system mounting");
+			error("The clock of the file system and this computer "
+			      "appear to not be synchronized");
 			/* It could be safest to exit here. We likely mounted
 			 * a different file system with the state save files */
 		}
