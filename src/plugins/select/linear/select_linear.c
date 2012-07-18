@@ -2641,6 +2641,9 @@ extern int init ( void )
 	rc = _init_status_pthread();
 #endif
 	cr_type = slurmctld_conf.select_type_param;
+	if (cr_type)
+		verbose("%s loaded with argument %u", plugin_name, cr_type);
+
 	return rc;
 }
 
