@@ -1335,7 +1335,6 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	List license_list = (List) NULL;
 	char *name1, *name2, *val1, *val2;
 	uint32_t total_node_cnt = NO_VAL;
-	char str[100];
 
 	if (!resv_list)
 		resv_list = list_create(_del_resv_rec);
@@ -1654,7 +1653,6 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	int error_code = SLURM_SUCCESS, i, rc;
 	char start_time[32], end_time[32];
 	char *name1, *name2, *val1, *val2;
-	char str[100];
 
 	if (!resv_list)
 		resv_list = list_create(_del_resv_rec);
@@ -2778,7 +2776,7 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 	bitstr_t *ret_bitmap = NULL, *tmp_bitmap;
 	uint32_t total_node_cnt = 0;
 	bool resv_debug;
-    char str[100];
+
 #ifdef HAVE_BG
 	static uint16_t static_blocks = (uint16_t)NO_VAL;
 	if (static_blocks == (uint16_t)NO_VAL) {
