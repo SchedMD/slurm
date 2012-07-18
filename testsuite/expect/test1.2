@@ -43,12 +43,13 @@ print_header $test_id
 if {[test_bluegene]} {
 	# We never launch more than one task on emulated Bluegene
 	set task_cnt 1
-} else {
-	set task_cnt 10
-}
-if {[test_cray]} {
+} elseif {[test_cray]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
 	exit $exit_code
+} elseif {[test_serial]} {
+	set task_cnt 1
+} else {
+	set task_cnt 10
 }
 
 #

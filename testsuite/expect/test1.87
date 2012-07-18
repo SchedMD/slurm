@@ -45,6 +45,9 @@ print_header $test_id
 if {[test_front_end] != 0} {
 	send_user "\nWARNING: This test is incompatible with front-end systems\n"
 	exit 0
+} elseif {[test_serial]} {
+	send_user "\nWARNING: This test is incomatible with front-end systems\n"
+	exit 0
 }
 
 #
@@ -75,6 +78,11 @@ expect {
 		send_user "WARNING: partition too small for test\n"
 		slow_kill $srun_pid
 		exit 0
+	}
+	-re "Required node not available" {
+		send_user "\nWARNING: can't test srun task distribution\n"
+		exec $bin_rm -f $file_in
+		exit $exit_code
 	}
 	-re "Unable to contact" {
 		send_user "\nFAILURE: slurm appears to be down\n"

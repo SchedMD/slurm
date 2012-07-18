@@ -1480,7 +1480,8 @@ static int _sync_block_lists(List full_list, List incomp_list)
 		   then we don't need to add either, (since it is
 		   already in the list).
 		*/
-		if (!new_record->bg_block_id || new_record->original)
+		if ((new_record->magic != BLOCK_MAGIC)
+		    || !new_record->bg_block_id || new_record->original)
 			continue;
 		list_remove(itr);
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)

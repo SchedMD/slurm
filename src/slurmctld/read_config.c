@@ -71,6 +71,7 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
+#include "src/common/strnatcmp.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/front_end.h"
@@ -121,11 +122,50 @@ static void _validate_node_proc_count(void);
 #endif
 
 /*
- * _reorder_node_record_table - order node table in ascending order of node_rank
+ * _reorder_nodes_by_name - order node table in ascending order of name
+ */
+static void _reorder_nodes_by_name(void)
+{
+	struct node_record *node_ptr, *node_ptr2;
+	int i, j, min_inx;
+
+	/* Now we need to sort the node records */
+	for (i = 0; i < node_record_count; i++) {
+		min_inx = i;
+		for (j = i + 1; j < node_record_count; j++) {
+			if (strnatcmp(node_record_table_ptr[j].name,
+				      node_record_table_ptr[min_inx].name) < 0)
+				min_inx = j;
+		}
+
+		if (min_inx != i) {	/* swap records */
+			struct node_record node_record_tmp;
+
+			j = sizeof(struct node_record);
+			node_ptr  = node_record_table_ptr + i;
+			node_ptr2 = node_record_table_ptr + min_inx;
+
+			memcpy(&node_record_tmp, node_ptr, j);
+			memcpy(node_ptr, node_ptr2, j);
+			memcpy(node_ptr2, &node_record_tmp, j);
+		}
+	}
+
+#if _DEBUG
+	/* Log the results */
+	for (i=0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		info("node_rank[%d]: %s", i, node_ptr->name);
+	}
+#endif
+}
+
+/*
+ * _reorder_nodes_by_rank - order node table in ascending order of node_rank
  * This depends on the TopologyPlugin and/or SelectPlugin, which may generate
  * such a ranking.
  */
-static void _reorder_node_record_table(void)
+static void _reorder_nodes_by_rank(void)
 {
 	struct node_record *node_ptr, *node_ptr2;
 	int i, j, min_inx;
@@ -146,7 +186,7 @@ static void _reorder_node_record_table(void)
 			struct node_record node_record_tmp;
 
 			j = sizeof(struct node_record);
-			node_ptr =  node_record_table_ptr + i;
+			node_ptr  = node_record_table_ptr + i;
 			node_ptr2 = node_record_table_ptr + min_inx;
 
 			memcpy(&node_record_tmp, node_ptr, j);
@@ -159,7 +199,7 @@ static void _reorder_node_record_table(void)
 	/* Log the results */
 	for (i=0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
-		info("%s: %u", node_ptr->name, node_ptr->node_rank);
+		info("node_rank[%u]: %s", node_ptr->node_rank, node_ptr->name);
 	}
 #endif
 }
@@ -748,6 +788,11 @@ int read_slurm_conf(int recover, bool reconfig)
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
 	if (slurm_sched_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize sched plugin");
+	if (!reconfig && (old_preempt_mode & PREEMPT_MODE_GANG) &&
+	    (gs_init() != SLURM_SUCCESS)) {
+		/* gs_init() must immediately follow slurm_sched_init() */
+		fatal("Failed to initialize gang scheduler");
+	}
 	if (switch_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize switch plugin");
 
@@ -771,7 +816,9 @@ int read_slurm_conf(int recover, bool reconfig)
 	do_reorder_nodes |= select_g_node_ranking(node_record_table_ptr,
 						  node_record_count);
 	if (do_reorder_nodes)
-		_reorder_node_record_table();
+		_reorder_nodes_by_rank();
+	else
+		_reorder_nodes_by_name();
 
 	rehash_node();
 	rehash_jobs();
@@ -882,6 +929,8 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	/* Update plugin parameters as possible */
 	rc = job_submit_plugin_reconfig();
+	error_code = MAX(error_code, rc);	/* not fatal */
+	rc = switch_g_reconfig();
 	error_code = MAX(error_code, rc);	/* not fatal */
 	rc = _preserve_select_type_param(&slurmctld_conf, old_select_type_p);
 	error_code = MAX(error_code, rc);	/* not fatal */
@@ -1004,6 +1053,7 @@ static int _restore_node_state(int recover,
 		node_ptr->cpus          = old_node_ptr->cpus;
 		node_ptr->cores         = old_node_ptr->cores;
 		node_ptr->last_idle     = old_node_ptr->last_idle;
+		node_ptr->boards        = old_node_ptr->boards;
 		node_ptr->sockets       = old_node_ptr->sockets;
 		node_ptr->threads       = old_node_ptr->threads;
 		node_ptr->real_memory   = old_node_ptr->real_memory;
@@ -1337,6 +1387,7 @@ static int _update_preempt(uint16_t old_preempt_mode)
 		return gs_fini();
 	}
 
+	error("Invalid gang scheduling mode change");
 	return EINVAL;
 }
 

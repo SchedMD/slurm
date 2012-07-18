@@ -42,6 +42,7 @@ int g_node_scaling = 1;
 enum {
 	SORTID_POS = POS_LOC,
 	SORTID_ARCH,
+	SORTID_BOARDS,
 	SORTID_BOOT_TIME,
 	SORTID_COLOR,
 	SORTID_CPUS,
@@ -108,9 +109,11 @@ static display_data_t display_data_node[] = {
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_ERR_CPUS, "Error CPU Count", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_CORES, "CoresPerSocket", FALSE,
+	{G_TYPE_INT, SORTID_BOARDS, "Boards", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_SOCKETS, "Sockets", FALSE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_INT, SORTID_CORES, "CoresPerSocket", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_THREADS, "ThreadsPerCore", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
@@ -256,12 +259,11 @@ static void _layout_node_record(GtkTreeView *treeview,
 				   lower);
 	xfree(lower);
 
-
-	convert_num_unit((float)node_ptr->cores, tmp_cnt, sizeof(tmp_cnt),
+	convert_num_unit((float)node_ptr->boards, tmp_cnt, sizeof(tmp_cnt),
 			 UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
-						 SORTID_CORES),
+						 SORTID_BOARDS),
 				   tmp_cnt);
 
 	convert_num_unit((float)node_ptr->sockets, tmp_cnt, sizeof(tmp_cnt),
@@ -269,6 +271,13 @@ static void _layout_node_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_SOCKETS),
+				   tmp_cnt);
+
+	convert_num_unit((float)node_ptr->cores, tmp_cnt, sizeof(tmp_cnt),
+			 UNIT_NONE);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_CORES),
 				   tmp_cnt);
 
 	convert_num_unit((float)node_ptr->threads, tmp_cnt, sizeof(tmp_cnt),
@@ -382,6 +391,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, &sview_node_info_ptr->iter_ptr,
 			   SORTID_ARCH,      node_ptr->arch,
+			   SORTID_BOARDS,    node_ptr->boards,
 			   SORTID_BOOT_TIME, sview_node_info_ptr->boot_time,
 			   SORTID_COLOR,
 				sview_colors[sview_node_info_ptr->pos

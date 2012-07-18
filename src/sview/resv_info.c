@@ -188,8 +188,8 @@ static void _process_each_resv(GtkTreeModel *model, GtkTreePath *path,
 
 /*
  *  _parse_flags  is used to parse the Flags= option.  It handles
- *  daily, weekly, and maint, optionally preceded by + or -,
- *  separated by a comma but no spaces.
+ *  daily, weekly, maint, static_nodes and part_nodes optionally
+ *  preceded by + or -, separated by a comma but no spaces.
  */
 static uint32_t _parse_flags(const char *flagstr)
 {
@@ -253,6 +253,13 @@ static uint32_t _parse_flags(const char *flagstr)
 				outflags |= RESERVE_FLAG_NO_STATIC;
 			else
 				outflags |= RESERVE_FLAG_STATIC;
+		} else if (strncasecmp(curr, "Part_Nodes", MAX(taglen,1))
+			   == 0) {
+			curr += taglen;
+			if (flip)
+				outflags |= RESERVE_FLAG_NO_PART_NODES;
+			else
+				outflags |= RESERVE_FLAG_PART_NODES;
 		} else {
 			char *temp = g_strdup_printf("Error parsing flags %s.",
 						     flagstr);

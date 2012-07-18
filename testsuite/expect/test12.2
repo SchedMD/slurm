@@ -116,7 +116,7 @@ proc _get_mem {prog} {
 	# Compute error in KB
 	set diff_mem [expr $mem_used - $mem_size]
 	set error_mem [expr abs($diff_mem)]
-	if {$error_mem > 4100} {
+	if {($mem_used < $mem_size) || ($error_mem > 4200)} {
 		send_user "\nFAILURE: sstat memory use discrepancy of $error_mem KB\n"
 		send_user "  Wanted $mem_size KB, got $mem_used KB\n"
 		return 1
@@ -221,7 +221,7 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 }
 
 # Wait for data to get logged
-exec $bin_sleep 5
+exec $bin_sleep 10
 
 if {[_get_mem $sstat] != 0} {
 	set exit_code 1

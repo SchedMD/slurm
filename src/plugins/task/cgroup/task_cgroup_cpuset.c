@@ -48,6 +48,7 @@
 #include "slurm/slurm.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmd/slurmd.h"
+#include "src/common/cpu_frequency.h"
 
 #include "src/common/bitstring.h"
 #include "src/common/xstring.h"
@@ -684,6 +685,11 @@ extern int task_cgroup_cpuset_create(slurmd_job_t *job)
 		fstatus = SLURM_ERROR;
 	} else
 		fstatus = SLURM_SUCCESS;
+
+	/* validate the requested cpu frequency and set it */
+	if (job->cpu_freq != NO_VAL) {
+		cpu_freq_cgroup_validate(job, step_alloc_cores);
+	}
 
 error:
 	xcgroup_unlock(&cpuset_cg);

@@ -194,6 +194,8 @@ test1.91   Test of CPU affinity for multi-core systems.
 test1.92   Test of task distribution support on multi-core systems.
 test1.93   Test of LAM-MPI functionality
 test1.94   Test of MPICH2 task spawn logic
+test1.95   Basic UPC (Unified Parallel C) test via srun.
+test1.96   Basic SHMEM test via srun.
 **NOTE**   The above tests for mutliple processor/partition systems only
 
 test2.#    Testing of scontrol options (to be run as unprivileged user).
@@ -204,7 +206,7 @@ test2.3    Validate scontrol ping command.
 test2.4    Validate scontrol exit, quit, and !! commands.
 test2.5    Validate scontrol show commands for configuation, daemons,
            nodes, frontends, and partitions.
-test2.6    Validate scontrol verbose and quite options.
+test2.6    Validate scontrol verbose and quiet options.
 test2.7    Validate scontrol pidinfo command.
 test2.8    Validate scontrol show commands for jobs and steps.
 test2.9    Validate scontrol completing command.
@@ -352,7 +354,7 @@ test9.5    Stress test of per-task input files.
 test9.6    Stress test of per-task output files.
 test9.7    Stress test multiple simultaneous commands via multiple threads.
 test9.8    Stress test with maximum slurmctld message concurrency.
-test9.9    Throughput test for 2000 jobs for timing
+test9.9    Throughput test for 5000 jobs for timing
 
 
 test10.#   Testing of smap options.
@@ -398,6 +400,7 @@ test12.5   Test sacct --helpformat option.
 test13.#   Testing of switch plugins
 ====================================
 test13.1   Test that we avoid re-using active switch contexts.
+test13.2   Test for switch/nrt's --network options.
 
 
 test14.#   Testing of sbcast options.

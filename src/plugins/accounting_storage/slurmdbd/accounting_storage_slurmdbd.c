@@ -54,7 +54,6 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_xlator.h"
-#include "src/common/jobacct_common.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurmdbd_defs.h"
@@ -62,6 +61,8 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/locks.h"
+
+#define BUFFER_SIZE 4096
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get

@@ -78,7 +78,7 @@
 
 #include "slurm/slurm.h"
 
-#include "src/common/jobacct_common.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/xstring.h"
@@ -86,6 +86,7 @@
 
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
+#define BUFFER_SIZE 4096
 
 typedef enum {
 	/* COMMON */

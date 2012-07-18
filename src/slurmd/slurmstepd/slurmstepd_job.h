@@ -134,6 +134,7 @@ typedef struct slurmd_job {
 	char          *cpu_bind;       /* binding map for map/mask_cpu      */
 	mem_bind_type_t mem_bind_type; /* --mem_bind=                       */
 	char          *mem_bind;       /* binding map for tasks to memory   */
+	uint32_t       cpu_freq;       /* requested cpu frequency           */
 	switch_jobinfo_t *switch_job; /* switch-specific job information     */
 	uid_t         uid;     /* user id for job                           */
 	gid_t         gid;     /* group ID for job                          */
@@ -232,7 +233,7 @@ slurmd_task_info_t * task_info_create(int taskid, int gtaskid,
 static inline slurmd_task_info_t *
 job_task_info_by_pid (slurmd_job_t *job, pid_t pid)
 {
-	int i;
+	uint32_t i;
 	for (i = 0; i < job->node_tasks; i++) {
 		if (job->task[i]->pid == pid)
 			return (job->task[i]);

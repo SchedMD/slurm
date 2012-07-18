@@ -53,6 +53,7 @@
 #include "src/common/arg_desc.h"
 
 static bool auth_dummy = false;	/* for security testing */
+static bool init_run = false;
 
 /*
  * WARNING:  Do not change the order of these fields or add additional
@@ -72,39 +73,29 @@ typedef struct slurm_auth_ops {
         int          (*sa_errno)  ( void *cred );
         const char * (*sa_errstr) ( int slurm_errno );
 } slurm_auth_ops_t;
-
 /*
- * Implementation of the authentication context.  Hopefully everything
- * having to do with plugins will be abstracted under here so that the
- * callers can just deal with creating a context and asking for the
- * operations implemented pertinent to that context.
- *
- * auth_type - the string (presumably from configuration files)
- * describing the desired form of authentication, such as "auth/munge"
- * or "auth/kerberos" or "auth/none".
- *
- * plugin_list - the plugin rack managing the loading and unloading of
- * plugins for authencation.
- *
- * cur_plugin - the plugin currently supplying operations to the caller.
- *
- * ops - a table of pointers to functions in the plugin which correspond
- * to the standardized plugin API.  We create this table by text references
- * into the plugin's symbol table.
+ * These strings must be kept in the same order as the fields
+ * declared for slurm_auth_ops_t.
  */
-struct slurm_auth_context {
-        char *           auth_type;
-        plugrack_t       plugin_list;
-        plugin_handle_t  cur_plugin;
-        int              auth_errno;
-        slurm_auth_ops_t ops;
+static const char *syms[] = {
+	"slurm_auth_create",
+	"slurm_auth_destroy",
+	"slurm_auth_verify",
+	"slurm_auth_get_uid",
+	"slurm_auth_get_gid",
+	"slurm_auth_pack",
+	"slurm_auth_unpack",
+	"slurm_auth_print",
+	"slurm_auth_errno",
+	"slurm_auth_errstr"
 };
 
 /*
  * A global authentication context.  "Global" in the sense that there's
  * only one, with static bindings.  We don't export it.
  */
-static slurm_auth_context_t g_context    = NULL;
+static slurm_auth_ops_t ops;
+static plugin_context_t *g_context = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /*
@@ -116,82 +107,6 @@ static arg_desc_t auth_args[] = {
         { NULL }
 };
 
-/*
- * Resolve the operations from the plugin.
- */
-static slurm_auth_ops_t *
-slurm_auth_get_ops( slurm_auth_context_t c )
-{
-        /*
-         * These strings must be kept in the same order as the fields
-         * declared for slurm_auth_ops_t.
-         */
-        static const char *syms[] = {
-                "slurm_auth_create",
-                "slurm_auth_destroy",
-                "slurm_auth_verify",
-                "slurm_auth_get_uid",
-                "slurm_auth_get_gid",
-                "slurm_auth_pack",
-                "slurm_auth_unpack",
-                "slurm_auth_print",
-                "slurm_auth_errno",
-                "slurm_auth_errstr"
-        };
-        int n_syms = sizeof( syms ) / sizeof( char * );
-
- 	/* Find the correct plugin. */
-        c->cur_plugin = plugin_load_and_link(c->auth_type, n_syms, syms,
-					     (void **) &c->ops);
-        if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
-        	return &c->ops;
-
-	if(errno != EPLUGIN_NOTFOUND) {
-		error("Couldn't load specified plugin name for %s: %s",
-		      c->auth_type, plugin_strerror(errno));
-		return NULL;
-	}
-
-	error("Couldn't find the specified plugin name for %s "
-	      "looking at all files",
-	      c->auth_type);
-
-	/* Get the plugin list, if needed. */
-        if ( c->plugin_list == NULL ) {
-		char *plugin_dir;
-                c->plugin_list = plugrack_create();
-                if ( c->plugin_list == NULL ) {
-                        error( "Unable to create auth plugin manager" );
-                        return NULL;
-                }
-
-                plugrack_set_major_type( c->plugin_list, "auth" );
-                plugrack_set_paranoia( c->plugin_list,
-				       PLUGRACK_PARANOIA_NONE,
-				       0 );
-		plugin_dir = slurm_get_plugin_dir();
-                plugrack_read_dir( c->plugin_list, plugin_dir );
-		xfree(plugin_dir);
-        }
-
-        /* Find the correct plugin. */
-        c->cur_plugin = plugrack_use_by_type( c->plugin_list, c->auth_type );
-        if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
-                error( "can't find a plugin for type %s", c->auth_type );
-                return NULL;
-        }
-
-        /* Dereference the API. */
-        if ( plugin_get_syms( c->cur_plugin,
-                              n_syms,
-                              syms,
-                              (void **) &c->ops ) < n_syms ) {
-                error( "incomplete auth plugin detected" );
-                return NULL;
-        }
-
-        return &c->ops;
-}
 
 const arg_desc_t *
 slurm_auth_get_arg_desc( void )
@@ -226,37 +141,6 @@ slurm_auth_marshal_args( void *hosts, int timeout )
         return argv;
 }
 
-
-slurm_auth_context_t
-slurm_auth_context_create( const char *auth_type )
-{
-        slurm_auth_context_t c;
-
-        if ( auth_type == NULL ) {
-                debug3( "slurm_auth_context_create: no authentication type" );
-                return NULL;
-        }
-
-        c = xmalloc( sizeof( struct slurm_auth_context ) );
-
-        c->auth_errno = SLURM_SUCCESS;
-
-        /* Copy the authentication type. */
-        c->auth_type = xstrdup( auth_type );
-        if ( c->auth_type == NULL ) {
-                debug3( "can't make local copy of authentication type" );
-                xfree( c );
-                return NULL;
-        }
-
-        /* Plugin rack is demand-loaded on first reference. */
-        c->plugin_list = NULL;
-        c->cur_plugin = PLUGIN_INVALID_HANDLE;
-
-        return c;
-}
-
-
 static const char *
 slurm_auth_generic_errstr( int slurm_errno )
 {
@@ -286,68 +170,44 @@ slurm_auth_generic_errstr( int slurm_errno )
         }
 }
 
-
-static int
-_slurm_auth_context_destroy( slurm_auth_context_t c )
-{
-	int rc = SLURM_SUCCESS;
-
-        /*
-         * Must check return code here because plugins might still
-         * be loaded and active.
-         */
-        if ( c->plugin_list ) {
-                if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
-                        rc =  SLURM_ERROR;
-                }
-        } else {
-		plugin_unload(c->cur_plugin);
-	}
-
-        xfree( c->auth_type );
-        xfree( c );
-
-        return rc;
-}
-
 extern int slurm_auth_init( char *auth_type )
 {
         int retval = SLURM_SUCCESS;
-	char *auth_type_local = NULL;
+	char *type = NULL;
+	char *plugin_type = "auth";
 
-        slurm_mutex_lock( &context_lock );
+	if (init_run && g_context)
+                return retval;
 
-        if ( g_context )
+	slurm_mutex_lock(&context_lock);
+
+        if (g_context)
                 goto done;
 
-	if (auth_type == NULL) {
-		auth_type_local = slurm_get_auth_type();
-		auth_type = auth_type_local;
-	}
-	if (strcmp(auth_type, "auth/dummy") == 0) {
-		info( "warning: %s plugin selected", auth_type);
+	if (auth_type)
+		slurm_set_auth_type(auth_type);
+
+	type = slurm_get_auth_type();
+
+	if (strcmp(type, "auth/dummy") == 0) {
+		info( "warning: %s plugin selected", type);
 		auth_dummy = true;
 		goto done;
 	}
 
-        g_context = slurm_auth_context_create( auth_type );
-        if ( g_context == NULL ) {
-                error( "cannot create a context for %s", auth_type );
-                retval = SLURM_ERROR;
-                goto done;
-        }
+	g_context = plugin_context_create(
+		plugin_type, type, (void **)&ops, syms, sizeof(syms));
 
-        if ( slurm_auth_get_ops( g_context ) == NULL ) {
-                error( "cannot resolve %s plugin operations",
-		       auth_type );
-                _slurm_auth_context_destroy( g_context );
-                g_context = NULL;
-                retval = SLURM_ERROR;
-        }
+	if (!g_context) {
+		error("cannot create %s context for %s", plugin_type, type);
+		retval = SLURM_ERROR;
+		goto done;
+	}
+	init_run = true;
 
 done:
-	xfree(auth_type_local);
-        slurm_mutex_unlock( &context_lock );
+	xfree(type);
+        slurm_mutex_unlock(&context_lock);
         return retval;
 }
 
@@ -357,10 +217,11 @@ slurm_auth_fini( void )
 {
 	int rc;
 
-	if ( !g_context )
+	if (!g_context)
 		return SLURM_SUCCESS;
 
-	rc = _slurm_auth_context_destroy( g_context );
+	init_run = false;
+	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 	return rc;
 }
@@ -388,7 +249,7 @@ g_slurm_auth_create( void *hosts, int timeout, char *auth_info )
                 return NULL;
         }
 
-        ret = (*(g_context->ops.create))( argv, auth_info );
+        ret = (*(ops.create))( argv, auth_info );
         xfree( argv );
         return ret;
 }
@@ -402,7 +263,7 @@ g_slurm_auth_destroy( void *cred )
 	if ( auth_dummy )	/* don't worry about leak in testing */
 		return SLURM_SUCCESS;
 
-        return (*(g_context->ops.destroy))( cred );
+        return (*(ops.destroy))( cred );
 }
 
 int
@@ -421,7 +282,7 @@ g_slurm_auth_verify( void *cred, void *hosts, int timeout, char *auth_info )
                 return SLURM_ERROR;
         }
 
-        ret = (*(g_context->ops.verify))( cred, auth_info );
+        ret = (*(ops.verify))( cred, auth_info );
         xfree( argv );
         return ret;
 }
@@ -432,7 +293,7 @@ g_slurm_auth_get_uid( void *cred, char *auth_info )
 	if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
                 return SLURM_AUTH_NOBODY;
 
-        return (*(g_context->ops.get_uid))( cred, auth_info );
+        return (*(ops.get_uid))( cred, auth_info );
 }
 
 gid_t
@@ -441,7 +302,7 @@ g_slurm_auth_get_gid( void *cred, char *auth_info )
 	if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
                 return SLURM_AUTH_NOBODY;
 
-        return (*(g_context->ops.get_gid))( cred, auth_info );
+        return (*(ops.get_gid))( cred, auth_info );
 }
 
 int
@@ -453,7 +314,7 @@ g_slurm_auth_pack( void *cred, Buf buf )
 	if ( auth_dummy )
 		return SLURM_SUCCESS;
 
-        return (*(g_context->ops.pack))( cred, buf );
+        return (*(ops.pack))( cred, buf );
 }
 
 void *
@@ -462,7 +323,7 @@ g_slurm_auth_unpack( Buf buf )
 	if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
                 return NULL;
 
-        return (*(g_context->ops.unpack))( buf );
+        return (*(ops.unpack))( buf );
 }
 
 int
@@ -474,7 +335,7 @@ g_slurm_auth_print( void *cred, FILE *fp )
 	if ( auth_dummy )
 		return SLURM_SUCCESS;
 
-        return (*(g_context->ops.print))( cred, fp );
+        return (*(ops.print))( cred, fp );
 }
 
 int
@@ -483,7 +344,7 @@ g_slurm_auth_errno( void *cred )
         if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
                 return SLURM_ERROR;
 
-        return (*(g_context->ops.sa_errno))( cred );
+        return (*(ops.sa_errno))( cred );
 }
 
 const char *
@@ -498,5 +359,5 @@ g_slurm_auth_errstr( int slurm_errno )
         if (( generic = (char *) slurm_auth_generic_errstr( slurm_errno ) ))
                 return generic;
 
-        return (*(g_context->ops.sa_errstr))( slurm_errno );
+        return (*(ops.sa_errstr))( slurm_errno );
 }

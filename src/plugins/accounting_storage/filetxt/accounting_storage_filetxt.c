@@ -39,6 +39,7 @@
 \*****************************************************************************/
 
 #include <strings.h>
+#include "src/common/node_select.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "filetxt_jobacct_process.h"
 

@@ -79,6 +79,13 @@
  */
 typedef void *plugin_handle_t;
 
+typedef struct {
+	plugin_handle_t	cur_plugin;
+	void *plugin_list;
+	char *type;
+} plugin_context_t;
+
+
 #define PLUGIN_INVALID_HANDLE ((void*)0)
 
 typedef enum {
@@ -87,7 +94,8 @@ typedef enum {
 	EPLUGIN_ACCESS_ERROR,    /* Access denied                       */
 	EPLUGIN_DLOPEN_FAILED,   /* Dlopen not successful               */
 	EPLUGIN_INIT_FAILED,     /* Plugin's init() callback failed     */
-	EPLUGIN_MISSING_SYMBOL   /* plugin_name/type/version missing    */
+	EPLUGIN_MISSING_NAME,    /* plugin_name/type/version missing    */
+	EPLUGIN_MISSING_SYMBOL,  /* some symbol needed isn't found      */
 } plugin_err_t;
 
 const char *plugin_strerror(plugin_err_t err);
@@ -186,5 +194,30 @@ int plugin_get_syms( plugin_handle_t plug,
 		     int n_syms,
 		     const char *names[],
 		     void *ptrs[] );
+
+
+/*
+ * Create a priority context
+ * plugin_type - IN - name of plugin major type (select)
+ * uler_type - IN - name of plugin minor type (linear)
+ * ptrs[] - IN/OUT - an array of pointers into which the addresses of the
+ *        respective symbols should be placed.  ptrs[i] will receive
+ *        the address of names[i].
+ * names[] - IN - an argv-like array of symbol names to resolve.
+ * names_size - IN - size of names[] (sizeof(names))
+ *
+ * Returns plugin_context_t on success of NULL if failed.  On success
+ * ptrs[] is filled in with the symbols from names[].
+ *
+ * Free memory with plugin_context_destroy
+ */
+extern plugin_context_t *plugin_context_create(
+	const char *plugin_type, const char *uler_type,
+	void *ptrs[], const char *names[], size_t names_size);
+
+/*
+ * Destroy a context created from plugin_context_create.
+ */
+extern int plugin_context_destroy(plugin_context_t *c);
 
 #endif /*__GENERIC_PLUGIN_H__*/

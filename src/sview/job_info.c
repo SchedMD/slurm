@@ -1211,7 +1211,17 @@ static int _get_node_cnt(job_info_t * job)
 {
 	int node_cnt = 0;
 
-	if (IS_JOB_PENDING(job) || IS_JOB_COMPLETING(job)) {
+	/*  For PENDING jobs, return the maximum of the requested nodelist,
+	 *   requested maximum number of nodes, or requested CPUs rounded
+	 *   to nearest node.
+	 *
+	 *  For COMPLETING jobs, the job->nodes nodelist has already been
+	 *   altered to list only the nodes still in the comp state, and
+	 *   thus we count only those nodes toward the total nodes still
+	 *   allocated to this job.
+	 */
+
+	if (IS_JOB_PENDING(job)) {
 		node_cnt = _nodes_in_list(job->req_nodes);
 		node_cnt = MAX(node_cnt, job->num_nodes);
 	} else

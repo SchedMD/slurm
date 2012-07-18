@@ -147,7 +147,11 @@ if {[test_front_end] != 0} {
 # Spawn a program that generates "node_id" (%n) in stdout file names
 # and confirm they are created
 #
-set task_count [expr $node_count * 2]
+if {[test_serial]} {
+	set task_count $node_count
+} else {
+	set task_count [expr $node_count * 2]
+}
 set timeout $max_job_delay
 set srun_pid [spawn $srun -l --output=$file_out_n -N $node_count -n $task_count -O -v -t1 $bin_echo hello]
 expect {

@@ -57,12 +57,12 @@
 #include <utime.h>
 #include <grp.h>
 
+#include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
-#include "src/common/jobacct_common.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -91,6 +91,9 @@
 #include "src/slurmd/common/task_plugin.h"
 
 #define _LIMIT_INFO 0
+
+#define RETRY_DELAY 15		/* retry every 15 seconds */
+#define MAX_RETRY   240		/* retry 240 times (one hour max) */
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
@@ -129,18 +132,21 @@ static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _destroy_env(char **env);
 static int  _get_grouplist(uid_t my_uid, gid_t my_gid, int *ngroups,
 			   gid_t **groups);
+static bool _is_batch_job_finished(uint32_t job_id);
 static void _job_limits_free(void *x);
 static int  _job_limits_match(void *x, void *key);
 static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
+static void _note_batch_job_finished(uint32_t job_id);
 static int  _step_limits_match(void *x, void *key);
 static int  _terminate_all_steps(uint32_t jobid, bool batch);
 static void _rpc_launch_tasks(slurm_msg_t *);
 static void _rpc_abort_job(slurm_msg_t *);
-static void _rpc_batch_job(slurm_msg_t *);
+static void _rpc_batch_job(slurm_msg_t *msg, bool new_msg);
 static void _rpc_job_notify(slurm_msg_t *);
 static void _rpc_signal_tasks(slurm_msg_t *);
 static void _rpc_checkpoint_tasks(slurm_msg_t *);
+static void _rpc_complete_batch(slurm_msg_t *);
 static void _rpc_terminate_tasks(slurm_msg_t *);
 static void _rpc_timelimit(slurm_msg_t *);
 static void _rpc_reattach_tasks(slurm_msg_t *);
@@ -205,6 +211,11 @@ static pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
 static List job_limits_list = NULL;
 static bool job_limits_loaded = false;
 
+#define FINI_JOB_CNT 32
+static pthread_mutex_t fini_mutex = PTHREAD_MUTEX_INITIALIZER;
+static uint32_t fini_job_id[FINI_JOB_CNT];
+static int next_fini_job_inx = 0;
+
 /* NUM_PARALLEL_SUSPEND controls the number of jobs suspended/resumed
  * at one time as well as the number of jobsteps per job that can be
  * suspended at one time */
@@ -237,10 +248,11 @@ slurmd_req(slurm_msg_t *msg)
 
 	switch(msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
+		debug2("Processing RPC: REQUEST_BATCH_JOB_LAUNCH");
 		/* Mutex locking moved into _rpc_batch_job() due to
 		 * very slow prolog on Blue Gene system. Only batch
 		 * jobs are supported on Blue Gene (no job steps). */
-		_rpc_batch_job(msg);
+		_rpc_batch_job(msg, true);
 		last_slurmctld_msg = time(NULL);
 		slurm_free_job_launch_msg(msg->data);
 		break;
@@ -289,6 +301,7 @@ slurmd_req(slurm_msg_t *msg)
 		slurm_free_signal_job_msg(msg->data);
 		break;
 	case REQUEST_SUSPEND:
+		debug2("Processing RPC: REQUEST_SUSPEND");
 		_rpc_suspend_job(msg);
 		last_slurmctld_msg = time(NULL);
 		slurm_free_suspend_msg(msg->data);
@@ -305,25 +318,35 @@ slurmd_req(slurm_msg_t *msg)
 		_rpc_terminate_job(msg);
 		slurm_free_kill_job_msg(msg->data);
 		break;
+	case REQUEST_COMPLETE_BATCH_SCRIPT:
+		debug2("Processing RPC: REQUEST_COMPLETE_BATCH_SCRIPT");
+		_rpc_complete_batch(msg);
+		slurm_free_complete_batch_script_msg(msg->data);
+		break;
 	case REQUEST_UPDATE_JOB_TIME:
+		debug2("Processing RPC: REQUEST_UPDATE_JOB_TIME");
 		_rpc_update_time(msg);
 		last_slurmctld_msg = time(NULL);
 		slurm_free_update_job_time_msg(msg->data);
 		break;
 	case REQUEST_SHUTDOWN:
+		debug2("Processing RPC: REQUEST_SHUTDOWN");
 		_rpc_shutdown(msg);
 		slurm_free_shutdown_msg(msg->data);
 		break;
 	case REQUEST_RECONFIGURE:
+		debug2("Processing RPC: REQUEST_RECONFIGURE");
 		_rpc_reconfig(msg);
 		last_slurmctld_msg = time(NULL);
 		/* No body to free */
 		break;
 	case REQUEST_REBOOT_NODES:
+		debug2("Processing RPC: REQUEST_REBOOT_NODES");
 		_rpc_reboot(msg);
 		slurm_free_reboot_msg(msg->data);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
+		debug2("Processing RPC: REQUEST_NODE_REGISTRATION_STATUS");
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
 		rc = _rpc_ping(msg);
 		last_slurmctld_msg = time(NULL);
@@ -338,6 +361,7 @@ slurmd_req(slurm_msg_t *msg)
 		/* No body to free */
 		break;
 	case REQUEST_HEALTH_CHECK:
+		debug2("Processing RPC: REQUEST_HEALTH_CHECK");
 		_rpc_health_check(msg);
 		last_slurmctld_msg = time(NULL);
 		/* No body to free */
@@ -517,6 +541,9 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	/* Send GRES information to slurmstepd */
 	gres_plugin_send_stepd(fd);
 
+	/* send cpu_frequency info to slurmstepd */
+	cpu_freq_send_info(fd);
+
 	/* send req over to slurmstepd */
 	switch(type) {
 	case LAUNCH_BATCH_JOB:
@@ -538,6 +565,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	}
 	buffer = init_buf(0);
 	msg.data = req;
+	msg.protocol_version = SLURM_PROTOCOL_VERSION;
 	pack_msg(&msg, buffer);
 	len = get_buf_offset(buffer);
 	safe_write(fd, &len, sizeof(int));
@@ -810,6 +838,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		}
 		host_index = hostset_find(j_hset, conf->node_name);
 		hostset_destroy(j_hset);
+
 		if ((host_index < 0) || (host_index >= arg.job_nhosts)) {
 			error("job cr credential invalid host_index %d for "
 			      "job %u", host_index, arg.jobid);
@@ -1237,22 +1266,52 @@ _set_batch_job_limits(slurm_msg_t *msg)
 	slurm_cred_free_args(&arg);
 }
 
+/* These functions prevent a possible race condition if the batch script's
+ * complete RPC is processed before it's launch_successful response. This
+ *  */
+static bool _is_batch_job_finished(uint32_t job_id)
+{
+	bool found_job = false;
+	int i;
+
+	slurm_mutex_lock(&fini_mutex);
+	for (i = 0; i < FINI_JOB_CNT; i++) {
+		if (fini_job_id[i] == job_id) {
+			found_job = true;
+			break;
+		}
+	}
+	slurm_mutex_unlock(&fini_mutex);
+
+	return found_job;
+}
+static void _note_batch_job_finished(uint32_t job_id)
+{
+	slurm_mutex_lock(&fini_mutex);
+	fini_job_id[next_fini_job_inx] = job_id;
+	if (++next_fini_job_inx >= FINI_JOB_CNT)
+		next_fini_job_inx = 0;
+	slurm_mutex_unlock(&fini_mutex);
+}
+
 static void
-_rpc_batch_job(slurm_msg_t *msg)
+_rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 {
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
 	bool     first_job_run = true;
 	int      rc = SLURM_SUCCESS;
-	uid_t    req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	char    *resv_id = NULL;
-	bool	 replied = false;
+	bool	 replied = false, revoked;
 	slurm_addr_t *cli = &msg->orig_addr;
 
-	if (!_slurm_authorized_user(req_uid)) {
-		error("Security violation, batch launch RPC from uid %d",
-		      req_uid);
-		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
-		goto done;
+	if (new_msg) {
+		uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+		if (!_slurm_authorized_user(req_uid)) {
+			error("Security violation, batch launch RPC from uid %d",
+			      req_uid);
+			rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
+			goto done;
+		}
 	}
 	slurm_cred_handle_reissue(conf->vctx, req->cred);
 	if (slurm_cred_revoked(conf->vctx, req->cred)) {
@@ -1278,7 +1337,7 @@ _rpc_batch_job(slurm_msg_t *msg)
 		 * Just reply now and send a separate kill job request if the
 		 * prolog or launch fail. */
 		replied = true;
-		if (slurm_send_rc_msg(msg, rc) < 1) {
+		if (new_msg && (slurm_send_rc_msg(msg, rc) < 1)) {
 			/* The slurmctld is no longer waiting for a reply.
 			 * This typically indicates that the slurmd was
 			 * blocked from memory and/or CPUs and the slurmctld
@@ -1299,7 +1358,7 @@ _rpc_batch_job(slurm_msg_t *msg)
 					    SELECT_JOBDATA_BLOCK_ID, &resv_id);
 #elif defined(HAVE_CRAY)
 		resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
-					    SELECT_PRINT_RESV_ID);
+							  SELECT_PRINT_RESV_ID);
 #endif
 		rc = _run_prolog(req->job_id, req->uid, resv_id,
 				 req->spank_job_env, req->spank_job_env_size);
@@ -1351,8 +1410,16 @@ _rpc_batch_job(slurm_msg_t *msg)
 
 	/* On a busy system, slurmstepd may take a while to respond,
 	 * if the job was cancelled in the interim, run through the
-	 * abort logic below */
-	if (slurm_cred_revoked(conf->vctx, req->cred)) {
+	 * abort logic below. */
+	revoked = slurm_cred_revoked(conf->vctx, req->cred);
+	if (revoked && _is_batch_job_finished(req->job_id)) {
+		/* If configured with select/serial and the batch job already
+		 * completed, consider the job sucessfully launched and do
+		 * not repeat termination logic below, which in the worst case
+		 * just slows things down with another message. */
+		revoked = false;
+	}
+	if (revoked) {
 		info("Job %u killed while launch was in progress",
 		     req->job_id);
 		sleep(1);	/* give slurmstepd time to create
@@ -1364,7 +1431,7 @@ _rpc_batch_job(slurm_msg_t *msg)
 
 done:
 	if (!replied) {
-		if (slurm_send_rc_msg(msg, rc) < 1) {
+		if (new_msg && (slurm_send_rc_msg(msg, rc) < 1)) {
 			/* The slurmctld is no longer waiting for a reply.
 			 * This typically indicates that the slurmd was
 			 * blocked from memory and/or CPUs and the slurmctld
@@ -1488,12 +1555,12 @@ _abort_step(uint32_t job_id, uint32_t step_id)
 	resp.range_first  = 0;
 	resp.range_last   = 0;
 	resp.step_rc      = 1;
-	resp.jobacct      = jobacct_gather_g_create(NULL);
+	resp.jobacct      = jobacctinfo_create(NULL);
 	resp_msg.msg_type = REQUEST_STEP_COMPLETE;
 	resp_msg.data     = &resp;
 	rc2 = slurm_send_recv_controller_rc_msg(&resp_msg, &rc);
 	/* Note: we are ignoring the RPC return code */
-	jobacct_gather_g_destroy(resp.jobacct);
+	jobacctinfo_destroy(resp.jobacct);
 	return rc2;
 }
 
@@ -1752,14 +1819,14 @@ _enforce_job_mem_limit(void)
 		if ((!stepd_stat_jobacct(fd, &acct_req, resp)) &&
 		    (resp->jobacct)) {
 			/* resp->jobacct is NULL if account is disabled */
-			jobacct_common_getinfo((struct jobacctinfo *)
-					       resp->jobacct,
-					       JOBACCT_DATA_TOT_RSS,
-					       &step_rss);
-			jobacct_common_getinfo((struct jobacctinfo *)
-					       resp->jobacct,
-					       JOBACCT_DATA_TOT_VSIZE,
-					       &step_vsize);
+			jobacctinfo_getinfo((struct jobacctinfo *)
+					    resp->jobacct,
+					    JOBACCT_DATA_TOT_RSS,
+					    &step_rss);
+			jobacctinfo_getinfo((struct jobacctinfo *)
+					    resp->jobacct,
+					    JOBACCT_DATA_TOT_VSIZE,
+					    &step_vsize);
 #if _LIMIT_INFO
 			info("Step:%u.%u RSS:%u KB VSIZE:%u KB",
 			     stepd->jobid, stepd->stepid,
@@ -2142,6 +2209,7 @@ _rpc_daemon_status(slurm_msg_t *msg)
 
 	resp = xmalloc(sizeof(slurmd_status_t));
 	resp->actual_cpus        = conf->actual_cpus;
+	resp->actual_boards      = conf->actual_boards;
 	resp->actual_sockets     = conf->actual_sockets;
 	resp->actual_cores       = conf->actual_cores;
 	resp->actual_threads     = conf->actual_threads;
@@ -2985,8 +3053,9 @@ _epilog_complete(uint32_t jobid, int rc)
 	if (slurm_send_only_controller_msg(&msg) < 0) {
 		error("Unable to send epilog complete message: %m");
 		ret = SLURM_ERROR;
-	} else
+	} else {
 		debug ("Job %u: sent epilog complete msg: rc = %d", jobid, rc);
+	}
 
 	switch_g_free_node_info(&req.switch_nodeinfo);
 	return ret;
@@ -3285,7 +3354,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	}
 }
 
-/* Job shouldn't even be runnin here, abort it immediately */
+/* Job shouldn't even be running here, abort it immediately */
 static void
 _rpc_abort_job(slurm_msg_t *msg)
 {
@@ -3355,11 +3424,172 @@ _rpc_abort_job(slurm_msg_t *msg)
 				    &resv_id);
 #elif defined(HAVE_CRAY)
 	resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
-				    SELECT_PRINT_RESV_ID);
+						  SELECT_PRINT_RESV_ID);
 #endif
 	_run_epilog(req->job_id, req->job_uid, resv_id,
 		    req->spank_job_env, req->spank_job_env_size);
 	xfree(resv_id);
+}
+
+/* This is a variant of _rpc_terminate_job for use with select/serial */
+static void
+_rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id)
+{
+	int             rc     = SLURM_SUCCESS;
+	int             nsteps = 0;
+	int		delay;
+	time_t		now = time(NULL);
+	slurm_ctl_conf_t *cf;
+
+	slurmd_release_resources(job_id);
+
+	if (_waiter_init(job_id) == SLURM_ERROR)
+		return;
+
+	/*
+	 * "revoke" all future credentials for this jobid
+	 */
+	_note_batch_job_finished(job_id);
+	if (slurm_cred_revoke(conf->vctx, job_id, now, now) < 0) {
+		debug("revoking cred for job %u: %m", job_id);
+	} else {
+		save_cred_state(conf->vctx);
+		debug("credential for job %u revoked", job_id);
+	}
+
+	/*
+	 * Tasks might be stopped (possibly by a debugger)
+	 * so send SIGCONT first.
+	 */
+	_kill_all_active_steps(job_id, SIGCONT, true);
+	if (errno == ESLURMD_STEP_SUSPENDED) {
+		/*
+		 * If the job step is currently suspended, we don't
+		 * bother with a "nice" termination.
+		 */
+		debug2("Job is currently suspended, terminating");
+		nsteps = _terminate_all_steps(job_id, true);
+	} else {
+		nsteps = _kill_all_active_steps(job_id, SIGTERM, true);
+	}
+
+#ifndef HAVE_AIX
+	if ((nsteps == 0) && !conf->epilog) {
+		slurm_cred_begin_expiration(conf->vctx, job_id);
+		save_cred_state(conf->vctx);
+		_waiter_complete(job_id);
+		return;
+	}
+#endif
+
+	/*
+	 *  Check for corpses
+	 */
+	cf = slurm_conf_lock();
+	delay = MAX(cf->kill_wait, 5);
+	slurm_conf_unlock();
+	if (!_pause_for_job_completion(job_id, NULL, delay) &&
+	     _terminate_all_steps(job_id, true) ) {
+		/*
+		 *  Block until all user processes are complete.
+		 */
+		_pause_for_job_completion(job_id, NULL, 0);
+	}
+
+	/*
+	 *  Begin expiration period for cached information about job.
+	 *   If expiration period has already begun, then do not run
+	 *   the epilog again, as that script has already been executed
+	 *   for this job.
+	 */
+	if (slurm_cred_begin_expiration(conf->vctx, job_id) < 0) {
+		debug("Not running epilog for jobid %d: %m", job_id);
+		goto done;
+	}
+
+	save_cred_state(conf->vctx);
+
+	/* NOTE: We lack the job's SPANK environment variables */
+	rc = _run_epilog(job_id, (uid_t) user_id, NULL, NULL, 0);
+	if (rc) {
+		int term_sig, exit_status;
+		if (WIFSIGNALED(rc)) {
+			exit_status = 0;
+			term_sig    = WTERMSIG(rc);
+		} else {
+			exit_status = WEXITSTATUS(rc);
+			term_sig    = 0;
+		}
+		error("[job %u] epilog failed status=%d:%d",
+		      job_id, exit_status, term_sig);
+		rc = ESLURMD_EPILOG_FAILED;
+	} else
+		debug("completed epilog for jobid %u", job_id);
+
+    done:
+	_wait_state_completed(job_id, 5);
+	_waiter_complete(job_id);
+}
+
+/* This complete batch RPC came from slurmstepd because we have select/serial
+ * configured. Terminate the job here. Forward the batch completion RPC to
+ * slurmctld and possible get a new batch launch RPC in response. */
+static void
+_rpc_complete_batch(slurm_msg_t *msg)
+{
+	int		i, rc, msg_rc;
+	slurm_msg_t	req_msg, resp_msg;
+	uid_t           uid    = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	complete_batch_script_msg_t *req = msg->data;
+
+	if (!_slurm_authorized_user(uid)) {
+		error("Security violation: complete_batch(%u) from uid %d",
+		      req->job_id, uid);
+		if (msg->conn_fd >= 0)
+			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
+	}
+
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	_rpc_terminate_batch_job(req->job_id, req->user_id);
+
+	slurm_msg_t_init(&req_msg);
+	req_msg.msg_type= REQUEST_COMPLETE_BATCH_JOB;
+	req_msg.data	= msg->data;
+	for (i = 0; i <= MAX_RETRY; i++) {
+		msg_rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
+		if (msg_rc == SLURM_SUCCESS)
+			break;
+		info("Retrying job complete RPC for job %u", req->job_id);
+		sleep(RETRY_DELAY);
+	}
+	if (i > MAX_RETRY) {
+		error("Unable to send job complete message: %m");
+		return;
+	}
+
+	if (resp_msg.msg_type == RESPONSE_SLURM_RC) {
+		last_slurmctld_msg = time(NULL);
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		if (rc) {
+			error("complete_batch for job %u: %s", req->job_id,
+			      slurm_strerror(rc));
+		}
+		return;
+	}
+
+	if (resp_msg.msg_type != REQUEST_BATCH_JOB_LAUNCH) {
+		error("Invalid response msg_type (%u) to complete_batch RPC "
+		      "for job %u", resp_msg.msg_type, req->job_id);
+		return;
+	}
+
+	/* (resp_msg.msg_type == REQUEST_BATCH_JOB_LAUNCH) */
+	debug2("Processing RPC: REQUEST_BATCH_JOB_LAUNCH");
+	last_slurmctld_msg = time(NULL);
+	_rpc_batch_job(&resp_msg, false);
+	slurm_free_job_launch_msg(resp_msg.data);
 }
 
 static void
@@ -3543,7 +3773,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 				    &resv_id);
 #elif defined(HAVE_CRAY)
 	resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
-				    SELECT_PRINT_RESV_ID);
+						  SELECT_PRINT_RESV_ID);
 #endif
 	rc = _run_epilog(req->job_id, req->job_uid, resv_id,
 			 req->spank_job_env, req->spank_job_env_size);
@@ -3781,6 +4011,7 @@ _build_env(uint32_t jobid, uid_t uid, char *resv_id,
 	if (spank_job_env_size)
 		env_array_merge(&env, (const char **) spank_job_env);
 
+	setenvf(&env, "SLURM_CONF", conf->conffile);
 	setenvf(&env, "SLURM_JOB_ID", "%u", jobid);
 	setenvf(&env, "SLURM_JOB_UID",   "%u", uid);
 	name = uid_to_string(uid);
@@ -3836,7 +4067,7 @@ run_spank_job_script (const char *mode, char **env)
 
 	fd_set_close_on_exec (pfds[1]);
 
-	info ("Calling %s spank %s", conf->stepd_loc, mode);
+	debug ("Calling %s spank %s", conf->stepd_loc, mode);
 	if ((cpid = fork ()) < 0) {
 		error ("executing spank %s: %m", mode);
 		return (-1);
@@ -3848,9 +4079,6 @@ run_spank_job_script (const char *mode, char **env)
 			"spank",
 			(char *) mode,
 			NULL };
-
-		/* Set the correct slurm.conf location */
-		setenvf (&env, "SLURM_CONF", conf->conffile);
 
 		if (dup2 (pfds[0], STDIN_FILENO) < 0)
 			fatal ("dup2: %m");

@@ -51,6 +51,12 @@ dnl We need to know if this is a Q system
 AM_CONDITIONAL(BGQ_LOADED, test "x$ac_bgq_loaded" = "xyes")
 AC_SUBST(BGQ_LOADED)
 
+dnl ok now check if We are on a real L or P system, (test if to build srun
+dnl or not.  If we are emulating things we should build it.
+AM_CONDITIONAL(REAL_BGQ_LOADED, test "x$ac_real_bluegene_loaded" = "xyes")
+AC_SUBST(REAL_BGQ_LOADED)
+
+
 dnl ok now check if any bluegene was loaded.
 AM_CONDITIONAL(BLUEGENE_LOADED, test "x$ac_bluegene_loaded" = "xyes")
 AC_SUBST(BLUEGENE_LOADED)
@@ -118,7 +124,7 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  pty.h utmp.h \
 		 sys/syslog.h linux/sched.h \
 		 kstat.h paths.h limits.h sys/statfs.h sys/ptrace.h sys/termios.h \
-		 llapi.h nrt.h \
+		 llapi.h \
 		)
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
@@ -282,17 +288,9 @@ else
 fi
 AC_SUBST(SLURM_PREFIX)
 
-dnl check for whether to include Elan support
+dnl check for whether to include IBM NRT (Network Resource Table) support
 dnl
-X_AC_ELAN
-AM_CONDITIONAL(HAVE_ELAN, test "x$ac_have_elan" = "xyes")
-AC_SUBST(HAVE_ELAN)
-
-dnl check for whether to include Federation support
-dnl
-X_AC_FEDERATION
-AM_CONDITIONAL(HAVE_FEDERATION, test "x$ac_have_federation" = "xyes")
-AC_SUBST(HAVE_FEDERATION)
+X_AC_NRT
 
 dnl check for SGI job container support
 dnl
@@ -431,6 +429,7 @@ AC_CONFIG_FILES([Makefile
 		 src/sdiag/Makefile
 		 src/sprio/Makefile
 		 src/srun/Makefile
+		 src/srun/libsrun/Makefile
 		 src/srun_cr/Makefile
 		 src/slurmd/Makefile
 		 src/slurmd/common/Makefile
@@ -488,6 +487,10 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/job_submit/logging/Makefile
 		 src/plugins/job_submit/lua/Makefile
 		 src/plugins/job_submit/partition/Makefile
+		 src/plugins/launch/Makefile
+		 src/plugins/launch/poe/Makefile
+		 src/plugins/launch/runjob/Makefile
+		 src/plugins/launch/slurm/Makefile
 		 src/plugins/preempt/Makefile
 		 src/plugins/preempt/none/Makefile
 		 src/plugins/preempt/partition_prio/Makefile
@@ -500,7 +503,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/proctrack/cgroup/Makefile
 		 src/plugins/proctrack/pgid/Makefile
 		 src/plugins/proctrack/linuxproc/Makefile
-		 src/plugins/proctrack/rms/Makefile
 		 src/plugins/proctrack/sgi_job/Makefile
 		 src/plugins/proctrack/lua/Makefile
 		 src/plugins/sched/Makefile
@@ -521,10 +523,11 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/cray/libalps/Makefile
 		 src/plugins/select/cray/libemulate/Makefile
 		 src/plugins/select/linear/Makefile
+		 src/plugins/select/serial/Makefile
 		 src/plugins/switch/Makefile
-		 src/plugins/switch/elan/Makefile
 		 src/plugins/switch/none/Makefile
-		 src/plugins/switch/federation/Makefile
+		 src/plugins/switch/nrt/Makefile
+		 src/plugins/switch/nrt/libpermapi/Makefile
 		 src/plugins/mpi/Makefile
 		 src/plugins/mpi/mpich1_p4/Makefile
 		 src/plugins/mpi/mpich1_shmem/Makefile

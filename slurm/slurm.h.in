@@ -422,7 +422,8 @@ enum jobacct_data_type {
 	JOBACCT_DATA_TOT_PAGES,	/* data-> uint32_t psize */
 	JOBACCT_DATA_MIN_CPU,	/* data-> uint32_t psize */
 	JOBACCT_DATA_MIN_CPU_ID,	/* data-> jobacct_id_t psize */
-	JOBACCT_DATA_TOT_CPU	/* data-> uint32_t psize */
+	JOBACCT_DATA_TOT_CPU,	/* data-> uint32_t psize */
+	JOBACCT_DATA_CPU_CYCLES /* data-> uint32_t psize */
 };
 
 /* Possible task distributions across the nodes */
@@ -458,6 +459,7 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
 	CPU_BIND_TO_CORES  = 0x04, /* =cores */
 	CPU_BIND_TO_SOCKETS= 0x08, /* =sockets */
 	CPU_BIND_TO_LDOMS  = 0x10, /* locality domains */
+	CPU_BIND_TO_BOARDS = 0x1000, /* =boards */
 	/* the following manual binding flags are mutually exclusive */
 	/* CPU_BIND_NONE needs to be the lowest value among manual bindings */
 	CPU_BIND_NONE	   = 0x20, /* =no */
@@ -472,6 +474,13 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
 	 * the contents of TaskPluginParams */
 	CPU_BIND_CPUSETS   = 0x8000
 } cpu_bind_type_t;
+
+/* Flag to indicate that cpu_freq is a range: low,medium,high
+ * instead of an integer value in kilohertz */
+#define CPU_FREQ_RANGE_FLAG 0x80000000
+#define CPU_FREQ_LOW        0x80000001
+#define CPU_FREQ_MEDIUM     0x80000002
+#define CPU_FREQ_HIGH       0x80000003
 
 typedef enum mem_bind_type {    /* memory binding type from --mem_bind=... */
 	/* verbose can be set with any other flag */
@@ -526,6 +535,7 @@ enum node_states {
  * Values can be can be ORed */
 #define SHOW_ALL	0x0001	/* Show info for "hidden" partitions */
 #define SHOW_DETAIL	0x0002	/* Show detailed resource information */
+#define SHOW_DETAIL2	0x0004	/* Show batch script listing */
 
 /* Define keys for ctx_key argument of slurm_step_ctx_get() */
 enum ctx_keys {
@@ -553,6 +563,9 @@ enum ctx_keys {
 #define CR_CORE		0x0004	/* Resources are shared down to the core level.
 				 * Jobs will not be co-allocated within a
 				 * core. */
+#define CR_BOARD	0x0008	/* Resources are shared down to the board
+				 * level. Jobs will not be co-allocated
+				 * within a board. */
 #define CR_MEMORY	0x0010	/* Memory as consumable resources. Memory is
 				 * not over-commited when selected as a CR. */
 
@@ -996,6 +1009,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default=0 */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job,
 				 * default=0 */
+	uint16_t boards_per_node; /* boards per node required by job  */
+	uint16_t sockets_per_board;/* sockets per board required by job */
 	uint16_t sockets_per_node;/* sockets per node required by job */
 	uint16_t cores_per_socket;/* cores per socket required by job */
 	uint16_t threads_per_core;/* threads per core required by job */
@@ -1003,6 +1018,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on
 				    * each socket */
 	uint16_t ntasks_per_core;/* number of tasks to invoke on each core */
+	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */
 	uint16_t pn_min_cpus;    /* minimum # CPUs per node, default=0 */
 	uint32_t pn_min_memory;  /* minimum real memory per node OR
 				  * real memory per CPU | MEM_PER_CPU,
@@ -1067,9 +1083,11 @@ typedef struct job_info {
 	char *licenses;		/* licenses required by the job */
 	uint32_t max_cpus;	/* maximum number of cpus usable by job */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job */
-	uint16_t sockets_per_node;/* sockets per node required by job */
-	uint16_t cores_per_socket;/* cores per socket required by job */
-	uint16_t threads_per_core;/* threads per core required by job */
+	uint16_t boards_per_node;  /* boards per node required by job   */
+	uint16_t sockets_per_board;/* sockets per board required by job */
+	uint16_t sockets_per_node; /* sockets per node required by job  */
+	uint16_t cores_per_socket; /* cores per socket required by job  */
+	uint16_t threads_per_core; /* threads per core required by job  */
 	char *name;		/* name of the job */
 	char *network;		/* network specification */
 	char *nodes;		/* list of nodes allocated to job */
@@ -1079,7 +1097,8 @@ typedef struct job_info {
 				 * start_range_2, .., -1  */
 	uint16_t ntasks_per_core;/* number of tasks to invoke on each core */
 	uint16_t ntasks_per_node;/* number of tasks to invoke on each node */
-	uint16_t ntasks_per_socket;/* number of tasks to invoke on each socket */
+	uint16_t ntasks_per_socket;/* number of tasks to invoke on each socket*/
+	uint16_t ntasks_per_board; /* number of tasks to invoke on each board */
 
 	uint32_t num_nodes;	/* minimum number of nodes required by job */
 	uint32_t num_cpus;	/* minimum number of cpus required by job */
@@ -1120,12 +1139,24 @@ typedef struct job_info {
 	uint32_t wait4switch;   /* Maximum time to wait for minimum switches */
 	char *wckey;            /* wckey for job */
 	char *work_dir;		/* pathname of working directory */
-} job_info_t;
+} slurm_job_info_t;
+
+#ifndef __PERMAPI__H__
+/* If on an IBM PERCS machine the libpermapi.so file we generate in
+ * the switch/nrt plugin will need to link to this file and the
+ * permapi.h file which both have a job_info_t structure defined in
+ * it.  So to avoid conflict only define job_info_t if we haven't
+ * included that file first.  Then when in the libpermapi environment
+ * we can use slurm_job_info_t to access the job_info_t data.  If not
+ * in that environment we should never know anything changed.
+ */
+typedef slurm_job_info_t job_info_t;
+#endif
 
 typedef struct job_info_msg {
 	time_t last_update;	/* time of latest info */
 	uint32_t record_count;	/* number of records */
-	job_info_t *job_array;	/* the job records */
+	slurm_job_info_t *job_array;	/* the job records */
 } job_info_msg_t;
 
 typedef struct step_update_request_msg {
@@ -1228,6 +1259,7 @@ typedef struct suspend_msg {
 typedef struct {
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
 	uint32_t cpu_count;	/* number of required processors */
+	uint32_t cpu_freq;	/* requested cpu frequency */
 	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
 	char *features;		/* required node features, default NONE */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
@@ -1289,6 +1321,7 @@ typedef struct {
 	char *task_epilog;
 	uint16_t cpu_bind_type;	/* use cpu_bind_type_t */
 	char *cpu_bind;
+	uint32_t cpu_freq;      /* requested cpu frequency */
 	uint16_t mem_bind_type;	/* use mem_bind_type_t */
 	char *mem_bind;
 
@@ -1344,6 +1377,7 @@ typedef struct {
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	uint32_t num_cpus;	/* how many cpus are being used by step */
+	uint32_t cpu_freq;	/* requested cpu frequency */
 	uint32_t num_tasks;	/* number of tasks */
 	char *partition;	/* name of assigned partition */
 	char *resv_ports;	/* ports allocated for MPI */
@@ -1391,8 +1425,9 @@ typedef struct {
 
 typedef struct node_info {
 	char *arch;		/* computer architecture */
+	uint16_t boards;        /* total number of boards per node  */
 	time_t boot_time;	/* time of node boot */
-	uint16_t cores;         /* number of cores per CPU */
+	uint16_t cores;         /* number of cores per socket       */
 	uint16_t cpus;		/* configured count of cpus running on
 				 * the node */
 	char *features;		/* list of a node's features */
@@ -1409,7 +1444,7 @@ typedef struct node_info {
 	uint32_t reason_uid;   	/* User that set the reason, ignore if
 				 * no reason is set. */
 	time_t slurmd_start_time;/* time of slurmd startup */
-	uint16_t sockets;       /* number of sockets per node */
+	uint16_t sockets;       /* total number of sockets per node */
 	uint16_t threads;       /* number of threads per core */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
 	uint32_t weight;	/* arbitrary priority of node for scheduling */
@@ -1679,6 +1714,8 @@ void slurm_init_update_block_msg PARAMS((update_block_msg_t *update_block_msg));
 #define RESERVE_FLAG_NO_LIC_ONLY 0x0200	/* Clear reserve licenses only flag */
 #define RESERVE_FLAG_STATIC     0x0400 /* Static node allocation */
 #define RESERVE_FLAG_NO_STATIC  0x0800 /* Clear static node allocation */
+#define RESERVE_FLAG_PART_NODES 0x1000	/* Use Partition Nodes only */
+#define RESERVE_FLAG_NO_PART_NODES 0x2000 /* Clear Partition Nodes only */
 #define RESERVE_FLAG_OVERLAP	0x4000	/* Permit to overlap others */
 #define RESERVE_FLAG_SPEC_NODES	0x8000	/* Contains specific nodes */
 
@@ -1758,6 +1795,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_NO_REALTIME	0x00010000	/* get debug when the
 						 * realtime server
 						 * dies on a bluegene system */
+#define DEBUG_FLAG_SWITCH	0x00020000	/* SwitchType plugin */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
@@ -1826,6 +1864,8 @@ typedef struct slurm_ctl_conf {
 				 * inactive resource allocation is released */
 	uint16_t job_acct_gather_freq; /* poll frequency for job accounting
 					* gather plugins */
+	uint16_t xres_access_freq; /* poll frequency for 
+					* external-resource-access thread */
 	char *job_acct_gather_type; /* job accounting gather type */
 	char *job_ckpt_dir;	/* directory saving job record checkpoint */
 	char *job_comp_host;	/* job completion logging host */
@@ -1844,7 +1884,9 @@ typedef struct slurm_ctl_conf {
 				    * the processes is aborted or crashed */
 	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL
 				 * on job termination */
+	char *launch_type;	/* type of step launcher to use */
 	char *licenses;		/* licenses available on this cluster */
+	char *licenses_used;	/* licenses used on this cluster */
 	char *mail_prog;	/* pathname of mail program */
 	uint32_t max_job_cnt;	/* maximum number of active jobs */
 	uint32_t max_job_id;	/* maximum job id before using first_job_id */
@@ -1975,8 +2017,9 @@ typedef struct slurmd_status_msg {
 	time_t last_slurmctld_msg;	/* time of last slurmctld message */
 	uint16_t slurmd_debug;		/* logging level */
 	uint16_t actual_cpus;		/* actual logical processor count */
-	uint16_t actual_sockets;	/* actual sockets count */
-	uint16_t actual_cores;		/* actual core count */
+	uint16_t actual_boards;  	/* actual total boards count      */
+	uint16_t actual_sockets;	/* actual total sockets count     */
+	uint16_t actual_cores;		/* actual core per socket count   */
 	uint16_t actual_threads;	/* actual thread per core count */
 	uint32_t actual_real_mem;	/* actual real memory in MB */
 	uint32_t actual_tmp_disk;	/* actual temp disk space in MB */
@@ -2372,7 +2415,7 @@ extern int slurm_terminate_job_step PARAMS((uint32_t job_id, uint32_t step_id));
  *	in the structure that you will pass to slurm_step_ctx_create().
  *	This function will NOT allocate any new memory.
  * IN ptr - pointer to a structure allocated by the user.  The structure will
- *      be intialized.
+ *      be initialized.
  */
 extern void slurm_step_ctx_params_t_init PARAMS((slurm_step_ctx_params_t *ptr));
 
@@ -2420,14 +2463,17 @@ extern int slurm_jobinfo_ctx_get PARAMS((switch_jobinfo_t *jobinfo,
  *	to run a single process per node, regardless of the settings
  *	selected at slurm_step_ctx_create time.
  *
- *	This is primarily used on AIX by the slurm_ll_api in support of
- * 	poe.  The slurm_ll_api will want to launch a single pmd daemon
+ *	This is primarily used when launching 1 task per node as done
+ * 	with IBM's PE where we want to launch a single pmd daemon
  *	on each node regardless of the number of tasks running on each
  *	node.
  * IN ctx - job step context generated by slurm_step_ctx_create
+ * IN addr_array - address of nodes to run on
+ * IN node_cnt - number of nodes to run on
  * RET SLURM_SUCCESS or SLURM_ERROR (with slurm_errno set)
  */
-extern int slurm_step_ctx_daemon_per_node_hack PARAMS((slurm_step_ctx_t *ctx));
+extern int slurm_step_ctx_daemon_per_node_hack PARAMS(
+	(slurm_step_ctx_t *ctx, char **addr_array, uint32_t node_cnt));
 
 /*
  * slurm_step_ctx_destroy - free allocated memory for a job step context.
@@ -2441,7 +2487,7 @@ extern int slurm_step_ctx_destroy PARAMS((slurm_step_ctx_t *ctx));
  *      slurm_step_launch_params_t structure with default values.
  *	default values.  This function will NOT allocate any new memory.
  * IN ptr - pointer to a structure allocated by the use.  The structure will
- *      be intialized.
+ *      be initialized.
  */
 extern void slurm_step_launch_params_t_init
 PARAMS((slurm_step_launch_params_t *ptr));
@@ -2704,7 +2750,7 @@ extern int slurm_pid2jobid PARAMS((pid_t job_pid, uint32_t * job_id_ptr));
  * IN job_ptr - an individual job information record pointer
  * IN one_liner - print as a single line if true
  */
-extern void slurm_print_job_info PARAMS((FILE*, job_info_t * job_ptr,
+extern void slurm_print_job_info PARAMS((FILE*, slurm_job_info_t * job_ptr,
 					 int one_liner));
 
 /*
@@ -2725,7 +2771,7 @@ extern void slurm_print_job_info_msg PARAMS(
  * RET out - char * containing formatted output (must be freed after call)
  *           NULL is returned on failure.
  */
-extern char *slurm_sprint_job_info PARAMS((job_info_t * job_ptr,
+extern char *slurm_sprint_job_info PARAMS((slurm_job_info_t * job_ptr,
 					   int one_liner));
 
 /*

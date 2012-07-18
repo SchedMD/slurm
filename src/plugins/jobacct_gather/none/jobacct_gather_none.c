@@ -90,6 +90,12 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
+extern void jobacct_gather_p_poll_data(List task_list, bool pgid_plugin,
+				       uint64_t cont_id)
+{
+	return;
+}
+
 extern jobacctinfo_t *jobacct_gather_p_create(jobacct_id_t *jobacct_id)
 {
 	return NULL;
@@ -135,7 +141,7 @@ extern int jobacct_gather_p_startpoll(uint16_t frequency)
 	return SLURM_SUCCESS;
 }
 
-extern int jobacct_gather_p_endpoll()
+extern int jobacct_gather_p_endpoll(void)
 {
 	return SLURM_SUCCESS;
 }
@@ -145,12 +151,12 @@ extern void jobacct_gather_p_change_poll(uint16_t frequency)
 	return;
 }
 
-extern void jobacct_gather_p_suspend_poll()
+extern void jobacct_gather_p_suspend_poll(void)
 {
 	return;
 }
 
-extern void jobacct_gather_p_resume_poll()
+extern void jobacct_gather_p_resume_poll(void)
 {
 	return;
 }

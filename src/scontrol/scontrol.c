@@ -143,7 +143,7 @@ main (int argc, char *argv[])
 			all_flag = 1;
 			break;
 		case (int)'d':
-			detail_flag = 1;
+			detail_flag++;
 			break;
 		case (int)'h':
 			_usage ();
@@ -564,8 +564,9 @@ static int _reboot_nodes(char *node_list)
 
 	conf = slurm_conf_lock();
 	if (conf->reboot_program == NULL) {
-		fprintf (stderr, "RebootProgram isn't defined");
+		error("RebootProgram isn't defined");
 		slurm_conf_unlock();
+		slurm_seterrno(SLURM_ERROR);
 		return SLURM_ERROR;
 	}
 	slurm_conf_unlock();
@@ -704,6 +705,16 @@ _process_command (int argc, char *argv[])
 			return 0;
 		}
 		detail_flag = 1;
+	}
+	else if (strncasecmp (tag, "script", MAX(tag_len, 3)) == 0) {
+		if (argc > 1) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "too many arguments for keyword:%s\n",
+				 tag);
+			return 0;
+		}
+		detail_flag = 2;
 	}
 	else if (strncasecmp (tag, "exit", MAX(tag_len, 1)) == 0) {
 		if (argc > 1) {
@@ -1038,7 +1049,7 @@ _process_command (int argc, char *argv[])
 			}
 		}
 	}
-	else if (strncasecmp (tag, "schedloglevel", MAX(tag_len, 2)) == 0) {
+	else if (strncasecmp (tag, "schedloglevel", MAX(tag_len, 3)) == 0) {
 		if (argc > 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)

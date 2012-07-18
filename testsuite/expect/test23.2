@@ -170,7 +170,7 @@ expect {
 # Build input script file1
 #
 make_bash_script $file_in1 "
-$srun $file_in2
+$srun --mem=2 $file_in2
 
 "
 
@@ -178,7 +178,7 @@ $srun $file_in2
 # Build input script file2
 #
 make_bash_script $file_in2 "
-$srun $file_in3
+$srun --mem=2 $file_in3
 
 "
 
@@ -186,15 +186,17 @@ $srun $file_in3
 # Build input script file3
 #
 make_bash_script $file_in3 "
-$srun sleep 10
+$srun --mem=2 sleep 10
 
 "
 
 #
 # Spawn a job via srun using this account
+# NOTE: --mem option here and in scripts above to permit running more than one
+#       step per job if DefMemPerCPU or DefMemPerNode is configured.
 #
 set job_id3 0
-spawn $sbatch -N1 -t1 -v --account=$test_acct --output=/dev/null $file_in1
+spawn $sbatch -N1 -t1 -v --mem=10 --account=$test_acct --output=/dev/null $file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id3 $expect_out(1,string)

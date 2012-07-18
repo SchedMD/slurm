@@ -13,7 +13,8 @@ convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 
 sbatch_LDADD = $(convenience_libs)
 
-sbatch_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sbatch_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
 
 force:
 $(convenience_libs) : force

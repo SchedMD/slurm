@@ -651,14 +651,11 @@ lua_LIBS
 lua_CFLAGS
 HAVE_SGI_JOB_FALSE
 HAVE_SGI_JOB_TRUE
-HAVE_FEDERATION
-HAVE_FEDERATION_FALSE
-HAVE_FEDERATION_TRUE
-FEDERATION_LDFLAGS
-HAVE_ELAN
-HAVE_ELAN_FALSE
-HAVE_ELAN_TRUE
-ELAN_LIBS
+HAVE_NRT
+HAVE_NRT_FALSE
+HAVE_NRT_TRUE
+NRT_LDFLAGS
+NRT_CPPFLAGS
 SLURM_PREFIX
 SLURMCTLD_PORT_COUNT
 SLURMDBD_PORT
@@ -757,6 +754,9 @@ CMD_LDFLAGS
 BLUEGENE_LOADED
 BLUEGENE_LOADED_FALSE
 BLUEGENE_LOADED_TRUE
+REAL_BGQ_LOADED
+REAL_BGQ_LOADED_FALSE
+REAL_BGQ_LOADED_TRUE
 BGQ_LOADED
 BGQ_LOADED_FALSE
 BGQ_LOADED_TRUE
@@ -781,6 +781,7 @@ BG_INCLUDES
 am__fastdepCC_FALSE
 am__fastdepCC_TRUE
 CCDEPMODE
+am__nodep
 AMDEPBACKSLASH
 AMDEP_FALSE
 AMDEP_TRUE
@@ -927,6 +928,8 @@ with_slurmctld_port
 with_slurmd_port
 with_slurmdbd_port
 with_slurmctld_port_count
+with_nrth
+with_libnrt
 with_readline
 with_ssl
 with_munge
@@ -1617,7 +1620,7 @@ Optional Packages:
   --with-bg-serial=NAME   set BG_SERIAL value
 
   --with-proctrack=PATH   Specify path to proctrack sources
-  --with-pic              try to use only PIC/non-PIC objects [default=use
+  --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
                           both]
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-sysroot=DIR Search for dependent libraries within DIR
@@ -1639,6 +1642,8 @@ Optional Packages:
   --with-slurmdbd-port=N  set slurmdbd default port [6819]
   --with-slurmctld-port-count=N
                           set slurmctld default port count [1]
+  --with-nrth=PATH        Parent directory of nrt.h
+  --with-libnrt=PATH      Parent directory of libnrt.so
   --without-readline      compile without readline support
   --with-ssl=PATH         Specify path to OpenSSL installation
   --with-munge=PATH       Specify path to munge installation
@@ -3362,11 +3367,11 @@ MAKEINFO=${MAKEINFO-"${am_missing_run}makeinfo"}
 
 # We need awk for the "check" target.  The system "awk" is bad on
 # some platforms.
-# Always define AMTAR for backward compatibility.
+# Always define AMTAR for backward compatibility.  Yes, it's still used
+# in the wild :-(  We should find a proper way to deprecate it ...
+AMTAR='$${TAR-tar}'
 
-AMTAR=${AMTAR-"${am_missing_run}tar"}
-
-am__tar='${AMTAR} chof - "$$tardir"'; am__untar='${AMTAR} xf -'
+am__tar='$${TAR-tar} chof - "$$tardir"' am__untar='$${TAR-tar} xf -'
 
 
 
@@ -3474,6 +3479,7 @@ fi
 if test "x$enable_dependency_tracking" != xno; then
   am_depcomp="$ac_aux_dir/depcomp"
   AMDEPBACKSLASH='\'
+  am__nodep='_no'
 fi
  if test "x$enable_dependency_tracking" != xno; then
   AMDEP_TRUE=
@@ -4287,6 +4293,7 @@ else
   # instance it was reported that on HP-UX the gcc test will end up
   # making a dummy file named `D' -- because `-MD' means `put the output
   # in D'.
+  rm -rf conftest.dir
   mkdir conftest.dir
   # Copy depcomp to subdir because otherwise we won't find it if we're
   # using a relative directory.
@@ -4346,7 +4353,7 @@ else
 	break
       fi
       ;;
-    msvisualcpp | msvcmsys)
+    msvc7 | msvc7msys | msvisualcpp | msvcmsys)
       # This compiler won't grok `-c -o', but also, the minuso test has
       # not run yet.  These depmodes are late enough in the game, and
       # so weak that their functioning should not be impacted.
@@ -5023,6 +5030,7 @@ else
   # instance it was reported that on HP-UX the gcc test will end up
   # making a dummy file named `D' -- because `-MD' means `put the output
   # in D'.
+  rm -rf conftest.dir
   mkdir conftest.dir
   # Copy depcomp to subdir because otherwise we won't find it if we're
   # using a relative directory.
@@ -5082,7 +5090,7 @@ else
 	break
       fi
       ;;
-    msvisualcpp | msvcmsys)
+    msvc7 | msvc7msys | msvisualcpp | msvcmsys)
       # This compiler won't grok `-c -o', but also, the minuso test has
       # not run yet.  These depmodes are late enough in the game, and
       # so weak that their functioning should not be impacted.
@@ -5263,6 +5271,29 @@ else
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
+		# In later versions of the driver IBM added a better function
+		# to see if blocks were IO connected or not.  Here is a check
+		# to not break backwards compatibility
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <bgsched/bgsched.h>
+				#include <bgsched/Block.h>
+int
+main ()
+{
+ bgsched::Block::checkIO("", NULL, NULL);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  have_bgq_new_io_check=yes
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: Using old iocheck." >&5
+$as_echo "Using old iocheck." >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 		ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -5297,6 +5328,11 @@ $as_echo "#define HAVE_FRONT_END 1" >>confdefs.h
 $as_echo "#define HAVE_BG_FILES 1" >>confdefs.h
 
 		#AC_DEFINE_UNQUOTED(BG_BRIDGE_SO, "$soloc", [Define the BG_BRIDGE_SO value])
+		if test ! -z "$have_bgq_new_io_check" ; then
+
+$as_echo "#define HAVE_BG_NEW_IO_CHECK 1" >>confdefs.h
+
+		fi
 
     		{ $as_echo "$as_me:${as_lineno-$LINENO}: Running on a legitimate BG/Q system" >&5
 $as_echo "$as_me: Running on a legitimate BG/Q system" >&6;}
@@ -5323,6 +5359,17 @@ else
   BGQ_LOADED_TRUE='#'
   BGQ_LOADED_FALSE=
 fi
+
+
+
+ if test "x$ac_real_bluegene_loaded" = "xyes"; then
+  REAL_BGQ_LOADED_TRUE=
+  REAL_BGQ_LOADED_FALSE='#'
+else
+  REAL_BGQ_LOADED_TRUE='#'
+  REAL_BGQ_LOADED_FALSE=
+fi
+
 
 
 
@@ -6614,6 +6661,7 @@ else
   # instance it was reported that on HP-UX the gcc test will end up
   # making a dummy file named `D' -- because `-MD' means `put the output
   # in D'.
+  rm -rf conftest.dir
   mkdir conftest.dir
   # Copy depcomp to subdir because otherwise we won't find it if we're
   # using a relative directory.
@@ -6673,7 +6721,7 @@ else
 	break
       fi
       ;;
-    msvisualcpp | msvcmsys)
+    msvc7 | msvc7msys | msvisualcpp | msvcmsys)
       # This compiler won't grok `-c -o', but also, the minuso test has
       # not run yet.  These depmodes are late enough in the game, and
       # so weak that their functioning should not be impacted.
@@ -6998,6 +7046,7 @@ else
   # instance it was reported that on HP-UX the gcc test will end up
   # making a dummy file named `D' -- because `-MD' means `put the output
   # in D'.
+  rm -rf conftest.dir
   mkdir conftest.dir
   # Copy depcomp to subdir because otherwise we won't find it if we're
   # using a relative directory.
@@ -7057,7 +7106,7 @@ else
 	break
       fi
       ;;
-    msvisualcpp | msvcmsys)
+    msvc7 | msvc7msys | msvisualcpp | msvcmsys)
       # This compiler won't grok `-c -o', but also, the minuso test has
       # not run yet.  These depmodes are late enough in the game, and
       # so weak that their functioning should not be impacted.
@@ -7151,8 +7200,8 @@ esac
 
 
 
-macro_version='2.4'
-macro_revision='1.3293'
+macro_version='2.4.2'
+macro_revision='1.3337'
 
 
 
@@ -7796,6 +7845,11 @@ else
     lt_cv_sys_max_cmd_len=196608
     ;;
 
+  os2*)
+    # The test takes a long time on OS/2.
+    lt_cv_sys_max_cmd_len=8192
+    ;;
+
   osf*)
     # Dr. Hans Ekkehard Plesser reports seeing a kernel panic running configure
     # due to this test when exec_disable_arg_limit is 1 on Tru64. It is not
@@ -7835,7 +7889,7 @@ else
       # If test is not a shell built-in, we'll probably end up computing a
       # maximum length that is only half of the actual maximum length, but
       # we can't tell.
-      while { test "X"`func_fallback_echo "$teststring$teststring" 2>/dev/null` \
+      while { test "X"`env echo "$teststring$teststring" 2>/dev/null` \
 	         = "X$teststring$teststring"; } >/dev/null 2>&1 &&
 	      test $i != 17 # 1/2 MB should be enough
       do
@@ -8264,7 +8318,7 @@ irix5* | irix6* | nonstopux*)
   lt_cv_deplibs_check_method=pass_all
   ;;
 
-# This must be Linux ELF.
+# This must be glibc/ELF.
 linux* | k*bsd*-gnu | kopensolaris*-gnu)
   lt_cv_deplibs_check_method=pass_all
   ;;
@@ -8904,13 +8958,13 @@ old_postuninstall_cmds=
 if test -n "$RANLIB"; then
   case $host_os in
   openbsd*)
-    old_postinstall_cmds="$old_postinstall_cmds~\$RANLIB -t \$oldlib"
+    old_postinstall_cmds="$old_postinstall_cmds~\$RANLIB -t \$tool_oldlib"
     ;;
   *)
-    old_postinstall_cmds="$old_postinstall_cmds~\$RANLIB \$oldlib"
+    old_postinstall_cmds="$old_postinstall_cmds~\$RANLIB \$tool_oldlib"
     ;;
   esac
-  old_archive_cmds="$old_archive_cmds~\$RANLIB \$oldlib"
+  old_archive_cmds="$old_archive_cmds~\$RANLIB \$tool_oldlib"
 fi
 
 case $host_os in
@@ -9057,6 +9111,7 @@ for ac_symprfx in "" "_"; do
     # which start with @ or ?.
     lt_cv_sys_global_symbol_pipe="$AWK '"\
 "     {last_section=section; section=\$ 3};"\
+"     /^COFF SYMBOL TABLE/{for(i in hide) delete hide[i]};"\
 "     /Section length .*#relocs.*(pick any)/{hide[last_section]=1};"\
 "     \$ 0!~/External *\|/{next};"\
 "     / 0+ UNDEF /{next}; / UNDEF \([^|]\)*()/{next};"\
@@ -9445,7 +9500,7 @@ $as_echo "$lt_cv_cc_needs_belf" >&6; }
     CFLAGS="$SAVE_CFLAGS"
   fi
   ;;
-sparc*-*solaris*)
+*-*solaris*)
   # Find out which ABI we are using.
   echo 'int i;' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
@@ -9456,7 +9511,20 @@ sparc*-*solaris*)
     case `/usr/bin/file conftest.o` in
     *64-bit*)
       case $lt_cv_prog_gnu_ld in
-      yes*) LD="${LD-ld} -m elf64_sparc" ;;
+      yes*)
+        case $host in
+        i?86-*-solaris*)
+          LD="${LD-ld} -m elf_x86_64"
+          ;;
+        sparc*-*-solaris*)
+          LD="${LD-ld} -m elf64_sparc"
+          ;;
+        esac
+        # GNU ld 2.21 introduced _sol2 emulations.  Use them if available.
+        if ${LD-ld} -V | grep _sol2 >/dev/null 2>&1; then
+          LD="${LD-ld}_sol2"
+        fi
+        ;;
       *)
 	if ${LD-ld} -64 -r -o conftest2.o conftest.o >/dev/null 2>&1; then
 	  LD="${LD-ld} -64"
@@ -10096,7 +10164,13 @@ else
 	$LTCC $LTCFLAGS $LDFLAGS -o libconftest.dylib \
 	  -dynamiclib -Wl,-single_module conftest.c 2>conftest.err
         _lt_result=$?
-	if test -f libconftest.dylib && test ! -s conftest.err && test $_lt_result = 0; then
+	# If there is a non-empty error log, and "single_module"
+	# appears in it, assume the flag caused a linker warning
+        if test -s conftest.err && $GREP single_module conftest.err; then
+	  cat conftest.err >&5
+	# Otherwise, if the output was created with a 0 exit code from
+	# the compiler, it worked.
+	elif test -f libconftest.dylib && test $_lt_result -eq 0; then
 	  lt_cv_apple_cc_single_mod=yes
 	else
 	  cat conftest.err >&5
@@ -10107,6 +10181,7 @@ else
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $lt_cv_apple_cc_single_mod" >&5
 $as_echo "$lt_cv_apple_cc_single_mod" >&6; }
+
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for -exported_symbols_list linker flag" >&5
 $as_echo_n "checking for -exported_symbols_list linker flag... " >&6; }
 if ${lt_cv_ld_exported_symbols_list+:} false; then :
@@ -10139,6 +10214,7 @@ rm -f core conftest.err conftest.$ac_objext \
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $lt_cv_ld_exported_symbols_list" >&5
 $as_echo "$lt_cv_ld_exported_symbols_list" >&6; }
+
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for -force_load linker flag" >&5
 $as_echo_n "checking for -force_load linker flag... " >&6; }
 if ${lt_cv_ld_force_load+:} false; then :
@@ -10160,7 +10236,9 @@ _LT_EOF
       echo "$LTCC $LTCFLAGS $LDFLAGS -o conftest conftest.c -Wl,-force_load,./libconftest.a" >&5
       $LTCC $LTCFLAGS $LDFLAGS -o conftest conftest.c -Wl,-force_load,./libconftest.a 2>conftest.err
       _lt_result=$?
-      if test -f conftest && test ! -s conftest.err && test $_lt_result = 0 && $GREP forced_load conftest 2>&1 >/dev/null; then
+      if test -s conftest.err && $GREP force_load conftest.err; then
+	cat conftest.err >&5
+      elif test -f conftest && test $_lt_result -eq 0 && $GREP forced_load conftest >/dev/null 2>&1 ; then
 	lt_cv_ld_force_load=yes
       else
 	cat conftest.err >&5
@@ -10308,7 +10386,22 @@ fi
 
 # Check whether --with-pic was given.
 if test "${with_pic+set}" = set; then :
-  withval=$with_pic; pic_mode="$withval"
+  withval=$with_pic; lt_p=${PACKAGE-default}
+    case $withval in
+    yes|no) pic_mode=$withval ;;
+    *)
+      pic_mode=default
+      # Look at the argument we got.  We use all the common list separators.
+      lt_save_ifs="$IFS"; IFS="${IFS}$PATH_SEPARATOR,"
+      for lt_pkg in $withval; do
+	IFS="$lt_save_ifs"
+	if test "X$lt_pkg" = "X$lt_p"; then
+	  pic_mode=yes
+	fi
+      done
+      IFS="$lt_save_ifs"
+      ;;
+    esac
 else
   pic_mode=default
 fi
@@ -10360,6 +10453,10 @@ LIBTOOL_DEPS="$ltmain"
 
 # Always use our own libtool.
 LIBTOOL='$(SHELL) $(top_builddir)/libtool'
+
+
+
+
 
 
 
@@ -10845,7 +10942,9 @@ lt_prog_compiler_static=
     case $cc_basename in
     nvcc*) # Cuda Compiler Driver 2.2
       lt_prog_compiler_wl='-Xlinker '
-      lt_prog_compiler_pic='-Xcompiler -fPIC'
+      if test -n "$lt_prog_compiler_pic"; then
+        lt_prog_compiler_pic="-Xcompiler $lt_prog_compiler_pic"
+      fi
       ;;
     esac
   else
@@ -10936,17 +11035,32 @@ lt_prog_compiler_static=
 	;;
       *)
 	case `$CC -V 2>&1 | sed 5q` in
-	*Sun\ F* | *Sun*Fortran*)
+	*Sun\ Ceres\ Fortran* | *Sun*Fortran*\ [1-7].* | *Sun*Fortran*\ 8.[0-3]*)
 	  # Sun Fortran 8.3 passes all unrecognized flags to the linker
 	  lt_prog_compiler_pic='-KPIC'
 	  lt_prog_compiler_static='-Bstatic'
 	  lt_prog_compiler_wl=''
+	  ;;
+	*Sun\ F* | *Sun*Fortran*)
+	  lt_prog_compiler_pic='-KPIC'
+	  lt_prog_compiler_static='-Bstatic'
+	  lt_prog_compiler_wl='-Qoption ld '
 	  ;;
 	*Sun\ C*)
 	  # Sun C 5.9
 	  lt_prog_compiler_pic='-KPIC'
 	  lt_prog_compiler_static='-Bstatic'
 	  lt_prog_compiler_wl='-Wl,'
+	  ;;
+        *Intel*\ [CF]*Compiler*)
+	  lt_prog_compiler_wl='-Wl,'
+	  lt_prog_compiler_pic='-fPIC'
+	  lt_prog_compiler_static='-static'
+	  ;;
+	*Portland\ Group*)
+	  lt_prog_compiler_wl='-Wl,'
+	  lt_prog_compiler_pic='-fpic'
+	  lt_prog_compiler_static='-Bstatic'
 	  ;;
 	esac
 	;;
@@ -11309,7 +11423,6 @@ $as_echo_n "checking whether the $compiler linker ($LD) supports shared librarie
   hardcode_direct=no
   hardcode_direct_absolute=no
   hardcode_libdir_flag_spec=
-  hardcode_libdir_flag_spec_ld=
   hardcode_libdir_separator=
   hardcode_minus_L=no
   hardcode_shlibpath_var=unsupported
@@ -11562,8 +11675,7 @@ _LT_EOF
 	xlf* | bgf* | bgxlf* | mpixlf*)
 	  # IBM XL Fortran 10.1 on PPC cannot create shared libs itself
 	  whole_archive_flag_spec='--whole-archive$convenience --no-whole-archive'
-	  hardcode_libdir_flag_spec=
-	  hardcode_libdir_flag_spec_ld='-rpath $libdir'
+	  hardcode_libdir_flag_spec='${wl}-rpath ${wl}$libdir'
 	  archive_cmds='$LD -shared $libobjs $deplibs $linker_flags -soname $soname -o $lib'
 	  if test "x$supports_anon_versioning" = xyes; then
 	    archive_expsym_cmds='echo "{ global:" > $output_objdir/$libname.ver~
@@ -11943,6 +12055,7 @@ fi
 	# The linker will not automatically build a static lib if we build a DLL.
 	# _LT_TAGVAR(old_archive_from_new_cmds, )='true'
 	enable_shared_with_static_runtimes=yes
+	exclude_expsyms='_NULL_IMPORT_DESCRIPTOR|_IMPORT_DESCRIPTOR_.*'
 	export_symbols_cmds='$NM $libobjs $convenience | $global_symbol_pipe | $SED -e '\''/^[BCDGRS][ ]/s/.*[ ]\([^ ]*\)/\1,DATA/'\'' | $SED -e '\''/^[AITW][ ]/s/.*[ ]//'\'' | sort | uniq > $export_symbols'
 	# Don't use ranlib
 	old_postinstall_cmds='chmod 644 $oldlib'
@@ -11988,6 +12101,7 @@ fi
   hardcode_shlibpath_var=unsupported
   if test "$lt_cv_ld_force_load" = "yes"; then
     whole_archive_flag_spec='`for conv in $convenience\"\"; do test  -n \"$conv\" && new_convenience=\"$new_convenience ${wl}-force_load,$conv\"; done; func_echo_all \"$new_convenience\"`'
+
   else
     whole_archive_flag_spec=''
   fi
@@ -12016,10 +12130,6 @@ fi
       hardcode_shlibpath_var=no
       ;;
 
-    freebsd1*)
-      ld_shlibs=no
-      ;;
-
     # FreeBSD 2.2.[012] allows us to include c++rt0.o to get C++ constructor
     # support.  Future versions do this automatically, but an explicit c++rt0.o
     # does not break anything, and helps significantly (at the cost of a little
@@ -12032,7 +12142,7 @@ fi
       ;;
 
     # Unfortunately, older versions of FreeBSD 2 do not have this feature.
-    freebsd2*)
+    freebsd2.*)
       archive_cmds='$LD -Bshareable -o $lib $libobjs $deplibs $linker_flags'
       hardcode_direct=yes
       hardcode_minus_L=yes
@@ -12071,7 +12181,6 @@ fi
       fi
       if test "$with_gnu_ld" = no; then
 	hardcode_libdir_flag_spec='${wl}+b ${wl}$libdir'
-	hardcode_libdir_flag_spec_ld='+b $libdir'
 	hardcode_libdir_separator=:
 	hardcode_direct=yes
 	hardcode_direct_absolute=yes
@@ -12695,11 +12804,6 @@ esac
 
 
 
-
-
-
-
-
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking dynamic linker characteristics" >&5
 $as_echo_n "checking dynamic linker characteristics... " >&6; }
 
@@ -12789,7 +12893,7 @@ need_version=unknown
 
 case $host_os in
 aix3*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   library_names_spec='${libname}${release}${shared_ext}$versuffix $libname.a'
   shlibpath_var=LIBPATH
 
@@ -12798,7 +12902,7 @@ aix3*)
   ;;
 
 aix[4-9]*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
   hardcode_into_libs=yes
@@ -12863,7 +12967,7 @@ beos*)
   ;;
 
 bsdi[45]*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_version=no
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
   soname_spec='${libname}${release}${shared_ext}$major'
@@ -13002,16 +13106,12 @@ darwin* | rhapsody*)
   ;;
 
 dgux*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname$shared_ext'
   soname_spec='${libname}${release}${shared_ext}$major'
   shlibpath_var=LD_LIBRARY_PATH
-  ;;
-
-freebsd1*)
-  dynamic_linker=no
   ;;
 
 freebsd* | dragonfly*)
@@ -13021,7 +13121,7 @@ freebsd* | dragonfly*)
     objformat=`/usr/bin/objformat`
   else
     case $host_os in
-    freebsd[123]*) objformat=aout ;;
+    freebsd[23].*) objformat=aout ;;
     *) objformat=elf ;;
     esac
   fi
@@ -13039,7 +13139,7 @@ freebsd* | dragonfly*)
   esac
   shlibpath_var=LD_LIBRARY_PATH
   case $host_os in
-  freebsd2*)
+  freebsd2.*)
     shlibpath_overrides_runpath=yes
     ;;
   freebsd3.[01]* | freebsdelf3.[01]*)
@@ -13059,7 +13159,7 @@ freebsd* | dragonfly*)
   ;;
 
 gnu*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}${major} ${libname}${shared_ext}'
@@ -13070,7 +13170,7 @@ gnu*)
   ;;
 
 haiku*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
   dynamic_linker="$host_os runtime_loader"
@@ -13131,7 +13231,7 @@ hpux9* | hpux10* | hpux11*)
   ;;
 
 interix[3-9]*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major ${libname}${shared_ext}'
@@ -13147,7 +13247,7 @@ irix5* | irix6* | nonstopux*)
     nonstopux*) version_type=nonstopux ;;
     *)
 	if test "$lt_cv_prog_gnu_ld" = yes; then
-		version_type=linux
+		version_type=linux # correct to gnu/linux during the next big refactor
 	else
 		version_type=irix
 	fi ;;
@@ -13184,9 +13284,9 @@ linux*oldld* | linux*aout* | linux*coff*)
   dynamic_linker=no
   ;;
 
-# This must be Linux ELF.
+# This must be glibc/ELF.
 linux* | k*bsd*-gnu | kopensolaris*-gnu)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
@@ -13280,7 +13380,7 @@ netbsd*)
   ;;
 
 newsos6)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
   shlibpath_var=LD_LIBRARY_PATH
   shlibpath_overrides_runpath=yes
@@ -13349,7 +13449,7 @@ rdos*)
   ;;
 
 solaris*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
@@ -13374,7 +13474,7 @@ sunos4*)
   ;;
 
 sysv4 | sysv4.3*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
   soname_spec='${libname}${release}${shared_ext}$major'
   shlibpath_var=LD_LIBRARY_PATH
@@ -13398,7 +13498,7 @@ sysv4 | sysv4.3*)
 
 sysv4*MP*)
   if test -d /usr/nec ;then
-    version_type=linux
+    version_type=linux # correct to gnu/linux during the next big refactor
     library_names_spec='$libname${shared_ext}.$versuffix $libname${shared_ext}.$major $libname${shared_ext}'
     soname_spec='$libname${shared_ext}.$major'
     shlibpath_var=LD_LIBRARY_PATH
@@ -13429,7 +13529,7 @@ sysv5* | sco3.2v5* | sco5v6* | unixware* | OpenUNIX* | sysv4*uw2*)
 
 tpf*)
   # TPF is a cross-target only.  Preferred cross-host = GNU/Linux.
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
@@ -13439,7 +13539,7 @@ tpf*)
   ;;
 
 uts4*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
   soname_spec='${libname}${release}${shared_ext}$major'
   shlibpath_var=LD_LIBRARY_PATH
@@ -14364,7 +14464,6 @@ export_dynamic_flag_spec_CXX=
 hardcode_direct_CXX=no
 hardcode_direct_absolute_CXX=no
 hardcode_libdir_flag_spec_CXX=
-hardcode_libdir_flag_spec_ld_CXX=
 hardcode_libdir_separator_CXX=
 hardcode_minus_L_CXX=no
 hardcode_shlibpath_var_CXX=unsupported
@@ -14948,6 +15047,7 @@ fi
   hardcode_shlibpath_var_CXX=unsupported
   if test "$lt_cv_ld_force_load" = "yes"; then
     whole_archive_flag_spec_CXX='`for conv in $convenience\"\"; do test  -n \"$conv\" && new_convenience=\"$new_convenience ${wl}-force_load,$conv\"; done; func_echo_all \"$new_convenience\"`'
+
   else
     whole_archive_flag_spec_CXX=''
   fi
@@ -14992,7 +15092,7 @@ fi
         esac
         ;;
 
-      freebsd[12]*)
+      freebsd2.*)
         # C++ shared libraries reported to be fairly broken before
 	# switch to ELF
         ld_shlibs_CXX=no
@@ -15668,6 +15768,7 @@ _lt_libdeps_save_CFLAGS=$CFLAGS
 case "$CC $CFLAGS " in #(
 *\ -flto*\ *) CFLAGS="$CFLAGS -fno-lto" ;;
 *\ -fwhopr*\ *) CFLAGS="$CFLAGS -fno-whopr" ;;
+*\ -fuse-linker-plugin*\ *) CFLAGS="$CFLAGS -fno-use-linker-plugin" ;;
 esac
 
 if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
@@ -16457,7 +16558,9 @@ $as_echo_n "checking whether the $compiler linker ($LD) supports shared librarie
     ;;
   cygwin* | mingw* | cegcc*)
     case $cc_basename in
-    cl*) ;;
+    cl*)
+      exclude_expsyms_CXX='_NULL_IMPORT_DESCRIPTOR|_IMPORT_DESCRIPTOR_.*'
+      ;;
     *)
       export_symbols_cmds_CXX='$NM $libobjs $convenience | $global_symbol_pipe | $SED -e '\''/^[BCDGRS][ ]/s/.*[ ]\([^ ]*\)/\1 DATA/;s/^.*[ ]__nm__\([^ ]*\)[ ][^ ]*/\1 DATA/;/^I[ ]/d;/^[AITW][ ]/s/.* //'\'' | sort | uniq > $export_symbols'
       exclude_expsyms_CXX='[_]+GLOBAL_OFFSET_TABLE_|[_]+GLOBAL__[FID]_.*|[_]+head_[A-Za-z0-9_]+_dll|[A-Za-z0-9_]+_dll_iname'
@@ -16613,8 +16716,6 @@ esac
 
 
 
-
-
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking dynamic linker characteristics" >&5
 $as_echo_n "checking dynamic linker characteristics... " >&6; }
 
@@ -16640,7 +16741,7 @@ need_version=unknown
 
 case $host_os in
 aix3*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   library_names_spec='${libname}${release}${shared_ext}$versuffix $libname.a'
   shlibpath_var=LIBPATH
 
@@ -16649,7 +16750,7 @@ aix3*)
   ;;
 
 aix[4-9]*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
   hardcode_into_libs=yes
@@ -16714,7 +16815,7 @@ beos*)
   ;;
 
 bsdi[45]*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_version=no
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
   soname_spec='${libname}${release}${shared_ext}$major'
@@ -16851,16 +16952,12 @@ darwin* | rhapsody*)
   ;;
 
 dgux*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname$shared_ext'
   soname_spec='${libname}${release}${shared_ext}$major'
   shlibpath_var=LD_LIBRARY_PATH
-  ;;
-
-freebsd1*)
-  dynamic_linker=no
   ;;
 
 freebsd* | dragonfly*)
@@ -16870,7 +16967,7 @@ freebsd* | dragonfly*)
     objformat=`/usr/bin/objformat`
   else
     case $host_os in
-    freebsd[123]*) objformat=aout ;;
+    freebsd[23].*) objformat=aout ;;
     *) objformat=elf ;;
     esac
   fi
@@ -16888,7 +16985,7 @@ freebsd* | dragonfly*)
   esac
   shlibpath_var=LD_LIBRARY_PATH
   case $host_os in
-  freebsd2*)
+  freebsd2.*)
     shlibpath_overrides_runpath=yes
     ;;
   freebsd3.[01]* | freebsdelf3.[01]*)
@@ -16908,7 +17005,7 @@ freebsd* | dragonfly*)
   ;;
 
 gnu*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}${major} ${libname}${shared_ext}'
@@ -16919,7 +17016,7 @@ gnu*)
   ;;
 
 haiku*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
   dynamic_linker="$host_os runtime_loader"
@@ -16980,7 +17077,7 @@ hpux9* | hpux10* | hpux11*)
   ;;
 
 interix[3-9]*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major ${libname}${shared_ext}'
@@ -16996,7 +17093,7 @@ irix5* | irix6* | nonstopux*)
     nonstopux*) version_type=nonstopux ;;
     *)
 	if test "$lt_cv_prog_gnu_ld" = yes; then
-		version_type=linux
+		version_type=linux # correct to gnu/linux during the next big refactor
 	else
 		version_type=irix
 	fi ;;
@@ -17033,9 +17130,9 @@ linux*oldld* | linux*aout* | linux*coff*)
   dynamic_linker=no
   ;;
 
-# This must be Linux ELF.
+# This must be glibc/ELF.
 linux* | k*bsd*-gnu | kopensolaris*-gnu)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
@@ -17129,7 +17226,7 @@ netbsd*)
   ;;
 
 newsos6)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
   shlibpath_var=LD_LIBRARY_PATH
   shlibpath_overrides_runpath=yes
@@ -17198,7 +17295,7 @@ rdos*)
   ;;
 
 solaris*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
@@ -17223,7 +17320,7 @@ sunos4*)
   ;;
 
 sysv4 | sysv4.3*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
   soname_spec='${libname}${release}${shared_ext}$major'
   shlibpath_var=LD_LIBRARY_PATH
@@ -17247,7 +17344,7 @@ sysv4 | sysv4.3*)
 
 sysv4*MP*)
   if test -d /usr/nec ;then
-    version_type=linux
+    version_type=linux # correct to gnu/linux during the next big refactor
     library_names_spec='$libname${shared_ext}.$versuffix $libname${shared_ext}.$major $libname${shared_ext}'
     soname_spec='$libname${shared_ext}.$major'
     shlibpath_var=LD_LIBRARY_PATH
@@ -17278,7 +17375,7 @@ sysv5* | sco3.2v5* | sco5v6* | unixware* | OpenUNIX* | sysv4*uw2*)
 
 tpf*)
   # TPF is a cross-target only.  Preferred cross-host = GNU/Linux.
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   need_lib_prefix=no
   need_version=no
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
@@ -17288,7 +17385,7 @@ tpf*)
   ;;
 
 uts4*)
-  version_type=linux
+  version_type=linux # correct to gnu/linux during the next big refactor
   library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major $libname${shared_ext}'
   soname_spec='${libname}${release}${shared_ext}$major'
   shlibpath_var=LD_LIBRARY_PATH
@@ -17414,6 +17511,8 @@ ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
 
 
 
@@ -17808,7 +17907,7 @@ for ac_header in mcheck.h values.h socket.h sys/socket.h  \
                  pty.h utmp.h \
 		 sys/syslog.h linux/sched.h \
 		 kstat.h paths.h limits.h sys/statfs.h sys/ptrace.h sys/termios.h \
-		 llapi.h nrt.h \
+		 llapi.h \
 
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
@@ -21091,268 +21190,86 @@ fi
 
 
 
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for rms_prgcreate in -lrmscall" >&5
-$as_echo_n "checking for rms_prgcreate in -lrmscall... " >&6; }
-if ${ac_cv_lib_rmscall_rms_prgcreate+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lrmscall  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
+   nrt_default_dirs="/usr/include"
 
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char rms_prgcreate ();
-int
-main ()
-{
-return rms_prgcreate ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_rmscall_rms_prgcreate=yes
-else
-  ac_cv_lib_rmscall_rms_prgcreate=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_rmscall_rms_prgcreate" >&5
-$as_echo "$ac_cv_lib_rmscall_rms_prgcreate" >&6; }
-if test "x$ac_cv_lib_rmscall_rms_prgcreate" = xyes; then :
-  ac_elan_have_rmscall=yes; ELAN_LIBS="-lrmscall"
+# Check whether --with-nrth was given.
+if test "${with_nrth+set}" = set; then :
+  withval=$with_nrth;  nrt_default_dirs="$withval $nrt_default_dirs"
 fi
 
-
-   if test "$ac_elan_have_rmscall" != "yes" ; then
-       { $as_echo "$as_me:${as_lineno-$LINENO}: Cannot support QsNet without librmscall" >&5
-$as_echo "$as_me: Cannot support QsNet without librmscall" >&6;}
-   fi
-
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for elan3_create in -lelan3" >&5
-$as_echo_n "checking for elan3_create in -lelan3... " >&6; }
-if ${ac_cv_lib_elan3_elan3_create+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lelan3  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char elan3_create ();
-int
-main ()
-{
-return elan3_create ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_elan3_elan3_create=yes
-else
-  ac_cv_lib_elan3_elan3_create=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_elan3_elan3_create" >&5
-$as_echo "$ac_cv_lib_elan3_elan3_create" >&6; }
-if test "x$ac_cv_lib_elan3_elan3_create" = xyes; then :
-  ac_elan_have_elan3=yes
-else
-  ac_elan_noelan3=1
-fi
-
-
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for elanctrl_open in -lelanctrl" >&5
-$as_echo_n "checking for elanctrl_open in -lelanctrl... " >&6; }
-if ${ac_cv_lib_elanctrl_elanctrl_open+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lelanctrl  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char elanctrl_open ();
-int
-main ()
-{
-return elanctrl_open ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_elanctrl_elanctrl_open=yes
-else
-  ac_cv_lib_elanctrl_elanctrl_open=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_elanctrl_elanctrl_open" >&5
-$as_echo "$ac_cv_lib_elanctrl_elanctrl_open" >&6; }
-if test "x$ac_cv_lib_elanctrl_elanctrl_open" = xyes; then :
-  ac_elan_have_elanctrl=yes
-else
-  ac_elan_noelanctrl=1
-fi
-
-
-   if test "$ac_elan_have_elan3" = "yes"; then
-
-$as_echo "#define HAVE_LIBELAN3 1" >>confdefs.h
-
-      ELAN_LIBS="$ELAN_LIBS -lelan3"
-      test "$ac_elan_have_rmscall" = "yes" && ac_have_elan="yes"
-   elif test "$ac_elan_have_elanctrl" = "yes"; then
-
-$as_echo "#define HAVE_LIBELANCTRL 1" >>confdefs.h
-
-      ELAN_LIBS="$ELAN_LIBS -lelanctrl"
-      test "$ac_elan_have_rmscall" = "yes" && ac_have_elan="yes"
-   else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: Cannot support QsNet without libelan3 or libelanctrl!" >&5
-$as_echo "$as_me: Cannot support QsNet without libelan3 or libelanctrl!" >&6;}
-   fi
-
-   if test "$ac_have_elan" = yes; then
-     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for elanhost_config_create in -lelanhosts" >&5
-$as_echo_n "checking for elanhost_config_create in -lelanhosts... " >&6; }
-if ${ac_cv_lib_elanhosts_elanhost_config_create+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lelanhosts  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char elanhost_config_create ();
-int
-main ()
-{
-return elanhost_config_create ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_elanhosts_elanhost_config_create=yes
-else
-  ac_cv_lib_elanhosts_elanhost_config_create=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_elanhosts_elanhost_config_create" >&5
-$as_echo "$ac_cv_lib_elanhosts_elanhost_config_create" >&6; }
-if test "x$ac_cv_lib_elanhosts_elanhost_config_create" = xyes; then :
-  ac_elan_have_elanhosts=yes
-fi
-
-
-     if test "$ac_elan_have_elanhosts" = "yes"; then
-
-$as_echo "#define HAVE_LIBELANHOSTS 1" >>confdefs.h
-
-        ELAN_LIBS="$ELAN_LIBS -lelanhosts"
-     else
-        ac_have_elan="no"
-        { $as_echo "$as_me:${as_lineno-$LINENO}: Cannot build QsNet modules without libelanhosts" >&5
-$as_echo "$as_me: Cannot build QsNet modules without libelanhosts" >&6;}
-     fi
-   fi
-
-
-
- if test "x$ac_have_elan" = "xyes"; then
-  HAVE_ELAN_TRUE=
-  HAVE_ELAN_FALSE='#'
-else
-  HAVE_ELAN_TRUE='#'
-  HAVE_ELAN_FALSE=
-fi
-
-
-
-
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable AIX Federation switch support" >&5
-$as_echo_n "checking whether to enable AIX Federation switch support... " >&6; }
-   ntbl_default_dirs="/usr/lib"
-   for ntbl_dir in $ntbl_default_dirs; do
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking Checking NRT header file" >&5
+$as_echo_n "checking Checking NRT header file... " >&6; }
+   for nrt_dir in $nrt_default_dirs; do
       # skip dirs that don't exist
-      if test ! -z "$ntbl_dir" -a ! -d "$ntbl_dir" ; then
+      if test ! -z "$nrt_dir" -a ! -d "$nrt_dir" ; then
          continue;
       fi
-
-      if test "$OBJECT_MODE" = "64"; then
-	 libntbl="ntbl_64"
-      else
-         libntbl="ntbl"
+      # search for required NRT API libraries
+      if test -f "$nrt_dir/nrt.h"; then
+         ac_have_nrt_h="yes"
+         NRT_CPPFLAGS="-I$nrt_dir"
+	 break;
       fi
-
-      # search for required NTBL API libraries
-      if test -f "$ntbl_dir/lib${libntbl}.so"; then
-         ac_have_federation="yes"
-         FEDERATION_LDFLAGS="-l$libntbl"
-         break;
-      fi
-
    done
-
-   if test "x$ac_have_federation" != "xyes" ; then
+   if test "x$ac_have_nrt_h" != "xyes" ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-      { $as_echo "$as_me:${as_lineno-$LINENO}: Cannot support Federation without libntbl" >&5
-$as_echo "$as_me: Cannot support Federation without libntbl" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: Cannot support IBM NRT API without nrt.h" >&5
+$as_echo "$as_me: Cannot support IBM NRT API without nrt.h" >&6;}
+   else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+   fi
+
+
+
+   nrt_default_dirs="/usr/lib64 /usr/lib"
+
+# Check whether --with-libnrt was given.
+if test "${with_libnrt+set}" = set; then :
+  withval=$with_libnrt;  nrt_default_dirs="$withval $nrt_default_dirs"
+fi
+
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable IBM NRT support" >&5
+$as_echo_n "checking whether to enable IBM NRT support... " >&6; }
+   for nrt_dir in $nrt_default_dirs; do
+      # skip dirs that don't exist
+      if test ! -z "$nrt_dir" -a ! -d "$nrt_dir" ; then
+         continue;
+      fi
+      # search for required NRT API libraries
+      if test -f "$nrt_dir/libnrt.so"; then
+         ac_have_libnrt="yes"
+         NRT_LDFLAGS="-L$nrt_dir -lnrt"
+	 break;
+      fi
+   done
+
+
+   if test "x$ac_have_libnrt" != "xyes" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+      { $as_echo "$as_me:${as_lineno-$LINENO}: Cannot support IBM NRT API without libnrt." >&5
+$as_echo "$as_me: Cannot support IBM NRT API without libnrt." >&6;}
    else
       { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
-$as_echo "#define HAVE_LIBNTBL 1" >>confdefs.h
+$as_echo "#define HAVE_LIBNRT 1" >>confdefs.h
 
    fi
 
-
-
- if test "x$ac_have_federation" = "xyes"; then
-  HAVE_FEDERATION_TRUE=
-  HAVE_FEDERATION_FALSE='#'
+   if test "x$ac_have_nrt_h" == "xyes" && test "x$ac_have_libnrt" == "xyes"; then
+      ac_have_nrt="yes"
+   fi
+    if test "x$ac_have_nrt" = "xyes"; then
+  HAVE_NRT_TRUE=
+  HAVE_NRT_FALSE='#'
 else
-  HAVE_FEDERATION_TRUE='#'
-  HAVE_FEDERATION_FALSE=
+  HAVE_NRT_TRUE='#'
+  HAVE_NRT_FALSE=
 fi
+
 
 
 
@@ -22266,7 +22183,7 @@ fi
 
 
 
-ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/arrayrun/Makefile contribs/cray/Makefile contribs/lua/Makefile contribs/pam/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm/Makefile contribs/perlapi/libslurm/perl/Makefile.PL contribs/perlapi/libslurmdb/Makefile contribs/perlapi/libslurmdb/perl/Makefile.PL contribs/torque/Makefile contribs/phpext/Makefile contribs/phpext/slurm_php/config.m4 contribs/sjobexit/Makefile contribs/slurmdb-direct/Makefile src/Makefile src/api/Makefile src/common/Makefile src/db_api/Makefile src/database/Makefile src/sacct/Makefile src/sacctmgr/Makefile src/sreport/Makefile src/sstat/Makefile src/sshare/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/sdiag/Makefile src/sprio/Makefile src/srun/Makefile src/srun_cr/Makefile src/slurmd/Makefile src/slurmd/common/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/common/Makefile src/plugins/accounting_storage/filetxt/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/pgsql/Makefile src/plugins/accounting_storage/none/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/checkpoint/blcr/Makefile src/plugins/checkpoint/blcr/cr_checkpoint.sh src/plugins/checkpoint/blcr/cr_restart.sh src/plugins/crypto/Makefile src/plugins/crypto/munge/Makefile src/plugins/crypto/openssl/Makefile src/plugins/gres/Makefile src/plugins/gres/gpu/Makefile src/plugins/gres/nic/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobacct_gather/aix/Makefile src/plugins/jobacct_gather/cgroup/Makefile src/plugins/jobacct_gather/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/pgsql/Makefile src/plugins/job_submit/Makefile src/plugins/job_submit/cnode/Makefile src/plugins/job_submit/defaults/Makefile src/plugins/job_submit/logging/Makefile src/plugins/job_submit/lua/Makefile src/plugins/job_submit/partition/Makefile src/plugins/preempt/Makefile src/plugins/preempt/none/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/cgroup/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/proctrack/lua/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/ba/Makefile src/plugins/select/bluegene/ba_bgq/Makefile src/plugins/select/bluegene/bl/Makefile src/plugins/select/bluegene/bl_bgq/Makefile src/plugins/select/bluegene/sfree/Makefile src/plugins/select/cons_res/Makefile src/plugins/select/cray/Makefile src/plugins/select/cray/libalps/Makefile src/plugins/select/cray/libemulate/Makefile src/plugins/select/linear/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/mpi/pmi2/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/cgroup/Makefile src/plugins/task/none/Makefile src/plugins/topology/Makefile src/plugins/topology/3d_torus/Makefile src/plugins/topology/node_rank/Makefile src/plugins/topology/none/Makefile src/plugins/topology/tree/Makefile doc/Makefile doc/man/Makefile doc/man/man1/Makefile doc/man/man3/Makefile doc/man/man5/Makefile doc/man/man8/Makefile doc/html/Makefile doc/html/configurator.html doc/html/configurator.easy.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile testsuite/slurm_unit/common/Makefile"
+ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/arrayrun/Makefile contribs/cray/Makefile contribs/lua/Makefile contribs/pam/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm/Makefile contribs/perlapi/libslurm/perl/Makefile.PL contribs/perlapi/libslurmdb/Makefile contribs/perlapi/libslurmdb/perl/Makefile.PL contribs/torque/Makefile contribs/phpext/Makefile contribs/phpext/slurm_php/config.m4 contribs/sjobexit/Makefile contribs/slurmdb-direct/Makefile src/Makefile src/api/Makefile src/common/Makefile src/db_api/Makefile src/database/Makefile src/sacct/Makefile src/sacctmgr/Makefile src/sreport/Makefile src/sstat/Makefile src/sshare/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/sdiag/Makefile src/sprio/Makefile src/srun/Makefile src/srun/libsrun/Makefile src/srun_cr/Makefile src/slurmd/Makefile src/slurmd/common/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/common/Makefile src/plugins/accounting_storage/filetxt/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/pgsql/Makefile src/plugins/accounting_storage/none/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/checkpoint/blcr/Makefile src/plugins/checkpoint/blcr/cr_checkpoint.sh src/plugins/checkpoint/blcr/cr_restart.sh src/plugins/crypto/Makefile src/plugins/crypto/munge/Makefile src/plugins/crypto/openssl/Makefile src/plugins/gres/Makefile src/plugins/gres/gpu/Makefile src/plugins/gres/nic/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobacct_gather/aix/Makefile src/plugins/jobacct_gather/cgroup/Makefile src/plugins/jobacct_gather/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/pgsql/Makefile src/plugins/job_submit/Makefile src/plugins/job_submit/cnode/Makefile src/plugins/job_submit/defaults/Makefile src/plugins/job_submit/logging/Makefile src/plugins/job_submit/lua/Makefile src/plugins/job_submit/partition/Makefile src/plugins/launch/Makefile src/plugins/launch/poe/Makefile src/plugins/launch/runjob/Makefile src/plugins/launch/slurm/Makefile src/plugins/preempt/Makefile src/plugins/preempt/none/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/cgroup/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/proctrack/lua/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/ba/Makefile src/plugins/select/bluegene/ba_bgq/Makefile src/plugins/select/bluegene/bl/Makefile src/plugins/select/bluegene/bl_bgq/Makefile src/plugins/select/bluegene/sfree/Makefile src/plugins/select/cons_res/Makefile src/plugins/select/cray/Makefile src/plugins/select/cray/libalps/Makefile src/plugins/select/cray/libemulate/Makefile src/plugins/select/linear/Makefile src/plugins/select/serial/Makefile src/plugins/switch/Makefile src/plugins/switch/none/Makefile src/plugins/switch/nrt/Makefile src/plugins/switch/nrt/libpermapi/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/mpi/pmi2/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/cgroup/Makefile src/plugins/task/none/Makefile src/plugins/topology/Makefile src/plugins/topology/3d_torus/Makefile src/plugins/topology/node_rank/Makefile src/plugins/topology/none/Makefile src/plugins/topology/tree/Makefile doc/Makefile doc/man/Makefile doc/man/man1/Makefile doc/man/man3/Makefile doc/man/man5/Makefile doc/man/man8/Makefile doc/html/Makefile doc/html/configurator.html doc/html/configurator.easy.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile testsuite/slurm_unit/common/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -22418,6 +22335,10 @@ if test -z "${BGQ_LOADED_TRUE}" && test -z "${BGQ_LOADED_FALSE}"; then
   as_fn_error $? "conditional \"BGQ_LOADED\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${REAL_BGQ_LOADED_TRUE}" && test -z "${REAL_BGQ_LOADED_FALSE}"; then
+  as_fn_error $? "conditional \"REAL_BGQ_LOADED\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${BLUEGENE_LOADED_TRUE}" && test -z "${BLUEGENE_LOADED_FALSE}"; then
   as_fn_error $? "conditional \"BLUEGENE_LOADED\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -22503,12 +22424,8 @@ if test -z "${DEBUG_MODULES_TRUE}" && test -z "${DEBUG_MODULES_FALSE}"; then
   as_fn_error $? "conditional \"DEBUG_MODULES\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${HAVE_ELAN_TRUE}" && test -z "${HAVE_ELAN_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_ELAN\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_FEDERATION_TRUE}" && test -z "${HAVE_FEDERATION_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_FEDERATION\" was never defined.
+if test -z "${HAVE_NRT_TRUE}" && test -z "${HAVE_NRT_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_NRT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_SGI_JOB_TRUE}" && test -z "${HAVE_SGI_JOB_FALSE}"; then
@@ -23167,6 +23084,7 @@ pic_mode='`$ECHO "$pic_mode" | $SED "$delay_single_quote_subst"`'
 enable_fast_install='`$ECHO "$enable_fast_install" | $SED "$delay_single_quote_subst"`'
 SHELL='`$ECHO "$SHELL" | $SED "$delay_single_quote_subst"`'
 ECHO='`$ECHO "$ECHO" | $SED "$delay_single_quote_subst"`'
+PATH_SEPARATOR='`$ECHO "$PATH_SEPARATOR" | $SED "$delay_single_quote_subst"`'
 host_alias='`$ECHO "$host_alias" | $SED "$delay_single_quote_subst"`'
 host='`$ECHO "$host" | $SED "$delay_single_quote_subst"`'
 host_os='`$ECHO "$host_os" | $SED "$delay_single_quote_subst"`'
@@ -23249,7 +23167,6 @@ with_gnu_ld='`$ECHO "$with_gnu_ld" | $SED "$delay_single_quote_subst"`'
 allow_undefined_flag='`$ECHO "$allow_undefined_flag" | $SED "$delay_single_quote_subst"`'
 no_undefined_flag='`$ECHO "$no_undefined_flag" | $SED "$delay_single_quote_subst"`'
 hardcode_libdir_flag_spec='`$ECHO "$hardcode_libdir_flag_spec" | $SED "$delay_single_quote_subst"`'
-hardcode_libdir_flag_spec_ld='`$ECHO "$hardcode_libdir_flag_spec_ld" | $SED "$delay_single_quote_subst"`'
 hardcode_libdir_separator='`$ECHO "$hardcode_libdir_separator" | $SED "$delay_single_quote_subst"`'
 hardcode_direct='`$ECHO "$hardcode_direct" | $SED "$delay_single_quote_subst"`'
 hardcode_direct_absolute='`$ECHO "$hardcode_direct_absolute" | $SED "$delay_single_quote_subst"`'
@@ -23321,7 +23238,6 @@ with_gnu_ld_CXX='`$ECHO "$with_gnu_ld_CXX" | $SED "$delay_single_quote_subst"`'
 allow_undefined_flag_CXX='`$ECHO "$allow_undefined_flag_CXX" | $SED "$delay_single_quote_subst"`'
 no_undefined_flag_CXX='`$ECHO "$no_undefined_flag_CXX" | $SED "$delay_single_quote_subst"`'
 hardcode_libdir_flag_spec_CXX='`$ECHO "$hardcode_libdir_flag_spec_CXX" | $SED "$delay_single_quote_subst"`'
-hardcode_libdir_flag_spec_ld_CXX='`$ECHO "$hardcode_libdir_flag_spec_ld_CXX" | $SED "$delay_single_quote_subst"`'
 hardcode_libdir_separator_CXX='`$ECHO "$hardcode_libdir_separator_CXX" | $SED "$delay_single_quote_subst"`'
 hardcode_direct_CXX='`$ECHO "$hardcode_direct_CXX" | $SED "$delay_single_quote_subst"`'
 hardcode_direct_absolute_CXX='`$ECHO "$hardcode_direct_absolute_CXX" | $SED "$delay_single_quote_subst"`'
@@ -23360,6 +23276,7 @@ _LTECHO_EOF'
 # Quote evaled strings.
 for var in SHELL \
 ECHO \
+PATH_SEPARATOR \
 SED \
 GREP \
 EGREP \
@@ -23410,7 +23327,6 @@ with_gnu_ld \
 allow_undefined_flag \
 no_undefined_flag \
 hardcode_libdir_flag_spec \
-hardcode_libdir_flag_spec_ld \
 hardcode_libdir_separator \
 exclude_expsyms \
 include_expsyms \
@@ -23444,7 +23360,6 @@ with_gnu_ld_CXX \
 allow_undefined_flag_CXX \
 no_undefined_flag_CXX \
 hardcode_libdir_flag_spec_CXX \
-hardcode_libdir_flag_spec_ld_CXX \
 hardcode_libdir_separator_CXX \
 exclude_expsyms_CXX \
 include_expsyms_CXX \
@@ -23574,6 +23489,7 @@ do
     "src/sdiag/Makefile") CONFIG_FILES="$CONFIG_FILES src/sdiag/Makefile" ;;
     "src/sprio/Makefile") CONFIG_FILES="$CONFIG_FILES src/sprio/Makefile" ;;
     "src/srun/Makefile") CONFIG_FILES="$CONFIG_FILES src/srun/Makefile" ;;
+    "src/srun/libsrun/Makefile") CONFIG_FILES="$CONFIG_FILES src/srun/libsrun/Makefile" ;;
     "src/srun_cr/Makefile") CONFIG_FILES="$CONFIG_FILES src/srun_cr/Makefile" ;;
     "src/slurmd/Makefile") CONFIG_FILES="$CONFIG_FILES src/slurmd/Makefile" ;;
     "src/slurmd/common/Makefile") CONFIG_FILES="$CONFIG_FILES src/slurmd/common/Makefile" ;;
@@ -23631,6 +23547,10 @@ do
     "src/plugins/job_submit/logging/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/job_submit/logging/Makefile" ;;
     "src/plugins/job_submit/lua/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/job_submit/lua/Makefile" ;;
     "src/plugins/job_submit/partition/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/job_submit/partition/Makefile" ;;
+    "src/plugins/launch/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/launch/Makefile" ;;
+    "src/plugins/launch/poe/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/launch/poe/Makefile" ;;
+    "src/plugins/launch/runjob/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/launch/runjob/Makefile" ;;
+    "src/plugins/launch/slurm/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/launch/slurm/Makefile" ;;
     "src/plugins/preempt/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/preempt/Makefile" ;;
     "src/plugins/preempt/none/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/preempt/none/Makefile" ;;
     "src/plugins/preempt/partition_prio/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/preempt/partition_prio/Makefile" ;;
@@ -23643,7 +23563,6 @@ do
     "src/plugins/proctrack/cgroup/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/cgroup/Makefile" ;;
     "src/plugins/proctrack/pgid/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/pgid/Makefile" ;;
     "src/plugins/proctrack/linuxproc/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/linuxproc/Makefile" ;;
-    "src/plugins/proctrack/rms/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/rms/Makefile" ;;
     "src/plugins/proctrack/sgi_job/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/sgi_job/Makefile" ;;
     "src/plugins/proctrack/lua/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/lua/Makefile" ;;
     "src/plugins/sched/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/sched/Makefile" ;;
@@ -23664,10 +23583,11 @@ do
     "src/plugins/select/cray/libalps/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/select/cray/libalps/Makefile" ;;
     "src/plugins/select/cray/libemulate/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/select/cray/libemulate/Makefile" ;;
     "src/plugins/select/linear/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/select/linear/Makefile" ;;
+    "src/plugins/select/serial/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/select/serial/Makefile" ;;
     "src/plugins/switch/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/Makefile" ;;
-    "src/plugins/switch/elan/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/elan/Makefile" ;;
     "src/plugins/switch/none/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/none/Makefile" ;;
-    "src/plugins/switch/federation/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/federation/Makefile" ;;
+    "src/plugins/switch/nrt/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/nrt/Makefile" ;;
+    "src/plugins/switch/nrt/libpermapi/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/switch/nrt/libpermapi/Makefile" ;;
     "src/plugins/mpi/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/mpi/Makefile" ;;
     "src/plugins/mpi/mpich1_p4/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/mpi/mpich1_p4/Makefile" ;;
     "src/plugins/mpi/mpich1_shmem/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/mpi/mpich1_shmem/Makefile" ;;
@@ -24413,8 +24333,8 @@ $as_echo X"$file" |
 # NOTE: Changes made to this file will be lost: look at ltmain.sh.
 #
 #   Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2003, 2004, 2005,
-#                 2006, 2007, 2008, 2009, 2010 Free Software Foundation,
-#                 Inc.
+#                 2006, 2007, 2008, 2009, 2010, 2011 Free Software
+#                 Foundation, Inc.
 #   Written by Gordon Matzigkeit, 1996
 #
 #   This file is part of GNU Libtool.
@@ -24467,6 +24387,9 @@ SHELL=$lt_SHELL
 
 # An echo program that protects backslashes.
 ECHO=$lt_ECHO
+
+# The PATH separator for the build system.
+PATH_SEPARATOR=$lt_PATH_SEPARATOR
 
 # The host system.
 host_alias=$host_alias
@@ -24768,10 +24691,6 @@ no_undefined_flag=$lt_no_undefined_flag
 # Flag to hardcode \$libdir into a binary during linking.
 # This must work even if \$libdir does not exist
 hardcode_libdir_flag_spec=$lt_hardcode_libdir_flag_spec
-
-# If ld is used when linking, flag to hardcode \$libdir into a binary
-# during linking.  This must work even if \$libdir does not exist.
-hardcode_libdir_flag_spec_ld=$lt_hardcode_libdir_flag_spec_ld
 
 # Whether we need a single "-rpath" flag with a separated argument.
 hardcode_libdir_separator=$lt_hardcode_libdir_separator
@@ -25114,10 +25033,6 @@ no_undefined_flag=$lt_no_undefined_flag_CXX
 # Flag to hardcode \$libdir into a binary during linking.
 # This must work even if \$libdir does not exist
 hardcode_libdir_flag_spec=$lt_hardcode_libdir_flag_spec_CXX
-
-# If ld is used when linking, flag to hardcode \$libdir into a binary
-# during linking.  This must work even if \$libdir does not exist.
-hardcode_libdir_flag_spec_ld=$lt_hardcode_libdir_flag_spec_ld_CXX
 
 # Whether we need a single "-rpath" flag with a separated argument.
 hardcode_libdir_separator=$lt_hardcode_libdir_separator_CXX

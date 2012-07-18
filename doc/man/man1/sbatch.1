@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 2.4" "October 2011" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 2.5" "June 2012" "SLURM Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to SLURM.
@@ -495,6 +495,7 @@ The batch script will only be submitted to the controller if the resources
 necessary to grant its job allocation are immediately available.  If the
 job allocation will have to wait in a queue of pending jobs, the batch script
 will not be submitted.
+NOTE: There is limitted support for this option with batch jobs.
 
 .TP
 \fB\-i\fR, \fB\-\-input\fR=<\fIfilename pattern\fR>
@@ -510,12 +511,11 @@ The filename pattern may contain one or more replacement symbols, which are
 a percent sign "%" followed by a letter (e.g. %j).
 
 Supported replacement symbols are:
-.PD 0
-.RS 10
+.PD
+.RS
 .TP
 \fB%j\fR
 Job allocation number.
-.PD 0
 .TP
 \fB%N\fR
 Node name.  Only one file is created, so %N will be replaced by the name of the
@@ -550,10 +550,10 @@ range of allocated nodes.
 \fB\-L\fR, \fB\-\-licenses\fR=<\fBlicense\fR>
 Specification of licenses (or other resources available on all
 nodes of the cluster) which must be allocated to this job.
-License names can be followed by an asterisk and count
+License names can be followed by a colon and count
 (the default count is one).
 Multiple license names should be comma separated (e.g.
-"\-\-licenses=foo*4,bar").
+"\-\-licenses=foo:4,bar").
 
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
@@ -631,8 +631,13 @@ Inside the hostfile must contain at minimum the number of hosts
 requested and be one per line or comma separated.  If specifying a
 task count (\fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>), your tasks
 will be laid out on the nodes in the order of the file.
-.TP
+.br
+\fBNOTE:\fR The arbitrary distribution option on a job allocation only
+controls the nodes to be allocated to the job and not the allocation of
+CPUs on those nodes. This option is meant primarily to control a job step's
+task layout in an existing job allocation for the srun command.
 
+.TP
 Second distribution method:
 .TP
 .B block
@@ -667,6 +672,10 @@ This parameter would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR).
 Also see \fB\-\-mem\-per\-cpu\fR.
 \fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
+NOTE: Enforcement of memory limits currently requires enabling of
+accounting, which samples memory use on a periodic basis (data need
+not be stored, just collected). A task may exceed the memory limit 
+until the next periodic accounting sample.
 
 .TP
 \fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>
@@ -793,18 +802,105 @@ that the \fB\-\-cpus\-per\-task\fR option will change this default.
 .TP
 \fB\-\-network\fR=<\fItype\fR>
 Specify the communication protocol to be used.
-This option is supported on AIX systems.
-Since POE is used to launch tasks, this option is not normally used or
-is specified using the \fBSLURM_NETWORK\fR environment variable.
 The interpretation of \fItype\fR is system dependent.
-For systems with an IBM Federation switch, the following
-comma\-separated and case insensitive types are recognized:
-\fBIP\fR (the default is user\-space), \fBSN_ALL\fR, \fBSN_SINGLE\fR,
-\fBBULK_XFER\fR and adapter names  (e.g. \fBSNI0\fR and \fBSNI1\fR).
-For more information, on IBM systems see \fIpoe\fR documentation on
-the environment variables \fBMP_EUIDEVICE\fR and \fBMP_USE_BULK_XFER\fR.
-Note that only four jobs steps may be active at once on a node with the
-\fBBULK_XFER\fR option due to limitations in the Federation switch driver.
+This option is current supported on systems with IBM's Parallel Environment (PE).
+See IBM's LoadLeveler job command keyword documentation about the keyword
+"network" for more information.
+Multiple values may be specified in a comma separated list.
+All options are case in\-sensitive.
+Supported values include:
+.RS
+.TP 12
+\fBBULK_XFER\fR[=<\fIresources\fR>]
+Enable bulk transfer of data using Remote Direct-Memory Access (RDMA).
+The optional \fIresources\fR specification is a numeric value which can have
+a suffix of "k", "K", "m", "M", "g" or "G" for kilobytes, megabytes or
+gigabytes.
+NOTE: The \fIresources\fR specification is not supported by the underlying
+IBM infrastructure as of Parallel Environment version 2.2 and no value should
+be specified at this time.
+.TP
+\fBCAU\fR=<\fIcount\fR>
+Number of Collecitve Accelleration Units (CAU) required.
+Applies only to IBM Power7-IH processors.
+Default value is zero.
+Independent CAU will be allocated for each programming interface (MPI, LAPI, etc.)
+.TP
+\fBDEVNAME\fR=<\fIname\fR>
+Specify the device name to use for communications (e.g. "eth0" or "mlx4_0").
+.TP
+\fBDEVTYPE\fR=<\fItype\fR>
+Specify the device type to use for communications.
+The supported values of \fItype\fR are:
+"IB" (InfiniBand), "HFI" (P7 Host Fabric Interface),
+"IPONLY" (IP-Only interfaces), "HPCE" (HPC Ethernet), and
+"KMUX" (Kernel Emulation of HPCE).
+The devices allocated to a job must all be of the same type.
+The default value depends upon depends upon what hardware is available and in
+order of preferences is IPONLY (which is not considered in User Space mode),
+HFI, IB, HPCE, and KMUX.
+.TP
+\fBIMMED\fR =<\fIcount\fR>
+Number of immediate send slots per window required.
+Applies only to IBM Power7-IH processors.
+Default value is zero.
+.TP
+\fBINSTANCES\fR =<\fIcount\fR>
+Specify number of network connections for each task on each network connection.
+The default instance count is 1.
+.TP
+\fBIPV4\fR
+Use Internet Protocol (IP) version 4 communications (default).
+.TP
+\fBIPV6\fR
+Use Internet Protocol (IP) version 6 communications.
+.TP
+\fBLAPI\fR
+Use the LAPI programming interface.
+.TP
+\fBMPI\fR
+Use the MPI programming interface.
+MPI is the default interface.
+.TP
+\fBPAMI\fR
+Use the PAMI programming interface.
+.TP
+\fBSN_ALL\fR
+Use all available switch networks (default).
+.TP
+\fBSN_SINGLE\fR
+Use one available switch network.
+.TP
+\fBUPC\fR
+Use the UPC programming interface.
+.TP
+\fBUS\fR
+Use User Space communications.
+.TP
+
+Some examples of network specifications:
+.TP
+\fBInstances=2,US,MPI,SN_ALL\fR
+Create two user space connections for MPI communications on every switch
+network for each task.
+.TP
+\fBUS,MPI,Instances=3,Devtype=IB\fR
+Create three user space connections for MPI communications on every InfiniBand
+network for each task.
+.TP
+\fBIPV4,LAPI,SN_Single\fR
+Create a IP version 4 connection for LAPI communications on one switch network
+for each task.
+.TP
+\fBInstances=2,US,LAPI,MPI\fR
+Create two user space connections each for LAPI and MPI communcations on every
+switch network for each task. Note that SN_ALL is the default option so every
+switch network is used. Also note that Instances=2 specifies that two
+connections are established for each protocol (LAPI and MPI) and each task.
+If there are two networks and four tasks on the node then a total
+of 32 connections are estabhished (2 instances x 2 protocols x 2 networks x
+4 tasks).
+.RE
 
 .TP
 \fB\-\-nice\fR[=\fIadjustment\fR]
@@ -1015,7 +1111,7 @@ The default max\-time is the max_switch_wait SchedulerParameter.
 Set a limit on the total run time of the job allocation.  If the
 requested time limit exceeds the partition's time limit, the job will
 be left in a PENDING state (possibly indefinitely).  The default time
-limit is the partition's time limit.  When the time limit is reached,
+limit is the partition's default time limit.  When the time limit is reached,
 each task in each job step is sent SIGTERM followed by SIGKILL.  The
 interval between signals is specified by the SLURM configuration
 parameter \fBKillWait\fR.  A time limit of zero requests that no time

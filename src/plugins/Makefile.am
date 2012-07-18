@@ -7,6 +7,7 @@ SUBDIRS = \
 	jobacct_gather		\
 	jobcomp			\
 	job_submit		\
+	launch			\
 	mpi			\
 	preempt			\
 	priority		\

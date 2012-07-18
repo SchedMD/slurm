@@ -383,7 +383,7 @@ fini:
 uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 			 const uint32_t node_i, bool cpu_type)
 {
-	uint16_t cpu_count = 0, avail_cpus = 0, num_tasks = 0;
+	uint16_t avail_cpus = 0, num_tasks = 0;
 	uint32_t core_begin    = cr_get_coremap_offset(node_i);
 	uint32_t core_end      = cr_get_coremap_offset(node_i+1);
 	uint32_t c;
@@ -522,8 +522,6 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 	} else {
 		j = avail_cpus / cpus_per_task;
 		num_tasks = MIN(num_tasks, j);
-		if (job_ptr->details->ntasks_per_node)
-			avail_cpus = num_tasks * cpus_per_task;
 	}
 
 	if ((job_ptr->details->ntasks_per_node &&
@@ -545,21 +543,10 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 			bit_clear(core_map, c);
 		else {
 			free_cores[i]--;
-			/* we have to ensure that cpu_count 
-			 * is not bigger than avail_cpus due to 
-			 * hyperthreading or this would break
-			 * the selection logic providing more
-			 * cpus than allowed after task-related data
-			 * processing of stage 3
-			 */
-			if (avail_cpus >= threads_per_core) {
+			if (avail_cpus >= threads_per_core)
 				avail_cpus -= threads_per_core;
-				cpu_count += threads_per_core;
-			}
-			else {
-				cpu_count += avail_cpus;
+			else
 				avail_cpus = 0;
-			}
 		}
 	}
 
@@ -570,10 +557,9 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 fini:
 	if (!num_tasks) {
 		bit_nclear(core_map, core_begin, core_end-1);
-		cpu_count = 0;
 	}
 	xfree(free_cores);
-	return cpu_count;
+	return num_tasks * cpus_per_task;
 }
 
 
@@ -1877,16 +1863,16 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 	int rc;
 	uint16_t *cpu_cnt, *cpus = NULL;
 	uint32_t start, n, a;
-    //char str[100];
+	//char str[100];
 	bitstr_t *req_map = job_ptr->details->req_node_bitmap;
 
 	if (bit_set_count(node_map) < min_nodes)
 		return NULL;
 
-    //bit_fmt(str, (sizeof(str) - 1), node_map);
-    //info("ALEJ: _select_nodes nodemap: %s", str);
-    //bit_fmt(str, (sizeof(str) - 1), core_map);
-    //info("ALEJ: _select_nodes coremap: %s", str);
+	//bit_fmt(str, (sizeof(str) - 1), node_map);
+	//info("ALEJ: _select_nodes nodemap: %s", str);
+	//bit_fmt(str, (sizeof(str) - 1), core_map);
+	//info("ALEJ: _select_nodes coremap: %s", str);
 
 	/* get resource usage for this job from each available node */
 	_get_res_usage(job_ptr, node_map, core_map, cr_node_cnt,
@@ -1912,6 +1898,9 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
     
     //bit_fmt(str, (sizeof(str) - 1), node_map);
     //info("ALEJ: _select_nodes nodemap: %s", str);
+
+	//bit_fmt(str, (sizeof(str) - 1), node_map);
+	//info("ALEJ: _select_nodes nodemap: %s", str);
 
 	/* choose the best nodes for the job */
 	rc = _choose_nodes(job_ptr, node_map, min_nodes, max_nodes, req_nodes,
@@ -1964,7 +1953,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint16_t cr_type, enum node_cr_state job_node_req, 
 			uint32_t cr_node_cnt,
 			struct part_res_record *cr_part_ptr,
-			struct node_use_record *node_usage, bitstr_t *exc_core_bitmap)
+			struct node_use_record *node_usage,
+			bitstr_t *exc_core_bitmap)
 {
 	int error_code = SLURM_SUCCESS, ll; /* ll = layout array index */
 	uint16_t *layout_ptr = NULL;
@@ -2104,16 +2094,16 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bit_copybits(bitmap, orig_map);
 	bit_copybits(free_cores, avail_cores);
 
-    if(exc_core_bitmap){
-        char str[100];
-       
-        bit_fmt(str, (sizeof(str) - 1), exc_core_bitmap);
-	    debug2("excluding cores reserved: %s", str);
+	if (exc_core_bitmap) {
+		char str[100];
 
-        bit_not(exc_core_bitmap);
-        bit_and(free_cores, exc_core_bitmap);
-        bit_not(exc_core_bitmap);
-    }
+		bit_fmt(str, (sizeof(str) - 1), exc_core_bitmap);
+		debug2("excluding cores reserved: %s", str);
+
+		bit_not(exc_core_bitmap);
+		bit_and(free_cores, exc_core_bitmap);
+		bit_not(exc_core_bitmap);
+	}
 
 	/* remove all existing allocations from free_cores */
 	tmpcore = bit_copy(free_cores);
@@ -2162,11 +2152,11 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bit_copybits(bitmap, orig_map);
 	bit_copybits(free_cores, avail_cores);
 
-    if(exc_core_bitmap){
-        bit_not(exc_core_bitmap);
-        bit_and(free_cores, exc_core_bitmap);
-        bit_not(exc_core_bitmap);
-    }
+	if (exc_core_bitmap) {
+		bit_not(exc_core_bitmap);
+		bit_and(free_cores, exc_core_bitmap);
+		bit_not(exc_core_bitmap);
+	}
 
 	for (jp_ptr = cr_part_ptr; jp_ptr; jp_ptr = jp_ptr->next) {
 		if (jp_ptr->part_ptr == job_ptr->part_ptr)

@@ -91,6 +91,9 @@ if { [test_bluegene] } {
 	} else {
 		set node_cnt 1-1024
 	}
+} elseif { [test_serial] } {
+	set node_cnt 1
+	set tasks    1
 } else {
 	set node_cnt 1-1
 }

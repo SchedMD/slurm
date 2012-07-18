@@ -1,3 +1,4 @@
+
 /*****************************************************************************\
  *  slurm_accounting_storage.c - account storage plugin wrapper.
  *
@@ -53,6 +54,7 @@
 #include "src/common/list.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -189,196 +191,72 @@ typedef struct slurm_acct_storage_ops {
 	int (*flush_jobs)          (void *db_conn,
 				    time_t event_time);
 } slurm_acct_storage_ops_t;
-
-typedef struct slurm_acct_storage_context {
-	char	       	*acct_storage_type;
-	plugrack_t     	plugin_list;
-	plugin_handle_t	cur_plugin;
-	int		acct_storage_errno;
-	slurm_acct_storage_ops_t ops;
-} slurm_acct_storage_context_t;
-
-static slurm_acct_storage_context_t * g_acct_storage_context = NULL;
-static pthread_mutex_t		g_acct_storage_context_lock =
-	PTHREAD_MUTEX_INITIALIZER;
-
 /*
- * Local functions
+ * Must be synchronized with slurm_acct_storage_ops_t above.
  */
-static slurm_acct_storage_ops_t *_acct_storage_get_ops(
-	slurm_acct_storage_context_t *c);
-static slurm_acct_storage_context_t *_acct_storage_context_create(
-	const char *acct_storage_type);
-static int _acct_storage_context_destroy(
-	slurm_acct_storage_context_t *c);
+static const char *syms[] = {
+	"acct_storage_p_get_connection",
+	"acct_storage_p_close_connection",
+	"acct_storage_p_commit",
+	"acct_storage_p_add_users",
+	"acct_storage_p_add_coord",
+	"acct_storage_p_add_accts",
+	"acct_storage_p_add_clusters",
+	"acct_storage_p_add_associations",
+	"acct_storage_p_add_qos",
+	"acct_storage_p_add_wckeys",
+	"acct_storage_p_add_reservation",
+	"acct_storage_p_modify_users",
+	"acct_storage_p_modify_accts",
+	"acct_storage_p_modify_clusters",
+	"acct_storage_p_modify_associations",
+	"acct_storage_p_modify_job",
+	"acct_storage_p_modify_qos",
+	"acct_storage_p_modify_wckeys",
+	"acct_storage_p_modify_reservation",
+	"acct_storage_p_remove_users",
+	"acct_storage_p_remove_coord",
+	"acct_storage_p_remove_accts",
+	"acct_storage_p_remove_clusters",
+	"acct_storage_p_remove_associations",
+	"acct_storage_p_remove_qos",
+	"acct_storage_p_remove_wckeys",
+	"acct_storage_p_remove_reservation",
+	"acct_storage_p_get_users",
+	"acct_storage_p_get_accts",
+	"acct_storage_p_get_clusters",
+	"acct_storage_p_get_config",
+	"acct_storage_p_get_associations",
+	"acct_storage_p_get_events",
+	"acct_storage_p_get_problems",
+	"acct_storage_p_get_qos",
+	"acct_storage_p_get_wckeys",
+	"acct_storage_p_get_reservations",
+	"acct_storage_p_get_txn",
+	"acct_storage_p_get_usage",
+	"acct_storage_p_roll_usage",
+	"clusteracct_storage_p_node_down",
+	"clusteracct_storage_p_node_up",
+	"clusteracct_storage_p_cluster_cpus",
+	"clusteracct_storage_p_register_ctld",
+	"clusteracct_storage_p_register_disconn_ctld",
+	"clusteracct_storage_p_fini_ctld",
+	"jobacct_storage_p_job_start",
+	"jobacct_storage_p_job_complete",
+	"jobacct_storage_p_step_start",
+	"jobacct_storage_p_step_complete",
+	"jobacct_storage_p_suspend",
+	"jobacct_storage_p_get_jobs_cond",
+	"jobacct_storage_p_archive",
+	"jobacct_storage_p_archive_load",
+	"acct_storage_p_update_shares_used",
+	"acct_storage_p_flush_jobs_on_cluster"
+};
 
-/*
- * Locate and load the appropriate plugin
- */
-static slurm_acct_storage_ops_t * _acct_storage_get_ops(
-	slurm_acct_storage_context_t *c)
-{
-	/*
-	 * Must be synchronized with slurm_acct_storage_ops_t above.
-	 */
-	static const char *syms[] = {
-		"acct_storage_p_get_connection",
-		"acct_storage_p_close_connection",
-		"acct_storage_p_commit",
-		"acct_storage_p_add_users",
-		"acct_storage_p_add_coord",
-		"acct_storage_p_add_accts",
-		"acct_storage_p_add_clusters",
-		"acct_storage_p_add_associations",
-		"acct_storage_p_add_qos",
-		"acct_storage_p_add_wckeys",
-		"acct_storage_p_add_reservation",
-		"acct_storage_p_modify_users",
-		"acct_storage_p_modify_accts",
-		"acct_storage_p_modify_clusters",
-		"acct_storage_p_modify_associations",
-		"acct_storage_p_modify_job",
-		"acct_storage_p_modify_qos",
-		"acct_storage_p_modify_wckeys",
-		"acct_storage_p_modify_reservation",
-		"acct_storage_p_remove_users",
-		"acct_storage_p_remove_coord",
-		"acct_storage_p_remove_accts",
-		"acct_storage_p_remove_clusters",
-		"acct_storage_p_remove_associations",
-		"acct_storage_p_remove_qos",
-		"acct_storage_p_remove_wckeys",
-		"acct_storage_p_remove_reservation",
-		"acct_storage_p_get_users",
-		"acct_storage_p_get_accts",
-		"acct_storage_p_get_clusters",
-		"acct_storage_p_get_config",
-		"acct_storage_p_get_associations",
-		"acct_storage_p_get_events",
-		"acct_storage_p_get_problems",
-		"acct_storage_p_get_qos",
-		"acct_storage_p_get_wckeys",
-		"acct_storage_p_get_reservations",
-		"acct_storage_p_get_txn",
-		"acct_storage_p_get_usage",
-		"acct_storage_p_roll_usage",
-		"clusteracct_storage_p_node_down",
-		"clusteracct_storage_p_node_up",
-		"clusteracct_storage_p_cluster_cpus",
-		"clusteracct_storage_p_register_ctld",
-		"clusteracct_storage_p_register_disconn_ctld",
-		"clusteracct_storage_p_fini_ctld",
-		"jobacct_storage_p_job_start",
-		"jobacct_storage_p_job_complete",
-		"jobacct_storage_p_step_start",
-		"jobacct_storage_p_step_complete",
-		"jobacct_storage_p_suspend",
-		"jobacct_storage_p_get_jobs_cond",
-		"jobacct_storage_p_archive",
-		"jobacct_storage_p_archive_load",
-		"acct_storage_p_update_shares_used",
-		"acct_storage_p_flush_jobs_on_cluster"
-	};
-	int n_syms = sizeof( syms ) / sizeof( char * );
-
-	/* Find the correct plugin. */
-	c->cur_plugin = plugin_load_and_link(c->acct_storage_type, n_syms, syms,
-					     (void **) &c->ops);
-	if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
-		return &c->ops;
-
-	if(errno != EPLUGIN_NOTFOUND) {
-		error("Couldn't load specified plugin name for %s: %s",
-		      c->acct_storage_type, plugin_strerror(errno));
-		return NULL;
-	}
-
-	error("Couldn't find the specified plugin name for %s "
-	      "looking at all files",
-	      c->acct_storage_type);
-
-	/* Get plugin list. */
-	if ( c->plugin_list == NULL ) {
-		char *plugin_dir;
-		c->plugin_list = plugrack_create();
-		if ( c->plugin_list == NULL ) {
-			error( "cannot create plugin manager" );
-			return NULL;
-		}
-		plugrack_set_major_type( c->plugin_list, "accounting_storage" );
-		plugrack_set_paranoia( c->plugin_list,
-				       PLUGRACK_PARANOIA_NONE,
-				       0 );
-		plugin_dir = slurm_get_plugin_dir();
-		plugrack_read_dir( c->plugin_list, plugin_dir );
-		xfree(plugin_dir);
-	}
-
-	c->cur_plugin = plugrack_use_by_type( c->plugin_list,
-					      c->acct_storage_type );
-	if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
-		error( "cannot find accounting_storage plugin for %s",
-		       c->acct_storage_type );
-		return NULL;
-	}
-
-	/* Dereference the API. */
-	if ( plugin_get_syms( c->cur_plugin,
-			      n_syms,
-			      syms,
-			      (void **) &c->ops ) < n_syms ) {
-		error( "incomplete acct_storage plugin detected" );
-		return NULL;
-	}
-
-	return &c->ops;
-}
-
-/*
- * Create a acct_storage context
- */
-static slurm_acct_storage_context_t *_acct_storage_context_create(
-	const char *acct_storage_type)
-{
-	slurm_acct_storage_context_t *c;
-
-	if ( acct_storage_type == NULL ) {
-		debug3( "_acct_storage_context_create: no uler type" );
-		return NULL;
-	}
-
-	c = xmalloc( sizeof( slurm_acct_storage_context_t ) );
-	c->acct_storage_type	= xstrdup( acct_storage_type );
-	c->plugin_list	= NULL;
-	c->cur_plugin	= PLUGIN_INVALID_HANDLE;
-	c->acct_storage_errno	= SLURM_SUCCESS;
-
-	return c;
-}
-
-/*
- * Destroy a acct_storage context
- */
-static int _acct_storage_context_destroy(slurm_acct_storage_context_t *c)
-{
-	int rc = SLURM_SUCCESS;
-	/*
-	 * Must check return code here because plugins might still
-	 * be loaded and active.
-	 */
-	if ( c->plugin_list ) {
-		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
-			rc = SLURM_ERROR;
-		}
-	} else {
-		plugin_unload(c->cur_plugin);
-	}
-
-	xfree( c->acct_storage_type );
-	xfree( c );
-
-	return rc;
-}
+static slurm_acct_storage_ops_t ops;
+static plugin_context_t *plugin_context = NULL;
+static pthread_mutex_t plugin_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 /*
  * Initialize context for acct_storage plugin
@@ -386,36 +264,35 @@ static int _acct_storage_context_destroy(slurm_acct_storage_context_t *c)
 extern int slurm_acct_storage_init(char *loc)
 {
 	int retval = SLURM_SUCCESS;
-	char *acct_storage_type = NULL;
+	char *plugin_type = "accounting_storage";
+	char *type = NULL;
 
-	slurm_mutex_lock( &g_acct_storage_context_lock );
+	if (init_run && plugin_context)
+		return retval;
 
-	if ( g_acct_storage_context )
+	slurm_mutex_lock(&plugin_context_lock);
+
+	if (plugin_context)
 		goto done;
+
 	if (loc)
 		slurm_set_accounting_storage_loc(loc);
 
-	acct_storage_type = slurm_get_accounting_storage_type();
+	type = slurm_get_accounting_storage_type();
 
-	g_acct_storage_context = _acct_storage_context_create(
-				 acct_storage_type);
-	if ( g_acct_storage_context == NULL ) {
-		error( "cannot create acct_storage context for %s",
-		       acct_storage_type );
+	plugin_context = plugin_context_create(
+		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+
+	if (!plugin_context) {
+		error("cannot create %s context for %s", plugin_type, type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
-
-	if ( _acct_storage_get_ops( g_acct_storage_context ) == NULL ) {
-		error( "cannot resolve acct_storage plugin operations" );
-		_acct_storage_context_destroy( g_acct_storage_context );
-		g_acct_storage_context = NULL;
-		retval = SLURM_ERROR;
-	}
+	init_run = true;
 
 done:
-	slurm_mutex_unlock( &g_acct_storage_context_lock );
-	xfree(acct_storage_type);
+	slurm_mutex_unlock(&plugin_context_lock);
+	xfree(type);
 	return retval;
 }
 
@@ -423,31 +300,30 @@ extern int slurm_acct_storage_fini(void)
 {
 	int rc;
 
-	if (!g_acct_storage_context)
+	if (!plugin_context)
 		return SLURM_SUCCESS;
 
-//	(*(g_acct_storage_context->ops.acct_storage_fini))();
-	rc = _acct_storage_context_destroy( g_acct_storage_context );
-	g_acct_storage_context = NULL;
+	init_run = false;
+//	(*(ops.acct_storage_fini))();
+	rc = plugin_context_destroy(plugin_context);
+	plugin_context = NULL;
 	return rc;
 }
 
 extern void *acct_storage_g_get_connection(
-	     const slurm_trigger_callbacks_t *callbacks,
-	     int conn_num, bool rollback,char *cluster_name)
+	const slurm_trigger_callbacks_t *callbacks,
+	int conn_num, bool rollback,char *cluster_name)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_conn))(callbacks, conn_num,
-							 rollback,
-							 cluster_name);
+	return (*(ops.get_conn))(callbacks, conn_num, rollback, cluster_name);
 }
 
 extern int acct_storage_g_close_connection(void **db_conn)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.close_conn))(db_conn);
+	return (*(ops.close_conn))(db_conn);
 
 }
 
@@ -455,7 +331,7 @@ extern int acct_storage_g_commit(void *db_conn, bool commit)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.commit))(db_conn, commit);
+	return (*(ops.commit))(db_conn, commit);
 
 }
 
@@ -464,8 +340,7 @@ extern int acct_storage_g_add_users(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.add_users))
-		(db_conn, uid, user_list);
+	return (*(ops.add_users))(db_conn, uid, user_list);
 }
 
 extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
@@ -474,8 +349,7 @@ extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.add_coord))
-		(db_conn, uid, acct_list, user_cond);
+	return (*(ops.add_coord))(db_conn, uid, acct_list, user_cond);
 }
 
 extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
@@ -483,8 +357,7 @@ extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.add_accts))
-		(db_conn, uid, acct_list);
+	return (*(ops.add_accts))(db_conn, uid, acct_list);
 }
 
 extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
@@ -492,8 +365,7 @@ extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.add_clusters))
-		(db_conn, uid, cluster_list);
+	return (*(ops.add_clusters))(db_conn, uid, cluster_list);
 }
 
 extern int acct_storage_g_add_associations(void *db_conn, uint32_t uid,
@@ -501,8 +373,7 @@ extern int acct_storage_g_add_associations(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.add_associations))
-		(db_conn, uid, association_list);
+	return (*(ops.add_associations))(db_conn, uid, association_list);
 }
 
 extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
@@ -510,8 +381,7 @@ extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.add_qos))
-		(db_conn, uid, qos_list);
+	return (*(ops.add_qos))(db_conn, uid, qos_list);
 }
 
 extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
@@ -519,8 +389,7 @@ extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.add_wckeys))
-		(db_conn, uid, wckey_list);
+	return (*(ops.add_wckeys))(db_conn, uid, wckey_list);
 }
 
 extern int acct_storage_g_add_reservation(void *db_conn,
@@ -528,8 +397,7 @@ extern int acct_storage_g_add_reservation(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NO_VAL;
-	return (*(g_acct_storage_context->ops.add_reservation))
-		(db_conn, resv);
+	return (*(ops.add_reservation))(db_conn, resv);
 }
 
 extern List acct_storage_g_modify_users(void *db_conn, uint32_t uid,
@@ -538,8 +406,7 @@ extern List acct_storage_g_modify_users(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.modify_users))
-		(db_conn, uid, user_cond, user);
+	return (*(ops.modify_users))(db_conn, uid, user_cond, user);
 }
 
 extern List acct_storage_g_modify_accounts(void *db_conn, uint32_t uid,
@@ -548,8 +415,7 @@ extern List acct_storage_g_modify_accounts(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.modify_accts))
-		(db_conn, uid, acct_cond, acct);
+	return (*(ops.modify_accts))(db_conn, uid, acct_cond, acct);
 }
 
 extern List acct_storage_g_modify_clusters(void *db_conn, uint32_t uid,
@@ -558,8 +424,7 @@ extern List acct_storage_g_modify_clusters(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.modify_clusters))
-		(db_conn, uid, cluster_cond, cluster);
+	return (*(ops.modify_clusters))(db_conn, uid, cluster_cond, cluster);
 }
 
 extern List acct_storage_g_modify_associations(
@@ -569,8 +434,7 @@ extern List acct_storage_g_modify_associations(
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.modify_associations))
-		(db_conn, uid, assoc_cond, assoc);
+	return (*(ops.modify_associations))(db_conn, uid, assoc_cond, assoc);
 }
 
 extern List acct_storage_g_modify_job(void *db_conn, uint32_t uid,
@@ -579,8 +443,7 @@ extern List acct_storage_g_modify_job(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.modify_job))
-		(db_conn, uid, job_cond, job);
+	return (*(ops.modify_job))(db_conn, uid, job_cond, job);
 }
 
 extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
@@ -589,8 +452,7 @@ extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.modify_qos))
-		(db_conn, uid, qos_cond, qos);
+	return (*(ops.modify_qos))(db_conn, uid, qos_cond, qos);
 }
 
 extern List acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,
@@ -599,8 +461,7 @@ extern List acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.modify_wckeys))
-		(db_conn, uid, wckey_cond, wckey);
+	return (*(ops.modify_wckeys))(db_conn, uid, wckey_cond, wckey);
 }
 
 extern int acct_storage_g_modify_reservation(void *db_conn,
@@ -608,8 +469,7 @@ extern int acct_storage_g_modify_reservation(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NO_VAL;
-	return (*(g_acct_storage_context->ops.modify_reservation))
-		(db_conn, resv);
+	return (*(ops.modify_reservation))(db_conn, resv);
 }
 
 extern List acct_storage_g_remove_users(void *db_conn, uint32_t uid,
@@ -617,8 +477,7 @@ extern List acct_storage_g_remove_users(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.remove_users))
-		(db_conn, uid, user_cond);
+	return (*(ops.remove_users))(db_conn, uid, user_cond);
 }
 
 extern List acct_storage_g_remove_coord(void *db_conn, uint32_t uid,
@@ -627,8 +486,7 @@ extern List acct_storage_g_remove_coord(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.remove_coord))
-		(db_conn, uid, acct_list, user_cond);
+	return (*(ops.remove_coord))(db_conn, uid, acct_list, user_cond);
 }
 
 extern List acct_storage_g_remove_accounts(void *db_conn, uint32_t uid,
@@ -636,8 +494,7 @@ extern List acct_storage_g_remove_accounts(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.remove_accts))
-		(db_conn, uid, acct_cond);
+	return (*(ops.remove_accts))(db_conn, uid, acct_cond);
 }
 
 extern List acct_storage_g_remove_clusters(void *db_conn, uint32_t uid,
@@ -645,8 +502,7 @@ extern List acct_storage_g_remove_clusters(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.remove_clusters))
-		(db_conn, uid, cluster_cond);
+	return (*(ops.remove_clusters))(db_conn, uid, cluster_cond);
 }
 
 extern List acct_storage_g_remove_associations(
@@ -655,8 +511,7 @@ extern List acct_storage_g_remove_associations(
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.remove_associations))
-		(db_conn, uid, assoc_cond);
+	return (*(ops.remove_associations))(db_conn, uid, assoc_cond);
 }
 
 extern List acct_storage_g_remove_qos(void *db_conn, uint32_t uid,
@@ -664,8 +519,7 @@ extern List acct_storage_g_remove_qos(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.remove_qos))
-		(db_conn, uid, qos_cond);
+	return (*(ops.remove_qos))(db_conn, uid, qos_cond);
 }
 
 extern List acct_storage_g_remove_wckeys(void *db_conn, uint32_t uid,
@@ -673,8 +527,7 @@ extern List acct_storage_g_remove_wckeys(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.remove_wckeys))
-		(db_conn, uid, wckey_cond);
+	return (*(ops.remove_wckeys))(db_conn, uid, wckey_cond);
 }
 
 extern int acct_storage_g_remove_reservation(void *db_conn,
@@ -682,8 +535,7 @@ extern int acct_storage_g_remove_reservation(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NO_VAL;
-	return (*(g_acct_storage_context->ops.remove_reservation))
-		(db_conn, resv);
+	return (*(ops.remove_reservation))(db_conn, resv);
 }
 
 extern List acct_storage_g_get_users(void *db_conn, uint32_t uid,
@@ -691,8 +543,7 @@ extern List acct_storage_g_get_users(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_users))
-		(db_conn, uid, user_cond);
+	return (*(ops.get_users))(db_conn, uid, user_cond);
 }
 
 extern List acct_storage_g_get_accounts(void *db_conn, uint32_t uid,
@@ -700,8 +551,7 @@ extern List acct_storage_g_get_accounts(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_accts))
-		(db_conn, uid, acct_cond);
+	return (*(ops.get_accts))(db_conn, uid, acct_cond);
 }
 
 extern List acct_storage_g_get_clusters(void *db_conn, uint32_t uid,
@@ -709,15 +559,14 @@ extern List acct_storage_g_get_clusters(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_clusters))
-		(db_conn, uid, cluster_cond);
+	return (*(ops.get_clusters))(db_conn, uid, cluster_cond);
 }
 
 extern List acct_storage_g_get_config(void *db_conn, char *config_name)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_config))(db_conn, config_name);
+	return (*(ops.get_config))(db_conn, config_name);
 }
 
 extern List acct_storage_g_get_associations(
@@ -726,8 +575,7 @@ extern List acct_storage_g_get_associations(
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_associations))
-		(db_conn, uid, assoc_cond);
+	return (*(ops.get_associations))(db_conn, uid, assoc_cond);
 }
 
 extern List acct_storage_g_get_events(void *db_conn, uint32_t uid,
@@ -735,8 +583,7 @@ extern List acct_storage_g_get_events(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_events))
-		(db_conn, uid, event_cond);
+	return (*(ops.get_events))(db_conn, uid, event_cond);
 }
 
 extern List acct_storage_g_get_problems(void *db_conn, uint32_t uid,
@@ -744,8 +591,7 @@ extern List acct_storage_g_get_problems(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_problems))
-		(db_conn, uid, assoc_cond);
+	return (*(ops.get_problems))(db_conn, uid, assoc_cond);
 }
 
 extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid,
@@ -753,7 +599,7 @@ extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_qos))(db_conn, uid, qos_cond);
+	return (*(ops.get_qos))(db_conn, uid, qos_cond);
 }
 
 extern List acct_storage_g_get_wckeys(void *db_conn, uint32_t uid,
@@ -761,17 +607,15 @@ extern List acct_storage_g_get_wckeys(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_wckeys))(db_conn, uid,
-							   wckey_cond);
+	return (*(ops.get_wckeys))(db_conn, uid, wckey_cond);
 }
 
-extern List acct_storage_g_get_reservations(void *db_conn, uint32_t uid,
-					    slurmdb_reservation_cond_t *resv_cond)
+extern List acct_storage_g_get_reservations(
+	void *db_conn, uint32_t uid, slurmdb_reservation_cond_t *resv_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_resvs))(db_conn, uid,
-							  resv_cond);
+	return (*(ops.get_resvs))(db_conn, uid, resv_cond);
 }
 
 extern List acct_storage_g_get_txn(void *db_conn,  uint32_t uid,
@@ -779,7 +623,7 @@ extern List acct_storage_g_get_txn(void *db_conn,  uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_txn))(db_conn, uid, txn_cond);
+	return (*(ops.get_txn))(db_conn, uid, txn_cond);
 }
 
 extern int acct_storage_g_get_usage(void *db_conn,  uint32_t uid,
@@ -788,8 +632,7 @@ extern int acct_storage_g_get_usage(void *db_conn,  uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.get_usage))
-		(db_conn, uid, in, type, start, end);
+	return (*(ops.get_usage))(db_conn, uid, in, type, start, end);
 }
 
 extern int acct_storage_g_roll_usage(void *db_conn,
@@ -798,8 +641,7 @@ extern int acct_storage_g_roll_usage(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.roll_usage))
-		(db_conn, sent_start, sent_end, archive_data);
+	return (*(ops.roll_usage))(db_conn, sent_start, sent_end, archive_data);
 }
 
 extern int clusteracct_storage_g_node_down(void *db_conn,
@@ -809,8 +651,8 @@ extern int clusteracct_storage_g_node_down(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
- 	return (*(g_acct_storage_context->ops.node_down))
-		(db_conn, node_ptr, event_time, reason, reason_uid);
+	return (*(ops.node_down))(db_conn, node_ptr, event_time,
+				  reason, reason_uid);
 }
 
 extern int clusteracct_storage_g_node_up(void *db_conn,
@@ -865,7 +707,7 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 
 			send_node.node_state = NODE_STATE_ERROR;
 
-			return (*(g_acct_storage_context->ops.node_down))
+			return (*(ops.node_down))
 				(db_conn, &send_node,
 				 event_time, reason, slurm_get_slurm_user_id());
 		} else {
@@ -879,8 +721,7 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 		node_ptr->reason_uid = NO_VAL;
 	}
 
- 	return (*(g_acct_storage_context->ops.node_up))
-		(db_conn, node_ptr, event_time);
+	return (*(ops.node_up))(db_conn, node_ptr, event_time);
 }
 
 
@@ -891,8 +732,7 @@ extern int clusteracct_storage_g_cluster_cpus(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
- 	return (*(g_acct_storage_context->ops.cluster_cpus))
-		(db_conn, cluster_nodes, cpus, event_time);
+	return (*(ops.cluster_cpus))(db_conn, cluster_nodes, cpus, event_time);
 }
 
 
@@ -900,7 +740,7 @@ extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
- 	return (*(g_acct_storage_context->ops.register_ctld))(db_conn, port);
+	return (*(ops.register_ctld))(db_conn, port);
 }
 
 extern int clusteracct_storage_g_register_disconn_ctld(
@@ -908,8 +748,7 @@ extern int clusteracct_storage_g_register_disconn_ctld(
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.register_disconn_ctld))
-		(db_conn, control_host);
+	return (*(ops.register_disconn_ctld))(db_conn, control_host);
 }
 
 extern int clusteracct_storage_g_fini_ctld(void *db_conn,
@@ -917,7 +756,7 @@ extern int clusteracct_storage_g_fini_ctld(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
- 	return (*(g_acct_storage_context->ops.fini_ctld))(db_conn, cluster_rec);
+	return (*(ops.fini_ctld))(db_conn, cluster_rec);
 }
 
 /*
@@ -938,13 +777,12 @@ extern int jobacct_storage_g_job_start(void *db_conn,
 		int rc;
 		time_t orig_start_time = job_ptr->start_time;
 		job_ptr->start_time = (time_t) 0;
-		rc = (*(g_acct_storage_context->ops.job_start))(
-			db_conn, job_ptr);
+		rc = (*(ops.job_start))(db_conn, job_ptr);
 		job_ptr->start_time = orig_start_time;
 		return rc;
 	}
 
-	return (*(g_acct_storage_context->ops.job_start))(db_conn, job_ptr);
+	return (*(ops.job_start))(db_conn, job_ptr);
 }
 
 /*
@@ -955,7 +793,7 @@ extern int jobacct_storage_g_job_complete(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.job_complete))(db_conn, job_ptr);
+	return (*(ops.job_complete))(db_conn, job_ptr);
 }
 
 /*
@@ -966,7 +804,7 @@ extern int jobacct_storage_g_step_start(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.step_start))(db_conn, step_ptr);
+	return (*(ops.step_start))(db_conn, step_ptr);
 }
 
 /*
@@ -977,8 +815,7 @@ extern int jobacct_storage_g_step_complete(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.step_complete))(db_conn,
-							      step_ptr);
+	return (*(ops.step_complete))(db_conn, step_ptr);
 }
 
 /*
@@ -989,7 +826,7 @@ extern int jobacct_storage_g_job_suspend(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
- 	return (*(g_acct_storage_context->ops.job_suspend))(db_conn, job_ptr);
+	return (*(ops.job_suspend))(db_conn, job_ptr);
 }
 
 /*
@@ -1002,8 +839,7 @@ extern List jobacct_storage_g_get_jobs_cond(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
- 	return (*(g_acct_storage_context->ops.get_jobs_cond))
-		(db_conn, uid, job_cond);
+	return (*(ops.get_jobs_cond))(db_conn, uid, job_cond);
 }
 
 /*
@@ -1014,8 +850,7 @@ extern int jobacct_storage_g_archive(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
- 	return (*(g_acct_storage_context->ops.archive_dump))
-		(db_conn, arch_cond);
+	return (*(ops.archive_dump))(db_conn, arch_cond);
 }
 
 /*
@@ -1026,7 +861,7 @@ extern int jobacct_storage_g_archive_load(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
- 	return (*(g_acct_storage_context->ops.archive_load))(db_conn, arch_rec);
+	return (*(ops.archive_load))(db_conn, arch_rec);
 
 }
 
@@ -1039,8 +874,7 @@ extern int acct_storage_g_update_shares_used(void *db_conn, List acct_list)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
- 	return (*(g_acct_storage_context->ops.update_shares_used))(db_conn,
-								   acct_list);
+	return (*(ops.update_shares_used))(db_conn, acct_list);
 }
 
 /*
@@ -1056,7 +890,6 @@ extern int acct_storage_g_flush_jobs_on_cluster(
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
- 	return (*(g_acct_storage_context->ops.flush_jobs))
-		(db_conn, event_time);
+	return (*(ops.flush_jobs))(db_conn, event_time);
 
 }

@@ -290,7 +290,8 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 			rc = select_g_job_test(job_ptr, *avail_bitmap,
 					       high_cnt, max_nodes, req_nodes,
 					       SELECT_MODE_WILL_RUN,
-					       preemptee_candidates, NULL, exc_core_bitmap);
+					       preemptee_candidates, NULL,
+					       exc_core_bitmap);
 		}
 
 		/* Restore the feature counts */
@@ -307,22 +308,23 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		 * then on shared nodes (if so configured). */
 		uint16_t orig_shared;
 		time_t now = time(NULL);
-        char str[100];
+		char str[100];
 
 		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 		orig_shared = job_ptr->details->shared;
 		job_ptr->details->shared = 0;
 		tmp_bitmap = bit_copy(*avail_bitmap);
 
-        if(exc_core_bitmap){
-            bit_fmt(str, (sizeof(str) - 1), exc_core_bitmap);
-            debug2(" _try_sched with exclude core bitmap: %s", str);
-        }
+		if (exc_core_bitmap){
+			bit_fmt(str, (sizeof(str) - 1), exc_core_bitmap);
+			debug2(" _try_sched with exclude core bitmap: %s",str);
+		}
 
 		rc = select_g_job_test(job_ptr, *avail_bitmap, min_nodes,
 				       max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN,
-				       preemptee_candidates, NULL, exc_core_bitmap);
+				       preemptee_candidates, NULL,
+				       exc_core_bitmap);
 
 		job_ptr->details->shared = orig_shared;
 
@@ -333,7 +335,8 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 			rc = select_g_job_test(job_ptr, *avail_bitmap,
 					       min_nodes, max_nodes, req_nodes,
 					       SELECT_MODE_WILL_RUN,
-					       preemptee_candidates, NULL, exc_core_bitmap);
+					       preemptee_candidates, NULL,
+					       exc_core_bitmap);
 		} else
 			FREE_NULL_BITMAP(tmp_bitmap);
 	}
@@ -390,8 +393,12 @@ static void _load_config(void)
 		fatal("Invalid backfill scheduler max_job_bf: %d",
 		      max_backfill_job_cnt);
 	}
+	/* "bf_res=" is vestigial from version 2.3 and can be removed later.
+	 * Only "bf_resolution=" is documented. */
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_res=")))
 		backfill_resolution = atoi(tmp_ptr + 7);
+	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_resolution=")))
+		backfill_resolution = atoi(tmp_ptr + 14);
 	if (backfill_resolution < 1) {
 		fatal("Invalid backfill scheduler resolution: %d",
 		      backfill_resolution);
@@ -558,7 +565,7 @@ static int _attempt_backfill(void)
 		filter_root = true;
 
 	job_queue = build_job_queue(true);
-	if (list_count(job_queue) <= 1) {
+	if (list_count(job_queue) == 0) {
 		debug("backfill: no jobs to backfill");
 		list_destroy(job_queue);
 		return 0;
@@ -694,8 +701,9 @@ static int _attempt_backfill(void)
  TRY_LATER:	FREE_NULL_BITMAP(avail_bitmap);
 		start_res   = later_start;
 		later_start = 0;
-        exc_core_bitmap = NULL;
-		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap, &exc_core_bitmap);
+		exc_core_bitmap = NULL;
+		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
+				  &exc_core_bitmap);
 		if (j != SLURM_SUCCESS) {
 			job_ptr->time_limit = orig_time_limit;
 			continue;
@@ -782,8 +790,8 @@ static int _attempt_backfill(void)
 		       job_ptr->job_id);
 
 		slurmctld_diag_stats.bf_last_depth_try++;
-		j = _try_sched(job_ptr, &avail_bitmap,
-			       min_nodes, max_nodes, req_nodes, exc_core_bitmap);
+		j = _try_sched(job_ptr, &avail_bitmap, min_nodes, max_nodes,
+			       req_nodes, exc_core_bitmap);
 		now = time(NULL);
 		if (j != SLURM_SUCCESS) {
 			job_ptr->time_limit = orig_time_limit;

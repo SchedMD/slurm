@@ -15,7 +15,8 @@ sshare_SOURCES =	\
 	process.c               \
 	sshare.c sshare.h
 
-sshare_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sshare_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
 
 force:
 $(sshare_LDADD) : force

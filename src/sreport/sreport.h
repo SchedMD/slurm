@@ -79,7 +79,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
 
-#include "src/common/jobacct_common.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/xstring.h"

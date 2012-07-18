@@ -125,6 +125,7 @@ http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2</a></li><br>
 <ul>
 <li><a href="http://www.mpi-softtech.com/">ChaMPIon, MPI Software Technology</a></li>
 <li><a href="http://www.hp.com/go/mpi">HP-MPI</a></li>
+<li><a href="http://software.intel.com/en-us/articles/intel-mpi-library/">Intel-MPI</a></li>
 <li><a href="http://www.lam-mpi.org/">LAM/MPI</a></li>
 <li><a href="http://www-unix.mcs.anl.gov/mpi/mpich1/">MPICH1</a></li>
 <li><a href="http://www.mcs.anl.gov/research/projects/mpich2/">MPICH2</a></li>
@@ -154,6 +155,9 @@ SLURM's PAM module has also been packaged for
 <ul>
 <li><a href="http://www.sdsc.edu/catalina/">Catalina</a> a scheduler supporting the
 <a href="http://www.ogf.org/">Open Grid Forum</a> Advance Reservation API</li>
+<li><a href="http://web.mit.edu/star/cluster/docs/latest/index.html">StarCluster</a>
+cloud computing toolkit has a
+<a href="https://github.com/jlafon/StarCluster">SLURM port available</a>.
 <li><a href="http://www.platform.com/">Load Sharing Facility (LSF)</a></li>
 <li><a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
 Maui Scheduler</a></li>
@@ -215,6 +219,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 6 March 2012</p>
+<p style="text-align:center;">Last modified 17 May 2012</p>
 
 <!--#include virtual="footer.txt"-->

@@ -58,7 +58,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr);
 extern int delete_resv(reservation_name_msg_t *resv_desc_ptr);
 
 /* Dump the reservation records to a buffer */
-extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid);
+extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
+		      uint16_t protocol_version);
 
 /* Save the state of all reservations to file */
 extern int dump_all_resv_state(void);
@@ -79,6 +80,12 @@ extern bool is_node_in_maint_reservation(int nodenum);
 
 /* After an assocation has been added or removed update the lists. */
 extern void update_assocs_in_resvs(void);
+
+/*
+ * Update reserved nodes for all reservations using a specific partition if the
+ * resevation has NodeList=ALL and RESERVE_FLAGS_PART_NODES.
+*/
+extern void update_part_nodes_in_resv(struct part_record *part_ptr);
 
 /*
  * Load the reservation state from file, recover on slurmctld restart.
@@ -130,7 +137,8 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
  *			  reserved
  */
 extern int job_test_resv(struct job_record *job_ptr, time_t *when,
-			 bool move_time, bitstr_t **node_bitmap, bitstr_t **exc_core_bitmap);
+			 bool move_time, bitstr_t **node_bitmap,
+			 bitstr_t **exc_core_bitmap);
 
 /*
  * Determine if a job can start now based only upon its reservations

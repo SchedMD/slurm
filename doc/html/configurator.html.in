@@ -548,6 +548,7 @@ Select one value for <B>SwitchType</B>:<BR>
 Federation Switch<BR>
 <input type="radio" name="switch_type" value="none" checked> <B>None</B>: No special
 handling required (InfiniBand, Myrinet, Ethernet, etc.)<BR>
+<input type="radio" name="switch_type" value="nrt"> <B>NRT</B>: IBM Network Resource Table<BR>
 <P>
 
 <H2>Default MPI Type</H2>
@@ -635,11 +636,13 @@ Select one value for <B>SelectType</B>:<BR>
     Core and Memory as consumable resources.
 </DL>
 </DL>
+<input type="radio" name="select_type" value="bluegene">
+<B>BlueGene</B>: For IBM Blue Gene systems only<BR>
 <input type="radio" name="select_type" value="linear" checked>
 <B>Linear</B>: Node-base
 resource allocation, does not manage individual processor allocation<BR>
-<input type="radio" name="select_type" value="bluegene">
-<B>BlueGene</B>: For IBM Blue Gene systems only<BR>
+<input type="radio" name="select_type" value="serial">
+<B>Serial</B>: Supports single CPU job allocations only<BR>
 <P>
 
 <H2>Task Launch</H2>
@@ -850,5 +853,5 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 3 April 2012</P>
+Last modified 21 June 2012</P>
 </BODY>

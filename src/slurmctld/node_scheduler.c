@@ -116,7 +116,8 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes, bool test_only,
 			    List preemptee_candidates,
-			    List *preemptee_job_list, bool has_xand, bitstr_t *exc_node_bitmap);
+			    List *preemptee_job_list, bool has_xand,
+			    bitstr_t *exc_node_bitmap);
 static bool _valid_feature_counts(struct job_details *detail_ptr,
 				  bitstr_t *node_bitmap, bool *has_xor);
 static bitstr_t *_valid_features(struct job_details *detail_ptr,
@@ -135,13 +136,6 @@ extern void allocate_nodes(struct job_record *job_ptr)
 	struct node_record *node_ptr;
 	bool has_cloud = false, has_cloud_power_save = false;
 
-	xfree(job_ptr->batch_host);
-#ifdef HAVE_FRONT_END
-	job_ptr->front_end_ptr = assign_front_end();
-	xassert(job_ptr->front_end_ptr);
-	job_ptr->batch_host = xstrdup(job_ptr->front_end_ptr->name);
-#endif
-
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
@@ -153,9 +147,8 @@ extern void allocate_nodes(struct job_record *job_ptr)
 				has_cloud_power_save = true;
 		}
 		make_node_alloc(node_ptr, job_ptr);
-		if (job_ptr->batch_host == NULL)
-			job_ptr->batch_host = xstrdup(node_ptr->name);
 	}
+
 	last_node_update = time(NULL);
 	license_job_get(job_ptr);
 
@@ -211,8 +204,9 @@ extern void set_job_alias_list(struct job_record *job_ptr)
  * IN preempted - true if job is being preempted
  */
 extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
-		bool suspended, bool preempted)
+			     bool suspended, bool preempted)
 {
+	static int select_serial = -1;
 	int i;
 	kill_job_msg_t *kill_job = NULL;
 	agent_arg_t *agent_args = NULL;
@@ -224,6 +218,13 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
+
+	if (select_serial == -1) {
+		if (strcmp(slurmctld_conf.select_type, "select/serial"))
+			select_serial = 0;
+		else
+			select_serial = 1;
+	}
 
 	license_job_return(job_ptr);
 	acct_policy_job_fini(job_ptr);
@@ -326,6 +327,11 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 			}
 			bit_clear(job_ptr->node_bitmap_cg, i);
 			job_update_cpu_cnt(job_ptr, i);
+			/* node_cnt indicates how many nodes we are waiting
+			 * to get epilog complete messages from, so do not
+			 * count down nodes. NOTE: The job's node_cnt will not
+			 * match the number of entries in the node string
+			 * during its completion. */
 			job_ptr->node_cnt--;
 		}
 		make_node_comp(node_ptr, job_ptr, suspended);
@@ -342,13 +348,12 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	}
 
 	if (agent_args->node_count == 0) {
-		if (job_ptr->details->expanding_jobid == 0) {
+		if ((job_ptr->details->expanding_jobid == 0) &&
+		    (select_serial == 0)) {
 			error("Job %u allocated no nodes to be killed on",
 			      job_ptr->job_id);
 		}
-		xfree(kill_job->nodes);
-		select_g_select_jobinfo_free(kill_job->select_jobinfo);
-		xfree(kill_job);
+		slurm_free_kill_job_msg(kill_job);
 		hostlist_destroy(agent_args->hostlist);
 		xfree(agent_args);
 		return;
@@ -489,7 +494,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	 * of select_bitmap to those nodes */
 	if (job_ptr->resv_name == NULL) {
 		time_t start_res = time(NULL);
-		rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap, &exc_core_bitmap);
+		rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
+				   &exc_core_bitmap);
 		if ((rc != SLURM_SUCCESS) ||
 		    (bit_set_count(resv_bitmap) < min_nodes) ||
 		    (job_ptr->details->req_node_bitmap &&
@@ -505,12 +511,13 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			avail_node_bitmap = resv_bitmap;
 		} else
 			FREE_NULL_BITMAP(resv_bitmap);
-	}else{
+	} else {
 		time_t start_res = time(NULL);
-		rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap, &exc_core_bitmap);
-
-        /* We do not care about return value. We are just interested in exc_core_bitmap creation */
-    }
+		rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
+				   &exc_core_bitmap);
+		/* We do not care about return value.
+		 * We are just interested in exc_core_bitmap creation */
+	}
 
 	/* save job and request state */
 	saved_min_nodes = min_nodes;
@@ -582,7 +589,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					job_ptr, part_ptr, min_nodes,
 					max_nodes, req_nodes, test_only,
 					preemptee_candidates,
-					preemptee_job_list, false, exc_core_bitmap);
+					preemptee_job_list, false,
+					exc_core_bitmap);
 #if 0
 {
 			char *tmp_str = bitmap2node_name(feature_bitmap);
@@ -748,7 +756,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 struct part_record *part_ptr,
 		 uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
 		 bool test_only, List preemptee_candidates,
-		 List *preemptee_job_list, bool has_xand, bitstr_t *exc_core_bitmap)
+		 List *preemptee_job_list, bool has_xand,
+		 bitstr_t *exc_core_bitmap)
 {
 	int error_code = SLURM_SUCCESS, i, j, pick_code;
 	int total_nodes = 0, avail_nodes = 0;
@@ -768,7 +777,27 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	else
 		select_mode = SELECT_MODE_RUN_NOW;
 
-	if (node_set_size == 0) {
+	if ((job_ptr->details->min_nodes == 0) &&
+	    (job_ptr->details->max_nodes == 0)) {
+		avail_bitmap = bit_alloc(node_record_count);
+		if (!avail_bitmap)
+			fatal("bit_alloc: malloc failure");
+		pick_code = select_g_job_test(job_ptr,
+					      avail_bitmap,
+					      0, 0, 0,
+					      select_mode,
+					      preemptee_candidates,
+					      preemptee_job_list,
+					      exc_core_bitmap);
+
+		if (pick_code == SLURM_SUCCESS) {
+			*select_bitmap = avail_bitmap;
+			return SLURM_SUCCESS;
+		} else {
+			bit_free(avail_bitmap);
+			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+		}
+	} else if (node_set_size == 0) {
 		info("_pick_best_nodes: empty node set for selection");
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
@@ -974,7 +1003,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						      req_nodes,
 						      select_mode,
 						      preemptee_candidates,
-						      preemptee_job_list, exc_core_bitmap);
+						      preemptee_job_list,
+						      exc_core_bitmap);
 #if 0
 {
 			char *tmp_str1 = bitmap2node_name(backup_bitmap);
@@ -1021,7 +1051,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						      req_nodes,
 						      select_mode,
 						      preemptee_candidates,
-						      preemptee_job_list, exc_core_bitmap);
+						      preemptee_job_list,
+						      exc_core_bitmap);
 			if ((pick_code == SLURM_SUCCESS) &&
 			     (bit_set_count(avail_bitmap) <= max_nodes)) {
 				FREE_NULL_BITMAP(total_bitmap);
@@ -1054,7 +1085,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						max_nodes,
 						req_nodes,
 						SELECT_MODE_TEST_ONLY,
-						preemptee_candidates, NULL, exc_core_bitmap);
+						preemptee_candidates, NULL,
+						exc_core_bitmap);
 				if (pick_code == SLURM_SUCCESS) {
 					runable_ever  = true;
 					if (bit_set_count(avail_bitmap) <=
@@ -1072,7 +1104,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						max_nodes,
 						req_nodes,
 						SELECT_MODE_TEST_ONLY,
-						preemptee_candidates, NULL, exc_core_bitmap);
+						preemptee_candidates, NULL,
+						exc_core_bitmap);
 				if (pick_code == SLURM_SUCCESS) {
 					FREE_NULL_BITMAP(possible_bitmap);
 					possible_bitmap = total_bitmap;
@@ -1164,6 +1197,11 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
 		}
 
 		if (rc != SLURM_SUCCESS) {
+			if ((mode != PREEMPT_MODE_CANCEL)
+			    && (slurm_job_check_grace(job_ptr)
+				== SLURM_SUCCESS))
+				continue;
+
 			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0, true);
 			if (rc == SLURM_SUCCESS)
 				info("preempted job %u had to be killed",
@@ -1212,16 +1250,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	time_t now = time(NULL);
 	bool configuring = false;
 	List preemptee_job_list = NULL;
-	slurmdb_association_rec_t *assoc_ptr = NULL;
 	slurmdb_qos_rec_t *qos_ptr = NULL;
-	uint32_t job_min_nodes, job_max_nodes;
-	uint32_t part_min_nodes, part_max_nodes;
-#ifdef HAVE_BG
-	static uint16_t cpus_per_node = 0;
-	if (!cpus_per_node)
-		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
-					&cpus_per_node);
-#endif
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -1230,7 +1259,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		return ESLURM_ACCOUNTING_POLICY;
 
 	part_ptr = job_ptr->part_ptr;
-	assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
 	qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
 
 	/* identify partition */
@@ -1242,70 +1270,19 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		      job_ptr->job_id, job_ptr->partition);
 	}
 
-#ifdef HAVE_BG
-	job_min_nodes = job_ptr->details->min_cpus / cpus_per_node;
-	job_max_nodes = job_ptr->details->max_cpus / cpus_per_node;
-	part_min_nodes = part_ptr->min_nodes_orig;
-	part_max_nodes = part_ptr->max_nodes_orig;
-#else
-	job_min_nodes = job_ptr->details->min_nodes;
-	job_max_nodes = job_ptr->details->max_nodes;
-	part_min_nodes = part_ptr->min_nodes;
-	part_max_nodes = part_ptr->max_nodes;
-#endif
-	/* Confirm that partition is up and has compatible nodes limits */
-	fail_reason = WAIT_NO_REASON;
-	if (part_ptr->state_up == PARTITION_DOWN)
-		fail_reason = WAIT_PART_DOWN;
-	else if (part_ptr->state_up == PARTITION_INACTIVE)
-		fail_reason = WAIT_PART_INACTIVE;
-	else if (job_ptr->priority == 0)       /* user or administrator hold */
-		fail_reason = WAIT_HELD;
-	else if ((((job_ptr->time_limit != NO_VAL) &&
-		   (job_ptr->time_limit > part_ptr->max_time)) ||
-		  ((job_ptr->time_min   != NO_VAL) &&
-		   (job_ptr->time_min   > part_ptr->max_time))) &&
-		   (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
-		 			     QOS_FLAG_PART_TIME_LIMIT))))
-		fail_reason = WAIT_PART_TIME_LIMIT;
-	else if (((job_max_nodes != 0) &&
-	          ((job_max_nodes < part_min_nodes) &&
-		   (!qos_ptr || (qos_ptr && !(qos_ptr->flags
-					      & QOS_FLAG_PART_MIN_NODE))))) ||
-	         ((job_min_nodes > part_max_nodes) &&
-		  (!qos_ptr || (qos_ptr && !(qos_ptr->flags
-					     & QOS_FLAG_PART_MAX_NODE)))))
-		fail_reason = WAIT_PART_NODE_LIMIT;
-	else if (qos_ptr && assoc_ptr &&
-		 (qos_ptr->flags & QOS_FLAG_ENFORCE_USAGE_THRES) &&
-		 (!fuzzy_equal(qos_ptr->usage_thres, NO_VAL))) {
-		if (!job_ptr->prio_factors)
-			job_ptr->prio_factors =
-				xmalloc(sizeof(priority_factors_object_t));
-
-		if (!job_ptr->prio_factors->priority_fs) {
-			if (fuzzy_equal(assoc_ptr->usage->usage_efctv, NO_VAL))
-				priority_g_set_assoc_usage(assoc_ptr);
-			job_ptr->prio_factors->priority_fs =
-				priority_g_calc_fs_factor(
-					assoc_ptr->usage->usage_efctv,
-					(long double)assoc_ptr->usage->
-					shares_norm);
+	if (job_ptr->priority == 0) {	/* user/admin hold */
+		if ((job_ptr->state_reason != WAIT_HELD) &&
+		    (job_ptr->state_reason != WAIT_HELD_USER)) {
+			job_ptr->state_reason = WAIT_HELD;
 		}
-		if (job_ptr->prio_factors->priority_fs < qos_ptr->usage_thres)
-			fail_reason = WAIT_QOS_THRES;
+		return ESLURM_JOB_HELD;
 	}
 
+	/* Confirm that partition is up and has compatible nodes limits */
+	fail_reason = job_limits_check(&job_ptr);
 	if (fail_reason != WAIT_NO_REASON) {
 		last_job_update = now;
 		xfree(job_ptr->state_desc);
-		if (job_ptr->priority == 0) {	/* user/admin hold */
-			if ((job_ptr->state_reason != WAIT_HELD) &&
-			    (job_ptr->state_reason != WAIT_HELD_USER)) {
-				job_ptr->state_reason = WAIT_HELD;
-			}
-			return ESLURM_JOB_HELD;
-		}
 		job_ptr->state_reason = fail_reason;
 		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	}
@@ -1763,7 +1740,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			xfree(job_ptr->state_desc);
 			if (rc == ESLURM_INVALID_TIME_VALUE)
 				return ESLURM_RESERVATION_NOT_USABLE;
-            
+
             if (rc == ESLURM_NODES_BUSY)
                 return ESLURM_NODES_BUSY;
 
@@ -1779,6 +1756,12 @@ static int _build_node_list(struct job_record *job_ptr,
 			/* Required nodes outside of the reservation */
 			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		}
+	}
+	if ((job_ptr->details->min_nodes == 0) &&
+	    (job_ptr->details->max_nodes == 0)) {
+		*node_set_pptr = NULL;
+		*node_set_size = 0;
+		return SLURM_SUCCESS;
 	}
 
 	node_set_inx = 0;
@@ -2093,6 +2076,12 @@ extern void build_node_details(struct job_record *job_ptr)
 	xrealloc(job_ptr->node_addr,
 		 (sizeof(slurm_addr_t) * job_ptr->node_cnt));
 
+	xfree(job_ptr->batch_host);
+#ifdef HAVE_FRONT_END
+	job_ptr->front_end_ptr = assign_front_end();
+	xassert(job_ptr->front_end_ptr);
+	job_ptr->batch_host = xstrdup(job_ptr->front_end_ptr->name);
+#endif
 	while ((this_node_name = hostlist_shift(host_list))) {
 		if ((node_ptr = find_node_record(this_node_name))) {
 			memcpy(&job_ptr->node_addr[node_inx++],
@@ -2101,6 +2090,8 @@ extern void build_node_details(struct job_record *job_ptr)
 			error("Invalid node %s in JobId=%u",
 			      this_node_name, job_ptr->job_id);
 		}
+		if (job_ptr->batch_host == NULL)
+			job_ptr->batch_host = xstrdup(this_node_name);
 		free(this_node_name);
 	}
 	hostlist_destroy(host_list);

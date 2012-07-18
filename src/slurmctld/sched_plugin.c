@@ -69,147 +69,27 @@ typedef struct slurm_sched_ops {
 	char *		(*get_conf)		( void );
 } slurm_sched_ops_t;
 
+/*
+ * Must be synchronized with slurm_sched_ops_t above.
+ */
+static const char *syms[] = {
+	"slurm_sched_plugin_schedule",
+	"slurm_sched_plugin_newalloc",
+	"slurm_sched_plugin_freealloc",
+	"slurm_sched_plugin_initial_priority",
+	"slurm_sched_plugin_job_is_pending",
+	"slurm_sched_plugin_reconfig",
+	"slurm_sched_plugin_partition_change",
+	"slurm_sched_get_errno",
+	"slurm_sched_strerror",
+	"slurm_sched_plugin_requeue",
+	"slurm_sched_get_conf"
+};
 
-/* ************************************************************************ */
-/*  TAG(                        slurm_sched_contex_t                     )  */
-/* ************************************************************************ */
-typedef struct slurm_sched_context {
-	char	       	*sched_type;
-	plugrack_t     	plugin_list;
-	plugin_handle_t	cur_plugin;
-	int		sched_errno;
-	slurm_sched_ops_t ops;
-} slurm_sched_context_t;
-
-static slurm_sched_context_t	*g_sched_context = NULL;
-static pthread_mutex_t		g_sched_context_lock = PTHREAD_MUTEX_INITIALIZER;
-
-
-/* ************************************************************************ */
-/*  TAG(                       slurm_sched_get_ops                       )  */
-/* ************************************************************************ */
-static slurm_sched_ops_t *
-slurm_sched_get_ops( slurm_sched_context_t *c )
-{
-	/*
-	 * Must be synchronized with slurm_sched_ops_t above.
-	 */
-	static const char *syms[] = {
-		"slurm_sched_plugin_schedule",
-		"slurm_sched_plugin_newalloc",
-		"slurm_sched_plugin_freealloc",
-		"slurm_sched_plugin_initial_priority",
-		"slurm_sched_plugin_job_is_pending",
-		"slurm_sched_plugin_reconfig",
-		"slurm_sched_plugin_partition_change",
-		"slurm_sched_get_errno",
-		"slurm_sched_strerror",
-		"slurm_sched_plugin_requeue",
-		"slurm_sched_get_conf"
-	};
-	int n_syms = sizeof( syms ) / sizeof( char * );
-
-	/* Find the correct plugin. */
-        c->cur_plugin = plugin_load_and_link(c->sched_type, n_syms, syms,
-					     (void **) &c->ops);
-        if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
-        	return &c->ops;
-
-	if(errno != EPLUGIN_NOTFOUND) {
-		error("Couldn't load specified plugin name for %s: %s",
-		      c->sched_type, plugin_strerror(errno));
-		return NULL;
-	}
-
-	error("sched: Couldn't find the specified plugin name for %s "
-	      "looking at all files",
-	      c->sched_type);
-
-	/* Get plugin list. */
-	if ( c->plugin_list == NULL ) {
-		char *plugin_dir;
-		c->plugin_list = plugrack_create();
-		if ( c->plugin_list == NULL ) {
-			error( "sched: cannot create plugin manager" );
-			return NULL;
-		}
-		plugrack_set_major_type( c->plugin_list, "sched" );
-		plugrack_set_paranoia( c->plugin_list,
-				       PLUGRACK_PARANOIA_NONE,
-				       0 );
-		plugin_dir = slurm_get_plugin_dir();
-		plugrack_read_dir( c->plugin_list, plugin_dir );
-		xfree(plugin_dir);
-	}
-
-	c->cur_plugin = plugrack_use_by_type( c->plugin_list, c->sched_type );
-	if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
-		error( "sched: cannot find scheduler plugin for %s", 
-		       c->sched_type );
-		return NULL;
-	}
-
-	/* Dereference the API. */
-	if ( plugin_get_syms( c->cur_plugin,
-			      n_syms,
-			      syms,
-			      (void **) &c->ops ) < n_syms ) {
-		error( "sched: incomplete scheduling plugin detected" );
-		return NULL;
-	}
-
-	return &c->ops;
-}
-
-
-/* ************************************************************************ */
-/*  TAG(                  slurm_sched_context_create                     )  */
-/* ************************************************************************ */
-static slurm_sched_context_t *
-slurm_sched_context_create( const char *sched_type )
-{
-	slurm_sched_context_t *c;
-
-	if ( sched_type == NULL ) {
-		debug3( "slurm_sched_context:  no scheduler type" );
-		return NULL;
-	}
-
-	c = xmalloc( sizeof( slurm_sched_context_t ) );
-	c->sched_type	= xstrdup( sched_type );
-	c->plugin_list	= NULL;
-	c->cur_plugin	= PLUGIN_INVALID_HANDLE;
-	c->sched_errno 	= SLURM_SUCCESS;
-
-	return c;
-}
-
-
-/* ************************************************************************ */
-/*  TAG(                  slurm_sched_context_destroy                    )  */
-/* ************************************************************************ */
-static int
-slurm_sched_context_destroy( slurm_sched_context_t *c )
-{
-	int rc = SLURM_SUCCESS;
-	/*
-	 * Must check return code here because plugins might still
-	 * be loaded and active.
-	 */
-	if ( c->plugin_list ) {
-		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
-			rc = SLURM_ERROR;
-		}
-	} else {
-		plugin_unload(c->cur_plugin);
-	}
-
-	xfree( c->sched_type );
-	xfree( c );
-
-	return rc;
-}
-
+static slurm_sched_ops_t ops;
+static plugin_context_t	*g_context = NULL;
+static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 /* *********************************************************************** */
 /*  TAG(                        slurm_sched_init                        )  */
@@ -223,37 +103,31 @@ extern int
 slurm_sched_init( void )
 {
 	int retval = SLURM_SUCCESS;
-	char *sched_type = NULL;
+	char *plugin_type = "sched";
+	char *type = NULL;
 
-	slurm_mutex_lock( &g_sched_context_lock );
+	if ( init_run && g_context )
+		return retval;
 
-	if ( g_sched_context )
+	slurm_mutex_lock( &g_context_lock );
+
+	if ( g_context )
 		goto done;
 
-	sched_type = slurm_get_sched_type();
-	g_sched_context = slurm_sched_context_create( sched_type );
-	if ( g_sched_context == NULL ) {
-		error( "cannot create scheduler context for %s",
-			 sched_type );
+	type = slurm_get_sched_type();
+	g_context = plugin_context_create(
+		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+
+	if (!g_context) {
+		error("cannot create %s context for %s", plugin_type, type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
+	init_run = true;
 
-	if ( slurm_sched_get_ops( g_sched_context ) == NULL ) {
-		error( "cannot resolve scheduler plugin operations" );
-		slurm_sched_context_destroy( g_sched_context );
-		g_sched_context = NULL;
-		retval = SLURM_ERROR;
-		goto done;
-	}
-
-	if ( (slurm_get_preempt_mode() & PREEMPT_MODE_GANG) &&
-	     (gs_init() != SLURM_SUCCESS))
-		error( "cannot start gang scheduler ");
-
- done:
-	slurm_mutex_unlock( &g_sched_context_lock );
-	xfree(sched_type);
+done:
+	slurm_mutex_unlock( &g_context_lock );
+	xfree(type);
 	return retval;
 }
 
@@ -265,11 +139,12 @@ slurm_sched_fini( void )
 {
 	int rc;
 
-	if (!g_sched_context)
+	if (!g_context)
 		return SLURM_SUCCESS;
 
-	rc = slurm_sched_context_destroy(g_sched_context);
-	g_sched_context = NULL;
+	init_run = false;
+	rc = plugin_context_destroy(g_context);
+	g_context = NULL;
 
 	if ( (slurm_get_preempt_mode() & PREEMPT_MODE_GANG) &&
 	     (gs_fini() != SLURM_SUCCESS))
@@ -292,7 +167,7 @@ slurm_sched_reconfig( void )
 	     (gs_reconfig() != SLURM_SUCCESS))
 		error( "cannot reconfigure gang scheduler" );
 
-	return (*(g_sched_context->ops.reconfig))();
+	return (*(ops.reconfig))();
 }
 
 /* *********************************************************************** */
@@ -311,7 +186,7 @@ slurm_sched_schedule( void )
 		error( "gang scheduler could not rescan jobs" );
 #endif
 
-	return (*(g_sched_context->ops.schedule))();
+	return (*(ops.schedule))();
 }
 
 /* *********************************************************************** */
@@ -329,7 +204,7 @@ slurm_sched_newalloc( struct job_record *job_ptr )
 		       job_ptr->job_id);
 	}
 
-	return (*(g_sched_context->ops.newalloc))( job_ptr );
+	return (*(ops.newalloc))( job_ptr );
 }
 
 /* *********************************************************************** */
@@ -347,7 +222,7 @@ slurm_sched_freealloc( struct job_record *job_ptr )
 		       job_ptr->job_id);
 	}
 
-	return (*(g_sched_context->ops.freealloc))( job_ptr );
+	return (*(ops.freealloc))( job_ptr );
 }
 
 
@@ -361,8 +236,7 @@ slurm_sched_initial_priority( uint32_t last_prio,
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_sched_context->ops.initial_priority))( last_prio,
-							   job_ptr );
+	return (*(ops.initial_priority))( last_prio, job_ptr );
 }
 
 /* *********************************************************************** */
@@ -374,7 +248,7 @@ slurm_sched_job_is_pending( void )
 	if ( slurm_sched_init() < 0 )
 		return;
 
-	(*(g_sched_context->ops.job_is_pending))();
+	(*(ops.job_is_pending))();
 }
 
 /* *********************************************************************** */
@@ -390,7 +264,7 @@ slurm_sched_partition_change( void )
 	     (gs_reconfig() != SLURM_SUCCESS))
 		error( "cannot reconfigure gang scheduler" );
 
-	(*(g_sched_context->ops.partition_change))();
+	(*(ops.partition_change))();
 }
 
 /* *********************************************************************** */
@@ -402,7 +276,7 @@ slurm_sched_p_get_errno( void )
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_sched_context->ops.get_errno))( );
+	return (*(ops.get_errno))( );
 }
 
 /* *********************************************************************** */
@@ -414,7 +288,7 @@ slurm_sched_p_strerror( int errnum )
 	if ( slurm_sched_init() < 0 )
 		return NULL;
 
-	return (*(g_sched_context->ops.strerror))( errnum );
+	return (*(ops.strerror))( errnum );
 }
 
 /* *********************************************************************** */
@@ -426,7 +300,7 @@ slurm_sched_requeue( struct job_record *job_ptr, char *reason )
         if ( slurm_sched_init() < 0 )
                 return;
 
-        (*(g_sched_context->ops.job_requeue))( job_ptr, reason );
+        (*(ops.job_requeue))( job_ptr, reason );
 }
 
 /* *********************************************************************** */
@@ -438,7 +312,7 @@ slurm_sched_p_get_conf( void )
         if ( slurm_sched_init() < 0 )
                 return NULL;
 
-        return (*(g_sched_context->ops.get_conf))( );
+        return (*(ops.get_conf))( );
 }
 
 

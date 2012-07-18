@@ -170,7 +170,7 @@ typedef struct slurm_select_ops {
 						 uint16_t protocol_version);
 	select_nodeinfo_t *(*nodeinfo_alloc)	(void);
 	int		(*nodeinfo_free)	(select_nodeinfo_t *nodeinfo);
-	int		(*nodeinfo_set_all)	(time_t last_query_time);
+	int		(*nodeinfo_set_all)	(void);
 	int		(*nodeinfo_set)		(struct job_record *job_ptr);
 	int		(*nodeinfo_get)		(select_nodeinfo_t *nodeinfo,
 						 enum
@@ -203,6 +203,7 @@ typedef struct slurm_select_ops {
 						 *block_desc_ptr);
 	int		(*update_sub_node)	(update_block_msg_t
 						 *block_desc_ptr);
+	int             (*fail_cnode)           (struct step_record *step_ptr);
 	int		(*get_info_from_plugin)	(enum
 						 select_plugindata_info dinfo,
 						 struct job_record *job_ptr,
@@ -213,7 +214,9 @@ typedef struct slurm_select_ops {
 						 void *data);
 	int		(*reconfigure)		(void);
 	bitstr_t *      (*resv_test)            (bitstr_t *avail_bitmap,
-		 uint32_t node_cnt, uint32_t core_cnt, bitstr_t **core_bitmap);
+						 uint32_t node_cnt,
+						 uint32_t core_cnt,
+						 bitstr_t **core_bitmap);
 	void            (*ba_init)              (node_info_msg_t *node_info_ptr,
 						 bool sanity_check);
 	void            (*ba_fini)              (void);
@@ -221,13 +224,12 @@ typedef struct slurm_select_ops {
 
 } slurm_select_ops_t;
 
-typedef struct slurm_select_context {
-	char		*select_type;
-	plugrack_t	plugin_list;
-	plugin_handle_t	cur_plugin;
-	int		select_errno;
-	slurm_select_ops_t ops;
-} slurm_select_context_t;
+/*
+ * Defined in node_select.c Must be synchronized with slurm_select_ops_t above.
+ * Also must be synchronized with the other_plugin.c in
+ * the select/cray plugin.
+ */
+extern const char *node_select_syms[];
 
 /* Convert a node coordinate character into its equivalent number:
  * '0' = 0; '9' = 9; 'A' = 10; etc. */
@@ -336,9 +338,8 @@ extern int select_g_select_nodeinfo_free(dynamic_plugin_data_t *nodeinfo);
 extern int select_g_select_nodeinfo_set(struct job_record *job_ptr);
 
 /* Update slect plugin information about every node as needed (if changed since
- * previous query)
- * IN query_time - Time of previous update */
-extern int select_g_select_nodeinfo_set_all(time_t last_query_time);
+ * previous query) */
+extern int select_g_select_nodeinfo_set_all(void);
 
 /*
  * Get information from a slect plugin node record
@@ -400,6 +401,13 @@ extern int select_g_update_sub_node (update_block_msg_t *block_desc_ptr);
  * IN block_desc_ptr - information about the block
  */
 extern int select_g_update_block (update_block_msg_t *block_desc_ptr);
+
+/*
+ * Fail certain cnodes in a blocks midplane (usually comes from the
+ *        IBM runjob mux)
+ * IN step_ptr - step with failed cnodes
+ */
+extern int select_g_fail_cnode (struct step_record *step_ptr);
 
 /******************************************************\
  * JOB SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *
@@ -544,7 +552,8 @@ extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes,
 			     uint32_t req_nodes, uint16_t mode,
 			     List preemptee_candidates,
-			     List *preemptee_job_list, bitstr_t *exc_core_bitmap);
+			     List *preemptee_job_list,
+			     bitstr_t *exc_core_bitmap);
 
 /*
  * Note initiation of job is about to begin. Called immediately
@@ -657,7 +666,9 @@ extern int select_g_step_finish(struct step_record *step_ptr);
  * IN core_bitmap - cores to exclude for this reservation
  * RET - nodes selected for use by the reservation
  */
-extern bitstr_t * select_g_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt, uint32_t core_cnt, bitstr_t **core_bitmap);
+extern bitstr_t * select_g_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
+				     uint32_t core_cnt,
+				     bitstr_t **core_bitmap);
 
 /*****************************\
  * GET INFORMATION FUNCTIONS *

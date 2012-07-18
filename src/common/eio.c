@@ -481,7 +481,7 @@ void eio_obj_destroy(void *arg)
 /*
  * Add an eio_obj_t "obj" to an eio_handle_t "eio"'s internal object list.
  *
- * This function can only be used to intialize "eio"'s list before
+ * This function can only be used to initialize "eio"'s list before
  * calling eio_handle_mainloop.  If it is used after the eio engine's
  * mainloop has started, segfaults are likely.
  */

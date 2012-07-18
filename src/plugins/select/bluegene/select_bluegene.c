@@ -42,7 +42,7 @@
 #include "bg_read_config.h"
 #include "bg_defined_block.h"
 
-#ifdef HAVE_BGQ
+#ifndef HAVE_BG_L_P
 # include "ba_bgq/block_allocator.h"
 #else
 # include "ba/block_allocator.h"
@@ -1917,7 +1917,32 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		      "assigned to it, but for some reason we are "
 		      "trying to start a step on it?",
 		      job_ptr->job_id);
-
+	else if (bg_record->magic != BLOCK_MAGIC) {
+		bg_record = find_bg_record_in_list(
+			bg_lists->main, jobinfo->bg_block_id);
+		if (!bg_record || (bg_record->magic != BLOCK_MAGIC)) {
+			int rc;
+			error("select_p_step_pick_nodes: "
+			      "Whoa, some how we got a bad block for job %u, "
+			      "it should be %s but we couldn't find "
+			      "it on the system, no step for you, "
+			      "and ending job.",
+			      job_ptr->job_id, jobinfo->bg_block_id);
+			slurm_mutex_unlock(&block_state_mutex);
+			if ((rc = job_requeue(0, job_ptr->job_id,
+					      -1, (uint16_t)NO_VAL, false))) {
+				error("Couldn't requeue job %u, failing it: %s",
+				      job_ptr->job_id, slurm_strerror(rc));
+				job_fail(job_ptr->job_id);
+			}
+			return NULL;
+		}
+		error("select_p_step_pick_nodes: Whoa, some how we got a "
+		      "bad block for job %u, it should be %s "
+		      "(we found it so no big deal, but strange)",
+		      job_ptr->job_id, jobinfo->bg_block_id);
+		jobinfo->bg_record = bg_record;
+	}
 	xassert(!step_jobinfo->units_used);
 
 	xfree(step_jobinfo->bg_block_id);
@@ -1926,8 +1951,10 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 
 	if (((cluster_flags & CLUSTER_FLAG_BGL)
 	     || (cluster_flags & CLUSTER_FLAG_BGP))
-	    || (node_count == bg_record->cnode_cnt)) {
-		/* If we are using the whole block we need to verify
+	    || ((node_count == bg_record->cnode_cnt)
+		|| (node_count > bg_conf->mp_cnode_cnt))) {
+		/* If we are using the whole block (or more than 1
+		   midplane of it) we need to verify
 		   if anything else is used.  If anything else is used
 		   return NULL, else return that we can use the entire
 		   thing.
@@ -1938,7 +1965,8 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		if (list_count(job_ptr->step_list)) {
 			if (bg_conf->slurm_debug_flags & DEBUG_FLAG_BG_PICK)
 				info("select_p_step_pick_nodes: Looking "
-				     "for the entire block %s for job %u, "
+				     "for more than one midplane of "
+				     "block %s for job %u, "
 				     "but some of it is used.",
 				     bg_record->bg_block_id, job_ptr->job_id);
 			goto end_it;
@@ -1946,31 +1974,49 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		if (!(picked_mps = bit_copy(job_ptr->node_bitmap)))
 			fatal("bit_copy malloc failure");
 
-		if (cluster_flags & CLUSTER_FLAG_BGQ
-		    && (bg_record->mp_count == 1)) {
+		if (cluster_flags & CLUSTER_FLAG_BGQ) {
 			bitstr_t *used_bitmap;
+			if (node_count > bg_conf->mp_cnode_cnt) {
+				/* Here we have to make sure nothing
+				   else is able to run on this block
+				   since we are using more than 1
+				   midplane but potentially not the
+				   entire allocation.
+				*/
+				FREE_NULL_BITMAP(jobinfo->units_avail);
+				FREE_NULL_BITMAP(jobinfo->units_used);
+				jobinfo->units_avail =
+					ba_create_ba_mp_cnode_bitmap(bg_record);
+				jobinfo->units_used =
+					bit_copy(jobinfo->units_avail);
+			}
 
 			if (jobinfo->units_avail)
 				used_bitmap = jobinfo->units_used;
 			else {
-				xassert((ba_mp = list_peek(
-						 bg_record->ba_mp_list)));
+				ba_mp = list_peek(bg_record->ba_mp_list);
+				xassert(ba_mp);
 				if (!ba_mp->cnode_bitmap)
 					ba_mp->cnode_bitmap =
 						ba_create_ba_mp_cnode_bitmap(
 							bg_record);
 				used_bitmap = ba_mp->cnode_bitmap;
 			}
+			/* units_used and units_avail will be the
+			   same, the exact opposite of used_bitmap.
+			*/
 			step_jobinfo->units_used = bit_copy(used_bitmap);
-			step_jobinfo->units_avail = bit_copy(used_bitmap);
 			bit_not(step_jobinfo->units_used);
+			step_jobinfo->units_avail =
+				bit_copy(step_jobinfo->units_used);
 			bit_or(used_bitmap, step_jobinfo->units_used);
 		}
 
 		step_jobinfo->ionode_str = xstrdup(jobinfo->ionode_str);
 	} else if (jobinfo->units_avail) {
 		bitstr_t *total_bitmap = jobinfo->units_used;
-		xassert((ba_mp = list_peek(bg_record->ba_mp_list)));
+		ba_mp = list_peek(bg_record->ba_mp_list);
+		xassert(ba_mp);
 		if (ba_mp->cnode_err_bitmap) {
 			total_bitmap = bit_copy(jobinfo->units_used);
 			bit_or(total_bitmap, ba_mp->cnode_err_bitmap);
@@ -2061,7 +2107,7 @@ end_it:
 extern int select_p_step_finish(struct step_record *step_ptr)
 {
 	bg_record_t *bg_record = NULL;
-	select_jobinfo_t *jobinfo = NULL;
+	select_jobinfo_t *jobinfo = NULL, *step_jobinfo = NULL;
 	int rc = SLURM_SUCCESS;
 	char *tmp_char = NULL;
 
@@ -2076,10 +2122,18 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 	}
 
 	jobinfo = step_ptr->job_ptr->select_jobinfo->data;
+	step_jobinfo = step_ptr->select_jobinfo->data;
 
-	if (jobinfo->units_avail)
+	if (step_jobinfo->cnode_cnt > bg_conf->mp_cnode_cnt) {
+		/* This means we were using units_avail and units_used
+		   as midplanes not cnodes for either the whole job
+		   allocation or a portion of it.
+		*/
+		FREE_NULL_BITMAP(jobinfo->units_avail);
+		FREE_NULL_BITMAP(jobinfo->units_used);
+	} else if (jobinfo->units_avail)
 		rc = ba_sub_block_in_bitmap_clear(
-			step_ptr->select_jobinfo->data, jobinfo->units_used);
+			step_jobinfo, jobinfo->units_used);
 	else {
 		slurm_mutex_lock(&block_state_mutex);
 		bg_record = jobinfo->bg_record;
@@ -2089,6 +2143,26 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 			      "assigned to it, but for some reason we are "
 			      "trying to end the step?",
 			      step_ptr->job_ptr->job_id, step_ptr->step_id);
+		else if (bg_record->magic != BLOCK_MAGIC) {
+			bg_record = find_bg_record_in_list(
+				bg_lists->main, jobinfo->bg_block_id);
+			if (!bg_record || (bg_record->magic != BLOCK_MAGIC)) {
+				error("select_p_step_finish: "
+				      "Whoa, some how we got a bad block "
+				      "for job %u, it should be %s but "
+				      "we couldn't find it on the system, "
+				      "so no real need to clear it up.",
+				      step_ptr->job_ptr->job_id,
+				      jobinfo->bg_block_id);
+				slurm_mutex_unlock(&block_state_mutex);
+				return SLURM_ERROR;
+			}
+			error("select_p_step_finish: Whoa, some how we "
+			      "got a bad block for job %u, it should be %s "
+			      "(we found it so no big deal, but strange)",
+			      step_ptr->job_ptr->job_id, jobinfo->bg_block_id);
+			jobinfo->bg_record = bg_record;
+		}
 		rc = ba_sub_block_in_record_clear(bg_record, step_ptr);
 		slurm_mutex_unlock(&block_state_mutex);
 	}
@@ -2195,12 +2269,12 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 	return select_nodeinfo_free(nodeinfo);
 }
 
-extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
+extern int select_p_select_nodeinfo_set_all(void)
 {
         if (bg_recover != NOT_FROM_CONTROLLER)
                 bridge_status_init();
 
-	return select_nodeinfo_set_all(last_query_time);
+	return select_nodeinfo_set_all();
 }
 
 extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
@@ -2478,14 +2552,15 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 					info("Pending job %u on block %s "
 					     "will try to be requeued "
 					     "because overlapping block %s "
-					     "is in an error state.",
+					     "is being removed.",
 					     found_record->job_running,
 					     found_record->bg_block_id,
 					     bg_record->bg_block_id);
 				else
-					info("Failing job %u on block %s "
+					info("Running job %u on block %s "
+					     "will try to be requeued "
 					     "because overlapping block %s "
-					     "is in an error state.",
+					     "is being removed.",
 					     found_record->job_running,
 					     found_record->bg_block_id,
 					     bg_record->bg_block_id);
@@ -2498,7 +2573,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 				struct job_record *job_ptr = NULL;
 				ListIterator job_itr = list_iterator_create(
 					found_record->job_list);
-				while ((job_ptr = list_next(itr))) {
+				while ((job_ptr = list_next(job_itr))) {
 					if (job_ptr->magic != JOB_MAGIC) {
 						error("select_p_update_block: "
 						      "bad magic found when "
@@ -2512,18 +2587,17 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 						info("Pending job %u on "
 						     "block %s "
 						     "will try to be requeued "
-						     "because overlapping "
-						     "block %s "
+						     "because related block %s "
 						     "is in an error state.",
 						     job_ptr->job_id,
 						     found_record->bg_block_id,
 						     bg_record->bg_block_id);
 					else
-						info("Failing job %u on "
+						info("Running job %u on "
 						     "block %s "
-						     "because overlapping "
-						     "block %s "
-						     "is in an error state.",
+						     "will try to be requeued "
+						     "because related block %s "
+						     "is being removed.",
 						     job_ptr->job_id,
 						     found_record->bg_block_id,
 						     bg_record->bg_block_id);
@@ -2779,6 +2853,120 @@ end_it:
 #endif
 }
 
+/* While the realtime server should get all the cnode state changes on
+ * older versions of the IBM driver if a job has a timeout it doesn't
+ * always happen.  So what happens is the runjob_mux will now send a
+ * nice cancel to the slurmctld to make sure it gets marked.
+ */
+extern int select_p_fail_cnode(struct step_record *step_ptr)
+{
+#if defined HAVE_BG && !defined HAVE_BG_L_P
+	bg_record_t *bg_record;
+	select_nodeinfo_t *nodeinfo;
+	select_jobinfo_t *jobinfo;
+	select_jobinfo_t *step_jobinfo;
+	struct node_record *node_ptr = NULL;
+	ListIterator itr, itr2;
+	ba_mp_t *ba_mp = NULL, *found_ba_mp;
+	int i;
+
+	xassert(step_ptr);
+
+	jobinfo = step_ptr->job_ptr->select_jobinfo->data;
+	step_jobinfo = step_ptr->select_jobinfo->data;
+
+	/* block_state must be locked before ba_system */
+	slurm_mutex_lock(&block_state_mutex);
+	slurm_mutex_lock(&ba_system_mutex);
+	for (i=0; i<bit_size(step_ptr->step_node_bitmap); i++) {
+		if (!bit_test(step_ptr->step_node_bitmap, i))
+			continue;
+		ba_mp = ba_inx2ba_mp(i);
+		xassert(ba_mp);
+
+		if (!ba_mp->cnode_err_bitmap)
+			ba_mp->cnode_err_bitmap =
+				bit_alloc(bg_conf->mp_cnode_cnt);
+
+		if (jobinfo->units_avail) {
+			bit_or(ba_mp->cnode_err_bitmap,
+			       step_jobinfo->units_used);
+		} else {
+			bit_nset(ba_mp->cnode_err_bitmap, 0,
+				 bit_size(ba_mp->cnode_err_bitmap)-1);
+		}
+		node_ptr = &(node_record_table_ptr[ba_mp->index]);
+		xassert(node_ptr->select_nodeinfo);
+		nodeinfo = (select_nodeinfo_t *)node_ptr->select_nodeinfo->data;
+		xassert(nodeinfo);
+		xfree(nodeinfo->failed_cnodes);
+		nodeinfo->failed_cnodes = ba_node_map_ranged_hostlist(
+			ba_mp->cnode_err_bitmap, ba_mp_geo_system);
+	}
+
+	if (!ba_mp) {
+		error("select_p_fail_cnode: no ba_mp? "
+		      "This should never happen");
+		slurm_mutex_unlock(&ba_system_mutex);
+		slurm_mutex_unlock(&block_state_mutex);
+		return SLURM_ERROR;
+	}
+
+	itr = list_iterator_create(bg_lists->main);
+	while ((bg_record = (bg_record_t *)list_next(itr))) {
+		if (!bit_overlap(step_ptr->step_node_bitmap,
+				 bg_record->mp_bitmap))
+			continue;
+		itr2 = list_iterator_create(bg_record->ba_mp_list);
+		while ((found_ba_mp = (ba_mp_t *)list_next(itr2))) {
+			float err_ratio;
+
+			if (!found_ba_mp->used
+			    || !bit_test(step_ptr->step_node_bitmap,
+					 found_ba_mp->index))
+				continue;
+
+			/* perhaps this block isn't involved in this
+			   error */
+			if (jobinfo->units_avail
+			    && found_ba_mp->cnode_usable_bitmap
+			    && bit_overlap(found_ba_mp->cnode_usable_bitmap,
+					   ba_mp->cnode_err_bitmap))
+					continue;
+
+			if (!found_ba_mp->cnode_err_bitmap)
+				found_ba_mp->cnode_err_bitmap =
+					bit_alloc(bg_conf->mp_cnode_cnt);
+
+			bit_or(found_ba_mp->cnode_err_bitmap,
+			       ba_mp->cnode_err_bitmap);
+			bg_record->cnode_err_cnt =
+				bit_set_count(found_ba_mp->cnode_err_bitmap);
+
+
+			err_ratio = (float)bg_record->cnode_err_cnt
+				/ (float)bg_record->cnode_cnt;
+                        bg_record->err_ratio = err_ratio * 100;
+
+			/* handle really small ratios */
+			if (!bg_record->err_ratio && bg_record->cnode_err_cnt)
+				bg_record->err_ratio = 1;
+
+			debug("select_p_fail_cnode: "
+			      "count in error for %s is %u with ratio at %u",
+			      bg_record->bg_block_id,
+			      bg_record->cnode_err_cnt,
+			      bg_record->err_ratio);
+		}
+		list_iterator_destroy(itr2);
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&ba_system_mutex);
+	slurm_mutex_unlock(&block_state_mutex);
+#endif
+	return SLURM_SUCCESS;
+}
+
 extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo,
 					  struct job_record *job_ptr,
 					  void *data)
@@ -2920,6 +3108,14 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 		if (job_desc->min_nodes == (uint32_t) NO_VAL)
 			return SLURM_SUCCESS;
+		else if ((job_desc->min_nodes == 1)
+			 && (job_desc->min_cpus != NO_VAL)) {
+			job_desc->min_nodes = job_desc->min_cpus;
+			if (job_desc->ntasks_per_node
+			    && job_desc->ntasks_per_node != NO_VAL)
+				job_desc->min_nodes /=
+					job_desc->ntasks_per_node;
+		}
 
 		get_select_jobinfo(job_desc->select_jobinfo->data,
 				   SELECT_JOBDATA_GEOMETRY, &req_geometry);
@@ -3132,7 +3328,8 @@ extern int select_p_reconfigure(void)
 #endif
 }
 
-extern bitstr_t *select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt, bitstr_t **core_bitmap)
+extern bitstr_t *select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
+				    bitstr_t **core_bitmap)
 {
 #ifdef HAVE_BG
 	/* Reserve a block of appropriate geometry by issuing a fake job

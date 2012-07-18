@@ -661,22 +661,25 @@ extern int check_and_set_mp_list(List mps)
 						     curr_ba_switch->usage));
 				rc = SLURM_ERROR;
 				goto end_it;
-			} else if ((curr_ba_switch->usage
-				    & BG_SWITCH_CABLE_ERROR_SET)
-				   && (ba_switch->usage & BG_SWITCH_OUT_PASS)) {
-				if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
-					info("check_and_set_mp_list: "
-					     "%s(%d)'s cable is not available "
-					     "can't make this block.  "
-					     "We need %s and system is %s",
-					     ba_mp->coord_str, i,
-					     ba_switch_usage_str(
-						     ba_switch->usage),
-					     ba_switch_usage_str(
-						     curr_ba_switch->usage));
-				rc = SLURM_ERROR;
-				goto end_it;
 			}
+			/* Since we are only checking to see if this
+			   block is creatable we don't need to check
+			   hardware issues like bad cables.
+			*/
+			/* else if ((curr_ba_switch->usage */
+			/* 	    & BG_SWITCH_CABLE_ERROR_SET) */
+			/* 	   && (ba_switch->usage & BG_SWITCH_OUT_PASS)) { */
+			/* 	if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) */
+			/* 		info("check_and_set_mp_list: " */
+			/* 		     "%s(%d)'s cable is not available " */
+			/* 		     "can't really make this block.  " */
+			/* 		     "We need %s and system is %s", */
+			/* 		     ba_mp->coord_str, i, */
+			/* 		     ba_switch_usage_str( */
+			/* 			     ba_switch->usage), */
+			/* 		     ba_switch_usage_str( */
+			/* 			     curr_ba_switch->usage)); */
+			/* } */
 
 			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO_DEEP)
 				info("check_and_set_mp_list: "
@@ -1151,17 +1154,8 @@ try_again:
 			break;
 
 		clear_cnt = bit_clear_count(total_bitmap);
+
 		FREE_NULL_BITMAP(total_bitmap);
-		/* User asked for a bad CPU count or we can't place it
-		   here in this small allocation. */
-		if (jobinfo->cnode_cnt < bg_conf->mp_cnode_cnt) {
-			list_iterator_destroy(itr);
-			if (ba_debug_flags & DEBUG_FLAG_BG_ALGO)
-				info("We couldn't place a sub block of %d",
-				     *node_count);
-			(*node_count)++;
-			goto try_again;
-		}
 
 		/* Grab the most empty midplane to be used later if we
 		   can't find a spot.
@@ -1553,7 +1547,8 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 	if (!bg_record->job_list)
 		return NULL;
 
-	xassert((ba_mp = list_peek(bg_record->ba_mp_list)));
+	ba_mp = list_peek(bg_record->ba_mp_list);
+	xassert(ba_mp);
 
 	if (in_job_ptr && in_job_ptr->magic != JOB_MAGIC) {
 		/* This can happen if the mmcs job hangs out in the system
@@ -1717,6 +1712,11 @@ extern int ba_translate_coord2nc(uint16_t *cnode_coords)
 	return nc_loc;
 }
 
+/* ba_system_mutex needs to be locked before calling this. */
+extern ba_mp_t *ba_inx2ba_mp(int inx)
+{
+	return ba_main_grid_array[inx];
+}
 
 static char *_copy_from_main(List main_mps, List ret_list)
 {

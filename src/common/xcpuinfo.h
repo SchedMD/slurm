@@ -45,7 +45,7 @@
 #define XCPUINFO_SUCCESS  0
 
 extern int get_procs(uint16_t *procs);
-extern int get_cpuinfo(uint16_t numproc,
+extern int get_cpuinfo(uint16_t numproc, uint16_t *boards,
 		       uint16_t *sockets, uint16_t *cores, uint16_t *threads,
 		       uint16_t *block_map_size,
 		       uint16_t **block_map, uint16_t **block_map_inv);

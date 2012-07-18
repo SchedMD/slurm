@@ -59,141 +59,24 @@ typedef struct slurm_proctrack_ops {
 	int              (*get_pids)  (uint64_t id, pid_t ** pids, int *npids);
 } slurm_proctrack_ops_t;
 
+/*
+ * Must be synchronized with slurm_proctrack_ops_t above.
+ */
+static const char *syms[] = {
+	"slurm_container_plugin_create",
+	"slurm_container_plugin_add",
+	"slurm_container_plugin_signal",
+	"slurm_container_plugin_destroy",
+	"slurm_container_plugin_find",
+	"slurm_container_plugin_has_pid",
+	"slurm_container_plugin_wait",
+	"slurm_container_plugin_get_pids"
+};
 
-/* ************************************************************************ */
-/*  TAG(                        slurm_proctrack_contex_t                 )  */
-/* ************************************************************************ */
-typedef struct slurm_proctrack_context {
-	char *                 proctrack_type;
-	plugrack_t             plugin_list;
-	plugin_handle_t        cur_plugin;
-	int                    op_errno;
-	slurm_proctrack_ops_t  ops;
-} slurm_proctrack_context_t;
-
-static slurm_proctrack_context_t *g_proctrack_context = NULL;
-static pthread_mutex_t g_proctrack_context_lock = PTHREAD_MUTEX_INITIALIZER;
-
-
-/* ************************************************************************ */
-/*  TAG(                        _proctrack_get_ops                       )  */
-/* ************************************************************************ */
-static slurm_proctrack_ops_t *
-_proctrack_get_ops(slurm_proctrack_context_t * c)
-{
-	/*
-	 * Must be synchronized with slurm_proctrack_ops_t above.
-	 */
-	static const char *syms[] = {
-		"slurm_container_plugin_create",
-		"slurm_container_plugin_add",
-		"slurm_container_plugin_signal",
-		"slurm_container_plugin_destroy",
-		"slurm_container_plugin_find",
-		"slurm_container_plugin_has_pid",
-		"slurm_container_plugin_wait",
-		"slurm_container_plugin_get_pids"
-	};
-	int n_syms = sizeof(syms) / sizeof(char *);
-
-	/* Find the correct plugin. */
-	c->cur_plugin = plugin_load_and_link(c->proctrack_type, n_syms, syms,
-					     (void **) &c->ops);
-	if (c->cur_plugin != PLUGIN_INVALID_HANDLE)
-		return &c->ops;
-
-	if(errno != EPLUGIN_NOTFOUND) {
-		error("Couldn't load specified plugin name for %s: %s",
-		      c->proctrack_type, plugin_strerror(errno));
-		return NULL;
-	}
-
-	error("Couldn't find the specified plugin name for %s "
-	      "looking at all files", c->proctrack_type);
-
-	/* Get plugin list. */
-	if (c->plugin_list == NULL) {
-		char *plugin_dir;
-		c->plugin_list = plugrack_create();
-		if (c->plugin_list == NULL) {
-			error("cannot create plugin manager");
-			return NULL;
-		}
-		plugrack_set_major_type(c->plugin_list, "proctrack");
-		plugrack_set_paranoia(c->plugin_list,
-				      PLUGRACK_PARANOIA_NONE, 0);
-		plugin_dir = slurm_get_plugin_dir();
-		plugrack_read_dir(c->plugin_list, plugin_dir);
-		xfree(plugin_dir);
-	}
-
-	c->cur_plugin = plugrack_use_by_type(c->plugin_list,
-					     c->proctrack_type);
-	if (c->cur_plugin == PLUGIN_INVALID_HANDLE) {
-		error("cannot find proctrack plugin for %s",
-		      c->proctrack_type);
-		return NULL;
-	}
-
-	/* Dereference the API. */
-	if (plugin_get_syms(c->cur_plugin,
-			    n_syms, syms, (void **) &c->ops) < n_syms) {
-		error("incomplete proctrack plugin detected");
-		return NULL;
-	}
-
-	return &c->ops;
-}
-
-
-/* ************************************************************************ */
-/*  TAG(                   _proctrack_context_create                     )  */
-/* ************************************************************************ */
-static slurm_proctrack_context_t *
-_proctrack_context_create(const char *proctrack_type)
-{
-	slurm_proctrack_context_t *c;
-
-	if (proctrack_type == NULL) {
-		debug3("_proctrack_context_create:  no proctrack type");
-		return NULL;
-	}
-
-	c = xmalloc(sizeof(slurm_proctrack_context_t));
-	c->proctrack_type = xstrdup(proctrack_type);
-	c->plugin_list = NULL;
-	c->cur_plugin = PLUGIN_INVALID_HANDLE;
-	c->op_errno = SLURM_SUCCESS;
-
-	return c;
-}
-
-
-/* ************************************************************************ */
-/*  TAG(                   _proctrack_context_destroy                    )  */
-/* ************************************************************************ */
-static int _proctrack_context_destroy(slurm_proctrack_context_t * c)
-{
-	int rc = SLURM_SUCCESS;
-
-	/*
-	 * Must check return code here because plugins might still
-	 * be loaded and active.
-	 */
-	if (c->plugin_list) {
-		if (plugrack_destroy(c->plugin_list) != SLURM_SUCCESS) {
-			rc = SLURM_ERROR;
-		}
-	} else {
-		plugin_unload(c->cur_plugin);
-	}
-
-	xfree(c->proctrack_type);
-	xfree(c);
-
-	return rc;
-}
-
+static slurm_proctrack_ops_t ops;
+static plugin_context_t *g_context = NULL;
+static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 /* *********************************************************************** */
 /*  TAG(                    slurm_proctrack_init                        )  */
@@ -204,33 +87,31 @@ static int _proctrack_context_destroy(slurm_proctrack_context_t * c)
 extern int slurm_proctrack_init(void)
 {
 	int retval = SLURM_SUCCESS;
-	char *proctrack_type = NULL;
+	char *plugin_type = "proctrack";
+	char *type = NULL;
 
-	slurm_mutex_lock(&g_proctrack_context_lock);
+	if (init_run && g_context)
+		return retval;
 
-	if (g_proctrack_context)
+	slurm_mutex_lock(&g_context_lock);
+
+	if (g_context)
 		goto done;
 
-	proctrack_type = slurm_get_proctrack_type();
-	g_proctrack_context = _proctrack_context_create(proctrack_type);
-	if (g_proctrack_context == NULL) {
-		error("cannot create proctrack context for %s",
-		      proctrack_type);
+	type = slurm_get_proctrack_type();
+	g_context = plugin_context_create(
+		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+
+	if (!g_context) {
+		error("cannot create %s context for %s", plugin_type, type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
+	init_run = true;
 
-	if (_proctrack_get_ops(g_proctrack_context) == NULL) {
-		error("cannot resolve proctrack plugin operations for %s",
-		      proctrack_type);
-		_proctrack_context_destroy(g_proctrack_context);
-		g_proctrack_context = NULL;
-		retval = SLURM_ERROR;
-	}
-
-      done:
-	slurm_mutex_unlock(&g_proctrack_context_lock);
-	xfree(proctrack_type);
+done:
+	slurm_mutex_unlock(&g_context_lock);
+	xfree(type);
 	return retval;
 }
 
@@ -241,11 +122,12 @@ extern int slurm_proctrack_fini(void)
 {
 	int rc;
 
-	if (!g_proctrack_context)
+	if (!g_context)
 		return SLURM_SUCCESS;
 
-	rc = _proctrack_context_destroy(g_proctrack_context);
-	g_proctrack_context = NULL;
+	init_run = false;
+	rc = plugin_context_destroy(g_context);
+	g_context = NULL;
 	return rc;
 }
 
@@ -262,7 +144,7 @@ extern int slurm_container_create(slurmd_job_t * job)
 	if (slurm_proctrack_init() < 0)
 		return 0;
 
-	return (*(g_proctrack_context->ops.create)) (job);
+	return (*(ops.create)) (job);
 }
 
 /*
@@ -279,7 +161,7 @@ extern int slurm_container_add(slurmd_job_t * job, pid_t pid)
 	if (slurm_proctrack_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(g_proctrack_context->ops.add)) (job, pid);
+	return (*(ops.add)) (job, pid);
 }
 
 /*
@@ -295,7 +177,7 @@ extern int slurm_container_signal(uint64_t cont_id, int signal)
 	if (slurm_proctrack_init() < 0) {
 		return SLURM_ERROR;
 	}
-	return (*(g_proctrack_context->ops.signal)) (cont_id, signal);
+	return (*(ops.signal)) (cont_id, signal);
 }
 
 /*
@@ -309,7 +191,7 @@ extern int slurm_container_destroy(uint64_t cont_id)
 	if (slurm_proctrack_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(g_proctrack_context->ops.destroy)) (cont_id);
+	return (*(ops.destroy)) (cont_id);
 }
 
 /*
@@ -322,7 +204,7 @@ extern uint64_t slurm_container_find(pid_t pid)
 	if (slurm_proctrack_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(g_proctrack_context->ops.find_cont)) (pid);
+	return (*(ops.find_cont)) (pid);
 }
 
 /*
@@ -334,7 +216,7 @@ extern bool slurm_container_has_pid(uint64_t cont_id, pid_t pid)
 	if (slurm_proctrack_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(g_proctrack_context->ops.has_pid)) (cont_id, pid);
+	return (*(ops.has_pid)) (cont_id, pid);
 }
 
 /*
@@ -352,7 +234,7 @@ extern int slurm_container_wait(uint64_t cont_id)
 	if (slurm_proctrack_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(g_proctrack_context->ops.wait)) (cont_id);
+	return (*(ops.wait)) (cont_id);
 }
 
 /*
@@ -373,5 +255,5 @@ slurm_container_get_pids(uint64_t cont_id, pid_t ** pids, int *npids)
 	if (slurm_proctrack_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(g_proctrack_context->ops.get_pids)) (cont_id, pids, npids);
+	return (*(ops.get_pids)) (cont_id, pids, npids);
 }

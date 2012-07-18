@@ -32,14 +32,16 @@ noinst_LTLIBRARIES = 			\
 	libspank.la
 
 libcommon_la_SOURCES = 			\
- 	xcgroup_read_config.c xcgroup_read_config.h		\
- 	xcgroup.c xcgroup.h 					\
- 	xcpuinfo.c xcpuinfo.h 					\
+	xcgroup_read_config.c xcgroup_read_config.h		\
+	xcgroup.c xcgroup.h 					\
+	xcpuinfo.c xcpuinfo.h 					\
+	cpu_frequency.c cpu_frequency.h \
 	assoc_mgr.c assoc_mgr.h 	\
 	xmalloc.c xmalloc.h 		\
 	xassert.c xassert.h		\
 	xstring.c xstring.h		\
 	xsignal.c xsignal.h		\
+	strnatcmp.c strnatcmp.h		\
 	forward.c forward.h     	\
 	strlcpy.c strlcpy.h		\
 	list.c list.h 			\
@@ -85,7 +87,6 @@ libcommon_la_SOURCES = 			\
 	uid.c uid.h			\
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
-	jobacct_common.c jobacct_common.h \
 	slurm_accounting_storage.c slurm_accounting_storage.h \
 	slurm_jobacct_gather.c slurm_jobacct_gather.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
@@ -132,9 +133,9 @@ libspank_la_SOURCES = \
 	plugstack.c plugstack.h \
 	optz.c      optz.h
 
-libcommon_la_LIBADD   = $(DL_LIBS)
+libcommon_la_LIBADD   = $(DL_LIBS) $(HWLOC_LIBS)
 
-libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
+libcommon_la_LDFLAGS  = $(HWLOC_LDFLAGS) $(LIB_LDFLAGS) -module --export-dynamic
 
 # This was made so we could export all symbols from libcommon
 # on multiple platforms

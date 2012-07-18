@@ -186,6 +186,7 @@ hv_to_slurm_step_launch_params(HV *hv, slurm_step_launch_params_t *params)
 	FETCH_FIELD(hv, params, task_epilog, charp, FALSE);
 	FETCH_FIELD(hv, params, cpu_bind_type, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, cpu_bind, charp, FALSE);
+	FETCH_FIELD(hv, params, cpu_freq, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, mem_bind_type, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, mem_bind, charp, FALSE);
 

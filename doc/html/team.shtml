@@ -28,14 +28,15 @@ organizations. Lead SLURM developers are:
 <li>Daniel Christians (HP)</li>
 <li>Gilles Civario (Bull)</li>
 <li>Chuck Clouston (Bull)</li>
-<li>Phil Eckert (Lawrence Livermore National Laboratory)</li>
 <li>Yuri D'Elia (Center for Biomedicine, EURAC Research, Italy)</li>
-<li>Carles Fenoy (Barcelona Supercomputer Center, Spain)</li>
 <li>Joseph Donaghy (Lawrence Livermore National Laboratory)</li>
 <li>Chris Dunlap (Lawrence Livermore National Laboratory)</li>
+<li>Phil Eckert (Lawrence Livermore National Laboratory)</li>
 <li>Joey Ekstrom (Lawrence Livermore National Laboratory/Bringham Young University)</li>
 <li>Josh England (TGS Management Corporation)</li>
 <li>Kent Engstr&ouml;m  (National Supercomputer Centre, Sweden)</li>
+<li>Carles Fenoy (Barcelona Supercomputer Center, Spain)</li>
+<li>Damien Fran&ccedil;ois (Universit&eacute; catholique de Louvain, Belgium)</li>
 <li>Jim Garlick (Lawrence Livermore National Laboratory)</li>
 <li>Didier Gazen (Laboratoire d'Aerologie, France)</li>
 <li>Raphael Geissert (Debian)</li>
@@ -101,14 +102,15 @@ organizations. Lead SLURM developers are:
 <li>Adam Todorski (Rensselaer Polytechnic Institute)</li>
 <li>Stephen Trofinoff (Swiss National Supercomputing Centre)</li>
 <li>Nathan Weeks (Iowa State University)</li>
+<li>Andy Wettstein (University of Chicago)</li>
 <li>Tim Wickberg (Rensselaer Polytechnic Institute)</li>
 <li>Ramiro Brito Willmersdorf (Universidade Federal de Pemambuco, Brazil)</li>
 <li>Jay Windley (Linux NetworX)</li>
 <li>Anne-Marie Wunderlin (Bull)</li>
 <li>Nathan Yee (SchedMD)</li>
-<li>Damien François (UCL)</li>
+<!-- PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 14 May 2012</p>
+<p style="text-align:center;">Last modified 30 May 2012</p>
 
 <!--#include virtual="footer.txt"-->

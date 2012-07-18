@@ -102,6 +102,13 @@ extern int other_update_block(update_block_msg_t *block_desc_ptr);
 extern int other_update_sub_node(update_block_msg_t *block_desc_ptr);
 
 /*
+ * Fail certain cnodes in a blocks midplane (usually comes from the
+ *        IBM runjob mux)
+ * IN step_ptr - step that failed
+ */
+extern int other_fail_cnode (struct step_record *step_ptr);
+
+/*
  * Get select data from a plugin
  * IN node_pts  - current node record
  * IN dinfo   - type of data to get from the node record
@@ -343,7 +350,7 @@ extern select_nodeinfo_t *other_select_nodeinfo_alloc(void);
 
 extern int other_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
-extern int other_select_nodeinfo_set_all(time_t last_query_time);
+extern int other_select_nodeinfo_set_all(void);
 
 extern int other_select_nodeinfo_set(struct job_record *job_ptr);
 
@@ -371,7 +378,8 @@ extern int other_pack_select_info(time_t last_query_time, uint16_t show_flags,
 /* Note reconfiguration or change in partition configuration */
 extern int other_reconfigure(void);
 
-extern bitstr_t * other_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt, bitstr_t **core_bitmap);
+extern bitstr_t * other_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
+				  uint32_t core_cnt, bitstr_t **core_bitmap);
 
 extern void other_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check);
 extern void other_ba_fini(void);

@@ -1,0 +1,223 @@
+<!--#include virtual="header.txt"-->
+
+<h1>IBM Parallel Environment User and Administrator Guide</h1>
+
+<h2>Overview</h2>
+
+<p>This document describes the unique features of SLURM on the
+IBM computers with the
+<a href="http://www-03.ibm.com/systems/software/parallel/">Parallel Environment (PE)</a>
+software. You should be familiar with the SLURM's mode of operation on Linux
+clusters before studying the relatively few differences in operation on systems
+with PE, which are described in this document.</p>
+
+<h2>User Tools</h2>
+
+<p>The normal set of SLURM user tools: srun, scancel, sinfo, smap, squeue and
+scontrol provide all of the expected services. Job steps are launched using the
+srun command, which translates its options and invokes IBM's poe command. The
+poe command actually launches the tasks. The poe command may also be invoked
+directly if desired. The actual task launch process is as follows:</p>
+<ol>
+<li>Invoke srun command with desired options.</li>
+<li>The srun command creates a job allocation (if necessary).</li>
+<li>The srun command translates its options and invokes the poe command.</li>
+<li>The poe command loads a SLURM library that provides various resource
+management functionality.</li>
+<li>The poe command, through the SLURM library, launches a process named
+"pmdv12" on the appropriate compute nodes. Note that the "v12" on the end of
+the process name represents the version number of the "pmd" process and is
+subject to change.</li>
+<li>The poe command interacts with the pmdv12 process to launch the application
+tasks, handle their I/O, etc. Since the task launch procedure occurs outside of
+SLURM's control, none of the normal task-level SLURM support is available.</li>
+<li>The poe command, through the SLURM library, notes the completion of the
+job step.</li>
+</ol>
+
+<h3>Network Options</h3>
+<p>Each job step can specify it's desired network options.
+For example, one job step may use IP mode communications and the next use
+User Space (US) mode communications.
+Network specifications may be specified using srun's --network option or the
+SLURM_NETWORK environment variable. Supported network options include:</p>
+<ul>
+<li>Network protocol</li>
+  <ul>
+  <li><b>ip</b> Internet protocol, version 4</li>
+  <li><b>ipv4</b> Internet protocol, version 4 (default)</li>
+  <li><b>ipv6</b> Internet protocol, version 6</li>
+  <li><b>us</b> User Space protocol, may be combined with ibv4 or ipv6</li>
+  </ul>
+<li>Programming interface</li>
+  <ul>
+  <li><b>lapi</b> Low-level Application Programming Interface</li>
+  <li><b>mpi</b> Message Passing Interface (default)</li>
+  <li><b>pami</b> Parallel Active Message Interface</li>
+  <li><b>upc</b> Unified Parallel C Interface</li>
+  </ul>
+<li>Other options</li>
+  <ul>
+  <li><b>bulk_xfer [=<i>resources</i>]</b>
+  Enable bulk transfer of data using Remote Direct-Memory Access (RDMA).
+  The optional <i>resources</i> specification is a numeric value which can have
+  a suffix of "k", "K", "m", "M", "g" or "G" for kilobytes, megabytes or
+  gigabytes.
+  <b>NOTE:</b> The <i>resources</i> specification is not supported by the
+  underlying IBM infrastructure as of Parallel Environment version 2.2 and no
+  value should be specified at this time.</li>
+  <li><b>cau=<i>count</i></b>
+  Specify the count of Collective Acceleration Units (CAU) required per
+  programming interface.
+  Default value is zero.
+  Applies only to IBM Power7-IH processors.
+  <li><b>devname=<i>name</i></b>
+  Specify the name of an network adapter to use.
+  For example: "eth0" or "mlx4_0".</li>
+  <li><b>devtype=<i>type</i></b>
+  Specify the device type to use for communications.
+  The supported values of <i>type</i> are:
+  "IB" (InfiniBand), "HFI" (P7 Host Fabric Interface),
+  "IPONLY" (IP-Only interfaces), "HPCE" (HPC Ethernet), and
+  "KMUX" (Kernel Emulation of HPCE).
+  The devices allocated to a job must all be of the same type.
+  The default value depends upon depends upon what hardware is available and in
+  order of preferences is IPONLY (which is not considered in User Space mode),
+  HFI, IB, HPCE, and KMUX.</li>
+  <li><b>immed=<i>count</i></b>
+  Specify the count of immediate send slots per adapter window.
+  Default value is zero.
+  Applies only to IBM Power7-IH processors.
+  <li><b>instances=<i>count</i></b>
+  Specify number of network connections for each task on each network connection.
+  The default instance count is 1.</li>
+  <li><b>sn_all</b> Use all available switch adapters (default).
+  This option can not be combined with sn_single.</li>
+  <li><b>sn_single</b> Use only one switch adapters.
+  This option can not be combined withsn_all.
+  If multiple adapters of different types exist, the devname and/or
+  devtype option can also be used to select one of them.</li>
+  </ul>
+</ul>
+
+<p>Examples of network option use:
+<br><br>
+<b>--network=sn_all,mpi</b><br>
+Allocate one switch window per task on each node and every network supporting
+MPI.
+<br><br>
+<b>--network=sn_all,mpi,bulk_xfer=100m,us</b><br>
+Allocate one switch window per task on each node and every network supporting
+MPI and user space communications. Reserve 100 MB for RDMA.
+<br><br>
+<b>--network=sn_all,instances=3,mpi</b><br>
+Allocate three switch window per task on each node and every network supporting
+MPI.
+<br><br>
+<b>--network=sn_all,mpi,pami</b><br>
+Allocate one switch window per task on each node and every network supporting
+MPI and a second window supporting PAMI.
+<br><br>
+<b>--network=devtype=ib,instances=2,lapi,mpi</b><br>
+On every Infiniband network connection, allocate two switch windows each for 
+both lapi and mpi interfaces. If each node has one Infinband network connection,
+this would result in four switch windows per task.
+</p>
+
+<h3>Debugging</h3>
+
+<p>Most debuggers require detailed information about launched tasks such as
+host name, process ID, etc. Since that information is only available from
+poe (which launches those tasks), the srun command wrapper can not be used
+for most debugging purposes. You or the debugging tool must invoke the poe
+command directly. In order to facilitate use of poe, srun's 
+<br><b>FIXME: We need to add this functionality</b>
+option may be used with the options
+normally used in order to generate the equivalent poe command line, which
+can subsequently be used with the debugger.</p>
+
+<h3>Checkpoint</h3>
+
+<p><b>FIXME: We need to validate all of this</b>
+SLURM supports checkpoint via poe.
+In order to enable checkpoint, the shell executing the poe command must
+itself be initiated with the environment variable <b>CHECKPOINT=yes</b>.
+One file is written for each node on which the job is executing, plus
+another for the script executing poe.a
+By default, the checkpoint files will be written to the current working
+directory of the job.
+Names and locations of these files can be controlled using the
+environment variables <b>MP_CKPTFILE</b> and <b>MP_CKPTDIR</b>.
+Use the squeue command to identify the job and job step of interest.
+To initiate a checkpoint in which the job step will continue execution,
+use the command: <br>
+<b>scontrol check create <i>job_id.step_id</i></b><br>
+To initiate a checkpoint in which the job step will terminate afterwards,
+use the command: <br>
+<b>scontrol check vacate <i>job_id.step_id</i></b></p>
+
+<h3>Unsupported Options</h3>
+
+<p>Some SLURM options can not be supported by PE and the following srun options
+are silently ignored:</p>
+<ul>
+<li>-K, --kill-on-bad-exit (terminate step if any task has a non-zero exit code)</li>
+<li>-k, --no-kill (set to not kill job upon node failure)</li>
+<li>--ntasks-per-core (number of tasks to invoke per code)</li>
+<li>--ntasks-per-socket (number of tasks to invoke per socket)</li>
+<li>-O, --overcommit (over subscribe resources)</li>
+<li>--resv-ports (communication ports reserved for OpenMPI)</li>
+<li>--runjob-opts (used only on IBM BlueGene/Q systems)</li>
+<li>--signal (signal to send when near time limit and the remaining time required)</li>
+<li>--sockets-per-node (number of sockets per node required)</li>
+<li>-u, --unbuffered (avoid line buffering)</li>
+<li>-W, --wait (specify job swait time after first task exit)</li>
+<li>-Z, --no-allocate (launch tasks without creating job allocation></li>
+</ul>
+
+<h2>System Administration</h2>
+
+<p>There are two critical SLURM configuration parameters for use with PE.
+These configuration parameters should be set in your <b>slurm.conf</b> file.
+<b>SwitchType</b> defines the mechanism used to manage the network switch and
+it must be set to <b>switch/nrt</b> and use IBM's Network Resource Table (NRT)
+interface. In order for the switch/nrt plugin to be built, the NRT header file
+and library must be found at the time the SLURM is built. SLURM searches for
+the nrt.h file in the /usr/include directory by default. If the file is not
+installed there, you can specify a different location using the 
+<b>--with-nrth=PATH</b> option to the configure program, where "PATH" is the
+fully qualified pathname of the parent directory of the nrt.h file.
+SLURM searches for the libnrt.so file in the /usr/lib and /usr/lib64 directories
+by default. If the file is not installed there, you can specify a different
+location using the <b>--with-nrtlib=PATH</b> option to the configure program,
+where "PATH" is the fully qualified pathname of the parent directory of the
+libnrt.so file.
+Alternately these values may be specified in your ~/.rpmmacros file.
+For example:</p>
+<pre>
+%_with_nrth      "/opt/ibmhpc/pecurrent/base/include"
+%_with_libnrt    "/opt/ibmhpc/pecurrent/base/intel/lib64"
+</pre>
+
+<p>The poe command interacts with SLURM by loading a SLURM library providing
+a variety of functions for its use. You must specify the location of that
+library and note that SLURM is the resource manager in the file named
+"/etc/poe.limits".
+The library name is "libpermapi.so" and it is in installed with the other SLURM
+libraries in the subdirectory "lib/slurm". A sample "/etc/poe.limits" file is
+shown below. You will need to modify the value of MP_PE_RMLIB to match SLURM's
+installation location on your system.
+<pre>
+#
+# Sample /etc/poe.limits
+# Modify the path below as appropriate
+#
+MP_PE_RMLIB=/usr/local/lib/slurm/libpermapi.so
+MP_POOL=slurm
+</pre>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 16 July 2012</p></td>
+
+<!--#include virtual="footer.txt"-->

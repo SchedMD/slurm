@@ -54,12 +54,14 @@ if {[file executable $mpicc] == 0} {
 	send_user "\nWARNING: $mpicc does not exists\n"
 	exit 0
 }
-if {[test_front_end] != 0} {
+if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit 0
-}
-if {[test_aix] == 1} {
+} elseif {[test_aix]} {
 	send_user "WARNING: Test is incompatible with AIX\n"
+	exit 0
+} elseif {[test_serial]} {
+	send_user "WARNING: Test is incompatible with serial system\n"
 	exit 0
 }
 
@@ -69,7 +71,7 @@ if {[test_aix] == 1} {
 exec $bin_rm -f $test_prog ${test_prog}.o
 if {$use_pmi} {
 	set pmi_link "-rpath $slurm_dir/lib -L $slurm_dir/lib -lpmi"
-	exec $mpicc -Xlinker $pmi_link -o $test_prog ${test_prog}.c
+	eval exec $mpicc -Xlinker $pmi_link -o $test_prog ${test_prog}.c
 } else {
 	exec $mpicc -o $test_prog ${test_prog}.c
 }

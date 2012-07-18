@@ -57,6 +57,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/common/job_options.h"
 #include "src/common/forward.h"
 #include "src/common/slurm_jobacct_gather.h"
@@ -117,7 +118,7 @@ extern void slurm_msg_t_init(slurm_msg_t *msg)
  *	values from the "src" slurm_msg_t structure.
  * IN src - Pointer to the initialized message from which "dest" will
  *	be initialized.
- * OUT dest - Pointer to the slurm_msg_t which will be intialized.
+ * OUT dest - Pointer to the slurm_msg_t which will be initialized.
  * NOTE: the "dest" structure will contain pointers into the contents of "src".
  */
 extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src)
@@ -503,7 +504,7 @@ extern void slurm_free_node_registration_status_msg(
 		xfree(msg->node_name);
 		xfree(msg->os);
 		xfree(msg->step_id);
-		if (msg->startup)
+		if (msg->switch_nodeinfo)
 			switch_g_free_node_info(&msg->switch_nodeinfo);
 		xfree(msg);
 	}
@@ -600,7 +601,7 @@ extern void slurm_free_complete_batch_script_msg(
 		complete_batch_script_msg_t * msg)
 {
 	if (msg) {
-		jobacct_gather_g_destroy(msg->jobacct);
+		jobacctinfo_destroy(msg->jobacct);
 		xfree(msg->node_name);
 		xfree(msg);
 	}
@@ -1390,6 +1391,16 @@ extern char *reservation_flags_string(uint16_t flags)
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "NO_STATIC");
+	}
+	if (flags & RESERVE_FLAG_PART_NODES) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "PART_NODES");
+	}
+	if (flags & RESERVE_FLAG_NO_PART_NODES) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "NO_PART_NODES");
 	}
 	return flag_str;
 }
@@ -2218,7 +2229,7 @@ extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
 extern void slurm_free_step_complete_msg(step_complete_msg_t *msg)
 {
 	if (msg) {
-		jobacct_gather_g_destroy(msg->jobacct);
+		jobacctinfo_destroy(msg->jobacct);
 		xfree(msg);
 	}
 }
@@ -2227,7 +2238,7 @@ extern void slurm_free_job_step_stat(void *object)
 {
 	job_step_stat_t *msg = (job_step_stat_t *)object;
 	if (msg) {
-		jobacct_gather_g_destroy(msg->jobacct);
+		jobacctinfo_destroy(msg->jobacct);
 		slurm_free_job_step_pids(msg->step_pids);
 		xfree(msg);
 	}
@@ -2424,6 +2435,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
 		slurm_free_complete_job_allocation_msg(data);
 		break;
+	case REQUEST_COMPLETE_BATCH_JOB:
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
 		slurm_free_complete_batch_script_msg(data);
 		break;

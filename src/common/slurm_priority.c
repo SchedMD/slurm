@@ -52,143 +52,21 @@ typedef struct slurm_priority_ops {
 	(priority_factors_request_msg_t *req_msg, uid_t uid);
 } slurm_priority_ops_t;
 
-typedef struct slurm_priority_context {
-	char	       	*priority_type;
-	plugrack_t     	plugin_list;
-	plugin_handle_t	cur_plugin;
-	int		priority_errno;
-	slurm_priority_ops_t ops;
-} slurm_priority_context_t;
-
-static slurm_priority_context_t * g_priority_context = NULL;
-static pthread_mutex_t		g_priority_context_lock =
-	PTHREAD_MUTEX_INITIALIZER;
-
 /*
- * Local functions
+ * Must be synchronized with slurm_priority_ops_t above.
  */
-static slurm_priority_ops_t *_priority_get_ops(
-	slurm_priority_context_t *c);
-static slurm_priority_context_t *_priority_context_create(
-	const char *priority_type);
-static int _priority_context_destroy(
-	slurm_priority_context_t *c);
+static const char *syms[] = {
+	"priority_p_set",
+	"priority_p_reconfig",
+	"priority_p_set_assoc_usage",
+	"priority_p_calc_fs_factor",
+	"priority_p_get_priority_factors_list",
+};
 
-/*
- * Locate and load the appropriate plugin
- */
-static slurm_priority_ops_t * _priority_get_ops(
-	slurm_priority_context_t *c)
-{
-	/*
-	 * Must be synchronized with slurm_priority_ops_t above.
-	 */
-	static const char *syms[] = {
-		"priority_p_set",
-		"priority_p_reconfig",
-		"priority_p_set_assoc_usage",
-		"priority_p_calc_fs_factor",
-		"priority_p_get_priority_factors_list",
-	};
-	int n_syms = sizeof( syms ) / sizeof( char * );
-
-	/* Find the correct plugin. */
-        c->cur_plugin = plugin_load_and_link(c->priority_type, n_syms, syms,
-					     (void **) &c->ops);
-        if ( c->cur_plugin != PLUGIN_INVALID_HANDLE )
-        	return &c->ops;
-
-	if(errno != EPLUGIN_NOTFOUND) {
-		error("Couldn't load specified plugin name for %s: %s",
-		      c->priority_type, plugin_strerror(errno));
-		return NULL;
-	}
-
-	error("Couldn't find the specified plugin name for %s "
-	      "looking at all files",
-	      c->priority_type);
-
-	/* Get plugin list. */
-	if ( c->plugin_list == NULL ) {
-		char *plugin_dir;
-		c->plugin_list = plugrack_create();
-		if ( c->plugin_list == NULL ) {
-			error( "cannot create plugin manager" );
-			return NULL;
-		}
-		plugrack_set_major_type( c->plugin_list, "priority" );
-		plugrack_set_paranoia( c->plugin_list,
-				       PLUGRACK_PARANOIA_NONE,
-				       0 );
-		plugin_dir = slurm_get_plugin_dir();
-		plugrack_read_dir( c->plugin_list, plugin_dir );
-		xfree(plugin_dir);
-	}
-
-	c->cur_plugin = plugrack_use_by_type( c->plugin_list,
-					      c->priority_type );
-	if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
-		error( "cannot find accounting_storage plugin for %s",
-		       c->priority_type );
-		return NULL;
-	}
-
-	/* Dereference the API. */
-	if ( plugin_get_syms( c->cur_plugin,
-			      n_syms,
-			      syms,
-			      (void **) &c->ops ) < n_syms ) {
-		error( "incomplete priority plugin detected" );
-		return NULL;
-	}
-
-	return &c->ops;
-}
-
-/*
- * Create a priority context
- */
-static slurm_priority_context_t *_priority_context_create(
-	const char *priority_type)
-{
-	slurm_priority_context_t *c;
-
-	if ( priority_type == NULL ) {
-		debug3( "_priority_context_create: no uler type" );
-		return NULL;
-	}
-
-	c = xmalloc( sizeof( slurm_priority_context_t ) );
-	c->priority_type	= xstrdup( priority_type );
-	c->plugin_list	= NULL;
-	c->cur_plugin	= PLUGIN_INVALID_HANDLE;
-	c->priority_errno	= SLURM_SUCCESS;
-
-	return c;
-}
-
-/*
- * Destroy a priority context
- */
-static int _priority_context_destroy(slurm_priority_context_t *c)
-{
-	/*
-	 * Must check return code here because plugins might still
-	 * be loaded and active.
-	 */
-	if ( c->plugin_list ) {
-		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
-			return SLURM_ERROR;
-		}
-	} else {
-		plugin_unload(c->cur_plugin);
-	}
-
-	xfree( c->priority_type );
-	xfree( c );
-
-	return SLURM_SUCCESS;
-}
+static slurm_priority_ops_t ops;
+static plugin_context_t *g_priority_context = NULL;
+static pthread_mutex_t g_priority_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 /*
  * Initialize context for priority plugin
@@ -196,33 +74,32 @@ static int _priority_context_destroy(slurm_priority_context_t *c)
 extern int slurm_priority_init(void)
 {
 	int retval = SLURM_SUCCESS;
-	char *priority_type = NULL;
+	char *plugin_type = "priority";
+	char *type = NULL;
 
-	slurm_mutex_lock( &g_priority_context_lock );
+	if (init_run && g_priority_context)
+		return retval;
 
-	if ( g_priority_context )
+	slurm_mutex_lock(&g_priority_context_lock);
+
+	if (g_priority_context)
 		goto done;
 
-	priority_type = slurm_get_priority_type();
+	type = slurm_get_priority_type();
 
-	g_priority_context = _priority_context_create(priority_type);
-	if ( g_priority_context == NULL ) {
-		error( "cannot create priority context for %s",
-		       priority_type );
+	g_priority_context = plugin_context_create(
+		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+
+	if (!g_priority_context) {
+		error("cannot create %s context for %s", plugin_type, type);
 		retval = SLURM_ERROR;
 		goto done;
 	}
-
-	if ( _priority_get_ops( g_priority_context ) == NULL ) {
-		error( "cannot resolve priority plugin operations" );
-		_priority_context_destroy( g_priority_context );
-		g_priority_context = NULL;
-		retval = SLURM_ERROR;
-	}
+	init_run = true;
 
 done:
-	slurm_mutex_unlock( &g_priority_context_lock );
-	xfree(priority_type);
+	slurm_mutex_unlock(&g_priority_context_lock);
+	xfree(type);
 	return retval;
 }
 
@@ -233,7 +110,8 @@ extern int slurm_priority_fini(void)
 	if (!g_priority_context)
 		return SLURM_SUCCESS;
 
-	rc = _priority_context_destroy( g_priority_context );
+	init_run = false;
+	rc = plugin_context_destroy(g_priority_context);
 	g_priority_context = NULL;
 	return rc;
 }
@@ -243,7 +121,7 @@ extern uint32_t priority_g_set(uint32_t last_prio, struct job_record *job_ptr)
 	if (slurm_priority_init() < 0)
 		return 0;
 
-	return (*(g_priority_context->ops.set))(last_prio, job_ptr);
+	return (*(ops.set))(last_prio, job_ptr);
 }
 
 extern void priority_g_reconfig(void)
@@ -251,7 +129,7 @@ extern void priority_g_reconfig(void)
 	if (slurm_priority_init() < 0)
 		return;
 
-	(*(g_priority_context->ops.reconfig))();
+	(*(ops.reconfig))();
 
 	return;
 }
@@ -261,7 +139,7 @@ extern void priority_g_set_assoc_usage(slurmdb_association_rec_t *assoc)
 	if (slurm_priority_init() < 0)
 		return;
 
-	(*(g_priority_context->ops.set_assoc_usage))(assoc);
+	(*(ops.set_assoc_usage))(assoc);
 	return;
 }
 
@@ -271,7 +149,7 @@ extern double priority_g_calc_fs_factor(long double usage_efctv,
 	if (slurm_priority_init() < 0)
 		return 0.0;
 
-	return (*(g_priority_context->ops.calc_fs_factor))
+	return (*(ops.calc_fs_factor))
 		(usage_efctv, shares_norm);
 }
 
@@ -281,5 +159,6 @@ extern List priority_g_get_priority_factors_list(
 	if (slurm_priority_init() < 0)
 		return NULL;
 
-	return (*(g_priority_context->ops.get_priority_factors))(req_msg, uid);
+	return (*(ops.get_priority_factors))(req_msg, uid);
 }
+

@@ -143,14 +143,17 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 {
 	int error_code = SLURM_SUCCESS;
 	struct node_record *node_rec = NULL;
+	hostlist_t address_list = NULL;
 	hostlist_t alias_list = NULL;
 	hostlist_t hostname_list = NULL;
-	hostlist_t address_list = NULL;
+	hostlist_t port_list = NULL;
+	char *address = NULL;
 	char *alias = NULL;
 	char *hostname = NULL;
-	char *address = NULL;
+	char *port_str = NULL;
 	int state_val = NODE_STATE_UNKNOWN;
-	int address_count, alias_count, hostname_count;
+	int address_count, alias_count, hostname_count, port_count;
+	uint16_t port = 0;
 
 	if (node_ptr->state != NULL) {
 		state_val = state_str2int(node_ptr->state, node_ptr->nodenames);
@@ -158,6 +161,12 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 			goto cleanup;
 	}
 
+	if ((address_list = hostlist_create(node_ptr->addresses)) == NULL) {
+		fatal("Unable to create NodeAddr list from %s",
+		      node_ptr->addresses);
+		error_code = errno;
+		goto cleanup;
+	}
 	if ((alias_list = hostlist_create(node_ptr->nodenames)) == NULL) {
 		fatal("Unable to create NodeName list from %s",
 		      node_ptr->nodenames);
@@ -170,9 +179,19 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 		error_code = errno;
 		goto cleanup;
 	}
-	if ((address_list = hostlist_create(node_ptr->addresses)) == NULL) {
-		fatal("Unable to create NodeAddr list from %s",
-		      node_ptr->addresses);
+	if (node_ptr->port_str && node_ptr->port_str[0] &&
+	    (node_ptr->port_str[0] != '[') &&
+	    (strchr(node_ptr->port_str, '-') ||
+	     strchr(node_ptr->port_str, ','))) {
+		xstrfmtcat(port_str, "[%s]", node_ptr->port_str);
+		port_list = hostlist_create(port_str);
+		xfree(port_str);
+	} else {
+		port_list = hostlist_create(node_ptr->port_str);
+	}
+	if (port_list == NULL) {
+		error("Unable to create Port list from %s",
+		      node_ptr->port_str);
 		error_code = errno;
 		goto cleanup;
 	}
@@ -181,6 +200,7 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 	address_count  = hostlist_count(address_list);
 	alias_count    = hostlist_count(alias_list);
 	hostname_count = hostlist_count(hostname_list);
+	port_count     = hostlist_count(port_list);
 #ifdef HAVE_FRONT_END
 	if ((hostname_count != alias_count) && (hostname_count != 1)) {
 		error("NodeHostname count must equal that of NodeName "
@@ -193,30 +213,54 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 		goto cleanup;
 	}
 #else
+#ifdef MULTIPLE_SLURMD
+	if ((address_count != alias_count) && (address_count != 1)) {
+		error("NodeAddr count must equal that of NodeName "
+		      "records of there must be no more than one");
+		goto cleanup;
+	}
+#else
+	if (address_count < alias_count) {
+		error("At least as many NodeAddr are required as NodeName");
+		goto cleanup;
+	}
+#endif	/* MULTIPLE_SLURMD */
 	if (hostname_count < alias_count) {
 		error("At least as many NodeHostname are required "
 		      "as NodeName");
 		goto cleanup;
 	}
-	if (address_count < alias_count) {
-		error("At least as many NodeAddr are required as NodeName");
+#endif
+	if ((port_count != alias_count) && (port_count > 1)) {
+		error("Port count must equal that of NodeName "
+		      "records or there must be no more than one");
 		goto cleanup;
 	}
-#endif
 
 	/* now build the individual node structures */
 	while ((alias = hostlist_shift(alias_list))) {
+		if (address_count > 0) {
+			address_count--;
+			if (address)
+				free(address);
+			address = hostlist_shift(address_list);
+		}
 		if (hostname_count > 0) {
 			hostname_count--;
 			if (hostname)
 				free(hostname);
 			hostname = hostlist_shift(hostname_list);
 		}
-		if (address_count > 0) {
-			address_count--;
-			if (address)
-				free(address);
-			address = hostlist_shift(address_list);
+		if (port_count > 0) {
+			int port_int;
+			port_count--;
+			if (port_str)
+				free(port_str);
+			port_str = hostlist_shift(port_list);
+			port_int = atoi(port_str);
+			if ((port_int <= 0) || (port_int > 0xffff))
+				fatal("Invalid Port %s", node_ptr->port_str);
+			port = port_int;
 		}
 		/* find_node_record locks this to get the
 		 * alias so we need to unlock */
@@ -230,7 +274,7 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 			node_rec->last_response = (time_t) 0;
 			node_rec->comm_name = xstrdup(address);
 			node_rec->node_hostname = xstrdup(hostname);
-			node_rec->port      = node_ptr->port;
+			node_rec->port      = port;
 			node_rec->weight    = node_ptr->weight;
 			node_rec->features  = xstrdup(node_ptr->feature);
 			node_rec->reason    = xstrdup(node_ptr->reason);
@@ -247,12 +291,16 @@ cleanup:
 		free(address);
 	if (hostname)
 		free(hostname);
+	if (port_str)
+		free(port_str);
+	if (address_list)
+		hostlist_destroy(address_list);
 	if (alias_list)
 		hostlist_destroy(alias_list);
 	if (hostname_list)
 		hostlist_destroy(hostname_list);
-	if (address_list)
-		hostlist_destroy(address_list);
+	if (port_list)
+		hostlist_destroy(port_list);
 	return error_code;
 }
 
@@ -596,6 +644,7 @@ extern int build_all_nodeline_info (bool set_bitmap)
 		config_ptr = create_config_record();
 		config_ptr->nodes = xstrdup(node->nodenames);
 		config_ptr->cpus = node->cpus;
+		config_ptr->boards = node->boards;
 		config_ptr->sockets = node->sockets;
 		config_ptr->cores = node->cores;
 		config_ptr->threads = node->threads;
@@ -730,6 +779,7 @@ extern struct node_record *create_node_record (
 	node_ptr->config_ptr = config_ptr;
 	/* these values will be overwritten when the node actually registers */
 	node_ptr->cpus = config_ptr->cpus;
+	node_ptr->boards = config_ptr->boards;
 	node_ptr->sockets = config_ptr->sockets;
 	node_ptr->cores = config_ptr->cores;
 	node_ptr->threads = config_ptr->threads;

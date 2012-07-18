@@ -19,6 +19,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="bluegene.html">Blue Gene User and Administrator Guide</a></li>
 <li><a href="cray.html">Cray User and Administrator Guide</a></li>
 <li><a href="ibm.html">IBM AIX User and Administrator Guide</a></li>
+<li><a href="poe.html">IBM Parallel Environment User and Administrator Guide</a></li>
 </ul>
 </ul>
 
@@ -26,16 +27,17 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <ul>
 <li><a href="quickstart_admin.html">Quick Start Administrator Guide</a></li>
 <li><a href="accounting.html">Accounting</a></li>
+<li><a href="cgroups.html">Cgroups Guide</a></li>
 <li><a href="configurator.html">Configuration Tool (Full version)</a></li>
 <li><a href="configurator.easy.html">Configuration Tool (Simplified version)</a></li>
 <li><a href="cpu_management.html">CPU Management User and Administrator Guide</a></li>
-<li><a href="elastic_computing.html">Elastic Computing</a></li>
 <li><a href="big_sys.html">Large Cluster Administration Guide</a></li>
 <li><a href="power_save.html">Power Saving Guide</a></li>
 <li><a href="troubleshoot.html">Troubleshooting Guide</a></li>
 <li>SLURM Scheduling</li>
 <ul>
 <li><a href="cons_res.html">Consumable Resources Guide</a></li>
+<li><a href="elastic_computing.html">Elastic Computing</a></li>
 <li><a href="gang_scheduling.html">Gang Scheduling</a></li>
 <li><a href="gres.html">Generic Resource (GRES) Scheduling</a></li>
 <li><a href="high_throughput.html">High Throughput Computing Guide</a></li>
@@ -58,6 +60,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="bluegene.html">Blue Gene User and Administrator Guide</a></li>
 <li><a href="cray.html">Cray User and Administrator Guide</a></li>
 <li><a href="ibm.html">IBM AIX User and Administrator Guide</a></li>
+<li><a href="poe.html">IBM Parallel Environment User and Administrator Guide</a></li>
 <li><a href="sun_const.html">Sun Constellation Aministrator Guide</a></li>
 </ul>
 </ul>
@@ -83,6 +86,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="checkpoint_plugins.html">Job Checkpoint Plugin Programmer Guide</a></li>
 <li><a href="jobcompplugins.html">Job Completion Logging Plugin Programmer Guide</a></li>
 <li><a href="job_submit_plugins.html">Job Submission Plugin Programmer Guide</a></li>
+<li><a href="launch_plugins.html">Launch Plugin Programmer Guide</a></li>
 <li><a href="mpiplugins.html">MPI Plugin Programmer Guide</a></li>
 <li><a href="preemption_plugins.html">Preemption Plugin Programmer Guide</a></li>
 <li><a href="priority_plugins.html">Priority Plugin Programmer Guide</a></li>
@@ -95,6 +99,6 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 2 April 2012</p>
+<p style="text-align:center;">Last modified 6 July 2012</p>
 
 <!--#include virtual="footer.txt"-->

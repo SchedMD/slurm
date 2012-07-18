@@ -44,8 +44,12 @@
 #ifndef _HAVE_FILETXT_JOBCOMP_PROCESS_H
 #define _HAVE_FILETXT_JOBCOMP_PROCESS_H
 
-#include "src/common/jobacct_common.h"
+#include <sys/stat.h>
+
+#include "src/common/node_select.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/xstring.h"
 
 extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond);
 extern int filetxt_jobcomp_process_archive(slurmdb_archive_cond_t *arch_cond);

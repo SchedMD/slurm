@@ -885,7 +885,7 @@ stepd_completion(int fd, step_complete_msg_t *sent)
 	safe_write(fd, &sent->range_first, sizeof(int));
 	safe_write(fd, &sent->range_last, sizeof(int));
 	safe_write(fd, &sent->step_rc, sizeof(int));
-	jobacct_gather_g_setinfo(sent->jobacct, JOBACCT_DATA_PIPE, &fd);
+	jobacctinfo_setinfo(sent->jobacct, JOBACCT_DATA_PIPE, &fd);
 	/* Receive the return code and errno */
 	safe_read(fd, &rc, sizeof(int));
 	safe_read(fd, &errnum, sizeof(int));
@@ -920,7 +920,7 @@ rwfail:
 	 * Do pack/unpack instead to be sure of independances of 
 	 * slurmd and slurmstepd
 	 */
-	jobacct_gather_g_pack(sent->jobacct, SLURM_PROTOCOL_VERSION, buffer);
+	jobacctinfo_pack(sent->jobacct, SLURM_PROTOCOL_VERSION, buffer);
 	len = get_buf_offset(buffer);
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(buffer), len);
@@ -986,14 +986,14 @@ stepd_stat_jobacct(int fd, job_step_id_msg_t *sent, job_step_stat_t *resp)
 	safe_write(fd, &req, sizeof(int));
 
 	/* Receive the jobacct struct and return */
-	resp->jobacct = jobacct_gather_g_create(NULL);
+	resp->jobacct = jobacctinfo_create(NULL);
 
 	/* Do not attempt reading data until there is something to read.
 	 * Avoid locking the jobacct_gather plugin early and creating
 	 * possible deadlock. */
 	if (_wait_fd_readable(fd))
 		goto rwfail;
-	rc = jobacct_gather_g_getinfo(resp->jobacct, JOBACCT_DATA_PIPE, &fd);
+	rc = jobacctinfo_getinfo(resp->jobacct, JOBACCT_DATA_PIPE, &fd);
 
 	safe_read(fd, &tasks, sizeof(int));
 	resp->num_tasks = tasks;
@@ -1001,7 +1001,7 @@ stepd_stat_jobacct(int fd, job_step_id_msg_t *sent, job_step_stat_t *resp)
 	return rc;
 rwfail:
 	error("gathering job accounting: %d", rc);
-	jobacct_gather_g_destroy(resp->jobacct);
+	jobacctinfo_destroy(resp->jobacct);
 	resp->jobacct = NULL;
 	return rc;
 }

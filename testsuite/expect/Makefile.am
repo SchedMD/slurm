@@ -105,6 +105,10 @@ EXTRA_DIST = \
 	test1.94			\
 	test1.94.master.c		\
 	test1.94.slave.c		\
+	test1.95			\
+	test1.95.prog.upc		\
+	test1.96			\
+	test1.96.prog.c			\
 	test2.1				\
 	test2.2				\
 	test2.3				\
@@ -228,6 +232,8 @@ EXTRA_DIST = \
 	test9.7.bash			\
 	test9.8				\
 	test9.9				\
+	test9.9.bash			\
+	test9.9.prog.c			\
 	test10.1			\
 	test10.2			\
 	test10.3			\
@@ -257,6 +263,7 @@ EXTRA_DIST = \
 	test12.4			\
 	test12.5			\
 	test13.1			\
+	test13.2			\
 	test14.1			\
 	test14.2			\
 	test14.3			\

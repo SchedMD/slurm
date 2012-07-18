@@ -75,7 +75,7 @@ license from being scheduled on this cluster during this reservation.</p>
 <pre>
 $ scontrol create reservation starttime=2009-04-06T16:00:00 \
    duration=120 user=root flags=ignore_jobs \
-   licenses=lustre*1000
+   licenses=lustre:1000
 Reservation created: root_4
 
 $ scontrol show reservation
@@ -168,11 +168,11 @@ licenses field to require one "cpu" for each physical CPU required to satisfy
 the request.</p>
 <pre>
 $ scontrol show configuration | grep Licenses
-Licenses  = cpu*64
+Licenses  = cpu:64
 
 $ scontrol create reservation starttime=2009-04-06T16:00:00 \
-   duration=120 user=bob flags=ignore_jobs \
-   licenses=cpu*32
+   duration=120 user=bob flags=license_only \
+   licenses=cpu:32
 Reservation created: bob_5
 </pre>
 
@@ -301,7 +301,7 @@ before a reservation given fewer jobs to time-slice with.</li>
 nodes be reserved (work around described above).</li>
 </ol>
 
-<p style="text-align: center;">Last modified 31 January 2012</p>
+<p style="text-align: center;">Last modified 23 May 2012</p>
 
 <!--#include virtual="footer.txt"-->
 

@@ -122,7 +122,7 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 	}
 
 	if (net_stream_listen(&sock, (short *)port) < 0) {
-		error("unable to intialize step launch listening socket: %m");
+		error("unable to initialize step launch listening socket: %m");
 		xfree(msg_thr);
 		return NULL;
 	}

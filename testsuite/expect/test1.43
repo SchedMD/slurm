@@ -46,6 +46,7 @@ if {[test_cray]} {
 #
 # Spawn a srun jobs with ever larger node counts
 #
+set alloc_fail 0
 set timeout 60
 for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 	set srun_pid [spawn $srun --test-only -N$node_cnt -t1 $bin_printenv SLURMD_NODENAME]
@@ -55,6 +56,7 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 			exp_continue
 		}
 		-re "allocation failure" {
+			set alloc_fail 1
 			set node_cnt 0
 			exp_continue
 		}
@@ -77,6 +79,8 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 if {$jobs_run == 0} {
 	send_user "\nFAILURE: No jobs run\n"
 	set exit_code 1
+} elseif {$alloc_fail == 1} {
+	send_user "\nError expected. No worries.\n"
 }
 
 if {$exit_code == 0} {

@@ -490,8 +490,18 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("LaunchType");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->launch_type);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("Licenses");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->licenses);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("LicensesUsed");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->licenses_used);
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -1233,6 +1243,8 @@ void slurm_print_slurmd_status (FILE* out,
 
 	fprintf(out, "Actual CPUs              = %u\n",
 		slurmd_status_ptr->actual_cpus);
+	fprintf(out, "Actual Boards         = %u\n",
+		slurmd_status_ptr->actual_boards);
 	fprintf(out, "Actual sockets           = %u\n",
 		slurmd_status_ptr->actual_sockets);
 	fprintf(out, "Actual cores             = %u\n",

@@ -238,6 +238,7 @@ int main(int argc, char *argv[])
 	assoc_init_args_t assoc_init_arg;
 	pthread_t assoc_cache_thread;
 	slurm_trigger_callbacks_t callbacks;
+	char *dir_name;
 
 	/*
 	 * Establish initial configuration
@@ -437,7 +438,7 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize checkpoint plugin" );
 	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
 		fatal( "failed to initialize accounting_storage plugin");
-	if (slurm_jobacct_gather_init() != SLURM_SUCCESS )
+	if (jobacct_gather_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize jobacct_gather plugin");
 	if (job_submit_plugin_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize job_submit plugin");
@@ -468,7 +469,7 @@ int main(int argc, char *argv[])
 					slurm_strerror(error_code));
 			}
 			unlock_slurmctld(config_write_lock);
-			select_g_select_nodeinfo_set_all(time(NULL));
+			select_g_select_nodeinfo_set_all();
 
 			if (recover == 0)
 				_accounting_mark_all_nodes_down("cold-start");
@@ -569,6 +570,9 @@ int main(int argc, char *argv[])
 		_slurmctld_background(NULL);
 
 		/* termination of controller */
+		dir_name = slurm_get_state_save_location();
+		switch_save(dir_name);
+		xfree(dir_name);
 		slurm_priority_fini();
 		shutdown_state_save();
 		pthread_join(slurmctld_config.thread_id_sig,  NULL);
@@ -619,7 +623,7 @@ int main(int argc, char *argv[])
 {
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */
-	char *dir_name;
+
 
 	/* Give running agents a chance to complete and free memory.
 	 * Wait up to 60 seconds (3 seconds * 20) */
@@ -653,7 +657,7 @@ int main(int argc, char *argv[])
 	job_submit_plugin_fini();
 	slurm_preempt_fini();
 	g_slurm_jobcomp_fini();
-	slurm_jobacct_gather_fini();
+	jobacct_gather_fini();
 	slurm_select_fini();
 	slurm_topo_fini();
 	checkpoint_fini();

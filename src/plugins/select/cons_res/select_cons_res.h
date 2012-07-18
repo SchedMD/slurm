@@ -79,9 +79,9 @@
  * preemption, which can override these protections.
  */
 enum node_cr_state {
-	NODE_CR_AVAILABLE = 0,  /* The node may be IDLE or IN USE (shared) */
-	NODE_CR_ONE_ROW = 1,    /* node is in use by Shared=NO part */
-	NODE_CR_RESERVED = 100, /* node is in use by Shared=EXCLUSIVE part */
+	NODE_CR_AVAILABLE = 0,    /* The node may be IDLE or IN USE (shared) */
+	NODE_CR_ONE_ROW = 1,      /* node is in use by Shared=NO part */
+	NODE_CR_RESERVED = 10000, /* node is in use by Shared=EXCLUSIVE part */
 };
 
 /* a partition's per-row CPU allocation data */
@@ -104,6 +104,7 @@ struct part_res_record {
 struct node_res_record {
 	struct node_record *node_ptr;	/* ptr to the actual node */
 	uint16_t cpus;			/* count of processors configured */
+	uint16_t boards; 		/* count of boards configured */
 	uint16_t sockets;		/* count of sockets configured */
 	uint16_t cores;			/* count of cores configured */
 	uint16_t vpus;			/* count of virtual cpus (hyperthreads)

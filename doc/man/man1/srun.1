@@ -1,17 +1,17 @@
-.TH "srun" "1" "SLURM 2.4" "October 2011" "SLURM Commands"
+.TH "srun" "1" "SLURM 2.5" "July 2012" "SLURM Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
 
 .SH "SYNOPSIS"
-\fBsrun\fR            [\fIOPTIONS\fR...]  \fIexecutable \fR[\fIargs\fR...]
+\fBsrun\fR [\fIOPTIONS\fR...]  \fIexecutable \fR[\fIargs\fR...]
 
 .SH "DESCRIPTION"
 Run a parallel job on cluster managed by SLURM.  If necessary, srun will
 first create a resource allocation in which to run the parallel job.
 
-The following document describes the the influence of various options on the 
-allocation of cpus to jobs and tasks. 
+The following document describes the the influence of various options on the
+allocation of cpus to jobs and tasks.
 .br
 http://www.schedmd.com/slurmdocs/cpu_management.html
 
@@ -132,7 +132,7 @@ Users can specify which of these \fBfeatures\fR are required by their job
 using the constraint option.
 Only nodes having features matching the job constraints will be used to
 satisfy the request.
-Multiple constraints may be specified with AND, OR, exclusive OR, 
+Multiple constraints may be specified with AND, OR, exclusive OR,
 resource counts, etc.
 Supported \fbconstraint\fR options include:
 .PD 1
@@ -171,7 +171,7 @@ Specific counts of multiple resources may be specified by using the AND
 operator and enclosing the options within square brackets.
 For example: "\fB\-\-constraint=[rack1*2&rack2*4]"\fR might
 be used to specify that two nodes must be allocated from nodes with the feature
-of "rack1" and four nodes must be allocated from nodes with the feature 
+of "rack1" and four nodes must be allocated from nodes with the feature
 "rack2".
 .RE
 
@@ -205,9 +205,9 @@ the SLURM_CPU_BIND environment variable value to "verbose".
 The following informational environment variables are set when \fB\-\-cpu_bind\fR
 is in use:
 .nf
-        SLURM_CPU_BIND_VERBOSE
-        SLURM_CPU_BIND_TYPE
-        SLURM_CPU_BIND_LIST
+	SLURM_CPU_BIND_VERBOSE
+	SLURM_CPU_BIND_TYPE
+	SLURM_CPU_BIND_LIST
 .fi
 
 See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
@@ -316,6 +316,43 @@ Show help message for cpu_bind
 .RE
 
 .TP
+\fB\-\-cpu\-freq\fR =<\fIrequested frequency in kilohertz\fR>
+
+Request that the job step initiated by this srun be run at the
+requested frequency if possible, on the cpus selected for the step on
+the compute node(s).  In addition to specifying a numerical frequency in
+kilohertz, the request can specify \fIlow\fR, \fImedium\fR, or
+\fIhigh\fR for the value. "Low" will select the lowest available
+frequency, "high" will select the highest available frequency, while
+"medium" attempts to set a frequency in the middle of the available
+range. If the numeric value specified does not exactly match a legal
+available frequency, SLURM will attempt to pick a legal frequency
+close to the request.
+
+The following informational environment variable is set in the job
+step when \fB\-\-cpu\-freq\fR option is requested.
+.nf
+        SLURM_CPU_FREQ_REQ
+.fi
+
+This environment variable can also be used to supply the value for the
+cpu frequency request if it is set when the 'srun' command is issued.
+The \fB\-\-cpu\-freq\fR on the command line will override the
+environment variable value.  See the \fBENVIRONMENT VARIABLES\fR
+section for a description of the SLURM_CPU_FREQ_REQ variable.
+
+\fBNOTE\fR: This parameter is treated as a request, not a requirement.
+If the job step's node does not support setting the cpu frequency, or
+the requested value is outside the bounds of the legal frequencies, an
+error is logged, but the job step is allowed to continue.
+
+\fBNOTE\fR: Setting the frequency for just the cpus of the job step
+implies that the tasks are confined to those cpus.  If task
+confinement (i.e., TaskPlugin=task/affinity or
+TaskPlugin=task/cgroup with the "ConstrainCores" option) is not
+configured, this parameter is ignored.
+
+.TP
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR=<\fIncpus\fR>
 Request that \fIncpus\fR be allocated \fBper process\fR. This may be
 useful if the job is multithreaded and requires more than one CPU
@@ -339,8 +376,9 @@ allocation will include four CPUs. The job step allocation will then launch two
 threads per CPU for a total of two tasks.
 
 \fBWARNING\fR: When srun is executed from within salloc or sbatch,
-there are configurations and options which can result in inconsistent 
+there are configurations and options which can result in inconsistent
 allocations when \-c has a value greater than \-c on salloc or sbatch.
+
 .TP
 \fB\-d\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
 Defer the start of this job until the specified dependencies have been
@@ -493,7 +531,10 @@ time period specified.
 If no argument is given, resources must be available immediately
 for the request to succeed.
 By default, \fB\-\-immediate\fR is off, and the command
-will block until resources become available.
+will block until resources become available. Since this option's
+argument is optional, for proper parsing the single letter option
+must be followed immediately with the value and not include a
+space between them. For example "\-I60" and not "\-I 60".
 
 .TP
 \fB\-i\fR, \fB\-\-input\fR=<\fImode\fR>
@@ -508,10 +549,10 @@ a terminal is not possible.
 \fB\-J\fR, \fB\-\-job\-name\fR=<\fIjobname\fR>
 Specify a name for the job. The specified name will appear along with
 the job id number when querying running jobs on the system. The default
-is the supplied \fBexecutable\fR program's name. NOTE: This information 
+is the supplied \fBexecutable\fR program's name. NOTE: This information
 may be written to the slurm_jobacct.log file. This file is space delimited
-so if a space is used in the \fIjobname\fR name it will cause problems in 
-properly displaying the contents of the slurm_jobacct.log file when the 
+so if a space is used in the \fIjobname\fR name it will cause problems in
+properly displaying the contents of the slurm_jobacct.log file when the
 \fBsacct\fR command is used.
 
 .TP
@@ -530,18 +571,21 @@ argument of zero will not terminate the job. A non\-zero argument or no
 argument will terminate the job.
 Note: This option takes precedence over the \fB\-W\fR, \fB\-\-wait\fR option
 to terminate the job immediately if a task exits with a non\-zero exit code.
+Since this option's argument is optional, for proper parsing the
+single letter option must be followed immediately with the value and
+not include a space between them. For example "\-K1" and not "\-K 1".
 
 .TP
 \fB\-k\fR, \fB\-\-no\-kill\fR
 Do not automatically terminate a job of one of the nodes it has been
 allocated fails.  This option is only recognized on a job allocation,
 not for the submission of individual job steps.
-The job will assume all responsibilities for fault\-tolerance. 
+The job will assume all responsibilities for fault\-tolerance.
 Tasks launch using this option will not be considered terminated
 (e.g. \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR and
 \fB\-W\fR, \fB\-\-wait\fR options will have no effect upon the job step).
 The active job step (MPI job) will likely suffer a fatal error,
-but subsequent job steps may be run if this option is specified. 
+but subsequent job steps may be run if this option is specified.
 The default action is to terminate the job upon node failure.
 
 .TP
@@ -556,10 +600,10 @@ task id.
 \fB\-L\fR, \fB\-\-licenses\fR=<\fBlicense\fR>
 Specification of licenses (or other resources available on all
 nodes of the cluster) which must be allocated to this job.
-License names can be followed by an asterisk and count
+License names can be followed by a colon and count
 (the default count is one).
 Multiple license names should be comma separated (e.g.
-"\-\-licenses=foo*4,bar").
+"\-\-licenses=foo:4,bar").
 
 .TP
 \fB\-m\fR, \fB\-\-distribution\fR=
@@ -625,8 +669,13 @@ Inside the hostfile must contain at minimum the number of hosts
 requested and be one per line or comma separated.  If specifying a
 task count (\fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>), your tasks
 will be laid out on the nodes in the order of the file.
-.TP
+.br
+\fBNOTE:\fR The arbitrary distribution option on a job allocation only
+controls the nodes to be allocated to the job and not the allocation of
+CPUs on those nodes. This option is meant primarily to control a job step's
+task layout in an existing job allocation for the srun command.
 
+.TP
 Second distribution method:
 .TP
 .B block
@@ -661,6 +710,10 @@ This parameter would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR).
 Also see \fB\-\-mem\-per\-cpu\fR.
 \fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
+NOTE: Enforcement of memory limits currently requires enabling of
+accounting, which samples memory use on a periodic basis (data need
+not be stored, just collected). A task may exceed the memory limit
+until the next periodic accounting sample.
 
 .TP
 \fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>
@@ -671,7 +724,7 @@ seen using the \fBscontrol show config\fR command.
 Note that if the job's \fB\-\-mem\-per\-cpu\fR value exceeds the configured
 \fBMaxMemPerCPU\fR, then the user's limit will be treated as a memory limit
 per task; \fB\-\-mem\-per\-cpu\fR will be reduced to a value no larger than
-\fBMaxMemPerCPU\fR; \fB\-\-cpus\-per\-task\fR will be set and value of 
+\fBMaxMemPerCPU\fR; \fB\-\-cpus\-per\-task\fR will be set and value of
 \fB\-\-cpus\-per\-task\fR multiplied by the new \fB\-\-mem\-per\-cpu\fR
 value will equal the original \fB\-\-mem\-per\-cpu\fR value specified by
 the user.
@@ -702,9 +755,9 @@ The following informational environment variables are set when
 \fB\-\-mem_bind\fR is in use:
 
 .nf
-        SLURM_MEM_BIND_VERBOSE
-        SLURM_MEM_BIND_TYPE
-        SLURM_MEM_BIND_LIST
+	SLURM_MEM_BIND_VERBOSE
+	SLURM_MEM_BIND_TYPE
+	SLURM_MEM_BIND_LIST
 .fi
 
 See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
@@ -831,18 +884,109 @@ that the \fB\-\-cpus\-per\-task\fR option will change this default.
 .TP
 \fB\-\-network\fR=<\fItype\fR>
 Specify the communication protocol to be used.
-This option is supported on AIX systems.
-Since POE is used to launch tasks, this option is not normally used or
-is specified using the \fBSLURM_NETWORK\fR environment variable.
 The interpretation of \fItype\fR is system dependent.
-For systems with an IBM Federation switch, the following
-comma\-separated and case insensitive types are recognized:
-\fBIP\fR (the default is user\-space), \fBSN_ALL\fR, \fBSN_SINGLE\fR,
-\fBBULK_XFER\fR and adapter names  (e.g. \fBSNI0\fR and \fBSNI1\fR).
-For more information, on IBM systems see \fIpoe\fR documentation on
-the environment variables \fBMP_EUIDEVICE\fR and \fBMP_USE_BULK_XFER\fR.
-Note that only four jobs steps may be active at once on a node with the
-\fBBULK_XFER\fR option due to limitations in the Federation switch driver.
+This option is current supported on systems with IBM's Parallel Environment (PE).
+See IBM's LoadLeveler job command keyword documentation about the keyword
+"network" for more information.
+Multiple values may be specified in a comma separated list.
+All options are case in\-sensitive.
+Supported values include:
+.RS
+.TP 12
+\fBBULK_XFER\fR[=<\fIresources\fR>]
+Enable bulk transfer of data using Remote Direct-Memory Access (RDMA).
+The optional \fIresources\fR specification is a numeric value which can have
+a suffix of "k", "K", "m", "M", "g" or "G" for kilobytes, megabytes or
+gigabytes.
+NOTE: The \fIresources\fR specification is not supported by the underlying
+IBM infrastructure as of Parallel Environment version 2.2 and no value should
+be specified at this time.
+The devices allocated to a job must all be of the same type.
+The default value depends upon depends upon what hardware is available and in
+order of preferences is IPONLY (which is not considered in User Space mode),
+HFI, IB, HPCE, and KMUX.
+.TP
+\fBCAU\fR=<\fIcount\fR>
+Number of Collecitve Accelleration Units (CAU) required.
+Applies only to IBM Power7-IH processors.
+Default value is zero.
+Independent CAU will be allocated for each programming interface (MPI, LAPI, etc.)
+.TP
+\fBDEVNAME\fR=<\fIname\fR>
+Specify the device name to use for communications (e.g. "eth0" or "mlx4_0").
+.TP
+\fBDEVTYPE\fR=<\fItype\fR>
+Specify the device type to use for communications.
+The supported values of \fItype\fR are:
+"IB" (InfiniBand), "HFI" (P7 Host Fabric Interface),
+"IPONLY" (IP-Only interfaces), "HPCE" (HPC Ethernet), and
+"KMUX" (Kernel Emulation of HPCE).
+The devices allocated to a job must all be of the same type.
+The default value depends upon depends upon what hardware is available and in
+order of preferences is IPONLY (which is not considered in User Space mode),
+HFI, IB, HPCE, and KMUX.
+.TP
+\fBIMMED\fR =<\fIcount\fR>
+Number of immediate send slots per window required.
+Applies only to IBM Power7-IH processors.
+Default value is zero.
+.TP
+\fBINSTANCES\fR =<\fIcount\fR>
+Specify number of network connections for each task on each network connection.
+The default instance count is 1.
+.TP
+\fBIPV4\fR
+Use Internet Protocol (IP) version 4 communications (default).
+.TP
+\fBIPV6\fR
+Use Internet Protocol (IP) version 6 communications.
+.TP
+\fBLAPI\fR
+Use the LAPI programming interface.
+.TP
+\fBMPI\fR
+Use the MPI programming interface.
+MPI is the default interface.
+.TP
+\fBPAMI\fR
+Use the PAMI programming interface.
+.TP
+\fBSN_ALL\fR
+Use all available switch networks (default).
+.TP
+\fBSN_SINGLE\fR
+Use one available switch network.
+.TP
+\fBUPC\fR
+Use the UPC programming interface.
+.TP
+\fBUS\fR
+Use User Space communications.
+.TP
+
+Some examples of network specifications:
+.TP
+\fBInstances=2,US,MPI,SN_ALL\fR
+Create two user space connections for MPI communications on every switch
+network for each task.
+.TP
+\fBUS,MPI,Instances=3,Devtype=IB\fR
+Create three user space connections for MPI communications on every InfiniBand
+network for each task.
+.TP
+\fBIPV4,LAPI,SN_Single\fR
+Create a IP version 4 connection for LAPI communications on one switch network
+for each task.
+.TP
+\fBInstances=2,US,LAPI,MPI\fR
+Create two user space connections each for LAPI and MPI communcations on every
+switch network for each task. Note that SN_ALL is the default option so every
+switch network is used. Also note that Instances=2 specifies that two
+connections are established for each protocol (LAPI and MPI) and each task.
+If there are two networks and four tasks on the node then a total
+of 32 connections are estabhished (2 instances x 2 protocols x 2 networks x
+4 tasks).
+.RE
 
 .TP
 \fB\-\-nice\fR[=\fIadjustment\fR]
@@ -898,9 +1042,9 @@ NOTE: This option is not supported unless
 Overcommit resources. Normally, \fBsrun\fR
 will not allocate more than one process per CPU. By specifying
 \fB\-\-overcommit\fR you are explicitly allowing more than one process
-per CPU. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are 
-permitted to execute per node.  NOTE: \fBMAX_TASKS_PER_NODE\fR is 
-defined in the file \fIslurm.h\fR and is not a variable, it is set at 
+per CPU. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are
+permitted to execute per node.  NOTE: \fBMAX_TASKS_PER_NODE\fR is
+defined in the file \fIslurm.h\fR and is not a variable, it is set at
 SLURM build time.
 
 .TP
@@ -966,7 +1110,7 @@ The maximum size of a process's data segment
 .TP
 \fBFSIZE\fR
 The maximum size of files created. Note that if the user sets FSIZE to less
-than the current size of the slurmd.log, job launches will fail with 
+than the current size of the slurmd.log, job launches will fail with
 a 'File size limit exceeded' error.
 .TP
 \fBMEMLOCK\fR
@@ -990,7 +1134,7 @@ The maximum stack size
 Execute task zero in pseudo terminal mode.
 Implicitly sets \fB\-\-unbuffered\fR.
 Implicitly sets \fB\-\-error\fR and \fB\-\-output\fR to /dev/null
-for all tasks except task zero, which may cause those tasks to 
+for all tasks except task zero, which may cause those tasks to
 exit immediately (e.g. shells will typically exit immediately
 in that situation).
 Not currently supported on AIX platforms.
@@ -1021,7 +1165,7 @@ This option may be used to spread several job steps out among the
 nodes of the current job. If \fB\-r\fR is used, the current job
 step will begin at node \fIn\fR of the allocated nodelist, where
 the first node is considered node 0.  The \fB\-r\fR option is not
-permitted with \fB\-w\fR or \fB\-x\fR option and will result in a 
+permitted with \fB\-w\fR or \fB\-x\fR option and will result in a
 fatal error when not running within a prior allocation (i.e. when
 SLURM_JOB_ID is not set). The default for \fIn\fR is 0. If the
 value of \fB\-\-nodes\fR exceeds the number of nodes identified
@@ -1089,7 +1233,7 @@ When a tree topology is used, this defines the maximum count of switches
 desired for the job allocation and optionally the maximum time to wait
 for that number of switches. If SLURM finds an allocation containing more
 switches than the count specified, the job remains pending until it either finds
-an allocation with desired switch count or the time limit expires. 
+an allocation with desired switch count or the time limit expires.
 It there is no switch count limit, there is no delay in starting the job.
 Acceptable time formats include "minutes", "minutes:seconds",
 "hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
@@ -1117,8 +1261,8 @@ requested time limit for a job exceeds the partition's time limit,
 the job will be left in a PENDING state (possibly indefinitely).
 If the requested time limit for a job step exceeds the partition's
 time limit, the job step will not be initiated.  The default time
-limit is the partition's time limit.  When the time limit is reached,
-the job's tasks are sent SIGTERM followed by SIGKILL. If the time
+limit is the partition's default time limit.  When the time limit is reached,
+each task in each job step is sent SIGTERM followed by SIGKILL.  The
 limit is for the job, all job steps are signaled. If the time limit is
 for a single job step within an existing job allocation, only that job
 step will be affected. A job time limit supercedes all job step time
@@ -1168,12 +1312,12 @@ above when task/affinity plugin is enabled.
 Set a minimum time limit on the job allocation.
 If specified, the job may have it's \fB\-\-time\fR limit lowered to a value
 no lower than \fB\-\-time\-min\fR if doing so permits the job to begin
-execution earlier than otherwise possible. 
+execution earlier than otherwise possible.
 The job's time limit will not be changed after the job is allocated resources.
-This is performed by a backfill scheduling algorithm to allocate resources 
+This is performed by a backfill scheduling algorithm to allocate resources
 otherwise reserved for higher priority jobs.
-Acceptable time formats include "minutes", "minutes:seconds", 
-"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
+Acceptable time formats include "minutes", "minutes:seconds",
+"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
 "days\-hours:minutes:seconds".
 
 .TP
@@ -1218,7 +1362,7 @@ parameter in the slurm configuration file (see \fBslurm.conf(5)\fR). This
 option can be useful to insure that a job is terminated in a timely fashion
 in the event that one or more tasks terminate prematurely.
 Note: The \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR option takes precedence
-over \fB\-W\fR, \fB\-\-wait\fR to terminate the job immediately if a task 
+over \fB\-W\fR, \fB\-\-wait\fR to terminate the job immediately if a task
 exits with a non\-zero exit code.
 
 .TP
@@ -1254,8 +1398,8 @@ if it contains a "/"character.
 \fB\-Z\fR, \fB\-\-no\-allocate\fR
 Run the specified tasks on a set of nodes without creating a SLURM
 "job" in the SLURM queue structure, bypassing the normal resource
-allocation step.  The list of nodes must be specified with the 
-\fB\-w\fR, \fB\-\-nodelist\fR option.  This is a privileged option 
+allocation step.  The list of nodes must be specified with the
+\fB\-w\fR, \fB\-\-nodelist\fR option.  This is a privileged option
 only available for the users "SlurmUser" and "root".
 
 .PP
@@ -1381,8 +1525,15 @@ standard input of \fBsrun\fR to all remote tasks.
 If stdin is only to be read by a subset of the spawned tasks, specifying a
 file to read from rather than forwarding stdin from the \fBsrun\fR command may
 be preferable as it avoids moving and storing data that will never be read.
+.PP
 For OS X, the poll() function does not support stdin, so input from
 a terminal is not possible.
+.PP
+For BGQ srun only supports stdin to 1 task running on the system.  By
+default it is taskid 0 but can be changed with the \-i<taskid> as
+described below, or \-\-runjob\-opt="\-\-stdinrank=<taskid>".  Outside
+of the taskid option none of the options below are available for a BGQ system.
+.PP
 This behavior may be changed with the
 \fB\-\-output\fR, \fB\-\-error\fR, and \fB\-\-input\fR
 (\fB\-o\fR, \fB\-e\fR, \fB\-i\fR) options. Valid format specifications
@@ -1397,14 +1548,14 @@ stdin is broadcast to all remote tasks.
 stdout and stderr is not received from any task.
 stdin is not sent to any task (stdin is closed).
 .TP
-\fItaskid\fR
+\fBtaskid\fR
 stdout and/or stderr are redirected from only the task with relative
 id equal to \fItaskid\fR, where 0 <= \fItaskid\fR <= \fIntasks\fR,
 where \fIntasks\fR is the total number of tasks in the current job step.
 stdin is redirected from the stdin of \fBsrun\fR to this same task.
 This file will be written on the node executing the task.
 .TP
-\fIfilename\fR
+\fBfilename\fR
 \fBsrun\fR will redirect stdout and/or stderr to the named file from
 all tasks.
 stdin will be redirected from the named file and broadcast to all
@@ -1413,7 +1564,7 @@ that runs \fBsrun\fR.  Depending on the cluster's file system layout,
 this may result in the output appearing in different places depending
 on whether the job is run in batch mode.
 .TP
-format string
+\fBformat string\fR
 \fBsrun\fR allows for a format string to be used to generate the
 named IO file
 described above. The following list of format specifiers may be
@@ -1525,6 +1676,16 @@ Same as \fB\-\-conn\-type\fR
 .TP
 \fBSLURM_CPU_BIND\fR
 Same as \fB\-\-cpu_bind\fR
+.TP
+\fBSLURM_CPU_FREQ_REQ\fR
+Same as \fB\-\-cpu\-freq\fR. Can specify a numerical frequency in
+kilohertz, or the request can specify \fIlow\fR, \fImedium\fR, or
+\fIhigh\fR for the value. "Low" will select the lowest available
+frequency, "high" will select the highest available frequency, while
+"medium" attempts to set a frequency in the middle of the available
+range. If the numeric value specified does not exactly match a legal
+available frequency, SLURM will attempt to pick a legal frequency
+close to the request.
 .TP
 \fBSLURM_CPUS_PER_TASK\fR
 Same as \fB\-c, \-\-cpus\-per\-task\fR
@@ -1705,6 +1866,13 @@ if specified on the execute line.
 \-\-cpu_bind map or mask list (<list of IDs or masks for this node>)
 
 .TP
+\fBSLURM_CPU_FREQ_REQ\fR
+Contains the value requested for cpu frequency on the srun command as
+a numerical frequency in kilohertz, or a coded value for a request of
+\fIlow\fR, \fImedium\fR, or \fIhigh\fR for the frequency. See the
+description of the \fB\-\-cpu\-freq\fR option or the
+\fBSLURM_CPU_FREQ_REQ\fR input environment variable.
+.TP
 \fBSLURM_CPUS_ON_NODE\fR
 Count of processors available to the job on this node.
 Note the select/linear plugin allocates entire nodes to
@@ -1804,6 +1972,13 @@ This is set only if the system has the topology/tree plugin configured.
 The value will be set component types listed in \fBSLURM_TOPOLOGY_ADDR\fR.
 Each component will be identified as either "switch" or "node".
 A period is used to separate each hardware component type.
+
+.TP
+\fBSRUN_DEBUG\fR
+Set to the logging level of the \fBsrun\fR command.
+Default value is 3 (info level).
+The value is incremented or decremented based upon the \-\-verbose and
+\-\-quiet options.
 
 .TP
 \fBMPIRUN_NOALLOCATE\fR

@@ -1,0 +1,59 @@
+############################################################################
+# Purpose: Test for accounting records of specific job names with their ID
+############################################################################
+# Copyright (C) 2012 SchedMD LLC.
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.schedmd.com/slurmdocs/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+#
+# Test maxnode
+#
+proc inc21_21_1 { maxnode } {
+
+	global number bin_id ta srun exit_code
+
+#
+# Spawn a job testing maxnode
+#
+	set matches 0
+	spawn $srun -v -N$maxnode --account=$ta $bin_id
+	expect {
+		-re "launching ($number)" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { $matches != 1 } {
+		send_user "\nFAILURE: job dion't launch with correct limit\n"
+		set exit_code 1
+		return $exit_code
+	}
+
+
+}

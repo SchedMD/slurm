@@ -212,6 +212,7 @@ extern int   accounting_enforce;
 extern int   association_based_accounting;
 extern uint32_t   cluster_cpus;
 extern int   with_slurmdbd;
+extern bool  load_2_4_state;
 
 /*****************************************************************************\
  *  NODE parameters and data structures, mostly in src/common/node_conf.h
@@ -331,7 +332,7 @@ typedef struct slurmctld_resv {
 	char **account_list;	/* list of accounts permitted to use	*/
 	char *assoc_list;	/* list of associations			*/
 	uint32_t cpu_cnt;	/* number of reserved CPUs		*/
-	bitstr_t *core_bitmap; /* bitmap of reserved cores		*/
+	bitstr_t *core_bitmap;	/* bitmap of reserved cores		*/
 	uint32_t duration;	/* time in seconds for this
 				 * reservation to last                  */
 	time_t end_time;	/* end time of reservation		*/
@@ -633,6 +634,7 @@ struct 	step_record {
 					 * step relative to job's nodes,
 					 * see src/common/job_resources.h */
 	uint32_t cpu_count;		/* count of step's CPUs */
+	uint32_t cpu_freq;	        /* requested cpu frequency */
 	uint16_t cpus_per_task;		/* cpus per task initiated */
 	uint16_t cyclic_alloc;		/* set for cyclic task allocation
 					 * across nodes */
@@ -959,7 +961,7 @@ extern int job_alloc_info(uint32_t uid, uint32_t job_id,
  * IN will_run - don't initiate the job if set, just test if it could run
  *	now or later
  * OUT resp - will run response (includes start location, time, etc.)
- * IN allocate - resource allocation request if set, not a full job
+ * IN allocate - resource allocation request only if set, batch job if zero
  * IN submit_uid -uid of user issuing the request
  * OUT job_pptr - set to pointer to job record
  * RET 0 or an error code. If the job would only be able to execute with
@@ -1821,6 +1823,11 @@ extern int validate_alloc_node(struct part_record *part_ptr, char* alloc_node);
  * RET 1 if permitted to run, 0 otherwise
  */
 extern int validate_group (struct part_record *part_ptr, uid_t run_uid);
+
+/* Perform some size checks on strings we store to prevent
+ * malicious user filling slurmctld's memory
+ * RET 0 or error code */
+extern int validate_job_create_req(job_desc_msg_t * job_desc);
 
 /*
  * validate_jobs_on_node - validate that any jobs that should be on the node

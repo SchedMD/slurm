@@ -124,6 +124,7 @@ static slurm_gres_context_t *gres_context = NULL;
 static char *gres_plugin_list = NULL;
 static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static List gres_conf_list = NULL;
+static bool init_run = false;
 
 /* Local functions */
 static gres_node_state_t *
@@ -338,6 +339,9 @@ extern int gres_plugin_init(void)
 	int i, j, rc = SLURM_SUCCESS;
 	char *last = NULL, *names, *one_name, *full_name;
 
+	if (init_run && (gres_context_cnt >= 0))
+		return rc;
+
 	slurm_mutex_lock(&gres_context_lock);
 	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
 		gres_debug = true;
@@ -403,6 +407,7 @@ extern int gres_plugin_init(void)
 		gres_context[i].gres_name_colon_len =
 			strlen(gres_context[i].gres_name_colon);
 	}
+	init_run = true;
 
 fini:	slurm_mutex_unlock(&gres_context_lock);
 	return rc;
@@ -421,6 +426,7 @@ extern int gres_plugin_fini(void)
 	if (gres_context_cnt < 0)
 		goto fini;
 
+	init_run = false;
 	for (i=0; i<gres_context_cnt; i++) {
 		j = _unload_gres_plugin(gres_context + i);
 		if (j != SLURM_SUCCESS)
@@ -699,6 +705,10 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		if (p->count && (p->count != tmp_long)) {
 			fatal("Invalid gres data for %s, Count does not match "
 			      "File value", p->name);
+		}
+		if ((tmp_long < 0) || (tmp_long >= NO_VAL)) {
+			fatal("Gres %s has invalid count value %ld",
+			      p->name, tmp_long);
 		}
 		p->count = tmp_long;
 		xfree(tmp_str);

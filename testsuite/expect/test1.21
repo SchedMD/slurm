@@ -38,23 +38,26 @@ set exit_code        0
 set job_id           0
 set matches          0
 set task_id          3
+set task_num         10
 
 print_header $test_id
 
-if {[test_cray]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-}
 if {[test_bluegene]} {
 	send_user "\nWARNING: This test is incompatible with Bluegene systems\n"
 	exit $exit_code
+} elseif {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+} elseif {[test_serial]} {
+	set task_id 0
+	set task_num 1
 }
 
 #
 # Spawn a shell via srun with stdout forwarding disabled
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --input=$task_id -N1 -n10 -O -v --wait=2 -t1 $bin_bash]
+set srun_pid [spawn $srun --input=$task_id -N1 -n$task_num -O -v --wait=2 -t1 $bin_bash]
 expect {
 	-re "launching ($number).0 on host" {
 		set job_id $expect_out(1,string)
@@ -107,7 +110,7 @@ if {$exit_code == 0} {
 #
 set job_id  0
 set matches 0
-set srun_pid [spawn $srun --output=$task_id -N1 -n10 -O -v env]
+set srun_pid [spawn $srun --output=$task_id -N1 -n$task_num -O -v env]
 expect {
 	-re "launching ($number).0 on host" {
 		set job_id $expect_out(1,string)

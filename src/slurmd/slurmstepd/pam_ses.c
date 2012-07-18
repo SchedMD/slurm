@@ -90,7 +90,7 @@ pam_setup (char *user, char *host)
 	 * handling resource limits. When a PAM session is opened on behalf of
 	 * a user, the limits imposed by the sys admin are picked up. Opening
 	 * a PAM session requires a PAM handle, which is obtained when the PAM
-	 * interface is intialized. (PAM handles are required with essentially
+	 * interface is initialized. (PAM handles are required with essentially
 	 * all PAM calls.) It's also necessary to have the users PAM credentials
 	 * to open a user session.
  	 */

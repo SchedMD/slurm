@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 
 	_set_exit_code();
 	if (spank_init_allocator() < 0) {
-		error("Failed to intialize plugin stack");
+		error("Failed to initialize plugin stack");
 		exit(error_exit);
 	}
 
@@ -262,7 +262,7 @@ static int _check_cluster_specific_settings(job_desc_msg_t *req)
 /* Returns 0 on success, -1 on failure */
 static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
-		int i;
+	int i;
 	extern char **environ;
 
 	if (opt.jobid_set)
@@ -281,12 +281,14 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->req_nodes = opt.nodelist;
 	desc->exc_nodes = opt.exc_nodes;
 	desc->partition = opt.partition;
-	if (opt.nodes_set || opt.min_nodes)
-		desc->min_nodes = opt.min_nodes;
 	if (opt.licenses)
 		desc->licenses = xstrdup(opt.licenses);
-	if (opt.nodes_set || opt.max_nodes)
-		desc->max_nodes = opt.max_nodes;
+	if (opt.nodes_set) {
+		desc->min_nodes = opt.min_nodes;
+		if (opt.max_nodes)
+			desc->max_nodes = opt.max_nodes;
+	} else if (opt.ntasks_set && (opt.ntasks == 0))
+		desc->min_nodes = 0;
 	if (opt.ntasks_per_node)
 		desc->ntasks_per_node = opt.ntasks_per_node;
 	desc->user_id = opt.uid;
@@ -360,6 +362,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->overcommit = opt.overcommit;
 	} else if (opt.cpus_set)
 		desc->min_cpus = opt.ntasks * opt.cpus_per_task;
+	else if (opt.nodes_set && (opt.min_nodes == 0))
+		desc->min_cpus = 0;
 	else
 		desc->min_cpus = opt.ntasks;
 
@@ -416,7 +420,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 				    "SLURM_GET_USER_ENV", "1");
 	}
 
-	if(opt.distribution == SLURM_DIST_ARBITRARY) {
+	if (opt.distribution == SLURM_DIST_ARBITRARY) {
 		env_array_overwrite_fmt(&desc->environment,
 					"SLURM_ARBITRARY_NODELIST",
 					"%s", desc->req_nodes);

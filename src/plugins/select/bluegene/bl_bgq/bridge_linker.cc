@@ -67,6 +67,23 @@ static bool initialized = false;
 
 
 #ifdef HAVE_BG_FILES
+
+// For future code
+//
+// static int _check_version(
+// 	const unsigned major, const unsigned minor, const unsigned micro)
+// {
+// 	if ((version::major > major)
+// 	    || (version::major == major
+// 		&& version::minor > minor)
+// 	    || (version::major == major
+// 		&& version::minor == minor
+// 		&& version::mod >= micro))
+// 		return true;
+
+// 	return false;
+// }
+
 /* ba_system_mutex needs to be locked before coming here */
 static void _setup_ba_mp(int level, uint16_t *coords,
 			 ComputeHardware::ConstPtr bgqsys)
@@ -309,6 +326,7 @@ static int _block_wait_for_jobs(char *bg_block_id, struct job_record *job_ptr)
 static void _remove_jobs_on_block_and_reset(char *block_id,
 					    struct job_record *job_ptr)
 {
+	char *mp_str = NULL;
 	bg_record_t *bg_record = NULL;
 	int job_remove_failed = 0;
 	slurmctld_lock_t job_read_lock =
@@ -335,11 +353,7 @@ static void _remove_jobs_on_block_and_reset(char *block_id,
 	if (bg_record) {
 		if (job_remove_failed) {
 			if (bg_record->mp_str)
-				slurm_drain_nodes(
-					bg_record->mp_str,
-					(char *)
-					"_term_agent: Couldn't remove job",
-					slurm_get_slurm_user_id());
+				mp_str = xstrdup(bg_record->mp_str);
 			else
 				error("Block %s doesn't have a node list.",
 				      block_id);
@@ -355,6 +369,15 @@ static void _remove_jobs_on_block_and_reset(char *block_id,
 	slurm_mutex_unlock(&block_state_mutex);
 	if (job_ptr)
 		unlock_slurmctld(job_read_lock);
+
+	/* avoid locking issues just do this afterwards. */
+	if (mp_str) {
+		slurm_drain_nodes(mp_str,
+				  (char *)"_term_agent: Couldn't remove job",
+				  slurm_get_slurm_user_id());
+		xfree(mp_str);
+	}
+
 }
 
 extern int bridge_init(char *properties_file)
@@ -688,6 +711,7 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 		return SLURM_ERROR;
 
 #ifdef HAVE_BG_FILES
+	char *function_name;
 	/* Lets see if we are connected to the IO. */
 	try {
 		uint32_t avail, unavail;
@@ -715,34 +739,62 @@ extern int bridge_block_boot(bg_record_t *bg_record)
 	}
 
 	try {
-		std::vector<std::string> mp_vec;
-		if (!Block::isIOConnected(bg_record->bg_block_id, &mp_vec)) {
+		std::vector<std::string> res_vec;
+#ifdef HAVE_BG_NEW_IO_CHECK
+		std::vector<std::string> unconn_ionode_vec;
+
+		function_name = (char *)"Block::checkIO";
+		Block::checkIO(bg_record->bg_block_id,
+			       &unconn_ionode_vec,
+			       &res_vec);
+		if (!res_vec.empty()) {
 			error("Block %s is not IOConnected, "
+			      "contact your admin. Midplanes not "
+			      "connected ...", bg_record->bg_block_id);
+			slurm_mutex_lock(&ba_system_mutex);
+			BOOST_FOREACH(const std::string& res, res_vec) {
+				ba_mp_t *ba_mp = loc2ba_mp(res.c_str());
+				if (ba_mp)
+					error("%s(%s)",
+					      res.c_str(), ba_mp->coord_str);
+				else
+					error("%s", res.c_str());
+			}
+			slurm_mutex_unlock(&ba_system_mutex);
+			return BG_ERROR_NO_IOBLOCK_CONNECTED;
+		}
+#else
+		function_name = (char *)"Block::isIOConnected";
+		if (!Block::isIOConnected(
+			    bg_record->bg_block_id, &res_vec)) {
+			error("Using old method, "
+			      "block %s is not IOConnected, "
 			      "contact your admin. Hardware not "
 			      "connected ...", bg_record->bg_block_id);
-			BOOST_FOREACH(const std::string& mp, mp_vec) {
-				error("%s", mp.c_str());
+			BOOST_FOREACH(const std::string& res, res_vec) {
+				error("%s", res.c_str());
 			}
 			return BG_ERROR_NO_IOBLOCK_CONNECTED;
 		}
+#endif
 	} catch (const bgsched::DatabaseException& err) {
-		rc = bridge_handle_database_errors("Block::isIOConnected",
+		rc = bridge_handle_database_errors(function_name,
 						   err.getError().toValue());
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	} catch (const bgsched::InputException& err) {
-		rc = bridge_handle_input_errors("Block::isIOConnected",
+		rc = bridge_handle_input_errors(function_name,
 						err.getError().toValue(),
 						bg_record);
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	} catch (const bgsched::InternalException& err) {
-		rc = bridge_handle_internal_errors("Block::isIOConnected",
+		rc = bridge_handle_internal_errors(function_name,
 						err.getError().toValue());
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	} catch (...) {
-                error("isIOConnected request failed ... continuing.");
+                error("%s request failed ... continuing.", function_name);
 		rc = SLURM_ERROR;
 	}
 

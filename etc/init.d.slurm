@@ -55,11 +55,6 @@ else
    RETVAL=0
 fi
 
-if [ ! -x $BINDIR/scontrol ]; then
-   echo "Could not find $BINDIR/scontrol. Bad path?"
-   exit 1
-fi
-
 # We can not use a starter program without losing environment
 # variables that are critical on Blue Gene systems
 if [ -d /bgl/BlueLight/ppcfloor ]; then
@@ -78,6 +73,11 @@ if [ -f /etc/sysconfig/slurm ] ; then
 else
     SLURMCTLD_OPTIONS=""
     SLURMD_OPTIONS=""
+fi
+
+if [ ! -x $BINDIR/scontrol ]; then
+   echo "Could not find $BINDIR/scontrol. Bad path?"
+   exit 1
 fi
 
 if [ ! -f $CONFDIR/slurm.conf ]; then

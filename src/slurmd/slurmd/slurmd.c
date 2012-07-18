@@ -63,6 +63,7 @@
 #endif
 
 #include "src/common/bitstring.h"
+#include "src/common/cpu_frequency.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
@@ -538,14 +539,12 @@ cleanup:
 extern int
 send_registration_msg(uint32_t status, bool startup)
 {
-	int ret_val = SLURM_SUCCESS;
+	int rc, ret_val = SLURM_SUCCESS;
 	slurm_msg_t req;
-	slurm_msg_t resp;
 	slurm_node_registration_status_msg_t *msg =
 		xmalloc (sizeof (slurm_node_registration_status_msg_t));
 
 	slurm_msg_t_init(&req);
-	slurm_msg_t_init(&resp);
 
 	msg->startup = (uint16_t) startup;
 	_fill_registration_msg(msg);
@@ -554,17 +553,13 @@ send_registration_msg(uint32_t status, bool startup)
 	req.msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
 	req.data     = msg;
 
-	if (slurm_send_recv_controller_msg(&req, &resp) < 0) {
+	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0) {
 		error("Unable to register: %m");
 		ret_val = SLURM_FAILURE;
 	} else {
 		sent_reg_time = time(NULL);
-		slurm_free_return_code_msg(resp.data);
 	}
 	slurm_free_node_registration_status_msg (msg);
-
-	/* XXX look at response msg
-	 */
 
 	return ret_val;
 }
@@ -584,6 +579,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 
 	msg->node_name   = xstrdup (conf->node_name);
 	msg->cpus	 = conf->cpus;
+	msg->boards	 = conf->boards;
 	msg->sockets	 = conf->sockets;
 	msg->cores	 = conf->cores;
 	msg->threads	 = conf->threads;
@@ -605,15 +601,17 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 
 	if (first_msg) {
 		first_msg = false;
-		info("CPUs=%u Sockets=%u Cores=%u Threads=%u "
+		info("Procs=%u Boards=%u Sockets=%u Cores=%u Threads=%u "
 		     "Memory=%u TmpDisk=%u Uptime=%u",
-		     msg->cpus, msg->sockets, msg->cores, msg->threads,
-		     msg->real_memory, msg->tmp_disk, msg->up_time);
+		     msg->cpus, msg->boards, msg->sockets, msg->cores,
+		     msg->threads, msg->real_memory, msg->tmp_disk,
+		     msg->up_time);
 	} else {
-		debug3("CPUs=%u Sockets=%u Cores=%u Threads=%u "
+		debug3("Procs=%u Boards=%u Sockets=%u Cores=%u Threads=%u "
 		       "Memory=%u TmpDisk=%u Uptime=%u",
-		       msg->cpus, msg->sockets, msg->cores, msg->threads,
-		       msg->real_memory, msg->tmp_disk, msg->up_time);
+		       msg->cpus, msg->boards, msg->sockets, msg->cores,
+		       msg->threads, msg->real_memory, msg->tmp_disk,
+		       msg->up_time);
 	}
 	uname(&buf);
 	if ((arch = getenv("SLURM_ARCH")))
@@ -667,7 +665,6 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
-
 	msg->timestamp = time(NULL);
 
 	return;
@@ -886,9 +883,10 @@ _read_config(void)
 	}
 
 	conf->port = slurm_conf_get_port(conf->node_name);
-	slurm_conf_get_cpus_sct(conf->node_name,
-				&conf->conf_cpus,  &conf->conf_sockets,
-				&conf->conf_cores, &conf->conf_threads);
+	slurm_conf_get_cpus_bsct(conf->node_name,
+				 &conf->conf_cpus, &conf->conf_boards,
+				 &conf->conf_sockets, &conf->conf_cores,
+				 &conf->conf_threads);
 
 	/* store hardware properties in slurmd_config */
 	xfree(conf->block_map);
@@ -909,6 +907,7 @@ _read_config(void)
 #else
 	get_procs(&conf->actual_cpus);
 	get_cpuinfo(conf->actual_cpus,
+		    &conf->actual_boards,
 		    &conf->actual_sockets,
 		    &conf->actual_cores,
 		    &conf->actual_threads,
@@ -923,6 +922,7 @@ _read_config(void)
 	 * Report actual hardware configuration, irrespective of FastSchedule.
 	 */
 	conf->cpus    = conf->actual_cpus;
+	conf->boards   = conf->actual_boards;
 	conf->sockets = conf->actual_sockets;
 	conf->cores   = conf->actual_cores;
 	conf->threads = conf->actual_threads;
@@ -937,11 +937,13 @@ _read_config(void)
 	    ((cf->fast_schedule == 1) &&
 	     (conf->actual_cpus < conf->conf_cpus))) {
 		conf->cpus    = conf->actual_cpus;
+		conf->boards   = conf->actual_boards;
 		conf->sockets = conf->actual_sockets;
 		conf->cores   = conf->actual_cores;
 		conf->threads = conf->actual_threads;
 	} else {
 		conf->cpus    = conf->conf_cpus;
+		conf->boards   = conf->conf_boards;
 		conf->sockets = conf->conf_sockets;
 		conf->cores   = conf->conf_cores;
 		conf->threads = conf->conf_threads;
@@ -992,6 +994,7 @@ _read_config(void)
 	_massage_pathname(&conf->spooldir);
 	_free_and_set(&conf->pidfile,  xstrdup(cf->slurmd_pidfile));
 	_massage_pathname(&conf->pidfile);
+	_free_and_set(&conf->select_type, xstrdup(cf->select_type));
 	_free_and_set(&conf->task_prolog, xstrdup(cf->task_prolog));
 	_free_and_set(&conf->task_epilog, xstrdup(cf->task_epilog));
 	_free_and_set(&conf->pubkey,   path_pubkey);
@@ -1035,6 +1038,12 @@ _reconfigure(void)
 	slurm_topo_build_config();
 	_set_topo_info();
 
+	/*
+	 * In case the administrator changed the cpu frequency set capabilities
+	 * on this node, rebuild the cpu frequency table information
+	 */
+	cpu_freq_init(conf);
+
 	_print_conf();
 
 	/*
@@ -1073,6 +1082,7 @@ _reconfigure(void)
 	list_destroy(steps);
 
 	gres_plugin_reconfig(&did_change);
+	(void) switch_g_reconfig();
 	if (did_change) {
 		uint32_t cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 		(void) gres_plugin_node_config_load(cpu_cnt);
@@ -1106,6 +1116,10 @@ _print_conf(void)
 	       conf->cpus,
 	       conf->conf_cpus,
 	       conf->actual_cpus);
+	debug3("Boards      = %-2u (CF: %2u, HW: %2u)",
+	       conf->boards,
+	       conf->conf_boards,
+	       conf->actual_boards);
 	debug3("Sockets     = %-2u (CF: %2u, HW: %2u)",
 	       conf->sockets,
 	       conf->conf_sockets,
@@ -1196,7 +1210,7 @@ _init_conf(void)
 static void
 _destroy_conf(void)
 {
-	if(conf) {
+	if (conf) {
 		xfree(conf->block_map);
 		xfree(conf->block_map_inv);
 		xfree(conf->conffile);
@@ -1211,6 +1225,7 @@ _destroy_conf(void)
 		xfree(conf->pidfile);
 		xfree(conf->prolog);
 		xfree(conf->pubkey);
+		xfree(conf->select_type);
 		xfree(conf->spooldir);
 		xfree(conf->stepd_loc);
 		xfree(conf->task_prolog);
@@ -1247,6 +1262,7 @@ _print_config(void)
 #else
 	get_procs(&conf->actual_cpus);
 	get_cpuinfo(conf->actual_cpus,
+			&conf->actual_boards,
 		    &conf->actual_sockets,
 		    &conf->actual_cores,
 		    &conf->actual_threads,
@@ -1421,8 +1437,13 @@ _slurmd_init(void)
 	slurm_topo_build_config();
 	_set_topo_info();
 
+	/*
+	 * Check for cpu frequency set capabilities on this node
+	 */
+	cpu_freq_init(conf);
+
 	_print_conf();
-	if (slurm_jobacct_gather_init() != SLURM_SUCCESS)
+	if (jobacct_gather_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 	if (slurm_proctrack_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
@@ -1458,6 +1479,11 @@ _slurmd_init(void)
 	 */
 	if (!(conf->vctx = slurm_cred_verifier_ctx_create(conf->pubkey)))
 		return SLURM_FAILURE;
+	if (!strcmp(conf->select_type, "select/serial")) {
+		/* Only cache credential for 5 seconds with select/serial
+		 * for shorter cache searches and higher throughput */
+		slurm_cred_ctx_set(conf->vctx, SLURM_CRED_OPT_EXPIRY_WINDOW, 5);
+	}
 
 	/*
 	 * Create slurmd spool directory if necessary.
@@ -1603,7 +1629,7 @@ _slurmd_fini(void)
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	fini_setproctitle();
 	slurm_select_fini();
-	slurm_jobacct_gather_fini();
+	jobacct_gather_fini();
 	spank_slurmd_exit();
 	return SLURM_SUCCESS;
 }

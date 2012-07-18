@@ -30,7 +30,9 @@ that are configured as hidden and partitions that are unavailable to user's
 group.
 .TP
 \fB\-d\fR, \fB\-\-details\fR
-Causes the \fBshow\fR command to provide additional details where available.
+Causes the \fIshow\fR command to provide additional details where available.
+Repeating the option more than once (e.g., "\-dd") will cause the \fIshow job\fR
+command to also list the batch script, if the job was a batch job.
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print a help message describing the usage of scontrol.
@@ -151,8 +153,6 @@ If the specified partition is in use, the request is denied.
 .TP
 \fBdetails\fP
 Causes the \fIshow\fP command to provide additional details where available.
-Batch job information will include the batch script for jobs the user is
-authorized to view.
 Job information will include CPUs and NUMA memory allocated on each node.
 Note that on computers with hyperthreading enabled and SLURM configured to
 allocate cores, each listed CPU represents one physical core.
@@ -161,7 +161,8 @@ CPU count and task count may differ.
 See the \fB\-\-cpu_bind\fR and \fB\-\-mem_bind\fR option descriptions in
 srun man pages for more information.
 The \fBdetails\fP option is currently only supported for the \fIshow job\fP
-command.
+command. To also list the batch script for batch jobs, in addition to the
+details, use the \fBscript\fP option described below instead of this option.
 
 .TP
 \fBexit\fP
@@ -274,6 +275,12 @@ This value is temporary and will be overwritten when the slurmctld
 daemon reads the slurm.conf configuration file (e.g. when the daemon 
 is restarted or \fBscontrol reconfigure\fR is executed) if the
 SlurmSchedLogLevel parameter is present.
+
+.TP
+\fBscript\fP
+Causes the \fIshow job\fP command to list the batch script for batch
+jobs in addition to the detail information described under the
+\fBdetails\fP option above.
 
 .TP
 \fBsetdebug\fP \fILEVEL\fP
@@ -1071,12 +1078,18 @@ may use the reserved nodes.
 A new reservation must specify Users and/or Accounts.
 
 .TP
+\fICoreCnt\fP=<num>
+Identify number of cores to be reserved. This should only be used for
+reservations that are less than one node in size. Otherwise use the
+\fINodeCnt\fP option described below.
+
+.TP
 \fILicenses\fP=<license>
 Specification of licenses (or other resources available on all
 nodes of the cluster) which are to be reserved.
-License names can be followed by an asterisk and count
+License names can be followed by a colon and count
 (the default count is one).
-Multiple license names should be comma separated (e.g. "Licenses=foo*4,bar").
+Multiple license names should be comma separated (e.g. "Licenses=foo:4,bar").
 A new reservation must specify one or more resource to be included: NodeCnt,
 Nodes and/or Licenses.
 
@@ -1168,6 +1181,11 @@ Ignore currently running jobs when creating the reservation.
 This can be especially useful when reserving all nodes in the system
 for maintenance.
 .TP
+\fIPART_NODES\fR
+This flag can be used to reserve all nodes within the specified
+partition.  PartitionName and Nodes=ALL must be specified or
+this option is ignored.
+.TP
 \fIDAILY\fR
 Repeat the reservation at the same time every day
 .TP
@@ -1197,20 +1215,39 @@ E.g.  Users=jones1,smith2.
 A new reservation must specify Users and/or Accounts.
 
 .TP
-\fBSPECIFICATIONS FOR UPDATE, BLOCK \fR
+\fBSPECIFICATIONS FOR UPDATE BLOCK/SUBMP \fR
 .TP
 Bluegene systems only!
 .TP
 \fIBlockName\fP=<name>
 Identify the bluegene block to be updated. This specification is required.
 .TP
-\fIState\fP=<free|error|remove>
-This will update the state of a bluegene block to either FREE or ERROR.
-(i.e. update BlockName=RMP0 STATE=ERROR) State error will not allow jobs
-to run on the block. \fBWARNING!!!!\fR This will cancel any
-running job on the block!  On dynamically laid out systems REMOVE will
-free and remove the block from the system.  If the block is smaller
-than a midplane every block on that midplane will be removed.
+\fIState\fP=<free|error|recreate|remove|resume>
+This will update the state of a bluegene block.
+(i.e. update BlockName=RMP0 STATE=ERROR)
+\fBWARNING!!!!\fR With the exception of the RESUME state, all other
+state values will cancel any running job on the block!
+.RS
+.TP 10
+\fIFREE\fP
+Return the block to a free state.
+.TP
+\fIERROR\fP
+Make it so jobs don't run on the block.
+.TP
+\fIRECREATE\fP
+Destroy the current block and create a new one to take its place.
+.TP
+\fIREMOVE\fP
+Free and remove the block from the system.  If the block is smaller
+than a midplane every block on that midplane will be removed. (only
+available on dynamic laid out systems)
+.TP
+\fIRESUME\fP
+If a block is in ERROR state RESUME will return the block to its
+previous usable state (FREE or READY).
+.RE
+
 .TP
 \fISubMPName\fP=<name>
 Identify the bluegene ionodes to be updated (i.e. bg000[0\-3]). This

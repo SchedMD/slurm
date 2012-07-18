@@ -61,7 +61,7 @@ if (<i>select_p_job_test</i>(all available nodes) != SLURM_SUCCESS) {
       /* leave the job queued for later execution */
    else {
       while (!<i>select_p_job_ready</i>())
-        wait
+	 wait
       /* execute the job */
       /* wait for job to end or be terminated */
       <i>select_p_job_fini</i>()
@@ -226,13 +226,9 @@ to the updated job.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
-<p class="commandline">int select_p_select_nodeinfo_set_all(time_t last_query_time);</p>
+<p class="commandline">int select_p_select_nodeinfo_set_all(void);</p>
 <p style="margin-left:.2in"><b>Description</b>: Update select plugin specific
 information about every node as needed.</p>
-<p style="margin-left:.2in"><b>Argument</b>:
-<span class="commandline"> last_query_time</span>&nbsp; &nbsp;&nbsp;(input) Time
-of previous node state query. Only update the information if data has changed
-since this time.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
@@ -441,7 +437,7 @@ to the select plugin specific information about a job.<br>
 Call xfree() to release the memory allocated for the return value.</p>
 
 <p class="commandline">int select_p_job_test (struct job_record *job_ptr,
-bitstr_t *bitmap, int min_nodes, int max_nodes, int req_nodes, int mode,
+bitstr_t *bitmap, uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes, uint32_t mode,
 List preemption_candidates, List *preempted_jobs);</p>
 <p style="margin-left:.2in"><b>Description</b>: Given a job's scheduling requirement
 specification and a set of nodes which might  be used to satisfy the request, identify
@@ -640,6 +636,15 @@ Pointer to the step which has completed execution.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
+<p class="commandline">int select_p_fail_cnode(struct step_record *step_ptr);</p>
+<p style="margin-left:.2in"><b>Description</b>: This function fails
+  certain cnodes in a blocks midplane.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline">step_ptr</span>&nbsp; &nbsp;&nbsp(input)
+information on the step that has failed cnodes.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
 
@@ -664,7 +669,7 @@ be used for an advanced reservation.</p>
 
 <h3>Get Information Functions</h3>
 
-<p class="commandline">int select_p_get_info_from_plugin(enum select_data_info info,
+<p class="commandline">int select_p_get_info_from_plugin(enum select_plugindata_info dinfo,
 struct job_record *job_ptr, void *data);</p>
 <p style="margin-left:.2in"><b>Description</b>: Get plugin-specific information
 about a job.</p>
@@ -742,6 +747,6 @@ to maintain data format compatibility across different versions of the plugin.</
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 3 August 2011</p>
+<p style="text-align:center;">Last modified 12 June 2012</p>
 
 <!--#include virtual="footer.txt"-->

@@ -1,7 +1,134 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 2.4.0.pre5
+* Changes in SLURM 2.5.0.pre2
+=============================
+ -- When running with multiple slurmd daemons per node, enable specifying a
+    range of ports on a single line of the node configuration in slurm.conf.
+ -- Add reservation flag of Part_Nodes to allocate all nodes in a partition to
+    a reservation and automatically change the reservation when nodes are
+    added to or removed from the reservation. Based upon work by
+    Bill Brophy, Bull.
+ -- Add support for advanced reservation for specific cores rather than whole
+    nodes. Current limiations: homogeneous cluster, nodes idle when reservation
+    created, and no more than one reservation per node. Code is still under
+    development. Work by Alejandro Lucero Palau, et. al, BSC.
+ -- Add DebugFlag of Switch to log switch plugin details.
+ -- Correct job node_cnt value in job completion plugin when job fails due to
+    down node. Previously was too low by one.
+ -- Add new srun option --cpu-freq to enable user control over the job's CPU
+    frequency and thus it's power consumption. NOTE: cpu frequency is not
+    currently preserved for jobs being suspended and later resumed. Work by
+    Don Albert, Bull.
+
+* Changes in SLURM 2.5.0.pre1
+=============================
+ -- Add new output to "scontrol show configuration" of LicensesUsed. Output is
+    "name:used/total"
+ -- Changed jobacct_gather plugin infrastructure to be cleaner and easier to
+    maintain.
+ -- Change license option count separator from "*" to ":" for consistency with
+    the gres option (e.g. "--licenses=foo:2 --gres=gpu:2"). The "*" will still
+    be accepted, but is no longer documented.
+ -- Permit more than 100 jobs to be scheduled per node (new limit is 10,000
+    jobs).
+ -- Restructure of srun code to allow outside programs to utilize existing
+    logic.
+
+* Changes in SLURM 2.4.2
+========================
+ -- BLUEGENE - Correct potential deadlock issue when hardware goes bad and
+    there are jobs running on that hardware.
+ -- If job is submitted to more than one partition, it's partition pointer can
+    be set to an invalid value. This can result in the count of CPUs allocated
+    on a node being bad, resulting in over- or under-allocation of its CPUs.
+    Patch by Carles Fenoy, BSC.
+ -- Fix bug in task layout with select/cons_res plugin and --ntasks-per-node
+    option. Patch by Martin Perry, Bull.
+ -- BLUEGENE - remove race condition where if a block is removed while waiting
+    for a job to finish on it the number of unused cpus wasn't updated
+    correctly.
+ -- BGQ - make sure we have a valid block when creating or finishing a step
+    allocation.
+ -- BLUEGENE - If a large block (> 1 midplane) is in error and underlying
+    hardware is marked bad remove the larger block and create a block over
+    just the bad hardware making the other hardware available to run on.
+ -- BLUEGENE - Handle job completion correctly if an admin removes a block
+    where other blocks on an overlapping midplane are running jobs.
+ -- BLUEGENE - correctly remove running jobs when freeing a block.
+ -- BGQ - correct logic to place multiple (< 1 midplane) steps inside a
+    multi midplane block allocation.
+ -- BGQ - Make it possible for a multi midplane allocation to run on more
+    than 1 midplane but not the entire allocation.
+ -- BGL - Fix for syncing users on block from Tim Wickberg
+ -- Fix initialization of protocol_version for some messages to make sure it
+    is always set when sending or receiving a message.
+
+* Changes in SLURM 2.4.1
+========================
+ -- Fix bug for job state change from 2.3 -> 2.4 job state can now be preserved
+    correctly when transitioning.  This also applies for 2.4.0 -> 2.4.1, no
+    state will be lost. (Thanks to Carles Fenoy)
+
+* Changes in SLURM 2.4.0
+========================
+ -- Cray - Improve support for zero compute note resource allocations.
+    Partition used can now be configured with no nodes nodes.
+ -- BGQ - make it so srun -i<taskid> works correctly.
+ -- Fix parse_uint32/16 to complain if a non-digit is given.
+ -- Add SUBMITHOST to job state passed to Moab vial sched/wiki2. Patch by Jon
+    Bringhurst (LANL).
+ -- BGQ - Fix issue when running with AllowSubBlockAllocations=Yes without
+    compiling with --enable-debug
+ -- Modify scontrol to require "-dd" option to report batch job's script. Patch
+    from Don Albert, Bull.
+ -- Modify SchedulerParamters option to match documentation: "bf_res="
+    changed to "bf_resolution=". Patch from Rod Schultz, Bull.
+ -- Fix bug that clears job pending reason field. Patch fron Don Lipari, LLNL.
+ -- In etc/init.d/slurm move check for scontrol after sourcing
+    /etc/sysconfig/slurm. Patch from Andy Wettstein, University of Chicago.
+ -- Fix in scheduling logic that can delay jobs with min/max node counts.
+ -- BGQ - fix issue where if a step uses the entire allocation and then
+    the next step in the allocation only uses part of the allocation it gets
+    the correct cnodes.
+ -- BGQ - Fix checking for IO on a block with new IBM driver V1R1M1 previous
+    function didn't always work correctly.
+ -- BGQ - Fix issue when a nodeboard goes down and you want to combine blocks
+    to make a larger small block and are running with sub-blocks.
+ -- BLUEGENE - Better logic for making small blocks around bad nodeboard/card.
+ -- BGQ - When using an old IBM driver cnodes that go into error because of
+    a job kill timeout aren't always reported to the system.  This is now
+    handled by the runjob_mux plugin.
+ -- BGQ - Added information on how to setup the runjob_mux to run as SlurmUser.
+ -- Improve memory consumption on step layouts with high task count.
+ -- BGQ - quiter debug when the real time server comes back but there are
+    still messages we find when we poll but haven't given it back to the real
+    time yet.
+ -- BGQ - fix for if a request comes in smaller than the smallest block and
+    we must use a small block instead of a shared midplane block.
+ -- Fix issues on large jobs (>64k tasks) to have the correct counter type when
+    packing the step layout structure.
+ -- BGQ - fix issue where if a user was asking for tasks and ntasks-per-node
+    but not node count the node count is correctly figured out.
+ -- Move logic to always use the 1st alphanumeric node as the batch host for
+    batch jobs.
+ -- BLUEGENE - fix race condition where if a nodeboard/card goes down at the
+    same time a block is destroyed and that block just happens to be the
+    smallest overlapping block over the bad hardware.
+ -- Fix bug when querying accounting looking for a job node size.
+ -- BLUEGENE - fix possible race condition if cleaning up a block and the
+    removal of the job on the block failed.
+ -- BLUEGENE - fix issue if a cable was in an error state make it so we can
+    check if a block is still makable if the cable wasn't in error.
+ -- Put nodes names in alphabetic order in node table.
+ -- If preempted job should have a grace time and preempt mode is not cancel
+    but job is going to be canceled because it is interactive or other reason
+    it now receives the grace time.
+ -- BGQ - Modified documents to explain new plugin_flags needed in bg.properties
+    in order for the runjob_mux to run correctly.
+ -- BGQ - change linking from libslurm.o to libslurmhelper.la to avoid warning.
+
+* Changes in SLURM 2.4.0.rc1
 =============================
  -- Improve task binding logic by making fuller use of HWLOC library,
     especially with respect to Opteron 6000 series processors. Work contributed
@@ -228,6 +355,14 @@ documents those changes that are of interest to users and admins.
     in treating missing a GID or UID as a fatal error.
  -- If job time limit exceeds partition maximum, but job's minimum time limit
     does not, set job's time limit to partition maximum at allocation time.
+
+* Changes in SLURM 2.3.6
+========================
+ -- Fix DefMemPerCPU for partition definitions.
+ -- Fix to create a reservation with licenses and no nodes.
+ -- Fix issue with assoc_mgr if a bad state file is given and the database
+    isn't up at the time the slurmctld starts, not running the
+    priority/multifactor plugin, and then the database is started up later.
 
 * Changes in SLURM 2.3.5
 ========================

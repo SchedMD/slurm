@@ -50,12 +50,13 @@ if { [test_bluegene] } {
 	} else {
 		set node_cnt 1-2048
 	}
+} elseif { [test_serial] } {
+	set node_cnt 1
+	set task_cnt 1
+} elseif { [test_xcpu] } {
+	set node_cnt 1-1
 } else {
-	if { [test_xcpu] } {
-		set node_cnt 1-1
-	} else {
-		set node_cnt 1-4
-	}
+	set node_cnt 1-4
 }
 set other_opts   "-O"
 

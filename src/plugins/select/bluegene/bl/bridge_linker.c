@@ -1687,7 +1687,7 @@ extern int bridge_block_sync_users(bg_record_t *bg_record)
 #ifdef HAVE_BG_FILES
 	char *user;
 	rm_partition_t *block_ptr = NULL;
-	int rc, i, user_count;
+	int rc, i, user_count, found=0;
 	char *user_name = NULL;
 
 	/* We can't use bridge_get_block_info here because users are
@@ -1753,18 +1753,19 @@ extern int bridge_block_sync_users(bg_record_t *bg_record)
 			continue;
 		}
 
-		if (!strcmp(user, bg_conf->slurm_user_name)) {
-			free(user);
-			continue;
-		}
+		/* It has been found on L the block owner is not
+		   needed as a regular user so we are now removing
+		   it.  It is unknown if this is the case for P but we
+		   believe it is.  If a problem does arise on P please
+		   report and just uncomment this check.
+		*/
+		/* if (!strcmp(user, bg_conf->slurm_user_name)) { */
+		/* 	free(user); */
+		/* 	continue; */
+		/* } */
 
 		if (user_name && !strcmp(user, user_name)) {
-			returnc = REMOVE_USER_FOUND;
-			if ((rc = bridge_block_add_user(bg_record, user))
-			    != SLURM_SUCCESS) {
-				debug("couldn't add user %s to block %s",
-				      user, bg_record->bg_block_id);
-			}
+			found=1;
 			free(user);
 			continue;
 		}
@@ -1779,6 +1780,17 @@ extern int bridge_block_sync_users(bg_record_t *bg_record)
 		}
 		free(user);
 	}
+
+	// no users currently, or we didn't find outselves in the lookup
+	if (!found && user_name) {
+		returnc = REMOVE_USER_FOUND;
+		if ((rc = bridge_block_add_user(bg_record, user_name))
+		    != SLURM_SUCCESS) {
+			debug("couldn't add user %s to block %s",
+			      user, bg_record->bg_block_id);
+		}
+	}
+
 	if ((rc = bridge_free_block(block_ptr)) != SLURM_SUCCESS) {
 		error("bridge_free_block(): %s", bg_err_str(rc));
 	}

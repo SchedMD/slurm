@@ -122,6 +122,15 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 	   removed out of all the lists.
 	*/
 	remove_from_bg_list(bg_lists->booted, bg_record);
+	if (remove_from_bg_list(bg_lists->job_running, bg_record)
+	    == SLURM_SUCCESS) {
+		debug2("_post_block_free: we are freeing block %s and "
+		       "it was in the job_running list.  This can happen if a "
+		       "block is removed while waiting for mmcs to finish "
+		       "removing the job from the block.",
+		       bg_record->bg_block_id);
+		num_unused_cpus += bg_record->cpu_cnt;
+	}
 
 	/* If we don't have any mp_counts force block removal */
 	if (restore && bg_record->mp_count)
@@ -525,7 +534,7 @@ extern int free_block_list(uint32_t job_id, List track_list,
 			itr = list_iterator_create(bg_record->job_list);
 			while ((job_ptr = list_next(itr))) {
 				if ((job_ptr->magic != JOB_MAGIC)
-				    || !IS_JOB_FINISHED(job_ptr))
+				    || IS_JOB_FINISHED(job_ptr))
 					continue;
 				freeit = xmalloc(sizeof(kill_job_struct_t));
 				freeit->jobid = job_ptr->job_id;

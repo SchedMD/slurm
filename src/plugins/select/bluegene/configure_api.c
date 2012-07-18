@@ -65,142 +65,59 @@ typedef struct {
 	void (*set_ba_debug_flags)     (uint32_t debug_flags);
 } bg_configure_api_ops_t;
 
-typedef struct bg_configure_context {
-	char	       	*type;
-	plugrack_t     	plugin_list;
-	plugin_handle_t	cur_plugin;
-	int		bg_configure_errno;
-	bg_configure_api_ops_t ops;
-} bg_configure_context_t;
-
-static bg_configure_context_t *bg_configure_context = NULL;
-static pthread_mutex_t	       bg_configure_context_lock =
-	PTHREAD_MUTEX_INITIALIZER;
-
-static bg_configure_api_ops_t *_get_ops(bg_configure_context_t *c)
-{
-	/*
-	 * Must be synchronized with bg_configure_api_ops_t above.
-	 */
-	static const char *syms[] = {
-		"ba_init",
-		"ba_fini",
-		"ba_setup_wires",
-		"reset_ba_system",
-		"destroy_ba_mp",
-		"ba_passthroughs_string",
-		"ba_update_mp_state",
-		"ba_set_removable_mps",
-		"ba_reset_all_removed_mps",
-		"new_ba_request",
-		"allocate_block",
-		"remove_block",
-		"str2ba_mp",
-		"loc2ba_mp",
-		"coord2ba_mp",
-		"give_geo",
-		"config_make_tbl",
-		"set_ba_debug_flags",
-	};
-	int n_syms = sizeof(syms) / sizeof(char *);
-
-	/* Find the correct plugin. */
-	c->cur_plugin = plugin_load_and_link(c->type, n_syms, syms,
-					     (void **) &c->ops);
-	if (c->cur_plugin != PLUGIN_INVALID_HANDLE)
-		return &c->ops;
-
-	if(errno != EPLUGIN_NOTFOUND) {
-		error("Couldn't load specified plugin name for %s: %s",
-		      c->type, plugin_strerror(errno));
-		return NULL;
-	}
-
-	error("Couldn't find the specified plugin name for %s "
-	      "looking at all files",
-	      c->type);
-
-	/* Get plugin list. */
-	if ( c->plugin_list == NULL ) {
-		char *plugin_dir;
-		c->plugin_list = plugrack_create();
-		if ( c->plugin_list == NULL ) {
-			error( "cannot create plugin manager" );
-			return NULL;
-		}
-		plugrack_set_major_type(c->plugin_list, "select");
-		plugrack_set_paranoia(c->plugin_list,
-				      PLUGRACK_PARANOIA_NONE,
-				      0);
-		plugin_dir = slurm_get_plugin_dir();
-		plugrack_read_dir(c->plugin_list, plugin_dir);
-		xfree(plugin_dir);
-	}
-
-	c->cur_plugin = plugrack_use_by_type(c->plugin_list, c->type);
-	if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
-		error( "cannot find accounting_storage plugin for %s",
-		       c->type );
-		return NULL;
-	}
-
-	/* Dereference the API. */
-	if ( plugin_get_syms(c->cur_plugin,
-			     n_syms,
-			     syms,
-			     (void **) &c->ops ) < n_syms) {
-		error("incomplete select plugin detected");
-		return NULL;
-	}
-
-	return &c->ops;
-}
-
 /*
- * Destroy a node selection context
+ * Must be synchronized with bg_configure_api_ops_t above.
  */
-static int _context_destroy(bg_configure_context_t *c)
-{
-	int rc = SLURM_SUCCESS;
-	/*
-	 * Must check return code here because plugins might still
-	 * be loaded and active.
-	 */
-	if (c->plugin_list) {
-		if (plugrack_destroy(c->plugin_list) != SLURM_SUCCESS)
-			rc = SLURM_ERROR;
-	} else {
-		plugin_unload(c->cur_plugin);
-	}
+static const char *syms[] = {
+	"ba_init",
+	"ba_fini",
+	"ba_setup_wires",
+	"reset_ba_system",
+	"destroy_ba_mp",
+	"ba_passthroughs_string",
+	"ba_update_mp_state",
+	"ba_set_removable_mps",
+	"ba_reset_all_removed_mps",
+	"new_ba_request",
+	"allocate_block",
+	"remove_block",
+	"str2ba_mp",
+	"loc2ba_mp",
+	"coord2ba_mp",
+	"give_geo",
+	"config_make_tbl",
+	"set_ba_debug_flags",
+};
 
-	xfree(c->type);
-
-	return rc;
-}
-
+static bg_configure_api_ops_t ops;
+static plugin_context_t *g_context = NULL;
+static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool init_run = false;
 
 extern int bg_configure_init(void)
 {
 	int rc = SLURM_SUCCESS;
-	slurm_mutex_lock(&bg_configure_context_lock);
+	char *plugin_type = "select", *type="select/bluegene";
+	if (init_run && g_context)
+		return rc;
 
-	if (bg_configure_context)
+	slurm_mutex_lock(&g_context_lock);
+
+	if (g_context)
 		goto done;
 
-	bg_configure_context = xmalloc(sizeof(bg_configure_context_t));
-	bg_configure_context->type = xstrdup("select/bluegene");
-	bg_configure_context->cur_plugin = PLUGIN_INVALID_HANDLE;
-	bg_configure_context->bg_configure_errno = SLURM_SUCCESS;
+	g_context = plugin_context_create(
+		plugin_type, type, (void **)&ops, syms, sizeof(syms));
 
-	if (!_get_ops(bg_configure_context)) {
-		error("cannot resolve select plugin operations for configure");
-		_context_destroy(bg_configure_context);
-		bg_configure_context = NULL;
+	if (!g_context) {
+		error("cannot create %s context for %s", plugin_type, type);
 		rc = SLURM_ERROR;
+		goto done;
 	}
+	init_run = true;
 
 done:
-	slurm_mutex_unlock(&bg_configure_context_lock);
+	slurm_mutex_unlock(&g_context_lock);
 	return rc;
 
 }
@@ -209,14 +126,15 @@ extern int bg_configure_fini(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	slurm_mutex_lock(&bg_configure_context_lock);
-	if (!bg_configure_context)
+	slurm_mutex_lock(&g_context_lock);
+	if (!g_context)
 		goto fini;
 
-	rc = _context_destroy(bg_configure_context);
-	bg_configure_context = NULL;
+	init_run = false;
+	rc = plugin_context_destroy(g_context);
+	g_context = NULL;
 fini:
-	slurm_mutex_unlock(&bg_configure_context_lock);
+	slurm_mutex_unlock(&g_context_lock);
 	return rc;
 }
 
@@ -226,7 +144,7 @@ extern void bg_configure_ba_init(
 	if (bg_configure_init() < 0)
 		return;
 
-	(*(bg_configure_context->ops.ba_init))(node_info_ptr, load_bridge);
+	(*(ops.ba_init))(node_info_ptr, load_bridge);
 }
 
 extern void bg_configure_ba_fini(void)
@@ -234,7 +152,7 @@ extern void bg_configure_ba_fini(void)
 	if (bg_configure_init() < 0)
 		return;
 
-	(*(bg_configure_context->ops.ba_fini))();
+	(*(ops.ba_fini))();
 }
 
 extern void bg_configure_ba_setup_wires(void)
@@ -242,7 +160,7 @@ extern void bg_configure_ba_setup_wires(void)
 	if (bg_configure_init() < 0)
 		return;
 
-	(*(bg_configure_context->ops.ba_setup_wires))();
+	(*(ops.ba_setup_wires))();
 }
 
 extern void bg_configure_reset_ba_system(bool track_down_mps)
@@ -250,7 +168,7 @@ extern void bg_configure_reset_ba_system(bool track_down_mps)
 	if (bg_configure_init() < 0)
 		return;
 
-	(*(bg_configure_context->ops.reset_ba_system))(track_down_mps);
+	(*(ops.reset_ba_system))(track_down_mps);
 }
 
 extern void bg_configure_destroy_ba_mp(void *ptr)
@@ -258,7 +176,7 @@ extern void bg_configure_destroy_ba_mp(void *ptr)
 	if (bg_configure_init() < 0)
 		return;
 
-	(*(bg_configure_context->ops.destroy_ba_mp))(ptr);
+	(*(ops.destroy_ba_mp))(ptr);
 }
 
 extern char *bg_configure_ba_passthroughs_string(uint16_t passthrough)
@@ -266,7 +184,7 @@ extern char *bg_configure_ba_passthroughs_string(uint16_t passthrough)
 	if (bg_configure_init() < 0)
 		return NULL;
 
-	return (*(bg_configure_context->ops.ba_passthroughs_string))
+	return (*(ops.ba_passthroughs_string))
 		(passthrough);
 }
 
@@ -275,7 +193,7 @@ extern void bg_configure_ba_update_mp_state(ba_mp_t *ba_mp, uint16_t state)
 	if (bg_configure_init() < 0)
 		return;
 
-	(*(bg_configure_context->ops.ba_update_mp_state))(ba_mp, state);
+	(*(ops.ba_update_mp_state))(ba_mp, state);
 }
 
 extern int bg_configure_ba_set_removable_mps(bitstr_t *bitmap, bool except)
@@ -283,7 +201,7 @@ extern int bg_configure_ba_set_removable_mps(bitstr_t *bitmap, bool except)
 	if (bg_configure_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(bg_configure_context->ops.ba_set_removable_mps))
+	return (*(ops.ba_set_removable_mps))
 		(bitmap, except);
 }
 
@@ -292,7 +210,7 @@ extern int bg_configure_ba_reset_all_removed_mps(void)
 	if (bg_configure_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(bg_configure_context->ops.ba_reset_all_removed_mps))();
+	return (*(ops.ba_reset_all_removed_mps))();
 }
 
 
@@ -301,7 +219,7 @@ extern int bg_configure_new_ba_request(select_ba_request_t* ba_request)
 	if (bg_configure_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(bg_configure_context->ops.new_ba_request))(ba_request);
+	return (*(ops.new_ba_request))(ba_request);
 }
 
 extern int bg_configure_allocate_block(
@@ -310,7 +228,7 @@ extern int bg_configure_allocate_block(
 	if (bg_configure_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(bg_configure_context->ops.allocate_block))
+	return (*(ops.allocate_block))
 		(ba_request, results);
 }
 
@@ -319,7 +237,7 @@ extern int bg_configure_remove_block(List mps, bool is_small)
 	if (bg_configure_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(bg_configure_context->ops.remove_block))(mps, is_small);
+	return (*(ops.remove_block))(mps, is_small);
 }
 
 extern ba_mp_t *bg_configure_str2ba_mp(const char *coords)
@@ -327,7 +245,7 @@ extern ba_mp_t *bg_configure_str2ba_mp(const char *coords)
 	if (bg_configure_init() < 0)
 		return NULL;
 
-	return (*(bg_configure_context->ops.str2ba_mp))(coords);
+	return (*(ops.str2ba_mp))(coords);
 }
 
 extern ba_mp_t *bg_configure_loc2ba_mp(const char *mp_id)
@@ -335,7 +253,7 @@ extern ba_mp_t *bg_configure_loc2ba_mp(const char *mp_id)
 	if (bg_configure_init() < 0)
 		return NULL;
 
-	return (*(bg_configure_context->ops.loc2ba_mp))(mp_id);
+	return (*(ops.loc2ba_mp))(mp_id);
 }
 
 extern ba_mp_t *bg_configure_coord2ba_mp(const uint16_t *coord)
@@ -343,7 +261,7 @@ extern ba_mp_t *bg_configure_coord2ba_mp(const uint16_t *coord)
 	if (bg_configure_init() < 0)
 		return NULL;
 
-	return (*(bg_configure_context->ops.coord2ba_mp))(coord);
+	return (*(ops.coord2ba_mp))(coord);
 }
 
 extern char *bg_configure_give_geo(uint16_t *int_geo, int dims, bool with_sep)
@@ -351,7 +269,7 @@ extern char *bg_configure_give_geo(uint16_t *int_geo, int dims, bool with_sep)
 	if (bg_configure_init() < 0)
 		return NULL;
 
-	return (*(bg_configure_context->ops.give_geo))(int_geo, dims, with_sep);
+	return (*(ops.give_geo))(int_geo, dims, with_sep);
 }
 
 extern s_p_hashtbl_t *bg_configure_config_make_tbl(char *filename)
@@ -359,7 +277,7 @@ extern s_p_hashtbl_t *bg_configure_config_make_tbl(char *filename)
 	if (bg_configure_init() < 0)
 		return NULL;
 
-	return (*(bg_configure_context->ops.config_make_tbl))(filename);
+	return (*(ops.config_make_tbl))(filename);
 }
 
 extern void ba_configure_set_ba_debug_flags(uint32_t debug_flags)
@@ -367,5 +285,5 @@ extern void ba_configure_set_ba_debug_flags(uint32_t debug_flags)
 	if (bg_configure_init() < 0)
 		return;
 
-	(*(bg_configure_context->ops.set_ba_debug_flags))(debug_flags);
+	(*(ops.set_ba_debug_flags))(debug_flags);
 }

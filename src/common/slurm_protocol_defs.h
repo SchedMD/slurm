@@ -286,6 +286,7 @@ typedef enum {
 	REQUEST_JOB_STEP_PIDS,
 	RESPONSE_JOB_STEP_PIDS,
 	REQUEST_FORWARD_DATA,
+	REQUEST_COMPLETE_BATCH_JOB,
 
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
@@ -539,6 +540,7 @@ typedef struct complete_batch_script {
 	uint32_t job_rc;
 	uint32_t slurm_rc;
 	char *node_name;
+	uint32_t user_id;	/* user the job runs as */
 } complete_batch_script_msg_t;
 
 typedef struct step_complete_msg {
@@ -595,6 +597,7 @@ typedef struct job_step_specs {
 	uint16_t ckpt_interval;	/* checkpoint creation interval (minutes) */
 	char *ckpt_dir; 	/* path to store checkpoint image files */
 	uint32_t cpu_count;	/* count of required processors */
+	uint32_t cpu_freq;	/* requested cpu frequency */
 	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
 	char *features;		/* required node features, default NONE */
 	char *gres;		/* generic resources required */
@@ -674,6 +677,7 @@ typedef struct launch_tasks_request_msg {
 	uint8_t open_mode;	/* stdout/err append or truncate */
 	uint8_t pty;		/* use pseudo tty */
 	uint16_t acctg_freq;	/* accounting polling interval */
+	uint32_t cpu_freq;	/* requested cpu frequency */
 
 	/********** START "normal" IO only options **********/
 	/* These options are ignored if user_managed_io is 1 */
@@ -806,6 +810,7 @@ typedef struct batch_job_launch_msg {
 				  * real memory per CPU | MEM_PER_CPU,
 				  * default=0 (no limit) */
 	uint16_t acctg_freq;	/* accounting polling interval	*/
+	uint32_t cpu_freq;	/* requested cpu frequency */
 	uint32_t job_mem;	/* memory limit for job		*/
 	uint16_t restart_cnt;	/* batch job restart count	*/
 	char **spank_job_env;	/* SPANK job environment variables */
@@ -883,10 +888,13 @@ typedef struct file_bcast_msg {
 } file_bcast_msg_t;
 
 typedef struct multi_core_data {
+	uint16_t boards_per_node;	/* boards per node required by job   */
+	uint16_t sockets_per_board;	/* sockets per board required by job */
 	uint16_t sockets_per_node;	/* sockets per node required by job */
 	uint16_t cores_per_socket;	/* cores per cpu required by job */
 	uint16_t threads_per_core;	/* threads per core required by job */
 
+	uint16_t ntasks_per_board;  /* number of tasks to invoke on each board*/
 	uint16_t ntasks_per_socket; /* number of tasks to invoke on each socket */
 	uint16_t ntasks_per_core;   /* number of tasks to invoke on each core */
 	uint16_t plane_size;        /* plane size when task_dist = SLURM_DIST_PLANE */
@@ -924,6 +932,7 @@ typedef struct slurm_node_registration_status_msg {
 	uint32_t job_count;	/* number of associate job_id's */
 	uint32_t *job_id;	/* IDs of running job (if any) */
 	char *node_name;
+	uint16_t boards;
 	char *os;
 	uint32_t real_memory;
 	time_t slurmd_start_time;
@@ -973,7 +982,7 @@ extern void slurm_msg_t_init (slurm_msg_t *msg);
  *	values from the "src" slurm_msg_t structure.
  * IN src - Pointer to the initialized message from which "dest" will
  *	be initialized.
- * OUT dest - Pointer to the slurm_msg_t which will be intialized.
+ * OUT dest - Pointer to the slurm_msg_t which will be initialized.
  * NOTE: the "dest" structure will contain pointers into the contents of "src".
  */
 extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src);

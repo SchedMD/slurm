@@ -1202,11 +1202,11 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 			xstrcat(*extra, " where (");
 
 		if (job_cond->cpus_max) {
-			xstrfmtcat(*extra, "(t1.alloc_cpus between %u and %u))",
+			xstrfmtcat(*extra, "(t1.cpus_alloc between %u and %u))",
 				   job_cond->cpus_min, job_cond->cpus_max);
 
 		} else {
-			xstrfmtcat(*extra, "(t1.alloc_cpus='%u'))",
+			xstrfmtcat(*extra, "(t1.cpus_alloc='%u'))",
 				   job_cond->cpus_min);
 
 		}
@@ -1220,11 +1220,11 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 
 		if (job_cond->nodes_max) {
 			xstrfmtcat(*extra,
-				   "(t1.alloc_nodes between %u and %u))",
+				   "(t1.nodes_alloc between %u and %u))",
 				   job_cond->nodes_min, job_cond->nodes_max);
 
 		} else {
-			xstrfmtcat(*extra, "(t1.alloc_nodes='%u'))",
+			xstrfmtcat(*extra, "(t1.nodes_alloc='%u'))",
 				   job_cond->nodes_min);
 
 		}

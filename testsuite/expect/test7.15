@@ -47,13 +47,17 @@ exec $bin_cc -O -o $file_prog ${file_prog}.c
 #   is intermittent.
 #
 if { $partition == "" } {
-   if {[info exists env(SLURM_PARTITION)] } {
-       set partition $env(SLURM_PARTITION)
-   } else {
-       set partition [default_partition]
-   }
+	if {[info exists env(SLURM_PARTITION)] } {
+		set partition $env(SLURM_PARTITION)
+	} else {
+		set partition [default_partition]
+	}
 }
-set nnodes [available_nodes $partition]
+if {[test_serial]} {
+	set nnodes 1
+} else {
+	set nnodes [available_nodes $partition]
+}
 
 #
 #  Run the test_prog to ensure that no signals are blocked by

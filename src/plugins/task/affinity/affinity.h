@@ -81,6 +81,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #include "src/common/cbuf.h"
+#include "src/common/cpu_frequency.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"

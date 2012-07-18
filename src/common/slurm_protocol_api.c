@@ -1504,6 +1504,43 @@ int slurm_set_jobcomp_port(uint32_t port)
 	return 0;
 }
 
+/* slurm_get_launch_type
+ * get launch_type from slurmctld_conf object
+ * RET char *   - launch_type, MUST be xfreed by caller
+ */
+char *slurm_get_launch_type(void)
+{
+	char *launch_type = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		launch_type = xstrdup(conf->launch_type);
+		slurm_conf_unlock();
+	}
+	return launch_type;
+}
+
+/* slurm_set_launch_type
+ * set launch_type in slurmctld_conf object
+ * RET 0 or error code
+ */
+int slurm_set_launch_type(char *launch_type)
+{
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		xfree(conf->launch_type);
+		conf->launch_type = xstrdup(launch_type);
+		slurm_conf_unlock();
+	}
+	return 0;
+}
+
+
 /* slurm_get_preempt_type
  * get PreemptType from slurmctld_conf object
  * RET char *   - preempt type, MUST be xfreed by caller
@@ -2374,6 +2411,7 @@ List slurm_receive_msgs(slurm_fd_t fd, int steps, int timeout)
 	/*
 	 * Unpack message body
 	 */
+	msg.protocol_version = header.version;
 	msg.msg_type = header.msg_type;
 	msg.flags = header.flags;
 
@@ -2604,6 +2642,7 @@ int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
 	/*
 	 * Unpack message body
 	 */
+	msg->protocol_version = header.version;
 	msg->msg_type = header.msg_type;
 	msg->flags = header.flags;
 

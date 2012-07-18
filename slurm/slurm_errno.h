@@ -189,6 +189,7 @@ enum {
 	ESLURM_PARTITION_IN_USE,
 	ESLURM_STEP_LIMIT,
 	ESLURM_JOB_SUSPENDED,
+	ESLURM_CAN_NOT_START_IMMEDIATELY,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

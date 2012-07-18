@@ -63,6 +63,9 @@
 /* Define to 1 if emulating or running on Blue Gene/L or P system */
 #undef HAVE_BG_L_P
 
+/* Define to 1 if using code with new iocheck */
+#undef HAVE_BG_NEW_IO_CHECK
+
 /* Define to 1 if you have the `cfmakeraw' function. */
 #undef HAVE_CFMAKERAW
 
@@ -133,23 +136,14 @@
 /* Define to 1 if you have the <kstat.h> header file. */
 #undef HAVE_KSTAT_H
 
-/* define if you have libelan3. */
-#undef HAVE_LIBELAN3
-
-/* define if you have libelanctrl. */
-#undef HAVE_LIBELANCTRL
-
-/* define if you have libelanhosts. */
-#undef HAVE_LIBELANHOSTS
-
 /* Define to 1 if you have the `expat' library (-lexpat). */
 #undef HAVE_LIBEXPAT
 
 /* Define to 1 if you have the `job' library (-ljob). */
 #undef HAVE_LIBJOB
 
-/* define if you have libntbl. */
-#undef HAVE_LIBNTBL
+/* define if you have libnrt. */
+#undef HAVE_LIBNRT
 
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
@@ -181,9 +175,6 @@
 
 /* Define to 1 if you have the <netdb.h> header file. */
 #undef HAVE_NETDB_H
-
-/* Define to 1 if you have the <nrt.h> header file. */
-#undef HAVE_NRT_H
 
 /* define if numa library installed */
 #undef HAVE_NUMA

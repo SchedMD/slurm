@@ -3851,8 +3851,8 @@ slurmdbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg,
 	pack32(msg->db_index, buffer);
 	pack_time(msg->end_time, buffer);
 	pack32(msg->exit_code, buffer);
-	jobacct_common_pack((struct jobacctinfo *)msg->jobacct,
-			    rpc_version, buffer);
+	jobacctinfo_pack((struct jobacctinfo *)msg->jobacct,
+			 rpc_version, buffer);
 	pack32(msg->job_id, buffer);
 	pack32(msg->req_uid, buffer);
 	pack_time(msg->start_time, buffer);
@@ -3871,8 +3871,8 @@ slurmdbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
 	safe_unpack32(&msg_ptr->db_index, buffer);
 	safe_unpack_time(&msg_ptr->end_time, buffer);
 	safe_unpack32(&msg_ptr->exit_code, buffer);
-	jobacct_common_unpack((struct jobacctinfo **)&msg_ptr->jobacct,
-			      rpc_version, buffer);
+	jobacctinfo_unpack((struct jobacctinfo **)&msg_ptr->jobacct,
+			   rpc_version, buffer);
 	safe_unpack32(&msg_ptr->job_id, buffer);
 	safe_unpack32(&msg_ptr->req_uid, buffer);
 	safe_unpack_time(&msg_ptr->start_time, buffer);

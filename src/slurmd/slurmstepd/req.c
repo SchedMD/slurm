@@ -49,6 +49,7 @@
 #include <signal.h>
 #include <time.h>
 
+#include "src/common/cpu_frequency.h"
 #include "src/common/fd.h"
 #include "src/common/eio.h"
 #include "src/common/parse_time.h"
@@ -58,6 +59,7 @@
 #include "src/common/stepd_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/checkpoint.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
@@ -1175,7 +1177,7 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	jobacct_gather_g_suspend_poll();
+	jobacct_gather_suspend_poll();
 
 	/*
 	 * Signal the container
@@ -1210,6 +1212,10 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 		}
 		suspended = true;
 	}
+	/* reset the cpu frequencies if cpu_freq option used */
+	if (job->cpu_freq != NO_VAL)
+		cpu_freq_reset(job);
+
 	pthread_mutex_unlock(&suspend_mutex);
 
 done:
@@ -1247,7 +1253,7 @@ _handle_resume(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	jobacct_gather_g_resume_poll();
+	jobacct_gather_resume_poll();
 	/*
 	 * Signal the container
 	 */
@@ -1266,6 +1272,10 @@ _handle_resume(int fd, slurmd_job_t *job, uid_t uid)
 		}
 		suspended = false;
 	}
+	/* set the cpu frequencies if cpu_freq option used */
+	if (job->cpu_freq != NO_VAL)
+		cpu_freq_set(job);
+
 	pthread_mutex_unlock(&suspend_mutex);
 
 done:
@@ -1326,12 +1336,12 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid, int protocol)
 		buf = xmalloc(len);
 		safe_read(fd, buf, len);
 		buffer = create_buf(buf, len);
-		jobacct_gather_g_unpack(&jobacct, SLURM_PROTOCOL_VERSION,
+		jobacctinfo_unpack(&jobacct, SLURM_PROTOCOL_VERSION,
 					buffer);
 		free_buf(buffer);
 	} else {
-		jobacct = jobacct_gather_g_create(NULL);
-		jobacct_gather_g_getinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
+		jobacct = jobacctinfo_create(NULL);
+		jobacctinfo_getinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
 	}
 
 	/*
@@ -1368,9 +1378,9 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid, int protocol)
 	step_complete.step_rc = MAX(step_complete.step_rc, step_rc);
 
 	/************* acct stuff ********************/
-	jobacct_gather_g_aggregate(step_complete.jobacct, jobacct);
+	jobacctinfo_aggregate(step_complete.jobacct, jobacct);
 timeout:
-	jobacct_gather_g_destroy(jobacct);
+	jobacctinfo_destroy(jobacct);
 	/*********************************************/
 
 	/* Send the return code and errno, we do this within the locked
@@ -1407,24 +1417,24 @@ _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid)
 		      "owned by uid %ld",
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
 		/* Send NULL */
-		jobacct_gather_g_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
+		jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
 		return SLURM_ERROR;
 	}
 
-	jobacct = jobacct_gather_g_create(NULL);
+	jobacct = jobacctinfo_create(NULL);
 	debug3("num tasks = %d", job->node_tasks);
 
 	for (i = 0; i < job->node_tasks; i++) {
-		temp_jobacct = jobacct_gather_g_stat_task(job->task[i]->pid);
+		temp_jobacct = jobacct_gather_stat_task(job->task[i]->pid);
 		if(temp_jobacct) {
-			jobacct_gather_g_aggregate(jobacct, temp_jobacct);
-			jobacct_gather_g_destroy(temp_jobacct);
+			jobacctinfo_aggregate(jobacct, temp_jobacct);
+			jobacctinfo_destroy(temp_jobacct);
 			num_tasks++;
 		}
 	}
-	jobacct_gather_g_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
+	jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
 	safe_write(fd, &num_tasks, sizeof(int));
-	jobacct_gather_g_destroy(jobacct);
+	jobacctinfo_destroy(jobacct);
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_ERROR;

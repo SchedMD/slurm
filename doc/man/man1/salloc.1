@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 2.4" "October 2011" "SLURM Commands"
+.TH "salloc" "1" "SLURM 2.5" "June 2012" "SLURM Commands"
 
 .SH "NAME"
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command,
@@ -21,8 +21,8 @@ section). If no command is specified, then the value of
 \fBSallocDefaultCommand\fR is not set, then \fBsalloc\fR runs the
 user's default shell.
 
-The following document describes the the influence of various options on the 
-allocation of cpus to jobs and tasks. 
+The following document describes the the influence of various options on the
+allocation of cpus to jobs and tasks.
 .br
 http://www.schedmd.com/slurmdocs/cpu_management.html
 
@@ -141,7 +141,7 @@ Users can specify which of these \fBfeatures\fR are required by their job
 using the constraint option.
 Only nodes having features matching the job constraints will be used to
 satisfy the request.
-Multiple constraints may be specified with AND, OR, exclusive OR, 
+Multiple constraints may be specified with AND, OR, exclusive OR,
 resource counts, etc.
 Supported \fbconstraint\fR options include:
 .PD 1
@@ -180,7 +180,7 @@ Specific counts of multiple resources may be specified by using the AND
 operator and enclosing the options within square brackets.
 For example: "\fB\-\-constraint=[rack1*2&rack2*4]"\fR might
 be used to specify that two nodes must be allocated from nodes with the feature
-of "rack1" and four nodes must be allocated from nodes with the feature 
+of "rack1" and four nodes must be allocated from nodes with the feature
 "rack2".
 .RE
 
@@ -209,9 +209,9 @@ the SLURM_CPU_BIND environment variable value to "verbose".
 The following informational environment variables are set when \fB\-\-cpu_bind\fR
 is in use:
 .nf
-        SLURM_CPU_BIND_VERBOSE
-        SLURM_CPU_BIND_TYPE
-        SLURM_CPU_BIND_LIST
+	SLURM_CPU_BIND_VERBOSE
+	SLURM_CPU_BIND_TYPE
+	SLURM_CPU_BIND_LIST
 .fi
 
 See the \fBENVIRONMENT VARIABLE\fR section for a more detailed description
@@ -453,7 +453,10 @@ time period specified.
 If no argument is given, resources must be available immediately
 for the request to succeed.
 By default, \fB\-\-immediate\fR is off, and the command
-will block until resources become available.
+will block until resources become available. Since this option's
+argument is optional, for proper parsing the single letter option must
+be followed immediately with the value and not include a space between
+them. For example "\-I60" and not "\-I 60".
 
 .TP
 \fB\-J\fR, \fB\-\-job\-name\fR=<\fIjobname\fR>
@@ -476,8 +479,11 @@ allocation has been revoked. The job allocation can be revoked for a
 couple of reasons: someone used \fBscancel\fR to revoke the allocation,
 or the allocation reached its time limit.  If you do not specify a signal
 name or number and SLURM is configured to signal the spawned command at job
-termination, the default signal is SIGHUP for interactive and SIGTERM for 
-non\-interactive sessions.
+termination, the default signal is SIGHUP for interactive and SIGTERM for
+non\-interactive sessions. Since this option's argument is optional,
+for proper parsing the single letter option must be followed
+immediately with the value and not include a space between them. For
+example "\-K1" and not "\-K 1".
 
 .TP
 \fB\-k\fR, \fB\-\-no\-kill\fR
@@ -495,10 +501,10 @@ range of allocated nodes.
 \fB\-L\fR, \fB\-\-licenses\fR=<\fBlicense\fR>
 Specification of licenses (or other resources available on all
 nodes of the cluster) which must be allocated to this job.
-License names can be followed by an asterisk and count
+License names can be followed by a colon and count
 (the default count is one).
 Multiple license names should be comma separated (e.g.
-"\-\-licenses=foo*4,bar").
+"\-\-licenses=foo:4,bar").
 
 .TP
 \fB\-m\fR, \fB\-\-distribution\fR=
@@ -567,8 +573,13 @@ Inside the hostfile must contain at minimum the number of hosts
 requested and be one per line or comma separated.  If specifying a
 task count (\fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>), your tasks
 will be laid out on the nodes in the order of the file.
-.TP
+.br
+\fBNOTE:\fR The arbitrary distribution option on a job allocation only
+controls the nodes to be allocated to the job and not the allocation of
+CPUs on those nodes. This option is meant primarily to control a job step's
+task layout in an existing job allocation for the srun command.
 
+.TP
 Second distribution method:
 .TP
 .B block
@@ -603,6 +614,10 @@ This parameter would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR).
 Also see \fB\-\-mem\-per\-cpu\fR.
 \fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
+NOTE: Enforcement of memory limits currently requires enabling of
+accounting, which samples memory use on a periodic basis (data need
+not be stored, just collected). A task may exceed the memory limit
+until the next periodic accounting sample.
 
 .TP
 \fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>
@@ -613,7 +628,7 @@ seen using the \fBscontrol show config\fR command.
 Note that if the job's \fB\-\-mem\-per\-cpu\fR value exceeds the configured
 \fBMaxMemPerCPU\fR, then the user's limit will be treated as a memory limit
 per task; \fB\-\-mem\-per\-cpu\fR will be reduced to a value no larger than
-\fBMaxMemPerCPU\fR; \fB\-\-cpus\-per\-task\fR will be set and value of 
+\fBMaxMemPerCPU\fR; \fB\-\-cpus\-per\-task\fR will be set and value of
 \fB\-\-cpus\-per\-task\fR multiplied by the new \fB\-\-mem\-per\-cpu\fR
 value will equal the original \fB\-\-mem\-per\-cpu\fR value specified by
 the user.
@@ -644,9 +659,9 @@ The following informational environment variables are set when
 \fB\-\-mem_bind\fR is in use:
 
 .nf
-        SLURM_MEM_BIND_VERBOSE
-        SLURM_MEM_BIND_TYPE
-        SLURM_MEM_BIND_LIST
+	SLURM_MEM_BIND_VERBOSE
+	SLURM_MEM_BIND_TYPE
+	SLURM_MEM_BIND_LIST
 .fi
 
 See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
@@ -729,18 +744,105 @@ that the \fB\-\-cpus\-per\-task\fR option will change this default.
 .TP
 \fB\-\-network\fR=<\fItype\fR>
 Specify the communication protocol to be used.
-This option is supported on AIX systems.
-Since POE is used to launch tasks, this option is not normally used or
-is specified using the \fBSLURM_NETWORK\fR environment variable.
 The interpretation of \fItype\fR is system dependent.
-For systems with an IBM Federation switch, the following
-comma\-separated and case insensitive types are recognized:
-\fBIP\fR (the default is user\-space), \fBSN_ALL\fR, \fBSN_SINGLE\fR,
-\fBBULK_XFER\fR and adapter names  (e.g. \fBSNI0\fR and \fBSNI1\fR).
-For more information, on IBM systems see \fIpoe\fR documentation on
-the environment variables \fBMP_EUIDEVICE\fR and \fBMP_USE_BULK_XFER\fR.
-Note that only four jobs steps may be active at once on a node with the
-\fBBULK_XFER\fR option due to limitations in the Federation switch driver.
+This option is current supported on systems with IBM's Parallel Environment (PE).
+See IBM's LoadLeveler job command keyword documentation about the keyword
+"network" for more information.
+Multiple values may be specified in a comma separated list.
+All options are case in\-sensitive.
+Supported values include:
+.RS
+.TP 12
+\fBBULK_XFER\fR[=<\fIresources\fR>]
+Enable bulk transfer of data using Remote Direct-Memory Access (RDMA).
+The optional \fIresources\fR specification is a numeric value which can have
+a suffix of "k", "K", "m", "M", "g" or "G" for kilobytes, megabytes or
+gigabytes.
+NOTE: The \fIresources\fR specification is not supported by the underlying
+IBM infrastructure as of Parallel Environment version 2.2 and no value should
+be specified at this time.
+.TP
+\fBCAU\fR=<\fIcount\fR>
+Number of Collecitve Accelleration Units (CAU) required.
+Applies only to IBM Power7-IH processors.
+Default value is zero.
+Independent CAU will be allocated for each programming interface (MPI, LAPI, etc.)
+.TP
+\fBDEVNAME\fR=<\fIname\fR>
+Specify the device name to use for communications (e.g. "eth0" or "mlx4_0").
+.TP
+\fBDEVTYPE\fR=<\fItype\fR>
+Specify the device type to use for communications.
+The supported values of \fItype\fR are:
+"IB" (InfiniBand), "HFI" (P7 Host Fabric Interface),
+"IPONLY" (IP-Only interfaces), "HPCE" (HPC Ethernet), and
+"KMUX" (Kernel Emulation of HPCE).
+The devices allocated to a job must all be of the same type.
+The default value depends upon depends upon what hardware is available and in
+order of preferences is IPONLY (which is not considered in User Space mode),
+HFI, IB, HPCE, and KMUX.
+.TP
+\fBIMMED\fR =<\fIcount\fR>
+Number of immediate send slots per window required.
+Applies only to IBM Power7-IH processors.
+Default value is zero.
+.TP
+\fBINSTANCES\fR =<\fIcount\fR>
+Specify number of network connections for each task on each network connection.
+The default instance count is 1.
+.TP
+\fBIPV4\fR
+Use Internet Protocol (IP) version 4 communications (default).
+.TP
+\fBIPV6\fR
+Use Internet Protocol (IP) version 6 communications.
+.TP
+\fBLAPI\fR
+Use the LAPI programming interface.
+.TP
+\fBMPI\fR
+Use the MPI programming interface.
+MPI is the default interface.
+.TP
+\fBPAMI\fR
+Use the PAMI programming interface.
+.TP
+\fBSN_ALL\fR
+Use all available switch networks (default).
+.TP
+\fBSN_SINGLE\fR
+Use one available switch network.
+.TP
+\fBUPC\fR
+Use the UPC programming interface.
+.TP
+\fBUS\fR
+Use User Space communications.
+.TP
+
+Some examples of network specifications:
+.TP
+\fBInstances=2,US,MPI,SN_ALL\fR
+Create two user space connections for MPI communications on every switch
+network for each task.
+.TP
+\fBUS,MPI,Instances=3,Devtype=IB\fR
+Create three user space connections for MPI communications on every InfiniBand
+network for each task.
+.TP
+\fBIPV4,LAPI,SN_Single\fR
+Create a IP version 4 connection for LAPI communications on one switch network
+for each task.
+.TP
+\fBInstances=2,US,LAPI,MPI\fR
+Create two user space connections each for LAPI and MPI communcations on every
+switch network for each task. Note that SN_ALL is the default option so every
+switch network is used. Also note that Instances=2 specifies that two
+connections are established for each protocol (LAPI and MPI) and each task.
+If there are two networks and four tasks on the node then a total
+of 32 connections are estabhished (2 instances x 2 protocols x 2 networks x
+4 tasks).
+.RE
 
 .TP
 \fB\-\-nice\fR[=\fIadjustment\fR]
@@ -808,7 +910,7 @@ other jobs cannot use them for some period of time.  (Note that the
 SLURM job is subject to the normal constraints on jobs, including time
 limits, so that eventually the job will terminate and the resources
 will be freed, or you can terminate the job manually using the
-\fBscancel\fR command.) 
+\fBscancel\fR command.)
 
 .TP
 \fB\-O\fR, \fB\-\-overcommit\fR
@@ -876,7 +978,7 @@ When a tree topology is used, this defines the maximum count of switches
 desired for the job allocation and optionally the maximum time to wait
 for that number of switches. If SLURM finds an allocation containing more
 switches than the count specified, the job remains pending until it either finds
-an allocation with desired switch count or the time limit expires. 
+an allocation with desired switch count or the time limit expires.
 It there is no switch count limit, there is no delay in starting the job.
 Acceptable time formats include "minutes", "minutes:seconds",
 "hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
@@ -891,8 +993,8 @@ The default max\-time is the max_switch_wait SchedulerParameter.
 Set a limit on the total run time of the job allocation.  If the
 requested time limit exceeds the partition's time limit, the job will
 be left in a PENDING state (possibly indefinitely).  The default time
-limit is the partition's time limit.  When the time limit is reached,
-the each task in each job step is sent SIGTERM followed by SIGKILL. The
+limit is the partition's default time limit.  When the time limit is reached,
+each task in each job step is sent SIGTERM followed by SIGKILL.  The
 interval between signals is specified by the SLURM configuration
 parameter \fBKillWait\fR.  A time limit of zero requests that no time
 limit be imposed.  Acceptable time formats include "minutes",
@@ -910,12 +1012,12 @@ above when task/affinity plugin is enabled.
 Set a minimum time limit on the job allocation.
 If specified, the job may have it's \fB\-\-time\fR limit lowered to a value
 no lower than \fB\-\-time\-min\fR if doing so permits the job to begin
-execution earlier than otherwise possible. 
+execution earlier than otherwise possible.
 The job's time limit will not be changed after the job is allocated resources.
-This is performed by a backfill scheduling algorithm to allocate resources 
+This is performed by a backfill scheduling algorithm to allocate resources
 otherwise reserved for higher priority jobs.
-Acceptable time formats include "minutes", "minutes:seconds", 
-"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
+Acceptable time formats include "minutes", "minutes:seconds",
+"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
 "days\-hours:minutes:seconds".
 
 .TP

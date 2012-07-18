@@ -342,10 +342,10 @@
 #define plugrack_set_paranoia   slurm_plugrack_set_paranoia
 #define plugrack_use_by_type    slurm_plugrack_use_by_type
 
-#define jobacct_common_pack	slurm_jobacct_common_pack
-#define jobacct_common_unpack	slurm_jobacct_common_unpack
-#define jobacct_common_alloc_jobacct slurm_jobacct_common_alloc_jobacct
-#define jobacct_common_free_jobacct slurm_jobacct_common_free_jobacct
+#define jobacctinfo_pack	slurm_jobacctinfo_pack
+#define jobacctinfo_unpack	slurm_jobacctinfo_unpack
+#define jobacctinfo_create      slurm_jobacctinfo_create
+#define jobacctinfo_destroy     slurm_jobacctinfo_destroy
 
 /* node_select.[ch] functions */
 #define destroy_select_ba_request	slurm_destroy_select_ba_request
@@ -363,7 +363,7 @@
 #include "src/common/arg_desc.h"
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
-#include "src/common/jobacct_common.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"

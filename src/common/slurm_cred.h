@@ -129,7 +129,7 @@ void slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx);
  *
  * On pack() ctx is packed in machine-independent format into the
  * buffer, on unpack() the contents of the buffer are used to
- * intialize the state of the context ctx.
+ * initialize the state of the context ctx.
  */
 int  slurm_cred_ctx_pack(slurm_cred_ctx_t ctx, Buf buffer);
 int  slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, Buf buffer);

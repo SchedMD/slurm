@@ -64,6 +64,7 @@
 #include "src/slurmctld/groups.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
@@ -1378,6 +1379,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 			     part_ptr->nodes, part_desc->name);
 			xfree(backup_node_list);
 		}
+		update_part_nodes_in_resv(part_ptr);
 	} else if (part_ptr->node_bitmap == NULL) {
 		/* Newly created partition needs a bitmap, even if empty */
 		part_ptr->node_bitmap = bit_alloc(node_record_count);

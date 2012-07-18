@@ -77,7 +77,7 @@ extern select_nodeinfo_t *select_nodeinfo_alloc(uint32_t size);
 
 extern int select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
-extern int select_nodeinfo_set_all(time_t last_query_time);
+extern int select_nodeinfo_set_all(void);
 
 extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 			       enum select_nodedata_type dinfo,

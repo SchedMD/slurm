@@ -11,7 +11,7 @@ for this material.</p>
 
 <h2>Performance Results</h2>
 
-<p>SLURM has also been validated to process 100,000 jobs and job steps per hour
+<p>SLURM has also been validated to execute 500 simple batch jobs per second
 on a sustained basis with short bursts of activity at a much higher level.
 Actual performance depends upon the jobs to be executed plus the hardware and
 configuration used.</p>
@@ -52,14 +52,30 @@ be set quite high for memory size, open file count and stack size.</p>
 
 <h2>SLURM Configuration</h2>
 
+<p>NOTE: Substantial changes were made in SLURM version 2.4 to support higher
+throughput rates. Version 2.5 includes more enhancements.</p>
+
 <p>Several SLURM configuration parameters should be adjusted to
-reflect the needs of high throughput computing.</p>
+reflect the needs of high throughput computing. The changes described below
+will not be possible in all environments, but these are the configuration
+options that you may want to consider for higher throughput.</p>
 
 <ul>
+<li><b>AccountingStorageType</b>:
+Disabling accounting will improve job throughput. Disable storing of
+accounting by using the <i>accounting_storage/none</i> plugin.</li>
+<li><b>JobAcctGatherType</b>:
+Disabling the collection of job accounting information will improve job
+throughput. Disable collection of accounting by using the
+<i>jobacct_gather/none</i> plugin.</li>
+<li><b>JobCompType</b>:
+Disabling recording of job completion information will improve job
+throughput. Disable recording of job completion information by using the
+<i>jobcomp/none</i> plugin.</li>
 <li><b>MaxJobCount</b>:
 Controls how many jobs may be in the <b>slurmctld</b> daemon records at any
 point in time (pending, running, suspended or completed[temporarily]).
-The default value is 10,000</li>
+The default value is 10,000.</li>
 <li><b>MessageTimeout</b>:
 Controls how long to wait for a response to messages.
 The default value is 10 seconds.
@@ -70,7 +86,12 @@ Controls how soon the record of a completed job can be purged from the
 <b>slurmctld</b> memory and thus not visible using the <b>squeue</b> command.
 The record of jobs run will be preserved in accounting records and logs.
 The default value is 300 seconds. The value should be reduced to a few
-seconds if possible.</li>
+seconds if possible. Use of accounting records for older jobs can increase
+the job throughput rate compared with retaining old jobs in the memory of
+the slurmctld daemon.</li>
+<li><b>PriorityType</b>:
+The <i>priority/builtin</i> is considerably faster than other options, but
+schedules jobs only on a First In First Out (FIFO) basis.</li>
 <li><b>SchedulerParameters</b>:
 Several scheduling parameters are available.
 <ul>
@@ -91,16 +112,42 @@ jobs or less) and <b>interval</b> to 30 seconds or more will limit the
 overhead of backfill scheduling (NOTE: the default values are fine for both
 of these parameters).</li>
 </ul></li>
+<li><b>SchedulerType</b>:
+If most jobs are short lived then use of the <i>sched/builtin</i> plugin is
+recomended. This manages a queue of jobs on a First-In-First-Out (FIFO) basis
+and eliminates logic used to sort the queue by priority.
+<li><b>SelectType</b>:
+If only serial jobs (single CPU jobs) are to be executed, use of the
+<i>select/serial</i> plugin is recommended. This plugin eliminates much of
+the logic found in other select plugins to optimize job allocations with
+respect to network topology. It also reduces communications required to
+executed batch jobs by 75 percent through the use of a "pull" model, where
+the completeion of each job by the <i>slurmd</i> daemon initiates a single
+message to the <i>slurmctld</i> daemon upon completion of the job's epilog
+script. The response to this message can be information required to initiate
+another job utilizing the resources just released by the previous job.
+<b>NOTE:</b> The use of <i>select/serial</i> prevents the job's <i>Epilog</i>
+program from being initiated with any SPANK environment variables.</li>
 <li><b>SlurmctldPort</b>:
 It is desirable to configure the <b>slurmctld</b> daemon to accept incoming
 messages on more than one port in order to avoid having incoming messages
 discarded by the operating system due to exceeding the SOMAXCONN limit
 described above. Using between two and ten ports is suggested when large
 numbers of simultaneous requests are to be supported.</li>
+<li><b>SlurmctldDebug</b>:
+More detailed logging will decrease system throughput. Set to 2 (log errors
+only) or 3 (general information logging). Each increment in the logging level
+will increase the number of message by a factor of about 3.</li>
+<li><b>SlurmdDebug</b>:
+More detailed logging will decrease system throughput. Set to 2 (log errors
+only) or 3 (general information logging). Each increment in the logging level
+will increase the number of message by a factor of about 3.</li>
+<li><b>SlurmdLogFile</b>:
+Writing to local storage is recommended.</li>
 <li>Other: Configure logging, accounting and other overhead to a minimum
 appropriate for your environment.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 30 August 2010</p>
+<p style="text-align:center;">Last modified 12 July 2012</p>
 
 <!--#include virtual="footer.txt"-->

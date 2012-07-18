@@ -452,7 +452,7 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 {
 	struct node_record *node_ptr;
 	uint16_t avail_cpus;
-	uint16_t cpus, sockets, cores, threads;
+	uint16_t cpus, boards, sockets, cores, threads;
 	uint16_t cpus_per_task = 1;
 	uint16_t ntasks_per_node = 0, ntasks_per_socket, ntasks_per_core;
 	uint16_t min_sockets, min_cores, min_threads;
@@ -482,19 +482,24 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	node_ptr = select_node_ptr + index;
 	if (select_fast_schedule) { /* don't bother checking each node */
 		cpus    = node_ptr->config_ptr->cpus;
+		boards  = node_ptr->config_ptr->boards;
 		sockets = node_ptr->config_ptr->sockets;
 		cores   = node_ptr->config_ptr->cores;
 		threads = node_ptr->config_ptr->threads;
 	} else {
 		cpus    = node_ptr->cpus;
+		boards  = node_ptr->boards;
 		sockets = node_ptr->sockets;
 		cores   = node_ptr->cores;
 		threads = node_ptr->threads;
 	}
 
 #if SELECT_DEBUG
-	info("host %s HW_ cpus %u sockets %u cores %u threads %u ",
-	     node_ptr->name, cpus, sockets, cores, threads);
+	info("host %s HW_ cpus %u boards %u sockets %u cores %u threads %u ",
+	     node_ptr->name, cpus, boards, sockets, cores, threads);
+#else
+	debug("host %s HW_ cpus %u boards %u sockets %u cores %u threads %u ",
+	      node_ptr->name, cpus, boards, sockets, cores, threads);
 #endif
 
 	avail_cpus = slurm_get_avail_procs(
@@ -3078,7 +3083,7 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
+extern int select_p_select_nodeinfo_set_all(void)
 {
 	struct node_record *node_ptr = NULL;
 	int i=0;
@@ -3086,7 +3091,7 @@ extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
 
 	/* only set this once when the last_node_update is newer than
 	 * the last time we set things up. */
-	if(last_set_all && (last_node_update < last_set_all)) {
+	if (last_set_all && (last_node_update < last_set_all)) {
 		debug2("Node select info for set all hasn't "
 		       "changed since %ld",
 		       (long)last_set_all);
@@ -3295,6 +3300,11 @@ extern int select_p_update_sub_node (update_block_msg_t *block_desc_ptr)
 	return SLURM_SUCCESS;
 }
 
+extern int select_p_fail_cnode(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo,
 					  struct job_record *job_ptr,
 					  void *data)
@@ -3337,7 +3347,8 @@ extern int select_p_reconfigure(void)
  * IN node_cnt - count of required nodes
  * RET - nodes selected for use by the reservation
  */
-extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt, bitstr_t **core_bitmap)
+extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
+				     bitstr_t **core_bitmap)
 {
 	bitstr_t **switches_bitmap;		/* nodes on this switch */
 	int       *switches_cpu_cnt;		/* total CPUs on switch */

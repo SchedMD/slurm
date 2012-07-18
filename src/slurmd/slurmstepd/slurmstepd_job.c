@@ -220,6 +220,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->cpu_bind = xstrdup(msg->cpu_bind);
 	job->mem_bind_type = msg->mem_bind_type;
 	job->mem_bind = xstrdup(msg->mem_bind);
+	job->cpu_freq = msg->cpu_freq;
 	job->ckpt_dir = xstrdup(msg->ckpt_dir);
 	job->restart_dir = xstrdup(msg->restart_dir);
 	job->cpus_per_task = msg->cpus_per_task;
@@ -279,7 +280,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->debug   = msg->slurmd_debug;
 	job->cpus    = msg->cpus_allocated[nodeid];
 	if (msg->acctg_freq != (uint16_t) NO_VAL)
-		jobacct_gather_g_change_poll(msg->acctg_freq);
+		jobacct_gather_change_poll(msg->acctg_freq);
 	job->multi_prog  = msg->multi_prog;
 	job->timelimit   = (time_t) -1;
 	job->task_flags  = msg->task_flags;
@@ -291,10 +292,10 @@ job_create(launch_tasks_request_msg_t *msg)
 			   &job->job_alloc_cores, &job->step_alloc_cores,
 			   &job->job_mem, &job->step_mem);
 	if (job->step_mem) {
-		jobacct_common_set_mem_limit(job->jobid, job->stepid,
+		jobacct_gather_set_mem_limit(job->jobid, job->stepid,
 					     job->step_mem);
 	} else if (job->job_mem) {
-		jobacct_common_set_mem_limit(job->jobid, job->stepid,
+		jobacct_gather_set_mem_limit(job->jobid, job->stepid,
 					     job->job_mem);
 	}
 
@@ -378,7 +379,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 
 	job->batch   = true;
 	if (msg->acctg_freq != (uint16_t) NO_VAL)
-		jobacct_gather_g_change_poll(msg->acctg_freq);
+		jobacct_gather_change_poll(msg->acctg_freq);
 	job->multi_prog = 0;
 	job->open_mode  = msg->open_mode;
 	job->overcommit = (bool) msg->overcommit;
@@ -414,11 +415,10 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	format_core_allocs(msg->cred, conf->node_name,
 			   &job->job_alloc_cores, &job->step_alloc_cores,
 			   &job->job_mem, &job->step_mem);
-	if (job->step_mem) {
-		jobacct_common_set_mem_limit(job->jobid, NO_VAL,
-					     job->step_mem);
-	} else if (job->job_mem)
-		jobacct_common_set_mem_limit(job->jobid, NO_VAL, job->job_mem);
+	if (job->step_mem)
+		jobacct_gather_set_mem_limit(job->jobid, NO_VAL, job->step_mem);
+	else if (job->job_mem)
+		jobacct_gather_set_mem_limit(job->jobid, NO_VAL, job->job_mem);
 
 	get_cred_gres(msg->cred, conf->node_name,
 		      &job->job_gres_list, &job->step_gres_list);

@@ -48,6 +48,7 @@ extern "C" {
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
+#include "src/common/slurm_protocol_defs.h"
 #include <slurm/slurm.h>
 
 }
@@ -103,7 +104,6 @@ typedef struct {
 static List runjob_list = NULL;
 static pthread_mutex_t runjob_list_lock = PTHREAD_MUTEX_INITIALIZER;
 
-
 static void _destroy_runjob_job(void *object)
 {
 	runjob_job_t *runjob_job = (runjob_job_t *)object;
@@ -113,6 +113,22 @@ static void _destroy_runjob_job(void *object)
 		xfree(runjob_job);
 	}
 }
+
+static void _send_failed_cnodes(uint32_t job_id, uint32_t step_id, uint16_t sig)
+{
+	int rc;
+
+	while ((rc = slurm_kill_job_step(job_id, step_id, sig))) {
+		rc = slurm_get_errno();
+
+		if (rc == ESLURM_ALREADY_DONE || rc == ESLURM_INVALID_JOB_ID)
+			break;
+		std::cerr << "Trying to fail cnodes, message from slurmctld: "
+			  << slurm_strerror(rc) << std::endl;
+		sleep (5);
+	}
+}
+
 
 Plugin::Plugin() :
 	bgsched::runjob::Plugin(),
@@ -249,7 +265,8 @@ void Plugin::execute(bgsched::runjob::Verify& verify)
 			+ " block="
 			+ boost::lexical_cast<std::string>(block_cnode_cnt);
 		goto deny_job;
-	} else if (step_cnode_cnt < block_cnode_cnt) {
+	} else if ((step_cnode_cnt < block_cnode_cnt)
+		   && (step_cnode_cnt <= 512)) {
 		uint16_t dim;
 		uint16_t tmp_uint16[HIGHEST_DIMENSIONS];
 
@@ -366,6 +383,7 @@ void Plugin::execute(const bgsched::runjob::Terminated& data)
 {
 	ListIterator itr = NULL;
 	runjob_job_t *runjob_job = NULL;
+	uint16_t sig = 0;
 
 	boost::lock_guard<boost::mutex> lock( _mutex );
 	// std::cout << "runjob " << data.pid() << " shadowing job "
@@ -396,6 +414,10 @@ void Plugin::execute(const bgsched::runjob::Terminated& data)
 	} else if (data.kill_timeout()) {
 		std::cerr << runjob_job->job_id << "." << runjob_job->step_id
 			  << " had a kill_timeout()" << std::endl;
+		/* In an older driver this wasn't always caught, so
+		   send it.
+		*/
+		sig = SIG_NODE_FAIL;
 	} else if (!nodes.empty()) {
 		char tmp_char[6];
 
@@ -418,7 +440,12 @@ void Plugin::execute(const bgsched::runjob::Terminated& data)
 			  << " had a message of '" << data.message()
 			  << "'. ("
 			  << runjob_job->total_cnodes << ")" << std::endl;
-	}
+	} // else if (data.status() == 9)
+	  // 	sig = SIGKILL;
+
+	if (sig)
+		_send_failed_cnodes(
+			runjob_job->job_id, runjob_job->step_id, sig);
 
 	_destroy_runjob_job(runjob_job);
 }

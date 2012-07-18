@@ -47,6 +47,7 @@
 #include <stdlib.h>
 #include <signal.h>
 
+#include "src/common/cpu_frequency.h"
 #include "src/common/gres.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_rlimits_info.h"
@@ -55,6 +56,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/plugstack.h"
+#include "src/common/node_select.h"
 
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/setproctitle.h"
@@ -381,7 +383,7 @@ _init_from_slurmd(int sock, char **argv,
 	safe_read(sock, &step_complete.max_depth, sizeof(int));
 	safe_read(sock, &step_complete.parent_addr, sizeof(slurm_addr_t));
 	step_complete.bits = bit_alloc(step_complete.children);
-	step_complete.jobacct = jobacct_gather_g_create(NULL);
+	step_complete.jobacct = jobacctinfo_create(NULL);
 	pthread_mutex_unlock(&step_complete.lock);
 
 	/* receive conf from slurmd */
@@ -391,7 +393,7 @@ _init_from_slurmd(int sock, char **argv,
 
 	debug2("debug level is %d.", conf->debug_level);
 	/* acct info */
-	jobacct_gather_g_startpoll(conf->job_acct_gather_freq);
+	jobacct_gather_startpoll(conf->job_acct_gather_freq);
 
 	switch_g_slurmd_step_init();
 
@@ -428,6 +430,9 @@ _init_from_slurmd(int sock, char **argv,
 	/* Receive GRES information from slurmd */
 	gres_plugin_recv_stepd(sock);
 
+	/* Receive cpu_frequency info from slurmd */
+	cpu_freq_recv_info(sock);
+
 	/* receive req from slurmd */
 	safe_read(sock, &len, sizeof(int));
 	incoming_buffer = xmalloc(sizeof(char) * len);
@@ -436,6 +441,7 @@ _init_from_slurmd(int sock, char **argv,
 
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
+	msg->protocol_version = SLURM_PROTOCOL_VERSION;
 
 	switch(step_type) {
 	case LAUNCH_BATCH_JOB:
@@ -504,7 +510,7 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 	}
 
 	job->jmgr_pid = getpid();
-	job->jobacct = jobacct_gather_g_create(NULL);
+	job->jobacct = jobacctinfo_create(NULL);
 
 	/* Establish GRES environment variables */
 	if (conf->debug_flags & DEBUG_FLAG_GRES) {
@@ -533,7 +539,7 @@ static void
 _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 {
 	if (job) {
-		jobacct_gather_g_destroy(job->jobacct);
+		jobacctinfo_destroy(job->jobacct);
 		if (!job->batch)
 			job_destroy(job);
 	}
@@ -553,7 +559,7 @@ _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 		fatal("handle_launch_message: Unrecognized launch RPC");
 		break;
 	}
-	jobacct_gather_g_destroy(step_complete.jobacct);
+	jobacctinfo_destroy(step_complete.jobacct);
 
 	xfree(msg);
 }

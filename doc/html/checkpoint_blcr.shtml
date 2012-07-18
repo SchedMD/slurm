@@ -4,7 +4,7 @@
 
 <h2>Overview</h2>
 <p>SLURM version 2.0 has been integrated with
-<a href="https://ftg.lbl.gov/CheckpointRestart/CheckpointRestart.shtml">
+<a href="https://upc-bugs.lbl.gov/blcr/doc/html/">
 Berkeley Lab Checkpoint/Restart (BLCR)</a> in order to provide automatic
 job checkpoint/restart support.
 Functionality provided includes:
@@ -193,6 +193,6 @@ option at job submit time or scontrol's <b>ImageDir</b> option.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 26 March 2012</p>
+<p style="text-align:center;">Last modified 20 June 2012</p>
 
 <!--#include virtual="footer.txt"-->

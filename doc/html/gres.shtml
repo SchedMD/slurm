@@ -43,7 +43,8 @@ values in <I>slurm.conf</I> ).</LI>
 The default value is set to the number of <B>File</B> values specified (if any),
 otherwise the default value is one. A suffix of "K", "M" or "G" may be used
 to mulitply the number by 1024, 1048576 or 1073741824 respectively
-(e.g. "Count=10G").</LI>
+(e.g. "Count=10G"). Note that Count is a 32-bit field and the maximum value
+is 4,294,967,295.</LI>
 
 <LI><B>CPUs</B> Specify the CPU index numbers for the specific CPUs which can
 use this resources. For example, it may be strongly preferable to use specific
@@ -150,6 +151,6 @@ JobStep=1234.2 CUDA_VISIBLE_DEVICES=3
 file and insure they are in the increasing numeric order.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 8 May 2012</p>
+<p style="text-align: center;">Last modified 2 July 2012</p>
 
 </body></html>

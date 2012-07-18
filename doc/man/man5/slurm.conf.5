@@ -1,4 +1,4 @@
-.TH "slurm.conf" "6" "April 2012" "slurm.conf 2.4" "Slurm configuration file"
+.TH "slurm.conf" "5" "July 2012" "slurm.conf 2.5" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -323,6 +323,9 @@ Resource selection plugin
 .TP
 \fBSteps\fR
 Slurmctld resource allocation for job steps
+.TP
+\fBSwitch\fR
+Siwtch plugin
 .TP
 \fBTriggers\fR
 Slurmctld triggers
@@ -733,10 +736,10 @@ The value may not exceed 65533.
 \fBLicenses\fR
 Specification of licenses (or other resources available on all
 nodes of the cluster) which can be allocated to jobs.
-License names can optionally be followed by an asterisk
+License names can optionally be followed by a colon
 and count with a default count of one.
 Multiple license names should be comma separated (e.g.
-"Licenses=foo*4,bar").
+"Licenses=foo:4,bar").
 Note that SLURM prevents jobs from being scheduled if their
 required license specification is not available.
 SLURM does not prevent jobs from using licenses that are
@@ -816,9 +819,11 @@ necessitate higher values.
 \fBMinJobAge\fR
 The minimum age of a completed job before its record is purged from
 SLURM's active database. Set the values of \fBMaxJobCount\fR and
-\fBMinJobAge\fR to insure the slurmctld daemon does not exhaust
+  to insure the slurmctld daemon does not exhaust
 its memory or other resources. The default value is 300 seconds.
 A value of zero prevents any job record purging.
+In order to eliminate some possible race conditions, the minimum non\-zero
+value for \fBMinJobAge\fR recommended is 2.
 May not exceed 65533.
 
 .TP
@@ -834,7 +839,7 @@ Currently supported versions include:
 \fBmvapich\fR,
 \fBnone\fR (default, which works for many other versions of MPI) and
 \fBopenmpi\fR.
-\fpmi2\fR,
+\fBpmi2\fR,
 More information about MPI use is available here
 <http://www.schedmd.com/slurmdocs/mpi_guide.html>.
 
@@ -1169,6 +1174,12 @@ resources for use.
 While this program is running, the nodes associated with the job will be
 have a POWER_UP/CONFIGURING flag set in their state, which can be readily
 viewed.
+The slurmctld daemon will wait indefinitely for this program to complete.
+Once the program completes with an exit code of zero, the nodes will be
+considered ready for use and the program will be started.
+If some node can not be made available for use, the program should drain
+the node (typically using the scontrol command) and terminate with a non\-zero
+exit code.
 A non\-zero exit code will result in the job being requeued (where possible)
 or killed.
 See \fBProlog and Epilog Scripts\fR for more information.
@@ -1545,6 +1556,12 @@ Note that whole nodes can be allocated to jobs for selected
 partitions by using the \fIShared=Exclusive\fR option.
 See the partition \fBShared\fR parameter for more information.
 .TP
+\fBselect/serial\fR
+for allocating resources to single CPU jobs only.
+Highly optimized for maximum throughput.
+NOTE: SPANK environment variables are NOT propagated to the job's \fBEpilog\fR
+program.
+.TP
 \fBselect/bluegene\fR
 for a three\-dimensional BlueGene system.
 The default value is "select/bluegene" for BlueGene systems.
@@ -1607,7 +1624,10 @@ Without this option, by default one task will be allocated per
 thread on nodes with more than one \fBThreadsPerCore\fR configured.
 .TP
 \fBCR_CORE_DEFAULT_DIST_BLOCK\fR
-Allocate cores using block distribution by default.
+Allocate cores within a node using block distribution by default.
+This is a pseudo\-best\-fit algorithm that minimizes the number of
+boards and minimizes the number of sockets (within minimum boards)
+used for the allocation. 
 This default behavior can be overridden specifying a particular 
 "\-m" parameter with srun/salloc/sbatch.
 Without this option, cores will be allocated cyclicly across the sockets.
@@ -1946,6 +1966,8 @@ Acceptable values include
 "switch/none" for switches not requiring special processing for job launch
 or termination (Myrinet, Ethernet, and InfiniBand),
 "switch/elan" for Quadrics Elan 3 or Elan 4 interconnect.
+"switch/federation" for IBM's Federation switch.
+"switch/nrt" for IBM's Network Resource Table API.
 The default value is "switch/none".
 All SLURM daemons, commands and running jobs must be restarted for a
 change in \fBSwitchType\fR to take effect.
@@ -2287,7 +2309,7 @@ settings.  Note that if the short form of the hostname is not used, it
 may prevent use of hostlist expressions (the numeric portion in brackets
 must be at the end of the string).
 Only short hostname forms are compatible with the
-switch/elan and switch/federation plugins at this time.
+switch/elan, switch/federation and switch/nrt plugins at this time.
 It may also be an arbitrary string if \fBNodeHostname\fR is specified.
 If the \fBNodeName\fR is "DEFAULT", the values specified
 with that record will apply to subsequent node specifications
@@ -2309,7 +2331,7 @@ settings.  Note that if the short form of the hostname is not used, it
 may prevent use of hostlist expressions (the numeric portion in brackets
 must be at the end of the string).
 Only short hostname forms are compatible with the
-switch/elan and switch/federation plugins at this time.
+switch/elan, switch/federation and switch/nrt plugins at this time.
 A node range expression can be used to specify a set of nodes.
 If an expression is used, the number of nodes identified by
 \fBNodeHostname\fR on a line in the configuration file must
@@ -2328,7 +2350,15 @@ they must exactly match the entries in the \fBNodeName\fR
 (e.g. "NodeName=lx[0\-7] NodeAddr="elx[0\-7]").
 \fBNodeAddr\fR may also contain IP addresses.
 By default, the \fBNodeAddr\fR will be identical in value to
-\fBNodeName\fR.
+\fBNodeHostname\fR.
+
+.TP
+\fBBoards\fR
+Number of Baseboards in nodes with a baseboard controller.
+Note that when Boards is specified, SocketsPerBoard,
+CoresPerSocket, and ThreadsPerCore should be specified.
+Boards and CPUs are mutully exclusive.
+The default value is 1.
 
 .TP
 \fBCoresPerSocket\fR
@@ -2344,6 +2374,7 @@ The default value is 1.
 Number of logical processors on the node (e.g. "2").
 If \fBCPUs\fR is omitted, it will set equal to the product of
 \fBSockets\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
+CPUs and Boards are mutually exclusive.
 The default value is 1.
 
 .TP
@@ -2365,7 +2396,8 @@ colon with a numeric value (default value is one)
 (e.g. "Gres=bandwidth:10000,gpu:2").
 A suffix of "K", "M" or "G" may be used to mulitply the number by 1024,
 1048576 or 1073741824 respectively (e.g. "Gres=bandwidth:4G,gpu:4")..
-By default a node has no generic resources.
+By default a node has no generic resources and its maximum count is
+4,294,967,295.
 Also see \fBFeature\fR.
 
 .TP
@@ -2374,7 +2406,8 @@ The port number that the SLURM compute node daemon, \fBslurmd\fR, listens
 to for work on this particular node. By default there is a single port number
 for all \fBslurmd\fR daemons on all compute nodes as defined by the 
 \fBSlurmdPort\fR configuration parameter. Use of this option is not generally
-recommended except for development or testing purposes.
+recommended except for development or testing purposes. If multiple
+\fBslurmd\fR daemons execute on a node this can specify a range of ports
 
 .TP
 \fBProcs\fR
@@ -2398,6 +2431,15 @@ If Sockets is omitted, it will be inferred from
 \fBCPUs\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
 \fBNOTE\fR: If you have multi\-core processors, you will likely
 need to specify these parameters.
+Sockets and SocketsPerBoard are mutually exclusive.
+If Sockets is specified when Boards is also used,
+Sockets is interpreted as SocketsPerBoard rather than total sockets.
+The default value is 1.
+
+.TP
+\fBSocketsPerBoard\fR
+Number of physical processor sockets/chips on a baseboard.
+Sockets and SocketsPerBoard are mutually exclusive.
 The default value is 1.
 
 .TP
@@ -3374,7 +3416,7 @@ See the \fBlogrotate\fR man page for more details.
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
-Portions Copyright (C) 2010 SchedMD <http://www.sched\-md.com>.
+Portions Copyright (C) 2010-2012 SchedMD <http://www.sched\-md.com>.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP

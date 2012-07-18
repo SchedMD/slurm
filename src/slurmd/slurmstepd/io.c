@@ -276,7 +276,7 @@ _client_writable(eio_obj_t *obj)
 	}
 
 	/* If this is a newly attached client its msg_queue needs
-	 * to be intialized from the outgoing_cache, and then "obj" needs
+	 * to be initialized from the outgoing_cache, and then "obj" needs
 	 * to be added to the List of clients.
 	 */
 	if (client->msg_queue == NULL) {

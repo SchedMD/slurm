@@ -1706,6 +1706,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 				sview_part_info->sub_part_total.reason
 					= sview_part_sub->reason;
 			}
+			hostlist_sort(sview_part_sub->hl);
 		}
 		list_iterator_destroy(itr);
 	}

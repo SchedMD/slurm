@@ -102,6 +102,9 @@ exec $bin_rm -f $file_in
 # NOTE: Running "scontrol show job" and looking for these job IDs
 # may not work due to a bug in awk not scanning large output buffers
 #
+# NOTE: Match "JobId=" only
+#
+send_user "\nGetting more info for job id 1 ($job_id1)\n"
 set matches 0
 spawn $scontrol show job $job_id1
 expect {
@@ -109,17 +112,11 @@ expect {
 		incr matches
 		exp_continue
 	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
+	-re "CPU_IDs=" {
+		incr matches
+		exp_continue
 	}
-	eof {
-		wait
-	}
-}
-spawn $scontrol show job $job_id2
-expect {
-	-re "JobId=$job_id2 " {
+	-re "BatchScript=" {
 		incr matches
 		exp_continue
 	}
@@ -131,8 +128,145 @@ expect {
 		wait
 	}
 }
+send_user "\nGetting more info for job id 2 ($job_id2)\n"
+spawn $scontrol show job $job_id2
+expect {
+	-re "JobId=$job_id2 " {
+		incr matches
+		exp_continue
+	}
+	-re "CPU_IDs=" {
+		incr matches
+		exp_continue
+	}
+	-re "BatchScript=" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+
 if {$matches != 2} {
-	send_user "\nFAILURE: scontrol found $matches of 2 jobs\n"
+	send_user "\nFAILURE: scontrol failed to find matching job ($matches != 2)\n"
+	set exit_code 1
+}
+
+#
+# using the scontrol -d option to display more info about job
+#
+send_user "\nGetting more info for job id 1 ($job_id1) with -d option\n"
+set matches 0
+spawn $scontrol -d show job $job_id1
+expect {
+	-re "JobId=$job_id1 " {
+		incr matches
+		exp_continue
+	}
+	-re "CPU_IDs=" {
+		incr matches
+		exp_continue
+	}
+	-re "BatchScript=" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\n FAILURE scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+send_user "\nGetting more info for job id 2 ($job_id2) with -d option\n"
+spawn $scontrol -d show job $job_id2
+expect {
+	-re "JobId=$job_id2 " {
+		incr matches
+		exp_continue
+	}
+	-re "CPU_IDs=" {
+		incr matches
+		exp_continue
+	}
+	-re "BatchScript=" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+
+}
+if {$matches != 4} {
+	send_user "\nFAILURE: scontrol failed to find matching job ($matches != 4)\n"
+	set exit_code 1
+}
+
+#
+# using the scontrol -dd option to display more info about job
+#
+send_user "\nGetting more info for job id 1 ($job_id1) with -dd option\n"
+set matches 0
+spawn $scontrol -dd show job $job_id1
+expect {
+	-re "JobId=$job_id1 " {
+		incr matches
+		exp_continue
+	}
+	-re "CPU_IDs=" {
+		incr matches
+		exp_continue
+	}
+	-re "BatchScript=" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\n FAILURE scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+send_user "\nGetting more info for job id 2 ($job_id2) with -dd option\n"
+spawn $scontrol -dd show job $job_id2
+expect {
+	-re "JobId=$job_id2 " {
+		incr matches
+		exp_continue
+	}
+	-re "CPU_IDs=" {
+		incr matches
+		exp_continue
+	}
+	-re "BatchScript=" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+
+}
+if {$matches != 6} {
+	send_user "\nFAILURE: scontrol failed to find matching job ($matches != 6)\n"
 	set exit_code 1
 }
 

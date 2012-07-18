@@ -59,6 +59,7 @@
 #include "src/common/checkpoint.h"
 #include "src/common/forward.h"
 #include "src/common/gres.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_interface.h"
@@ -173,7 +174,7 @@ static struct step_record * _create_step_record(struct job_record *job_ptr)
 	step_ptr->job_ptr = job_ptr;
 	step_ptr->start_time = time(NULL);
 	step_ptr->time_limit = INFINITE;
-	step_ptr->jobacct = jobacct_gather_g_create(NULL);
+	step_ptr->jobacct = jobacctinfo_create(NULL);
 	step_ptr->requid = -1;
 	if (list_append (job_ptr->step_list, step_ptr) == NULL)
 		fatal ("_create_step_record: unable to allocate memory");
@@ -221,7 +222,7 @@ static void _free_step_rec(struct step_record *step_ptr)
 	xfree(step_ptr->host);
 	xfree(step_ptr->name);
 	slurm_step_layout_destroy(step_ptr->step_layout);
-	jobacct_gather_g_destroy(step_ptr->jobacct);
+	jobacctinfo_destroy(step_ptr->jobacct);
 	FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
 	FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 	FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
@@ -282,8 +283,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	       step_spec->user_id, step_spec->job_id,
 	       step_spec->min_nodes, step_spec->max_nodes,
 	       step_spec->cpu_count);
-	debug3("   num_tasks=%u relative=%u task_dist=%u node_list=%s",
-	       step_spec->num_tasks, step_spec->relative,
+	debug3("   cpu_freq=%u num_tasks=%u relative=%u task_dist=%u node_list=%s",
+	       step_spec->cpu_freq, step_spec->num_tasks, step_spec->relative,
 	       step_spec->task_dist, step_spec->node_list);
 	debug3("   host=%s port=%u name=%s network=%s exclusive=%u",
 	       step_spec->host, step_spec->port, step_spec->name,
@@ -341,6 +342,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 {
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
+	int rc = SLURM_SUCCESS;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -348,9 +350,11 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if (IS_JOB_FINISHED(job_ptr))
-		return ESLURM_ALREADY_DONE;
-	if (!IS_JOB_RUNNING(job_ptr)) {
+	if (IS_JOB_FINISHED(job_ptr)) {
+		rc = ESLURM_ALREADY_DONE;
+		if (signal != SIG_NODE_FAIL)
+			return rc;
+	} else if (!IS_JOB_RUNNING(job_ptr)) {
 		verbose("job_step_signal: step %u.%u can not be sent signal "
 			"%u from state=%s", job_id, step_id, signal,
 			job_state_string(job_ptr->job_state));
@@ -370,7 +374,17 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P	
+	/* If SIG_NODE_FAIL codes through it means we had nodes failed
+	   so handle that in the select plugin and switch the signal
+	   to KILL afterwards.
+	*/
+	if (signal == SIG_NODE_FAIL) {
+		select_g_fail_cnode(step_ptr);
+		signal = SIGKILL;
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	}
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
 	srun_step_signal(step_ptr, signal);
 #endif
 
@@ -1779,13 +1793,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 #if defined HAVE_BGQ
 	if (step_specs->min_nodes < node_count) {
-		if (step_specs->min_nodes > 512) {
-			error("step asked for more than 512 nodes but "
-			      "less than the allocation, on a "
-			      "bluegene/Q system that isn't allowed.");
-			return ESLURM_INVALID_NODE_COUNT;
-		}
-		/* We are asking for less than we have. */
 		node_count = step_specs->min_nodes;
 
 		step_specs->min_nodes = 1;
@@ -1958,6 +1965,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->port = step_specs->port;
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->batch_step = batch_step;
+	step_ptr->cpu_freq = step_specs->cpu_freq;
 	step_ptr->cpus_per_task = (uint16_t)cpus_per_task;
 	step_ptr->mem_per_cpu = step_specs->mem_per_cpu;
 	step_ptr->ckpt_interval = step_specs->ckpt_interval;
@@ -2045,9 +2053,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 		if (switch_build_jobinfo(step_ptr->switch_job,
 					 step_ptr->step_layout->node_list,
 					 step_ptr->step_layout->tasks,
-					 step_ptr->cyclic_alloc,
+					 step_ptr->step_layout->tids,
 					 step_ptr->network) < 0) {
-			error("switch_build_jobinfo: %m");
 			delete_step_record (job_ptr, step_ptr->step_id);
 			return ESLURM_INTERCONNECT_FAILURE;
 		}
@@ -2242,7 +2249,38 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 	cpu_cnt = step_ptr->cpu_count;
 #endif
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+		pack32(step_ptr->job_ptr->job_id, buffer);
+		pack32(step_ptr->step_id, buffer);
+		pack16(step_ptr->ckpt_interval, buffer);
+		pack32(step_ptr->job_ptr->user_id, buffer);
+		pack32(cpu_cnt, buffer);
+		pack32(step_ptr->cpu_freq, buffer);
+		pack32(task_cnt, buffer);
+		pack32(step_ptr->time_limit, buffer);
+
+		pack_time(step_ptr->start_time, buffer);
+		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
+			run_time = step_ptr->pre_sus_time;
+		} else {
+			begin_time = MAX(step_ptr->start_time,
+					 step_ptr->job_ptr->suspend_time);
+			run_time = step_ptr->pre_sus_time +
+				difftime(time(NULL), begin_time);
+		}
+		pack_time(run_time, buffer);
+
+		packstr(step_ptr->job_ptr->partition, buffer);
+		packstr(step_ptr->resv_ports, buffer);
+		packstr(node_list, buffer);
+		packstr(step_ptr->name, buffer);
+		packstr(step_ptr->network, buffer);
+		pack_bit_fmt(pack_bitstr, buffer);
+		packstr(step_ptr->ckpt_dir, buffer);
+		packstr(step_ptr->gres, buffer);
+		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
+					     protocol_version);
+	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->job_id, buffer);
 		pack32(step_ptr->step_id, buffer);
 		pack16(step_ptr->ckpt_interval, buffer);
@@ -2685,7 +2723,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		step_ptr->exit_code = req->step_rc;
 		if (max_rc)
 			*max_rc = step_ptr->exit_code;
-		jobacct_gather_g_aggregate(step_ptr->jobacct, req->jobacct);
+		jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
 		/* we don't want to delete the step record here since
 		   right after we delete this step again if we delete
 		   it here we won't find it when we try the second
@@ -2700,7 +2738,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		return EINVAL;
 	}
 
-	jobacct_gather_g_aggregate(step_ptr->jobacct, req->jobacct);
+	jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
 
 	if (!step_ptr->exit_node_bitmap) {
 		/* initialize the node bitmap for exited nodes */

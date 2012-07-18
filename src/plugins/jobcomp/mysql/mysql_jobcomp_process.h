@@ -46,7 +46,7 @@
 
 #include "src/database/mysql_common.h"
 #include "src/common/slurm_jobcomp.h"
-#include "src/common/jobacct_common.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_accounting_storage.h"
 
 extern mysql_conn_t *jobcomp_mysql_conn;

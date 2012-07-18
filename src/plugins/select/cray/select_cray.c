@@ -472,9 +472,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern int select_p_select_nodeinfo_set_all(time_t last_query_time)
+extern int select_p_select_nodeinfo_set_all(void)
 {
-	return other_select_nodeinfo_set_all(last_query_time);
+	return other_select_nodeinfo_set_all();
 }
 
 extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
@@ -782,6 +782,11 @@ extern int select_p_update_sub_node(update_block_msg_t *block_desc_ptr)
 	return other_update_sub_node(block_desc_ptr);
 }
 
+extern int select_p_fail_cnode(struct step_record *step_ptr)
+{
+	return other_fail_cnode(step_ptr);
+}
+
 extern int select_p_get_info_from_plugin(enum select_jobdata_type info,
 					 struct job_record *job_ptr,
 					 void *data)
@@ -811,9 +816,10 @@ extern int select_p_reconfigure(void)
 	return other_reconfigure();
 }
 
-extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt, bitstr_t **core_bitmap)
+extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
+				     uint32_t core_cnt, bitstr_t **core_bitmap)
 {
-	return other_resv_test(avail_bitmap, node_cnt, core_bitmap);
+	return other_resv_test(avail_bitmap, node_cnt, core_cnt, core_bitmap);
 }
 
 extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)

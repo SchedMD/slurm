@@ -33,6 +33,10 @@
 ############################################################################
 source ./globals
 source ./globals_accounting
+source ./inc21.21.1
+source ./inc21.21.2
+source ./inc21.21.3
+source ./inc21.21.4
 
 set test_id     "21.21"
 set exit_code   0
@@ -40,6 +44,11 @@ set file_in     "test.$test_id.input"
 set ta		slurm_test-account.1
 set timeout 60
 print_header $test_id
+
+if {[test_serial]} {
+	send_user "\nWARNING: This test is not compatible with serial system\n"
+	exit 0
+}
 
 proc _test_limits { } {
 	global file_in srun sbatch squeue scancel bin_id number bin_sleep bin_rm ta
@@ -56,113 +65,33 @@ proc _test_limits { } {
 	if { $exit_code } {
 		return $exit_code
 	}
-	#
-	# Spawn a job testing maxnode
-	#
-	set matches 0
-	spawn $srun -v -N$maxnode --account=$ta $bin_id
-	expect {
-		-re "launching ($number)" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: srun not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if { $matches != 1 } {
-		send_user "\nFAILURE: job dion't launch with correct limit\n"
-		set exit_code 1
-		return $exit_code
-	}
-	#
-	# Spawn a job testing maxnode+1
-	#
-	spawn $srun -N[expr $maxnode + 1] --account=$ta $bin_id
-	expect {
-		-re "Job violates accounting policy" {
-			send_user "\nThis error is expected, not a problem\n"
-			exp_continue
-		}
-		-re "launching ($number)" {
-			send_user "\nFAILURE: job should not have run.\n"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: srun not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if { $exit_code } {
-		return $exit_code
-	}
 
 	#
-	# Spawn a job testing maxwall
+	# Start sub-test: test for maxnode
 	#
-	set matches 0
-	spawn $srun -v -t$maxwall --account=$ta $bin_id
-	expect {
-		-re "launching ($number)" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: srun not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
+	inc21_21_1 $maxnode
 
-	if { $matches != 1 } {
-		send_user "\nFAILURE: job dion't launch with correct limit\n"
-		set exit_code 1
-		return $exit_code
-	}
 	#
-	# Spawn a job testing maxwall+1
+	# Start sub-test: test for maxnode+1
 	#
-	spawn $srun -t[expr $maxwall + 1] --account=$ta $bin_id
-	expect {
-		-re "Job violates accounting policy" {
-			send_user "\nThis error is expected, not a problem\n"
-			exp_continue
-		}
-		-re "launching ($number)" {
-			send_user "\nFAILURE: job should not have run.\n"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: srun not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
+	inc21_21_2 $maxnode
 
-	if { $exit_code } {
-		return $exit_code
-	}
+	#
+	# Start sub-test: testing maxwall
+	#
+	inc21_21_3 $maxwall
+
+	#
+	# Start sub-test: testing maxwall+1
+	#
+	inc21_21_4 $maxwall
+
 
 	# This should overwrite the old file_in which has already been used,
 	# so no big deal.
 	make_bash_script $file_in "
 	$bin_sleep 5
-        "
+	"
 
 	# test job max cnt and submit
 	for {set inx 0} {$inx < $maxsubmit} {incr inx} {
@@ -211,7 +140,7 @@ proc _test_limits { } {
 			exp_continue
 		}
 		-re "Submitted batch job ($number)" {
-			send_user "\nFAILURE: job should not have run.\n"
+			send_user "\nFAILURE: job should not have run 3.\n"
 			set exit_code 1
 			exp_continue
 		}

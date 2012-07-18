@@ -956,7 +956,8 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	List requests = NULL;
 	List delete_list = NULL;
 	ListIterator itr = NULL;
-	bg_record_t *bg_record = NULL, *found_record = NULL, tmp_record;
+	bg_record_t *bg_record = NULL, *found_record = NULL,
+		tmp_record, *error_bg_record = NULL;
 	bg_record_t *smallest_bg_record = NULL;
 	struct node_record *node_ptr = NULL;
 	int mp_bit = 0;
@@ -1068,16 +1069,18 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			smallest_bg_record = bg_record;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&block_state_mutex);
-	if (!slurmctld_locked)
-		unlock_slurmctld(job_write_lock);
+
+	/* We cannot unlock block_state_mutex here until we are done
+	 * with smallest_bg_record.
+	 */
 
 	if (bg_conf->layout_mode != LAYOUT_DYNAMIC) {
 		debug3("running non-dynamic mode");
 		/* This should never happen, but just in case... */
-		if (delete_list)
+		if (delete_list) {
 			list_destroy(delete_list);
-
+			delete_list = NULL;
+		}
 		/* If we found a block that is smaller or equal to a
 		   midplane we will just mark it in an error state as
 		   opposed to draining the node.
@@ -1086,14 +1089,16 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 		    && (smallest_bg_record->cnode_cnt < bg_conf->mp_cnode_cnt)){
 			if (smallest_bg_record->state & BG_BLOCK_ERROR_FLAG) {
 				rc = SLURM_NO_CHANGE_IN_DATA;
+				slurm_mutex_unlock(&block_state_mutex);
 				goto cleanup;
 			}
 
-			rc = put_block_in_error_state(
-				smallest_bg_record, reason);
+			slurm_mutex_unlock(&block_state_mutex);
+			error_bg_record = smallest_bg_record;
 			goto cleanup;
 		}
 
+		slurm_mutex_unlock(&block_state_mutex);
 		debug("No block under 1 midplane available for this nodecard.  "
 		      "Draining the whole node.");
 		if (!node_already_down(mp_name)) {
@@ -1113,27 +1118,22 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	if (delete_list) {
 		int cnt_set = 0;
 		bitstr_t *iobitmap = bit_alloc(bg_conf->ionodes_per_mp);
-		/* don't lock here since it is handled inside
-		   the put_block_in_error_state
-		*/
 		itr = list_iterator_create(delete_list);
 		while ((bg_record = list_next(itr))) {
 			debug2("combining smaller than nodecard "
 			       "dynamic block %s",
 			       bg_record->bg_block_id);
-			while ((bg_record->job_running > NO_JOB_RUNNING)
-			       || (bg_record->job_list
-				   && list_count(bg_record->job_list)))
-				sleep(1);
-
 			bit_or(iobitmap, bg_record->ionode_bitmap);
 			cnt_set++;
 		}
 		list_iterator_destroy(itr);
 		list_destroy(delete_list);
+		delete_list = NULL;
+
 		if (!cnt_set) {
 			FREE_NULL_BITMAP(iobitmap);
 			rc = SLURM_ERROR;
+			slurm_mutex_unlock(&block_state_mutex);
 			goto cleanup;
 		}
 		/* set the start to be the same as the start of the
@@ -1155,29 +1155,26 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	} else if (smallest_bg_record) {
 		debug2("smallest dynamic block is %s",
 		       smallest_bg_record->bg_block_id);
-		if (smallest_bg_record->state & BG_BLOCK_ERROR_FLAG) {
-			rc = SLURM_NO_CHANGE_IN_DATA;
-			goto cleanup;
-		}
-
-		while ((smallest_bg_record->job_running > NO_JOB_RUNNING)
-		       || (smallest_bg_record->job_list
-			   && list_count(smallest_bg_record->job_list)))
-			sleep(1);
 
 		if (smallest_bg_record->cnode_cnt == create_size) {
-			rc = put_block_in_error_state(
-				smallest_bg_record, reason);
+			slurm_mutex_unlock(&block_state_mutex);
+			error_bg_record = smallest_bg_record;
 			goto cleanup;
 		}
+
+		/* If the block is bigger than the asked for error we
+		   need to resume it to keep accounting correct.
+		*/
+		if (smallest_bg_record->state & BG_BLOCK_ERROR_FLAG)
+			resume_block(smallest_bg_record);
 
 		if (create_size > smallest_bg_record->cnode_cnt) {
 			/* we should never get here.  This means we
 			 * have a create_size that is bigger than a
 			 * block that is already made.
 			 */
-			rc = put_block_in_error_state(
-				smallest_bg_record, reason);
+			slurm_mutex_unlock(&block_state_mutex);
+			error_bg_record = smallest_bg_record;
 			goto cleanup;
 		}
 		debug3("node count is %d", smallest_bg_record->cnode_cnt);
@@ -1202,9 +1199,10 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 		if (create_size != bg_conf->nodecard_cnode_cnt) {
 			blockreq.small128 = blockreq.small32 / 4;
 			blockreq.small32 = 0;
-			io_start = 0;
-		} else if ((io_start =
-			    bit_ffs(smallest_bg_record->ionode_bitmap)) == -1)
+		}
+
+		if ((io_start =
+		     bit_ffs(smallest_bg_record->ionode_bitmap)) == -1)
 			/* set the start to be the same as the start of the
 			   ionode_bitmap.  If no ionodes set (not a small
 			   block) set io_start = 0. */
@@ -1225,6 +1223,7 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			blockreq.small128 = 4;
 			break;
 		case 512:
+			slurm_mutex_unlock(&block_state_mutex);
 			if (!node_already_down(mp_name)) {
 				if (slurmctld_locked)
 					drain_nodes(mp_name, reason,
@@ -1248,7 +1247,6 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 		   smallest block that takes up the entire midplane. */
 	}
 
-
 	/* Here we need to add blocks that take up nodecards on this
 	   midplane.  Since Slurm only keeps track of midplanes
 	   natively this is the only want to handle this case.
@@ -1256,7 +1254,48 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 	requests = list_create(destroy_bg_record);
 	add_bg_record(requests, NULL, &blockreq, 1, io_start);
 
-	slurm_mutex_lock(&block_state_mutex);
+	if (bg_conf->sub_blocks
+	    && (!smallest_bg_record
+		|| smallest_bg_record->cnode_cnt == bg_conf->mp_cnode_cnt)) {
+		bg_record_t *rem_record = NULL;
+		memset(&blockreq, 0, sizeof(select_ba_request_t));
+		blockreq.conn_type[0] = SELECT_SMALL;
+		blockreq.save_name = mp_name;
+		blockreq.small256 = 2;
+		add_bg_record(requests, NULL, &blockreq, 1, io_start);
+
+		itr = list_iterator_create(requests);
+		while ((bg_record = list_next(itr))) {
+			if (bit_overlap(bg_record->ionode_bitmap,
+					tmp_record.ionode_bitmap)) {
+				if (bg_record->cnode_cnt == 256) {
+					print_bg_record(bg_record);
+					rem_record = bg_record;
+					list_remove(itr);
+					break;
+				}
+			}
+		}
+		if (!rem_record) {
+			/* this should never happen */
+			error("down_nodecard: something bad happened "
+			      "with creation of 256 block");
+		} else {
+			list_iterator_reset(itr);
+			while ((bg_record = list_next(itr))) {
+				if (bg_record->cnode_cnt == 256)
+					continue;
+				if (!bit_overlap(bg_record->ionode_bitmap,
+						 rem_record->ionode_bitmap)) {
+					print_bg_record(bg_record);
+					list_delete_item(itr);
+				}
+			}
+			destroy_bg_record(rem_record);
+		}
+		list_iterator_destroy(itr);
+	}
+
 	delete_list = list_create(NULL);
 	while ((bg_record = list_pop(requests))) {
 		itr = list_iterator_create(bg_lists->main);
@@ -1287,29 +1326,38 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 				tmp_record.ionode_bitmap)) {
 			/* here we know the error block doesn't exist
 			   so just set the state here */
-			slurm_mutex_unlock(&block_state_mutex);
-			rc = put_block_in_error_state(bg_record, reason);
-			slurm_mutex_lock(&block_state_mutex);
+			error_bg_record = bg_record;
 		}
 	}
 	list_destroy(requests);
 
+	sort_bg_record_inc_size(bg_lists->main);
+	last_bg_update = time(NULL);
+	slurm_mutex_unlock(&block_state_mutex);
+
+cleanup:
+	if (!slurmctld_locked)
+		unlock_slurmctld(job_write_lock);
+	FREE_NULL_BITMAP(tmp_record.mp_bitmap);
+	FREE_NULL_BITMAP(tmp_record.ionode_bitmap);
+	if (error_bg_record) {
+		/* all locks must be released before going into
+		 * put_block_in_error_state.
+		 */
+		if (slurmctld_locked)
+			unlock_slurmctld(job_write_lock);
+		rc = put_block_in_error_state(error_bg_record, reason);
+		if (slurmctld_locked)
+			lock_slurmctld(job_write_lock);
+	}
 	if (delete_list) {
 		bool delete_it = 0;
 		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
 			delete_it = 1;
-		slurm_mutex_unlock(&block_state_mutex);
 		free_block_list(NO_VAL, delete_list, delete_it, 0);
 		list_destroy(delete_list);
+		delete_list = NULL;
 	}
-	slurm_mutex_lock(&block_state_mutex);
-	sort_bg_record_inc_size(bg_lists->main);
-	slurm_mutex_unlock(&block_state_mutex);
-	last_bg_update = time(NULL);
-
-cleanup:
-	FREE_NULL_BITMAP(tmp_record.mp_bitmap);
-	FREE_NULL_BITMAP(tmp_record.ionode_bitmap);
 
 	return rc;
 
@@ -1568,10 +1616,13 @@ extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 
 	if (!list_count(bg_lists->job_running)
 	    && (num_unused_cpus != num_possible_unused_cpus)) {
+		/* This should never happen, but if it does reset the
+		   num_unused_cpus and go on your way.
+		*/
 		error("Hey we are here with no jobs and we have only "
 		      "%d usuable cpus.  We should have %d!",
 		      num_unused_cpus, num_possible_unused_cpus);
-		xassert(0);
+		//xassert(0);
 		num_unused_cpus = num_possible_unused_cpus;
 	}
 

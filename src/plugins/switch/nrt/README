@@ -1,0 +1,26 @@
+Sample tests
+
+./srun -N2 --network="sn_all,devtype=ib" hostname
+./srun -N2 --network="sn_all,devtype=iponly" hostname
+./srun -N2 --network="sn_single,devtype=ib" hostname
+./srun -N2 --network="sn_single,devtype=ib,us" hostname
+./srun -N2 --network="sn_single,devtype=iponly,ipv4" hostname
+./srun -N2 --network="sn_single,devtype=iponly,ipv6" hostname
+./srun -N2 --network="sn_all,ipv6" hostname
+./srun -N2 --network="mlx4_0" hostname
+./srun -N2 --network="eth0" hostname
+./srun -N2 --network="mlx4_0,mpi,lapi" hostname
+./srun -N2 --network="mlx4_0,mpi,lapi,us" hostname
+./srun -N2 --network="mlx4_0,mpi,lapi,instances=3" hostname
+./srun -N2 -n4 --network="mlx4_0,mpi,lapi,us,instances=3" hostname
+./srun -N2 --network="sn_all" hostname
+./srun -N2 --network="sn_all,mpi,lapi" hostname
+./srun -N2 --network="sn_all,mpi,lapi" hostname
+./srun -N2 -n4 --network="sn_all,mpi,lapi,instances=2" hostname
+./srun -N2 -n4 --network="sn_all,mpi,lapi,instances=3,us" hostname
+./srun -N2 --network="mlx4_0,bulk_xfer=1000,us" hostname
+
+FAILURES
+./srun -N2 --network="sn_all,devtype=hfi" hostname
+./srun -N2 --network="sn_single,devtype=hfi" hostname
+./srun -N2 --network="sn_single,devtype=iponly,us" hostname
