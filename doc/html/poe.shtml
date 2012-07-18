@@ -179,14 +179,25 @@ are silently ignored:</p>
 
 <p>There are two critical SLURM configuration parameters for use with PE.
 These configuration parameters should be set in your <b>slurm.conf</b> file.
+<b>LaunchType</b> defines the task launch mechanism to be used and must be set
+to <b>launch/poe</b>.
 <b>SwitchType</b> defines the mechanism used to manage the network switch and
 it must be set to <b>switch/nrt</b> and use IBM's Network Resource Table (NRT)
-interface. In order for the switch/nrt plugin to be built, the NRT header file
-and library must be found at the time the SLURM is built. SLURM searches for
-the nrt.h file in the /usr/include directory by default. If the file is not
-installed there, you can specify a different location using the 
-<b>--with-nrth=PATH</b> option to the configure program, where "PATH" is the
-fully qualified pathname of the parent directory of the nrt.h file.
+interface.</p>
+<pre>
+# Excerpt of slurm.conf
+LaunchType=launch/poe
+SwitchType=switch/nrt
+</pre>
+
+<p>In order for these plugins to be built, the locations of the POE Resource
+Manager header file (permapi.h) the NRT header file (nrt.h) and NRT library
+(libnrt.so) must be identified at the time the SLURM is built.
+SLURM searches for the header files in the /usr/include directory by default.
+If the files are not installed there, you can specify a different location using
+the <b>--with-nrth=PATH</b> option to the configure program, where "PATH" is
+the fully qualified pathname of the parent directory of the nrt.h and permapi.h
+files.
 SLURM searches for the libnrt.so file in the /usr/lib and /usr/lib64 directories
 by default. If the file is not installed there, you can specify a different
 location using the <b>--with-nrtlib=PATH</b> option to the configure program,
@@ -218,6 +229,6 @@ MP_POOL=slurm
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 16 July 2012</p></td>
+<p style="text-align:center;">Last modified 18 July 2012</p></td>
 
 <!--#include virtual="footer.txt"-->
