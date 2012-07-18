@@ -5,7 +5,7 @@ AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common \
-	 -I$(top_srcdir)/src/srun/libsrun
+	   -I$(top_srcdir)/src/srun/libsrun $(NRT_CPPFLAGS)
 
 # making a .la
 
