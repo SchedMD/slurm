@@ -285,8 +285,7 @@ static int handle_spank_mode (int argc, char *argv[])
 	if (get_jobid_uid_from_env (&jobid, &uid) < 0)
 		return error ("spank environment invalid");
 
-	verbose ("Running spank/%s for jobid [%u] uid [%u]",
-		mode, jobid, uid);
+	debug("Running spank/%s for jobid [%u] uid [%u]", mode, jobid, uid);
 
 	if (strcmp (mode, "prolog") == 0) {
 		if (spank_job_prolog (jobid, uid) < 0)

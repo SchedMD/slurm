@@ -2365,6 +2365,8 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 	bg_record = find_bg_record_in_list(bg_lists->main,
 					   block_desc_ptr->bg_block_id);
 	if (!bg_record) {
+		error("update_block: block %s not found",
+		      block_desc_ptr->bg_block_id);
 		slurm_mutex_unlock(&block_state_mutex);
 		return ESLURM_INVALID_BLOCK_NAME;
 	}
@@ -2448,6 +2450,8 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 	if (block_desc_ptr->state == BG_BLOCK_ERROR_FLAG) {
 		bg_record_t *found_record = NULL;
 		List delete_list = list_create(NULL);
+		bool delete_it = 0;
+
 		/* This loop shouldn't do much in regular Dynamic mode
 		   since there shouldn't be overlapped blocks.  But if
 		   there is a trouble block that isn't going away and
@@ -2494,11 +2498,14 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 				       found_record->bg_block_id,
 				       bg_record->bg_block_id);
 			}
+			resume_block(found_record);
 			list_push(delete_list, found_record);
 		}
 		list_iterator_destroy(itr);
 		slurm_mutex_unlock(&block_state_mutex);
-		free_block_list(NO_VAL, delete_list, 0, 0);
+		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
+			delete_it = 1;
+		free_block_list(NO_VAL, delete_list, delete_it, 0);
 		list_destroy(delete_list);
 		put_block_in_error_state(bg_record, reason);
 	} else if (block_desc_ptr->state == BG_BLOCK_FREE) {
