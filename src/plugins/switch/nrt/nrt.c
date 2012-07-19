@@ -1082,6 +1082,7 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 					hfi_table = (nrt_hfi_task_info_t *)
 						    tableinfo[table_inx].table;
 					hfi_table += task_id;
+					hfi_table->lid = adapter->lid;
 					hfi_table->task_id = task_id;
 					hfi_table->win_id = window->window_id;
 				} else if ((adapter->adapter_type == NRT_HPCE)||
