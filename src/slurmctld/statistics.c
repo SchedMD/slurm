@@ -125,8 +125,9 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 	buffer_ptr[0] = xfer_buf_data(buffer);
 }
 
-/* Reset all scheduling statistics */
-extern void reset_stats(void)
+/* Reset all scheduling statistics
+ * level IN - clear backfilled_jobs count if set */
+extern void reset_stats(int level)
 {
 	slurmctld_diag_stats.proc_req_raw = 0;
 	slurmctld_diag_stats.proc_req_threads = 0;
@@ -140,7 +141,10 @@ extern void reset_stats(void)
 	slurmctld_diag_stats.jobs_canceled = 0;
 	slurmctld_diag_stats.jobs_failed = 0;
 
-	slurmctld_diag_stats.backfilled_jobs = 0;
+	/* Just resetting this value when reset requested explicitly */
+	if (level)
+		slurmctld_diag_stats.backfilled_jobs = 0;
+
 	slurmctld_diag_stats.last_backfilled_jobs = 0;
 	slurmctld_diag_stats.bf_cycle_counter = 0;
 	slurmctld_diag_stats.bf_cycle_sum = 0;
