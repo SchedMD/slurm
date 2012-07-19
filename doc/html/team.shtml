@@ -28,6 +28,7 @@ organizations. Lead SLURM developers are:
 <li>Daniel Christians (HP)</li>
 <li>Gilles Civario (Bull)</li>
 <li>Chuck Clouston (Bull)</li>
+<li>Francois Diakhate (CEA, France)</li>
 <li>Phil Eckert (Lawrence Livermore National Laboratory)</li>
 <li>Yuri D'Elia (Center for Biomedicine, EURAC Research, Italy)</li>
 <li>Carles Fenoy (Barcelona Supercomputer Center, Spain)</li>
@@ -110,6 +111,6 @@ organizations. Lead SLURM developers are:
 <li>Damien François (UCL)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 30 May 2012</p>
+<p style="text-align:center;">Last modified 19 July 2012</p>
 
 <!--#include virtual="footer.txt"-->
