@@ -1568,7 +1568,7 @@ extern void reset_first_job_id(void);
 extern void reset_job_bitmaps (void);
 
 /* Reset all scheduling statistics */
-extern void reset_stats(void);
+extern void reset_stats(int level);
 
 /*
  * restore_node_features - Make node and config (from slurm.conf) fields
