@@ -31,6 +31,10 @@ documents those changes that are of interest to users and admins.
     is always set when sending or receiving a message.
  -- Reset backfilled job counter only when explicitly cleared using scontrol.
     Patch from Alejandro Lucero Palau, BSC.
+ -- BLUEGENE - Fix for handling blocks when a larger block will not free and
+    while it is attempting to free underlying hardware is marked in error
+    making small blocks overlapping with the freeing block.  This only
+    applies to dynamic layout mode.
 
 * Changes in SLURM 2.4.1
 ========================

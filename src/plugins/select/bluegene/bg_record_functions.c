@@ -1305,7 +1305,6 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			if (!blocks_overlap(bg_record, found_record))
 				continue;
 			list_push(delete_list, found_record);
-			list_remove(itr);
 		}
 		list_iterator_destroy(itr);
 
