@@ -29,6 +29,8 @@ documents those changes that are of interest to users and admins.
  -- BGL - Fix for syncing users on block from Tim Wickberg
  -- Fix initialization of protocol_version for some messages to make sure it
     is always set when sending or receiving a message.
+ -- Reset backfilled job counter only when explicitly cleared using scontrol.
+    Patch from Alejandro Lucero Palau, BSC.
 
 * Changes in SLURM 2.4.1
 ========================

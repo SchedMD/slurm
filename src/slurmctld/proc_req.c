@@ -4260,7 +4260,7 @@ static void _slurm_rpc_dump_stats(slurm_msg_t * msg)
 	response_msg.msg_type = RESPONSE_STATS_INFO;
 
 	if (request_msg->command_id == STAT_COMMAND_RESET) {
-		reset_stats();
+		reset_stats(1);
 		pack_all_stat(0, &dump, &dump_size, msg->protocol_version);
 		response_msg.data = dump;
 		response_msg.data_size = dump_size;

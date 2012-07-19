@@ -514,6 +514,7 @@ static int _attempt_backfill(void)
 	int job_test_count = 0;
 	uint32_t *uid = NULL, nuser = 0;
 	uint16_t *njobs = NULL;
+	bool already_counted;
 
 #ifdef HAVE_CRAY
 	/*
@@ -595,6 +596,7 @@ static int _attempt_backfill(void)
 			info("backfill test for job %u", job_ptr->job_id);
 
 		slurmctld_diag_stats.bf_last_depth++;
+		already_counted = false;
 
 		if (max_backfill_job_per_user) {
 			for (j = 0; j < nuser; j++) {
@@ -772,7 +774,11 @@ static int _attempt_backfill(void)
 		debug2("backfill: entering _try_sched for job %u.",
 		       job_ptr->job_id);
 
-		slurmctld_diag_stats.bf_last_depth_try++;
+		if (!already_counted) {
+			slurmctld_diag_stats.bf_last_depth_try++;
+			already_counted = true;
+		}
+
 		j = _try_sched(job_ptr, &avail_bitmap,
 			       min_nodes, max_nodes, req_nodes);
 		debug2("backfill: finished _try_sched for job %u.",

@@ -1576,7 +1576,7 @@ static void *_slurmctld_background(void *no_data)
 			/* Resetting stats values */
 			last_proc_req_start = now;
 			next_stats_reset = now - (now % 86400) + 86400;
-			reset_stats();
+			reset_stats(0);
 		}
 
 		/* Reassert this machine as the primary controller.
