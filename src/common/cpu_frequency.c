@@ -83,7 +83,7 @@ cpu_freq_init(slurmd_conf_t *conf)
 	struct stat statbuf;
 	FILE *fp;
 	char value[LINE_LEN];
-	unsigned int i;
+	unsigned int i, j;
 
 	/* check for cpufreq support */
 	if ( stat(PATH_TO_CPU "cpu0/cpufreq", &statbuf) != 0 ) {
@@ -136,6 +136,9 @@ cpu_freq_init(slurmd_conf_t *conf)
 		}
 		strcpy(cpufreq[i].reset_governor, value);
 		fclose(fp);
+		j = strlen(cpufreq[i].reset_governor);
+		if ((j > 0) && (cpufreq[i].reset_governor[j - 1] == '\n'))
+			cpufreq[i].reset_governor[j - 1] = '\0';
 
 		snprintf(path, sizeof(path),
 			 PATH_TO_CPU "cpu%u/cpufreq/scaling_min_freq", i);
@@ -219,10 +222,10 @@ cpu_freq_cpuset_validate(slurmd_job_t *job) {
 	debug2("cpu_freq_cpuset_validate: request = %12d  %8x",
 	       job->cpu_freq, job->cpu_freq);
 	debug2("  jobid=%u, stepid=%u, tasks=%u cpu/task=%u, cpus=%u",
-	     job->jobid,job->stepid,job->node_tasks,
+	     job->jobid, job->stepid, job->node_tasks,
 	       job->cpus_per_task,job->cpus);
 	debug2("  cpu_bind_type=%4x, cpu_bind map=%s",
-	       job->cpu_bind_type,job->cpu_bind);
+	       job->cpu_bind_type, job->cpu_bind);
 
 	if (!cpu_freq_count)
 		return;
@@ -257,7 +260,6 @@ cpu_freq_cpuset_validate(slurmd_job_t *job) {
 	} while ( (cpu_str = strtok_r(NULL, ",", &savestr) ) != NULL);
 
 	for (cpuidx=0; cpuidx < cpu_freq_count; cpuidx++) {
-
 		if (bit_test(cpus_to_set, cpuidx)) {
 			_cpu_freq_find_valid(job->cpu_freq, cpuidx);
 		}
@@ -605,7 +607,7 @@ cpu_freq_reset(slurmd_job_t *job)
 	char path[SYSFS_PATH_MAX];
 	FILE *fp;
 	char value[LINE_LEN];
-	unsigned int i,j;
+	unsigned int i, j;
 
 	if ((!cpu_freq_count) || (!cpufreq))
 		return;
@@ -630,12 +632,13 @@ cpu_freq_reset(slurmd_job_t *job)
 		if ( ( fp = fopen(path, "w") ) == NULL )
 			continue;
 		fputs(cpufreq[i].reset_governor, fp);
+		fputc('\n', fp);
 		fclose(fp);
 
 		j++;
 		debug3("cpu_freq_reset: "
 		       "cpu %u, frequency reset: %u, governor reset: %s",
-		     i,cpufreq[i].reset_frequency,cpufreq[i].reset_governor);
+		       i,cpufreq[i].reset_frequency,cpufreq[i].reset_governor);
 	}
 	debug("cpu_freq_reset: #cpus reset = %u", j);
 }
