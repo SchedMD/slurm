@@ -486,10 +486,10 @@ _make_tmpdir(slurmd_job_t *job)
 	else if (mkdir(tmpdir, 0700) < 0) {
 		struct stat st;
 		int mkdir_errno = errno;
-		
+
 		if (stat(tmpdir, &st)) { /* does the file exist ? */
 			/* show why we were not able to create it */
-			error("Unable to create TMPDIR [%s]: %s", 
+			error("Unable to create TMPDIR [%s]: %s",
 			      tmpdir, strerror(mkdir_errno));
 		} else if (!S_ISDIR(st.st_mode)) {  /* is it a directory? */
 			error("TMPDIR [%s] is not a directory", tmpdir);
