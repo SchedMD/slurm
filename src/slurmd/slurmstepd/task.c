@@ -480,16 +480,20 @@ _make_tmpdir(slurmd_job_t *job)
 	if (!(tmpdir = getenvp(job->env, "TMPDIR")))
 		setenvf(&job->env, "TMPDIR", "/tmp"); /* task may want it set */
 	else if (mkdir(tmpdir, 0700) < 0) {
-		if (errno == EEXIST) {
-			struct stat st;
+		struct stat st;
+		int mkdir_errno = errno;
+		
+		if (stat(tmpdir, &st)) { /* does the file exist ? */
+			/* show why we were not able to create it */
+			error("Unable to create TMPDIR [%s]: %s", 
+			      tmpdir, strerror(mkdir_errno));
+		} else if (!S_ISDIR(st.st_mode)) {  /* is it a directory? */
+			error("TMPDIR [%s] is not a directory", tmpdir);
+		} else if (eaccess(tmpdir, X_OK|W_OK)) /* check permissions */
+			error("TMPDIR [%s] is not writeable", tmpdir);
+		else
+			return;
 
-			if (stat(tmpdir, &st) == 0 && /* does user have access? */
-			    S_ISDIR(st.st_mode) && /* is it a directory? */
-			    ((st.st_mode & S_IWOTH) || /* can user write there? */
-			     (st.st_uid == job->uid && (st.st_mode & S_IWUSR))))
-				return;
-		}
-		error("Unable to create TMPDIR [%s]: %m", tmpdir);
 		error("Setting TMPDIR to /tmp");
 		setenvf(&job->env, "TMPDIR", "/tmp");
 	}
