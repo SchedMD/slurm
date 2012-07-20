@@ -526,30 +526,83 @@ static char *_build_poe_command(uint32_t job_id)
 			setenv("MP_CPU_USE", "multiple", 1);
 	}
 	if (opt.network) {
-		if (strstr(opt.network, "hfi"))
-			setenv("MP_DEVTYPE", "hfi", 1);
-		else if  (strstr(opt.network, "ib"))
-			setenv("MP_DEVTYPE", "ib", 1);
-	}
-	if (opt.network) {
-		if (strstr(opt.network, "sn_all"))
-			setenv("MP_EUIDEVICE", "sn_all", 1);
-		else if (strstr(opt.network, "sn_single"))
-			setenv("MP_EUIDEVICE", "sn_single", 1);
-		else if ((tmp_str = strstr(opt.network, "eth"))) {
-			char buf[5];
-			strncpy(buf, tmp_str, 5);
-			buf[4] = '\0';
-			setenv("MP_EUIDEVICE", buf, 1);
+		bool protocol_set = false;
+		char *save_ptr = NULL, *token;
+		char *network_str = xstrdup(opt.network);
+
+		token = strtok_r(network_str, ",", &save_ptr);
+		while (token) {
+			/* bulk_xfer options */
+			if (!strncasecmp(token, "bulk_xfer", 9)) {
+				setenv("MP_USE_BULK_XFER", "yes", 1);
+
+			/* device name options */
+			} else if (!strncasecmp(token, "devname=", 8)) {
+				/* Ignored by POE */
+
+			/* device type options */
+			} else if (!strncasecmp(token, "devtype=", 8)) {
+				char *type_ptr = token + 8;
+				if (!strcasecmp(type_ptr, "ib"))
+					setenv("MP_DEVTYPE", type_ptr, 1);
+				else if (!strcasecmp(type_ptr, "hfi"))
+					setenv("MP_DEVTYPE", type_ptr, 1);
+
+			/* instances options */
+			} else if (!strncasecmp(token, "instances=", 10)) {
+				/* Ignored */
+
+			/* network options */
+			} else if (!strcasecmp(token, "ip")   ||
+				  !strcasecmp(token, "ipv4")  ||
+				  !strcasecmp(token, "ipv6")) {
+				setenv("MP_EUILIB", "IP", 1);
+			} else if (!strcasecmp(token, "us")) {
+				setenv("MP_EUILIB", "US", 1);
+
+			/* protocol options */
+			} else if ((!strncasecmp(token, "lapi", 4)) ||
+				   (!strncasecmp(token, "mpi",  3)) ||
+				   (!strncasecmp(token, "pami", 4)) ||
+				   (!strncasecmp(token, "upc",  3))) {
+				if (!protocol_set) {
+					protocol_set = true;
+					protocol = NULL;
+				}
+				if (protocol)
+					xstrcat(protocol, ",");
+				xstrcat(protocol, token);
+				setenv("MP_MSG_API", protocol, 0);
+
+			/* adapter options */
+			} else if (!strcasecmp(token, "sn_all")) {
+				setenv("MP_EUIDEVICE", "sn_all", 1);
+			} else if (!strcasecmp(token, "sn_single")) {
+				setenv("MP_EUIDEVICE", "sn_single", 1);
+
+			/* Collective Acceleration Units (CAU) */
+			} else if (!strncasecmp(token, "cau=", 4)) {
+				setenv("MP_COLLECTIVE_GROUPS", token + 4, 1);
+
+			/* Immediate Send Slots Per Window */
+			} else if (!strncasecmp(token, "immed=", 6)) {
+				setenv("MP_IMM_SEND_BUFFERS", token + 6, 1);
+
+			/* other */
+			} else {
+				info("switch/nrt: invalid option: %s", token);
+			}
+			token = strtok_r(NULL, ",", &save_ptr);
 		}
+		if (protocol_set)
+			xfree(protocol);
+		else
+			setenv("MP_MSG_API", protocol, 0);
+	} else {
+		if (!strcmp(protocol, "multi"))
+			setenv("MP_MSG_API", protocol, 0);
 	}
-	if (opt.network) {
-		if (strstr(opt.network, "ip") || strstr(opt.network, "ip"))
-			setenv("MP_EUILIB", "IP", 1);
-		else if (strstr(opt.network, "us") ||
-			 strstr(opt.network, "US"))
-			setenv("MP_EUILIB", "US", 1);
-	}
+
 	if (opt.nodelist) {
 		char *fname = NULL, *host_name, *host_line;
 		pid_t pid = getpid();
@@ -598,20 +651,6 @@ static char *_build_poe_command(uint32_t job_id)
 	/* } */
 	if (opt.labelio)
 		setenv("MP_LABELIO", "yes", 0);
-	if (!strcmp(protocol, "multi"))
-		setenv("MP_MSG_API", "mpi", 0);
-	else if (!strcmp(protocol, "mpi"))
-		setenv("MP_MSG_API", "mpi", 0);
-	else if (!strcmp(protocol, "lapi"))
-		setenv("MP_MSG_API", "lapi", 0);
-	else if (!strcmp(protocol, "pami"))
-		setenv("MP_MSG_API", "pami", 0);
-	else if (!strcmp(protocol, "upc"))
-		setenv("MP_MSG_API", "upc", 0);
-	else if (!strcmp(protocol, "shmem")) {
-		setenv("MP_MSG_API", "shmem,xmi", 0);
-		setenv("MP_USE_BULK_XFER", "no", 0);
-	}
 	if (opt.min_nodes != NO_VAL) {
 		snprintf(value, sizeof(value), "%u", opt.min_nodes);
 		setenv("MP_NODES", value, 1);
