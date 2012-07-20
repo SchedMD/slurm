@@ -547,6 +547,7 @@ static char *_build_poe_command(uint32_t job_id)
 					setenv("MP_DEVTYPE", type_ptr, 1);
 				else if (!strcasecmp(type_ptr, "hfi"))
 					setenv("MP_DEVTYPE", type_ptr, 1);
+				/* POE ignores other options */
 
 			/* instances options */
 			} else if (!strncasecmp(token, "instances=", 10)) {
