@@ -700,11 +700,6 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		opt.ntasks = pe_job_req->total_tasks;
 	}
 
-	xfree(opt.mpi_type);
-	opt.mpi_type = xstrdup(pe_job_req->network_usage.protocols);
-	xfree(opt.network);
-	opt.network = xstrdup(pe_job_req->network_usage.mode);
-
 	create_srun_job(&job, &got_alloc, slurm_started);
 	return 0;
 }
