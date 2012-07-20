@@ -432,8 +432,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		ret_info->protocol[i] = xstrdup(table_ptr->protocol_name);
 		ret_info->mode[i] = xstrdup(opt.network);
 		ret_info->devicename[i] = xstrdup(table_ptr->adapter_name);
-		/* FIXME: we don't know how to handle instances yet. */
-		ret_info->instance[i] = 1;
+		ret_info->instance[i] = table_ptr->instance;
 		info("%d: %s %s %s %d", i, ret_info->protocol[i], ret_info->mode[i], ret_info->devicename[i], ret_info->instance[i]);
 	}
 	xfree(network_id_list);

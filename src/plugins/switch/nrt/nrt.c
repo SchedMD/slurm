@@ -1116,6 +1116,7 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 					protocol_name,
 					NRT_MAX_PROTO_NAME_LEN);
 				tableinfo[table_inx].context_id = context_id;
+				tableinfo[table_inx].instance   = j;
 				tableinfo[table_inx].table_id   = table_id;
 			}  /* for each table */
 		}  /* for each context */
@@ -1295,6 +1296,7 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 				protocol_name,
 				NRT_MAX_PROTO_NAME_LEN);
 			tableinfo[table_inx].context_id = context_id;
+			tableinfo[table_inx].instance   = table_id;
 			tableinfo[table_inx].table_id   = table_id;
 		}  /* for each table */
 	}  /* for each context */
@@ -1670,6 +1672,7 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 		info("  adapter_type: %s",
 		     _adapter_type_str(j->tableinfo[i].adapter_type));
 		info("  context_id: %u", j->tableinfo[i].context_id);
+		info("  instance: %u", j->tableinfo[i].instance);
 		info("  network_id: %lu", j->tableinfo[i].network_id);
 		info("  protocol_name: %s", j->tableinfo[i].protocol_name);
 		info("  table_id: %u", j->tableinfo[i].table_id);
@@ -2731,7 +2734,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		 * NRT's records. Specifically the IPONLY devices report their
 		 * maximum window count is 0, but then report a non-zero
 		 * current window count. */
-		jp->tables_per_task = 0;
+		//jp->tables_per_task = 0;
 	}
 
 	if (instances <= 0) {
@@ -2839,6 +2842,7 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp)
 	adapter_type = tableinfo->adapter_type;
 	pack32(adapter_type, buf);
 	pack16(tableinfo->context_id, buf);
+	pack32(tableinfo->instance, buf);
 	pack64(tableinfo->network_id, buf);
 	packmem(tableinfo->protocol_name, NRT_MAX_PROTO_NAME_LEN, buf);
 	if (!jp->user_space)
@@ -2961,6 +2965,7 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp)
 	safe_unpack32(&adapter_type, buf);
 	tableinfo->adapter_type = (int) adapter_type;
 	safe_unpack16(&tableinfo->context_id, buf);
+	safe_unpack32(&tableinfo->instance, buf);
 	safe_unpack64(&tableinfo->network_id, buf);
 	safe_unpackmem_ptr(&name_ptr, &tmp_32, buf);
 	if (tmp_32 != NRT_MAX_PROTO_NAME_LEN)

@@ -59,6 +59,7 @@ typedef struct nrt_tableinfo {
 	char adapter_name[NRT_MAX_ADAPTER_NAME_LEN]; /* eth0, mlx4_0, etc. */
 	nrt_adapter_t adapter_type;
 	nrt_context_id_t context_id;
+	uint32_t instance;
 	nrt_network_id_t network_id;
 	char protocol_name[NRT_MAX_PROTO_NAME_LEN];  /* MPI, LAPI, UPC, etc. */
 	nrt_table_id_t table_id;
