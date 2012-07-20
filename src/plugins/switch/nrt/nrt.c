@@ -1116,7 +1116,7 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 					protocol_name,
 					NRT_MAX_PROTO_NAME_LEN);
 				tableinfo[table_inx].context_id = context_id;
-				tableinfo[table_inx].instance   = j;
+				tableinfo[table_inx].instance   = j + 1;
 				tableinfo[table_inx].table_id   = table_id;
 			}  /* for each table */
 		}  /* for each context */
@@ -1296,7 +1296,7 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 				protocol_name,
 				NRT_MAX_PROTO_NAME_LEN);
 			tableinfo[table_inx].context_id = context_id;
-			tableinfo[table_inx].instance   = table_id;
+			tableinfo[table_inx].instance   = table_id + 1;
 			tableinfo[table_inx].table_id   = table_id;
 		}  /* for each table */
 	}  /* for each context */
