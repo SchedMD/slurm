@@ -94,21 +94,6 @@ extern FILE *pmd_lfp;
 	}
 /************************************/
 
-static nrt_job_key_t _get_nrt_job_key(srun_job_t *job)
-{
-	job_step_create_response_msg_t *resp;
-	nrt_job_key_t job_key;
-
-	if (!job || !job->step_ctx)
-		return NO_VAL;
-
-	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &resp);
-	if (!resp)
-	    return NO_VAL;
-	slurm_jobinfo_ctx_get(resp->switch_job, NRT_JOBINFO_KEY, &job_key);
-	return job_key;
-}
-
 /* The connection communicates information to and from the resource
  * manager, so that the resource manager can start the parallel task
  * manager, and is available for the caller to communicate directly
@@ -391,6 +376,10 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	hostlist_t hl;
 	char *host;
 	host_usage_t *host_ptr;
+	int table_cnt;
+	nrt_tableinfo_t *tables, *table_ptr;
+	nrt_job_key_t job_key;
+	job_step_create_response_msg_t *resp;
 
 	if (pm_type == PM_PMD) {
 		PMD_LOG("pe_rm_get_job_info called\n");
@@ -408,18 +397,35 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	ret_info->rm_id = NULL;
 	ret_info->procs = job->ntasks;
 	ret_info->max_instances = 1;
-	ret_info->job_key = _get_nrt_job_key(job);
 	ret_info->check_pointable = 0;
-	ret_info->protocol = xmalloc(sizeof(char *)*2);
-	ret_info->protocol[0] = xstrdup(opt.mpi_type);
-	ret_info->mode = xmalloc(sizeof(char *)*2);
-	ret_info->mode[0] = xstrdup(opt.network);
-	ret_info->instance = xmalloc(sizeof(int)*3);
-	ret_info->instance[0] = 1;
-	ret_info->instance[1] = -1;
-/* FIXME: not sure how to handle devicename yet */
-	ret_info->devicename = xmalloc(sizeof(char *)*2);
-	ret_info->devicename[0] = xstrdup("mlx4_0");
+	if (!job || !job->step_ctx)
+		return -1;
+
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &resp);
+	if (!resp)
+		return -1;
+	slurm_jobinfo_ctx_get(resp->switch_job, NRT_JOBINFO_KEY, &job_key);
+	ret_info->job_key = job_key;
+
+	slurm_jobinfo_ctx_get(
+		resp->switch_job, NRT_JOBINFO_TABLESPERTASK, &table_cnt);
+	ret_info->protocol = xmalloc(sizeof(char *)*(table_cnt+1));
+	ret_info->mode = xmalloc(sizeof(char *)*(table_cnt+1));
+	ret_info->devicename = xmalloc(sizeof(char *)*(table_cnt+1));
+	ret_info->instance = xmalloc(sizeof(int)*(table_cnt+2));
+
+	slurm_jobinfo_ctx_get(resp->switch_job, NRT_JOBINFO_TABLEINFO, &tables);
+	info("got count of %d", table_cnt);
+	for (i=0, table_ptr=tables; i<table_cnt; i++, table_ptr++) {
+		ret_info->protocol[i] = xstrdup(table_ptr->protocol_name);
+		ret_info->mode[i] = xstrdup(opt.network);
+		ret_info->devicename[i] = xstrdup(table_ptr->adapter_name);
+		/* FIXME: we don't know how to handle instances yet. */
+		ret_info->instance[i] = 1;
+		info("%d: %s %s %s %d", i, ret_info->protocol[i], ret_info->mode[i], ret_info->devicename[i], ret_info->instance[i]);
+	}
+	ret_info->instance[i] = -1;
+	/* FIXME: we don't know the number of networks yet. */
 	ret_info->num_network = 1;
 	ret_info->host_count = job->nhosts;
 
