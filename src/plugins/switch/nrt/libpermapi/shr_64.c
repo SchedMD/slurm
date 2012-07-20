@@ -380,6 +380,8 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	nrt_tableinfo_t *tables, *table_ptr;
 	nrt_job_key_t job_key;
 	job_step_create_response_msg_t *resp;
+	int network_id_cnt = 0;
+	nrt_network_id_t *network_id_list;
 
 	if (pm_type == PM_PMD) {
 		PMD_LOG("pe_rm_get_job_info called\n");
@@ -416,7 +418,17 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 
 	slurm_jobinfo_ctx_get(resp->switch_job, NRT_JOBINFO_TABLEINFO, &tables);
 	info("got count of %d", table_cnt);
+	network_id_list = xmalloc(sizeof(nrt_network_id_t) * table_cnt);
 	for (i=0, table_ptr=tables; i<table_cnt; i++, table_ptr++) {
+		for (j = 0; j < network_id_cnt; j++) {
+			if (table_ptr->network_id == network_id_list[j])
+				break;
+		}
+		if (j >= network_id_cnt) {
+			/* add this new network ID to our table */
+			network_id_list[network_id_cnt++] =
+				table_ptr->network_id;
+		}
 		ret_info->protocol[i] = xstrdup(table_ptr->protocol_name);
 		ret_info->mode[i] = xstrdup(opt.network);
 		ret_info->devicename[i] = xstrdup(table_ptr->adapter_name);
@@ -424,9 +436,9 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		ret_info->instance[i] = 1;
 		info("%d: %s %s %s %d", i, ret_info->protocol[i], ret_info->mode[i], ret_info->devicename[i], ret_info->instance[i]);
 	}
+	xfree(network_id_list);
 	ret_info->instance[i] = -1;
-	/* FIXME: we don't know the number of networks yet. */
-	ret_info->num_network = 1;
+	ret_info->num_network = network_id_cnt;
 	ret_info->host_count = job->nhosts;
 
 	step_layout = launch_common_get_slurm_step_layout(job);
