@@ -1457,7 +1457,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 	select_bitmap = NULL;	/* nothing left to free */
 	allocate_nodes(job_ptr);
-	build_node_details(job_ptr);
+	build_node_details(job_ptr, true);
 
 	/* This could be set in the select plugin so we want to keep
 	   the flag. */
@@ -2054,8 +2054,9 @@ static int _nodes_in_sets(bitstr_t *req_bitmap,
 /*
  * build_node_details - sets addresses for allocated nodes
  * IN job_ptr - pointer to a job record
+ * IN new_alloc - set if new job allocation, cleared if state recovery
  */
-extern void build_node_details(struct job_record *job_ptr)
+extern void build_node_details(struct job_record *job_ptr, bool new_alloc)
 {
 	hostlist_t host_list = NULL;
 	struct node_record *node_ptr;
@@ -2076,11 +2077,23 @@ extern void build_node_details(struct job_record *job_ptr)
 	xrealloc(job_ptr->node_addr,
 		 (sizeof(slurm_addr_t) * job_ptr->node_cnt));
 
-	xfree(job_ptr->batch_host);
 #ifdef HAVE_FRONT_END
-	job_ptr->front_end_ptr = assign_front_end();
-	xassert(job_ptr->front_end_ptr);
-	job_ptr->batch_host = xstrdup(job_ptr->front_end_ptr->name);
+	if (new_alloc) {
+		/* Find available front-end node and assign it to this job */
+		xfree(job_ptr->batch_host);
+		job_ptr->front_end_ptr = assign_front_end(NULL);
+		if (job_ptr->front_end_ptr) {
+			job_ptr->batch_host = xstrdup(job_ptr->
+						      front_end_ptr->name);
+		}
+	} else if (job_ptr->batch_host) {
+		/* Reset pointer to this job's front-end node */
+		job_ptr->front_end_ptr = assign_front_end(job_ptr->batch_host);
+		if (!job_ptr->front_end_ptr)
+			xfree(job_ptr->batch_host);
+	}
+#else
+	xfree(job_ptr->batch_host);
 #endif
 	while ((this_node_name = hostlist_shift(host_list))) {
 		if ((node_ptr = find_node_record(this_node_name))) {
