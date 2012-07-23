@@ -727,5 +727,10 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	}
 
 	create_srun_job(&job, &got_alloc, slurm_started);
+
+	/* make sure we set up a signal handler */
+	if (!slurm_started)
+		pre_launch_srun_job(job, 0);
+
 	return 0;
 }
