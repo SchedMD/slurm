@@ -388,315 +388,6 @@ static bool _multi_prog_parse(char *line, int length, int step_id)
 	}
 }
 
-/* Build a POE command line based upon srun options (using global variables) */
-static char *_build_poe_command(uint32_t job_id)
-{
-	int i, step_id;
-	char *cmd_line = NULL, *tmp_str;
-	char dname[512], value[32];
-	bool need_cmdfile = false;
-	char *protocol = "mpi";
-
-	/*
-	 * In order to support MPMD or job steps smaller than the job
-	 * allocation size, specify a command file using the poe option
-	 * -cmdfile or MP_CMDFILE env var. See page 43 here:
-	 * http://publib.boulder.ibm.com/epubs/pdf/c2367811.pdf
-	 * The command file should contain one more more lines of the following
-	 * form:
-	 * <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args>
-	 * IBM is working to eliminate the need to specify protocol, but until
-	 * then it might be determined as follows:
-	 *
-	 * We are currently looking at 'ldd <program>' and checking the name of
-	 * the MPI and PAMI libraries and on x86, also checking to see if Intel
-	 * MPI library is used.
-	 * This is done at runtime in PMD and depending on '-mpilib' option and
-	 * '-config' option used, change the LD_LIBRARY_PATH to properly
-	 * support the different PE Runtime levels the customer have installed
-	 * on their cluster.
-	 *
-	 * There is precedence order that would be important if multiple
-	 * libraries are listed in the 'ldd output' as long as you know it is
-	 * not a mixed protocol (i.e. Openshmem + MPI, UPC + MPI, etc)
-	 * application.
-	 * 1) If MPI library is found (libmpi.so) -> use 'mpi'
-	 * 2) if Openshmem library is found (libshmem.so) -> use 'shmem'
-	 * 3) if UPC runtime library is found (libxlpgas.so) -> use 'pgas'
-	 * 4) if only PAMI library is found (libpami.so) -> use 'pami'
-	 * 5) if only LAPI library is found (liblapi.so) -> use 'lapi'
-	 */
-	if (opt.multi_prog)
-		need_cmdfile = true;
-	if (opt.ntasks_set && !need_cmdfile) {
-		tmp_str = getenv("SLURM_NPROCS");
-		if (!tmp_str)
-			tmp_str = getenv("SLURM_NNODES");
-		if (tmp_str && (opt.ntasks != atoi(tmp_str)))
-			need_cmdfile = true;
-	}
-
-	if (opt.multi_prog) {
-		protocol = "multi";
-	} else {
-		protocol = _get_cmd_protocol(opt.argv[1]);
-	}
-	debug("cmd:%s protcol:%s", opt.argv[1], protocol);
-
-	step_id = _get_next_stepid(job_id, dname, sizeof(dname));
-
-	if (need_cmdfile) {
-		char *buf;
-		int fd, i, j, k;
-
-		/* NOTE: The command file needs to be in a directory that can
-		 * be read from the compute node(s), so /tmp does not work.
-		 * We use the user's home directory (based upon "HOME"
-		 * environment variable) otherwise use current working
-		 * directory. The file name contains the job ID and step ID. */
-		xstrfmtcat(cmd_fname,
-			   "%s/slurm_cmdfile_%u.%d", dname, job_id, step_id);
-		while ((fd = creat(cmd_fname, 0600)) < 0) {
-			if (errno == EINTR)
-				continue;
-			fatal("creat(%s): %m", cmd_fname);
-		}
-
-		i = strlen(opt.argv[1]) + 128;
-		buf = xmalloc(i);
-		if (opt.multi_prog) {
-			char in_line[512];
-			FILE *fp = fopen(opt.argv[1], "r");
-			if (!fp)
-				fatal("fopen(%s): %m", opt.argv[1]);
-			/* Read and parse SLURM MPMD format file here */
-			while (fgets(in_line, sizeof(in_line), fp))
-				_multi_prog_parse(in_line, 512, -1);
-			fclose(fp);
-			/* Write LoadLeveler MPMD format file here */
-			while (_multi_prog_parse(in_line, 512, step_id))
-				j = xstrfmtcat(buf, "%s\n", in_line);
-		} else {
-			/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args...>*/
-			xstrfmtcat(buf, "%s@%d%c%d%c%s:%d",
-				   opt.argv[1], step_id, '%',
-				   opt.ntasks, '%', protocol, opt.ntasks);
-			for (i = 2; i < opt.argc; i++) /* start at argv[2] */
-				xstrfmtcat(buf, " %s", opt.argv[i]);
-			xstrfmtcat(buf, "\n");
-		}
-		i = 0;
-		j = strlen(buf);
-		while ((k = write(fd, &buf[i], j))) {
-			if (k > 0) {
-				i += k;
-				j -= k;
-			} else if ((errno != EAGAIN) && (errno != EINTR)) {
-				error("write(cmdfile): %m");
-				break;
-			}
-		}
-		(void) close(fd);
-		setenv("MP_NEWJOB", "parallel", 1);
-		setenv("MP_CMDFILE", cmd_fname, 1);
-	} else {
-		xstrfmtcat(cmd_line, " %s", opt.argv[1]);
-		/* Each token gets double quotes around it in case any
-		 * arguments contain spaces */
-		for (i = 2; i < opt.argc; i++) {
-			xstrfmtcat(cmd_line, " \"%s\"", opt.argv[i]);
-		}
-	}
-
-	if (opt.network) {
-		if (strstr(opt.network, "dedicated"))
-			setenv("MP_ADAPTER_USE", "dedicated", 1);
-		else if (strstr(opt.network, "shared"))
-			setenv("MP_ADAPTER_USE", "shared", 1);
-	}
-	if (opt.cpu_bind_type) {
-		if ((opt.cpu_bind_type & CPU_BIND_TO_THREADS) ||
-		    (opt.cpu_bind_type & CPU_BIND_TO_CORES)) {
-			setenv("MP_BINDPROC", "yes", 1);
-		}
-	}
-	if (opt.shared != (uint16_t) NO_VAL) {
-		if (opt.shared)
-			setenv("MP_CPU_USE", "unique", 1);
-		else
-			setenv("MP_CPU_USE", "multiple", 1);
-	}
-	if (opt.network) {
-		bool protocol_set = false;
-		char *save_ptr = NULL, *token;
-		char *network_str = xstrdup(opt.network);
-
-		token = strtok_r(network_str, ",", &save_ptr);
-		while (token) {
-			/* bulk_xfer options */
-			if (!strncasecmp(token, "bulk_xfer", 9)) {
-				setenv("MP_USE_BULK_XFER", "yes", 1);
-
-			/* device name options */
-			} else if (!strncasecmp(token, "devname=", 8)) {
-				/* Ignored by POE */
-
-			/* device type options */
-			} else if (!strncasecmp(token, "devtype=", 8)) {
-				char *type_ptr = token + 8;
-				if (!strcasecmp(type_ptr, "ib"))
-					setenv("MP_DEVTYPE", type_ptr, 1);
-				else if (!strcasecmp(type_ptr, "hfi"))
-					setenv("MP_DEVTYPE", type_ptr, 1);
-				/* POE ignores other options */
-
-			/* instances options */
-			} else if (!strncasecmp(token, "instances=", 10)) {
-				/* Ignored */
-
-			/* network options */
-			} else if (!strcasecmp(token, "ip")   ||
-				  !strcasecmp(token, "ipv4")  ||
-				  !strcasecmp(token, "ipv6")) {
-				setenv("MP_EUILIB", "IP", 1);
-			} else if (!strcasecmp(token, "us")) {
-				setenv("MP_EUILIB", "US", 1);
-
-			/* protocol options */
-			} else if ((!strncasecmp(token, "lapi", 4)) ||
-				   (!strncasecmp(token, "mpi",  3)) ||
-				   (!strncasecmp(token, "pami", 4)) ||
-				   (!strncasecmp(token, "upc",  3))) {
-				if (!protocol_set) {
-					protocol_set = true;
-					protocol = NULL;
-				}
-				if (protocol)
-					xstrcat(protocol, ",");
-				xstrcat(protocol, token);
-				setenv("MP_MSG_API", protocol, 0);
-
-			/* adapter options */
-			} else if (!strcasecmp(token, "sn_all")) {
-				setenv("MP_EUIDEVICE", "sn_all", 1);
-			} else if (!strcasecmp(token, "sn_single")) {
-				setenv("MP_EUIDEVICE", "sn_single", 1);
-
-			/* Collective Acceleration Units (CAU) */
-			} else if (!strncasecmp(token, "cau=", 4)) {
-				setenv("MP_COLLECTIVE_GROUPS", token + 4, 1);
-
-			/* Immediate Send Slots Per Window */
-			} else if (!strncasecmp(token, "immed=", 6)) {
-				setenv("MP_IMM_SEND_BUFFERS", token + 6, 1);
-
-			/* other */
-			} else {
-				info("switch/nrt: invalid option: %s", token);
-			}
-			token = strtok_r(NULL, ",", &save_ptr);
-		}
-		if (protocol_set)
-			xfree(protocol);
-		else
-			setenv("MP_MSG_API", protocol, 0);
-	} else {
-		if (!strcmp(protocol, "multi"))
-			setenv("MP_MSG_API", protocol, 0);
-	}
-
-	if (opt.nodelist) {
-		char *fname = NULL, *host_name, *host_line;
-		pid_t pid = getpid();
-		hostlist_t hl;
-		int fd, len, offset, wrote;
-		hl = hostlist_create(opt.nodelist);
-		if (!hl)
-			fatal("Invalid nodelist: %s", opt.nodelist);
-		xstrfmtcat(fname, "slurm_hostlist.%u", (uint32_t) pid);
-		if ((fd = creat(fname, 0600)) < 0)
-			fatal("creat(%s): %m", fname);
-		while ((host_name = hostlist_shift(hl))) {
-			host_line = NULL;
-			xstrfmtcat(host_line, "%s\n", host_name);
-			free(host_name);
-			len = strlen(host_line) + 1;
-			offset = 0;
-			while (len > offset) {
-				wrote = write(fd, host_line + offset,
-					      len - offset);
-				if (wrote < 0) {
-					if ((errno == EAGAIN) ||
-					    (errno == EINTR))
-						continue;
-					fatal("write(%s): %m", fname);
-				}
-				offset += wrote;
-			}
-			xfree(host_line);
-		}
-		hostlist_destroy(hl);
-		info("wrote hostlist file at %s", fname);
-		xfree(fname);
-		close(fd);
-	}
-	if (opt.msg_timeout) {
-		snprintf(value, sizeof(value), "%d", opt.msg_timeout);
-		setenv("MP_TIMEOUT", value, 1);
-	}
-	if (opt.immediate)
-		setenv("MP_RETRY", "0", 1);
-	/* if (_verbose) { */
-	/* 	int info_level = MIN((_verbose + 1), 6); */
-	/* 	snprintf(value, sizeof(value), "%d", info_level); */
-	/* 	setenv("MP_INFOLEVEL", value, 1); */
-	/* } */
-	if (opt.labelio)
-		setenv("MP_LABELIO", "yes", 0);
-	if (opt.min_nodes != NO_VAL) {
-		snprintf(value, sizeof(value), "%u", opt.min_nodes);
-		setenv("MP_NODES", value, 1);
-	}
-	if (opt.ntasks) {
-		snprintf(value, sizeof(value), "%u", opt.ntasks);
-		setenv("MP_PROCS", value, 1);
-	}
-	if (opt.cpu_bind_type) {
-		if (opt.cpu_bind_type & CPU_BIND_TO_THREADS)
-			setenv("MP_TASK_AFFINITY", "cpu", 1);
-		else if (opt.cpu_bind_type & CPU_BIND_TO_CORES)
-			setenv("MP_TASK_AFFINITY", "core", 1);
-		else if (opt.cpus_per_task) {
-			snprintf(value, sizeof(value), "cpu:%d",
-				 opt.cpus_per_task);
-			setenv("MP_TASK_AFFINITY", value, 1);
-		}
-	}
-	if (opt.ntasks_per_node != NO_VAL) {
-		snprintf(value, sizeof(value), "%u", opt.ntasks_per_node);
-		setenv("MP_TASKS_PER_NODE", value, 1);
-	}
-	if (opt.unbuffered) {
-		setenv("MP_STDERRMODE", "unordered", 1);
-		setenv("MP_STDOUTMODE", "unordered", 1);
-	}
-
-	/* Since poe doesn't need to know about the partition and it
-	   really needs to have RMPOOL set just set it to something.
-	*/
-	setenv("MP_RMPOOL", "SLURM", 1);
-	setenv("SLURM_STARTED_STEP", "YES", 1);
-	//disable_status = opt.disable_status;
-	//quit_on_intr = opt.quit_on_intr;
-	//srun_jobid = xstrdup(opt.jobid);
-
-#if _DEBUG_SRUN
-	info("cmd_line:%s", cmd_line);
-#endif
-	xfree(cmd_line);
-	return NULL;
-}
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  *	are called.  Put global initialization here.
@@ -748,8 +439,397 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
 				    sig_atomic_t *destroy_job)
 {
-	poe_cmd_line = _build_poe_command(job->jobid);
+	int step_id;
+	char dname[512], value[32];
+	bool need_cmdfile = false;
+	char *protocol = "mpi";
 
+	if (opt.launch_cmd)
+		xstrfmtcat(poe_cmd_line, "%s", opt.argv[0]);
+
+	/*
+	 * In order to support MPMD or job steps smaller than the job
+	 * allocation size, specify a command file using the poe option
+	 * -cmdfile or MP_CMDFILE env var. See page 43 here:
+	 * http://publib.boulder.ibm.com/epubs/pdf/c2367811.pdf
+	 * The command file should contain one more more lines of the following
+	 * form:
+	 * <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args>
+	 * IBM is working to eliminate the need to specify protocol, but until
+	 * then it might be determined as follows:
+	 *
+	 * We are currently looking at 'ldd <program>' and checking the name of
+	 * the MPI and PAMI libraries and on x86, also checking to see if Intel
+	 * MPI library is used.
+	 * This is done at runtime in PMD and depending on '-mpilib' option and
+	 * '-config' option used, change the LD_LIBRARY_PATH to properly
+	 * support the different PE Runtime levels the customer have installed
+	 * on their cluster.
+	 *
+	 * There is precedence order that would be important if multiple
+	 * libraries are listed in the 'ldd output' as long as you know it is
+	 * not a mixed protocol (i.e. Openshmem + MPI, UPC + MPI, etc)
+	 * application.
+	 * 1) If MPI library is found (libmpi.so || libmich.so) -> use 'mpi'
+	 * 2) if Openshmem library is found (libshmem.so) -> use 'shmem'
+	 * 3) if UPC runtime library is found (libxlpgas.so) -> use 'pgas'
+	 * 4) if only PAMI library is found (libpami.so) -> use 'pami'
+	 * 5) if only LAPI library is found (liblapi.so) -> use 'lapi'
+	 */
+	if (opt.multi_prog)
+		need_cmdfile = true;
+	if (opt.ntasks_set && !need_cmdfile) {
+		char *tmp_str = getenv("SLURM_NPROCS");
+		if (!tmp_str)
+			tmp_str = getenv("SLURM_NNODES");
+		if (tmp_str && (opt.ntasks != atoi(tmp_str)))
+			need_cmdfile = true;
+	}
+
+	if (opt.multi_prog) {
+		protocol = "multi";
+	} else {
+		protocol = _get_cmd_protocol(opt.argv[1]);
+	}
+	debug("cmd:%s protcol:%s", opt.argv[1], protocol);
+
+
+	if (need_cmdfile) {
+		char *buf;
+		int fd, i, j, k;
+
+		if (opt.launch_cmd) {
+			error("--launch_cmd not available "
+			      "when using a cmdfile");
+			return SLURM_ERROR;
+		}
+		xassert(job);
+		/* NOTE: The command file needs to be in a directory that can
+		 * be read from the compute node(s), so /tmp does not work.
+		 * We use the user's home directory (based upon "HOME"
+		 * environment variable) otherwise use current working
+		 * directory. The file name contains the job ID and step ID. */
+		step_id = _get_next_stepid(job->jobid, dname, sizeof(dname));
+		xstrfmtcat(cmd_fname,
+			   "%s/slurm_cmdfile_%u.%d",
+			   dname, job->jobid, step_id);
+		while ((fd = creat(cmd_fname, 0600)) < 0) {
+			if (errno == EINTR)
+				continue;
+			fatal("creat(%s): %m", cmd_fname);
+		}
+
+		i = strlen(opt.argv[1]) + 128;
+		buf = xmalloc(i);
+		if (opt.multi_prog) {
+			char in_line[512];
+			FILE *fp = fopen(opt.argv[1], "r");
+			if (!fp)
+				fatal("fopen(%s): %m", opt.argv[1]);
+			/* Read and parse SLURM MPMD format file here */
+			while (fgets(in_line, sizeof(in_line), fp))
+				_multi_prog_parse(in_line, 512, -1);
+			fclose(fp);
+			/* Write LoadLeveler MPMD format file here */
+			while (_multi_prog_parse(in_line, 512, step_id))
+				j = xstrfmtcat(buf, "%s\n", in_line);
+		} else {
+			/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args...>*/
+			xstrfmtcat(buf, "%s@%d%c%d%c%s:%d",
+				   opt.argv[1], step_id, '%',
+				   opt.ntasks, '%', protocol, opt.ntasks);
+			for (i = 2; i < opt.argc; i++) /* start at argv[2] */
+				xstrfmtcat(buf, " %s", opt.argv[i]);
+			xstrfmtcat(buf, "\n");
+		}
+		i = 0;
+		j = strlen(buf);
+		while ((k = write(fd, &buf[i], j))) {
+			if (k > 0) {
+				i += k;
+				j -= k;
+			} else if ((errno != EAGAIN) && (errno != EINTR)) {
+				error("write(cmdfile): %m");
+				break;
+			}
+		}
+		(void) close(fd);
+		setenv("MP_NEWJOB", "parallel", 1);
+		if (opt.launch_cmd)
+			xstrfmtcat(poe_cmd_line, " -newjob parallel");
+		setenv("MP_CMDFILE", cmd_fname, 1);
+		if (opt.launch_cmd)
+			xstrfmtcat(poe_cmd_line, " -cmdfile %s", cmd_fname);
+	}
+
+	if (opt.cpu_bind_type) {
+		if ((opt.cpu_bind_type & CPU_BIND_TO_THREADS) ||
+		    (opt.cpu_bind_type & CPU_BIND_TO_CORES)) {
+			setenv("MP_BINDPROC", "yes", 1);
+			if (opt.launch_cmd)
+				xstrfmtcat(poe_cmd_line, " -bindproc yes");
+		}
+	}
+	if (opt.shared != (uint16_t) NO_VAL) {
+		char *shared_cpu_use = "multiple";
+
+		if (opt.shared)
+			shared_cpu_use = "unique";
+
+		setenv("MP_CPU_USE", shared_cpu_use, 1);
+
+		if (opt.launch_cmd)
+			xstrfmtcat(poe_cmd_line, " -cpu_use %s",
+				   shared_cpu_use);
+	}
+	if (opt.network) {
+		bool protocol_set = false;
+		char *save_ptr = NULL, *token;
+		char *network_str = xstrdup(opt.network);
+		char *adapter_use = NULL;
+
+		if (strstr(opt.network, "dedicated"))
+			adapter_use = "dedicated";
+		else if (strstr(opt.network, "shared"))
+			adapter_use = "shared";
+
+		if (adapter_use) {
+			setenv("MP_ADAPTER_USE", adapter_use, 1);
+			if (opt.launch_cmd)
+				xstrfmtcat(poe_cmd_line, " -adapter_use %s",
+					   adapter_use);
+		}
+
+		token = strtok_r(network_str, ",", &save_ptr);
+		while (token) {
+			/* bulk_xfer options */
+			if (!strncasecmp(token, "bulk_xfer", 9)) {
+				setenv("MP_USE_BULK_XFER", "yes", 1);
+				if (opt.launch_cmd)
+					xstrfmtcat(poe_cmd_line,
+						   " -use_bulk_xfer yes");
+			/* device name options */
+			} else if (!strncasecmp(token, "devname=", 8)) {
+				/* Ignored by POE */
+
+			/* device type options */
+			} else if (!strncasecmp(token, "devtype=", 8)) {
+				char *type_ptr = token + 8;
+				if (!strcasecmp(type_ptr, "ib")) {
+					setenv("MP_DEVTYPE", type_ptr, 1);
+					if (opt.launch_cmd)
+						xstrfmtcat(poe_cmd_line,
+							   " -devtype %s",
+							   type_ptr);
+				} else if (!strcasecmp(type_ptr, "hfi")) {
+					setenv("MP_DEVTYPE", type_ptr, 1);
+					if (opt.launch_cmd)
+						xstrfmtcat(poe_cmd_line,
+							   " -devtype %s",
+							   type_ptr);
+				}
+				/* POE ignores other options */
+
+			/* instances options */
+			} else if (!strncasecmp(token, "instances=", 10)) {
+				/* Ignored */
+
+			/* network options */
+			} else if (!strcasecmp(token, "ip")   ||
+				  !strcasecmp(token, "ipv4")  ||
+				  !strcasecmp(token, "ipv6")) {
+				setenv("MP_EUILIB", "ip", 1);
+				if (opt.launch_cmd)
+					xstrfmtcat(poe_cmd_line,
+						   " -euilib ip");
+			} else if (!strcasecmp(token, "us")) {
+				setenv("MP_EUILIB", "us", 1);
+				if (opt.launch_cmd)
+					xstrfmtcat(poe_cmd_line,
+						   " -euilib us");
+			/* protocol options */
+			} else if ((!strncasecmp(token, "lapi", 4)) ||
+				   (!strncasecmp(token, "mpi",  3)) ||
+				   (!strncasecmp(token, "pami", 4)) ||
+				   (!strncasecmp(token, "upc",  3))) {
+				if (!protocol_set) {
+					protocol_set = true;
+					protocol = NULL;
+				}
+				if (protocol)
+					xstrcat(protocol, ",");
+				xstrcat(protocol, token);
+				setenv("MP_MSG_API", protocol, 0);
+				info("token %s protocol %s", token, protocol);
+			/* adapter options */
+			} else if (!strcasecmp(token, "sn_all")) {
+				setenv("MP_EUIDEVICE", "sn_all", 1);
+				if (opt.launch_cmd)
+					xstrfmtcat(poe_cmd_line,
+						   " -euidevice sn_all");
+			} else if (!strcasecmp(token, "sn_single")) {
+				setenv("MP_EUIDEVICE", "sn_single", 1);
+				if (opt.launch_cmd)
+					xstrfmtcat(poe_cmd_line,
+						   " -euidevice sn_single");
+			/* Collective Acceleration Units (CAU) */
+			} else if (!strncasecmp(token, "cau=", 4)) {
+				setenv("MP_COLLECTIVE_GROUPS", token + 4, 1);
+				if (opt.launch_cmd)
+					xstrfmtcat(poe_cmd_line,
+						   " -collective_groups %s",
+						   token + 4);
+			/* Immediate Send Slots Per Window */
+			} else if (!strncasecmp(token, "immed=", 6)) {
+				setenv("MP_IMM_SEND_BUFFERS", token + 6, 1);
+				if (opt.launch_cmd)
+					xstrfmtcat(poe_cmd_line,
+						   " -imm_send_buffers %s",
+						   token + 6);
+			/* other */
+			} else {
+				info("switch/nrt: invalid option: %s", token);
+			}
+			token = strtok_r(NULL, ",", &save_ptr);
+		}
+
+		if (opt.launch_cmd)
+			xstrfmtcat(poe_cmd_line, " -msg_api %s", protocol);
+		info("set %d protocol %s", protocol_set, protocol);
+		if (protocol_set)
+			xfree(protocol);
+		else
+			setenv("MP_MSG_API", protocol, 0);
+	} else {
+		if (!strcmp(protocol, "multi")) {
+			setenv("MP_MSG_API", protocol, 0);
+			if (opt.launch_cmd)
+				xstrfmtcat(poe_cmd_line,
+					   " -msg_api %s", protocol);
+		}
+	}
+
+	if (opt.nodelist) {
+		char *fname = NULL, *host_name, *host_line;
+		pid_t pid = getpid();
+		hostlist_t hl;
+		int fd, len, offset, wrote;
+		hl = hostlist_create(opt.nodelist);
+		if (!hl)
+			fatal("Invalid nodelist: %s", opt.nodelist);
+		xstrfmtcat(fname, "slurm_hostlist.%u", (uint32_t) pid);
+		if ((fd = creat(fname, 0600)) < 0)
+			fatal("creat(%s): %m", fname);
+		while ((host_name = hostlist_shift(hl))) {
+			host_line = NULL;
+			xstrfmtcat(host_line, "%s\n", host_name);
+			free(host_name);
+			len = strlen(host_line) + 1;
+			offset = 0;
+			while (len > offset) {
+				wrote = write(fd, host_line + offset,
+					      len - offset);
+				if (wrote < 0) {
+					if ((errno == EAGAIN) ||
+					    (errno == EINTR))
+						continue;
+					fatal("write(%s): %m", fname);
+				}
+				offset += wrote;
+			}
+			xfree(host_line);
+		}
+		hostlist_destroy(hl);
+		info("wrote hostlist file at %s", fname);
+		xfree(fname);
+		close(fd);
+	}
+	if (opt.msg_timeout) {
+		snprintf(value, sizeof(value), "%d", opt.msg_timeout);
+		setenv("MP_TIMEOUT", value, 1);
+		if (opt.launch_cmd)
+			xstrfmtcat(poe_cmd_line, " -timeout %s", value);
+	}
+	if (opt.immediate) {
+		setenv("MP_RETRY", "0", 1);
+		if (opt.launch_cmd)
+			xstrfmtcat(poe_cmd_line, " -retry 0");
+	}
+	if (opt.labelio) {
+		setenv("MP_LABELIO", "yes", 0);
+		if (opt.launch_cmd)
+			xstrfmtcat(poe_cmd_line, " -labelio yes");
+	}
+	if (opt.min_nodes != NO_VAL) {
+		snprintf(value, sizeof(value), "%u", opt.min_nodes);
+		setenv("MP_NODES", value, 1);
+		if (opt.launch_cmd)
+			xstrfmtcat(poe_cmd_line, " -nodes %s", value);
+	}
+	if (opt.ntasks) {
+		snprintf(value, sizeof(value), "%u", opt.ntasks);
+		setenv("MP_PROCS", value, 1);
+		if (opt.launch_cmd)
+			xstrfmtcat(poe_cmd_line, " -procs %s", value);
+	}
+	if (opt.cpu_bind_type) {
+		char *task_affinity = NULL;
+
+		if (opt.cpu_bind_type & CPU_BIND_TO_THREADS)
+			task_affinity = "cpu";
+		else if (opt.cpu_bind_type & CPU_BIND_TO_CORES)
+			task_affinity = "core";
+		else if (opt.cpus_per_task) {
+			snprintf(value, sizeof(value), "cpu:%d",
+				 opt.cpus_per_task);
+			task_affinity = value;
+		}
+
+		if (task_affinity) {
+			setenv("MP_TASK_AFFINITY", task_affinity, 1);
+			if (opt.launch_cmd)
+				xstrfmtcat(poe_cmd_line, " -task_affinity %s",
+					   task_affinity);
+
+		}
+	}
+	if (opt.ntasks_per_node != NO_VAL) {
+		snprintf(value, sizeof(value), "%u", opt.ntasks_per_node);
+		setenv("MP_TASKS_PER_NODE", value, 1);
+		if (opt.launch_cmd)
+			xstrfmtcat(poe_cmd_line, " -tasks_per_node %s", value);
+	}
+	if (opt.unbuffered) {
+		setenv("MP_STDERRMODE", "unordered", 1);
+		setenv("MP_STDOUTMODE", "unordered", 1);
+		if (opt.launch_cmd)
+			xstrfmtcat(poe_cmd_line,
+				   " -stderrmode unordered"
+				   " -stdoutmmode unordered");
+	}
+
+	/* Since poe doesn't need to know about the partition and it
+	   really needs to have RMPOOL set just set it to something.
+	*/
+	setenv("MP_RMPOOL", "SLURM", 1);
+	if (opt.launch_cmd)
+		xstrfmtcat(poe_cmd_line, " -rmpool slurm");
+
+	setenv("SLURM_STARTED_STEP", "YES", 1);
+	//disable_status = opt.disable_status;
+	//quit_on_intr = opt.quit_on_intr;
+	//srun_jobid = xstrdup(opt.jobid);
+
+	if (opt.launch_cmd) {
+		int i;
+		for (i = 1; i < opt.argc; i++)
+			xstrfmtcat(poe_cmd_line, " %s", opt.argv[i]);
+
+		printf("%s\n", poe_cmd_line);
+		xfree(poe_cmd_line);
+
+		exit(0);
+	}
  	return SLURM_SUCCESS;
 }
 

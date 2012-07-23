@@ -189,6 +189,7 @@
 #define LONG_OPT_REQ_SWITCH      0x153
 #define LONG_OPT_RUNJOB_OPTS     0x154
 #define LONG_OPT_CPU_FREQ        0x155
+#define LONG_OPT_LAUNCH_CMD      0x156
 
 extern char **environ;
 
@@ -461,6 +462,7 @@ static void _opt_default()
 	opt.req_switch = -1;
 	opt.wait4switch = -1;
 	opt.runjob_opts = NULL;
+	opt.launch_cmd = false;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -807,6 +809,7 @@ static void set_options(const int argc, char **argv)
 		{"ioload-image",     required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 		{"linux-image",      required_argument, 0, LONG_OPT_LINUX_IMAGE},
+		{"launch-cmd",       no_argument,       0, LONG_OPT_LAUNCH_CMD},
 		{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
 		{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
@@ -1115,6 +1118,9 @@ static void set_options(const int argc, char **argv)
 			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
 						  &opt.cpu_bind_type))
 				exit(error_exit);
+			break;
+		case LONG_OPT_LAUNCH_CMD:
+			opt.launch_cmd = true;
 			break;
 		case LONG_OPT_MEM_BIND:
 			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
@@ -1768,9 +1774,13 @@ static void _opt_args(int argc, char **argv)
 	/* for (i=0; i<opt.argc; i++) */
 	/* 	info("%d is '%s'", i, opt.argv[i]); */
 
-	if (opt.multi_prog && verify_multi_name(opt.argv[command_pos],
-						opt.ntasks))
+	if (opt.launch_cmd) {
+		launch_g_create_job_step(NULL, 0, NULL, NULL);
+		exit(0);
+	} else if (opt.multi_prog && verify_multi_name(opt.argv[command_pos],
+						       opt.ntasks))
 		exit(error_exit);
+
 }
 
 /*
@@ -2609,9 +2619,10 @@ static void _help(void)
 	spank_print_options(stdout, 6, 30);
 
 	printf("\n"
-#ifdef HAVE_AIX				/* AIX/Federation specific options */
-"AIX related options:\n"
+#if defined HAVE_AIX || defined HAVE_LIBNRT /* IBM PE specific options */
+"PE related options:\n"
 "      --network=type          communication protocol to be used\n"
+"      --launch-cmd            print external launcher command line if not SLURM\n"
 "\n"
 #endif
 #ifdef HAVE_BG				/* Blue gene specific options */
