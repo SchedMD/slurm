@@ -555,11 +555,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		}
 		(void) close(fd);
 		setenv("MP_NEWJOB", "parallel", 1);
-		if (opt.launch_cmd)
-			xstrfmtcat(poe_cmd_line, " -newjob parallel");
 		setenv("MP_CMDFILE", cmd_fname, 1);
-		if (opt.launch_cmd)
-			xstrfmtcat(poe_cmd_line, " -cmdfile %s", cmd_fname);
 	}
 
 	if (opt.cpu_bind_type) {
@@ -660,7 +656,6 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 					xstrcat(protocol, ",");
 				xstrcat(protocol, token);
 				setenv("MP_MSG_API", protocol, 0);
-				info("token %s protocol %s", token, protocol);
 			/* adapter options */
 			} else if (!strcasecmp(token, "sn_all")) {
 				setenv("MP_EUIDEVICE", "sn_all", 1);
@@ -695,7 +690,6 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 		if (opt.launch_cmd)
 			xstrfmtcat(poe_cmd_line, " -msg_api %s", protocol);
-		info("set %d protocol %s", protocol_set, protocol);
 		if (protocol_set)
 			xfree(protocol);
 		else
