@@ -140,7 +140,7 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started);
 
 extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
-		      pthread_t signal_thread, bool slurm_started);
+		      bool slurm_started);
 
 /*
  *  Update job filenames and modes for stderr, stdout, and stdin.

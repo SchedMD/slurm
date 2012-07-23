@@ -162,7 +162,6 @@ int srun(int ac, char **av)
 	int debug_level;
 	env_t *env = xmalloc(sizeof(env_t));
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-	pthread_t signal_thread = (pthread_t) 0;
 	bool got_alloc = false;
 	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
 
@@ -269,7 +268,7 @@ relaunch:
 			goto relaunch;
 	}
 
-	fini_srun(job, got_alloc, &global_rc, signal_thread, 0);
+	fini_srun(job, got_alloc, &global_rc, 0);
 
 	return (int)global_rc;
 }

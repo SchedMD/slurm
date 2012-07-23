@@ -218,11 +218,13 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 	/* OK we are now really running something */
 	PMD_LOG("got pe_rm_free called\n");
 	debug("got pe_rm_free called %p %p", job, job->step_ctx);
-	if (launch_g_step_wait(job, got_alloc) != -1) {
-		/* We are at the end so don't worry about freeing the
-		   srun_job_t pointer */
-		fini_srun(job, got_alloc, &rc, 0, slurm_started);
-	}
+	/* Since we can't relaunch the step here don't worry about the
+	   return code.
+	*/
+	launch_g_step_wait(job, got_alloc);
+	/* We are at the end so don't worry about freeing the
+	   srun_job_t pointer */
+	fini_srun(job, got_alloc, &rc, slurm_started);
 
 	*resource_mgr = NULL;
 	dlclose(my_handle);
