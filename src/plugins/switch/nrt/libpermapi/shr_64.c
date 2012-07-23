@@ -411,7 +411,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	ret_info->job_key = job_key;
 
 	if (opt.network) {
-		char *save_ptr = NULL, *token;
+		char *save_ptr = NULL, *token = NULL;
 		char *network_str = xstrdup(opt.network);
 		while (token) {
 			/* network options */
