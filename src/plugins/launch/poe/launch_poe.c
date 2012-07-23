@@ -211,7 +211,8 @@ static char *_get_cmd_protocol(char *cmd)
 			break;
 		}
 	}
-	if (strstr(buf, "libmpi.so"))
+
+	if (strstr(buf, "libmpi.so") || strstr(buf, "libmpich.so"))
 		protocol = "mpi";
 	else if (strstr(buf, "libshmem.so"))
 		protocol = "shmem";
