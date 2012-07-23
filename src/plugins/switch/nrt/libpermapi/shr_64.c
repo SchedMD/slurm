@@ -375,6 +375,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	slurm_step_layout_t *step_layout;
 	hostlist_t hl;
 	char *host;
+	char *mode = "IP";
 	host_usage_t *host_ptr;
 	int table_cnt;
 	nrt_tableinfo_t *tables, *table_ptr;
@@ -409,6 +410,24 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	slurm_jobinfo_ctx_get(resp->switch_job, NRT_JOBINFO_KEY, &job_key);
 	ret_info->job_key = job_key;
 
+	if (opt.network) {
+		char *save_ptr = NULL, *token;
+		char *network_str = xstrdup(opt.network);
+		while (token) {
+			/* network options */
+			if (!strcasecmp(token, "ip")   ||
+			    !strcasecmp(token, "ipv4")  ||
+			    !strcasecmp(token, "ipv6")) {
+				mode = "IP";
+			} else if (!strcasecmp(token, "us")) {
+				mode = "US";
+			}
+			/* Currently ignoring all other options */
+			token = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(network_str);
+	}
+
 	slurm_jobinfo_ctx_get(
 		resp->switch_job, NRT_JOBINFO_TABLESPERTASK, &table_cnt);
 	ret_info->protocol = xmalloc(sizeof(char *)*(table_cnt+1));
@@ -430,7 +449,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 				table_ptr->network_id;
 		}
 		ret_info->protocol[i] = xstrdup(table_ptr->protocol_name);
-		ret_info->mode[i] = xstrdup(opt.network);
+		ret_info->mode[i] = xstrdup(mode);
 		ret_info->devicename[i] = xstrdup(table_ptr->adapter_name);
 		ret_info->instance[i] = table_ptr->instance;
 		info("%d: %s %s %s %d", i, ret_info->protocol[i], ret_info->mode[i], ret_info->devicename[i], ret_info->instance[i]);
