@@ -1704,7 +1704,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		}
 		job_ptr->qos_id = qos_rec.id;
 	}
-	build_node_details(job_ptr);	/* set node_addr */
+	build_node_details(job_ptr, false);	/* set node_addr */
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -6338,7 +6338,7 @@ void reset_job_bitmaps(void)
 			job_fail = true;
 		}
 		_reset_step_bitmaps(job_ptr);
-		build_node_details(job_ptr);	/* set node_addr */
+		build_node_details(job_ptr, false);	/* set node_addr */
 
 		if (_reset_detail_bitmaps(job_ptr))
 			job_fail = true;

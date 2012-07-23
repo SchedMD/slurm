@@ -35,6 +35,10 @@ documents those changes that are of interest to users and admins.
     while it is attempting to free underlying hardware is marked in error
     making small blocks overlapping with the freeing block.  This only
     applies to dynamic layout mode.
+ -- Cray and BlueGene - Do not treat lack of usable front-end nodes when
+    slurmctld deamon starts as a fatal error. Also preserve correct front-end
+    node for jobs when there is more than one front-end node and the slurmctld
+    daemon restarts.
 
 * Changes in SLURM 2.4.1
 ========================
