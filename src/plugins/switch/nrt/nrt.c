@@ -1919,7 +1919,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 			if (window_count > max_windows) {
 				/* This happens if IP_ONLY devices are
 				 * allocated with tables_per_task > 0 */
-				error("nrt_command(status_adapter, %s, %s): "
+				debug("nrt_command(status_adapter, %s, %s): "
 				      "window_count > max_windows (%u > %hu)",
 				      adapter_status.adapter_name,
 				      _adapter_type_str(adapter_status.
@@ -2729,12 +2729,13 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	hostlist_iterator_reset(hi);
 
 	if (adapter_type == NRT_IPONLY) {
-		/* Without setting tables_per_task == 0, non-existant switch
-		 * windows are allocated resulting in some inconstencies in
-		 * NRT's records. Specifically the IPONLY devices report their
-		 * maximum window count is 0, but then report a non-zero
-		 * current window count. */
-		//jp->tables_per_task = 0;
+		/* FIXME: If tables_per_task!=0 for adapter_type==NRT_IPONLY
+		 * then the device's window count in NRT is incremented.
+		 * When we later read the adapter information, the adapter
+		 * reports a maximum window count of zero and a current
+		 * window count that is non zero. However, setting the value
+		 * to zero results in the MPI job failing. */
+		/* jp->tables_per_task = 0; */
 	}
 
 	if (instances <= 0) {
