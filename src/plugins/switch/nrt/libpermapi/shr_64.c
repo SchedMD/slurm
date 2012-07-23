@@ -399,7 +399,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	ret_info->job_name = xstrdup(opt.job_name);
 	ret_info->rm_id = NULL;
 	ret_info->procs = job->ntasks;
-	ret_info->max_instances = 1;
+	ret_info->max_instances = 0;
 	ret_info->check_pointable = 0;
 	if (!job || !job->step_ctx)
 		return -1;
@@ -448,10 +448,13 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 			network_id_list[network_id_cnt++] =
 				table_ptr->network_id;
 		}
+/* FIXME: Format of these data structure contents not well defined */
 		ret_info->protocol[i] = xstrdup(table_ptr->protocol_name);
 		ret_info->mode[i] = xstrdup(mode);
 		ret_info->devicename[i] = xstrdup(table_ptr->adapter_name);
 		ret_info->instance[i] = table_ptr->instance;
+		ret_info->max_instances = MAX(ret_info->max_instances,
+					      ret_info->instance[i]);
 		info("%d: %s %s %s %d", i, ret_info->protocol[i], ret_info->mode[i], ret_info->devicename[i], ret_info->instance[i]);
 	}
 	xfree(network_id_list);
