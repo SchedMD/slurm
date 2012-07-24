@@ -444,8 +444,13 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	bool need_cmdfile = false;
 	char *protocol = "mpi";
 
-	if (opt.launch_cmd)
+	if (opt.launch_cmd) {
+		int i;
+
 		xstrfmtcat(poe_cmd_line, "%s", opt.argv[0]);
+		for (i = 1; i < opt.argc; i++)
+			xstrfmtcat(poe_cmd_line, " %s", opt.argv[i]);
+	}
 
 	/*
 	 * In order to support MPMD or job steps smaller than the job
@@ -815,10 +820,6 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	//srun_jobid = xstrdup(opt.jobid);
 
 	if (opt.launch_cmd) {
-		int i;
-		for (i = 1; i < opt.argc; i++)
-			xstrfmtcat(poe_cmd_line, " %s", opt.argv[i]);
-
 		printf("%s\n", poe_cmd_line);
 		xfree(poe_cmd_line);
 
