@@ -855,7 +855,7 @@ extern int launch_p_step_launch(
 		return 1;
 	} else if (pid > 0) {
 		if (waitpid(pid, NULL, 0) < 0)
-			error("Unable to reap slurmd child process");
+			error("Unable to reap poe child process");
 	} else {
 		/* if ((dup2(stdin_pipe[0],  0) == -1) || */
 		/*     (dup2(stdout_pipe[1], 1) == -1) || */
