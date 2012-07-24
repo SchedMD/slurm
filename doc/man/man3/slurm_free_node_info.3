@@ -103,6 +103,10 @@ or partition records are returned.
 .LP
 \fBslurm_load_node\fR Returns a \fInode_info_msg_t\fP that contains an update
 time, record count, and array of node_table records for all nodes.
+Note that nodes which are hidden for any reason will have a NULL node name.
+Other fields associated with the node will be filled in appropriately.
+Reasons for a node being hidden include: a node state of FUTURE, a node in the
+CLOUD that is powered down, or a node in a hidden partition.
 .LP
 \fBslurm_print_node_info_msg\fR Prints the contents of the data structure
 describing all node records from the data loaded by the \fBslurm_load_node\fR
