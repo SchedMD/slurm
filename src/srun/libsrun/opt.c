@@ -251,6 +251,11 @@ int initialize_and_process_args(int argc, char *argv[])
 	if (_verbose > 3)
 		_opt_list();
 
+	if (opt.launch_cmd) {
+		launch_g_create_job_step(NULL, 0, NULL, NULL);
+		exit(0);
+	}
+
 	return 1;
 
 }
@@ -1774,11 +1779,8 @@ static void _opt_args(int argc, char **argv)
 	/* for (i=0; i<opt.argc; i++) */
 	/* 	info("%d is '%s'", i, opt.argv[i]); */
 
-	if (opt.launch_cmd) {
-		launch_g_create_job_step(NULL, 0, NULL, NULL);
-		exit(0);
-	} else if (opt.multi_prog && verify_multi_name(opt.argv[command_pos],
-						       opt.ntasks))
+	if (opt.multi_prog && verify_multi_name(opt.argv[command_pos],
+						opt.ntasks))
 		exit(error_exit);
 
 }
