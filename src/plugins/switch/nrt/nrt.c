@@ -2909,6 +2909,8 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp)
 			pack32(hfi_tbl_ptr->task_id, buf);
 			tmp_16 = hfi_tbl_ptr->lid;
 			pack16(tmp_16, buf);
+			tmp_8 = hfi_tbl_ptr->lpar_id;
+			pack8(tmp_8, buf);
 			tmp_8 = hfi_tbl_ptr->win_id;
 			pack8(tmp_8, buf);
 		}
@@ -3048,6 +3050,8 @@ _unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp)
 			safe_unpack32(&hfi_tbl_ptr->task_id, buf);
 			safe_unpack16(&tmp_16, buf);
 			hfi_tbl_ptr->lid = tmp_16;
+			safe_unpack8(&tmp_8, buf);
+			hfi_tbl_ptr->lpar_id = tmp_8;
 			safe_unpack8(&tmp_8, buf);
 			hfi_tbl_ptr->win_id = tmp_8;
 		}
