@@ -2653,8 +2653,6 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 
 	jp->bulk_xfer   = (uint8_t) bulk_xfer;
 	jp->bulk_xfer_resources = bulk_xfer_resources;
-	jp->cau_indexes = (uint16_t) cau;
-	jp->immed_slots = (uint16_t) immed;
 	jp->ip_v4       = (uint8_t) ip_v4;
 	jp->job_key     = _next_key();
 	jp->nodenames   = hostlist_copy(hl);
@@ -2736,6 +2734,22 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		 * window count that is non zero. However, setting the value
 		 * to zero results in the MPI job failing. */
 		/* jp->tables_per_task = 0; */
+	}
+	if ((adapter_type == NRT_HFI) && jp->user_space) {
+		jp->cau_indexes = (uint16_t) cau;
+		jp->immed_slots = (uint16_t) immed;
+	} else {
+		/* The table load will always fail if cau_indexes or
+		 * immed_slots are non-zero unless running on an HFI network
+		 * with User Space communications, so ignore user options.
+		 * Alternately we can check for non-zero user option and
+		 * return SLURM_FAILURE here. */
+		if ((cau != 0) || (immed != 0)) {
+			debug("switch/nrt: cau:%hu immed:%hu ignored for job",
+			      cau, immed);
+		}
+		jp->cau_indexes = 0;
+		jp->immed_slots = 0;
 	}
 
 	if (instances <= 0) {
