@@ -1840,7 +1840,7 @@ static void _node_state_dealloc(gres_state_t *gres_ptr)
 	gres_node_ptr->gres_cnt_alloc = 0;
 	if (gres_node_ptr->gres_bit_alloc) {
 		int i = bit_size(gres_node_ptr->gres_bit_alloc) - 1;
-		if (i > 0)
+		if (i >= 0)
 			bit_nclear(gres_node_ptr->gres_bit_alloc, 0, i);
 	}
 	if (gres_node_ptr->topo_cnt && !gres_node_ptr->topo_gres_cnt_alloc) {
