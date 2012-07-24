@@ -36,6 +36,10 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   	# the correct runtime library path in the binaries.
   	if test "x$ac_have_aix" = "xyes"; then
   		SSL_LIB_TEST="-lcrypto-static"
+	elif test "x$ac_have_nrt" = "xyes"; then
+		# it appears on p7 machines the openssl doesn't
+		# link correctly so we need to add -ldl
+		SSL_LIB_TEST="$SSL_LIB_TEST -ldl"
   	fi
     ])
   
