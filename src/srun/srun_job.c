@@ -431,7 +431,6 @@ _compute_task_count(allocation_info_t *ainfo)
 #if defined HAVE_BGQ
 //#if defined HAVE_BGQ && HAVE_BG_FILES
 	/* always return the ntasks here for Q */
-	info("returning %d", opt.ntasks);
 	return opt.ntasks;
 #endif
 	if (opt.cpus_set) {
