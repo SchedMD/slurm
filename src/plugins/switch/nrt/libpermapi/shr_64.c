@@ -397,7 +397,6 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	debug("got pe_rm_get_job_info called %p %p", job_info, *job_info);
 
 	*job_info = ret_info;
-
 	ret_info->job_name = xstrdup(opt.job_name);
 	ret_info->rm_id = NULL;
 	ret_info->procs = job->ntasks;
@@ -725,6 +724,9 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		opt.ntasks_set = true;
 		opt.ntasks = pe_job_req->total_tasks;
 	}
+
+	if (!opt.job_name)
+		opt.job_name = xstrdup("poe_ran_job");
 
 	create_srun_job(&job, &got_alloc, slurm_started);
 
