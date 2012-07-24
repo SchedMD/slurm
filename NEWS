@@ -373,6 +373,10 @@ documents those changes that are of interest to users and admins.
  -- Fix issue with assoc_mgr if a bad state file is given and the database
     isn't up at the time the slurmctld starts, not running the
     priority/multifactor plugin, and then the database is started up later.
+ -- Gres: If a gres has a count of one and an associated file then when doing
+    a reconfiguration, the node's bitmap was not cleared resulting in an
+    underflow upon job termination or removal from scheduling matrix by the
+    backfill scheduler.
 
 * Changes in SLURM 2.3.5
 ========================
