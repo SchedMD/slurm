@@ -203,11 +203,11 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 	if (pm_type == PM_PMD) {
 		/* If the PMD calls this and it didn't launch anything we need
 		 * to not do anything here or PMD will crap out on it. */
-		PMD_LOG("got pe_rm_connect called from PMD, "
+		PMD_LOG("got pe_rm_free called from PMD, "
 			"we don't handle this yet\n");
 		return;
 	} else if (pm_type != PM_POE) {
-		error("pe_rm_connect: unknown caller");
+		error("pe_rm_free: unknown caller");
 		return;
 	}
 
@@ -216,7 +216,6 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 	xassert(job);
 
 	/* OK we are now really running something */
-	PMD_LOG("got pe_rm_free called\n");
 	debug("got pe_rm_free called %p %p", job, job->step_ctx);
 	/* Since we can't relaunch the step here don't worry about the
 	   return code.
