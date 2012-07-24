@@ -1083,6 +1083,7 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 						    tableinfo[table_inx].table;
 					hfi_table += task_id;
 					hfi_table->lid = adapter->lid;
+					hfi_table->lpar_id = adapter->special;
 					hfi_table->task_id = task_id;
 					hfi_table->win_id = window->window_id;
 				} else if ((adapter->adapter_type == NRT_HPCE)||
@@ -1268,6 +1269,7 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 					    tableinfo[table_inx].table;
 				hfi_table += task_id;
 				hfi_table->lid = adapter->lid;
+				hfi_table->lpar_id = adapter->special;
 				hfi_table->task_id = task_id;
 				hfi_table->win_id = window->window_id;
 			} else if ((adapter_type == NRT_HPCE) ||
