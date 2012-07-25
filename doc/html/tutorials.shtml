@@ -1,0 +1,31 @@
+<!--#include virtual="header.txt"-->
+
+<h1>SLURM Tutorials</h1>
+
+<h2>Introduction to SLURM Tutorial</h2>
+<p>Introduction to the SLURM Resource Manager for users and system
+administrators. Tutorial covers SLURM architecture, daemons and commands.
+Learn how to use a basic set of commands.
+Learn how to build, configure, and install SLURM.</p>
+
+<ul>
+<li><a href="tutorial_slurm_intro.avi">Introduction to SLURM video</a></li>
+<li><a href="tutorial_intro_files.tar">Tar-ball</a> with sample configuration files</li>
+<li>The same video on <a href="http://www.youtube.com">YouTube</a> (in eight parts)</a></li>
+<ol>
+<li><a href="http://www.youtube.com/watch?v=NH_Fb7X6Db0&feature=relmfu">Introduction to SLURM, Part 1</a></li>
+<li><a href="http://www.youtube.com/watch?v=LJrY0AthLB8&feature=relmfu">Introduction to SLURM, Part 2</a></li>
+<li><a href="http://www.youtube.com/watch?v=MI9jHavOt5o&feature=relmfu">Introduction to SLURM, Part 3</a></li>
+<li><a href="http://www.youtube.com/watch?v=aljhVYwyAoM&feature=relmfu">Introduction to SLURM, Part 4</a></li>
+<li><a href="http://www.youtube.com/watch?v=-4XFG5MoHQY&feature=relmfu">Introduction to SLURM, Part 5</a></li>
+<li><a href="http://www.youtube.com/watch?v=PAYMsuqf-CA&feature=relmfu">Introduction to SLURM, Part 6</a></li>
+<li><a href="http://www.youtube.com/watch?v=kFW0tk7aDDo&feature=relmfu">Introduction to SLURM, Part 7</a></li>
+<li><a href="http://www.youtube.com/watch?v=VozfZGZIX8w&feature=relmfu">Introduction to SLURM, Part 8</a></li>
+</ol>
+</ul>
+
+<h2>More Tutorials Coming Soon...</h2>
+
+<p style="text-align:center;">Last modified 25 July 2012</p>
+
+<!--#include virtual="footer.txt"-->

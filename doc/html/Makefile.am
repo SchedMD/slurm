@@ -76,7 +76,8 @@ generated_html = \
 	testimonials.html \
 	topology.html \
 	topology_plugin.html \
-	troubleshoot.html
+	troubleshoot.html \
+	tutorials.html
 
 html_DATA = \
 	${generated_html} \
@@ -104,6 +105,7 @@ html_DATA = \
 	sponsors.gif \
 	topo_ex1.gif \
 	topo_ex2.gif \
+	tutorial_intro_files.tar \
 	usage_pies.gif
 
 MOSTLYCLEANFILES = ${generated_html}
