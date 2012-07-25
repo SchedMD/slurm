@@ -2743,12 +2743,13 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	hostlist_iterator_reset(hi);
 
 	if (adapter_type == NRT_IPONLY) {
-		/* FIXME: If tables_per_task!=0 for adapter_type==NRT_IPONLY
+		/* If tables_per_task != 0 for adapter_type == NRT_IPONLY
 		 * then the device's window count in NRT is incremented.
 		 * When we later read the adapter information, the adapter
 		 * reports a maximum window count of zero and a current
 		 * window count that is non zero. However, setting the value
-		 * to zero results in the MPI job failing. */
+		 * to zero results in the MPI job failing. This appears to
+		 * be due to a bug in IBM's NRT library. */
 		/* jp->tables_per_task = 0; */
 	}
 	if ((adapter_type == NRT_HFI) && jp->user_space) {
@@ -3945,7 +3946,6 @@ nrt_clear_node_state(void)
 				/* This error seems to happen on IP_ONLY
 				 * adapters if the unload_table does not
 				 * occur */
-/* FIXME: Review and test Torrent logic */
 				if (first_use) {
 					error("nrt_command(status_adapter, "
 					      "%s, %s): window_count > "
