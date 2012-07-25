@@ -19,10 +19,10 @@ subsystem=${progname##*_}
 get_mount_dir()
 {
     local lssubsys=$(type -p lssubsys)
-    if [ -x $lssubsys ]; then
+    if [[ $lssubsys ]]; then
         $lssubsys -m $subsystem | awk '{print $2}'
     else
-        awk "/release_agent=$0/ { print \$2 }"
+        echo "/cgroup/$subsystem"
     fi
 }
 
