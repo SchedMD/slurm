@@ -6,7 +6,7 @@
 # information on cgroup configuration parameters
 #--
 CgroupAutomount=yes
-CgroupReleaseAgent="/etc/slurm/cgroup"
+CgroupReleaseAgentDir="/etc/slurm/cgroup"
 
 ConstrainCores=no
 ConstrainRAMSpace=no
