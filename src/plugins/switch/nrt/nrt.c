@@ -839,7 +839,21 @@ _add_block_use(slurm_nrt_jobinfo_t *jp, slurm_nrt_adapter_t *adapter)
 	nrt_cau_index_t new_cau_count = 0;
 	uint64_t new_rcontext_blocks  = 0;
 
-	/* Validate sufficient CAU resources */
+	/*
+	 * Validate sufficient CAU resources
+	 *
+	 * From Bill LePera, IBM, July 14, 2012:
+	 * CAU indexes on HFI are allocated on a job-context basis.  That means
+	 * the CAU indexes are shared among tables with the same job key and
+	 * context ID.  In this scenario you would set the total number of CAU
+	 * indexes desired in the num_cau_indexs field for all the tables with
+	 * the same job key and context ID, but PNSD will only allocate that
+	 * number one time for all the tables.  For example, If job key 1234,
+	 * context ID 0 is striped across four networks, it will have four
+	 * NRTs.  If that job requests 2 CAU indexes, the num_cau_indexes field
+	 * in each NRT should be set to 2.  However, PNSD will only allocate 2
+	 * indexes for that job.
+	 */
 	if (jp->cau_indexes) {
 		new_cau_count = adapter->cau_indexes_used + jp->cau_indexes;
 		if (adapter->cau_indexes_avail < new_cau_count) {
