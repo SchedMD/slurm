@@ -21,6 +21,7 @@ documents those changes that are of interest to users and admins.
     currently preserved for jobs being suspended and later resumed. Work by
     Don Albert, Bull.
  -- Add Google search to all web pages.
+ -- Add sinfo -T option to print reservation information.
 
 * Changes in SLURM 2.5.0.pre1
 =============================
