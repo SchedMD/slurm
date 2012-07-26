@@ -73,6 +73,9 @@ documents those changes that are of interest to users and admins.
     slurmctld deamon starts as a fatal error. Also preserve correct front-end
     node for jobs when there is more than one front-end node and the slurmctld
     daemon restarts.
+ -- Correct parsing of srun/sbatch input/output/error file names so that only
+    the name "none" is mapped to /dev/null and not any file name starting
+    with "none" (e.g. "none.o").
 
 * Changes in SLURM 2.4.1
 ========================

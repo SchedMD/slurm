@@ -946,7 +946,7 @@ static void set_options(const int argc, char **argv)
 				exit(error_exit);
 			}
 			xfree(opt.efname);
-			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
+			if (strcasecmp(optarg, "none") == 0)
 				opt.efname = xstrdup("/dev/null");
 			else
 				opt.efname = xstrdup(optarg);
@@ -968,7 +968,7 @@ static void set_options(const int argc, char **argv)
 				exit(error_exit);
 			}
 			xfree(opt.ifname);
-			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
+			if (strcasecmp(optarg, "none") == 0)
 				opt.ifname = xstrdup("/dev/null");
 			else
 				opt.ifname = xstrdup(optarg);
@@ -1038,7 +1038,7 @@ static void set_options(const int argc, char **argv)
 				exit(error_exit);
 			}
 			xfree(opt.ofname);
-			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
+			if (strcasecmp(optarg, "none") == 0)
 				opt.ofname = xstrdup("/dev/null");
 			else
 				opt.ofname = xstrdup(optarg);
