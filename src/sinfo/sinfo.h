@@ -160,6 +160,7 @@ struct sinfo_parameters {
 	bool no_header;
 	bool node_field_flag;
 	bool node_flag;
+	bool reservation_flag;
 	bool responding_nodes;
 	bool list_reasons;
 	bool summarize;

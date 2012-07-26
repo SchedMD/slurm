@@ -61,6 +61,7 @@ static int   _build_min_max_16_string(char *buffer, int buf_size,
 static int   _build_min_max_32_string(char *buffer, int buf_size,
 				uint32_t min, uint32_t max,
 				bool range, bool use_suffix);
+static void  _print_reservation(reserve_info_t *resv_ptr);
 static int   _print_secs(long time, int width, bool right, bool cut_output);
 static int   _print_str(char *str, int width, bool right, bool cut_output);
 static void  _set_node_field_size(List sinfo_list);
@@ -112,9 +113,42 @@ int print_sinfo_entry(sinfo_data_t *sinfo_data)
 	return SLURM_SUCCESS;
 }
 
+void print_sinfo_reservation(reserve_info_msg_t *resv_ptr)
+{
+	reserve_info_t *reserve_ptr = NULL;
+	int i;
+	if (!params.no_header)
+		printf(" ResName    State       StartTime             EndTime"
+		       "           Duration  Nodelist\n");
+	reserve_ptr = resv_ptr->reservation_array;
+	for (i = 0; i < resv_ptr->record_count; i++) {
+		_print_reservation(&reserve_ptr[i]);
+	}
+}
+
 /*****************************************************************************
  * Local Print Functions
  *****************************************************************************/
+
+static void _print_reservation(reserve_info_t *resv_ptr)
+{
+	char tmp1[32], tmp2[32], tmp3[32];
+	char *state = "INACTIVE";
+	uint32_t duration;
+	time_t now = time(NULL);
+
+	slurm_make_time_str(&resv_ptr->start_time, tmp1, sizeof(tmp1));
+	slurm_make_time_str(&resv_ptr->end_time,   tmp2, sizeof(tmp2));
+	duration = difftime(resv_ptr->end_time, resv_ptr->start_time);
+	secs2time_str(duration, tmp3, sizeof(tmp3));
+
+	if ((resv_ptr->start_time <= now) && (resv_ptr->end_time >= now))
+		state = "ACTIVE";
+	printf("%9s %8s  %s   %s   %s  %s\n",
+	       resv_ptr->name, state, tmp1, tmp2, tmp3, resv_ptr->node_list);
+
+	return;
+}
 
 static int _print_str(char *str, int width, bool right, bool cut_output)
 {

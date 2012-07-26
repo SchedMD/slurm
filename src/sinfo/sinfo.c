@@ -75,7 +75,9 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 static int  _multi_cluster(List clusters);
 static int  _query_server(partition_info_msg_t ** part_pptr,
 			  node_info_msg_t ** node_pptr,
-			  block_info_msg_t ** block_pptr, bool clear_old);
+			  block_info_msg_t ** block_pptr,
+			  reserve_info_msg_t ** reserv_pptr, bool clear_old);
+static int _reservation_report(reserve_info_msg_t *resv_ptr);
 static void _sort_hostlist(List sinfo_list);
 static int  _strcmp(char *data1, char *data2);
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
@@ -148,13 +150,17 @@ static int _get_info(bool clear_old)
 	partition_info_msg_t *partition_msg = NULL;
 	node_info_msg_t *node_msg = NULL;
 	block_info_msg_t *block_msg = NULL;
+	reserve_info_msg_t *reserv_msg = NULL;
 	List sinfo_list = NULL;
 	int rc = 0;
 
-	if (_query_server(&partition_msg, &node_msg, &block_msg, clear_old))
+	if (_query_server(&partition_msg, &node_msg, &block_msg, &reserv_msg,
+			  clear_old))
 		rc = 1;
 	else if (params.bg_flag)
 		(void) _bg_report(block_msg);
+	else if (params.reservation_flag)
+		(void) _reservation_report(reserv_msg);
 	else {
 		sinfo_list = list_create(_sinfo_list_delete);
 		_build_sinfo_data(sinfo_list, partition_msg, node_msg);
@@ -201,10 +207,27 @@ static int _bg_report(block_info_msg_t *block_ptr)
 }
 
 /*
+ * _reservation_report - print current reservation information
+ */
+static int _reservation_report(reserve_info_msg_t *resv_ptr)
+{
+	if (!resv_ptr) {
+		slurm_perror("No resv_ptr given\n");
+		return SLURM_ERROR;
+	}
+	if (resv_ptr->record_count != 0) {
+		print_sinfo_reservation(resv_ptr);
+	} else
+		printf ("No reservations in the system\n");
+	return SLURM_SUCCESS;
+}
+
+/*
  * _query_server - download the current server state
  * part_pptr IN/OUT - partition information message
  * node_pptr IN/OUT - node information message
  * block_pptr IN/OUT - BlueGene block data
+ * reserv_pptr IN/OUT - reservation information message
  * clear_old IN - If set, then always replace old data, needed when going
  *		  between clusters.
  * RET zero or error code
@@ -212,11 +235,14 @@ static int _bg_report(block_info_msg_t *block_ptr)
 static int
 _query_server(partition_info_msg_t ** part_pptr,
 	      node_info_msg_t ** node_pptr,
-	      block_info_msg_t ** block_pptr, bool clear_old)
+	      block_info_msg_t ** block_pptr,
+	      reserve_info_msg_t ** reserv_pptr,
+	      bool clear_old)
 {
 	static partition_info_msg_t *old_part_ptr = NULL, *new_part_ptr;
 	static node_info_msg_t *old_node_ptr = NULL, *new_node_ptr;
 	static block_info_msg_t *old_bg_ptr = NULL, *new_bg_ptr;
+	static reserve_info_msg_t *old_resv_ptr = NULL, *new_resv_ptr;
 
 	int error_code;
 	uint16_t show_flags = 0;
@@ -269,6 +295,29 @@ _query_server(partition_info_msg_t ** part_pptr,
 	}
 	old_node_ptr = new_node_ptr;
 	*node_pptr = new_node_ptr;
+
+	if (old_resv_ptr) {
+		if (clear_old)
+			old_resv_ptr->last_update = 0;
+		error_code = slurm_load_reservations(old_resv_ptr->last_update,
+						     &new_resv_ptr);
+		if (error_code == SLURM_SUCCESS)
+			slurm_free_reservation_info_msg(old_resv_ptr);
+		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_SUCCESS;
+			new_resv_ptr = old_resv_ptr;
+		}
+	} else {
+		error_code = slurm_load_reservations((time_t) NULL,
+						     &new_resv_ptr);
+	}
+
+	if (error_code) {
+		slurm_perror("slurm_load_reservations");
+		return error_code;
+	}
+	old_resv_ptr = new_resv_ptr;
+	*reserv_pptr = new_resv_ptr;
 
 	if (!params.bg_flag)
 		return SLURM_SUCCESS;

@@ -108,6 +108,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"summarize", no_argument,       0, 's'},
 		{"sort",      required_argument, 0, 'S'},
 		{"states",    required_argument, 0, 't'},
+		{"reservation",no_argument,      0, 'T'},
 		{"verbose",   no_argument,       0, 'v'},
 		{"version",   no_argument,       0, 'V'},
 		{"help",      no_argument,       0, OPT_LONG_HELP},
@@ -136,7 +137,7 @@ extern void parse_command_line(int argc, char *argv[])
 		working_cluster_rec = list_peek(params.clusters);
 	}
 
-	while((opt_char = getopt_long(argc, argv, "abdehi:lM:n:No:p:rRsS:t:vV",
+	while((opt_char = getopt_long(argc, argv, "abdehi:lM:n:No:p:rRsS:t:TvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -239,6 +240,9 @@ extern void parse_command_line(int argc, char *argv[])
 				error ("valid states: %s", _node_state_list ());
 				exit (1);
 			}
+			break;
+		case (int) 'T':
+			params.reservation_flag = true;
 			break;
 		case (int) 'v':
 			params.verbose++;
@@ -836,6 +840,8 @@ void _print_options( void )
 			params.match_flags.reason_timestamp_flag ?  "true" : "false");
 	printf("reason_user_flag = %s\n",
 			params.match_flags.reason_user_flag ?  "true" : "false");
+	printf("reservation_flag = %s\n", params.reservation_flag ?
+			"true" : "false");
 	printf("root_flag       = %s\n", params.match_flags.root_flag ?
 			"true" : "false");
 	printf("share_flag      = %s\n", params.match_flags.share_flag ?
@@ -850,7 +856,7 @@ void _print_options( void )
 static void _usage( void )
 {
 	printf("\
-Usage: sinfo [-abdelNRrsv] [-i seconds] [-t states] [-p partition] [-n nodes]\n\
+Usage: sinfo [-abdelNRrsTv] [-i seconds] [-t states] [-p partition] [-n nodes]\n\
              [-S fields] [-o format] \n");
 }
 
@@ -876,6 +882,7 @@ Usage: sinfo [OPTIONS]\n\
   -s, --summarize            report state summary only\n\
   -S, --sort=fields          comma separated list of fields to sort on\n\
   -t, --states=node_state    specify the what states of nodes to view\n\
+  -T, --reservation          show only reservation information\n\
   -v, --verbose              verbosity level\n\
   -V, --version              output version information and exit\n\
 \nHelp options:\n\
