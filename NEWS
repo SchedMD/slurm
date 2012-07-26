@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
     frequency and thus it's power consumption. NOTE: cpu frequency is not
     currently preserved for jobs being suspended and later resumed. Work by
     Don Albert, Bull.
+ -- Add Google search to all web pages.
 
 * Changes in SLURM 2.5.0.pre1
 =============================
