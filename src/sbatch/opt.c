@@ -1183,7 +1183,7 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'e':
 			xfree(opt.efname);
-			if (strncasecmp(optarg, "none", (size_t)4) == 0)
+			if (strcasecmp(optarg, "none") == 0)
 				opt.efname = xstrdup("/dev/null");
 			else
 				opt.efname = xstrdup(optarg);
@@ -1212,7 +1212,7 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'i':
 			xfree(opt.ifname);
-			if (strncasecmp(optarg, "none", (size_t)4) == 0)
+			if (strcasecmp(optarg, "none") == 0)
 				opt.ifname = xstrdup("/dev/null");
 			else
 				opt.ifname = xstrdup(optarg);
@@ -1271,7 +1271,7 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'o':
 			xfree(opt.ofname);
-			if (strncasecmp(optarg, "none", (size_t)4) == 0)
+			if (strcasecmp(optarg, "none") == 0)
 				opt.ofname = xstrdup("/dev/null");
 			else
 				opt.ofname = xstrdup(optarg);
@@ -1748,7 +1748,7 @@ static void _set_pbs_options(int argc, char **argv)
 			break;
 		case 'e':
 			xfree(opt.efname);
-			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
+			if (strcasecmp(optarg, "none") == 0)
 				opt.efname = xstrdup("/dev/null");
 			else
 				opt.efname = xstrdup(optarg);
@@ -1782,7 +1782,7 @@ static void _set_pbs_options(int argc, char **argv)
 			break;
 		case 'o':
 			xfree(opt.ofname);
-			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
+			if (strcasecmp(optarg, "none") == 0)
 				opt.ofname = xstrdup("/dev/null");
 			else
 				opt.ofname = xstrdup(optarg);
