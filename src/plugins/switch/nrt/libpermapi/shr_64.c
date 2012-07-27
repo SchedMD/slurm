@@ -636,6 +636,8 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 extern int pe_rm_send_event(rmhandle_t resource_mgr, job_event_t *job_event,
 			    char ** error_msg)
 {
+	int rc;
+
 	if (pm_type == PM_PMD) {
 		PMD_LOG("pe_rm_send_event called\n");
 		return 0;
@@ -643,8 +645,31 @@ extern int pe_rm_send_event(rmhandle_t resource_mgr, job_event_t *job_event,
 		error("pe_rm_send_event: unknown caller");
 		return -1;
 	}
+	debug("got pe_rm_send_event called with event type %d",
+	      job_event->event);
 
-	debug("got pe_rm_send_event called");
+	if ((job_event->event == JOB_CKPT_COMPLETE) && job) {
+		struct ckpt_end_data *ckpt_end_ptr = (struct ckpt_end_data *)
+						     job_event->event_data;
+		rc = slurm_checkpoint_complete(job->jobid, job->stepid,
+					       ckpt_end_ptr->ckpt_start_time,
+					       ckpt_end_ptr->ckpt_rc,
+					       ckpt_end_ptr->ckpt_msg);
+		if (rc != SLURM_SUCCESS) {
+			error("pe_rm_send_event: Unable to process checkpoint "
+			      "complete event for %u.%u",
+			      job->jobid, job->stepid);
+		} else {
+			debug("pe_rm_send_event: Checkpoint complete for %u.%u",
+			      job->jobid, job->stepid);
+		}
+	} else if ((job_event->event == JOB_CKPT_IN_PROGRESS) && job) {
+		/* FIXME: This may need to trigger switch/nrt call on each node
+		 * to preempt the job. Not sure how this works yet... */
+		debug("pe_rm_send_event: Checkpoint in progress for %u.%u",
+		      job->jobid, job->stepid);
+	}
+
 	return 0;
 }
 
