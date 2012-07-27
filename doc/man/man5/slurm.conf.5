@@ -206,7 +206,7 @@ Supported values presently include:
 .RS
 .TP 18
 \fBcheckpoint/aix\fR
-for AIX systems only
+for IBM AIX systems only
 .TP
 \fBcheckpoint/blcr\fR
 Berkeley Lab Checkpoint Restart (BLCR).
@@ -325,7 +325,7 @@ Resource selection plugin
 Slurmctld resource allocation for job steps
 .TP
 \fBSwitch\fR
-Siwtch plugin
+Switch plugin
 .TP
 \fBTriggers\fR
 Slurmctld triggers
@@ -529,7 +529,7 @@ of groups allowed to use a partition will be updated periodically, even when
 there have been no changes to the /etc/group file.
 Otherwise group member information will be updated periodically only after the
 /etc/group file is updated
-The default vaue is 0.
+The default value is 0.
 Also see the \fBGroupUpdateTime\fR parameter.
 
 .TP
@@ -1673,7 +1673,7 @@ The default value is "root".
 .TP
 \fBSlurmctldDebug\fR
 The level of detail to provide \fBslurmctld\fR daemon's logs.
-The default valus is \fBinfo\fR.
+The default value is \fBinfo\fR.
 .RS
 .TP 10
 \fBquiet\fR
@@ -1742,7 +1742,7 @@ May not exceed 65533.
 .TP
 \fBSlurmdDebug\fR
 The level of detail to provide \fBslurmd\fR daemon's logs.
-The default valus is \fBinfo\fR.
+The default value is \fBinfo\fR.
 .RS
 .TP 10
 \fBquiet\fR
@@ -2357,7 +2357,7 @@ By default, the \fBNodeAddr\fR will be identical in value to
 Number of Baseboards in nodes with a baseboard controller.
 Note that when Boards is specified, SocketsPerBoard,
 CoresPerSocket, and ThreadsPerCore should be specified.
-Boards and CPUs are mutully exclusive.
+Boards and CPUs are mutually exclusive.
 The default value is 1.
 
 .TP
@@ -2394,7 +2394,7 @@ A comma delimited list of generic resources specifications for a node.
 Each resource specification consists of a name followed by an optional
 colon with a numeric value (default value is one)
 (e.g. "Gres=bandwidth:10000,gpu:2").
-A suffix of "K", "M" or "G" may be used to mulitply the number by 1024,
+A suffix of "K", "M" or "G" may be used to multiply the number by 1024,
 1048576 or 1073741824 respectively (e.g. "Gres=bandwidth:4G,gpu:4")..
 By default a node has no generic resources and its maximum count is
 4,294,967,295.
