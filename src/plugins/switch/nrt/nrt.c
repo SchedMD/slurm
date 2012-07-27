@@ -39,6 +39,15 @@
  *****************************************************************************
  *  NOTE: The NRT API communicates with IBM's Protocol Network Services Deamon
  *  (PNSD). PNSD logs are written to /tmp/serverlog.
+ *
+ *  NOTE: To get good POE error message it may be necessary to execute
+ *  export LANG=en_US
+ *
+ *  NOTE: POE core files always written to /tmp
+ *
+ *  NOTE: POE and PMD initiallly load /usr/lib64/libpermapi.so rather than the
+ *  library specified by MP_PRE_RMLIB in /etc/poe.limits. For now we need to
+ *  put SLURM's libpermapi.so in /usr/lib64. IBM to address later.
 \*****************************************************************************/
 
 #include <assert.h>
