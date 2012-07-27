@@ -253,7 +253,8 @@ static int	_wait_for_window_unloaded(char *adapter_name,
 					  nrt_adapter_t adapter_type,
 					  nrt_window_id_t window_id, int retry,
 					  unsigned int max_windows);
-static int	_wait_job(nrt_job_key_t job_key,preemption_state_t want_state);
+static int	_wait_job(nrt_job_key_t job_key,preemption_state_t want_state,
+			  int max_wait_secs);
 static char *	_win_state_str(win_state_t state);
 static int	_window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname,
 				  win_state_t state);
@@ -4181,14 +4182,16 @@ static preemption_state_t _job_preempt_state(nrt_job_key_t job_key)
 }
 
 /* Return 0 when job in desired state, -1 on error */
-static int _wait_job(nrt_job_key_t job_key, preemption_state_t want_state)
+static int _wait_job(nrt_job_key_t job_key, preemption_state_t want_state,
+		     int max_wait_secs)
 {
 	preemption_state_t curr_state;
 	char *state_str = NULL;
+	time_t start_time = time(NULL), now;
 	int i;
 
-	for (i = 0; i < 100; i++) {
-		if (1)
+	for (i = 0; ; i++) {
+		if (i)
 			usleep(100000);
 		curr_state = _job_preempt_state(job_key);
 		if (curr_state == want_state) {
@@ -4211,18 +4214,24 @@ static int _wait_job(nrt_job_key_t job_key, preemption_state_t want_state)
 			      want_state);
 			return -1;
 		}
+		if (max_wait_secs) {
+			now = time(NULL);
+			if ((now - start_time) > max_wait_secs)
+				break;
+		}
 	}
 
 	if (want_state == PES_JOB_RUNNING)
 		state_str = "Running";
 	else if (want_state == PES_JOB_PREEMPTED)
 		state_str = "Preempted";
-	error("switch/nrt: Desired job state of %s not reached in %d msec",
-	      state_str, (100 * i));
+	error("switch/nrt: Desired job state of %s not reached in %d sec",
+	      state_str, (int)(now - start_time));
 	return -1;
 }
 
-extern int nrt_preempt_job(slurm_nrt_jobinfo_t *jp, nrt_option_t option)
+extern int nrt_preempt_job(slurm_nrt_jobinfo_t *jp, nrt_option_t option,
+			   int max_wait_secs)
 {
 	nrt_cmd_preempt_job_t preempt_job;
 	int err;
@@ -4230,7 +4239,7 @@ extern int nrt_preempt_job(slurm_nrt_jobinfo_t *jp, nrt_option_t option)
 	preempt_job.job_key	= jp->job_key;
 	preempt_job.option	= option;
 	preempt_job.timeout_val	= NULL;    /* Should be set? What value? */
-	if (_wait_job(jp->job_key, PES_JOB_RUNNING))
+	if (_wait_job(jp->job_key, PES_JOB_RUNNING, max_wait_secs))
 		return SLURM_ERROR;
 	/* NOTE: This function is non-blocking.
 	 * To detect completeion, poll on NRT_CMD_QUERY_PREEMPTION_STATE */
@@ -4239,12 +4248,13 @@ extern int nrt_preempt_job(slurm_nrt_jobinfo_t *jp, nrt_option_t option)
 		error("nrt_command(preempt job): %s", nrt_err_str(err));
 		return SLURM_ERROR;
 	}
-	if (_wait_job(jp->job_key, PES_JOB_PREEMPTED))
+	if (_wait_job(jp->job_key, PES_JOB_PREEMPTED, max_wait_secs))
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
 
-extern int nrt_resume_job(slurm_nrt_jobinfo_t *jp, nrt_option_t option)
+extern int nrt_resume_job(slurm_nrt_jobinfo_t *jp, nrt_option_t option,
+			  int max_wait_secs)
 {
 	nrt_cmd_resume_job_t resume_job;
 	int err;
@@ -4259,7 +4269,7 @@ extern int nrt_resume_job(slurm_nrt_jobinfo_t *jp, nrt_option_t option)
 		error("nrt_command(resume job): %s", nrt_err_str(err));
 		return SLURM_ERROR;
 	}
-	if (_wait_job(jp->job_key, PES_JOB_RUNNING))
+	if (_wait_job(jp->job_key, PES_JOB_RUNNING, max_wait_secs))
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
