@@ -110,6 +110,7 @@ static void  _ckpt_dequeue_timeout(uint32_t job_id, uint32_t step_id,
 		time_t start_time);
 static void  _ckpt_timeout_free(void *rec);
 static void  _ckpt_signal_step(struct ckpt_timeout_info *rec);
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -317,7 +318,7 @@ extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer,
 	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		pack16(check_ptr->disabled, buffer);
 		pack16(check_ptr->node_cnt, buffer);
 		pack16(check_ptr->reply_cnt, buffer);
@@ -338,7 +339,7 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer,
 	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
 		safe_unpack16(&check_ptr->disabled, buffer);
 		safe_unpack16(&check_ptr->node_cnt, buffer);
 		safe_unpack16(&check_ptr->reply_cnt, buffer);
