@@ -85,13 +85,15 @@ struct check_job_info {
 };
 
 static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
-		char *node_name, slurm_addr_t node_addr);
+		      char *node_name, slurm_addr_t node_addr);
 static int  _step_sig(struct step_record * step_ptr, uint16_t wait,
-		uint16_t signal, uint16_t sig_timeout);
+		      uint16_t signal, uint16_t sig_timeout);
 
 /* checkpoint request timeout processing */
+static bool		ckpt_agent_stop = false;
 static pthread_t	ckpt_agent_tid = 0;
 static pthread_mutex_t	ckpt_agent_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t	ckpt_agent_cond = PTHREAD_COND_INITIALIZER;
 static List		ckpt_timeout_list = NULL;
 struct ckpt_timeout_info {
 	uint32_t   job_id;
@@ -166,20 +168,17 @@ extern int init ( void )
 
 extern int fini ( void )
 {
-	int i;
+	pthread_mutex_lock(&ckpt_agent_mutex);
+	ckpt_agent_stop = true;
+	pthread_cond_signal(&ckpt_agent_cond);
+	pthread_mutex_unlock(&ckpt_agent_mutex);
 
-	if (!&ckpt_agent_tid)
-		return SLURM_SUCCESS;
-
-	for (i=0; i<4; i++) {
-		if (pthread_cancel(ckpt_agent_tid)) {
-			ckpt_agent_tid = 0;
-			return SLURM_SUCCESS;
-		}
-		usleep(1000);
+	if (ckpt_agent_tid && pthread_join(ckpt_agent_tid, NULL)) {
+		error("Could not kill checkpoint pthread");
+		return SLURM_ERROR;
 	}
-	error("Could not kill checkpoint pthread");
-	return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -188,7 +187,7 @@ extern int fini ( void )
 
 extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 			  struct step_record *step_ptr, uint16_t op,
-			  uint16_t data, char *image_dir, time_t * event_time,
+			  uint16_t data, char *image_dir, time_t *event_time,
 			  uint32_t *error_code, char **error_msg )
 {
 	int rc = SLURM_SUCCESS;
@@ -430,6 +429,17 @@ static int _step_sig(struct step_record * step_ptr, uint16_t wait,
 	return SLURM_SUCCESS;
 }
 
+static void _my_sleep(int secs)
+{
+	struct timespec ts = {0, 0};
+
+	ts.tv_sec = time(NULL) + secs;
+	pthread_mutex_lock(&ckpt_agent_mutex);
+	if (!ckpt_agent_stop)
+		pthread_cond_timedwait(&ckpt_agent_cond,&ckpt_agent_mutex,&ts);
+	pthread_mutex_unlock(&ckpt_agent_mutex);
+}
+
 /* Checkpoint processing pthread
  * Never returns, but is cancelled on plugin termiantion */
 static void *_ckpt_agent_thr(void *arg)
@@ -439,7 +449,9 @@ static void *_ckpt_agent_thr(void *arg)
 	time_t now;
 
 	while (1) {
-		sleep(1);
+		_my_sleep(1);
+		if (ckpt_agent_stop)
+			break;
 		if (!ckpt_timeout_list)
 			continue;
 
@@ -458,6 +470,7 @@ static void *_ckpt_agent_thr(void *arg)
 		slurm_mutex_unlock(&ckpt_agent_mutex);
 		list_iterator_destroy(iter);
 	}
+	return NULL;
 }
 
 static void _ckpt_signal_step(struct ckpt_timeout_info *rec)
