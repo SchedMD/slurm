@@ -233,6 +233,7 @@ static void	_hash_add_nodeinfo(slurm_nrt_libstate_t *state,
 static int	_hash_index(char *name);
 static void	_hash_rebuild(slurm_nrt_libstate_t *state);
 static void	_init_adapter_cache(void);
+static preemption_state_t _job_preempt_state(nrt_job_key_t job_key);
 static int	_job_step_window_state(slurm_nrt_jobinfo_t *jp,
 				       hostlist_t hl, win_state_t state);
 static void	_lock(void);
@@ -252,6 +253,7 @@ static int	_wait_for_window_unloaded(char *adapter_name,
 					  nrt_adapter_t adapter_type,
 					  nrt_window_id_t window_id, int retry,
 					  unsigned int max_windows);
+static int	_wait_job(nrt_job_key_t job_key,preemption_state_t want_state);
 static char *	_win_state_str(win_state_t state);
 static int	_window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname,
 				  win_state_t state);
@@ -4159,4 +4161,105 @@ extern bool nrt_adapter_name_check(char *token, hostlist_t hl)
 	_unlock();
 
 	return name_found;
+}
+
+static preemption_state_t _job_preempt_state(nrt_job_key_t job_key)
+{
+	nrt_cmd_query_preemption_state_t preempt_state;
+	preemption_state_t state;
+	int err;
+
+	preempt_state.job_key	= job_key;
+	preempt_state.state	= &state;
+	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_PREEMPTION_STATE,
+			  &preempt_state);
+	if (err != NRT_SUCCESS) {
+		error("nrt_command(preempt state): %s", nrt_err_str(err));
+		return PES_INIT;	/* No good return value for error */
+	}
+	return state;
+}
+
+/* Return 0 when job in desired state, -1 on error */
+static int _wait_job(nrt_job_key_t job_key, preemption_state_t want_state)
+{
+	preemption_state_t curr_state;
+	char *state_str = NULL;
+	int i;
+
+	for (i = 0; i < 100; i++) {
+		if (1)
+			usleep(100000);
+		curr_state = _job_preempt_state(job_key);
+		if (curr_state == want_state) {
+			debug("switch/nrt: Desired job state in %d msec",
+			      (100 * i));
+			return 0;
+		}
+		if ((curr_state == PES_PREEMPTION_FAILED) ||
+		    (curr_state == PES_RESUME_FAILED))
+			return -1;
+		if (want_state == PES_JOB_RUNNING) {
+			if ((curr_state != PES_INIT) &&
+			    (curr_state != PES_RESUME_INPROGRESS))
+				return -1;
+		} else if (want_state == PES_JOB_PREEMPTED) {
+			if (curr_state != PES_PREEMPTION_INPROGRESS)
+				return 0;
+		} else {
+			error("_wait_job: invalid desired state: %d",
+			      want_state);
+			return -1;
+		}
+	}
+
+	if (want_state == PES_JOB_RUNNING)
+		state_str = "Running";
+	else if (want_state == PES_JOB_PREEMPTED)
+		state_str = "Preempted";
+	error("switch/nrt: Desired job state of %s not reached in %d msec",
+	      state_str, (100 * i));
+	return -1;
+}
+
+extern int nrt_preempt_job(slurm_nrt_jobinfo_t *jp, nrt_option_t option)
+{
+	nrt_cmd_preempt_job_t preempt_job;
+	int err;
+
+	preempt_job.job_key	= jp->job_key;
+	preempt_job.option	= option;
+	preempt_job.timeout_val	= NULL;    /* Should be set? What value? */
+	if (_wait_job(jp->job_key, PES_JOB_RUNNING))
+		return SLURM_ERROR;
+	/* NOTE: This function is non-blocking.
+	 * To detect completeion, poll on NRT_CMD_QUERY_PREEMPTION_STATE */
+	err = nrt_command(NRT_VERSION, NRT_CMD_PREEMPT_JOB, &preempt_job);
+	if (err != NRT_SUCCESS) {
+		error("nrt_command(preempt job): %s", nrt_err_str(err));
+		return SLURM_ERROR;
+	}
+	if (_wait_job(jp->job_key, PES_JOB_PREEMPTED))
+		return SLURM_ERROR;
+	return SLURM_SUCCESS;
+}
+
+extern int nrt_resume_job(slurm_nrt_jobinfo_t *jp, nrt_option_t option)
+{
+	nrt_cmd_resume_job_t resume_job;
+	int err;
+
+	resume_job.job_key	= jp->job_key;
+	resume_job.option	= option;
+	resume_job.timeout_val	= NULL;    /* Should be set? What value? */
+	/* NOTE: This function is non-blocking.
+	 * To detect completeion, poll on NRT_CMD_QUERY_PREEMPTION_STATE */
+	err = nrt_command(NRT_VERSION, NRT_CMD_RESUME_JOB, &resume_job);
+	if (err != NRT_SUCCESS) {
+		error("nrt_command(resume job): %s", nrt_err_str(err));
+		return SLURM_ERROR;
+	}
+	if (_wait_job(jp->job_key, PES_JOB_RUNNING))
+		return SLURM_ERROR;
+	return SLURM_SUCCESS;
 }
