@@ -1348,7 +1348,7 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 	char *hostname = NULL;
 	char *port_str = NULL;
 	int error_code = SLURM_SUCCESS;
-	int address_count, alias_count, hostname_count, port_count;
+	int address_count, alias_count, hostname_count, port_count, port_int;
 	uint16_t port = 0;
 
 	if ((node_ptr->nodenames == NULL) || (node_ptr->nodenames[0] == '\0'))
@@ -1423,12 +1423,12 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 		error("At least as many NodeAddr are required as NodeName");
 		goto cleanup;
 	}
-#endif	/* MULTIPLE_SLURMD */
 	if (hostname_count < alias_count) {
 		error("At least as many NodeHostname are required "
 		      "as NodeName");
 		goto cleanup;
 	}
+#endif	/* MULTIPLE_SLURMD */
 #endif	/* HAVE_FRONT_END */
 	if ((port_count != alias_count) && (port_count > 1)) {
 		error("Port count must equal that of NodeName "
@@ -1438,12 +1438,22 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 
 	/* now build the individual node structures */
 	while ((alias = hostlist_shift(alias_list))) {
-		if ((address_count > 1)  || (address == NULL))
+		if (address_count > 0) {
+			address_count--;
+			if (address)
+				free(address);
 			address = hostlist_shift(address_list);
-		if ((hostname_count > 1) || (hostname == NULL))
+		}
+		if (hostname_count > 0) {
+			hostname_count--;
+			if (hostname)
+				free(hostname);
 			hostname = hostlist_shift(hostname_list);
-		if ((port_count > 1) && (port_str == NULL)) {
-			int port_int;
+		}
+		if (port_count > 0) {
+			port_count--;
+			if (port_str)
+				free(port_str);
 			port_str = hostlist_shift(port_list);
 			port_int = atoi(port_str);
 			if ((port_int <= 0) || (port_int > 0xffff))
@@ -1455,21 +1465,6 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 				  node_ptr->sockets, node_ptr->cores,
 				  node_ptr->threads);
 		free(alias);
-		if (address_count > 1) {
-			address_count--;
-			free(address);
-			address = NULL;
-		}
-		if (hostname_count > 1) {
-			hostname_count--;
-			free(hostname);
-			hostname = NULL;
-		}
-		if (port_count > 1) {
-			port_count--;
-			free(port_str);
-			port_str = NULL;
-		}
 	}
 	if (address)
 		free(address);
