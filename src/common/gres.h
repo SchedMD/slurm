@@ -45,6 +45,14 @@
 
 #define GRES_MAGIC 0x438a34d4
 
+
+enum {
+	GRES_VAL_TYPE_FOUND  = 0,
+	GRES_VAL_TYPE_CONFIG = 1,
+	GRES_VAL_TYPE_AVAIL  = 2,
+	GRES_VAL_TYPE_ALLOC  = 3
+};
+
 /* Gres state information gathered by slurmd daemon */
 typedef struct gres_slurmd_conf {
 	/* Count of gres available in this configuration record */
@@ -560,4 +568,36 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
  */
 extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
 				    uint32_t job_id, uint32_t step_id);
+
+/*
+ * Fill in an array of GRES type ids contained within the given gres_list
+ *		and an array of corresponding counts of those GRES types.
+ * IN gres_list - a List of GRES types found on a node.
+ * IN arrlen - Length of the arrays (the number of elements in the gres_list).
+ * IN gres_count_ids, gres_count_vals - the GRES type ID's and values found
+ *	 	in the gres_list.
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_num_gres_alloced_all(List gres_list, int arrlen,
+				     int* gres_count_ids, int* gres_count_vals,
+				     int valtype);
+
+/*
+ * Map a given GRES type ID back to a GRES type name.
+ * gres_id IN - GRES type ID to search for.
+ * gres_name IN - Pre-allocated string in which to store the GRES type name.
+ * gres_name_len - Size of gres_name in bytes
+ * RET - error code (currently not used--always return SLURM_SUCCESS)
+ */
+extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
+				   int gres_name_len);
+
+/*
+ * Determine how many GRES of a given type are allocated to a job
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN gres_name - name of a GRES type
+ * RET count of this GRES allocated to this job
+ */
+extern uint32_t gres_get_value_by_type(List job_gres_list, char* gres_name);
+
 #endif /* !_GRES_H */

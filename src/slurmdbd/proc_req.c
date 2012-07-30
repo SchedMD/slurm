@@ -36,7 +36,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/xstring.h"
+#include "src/common/gres.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurmdbd_defs.h"
@@ -45,6 +45,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
+#include "src/common/xstring.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
 #include "src/slurmdbd/proc_req.h"
@@ -2635,6 +2636,8 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.priority = job_start_msg->priority;
 	job.start_time = job_start_msg->start_time;
 	job.time_limit = job_start_msg->timelimit;
+	job.gres = job_start_msg->gres;
+	job.gres_alloc = job_start_msg->gres_alloc;
 	job.wckey = _replace_double_quotes(job_start_msg->wckey);
 	details.submit_time = job_start_msg->submit_time;
 

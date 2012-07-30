@@ -503,8 +503,12 @@ struct job_record {
 					 * wait call) */
 	front_end_record_t *front_end_ptr; /* Pointer to front-end node running
 					 * this job */
-	char *gres;			/* generic resources */
+	char *gres;			/* generic resources requested by job*/
 	List gres_list;			/* generic resource allocation detail */
+	char *gres_alloc;		/* Allocated generic resources string
+					 * to be passed to slurmdbd */
+	char *gres_used;		/* Used generic resources string
+					 * to be passed to slurmdbd */
 	uint32_t group_id;		/* group submitted under */
 	uint32_t job_id;		/* job ID */
 	struct job_record *job_next;	/* next entry with same hash index */
