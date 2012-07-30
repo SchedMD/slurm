@@ -124,9 +124,8 @@ void print_sinfo_reservation(reserve_info_msg_t *resv_ptr)
 	if (!params.no_header) {
 		for (i = 0; i < resv_ptr->record_count; i++)
 			width = MAX(width, _resv_name_width(&reserve_ptr[i]));
-		snprintf(format, sizeof(format), "%%-%ds", width);
-		strncat(format, "  %8s  %19s  %19s  %11s  %s\n",
-			sizeof(format));
+		snprintf(format, sizeof(format),
+			 "%%-%ds  %%8s  %%19s  %%19s  %%11s  %%s\n", width);
 		printf(format,
 		       "RESV_NAME", "STATE", "START_TIME", "END_TIME",
 		       "DURATION", "NODELIST");
@@ -159,8 +158,8 @@ static void _print_reservation(reserve_info_t *resv_ptr, int width)
 
 	if ((resv_ptr->start_time <= now) && (resv_ptr->end_time >= now))
 		state = "ACTIVE";
-	snprintf(format, sizeof(format), "%%-%ds", width);
-	strncat(format, "  %8s  %19s  %19s  %11s  %s\n",sizeof(format));
+	snprintf(format, sizeof(format),
+		 "%%-%ds  %%8s  %%19s  %%19s  %%11s  %%s\n", width);
 	printf(format,
 	       resv_ptr->name, state, tmp1, tmp2, tmp3, resv_ptr->node_list);
 
