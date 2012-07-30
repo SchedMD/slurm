@@ -68,12 +68,19 @@ environment variable available to the tasks as shown here: <br>
 <i>SLURM_STEP_RESV_PORTS=12000-12015</i></p>
 
 <pre>
-$ salloc -n4 sh    # allocates 4 processors
-                   # and spawns shell for job
+$ salloc -n4 sh   # allocates 4 processors and spawns shell for job
 &gt; srun --resv-port a.out
-&gt; exit             # exits shell spawned by
-                   # initial salloc command
-</pre></p>
+&gt; exit            # exits shell spawned by initial salloc command
+</pre>
+
+<p>Or</p>
+
+<pre>
+$ export SLURM_RESV_PORT=1
+$ salloc -n4 sh   # allocates 4 processors and spawns shell for job
+&gt; srun a.out
+&gt; exit            # exits shell spawned by initial salloc command
+</pre>
 
 <p>If the ports reserved for a job step are found by the Open MPI library
 to be in use, a message of this form will be printed and the job step
@@ -89,16 +96,12 @@ ports.</p>
 for the job and then mpirun to initiate the tasks.
 For example:</p>
 <pre>
-$ salloc -n4 sh    # allocates 4 processors
-                   # and spawns shell for job
+$ salloc -n4 sh   # allocates 4 processors and spawns shell for job
 &gt; mpirun a.out
-&gt; exit             # exits shell spawned by
-                   # initial salloc command
+&gt; exit            # exits shell spawned by initial salloc command
 </pre>
 
 <hr size=4 width="100%">
-
-nd spawns shell for job
 
 <h2><a name="intel_mpi"><b>Intel MPI</b></a></h2>
 
