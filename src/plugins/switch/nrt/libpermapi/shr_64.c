@@ -87,13 +87,6 @@ extern char **environ;
 extern int pm_type;
 extern int pmdlog;
 extern FILE *pmd_lfp;
-
-#define PMD_LOG(fmt, args...)						\
-	if (pmdlog) {							\
-		const char *f_name = strrchr(__FILE__, '/');		\
-		fprintf(pmd_lfp, "[%d@%s]: " fmt , __LINE__, f_name!=NULL?(f_name+1):__FILE__, ##args);	\
-		fflush(pmd_lfp);                                        \
-	}
 /************************************/
 
 /* The connection communicates information to and from the resource
@@ -133,10 +126,16 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	if (pm_type == PM_PMD) {
 		/* If the PMD calls this and it didn't launch anything we need
 		 * to not do anything here or PMD will crap out on it. */
-		PMD_LOG("got pe_rm_connect called from PMD\n");
+		debug("got pe_rm_connect called from PMD");
+		if (create_job_step(job, false) != SLURM_SUCCESS) {
+			error("no job step created");
+			return -1;
+		}
+
+
 		/* if (environ) { */
 		/* 	for (i=0; environ[i]; i++) { */
-		/* 		PMD_LOG("%s\n", environ[i]); */
+		/* 		PMD_LOG("%s", environ[i]); */
 		/* 	} */
 		/* } */
 	} else if (pm_type == PM_POE) {
@@ -145,30 +144,23 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		error("pe_rm_connect: unknown caller");
 		return -1;
 	}
-	PMD_LOG("before assert %p\n", job);
+
 	xassert(job);
-PMD_LOG("after assert\n");
 
 	opt.argc = my_argc;
 	opt.argv = my_argv;
 	opt.user_managed_io = true;
 
-	PMD_LOG("0 got pe_rm_connect called from PMD\n");
 	launch_common_set_stdio_fds(job, &cio_fds);
-	PMD_LOG("1 got pe_rm_connect called from PMD\n");
 	if (slurm_step_ctx_daemon_per_node_hack(job->step_ctx,
 						connect_param->machine_name,
 						connect_param->machine_count)
 	    != SLURM_SUCCESS) {
 		*error_msg = xstrdup_printf(
 			"pe_rm_connect: problem with hack");
-		if (pm_type == PM_PMD) {
-			PMD_LOG("%s", *error_msg);
-		} else
-			error("%s", *error_msg);
+		error("%s", *error_msg);
 		return -1;
 	}
-	PMD_LOG("2 got pe_rm_connect called from PMD\n");
 
 	if (launch_g_step_launch(job, &cio_fds, &global_rc)) {
 		*error_msg = xstrdup_printf(
@@ -177,7 +169,7 @@ PMD_LOG("after assert\n");
 		return -1;
 	}
 
-	PMD_LOG("3 got pe_rm_connect called from PMD\n");
+	debug("3 got pe_rm_connect called from");
 	rc = slurm_step_ctx_get(job->step_ctx,
 				SLURM_STEP_CTX_USER_MANAGED_SOCKETS,
 				&fd_cnt, &ctx_sockfds);
@@ -185,20 +177,14 @@ PMD_LOG("after assert\n");
 		*error_msg = xstrdup_printf(
 			"pe_rm_connect: Unable to get pmd IO socket array %d",
 			rc);
-		if (pm_type == PM_PMD) {
-			PMD_LOG("%s\n", *error_msg);
-		} else
-			error("%s", *error_msg);
+		error("%s", *error_msg);
 		return -1;
 	}
 	if (fd_cnt != connect_param->machine_count) {
 		*error_msg = xstrdup_printf(
 			"pe_rm_connect: looking for %d sockets but got back %d",
 			connect_param->machine_count, fd_cnt);
-		if (pm_type == PM_PMD) {
-			PMD_LOG("%s\n", *error_msg);
-		} else
-			error("%s", *error_msg);
+		error("%s", *error_msg);
 		return -1;
 	}
 
@@ -222,8 +208,8 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 	if (pm_type == PM_PMD) {
 		/* If the PMD calls this and it didn't launch anything we need
 		 * to not do anything here or PMD will crap out on it. */
-		PMD_LOG("got pe_rm_free called from PMD, "
-			"we don't handle this yet\n");
+		debug("got pe_rm_free called from PMD, "
+		      "we don't handle this yet");
 		return;
 	} else if (pm_type != PM_POE) {
 		error("pe_rm_free: unknown caller");
@@ -260,7 +246,7 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 extern int pe_rm_free_event(rmhandle_t resource_mgr, job_event_t ** job_event)
 {
 	if (pm_type == PM_PMD) {
-		PMD_LOG("pe_rm_free_event called\n");
+		debug("pe_rm_free_event called");
 		return 0;
 	} else if (pm_type != PM_POE) {
 		error("pe_rm_free_event: unknown caller");
@@ -338,7 +324,7 @@ extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 	job_event_t *ret_event = NULL;
 	int *state;
 	if (pm_type == PM_PMD) {
-		PMD_LOG("pe_rm_get_event called\n");
+		debug("pe_rm_get_event called");
 		return 0;
 	} else if (pm_type != PM_POE) {
 		error("pe_rm_get_event: unknown caller");
@@ -405,7 +391,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	nrt_network_id_t *network_id_list;
 
 	if (pm_type == PM_PMD) {
-		PMD_LOG("pe_rm_get_job_info called\n");
+		debug("pe_rm_get_job_info called");
 		return 0;
 	} else if (pm_type != PM_POE) {
 		error("pe_rm_get_job_info: unknown caller");
@@ -607,18 +593,29 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 
 	slurm_set_launch_type("launch/slurm");
 
+	if ((srun_debug = getenv("SRUN_DEBUG")))
+		debug_level = atoi(srun_debug);
+	log_opts.stderr_level  = debug_level;
+	log_opts.logfile_level = debug_level;
+	log_opts.syslog_level  = debug_level;
+
+	if (pm_type == PM_PMD)
+		log_alter_with_fp(log_opts, LOG_DAEMON, pmd_lfp);
+	else
+		log_alter(log_opts, LOG_DAEMON, "/dev/null");
+
+	/* This will be used later in the code to set the
+	 * _verbose level. */
+	if (debug_level >= LOG_LEVEL_INFO)
+		debug_level -= LOG_LEVEL_INFO;
+
+	debug("got pe_rm_init called %s %p", rm_id, info);
+
 	if (pm_type == PM_PMD) {
 		uint32_t job_id = -1, step_id = -1;
 		resource_allocation_response_msg_t resp;
 		char *myargv[3] = { "pmd", "pmd", NULL };
 		uint16_t cpn = 1;
-
-		PMD_LOG("pe_rm_init called\n");
-		debug_level = LOG_LEVEL_QUIET;
-		log_opts.stderr_level  = debug_level;
-		log_opts.logfile_level = debug_level;
-		log_opts.syslog_level  = debug_level;
-		log_alter(log_opts, LOG_DAEMON, "/dev/null");
 
 		init_srun(2, myargv, &log_opts, debug_level, 1);
 
@@ -627,14 +624,14 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		if ((srun_debug = getenv("SLURM_STEP_ID")))
 			step_id = atoi(srun_debug);
 		if (job_id == -1 || step_id == -1) {
-			PMD_LOG("error: SLURM_JOB_ID or SLURM_STEP_ID "
-				"not found %d.%d\n", job_id, step_id);
+			error("SLURM_JOB_ID or SLURM_STEP_ID "
+			      "not found %d.%d", job_id, step_id);
 			return -1;
 		}
 		opt.no_alloc = true;
 
 		memset(&resp, 0, sizeof(resp));
-		resp.node_list = "localhost";
+		opt.nodelist = resp.node_list = "localhost";
 		resp.node_cnt = 1;
 		resp.job_id = job_id;
 		resp.num_cpu_groups = 1;
@@ -644,20 +641,20 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		opt.overcommit = true;
 
 		if (!(job = job_create_allocation(&resp))) {
-			PMD_LOG("error: no job created\n");
+			error("no job created");
 			return -1;
 		}
-		PMD_LOG("job created %d\n",opt.no_alloc);
+		info("job created %d",opt.no_alloc);
 
-		if (create_job_step(job, false) != SLURM_SUCCESS) {
-			PMD_LOG("error: no job step created");
-			return -1;
-		}
+		/* if (create_job_step(job, false) != SLURM_SUCCESS) { */
+		/* 	error("no job step created"); */
+		/* 	return -1; */
+		/* } */
 
 		job->stepid = step_id;
 //		job->ntasks = job->cpu_count = 1;
 
-		PMD_LOG("pe_rm_init done\n");
+		info("pe_rm_init done");
 	} else if (pm_type == PM_POE) {
 		/* Don't print standard messages when running under
 		   PMD or it will get confused.
@@ -708,7 +705,7 @@ extern int pe_rm_send_event(rmhandle_t resource_mgr, job_event_t *job_event,
 	int rc;
 
 	if (pm_type == PM_PMD) {
-		PMD_LOG("pe_rm_send_event called\n");
+		debug("pe_rm_send_event called");
 		return 0;
 	} else if (pm_type != PM_POE) {
 		error("pe_rm_send_event: unknown caller");
@@ -766,7 +763,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		slurm_started = true;
 
 	if (pm_type == PM_PMD) {
-		PMD_LOG("pe_rm_submit_job called\n");
+		debug("pe_rm_submit_job called");
 		return 0;
 	} else if (pm_type != PM_POE) {
 		error("pe_rm_submit_job: unknown caller");
