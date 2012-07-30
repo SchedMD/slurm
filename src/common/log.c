@@ -489,6 +489,28 @@ int log_alter(log_options_t opt, log_facility_t fac, char *logfile)
 	return rc;
 }
 
+/* reinitialize log data structures. Like log_init, but do not init
+ * the log mutex
+ */
+int log_alter_with_fp(log_options_t opt, log_facility_t fac, FILE *fp_in)
+{
+	int rc = 0;
+	slurm_mutex_lock(&log_lock);
+	rc = _log_init(NULL, opt, fac, NULL);
+	if (log->logfp)
+		fclose(log->logfp); /* Ignore errors */
+	log->logfp = fp_in;
+	if (log->logfp) {
+		int fd;
+		if ((fd = fileno(log->logfp)) < 0)
+			log->logfp = NULL;
+		/* don't close fd on out since this fd was made
+		 * outside of the logger */
+	}
+	slurm_mutex_unlock(&log_lock);
+	return rc;
+}
+
 /* reinitialize scheduler log data structures. Like sched_log_init,
  * but do not init the log mutex
  */
