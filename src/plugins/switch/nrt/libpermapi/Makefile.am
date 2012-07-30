@@ -15,7 +15,7 @@ CPPFLAGS = -DMYSELF_SO=\"$(libdir)/slurm/libpermapi.so\"
 
 libpermapi_la_SOURCES = shr_64.c
 
-libpermapi_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(DL_LIBS)
+libpermapi_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(DL_LIBS) -Wl,-Bsymbolic
 
 libpermapi_la_LIBADD = $(top_builddir)/src/srun/libsrun/libsrun.la \
 	$(top_builddir)/src/api/libslurmhelper.la
