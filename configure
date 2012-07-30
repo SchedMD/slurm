@@ -19710,7 +19710,7 @@ $as_echo "$x_ac_cv_hwloc_dir" >&6; }
 $as_echo "$as_me: WARNING: unable to locate hwloc installation" >&2;}
   else
     HWLOC_CPPFLAGS="-I$x_ac_cv_hwloc_dir/include"
-    HWLOC_LDFLAGS="-L$x_ac_cv_hwloc_dir/$bit"
+    HWLOC_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_hwloc_dir/$bit -L$x_ac_cv_hwloc_dir/$bit"
     HWLOC_LIBS="-lhwloc"
 
 $as_echo "#define HAVE_HWLOC 1" >>confdefs.h
@@ -21240,7 +21240,7 @@ $as_echo_n "checking whether to enable IBM NRT support... " >&6; }
       # search for required NRT API libraries
       if test -f "$nrt_dir/libnrt.so"; then
          ac_have_libnrt="yes"
-         NRT_LDFLAGS="-L$nrt_dir -lnrt"
+         NRT_LDFLAGS="-Wl,-rpath -Wl,$nrt_dir -L$nrt_dir -lnrt"
 	 break;
       fi
    done
