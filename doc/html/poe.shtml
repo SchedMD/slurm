@@ -131,7 +131,7 @@ host name, process ID, etc. Since that information is only available from
 poe (which launches those tasks), the srun command wrapper can not be used
 for most debugging purposes. You or the debugging tool must invoke the poe
 command directly. In order to facilitate use of poe, srun's 
-<br><b>FIXME: We need to add this functionality</b>
+<br><b>--launch-cmd</b>
 option may be used with the options
 normally used in order to generate the equivalent poe command line, which
 can subsequently be used with the debugger.</p>
@@ -229,6 +229,6 @@ MP_POOL=slurm
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 18 July 2012</p></td>
+<p style="text-align:center;">Last modified 30 July 2012</p></td>
 
 <!--#include virtual="footer.txt"-->
