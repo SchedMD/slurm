@@ -46,9 +46,11 @@
 #  include "config.h"
 #endif
 
+#include "src/common/slurm_xlator.h"
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/common/log.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/list.h"
@@ -131,32 +133,42 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	if (pm_type == PM_PMD) {
 		/* If the PMD calls this and it didn't launch anything we need
 		 * to not do anything here or PMD will crap out on it. */
-		PMD_LOG("got pe_rm_connect called from PMD, "
-			"we don't handle this yet\n");
-		return -1;
-	} else if (pm_type != PM_POE) {
+		PMD_LOG("got pe_rm_connect called from PMD\n");
+		/* if (environ) { */
+		/* 	for (i=0; environ[i]; i++) { */
+		/* 		PMD_LOG("%s\n", environ[i]); */
+		/* 	} */
+		/* } */
+	} else if (pm_type == PM_POE) {
+		debug("got pe_rm_connect called");
+	} else {
 		error("pe_rm_connect: unknown caller");
 		return -1;
 	}
-
+	PMD_LOG("before assert %p\n", job);
 	xassert(job);
-
-	debug("got pe_rm_connect called");
+PMD_LOG("after assert\n");
 
 	opt.argc = my_argc;
 	opt.argv = my_argv;
 	opt.user_managed_io = true;
 
+	PMD_LOG("0 got pe_rm_connect called from PMD\n");
 	launch_common_set_stdio_fds(job, &cio_fds);
+	PMD_LOG("1 got pe_rm_connect called from PMD\n");
 	if (slurm_step_ctx_daemon_per_node_hack(job->step_ctx,
 						connect_param->machine_name,
 						connect_param->machine_count)
 	    != SLURM_SUCCESS) {
 		*error_msg = xstrdup_printf(
 			"pe_rm_connect: problem with hack");
-		error("%s", *error_msg);
+		if (pm_type == PM_PMD) {
+			PMD_LOG("%s", *error_msg);
+		} else
+			error("%s", *error_msg);
 		return -1;
 	}
+	PMD_LOG("2 got pe_rm_connect called from PMD\n");
 
 	if (launch_g_step_launch(job, &cio_fds, &global_rc)) {
 		*error_msg = xstrdup_printf(
@@ -165,6 +177,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		return -1;
 	}
 
+	PMD_LOG("3 got pe_rm_connect called from PMD\n");
 	rc = slurm_step_ctx_get(job->step_ctx,
 				SLURM_STEP_CTX_USER_MANAGED_SOCKETS,
 				&fd_cnt, &ctx_sockfds);
@@ -172,14 +185,20 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		*error_msg = xstrdup_printf(
 			"pe_rm_connect: Unable to get pmd IO socket array %d",
 			rc);
-		error("%s", *error_msg);
+		if (pm_type == PM_PMD) {
+			PMD_LOG("%s\n", *error_msg);
+		} else
+			error("%s", *error_msg);
 		return -1;
 	}
 	if (fd_cnt != connect_param->machine_count) {
 		*error_msg = xstrdup_printf(
 			"pe_rm_connect: looking for %d sockets but got back %d",
 			connect_param->machine_count, fd_cnt);
-		error("%s", *error_msg);
+		if (pm_type == PM_PMD) {
+			PMD_LOG("%s\n", *error_msg);
+		} else
+			error("%s", *error_msg);
 		return -1;
 	}
 
@@ -567,15 +586,14 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	 */
 	*rmapi_version = 1300;
 	*resource_mgr = (void *)&job;
+
 #ifdef MYSELF_SO
 	/* Since POE opens this lib without
-	   RTLD_LAZY | RTLD_GLOBAL
+	   RTLD_LAZY | RTLD_GLOBAL | RTLD_DEEPBIND
 	   we just open ourself again with those options and bada bing
 	   bada boom we are good to go with the symbols we need.
-	   Don't use RTLD_DEEPBIND or you will get bad errors when log
-	   messages are printed.
 	*/
-	my_handle = dlopen(MYSELF_SO, RTLD_LAZY | RTLD_GLOBAL);
+	my_handle = dlopen(MYSELF_SO, RTLD_LAZY | RTLD_GLOBAL | RTLD_DEEPBIND);
 	if (!my_handle) {
 		debug("%s", dlerror());
 		return 1;
@@ -583,36 +601,87 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 #else
 	fatal("I haven't been told where I am.  This should never happen.");
 #endif
-	if (pm_type == PM_PMD) {
-		PMD_LOG("pe_rm_init called\n");
-		return 0;
-	} else if (pm_type != PM_POE) {
-		error("pe_rm_init: unknown caller");
-		return -1;
-	}
-
-	debug("got pe_rm_init called %s", rm_id);
 
 	if (slurm_select_init(1) != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin" );
 
-	/* Set up slurmctld message handler */
-	slurmctld_msg_init();
 	slurm_set_launch_type("launch/slurm");
 
-	if ((srun_debug = getenv("SRUN_DEBUG")))
-		debug_level = atoi(srun_debug);
-	if (debug_level) {
+	if (pm_type == PM_PMD) {
+		uint32_t job_id = -1, step_id = -1;
+		resource_allocation_response_msg_t resp;
+		char *myargv[3] = { "pmd", "pmd", NULL };
+		uint16_t cpn = 1;
+
+		PMD_LOG("pe_rm_init called\n");
+		debug_level = LOG_LEVEL_QUIET;
 		log_opts.stderr_level  = debug_level;
 		log_opts.logfile_level = debug_level;
 		log_opts.syslog_level  = debug_level;
-
 		log_alter(log_opts, LOG_DAEMON, "/dev/null");
-	}
 
-	/* This will be used later in the code to set the _verbose level. */
-	if (debug_level >= LOG_LEVEL_INFO)
-		debug_level -= LOG_LEVEL_INFO;
+		init_srun(2, myargv, &log_opts, debug_level, 1);
+
+		if ((srun_debug = getenv("SLURM_JOB_ID")))
+			job_id = atoi(srun_debug);
+		if ((srun_debug = getenv("SLURM_STEP_ID")))
+			step_id = atoi(srun_debug);
+		if (job_id == -1 || step_id == -1) {
+			PMD_LOG("error: SLURM_JOB_ID or SLURM_STEP_ID "
+				"not found %d.%d\n", job_id, step_id);
+			return -1;
+		}
+		opt.no_alloc = true;
+
+		memset(&resp, 0, sizeof(resp));
+		resp.node_list = "localhost";
+		resp.node_cnt = 1;
+		resp.job_id = job_id;
+		resp.num_cpu_groups = 1;
+		resp.cpus_per_node = &cpn;
+		resp.cpu_count_reps = &resp.node_cnt;
+
+		opt.overcommit = true;
+
+		if (!(job = job_create_allocation(&resp))) {
+			PMD_LOG("error: no job created\n");
+			return -1;
+		}
+		PMD_LOG("job created %d\n",opt.no_alloc);
+
+		if (create_job_step(job, false) != SLURM_SUCCESS) {
+			PMD_LOG("error: no job step created");
+			return -1;
+		}
+
+		job->stepid = step_id;
+//		job->ntasks = job->cpu_count = 1;
+
+		PMD_LOG("pe_rm_init done\n");
+	} else if (pm_type == PM_POE) {
+		/* Don't print standard messages when running under
+		   PMD or it will get confused.
+		*/
+		if ((srun_debug = getenv("SRUN_DEBUG")))
+			debug_level = atoi(srun_debug);
+		if (debug_level) {
+			log_opts.stderr_level  = debug_level;
+			log_opts.logfile_level = debug_level;
+			log_opts.syslog_level  = debug_level;
+
+			log_alter(log_opts, LOG_DAEMON, "/dev/null");
+			/* This will be used later in the code to set the
+			 * _verbose level. */
+			if (debug_level >= LOG_LEVEL_INFO)
+				debug_level -= LOG_LEVEL_INFO;
+		}
+		debug("got pe_rm_init called %s", rm_id);
+		/* Set up slurmctld message handler */
+		slurmctld_msg_init();
+	} else {
+		error("pe_rm_init: unknown caller");
+		return -1;
+	}
 
 	return 0;
 }
