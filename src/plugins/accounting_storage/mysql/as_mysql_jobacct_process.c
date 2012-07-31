@@ -242,8 +242,7 @@ static void _state_time_string(char **extra, uint32_t state,
 		}
 		break;
 	case JOB_SUSPENDED:
-		/* FIX ME: this should do something with the suspended
-		   table, but it doesn't right now. */
+		/* Handle this the same way we handle RUNNING. */
 	case JOB_RUNNING:
 		if (start) {
 			if (!end) {
@@ -252,7 +251,7 @@ static void _state_time_string(char **extra, uint32_t state,
 					   "((!t1.time_end && t1.state=%d) || "
 					   "(%d between t1.time_start "
 					   "and t1.time_end)))",
-					   JOB_RUNNING, start);
+					   base_state, start);
 			} else {
 				xstrfmtcat(*extra,
 					   "(t1.time_start && "
@@ -978,16 +977,16 @@ extern int good_nodes_from_inx(List local_cluster_list,
 	return 1;
 }
 
-extern char *setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
-					   slurmdb_job_cond_t *job_cond,
-					   char *cluster_name, char **extra)
+extern int setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
+					 slurmdb_job_cond_t *job_cond,
+					 char *cluster_name, char **extra)
 {
 	int set = 0;
 	ListIterator itr = NULL;
 	char *object = NULL;
 
 	if (!job_cond)
-		return NULL;
+		return SLURM_SUCCESS;
 
 	/* this must be done before resvid_list since we set
 	   resvid_list up here */
@@ -1039,6 +1038,78 @@ no_resv:
 		}
 		list_iterator_destroy(itr);
 		xstrcat(*extra, ")");
+	}
+
+	if (job_cond->state_list && list_count(job_cond->state_list)) {
+		itr = list_iterator_create(job_cond->state_list);
+		while ((object = list_next(itr))) {
+			uint32_t state = (uint32_t)slurm_atoul(object);
+			state &= JOB_STATE_BASE;
+			if (state == JOB_SUSPENDED)
+				break;
+		}
+		list_iterator_destroy(itr);
+
+		if (object) {
+			MYSQL_RES *result = NULL;
+			MYSQL_ROW row;
+			char *query = xstrdup_printf(
+				"select job_db_inx from \"%s_%s\"",
+				cluster_name, suspend_table);
+			if (job_cond->usage_start) {
+				if (!job_cond->usage_end) {
+					xstrfmtcat(query,
+						   " where (!time_end "
+						   "|| (%d between "
+						   "time_start and time_end))",
+						   (int)job_cond->usage_start);
+				} else {
+					xstrfmtcat(query,
+						   " where (!time_end "
+						   "|| (time_start && "
+						   "((%d between time_start "
+						   "and time_end) "
+						   "|| (time_start between "
+						   "%d and %d))))",
+						   (int)job_cond->usage_start,
+						   (int)job_cond->usage_start,
+						   (int)job_cond->usage_end);
+				}
+			} else if (job_cond->usage_end) {
+				xstrfmtcat(query, " where (time_start && "
+					   "time_start < %d)",
+					   (int)job_cond->usage_end);
+			}
+
+			debug3("%d(%s:%d) query\n%s",
+			       mysql_conn->conn, THIS_FILE, __LINE__, query);
+			result = mysql_db_query_ret(mysql_conn, query, 0);
+			xfree(query);
+			if (!result)
+				return SLURM_ERROR;
+			set = 0;
+			while ((row = mysql_fetch_row(result))) {
+				if (set)
+					xstrfmtcat(*extra,
+						   " || t1.job_db_inx=%s",
+						   row[0]);
+				else {
+					set = 1;
+					if (*extra)
+						xstrfmtcat(
+							*extra,
+							" || (t1.job_db_inx=%s",
+							row[0]);
+					else
+						xstrfmtcat(*extra, " where "
+							   "(t1.job_db_inx=%s",
+							   row[0]);
+				}
+			}
+			mysql_free_result(result);
+			if (set)
+				xstrcat(*extra, ")");
+		}
 	}
 
 	return SLURM_SUCCESS;
@@ -1259,6 +1330,7 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		while ((object = list_next(itr))) {
 			if (set)
 				xstrcat(*extra, " || ");
+
 			_state_time_string(extra, (uint32_t)slurm_atoul(object),
 					   job_cond->usage_start,
 					   job_cond->usage_end);

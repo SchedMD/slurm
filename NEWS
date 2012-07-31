@@ -85,6 +85,8 @@ documents those changes that are of interest to users and admins.
     exec of mount/umount from Janne Blomqvist.
  -- BLUEGENE - correct start time setup when no jobs are blocking the way
     from Mark Nelson
+ -- Fixed sacct --state=S query to return information about suspended jobs
+    current or in the past.
 
 * Changes in SLURM 2.4.1
 ========================
