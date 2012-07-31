@@ -97,8 +97,6 @@ int xcgroup_ns_destroy(xcgroup_ns_t* cgns);
  * returned values:
  *  - XCGROUP_ERROR
  *  - XCGROUP_SUCCESS
- *
- * If an error occurs, errno will be set.
  */
 int xcgroup_ns_mount(xcgroup_ns_t* cgns);
 
@@ -108,8 +106,6 @@ int xcgroup_ns_mount(xcgroup_ns_t* cgns);
  * returned values:
  *  - XCGROUP_ERROR
  *  - XCGROUP_SUCCESS
- *
- * If an error occurs, errno will be set.
  */
 int xcgroup_ns_umount(xcgroup_ns_t* cgns);
 

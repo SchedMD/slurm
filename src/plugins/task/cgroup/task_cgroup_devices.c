@@ -123,7 +123,7 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		if ( slurm_cgroup_conf->cgroup_automount ) {
 			if ( xcgroup_ns_mount(&devices_ns) ) {
 				error("task/cgroup: unable to mount devices "
-				      "namespace: %s", slurm_strerror(errno));
+				      "namespace");
 				goto clean;
 			}
 			info("task/cgroup: devices namespace is now mounted");

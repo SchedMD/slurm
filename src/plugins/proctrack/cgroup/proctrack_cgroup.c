@@ -147,8 +147,7 @@ int _slurm_cgroup_init(void)
 		if (slurm_cgroup_conf.cgroup_automount) {
 			if (xcgroup_ns_mount(&freezer_ns)) {
 				error("unable to mount freezer cgroup"
-				      " namespace: %s",
-				      slurm_strerror(errno));
+				      " namespace");
 				return SLURM_ERROR;
 			}
 			info("cgroup namespace '%s' is now mounted", "freezer");
