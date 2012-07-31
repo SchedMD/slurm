@@ -46,6 +46,8 @@ documents those changes that are of interest to users and admins.
     the current plugin has been loaded when using runjob_mux_refresh_config
  -- CGROUPS - Use system mount/umount function calls instead of doing fork
     exec of mount/umount from Janne Blomqvist.
+ -- BLUEGENE - correct start time setup when no jobs are blocking the way
+    from Mark Nelson
 
 * Changes in SLURM 2.4.1
 ========================
