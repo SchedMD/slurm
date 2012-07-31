@@ -93,6 +93,37 @@ typedef struct agent_data {
 	slurm_fd_t fe_comm_socket;
 } agent_data_t;
 
+static Buf _pack_srun_job_rec(void)
+{
+	Buf buffer;
+
+	buffer = init_buf(4096);
+	pack32(job->jobid, buffer);
+	pack32(job->stepid, buffer);
+	pack32(job->cpu_count, buffer);
+	pack32(job->nhosts, buffer);
+	pack32(job->ntasks, buffer);
+
+	return buffer;
+}
+static srun_job_t * _unpack_srun_job_rec(Buf buffer)
+{
+	srun_job_t *job_data;
+
+	job_data = xmalloc(sizeof(srun_job_t));
+	safe_unpack32(&job_data->jobid, buffer);
+	safe_unpack32(&job_data->stepid, buffer);
+	safe_unpack32(&job_data->cpu_count, buffer);
+	safe_unpack32(&job_data->nhosts, buffer);
+	safe_unpack32(&job_data->ntasks, buffer);
+
+	return job_data;
+
+unpack_error:
+	xfree(job_data);
+	return NULL;
+}
+
 /* Validate a message connection
  * Return: true=valid/authenticated */
 static bool _validate_connect(slurm_fd_t socket_conn, uint32_t auth_key)
@@ -108,7 +139,7 @@ static bool _validate_connect(slurm_fd_t socket_conn, uint32_t auth_key)
 		FD_ZERO(&read_fds);
 		FD_SET(socket_conn, &read_fds);
 
-		tv.tv_sec = 2;
+		tv.tv_sec = 10;
 		tv.tv_usec = 0;
 		i = select((n_fds + 1), &read_fds, NULL, NULL, &tv);
 		if (i == 0)
@@ -138,6 +169,10 @@ static void _agent_proc_connect(slurm_fd_t fe_comm_socket,uint32_t fe_auth_key)
 	slurm_fd_t fe_comm_conn = -1;
 	slurm_addr_t be_addr;
 	bool be_connected = false;
+	Buf buffer = NULL;
+	uint32_t buf_size;
+	char *buf_data;
+	int i, offset = 0;
 
 	while (1) {
 		fe_comm_conn = slurm_accept_stream(fe_comm_socket, &be_addr);
@@ -148,15 +183,44 @@ static void _agent_proc_connect(slurm_fd_t fe_comm_socket,uint32_t fe_auth_key)
 		}
 		if (errno != EINTR) {
 			error("slurm_accept_stream: %m");
-			goto fini;
+			break;
 		}
 	}
 
-fini:	if (be_connected) {
-		info("READY TO SEND JOB INFO NOW");
+	if (!be_connected)
+		goto fini;
+
+	buffer = _pack_srun_job_rec();
+	buf_size = get_buf_offset(buffer);
+	buf_data = (char *) &buf_size;
+	i = slurm_write_stream_timeout(fe_comm_conn, buf_data,
+				       sizeof(buf_size), 8000);
+	if (i < sizeof(buf_size)) {
+		error("_agent_proc_connect write: %m");
+		goto fini;
 	}
-	if (fe_comm_conn >= 0)
+
+	buf_data = get_buf_data(buffer);
+	while (buf_size > offset) {
+		i = slurm_write_stream_timeout(fe_comm_conn, buf_data + offset,
+					       buf_size - offset, 8000);
+		if (i < 0) {
+			if ((errno != EAGAIN) && (errno != EINTR)) {
+				error("_agent_proc_connect write: %m");
+				break;
+			}
+		} else if (i > 0) {
+			offset += i;
+		} else {
+			error("_agent_proc_connect write: timeout");
+			break;
+		}
+	}
+
+fini:	if (fe_comm_conn >= 0)
 		slurm_close_accepted_conn(fe_comm_conn);
+	if (buffer)
+		free_buf(buffer);
 }
 
 /* Thread to wait for and process messgaes from PMD (via libpermapi) */
@@ -261,10 +325,12 @@ srun_job_t * _read_job_srun_agent(void)
 	char buf[32], *host, *sep;
 	slurm_fd_t resp_socket;
 	uint16_t resp_port;
-	uint32_t resp_auth_key;
+	uint32_t resp_auth_key, buf_size;
 	srun_job_t *srun_job = NULL;
 	slurm_addr_t resp_addr;
-	int i;
+	char *job_data;
+	Buf buffer;
+	int i, offset = 0;
 
 	if (!key_str) {
 		error("SLURM_FE_KEY environment variable not set");
@@ -293,16 +359,38 @@ srun_job_t * _read_job_srun_agent(void)
 	}
 
 	resp_auth_key = atoi(key_str);
-	memcpy(buf+0,  &resp_auth_key, 4);
-	i = slurm_write_stream_timeout(resp_socket, buf, 4, 10);
+	memcpy(buf + 0, &resp_auth_key, 4);
+	i = slurm_write_stream_timeout(resp_socket, buf, 4, 8000);
 	if (i < 4) {
 		error("_read_job_srun_agent write: %m");
 		return NULL;
 	}
 
-//	srun_job = xmalloc(sizeof(srun_job_t));
-/* Read and populate the data structure */
+	i = slurm_read_stream_timeout(resp_socket, (char *) &buf_size, 4, 8000);
+	if (i < 4) {
+		error("_read_job_srun_agent read (i=%d): %m", i);
+		return NULL;
+	}
+	job_data = xmalloc(buf_size);
+	while (buf_size > offset) {
+		i = slurm_read_stream_timeout(resp_socket, job_data + offset,
+					      buf_size - offset, 8000);
+		if (i < 0) {
+			if ((errno != EAGAIN) && (errno != EINTR)) {
+				error("_read_job_srun_agent read (buf=%d): %m", i);
+				break;
+			}
+		} else if (i > 0) {
+			offset += i;
+		} else {
+			error("_read_job_srun_agent read: timeout");
+			break;
+		}
+	}
 	slurm_shutdown_msg_engine(resp_socket);
+	buffer = create_buf(job_data, buf_size);
+	srun_job = _unpack_srun_job_rec(buffer);
+	free_buf(buffer);	/* This does xfree(job_data) */
 
 	return srun_job;
 }
@@ -858,26 +946,12 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		resp.cpus_per_node = &cpn;
 		resp.cpu_count_reps = &resp.node_cnt;
 
-#if 1
 		job = _read_job_srun_agent();
-#else
-		opt.overcommit = true;
-		job = job_create_allocation(&resp);
-#endif
 		if (!job) {
 			error("no job created");
 			return -1;
 		}
-		info("job created %d",opt.no_alloc);
-
-		/* if (create_job_step(job, false) != SLURM_SUCCESS) { */
-		/* 	error("no job step created"); */
-		/* 	return -1; */
-		/* } */
-
-		job->stepid = step_id;
-//		job->ntasks = job->cpu_count = 1;
-
+		error("job created %u.%u", job->jobid, job->stepid);
 		info("pe_rm_init done");
 	} else if (pm_type == PM_POE) {
 		/* Don't print standard messages when running under
