@@ -44,6 +44,8 @@ documents those changes that are of interest to users and admins.
     with "none" (e.g. "none.o").
  -- BGQ - added version string to the load of the runjob_mux plugin to verify
     the current plugin has been loaded when using runjob_mux_refresh_config
+ -- Use system mount/umount function calls instead of doing fork exec of
+    mount/umount from Janne Blomqvist.
 
 * Changes in SLURM 2.4.1
 ========================

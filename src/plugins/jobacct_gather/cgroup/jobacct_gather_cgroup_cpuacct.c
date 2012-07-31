@@ -98,7 +98,8 @@ extern int jobacct_gather_cgroup_cpuacct_init(
 		if (slurm_cgroup_conf->cgroup_automount) {
 			if (xcgroup_ns_mount(&cpuacct_ns)) {
 				error("jobacct_gather/cgroup: unable to mount "
-				      "cpuacct namespace");
+				      "cpuacct namespace: %s",
+				      slurm_strerror(errno));
 				goto clean;
 			}
 			info("jobacct_gather/cgroup: cpuacct namespace is now "

@@ -98,7 +98,8 @@ extern int jobacct_gather_cgroup_memory_init(
 		if (slurm_cgroup_conf->cgroup_automount) {
 			if (xcgroup_ns_mount(&memory_ns)) {
 				error("jobacct_gather/cgroup: unable to mount "
-				      "memory namespace");
+				      "memory namespace: %s",
+				      slurm_strerror(errno));
 				goto clean;
 			}
 			info("jobacct_gather/cgroup: memory namespace is now "
