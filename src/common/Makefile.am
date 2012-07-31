@@ -46,6 +46,7 @@ libcommon_la_SOURCES = 			\
 	strlcpy.c strlcpy.h		\
 	list.c list.h 			\
 	xtree.c xtree.h			\
+	xhash.c xhash.h			\
 	net.c net.h                     \
 	log.c log.h			\
 	cbuf.c cbuf.h			\
