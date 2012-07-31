@@ -138,7 +138,8 @@ Plugin::Plugin() :
 
 	runjob_list = list_create(_destroy_runjob_job);
 
-	std::cout << "Slurm runjob plugin loaded" << std::endl;
+	std::cout << "Slurm runjob plugin loaded version "
+		  << SLURM_VERSION_STRING << std::endl;
 }
 
 Plugin::~Plugin()
