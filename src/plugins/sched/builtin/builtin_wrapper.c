@@ -151,9 +151,6 @@ slurm_sched_plugin_initial_priority( uint32_t last_prio,
 
 /**************************************************************************/
 /* TAG(              slurm_sched_plugin_job_is_pending                  ) */
-/*   This entire implementation does nothing more than calculate the      */
-/*   expected start time for pending jobs.  The logic is borrowed from    */
-/*   backfill.c                                                           */
 /**************************************************************************/
 void slurm_sched_plugin_job_is_pending( void )
 {
