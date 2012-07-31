@@ -1337,7 +1337,7 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid, int protocol)
 		safe_read(fd, buf, len);
 		buffer = create_buf(buf, len);
 		jobacctinfo_unpack(&jobacct, SLURM_PROTOCOL_VERSION,
-					buffer);
+				   PROTOCOL_TYPE_SLURM, buffer);
 		free_buf(buffer);
 	} else {
 		jobacct = jobacctinfo_create(NULL);

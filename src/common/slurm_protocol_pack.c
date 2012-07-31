@@ -60,13 +60,13 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
+#include "src/common/slurmdbd_defs.h"
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xassert.h"
 #include "src/common/forward.h"
 #include "src/common/job_options.h"
-#include "src/common/slurmdbd_defs.h"
 
 #define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
@@ -9810,14 +9810,16 @@ _pack_complete_batch_script_msg(
 	uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
-		jobacctinfo_pack(msg->jobacct, protocol_version, buffer);
+		jobacctinfo_pack(msg->jobacct,
+				protocol_version, PROTOCOL_TYPE_SLURM, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_rc, buffer);
 		pack32(msg->slurm_rc, buffer);
 		pack32(msg->user_id, buffer);
 		packstr(msg->node_name, buffer);
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-		jobacctinfo_pack(msg->jobacct, protocol_version, buffer);
+		jobacctinfo_pack(msg->jobacct,
+				protocol_version, PROTOCOL_TYPE_SLURM, buffer);
 		pack32((uint32_t)msg->job_id, buffer);
 		pack32((uint32_t)msg->job_rc, buffer);
 		pack32((uint32_t)msg->slurm_rc, buffer);
@@ -9842,8 +9844,8 @@ _unpack_complete_batch_script_msg(
 	*msg_ptr = msg;
 
 	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
-		if (jobacctinfo_unpack(&msg->jobacct,
-				       protocol_version, buffer)
+		if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
+				       PROTOCOL_TYPE_SLURM, buffer)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&msg->job_id, buffer);
@@ -9852,8 +9854,8 @@ _unpack_complete_batch_script_msg(
 		safe_unpack32(&msg->user_id, buffer);
 		safe_unpackstr_xmalloc(&msg->node_name, &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-		if (jobacctinfo_unpack(&msg->jobacct,
-				       protocol_version, buffer)
+		if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
+				       PROTOCOL_TYPE_SLURM, buffer)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&msg->job_id, buffer);
@@ -9880,7 +9882,8 @@ _pack_job_step_stat(job_step_stat_t * msg, Buf buffer,
 {
 	pack32((uint32_t)msg->return_code, buffer);
 	pack32((uint32_t)msg->num_tasks, buffer);
-	jobacctinfo_pack(msg->jobacct, protocol_version, buffer);
+		jobacctinfo_pack(msg->jobacct,
+				protocol_version, PROTOCOL_TYPE_SLURM, buffer);
 	_pack_job_step_pids(msg->step_pids, buffer, protocol_version);
 }
 
@@ -9897,7 +9900,8 @@ _unpack_job_step_stat(job_step_stat_t ** msg_ptr, Buf buffer,
 
 	safe_unpack32(&msg->return_code, buffer);
 	safe_unpack32(&msg->num_tasks, buffer);
-	if (jobacctinfo_unpack(&msg->jobacct, protocol_version, buffer)
+	if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
+			       PROTOCOL_TYPE_SLURM, buffer)
 	    != SLURM_SUCCESS)
 		goto unpack_error;
 	rc = _unpack_job_step_pids(&msg->step_pids, buffer, protocol_version);
@@ -9982,7 +9986,8 @@ _pack_step_complete_msg(step_complete_msg_t * msg, Buf buffer,
 	pack32((uint32_t)msg->range_first, buffer);
 	pack32((uint32_t)msg->range_last, buffer);
 	pack32((uint32_t)msg->step_rc, buffer);
-	jobacctinfo_pack(msg->jobacct, protocol_version, buffer);
+	jobacctinfo_pack(msg->jobacct,
+			protocol_version, PROTOCOL_TYPE_SLURM, buffer);
 }
 
 static int
@@ -9999,7 +10004,8 @@ _unpack_step_complete_msg(step_complete_msg_t ** msg_ptr, Buf buffer,
 	safe_unpack32(&msg->range_first, buffer);
 	safe_unpack32(&msg->range_last, buffer);
 	safe_unpack32(&msg->step_rc, buffer);
-	if (jobacctinfo_unpack(&msg->jobacct, protocol_version, buffer)
+	if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
+			       PROTOCOL_TYPE_SLURM, buffer)
 	    != SLURM_SUCCESS)
 		goto unpack_error;
 

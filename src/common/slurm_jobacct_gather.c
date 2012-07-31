@@ -56,6 +56,7 @@
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
@@ -739,14 +740,22 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-extern void jobacctinfo_pack(
-	jobacctinfo_t *jobacct, uint16_t rpc_version, Buf buffer)
+extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
+			     uint16_t rpc_version, uint16_t protocol_type,
+			     Buf buffer)
 {
 	int i = 0;
+	/* uint16_t rpc2use = rpc_version; */
+	/* if (protocol_type == PROTOCOL_TYPE_SLURM) */
+	/* 	rpc2use = SLURMDBD_2_5_VERSION; */
 
 	if (!jobacct) {
+// BULL:	for (i = 0; i < 13; i++)
 		for (i = 0; i < 12; i++)
 			pack32((uint32_t) 0, buffer);
+		if(rpc_version >= SLURMDBD_2_4_VERSION) {
+			pack32((uint32_t) 0, buffer);
+		}
 		for (i = 0; i < 4; i++)
 			_pack_jobacct_id(NULL, rpc_version, buffer);
 		return;
@@ -764,6 +773,10 @@ extern void jobacctinfo_pack(
 	pack32((uint32_t)jobacct->tot_pages, buffer);
 	pack32((uint32_t)jobacct->min_cpu, buffer);
 	pack32((uint32_t)jobacct->tot_cpu, buffer);
+//BULL	pack32((uint32_t)jobacct->cpu_cycles, buffer);
+//BULL	if(rpc2use >= SLURMDBD_2_4_VERSION) {
+//BULL		pack32((uint32_t)jobacct->consumed_power, buffer);
+//BULL	}
 
 	_pack_jobacct_id(&jobacct->max_vsize_id, rpc_version, buffer);
 	_pack_jobacct_id(&jobacct->max_rss_id, rpc_version, buffer);
@@ -771,10 +784,22 @@ extern void jobacctinfo_pack(
 	_pack_jobacct_id(&jobacct->min_cpu_id, rpc_version, buffer);
 }
 
-extern int jobacctinfo_unpack(
-	jobacctinfo_t **jobacct, uint16_t rpc_version, Buf buffer)
+extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
+			      uint16_t rpc_version, uint16_t protocol_type,
+			      Buf buffer)
 {
 	uint32_t uint32_tmp;
+
+	/* uint16_t rpc2use = SLURMDBD_2_3_VERSION; // covers NO_VAL case */
+	/* if (protocol_type == PROTOCOL_TYPE_SLURM) { */
+	/* 	if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) { */
+	/* 		rpc2use = SLURMDBD_2_5_VERSION; */
+	/* 	} else if (rpc_version >= SLURM_2_4_PROTOCOL_VERSION) { */
+	/* 		rpc2use = SLURMDBD_2_4_VERSION; */
+	/* 	} */
+	/* } else { */
+	/* 	rpc2use = rpc_version; */
+	/* } */
 
 	*jobacct = xmalloc(sizeof(struct jobacctinfo));
 	safe_unpack32(&uint32_tmp, buffer);
@@ -793,7 +818,10 @@ extern int jobacctinfo_unpack(
 	safe_unpack32(&(*jobacct)->tot_pages, buffer);
 	safe_unpack32(&(*jobacct)->min_cpu, buffer);
 	safe_unpack32(&(*jobacct)->tot_cpu, buffer);
-
+//BULL	safe_unpack32(&(*jobacct)->cpu_cycles, buffer);
+//BULL	if(rpc2use >= SLURMDBD_2_4_VERSION) {
+//BULL		safe_unpack32(&(*jobacct)->consumed_power, buffer);
+//BULL	}
 	if (_unpack_jobacct_id(&(*jobacct)->max_vsize_id, rpc_version, buffer)
 	    != SLURM_SUCCESS)
 		goto unpack_error;

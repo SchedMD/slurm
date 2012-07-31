@@ -359,7 +359,8 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 			MAX(MAX_AGENT_QUEUE, slurmctld_conf.max_job_cnt * 2);
 
 	buffer = pack_slurmdbd_msg(req, rpc_version);
-
+	debug5("slurm_send_slurmdbd_msg:process %u bytes ",
+			buffer->processed);
 	slurm_mutex_lock(&agent_lock);
 	if ((agent_tid == 0) || (agent_list == NULL)) {
 		_create_agent();
@@ -3908,13 +3909,16 @@ slurmdbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg,
 	pack_time(msg->end_time, buffer);
 	pack32(msg->exit_code, buffer);
 	jobacctinfo_pack((struct jobacctinfo *)msg->jobacct,
-			 rpc_version, buffer);
+			 rpc_version, PROTOCOL_TYPE_DBD, buffer);
 	pack32(msg->job_id, buffer);
 	pack32(msg->req_uid, buffer);
 	pack_time(msg->start_time, buffer);
 	pack_time(msg->job_submit_time, buffer);
 	pack32(msg->step_id, buffer);
 	pack32(msg->total_cpus, buffer);
+	debug2("slurmdbd_pack_step_complete_msg:"
+			" buffer->processed %u",
+			buffer->processed);
 }
 
 extern int
@@ -3928,7 +3932,7 @@ slurmdbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
 	safe_unpack_time(&msg_ptr->end_time, buffer);
 	safe_unpack32(&msg_ptr->exit_code, buffer);
 	jobacctinfo_unpack((struct jobacctinfo **)&msg_ptr->jobacct,
-			   rpc_version, buffer);
+			   rpc_version, PROTOCOL_TYPE_DBD, buffer);
 	safe_unpack32(&msg_ptr->job_id, buffer);
 	safe_unpack32(&msg_ptr->req_uid, buffer);
 	safe_unpack_time(&msg_ptr->start_time, buffer);
@@ -3938,6 +3942,9 @@ slurmdbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	debug2("slurmdbd_unpack_step_complete_msg:"
+			"unpack_error: size_buf(buffer) %u",
+		size_buf(buffer));
 	slurmdbd_free_step_complete_msg(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
@@ -3990,6 +3997,9 @@ slurmdbd_unpack_step_start_msg(dbd_step_start_msg_t **msg,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	debug2("slurmdbd_unpack_step_start_msg:"
+		"unpack_error: size_buf(buffer) %u",
+	size_buf(buffer));
 	slurmdbd_free_step_start_msg(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
