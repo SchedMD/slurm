@@ -109,7 +109,7 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		if (slurm_cgroup_conf->cgroup_automount) {
 			if (xcgroup_ns_mount(&memory_ns)) {
 				error("task/cgroup: unable to mount memory "
-				      "namespace");
+				      "namespace: %s", slurm_strerror(errno));
 				goto clean;
 			}
 			info("task/cgroup: memory namespace is now mounted");
