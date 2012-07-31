@@ -11,3 +11,13 @@ TESTS = \
         log-test \
 	bitstring-test 
 
+if HAVE_CHECK
+MYCFLAGS  = @CHECK_CFLAGS@ -Wall -ansi -pedantic -std=c99
+MYCFLAGS += -D_ISO99_SOURCE -Wunused-but-set-variable
+MYCFLAGS += -I$(top_srcdir)/src/common
+MYCFLAGS += $(top_builddir)/src/common/libcommon.la
+TESTS += xtree-test
+xtree_test_CFLAGS = $(MYCFLAGS)
+xtree_test_LDADD  = @CHECK_LIBS@
+endif
+
