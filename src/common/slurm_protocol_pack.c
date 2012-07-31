@@ -9810,16 +9810,16 @@ _pack_complete_batch_script_msg(
 	uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
-		jobacctinfo_pack(msg->jobacct,
-				protocol_version, PROTOCOL_TYPE_SLURM, buffer);
+		jobacctinfo_pack(msg->jobacct, protocol_version,
+				 PROTOCOL_TYPE_SLURM, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_rc, buffer);
 		pack32(msg->slurm_rc, buffer);
 		pack32(msg->user_id, buffer);
 		packstr(msg->node_name, buffer);
 	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-		jobacctinfo_pack(msg->jobacct,
-				protocol_version, PROTOCOL_TYPE_SLURM, buffer);
+		jobacctinfo_pack(msg->jobacct, protocol_version,
+				 PROTOCOL_TYPE_SLURM, buffer);
 		pack32((uint32_t)msg->job_id, buffer);
 		pack32((uint32_t)msg->job_rc, buffer);
 		pack32((uint32_t)msg->slurm_rc, buffer);
@@ -9882,8 +9882,8 @@ _pack_job_step_stat(job_step_stat_t * msg, Buf buffer,
 {
 	pack32((uint32_t)msg->return_code, buffer);
 	pack32((uint32_t)msg->num_tasks, buffer);
-		jobacctinfo_pack(msg->jobacct,
-				protocol_version, PROTOCOL_TYPE_SLURM, buffer);
+	jobacctinfo_pack(msg->jobacct, protocol_version,
+			 PROTOCOL_TYPE_SLURM, buffer);
 	_pack_job_step_pids(msg->step_pids, buffer, protocol_version);
 }
 
@@ -9986,8 +9986,8 @@ _pack_step_complete_msg(step_complete_msg_t * msg, Buf buffer,
 	pack32((uint32_t)msg->range_first, buffer);
 	pack32((uint32_t)msg->range_last, buffer);
 	pack32((uint32_t)msg->step_rc, buffer);
-	jobacctinfo_pack(msg->jobacct,
-			protocol_version, PROTOCOL_TYPE_SLURM, buffer);
+	jobacctinfo_pack(msg->jobacct, protocol_version,
+			 PROTOCOL_TYPE_SLURM, buffer);
 }
 
 static int

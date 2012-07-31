@@ -137,6 +137,23 @@ static int    _tot_wait (struct timeval *start_time);
  * Socket open/close/read/write functions
  ****************************************************************************/
 
+/* Some functions are called by the DBD as well as regular slurm
+ * procedures.  In this case we need to make a way to translate the
+ * DBD rpc to that of SLURM.
+ * rpc_version IN - DBD rpc version
+ * Returns corrisponding SLURM rpc version
+ */
+extern uint16_t slurmdbd_translate_rpc(uint16_t rpc_version)
+{
+	if (rpc_version >= SLURMDBD_2_5_VERSION)
+		return SLURM_2_5_PROTOCOL_VERSION;
+	else if (rpc_version >= SLURMDBD_2_4_VERSION)
+		return SLURM_2_4_PROTOCOL_VERSION;
+
+	return SLURM_2_3_PROTOCOL_VERSION;
+}
+
+
 /* Open a socket connection to SlurmDbd
  * auth_info IN - alternate authentication key
  * callbacks IN - make agent to process RPCs and contains callback pointers
@@ -359,8 +376,7 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 			MAX(MAX_AGENT_QUEUE, slurmctld_conf.max_job_cnt * 2);
 
 	buffer = pack_slurmdbd_msg(req, rpc_version);
-	debug5("slurm_send_slurmdbd_msg:process %u bytes ",
-			buffer->processed);
+
 	slurm_mutex_lock(&agent_lock);
 	if ((agent_tid == 0) || (agent_list == NULL)) {
 		_create_agent();
@@ -3916,9 +3932,6 @@ slurmdbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg,
 	pack_time(msg->job_submit_time, buffer);
 	pack32(msg->step_id, buffer);
 	pack32(msg->total_cpus, buffer);
-	debug2("slurmdbd_pack_step_complete_msg:"
-			" buffer->processed %u",
-			buffer->processed);
 }
 
 extern int
@@ -3943,7 +3956,7 @@ slurmdbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
 
 unpack_error:
 	debug2("slurmdbd_unpack_step_complete_msg:"
-			"unpack_error: size_buf(buffer) %u",
+	       "unpack_error: size_buf(buffer) %u",
 		size_buf(buffer));
 	slurmdbd_free_step_complete_msg(msg_ptr);
 	*msg = NULL;

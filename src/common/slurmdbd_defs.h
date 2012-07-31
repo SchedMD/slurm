@@ -393,6 +393,14 @@ extern pthread_cond_t assoc_cache_cond; /* assoc cache condition */
  * Slurm DBD message processing functions
 \*****************************************************************************/
 
+/* Some functions are called by the DBD as well as regular slurm
+ * procedures.  In this case we need to make a way to translate the
+ * DBD rpc to that of SLURM.
+ * rpc_version IN - DBD rpc version
+ * Returns corrisponding SLURM rpc version
+ */
+extern uint16_t slurmdbd_translate_rpc(uint16_t rpc_version);
+
 /* Open a socket connection to SlurmDbd
  * auth_info IN - alternate authentication key
  * make_agent IN - make agent to process RPCs if set

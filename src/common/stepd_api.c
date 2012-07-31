@@ -920,8 +920,8 @@ rwfail:
 	 * Do pack/unpack instead to be sure of independances of 
 	 * slurmd and slurmstepd
 	 */
-	jobacctinfo_pack(sent->jobacct,
-			SLURM_PROTOCOL_VERSION, PROTOCOL_TYPE_SLURM, buffer);
+	jobacctinfo_pack(sent->jobacct, SLURM_PROTOCOL_VERSION,
+			 PROTOCOL_TYPE_SLURM, buffer);
 	len = get_buf_offset(buffer);
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(buffer), len);

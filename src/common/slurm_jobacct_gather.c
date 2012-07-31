@@ -745,17 +745,23 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 			     Buf buffer)
 {
 	int i = 0;
-	/* uint16_t rpc2use = rpc_version; */
-	/* if (protocol_type == PROTOCOL_TYPE_SLURM) */
-	/* 	rpc2use = SLURMDBD_2_5_VERSION; */
+
+	/* The function can take calls from both DBD and from regular
+	 * SLURM functions.  We choose to standardize on using the
+	 * SLURM_PROTOCOL_VERSION here so if PROTOCOL_TYPE_DBD comes
+	 * in we need to translate the DBD rpc_version to use the
+	 * SLURM protocol_version.
+	 *
+	 * If this function ever changes make sure the
+	 * slurmdbd_translate_rpc function has been updated with the
+	 * new protocol version.
+	 */
+	if (protocol_type == PROTOCOL_TYPE_DBD)
+		rpc_version = slurmdbd_translate_rpc(rpc_version);
 
 	if (!jobacct) {
-// BULL:	for (i = 0; i < 13; i++)
 		for (i = 0; i < 12; i++)
 			pack32((uint32_t) 0, buffer);
-		if(rpc_version >= SLURMDBD_2_4_VERSION) {
-			pack32((uint32_t) 0, buffer);
-		}
 		for (i = 0; i < 4; i++)
 			_pack_jobacct_id(NULL, rpc_version, buffer);
 		return;
@@ -773,10 +779,6 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 	pack32((uint32_t)jobacct->tot_pages, buffer);
 	pack32((uint32_t)jobacct->min_cpu, buffer);
 	pack32((uint32_t)jobacct->tot_cpu, buffer);
-//BULL	pack32((uint32_t)jobacct->cpu_cycles, buffer);
-//BULL	if(rpc2use >= SLURMDBD_2_4_VERSION) {
-//BULL		pack32((uint32_t)jobacct->consumed_power, buffer);
-//BULL	}
 
 	_pack_jobacct_id(&jobacct->max_vsize_id, rpc_version, buffer);
 	_pack_jobacct_id(&jobacct->max_rss_id, rpc_version, buffer);
@@ -790,16 +792,18 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 {
 	uint32_t uint32_tmp;
 
-	/* uint16_t rpc2use = SLURMDBD_2_3_VERSION; // covers NO_VAL case */
-	/* if (protocol_type == PROTOCOL_TYPE_SLURM) { */
-	/* 	if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) { */
-	/* 		rpc2use = SLURMDBD_2_5_VERSION; */
-	/* 	} else if (rpc_version >= SLURM_2_4_PROTOCOL_VERSION) { */
-	/* 		rpc2use = SLURMDBD_2_4_VERSION; */
-	/* 	} */
-	/* } else { */
-	/* 	rpc2use = rpc_version; */
-	/* } */
+	/* The function can take calls from both DBD and from regular
+	 * SLURM functions.  We choose to standardize on using the
+	 * SLURM_PROTOCOL_VERSION here so if PROTOCOL_TYPE_DBD comes
+	 * in we need to translate the DBD rpc_version to use the
+	 * SLURM protocol_version.
+	 *
+	 * If this function ever changes make sure the
+	 * slurmdbd_translate_rpc function has been updated with the
+	 * new protocol version.
+	 */
+	if (protocol_type == PROTOCOL_TYPE_DBD)
+		rpc_version = slurmdbd_translate_rpc(rpc_version);
 
 	*jobacct = xmalloc(sizeof(struct jobacctinfo));
 	safe_unpack32(&uint32_tmp, buffer);
@@ -818,10 +822,7 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 	safe_unpack32(&(*jobacct)->tot_pages, buffer);
 	safe_unpack32(&(*jobacct)->min_cpu, buffer);
 	safe_unpack32(&(*jobacct)->tot_cpu, buffer);
-//BULL	safe_unpack32(&(*jobacct)->cpu_cycles, buffer);
-//BULL	if(rpc2use >= SLURMDBD_2_4_VERSION) {
-//BULL		safe_unpack32(&(*jobacct)->consumed_power, buffer);
-//BULL	}
+
 	if (_unpack_jobacct_id(&(*jobacct)->max_vsize_id, rpc_version, buffer)
 	    != SLURM_SUCCESS)
 		goto unpack_error;
@@ -838,8 +839,7 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	debug2("jobacctinfo_unpack:"
-		"unpack_error: size_buf(buffer) %u",
+	debug2("jobacctinfo_unpack: unpack_error: size_buf(buffer) %u",
 	size_buf(buffer));
 	xfree(*jobacct);
        	return SLURM_ERROR;
