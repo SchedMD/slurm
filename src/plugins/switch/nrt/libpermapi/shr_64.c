@@ -87,6 +87,226 @@ extern char **environ;
 extern int pm_type;
 extern int pmdlog;
 extern FILE *pmd_lfp;
+
+typedef struct agent_data {
+	uint32_t   fe_auth_key;
+	slurm_fd_t fe_comm_socket;
+} agent_data_t;
+
+/* Validate a message connection
+ * Return: true=valid/authenticated */
+static bool _validate_connect(slurm_fd_t socket_conn, uint32_t auth_key)
+{
+	struct timeval tv;
+	fd_set read_fds;
+	uint32_t read_key;
+	bool valid = false;
+	int i, n_fds;
+
+	n_fds = socket_conn;
+	while (1) {
+		FD_ZERO(&read_fds);
+		FD_SET(socket_conn, &read_fds);
+
+		tv.tv_sec = 2;
+		tv.tv_usec = 0;
+		i = select((n_fds + 1), &read_fds, NULL, NULL, &tv);
+		if (i == 0)
+			break;
+		if (i < 0) {
+			if (errno == EINTR)
+				continue;
+			break;
+		}
+		i = slurm_read_stream(socket_conn, (char *)&read_key,
+				      sizeof(read_key));
+		if ((i == sizeof(read_key)) && (read_key == auth_key)) {
+			valid = true;
+		} else {
+			error("error validating incoming socket connection");
+			sleep(1);	/* Help prevent brute force attack */
+		}
+		break;
+	}
+
+	return valid;
+}
+
+/* Process a message from PMD */
+static void _agent_proc_connect(slurm_fd_t fe_comm_socket,uint32_t fe_auth_key)
+{
+	slurm_fd_t fe_comm_conn = -1;
+	slurm_addr_t be_addr;
+	bool be_connected = false;
+
+	while (1) {
+		fe_comm_conn = slurm_accept_stream(fe_comm_socket, &be_addr);
+		if (fe_comm_conn != SLURM_SOCKET_ERROR) {
+			if (_validate_connect(fe_comm_conn, fe_auth_key))
+				be_connected = true;
+			break;
+		}
+		if (errno != EINTR) {
+			error("slurm_accept_stream: %m");
+			goto fini;
+		}
+	}
+
+fini:	if (be_connected) {
+		info("READY TO SEND JOB INFO NOW");
+	}
+	if (fe_comm_conn >= 0)
+		slurm_close_accepted_conn(fe_comm_conn);
+}
+
+/* Thread to wait for and process messgaes from PMD (via libpermapi) */
+static void *_agent_thread(void *arg)
+{
+        agent_data_t *agent_data_ptr = (agent_data_t *) arg;
+	uint32_t   fe_auth_key    = agent_data_ptr->fe_auth_key;
+	slurm_fd_t fe_comm_socket = agent_data_ptr->fe_comm_socket;
+	fd_set except_fds, read_fds;
+	struct timeval tv;
+	int i, n_fds;
+
+	xfree(agent_data_ptr);
+	n_fds = fe_comm_socket;
+	while (fe_comm_socket >= 0) {
+		FD_ZERO(&except_fds);
+		FD_SET(fe_comm_socket, &except_fds);
+		FD_ZERO(&read_fds);
+		FD_SET(fe_comm_socket, &read_fds);
+
+		tv.tv_sec =  0;
+		tv.tv_usec = 0;
+		i = select((n_fds + 1), &read_fds, NULL, &except_fds, &tv);
+		if ((i == 0) ||
+		    ((i == -1) && (errno == EINTR))) {
+			;
+		} else if (i == -1) {
+			error("select(): %m");
+			break;
+		} else {	/* i > 0, ready for I/O */
+			_agent_proc_connect(fe_comm_socket, fe_auth_key);;
+		}
+	}
+	slurm_shutdown_msg_engine(fe_comm_socket);
+
+	return NULL;
+}
+
+/* Generate and return a pseudo-random 32-bit authentication key */
+static uint32_t _gen_auth_key(void)
+{
+	struct timeval tv;
+	uint32_t key;
+
+	gettimeofday(&tv, NULL);
+	key  = (tv.tv_sec % 1000) * 1000000;
+	key += tv.tv_usec;
+
+	return key;
+}
+
+/* Spawn a shell to receive communications from PMD and spawn additional
+ * PMD on other nodes using a fanout mechanism other than SLURM. */
+static void _spawn_fe_agent(void)
+{
+	char hostname[256];
+	uint32_t   fe_auth_key = 0;
+	slurm_fd_t fe_comm_socket = -1;
+	slurm_addr_t comm_addr;
+	uint16_t comm_port;
+	pthread_attr_t agent_attr;
+	pthread_t agent_tid;
+	agent_data_t *agent_data_ptr;
+
+	/* Open socket for back-end program to communicate with */
+	if ((fe_comm_socket = slurm_init_msg_engine_port(0)) < 0) {
+		error("init_msg_engine_port: %m");
+		return;
+	}
+	if (slurm_get_stream_addr(fe_comm_socket, &comm_addr) < 0) {
+		error("slurm_get_stream_addr: %m");
+		return;
+	}
+	comm_port = ntohs(((struct sockaddr_in) comm_addr).sin_port);
+	fe_auth_key = _gen_auth_key();
+	if (gethostname_short(hostname, sizeof(hostname)))
+		fatal("gethostname_short(): %m");
+
+	/* Set up environment variables for the plugin (as called by PMD)
+	 * to load job information */
+	setenvfs("SLURM_FE_KEY=%u", fe_auth_key);
+	setenvfs("SLURM_FE_SOCKET=%s:%hu", hostname, comm_port);
+
+	agent_data_ptr = xmalloc(sizeof(agent_data_t));
+	agent_data_ptr->fe_auth_key = fe_auth_key;
+	agent_data_ptr->fe_comm_socket = fe_comm_socket;
+	slurm_attr_init(&agent_attr);
+	pthread_attr_setdetachstate(&agent_attr, PTHREAD_CREATE_DETACHED);
+	while ((pthread_create(&agent_tid, &agent_attr, &_agent_thread,
+			       (void *) agent_data_ptr))) {
+		if (errno != EAGAIN)
+			fatal("pthread_create(): %m");
+		sleep(1);
+	}
+	slurm_attr_destroy(&agent_attr);
+}
+
+srun_job_t * _read_job_srun_agent(void)
+{
+	char *key_str  = getenv("SLURM_FE_KEY");
+	char *sock_str = getenv("SLURM_FE_SOCKET");
+	char buf[32], *host, *sep;
+	slurm_fd_t resp_socket;
+	uint16_t resp_port;
+	uint32_t resp_auth_key;
+	srun_job_t *srun_job = NULL;
+	slurm_addr_t resp_addr;
+	int i;
+
+	if (!key_str) {
+		error("SLURM_FE_KEY environment variable not set");
+		return NULL;
+	}
+	if (!sock_str) {
+		error("SLURM_FE_SOCKET environment variable not set");
+		return NULL;
+	}
+	host = xstrdup(sock_str);
+	sep = strchr(host, ':');
+	if (!sep) {
+		error("_read_job_srun_agent(): SLURM_FE_SOCKET is invalid: %s",
+		      sock_str);
+		xfree(host);
+		return NULL;
+	}
+	sep[0] = '\0';
+	resp_port = atoi(sep + 1);
+	slurm_set_addr(&resp_addr, resp_port, host);
+	xfree(host);
+	resp_socket = slurm_open_stream(&resp_addr);
+	if (resp_socket < 0) {
+		error("slurm_open_msg_conn(%s): %m", sock_str);
+		return NULL;
+	}
+
+	resp_auth_key = atoi(key_str);
+	memcpy(buf+0,  &resp_auth_key, 4);
+	i = slurm_write_stream_timeout(resp_socket, buf, 4, 10);
+	if (i < 4) {
+		error("_read_job_srun_agent write: %m");
+		return NULL;
+	}
+
+//	srun_job = xmalloc(sizeof(srun_job_t));
+/* Read and populate the data structure */
+	slurm_shutdown_msg_engine(resp_socket);
+
+	return srun_job;
+}
+
 /************************************/
 
 /* The connection communicates information to and from the resource
@@ -638,9 +858,13 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		resp.cpus_per_node = &cpn;
 		resp.cpu_count_reps = &resp.node_cnt;
 
+#if 1
+		job = _read_job_srun_agent();
+#else
 		opt.overcommit = true;
-
-		if (!(job = job_create_allocation(&resp))) {
+		job = job_create_allocation(&resp);
+#endif
+		if (!job) {
 			error("no job created");
 			return -1;
 		}
@@ -673,8 +897,13 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 				debug_level -= LOG_LEVEL_INFO;
 		}
 		debug("got pe_rm_init called %s", rm_id);
+
 		/* Set up slurmctld message handler */
 		slurmctld_msg_init();
+
+		/* Create agent thread to forward job credential needed for
+		 * PMD to fanout child processes on other nodes */
+		_spawn_fe_agent();
 	} else {
 		error("pe_rm_init: unknown caller");
 		return -1;
