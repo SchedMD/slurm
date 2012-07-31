@@ -205,10 +205,18 @@ enum {
 	STEP_REQ_COUNT
 };
 
-static void _state_time_string(char **extra, uint32_t state,
+static void _state_time_string(mysql_conn_t *mysql_conn,
+			       slurmdb_job_cond_t *job_cond,
+			       char **extra, uint32_t state,
 			       uint32_t start, uint32_t end)
 {
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	ListIterator itr = NULL;
+	char *query = NULL, *cluster_name = NULL;
 	int base_state = state & JOB_STATE_BASE;
+	int set = 0, added = 0;
+	List use_cluster_list = as_mysql_cluster_list;
 
 	if (!start && !end) {
 		xstrfmtcat(*extra, "t1.state='%u'", state);
@@ -242,8 +250,96 @@ static void _state_time_string(char **extra, uint32_t state,
 		}
 		break;
 	case JOB_SUSPENDED:
-		/* FIX ME: this should do something with the suspended
-		   table, but it doesn't right now. */
+		/* Since we could be looking in the past for suspended
+		 * jobs we need to first look for jobs in each of the
+		 * cluster's suspend_table to see if we can use that
+		 * first.
+		 */
+		if (job_cond->cluster_list
+		    && list_count(job_cond->cluster_list))
+			use_cluster_list = job_cond->cluster_list;
+		else
+			slurm_mutex_lock(&as_mysql_cluster_list_lock);
+
+		itr = list_iterator_create(use_cluster_list);
+		while ((cluster_name = list_next(itr))) {
+			query = xstrdup_printf(
+				"select job_db_inx from \"%s_%s\"",
+				cluster_name, suspend_table);
+			if (start) {
+				if (!end) {
+					xstrfmtcat(query,
+						   " where (%d between "
+						   "time_start and time_end)",
+						   start);
+				} else {
+					xstrfmtcat(query,
+						   " where (time_start && "
+						   "((%d between time_start "
+						   "and time_end) "
+						   "|| (time_start between "
+						   "%d and %d)))",
+						   start, start, end);
+				}
+			} else if (end) {
+				xstrfmtcat(query, " where (time_start && "
+					   "time_start < %d)", end);
+			}
+
+			debug3("%d(%s:%d) query\n%s",
+			       mysql_conn->conn, THIS_FILE, __LINE__, query);
+			result = mysql_db_query_ret(mysql_conn, query, 0);
+			xfree(query);
+			if (!result)
+				continue;
+			set = 0;
+			while ((row = mysql_fetch_row(result))) {
+				if (set)
+					xstrfmtcat(*extra,
+						   " || job_db_inx=%s", row[0]);
+				else {
+					if (added)
+						xstrcat(*extra, ") || (");
+					else {
+						added = 1;
+						xstrcat(*extra, "(");
+					}
+					set = 1;
+					xstrfmtcat(*extra,
+						   "(job_db_inx=%s", row[0]);
+				}
+			}
+			mysql_free_result(result);
+		}
+		if (use_cluster_list == as_mysql_cluster_list)
+			slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+
+		/* If we didn't find anything we need to put something
+		   here to avoid a blank () in the calling sql.
+		*/
+		if (added)
+			xstrcat(*extra, "))");
+		else if (start) {
+			if (!end)
+				xstrfmtcat(*extra,
+					   "(t1.time_start && "
+					   "((!t1.time_end && t1.state=%d) || "
+					   "(%d between t1.time_start "
+					   "and t1.time_end)))",
+					   JOB_SUSPENDED, start);
+			else
+				xstrfmtcat(*extra,
+					   "(t1.time_start && "
+					   "((%d between t1.time_start "
+					   "and t1.time_end) "
+					   "|| (t1.time_start between "
+					   "%d and %d)))",
+					   start, start,
+					   end);
+		} else if (end)
+			xstrfmtcat(*extra, "(t1.time_start && "
+				   "t1.time_start < %d)", end);
+		break;
 	case JOB_RUNNING:
 		if (start) {
 			if (!end) {
@@ -1259,7 +1355,8 @@ extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
 		while ((object = list_next(itr))) {
 			if (set)
 				xstrcat(*extra, " || ");
-			_state_time_string(extra, (uint32_t)slurm_atoul(object),
+			_state_time_string(mysql_conn, job_cond,
+					   extra, (uint32_t)slurm_atoul(object),
 					   job_cond->usage_start,
 					   job_cond->usage_end);
 			set = 1;
