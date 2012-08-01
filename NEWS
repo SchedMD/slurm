@@ -43,6 +43,10 @@ documents those changes that are of interest to users and admins.
  -- Restructure of srun code to allow outside programs to utilize existing
     logic.
 
+* Changes in SLURM 2.4.3
+========================
+ -- Accounting - Fix so complete 32 bit numbers can be put in for a priority.
+
 * Changes in SLURM 2.4.2
 ========================
  -- BLUEGENE - Correct potential deadlock issue when hardware goes bad and
