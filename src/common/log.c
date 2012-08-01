@@ -755,7 +755,12 @@ _log_printf(log_t *log, cbuf_t cb, FILE *stream, const char *fmt, ...)
 	va_list ap;
 	int fd = fileno(stream);
 
-	xassert(fd >= 0);
+	/* If the fd is less than 0 just return sense we can't do
+	   anything here.  This can happen if a calling program is the
+	   one that set up the io.
+	*/
+	if (fd < 0)
+		return;
 
 	/* If the socket has gone away we just return like all is
 	   well. */
