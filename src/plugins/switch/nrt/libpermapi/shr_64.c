@@ -50,17 +50,20 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/api/step_ctx.h"
+
+#include "src/common/hostlist.h"
+#include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/plugstack.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/list.h"
-#include "src/common/hostlist.h"
-#include "src/common/plugstack.h"
 
-#include "src/srun/libsrun/srun_job.h"
-#include "src/srun/libsrun/opt.h"
 #include "src/srun/libsrun/allocate.h"
 #include "src/srun/libsrun/launch.h"
+#include "src/srun/libsrun/opt.h"
+#include "src/srun/libsrun/srun_job.h"
 #include "src/plugins/switch/nrt/nrt_keys.h"
 
 bool srun_max_timer = false;
@@ -93,6 +96,103 @@ typedef struct agent_data {
 	slurm_fd_t fe_comm_socket;
 } agent_data_t;
 
+static void _pack_job_step_launch_state(struct step_launch_state *launch_state,
+					Buf buffer)
+{
+	uint8_t user_managed_io = (uint8_t) launch_state->user_managed_io;
+
+	pack8(user_managed_io, buffer);
+	pack16(launch_state->num_resp_port, buffer);
+	pack16_array(launch_state->resp_port, launch_state->num_resp_port,
+		     buffer);
+}
+static int _unpack_job_step_launch_state(struct step_launch_state **
+					  launch_state_ptr, Buf buffer)
+{
+	struct step_launch_state *launch_state;
+	uint8_t user_managed_io;
+	uint16_t num_resp_port;
+	uint16_t *resp_port = NULL;
+	uint32_t tmp_32;
+
+	safe_unpack8(&user_managed_io, buffer);
+	safe_unpack16(&num_resp_port, buffer);
+	safe_unpack16_array(&resp_port, &tmp_32, buffer);
+	if (tmp_32 != num_resp_port)
+		goto unpack_error;
+
+	launch_state = xmalloc(sizeof(struct step_launch_state));
+	launch_state->user_managed_io = user_managed_io;
+	launch_state->num_resp_port = num_resp_port;
+	launch_state->resp_port = resp_port;
+	*launch_state_ptr = launch_state;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("_unpack_job_step_launch_state: unpack error");
+	xfree(resp_port);
+	*launch_state_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_srun_ctx(slurm_step_ctx_t *ctx, Buf buffer)
+{
+	uint8_t tmp_8 = 0;
+
+	if (ctx)
+		tmp_8 = 1;
+	pack8(tmp_8, buffer);
+	if (!ctx || !ctx->step_req || !ctx->step_resp || !ctx->launch_state) {
+		error("_pack_srun_ctx: ctx is NULL");
+		return;
+	}
+	pack_job_step_create_request_msg(ctx->step_req, buffer,
+					 SLURM_PROTOCOL_VERSION);
+	pack_job_step_create_response_msg(ctx->step_resp, buffer,
+					  SLURM_PROTOCOL_VERSION);
+	_pack_job_step_launch_state(ctx->launch_state, buffer);
+}
+static int _unpack_srun_ctx(slurm_step_ctx_t **step_ctx, Buf buffer)
+{
+	slurm_step_ctx_t *ctx = NULL;
+	uint8_t tmp_8;
+	int rc;
+
+	*step_ctx = NULL;
+	safe_unpack8(&tmp_8, buffer);
+	if (tmp_8 == 0) {
+		error("_unpack_srun_ctx: ctx is NULL");
+		return SLURM_ERROR;
+	}
+
+	ctx = xmalloc(sizeof(slurm_step_ctx_t));
+	rc = unpack_job_step_create_request_msg(&ctx->step_req, buffer,
+						SLURM_PROTOCOL_VERSION);
+	if (rc != SLURM_SUCCESS)
+		goto unpack_error;
+
+	rc = unpack_job_step_create_response_msg(&ctx->step_resp, buffer,
+						 SLURM_PROTOCOL_VERSION);
+	if (rc != SLURM_SUCCESS)
+		goto unpack_error;
+
+	rc = _unpack_job_step_launch_state(&ctx->launch_state, buffer);
+	if (rc != SLURM_SUCCESS)
+		goto unpack_error;
+
+	*step_ctx = ctx;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("_unpack_srun_ctx: unpack error");
+	if (ctx && ctx->step_req)
+		slurm_free_job_step_create_request_msg(ctx->step_req);
+	if (ctx && ctx->step_resp)
+		slurm_free_job_step_create_response_msg(ctx->step_resp);
+	xfree(ctx);
+	return SLURM_ERROR;
+}
+
 static Buf _pack_srun_job_rec(void)
 {
 	uint32_t tmp_32;
@@ -109,6 +209,8 @@ static Buf _pack_srun_job_rec(void)
 
 	packstr(job->alias_list, buffer);
 	packstr(job->nodelist, buffer);
+
+	_pack_srun_ctx(job->step_ctx, buffer);
 
 	return buffer;
 }
@@ -129,9 +231,13 @@ static srun_job_t * _unpack_srun_job_rec(Buf buffer)
 	safe_unpackstr_xmalloc(&job_data->alias_list, &tmp_32, buffer);
 	safe_unpackstr_xmalloc(&job_data->nodelist, &tmp_32, buffer);
 
+	if (_unpack_srun_ctx(&job_data->step_ctx, buffer))
+		goto unpack_error;
+
 	return job_data;
 
 unpack_error:
+	error("_unpack_srun_job_rec: unpack error");
 	xfree(job_data->alias_list);
 	xfree(job_data->nodelist);
 	xfree(job_data);
@@ -401,6 +507,7 @@ srun_job_t * _read_job_srun_agent(void)
 			break;
 		}
 	}
+
 	slurm_shutdown_msg_engine(resp_socket);
 	buffer = create_buf(job_data, buf_size);
 	srun_job = _unpack_srun_job_rec(buffer);
@@ -965,7 +1072,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 			error("no job created");
 			return -1;
 		}
-		error("job created %u.%u", job->jobid, job->stepid);
+		info("job created %u.%u", job->jobid, job->stepid);
 		info("pe_rm_init done");
 	} else if (pm_type == PM_POE) {
 		/* Don't print standard messages when running under

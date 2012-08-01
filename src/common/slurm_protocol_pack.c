@@ -190,13 +190,6 @@ static void _pack_delete_partition_msg(delete_part_msg_t * msg, Buf buffer,
 static int _unpack_delete_partition_msg(delete_part_msg_t ** msg, Buf buffer,
 					uint16_t protocol_version);
 
-static void _pack_job_step_create_request_msg(job_step_create_request_msg_t
-					      * msg, Buf buffer,
-					      uint16_t protocol_version);
-static int _unpack_job_step_create_request_msg(
-	job_step_create_request_msg_t ** msg, Buf buffer,
-	uint16_t protocol_version);
-
 static void _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer,
 			       uint16_t protocol_version);
 static int _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer,
@@ -216,13 +209,6 @@ static void _pack_update_job_time_msg(job_time_msg_t * msg, Buf buffer,
 				      uint16_t protocol_version);
 static int _unpack_update_job_time_msg(job_time_msg_t ** msg, Buf buffer,
 				       uint16_t protocol_version);
-
-static void  _pack_job_step_create_response_msg(
-	job_step_create_response_msg_t * msg, Buf buffer,
-	uint16_t protocol_version);
-static int _unpack_job_step_create_response_msg(
-	job_step_create_response_msg_t ** msg, Buf buffer,
-	uint16_t protocol_version);
 
 static void _pack_part_info_request_msg(part_info_request_msg_t * msg,
 					Buf buffer, uint16_t protocol_version);
@@ -993,13 +979,13 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				      msg->protocol_version);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
-		_pack_job_step_create_response_msg(
+		pack_job_step_create_response_msg(
 			(job_step_create_response_msg_t *)
 			msg->data, buffer,
 			msg->protocol_version);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
-		_pack_job_step_create_request_msg(
+		pack_job_step_create_request_msg(
 			(job_step_create_request_msg_t *)
 			msg->data, buffer,
 			msg->protocol_version);
@@ -1551,15 +1537,14 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					     msg->protocol_version);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
-		rc = _unpack_job_step_create_response_msg(
+		rc = unpack_job_step_create_response_msg(
 			(job_step_create_response_msg_t **)
 			& msg->data, buffer,
 			msg->protocol_version);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
-		rc = _unpack_job_step_create_request_msg(
-			(job_step_create_request_msg_t **)
-			& msg->data, buffer,
+		rc = unpack_job_step_create_request_msg(
+			(job_step_create_request_msg_t **) & msg->data, buffer,
 			msg->protocol_version);
 		break;
 	case REQUEST_JOB_ID:
@@ -3523,10 +3508,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_step_create_request_msg(job_step_create_request_msg_t
-				  * msg, Buf buffer,
-				  uint16_t protocol_version)
+extern void
+pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
+				 Buf buffer, uint16_t protocol_version)
 {
 	xassert(msg != NULL);
 
@@ -3619,10 +3603,9 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 
 }
 
-static int
-_unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
-				    Buf buffer,
-				    uint16_t protocol_version)
+extern int
+unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
+				   Buf buffer, uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
 	job_step_create_request_msg_t *tmp_ptr;
@@ -3928,10 +3911,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_step_create_response_msg(job_step_create_response_msg_t * msg,
-				   Buf buffer,
-				   uint16_t protocol_version)
+extern void
+pack_job_step_create_response_msg(job_step_create_response_msg_t * msg,
+				  Buf buffer, uint16_t protocol_version)
 {
 	xassert(msg != NULL);
 
@@ -3954,10 +3936,9 @@ _pack_job_step_create_response_msg(job_step_create_response_msg_t * msg,
 	}
 }
 
-static int
-_unpack_job_step_create_response_msg(job_step_create_response_msg_t ** msg,
-				     Buf buffer,
-				     uint16_t protocol_version)
+extern int
+unpack_job_step_create_response_msg(job_step_create_response_msg_t ** msg,
+				    Buf buffer, uint16_t protocol_version)
 {
 	job_step_create_response_msg_t *tmp_ptr = NULL;
 	uint32_t uint32_tmp;
