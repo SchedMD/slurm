@@ -557,12 +557,6 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		/* If the PMD calls this and it didn't launch anything we need
 		 * to not do anything here or PMD will crap out on it. */
 		debug("got pe_rm_connect called from PMD");
-		if (create_job_step(job, false) != SLURM_SUCCESS) {
-			error("no job step created");
-			return -1;
-		}
-
-
 		/* if (environ) { */
 		/* 	for (i=0; environ[i]; i++) { */
 		/* 		PMD_LOG("%s", environ[i]); */
@@ -570,6 +564,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		/* } */
 	} else if (pm_type == PM_POE) {
 		debug("got pe_rm_connect called");
+		launch_common_set_stdio_fds(job, &cio_fds);
 	} else {
 		error("pe_rm_connect: unknown caller");
 		return -1;
@@ -580,21 +575,21 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	opt.argc = my_argc;
 	opt.argv = my_argv;
 	opt.user_managed_io = true;
-
-	launch_common_set_stdio_fds(job, &cio_fds);
 	if (slurm_step_ctx_daemon_per_node_hack(job->step_ctx,
 						connect_param->machine_name,
 						connect_param->machine_count)
 	    != SLURM_SUCCESS) {
 		*error_msg = xstrdup_printf(
-			"pe_rm_connect: problem with hack");
+			"pe_rm_connect: problem with hack: %s",
+			slurm_strerror(errno));
 		error("%s", *error_msg);
 		return -1;
 	}
-
+	info("after hack");
 	if (launch_g_step_launch(job, &cio_fds, &global_rc)) {
 		*error_msg = xstrdup_printf(
-			"pe_rm_connect: problem with launch");
+			"pe_rm_connect: problem with launch: %s",
+			slurm_strerror(errno));
 		error("%s", *error_msg);
 		return -1;
 	}
