@@ -87,6 +87,8 @@ documents those changes that are of interest to users and admins.
     from Mark Nelson
  -- Fixed sacct --state=S query to return information about suspended jobs
     current or in the past.
+ -- FRONTEND - Made error warning more apparent if a frontend node isn't
+    configured correctly.
 
 * Changes in SLURM 2.4.1
 ========================
