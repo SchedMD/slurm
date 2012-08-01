@@ -901,7 +901,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		return NULL;
 	}
 
-	if ((step_spec->mem_per_cpu && _is_mem_resv()) || step_spec->gres) {
+	if ((step_spec->mem_per_cpu && _is_mem_resv()) ||
+	    (step_spec->gres && (step_spec->gres[0]))) {
 		int fail_mode = ESLURM_INVALID_TASK_MEMORY;
 		uint32_t tmp_mem, tmp_cpus, avail_cpus, total_cpus;
 		uint32_t avail_tasks, total_tasks;
