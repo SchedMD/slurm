@@ -426,7 +426,7 @@ static void
 _decrement_thd_count(void)
 {
 	slurm_mutex_lock(&active_mutex);
-	if (active_threads>0)
+	if (active_threads > 0)
 		active_threads--;
 	pthread_cond_signal(&active_cond);
 	slurm_mutex_unlock(&active_mutex);
@@ -453,13 +453,28 @@ _increment_thd_count(void)
 static void
 _wait_for_all_threads(void)
 {
+	struct timespec ts;
+	int rc;
+
+	ts.tv_sec  = time(NULL);
+	ts.tv_nsec = 0;
+	ts.tv_sec += 120;       /* 2 minutes allowed for shutdown */
+
 	slurm_mutex_lock(&active_mutex);
 	while (active_threads > 0) {
 		verbose("waiting on %d active threads", active_threads);
-		pthread_cond_wait(&active_cond, &active_mutex);
+		rc = pthread_cond_timedwait(&active_cond, &active_mutex, &ts);
+		if (rc == ETIMEDOUT) {
+			error("Timeout waiting for completion of %d threads",
+			      active_threads);
+			pthread_cond_signal(&active_cond);
+			slurm_mutex_unlock(&active_mutex);
+			return;
+		}
 	}
+	pthread_cond_signal(&active_cond);
 	slurm_mutex_unlock(&active_mutex);
-	verbose("all threads complete.");
+	verbose("all threads complete");
 }
 
 static void

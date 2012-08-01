@@ -23,6 +23,7 @@ documents those changes that are of interest to users and admins.
  -- Add Google search to all web pages.
  -- Add sinfo -T option to print reservation information. Work by Bill Brophy,
     Bull.
+ -- Force slurmd exit after 2 minute wait, even if threads are hung.
 
 * Changes in SLURM 2.5.0.pre1
 =============================
