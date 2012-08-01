@@ -95,6 +95,7 @@ typedef struct agent_data {
 
 static Buf _pack_srun_job_rec(void)
 {
+	uint32_t tmp_32;
 	Buf buffer;
 
 	buffer = init_buf(4096);
@@ -103,11 +104,17 @@ static Buf _pack_srun_job_rec(void)
 	pack32(job->cpu_count, buffer);
 	pack32(job->nhosts, buffer);
 	pack32(job->ntasks, buffer);
+	tmp_32 = job->state;	/* job state is int */
+	pack32(tmp_32, buffer);
+
+	packstr(job->alias_list, buffer);
+	packstr(job->nodelist, buffer);
 
 	return buffer;
 }
 static srun_job_t * _unpack_srun_job_rec(Buf buffer)
 {
+	uint32_t tmp_32;
 	srun_job_t *job_data;
 
 	job_data = xmalloc(sizeof(srun_job_t));
@@ -116,10 +123,17 @@ static srun_job_t * _unpack_srun_job_rec(Buf buffer)
 	safe_unpack32(&job_data->cpu_count, buffer);
 	safe_unpack32(&job_data->nhosts, buffer);
 	safe_unpack32(&job_data->ntasks, buffer);
+	safe_unpack32(&tmp_32, buffer);
+	job_data->state = (int) tmp_32;
+
+	safe_unpackstr_xmalloc(&job_data->alias_list, &tmp_32, buffer);
+	safe_unpackstr_xmalloc(&job_data->nodelist, &tmp_32, buffer);
 
 	return job_data;
 
 unpack_error:
+	xfree(job_data->alias_list);
+	xfree(job_data->nodelist);
 	xfree(job_data);
 	return NULL;
 }

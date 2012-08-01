@@ -100,7 +100,7 @@ typedef struct srun_job {
 
 	int  rc;                /* srun return code                       */
 
-	char *alias_list;	/* node name/address/hostnamne aliases */
+	char *alias_list;	/* node name/address/hostname aliases */
 	char *nodelist;		/* nodelist in string form */
 
 	fname_t *ifname;
