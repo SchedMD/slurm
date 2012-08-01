@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
  -- Add sinfo -T option to print reservation information. Work by Bill Brophy,
     Bull.
  -- Force slurmd exit after 2 minute wait, even if threads are hung.
+ -- Change node_req field in struct job_resources from 8 to 32 bits so we can
+    run more than 256 jobs per node.
 
 * Changes in SLURM 2.5.0.pre1
 =============================
