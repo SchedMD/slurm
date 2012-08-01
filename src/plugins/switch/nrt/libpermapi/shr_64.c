@@ -166,6 +166,7 @@ static int _unpack_srun_ctx(slurm_step_ctx_t **step_ctx, Buf buffer)
 	}
 
 	ctx = xmalloc(sizeof(slurm_step_ctx_t));
+	ctx->magic = STEP_CTX_MAGIC;
 	rc = unpack_job_step_create_request_msg(&ctx->step_req, buffer,
 						SLURM_PROTOCOL_VERSION);
 	if (rc != SLURM_SUCCESS)
