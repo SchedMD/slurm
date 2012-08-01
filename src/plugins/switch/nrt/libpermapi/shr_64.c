@@ -557,11 +557,6 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		/* If the PMD calls this and it didn't launch anything we need
 		 * to not do anything here or PMD will crap out on it. */
 		debug("got pe_rm_connect called from PMD");
-		/* if (environ) { */
-		/* 	for (i=0; environ[i]; i++) { */
-		/* 		PMD_LOG("%s", environ[i]); */
-		/* 	} */
-		/* } */
 	} else if (pm_type == PM_POE) {
 		debug("got pe_rm_connect called");
 		launch_common_set_stdio_fds(job, &cio_fds);
@@ -585,7 +580,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		error("%s", *error_msg);
 		return -1;
 	}
-	info("after hack");
+
 	if (launch_g_step_launch(job, &cio_fds, &global_rc)) {
 		*error_msg = xstrdup_printf(
 			"pe_rm_connect: problem with launch: %s",
@@ -594,7 +589,6 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		return -1;
 	}
 
-	debug("3 got pe_rm_connect called from");
 	rc = slurm_step_ctx_get(job->step_ctx,
 				SLURM_STEP_CTX_USER_MANAGED_SOCKETS,
 				&fd_cnt, &ctx_sockfds);
@@ -635,7 +629,6 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 		 * to not do anything here or PMD will crap out on it. */
 		debug("got pe_rm_free called from PMD, "
 		      "we don't handle this yet");
-		return;
 	} else if (pm_type != PM_POE) {
 		error("pe_rm_free: unknown caller");
 		return;
@@ -650,7 +643,13 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 	/* Since we can't relaunch the step here don't worry about the
 	   return code.
 	*/
-	launch_g_step_wait(job, got_alloc);
+	/* It doesn't appear we need to wait for the step.  Since
+	 * POE/PMD will not wait for the end of this function anyway
+	 * lets just fini the thing and get out of here.  POE/PMD only
+	 * really calls this when the step is finished anyway.
+	 */
+
+//	launch_g_step_wait(job, got_alloc);
 	/* We are at the end so don't worry about freeing the
 	   srun_job_t pointer */
 	fini_srun(job, got_alloc, &rc, slurm_started);
@@ -867,7 +866,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	ret_info->instance = xmalloc(sizeof(int)*(table_cnt+2));
 
 	slurm_jobinfo_ctx_get(resp->switch_job, NRT_JOBINFO_TABLEINFO, &tables);
-	info("got count of %d", table_cnt);
+	debug2("got count of %d", table_cnt);
 	network_id_list = xmalloc(sizeof(nrt_network_id_t) * table_cnt);
 	for (i=0, table_ptr=tables; i<table_cnt; i++, table_ptr++) {
 		for (j = 0; j < network_id_cnt; j++) {
@@ -886,7 +885,9 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		ret_info->instance[i] = table_ptr->instance;
 		ret_info->max_instances = MAX(ret_info->max_instances,
 					      ret_info->instance[i]);
-		info("%d: %s %s %s %d", i, ret_info->protocol[i], ret_info->mode[i], ret_info->devicename[i], ret_info->instance[i]);
+		debug("%d: %s %s %s %d", i, ret_info->protocol[i],
+		      ret_info->mode[i], ret_info->devicename[i],
+		      ret_info->instance[i]);
 	}
 	xfree(network_id_list);
 	ret_info->instance[i] = -1;
@@ -1020,9 +1021,8 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 
 	if ((srun_debug = getenv("SRUN_DEBUG")))
 		debug_level = atoi(srun_debug);
-	log_opts.stderr_level  = debug_level;
-	log_opts.logfile_level = debug_level;
-	log_opts.syslog_level  = debug_level;
+	log_opts.stderr_level  = log_opts.logfile_level =
+		log_opts.syslog_level = debug_level;
 
 	if (pm_type == PM_PMD)
 		log_alter_with_fp(log_opts, LOG_DAEMON, pmd_lfp);
@@ -1038,9 +1038,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 
 	if (pm_type == PM_PMD) {
 		uint32_t job_id = -1, step_id = -1;
-		resource_allocation_response_msg_t resp;
 		char *myargv[3] = { "pmd", "pmd", NULL };
-		uint16_t cpn = 1;
 
 		init_srun(2, myargv, &log_opts, debug_level, 1);
 
@@ -1053,15 +1051,6 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 			      "not found %d.%d", job_id, step_id);
 			return -1;
 		}
-		opt.no_alloc = true;
-
-		memset(&resp, 0, sizeof(resp));
-		opt.nodelist = resp.node_list = "localhost";
-		resp.node_cnt = 1;
-		resp.job_id = job_id;
-		resp.num_cpu_groups = 1;
-		resp.cpus_per_node = &cpn;
-		resp.cpu_count_reps = &resp.node_cnt;
 
 		job = _read_job_srun_agent();
 		if (!job) {
@@ -1069,6 +1058,9 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 			return -1;
 		}
 		info("job created %u.%u", job->jobid, job->stepid);
+		opt.ifname = opt.ofname = opt.efname = "/dev/null";
+		job_update_io_fnames(job);
+
 		info("pe_rm_init done");
 	} else if (pm_type == PM_POE) {
 		/* Don't print standard messages when running under
