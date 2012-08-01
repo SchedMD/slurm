@@ -156,9 +156,10 @@ static int _build_gres_alloc_string(struct job_record *job_ptr, int valtype)
 		i_first = bit_ffs(node_bitmap);
 		i_last  = bit_fls(node_bitmap);
 	} else {
-		debug("job id: %u/function: %s:%d--No nodes in bitmap of "
-		      "job_record!",
-		      job_ptr->job_id, __FUNCTION__, __LINE__);
+		if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
+			debug("(%s:%d) job id: %u -- No nodes in bitmap of "
+			      "job_record!",
+			      THIS_FILE, __LINE__, job_ptr->job_id);
 		return rv;
 	}
 	if (i_first == -1)      /* job has no nodes */
@@ -180,17 +181,19 @@ static int _build_gres_alloc_string(struct job_record *job_ptr, int valtype)
 		else
 			count = 0;
 
-		debug("job id: %u/function: %s:%d--Count of GRES types in the "
-		      "gres_list is: %d",
-		      job_ptr->job_id, __FUNCTION__, __LINE__, count);
+		if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
+			debug("(%s:%d) job id: %u -- Count of "
+			      "GRES types in the gres_list is: %d",
+			      THIS_FILE, __LINE__, job_ptr->job_id, count);
 
 		/* Only reallocate when there is an increase in size of the
 		 * local arrays. */
 		if (count > oldcount) {
-			debug("job id: %u/function: %s:%d--Old GRES count: %d "
-			      "New GRES count: %d",
-			      job_ptr->job_id, __FUNCTION__, __LINE__,
-			      oldcount, count);
+			if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
+				debug("(%s:%d) job id: %u -- Old GRES "
+				      "count: %d New GRES count: %d",
+				      THIS_FILE, __LINE__, job_ptr->job_id,
+				      oldcount, count);
 
 			/* Allocate arrays to hold each GRES type and its
 			 * associated value found on this node.
@@ -262,8 +265,9 @@ static int _build_gres_alloc_string(struct job_record *job_ptr, int valtype)
 		if (prefix[0] == '\0')
 			prefix = ",";
 
-		debug("job id: %u/function: %s:%d--gres_alloc substring=(%s)",
-		      job_ptr->job_id, __FUNCTION__, __LINE__, buf);
+		if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
+			debug("(%s:%d) job id: %u -- gres_alloc substring=(%s)",
+			      THIS_FILE, __LINE__, job_ptr->job_id, buf);
 	}
 	xfree(gres_count_ids);
 	xfree(gres_count_vals);
@@ -1654,10 +1658,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	 * strings representing the amount of each GRES type requested
 	 *  and allocated. */
 	_fill_in_gres_fields(job_ptr);
-	debug("job id: %u/function: %s:%d--job_record->gres: (%s), "
-	      "job_record->gres_alloc: (%s)",
-	      job_ptr->job_id, __FUNCTION__, __LINE__,
-	      job_ptr->gres, job_ptr->gres_alloc);
+	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
+		debug("(%s:%d) job id: %u -- job_record->gres: (%s), "
+		      "job_record->gres_alloc: (%s)",
+		      THIS_FILE, __LINE__, job_ptr->job_id,
+		      job_ptr->gres, job_ptr->gres_alloc);
 
 	return error_code;
 }
@@ -1684,9 +1689,12 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 
 	/* First build the GRES requested field. */
 	if ((req_config == NULL) || (req_config[0] == '\0')) {
-		debug("job id: %u/function: %s:%d--job_record->gres is empty "
-		      "or NULL; this is OK if no GRES was requested",
-		      job_ptr->job_id, __FUNCTION__, __LINE__);
+		if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
+			debug("(%s:%d) job id: %u -- job_record->gres "
+			      "is empty or NULL; this is OK if no GRES "
+			      "was requested",
+			      THIS_FILE, __LINE__, job_ptr->job_id);
+
 		xfree(job_ptr->gres);
 		xstrcat(job_ptr->gres, "");
 	} else {
@@ -1716,10 +1724,11 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 					prefix = ",";
 			}
 
-			debug("job id: %u/function: %s:%d--ngres_req: %u, "
-			      "gres_req substring = (%s)",
-			      job_ptr->job_id, __FUNCTION__, __LINE__,
-			      ngres_req, buf);
+			if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
+				debug("(%s:%d) job id: %u -- ngres_req: "
+				      "%u, gres_req substring = (%s)",
+				      THIS_FILE, __LINE__, job_ptr->job_id,
+				      ngres_req, buf);
 			tok = strtok_r(NULL, ",", &last);
 		}
 		xfree(tmp_str);
@@ -1736,10 +1745,11 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 
 	/* Now build the GRES allocated field. */
 	rv = _build_gres_alloc_string(job_ptr, valtype);
-	debug("job id: %u/function: %s:%d--job_record->gres: (%s), "
-	      "job_record->gres_alloc: (%s)",
-	      job_ptr->job_id, __FUNCTION__, __LINE__,
-	      job_ptr->gres, job_ptr->gres_alloc);
+	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
+		debug("(%s:%d) job id: %u -- job_record->gres: (%s), "
+		      "job_record->gres_alloc: (%s)",
+		      THIS_FILE, __LINE__, job_ptr->job_id,
+		      job_ptr->gres, job_ptr->gres_alloc);
 
 	return rv;
 }
