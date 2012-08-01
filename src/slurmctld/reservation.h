@@ -141,6 +141,14 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			 bitstr_t **exc_core_bitmap);
 
 /*
+ * Determine the time of the first reservation to end after some time.
+ * return zero of no reservation ends after that time.
+ * IN start_time - look for reservations ending after this time
+ * RET the reservation end time or zero of none found
+ */
+extern time_t find_resv_end(time_t start_time);
+
+/*
  * Determine if a job can start now based only upon its reservations
  *	specification, if any
  *

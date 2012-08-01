@@ -3354,6 +3354,35 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 	return rc;
 }
 
+/*
+ * Determine the time of the first reservation to end after some time.
+ * return zero of no reservation ends after that time.
+ * IN start_time - look for reservations ending after this time
+ * RET the reservation end time or zero of none found
+ */
+extern time_t find_resv_end(time_t start_time)
+{
+	ListIterator iter;
+	slurmctld_resv_t *resv_ptr;
+	time_t end_time = 0;
+
+	if (!resv_list)
+		return end_time;
+
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if ((start_time < resv_ptr->start_time) ||
+		    (start_time > resv_ptr->end_time))
+			continue;
+		if ((end_time == 0) || (resv_ptr->end_time < end_time))
+			end_time = resv_ptr->end_time;
+	}
+	list_iterator_destroy(iter);
+	return end_time;
+}
+
 /* Begin scan of all jobs for valid reservations */
 extern void begin_job_resv_check(void)
 {

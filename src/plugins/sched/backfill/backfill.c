@@ -521,7 +521,7 @@ static int _attempt_backfill(void)
 	uint32_t min_nodes, max_nodes, req_nodes;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL;
-	time_t now, sched_start, later_start, start_res;
+	time_t now, sched_start, later_start, start_res, resv_end;
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
 	static int sched_timeout = 0;
@@ -714,7 +714,7 @@ static int _attempt_backfill(void)
 			end_time = (time_limit * 60) + start_res;
 		else
 			end_time = (time_limit * 60) + now;
-
+		resv_end = find_resv_end(start_res);
 		/* Identify usable nodes for this job */
 		bit_and(avail_bitmap, part_ptr->node_bitmap);
 		bit_and(avail_bitmap, up_node_bitmap);
@@ -731,6 +731,10 @@ static int _attempt_backfill(void)
 				break;
 			if ((j = node_space[j].next) == 0)
 				break;
+		}
+		if ((resv_end++) &&
+		    ((later_start == 0) || (resv_end < later_start))) {
+			later_start = resv_end;
 		}
 
 		if (job_ptr->details->exc_node_bitmap) {

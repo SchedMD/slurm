@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
  -- Force slurmd exit after 2 minute wait, even if threads are hung.
  -- Change node_req field in struct job_resources from 8 to 32 bits so we can
     run more than 256 jobs per node.
+ -- sched/backfill: Improve accuracy of expected job start with respect to
+    reservations.
 
 * Changes in SLURM 2.5.0.pre1
 =============================
