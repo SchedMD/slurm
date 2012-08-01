@@ -90,6 +90,8 @@ documents those changes that are of interest to users and admins.
     current or in the past.
  -- FRONTEND - Made error warning more apparent if a frontend node isn't
     configured correctly.
+ -- BGQ - update documentation about runjob_mux_refresh_config which works
+    correctly as of IBM driver V1R1M1 efix 008.
 
 * Changes in SLURM 2.4.1
 ========================

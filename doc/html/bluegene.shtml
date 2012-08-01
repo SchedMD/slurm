@@ -263,8 +263,8 @@ information from the system and manipulate blocks.
 
 <p>In order to make <i>srun</i> operate correctly with the underlying system
 and to ensure security for new MPI jobs, it is necessary to enable the
-SLURM plugin for the IBM runjob_mux.  This can
-be done by altering the bg.properties file. In the [runjob.mux]
+SLURM plugin for the IBM runjob_mux.  This is
+done by altering the bg.properties file. In the [runjob.mux]
 section of the bg.properties file change the plugin option to
 <i>$prefix/lib/slurm/runjob_plugin.so</i> and also set the plugin_flags
 option to <i>0x0109</i> (RTLD_LAZY | RTLD_GLOBAL | RTLD_DEEPBIND)
@@ -325,10 +325,11 @@ stopped runjob_mux
 started runjob_mux
 </pre>
 </li>
-<li><b>WARNING! As of IBM driver V1R1M1 this
-method did not work.  It appears to in the logs, but loads the old
-plugin (presumably still in memory) other than the new one,
-so use at your own risk and don't complain if it doesn't work.</b>
+<li><b>WARNING! You need at least IBM driver V1R1M1 efix 008 or this
+method will not work.  Pervious versions would load the old
+plugin (presumably still in memory) other than the new one.  As of SLURM
+2.4.2 when the plugin is loaded it will print the version of SLURM
+which should let you know if the new one is loaded or not.</b>
 <p>This method allows no job loss using the
 IBM <i>runjob_mux_refresh_config</i> command.  This should
 reload the plugin and all should be good afterwards.  After doing this
