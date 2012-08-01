@@ -43,6 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "src/common/slurm_xlator.h"
 #include "src/api/pmi_server.h"
 #include "src/srun/libsrun/allocate.h"
 #include "src/srun/libsrun/launch.h"

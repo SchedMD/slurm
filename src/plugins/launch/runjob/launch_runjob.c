@@ -39,6 +39,7 @@
 #  include "config.h"
 #endif
 
+#include "src/common/slurm_xlator.h"
 #include "src/common/proc_args.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_auth.h"

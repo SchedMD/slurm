@@ -44,6 +44,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "src/common/slurm_xlator.h"
 #include "src/srun/libsrun/launch.h"
 #include "src/common/env.h"
 /*
