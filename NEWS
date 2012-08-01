@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.4.3
+========================
+
 * Changes in SLURM 2.4.2
 ========================
  -- BLUEGENE - Correct potential deadlock issue when hardware goes bad and
