@@ -1030,7 +1030,7 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 				break;
 			}
 		if (i >= select_context_cnt) {
-			error("we don't have seect plugin type %u", plugin_id);
+			error("we don't have select plugin type %u", plugin_id);
 			goto unpack_error;
 		}
 	} else
