@@ -903,10 +903,6 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	while ((host = hostlist_shift(hl))) {
 		slurm_addr_t addr;
 		host_ptr->host_name = host;
-/* FIXME: not sure how to handle host_address yet we are guessing the
- * below will do what we need. */
-		/* host_ptr->host_address = */
-		/* 	xstrdup_printf("10.0.0.5%d", i+1); */
 		slurm_conf_get_addr(host, &addr);
 		host_ptr->host_address = xstrdup(inet_ntoa(addr.sin_addr));
 		host_ptr->task_count = step_layout->tasks[i];
