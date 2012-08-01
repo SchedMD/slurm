@@ -1179,7 +1179,8 @@ static int _get_hash_idx(const char *name)
 static void _push_to_hashtbls(char *alias, char *hostname,
 			      char *address, uint16_t port,
 			      uint16_t cpus, uint16_t sockets,
-			      uint16_t cores, uint16_t threads)
+			      uint16_t cores, uint16_t threads,
+			      bool front_end)
 {
 	int hostname_idx, alias_idx;
 	names_ll_t *p, *new;
@@ -1203,6 +1204,10 @@ static void _push_to_hashtbls(char *alias, char *hostname,
 	p = node_to_host_hashtbl[alias_idx];
 	while (p) {
 		if (strcmp(p->alias, alias)==0) {
+			if (front_end)
+				fatal("Frontend not configured correctly "
+				      "in slurm.conf.  See man slurm.conf "
+				      "look for frontendname.");
 			fatal("Duplicated NodeName %s in the config file",
 			      p->alias);
 			return;
@@ -1322,7 +1327,7 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 			hostname = hostlist_shift(hostname_list);
 		_push_to_hashtbls(alias, hostname, address, node_ptr->port,
 				  node_ptr->cpus, node_ptr->sockets,
-				  node_ptr->cores, node_ptr->threads);
+				  node_ptr->cores, node_ptr->threads, 0);
 		free(alias);
 		if (address_count > 1) {
 			address_count--;
@@ -1387,7 +1392,7 @@ static int _register_front_ends(slurm_conf_frontend_t *front_end_ptr)
 		address = hostlist_shift(address_list);
 
 		_push_to_hashtbls(hostname, hostname, address,
-				  front_end_ptr->port, 1, 1, 1, 1);
+				  front_end_ptr->port, 1, 1, 1, 1, 1);
 		free(hostname);
 		free(address);
 	}
