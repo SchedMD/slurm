@@ -748,9 +748,7 @@ static void set_options(const int argc, char **argv)
 	int opt_char, option_index = 0, max_val = 0, tmp_int;
 	struct utsname name;
 	static struct option long_options[] = {
-		{"attach",        no_argument,       0, 'a'},
 		{"account",       required_argument, 0, 'A'},
-		{"batch",         no_argument,       0, 'b'},
 		{"extra-node-info", required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
@@ -862,7 +860,7 @@ static void set_options(const int argc, char **argv)
 		{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+aA:bB:c:C:d:D:e:Eg:hHi:I::jJ:kK::lL:m:n:N:"
+	char *opt_string = "+A:B:c:C:d:D:e:Eg:hHi:I::jJ:kK::lL:m:n:N:"
 		"o:Op:P:qQr:Rst:T:uU:vVw:W:x:XZ";
 	char *pos_delimit;
 #ifdef HAVE_PTY_H
@@ -894,14 +892,6 @@ static void set_options(const int argc, char **argv)
 			xfree(opt.account);
 			opt.account = xstrdup(optarg);
 			break;
-		case (int)'a':
-			error("Please use the \"sattach\" command instead of "
-			      "\"srun -a/--attach\".");
-			exit(error_exit);
-		case (int)'b':
-			error("Please use the \"sbatch\" command instead of "
-			      "\"srun -b/--batch\".");
-			exit(error_exit);
 		case (int)'B':
 			opt.extra_set = verify_socket_core_thread_count(
 						optarg,
