@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "July 2012" "slurm.conf 2.5" "Slurm configuration file"
+.TH "slurm.conf" "5" "August 2012" "slurm.conf 2.5" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -734,6 +734,16 @@ If the job fails to terminate gracefully in the interval specified,
 it will be forcibly terminated.
 The default value is 30 seconds.
 The value may not exceed 65533.
+
+.TP
+\fBLaunchType\fR
+Identifies the mechanism to be used to launch application tasks.
+Acceptable values include
+"launch/poe" for use with IBM Parallel Environment (PE),
+"launch/runjob" for use with IBM BlueGene/Q systems, and
+"launch/slurm" for all other systems.
+The default value is "launch/runjob" for IBM BlueGene/Q systems and
+"launch/slurm" for all other systems.
 
 .TP
 \fBLicenses\fR
@@ -1967,9 +1977,7 @@ Identifies the type of switch or interconnect used for application
 communications.
 Acceptable values include
 "switch/none" for switches not requiring special processing for job launch
-or termination (Myrinet, Ethernet, and InfiniBand),
-"switch/elan" for Quadrics Elan 3 or Elan 4 interconnect.
-"switch/federation" for IBM's Federation switch.
+or termination (Myrinet, Ethernet, and InfiniBand) and
 "switch/nrt" for IBM's Network Resource Table API.
 The default value is "switch/none".
 All SLURM daemons, commands and running jobs must be restarted for a
