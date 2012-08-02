@@ -73,10 +73,13 @@
 #define SLURM_2_5_PROTOCOL_VERSION SLURM_PROTOCOL_VERSION
 #define SLURM_2_4_PROTOCOL_VERSION ((24 << 8) | 0)
 #define SLURM_2_3_PROTOCOL_VERSION ((23 << 8) | 0)
+#if 0
+/* SLURM version 2.5 code removed support for protocol versions before 2.2 */
 #define SLURM_2_2_PROTOCOL_VERSION ((22 << 8) | 0)
 #define SLURM_2_1_PROTOCOL_VERSION ((21 << 8) | 0)
 #define SLURM_2_0_PROTOCOL_VERSION ((20 << 8) | 0)
 #define SLURM_1_3_PROTOCOL_VERSION ((13 << 8) | 0)
+#endif
 
 /* used to set flags to empty */
 #define SLURM_PROTOCOL_NO_FLAGS 0

@@ -567,47 +567,6 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 		packstr(bg_record->reason, buffer);
 		pack16((uint16_t)bg_record->state, buffer);
 		packnull(buffer); /* for mp_used_inx */
-	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-		packstr(bg_record->bg_block_id, buffer);
-#ifdef HAVE_BGL
-		packstr(bg_record->blrtsimage, buffer);
-#endif
-		pack_bit_fmt(bg_record->mp_bitmap, buffer);
-		pack16((uint16_t)bg_record->conn_type[0], buffer);
-		packstr(bg_record->ionode_str, buffer);
-		pack_bit_fmt(bg_record->ionode_bitmap, buffer);
-		pack32((uint32_t)bg_record->job_running, buffer);
-		packstr(bg_record->linuximage, buffer);
-		packstr(bg_record->mloaderimage, buffer);
-		packstr(bg_record->mp_str, buffer);
-		pack32((uint32_t)bg_record->cnode_cnt, buffer);
-#ifdef HAVE_BGL
-		pack16((uint16_t)bg_record->node_use, buffer);
-#endif
-		packnull(buffer); /* for user_name */
-		packstr(bg_record->ramdiskimage, buffer);
-		packstr(bg_record->reason, buffer);
-		pack16((uint16_t)bg_record->state, buffer);
-	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
-		packstr(bg_record->bg_block_id, buffer);
-#ifdef HAVE_BGL
-		packstr(bg_record->blrtsimage, buffer);
-#endif
-		pack_bit_fmt(bg_record->mp_bitmap, buffer);
-		pack16((uint16_t)bg_record->conn_type[0], buffer);
-		packstr(bg_record->ionode_str, buffer);
-		pack_bit_fmt(bg_record->ionode_bitmap, buffer);
-		pack32((uint32_t)bg_record->job_running, buffer);
-		packstr(bg_record->linuximage, buffer);
-		packstr(bg_record->mloaderimage, buffer);
-		packstr(bg_record->mp_str, buffer);
-		pack32((uint32_t)bg_record->cnode_cnt, buffer);
-#ifdef HAVE_BGL
-		pack16((uint16_t)bg_record->node_use, buffer);
-#endif
-		packnull(buffer); /* for user_name */
-		packstr(bg_record->ramdiskimage, buffer);
-		pack16((uint16_t)bg_record->state, buffer);
 	}
 }
 
@@ -762,10 +721,6 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 	if (ver_str) {
 		if (!strcmp(ver_str, BLOCK_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
-		} else if (!strcmp(ver_str, BLOCK_2_2_STATE_VERSION)) {
-			protocol_version = SLURM_2_2_PROTOCOL_VERSION;
-		} else if (!strcmp(ver_str, BLOCK_2_1_STATE_VERSION)) {
-			protocol_version = SLURM_2_1_PROTOCOL_VERSION;
 		}
 	}
 
@@ -780,16 +735,6 @@ static int _load_state_file(List curr_block_list, char *dir_name)
 	}
 	xfree(ver_str);
 	safe_unpack32(&record_count, buffer);
-
-	/* In older versions of the code we stored things in a
-	   block_info_msg_t.  This isn't the case anymore so in the
-	   newer code we don't store the timestamp since it isn't
-	   really needed.
-	*/
-	if (protocol_version <= SLURM_2_2_PROTOCOL_VERSION) {
-		time_t last_save;
-		safe_unpack_time(&last_save, buffer);
-	}
 
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system(true);
@@ -2201,7 +2146,7 @@ extern int select_p_pack_select_info(time_t last_query_time,
 		pack32(blocks_packed, buffer);
 		pack_time(last_bg_update, buffer);
 
-		if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 			if (bg_lists->main) {
 				slurmctld_lock_t job_read_lock =
 					{ NO_LOCK, READ_LOCK,

@@ -126,7 +126,7 @@ static int _open_front_end_state_file(char **state_file)
 static void _pack_front_end(struct front_end_record *dump_front_end_ptr,
 			    Buf buffer, uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		pack_time(dump_front_end_ptr->boot_time, buffer);
 		packstr(dump_front_end_ptr->name, buffer);
 		pack16(dump_front_end_ptr->node_state, buffer);
@@ -454,7 +454,7 @@ extern void pack_all_front_end(char **buffer_ptr, int *buffer_size, uid_t uid,
 	buffer = init_buf(BUF_SIZE * 2);
 	nodes_packed = 0;
 
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
 		pack_time(now, buffer);
@@ -657,7 +657,7 @@ extern int load_all_front_end_state(bool state_only)
 
 	while (remaining_buf (buffer) > 0) {
 		uint16_t base_state;
-		if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
 			safe_unpack16 (&node_state,  buffer);
 			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);

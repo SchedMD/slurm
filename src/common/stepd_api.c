@@ -299,18 +299,14 @@ stepd_get_info(int fd)
 	safe_read(fd, &step_info->stepid, sizeof(uint32_t));
 
 	safe_read(fd, &protocol_version, sizeof(uint16_t));
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		safe_read(fd, &step_info->nodeid, sizeof(uint32_t));
 		safe_read(fd, &step_info->job_mem_limit, sizeof(uint32_t));
 		safe_read(fd, &step_info->step_mem_limit, sizeof(uint32_t));
 	} else {
-		step_info->nodeid  = protocol_version << 16;
-		safe_read(fd, &protocol_version, sizeof(uint16_t));
-		step_info->nodeid |= protocol_version;
-		safe_read(fd, &step_info->job_mem_limit, sizeof(uint32_t));
-		step_info->step_mem_limit = step_info->job_mem_limit;
-		verbose("Old version slurmstepd for step %u.%u", 
-			step_info->jobid, step_info->stepid);
+		error("stepd_get_info: protocol_version "
+		      "%hu not supported", protocol_version);
+		goto rwfail;
 	}
 	return step_info;
 
@@ -872,29 +868,6 @@ rwfail:
 int
 stepd_completion(int fd, step_complete_msg_t *sent)
 {
-#if (SLURM_PROTOCOL_VERSION <= SLURM_2_4_PROTOCOL_VERSION)
-/* FIXME: Remove this code plus the read code from src/slurmd/slurmstepd/req.c
- * in SLURM version 2.5 */
-	int req = REQUEST_STEP_COMPLETION;
-	int rc;
-	int errnum = 0;
-
-	debug("Entering stepd_completion, range_first = %d, range_last = %d",
-	      sent->range_first, sent->range_last);
-	safe_write(fd, &req, sizeof(int));
-	safe_write(fd, &sent->range_first, sizeof(int));
-	safe_write(fd, &sent->range_last, sizeof(int));
-	safe_write(fd, &sent->step_rc, sizeof(int));
-	jobacctinfo_setinfo(sent->jobacct, JOBACCT_DATA_PIPE, &fd);
-	/* Receive the return code and errno */
-	safe_read(fd, &rc, sizeof(int));
-	safe_read(fd, &errnum, sizeof(int));
-
-	errno = errnum;
-	return rc;
-rwfail:
-	return -1;
-#else
 	int req = REQUEST_STEP_COMPLETION_V2;
 	int rc;
 	int errnum = 0;
@@ -935,7 +908,6 @@ rwfail:
 	return rc;
 rwfail:
 	return -1;
-#endif
 }
 
 /* Wait for a file descriptor to be readable (up to 300 seconds).
@@ -1086,4 +1058,3 @@ rwfail:
 	*pids_array = NULL;
 	return SLURM_ERROR;
 }
-
