@@ -647,7 +647,6 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 
 	xassert(job);
 
-	/* OK we are now really running something */
 	debug("got pe_rm_free called %p %p", job, job->step_ctx);
 	/* Since we can't relaunch the step here don't worry about the
 	   return code.
