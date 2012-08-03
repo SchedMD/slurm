@@ -639,6 +639,9 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
  * allocated. When called, pe_rm_free implies the job has completed
  * and resources are freed and available for subsequent jobs.
  * IN/OUT resource_mgr
+ *
+ * As of PE 1207 pe_rm_free does not always complete.  The parent
+ * process seems to finish before we do.  So you might be erronious errors.
  */
 extern void pe_rm_free(rmhandle_t *resource_mgr)
 {
@@ -664,13 +667,7 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 	/* Since we can't relaunch the step here don't worry about the
 	   return code.
 	*/
-	/* It doesn't appear we need to wait for the step.  Since
-	 * POE/PMD will not wait for the end of this function anyway
-	 * lets just fini the thing and get out of here.  POE/PMD only
-	 * really calls this when the step is finished anyway.
-	 */
-
-//	launch_g_step_wait(job, got_alloc);
+	launch_g_step_wait(job, got_alloc);
 	/* We are at the end so don't worry about freeing the
 	   srun_job_t pointer */
 	fini_srun(job, got_alloc, &rc, slurm_started);
