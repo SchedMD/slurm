@@ -1008,6 +1008,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		      char** error_msg)
 {
 	char *srun_debug = NULL;
+	char *myargv[3] = { "poe", "poe", NULL };
 
 	/* SLURM was originally written against 1300, so we will
 	 * return that, no matter what comes in so we always work.
@@ -1040,9 +1041,10 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	log_opts.stderr_level  = log_opts.logfile_level =
 		log_opts.syslog_level = debug_level;
 
-	if (pm_type == PM_PMD)
+	if (pm_type == PM_PMD) {
 		log_alter_with_fp(log_opts, LOG_DAEMON, pmd_lfp);
-	else
+		myargv[0] = myargv[1] = "pmd";
+	} else
 		log_alter(log_opts, LOG_DAEMON, "/dev/null");
 
 	/* This will be used later in the code to set the
@@ -1052,11 +1054,16 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 
 	debug("got pe_rm_init called %s %p", rm_id, info);
 
+	/* This needs to happen before any other threads so we can
+	   catch the signals correctly.  Send in NULL for logopts
+	   because we just set it up. Also always send 1 for
+	   slurm_started since we don't want to start up the shepard
+	   thread in this case.
+	*/
+	init_srun(2, myargv, NULL, debug_level, 1);
+
 	if (pm_type == PM_PMD) {
 		uint32_t job_id = -1, step_id = -1;
-		char *myargv[3] = { "pmd", "pmd", NULL };
-
-		init_srun(2, myargv, &log_opts, debug_level, 1);
 
 		if ((srun_debug = getenv("SLURM_JOB_ID")))
 			job_id = atoi(srun_debug);
@@ -1189,10 +1196,6 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		     char** error_msg)
 {
 	job_request_t *pe_job_req = NULL;
-	char *myargv[3] = { "poe", "poe", NULL };
-
-	if (getenv("SLURM_STARTED_STEP"))
-		slurm_started = true;
 
 	if (pm_type == PM_PMD) {
 		debug("pe_rm_submit_job called");
@@ -1208,8 +1211,6 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		error("SLURM doesn't handle files to submit_job");
 		return -1;
 	}
-
-	init_srun(2, myargv, &log_opts, debug_level, 1);
 
 	pe_job_req = (job_request_t *)job_cmd.job_command;
 	debug2("num_nodes\t= %d", pe_job_req->num_nodes);
