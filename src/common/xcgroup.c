@@ -162,8 +162,8 @@ int xcgroup_ns_mount(xcgroup_ns_t* cgns)
 		p = mnt_point;
 		while ((p = index(p+1, '/')) != NULL) {
 			*p = '\0';
-			mkdir(mnt_point, 0755);
-			if (errno != EEXIST) {
+			fstatus = mkdir(mnt_point, 0755);
+			if (fstatus && errno != EEXIST) {
 				debug("unable to create cgroup ns required "
 				      "directory '%s'", mnt_point);
 				xfree(mnt_point);
