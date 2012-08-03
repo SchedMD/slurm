@@ -404,6 +404,7 @@ extern int launch_p_step_launch(
 	task_state = task_state_create(opt.ntasks);
 
 	slurm_step_launch_params_t_init(&launch_params);
+	memset(&callbacks, 0, sizeof(callbacks));
 	launch_params.gid = opt.gid;
 	launch_params.alias_list = job->alias_list;
 	launch_params.argc = opt.argc;
