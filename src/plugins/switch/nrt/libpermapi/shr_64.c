@@ -541,8 +541,6 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	char *name = NULL, *node_list = NULL;
 
 	if (pm_type == PM_PMD) {
-		/* If the PMD calls this and it didn't launch anything we need
-		 * to not do anything here or PMD will crap out on it. */
 		debug("got pe_rm_connect called from PMD");
 	} else if (pm_type == PM_POE) {
 		debug("got pe_rm_connect called");
@@ -646,20 +644,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 extern void pe_rm_free(rmhandle_t *resource_mgr)
 {
 	uint32_t rc = 0;
-	//srun_job_t *job = *(srun_job_t **)*resource_mgr;
 
-	if (pm_type == PM_PMD) {
-		/* If the PMD calls this and it didn't launch anything we need
-		 * to not do anything here or PMD will crap out on it. */
-		debug("got pe_rm_free called from PMD, "
-		      "we don't handle this yet");
-	} else if (pm_type != PM_POE) {
-		error("pe_rm_free: unknown caller");
-		return;
-	}
-
-	/* If the PMD calls this and it didn't launch anything we need
-	 * to not do anything here or PMD will crap out on it. */
 	xassert(job);
 
 	/* OK we are now really running something */
@@ -1143,13 +1128,6 @@ extern int pe_rm_send_event(rmhandle_t resource_mgr, job_event_t *job_event,
 {
 	int rc;
 
-	if (pm_type == PM_PMD) {
-		debug("pe_rm_send_event called");
-		return 0;
-	} else if (pm_type != PM_POE) {
-		error("pe_rm_send_event: unknown caller");
-		return -1;
-	}
 	debug("got pe_rm_send_event called with event type %d",
 	      job_event->event);
 
@@ -1198,7 +1176,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	job_request_t *pe_job_req = NULL;
 
 	if (pm_type == PM_PMD) {
-		debug("pe_rm_submit_job called");
+		debug("pe_rm_submit_job called from PMD");
 		return 0;
 	} else if (pm_type != PM_POE) {
 		error("pe_rm_submit_job: unknown caller");
