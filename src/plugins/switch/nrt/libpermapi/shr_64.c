@@ -1021,6 +1021,8 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 
 	slurm_set_launch_type("launch/slurm");
 
+	if (getenv("SLURM_STARTED_STEP"))
+		slurm_started = true;
 	if ((srun_debug = getenv("SRUN_DEBUG")))
 		debug_level = atoi(srun_debug);
 	log_opts.stderr_level  = log_opts.logfile_level =
