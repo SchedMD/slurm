@@ -98,6 +98,7 @@ strong_alias(log_init,		slurm_log_init);
 strong_alias(log_reinit,	slurm_log_reinit);
 strong_alias(log_fini,		slurm_log_fini);
 strong_alias(log_alter,		slurm_log_alter);
+strong_alias(log_alter_with_fp, slurm_log_alter_with_fp);
 strong_alias(log_set_fpfx,	slurm_log_set_fpfx);
 strong_alias(log_fp,		slurm_log_fp);
 strong_alias(log_has_data,	slurm_log_has_data);

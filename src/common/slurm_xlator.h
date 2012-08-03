@@ -197,6 +197,7 @@
 #define	log_reinit		slurm_log_reinit
 #define	log_fini		slurm_log_fini
 #define	log_alter		slurm_log_alter
+#define	log_alter_with_fp	slurm_log_alter_with_fp
 #define	log_set_fpfx		slurm_log_set_fpfx
 #define	log_fp			slurm_log_fp
 #define	log_has_data		slurm_log_has_data
