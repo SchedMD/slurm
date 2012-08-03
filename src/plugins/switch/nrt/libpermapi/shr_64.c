@@ -1075,26 +1075,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 
 		info("pe_rm_init done");
 	} else if (pm_type == PM_POE) {
-		/* Don't print standard messages when running under
-		   PMD or it will get confused.
-		*/
-		if ((srun_debug = getenv("SRUN_DEBUG")))
-			debug_level = atoi(srun_debug);
-		if (debug_level) {
-			log_opts.stderr_level  = debug_level;
-			log_opts.logfile_level = debug_level;
-			log_opts.syslog_level  = debug_level;
-
-			log_alter(log_opts, LOG_DAEMON, "/dev/null");
-			/* This will be used later in the code to set the
-			 * _verbose level. */
-			if (debug_level >= LOG_LEVEL_INFO)
-				debug_level -= LOG_LEVEL_INFO;
-		}
 		debug("got pe_rm_init called %s", rm_id);
-
-		/* Set up slurmctld message handler */
-		slurmctld_msg_init();
 
 		/* Create agent thread to forward job credential needed for
 		 * PMD to fanout child processes on other nodes */
