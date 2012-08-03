@@ -75,6 +75,7 @@ static int debug_level = 0;
 static bool got_alloc = false;
 static bool slurm_started = false;
 static log_options_t log_opts = LOG_OPTS_INITIALIZER;
+static host_usage_t *host_usage = NULL;
 
 int sig_array[] = {
 	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGHUP,
@@ -96,43 +97,18 @@ typedef struct agent_data {
 	slurm_fd_t fe_comm_socket;
 } agent_data_t;
 
-static void _pack_job_step_launch_state(struct step_launch_state *launch_state,
-					Buf buffer)
+static char *_name_from_addr(char *addr)
 {
-	uint8_t user_managed_io = (uint8_t) launch_state->user_managed_io;
+	host_usage_t *host_ptr;
 
-	pack8(user_managed_io, buffer);
-	pack16(launch_state->num_resp_port, buffer);
-	pack16_array(launch_state->resp_port, launch_state->num_resp_port,
-		     buffer);
-}
-static int _unpack_job_step_launch_state(struct step_launch_state **
-					  launch_state_ptr, Buf buffer)
-{
-	struct step_launch_state *launch_state;
-	uint8_t user_managed_io;
-	uint16_t num_resp_port;
-	uint16_t *resp_port = NULL;
-	uint32_t tmp_32;
-
-	safe_unpack8(&user_managed_io, buffer);
-	safe_unpack16(&num_resp_port, buffer);
-	safe_unpack16_array(&resp_port, &tmp_32, buffer);
-	if (tmp_32 != num_resp_port)
-		goto unpack_error;
-
-	launch_state = xmalloc(sizeof(struct step_launch_state));
-	launch_state->user_managed_io = user_managed_io;
-	launch_state->num_resp_port = num_resp_port;
-	launch_state->resp_port = resp_port;
-	*launch_state_ptr = launch_state;
-	return SLURM_SUCCESS;
-
-unpack_error:
-	error("_unpack_job_step_launch_state: unpack error");
-	xfree(resp_port);
-	*launch_state_ptr = NULL;
-	return SLURM_ERROR;
+	xassert(host_usage);
+	host_ptr = host_usage;
+	while (host_ptr && host_ptr->host_address) {
+		if (!strcmp(addr, host_ptr->host_address))
+			return host_ptr->host_name;
+		host_ptr++;
+	}
+	return NULL;
 }
 
 static void _pack_srun_ctx(slurm_step_ctx_t *ctx, Buf buffer)
@@ -142,7 +118,7 @@ static void _pack_srun_ctx(slurm_step_ctx_t *ctx, Buf buffer)
 	if (ctx)
 		tmp_8 = 1;
 	pack8(tmp_8, buffer);
-	if (!ctx || !ctx->step_req || !ctx->step_resp || !ctx->launch_state) {
+	if (!ctx || !ctx->step_req || !ctx->step_resp) {
 		error("_pack_srun_ctx: ctx is NULL");
 		return;
 	}
@@ -150,8 +126,8 @@ static void _pack_srun_ctx(slurm_step_ctx_t *ctx, Buf buffer)
 					 SLURM_PROTOCOL_VERSION);
 	pack_job_step_create_response_msg(ctx->step_resp, buffer,
 					  SLURM_PROTOCOL_VERSION);
-	_pack_job_step_launch_state(ctx->launch_state, buffer);
 }
+
 static int _unpack_srun_ctx(slurm_step_ctx_t **step_ctx, Buf buffer)
 {
 	slurm_step_ctx_t *ctx = NULL;
@@ -177,10 +153,6 @@ static int _unpack_srun_ctx(slurm_step_ctx_t **step_ctx, Buf buffer)
 	if (rc != SLURM_SUCCESS)
 		goto unpack_error;
 
-	rc = _unpack_job_step_launch_state(&ctx->launch_state, buffer);
-	if (rc != SLURM_SUCCESS)
-		goto unpack_error;
-
 	*step_ctx = ctx;
 	return SLURM_SUCCESS;
 
@@ -196,44 +168,56 @@ unpack_error:
 
 static Buf _pack_srun_job_rec(void)
 {
-	uint32_t tmp_32;
 	Buf buffer;
+	host_usage_t *host_ptr;
 
 	buffer = init_buf(4096);
-	pack32(job->jobid, buffer);
-	pack32(job->stepid, buffer);
-	pack32(job->cpu_count, buffer);
 	pack32(job->nhosts, buffer);
-	pack32(job->ntasks, buffer);
-	tmp_32 = job->state;	/* job state is int */
-	pack32(tmp_32, buffer);
 
 	packstr(job->alias_list, buffer);
 	packstr(job->nodelist, buffer);
 
 	_pack_srun_ctx(job->step_ctx, buffer);
 
+	/* Since we can't rely on slurm_conf_get_nodename_from_addr
+	   working on a PERCS machine reliably we will sort all the
+	   IP's as we know them and ship them over if/when a PMD needs to
+	   forward the fanout.
+	*/
+	xassert(host_usage);
+	host_ptr = host_usage;
+	while (host_ptr && host_ptr->host_name) {
+		packstr(host_ptr->host_name, buffer);
+		packstr(host_ptr->host_address, buffer);
+		host_ptr++;
+	}
 	return buffer;
 }
+
 static srun_job_t * _unpack_srun_job_rec(Buf buffer)
 {
 	uint32_t tmp_32;
 	srun_job_t *job_data;
+	host_usage_t *host_ptr;
+	int i;
 
 	job_data = xmalloc(sizeof(srun_job_t));
-	safe_unpack32(&job_data->jobid, buffer);
-	safe_unpack32(&job_data->stepid, buffer);
-	safe_unpack32(&job_data->cpu_count, buffer);
 	safe_unpack32(&job_data->nhosts, buffer);
-	safe_unpack32(&job_data->ntasks, buffer);
-	safe_unpack32(&tmp_32, buffer);
-	job_data->state = (int) tmp_32;
 
 	safe_unpackstr_xmalloc(&job_data->alias_list, &tmp_32, buffer);
 	safe_unpackstr_xmalloc(&job_data->nodelist, &tmp_32, buffer);
 
 	if (_unpack_srun_ctx(&job_data->step_ctx, buffer))
 		goto unpack_error;
+
+	host_usage = xmalloc(sizeof(host_usage_t) * (job_data->nhosts+1));
+	host_ptr = host_usage;
+	for (i=0; i<job_data->nhosts; i++) {
+		safe_unpackstr_xmalloc(&host_ptr->host_name, &tmp_32, buffer);
+		safe_unpackstr_xmalloc(&host_ptr->host_address,
+				       &tmp_32, buffer);
+		host_ptr++;
+	}
 
 	return job_data;
 
@@ -498,7 +482,8 @@ srun_job_t * _read_job_srun_agent(void)
 					      buf_size - offset, 8000);
 		if (i < 0) {
 			if ((errno != EAGAIN) && (errno != EINTR)) {
-				error("_read_job_srun_agent read (buf=%d): %m", i);
+				error("_read_job_srun_agent read (buf=%d): %m",
+				      i);
 				break;
 			}
 		} else if (i > 0) {
@@ -552,6 +537,8 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	uint32_t global_rc = 0;
 	int i, rc, fd_cnt;
 	int *ctx_sockfds = NULL;
+	hostlist_t hl = NULL;
+	char *name = NULL, *node_list = NULL;
 
 	if (pm_type == PM_PMD) {
 		/* If the PMD calls this and it didn't launch anything we need
@@ -567,11 +554,45 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 
 	xassert(job);
 
+	/* translate the ip to a node list which SLURM uses to send
+	   messages instead of IP addresses (at this point anyway)
+	*/
+	for (i=0; i<connect_param->machine_count; i++) {
+		name = _name_from_addr(connect_param->machine_name[i]);
+		if (!name) {
+			if (hl)
+				hostlist_destroy(hl);
+			*error_msg = xstrdup_printf(
+				"pe_rm_connect: unknown host for ip %s",
+				connect_param->machine_name[i]);
+			error("%s", *error_msg);
+			return -1;
+		}
+
+		if (!hl)
+			hl = hostlist_create(name);
+		else
+			hostlist_push_host(hl, name);
+	}
+
+	if (!hl) {
+		*error_msg = xstrdup_printf(
+			"pe_rm_connect: machine_count 0? it came in as "
+			"%d but we didn't get a hostlist",
+			connect_param->machine_count);
+		error("%s", *error_msg);
+		return -1;
+	}
+
+	hostlist_sort(hl);
+	node_list = hostlist_ranged_string_xmalloc(hl);
+	hostlist_destroy(hl);
+
 	opt.argc = my_argc;
 	opt.argv = my_argv;
 	opt.user_managed_io = true;
 	if (slurm_step_ctx_daemon_per_node_hack(job->step_ctx,
-						connect_param->machine_name,
+						node_list,
 						connect_param->machine_count)
 	    != SLURM_SUCCESS) {
 		*error_msg = xstrdup_printf(
@@ -896,7 +917,8 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 
 	step_layout = launch_common_get_slurm_step_layout(job);
 
-	ret_info->hosts = xmalloc(sizeof(host_usage_t) * ret_info->host_count);
+	ret_info->hosts = xmalloc(sizeof(host_usage_t)
+				  * (ret_info->host_count+1));
 	host_ptr = ret_info->hosts;
 	i=0;
 	hl = hostlist_create(step_layout->node_list);
@@ -921,6 +943,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		host_ptr++;
 	}
 	hostlist_destroy(hl);
+	host_usage = ret_info->hosts;
 
 	return 0;
 }
@@ -1053,6 +1076,10 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 			error("no job created");
 			return -1;
 		}
+
+		job->jobid = job_id;
+		job->stepid = step_id;
+
 		info("job created %u.%u", job->jobid, job->stepid);
 		opt.ifname = opt.ofname = opt.efname = "/dev/null";
 		job_update_io_fnames(job);
