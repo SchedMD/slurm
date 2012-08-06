@@ -46,12 +46,10 @@ set job_id      0
 
 print_header $test_id
 
-if { ![file exists $poe] } {
-	send_user "WARNING: poe must be installed on the\
-	    system to run this test.\n"
+if { ![test_launch_poe] } {
+	send_user "\nWARNING: This test is only compatable with launch/poe systems\n"
 	exit $exit_code
 }
-
 
 #
 # execute poe with a specific node count
