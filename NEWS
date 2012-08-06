@@ -6,6 +6,9 @@ documents those changes that are of interest to users and admins.
  -- Accounting - Fix so complete 32 bit numbers can be put in for a priority.
  -- cgroups - fix if initial directory is non-existent SLURM creates it
     correctly.  Before the errno wasn't being checked correctly
+ -- BGQ - fixed srun when only requesting a task count and not a node count
+    to operate the same way salloc or sbatch did and assign a task per cpu
+    by default instead of task per node.
 
 * Changes in SLURM 2.4.2
 ========================
