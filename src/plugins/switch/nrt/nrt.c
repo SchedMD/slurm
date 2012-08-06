@@ -190,10 +190,17 @@ typedef struct {
 typedef struct nrt_protocol_info {
 	char protocol_name[NRT_MAX_PROTO_NAME_LEN];
 } nrt_protocol_info_t;
+
 typedef struct nrt_protocol_table {
 	nrt_protocol_info_t protocol_table[NRT_MAX_PROTO_CNT];
 	int protocol_table_cnt;	/* Count of entries in protocol_table */
 } nrt_protocol_table_t;
+
+typedef struct slurm_nrt_suspend_info {
+	uint32_t job_key_count;
+	uint32_t job_key_array_size;
+	nrt_job_key_t *job_key;
+} slurm_nrt_suspend_info_t;
 
 static int lid_cache_size = 0;
 static nrt_cache_entry_t lid_cache[NRT_MAX_ADAPTERS];
@@ -3475,6 +3482,8 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 		bzero(&table_info, sizeof(nrt_table_info_t));
 		table_info.num_tasks = jp->tableinfo[i].table_length;
 		table_info.job_key = jp->job_key;
+		/* Enable job preeption and release of resources */
+		table_info.job_options = PREEMPT_RELEASE_RESOURCES_MASK;
 		table_info.uid = uid;
 		table_info.network_id = jp->tableinfo[i].network_id;
 		table_info.pid = pid;
@@ -4175,7 +4184,8 @@ static preemption_state_t _job_preempt_state(nrt_job_key_t job_key)
 	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_PREEMPTION_STATE,
 			  &preempt_state);
 	if (err != NRT_SUCCESS) {
-		error("nrt_command(preempt state): %s", nrt_err_str(err));
+		error("nrt_command(preempt_state, %u): %s",
+		      job_key, nrt_err_str(err));
 		return PES_INIT;	/* No good return value for error */
 	}
 	return state;
@@ -4199,6 +4209,7 @@ static int _wait_job(nrt_job_key_t job_key, preemption_state_t want_state,
 			      (100 * i));
 			return 0;
 		}
+		/* info("job_key:%u state:%d", job_key, curr_state); */
 		if ((curr_state == PES_PREEMPTION_FAILED) ||
 		    (curr_state == PES_RESUME_FAILED))
 			return -1;
@@ -4230,46 +4241,189 @@ static int _wait_job(nrt_job_key_t job_key, preemption_state_t want_state,
 	return -1;
 }
 
-extern int nrt_preempt_job(slurm_nrt_jobinfo_t *jp, nrt_option_t option,
-			   int max_wait_secs)
+extern int nrt_preempt_job_test(slurm_nrt_jobinfo_t *jp)
+{
+	if (jp->cau_indexes) {
+		info("Unable to preempt job with allocated CAU");
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
+extern void nrt_suspend_job_info_get(slurm_nrt_jobinfo_t *jp,
+				     void **suspend_info)
+{
+	slurm_nrt_suspend_info_t *susp_info_ptr;
+	if (!jp)
+		return;
+	if (*suspend_info == NULL) {
+		susp_info_ptr = xmalloc(sizeof(slurm_nrt_suspend_info_t));
+		susp_info_ptr->job_key_array_size = 8;
+		susp_info_ptr->job_key = xmalloc(sizeof(nrt_job_key_t) * 8);
+		*suspend_info = susp_info_ptr;
+	} else {
+		susp_info_ptr = *suspend_info;
+		if ((susp_info_ptr->job_key_count + 1) >=
+		    susp_info_ptr->job_key_array_size) {
+			susp_info_ptr->job_key_array_size *= 2;
+			xrealloc(susp_info_ptr->job_key,
+				 sizeof(nrt_job_key_t) *
+				 susp_info_ptr->job_key_array_size);
+		}
+	}
+	susp_info_ptr->job_key[susp_info_ptr->job_key_count++] = jp->job_key;
+}
+
+extern void nrt_suspend_job_info_pack(void *suspend_info, Buf buffer)
+{
+	slurm_nrt_suspend_info_t *susp_info_ptr;
+
+	if (!suspend_info) {
+		uint32_t tmp_32 = 0;
+		pack32(tmp_32, buffer);
+		return;
+	}
+	susp_info_ptr = (slurm_nrt_suspend_info_t *) suspend_info;
+	pack32(susp_info_ptr->job_key_count, buffer);
+	pack32_array(susp_info_ptr->job_key, susp_info_ptr->job_key_count,
+		     buffer);
+	if (debug_flags & DEBUG_FLAG_SWITCH) {
+		int i;
+		for (i = 0; i < susp_info_ptr->job_key_count; i++) {
+			info("nrt_suspend_job_info_pack: job_key[%d]:%u",
+			     i, susp_info_ptr->job_key[i]);
+		}
+	}
+}
+
+extern int nrt_suspend_job_info_unpack(void **suspend_info, Buf buffer)
+{
+	slurm_nrt_suspend_info_t *susp_info_ptr = NULL;
+	uint32_t tmp_32;
+
+	*suspend_info = NULL;
+	safe_unpack32(&tmp_32, buffer);
+	if (tmp_32 == 0)
+		return SLURM_SUCCESS;
+
+	susp_info_ptr = xmalloc(sizeof(slurm_nrt_suspend_info_t));
+	susp_info_ptr->job_key = xmalloc(sizeof(nrt_job_key_t) * tmp_32);
+	susp_info_ptr->job_key_count = tmp_32;
+	susp_info_ptr->job_key_array_size = tmp_32;
+	safe_unpack32_array(&susp_info_ptr->job_key, &tmp_32, buffer);
+	if (tmp_32 != susp_info_ptr->job_key_count)
+		goto unpack_error;
+	*suspend_info = susp_info_ptr;
+	if (debug_flags & DEBUG_FLAG_SWITCH) {
+		int i;
+		for (i = 0; i < susp_info_ptr->job_key_count; i++) {
+			info("nrt_suspend_job_info_pack: job_key[%d]:%u",
+			     i, susp_info_ptr->job_key[i]);
+		}
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("nrt_suspend_job_info_unpack: unpack error");
+	xfree(susp_info_ptr->job_key);
+	xfree(susp_info_ptr);
+	return SLURM_ERROR;
+}
+
+extern void nrt_suspend_job_info_free(void *suspend_info)
+{
+	slurm_nrt_suspend_info_t *susp_info_ptr;
+
+	susp_info_ptr = (slurm_nrt_suspend_info_t *) suspend_info;
+	if (susp_info_ptr) {
+		xfree(susp_info_ptr->job_key);
+		xfree(susp_info_ptr);
+	}
+}
+
+static int _preempt_job(nrt_job_key_t job_key, int max_wait_secs)
 {
 	nrt_cmd_preempt_job_t preempt_job;
 	int err;
 
-	preempt_job.job_key	= jp->job_key;
-	preempt_job.option	= option;
+	preempt_job.job_key	= job_key;
+	preempt_job.option	= PREEMPT_RELEASE_RESOURCES_MASK;
 	preempt_job.timeout_val	= NULL;    /* Should be set? What value? */
-	if (_wait_job(jp->job_key, PES_JOB_RUNNING, max_wait_secs))
+	if (_wait_job(job_key, PES_JOB_RUNNING, max_wait_secs))
 		return SLURM_ERROR;
 	/* NOTE: This function is non-blocking.
 	 * To detect completeion, poll on NRT_CMD_QUERY_PREEMPTION_STATE */
 	err = nrt_command(NRT_VERSION, NRT_CMD_PREEMPT_JOB, &preempt_job);
 	if (err != NRT_SUCCESS) {
-		error("nrt_command(preempt job): %s", nrt_err_str(err));
+		error("nrt_command(preempt job, %u): %s", job_key,
+		      nrt_err_str(err));
 		return SLURM_ERROR;
 	}
-	if (_wait_job(jp->job_key, PES_JOB_PREEMPTED, max_wait_secs))
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("nrt_command(preempting job, %u)", job_key);
+	if (_wait_job(job_key, PES_JOB_PREEMPTED, max_wait_secs))
 		return SLURM_ERROR;
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("nrt_command(preempted job, %u)", job_key);
 	return SLURM_SUCCESS;
 }
 
-extern int nrt_resume_job(slurm_nrt_jobinfo_t *jp, nrt_option_t option,
-			  int max_wait_secs)
+extern int nrt_preempt_job(void *suspend_info, int max_wait_secs)
+{
+	slurm_nrt_suspend_info_t *susp_info_ptr;
+	int err, i, rc = SLURM_SUCCESS;
+
+	susp_info_ptr = (slurm_nrt_suspend_info_t *) suspend_info;
+	if (susp_info_ptr) {
+		for (i = 0; i < susp_info_ptr->job_key_count; i++) {
+			err = _preempt_job(susp_info_ptr->job_key[i],
+					   max_wait_secs);
+			if (err != SLURM_SUCCESS)
+				rc = err;
+		}
+	}
+	return rc;
+}
+
+static int _resume_job(nrt_job_key_t job_key, int max_wait_secs)
 {
 	nrt_cmd_resume_job_t resume_job;
 	int err;
 
-	resume_job.job_key	= jp->job_key;
-	resume_job.option	= option;
+	resume_job.job_key	= job_key;
+	resume_job.option	= PREEMPT_RELEASE_RESOURCES_MASK;
 	resume_job.timeout_val	= NULL;    /* Should be set? What value? */
 	/* NOTE: This function is non-blocking.
 	 * To detect completeion, poll on NRT_CMD_QUERY_PREEMPTION_STATE */
 	err = nrt_command(NRT_VERSION, NRT_CMD_RESUME_JOB, &resume_job);
 	if (err != NRT_SUCCESS) {
-		error("nrt_command(resume job): %s", nrt_err_str(err));
+		error("nrt_command(resume job, %u): %s", job_key,
+		      nrt_err_str(err));
 		return SLURM_ERROR;
 	}
-	if (_wait_job(jp->job_key, PES_JOB_RUNNING, max_wait_secs))
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("nrt_command(resuming job, %u)", job_key);
+	if (_wait_job(job_key, PES_JOB_RUNNING, max_wait_secs))
 		return SLURM_ERROR;
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("nrt_command(resumed job, %u)", job_key);
 	return SLURM_SUCCESS;
+}
+
+extern int nrt_resume_job(void *suspend_info, int max_wait_secs)
+{
+	slurm_nrt_suspend_info_t *susp_info_ptr;
+	int err, i, rc = SLURM_SUCCESS;
+
+	susp_info_ptr = (slurm_nrt_suspend_info_t *) suspend_info;
+	if (susp_info_ptr) {
+		for (i = 0; i < susp_info_ptr->job_key_count; i++) {
+			err = _resume_job(susp_info_ptr->job_key[i],
+					  max_wait_secs);
+			if (err != SLURM_SUCCESS)
+				rc = err;
+		}
+	}
+	return rc;
 }

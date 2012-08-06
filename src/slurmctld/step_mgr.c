@@ -3220,6 +3220,8 @@ extern void step_checkpoint(void)
 			continue; /* ignore periodic step ckpt */
 		}
 		step_iterator = list_iterator_create (job_ptr->step_list);
+		if (!step_iterator)
+			fatal("list_iterator_create: malloc failure");
 		while ((step_ptr = (struct step_record *)
 				list_next (step_iterator))) {
 			char *image_dir = NULL;

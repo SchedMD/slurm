@@ -185,7 +185,8 @@ static void _send_job_kill(struct job_record *job_ptr);
 static void _set_job_id(struct job_record *job_ptr);
 static void _signal_batch_job(struct job_record *job_ptr, uint16_t signal);
 static void _signal_job(struct job_record *job_ptr, int signal);
-static void _suspend_job(struct job_record *job_ptr, uint16_t op);
+static void _suspend_job(struct job_record *job_ptr, uint16_t op,
+			 bool indf_susp);
 static int  _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp);
 static bool _top_priority(struct job_record *job_ptr);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
@@ -8777,17 +8778,41 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 	return;
 }
 
-/* Send suspend request to slumrd of all nodes associated with a job */
-static void _suspend_job(struct job_record *job_ptr, uint16_t op)
+static void *_switch_suspend_info(struct job_record *job_ptr)
+{
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+	void *switch_suspend_info = NULL;
+
+	step_iterator = list_iterator_create (job_ptr->step_list);
+	if (!step_iterator)
+		fatal("list_iterator_create: malloc failure");
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		interconnect_suspend_info_get(step_ptr->switch_job,
+					      &switch_suspend_info);
+	}
+	list_iterator_destroy (step_iterator);
+
+	return switch_suspend_info;
+}
+
+/* Send suspend request to slumrd of all nodes associated with a job
+ * job_ptr IN - job to be suspended or resumed
+ * op IN - SUSPEND_JOB or RESUME_JOB
+ * indf_susp IN - set if job is being suspended indefinitely by user
+ *                or admin, otherwise suspended for gang scheduling
+ */
+static void _suspend_job(struct job_record *job_ptr, uint16_t op,
+			 bool indf_susp)
 {
 #ifndef HAVE_FRONT_END
 	int i;
 #endif
 	agent_arg_t *agent_args;
-	suspend_msg_t *sus_ptr;
+	suspend_int_msg_t *sus_ptr;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
-	agent_args->msg_type = REQUEST_SUSPEND;
+	agent_args->msg_type = REQUEST_SUSPEND_INT;
 	agent_args->retry = 0;	/* don't resend, gang scheduler
 				 * sched/wiki or sched/wiki2 can
 				 * quickly induce huge backlog
@@ -8795,9 +8820,11 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op)
 	agent_args->hostlist = hostlist_create("");
 	if (agent_args->hostlist == NULL)
 		fatal("hostlist_create: malloc failure");
-	sus_ptr = xmalloc(sizeof(suspend_msg_t));
+	sus_ptr = xmalloc(sizeof(suspend_int_msg_t));
 	sus_ptr->job_id = job_ptr->job_id;
 	sus_ptr->op = op;
+	sus_ptr->indf_susp = indf_susp;
+	sus_ptr->switch_info = _switch_suspend_info(job_ptr);
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
@@ -8929,6 +8956,25 @@ static int _resume_job_nodes(struct job_record *job_ptr, bool indf_susp)
 	return rc;
 }
 
+static int _job_suspend_switch_test(struct job_record *job_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+
+	step_iterator = list_iterator_create(job_ptr->step_list);
+	if (!step_iterator)
+		fatal("list_iterator_create: malloc failure");
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		rc = interconnect_suspend_test(step_ptr->switch_job);
+		if (rc != SLURM_SUCCESS)
+			break;
+	}
+	list_iterator_destroy (step_iterator);
+
+	return rc;
+}
+
 /*
  * job_suspend - perform some suspend/resume operation
  * IN sus_ptr - suspend/resume request message
@@ -8950,16 +8996,6 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	struct job_record *job_ptr = NULL;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
-
-	/* test if this system configuration
-	 * supports job suspend/resume */
-	if (strcasecmp(slurmctld_conf.switch_type,
-			"switch/federation") == 0) {
-		/* Work is needed to support the
-		 * release and reuse of switch
-		 * windows associated with a job */
-		rc = ESLURM_NOT_SUPPORTED;
-	}
 #ifdef HAVE_BG
 	rc = ESLURM_NOT_SUPPORTED;
 #endif
@@ -8986,6 +9022,11 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		rc = ESLURM_ALREADY_DONE;
 		goto reply;
 	}
+	if ((sus_ptr->op == SUSPEND_JOB) &&
+	    (_job_suspend_switch_test(job_ptr) != SLURM_SUCCESS)) {
+		rc = ESLURM_NOT_SUPPORTED;
+		goto reply;
+	}
 
 	/* Notify salloc/srun of suspend/resume */
 	srun_job_suspend(job_ptr, sus_ptr->op);
@@ -8999,7 +9040,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		rc = _suspend_job_nodes(job_ptr, indf_susp);
 		if (rc != SLURM_SUCCESS)
 			goto reply;
-		_suspend_job(job_ptr, sus_ptr->op);
+		_suspend_job(job_ptr, sus_ptr->op, indf_susp);
 		job_ptr->job_state = JOB_SUSPENDED;
 		if (indf_susp)
 			job_ptr->priority = 0;
@@ -9021,7 +9062,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		rc = _resume_job_nodes(job_ptr, indf_susp);
 		if (rc != SLURM_SUCCESS)
 			goto reply;
-		_suspend_job(job_ptr, sus_ptr->op);
+		_suspend_job(job_ptr, sus_ptr->op, indf_susp);
 		job_ptr->job_state = JOB_RUNNING;
 		job_ptr->tot_sus_time +=
 			difftime(now, job_ptr->suspend_time);

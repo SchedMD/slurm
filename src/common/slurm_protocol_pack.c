@@ -489,6 +489,11 @@ static void _pack_suspend_msg(suspend_msg_t *msg, Buf buffer,
 static int  _unpack_suspend_msg(suspend_msg_t **msg_ptr, Buf buffer,
 				uint16_t protocol_version);
 
+static void _pack_suspend_int_msg(suspend_int_msg_t *msg, Buf buffer,
+			          uint16_t protocol_version);
+static int  _unpack_suspend_int_msg(suspend_int_msg_t **msg_ptr, Buf buffer,
+				    uint16_t protocol_version);
+
 static void _pack_buffer_msg(slurm_msg_t * msg, Buf buffer);
 
 static void _pack_kvs_host_rec(struct kvs_hosts *msg_ptr, Buf buffer,
@@ -1055,6 +1060,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_suspend_msg((suspend_msg_t *)msg->data, buffer,
 				  msg->protocol_version);
 		break;
+	case REQUEST_SUSPEND_INT:
+		_pack_suspend_int_msg((suspend_int_msg_t *)msg->data, buffer,
+				      msg->protocol_version);
+		break;
 
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_REQUEUE:
@@ -1617,6 +1626,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_suspend_msg((suspend_msg_t **) &msg->data,
 					 buffer,
 					 msg->protocol_version);
+		break;
+	case REQUEST_SUSPEND_INT:
+		rc = _unpack_suspend_int_msg((suspend_int_msg_t **) &msg->data,
+					     buffer, msg->protocol_version);
 		break;
 
 	case REQUEST_JOB_READY:
@@ -9072,8 +9085,8 @@ static void _pack_suspend_msg(suspend_msg_t *msg, Buf buffer,
 {
 	xassert ( msg != NULL );
 
-	pack16((uint16_t)msg -> op, buffer ) ;
-	pack32((uint32_t)msg->job_id,  buffer ) ;
+	pack16(msg -> op, buffer);
+	pack32(msg->job_id,  buffer);
 }
 
 static int  _unpack_suspend_msg(suspend_msg_t **msg_ptr, Buf buffer,
@@ -9085,13 +9098,46 @@ static int  _unpack_suspend_msg(suspend_msg_t **msg_ptr, Buf buffer,
 	msg = xmalloc ( sizeof (suspend_msg_t) );
 	*msg_ptr = msg ;
 
-	safe_unpack16(&msg->op ,      buffer ) ;
-	safe_unpack32(&msg->job_id  , buffer ) ;
+	safe_unpack16(&msg->op,      buffer);
+	safe_unpack32(&msg->job_id , buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
 	*msg_ptr = NULL;
 	slurm_free_suspend_msg(msg);
+	return SLURM_ERROR;
+}
+
+static void _pack_suspend_int_msg(suspend_int_msg_t *msg, Buf buffer,
+			          uint16_t protocol_version)
+{
+	xassert ( msg != NULL );
+
+	pack16(msg->op, buffer);
+	pack32(msg->job_id,  buffer);
+	pack8(msg->indf_susp, buffer);
+	interconnect_suspend_info_pack(msg->switch_info, buffer);
+}
+
+static int  _unpack_suspend_int_msg(suspend_int_msg_t **msg_ptr, Buf buffer,
+				    uint16_t protocol_version)
+{
+	suspend_int_msg_t * msg;
+	xassert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (suspend_int_msg_t) );
+	*msg_ptr = msg ;
+
+	safe_unpack16(&msg->op,     buffer);
+	safe_unpack32(&msg->job_id, buffer);
+	safe_unpack8(&msg->indf_susp, buffer);
+	if (interconnect_suspend_info_unpack(&msg->switch_info, buffer))
+		goto unpack_error;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	*msg_ptr = NULL;
+	slurm_free_suspend_int_msg(msg);
 	return SLURM_ERROR;
 }
 

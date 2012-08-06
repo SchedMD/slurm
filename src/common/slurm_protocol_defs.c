@@ -857,10 +857,13 @@ extern void slurm_free_suspend_msg(suspend_msg_t *msg)
 	xfree(msg);
 }
 
-/*extern void slurm_free_stats_request_msg(stats_desc_msg_t *msg)
+extern void slurm_free_suspend_int_msg(suspend_int_msg_t *msg)
 {
-	xfree(msg);
-}*/
+	if (msg) {
+		interconnect_suspend_info_free(msg->switch_info);
+		xfree(msg);
+	}
+}
 
 extern void slurm_free_stats_response_msg(stats_info_response_msg_t *msg)
 {
@@ -2506,6 +2509,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_SUSPEND:
 	case SRUN_REQUEST_SUSPEND:
 		slurm_free_suspend_msg(data);
+		break;
+	case REQUEST_SUSPEND_INT:
+		slurm_free_suspend_int_msg(data);
 		break;
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_REQUEUE:

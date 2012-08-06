@@ -287,6 +287,7 @@ typedef enum {
 	RESPONSE_JOB_STEP_PIDS,
 	REQUEST_FORWARD_DATA,
 	REQUEST_COMPLETE_BATCH_JOB,
+	REQUEST_SUSPEND_INT,
 
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
@@ -919,6 +920,14 @@ typedef struct forward_data_msg {
 	char *data;
 } forward_data_msg_t;
 
+/* suspend_msg_t variant for internal slurm daemon communications */
+typedef struct suspend_int_msg {
+	uint16_t op;            /* suspend operation, see enum suspend_opts */
+	uint32_t job_id;        /* slurm job_id */
+	uint8_t  indf_susp;     /* non-zero if being suspended indefinitely */
+	void *   switch_info;	/* opaque data for switch plugin */
+} suspend_int_msg_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -1090,6 +1099,7 @@ extern void slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg);
 extern void slurm_free_checkpoint_task_comp_msg(checkpoint_task_comp_msg_t *msg);
 extern void slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg);
 extern void slurm_free_suspend_msg(suspend_msg_t *msg);
+extern void slurm_free_suspend_int_msg(suspend_int_msg_t *msg);
 extern void slurm_free_update_step_msg(step_update_request_msg_t * msg);
 extern void slurm_free_resource_allocation_response_msg (
 		resource_allocation_response_msg_t * msg);
