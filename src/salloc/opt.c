@@ -951,7 +951,7 @@ void set_options(const int argc, char **argv)
 				error("duplicate --gid option");
 				exit(error_exit);
 			}
-			if (gid_from_string (optarg, &opt.euid) < 0) {
+			if (gid_from_string (optarg, &opt.egid) < 0) {
 				error("--gid=\"%s\" invalid", optarg);
 				exit(error_exit);
 			}
