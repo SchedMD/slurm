@@ -305,7 +305,8 @@ of whole jobs rather than individual job steps. A suspended job will relinquish
 CPU resources, but retain memory and switch window resources. Note that the
 long term suspension of jobs with any allocated Collective Acceleration
 Units (CAU) is disabled and an error message to that effect will be generated
-in response to such a request.
+in response to such a request. In addition, verion 1200 or higher of IBM's NRT
+API is required to support this functionality.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 

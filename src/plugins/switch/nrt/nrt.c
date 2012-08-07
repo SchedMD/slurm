@@ -3483,7 +3483,11 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 		table_info.num_tasks = jp->tableinfo[i].table_length;
 		table_info.job_key = jp->job_key;
 		/* Enable job preeption and release of resources */
+#ifdef PREEMPT_RELEASE_RESOURCES_MASK
 		table_info.job_options = PREEMPT_RELEASE_RESOURCES_MASK;
+#else
+		table_info.job_options = 0x0001;
+#endif
 		table_info.uid = uid;
 		table_info.network_id = jp->tableinfo[i].network_id;
 		table_info.pid = pid;
@@ -4243,11 +4247,15 @@ static int _wait_job(nrt_job_key_t job_key, preemption_state_t want_state,
 
 extern int nrt_preempt_job_test(slurm_nrt_jobinfo_t *jp)
 {
+#ifdef PREEMPT_RELEASE_RESOURCES_MASK
 	if (jp->cau_indexes) {
 		info("Unable to preempt job with allocated CAU");
 		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern void nrt_suspend_job_info_get(slurm_nrt_jobinfo_t *jp,
@@ -4348,7 +4356,11 @@ static int _preempt_job(nrt_job_key_t job_key, int max_wait_secs)
 	int err;
 
 	preempt_job.job_key	= job_key;
+#ifdef PREEMPT_RELEASE_RESOURCES_MASK
 	preempt_job.option	= PREEMPT_RELEASE_RESOURCES_MASK;
+#else
+	preempt_job.option	= 0x0001;
+#endif
 	preempt_job.timeout_val	= NULL;    /* Should be set? What value? */
 	if (_wait_job(job_key, PES_JOB_RUNNING, max_wait_secs))
 		return SLURM_ERROR;
@@ -4392,7 +4404,11 @@ static int _resume_job(nrt_job_key_t job_key, int max_wait_secs)
 	int err;
 
 	resume_job.job_key	= job_key;
+#ifdef PREEMPT_RELEASE_RESOURCES_MASK
 	resume_job.option	= PREEMPT_RELEASE_RESOURCES_MASK;
+#else
+	resume_job.option	= 0x0001;
+#endif
 	resume_job.timeout_val	= NULL;    /* Should be set? What value? */
 	/* NOTE: This function is non-blocking.
 	 * To detect completeion, poll on NRT_CMD_QUERY_PREEMPTION_STATE */
