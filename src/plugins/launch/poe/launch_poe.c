@@ -414,8 +414,12 @@ extern int launch_p_setup_srun_opt(char **rest)
 		error("--test-only not supported with poe");
 		exit (1);
 	} else if (opt.no_alloc) {
-		error("--no-allocate not supported with LoadLeveler");
+		error("--no-allocate not supported with poe");
 		exit (1);
+	}
+	if (opt.slurmd_debug != LOG_LEVEL_QUIET) {
+		error("--slurmd-debug not supported with poe");
+		opt.slurmd_debug = LOG_LEVEL_QUIET;
 	}
 
 	opt.argc++;
