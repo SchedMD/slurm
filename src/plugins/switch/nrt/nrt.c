@@ -3485,8 +3485,6 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 		/* Enable job preeption and release of resources */
 #ifdef PREEMPT_RELEASE_RESOURCES_MASK
 		table_info.job_options = PREEMPT_RELEASE_RESOURCES_MASK;
-#else
-		table_info.job_options = 0x0001;
 #endif
 		table_info.uid = uid;
 		table_info.network_id = jp->tableinfo[i].network_id;
