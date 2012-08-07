@@ -66,7 +66,7 @@ set match_run   0
 set match_sig   0
 set match_abort 0
 set job_id  0
-set srun_pid [spawn $srun -v -N1 -t1 -X $file_prog]
+set srun_pid [spawn $srun -v -N1 -t1 -X ./$file_prog]
 expect {
 	-re "launching ($number).0" {
 		set job_id $expect_out(1,string)

@@ -84,7 +84,7 @@ expect {
 #	Expect have difficulties handling unbuffered srun output
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -t1 --debugger-test --unbuffered $file_prog]
+set srun_pid [spawn $srun -N1 -t1 --debugger-test --unbuffered ./$file_prog]
 expect {
 	-re "task:.*, host:.*, pid:.*, executable:.*" {
 		incr matches
@@ -149,7 +149,7 @@ if {$exit_code == 0} {
 #
 set matches  0
 set fini_cnt 0
-set srun_pid [spawn $srun -N1 -t1 --debugger-test --unbuffered $file_prog]
+set srun_pid [spawn $srun -N1 -t1 --debugger-test --unbuffered ./$file_prog]
 expect {
 	-re "task:.*, host:.*, pid:.*, executable:.*" {
 		incr matches

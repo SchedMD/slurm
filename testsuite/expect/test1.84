@@ -71,7 +71,7 @@ set host           ""
 set timeout        $max_job_delay
 set task_cnt       0
 
-set srun_pid [spawn $srun -N1 --cpus-per-task=1 --exclusive -l -t1 $file_in]
+set srun_pid [spawn $srun -N1 --cpus-per-task=1 --exclusive -l -t1 ./$file_in]
 expect {
 	-re "SLURM_CPUS_ON_NODE=($number) SLURMD_NODENAME=($alpha_numeric_under)" {
 		set cpu_cnt $expect_out(1,string)

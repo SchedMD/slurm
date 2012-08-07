@@ -58,7 +58,7 @@ exec $bin_chmod 700 $test_prog
 #
 set matches 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -n1 -O $test_prog]
+set srun_pid [spawn $srun -n1 -t1 ./$test_prog]
 expect {
 	-re "Segmentation fault" {
 		send_user "\nThis Seg Fault was expected, no worries\n"

@@ -86,19 +86,19 @@ file delete $file_out $file_err
 make_bash_script $file_in "
   $bin_date
   $bin_echo test1_N3_n6_cyclic
-  $srun -n6 --distribution=cyclic $test_prog
+  $srun -n6 --distribution=cyclic ./$test_prog
 
   $bin_date
   $bin_echo test2_n6_block
-  $srun -n6 --distribution=block  $test_prog
+  $srun -n6 --distribution=block  ./$test_prog
 
   $bin_date
   $bin_echo test3_n4_cyclic
-  $srun -n4 --distribution=cyclic $test_prog
+  $srun -n4 --distribution=cyclic ./$test_prog
 
   $bin_date
   $bin_echo test4_n4_block
-  $srun -n4 --distribution=block  $test_prog
+  $srun -n4 --distribution=block  ./$test_prog
 
   $bin_date
   $bin_echo TEST_COMPLETE

@@ -106,7 +106,7 @@ make_bash_script $file_in "
   $bin_echo ' '
   $bin_echo 'testing $iterations sets of spawned tasks'
   for ((i=0; i<$iterations; i++)) ; do
-    $srun $file_prog
+    $srun ./$file_prog
   done
   $bin_echo 'fini'
 "

@@ -156,7 +156,7 @@ if {$got_sleep_err == 0} {
 #
 # Spawn a program to run for a while with no input, output or error
 #
-set srun_pid [spawn $srun --input=none --output=none --error=none -t1 -N1 od -c $srun]
+set srun_pid [spawn $srun --input=none --output=none --error=none -t1 -N1 $bin_head $file_in]
 expect {
 	-re "Unable to contact" {
 		send_user "\nFAILURE: slurm appears to be down\n"

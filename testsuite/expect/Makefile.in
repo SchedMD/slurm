@@ -314,6 +314,7 @@ EXTRA_DIST = \
 	test1.13			\
 	test1.14			\
 	test1.15			\
+	test1.15.bash			\
 	test1.16			\
 	test1.17			\
 	test1.18			\

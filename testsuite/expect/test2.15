@@ -85,7 +85,7 @@ fi
 #
 set host ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N$node_cnt -t1 $file_in]
+set srun_pid [spawn $srun -N$node_cnt -t1 ./$file_in]
 set srun_id $spawn_id
 expect {
 	-re "JOBID=($number)" {

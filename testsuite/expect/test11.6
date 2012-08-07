@@ -67,7 +67,7 @@ make_bash_script $file_in "
 # Spawn the job
 #
 set timeout    $max_job_delay
-spawn $poe $file_in -rmpool $partition -procs 1
+spawn $poe ./$file_in -rmpool $partition -procs 1
 set poe_id $spawn_id
 expect {
 	-re "BEGIN=($number)" {

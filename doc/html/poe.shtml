@@ -14,7 +14,9 @@ with PE, which are described in this document.</p>
 <h2>User Tools</h2>
 
 <p>The normal set of SLURM user tools: srun, scancel, sinfo, squeue, scontrol,
-etc. provide all of the expected services. Job steps are launched using the
+etc. provide all of the expected services.
+The only SLURM command not supported is sattach.
+Job steps are launched using the
 srun command, which translates its options and invokes IBM's poe command. The
 poe command actually launches the tasks. The poe command may also be invoked
 directly if desired. The actual task launch process is as follows:</p>
@@ -160,6 +162,7 @@ use the command: <br>
 <p>Some SLURM options can not be supported by PE and the following srun options
 are silently ignored:</p>
 <ul>
+<li>-D, --chdir (set working directory)</li>
 <li>-K, --kill-on-bad-exit (terminate step if any task has a non-zero exit code)</li>
 <li>-k, --no-kill (set to not kill job upon node failure)</li>
 <li>--ntasks-per-core (number of tasks to invoke per code)</li>
@@ -172,6 +175,33 @@ are silently ignored:</p>
 <li>-u, --unbuffered (avoid line buffering)</li>
 <li>-W, --wait (specify job swait time after first task exit)</li>
 <li>-Z, --no-allocate (launch tasks without creating job allocation></li>
+</ul>
+
+<p>In addition, the following options have some limitations:</p>
+<ul>
+<li>-e, --error (Unable to support node and task-specific file names)</li>
+<li>-i, --input (Unable to support node and task-specific file names)</li>
+<li>-o, --output (Unable to support node and task-specific file names)</li>
+</ul>
+
+<h3>Environment Variables</h3>
+
+<p><b>FIXME: We need to validate all of this</b>
+<p>Since SLURM is not directly launching user tasks, the following environment
+variables are NOT available with POE:</p>
+<ul>
+<li>SLURM_CPU_BIND_LIST</li>
+<li>SLURM_CPU_BIND_TYPE</li>
+<li>SLURM_CPU_BIND_VERBOSE</li>
+<li>SLURM_CPUS_ON_NODE</li>
+<li>SLURM_GTIDS</li>
+<li>SLURM_LAUNCH_NODE_IPADDR</li>
+<li>SLURM_LOCALID</li>
+<li>SLURM_MEM_BIND_LIST</li>
+<li>SLURM_MEM_BIND_TYPE</li>
+<li>SLURM_MEM_BIND_VERBOSE</li>
+<li>SLURM_PROCID</li>
+<li>SLURM_TASK_PID</li>
 </ul>
 
 <h3>Gang Scheduling</h3>
@@ -187,6 +217,12 @@ value. Note that the default timeout is 150 seconds. See
 <pre>
 export MP_TIMEOUT=600
 </pre>
+
+<h3>Other Notes</h3>
+
+<p>If the srun command's --label option is used, note that POE's prefix is
+the task ID followed by a colon. The prefix with native SLURM is the task ID
+followed by a colon followed by one space.</p>
 
 <h2>System Administration</h2>
 
@@ -273,6 +309,6 @@ in response to such a request.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 August 2012</p></td>
+<p style="text-align:center;">Last modified 7 August 2012</p></td>
 
 <!--#include virtual="footer.txt"-->
