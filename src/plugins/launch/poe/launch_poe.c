@@ -751,8 +751,12 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	if (opt.msg_timeout) {
 		snprintf(value, sizeof(value), "%d", opt.msg_timeout);
 		setenv("MP_TIMEOUT", value, 1);
-		if (opt.launch_cmd)
-			xstrfmtcat(poe_cmd_line, " -timeout %s", value);
+		/* Don't print out the timeout.  poe doesn't remove it
+		   from the command line and it will get tacked on to
+		   the actual job.
+		*/
+		/* if (opt.launch_cmd) */
+		/* 	xstrfmtcat(poe_cmd_line, " -timeout %s", value); */
 	}
 	if (opt.immediate) {
 		setenv("MP_RETRY", "0", 1);
