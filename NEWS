@@ -28,6 +28,8 @@ documents those changes that are of interest to users and admins.
     run more than 256 jobs per node.
  -- sched/backfill: Improve accuracy of expected job start with respect to
     reservations.
+ -- sinfo partition field size will be set the the length of the longest
+    partition name by default.
 
 * Changes in SLURM 2.5.0.pre1
 =============================

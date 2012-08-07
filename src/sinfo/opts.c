@@ -266,12 +266,14 @@ extern void parse_command_line(int argc, char *argv[])
 
 	if ( params.format == NULL ) {
 		if ( params.summarize ) {
-			if(params.cluster_flags & CLUSTER_FLAG_BG)
+			params.part_field_flag = true;	/* compute size later */
+			if (params.cluster_flags & CLUSTER_FLAG_BG)
 				params.format = "%9P %.5a %.10l %.32F  %N";
 			else
 				params.format = "%9P %.5a %.10l %.16F  %N";
 		} else if ( params.node_flag ) {
 			params.node_field_flag = true;	/* compute size later */
+			params.part_field_flag = true;	/* compute size later */
 			params.format = params.long_output ?
 			  "%N %.6D %.9P %.11T %.4c %.8z %.6m %.8d %.6w %.8f %20E" :
 			  "%N %.6D %.9P %6t";
@@ -285,6 +287,7 @@ extern void parse_command_line(int argc, char *argv[])
 			params.format = xstrdup(env_val);
 
 		} else {
+			params.part_field_flag = true;	/* compute size later */
 			params.format = params.long_output ?
 			  "%9P %.5a %.10l %.10s %.4r %.5h %.10g %.6D %.11T %N" :
 			  "%9P %.5a %.10l %.6D %.6t %N";
@@ -799,6 +802,8 @@ void _print_options( void )
 					"true" : "false");
 	printf("node_format = %s\n", params.node_flag   ? "true" : "false");
 	printf("nodes       = %s\n", params.nodes ? params.nodes : "n/a");
+	printf("part_field  = %s\n", params.part_field_flag ?
+					"true" : "false");
 	printf("partition   = %s\n", params.partition ?
 					params.partition: "n/a");
 	printf("responding  = %s\n", params.responding_nodes ?

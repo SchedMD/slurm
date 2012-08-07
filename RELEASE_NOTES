@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.5
-2 August 2012
+7 August 2012
 
 
 IMPORTANT NOTE:
@@ -55,6 +55,8 @@ COMMAND CHANGES (see man pages for details)
 - Add reservation flag of "Part_Nodes" to allocate all nodes in a partition to
   a reservation and automatically change the reservation when nodes are
   added to or removed from the reservation.
+- sinfo partition field size will be set the the length of the longest
+  partition name by default.
 
 OTHER CHANGES
 =============

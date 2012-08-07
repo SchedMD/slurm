@@ -55,6 +55,7 @@
 #include "src/sinfo/sinfo.h"
 
 #define MIN_NODE_FIELD_SIZE 9
+#define MIN_PART_FIELD_SIZE 9
 
 static int   _build_min_max_16_string(char *buffer, int buf_size,
 				uint16_t min, uint16_t max, bool range);
@@ -66,6 +67,7 @@ static int   _print_secs(long time, int width, bool right, bool cut_output);
 static int   _print_str(char *str, int width, bool right, bool cut_output);
 static int   _resv_name_width(reserve_info_t *resv_ptr);
 static void  _set_node_field_size(List sinfo_list);
+static void  _set_part_field_size(List sinfo_list);
 static char *_str_tolower(char *upper_str);
 
 /*****************************************************************************
@@ -86,6 +88,8 @@ int print_sinfo_list(List sinfo_list)
 
 	if (params.node_field_flag)
 		_set_node_field_size(sinfo_list);
+	if (params.part_field_flag)
+		_set_part_field_size(sinfo_list);
 
 	if (!params.no_header)
 		print_sinfo_entry(NULL);
@@ -310,6 +314,22 @@ static void _set_node_field_size(List sinfo_list)
 	}
 	list_iterator_destroy(i);
 	params.node_field_size = max_width;
+}
+
+static void _set_part_field_size(List sinfo_list)
+{
+	ListIterator i = list_iterator_create(sinfo_list);
+	sinfo_data_t *current;
+	int max_width = MIN_PART_FIELD_SIZE, this_width = 0;
+
+	while ((current = (sinfo_data_t *) list_next(i)) != NULL) {
+		if (!current->part_info || !current->part_info->name)
+			continue;
+		this_width = strlen(current->part_info->name);
+		max_width = MAX(max_width, this_width);
+	}
+	list_iterator_destroy(i);
+	params.part_field_size = max_width;
 }
 
 /*
@@ -759,6 +779,8 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 int _print_partition(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
+	if (params.part_field_flag)
+		width = params.part_field_size;
 	if (sinfo_data) {
 		if (sinfo_data->part_info == NULL)
 			_print_str("n/a", width, right_justify, true);
@@ -785,6 +807,8 @@ int _print_partition(sinfo_data_t * sinfo_data, int width,
 int _print_partition_name(sinfo_data_t * sinfo_data, int width,
 			  bool right_justify, char *suffix)
 {
+	if (params.part_field_flag)
+		width = params.part_field_size;
 	if (sinfo_data) {
 		if (sinfo_data->part_info == NULL)
 			_print_str("n/a", width, right_justify, true);
