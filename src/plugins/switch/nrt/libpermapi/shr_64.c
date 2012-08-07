@@ -1246,9 +1246,6 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		opt.ntasks = pe_job_req->total_tasks;
 	}
 
-	if (!opt.job_name)
-		opt.job_name = xstrdup("poe_ran_job");
-
 	create_srun_job(&job, &got_alloc, slurm_started);
 
 	/* make sure we set up a signal handler */
