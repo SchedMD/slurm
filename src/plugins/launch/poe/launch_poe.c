@@ -823,6 +823,8 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	if (opt.launch_cmd)
 		xstrfmtcat(poe_cmd_line, " -rmpool slurm");
 
+	if (opt.job_name)
+		setenv("SLURM_JOB_NAME", opt.job_name, 1);
 	setenv("SLURM_STARTED_STEP", "YES", 1);
 	//disable_status = opt.disable_status;
 	//quit_on_intr = opt.quit_on_intr;

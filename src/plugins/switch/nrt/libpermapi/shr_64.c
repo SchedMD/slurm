@@ -991,8 +991,8 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		      char** error_msg)
 {
-	char *srun_debug = NULL;
-	char *myargv[3] = { "poe", "poe", NULL };
+	char *srun_debug = NULL, *tmp_char = NULL;
+	char *myargv[3] = { "poe", NULL, NULL };
 
 	/* SLURM was originally written against 1300, so we will
 	 * return that, no matter what comes in so we always work.
@@ -1027,16 +1027,52 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	log_opts.stderr_level  = log_opts.logfile_level =
 		log_opts.syslog_level = debug_level;
 
-	if (pm_type == PM_PMD) {
-		log_alter_with_fp(log_opts, LOG_DAEMON, pmd_lfp);
-		myargv[0] = myargv[1] = "pmd";
-	} else
-		log_alter(log_opts, LOG_DAEMON, "/dev/null");
-
 	/* This will be used later in the code to set the
 	 * _verbose level. */
 	if (debug_level >= LOG_LEVEL_INFO)
 		debug_level -= LOG_LEVEL_INFO;
+
+	if (pm_type == PM_PMD) {
+		log_alter_with_fp(log_opts, LOG_DAEMON, pmd_lfp);
+		myargv[0] = myargv[1] = "pmd";
+	} else {
+		log_alter(log_opts, LOG_DAEMON, "/dev/null");
+
+		myargv[1] = getenv("SLURM_JOB_NAME");
+
+		/* If SLURM_JOB_NAME isn't set that means we launched
+		   from poe proper instead of srun launching poe.
+		*/
+		if (!myargv[1]) {
+			/* Here we can get the name of the running job
+			   because it is always the 2nd argv in the
+			   poe line.
+			*/
+			char *poe_argv = getenv("MP_I_SAVED_ARGV");
+			if (poe_argv) {
+				char *walking_char = NULL;
+				int i = 0, set = 0;
+				tmp_char = xstrdup(poe_argv);
+				walking_char = tmp_char;
+				while (tmp_char[i]) {
+					if (tmp_char[i] != ' ') {
+						i++;
+						continue;
+					}
+					if (set) {
+						tmp_char[i] = '\0';
+						break;
+					}
+					set = 1;
+					i++;
+					walking_char = tmp_char + i;
+				}
+				myargv[1] = walking_char;
+			}
+			if (!myargv[1])
+				myargv[1] = "poe";
+		}
+	}
 
 	debug("got pe_rm_init called %s %p", rm_id, info);
 
@@ -1047,6 +1083,8 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	   thread in this case.
 	*/
 	init_srun(2, myargv, NULL, debug_level, 1);
+
+	xfree(tmp_char); /* just in case */
 
 	if (pm_type == PM_PMD) {
 		uint32_t job_id = -1, step_id = -1;
