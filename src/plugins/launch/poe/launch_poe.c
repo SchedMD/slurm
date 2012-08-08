@@ -845,8 +845,13 @@ extern int launch_p_step_launch(
 		error("fork: %m");
 		return 1;
 	} else if (pid > 0) {
-		if (waitpid(pid, NULL, 0) < 0)
+		if (waitpid(pid, &rc, 0) < 0)
 			error("Unable to reap poe child process");
+		*global_rc = rc;
+		/* Just because waitpid returns something doesn't mean
+		   this function failed so always set it back to 0.
+		*/
+		rc = 0;
 	} else {
 		/* dup stdio onto our open fds */
 		if ((dup2(cio_fds->in.fd, 0) == -1) ||
