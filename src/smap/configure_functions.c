@@ -911,8 +911,8 @@ static int _save_allocation(char *com, List allocated_blocks)
 			   "RamDiskImage=%s/ramdisk.elf\n",
 			   image_dir);
 
-		xstrcat(save_string, "Numpsets=8 # io poor\n");
-		xstrcat(save_string, "# Numpsets=64 # io rich\n");
+		xstrcat(save_string, "IONodesPerMP=8 # io poor\n");
+		xstrcat(save_string, "# IONodesPerMP=64 # io rich\n");
 #elif defined HAVE_BGP
 		image_dir = "/bgsys/drivers/ppcfloor/boot";
 		xstrfmtcat(save_string, "CnloadImage=%s/cns,%s/cnk\n",
@@ -922,14 +922,14 @@ static int _save_allocation(char *com, List allocated_blocks)
 		xstrfmtcat(save_string,
 			   "IoloadImage=%s/cns,%s/linux,%s/ramdisk\n",
 			   image_dir, image_dir, image_dir);
-		xstrcat(save_string, "Numpsets=4 # io poor\n");
-		xstrcat(save_string, "# Numpsets=32 # io rich\n");
+		xstrcat(save_string, "IONodesPerMP=4 # io poor\n");
+		xstrcat(save_string, "# IONodesPerMP=32 # io rich\n");
 #else
 		image_dir = "/bgsys/drivers/ppcfloor/boot";
 		xstrfmtcat(save_string, "MloaderImage=%s/firmware\n",
 			   image_dir);
-		xstrcat(save_string, "Numpsets=4 # io semi-poor\n");
-		xstrcat(save_string, "# Numpsets=16 # io rich\n");
+		xstrcat(save_string, "IONodesPerMP=4 # io semi-poor\n");
+		xstrcat(save_string, "# IONodesPerMP=16 # io rich\n");
 #endif
 
 		xstrcat(save_string, "BridgeAPILogFile="
