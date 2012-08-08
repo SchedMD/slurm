@@ -71,10 +71,9 @@ bool srun_shutdown  = false;
 
 static void *my_handle = NULL;
 static srun_job_t *job = NULL;
-static int debug_level = 0;
 static bool got_alloc = false;
 static bool slurm_started = false;
-static log_options_t log_opts = LOG_OPTS_INITIALIZER;
+static log_options_t log_opts = LOG_OPTS_STDERR_ONLY;
 static host_usage_t *host_usage = NULL;
 
 int sig_array[] = {
@@ -993,6 +992,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 {
 	char *srun_debug = NULL, *tmp_char = NULL;
 	char *myargv[3] = { "poe", NULL, NULL };
+	int debug_level = log_opts.logfile_level;
 
 	/* SLURM was originally written against 1300, so we will
 	 * return that, no matter what comes in so we always work.
@@ -1024,9 +1024,10 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		slurm_started = true;
 	if ((srun_debug = getenv("SRUN_DEBUG")))
 		debug_level = atoi(srun_debug);
-	log_opts.stderr_level  = log_opts.logfile_level =
-		log_opts.syslog_level = debug_level;
-
+	if (debug_level) {
+		log_opts.stderr_level  = log_opts.logfile_level =
+			log_opts.syslog_level = debug_level;
+	}
 	/* This will be used later in the code to set the
 	 * _verbose level. */
 	if (debug_level >= LOG_LEVEL_INFO)
