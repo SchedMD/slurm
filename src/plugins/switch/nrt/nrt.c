@@ -205,6 +205,12 @@ typedef struct slurm_nrt_suspend_info {
 static int lid_cache_size = 0;
 static nrt_cache_entry_t lid_cache[NRT_MAX_ADAPTERS];
 
+/* Keep track of local ID so slurmd can determine which switch tables
+ * are for that particular node */
+static uint64_t my_lpar_id = 0;
+static bool     my_lpar_id_set = false;
+static uint64_t my_network_id = 0;
+static bool     my_network_id_set = false;
 
 /* Local functions */
 static char *	_adapter_type_str(nrt_adapter_t type);
@@ -258,8 +264,8 @@ static int	_unpack_tableinfo(nrt_tableinfo_t *tableinfo,
 static int	_wait_for_all_windows(nrt_tableinfo_t *tableinfo);
 static int	_wait_for_window_unloaded(char *adapter_name,
 					  nrt_adapter_t adapter_type,
-					  nrt_window_id_t window_id, int retry,
-					  unsigned int max_windows);
+					  nrt_window_id_t window_id,
+					  int retry);
 static int	_wait_job(nrt_job_key_t job_key,preemption_state_t want_state,
 			  int max_wait_secs);
 static char *	_win_state_str(win_state_t state);
@@ -1127,6 +1133,7 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 					hpce_table = (nrt_hpce_task_info_t *)
 						     tableinfo[table_inx].table;
 					hpce_table += task_id;
+					hpce_table->node_number = node_number;
 					hpce_table->task_id = task_id;
 					hpce_table->win_id = window->window_id;
 				} else {
@@ -2018,8 +2025,11 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 						       adapter_type));
 				_print_adapter_info(&adapter_info);
 			}
-			if (adapter_info.node_number != 0)
+			if (adapter_info.node_number != 0) {
 				n->node_number = adapter_info.node_number;
+				my_network_id  = adapter_info.node_number;
+				my_network_id_set = true;
+			}
 			adapter_ptr->cau_indexes_avail =
 				adapter_info.cau_indexes_avail;
 			adapter_ptr->immed_slots_avail =
@@ -2040,6 +2050,10 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 						       port_id;
 				adapter_ptr->special = adapter_info.port[k].
 						       special;
+				if (adapter_ptr->adapter_type == NRT_HFI) {
+					my_lpar_id = adapter_ptr->special;
+					my_lpar_id_set = true;
+				}
 				break;
 			}
 			if ((adapter_ptr->ipv4_addr == 0) &&
@@ -3281,8 +3295,7 @@ nrt_get_jobinfo(slurm_nrt_jobinfo_t *jp, int key, void *data)
  */
 static int
 _wait_for_window_unloaded(char *adapter_name, nrt_adapter_t adapter_type,
-			  nrt_window_id_t window_id, int retry,
-			  unsigned int max_windows)
+			  nrt_window_id_t window_id, int retry)
 {
 	int err, i, j;
 	int rc = SLURM_ERROR;
@@ -3326,14 +3339,14 @@ _wait_for_window_unloaded(char *adapter_name, nrt_adapter_t adapter_type,
 			      window_id);
 			break;
 		}
-		if (status_array[j].state == NRT_WIN_AVAILABLE) {
-			rc = SLURM_SUCCESS;
-			break;
-		}
 		debug2("nrt_status_adapter(%s, %s), window %u state %s",
 		       adapter_name,
 		       _adapter_type_str(adapter_type), window_id,
 		       _win_state_str(status_array[j].state));
+		if (status_array[j].state == NRT_WIN_AVAILABLE) {
+			rc = SLURM_SUCCESS;
+			break;
+		}
 	}
 	if (status_array)
 		free(status_array);
@@ -3354,41 +3367,37 @@ _wait_for_all_windows(nrt_tableinfo_t *tableinfo)
 	int err, i, rc = SLURM_SUCCESS;
 	int retry = 15;
 	nrt_window_id_t window_id = 0;
-	nrt_cmd_query_adapter_names_t adapter_names;
-	unsigned int max_windows, num_adapter_names;
 
-	adapter_names.adapter_type = tableinfo->adapter_type;
-	adapter_names.max_windows = &max_windows;
-	adapter_names.num_adapter_names = &num_adapter_names;
-	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
-			  &adapter_names);
-	if (err != NRT_SUCCESS) {
-		error("nrt_command(adapter_names, %s): %s",
-		      _adapter_type_str(adapter_names.adapter_type),
-		      nrt_err_str(err));
-		rc = SLURM_ERROR;
-		/* We will still try to unload the windows. It is unclear what
-		 * the maximum window count is, but 512 is largest seen. */
-		max_windows = 1024;
+	if (!my_lpar_id_set && !my_network_id_set) {
+		slurm_nrt_nodeinfo_t *n;
+		nrt_alloc_nodeinfo(&n);
+		_get_adapters(n);
+		nrt_free_nodeinfo(n, false);
 	}
-	
+
 	for (i = 0; i < tableinfo->table_length; i++) {
 		if (tableinfo->adapter_type == NRT_IB) {
 			nrt_ib_task_info_t *ib_tbl_ptr;
 			ib_tbl_ptr = (nrt_ib_task_info_t *) tableinfo->table;
 			ib_tbl_ptr += i;
+			if (ib_tbl_ptr->node_number != my_network_id)
+				continue;
 			window_id = ib_tbl_ptr->win_id;
-		} else if (adapter_names.adapter_type == NRT_HFI) {
+		} else if (tableinfo->adapter_type == NRT_HFI) {
 			nrt_hfi_task_info_t *hfi_tbl_ptr;
 			hfi_tbl_ptr = (nrt_hfi_task_info_t *) tableinfo->table;
 			hfi_tbl_ptr += i;
+			if (hfi_tbl_ptr->lpar_id != my_lpar_id)
+				continue;
 			window_id = hfi_tbl_ptr->win_id;
-		} else if ((adapter_names.adapter_type == NRT_HPCE) ||
-		           (adapter_names.adapter_type == NRT_KMUX)) {
+		} else if ((tableinfo->adapter_type == NRT_HPCE) ||
+		           (tableinfo->adapter_type == NRT_KMUX)) {
 			nrt_hpce_task_info_t *hpce_tbl_ptr;
 			hpce_tbl_ptr = (nrt_hpce_task_info_t *) tableinfo->
 								table;
 			hpce_tbl_ptr += i;
+			if (hpce_tbl_ptr->node_number != my_network_id)
+				continue;
 			window_id = hpce_tbl_ptr->win_id;
 		} else {
 			error("_wait_for_all_windows: Missing support for "
@@ -3398,7 +3407,7 @@ _wait_for_all_windows(nrt_tableinfo_t *tableinfo)
 
 		err = _wait_for_window_unloaded(tableinfo->adapter_name,
 						tableinfo->adapter_type,
-						window_id, retry, max_windows);
+						window_id, retry);
 		if (err != SLURM_SUCCESS) {
 			error("Window %hu adapter %s did not "
 			      "become free within %d seconds",
@@ -3629,6 +3638,13 @@ static int _unload_job_windows(slurm_nrt_jobinfo_t *jp)
 	int err, i, j, rc = SLURM_SUCCESS;
 	int retry = 15;
 
+	if (!my_lpar_id_set && !my_network_id_set) {
+		slurm_nrt_nodeinfo_t *n;
+		nrt_alloc_nodeinfo(&n);
+		_get_adapters(n);
+		nrt_free_nodeinfo(n, false);
+	}
+
 	for (i = 0; i < jp->tables_per_task; i++) {
 		for (j = 0; j < jp->tableinfo[i].table_length; j++) {
 			if (jp->tableinfo[i].adapter_type == NRT_IB) {
@@ -3636,12 +3652,16 @@ static int _unload_job_windows(slurm_nrt_jobinfo_t *jp)
 				ib_tbl_ptr = (nrt_ib_task_info_t *)
 					     jp->tableinfo[i].table;
 				ib_tbl_ptr += j;
+				if (ib_tbl_ptr->node_number != my_network_id)
+					continue;
 				window_id = ib_tbl_ptr->win_id;
 			} else if (jp->tableinfo[i].adapter_type == NRT_HFI) {
 				nrt_hfi_task_info_t *hfi_tbl_ptr;
 				hfi_tbl_ptr = (nrt_hfi_task_info_t *)
 					      jp->tableinfo[i].table;
 				hfi_tbl_ptr += j;
+				if (hfi_tbl_ptr->lpar_id != my_lpar_id)
+					continue;
 				window_id = hfi_tbl_ptr->win_id;
 			} else if ((jp->tableinfo[i].adapter_type==NRT_HPCE) ||
 			           (jp->tableinfo[i].adapter_type==NRT_KMUX)) {
@@ -3649,6 +3669,8 @@ static int _unload_job_windows(slurm_nrt_jobinfo_t *jp)
 				hpce_tbl_ptr = (nrt_hpce_task_info_t *)
 					       jp->tableinfo[i].table;
 				hpce_tbl_ptr += j;
+				if (hpce_tbl_ptr->node_number != my_network_id)
+					continue;
 				window_id = hpce_tbl_ptr->win_id;
 			} else {
 				fatal("nrt_unload_window: invalid adapter "
