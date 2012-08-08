@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
     by default instead of task per node.
  -- Fix salloc --gid to work correctly.  Reported by Brian Gilmer
  -- BGQ - fix smap to set the correct default MloaderImage
+ -- BLUEGENE - updated documentation.
 
 * Changes in SLURM 2.4.2
 ========================
