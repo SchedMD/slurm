@@ -1722,13 +1722,14 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 				xstrcat(job_ptr->gres ,buf);
 				if (prefix[0] == '\0')
 					prefix = ",";
+				if (slurm_get_debug_flags() & DEBUG_FLAG_GRES){
+					debug("(%s:%d) job id:%u -- ngres_req:"
+					      "%u, gres_req substring = (%s)",
+					      THIS_FILE, __LINE__,
+					      job_ptr->job_id, ngres_req, buf);
+				}
 			}
 
-			if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
-				debug("(%s:%d) job id: %u -- ngres_req: "
-				      "%u, gres_req substring = (%s)",
-				      THIS_FILE, __LINE__, job_ptr->job_id,
-				      ngres_req, buf);
 			tok = strtok_r(NULL, ",", &last);
 		}
 		xfree(tmp_str);
@@ -1745,11 +1746,12 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 
 	/* Now build the GRES allocated field. */
 	rv = _build_gres_alloc_string(job_ptr, valtype);
-	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
+	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
 		debug("(%s:%d) job id: %u -- job_record->gres: (%s), "
 		      "job_record->gres_alloc: (%s)",
 		      THIS_FILE, __LINE__, job_ptr->job_id,
 		      job_ptr->gres, job_ptr->gres_alloc);
+	}
 
 	return rv;
 }
