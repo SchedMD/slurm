@@ -38,11 +38,13 @@ job step.</li>
 </ol>
 
 <h3>Network Options</h3>
+
 <p>Each job step can specify it's desired network options.
 For example, one job step may use IP mode communications and the next use
 User Space (US) mode communications.
 Network specifications may be specified using srun's --network option or the
 SLURM_NETWORK environment variable. Supported network options include:</p>
+
 <ul>
 <li>Network protocol</li>
   <ul>
@@ -125,6 +127,12 @@ On every Infiniband network connection, allocate two switch windows each for
 both lapi and mpi interfaces. If each node has one Infinband network connection,
 this would result in four switch windows per task.
 </p>
+
+<p><b>NOTE:</b> Switch resources on a node are shared between all job steps on
+that node. If a job step can not be initiated due to insufficient switch
+resources being available, that job step will periodically retry getting
+resources for the lifetime of the job unless srun's --immediate option is
+used.</p>
 
 <h3>Debugging</h3>
 
@@ -310,6 +318,6 @@ API is required to support this functionality.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 7 August 2012</p></td>
+<p style="text-align:center;">Last modified 8 August 2012</p></td>
 
 <!--#include virtual="footer.txt"-->

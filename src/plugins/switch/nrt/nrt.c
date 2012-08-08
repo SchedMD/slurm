@@ -216,6 +216,8 @@ static bool     my_network_id_set = false;
 static char *	_adapter_type_str(nrt_adapter_t type);
 static int	_add_block_use(slurm_nrt_jobinfo_t *jp,
 			       slurm_nrt_adapter_t *adapter);
+static int	_add_immed_use(char *hostname, slurm_nrt_jobinfo_t *jp,
+			       slurm_nrt_adapter_t *adapter);
 static int	_allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 			uint32_t node_id, nrt_task_id_t task_id,
 			nrt_adapter_t adapter_type, int network_id,
@@ -827,6 +829,7 @@ _find_free_window(slurm_nrt_adapter_t *adapter)
 			return window;
 	}
 
+	slurm_seterrno(ESLURM_INTERCONNECT_BUSY);
 	return (slurm_nrt_window_t *) NULL;
 }
 
@@ -881,26 +884,43 @@ _add_block_use(slurm_nrt_jobinfo_t *jp, slurm_nrt_adapter_t *adapter)
 	 * indexes for that job.
 	 */
 	if (jp->cau_indexes) {
-		new_cau_count = adapter->cau_indexes_used + jp->cau_indexes;
-		if (adapter->cau_indexes_avail < new_cau_count) {
+		if (adapter->cau_indexes_avail < jp->cau_indexes) {
 			info("switch/nrt: Insufficient cau_indexes resources "
 			     "on adapter %s (%hu < %hu)",
 			     adapter->adapter_name, adapter->cau_indexes_avail,
+			     jp->cau_indexes);
+			return SLURM_ERROR;
+		}
+		new_cau_count = adapter->cau_indexes_used + jp->cau_indexes;
+		if (adapter->cau_indexes_avail < new_cau_count) {
+			info("switch/nrt: Insufficient cau_indexes resources "
+			     "available on adapter %s (%hu < %hu)",
+			     adapter->adapter_name, adapter->cau_indexes_avail,
 			     new_cau_count);
+			slurm_seterrno(ESLURM_INTERCONNECT_BUSY);
 			return SLURM_ERROR;
 		}
 	}
 
 	/* Validate sufficient RDMA resources */
 	if (jp->bulk_xfer && jp->bulk_xfer_resources) {
+		if (adapter->rcontext_block_count < jp->bulk_xfer_resources) {
+			info("switch/nrt: Insufficient bulk_xfer resources on "
+			     "adapter %s (%"PRIu64" < %u)",
+			     adapter->adapter_name,
+			     adapter->rcontext_block_count,
+			     jp->bulk_xfer_resources);
+			return SLURM_ERROR;
+		}
 		new_rcontext_blocks = adapter->rcontext_block_used +
 				      jp->bulk_xfer_resources;
 		if (adapter->rcontext_block_count < new_rcontext_blocks) {
-			info("switch/nrt: Insufficient bulk_xfer resources on "
-			     "adapter %s (%"PRIu64" < %"PRIu64")",
+			info("switch/nrt: Insufficient bulk_xfer resources "
+			     "available on adapter %s (%"PRIu64" < %"PRIu64")",
 			     adapter->adapter_name,
 			     adapter->rcontext_block_count,
 			     new_rcontext_blocks);
+			slurm_seterrno(ESLURM_INTERCONNECT_BUSY);
 			return SLURM_ERROR;
 		}
 	} else {
@@ -948,6 +968,30 @@ _add_block_use(slurm_nrt_jobinfo_t *jp, slurm_nrt_adapter_t *adapter)
 #endif
 	return SLURM_SUCCESS;
 }
+
+static int _add_immed_use(char *hostname, slurm_nrt_jobinfo_t *jp,
+			  slurm_nrt_adapter_t *adapter)
+{
+	if (adapter->immed_slots_avail < jp->immed_slots) {
+		info("switch/nrt: Insufficient immediate slots on "
+		     "node %s adapter %s",
+		     hostname, adapter->adapter_name);
+		return SLURM_ERROR;
+	}
+
+	adapter->immed_slots_used += jp->immed_slots;
+	if (adapter->immed_slots_avail < adapter->immed_slots_used) {
+		info("switch/nrt: Insufficient immediate slots available on "
+		     "node %s adapter %s",
+		     hostname, adapter->adapter_name);
+		adapter->immed_slots_used -= jp->immed_slots;
+		slurm_seterrno(ESLURM_INTERCONNECT_BUSY);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static bool
 _free_block_use(slurm_nrt_jobinfo_t *jp, slurm_nrt_adapter_t *adapter)
 {
@@ -1043,9 +1087,9 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 			if (user_space &&
 			    (adapter->adapter_type == NRT_IPONLY))
 				continue;
-			if (context_id == 0) {
-				if (_add_block_use(jp, adapter))
-					return SLURM_ERROR;
+			if ((context_id == 0) &&
+			    (_add_block_use(jp, adapter))) {
+				return SLURM_ERROR;
 			}
 			for (j = 0; j < instances; j++) {
 				table_id++;
@@ -1064,19 +1108,9 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 						     adapter->adapter_name);
 						return SLURM_ERROR;
 					}
-					adapter->immed_slots_used +=
-						jp->immed_slots;
-					if (adapter->immed_slots_used >
-					    adapter->immed_slots_avail) {
-						info("switch/nrt: "
-						     "No free immediate slots "
-						     "on node %s adapter %s",
-						     node->name,
-						     adapter->adapter_name);
-						adapter->immed_slots_used -=
-							jp->immed_slots;
+					if (_add_immed_use(hostname, jp,
+							   adapter))
 						return SLURM_ERROR;
-					}
 					window->state = NRT_WIN_UNAVAILABLE;
 					window->job_key = job_key;
 				}
@@ -1239,9 +1273,9 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 	table_inx = -1;
 	for (context_id = 0; context_id < protocol_table->protocol_table_cnt;
 	     context_id++) {
-		if (context_id == 0) {
-			if (_add_block_use(jp, adapter))
-				return SLURM_ERROR;
+		if ((context_id == 0) &&
+		    (_add_block_use(jp, adapter))) {
+			return SLURM_ERROR;
 		}
 		for (table_id = 0; table_id < instances; table_id++) {
 			table_inx++;
@@ -1255,17 +1289,8 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 					     adapter->adapter_name);
 					return SLURM_ERROR;
 				}
-				adapter->immed_slots_used += jp->immed_slots;
-				if (adapter->immed_slots_used >
-				    adapter->immed_slots_avail) {
-					info("switch/nrt: No free immediate "
-					     "slots on node %s adapter %s",
-					     node->name,
-					     adapter->adapter_name);
-					adapter->immed_slots_used -=
-						jp->immed_slots;
+				if (_add_immed_use(hostname, jp, adapter))
 					return SLURM_ERROR;
-				}
 				window->state = NRT_WIN_UNAVAILABLE;
 				window->job_key = job_key;
 			}

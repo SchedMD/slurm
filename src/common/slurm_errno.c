@@ -282,6 +282,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job is current suspended, requested operation disabled"	},
 	{ ESLURM_CAN_NOT_START_IMMEDIATELY,
 	  "Job can not start immediately"			},
+	{ ESLURM_INTERCONNECT_BUSY,
+	  "Switch resources currently not available"		},
 
 	/* slurmd error codes */
 

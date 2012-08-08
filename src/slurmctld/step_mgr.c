@@ -2057,6 +2057,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 					 step_ptr->step_layout->tids,
 					 step_ptr->network) < 0) {
 			delete_step_record (job_ptr, step_ptr->step_id);
+			if (errno == ESLURM_INTERCONNECT_BUSY)
+				return errno;
 			return ESLURM_INTERCONNECT_FAILURE;
 		}
 		step_alloc_lps(step_ptr);

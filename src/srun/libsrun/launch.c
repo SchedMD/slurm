@@ -285,6 +285,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_PORTS_BUSY) &&
 		     (rc != ESLURM_PROLOG_RUNNING) &&
 		     (rc != SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT) &&
+		     (rc != ESLURM_INTERCONNECT_BUSY) &&
 		     (rc != ESLURM_DISABLED))) {
 			error ("Unable to create job step: %m");
 			return SLURM_ERROR;
