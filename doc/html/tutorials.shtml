@@ -9,9 +9,7 @@ Learn how to use a basic set of commands.
 Learn how to build, configure, and install SLURM.</p>
 
 <ul>
-<li><a href="tutorial_slurm_intro.avi">Introduction to SLURM video</a></li>
-<li><a href="tutorial_intro_files.tar">Tar-ball</a> with sample configuration files</li>
-<li>The same video on <a href="http://www.youtube.com">YouTube</a> (in eight parts)</a></li>
+<li>Introduction to SLURM video on <a href="http://www.youtube.com">YouTube</a> (in eight parts)</a></li>
 <ol>
 <li><a href="http://www.youtube.com/watch?v=NH_Fb7X6Db0&feature=relmfu">Introduction to SLURM, Part 1</a></li>
 <li><a href="http://www.youtube.com/watch?v=LJrY0AthLB8&feature=relmfu">Introduction to SLURM, Part 2</a></li>
@@ -22,10 +20,12 @@ Learn how to build, configure, and install SLURM.</p>
 <li><a href="http://www.youtube.com/watch?v=kFW0tk7aDDo&feature=relmfu">Introduction to SLURM, Part 7</a></li>
 <li><a href="http://www.youtube.com/watch?v=VozfZGZIX8w&feature=relmfu">Introduction to SLURM, Part 8</a></li>
 </ol>
+<li><a href="tutorial_slurm_intro.avi">Introduction to SLURM video (one 330 MB file)</a></li>
+<li><a href="tutorial_intro_files.tar">Tar-ball</a> with sample configuration files</li>
 </ul>
 
 <h2>More Tutorials Coming Soon...</h2>
 
-<p style="text-align:center;">Last modified 25 July 2012</p>
+<p style="text-align:center;">Last modified 8 August 2012</p>
 
 <!--#include virtual="footer.txt"-->
