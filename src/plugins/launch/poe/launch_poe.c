@@ -839,55 +839,28 @@ extern int launch_p_step_launch(
 {
 	int rc = 0;
 	pid_t pid;
-	int stderr_pipe[2] = {-1, -1};
-	int stdin_pipe[2] = {-1, -1}, stdout_pipe[2] = {-1, -1};
-
-	if ((pipe(stdin_pipe) == -1)
-	    || (pipe(stdout_pipe) == -1)
-	    || (pipe(stderr_pipe) == -1)) {
-		error("pipe: %m");
-		return 1;
-	}
 
 	pid = fork();
 	if (pid < 0) {
-		/* (void) close(stdin_pipe[0]); */
-		/* (void) close(stdin_pipe[1]); */
-		/* (void) close(stdout_pipe[0]); */
-		/* (void) close(stdout_pipe[1]); */
-		/* (void) close(stderr_pipe[0]); */
-		/* (void) close(stderr_pipe[1]); */
 		error("fork: %m");
 		return 1;
 	} else if (pid > 0) {
 		if (waitpid(pid, NULL, 0) < 0)
 			error("Unable to reap poe child process");
 	} else {
-		/* if ((dup2(stdin_pipe[0],  0) == -1) || */
-		/*     (dup2(stdout_pipe[1], 1) == -1) || */
-		/*     (dup2(stderr_pipe[1], 2) == -1)) { */
-		/* 	error("dup2: %m"); */
-		/* 	return 1; */
-		/* } */
-
-		/* (void) close(stderr_pipe[0]); */
-		/* (void) close(stderr_pipe[1]); */
-		/* (void) close(stdin_pipe[0]); */
-		/* (void) close(stdin_pipe[1]); */
-		/* (void) close(stdout_pipe[0]); */
-		/* (void) close(stdout_pipe[1]); */
+		/* dup stdio onto our open fds */
+		if ((dup2(cio_fds->in.fd, 0) == -1) ||
+		    (dup2(cio_fds->out.fd, 1) == -1) ||
+		    (dup2(cio_fds->err.fd, 2) == -1)) {
+			error("dup2: %m");
+			return 1;
+		}
 
 		execvp(opt.argv[0], opt.argv);
 		error("execv(poe) error: %m");
 		return 1;
 	}
 
-	(void) close(stdin_pipe[0]);
-	(void) close(stdout_pipe[1]);
-	(void) close(stderr_pipe[1]);
-
-	/* NOTE: dummy_pipe is only used to wake the select() function in the
-	 * loop below when the spawned process terminates */
 	return rc;
 }
 
