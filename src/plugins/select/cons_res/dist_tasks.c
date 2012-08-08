@@ -372,6 +372,11 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		cpus  = job_res->cpus[i];
 		vpus  = MIN(select_node_record[n].vpus, ntasks_per_core);
 
+		/* compute still required cores on the node */
+		req_cpus = cpus / vpus;
+		if ( cpus % vpus )
+			req_cpus++;
+
 		if (nboards_nb > MAX_BOARDS) {
 			debug3("cons_res: node[%u]: exceeds max boards; "
 				"doing best-fit across sockets only", n);
@@ -419,7 +424,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		count = 0;
 		for (b = 0; b < nboards_nb; b++) {
 			count+=sort_brds_cpu_cnt[b];
-			if (count >= cpus)
+			if (count >= req_cpus)
 				break;
 		}
 		b_min = b+1;
@@ -445,7 +450,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 				                        + comb_brd_idx];
 				count += boards_cpu_cnt[board_num];
 			}
-			if (count >= cpus) {
+			if (count >= req_cpus) {
 				elig_brd_combs[elig] = comb_idx;
 				elig_cpu_cnt[elig] = count;
 				elig++;
@@ -490,7 +495,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 				sock_idx =
 				socket_list[(int)((elig_idx*sock_per_comb)+b)];
 				count+=sockets_cpu_cnt[sock_idx];
-				if (count >= cpus)
+				if (count >= req_cpus)
 					break;
 			}
 			b++;
@@ -508,7 +513,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		debug3("cons_res: best_fit: node[%u]: required cpus: %u, "
 				"min req boards: %u,", n, cpus, b_min);
 		debug3("cons_res: best_fit: node[%u]: min req sockets: %u, "
-				"min avail cpus: %u", n, s_min, cpu_min);
+				"min avail cores: %u", n, s_min, cpu_min);
 		/* Re-sort socket list for best-fit board combination in
 		 * ascending order of socket number */
 		qsort(&socket_list[comb_min * sock_per_comb], sock_per_comb,
@@ -524,11 +529,6 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 			best_fit_cpus = 0;
 			best_fit_sufficient = false;
-
-			/* compute still required cores on the node */
-			req_cpus = cpus / vpus;
-			if ( cpus % vpus )
-				req_cpus++;
 
 			/* search for the best socket, */
 			/* starting from the last one to let more room */
