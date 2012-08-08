@@ -901,7 +901,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		return NULL;
 	}
 
-	if ((step_spec->mem_per_cpu && _is_mem_resv()) || step_spec->gres) {
+	if ((step_spec->mem_per_cpu && _is_mem_resv()) ||
+	    (step_spec->gres && (step_spec->gres[0]))) {
 		int fail_mode = ESLURM_INVALID_TASK_MEMORY;
 		uint32_t tmp_mem, tmp_cpus, avail_cpus, total_cpus;
 		uint32_t avail_tasks, total_tasks;
@@ -2310,61 +2311,9 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		packstr(step_ptr->gres, buffer);
 		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
 					     protocol_version);
-	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-		pack32(step_ptr->job_ptr->job_id, buffer);
-		pack32(step_ptr->step_id, buffer);
-		pack16(step_ptr->ckpt_interval, buffer);
-		pack32(step_ptr->job_ptr->user_id, buffer);
-		pack32(cpu_cnt, buffer);
-		pack32(task_cnt, buffer);
-		pack32(step_ptr->time_limit, buffer);
-
-		pack_time(step_ptr->start_time, buffer);
-		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
-			run_time = step_ptr->pre_sus_time;
-		} else {
-			begin_time = MAX(step_ptr->start_time,
-					 step_ptr->job_ptr->suspend_time);
-			run_time = step_ptr->pre_sus_time +
-				difftime(time(NULL), begin_time);
-		}
-		pack_time(run_time, buffer);
-
-		packstr(step_ptr->job_ptr->partition, buffer);
-		packstr(step_ptr->resv_ports, buffer);
-		packstr(node_list, buffer);
-		packstr(step_ptr->name, buffer);
-		packstr(step_ptr->network, buffer);
-		pack_bit_fmt(pack_bitstr, buffer);
-		packstr(step_ptr->ckpt_dir, buffer);
-		packstr(step_ptr->gres, buffer);
 	} else {
-		pack32(step_ptr->job_ptr->job_id, buffer);
-		pack32(step_ptr->step_id, buffer);
-		pack16(step_ptr->ckpt_interval, buffer);
-		pack32(step_ptr->job_ptr->user_id, buffer);
-		pack32(cpu_cnt, buffer);
-		pack32(task_cnt, buffer);
-		pack32(step_ptr->time_limit, buffer);
-
-		pack_time(step_ptr->start_time, buffer);
-		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
-			run_time = step_ptr->pre_sus_time;
-		} else {
-			begin_time = MAX(step_ptr->start_time,
-					 step_ptr->job_ptr->suspend_time);
-			run_time = step_ptr->pre_sus_time +
-				difftime(time(NULL), begin_time);
-		}
-		pack_time(run_time, buffer);
-
-		packstr(step_ptr->job_ptr->partition, buffer);
-		packstr(step_ptr->resv_ports, buffer);
-		packstr(node_list, buffer);
-		packstr(step_ptr->name, buffer);
-		packstr(step_ptr->network, buffer);
-		pack_bit_fmt(pack_bitstr, buffer);
-		packstr(step_ptr->ckpt_dir, buffer);
+		error("_pack_ctld_job_step_info: protocol_version "
+		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -3116,128 +3065,10 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 			      job_ptr->job_id, step_id, no_kill);
 			goto unpack_error;
 		}
-	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-		safe_unpack32(&step_id, buffer);
-		safe_unpack16(&cyclic_alloc, buffer);
-		safe_unpack16(&port, buffer);
-		safe_unpack16(&ckpt_interval, buffer);
-		safe_unpack16(&cpus_per_task, buffer);
-		safe_unpack16(&resv_port_cnt, buffer);
-
-		safe_unpack8(&no_kill, buffer);
-
-		safe_unpack32(&cpu_count, buffer);
-		safe_unpack32(&mem_per_cpu, buffer);
-		safe_unpack32(&exit_code, buffer);
-		if (exit_code != NO_VAL) {
-			safe_unpackstr_xmalloc(&bit_fmt, &name_len, buffer);
-			safe_unpack16(&bit_cnt, buffer);
-		}
-		safe_unpack32(&core_size, buffer);
-		if (core_size)
-			safe_unpackstr_xmalloc(&core_job, &name_len, buffer);
-
-		safe_unpack32(&time_limit, buffer);
-		safe_unpack_time(&start_time, buffer);
-		safe_unpack_time(&pre_sus_time, buffer);
-		safe_unpack_time(&tot_sus_time, buffer);
-		safe_unpack_time(&ckpt_time, buffer);
-
-		safe_unpackstr_xmalloc(&host, &name_len, buffer);
-		safe_unpackstr_xmalloc(&resv_ports, &name_len, buffer);
-		safe_unpackstr_xmalloc(&name, &name_len, buffer);
-		safe_unpackstr_xmalloc(&network, &name_len, buffer);
-		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
-
-		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
-		if (gres_plugin_step_state_unpack(&gres_list, buffer,
-						  job_ptr->job_id, step_id,
-						  protocol_version)
-		    != SLURM_SUCCESS)
-			goto unpack_error;
-
-		safe_unpack16(&batch_step, buffer);
-		if (!batch_step) {
-			if (unpack_slurm_step_layout(&step_layout, buffer,
-						     protocol_version))
-				goto unpack_error;
-			switch_alloc_jobinfo(&switch_tmp);
-			if (switch_unpack_jobinfo(switch_tmp, buffer))
-				goto unpack_error;
-		}
-		checkpoint_alloc_jobinfo(&check_tmp);
-		if (checkpoint_unpack_jobinfo(check_tmp, buffer,
-					      protocol_version))
-			goto unpack_error;
-
-		/* validity test as possible */
-		if (cyclic_alloc > 1) {
-			error("Invalid data for job %u.%u: cyclic_alloc=%u",
-			      job_ptr->job_id, step_id, cyclic_alloc);
-			goto unpack_error;
-		}
-		if (no_kill > 1) {
-			error("Invalid data for job %u.%u: no_kill=%u",
-			      job_ptr->job_id, step_id, no_kill);
-			goto unpack_error;
-		}
 	} else {
-		safe_unpack32(&step_id, buffer);
-		safe_unpack16(&cyclic_alloc, buffer);
-		safe_unpack16(&port, buffer);
-		safe_unpack16(&ckpt_interval, buffer);
-		safe_unpack16(&cpus_per_task, buffer);
-		safe_unpack16(&resv_port_cnt, buffer);
-
-		safe_unpack8(&no_kill, buffer);
-
-		safe_unpack32(&cpu_count, buffer);
-		safe_unpack32(&mem_per_cpu, buffer);
-		safe_unpack32(&exit_code, buffer);
-		if (exit_code != NO_VAL) {
-			safe_unpackstr_xmalloc(&bit_fmt, &name_len, buffer);
-			safe_unpack16(&bit_cnt, buffer);
-		}
-		safe_unpack32(&core_size, buffer);
-		if (core_size)
-			safe_unpackstr_xmalloc(&core_job, &name_len, buffer);
-
-		safe_unpack32(&time_limit, buffer);
-		safe_unpack_time(&start_time, buffer);
-		safe_unpack_time(&pre_sus_time, buffer);
-		safe_unpack_time(&tot_sus_time, buffer);
-		safe_unpack_time(&ckpt_time, buffer);
-
-		safe_unpackstr_xmalloc(&host, &name_len, buffer);
-		safe_unpackstr_xmalloc(&resv_ports, &name_len, buffer);
-		safe_unpackstr_xmalloc(&name, &name_len, buffer);
-		safe_unpackstr_xmalloc(&network, &name_len, buffer);
-		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
-		safe_unpack16(&batch_step, buffer);
-		if (!batch_step) {
-			if (unpack_slurm_step_layout(&step_layout, buffer,
-						     protocol_version))
-				goto unpack_error;
-			switch_alloc_jobinfo(&switch_tmp);
-			if (switch_unpack_jobinfo(switch_tmp, buffer))
-				goto unpack_error;
-		}
-		checkpoint_alloc_jobinfo(&check_tmp);
-		if (checkpoint_unpack_jobinfo(check_tmp, buffer,
-					      protocol_version))
-			goto unpack_error;
-
-		/* validity test as possible */
-		if (cyclic_alloc > 1) {
-			error("Invalid data for job %u.%u: cyclic_alloc=%u",
-			      job_ptr->job_id, step_id, cyclic_alloc);
-			goto unpack_error;
-		}
-		if (no_kill > 1) {
-			error("Invalid data for job %u.%u: no_kill=%u",
-			      job_ptr->job_id, step_id, no_kill);
-			goto unpack_error;
-		}
+		error("load_step_state: protocol_version "
+		      "%hu not supported", protocol_version);
+		goto unpack_error;
 	}
 
 	step_ptr = find_step_record(job_ptr, step_id);
@@ -3389,6 +3220,8 @@ extern void step_checkpoint(void)
 			continue; /* ignore periodic step ckpt */
 		}
 		step_iterator = list_iterator_create (job_ptr->step_list);
+		if (!step_iterator)
+			fatal("list_iterator_create: malloc failure");
 		while ((step_ptr = (struct step_record *)
 				list_next (step_iterator))) {
 			char *image_dir = NULL;

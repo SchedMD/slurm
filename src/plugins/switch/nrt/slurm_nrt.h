@@ -122,5 +122,13 @@ extern int nrt_libstate_clear(void);
 extern int nrt_slurmctld_init(void);
 extern int nrt_slurmd_init(void);
 extern int nrt_slurmd_step_init(void);
+extern int nrt_preempt_job_test(slurm_nrt_jobinfo_t *jp);
+extern int nrt_preempt_job(void *suspend_info, int max_wait_secs);
+extern int nrt_resume_job(void *suspend_info, int max_wait_secs);
+extern void nrt_suspend_job_info_get(slurm_nrt_jobinfo_t *jp,
+				     void **suspend_info);
+extern void nrt_suspend_job_info_pack(void *suspend_info, Buf buffer);
+extern int nrt_suspend_job_info_unpack(void **suspend_info, Buf buffer);
+extern void nrt_suspend_job_info_free(void *suspend_info);
 
 #endif /* _SLURM_NRT_INCLUDED */

@@ -13,8 +13,10 @@ with PE, which are described in this document.</p>
 
 <h2>User Tools</h2>
 
-<p>The normal set of SLURM user tools: srun, scancel, sinfo, smap, squeue and
-scontrol provide all of the expected services. Job steps are launched using the
+<p>The normal set of SLURM user tools: srun, scancel, sinfo, squeue, scontrol,
+etc. provide all of the expected services.
+The only SLURM command not supported is sattach.
+Job steps are launched using the
 srun command, which translates its options and invokes IBM's poe command. The
 poe command actually launches the tasks. The poe command may also be invoked
 directly if desired. The actual task launch process is as follows:</p>
@@ -94,7 +96,7 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
   <li><b>sn_all</b> Use all available switch adapters (default).
   This option can not be combined with sn_single.</li>
   <li><b>sn_single</b> Use only one switch adapters.
-  This option can not be combined withsn_all.
+  This option can not be combined with sn_all.
   If multiple adapters of different types exist, the devname and/or
   devtype option can also be used to select one of them.</li>
   </ul>
@@ -106,9 +108,9 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
 Allocate one switch window per task on each node and every network supporting
 MPI.
 <br><br>
-<b>--network=sn_all,mpi,bulk_xfer=100m,us</b><br>
+<b>--network=sn_all,mpi,bulk_xfer,us</b><br>
 Allocate one switch window per task on each node and every network supporting
-MPI and user space communications. Reserve 100 MB for RDMA.
+MPI and user space communications. Reserve resources for RDMA.
 <br><br>
 <b>--network=sn_all,instances=3,mpi</b><br>
 Allocate three switch window per task on each node and every network supporting
@@ -131,9 +133,8 @@ host name, process ID, etc. Since that information is only available from
 poe (which launches those tasks), the srun command wrapper can not be used
 for most debugging purposes. You or the debugging tool must invoke the poe
 command directly. In order to facilitate use of poe, srun's 
-<br><b>FIXME: We need to add this functionality</b>
-option may be used with the options
-normally used in order to generate the equivalent poe command line, which
+<br><b>--launch-cmd</b> option may be used with the options normally used.
+srun will then print the equivalent poe command line, which
 can subsequently be used with the debugger.</p>
 
 <h3>Checkpoint</h3>
@@ -161,6 +162,7 @@ use the command: <br>
 <p>Some SLURM options can not be supported by PE and the following srun options
 are silently ignored:</p>
 <ul>
+<li>-D, --chdir (set working directory)</li>
 <li>-K, --kill-on-bad-exit (terminate step if any task has a non-zero exit code)</li>
 <li>-k, --no-kill (set to not kill job upon node failure)</li>
 <li>--ntasks-per-core (number of tasks to invoke per code)</li>
@@ -175,18 +177,76 @@ are silently ignored:</p>
 <li>-Z, --no-allocate (launch tasks without creating job allocation></li>
 </ul>
 
+<p>In addition, the following options have some limitations:</p>
+<ul>
+<li>-e, --error (Unable to support node and task-specific file names)</li>
+<li>-i, --input (Unable to support node and task-specific file names)</li>
+<li>-o, --output (Unable to support node and task-specific file names)</li>
+</ul>
+
+<h3>Environment Variables</h3>
+
+<p><b>FIXME: We need to validate all of this</b>
+<p>Since SLURM is not directly launching user tasks, the following environment
+variables are NOT available with POE:</p>
+<ul>
+<li>SLURM_CPU_BIND_LIST</li>
+<li>SLURM_CPU_BIND_TYPE</li>
+<li>SLURM_CPU_BIND_VERBOSE</li>
+<li>SLURM_CPUS_ON_NODE</li>
+<li>SLURM_GTIDS</li>
+<li>SLURM_LAUNCH_NODE_IPADDR</li>
+<li>SLURM_LOCALID</li>
+<li>SLURM_MEM_BIND_LIST</li>
+<li>SLURM_MEM_BIND_TYPE</li>
+<li>SLURM_MEM_BIND_VERBOSE</li>
+<li>SLURM_PROCID</li>
+<li>SLURM_TASK_PID</li>
+</ul>
+
+<h3>Gang Scheduling</h3>
+
+<p>SLURM can be configured to gang schedule (time slice) parallel jobs by
+alternately suspending and resuming them. Depending upon the the number of
+jobs configured to time slice and the time slice interval (as specified in
+the <i>slurm.conf</i> file using the <b>Shared</b> and <b>SchedulerTimeSlice</b>
+options), the job may experience communication timeouts. Set the environment
+variable <b>MP_TIMEOUT</b> to specify an appropriate communication timeout
+value. Note that the default timeout is 150 seconds. See
+<a href="gang_scheduling.html">Gang Scheduling</a> for more information.</p>
+<pre>
+export MP_TIMEOUT=600
+</pre>
+
+<h3>Other Notes</h3>
+
+<p>If the srun command's --label option is used, note that POE's prefix is
+the task ID followed by a colon. The prefix with native SLURM is the task ID
+followed by a colon followed by one space.</p>
+
 <h2>System Administration</h2>
 
 <p>There are two critical SLURM configuration parameters for use with PE.
 These configuration parameters should be set in your <b>slurm.conf</b> file.
+<b>LaunchType</b> defines the task launch mechanism to be used and must be set
+to <b>launch/poe</b>.
 <b>SwitchType</b> defines the mechanism used to manage the network switch and
 it must be set to <b>switch/nrt</b> and use IBM's Network Resource Table (NRT)
-interface. In order for the switch/nrt plugin to be built, the NRT header file
-and library must be found at the time the SLURM is built. SLURM searches for
-the nrt.h file in the /usr/include directory by default. If the file is not
-installed there, you can specify a different location using the 
-<b>--with-nrth=PATH</b> option to the configure program, where "PATH" is the
-fully qualified pathname of the parent directory of the nrt.h file.
+interface.</p>
+<pre>
+# Excerpt of slurm.conf
+LaunchType=launch/poe
+SwitchType=switch/nrt
+</pre>
+
+<p>In order for these plugins to be built, the locations of the POE Resource
+Manager header file (permapi.h) the NRT header file (nrt.h) and NRT library
+(libnrt.so) must be identified at the time the SLURM is built.
+SLURM searches for the header files in the /usr/include directory by default.
+If the files are not installed there, you can specify a different location using
+the <b>--with-nrth=PATH</b> option to the configure program, where "PATH" is
+the fully qualified pathname of the parent directory of the nrt.h and permapi.h
+files.
 SLURM searches for the libnrt.so file in the /usr/lib and /usr/lib64 directories
 by default. If the file is not installed there, you can specify a different
 location using the <b>--with-nrtlib=PATH</b> option to the configure program,
@@ -206,7 +266,13 @@ library and note that SLURM is the resource manager in the file named
 The library name is "libpermapi.so" and it is in installed with the other SLURM
 libraries in the subdirectory "lib/slurm". A sample "/etc/poe.limits" file is
 shown below. You will need to modify the value of MP_PE_RMLIB to match SLURM's
-installation location on your system.
+installation location on your system.<br>
+<b>NOTE:</b> The poe command is loading and using the libpermapi.so library
+initially from the /usr/lib64 directory. It later reads the /etc/poe.limits
+file and loads the correct library. In order for poe to work with SLURM it
+needs to use the "libpermapi.so" generated by SLURM for all of its functions.
+Until poe is modified to only load the correct library, it is necessary for
+the file /usr/lib64/libpermapi.so to contain SLURM's library or a link to it.</p>
 <pre>
 #
 # Sample /etc/poe.limits
@@ -216,8 +282,34 @@ MP_PE_RMLIB=/usr/local/lib/slurm/libpermapi.so
 MP_POOL=slurm
 </pre>
 
+<h3>Job Scheduling</h3>
+
+<p>SLURM can be configured to gang schedule (time slice) parallel jobs by
+alternately suspending and resuming them. Depending upon the the number of
+jobs configured to time slice and the time slice interval (as specified in
+the <i>slurm.conf</i> file using the <b>Shared</b> and <b>SchedulerTimeSlice</b>
+options), the job may experience communication timeouts. Set the environment
+variable <b>MP_TIMEOUT</b> to specify an appropriate communication timeout
+value. Note that the default timeout is 150 seconds. See
+<a href="gang_scheduling.html">Gang Scheduling</a> for more information.</p>
+<pre>
+export MP_TIMEOUT=600
+</pre>
+
+<p>SLURM also can support long term job preemption with IBM's Parallel
+Environment. Job's can be explicitly preempted and later resumed using the
+<b>scontrol suspend &lt;jobid&gt;</b> and <b>scontrol resume &lt;jobid&gt;</b>
+commands. This functionality relies upon NRT functions to suspend/resume
+programs and reset MPI timeouts. Note that SLURM suports the preemption only
+of whole jobs rather than individual job steps. A suspended job will relinquish
+CPU resources, but retain memory and switch window resources. Note that the
+long term suspension of jobs with any allocated Collective Acceleration
+Units (CAU) is disabled and an error message to that effect will be generated
+in response to such a request. In addition, verion 1200 or higher of IBM's NRT
+API is required to support this functionality.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 16 July 2012</p></td>
+<p style="text-align:center;">Last modified 7 August 2012</p></td>
 
 <!--#include virtual="footer.txt"-->

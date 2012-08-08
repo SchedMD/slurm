@@ -50,8 +50,9 @@ extern void allocate_nodes(struct job_record *job_ptr);
 /*
  * build_node_details - sets addresses for allocated nodes
  * IN job_ptr - pointer to a job record
+ * IN new_alloc - set if new job allocation, cleared if state recovery
  */
-extern void build_node_details(struct job_record *job_ptr);
+extern void build_node_details(struct job_record *job_ptr, bool new_alloc);
 
 /*
  * deallocate_nodes - for a given job, deallocate its nodes and make

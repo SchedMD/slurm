@@ -54,6 +54,7 @@
 #include <string.h>
 #include <strings.h>
 #include <dirent.h>
+#include <sys/mount.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -129,12 +130,14 @@ int xcgroup_ns_destroy(xcgroup_ns_t* cgns) {
  * returned values:
  *  - XCGROUP_ERROR
  *  - XCGROUP_SUCCESS
+ *
+ * If an error occurs, errno will be set.
  */
 int xcgroup_ns_mount(xcgroup_ns_t* cgns)
 {
 	int fstatus;
-	char* mount_cmd_fmt;
-	char mount_cmd[1024];
+	char* options;
+	char opt_combined[1024];
 
 	char* mnt_point;
 	char* p;
@@ -159,8 +162,8 @@ int xcgroup_ns_mount(xcgroup_ns_t* cgns)
 		p = mnt_point;
 		while ((p = index(p+1, '/')) != NULL) {
 			*p = '\0';
-			mkdir(mnt_point, 0755);
-			if (errno != EEXIST) {
+			fstatus = mkdir(mnt_point, 0755);
+			if (fstatus && errno != EEXIST) {
 				debug("unable to create cgroup ns required "
 				      "directory '%s'", mnt_point);
 				xfree(mnt_point);
@@ -182,21 +185,20 @@ int xcgroup_ns_mount(xcgroup_ns_t* cgns)
 	umask(omask);
 
 	if (cgns->mnt_args == NULL ||
-	     strlen(cgns->mnt_args) == 0) {
-		mount_cmd_fmt = "/bin/mount -o %s%s -t cgroup none %s";
+	    strlen(cgns->mnt_args) == 0)
+		options = cgns->subsystems;
+	else {
+		if (snprintf(opt_combined, sizeof(opt_combined), "%s,%s",
+			     cgns->subsystems, cgns->mnt_args)
+		    >= sizeof(opt_combined)) {
+			debug2("unable to build cgroup options string");
+			return XCGROUP_ERROR;
+		}
+		options = opt_combined;
 	}
-	else
-		mount_cmd_fmt = "/bin/mount -o %s, %s -t cgroup none %s";
 
-	if (snprintf(mount_cmd, 1024, mount_cmd_fmt, cgns->subsystems,
-		      cgns->mnt_args, cgns->mnt_point) >= 1024) {
-		debug2("unable to build cgroup ns mount cmd line");
-		return XCGROUP_ERROR;
-	}
-	else
-		debug3("cgroup mount cmd line is '%s'", mount_cmd);
-
-	if (system(mount_cmd))
+	if (mount("cgroup", cgns->mnt_point, "cgroup",
+		  MS_NOSUID|MS_NOEXEC|MS_NODEV, options))
 		return XCGROUP_ERROR;
 	else {
 		/* we then set the release_agent if necessary */
@@ -217,26 +219,14 @@ int xcgroup_ns_mount(xcgroup_ns_t* cgns)
  * returned values:
  *  - XCGROUP_ERROR
  *  - XCGROUP_SUCCESS
+ *
+ * If an error occurs, errno will be set.
  */
 int xcgroup_ns_umount(xcgroup_ns_t* cgns)
 {
-	char* umount_cmd_fmt;
-	char umount_cmd[1024];
-
-	umount_cmd_fmt = "/bin/umount %s";
-
-	if (snprintf(umount_cmd, 1024, umount_cmd_fmt,
-		      cgns->mnt_point) >= 1024) {
-		debug2("unable to build cgroup ns umount cmd line");
+	if (umount(cgns->mnt_point))
 		return XCGROUP_ERROR;
-	}
-	else
-		debug3("cgroup ns umount cmd line is '%s'", umount_cmd);
-
-	if (system(umount_cmd))
-		return XCGROUP_ERROR;
-	else
-		return XCGROUP_SUCCESS;
+	return XCGROUP_SUCCESS;
 }
 
 /*

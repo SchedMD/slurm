@@ -195,6 +195,7 @@ typedef struct srun_options {
 	int  max_launch_time;   /* Undocumented                 */
 	int  max_exit_timeout;  /* Undocumented                 */
 	int  msg_timeout;       /* Undocumented                 */
+	bool launch_cmd;        /* --launch_cmd                 */
 	char *network;		/* --network=			*/
 
 	/* BLUEGENE SPECIFIC */

@@ -504,7 +504,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "grp_cpu_run_mins", "bigint default NULL" },
 		{ "preempt", "text not null default ''" },
 		{ "preempt_mode", "int default 0" },
-		{ "priority", "int default 0" },
+		{ "priority", "int unsigned default 0" },
 		{ "usage_factor", "double default 1.0 not null" },
 		{ "usage_thres", "double default NULL" },
 		{ NULL, NULL}
@@ -939,7 +939,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "nodes_alloc", "int unsigned not null" },
 		{ "node_inx", "text" },
 		{ "partition", "tinytext not null" },
-		{ "priority", "int not null" },
+		{ "priority", "int unsigned not null" },
 		{ "state", "smallint unsigned not null" },
 		{ "timelimit", "int unsigned default 0 not null" },
 		{ "time_submit", "int unsigned default 0 not null" },
@@ -947,6 +947,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "time_start", "int unsigned default 0 not null" },
 		{ "time_end", "int unsigned default 0 not null" },
 		{ "time_suspended", "int unsigned default 0 not null" },
+		{ "gres_req", "text not null default ''" },
+		{ "gres_alloc", "text not null default ''" },
+		{ "gres_used", "text not null default ''" },
 		{ "wckey", "tinytext not null default ''" },
 		{ "track_steps", "tinyint not null" },
 		{ NULL, NULL}

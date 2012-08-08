@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1>SLURM User and Administrator Guide for Cray systems</h1>
+<h1>SLURM User and Administrator Guide for Cray Systems</h1>
 
 <h2>User Guide</h2>
 
@@ -99,7 +99,7 @@ option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i> file.</p>
    Setting <i>--ntasks-per-node</i> to the number of cores per node yields the default per-CPU share
    minimum value.</p>
 
-<p>For all cases in between these extremes, set --mem=per_task_memory and</p>
+<p>For all cases in between these extremes, set --mem=per_task_node or --mem-per-cpu=memory_per_cpu (node CPU count and task count may differ) and</p>
 <pre>
    --ntasks-per-node=floor(node_memory / per_task_memory)
 </pre>
@@ -111,7 +111,7 @@ option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i> file.</p>
     #SBATCH --comment="requesting 7500MB per task on 32000MB/24-core nodes"
     #SBATCH --ntasks=64
     #SBATCH --ntasks-per-node=4
-    #SBATCH --mem=7500
+    #SBATCH --mem=30000
 </pre>
 <p>If you would like to fine-tune the memory limit of your application, you can set the same parameters in
    a salloc session and then check directly, using</p>
@@ -128,7 +128,7 @@ option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i> file.</p>
    on CLE 3.x systems for details.</p>
 
 <h3>Node ordering options</h3>
-<p>SLURM honours the node ordering policy set for Cray's Application Level Placement Scheduler (ALPS). Node 
+<p>SLURM honors the node ordering policy set for Cray's Application Level Placement Scheduler (ALPS). Node 
    ordering is a configurable system option (ALPS_NIDORDER in /etc/sysconfig/alps). The current
    setting is reported by '<i>apstat -svv</i>'  (look for the line starting with "nid ordering option") and
    can not be changed at  runtime. The resulting, effective node ordering is revealed by '<i>apstat -no</i>'
@@ -156,7 +156,7 @@ option to any of the commands used to create a job allocation/reservation.</p>
 nodes (typically used for pre- or post-processing functionality) then submit a
 batch job with a node count specification of zero.</p>
 <pre>
-sbatch -N0 preprocess.bash
+sbatch -N0 pre_process.bash
 </pre>
 <p><b>Note</b>: Support for Cray job allocations with zero compute nodes was
 added to SLURM version 2.4. Earlier versions of SLURM will return an error for
@@ -252,7 +252,7 @@ login: # curl -O http://munge.googlecode.com/files/munge-0.5.10.tar.bz2
 login: # cp munge-0.5.10.tar.bz2 ${LIBROOT}/munge/zip
 login: # chmod u+x ${LIBROOT}/munge/zip/munge_build_script.sh
 login: # ${LIBROOT}/munge/zip/munge_build_script.sh
-(generates lots of output and enerates a tar-ball called
+(generates lots of output and generates a tar-ball called
 $LIBROOT/munge_build-.*YYYY-MM-DD.tar.gz)
 login: # scp munge_build-2011-07-12.tar.gz root@boot:/rr/current/software
 </pre>
@@ -465,7 +465,7 @@ TopologyPlugin=topology/none
 SchedulerType=sched/backfill
 
 # Node selection: use the special-purpose "select/cray" plugin.
-# Internally this uses select/linar, i.e. nodes are always allocated
+# Internally this uses select/linear, i.e. nodes are always allocated
 # in units of nodes (other allocation is currently not possible, since
 # ALPS does not yet allow to run more than 1 executable on the same
 # node, see aprun(1), section LIMITATIONS).
@@ -691,6 +691,6 @@ allocation.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 April 2012</p></td>
+<p style="text-align:center;">Last modified 25 July 2012</p></td>
 
 <!--#include virtual="footer.txt"-->

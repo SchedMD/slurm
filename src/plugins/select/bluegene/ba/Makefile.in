@@ -339,7 +339,9 @@ wire_testSOURCES = wire_test.c
 wire_test_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) \
 		../libba_common.la $(libblock_allocator_la_OBJECTS)
 
-wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
+wire_test_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) \
+	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+
 all: all-am
 
 .SUFFIXES:

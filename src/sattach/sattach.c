@@ -124,7 +124,7 @@ int sattach(int argc, char *argv[])
 	slurm_cred_t *fake_cred;
 	message_thread_state_t *mts;
 	client_io_t *io;
-	char *hosts;
+	char *hosts, *launch_type;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
@@ -139,6 +139,12 @@ int sattach(int argc, char *argv[])
 		logopt.prefix_level = 1;
 		log_alter(logopt, 0, NULL);
 	}
+	launch_type = slurm_get_launch_type();
+	if (launch_type && !strcmp(launch_type, "launch/poe")) {
+		error("sattach does not support LaunchType=launch/poe");
+		exit(error_exit);
+	}
+	xfree(launch_type);
 
 	layout = slurm_job_step_layout_get(opt.jobid, opt.stepid);
 	if (layout == NULL) {

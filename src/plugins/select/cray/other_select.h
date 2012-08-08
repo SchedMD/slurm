@@ -160,13 +160,14 @@ extern int other_alter_node_cnt(enum select_node_cnt type, void *data);
  *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  *		Existing list is appended to.
+ * IN exc_core_bitmap - bitmap of cores being reserved.
  * RET zero on success, EINVAL otherwise
  */
 extern int other_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes, uint16_t mode,
-			  List preemptee_candidates,
-			  List *preemptee_job_list);
+			  List preemptee_candidates, List *preemptee_job_list,
+			  bitstr_t *exc_core_bitmap);
 
 /*
  * Note initiation of job is about to begin. Called immediately

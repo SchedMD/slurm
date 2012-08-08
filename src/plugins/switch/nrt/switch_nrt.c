@@ -130,7 +130,7 @@ static slurm_errtab_t slurm_errtab[] = {
  */
 const char plugin_name[]        = "switch NRT plugin";
 const char plugin_type[]        = "switch/nrt";
-const uint32_t plugin_version   = 100;
+const uint32_t plugin_version   = 110;
 
 uint32_t debug_flags = 0;
 
@@ -749,6 +749,66 @@ extern int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid,
 	pid = getpid();
 	return nrt_load_table((slurm_nrt_jobinfo_t *)jobinfo, uid, pid,
 			      job_name);
+}
+
+extern int switch_p_job_suspend_test(switch_jobinfo_t *jobinfo)
+{
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_suspend_test()");
+
+	return nrt_preempt_job_test((slurm_nrt_jobinfo_t *)jobinfo);
+}
+
+extern void switch_p_job_suspend_info_get(switch_jobinfo_t *jobinfo,
+					  void **suspend_info)
+{
+	if ( switch_init() < 0 )
+		return;
+
+	nrt_suspend_job_info_get((slurm_nrt_jobinfo_t *)jobinfo, suspend_info);
+	return;
+}
+
+extern void switch_p_job_suspend_info_pack(void *suspend_info, Buf buffer)
+{
+	if ( switch_init() < 0 )
+		return;
+
+	nrt_suspend_job_info_pack(suspend_info, buffer);
+	return;
+}
+
+extern int switch_p_job_suspend_info_unpack(void **suspend_info, Buf buffer)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return nrt_suspend_job_info_unpack(suspend_info, buffer);
+}
+
+extern void switch_p_job_suspend_info_free(void *suspend_info)
+{
+	if ( switch_init() < 0 )
+		return;
+
+	nrt_suspend_job_info_free(suspend_info);
+	return;
+}
+
+extern int switch_p_job_suspend(void *suspend_info, int max_wait)
+{
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_suspend()");
+
+	return nrt_preempt_job(suspend_info, max_wait);
+}
+
+extern int switch_p_job_resume(void *suspend_info, int max_wait)
+{
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_resume()");
+
+	return nrt_resume_job(suspend_info, max_wait);
 }
 
 extern int switch_p_job_fini (switch_jobinfo_t *jobinfo)

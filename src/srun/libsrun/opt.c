@@ -189,6 +189,7 @@
 #define LONG_OPT_REQ_SWITCH      0x153
 #define LONG_OPT_RUNJOB_OPTS     0x154
 #define LONG_OPT_CPU_FREQ        0x155
+#define LONG_OPT_LAUNCH_CMD      0x156
 
 extern char **environ;
 
@@ -249,6 +250,11 @@ int initialize_and_process_args(int argc, char *argv[])
 
 	if (_verbose > 3)
 		_opt_list();
+
+	if (opt.launch_cmd) {
+		launch_g_create_job_step(NULL, 0, NULL, NULL);
+		exit(0);
+	}
 
 	return 1;
 
@@ -461,6 +467,7 @@ static void _opt_default()
 	opt.req_switch = -1;
 	opt.wait4switch = -1;
 	opt.runjob_opts = NULL;
+	opt.launch_cmd = false;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -741,9 +748,7 @@ static void set_options(const int argc, char **argv)
 	int opt_char, option_index = 0, max_val = 0, tmp_int;
 	struct utsname name;
 	static struct option long_options[] = {
-		{"attach",        no_argument,       0, 'a'},
 		{"account",       required_argument, 0, 'A'},
-		{"batch",         no_argument,       0, 'b'},
 		{"extra-node-info", required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
@@ -807,6 +812,7 @@ static void set_options(const int argc, char **argv)
 		{"ioload-image",     required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 		{"linux-image",      required_argument, 0, LONG_OPT_LINUX_IMAGE},
+		{"launch-cmd",       no_argument,       0, LONG_OPT_LAUNCH_CMD},
 		{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 		{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
 		{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
@@ -854,7 +860,7 @@ static void set_options(const int argc, char **argv)
 		{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+aA:bB:c:C:d:D:e:Eg:hHi:I::jJ:kK::lL:m:n:N:"
+	char *opt_string = "+A:B:c:C:d:D:e:Eg:hHi:I::jJ:kK::lL:m:n:N:"
 		"o:Op:P:qQr:Rst:T:uU:vVw:W:x:XZ";
 	char *pos_delimit;
 #ifdef HAVE_PTY_H
@@ -886,14 +892,6 @@ static void set_options(const int argc, char **argv)
 			xfree(opt.account);
 			opt.account = xstrdup(optarg);
 			break;
-		case (int)'a':
-			error("Please use the \"sattach\" command instead of "
-			      "\"srun -a/--attach\".");
-			exit(error_exit);
-		case (int)'b':
-			error("Please use the \"sbatch\" command instead of "
-			      "\"srun -b/--batch\".");
-			exit(error_exit);
 		case (int)'B':
 			opt.extra_set = verify_socket_core_thread_count(
 						optarg,
@@ -938,7 +936,7 @@ static void set_options(const int argc, char **argv)
 				exit(error_exit);
 			}
 			xfree(opt.efname);
-			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
+			if (strcasecmp(optarg, "none") == 0)
 				opt.efname = xstrdup("/dev/null");
 			else
 				opt.efname = xstrdup(optarg);
@@ -960,7 +958,7 @@ static void set_options(const int argc, char **argv)
 				exit(error_exit);
 			}
 			xfree(opt.ifname);
-			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
+			if (strcasecmp(optarg, "none") == 0)
 				opt.ifname = xstrdup("/dev/null");
 			else
 				opt.ifname = xstrdup(optarg);
@@ -1030,7 +1028,7 @@ static void set_options(const int argc, char **argv)
 				exit(error_exit);
 			}
 			xfree(opt.ofname);
-			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
+			if (strcasecmp(optarg, "none") == 0)
 				opt.ofname = xstrdup("/dev/null");
 			else
 				opt.ofname = xstrdup(optarg);
@@ -1115,6 +1113,9 @@ static void set_options(const int argc, char **argv)
 			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
 						  &opt.cpu_bind_type))
 				exit(error_exit);
+			break;
+		case LONG_OPT_LAUNCH_CMD:
+			opt.launch_cmd = true;
 			break;
 		case LONG_OPT_MEM_BIND:
 			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
@@ -1671,11 +1672,6 @@ static void _opt_args(int argc, char **argv)
 				opt.max_nodes = opt.min_nodes = node_cnt
 					= opt.ntasks;
 			}
-		} else if (node_cnt < opt.ntasks) {
-			node_cnt = opt.ntasks;
-			if (opt.ntasks_per_node != NO_VAL)
-				node_cnt /= opt.ntasks_per_node;
-			opt.max_nodes = opt.min_nodes = node_cnt;
 		}
 
 		if (!opt.ntasks_per_node || (opt.ntasks_per_node == NO_VAL)) {
@@ -1771,6 +1767,7 @@ static void _opt_args(int argc, char **argv)
 	if (opt.multi_prog && verify_multi_name(opt.argv[command_pos],
 						opt.ntasks))
 		exit(error_exit);
+
 }
 
 /*
@@ -2609,9 +2606,10 @@ static void _help(void)
 	spank_print_options(stdout, 6, 30);
 
 	printf("\n"
-#ifdef HAVE_AIX				/* AIX/Federation specific options */
-"AIX related options:\n"
+#if defined HAVE_AIX || defined HAVE_LIBNRT /* IBM PE specific options */
+"PE related options:\n"
 "      --network=type          communication protocol to be used\n"
+"      --launch-cmd            print external launcher command line if not SLURM\n"
 "\n"
 #endif
 #ifdef HAVE_BG				/* Blue gene specific options */

@@ -83,16 +83,16 @@ have failed but actually succeeded.</p>
 
 <h2>The sjobexitmod command</h2>
 
-<p>A new command is available in SLURM 2.2 to display and update the
-two new derived exit fields of the SLURM db's job record.
+<p>The sjobexitmod command is available to display and update the
+two derived exit fields of the SLURM db's job record.
 <b>sjobexitmod</b> can first be used to display the existing exit code
 / string for a job:</p>
 
 <PRE>
 > sjobexitmod -l 123
-       JobID    Account   NNodes        NodeList      State ExitCode DerivedExitCode        Comment
------------- ---------- -------- --------------- ---------- -------- --------------- --------------
-123                  lc        1            tux0  COMPLETED      0:0             0:0
+JobID Account NNodes NodeList     State ExitCode DerivedExitCode Comment
+----- ------- ------ -------- --------- -------- --------------- -------
+123        lc      1     tux0 COMPLETED      0:0             0:0
 </PRE>
 
 If a change is desired, <b>sjobexitmod</b> can modify the derived fields:
@@ -103,9 +103,9 @@ If a change is desired, <b>sjobexitmod</b> can modify the derived fields:
  Modification of job 123 was successful.
 
 > sjobexitmod -l 123
-       JobID    Account   NNodes        NodeList      State ExitCode DerivedExitCode        Comment
------------- ---------- -------- --------------- ---------- -------- --------------- --------------
-123                  lc        1            tux0  COMPLETED      0:0            49:0  out of memory
+JobID Account NNodes NodeList     State ExitCode DerivedExitCode Comment
+----- ------- ------ -------- --------- -------- --------------- -------
+123        lc      1     tux0 COMPLETED      0:0            49:0 out of memory
 </PRE>
 
 <p>The existing <b>sacct</b> command also supports the two new derived
@@ -113,11 +113,11 @@ exit fields:</p>
 
 <PRE>
 > sacct -X -j 123 -o JobID,NNodes,State,ExitCode,DerivedExitcode,Comment
-       JobID   NNodes      State ExitCode DerivedExitCode        Comment
------------- -------- ---------- -------- --------------- --------------
-123                 1  COMPLETED      0:0            49:0  out of memory
+JobID   NNodes      State ExitCode DerivedExitCode        Comment
+------ ------- ---------- -------- --------------- --------------
+123          1  COMPLETED      0:0            49:0  out of memory
 </PRE>
 
-<p style="text-align:center;">Last modified 1 November 2010</p>
+<p style="text-align:center;">Last modified 26 July 2012</p>
 
 <!--#include virtual="footer.txt"-->

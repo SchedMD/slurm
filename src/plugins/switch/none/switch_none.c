@@ -76,7 +76,7 @@
  */
 const char plugin_name[]        = "switch NONE plugin";
 const char plugin_type[]        = "switch/none";
-const uint32_t plugin_version   = 100;
+const uint32_t plugin_version   = 110;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -186,6 +186,42 @@ int switch_p_job_preinit ( switch_jobinfo_t *jobinfo )
 
 extern int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid,
 			      char *job_name)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int switch_p_job_suspend_test(switch_jobinfo_t *jobinfo)
+{
+	return SLURM_SUCCESS;
+}
+
+extern void switch_p_job_suspend_info_get(switch_jobinfo_t *jobinfo,
+					  void **suspend_info)
+{
+	return;
+}
+
+extern void switch_p_job_suspend_info_pack(void *suspend_info, Buf buffer)
+{
+	return;
+}
+
+extern int switch_p_job_suspend_info_unpack(void **suspend_info, Buf buffer)
+{
+	return SLURM_SUCCESS;
+}
+
+extern void switch_p_job_suspend_info_free(void *suspend_info)
+{
+	return;
+}
+
+extern int switch_p_job_suspend(void *suspend_info, int max_wait)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int switch_p_job_resume(void *suspend_info, int max_wait)
 {
 	return SLURM_SUCCESS;
 }

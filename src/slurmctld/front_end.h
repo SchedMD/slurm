@@ -43,9 +43,10 @@
 
 /*
  * assign_front_end - assign a front end node for starting a job
- * RET pointer to the front end node to use or NULL if none available
+ * IN batch_host - previously set batch_host name
+ * RET pointer to the front end node to use or NULL if none found
  */
-extern front_end_record_t *assign_front_end(void);
+extern front_end_record_t *assign_front_end(char *batch_host);
 
 /*
  * avail_front_end - test if any front end nodes are available for starting job

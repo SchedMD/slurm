@@ -362,11 +362,9 @@ processors left idle)
 <H2>Interconnect</H2>
 Define the node interconnect used.<BR>
 Select one value for <B>SwitchType</B>:<BR>
-<input type="radio" name="switch_type" value="elan"> <B>Elan</B>: Quadrics Elan3 or Elan4<BR>
-<input type="radio" name="switch_type" value="federation"> <B>Federation</B>: IBM
-Federation Switch<BR>
 <input type="radio" name="switch_type" value="none" checked> <B>None</B>: No special
 handling required (InfiniBand, Myrinet, Ethernet, etc.)<BR>
+<input type="radio" name="switch_type" value="nrt"> <B>NRT</B>: IBM Network Resource Table<BR>
 <P>
 
 <H2>Default MPI Type</H2>
@@ -543,5 +541,5 @@ Specify a specify the fully qualified pathname for the file.
 </FORM>
 <HR>
 <a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 21 June 2012</P>
+Last modified 2 August 2012</P>
 </BODY>

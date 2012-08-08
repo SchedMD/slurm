@@ -438,7 +438,7 @@ Call xfree() to release the memory allocated for the return value.</p>
 
 <p class="commandline">int select_p_job_test (struct job_record *job_ptr,
 bitstr_t *bitmap, uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes, uint32_t mode,
-List preemption_candidates, List *preempted_jobs);</p>
+List preemption_candidates, List *preempted_jobs, bitstr_t *exc_core_bitmap);</p>
 <p style="margin-left:.2in"><b>Description</b>: Given a job's scheduling requirement
 specification and a set of nodes which might  be used to satisfy the request, identify
 the nodes which "best" satisfy the request. Note that nodes being considered for allocation
@@ -484,7 +484,9 @@ If the value is NULL, no job list is returned.
 If the list pointed to has a value of NULL, a new list will be created
 otherwise the existing list will be overwritten.
 Use the <i>list_destroy</i> function to destroy the list when no longer
-needed.</p>
+needed.<br>
+<span class="commandline"> exc_core_bitmap</span>&nbsp; &nbsp;&nbsp;(input)
+bitmap of cores held for advanced reservations.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR .</p>
 
@@ -747,6 +749,6 @@ to maintain data format compatibility across different versions of the plugin.</
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 June 2012</p>
+<p style="text-align:center;">Last modified 18 July 2012</p>
 
 <!--#include virtual="footer.txt"-->

@@ -348,7 +348,7 @@ extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer,
 	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		pack16(check_ptr->disabled, buffer);
 		pack_time(check_ptr->time_stamp, buffer);
 		pack32(check_ptr->error_code, buffer);
@@ -365,7 +365,7 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer,
 	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
 
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		safe_unpack16(&check_ptr->disabled, buffer);
 		safe_unpack_time(&check_ptr->time_stamp, buffer);
 		safe_unpack32(&check_ptr->error_code, buffer);

@@ -68,6 +68,7 @@ int format_add_function(List list, int width, bool right_justify,
 void print_date(void);
 int  print_sinfo_entry(sinfo_data_t *sinfo_data);
 int  print_sinfo_list(List sinfo_list);
+void print_sinfo_reservation(reserve_info_msg_t *resv_ptr);
 
 #define format_add_avail(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_avail)

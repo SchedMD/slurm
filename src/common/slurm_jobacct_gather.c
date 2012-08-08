@@ -56,6 +56,7 @@
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
@@ -739,10 +740,24 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-extern void jobacctinfo_pack(
-	jobacctinfo_t *jobacct, uint16_t rpc_version, Buf buffer)
+extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
+			     uint16_t rpc_version, uint16_t protocol_type,
+			     Buf buffer)
 {
 	int i = 0;
+
+	/* The function can take calls from both DBD and from regular
+	 * SLURM functions.  We choose to standardize on using the
+	 * SLURM_PROTOCOL_VERSION here so if PROTOCOL_TYPE_DBD comes
+	 * in we need to translate the DBD rpc_version to use the
+	 * SLURM protocol_version.
+	 *
+	 * If this function ever changes make sure the
+	 * slurmdbd_translate_rpc function has been updated with the
+	 * new protocol version.
+	 */
+	if (protocol_type == PROTOCOL_TYPE_DBD)
+		rpc_version = slurmdbd_translate_rpc(rpc_version);
 
 	if (!jobacct) {
 		for (i = 0; i < 12; i++)
@@ -771,10 +786,24 @@ extern void jobacctinfo_pack(
 	_pack_jobacct_id(&jobacct->min_cpu_id, rpc_version, buffer);
 }
 
-extern int jobacctinfo_unpack(
-	jobacctinfo_t **jobacct, uint16_t rpc_version, Buf buffer)
+extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
+			      uint16_t rpc_version, uint16_t protocol_type,
+			      Buf buffer)
 {
 	uint32_t uint32_tmp;
+
+	/* The function can take calls from both DBD and from regular
+	 * SLURM functions.  We choose to standardize on using the
+	 * SLURM_PROTOCOL_VERSION here so if PROTOCOL_TYPE_DBD comes
+	 * in we need to translate the DBD rpc_version to use the
+	 * SLURM protocol_version.
+	 *
+	 * If this function ever changes make sure the
+	 * slurmdbd_translate_rpc function has been updated with the
+	 * new protocol version.
+	 */
+	if (protocol_type == PROTOCOL_TYPE_DBD)
+		rpc_version = slurmdbd_translate_rpc(rpc_version);
 
 	*jobacct = xmalloc(sizeof(struct jobacctinfo));
 	safe_unpack32(&uint32_tmp, buffer);
@@ -810,8 +839,7 @@ extern int jobacctinfo_unpack(
 	return SLURM_SUCCESS;
 
 unpack_error:
-	debug2("jobacctinfo_unpack:"
-		"unpack_error: size_buf(buffer) %u",
+	debug2("jobacctinfo_unpack: unpack_error: size_buf(buffer) %u",
 	size_buf(buffer));
 	xfree(*jobacct);
        	return SLURM_ERROR;

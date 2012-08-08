@@ -80,7 +80,8 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #define FDUMP_FLAG 0x04
-
+#define PROTOCOL_TYPE_SLURM 0
+#define PROTOCOL_TYPE_DBD 1
 typedef struct {
 	uint16_t taskid; /* contains which task number it was on */
 	uint32_t nodeid; /* contains which node number it was on */
@@ -144,14 +145,15 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 extern int jobacctinfo_getinfo(jobacctinfo_t *jobacct,
 			       enum jobacct_data_type type, void *data);
 extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
-			     uint16_t rpc_version, Buf buffer);
+			     uint16_t rpc_version,
+			     uint16_t protocol_type, Buf buffer);
 extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
-			      uint16_t rpc_version, Buf buffer);
+			      uint16_t rpc_version,
+			      uint16_t protocol_type, Buf buffer);
 
 extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from);
 
 extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct);
-
 
 #endif /*__SLURM_JOBACCT_GATHER_H__*/
 

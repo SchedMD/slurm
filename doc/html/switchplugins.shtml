@@ -5,7 +5,7 @@
 <h2> Overview</h2>
 <p> This document describes SLURM switch (interconnect) plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own SLURM
-switch plugins. This is version 100 of the API.
+switch plugins. This is version 110 of the API.
 Note that many of the API functions are used only by one of the daemons. For
 example the slurmctld daemon builds a job step's switch credential
 (<span class="commandline">switch_p_build_jobinfo</span>) while the
@@ -22,14 +22,14 @@ abbreviation for the type of switch. We recommend, for example:</p>
 <ul>
 <li><b>none</b>&#151;A plugin that implements the API without providing any actual
 switch service. This is the case for Ethernet and Myrinet interconnects.</li>
-<li><b>nrt</b>&#151;IBM Network Resource Table (presently under development).</li>
+<li><b>nrt</b>&#151;IBM Network Resource Table API.</li>
 </ul>
 <p>The <span class="commandline">plugin_name</span> and
 <span class="commandline">plugin_version</span>
 symbols required by the SLURM Plugin API require no specialization for switch support.
 Note carefully, however, the versioning discussion below.</p>
 <p>The programmer is urged to study
-<span class="commandline">src/plugins/switch/switch_elan.c</span> and
+<span class="commandline">src/plugins/switch/switch_nrt.c</span> and
 <span class="commandline">src/plugins/switch/switch_none.c</span>
 for sample implementations of a SLURM switch plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
@@ -173,7 +173,7 @@ to indicate the reason for failure.</p>
 <p style="margin-left:.2in"><b>Description</b>: Release the storage associated with
 a node's switch state record.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> switch_node</span>&nbsp;
-&nbsp;&nbsp;(intput/output) a previously allocated node switch state record.</p>
+&nbsp;&nbsp;(input/output) a previously allocated node switch state record.</p>
 <p style="margin-left:.2in"><b>Returns</b>: None</p>
 
 <p class="commandline">char * switch_p_sprintf_node_info (switch_node_info_t switch_node,
@@ -233,7 +233,7 @@ copy of the function argument.</p>
 <p style="margin-left:.2in"><b>Description</b>: Release the storage associated with a job's
  switch credential.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> switch_job</span>&nbsp;
-&nbsp;&nbsp;(intput) an existing job switch credential.</p>
+&nbsp;&nbsp;(input) an existing job switch credential.</p>
 <p style="margin-left:.2in"><b>Returns</b>: None</p>
 
 <p class="commandline">int switch_p_pack_jobinfo (switch_jobinfo_t switch_job, Buf buffer);</p>
@@ -483,6 +483,86 @@ the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 <p class="footer"><a href="#top">top</a></p>
 
+<h3>Job Management Suspend/Resume Functions</h3>
+
+<p class="commandline">int switch_p_job_suspend_test(switch_jobinfo_t *switch_job);</p>
+<p style="margin-left:.2in"><b>Description</b>: Determine if a specific job
+step can be preempted.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job's
+switch credential.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if the job can be
+preempted and SLURM_ERROR otherwise.</p>
+
+<p class="commandline">void switch_p_job_suspend_info_get(switch_jobinfo_t *switch_job,
+void **suspend_info);</p>
+<p style="margin-left:.2in"><b>Description</b>: Pack any information needed
+for a job step to be preempted into an opaque data structure.<br>
+<b>NOTE</b>: Use switch_p_job_suspend_info_free() to free the opaque data structure.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job
+step's switch credential.<br>
+<span class="commandline"> suspend_info</span>&nbsp; &nbsp;&nbsp;(input/output)
+information needed for a job to be preempted. This should be NULL for the
+first call and data about job steps will be added to the opaque data structure
+for addition function call (i.e. for each addition job step).</p>
+
+<p class="commandline">void switch_p_job_suspend_info_pack(void *suspend_info, Buf buffer);</p>
+<p style="margin-left:.2in"><b>Description</b>: Pack the information needed
+for a job step to be preempted into a buffer</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> suspend_info</span>&nbsp; &nbsp;&nbsp;(input)
+information needed for a job to be preempted, including information for all
+steps in that job.<br>
+<span class="commandline"> buffer</span>&nbsp; &nbsp;&nbsp;(input/output)
+the buffer that has suspend_info added to it.</p>
+
+<p class="commandline">int switch_p_job_suspend_info_unpack(void **suspend_info, Buf buffer);</p>
+<p style="margin-left:.2in"><b>Description</b>: Unpack the information needed
+for a job step to be preempted from a buffer.<br>
+<b>NOTE</b>: Use switch_p_job_suspend_info_free() to free the opaque data structure.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> suspend_info</span>&nbsp; &nbsp;&nbsp;(output)
+information needed for a job to be preempted, including information for all
+steps in that job.<br>
+<span class="commandline"> buffer</span>&nbsp; &nbsp;&nbsp;(input/output)
+the buffer that has suspend_info extracted from it.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if the suspend_info
+data was successfully read from buffer and SLURM_ERROR otherwise.</p>
+
+<p class="commandline">int switch_p_job_suspend(void *suspend_info, int max_wait);</p>
+<p style="margin-left:.2in"><b>Description</b>: Suspend a job's use of switch
+resources. This may reset MPI timeout values and/or release switch resources.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> suspend_info</span>&nbsp; &nbsp;&nbsp;(input)
+information needed for a job to be preempted, including information for all
+steps in that job.<br>
+<span class="commandline"> max_wait</span>&nbsp; &nbsp;&nbsp;(input) maximum
+time interval to wait for the operation to complete, in seconds</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if job's switch
+resources suspended and SLURM_ERROR otherwise.</p>
+
+<p class="commandline">int switch_p_job_resume(void *suspend_info, int max_wait);</p>
+<p style="margin-left:.2in"><b>Description</b>: Resume a job's use of switch
+resources. This may reset MPI timeout values and/or release switch resources.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> suspend_info</span>&nbsp; &nbsp;&nbsp;(input)
+information needed for a job to be resumed, including information for all
+steps in that job.<br>
+<span class="commandline"> max_wait</span>&nbsp; &nbsp;&nbsp;(input) maximum
+time interval to wait for the operation to complete, in seconds</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if job's switch
+resources resumed and SLURM_ERROR otherwise.</p>
+
+<p class="commandline">void switch_p_job_suspend_info_free(void *suspend_info);</p>
+<p style="margin-left:.2in"><b>Description</b>: Free the resources allocated
+to store job suspend/resume information as generated by the
+switch_p_job_suspend_info_get() and switch_p_job_suspend_info_unpack() functions.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> suspend_info</span>&nbsp; &nbsp;&nbsp;(input)
+information needed for a job to be preempted, including information for all
+steps in that job.</p>
+
 <h3>Error Handling Functions</h3>
 <a name="get_errno"><p class="commandline">int switch_p_get_errno (void);</p></a>
 <p style="margin-left:.2in"><b>Description</b>: Return the number of a switch
@@ -510,6 +590,6 @@ plugin that transmitted it. It is at the discretion of the plugin author whether
 to maintain data format compatibility across different versions of the plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 April 2012</p>
+<p style="text-align:center;">Last modified 6 August 2012</p>
 
 <!--#include virtual="footer.txt"-->

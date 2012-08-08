@@ -1242,7 +1242,7 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 
 	cred = _slurm_cred_alloc();
 	slurm_mutex_lock(&cred->mutex);
-	if(protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		safe_unpack32(&cred->jobid, buffer);
 		safe_unpack32(&cred->stepid, buffer);
 		safe_unpack32(&cred_uid, buffer);
@@ -1263,7 +1263,7 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&cred->step_hostlist, &len, buffer);
 		safe_unpack_time(&cred->ctime, buffer);
 
-		if(!(cluster_flags & CLUSTER_FLAG_BG)) {
+		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
 			uint32_t tot_core_cnt;
 			safe_unpack32(&tot_core_cnt, buffer);
 			safe_unpackstr_xmalloc(&bit_fmt, &len, buffer);
@@ -1305,6 +1305,10 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 		safe_unpackmem_xmalloc(sigp, &len, buffer);
 		cred->siglen = len;
 		xassert(len > 0);
+	} else {
+		error("slurm_cred_unpack: protocol_version"
+		      " %hu not supported", protocol_version);
+		goto unpack_error;
 	}
 	slurm_mutex_unlock(&cred->mutex);
 	return cred;

@@ -20,6 +20,16 @@ documents those changes that are of interest to users and admins.
     frequency and thus it's power consumption. NOTE: cpu frequency is not
     currently preserved for jobs being suspended and later resumed. Work by
     Don Albert, Bull.
+ -- Add Google search to all web pages.
+ -- Add sinfo -T option to print reservation information. Work by Bill Brophy,
+    Bull.
+ -- Force slurmd exit after 2 minute wait, even if threads are hung.
+ -- Change node_req field in struct job_resources from 8 to 32 bits so we can
+    run more than 256 jobs per node.
+ -- sched/backfill: Improve accuracy of expected job start with respect to
+    reservations.
+ -- sinfo partition field size will be set the the length of the longest
+    partition name by default.
 
 * Changes in SLURM 2.5.0.pre1
 =============================
@@ -30,10 +40,19 @@ documents those changes that are of interest to users and admins.
  -- Change license option count separator from "*" to ":" for consistency with
     the gres option (e.g. "--licenses=foo:2 --gres=gpu:2"). The "*" will still
     be accepted, but is no longer documented.
- -- Permit more than 100 jobs to be scheduled per node (new limit is 10,000
+ -- Permit more than 100 jobs to be scheduled per node (new limit is 250
     jobs).
  -- Restructure of srun code to allow outside programs to utilize existing
     logic.
+
+* Changes in SLURM 2.4.3
+========================
+ -- Accounting - Fix so complete 32 bit numbers can be put in for a priority.
+ -- cgroups - fix if initial directory is non-existent SLURM creates it
+    correctly.  Before the errno wasn't being checked correctly
+ -- BGQ - fixed srun when only requesting a task count and not a node count
+    to operate the same way salloc or sbatch did and assign a task per cpu
+    by default instead of task per node.
 
 * Changes in SLURM 2.4.2
 ========================
@@ -63,6 +82,31 @@ documents those changes that are of interest to users and admins.
  -- BGL - Fix for syncing users on block from Tim Wickberg
  -- Fix initialization of protocol_version for some messages to make sure it
     is always set when sending or receiving a message.
+ -- Reset backfilled job counter only when explicitly cleared using scontrol.
+    Patch from Alejandro Lucero Palau, BSC.
+ -- BLUEGENE - Fix for handling blocks when a larger block will not free and
+    while it is attempting to free underlying hardware is marked in error
+    making small blocks overlapping with the freeing block.  This only
+    applies to dynamic layout mode.
+ -- Cray and BlueGene - Do not treat lack of usable front-end nodes when
+    slurmctld deamon starts as a fatal error. Also preserve correct front-end
+    node for jobs when there is more than one front-end node and the slurmctld
+    daemon restarts.
+ -- Correct parsing of srun/sbatch input/output/error file names so that only
+    the name "none" is mapped to /dev/null and not any file name starting
+    with "none" (e.g. "none.o").
+ -- BGQ - added version string to the load of the runjob_mux plugin to verify
+    the current plugin has been loaded when using runjob_mux_refresh_config
+ -- CGROUPS - Use system mount/umount function calls instead of doing fork
+    exec of mount/umount from Janne Blomqvist.
+ -- BLUEGENE - correct start time setup when no jobs are blocking the way
+    from Mark Nelson
+ -- Fixed sacct --state=S query to return information about suspended jobs
+    current or in the past.
+ -- FRONTEND - Made error warning more apparent if a frontend node isn't
+    configured correctly.
+ -- BGQ - update documentation about runjob_mux_refresh_config which works
+    correctly as of IBM driver V1R1M1 efix 008.
 
 * Changes in SLURM 2.4.1
 ========================
@@ -363,6 +407,10 @@ documents those changes that are of interest to users and admins.
  -- Fix issue with assoc_mgr if a bad state file is given and the database
     isn't up at the time the slurmctld starts, not running the
     priority/multifactor plugin, and then the database is started up later.
+ -- Gres: If a gres has a count of one and an associated file then when doing
+    a reconfiguration, the node's bitmap was not cleared resulting in an
+    underflow upon job termination or removal from scheduling matrix by the
+    backfill scheduler.
 
 * Changes in SLURM 2.3.5
 ========================

@@ -1,4 +1,4 @@
-.TH SINFO "1" "April 2012" "sinfo 2.4" "Slurm components"
+.TH SINFO "1" "August 2012" "sinfo 2.5" "Slurm components"
 
 .SH "NAME"
 sinfo \- view information about SLURM nodes and partitions.
@@ -84,13 +84,13 @@ when running with various options are
 .RS
 .TP 15
 .I "default"
-"%9P %5a %.10l %.5D %6t %N"
+"%P %5a %.10l %.5D %6t %N"
 .TP
 .I "\-\-summarize"
-"%9P %5a %.10l %16F %N"
+"%P %5a %.10l %16F %N"
 .TP
 .I "\-\-long"
-"%9P %5a %.10l %.8s %4r %5h %10g %.5D %11T %N"
+"%P %5a %.10l %.8s %4r %5h %10g %.5D %11T %N"
 .TP
 .I "\-\-Node"
 "%N %.5D %9P %6t"
@@ -291,6 +291,10 @@ By default nodes in the specified state are reported whether
 they are responding or not.
 The \fB\-\-dead\fR and \fB\-\-responding\fR options may be
 used to filtering nodes by the responding flag.
+
+.TP
+\fB\-T\fR, \fB\-\-reservation\fR
+Only display information about SLURM reservations.
 
 .TP
 \fB\-\-usage\fR

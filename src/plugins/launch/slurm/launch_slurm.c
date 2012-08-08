@@ -43,6 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "src/common/slurm_xlator.h"
 #include "src/api/pmi_server.h"
 #include "src/srun/libsrun/allocate.h"
 #include "src/srun/libsrun/launch.h"
@@ -289,7 +290,7 @@ static void _task_finish(task_exit_msg_t *msg)
 	const char *task_str = _taskstr(msg->num_tasks);
 
 	verbose("Received task exit notification for %d %s (status=0x%04x).",
-	      msg->num_tasks, task_str, msg->return_code);
+		msg->num_tasks, task_str, msg->return_code);
 
 	tasks = _task_array_to_string(msg->num_tasks, msg->task_id_list);
 	hosts = _task_ids_to_host_list(msg->num_tasks, msg->task_id_list);
@@ -403,6 +404,7 @@ extern int launch_p_step_launch(
 	task_state = task_state_create(opt.ntasks);
 
 	slurm_step_launch_params_t_init(&launch_params);
+	memset(&callbacks, 0, sizeof(callbacks));
 	launch_params.gid = opt.gid;
 	launch_params.alias_list = job->alias_list;
 	launch_params.argc = opt.argc;

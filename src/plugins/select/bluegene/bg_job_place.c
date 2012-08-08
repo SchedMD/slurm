@@ -1858,7 +1858,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		else if (bg_record->job_list
 			 && list_count(bg_record->job_list)) {
 			struct job_record *found_job_ptr;
-			time_t max_end_time = 0;
 			ListIterator job_list_itr =
 				list_iterator_create(bg_record->job_list);
 			while ((found_job_ptr = list_next(job_list_itr))) {
@@ -1868,10 +1867,18 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			list_iterator_destroy(job_list_itr);
 		}
 
-		if (max_end_time <= starttime)
-			starttime += 5;
-		else
-			starttime = max_end_time;
+		/* If there are any jobs running max_end_time will
+		 * be set to something (ie: it won't still be 0)
+		 * so in this case, and only this case, we need to
+		 * update the value of starttime. Otherwise leave
+		 * it as is.
+		 */
+		if (max_end_time) {
+			if (max_end_time <= starttime)
+				starttime += 5;
+			else
+				starttime = max_end_time;
+		}
 
 		/* make sure the job is eligible to run */
 		if (job_ptr->details->begin_time > starttime)

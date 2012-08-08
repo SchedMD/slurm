@@ -548,8 +548,8 @@ extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		(job_ptr, bitmap,
 		 min_nodes, max_nodes,
 		 req_nodes, mode,
-		 preemptee_candidates,
-		 preemptee_job_list);
+		 preemptee_candidates, preemptee_job_list,
+		 exc_core_bitmap);
 }
 
 /*
@@ -743,15 +743,19 @@ extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
-	if(nodeinfo) {
+	if (nodeinfo) {
 		data = nodeinfo->data;
 		plugin_id = nodeinfo->plugin_id;
 	} else
 		plugin_id = select_context_default;
 
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION)
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		pack32(*(ops[plugin_id].plugin_id),
 		       buffer);
+	} else {
+		error("select_g_select_nodeinfo_pack: protocol_version "
+		      "%hu not supported", protocol_version);
+	}
 
 	return (*(ops[plugin_id].
 		  nodeinfo_pack))(data, buffer, protocol_version);
@@ -769,21 +773,26 @@ extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
 	nodeinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*nodeinfo = nodeinfo_ptr;
 
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
 		for (i=0; i<select_context_cnt; i++)
-			if(*(ops[i].plugin_id) == plugin_id) {
+			if (*(ops[i].plugin_id) == plugin_id) {
 				nodeinfo_ptr->plugin_id = i;
 				break;
 			}
 		if (i >= select_context_cnt) {
-			error("we don't have this plugin type %u", plugin_id);
+			error("we don't have select plugin type %u",plugin_id);
 			goto unpack_error;
 		}
-	} else
+	} else {
 		nodeinfo_ptr->plugin_id = select_context_default;
+		error("select_g_select_nodeinfo_unpack: protocol_version"
+		      " %hu not supported", protocol_version);
+		goto unpack_error;
+	}
+
 	if ((*(ops[nodeinfo_ptr->plugin_id].nodeinfo_unpack))
 	   ((select_nodeinfo_t **)&nodeinfo_ptr->data, buffer,
 	    protocol_version) != SLURM_SUCCESS)
@@ -997,8 +1006,13 @@ extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
 	} else
 		plugin_id = select_context_default;
 
-	if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION)
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		pack32(*(ops[plugin_id].plugin_id), buffer);
+	} else {
+		error("select_g_select_jobinfo_pack: protocol_version "
+		      "%hu not supported", protocol_version);
+	}
+
 	return (*(ops[plugin_id].jobinfo_pack))(data, buffer, protocol_version);
 }
 
@@ -1020,21 +1034,25 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*jobinfo = jobinfo_ptr;
 
-	if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
 		for (i=0; i<select_context_cnt; i++)
-			if(*(ops[i].plugin_id) == plugin_id) {
+			if (*(ops[i].plugin_id) == plugin_id) {
 				jobinfo_ptr->plugin_id = i;
 				break;
 			}
 		if (i >= select_context_cnt) {
-			error("we don't have this plugin type %u", plugin_id);
+			error("we don't have select plugin type %u", plugin_id);
 			goto unpack_error;
 		}
-	} else
+	} else {
 		jobinfo_ptr->plugin_id = select_context_default;
+		error("select_g_select_jobinfo_unpack: protocol_version "
+		      "%hu not supported", protocol_version);
+		goto unpack_error;
+	}
 
 	if ((*(ops[jobinfo_ptr->plugin_id].jobinfo_unpack))
 		((select_jobinfo_t **)&jobinfo_ptr->data, buffer,

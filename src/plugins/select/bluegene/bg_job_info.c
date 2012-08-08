@@ -445,7 +445,6 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 				uint16_t protocol_version)
 {
 	int i;
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	int dims = slurmdb_setup_cluster_dims();
 
 	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
@@ -560,92 +559,6 @@ extern int  pack_select_jobinfo(select_jobinfo_t *jobinfo, Buf buffer,
 			packnull(buffer); //ramdisk
 			packnull(buffer); //units_used
 		}
-	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-		if (jobinfo) {
-			/* NOTE: If new elements are added here, make sure to
-			 * add equivalant pack of zeros below for NULL
-			 * pointer */
-			for (i=0; i<dims; i++) {
-				pack16(jobinfo->geometry[i], buffer);
-			}
-			pack16(jobinfo->conn_type[0], buffer);
-			pack16(jobinfo->reboot, buffer);
-			pack16(jobinfo->rotate, buffer);
-
-			pack32(jobinfo->cnode_cnt, buffer);
-
-			packstr(jobinfo->bg_block_id, buffer);
-			packstr(jobinfo->mp_str, buffer);
-			packstr(jobinfo->ionode_str, buffer);
-
-			packstr(jobinfo->blrtsimage, buffer);
-			packstr(jobinfo->linuximage, buffer);
-			packstr(jobinfo->mloaderimage, buffer);
-			packstr(jobinfo->ramdiskimage, buffer);
-		} else {
-			/* pack space for 3 positions for geo
-			 * then 1 for conn_type, reboot, and rotate
-			 */
-			for (i=0; i<(dims+3); i++)
-				pack16((uint16_t) 0, buffer);
-
-			pack32((uint32_t) 0, buffer); //node_cnt
-
-			packnull(buffer); //bg_block_id
-			packnull(buffer); //nodes
-			packnull(buffer); //ionodes
-
-			packnull(buffer); //blrts
-			packnull(buffer); //linux
-			packnull(buffer); //mloader
-			packnull(buffer); //ramdisk
-		}
-	} else {
-		if (jobinfo) {
-			/* NOTE: If new elements are added here, make sure to
-			 * add equivalant pack of zeros below for NULL
-			 * pointer */
-			for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-				pack16(jobinfo->geometry[i], buffer);
-			}
-			pack16(jobinfo->conn_type[0], buffer);
-			pack16(jobinfo->reboot, buffer);
-			pack16(jobinfo->rotate, buffer);
-
-			pack32(jobinfo->cnode_cnt, buffer);
-			pack32(0, buffer);
-
-			packstr(jobinfo->bg_block_id, buffer);
-			packstr(jobinfo->mp_str, buffer);
-			packstr(jobinfo->ionode_str, buffer);
-
-			if (cluster_flags & CLUSTER_FLAG_BGL)
-				packstr(jobinfo->blrtsimage, buffer);
-
-			packstr(jobinfo->linuximage, buffer);
-			packstr(jobinfo->mloaderimage, buffer);
-			packstr(jobinfo->ramdiskimage, buffer);
-		} else {
-			/* pack space for 3 positions for geo
-			 * then 1 for conn_type, reboot, and rotate
-			 */
-			for (i=0; i<(SYSTEM_DIMENSIONS+3); i++)
-				pack16((uint16_t) 0, buffer);
-
-			pack32((uint32_t) 0, buffer); //node_cnt
-			pack32((uint32_t) 0, buffer); //max_cpus
-
-			packnull(buffer); //bg_block_id
-			packnull(buffer); //nodes
-			packnull(buffer); //ionodes
-
-			if (cluster_flags & CLUSTER_FLAG_BGL)
-				packnull(buffer); //blrts
-
-			packnull(buffer); //linux
-			packnull(buffer); //mloader
-			packnull(buffer); //ramdisk
-		}
 	}
 	return SLURM_SUCCESS;
 }
@@ -663,7 +576,6 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 	int i;
 	uint32_t uint32_tmp;
 	uint16_t mp_cnode_cnt;
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	int dims = slurmdb_setup_cluster_dims();
 	select_jobinfo_t *jobinfo = xmalloc(sizeof(struct select_jobinfo));
 	char *bit_char = NULL;
@@ -754,59 +666,6 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 			bit_unfmt(jobinfo->units_used, bit_char);
 			xfree(bit_char);
 		}
-	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-		jobinfo->dim_cnt = dims;
-		for (i=0; i<dims; i++) {
-			safe_unpack16(&(jobinfo->geometry[i]), buffer);
-		}
-
-		safe_unpack16(&(jobinfo->conn_type[0]), buffer);
-		safe_unpack16(&(jobinfo->reboot), buffer);
-		safe_unpack16(&(jobinfo->rotate), buffer);
-
-		safe_unpack32(&(jobinfo->cnode_cnt), buffer);
-
-		safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&(jobinfo->mp_str), &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&(jobinfo->ionode_str), &uint32_tmp,
-				       buffer);
-
-		safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&(jobinfo->linuximage), &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&(jobinfo->mloaderimage), &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&(jobinfo->ramdiskimage), &uint32_tmp,
-				       buffer);
-	} else {
-		jobinfo->dim_cnt = dims;
-		for (i=0; i<dims; i++) {
-			safe_unpack16(&(jobinfo->geometry[i]), buffer);
-		}
-		safe_unpack16(&(jobinfo->conn_type[0]), buffer);
-		safe_unpack16(&(jobinfo->reboot), buffer);
-		safe_unpack16(&(jobinfo->rotate), buffer);
-
-		safe_unpack32(&(jobinfo->cnode_cnt), buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-
-		safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&(jobinfo->mp_str), &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&(jobinfo->ionode_str), &uint32_tmp,
-				       buffer);
-
-		if (cluster_flags & CLUSTER_FLAG_BGL)
-			safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),
-					       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&(jobinfo->linuximage), &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&(jobinfo->mloaderimage), &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&(jobinfo->ramdiskimage), &uint32_tmp,
-				       buffer);
 	}
 	return SLURM_SUCCESS;
 

@@ -50,6 +50,7 @@ static void pass_its_neighbor(const int rank, const int size, const int* buf)
 
 int main(int argc, char * argv[])
 {
+	int i;
 	int size, rank,buf;
 
 	MPI_Init(&argc, &argv);
@@ -58,7 +59,10 @@ int main(int argc, char * argv[])
 
 	buf = rank;	/* we only pass rank */
 
-	pass_its_neighbor(rank, size, &buf);
+	for (i = 0; i < 100; i++) {
+		pass_its_neighbor(rank, size, &buf);
+		sleep(1);
+	}
 
 	MPI_Finalize();
 	return 0;

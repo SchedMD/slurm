@@ -513,6 +513,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_aix.so      &&
 
 LIST=./percs.files
 touch $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_poe.so	&&
+   echo %{_libdir}/slurm/checkpoint_poe.so		 >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_nrt.so  	&&
   echo %{_libdir}/slurm/switch_nrt.so			>> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libpermapi.so  	&&
@@ -536,10 +538,10 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_pgsql.so            &&
    echo %{_libdir}/slurm/jobcomp_pgsql.so            >> $LIST
 
 LIST=./plugins.files
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/select_bluegene.so          &&
-   echo %{_libdir}/slurm/select_bluegene.so          >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so           &&
    echo %{_libdir}/slurm/crypto_openssl.so           >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/select_bluegene.so          &&
+   echo %{_libdir}/slurm/select_bluegene.so          >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
    echo %{_libdir}/slurm/task_affinity.so            >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cgroup.so              &&

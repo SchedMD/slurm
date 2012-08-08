@@ -43,6 +43,7 @@
 
 #include <string.h>
 
+#include "src/common/slurm_xlator.h"
 #include "src/common/xmalloc.h"
 #include "src/common/bitstring.h"
 #include "src/common/xassert.h"

@@ -589,6 +589,12 @@ but subsequent job steps may be run if this option is specified.
 The default action is to terminate the job upon node failure.
 
 .TP
+\fB\-\-launch-cmd\fR
+Print external launch command instead of running job normally through SLURM.
+This option is current supported on systems with IBM's Parallel
+Environment (PE) to print out the poe command for use with totalview.
+
+.TP
 \fB\-l\fR, \fB\-\-label\fR
 prepend task number to lines of stdout/err. Normally, stdout and stderr
 from remote tasks is line\-buffered directly to the stdout and stderr of

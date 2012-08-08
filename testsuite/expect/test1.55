@@ -63,7 +63,7 @@ make_bash_script $test_script {
 set timeout $max_job_delay
 set jobid  0
 set stepid 0
-set srun_pid [spawn $srun --unbuffered -v -n1 -t1 $test_script]
+set srun_pid [spawn $srun --unbuffered -v -n1 -t1 ./$test_script]
 expect {
 	-re "launching (($number)\.0)" {
 		set stepid $expect_out(1,string)

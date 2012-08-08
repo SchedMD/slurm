@@ -197,7 +197,6 @@ static int	_validate_file(char *path_name, char *gres_name);
 static void	_validate_gres_node_cpus(gres_node_state_t *node_gres_ptr,
 					 int cpus_ctld, char *node_name);
 
-
 /* Convert a gres_name into a number for faster comparision operations */
 static uint32_t	_build_id(char *gres_name)
 {
@@ -1025,7 +1024,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 		p->has_file = has_file;
 		p->cpus = tmp_cpus;
 		tmp_cpus = NULL;	/* Nothing left to xfree */
-		xfree(tmp_name);	/* Don't bother to preserve */
+		p->name = tmp_name;     /* We need to preserve for accounting! */
 		p->plugin_id = plugin_id;
 		list_append(gres_conf_list, p);
 	}
@@ -1280,6 +1279,48 @@ static uint32_t _get_tot_gres_cnt(uint32_t plugin_id, uint32_t *set_cnt)
 	if (cpu_set_cnt)
 		*set_cnt = rec_cnt;
 	return gres_cnt;
+}
+
+/*
+ * Map a given GRES type ID back to a GRES type name.
+ * gres_id IN - GRES type ID to search for.
+ * gres_name IN - Pre-allocated string in which to store the GRES type name.
+ * gres_name_len - Size of gres_name in bytes
+ * RET - error code (currently not used--always return SLURM_SUCCESS)
+ */
+extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
+				   int gres_name_len)
+{
+	ListIterator iter;
+	gres_slurmd_conf_t *gres_slurmd_conf;
+	int rc = SLURM_SUCCESS;
+	int      found = 0;
+
+	if (gres_conf_list == NULL) {
+		/* Should not reach this as if there are GRES id's then there
+		 * must have been a gres_conf_list.
+		 */
+		info("%s--The gres_conf_list is NULL!!!\n", __FUNCTION__);
+		snprintf(gres_name, gres_name_len, "%u", gres_id);
+		return rc;
+	}
+
+	iter = list_iterator_create(gres_conf_list);
+	if (iter == NULL)
+		fatal("list_iterator_create: malloc failure");
+	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
+		if (gres_slurmd_conf->plugin_id != gres_id)
+			continue;
+		strncpy(gres_name, gres_slurmd_conf->name, gres_name_len);
+		found = 1;
+		break;
+	}
+	list_iterator_destroy(iter);
+
+	if (!found)	/* Could not find GRES type name, use id */
+		snprintf(gres_name, gres_name_len, "%u", gres_id);
+
+	return rc;
 }
 
 extern int _node_config_validate(char *node_name, char *orig_config,
@@ -1708,13 +1749,17 @@ extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
-		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
 			safe_unpack32(&plugin_id, buffer);
 			safe_unpack32(&gres_cnt_avail, buffer);
 			safe_unpack8(&has_bitmap, buffer);
+		} else {
+			error("gres_plugin_node_state_unpack: protocol_version"
+			      " %hu not supported", protocol_version);
+			goto unpack_error;
 		}
 		for (i=0; i<gres_context_cnt; i++) {
 			if (gres_context[i].plugin_id == plugin_id)
@@ -1854,7 +1899,7 @@ static void _node_state_dealloc(gres_state_t *gres_ptr)
 	gres_node_ptr->gres_cnt_alloc = 0;
 	if (gres_node_ptr->gres_bit_alloc) {
 		int i = bit_size(gres_node_ptr->gres_bit_alloc) - 1;
-		if (i > 0)
+		if (i >= 0)
 			bit_nclear(gres_node_ptr->gres_bit_alloc, 0, i);
 	}
 	if (gres_node_ptr->topo_cnt && !gres_node_ptr->topo_gres_cnt_alloc) {
@@ -2249,7 +2294,7 @@ extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		gres_job_ptr = (gres_job_state_t *) gres_ptr->gres_data;
-		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 			pack32(magic, buffer);
 			pack32(gres_ptr->plugin_id, buffer);
 			pack32(gres_job_ptr->gres_cnt_alloc, buffer);
@@ -2284,8 +2329,12 @@ extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 			} else {
 				pack8((uint8_t) 0, buffer);
 			}
+			rec_cnt++;
+		} else {
+			error("gres_plugin_node_state_pack: protocol_version"
+			      " %hu not supported", protocol_version);
+			break;
 		}
-		rec_cnt++;
 	}
 	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
@@ -2333,7 +2382,7 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			break;
 		rec_cnt--;
 
-		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
@@ -2374,6 +2423,10 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 						      buffer);
 				}
 			}
+		} else {
+			error("gres_plugin_job_state_unpack: protocol_version"
+			      " %hu not supported", protocol_version);
+			goto unpack_error;
 		}
 
 		for (i=0; i<gres_context_cnt; i++) {
@@ -3862,7 +3915,7 @@ extern int gres_plugin_step_state_pack(List gres_list, Buf buffer,
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		gres_step_ptr = (gres_step_state_t *) gres_ptr->gres_data;
-		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 			pack32(magic, buffer);
 			pack32(gres_ptr->plugin_id, buffer);
 			pack32(gres_step_ptr->gres_cnt_alloc, buffer);
@@ -3877,8 +3930,12 @@ extern int gres_plugin_step_state_pack(List gres_list, Buf buffer,
 			} else {
 				pack8((uint8_t) 0, buffer);
 			}
+			rec_cnt++;
+		} else {
+			error("gres_plugin_step_state_pack: protocol_version "
+			      "%hu not supported", protocol_version);
+			break;
 		}
-		rec_cnt++;
 	}
 	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
@@ -3926,7 +3983,7 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 			break;
 		rec_cnt--;
 
-		if(protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
@@ -3946,6 +4003,10 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 						       buffer);
 				}
 			}
+		} else {
+			error("gres_plugin_step_state_unpack: protocol_version"
+			      " %hu not supported", protocol_version);
+			goto unpack_error;
 		}
 
 		for (i=0; i<gres_context_cnt; i++) {
@@ -4457,6 +4518,109 @@ extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
 		}
 	}
 	list_iterator_destroy(step_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
+}
+
+/*
+ * Determine how many GRES of a given type are allocated to a job
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN gres_name - name of a GRES type
+ * RET count of this GRES allocated to this job
+ */
+extern uint32_t gres_get_value_by_type(List job_gres_list, char* gres_name)
+{
+	int i;
+	uint32_t gres_cnt = 0, plugin_id;
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	gres_job_state_t *job_gres_data;
+
+	if (job_gres_list == NULL)
+		return NO_VAL;
+
+	gres_cnt = NO_VAL;
+	(void) gres_plugin_init();
+	plugin_id = _build_id(gres_name);
+
+	slurm_mutex_lock(&gres_context_lock);
+	job_gres_iter = list_iterator_create(job_gres_list);
+	if (!job_gres_iter)
+		fatal("list_iterator_create: malloc failure");
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		for (i=0; i<gres_context_cnt; i++) {
+			if (job_gres_ptr->plugin_id != plugin_id)
+				continue;
+			job_gres_data = (gres_job_state_t *)
+					job_gres_ptr->gres_data;
+			gres_cnt = job_gres_data->gres_cnt_alloc;
+			break;
+		}
+	}
+	list_iterator_destroy(job_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return gres_cnt;
+}
+
+/*
+ * Fill in an array of GRES type ids contained within the given gres_list
+ *		and an array of corresponding counts of those GRES types.
+ * IN gres_list - a List of GRES types found on a node.
+ * IN arrlen - Length of the arrays (the number of elements in the gres_list).
+ * IN gres_count_ids, gres_count_vals - the GRES type ID's and values found
+ *	 	in the gres_list.
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_num_gres_alloced_all(List gres_list, int arrlen,
+		 int* gres_count_ids, int* gres_count_vals, int valtype)
+{
+	ListIterator  node_gres_iter;
+	gres_state_t* node_gres_ptr;
+	void*         node_gres_data;
+	uint32_t      val;
+	int           rc, ix = 0;
+
+	rc = gres_plugin_init();
+	if ((rc == SLURM_SUCCESS) && (arrlen <= 0))
+		rc = EINVAL;
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	slurm_mutex_lock(&gres_context_lock);
+
+	node_gres_iter = list_iterator_create(gres_list);
+	if (!node_gres_iter)
+		fatal("list_iterator_create: malloc failure");
+	while ((node_gres_ptr = (gres_state_t*) list_next(node_gres_iter))) {
+		gres_node_state_t *node_gres_state_ptr;
+		val = 0;
+		node_gres_data = node_gres_ptr->gres_data;
+		node_gres_state_ptr = (gres_node_state_t *) node_gres_data;
+		xassert(node_gres_state_ptr);
+
+		switch(valtype) {
+		case(GRES_VAL_TYPE_FOUND):
+			val = node_gres_state_ptr->gres_cnt_found;
+			break;
+		case(GRES_VAL_TYPE_CONFIG):
+			val = node_gres_state_ptr->gres_cnt_config;
+			break;
+		case(GRES_VAL_TYPE_AVAIL):
+			val = node_gres_state_ptr->gres_cnt_avail;
+			break;
+		case(GRES_VAL_TYPE_ALLOC):
+			val = node_gres_state_ptr->gres_cnt_alloc;
+		}
+
+		gres_count_ids[ix]  = node_gres_ptr->plugin_id;
+		gres_count_vals[ix] = val;
+		if (++ix >= arrlen)
+			break;
+	}
+	list_iterator_destroy(node_gres_iter);
+
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;

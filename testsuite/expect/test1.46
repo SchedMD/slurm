@@ -48,6 +48,9 @@ if {[test_bluegene]} {
 } elseif {[test_serial]} {
 	send_user "\nWARNING: This test is incompatible with a serial system\n"
 	exit 0
+} elseif {[test_launch_poe]} {
+	send_user "\nWARNING: This test is incompatible with POE systems\n"
+	exit $exit_code
 }
 
 #
@@ -85,7 +88,7 @@ exec $bin_chmod 700 $file_in
 # Spawn a shell via srun and send exit command to task 1 only
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -n10 -N1 -O --kill-on-bad-exit -t1 $file_in]
+set srun_pid [spawn $srun -n10 -N1 -O --kill-on-bad-exit -t1 ./$file_in]
 expect {
 	-re "exit code 2" {
 		send_user "This error is expected, no worries\n"

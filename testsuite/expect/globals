@@ -138,7 +138,8 @@ cset bin_echo	"echo"
 cset bin_env	"env"
 cset bin_file	"file"
 cset bin_id	"id"
-cset bin_grep    "grep"
+cset bin_grep   "grep"
+cset bin_head   "head"
 
 # Don't user $bin_hostname unless on a front-end system that
 # doesn't fully use the slurmd, use $bin_printenv SLURMD_NODENAME
@@ -1340,6 +1341,37 @@ proc test_switch_nrt { } {
 
 	return $switch_nrt
 }
+
+################################################################
+#
+# Proc: test_launch_poe
+#
+# Purpose: Determine if the system is using launch/poe.
+#
+# Returns 1 if the system is running launch/poe, 0 otherwise
+#
+################################################################
+
+proc test_launch_poe { } {
+	global scontrol bin_bash bin_grep
+
+	log_user 0
+	set launch_poe 0
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep LaunchType"
+	expect {
+		"launch/poe" {
+			set launch_poe 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $launch_poe
+}
+
 ################################################################
 #
 # Proc: test_emulated

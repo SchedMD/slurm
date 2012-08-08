@@ -279,23 +279,9 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 				     step_layout->tasks[i],
 				     buffer);
 		}
-	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
-		if (step_layout)
-			i=1;
-
-		pack16(i, buffer);
-		if (!i)
-			return;
-		packstr(step_layout->node_list, buffer);
-		pack32(step_layout->node_cnt, buffer);
-		pack32(step_layout->task_cnt, buffer);
-		pack16(step_layout->task_dist, buffer);
-
-		for (i=0; i<step_layout->node_cnt; i++) {
-			pack32_array(step_layout->tids[i],
-				     step_layout->tasks[i],
-				     buffer);
-		}
+	} else {
+		error("pack_slurm_step_layout: protocol_version "
+		      "%hu not supported", protocol_version);
 	}
 }
 
@@ -333,30 +319,10 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer,
 					    buffer);
 			step_layout->tasks[i] = num_tids;
 		}
-	} else if (protocol_version >= SLURM_2_1_PROTOCOL_VERSION) {
-		safe_unpack16(&uint16_tmp, buffer);
-		if (!uint16_tmp)
-			return SLURM_SUCCESS;
-
-		step_layout = xmalloc(sizeof(slurm_step_layout_t));
-		*layout = step_layout;
-
-		safe_unpackstr_xmalloc(&step_layout->node_list,
-				       &uint32_tmp, buffer);
-		safe_unpack32(&step_layout->node_cnt, buffer);
-		safe_unpack32(&step_layout->task_cnt, buffer);
-		safe_unpack16(&step_layout->task_dist, buffer);
-
-		step_layout->tasks =
-			xmalloc(sizeof(uint32_t) * step_layout->node_cnt);
-		step_layout->tids = xmalloc(sizeof(uint32_t *)
-					    * step_layout->node_cnt);
-		for (i = 0; i < step_layout->node_cnt; i++) {
-			safe_unpack32_array(&(step_layout->tids[i]),
-					    &num_tids,
-					    buffer);
-			step_layout->tasks[i] = num_tids;
-		}
+	} else {
+		error("unpack_slurm_step_layout: protocol_version "
+		      "%hu not supported", protocol_version);
+		goto unpack_error;
 	}
 	return SLURM_SUCCESS;
 

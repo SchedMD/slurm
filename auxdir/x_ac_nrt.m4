@@ -16,15 +16,15 @@
 AC_DEFUN([X_AC_NRT],
 [
    nrt_default_dirs="/usr/include"
-   AC_ARG_WITH([nrth], AS_HELP_STRING(--with-nrth=PATH,Parent directory of nrt.h), [ nrt_default_dirs="$withval $nrt_default_dirs"])
-   AC_MSG_CHECKING([Checking NRT header file])
+   AC_ARG_WITH([nrth], AS_HELP_STRING(--with-nrth=PATH,Parent directory of nrt.h and permapi.h), [ nrt_default_dirs="$withval $nrt_default_dirs"])
+   AC_MSG_CHECKING([Checking NRT and PERMAPI header files])
    for nrt_dir in $nrt_default_dirs; do
       # skip dirs that don't exist
       if test ! -z "$nrt_dir" -a ! -d "$nrt_dir" ; then
          continue;
       fi
-      # search for required NRT API libraries
-      if test -f "$nrt_dir/nrt.h"; then
+      # search for required NRT and PERMAPI header files
+      if test -f "$nrt_dir/nrt.h" -a -f "$nrt_dir/permapi.h"; then
          ac_have_nrt_h="yes"
          NRT_CPPFLAGS="-I$nrt_dir"
 	 break;
@@ -32,7 +32,7 @@ AC_DEFUN([X_AC_NRT],
    done
    if test "x$ac_have_nrt_h" != "xyes" ; then
       AC_MSG_RESULT([no])
-      AC_MSG_NOTICE([Cannot support IBM NRT API without nrt.h])
+      AC_MSG_NOTICE([Cannot support IBM NRT without nrt.h and permapi.h])
    else
       AC_MSG_RESULT([yes])
    fi
@@ -50,7 +50,7 @@ AC_DEFUN([X_AC_NRT],
       # search for required NRT API libraries
       if test -f "$nrt_dir/libnrt.so"; then
          ac_have_libnrt="yes"
-         NRT_LDFLAGS="-L$nrt_dir -lnrt"
+         NRT_LDFLAGS="-Wl,-rpath -Wl,$nrt_dir -L$nrt_dir -lnrt"
 	 break;
       fi
    done
@@ -58,10 +58,10 @@ AC_DEFUN([X_AC_NRT],
 
    if test "x$ac_have_libnrt" != "xyes" ; then
       AC_MSG_RESULT([no])
-      AC_MSG_NOTICE([Cannot support IBM NRT API without libnrt.])
+      AC_MSG_NOTICE([Cannot support IBM NRT API without libnrt.so])
    else
       AC_MSG_RESULT([yes])
-      AC_DEFINE(HAVE_LIBNRT, 1, [define if you have libnrt.])
+      AC_DEFINE(HAVE_LIBNRT, 1, [define if you have libnrt.so])
    fi
 
    if test "x$ac_have_nrt_h" == "xyes" && test "x$ac_have_libnrt" == "xyes"; then

@@ -52,7 +52,7 @@ AC_DEFUN([X_AC_HWLOC],
     AC_MSG_WARN([unable to locate hwloc installation])
   else
     HWLOC_CPPFLAGS="-I$x_ac_cv_hwloc_dir/include"
-    HWLOC_LDFLAGS="-L$x_ac_cv_hwloc_dir/$bit"
+    HWLOC_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_hwloc_dir/$bit -L$x_ac_cv_hwloc_dir/$bit"
     HWLOC_LIBS="-lhwloc"
     AC_DEFINE(HAVE_HWLOC, 1, [Define to 1 if hwloc library found])
     if test "$x_ac_cv_hwloc_pci" = "yes"; then

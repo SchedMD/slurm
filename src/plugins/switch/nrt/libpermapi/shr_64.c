@@ -46,19 +46,24 @@
 #  include "config.h"
 #endif
 
+#include "src/common/slurm_xlator.h"
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/api/step_ctx.h"
+
+#include "src/common/hostlist.h"
+#include "src/common/list.h"
+#include "src/common/log.h"
+#include "src/common/plugstack.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/list.h"
-#include "src/common/hostlist.h"
-#include "src/common/plugstack.h"
 
-#include "src/srun/libsrun/srun_job.h"
-#include "src/srun/libsrun/opt.h"
 #include "src/srun/libsrun/allocate.h"
 #include "src/srun/libsrun/launch.h"
+#include "src/srun/libsrun/opt.h"
+#include "src/srun/libsrun/srun_job.h"
 #include "src/plugins/switch/nrt/nrt_keys.h"
 
 bool srun_max_timer = false;
@@ -70,6 +75,7 @@ static int debug_level = 0;
 static bool got_alloc = false;
 static bool slurm_started = false;
 static log_options_t log_opts = LOG_OPTS_INITIALIZER;
+static host_usage_t *host_usage = NULL;
 
 int sig_array[] = {
 	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGHUP,
@@ -86,28 +92,417 @@ extern int pm_type;
 extern int pmdlog;
 extern FILE *pmd_lfp;
 
-#define PMD_LOG(fmt, args...)						\
-	if (pmdlog) {							\
-		const char *f_name = strrchr(__FILE__, '/');		\
-		fprintf(pmd_lfp, "[%d@%s]: " fmt , __LINE__, f_name!=NULL?(f_name+1):__FILE__, ##args);	\
-		fflush(pmd_lfp);                                        \
-	}
-/************************************/
+typedef struct agent_data {
+	uint32_t   fe_auth_key;
+	slurm_fd_t fe_comm_socket;
+} agent_data_t;
 
-static nrt_job_key_t _get_nrt_job_key(srun_job_t *job)
+static char *_name_from_addr(char *addr)
 {
-	job_step_create_response_msg_t *resp;
-	nrt_job_key_t job_key;
+	host_usage_t *host_ptr;
 
-	if (!job || !job->step_ctx)
-		return NO_VAL;
-
-	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &resp);
-	if (!resp)
-	    return NO_VAL;
-	slurm_jobinfo_ctx_get(resp->switch_job, NRT_JOBINFO_KEY, &job_key);
-	return job_key;
+	xassert(host_usage);
+	host_ptr = host_usage;
+	while (host_ptr && host_ptr->host_address) {
+		if (!strcmp(addr, host_ptr->host_address))
+			return host_ptr->host_name;
+		host_ptr++;
+	}
+	return NULL;
 }
+
+static void _pack_srun_ctx(slurm_step_ctx_t *ctx, Buf buffer)
+{
+	uint8_t tmp_8 = 0;
+
+	if (ctx)
+		tmp_8 = 1;
+	pack8(tmp_8, buffer);
+	if (!ctx || !ctx->step_req || !ctx->step_resp) {
+		error("_pack_srun_ctx: ctx is NULL");
+		return;
+	}
+	pack_job_step_create_request_msg(ctx->step_req, buffer,
+					 SLURM_PROTOCOL_VERSION);
+	pack_job_step_create_response_msg(ctx->step_resp, buffer,
+					  SLURM_PROTOCOL_VERSION);
+}
+
+static int _unpack_srun_ctx(slurm_step_ctx_t **step_ctx, Buf buffer)
+{
+	slurm_step_ctx_t *ctx = NULL;
+	uint8_t tmp_8;
+	int rc;
+
+	*step_ctx = NULL;
+	safe_unpack8(&tmp_8, buffer);
+	if (tmp_8 == 0) {
+		error("_unpack_srun_ctx: ctx is NULL");
+		return SLURM_ERROR;
+	}
+
+	ctx = xmalloc(sizeof(slurm_step_ctx_t));
+	ctx->magic = STEP_CTX_MAGIC;
+	rc = unpack_job_step_create_request_msg(&ctx->step_req, buffer,
+						SLURM_PROTOCOL_VERSION);
+	if (rc != SLURM_SUCCESS)
+		goto unpack_error;
+
+	rc = unpack_job_step_create_response_msg(&ctx->step_resp, buffer,
+						 SLURM_PROTOCOL_VERSION);
+	if (rc != SLURM_SUCCESS)
+		goto unpack_error;
+
+	*step_ctx = ctx;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("_unpack_srun_ctx: unpack error");
+	if (ctx && ctx->step_req)
+		slurm_free_job_step_create_request_msg(ctx->step_req);
+	if (ctx && ctx->step_resp)
+		slurm_free_job_step_create_response_msg(ctx->step_resp);
+	xfree(ctx);
+	return SLURM_ERROR;
+}
+
+static Buf _pack_srun_job_rec(void)
+{
+	Buf buffer;
+	host_usage_t *host_ptr;
+
+	buffer = init_buf(4096);
+	pack32(job->nhosts, buffer);
+
+	packstr(job->alias_list, buffer);
+	packstr(job->nodelist, buffer);
+
+	_pack_srun_ctx(job->step_ctx, buffer);
+
+	/* Since we can't rely on slurm_conf_get_nodename_from_addr
+	   working on a PERCS machine reliably we will sort all the
+	   IP's as we know them and ship them over if/when a PMD needs to
+	   forward the fanout.
+	*/
+	xassert(host_usage);
+	host_ptr = host_usage;
+	while (host_ptr && host_ptr->host_name) {
+		packstr(host_ptr->host_name, buffer);
+		packstr(host_ptr->host_address, buffer);
+		host_ptr++;
+	}
+	return buffer;
+}
+
+static srun_job_t * _unpack_srun_job_rec(Buf buffer)
+{
+	uint32_t tmp_32;
+	srun_job_t *job_data;
+	host_usage_t *host_ptr;
+	int i;
+
+	job_data = xmalloc(sizeof(srun_job_t));
+	safe_unpack32(&job_data->nhosts, buffer);
+
+	safe_unpackstr_xmalloc(&job_data->alias_list, &tmp_32, buffer);
+	safe_unpackstr_xmalloc(&job_data->nodelist, &tmp_32, buffer);
+
+	if (_unpack_srun_ctx(&job_data->step_ctx, buffer))
+		goto unpack_error;
+
+	host_usage = xmalloc(sizeof(host_usage_t) * (job_data->nhosts+1));
+	host_ptr = host_usage;
+	for (i=0; i<job_data->nhosts; i++) {
+		safe_unpackstr_xmalloc(&host_ptr->host_name, &tmp_32, buffer);
+		safe_unpackstr_xmalloc(&host_ptr->host_address,
+				       &tmp_32, buffer);
+		host_ptr++;
+	}
+
+	return job_data;
+
+unpack_error:
+	error("_unpack_srun_job_rec: unpack error");
+	xfree(job_data->alias_list);
+	xfree(job_data->nodelist);
+	xfree(job_data);
+	return NULL;
+}
+
+/* Validate a message connection
+ * Return: true=valid/authenticated */
+static bool _validate_connect(slurm_fd_t socket_conn, uint32_t auth_key)
+{
+	struct timeval tv;
+	fd_set read_fds;
+	uint32_t read_key;
+	bool valid = false;
+	int i, n_fds;
+
+	n_fds = socket_conn;
+	while (1) {
+		FD_ZERO(&read_fds);
+		FD_SET(socket_conn, &read_fds);
+
+		tv.tv_sec = 10;
+		tv.tv_usec = 0;
+		i = select((n_fds + 1), &read_fds, NULL, NULL, &tv);
+		if (i == 0)
+			break;
+		if (i < 0) {
+			if (errno == EINTR)
+				continue;
+			break;
+		}
+		i = slurm_read_stream(socket_conn, (char *)&read_key,
+				      sizeof(read_key));
+		if ((i == sizeof(read_key)) && (read_key == auth_key)) {
+			valid = true;
+		} else {
+			error("error validating incoming socket connection");
+			sleep(1);	/* Help prevent brute force attack */
+		}
+		break;
+	}
+
+	return valid;
+}
+
+/* Process a message from PMD */
+static void _agent_proc_connect(slurm_fd_t fe_comm_socket,uint32_t fe_auth_key)
+{
+	slurm_fd_t fe_comm_conn = -1;
+	slurm_addr_t be_addr;
+	bool be_connected = false;
+	Buf buffer = NULL;
+	uint32_t buf_size;
+	char *buf_data;
+	int i, offset = 0;
+
+	while (1) {
+		fe_comm_conn = slurm_accept_stream(fe_comm_socket, &be_addr);
+		if (fe_comm_conn != SLURM_SOCKET_ERROR) {
+			if (_validate_connect(fe_comm_conn, fe_auth_key))
+				be_connected = true;
+			break;
+		}
+		if (errno != EINTR) {
+			error("slurm_accept_stream: %m");
+			break;
+		}
+	}
+
+	if (!be_connected)
+		goto fini;
+
+	buffer = _pack_srun_job_rec();
+	buf_size = get_buf_offset(buffer);
+	buf_data = (char *) &buf_size;
+	i = slurm_write_stream_timeout(fe_comm_conn, buf_data,
+				       sizeof(buf_size), 8000);
+	if (i < sizeof(buf_size)) {
+		error("_agent_proc_connect write: %m");
+		goto fini;
+	}
+
+	buf_data = get_buf_data(buffer);
+	while (buf_size > offset) {
+		i = slurm_write_stream_timeout(fe_comm_conn, buf_data + offset,
+					       buf_size - offset, 8000);
+		if (i < 0) {
+			if ((errno != EAGAIN) && (errno != EINTR)) {
+				error("_agent_proc_connect write: %m");
+				break;
+			}
+		} else if (i > 0) {
+			offset += i;
+		} else {
+			error("_agent_proc_connect write: timeout");
+			break;
+		}
+	}
+
+fini:	if (fe_comm_conn >= 0)
+		slurm_close_accepted_conn(fe_comm_conn);
+	if (buffer)
+		free_buf(buffer);
+}
+
+/* Thread to wait for and process messgaes from PMD (via libpermapi) */
+static void *_agent_thread(void *arg)
+{
+        agent_data_t *agent_data_ptr = (agent_data_t *) arg;
+	uint32_t   fe_auth_key    = agent_data_ptr->fe_auth_key;
+	slurm_fd_t fe_comm_socket = agent_data_ptr->fe_comm_socket;
+	fd_set except_fds, read_fds;
+	struct timeval tv;
+	int i, n_fds;
+
+	xfree(agent_data_ptr);
+	n_fds = fe_comm_socket;
+	while (fe_comm_socket >= 0) {
+		FD_ZERO(&except_fds);
+		FD_SET(fe_comm_socket, &except_fds);
+		FD_ZERO(&read_fds);
+		FD_SET(fe_comm_socket, &read_fds);
+
+		tv.tv_sec =  0;
+		tv.tv_usec = 0;
+		i = select((n_fds + 1), &read_fds, NULL, &except_fds, &tv);
+		if ((i == 0) ||
+		    ((i == -1) && (errno == EINTR))) {
+			;
+		} else if (i == -1) {
+			error("select(): %m");
+			break;
+		} else {	/* i > 0, ready for I/O */
+			_agent_proc_connect(fe_comm_socket, fe_auth_key);;
+		}
+	}
+	slurm_shutdown_msg_engine(fe_comm_socket);
+
+	return NULL;
+}
+
+/* Generate and return a pseudo-random 32-bit authentication key */
+static uint32_t _gen_auth_key(void)
+{
+	struct timeval tv;
+	uint32_t key;
+
+	gettimeofday(&tv, NULL);
+	key  = (tv.tv_sec % 1000) * 1000000;
+	key += tv.tv_usec;
+
+	return key;
+}
+
+/* Spawn a shell to receive communications from PMD and spawn additional
+ * PMD on other nodes using a fanout mechanism other than SLURM. */
+static void _spawn_fe_agent(void)
+{
+	char hostname[256];
+	uint32_t   fe_auth_key = 0;
+	slurm_fd_t fe_comm_socket = -1;
+	slurm_addr_t comm_addr;
+	uint16_t comm_port;
+	pthread_attr_t agent_attr;
+	pthread_t agent_tid;
+	agent_data_t *agent_data_ptr;
+
+	/* Open socket for back-end program to communicate with */
+	if ((fe_comm_socket = slurm_init_msg_engine_port(0)) < 0) {
+		error("init_msg_engine_port: %m");
+		return;
+	}
+	if (slurm_get_stream_addr(fe_comm_socket, &comm_addr) < 0) {
+		error("slurm_get_stream_addr: %m");
+		return;
+	}
+	comm_port = ntohs(((struct sockaddr_in) comm_addr).sin_port);
+	fe_auth_key = _gen_auth_key();
+	if (gethostname_short(hostname, sizeof(hostname)))
+		fatal("gethostname_short(): %m");
+
+	/* Set up environment variables for the plugin (as called by PMD)
+	 * to load job information */
+	setenvfs("SLURM_FE_KEY=%u", fe_auth_key);
+	setenvfs("SLURM_FE_SOCKET=%s:%hu", hostname, comm_port);
+
+	agent_data_ptr = xmalloc(sizeof(agent_data_t));
+	agent_data_ptr->fe_auth_key = fe_auth_key;
+	agent_data_ptr->fe_comm_socket = fe_comm_socket;
+	slurm_attr_init(&agent_attr);
+	pthread_attr_setdetachstate(&agent_attr, PTHREAD_CREATE_DETACHED);
+	while ((pthread_create(&agent_tid, &agent_attr, &_agent_thread,
+			       (void *) agent_data_ptr))) {
+		if (errno != EAGAIN)
+			fatal("pthread_create(): %m");
+		sleep(1);
+	}
+	slurm_attr_destroy(&agent_attr);
+}
+
+srun_job_t * _read_job_srun_agent(void)
+{
+	char *key_str  = getenv("SLURM_FE_KEY");
+	char *sock_str = getenv("SLURM_FE_SOCKET");
+	char buf[32], *host, *sep;
+	slurm_fd_t resp_socket;
+	uint16_t resp_port;
+	uint32_t resp_auth_key, buf_size;
+	srun_job_t *srun_job = NULL;
+	slurm_addr_t resp_addr;
+	char *job_data;
+	Buf buffer;
+	int i, offset = 0;
+
+	if (!key_str) {
+		error("SLURM_FE_KEY environment variable not set");
+		return NULL;
+	}
+	if (!sock_str) {
+		error("SLURM_FE_SOCKET environment variable not set");
+		return NULL;
+	}
+	host = xstrdup(sock_str);
+	sep = strchr(host, ':');
+	if (!sep) {
+		error("_read_job_srun_agent(): SLURM_FE_SOCKET is invalid: %s",
+		      sock_str);
+		xfree(host);
+		return NULL;
+	}
+	sep[0] = '\0';
+	resp_port = atoi(sep + 1);
+	slurm_set_addr(&resp_addr, resp_port, host);
+	xfree(host);
+	resp_socket = slurm_open_stream(&resp_addr);
+	if (resp_socket < 0) {
+		error("slurm_open_msg_conn(%s): %m", sock_str);
+		return NULL;
+	}
+
+	resp_auth_key = atoi(key_str);
+	memcpy(buf + 0, &resp_auth_key, 4);
+	i = slurm_write_stream_timeout(resp_socket, buf, 4, 8000);
+	if (i < 4) {
+		error("_read_job_srun_agent write: %m");
+		return NULL;
+	}
+
+	i = slurm_read_stream_timeout(resp_socket, (char *) &buf_size, 4, 8000);
+	if (i < 4) {
+		error("_read_job_srun_agent read (i=%d): %m", i);
+		return NULL;
+	}
+	job_data = xmalloc(buf_size);
+	while (buf_size > offset) {
+		i = slurm_read_stream_timeout(resp_socket, job_data + offset,
+					      buf_size - offset, 8000);
+		if (i < 0) {
+			if ((errno != EAGAIN) && (errno != EINTR)) {
+				error("_read_job_srun_agent read (buf=%d): %m",
+				      i);
+				break;
+			}
+		} else if (i > 0) {
+			offset += i;
+		} else {
+			error("_read_job_srun_agent read: timeout");
+			break;
+		}
+	}
+
+	slurm_shutdown_msg_engine(resp_socket);
+	buffer = create_buf(job_data, buf_size);
+	srun_job = _unpack_srun_job_rec(buffer);
+	free_buf(buffer);	/* This does xfree(job_data) */
+
+	return srun_job;
+}
+
+/************************************/
 
 /* The connection communicates information to and from the resource
  * manager, so that the resource manager can start the parallel task
@@ -142,40 +537,73 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	uint32_t global_rc = 0;
 	int i, rc, fd_cnt;
 	int *ctx_sockfds = NULL;
+	hostlist_t hl = NULL;
+	char *name = NULL, *node_list = NULL;
 
 	if (pm_type == PM_PMD) {
-		/* If the PMD calls this and it didn't launch anything we need
-		 * to not do anything here or PMD will crap out on it. */
-		PMD_LOG("got pe_rm_connect called from PMD, "
-			"we don't handle this yet\n");
-		return -1;
-	} else if (pm_type != PM_POE) {
+		debug("got pe_rm_connect called from PMD");
+	} else if (pm_type == PM_POE) {
+		debug("got pe_rm_connect called");
+		launch_common_set_stdio_fds(job, &cio_fds);
+	} else {
 		error("pe_rm_connect: unknown caller");
 		return -1;
 	}
 
 	xassert(job);
 
-	debug("got pe_rm_connect called");
+	/* translate the ip to a node list which SLURM uses to send
+	   messages instead of IP addresses (at this point anyway)
+	*/
+	for (i=0; i<connect_param->machine_count; i++) {
+		name = _name_from_addr(connect_param->machine_name[i]);
+		if (!name) {
+			if (hl)
+				hostlist_destroy(hl);
+			*error_msg = xstrdup_printf(
+				"pe_rm_connect: unknown host for ip %s",
+				connect_param->machine_name[i]);
+			error("%s", *error_msg);
+			return -1;
+		}
+
+		if (!hl)
+			hl = hostlist_create(name);
+		else
+			hostlist_push_host(hl, name);
+	}
+
+	if (!hl) {
+		*error_msg = xstrdup_printf(
+			"pe_rm_connect: machine_count 0? it came in as "
+			"%d but we didn't get a hostlist",
+			connect_param->machine_count);
+		error("%s", *error_msg);
+		return -1;
+	}
+
+	hostlist_sort(hl);
+	node_list = hostlist_ranged_string_xmalloc(hl);
+	hostlist_destroy(hl);
 
 	opt.argc = my_argc;
 	opt.argv = my_argv;
 	opt.user_managed_io = true;
-
-	launch_common_set_stdio_fds(job, &cio_fds);
 	if (slurm_step_ctx_daemon_per_node_hack(job->step_ctx,
-						connect_param->machine_name,
+						node_list,
 						connect_param->machine_count)
 	    != SLURM_SUCCESS) {
 		*error_msg = xstrdup_printf(
-			"pe_rm_connect: problem with hack");
+			"pe_rm_connect: problem with hack: %s",
+			slurm_strerror(errno));
 		error("%s", *error_msg);
 		return -1;
 	}
 
 	if (launch_g_step_launch(job, &cio_fds, &global_rc)) {
 		*error_msg = xstrdup_printf(
-			"pe_rm_connect: problem with launch");
+			"pe_rm_connect: problem with launch: %s",
+			slurm_strerror(errno));
 		error("%s", *error_msg);
 		return -1;
 	}
@@ -209,35 +637,24 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
  * allocated. When called, pe_rm_free implies the job has completed
  * and resources are freed and available for subsequent jobs.
  * IN/OUT resource_mgr
+ *
+ * As of PE 1207 pe_rm_free does not always complete.  The parent
+ * process seems to finish before we do.  So you might be erronious errors.
  */
 extern void pe_rm_free(rmhandle_t *resource_mgr)
 {
 	uint32_t rc = 0;
-	//srun_job_t *job = *(srun_job_t **)*resource_mgr;
 
-	if (pm_type == PM_PMD) {
-		/* If the PMD calls this and it didn't launch anything we need
-		 * to not do anything here or PMD will crap out on it. */
-		PMD_LOG("got pe_rm_connect called from PMD, "
-			"we don't handle this yet\n");
-		return;
-	} else if (pm_type != PM_POE) {
-		error("pe_rm_connect: unknown caller");
-		return;
-	}
-
-	/* If the PMD calls this and it didn't launch anything we need
-	 * to not do anything here or PMD will crap out on it. */
 	xassert(job);
 
-	/* OK we are now really running something */
-	PMD_LOG("got pe_rm_free called\n");
 	debug("got pe_rm_free called %p %p", job, job->step_ctx);
-	if (launch_g_step_wait(job, got_alloc) != -1) {
-		/* We are at the end so don't worry about freeing the
-		   srun_job_t pointer */
-		fini_srun(job, got_alloc, &rc, 0, slurm_started);
-	}
+	/* Since we can't relaunch the step here don't worry about the
+	   return code.
+	*/
+	launch_g_step_wait(job, got_alloc);
+	/* We are at the end so don't worry about freeing the
+	   srun_job_t pointer */
+	fini_srun(job, got_alloc, &rc, slurm_started);
 
 	*resource_mgr = NULL;
 	dlclose(my_handle);
@@ -255,7 +672,7 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 extern int pe_rm_free_event(rmhandle_t resource_mgr, job_event_t ** job_event)
 {
 	if (pm_type == PM_PMD) {
-		PMD_LOG("pe_rm_free_event called\n");
+		debug("pe_rm_free_event called");
 		return 0;
 	} else if (pm_type != PM_POE) {
 		error("pe_rm_free_event: unknown caller");
@@ -333,7 +750,7 @@ extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 	job_event_t *ret_event = NULL;
 	int *state;
 	if (pm_type == PM_PMD) {
-		PMD_LOG("pe_rm_get_event called\n");
+		debug("pe_rm_get_event called");
 		return 0;
 	} else if (pm_type != PM_POE) {
 		error("pe_rm_get_event: unknown caller");
@@ -390,10 +807,17 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	slurm_step_layout_t *step_layout;
 	hostlist_t hl;
 	char *host;
+	char *mode = "IP";
 	host_usage_t *host_ptr;
+	int table_cnt;
+	nrt_tableinfo_t *tables, *table_ptr;
+	nrt_job_key_t job_key;
+	job_step_create_response_msg_t *resp;
+	int network_id_cnt = 0;
+	nrt_network_id_t *network_id_list;
 
 	if (pm_type == PM_PMD) {
-		PMD_LOG("pe_rm_get_job_info called\n");
+		debug("pe_rm_get_job_info called");
 		return 0;
 	} else if (pm_type != PM_POE) {
 		error("pe_rm_get_job_info: unknown caller");
@@ -403,39 +827,85 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	debug("got pe_rm_get_job_info called %p %p", job_info, *job_info);
 
 	*job_info = ret_info;
-
 	ret_info->job_name = xstrdup(opt.job_name);
 	ret_info->rm_id = NULL;
 	ret_info->procs = job->ntasks;
-	ret_info->max_instances = 1;
-	ret_info->job_key = _get_nrt_job_key(job);
+	ret_info->max_instances = 0;
 	ret_info->check_pointable = 0;
-	ret_info->protocol = xmalloc(sizeof(char *)*2);
-	ret_info->protocol[0] = xstrdup(opt.mpi_type);
-	ret_info->mode = xmalloc(sizeof(char *)*2);
-	ret_info->mode[0] = xstrdup(opt.network);
-	ret_info->instance = xmalloc(sizeof(int)*3);
-	ret_info->instance[0] = 1;
-	ret_info->instance[1] = -1;
-/* FIXME: not sure how to handle devicename yet */
-	ret_info->devicename = xmalloc(sizeof(char *)*2);
-	ret_info->devicename[0] = xstrdup("mlx4_0");
-	ret_info->num_network = 1;
+	if (!job || !job->step_ctx)
+		return -1;
+
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &resp);
+	if (!resp)
+		return -1;
+	slurm_jobinfo_ctx_get(resp->switch_job, NRT_JOBINFO_KEY, &job_key);
+	ret_info->job_key = job_key;
+
+	if (opt.network) {
+		char *network_str = xstrdup(opt.network);
+		char *save_ptr = NULL,
+			*token = strtok_r(network_str, ",", &save_ptr);
+		while (token) {
+			/* network options */
+			if (!strcasecmp(token, "ip")   ||
+			    !strcasecmp(token, "ipv4")  ||
+			    !strcasecmp(token, "ipv6")) {
+				mode = "IP";
+			} else if (!strcasecmp(token, "us")) {
+				mode = "US";
+			}
+			/* Currently ignoring all other options */
+			token = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(network_str);
+	}
+
+	slurm_jobinfo_ctx_get(
+		resp->switch_job, NRT_JOBINFO_TABLESPERTASK, &table_cnt);
+	ret_info->protocol = xmalloc(sizeof(char *)*(table_cnt+1));
+	ret_info->mode = xmalloc(sizeof(char *)*(table_cnt+1));
+	ret_info->devicename = xmalloc(sizeof(char *)*(table_cnt+1));
+	ret_info->instance = xmalloc(sizeof(int)*(table_cnt+2));
+
+	slurm_jobinfo_ctx_get(resp->switch_job, NRT_JOBINFO_TABLEINFO, &tables);
+	debug2("got count of %d", table_cnt);
+	network_id_list = xmalloc(sizeof(nrt_network_id_t) * table_cnt);
+	for (i=0, table_ptr=tables; i<table_cnt; i++, table_ptr++) {
+		for (j = 0; j < network_id_cnt; j++) {
+			if (table_ptr->network_id == network_id_list[j])
+				break;
+		}
+		if (j >= network_id_cnt) {
+			/* add this new network ID to our table */
+			network_id_list[network_id_cnt++] =
+				table_ptr->network_id;
+		}
+/* FIXME: Format of these data structure contents not well defined */
+		ret_info->protocol[i] = xstrdup(table_ptr->protocol_name);
+		ret_info->mode[i] = xstrdup(mode);
+		ret_info->devicename[i] = xstrdup(table_ptr->adapter_name);
+		ret_info->instance[i] = table_ptr->instance;
+		ret_info->max_instances = MAX(ret_info->max_instances,
+					      ret_info->instance[i]);
+		debug("%d: %s %s %s %d", i, ret_info->protocol[i],
+		      ret_info->mode[i], ret_info->devicename[i],
+		      ret_info->instance[i]);
+	}
+	xfree(network_id_list);
+	ret_info->instance[i] = -1;
+	ret_info->num_network = network_id_cnt;
 	ret_info->host_count = job->nhosts;
 
 	step_layout = launch_common_get_slurm_step_layout(job);
 
-	ret_info->hosts = xmalloc(sizeof(host_usage_t) * ret_info->host_count);
+	ret_info->hosts = xmalloc(sizeof(host_usage_t)
+				  * (ret_info->host_count+1));
 	host_ptr = ret_info->hosts;
 	i=0;
 	hl = hostlist_create(step_layout->node_list);
 	while ((host = hostlist_shift(hl))) {
 		slurm_addr_t addr;
 		host_ptr->host_name = host;
-/* FIXME: not sure how to handle host_address yet we are guessing the
- * below will do what we need. */
-		/* host_ptr->host_address = */
-		/* 	xstrdup_printf("10.0.0.5%d", i+1); */
 		slurm_conf_get_addr(host, &addr);
 		host_ptr->host_address = xstrdup(inet_ntoa(addr.sin_addr));
 		host_ptr->task_count = step_layout->tasks[i];
@@ -454,6 +924,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		host_ptr++;
 	}
 	hostlist_destroy(hl);
+	host_usage = ret_info->hosts;
 
 	return 0;
 }
@@ -520,13 +991,15 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		      char** error_msg)
 {
-	char *srun_debug = NULL;
+	char *srun_debug = NULL, *tmp_char = NULL;
+	char *myargv[3] = { "poe", NULL, NULL };
 
 	/* SLURM was originally written against 1300, so we will
 	 * return that, no matter what comes in so we always work.
 	 */
 	*rmapi_version = 1300;
 	*resource_mgr = (void *)&job;
+
 #ifdef MYSELF_SO
 	/* Since POE opens this lib without
 	   RTLD_LAZY | RTLD_GLOBAL | RTLD_DEEPBIND
@@ -541,36 +1014,115 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 #else
 	fatal("I haven't been told where I am.  This should never happen.");
 #endif
-	if (pm_type == PM_PMD) {
-		PMD_LOG("pe_rm_init called\n");
-		return 0;
-	} else if (pm_type != PM_POE) {
-		error("pe_rm_init: unknown caller");
-		return -1;
-	}
-
-	debug("got pe_rm_init called %s", rm_id);
 
 	if (slurm_select_init(1) != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin" );
 
-	/* Set up slurmctld message handler */
-	slurmctld_msg_init();
 	slurm_set_launch_type("launch/slurm");
 
+	if (getenv("SLURM_STARTED_STEP"))
+		slurm_started = true;
 	if ((srun_debug = getenv("SRUN_DEBUG")))
 		debug_level = atoi(srun_debug);
-	if (debug_level) {
-		log_opts.stderr_level  = debug_level;
-		log_opts.logfile_level = debug_level;
-		log_opts.syslog_level  = debug_level;
+	log_opts.stderr_level  = log_opts.logfile_level =
+		log_opts.syslog_level = debug_level;
 
-		log_alter(log_opts, LOG_DAEMON, "/dev/null");
-	}
-
-	/* This will be used later in the code to set the _verbose level. */
+	/* This will be used later in the code to set the
+	 * _verbose level. */
 	if (debug_level >= LOG_LEVEL_INFO)
 		debug_level -= LOG_LEVEL_INFO;
+
+	if (pm_type == PM_PMD) {
+		log_alter_with_fp(log_opts, LOG_DAEMON, pmd_lfp);
+		myargv[0] = myargv[1] = "pmd";
+	} else {
+		log_alter(log_opts, LOG_DAEMON, "/dev/null");
+
+		myargv[1] = getenv("SLURM_JOB_NAME");
+
+		/* If SLURM_JOB_NAME isn't set that means we launched
+		   from poe proper instead of srun launching poe.
+		*/
+		if (!myargv[1]) {
+			/* Here we can get the name of the running job
+			   because it is always the 2nd argv in the
+			   poe line.
+			*/
+			char *poe_argv = getenv("MP_I_SAVED_ARGV");
+			if (poe_argv) {
+				char *walking_char = NULL;
+				int i = 0, set = 0;
+				tmp_char = xstrdup(poe_argv);
+				walking_char = tmp_char;
+				while (tmp_char[i]) {
+					if (tmp_char[i] != ' ') {
+						i++;
+						continue;
+					}
+					if (set) {
+						tmp_char[i] = '\0';
+						break;
+					}
+					set = 1;
+					i++;
+					walking_char = tmp_char + i;
+				}
+				myargv[1] = walking_char;
+			}
+			if (!myargv[1])
+				myargv[1] = "poe";
+		}
+	}
+
+	debug("got pe_rm_init called %s %p", rm_id, info);
+
+	/* This needs to happen before any other threads so we can
+	   catch the signals correctly.  Send in NULL for logopts
+	   because we just set it up. Also always send 1 for
+	   slurm_started since we don't want to start up the shepard
+	   thread in this case.
+	*/
+	init_srun(2, myargv, NULL, debug_level, 1);
+
+	xfree(tmp_char); /* just in case */
+
+	if (pm_type == PM_PMD) {
+		uint32_t job_id = -1, step_id = -1;
+
+		if ((srun_debug = getenv("SLURM_JOB_ID")))
+			job_id = atoi(srun_debug);
+		if ((srun_debug = getenv("SLURM_STEP_ID")))
+			step_id = atoi(srun_debug);
+		if (job_id == -1 || step_id == -1) {
+			error("SLURM_JOB_ID or SLURM_STEP_ID "
+			      "not found %d.%d", job_id, step_id);
+			return -1;
+		}
+
+		job = _read_job_srun_agent();
+		if (!job) {
+			error("no job created");
+			return -1;
+		}
+
+		job->jobid = job_id;
+		job->stepid = step_id;
+
+		info("job created %u.%u", job->jobid, job->stepid);
+		opt.ifname = opt.ofname = opt.efname = "/dev/null";
+		job_update_io_fnames(job);
+
+		info("pe_rm_init done");
+	} else if (pm_type == PM_POE) {
+		debug("got pe_rm_init called %s", rm_id);
+
+		/* Create agent thread to forward job credential needed for
+		 * PMD to fanout child processes on other nodes */
+		_spawn_fe_agent();
+	} else {
+		error("pe_rm_init: unknown caller");
+		return -1;
+	}
 
 	return 0;
 }
@@ -594,15 +1146,33 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 extern int pe_rm_send_event(rmhandle_t resource_mgr, job_event_t *job_event,
 			    char ** error_msg)
 {
-	if (pm_type == PM_PMD) {
-		PMD_LOG("pe_rm_send_event called\n");
-		return 0;
-	} else if (pm_type != PM_POE) {
-		error("pe_rm_send_event: unknown caller");
-		return -1;
+	int rc;
+
+	debug("got pe_rm_send_event called with event type %d",
+	      job_event->event);
+
+	if ((job_event->event == JOB_CKPT_COMPLETE) && job) {
+		struct ckpt_end_data *ckpt_end_ptr = (struct ckpt_end_data *)
+						     job_event->event_data;
+		rc = slurm_checkpoint_complete(job->jobid, job->stepid,
+					       ckpt_end_ptr->ckpt_start_time,
+					       ckpt_end_ptr->ckpt_rc,
+					       ckpt_end_ptr->ckpt_msg);
+		if (rc != SLURM_SUCCESS) {
+			error("pe_rm_send_event: Unable to process checkpoint "
+			      "complete event for %u.%u",
+			      job->jobid, job->stepid);
+		} else {
+			debug("pe_rm_send_event: Checkpoint complete for %u.%u",
+			      job->jobid, job->stepid);
+		}
+	} else if ((job_event->event == JOB_CKPT_IN_PROGRESS) && job) {
+		/* FIXME: This may need to trigger switch/nrt call on each node
+		 * to preempt the job. Not sure how this works yet... */
+		debug("pe_rm_send_event: Checkpoint in progress for %u.%u",
+		      job->jobid, job->stepid);
 	}
 
-	debug("got pe_rm_send_event called");
 	return 0;
 }
 
@@ -624,13 +1194,9 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		     char** error_msg)
 {
 	job_request_t *pe_job_req = NULL;
-	char *myargv[3] = { "poe", "poe", NULL };
-
-	if (getenv("SLURM_STARTED_STEP"))
-		slurm_started = true;
 
 	if (pm_type == PM_PMD) {
-		PMD_LOG("pe_rm_submit_job called\n");
+		debug("pe_rm_submit_job called from PMD");
 		return 0;
 	} else if (pm_type != PM_POE) {
 		error("pe_rm_submit_job: unknown caller");
@@ -643,8 +1209,6 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		error("SLURM doesn't handle files to submit_job");
 		return -1;
 	}
-
-	init_srun(2, myargv, &log_opts, debug_level, 1);
 
 	pe_job_req = (job_request_t *)job_cmd.job_command;
 	debug2("num_nodes\t= %d", pe_job_req->num_nodes);
@@ -682,11 +1246,9 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		opt.ntasks = pe_job_req->total_tasks;
 	}
 
-	xfree(opt.mpi_type);
-	opt.mpi_type = xstrdup(pe_job_req->network_usage.protocols);
-	xfree(opt.network);
-	opt.network = xstrdup(pe_job_req->network_usage.mode);
-
 	create_srun_job(&job, &got_alloc, slurm_started);
+
+	/* make sure we set up a signal handler */
+	pre_launch_srun_job(job, slurm_started);
 	return 0;
 }

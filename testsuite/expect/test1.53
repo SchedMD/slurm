@@ -39,6 +39,11 @@ set file_prog    "test$test_id.prog"
 
 print_header $test_id
 
+if { [test_launch_poe] } {
+	send_user "\nWARNING: This test is incompatable with launch/poe systems\n"
+	exit $exit_code
+}
+
 #
 # Delete left-over programs and rebuild them.
 #
@@ -51,7 +56,7 @@ exec $bin_cc -o $file_prog $file_prog.c
 #
 set run_time 0
 set timeout [expr $max_job_delay + 120]
-set srun_pid [spawn $srun -t4 --signal=2@120 $file_prog]
+set srun_pid [spawn $srun -t4 --signal=2@120 ./$file_prog]
 expect {
 	-re "Begin test" {
 		set began_flag 1

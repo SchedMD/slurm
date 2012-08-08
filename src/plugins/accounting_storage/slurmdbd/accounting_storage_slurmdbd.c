@@ -199,6 +199,8 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->wckey         = xstrdup(job_ptr->wckey);
 	req->uid           = job_ptr->user_id;
 	req->qos_id        = job_ptr->qos_id;
+	req->gres          = job_ptr->gres;
+	req->gres_alloc    = job_ptr->gres_alloc;
 
 	return SLURM_SUCCESS;
 }

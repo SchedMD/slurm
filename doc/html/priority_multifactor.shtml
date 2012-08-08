@@ -2,8 +2,6 @@
 
 <h1>Multifactor Priority Plugin</h1>
 
-<b>Note:</b> This document describes features added to SLURM version 2.0.
-
 <h2>Contents</h2>
 <UL>
 <LI> <a href=#intro>Introduction</a>
@@ -27,7 +25,7 @@
 
 <P> The <i>PriorityType</i> parameter in the slurm.conf file selects the priority plugin.  The default value for this variable is "priority/basic" which enables simple FIFO scheduling. (See <a href="#config">Configuration</a> below)</P>
 
-<P> SLURM version 2.0 includes the Multi-factor Job Priority plugin.  This plugin provides a very versatile facility for ordering the queue of jobs waiting to be scheduled.</P>
+<P> The Multi-factor Job Priority plugin provides a very versatile facility for ordering the queue of jobs waiting to be scheduled.</P>
 
 <!-------------------------------------------------------------------------->
 <a name=mfjppintro>
@@ -157,9 +155,9 @@ computing resources described below.
 <P> A user's normalized shares is simply</P>
 
 <PRE>
-S =	(S<sub>user</sub> / S<sub>sibblings</sub>) *
-	(S<sub>account</sub> / S<sub>sibbling-accounts</sub>) *
-	(S<sub>parent</sub> / S<sub>parent-sibblings</sub>) * ...
+S =	(S<sub>user</sub> / S<sub>siblings</sub>) *
+	(S<sub>account</sub> / S<sub>sibling-accounts</sub>) *
+	(S<sub>parent</sub> / S<sub>parent-siblings</sub>) * ...
 </PRE>
 
 Where:
@@ -169,15 +167,15 @@ Where:
 <DD> is the user's normalized share, between zero and one
 <DT> S<sub>user</sub>
 <DD> are the number of shares of the account allocated to the user
-<DT> S<sub>sibblings</sub>
+<DT> S<sub>siblings</sub>
 <DD> are the total number of shares allocated to all users permitted to charge the account (including S<sub>user</sub>)
 <DT> S<sub>account</sub>
 <DD> are the number of shares of the parent account allocated to the account
-<DT> S<sub>sibbling-accounts</sub>
+<DT> S<sub>sibling-accounts</sub>
 <DD> are the total number of shares allocated to all sub-accounts of the parent account
 <DT> S<sub>parent</sub>
 <DD> are the number of shares of the grandparent account allocated to the parent
-<DT> S<sub>parent-sibblings</sub>
+<DT> S<sub>parent-siblings</sub>
 <DD> are the total number of shares allocated to all sub-accounts of the grandparent account
 </DL>
 
@@ -570,6 +568,6 @@ PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 27 September 2011</p>
+<p style="text-align:center;">Last modified 26 July 2012</p>
 
 <!--#include virtual="footer.txt"-->

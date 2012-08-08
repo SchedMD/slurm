@@ -172,26 +172,36 @@ if {[wait_for_file $file_out] != 0} {
 spawn $bin_sort $file_out
 expect {
 	-re "USER_CORE=($number)" {
-		if {$expect_out(1,string) == [expr $limit_core * 1024]} {
+		set target [expr $limit_core * 1024]
+		if {$expect_out(1,string) == $target} {
 			incr matches
+		} else {
+			send_user "\nCORE mis-match ($expect_out(1,string) != $target)\n"
 		}
 		exp_continue
 	}
 	-re "USER_FSIZE=($number)" {
-		if {$expect_out(1,string) == [expr $limit_fsize * 1024]} {
+		set target [expr $limit_fsize * 1024]
+		if {$expect_out(1,string) == $target} {
 			incr matches
+		} else {
+			send_user "\nFSIZE mis-match ($expect_out(1,string) != $target)\n"
 		}
 		exp_continue
 	}
 	-re "USER_NOFILE=($number)" {
 		if {$expect_out(1,string) == $limit_nofile} {
 			incr matches
+		} else {
+			send_user "\nNOFILE mis-match ($expect_out(1,string) != $limit_nofile)\n"
 		}
 		exp_continue
 	}
 	-re "USER_NPROC=($number)" {
 		if {$expect_out(1,string) == $limit_nproc} {
 			incr matches
+		} else {
+			send_user "\nNPROC mis-match ($expect_out(1,string) != $limit_nproc)\n"
 		}
 		exp_continue
 	}
@@ -200,8 +210,11 @@ expect {
 		exp_continue
 	}
 	-re "USER_STACK=($number)" {
+		set target [expr $limit_stack * 1024]
 		if {$expect_out(1,string) == [expr $limit_stack * 1024]} {
 			incr matches
+		} else {
+			send_user "\nSTACK mis-match ($expect_out(1,string) != $target)\n"
 		}
 		exp_continue
 	}
@@ -219,7 +232,7 @@ expect {
 }
 
 if {$matches != 5} {
-	send_user "\nFAILURE: User limits not propagated got $matches matches\n"
+	send_user "\nFAILURE: User limits not propagated got $matches of 5 matches\n"
 	send_user "Check PropagateResourceLimits configuration parameter\n"
 	send_user "Check $file_err for errors\n"
 	send_user "A long running slurmd could cause a file size limit error\n"

@@ -83,6 +83,18 @@ typedef struct slurm_switch_ops {
 	int          (*job_preinit)       ( switch_jobinfo_t *jobinfo );
 	int          (*job_init)          ( switch_jobinfo_t *jobinfo,
 					    uid_t uid, char *job_name );
+	int          (*job_suspend_test)  ( switch_jobinfo_t *jobinfo );
+	void         (*job_suspend_info_get)( switch_jobinfo_t *jobinfo,
+					      void *suspend_info );
+	void         (*job_suspend_info_pack)( void *suspend_info,
+					    Buf buffer );
+	int          (*job_suspend_info_unpack)( void **suspend_info,
+					    Buf buffer );
+	void         (*job_suspend_info_free)( void *suspend_info );
+	int          (*job_suspend)       ( void *suspend_info,
+					    int max_wait );
+	int          (*job_resume)        ( void *suspend_info,
+					    int max_wait );
 	int          (*job_fini)          ( switch_jobinfo_t *jobinfo );
 	int          (*job_postfini)      ( switch_jobinfo_t *jobinfo,
 					    uid_t pgid,
@@ -138,6 +150,13 @@ static const char *syms[] = {
 	"switch_p_node_fini",
 	"switch_p_job_preinit",
 	"switch_p_job_init",
+	"switch_p_job_suspend_test",
+	"switch_p_job_suspend_info_get",
+	"switch_p_job_suspend_info_pack",
+	"switch_p_job_suspend_info_unpack",
+	"switch_p_job_suspend_info_free",
+	"switch_p_job_suspend",
+	"switch_p_job_resume",
 	"switch_p_job_fini",
 	"switch_p_job_postfini",
 	"switch_p_job_attach",
@@ -349,6 +368,63 @@ extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid,
 		return SLURM_ERROR;
 
 	return (*(ops.job_init)) (jobinfo, uid, job_name);
+}
+
+extern int interconnect_suspend_test(switch_jobinfo_t *jobinfo)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(ops.job_suspend_test)) (jobinfo);
+}
+
+extern void interconnect_suspend_info_get(switch_jobinfo_t *jobinfo,
+					  void **suspend_info)
+{
+	if ( switch_init() < 0 )
+		return;
+
+	(*(ops.job_suspend_info_get)) (jobinfo, suspend_info);
+}
+
+extern void interconnect_suspend_info_pack(void *suspend_info, Buf buffer)
+{
+	if ( switch_init() < 0 )
+		return;
+
+	(*(ops.job_suspend_info_pack)) (suspend_info, buffer);
+}
+
+extern int interconnect_suspend_info_unpack(void **suspend_info, Buf buffer)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(ops.job_suspend_info_unpack)) (suspend_info, buffer);
+}
+
+extern void interconnect_suspend_info_free(void *suspend_info)
+{
+	if ( switch_init() < 0 )
+		return;
+
+	(*(ops.job_suspend_info_free)) (suspend_info);
+}
+
+extern int interconnect_suspend(void *suspend_info, int max_wait)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(ops.job_suspend)) (suspend_info, max_wait);
+}
+
+extern int interconnect_resume(void *suspend_info, int max_wait)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(ops.job_resume)) (suspend_info, max_wait);
 }
 
 extern int interconnect_fini(switch_jobinfo_t *jobinfo)

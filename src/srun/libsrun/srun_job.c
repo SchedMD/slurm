@@ -616,7 +616,7 @@ extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started)
 }
 
 extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
-		      pthread_t signal_thread, bool slurm_started)
+		      bool slurm_started)
 {
 	/* If running from poe Most of this already happened in srun. */
 	if (slurm_started)
@@ -714,7 +714,6 @@ _compute_task_count(allocation_info_t *ainfo)
 #if defined HAVE_BGQ
 //#if defined HAVE_BGQ && HAVE_BG_FILES
 	/* always return the ntasks here for Q */
-	info("returning %d", opt.ntasks);
 	return opt.ntasks;
 #endif
 	if (opt.cpus_set) {

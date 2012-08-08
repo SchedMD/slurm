@@ -260,13 +260,14 @@ extern int other_block_init(List block_list)
  *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  *		Existing list is appended to.
+ * IN exc_core_bitmap - bitmap of cores being reserved.
  * RET zero on success, EINVAL otherwise
  */
 extern int other_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			     uint32_t min_nodes, uint32_t max_nodes,
-			     uint32_t req_nodes, uint16_t mode,
-			     List preemptee_candidates,
-			     List *preemptee_job_list)
+			  uint32_t min_nodes, uint32_t max_nodes,
+			  uint32_t req_nodes, uint16_t mode,
+			  List preemptee_candidates, List *preemptee_job_list,
+			  bitstr_t *exc_core_bitmap)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
@@ -275,8 +276,8 @@ extern int other_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		(job_ptr, bitmap,
 		 min_nodes, max_nodes,
 		 req_nodes, mode,
-		 preemptee_candidates,
-		 preemptee_job_list);
+		 preemptee_candidates, preemptee_job_list,
+		 exc_core_bitmap);
 }
 
 /*

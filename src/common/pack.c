@@ -355,7 +355,7 @@ int unpack16_array(uint16_t ** valp, uint32_t * size_val, Buf buffer)
 
 	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
-
+if (*size_val > 4000000) abort();
 	*valp = xmalloc((*size_val) * sizeof(uint16_t));
 	for (i = 0; i < *size_val; i++) {
 		if (unpack16((*valp) + i, buffer))

@@ -196,6 +196,13 @@ void sched_log_fini(void);
  */
 int log_alter(log_options_t opts, log_facility_t fac, char *logfile);
 
+/* Alter log facility, options are like log_alter() above, except that
+ * an the file pointer is sent in instead of a filename.
+ *
+ * This function may only be called once.
+ */
+int log_alter_with_fp(log_options_t opt, log_facility_t fac, FILE *fp_in);
+
 /* Sched alter log facility, options are like sched_log_init() above,
  * except that an argv0 argument is not passed.
  *

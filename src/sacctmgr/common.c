@@ -439,7 +439,7 @@ static print_field_t *_get_print_field(char *object)
 		field->type = PRINT_PRIO;
 		field->name = xstrdup("Priority");
 		field->len = 10;
-		field->print_routine = print_fields_int;
+		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("Problem", object, MAX(command_len, 1))) {
 		field->type = PRINT_PROBLEM;
 		field->name = xstrdup("Problem");

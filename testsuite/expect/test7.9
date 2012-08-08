@@ -54,6 +54,11 @@ set invalid 0
 log_user 0
 spawn $scontrol show config
 expect {
+	-re "launch/poe" {
+		send_user "\nWARNING: test incompatible with launch/poe\n"
+		set invalid 1
+		exp_continue
+	}
 	-re "proctrack/aix" {
 		send_user "\nWARNING: test incompatible with proctrack/aix\n"
 		set invalid 1
@@ -106,7 +111,7 @@ make_bash_script $file_in "
   $bin_echo ' '
   $bin_echo 'testing $iterations sets of spawned tasks'
   for ((i=0; i<$iterations; i++)) ; do
-    $srun $file_prog
+    $srun ./$file_prog
   done
   $bin_echo 'fini'
 "

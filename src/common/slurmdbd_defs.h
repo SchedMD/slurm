@@ -76,8 +76,11 @@
  *	communicating with it (e.g. it will not accept messages with a
  *	version higher than SLURMDBD_VERSION).
  */
-#define SLURMDBD_VERSION	11 /* already changed for 2.5 */
-#define SLURMDBD_VERSION_MIN	7
+#define SLURMDBD_VERSION       11
+#define SLURMDBD_2_5_VERSION   11 /* 2.5 */
+#define SLURMDBD_2_4_VERSION   10 /* 2.4 */
+#define SLURMDBD_2_3_VERSION	9 /* 2.3 */
+#define SLURMDBD_VERSION_MIN	9
 
 /* SLURM DBD message types */
 /* ANY TIME YOU ADD TO THIS LIST UPDATE THE CONVERSION FUNCTIONS! */
@@ -279,6 +282,9 @@ typedef struct dbd_job_start_msg {
 	time_t   submit_time;	/* job submit time */
 	uint32_t timelimit;	/* job timelimit */
 	uint32_t uid;	        /* user ID if associations are being used */
+	char*    gres;          /* Original gres string requested by user. */
+	char*    gres_alloc;    /* String depicting the allocated
+				 * GRES by type for the entire job. */
 	char *   wckey;		/* wckey name */
 } dbd_job_start_msg_t;
 
@@ -386,6 +392,14 @@ extern pthread_cond_t assoc_cache_cond; /* assoc cache condition */
 /*****************************************************************************\
  * Slurm DBD message processing functions
 \*****************************************************************************/
+
+/* Some functions are called by the DBD as well as regular slurm
+ * procedures.  In this case we need to make a way to translate the
+ * DBD rpc to that of SLURM.
+ * rpc_version IN - DBD rpc version
+ * Returns corrisponding SLURM rpc version
+ */
+extern uint16_t slurmdbd_translate_rpc(uint16_t rpc_version);
 
 /* Open a socket connection to SlurmDbd
  * auth_info IN - alternate authentication key

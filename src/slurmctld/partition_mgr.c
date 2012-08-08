@@ -457,7 +457,7 @@ int load_all_part_state(void)
 	uint32_t max_time, default_time, max_nodes, min_nodes;
 	uint32_t grace_time = 0;
 	time_t time;
-	uint16_t def_part_flag, flags, hidden, root_only;
+	uint16_t flags;
 	uint16_t max_share, preempt_mode, priority, state_up;
 	struct part_record *part_ptr;
 	uint32_t data_size = 0, name_len;
@@ -508,8 +508,6 @@ int load_all_part_state(void)
 	if(ver_str) {
 		if (!strcmp(ver_str, PART_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
-		} else if(!strcmp(ver_str, PART_2_1_STATE_VERSION)) {
-			protocol_version = SLURM_2_1_PROTOCOL_VERSION;
 		}
 	}
 
@@ -557,78 +555,10 @@ int load_all_part_state(void)
 				      part_name, flags);
 				error_code = EINVAL;
 			}
-		} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
-			safe_unpack32(&max_time, buffer);
-			safe_unpack32(&default_time, buffer);
-			safe_unpack32(&max_nodes, buffer);
-			safe_unpack32(&min_nodes, buffer);
-
-			safe_unpack16(&flags,        buffer);
-			safe_unpack16(&max_share,    buffer);
-			safe_unpack16(&preempt_mode, buffer);
-			safe_unpack16(&priority,     buffer);
-
-			if (priority > part_max_priority)
-				part_max_priority = priority;
-
-			safe_unpack16(&state_up, buffer);
-			safe_unpackstr_xmalloc(&allow_groups,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&allow_alloc_nodes,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
-			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
-			if ((flags & PART_FLAG_DEFAULT_CLR) ||
-			    (flags & PART_FLAG_HIDDEN_CLR)  ||
-			    (flags & PART_FLAG_NO_ROOT_CLR) ||
-			    (flags & PART_FLAG_ROOT_ONLY_CLR)) {
-				error("Invalid data for partition %s: flags=%u",
-				      part_name, flags);
-				error_code = EINVAL;
-			}
 		} else {
-			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
-			safe_unpack32(&max_time, buffer);
-			safe_unpack32(&default_time, buffer);
-			safe_unpack32(&max_nodes, buffer);
-			safe_unpack32(&min_nodes, buffer);
-
-			safe_unpack16(&def_part_flag, buffer);
-			safe_unpack16(&hidden,    buffer);
-			safe_unpack16(&root_only, buffer);
-			safe_unpack16(&max_share, buffer);
-			safe_unpack16(&priority,  buffer);
-
-			if (priority > part_max_priority)
-				part_max_priority = priority;
-
-			safe_unpack16(&state_up, buffer);
-			if (state_up == 0)
-				state_up = PARTITION_DOWN;
-			else
-				state_up = PARTITION_UP;
-			safe_unpackstr_xmalloc(&allow_groups,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&allow_alloc_nodes,
-					       &name_len, buffer);
-			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
-			flags = 0;
-			if (def_part_flag)
-				flags |= PART_FLAG_DEFAULT;
-			if (hidden)
-				flags |= PART_FLAG_HIDDEN;
-			if (root_only);
-				flags |= PART_FLAG_ROOT_ONLY;
-			if ((def_part_flag > 1) || (root_only > 1) ||
-			    (hidden > 1)) {
-				error("Invalid data for partition %s: "
-				      "def_part_flag=%u hidden=%u root_only=%u",
-				      part_name, def_part_flag, hidden,
-				      root_only);
-				error_code = EINVAL;
-			}
-			preempt_mode = (uint16_t) NO_VAL;
+			error("load_all_part_state: protocol_version "
+			      "%hu not supported", protocol_version);
+			goto unpack_error;
 		}
 		/* validity test as possible */
 		if (state_up > PARTITION_UP) {
@@ -993,76 +923,9 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		packstr(part_ptr->alternate, buffer);
 		packstr(part_ptr->nodes, buffer);
 		pack_bit_fmt(part_ptr->node_bitmap, buffer);
-	} else if (protocol_version >= SLURM_2_2_PROTOCOL_VERSION) {
-		if (default_part_loc == part_ptr)
-			part_ptr->flags |= PART_FLAG_DEFAULT;
-		else
-			part_ptr->flags &= (~PART_FLAG_DEFAULT);
-
-		packstr(part_ptr->name, buffer);
-		pack32(part_ptr->max_time, buffer);
-		pack32(part_ptr->default_time, buffer);
-		pack32(part_ptr->max_nodes_orig, buffer);
-		pack32(part_ptr->min_nodes_orig, buffer);
-		altered = part_ptr->total_nodes;
-		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &altered);
-		pack32(altered,              buffer);
-		pack32(part_ptr->total_cpus, buffer);
-		pack16(part_ptr->flags,      buffer);
-		pack16(part_ptr->max_share,  buffer);
-		pack16(part_ptr->preempt_mode, buffer);
-		pack16(part_ptr->priority,   buffer);
-
-		pack16(part_ptr->state_up, buffer);
-		packstr(part_ptr->allow_groups, buffer);
-		packstr(part_ptr->allow_alloc_nodes, buffer);
-		packstr(part_ptr->alternate, buffer);
-		packstr(part_ptr->nodes, buffer);
-		pack_bit_fmt(part_ptr->node_bitmap, buffer);
 	} else {
-		uint16_t default_part_flag, hidden, no_root, root_only, state;
-		if (default_part_loc == part_ptr)
-			default_part_flag = 1;
-		else
-			default_part_flag = 0;
-		if (part_ptr->flags & PART_FLAG_HIDDEN)
-			hidden = 1;
-		else
-			hidden = 0;
-		if (part_ptr->flags & PART_FLAG_NO_ROOT)
-			no_root = 1;
-		else
-			no_root = 0;
-		if (part_ptr->flags & PART_FLAG_ROOT_ONLY)
-			root_only = 1;
-		else
-			root_only = 0;
-
-		packstr(part_ptr->name, buffer);
-		pack32(part_ptr->max_time, buffer);
-		pack32(part_ptr->default_time, buffer);
-		pack32(part_ptr->max_nodes_orig, buffer);
-		pack32(part_ptr->min_nodes_orig, buffer);
-		altered = part_ptr->total_nodes;
-		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &altered);
-		pack32(altered, buffer);
-		pack32(part_ptr->total_cpus, buffer);
-		pack16(default_part_flag,    buffer);
-		pack16(no_root,              buffer);
-		pack16(hidden,               buffer);
-		pack16(root_only,            buffer);
-		pack16(part_ptr->max_share,  buffer);
-		pack16(part_ptr->priority,   buffer);
-
-		if (part_ptr->state_up == PARTITION_UP)
-			state = 1;
-		else	/* DOWN, DRAIN, and INACTIVE */
-			state = 0;
-		pack16(state, buffer);
-		packstr(part_ptr->allow_groups, buffer);
-		packstr(part_ptr->allow_alloc_nodes, buffer);
-		packstr(part_ptr->nodes, buffer);
-		pack_bit_fmt(part_ptr->node_bitmap, buffer);
+		error("pack_part: protocol_version "
+		      "%hu not supported", protocol_version);
 	}
 }
 

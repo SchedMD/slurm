@@ -2,8 +2,8 @@
 
 <h1>Quick Start Administrator Guide</h1>
 <h2>Overview</h2>
-Please see the <a href="quickstart.html">Quick Start User Guide</a> for a
-general overview.
+<p>Please see the <a href="quickstart.html">Quick Start User Guide</a> for a
+general overview.</p>
 
 <h2>Super Quick Start</h2>
 <ol>
@@ -662,7 +662,7 @@ See <i>testsuite/expect/README</i> for more information.</p>
 the major, minor and micro release numbers in that order (e.g. 2.1.3 is
 major=2, minor=1, micro=3).
 Changes in the RPCs (remote procedure calls) will only be made if the major
-and/or minor relase number changes.
+and/or minor release number changes.
 Changes in the micro release number generally represent only bug fixes,
 but may also include minor enhancements.</p>
 
@@ -688,6 +688,6 @@ Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 19 March 2012</p>
+<p style="text-align:center;">Last modified 26 July 2012</p>
 
 <!--#include virtual="footer.txt"-->

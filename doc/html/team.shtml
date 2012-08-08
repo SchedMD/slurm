@@ -29,6 +29,7 @@ organizations. Lead SLURM developers are:
 <li>Gilles Civario (Bull)</li>
 <li>Chuck Clouston (Bull)</li>
 <li>Yuri D'Elia (Center for Biomedicine, EURAC Research, Italy)</li>
+<li>Francois Diakhate (CEA, France)</li>
 <li>Joseph Donaghy (Lawrence Livermore National Laboratory)</li>
 <li>Chris Dunlap (Lawrence Livermore National Laboratory)</li>
 <li>Phil Eckert (Lawrence Livermore National Laboratory)</li>
@@ -111,6 +112,6 @@ organizations. Lead SLURM developers are:
 <!-- PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 30 May 2012</p>
+<p style="text-align:center;">Last modified 19 July 2012</p>
 
 <!--#include virtual="footer.txt"-->

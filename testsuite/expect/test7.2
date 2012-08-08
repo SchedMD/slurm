@@ -112,7 +112,7 @@ if { [test_bluegene] } {
 # Adjust time limits as needed for large task counts */
 #                   times are here  vv
 set timeout [expr $max_job_delay +  60]
-set srun_pid [spawn $srun -l -N$node_cnt -n$task_cnt -O -t1 --threads=1 $file_prog_get]
+set srun_pid [spawn $srun -l -N$node_cnt -n$task_cnt -O -t1 --threads=1 ./$file_prog_get]
 expect {
 	-re "(FAILURE|error)" {
 		send_user "\nFAILURE: some error occurred\n"

@@ -55,15 +55,19 @@
 #include "src/sinfo/sinfo.h"
 
 #define MIN_NODE_FIELD_SIZE 9
+#define MIN_PART_FIELD_SIZE 9
 
 static int   _build_min_max_16_string(char *buffer, int buf_size,
 				uint16_t min, uint16_t max, bool range);
 static int   _build_min_max_32_string(char *buffer, int buf_size,
 				uint32_t min, uint32_t max,
 				bool range, bool use_suffix);
+static void  _print_reservation(reserve_info_t *resv_ptr, int width);
 static int   _print_secs(long time, int width, bool right, bool cut_output);
 static int   _print_str(char *str, int width, bool right, bool cut_output);
+static int   _resv_name_width(reserve_info_t *resv_ptr);
 static void  _set_node_field_size(List sinfo_list);
+static void  _set_part_field_size(List sinfo_list);
 static char *_str_tolower(char *upper_str);
 
 /*****************************************************************************
@@ -84,6 +88,8 @@ int print_sinfo_list(List sinfo_list)
 
 	if (params.node_field_flag)
 		_set_node_field_size(sinfo_list);
+	if (params.part_field_flag)
+		_set_part_field_size(sinfo_list);
 
 	if (!params.no_header)
 		print_sinfo_entry(NULL);
@@ -112,9 +118,57 @@ int print_sinfo_entry(sinfo_data_t *sinfo_data)
 	return SLURM_SUCCESS;
 }
 
+void print_sinfo_reservation(reserve_info_msg_t *resv_ptr)
+{
+	reserve_info_t *reserve_ptr = NULL;
+	char format[64];
+	int i, width = 9;
+
+	reserve_ptr = resv_ptr->reservation_array;
+	if (!params.no_header) {
+		for (i = 0; i < resv_ptr->record_count; i++)
+			width = MAX(width, _resv_name_width(&reserve_ptr[i]));
+		snprintf(format, sizeof(format),
+			 "%%-%ds  %%8s  %%19s  %%19s  %%11s  %%s\n", width);
+		printf(format,
+		       "RESV_NAME", "STATE", "START_TIME", "END_TIME",
+		       "DURATION", "NODELIST");
+	}
+	for (i = 0; i < resv_ptr->record_count; i++)
+		_print_reservation(&reserve_ptr[i], width);
+}
+
 /*****************************************************************************
  * Local Print Functions
  *****************************************************************************/
+static int _resv_name_width(reserve_info_t *resv_ptr)
+{
+	if (!resv_ptr->name)
+		return 0;
+	return strlen(resv_ptr->name);
+}
+
+static void _print_reservation(reserve_info_t *resv_ptr, int width)
+{
+	char format[64], tmp1[32], tmp2[32], tmp3[32];
+	char *state = "INACTIVE";
+	uint32_t duration;
+	time_t now = time(NULL);
+
+	slurm_make_time_str(&resv_ptr->start_time, tmp1, sizeof(tmp1));
+	slurm_make_time_str(&resv_ptr->end_time,   tmp2, sizeof(tmp2));
+	duration = difftime(resv_ptr->end_time, resv_ptr->start_time);
+	secs2time_str(duration, tmp3, sizeof(tmp3));
+
+	if ((resv_ptr->start_time <= now) && (resv_ptr->end_time >= now))
+		state = "ACTIVE";
+	snprintf(format, sizeof(format),
+		 "%%-%ds  %%8s  %%19s  %%19s  %%11s  %%s\n", width);
+	printf(format,
+	       resv_ptr->name, state, tmp1, tmp2, tmp3, resv_ptr->node_list);
+
+	return;
+}
 
 static int _print_str(char *str, int width, bool right, bool cut_output)
 {
@@ -260,6 +314,22 @@ static void _set_node_field_size(List sinfo_list)
 	}
 	list_iterator_destroy(i);
 	params.node_field_size = max_width;
+}
+
+static void _set_part_field_size(List sinfo_list)
+{
+	ListIterator i = list_iterator_create(sinfo_list);
+	sinfo_data_t *current;
+	int max_width = MIN_PART_FIELD_SIZE, this_width = 0;
+
+	while ((current = (sinfo_data_t *) list_next(i)) != NULL) {
+		if (!current->part_info || !current->part_info->name)
+			continue;
+		this_width = strlen(current->part_info->name);
+		max_width = MAX(max_width, this_width);
+	}
+	list_iterator_destroy(i);
+	params.part_field_size = max_width;
 }
 
 /*
@@ -709,6 +779,8 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 int _print_partition(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
+	if (params.part_field_flag)
+		width = params.part_field_size;
 	if (sinfo_data) {
 		if (sinfo_data->part_info == NULL)
 			_print_str("n/a", width, right_justify, true);
@@ -735,6 +807,8 @@ int _print_partition(sinfo_data_t * sinfo_data, int width,
 int _print_partition_name(sinfo_data_t * sinfo_data, int width,
 			  bool right_justify, char *suffix)
 {
+	if (params.part_field_flag)
+		width = params.part_field_size;
 	if (sinfo_data) {
 		if (sinfo_data->part_info == NULL)
 			_print_str("n/a", width, right_justify, true);

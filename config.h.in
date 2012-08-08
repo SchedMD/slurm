@@ -142,7 +142,7 @@
 /* Define to 1 if you have the `job' library (-ljob). */
 #undef HAVE_LIBJOB
 
-/* define if you have libnrt. */
+/* define if you have libnrt.so */
 #undef HAVE_LIBNRT
 
 /* Define to 1 if you have the <limits.h> header file. */
