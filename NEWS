@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
     to operate the same way salloc or sbatch did and assign a task per cpu
     by default instead of task per node.
  -- Fix salloc --gid to work correctly.  Reported by Brian Gilmer
+ -- BGQ - fix smap to set the correct default MloaderImage
 
 * Changes in SLURM 2.4.2
 ========================

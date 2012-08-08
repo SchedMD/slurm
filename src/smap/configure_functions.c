@@ -926,7 +926,7 @@ static int _save_allocation(char *com, List allocated_blocks)
 		xstrcat(save_string, "# Numpsets=32 # io rich\n");
 #else
 		image_dir = "/bgsys/drivers/ppcfloor/boot";
-		xstrfmtcat(save_string, "MloaderImage=%s/uloader\n",
+		xstrfmtcat(save_string, "MloaderImage=%s/firmware\n",
 			   image_dir);
 		xstrcat(save_string, "Numpsets=4 # io semi-poor\n");
 		xstrcat(save_string, "# Numpsets=16 # io rich\n");
