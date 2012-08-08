@@ -2236,9 +2236,9 @@ _fake_unpack_adapters(Buf buf, slurm_nrt_nodeinfo_t *n)
 
 		/* no copy, just advances buf counters */
 		for (j = 0; j < window_count; j++) {
-			safe_unpack16(&dummy16, buf);
-			safe_unpack32(&dummy32, buf);
-			safe_unpack32(&dummy32, buf);
+			safe_unpack16(&dummy16, buf);	/* window_id */
+			safe_unpack32(&dummy32, buf);	/* state */
+			safe_unpack32(&dummy32, buf);	/* job_key */
 		}
 
 		for (j = 0; j < n->adapter_count; j++) {
