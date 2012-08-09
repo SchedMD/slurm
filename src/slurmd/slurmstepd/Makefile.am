@@ -36,5 +36,5 @@ slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 endif
 
 force:
-$(slurmd_LDADD) : force
+$(slurmstepd_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
