@@ -28,12 +28,16 @@ for every <i>midplane</i> on the system. </p>
 
 <p>Internally SLURM treats each <i>midplane</i> as one node with
 a processor count equal to the number of cores on the midplane, which
-keeps the number of entities being managed by SLURM more reasonable.
-Since the current BlueGene software can sub-allocate a <i>midplane</i>
-into smaller blocks, more than one user job can execute on each <i>midplane</i>.
-In the case of BlueGene/Q systems, more than one user job can also
+keeps the number of entities being managed by SLURM more
+reasonable.</p>
+
+<p>All BlueGene systems can sub-allocate a <i>midplane</i>
+into smaller blocks, this allows more than one user job to execute on
+each <i>midplane</i>.</p>
+<p>In the case of BlueGene/Q systems, more than one user job can also
 execute in each block (see AllowSubBlockAllocation option in 'man
-bluegene.conf').
+bluegene.conf').</p>
+
 To effectively utilize this environment, SLURM tools present the user with
 the view that each <i>c-node</i> is a separate node, so allocation requests
 and status information use <i>c-node</i> counts.
