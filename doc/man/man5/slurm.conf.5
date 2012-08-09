@@ -1145,6 +1145,10 @@ which uses an AIX kernel extension and is the default for AIX systems
 \fBproctrack/cgroup\fR
 which uses linux cgroups to constrain and track processes.
 NOTE: see "man cgroup.conf" for configuration details
+NOTE: This plugin writes to disk often and can impact performance.
+If you are running lots of short running jobs
+(less than a couple of seconds) this plugin slows down performance dramatically.
+It should probably be avoided in an HTC environment.
 .TP
 \fBproctrack/linuxproc\fR
 which uses linux process tree using parent process IDs
@@ -2013,6 +2017,10 @@ which is supported by SLURM.
 enables resource containment using Linux control cgroups.
 This enables the \-\-cpu_bind and/or \-\-mem_bind srun options.
 NOTE: see "man cgroup.conf" for configuration details.
+NOTE: This plugin writes to disk and can slightly impact performance.
+If you are running lots of short running jobs
+(less than a couple of seconds) this plugin slows down performance slightly.
+It should probably be avoided in an HTC environment.
 .TP
 \fBtask/none\fR
 for systems requiring no special handling of user tasks.

@@ -89,6 +89,9 @@ The default value is 300 seconds. The value should be reduced to a few
 seconds if possible. Use of accounting records for older jobs can increase
 the job throughput rate compared with retaining old jobs in the memory of
 the slurmctld daemon.</li>
+<li><b>ProctrackType</b>:
+Avoid using <i>proctrack/cgroup</i> it is considerably slower than
+other alternatives. <i>proctrack/pgid</i> (the default) is advised.</li>
 <li><b>PriorityType</b>:
 The <i>priority/builtin</i> is considerably faster than other options, but
 schedules jobs only on a First In First Out (FIFO) basis.</li>
@@ -96,7 +99,7 @@ schedules jobs only on a First In First Out (FIFO) basis.</li>
 Several scheduling parameters are available.
 <ul>
 <li>Setting option <b>defer</b> will avoid attempting to schedule each job
-individually at job submit time, but defer it until a later time when 
+individually at job submit time, but defer it until a later time when
 scheduling multiple jobs simultaneously may be possible.
 This option may improve system responsiveness when large numbers of jobs
 (many hundreds) are submitted at the same time, but it will delay the
@@ -144,10 +147,15 @@ only) or 3 (general information logging). Each increment in the logging level
 will increase the number of message by a factor of about 3.</li>
 <li><b>SlurmdLogFile</b>:
 Writing to local storage is recommended.</li>
-<li>Other: Configure logging, accounting and other overhead to a minimum
+<li><b>TaskPlugin</b>:
+Avoid using <i>task/cgroup</i> it is slower than other
+alternatives. It is not as heavy as the cgroup proctrack
+plugin, but still added overhead.  On the same note <i>task/affinity</i> does
+not appear to add any mesurable overhead.</li>
+<li><b>Other</b>: Configure logging, accounting and other overhead to a minimum
 appropriate for your environment.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 12 July 2012</p>
+<p style="text-align:center;">Last modified 9 August 2012</p>
 
 <!--#include virtual="footer.txt"-->
