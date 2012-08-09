@@ -38,7 +38,7 @@ If desired, multiple trigger programs can be set for the same event.
 user \fISlurmUser\fR unless \fISlurmUser\fR is configured as user root.
 This is required for the \fIslurmctld\fR daemon to set the appropriate
 user and group IDs for the executed program.
-Also note that the program is executed on the same node that the
+Also note that the trigger program is executed on the same node that the
 \fIslurmctld\fR daemon uses rather than some allocated compute node.
 To check the value of \fISlurmUser\fR, run the command:
 
@@ -79,6 +79,7 @@ Clear or delete a previously defined event trigger.
 The \fB\-\-id\fR, \fB\-\-jobid\fR or \fB\-\-userid\fR
 option must be specified to identify the trigger(s) to
 be cleared.
+Only user root or the trigger's creator can delete a trigger.
 
 .TP
 \fB\-d\fR, \fB\-\-down\fR
@@ -209,6 +210,8 @@ Register an event trigger based upon the supplied options.
 NOTE: An event is only triggered once. A new event trigger
 must be set established for future events of the same type
 to be processed.
+Triggers can only be set if the command is run by the user
+\fISlurmUser\fR unless \fISlurmUser\fR is configured as user root.
 
 .TP
 \fB\-t\fR, \fB\-\-time\fR

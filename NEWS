@@ -56,6 +56,8 @@ documents those changes that are of interest to users and admins.
  -- Fix salloc --gid to work correctly.  Reported by Brian Gilmer
  -- BGQ - fix smap to set the correct default MloaderImage
  -- BLUEGENE - updated documentation.
+ -- Close the batch job's environment file when it contains no data to avoid
+    leaking file descriptors.
 
 * Changes in SLURM 2.4.2
 ========================
