@@ -2177,7 +2177,8 @@ static void _pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer)
  *	including digital signature.
  * RET the sbcast credential or NULL on error */
 sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
-				  uint32_t job_id, char *nodes)
+				  uint32_t job_id, char *nodes,
+				  time_t expiration)
 {
 	Buf buffer;
 	int rc;
@@ -2190,7 +2191,7 @@ sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
 
 	sbcast_cred = xmalloc(sizeof(struct sbcast_cred));
 	sbcast_cred->ctime      = now;
-	sbcast_cred->expiration = now + DEFAULT_EXPIRATION_WINDOW;
+	sbcast_cred->expiration = expiration;
 	sbcast_cred->jobid      = job_id;
 	sbcast_cred->nodes      = xstrdup(nodes);
 
@@ -2371,4 +2372,5 @@ void  print_sbcast_cred(sbcast_cred_t *sbcast_cred)
 	info("Sbcast_cred: Jobid   %u", sbcast_cred->jobid         );
 	info("Sbcast_cred: Nodes   %s", sbcast_cred->nodes         );
 	info("Sbcast_cred: ctime   %s", ctime(&sbcast_cred->ctime) );
+	info("Sbcast_cred: Expire  %s", ctime(&sbcast_cred->expiration) );
 }
