@@ -1697,7 +1697,7 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 
 		xfree(job_ptr->gres);
 		xstrcat(job_ptr->gres, "");
-	} else {
+	} else if ( job_ptr->node_cnt > 0 ) {
 		/* job_ptr->gres is rebuilt/replaced here */
 		tmp_str = req_config;
 		job_ptr->gres = xstrdup("");
@@ -1713,21 +1713,28 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 			/* Retrieve the number of GRES requested/required. */
 			ngres_req = gres_get_value_by_type(job_ptr->gres_list,
 							   subtok);
+
+			/* In the event that we somehow have a valid
+			 * GRES type but don't find a quantity for it,
+			 * we simply write ":0" for the quantity.
+			 */
+			if (ngres_req == NO_VAL)
+				ngres_req = 0;
+
 			/* Append value to the gres string. */
-			if ((ngres_req != NO_VAL) &&
-			    (ngres_req*job_ptr->node_cnt > 0)) {
-				snprintf(buf, sizeof(buf), "%s%s:%u",
-					 prefix, subtok,
-					 ngres_req*job_ptr->node_cnt);
-				xstrcat(job_ptr->gres ,buf);
-				if (prefix[0] == '\0')
-					prefix = ",";
-				if (slurm_get_debug_flags() & DEBUG_FLAG_GRES){
-					debug("(%s:%d) job id:%u -- ngres_req:"
-					      "%u, gres_req substring = (%s)",
-					      THIS_FILE, __LINE__,
-					      job_ptr->job_id, ngres_req, buf);
-				}
+			snprintf(buf, sizeof(buf), "%s%s:%u",
+				 prefix, subtok,
+				 ngres_req * job_ptr->node_cnt);
+
+			xstrcat(job_ptr->gres_used, buf);
+
+			if (prefix[0] == '\0')
+				prefix = ",";
+			if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
+				debug("(%s:%d) job id:%u -- ngres_req:"
+				      "%u, gres_req substring = (%s)",
+				      THIS_FILE, __LINE__,
+				      job_ptr->job_id, ngres_req, buf);
 			}
 
 			tok = strtok_r(NULL, ",", &last);
@@ -1735,22 +1742,24 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 		xfree(tmp_str);
 	}
 
-	/* Find out which select type plugin we have so we can decide what
-	 * value to look for. */
-	select_type = slurm_get_select_type();
+	if ( !job_ptr->gres_alloc || (job_ptr->gres_alloc[0] == '\0') ) {
+		select_type = slurm_get_select_type();
 
-	if (!strcmp(select_type, "select/cray"))
-		valtype = GRES_VAL_TYPE_CONFIG;
-	else
-		valtype = GRES_VAL_TYPE_ALLOC;
+		/* Find out which select type plugin we have so we can decide
+		 * what value to look for. */
+		if (!strcmp(select_type, "select/cray"))
+			valtype = GRES_VAL_TYPE_CONFIG;
+		else
+			valtype = GRES_VAL_TYPE_ALLOC;
 
-	/* Now build the GRES allocated field. */
-	rv = _build_gres_alloc_string(job_ptr, valtype);
-	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
-		debug("(%s:%d) job id: %u -- job_record->gres: (%s), "
-		      "job_record->gres_alloc: (%s)",
-		      THIS_FILE, __LINE__, job_ptr->job_id,
-		      job_ptr->gres, job_ptr->gres_alloc);
+		/* Now build the GRES allocated field. */
+		rv = _build_gres_alloc_string(job_ptr, valtype);
+		if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
+			debug("(%s:%d) job id: %u -- job_record->gres: (%s), "
+			      "job_record->gres_alloc: (%s)",
+			      THIS_FILE, __LINE__, job_ptr->job_id,
+			      job_ptr->gres, job_ptr->gres_alloc);
+		}
 	}
 
 	return rv;
