@@ -441,7 +441,7 @@ no_rollup_change:
 			   begin_time, submit_time, start_time,
 			   jname, track_steps, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
-			   job_ptr->total_cpus, node_cnt, job_ptr->gres,
+			   job_ptr->total_cpus, node_cnt, job_ptr->gres_req,
 			   job_ptr->gres_alloc);
 
 		if (job_ptr->account)
@@ -470,7 +470,7 @@ no_rollup_change:
 			   submit_time, start_time,
 			   jname, track_steps, job_ptr->qos_id, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
-			   job_ptr->total_cpus, node_cnt, job_ptr->gres,
+			   job_ptr->total_cpus, node_cnt, job_ptr->gres_req,
 			   job_ptr->gres_alloc);
 
 		if (job_ptr->account)
@@ -528,7 +528,7 @@ no_rollup_change:
 			   job_ptr->total_cpus, node_cnt, job_ptr->qos_id,
 			   job_ptr->assoc_id, wckeyid,
 			   job_ptr->resv_id, job_ptr->time_limit,
-			   job_ptr->gres, job_ptr->gres_alloc,
+			   job_ptr->gres_req, job_ptr->gres_alloc,
 			   job_ptr->db_index);
 
 		debug3("%d(%s:%d) query\n%s",

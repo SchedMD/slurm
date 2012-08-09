@@ -2592,8 +2592,9 @@ extern void slurmdbd_free_job_start_msg(void *in)
 	if (msg) {
 		xfree(msg->account);
 		xfree(msg->block_id);
-		xfree(msg->gres);
 		xfree(msg->gres_alloc);
+		xfree(msg->gres_req);
+		xfree(msg->gres_used);
 		xfree(msg->name);
 		xfree(msg->nodes);
 		xfree(msg->node_inx);
@@ -3177,8 +3178,9 @@ slurmdbd_pack_job_start_msg(void *in,
 		pack32(msg->db_index, buffer);
 		pack_time(msg->eligible_time, buffer);
 		pack32(msg->gid, buffer);
-		packstr(msg->gres, buffer);
 		packstr(msg->gres_alloc, buffer);
+		packstr(msg->gres_req, buffer);
+		packstr(msg->gres_used, buffer);
 		pack32(msg->job_id, buffer);
 		pack16(msg->job_state, buffer);
 		packstr(msg->name, buffer);
@@ -3238,8 +3240,11 @@ slurmdbd_unpack_job_start_msg(void **msg,
 		safe_unpack32(&msg_ptr->db_index, buffer);
 		safe_unpack_time(&msg_ptr->eligible_time, buffer);
 		safe_unpack32(&msg_ptr->gid, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->gres_alloc, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->gres_req, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->gres_used, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);
 		safe_unpack16(&msg_ptr->job_state, buffer);

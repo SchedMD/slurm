@@ -1695,12 +1695,13 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 			      "was requested",
 			      THIS_FILE, __LINE__, job_ptr->job_id);
 
-		xfree(job_ptr->gres);
-		xstrcat(job_ptr->gres, "");
+		xfree(job_ptr->gres_req);
+		xstrcat(job_ptr->gres_req, "");
 	} else if ( job_ptr->node_cnt > 0 ) {
-		/* job_ptr->gres is rebuilt/replaced here */
-		tmp_str = req_config;
-		job_ptr->gres = xstrdup("");
+		/* job_ptr->gres_req is rebuilt/replaced here */
+		tmp_str = xstrdup(req_config);
+		xfree(job_ptr->gres_req);
+		job_ptr->gres_req = xstrdup("");
 
 		tok = strtok_r(tmp_str, ",", &last);
 		while (tok) {
@@ -1726,7 +1727,7 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 				 prefix, subtok,
 				 ngres_req * job_ptr->node_cnt);
 
-			xstrcat(job_ptr->gres_used, buf);
+			xstrcat(job_ptr->gres_req, buf);
 
 			if (prefix[0] == '\0')
 				prefix = ",";

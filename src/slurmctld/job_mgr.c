@@ -836,6 +836,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->comment, buffer);
 	packstr(dump_job_ptr->gres, buffer);
 	packstr(dump_job_ptr->gres_alloc, buffer);
+	packstr(dump_job_ptr->gres_req, buffer);
+	packstr(dump_job_ptr->gres_used, buffer);
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->licenses, buffer);
 	packstr(dump_job_ptr->mail_user, buffer);
@@ -902,7 +904,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
 	char *resv_name = NULL, *gres = NULL, *batch_host = NULL;
-	char *gres_alloc = NULL;
+	char *gres_alloc = NULL, *gres_req = NULL, *gres_used = NULL;
 	char **spank_job_env = (char **) NULL;
 	List gres_list = NULL, part_ptr_list = NULL;
 	struct job_record *job_ptr = NULL;
@@ -1018,6 +1020,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_alloc, &name_len, buffer);
+		safe_unpackstr_xmalloc(&gres_req, &name_len, buffer);
+		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 		safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
 		safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
@@ -1419,6 +1423,12 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	xfree(job_ptr->gres_alloc);
 	job_ptr->gres_alloc   = gres_alloc;
 	gres_alloc            = NULL;  /* reused, nothing left to free */
+	xfree(job_ptr->gres_req);
+	job_ptr->gres_req    = gres_req;
+	gres_req              = NULL;  /* reused, nothing left to free */
+	xfree(job_ptr->gres_used);
+	job_ptr->gres_used    = gres_used;
+	gres_used             = NULL;  /* reused, nothing left to free */
 	job_ptr->gres_list    = gres_list;
 	job_ptr->direct_set_prio = direct_set_prio;
 	job_ptr->db_index     = db_index;
@@ -1585,6 +1595,8 @@ unpack_error:
 	xfree(comment);
 	xfree(gres);
 	xfree(gres_alloc);
+	xfree(gres_req);
+	xfree(gres_used);
 	xfree(resp_host);
 	xfree(licenses);
 	xfree(mail_user);
@@ -5229,6 +5241,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->comment);
 	xfree(job_ptr->gres);
 	xfree(job_ptr->gres_alloc);
+	xfree(job_ptr->gres_req);
 	xfree(job_ptr->gres_used);
 	FREE_NULL_LIST(job_ptr->gres_list);
 	xfree(job_ptr->licenses);

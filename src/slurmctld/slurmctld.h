@@ -505,9 +505,11 @@ struct job_record {
 					 * this job */
 	char *gres;			/* generic resources requested by job*/
 	List gres_list;			/* generic resource allocation detail */
-	char *gres_alloc;		/* Allocated generic resources string
+	char *gres_alloc;		/* Allocated GRES added over all nodes
 					 * to be passed to slurmdbd */
-	char *gres_used;		/* Used generic resources string
+	char *gres_req;			/* Requested GRES added over all nodes
+					 * to be passed to slurmdbd */
+	char *gres_used;		/* Actual GRES use added over all nodes
 					 * to be passed to slurmdbd */
 	uint32_t group_id;		/* group submitted under */
 	uint32_t job_id;		/* job ID */
