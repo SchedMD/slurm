@@ -1772,7 +1772,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					break;
 				} else if (found_record->job_list &&
 					   list_count(found_record->job_list)) {
-					select_jobinfo_t *jobinfo;
+					select_jobinfo_t *found_jobinfo;
 					ba_mp_t *ba_mp;
 					struct job_record *found_job_ptr;
 					ListIterator job_list_itr =
@@ -1783,7 +1783,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						if (found_job_ptr
 						    != preempt_job_ptr)
 							continue;
-						jobinfo = found_job_ptr->
+						found_jobinfo = found_job_ptr->
 							select_jobinfo->data;
 						ba_mp = list_peek(found_record->
 								  ba_mp_list);
@@ -1791,10 +1791,13 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						xassert(ba_mp);
 						xassert(ba_mp->cnode_bitmap);
 
-						bit_not(jobinfo->units_avail);
+						bit_not(found_jobinfo->
+							units_avail);
 						bit_and(ba_mp->cnode_bitmap,
-							jobinfo->units_avail);
-						bit_not(jobinfo->units_avail);
+							found_jobinfo->
+							units_avail);
+						bit_not(found_jobinfo->
+							units_avail);
 
 						if (bg_conf->slurm_debug_flags
 						    & DEBUG_FLAG_BG_PICK)
