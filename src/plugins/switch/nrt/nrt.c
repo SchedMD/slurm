@@ -826,11 +826,14 @@ _alloc_node(slurm_nrt_libstate_t *lp, char *name)
 static slurm_nrt_window_t *
 _find_free_window(slurm_nrt_adapter_t *adapter)
 {
-	int i;
+	static int last_inx = 0;
 	slurm_nrt_window_t *window;
+	int i;
 
-	for (i = 0; i < adapter->window_count; i++) {
-		window = &adapter->window_list[i];
+	for (i = 0; i < adapter->window_count; i++, last_inx++) {
+		if (last_inx >= adapter->window_count)
+			last_inx = 0;
+		window = &adapter->window_list[last_inx];
 		if (window->state == NRT_WIN_AVAILABLE)
 			return window;
 	}
