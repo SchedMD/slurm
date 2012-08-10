@@ -21,6 +21,10 @@ documents those changes that are of interest to users and admins.
     submit when required nodes are up, but completing a job or in exclusive
     job allocation.
  -- Add HWLOC_FLAGS so linking to libslurm works correctly
+ -- BGQ - If using backfill and a shared block is running at least one job
+    and a job comes through backfill and can fit on the block without ending
+    jobs don't set an end_time for the running jobs since they don't need to
+    end to start the job.
 
 * Changes in SLURM 2.4.2
 ========================
