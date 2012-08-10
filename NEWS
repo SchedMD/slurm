@@ -17,6 +17,9 @@ documents those changes that are of interest to users and admins.
  -- Fix sbcast's credential to last till the end of a job instead of the
     previous 20 minute time limit.  The previous behavior would fail for
     large files 20 minutes into the transfer.
+ -- Return ESLURM_NODES_BUSY rather than ESLURM_NODE_NOT_AVAIL error on job
+    submit when required nodes are up, but completing a job or in exclusive
+    job allocation.
 
 * Changes in SLURM 2.4.2
 ========================
