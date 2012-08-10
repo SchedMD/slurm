@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
  -- Return ESLURM_NODES_BUSY rather than ESLURM_NODE_NOT_AVAIL error on job
     submit when required nodes are up, but completing a job or in exclusive
     job allocation.
+ -- Add HWLOC_FLAGS so linking to libslurm works correctly
 
 * Changes in SLURM 2.4.2
 ========================
