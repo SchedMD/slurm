@@ -258,6 +258,12 @@ static int	_pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static void	_pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf,
 				slurm_nrt_jobinfo_t *jp);
 static char *	_state_str(win_state_t state);
+static int	_unload_window(char *adapter_name, nrt_adapter_t adapter_type,
+			       nrt_job_key_t job_key,
+			       nrt_window_id_t window_id, int retry);
+static int	_unload_window_all_jobs(char *adapter_name,
+					nrt_adapter_t adapter_type,
+					nrt_window_id_t window_id);
 static void	_unlock(void);
 static int	_unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static int	_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf,
@@ -3714,6 +3720,48 @@ _unload_window(char *adapter_name, nrt_adapter_t adapter_type,
 
 	return SLURM_FAILURE;
 }
+static int
+_unload_window_all_jobs(char *adapter_name, nrt_adapter_t adapter_type,
+			nrt_window_id_t window_id)
+{
+	int err, i;
+	nrt_cmd_unload_window_t unload_window;
+	nrt_cmd_query_jobs_t nrt_jobs;
+	nrt_job_key_t job_count, *job_keys = NULL;
+
+	nrt_jobs.adapter_name = adapter_name;
+	nrt_jobs.adapter_type = adapter_type;
+	nrt_jobs.job_count = &job_count;
+	nrt_jobs.job_keys = &job_keys;
+	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_JOBS, &nrt_jobs);
+	if (err != NRT_SUCCESS) {
+		error("nrt_command(query_jobs, %s, %s): %s",
+		       adapter_name, _adapter_type_str(adapter_type),
+		       nrt_err_str(err));
+		if (job_keys)
+			free(job_keys);
+		return err;
+	}
+
+	for (i = 0; i < job_count; i++) {
+		unload_window.adapter_name = adapter_name;
+		unload_window.adapter_type = adapter_type;
+		unload_window.job_key = job_keys[i];
+		unload_window.window_id = window_id;
+
+		err = nrt_command(NRT_VERSION, NRT_CMD_UNLOAD_WINDOW,
+				  &unload_window);
+		if (err == NRT_SUCCESS) {
+			info("nrt_command(unload_window, %s, %s, %u, %hu)",
+			      adapter_name, _adapter_type_str(adapter_type),
+			      job_keys[i], window_id);
+		}
+	}
+
+	if (job_keys)
+		free(job_keys);
+	return SLURM_FAILURE;
+}
 
 static int _unload_job_table(slurm_nrt_jobinfo_t *jp)
 {
@@ -4018,8 +4066,10 @@ nrt_clear_node_state(void)
 	nrt_cmd_status_adapter_t adapter_status;
 	nrt_window_id_t window_count;
 	nrt_status_t *status_array = NULL;
+	win_state_t state;
 	nrt_cmd_clean_window_t clean_window;
 	char window_str[128];
+	bool orphan_procs = false;
 	hostset_t hs = NULL;
 
 	if (debug_flags & DEBUG_FLAG_SWITCH)
@@ -4144,6 +4194,21 @@ nrt_clear_node_state(void)
 					fatal("hostset_create malloc failure");
 			}
 			for (k = 0; k < window_count; k++) {
+				if (debug_flags & DEBUG_FLAG_SWITCH) {
+					snprintf(window_str,
+						 sizeof(window_str), "%d",
+						 clean_window.window_id);
+					hostset_insert(hs, window_str);
+				}
+				state = status_array[k].state;
+				if ((state == NRT_WIN_RESERVED) ||
+				    (state == NRT_WIN_READY) ||
+				    (state == NRT_WIN_RUNNING)) {
+					_unload_window_all_jobs(
+						adapter_status.adapter_name,
+						adapter_status.adapter_type,
+						status_array[k].window_id);
+				}
 				clean_window.adapter_name = adapter_names.
 							    adapter_names[j];
 				clean_window.adapter_type = adapter_names.
@@ -4154,6 +4219,8 @@ nrt_clear_node_state(void)
 				err = nrt_command(NRT_VERSION,
 						  NRT_CMD_CLEAN_WINDOW,
 						  &clean_window);
+				if (err == NRT_WRONG_WINDOW_STATE)
+					orphan_procs = true;
 				if (err != NRT_SUCCESS) {
 					error("nrt_command(clean_window, "
 					      "%s, %s, %u): %s",
@@ -4164,12 +4231,6 @@ nrt_clear_node_state(void)
 					      nrt_err_str(err));
 					rc = SLURM_ERROR;
 					continue;
-				}
-				if (debug_flags & DEBUG_FLAG_SWITCH) {
-					snprintf(window_str,
-						 sizeof(window_str), "%d",
-						 clean_window.window_id);
-					hostset_insert(hs, window_str);
 				}
 			}
 			if (debug_flags & DEBUG_FLAG_SWITCH) {
@@ -4192,6 +4253,14 @@ nrt_clear_node_state(void)
 		free(status_array);
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("nrt_clear_node_state: complete:%d", rc);
+	if (orphan_procs) {
+		error("switch/nrt: THERE APPEAR TO BE ORPHAN PROCESSES "
+		      "HOLDING SWITCH WINDOWS");
+		error("switch/nrt: You must manually find and kill these "
+		      "processes before using this node");
+		error("switch/nrt: Use of ProctrackType=proctrack/cgroup "
+		      "generally prevents this");
+	}
 
 	return rc;
 }

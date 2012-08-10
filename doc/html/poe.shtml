@@ -234,7 +234,7 @@ followed by a colon followed by one space.</p>
 
 <h2>System Administration</h2>
 
-<p>There are three critical SLURM configuration parameters for use with PE.
+<p>There are several critical SLURM configuration parameters for use with PE.
 These configuration parameters should be set in your <b>slurm.conf</b> file.
 <b>LaunchType</b> defines the task launch mechanism to be used and must be set
 to <b>launch/poe</b>.
@@ -244,12 +244,20 @@ interface.
 Task launch is slower in this environment than with a typical Linux cluster
 and the <b>MessageTimeout</b> must be configured to a sufficiently large value
 so that large parallel jobs can be launched without SLURM's job step
-credentials expiring.</p>
+credentials expiring.
+When switch resources are allocated to a job, all processes spawned by that job
+must be terminated before the switch resources can be released for use by another
+program. This means that reliable tracking of all spawned processes is critical
+for switch use. Use of <b>ProctrackType=proctrack/cgroup</b> is strongly
+recommended. Use of any other process tracking plugin significantly increases
+the likelyhood of orphan processes that must be manually identified and killed
+in order to reuse switch resources.</p>
 <pre>
 # Excerpt of slurm.conf
 LaunchType=launch/poe
 SwitchType=switch/nrt
 MessageTimeout=30
+ProctrackType=proctrack/cgroup
 </pre>
 
 <p>In order for these plugins to be built, the locations of the POE Resource
@@ -332,8 +340,12 @@ can manaage compute nodes "tux[9-16]" on the same cluster).</p>
 Then poe uses the <b>launch/slurm</b> plugin to launch the "pmd" process on the
 compute nodes, so two launch plugins are actually used.</p>
 
+<p>Depending upon job size and network options, allocating and deallocating
+switch resources can take multple seconds per node and the process is not well
+parallelized. This is outside of SLURM's control.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 August 2012</p></td>
+<p style="text-align:center;">Last modified 9 August 2012</p></td>
 
 <!--#include virtual="footer.txt"-->
