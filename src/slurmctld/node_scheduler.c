@@ -921,6 +921,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool tried_sched = false;	/* Tried to schedule with avail nodes */
 	static uint32_t cr_enabled = NO_VAL;
 	bool preempt_flag = false;
+	bool nodes_busy = false;
 	int shared = 0, select_mode;
 
 	if (test_only)
@@ -1074,6 +1075,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				fatal("bit_copy malloc failure");
 		}
 		for (i = 0; i < node_set_size; i++) {
+			int count1 = 0, count2 = 0;
 			if (!has_xand &&
 			    !bit_test(node_set_ptr[i].feature_bits, j))
 				continue;
@@ -1089,6 +1091,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			}
 
 			bit_and(node_set_ptr[i].my_bitmap, avail_node_bitmap);
+			if (!nodes_busy) {
+				count1 = bit_set_count(node_set_ptr[i].
+						       my_bitmap);
+			}
 			if (!preempt_flag) {
 				if (shared) {
 					bit_and(node_set_ptr[i].my_bitmap,
@@ -1111,6 +1117,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					cg_node_bitmap);
 				bit_not(cg_node_bitmap);
 #endif
+			}
+			if (!nodes_busy) {
+				count2 = bit_set_count(node_set_ptr[i].
+						       my_bitmap);
+				if (count1 != count2)
+					nodes_busy = true;
 			}
 			if (avail_bitmap) {
 				bit_or(avail_bitmap,
@@ -1273,12 +1285,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 	/* The job is not able to start right now, return a
 	 * value indicating when the job can start */
-	if (!runable_avail)
-		error_code = ESLURM_NODE_NOT_AVAIL;
 	if (!runable_ever) {
 		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		info("_pick_best_nodes: job %u never runnable",
 		     job_ptr->job_id);
+	} else if (!runable_avail && !nodes_busy) {
+		error_code = ESLURM_NODE_NOT_AVAIL;
 	}
 
 	if (error_code == SLURM_SUCCESS) {
