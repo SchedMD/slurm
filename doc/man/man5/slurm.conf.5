@@ -226,7 +226,11 @@ OpenMPI (version 1.3 or higher)
 \fBClusterName\fR
 The name by which this SLURM managed cluster is known in the
 accounting database.  This is needed distinguish accounting records
-when multiple clusters report to the same database.
+when multiple clusters report to the same database. Because of limitations
+in some databases, any upper case letters in the name will be silently mapped
+to lower case. In order to avoid confusion, it is recommended that the name
+be lower case.
+
 
 .TP
 \fBCompleteWait\fR
