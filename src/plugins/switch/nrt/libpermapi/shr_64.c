@@ -1037,42 +1037,163 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		log_alter_with_fp(log_opts, LOG_DAEMON, pmd_lfp);
 		myargv[0] = myargv[1] = "pmd";
 	} else {
+		char *poe_argv = getenv("MP_I_SAVED_ARGV");
 		log_alter(log_opts, LOG_DAEMON, "/dev/null");
 
 		myargv[1] = getenv("SLURM_JOB_NAME");
 
-		/* If SLURM_JOB_NAME isn't set that means we launched
-		   from poe proper instead of srun launching poe.
-		*/
-		if (!myargv[1]) {
-			/* Here we can get the name of the running job
-			   because it is always the 2nd argv in the
-			   poe line.
-			*/
-			char *poe_argv = getenv("MP_I_SAVED_ARGV");
-			if (poe_argv) {
-				char *walking_char = NULL;
-				int i = 0, set = 0;
-				tmp_char = xstrdup(poe_argv);
-				walking_char = tmp_char;
-				while (tmp_char[i]) {
-					if (tmp_char[i] != ' ') {
-						i++;
-						continue;
-					}
-					if (set) {
-						tmp_char[i] = '\0';
+		if (poe_argv) {
+			char *adapter_use = NULL;
+			char *bulk_xfer = NULL;
+			char *collectives = NULL;
+			char *euidevice = NULL;
+			char *euilib = NULL;
+			char *immediate = NULL;
+			char *instances = NULL;
+			char *tmp_argv = xstrdup(poe_argv);
+			char *tok, *save_ptr = NULL;
+			int tok_inx = 0;
+
+			/* Parse the command line
+			 * Map the following options to their srun equivalent
+			 * -adapter_use shared | dedicated
+			 * -collective_groups #
+			 * -euidevice sn_all | sn_single
+			 * -euilib ip | us
+			 * -imm_send_buffers #
+			 * -instances #
+			 * -use_bulk_xfer yes | no
+			 */
+			tok = strtok_r(tmp_argv, " ", &save_ptr);
+			while (tok) {
+				if ((tok_inx == 1) && !myargv[1]) {
+					myargv[1] = xstrdup(tok);
+				} else if (!strcmp(tok, "-adapter_use")) {
+					tok = strtok_r(NULL, " ", &save_ptr);
+					if (!tok)
 						break;
-					}
-					set = 1;
-					i++;
-					walking_char = tmp_char + i;
+					adapter_use = xstrdup(tok);
+				} else if (!strcmp(tok, "-collective_groups")){
+					tok = strtok_r(NULL, " ", &save_ptr);
+					if (!tok)
+						break;
+					collectives = xstrdup(tok);
+				} else if (!strcmp(tok, "-euidevice")) {
+					tok = strtok_r(NULL, " ", &save_ptr);
+					if (!tok)
+						break;
+					euidevice = xstrdup(tok);
+				} else if (!strcmp(tok, "-euilib")) {
+					tok = strtok_r(NULL, " ", &save_ptr);
+					if (!tok)
+						break;
+					euilib = xstrdup(tok);
+				} else if (!strcmp(tok, "-imm_send_buffers")) {
+					tok = strtok_r(NULL, " ", &save_ptr);
+					if (!tok)
+						break;
+					immediate = xstrdup(tok);
+				} else if (!strcmp(tok, "-instances")) {
+					tok = strtok_r(NULL, " ", &save_ptr);
+					if (!tok)
+						break;
+					instances = xstrdup(tok);
+				} else if (!strcmp(tok, "-use_bulk_xfer")) {
+					tok = strtok_r(NULL, " ", &save_ptr);
+					if (!tok)
+						break;
+					bulk_xfer = xstrdup(tok);
 				}
-				myargv[1] = walking_char;
+
+				tok = strtok_r(NULL, " ", &save_ptr);
+				tok_inx++;
 			}
-			if (!myargv[1])
-				myargv[1] = "poe";
+			xfree(tmp_argv);
+
+			/* Parse the environment variables */
+			if (!adapter_use) {
+				char *tmp = getenv("MP_ADAPTER_USE");
+				if (tmp)
+					adapter_use = xstrdup(tmp);
+			}
+			if (!collectives) {
+				char *tmp = getenv("MP_COLLECTIVE_GROUPS");
+				if (tmp)
+					collectives = xstrdup(tmp);
+			}
+			if (!euidevice) {
+				char *tmp = getenv("MP_EUIDEVICE");
+				if (tmp)
+					euidevice = xstrdup(tmp);
+			}
+			if (!euilib) {
+				char *tmp = getenv("MP_EUILIB");
+				if (tmp)
+					euilib = xstrdup(tmp);
+			}
+			if (!immediate) {
+				char *tmp = getenv("MP_IMM_SEND_BUFFERS");
+				if (tmp)
+					immediate = xstrdup(tmp);
+			}
+			if (!instances) {
+				char *tmp = getenv("MP_INSTANCES");
+				if (tmp)
+					instances = xstrdup(tmp);
+			}
+			if (!bulk_xfer) {
+				char *tmp = getenv("MP_USE_BULK_XFER");
+				if (tmp)
+					bulk_xfer = xstrdup(tmp);
+			}
+			xfree(opt.network);
+			if (adapter_use) {
+				if (!strcmp(adapter_use, "dedicated"))
+					opt.exclusive = true;
+				xfree(adapter_use);
+			}
+			if (collectives) {
+				if (opt.network)
+					xstrcat(opt.network, ",");
+				xstrcat(opt.network, "cau=");
+				xstrcat(opt.network, collectives);
+			}
+			if (euidevice) {
+				if (opt.network)
+					xstrcat(opt.network, ",");
+				xstrcat(opt.network, euidevice);
+			}
+			if (euilib) {
+				if (opt.network)
+					xstrcat(opt.network, ",");
+				xstrcat(opt.network, euilib);
+			}
+			if (immediate) {
+				if (opt.network)
+					xstrcat(opt.network, ",");
+				xstrcat(opt.network, "immed=");
+				xstrcat(opt.network, immediate);
+			}
+			if (instances) {
+				if (opt.network)
+					xstrcat(opt.network, ",");
+				xstrcat(opt.network, "instances=");
+				xstrcat(opt.network, instances);
+			}
+			if (bulk_xfer && !strcmp(bulk_xfer, "yes")) {
+				if (opt.network)
+					xstrcat(opt.network, ",");
+				xstrcat(opt.network, "bulk_xfer");
+			}
+			xfree(bulk_xfer);
+				xfree(collectives);
+			xfree(euidevice);
+			xfree(euilib);
+			xfree(immediate);
+			xfree(instances);
 		}
+		if (!myargv[1])
+			myargv[1] = "poe";
 	}
 
 	debug("got pe_rm_init called %s %p", rm_id, info);
