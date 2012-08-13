@@ -208,6 +208,7 @@ int xcgroup_ns_mount(xcgroup_ns_t* cgns)
 				return XCGROUP_SUCCESS;
 			xcgroup_set_param(&cg, "release_agent",
 					  cgns->notify_prog);
+			xcgroup_destroy(&cg);
 		}
 		return XCGROUP_SUCCESS;
 	}
