@@ -341,11 +341,27 @@ Then poe uses the <b>launch/slurm</b> plugin to launch the "pmd" process on the
 compute nodes, so two launch plugins are actually used.</p>
 
 <p>Depending upon job size and network options, allocating and deallocating
-switch resources can take multple seconds per node and the process is not well
-parallelized. This is outside of SLURM's control.</p>
+switch resources can take multple seconds per node and the process of launching
+applications on multiple nodes is not well parallelized.
+This is outside of SLURM's control.</p>
+
+<h3>Debugging Notes</h3>
+
+<p>It is possible to generate detailed logging of all switch/nrt actions and
+data by configuring <b>DebugFlags=switch</b>.</p>
+
+<p>The Protocol Network Services Daemon (PNSD) manages the Network Resource
+Table (NRT) information on each node. It's logs are written to the file
+<b>/etc/serverlog</b>, which may be useful to diagnose problems. In order to
+execute PNSD in debug node (for extra debugging information), run the following
+commands as user root:</p>
+<pre>
+stopsrc -s pnsd
+startsrc -s pnsd -a -D
+</pre>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 9 August 2012</p></td>
+<p style="text-align:center;">Last modified 13 August 2012</p></td>
 
 <!--#include virtual="footer.txt"-->
