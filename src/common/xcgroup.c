@@ -136,7 +136,6 @@ clean:
  */
 int xcgroup_ns_destroy(xcgroup_ns_t* cgns)
 {
-
 	xfree(cgns->mnt_point);
 	xfree(cgns->mnt_args);
 	xfree(cgns->subsystems);
@@ -222,6 +221,11 @@ int xcgroup_ns_mount(xcgroup_ns_t* cgns)
 		  MS_NOSUID|MS_NOEXEC|MS_NODEV, options))
 		return XCGROUP_ERROR;
 	else {
+		/* FIXME: this only gets set when we aren't mounted at
+		   all.  Since we never umount this may only be loaded
+		   at startup the first time.
+		*/
+
 		/* we then set the release_agent if necessary */
 		if (cgns->notify_prog) {
 			if (xcgroup_create(cgns, &cg, "/", 0, 0) ==
@@ -260,16 +264,15 @@ int xcgroup_ns_umount(xcgroup_ns_t* cgns)
  */
 int xcgroup_ns_is_available(xcgroup_ns_t* cgns)
 {
-	int fstatus;
+	int fstatus = 0;
 	char* value;
 	size_t s;
 	xcgroup_t cg;
 
 	if (xcgroup_create(cgns, &cg, "/", 0, 0) == XCGROUP_ERROR)
 		return 0;
-
 	if (xcgroup_get_param(&cg, "release_agent",
-			       &value, &s) != XCGROUP_SUCCESS)
+			      &value, &s) != XCGROUP_SUCCESS)
 		fstatus = 0;
 	else {
 		xfree(value);
