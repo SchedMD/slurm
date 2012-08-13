@@ -69,54 +69,20 @@ xcgroup_t task_cpuacct_cg;
 extern int jobacct_gather_cgroup_cpuacct_init(
 	slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
-	char release_agent_path[PATH_MAX];
-
 	/* initialize user/job/jobstep cgroup relative paths */
 	user_cgroup_path[0]='\0';
 	job_cgroup_path[0]='\0';
 	jobstep_cgroup_path[0]='\0';
 
 	/* initialize cpuacct cgroup namespace */
-	release_agent_path[0]='\0';
-	if (snprintf(release_agent_path, PATH_MAX, "%s/release_cpuacct",
-		     slurm_cgroup_conf->cgroup_release_agent) >= PATH_MAX) {
-		error("jobacct_gather/cgroup: unable to build cpuacct release "
-		      "agent path");
-		goto error;
-	}
-
-	if (xcgroup_ns_create(slurm_cgroup_conf, &cpuacct_ns, "/cpuacct", "",
-			      "cpuacct", release_agent_path) !=
-	    XCGROUP_SUCCESS) {
+	if (xcgroup_ns_create(slurm_cgroup_conf, &cpuacct_ns,  "", "cpuacct")
+	    != XCGROUP_SUCCESS) {
 		error("jobacct_gather/cgroup: unable to create cpuacct "
 		      "namespace");
-		goto error;
+		return SLURM_ERROR;
 	}
 
-	/* check that cpuacct cgroup namespace is available */
-	if (!xcgroup_ns_is_available(&cpuacct_ns)) {
-		if (slurm_cgroup_conf->cgroup_automount) {
-			if (xcgroup_ns_mount(&cpuacct_ns)) {
-				error("jobacct_gather/cgroup: unable to mount "
-				      "cpuacct namespace: %s",
-				      slurm_strerror(errno));
-				goto clean;
-			}
-			info("jobacct_gather/cgroup: cpuacct namespace is now "
-			     "mounted");
-		} else {
-			error("jobacct_gather/cgroup: cpuacct namespace not "
-			      "mounted. aborting");
-			goto clean;
-		}
-	}
 	return SLURM_SUCCESS;
-
-clean:
-	xcgroup_ns_destroy(&cpuacct_ns);
-
-error:
-	return SLURM_ERROR;
 }
 
 extern int jobacct_gather_cgroup_cpuacct_fini(

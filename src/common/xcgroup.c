@@ -95,16 +95,36 @@ int _file_write_content(char* file_path, char* content, size_t csize);
  *  - XCGROUP_SUCCESS
  */
 int xcgroup_ns_create(slurm_cgroup_conf_t *conf,
-		xcgroup_ns_t* cgns, char* mnt_point, char* mnt_args,
-		      char* subsys, char* notify_prog) {
+		      xcgroup_ns_t *cgns, char *mnt_args, char *subsys) {
 
-	cgns->mnt_point = xstrdup(conf->cgroup_mountpoint);
-	xstrcat(cgns->mnt_point, mnt_point);
-
+	cgns->mnt_point = xstrdup_printf("%s/%s",
+					 conf->cgroup_mountpoint, subsys);
 	cgns->mnt_args = xstrdup(mnt_args);
 	cgns->subsystems = xstrdup(subsys);
-	cgns->notify_prog = xstrdup(notify_prog);
+	cgns->notify_prog = xstrdup_printf("%s/release_%s",
+					   conf->cgroup_release_agent, subsys);
+
+	/* check that freezer cgroup namespace is available */
+	if (!xcgroup_ns_is_available(cgns)) {
+		if (conf->cgroup_automount) {
+			if (xcgroup_ns_mount(cgns)) {
+				error("unable to mount %s cgroup "
+				      "namespace: %s",
+				      subsys, slurm_strerror(errno));
+				goto clean;
+			}
+			info("cgroup namespace '%s' is now mounted", subsys);
+		} else {
+			error("cgroup namespace '%s' not mounted. aborting",
+			      subsys);
+			goto clean;
+		}
+	}
+
 	return XCGROUP_SUCCESS;
+clean:
+	xcgroup_ns_destroy(cgns);
+	return XCGROUP_ERROR;
 }
 
 /*
@@ -114,7 +134,8 @@ int xcgroup_ns_create(slurm_cgroup_conf_t *conf,
  *  - XCGROUP_ERROR
  *  - XCGROUP_SUCCESS
  */
-int xcgroup_ns_destroy(xcgroup_ns_t* cgns) {
+int xcgroup_ns_destroy(xcgroup_ns_t* cgns)
+{
 
 	xfree(cgns->mnt_point);
 	xfree(cgns->mnt_args);

@@ -78,9 +78,8 @@ typedef struct xcgroup {
  *  - XCGROUP_SUCCESS
  */
 int xcgroup_ns_create(slurm_cgroup_conf_t *conf,
-		      xcgroup_ns_t* cgns,
-		      char* mnt_point,char* mnt_args,
-		      char* subsys,char* notify_prog);
+		      xcgroup_ns_t* cgns, char* mnt_args,
+		      char* subsys);
 
 /*
  * destroy a cgroup namespace

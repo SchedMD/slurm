@@ -83,41 +83,16 @@ static uint64_t percent_in_bytes (uint64_t mb, float percent)
 
 extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
-	char release_agent_path[PATH_MAX];
-
 	/* initialize user/job/jobstep cgroup relative paths */
 	user_cgroup_path[0]='\0';
 	job_cgroup_path[0]='\0';
 	jobstep_cgroup_path[0]='\0';
 
 	/* initialize memory cgroup namespace */
-	release_agent_path[0]='\0';
-	if (snprintf(release_agent_path,PATH_MAX,"%s/release_memory",
-		      slurm_cgroup_conf->cgroup_release_agent) >= PATH_MAX) {
-		error("task/cgroup: unable to build memory release agent path");
-		goto error;
-	}
-	if (xcgroup_ns_create(slurm_cgroup_conf, &memory_ns, "/memory", "",
-			       "memory",release_agent_path) !=
-	     XCGROUP_SUCCESS) {
+	if (xcgroup_ns_create(slurm_cgroup_conf, &memory_ns, "", "memory")
+	    != XCGROUP_SUCCESS) {
 		error("task/cgroup: unable to create memory namespace");
-		goto error;
-	}
-
-	/* check that memory cgroup namespace is available */
-	if (! xcgroup_ns_is_available(&memory_ns)) {
-		if (slurm_cgroup_conf->cgroup_automount) {
-			if (xcgroup_ns_mount(&memory_ns)) {
-				error("task/cgroup: unable to mount memory "
-				      "namespace: %s", slurm_strerror(errno));
-				goto clean;
-			}
-			info("task/cgroup: memory namespace is now mounted");
-		} else {
-			error("task/cgroup: memory namespace not mounted. "
-			      "aborting");
-			goto clean;
-		}
+		return SLURM_ERROR;
 	}
 
 	allowed_ram_space = slurm_cgroup_conf->allowed_ram_space;
@@ -157,12 +132,6 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
         setenv("SLURMSTEPD_OOM_ADJ","-17",0);
 
 	return SLURM_SUCCESS;
-
-clean:
-	xcgroup_ns_destroy(&memory_ns);
-
-error:
-	return SLURM_ERROR;
 }
 
 extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)

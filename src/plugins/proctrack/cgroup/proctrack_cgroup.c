@@ -110,7 +110,6 @@ static slurm_cgroup_conf_t slurm_cgroup_conf;
 static char user_cgroup_path[PATH_MAX];
 static char job_cgroup_path[PATH_MAX];
 static char jobstep_cgroup_path[PATH_MAX];
-static char release_agent_path[PATH_MAX];
 
 static xcgroup_ns_t freezer_ns;
 
@@ -125,39 +124,12 @@ int _slurm_cgroup_init(void)
 	user_cgroup_path[0]='\0';
 	job_cgroup_path[0]='\0';
 	jobstep_cgroup_path[0]='\0';
-	release_agent_path[0]='\0';
-
-	/* build freezer release agent path */
-	if (snprintf(release_agent_path, PATH_MAX, "%s/release_freezer",
-		      slurm_cgroup_conf.cgroup_release_agent) >= PATH_MAX) {
-		error("unable to build cgroup freezer release agent path");
-		return SLURM_ERROR;
-	}
 
 	/* initialize freezer cgroup namespace */
-	if (xcgroup_ns_create(&slurm_cgroup_conf, &freezer_ns, "/freezer", "",
-			       "freezer", release_agent_path)
+	if (xcgroup_ns_create(&slurm_cgroup_conf, &freezer_ns, "", "freezer")
 	     != XCGROUP_SUCCESS) {
 		error("unable to create freezer cgroup namespace");
 		return SLURM_ERROR;
-	}
-
-	/* check that freezer cgroup namespace is available */
-	if (! xcgroup_ns_is_available(&freezer_ns)) {
-		if (slurm_cgroup_conf.cgroup_automount) {
-			if (xcgroup_ns_mount(&freezer_ns)) {
-				error("unable to mount freezer cgroup"
-				      " namespace: %s",
-				      slurm_strerror(errno));
-				return SLURM_ERROR;
-			}
-			info("cgroup namespace '%s' is now mounted", "freezer");
-		}
-		else {
-			error("cgroup namespace '%s' not mounted. aborting",
-			      "freezer");
-			return SLURM_ERROR;
-		}
 	}
 
 	return SLURM_SUCCESS;
@@ -299,6 +271,8 @@ int _slurm_cgroup_destroy(void)
 		xcgroup_delete(&user_freezer_cg);
 		xcgroup_destroy(&user_freezer_cg);
 	}
+
+	xcgroup_ns_destroy(&freezer_ns);
 
 	return SLURM_SUCCESS;
 }
