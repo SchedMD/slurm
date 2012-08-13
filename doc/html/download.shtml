@@ -213,12 +213,12 @@ past as well as what resources they used. Download the code from:<br>
 
 <li><b>Task Affinity</b> plugins</li>
 <ul>
-<li><a href="http://www.open-mpi.org/software/plpa/">
-Portable Linux Processor Affinity (PLPA)</a></li>
+<li><a href="http://www.open-mpi.org/projects/hwloc/">
+Portable Hardware Locality (hwloc)</a></li>
 </ul><br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 17 May 2012</p>
+<p style="text-align:center;">Last modified 13 August 2012</p>
 
 <!--#include virtual="footer.txt"-->
