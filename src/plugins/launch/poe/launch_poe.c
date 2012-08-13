@@ -589,6 +589,8 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				   shared_cpu_use);
 	}
 	if (opt.network) {
+		bool cau_set = false;
+		bool dev_type_set = false;
 		bool protocol_set = false;
 		char *save_ptr = NULL, *token;
 		char *network_str = xstrdup(opt.network);
@@ -634,6 +636,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 							   " -devtype %s",
 							   type_ptr);
 				}
+				dev_type_set = true;
 				/* POE ignores other options */
 
 			/* instances options */
@@ -684,6 +687,8 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 					xstrfmtcat(poe_cmd_line,
 						   " -collective_groups %s",
 						   token + 4);
+				if (atoi(token + 4))
+					cau_set = true;
 			/* Immediate Send Slots Per Window */
 			} else if (!strncasecmp(token, "immed=", 6)) {
 				setenv("MP_IMM_SEND_BUFFERS", token + 6, 1);
@@ -696,6 +701,18 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				info("switch/nrt: invalid option: %s", token);
 			}
 			token = strtok_r(NULL, ",", &save_ptr);
+		}
+		if (cau_set && !dev_type_set) {
+			/* If POE is executed directly (not spawned by srun)
+			 * it will generate an error if -collective_groups is
+			 * non-zero and devtype is not set. Since we do not
+			 * know what devices are available at this point, set
+			 * the default type to hfi in hopes of avoiding an
+			 * error. User can always specify a devtype in the
+			 * --network option to avoid possible invalid value */
+			setenv("MP_DEVTYPE", type_ptr, 1);
+			if (opt.launch_cmd)
+				xstrcat(poe_cmd_line, " -devtype hfi");
 		}
 
 		if (opt.launch_cmd)

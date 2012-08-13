@@ -75,6 +75,8 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
   programming interface.
   Default value is zero.
   Applies only to IBM Power7-IH processors.
+  POE requires that if <b>cau</b> has a non-zero value then <b>devtype=IB</b>
+  or <b>devtype=HFI</b> must be explictly specified.
   <li><b>devname=<i>name</i></b>
   Specify the name of an network adapter to use.
   For example: "eth0" or "mlx4_0".</li>
