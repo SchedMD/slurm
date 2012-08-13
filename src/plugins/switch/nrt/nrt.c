@@ -1568,9 +1568,17 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 		info("    adapter_type: %s",
 		     _adapter_type_str(a->adapter_type));
 		info("    cau_indexes_avail: %hu", a->cau_indexes_avail);
-		info("    cau_indexes_used:  %hu", a->cau_indexes_used);
+		if (a->cau_indexes_used) {
+			/* This information is only available in Power7-IH
+			 * and only in slurmctld's data structure */
+			info("    cau_indexes_used:  %hu",a->cau_indexes_used);
+		}
 		info("    immed_slots_avail: %hu", a->immed_slots_avail);
-		info("    immed_slots_used:  %hu", a->immed_slots_used);
+		if (a->immed_slots_used) {
+			/* This information is only available in Power7-IH
+			 * and only in slurmctld's data structure */
+			info("    immed_slots_used:  %hu",a->immed_slots_used);
+		}
 		inet_ntop(AF_INET, &a->ipv4_addr, addr_str, sizeof(addr_str));
 		info("    ipv4_addr: %s", addr_str);
 		inet_ntop(AF_INET6, &a->ipv6_addr, addr_str, sizeof(addr_str));
