@@ -731,7 +731,7 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 	pid_t    pid = job->envtp->task_pid;
 
 	cpu_bind_type_t bind_type;
-	int bind_verbose;
+	int bind_verbose = 0;
 
 	hwloc_topology_t topology;
 	hwloc_bitmap_t cpuset;

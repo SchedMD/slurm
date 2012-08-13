@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
     and a job comes through backfill and can fit on the block without ending
     jobs don't set an end_time for the running jobs since they don't need to
     end to start the job.
+ -- Initialize bind_verbose when using task/cgroup.
 
 * Changes in SLURM 2.4.2
 ========================
