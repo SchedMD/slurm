@@ -176,7 +176,7 @@ expect {
 		if {$expect_out(1,string) == $target} {
 			incr matches
 		} else {
-			send_user "\nCORE mis-match ($expect_out(1,string) != $target)\n"
+			send_user "\nCORE value bad ($expect_out(1,string) != $target)\n"
 		}
 		exp_continue
 	}
@@ -185,7 +185,7 @@ expect {
 		if {$expect_out(1,string) == $target} {
 			incr matches
 		} else {
-			send_user "\nFSIZE mis-match ($expect_out(1,string) != $target)\n"
+			send_user "\nFSIZE value bad ($expect_out(1,string) != $target)\n"
 		}
 		exp_continue
 	}
@@ -193,7 +193,8 @@ expect {
 		if {$expect_out(1,string) == $limit_nofile} {
 			incr matches
 		} else {
-			send_user "\nNOFILE mis-match ($expect_out(1,string) != $limit_nofile)\n"
+			send_user "\nNOFILE value bad ($expect_out(1,string) != $limit_nofile)\n"
+			send_user "This is expected on POE systems\n"
 		}
 		exp_continue
 	}
@@ -201,7 +202,7 @@ expect {
 		if {$expect_out(1,string) == $limit_nproc} {
 			incr matches
 		} else {
-			send_user "\nNPROC mis-match ($expect_out(1,string) != $limit_nproc)\n"
+			send_user "\nNPROC value bad ($expect_out(1,string) != $limit_nproc)\n"
 		}
 		exp_continue
 	}
@@ -214,7 +215,7 @@ expect {
 		if {$expect_out(1,string) == [expr $limit_stack * 1024]} {
 			incr matches
 		} else {
-			send_user "\nSTACK mis-match ($expect_out(1,string) != $target)\n"
+			send_user "\nSTACK value bad ($expect_out(1,string) != $target)\n"
 		}
 		exp_continue
 	}
@@ -231,8 +232,13 @@ expect {
 	}
 }
 
-if {$matches != 5} {
-	send_user "\nFAILURE: User limits not propagated got $matches of 5 matches\n"
+if {[test_launch_poe]} {
+	set target 4
+} else {
+	set target 5
+}
+if {$matches != $target} {
+	send_user "\nFAILURE: User limits not propagated got $matches of $target matches\n"
 	send_user "Check PropagateResourceLimits configuration parameter\n"
 	send_user "Check $file_err for errors\n"
 	send_user "A long running slurmd could cause a file size limit error\n"
