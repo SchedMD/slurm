@@ -196,6 +196,23 @@ are silently ignored:</p>
 <li>-o, --output (Unable to support node and task-specific file names)</li>
 </ul>
 
+<p>The -L/--label option differs slighly in that when the output from multiple
+tasks are identical, they are combined on a single line with the prefix
+identifying which task(s) generated the output. In addition, there is a colon
+but no space between the task IDs and output. For example:</p>
+<pre>
+# SLURM OUTPUT
+0: foo
+1: foo
+0: bar
+1: barr
+
+# POE OUTPUT
+0-1:foo
+0:bar
+1:barr
+</pre>
+
 <h3>Environment Variables</h3>
 
 <p>Since SLURM is not directly launching user tasks, the following environment
@@ -219,6 +236,14 @@ variables are NOT available with POE:</p>
 <li>SLURM_TASKS_PER_NODE</li>
 <li>SLURM_TOPOLOGY_ADDR</li>
 <li>SLURM_TOPOLOGY_ADDR_PATTERN</li>
+</ul>
+
+<p>Note that POE sets a variety of environment variables that provide similar
+information to some the missing SLURM environment variables. Particularly
+node the following variables:</p>
+<ul>
+<li>MP_I_UPMD_HOSTNAME (local hostname)</li>
+<li>MP_CHILD (global task ID)</li>
 </ul>
 
 <h3>Gang Scheduling</h3>
@@ -371,6 +396,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 13 August 2012</p></td>
+<p style="text-align:center;">Last modified 14 August 2012</p></td>
 
 <!--#include virtual="footer.txt"-->
