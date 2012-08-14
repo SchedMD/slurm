@@ -397,14 +397,19 @@ extern int launch_p_step_launch(
 	slurm_step_launch_params_t launch_params;
 	slurm_step_launch_callbacks_t callbacks;
 	int rc = 0;
-
-	local_srun_job = job;
-	local_global_rc = global_rc;
-
-	task_state = task_state_create(opt.ntasks);
+	bool first_launch = 0;
 
 	slurm_step_launch_params_t_init(&launch_params);
 	memset(&callbacks, 0, sizeof(callbacks));
+
+	if (!task_state) {
+		task_state = task_state_create(job->ntasks);
+		local_srun_job = job;
+		local_global_rc = global_rc;
+		first_launch = 1;
+	} else
+		task_state_alter(task_state, job->ntasks);
+
 	launch_params.gid = opt.gid;
 	launch_params.alias_list = job->alias_list;
 	launch_params.argc = opt.argc;
@@ -455,13 +460,26 @@ extern int launch_p_step_launch(
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	launch_start_time = time(NULL);
-	if (slurm_step_launch(job->step_ctx, &launch_params, &callbacks) !=
-	    SLURM_SUCCESS) {
-		error("Application launch failed: %m");
-		*local_global_rc = 1;
-		slurm_step_launch_abort(job->step_ctx);
-		slurm_step_launch_wait_finish(job->step_ctx);
-		goto cleanup;
+	if (first_launch) {
+		if (slurm_step_launch(
+			    job->step_ctx, &launch_params, &callbacks) !=
+		    SLURM_SUCCESS) {
+			error("Application launch failed: %m");
+			*local_global_rc = 1;
+			slurm_step_launch_abort(job->step_ctx);
+			slurm_step_launch_wait_finish(job->step_ctx);
+			goto cleanup;
+		}
+	} else {
+		if (slurm_step_launch_add(job->step_ctx, &launch_params,
+					  job->nodelist, job->fir_nodeid) !=
+		    SLURM_SUCCESS) {
+			error("Application launch add failed: %m");
+			*local_global_rc = 1;
+			slurm_step_launch_abort(job->step_ctx);
+			slurm_step_launch_wait_finish(job->step_ctx);
+			goto cleanup;
+		}
 	}
 
 	update_job_state(job, SRUN_JOB_STARTING);

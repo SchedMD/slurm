@@ -75,6 +75,7 @@ static bool got_alloc = false;
 static bool slurm_started = false;
 static log_options_t log_opts = LOG_OPTS_STDERR_ONLY;
 static host_usage_t *host_usage = NULL;
+static hostlist_t total_hl = NULL;
 
 int sig_array[] = {
 	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGHUP,
@@ -533,14 +534,19 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	char *my_argv[2] = { connect_param->executable, NULL };
 //	char *my_argv[2] = { "/bin/hostname", NULL };
 	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
-	uint32_t global_rc = 0;
-	int i, rc, fd_cnt;
+	uint32_t global_rc = 0, orig_task_num;
+	int i, ii = 0, rc, fd_cnt, node_cnt;
 	int *ctx_sockfds = NULL;
+	char *name = NULL, *total_node_list = NULL;
+	static uint32_t task_num = 0;
 	hostlist_t hl = NULL;
-	char *name = NULL, *node_list = NULL;
+
+	xassert(job);
 
 	if (pm_type == PM_PMD) {
 		debug("got pe_rm_connect called from PMD");
+		/* Set up how many tasks the PMD is going to launch. */
+		job->ntasks = 1 + task_num;
 	} else if (pm_type == PM_POE) {
 		debug("got pe_rm_connect called");
 		launch_common_set_stdio_fds(job, &cio_fds);
@@ -548,8 +554,6 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		error("pe_rm_connect: unknown caller");
 		return -1;
 	}
-
-	xassert(job);
 
 	/* translate the ip to a node list which SLURM uses to send
 	   messages instead of IP addresses (at this point anyway)
@@ -570,6 +574,11 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 			hl = hostlist_create(name);
 		else
 			hostlist_push_host(hl, name);
+
+		if (!total_hl)
+			total_hl = hostlist_create(name);
+		else
+			hostlist_push_host(total_hl, name);
 	}
 
 	if (!hl) {
@@ -582,23 +591,31 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	}
 
 	hostlist_sort(hl);
-	node_list = hostlist_ranged_string_xmalloc(hl);
+	xfree(job->nodelist);
+	job->nodelist = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
+
+	hostlist_sort(total_hl);
+	total_node_list = hostlist_ranged_string_xmalloc(total_hl);
+	node_cnt = hostlist_count(total_hl);
 
 	opt.argc = my_argc;
 	opt.argv = my_argv;
 	opt.user_managed_io = true;
+	orig_task_num = task_num;
 	if (slurm_step_ctx_daemon_per_node_hack(job->step_ctx,
-						node_list,
-						connect_param->machine_count)
+						total_node_list,
+						node_cnt, &task_num)
 	    != SLURM_SUCCESS) {
+		xfree(total_node_list);
 		*error_msg = xstrdup_printf(
 			"pe_rm_connect: problem with hack: %s",
 			slurm_strerror(errno));
 		error("%s", *error_msg);
 		return -1;
 	}
-
+	xfree(total_node_list);
+	job->fir_nodeid = orig_task_num;
 	if (launch_g_step_launch(job, &cio_fds, &global_rc)) {
 		*error_msg = xstrdup_printf(
 			"pe_rm_connect: problem with launch: %s",
@@ -617,16 +634,16 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		error("%s", *error_msg);
 		return -1;
 	}
-	if (fd_cnt != connect_param->machine_count) {
+	if (fd_cnt != task_num) {
 		*error_msg = xstrdup_printf(
 			"pe_rm_connect: looking for %d sockets but got back %d",
 			connect_param->machine_count, fd_cnt);
 		error("%s", *error_msg);
 		return -1;
 	}
-
-	for (i=0; i<fd_cnt; i++)
-		rm_sockfds[i] = ctx_sockfds[i];
+	ii = 0;
+	for (i=orig_task_num; i<fd_cnt; i++)
+		rm_sockfds[ii++] = ctx_sockfds[i];
 
 	return 0;
 }
@@ -654,7 +671,8 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 	/* We are at the end so don't worry about freeing the
 	   srun_job_t pointer */
 	fini_srun(job, got_alloc, &rc, slurm_started);
-
+	hostlist_destroy(total_hl);
+	total_hl = NULL;
 	*resource_mgr = NULL;
 	dlclose(my_handle);
 }

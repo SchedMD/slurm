@@ -80,7 +80,9 @@ Changed the following enums and #defines
 
 Added the following API's
 =========================
-
+slurm_step_launch_add - added for adding tasks to steps that were
+		       	previously started.  (Note: it currently has only been
+			tested with user managed io jobs.)
 
 Changed the following API's
 ===========================

@@ -88,6 +88,7 @@ typedef struct fname {
 } fname_t;
 
 typedef struct srun_job {
+	int fir_nodeid;
 	uint32_t jobid;		/* assigned job id 	                  */
 	uint32_t stepid;	/* assigned step id 	                  */
 
