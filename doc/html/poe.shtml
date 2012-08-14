@@ -182,6 +182,8 @@ are silently ignored:</p>
 <li>--runjob-opts (used only on IBM BlueGene/Q systems)</li>
 <li>--signal (signal to send when near time limit and the remaining time required)</li>
 <li>--sockets-per-node (number of sockets per node required)</li>
+<li>--task-epilog (per-task epilog program)</li>
+<li>--task-prolog (per-task prolog program)</li>
 <li>-u, --unbuffered (avoid line buffering)</li>
 <li>-W, --wait (specify job swait time after first task exit)</li>
 <li>-Z, --no-allocate (launch tasks without creating job allocation></li>
@@ -196,7 +198,6 @@ are silently ignored:</p>
 
 <h3>Environment Variables</h3>
 
-<p><b>FIXME: We need to validate all of this</b>
 <p>Since SLURM is not directly launching user tasks, the following environment
 variables are NOT available with POE:</p>
 <ul>
@@ -210,8 +211,14 @@ variables are NOT available with POE:</p>
 <li>SLURM_MEM_BIND_LIST</li>
 <li>SLURM_MEM_BIND_TYPE</li>
 <li>SLURM_MEM_BIND_VERBOSE</li>
+<li>SLURM_NODEID</li>
 <li>SLURM_PROCID</li>
+<li>SLURM_SRUN_COMM_HOST</li>
+<li>SLURM_SRUN_COMM_PORT</li>
 <li>SLURM_TASK_PID</li>
+<li>SLURM_TASKS_PER_NODE</li>
+<li>SLURM_TOPOLOGY_ADDR</li>
+<li>SLURM_TOPOLOGY_ADDR_PATTERN</li>
 </ul>
 
 <h3>Gang Scheduling</h3>
