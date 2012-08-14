@@ -592,6 +592,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		bool cau_set = false;
 		bool dev_type_set = false;
 		bool protocol_set = false;
+		char *type_ptr = NULL;
 		char *save_ptr = NULL, *token;
 		char *network_str = xstrdup(opt.network);
 		char *adapter_use = NULL;
@@ -622,7 +623,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 			/* device type options */
 			} else if (!strncasecmp(token, "devtype=", 8)) {
-				char *type_ptr = token + 8;
+				type_ptr = token + 8;
 				if (!strcasecmp(type_ptr, "ib")) {
 					setenv("MP_DEVTYPE", type_ptr, 1);
 					if (opt.launch_cmd)
