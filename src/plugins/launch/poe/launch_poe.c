@@ -389,6 +389,84 @@ static bool _multi_prog_parse(char *line, int length, int step_id)
 	}
 }
 
+/* Propagate srun options for use by POE by setting environment
+ * variables, which are subsequently processed the libsrun/opt.c logic
+ * as called from launch/slurm (by POE). */
+static void _propagate_srun_opts(void)
+{
+	char value[32];
+
+	if (opt.account)
+		setenv("SLURM_ACCOUNT", opt.account, 1);
+	if (opt.acctg_freq >= 0) {
+		snprintf(value, sizeof(value), "%d", opt.acctg_freq);
+		setenv("SLURM_ACCTG_FREQ", value, 1);
+	}
+	if (opt.ckpt_dir)
+		setenv("SLURM_CHECKPOINT_DIR", opt.ckpt_dir, 1);
+	if (opt.ckpt_interval) {
+		snprintf(value, sizeof(value), "%d", opt.ckpt_interval);
+		setenv("SLURM_CHECKPOINT", value, 1);
+	}
+	if (opt.cpus_per_task) {
+		snprintf(value, sizeof(value), "%d", opt.cpus_per_task);
+		setenv("SLURM_CPUS_PER_TASK", value, 1);
+	}
+	if (opt.dependency)
+		setenv("SLURM_DEPENDENCY", opt.dependency, 1);
+	if (opt.exclusive)
+		setenv("SLURM_EXCLUSIVE", "1", 1);
+	if (opt.gres)
+		setenv("SLURM_GRES", opt.gres, 1);
+	if (opt.immediate)
+		setenv("SLURM_IMMEDIATE", "1", 1);
+	if (opt.job_name)
+		setenv("SLURM_JOB_NAME", opt.job_name, 1);
+	if (opt.mem_per_cpu > 0) {
+		snprintf(value, sizeof(value), "%d", opt.mem_per_cpu);
+		setenv("SLURM_MEM_PER_CPU", value, 1);
+	}
+	if (opt.pn_min_memory > 0) {
+		snprintf(value, sizeof(value), "%d", opt.pn_min_memory);
+		setenv("SLURM_MEM_PER_NODE", value, 1);
+	}
+	if (opt.network)
+		setenv("SLURM_NETWORK", opt.network, 1);
+	if (opt.nodes_set) {
+		if (opt.max_nodes >= opt.min_nodes) {
+			snprintf(value, sizeof(value), "%d-%d", 
+				 opt.min_nodes, opt.max_nodes);
+		} else {
+			snprintf(value, sizeof(value), "%d", opt.min_nodes);
+		}
+		setenv("SLURM_NNODES", value, 1);
+	}
+	if (opt.alloc_nodelist)
+		setenv("SLURM_NODELIST", opt.alloc_nodelist, 1);
+	if (opt.ntasks_set) {
+		snprintf(value, sizeof(value), "%d", opt.ntasks);
+		setenv("SLURM_NTASKS", value, 1);
+	}
+	if (opt.overcommit)
+		setenv("SLURM_OVERCOMMIT", "1", 1);
+	if (opt.partition)
+		setenv("SLURM_PARTITION", opt.partition, 1);
+	if (opt.qos)
+		setenv("SLURM_QOS", opt.qos, 1);
+	if (opt.resv_port_cnt >= 0) {
+		snprintf(value, sizeof(value), "%d", opt.resv_port_cnt);
+		setenv("SLURM_RESV_PORTS", value, 1);
+	}
+	if (opt.multi_prog)
+		setenv("SLURM_SRUN_MULTI", "1", 1);
+	if (opt.time_limit_str)
+		setenv("SLURM_TIMELIMIT", opt.time_limit_str, 1);
+	if (opt.wckey)
+		setenv("SLURM_WCKEY", opt.wckey, 1);
+	if (opt.cwd)
+		setenv("SLURM_WORKING_DIR", opt.cwd, 1);
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  *	are called.  Put global initialization here.
@@ -836,8 +914,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	if (opt.launch_cmd)
 		xstrfmtcat(poe_cmd_line, " -rmpool slurm");
 
-	if (opt.job_name)
-		setenv("SLURM_JOB_NAME", opt.job_name, 1);
+	_propagate_srun_opts();
 	setenv("SLURM_STARTED_STEP", "YES", 1);
 	//disable_status = opt.disable_status;
 	//quit_on_intr = opt.quit_on_intr;
