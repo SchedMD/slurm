@@ -392,7 +392,7 @@ static bool _multi_prog_parse(char *line, int length, int step_id)
 /* Propagate srun options for use by POE by setting environment
  * variables, which are subsequently processed the libsrun/opt.c logic
  * as called from launch/slurm (by POE). */
-static void _propagate_srun_opts(void)
+static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
 {
 	char value[32];
 
@@ -432,19 +432,17 @@ static void _propagate_srun_opts(void)
 	}
 	if (opt.network)
 		setenv("SLURM_NETWORK", opt.network, 1);
-	if (opt.nodes_set) {
-		if (opt.max_nodes >= opt.min_nodes) {
-			snprintf(value, sizeof(value), "%d-%d", 
-				 opt.min_nodes, opt.max_nodes);
-		} else {
-			snprintf(value, sizeof(value), "%d", opt.min_nodes);
-		}
+	if (nnodes) {
+		snprintf(value, sizeof(value), "%u", nnodes);
+		setenv("SLURM_JOB_NUM_NODES", value, 1);
 		setenv("SLURM_NNODES", value, 1);
 	}
-	if (opt.alloc_nodelist)
+	if (opt.alloc_nodelist) {
+		setenv("SLURM_JOB_NODELIST", opt.alloc_nodelist, 1);
 		setenv("SLURM_NODELIST", opt.alloc_nodelist, 1);
-	if (opt.ntasks_set) {
-		snprintf(value, sizeof(value), "%d", opt.ntasks);
+	}
+	if (ntasks) {
+		snprintf(value, sizeof(value), "%u", ntasks);
 		setenv("SLURM_NTASKS", value, 1);
 	}
 	if (opt.overcommit)
@@ -526,6 +524,8 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	char dname[512], value[32];
 	bool need_cmdfile = false;
 	char *protocol = "mpi";
+	uint32_t ntasks = opt.ntasks;
+	uint32_t nnodes = opt.min_nodes;
 
 	if (opt.launch_cmd) {
 		int i;
@@ -533,6 +533,15 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		xstrfmtcat(poe_cmd_line, "%s", opt.argv[0]);
 		for (i = 1; i < opt.argc; i++)
 			xstrfmtcat(poe_cmd_line, " %s", opt.argv[i]);
+	}
+
+	if (job) {
+		/* poe can't accept ranges so give the actual number
+		   here so it doesn't get confused if srun gives the
+		   max instead of the min.
+		*/
+		ntasks = job->ntasks;
+		nnodes = job->nhosts;
 	}
 
 	/*
@@ -859,14 +868,14 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		if (opt.launch_cmd)
 			xstrfmtcat(poe_cmd_line, " -labelio yes");
 	}
-	if (opt.min_nodes != NO_VAL) {
-		snprintf(value, sizeof(value), "%u", opt.min_nodes);
+	if (nnodes) {
+		snprintf(value, sizeof(value), "%u", nnodes);
 		setenv("MP_NODES", value, 1);
 		if (opt.launch_cmd)
 			xstrfmtcat(poe_cmd_line, " -nodes %s", value);
 	}
-	if (opt.ntasks) {
-		snprintf(value, sizeof(value), "%u", opt.ntasks);
+	if (ntasks) {
+		snprintf(value, sizeof(value), "%u", ntasks);
 		setenv("MP_PROCS", value, 1);
 		if (opt.launch_cmd)
 			xstrfmtcat(poe_cmd_line, " -procs %s", value);
@@ -914,7 +923,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	if (opt.launch_cmd)
 		xstrfmtcat(poe_cmd_line, " -rmpool slurm");
 
-	_propagate_srun_opts();
+	_propagate_srun_opts(nnodes, ntasks);
 	setenv("SLURM_STARTED_STEP", "YES", 1);
 	//disable_status = opt.disable_status;
 	//quit_on_intr = opt.quit_on_intr;
