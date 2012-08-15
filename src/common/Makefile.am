@@ -19,7 +19,7 @@ build_unsetenv_src = unsetenv.c unsetenv.h
 extra_unsetenv_src =
 endif
 
-INCLUDES     = -I$(top_srcdir) $(BG_INCLUDES)
+INCLUDES     = -I$(top_srcdir) $(BG_INCLUDES) $(HWLOC_CPPFLAGS)
 
 noinst_PROGRAMS = libcommon.o libeio.o libspank.o
 # This is needed if compiling on windows
