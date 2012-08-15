@@ -423,6 +423,49 @@ static void _spawn_fe_agent(void)
 	slurm_attr_destroy(&agent_attr);
 }
 
+/*
+ * Return a string representation of an array of uint16_t elements.
+ * Each value in the array is printed in decimal notation and elements
+ * are separated by a comma.  If sequential elements in the array
+ * contain the same value, the value is written out just once followed
+ * by "(xN)", where "N" is the number of times the value is repeated.
+ *
+ * Example:
+ *   The array "1, 2, 1, 1, 1, 3, 2" becomes the string "1,2,1(x3),3,2"
+ *
+ * Returns an xmalloc'ed string.  Free with xfree().
+ */
+static char *_uint16_array_to_str(int array_len, const uint16_t *array)
+{
+	int i;
+	int previous = 0;
+	char *sep = ",";  /* seperator */
+	char *str = xstrdup("");
+
+	if(array == NULL)
+		return str;
+
+	for (i = 0; i < array_len; i++) {
+		if ((i+1 < array_len)
+		    && (array[i] == array[i+1])) {
+				previous++;
+				continue;
+		}
+
+		if (i == array_len-1) /* last time through loop */
+			sep = "";
+		if (previous > 0) {
+			xstrfmtcat(str, "%u(x%u)%s",
+				   array[i], previous+1, sep);
+		} else {
+			xstrfmtcat(str, "%u%s", array[i], sep);
+		}
+		previous = 0;
+	}
+
+	return str;
+}
+
 srun_job_t * _read_job_srun_agent(void)
 {
 	char *key_str  = getenv("SLURM_FE_KEY");
@@ -832,6 +875,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	job_step_create_response_msg_t *resp;
 	int network_id_cnt = 0;
 	nrt_network_id_t *network_id_list;
+	char value[32];
 
 	if (pm_type == PM_PMD) {
 		debug("pe_rm_get_job_info called");
@@ -943,6 +987,25 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	hostlist_destroy(hl);
 	host_usage = ret_info->hosts;
 
+	if (!got_alloc || !slurm_started) {
+		snprintf(value, sizeof(value), "%u", job->jobid);
+		setenv("SLURM_JOB_ID", value, 1);
+		setenv("SLURM_JOBID", value, 1);
+		setenv("SLURM_NODELIST", job->nodelist, 1);
+		setenv("SLURM_JOB_NODELIST", job->nodelist, 1);
+	}
+	snprintf(value, sizeof(value), "%u", job->stepid);
+	setenv("SLURM_STEP_ID", value, 1);
+	setenv("SLURM_STEPID", value, 1);
+	setenv("SLURM_STEP_NODELIST", step_layout->node_list, 1);
+	snprintf(value, sizeof(value), "%u", job->nhosts);
+	setenv("SLURM_STEP_NUM_NODES", value, 1);
+	snprintf(value, sizeof(value), "%u", job->ntasks);
+	setenv("SLURM_STEP_NUM_TASKS", value, 1);
+	host = _uint16_array_to_str(step_layout->node_cnt,
+				    step_layout->tasks);
+	setenv("SLURM_STEP_TASKS_PER_NODE", host, 1);
+	xfree(host);
 	return 0;
 }
 
@@ -1043,7 +1106,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	if ((srun_debug = getenv("SRUN_DEBUG")))
 		debug_level = atoi(srun_debug);
 	if (debug_level) {
-		log_opts.stderr_level  = log_opts.logfile_level =
+		log_opts.stderr_level = log_opts.logfile_level =
 			log_opts.syslog_level = debug_level;
 	}
 	/* This will be used later in the code to set the
@@ -1215,7 +1278,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 			myargv[1] = "poe";
 	}
 
-	debug("got pe_rm_init called %s %p", rm_id, info);
+	debug("got pe_rm_init called");
 
 	/* This needs to happen before any other threads so we can
 	   catch the signals correctly.  Send in NULL for logopts
@@ -1249,14 +1312,9 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		job->jobid = job_id;
 		job->stepid = step_id;
 
-		info("job created %u.%u", job->jobid, job->stepid);
 		opt.ifname = opt.ofname = opt.efname = "/dev/null";
 		job_update_io_fnames(job);
-
-		info("pe_rm_init done");
 	} else if (pm_type == PM_POE) {
-		debug("got pe_rm_init called %s", rm_id);
-
 		/* Create agent thread to forward job credential needed for
 		 * PMD to fanout child processes on other nodes */
 		_spawn_fe_agent();
