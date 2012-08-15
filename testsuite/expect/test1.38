@@ -43,10 +43,7 @@ print_header $test_id
 if { [test_xcpu] } {
 	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
 	exit 0
-}
-
-# This test just uses options not applicable to cray's aprun
-if {[test_cray]} {
+} elseif {[test_cray]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
 	exit $exit_code
 }
@@ -85,7 +82,7 @@ set match_run  0
 set match_term 0
 set match_wait 0
 set job_id  0
-set srun_pid [spawn $srun -v -N1 -t1 --unbuffered $file_in]
+set srun_pid [spawn $srun -v -N1 -t1 --unbuffered ./$file_in]
 expect {
 	-re "launching ($number).0" {
 		set job_id $expect_out(1,string)
@@ -135,7 +132,7 @@ set match_run  0
 set match_term 0
 set match_wait 0
 set job_id  0
-set srun_pid [spawn $srun -v -N1 -t1 --unbuffered --quit-on-interrupt $file_in]
+set srun_pid [spawn $srun -v -N1 -t1 --unbuffered --quit-on-interrupt ./$file_in]
 expect {
 	-re "launching ($number).0" {
 		set job_id $expect_out(1,string)

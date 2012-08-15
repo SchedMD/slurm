@@ -47,6 +47,12 @@ if {[test_front_end]} {
         exit $exit_code
 }
 
+if {[test_launch_poe]} {
+	set node_name_env MP_I_UPMD_HOSTNAME
+} else {
+	set node_name_env SLURMD_NODENAME
+}
+
 #
 # Delete left-over input script
 # Build input script file
@@ -63,7 +69,7 @@ make_bash_script $file_in "
     inx=\$((inx+1))
   done
   $bin_sleep 2
-  $srun -v --exclusive -n1 $bin_printenv SLURMD_NODENAME &
+  $srun -v --exclusive -n1 $bin_printenv $node_name_env &
   wait
 "
 

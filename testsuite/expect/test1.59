@@ -54,10 +54,12 @@ if { [test_front_end] } {
 	exit 0
 }
 
-if {[string compare [switch_type] "elan"] == 0} {
-	send_user "\nWARNING: This test incompatible with Elan switch\n"
-	exit $exit_code
+if {[test_launch_poe]} {
+	set node_name_env MP_I_UPMD_HOSTNAME
+} else {
+	set node_name_env SLURMD_NODENAME
 }
+
 # find out if we have enough nodes to test functionality
 set partition [default_partition]
 
@@ -175,9 +177,9 @@ for {set i 0} {$i<4} {incr i} {
 	#
 	# execute srun with a specific node count
 	#
-	send "$srun -l $extra -O $bin_printenv SLURMD_NODENAME\r"
+	send "$srun -l $extra -O $bin_printenv $node_name_env\r"
 	expect {
-		-re "($number): ($alpha_numeric_under)" {
+		-re "($number): *($alpha_numeric_under)" {
 			set task_id $expect_out(1,string)
 			if {$task_id == 0} {
 				set node0 $expect_out(2,string)
@@ -327,10 +329,10 @@ for {set i 0} {$i<5} {incr i} {
 	# execute srun with a specific node count
 	#
 
-	send "$srun -l $extra -O $bin_printenv SLURMD_NODENAME\r"
+	send "$srun -l $extra -O $bin_printenv $node_name_env\r"
 
 	expect {
-		-re "($number): ($alpha_numeric_under)" {
+		-re "($number): *($alpha_numeric_under)" {
 			set task_id $expect_out(1,string)
 			if {$task_id == 0} {
 				set node0 $expect_out(2,string)

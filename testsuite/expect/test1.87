@@ -50,6 +50,12 @@ if {[test_front_end] != 0} {
 	exit 0
 }
 
+if {[test_launch_poe]} {
+	set node_name_env MP_I_UPMD_HOSTNAME
+} else {
+	set node_name_env SLURMD_NODENAME
+}
+
 #
 # Build input script file
 #
@@ -111,9 +117,9 @@ set host_0      ""
 set host_1      ""
 set host_2      ""
 set host_3      ""
-send "$srun -l $bin_printenv SLURMD_NODENAME\r"
+send "$srun -l $bin_printenv $node_name_env\r"
 expect {
-	-re "($number): ($alpha_numeric_under)" {
+	-re "($number): *($alpha_numeric_under)" {
 		set host_num $expect_out(1,string)
 		if { $host_num == 0 } {
 			set host_0 $expect_out(2,string)
@@ -176,9 +182,9 @@ if {$exit_code != 0} {
 #
 set matches 0
 
-send "$srun -l -N2 -n2 --relative=0 $bin_printenv SLURMD_NODENAME\r"
+send "$srun -l -N2 -n2 --relative=0 $bin_printenv $node_name_env\r"
 expect {
-	-re "($number): ($alpha_numeric_under)" {
+	-re "($number): *($alpha_numeric_under)" {
 		set host_num $expect_out(1,string)
 		if { $host_num == 0 } {
 			if {[string compare $expect_out(2,string) $host_0] == 0} {
@@ -228,9 +234,9 @@ if {$matches < 2} {
 # Get two nodes relative (starting at) node 2
 #
 set matches 0
-send "$srun -l -N2 -n2 --relative=2 $bin_printenv SLURMD_NODENAME\r"
+send "$srun -l -N2 -n2 --relative=2 $bin_printenv $node_name_env\r"
 expect {
-	-re "($number): ($alpha_numeric_under)" {
+	-re "($number): *($alpha_numeric_under)" {
 		set host_num $expect_out(1,string)
 		if { $host_num == 0 } {
 			if {[string compare $expect_out(2,string) $host_2] == 0} {
@@ -281,14 +287,14 @@ if {$matches < 2} {
 # Since there is only one node left, we check for a error message
 #
 set error 0
-send "$srun -l -N2 -n2 -O --relative=3 $bin_printenv SLURMD_NODENAME\r"
+send "$srun -l -N2 -n2 -O --relative=3 $bin_printenv $node_name_env\r"
 expect {
 	-re "error:" {
 		send_user "This error is expected, no worries\n"
 		incr error
 		exp_continue
 	}
-	-re "($number): ($alpha_numeric_under)" {
+	-re "($number): *($alpha_numeric_under)" {
 		send_user "\nFAILURE: running where we shouldn't be able to run\n"
 		set exit_code   1
 		exp_continue
@@ -310,7 +316,6 @@ expect {
 		wait
 	}
 }
-
 if {$error == 0} {
 	send_user "\nFAILURE: No error for inconsistent node count\n"
 	set exit_code   1
