@@ -35,9 +35,7 @@
 source ./globals
 
 set test_id     "11.4"
-set env(SLURM_LL_API_DEBUG) "2"
 set exit_code   0
-set job_id      0
 set job_ran     0
 set job_count   5
 set script      "mpi-testscripts/script.slurm.sh"
@@ -60,8 +58,7 @@ if { [string length $partition] == 0 } {
 #
 # execute poe with a an mpi script
 #
-spawn $poe $script -rmpool $partition -nodes 2 -procs 2\
-    -euilib us -retry wait
+spawn $poe $script -rmpool $partition -nodes 2 -procs 2 -euilib us
 expect {
 	-nocase "passed" {
 		incr job_ran
@@ -71,13 +68,8 @@ expect {
 		incr job_ran
 		exp_continue
 	}
-	-re "slurm job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: poe not responding\n"
-		cancel_job $job_id
 		set exit_code 1
 	}
 	eof {

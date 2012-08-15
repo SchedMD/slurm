@@ -35,6 +35,7 @@
 ****************************************************************************
 */
 #include <stdio.h>
+#include <stdlib.h>
 #include "mpi.h"
 
 #define BARRIER_COUNT 1000

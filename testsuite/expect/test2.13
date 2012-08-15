@@ -34,7 +34,8 @@ source ./globals
 
 set test_id       "2.13"
 set exit_code     0
-set file_in       "test$test_id.input"
+set file_in1      "test$test_id.input1"
+set file_in2      "test$test_id.input2"
 set file_out      "test$test_id.output"
 set job_id        0
 set orig_time     0
@@ -50,17 +51,22 @@ if {[test_cray]} {
 #
 # Build input script file
 #
-exec $bin_rm -f $file_in $file_out
-make_bash_script $file_in "
-  $bin_echo TEST_BEGIN
-  $srun -t5 $bin_sleep 120
-  $bin_echo TEST_FINISH
+exec $bin_rm -f $file_in1 $file_in2 $file_out
+make_bash_script $file_in1 "
+  $bin_echo JOB_BEGIN
+  $srun -t5 ./$file_in2
+  $bin_echo JOB_FINISH
+"
+make_bash_script $file_in2 "
+  $bin_echo STEP_BEGIN
+  $bin_sleep 120
+  $bin_echo STEP_FINISH
 "
 
 #
 # Submit a job so we have something to work with
 #
-set srun_pid [spawn $sbatch --output=$file_out -t3 $file_in]
+set srun_pid [spawn $sbatch --output=$file_out -t3 $file_in1]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -158,24 +164,20 @@ if {[wait_for_file $file_out] != 0} {
 	send_user "\nFAILURE: job output file not found\n"
 	exit 1
 }
-set matches 0
+
 spawn $bin_cat $file_out
 expect {
-	-re "(TEST_BEGIN|TIME LIMIT|TEST_FINISH)" {
-		incr matches
-		exp_continue
+	-re "STEP_FINISH" {
+		send_user "\nFAILURE: step time limit not enforced\n"
+		set exit_code 1
 	}
 	eof {
 		wait
 	}
 }
-if {$matches != 3} {
-        send_user "\nFAILURE: No step time limit message ($matches!=3)\n"
-        exit 1
-}
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out
+	exec $bin_rm -f $file_in1 $file_in2 $file_out
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

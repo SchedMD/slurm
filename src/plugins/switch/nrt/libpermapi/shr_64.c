@@ -1179,6 +1179,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 			if (euidevice) {
 				if (opt.network)
 					xstrcat(opt.network, ",");
+				xstrcat(opt.network, "devname=");
 				xstrcat(opt.network, euidevice);
 			}
 			if (euilib) {

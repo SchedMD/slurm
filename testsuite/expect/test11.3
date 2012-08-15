@@ -36,12 +36,10 @@
 source ./globals
 
 set test_id     "11.3"
-set env(SLURM_LL_API_DEBUG) "2"
 set exit_code   0
-set job_id      0
 set proto_count 0
 set protos      0
-print_header $test_id
+print_header    $test_id
 
 if { ![test_launch_poe] } {
 	send_user "\nWARNING: This test is only compatable with launch/poe systems\n"
@@ -52,42 +50,31 @@ if { [string length $partition] == 0 } {
 	set partition [default_partition]
 }
 
-set protocols { "mpi" "lapi" "mpi_lapi" }
+set protocols { "mpi" "lapi" "pami" }
 
 foreach proto $protocols {
 	#
 	# execute poe with a specific node count
 	#
 	incr protos
-	set found 0
-	spawn $poe hostname -rmpool $partition -msg_api $proto\
-	    -euilib us -retry wait
+	spawn $poe printenv MP_MSG_API -labelio yes -rmpool $partition -msg_api $proto
 	expect {
-		-re "LL_AdapterUsageProtocol = ($alpha_numeric_under)" {
-			if {![string compare $proto $expect_out(1,string)]} {
-				if { !$found } {
-					incr proto_count
-					incr found
-				}
-			}
-			exp_continue
-		}
-		-re "slurm job ($number)" {
-			set job_id $expect_out(1,string)
+		-re "($number): *$proto" {
+			incr proto_count
 			exp_continue
 		}
 		timeout {
 			send_user "\nFAILURE: poe not responding\n"
-			cancel_job $job_id
 			set exit_code 1
 		}
 		eof {
+			wait
 		}
 	}
 }
 
 if { $proto_count != $protos || !$proto_count } {
-	send_user "\nFAILURE: not all protocols worked got $proto_count looking for $protos\n"
+	send_user "\nFAILURE: not all protocols worked ($proto_count != $protos)\n"
 	set exit_code 1
 }
 
