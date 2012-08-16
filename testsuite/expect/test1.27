@@ -48,7 +48,7 @@ if {[test_cray]} {
 	    SLURM_JOB_ID 1
 	    SLURM_NNODES 0
 	    SLURM_NODELIST 0
-	    SLURM_NPROCS 1
+	    SLURM_NTASKS 1
 	    SLURM_STEPID 0
 	}
 } elseif {[test_launch_poe]} {
@@ -57,7 +57,7 @@ if {[test_cray]} {
 	    SLURM_JOB_ID 1
 	    SLURM_NNODES 0
 	    SLURM_NODELIST 0
-	    SLURM_NPROCS 1
+	    SLURM_NTASKS 1
 	    SLURM_STEPID 0
 	}
 } else {
@@ -70,7 +70,7 @@ if {[test_cray]} {
 	    SLURM_NNODES 0
 	    SLURM_NODEID 0
 	    SLURM_NODELIST 0
-	    SLURM_NPROCS 1
+	    SLURM_NTASKS 1
 	    SLURM_PROCID 0
 	    SLURM_SRUN_COMM_HOST 0
 	    SLURM_SRUN_COMM_PORT 1
