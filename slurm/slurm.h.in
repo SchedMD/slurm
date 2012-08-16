@@ -2475,7 +2475,7 @@ extern int slurm_jobinfo_ctx_get PARAMS((switch_jobinfo_t *jobinfo,
  */
 extern int slurm_step_ctx_daemon_per_node_hack PARAMS(
 	(slurm_step_ctx_t *ctx, char *node_list, uint32_t node_cnt,
-	uint32_t *curr_task_num));
+	 uint32_t *curr_task_num));
 
 /*
  * slurm_step_ctx_destroy - free allocated memory for a job step context.
