@@ -390,6 +390,10 @@ This is outside of SLURM's control.</p>
 <p>It is possible to generate detailed logging of all switch/nrt actions and
 data by configuring <b>DebugFlags=switch</b>.</p>
 
+<p>The envirnoment variable <b>MP_INFOLEVEL</b> can be used to enable the
+logging of POE debug messages. To enable fairly detailed logging, set
+<b>MP_INFOLEVEL=6</b>.</p>
+
 <p>The Protocol Network Services Daemon (PNSD) manages the Network Resource
 Table (NRT) information on each node. It's logs are written to the file
 <b>/etc/serverlog</b>, which may be useful to diagnose problems. In order to
