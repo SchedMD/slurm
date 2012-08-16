@@ -908,12 +908,10 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 			xstrfmtcat(poe_cmd_line, " -tasks_per_node %s", value);
 	}
 	if (opt.unbuffered) {
-		setenv("MP_STDERRMODE", "unordered", 1);
 		setenv("MP_STDOUTMODE", "unordered", 1);
 		if (opt.launch_cmd)
 			xstrfmtcat(poe_cmd_line,
-				   " -stderrmode unordered"
-				   " -stdoutmmode unordered");
+				   " -stdoutmode unordered");
 	}
 
 	/* Since poe doesn't need to know about the partition and it

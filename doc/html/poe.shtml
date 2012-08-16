@@ -189,11 +189,14 @@ are silently ignored:</p>
 <li>-Z, --no-allocate (launch tasks without creating job allocation></li>
 </ul>
 
-<p>In addition, the following options have some limitations:</p>
+<p>In addition, file name specifications with expression substitution
+(e.g. file names including "%j" for job_ID, "%J" for job_ID.step_ID,
+"%s" for step_ID "%t" for task_ID or "%n" for node_ID) are not supported.
+This effects the following options:</p>
 <ul>
-<li>-e, --error (Unable to support node and task-specific file names)</li>
-<li>-i, --input (Unable to support node and task-specific file names)</li>
-<li>-o, --output (Unable to support node and task-specific file names)</li>
+<li>-e, --error</li>
+<li>-i, --input</li>
+<li>-o, --output</li>
 </ul>
 
 <p>The -L/--label option differs slighly in that when the output from multiple
@@ -265,6 +268,9 @@ export MP_TIMEOUT=600
 <p>If the srun command's --label option is used, note that POE's prefix is
 the task ID followed by a colon. The prefix with native SLURM is the task ID
 followed by a colon followed by one space.</p>
+
+<p>POE forwards a limited set of signals to spawned tasks, mostly signals
+that indicate a fatal error. It does not forward SIGUSR1 or SIGUSR2 signals.</p>
 
 <h2>System Administration</h2>
 
@@ -396,6 +402,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 14 August 2012</p></td>
+<p style="text-align:center;">Last modified 16 August 2012</p></td>
 
 <!--#include virtual="footer.txt"-->

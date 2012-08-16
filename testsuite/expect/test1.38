@@ -93,6 +93,11 @@ expect {
 		cancel_job $job_id
 		exp_continue
 	}
+	-re "poe:.*tasks started" {
+		set match_run 1
+		cancel_job $job_id
+		exp_continue
+	}
 	-re "WAITING" {
 		set match_wait 1
 		# make sure the task gets started
@@ -114,7 +119,7 @@ expect {
 	}
 }
 if {[expr $match_run + $match_wait + $match_term] != 3} {
-	send_user "\nFAILURE: srun failed to properly process SIGINT matches was $match_run $match_wait $match_term\n"
+	send_user "\nFAILURE: srun failed to properly process SIGINT matches ($match_run, $match_wait, $match_term)\n"
 	set exit_code 1
 }
 if {$exit_code == 0} {
@@ -166,7 +171,7 @@ expect {
 }
 cancel_job $job_id
 if {[expr $match_run + $match_wait + $match_term] != 2} {
-	send_user "\nFAILURE: srun failed to properly process SIGINT $match_run $match_wait $match_term\n"
+	send_user "\nFAILURE: srun failed to properly process SIGINT matches ($match_run, $match_wait, $match_term)\n"
 	set exit_code 1
 }
 
