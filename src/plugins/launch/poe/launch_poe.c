@@ -651,7 +651,11 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 			}
 		}
 		(void) close(fd);
-		setenv("MP_NEWJOB", "parallel", 1);
+		/* FIXME : I get this error whtn MP_NEWJOB IS set ...
+		 * ATTENTION: 0031-634 MP_NEWJOB=parallel is ignored
+		 * when program name is supplied.
+		 */
+//		setenv("MP_NEWJOB", "parallel", 1);
 		setenv("MP_CMDFILE", cmd_fname, 1);
 	}
 
