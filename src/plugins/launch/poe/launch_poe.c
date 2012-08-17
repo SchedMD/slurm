@@ -247,6 +247,7 @@ static void _parse_prog_line(char *in_line, int *num_tasks, char **cmd,
 	int first_cmd_inx,  last_cmd_inx;
 	int first_task_inx, last_task_inx;
 	hostset_t hs;
+	char *tmp_str = NULL;
 
 	/* Get the task ID string */
 	for (i = 0; in_line[i]; i++)
@@ -300,7 +301,9 @@ static void _parse_prog_line(char *in_line, int *num_tasks, char **cmd,
 
 	/* Now transfer data to the function arguments */
 	in_line[last_task_inx] = '\0';
-	hs = hostset_create(in_line + first_task_inx);
+	xstrfmtcat(tmp_str, "[%s]", in_line + first_task_inx);
+	hs = hostset_create(tmp_str);
+	xfree(tmp_str);
 	in_line[last_task_inx] = ' ';
 	if (!hs)
 		goto bad_line;
@@ -506,14 +509,14 @@ extern int launch_p_setup_srun_opt(char **rest)
 
 	opt.argc++;
 
-	/* We need to do +2 here just incase multi-prog is needed (we
-	   add an extra argv on so just make space for it).
-	*/
+	/* We need to do +2 here just in case multi-prog is needed (we
+	 * add an extra argv on so just make space for it).
+	 */
 	opt.argv = (char **) xmalloc((opt.argc + 2) * sizeof(char *));
 
 	opt.argv[0] = xstrdup("poe");
 	/* Set default job name to the executable name rather than
-	 * "runjob" */
+	 * "poe" */
 	if (!opt.job_name_set_cmd && (1 < opt.argc)) {
 		opt.job_name_set_cmd = true;
 		opt.job_name = xstrdup(rest[0]);
@@ -534,7 +537,6 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 {
 	int step_id;
 	char dname[512], value[32];
-	bool need_cmdfile = false;
 	char *protocol = "mpi";
 	uint32_t ntasks = opt.ntasks;
 	uint32_t nnodes = opt.min_nodes;
@@ -557,8 +559,8 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	}
 
 	/*
-	 * In order to support MPMD or job steps smaller than the job
-	 * allocation size, specify a command file using the poe option
+	 * In order to support MPMD or job steps smaller than the LoadLeveler
+	 * job allocation size, specify a command file using the poe option
 	 * -cmdfile or MP_CMDFILE env var. See page 43 here:
 	 * http://publib.boulder.ibm.com/epubs/pdf/c2367811.pdf
 	 * The command file should contain one more more lines of the following
@@ -585,16 +587,6 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	 * 4) if only PAMI library is found (libpami.so) -> use 'pami'
 	 * 5) if only LAPI library is found (liblapi.so) -> use 'lapi'
 	 */
-	if (opt.multi_prog)
-		need_cmdfile = true;
-	if (opt.ntasks_set && !need_cmdfile) {
-		char *tmp_str = getenv("SLURM_NPROCS");
-		if (!tmp_str)
-			tmp_str = getenv("SLURM_NNODES");
-		if (tmp_str && (opt.ntasks != atoi(tmp_str)))
-			need_cmdfile = true;
-	}
-
 	if (opt.multi_prog) {
 		protocol = "multi";
 	} else {
@@ -602,8 +594,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	}
 	debug("cmd:%s protcol:%s", opt.argv[1], protocol);
 
-
-	if (need_cmdfile) {
+	if (opt.multi_prog) {
 		char *buf;
 		int fd, i, j, k;
 
@@ -663,12 +654,16 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 			}
 		}
 		(void) close(fd);
-		/* FIXME : I get this error whtn MP_NEWJOB IS set ...
-		 * ATTENTION: 0031-634 MP_NEWJOB=parallel is ignored
-		 * when program name is supplied.
-		 */
-//		setenv("MP_NEWJOB", "parallel", 1);
+		/* Set command file name via MP_CMDFILE and remove it from
+		 * the execute line. */
+		setenv("MP_NEWJOB", "parallel", 1);
 		setenv("MP_CMDFILE", cmd_fname, 1);
+		if (argc) {
+			xfree(opt.argv[1]);
+			for (k = 1; k < opt.argc; k++)
+				opt.argv[k] = opt.argv[k + 1];
+			opt.argc--;
+		}
 	}
 
 	if (opt.cpu_bind_type) {
