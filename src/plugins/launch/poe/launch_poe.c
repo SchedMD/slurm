@@ -459,8 +459,6 @@ static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
 		snprintf(value, sizeof(value), "%d", opt.resv_port_cnt);
 		setenv("SLURM_RESV_PORTS", value, 1);
 	}
-	if (opt.multi_prog)
-		setenv("SLURM_SRUN_MULTI", "1", 1);
 	if (opt.time_limit_str)
 		setenv("SLURM_TIMELIMIT", opt.time_limit_str, 1);
 	if (opt.wckey)
