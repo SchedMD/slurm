@@ -58,6 +58,12 @@ expect {
 		incr task_output
 		exp_continue
 	}
+	-re "($number)-($number):uid=" {
+		#needed for poe launch
+		incr task_output
+		incr task_output
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
