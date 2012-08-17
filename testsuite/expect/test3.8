@@ -73,7 +73,7 @@ make_bash_script $file_in "
     else
         $bin_touch $file_flag_1
     fi
-    $srun -n4 -O -l $bin_sleep 20
+    $srun -n4 -O -l $bin_sleep 60
 "
 if { [test_bluegene] } {
 	set node_cnt 512-2048
@@ -85,7 +85,7 @@ if { [test_bluegene] } {
 # Spawn a srun batch job that uses stdout/err and confirm their contents
 #
 set timeout $max_job_delay
-set sbatch_pid [spawn $sbatch --requeue -N$node_cnt --output=$file_out --error=$file_err -t1 $file_in]
+set sbatch_pid [spawn $sbatch --requeue -N$node_cnt --output=$file_out --error=$file_err -t2 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -112,7 +112,7 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: waiting for job to begin\n"
 	set exit_code 1
 }
-exec $bin_sleep 5
+exec $bin_sleep 15
 spawn $scontrol requeue $job_id
 expect {
 	-re "error" {
@@ -136,7 +136,7 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: waiting for job to begin\n"
 	set exit_code 1
 }
-exec $bin_sleep 5
+exec $bin_sleep 15
 spawn $scontrol requeue $job_id
 expect {
 	-re "error" {
@@ -185,7 +185,7 @@ set job_id        0
 
 exec $bin_rm -f $file_flag_1 $file_flag_2 $file_flag_3 $file_flag_4
 
-set sbatch_pid [spawn $sbatch --no-requeue --output=$file_out --error=$file_err -t1 $file_in]
+set sbatch_pid [spawn $sbatch --no-requeue --output=$file_out --error=$file_err -t2 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -213,7 +213,7 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 	set exit_code 1
 }
 set disabled 0
-exec $bin_sleep 5
+exec $bin_sleep 15
 spawn $scontrol requeue $job_id
 expect {
 	-re "error.*disabled" {
