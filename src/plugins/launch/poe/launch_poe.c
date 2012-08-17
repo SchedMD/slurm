@@ -249,13 +249,15 @@ static void _parse_prog_line(char *in_line, int *num_tasks, char **cmd,
 	hostset_t hs;
 
 	/* Get the task ID string */
-	for (i = 0; in_line[i]; i++) {
+	for (i = 0; in_line[i]; i++)
 		if (!isspace(in_line[i]))
 			break;
-	}
-	if (in_line[i] == '#')
+
+	if (!in_line[i]) /* empty line */
 		goto fini;
-	if (!isdigit(in_line[i]))
+	else if (in_line[i] == '#')
+		goto fini;
+	else if (!isdigit(in_line[i]))
 		goto bad_line;
 	first_task_inx = i;
 	for (i++; in_line[i]; i++) {
@@ -345,8 +347,8 @@ static bool _multi_prog_parse(char *line, int length, int step_id)
 		_parse_prog_line(line, &tmp_tasks, &tmp_cmd, &tmp_args);
 
 		if (tmp_tasks < 0) {
-			if (line[0] != '#')
-				error("bad line %s", line);
+			if (line[0] != '\n' && line[0] != '#')
+				error("bad line '%s'", line);
 			return true;
 		}
 
