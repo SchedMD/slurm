@@ -53,6 +53,16 @@ for a sample implementation of a SLURM launch plugin.
   <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
   <span class="commandline">SLURM_ERROR</span> on failure.
 
+<p class="commandline"> int launch_p_handle_multi_prog_verify(int command_pos)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Is called to verify a multi-prog file if verifying needs to be done.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+  <span class="commandline"> command_pos:</span> to be used with
+  global opt variable to tell which spot the command is in opt.argv.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  <span class="commandline">1</span> if handled, or<br>
+  <span class="commandline">0</span> if not.
+
 <p class="commandline"> int launch_p_create_job_step(srun_job_t *job,
   bool use_all_cpus, void (*signal_function)(int), sig_atomic_t
   *destroy_job)

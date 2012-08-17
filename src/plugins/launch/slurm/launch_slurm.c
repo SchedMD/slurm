@@ -42,6 +42,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/api/pmi_server.h"
@@ -344,6 +346,48 @@ static void _task_finish(task_exit_msg_t *msg)
 		_setup_max_wait_timer();
 }
 
+/* Load the multi_prog config file into argv, pass the  entire file contents
+ * in order to avoid having to read the file on every node. We could parse
+ * the infomration here too for loading the MPIR records for TotalView */
+static void _load_multi(int *argc, char **argv)
+{
+	int config_fd, data_read = 0, i;
+	struct stat stat_buf;
+	char *data_buf;
+
+	if ((config_fd = open(argv[0], O_RDONLY)) == -1) {
+		error("Could not open multi_prog config file %s",
+		      argv[0]);
+		exit(error_exit);
+	}
+	if (fstat(config_fd, &stat_buf) == -1) {
+		error("Could not stat multi_prog config file %s",
+		      argv[0]);
+		exit(error_exit);
+	}
+	if (stat_buf.st_size > 60000) {
+		error("Multi_prog config file %s is too large",
+		      argv[0]);
+		exit(error_exit);
+	}
+	data_buf = xmalloc(stat_buf.st_size + 1);
+	while ((i = read(config_fd, &data_buf[data_read], stat_buf.st_size
+			 - data_read)) != 0) {
+		if (i < 0) {
+			error("Error reading multi_prog config file %s",
+			      argv[0]);
+			exit(error_exit);
+		} else
+			data_read += i;
+	}
+	close(config_fd);
+
+	for (i = *argc+1; i > 1; i--)
+		argv[i] = argv[i-1];
+	argv[1] = data_buf;
+	*argc += 1;
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  *	are called.  Put global initialization here.
@@ -376,6 +420,21 @@ extern int launch_p_setup_srun_opt(char **rest)
 	opt.argv = (char **) xmalloc((opt.argc + 2) * sizeof(char *));
 
 	return 0;
+}
+
+extern int launch_p_handle_multi_prog_verify(int command_pos)
+{
+	if (opt.multi_prog) {
+		if (opt.argc < 1) {
+			error("configuration file not specified");
+			exit(error_exit);
+		}
+		_load_multi(&opt.argc, opt.argv);
+		if (verify_multi_name(opt.argv[command_pos], opt.ntasks))
+			exit(error_exit);
+		return 1;
+	} else
+		return 0;
 }
 
 extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,

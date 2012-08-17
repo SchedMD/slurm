@@ -105,7 +105,18 @@ extern int launch_fini(void);
 extern int launch_g_setup_srun_opt(char **rest);
 
 /*
- * launch_p_create_job_step() creates the job step.
+ * launch_g_handle_multi_prog_verify() is called to verify a
+ * multi-prog file if verifying needs to be done.
+ *
+ * IN command_pos - to be used with global opt variable to tell which
+ *                  spot the command is in opt.argv.
+ *
+ * RET 0 if not handled, 1 if handled
+ */
+extern int launch_g_handle_multi_prog_verify(int command_pos);
+
+/*
+ * launch_g_create_job_step() creates the job step.
  *
  * IN/OUT job - the job to be created into a job step.
  * IN use_all_cpus - the choice to use all the cpus.

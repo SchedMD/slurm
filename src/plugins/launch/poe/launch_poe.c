@@ -518,6 +518,12 @@ extern int launch_p_setup_srun_opt(char **rest)
 	return 1;
 }
 
+extern int launch_p_handle_multi_prog_verify(int command_pos)
+{
+	return 0;
+}
+
+
 extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
 				    sig_atomic_t *destroy_job)
