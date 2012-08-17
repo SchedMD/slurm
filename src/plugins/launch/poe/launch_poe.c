@@ -658,7 +658,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		 * the execute line. */
 		setenv("MP_NEWJOB", "parallel", 1);
 		setenv("MP_CMDFILE", cmd_fname, 1);
-		if (argc) {
+		if (opt.argc) {
 			xfree(opt.argv[1]);
 			for (k = 1; k < opt.argc; k++)
 				opt.argv[k] = opt.argv[k + 1];
