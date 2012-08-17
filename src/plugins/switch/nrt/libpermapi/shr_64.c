@@ -991,9 +991,17 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		snprintf(value, sizeof(value), "%u", job->jobid);
 		setenv("SLURM_JOB_ID", value, 1);
 		setenv("SLURM_JOBID", value, 1);
-		setenv("SLURM_NODELIST", job->nodelist, 1);
 		setenv("SLURM_JOB_NODELIST", job->nodelist, 1);
 	}
+
+	if (!opt.preserve_env) {
+		snprintf(value, sizeof(value), "%u", job->ntasks);
+		setenv("SLURM_NTASKS", value, 1);
+		snprintf(value, sizeof(value), "%u", job->nhosts);
+		setenv("SLURM_NNODES", value, 1);
+		setenv("SLURM_NODELIST", job->nodelist, 1);
+	}
+
 	snprintf(value, sizeof(value), "%u", job->stepid);
 	setenv("SLURM_STEP_ID", value, 1);
 	setenv("SLURM_STEPID", value, 1);
@@ -1287,6 +1295,11 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	   thread in this case.
 	*/
 	init_srun(2, myargv, NULL, debug_level, 1);
+
+	/* This has to be done after init_srun so as to not get over
+	   written. */
+	if (getenv("SLURM_PRESERVE_ENV"))
+		opt.preserve_env = true;
 
 	xfree(tmp_char); /* just in case */
 

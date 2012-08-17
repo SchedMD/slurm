@@ -437,13 +437,15 @@ static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
 	if (nnodes) {
 		snprintf(value, sizeof(value), "%u", nnodes);
 		setenv("SLURM_JOB_NUM_NODES", value, 1);
-		setenv("SLURM_NNODES", value, 1);
+		if (!opt.preserve_env)
+			setenv("SLURM_NNODES", value, 1);
 	}
 	if (opt.alloc_nodelist) {
 		setenv("SLURM_JOB_NODELIST", opt.alloc_nodelist, 1);
-		setenv("SLURM_NODELIST", opt.alloc_nodelist, 1);
+		if (!opt.preserve_env)
+			setenv("SLURM_NODELIST", opt.alloc_nodelist, 1);
 	}
-	if (ntasks) {
+	if (!opt.preserve_env && ntasks) {
 		snprintf(value, sizeof(value), "%u", ntasks);
 		setenv("SLURM_NTASKS", value, 1);
 	}
@@ -465,6 +467,10 @@ static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
 		setenv("SLURM_WCKEY", opt.wckey, 1);
 	if (opt.cwd)
 		setenv("SLURM_WORKING_DIR", opt.cwd, 1);
+	if (opt.preserve_env) {
+		snprintf(value, sizeof(value), "%d", opt.preserve_env);
+		setenv("SLURM_PRESERVE_ENV", value, 1);
+	}
 }
 
 /*
