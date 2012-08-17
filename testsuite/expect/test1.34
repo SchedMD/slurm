@@ -49,8 +49,7 @@ if {[test_front_end] != 0} {
 # Delete left-over program and rebuild it
 #
 file delete $test_prog
-
-exec $bin_make -f /dev/null $test_prog
+exec $bin_cc -o $file_prog ${file_prog}.c
 exec $bin_chmod 700 $test_prog
 
 #

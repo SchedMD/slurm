@@ -122,7 +122,7 @@ proc check_output { file_name } {
 file delete $file_prog $file_out1 $file_out2
 make_bash_script $file_prog_sh1 "$srun ./$file_prog"
 make_bash_script $file_prog_sh2 "./$file_prog"
-exec $bin_make -f /dev/null $file_prog
+exec $bin_cc -o $file_prog ${file_prog}.c
 exec $bin_chmod 700 $file_prog
 
 #

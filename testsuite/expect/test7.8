@@ -170,7 +170,7 @@ if {$job_id2 == 0} {
 # Start our Moab emulator ($test_prog) to manage the job
 #
 exec $bin_rm -f $test_prog
-exec $bin_make -f /dev/null $test_prog
+exec $bin_cc -o $file_prog ${file_prog}.c
 set success 0
 set moab_pid [spawn $test_prog $control_addr $job_id1 $job_id2 $sched_port $is_bluegene]
 expect {

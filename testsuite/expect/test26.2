@@ -74,7 +74,7 @@ if {$is_aprun_wrapper == 0} {
 # Try to impose a job step time limit via ALPS using 
 # srun wrapper's --alps option
 #
-make bash_script $file_in "$bin_sleep $sleep_time; echo FINI"
+make_bash_script $file_in "$bin_sleep $sleep_time; echo FINI"
 set timeout [expr $max_job_delay + $sleep_time]
 spawn $salloc -t4 $srun --alps=\"-t 1\" $file_in
 expect {
