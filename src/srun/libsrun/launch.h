@@ -97,7 +97,7 @@ extern int launch_init(void);
 extern int launch_fini(void);
 
 /*
- * launch_p_setup_srun_opt() is called when the plugin needs the srun
+ * launch_g_setup_srun_opt() is called when the plugin needs the srun
  * operation needs to be set up.
  *
  * IN rest - extra parameters on the command line not processed by srun
@@ -131,7 +131,7 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    sig_atomic_t *destroy_job);
 
 /*
- * launch_p_step_launch() is called to launch the job step that
+ * launch_g_step_launch() is called to launch the job step that
  * was created.
  *
  * IN/OUT job - the job needing to be launched
@@ -145,7 +145,7 @@ extern int launch_g_step_launch(
 	uint32_t *global_rc);
 
 /*
- * launch_p_step_wait() is called to wait for the job step to be finished.
+ * launch_g_step_wait() is called to wait for the job step to be finished.
  *
  * IN/OUT job - the job waiting to finish.
  * IN got_alloc - if the resource allocation was created inside srun
@@ -155,19 +155,19 @@ extern int launch_g_step_launch(
 extern int launch_g_step_wait(srun_job_t *job, bool got_alloc);
 
 /*
- * launch_p_step_terminate() is called to end the job step.
+ * launch_g_step_terminate() is called to end the job step.
  *
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
 extern int launch_g_step_terminate(void);
 
 /*
- * launch_p_print_status() displays the the status of the job step.
+ * launch_g_print_status() displays the the status of the job step.
  */
 extern void launch_g_print_status(void);
 
 /*
- * launch_p_fwd_signal() send a forward signal to an underlining task.
+ * launch_g_fwd_signal() send a forward signal to an underlining task.
  *
  * IN signal - the signal to forward to the underlying tasks.
  */
