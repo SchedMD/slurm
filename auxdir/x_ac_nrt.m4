@@ -64,7 +64,7 @@ AC_DEFUN([X_AC_NRT],
       AC_DEFINE(HAVE_LIBNRT, 1, [define if you have libnrt.so])
    fi
 
-   if test "x$ac_have_nrt_h" == "xyes" && test "x$ac_have_libnrt" == "xyes"; then
+   if test "x$ac_have_nrt_h" = "xyes" && test "x$ac_have_libnrt" = "xyes"; then
       ac_have_nrt="yes"
    fi
    AM_CONDITIONAL(HAVE_NRT, test "x$ac_have_nrt" = "xyes")

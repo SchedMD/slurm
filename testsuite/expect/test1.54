@@ -67,7 +67,7 @@ set matches 0
 set timeout $max_job_delay
 set srun_pid [spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog ./$file_in]
 expect {
-	-re "($number): task:($number):offset:($number)" {
+	-re "($number): *task:($number):offset:($number)" {
 		set label       $expect_out(1,string)
 		set task_id     $expect_out(2,string)
 		set task_offset $expect_out(3,string)

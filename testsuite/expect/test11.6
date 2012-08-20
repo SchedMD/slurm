@@ -86,7 +86,7 @@ expect {
 }
 if {$job_id == 0} {
 	send_user "\nFAILURE: SLURM_JOB_ID missing\n"
-	exit 0
+	exit 1
 }
 
 #

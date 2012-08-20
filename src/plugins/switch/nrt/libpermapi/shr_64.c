@@ -71,11 +71,11 @@ bool srun_shutdown  = false;
 
 static void *my_handle = NULL;
 static srun_job_t *job = NULL;
-static int debug_level = 0;
 static bool got_alloc = false;
 static bool slurm_started = false;
-static log_options_t log_opts = LOG_OPTS_INITIALIZER;
+static log_options_t log_opts = LOG_OPTS_STDERR_ONLY;
 static host_usage_t *host_usage = NULL;
+static hostlist_t total_hl = NULL;
 
 int sig_array[] = {
 	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGHUP,
@@ -423,6 +423,49 @@ static void _spawn_fe_agent(void)
 	slurm_attr_destroy(&agent_attr);
 }
 
+/*
+ * Return a string representation of an array of uint16_t elements.
+ * Each value in the array is printed in decimal notation and elements
+ * are separated by a comma.  If sequential elements in the array
+ * contain the same value, the value is written out just once followed
+ * by "(xN)", where "N" is the number of times the value is repeated.
+ *
+ * Example:
+ *   The array "1, 2, 1, 1, 1, 3, 2" becomes the string "1,2,1(x3),3,2"
+ *
+ * Returns an xmalloc'ed string.  Free with xfree().
+ */
+static char *_uint16_array_to_str(int array_len, const uint16_t *array)
+{
+	int i;
+	int previous = 0;
+	char *sep = ",";  /* seperator */
+	char *str = xstrdup("");
+
+	if(array == NULL)
+		return str;
+
+	for (i = 0; i < array_len; i++) {
+		if ((i+1 < array_len)
+		    && (array[i] == array[i+1])) {
+				previous++;
+				continue;
+		}
+
+		if (i == array_len-1) /* last time through loop */
+			sep = "";
+		if (previous > 0) {
+			xstrfmtcat(str, "%u(x%u)%s",
+				   array[i], previous+1, sep);
+		} else {
+			xstrfmtcat(str, "%u%s", array[i], sep);
+		}
+		previous = 0;
+	}
+
+	return str;
+}
+
 srun_job_t * _read_job_srun_agent(void)
 {
 	char *key_str  = getenv("SLURM_FE_KEY");
@@ -534,14 +577,19 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	char *my_argv[2] = { connect_param->executable, NULL };
 //	char *my_argv[2] = { "/bin/hostname", NULL };
 	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
-	uint32_t global_rc = 0;
-	int i, rc, fd_cnt;
+	uint32_t global_rc = 0, orig_task_num;
+	int i, ii = 0, rc, fd_cnt, node_cnt;
 	int *ctx_sockfds = NULL;
+	char *name = NULL, *total_node_list = NULL;
+	static uint32_t task_num = 0;
 	hostlist_t hl = NULL;
-	char *name = NULL, *node_list = NULL;
+
+	xassert(job);
 
 	if (pm_type == PM_PMD) {
 		debug("got pe_rm_connect called from PMD");
+		/* Set up how many tasks the PMD is going to launch. */
+		job->ntasks = 1 + task_num;
 	} else if (pm_type == PM_POE) {
 		debug("got pe_rm_connect called");
 		launch_common_set_stdio_fds(job, &cio_fds);
@@ -549,8 +597,6 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		error("pe_rm_connect: unknown caller");
 		return -1;
 	}
-
-	xassert(job);
 
 	/* translate the ip to a node list which SLURM uses to send
 	   messages instead of IP addresses (at this point anyway)
@@ -571,6 +617,11 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 			hl = hostlist_create(name);
 		else
 			hostlist_push_host(hl, name);
+
+		if (!total_hl)
+			total_hl = hostlist_create(name);
+		else
+			hostlist_push_host(total_hl, name);
 	}
 
 	if (!hl) {
@@ -583,23 +634,31 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	}
 
 	hostlist_sort(hl);
-	node_list = hostlist_ranged_string_xmalloc(hl);
+	xfree(job->nodelist);
+	job->nodelist = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
+
+	hostlist_sort(total_hl);
+	total_node_list = hostlist_ranged_string_xmalloc(total_hl);
+	node_cnt = hostlist_count(total_hl);
 
 	opt.argc = my_argc;
 	opt.argv = my_argv;
 	opt.user_managed_io = true;
+	orig_task_num = task_num;
 	if (slurm_step_ctx_daemon_per_node_hack(job->step_ctx,
-						node_list,
-						connect_param->machine_count)
+						total_node_list,
+						node_cnt, &task_num)
 	    != SLURM_SUCCESS) {
+		xfree(total_node_list);
 		*error_msg = xstrdup_printf(
 			"pe_rm_connect: problem with hack: %s",
 			slurm_strerror(errno));
 		error("%s", *error_msg);
 		return -1;
 	}
-
+	xfree(total_node_list);
+	job->fir_nodeid = orig_task_num;
 	if (launch_g_step_launch(job, &cio_fds, &global_rc)) {
 		*error_msg = xstrdup_printf(
 			"pe_rm_connect: problem with launch: %s",
@@ -618,16 +677,16 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		error("%s", *error_msg);
 		return -1;
 	}
-	if (fd_cnt != connect_param->machine_count) {
+	if (fd_cnt != task_num) {
 		*error_msg = xstrdup_printf(
 			"pe_rm_connect: looking for %d sockets but got back %d",
 			connect_param->machine_count, fd_cnt);
 		error("%s", *error_msg);
 		return -1;
 	}
-
-	for (i=0; i<fd_cnt; i++)
-		rm_sockfds[i] = ctx_sockfds[i];
+	ii = 0;
+	for (i=orig_task_num; i<fd_cnt; i++)
+		rm_sockfds[ii++] = ctx_sockfds[i];
 
 	return 0;
 }
@@ -655,7 +714,8 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 	/* We are at the end so don't worry about freeing the
 	   srun_job_t pointer */
 	fini_srun(job, got_alloc, &rc, slurm_started);
-
+	hostlist_destroy(total_hl);
+	total_hl = NULL;
 	*resource_mgr = NULL;
 	dlclose(my_handle);
 }
@@ -815,6 +875,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	job_step_create_response_msg_t *resp;
 	int network_id_cnt = 0;
 	nrt_network_id_t *network_id_list;
+	char value[32];
 
 	if (pm_type == PM_PMD) {
 		debug("pe_rm_get_job_info called");
@@ -926,6 +987,33 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	hostlist_destroy(hl);
 	host_usage = ret_info->hosts;
 
+	if (!got_alloc || !slurm_started) {
+		snprintf(value, sizeof(value), "%u", job->jobid);
+		setenv("SLURM_JOB_ID", value, 1);
+		setenv("SLURM_JOBID", value, 1);
+		setenv("SLURM_JOB_NODELIST", job->nodelist, 1);
+	}
+
+	if (!opt.preserve_env) {
+		snprintf(value, sizeof(value), "%u", job->ntasks);
+		setenv("SLURM_NTASKS", value, 1);
+		snprintf(value, sizeof(value), "%u", job->nhosts);
+		setenv("SLURM_NNODES", value, 1);
+		setenv("SLURM_NODELIST", job->nodelist, 1);
+	}
+
+	snprintf(value, sizeof(value), "%u", job->stepid);
+	setenv("SLURM_STEP_ID", value, 1);
+	setenv("SLURM_STEPID", value, 1);
+	setenv("SLURM_STEP_NODELIST", step_layout->node_list, 1);
+	snprintf(value, sizeof(value), "%u", job->nhosts);
+	setenv("SLURM_STEP_NUM_NODES", value, 1);
+	snprintf(value, sizeof(value), "%u", job->ntasks);
+	setenv("SLURM_STEP_NUM_TASKS", value, 1);
+	host = _uint16_array_to_str(step_layout->node_cnt,
+				    step_layout->tasks);
+	setenv("SLURM_STEP_TASKS_PER_NODE", host, 1);
+	xfree(host);
 	return 0;
 }
 
@@ -993,6 +1081,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 {
 	char *srun_debug = NULL, *tmp_char = NULL;
 	char *myargv[3] = { "poe", NULL, NULL };
+	int debug_level = log_opts.logfile_level;
 
 	/* SLURM was originally written against 1300, so we will
 	 * return that, no matter what comes in so we always work.
@@ -1024,9 +1113,10 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		slurm_started = true;
 	if ((srun_debug = getenv("SRUN_DEBUG")))
 		debug_level = atoi(srun_debug);
-	log_opts.stderr_level  = log_opts.logfile_level =
-		log_opts.syslog_level = debug_level;
-
+	if (debug_level) {
+		log_opts.stderr_level = log_opts.logfile_level =
+			log_opts.syslog_level = debug_level;
+	}
 	/* This will be used later in the code to set the
 	 * _verbose level. */
 	if (debug_level >= LOG_LEVEL_INFO)
@@ -1036,45 +1126,167 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		log_alter_with_fp(log_opts, LOG_DAEMON, pmd_lfp);
 		myargv[0] = myargv[1] = "pmd";
 	} else {
+		char *poe_argv = getenv("MP_I_SAVED_ARGV");
 		log_alter(log_opts, LOG_DAEMON, "/dev/null");
 
 		myargv[1] = getenv("SLURM_JOB_NAME");
 
-		/* If SLURM_JOB_NAME isn't set that means we launched
-		   from poe proper instead of srun launching poe.
-		*/
-		if (!myargv[1]) {
-			/* Here we can get the name of the running job
-			   because it is always the 2nd argv in the
-			   poe line.
-			*/
-			char *poe_argv = getenv("MP_I_SAVED_ARGV");
-			if (poe_argv) {
-				char *walking_char = NULL;
-				int i = 0, set = 0;
-				tmp_char = xstrdup(poe_argv);
-				walking_char = tmp_char;
-				while (tmp_char[i]) {
-					if (tmp_char[i] != ' ') {
-						i++;
-						continue;
-					}
-					if (set) {
-						tmp_char[i] = '\0';
+		if (poe_argv) {
+			char *adapter_use = NULL;
+			char *bulk_xfer = NULL;
+			char *collectives = NULL;
+			char *euidevice = NULL;
+			char *euilib = NULL;
+			char *immediate = NULL;
+			char *instances = NULL;
+			char *tmp_argv = xstrdup(poe_argv);
+			char *tok, *save_ptr = NULL;
+			int tok_inx = 0;
+
+			/* Parse the command line
+			 * Map the following options to their srun equivalent
+			 * -adapter_use shared | dedicated
+			 * -collective_groups #
+			 * -euidevice sn_all | sn_single
+			 * -euilib ip | us
+			 * -imm_send_buffers #
+			 * -instances #
+			 * -use_bulk_xfer yes | no
+			 */
+			tok = strtok_r(tmp_argv, " ", &save_ptr);
+			while (tok) {
+				if ((tok_inx == 1) && !myargv[1]) {
+					myargv[1] = xstrdup(tok);
+				} else if (!strcmp(tok, "-adapter_use")) {
+					tok = strtok_r(NULL, " ", &save_ptr);
+					if (!tok)
 						break;
-					}
-					set = 1;
-					i++;
-					walking_char = tmp_char + i;
+					adapter_use = xstrdup(tok);
+				} else if (!strcmp(tok, "-collective_groups")){
+					tok = strtok_r(NULL, " ", &save_ptr);
+					if (!tok)
+						break;
+					collectives = xstrdup(tok);
+				} else if (!strcmp(tok, "-euidevice")) {
+					tok = strtok_r(NULL, " ", &save_ptr);
+					if (!tok)
+						break;
+					euidevice = xstrdup(tok);
+				} else if (!strcmp(tok, "-euilib")) {
+					tok = strtok_r(NULL, " ", &save_ptr);
+					if (!tok)
+						break;
+					euilib = xstrdup(tok);
+				} else if (!strcmp(tok, "-imm_send_buffers")) {
+					tok = strtok_r(NULL, " ", &save_ptr);
+					if (!tok)
+						break;
+					immediate = xstrdup(tok);
+				} else if (!strcmp(tok, "-instances")) {
+					tok = strtok_r(NULL, " ", &save_ptr);
+					if (!tok)
+						break;
+					instances = xstrdup(tok);
+				} else if (!strcmp(tok, "-use_bulk_xfer")) {
+					tok = strtok_r(NULL, " ", &save_ptr);
+					if (!tok)
+						break;
+					bulk_xfer = xstrdup(tok);
 				}
-				myargv[1] = walking_char;
+
+				tok = strtok_r(NULL, " ", &save_ptr);
+				tok_inx++;
 			}
-			if (!myargv[1])
-				myargv[1] = "poe";
+			xfree(tmp_argv);
+
+			/* Parse the environment variables */
+			if (!adapter_use) {
+				char *tmp = getenv("MP_ADAPTER_USE");
+				if (tmp)
+					adapter_use = xstrdup(tmp);
+			}
+			if (!collectives) {
+				char *tmp = getenv("MP_COLLECTIVE_GROUPS");
+				if (tmp)
+					collectives = xstrdup(tmp);
+			}
+			if (!euidevice) {
+				char *tmp = getenv("MP_EUIDEVICE");
+				if (tmp)
+					euidevice = xstrdup(tmp);
+			}
+			if (!euilib) {
+				char *tmp = getenv("MP_EUILIB");
+				if (tmp)
+					euilib = xstrdup(tmp);
+			}
+			if (!immediate) {
+				char *tmp = getenv("MP_IMM_SEND_BUFFERS");
+				if (tmp)
+					immediate = xstrdup(tmp);
+			}
+			if (!instances) {
+				char *tmp = getenv("MP_INSTANCES");
+				if (tmp)
+					instances = xstrdup(tmp);
+			}
+			if (!bulk_xfer) {
+				char *tmp = getenv("MP_USE_BULK_XFER");
+				if (tmp)
+					bulk_xfer = xstrdup(tmp);
+			}
+			xfree(opt.network);
+			if (adapter_use) {
+				if (!strcmp(adapter_use, "dedicated"))
+					opt.exclusive = true;
+				xfree(adapter_use);
+			}
+			if (collectives) {
+				if (opt.network)
+					xstrcat(opt.network, ",");
+				xstrcat(opt.network, "cau=");
+				xstrcat(opt.network, collectives);
+			}
+			if (euidevice) {
+				if (opt.network)
+					xstrcat(opt.network, ",");
+				xstrcat(opt.network, "devname=");
+				xstrcat(opt.network, euidevice);
+			}
+			if (euilib) {
+				if (opt.network)
+					xstrcat(opt.network, ",");
+				xstrcat(opt.network, euilib);
+			}
+			if (immediate) {
+				if (opt.network)
+					xstrcat(opt.network, ",");
+				xstrcat(opt.network, "immed=");
+				xstrcat(opt.network, immediate);
+			}
+			if (instances) {
+				if (opt.network)
+					xstrcat(opt.network, ",");
+				xstrcat(opt.network, "instances=");
+				xstrcat(opt.network, instances);
+			}
+			if (bulk_xfer && !strcmp(bulk_xfer, "yes")) {
+				if (opt.network)
+					xstrcat(opt.network, ",");
+				xstrcat(opt.network, "bulk_xfer");
+			}
+			xfree(bulk_xfer);
+				xfree(collectives);
+			xfree(euidevice);
+			xfree(euilib);
+			xfree(immediate);
+			xfree(instances);
 		}
+		if (!myargv[1])
+			myargv[1] = "poe";
 	}
 
-	debug("got pe_rm_init called %s %p", rm_id, info);
+	debug("got pe_rm_init called");
 
 	/* This needs to happen before any other threads so we can
 	   catch the signals correctly.  Send in NULL for logopts
@@ -1083,6 +1295,11 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	   thread in this case.
 	*/
 	init_srun(2, myargv, NULL, debug_level, 1);
+
+	/* This has to be done after init_srun so as to not get over
+	   written. */
+	if (getenv("SLURM_PRESERVE_ENV"))
+		opt.preserve_env = true;
 
 	xfree(tmp_char); /* just in case */
 
@@ -1108,14 +1325,9 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		job->jobid = job_id;
 		job->stepid = step_id;
 
-		info("job created %u.%u", job->jobid, job->stepid);
 		opt.ifname = opt.ofname = opt.efname = "/dev/null";
 		job_update_io_fnames(job);
-
-		info("pe_rm_init done");
 	} else if (pm_type == PM_POE) {
-		debug("got pe_rm_init called %s", rm_id);
-
 		/* Create agent thread to forward job credential needed for
 		 * PMD to fanout child processes on other nodes */
 		_spawn_fe_agent();

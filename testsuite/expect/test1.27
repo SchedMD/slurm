@@ -42,24 +42,44 @@ print_header $test_id
 # These are the variables for which we are checking existence.
 # If the number following a variable name is 1, then we check to make
 # certain that the value of the env variable is greater than 0
-array set good_vars {
-    SLURM_CPUS_ON_NODE 1
-    SLURM_CPUS_PER_TASK 1
-    SLURM_JOB_ID 1
-    SLURM_LAUNCH_NODE_IPADDR 0
-    SLURM_LOCALID 0
-    SLURM_NNODES 0
-    SLURM_NODEID 0
-    SLURM_NODELIST 0
-    SLURM_NPROCS 1
-    SLURM_PROCID 0
-    SLURM_SRUN_COMM_HOST 0
-    SLURM_SRUN_COMM_PORT 1
-    SLURM_STEPID 0
-    SLURM_TASKS_PER_NODE 1
-    SLURM_TASK_PID 1
-    SLURM_TOPOLOGY_ADDR 0
-    SLURM_TOPOLOGY_ADDR_PATTERN 0
+if {[test_cray]} {
+	array set good_vars {
+	    SLURM_CPUS_PER_TASK 1
+	    SLURM_JOB_ID 1
+	    SLURM_NNODES 0
+	    SLURM_NODELIST 0
+	    SLURM_NTASKS 1
+	    SLURM_STEPID 0
+	}
+} elseif {[test_launch_poe]} {
+	array set good_vars {
+	    SLURM_CPUS_PER_TASK 1
+	    SLURM_JOB_ID 1
+	    SLURM_NNODES 0
+	    SLURM_NODELIST 0
+	    SLURM_NTASKS 1
+	    SLURM_STEPID 0
+	}
+} else {
+	array set good_vars {
+	    SLURM_CPUS_ON_NODE 1
+	    SLURM_CPUS_PER_TASK 1
+	    SLURM_JOB_ID 1
+	    SLURM_LAUNCH_NODE_IPADDR 0
+	    SLURM_LOCALID 0
+	    SLURM_NNODES 0
+	    SLURM_NODEID 0
+	    SLURM_NODELIST 0
+	    SLURM_NTASKS 1
+	    SLURM_PROCID 0
+	    SLURM_SRUN_COMM_HOST 0
+	    SLURM_SRUN_COMM_PORT 1
+	    SLURM_STEPID 0
+	    SLURM_TASKS_PER_NODE 1
+	    SLURM_TASK_PID 1
+	    SLURM_TOPOLOGY_ADDR 0
+	    SLURM_TOPOLOGY_ADDR_PATTERN 0
+	}
 }
 
 #
@@ -86,21 +106,16 @@ set total 0
 set good 0
 send_user "\n"
 foreach {slurm_var check_flag} [array get good_vars] {
-    incr total
-    if {[info exists found_vars($slurm_var)]} {
-	if { $check_flag == 1 && $found_vars($slurm_var) <= 0 } {
-		send_user "FAILURE: Found $slurm_var, but $found_vars($slurm_var) <= 0\n"
+	incr total
+	if {[info exists found_vars($slurm_var)]} {
+		if { $check_flag == 1 && $found_vars($slurm_var) <= 0 } {
+			send_user "FAILURE: Found $slurm_var, but $found_vars($slurm_var) <= 0\n"
+		} else {
+			incr good
+		}
 	} else {
-	    incr good
+		send_user "\nFAILURE: Variable $slurm_var not found\n"
 	}
-    } else {
-	send_user "\nFAILURE: Variable $slurm_var not found\n"
-    }
-}
-
-if {[test_cray]} {
-	send_user "\nWARNING: For Cray system, reducing environment variables to verify from $total to \n"
-	set total 5
 }
 
 if {$good < $total} {

@@ -66,9 +66,7 @@
 #include <stdio.h>
 #include <stdlib.h>		/* getenv     */
 #include <sys/param.h>		/* MAXPATHLEN */
-#include <sys/stat.h>
 #include <unistd.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
 
@@ -208,9 +206,6 @@ typedef struct env_vars env_vars_t;
 static int  _get_int(const char *arg, const char *what, bool positive);
 
 static void  _help(void);
-
-/* load a multi-program configuration file */
-static void _load_multi(int *argc, char **argv);
 
 /* fill in default options  */
 static void _opt_default(void);
@@ -1520,48 +1515,6 @@ static void set_options(const int argc, char **argv)
 	spank_option_table_destroy (optz);
 }
 
-/* Load the multi_prog config file into argv, pass the  entire file contents
- * in order to avoid having to read the file on every node. We could parse
- * the infomration here too for loading the MPIR records for TotalView */
-static void _load_multi(int *argc, char **argv)
-{
-	int config_fd, data_read = 0, i;
-	struct stat stat_buf;
-	char *data_buf;
-
-	if ((config_fd = open(argv[0], O_RDONLY)) == -1) {
-		error("Could not open multi_prog config file %s",
-		      argv[0]);
-		exit(error_exit);
-	}
-	if (fstat(config_fd, &stat_buf) == -1) {
-		error("Could not stat multi_prog config file %s",
-		      argv[0]);
-		exit(error_exit);
-	}
-	if (stat_buf.st_size > 60000) {
-		error("Multi_prog config file %s is too large",
-		      argv[0]);
-		exit(error_exit);
-	}
-	data_buf = xmalloc(stat_buf.st_size + 1);
-	while ((i = read(config_fd, &data_buf[data_read], stat_buf.st_size
-			 - data_read)) != 0) {
-		if (i < 0) {
-			error("Error reading multi_prog config file %s",
-			      argv[0]);
-			exit(error_exit);
-		} else
-			data_read += i;
-	}
-	close(config_fd);
-
-	for (i = *argc+1; i > 1; i--)
-		argv[i] = argv[i-1];
-	argv[1] = data_buf;
-	*argc += 1;
-}
-
 #if defined HAVE_BG && !defined HAVE_BG_L_P
 static bool _check_is_pow_of_2(int32_t n) {
 	/* Bitwise ANDing a power of 2 number like 16 with its
@@ -1745,13 +1698,8 @@ static void _opt_args(int argc, char **argv)
 		opt.argv[i] = xstrdup(rest[i-command_pos]);
 	opt.argv[opt.argc] = NULL;	/* End of argv's (for possible execv) */
 
-	if (opt.multi_prog) {
-		if (opt.argc < 1) {
-			error("configuration file not specified");
-			exit(error_exit);
-		}
-		_load_multi(&opt.argc, opt.argv);
-	} else if (opt.argc > command_pos) {
+	if (!launch_g_handle_multi_prog_verify(command_pos)
+	    && (opt.argc > command_pos)) {
 		char *fullpath;
 
 		if ((fullpath = search_path(opt.cwd,
@@ -1763,11 +1711,6 @@ static void _opt_args(int argc, char **argv)
 	}
 	/* for (i=0; i<opt.argc; i++) */
 	/* 	info("%d is '%s'", i, opt.argv[i]); */
-
-	if (opt.multi_prog && verify_multi_name(opt.argv[command_pos],
-						opt.ntasks))
-		exit(error_exit);
-
 }
 
 /*

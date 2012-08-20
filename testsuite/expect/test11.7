@@ -41,7 +41,6 @@ set num_nodes   2
 set num_tasks   2
 set node_count  0
 set task_count  0
-set job_id      0
 set hostfile    "test$test_id.hostfile"
 
 print_header $test_id
@@ -82,15 +81,16 @@ for {set i 0} {$i<2} {incr i} {
 		set file [open $hostfile "w"]
 		puts $file "$node1\n$node0"
 		close $file
-		spawn $poe $bin_printenv SLURMD_NODENAME -rmpool $partition -procs \
-				$num_tasks -nodes $num_nodes -retry wait \
+		spawn $poe $bin_printenv MP_I_UPMD_HOSTNAME -labelio yes \
+				-procs $num_tasks -nodes $num_nodes \
 				-hostfile $hostfile
 	} else {
 		#
 		# execute poe with a specific node count
 		#
-		spawn $poe $bin_printenv SLURMD_NODENAME -rmpool $partition -procs \
-				$num_tasks -nodes $num_nodes -retry wait
+		spawn $poe $bin_printenv MP_I_UPMD_HOSTNAME -labelio yes \
+				-procs $num_tasks -nodes $num_nodes \
+				-rmpool $partition
 	}
 	expect {
 		-re "0:($alpha_numeric_under)" {
@@ -101,16 +101,12 @@ for {set i 0} {$i<2} {incr i} {
 			set node1 $expect_out(1,string)
 			exp_continue
 		}
-		-re "slurm job ($number)" {
-			set job_id $expect_out(1,string)
-			exp_continue
-		}
 		timeout {
 			send_user "\nFAILURE: poe not responding\n"
-			cancel_job $job_id
 			set exit_code 1
 		}
 		eof {
+			wait
 		}
 	}
 }

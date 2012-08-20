@@ -391,50 +391,19 @@ static int _task_cgroup_cpuset_dist_block(
 
 extern int task_cgroup_cpuset_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
-	char release_agent_path[PATH_MAX];
-
 	/* initialize user/job/jobstep cgroup relative paths */
 	user_cgroup_path[0]='\0';
 	job_cgroup_path[0]='\0';
 	jobstep_cgroup_path[0]='\0';
 
 	/* initialize cpuset cgroup namespace */
-	release_agent_path[0]='\0';
-	if (snprintf(release_agent_path,PATH_MAX,"%s/release_cpuset",
-		     slurm_cgroup_conf->cgroup_release_agent) >= PATH_MAX) {
-		error("task/cgroup: unable to build cpuset release agent path");
-		goto error;
-	}
-	if (xcgroup_ns_create(slurm_cgroup_conf, &cpuset_ns, "/cpuset", "",
-			      "cpuset",release_agent_path) !=
-	    XCGROUP_SUCCESS) {
+	if (xcgroup_ns_create(slurm_cgroup_conf, &cpuset_ns, "", "cpuset")
+	    != XCGROUP_SUCCESS) {
 		error("task/cgroup: unable to create cpuset namespace");
-		goto error;
-	}
-
-	/* check that cpuset cgroup namespace is available */
-	if (! xcgroup_ns_is_available(&cpuset_ns)) {
-		if (slurm_cgroup_conf->cgroup_automount) {
-			if (xcgroup_ns_mount(&cpuset_ns)) {
-				error("task/cgroup: unable to mount cpuset "
-				      "namespace: %s", slurm_strerror(errno));
-				goto clean;
-			}
-			info("task/cgroup: cpuset namespace is now mounted");
-		} else {
-			error("task/cgroup: cpuset namespace not mounted. "
-			      "aborting");
-			goto clean;
-		}
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
-
-clean:
-	xcgroup_ns_destroy(&cpuset_ns);
-
-error:
-	return SLURM_ERROR;
 }
 
 extern int task_cgroup_cpuset_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
@@ -737,7 +706,7 @@ extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
 	pid_t    pid = job->envtp->task_pid;
 
 	cpu_bind_type_t bind_type;
-	int bind_verbose;
+	int bind_verbose = 0;
 
 	hwloc_topology_t topology;
 	hwloc_bitmap_t cpuset;

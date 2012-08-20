@@ -45,7 +45,17 @@
 
 global sacctmgr sacct salloc sattach sbatch sbcast scancel scontrol sinfo smap squeue sreport srun sstat strigger
 
-# Conditional set.  Only set variable if variable does not yet exist.
+################################################################
+#
+# Proc: cset
+#
+# Purpose: Conditional set.  Only set variable if variable does not yet exist.
+#
+# Input: name  -- name of the variable to set
+#	 value -- value to set to 'name'
+#
+################################################################
+
 proc cset {name value} {
 	if {![uplevel 1 info exists $name]} {
 		upvar $name tmp
@@ -750,13 +760,11 @@ proc test_assoc_enforced { } {
 
 ################################################################
 #
-# Proc: test_assoc_enforced
+# Proc: test_limits_enforced
 #
-# Purpose: Determine if we need an association to run a job.
-# This is based upon
-# the value of AccountingStorageEnforce in the slurm.conf.
+# Purpose: Check if AccountingStorageEnforce limits is set
 #
-# Returns level of association enforcement, 0 if none
+# Returns 1 if limits is set, else 0
 #
 ################################################################
 proc test_limits_enforced { } {
@@ -1578,10 +1586,20 @@ proc test_super_user { } {
 	return $super_user
 }
 
-# Create a 16 bit hex number from a signed decimal number
-# Replace all non-decimal characters
+################################################################
+#
+# Proc: dec2hex16
+#
+# Purpose: Create a 16 bit hex number from a signed decimal number
+#
+# Returns: 16 bit hex version of input 'value'
+#
+# Input: value -- decimal number to convert
+#
 # Courtesy of Chris Cornish
 # http://aspn.activestate.com/ASPN/Cookbook/Tcl/Recipe/415982
+################################################################
+# Replace all non-decimal characters
 proc dec2hex16 {value} {
 	regsub -all {[^0-x\.-]} $value {} newtemp
 	set value [string trim $newtemp]
@@ -1595,10 +1613,20 @@ proc dec2hex16 {value} {
 	}
 }
 
-# Create a 32 bit hex number from a signed decimal number
-# Replace all non-decimal characters
+################################################################
+#
+# Proc: dec2hex32
+#
+# Purpose: Create a 32 bit hex number from a signed decimal number
+#
+# Returns: 32 bit hex version of input 'value'
+#
+# Input: value -- decimal number to convert
+#
 # Courtesy of Chris Cornish
 # http://aspn.activestate.com/ASPN/Cookbook/Tcl/Recipe/415982
+################################################################
+# Replace all non-decimal characters
 proc dec2hex {value} {
 	regsub -all {[^0-x\.-]} $value {} newtemp
 	set value [string trim $newtemp]
@@ -1759,7 +1787,15 @@ proc make_bash_script { script_name script_contents } {
 }
 
 ################################################################
-# Given a hostname, return it's numeric suffix
+#
+# Proc: get_suffix
+#
+# Purpose: Given a hostname, return it's numeric suffix
+#
+# Returns: numerical suffix for input 'hostname'
+#
+# Input: hostname -- hostname for which to return suffix
+#
 ################################################################
 proc get_suffix { hostname } {
 	set host_len [string length $hostname]
@@ -1787,9 +1823,13 @@ proc get_suffix { hostname } {
 }
 
 ################################################################
-# Check if we are user root or SlurmUser
 #
-# Return 1 if true, 0 if false
+# Proc: is_super_user
+#
+# Purpose: Check if we are user root or SlurmUser
+#
+# Returns: 1 if true, 0 if false
+#
 ################################################################
 
 proc is_super_user { } {
@@ -1829,7 +1869,11 @@ proc is_super_user { } {
 
 ################################################################
 #
+# Proc: check_acct_associations
 #
+# Purpose: Use sacctmgr to check associations
+#
+# Returns: 0 on any error
 #
 ################################################################
 proc check_acct_associations { } {
@@ -1903,7 +1947,11 @@ proc check_acct_associations { } {
 
 ################################################################
 #
+# Proc:check_accounting_admin_level
 #
+# Purpose: get the admin_level for the current user
+#
+# Returns: admin_level for the current user
 #
 ################################################################
 proc check_accounting_admin_level { } {
@@ -1955,7 +2003,11 @@ proc check_accounting_admin_level { } {
 
 ################################################################
 #
+# Proc: get_cluster_name
 #
+# Purpose: get the cluster name
+#
+# Returns: name of the cluster
 #
 ################################################################
 proc get_cluster_name { } {

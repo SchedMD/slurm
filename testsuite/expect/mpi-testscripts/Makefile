@@ -6,9 +6,7 @@
 
 CODES = barrier_timed allred allred_timed alltoall alltoall_timed
 
-OPT4 = -qarch=440d
-
-CC = mpxlc
+CC = mpcc
 CFLAGS = $(OPT4)
 
 

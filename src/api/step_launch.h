@@ -119,6 +119,12 @@ typedef struct step_launch_state step_launch_state_t;
 struct step_launch_state * step_launch_state_create(slurm_step_ctx_t *ctx);
 
 /*
+ * If a steps size has changed update the launch_state structure for a
+ * specified step context, "ctx".
+ */
+void step_launch_state_alter(slurm_step_ctx_t *ctx);
+
+/*
  * Free the memory associated with the a launch state structure.
  */
 void step_launch_state_destroy(struct step_launch_state *sls);

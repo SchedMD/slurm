@@ -46,6 +46,7 @@
 
 typedef struct {
 	int (*setup_srun_opt)      (char **rest);
+	int (*handle_multi_prog)   (int command_pos);
 	int (*create_job_step)     (srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
 				    sig_atomic_t *destroy_job);
@@ -63,6 +64,7 @@ typedef struct {
  */
 static const char *syms[] = {
 	"launch_p_setup_srun_opt",
+	"launch_p_handle_multi_prog_verify",
 	"launch_p_create_job_step",
 	"launch_p_step_launch",
 	"launch_p_step_wait",
@@ -285,6 +287,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_PORTS_BUSY) &&
 		     (rc != ESLURM_PROLOG_RUNNING) &&
 		     (rc != SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT) &&
+		     (rc != ESLURM_INTERCONNECT_BUSY) &&
 		     (rc != ESLURM_DISABLED))) {
 			error ("Unable to create job step: %m");
 			return SLURM_ERROR;
@@ -432,6 +435,14 @@ extern int launch_g_setup_srun_opt(char **rest)
 		return SLURM_ERROR;
 
 	return (*(ops.setup_srun_opt))(rest);
+}
+
+extern int launch_g_handle_multi_prog_verify(int command_pos)
+{
+	if (launch_init() < 0)
+		return 0;
+
+	return (*(ops.handle_multi_prog))(command_pos);
 }
 
 extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,

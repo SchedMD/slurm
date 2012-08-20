@@ -720,7 +720,9 @@ _compute_task_count(allocation_info_t *ainfo)
 		for (i = 0; i < ainfo->num_cpu_groups; i++)
 			cnt += ( ainfo->cpu_count_reps[i] *
 				 (ainfo->cpus_per_node[i]/opt.cpus_per_task));
-	}
+	} else if (opt.ntasks_per_node != NO_VAL)
+		cnt = ainfo->nnodes * opt.ntasks_per_node;
+
 	return (cnt < ainfo->nnodes) ? ainfo->nnodes : cnt;
 }
 

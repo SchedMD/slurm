@@ -36,6 +36,7 @@ set test_id        "1.33"
 set exit_code      0
 set exit_script    "./test$test_id.exit.bash"
 set test_script    "./test$test_id.bash"
+set launch_poe     0
 
 print_header $test_id
 
@@ -45,6 +46,11 @@ if {[test_bluegene]} {
 } elseif {[test_cray]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
 	exit $exit_code
+} elseif {[test_launch_poe]} {
+	set launch_poe  1
+	set task_cnt	1
+	set sum1	10
+	set key2	"srun_exit_code_10"
 } elseif {[test_serial]} {
 	set task_cnt	1
 	set sum1	10
@@ -72,6 +78,7 @@ make_bash_script $test_script "
 # Spawn program and check for exit code messages from srun
 #
 set sum 0
+set myexit 0
 set timeout $max_job_delay
 set srun_pid [spawn $srun -N1 -n $task_cnt -O $exit_script]
 expect {
@@ -86,11 +93,19 @@ expect {
 		set exit_code 1
 	}
 	eof {
-		wait
+		if { $launch_poe } {
+			# since with poe we can only grab the poe's return code
+			# we check here to make sure it is the correct number
+			catch wait result
+			incr sum [lindex $result 3]
+		} else {
+			wait
+		}
 	}
 }
+
 if {$sum != $sum1} {
-	send_user "\nFAILURE: srun failed to report exit code ($sum != $sum1)\n"
+	send_user "\nFAILURE: srun failed to report exit code ($sum != $sum1) $myexit\n"
 	set exit_code 1
 }
 
@@ -118,7 +133,7 @@ if {$matches != 1} {
 # Post-processing
 #
 if {$exit_code == 0} {
-	exec $bin_rm -f $exit_script $test_script
+	#exec $bin_rm -f $exit_script $test_script
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

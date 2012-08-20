@@ -306,8 +306,6 @@ extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg)
 	/* now look for a valid request, matching uid */
 	trig_iter = list_iterator_create(trigger_list);
 	while ((trig_test = list_next(trig_iter))) {
-		if ((trig_test->user_id != (uint32_t) uid) && (uid != 0))
-			continue;
 		if (trig_in->trig_id &&
 		    (trig_in->trig_id != trig_test->trig_id))
 			continue;
@@ -318,6 +316,10 @@ extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg)
 			continue;
 		if (trig_test->state == 2)	/* wait for proc termination */
 			continue;
+		if ((trig_test->user_id != (uint32_t) uid) && (uid != 0)) {
+			rc = ESLURM_ACCESS_DENIED;
+			continue;
+		}
 		list_delete_item(trig_iter);
 		rc = SLURM_SUCCESS;
 	}

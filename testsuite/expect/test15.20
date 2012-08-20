@@ -73,7 +73,12 @@ if {$available < $node_cnt} {
     exit $exit_code
 }
 
-set salloc_pid [spawn $salloc -N$node_cnt -t1 $srun -l $bin_printenv SLURMD_NODENAME]
+if {[test_launch_poe]} {
+	set node_name_env MP_I_UPMD_HOSTNAME
+} else {
+	set node_name_env SLURMD_NODENAME
+}
+set salloc_pid [spawn $salloc -N$node_cnt -t1 $srun -l $bin_printenv $node_name_env]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -92,7 +97,7 @@ expect {
 		send_user "WARNING: partition too small for test\n"
 		exit 0
 	}
-	-re "($number): ($alpha_numeric_under)" {
+	-re "($number): *($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -167,7 +172,7 @@ set host_1      ""
 set host_2      ""
 set job_id      0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N2 -t1 --exclude=$exclude_node $srun -l $bin_printenv SLURMD_NODENAME]
+set salloc_pid [spawn $salloc -N2 -t1 --exclude=$exclude_node $srun -l $bin_printenv $node_name_env]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -180,7 +185,7 @@ expect {
 		exit 0
 	}
 
-	-re "($number): ($alpha_numeric_under)" {
+	-re "($number): *($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -239,13 +244,13 @@ set host_0      ""
 set host_1      ""
 set job_id      0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1 -t1 --nodelist=$include_node $srun -l $bin_printenv SLURMD_NODENAME]
+set salloc_pid [spawn $salloc -N1 -t1 --nodelist=$include_node $srun -l $bin_printenv $node_name_env]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "($number): ($alpha_numeric_under)" {
+	-re "($number): *($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}

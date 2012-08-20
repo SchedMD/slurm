@@ -95,16 +95,36 @@ int _file_write_content(char* file_path, char* content, size_t csize);
  *  - XCGROUP_SUCCESS
  */
 int xcgroup_ns_create(slurm_cgroup_conf_t *conf,
-		xcgroup_ns_t* cgns, char* mnt_point, char* mnt_args,
-		      char* subsys, char* notify_prog) {
+		      xcgroup_ns_t *cgns, char *mnt_args, char *subsys) {
 
-	cgns->mnt_point = xstrdup(conf->cgroup_mountpoint);
-	xstrcat(cgns->mnt_point, mnt_point);
-
+	cgns->mnt_point = xstrdup_printf("%s/%s",
+					 conf->cgroup_mountpoint, subsys);
 	cgns->mnt_args = xstrdup(mnt_args);
 	cgns->subsystems = xstrdup(subsys);
-	cgns->notify_prog = xstrdup(notify_prog);
+	cgns->notify_prog = xstrdup_printf("%s/release_%s",
+					   conf->cgroup_release_agent, subsys);
+
+	/* check that freezer cgroup namespace is available */
+	if (!xcgroup_ns_is_available(cgns)) {
+		if (conf->cgroup_automount) {
+			if (xcgroup_ns_mount(cgns)) {
+				error("unable to mount %s cgroup "
+				      "namespace: %s",
+				      subsys, slurm_strerror(errno));
+				goto clean;
+			}
+			info("cgroup namespace '%s' is now mounted", subsys);
+		} else {
+			error("cgroup namespace '%s' not mounted. aborting",
+			      subsys);
+			goto clean;
+		}
+	}
+
 	return XCGROUP_SUCCESS;
+clean:
+	xcgroup_ns_destroy(cgns);
+	return XCGROUP_ERROR;
 }
 
 /*
@@ -114,8 +134,8 @@ int xcgroup_ns_create(slurm_cgroup_conf_t *conf,
  *  - XCGROUP_ERROR
  *  - XCGROUP_SUCCESS
  */
-int xcgroup_ns_destroy(xcgroup_ns_t* cgns) {
-
+int xcgroup_ns_destroy(xcgroup_ns_t* cgns)
+{
 	xfree(cgns->mnt_point);
 	xfree(cgns->mnt_args);
 	xfree(cgns->subsystems);
@@ -201,6 +221,11 @@ int xcgroup_ns_mount(xcgroup_ns_t* cgns)
 		  MS_NOSUID|MS_NOEXEC|MS_NODEV, options))
 		return XCGROUP_ERROR;
 	else {
+		/* FIXME: this only gets set when we aren't mounted at
+		   all.  Since we never umount this may only be loaded
+		   at startup the first time.
+		*/
+
 		/* we then set the release_agent if necessary */
 		if (cgns->notify_prog) {
 			if (xcgroup_create(cgns, &cg, "/", 0, 0) ==
@@ -208,6 +233,7 @@ int xcgroup_ns_mount(xcgroup_ns_t* cgns)
 				return XCGROUP_SUCCESS;
 			xcgroup_set_param(&cg, "release_agent",
 					  cgns->notify_prog);
+			xcgroup_destroy(&cg);
 		}
 		return XCGROUP_SUCCESS;
 	}
@@ -238,16 +264,15 @@ int xcgroup_ns_umount(xcgroup_ns_t* cgns)
  */
 int xcgroup_ns_is_available(xcgroup_ns_t* cgns)
 {
-	int fstatus;
+	int fstatus = 0;
 	char* value;
 	size_t s;
 	xcgroup_t cg;
 
 	if (xcgroup_create(cgns, &cg, "/", 0, 0) == XCGROUP_ERROR)
 		return 0;
-
 	if (xcgroup_get_param(&cg, "release_agent",
-			       &value, &s) != XCGROUP_SUCCESS)
+			      &value, &s) != XCGROUP_SUCCESS)
 		fstatus = 0;
 	else {
 		xfree(value);

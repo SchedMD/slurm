@@ -10,6 +10,13 @@ organizations. Lead SLURM developers are:
 
 <p>SLURM contributors include:</p>
 <ul>
+<!-- FUNDING ORGANIZATIONS, PLEASE KEEP IN ALPHABETICAL ORDER -->
+<li><a href="http://www.bull.com">Bull</a></li>
+<li><a href="http://www.fhcrc.org">Fred Hutchinson Cancer Research Center</a></li>
+<li><a href="http://www.hp.com">HPr</a></li>
+<li><a href="http://www.llnl.gov">Lawrence Livermore National Laboratory</a></li>
+<li><a href="http://www.ornl.gov">Oak Ridge National Laboratory</a></li>
+<br><!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 <li>Ramiro Alba (Centre Tecnol&ograve;gic de Tranfer&egrave;ncia de Calor, Spain)</li>
 <li>Amjad Majid Ali (Colorado State University)</li>
 <li>P&auml;r Andersson (National Supercomputer Centre, Sweden)</li>
@@ -109,9 +116,9 @@ organizations. Lead SLURM developers are:
 <li>Jay Windley (Linux NetworX)</li>
 <li>Anne-Marie Wunderlin (Bull)</li>
 <li>Nathan Yee (SchedMD)</li>
-<!-- PLEASE KEEP IN ALPHABETICAL ORDER -->
+<!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 19 July 2012</p>
+<p style="text-align:center;">Last modified 17 August 2012</p>
 
 <!--#include virtual="footer.txt"-->

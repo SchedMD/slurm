@@ -784,9 +784,6 @@ slurm_step_ctx_get(slurm_step_ctx_t *ctx, int ctx_key, INOUT ...)
 #int
 #slurm_job_info_ctx_get(switch_jobinfo_t *jobinfo, int data_type, void *data)
 
-int
-slurm_step_ctx_daemon_per_node_hack(slurm_step_ctx_t *ctx, char **addr_array, uint32_t node_cnt)
-
 void
 slurm_step_ctx_DESTROY(slurm_step_ctx_t *ctx)
 	CODE:

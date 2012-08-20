@@ -38,11 +38,13 @@ job step.</li>
 </ol>
 
 <h3>Network Options</h3>
+
 <p>Each job step can specify it's desired network options.
 For example, one job step may use IP mode communications and the next use
 User Space (US) mode communications.
 Network specifications may be specified using srun's --network option or the
 SLURM_NETWORK environment variable. Supported network options include:</p>
+
 <ul>
 <li>Network protocol</li>
   <ul>
@@ -73,6 +75,8 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
   programming interface.
   Default value is zero.
   Applies only to IBM Power7-IH processors.
+  POE requires that if <b>cau</b> has a non-zero value then <b>devtype=IB</b>
+  or <b>devtype=HFI</b> must be explictly specified.
   <li><b>devname=<i>name</i></b>
   Specify the name of an network adapter to use.
   For example: "eth0" or "mlx4_0".</li>
@@ -126,6 +130,12 @@ both lapi and mpi interfaces. If each node has one Infinband network connection,
 this would result in four switch windows per task.
 </p>
 
+<p><b>NOTE:</b> Switch resources on a node are shared between all job steps on
+that node. If a job step can not be initiated due to insufficient switch
+resources being available, that job step will periodically retry getting
+resources for the lifetime of the job unless srun's --immediate option is
+used.</p>
+
 <h3>Debugging</h3>
 
 <p>Most debuggers require detailed information about launched tasks such as
@@ -172,21 +182,42 @@ are silently ignored:</p>
 <li>--runjob-opts (used only on IBM BlueGene/Q systems)</li>
 <li>--signal (signal to send when near time limit and the remaining time required)</li>
 <li>--sockets-per-node (number of sockets per node required)</li>
+<li>--task-epilog (per-task epilog program)</li>
+<li>--task-prolog (per-task prolog program)</li>
 <li>-u, --unbuffered (avoid line buffering)</li>
 <li>-W, --wait (specify job swait time after first task exit)</li>
 <li>-Z, --no-allocate (launch tasks without creating job allocation></li>
 </ul>
 
-<p>In addition, the following options have some limitations:</p>
+<p>In addition, file name specifications with expression substitution
+(e.g. file names including "%j" for job_ID, "%J" for job_ID.step_ID,
+"%s" for step_ID "%t" for task_ID or "%n" for node_ID) are not supported.
+This effects the following options:</p>
 <ul>
-<li>-e, --error (Unable to support node and task-specific file names)</li>
-<li>-i, --input (Unable to support node and task-specific file names)</li>
-<li>-o, --output (Unable to support node and task-specific file names)</li>
+<li>-e, --error</li>
+<li>-i, --input</li>
+<li>-o, --output</li>
 </ul>
+
+<p>The -L/--label option differs slighly in that when the output from multiple
+tasks are identical, they are combined on a single line with the prefix
+identifying which task(s) generated the output. In addition, there is a colon
+but no space between the task IDs and output. For example:</p>
+<pre>
+# SLURM OUTPUT
+0: foo
+1: foo
+0: bar
+1: barr
+
+# POE OUTPUT
+0-1:foo
+0:bar
+1:barr
+</pre>
 
 <h3>Environment Variables</h3>
 
-<p><b>FIXME: We need to validate all of this</b>
 <p>Since SLURM is not directly launching user tasks, the following environment
 variables are NOT available with POE:</p>
 <ul>
@@ -200,8 +231,22 @@ variables are NOT available with POE:</p>
 <li>SLURM_MEM_BIND_LIST</li>
 <li>SLURM_MEM_BIND_TYPE</li>
 <li>SLURM_MEM_BIND_VERBOSE</li>
+<li>SLURM_NODEID</li>
 <li>SLURM_PROCID</li>
+<li>SLURM_SRUN_COMM_HOST</li>
+<li>SLURM_SRUN_COMM_PORT</li>
 <li>SLURM_TASK_PID</li>
+<li>SLURM_TASKS_PER_NODE</li>
+<li>SLURM_TOPOLOGY_ADDR</li>
+<li>SLURM_TOPOLOGY_ADDR_PATTERN</li>
+</ul>
+
+<p>Note that POE sets a variety of environment variables that provide similar
+information to some the missing SLURM environment variables. Particularly
+node the following variables:</p>
+<ul>
+<li>MP_I_UPMD_HOSTNAME (local hostname)</li>
+<li>MP_CHILD (global task ID)</li>
 </ul>
 
 <h3>Gang Scheduling</h3>
@@ -218,25 +263,41 @@ value. Note that the default timeout is 150 seconds. See
 export MP_TIMEOUT=600
 </pre>
 
-<h3>Other Notes</h3>
+<h3>Other User Notes</h3>
 
 <p>If the srun command's --label option is used, note that POE's prefix is
 the task ID followed by a colon. The prefix with native SLURM is the task ID
 followed by a colon followed by one space.</p>
 
+<p>POE forwards a limited set of signals to spawned tasks, mostly signals
+that indicate a fatal error. It does not forward SIGUSR1 or SIGUSR2 signals.</p>
+
 <h2>System Administration</h2>
 
-<p>There are two critical SLURM configuration parameters for use with PE.
+<p>There are several critical SLURM configuration parameters for use with PE.
 These configuration parameters should be set in your <b>slurm.conf</b> file.
 <b>LaunchType</b> defines the task launch mechanism to be used and must be set
 to <b>launch/poe</b>.
 <b>SwitchType</b> defines the mechanism used to manage the network switch and
 it must be set to <b>switch/nrt</b> and use IBM's Network Resource Table (NRT)
-interface.</p>
+interface.
+Task launch is slower in this environment than with a typical Linux cluster
+and the <b>MessageTimeout</b> must be configured to a sufficiently large value
+so that large parallel jobs can be launched without SLURM's job step
+credentials expiring.
+When switch resources are allocated to a job, all processes spawned by that job
+must be terminated before the switch resources can be released for use by another
+program. This means that reliable tracking of all spawned processes is critical
+for switch use. Use of <b>ProctrackType=proctrack/cgroup</b> is strongly
+recommended. Use of any other process tracking plugin significantly increases
+the likelyhood of orphan processes that must be manually identified and killed
+in order to reuse switch resources.</p>
 <pre>
 # Excerpt of slurm.conf
 LaunchType=launch/poe
 SwitchType=switch/nrt
+MessageTimeout=30
+ProctrackType=proctrack/cgroup
 </pre>
 
 <p>In order for these plugins to be built, the locations of the POE Resource
@@ -279,7 +340,7 @@ the file /usr/lib64/libpermapi.so to contain SLURM's library or a link to it.</p
 # Modify the path below as appropriate
 #
 MP_PE_RMLIB=/usr/local/lib/slurm/libpermapi.so
-MP_POOL=slurm
+
 </pre>
 
 <h3>Job Scheduling</h3>
@@ -308,8 +369,43 @@ Units (CAU) is disabled and an error message to that effect will be generated
 in response to such a request. In addition, verion 1200 or higher of IBM's NRT
 API is required to support this functionality.</p>
 
+<h3>Design Notes</h3>
+
+<p>It is possible to configure SLURM and LoadLeveler to simultaneously exist
+on a cluster, however each scheduler must be configured to manage different
+compute nodes (e.g. LoadLeveler can manage compute nodes "tux[1-8]" and SLURM
+can manaage compute nodes "tux[9-16]" on the same cluster).</p>
+
+<p>The srun command uses the <b>launch/poe</b> plugin to launch the poe program.
+Then poe uses the <b>launch/slurm</b> plugin to launch the "pmd" process on the
+compute nodes, so two launch plugins are actually used.</p>
+
+<p>Depending upon job size and network options, allocating and deallocating
+switch resources can take multple seconds per node and the process of launching
+applications on multiple nodes is not well parallelized.
+This is outside of SLURM's control.</p>
+
+<h3>Debugging Notes</h3>
+
+<p>It is possible to generate detailed logging of all switch/nrt actions and
+data by configuring <b>DebugFlags=switch</b>.</p>
+
+<p>The envirnoment variable <b>MP_INFOLEVEL</b> can be used to enable the
+logging of POE debug messages. To enable fairly detailed logging, set
+<b>MP_INFOLEVEL=6</b>.</p>
+
+<p>The Protocol Network Services Daemon (PNSD) manages the Network Resource
+Table (NRT) information on each node. It's logs are written to the file
+<b>/etc/serverlog</b>, which may be useful to diagnose problems. In order to
+execute PNSD in debug node (for extra debugging information), run the following
+commands as user root:</p>
+<pre>
+stopsrc -s pnsd
+startsrc -s pnsd -a -D
+</pre>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 7 August 2012</p></td>
+<p style="text-align:center;">Last modified 16 August 2012</p></td>
 
 <!--#include virtual="footer.txt"-->

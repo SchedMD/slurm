@@ -6158,7 +6158,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		     uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
-	job_desc_msg_t *job_desc_ptr;
+	job_desc_msg_t *job_desc_ptr = NULL;
 
 	/* alloc memory for structure */
 	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {

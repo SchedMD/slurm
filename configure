@@ -21259,7 +21259,7 @@ $as_echo "#define HAVE_LIBNRT 1" >>confdefs.h
 
    fi
 
-   if test "x$ac_have_nrt_h" == "xyes" && test "x$ac_have_libnrt" == "xyes"; then
+   if test "x$ac_have_nrt_h" = "xyes" && test "x$ac_have_libnrt" = "xyes"; then
       ac_have_nrt="yes"
    fi
     if test "x$ac_have_nrt" = "xyes"; then

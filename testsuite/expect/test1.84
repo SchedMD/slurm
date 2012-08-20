@@ -61,6 +61,12 @@ if {[string compare $select_type "cons_res"]} {
 	exit 0
 }
 
+if {[test_launch_poe]} {
+	set node_name_env MP_I_UPMD_HOSTNAME
+} else {
+	set node_name_env SLURMD_NODENAME
+}
+
 #
 # Submit a 1 node job to determine the node's CPU count
 #
@@ -73,7 +79,7 @@ set task_cnt       0
 
 set srun_pid [spawn $srun -N1 --cpus-per-task=1 --exclusive -l -t1 ./$file_in]
 expect {
-	-re "SLURM_CPUS_ON_NODE=($number) SLURMD_NODENAME=($alpha_numeric_under)" {
+	-re "SLURM_CPUS_ON_NODE=($number) $node_name_env=($alpha_numeric_under)" {
 		set cpu_cnt $expect_out(1,string)
 		set host $expect_out(2,string)
 		incr task_cnt
@@ -145,7 +151,7 @@ if {$cpu_cnt < 2} {
 # Now verify the --cpus-per-task option
 #
 set task_cnt  0
-set srun_pid [spawn $srun -N1 --cpus-per-task=2 --exclusive -l -t1 --nodelist=$host $bin_printenv SLURMD_NODENAME]
+set srun_pid [spawn $srun -N1 --cpus-per-task=2 --exclusive -l -t1 --nodelist=$host $bin_printenv $node_name_env]
 expect {
 	-re "Invalid node name specified" {
 		send_user "\nWARNING: Appears you are using "
@@ -153,7 +159,7 @@ expect {
 		send_user "This test won't work in that fashion.\n"
 		exit 0
 	}
-	-re "$number: ($alpha_numeric_under)" {
+	-re "$number: *($alpha_numeric_under)" {
 		incr task_cnt
 		exp_continue
 	}

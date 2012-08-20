@@ -70,10 +70,10 @@ if {[test_cray]} {
 make_bash_script $file_in "
    $bin_printenv SLURM_NNODES
    $srun -E -n1 -N1 $bin_printenv SLURM_NNODES
-   $bin_printenv SLURM_NPROCS
-   $srun --preserve-env -n1 -N1 $bin_printenv SLURM_NPROCS
+   $bin_printenv SLURM_NTASKS
+   $srun --preserve-env -n1 -N1 $bin_printenv SLURM_NTASKS
    $srun -n1 -N1 $bin_printenv SLURM_NNODES
-   $srun -n1 -N1 $bin_printenv SLURM_NPROCS"
+   $srun -n1 -N1 $bin_printenv SLURM_NTASKS"
 
 #
 # Run job to determine what nodes are available
@@ -142,7 +142,7 @@ if {$num_nodes_test1 != $num_nodes_test2} {
 }
 
 if {$num_procs_test1 != $num_procs_test2} {
-	send_user "\nFAILURE: SLURM_NPROCS was not preserved ($num_procs_test1 != $num_procs_test2)\n"
+	send_user "\nFAILURE: SLURM_NTASKS was not preserved ($num_procs_test1 != $num_procs_test2)\n"
 	set exit_code 1
 }
 
@@ -156,7 +156,7 @@ if {$num_nodes_test3 != 1} {
 }
 
 if {$num_procs_test3 != 1} {
-	send_user "\nFAILURE: SLURM_NPROCS should be 1 ($num_procs_test3 != 1)\n"
+	send_user "\nFAILURE: SLURM_NTASKS should be 1 ($num_procs_test3 != 1)\n"
 	set exit_code 1
 }
 

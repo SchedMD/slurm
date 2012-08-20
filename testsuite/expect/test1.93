@@ -46,6 +46,9 @@ if {[test_front_end] != 0} {
 } elseif {[test_serial]} {
 	send_user "\nWARNING: This test is incompatible with serial system\n"
 	exit 0
+} elseif {[test_launch_poe]} {
+	send_user "\nWARNING: This test is incompatible with POE systems\n"
+	exit 0
 }
 
 #
@@ -90,11 +93,21 @@ exec $bin_rm -f $file_in
 #
 # Get node names
 #
+if {[test_launch_poe]} {
+	set node_name_env MP_I_UPMD_HOSTNAME
+} else {
+	set node_name_env SLURMD_NODENAME
+}
 set host_0      ""
 set host_1      ""
-send "$srun -l --mpi=lam $bin_printenv SLURMD_NODENAME\r"
+send "$srun -l --mpi=lam $bin_printenv $node_name_env\r"
 expect {
-	-re "($number): ($alpha_numeric_under)" {
+	-re "0-1: *($alpha_numeric_under)" {
+		set host_0 $expect_out(1,string)
+		set host_1 $expect_out(1,string)
+		exp_continue
+	}
+	-re "($number): *($alpha_numeric_under)" {
 		set host_inx $expect_out(1,string)
 		if {$host_inx == 0} {
 			set host_0 $expect_out(2,string)

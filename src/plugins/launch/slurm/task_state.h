@@ -51,6 +51,8 @@ typedef enum {
 
 task_state_t task_state_create (int ntasks);
 
+void task_state_alter (task_state_t ts, int ntasks);
+
 void task_state_destroy (task_state_t ts);
 
 void task_state_update (task_state_t ts, int taskid, task_state_type_t t);

@@ -1772,7 +1772,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					break;
 				} else if (found_record->job_list &&
 					   list_count(found_record->job_list)) {
-					select_jobinfo_t *jobinfo;
+					select_jobinfo_t *found_jobinfo;
 					ba_mp_t *ba_mp;
 					struct job_record *found_job_ptr;
 					ListIterator job_list_itr =
@@ -1783,7 +1783,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						if (found_job_ptr
 						    != preempt_job_ptr)
 							continue;
-						jobinfo = found_job_ptr->
+						found_jobinfo = found_job_ptr->
 							select_jobinfo->data;
 						ba_mp = list_peek(found_record->
 								  ba_mp_list);
@@ -1791,10 +1791,13 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						xassert(ba_mp);
 						xassert(ba_mp->cnode_bitmap);
 
-						bit_not(jobinfo->units_avail);
+						bit_not(found_jobinfo->
+							units_avail);
 						bit_and(ba_mp->cnode_bitmap,
-							jobinfo->units_avail);
-						bit_not(jobinfo->units_avail);
+							found_jobinfo->
+							units_avail);
+						bit_not(found_jobinfo->
+							units_avail);
 
 						if (bg_conf->slurm_debug_flags
 						    & DEBUG_FLAG_BG_PICK)
@@ -1857,14 +1860,41 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			max_end_time = INFINITE;
 		else if (bg_record->job_list
 			 && list_count(bg_record->job_list)) {
-			struct job_record *found_job_ptr;
-			ListIterator job_list_itr =
-				list_iterator_create(bg_record->job_list);
-			while ((found_job_ptr = list_next(job_list_itr))) {
-				if (found_job_ptr->end_time > max_end_time)
-					max_end_time = found_job_ptr->end_time;
+			bitstr_t *total_bitmap;
+			bool need_free = false;
+			ba_mp_t *ba_mp = list_peek(bg_record->ba_mp_list);
+			xassert(ba_mp);
+			xassert(ba_mp->cnode_bitmap);
+
+			if (bg_record->err_ratio) {
+				xassert(ba_mp->cnode_err_bitmap);
+				total_bitmap = bit_copy(ba_mp->cnode_bitmap);
+				bit_or(total_bitmap, ba_mp->cnode_err_bitmap);
+				need_free = true;
+			} else
+				total_bitmap = ba_mp->cnode_bitmap;
+			/* Only look at the jobs here if we don't have
+			   enough space on the block. jobinfo is set up
+			   at the beginning of the function in case
+			   you were wondering.
+			*/
+			if (jobinfo->cnode_cnt >
+			    bit_clear_count(total_bitmap)) {
+				struct job_record *found_job_ptr;
+				ListIterator job_list_itr =
+					list_iterator_create(
+						bg_record->job_list);
+				while ((found_job_ptr =
+					list_next(job_list_itr))) {
+					if (found_job_ptr->end_time
+					    > max_end_time)
+						max_end_time =
+							found_job_ptr->end_time;
+				}
+				list_iterator_destroy(job_list_itr);
 			}
-			list_iterator_destroy(job_list_itr);
+			if (need_free)
+				FREE_NULL_BITMAP(total_bitmap);
 		}
 
 		/* If there are any jobs running max_end_time will

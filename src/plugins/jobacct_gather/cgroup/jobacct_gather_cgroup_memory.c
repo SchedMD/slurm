@@ -70,53 +70,20 @@ xcgroup_t task_memory_cg;
 extern int jobacct_gather_cgroup_memory_init(
 	slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
-	char release_agent_path[PATH_MAX];
-
 	/* initialize user/job/jobstep cgroup relative paths */
 	user_cgroup_path[0]='\0';
 	job_cgroup_path[0]='\0';
 	jobstep_cgroup_path[0]='\0';
 
 	/* initialize memory cgroup namespace */
-	release_agent_path[0]='\0';
-	if (snprintf(release_agent_path, PATH_MAX, "%s/release_memory",
-		     slurm_cgroup_conf->cgroup_release_agent) >= PATH_MAX) {
-		error("jobacct_gather/cgroup: unable to build memory release "
-		      "agent path");
-		goto error;
-	}
-	if (xcgroup_ns_create(slurm_cgroup_conf, &memory_ns, "/memory", "",
-			      "memory", release_agent_path) !=
-	    XCGROUP_SUCCESS) {
+	if (xcgroup_ns_create(slurm_cgroup_conf, &memory_ns, "", "memory")
+	    != XCGROUP_SUCCESS) {
 		error("jobacct_gather/cgroup: unable to create memory "
 		      "namespace");
-		goto error;
+		return SLURM_ERROR;
 	}
 
-	/* check that memory cgroup namespace is available */
-	if (!xcgroup_ns_is_available(&memory_ns)) {
-		if (slurm_cgroup_conf->cgroup_automount) {
-			if (xcgroup_ns_mount(&memory_ns)) {
-				error("jobacct_gather/cgroup: unable to mount "
-				      "memory namespace: %s",
-				      slurm_strerror(errno));
-				goto clean;
-			}
-			info("jobacct_gather/cgroup: memory namespace is now "
-			     "mounted");
-		} else {
-			error("jobacct_gather/cgroup: memory namespace not "
-			      "mounted. aborting");
-			goto clean;
-		}
-	}
 	return SLURM_SUCCESS;
-
-clean:
-	xcgroup_ns_destroy(&memory_ns);
-
-error:
-	return SLURM_ERROR;
 }
 
 extern int jobacct_gather_cgroup_memory_fini(

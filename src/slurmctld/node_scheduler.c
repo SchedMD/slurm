@@ -921,6 +921,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool tried_sched = false;	/* Tried to schedule with avail nodes */
 	static uint32_t cr_enabled = NO_VAL;
 	bool preempt_flag = false;
+	bool nodes_busy = false;
 	int shared = 0, select_mode;
 
 	if (test_only)
@@ -1074,6 +1075,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				fatal("bit_copy malloc failure");
 		}
 		for (i = 0; i < node_set_size; i++) {
+			int count1 = 0, count2 = 0;
 			if (!has_xand &&
 			    !bit_test(node_set_ptr[i].feature_bits, j))
 				continue;
@@ -1089,6 +1091,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			}
 
 			bit_and(node_set_ptr[i].my_bitmap, avail_node_bitmap);
+			if (!nodes_busy) {
+				count1 = bit_set_count(node_set_ptr[i].
+						       my_bitmap);
+			}
 			if (!preempt_flag) {
 				if (shared) {
 					bit_and(node_set_ptr[i].my_bitmap,
@@ -1111,6 +1117,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					cg_node_bitmap);
 				bit_not(cg_node_bitmap);
 #endif
+			}
+			if (!nodes_busy) {
+				count2 = bit_set_count(node_set_ptr[i].
+						       my_bitmap);
+				if (count1 != count2)
+					nodes_busy = true;
 			}
 			if (avail_bitmap) {
 				bit_or(avail_bitmap,
@@ -1273,12 +1285,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 	/* The job is not able to start right now, return a
 	 * value indicating when the job can start */
-	if (!runable_avail)
-		error_code = ESLURM_NODE_NOT_AVAIL;
 	if (!runable_ever) {
 		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		info("_pick_best_nodes: job %u never runnable",
 		     job_ptr->job_id);
+	} else if (!runable_avail && !nodes_busy) {
+		error_code = ESLURM_NODE_NOT_AVAIL;
 	}
 
 	if (error_code == SLURM_SUCCESS) {
@@ -1695,12 +1707,13 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 			      "was requested",
 			      THIS_FILE, __LINE__, job_ptr->job_id);
 
-		xfree(job_ptr->gres);
-		xstrcat(job_ptr->gres, "");
-	} else {
-		/* job_ptr->gres is rebuilt/replaced here */
-		tmp_str = req_config;
-		job_ptr->gres = xstrdup("");
+		xfree(job_ptr->gres_req);
+		xstrcat(job_ptr->gres_req, "");
+	} else if ( job_ptr->node_cnt > 0 ) {
+		/* job_ptr->gres_req is rebuilt/replaced here */
+		tmp_str = xstrdup(req_config);
+		xfree(job_ptr->gres_req);
+		job_ptr->gres_req = xstrdup("");
 
 		tok = strtok_r(tmp_str, ",", &last);
 		while (tok) {
@@ -1713,43 +1726,54 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 			/* Retrieve the number of GRES requested/required. */
 			ngres_req = gres_get_value_by_type(job_ptr->gres_list,
 							   subtok);
+
+			/* In the event that we somehow have a valid
+			 * GRES type but don't find a quantity for it,
+			 * we simply write ":0" for the quantity.
+			 */
+			if (ngres_req == NO_VAL)
+				ngres_req = 0;
+
 			/* Append value to the gres string. */
-			if ((ngres_req != NO_VAL) &&
-			    (ngres_req*job_ptr->node_cnt > 0)) {
-				snprintf(buf, sizeof(buf), "%s%s:%u",
-					 prefix, subtok,
-					 ngres_req*job_ptr->node_cnt);
-				xstrcat(job_ptr->gres ,buf);
-				if (prefix[0] == '\0')
-					prefix = ",";
+			snprintf(buf, sizeof(buf), "%s%s:%u",
+				 prefix, subtok,
+				 ngres_req * job_ptr->node_cnt);
+
+			xstrcat(job_ptr->gres_req, buf);
+
+			if (prefix[0] == '\0')
+				prefix = ",";
+			if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
+				debug("(%s:%d) job id:%u -- ngres_req:"
+				      "%u, gres_req substring = (%s)",
+				      THIS_FILE, __LINE__,
+				      job_ptr->job_id, ngres_req, buf);
 			}
 
-			if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
-				debug("(%s:%d) job id: %u -- ngres_req: "
-				      "%u, gres_req substring = (%s)",
-				      THIS_FILE, __LINE__, job_ptr->job_id,
-				      ngres_req, buf);
 			tok = strtok_r(NULL, ",", &last);
 		}
 		xfree(tmp_str);
 	}
 
-	/* Find out which select type plugin we have so we can decide what
-	 * value to look for. */
-	select_type = slurm_get_select_type();
+	if ( !job_ptr->gres_alloc || (job_ptr->gres_alloc[0] == '\0') ) {
+		select_type = slurm_get_select_type();
 
-	if (!strcmp(select_type, "select/cray"))
-		valtype = GRES_VAL_TYPE_CONFIG;
-	else
-		valtype = GRES_VAL_TYPE_ALLOC;
+		/* Find out which select type plugin we have so we can decide
+		 * what value to look for. */
+		if (!strcmp(select_type, "select/cray"))
+			valtype = GRES_VAL_TYPE_CONFIG;
+		else
+			valtype = GRES_VAL_TYPE_ALLOC;
 
-	/* Now build the GRES allocated field. */
-	rv = _build_gres_alloc_string(job_ptr, valtype);
-	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
-		debug("(%s:%d) job id: %u -- job_record->gres: (%s), "
-		      "job_record->gres_alloc: (%s)",
-		      THIS_FILE, __LINE__, job_ptr->job_id,
-		      job_ptr->gres, job_ptr->gres_alloc);
+		/* Now build the GRES allocated field. */
+		rv = _build_gres_alloc_string(job_ptr, valtype);
+		if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
+			debug("(%s:%d) job id: %u -- job_record->gres: (%s), "
+			      "job_record->gres_alloc: (%s)",
+			      THIS_FILE, __LINE__, job_ptr->job_id,
+			      job_ptr->gres, job_ptr->gres_alloc);
+		}
+	}
 
 	return rv;
 }

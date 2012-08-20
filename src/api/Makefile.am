@@ -131,7 +131,7 @@ libslurm_la_LIBADD = $(convenience_libs)
 libslurm_la_LDFLAGS        = \
         $(LIB_LDFLAGS) \
         -version-info $(current):$(rev):$(age) \
-        $(OTHER_FLAGS)
+        $(OTHER_FLAGS) $(HWLOC_LDFLAGS) $(HWLOC_LIBS)
 
 #
 # The libpmi_la_LIBADD specification below causes libpmi.la to relink

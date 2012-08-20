@@ -36,13 +36,7 @@
 source ./globals
 
 set test_id     "11.2"
-set env(SLURM_LL_API_DEBUG) "2"
 set exit_code   0
-set mode        "us"
-set device      "sn0"
-set found_mode  ""
-set found_device ""
-set job_id      0
 
 print_header $test_id
 
@@ -51,105 +45,92 @@ if { ![test_launch_poe] } {
 	exit $exit_code
 }
 
-#
-# execute poe with a specific node count
-#
 if { [string length $partition] == 0 } {
 	set partition [default_partition]
 }
-spawn $poe hostname -rmpool $partition\
-    -euidevice $device -retry wait
 
+#
+# Try running with an invalid device name
+#
+set found_device 0
+set got_output   0
+spawn $poe hostname -labelio yes -rmpool $partition -euidevice BAD_DEV_NAME
 expect {
-	-re "ERROR: don't specify the sn adapter" {
-		set found_device 1
+	-re "($number): *($alpha_numeric_under)" {
+		set got_output 1
 		exp_continue
 	}
 	-re "Error configuring interconnect" {
+		send_user "\nThis error is expected, not a problem\n"
 		set found_device 1
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: poe not responding\n"
-		cancel_job $job_id
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
-
-
-if { $found_device != 1 } {
-	send_user "\nFAILURE: device '$device' was not set correctly\
-got '$found_device'\n"
+if { $found_device != 1 || $got_output != 0 } {
+	send_user "\nFAILURE: euidevice was not set correctly\n"
 	set exit_code 1
 }
 
 #
-# execute poe with a specific node count
+# Try running in user space
 #
-spawn $poe hostname -rmpool $partition -euilib $mode -retry wait
-
+set got_output   0
+spawn $poe printenv MP_EUILIB -labelio yes -rmpool $partition -euilib us
 expect {
-	-re "LL_AdapterUsageMode = ($alpha_numeric_under)" {
-		set found_mode $expect_out(1,string)
+	-re "($number): *us" {
+		set got_output 1
+		exp_continue
+	}
+	-re "Error configuring interconnect" {
+		send_user "\nFAILURE: Unable to run in user space\n"
+		set exit_code 1
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: poe not responding\n"
-		cancel_job $job_id
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
-
-
-if {[string compare $mode $found_mode]} {
-	send_user "\nFAILURE: mode '$mode' was not set correctly\
-got '$found_mode'\n"
+if { $got_output != 1 } {
+	send_user "\nFAILURE: euilib was not set correctly\n"
 	set exit_code 1
 }
 
-set mode        "ip"
-set device      "en0"
-set found_mode  ""
-set found_device ""
-
 #
-# execute poe with a specific node count
+# Try running in IP mode over device eth0
 #
-spawn $poe hostname -rmpool $partition -euilib $mode\
-    -euidevice $device -retry wait
-
+set got_output   0
+spawn $poe printenv MP_EUIDEVICE -labelio yes -rmpool $partition -euilib ip -euidevice eth0
 expect {
-	-re "LL_AdapterUsageMode = ($alpha_numeric_under)" {
-		set found_mode $expect_out(1,string)
+	-re "($number): *eth0" {
+		set got_output 1
 		exp_continue
 	}
-	-re "LL_AdapterUsageDevice = ($alpha_numeric_under)" {
-		set found_device $expect_out(1,string)
+	-re "Error configuring interconnect" {
+		send_user "\nFAILURE: Unable to run in user space\n"
+		set exit_code 1
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: poe not responding\n"
-		cancel_job $job_id
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
-
-
-if {[string compare $mode $found_mode]} {
-	send_user "\nFAILURE: mode '$mode' was not set correctly\
-got '$found_mode'\n"
-	set exit_code 1
-}
-
-if {[string compare $device $found_device]} {
-	send_user "\nFAILURE: device '$device' was not set correctly\
-got '$found_device'\n"
+if { $got_output != 1 } {
+	send_user "\nFAILURE: euilib or euidevice was not set correctly\n"
 	set exit_code 1
 }
 

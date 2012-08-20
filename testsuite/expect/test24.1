@@ -41,6 +41,11 @@ set test_prog   "test$test_id.prog"
 set matches     0
 print_header $test_id
 
+if {![file exists /usr/include/hwloc.h]} {
+	send_user "\nWARNING: This test is can now be run without hwloc being installed\n"
+	exit 0
+}
+
 #
 # Delete left-over programs and rebuild them
 #

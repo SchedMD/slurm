@@ -282,9 +282,12 @@ typedef struct dbd_job_start_msg {
 	time_t   submit_time;	/* job submit time */
 	uint32_t timelimit;	/* job timelimit */
 	uint32_t uid;	        /* user ID if associations are being used */
-	char*    gres;          /* Original gres string requested by user. */
-	char*    gres_alloc;    /* String depicting the allocated
-				 * GRES by type for the entire job. */
+	char*    gres_alloc;    /* String depicting the allocated GRES by
+				 * type for the entire job on all nodes. */
+	char*    gres_req;      /* String depicting the requested GRES by
+				 * type for the entire job on all nodes. */
+	char*    gres_used;     /* String depicting the GRES actually used by
+				 * type for the entire job on all nodes. */
 	char *   wckey;		/* wckey name */
 } dbd_job_start_msg_t;
 

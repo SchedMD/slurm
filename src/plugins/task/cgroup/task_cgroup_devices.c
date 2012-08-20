@@ -81,7 +81,6 @@ static int read_allowed_devices_file(char *allowed_devices[PATH_MAX]);
 
 extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
-	char release_agent_path[PATH_MAX];
 	uint16_t cpunum;
 
 	/* initialize cpuinfo internal data */
@@ -92,8 +91,6 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	user_cgroup_path[0] = '\0';
 	job_cgroup_path[0] = '\0';
 	jobstep_cgroup_path[0] = '\0';
-	/* initialize devices cgroup namespace */
-	release_agent_path[0] = '\0';
 	/* initialize allowed_devices_filename */
 	cgroup_allowed_devices_file[0] = '\0';
 
@@ -104,41 +101,15 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 
 	(void) gres_plugin_node_config_load(cpunum);
 
-	strcpy(cgroup_allowed_devices_file, slurm_cgroup_conf->allowed_devices_file);
-	
-	if ( snprintf(release_agent_path,PATH_MAX,"%s/release_devices",
-		      slurm_cgroup_conf->cgroup_release_agent) >= PATH_MAX ) {
-		error("task/cgroup: unable to build devices release agent path");
-		goto error;
-	}
-	if (xcgroup_ns_create(slurm_cgroup_conf, &devices_ns, "/devices","",
-			       "devices",release_agent_path) != 
-	     XCGROUP_SUCCESS ) {
+	strcpy(cgroup_allowed_devices_file,
+	       slurm_cgroup_conf->allowed_devices_file);
+	if (xcgroup_ns_create(slurm_cgroup_conf, &devices_ns, "", "devices")
+	    != XCGROUP_SUCCESS ) {
 		error("task/cgroup: unable to create devices namespace");
 		goto error;
 	}
 
-	/* check that devices cgroup namespace is available */
-	if ( ! xcgroup_ns_is_available(&devices_ns) ) {
-		if ( slurm_cgroup_conf->cgroup_automount ) {
-			if ( xcgroup_ns_mount(&devices_ns) ) {
-				error("task/cgroup: unable to mount devices "
-				      "namespace: %s", slurm_strerror(errno));
-				goto clean;
-			}
-			info("task/cgroup: devices namespace is now mounted");
-		}
-		else {
-			error("task/cgroup: devices namespace not mounted. "
-			      "aborting");
-			goto clean;
-		}
-	}
-
 	return SLURM_SUCCESS;
-
-clean:
-	xcgroup_ns_destroy(&devices_ns);
 
 error:
 	xcpuinfo_fini();

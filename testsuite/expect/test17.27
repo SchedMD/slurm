@@ -76,7 +76,11 @@ if {$available < $node_cnt} {
 #
 # Build input script file
 #
-make_bash_script $file_in "$srun -l $bin_printenv SLURMD_NODENAME"
+if {[test_launch_poe]} {
+	make_bash_script $file_in "$srun -l $bin_printenv MP_I_UPMD_HOSTNAME"
+} else {
+	make_bash_script $file_in "$srun -l $bin_printenv SLURMD_NODENAME"
+}
 
 #
 # Run job to determine what nodes are available
@@ -117,7 +121,7 @@ if {[wait_for_file $file_out] != 0} {
 }
 spawn $bin_cat $file_out
 expect {
-	-re "($number): ($alpha_numeric_under)" {
+	-re "($number): *($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -208,7 +212,7 @@ if {[wait_for_file $file_out] != 0} {
 }
 spawn $bin_cat $file_out
 expect {
-	-re "($number): ($alpha_numeric_under)" {
+	-re "($number): *($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -284,7 +288,7 @@ if {[wait_for_file $file_out] != 0} {
 spawn $bin_cat $file_out
 expect {
 
-	-re "($number): ($alpha_numeric_under)" {
+	-re "($number): *($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}

@@ -122,6 +122,20 @@ set task_cnt      0
 set max_node_val -1
 spawn $bin_sort $env_valu_stdout
 expect {
+#	POE options
+	-re "MP_CHILD=($number)" {
+		incr task_cnt
+		exp_continue
+	}
+	-re "MP_ENDPOINTS=($number)" {
+		set node_id $expect_out(1,string)
+		if {$node_id > $max_node_val} {
+			set max_node_val $node_id
+		}
+		exp_continue
+	}
+
+#	Linux options
 	-re "SLURM_NODEID=($number)" {
 		set node_id $expect_out(1,string)
 		if {$node_id > $max_node_val} {
@@ -133,6 +147,7 @@ expect {
 		incr task_cnt
 		exp_continue
 	}
+
 	timeout {
 		send_user "\nFAILURE: $bin_sort not responding\n"
 		set exit_code 1
@@ -149,6 +164,7 @@ if {$task_cnt != $env_valu_nprocs} {
 	send_user " ($task_cnt != $env_valu_nprocs)\n"
 	set exit_code 1
 }
+
 # Note zero origin conversion
 incr max_node_val
 if {$max_node_val < $min_nodes} {

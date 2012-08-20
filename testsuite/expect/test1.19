@@ -52,10 +52,19 @@ if {[test_bluegene]} {
 } elseif {[test_cray]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
 	exit $exit_code
+} elseif {[test_launch_poe]} {
+	send_user "\nWARNING: This test is incompatible with POE systems\n"
+	exit $exit_code
 } elseif {[test_serial]} {
 	set task_cnt 1
 } else {
 	set task_cnt 5
+}
+
+if {[test_launch_poe]} {
+	set node_name_env MP_I_UPMD_HOSTNAME
+} else {
+	set node_name_env SLURMD_NODENAME
 }
 
 #
@@ -149,7 +158,7 @@ if {[wait_for_file $file_err_j_glob] == 0} {
 #  file name and confirm it is created
 #
 set job_id   0
-set srun_pid [spawn $srun --output=$file_out_J -N1 -v -t1 $bin_printenv SLURMD_NODENAME]
+set srun_pid [spawn $srun --output=$file_out_J -N1 -v -t1 $bin_printenv $node_name_env]
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
@@ -186,7 +195,7 @@ set file_out_n_glob  "test$test_id.n.$node_id.output"
 exec $bin_rm -f $file_out_n_glob
 
 set job_id   0
-set srun_pid [spawn $srun --output=$file_out_n -N1 -n$task_cnt -O -v -t1 $bin_printenv SLURMD_NODENAME]
+set srun_pid [spawn $srun --output=$file_out_n -N1 -n$task_cnt -O -v -t1 $bin_printenv $node_name_env]
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
@@ -232,8 +241,8 @@ if {$file_cnt != 1} {
 #
 exec $bin_rm -f $file_in
 make_bash_script $file_in "
-  $srun -n4 -O --output=$file_out_s $bin_printenv SLURMD_NODENAME
-  $srun -n4 -O --output=$file_out_s $bin_printenv SLURMD_NODENAME
+  $srun -n4 -O --output=$file_out_s $bin_printenv $node_name_env
+  $srun -n4 -O --output=$file_out_s $bin_printenv $node_name_env
 "
 
 for {set step_id 0} {$step_id < 4} {incr step_id} {

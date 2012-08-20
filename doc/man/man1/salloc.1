@@ -198,7 +198,8 @@ above when task/affinity plugin is enabled.
 
 .TP
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
-Bind tasks to CPUs. Used only when the task/affinity plugin is enabled.
+Bind tasks to CPUs.
+Used only when the task/affinity or task/cgroup plugin is enabled.
 The configuration parameter \fBTaskPluginParam\fR may override these options.
 For example, if \fBTaskPluginParam\fR is configured to bind to cores,
 your job will not be able to bind tasks to sockets.
