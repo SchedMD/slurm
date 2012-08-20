@@ -829,7 +829,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		}
 	}
 
-	if (opt.nodelist) {
+	if (opt.nodelist && (opt.distribution == SLURM_DIST_ARBITRARY)) {
 		char *fname = NULL, *host_name, *host_line;
 		pid_t pid = getpid();
 		hostlist_t hl;
@@ -840,30 +840,55 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		xstrfmtcat(fname, "slurm_hostlist.%u", (uint32_t) pid);
 		if ((fd = creat(fname, 0600)) < 0)
 			fatal("creat(%s): %m", fname);
+		host_line = NULL;
 		while ((host_name = hostlist_shift(hl))) {
-			host_line = NULL;
-			xstrfmtcat(host_line, "%s\n", host_name);
+			if (host_line)
+				xstrcat(host_line, "\n");
+			xstrcat(host_line, host_name);
 			free(host_name);
-			len = strlen(host_line) + 1;
-			offset = 0;
-			while (len > offset) {
-				wrote = write(fd, host_line + offset,
-					      len - offset);
-				if (wrote < 0) {
-					if ((errno == EAGAIN) ||
-					    (errno == EINTR))
-						continue;
-					fatal("write(%s): %m", fname);
-				}
-				offset += wrote;
-			}
-			xfree(host_line);
 		}
 		hostlist_destroy(hl);
-		info("wrote hostlist file at %s", fname);
+		len = strlen(host_line) + 1;
+		offset = 0;
+		while (len > offset) {
+			wrote = write(fd, host_line + offset,
+				      len - offset);
+			if (wrote < 0) {
+				if ((errno == EAGAIN) ||
+				    (errno == EINTR))
+					continue;
+				fatal("write(%s): %m", fname);
+			}
+			offset += wrote;
+		}
+		xfree(host_line);
+		debug3("wrote hostlist file at %s", fname);
+		setenv("MP_HOSTFILE", fname, 1);
+		if (opt.launch_cmd)
+			xstrfmtcat(poe_cmd_line, " -hfile %s", fname);
+		/* RESD has to be set to yes or for some reason poe
+		   thinks things are already set up and then we are
+		   screwed.
+		*/
+		setenv("MP_RESD", "yes", 1);
+		if (opt.launch_cmd)
+			xstrcat(poe_cmd_line, " -resd yes");
 		xfree(fname);
 		close(fd);
+		setenv("MP_STDOUTMODE", "unordered", 1);
+		/* Just incase we didn't specify a file in srun. */
+		setenv("SLURM_ARBITRARY_NODELIST", opt.nodelist, 1);
+	} else {
+		/* Since poe doesn't need to know about the partition and it
+		   really needs to have RMPOOL set just set it to something.
+		   This only needs to happen if we don't specify the
+		   hostlist like above.
+		*/
+		setenv("MP_RMPOOL", "SLURM", 1);
+		if (opt.launch_cmd)
+			xstrfmtcat(poe_cmd_line, " -rmpool slurm");
 	}
+
 	if (opt.msg_timeout) {
 		snprintf(value, sizeof(value), "%d", opt.msg_timeout);
 		setenv("MP_TIMEOUT", value, 1);
@@ -924,13 +949,6 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 			xstrfmtcat(poe_cmd_line,
 				   " -stdoutmode unordered");
 	}
-
-	/* Since poe doesn't need to know about the partition and it
-	   really needs to have RMPOOL set just set it to something.
-	*/
-	setenv("MP_RMPOOL", "SLURM", 1);
-	if (opt.launch_cmd)
-		xstrfmtcat(poe_cmd_line, " -rmpool slurm");
 
 	_propagate_srun_opts(nnodes, ntasks);
 	setenv("SLURM_STARTED_STEP", "YES", 1);
