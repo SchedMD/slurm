@@ -863,7 +863,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 			      char ** error_msg)
 {
 	job_info_t *ret_info = xmalloc(sizeof(job_info_t));
-	int i, j, task_id = 0;
+	int i, j;
 	slurm_step_layout_t *step_layout;
 	hostlist_t hl;
 	char *host;
@@ -972,8 +972,11 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		host_ptr->task_count = step_layout->tasks[i];
 		host_ptr->task_ids =
 			xmalloc(sizeof(int) * host_ptr->task_count);
+		/* Task ids are already set up in the layout, so just
+		   use them.
+		*/
 		for (j=0; j<host_ptr->task_count; j++)
-			host_ptr->task_ids[j] = task_id++;
+			host_ptr->task_ids[j] = step_layout->tids[i][j];
 		debug3("%s = %s %d tasks",
 		       host_ptr->host_name, host_ptr->host_address,
 		       host_ptr->task_count);
