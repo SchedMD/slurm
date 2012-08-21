@@ -846,16 +846,18 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 		   small block allocations.
 		*/
 		for (dim=0; dim<cluster_dims; dim++) {
-			if ((ba_request->conn_type[dim] == SELECT_MESH)
-			    && (ba_geo_table->geometry[dim] == 1)) {
+			if (((ba_request->conn_type[dim] == SELECT_MESH)
+			      || (ba_request->conn_type[dim] == SELECT_NAV))
+			     && ((ba_geo_table->geometry[dim] == 1)
+				 || (ba_geo_table->geometry[dim]
+				     == DIM_SIZE[dim]))) {
 				/* On a Q all single midplane blocks
-				 * must be a TORUS. */
-				ba_request->conn_type[dim] = SELECT_TORUS;
-			} else if ((ba_request->conn_type[dim] == SELECT_MESH)
-				   && (ba_geo_table->geometry[dim]
-				       == DIM_SIZE[dim])) {
-				/* Might as well make it a torus since
-				   we are using all the nodes. */
+				 * must be a TORUS.
+				 *
+				 * Also if we are using all midplanes
+				 * in a dimension might as well make
+				 * it a torus.
+				 */
 				ba_request->conn_type[dim] = SELECT_TORUS;
 			} else if (ba_request->conn_type[dim] == SELECT_NAV) {
 				/* Set everything else to the default */
