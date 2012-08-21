@@ -551,7 +551,6 @@ static bg_record_t *_find_matching_block(List block_list,
 			if ((request->conn_type[dim]
 			     != bg_record->conn_type[dim])
 			    && (request->conn_type[dim] != SELECT_NAV)) {
-#ifdef HAVE_BGP
 				if (request->conn_type[0] >= SELECT_SMALL) {
 					/* we only want to reboot blocks if
 					   they have to be so skip booted
@@ -574,7 +573,7 @@ static bg_record_t *_find_matching_block(List block_list,
 					*/
 					goto good_conn_type;
 				}
-#endif
+
 				if (bg_conf->slurm_debug_flags
 				    & DEBUG_FLAG_BG_PICK) {
 					char *req_conn_type =
@@ -598,9 +597,8 @@ static bg_record_t *_find_matching_block(List block_list,
 		if (dim != conn_type_dims)
 			continue;
 
-#ifdef HAVE_BGP
 	good_conn_type:
-#endif
+
 		/*****************************************/
 		/* match up geometry as "best" possible  */
 		/*****************************************/
