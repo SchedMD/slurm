@@ -26,6 +26,7 @@ documents those changes that are of interest to users and admins.
     jobs don't set an end_time for the running jobs since they don't need to
     end to start the job.
  -- Initialize bind_verbose when using task/cgroup.
+ -- BGQ - Fix for handling backfill much better when sharing blocks.
 
 * Changes in SLURM 2.4.2
 ========================

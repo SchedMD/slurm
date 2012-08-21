@@ -1050,6 +1050,28 @@ static int _dynamically_request(List block_list, int *blocks_added,
 
 	return rc;
 }
+
+/* Return the last finishing job on a shared block */
+static struct job_record *_get_last_job(bg_record_t *bg_record)
+{
+	struct job_record *found_job_ptr;
+	struct job_record *last_job_ptr;
+
+	ListIterator job_list_itr = NULL;
+
+	xassert(bg_record->job_list);
+
+	job_list_itr = list_iterator_create(bg_record->job_list);
+	last_job_ptr = list_next(job_list_itr);
+	while ((found_job_ptr = list_next(job_list_itr))) {
+		if (found_job_ptr->end_time > last_job_ptr->end_time)
+			last_job_ptr = found_job_ptr;
+	}
+	list_iterator_destroy(job_list_itr);
+
+	return last_job_ptr;
+}
+
 /*
  * finds the best match for a given job request
  *
@@ -1330,9 +1352,6 @@ static int _find_best_block_match(List block_list,
 				bool track_down_nodes = true;
 
 				if ((bg_record = list_pop(job_list))) {
-					/* FIXME: handle job_list here
-					   some how as well.
-					*/
 					if (bg_record->job_ptr) {
 						if (bg_conf->slurm_debug_flags
 						    & DEBUG_FLAG_BG_PICK)
@@ -1363,6 +1382,26 @@ static int _find_best_block_match(List block_list,
 						*/
 						bg_record->job_running =
 							NO_JOB_RUNNING;
+					} else if (bg_record->job_list
+						   && list_count(bg_record->
+								 job_list)) {
+						if (bg_conf->slurm_debug_flags
+						    & DEBUG_FLAG_BG_PICK)
+							info("taking off "
+							     "%d jobs that "
+							     "are running on "
+							     "%s",
+							     list_count(
+								     bg_record->
+								     job_list),
+							     bg_record->
+							     bg_block_id);
+						/* bg_record->job_running
+						   isn't used when we use
+						   job lists, so no need
+						   to set it to
+						   NO_JOB_RUNNING.
+						*/
 					} else if ((bg_record->job_running
 						    == BLOCK_ERROR_STATE)
 						   && (bg_conf->
@@ -1435,10 +1474,21 @@ static int _find_best_block_match(List block_list,
 					(*found_bg_record)->mp_bitmap);
 
 				if (bg_record) {
-					(*found_bg_record)->job_running =
-						bg_record->job_running;
-					(*found_bg_record)->job_ptr
-						= bg_record->job_ptr;
+					if (bg_record->job_list &&
+					    list_count(bg_record->job_list)) {
+						(*found_bg_record)->job_ptr =
+							_get_last_job(
+								bg_record);
+						(*found_bg_record)->job_running
+							= (*found_bg_record)->
+							job_ptr->job_id;
+					} else {
+						(*found_bg_record)->job_running
+							= bg_record->
+							job_running;
+						(*found_bg_record)->job_ptr
+							= bg_record->job_ptr;
+					}
 				}
 				list_destroy(new_blocks);
 				break;
@@ -1880,18 +1930,9 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			*/
 			if (jobinfo->cnode_cnt >
 			    bit_clear_count(total_bitmap)) {
-				struct job_record *found_job_ptr;
-				ListIterator job_list_itr =
-					list_iterator_create(
-						bg_record->job_list);
-				while ((found_job_ptr =
-					list_next(job_list_itr))) {
-					if (found_job_ptr->end_time
-					    > max_end_time)
-						max_end_time =
-							found_job_ptr->end_time;
-				}
-				list_iterator_destroy(job_list_itr);
+				struct job_record *found_job_ptr =
+					_get_last_job(bg_record);
+				max_end_time = found_job_ptr->end_time;
 			}
 			if (need_free)
 				FREE_NULL_BITMAP(total_bitmap);
