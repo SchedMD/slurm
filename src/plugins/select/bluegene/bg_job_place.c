@@ -1716,10 +1716,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			jobinfo->conn_type[0] = SELECT_SMALL;
 			for (dim=1; dim<SYSTEM_DIMENSIONS; dim++)
 				jobinfo->conn_type[dim] = SELECT_NAV;
-		} else if (job_ptr->details->max_cpus >= bg_conf->cpus_per_mp) {
-			for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
-				jobinfo->conn_type[dim] =
-					bg_conf->default_conn_type[dim];
 		} else if (!bg_conf->sub_blocks &&
 			   (job_ptr->details->min_cpus
 			    < bg_conf->cpus_per_mp)) {
