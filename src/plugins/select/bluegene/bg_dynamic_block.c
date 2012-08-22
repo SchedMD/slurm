@@ -74,6 +74,7 @@ extern List create_dynamic_block(List block_list,
 
 	if (bg_conf->sub_blocks && (cnodes < bg_conf->mp_cnode_cnt)) {
 		cnodes = bg_conf->mp_cnode_cnt;
+		request->conn_type[0] = SELECT_TORUS;
 	} else if (cnodes < bg_conf->smallest_block) {
 		error("Can't create this size %d "
 		      "on this system the smallest block is %u",
