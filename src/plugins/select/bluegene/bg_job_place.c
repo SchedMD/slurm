@@ -618,16 +618,14 @@ static bg_record_t *_find_matching_block(List block_list,
 			xassert(ba_mp->cnode_bitmap);
 			xassert(ba_mp->cnode_usable_bitmap);
 
-			if (SELECT_IS_TEST(query_mode)
-			    && SELECT_IS_CHECK_FULL_SET(query_mode)) {
-				total_bitmap = ba_mp->cnode_usable_bitmap;
-			} else if (bg_record->err_ratio) {
+			if (bg_record->err_ratio) {
 				xassert(ba_mp->cnode_err_bitmap);
 				total_bitmap = bit_copy(ba_mp->cnode_bitmap);
 				bit_or(total_bitmap, ba_mp->cnode_err_bitmap);
 				need_free = true;
 			} else
 				total_bitmap = ba_mp->cnode_bitmap;
+
 			memset(&tmp_jobinfo, 0, sizeof(select_jobinfo_t));
 			tmp_jobinfo.cnode_cnt = jobinfo->cnode_cnt;
 			if (!ba_sub_block_in_bitmap(
