@@ -48,6 +48,12 @@ if { [test_front_end] } {
 	exit 0
 }
 
+if {[test_launch_poe]} {
+	set use_envvar MP_I_UPMD_HOSTNAME
+} else {
+	set use_envvar SLURM_NODEID
+}
+
 #
 # Submit a two node job with block distribution
 #
@@ -61,7 +67,7 @@ set expected_layout2 [list 0 0 1 1]
 set expected_layout3 [list 0 1 1 1]
 set tested_layout [list -1 -1 -1 -1]
 set timeout $max_job_delay
-set srun_pid [spawn $srun -O -N2 -n4 -l --distribution=block -t1 $bin_printenv SLURM_NODEID]
+set srun_pid [spawn $srun -O -N2 -n4 -l --distribution=block -t1 $bin_printenv $use_envvar]
 expect {
 	-re "More processors requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -75,6 +81,18 @@ expect {
 		set index $expect_out(1,string)
 		set value $expect_out(2,string)
 		lset tested_layout $index $value
+		exp_continue
+	}
+	-re "($number).($number):($alpha_numeric_under)" {
+		set index $expect_out(1,string)
+		set index2 $expect_out(2,string)
+		if { $index == 0 } {
+			set value 0
+		} else {
+			set value 1
+		}
+		lset tested_layout $index $value
+		lset tested_layout $index2 $value
 		exp_continue
 	}
 	timeout {
@@ -117,7 +135,7 @@ set expected_layout1 [list 0 1 1 1]
 set expected_layout2 [list 0 1 0 1]
 set expected_layout3 [list 0 1 0 0]
 set tested_layout [list -1 -1 -1 -1]
-set srun_pid [spawn $srun -O -N2 -n4 -l --distribution=cyclic -t1 $bin_printenv SLURM_NODEID]
+set srun_pid [spawn $srun -O -N2 -n4 -l --distribution=cyclic -t1 $bin_printenv $use_envvar]
 expect {
 	-re "More processors requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -131,6 +149,18 @@ expect {
 		set index $expect_out(1,string)
 		set value $expect_out(2,string)
 		lset tested_layout $index $value
+		exp_continue
+	}
+	-re "($number).($number):($alpha_numeric_under)" {
+		set index $expect_out(1,string)
+		set index2 $expect_out(2,string)
+		if { $index == 0 } {
+			set value 0
+		} else {
+			set value 1
+		}
+		lset tested_layout $index $value
+		lset tested_layout $index2 $value
 		exp_continue
 	}
 	timeout {

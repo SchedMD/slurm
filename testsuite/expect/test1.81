@@ -48,6 +48,12 @@ if {[test_cray]} {
 	exit $exit_code
 }
 
+if {[test_launch_poe]} {
+	set use_envvar MP_I_UPMD_HOSTNAME
+} else {
+	set use_envvar SLURM_NODEID
+}
+
 #
 # Submit a 1 node job and validate that we don't get more than one
 #
@@ -56,7 +62,7 @@ set task_cnt    0
 set can_not_run 0
 set timeout $max_job_delay
 
-set srun_pid [spawn $srun -N1-1 -c 1 -l -t1 $bin_printenv SLURM_NODEID]
+set srun_pid [spawn $srun -N1-1 -c 1 -l -t1 $bin_printenv $use_envvar]
 expect {
 	-re "(Task count specification invalid|configuration is not available)" {
 		if { [test_front_end] } {
@@ -87,13 +93,13 @@ if {$can_not_run == 1} {
 }
 
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURM_NODEID of task 0\n"
+	send_user "\nFAILURE: Did not get $use_envvar of task 0\n"
 	set exit_code   1
 }
 
 set alloc_fail 0
 set task_cnt2  0
-set srun_pid [spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_printenv SLURM_NODEID]
+set srun_pid [spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_printenv $use_envvar]
 expect {
 	-re "($number):" {
 		incr task_cnt2
@@ -128,9 +134,9 @@ if { $task_cnt2 != 0 } {
 set host_0      ""
 set host_1      ""
 
-set srun_pid [spawn $srun -N1-1 -l -t1 $bin_printenv SLURM_NODEID]
+set srun_pid [spawn $srun -N1-1 -l -t1 $bin_printenv $use_envvar]
 expect {
-	-re "($number): ($alpha_numeric_under)" {
+	-re "($number): *($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -153,7 +159,7 @@ expect {
 # Verify node count
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURM_NODEID of task 0\n"
+	send_user "\nFAILURE: Did not get $use_envvar of task 0\n"
 	set exit_code   1
 }
 if {[string compare $host_1 ""] != 0} {
@@ -172,9 +178,9 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1-3 -l -t1 $bin_printenv SLURM_NODEID]
+set srun_pid [spawn $srun -N1-3 -l -t1 $bin_printenv $use_envvar]
 expect {
-	-re "($number): ($alpha_numeric_under)" {
+	-re "($number): *($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -203,7 +209,7 @@ expect {
 # Verify node count
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURM_NODEID of task 0\n"
+	send_user "\nFAILURE: Did not get $use_envvar of task 0\n"
 	set exit_code   1
 }
 if {[string compare $host_3 ""] != 0} {
@@ -233,13 +239,13 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N2-3 -l -t1 $bin_printenv SLURM_NODEID]
+set srun_pid [spawn $srun -N2-3 -l -t1 $bin_printenv $use_envvar]
 expect {
 	-re "Node count specification invalid" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit $exit_code
 	}
-	-re "($number): ($alpha_numeric_under)" {
+	-re "($number): *($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -268,11 +274,11 @@ expect {
 # Verify node count
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURM_NODEID of task 0\n"
+	send_user "\nFAILURE: Did not get $use_envvar of task 0\n"
 	set exit_code   1
 }
 if {[string compare $host_1 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURM_NODEID of task 1\n"
+	send_user "\nFAILURE: Did not get $use_envvar of task 1\n"
 	set exit_code   1
 }
 if {[string compare $host_3 ""] != 0} {
