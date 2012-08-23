@@ -52,6 +52,7 @@
 
 #include "debugger.h"
 #include "srun_job.h"
+#include "launch.h"
 
 /*
  *  Instantiate extern variables from debugger.h
@@ -74,6 +75,6 @@ void MPIR_Breakpoint(srun_job_t *job)
 	 *  interest occurred.
 	 */
 	debug("In MPIR_Breakpoint");
-	slurm_step_launch_fwd_signal(job->step_ctx, SIG_DEBUG_WAKE);
+	launch_g_fwd_signal(SIG_DEBUG_WAKE);
 }
 #endif
