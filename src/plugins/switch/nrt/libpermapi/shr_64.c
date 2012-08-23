@@ -975,11 +975,13 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		/* Task ids are already set up in the layout, so just
 		   use them.
 		*/
-		for (j=0; j<host_ptr->task_count; j++)
-			host_ptr->task_ids[j] = step_layout->tids[i][j];
 		debug3("%s = %s %d tasks",
 		       host_ptr->host_name, host_ptr->host_address,
 		       host_ptr->task_count);
+		for (j=0; j<host_ptr->task_count; j++) {
+			host_ptr->task_ids[j] = step_layout->tids[i][j];
+			debug3("taskid %d", host_ptr->task_ids[j]);
+		}
 		i++;
 		if (i > ret_info->host_count) {
 			error("we have more nodes that we bargined for.");
