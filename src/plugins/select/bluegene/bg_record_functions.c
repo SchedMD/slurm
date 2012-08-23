@@ -519,10 +519,15 @@ extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	/* else if (rec_a->avail_cnode_cnt && !rec_b->avail_cnode_cnt) */
 	/* 	return -1; */
 
-	if (rec_a->avail_cnode_cnt > rec_b->avail_cnode_cnt)
-		return 1;
-	else if (rec_a->avail_cnode_cnt < rec_b->avail_cnode_cnt)
-		return -1;
+	if (rec_a->job_list && rec_b->job_list) {
+		/* we only want to use this sort on 1 midplane blocks
+		   that are used for sharing
+		*/
+		if (rec_a->avail_cnode_cnt > rec_b->avail_cnode_cnt)
+			return 1;
+		else if (rec_a->avail_cnode_cnt < rec_b->avail_cnode_cnt)
+			return -1;
+	}
 
 	if (rec_a->avail_job_end > rec_b->avail_job_end)
 		return 1;
