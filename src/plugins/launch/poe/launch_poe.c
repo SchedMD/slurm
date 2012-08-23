@@ -419,6 +419,10 @@ static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
 	}
 	if (opt.dependency)
 		setenv("SLURM_DEPENDENCY", opt.dependency, 1);
+	if (opt.distribution != SLURM_DIST_UNKNOWN) {
+		snprintf(value, sizeof(value), "%d", opt.distribution);
+		setenv("SLURM_DISTRIBUTION", value, 1);
+	}
 	if (opt.exclusive)
 		setenv("SLURM_EXCLUSIVE", "1", 1);
 	if (opt.gres)
