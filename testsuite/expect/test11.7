@@ -83,14 +83,15 @@ for {set i 0} {$i<2} {incr i} {
 		close $file
 		spawn $poe $bin_printenv MP_I_UPMD_HOSTNAME -labelio yes \
 				-procs $num_tasks -nodes $num_nodes \
-				-hostfile $hostfile
+				-hostfile $hostfile -resd yes \
+		                -stdoutmode ordered
 	} else {
 		#
 		# execute poe with a specific node count
 		#
 		spawn $poe $bin_printenv MP_I_UPMD_HOSTNAME -labelio yes \
 				-procs $num_tasks -nodes $num_nodes \
-				-rmpool $partition
+				-rmpool slurm -stdoutmode ordered
 	}
 	expect {
 		-re "0:($alpha_numeric_under)" {
