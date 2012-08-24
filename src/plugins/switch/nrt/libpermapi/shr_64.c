@@ -975,12 +975,12 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		/* Task ids are already set up in the layout, so just
 		   use them.
 		*/
-		debug3("%s = %s %d tasks",
+		debug2("%s = %s %d tasks",
 		       host_ptr->host_name, host_ptr->host_address,
 		       host_ptr->task_count);
 		for (j=0; j<host_ptr->task_count; j++) {
 			host_ptr->task_ids[j] = step_layout->tids[i][j];
-			debug3("taskid %d", host_ptr->task_ids[j]);
+			debug2("taskid %d", host_ptr->task_ids[j]);
 		}
 		i++;
 		if (i > ret_info->host_count) {
@@ -1305,8 +1305,14 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	   written. */
 	if (getenv("SLURM_PRESERVE_ENV"))
 		opt.preserve_env = true;
-
-	xfree(tmp_char); /* just in case */
+	if ((tmp_char = getenv("SRUN_EXC_NODES")))
+		opt.exc_nodes = xstrdup(tmp_char);
+	if ((tmp_char = getenv("SRUN_WITH_NODES")))
+		opt.nodelist = xstrdup(tmp_char);
+	if ((tmp_char = getenv("SRUN_RELATIVE"))) {
+		opt.relative = atoi(tmp_char);
+		opt.relative_set = 1;
+	}
 
 	if (pm_type == PM_PMD) {
 		uint32_t job_id = -1, step_id = -1;
@@ -1451,6 +1457,23 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	debug2("require\t= %s", pe_job_req->requirements);
 	debug2("node_topology\t= %s", pe_job_req->node_topology);
 	debug2("pool\t= %s", pe_job_req->pool);
+
+	if (!opt.nodelist
+	    && pe_job_req->host_names && *pe_job_req->host_names) {
+		/* This means there was a hostfile used for this job.
+		   So we need to set up the arbitrary of it.
+		*/
+		char **names = pe_job_req->host_names;
+		opt.distribution = SLURM_DIST_ARBITRARY;
+		while (names && *names) {
+			if (opt.nodelist)
+				xstrfmtcat(opt.nodelist, ",%s",
+					   strtok(*names, "."));
+			else
+				opt.nodelist = xstrdup(strtok(*names, "."));
+			names++;
+		}
+	}
 
 	if (pe_job_req->num_nodes != -1)
 		opt.max_nodes = opt.min_nodes = pe_job_req->num_nodes;

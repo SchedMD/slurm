@@ -423,6 +423,8 @@ static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
 		snprintf(value, sizeof(value), "%d", opt.distribution);
 		setenv("SLURM_DISTRIBUTION", value, 1);
 	}
+	if (opt.exc_nodes)
+		setenv("SRUN_EXC_NODES", opt.exc_nodes, 1);
 	if (opt.exclusive)
 		setenv("SLURM_EXCLUSIVE", "1", 1);
 	if (opt.gres)
@@ -458,10 +460,16 @@ static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
 	}
 	if (opt.overcommit)
 		setenv("SLURM_OVERCOMMIT", "1", 1);
+	if (opt.nodelist)
+		setenv("SRUN_WITH_NODES", opt.nodelist, 1);
 	if (opt.partition)
 		setenv("SLURM_PARTITION", opt.partition, 1);
 	if (opt.qos)
 		setenv("SLURM_QOS", opt.qos, 1);
+	if (opt.relative_set) {
+		snprintf(value, sizeof(value), "%u", opt.relative);
+		setenv("SRUN_RELATIVE", value, 1);
+	}
 	if (opt.resv_port_cnt >= 0) {
 		snprintf(value, sizeof(value), "%d", opt.resv_port_cnt);
 		setenv("SLURM_RESV_PORTS", value, 1);
@@ -879,6 +887,9 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 			xstrcat(poe_cmd_line, " -resd yes");
 		xfree(fname);
 		close(fd);
+		/* FIXME: This next line is here just for debug
+		 * purpose.  It makes it so each task has a separate
+		 * line. */
 		setenv("MP_STDOUTMODE", "unordered", 1);
 		/* Just incase we didn't specify a file in srun. */
 		setenv("SLURM_ARBITRARY_NODELIST", opt.nodelist, 1);
