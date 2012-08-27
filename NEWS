@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
     reservations.
  -- sinfo partition field size will be set the the length of the longest
     partition name by default.
+ -- Add "cpu_load" to node information. Populate CPULOAD in node information
+    reported to Moab cluster manager.
 
 * Changes in SLURM 2.5.0.pre1
 =============================

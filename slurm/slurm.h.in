@@ -1432,6 +1432,7 @@ typedef struct node_info {
 				 * the node */
 	char *features;		/* list of a node's features */
 	char *gres;		/* list of a node's generic resources */
+	uint32_t cpu_load;	/* CPU load * 100 */
 	char *name;		/* node name to slurm */
 	char *node_addr;	/* communication name (optional) */
 	char *node_hostname;	/* node's hostname (optional) */

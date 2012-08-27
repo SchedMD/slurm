@@ -788,6 +788,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 #ifndef HAVE_BG
 		}
 #endif
+		pack32(dump_node_ptr->cpu_load, buffer);
 		pack32(dump_node_ptr->config_ptr->weight, buffer);
 		pack32(dump_node_ptr->reason_uid, buffer);
 

@@ -2943,6 +2943,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 
 		safe_unpack32(&node->real_memory, buffer);
 		safe_unpack32(&node->tmp_disk, buffer);
+		safe_unpack32(&node->cpu_load, buffer);
 		safe_unpack32(&node->weight, buffer);
 		safe_unpack32(&node->reason_uid, buffer);
 
@@ -2971,6 +2972,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 
 		safe_unpack32(&node->real_memory, buffer);
 		safe_unpack32(&node->tmp_disk, buffer);
+		node->cpu_load = NO_VAL;
 		safe_unpack32(&node->weight, buffer);
 		safe_unpack32(&node->reason_uid, buffer);
 

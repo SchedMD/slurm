@@ -68,6 +68,7 @@ API CHANGES
 
 Changed members of the following structs
 ========================================
+Added cpu_load to node_info.
 
 
 Added the following struct definitions

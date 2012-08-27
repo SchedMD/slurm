@@ -779,6 +779,7 @@ extern struct node_record *create_node_record (
 	node_ptr->config_ptr = config_ptr;
 	/* these values will be overwritten when the node actually registers */
 	node_ptr->cpus = config_ptr->cpus;
+	node_ptr->cpu_load = NO_VAL;
 	node_ptr->boards = config_ptr->boards;
 	node_ptr->sockets = config_ptr->sockets;
 	node_ptr->cores = config_ptr->cores;
