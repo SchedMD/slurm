@@ -24,8 +24,21 @@ Learn how to build, configure, and install SLURM.</p>
 <li><a href="tutorial_intro_files.tar">Tar-ball</a> with sample configuration files</li>
 </ul>
 
+<h2>SLURM Database Usage</h2>
+<p>SLURM Resource Manager databasae for users and system administrators.
+Tutorial covers SLURM architecture for database use, accounting commands,
+resource limits, fair share scheduling, and accounting configuration.</p>
+
+<ul>
+<li>SLURM Database Usage video on <a href="http://www.youtube.com">YouTube</a> (in two parts)</a></li>
+<ol>
+<li><a href="http://www.youtube.com/watch?v=8UfzXnzSmL4&feature=relmfu">SLURM Database Usage, Part 1</a></li>
+<li><a href="http://www.youtube.com/watch?v=wZrJQKRc2Vg&feature=relmfu">SLURM Database Usage, Part 2</a></li>
+</ol>
+</ul>
+
 <h2>More Tutorials Coming Soon...</h2>
 
-<p style="text-align:center;">Last modified 8 August 2012</p>
+<p style="text-align:center;">Last modified 27 August 2012</p>
 
 <!--#include virtual="footer.txt"-->
