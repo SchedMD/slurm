@@ -4461,6 +4461,8 @@ extern int nrt_preempt_job_test(slurm_nrt_jobinfo_t *jp)
 	}
 	return SLURM_SUCCESS;
 #else
+	info("switch/nrt: This version of libnrt.so does not support job "
+	     "suspend/resume");
 	return SLURM_ERROR;
 #endif
 }
