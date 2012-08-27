@@ -113,6 +113,12 @@ if {[wait_for_file $file_err] == 0} {
 			set tl 1
 			exp_continue
 		}
+		# With POE we can't get the output from the slurmd so we
+		# expect this error
+		-re "ERROR: 0031-250  task 0: Terminated" {
+			set tl 1
+			exp_continue
+		}
 		eof {
 			wait
 		}
