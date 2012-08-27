@@ -594,7 +594,8 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		debug("got pe_rm_connect called");
 		launch_common_set_stdio_fds(job, &cio_fds);
 	} else {
-		error("pe_rm_connect: unknown caller");
+		*error_msg = xstrdup_printf("pe_rm_connect: unknown caller");
+		error("%s", *error_msg);
 		return -1;
 	}
 
@@ -816,7 +817,8 @@ extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 		debug("pe_rm_get_event called");
 		return 0;
 	} else if (pm_type != PM_POE) {
-		error("pe_rm_get_event: unknown caller");
+		*error_msg = xstrdup_printf("pe_rm_get_event: unknown caller");
+		error("%s", *error_msg);
 		return -1;
 	}
 
@@ -884,7 +886,9 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		debug("pe_rm_get_job_info called");
 		return 0;
 	} else if (pm_type != PM_POE) {
-		error("pe_rm_get_job_info: unknown caller");
+		*error_msg = xstrdup_printf(
+			"pe_rm_get_job_info: unknown caller");
+		error("%s", *error_msg);
 		return -1;
 	}
 
@@ -905,10 +909,16 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	ret_info->procs = job->ntasks;
 	ret_info->max_instances = 0;
 	ret_info->check_pointable = 0;
+	ret_info->rset_name = "RSET_NONE";
+	ret_info->endpoints = 1;
 
 	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &resp);
-	if (!resp)
+	if (!resp) {
+		*error_msg = xstrdup_printf(
+			"pe_rm_get_job_info: no step response in step ctx");
+		error("%s", *error_msg);
 		return -1;
+	}
 	slurm_jobinfo_ctx_get(resp->switch_job, NRT_JOBINFO_KEY, &job_key);
 	ret_info->job_key = job_key;
 
@@ -1332,14 +1342,18 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		if ((srun_debug = getenv("SLURM_STEP_ID")))
 			step_id = atoi(srun_debug);
 		if (job_id == -1 || step_id == -1) {
-			error("SLURM_JOB_ID or SLURM_STEP_ID "
-			      "not found %d.%d", job_id, step_id);
+			*error_msg = xstrdup_printf(
+				"pe_rm_init: SLURM_JOB_ID or SLURM_STEP_ID "
+				"not found %d.%d", job_id, step_id);
+			error("%s", *error_msg);
 			return -1;
 		}
 
 		job = _read_job_srun_agent();
 		if (!job) {
-			error("no job created");
+			*error_msg = xstrdup_printf(
+				"pe_rm_init: no job created");
+			error("%s", *error_msg);
 			return -1;
 		}
 
@@ -1353,7 +1367,8 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		 * PMD to fanout child processes on other nodes */
 		_spawn_fe_agent();
 	} else {
-		error("pe_rm_init: unknown caller");
+		*error_msg = xstrdup_printf("pe_rm_init: unknown caller");
+		error("%s", *error_msg);
 		return -1;
 	}
 
@@ -1432,14 +1447,18 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		debug("pe_rm_submit_job called from PMD");
 		return 0;
 	} else if (pm_type != PM_POE) {
-		error("pe_rm_submit_job: unknown caller");
+		*error_msg = xstrdup_printf("pe_rm_submit_job: unknown caller");
+		error("%s", *error_msg);
 		return -1;
 	}
 
 	debug("got pe_rm_submit_job called %d", job_cmd.job_format);
 	if (job_cmd.job_format != 1) {
 		/* We don't handle files */
-		error("SLURM doesn't handle files to submit_job");
+		*error_msg = xstrdup_printf(
+			"pe_rm_submit_job: SLURM doesn't handle files "
+			"to submit_job");
+		error("%s", *error_msg);
 		return -1;
 	}
 
