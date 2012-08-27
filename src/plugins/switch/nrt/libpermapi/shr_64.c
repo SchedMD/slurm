@@ -704,18 +704,21 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 {
 	uint32_t rc = 0;
 
-	xassert(job);
+	if (job && job->step_ctx) {
+		debug("got pe_rm_free called %p %p", job, job->step_ctx);
+		/* Since we can't relaunch the step here don't worry about the
+		   return code.
+		*/
+		launch_g_step_wait(job, got_alloc);
+		/* We are at the end so don't worry about freeing the
+		   srun_job_t pointer */
+		fini_srun(job, got_alloc, &rc, slurm_started);
+	}
 
-	debug("got pe_rm_free called %p %p", job, job->step_ctx);
-	/* Since we can't relaunch the step here don't worry about the
-	   return code.
-	*/
-	launch_g_step_wait(job, got_alloc);
-	/* We are at the end so don't worry about freeing the
-	   srun_job_t pointer */
-	fini_srun(job, got_alloc, &rc, slurm_started);
-	hostlist_destroy(total_hl);
-	total_hl = NULL;
+	if (total_hl) {
+		hostlist_destroy(total_hl);
+		total_hl = NULL;
+	}
 	*resource_mgr = NULL;
 	dlclose(my_handle);
 }
@@ -885,7 +888,16 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		return -1;
 	}
 
-	debug("got pe_rm_get_job_info called %p %p", job_info, *job_info);
+	debug("got pe_rm_get_job_info called");
+	if (!job || !job->step_ctx) {
+		error("pe_rm_get_job_info: It doesn't appear "
+		      "pe_rm_submit_job was called.  I am guessing "
+		      "PE_RM_BATCH is set somehow.  It things don't work well "
+		      "using this mode unset the env var and retry.");
+		create_srun_job(&job, &got_alloc, slurm_started);
+		/* make sure we set up a signal handler */
+		pre_launch_srun_job(job, slurm_started);
+	}
 
 	*job_info = ret_info;
 	ret_info->job_name = xstrdup(opt.job_name);
@@ -893,8 +905,6 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	ret_info->procs = job->ntasks;
 	ret_info->max_instances = 0;
 	ret_info->check_pointable = 0;
-	if (!job || !job->step_ctx)
-		return -1;
 
 	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &resp);
 	if (!resp)
