@@ -111,7 +111,7 @@ launching the MPI jobs under the control of the SLURM job manager:</p>
 <li><a href="#intel_mpirun_mpd">The <i>mpirun</i> command over the MPD Process Manager (PM)</a></li>
 <li><a href="#intel_mpirun_hydra">The <i>mpirun</i> command over the Hydra PM</a></li>
 <li><a href="#intel_mpiexec_hydra">The <i>mpiexec.hydra</i> command (Hydra PM)</a></li>
-<li><a href="#intel_srun">The <i>srun</i> command (SLURM)</a></li>
+<li><a href="#intel_srun">The <i>srun</i> command (SLURM, recommended)</a></li>
 </ul>
 <p>This description provides detailed information on all of these methods.</p>
 
@@ -153,8 +153,10 @@ through the Hydra PM.</p>
 <i>mpiexec.hydra -bootstrap slurm -n &lt;num_procs&gt; a.out</i>
 </pre>
 
-<h3><a name="intel_srun">The srun Command (SLURM)</a></h3>
-<p>This advanced method is supported by the Intel&reg; MPI Library 4.0 Update 3
+<h3><a name="intel_srun">The srun Command (SLURM, recommended)</a></h3>
+<p>This advanced method is supported by the Intel&reg; MPI Library 4.0 Update 3.
+This method is the best integrated with SLURM and supports process tracking,
+accounting, task affinity, suspend/resume and other features.
  Use the following commands to allocate a SLURM session and start an MPI job in
 it, or to start an MPI job within a SLURM session already created using the
 <i>sbatch</i> or <i>salloc</i> commands:</p>
@@ -438,6 +440,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 28 July 2012</p>
+<p style="text-align:center;">Last modified 27 August 2012</p>
 
 <!--#include virtual="footer.txt"-->
