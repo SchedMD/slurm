@@ -79,89 +79,23 @@ const char plugin_type[]        = "launch/poe";
 const uint32_t plugin_version   = 101;
 
 static char *cmd_fname = NULL;
-static char *stepid_fname = NULL;
 static char *poe_cmd_line = NULL;
 
-/* Return the next available step ID */
-static int _get_next_stepid(uint32_t job_id, char *dname, int dname_size)
+static void _build_work_dir(char *dname, int dname_size)
 {
-	int fd, i, rc, step_id;
 	char *work_dir;
-	ssize_t io_size = 0;
-	char buf[16];
 
 	/* NOTE: Directory must be shared between nodes for cmd_file to work */
 	if (!(work_dir = getenv("HOME"))) {
 		work_dir = xmalloc(512);
 		if (!getcwd(work_dir, 512))
 			fatal("getcwd(): %m");
-		snprintf(dname, dname_size, "%s/.slurm_loadl", work_dir);
+		snprintf(dname, dname_size, "%s/.slurm", work_dir);
 		xfree(work_dir);
 	} else {
-		snprintf(dname, dname_size, "%s/.slurm_loadl", work_dir);
+		snprintf(dname, dname_size, "%s/.slurm", work_dir);
 	}
 	mkdir(dname, 0700);
-
-	/* Create or open our stepid file */
-	if (!stepid_fname)
-		stepid_fname = xstrdup_printf("%s/slurm_stepid_%u",
-					      dname, job_id);
-	while (((fd = open(stepid_fname, O_CREAT|O_EXCL|O_RDWR, 0600)) < 0) &&
-	       (errno == EINTR))
-		;
-	if ((fd < 0) && (errno == EEXIST))
-		fd = open(stepid_fname, O_RDWR);
-	if (fd < 0)
-		fatal("open(%s): %m", stepid_fname);
-
-	/* Set exclusive lock on the file */
-	for (i = 0; ; i++) {
-		rc = flock(fd, LOCK_EX | LOCK_NB);
-		if (rc == 0)
-			break;
-		if (i > 10)
-			fatal("flock(%s): %m", stepid_fname);
-		usleep(100);
-	}
-
-	/* Read latest step ID from the file */
-	for (i = 0; ; i++) {
-		io_size = read(fd, buf, sizeof(buf));
-		if (io_size >= 0)
-			break;
-		if (i > 10) {
-			flock(fd, LOCK_UN);
-			fatal("read(%s): %m", stepid_fname);
-		}
-	}
-	if (io_size > 0)
-		step_id = atoi(buf) + 1;
-	else
-		step_id = 1;
-
-	/* Write new step ID value */
-	snprintf(buf, sizeof(buf), "%d", step_id);
-	for (i = 0; ; i++) {
-		lseek(fd, 0, SEEK_SET);
-		io_size = write(fd, buf, sizeof(buf));
-		if (io_size == sizeof(buf))
-			break;
-		if (i > 10) {
-			flock(fd, LOCK_UN);
-			fatal("write(%s): %m", stepid_fname);
-		}
-	}
-
-	/* Unlock the file */
-	for (i = 0; ; i++) {
-		rc = flock(fd, LOCK_UN);
-		if (rc == 0)
-			break;
-		if (i > 10)
-			fatal("flock(%s): %m", stepid_fname);
-	}
-
-	return step_id;
 }
 
 /* Given a program name, return its communication protocol */
@@ -547,7 +481,6 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
 				    sig_atomic_t *destroy_job)
 {
-	int step_id;
 	char dname[512], value[32];
 	char *protocol = "mpi";
 	uint32_t ntasks = opt.ntasks;
@@ -593,7 +526,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	 * libraries are listed in the 'ldd output' as long as you know it is
 	 * not a mixed protocol (i.e. Openshmem + MPI, UPC + MPI, etc)
 	 * application.
-	 * 1) If MPI library is found (libmpi.so || libmich.so) -> use 'mpi'
+	 * 1) If MPI library is found (libmpi*.so) -> use 'mpi'
 	 * 2) if Openshmem library is found (libshmem.so) -> use 'shmem'
 	 * 3) if UPC runtime library is found (libxlpgas.so) -> use 'pgas'
 	 * 4) if only PAMI library is found (libpami.so) -> use 'pami'
@@ -607,8 +540,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	debug("cmd:%s protcol:%s", opt.argv[1], protocol);
 
 	if (opt.multi_prog) {
-		char *buf;
-		int fd, i, j, k;
+		int fd, k;
 
 		if (opt.launch_cmd) {
 			error("--launch_cmd not available "
@@ -620,17 +552,19 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		 * be read from the compute node(s), so /tmp does not work.
 		 * We use the user's home directory (based upon "HOME"
 		 * environment variable) otherwise use current working
-		 * directory. The file name contains the job ID and step ID. */
-		step_id = _get_next_stepid(job->jobid, dname, sizeof(dname));
-		xstrfmtcat(cmd_fname,
-			   "%s/slurm_cmdfile_%u.%d",
-			   dname, job->jobid, step_id);
+		 * directory. The file is only created here, it is written
+		 * in launch_poe.c. */
+		_build_work_dir(dname, sizeof(dname));
+		xstrfmtcat(cmd_fname, "%s/slurm_cmdfile.%u",
+			   dname, (uint32_t) getpid());
 		while ((fd = creat(cmd_fname, 0600)) < 0) {
 			if (errno == EINTR)
 				continue;
 			fatal("creat(%s): %m", cmd_fname);
 		}
-
+		(void) close(fd);
+#if 0
+		char *buf;
 		i = strlen(opt.argv[1]) + 128;
 		buf = xmalloc(i);
 		if (opt.multi_prog) {
@@ -643,17 +577,10 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				_multi_prog_parse(in_line, 512, -1);
 			fclose(fp);
 			/* Write LoadLeveler MPMD format file here */
-			while (_multi_prog_parse(in_line, 512, step_id))
+			while (_multi_prog_parse(in_line, 512, 0))
 				j = xstrfmtcat(buf, "%s\n", in_line);
-		} else {
-			/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args...>*/
-			xstrfmtcat(buf, "%s@%d%c%d%c%s:%d",
-				   opt.argv[1], step_id, '%',
-				   opt.ntasks, '%', protocol, opt.ntasks);
-			for (i = 2; i < opt.argc; i++) /* start at argv[2] */
-				xstrfmtcat(buf, " %s", opt.argv[i]);
-			xstrfmtcat(buf, "\n");
 		}
+
 		i = 0;
 		j = strlen(buf);
 		while ((k = write(fd, &buf[i], j))) {
@@ -665,11 +592,13 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				break;
 			}
 		}
-		(void) close(fd);
+#endif
+
 		/* Set command file name via MP_CMDFILE and remove it from
 		 * the execute line. */
 		setenv("MP_NEWJOB", "parallel", 1);
 		setenv("MP_CMDFILE", cmd_fname, 1);
+		setenv("SLURM_CMDFILE", opt.argv[1], 1);
 		if (opt.argc) {
 			xfree(opt.argv[1]);
 			for (k = 1; k < opt.argc; k++)
@@ -1017,15 +946,11 @@ extern int launch_p_step_launch(
 
 extern int launch_p_step_wait(srun_job_t *job, bool got_alloc)
 {
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 extern int launch_p_step_terminate(void)
 {
-	if (cmd_fname)
-		(void) unlink(cmd_fname);
-	if (stepid_fname)
-		(void) unlink(stepid_fname);
 	return SLURM_SUCCESS;
 }
 
