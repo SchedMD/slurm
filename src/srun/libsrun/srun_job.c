@@ -591,10 +591,14 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 	*p_job = job;
 }
 
-extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started)
+extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
+				bool handle_signals)
 {
 	pthread_attr_t thread_attr;
-	if (!signal_thread) {
+
+	if (!handle_signals) {
+		xsignal_unblock(sig_array);
+	} else if (!signal_thread) {
 		slurm_attr_init(&thread_attr);
 		while (pthread_create(&signal_thread, &thread_attr,
 				      _srun_signal_mgr, job)) {

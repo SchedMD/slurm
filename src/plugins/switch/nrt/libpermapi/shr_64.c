@@ -1181,7 +1181,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		      "using this mode unset the env var and retry.");
 		create_srun_job(&job, &got_alloc, slurm_started);
 		/* make sure we set up a signal handler */
-		pre_launch_srun_job(job, slurm_started);
+		pre_launch_srun_job(job, slurm_started, 0);
 	}
 
 	*job_info = ret_info;
@@ -1388,7 +1388,6 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	char *srun_debug = NULL, *tmp_char = NULL;
 	char *myargv[3] = { "poe", NULL, NULL };
 	int debug_level = log_opts.logfile_level;
-
 	/* SLURM was originally written against 1300, so we will
 	 * return that, no matter what comes in so we always work.
 	 */
@@ -1805,6 +1804,6 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	_re_write_cmdfile(slurm_cmd_fname, poe_cmd_fname, job->stepid);
 
 	/* make sure we set up a signal handler */
-	pre_launch_srun_job(job, slurm_started);
+	pre_launch_srun_job(job, slurm_started, 0);
 	return 0;
 }

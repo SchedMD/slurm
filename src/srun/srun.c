@@ -258,7 +258,7 @@ int srun(int ac, char **av)
 
 	/* re_launch: */
 relaunch:
-	pre_launch_srun_job(job, 0);
+	pre_launch_srun_job(job, 0, 1);
 
 	launch_common_set_stdio_fds(job, &cio_fds);
 
