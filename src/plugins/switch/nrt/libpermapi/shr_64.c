@@ -617,20 +617,23 @@ static char *_get_cmd_protocol(char *cmd)
 
 /*
  * Parse a multi-prog input file line
+ * total_tasks - Number of tasks in the job,
+ *               also size of the cmd, args, and protocol arrays
  * line IN - line to parse
- * num_task OUT - number of tasks to be started
- * cmd OUT - command to execute, caller must xfree this
+ * cmd OUT  - command to execute, caller must xfree this
  * args OUT - arguments to the command, caller must xfree this
+ * protocol OUT - communication protocol of the command, do not xfree this
  */
-static void _parse_prog_line(char *in_line, int *num_tasks, char **cmd,
-			     char **args)
+static void _parse_prog_line(int total_tasks, char *in_line, char **cmd,
+			     char **args, char **protocol)
 {
-	int i;
+	int i, task_id;
 	int first_arg_inx = 0, last_arg_inx = 0;
 	int first_cmd_inx,  last_cmd_inx;
 	int first_task_inx, last_task_inx;
-	hostset_t hs;
-	char *tmp_str = NULL;
+	hostset_t hs = NULL;
+	char *task_id_str, *tmp_str = NULL;
+	char *line_args = NULL, *line_cmd = NULL, *line_protocol = NULL;
 
 	/* Get the task ID string */
 	for (i = 0; in_line[i]; i++)
@@ -638,9 +641,9 @@ static void _parse_prog_line(char *in_line, int *num_tasks, char **cmd,
 			break;
 
 	if (!in_line[i]) /* empty line */
-		goto fini;
+		return;
 	else if (in_line[i] == '#')
-		goto fini;
+		return;
 	else if (!isdigit(in_line[i]))
 		goto bad_line;
 	first_task_inx = i;
@@ -690,96 +693,101 @@ static void _parse_prog_line(char *in_line, int *num_tasks, char **cmd,
 	in_line[last_task_inx] = ' ';
 	if (!hs)
 		goto bad_line;
-	*num_tasks = hostset_count(hs);
-	hostset_destroy(hs);
 
 	in_line[last_cmd_inx] = '\0';
-	*cmd = xstrdup(in_line + first_cmd_inx);
+	line_cmd = xstrdup(in_line + first_cmd_inx);
 	in_line[last_cmd_inx] = ' ';
 
 	if (last_arg_inx)
 		in_line[last_arg_inx] = '\0';
 	if (first_arg_inx)
-		*args = xstrdup(in_line + first_arg_inx);
-	else
-		*args = NULL;
+		line_args = xstrdup(in_line + first_arg_inx);
 	if (last_arg_inx)
 		in_line[last_arg_inx] = '\n';
+
+	line_protocol = _get_cmd_protocol(line_cmd);
+	while ((task_id_str = hostset_pop(hs))) {
+		task_id = strtol(task_id_str, &tmp_str, 10);
+		if ((tmp_str[0] != '\0') || (task_id < 0))
+			goto bad_line;
+		if (task_id >= total_tasks)
+			continue;
+		cmd[task_id]  = xstrdup(line_cmd);
+		args[task_id] = xstrdup(line_args);
+		protocol[task_id] = line_protocol;
+	}
+
+	xfree(line_args);
+	xfree(line_cmd);
+	hostset_destroy(hs);
 	return;
 
 bad_line:
 	error("invalid input line: %s", in_line);
-fini:	*num_tasks = -1;
+	xfree(line_args);
+	xfree(line_cmd);
+	if (hs)
+		hostset_destroy(hs);
 	return;
 }
 
 /*
- * Either get or set a POE command line,
- * line IN/OUT - line to set or get
+ * Read a line from SLURM MPMD command file or write the equivalent POE line.
+ * line IN/OUT - line to read or write
  * length IN - size of line in bytes
  * step_id IN - -1 if input line, otherwise the step ID to output
+ * task_id IN - count of tasks in job step (if step_id == -1)
+ *              task_id to report (if step_id != -1)
  * RET true if more lines to get
  */
-static bool _multi_prog_parse(char *line, int length, int step_id)
+static bool _multi_prog_parse(char *line, int length, int step_id, int task_id)
 {
-	static int cmd_count = 0, inx = 0, total_tasks = 0;
-	static char **args = NULL, **cmd = NULL;
-	static int *num_tasks = NULL;
+	static int total_tasks = 0;
+	static char **args = NULL, **cmd = NULL, **protocol = NULL;
 	int i;
 
 	if (step_id < 0) {
-		char *tmp_args = NULL, *tmp_cmd = NULL;
-		int tmp_tasks = -1;
-		_parse_prog_line(line, &tmp_tasks, &tmp_cmd, &tmp_args);
-
-		if (tmp_tasks < 0) {
-			if (line[0] != '\n' && line[0] != '#')
-				error("bad line '%s'", line);
-			return true;
+		if (!args) {
+			args = xmalloc(sizeof(char *) * task_id);
+			cmd  = xmalloc(sizeof(char *) * task_id);
+			protocol = xmalloc(sizeof(char *) * task_id);
+			total_tasks = task_id;
 		}
 
-		xrealloc(args, (sizeof(char *) * (cmd_count + 1)));
-		xrealloc(cmd,  (sizeof(char *) * (cmd_count + 1)));
-		xrealloc(num_tasks, (sizeof(int) * (cmd_count + 1)));
-		args[cmd_count] = tmp_args;
-		cmd[cmd_count]  = tmp_cmd;
-		num_tasks[cmd_count] = tmp_tasks;
-		total_tasks += tmp_tasks;
-		cmd_count++;
+		_parse_prog_line(total_tasks, line, cmd, args, protocol);
 		return true;
-	} else if (inx >= cmd_count) {
-		for (i = 0; i < cmd_count; i++) {
+
+	} else if (task_id >= total_tasks) {
+		for (i = 0; i < total_tasks; i++) {
 			xfree(args[i]);
 			xfree(cmd[i]);
 		}
 		xfree(args);
 		xfree(cmd);
-		xfree(num_tasks);
-		cmd_count = 0;
-		inx = 0;
+		xfree(protocol);
 		total_tasks = 0;
 		return false;
-	} else if (args[inx]) {
+	} else if (!cmd[task_id]) {
+		error("No command in MPMD command file for task %d", task_id);
+		return true;
+	} else if (args[task_id]) {
 		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args...> */
 		snprintf(line, length, "%s@%d%c%d%c%s:%d %s",
-			 cmd[inx], step_id, '%', total_tasks, '%',
-			 _get_cmd_protocol(cmd[inx]), num_tasks[inx],
-			 args[inx]);
-		inx++;
+			 cmd[task_id], step_id, '%', total_tasks, '%',
+			 protocol[task_id], 1, args[task_id]);
 		return true;
 	} else {
 		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> */
 		snprintf(line, length, "%s@%d%c%d%c%s:%d",
-			 cmd[inx], step_id, '%', total_tasks, '%',
-			 _get_cmd_protocol(cmd[inx]), num_tasks[inx]);
-		inx++;
+			 cmd[task_id], step_id, '%', total_tasks, '%',
+			 protocol[task_id], 1);
 		return true;
 	}
 }
 
 /* Convert a SLURM format MPMD file into a POE MPMD command file */
 static void _re_write_cmdfile(char *slurm_cmd_fname, char *poe_cmd_fname,
-			      uint32_t step_id)
+			      uint32_t step_id, int task_cnt)
 {
 	char *buf, in_line[512];
 	int fd, i, j, k;
@@ -797,12 +805,15 @@ static void _re_write_cmdfile(char *slurm_cmd_fname, char *poe_cmd_fname,
 
 	/* Read and parse SLURM MPMD format file here */
 	while (fgets(in_line, sizeof(in_line), fp))
-		_multi_prog_parse(in_line, 512, -1);
+		_multi_prog_parse(in_line, 512, -1, task_cnt);
 	fclose(fp);
 
 	/* Write LoadLeveler MPMD format file here */
-	while (_multi_prog_parse(in_line, 512, step_id))
+	for (i = 0; ; i++) {
+		if (!_multi_prog_parse(in_line, 512, step_id, i))
+			break;
 		j = xstrfmtcat(buf, "%s\n", in_line);
+	}
 	i = 0;
 	j = strlen(buf);
 	fd = open(poe_cmd_fname, O_TRUNC | O_RDWR);
@@ -1797,7 +1808,8 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	}
 
 	create_srun_job(&job, &got_alloc, slurm_started, 0);
-	_re_write_cmdfile(slurm_cmd_fname, poe_cmd_fname, job->stepid);
+	_re_write_cmdfile(slurm_cmd_fname, poe_cmd_fname, job->stepid,
+			  pe_job_req->total_tasks);
 
 	/* make sure we set up a signal handler */
 	pre_launch_srun_job(job, slurm_started, 0);
