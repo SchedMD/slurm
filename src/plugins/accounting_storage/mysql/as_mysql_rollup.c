@@ -716,7 +716,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 			seconds = (row_end - row_start);
 
-			if (row[JOB_REQ_SUSPENDED]) {
+			if (slurm_atoul(row[JOB_REQ_SUSPENDED])) {
 				MYSQL_RES *result2 = NULL;
 				MYSQL_ROW row2;
 				/* get the suspended time for this job */

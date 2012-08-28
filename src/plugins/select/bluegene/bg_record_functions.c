@@ -1106,14 +1106,11 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 		slurm_mutex_unlock(&block_state_mutex);
 		debug("No block under 1 midplane available for this nodecard.  "
 		      "Draining the whole node.");
-		if (!node_already_down(mp_name)) {
-			if (slurmctld_locked)
-				drain_nodes(mp_name, reason,
-					    slurm_get_slurm_user_id());
-			else
-				slurm_drain_nodes(mp_name, reason,
-						  slurm_get_slurm_user_id());
-		}
+
+		/* the slurmctld is always locked here */
+		if (!node_already_down(mp_name))
+			drain_nodes(mp_name, reason,
+				    slurm_get_slurm_user_id());
 		rc = SLURM_SUCCESS;
 		goto cleanup;
 	}
@@ -1229,15 +1226,10 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			break;
 		case 512:
 			slurm_mutex_unlock(&block_state_mutex);
-			if (!node_already_down(mp_name)) {
-				if (slurmctld_locked)
-					drain_nodes(mp_name, reason,
-						    slurm_get_slurm_user_id());
-				else
-					slurm_drain_nodes(
-						mp_name, reason,
-						slurm_get_slurm_user_id());
-			}
+			/* the slurmctld is always locked here */
+			if (!node_already_down(mp_name))
+				drain_nodes(mp_name, reason,
+					    slurm_get_slurm_user_id());
 			rc = SLURM_SUCCESS;
 			goto cleanup;
 			break;
