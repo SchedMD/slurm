@@ -36,10 +36,11 @@
 \*****************************************************************************/
 
 #include <permapi.h>
+#include <ctype.h>
 #include <dlfcn.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <fcntl.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <arpa/inet.h>
 
 #ifdef HAVE_CONFIG_H
@@ -69,7 +70,7 @@
 bool srun_max_timer = false;
 bool srun_shutdown  = false;
 
-static char *cmd_fname = NULL;
+static char *poe_cmd_fname = NULL;
 static void *my_handle = NULL;
 static srun_job_t *job = NULL;
 static bool got_alloc = false;
@@ -546,6 +547,285 @@ srun_job_t * _read_job_srun_agent(void)
 	return srun_job;
 }
 
+/* Given a program name, return its communication protocol */
+static char *_get_cmd_protocol(char *cmd)
+{
+	int stdout_pipe[2] = {-1, -1}, stderr_pipe[2] = {-1, -1};
+	int read_size, buf_rem = 16 * 1024, offset = 0, status;
+	pid_t pid;
+	char *buf, *protocol = "mpi";
+
+	if ((pipe(stdout_pipe) == -1) || (pipe(stderr_pipe) == -1)) {
+		error("pipe: %m");
+		return "mpi";
+	}
+
+	pid = fork();
+	if (pid < 0) {
+		error("fork: %m");
+		return "mpi";
+	} else if (pid == 0) {
+		if ((dup2(stdout_pipe[1], 1) == -1) ||
+		    (dup2(stderr_pipe[1], 2) == -1)) {
+			error("dup2: %m");
+			return NULL;
+		}
+		(void) close(0);	/* stdin */
+		(void) close(stdout_pipe[0]);
+		(void) close(stdout_pipe[1]);
+		(void) close(stderr_pipe[0]);
+		(void) close(stderr_pipe[1]);
+
+		execlp("/usr/bin/ldd", "ldd", cmd, NULL);
+		error("execv(ldd) error: %m");
+		return NULL;
+	}
+
+	(void) close(stdout_pipe[1]);
+	(void) close(stderr_pipe[1]);
+	buf = xmalloc(buf_rem);
+	while ((read_size = read(stdout_pipe[0], &buf[offset], buf_rem))) {
+		if (read_size > 0) {
+			buf_rem -= read_size;
+			offset  += read_size;
+			if (buf_rem == 0)
+				break;
+		} else if ((errno != EAGAIN) || (errno != EINTR)) {
+			error("read(pipe): %m");
+			break;
+		}
+	}
+
+	if (strstr(buf, "libmpi"))
+		protocol = "mpi";
+	else if (strstr(buf, "libshmem.so"))
+		protocol = "shmem";
+	else if (strstr(buf, "libxlpgas.so"))
+		protocol = "pgas";
+	else if (strstr(buf, "libpami.so"))
+		protocol = "pami";
+	else if (strstr(buf, "liblapi.so"))
+		protocol = "lapi";
+	xfree(buf);
+	while ((waitpid(pid, &status, 0) == -1) && (errno == EINTR))
+		;
+	(void) close(stdout_pipe[0]);
+	(void) close(stderr_pipe[0]);
+
+	return protocol;
+}
+
+/*
+ * Parse a multi-prog input file line
+ * line IN - line to parse
+ * num_task OUT - number of tasks to be started
+ * cmd OUT - command to execute, caller must xfree this
+ * args OUT - arguments to the command, caller must xfree this
+ */
+static void _parse_prog_line(char *in_line, int *num_tasks, char **cmd,
+			     char **args)
+{
+	int i;
+	int first_arg_inx = 0, last_arg_inx = 0;
+	int first_cmd_inx,  last_cmd_inx;
+	int first_task_inx, last_task_inx;
+	hostset_t hs;
+	char *tmp_str = NULL;
+
+	/* Get the task ID string */
+	for (i = 0; in_line[i]; i++)
+		if (!isspace(in_line[i]))
+			break;
+
+	if (!in_line[i]) /* empty line */
+		goto fini;
+	else if (in_line[i] == '#')
+		goto fini;
+	else if (!isdigit(in_line[i]))
+		goto bad_line;
+	first_task_inx = i;
+	for (i++; in_line[i]; i++) {
+		if (isspace(in_line[i]))
+			break;
+	}
+	if (!isspace(in_line[i]))
+		goto bad_line;
+	last_task_inx = i;
+
+	/* Get the command */
+	for (i++; in_line[i]; i++) {
+		if (!isspace(in_line[i]))
+			break;
+	}
+	if (in_line[i] == '\0')
+		goto bad_line;
+	first_cmd_inx = i;
+	for (i++; in_line[i]; i++) {
+		if (isspace(in_line[i]))
+			break;
+	}
+	if (!isspace(in_line[i]))
+		goto bad_line;
+	last_cmd_inx = i;
+
+	/* Get the command's arguments */
+	for (i++; in_line[i]; i++) {
+		if (!isspace(in_line[i]))
+			break;
+	}
+	if (in_line[i])
+		first_arg_inx = i;
+	for ( ; in_line[i]; i++) {
+		if (in_line[i] == '\n') {
+			last_arg_inx = i;
+			break;
+		}
+	}
+
+	/* Now transfer data to the function arguments */
+	in_line[last_task_inx] = '\0';
+	xstrfmtcat(tmp_str, "[%s]", in_line + first_task_inx);
+	hs = hostset_create(tmp_str);
+	xfree(tmp_str);
+	in_line[last_task_inx] = ' ';
+	if (!hs)
+		goto bad_line;
+	*num_tasks = hostset_count(hs);
+	hostset_destroy(hs);
+
+	in_line[last_cmd_inx] = '\0';
+	*cmd = xstrdup(in_line + first_cmd_inx);
+	in_line[last_cmd_inx] = ' ';
+
+	if (last_arg_inx)
+		in_line[last_arg_inx] = '\0';
+	if (first_arg_inx)
+		*args = xstrdup(in_line + first_arg_inx);
+	else
+		*args = NULL;
+	if (last_arg_inx)
+		in_line[last_arg_inx] = '\n';
+	return;
+
+bad_line:
+	error("invalid input line: %s", in_line);
+fini:	*num_tasks = -1;
+	return;
+}
+
+/*
+ * Either get or set a POE command line,
+ * line IN/OUT - line to set or get
+ * length IN - size of line in bytes
+ * step_id IN - -1 if input line, otherwise the step ID to output
+ * RET true if more lines to get
+ */
+static bool _multi_prog_parse(char *line, int length, int step_id)
+{
+	static int cmd_count = 0, inx = 0, total_tasks = 0;
+	static char **args = NULL, **cmd = NULL;
+	static int *num_tasks = NULL;
+	int i;
+
+	if (step_id < 0) {
+		char *tmp_args = NULL, *tmp_cmd = NULL;
+		int tmp_tasks = -1;
+		_parse_prog_line(line, &tmp_tasks, &tmp_cmd, &tmp_args);
+
+		if (tmp_tasks < 0) {
+			if (line[0] != '\n' && line[0] != '#')
+				error("bad line '%s'", line);
+			return true;
+		}
+
+		xrealloc(args, (sizeof(char *) * (cmd_count + 1)));
+		xrealloc(cmd,  (sizeof(char *) * (cmd_count + 1)));
+		xrealloc(num_tasks, (sizeof(int) * (cmd_count + 1)));
+		args[cmd_count] = tmp_args;
+		cmd[cmd_count]  = tmp_cmd;
+		num_tasks[cmd_count] = tmp_tasks;
+		total_tasks += tmp_tasks;
+		cmd_count++;
+		return true;
+	} else if (inx >= cmd_count) {
+		for (i = 0; i < cmd_count; i++) {
+			xfree(args[i]);
+			xfree(cmd[i]);
+		}
+		xfree(args);
+		xfree(cmd);
+		xfree(num_tasks);
+		cmd_count = 0;
+		inx = 0;
+		total_tasks = 0;
+		return false;
+	} else if (args[inx]) {
+		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args...> */
+		snprintf(line, length, "%s@%d%c%d%c%s:%d %s",
+			 cmd[inx], step_id, '%', total_tasks, '%',
+			 _get_cmd_protocol(cmd[inx]), num_tasks[inx],
+			 args[inx]);
+		inx++;
+		return true;
+	} else {
+		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> */
+		snprintf(line, length, "%s@%d%c%d%c%s:%d",
+			 cmd[inx], step_id, '%', total_tasks, '%',
+			 _get_cmd_protocol(cmd[inx]), num_tasks[inx]);
+		inx++;
+		return true;
+	}
+}
+
+/* Convert a SLURM format MPMD file into a POE MPMD command file */
+static void _re_write_cmdfile(char *slurm_cmd_fname, char *poe_cmd_fname,
+			      uint32_t step_id)
+{
+	char *buf, in_line[512];
+	int fd, i, j, k;
+	FILE *fp;
+
+	if (!slurm_cmd_fname || !poe_cmd_fname)
+		return;
+
+	buf = xmalloc(1024);
+	fp = fopen(slurm_cmd_fname, "r");
+	if (!fp) {
+		error("fopen(%s): %m", slurm_cmd_fname);
+		return;
+	}
+
+	/* Read and parse SLURM MPMD format file here */
+	while (fgets(in_line, sizeof(in_line), fp))
+		_multi_prog_parse(in_line, 512, -1);
+	fclose(fp);
+
+/* FIXME: POE produces error for step_id 0 */
+step_id++;
+	/* Write LoadLeveler MPMD format file here */
+	while (_multi_prog_parse(in_line, 512, step_id))
+		j = xstrfmtcat(buf, "%s\n", in_line);
+	i = 0;
+	j = strlen(buf);
+	fd = open(poe_cmd_fname, O_TRUNC | O_RDWR);
+	if (fd < 0) {
+		error("open(%s): %m", poe_cmd_fname);
+		xfree(buf);
+		return;
+	}
+	while ((k = write(fd, &buf[i], j))) {
+		if (k > 0) {
+			i += k;
+			j -= k;
+		} else if ((errno != EAGAIN) && (errno != EINTR)) {
+			error("write(cmdfile): %m");
+			break;
+		}
+	}
+	close(fd);
+	xfree(buf);
+}
+
 /************************************/
 
 /* The connection communicates information to and from the resource
@@ -723,8 +1003,8 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 	}
 	*resource_mgr = NULL;
 	dlclose(my_handle);
-	if (cmd_fname)
-		(void) unlink(cmd_fname);
+	if (poe_cmd_fname)
+		(void) unlink(poe_cmd_fname);
 }
 
 /* The memory that is allocated to events generated by the resource
@@ -1445,14 +1725,16 @@ extern int pe_rm_send_event(rmhandle_t resource_mgr, job_event_t *job_event,
 int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		     char** error_msg)
 {
+	char *slurm_cmd_fname = NULL;
 	job_request_t *pe_job_req = NULL;
 
 	if (pm_type == PM_PMD) {
 		debug("pe_rm_submit_job called from PMD");
 		return 0;
 	} else if (pm_type == PM_POE) {
-		if (getenv("SLURM_CMDFILE"))
-			cmd_fname = getenv("MP_CMDFILE");
+		slurm_cmd_fname = getenv("SLURM_CMDFILE");
+		if (slurm_cmd_fname)
+			poe_cmd_fname = getenv("MP_CMDFILE");
 	} else {
 		*error_msg = xstrdup_printf("pe_rm_submit_job: unknown caller");
 		error("%s", *error_msg);
@@ -1522,16 +1804,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	}
 
 	create_srun_job(&job, &got_alloc, slurm_started);
-
-info("cmd_file:%s step_id:%u", getenv("SLURM_CMDFILE"), job->stepid);
-{
-	int fd, len;
-	fd = open(getenv("MP_CMDFILE"), O_TRUNC | O_RDWR);
-	/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args...> */
-	len = write(fd, "/bin/date@6%4%mpi:4\n", 21);
-info("wrote:%d", len);
-	close(fd);
-}
+	_re_write_cmdfile(slurm_cmd_fname, poe_cmd_fname, job->stepid);
 
 	/* make sure we set up a signal handler */
 	pre_launch_srun_job(job, slurm_started);
