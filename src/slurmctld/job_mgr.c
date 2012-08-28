@@ -3645,6 +3645,7 @@ extern int job_limits_check(struct job_record **job_pptr)
 static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		       struct job_record **job_pptr, uid_t submit_uid)
 {
+	static int launch_type_poe = -1;
 	int error_code = SLURM_SUCCESS, i, qos_error;
 	enum job_state_reason fail_reason;
 	struct part_record *part_ptr = NULL;
@@ -3936,7 +3937,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 						       job_pptr,
 						       &req_bitmap,
 						       &exc_bitmap))) {
-		if(error_code == SLURM_ERROR)
+		if (error_code == SLURM_ERROR)
 			error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
 		goto cleanup_fail;
 	}
@@ -3961,6 +3962,17 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
 	job_ptr->qos_ptr = (void *) qos_ptr;
 	job_ptr->qos_id = qos_rec.id;
+
+	if (launch_type_poe == -1) {
+		char *launch_type = slurm_get_launch_type();
+		if (!strcmp(launch_type, "launch/poe"))
+			launch_type_poe = 1;
+		else
+			launch_type_poe = 0;
+		xfree(launch_type);
+	}
+	if (launch_type_poe == 1)
+		job_ptr->next_step_id = 1;
 
 	/*
 	 * Permission for altering priority was confirmed above. The job_submit

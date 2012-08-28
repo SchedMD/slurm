@@ -800,8 +800,6 @@ static void _re_write_cmdfile(char *slurm_cmd_fname, char *poe_cmd_fname,
 		_multi_prog_parse(in_line, 512, -1);
 	fclose(fp);
 
-/* FIXME: POE produces error for step_id 0 */
-step_id++;
 	/* Write LoadLeveler MPMD format file here */
 	while (_multi_prog_parse(in_line, 512, step_id))
 		j = xstrfmtcat(buf, "%s\n", in_line);
