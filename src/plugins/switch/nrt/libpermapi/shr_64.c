@@ -768,7 +768,8 @@ static bool _multi_prog_parse(char *line, int length, int step_id, int task_id)
 		total_tasks = 0;
 		return false;
 	} else if (!cmd[task_id]) {
-		error("No command in MPMD command file for task %d", task_id);
+		error("Configuration file invalid, no record for task id %d",
+		      task_id);
 		return true;
 	} else if (args[task_id]) {
 		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args...> */
