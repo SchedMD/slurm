@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
     this isn't needed.
  -- BLUEGENE - Fix deadlock issue when dealing with bad hardware if using
     static blocks.
+ -- Fix to mysql plugin during rollup to only query suspended table when jobs
+    reported some suspended time.
 
 * Changes in SLURM 2.4.2
 ========================
