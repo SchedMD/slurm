@@ -41,9 +41,7 @@
 #  include "config.h"
 #endif
 
-#if defined(__NetBSD__)
 #include <sys/resource.h> /* for RLIMIT_NOFILE */
-#endif
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>

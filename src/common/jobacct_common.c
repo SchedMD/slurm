@@ -39,9 +39,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#if defined(__NetBSD__)
 #include <sys/resource.h>
-#endif
 
 #include "src/common/jobacct_common.h"
 

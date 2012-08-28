@@ -35,6 +35,7 @@ documents those changes that are of interest to users and admins.
     static blocks.
  -- Fix to mysql plugin during rollup to only query suspended table when jobs
     reported some suspended time.
+ -- Fix compile with glibc 2.16 (Kacper Kowalik)
 
 * Changes in SLURM 2.4.2
 ========================
