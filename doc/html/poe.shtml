@@ -199,6 +199,23 @@ This effects the following options:</p>
 <li>-o, --output</li>
 </ul>
 
+<p>The srun command's --multi-prog option  (for Multiple Program,
+Multiple Data configurations), the command file will be translated from
+SLURM's format to a POE format. POE does not support SLURM expressions
+in the MPMD configuration file (e.g. "%t" will not be replaced with the task's
+number and "%o" will not be replaced with the task's offset within
+this range). The command file will be stored in a temporary file
+in the ".slurm" subdirectory of your home directory. The file name will have a
+prefix of "slurm_cmdfile." followed by srun's process id. If the srun command
+does not terminate gracefully, this file may persist after the job step's
+termination and not be purged. You can find and purge these files using
+commands of the form shown below. You should only purge older files, after
+their job steps are completed.</p>
+<pre>
+$ ls -l ~/.slurm/slurm_cmdfile.*
+$ rm    ~/.slurm/slurm_cmdfile.*
+</pre>
+
 <p>The -L/--label option differs slighly in that when the output from multiple
 tasks are identical, they are combined on a single line with the prefix
 identifying which task(s) generated the output. In addition, there is a colon
@@ -207,13 +224,30 @@ but no space between the task IDs and output. For example:</p>
 # SLURM OUTPUT
 0: foo
 1: foo
+2: foo
 0: bar
 1: barr
+2: bar
 
 # POE OUTPUT
-0-1:foo
-0:bar
+0-2:foo
+0 2:bar
 1:barr
+</pre>
+
+<p>In addition, when srun's --multi-prog option (for Multiple Program,
+Multiple Data configurations) is used with the -L/--label option then a job
+step ID, colon and space will preceed the task ID and colon. For example:</p>
+<pre>
+# SLURM OUTPUT
+0: zero
+1: one
+2: two
+
+# POE OUTPUT (FOR STEP ID 1)
+1: 0: zero
+1: 1: one
+1: 2: two
 </pre>
 
 <h3>Environment Variables</h3>
@@ -406,6 +440,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 16 August 2012</p></td>
+<p style="text-align:center;">Last modified 28 August 2012</p></td>
 
 <!--#include virtual="footer.txt"-->
