@@ -134,10 +134,10 @@ extern srun_job_t * job_create_allocation(
 
 extern void init_srun(int ac, char **av,
 		      log_options_t *logopt, int debug_level,
-		      bool slurm_started);
+		      bool handle_signals);
 
 extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
-			    bool slurm_started);
+			    bool slurm_started, bool handle_signals);
 extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
 				bool handle_signals);
 

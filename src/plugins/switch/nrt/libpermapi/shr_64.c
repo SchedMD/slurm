@@ -1179,7 +1179,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		      "pe_rm_submit_job was called.  I am guessing "
 		      "PE_RM_BATCH is set somehow.  It things don't work well "
 		      "using this mode unset the env var and retry.");
-		create_srun_job(&job, &got_alloc, slurm_started);
+		create_srun_job(&job, &got_alloc, slurm_started, 0);
 		/* make sure we set up a signal handler */
 		pre_launch_srun_job(job, slurm_started, 0);
 	}
@@ -1593,15 +1593,11 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	}
 
 	debug("got pe_rm_init called");
-
 	/* This needs to happen before any other threads so we can
 	   catch the signals correctly.  Send in NULL for logopts
-	   because we just set it up. Also always send 1 for
-	   slurm_started since we don't want to start up the shepard
-	   thread in this case.
+	   because we just set it up.
 	*/
-	init_srun(2, myargv, NULL, debug_level, 1);
-
+	init_srun(2, myargv, NULL, debug_level, 0);
 	/* This has to be done after init_srun so as to not get over
 	   written. */
 	if (getenv("SLURM_PRESERVE_ENV"))
@@ -1800,10 +1796,11 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		opt.ntasks = pe_job_req->total_tasks;
 	}
 
-	create_srun_job(&job, &got_alloc, slurm_started);
+	create_srun_job(&job, &got_alloc, slurm_started, 0);
 	_re_write_cmdfile(slurm_cmd_fname, poe_cmd_fname, job->stepid);
 
 	/* make sure we set up a signal handler */
 	pre_launch_srun_job(job, slurm_started, 0);
+
 	return 0;
 }

@@ -406,12 +406,14 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 
 extern void init_srun(int ac, char **av,
 		      log_options_t *logopt, int debug_level,
-		      bool slurm_started)
+		      bool handle_signals)
 {
 	/* This must happen before we spawn any threads
 	 * which are not designed to handle them */
-	if (xsignal_block(sig_array) < 0)
-		error("Unable to block signals");
+	if (handle_signals) {
+		if (xsignal_block(sig_array) < 0)
+			error("Unable to block signals");
+	}
 
 	/* Initialize plugin stack, read options from plugins, etc.
 	 */
@@ -464,7 +466,7 @@ extern void init_srun(int ac, char **av,
 }
 
 extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
-			    bool slurm_started)
+			    bool slurm_started, bool handle_signals)
 {
 	resource_allocation_response_msg_t *resp;
 	srun_job_t *job = NULL;
@@ -541,7 +543,7 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 		else if (!opt.job_name_set_env && opt.argc)
 			setenvfs("SLURM_JOB_NAME=%s", opt.argv[0]);
 
-		if ( !(resp = allocate_nodes()) )
+		if ( !(resp = allocate_nodes(handle_signals)) )
 			exit(error_exit);
 		*got_alloc = true;
 		_print_job_information(resp);
@@ -596,9 +598,7 @@ extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
 {
 	pthread_attr_t thread_attr;
 
-	if (!handle_signals) {
-		xsignal_unblock(sig_array);
-	} else if (!signal_thread) {
+	if (handle_signals && !signal_thread) {
 		slurm_attr_init(&thread_attr);
 		while (pthread_create(&signal_thread, &thread_attr,
 				      _srun_signal_mgr, job)) {
@@ -606,8 +606,12 @@ extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
 			sleep(1);
 		}
 		slurm_attr_destroy(&thread_attr);
+	} else if (!handle_signals && slurm_started) {
+		/* FIXME: This makes it so poe gets the signal but
+		   srun doesn't work like it does on other systems.
+		*/
+		xsignal_unblock(sig_array);
 	}
-
 	/* if running from poe This already happened in srun. */
 	if (slurm_started)
 		return;
