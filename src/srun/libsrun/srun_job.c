@@ -608,8 +608,7 @@ extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
 		slurm_attr_destroy(&thread_attr);
 	} else if (!handle_signals && slurm_started) {
 		/* FIXME: This makes it so poe gets the signal but
-		   srun doesn't work like it does on other systems.
-		*/
+		 * srun doesn't work like it does on other systems. */
 		xsignal_unblock(sig_array);
 	}
 	/* if running from poe This already happened in srun. */
@@ -627,7 +626,7 @@ extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
 extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
 		      bool slurm_started)
 {
-	/* If running from poe Most of this already happened in srun. */
+	/* If running from poe, most of this already happened in srun. */
 	if (slurm_started)
 		goto cleanup;
 	if (got_alloc) {

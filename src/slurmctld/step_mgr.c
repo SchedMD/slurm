@@ -343,6 +343,21 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
 	int rc = SLURM_SUCCESS;
+	static bool notify_slurmd = true;
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+	static int notify_srun = 1;
+#else
+	static int notify_srun = -1;
+	if (notify_srun == -1) {
+		char *launch_type = slurm_get_launch_type();
+		if (!strcmp(launch_type, "launch/poe")) {
+			notify_srun = 1;
+			notify_slurmd = false;
+		} else
+			notify_srun = 0;
+		xfree(launch_type);
+	}
+#endif
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -384,17 +399,17 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	}
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
-	srun_step_signal(step_ptr, signal);
-#endif
+	if (notify_srun)
+		srun_step_signal(step_ptr, signal);
 
 	/* save user ID of the one who requested the job be cancelled */
 	if (signal == SIGKILL) {
 		step_ptr->requid = uid;
 		srun_step_complete(step_ptr);
 	}
+	if ((signal == SIGKILL) || notify_slurmd)
+		signal_step_tasks(step_ptr, signal, REQUEST_SIGNAL_TASKS);
 
-	signal_step_tasks(step_ptr, signal, REQUEST_SIGNAL_TASKS);
 	return SLURM_SUCCESS;
 }
 

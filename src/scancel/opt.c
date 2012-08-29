@@ -211,7 +211,14 @@ static void _opt_default(void)
 #ifdef HAVE_FRONT_END
 	opt.ctld	= true;
 #else
-	opt.ctld	= false;
+{
+	char *launch_type = slurm_get_launch_type();
+	if (!strcmp(launch_type, "launch/poe"))
+		opt.ctld	= true;
+	else
+		opt.ctld	= false;
+	xfree(launch_type);
+}
 #endif
 	opt.interactive	= false;
 	opt.job_cnt	= 0;
