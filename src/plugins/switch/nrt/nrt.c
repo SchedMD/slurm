@@ -2093,12 +2093,17 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 			if (window_count > max_windows) {
 				/* This happens if IP_ONLY devices are
 				 * allocated with tables_per_task > 0 */
+				char *reason;
+				if (adapter_status.adapter_type == NRT_IPONLY)
+					reason = ", Known libnrt bug";
+				else
+					reason = "";
 				debug("nrt_command(status_adapter, %s, %s): "
-				      "window_count > max_windows (%u > %hu)",
+				      "window_count > max_windows (%u > %hu)%s",
 				      adapter_status.adapter_name,
 				      _adapter_type_str(adapter_status.
 							adapter_type),
-				      window_count, max_windows);
+				      window_count, max_windows, reason);
 				/* Reset value to avoid logging bad data */
 				window_count = max_windows;
 			}
@@ -4156,25 +4161,31 @@ nrt_clear_node_state(void)
 				continue;
 			}
 			if (window_count > max_windows) {
-				/* This error seems to happen on IP_ONLY
-				 * adapters if the unload_table does not
-				 * occur */
+				/* This happens if IP_ONLY devices are
+				 * allocated with tables_per_task > 0 */
+				char *reason;
+				if (adapter_status.adapter_type == NRT_IPONLY)
+					reason = ", Known libnrt bug";
+				else
+					reason = "";
 				if (first_use) {
 					error("nrt_command(status_adapter, "
 					      "%s, %s): window_count > "
-					      "max_windows (%u > %hu)",
+					      "max_windows (%u > %hu)%s",
 					      adapter_status.adapter_name,
 					      _adapter_type_str(adapter_status.
 								adapter_type),
-					      window_count, max_windows);
+					      window_count, max_windows,
+					      reason);
 				} else {
 					debug("nrt_command(status_adapter, "
 					      "%s, %s): window_count > "
-					      "max_windows (%u > %hu)",
+					      "max_windows (%u > %hu)%s",
 					      adapter_status.adapter_name,
 					      _adapter_type_str(adapter_status.
 								adapter_type),
-					      window_count, max_windows);
+					      window_count, max_windows,
+					      reason);
 				}
 				/* Reset value to avoid logging bad data */
 				window_count = max_windows;
