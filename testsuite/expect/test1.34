@@ -83,7 +83,14 @@ if {$matches != 1} {
 #
 if {$exit_code == 0} {
 	make_bash_script $file_in "$bin_rm -f *${test_prog}*core /tmp/*${test_prog}*core"
-	exec ./$file_in
+#	Run with "spawn" rather than "exec" to better handle other user's core
+#	files that we can not delete
+	spawn ./$file_in
+	expect {
+		eof {
+			wait
+		}
+	}
 	exec $bin_rm -f $file_in $test_prog
 	send_user "\nSUCCESS\n"
 }

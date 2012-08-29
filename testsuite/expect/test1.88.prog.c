@@ -59,9 +59,10 @@ int main(int argc, char * argv[])
 
 	buf = rank;	/* we only pass rank */
 
-	for (i = 0; i < 100; i++) {
+	for (i = 0; i < 1; i++) {
+		if (i)
+			sleep(1);
 		pass_its_neighbor(rank, size, &buf);
-		sleep(1);
 	}
 
 	MPI_Finalize();

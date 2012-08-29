@@ -46,6 +46,12 @@ if {[test_cray]} {
 	exit $exit_code
 }
 
+if {[test_launch_poe]} {
+	set step_id 1
+} else {
+	set step_id 0
+}
+
 # Delete left-over stdout file
 file delete $file_out
 
@@ -56,7 +62,7 @@ make_bash_script $file_in "
   $srun $bin_sleep 10 &
   $bin_sleep 1
   $scontrol listpids \$SLURM_JOB_ID.10 \$SLURMD_NODENAME
-  $scontrol listpids \$SLURM_JOB_ID.0 \$SLURMD_NODENAME
+  $scontrol listpids \$SLURM_JOB_ID.$step_id \$SLURMD_NODENAME
   $scontrol listpids \$SLURM_JOB_ID \$SLURMD_NODENAME
 "
 
@@ -105,7 +111,7 @@ if {[wait_for_file $file_out] == 0} {
 			incr matches
 			exp_continue
 		}
-		-re "$job_id *0 *0 *0" {
+		-re "$job_id *$step_id *0 *0" {
 			incr matches
 			exp_continue
 		}

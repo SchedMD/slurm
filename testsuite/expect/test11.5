@@ -44,6 +44,12 @@ if {[test_cray]} {
 	exit $exit_code
 }
 
+if {[test_launch_poe]} {
+	set step_id 1
+} else {
+	set step_id 0
+}
+
 #
 # Delete left-over input script
 # Build input script file
@@ -83,8 +89,8 @@ if {$job_id == 0} {
 #
 # Wait for step to begin execution
 #
-if {[wait_for_step $job_id.0] != 0} {
-	send_user "\nFAILURE: waiting for step $job_id.0 to run\n"
+if {[wait_for_step $job_id.$step_id] != 0} {
+	send_user "\nFAILURE: waiting for step $job_id.$step_id to run\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -92,7 +98,7 @@ if {[wait_for_step $job_id.0] != 0} {
 #
 # Enable/disable/test ability to checkpoint
 #
-spawn $scontrol check disable $job_id.0
+spawn $scontrol check disable $job_id.$step_id
 expect {
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
@@ -104,7 +110,7 @@ expect {
 }
 
 set matches  0
-spawn $scontrol check able $job_id.0
+spawn $scontrol check able $job_id.$step_id
 expect {
 	-re "No" {
 		incr matches
@@ -127,7 +133,7 @@ if {$matches != 1} {
 	set exit_code 1
 }
 
-spawn $scontrol check enable $job_id.0
+spawn $scontrol check enable $job_id.$step_id
 expect {
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
@@ -139,7 +145,7 @@ expect {
 }
 
 set matches 0
-spawn $scontrol check able $job_id.0
+spawn $scontrol check able $job_id.$step_id
 expect {
 	-re "Yes" {
 		incr matches
@@ -172,7 +178,7 @@ if {[test_aix] == 1} {
 #
 # Create a checkpoint, continue execution
 #
-spawn $scontrol check create $job_id.0
+spawn $scontrol check create $job_id.$step_id
 expect {
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
@@ -183,7 +189,7 @@ expect {
 	}
 }
 set matches 0
-spawn $scontrol check able $job_id.0
+spawn $scontrol check able $job_id.$step_id
 expect {
 	-re "(Yes|Began at)" {
 		incr matches
@@ -209,7 +215,7 @@ if {$matches != 1} {
 #
 # Note completion of job step (undocumented option)
 #
-spawn $scontrol check complete $job_id.0
+spawn $scontrol check complete $job_id.$step_id
 expect {
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
@@ -220,7 +226,7 @@ expect {
 	}
 }
 set matches 0
-spawn $scontrol check error $job_id.0
+spawn $scontrol check error $job_id.$step_id
 expect {
 	-re "test error message" {
 		incr matches
