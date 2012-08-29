@@ -4402,6 +4402,31 @@ static preemption_state_t _job_preempt_state(nrt_job_key_t job_key)
 	return state;
 }
 
+static char *_job_state_str(preemption_state_t curr_state)
+{
+	static char buf[10];
+
+	switch (curr_state) {
+	case PES_INIT:
+		return "Init";
+	case PES_JOB_RUNNING:
+		return "Running";
+	case PES_PREEMPTION_INPROGRESS:
+		return "Preemption_in_progress";
+	case PES_JOB_PREEMPTED:
+		return "Preempted";
+	case PES_PREEMPTION_FAILED:
+		return "Preemption_failed";
+	case PES_RESUME_INPROGRESS:
+		return "Resume_in_progress";
+	case PES_RESUME_FAILED:
+		return "Resume_failed";
+	default:
+		snprintf(buf, sizeof(buf), "%d", curr_state);
+		return buf;
+	}
+}
+
 /* Return 0 when job in desired state, -1 on error */
 static int _wait_job(nrt_job_key_t job_key, preemption_state_t want_state,
 		     int max_wait_secs)
@@ -4447,8 +4472,9 @@ static int _wait_job(nrt_job_key_t job_key, preemption_state_t want_state,
 		state_str = "Running";
 	else if (want_state == PES_JOB_PREEMPTED)
 		state_str = "Preempted";
-	error("switch/nrt: Desired job state of %s not reached in %d sec",
-	      state_str, (int)(now - start_time));
+	error("switch/nrt: Desired job state of %s not reached in %d sec, "
+	      "Current job state is %s",
+	      state_str, (int)(now - start_time), _job_state_str(curr_state));
 	return -1;
 }
 
