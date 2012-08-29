@@ -4440,7 +4440,12 @@ static int _wait_job(nrt_job_key_t job_key, preemption_state_t want_state,
 		if (i)
 			usleep(100000);
 		curr_state = _job_preempt_state(job_key);
-		if (curr_state == want_state) {
+		/* Job's state is initially PES_INIT, even when running.
+		 * It only goes to state PES_JOB_RUNNING after suspend and
+		 * resume. */
+		if ((curr_state == want_state) ||
+		    ((curr_state == PES_INIT) &&
+		     (want_state == PES_JOB_RUNNING))) {
 			debug("switch/nrt: Desired job state in %d msec",
 			      (100 * i));
 			return 0;
