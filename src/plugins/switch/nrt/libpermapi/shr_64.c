@@ -838,9 +838,7 @@ static void _re_write_cmdfile(char *slurm_cmd_fname, char *poe_cmd_fname,
 
 void _self_signal(int signal)
 {
-	info("signalling pid %d with %d", getpid(), signal);
 	kill(getpid(), signal);
-	info("sent");
 }
 
 /************************************/
