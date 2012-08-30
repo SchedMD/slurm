@@ -8869,7 +8869,7 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 #endif
 
 	if (agent_args->node_count == 0) {
-		xfree(sus_ptr);
+		slurm_free_suspend_int_msg(sus_ptr);
 		xfree(agent_args);
 		return;
 	}

@@ -1399,6 +1399,8 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 				agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == REQUEST_JOB_NOTIFY)
 			slurm_free_job_notify_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == REQUEST_SUSPEND_INT)
+			slurm_free_suspend_int_msg(agent_arg_ptr->msg_args);
 		else
 			xfree(agent_arg_ptr->msg_args);
 	}
