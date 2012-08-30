@@ -579,7 +579,7 @@ _job_step_window_state(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		return SLURM_ERROR;
 
 	if ((jp->tables_per_task == 0) || (jp->tableinfo == NULL) ||
-	    (jp->tableinfo[0].table_length == 0))
+	    (jp->tableinfo[0].table_length == 0) || (!jp->user_space))
 		return SLURM_SUCCESS;
 
 	hi = hostlist_iterator_create(hl);
@@ -730,11 +730,11 @@ _window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 						       task_id);
 					}
 				} else {
-					error("_window_state_set: Missing "
-					      "support for adapter type %s",
+					error("switch/nrt: _window_state_set:"
+					      " Missing support for adapter "
+					      "type %s",
 					      _adapter_type_str(adapter->
 								adapter_type));
-
 				}
 
 				window = _find_window(adapter, win_id);
