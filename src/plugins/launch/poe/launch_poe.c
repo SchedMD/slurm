@@ -594,42 +594,57 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	}
 
 	if (opt.nodelist && (opt.distribution == SLURM_DIST_ARBITRARY)) {
-		char *fname = NULL, *host_name, *host_line;
-		pid_t pid = getpid();
-		hostlist_t hl;
-		int fd, len, offset, wrote;
-		hl = hostlist_create(opt.nodelist);
-		if (!hl)
-			fatal("Invalid nodelist: %s", opt.nodelist);
-		xstrfmtcat(fname, "slurm_hostlist.%u", (uint32_t) pid);
-		if ((fd = creat(fname, 0600)) < 0)
-			fatal("creat(%s): %m", fname);
-		host_line = NULL;
-		while ((host_name = hostlist_shift(hl))) {
-			if (host_line)
-				xstrcat(host_line, "\n");
-			xstrcat(host_line, host_name);
-			free(host_name);
-		}
-		hostlist_destroy(hl);
-		len = strlen(host_line) + 1;
-		offset = 0;
-		while (len > offset) {
-			wrote = write(fd, host_line + offset,
-				      len - offset);
-			if (wrote < 0) {
-				if ((errno == EAGAIN) ||
-				    (errno == EINTR))
-					continue;
-				fatal("write(%s): %m", fname);
+		bool destroy_hostfile = 0;
+		if (!opt.hostfile) {
+			char *host_name, *host_line;
+			pid_t pid = getpid();
+			hostlist_t hl;
+			int fd, len, offset, wrote;
+
+			destroy_hostfile = 1;
+
+			hl = hostlist_create(opt.nodelist);
+			if (!hl)
+				fatal("Invalid nodelist: %s", opt.nodelist);
+			xstrfmtcat(opt.hostfile, "slurm_hostlist.%u",
+				   (uint32_t) pid);
+			if ((fd = creat(opt.hostfile, 0600)) < 0)
+				fatal("creat(%s): %m", opt.hostfile);
+			host_line = NULL;
+			while ((host_name = hostlist_shift(hl))) {
+				if (host_line)
+					xstrcat(host_line, "\n");
+				xstrcat(host_line, host_name);
+				free(host_name);
 			}
-			offset += wrote;
+			hostlist_destroy(hl);
+			len = strlen(host_line) + 1;
+			offset = 0;
+			while (len > offset) {
+				wrote = write(fd, host_line + offset,
+					      len - offset);
+				if (wrote < 0) {
+					if ((errno == EAGAIN) ||
+					    (errno == EINTR))
+						continue;
+					fatal("write(%s): %m", opt.hostfile);
+				}
+				offset += wrote;
+			}
+			xfree(host_line);
+			close(fd);
 		}
-		xfree(host_line);
-		debug3("wrote hostlist file at %s", fname);
-		setenv("MP_HOSTFILE", fname, 1);
-		if (opt.launch_cmd)
-			xstrfmtcat(poe_cmd_line, " -hfile %s", fname);
+		debug2("using hostfile %s", opt.hostfile);
+		setenv("MP_HOSTFILE", opt.hostfile, 1);
+		if (opt.launch_cmd) {
+			xstrfmtcat(poe_cmd_line, " -hfile %s", opt.hostfile);
+			if (destroy_hostfile)
+				info("WARNING: hostlist file %s was created.  "
+				     "User is responsible to remove it when "
+				     "done.", opt.hostfile);
+		} else if (destroy_hostfile)
+			setenv("SRUN_DESTROY_HOSTFILE", opt.hostfile, 1);
+
 		/* RESD has to be set to yes or for some reason poe
 		   thinks things are already set up and then we are
 		   screwed.
@@ -637,8 +652,6 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		setenv("MP_RESD", "yes", 1);
 		if (opt.launch_cmd)
 			xstrcat(poe_cmd_line, " -resd yes");
-		xfree(fname);
-		close(fd);
 		/* FIXME: This next line is here just for debug
 		 * purpose.  It makes it so each task has a separate
 		 * line. */

@@ -413,6 +413,7 @@ static void _opt_default()
 	opt.constraints	    = NULL;
 	opt.gres	    = NULL;
 	opt.contiguous	    = false;
+	opt.hostfile	    = NULL;
 	opt.nodelist	    = NULL;
 	opt.exc_nodes	    = NULL;
 	opt.max_launch_time = 120;/* 120 seconds to launch job             */
@@ -1780,6 +1781,7 @@ static bool _opt_verify(void)
 				opt.nodelist = add_slash;
 			}
 			opt.distribution = SLURM_DIST_ARBITRARY;
+			opt.hostfile = xstrdup(opt.nodelist);
 			if (!_valid_node_list(&opt.nodelist)) {
 				error("Failure getting NodeNames from "
 				      "hostfile");
@@ -1790,6 +1792,8 @@ static bool _opt_verify(void)
 			}
 		}
 	} else {
+		if(strstr(opt.nodelist, "/"))
+			opt.hostfile = xstrdup(opt.nodelist);
 		if (!_valid_node_list(&opt.nodelist))
 			exit(error_exit);
 	}
