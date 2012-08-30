@@ -552,15 +552,22 @@ static int _cancel_job_id (uint32_t job_id, uint16_t signal)
 {
 	int error_code = SLURM_SUCCESS, i;
 	char *temp = NULL;
+#ifdef HAVE_FRONT_END
+	bool msg_to_ctld = true;
+#else
+	bool msg_to_ctld = false;
+#endif
 
-	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		if ((signal == (uint16_t)-1) || (signal == SIGKILL)) {
-			signal = 9;
-			error_code = slurm_kill_job(job_id, SIGKILL,
-						    false);
-		} else
+	if (signal == (uint16_t)-1)
+		signal = SIGKILL;
+	if (signal == SIGKILL)
+		msg_to_ctld = true;
+
+	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
+		if (msg_to_ctld)
+			error_code = slurm_kill_job(job_id, signal, false);
+		else
 			error_code = slurm_signal_job(job_id, signal);
-
 		if (error_code == 0
 		    || (errno != ESLURM_TRANSITION_STATE_NO_UPDATE
 			&& errno != ESLURM_JOB_PENDING))
@@ -593,11 +600,21 @@ static int _cancel_step_id(uint32_t job_id, uint32_t step_id,
 {
 	int error_code = SLURM_SUCCESS, i;
 	char *temp = NULL;
+#ifdef HAVE_FRONT_END
+	bool msg_to_ctld = true;
+#else
+	bool msg_to_ctld = false;
+#endif
 
-	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		if (signal == (uint16_t)-1 || (signal == SIGKILL)) {
-			signal = 9;
+	if (signal == (uint16_t)-1)
+		signal = SIGKILL;
+	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
+		if (msg_to_ctld) {
+			error_code = slurm_kill_job_step(job_id, step_id,
+							 signal);
+		} else if (signal == SIGKILL) {
 			error_code = slurm_terminate_job_step(job_id, step_id);
+
 		} else {
 			error_code = slurm_signal_job_step(job_id, step_id,
 							   signal);
