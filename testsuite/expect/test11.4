@@ -72,6 +72,17 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
+	}
+}
+
+#
+# poe has no time limit option, so make sure job is purged here
+#
+spawn $scancel --name=script.slurm.sh
+expect {
+	eof {
+		wait
 	}
 }
 
