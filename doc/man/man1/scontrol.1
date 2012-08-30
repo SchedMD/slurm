@@ -1086,6 +1086,8 @@ License names can be followed by an asterisk and count
 Multiple license names should be comma separated (e.g. "Licenses=foo*4,bar").
 A new reservation must specify one or more resource to be included: NodeCnt,
 Nodes and/or Licenses.
+If a reservation includes Licenses, but no NodeCnt or Nodes, then the option
+\fIFlags=LICENSE_ONLY\fP must also be specified.
 
 .TP
 \fINodeCnt\fP=<num>[,num,...]
