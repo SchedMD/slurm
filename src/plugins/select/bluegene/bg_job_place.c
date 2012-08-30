@@ -357,22 +357,29 @@ static bg_record_t *_find_matching_block(List block_list,
 					     bg_record->job_ptr->job_id);
 				continue;
 			} else if (bg_record->err_ratio) {
-				if (!bg_record->job_ptr
-				    && (!bg_record->job_list
-					|| !list_count(bg_record->job_list))) {
-					bg_record_t *found_record = NULL;
-					slurm_mutex_lock(&block_state_mutex);
+				bg_record_t *found_record = NULL;
+				slurm_mutex_lock(&block_state_mutex);
 
-					if (bg_record->original)
-						found_record =
-							bg_record->original;
-					else
-						found_record =
-							find_org_in_bg_list(
-								bg_lists->main,
-								bg_record);
-					if (!found_record)
-						found_record = bg_record;
+				if (bg_record->original)
+					found_record =
+						bg_record->original;
+				else
+					found_record =
+						find_org_in_bg_list(
+							bg_lists->main,
+							bg_record);
+				if (!found_record)
+					found_record = bg_record;
+
+				/* We have to use the original record
+				   here to avoid missing jobs that
+				   perhaps were removed to see if a
+				   job would run or if we were doing
+				   preemption.
+				*/
+				if (!found_record->job_ptr
+				    && (!found_record->job_list ||
+					!list_count(found_record->job_list))) {
 
 					if (found_record->free_cnt)
 						slurm_mutex_unlock(
@@ -403,8 +410,9 @@ static bg_record_t *_find_matching_block(List block_list,
 								tmp_list, 0, 0);
 						list_destroy(tmp_list);
 					}
-				} else if (bg_record->err_ratio
+				} else if (found_record->err_ratio
 					   >= bg_conf->max_block_err) {
+					slurm_mutex_unlock(&block_state_mutex);
 					/* This means the block is higher than
 					   the given max_block_err defined in
 					   the bluegene.conf.
@@ -419,7 +427,9 @@ static bg_record_t *_find_matching_block(List block_list,
 						     bg_record->err_ratio,
 						     bg_conf->max_block_err);
 					continue;
-				}
+				} else
+					slurm_mutex_unlock(&block_state_mutex);
+
 			}
 		}
 
