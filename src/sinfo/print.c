@@ -788,7 +788,7 @@ int _print_partition(sinfo_data_t * sinfo_data, int width,
 			char *tmp;
 			tmp = xstrdup(sinfo_data->part_info->name);
 			if (sinfo_data->part_info->flags & PART_FLAG_DEFAULT) {
-				if (strlen(tmp) < width)
+				if ( (strlen(tmp) < width) || (width == 0) )
 					xstrcat(tmp, "*");
 				else if (width > 0)
 					tmp[width-1] = '*';
