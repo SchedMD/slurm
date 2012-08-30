@@ -500,43 +500,71 @@ int xcgroup_delete(xcgroup_t* cg)
 		return XCGROUP_SUCCESS;
 }
 
+static int cgroup_procs_readable (xcgroup_t *cg)
+{
+	struct stat st;
+	char *path = NULL;
+	int rc = 0;
+
+	xstrfmtcat (path, "%s/%s", cg->path, "cgroup.procs");
+	if ((stat (path, &st) >= 0) && (st.st_mode & S_IRUSR))
+		rc = 1;
+	xfree (path);
+	return (rc);
+}
+
+static int cgroup_procs_writable (xcgroup_t *cg)
+{
+	struct stat st;
+	char *path = NULL;
+	int rc = 0;
+
+	xstrfmtcat (path, "%s/%s", cg->path, "cgroup.procs");
+	if ((stat (path, &st) >= 0) && (st.st_mode & S_IWUSR))
+		rc = 1;
+	xfree (path);
+	return (rc);
+}
+
+// This call is not intended to be used to move thread pids
 int xcgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids)
 {
 	int fstatus = XCGROUP_ERROR;
-	char* cpath = cg->path;
-	char file_path[PATH_MAX];
-
-	if (snprintf(file_path, PATH_MAX, "%s/tasks",
-		      cpath) >= PATH_MAX) {
-		debug2("unable to add pids to '%s' : %m", cpath);
-		return fstatus;
-	}
-
-	fstatus = _file_write_uint32s(file_path, (uint32_t*)pids, npids);
+	char* path = NULL;
+	
+	// If possible use cgroup.procs to add the processes atomically
+	if (cgroup_procs_writable (cg))
+		xstrfmtcat (path, "%s/%s", cg->path, "cgroup.procs");
+	else
+		xstrfmtcat (path, "%s/%s", cg->path, "tasks");
+	
+	fstatus = _file_write_uint32s(path, (uint32_t*)pids, npids);
 	if (fstatus != XCGROUP_SUCCESS)
-		debug2("unable to add pids to '%s'", cpath);
+		debug2("unable to add pids to '%s'", cg->path);
+
+	xfree(path);
 	return fstatus;
 }
 
-int
-xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids)
+// This call is not intended to be used to get thread pids
+int xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids)
 {
 	int fstatus = XCGROUP_ERROR;
-	char* cpath = cg->path;
-	char file_path[PATH_MAX];
-
+	char* path = NULL;
+	
 	if (pids == NULL || npids == NULL)
 		return SLURM_ERROR;
-
-	if (snprintf(file_path, PATH_MAX, "%s/tasks",
-		      cpath) >= PATH_MAX) {
-		debug2("unable to get pids of '%s' : %m", cpath);
-		return fstatus;
-	}
-
-	fstatus = _file_read_uint32s(file_path, (uint32_t**)pids, npids);
+	
+	if (cgroup_procs_readable (cg))
+		xstrfmtcat (path, "%s/%s", cg->path, "cgroup.procs");
+	else
+		xstrfmtcat (path, "%s/%s", cg->path, "tasks");
+	
+	fstatus = _file_read_uint32s(path, (uint32_t**)pids, npids);
 	if (fstatus != XCGROUP_SUCCESS)
-		debug2("unable to get pids of '%s'", cpath);
+		debug2("unable to get pids of '%s'", cg->path);
+
+	xfree(path);
 	return fstatus;
 }
 
@@ -761,19 +789,6 @@ static int cgroup_move_process_by_task (xcgroup_t *cg, pid_t pid)
 	}
 	closedir (dir);
 	return XCGROUP_SUCCESS;
-}
-
-static int cgroup_procs_writable (xcgroup_t *cg)
-{
-	struct stat st;
-	char *path = NULL;
-	int rc = 0;
-
-	xstrfmtcat (path, "%s/%s", cg->path, "cgroup.procs");
-	if ((stat (path, &st) >= 0) && (st.st_mode & S_IWUSR))
-		rc = 1;
-	xfree (path);
-	return (rc);
 }
 
 int xcgroup_move_process (xcgroup_t *cg, pid_t pid)

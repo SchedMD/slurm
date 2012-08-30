@@ -38,6 +38,8 @@ documents those changes that are of interest to users and admins.
  -- Fix compile with glibc 2.16 (Kacper Kowalik)
  -- BGQ - fix for deadlock where a block has error on it and all jobs
     running on it are preemptable by scheduling job.
+ -- proctrack/cgroup: Exclude internal threads from "scontrol list pids".
+    Patch from Matthieu Hautreux, CEA.
 
 * Changes in SLURM 2.4.2
 ========================
