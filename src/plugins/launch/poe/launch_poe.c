@@ -80,6 +80,7 @@ const uint32_t plugin_version   = 101;
 
 static char *cmd_fname = NULL;
 static char *poe_cmd_line = NULL;
+static pid_t poe_pid = 0;
 
 static void _build_work_dir(char *dname, int dname_size)
 {
@@ -256,6 +257,20 @@ static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
 		snprintf(value, sizeof(value), "%d", opt.preserve_env);
 		setenv("SLURM_PRESERVE_ENV", value, 1);
 	}
+}
+
+static void _unblock_signals (void)
+{
+	sigset_t set;
+	int i;
+
+	for (i = 0; sig_array[i]; i++) {
+		/* eliminate pending signals, then set to default */
+		xsignal(sig_array[i], SIG_IGN);
+		xsignal(sig_array[i], SIG_DFL);
+	}
+	sigemptyset(&set);
+	xsignal_set_mask (&set);
 }
 
 /*
@@ -722,14 +737,13 @@ extern int launch_p_step_launch(
 	void (*signal_function)(int))
 {
 	int rc = 0;
-	pid_t pid;
 
-	pid = fork();
-	if (pid < 0) {
+	poe_pid = fork();
+	if (poe_pid < 0) {
 		error("fork: %m");
 		return 1;
-	} else if (pid > 0) {
-		if (waitpid(pid, &rc, 0) < 0)
+	} else if (poe_pid > 0) {
+		if (waitpid(poe_pid, &rc, 0) < 0)
 			error("Unable to reap poe child process");
 		*global_rc = rc;
 		/* Just because waitpid returns something doesn't mean
@@ -737,6 +751,8 @@ extern int launch_p_step_launch(
 		*/
 		rc = 0;
 	} else {
+		setpgrp();
+		_unblock_signals();
 		/* dup stdio onto our open fds */
 		if ((dup2(cio_fds->in.fd, 0) == -1) ||
 		    (dup2(cio_fds->out.fd, 1) == -1) ||
@@ -771,5 +787,6 @@ extern void launch_p_print_status(void)
 
 extern void launch_p_fwd_signal(int signal)
 {
-
+	if (poe_pid)
+		kill(poe_pid, signal);
 }

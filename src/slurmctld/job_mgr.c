@@ -8770,6 +8770,35 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 #endif
 	agent_arg_t *agent_args = NULL;
 	signal_job_msg_t *signal_job_msg = NULL;
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+	static int notify_srun = 1;
+#else
+	static int notify_srun = -1;
+	if (notify_srun == -1) {
+		char *launch_type = slurm_get_launch_type();
+		if (!strcmp(launch_type, "launch/poe")) {
+			notify_srun = 1;
+		} else
+			notify_srun = 0;
+		xfree(launch_type);
+	}
+#endif
+	if (notify_srun) {
+		ListIterator step_iterator;
+		struct step_record *step_ptr;
+		step_iterator = list_iterator_create(job_ptr->step_list);
+		while ((step_ptr = list_next(step_iterator))) {
+			/* Since we have already checked the uid
+			   before this function we can just send 0.
+			*/
+			job_step_signal(job_ptr->job_id, step_ptr->step_id,
+					signal, 0);
+		}
+		list_iterator_destroy (step_iterator);
+
+		return;
+	}
+
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_SIGNAL_JOB;
