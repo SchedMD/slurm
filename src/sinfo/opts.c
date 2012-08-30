@@ -534,7 +534,12 @@ _parse_format( char* format )
 					right_justify,
 					suffix );
 		}
-/*		else if (field[0] == 'E') see 'R' below */
+		} else if (field[0] == 'E') {
+			params.match_flags.reason_flag = true;
+			format_add_reason( params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 		else if (field[0] == 'f') {
 			params.match_flags.features_flag = true;
 			format_add_features( params.format_list,
@@ -632,12 +637,6 @@ _parse_format( char* format )
 		} else if (field[0] == 'R') {
 			params.match_flags.partition_flag = true;
 			format_add_partition_name( params.format_list,
-					field_size,
-					right_justify,
-					suffix );
-		} else if ((field[0] == 'E') || (field[0] == 'R')) {
-			params.match_flags.reason_flag = true;
-			format_add_reason( params.format_list,
 					field_size,
 					right_justify,
 					suffix );
