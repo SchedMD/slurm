@@ -262,7 +262,8 @@ relaunch:
 
 	launch_common_set_stdio_fds(job, &cio_fds);
 
-	if (!launch_g_step_launch(job, &cio_fds, &global_rc)) {
+	if (!launch_g_step_launch(job, &cio_fds, &global_rc,
+				  launch_g_fwd_signal)) {
 		if (launch_g_step_wait(job, got_alloc) == -1)
 			goto relaunch;
 	}

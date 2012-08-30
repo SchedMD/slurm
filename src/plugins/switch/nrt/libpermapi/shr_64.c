@@ -836,6 +836,13 @@ static void _re_write_cmdfile(char *slurm_cmd_fname, char *poe_cmd_fname,
 	xfree(buf);
 }
 
+void _self_signal(int signal)
+{
+	info("signalling pid %d with %d", getpid(), signal);
+	kill(getpid(), signal);
+	info("sent");
+}
+
 /************************************/
 
 /* The connection communicates information to and from the resource
@@ -951,7 +958,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	}
 	xfree(total_node_list);
 	job->fir_nodeid = orig_task_num;
-	if (launch_g_step_launch(job, &cio_fds, &global_rc)) {
+	if (launch_g_step_launch(job, &cio_fds, &global_rc, _self_signal)) {
 		*error_msg = xstrdup_printf(
 			"pe_rm_connect: problem with launch: %s",
 			slurm_strerror(errno));

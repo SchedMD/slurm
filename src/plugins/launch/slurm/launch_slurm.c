@@ -451,7 +451,8 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 }
 
 extern int launch_p_step_launch(
-	srun_job_t *job, slurm_step_io_fds_t *cio_fds, uint32_t *global_rc)
+	srun_job_t *job, slurm_step_io_fds_t *cio_fds, uint32_t *global_rc,
+	void (*signal_function)(int))
 {
 	slurm_step_launch_params_t launch_params;
 	slurm_step_launch_callbacks_t callbacks;
@@ -512,6 +513,11 @@ extern int launch_p_step_launch(
 	} else {
 		launch_params.parallel_debug = false;
 	}
+	/* Normally this isn't used, but if an outside process (other
+	   than srun (poe) is using this logic to launch tasks then we
+	   can use this to signal the step.
+	*/
+	callbacks.step_signal = signal_function;
 	callbacks.task_start = _task_start;
 	callbacks.task_finish = _task_finish;
 
