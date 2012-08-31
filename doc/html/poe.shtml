@@ -250,6 +250,10 @@ step ID, colon and space will preceed the task ID and colon. For example:</p>
 1: 2: two
 </pre>
 
+<p>The srun command is not able to report task status upon receipt of a SIGINT
+signal (ctrl-c interupt from keyboard), however two SIGINT signals within a
+one second interval will terminate the job as on other SLURM configurations.</p>
+
 <h3>Environment Variables</h3>
 
 <p>Since SLURM is not directly launching user tasks, the following environment
@@ -440,6 +444,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 28 August 2012</p></td>
+<p style="text-align:center;">Last modified 31 August 2012</p></td>
 
 <!--#include virtual="footer.txt"-->
