@@ -8773,24 +8773,33 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 #if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
 	static int notify_srun = 1;
 #else
-	static int notify_srun = -1;
-	if (notify_srun == -1) {
+	int notify_srun;
+	static int launch_poe = -1;
+
+	if (launch_poe == -1) {
 		char *launch_type = slurm_get_launch_type();
-		if (!strcmp(launch_type, "launch/poe")) {
-			notify_srun = 1;
-		} else
-			notify_srun = 0;
+		if (!strcmp(launch_type, "launch/poe"))
+			launch_poe = 1;
+		else
+			launch_poe = 0;
 		xfree(launch_type);
 	}
+	/* For launch/poe all signals are forwarded by by srun to poe to tasks
+	 * except SIGSTOP/SIGCONT, which are used for job preemption. In that
+	 * case the slurmd must directly suspend tasks and switch resources. */
+	if (launch_poe && (signal != SIGSTOP) && (signal != SIGCONT))
+		notify_srun = 0;
+	else
+		notify_srun = 1;
 #endif
+
 	if (notify_srun) {
 		ListIterator step_iterator;
 		struct step_record *step_ptr;
 		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_ptr = list_next(step_iterator))) {
-			/* Since we have already checked the uid
-			   before this function we can just send 0.
-			*/
+			/* Since we have already checked the uid,
+			 * we can send this signal as uid 0. */
 			job_step_signal(job_ptr->job_id, step_ptr->step_id,
 					signal, 0);
 		}
@@ -8798,7 +8807,6 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 
 		return;
 	}
-
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_SIGNAL_JOB;
