@@ -518,12 +518,13 @@ extern int launch_p_step_launch(
 	   can use this to signal the step.
 	*/
 	callbacks.step_signal = signal_function;
-	/* If poe is using this code with multi-prog it tracking pmd's
-	   instead of the user's tasks so we don't need confuse the
-	   user with messages about tasks that aren't theirs.
+	callbacks.task_start = _task_start;
+	/* If poe is using this code with multi-prog it always returns
+	   1 for each task which could be confusing since no real
+	   error happened.
 	*/
-	if (!signal_function || (signal_function == launch_g_fwd_signal)) {
-		callbacks.task_start = _task_start;
+	if (!launch_params.multi_prog
+	    || (!signal_function || (signal_function == launch_g_fwd_signal))) {
 		callbacks.task_finish = _task_finish;
 	}
 
