@@ -603,7 +603,7 @@ numbering.)</p>
 
 <h3>Block map_cpu on a system with cyclic core numbering</h3>
 
-<p>If users do not check their system\92s core numbering before specifying
+<p>If users do not check their system's core numbering before specifying
 the map_cpu list and thereby do not realize that the new system has cyclic core
 numbering instead of block numbering then they will not get the expected
 layout.. For example, if they decide to re-use their mpirun command from above:</p>
