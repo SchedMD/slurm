@@ -8773,7 +8773,7 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 #if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
 	static int notify_srun = 1;
 #else
-	int notify_srun;
+	int notify_srun = 0;
 	static int launch_poe = -1;
 
 	if (launch_poe == -1) {
@@ -8788,8 +8788,6 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 	 * except SIGSTOP/SIGCONT, which are used for job preemption. In that
 	 * case the slurmd must directly suspend tasks and switch resources. */
 	if (launch_poe && (signal != SIGSTOP) && (signal != SIGCONT))
-		notify_srun = 0;
-	else
 		notify_srun = 1;
 #endif
 
