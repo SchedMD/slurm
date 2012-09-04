@@ -1122,7 +1122,7 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 				table_id++;
 				table_inx++;
 				if (table_inx >= jp->tables_per_task) {
-					error("switch/nrt: adapters count too "
+					error("switch/nrt: adapter count too "
 					      "high, host=%s", hostname);
 					return SLURM_ERROR;
 				}
@@ -1228,7 +1228,7 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 
 	if (++table_inx < jp->tables_per_task) {
 		/* This node has too few adapters of this type */
-		error("switch/nrt: adapters count too low, host=%s", hostname);
+		error("switch/nrt: adapter count too low, host=%s", hostname);
 		drain_nodes(hostname, "Too few switch adapters", 0);
 		return SLURM_ERROR;
 	}
@@ -2382,6 +2382,7 @@ static int
 _fake_unpack_adapters(Buf buf, slurm_nrt_nodeinfo_t *n)
 {
 	slurm_nrt_adapter_t *tmp_a = NULL;
+	slurm_nrt_window_t *tmp_w = NULL;
 	uint16_t dummy16;
 	uint32_t dummy32;
 	char *name_ptr;
@@ -2394,6 +2395,12 @@ _fake_unpack_adapters(Buf buf, slurm_nrt_nodeinfo_t *n)
 	int i, j, k;
 
 	safe_unpack32(&adapter_count, buf);
+	if (n && (n->adapter_count != adapter_count)) {
+		error("switch/nrt: node %s adapter count reset from %u to %u",
+		      n->name, n->adapter_count, adapter_count);
+		if (n->adapter_count < adapter_count)
+			drain_nodes(n->name, "Too few switch adapters", 0);
+	}
 	for (i = 0; i < adapter_count; i++) {
 		safe_unpackmem_ptr(&name_ptr, &dummy32, buf);
 		if (dummy32 != NRT_MAX_ADAPTER_NAME_LEN)
@@ -2478,6 +2485,42 @@ _fake_unpack_adapters(Buf buf, slurm_nrt_nodeinfo_t *n)
 			}
 			break;
 		}
+
+		if (j == n->adapter_count) {
+			error("switch/nrt: node %s adapter %s being added",
+			      n->name, name_ptr);
+			n->adapter_count++;
+			xrealloc(n->adapter_list,
+				 sizeof(slurm_nrt_adapter_t) *
+				 n->adapter_count);
+			tmp_a = n->adapter_list + j;
+			strncpy(tmp_a->adapter_name, name_ptr,
+				NRT_MAX_ADAPTER_NAME_LEN);
+			tmp_a->adapter_type = adapter_type;
+			/* tmp_a->block_count = 0 */
+			/* tmp_a->block_list = NULL */
+			tmp_a->cau_indexes_avail = cau_indexes_avail;
+			tmp_a->immed_slots_avail = immed_slots_avail;
+			tmp_a->ipv4_addr = ipv4_addr;
+			for (k = 0; k < 16; k++) {
+				tmp_a->ipv6_addr.s6_addr[k] =
+					ipv6_addr.s6_addr[k];
+			}
+			tmp_a->lid = lid;
+			tmp_a->network_id = network_id;
+			tmp_a->port_id = port_id;
+			tmp_a->rcontext_block_count = rcontext_block_count;
+			tmp_a->special = special;
+			tmp_a->window_count = window_count;
+			tmp_w = (slurm_nrt_window_t *)
+				xmalloc(sizeof(slurm_nrt_window_t) *
+				tmp_a->window_count);
+			for (k = 0; k < tmp_a->window_count; k++) {
+				tmp_w[k].state = NRT_WIN_AVAILABLE;
+				tmp_w[k].job_key = 0;
+			}
+			tmp_a->window_list = tmp_w;
+		}
 	}
 
 	return SLURM_SUCCESS;
@@ -2513,8 +2556,7 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	 */
 	assert(buf);
 
-	/* Extract node name from buffer
-	 */
+	/* Extract node name from buffer */
 	safe_unpack32(&magic, buf);
 	if (magic != NRT_NODEINFO_MAGIC)
 		slurm_seterrno_ret(EBADMAGIC_NRT_NODEINFO);
