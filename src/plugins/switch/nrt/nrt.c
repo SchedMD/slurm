@@ -76,6 +76,8 @@
 #include "src/plugins/switch/nrt/nrt_keys.h"
 #include "src/plugins/switch/nrt/slurm_nrt.h"
 
+extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid );
+
 /*
  * Definitions local to this module
  */
@@ -1120,7 +1122,8 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 				table_id++;
 				table_inx++;
 				if (table_inx >= jp->tables_per_task) {
-					error("switch/nrt: table count bad");
+					error("switch/nrt: adapters count too "
+					      "high, host=%s", hostname);
 					return SLURM_ERROR;
 				}
 				if (user_space) {
@@ -1222,6 +1225,13 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 			}  /* for each table */
 		}  /* for each context */
 	}  /* for each adapter */
+
+	if (++table_inx < jp->tables_per_task) {
+		/* This node has too few adapters of this type */
+		error("switch/nrt: adapters count too low, host=%s", hostname);
+		drain_nodes(hostname, "Too few switch adapters", 0);
+		return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -2997,7 +3007,6 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 				error("Failed to get next host");
 
 			for (j = 0; j < tasks_per_node[i]; j++) {
-
 				if (adapter_name == NULL) {
 					rc = _allocate_windows_all(jp, host, i,
 								tids[i][j],
