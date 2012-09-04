@@ -2439,6 +2439,7 @@ top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 					  (ListCmpF)_sort_usable_nodes_dec);
 				rc = EINVAL;
 				list_iterator_destroy(job_iterator);
+				_free_cr(exp_cr);
 				goto top;
 			}
 		}
