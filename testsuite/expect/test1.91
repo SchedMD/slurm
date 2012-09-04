@@ -41,6 +41,11 @@ set prompt      "PROMPT:"
 
 print_header $test_id
 
+if {[test_launch_poe]} {
+	send_user "\nWARNING: This test is incompatible with launch/poe systems\n"
+	exit 0
+}
+
 #
 # Test if task affinity support is supported.
 #
@@ -153,7 +158,7 @@ expect {
 		send "export PS1=\"$prompt\"\r"
 		exp_continue
 	}
-	-re "export PS1=\"$prompt\"" {
+	-re "export PS1=\"$prompt\"\r" {
 		exp_continue
 	}
 	timeout {

@@ -430,14 +430,6 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		}
 	}
 
-	if (opt.cpu_bind_type) {
-		if ((opt.cpu_bind_type & CPU_BIND_TO_THREADS) ||
-		    (opt.cpu_bind_type & CPU_BIND_TO_CORES)) {
-			setenv("MP_BINDPROC", "yes", 1);
-			if (opt.launch_cmd)
-				xstrfmtcat(poe_cmd_line, " -bindproc yes");
-		}
-	}
 	if (opt.shared != (uint16_t) NO_VAL) {
 		char *shared_cpu_use = "multiple";
 
@@ -697,24 +689,28 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 			xstrfmtcat(poe_cmd_line, " -procs %s", value);
 	}
 	if (opt.cpu_bind_type) {
-		char *task_affinity = NULL;
+		/* POE supports a limited subset of CPU binding options */
+		opt.cpu_bind_type &= (CPU_BIND_TO_THREADS |
+				      CPU_BIND_TO_CORES   |
+				      CPU_BIND_RANK);
+	}
+	if (opt.cpu_bind_type) {
+		char *task_affinity = NULL, *units;
+		int count = 1;
 
-		if (opt.cpu_bind_type & CPU_BIND_TO_THREADS)
-			task_affinity = "cpu";
-		else if (opt.cpu_bind_type & CPU_BIND_TO_CORES)
-			task_affinity = "core";
-		else if (opt.cpus_per_task) {
-			snprintf(value, sizeof(value), "cpu:%d",
-				 opt.cpus_per_task);
-			task_affinity = value;
-		}
+		if (opt.cpu_bind_type & CPU_BIND_TO_CORES)
+			units = "core";
+		else
+			units = "cpu";
 
-		if (task_affinity) {
-			setenv("MP_TASK_AFFINITY", task_affinity, 1);
-			if (opt.launch_cmd)
-				xstrfmtcat(poe_cmd_line, " -task_affinity %s",
-					   task_affinity);
-
+		if (opt.cpus_per_task)
+			count = MAX(opt.cpus_per_task, 1);
+		snprintf(value, sizeof(value), "%s:%d", units, count);
+		setenv("MP_TASK_AFFINITY", value, 1);
+		setenv("MP_BINDPROC", "yes", 1);
+		if (opt.launch_cmd) {
+			xstrfmtcat(poe_cmd_line, " -task_affinity %s", value);
+			xstrfmtcat(poe_cmd_line, " -bindproc yes");
 		}
 	}
 	if (opt.ntasks_per_node != NO_VAL) {

@@ -80,6 +80,12 @@ if {$force == 1} {
 	exit 0
 }
 
+if { [test_launch_poe] } {
+	set launch_poe 1
+} else {
+	set launch_poe 0
+}
+
 #
 # Build a test program to report affinity by task
 #
@@ -90,6 +96,7 @@ exec $bin_chmod 700 $file_prog
 #
 # Create an allocation
 #
+set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N1 --exclusive --verbose -t2 $bin_bash]
 expect {
 	-re "Granted job allocation ($number)" {
@@ -97,7 +104,7 @@ expect {
 		send "export PS1=\"$prompt\"\r"
 		exp_continue
 	}
-	-re "export PS1=\"$prompt\"" {
+	-re "export PS1=\"$prompt\"\r" {
 		exp_continue
 	}
 	timeout {
@@ -107,6 +114,16 @@ expect {
 		exit 1
 	}
 	-re $prompt {
+	}
+}
+
+#
+# Reading a second prompt is required by some versions of Expect
+#
+if { 0 } {
+	expect {
+		-re $prompt {
+		}
 	}
 }
 
@@ -133,7 +150,8 @@ expect {
 		slow_kill $salloc_pid
 		exit 1
 	}
-	-re $prompt
+	-re $prompt {
+	}
 }
 
 #
@@ -157,11 +175,28 @@ expect {
 		send_user "or failure to recognize prompt\n"
 		set exit_code 1
 	}
-	-re $prompt
+	-re $prompt {
+	}
 }
 if {$task_mask != $expected_mask} {
 	send_user "\nFAILURE: affinity mask inconsistency ($task_mask,$expected_mask)\n"
 	set exit_code 1
+}
+
+if { $launch_poe != 0 } {
+	send_user "\nWARNING: Additional tests not supported with launch/poe systems\n"
+	send "exit\r"
+	expect {
+		eof {
+			wait
+		}
+	}
+	if {$exit_code == 0} {
+		file delete $file_prog
+	} else {
+		send_user "\nFAILURE: See note about reading second prompt in the script (line 123)\n"
+	}
+	exit $exit_code
 }
 
 #

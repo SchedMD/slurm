@@ -191,22 +191,24 @@ are silently ignored:</p>
 </ul>
 
 <p>A limited subset of srun's --cpu-bind options are supported as shown
-below:</p>
+below. If the --cpus-per-task option is not specified, a value of one is used
+by default. Note that SLURM's mask_cpu and map_cpu options are not supported,
+nor are options to bind to sockets or boards.</p>
 <table border=1 cellspacing=0 cellpadding=4>
 <tr>
     <td><b>SLURM option</b></td>
     <td><b>POE equivalent</b></td>
 </tr>
 <tr>
-    <td>--cpu-bind=threads</td>
-    <td>-task_affinity=cpu</td>
+    <td>--cpu-bind=threads --cpus-per-task=#</td>
+    <td>-task_affinity=cpu:#</td>
 </tr>
 <tr>
-    <td>--cpu-bind=cores</td>
-    <td>-task_affinity=core</td>
+    <td>--cpu-bind=cores --cpus-per-task=#</td>
+    <td>-task_affinity=core:#</td>
 </tr>
 <tr>
-    <td>--cpu-bind=anything_else --cpus-per-task=#</td>
+    <td>--cpu-bind=rank --cpus-per-task=#</td>
     <td>-task_affinity=cpu:#</td>
 </tr>
 </table>
@@ -463,6 +465,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 31 August 2012</p></td>
+<p style="text-align:center;">Last modified 4 September 2012</p></td>
 
 <!--#include virtual="footer.txt"-->
