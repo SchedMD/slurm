@@ -349,7 +349,11 @@ program. This means that reliable tracking of all spawned processes is critical
 for switch use. Use of <b>ProctrackType=proctrack/cgroup</b> is strongly
 recommended. Use of any other process tracking plugin significantly increases
 the likelyhood of orphan processes that must be manually identified and killed
-in order to release switch resources.</p>
+in order to release switch resources.
+While it is possible to to configure distinct <b>NodeName</b> and
+<b>NodeHostName</b> parameters for the compute nodes, this is discouraged
+for performance reasons (the <b>switch/nrt</b> plugin is not optimized for
+such a configuration).</p>
 <pre>
 # Excerpt of slurm.conf
 LaunchType=launch/poe

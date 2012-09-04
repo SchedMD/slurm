@@ -72,6 +72,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 #include "src/common/read_config.h"
+#include "src/common/node_conf.h"
 #include "src/plugins/switch/nrt/nrt_keys.h"
 #include "src/plugins/switch/nrt/slurm_nrt.h"
 
@@ -420,6 +421,7 @@ _find_node(slurm_nrt_libstate_t *lp, char *name)
 {
 	int i;
 	slurm_nrt_nodeinfo_t *n;
+	struct node_record *node_ptr;
 
 	assert(name);
 	assert(lp);
@@ -433,6 +435,20 @@ _find_node(slurm_nrt_libstate_t *lp, char *name)
 		while (n) {
 			assert(n->magic == NRT_NODEINFO_MAGIC);
 			if (!strncmp(n->name, name, NRT_HOSTLEN))
+				return n;
+			n = n->next;
+		}
+	}
+
+	/* This code is only needed if NodeName and NodeHostName differ */
+	node_ptr = find_node_record(name);
+	if (node_ptr && lp->hash_table) {
+		i = _hash_index(node_ptr->node_hostname);
+		n = lp->hash_table[i];
+		while (n) {
+			assert(n->magic == NRT_NODEINFO_MAGIC);
+			if (!strncmp(n->name, node_ptr->node_hostname,
+				     NRT_HOSTLEN))
 				return n;
 			n = n->next;
 		}
