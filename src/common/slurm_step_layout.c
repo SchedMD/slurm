@@ -99,11 +99,11 @@ slurm_step_layout_t *slurm_step_layout_create(
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	step_layout->task_dist = task_dist;
-	if(task_dist == SLURM_DIST_ARBITRARY) {
+	if (task_dist == SLURM_DIST_ARBITRARY) {
 		hostlist_t hl = NULL;
 		char *buf = NULL;
 		/* set the node list for the task layout later if user
-		   supplied could be different that the job allocation */
+		 * supplied could be different that the job allocation */
 		arbitrary_nodes = xstrdup(tlist);
 		hl = hostlist_create(tlist);
 		hostlist_uniq(hl);
@@ -116,24 +116,23 @@ slurm_step_layout_t *slurm_step_layout_create(
 	}
 
 	step_layout->task_cnt  = num_tasks;
-	if(cluster_flags & CLUSTER_FLAG_FE) {
-		/* Limited job step support */
-		/* All jobs execute through front-end on Blue Gene.
+	if (cluster_flags & CLUSTER_FLAG_FE) {
+		/* Limited job step support on front-end systems.
+		 * All jobs execute through front-end on Blue Gene.
 		 * Normally we would not permit execution of job steps,
 		 * but can fake it by just allocating all tasks to
 		 * one of the allocated nodes. */
-		if(cluster_flags & CLUSTER_FLAG_BG)
+		if (cluster_flags & CLUSTER_FLAG_BG)
 			step_layout->node_cnt  = num_hosts;
 		else
 			step_layout->node_cnt  = 1;
 	} else
 		step_layout->node_cnt  = num_hosts;
 
-	if(_init_task_layout(step_layout, arbitrary_nodes,
-			     cpus_per_node, cpu_count_reps,
-			     cpus_per_task,
-			     task_dist, plane_size)
-	   != SLURM_SUCCESS) {
+	if (_init_task_layout(step_layout, arbitrary_nodes,
+			      cpus_per_node, cpu_count_reps,
+			      cpus_per_task,
+			      task_dist, plane_size) != SLURM_SUCCESS) {
 		slurm_step_layout_destroy(step_layout);
 		step_layout = NULL;
 	}
