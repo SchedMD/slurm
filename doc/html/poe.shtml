@@ -335,7 +335,8 @@ first step ID will be 1 rather than 0.</p>
 <p>There are several critical SLURM configuration parameters for use with PE.
 These configuration parameters should be set in your <b>slurm.conf</b> file.
 <b>LaunchType</b> defines the task launch mechanism to be used and must be set
-to <b>launch/poe</b>.
+to <b>launch/poe</b>. This configuration means that poe will be used to launch
+all applications.
 <b>SwitchType</b> defines the mechanism used to manage the network switch and
 it must be set to <b>switch/nrt</b> and use IBM's Network Resource Table (NRT)
 interface.
@@ -431,6 +432,15 @@ in response to such a request. In addition, verion 1200 or higher of IBM's NRT
 API is required to support this functionality.</p>
 
 <h3>Design Notes</h3>
+
+<p>It is necessary for all nodes that can be used for scheduling a single job
+have the same network adapter types and count. For example, if node "tux1"
+has two ethernet adapters then the node "tux2" in the same cluster must also
+have two ethernet adapters on the same networks or be in a different SLURM
+partition so that one job can not be allocated resources on both nodes.
+Without this restriction, a job may allocated adapter resources on one node
+and be unable to allocate the corresponding adapter resources on another
+node.</p>
 
 <p>It is possible to configure SLURM and LoadLeveler to simultaneously exist
 on a cluster, however each scheduler must be configured to manage different
