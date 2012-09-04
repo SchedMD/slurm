@@ -214,7 +214,7 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 
 		} else if (strncasecmp(tag, "StartTime", MAX(taglen, 1)) == 0){
 			time_t  t = parse_time(val, 0);
-			if (t == 0) {
+			if (errno == ESLURM_INVALID_TIME_VALUE) {
 				exit_code = 1;
 				error("Invalid start time %s.  %s",
 				      argv[i], msg);
@@ -224,7 +224,7 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 
 		} else if (strncasecmp(tag, "EndTime", MAX(taglen, 1)) == 0) {
 			time_t  t = parse_time(val, 0);
-			if (t == 0) {
+			if (errno == ESLURM_INVALID_TIME_VALUE) {
 				exit_code = 1;
 				error("Invalid end time %s.  %s", argv[i],msg);
 				return -1;

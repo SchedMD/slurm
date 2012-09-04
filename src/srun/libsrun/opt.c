@@ -1278,7 +1278,7 @@ static void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_BEGIN:
 			opt.begin = parse_time(optarg, 0);
-			if (opt.begin == 0) {
+			if (errno == ESLURM_INVALID_TIME_VALUE) {
 				error("Invalid time specification %s",
 				      optarg);
 				exit(error_exit);

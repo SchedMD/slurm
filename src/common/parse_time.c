@@ -342,6 +342,7 @@ extern time_t parse_time(char *time_str, int past)
 	int    month = -1, mday = -1, year = -1;
 	int    pos = 0;
 	struct tm res_tm;
+	time_t ret_time;
 
 	if (strncasecmp(time_str, "uts", 3) == 0) {
 		char *last = NULL;
@@ -508,10 +509,11 @@ extern time_t parse_time(char *time_str, int past)
 	res_tm.tm_isdst = -1;
 
 /* 	printf("%d/%d/%d %d:%d\n",month+1,mday,year,hour,minute); */
-
-	return mktime(&res_tm);
+	if ((ret_time = mktime(&res_tm)) != -1)
+		return ret_time;
 
  prob:	fprintf(stderr, "Invalid time specification (pos=%d): %s\n", pos, time_str);
+	errno = ESLURM_INVALID_TIME_VALUE;
 	return (time_t) 0;
 }
 
@@ -527,8 +529,7 @@ int main(int argc, char *argv[])
 		||  (in_line[0] == '\n'))
 			break;
 		when = parse_time(in_line);
-		if (when)
-			printf("%s", asctime(localtime(&when)));
+		printf("%s", asctime(localtime(&when)));
 	}
 }
 #endif
