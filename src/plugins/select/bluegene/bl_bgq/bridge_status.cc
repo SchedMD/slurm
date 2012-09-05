@@ -488,22 +488,47 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 				}
 				list_iterator_destroy(job_itr);
 			} else {
+				if (!*delete_list)
+					*delete_list = list_create(NULL);
 				/* If there are no jobs running just
 				   free the thing. (This rarely
 				   happens when a mmcs job goes into
 				   error right after it finishes.
-				   Weird, I know.)
+				   Weird, I know.)  Here we are going
+				   to just remove the block since else
+				   wise we could try to free this
+				   block over and over again, which
+				   only needs to happen once.
 				*/
-				bg_free_block(bg_record, 0, 1);
+				if (!block_ptr_exist_in_list(
+					    *delete_list, bg_record))
+					list_push(*delete_list, bg_record);
 			}
 
 			/* block_state_mutex is locked so handle this later */
 			if (job_ptr && job_ptr->kill_on_node_fail) {
-				kill_job_struct_t *freeit =
-					(kill_job_struct_t *)
-					xmalloc(sizeof(freeit));
-				freeit->jobid = job_ptr->job_id;
-				list_push(kill_job_list, freeit);
+				kill_job_struct_t *freeit = NULL;
+				ListIterator kill_job_itr =
+					list_iterator_create(kill_job_list);
+				/* Since lots of cnodes could fail at
+				   the same time effecting the same
+				   job make sure we only add it once
+				   since there is no reason to do the
+				   same process over and over again.
+				*/
+				while ((freeit = (kill_job_struct_t *)
+					list_next(kill_job_itr))) {
+					if (freeit->jobid == job_ptr->job_id)
+						break;
+				}
+				list_iterator_destroy(kill_job_itr);
+
+				if (!freeit) {
+					freeit = (kill_job_struct_t *)
+						xmalloc(sizeof(freeit));
+					freeit->jobid = job_ptr->job_id;
+					list_push(kill_job_list, freeit);
+				}
 			}
 
 			break;
