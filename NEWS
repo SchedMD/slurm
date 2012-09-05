@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
     reservations.
  -- sinfo partition field size will be set the the length of the longest
     partition name by default.
+ -- Make it so the parse_time will return a valid 0 if given epoch time and
+    set errno == ESLURM_INVALID_TIME_VALUE on error instead.
 
 * Changes in SLURM 2.5.0.pre1
 =============================
@@ -70,6 +72,20 @@ documents those changes that are of interest to users and admins.
     jobs don't set an end_time for the running jobs since they don't need to
     end to start the job.
  -- Initialize bind_verbose when using task/cgroup.
+ -- BGQ - Fix for handling backfill much better when sharing blocks.
+ -- BGQ - Fix for making small blocks on first pass if not sharing blocks.
+ -- BLUEGENE - Remove force of default conn_type instead of leaving NAV
+    when none are requested.  The Block allocator sets it up temporarily so
+    this isn't needed.
+ -- BLUEGENE - Fix deadlock issue when dealing with bad hardware if using
+    static blocks.
+ -- Fix to mysql plugin during rollup to only query suspended table when jobs
+    reported some suspended time.
+ -- Fix compile with glibc 2.16 (Kacper Kowalik)
+ -- BGQ - fix for deadlock where a block has error on it and all jobs
+    running on it are preemptable by scheduling job.
+ -- proctrack/cgroup: Exclude internal threads from "scontrol list pids".
+    Patch from Matthieu Hautreux, CEA.
 
 * Changes in SLURM 2.4.2
 ========================

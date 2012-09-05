@@ -5,9 +5,8 @@
  *  By Hung-Hsun Su, UPC Group, HSC Lab, Spring 2010
 \*****************************************************************************/
 
-#include <intrisics.h>
 #include <stdio.h>
-#include <mpp/shmem.h>
+#include <shmem.h>
 
 int me, npes, i;
 int src[8], dest[8];
@@ -15,6 +14,7 @@ int src[8], dest[8];
 int main(int argc, char * argv[])
 {
 	/* Get PE information */
+	shmem_init();
 	me = _my_pe();
 	npes = _num_pes();
 
@@ -37,6 +37,7 @@ int main(int argc, char * argv[])
 			printf(",%d", dest[i]);
 		printf("\n");
 	}
+	shmem_finalize();
 
 	return 0;
 }

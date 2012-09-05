@@ -137,12 +137,13 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
  * IN/OUT job - the job needing to be launched
  * IN cio_fds - filled in io descriptors.
  * IN/OUT global_rc - srun global return code.
- *
+ * IN signal_function - function used to forward signals sent from the
+ *                      slurmctld to the step.
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
 extern int launch_g_step_launch(
 	srun_job_t *job, slurm_step_io_fds_t *cio_fds,
-	uint32_t *global_rc);
+	uint32_t *global_rc, void (*signal_function)(int));
 
 /*
  * launch_g_step_wait() is called to wait for the job step to be finished.

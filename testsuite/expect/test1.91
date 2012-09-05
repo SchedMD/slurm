@@ -41,6 +41,11 @@ set prompt      "PROMPT:"
 
 print_header $test_id
 
+if {[test_launch_poe]} {
+	send_user "\nWARNING: This test is incompatible with launch/poe systems\n"
+	exit 0
+}
+
 #
 # Test if task affinity support is supported.
 #
@@ -153,7 +158,7 @@ expect {
 		send "export PS1=\"$prompt\"\r"
 		exp_continue
 	}
-	-re "export PS1=\"$prompt\"" {
+	-re "export PS1=\"$prompt\"\r" {
 		exp_continue
 	}
 	timeout {
@@ -172,7 +177,7 @@ expect {
 #
 set mask 0
 set task_cnt 0
-send "$srun -c1 $file_prog\r"
+send "$srun -c1 ./$file_prog\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_cnt
@@ -199,7 +204,7 @@ expect {
 #
 set expected_mask [ expr ((1 << $task_cnt) - 1) ]
 set task_mask 0
-send "$srun -c1 -n $task_cnt -B 1:1:1 $file_prog\r"
+send "$srun -c1 -n $task_cnt -B 1:1:1 ./$file_prog\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
@@ -232,7 +237,7 @@ while {$this_cnt <= $num_sockets} {
 	set num_tasks 0
 	set num_bits  0
 	set task_mask 0
-	send "$srun -B $this_cnt-$this_cnt:$num_cores:$num_threads $file_prog\r"
+	send "$srun -B $this_cnt-$this_cnt:$num_cores:$num_threads ./$file_prog\r"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
 			incr task_mask $expect_out(2,string)
@@ -282,7 +287,7 @@ while {$this_cnt <= $num_cores} {
 	set num_tasks 0
 	set num_bits  0
 	set task_mask 0
-	send "$srun -B $num_sockets:$this_cnt-$this_cnt:$num_threads $file_prog\r"
+	send "$srun -B $num_sockets:$this_cnt-$this_cnt:$num_threads ./$file_prog\r"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
 			incr task_mask $expect_out(2,string)
@@ -332,7 +337,7 @@ while {$this_cnt <= $num_threads} {
 	set num_tasks 0
 	set num_bits  0
 	set task_mask 0
-	send "$srun -B $num_sockets:$num_cores:$this_cnt-$this_cnt $file_prog\r"
+	send "$srun -B $num_sockets:$num_cores:$this_cnt-$this_cnt ./$file_prog\r"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
 			incr task_mask $expect_out(2,string)
@@ -381,7 +386,7 @@ while {$this_cnt <= $task_cnt} {
 	set num_tasks 0
 	set num_bits  0
 	set task_mask 0
-	send "$srun -c$this_cnt -B 1:1:1 $file_prog\r"
+	send "$srun -c$this_cnt -B 1:1:1 ./$file_prog\r"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
 			incr task_mask $expect_out(2,string)
@@ -427,7 +432,7 @@ while {$this_cnt <= $task_cnt} {
 #
 set expected_mask [ expr ((1 << $task_cnt) - 1) ]
 set task_mask 0
-send "$srun -n $task_cnt -m plane=4 $file_prog\r"
+send "$srun -n $task_cnt -m plane=4 ./$file_prog\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)

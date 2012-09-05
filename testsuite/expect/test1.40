@@ -115,7 +115,7 @@ expect {
 		set job_id2 $expect_out(1,string)
 		exp_continue
 	}
-	-re "launching ($number).0" {
+	-re "launching ($number)" {
 		set job_id2 $expect_out(1,string)
 		exp_continue
 	}

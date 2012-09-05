@@ -357,22 +357,29 @@ static bg_record_t *_find_matching_block(List block_list,
 					     bg_record->job_ptr->job_id);
 				continue;
 			} else if (bg_record->err_ratio) {
-				if (!bg_record->job_ptr
-				    && (!bg_record->job_list
-					|| !list_count(bg_record->job_list))) {
-					bg_record_t *found_record = NULL;
-					slurm_mutex_lock(&block_state_mutex);
+				bg_record_t *found_record = NULL;
+				slurm_mutex_lock(&block_state_mutex);
 
-					if (bg_record->original)
-						found_record =
-							bg_record->original;
-					else
-						found_record =
-							find_org_in_bg_list(
-								bg_lists->main,
-								bg_record);
-					if (!found_record)
-						found_record = bg_record;
+				if (bg_record->original)
+					found_record =
+						bg_record->original;
+				else
+					found_record =
+						find_org_in_bg_list(
+							bg_lists->main,
+							bg_record);
+				if (!found_record)
+					found_record = bg_record;
+
+				/* We have to use the original record
+				   here to avoid missing jobs that
+				   perhaps were removed to see if a
+				   job would run or if we were doing
+				   preemption.
+				*/
+				if (!found_record->job_ptr
+				    && (!found_record->job_list ||
+					!list_count(found_record->job_list))) {
 
 					if (found_record->free_cnt)
 						slurm_mutex_unlock(
@@ -403,8 +410,9 @@ static bg_record_t *_find_matching_block(List block_list,
 								tmp_list, 0, 0);
 						list_destroy(tmp_list);
 					}
-				} else if (bg_record->err_ratio
+				} else if (found_record->err_ratio
 					   >= bg_conf->max_block_err) {
+					slurm_mutex_unlock(&block_state_mutex);
 					/* This means the block is higher than
 					   the given max_block_err defined in
 					   the bluegene.conf.
@@ -419,7 +427,9 @@ static bg_record_t *_find_matching_block(List block_list,
 						     bg_record->err_ratio,
 						     bg_conf->max_block_err);
 					continue;
-				}
+				} else
+					slurm_mutex_unlock(&block_state_mutex);
+
 			}
 		}
 
@@ -551,7 +561,6 @@ static bg_record_t *_find_matching_block(List block_list,
 			if ((request->conn_type[dim]
 			     != bg_record->conn_type[dim])
 			    && (request->conn_type[dim] != SELECT_NAV)) {
-#ifdef HAVE_BGP
 				if (request->conn_type[0] >= SELECT_SMALL) {
 					/* we only want to reboot blocks if
 					   they have to be so skip booted
@@ -574,7 +583,7 @@ static bg_record_t *_find_matching_block(List block_list,
 					*/
 					goto good_conn_type;
 				}
-#endif
+
 				if (bg_conf->slurm_debug_flags
 				    & DEBUG_FLAG_BG_PICK) {
 					char *req_conn_type =
@@ -598,9 +607,8 @@ static bg_record_t *_find_matching_block(List block_list,
 		if (dim != conn_type_dims)
 			continue;
 
-#ifdef HAVE_BGP
 	good_conn_type:
-#endif
+
 		/*****************************************/
 		/* match up geometry as "best" possible  */
 		/*****************************************/
@@ -620,16 +628,14 @@ static bg_record_t *_find_matching_block(List block_list,
 			xassert(ba_mp->cnode_bitmap);
 			xassert(ba_mp->cnode_usable_bitmap);
 
-			if (SELECT_IS_TEST(query_mode)
-			    && SELECT_IS_CHECK_FULL_SET(query_mode)) {
-				total_bitmap = ba_mp->cnode_usable_bitmap;
-			} else if (bg_record->err_ratio) {
+			if (bg_record->err_ratio) {
 				xassert(ba_mp->cnode_err_bitmap);
 				total_bitmap = bit_copy(ba_mp->cnode_bitmap);
 				bit_or(total_bitmap, ba_mp->cnode_err_bitmap);
 				need_free = true;
 			} else
 				total_bitmap = ba_mp->cnode_bitmap;
+
 			memset(&tmp_jobinfo, 0, sizeof(select_jobinfo_t));
 			tmp_jobinfo.cnode_cnt = jobinfo->cnode_cnt;
 			if (!ba_sub_block_in_bitmap(
@@ -1050,6 +1056,28 @@ static int _dynamically_request(List block_list, int *blocks_added,
 
 	return rc;
 }
+
+/* Return the last finishing job on a shared block */
+static struct job_record *_get_last_job(bg_record_t *bg_record)
+{
+	struct job_record *found_job_ptr;
+	struct job_record *last_job_ptr;
+
+	ListIterator job_list_itr = NULL;
+
+	xassert(bg_record->job_list);
+
+	job_list_itr = list_iterator_create(bg_record->job_list);
+	last_job_ptr = list_next(job_list_itr);
+	while ((found_job_ptr = list_next(job_list_itr))) {
+		if (found_job_ptr->end_time > last_job_ptr->end_time)
+			last_job_ptr = found_job_ptr;
+	}
+	list_iterator_destroy(job_list_itr);
+
+	return last_job_ptr;
+}
+
 /*
  * finds the best match for a given job request
  *
@@ -1330,9 +1358,6 @@ static int _find_best_block_match(List block_list,
 				bool track_down_nodes = true;
 
 				if ((bg_record = list_pop(job_list))) {
-					/* FIXME: handle job_list here
-					   some how as well.
-					*/
 					if (bg_record->job_ptr) {
 						if (bg_conf->slurm_debug_flags
 						    & DEBUG_FLAG_BG_PICK)
@@ -1363,6 +1388,26 @@ static int _find_best_block_match(List block_list,
 						*/
 						bg_record->job_running =
 							NO_JOB_RUNNING;
+					} else if (bg_record->job_list
+						   && list_count(bg_record->
+								 job_list)) {
+						if (bg_conf->slurm_debug_flags
+						    & DEBUG_FLAG_BG_PICK)
+							info("taking off "
+							     "%d jobs that "
+							     "are running on "
+							     "%s",
+							     list_count(
+								     bg_record->
+								     job_list),
+							     bg_record->
+							     bg_block_id);
+						/* bg_record->job_running
+						   isn't used when we use
+						   job lists, so no need
+						   to set it to
+						   NO_JOB_RUNNING.
+						*/
 					} else if ((bg_record->job_running
 						    == BLOCK_ERROR_STATE)
 						   && (bg_conf->
@@ -1435,10 +1480,21 @@ static int _find_best_block_match(List block_list,
 					(*found_bg_record)->mp_bitmap);
 
 				if (bg_record) {
-					(*found_bg_record)->job_running =
-						bg_record->job_running;
-					(*found_bg_record)->job_ptr
-						= bg_record->job_ptr;
+					if (bg_record->job_list &&
+					    list_count(bg_record->job_list)) {
+						(*found_bg_record)->job_ptr =
+							_get_last_job(
+								bg_record);
+						(*found_bg_record)->job_running
+							= (*found_bg_record)->
+							job_ptr->job_id;
+					} else {
+						(*found_bg_record)->job_running
+							= bg_record->
+							job_running;
+						(*found_bg_record)->job_ptr
+							= bg_record->job_ptr;
+					}
 				}
 				list_destroy(new_blocks);
 				break;
@@ -1668,10 +1724,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			jobinfo->conn_type[0] = SELECT_SMALL;
 			for (dim=1; dim<SYSTEM_DIMENSIONS; dim++)
 				jobinfo->conn_type[dim] = SELECT_NAV;
-		} else if (job_ptr->details->max_cpus >= bg_conf->cpus_per_mp) {
-			for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
-				jobinfo->conn_type[dim] =
-					bg_conf->default_conn_type[dim];
 		} else if (!bg_conf->sub_blocks &&
 			   (job_ptr->details->min_cpus
 			    < bg_conf->cpus_per_mp)) {
@@ -1880,18 +1932,9 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			*/
 			if (jobinfo->cnode_cnt >
 			    bit_clear_count(total_bitmap)) {
-				struct job_record *found_job_ptr;
-				ListIterator job_list_itr =
-					list_iterator_create(
-						bg_record->job_list);
-				while ((found_job_ptr =
-					list_next(job_list_itr))) {
-					if (found_job_ptr->end_time
-					    > max_end_time)
-						max_end_time =
-							found_job_ptr->end_time;
-				}
-				list_iterator_destroy(job_list_itr);
+				struct job_record *found_job_ptr =
+					_get_last_job(bg_record);
+				max_end_time = found_job_ptr->end_time;
 			}
 			if (need_free)
 				FREE_NULL_BITMAP(total_bitmap);

@@ -49,7 +49,7 @@ explicitly specifying the number of sockets, cores, and threads required
 by their application.  Table 1 summarizes the new multi-core flags.
 
 <P>
-<table border=1 cellspacing=0 cellpadding=0>
+<table border=1 cellspacing=0 cellpadding=4>
 <tr><td colspan=2>
 <b><a href="#srun_lowlevelmc">Low-level (explicit binding)</a></b>
 </td></tr>
@@ -603,7 +603,7 @@ numbering.)</p>
 
 <h3>Block map_cpu on a system with cyclic core numbering</h3>
 
-<p>If users do not check their system’s core numbering before specifying
+<p>If users do not check their system's core numbering before specifying
 the map_cpu list and thereby do not realize that the new system has cyclic core
 numbering instead of block numbering then they will not get the expected
 layout.. For example, if they decide to re-use their mpirun command from above:</p>

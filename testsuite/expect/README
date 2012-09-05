@@ -376,8 +376,8 @@ test10.12  Test bg base partition XYZ to Rack Midplane and back
 test10.13  Test bluegene.conf file creation and validate it (-Dc option).
 
 
-test11.#   Testing of poe options. (AIX only)
-=============================================
+test11.#   Testing of poe options
+=================================
 test11.1   Test poe -proc and -nodes options
 test11.2   Test poe Network options (-euilib and -euidevice)
 test11.3   Test running of Network protocol option (-msg_api)
@@ -385,7 +385,8 @@ test11.4   Test mpi jobs (must run make in mpi-testscripts dir)
 test11.5   Test of checkpoint logic (direct with srun)
 test11.6   Test of checkpoint logic (with poe)
 test11.7   Test of hostfile logic (with poe)
-
+test11.8   Test of running different executables with different arguments
+           for each task (--multi-prog option with poe).
 
 test12.#   Testing of sacct command and options
 ===============================================

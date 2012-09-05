@@ -48,10 +48,6 @@ if { [test_front_end] } {
 	send_user "\nWARNING: This test is incompatible with FRONT_END systems\n"
 	exit 0
 }
-if {[test_multiple_slurmd] != 0} {
-	send_user "\nWARNING: This test is incompatible with multiple slurmd systems\n"
-	exit 0
-}
 
 # Various configurations allocate nodes, sockets, cores, cpus or threads;
 # not all of which are compatible with this test
@@ -62,9 +58,9 @@ if {[string compare $select_type "cons_res"]} {
 }
 
 if {[test_launch_poe]} {
-	set node_name_env MP_I_UPMD_HOSTNAME
+	set taskid_env MP_CHILD
 } else {
-	set node_name_env SLURMD_NODENAME
+	set taskid_env SLURM_PROCID
 }
 
 #
@@ -72,24 +68,85 @@ if {[test_launch_poe]} {
 #
 set cpu_cnt        0
 set cpus_per_node  0
-set fat_nodes      0
 set host           ""
 set timeout        $max_job_delay
 set task_cnt       0
+set threads_per_core 0
+set units ""
 
-set srun_pid [spawn $srun -N1 --cpus-per-task=1 --exclusive -l -t1 ./$file_in]
+# find me an idle node in default partition
+log_user 0
+
+# find the default partition
+set def_part [default_partition]
+
+# find the nodes in the default partition
+log_user 0
+set def_hostlist ""
+set part_exclusive 0
+spawn $scontrol show part $def_part
 expect {
-	-re "SLURM_CPUS_ON_NODE=($number) $node_name_env=($alpha_numeric_under)" {
-		set cpu_cnt $expect_out(1,string)
-		set host $expect_out(2,string)
+	-re " Nodes=($alpha_numeric_nodelist)"  {
+		set def_hostlist $expect_out(1,string)
+		exp_continue
+	}
+	-re " BasePartitions=($alpha_numeric_nodelist)" {
+		set def_hostlist $expect_out(1,string)
+		exp_continue
+	}
+	-re " Shared=EXCLUSIVE" {
+		set part_exclusive 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+set fd [open "|$scontrol --oneliner show node $def_hostlist"]
+exp_internal 1
+while {[gets $fd line] != -1} {
+	if {[regexp {NodeName=(\w+).*CPUTot=(\d+)(K?).*State=IDLE ThreadsPerCore=(\d+)} $line frag host cpu_cnt units threads_per_core] == 1} {
+		break
+	}
+}
+exp_internal 0
+if {[string compare $units ""]} {
+	set cpu_cnt [expr $cpu_cnt * 1024]
+}
+catch {close $fd}
+
+log_user 1
+
+if {!$cpu_cnt} {
+	send_user "\nFAILURE: couldn't find an idle node in the default partition\n"
+	exit 1
+}
+
+#
+# Check CPU count
+#
+if {[string compare $host ""] == 0} {
+	send_user "\nFAILURE: Did not get hostname from idle node\n"
+	exit 1
+}
+
+send_user "found idle node $host with $cpu_cnt processors\n"
+
+set srun_pid [spawn $srun -N1 -w$host --cpus-per-task=1 --exclusive -l -t1 $bin_printenv $taskid_env]
+expect {
+	-re "($number):" {
 		incr task_cnt
 		exp_continue
 	}
 	-re "Task count specification invalid" {
 		send_user "\nWARNING: nodes have too many CPUs for test\n"
-		set fat_nodes 1
-		exp_continue
-	}
+		exit 0
+ 		exp_continue
+ 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
@@ -99,36 +156,10 @@ expect {
 		wait
 	}
 }
-# On Blue Gene/L each node has 1024 CPUs, more than slurmd can launch
-if {$fat_nodes == 1} {
-	exit $exit_code
-}
 
-#
-# Check CPU count
-#
-if {[string compare $host ""] == 0} {
-	send_user "\nFAILURE: Did not get hostname\n"
-	exit 1
-}
 # Convert CPU count to core count if necessary
 if {$cpu_cnt != $task_cnt} {
 	set core_cnt  $cpu_cnt
-	set threads_per_core 1
-	spawn $scontrol show node $host
-	expect {
-		-re "ThreadsPerCore=($number)" {
-			set threads_per_core $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
 	if {$threads_per_core != 0} {
 		set cpu_cnt [expr $cpu_cnt * $threads_per_core]
 	}
@@ -151,7 +182,7 @@ if {$cpu_cnt < 2} {
 # Now verify the --cpus-per-task option
 #
 set task_cnt  0
-set srun_pid [spawn $srun -N1 --cpus-per-task=2 --exclusive -l -t1 --nodelist=$host $bin_printenv $node_name_env]
+set srun_pid [spawn $srun -N1 --cpus-per-task=2 --exclusive -l -t1 --nodelist=$host $bin_printenv $taskid_env]
 expect {
 	-re "Invalid node name specified" {
 		send_user "\nWARNING: Appears you are using "

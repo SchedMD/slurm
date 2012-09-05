@@ -51,6 +51,12 @@ if {[test_cray]} {
 	exit $exit_code
 }
 
+if {[test_launch_poe]} {
+	set mem_per_step 200
+} else {
+	set mem_per_step 1
+}
+
 #
 # A single slurmd can't handle a large task count without
 # running out of memory and pthreads
@@ -72,9 +78,9 @@ make_bash_script $file_in "
 $bin_sleep 5
 ulimit -u `ulimit -u -H`
 for ((inx=0; inx < $task_cnt; inx++)) ; do
-        $srun -N1 -n1 --mem-per-cpu=1 $bin_sleep $sleep_time &
+$srun -N1 -n1 --mem-per-cpu=$mem_per_step $bin_sleep $sleep_time &
 done
-$srun -N1 -n1 --mem-per-cpu=1 $bin_sleep $sleep_time
+$srun -N1 -n1 --mem-per-cpu=$mem_per_step $bin_sleep $sleep_time
 "
 
 #

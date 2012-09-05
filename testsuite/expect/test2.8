@@ -41,6 +41,12 @@ set job_id2     0
 
 print_header $test_id
 
+if {[test_launch_poe]} {
+	set step_id 1
+} else {
+	set step_id 0
+}
+
 #
 # Build input script file
 #
@@ -313,7 +319,7 @@ exec $bin_sleep 10
 set matches 0
 spawn $scontrol show step
 expect {
-	-re "StepId=$job_id1.0 " {
+	-re "StepId=$job_id1.$step_id " {
 		incr matches
 		exp_continue
 	}
@@ -334,9 +340,9 @@ if {[test_cray] == 0 && $matches != 1} {
 # Look at specific job step with scontrol
 #
 set matches 0
-spawn $scontrol show step $job_id1.0
+spawn $scontrol show step $job_id1.$step_id
 expect {
-	-re "StepId=$job_id1.0 " {
+	-re "StepId=$job_id1.$step_id " {
 		incr matches
 		exp_continue
 	}
@@ -364,9 +370,9 @@ if {[test_cray] == 0 && $matches != 1} {
 #
 set matches 0
 set job_id3 [expr $job_id1 + 10000]
-spawn $scontrol show step $job_id3.0
+spawn $scontrol show step $job_id3.$step_id
 expect {
-	-re "StepId=$job_id3.0 " {
+	-re "StepId=$job_id3.$step_id " {
 		send_user "\nFAILURE: scontrol found unexpected job step\n"
 		set exit_code 1
 		exp_continue

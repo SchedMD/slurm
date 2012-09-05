@@ -46,8 +46,7 @@ if { ![test_launch_poe] } {
 	exit $exit_code
 }
 if { ![file exists mpi-testscripts/allred] } {
-	send_user "ERROR: You must run a make in the mpi-testscripts\
-	    dir to run this test.\n"
+	send_user "ERROR: You must run a make in the mpi-testscripts directory to run this test.\n"
 	exit 1
 }
 
@@ -73,6 +72,17 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
+	}
+}
+
+#
+# poe has no time limit option, so make sure job is purged here
+#
+spawn $scancel --name=script.slurm.sh
+expect {
+	eof {
+		wait
 	}
 }
 

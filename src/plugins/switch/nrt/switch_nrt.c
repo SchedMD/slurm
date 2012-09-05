@@ -574,10 +574,11 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 			user_space = true;
 
 		/* protocol options */
-		} else if ((!strncasecmp(token, "lapi", 4)) ||
-			   (!strncasecmp(token, "mpi",  3)) ||
-			   (!strncasecmp(token, "pami", 4)) ||
-			   (!strncasecmp(token, "upc",  3))) {
+		} else if ((!strncasecmp(token, "lapi",  4)) ||
+			   (!strncasecmp(token, "mpi",   3)) ||
+			   (!strncasecmp(token, "pami",  4)) ||
+			   (!strncasecmp(token, "shmem", 5)) ||
+			   (!strncasecmp(token, "upc",   3))) {
 			if (protocol)
 				xstrcat(protocol, ",");
 			xstrcat(protocol, token);

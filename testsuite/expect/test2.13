@@ -48,6 +48,12 @@ if {[test_cray]} {
 	exit $exit_code
 }
 
+if {[test_launch_poe]} {
+	set step_id 1
+} else {
+	set step_id 0
+}
+
 #
 # Build input script file
 #
@@ -97,7 +103,7 @@ sleep 5
 #
 # Validate that step's origianl time limit
 #
-spawn  $scontrol show step $job_id.0
+spawn  $scontrol show step $job_id.$step_id
 expect {
 	-re "TimeLimit=00:($number):00" {
 		set orig_time $expect_out(1,string)
@@ -133,7 +139,7 @@ expect {
 #
 # Validate that step's new time limit
 #
-spawn  $scontrol show step $job_id.0
+spawn  $scontrol show step $job_id.$step_id
 expect {
 	-re "TimeLimit=00:($number):00" {
 		set orig_time $expect_out(1,string)

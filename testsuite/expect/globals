@@ -116,6 +116,7 @@ cset partition ""
 cset mpicc       "/usr/local/bin/mpicc"
 cset use_pmi	0
 cset upcc       "/usr/local/bin/upcc"
+cset oshcc      "/usr/local/bin/oshcc"
 
 # If using XCPU job launch, specify directory location as needed
 cset xcpu_dir	"/mnt/xcpu"

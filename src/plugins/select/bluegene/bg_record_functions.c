@@ -519,10 +519,15 @@ extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	/* else if (rec_a->avail_cnode_cnt && !rec_b->avail_cnode_cnt) */
 	/* 	return -1; */
 
-	if (rec_a->avail_cnode_cnt > rec_b->avail_cnode_cnt)
-		return 1;
-	else if (rec_a->avail_cnode_cnt < rec_b->avail_cnode_cnt)
-		return -1;
+	if (rec_a->job_list && rec_b->job_list) {
+		/* we only want to use this sort on 1 midplane blocks
+		   that are used for sharing
+		*/
+		if (rec_a->avail_cnode_cnt > rec_b->avail_cnode_cnt)
+			return 1;
+		else if (rec_a->avail_cnode_cnt < rec_b->avail_cnode_cnt)
+			return -1;
+	}
 
 	if (rec_a->avail_job_end > rec_b->avail_job_end)
 		return 1;
@@ -1101,14 +1106,11 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 		slurm_mutex_unlock(&block_state_mutex);
 		debug("No block under 1 midplane available for this nodecard.  "
 		      "Draining the whole node.");
-		if (!node_already_down(mp_name)) {
-			if (slurmctld_locked)
-				drain_nodes(mp_name, reason,
-					    slurm_get_slurm_user_id());
-			else
-				slurm_drain_nodes(mp_name, reason,
-						  slurm_get_slurm_user_id());
-		}
+
+		/* the slurmctld is always locked here */
+		if (!node_already_down(mp_name))
+			drain_nodes(mp_name, reason,
+				    slurm_get_slurm_user_id());
 		rc = SLURM_SUCCESS;
 		goto cleanup;
 	}
@@ -1224,15 +1226,10 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			break;
 		case 512:
 			slurm_mutex_unlock(&block_state_mutex);
-			if (!node_already_down(mp_name)) {
-				if (slurmctld_locked)
-					drain_nodes(mp_name, reason,
-						    slurm_get_slurm_user_id());
-				else
-					slurm_drain_nodes(
-						mp_name, reason,
-						slurm_get_slurm_user_id());
-			}
+			/* the slurmctld is always locked here */
+			if (!node_already_down(mp_name))
+				drain_nodes(mp_name, reason,
+					    slurm_get_slurm_user_id());
 			rc = SLURM_SUCCESS;
 			goto cleanup;
 			break;

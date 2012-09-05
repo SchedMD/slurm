@@ -48,6 +48,12 @@ if { [test_xcpu] } {
 	exit $exit_code
 }
 
+if {[test_launch_poe]} {
+	set step_id 1
+} else {
+	set step_id 0
+}
+
 #
 # Build input script file
 #
@@ -84,7 +90,7 @@ set match_wait 0
 set job_id  0
 set srun_pid [spawn $srun -v -N1 -t1 --unbuffered ./$file_in]
 expect {
-	-re "launching ($number).0" {
+	-re "launching ($number).$step_id" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
@@ -119,7 +125,8 @@ expect {
 	}
 }
 if {[expr $match_run + $match_wait + $match_term] != 3} {
-	send_user "\nFAILURE: srun failed to properly process SIGINT matches ($match_run, $match_wait, $match_term)\n"
+	send_user "\nFAILURE: srun failed to properly process SIGINT, "
+	send_user "($match_run + $match_wait + $match_term != 3)\n"
 	set exit_code 1
 }
 if {$exit_code == 0} {
@@ -139,7 +146,7 @@ set match_wait 0
 set job_id  0
 set srun_pid [spawn $srun -v -N1 -t1 --unbuffered --quit-on-interrupt ./$file_in]
 expect {
-	-re "launching ($number).0" {
+	-re "launching ($number).$step_id" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
@@ -152,11 +159,11 @@ expect {
 		set match_run 999
 		exp_continue
 	}
-	-re "srun: task0: running" {
+	-re "srun: task 0: running" {
 		set match_run 999
 		exp_continue
 	}
-	-re "Job step aborted" {
+	-re "srun: sending Ctrl-C" {
 		set match_term 1
 		exp_continue
 	}
@@ -171,7 +178,8 @@ expect {
 }
 cancel_job $job_id
 if {[expr $match_run + $match_wait + $match_term] != 2} {
-	send_user "\nFAILURE: srun failed to properly process SIGINT matches ($match_run, $match_wait, $match_term)\n"
+	send_user "\nFAILURE: srun failed to properly process SIGINT, "
+	send_user "($match_run + $match_wait + $match_term != 2)\n"
 	set exit_code 1
 }
 

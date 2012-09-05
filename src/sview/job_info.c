@@ -553,14 +553,12 @@ static int _cancel_job_id (uint32_t job_id, uint16_t signal)
 	int error_code = SLURM_SUCCESS, i;
 	char *temp = NULL;
 
-	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		if ((signal == (uint16_t)-1) || (signal == SIGKILL)) {
-			signal = 9;
-			error_code = slurm_kill_job(job_id, SIGKILL,
-						    false);
-		} else
-			error_code = slurm_signal_job(job_id, signal);
-
+	if (signal == (uint16_t)-1)
+		signal = SIGKILL;
+	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
+		/* NOTE: RPC always sent to slurmctld rather than directly
+		 * to slurmd daemons */
+		error_code = slurm_kill_job(job_id, signal, false);
 		if (error_code == 0
 		    || (errno != ESLURM_TRANSITION_STATE_NO_UPDATE
 			&& errno != ESLURM_JOB_PENDING))
@@ -594,13 +592,17 @@ static int _cancel_step_id(uint32_t job_id, uint32_t step_id,
 	int error_code = SLURM_SUCCESS, i;
 	char *temp = NULL;
 
-	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		if (signal == (uint16_t)-1 || (signal == SIGKILL)) {
-			signal = 9;
+	if (signal == (uint16_t)-1)
+		signal = SIGKILL;
+	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
+		/* NOTE: RPC always sent to slurmctld rather than directly
+		 * to slurmd daemons */
+		if (signal == SIGKILL) {
 			error_code = slurm_terminate_job_step(job_id, step_id);
+
 		} else {
-			error_code = slurm_signal_job_step(job_id, step_id,
-							   signal);
+			error_code = slurm_kill_job_step(job_id, step_id,
+							 signal);
 		}
 		if (error_code == 0
 		    || (errno != ESLURM_TRANSITION_STATE_NO_UPDATE

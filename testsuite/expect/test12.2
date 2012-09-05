@@ -54,15 +54,26 @@ if {[test_front_end]} {
         exit $exit_code
 }
 
+if {[test_launch_poe]} {
+#	Allow memory for the pmd process
+	set max_mem_error 140000
+	set step_id       1
+	set launch_poe    1
+} else {
+	set max_mem_error 4200
+	set step_id       0
+	set launch_poe    0
+}
+
 proc _get_mem {prog} {
-	global sstat float number mem_size job_id
+	global sstat float number mem_size job_id step_id max_mem_error
 
 	set mem_used -1
 	set mem_task -1
 	set ave_used -1
 	set exit_code 0
 
-	spawn $prog --noheader -p --job=$job_id.0 --fields maxvmsize,maxvmsizetask,avevmsize
+	spawn $prog --noheader -p --job=$job_id.$step_id --fields maxvmsize,maxvmsizetask,avevmsize
 	expect {
 		-re "($float)(\[KMG\]*).($number).($float)(\[KMG\]*)" {
 			set mem_used  $expect_out(1,string)
@@ -116,7 +127,7 @@ proc _get_mem {prog} {
 	# Compute error in KB
 	set diff_mem [expr $mem_used - $mem_size]
 	set error_mem [expr abs($diff_mem)]
-	if {($mem_used < $mem_size) || ($error_mem > 4200)} {
+	if {($mem_used < $mem_size) || ($error_mem > $max_mem_error)} {
 		send_user "\nFAILURE: sstat memory use discrepancy of $error_mem KB\n"
 		send_user "  Wanted $mem_size KB, got $mem_used KB\n"
 		return 1
@@ -175,7 +186,7 @@ exec $bin_cc -O -o $file_prog ${file_prog}.c
 exec $bin_chmod 700 $file_prog
 
 make_bash_script $file_in "
-    $srun $file_prog $ret_code $sleep_time $mem_size
+    $srun ./$file_prog $ret_code $sleep_time $mem_size
 "
 
 #
@@ -235,14 +246,13 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 	set exit_code 1
 }
 
-
 #
 # Report basic sacct info
 #
 
-spawn $sacct --noheader -P --job=$job_id.0 --fields jobid,jobname,state,exitcode
+spawn $sacct --noheader -P --job=$job_id.$step_id --fields jobid,jobname,state,exitcode
 expect {
-	-re "$job_id\.0" {
+	-re "$job_id\.$step_id" {
 		incr matches
 		exp_continue
 	}
@@ -266,8 +276,13 @@ expect {
 		wait
 	}
 }
-if {$matches < 4} {
-	send_user "\nFAILURE: sacct reporting failed $matches\n"
+if {$launch_poe != 0} {
+	set match_target 2
+} else {
+	set match_target 4
+}
+if {$matches < $match_target} {
+	send_user "\nFAILURE: sacct reporting failed ($matches < $match_target)\n"
 	set exit_code 1
 }
 
@@ -277,7 +292,7 @@ if {$matches < 4} {
 #   expected integer but got "08" (looks like invalid octal number)
 #
 set elapsed_time 0
-spawn $sacct --noheader -P --job=$job_id.0 --fields elapsed
+spawn $sacct --noheader -P --job=$job_id.$step_id --fields elapsed
 expect {
 	-re "($number):($number):(\[0-9\])(\[0-9\])" {
 		set hours $expect_out(1,string)

@@ -40,6 +40,13 @@ set job_id1      0
 set job_id2      0
 
 print_header $test_id
+
+if {[test_launch_poe]} {
+	set step_id 1
+} else {
+	set step_id 0
+}
+
 #
 # Delete left-over input script
 # Build input script file
@@ -202,11 +209,10 @@ if {$have_job_ids == 1} {
 #
 
 spawn $squeue --iterate=5 --steps
-set step_id    "$job_id1.0"
 set iteration  0
 set step_found 0
 expect {
-	-re "($end_of_line)($job_id1.0) " {
+	-re "($end_of_line)($job_id1.$step_id) " {
 		set step_found 1
 		set squeue_pid [exp_pid]
 		exec $bin_kill -TERM $squeue_pid

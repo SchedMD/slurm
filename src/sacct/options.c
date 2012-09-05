@@ -714,7 +714,7 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case 'E':
 			job_cond->usage_end = parse_time(optarg, 1);
-			if (job_cond->usage_end == 0)
+			if (errno == ESLURM_INVALID_TIME_VALUE)
 				exit(1);
 			break;
 		case 'f':
@@ -851,7 +851,7 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case 'S':
 			job_cond->usage_start = parse_time(optarg, 1);
-			if (job_cond->usage_start == 0)
+			if (errno == ESLURM_INVALID_TIME_VALUE)
 				exit(1);
 			break;
 		case 'T':

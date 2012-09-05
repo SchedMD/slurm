@@ -72,8 +72,11 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 #include "src/common/read_config.h"
+#include "src/common/node_conf.h"
 #include "src/plugins/switch/nrt/nrt_keys.h"
 #include "src/plugins/switch/nrt/slurm_nrt.h"
+
+extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid );
 
 /*
  * Definitions local to this module
@@ -420,6 +423,7 @@ _find_node(slurm_nrt_libstate_t *lp, char *name)
 {
 	int i;
 	slurm_nrt_nodeinfo_t *n;
+	struct node_record *node_ptr;
 
 	assert(name);
 	assert(lp);
@@ -433,6 +437,20 @@ _find_node(slurm_nrt_libstate_t *lp, char *name)
 		while (n) {
 			assert(n->magic == NRT_NODEINFO_MAGIC);
 			if (!strncmp(n->name, name, NRT_HOSTLEN))
+				return n;
+			n = n->next;
+		}
+	}
+
+	/* This code is only needed if NodeName and NodeHostName differ */
+	node_ptr = find_node_record(name);
+	if (node_ptr && lp->hash_table) {
+		i = _hash_index(node_ptr->node_hostname);
+		n = lp->hash_table[i];
+		while (n) {
+			assert(n->magic == NRT_NODEINFO_MAGIC);
+			if (!strncmp(n->name, node_ptr->node_hostname,
+				     NRT_HOSTLEN))
 				return n;
 			n = n->next;
 		}
@@ -579,7 +597,7 @@ _job_step_window_state(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		return SLURM_ERROR;
 
 	if ((jp->tables_per_task == 0) || (jp->tableinfo == NULL) ||
-	    (jp->tableinfo[0].table_length == 0))
+	    (jp->tableinfo[0].table_length == 0) || (!jp->user_space))
 		return SLURM_SUCCESS;
 
 	hi = hostlist_iterator_create(hl);
@@ -730,11 +748,11 @@ _window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 						       task_id);
 					}
 				} else {
-					error("_window_state_set: Missing "
-					      "support for adapter type %s",
+					error("switch/nrt: _window_state_set:"
+					      " Missing support for adapter "
+					      "type %s",
 					      _adapter_type_str(adapter->
 								adapter_type));
-
 				}
 
 				window = _find_window(adapter, win_id);
@@ -1104,7 +1122,8 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 				table_id++;
 				table_inx++;
 				if (table_inx >= jp->tables_per_task) {
-					error("switch/nrt: table count bad");
+					error("switch/nrt: adapter count too "
+					      "high, host=%s", hostname);
 					return SLURM_ERROR;
 				}
 				if (user_space) {
@@ -1206,6 +1225,13 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 			}  /* for each table */
 		}  /* for each context */
 	}  /* for each adapter */
+
+	if (++table_inx < jp->tables_per_task) {
+		/* This node has too few adapters of this type */
+		error("switch/nrt: adapter count too low, host=%s", hostname);
+		drain_nodes(hostname, "Too few switch adapters", 0);
+		return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -2093,12 +2119,17 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 			if (window_count > max_windows) {
 				/* This happens if IP_ONLY devices are
 				 * allocated with tables_per_task > 0 */
+				char *reason;
+				if (adapter_status.adapter_type == NRT_IPONLY)
+					reason = ", Known libnrt bug";
+				else
+					reason = "";
 				debug("nrt_command(status_adapter, %s, %s): "
-				      "window_count > max_windows (%u > %hu)",
+				      "window_count > max_windows (%u > %hu)%s",
 				      adapter_status.adapter_name,
 				      _adapter_type_str(adapter_status.
 							adapter_type),
-				      window_count, max_windows);
+				      window_count, max_windows, reason);
 				/* Reset value to avoid logging bad data */
 				window_count = max_windows;
 			}
@@ -2351,6 +2382,7 @@ static int
 _fake_unpack_adapters(Buf buf, slurm_nrt_nodeinfo_t *n)
 {
 	slurm_nrt_adapter_t *tmp_a = NULL;
+	slurm_nrt_window_t *tmp_w = NULL;
 	uint16_t dummy16;
 	uint32_t dummy32;
 	char *name_ptr;
@@ -2363,6 +2395,12 @@ _fake_unpack_adapters(Buf buf, slurm_nrt_nodeinfo_t *n)
 	int i, j, k;
 
 	safe_unpack32(&adapter_count, buf);
+	if (n && (n->adapter_count != adapter_count)) {
+		error("switch/nrt: node %s adapter count reset from %u to %u",
+		      n->name, n->adapter_count, adapter_count);
+		if (n->adapter_count < adapter_count)
+			drain_nodes(n->name, "Too few switch adapters", 0);
+	}
 	for (i = 0; i < adapter_count; i++) {
 		safe_unpackmem_ptr(&name_ptr, &dummy32, buf);
 		if (dummy32 != NRT_MAX_ADAPTER_NAME_LEN)
@@ -2447,6 +2485,42 @@ _fake_unpack_adapters(Buf buf, slurm_nrt_nodeinfo_t *n)
 			}
 			break;
 		}
+
+		if (j == n->adapter_count) {
+			error("switch/nrt: node %s adapter %s being added",
+			      n->name, name_ptr);
+			n->adapter_count++;
+			xrealloc(n->adapter_list,
+				 sizeof(slurm_nrt_adapter_t) *
+				 n->adapter_count);
+			tmp_a = n->adapter_list + j;
+			strncpy(tmp_a->adapter_name, name_ptr,
+				NRT_MAX_ADAPTER_NAME_LEN);
+			tmp_a->adapter_type = adapter_type;
+			/* tmp_a->block_count = 0 */
+			/* tmp_a->block_list = NULL */
+			tmp_a->cau_indexes_avail = cau_indexes_avail;
+			tmp_a->immed_slots_avail = immed_slots_avail;
+			tmp_a->ipv4_addr = ipv4_addr;
+			for (k = 0; k < 16; k++) {
+				tmp_a->ipv6_addr.s6_addr[k] =
+					ipv6_addr.s6_addr[k];
+			}
+			tmp_a->lid = lid;
+			tmp_a->network_id = network_id;
+			tmp_a->port_id = port_id;
+			tmp_a->rcontext_block_count = rcontext_block_count;
+			tmp_a->special = special;
+			tmp_a->window_count = window_count;
+			tmp_w = (slurm_nrt_window_t *)
+				xmalloc(sizeof(slurm_nrt_window_t) *
+				tmp_a->window_count);
+			for (k = 0; k < tmp_a->window_count; k++) {
+				tmp_w[k].state = NRT_WIN_AVAILABLE;
+				tmp_w[k].job_key = 0;
+			}
+			tmp_a->window_list = tmp_w;
+		}
 	}
 
 	return SLURM_SUCCESS;
@@ -2482,8 +2556,7 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	 */
 	assert(buf);
 
-	/* Extract node name from buffer
-	 */
+	/* Extract node name from buffer */
 	safe_unpack32(&magic, buf);
 	if (magic != NRT_NODEINFO_MAGIC)
 		slurm_seterrno_ret(EBADMAGIC_NRT_NODEINFO);
@@ -2976,7 +3049,6 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 				error("Failed to get next host");
 
 			for (j = 0; j < tasks_per_node[i]; j++) {
-
 				if (adapter_name == NULL) {
 					rc = _allocate_windows_all(jp, host, i,
 								tids[i][j],
@@ -4156,25 +4228,31 @@ nrt_clear_node_state(void)
 				continue;
 			}
 			if (window_count > max_windows) {
-				/* This error seems to happen on IP_ONLY
-				 * adapters if the unload_table does not
-				 * occur */
+				/* This happens if IP_ONLY devices are
+				 * allocated with tables_per_task > 0 */
+				char *reason;
+				if (adapter_status.adapter_type == NRT_IPONLY)
+					reason = ", Known libnrt bug";
+				else
+					reason = "";
 				if (first_use) {
 					error("nrt_command(status_adapter, "
 					      "%s, %s): window_count > "
-					      "max_windows (%u > %hu)",
+					      "max_windows (%u > %hu)%s",
 					      adapter_status.adapter_name,
 					      _adapter_type_str(adapter_status.
 								adapter_type),
-					      window_count, max_windows);
+					      window_count, max_windows,
+					      reason);
 				} else {
 					debug("nrt_command(status_adapter, "
 					      "%s, %s): window_count > "
-					      "max_windows (%u > %hu)",
+					      "max_windows (%u > %hu)%s",
 					      adapter_status.adapter_name,
 					      _adapter_type_str(adapter_status.
 								adapter_type),
-					      window_count, max_windows);
+					      window_count, max_windows,
+					      reason);
 				}
 				/* Reset value to avoid logging bad data */
 				window_count = max_windows;
@@ -4402,6 +4480,31 @@ static preemption_state_t _job_preempt_state(nrt_job_key_t job_key)
 	return state;
 }
 
+static char *_job_state_str(preemption_state_t curr_state)
+{
+	static char buf[10];
+
+	switch (curr_state) {
+	case PES_INIT:
+		return "Init";
+	case PES_JOB_RUNNING:
+		return "Running";
+	case PES_PREEMPTION_INPROGRESS:
+		return "Preemption_in_progress";
+	case PES_JOB_PREEMPTED:
+		return "Preempted";
+	case PES_PREEMPTION_FAILED:
+		return "Preemption_failed";
+	case PES_RESUME_INPROGRESS:
+		return "Resume_in_progress";
+	case PES_RESUME_FAILED:
+		return "Resume_failed";
+	default:
+		snprintf(buf, sizeof(buf), "%d", curr_state);
+		return buf;
+	}
+}
+
 /* Return 0 when job in desired state, -1 on error */
 static int _wait_job(nrt_job_key_t job_key, preemption_state_t want_state,
 		     int max_wait_secs)
@@ -4415,7 +4518,12 @@ static int _wait_job(nrt_job_key_t job_key, preemption_state_t want_state,
 		if (i)
 			usleep(100000);
 		curr_state = _job_preempt_state(job_key);
-		if (curr_state == want_state) {
+		/* Job's state is initially PES_INIT, even when running.
+		 * It only goes to state PES_JOB_RUNNING after suspend and
+		 * resume. */
+		if ((curr_state == want_state) ||
+		    ((curr_state == PES_INIT) &&
+		     (want_state == PES_JOB_RUNNING))) {
 			debug("switch/nrt: Desired job state in %d msec",
 			      (100 * i));
 			return 0;
@@ -4447,8 +4555,9 @@ static int _wait_job(nrt_job_key_t job_key, preemption_state_t want_state,
 		state_str = "Running";
 	else if (want_state == PES_JOB_PREEMPTED)
 		state_str = "Preempted";
-	error("switch/nrt: Desired job state of %s not reached in %d sec",
-	      state_str, (int)(now - start_time));
+	error("switch/nrt: Desired job state of %s not reached in %d sec, "
+	      "Current job state is %s",
+	      state_str, (int)(now - start_time), _job_state_str(curr_state));
 	return -1;
 }
 
@@ -4461,6 +4570,8 @@ extern int nrt_preempt_job_test(slurm_nrt_jobinfo_t *jp)
 	}
 	return SLURM_SUCCESS;
 #else
+	info("switch/nrt: This version of libnrt.so does not support job "
+	     "suspend/resume");
 	return SLURM_ERROR;
 #endif
 }

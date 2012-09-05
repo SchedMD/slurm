@@ -33,7 +33,7 @@ subject to change.</li>
 <li>The poe command interacts with the pmdv12 process to launch the application
 tasks, handle their I/O, etc. Since the task launch procedure occurs outside of
 SLURM's control, none of the normal task-level SLURM support is available.</li>
-<li>The poe command, through the SLURM library, notes the completion of the
+<li>The poe command, through the SLURM library, reports the completion of the
 job step.</li>
 </ol>
 
@@ -75,10 +75,11 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
   programming interface.
   Default value is zero.
   Applies only to IBM Power7-IH processors.
-  POE requires that if <b>cau</b> has a non-zero value then <b>devtype=IB</b>
-  or <b>devtype=HFI</b> must be explictly specified.
+  POE requires that if <b>cau</b> has a non-zero value then <b>us</b>,
+  <b>devtype=IB</b> or <b>devtype=HFI</b> must be explictly specified otherwise
+  the request may attempt to allocate CAU with IP communications and fail.
   <li><b>devname=<i>name</i></b>
-  Specify the name of an network adapter to use.
+  Specify the name of an individual network adapter to use.
   For example: "eth0" or "mlx4_0".</li>
   <li><b>devtype=<i>type</i></b>
   Specify the device type to use for communications.
@@ -132,7 +133,7 @@ this would result in four switch windows per task.
 
 <p><b>NOTE:</b> Switch resources on a node are shared between all job steps on
 that node. If a job step can not be initiated due to insufficient switch
-resources being available, that job step will periodically retry getting
+resources being available, that job step will periodically retry allocating
 resources for the lifetime of the job unless srun's --immediate option is
 used.</p>
 
@@ -142,14 +143,14 @@ used.</p>
 host name, process ID, etc. Since that information is only available from
 poe (which launches those tasks), the srun command wrapper can not be used
 for most debugging purposes. You or the debugging tool must invoke the poe
-command directly. In order to facilitate use of poe, srun's 
+command directly. In order to facilitate the direct use of poe, srun's 
 <br><b>--launch-cmd</b> option may be used with the options normally used.
 srun will then print the equivalent poe command line, which
 can subsequently be used with the debugger.</p>
 
 <h3>Checkpoint</h3>
 
-<p><b>FIXME: We need to validate all of this</b>
+<p><b>FIXME: We need to validate all of this</b><br>
 SLURM supports checkpoint via poe.
 In order to enable checkpoint, the shell executing the poe command must
 itself be initiated with the environment variable <b>CHECKPOINT=yes</b>.
@@ -189,15 +190,55 @@ are silently ignored:</p>
 <li>-Z, --no-allocate (launch tasks without creating job allocation></li>
 </ul>
 
+<p>A limited subset of srun's --cpu-bind options are supported as shown
+below. If the --cpus-per-task option is not specified, a value of one is used
+by default. Note that SLURM's mask_cpu and map_cpu options are not supported,
+nor are options to bind to sockets or boards.</p>
+<table border=1 cellspacing=0 cellpadding=4>
+<tr>
+    <td><b>SLURM option</b></td>
+    <td><b>POE equivalent</b></td>
+</tr>
+<tr>
+    <td>--cpu-bind=threads --cpus-per-task=#</td>
+    <td>-task_affinity=cpu:#</td>
+</tr>
+<tr>
+    <td>--cpu-bind=cores --cpus-per-task=#</td>
+    <td>-task_affinity=core:#</td>
+</tr>
+<tr>
+    <td>--cpu-bind=rank --cpus-per-task=#</td>
+    <td>-task_affinity=cpu:#</td>
+</tr>
+</table>
+
 <p>In addition, file name specifications with expression substitution
 (e.g. file names including "%j" for job_ID, "%J" for job_ID.step_ID,
-"%s" for step_ID "%t" for task_ID or "%n" for node_ID) are not supported.
+"%s" for step_ID, "%t" for task_ID, or "%n" for node_ID) are not supported.
 This effects the following options:</p>
 <ul>
 <li>-e, --error</li>
 <li>-i, --input</li>
 <li>-o, --output</li>
 </ul>
+
+<p>For the srun command's --multi-prog option (Multiple Program,
+Multiple Data configurations), the command file will be translated from
+SLURM's format to a POE format. POE does not support SLURM expressions
+in the MPMD configuration file (e.g. "%t" will not be replaced with the task's
+number and "%o" will not be replaced with the task's offset within
+this range). The command file will be stored in a temporary file
+in the ".slurm" subdirectory of your home directory. The file name will have a
+prefix of "slurm_cmdfile." followed by srun's process id. If the srun command
+does not terminate gracefully, this file may persist after the job step's
+termination and not be purged. You can find and purge these files using
+commands of the form shown below. You should only purge older files, after
+their job steps are completed.</p>
+<pre>
+$ ls -l ~/.slurm/slurm_cmdfile.*
+$ rm    ~/.slurm/slurm_cmdfile.*
+</pre>
 
 <p>The -L/--label option differs slighly in that when the output from multiple
 tasks are identical, they are combined on a single line with the prefix
@@ -207,14 +248,35 @@ but no space between the task IDs and output. For example:</p>
 # SLURM OUTPUT
 0: foo
 1: foo
+2: foo
 0: bar
 1: barr
+2: bar
 
 # POE OUTPUT
-0-1:foo
-0:bar
+0-2:foo
+0 2:bar
 1:barr
 </pre>
+
+<p>In addition, when srun's --multi-prog option (for Multiple Program,
+Multiple Data configurations) is used with the -L/--label option then a job
+step ID, colon and space will preceed the task ID and colon. For example:</p>
+<pre>
+# SLURM OUTPUT
+0: zero
+1: one
+2: two
+
+# POE OUTPUT (FOR STEP ID 1)
+1: 0: zero
+1: 1: one
+1: 2: two
+</pre>
+
+<p>The srun command is not able to report task status upon receipt of a SIGINT
+signal (ctrl-c interupt from keyboard), however two SIGINT signals within a
+one second interval will terminate the job as on other SLURM configurations.</p>
 
 <h3>Environment Variables</h3>
 
@@ -243,7 +305,7 @@ variables are NOT available with POE:</p>
 
 <p>Note that POE sets a variety of environment variables that provide similar
 information to some the missing SLURM environment variables. Particularly
-node the following variables:</p>
+note the following environment variables:</p>
 <ul>
 <li>MP_I_UPMD_HOSTNAME (local hostname)</li>
 <li>MP_CHILD (global task ID)</li>
@@ -265,19 +327,16 @@ export MP_TIMEOUT=600
 
 <h3>Other User Notes</h3>
 
-<p>If the srun command's --label option is used, note that POE's prefix is
-the task ID followed by a colon. The prefix with native SLURM is the task ID
-followed by a colon followed by one space.</p>
-
-<p>POE forwards a limited set of signals to spawned tasks, mostly signals
-that indicate a fatal error. It does not forward SIGUSR1 or SIGUSR2 signals.</p>
+<p>POE can not support a step ID of zero. In POE installations, a job's
+first step ID will be 1 rather than 0.</p>
 
 <h2>System Administration</h2>
 
 <p>There are several critical SLURM configuration parameters for use with PE.
 These configuration parameters should be set in your <b>slurm.conf</b> file.
 <b>LaunchType</b> defines the task launch mechanism to be used and must be set
-to <b>launch/poe</b>.
+to <b>launch/poe</b>. This configuration means that poe will be used to launch
+all applications.
 <b>SwitchType</b> defines the mechanism used to manage the network switch and
 it must be set to <b>switch/nrt</b> and use IBM's Network Resource Table (NRT)
 interface.
@@ -291,7 +350,11 @@ program. This means that reliable tracking of all spawned processes is critical
 for switch use. Use of <b>ProctrackType=proctrack/cgroup</b> is strongly
 recommended. Use of any other process tracking plugin significantly increases
 the likelyhood of orphan processes that must be manually identified and killed
-in order to reuse switch resources.</p>
+in order to release switch resources.
+While it is possible to to configure distinct <b>NodeName</b> and
+<b>NodeHostName</b> parameters for the compute nodes, this is discouraged
+for performance reasons (the <b>switch/nrt</b> plugin is not optimized for
+such a configuration).</p>
 <pre>
 # Excerpt of slurm.conf
 LaunchType=launch/poe
@@ -330,7 +393,7 @@ shown below. You will need to modify the value of MP_PE_RMLIB to match SLURM's
 installation location on your system.<br>
 <b>NOTE:</b> The poe command is loading and using the libpermapi.so library
 initially from the /usr/lib64 directory. It later reads the /etc/poe.limits
-file and loads the correct library. In order for poe to work with SLURM it
+file and loads the correct library. In order for poe to work with SLURM, it
 needs to use the "libpermapi.so" generated by SLURM for all of its functions.
 Until poe is modified to only load the correct library, it is necessary for
 the file /usr/lib64/libpermapi.so to contain SLURM's library or a link to it.</p>
@@ -340,7 +403,6 @@ the file /usr/lib64/libpermapi.so to contain SLURM's library or a link to it.</p
 # Modify the path below as appropriate
 #
 MP_PE_RMLIB=/usr/local/lib/slurm/libpermapi.so
-
 </pre>
 
 <h3>Job Scheduling</h3>
@@ -371,10 +433,21 @@ API is required to support this functionality.</p>
 
 <h3>Design Notes</h3>
 
+<p>It is necessary for all nodes that can be used for scheduling a single job
+have the same network adapter types and count. For example, if node "tux1"
+has two ethernet adapters then the node "tux2" in the same cluster must also
+have two ethernet adapters on the same networks or be in a different SLURM
+partition so that one job can not be allocated resources on both nodes.
+Without this restriction, a job may allocated adapter resources on one node
+and be unable to allocate the corresponding adapter resources on another
+node.</p>
+
 <p>It is possible to configure SLURM and LoadLeveler to simultaneously exist
 on a cluster, however each scheduler must be configured to manage different
 compute nodes (e.g. LoadLeveler can manage compute nodes "tux[1-8]" and SLURM
-can manaage compute nodes "tux[9-16]" on the same cluster).</p>
+can manaage compute nodes "tux[9-16]" on the same cluster). In addition, the
+/etc/poe.limits file on each node must identify the MP_PE_RMLIB appropriate
+for that node (e.g. IBM's or SLURM's libpermapi.so)</p>
 
 <p>The srun command uses the <b>launch/poe</b> plugin to launch the poe program.
 Then poe uses the <b>launch/slurm</b> plugin to launch the "pmd" process on the
@@ -406,6 +479,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 16 August 2012</p></td>
+<p style="text-align:center;">Last modified 4 September 2012</p></td>
 
 <!--#include virtual="footer.txt"-->

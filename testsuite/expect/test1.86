@@ -313,7 +313,7 @@ if {$matches == 0} {
 #
 # Error test: Overlapping include/exclude node list
 # NOTE: some versions of Expect have a problem with long input
-#	lines, so we use two send commands for this  execute line
+#	lines, so we use two send commands for this execute line
 #
 set matches 0
 send "srun -l -N1 -n1 --nodelist=$host_0 "
@@ -388,7 +388,12 @@ set test_0      ""
 set test_1      ""
 send "srun -l -N1-1 -n2 -O $bin_printenv $node_name_env\r"
 expect {
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number).($number):($alpha_numeric_under)" {
+		set test_0 $expect_out(3,string)
+		set test_1 $expect_out(3,string)
+		exp_continue
+	}
+	-re "($number): ($alpha_numeric_under)" {
 		set host_inx $expect_out(1,string)
 		if {$host_inx == 0} {
 			set test_0 $expect_out(2,string)

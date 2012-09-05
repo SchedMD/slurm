@@ -51,8 +51,8 @@ if {[test_front_end]} {
 } elseif {[test_serial]} {
 	send_user "WARNING: Test is incompatible with serial system\n"
 	exit 0
-} elseif {![file exists /usr/include/mpp/shmem.h]} {
-	send_user "\nWARNING: /usr/include/mpp/shmem.h does not exists\n"
+} elseif {![file exists $oshcc]} {
+	send_user "\nWARNING: $oshcc does not exists\n"
 	exit 0
 }
 
@@ -60,7 +60,7 @@ if {[test_front_end]} {
 # Delete left-over program and rebuild it
 #
 exec $bin_rm -f $test_prog ${test_prog}.o
-exec $bin_cc -o $test_prog ${test_prog}.c -lshmem
+exec $oshcc  -o $test_prog ${test_prog}.c -lshmem
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -69,7 +69,7 @@ file delete $file_out $file_err
 # Build input script file
 #
 make_bash_script $file_in "
-  $srun -n $task_cnt $test_prog
+  $srun -n $task_cnt ./$test_prog
 "
 
 #

@@ -3645,6 +3645,7 @@ extern int job_limits_check(struct job_record **job_pptr)
 static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		       struct job_record **job_pptr, uid_t submit_uid)
 {
+	static int launch_type_poe = -1;
 	int error_code = SLURM_SUCCESS, i, qos_error;
 	enum job_state_reason fail_reason;
 	struct part_record *part_ptr = NULL;
@@ -3936,7 +3937,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 						       job_pptr,
 						       &req_bitmap,
 						       &exc_bitmap))) {
-		if(error_code == SLURM_ERROR)
+		if (error_code == SLURM_ERROR)
 			error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
 		goto cleanup_fail;
 	}
@@ -3961,6 +3962,17 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
 	job_ptr->qos_ptr = (void *) qos_ptr;
 	job_ptr->qos_id = qos_rec.id;
+
+	if (launch_type_poe == -1) {
+		char *launch_type = slurm_get_launch_type();
+		if (!strcmp(launch_type, "launch/poe"))
+			launch_type_poe = 1;
+		else
+			launch_type_poe = 0;
+		xfree(launch_type);
+	}
+	if (launch_type_poe == 1)
+		job_ptr->next_step_id = 1;
 
 	/*
 	 * Permission for altering priority was confirmed above. The job_submit
@@ -8758,6 +8770,41 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 #endif
 	agent_arg_t *agent_args = NULL;
 	signal_job_msg_t *signal_job_msg = NULL;
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+	static int notify_srun = 1;
+#else
+	int notify_srun = 0;
+	static int launch_poe = -1;
+
+	if (launch_poe == -1) {
+		char *launch_type = slurm_get_launch_type();
+		if (!strcmp(launch_type, "launch/poe"))
+			launch_poe = 1;
+		else
+			launch_poe = 0;
+		xfree(launch_type);
+	}
+	/* For launch/poe all signals are forwarded by by srun to poe to tasks
+	 * except SIGSTOP/SIGCONT, which are used for job preemption. In that
+	 * case the slurmd must directly suspend tasks and switch resources. */
+	if (launch_poe && (signal != SIGSTOP) && (signal != SIGCONT))
+		notify_srun = 1;
+#endif
+
+	if (notify_srun) {
+		ListIterator step_iterator;
+		struct step_record *step_ptr;
+		step_iterator = list_iterator_create(job_ptr->step_list);
+		while ((step_ptr = list_next(step_iterator))) {
+			/* Since we have already checked the uid,
+			 * we can send this signal as uid 0. */
+			job_step_signal(job_ptr->job_id, step_ptr->step_id,
+					signal, 0);
+		}
+		list_iterator_destroy (step_iterator);
+
+		return;
+	}
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_SIGNAL_JOB;
@@ -8857,7 +8904,7 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 #endif
 
 	if (agent_args->node_count == 0) {
-		xfree(sus_ptr);
+		slurm_free_suspend_int_msg(sus_ptr);
 		xfree(agent_args);
 		return;
 	}

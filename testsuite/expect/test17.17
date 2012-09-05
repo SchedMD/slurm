@@ -40,7 +40,6 @@ set file_err     "test$test_id.error"
 set file_in      "test$test_id.input"
 set file_out     "test$test_id.output"
 set job_id1      0
-set host_name    ""
 set nodelist_name ""
 
 print_header $test_id
@@ -58,10 +57,6 @@ set srun_pid [spawn $srun -v -N1 -l -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "on host ($alpha_numeric_under)," {
 		set nodelist_name $expect_out(1,string)
-		exp_continue
-	}
-	-re "0: ($alpha_numeric_under)" {
-		set host_name $expect_out(1,string)
 		exp_continue
 	}
 	timeout {

@@ -2,7 +2,8 @@
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          Test of running different executables with different arguments
-#          for each task (--multi-prog option).
+#          for each task (--multi-prog option with poe). This is a variant
+#          of test1.54 for POE systems
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -33,20 +34,14 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.54"
+set test_id     "11.8"
 set file_in     "test$test_id.input"
 set exit_code   0
 
 print_header $test_id
 
-if {[test_front_end] != 0} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit 0
-} elseif {[test_serial]} {
-	send_user "\nWARNING: This test is incompatible with serial systems\n"
-	exit 0
-} elseif {[test_launch_poe]} {
-	send_user "\nWARNING: This test is incompatible with POE systems\n"
+if {![test_launch_poe]} {
+	send_user "\nWARNING: This test is incompatible with non-POE systems\n"
 	exit 0
 }
 
@@ -57,8 +52,10 @@ if {[test_front_end] != 0} {
 exec $bin_rm -f $file_in
 set file [open $file_in "w"]
 puts $file "# multi-program configuration file
-1-2   /bin/echo task:%t:offset:%o
-0,3   echo task:%t:offset:%o
+1   /bin/echo task:1:offset:0
+2   /bin/echo task:2:offset:1
+0   echo task:0:offset:0
+3   echo task:3:offset:1
 "
 close $file
 exec $bin_chmod 700 $file_in
@@ -120,30 +117,22 @@ set timeout [expr $max_job_delay + 60 + 60 + 60]
 exec $bin_rm -f $file_in
 set file [open $file_in "w"]
 puts $file "# multi-program configuration file
-1-2   /bin/hostname
-0,3   /bin/date
+1,3   /bin/true
+0,2   /bin/date
 "
 close $file
 exec $bin_chmod 700 $file_in
 
 set job_id    -
 set matches   0
-set srun_pid [spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog --debugger-test -v ./$file_in]
+set srun_pid [spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog -v ./$file_in]
 expect {
 	-re "launching ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "executable:(/bin/)($alpha)" {
-		if {[string compare $expect_out(2,string) "date"] != 0} {
-			incr matches
-		}
-		if {[string compare $expect_out(2,string) "hostname"] != 0} {
-			incr matches
-		}
-		if {$matches == 4} {
-			slow_kill $srun_pid
-		}
+	-re " 0 2:.*($number):($number):($number)" {
+		incr matches
 		exp_continue
 	}
 	timeout {
@@ -155,8 +144,8 @@ expect {
 		wait
 	}
 }
-if {$matches != 4} {
-	send_user "\nFAILURE: did not generate full list of executables.\n"
+if {$matches != 1} {
+	send_user "\nFAILURE: did not generate one date.\n"
 	set exit_code 1
 }
 if {$job_id == 0} {
@@ -179,7 +168,7 @@ if {$exit_code != 0} {
 set matches   0
 set srun_pid [spawn $srun -N1 -n5 --overcommit -l -t1 --multi-prog  ./$file_in]
 expect {
-	-re "Configuration file .* invalid" {
+	-re "Configuration file .*invalid" {
 		send_user "\nNo worries. This error is expected\n"
 		incr matches
 	}

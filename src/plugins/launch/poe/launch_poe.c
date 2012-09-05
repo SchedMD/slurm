@@ -79,89 +79,24 @@ const char plugin_type[]        = "launch/poe";
 const uint32_t plugin_version   = 101;
 
 static char *cmd_fname = NULL;
-static char *stepid_fname = NULL;
 static char *poe_cmd_line = NULL;
+static pid_t poe_pid = 0;
 
-/* Return the next available step ID */
-static int _get_next_stepid(uint32_t job_id, char *dname, int dname_size)
+static void _build_work_dir(char *dname, int dname_size)
 {
-	int fd, i, rc, step_id;
 	char *work_dir;
-	ssize_t io_size = 0;
-	char buf[16];
 
 	/* NOTE: Directory must be shared between nodes for cmd_file to work */
 	if (!(work_dir = getenv("HOME"))) {
 		work_dir = xmalloc(512);
 		if (!getcwd(work_dir, 512))
 			fatal("getcwd(): %m");
-		snprintf(dname, dname_size, "%s/.slurm_loadl", work_dir);
+		snprintf(dname, dname_size, "%s/.slurm", work_dir);
 		xfree(work_dir);
 	} else {
-		snprintf(dname, dname_size, "%s/.slurm_loadl", work_dir);
+		snprintf(dname, dname_size, "%s/.slurm", work_dir);
 	}
 	mkdir(dname, 0700);
-
-	/* Create or open our stepid file */
-	if (!stepid_fname)
-		stepid_fname = xstrdup_printf("%s/slurm_stepid_%u",
-					      dname, job_id);
-	while (((fd = open(stepid_fname, O_CREAT|O_EXCL|O_RDWR, 0600)) < 0) &&
-	       (errno == EINTR))
-		;
-	if ((fd < 0) && (errno == EEXIST))
-		fd = open(stepid_fname, O_RDWR);
-	if (fd < 0)
-		fatal("open(%s): %m", stepid_fname);
-
-	/* Set exclusive lock on the file */
-	for (i = 0; ; i++) {
-		rc = flock(fd, LOCK_EX | LOCK_NB);
-		if (rc == 0)
-			break;
-		if (i > 10)
-			fatal("flock(%s): %m", stepid_fname);
-		usleep(100);
-	}
-
-	/* Read latest step ID from the file */
-	for (i = 0; ; i++) {
-		io_size = read(fd, buf, sizeof(buf));
-		if (io_size >= 0)
-			break;
-		if (i > 10) {
-			flock(fd, LOCK_UN);
-			fatal("read(%s): %m", stepid_fname);
-		}
-	}
-	if (io_size > 0)
-		step_id = atoi(buf) + 1;
-	else
-		step_id = 1;
-
-	/* Write new step ID value */
-	snprintf(buf, sizeof(buf), "%d", step_id);
-	for (i = 0; ; i++) {
-		lseek(fd, 0, SEEK_SET);
-		io_size = write(fd, buf, sizeof(buf));
-		if (io_size == sizeof(buf))
-			break;
-		if (i > 10) {
-			flock(fd, LOCK_UN);
-			fatal("write(%s): %m", stepid_fname);
-		}
-	}
-
-	/* Unlock the file */
-	for (i = 0; ; i++) {
-		rc = flock(fd, LOCK_UN);
-		if (rc == 0)
-			break;
-		if (i > 10)
-			fatal("flock(%s): %m", stepid_fname);
-	}
-
-	return step_id;
 }
 
 /* Given a program name, return its communication protocol */
@@ -232,168 +167,6 @@ static char *_get_cmd_protocol(char *cmd)
 	return protocol;
 }
 
-/*
- * Parse a multi-prog input file line
- * line IN - line to parse
- * num_task OUT - number of tasks to be started
- * cmd OUT - command to execute, caller must xfree this
- * args OUT - arguments to the command, caller must xfree this
- */
-static void _parse_prog_line(char *in_line, int *num_tasks, char **cmd,
-			     char **args)
-{
-	int i;
-	int first_arg_inx = 0, last_arg_inx = 0;
-	int first_cmd_inx,  last_cmd_inx;
-	int first_task_inx, last_task_inx;
-	hostset_t hs;
-	char *tmp_str = NULL;
-
-	/* Get the task ID string */
-	for (i = 0; in_line[i]; i++)
-		if (!isspace(in_line[i]))
-			break;
-
-	if (!in_line[i]) /* empty line */
-		goto fini;
-	else if (in_line[i] == '#')
-		goto fini;
-	else if (!isdigit(in_line[i]))
-		goto bad_line;
-	first_task_inx = i;
-	for (i++; in_line[i]; i++) {
-		if (isspace(in_line[i]))
-			break;
-	}
-	if (!isspace(in_line[i]))
-		goto bad_line;
-	last_task_inx = i;
-
-	/* Get the command */
-	for (i++; in_line[i]; i++) {
-		if (!isspace(in_line[i]))
-			break;
-	}
-	if (in_line[i] == '\0')
-		goto bad_line;
-	first_cmd_inx = i;
-	for (i++; in_line[i]; i++) {
-		if (isspace(in_line[i]))
-			break;
-	}
-	if (!isspace(in_line[i]))
-		goto bad_line;
-	last_cmd_inx = i;
-
-	/* Get the command's arguments */
-	for (i++; in_line[i]; i++) {
-		if (!isspace(in_line[i]))
-			break;
-	}
-	if (in_line[i])
-		first_arg_inx = i;
-	for ( ; in_line[i]; i++) {
-		if (in_line[i] == '\n') {
-			last_arg_inx = i;
-			break;
-		}
-	}
-
-	/* Now transfer data to the function arguments */
-	in_line[last_task_inx] = '\0';
-	xstrfmtcat(tmp_str, "[%s]", in_line + first_task_inx);
-	hs = hostset_create(tmp_str);
-	xfree(tmp_str);
-	in_line[last_task_inx] = ' ';
-	if (!hs)
-		goto bad_line;
-	*num_tasks = hostset_count(hs);
-	hostset_destroy(hs);
-
-	in_line[last_cmd_inx] = '\0';
-	*cmd = xstrdup(in_line + first_cmd_inx);
-	in_line[last_cmd_inx] = ' ';
-
-	if (last_arg_inx)
-		in_line[last_arg_inx] = '\0';
-	if (first_arg_inx)
-		*args = xstrdup(in_line + first_arg_inx);
-	else
-		*args = NULL;
-	if (last_arg_inx)
-		in_line[last_arg_inx] = '\n';
-	return;
-
-bad_line:
-	error("invalid input line: %s", in_line);
-fini:	*num_tasks = -1;
-	return;
-}
-
-/*
- * Either get or set a POE command line,
- * line IN/OUT - line to set or get
- * length IN - size of line in bytes
- * step_id IN - -1 if input line, otherwise the step ID to output
- * RET true if more lines to get
- */
-static bool _multi_prog_parse(char *line, int length, int step_id)
-{
-	static int cmd_count = 0, inx = 0, total_tasks = 0;
-	static char **args = NULL, **cmd = NULL;
-	static int *num_tasks = NULL;
-	int i;
-
-	if (step_id < 0) {
-		char *tmp_args = NULL, *tmp_cmd = NULL;
-		int tmp_tasks = -1;
-		_parse_prog_line(line, &tmp_tasks, &tmp_cmd, &tmp_args);
-
-		if (tmp_tasks < 0) {
-			if (line[0] != '\n' && line[0] != '#')
-				error("bad line '%s'", line);
-			return true;
-		}
-
-		xrealloc(args, (sizeof(char *) * (cmd_count + 1)));
-		xrealloc(cmd,  (sizeof(char *) * (cmd_count + 1)));
-		xrealloc(num_tasks, (sizeof(int) * (cmd_count + 1)));
-		args[cmd_count] = tmp_args;
-		cmd[cmd_count]  = tmp_cmd;
-		num_tasks[cmd_count] = tmp_tasks;
-		total_tasks += tmp_tasks;
-		cmd_count++;
-		return true;
-	} else if (inx >= cmd_count) {
-		for (i = 0; i < cmd_count; i++) {
-			xfree(args[i]);
-			xfree(cmd[i]);
-		}
-		xfree(args);
-		xfree(cmd);
-		xfree(num_tasks);
-		cmd_count = 0;
-		inx = 0;
-		total_tasks = 0;
-		return false;
-	} else if (args[inx]) {
-		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args...> */
-		snprintf(line, length, "%s@%d%c%d%c%s:%d %s",
-			 cmd[inx], step_id, '%', total_tasks, '%',
-			 _get_cmd_protocol(cmd[inx]), num_tasks[inx],
-			 args[inx]);
-		inx++;
-		return true;
-	} else {
-		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> */
-		snprintf(line, length, "%s@%d%c%d%c%s:%d",
-			 cmd[inx], step_id, '%', total_tasks, '%',
-			 _get_cmd_protocol(cmd[inx]), num_tasks[inx]);
-		inx++;
-		return true;
-	}
-}
-
 /* Propagate srun options for use by POE by setting environment
  * variables, which are subsequently processed the libsrun/opt.c logic
  * as called from launch/slurm (by POE). */
@@ -419,6 +192,12 @@ static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
 	}
 	if (opt.dependency)
 		setenv("SLURM_DEPENDENCY", opt.dependency, 1);
+	if (opt.distribution != SLURM_DIST_UNKNOWN) {
+		snprintf(value, sizeof(value), "%d", opt.distribution);
+		setenv("SLURM_DISTRIBUTION", value, 1);
+	}
+	if (opt.exc_nodes)
+		setenv("SRUN_EXC_NODES", opt.exc_nodes, 1);
 	if (opt.exclusive)
 		setenv("SLURM_EXCLUSIVE", "1", 1);
 	if (opt.gres)
@@ -454,10 +233,16 @@ static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
 	}
 	if (opt.overcommit)
 		setenv("SLURM_OVERCOMMIT", "1", 1);
+	if (opt.nodelist)
+		setenv("SRUN_WITH_NODES", opt.nodelist, 1);
 	if (opt.partition)
 		setenv("SLURM_PARTITION", opt.partition, 1);
 	if (opt.qos)
 		setenv("SLURM_QOS", opt.qos, 1);
+	if (opt.relative_set) {
+		snprintf(value, sizeof(value), "%u", opt.relative);
+		setenv("SRUN_RELATIVE", value, 1);
+	}
 	if (opt.resv_port_cnt >= 0) {
 		snprintf(value, sizeof(value), "%d", opt.resv_port_cnt);
 		setenv("SLURM_RESV_PORTS", value, 1);
@@ -472,6 +257,20 @@ static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
 		snprintf(value, sizeof(value), "%d", opt.preserve_env);
 		setenv("SLURM_PRESERVE_ENV", value, 1);
 	}
+}
+
+static void _unblock_signals (void)
+{
+	sigset_t set;
+	int i;
+
+	for (i = 0; sig_array[i]; i++) {
+		/* eliminate pending signals, then set to default */
+		xsignal(sig_array[i], SIG_IGN);
+		xsignal(sig_array[i], SIG_DFL);
+	}
+	sigemptyset(&set);
+	xsignal_set_mask (&set);
 }
 
 /*
@@ -535,7 +334,6 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
 				    sig_atomic_t *destroy_job)
 {
-	int step_id;
 	char dname[512], value[32];
 	char *protocol = "mpi";
 	uint32_t ntasks = opt.ntasks;
@@ -581,7 +379,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	 * libraries are listed in the 'ldd output' as long as you know it is
 	 * not a mixed protocol (i.e. Openshmem + MPI, UPC + MPI, etc)
 	 * application.
-	 * 1) If MPI library is found (libmpi.so || libmich.so) -> use 'mpi'
+	 * 1) If MPI library is found (libmpi*.so) -> use 'mpi'
 	 * 2) if Openshmem library is found (libshmem.so) -> use 'shmem'
 	 * 3) if UPC runtime library is found (libxlpgas.so) -> use 'pgas'
 	 * 4) if only PAMI library is found (libpami.so) -> use 'pami'
@@ -595,8 +393,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 	debug("cmd:%s protcol:%s", opt.argv[1], protocol);
 
 	if (opt.multi_prog) {
-		char *buf;
-		int fd, i, j, k;
+		int fd, k;
 
 		if (opt.launch_cmd) {
 			error("--launch_cmd not available "
@@ -608,56 +405,23 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		 * be read from the compute node(s), so /tmp does not work.
 		 * We use the user's home directory (based upon "HOME"
 		 * environment variable) otherwise use current working
-		 * directory. The file name contains the job ID and step ID. */
-		step_id = _get_next_stepid(job->jobid, dname, sizeof(dname));
-		xstrfmtcat(cmd_fname,
-			   "%s/slurm_cmdfile_%u.%d",
-			   dname, job->jobid, step_id);
+		 * directory. The file is only created here, it is written
+		 * in launch_poe.c. */
+		_build_work_dir(dname, sizeof(dname));
+		xstrfmtcat(cmd_fname, "%s/slurm_cmdfile.%u",
+			   dname, (uint32_t) getpid());
 		while ((fd = creat(cmd_fname, 0600)) < 0) {
 			if (errno == EINTR)
 				continue;
 			fatal("creat(%s): %m", cmd_fname);
 		}
-
-		i = strlen(opt.argv[1]) + 128;
-		buf = xmalloc(i);
-		if (opt.multi_prog) {
-			char in_line[512];
-			FILE *fp = fopen(opt.argv[1], "r");
-			if (!fp)
-				fatal("fopen(%s): %m", opt.argv[1]);
-			/* Read and parse SLURM MPMD format file here */
-			while (fgets(in_line, sizeof(in_line), fp))
-				_multi_prog_parse(in_line, 512, -1);
-			fclose(fp);
-			/* Write LoadLeveler MPMD format file here */
-			while (_multi_prog_parse(in_line, 512, step_id))
-				j = xstrfmtcat(buf, "%s\n", in_line);
-		} else {
-			/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args...>*/
-			xstrfmtcat(buf, "%s@%d%c%d%c%s:%d",
-				   opt.argv[1], step_id, '%',
-				   opt.ntasks, '%', protocol, opt.ntasks);
-			for (i = 2; i < opt.argc; i++) /* start at argv[2] */
-				xstrfmtcat(buf, " %s", opt.argv[i]);
-			xstrfmtcat(buf, "\n");
-		}
-		i = 0;
-		j = strlen(buf);
-		while ((k = write(fd, &buf[i], j))) {
-			if (k > 0) {
-				i += k;
-				j -= k;
-			} else if ((errno != EAGAIN) && (errno != EINTR)) {
-				error("write(cmdfile): %m");
-				break;
-			}
-		}
 		(void) close(fd);
+
 		/* Set command file name via MP_CMDFILE and remove it from
 		 * the execute line. */
 		setenv("MP_NEWJOB", "parallel", 1);
 		setenv("MP_CMDFILE", cmd_fname, 1);
+		setenv("SLURM_CMDFILE", opt.argv[1], 1);
 		if (opt.argc) {
 			xfree(opt.argv[1]);
 			for (k = 1; k < opt.argc; k++)
@@ -666,14 +430,6 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		}
 	}
 
-	if (opt.cpu_bind_type) {
-		if ((opt.cpu_bind_type & CPU_BIND_TO_THREADS) ||
-		    (opt.cpu_bind_type & CPU_BIND_TO_CORES)) {
-			setenv("MP_BINDPROC", "yes", 1);
-			if (opt.launch_cmd)
-				xstrfmtcat(poe_cmd_line, " -bindproc yes");
-		}
-	}
 	if (opt.shared != (uint16_t) NO_VAL) {
 		char *shared_cpu_use = "multiple";
 
@@ -829,21 +585,31 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		}
 	}
 
-	if (opt.nodelist) {
-		char *fname = NULL, *host_name, *host_line;
-		pid_t pid = getpid();
-		hostlist_t hl;
-		int fd, len, offset, wrote;
-		hl = hostlist_create(opt.nodelist);
-		if (!hl)
-			fatal("Invalid nodelist: %s", opt.nodelist);
-		xstrfmtcat(fname, "slurm_hostlist.%u", (uint32_t) pid);
-		if ((fd = creat(fname, 0600)) < 0)
-			fatal("creat(%s): %m", fname);
-		while ((host_name = hostlist_shift(hl))) {
+	if (opt.nodelist && (opt.distribution == SLURM_DIST_ARBITRARY)) {
+		bool destroy_hostfile = 0;
+		if (!opt.hostfile) {
+			char *host_name, *host_line;
+			pid_t pid = getpid();
+			hostlist_t hl;
+			int fd, len, offset, wrote;
+
+			destroy_hostfile = 1;
+
+			hl = hostlist_create(opt.nodelist);
+			if (!hl)
+				fatal("Invalid nodelist: %s", opt.nodelist);
+			xstrfmtcat(opt.hostfile, "slurm_hostlist.%u",
+				   (uint32_t) pid);
+			if ((fd = creat(opt.hostfile, 0600)) < 0)
+				fatal("creat(%s): %m", opt.hostfile);
 			host_line = NULL;
-			xstrfmtcat(host_line, "%s\n", host_name);
-			free(host_name);
+			while ((host_name = hostlist_shift(hl))) {
+				if (host_line)
+					xstrcat(host_line, "\n");
+				xstrcat(host_line, host_name);
+				free(host_name);
+			}
+			hostlist_destroy(hl);
 			len = strlen(host_line) + 1;
 			offset = 0;
 			while (len > offset) {
@@ -853,17 +619,48 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 					if ((errno == EAGAIN) ||
 					    (errno == EINTR))
 						continue;
-					fatal("write(%s): %m", fname);
+					fatal("write(%s): %m", opt.hostfile);
 				}
 				offset += wrote;
 			}
 			xfree(host_line);
+			close(fd);
 		}
-		hostlist_destroy(hl);
-		info("wrote hostlist file at %s", fname);
-		xfree(fname);
-		close(fd);
+		debug2("using hostfile %s", opt.hostfile);
+		setenv("MP_HOSTFILE", opt.hostfile, 1);
+		if (opt.launch_cmd) {
+			xstrfmtcat(poe_cmd_line, " -hfile %s", opt.hostfile);
+			if (destroy_hostfile)
+				info("WARNING: hostlist file %s was created.  "
+				     "User is responsible to remove it when "
+				     "done.", opt.hostfile);
+		} else if (destroy_hostfile)
+			setenv("SRUN_DESTROY_HOSTFILE", opt.hostfile, 1);
+
+		/* RESD has to be set to yes or for some reason poe
+		   thinks things are already set up and then we are
+		   screwed.
+		*/
+		setenv("MP_RESD", "yes", 1);
+		if (opt.launch_cmd)
+			xstrcat(poe_cmd_line, " -resd yes");
+		/* FIXME: This next line is here just for debug
+		 * purpose.  It makes it so each task has a separate
+		 * line. */
+		setenv("MP_STDOUTMODE", "unordered", 1);
+		/* Just incase we didn't specify a file in srun. */
+		setenv("SLURM_ARBITRARY_NODELIST", opt.nodelist, 1);
+	} else {
+		/* Since poe doesn't need to know about the partition and it
+		   really needs to have RMPOOL set just set it to something.
+		   This only needs to happen if we don't specify the
+		   hostlist like above.
+		*/
+		setenv("MP_RMPOOL", "SLURM", 1);
+		if (opt.launch_cmd)
+			xstrfmtcat(poe_cmd_line, " -rmpool slurm");
 	}
+
 	if (opt.msg_timeout) {
 		snprintf(value, sizeof(value), "%d", opt.msg_timeout);
 		setenv("MP_TIMEOUT", value, 1);
@@ -892,24 +689,28 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 			xstrfmtcat(poe_cmd_line, " -procs %s", value);
 	}
 	if (opt.cpu_bind_type) {
-		char *task_affinity = NULL;
+		/* POE supports a limited subset of CPU binding options */
+		opt.cpu_bind_type &= (CPU_BIND_TO_THREADS |
+				      CPU_BIND_TO_CORES   |
+				      CPU_BIND_RANK);
+	}
+	if (opt.cpu_bind_type) {
+		char *task_affinity = NULL, *units;
+		int count = 1;
 
-		if (opt.cpu_bind_type & CPU_BIND_TO_THREADS)
-			task_affinity = "cpu";
-		else if (opt.cpu_bind_type & CPU_BIND_TO_CORES)
-			task_affinity = "core";
-		else if (opt.cpus_per_task) {
-			snprintf(value, sizeof(value), "cpu:%d",
-				 opt.cpus_per_task);
-			task_affinity = value;
-		}
+		if (opt.cpu_bind_type & CPU_BIND_TO_CORES)
+			units = "core";
+		else
+			units = "cpu";
 
-		if (task_affinity) {
-			setenv("MP_TASK_AFFINITY", task_affinity, 1);
-			if (opt.launch_cmd)
-				xstrfmtcat(poe_cmd_line, " -task_affinity %s",
-					   task_affinity);
-
+		if (opt.cpus_per_task)
+			count = MAX(opt.cpus_per_task, 1);
+		snprintf(value, sizeof(value), "%s:%d", units, count);
+		setenv("MP_TASK_AFFINITY", value, 1);
+		setenv("MP_BINDPROC", "yes", 1);
+		if (opt.launch_cmd) {
+			xstrfmtcat(poe_cmd_line, " -task_affinity %s", value);
+			xstrfmtcat(poe_cmd_line, " -bindproc yes");
 		}
 	}
 	if (opt.ntasks_per_node != NO_VAL) {
@@ -924,13 +725,6 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 			xstrfmtcat(poe_cmd_line,
 				   " -stdoutmode unordered");
 	}
-
-	/* Since poe doesn't need to know about the partition and it
-	   really needs to have RMPOOL set just set it to something.
-	*/
-	setenv("MP_RMPOOL", "SLURM", 1);
-	if (opt.launch_cmd)
-		xstrfmtcat(poe_cmd_line, " -rmpool slurm");
 
 	_propagate_srun_opts(nnodes, ntasks);
 	setenv("SLURM_STARTED_STEP", "YES", 1);
@@ -948,17 +742,17 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 }
 
 extern int launch_p_step_launch(
-	srun_job_t *job, slurm_step_io_fds_t *cio_fds, uint32_t *global_rc)
+	srun_job_t *job, slurm_step_io_fds_t *cio_fds, uint32_t *global_rc,
+	void (*signal_function)(int))
 {
 	int rc = 0;
-	pid_t pid;
 
-	pid = fork();
-	if (pid < 0) {
+	poe_pid = fork();
+	if (poe_pid < 0) {
 		error("fork: %m");
 		return 1;
-	} else if (pid > 0) {
-		if (waitpid(pid, &rc, 0) < 0)
+	} else if (poe_pid > 0) {
+		if (waitpid(poe_pid, &rc, 0) < 0)
 			error("Unable to reap poe child process");
 		*global_rc = rc;
 		/* Just because waitpid returns something doesn't mean
@@ -966,6 +760,8 @@ extern int launch_p_step_launch(
 		*/
 		rc = 0;
 	} else {
+		setpgrp();
+		_unblock_signals();
 		/* dup stdio onto our open fds */
 		if ((dup2(cio_fds->in.fd, 0) == -1) ||
 		    (dup2(cio_fds->out.fd, 1) == -1) ||
@@ -984,15 +780,11 @@ extern int launch_p_step_launch(
 
 extern int launch_p_step_wait(srun_job_t *job, bool got_alloc)
 {
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 extern int launch_p_step_terminate(void)
 {
-	if (cmd_fname)
-		(void) unlink(cmd_fname);
-	if (stepid_fname)
-		(void) unlink(stepid_fname);
 	return SLURM_SUCCESS;
 }
 
@@ -1004,5 +796,6 @@ extern void launch_p_print_status(void)
 
 extern void launch_p_fwd_signal(int signal)
 {
-
+	if (poe_pid)
+		kill(poe_pid, signal);
 }

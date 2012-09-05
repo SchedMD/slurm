@@ -52,7 +52,8 @@ typedef struct {
 				    sig_atomic_t *destroy_job);
 	int (*step_launch)         (srun_job_t *job,
 				    slurm_step_io_fds_t *cio_fds,
-				    uint32_t *global_rc);
+				    uint32_t *global_rc,
+				    void (*signal_function)(int));
 	int (*step_wait)           (srun_job_t *job, bool got_alloc);
 	int (*step_terminate)      (void);
 	void (*print_status)       (void);
@@ -458,12 +459,12 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 extern int launch_g_step_launch(
 	srun_job_t *job, slurm_step_io_fds_t *cio_fds,
-	uint32_t *global_rc)
+	uint32_t *global_rc, void (*signal_function)(int))
 {
 	if (launch_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(ops.step_launch))(job, cio_fds, global_rc);
+	return (*(ops.step_launch))(job, cio_fds, global_rc, signal_function);
 }
 
 extern int launch_g_step_wait(srun_job_t *job, bool got_alloc)

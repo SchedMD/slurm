@@ -43,6 +43,13 @@ if {[test_cray]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
 	exit 0
 }
+
+if {[test_launch_poe]} {
+	set step_id 1
+} else {
+	set step_id 0
+}
+
 #
 # Create a test script to be launch by srun
 #
@@ -65,7 +72,7 @@ set jobid  0
 set stepid 0
 set srun_pid [spawn $srun --unbuffered -v -n1 -t1 ./$test_script]
 expect {
-	-re "launching (($number)\.0)" {
+	-re "launching (($number)\.$step_id)" {
 		set stepid $expect_out(1,string)
 		set jobid $expect_out(2,string)
 		exp_continue
@@ -88,7 +95,6 @@ if {$jobid == 0} {
 send_user "Test saw stepid $stepid\n"
 set file [exp_open]
 close $file
-
 
 #
 # Lets see if the job step finishes normally

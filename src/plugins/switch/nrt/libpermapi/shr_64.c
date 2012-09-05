@@ -36,10 +36,11 @@
 \*****************************************************************************/
 
 #include <permapi.h>
+#include <ctype.h>
 #include <dlfcn.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <fcntl.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <arpa/inet.h>
 
 #ifdef HAVE_CONFIG_H
@@ -69,6 +70,7 @@
 bool srun_max_timer = false;
 bool srun_shutdown  = false;
 
+static char *poe_cmd_fname = NULL;
 static void *my_handle = NULL;
 static srun_job_t *job = NULL;
 static bool got_alloc = false;
@@ -545,6 +547,300 @@ srun_job_t * _read_job_srun_agent(void)
 	return srun_job;
 }
 
+/* Given a program name, return its communication protocol */
+static char *_get_cmd_protocol(char *cmd)
+{
+	int stdout_pipe[2] = {-1, -1}, stderr_pipe[2] = {-1, -1};
+	int read_size, buf_rem = 16 * 1024, offset = 0, status;
+	pid_t pid;
+	char *buf, *protocol = "mpi";
+
+	if ((pipe(stdout_pipe) == -1) || (pipe(stderr_pipe) == -1)) {
+		error("pipe: %m");
+		return "mpi";
+	}
+
+	pid = fork();
+	if (pid < 0) {
+		error("fork: %m");
+		return "mpi";
+	} else if (pid == 0) {
+		if ((dup2(stdout_pipe[1], 1) == -1) ||
+		    (dup2(stderr_pipe[1], 2) == -1)) {
+			error("dup2: %m");
+			return NULL;
+		}
+		(void) close(0);	/* stdin */
+		(void) close(stdout_pipe[0]);
+		(void) close(stdout_pipe[1]);
+		(void) close(stderr_pipe[0]);
+		(void) close(stderr_pipe[1]);
+
+		execlp("/usr/bin/ldd", "ldd", cmd, NULL);
+		error("execv(ldd) error: %m");
+		return NULL;
+	}
+
+	(void) close(stdout_pipe[1]);
+	(void) close(stderr_pipe[1]);
+	buf = xmalloc(buf_rem);
+	while ((read_size = read(stdout_pipe[0], &buf[offset], buf_rem))) {
+		if (read_size > 0) {
+			buf_rem -= read_size;
+			offset  += read_size;
+			if (buf_rem == 0)
+				break;
+		} else if ((errno != EAGAIN) || (errno != EINTR)) {
+			error("read(pipe): %m");
+			break;
+		}
+	}
+
+	if (strstr(buf, "libmpi"))
+		protocol = "mpi";
+	else if (strstr(buf, "libshmem.so"))
+		protocol = "shmem";
+	else if (strstr(buf, "libxlpgas.so"))
+		protocol = "pgas";
+	else if (strstr(buf, "libpami.so"))
+		protocol = "pami";
+	else if (strstr(buf, "liblapi.so"))
+		protocol = "lapi";
+	xfree(buf);
+	while ((waitpid(pid, &status, 0) == -1) && (errno == EINTR))
+		;
+	(void) close(stdout_pipe[0]);
+	(void) close(stderr_pipe[0]);
+
+	return protocol;
+}
+
+/*
+ * Parse a multi-prog input file line
+ * total_tasks - Number of tasks in the job,
+ *               also size of the cmd, args, and protocol arrays
+ * line IN - line to parse
+ * cmd OUT  - command to execute, caller must xfree this
+ * args OUT - arguments to the command, caller must xfree this
+ * protocol OUT - communication protocol of the command, do not xfree this
+ */
+static void _parse_prog_line(int total_tasks, char *in_line, char **cmd,
+			     char **args, char **protocol)
+{
+	int i, task_id;
+	int first_arg_inx = 0, last_arg_inx = 0;
+	int first_cmd_inx,  last_cmd_inx;
+	int first_task_inx, last_task_inx;
+	hostset_t hs = NULL;
+	char *task_id_str, *tmp_str = NULL;
+	char *line_args = NULL, *line_cmd = NULL, *line_protocol = NULL;
+
+	/* Get the task ID string */
+	for (i = 0; in_line[i]; i++)
+		if (!isspace(in_line[i]))
+			break;
+
+	if (!in_line[i]) /* empty line */
+		return;
+	else if (in_line[i] == '#')
+		return;
+	else if (!isdigit(in_line[i]))
+		goto bad_line;
+	first_task_inx = i;
+	for (i++; in_line[i]; i++) {
+		if (isspace(in_line[i]))
+			break;
+	}
+	if (!isspace(in_line[i]))
+		goto bad_line;
+	last_task_inx = i;
+
+	/* Get the command */
+	for (i++; in_line[i]; i++) {
+		if (!isspace(in_line[i]))
+			break;
+	}
+	if (in_line[i] == '\0')
+		goto bad_line;
+	first_cmd_inx = i;
+	for (i++; in_line[i]; i++) {
+		if (isspace(in_line[i]))
+			break;
+	}
+	if (!isspace(in_line[i]))
+		goto bad_line;
+	last_cmd_inx = i;
+
+	/* Get the command's arguments */
+	for (i++; in_line[i]; i++) {
+		if (!isspace(in_line[i]))
+			break;
+	}
+	if (in_line[i])
+		first_arg_inx = i;
+	for ( ; in_line[i]; i++) {
+		if (in_line[i] == '\n') {
+			last_arg_inx = i;
+			break;
+		}
+	}
+
+	/* Now transfer data to the function arguments */
+	in_line[last_task_inx] = '\0';
+	xstrfmtcat(tmp_str, "[%s]", in_line + first_task_inx);
+	hs = hostset_create(tmp_str);
+	xfree(tmp_str);
+	in_line[last_task_inx] = ' ';
+	if (!hs)
+		goto bad_line;
+
+	in_line[last_cmd_inx] = '\0';
+	line_cmd = xstrdup(in_line + first_cmd_inx);
+	in_line[last_cmd_inx] = ' ';
+
+	if (last_arg_inx)
+		in_line[last_arg_inx] = '\0';
+	if (first_arg_inx)
+		line_args = xstrdup(in_line + first_arg_inx);
+	if (last_arg_inx)
+		in_line[last_arg_inx] = '\n';
+
+	line_protocol = _get_cmd_protocol(line_cmd);
+	while ((task_id_str = hostset_pop(hs))) {
+		task_id = strtol(task_id_str, &tmp_str, 10);
+		if ((tmp_str[0] != '\0') || (task_id < 0))
+			goto bad_line;
+		if (task_id >= total_tasks)
+			continue;
+		cmd[task_id]  = xstrdup(line_cmd);
+		args[task_id] = xstrdup(line_args);
+		protocol[task_id] = line_protocol;
+	}
+
+	xfree(line_args);
+	xfree(line_cmd);
+	hostset_destroy(hs);
+	return;
+
+bad_line:
+	error("invalid input line: %s", in_line);
+	xfree(line_args);
+	xfree(line_cmd);
+	if (hs)
+		hostset_destroy(hs);
+	return;
+}
+
+/*
+ * Read a line from SLURM MPMD command file or write the equivalent POE line.
+ * line IN/OUT - line to read or write
+ * length IN - size of line in bytes
+ * step_id IN - -1 if input line, otherwise the step ID to output
+ * task_id IN - count of tasks in job step (if step_id == -1)
+ *              task_id to report (if step_id != -1)
+ * RET true if more lines to get
+ */
+static bool _multi_prog_parse(char *line, int length, int step_id, int task_id)
+{
+	static int total_tasks = 0;
+	static char **args = NULL, **cmd = NULL, **protocol = NULL;
+	int i;
+
+	if (step_id < 0) {
+		if (!args) {
+			args = xmalloc(sizeof(char *) * task_id);
+			cmd  = xmalloc(sizeof(char *) * task_id);
+			protocol = xmalloc(sizeof(char *) * task_id);
+			total_tasks = task_id;
+		}
+
+		_parse_prog_line(total_tasks, line, cmd, args, protocol);
+		return true;
+
+	} else if (task_id >= total_tasks) {
+		for (i = 0; i < total_tasks; i++) {
+			xfree(args[i]);
+			xfree(cmd[i]);
+		}
+		xfree(args);
+		xfree(cmd);
+		xfree(protocol);
+		total_tasks = 0;
+		return false;
+	} else if (!cmd[task_id]) {
+		error("Configuration file invalid, no record for task id %d",
+		      task_id);
+		return true;
+	} else if (args[task_id]) {
+		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> <args...> */
+		snprintf(line, length, "%s@%d%c%d%c%s:%d %s",
+			 cmd[task_id], step_id, '%', total_tasks, '%',
+			 protocol[task_id], 1, args[task_id]);
+		return true;
+	} else {
+		/* <cmd>@<step_id>%<total_tasks>%<protocol>:<num_tasks> */
+		snprintf(line, length, "%s@%d%c%d%c%s:%d",
+			 cmd[task_id], step_id, '%', total_tasks, '%',
+			 protocol[task_id], 1);
+		return true;
+	}
+}
+
+/* Convert a SLURM format MPMD file into a POE MPMD command file */
+static void _re_write_cmdfile(char *slurm_cmd_fname, char *poe_cmd_fname,
+			      uint32_t step_id, int task_cnt)
+{
+	char *buf, in_line[512];
+	int fd, i, j, k;
+	FILE *fp;
+
+	if (!slurm_cmd_fname || !poe_cmd_fname)
+		return;
+
+	buf = xmalloc(1024);
+	fp = fopen(slurm_cmd_fname, "r");
+	if (!fp) {
+		error("fopen(%s): %m", slurm_cmd_fname);
+		return;
+	}
+
+	/* Read and parse SLURM MPMD format file here */
+	while (fgets(in_line, sizeof(in_line), fp))
+		_multi_prog_parse(in_line, 512, -1, task_cnt);
+	fclose(fp);
+
+	/* Write LoadLeveler MPMD format file here */
+	for (i = 0; ; i++) {
+		if (!_multi_prog_parse(in_line, 512, step_id, i))
+			break;
+		j = xstrfmtcat(buf, "%s\n", in_line);
+	}
+	i = 0;
+	j = strlen(buf);
+	fd = open(poe_cmd_fname, O_TRUNC | O_RDWR);
+	if (fd < 0) {
+		error("open(%s): %m", poe_cmd_fname);
+		xfree(buf);
+		return;
+	}
+	while ((k = write(fd, &buf[i], j))) {
+		if (k > 0) {
+			i += k;
+			j -= k;
+		} else if ((errno != EAGAIN) && (errno != EINTR)) {
+			error("write(cmdfile): %m");
+			break;
+		}
+	}
+	close(fd);
+	xfree(buf);
+}
+
+void _self_signal(int signal)
+{
+	kill(getpid(), signal);
+}
+
 /************************************/
 
 /* The connection communicates information to and from the resource
@@ -594,7 +890,8 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		debug("got pe_rm_connect called");
 		launch_common_set_stdio_fds(job, &cio_fds);
 	} else {
-		error("pe_rm_connect: unknown caller");
+		*error_msg = xstrdup_printf("pe_rm_connect: unknown caller");
+		error("%s", *error_msg);
 		return -1;
 	}
 
@@ -659,7 +956,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	}
 	xfree(total_node_list);
 	job->fir_nodeid = orig_task_num;
-	if (launch_g_step_launch(job, &cio_fds, &global_rc)) {
+	if (launch_g_step_launch(job, &cio_fds, &global_rc, _self_signal)) {
 		*error_msg = xstrdup_printf(
 			"pe_rm_connect: problem with launch: %s",
 			slurm_strerror(errno));
@@ -704,20 +1001,28 @@ extern void pe_rm_free(rmhandle_t *resource_mgr)
 {
 	uint32_t rc = 0;
 
-	xassert(job);
+	if (job && job->step_ctx) {
+		debug("got pe_rm_free called %p %p", job, job->step_ctx);
+		/* Since we can't relaunch the step here don't worry about the
+		   return code.
+		*/
+		launch_g_step_wait(job, got_alloc);
+		/* We are at the end so don't worry about freeing the
+		   srun_job_t pointer */
+		fini_srun(job, got_alloc, &rc, slurm_started);
+	}
 
-	debug("got pe_rm_free called %p %p", job, job->step_ctx);
-	/* Since we can't relaunch the step here don't worry about the
-	   return code.
-	*/
-	launch_g_step_wait(job, got_alloc);
-	/* We are at the end so don't worry about freeing the
-	   srun_job_t pointer */
-	fini_srun(job, got_alloc, &rc, slurm_started);
-	hostlist_destroy(total_hl);
-	total_hl = NULL;
+	if (total_hl) {
+		hostlist_destroy(total_hl);
+		total_hl = NULL;
+	}
 	*resource_mgr = NULL;
 	dlclose(my_handle);
+	if (poe_cmd_fname)
+		(void) unlink(poe_cmd_fname);
+	/* remove the hostfile if needed */
+	if ((poe_cmd_fname = getenv("SRUN_DESTROY_HOSTFILE")))
+		(void) unlink(poe_cmd_fname);
 }
 
 /* The memory that is allocated to events generated by the resource
@@ -813,7 +1118,8 @@ extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 		debug("pe_rm_get_event called");
 		return 0;
 	} else if (pm_type != PM_POE) {
-		error("pe_rm_get_event: unknown caller");
+		*error_msg = xstrdup_printf("pe_rm_get_event: unknown caller");
+		error("%s", *error_msg);
 		return -1;
 	}
 
@@ -863,7 +1169,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 			      char ** error_msg)
 {
 	job_info_t *ret_info = xmalloc(sizeof(job_info_t));
-	int i, j, task_id = 0;
+	int i, j;
 	slurm_step_layout_t *step_layout;
 	hostlist_t hl;
 	char *host;
@@ -881,11 +1187,22 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		debug("pe_rm_get_job_info called");
 		return 0;
 	} else if (pm_type != PM_POE) {
-		error("pe_rm_get_job_info: unknown caller");
+		*error_msg = xstrdup_printf(
+			"pe_rm_get_job_info: unknown caller");
+		error("%s", *error_msg);
 		return -1;
 	}
 
-	debug("got pe_rm_get_job_info called %p %p", job_info, *job_info);
+	debug("got pe_rm_get_job_info called");
+	if (!job || !job->step_ctx) {
+		error("pe_rm_get_job_info: It doesn't appear "
+		      "pe_rm_submit_job was called.  I am guessing "
+		      "PE_RM_BATCH is set somehow.  It things don't work well "
+		      "using this mode unset the env var and retry.");
+		create_srun_job(&job, &got_alloc, slurm_started, 0);
+		/* make sure we set up a signal handler */
+		pre_launch_srun_job(job, slurm_started, 0);
+	}
 
 	*job_info = ret_info;
 	ret_info->job_name = xstrdup(opt.job_name);
@@ -893,12 +1210,16 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 	ret_info->procs = job->ntasks;
 	ret_info->max_instances = 0;
 	ret_info->check_pointable = 0;
-	if (!job || !job->step_ctx)
-		return -1;
+	ret_info->rset_name = "RSET_NONE";
+	ret_info->endpoints = 1;
 
 	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &resp);
-	if (!resp)
+	if (!resp) {
+		*error_msg = xstrdup_printf(
+			"pe_rm_get_job_info: no step response in step ctx");
+		error("%s", *error_msg);
 		return -1;
+	}
 	slurm_jobinfo_ctx_get(resp->switch_job, NRT_JOBINFO_KEY, &job_key);
 	ret_info->job_key = job_key;
 
@@ -972,11 +1293,16 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		host_ptr->task_count = step_layout->tasks[i];
 		host_ptr->task_ids =
 			xmalloc(sizeof(int) * host_ptr->task_count);
-		for (j=0; j<host_ptr->task_count; j++)
-			host_ptr->task_ids[j] = task_id++;
-		debug3("%s = %s %d tasks",
+		/* Task ids are already set up in the layout, so just
+		   use them.
+		*/
+		debug2("%s = %s %d tasks",
 		       host_ptr->host_name, host_ptr->host_address,
 		       host_ptr->task_count);
+		for (j=0; j<host_ptr->task_count; j++) {
+			host_ptr->task_ids[j] = step_layout->tids[i][j];
+			debug2("taskid %d", host_ptr->task_ids[j]);
+		}
 		i++;
 		if (i > ret_info->host_count) {
 			error("we have more nodes that we bargined for.");
@@ -1082,7 +1408,6 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	char *srun_debug = NULL, *tmp_char = NULL;
 	char *myargv[3] = { "poe", NULL, NULL };
 	int debug_level = log_opts.logfile_level;
-
 	/* SLURM was originally written against 1300, so we will
 	 * return that, no matter what comes in so we always work.
 	 */
@@ -1117,6 +1442,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		log_opts.stderr_level = log_opts.logfile_level =
 			log_opts.syslog_level = debug_level;
 	}
+
 	/* This will be used later in the code to set the
 	 * _verbose level. */
 	if (debug_level >= LOG_LEVEL_INFO)
@@ -1287,21 +1613,23 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 	}
 
 	debug("got pe_rm_init called");
-
 	/* This needs to happen before any other threads so we can
 	   catch the signals correctly.  Send in NULL for logopts
-	   because we just set it up. Also always send 1 for
-	   slurm_started since we don't want to start up the shepard
-	   thread in this case.
+	   because we just set it up.
 	*/
-	init_srun(2, myargv, NULL, debug_level, 1);
-
+	init_srun(2, myargv, NULL, debug_level, 0);
 	/* This has to be done after init_srun so as to not get over
 	   written. */
 	if (getenv("SLURM_PRESERVE_ENV"))
 		opt.preserve_env = true;
-
-	xfree(tmp_char); /* just in case */
+	if ((tmp_char = getenv("SRUN_EXC_NODES")))
+		opt.exc_nodes = xstrdup(tmp_char);
+	if ((tmp_char = getenv("SRUN_WITH_NODES")))
+		opt.nodelist = xstrdup(tmp_char);
+	if ((tmp_char = getenv("SRUN_RELATIVE"))) {
+		opt.relative = atoi(tmp_char);
+		opt.relative_set = 1;
+	}
 
 	if (pm_type == PM_PMD) {
 		uint32_t job_id = -1, step_id = -1;
@@ -1311,14 +1639,18 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		if ((srun_debug = getenv("SLURM_STEP_ID")))
 			step_id = atoi(srun_debug);
 		if (job_id == -1 || step_id == -1) {
-			error("SLURM_JOB_ID or SLURM_STEP_ID "
-			      "not found %d.%d", job_id, step_id);
+			*error_msg = xstrdup_printf(
+				"pe_rm_init: SLURM_JOB_ID or SLURM_STEP_ID "
+				"not found %d.%d", job_id, step_id);
+			error("%s", *error_msg);
 			return -1;
 		}
 
 		job = _read_job_srun_agent();
 		if (!job) {
-			error("no job created");
+			*error_msg = xstrdup_printf(
+				"pe_rm_init: no job created");
+			error("%s", *error_msg);
 			return -1;
 		}
 
@@ -1332,7 +1664,8 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		 * PMD to fanout child processes on other nodes */
 		_spawn_fe_agent();
 	} else {
-		error("pe_rm_init: unknown caller");
+		*error_msg = xstrdup_printf("pe_rm_init: unknown caller");
+		error("%s", *error_msg);
 		return -1;
 	}
 
@@ -1405,20 +1738,29 @@ extern int pe_rm_send_event(rmhandle_t resource_mgr, job_event_t *job_event,
 int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		     char** error_msg)
 {
+	char *slurm_cmd_fname = NULL;
 	job_request_t *pe_job_req = NULL;
 
 	if (pm_type == PM_PMD) {
 		debug("pe_rm_submit_job called from PMD");
 		return 0;
-	} else if (pm_type != PM_POE) {
-		error("pe_rm_submit_job: unknown caller");
+	} else if (pm_type == PM_POE) {
+		slurm_cmd_fname = getenv("SLURM_CMDFILE");
+		if (slurm_cmd_fname)
+			poe_cmd_fname = getenv("MP_CMDFILE");
+	} else {
+		*error_msg = xstrdup_printf("pe_rm_submit_job: unknown caller");
+		error("%s", *error_msg);
 		return -1;
 	}
 
 	debug("got pe_rm_submit_job called %d", job_cmd.job_format);
 	if (job_cmd.job_format != 1) {
 		/* We don't handle files */
-		error("SLURM doesn't handle files to submit_job");
+		*error_msg = xstrdup_printf(
+			"pe_rm_submit_job: SLURM doesn't handle files "
+			"to submit_job");
+		error("%s", *error_msg);
 		return -1;
 	}
 
@@ -1447,6 +1789,22 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	debug2("node_topology\t= %s", pe_job_req->node_topology);
 	debug2("pool\t= %s", pe_job_req->pool);
 
+	if (!opt.nodelist
+	    && pe_job_req->host_names && *pe_job_req->host_names) {
+		/* This means there was a hostfile used for this job.
+		 * So we need to set up the arbitrary distribution of it. */
+		char **names = pe_job_req->host_names;
+		opt.distribution = SLURM_DIST_ARBITRARY;
+		while (names && *names) {
+			if (opt.nodelist)
+				xstrfmtcat(opt.nodelist, ",%s",
+					   strtok(*names, "."));
+			else
+				opt.nodelist = xstrdup(strtok(*names, "."));
+			names++;
+		}
+	}
+
 	if (pe_job_req->num_nodes != -1)
 		opt.max_nodes = opt.min_nodes = pe_job_req->num_nodes;
 
@@ -1458,9 +1816,12 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		opt.ntasks = pe_job_req->total_tasks;
 	}
 
-	create_srun_job(&job, &got_alloc, slurm_started);
+	create_srun_job(&job, &got_alloc, slurm_started, 0);
+	_re_write_cmdfile(slurm_cmd_fname, poe_cmd_fname, job->stepid,
+			  pe_job_req->total_tasks);
 
 	/* make sure we set up a signal handler */
-	pre_launch_srun_job(job, slurm_started);
+	pre_launch_srun_job(job, slurm_started, 0);
+
 	return 0;
 }

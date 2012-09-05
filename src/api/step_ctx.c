@@ -431,6 +431,7 @@ slurm_step_ctx_daemon_per_node_hack(
 {
 	slurm_step_layout_t *layout;
 	int i, orig_task_num = *curr_task_num;
+	int sock = -1;
 
 	if ((ctx == NULL) || (ctx->magic != STEP_CTX_MAGIC)) {
 		slurm_seterrno(EINVAL);
@@ -439,6 +440,7 @@ slurm_step_ctx_daemon_per_node_hack(
 
 	if (!orig_task_num) {
 		/* hack the context step layout */
+		sock = ctx->launch_state->slurmctld_socket_fd;
 		slurm_step_layout_destroy(ctx->step_resp->step_layout);
 		ctx->step_resp->step_layout =
 			xmalloc(sizeof(slurm_step_layout_t));
@@ -465,9 +467,10 @@ slurm_step_ctx_daemon_per_node_hack(
 
 	/* Alter the launch state structure now that the settings
 	 * have changed */
-	if (!ctx->launch_state)
+	if (!ctx->launch_state) {
 		ctx->launch_state = step_launch_state_create(ctx);
-	else
+		ctx->launch_state->slurmctld_socket_fd = sock;
+	} else
 		step_launch_state_alter(ctx);
 
 	return SLURM_SUCCESS;

@@ -45,6 +45,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -405,12 +406,14 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 
 extern void init_srun(int ac, char **av,
 		      log_options_t *logopt, int debug_level,
-		      bool slurm_started)
+		      bool handle_signals)
 {
 	/* This must happen before we spawn any threads
 	 * which are not designed to handle them */
-	if (xsignal_block(sig_array) < 0)
-		error("Unable to block signals");
+	if (handle_signals) {
+		if (xsignal_block(sig_array) < 0)
+			error("Unable to block signals");
+	}
 
 	/* Initialize plugin stack, read options from plugins, etc.
 	 */
@@ -463,7 +466,7 @@ extern void init_srun(int ac, char **av,
 }
 
 extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
-			    bool slurm_started)
+			    bool slurm_started, bool handle_signals)
 {
 	resource_allocation_response_msg_t *resp;
 	srun_job_t *job = NULL;
@@ -540,7 +543,7 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 		else if (!opt.job_name_set_env && opt.argc)
 			setenvfs("SLURM_JOB_NAME=%s", opt.argv[0]);
 
-		if ( !(resp = allocate_nodes()) )
+		if ( !(resp = allocate_nodes(handle_signals)) )
 			exit(error_exit);
 		*got_alloc = true;
 		_print_job_information(resp);
@@ -590,10 +593,12 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 	*p_job = job;
 }
 
-extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started)
+extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
+				bool handle_signals)
 {
 	pthread_attr_t thread_attr;
-	if (!signal_thread) {
+
+	if (handle_signals && !signal_thread) {
 		slurm_attr_init(&thread_attr);
 		while (pthread_create(&signal_thread, &thread_attr,
 				      _srun_signal_mgr, job)) {
@@ -618,7 +623,7 @@ extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started)
 extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
 		      bool slurm_started)
 {
-	/* If running from poe Most of this already happened in srun. */
+	/* If running from poe, most of this already happened in srun. */
 	if (slurm_started)
 		goto cleanup;
 	if (got_alloc) {

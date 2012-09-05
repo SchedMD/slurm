@@ -191,8 +191,8 @@ int srun(int ac, char **av)
 	}
 #endif
 
-	init_srun(ac, av, &logopt, debug_level, 0);
-	create_srun_job(&job, &got_alloc, 0);
+	init_srun(ac, av, &logopt, debug_level, 1);
+	create_srun_job(&job, &got_alloc, 0, 1);
 
 	/*
 	 *  Enhance environment for job
@@ -258,11 +258,12 @@ int srun(int ac, char **av)
 
 	/* re_launch: */
 relaunch:
-	pre_launch_srun_job(job, 0);
+	pre_launch_srun_job(job, 0, 1);
 
 	launch_common_set_stdio_fds(job, &cio_fds);
 
-	if (!launch_g_step_launch(job, &cio_fds, &global_rc)) {
+	if (!launch_g_step_launch(job, &cio_fds, &global_rc,
+				  launch_g_fwd_signal)) {
 		if (launch_g_step_wait(job, got_alloc) == -1)
 			goto relaunch;
 	}

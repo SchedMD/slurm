@@ -48,11 +48,15 @@ print_header $test_id
 if { [test_xcpu] } {
 	send_user "\nWARNING: This test is incomptabible with XCPU system\n"
 	exit 0
-}
-
-if {[test_cray]} {
+} elseif {[test_cray]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
 	exit $exit_code
+}
+
+if {[test_launch_poe]} {
+	set step_id 1
+} else {
+	set step_id 0
 }
 
 #
@@ -111,7 +115,7 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 	exit 1
 }
 exec $bin_sleep 5
-spawn $squeue --steps=$job_id.0
+spawn $squeue --steps=$job_id.$step_id
 expect {
 	eof {
 		wait
@@ -141,9 +145,9 @@ exec $bin_sleep 5
 # sleep will exit along with the entire job.
 #
 set found_step 0
-spawn $squeue --steps=$job_id.0
+spawn $squeue --steps=$job_id.$step_id
 expect {
-	-re "($job_id).0" {
+	-re "($job_id).$step_id" {
 		set found_step 1
 		exp_continue
 	}
@@ -284,7 +288,7 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 	exit 1
 }
 exec $bin_sleep 5
-spawn $squeue --steps=$job_id.0
+spawn $squeue --steps=$job_id.$step_id
 expect {
 	eof {
 		wait
@@ -302,9 +306,9 @@ exec $bin_sleep 5
 # Confirm that job is gone
 #
 set found_step 0
-spawn $squeue --steps=$job_id.0
+spawn $squeue --steps=$job_id.$step_id
 expect {
-	-re "($job_id).0" {
+	-re "($job_id).$step_id" {
 		set found_step 1
 		exp_continue
 	}

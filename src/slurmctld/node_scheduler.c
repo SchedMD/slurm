@@ -1695,7 +1695,7 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 	char *   tok, *   last = NULL, *prefix = "";
 	char *subtok, *sublast = NULL;
 	char *req_config  = job_ptr->gres;
-	char *tmp_str, *select_type = NULL;
+	char *tmp_str;
 	uint32_t ngres_req;
 	int      valtype, rv = 0;
 
@@ -1756,7 +1756,7 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 	}
 
 	if ( !job_ptr->gres_alloc || (job_ptr->gres_alloc[0] == '\0') ) {
-		select_type = slurm_get_select_type();
+		char *select_type = slurm_get_select_type();
 
 		/* Find out which select type plugin we have so we can decide
 		 * what value to look for. */
@@ -1764,6 +1764,7 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 			valtype = GRES_VAL_TYPE_CONFIG;
 		else
 			valtype = GRES_VAL_TYPE_ALLOC;
+		xfree(select_type);
 
 		/* Now build the GRES allocated field. */
 		rv = _build_gres_alloc_string(job_ptr, valtype);
