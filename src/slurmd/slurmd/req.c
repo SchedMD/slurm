@@ -2028,6 +2028,8 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 	}
 #endif
 
+	debug("Sending signal %u to step %u.%u", req->signal, req->job_id,
+	      req->job_step_id);
 	rc = _signal_jobstep(req->job_id, req->job_step_id, req_uid,
 			     req->signal);
 	slurm_send_rc_msg(msg, rc);
