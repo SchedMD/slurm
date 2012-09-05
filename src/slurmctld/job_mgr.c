@@ -9199,6 +9199,21 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 /* Send specified signal to all steps associated with a job */
 static void _signal_job(struct job_record *job_ptr, int signal)
 {
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+	step_iterator = list_iterator_create(job_ptr->step_list);
+	while ((step_ptr = list_next(step_iterator))) {
+		/* Since we have already checked the uid,
+		 * we can send this signal as uid 0. */
+		job_step_signal(job_ptr->job_id, step_ptr->step_id,
+				signal, 0);
+	}
+	list_iterator_destroy (step_iterator);
+
+	return;
+#else
+
 #ifndef HAVE_FRONT_END
 	int i;
 #endif
@@ -9238,6 +9253,7 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 	agent_args->msg_args = signal_job_msg;
 	agent_queue_request(agent_args);
 	return;
+#endif
 }
 
 /* Send suspend request to slumrd of all nodes associated with a job */
