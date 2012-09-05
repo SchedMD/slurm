@@ -20,7 +20,7 @@ Also see <a href="tutorials.html">Tutorials</a> and
 <li><a href="bluegene.html">Blue Gene User and Administrator Guide</a></li>
 <li><a href="cray.html">Cray User and Administrator Guide</a></li>
 <li><a href="ibm.html">IBM AIX User and Administrator Guide</a></li>
-<li><a href="poe.html">IBM Parallel Environment User and Administrator Guide</a></li>
+<li><a href="ibm-pe.html">IBM Parallel Environment User and Administrator Guide</a></li>
 </ul>
 </ul>
 
@@ -61,7 +61,7 @@ Also see <a href="tutorials.html">Tutorials</a> and
 <li><a href="bluegene.html">Blue Gene User and Administrator Guide</a></li>
 <li><a href="cray.html">Cray User and Administrator Guide</a></li>
 <li><a href="ibm.html">IBM AIX User and Administrator Guide</a></li>
-<li><a href="poe.html">IBM Parallel Environment User and Administrator Guide</a></li>
+<li><a href="ibm-pe.html">IBM Parallel Environment User and Administrator Guide</a></li>
 <li><a href="sun_const.html">Sun Constellation Aministrator Guide</a></li>
 </ul>
 </ul>
