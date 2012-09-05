@@ -55,7 +55,7 @@ if { [string length $partition] == 0 } {
 }
 
 #
-# execute poe with a an mpi script
+# execute salloc with a script containing a collection of MPI programs
 #
 set timeout 120
 spawn $salloc -t2 -N2 -n2 --network=us ./$script

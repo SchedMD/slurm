@@ -147,7 +147,9 @@ for most debugging purposes. You or the debugging tool must invoke the poe
 command directly. In order to facilitate the direct use of poe, srun's 
 <br><b>--launch-cmd</b> option may be used with the options normally used.
 srun will then print the equivalent poe command line, which
-can subsequently be used with the debugger.</p>
+can subsequently be used with the debugger. The poe options must be explicitly
+set even if the command is executed from within an existing SLURM allocation
+(i.e. from within an allocation created by the salloc or sbatch command).</p>
 
 <h3>Checkpoint</h3>
 
@@ -156,7 +158,7 @@ SLURM supports checkpoint via poe.
 In order to enable checkpoint, the shell executing the poe command must
 itself be initiated with the environment variable <b>CHECKPOINT=yes</b>.
 One file is written for each node on which the job is executing, plus
-another for the script executing poe.a
+another for the script executing poe.
 By default, the checkpoint files will be written to the current working
 directory of the job.
 Names and locations of these files can be controlled using the
