@@ -26,7 +26,8 @@ directly if desired. The actual task launch process is as follows:</p>
 <li>The srun command translates its options and invokes the poe command.</li>
 <li>The poe command loads a SLURM library that provides various resource
 management functionality.</li>
-<li>The poe command, through the SLURM library, launches a process named
+<li>The poe command, through the SLURM library, creates a SLURM step
+allocation and launches a process named
 "pmdv12" on the appropriate compute nodes. Note that the "v12" on the end of
 the process name represents the version number of the "pmd" process and is
 subject to change.</li>
@@ -332,6 +333,12 @@ export MP_TIMEOUT=600
 
 <p>POE can not support a step ID of zero. In POE installations, a job's
 first step ID will be 1 rather than 0.</p>
+
+<p>Since the SLURM step launches the PE PMD process instead of the
+users tasks the exit code stored in accounting will be that of the PMD
+instead of the users tasks.  The exit code of the job allocation if
+started with srun will be correct as we will grab the exit code from
+the wrapped poe.</p>
 
 <h2>System Administration</h2>
 
