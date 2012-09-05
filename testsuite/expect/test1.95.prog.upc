@@ -24,6 +24,7 @@
 \*****************************************************************************/
 
 #include <stdio.h>
+#include <unistd.h>
 #include <upc.h>
 
 shared int inx[THREADS];
