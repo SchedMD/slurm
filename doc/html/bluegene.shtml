@@ -433,44 +433,10 @@ etc.).  Sample prolog and epilog scripts follow. </p>
 interfere with each other, scheduling is somewhat different on a BlueGene
 system than typical clusters.</p>
 
-<p><b>IMPORTANT: Choose your <i>SchedType in your slurm.conf</i>
-wisely.</b>  The below only really applies to dynamic
-partitioning.  <b>If you use static or overlap partitioning always use
-SchedType=sched/builtin.</b></p>
-<p>The way the backfill works is on a node basis or in bluegene's case
-a midplane level.  So the problem discribed below happens on
-machines using select/cons_res as well.</p>
-
-<p>Lets use a bluegene 1 midplane system for simplicities
-sake. (imagine a 1 node 512 core system using cons_res and you will
-have the same picture)</p>
-
-<p>If you have a job running on 256 of the midplane and the next job
-looking to run is 512 the backfill takes the node off from running
-from the list saying this is claimed for the next run.  The next job
-is only 16 nodes and could easily run before the 256 finishes so it
-should be backfilled but because the 512 has already claimed the
-resources it does not run.  So it could delay the start of the 16
-node job until it becomes the highest priority job even if it would
-really run before hand.</p>
-
-<p>Using Builtin fixes this scenario and goes through the list in
-priority running any job it can without respect to backfill.  This
-causes a new problem though.  If there is a large job there is no
-way for the queue to automatically drain and run it as in
-backfill. So large jobs could starve and will hang out until the
-system is free of other jobs.</p>
-
-<p>So there are pluses and minuses for each method.  On a large
-bluegene install it is probably a good idea to use backfill for most of the
-time and only switch to builtin when you want to stress things
-(backfill is much heavier of a protocol).  Smaller systems should probably
-run as builtin all the time especially if there is only 1
-midplane.</p>
-
-<p>The backfill plugin can be changed to be more resource conscious
-which would resolve all these issues, but this has not happened
-yet. But that is enough about SchedType, onward.</p>
+<p>Starting in 2.4.3 SchedType=sched/backfill works in all modes and
+for all job sizes.  Before this release there were issues backfilling
+jobs smaller than a midplane.  It is encourged to upgrade to at least
+2.4.3 for better backfill behavior.</p>
 
 <p>SLURM does support different partitions with an assortment of
 different scheduling parameters.
