@@ -100,7 +100,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 set matches 0
 spawn $scontrol --detail show job $job_id
 expect {
-	-re "ExitCode=0:0" {
+	-re " ExitCode=0:0" {
 		incr matches
 		exp_continue
 	}
@@ -206,7 +206,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 set matches 0
 spawn $scontrol --detail show job $job_id
 expect {
-	-re "ExitCode=33:0" {
+	-re " ExitCode=33:0" {
 		incr matches
 		exp_continue
 	}
