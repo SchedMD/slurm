@@ -522,14 +522,14 @@ no_rollup_change:
 		xstrfmtcat(query, "time_start=%ld, job_name='%s', state=%u, "
 			   "cpus_alloc=%u, nodes_alloc=%u, id_qos=%u, "
 			   "id_assoc=%u, id_wckey=%u, id_resv=%u, "
-			   "timelimit=%u, gres_req='%s', gres_alloc='%s' "
-			   "where job_db_inx=%d",
+			   "timelimit=%u, gres_req='%s', gres_alloc='%s', "
+			   "time_eligible=%ld where job_db_inx=%d",
 			   start_time, jname, job_state,
 			   job_ptr->total_cpus, node_cnt, job_ptr->qos_id,
 			   job_ptr->assoc_id, wckeyid,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   job_ptr->gres_req, job_ptr->gres_alloc,
-			   job_ptr->db_index);
+			   begin_time, job_ptr->db_index);
 
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
