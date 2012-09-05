@@ -58,6 +58,7 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
   <li><b>lapi</b> Low-level Application Programming Interface</li>
   <li><b>mpi</b> Message Passing Interface (default)</li>
   <li><b>pami</b> Parallel Active Message Interface</li>
+  <li><b>shmem</b> OpenSHMEM interface</li>
   <li><b>upc</b> Unified Parallel C Interface</li>
   </ul>
 <li>Other options</li>
@@ -479,6 +480,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 4 September 2012</p></td>
+<p style="text-align:center;">Last modified 5 September 2012</p></td>
 
 <!--#include virtual="footer.txt"-->
