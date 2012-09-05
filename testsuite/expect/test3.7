@@ -238,8 +238,9 @@ if {[wait_for_job $job_id2 DONE] != 0} {
 }
 if {$not_supported == 0} {
 	wait_for_file $file_out1
-	check_output $file_out1
 	wait_for_file $file_out2
+
+	check_output $file_out1
 	check_output $file_out2
 }
 
