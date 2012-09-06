@@ -106,6 +106,10 @@ static void _set_pending_job_id(uint32_t job_id)
 
 static void _signal_while_allocating(int signo)
 {
+	debug("Got signal %d", signo);
+	if (signo == SIGCONT)
+		return;
+
 	destroy_job = 1;
 	if (pending_job_id != 0) {
 		slurm_complete_job(pending_job_id, NO_VAL);
