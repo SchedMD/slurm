@@ -1149,7 +1149,7 @@ rwfail:
 static int
 _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 {
-	static launch_poe = -1;
+	static int launch_poe = -1;
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
 
