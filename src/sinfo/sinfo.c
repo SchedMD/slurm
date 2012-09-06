@@ -619,6 +619,9 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 	if (params.match_flags.weight_flag &&
 	    (node_ptr->weight      != sinfo_ptr->min_weight))
 		return false;
+	if (params.match_flags.cpu_load_flag &&
+	    (node_ptr->cpu_load        != sinfo_ptr->min_cpu_load))
+		return false;
 
 	return true;
 }
@@ -713,6 +716,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		sinfo_ptr->max_mem    = node_ptr->real_memory;
 		sinfo_ptr->min_weight = node_ptr->weight;
 		sinfo_ptr->max_weight = node_ptr->weight;
+		sinfo_ptr->min_cpu_load = node_ptr->cpu_load;
+		sinfo_ptr->max_cpu_load = node_ptr->cpu_load;
 	} else if (hostlist_find(sinfo_ptr->nodes, node_ptr->name) != -1) {
 		/* we already have this node in this record,
 		 * just return, don't duplicate */
@@ -752,6 +757,11 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 			sinfo_ptr->min_weight = node_ptr->weight;
 		if (sinfo_ptr->max_weight < node_ptr->weight)
 			sinfo_ptr->max_weight = node_ptr->weight;
+
+		if (sinfo_ptr->min_cpu_load > node_ptr->cpu_load)
+			sinfo_ptr->min_cpu_load = node_ptr->cpu_load;
+		if (sinfo_ptr->max_cpu_load < node_ptr->weight)
+			sinfo_ptr->max_cpu_load = node_ptr->cpu_load;
 	}
 
 	hostlist_push(sinfo_ptr->nodes,     node_ptr->name);

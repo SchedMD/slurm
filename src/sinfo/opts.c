@@ -76,7 +76,7 @@ static bool  _node_state_equal (int state_id, const char *state_str);
 static int   _node_state_id (char *str);
 static const char * _node_state_list (void);
 static void  _parse_token( char *token, char *field, int *field_size,
-                           bool *right_justify, char **suffix);
+			   bool *right_justify, char **suffix);
 static void  _print_options( void );
 static void  _usage( void );
 
@@ -314,25 +314,25 @@ _next_tok (char *sep, char **str)
 {
 	char *tok;
 
-        /* push str past any leading separators */
-        while ((**str != '\0') && (strchr(sep, **str) != '\0'))
-                (*str)++;
+	/* push str past any leading separators */
+	while ((**str != '\0') && (strchr(sep, **str) != '\0'))
+		(*str)++;
 
-        if (**str == '\0')
-                return NULL;
+	if (**str == '\0')
+		return NULL;
 
-        /* assign token ptr */
-        tok = *str;
+	/* assign token ptr */
+	tok = *str;
 
-        /* push str past token and leave pointing to first separator */
-        while ((**str != '\0') && (strchr(sep, **str) == '\0'))
-                (*str)++;
+	/* push str past token and leave pointing to first separator */
+	while ((**str != '\0') && (strchr(sep, **str) == '\0'))
+		(*str)++;
 
-        /* nullify consecutive separators and push str beyond them */
-        while ((**str != '\0') && (strchr(sep, **str) != '\0'))
-                *(*str)++ = '\0';
+	/* nullify consecutive separators and push str beyond them */
+	while ((**str != '\0') && (strchr(sep, **str) != '\0'))
+		*(*str)++ = '\0';
 
-        return (tok);
+	return (tok);
 }
 
 /*
@@ -618,6 +618,12 @@ _parse_format( char* format )
 					field_size,
 					right_justify,
 					suffix );
+		} else if (field[0] == 'O') {
+			params.match_flags.cpu_load_flag = true;
+			format_add_cpu_load( params.format_list,
+					field_size,
+					right_justify,
+					suffix );
 		} else if (field[0] == 'p') {
 			params.match_flags.priority_flag = true;
 			format_add_priority( params.format_list,
@@ -717,13 +723,13 @@ _parse_format( char* format )
 			prefix = xstrdup("%");
 			xstrcat(prefix, token);
 			xfree(suffix);
-			suffix = prefix;			
+			suffix = prefix;
 			format_add_invalid( params.format_list,
 					    field_size,
 					    right_justify,
 					    suffix );
 			fprintf(stderr, "Invalid node format specification: %c\n",
-			        field[0] );
+				field[0] );
 		}
 		token = strtok_r( NULL, "%", &tmp_char);
 	}
