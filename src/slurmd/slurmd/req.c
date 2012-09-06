@@ -3284,7 +3284,7 @@ _rpc_suspend_job(slurm_msg_t *msg, int version)
 	 * to get started and avoid a race condition that would
 	 * effectively cause the suspend request to get ignored
 	 * because "there's no job to suspend" */
-	if (first_time && req->op == SUSPEND_JOB) {
+	if (first_time && (req->op == SUSPEND_JOB)) {
 		debug3("suspend first sleep for %u", req->job_id);
 		sleep(1);
 	}
@@ -3344,8 +3344,10 @@ _rpc_suspend_job(slurm_msg_t *msg, int version)
 			for (x = 0; x < fdi; x++) {
 				debug2("Resuming job %u (cached step count %d)",
 				       req->job_id, x);
-				if (stepd_resume(fd[x]) < 0)
-					debug("  resume failed: %m");
+				if (stepd_resume(fd[x]) < 0) {
+					debug("Resume of job %u failed: %m",
+					      req->job_id);
+				}
 			}
 		}
 		for (x = 0; x < fdi; x++)

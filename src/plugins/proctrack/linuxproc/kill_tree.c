@@ -266,7 +266,7 @@ static xpid_t *_get_list(int top, xpid_t *list, xppid_t **hashtbl)
 
 static int _kill_proclist(xpid_t *list, int sig)
 {
-	int rc, rc0;
+	int rc;
 
 	rc = 0;
 	while (list) {
@@ -276,10 +276,10 @@ static int _kill_proclist(xpid_t *list, int sig)
 				       "Skipped sending signal %d",
 				       (long)list->pid, list->cmd, sig);
 			} else {
-				verbose("Sending %d to %d %s",
+				verbose("Sending signal %d to pid %d %s",
 					sig, list->pid, list->cmd);
-				rc0 = kill(list->pid, sig);
-				if (rc0) rc = errno; /* save the last error */
+				if (kill(list->pid, sig))
+					rc = errno; /* save the last error */
 			}
 		}
 		list = list->next;
