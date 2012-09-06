@@ -1149,12 +1149,11 @@ rwfail:
 static int
 _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 {
+	static launch_poe = -1;
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
 
-	debug("_handle_suspend for job %u.%u",
-	      job->jobid, job->stepid);
-
+	debug("_handle_suspend for job %u.%u", job->jobid, job->stepid);
 	debug3("  uid = %d", uid);
 	if (!_slurm_authorized_user(uid)) {
 		debug("job step suspend request from uid %ld for job %u.%u ",
@@ -1173,6 +1172,14 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 	}
 
 	jobacct_gather_suspend_poll();
+	if (launch_poe == -1) {
+		char *launch_type = slurm_get_launch_type();
+		if (!strcmp(launch_type, "launch/poe"))
+			launch_poe = 1;
+		else
+			launch_poe = 0;
+		xfree(launch_type);
+	}
 
 	/*
 	 * Signal the container
@@ -1193,11 +1200,15 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 		 * (that depends upon the MPI implementaiton used), but will
 		 * also permit longer time periods when more than one job can
 		 * be running on each resource (not good). */
-		if (slurm_container_signal(job->cont_id, SIGTSTP) < 0) {
-			verbose("Error suspending %u.%u (SIGTSTP): %m",
-				job->jobid, job->stepid);
-		} else
-			sleep(2);
+		if (launch_poe == 0) {
+			/* IBM MPI seens to periodically hang upon receipt
+			 * of SIGTSTP. */
+			if (slurm_container_signal(job->cont_id, SIGTSTP) < 0) {
+				verbose("Error suspending %u.%u (SIGTSTP): %m",
+					job->jobid, job->stepid);
+			} else
+				sleep(2);
+		}
 
 		if (slurm_container_signal(job->cont_id, SIGSTOP) < 0) {
 			verbose("Error suspending %u.%u (SIGSTOP): %m",
