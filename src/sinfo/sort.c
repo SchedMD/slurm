@@ -51,6 +51,7 @@ static bool reverse_order;
 static bool part_order;		/* order same as in part table */
 
 static int _sort_by_avail(void *void1, void *void2);
+static int _sort_by_cpu_load(void *void1, void *void2);
 static int _sort_by_cpus(void *void1, void *void2);
 static int _sort_by_sct(void *void1, void *void2);
 static int _sort_by_sockets(void *void1, void *void2);
@@ -76,7 +77,6 @@ static int _sort_by_root(void *void1, void *void2);
 static int _sort_by_share(void *void1, void *void2);
 static int _sort_by_state(void *void1, void *void2);
 static int _sort_by_weight(void *void1, void *void2);
-static int _sort_by_cpu_load(void *void1, void *void2);
 
 /*****************************************************************************
  * Global Sort Function
@@ -180,6 +180,19 @@ static int _sort_by_avail(void *void1, void *void2)
 	if (sinfo2->part_info)
 		val2 = sinfo2->part_info->state_up;
 	diff = val1 - val2;
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
+static int _sort_by_cpu_load(void *void1, void *void2)
+{
+	int diff;
+	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
+	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
+
+	diff = sinfo1->min_cpu_load - sinfo2->min_cpu_load;
 
 	if (reverse_order)
 		diff = -diff;
@@ -727,17 +740,3 @@ static int _sort_by_weight(void *void1, void *void2)
 		diff = -diff;
 	return diff;
 }
-
-static int _sort_by_cpu_load(void *void1, void *void2)
-{
-	int diff;
-	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
-	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
-
-	diff = sinfo1->min_cpu_load - sinfo2->min_cpu_load;
-
-	if (reverse_order)
-		diff = -diff;
-	return diff;
-}
-
