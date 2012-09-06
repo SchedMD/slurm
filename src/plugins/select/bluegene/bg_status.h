@@ -41,7 +41,7 @@
 #include "bg_core.h"
 
 typedef struct {
-	int jobid;
+	uint32_t jobid;
 } kill_job_struct_t;
 
 extern int bg_status_update_block_state(bg_record_t *bg_record,

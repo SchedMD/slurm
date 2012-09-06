@@ -695,7 +695,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				      CPU_BIND_RANK);
 	}
 	if (opt.cpu_bind_type) {
-		char *task_affinity = NULL, *units;
+		char *units;
 		int count = 1;
 
 		if (opt.cpu_bind_type & CPU_BIND_TO_CORES)

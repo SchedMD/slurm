@@ -86,6 +86,11 @@ documents those changes that are of interest to users and admins.
     running on it are preemptable by scheduling job.
  -- proctrack/cgroup: Exclude internal threads from "scontrol list pids".
     Patch from Matthieu Hautreux, CEA.
+ -- Memory leak fixed for select/linear when preempting jobs.
+ -- Fix if updating begin time of a job to update the eligible time in
+    accounting as well.
+ -- BGQ - make it so you can signal steps when signaling the job allocation.
+ -- BGQ - Remove extra overhead if a large block has many cnode failures.
 
 * Changes in SLURM 2.4.2
 ========================

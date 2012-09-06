@@ -46,7 +46,7 @@ print_header $test_id
 # Test for existence of UPC compiler
 #
 if {[info exists upcc] == 0} {
-	send_user "\nWARNING: upcc not defined, can't perform mpi testing\n"
+	send_user "\nWARNING: UPC compiler (upcc) not defined, can't perform UPC testing\n"
 	exit 0
 }
 if {[file executable $upcc] == 0} {
@@ -68,7 +68,7 @@ if {[test_front_end]} {
 # Delete left-over program and rebuild it
 #
 exec $bin_rm -f $test_prog ${test_prog}.o
-exec $upcc -o $test_prog ${test_prog}.upc
+exec $upcc -o $test_prog -qupc=threads=$task_cnt ${test_prog}.upc
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -77,7 +77,7 @@ file delete $file_out $file_err
 # Build input script file
 #
 make_bash_script $file_in "
-  $srun -n $task_cnt $test_prog
+  $srun -n $task_cnt ./$test_prog
 "
 
 #

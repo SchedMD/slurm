@@ -26,7 +26,8 @@ directly if desired. The actual task launch process is as follows:</p>
 <li>The srun command translates its options and invokes the poe command.</li>
 <li>The poe command loads a SLURM library that provides various resource
 management functionality.</li>
-<li>The poe command, through the SLURM library, launches a process named
+<li>The poe command, through the SLURM library, creates a SLURM step
+allocation and launches a process named
 "pmdv12" on the appropriate compute nodes. Note that the "v12" on the end of
 the process name represents the version number of the "pmd" process and is
 subject to change.</li>
@@ -58,6 +59,7 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
   <li><b>lapi</b> Low-level Application Programming Interface</li>
   <li><b>mpi</b> Message Passing Interface (default)</li>
   <li><b>pami</b> Parallel Active Message Interface</li>
+  <li><b>shmem</b> OpenSHMEM interface</li>
   <li><b>upc</b> Unified Parallel C Interface</li>
   </ul>
 <li>Other options</li>
@@ -146,7 +148,9 @@ for most debugging purposes. You or the debugging tool must invoke the poe
 command directly. In order to facilitate the direct use of poe, srun's 
 <br><b>--launch-cmd</b> option may be used with the options normally used.
 srun will then print the equivalent poe command line, which
-can subsequently be used with the debugger.</p>
+can subsequently be used with the debugger. The poe options must be explicitly
+set even if the command is executed from within an existing SLURM allocation
+(i.e. from within an allocation created by the salloc or sbatch command).</p>
 
 <h3>Checkpoint</h3>
 
@@ -155,7 +159,7 @@ SLURM supports checkpoint via poe.
 In order to enable checkpoint, the shell executing the poe command must
 itself be initiated with the environment variable <b>CHECKPOINT=yes</b>.
 One file is written for each node on which the job is executing, plus
-another for the script executing poe.a
+another for the script executing poe.
 By default, the checkpoint files will be written to the current working
 directory of the job.
 Names and locations of these files can be controlled using the
@@ -330,6 +334,12 @@ export MP_TIMEOUT=600
 <p>POE can not support a step ID of zero. In POE installations, a job's
 first step ID will be 1 rather than 0.</p>
 
+<p>Since the SLURM step launches the PE PMD process instead of the
+users tasks the exit code stored in accounting will be that of the PMD
+instead of the users tasks.  The exit code of the job allocation if
+started with srun will be correct as we will grab the exit code from
+the wrapped poe.</p>
+
 <h2>System Administration</h2>
 
 <p>There are several critical SLURM configuration parameters for use with PE.
@@ -479,6 +489,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 4 September 2012</p></td>
+<p style="text-align:center;">Last modified 5 September 2012</p></td>
 
 <!--#include virtual="footer.txt"-->

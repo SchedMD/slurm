@@ -1310,11 +1310,11 @@ extern char *trigger_type(uint32_t trig_type)
 	else if (trig_type == TRIGGER_TYPE_PRI_CTLD_ACCT_FULL)
 		return "primary_slurmctld_acct_buffer_full";
 	else if (trig_type == TRIGGER_TYPE_BU_CTLD_FAIL)
-		return "backup_ctld_failure";
+		return "backup_slurmctld_failure";
 	else if (trig_type == TRIGGER_TYPE_BU_CTLD_RES_OP)
-		return "backup_ctld_resumed_operation";
+		return "backup_slurmctld_resumed_operation";
 	else if (trig_type == TRIGGER_TYPE_BU_CTLD_AS_CTRL)
-		return "backup_ctld_assumed_control";
+		return "backup_slurmctld_assumed_control";
 	else if (trig_type == TRIGGER_TYPE_PRI_DBD_FAIL)
 		return "primary_slurmdbd_failure";
 	else if (trig_type == TRIGGER_TYPE_PRI_DBD_RES_OP)

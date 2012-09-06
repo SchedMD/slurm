@@ -33,6 +33,8 @@ set exit_code 0
 set test_code 0
 set fail 0
 
+print_header $test_id
+
 if {[test_switch_nrt] == 0} {
 	send_user "\nWARNING: This test is only compatable with switch/nrt systems\n"
 	exit 0
@@ -170,7 +172,7 @@ foreach test $good4task {
 }
 
 if {$exit_code != 0} {
-	send_user "\nFAILURE\n"
+	send_user "\nFAILURE: This test will only run on the SMD cluster without changes\n"
 } else {
 	send_user "\nSUCCESS\n"
 }

@@ -55,9 +55,10 @@ if { [string length $partition] == 0 } {
 }
 
 #
-# execute poe with a an mpi script
+# execute salloc with a script containing a collection of MPI programs
 #
-spawn $poe $script -rmpool $partition -nodes 2 -procs 2 -euilib us
+set timeout 120
+spawn $salloc -t2 -N2 -n2 --network=us ./$script
 expect {
 	-nocase "passed" {
 		incr job_ran
@@ -68,19 +69,9 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: poe not responding\n"
+		send_user "\nFAILURE: salloc/poe not responding\n"
 		set exit_code 1
 	}
-	eof {
-		wait
-	}
-}
-
-#
-# poe has no time limit option, so make sure job is purged here
-#
-spawn $scancel --name=script.slurm.sh
-expect {
 	eof {
 		wait
 	}

@@ -29,6 +29,7 @@ generated_html = \
 	help.html \
 	high_throughput.html \
 	ibm.html \
+	ibm-pe.html \
 	jobacct_gatherplugins.html \
 	job_exit_code.html \
 	job_launch.html \
@@ -46,7 +47,6 @@ generated_html = \
 	multi_cluster.html \
 	news.html \
 	overview.html \
-	poe.html \
 	platforms.html \
 	plugins.html \
 	power_save.html \

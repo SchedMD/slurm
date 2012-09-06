@@ -2957,9 +2957,8 @@ if (gerr > 0) {
 	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
 	printf( "Found %d errors overall on %d\n", gerr, rank );
 	}
-else {
-  if (!rank)
-    printf( "PASSED!", gerr, rank );
+else if (!rank) {
+    printf( "PASSED\n", gerr, rank );
 }
 
 MPI_Finalize( );
