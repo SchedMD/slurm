@@ -45,6 +45,8 @@ documents those changes that are of interest to users and admins.
     accounting as well.
  -- BGQ - make it so you can signal steps when signaling the job allocation.
  -- BGQ - Remove extra overhead if a large block has many cnode failures.
+ -- Priority/Multifactor - Fix issue with age factor when a job is estimated to
+    start in the future but is able to run now.
 
 * Changes in SLURM 2.4.2
 ========================
