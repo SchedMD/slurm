@@ -76,6 +76,7 @@ static int _sort_by_root(void *void1, void *void2);
 static int _sort_by_share(void *void1, void *void2);
 static int _sort_by_state(void *void1, void *void2);
 static int _sort_by_weight(void *void1, void *void2);
+static int _sort_by_cpu_load(void *void1, void *void2);
 
 /*****************************************************************************
  * Global Sort Function
@@ -101,64 +102,66 @@ void sort_sinfo_list(List sinfo_list)
 		if ((i > 0) && (params.sort[i-1] == '-'))
 			reverse_order = true;
 		if ((i > 0) && (params.sort[i-1] == '#'))
-                        part_order = true;
+			part_order = true;
 
 		if      (params.sort[i] == 'a')
-				list_sort(sinfo_list, _sort_by_avail);
+			list_sort(sinfo_list, _sort_by_avail);
 		else if (params.sort[i] == 'A')
-				list_sort(sinfo_list, _sort_by_nodes_ai);
+			list_sort(sinfo_list, _sort_by_nodes_ai);
 		else if (params.sort[i] == 'c')
-				list_sort(sinfo_list, _sort_by_cpus);
+			list_sort(sinfo_list, _sort_by_cpus);
 		else if (params.sort[i] == 'd')
-				list_sort(sinfo_list, _sort_by_disk);
+			list_sort(sinfo_list, _sort_by_disk);
 		else if (params.sort[i] == 'D')
-				list_sort(sinfo_list, _sort_by_nodes);
+			list_sort(sinfo_list, _sort_by_nodes);
 		else if (params.sort[i] == 'E')
-				list_sort(sinfo_list, _sort_by_reason_time);
+			list_sort(sinfo_list, _sort_by_reason_time);
 		else if (params.sort[i] == 'f')
-				list_sort(sinfo_list, _sort_by_features);
+			list_sort(sinfo_list, _sort_by_features);
 		else if (params.sort[i] == 'F')
-				list_sort(sinfo_list, _sort_by_nodes_ai);
+			list_sort(sinfo_list, _sort_by_nodes_ai);
 		else if (params.sort[i] == 'g')
-				list_sort(sinfo_list, _sort_by_groups);
+			list_sort(sinfo_list, _sort_by_groups);
 		else if (params.sort[i] == 'h')
-				list_sort(sinfo_list, _sort_by_share);
+			list_sort(sinfo_list, _sort_by_share);
 		else if (params.sort[i] == 'l')
-				list_sort(sinfo_list, _sort_by_max_time);
+			list_sort(sinfo_list, _sort_by_max_time);
 		else if (params.sort[i] == 'm')
-				list_sort(sinfo_list, _sort_by_memory);
+			list_sort(sinfo_list, _sort_by_memory);
 		else if (params.sort[i] == 'M')
-				list_sort(sinfo_list, _sort_by_preempt_mode);
+			list_sort(sinfo_list, _sort_by_preempt_mode);
 		else if (params.sort[i] == 'n')
-				list_sort(sinfo_list, _sort_by_hostnames);
+			list_sort(sinfo_list, _sort_by_hostnames);
 		else if (params.sort[i] == 'N')
-				list_sort(sinfo_list, _sort_by_node_list);
+			list_sort(sinfo_list, _sort_by_node_list);
 		else if (params.sort[i] == 'o')
-				list_sort(sinfo_list, _sort_by_node_addr);
+			list_sort(sinfo_list, _sort_by_node_addr);
+		else if (params.sort[i] == 'O')
+			list_sort(sinfo_list, _sort_by_cpu_load);
 		else if (params.sort[i] == 'p')
-				list_sort(sinfo_list, _sort_by_priority);
+			list_sort(sinfo_list, _sort_by_priority);
 		else if (params.sort[i] == 'P')
-				list_sort(sinfo_list, _sort_by_partition);
+			list_sort(sinfo_list, _sort_by_partition);
 		else if (params.sort[i] == 'r')
-				list_sort(sinfo_list, _sort_by_root);
+			list_sort(sinfo_list, _sort_by_root);
 		else if (params.sort[i] == 'R')
-				list_sort(sinfo_list, _sort_by_reason);
+			list_sort(sinfo_list, _sort_by_reason);
 		else if (params.sort[i] == 's')
-				list_sort(sinfo_list, _sort_by_job_size);
+			list_sort(sinfo_list, _sort_by_job_size);
 		else if (params.sort[i] == 't')
-				list_sort(sinfo_list, _sort_by_state);
+			list_sort(sinfo_list, _sort_by_state);
 		else if (params.sort[i] == 'T')
-				list_sort(sinfo_list, _sort_by_state);
+			list_sort(sinfo_list, _sort_by_state);
 		else if (params.sort[i] == 'w')
-				list_sort(sinfo_list, _sort_by_weight);
+			list_sort(sinfo_list, _sort_by_weight);
 		else if (params.sort[i] == 'X')
-				list_sort(sinfo_list, _sort_by_sockets);
+			list_sort(sinfo_list, _sort_by_sockets);
 		else if (params.sort[i] == 'Y')
-				list_sort(sinfo_list, _sort_by_cores);
+			list_sort(sinfo_list, _sort_by_cores);
 		else if (params.sort[i] == 'Z')
-				list_sort(sinfo_list, _sort_by_threads);
+			list_sort(sinfo_list, _sort_by_threads);
 		else if (params.sort[i] == 'z')
-				list_sort(sinfo_list, _sort_by_sct);
+			list_sort(sinfo_list, _sort_by_sct);
 	}
 }
 
@@ -724,3 +727,17 @@ static int _sort_by_weight(void *void1, void *void2)
 		diff = -diff;
 	return diff;
 }
+
+static int _sort_by_cpu_load(void *void1, void *void2)
+{
+	int diff;
+	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
+	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
+
+	diff = sinfo1->min_cpu_load - sinfo2->min_cpu_load;
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
