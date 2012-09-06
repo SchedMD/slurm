@@ -154,9 +154,13 @@ set even if the command is executed from within an existing SLURM allocation
 
 <h3>Checkpoint</h3>
 
-<p><b>FIXME: We need to validate all of this</b><br>
-SLURM supports checkpoint via poe.
-In order to enable checkpoint, the shell executing the poe command must
+<p>Checkpoint/restart is only supported with LoadLeveler.
+The <b>checkpoint/poe</b> plugin is based SLURM support for checkpoint support
+of poe in in the 2005 time frame and does not work with the current versions
+of poe.</p>
+
+<!--
+<p>In order to enable checkpoint, the shell executing the poe command must
 itself be initiated with the environment variable <b>CHECKPOINT=yes</b>.
 One file is written for each node on which the job is executing, plus
 another for the script executing poe.
@@ -171,6 +175,7 @@ use the command: <br>
 To initiate a checkpoint in which the job step will terminate afterwards,
 use the command: <br>
 <b>scontrol check vacate <i>job_id.step_id</i></b></p>
+-->
 
 <h3>Unsupported Options</h3>
 
@@ -489,6 +494,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 5 September 2012</p></td>
+<p style="text-align:center;">Last modified 6 September 2012</p></td>
 
 <!--#include virtual="footer.txt"-->
