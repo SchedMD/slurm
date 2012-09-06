@@ -25,11 +25,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <stdio.h>
 #include <mpi.h>
+#include <stdio.h>
+#include <time.h>
+#include <unistd.h>
 #include <sys/utsname.h>
 
-#define COMM_TAG 1000
+#define COMM_TAG   1000
+#define ITERATIONS 1
 
 static void pass_its_neighbor(const int rank, const int size, const int* buf)
 {
@@ -44,14 +47,15 @@ static void pass_its_neighbor(const int rank, const int size, const int* buf)
 	MPI_Waitall(2, request, status);
 
 	uname(&uts);
-	fprintf(stdout, "Rank[%d] on %s just received msg from Rank %d\n",
-		rank, uts.nodename, *buf);
+	printf("Rank[%d] on %s just received msg from Rank %d\n",
+	       rank, uts.nodename, *buf);
 }
 
 int main(int argc, char * argv[])
 {
 	int i;
 	int size, rank,buf;
+	time_t now;
 
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -59,10 +63,18 @@ int main(int argc, char * argv[])
 
 	buf = rank;	/* we only pass rank */
 
-	for (i = 0; i < 1; i++) {
+	for (i = 0; i < ITERATIONS; i++) {
 		if (i)
 			sleep(1);
 		pass_its_neighbor(rank, size, &buf);
+		if ((ITERATIONS > 1) && (rank == 0)) {
+			static time_t last_time = 0;
+			now = time(NULL);
+			printf("Iteration:%d Time:%s", i, ctime(&now));
+			if (last_time && (last_time < (now - 2)))
+				printf("Woke from suspend\n");
+			last_time = now;
+		}
 	}
 
 	MPI_Finalize();
