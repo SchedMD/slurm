@@ -5,6 +5,8 @@
 #
 # build options      .rpmmacros options      change to default action
 # ===============    ====================    ========================
+# --prefix           %_prefix        path    install path for commands, libraries, etc.
+# --docdir           %_defaultdocdir path    install path for documentation
 # --with aix         %_with_aix         1    build aix RPM
 # --with authd       %_with_authd       1    build auth-authd RPM
 # --with auth_none   %_with_auth_none   1    build auth-none RPM
