@@ -2,7 +2,7 @@
 # Purpose: Test of SLURM functionality
 #          to be called from test3.11
 #	   Several cases for core based reservations 
-#          
+#          Pluging select/cons_res needed
 #
 ############################################################################
 # Copyright (C) 2009 Lawrence Livermore National Security
@@ -39,7 +39,7 @@ proc inc3_11_8 {} {
 	set num_nodes [available_nodes $def_partition]
 	set core_res_num [ expr ($cores_per_node / 2) ]
 
-	send_user "\n+++++ STARTING TEST 7 +++++\n"
+	send_user "\n+++++ STARTING TEST 8 +++++\n"
 
 	# Make the job script
 	exec $bin_rm -f $file_in
