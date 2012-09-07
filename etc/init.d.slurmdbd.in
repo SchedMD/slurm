@@ -21,9 +21,9 @@
 # Description:       Start slurm to provide database server for SLURM
 ### END INIT INFO
 
-CONFDIR=/etc/slurm
-SBINDIR=/usr/sbin
-LIBDIR=/usr/lib
+CONFDIR="@sysconfdir@"
+LIBDIR="@libdir@"
+SBINDIR="@sbindir@"
 
 #Source function library.
 if [ -f /etc/rc.status ]; then

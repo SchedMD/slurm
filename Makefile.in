@@ -43,6 +43,8 @@ DIST_COMMON = $(am__configure_deps) $(pkginclude_HEADERS) \
 	$(top_srcdir)/contribs/perlapi/libslurm/perl/Makefile.PL.in \
 	$(top_srcdir)/contribs/perlapi/libslurmdb/perl/Makefile.PL.in \
 	$(top_srcdir)/contribs/phpext/slurm_php/config.m4.in \
+	$(top_srcdir)/etc/init.d.slurm.in \
+	$(top_srcdir)/etc/init.d.slurmdbd.in \
 	$(top_srcdir)/slurm/slurm.h.in AUTHORS COPYING ChangeLog \
 	INSTALL NEWS
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -93,7 +95,8 @@ CONFIG_HEADER = config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES = config.xml \
 	contribs/perlapi/libslurm/perl/Makefile.PL \
 	contribs/perlapi/libslurmdb/perl/Makefile.PL \
-	contribs/phpext/slurm_php/config.m4
+	contribs/phpext/slurm_php/config.m4 etc/init.d.slurm \
+	etc/init.d.slurmdbd
 CONFIG_CLEAN_VPATH_FILES =
 SOURCES =
 DIST_SOURCES =
@@ -391,8 +394,8 @@ EXTRA_DIST = \
 	etc/slurm.conf.example	\
 	etc/slurmdbd.conf.example \
 	etc/slurm.epilog.clean	\
-	etc/init.d.slurm	\
-	etc/init.d.slurmdbd	\
+	etc/init.d.slurm.in	\
+	etc/init.d.slurmdbd.in	\
 	etc/cgroup.conf.example \
 	etc/cgroup.release_common.example \
 	etc/cgroup_allowed_devices_file.conf.example \
@@ -413,7 +416,7 @@ EXTRA_DIST = \
 pkginclude_HEADERS = \
 	slurm/pmi.h		\
 	slurm/slurm.h 		\
-	slurm/slurmdb.h 		\
+	slurm/slurmdb.h 	\
 	slurm/slurm_errno.h	\
 	slurm/spank.h
 
@@ -492,6 +495,10 @@ contribs/perlapi/libslurm/perl/Makefile.PL: $(top_builddir)/config.status $(top_
 contribs/perlapi/libslurmdb/perl/Makefile.PL: $(top_builddir)/config.status $(top_srcdir)/contribs/perlapi/libslurmdb/perl/Makefile.PL.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 contribs/phpext/slurm_php/config.m4: $(top_builddir)/config.status $(top_srcdir)/contribs/phpext/slurm_php/config.m4.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+etc/init.d.slurm: $(top_builddir)/config.status $(top_srcdir)/etc/init.d.slurm.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+etc/init.d.slurmdbd: $(top_builddir)/config.status $(top_srcdir)/etc/init.d.slurmdbd.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:

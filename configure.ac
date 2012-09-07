@@ -415,6 +415,17 @@ AC_CONFIG_FILES([Makefile
 		 contribs/phpext/slurm_php/config.m4
 		 contribs/sjobexit/Makefile
 		 contribs/slurmdb-direct/Makefile
+		 doc/Makefile
+		 doc/man/Makefile
+		 doc/man/man1/Makefile
+		 doc/man/man3/Makefile
+		 doc/man/man5/Makefile
+		 doc/man/man8/Makefile
+		 doc/html/Makefile
+		 doc/html/configurator.html
+		 doc/html/configurator.easy.html
+		 etc/init.d.slurm
+		 etc/init.d.slurmdbd
 		 src/Makefile
 		 src/api/Makefile
 		 src/common/Makefile
@@ -544,15 +555,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/topology/node_rank/Makefile
 		 src/plugins/topology/none/Makefile
 		 src/plugins/topology/tree/Makefile
-		 doc/Makefile
-		 doc/man/Makefile
-		 doc/man/man1/Makefile
-		 doc/man/man3/Makefile
-		 doc/man/man5/Makefile
-		 doc/man/man8/Makefile
-		 doc/html/Makefile
-		 doc/html/configurator.html
-		 doc/html/configurator.easy.html
 		 testsuite/Makefile
 		 testsuite/expect/Makefile
 		 testsuite/slurm_unit/Makefile

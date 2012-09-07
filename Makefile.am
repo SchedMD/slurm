@@ -9,8 +9,8 @@ EXTRA_DIST =			\
 	etc/slurm.conf.example	\
 	etc/slurmdbd.conf.example \
 	etc/slurm.epilog.clean	\
-	etc/init.d.slurm	\
-	etc/init.d.slurmdbd	\
+	etc/init.d.slurm.in	\
+	etc/init.d.slurmdbd.in	\
 	etc/cgroup.conf.example \
 	etc/cgroup.release_common.example \
 	etc/cgroup_allowed_devices_file.conf.example \
@@ -31,7 +31,7 @@ EXTRA_DIST =			\
 pkginclude_HEADERS =		\
 	slurm/pmi.h		\
 	slurm/slurm.h 		\
-	slurm/slurmdb.h 		\
+	slurm/slurmdb.h 	\
 	slurm/slurm_errno.h	\
 	slurm/spank.h
 
