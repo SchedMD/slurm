@@ -566,13 +566,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -f slurm.files
 %defattr(-,root,root,0755)
-%doc AUTHORS
-%doc NEWS
-%doc README.rst
-%doc RELEASE_NOTES
-%doc DISCLAIMER
-%doc COPYING
-%doc doc/html
+%{_mandir}/../doc
 %{_bindir}/s*
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
