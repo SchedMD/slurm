@@ -1,0 +1,155 @@
+############################################################################
+# Purpose: Test of SLURM functionality
+#          to be called from test3.11
+#	   Several cases for core based reservations 
+#          
+#
+############################################################################
+# Copyright (C) 2009 Lawrence Livermore National Security
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Dave Bremer <dbremer@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.schedmd.com/slurmdocs/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+proc inc3_11_8 {} {
+	global user_name exit_code res_name res_nodes res_nodecnt res_corecnt
+	global bin_rm file_in bin_sleep sbatch number scontrol
+	global alpha_numeric_under scancel
+	global cluster_cpus cores_per_node def_partition
+
+	set num_nodes [available_nodes $def_partition]
+	set core_res_num [ expr ($cores_per_node / 2) ]
+
+	send_user "\n+++++ STARTING TEST 7 +++++\n"
+
+	# Make the job script
+	exec $bin_rm -f $file_in
+	make_bash_script $file_in "$bin_sleep 100"
+
+
+	# (First test) Submit the batch job: a simple job using just 1 core inside the reservation
+	set sbatch_pid [spawn $sbatch --nodes=$num_nodes --ntasks-per-node=$core_res_num $file_in]
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: sbatch not responding\033\[m\n"
+			slow_kill $sbatch_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		send_user "\n\033\[31mFAILURE: batch submit failure\033\[m\n"
+		exit 1
+	}
+
+	# Show the job
+	spawn $scontrol show job $job_id
+	expect {
+		-re "Invalid job id specified" {
+			send_user "\n\033\[31mFAILURE: Job $job_id not found\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		-re "JobState=PENDING" {
+			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	send_user "\nJOB is running as expected\n"
+
+	# Make the reservation using free cores in a node
+	set ret_code [create_res "StartTime=now Duration=60 NodeCnt=1 CoreCnt=$core_res_num User=$user_name" 0]
+	if {$ret_code != 0} {
+		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation\033\[m\n"
+		exit $ret_code
+	}
+
+	if {$res_nodecnt != 1} {
+		send_user "\n\033\[31mFAILURE: reservation created with $res_nodecnt nodes when just 1 was requested\033\[m\n"
+		set exit_code 1
+		exit $ret_code
+	}
+
+	if {$res_corecnt != $core_res_num} {
+		send_user "\n\033\[31mFAILURE: reservation created with $res_corecnt cores when just $core_res_num was requested\033\[m\n"
+		set exit_code 1
+		exit $ret_code
+	}
+	
+	send_user "\n\033\[32mSUCCESS: reservation was created as expected\033\[m\n"
+	
+	# Delete the reservation
+	set ret_code [delete_res $res_name]
+	if {$ret_code != 0} {
+		exit $ret_code
+	}
+
+	set core_res_num  [expr $core_res_num + 1]
+	# Make the reservation using more cores then free in a node
+	set ret_code [create_res "StartTime=now Duration=60 NodeCnt=1 CoreCnt=$core_res_num User=$user_name" 0]
+	if {$ret_code != 0} {
+		send_user "\n\033\[32mSUCCESS: Reservation can not be created as expected\033\[m\n"
+		set exit_code 0
+	} else {
+		send_user "\n\033\[31mFAILURE: reservation was created when it should have not\033\[m\n"
+		set exit_code 1
+		
+		# Delete the reservation
+		set ret_code [delete_res $res_name]
+	}
+
+	# Cancel the job
+	spawn $scancel -v $job_id
+	expect {
+		-re "Invalid job_id" {
+			send_user "\n\033\[31mFAILURE: Error cancelling the job submitted "
+			send_user "to the reservation.  Job $job_id not found\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: scancel not responding\033\[m\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	exit $exit_code
+
+}
