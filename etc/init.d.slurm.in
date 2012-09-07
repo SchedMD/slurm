@@ -25,10 +25,10 @@
 # Description:       Start slurm to provide resource management
 ### END INIT INFO
 
-BINDIR=/usr/bin
-CONFDIR=/etc/slurm
-LIBDIR=/usr/lib
-SBINDIR=/usr/sbin
+BINDIR="@bindir@"
+CONFDIR="@sysconfdir@"
+LIBDIR="@libdir@"
+SBINDIR="@sbindir@"
 
 # Source function library.
 if [ -f /etc/rc.status ]; then

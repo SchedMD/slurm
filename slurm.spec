@@ -5,6 +5,7 @@
 #
 # build options      .rpmmacros options      change to default action
 # ===============    ====================    ========================
+# --prefix           %_prefix        path    install path for commands, libraries, etc.
 # --with aix         %_with_aix         1    build aix RPM
 # --with authd       %_with_authd       1    build auth-authd RPM
 # --with auth_none   %_with_auth_none   1    build auth-none RPM
@@ -473,6 +474,10 @@ rm -f ${RPM_BUILD_ROOT}%{_bindir}/srun_cr
 rm -f ${RPM_BUILD_ROOT}%{_libexecdir}/slurm/cr_*
 %endif
 
+%if ! %{slurm_with sgijob}
+rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_sgi_job.so
+%endif
+
 # Build man pages that are generated directly by the tools
 rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
 ${RPM_BUILD_ROOT}%{_bindir}/sjobexitmod --roff > $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
@@ -568,13 +573,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -f slurm.files
 %defattr(-,root,root,0755)
-%doc AUTHORS
-%doc NEWS
-%doc README.rst
-%doc RELEASE_NOTES
-%doc DISCLAIMER
-%doc COPYING
-%doc doc/html
+%{_mandir}/../doc
 %{_bindir}/s*
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
@@ -703,6 +702,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/gres_gpu.so
 %{_libdir}/slurm/gres_nic.so
 %{_libdir}/slurm/jobacct_gather_aix.so
+%{_libdir}/slurm/jobacct_gather_cgroup.so
 %{_libdir}/slurm/jobacct_gather_linux.so
 %{_libdir}/slurm/jobacct_gather_none.so
 %{_libdir}/slurm/jobcomp_none.so
