@@ -1,5 +1,12 @@
 /*****************************************************************************\
  *  checkpoint_poe.c - IBM POE checkpoint plugin.
+ *
+ *  This is based upon checkpoint support of poe in the 2005 time frame for
+ *  the ASCI Purple computer. It does not work with current versions of POE.
+ *  From Gary Mincher (IBM, Sept 6 2012): "Checkpoint/restart on Linux is only
+ *  supported for user-space parallel jobs with a maximum of 512 tasks that are
+ *  run on Power 775 nodes, but jobs that use a resource manager or scheduler
+ *  other than LoadLeveler are not supported."
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.

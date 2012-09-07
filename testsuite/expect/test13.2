@@ -29,9 +29,10 @@
 ############################################################################
 source ./globals
 
+set test_id   "13.2"
 set exit_code 0
 set test_code 0
-set fail 0
+set fail      0
 
 print_header $test_id
 
@@ -39,7 +40,6 @@ if {[test_switch_nrt] == 0} {
 	send_user "\nWARNING: This test is only compatable with switch/nrt systems\n"
 	exit 0
 }
-
 
 #
 # This tests a few options that should and should not work for NRT
