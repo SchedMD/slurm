@@ -93,6 +93,9 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Remove extra overhead if a large block has many cnode failures.
  -- Priority/Multifactor - Fix issue with age factor when a job is estimated to
     start in the future but is able to run now.
+ -- CRAY - update to work with ALPS 5.1
+ -- BGQ - Handle issue of speed and mutexes when polling instead of using the
+    realtime server.
 
 * Changes in SLURM 2.4.2
 ========================
