@@ -1590,10 +1590,12 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	if (resv_desc_ptr->core_cnt == 0) {
 		debug2("reservation using full nodes");
 		_set_cpu_cnt(resv_ptr);
+		resv_ptr->full_nodes = 1;
 	} else {
 		debug2("reservation using partial nodes: core count %u",
 		       resv_desc_ptr->core_cnt);
 		resv_ptr->cpu_cnt = resv_desc_ptr->core_cnt;
+		resv_ptr->full_nodes = 0;
 	}
 
 	if((rc = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS)
@@ -2672,6 +2674,8 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			if ((resv_ptr->node_bitmap == NULL) ||
 			    (resv_ptr->start_time >= resv_desc_ptr->end_time) ||
 			    (resv_ptr->end_time   <= resv_desc_ptr->start_time))
+			    /* TODO: to avoid reservations using full nodes *
+			     * (resv_ptr->full_nodes == 0)) */
 				continue;
 			bit_not(resv_ptr->node_bitmap);
 			bit_and(node_bitmap, resv_ptr->node_bitmap);
@@ -2849,6 +2853,78 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 	return ret_bitmap;
 }
 
+int _check_job_compatibility(struct job_record *job_ptr, bitstr_t *avail_bitmap)
+{
+	uint32_t total_nodes;
+	bitstr_t *full_node_bitmap;
+	int i_core, i_node;
+	int start = 0;
+	int rep_count = 0;
+	char str[200];
+	job_resources_t *job_res = job_ptr->job_resrcs;
+
+	total_nodes = bit_set_count(job_res->node_bitmap);
+
+	debug2("Checking %d (of %d) nodes for job %u, core_bitmap_size: %d", 
+		total_nodes, bit_size(job_res->node_bitmap), 
+		job_ptr->job_id, bit_size(job_res->core_bitmap));
+
+	bit_fmt(str, sizeof(str), job_res->core_bitmap);
+	debug2("job coremap: %s", str);
+
+	full_node_bitmap = bit_alloc(total_nodes);
+	if(full_node_bitmap == NULL){
+		fatal("bit_alloc: malloc failure");
+	}
+	full_node_bitmap = bit_copy(job_res->node_bitmap);
+
+	debug2("Let's see core distribution for jobid: %u", 
+		job_ptr->job_id);
+	debug2("Total number of nodes: %d", total_nodes);
+
+	i_node = 0;
+	while (i_node < total_nodes){
+		int cores_in_a_node = (job_res->sockets_per_node[i_node] * 
+			 job_res->cores_per_socket[i_node]);
+
+		int repeat_node_conf = job_res->sock_core_rep_count[rep_count++];
+		int node_bitmap_inx;
+
+		debug2("Working with %d cores per node. Same node conf repeated"
+			" %d times (start core offset %d",
+			cores_in_a_node, repeat_node_conf, start);
+
+		i_node += repeat_node_conf;
+
+		while(repeat_node_conf--){
+			int allocated;
+
+			node_bitmap_inx = bit_ffs(full_node_bitmap);
+			allocated = 0;
+
+			for(i_core=0;i_core < cores_in_a_node;i_core++){
+				debug2("i_core: %d, start: %d, allocated: %d", 
+					i_core, start, allocated);
+				if(bit_test(job_ptr->job_resrcs->core_bitmap, 
+					i_core + start)){
+					allocated++;
+				}
+			}
+			debug2("Checking node %d, allocated: %d, "
+				"cores_in_a_node: %d", node_bitmap_inx, 
+				allocated, cores_in_a_node);
+
+			if(allocated == cores_in_a_node){
+				/* We can exclude this node */
+				debug2("Excluding node %d", node_bitmap_inx);
+				bit_clear(avail_bitmap, node_bitmap_inx);
+			}
+			start += cores_in_a_node;
+			bit_clear(full_node_bitmap, node_bitmap_inx);
+		}
+	}
+}
+
 static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 				     resv_desc_msg_t *resv_desc_ptr,
 				     uint32_t node_cnt, bitstr_t **core_bitmap)
@@ -2867,17 +2943,22 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 	job_iterator = list_iterator_create(job_list);
 	if (job_iterator == NULL)
 		fatal("list_iterator_create: malloc failure");
+
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
 			continue;
 		if (job_ptr->end_time < resv_desc_ptr->start_time)
 			continue;
 
-		/* TODO: This needs to be based on cores used by job
-		 * instead of based on nodes */
-		bit_not(job_ptr->node_bitmap);
-		bit_and(avail_bitmap, job_ptr->node_bitmap);
-		bit_not(job_ptr->node_bitmap);
+		if(resv_desc_ptr->full_nodes){ 
+			bit_not(job_ptr->node_bitmap);
+			bit_and(avail_bitmap, job_ptr->node_bitmap);
+			bit_not(job_ptr->node_bitmap);
+		} else 
+			/* is this really needed or select_cons just will not 
+			 * use full allocated nodes ? */
+			_check_job_compatibility(job_ptr, avail_bitmap);
+
 	}
 	list_iterator_destroy(job_iterator);
 	ret_bitmap = select_g_resv_test(avail_bitmap, node_cnt,
@@ -3291,9 +3372,11 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			    (resv_ptr->start_time >= job_end_time) ||
 			    (resv_ptr->end_time   <= job_start_time))
 				continue;
-			if (job_ptr->details->req_node_bitmap &&
+			if (job_ptr->details->req_node_bitmap && 
 			    bit_overlap(job_ptr->details->req_node_bitmap,
-					resv_ptr->node_bitmap)) {
+			    resv_ptr->node_bitmap) && 
+			    ((resv_ptr->cpu_cnt == 0) || 
+			    (!job_ptr->details->shared))) {
 				*when = resv_ptr->end_time;
 				rc = ESLURM_NODES_BUSY;
 				break;
@@ -3308,22 +3391,26 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 					lic_resv_time = resv_ptr->end_time;
 			}
 
-			if ((resv_ptr->cpu_cnt == 0) || (!job_ptr->details->shared) ||
-			    (resv_ptr->core_bitmap == NULL)) {
-				/* reservation uses full nodes or job will not share nodes */
+			if ((resv_ptr->full_nodes) || (!job_ptr->details->shared)){
+				debug2("reservation uses full nodes or job will"
+					" not share nodes");
 				bit_not(resv_ptr->node_bitmap);
 				bit_and(*node_bitmap, resv_ptr->node_bitmap);
 				bit_not(resv_ptr->node_bitmap);
 			} else {
-				//info("job_test_resv: %s reservation uses partial nodes ...", resv_ptr->name);
+				info("job_test_resv: %s reservation uses "
+					"partial nodes", resv_ptr->name);
 				if (*exc_core_bitmap == NULL) {
-					*exc_core_bitmap = bit_copy(resv_ptr->core_bitmap);
+					*exc_core_bitmap = 
+						bit_copy(resv_ptr->core_bitmap);
 				} else {
-					//char str[100];
+					char str[100];
 					bit_and(*exc_core_bitmap,
 						resv_ptr->core_bitmap);
-					//bit_fmt(str, (sizeof(str) - 1), *exc_core_bitmap);
-					//info("ALEJ: job_test_resv: New exclude core bitmap %s", str);
+					bit_fmt(str, (sizeof(str) - 1), 
+							*exc_core_bitmap);
+					debug2("New exclude core bitmap %s", 
+						str);
 				}
 			}
 		}
