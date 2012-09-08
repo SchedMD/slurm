@@ -1259,7 +1259,7 @@ _print_config(void)
 
 	get_memory(&conf->real_memory_size);
 	get_tmp_disk(&conf->tmp_disk_space, "/tmp");
-	printf("RealMemory=%u TmpDisk=%u ",
+	printf("RealMemory=%u TmpDisk=%u\n",
 	       conf->real_memory_size, conf->tmp_disk_space);
 
 	get_up_time(&conf->up_time);
