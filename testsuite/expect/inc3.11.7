@@ -1,0 +1,420 @@
+############################################################################
+# Purpose: Test of SLURM functionality
+#          to be called from test3.11
+#	   Several cases for core based reservations 
+#          Pluging select/cons_res needed
+#
+############################################################################
+# Copyright (C) 2009 Lawrence Livermore National Security
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Dave Bremer <dbremer@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.schedmd.com/slurmdocs/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+proc inc3_11_7 {} {
+	global user_name exit_code res_name res_nodes
+	global bin_rm file_in bin_sleep sbatch number scontrol
+	global alpha_numeric_under scancel
+	global cluster_cpus cores_per_node def_partition
+
+	set num_nodes [available_nodes $def_partition]
+	set core_res_num [ expr ($cores_per_node / 2) ]
+
+	send_user "\n+++++ STARTING TEST 7 +++++\n"
+	# Make the reservation
+	set ret_code [create_res "StartTime=now Duration=60 NodeCnt=1 CoreCnt=$core_res_num User=$user_name" 0]
+	if {$ret_code != 0} {
+		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation\033\[m\n"
+		exit $ret_code
+	}
+
+	# Make the job script
+	exec $bin_rm -f $file_in
+	make_bash_script $file_in "$bin_sleep 100"
+
+
+	# (First test) Submit the batch job: a simple job using just 1 core inside the reservation
+	set sbatch_pid [spawn $sbatch -n1 --reservation=$res_name $file_in]
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: sbatch not responding\033\[m\n"
+			slow_kill $sbatch_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		send_user "\n\033\[31mFAILURE: batch submit failure\033\[m\n"
+		exit 1
+	}
+
+	# Show the job, make sure reservation tag is right
+	spawn $scontrol show job $job_id
+	expect {
+		-re "Invalid job id specified" {
+			send_user "\n\033\[31mFAILURE: Job $job_id not found\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		-re "JobState=PENDING" {
+			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	send_user "\n\033\[32mJOB is running as expected\033\[m\n"
+
+	# Cancel the job
+	spawn $scancel -v $job_id
+	expect {
+		-re "Invalid job_id" {
+			send_user "\n\033\[31mFAILURE: Error cancelling the job submitted "
+			send_user "to the reservation.  Job $job_id not found\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: scancel not responding\033\[m\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	sleep 1
+
+	# (Second test) Submit the batch job: a job using all cores allocated by the reservation
+	set sbatch_pid [spawn $sbatch -n$core_res_num --reservation=$res_name $file_in]
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: sbatch not responding\033\[m\n"
+			slow_kill $sbatch_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		send_user "\n\033\[31mFAILURE: batch submit failure\033\[m\n"
+		exit 1
+	}
+
+	sleep 1
+	# Show the job, make sure reservation tag is right
+	spawn $scontrol show job $job_id
+	expect {
+		-re "Invalid job id specified" {
+			send_user "\n\033\[31mFAILURE: Job $job_id not found\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		-re "JobState=PENDING" {
+			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	send_user "\n\033\[32mJOB is running as expected\033\[m\n"
+
+	# Cancel the job
+	spawn $scancel -v $job_id
+	expect {
+		-re "Invalid job_id" {
+			send_user "\n\033\[31mFAILURE: Error cancelling the job submitted "
+			send_user "to the reservation.  Job $job_id not found\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: scancel not responding\033\[m\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	sleep 1
+
+	# (Third test) Submit the batch job: a job using all cores not allocated by the reservation
+	set sbatch_pid [spawn $sbatch -n$core_res_num --nodelist=$res_nodes $file_in]
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: sbatch not responding\033\[m\n"
+			slow_kill $sbatch_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		send_user "\n\033\[31mFAILURE: batch submit failure\033\[m\n"
+		exit 1
+	}
+
+	sleep 1
+	# Show the job, make sure reservation tag is right
+	spawn $scontrol show job $job_id
+	expect {
+		-re "Invalid job id specified" {
+			send_user "\n\033\[31mFAILURE: Job $job_id not found\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		-re "JobState=PENDING" {
+			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	send_user "\n\033\[32mJOB is running as expected\033\[m\n"
+
+	# Cancel the job
+	spawn $scancel -v $job_id
+	expect {
+		-re "Invalid job_id" {
+			send_user "\n\033\[31mFAILURE: Error cancelling the job submitted "
+			send_user "to the reservation.  Job $job_id not found\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: scancel not responding\033\[m\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	set core_res_num [ expr ($core_res_num + 1) ]
+	# (Fourth test) Submit a batch job: a job using more cores than allocated by the reservation
+	set sbatch_pid [spawn $sbatch -n$core_res_num --reservation=$res_name $file_in]
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: sbatch not responding\033\[m\n"
+			slow_kill $sbatch_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		send_user "\n\033\[31mFAILURE: batch submit failure\033\[m\n"
+		exit 1
+	}
+
+	sleep 1
+	# Show the job, make sure reservation tag is right
+	spawn $scontrol show job $job_id
+	expect {
+		-re "Invalid job id specified" {
+			send_user "\n\033\[31mFAILURE: Job $job_id not found\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		-re "JobState=PENDING" {
+			send_user "\n\033\[32mSUCCESS: Job $job_id is PENDING as expected\033\[m\n"
+			set exit_code 0
+			exp_continue
+		}
+		-re "JobState=RUNNING" {
+			send_user "\n\033\[31mFAILURE: Job $job_id is RUNNING but it should not\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	# Cancel the job
+	spawn $scancel -v $job_id
+	expect {
+		-re "Invalid job_id" {
+			send_user "\n\033\[31mFAILURE: Error cancelling the job submitted "
+			send_user "to the reservation.  Job $job_id not found\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: scancel not responding\033\[m\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	# (Fifth test) Submit a batch job: a job specifying node in reservation and
+	#              using more cores than allocated by the reservation
+	set sbatch_pid [spawn $sbatch -n$core_res_num --nodelist=$res_nodes --nodes=1 $file_in]
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: sbatch not responding\033\[m\n"
+			slow_kill $sbatch_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		send_user "\n\033\[31mFAILURE: batch submit failure\033\[m\n"
+		exit 1
+	}
+
+	sleep 1
+	# Show the job, make sure reservation tag is right
+	spawn $scontrol show job $job_id
+	expect {
+		-re "Invalid job id specified" {
+			send_user "\n\033\[31mFAILURE: Job $job_id not found\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		-re "JobState=PENDING" {
+			send_user "\n\033\[32mSUCCESS: Job $job_id is PENDING as expected\033\[m\n"
+			set exit_code 0
+			exp_continue
+		}
+		-re "JobState=RUNNING" {
+			send_user "\n\033\[31mFAILURE: Job $job_id is RUNNING but it should not\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	# No Cancelling the job now. Let's see if it runs once reservation is deleted
+	#
+	# Delete the reservation
+	set ret_code [delete_res $res_name]
+	if {$ret_code != 0} {
+		exit $ret_code
+	}
+
+	sleep 1
+	# Show the job
+	spawn $scontrol show job $job_id
+	expect {
+		-re "Invalid job id specified" {
+			send_user "\n\033\[31mFAILURE: Job $job_id not found\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		-re "JobState=PENDING" {
+			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING but it should not\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		-re "JobState=RUNNING" {
+			send_user "\n\033\[32mSUCCESS: Job $job_id is RUNNING as expected\033\[m\n"
+			set exit_code 0
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	# Cancelling the job now
+	spawn $scancel -v $job_id
+	expect {
+		-re "Invalid job_id" {
+			send_user "\n\033\[31mFAILURE: Error cancelling the job submitted "
+			send_user "to the reservation.  Job $job_id not found\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: scancel not responding\033\[m\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
