@@ -40,7 +40,7 @@ proc inc3_11_6 {} {
 	# Make the reservation
 	set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=ALL user=$user_name" 0]
 	if {$ret_code != 0} {
-		send_user "\nFAILURE: Unable to create a valid reservation\n"
+		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation\033\[m\n"
 		exit $ret_code
 	}
 
@@ -49,11 +49,11 @@ proc inc3_11_6 {} {
 	# Test for time reservation conflict (front overlap)
 	set ret_code [create_res "StartTime=now+30minutes Duration=60 Nodes=ALL user=$user_name" 1]
 	if {$ret_code == 0} {
-		send_user "\nFAILURE: Reservation $test did not fail but should have\n"
+		send_user "\n\033\[31mFAILURE: Reservation $test did not fail but should have\033\[m\n"
 		delete_res $res_name
 		exit 1
 	} else {
-		send_user "Expected error.  You can turn that frown upside-down.\n"
+		send_user "\033\[32mExpected error.  You can turn that frown upside-down.\033\[m\n"
 	}
 
 	# Delete the reservation
@@ -66,7 +66,7 @@ proc inc3_11_6 {} {
 	# Make the reservation
 	set ret_code [create_res "StartTime=now+30minutes Duration=60 Nodes=ALL user=$user_name" 0]
 	if {$ret_code != 0} {
-		send_user "\nFAILURE: Unable to create a valid reservation\n"
+		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation\033\[m\n"
 		exit $ret_code
 	}
 
@@ -75,11 +75,11 @@ proc inc3_11_6 {} {
 	# Test for time reservation conflict (trail overlap)
 	set ret_code [create_res "StartTime=now+60minutes Duration=60 Nodes=ALL user=$user_name" 1]
 	if {$ret_code == 0} {
-		send_user "\nFAILURE: Reservation $test did not fail but should have\n"
+		send_user "\n\033\[31mFAILURE: Reservation $test did not fail but should have\033\[m\n"
 		delete_res $res_name
 		exit 1
 	} else {
-		send_user "Expected error.  You can turn that frown upside-down.\n"
+		send_user "\033\[32mExpected error.  You can turn that frown upside-down.\033\[m\n"
 	}
 	# Delete the reservation
 	set ret_code [delete_res $res_name_save]
@@ -92,6 +92,6 @@ proc inc3_11_6 {} {
 	exec $bin_rm -f $file_in
 
 	if {$exit_code == 0} {
-		send_user "\nSUCCESS\n"
+		send_user "\n\033\[32mSUCCESS\033\[m\n"
 	}
 }

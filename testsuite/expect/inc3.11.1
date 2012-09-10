@@ -32,8 +32,13 @@
 ############################################################################
 
 proc inc3_11_1 {} {
-	global def_node user_name def_partition exit_code res_name
+	global def_node user_name def_partition exit_code cluster_cpus cores_per_node res_name
 
+	set num_nodes [available_nodes $def_partition]
+	
+	# First setting core_res_num greater than cores per node (assuming symmetric nodes)
+	set core_res_num [ expr ($cluster_cpus / $num_nodes) + 1 ]
+	
 	# TEST 1
 	# Make a list of lists with a series of parameters to test.  All the tests
 	# in goodtests should pass, all those in badtests should fail.
@@ -54,25 +59,28 @@ proc inc3_11_1 {} {
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=badtype,ignore_jobs}
 	{StartTime=now+10minutes   EndTime=now   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name Licenses=DUMMY_FOR_TESTING Flags=ignore_jobs}
+	#{StartTime=now   Duration=5   NodeCnt=2 CoreCnt=1  User=$user_name}
+	{StartTime=now   Duration=5   NodeCnt=1 CoreCnt=$core_res_num  User=$user_name}
 "
 	#	{StartTime=now   Duration=5   Nodes=$def_node   Account=badaccountname}
 
 	foreach test $badtests {
 		set ret_code [create_res $test 1]
 		if {$ret_code == 0} {
-			send_user "\nFAILURE: Reservation $test did not fail but should have\n"
+			send_user "\n\033\[31mFAILURE: Reservation $test did not fail but should have\033\[m\n"
 			delete_res $res_name
 			exit 1
 		} else {
-			send_user "Expected error.  You can turn that frown upside-down.\n"
+			send_user "\033\[32mExpected error.  You can turn that frown upside-down.\033\[m\n"
 		}
 	}
 
 	if {[test_super_user] == 0} {
-		send_user "\nWARNING: can not test more unless SlurmUser or root\n"
+		send_user "\n\033\[34mWARNING: can not test more unless SlurmUser or root\033\[m\n"
 		exit $exit_code
 	}
 
+	set core_res_num [ expr $cluster_cpus / 2 ]
 	set goodtests "
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
 	{StartTime=now+5minutes   EndTime=now+10minutes   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
@@ -81,17 +89,23 @@ proc inc3_11_1 {} {
 	{StartTime=now   Duration=5   NodeCnt=1   User=$user_name Flags=ignore_jobs}
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  PartitionName=$def_partition Flags=ignore_jobs}
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=Maint Flags=ignore_jobs}
+	{StartTime=now   Duration=5   NodeCnt=$num_nodes CoreCnt=$core_res_num  User=$user_name}
+	{StartTime=now   Duration=5   NodeCnt=10 CoreCnt=11  User=$user_name}
 "
 	foreach test $goodtests {
 		set ret_code [create_res $test 0]
 		if {$ret_code != 0} {
-			send_user "\nFAILURE: Unable to create a valid reservation\n"
+			send_user "\n\033\[31mFAILURE: Unable to create a valid reservation\033\[m\n"
 			exit $ret_code
+		} else {
+			send_user "\033\[32mReservation created as expected.\033\[m\n"
 		}
 		set ret_code [delete_res $res_name]
 		if {$ret_code != 0} {
-			send_user "\nFAILURE: Unable to delete a reservation\n"
+			send_user "\n\033\[31mFAILURE: Unable to delete a reservation\033\[m\n"
 			exit $ret_code
+		} else {
+			send_user "\033\[32mReservation deleted as expected.\033\[m\n"
 		}
 	}
 }

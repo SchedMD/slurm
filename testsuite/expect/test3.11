@@ -38,6 +38,8 @@ source ./inc3.11.3
 source ./inc3.11.4
 source ./inc3.11.5
 source ./inc3.11.6
+source ./inc3.11.7
+source ./inc3.11.8
 
 
 
@@ -63,6 +65,9 @@ proc create_res { res_params failure_expected } {
 	global scontrol
 	global alpha_numeric_under
 	global res_name
+	global res_nodes
+	global res_nodecnt
+	global res_corecnt
 
 	set ret_code 0
 	set res_name ""
@@ -93,7 +98,7 @@ proc create_res { res_params failure_expected } {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
+			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
 			set ret_code 1
 		}
 		eof {
@@ -134,6 +139,18 @@ proc create_res { res_params failure_expected } {
 				send_user "with:  $res_params\n"
 			}
 			set ret_code 1
+			exp_continue
+		}
+		-re "Nodes=($alpha_numeric_under)" {
+			set res_nodes $expect_out(1,string)
+			exp_continue
+		}
+		-re "NodeCnt=($alpha_numeric_under)" {
+			set res_nodecnt $expect_out(1,string)
+			exp_continue
+		}
+		-re "CoreCnt=($alpha_numeric_under)" {
+			set res_corecnt $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
@@ -276,22 +293,44 @@ expect {
 }
 
 
+set cons_res_actived 0
+spawn $scontrol show config
+expect {
+	-re "select/cons_res" {
+		set cons_res_actived 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
 # Start Test 1
-inc3_11_1
+#inc3_11_1
 
 # Start Test 2
-inc3_11_2
+#inc3_11_2
 
 # Start Test 3
-inc3_11_3
+#inc3_11_3
 
 # Start Test 4
-inc3_11_4
+#inc3_11_4
 
 # Start Test 5
-inc3_11_5
+#inc3_11_5
 
 # Start Test 6
-inc3_11_6
+#inc3_11_6
 
+if {$cons_res_actived == 1} {
+# Start Test 7
+inc3_11_7
+
+# Start Test 8
+inc3_11_8
+}
 exit $exit_code
