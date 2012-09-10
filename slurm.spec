@@ -88,6 +88,10 @@
 %slurm_with_opt sgijob
 %endif
 
+%if %{slurm_with cray}
+%slurm_with_opt sgijob
+%endif
+
 Name:    see META file
 Version: see META file
 Release: see META file
