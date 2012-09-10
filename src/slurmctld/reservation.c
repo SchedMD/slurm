@@ -2950,7 +2950,7 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 		if (job_ptr->end_time < resv_desc_ptr->start_time)
 			continue;
 
-		if(resv_desc_ptr->full_nodes){ 
+		if(resv_desc_ptr->core_cnt == 0){ 
 			bit_not(job_ptr->node_bitmap);
 			bit_and(avail_bitmap, job_ptr->node_bitmap);
 			bit_not(job_ptr->node_bitmap);
