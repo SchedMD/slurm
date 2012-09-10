@@ -32,7 +32,7 @@
 ############################################################################
 
 proc inc3_11_1 {} {
-	global def_node user_name def_partition exit_code cluster_cpus cores_per_node res_name
+	global def_node user_name def_partition exit_code cluster_cpus res_name
 
 	set num_nodes [available_nodes $def_partition]
 	
@@ -62,7 +62,7 @@ proc inc3_11_1 {} {
 	#{StartTime=now   Duration=5   NodeCnt=2 CoreCnt=1  User=$user_name}
 	{StartTime=now   Duration=5   NodeCnt=1 CoreCnt=$core_res_num  User=$user_name}
 "
-	#	{StartTime=now   Duration=5   Nodes=$def_node   Account=badaccountname}
+	#{StartTime=now   Duration=5   Nodes=$def_node   Account=badaccountname}
 
 	foreach test $badtests {
 		set ret_code [create_res $test 1]
@@ -90,8 +90,9 @@ proc inc3_11_1 {} {
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  PartitionName=$def_partition Flags=ignore_jobs}
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=Maint Flags=ignore_jobs}
 	{StartTime=now   Duration=5   NodeCnt=$num_nodes CoreCnt=$core_res_num  User=$user_name}
-	{StartTime=now   Duration=5   NodeCnt=10 CoreCnt=11  User=$user_name}
 "
+	#{StartTime=now   Duration=5   NodeCnt=10 CoreCnt=11  User=$user_name}
+
 	foreach test $goodtests {
 		set ret_code [create_res $test 0]
 		if {$ret_code != 0} {

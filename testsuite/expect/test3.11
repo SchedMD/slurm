@@ -249,16 +249,7 @@ proc delete_res { res_name } {
 #
 # Identify usable nodes in default partition
 #
-spawn $sinfo -h -o %32P
-expect {
-	-re "($alpha_numeric_under)(\\*)" {
-		set def_partition $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
+set def_partition [default_partition]
 if {[string compare $def_partition ""] == 0} {
 	send_user "\nFAILURE: failed to find default partition\n"
 	exit 1
@@ -278,6 +269,34 @@ if {[string compare $def_node ""] == 0} {
 	exit 1
 }
 
+#
+# Determine system size
+#
+set cores_per_socket 0
+set sockets_per_node 0
+log_user 0
+spawn $scontrol show node -o
+expect {
+	-re "CoresPerSocket=($number)" {
+		if {$cores_per_socket == 0} {
+			set cores_per_socket $expect_out(1,string)
+		}
+		exp_continue
+	}
+	-re "Sockets=($number)" {
+		if {$sockets_per_node == 0} {
+			set sockets_per_node $expect_out(1,string)
+		}
+		exp_continue
+	}	
+	eof {
+		wait
+	}
+}
+log_user 1
+set cores_per_node [expr $cores_per_socket * $sockets_per_node]
+set node_count [available_nodes $def_partition]
+set cluster_cpus [expr $cores_per_node * $node_count]
 
 #
 # Get the user name
@@ -308,29 +327,18 @@ expect {
 	}
 }
 
-# Start Test 1
-#inc3_11_1
-
-# Start Test 2
-#inc3_11_2
-
-# Start Test 3
-#inc3_11_3
-
-# Start Test 4
-#inc3_11_4
-
-# Start Test 5
-#inc3_11_5
-
-# Start Test 6
-#inc3_11_6
-
+inc3_11_1
+inc3_11_2
+inc3_11_3
+inc3_11_4
+inc3_11_5
+inc3_11_6
 if {$cons_res_actived == 1} {
-# Start Test 7
-inc3_11_7
+	inc3_11_7
+	inc3_11_8
+}
 
-# Start Test 8
-inc3_11_8
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
 }
 exit $exit_code
