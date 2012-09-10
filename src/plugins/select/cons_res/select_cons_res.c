@@ -2565,14 +2565,17 @@ bitstr_t *_make_core_bitmap_filtered(bitstr_t *node_map, int filter)
 	return core_map;
 }
 
-/* Once here, avail_bitmap has nodes not used by any job or reservation */
+/* Once here, if core_cnt=0, avail_bitmap has nodes not used by any job or reservation */
 bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			  uint32_t core_cnt, bitstr_t **core_bitmap)
 {
 	bitstr_t *sp_avail_bitmap;
-	char str[100];
+	char str[300];
 	/* Just allowing symetric requests today */
 	uint32_t cores_per_node = core_cnt / MAX(node_cnt, 1);
+	struct part_res_record *p_ptr;
+	bitstr_t *tmpcore;
+	int i;
 
 	debug2("reserving %d cores per node in %d nodes",
 	       cores_per_node, node_cnt);
@@ -2586,37 +2589,100 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	bit_fmt(str, (sizeof(str) - 1), sp_avail_bitmap);
 
 	if (core_cnt) { /* Reservation is using partial nodes */
-		*core_bitmap = _make_core_bitmap_filtered(avail_bitmap, 0);
+		debug2("Reservation is using partial nodes");
+		
+		/* if not NULL = Cores used by other core based reservations 
+		 * overlapping in time with this one */
+		if(*core_bitmap == NULL) 
+			*core_bitmap = 
+				_make_core_bitmap_filtered(avail_bitmap, 0); 
+
+		tmpcore = _make_core_bitmap_filtered(avail_bitmap, 0); 
+		
+		/* remove all existing allocations from free_cores */
+		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
+			if (!p_ptr->row)
+			       	continue;
+			for (i = 0; i < p_ptr->num_rows; i++) {
+				if (!p_ptr->row[i].row_bitmap)
+					continue;
+				bit_or(tmpcore, p_ptr->row[i].row_bitmap); 
+			}
+		}
+		bit_not(tmpcore); /* tmpcore contains now current free cores */
+		bit_fmt(str, (sizeof(str) - 1), tmpcore);
+		debug2("tmpcore contains just current free cores: %s", str);
 
 		while (core_cnt) {
-			uint32_t inx, coff;
+			int inx, coff, coff2;
 			int i;
+			int cores_in_node;
+			int local_cores;
 
 			inx = bit_ffs(avail_bitmap);
-			if (inx < 0)
-				break;
+			if(inx < 0){
+				info("reservation request can not be satisfied");
+				FREE_NULL_BITMAP(sp_avail_bitmap);
+				FREE_NULL_BITMAP(tmpcore);
+				return NULL;
+			}
+			debug2("Using node %d", inx);
 
 			coff = cr_get_coremap_offset(inx);
+			/* TODO: is next right for the last possible node at 
+			 * avail_bitmap? */
+			coff2 = cr_get_coremap_offset(inx + 1);
+			local_cores = coff2 - coff;
 
-			for (i = 0; i < cores_per_node; i++) {
-				/* TODO: checking cores_per_nodes is lower
-				 * than real cores per node */
-				bit_set(*core_bitmap, coff++);
-				core_cnt--;
+			bit_clear(avail_bitmap, inx);
+
+			if(local_cores < cores_per_node)
+				continue;
+
+			cores_in_node = 0;
+
+			/* First let's see in there are enough cores in 
+			 * this node */
+			for (i = 0; i < local_cores; i++) {
+				if(bit_test(tmpcore, coff + i))
+					cores_in_node++;
+			}
+			if(cores_in_node < cores_per_node)
+				continue;
+
+			cores_in_node = 0;
+			for (i = 0; i < local_cores; i++) {
+				if(bit_test(tmpcore, coff + i)){
+					bit_set(*core_bitmap, coff + i);
+					core_cnt--;
+					cores_in_node++;
+					if((cores_in_node == cores_per_node) || 
+							(core_cnt == 0))
+						break;
+				}
 			}
 
-			/* Add this node to the final node bitmap */
-			bit_set(sp_avail_bitmap, inx);
+			if(cores_in_node){ 
+				/* Add this node to the final node bitmap */
+				debug2("ALEJ: Reservation using %d cores in 
+						node %d", cores_in_node, inx);
+				bit_set(sp_avail_bitmap, inx);
+			} else {
+				debug2("ALEJ: Reservation NOT using node %d", 
+						inx);
+			}
 
-			/* Clear this node from the initial available bitmap */
-			bit_clear(avail_bitmap, inx);
 		}
 
+		FREE_NULL_BITMAP(tmpcore);
+
 		bit_fmt(str, (sizeof(str) - 1), *core_bitmap);
+		info("sequential pick using coremap: %s", str);
 
 		if (core_cnt) {
 			info("reservation request can not be satisfied");
 			FREE_NULL_BITMAP(sp_avail_bitmap);
+			FREE_NULL_BITMAP(tmpcore);
 			return NULL;
 		}
 
@@ -2643,11 +2709,9 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			return NULL;
 		}
 
+		bit_fmt(str, (sizeof(str) - 1), sp_avail_bitmap);
+		info("sequential pick using nodemap: %s", str);
 	}
-
-	//bit_fmt(str, (sizeof(str) - 1), sp_avail_bitmap);
-	//info("sequential pick using nodemap: %s", str);
-
 
 	return sp_avail_bitmap;
 }

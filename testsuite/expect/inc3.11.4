@@ -47,7 +47,7 @@ proc inc3_11_4 {} {
 	# Make the reservation
 	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=root" 0]
 	if {$ret_code != 0} {
-		send_user "\nFAILURE: Unable to create a reservation\n"
+		send_user "\n\033\[31mFAILURE: Unable to create a reservation\033\[m\n"
 		set exit_code 1
 	}
 
@@ -58,7 +58,7 @@ proc inc3_11_4 {} {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exec $scancel $job_id
-			send_user "\nFAILURE: job submit should have been denied\n"
+			send_user "\n\033\[31mFAILURE: job submit should have been denied\033\[m\n"
 			set exit_code 1
 			exp_continue
 		}
@@ -68,7 +68,7 @@ proc inc3_11_4 {} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sbatch not responding\n"
+			send_user "\n\033\[31mFAILURE: sbatch not responding\033\[m\n"
 			slow_kill $sbatch_pid
 			set exit_code 1
 		}
@@ -78,12 +78,12 @@ proc inc3_11_4 {} {
 	}
 
 	if {$denied == 0} {
-		send_user "\nFAILURE: Job $job_id should have been rejected "
+		send_user "\n\033\[31mFAILURE: Job $job_id should have been rejected "
 		send_user "from reservation restricted to root.  Expected "
-		send_user "rejection message not given.\n"
+		send_user "rejection message not given.\033\[m\n"
 		set exit_code 1
 	} else {
-		send_user "Expected error, no worries mate.\n"
+		send_user "\033\[32mExpected error, no worries mate.\033\[m\n"
 	}
 	# Delete the reservation
 	set ret_code [delete_res $res_name]
