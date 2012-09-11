@@ -1358,18 +1358,21 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				used_limits = _get_used_limits_for_user(
 					qos_ptr->usage->user_limit_list,
 					job_ptr->user_id);
-			if (used_limits && (used_limits->cpus
-					    >= qos_ptr->max_cpus_pu)) {
+			if (used_limits && ((used_limits->cpus +
+					     job_ptr->details->min_cpus)
+					    > qos_ptr->max_cpus_pu)) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason =
 					WAIT_QOS_RESOURCE_LIMIT;
 				debug2("job %u being held, "
-				       "the job is at or exceeds "
+				       "the user is at or would exceed "
 				       "max cpus per-user limit "
-				       "%u with %u for QOS %s",
+				       "%u with %u(+%u) for QOS %s",
 				       job_ptr->job_id,
 				       qos_ptr->max_cpus_pu,
-				       used_limits->cpus, qos_ptr->name);
+				       used_limits->cpus,
+				       job_ptr->details->min_cpus,
+				       qos_ptr->name);
 				rc = false;
 				goto end_it;
 			}
@@ -1445,18 +1448,21 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				used_limits = _get_used_limits_for_user(
 					qos_ptr->usage->user_limit_list,
 					job_ptr->user_id);
-			if (used_limits && (used_limits->nodes
-					    >= qos_ptr->max_nodes_pu)) {
+			if (used_limits && ((used_limits->nodes
+					     + job_ptr->details->min_nodes)
+					    > qos_ptr->max_nodes_pu)) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason =
 					WAIT_QOS_RESOURCE_LIMIT;
 				debug2("job %u being held, "
-				       "the job is at or exceeds "
+				       "the user is at or would exceed "
 				       "max nodes per-user "
-				       "limit %u with %u for QOS %s",
+				       "limit %u with %u(+%u) for QOS %s",
 				       job_ptr->job_id,
 				       qos_ptr->max_nodes_pu,
-				       used_limits->nodes, qos_ptr->name);
+				       used_limits->nodes,
+				       job_ptr->details->min_nodes,
+				       qos_ptr->name);
 				rc = false;
 				goto end_it;
 			}

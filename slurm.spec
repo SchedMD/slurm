@@ -87,6 +87,10 @@
 %slurm_with_opt sgijob
 %endif
 
+%if %{slurm_with cray}
+%slurm_with_opt sgijob
+%endif
+
 Name:    see META file
 Version: see META file
 Release: see META file
@@ -403,6 +407,7 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 	%{?with_ssl}		\
 	%{?with_munge}      \
 	%{?with_blcr}      \
+        %{?slurm_with_srun2aprun:--with-srun2aprun} \
 	%{!?slurm_with_readline:--without-readline} \
 	%{?with_cflags}
 

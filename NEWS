@@ -96,6 +96,9 @@ documents those changes that are of interest to users and admins.
  -- CRAY - update to work with ALPS 5.1
  -- BGQ - Handle issue of speed and mutexes when polling instead of using the
     realtime server.
+ -- BGQ - Fix minor sorting issue with sview when sorting by midplanes.
+ -- Accounting - Fix for handling per user max node/cpus limits on a QOS
+    correctly for current job.
 
 * Changes in SLURM 2.4.2
 ========================
