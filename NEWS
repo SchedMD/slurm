@@ -99,6 +99,8 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Fix minor sorting issue with sview when sorting by midplanes.
  -- Accounting - Fix for handling per user max node/cpus limits on a QOS
     correctly for current job.
+ -- Update documentation for -/+= when updating a reservation's
+    users/accounts/flags
 
 * Changes in SLURM 2.4.2
 ========================

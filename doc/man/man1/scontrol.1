@@ -1075,7 +1075,9 @@ For create, if you do not want to give a reservation name, use
 List of accounts permitted to use the reserved nodes.
 E.g.  Accounts=physcode1,physcode2.  A user in any of the accounts
 may use the reserved nodes.
-A new reservation must specify Users and/or Accounts.
+A new reservation must specify Users and/or Accounts.  You can add or
+remove individual accounts from an existing reservation by adding
+a '+' or '\-' sign before the '=' sign.
 
 .TP
 \fICoreCnt\fP=<num>
@@ -1156,9 +1158,9 @@ Identify the partition to be reserved.
 .TP
 \fIFlags\fP=<flags>
 Flags associated with the reservation.
-In order to remove a flag with the update option, precede the name with
-a minus sign. For example: Flags=\-DAILY (NOTE: this option is not supported
-for all flags).
+You can add or remove individual flags from an existing reservation by
+adding a '+' or '\-' sign before the '=' sign.  For example:
+Flags\-=DAILY (NOTE: this shortcut is not supported for all flags).
 Currently supported flags include:
 .RS
 .TP 12
@@ -1214,7 +1216,9 @@ Value may be cleared with blank data value, "Features=".
 \fIUsers\fP=<user list>
 List of users permitted to use the reserved nodes.
 E.g.  Users=jones1,smith2.
-A new reservation must specify Users and/or Accounts.
+A new reservation must specify Users and/or Accounts.  You can add or
+remove individual users from an existing reservation by adding a '+'
+or '\-' sign before the '=' sign.
 
 .TP
 \fBSPECIFICATIONS FOR UPDATE BLOCK/SUBMP \fR
