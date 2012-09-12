@@ -93,7 +93,13 @@ Also see \fBAllowedRAMSpace\fR.
 .TP
 \fBConstrainSwapSpace\fR=<yes|no>
 If configured to "yes" then constrain the job's swap space usage.
-The default value is "no".
+The default value is "no". Note that when set to "yes" and 
+ConstrainRAMSpace is set to "no", AllowedRAMSpace is automatically set
+to 100% in order to limit the RAM+Swap amount to 100% of job's requirement
+plus the percent of allowed swap space. This amount is thus set to both
+RAM and RAM+Swap limits. This means that in that particular case,
+ConstrainRAMSpace is automatically enabled with the same limit than the one
+used to constrain swap space.
 Also see \fBAllowedSwapSpace\fR.
 
 .TP
