@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
     partition name by default.
  -- Make it so the parse_time will return a valid 0 if given epoch time and
     set errno == ESLURM_INVALID_TIME_VALUE on error instead.
+ -- Correct srun --no-alloc logic when node count exceeds node list or task
+    task count is not a multiple of the node count. Work by Hongjia Cao, NUDT.
 
 * Changes in SLURM 2.5.0.pre1
 =============================
