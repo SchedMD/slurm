@@ -760,7 +760,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 
 		if (sinfo_ptr->min_cpu_load > node_ptr->cpu_load)
 			sinfo_ptr->min_cpu_load = node_ptr->cpu_load;
-		if (sinfo_ptr->max_cpu_load < node_ptr->weight)
+		if (sinfo_ptr->max_cpu_load < node_ptr->cpu_load)
 			sinfo_ptr->max_cpu_load = node_ptr->cpu_load;
 	}
 
