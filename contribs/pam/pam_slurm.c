@@ -49,6 +49,8 @@
 #include <dlfcn.h>
 
 #include "slurm/slurm.h"
+#include "src/common/xmalloc.h"
+#include "src/common/read_config.h"
 
 /*  Define the externally visible functions in this file.
  */
@@ -83,7 +85,7 @@ void __attribute__ ((destructor)) libpam_slurm_fini(void);
  *
  */
 static void * slurm_h = NULL;
-static int    debug   = 0;
+static int    pam_debug   = 0;
 
 static void _log_msg(int level, const char *format, ...);
 static void _parse_args(struct _options *opts, int argc, const char **argv);
@@ -94,7 +96,7 @@ static void _send_denial_msg(pam_handle_t *pamh, struct _options *opts,
 
 #define DBG(msg,args...)					\
 	do {							\
-		if (debug)					\
+		if (pam_debug)					\
 			_log_msg(LOG_INFO, msg, ##args);	\
 	} while (0);
 
@@ -211,7 +213,7 @@ _parse_args(struct _options *opts, int argc, const char **argv)
 	 */
 	for (i=0; i<argc; i++) {
 		if (!strcmp(argv[i], "debug"))
-			opts->enable_debug = debug = 1;
+			opts->enable_debug = pam_debug = 1;
 		else if (!strcmp(argv[i], "no_sys_info"))
 			opts->disable_sys_info = 1;
 		else if (!strcmp(argv[i], "no_warn"))
@@ -260,17 +262,30 @@ static int
 _slurm_match_allocation(uid_t uid)
 {
 	int authorized = 0, i;
-	char hostname[MAXHOSTNAMELEN], *p;
+	char hostname[MAXHOSTNAMELEN];
+	char *nodename = NULL;
 	job_info_msg_t * msg;
 
-	if (gethostname(hostname, sizeof(hostname)) < 0) {
+	if (gethostname_short(hostname, sizeof(hostname)) < 0) {
 		_log_msg(LOG_ERR, "gethostname: %m");
 		return 0;
 	}
-	if ((p = strchr(hostname, '.')))
-		*p = '\0';
 
-	DBG ("does uid %ld have \"%s\" allocated", uid, hostname);
+	if (!(nodename = slurm_conf_get_nodename(hostname))) {
+		if (!(nodename = slurm_conf_get_aliased_nodename())) {
+			/* if no match, try localhost (Should only be
+			 * valid in a test environment) */
+			if (!(nodename =
+			      slurm_conf_get_nodename("localhost"))) {
+				_log_msg(LOG_ERR,
+					 "slurm_conf_get_aliased_nodename: "
+					 "no hostname found");
+				return 0;
+			}
+		}
+	}
+
+	DBG ("does uid %ld have \"%s\" allocated?", uid, nodename);
 
 	if (slurm_load_jobs((time_t) 0, &msg, SHOW_ALL) < 0) {
 		_log_msg(LOG_ERR, "slurm_load_jobs: %s",
@@ -287,15 +302,15 @@ _slurm_match_allocation(uid_t uid)
 
 			DBG ("jobid %ld: nodes=\"%s\"", j->job_id, j->nodes);
 
-			if (_hostrange_member(hostname, j->nodes) ) {
+			if (_hostrange_member(nodename, j->nodes) ) {
 				DBG ("user %ld allocated node %s in job %ld",
-				     uid, hostname, j->job_id);
+				     uid, nodename, j->job_id);
 				authorized = 1;
 				break;
 			}
 		}
 	}
-
+	xfree(nodename);
 	slurm_free_job_info_msg (msg);
 
 	return authorized;
@@ -368,7 +383,7 @@ extern void libpam_slurm_init (void)
 	/* First try to use the same libslurm version ("libslurm.so.24.0.0"),
 	 * Second try to match the major version number ("libslurm.so.24"),
 	 * Otherwise use "libslurm.so" */
-	if (snprintf(libslurmname, sizeof(libslurmname), 
+	if (snprintf(libslurmname, sizeof(libslurmname),
 			"libslurm.so.%d.%d.%d", SLURM_API_CURRENT,
 			SLURM_API_REVISION, SLURM_API_AGE) >=
 			sizeof(libslurmname) ) {
