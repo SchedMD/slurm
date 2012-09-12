@@ -165,7 +165,8 @@ job_create_noalloc(void)
 	 */
 	job = _job_create_structure(ai);
 
-	job_update_io_fnames(job);
+	if (job != NULL)
+		job_update_io_fnames(job);
 
 error:
 	xfree(ai);
@@ -485,6 +486,10 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 	} else if (opt.no_alloc) {
 		info("do not allocate resources");
 		job = job_create_noalloc();
+		if (job == NULL) {
+			error("Job creation failure.");
+			exit(error_exit);
+		}
 		if (create_job_step(job, false) < 0) {
 			exit(error_exit);
 		}
@@ -774,7 +779,7 @@ _job_create_structure(allocation_info_t *ainfo)
 
 #if !defined HAVE_FRONT_END || (defined HAVE_BGQ)
 //#if !defined HAVE_FRONT_END || (defined HAVE_BGQ && defined HAVE_BG_FILES)
-	if(opt.min_nodes > job->nhosts) {
+	if (opt.min_nodes > job->nhosts) {
 		error("Only allocated %d nodes asked for %d",
 		      job->nhosts, opt.min_nodes);
 		if (opt.exc_nodes) {
@@ -782,11 +787,13 @@ _job_create_structure(allocation_info_t *ainfo)
 			 * are explicitly excluded, this error can occur. */
 			error("Are required nodes explicitly excluded?");
 		}
+		xfree(job);
 		return NULL;
 	}
 	if ((ainfo->cpus_per_node == NULL) ||
 	    (ainfo->cpu_count_reps == NULL)) {
 		error("cpus_per_node array is not set");
+		xfree(job);
 		return NULL;
 	}
 #endif
