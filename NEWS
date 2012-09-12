@@ -55,6 +55,8 @@ documents those changes that are of interest to users and admins.
     correctly for current job.
  -- Update documentation for -/+= when updating a reservation's
     users/accounts/flags
+ -- Update pam module to work if using aliases on nodes instead of actual
+    host names.
 
 * Changes in SLURM 2.4.2
 ========================
