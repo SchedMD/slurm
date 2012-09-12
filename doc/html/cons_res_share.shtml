@@ -53,7 +53,8 @@ Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_Core</B><BR>
 SelectTypeParameters=<B>CR_Core_Memory</B></TD>
 <TD>Shared=NO</TD>
-<TD>Cores are allocated to jobs. No core will run more than one job.</TD>
+<TD>Cores are allocated to jobs. No core will run more than one job.
+No node will run jobs from more than one SLURM partition.</TD>
 </TR><TR>
 <TD>Shared=YES</TD>
 <TD>By default same as Shared=NO. Cores allocated to a job may be shared with
@@ -68,7 +69,8 @@ Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_CPU</B><BR>
 SelectTypeParameters=<B>CR_CPU_Memory</B></TD>
 <TD>Shared=NO</TD>
-<TD>CPUs are allocated to jobs. No CPU will run more than one job.</TD>
+<TD>CPUs are allocated to jobs. No CPU will run more than one job.
+No node will run jobs from more than one SLURM partition.</TD>
 </TR><TR>
 <TD>Shared=YES</TD>
 <TD>By default same as Shared=NO. CPUs allocated to a job may be shared with
@@ -83,7 +85,8 @@ Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_Socket</B><BR>
 SelectTypeParameters=<B>CR_Socket_Memory</B></TD>
 <TD>Shared=NO</TD>
-<TD>Sockets are allocated to jobs. No socket will run more than one job.</TD>
+<TD>Sockets are allocated to jobs. No socket will run more than one job.
+No node will run jobs from more than one SLURM partition.</TD>
 </TR><TR>
 <TD>Shared=YES</TD>
 <TD>By default same as Shared=NO. Sockets allocated to a job may be shared with
@@ -260,6 +263,6 @@ values suitable for your system.</P>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 2 December 2008</p>
+<p style="text-align:center;">Last modified 12 September 2012</p>
 
 <!--#include virtual="footer.txt"-->
