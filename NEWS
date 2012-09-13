@@ -62,6 +62,8 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Put final poll after realtime comes back into service to avoid
     having the realtime server go down over and over again while waiting
     for the poll to finish.
+ -- task/cgroup/memory - ensure that ConstrainSwapSpace=no is correctly
+    handled. Work by Matthieu Hautreux, CEA.
 
 * Changes in SLURM 2.4.2
 ========================

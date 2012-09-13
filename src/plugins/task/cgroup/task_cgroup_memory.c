@@ -285,8 +285,8 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 	xcgroup_set_param (cg, "memory.use_hierarchy","1");
 
 	/* when RAM space has not to be constrained and we are here, it
-	   means that only Swap space has to be constrained. Thus set 
-	   RAM space limit to the mem+swap limit too */
+	 * means that only Swap space has to be constrained. Thus set 
+	 * RAM space limit to the mem+swap limit too */
 	if ( ! constrain_ram_space )
 		mlb = mls;
 	xcgroup_set_uint64_param (cg, "memory.limit_in_bytes", mlb);
@@ -296,15 +296,16 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 		xcgroup_set_uint64_param (cg, "memory.memsw.limit_in_bytes",
 					  mls);
 		info ("task/cgroup: %s: alloc=%luMB mem.limit=%luMB "
-		      "memsw.limit=%luMB",path,
+		      "memsw.limit=%luMB", path,
 		      (unsigned long) mem_limit,
 		      (unsigned long) mlb/(1024*1024),
 		      (unsigned long) mls/(1024*1024));
-	} else
+	} else {
 		info ("task/cgroup: %s: alloc=%luMB mem.limit=%luMB "
-		      "memsw.limit=unlimited",path,
+		      "memsw.limit=unlimited", path,
 		      (unsigned long) mem_limit,
 		      (unsigned long) mlb/(1024*1024));
+	}
 
 	return 0;
 }
