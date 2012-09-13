@@ -631,6 +631,7 @@ AUTHD_CFLAGS
 AUTHD_LIBS
 WITH_MUNGE_FALSE
 WITH_MUNGE_TRUE
+MUNGE_DIR
 MUNGE_LDFLAGS
 MUNGE_CPPFLAGS
 MUNGE_LIBS
@@ -22044,12 +22045,14 @@ $as_echo "$as_me: WARNING: unable to locate munge installation" >&2;}
   else
     MUNGE_LIBS="-lmunge"
     MUNGE_CPPFLAGS="-I$x_ac_cv_munge_dir/include"
+    MUNGE_DIR="$x_ac_cv_munge_dir"
     if test "$ac_with_rpath" = "yes"; then
       MUNGE_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_munge_dir/$bit -L$x_ac_cv_munge_dir/$bit"
     else
       MUNGE_LDFLAGS="-L$x_ac_cv_munge_dir/$bit"
     fi
   fi
+
 
 
 
