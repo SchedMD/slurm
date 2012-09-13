@@ -59,6 +59,9 @@ documents those changes that are of interest to users and admins.
     host names.
  -- Correction to task layout logic in select/cons_res for job with minimum
     and maximum node count.
+ -- BGQ - Put final poll after realtime comes back into service to avoid
+    having the realtime server go down over and over again while waiting
+    for the poll to finish.
 
 * Changes in SLURM 2.4.2
 ========================

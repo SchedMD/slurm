@@ -73,6 +73,7 @@ static bool bridge_status_inited = false;
 
 static bool initial_poll = true;
 static bool rt_running = false;
+static bool rt_waiting = false;
 
 /*
  * Handle compute block status changes as a result of a block allocate.
@@ -950,19 +951,42 @@ static void *_poll(void *no_data)
 	return NULL;
 }
 
+static void *_before_rt_poll(void *no_data)
+{
+	uint16_t coords[SYSTEM_DIMENSIONS];
+	/* To make sure we don't have any missing state */
+	if (!rt_waiting && blocks_are_created)
+		_do_block_poll();
+	if (!rt_waiting)
+		_do_hardware_poll(0, coords, bridge_get_compute_hardware());
+	return NULL;
+}
+
 void event_handler::handleRealtimeStartedRealtimeEvent(
 	const RealtimeStartedEventInfo& event)
 {
-	if (!rt_running) {
-		uint16_t coords[SYSTEM_DIMENSIONS];
+	if (!rt_running && !rt_waiting) {
+		pthread_attr_t thread_attr;
+		/* If we are in the middle of polling, break out since
+		   we are just going to do it again right after.
+		*/
+		rt_waiting = 1;
 		slurm_mutex_lock(&rt_mutex);
-		info("RealTime server started back up!");
-		/* To make sure we don't have any missing state */
-		if (blocks_are_created)
-			_do_block_poll();
-		_do_hardware_poll(0, coords, bridge_get_compute_hardware());
+		rt_waiting = 0;
 		rt_running = 1;
-	}
+		info("RealTime server started back up!");
+		/* Since we need to exit this function for the
+		   realtime server to start giving us info spawn a
+		   thread that will do it for us in the background.
+		*/
+		slurm_attr_init(&thread_attr);
+		if (pthread_create(&poll_thread, &thread_attr,
+				   _before_rt_poll, NULL))
+			fatal("pthread_create error %m");
+		slurm_attr_destroy(&thread_attr);
+	} else if (rt_waiting)
+		info("Realtime server appears to have gone and come back "
+		      "while we were trying to bring it back");
 }
 
 void event_handler::handleRealtimeEndedRealtimeEvent(
@@ -972,6 +996,9 @@ void event_handler::handleRealtimeEndedRealtimeEvent(
 		rt_running = 0;
 		slurm_mutex_unlock(&rt_mutex);
 		info("RealTime server stopped serving info");
+	} else {
+		info("RealTime server stopped serving info before "
+		      "we gave it back control.");
 	}
 }
 
