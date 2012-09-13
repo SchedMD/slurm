@@ -232,7 +232,6 @@ proc inc3_11_7 {} {
 		}
 		-re "JobState=PENDING" {
 			send_user "\n\033\[32mSUCCESS: Job $job_id is PENDING as expected\033\[m\n"
-			set exit_code 0
 			exp_continue
 		}
 		-re "JobState=RUNNING" {
@@ -284,7 +283,6 @@ proc inc3_11_7 {} {
 		}
 		-re "JobState=PENDING" {
 			send_user "\n\033\[32mSUCCESS: Job $job_id is PENDING as expected\033\[m\n"
-			set exit_code 0
 			exp_continue
 		}
 		-re "JobState=RUNNING" {
@@ -325,7 +323,6 @@ proc inc3_11_7 {} {
 		}
 		-re "JobState=RUNNING" {
 			send_user "\n\033\[32mSUCCESS: Job $job_id is RUNNING as expected\033\[m\n"
-			set exit_code 0
 			exp_continue
 		}
 		timeout {

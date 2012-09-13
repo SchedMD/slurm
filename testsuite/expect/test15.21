@@ -79,7 +79,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "Failed to allocate resources" {
+	-re "Unable to allocate resources" {
 		send_user "\nWARNING: can't test salloc task distribution\n"
 		exit $exit_code
 	}
