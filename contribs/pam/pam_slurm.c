@@ -230,7 +230,7 @@ _parse_args(struct _options *opts, int argc, const char **argv)
 
 /*
  *  Return 1 if 'hostname' is a member of 'str', a SLURM-style host list as
- *  returned by SLURM datatbase queries, else 0.  The 'str' argument is
+ *  returned by SLURM database queries, else 0.  The 'str' argument is
  *  truncated to the base prefix as a side-effect.
  */
 static int
@@ -253,6 +253,40 @@ _hostrange_member(char *hostname, char *str)
 		return 1;
 }
 
+/* _gethostname_short - equivalent to gethostname, but return only the first
+ * component of the fully qualified name
+ * (e.g. "linux123.foo.bar" becomes "linux123")
+ *
+ * Copied from src/common/read_config.c because it is not exported
+ * through libslurm.
+ *
+ * OUT name
+ */
+static int
+_gethostname_short (char *name, size_t len)
+{
+	int error_code, name_len;
+	char *dot_ptr, path_name[1024];
+
+	error_code = gethostname(path_name, sizeof(path_name));
+	if (error_code)
+		return error_code;
+
+	dot_ptr = strchr (path_name, '.');
+	if (dot_ptr == NULL)
+		dot_ptr = path_name + strlen(path_name);
+	else
+		dot_ptr[0] = '\0';
+
+	name_len = (dot_ptr - path_name);
+	if (name_len > len)
+		return ENAMETOOLONG;
+
+	strcpy(name, path_name);
+	return 0;
+}
+
+
 /*
  *  Query the SLURM database to find out if 'uid' has been allocated
  *  this node. If so, return 1 indicating that 'uid' is authorized to
@@ -266,7 +300,7 @@ _slurm_match_allocation(uid_t uid)
 	char *nodename = NULL;
 	job_info_msg_t * msg;
 
-	if (gethostname_short(hostname, sizeof(hostname)) < 0) {
+	if (_gethostname_short(hostname, sizeof(hostname)) < 0) {
 		_log_msg(LOG_ERR, "gethostname: %m");
 		return 0;
 	}
