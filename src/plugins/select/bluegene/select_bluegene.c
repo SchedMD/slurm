@@ -58,6 +58,7 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
+slurmctld_config_t slurmctld_config __attribute__((weak_import));
 slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
 struct node_record *node_record_table_ptr  __attribute__((weak_import)) = NULL;
 int bg_recover __attribute__((weak_import)) = NOT_FROM_CONTROLLER;
@@ -71,6 +72,7 @@ void *acct_db_conn  __attribute__((weak_import)) = NULL;
 char *slurmctld_cluster_name  __attribute__((weak_import)) = NULL;
 slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import)) = NULL;
 #else
+slurmctld_config_t slurmctld_config;
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr = NULL;
 int bg_recover = NOT_FROM_CONTROLLER;

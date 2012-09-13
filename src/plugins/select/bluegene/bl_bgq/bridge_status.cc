@@ -757,6 +757,8 @@ static void _do_block_poll(void)
 				    block_ptr->getStatus().toValue()),
 			    kill_job_list))
 			updated = 1;
+		if (rt_waiting || slurmctld_config.shutdown_time)
+			break;
 	}
 	slurm_mutex_unlock(&block_state_mutex);
 	unlock_slurmctld(job_read_lock);
@@ -765,7 +767,6 @@ static void _do_block_poll(void)
 
 	if (updated == 1)
 		last_bg_update = time(NULL);
-
 }
 
 /* Even though ba_mp should be coming from the main list
@@ -818,6 +819,9 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 				slurm_mutex_unlock(&ba_system_mutex);
 				slurm_mutex_unlock(&block_state_mutex);
 				unlock_slurmctld(job_read_lock);
+				if (rt_waiting
+				    || slurmctld_config.shutdown_time)
+					return;
 			}
 		}
 	}
@@ -836,18 +840,23 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 			_handle_bad_nodeboard(
 				nb_ptr->getLocation().substr(7,3).c_str(),
 				bg_down_node, nb_ptr->getState(), NULL, 0);
+			if (rt_waiting || slurmctld_config.shutdown_time)
+				return;
 		}
 	}
 
 	for (dim=Dimension::A; dim<=Dimension::D; dim++) {
 		Switch::ConstPtr switch_ptr = bridge_get_switch(mp_ptr, dim);
 		if (switch_ptr) {
-			if (switch_ptr->getState() != Hardware::Available)
+			if (switch_ptr->getState() != Hardware::Available) {
 				_handle_bad_switch(dim,
 						   bg_down_node,
 						   switch_ptr->getState(),
 						   1, 0);
-			else {
+				if (rt_waiting
+				    || slurmctld_config.shutdown_time)
+					return;
+			} else {
 				Cable::ConstPtr my_cable =
 					switch_ptr->getCable();
 				/* Dimensions of length 1 do not have a
@@ -866,6 +875,9 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 						delete_list, 0);
 					slurm_mutex_unlock(&ba_system_mutex);
 					slurm_mutex_unlock(&block_state_mutex);
+					if (rt_waiting
+					    || slurmctld_config.shutdown_time)
+						return;
 				}
 			}
 		}
@@ -892,6 +904,8 @@ static void _do_hardware_poll(int level, uint16_t *coords,
 		     coords[level]++) {
 			/* handle the outter dims here */
 			_do_hardware_poll(level+1, coords, bgqsys);
+			if (rt_waiting || slurmctld_config.shutdown_time)
+				return;
 		}
 		return;
 	}
@@ -929,11 +943,10 @@ static void *_poll(void *no_data)
 		}
 		//debug("polling taking over, realtime is dead");
 		curr_time = time(NULL);
-		if (blocks_are_created)
+		if (!rt_waiting && blocks_are_created)
 			_do_block_poll();
-
 		/* only do every 30 seconds */
-		if ((curr_time - 30) >= last_ran) {
+		if (!rt_waiting && ((curr_time - 30) >= last_ran)) {
 			uint16_t coords[SYSTEM_DIMENSIONS];
 			_do_hardware_poll(0, coords,
 					  bridge_get_compute_hardware());
@@ -1367,6 +1380,8 @@ extern int bridge_status_fini(void)
 		return SLURM_ERROR;
 
 	bridge_status_inited = false;
+	rt_waiting = 1;
+
 #if defined HAVE_BG_FILES
 	/* make the rt connection end. */
 	_bridge_status_disconnect();
@@ -1405,7 +1420,9 @@ extern int bridge_status_update_block_list_state(List block_list)
 	while ((bg_record = (bg_record_t *) list_next(itr))) {
 		BlockFilter filter;
 		Block::Ptrs vec;
-		if (bg_record->magic != BLOCK_MAGIC) {
+		if (!bridge_status_inited)
+			break;
+		else if (bg_record->magic != BLOCK_MAGIC) {
 			/* block is gone */
 			list_remove(itr);
 			continue;
