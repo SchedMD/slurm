@@ -403,6 +403,7 @@ AC_CONFIG_FILES([Makefile
 		 contribs/Makefile
 		 contribs/arrayrun/Makefile
 		 contribs/cray/Makefile
+		 contribs/cray/opt_modulefiles_slurm
 		 contribs/lua/Makefile
 		 contribs/pam/Makefile
 		 contribs/perlapi/Makefile
