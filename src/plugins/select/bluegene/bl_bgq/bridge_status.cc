@@ -1030,10 +1030,10 @@ void event_handler::handleBlockStateChangedRealtimeEvent(
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record = find_bg_record_in_list(bg_lists->main, bg_block_id);
 	if (!bg_record) {
-		unlock_slurmctld(job_read_lock);
 		slurm_mutex_unlock(&block_state_mutex);
-		info("bridge_status: bg_record %s isn't in the main list",
-		     bg_block_id);
+		unlock_slurmctld(job_read_lock);
+		debug2("bridge_status: bg_record %s isn't in the main list",
+		       bg_block_id);
 		return;
 	}
 
@@ -1261,6 +1261,7 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 		      bridge_hardware_state_string(event.getState()));
 		slurm_mutex_unlock(&ba_system_mutex);
 		slurm_mutex_unlock(&block_state_mutex);
+		unlock_slurmctld(job_read_lock);
 		return;
 	}
 
@@ -1402,6 +1403,7 @@ extern int bridge_status_fini(void)
 	}
 
 	pthread_mutex_destroy(&rt_mutex);
+
 	delete(rt_client_ptr);
 #endif
 	return SLURM_SUCCESS;
