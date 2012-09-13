@@ -150,13 +150,14 @@ static void _bridge_status_disconnect()
 
 /* ba_system_mutex && block_state_mutex must be unlocked before this */
 static void _handle_bad_midplane(char *bg_down_node,
-				 EnumWrapper<Hardware::State> state)
+				 EnumWrapper<Hardware::State> state,
+				 bool print_debug)
 {
 	assert(bg_down_node);
 
 	if (!node_already_down(bg_down_node)) {
-		if (rt_running
-		    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+		if (print_debug
+		    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 			error("Midplane %s, state went to '%s', "
 			      "marking midplane down.",
 			      bg_down_node,
@@ -170,7 +171,7 @@ static void _handle_bad_midplane(char *bg_down_node,
 
 static void _handle_bad_switch(int dim, const char *mp_coords,
 			       EnumWrapper<Hardware::State> state,
-			       bool block_state_locked)
+			       bool block_state_locked, bool print_debug)
 {
 	char bg_down_node[128];
 
@@ -180,8 +181,8 @@ static void _handle_bad_switch(int dim, const char *mp_coords,
 		 bg_conf->slurm_node_prefix, mp_coords);
 
 	if (!node_already_down(bg_down_node)) {
-		if (rt_running
-		    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+		if (print_debug
+		    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 			error("Switch at dim '%d' on Midplane %s, "
 			      "state went to '%s', marking midplane down.",
 			      dim, bg_down_node,
@@ -203,7 +204,7 @@ static void _handle_bad_switch(int dim, const char *mp_coords,
 /* ba_system_mutex && block_state_mutex must be unlocked before this */
 static void _handle_bad_nodeboard(const char *nb_name, char* bg_down_node,
 				  EnumWrapper<Hardware::State> state,
-				  char *reason)
+				  char *reason, bool print_debug)
 {
 	int io_start;
 	int rc;
@@ -245,8 +246,8 @@ static void _handle_bad_nodeboard(const char *nb_name, char* bg_down_node,
 
 	rc = down_nodecard(bg_down_node, io_start, 0, reason);
 
-	if (rt_running
-	    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME)) {
+	if (print_debug
+	    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME)) {
 		if (rc == SLURM_SUCCESS)
 			debug("nodeboard %s on %s is in an error state '%s'",
 			      nb_name, bg_down_node,
@@ -264,7 +265,7 @@ static void _handle_bad_nodeboard(const char *nb_name, char* bg_down_node,
 /* ba_system_mutex && block_state_mutex must be locked before this */
 static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 				EnumWrapper<Hardware::State> state,
-				List *delete_list)
+				List *delete_list, bool print_debug)
 {
 	Coordinates ibm_cnode_coords = getNodeMidplaneCoordinates(cnode_loc);
 	uint16_t cnode_coords[Dimension::NodeDims];
@@ -350,14 +351,15 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			 cnode_coords[3],
 			 cnode_coords[4],
 			 cnode_loc.c_str());
-		if (rt_running
-		    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+		if (print_debug
+		    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 			error("%s", reason);
 		/* unlock mutex here since _handle_bad_nodeboard could produce
 		   deadlock */
 		slurm_mutex_unlock(&ba_system_mutex);
 		slurm_mutex_unlock(&block_state_mutex);
-		_handle_bad_nodeboard(nc_name, ba_mp->coord_str, state, reason);
+		_handle_bad_nodeboard(nc_name, ba_mp->coord_str,
+				      state, reason, print_debug);
 		slurm_mutex_lock(&block_state_mutex);
 		slurm_mutex_lock(&ba_system_mutex);
 	}
@@ -365,8 +367,8 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 	if (!changed)
 		return;
 	last_bg_update = time(NULL);
-	if (rt_running
-	    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+	if (print_debug
+	    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 		info("_handle_node_change: state for %s - %s is '%s'",
 		     ba_mp->coord_str, cnode_loc.c_str(),
 		     bridge_hardware_state_string(state.toValue()));
@@ -434,8 +436,8 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			if (!bg_record->err_ratio && bg_record->cnode_err_cnt)
 				bg_record->err_ratio = 1;
 
-			if (rt_running
-			    || (bg_conf->slurm_debug_flags
+			if (print_debug
+			    && (bg_conf->slurm_debug_flags
 				& DEBUG_FLAG_NO_REALTIME))
 				debug("count in error for %s is %u "
 				      "with ratio at %u",
@@ -523,7 +525,7 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 
 static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 				 EnumWrapper<Hardware::State> state,
-				 List *delete_list)
+				 List *delete_list, bool print_debug)
 {
 	select_nodeinfo_t *nodeinfo;
 	struct node_record *node_ptr = NULL;
@@ -542,8 +544,8 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 		assert(nodeinfo);
 
 		ba_mp->axis_switch[dim].usage &= (~BG_SWITCH_CABLE_ERROR_FULL);
-		if (rt_running
-		    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+		if (print_debug
+		    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 			info("Cable in dim '%u' on Midplane %s, "
 			     "has returned to service",
 			     dim, ba_mp->coord_str);
@@ -573,8 +575,8 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 
 		ba_mp->axis_switch[dim].usage |= BG_SWITCH_CABLE_ERROR_FULL;
 
-		if (rt_running
-		    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+		if (print_debug
+		    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 			error("Cable at dim '%d' on Midplane %s, "
 			      "state went to '%s', marking cable down.",
 			      dim, ba_mp->coord_str,
@@ -790,7 +792,7 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 	slurm_mutex_unlock(&ba_system_mutex);
 
 	if (mp_ptr->getState() != Hardware::Available) {
-		_handle_bad_midplane(bg_down_node, mp_ptr->getState());
+		_handle_bad_midplane(bg_down_node, mp_ptr->getState(), 0);
 		/* no reason to continue */
 		return;
 	} else {
@@ -811,7 +813,7 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 				_handle_node_change(ba_mp,
 						    cnode_ptr->getLocation(),
 						    cnode_ptr->getState(),
-						    delete_list);
+						    delete_list, 0);
 				slurm_mutex_unlock(&ba_system_mutex);
 				slurm_mutex_unlock(&block_state_mutex);
 				unlock_slurmctld(job_read_lock);
@@ -832,7 +834,7 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 		    && (nb_ptr->getState() != Hardware::Available)) {
 			_handle_bad_nodeboard(
 				nb_ptr->getLocation().substr(7,3).c_str(),
-				bg_down_node, nb_ptr->getState(), NULL);
+				bg_down_node, nb_ptr->getState(), NULL, 0);
 		}
 	}
 
@@ -842,7 +844,8 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 			if (switch_ptr->getState() != Hardware::Available)
 				_handle_bad_switch(dim,
 						   bg_down_node,
-						   switch_ptr->getState(), 1);
+						   switch_ptr->getState(),
+						   1, 0);
 			else {
 				Cable::ConstPtr my_cable =
 					switch_ptr->getCable();
@@ -859,7 +862,7 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 					_handle_cable_change(
 						dim, ba_mp,
 						my_cable->getState(),
-						delete_list);
+						delete_list, 0);
 					slurm_mutex_unlock(&ba_system_mutex);
 					slurm_mutex_unlock(&block_state_mutex);
 				}
@@ -1054,7 +1057,7 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 		 bg_conf->slurm_node_prefix, ba_mp->coord_str);
 	slurm_mutex_unlock(&ba_system_mutex);
 
-	_handle_bad_midplane(bg_down_node, event.getState());
+	_handle_bad_midplane(bg_down_node, event.getState(), 1);
 
 	return;
 
@@ -1111,7 +1114,7 @@ void event_handler::handleSwitchStateChangedRealtimeEvent(
 	slurm_mutex_unlock(&ba_system_mutex);
 
 	/* Else mark the midplane down */
-	_handle_bad_switch(dim, bg_down_node, event.getState(), 0);
+	_handle_bad_switch(dim, bg_down_node, event.getState(), 0, 1);
 
 	return;
 }
@@ -1176,7 +1179,7 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 		 bg_conf->slurm_node_prefix, ba_mp->coord_str);
 	slurm_mutex_unlock(&ba_system_mutex);
 
-	_handle_bad_nodeboard(nb_name, bg_down_node, event.getState(), NULL);
+	_handle_bad_nodeboard(nb_name, bg_down_node, event.getState(), NULL, 1);
 	xfree(nb_name);
 	xfree(mp_name);
 
@@ -1227,7 +1230,7 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 	     bridge_hardware_state_string(event.getState()));
 
 	_handle_node_change(ba_mp, event.getLocation(), event.getState(),
-			    &delete_list);
+			    &delete_list, 1);
 	slurm_mutex_unlock(&ba_system_mutex);
 	slurm_mutex_unlock(&block_state_mutex);
 	unlock_slurmctld(job_read_lock);
@@ -1284,7 +1287,8 @@ void event_handler::handleTorusCableStateChangedRealtimeEvent(
 	}
 
 	/* Else mark the midplane down */
-	_handle_cable_change(dim, from_ba_mp, event.getState(), &delete_list);
+	_handle_cable_change(dim, from_ba_mp, event.getState(),
+			     &delete_list, 1);
 	slurm_mutex_unlock(&ba_system_mutex);
 	slurm_mutex_unlock(&block_state_mutex);
 
