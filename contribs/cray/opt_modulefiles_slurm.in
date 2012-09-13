@@ -13,7 +13,7 @@ proc ModulesHelp { } {
 conflict	xt-pbs pbs torque
 set slurmdir	"@prefix@"
 set mungedir	"@MUNGE_DIR@"
-set perldir	`perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;'`
+set perldir	[exec perl -e "use Config; \$T=\$Config{installsitearch}; \$P=\$Config{installprefix}; \$P1=\"\$P/local\"; \$T =~ s/\$P1//; \$T =~ s/\$P//; print \$T;"]
 
 set version "UNKNOWN"
 if {![catch {exec $slurmdir/bin/sbatch --version} out]} {
