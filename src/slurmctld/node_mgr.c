@@ -1813,6 +1813,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	node_ptr->os = reg_msg->os;
 	reg_msg->os = NULL;	/* Nothing left to free */
 
+	node_ptr->cpu_load = reg_msg->cpu_load;
+
 	if (IS_NODE_NO_RESPOND(node_ptr)) {
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 		node_ptr->node_state &= (~NODE_STATE_POWER_UP);

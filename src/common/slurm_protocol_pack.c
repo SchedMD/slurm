@@ -2430,6 +2430,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		pack32(msg->tmp_disk, buffer);
 		pack32(msg->up_time, buffer);
 		pack32(msg->hash_val, buffer);
+		pack32(msg->cpu_load, buffer);
 
 		pack32(msg->job_count, buffer);
 		for (i = 0; i < msg->job_count; i++) {
@@ -2522,6 +2523,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpack32(&node_reg_ptr->tmp_disk, buffer);
 		safe_unpack32(&node_reg_ptr->up_time, buffer);
 		safe_unpack32(&node_reg_ptr->hash_val, buffer);
+		safe_unpack32(&node_reg_ptr->cpu_load, buffer);
 
 		safe_unpack32(&node_reg_ptr->job_count, buffer);
 		node_reg_ptr->job_id =

@@ -940,6 +940,7 @@ typedef struct slurm_node_registration_status_msg {
 	char *arch;
 	uint16_t cores;
 	uint16_t cpus;
+	uint32_t cpu_load;	/* CPU load * 100 */
 	Buf gres_info;		/* generic resource info */
 	uint32_t hash_val;      /* hash value of slurm.conf file
 				   existing on node */
