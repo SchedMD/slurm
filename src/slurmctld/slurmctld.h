@@ -1573,6 +1573,9 @@ extern void reset_first_job_id(void);
  */
 extern void reset_job_bitmaps (void);
 
+/* Reset a node's CPU load value */
+extern void reset_node_load(char *node_name, uint32_t cpu_load);
+
 /* Reset all scheduling statistics
  * level IN - clear backfilled_jobs count if set */
 extern void reset_stats(int level);

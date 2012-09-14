@@ -985,6 +985,11 @@ inline void slurm_free_forward_data_msg(forward_data_msg_t *msg)
 	}
 }
 
+extern void slurm_free_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg)
+{
+	xfree(msg);
+}
+
 extern char *preempt_mode_string(uint16_t preempt_mode)
 {
 	char *gang_str;
@@ -2622,6 +2627,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONCE_SPANK_ENVIRONMENT:
 		slurm_free_spank_env_responce_msg(data);
 		break;
+	case RESPONSE_PING_SLURMD:
+		slurm_free_ping_slurmd_resp(data);
+		break;
 	default:
 		error("invalid type trying to be freed %u", type);
 		break;
@@ -2648,6 +2656,9 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *)data)->return_code;
+		break;
+	case RESPONSE_PING_SLURMD:
+		rc = SLURM_SUCCESS;
 		break;
 	case RESPONSE_FORWARD_FAILED:
 		/* There may be other reasons for the failure, but

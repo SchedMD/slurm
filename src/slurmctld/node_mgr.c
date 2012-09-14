@@ -2963,3 +2963,20 @@ extern void node_fini (void)
 	FREE_NULL_BITMAP(up_node_bitmap);
 	node_fini2();
 }
+
+/* Reset a node's CPU load value */
+extern void reset_node_load(char *node_name, uint32_t cpu_load)
+{
+#ifdef HAVE_FRONT_END
+	return;
+#else
+	struct node_record *node_ptr;
+
+	node_ptr = find_node_record(node_name);
+	if (node_ptr) {
+		node_ptr->cpu_load = cpu_load;
+		last_node_update = time(NULL);
+	} else
+		error("is_node_resp unable to find node %s", node_name);
+#endif
+}
