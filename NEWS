@@ -64,6 +64,7 @@ documents those changes that are of interest to users and admins.
     for the poll to finish.
  -- task/cgroup/memory - ensure that ConstrainSwapSpace=no is correctly
     handled. Work by Matthieu Hautreux, CEA.
+ -- CRAY - Fix for sacct -N option to work correctly
 
 * Changes in SLURM 2.4.2
 ========================
