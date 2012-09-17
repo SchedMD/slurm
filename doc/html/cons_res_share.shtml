@@ -7,15 +7,9 @@
 (Disclaimer: In this "CPU Management" section, the term "consumable resource"
 does not include memory. The management of memory as a consumable resource is
 discussed in it's own section below.)
-</P><P>
-As of SLURM version 1.3, the <CODE>select/cons_res</CODE> plugin
-supports sharing consumable resources via the per-partition <CODE>Shared</CODE>
-setting. Previously the <CODE>select/cons_res</CODE> plugin ignored this
-setting, since it was technically already "sharing" the nodes when it scheduled
-the resources of each node to different jobs.
 </P>
 <P>
-Now the per-partition <CODE>Shared</CODE> setting applies to the <U>entity
+The per-partition <CODE>Shared</CODE> setting applies to the <U>entity
 being selected for scheduling</U>:
 <UL><LI><P>
 When the default <CODE>select/linear</CODE> plugin is enabled, the
@@ -38,7 +32,8 @@ The following table describes this new functionality in more detail:
 </TR><TR>
 <TD ROWSPAN=3>SelectType=<B>select/linear</B></TD>
 <TD>Shared=NO</TD>
-<TD>Whole nodes are allocated to jobs. No node will run more than one job.</TD>
+<TD>Whole nodes are allocated to jobs. No node will run more than one job
+per partition/queue.</TD>
 </TR><TR>
 <TD>Shared=YES</TD>
 <TD>By default same as Shared=NO. Nodes allocated to a job may be shared with
@@ -46,15 +41,16 @@ other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
 option.</TD>
 </TR><TR>
 <TD>Shared=FORCE</TD>
-<TD>Whole nodes are allocated to jobs. A node may run more than one job.</TD>
+<TD>Each whole node can be allocated to multple jobs up to the count specified
+per partition/queue (default 4 jobs per node)</TD>
 </TR><TR>
 <TD ROWSPAN=3>SelectType=<B>select/cons_res</B><BR>
 Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_Core</B><BR>
 SelectTypeParameters=<B>CR_Core_Memory</B></TD>
 <TD>Shared=NO</TD>
-<TD>Cores are allocated to jobs. No core will run more than one job.
-No node will run jobs from more than one SLURM partition.</TD>
+<TD>Cores are allocated to jobs. No core will run more than one job
+per partition/queue.</TD>
 </TR><TR>
 <TD>Shared=YES</TD>
 <TD>By default same as Shared=NO. Cores allocated to a job may be shared with
@@ -62,15 +58,16 @@ other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
 option.</TD>
 </TR><TR>
 <TD>Shared=FORCE</TD>
-<TD>Cores are allocated to jobs. A core may run more than one job.</TD>
+<TD>Each core can be allocated to multple jobs up to the count specified
+per partition/queue (default 4 jobs per core).</TD>
 </TR><TR>
 <TD ROWSPAN=3>SelectType=<B>select/cons_res</B><BR>
 Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_CPU</B><BR>
 SelectTypeParameters=<B>CR_CPU_Memory</B></TD>
 <TD>Shared=NO</TD>
-<TD>CPUs are allocated to jobs. No CPU will run more than one job.
-No node will run jobs from more than one SLURM partition.</TD>
+<TD>CPUs are allocated to jobs. No CPU will run more than one job
+per partition/queue.</TD>
 </TR><TR>
 <TD>Shared=YES</TD>
 <TD>By default same as Shared=NO. CPUs allocated to a job may be shared with
@@ -78,15 +75,16 @@ other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
 option.</TD>
 </TR><TR>
 <TD>Shared=FORCE</TD>
-<TD>CPUs are allocated to jobs. A CPU may run more than one job.</TD>
+<TD>Each CPU can be allocated to multple jobs up to the count specified
+per partition/queue (default 4 jobs per CPU).</TD>
 </TR><TR>
 <TD ROWSPAN=3>SelectType=<B>select/cons_res</B><BR>
 Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_Socket</B><BR>
 SelectTypeParameters=<B>CR_Socket_Memory</B></TD>
 <TD>Shared=NO</TD>
-<TD>Sockets are allocated to jobs. No socket will run more than one job.
-No node will run jobs from more than one SLURM partition.</TD>
+<TD>Sockets are allocated to jobs. No Socket will run more than one job
+per partition/queue.</TD>
 </TR><TR>
 <TD>Shared=YES</TD>
 <TD>By default same as Shared=NO. Sockets allocated to a job may be shared with
@@ -94,7 +92,8 @@ other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
 option.</TD>
 </TR><TR>
 <TD>Shared=FORCE</TD>
-<TD>Sockets are allocated to jobs. A socket may run more than one job.</TD>
+<TD>Each socket can be allocated to multple jobs up to the count specified
+per partition/queue (default 4 jobs per socket).</TD>
 </TR>
 </TABLE>
 <P>When <CODE>Shared=FORCE</CODE> is configured, the consumable resources are
@@ -263,6 +262,6 @@ values suitable for your system.</P>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 September 2012</p>
+<p style="text-align:center;">Last modified 17 September 2012</p>
 
 <!--#include virtual="footer.txt"-->
