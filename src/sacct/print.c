@@ -959,9 +959,14 @@ void print_fields(type_t type, void *object)
 
 				break;
 			}
-			if(!g_qos_list)
+			if (!g_qos_list) {
+				slurmdb_qos_cond_t qos_cond;
+				memset(&qos_cond, 0,
+				       sizeof(slurmdb_qos_cond_t));
+				qos_cond.with_deleted = 1;
 				g_qos_list = slurmdb_qos_get(
-					acct_db_conn, NULL);
+					acct_db_conn, &qos_cond);
+			}
 
 			tmp_char = _find_qos_name_from_list(g_qos_list,
 							    tmp_int);
