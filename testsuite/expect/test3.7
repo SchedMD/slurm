@@ -177,6 +177,7 @@ if {[string compare $host_name ""] == 0} {
 	exit 1
 }
 # Submit another job to that same node
+wait_for_job $job_id2 RUNNING
 set srun_pid [spawn $sbatch -N1 -t2 --output=$file_out2 $file_prog_sh2]
 expect {
 	-re "Submitted batch job ($number)" {
@@ -204,8 +205,9 @@ if {$job_id2 == 0} {
 # Then resume job 2
 # The sleep commands are added so the program can recognize
 # that it has been suspended.
+# The long initial sleep is due to POE launching jobs slowly
 #
-sleep 5
+sleep 10
 suspend_job $job_id1 suspend
 if {$not_supported == 1} {
 	exec $bin_rm -f $file_out1 $file_out2 $file_prog $file_prog_sh1 $file_prog_sh2
