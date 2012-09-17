@@ -2,15 +2,23 @@
 
 <h1>SLURM User and Administrator Guide for Cray Systems</h1>
 
-<h2>User Guide</h2>
+<ul>
+<li><a href="#user_guide">User Guide</a></li>
+<li><a href="#admin_guide">Administrator Guide</a></li>
+<li><a href="http://www.cray.com">Cray</a></li>
+</ul>
+
+<HR SIZE=4>
+
+<h2><a name="user_guide">User Guide</a></h2>
 
 <p>This document describes the unique features of SLURM on Cray computers.
 You should be familiar with the SLURM's mode of operation on Linux clusters
 before studying the differences in Cray system operation described in this
 document.</p>
 
-<p>Since version 2.3 SLURM is designed to operate as a job scheduler over Cray's
-Application Level Placement Scheduler (ALPS).
+<p>Since version 2.3, SLURM is designed to operate as a job scheduler over
+Cray's Application Level Placement Scheduler (ALPS).
 Use SLURM's <i>sbatch</i> or <i>salloc</i> commands to create a resource
 allocation in ALPS.
 Then use ALPS' <i>aprun</i> command to launch parallel jobs within the resource
@@ -33,7 +41,7 @@ and the job steps not being visible, all other SLURM commands will operate
 as expected. Note that in order to build and install the aprun wrapper
 described above, execute "configure" with the <i>--with-srun2aprun</i>
 option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i>
-file.  This option is set with rpms from Cray.</p>
+file.  This option is set with RPMs from Cray.</p>
 
 <h3>Node naming and node geometry on Cray XT/XE systems</h3>
 <p>SLURM node names will be of the form "nid#####" where "#####" is a five-digit sequence number.
@@ -166,16 +174,18 @@ zero compute node job requests.</p>
 SLURM partitions explicitly configured with <b>MinNodes=0</b> (the default
 minimum node count for a partition is one compute node).</p>
 
-<h2>Administrator Guide</h2>
+<HR SIZE=4>
+
+<h2><a name="admin_guide">Administrator Guide</a></h2>
 
 <h3>Install supporting RPMs</h3>
 
 <p>The build requires a few -devel RPMs listed below. You can obtain these from
 SuSe/Novell.
 <ul>
-<li>CLE 2.x uses SuSe SLES 10 packages (rpms may be on the normal isos)</li>
-<li>CLE 3.x uses Suse SLES 11 packages (rpms are on the SDK isos, there
-are two SDK iso files for SDK)</li>
+<li>CLE 2.x uses SuSe SLES 10 packages (RPMs may be on the normal ISOs)</li>
+<li>CLE 3.x uses Suse SLES 11 packages (RPMs are on the SDK ISOs, there
+are two SDK ISO files for SDK)</li>
 </ul></p>
 
 <p>You can check by logging onto the boot node and running</p>
@@ -188,7 +198,7 @@ default: # rpm -qa
 <ul>
 <li>expat-2.0.xxx</li>
 <li>libexpat-devel-2.0.xxx</li>
-<li>cray-MySQL-devel-enterprise-5.0.64 (this should be on the Cray iso)</li>
+<li>cray-MySQL-devel-enterprise-5.0.64 (this should be on the Cray ISO)</li>
 </ul>
 
 <p>For example, loading MySQL can be done like this:</p>
@@ -218,16 +228,16 @@ somewhat from that described in the
 MUNGE Installation Guide</a>.</p>
 
 <p>Munge is the authentication daemon and needed by SLURM. You can get
-munge rpms from Cray use the below method to install and test.  The
-Cray munge rpm installs munge in /opt/munge.</p>
+Munge RPMs from Cray. Use the below method to install and test it. The
+Cray Munge RPM installs Munge in /opt/munge.</p>
 
-<p>If needed copy the rpms over to the boot node</p>
+<p>If needed copy the RPMs over to the boot node</p>
 <pre>
 login: # scp munge-*.rpm root@boot:/rr/current/software
 </pre>
 
-<p>Install the rpms on the boot node.  While this process creates a
-munge key it can't be use in /etc/munge directory.  So we make a
+<p>Install the RPMs on the boot node.  While this process creates a
+Munge key, it can't use the /etc/munge directory.  So we make a
 /opt/munge/key directory instead and create a key there.</p>
 <pre>
 boot: # xtopview
@@ -259,7 +269,7 @@ sdb: # /etc/init.d/munge start
 
 </pre>
 
-<p>Start the munge daemon and test it.</p>
+<p>Start the Munge daemon and test it.</p>
 <pre>
 login: # export PATH=/opt/munge/bin:$PATH
 login: # munge -n
@@ -267,8 +277,8 @@ MUNGE:AwQDAAAEy341MRViY+LacxYlz+mchKk5NUAGrYLqKRUvYkrR+MJzHTgzSm1JALqJcunWGDU6k3
 login: # munge -n | unmunge
 </pre>
 
-<p>When done, verify network connectivity by executing (You have to
-  have the munged started on the other-login-host as well):
+<p>When done, verify network connectivity by executing the following (the
+Munged daemon must be started on the other-login-host as well):
 <ul>
 <li><i>munge -n | ssh other-login-host /opt/slurm/munge/bin/unmunge</i></li>
 </ul>
@@ -306,9 +316,9 @@ node/31:# emacs -nw /etc/pam.d/common-session
 
 <p>SLURM can be built and installed as on any other computer as described
 <a href="quickstart_admin.html">Quick Start Administrator Guide</a>.
-You can also get current SLURM rpms from Cray.  An installation
-process for the rpms is described below.  The
-Cray SLURM rpms install in /opt/slurm.</p>
+You can also get current SLURM RPMs from Cray.  An installation
+process for the RPMs is described below.  The
+Cray SLURM RPMs install in /opt/slurm.</p>
 
 <p><b>NOTE:</b> By default neither the <i>salloc</i> command or <i>srun</i>
 command wrapper can be executed as a background process. This is done for two
@@ -323,12 +333,13 @@ using terminal foreground process group IDs</li>
 </ol>
 <p>You can optionally enable <i>salloc</i> and <i>srun</i> to execute as
 background processes by using the configure option
-<i>"--enable-salloc-background"</i> (.rpmmacros option <i>"%_with_salloc_backgroud 1"</i>, however doing will result in failed
+<i>"--enable-salloc-background"</i> (or the .rpmmacros option
+<i>"%_with_salloc_background 1"</i>), however doing will result in failed
 resource allocations
 (<i>error: Failed to allocate resources: Requested reservation is in use</i>)
 if not executed sequentially and
-increase the likelyhood of orphaned processes.  Specifically request
-this version when requesting rpms from Cray as this is not on by default.</p>
+increase the likelihood of orphaned processes.  Specifically request
+this version when requesting RPMs from Cray as this is not on by default.</p>
 <!-- Example:
  Modify srun script or ask user to execute "/usr/bin/setsid"
  before salloc or srun command -->
@@ -336,12 +347,12 @@ this version when requesting rpms from Cray as this is not on by default.</p>
  salloc spawns zsh, zsh spawns bash, etc.
  when salloc terminates, bash becomes a child of init -->
 
-<p>If needed copy the rpms over to the boot node.</p>
+<p>If needed copy the RPMs over to the boot node.</p>
 <pre>
 login: # scp slurm-*.rpm root@boot:/rr/current/software
 </pre>
 
-<p>Install the rpms on the boot node.</p>
+<p>Install the RPMs on the boot node.</p>
 <pre>
 boot: # xtopview
 default: # rpm -ivh /software/slurm-*.x86_64.rpm
@@ -362,7 +373,7 @@ configured, but will be set by SLURM using data from ALPS.
 <i>smap</i> and <i>sview</i> commands.
 <i>NodeHostName</i> will be set to the node's component label.
 The format of the component label is "c#-#c#s#n#" where the "#" fields
-represent in order: cabinet, row, cate, blade or slot, and node.
+represent in order: cabinet, row, cage, blade or slot, and node.
 For example "c0-1c2s5n3" is cabinet 0, row 1, cage 3, slot 5 and node 3.</p>
 
 <p>The <i>slurmd</i> daemons will not execute on the compute nodes, but will
@@ -569,7 +580,7 @@ script will insure that higher limits are possible. Copy the file
 <i>contribs/cray/etc_sysconfig_slurm</i> into <i>/etc/sysconfig/slurm</i>
 for these limits to take effect. This script is executed from
 <i>/etc/init.d/slurm</i>, which is typically executed to start the SLURM
-daemons. An excerpt of <i>contribs/cray/etc_sysconfig_slurm</i>is shown
+daemons. An excerpt of <i>contribs/cray/etc_sysconfig_slurm</i> is shown
 below.</p>
 
 <pre>
@@ -631,6 +642,6 @@ allocation.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 17 Sept 2012</p></td>
+<p style="text-align:center;">Last modified 17 September 2012</p></td>
 
 <!--#include virtual="footer.txt"-->

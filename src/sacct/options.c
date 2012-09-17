@@ -822,9 +822,14 @@ void parse_command_line(int argc, char **argv)
 				PRINT_FIELDS_PARSABLE_NO_ENDING;
 			break;
 		case 'q':
-			if(!g_qos_list)
+			if (!g_qos_list) {
+				slurmdb_qos_cond_t qos_cond;
+				memset(&qos_cond, 0,
+				       sizeof(slurmdb_qos_cond_t));
+				qos_cond.with_deleted = 1;
 				g_qos_list = slurmdb_qos_get(
-					acct_db_conn, NULL);
+					acct_db_conn, &qos_cond);
+			}
 
 			if(!job_cond->qos_list)
 				job_cond->qos_list =
