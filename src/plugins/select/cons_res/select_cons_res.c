@@ -910,9 +910,12 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			break;
 		}
 		if (i >= p_ptr->num_rows) {
-			/* ERROR: could not find a row for this job */
+			/* Job started or resumed and it's allocated resources
+			 * are already in use by some other job. Typically due
+			 * to manually resuming a job. */
 			error("cons_res: ERROR: job overflow: "
-			      "could not find row for job");
+			      "could not find idle resources for job %u",
+			      job_ptr->job_id);
 			/* just add the job to the last row for now */
 			_add_job_to_row(job, &(p_ptr->row[p_ptr->num_rows-1]));
 		}
