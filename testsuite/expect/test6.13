@@ -81,7 +81,9 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 	cancel_job $job_id
 	exit 1
 }
-exec $bin_sleep 2
+# Allow time for the step to start
+# This could take a while with launch/poe
+sleep 10
 
 #
 # Test verbose scancel
@@ -189,7 +191,7 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 	cancel_job $job_id
 	exit 1
 }
-exec $bin_sleep 2
+sleep 5
 
 #
 # Test verbose scancel
