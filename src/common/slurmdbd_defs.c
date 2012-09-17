@@ -2421,7 +2421,8 @@ static int _purge_job_start_req(void)
 		unpack16(&msg_type, buffer);
 		set_buf_offset(buffer, offset);
 		if ((msg_type == DBD_JOB_START) ||
-		    (msg_type == DBD_STEP_START)) {
+		    (msg_type == DBD_STEP_START) ||
+		    (msg_type == DBD_STEP_COMPLETE)) {
 			list_remove(iter);
 			purged++;
 		}
