@@ -5,6 +5,7 @@
 #
 # build options      .rpmmacros options      change to default action
 # ===============    ====================    ========================
+# --enable-salloc-background %_with_salloc_backgroud 1 on a cray system alloc salloc to execute as a background process.
 # --prefix           %_prefix        path    install path for commands, libraries, etc.
 # --with aix         %_with_aix         1    build aix RPM
 # --with authd       %_with_authd       1    build auth-authd RPM
@@ -24,7 +25,6 @@
 # --with sgijob      %_with_sgijob      1    build proctrack-sgi-job RPM
 # --with sun_const   %_with_sun_const   1    build for Sun Constellation system
 # --with-srun2aprun  %_with_srun2aprun  1    build srun as aprun wrapper
-
 #
 #  Allow defining --with and --without build options or %_with and %without in .rpmmacors
 #    slurm_with    builds option by default unless --without is specified
@@ -45,6 +45,7 @@
 %slurm_without_opt debug
 %slurm_without_opt sun_const
 %slurm_without_opt srun2aprun
+%slurm_without_opt salloc_backgroud
 
 # These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
@@ -407,7 +408,8 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 	%{?with_ssl}		\
 	%{?with_munge}      \
 	%{?with_blcr}      \
-        %{?slurm_with_srun2aprun:--with-srun2aprun} \
+	%{?slurm_with_srun2aprun:--with-srun2aprun} \
+	%{?slurm_with_salloc_backgroud:--enable-salloc-background} \
 	%{!?slurm_with_readline:--without-readline} \
 	%{?with_cflags}
 
@@ -427,6 +429,15 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
       install -D -m755 etc/init.d.slurmdbd $RPM_BUILD_ROOT/etc/init.d/slurmdbd
    fi
 %endif
+
+%if %{slurm_with cray}
+   if [ -d /opt/modulefiles ]; then
+      install -D -m755 contribs/cray/opt_modulefiles_slurm $RPM_BUILD_ROOT/opt/modulefiles/slurm/opt_modulefiles_slurm
+   fi
+%else
+   rm -f contribs/cray/opt_modulefiles_slurm
+%endif
+
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
 install -D -m644 etc/cgroup.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.conf.example
 install -D -m755 etc/cgroup_allowed_devices_file.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup_allowed_devices_file.conf.example
@@ -496,8 +507,9 @@ LIST=./slurm.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/etc/init.d/slurm			&&
   echo /etc/init.d/slurm				>> $LIST
-test -f $RPM_BUILD_ROOT/%{_bindir}/sview			&&
-  echo %{_bindir}/sview					>> $LIST
+
+test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/opt_modulefiles_slurm &&
+  echo /opt/modulefiles/slurm/opt_modulefiles_slurm	>> $LIST
 
 %if %{slurm_with bluegene}
 install -D -m644 etc/bluegene.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/bluegene.conf.example
@@ -601,6 +613,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/spank*
 %dir %{_sysconfdir}
 %dir %{_libdir}/slurm/src
+%if %{slurm_with cray}
+%dir /opt/modulefiles/slurm
+%endif
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/cgroup.conf.example
 %config %{_sysconfdir}/cgroup_allowed_devices_file.conf.example

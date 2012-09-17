@@ -68,6 +68,9 @@ static xcgroup_t user_memory_cg;
 static xcgroup_t job_memory_cg;
 static xcgroup_t step_memory_cg;
 
+static bool constrain_ram_space;
+static bool constrain_swap_space;
+
 static float allowed_ram_space;   /* Allowed RAM in percent       */
 static float allowed_swap_space;  /* Allowed Swap percent         */
 
@@ -95,7 +98,21 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		return SLURM_ERROR;
 	}
 
-	allowed_ram_space = slurm_cgroup_conf->allowed_ram_space;
+	constrain_ram_space = slurm_cgroup_conf->constrain_ram_space;
+	constrain_swap_space = slurm_cgroup_conf->constrain_swap_space;
+
+	/* 
+	 * as the swap space threshold will be configured with a 
+	 * mem+swp parameter value, if RAM space is not monitored,
+	 * set allowed RAM space to 100% of the job requested memory.
+	 * It will help to construct the mem+swp value that will be
+	 * used for both mem and mem+swp limit during memcg creation.
+	 */
+	if ( constrain_ram_space )
+		allowed_ram_space = slurm_cgroup_conf->allowed_ram_space;
+	else
+		allowed_ram_space = 100.0;
+
 	allowed_swap_space = slurm_cgroup_conf->allowed_swap_space;
 
 	if ((totalram = (uint64_t) conf->real_memory_size) == 0)
@@ -106,17 +123,19 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	max_swap += max_ram;
 	min_ram_space = slurm_cgroup_conf->min_ram_space * 1024 * 1024;
 
-	debug ("task/cgroup/memory: total:%luM allowed:%.4g%%, swap:%.4g%%, "
-	      "max:%.4g%%(%luM) max+swap:%.4g%%(%luM) min:%uM",
-	      (unsigned long) totalram,
-	      allowed_ram_space,
-	      allowed_swap_space,
-	      slurm_cgroup_conf->max_ram_percent,
-	      (unsigned long) (max_ram/(1024*1024)),
-	      slurm_cgroup_conf->max_swap_percent,
-	      (unsigned long) (max_swap/(1024*1024)),
-	      (unsigned) slurm_cgroup_conf->min_ram_space);
-
+	debug ("task/cgroup/memory: total:%luM allowed:%.4g%%(%s), "
+	       "swap:%.4g%%(%s), max:%.4g%%(%luM) max+swap:%.4g%%(%luM) min:%uM",
+	       (unsigned long) totalram,
+	       allowed_ram_space,
+	       constrain_ram_space?"enforced":"permissive",
+	       allowed_swap_space,
+	       constrain_swap_space?"enforced":"permissive",
+	       slurm_cgroup_conf->max_ram_percent,
+	       (unsigned long) (max_ram/(1024*1024)),
+	       slurm_cgroup_conf->max_swap_percent,
+	       (unsigned long) (max_swap/(1024*1024)),
+	       (unsigned) slurm_cgroup_conf->min_ram_space);
+	
         /*
          *  Warning: OOM Killer must be disabled for slurmstepd
          *  or it would be destroyed if the application use
@@ -233,14 +252,29 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 	}
 
 	xcgroup_set_param (cg, "memory.use_hierarchy","1");
-	xcgroup_set_uint64_param (cg, "memory.limit_in_bytes", mlb);
-	xcgroup_set_uint64_param (cg, "memory.memsw.limit_in_bytes", mls);
 
-	info ("task/cgroup: %s: alloc=%luMB mem.limit=%luMB memsw.limit=%luMB",
-		path,
-		(unsigned long) mem_limit,
-		(unsigned long) mlb/(1024*1024),
-		(unsigned long) mls/(1024*1024));
+	/* when RAM space has not to be constrained and we are here, it
+	 * means that only Swap space has to be constrained. Thus set 
+	 * RAM space limit to the mem+swap limit too */
+	if ( ! constrain_ram_space )
+		mlb = mls;
+	xcgroup_set_uint64_param (cg, "memory.limit_in_bytes", mlb);
+
+	/* this limit has to be set only if ConstrainSwapSpace is set to yes */
+	if ( constrain_swap_space ) {
+		xcgroup_set_uint64_param (cg, "memory.memsw.limit_in_bytes",
+					  mls);
+		info ("task/cgroup: %s: alloc=%luMB mem.limit=%luMB "
+		      "memsw.limit=%luMB", path,
+		      (unsigned long) mem_limit,
+		      (unsigned long) mlb/(1024*1024),
+		      (unsigned long) mls/(1024*1024));
+	} else {
+		info ("task/cgroup: %s: alloc=%luMB mem.limit=%luMB "
+		      "memsw.limit=unlimited", path,
+		      (unsigned long) mem_limit,
+		      (unsigned long) mlb/(1024*1024));
+	}
 
 	return 0;
 }
