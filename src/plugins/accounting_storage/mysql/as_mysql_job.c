@@ -927,7 +927,6 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 				  struct step_record *step_ptr)
 {
 	time_t now;
-	int elapsed;
 	int comp_status;
 	int cpus = 0;
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
@@ -937,7 +936,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	int rc =SLURM_SUCCESS;
 	uint32_t exit_code = 0;
-	time_t start_time, submit_time;
+	time_t submit_time;
 
 	if (!step_ptr->job_ptr->db_index
 	    && ((!step_ptr->job_ptr->details
@@ -948,14 +947,10 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	if (step_ptr->job_ptr->resize_time) {
-		submit_time = start_time = step_ptr->job_ptr->resize_time;
-		if (step_ptr->start_time > submit_time)
-			start_time = step_ptr->start_time;
-	} else {
-		start_time = step_ptr->start_time;
+	if (step_ptr->job_ptr->resize_time)
+		submit_time = step_ptr->job_ptr->resize_time;
+	else
 		submit_time = step_ptr->job_ptr->details->submit_time;
-	}
 
 	if (jobacct == NULL) {
 		/* JobAcctGather=slurmdb_gather/none, no data to process */
@@ -984,9 +979,6 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			cpus = step_ptr->cpu_count;
 #endif
 	}
-
-	if ((elapsed = (now - start_time)) < 0)
-		elapsed = 0;	/* For *very* short jobs, if clock is wrong */
 
 	exit_code = step_ptr->exit_code;
 	if (WIFSIGNALED(exit_code)) {
