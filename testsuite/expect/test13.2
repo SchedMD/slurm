@@ -29,10 +29,11 @@
 ############################################################################
 source ./globals
 
-set test_id   "13.2"
-set exit_code 0
-set test_code 0
-set fail      0
+set test_id    "13.2"
+set exit_code  0
+set test_code  0
+set fail       0
+set smd_system 1
 
 print_header $test_id
 
@@ -94,12 +95,21 @@ proc create_nrtparams_4tasks {nrt_params} {
 # This makes a list of all the bad test to be tested.
 #
 send_user "\n===============Bad Tests===================\n"
-
-set badtest "
-{sn_all,devtype=hfi}
-{sn_single,devtype=hfi}
-{sn_single,devtype=iponly,us}
-"
+if {$smd_system == 1} {
+#	For use on IB system
+	set badtest "
+	{sn_all,devtype=hfi}
+	{sn_single,devtype=hfi}
+	{sn_single,devtype=iponly,us}
+	"
+} else {
+#	For use on HFI/Torrent system
+	set badtest "
+	{sn_all,devtype=ib}
+	{sn_single,devtype=ib}
+	{sn_single,devtype=iponly,us}
+	"
+}
 
 foreach test $badtest {
 	set test_code [create_nrtparams $test]
@@ -118,24 +128,47 @@ foreach test $badtest {
 # This test a list of all the good tests that should succeed.
 #
 send_user "\n===============Good Tests================\n"
-set goodtest "
-{sn_all,devtype=ib}
-{sn_all,devtype=iponly}
-{sn_single,devtype=ib}
-{sn_single,devtype=ib,us}
-{sn_single,devtype=iponly,ipv4}
-{sn_single,devtype=iponly,ipv6}
-{sn_all,ipv6}
-{devname=mlx4_0}
-{devname=eth0}
-{devname=mlx4_0,mpi,lapi}
-{devname=mlx4_0,mpi,lapi,us}
-{devname=mlx4_0,mpi,lapi,instances=3}
-{sn_all}
-{sn_all,mpi,lapi}
-{sn_all,mpi,lapi}
-{devname=mlx4_0,bulk_xfer,us}
-"
+if {$smd_system == 1} {
+#	For use on IB system
+	set goodtest "
+	{sn_all,devtype=ib}
+	{sn_all,devtype=iponly}
+	{sn_single,devtype=ib}
+	{sn_single,devtype=ib,us}
+	{sn_single,devtype=iponly,ipv4}
+	{sn_single,devtype=iponly,ipv6}
+	{sn_all,ipv6}
+	{devname=mlx4_0}
+	{devname=eth0}
+	{devname=mlx4_0,mpi,lapi}
+	{devname=mlx4_0,mpi,lapi,us}
+	{devname=mlx4_0,mpi,lapi,instances=3}
+	{sn_all}
+	{sn_all,mpi,lapi}
+	{sn_all,mpi,lapi}
+	{devname=mlx4_0,bulk_xfer,us}
+	"
+} else {
+#	For use on HFI/Torrent system
+	set goodtest "
+	{sn_all,devtype=hfi}
+	{sn_all,devtype=iponly}
+	{sn_single,devtype=hfi}
+	{sn_single,devtype=hfi,us}
+	{sn_single,devtype=iponly,ipv4}
+	{sn_single,devtype=iponly,ipv6}
+	{sn_all,ipv6}
+	{devname=hfi0}
+	{devname=eth0}
+	{devname=hfi0,mpi,lapi}
+	{devname=hfi0,mpi,lapi,us}
+	{devname=hfi0,mpi,lapi,instances=3}
+	{sn_all}
+	{sn_all,mpi,lapi}
+	{sn_all,mpi,lapi}
+	{devname=hfi0,bulk_xfer,us}
+	"
+}
 
 foreach test $goodtest {
 	set test_code [create_nrtparams $test]
@@ -153,11 +186,21 @@ foreach test $goodtest {
 # This test a list of all the good test with 4 tasks
 #
 send_user "\n============Good Tests With 4 Tasks============\n"
-set good4task "
-{devname=mlx4_0,mpi,lapi,us,instances=3}
-{sn_all,mpi,lapi,instances=2}
-{sn_all,mpi,lapi,instances=3,us}
-"
+if {$smd_system == 1} {
+#	For use on IB system
+	set good4task "
+	{devname=mlx4_0,mpi,lapi,us,instances=3}
+	{sn_all,mpi,lapi,instances=2}
+	{sn_all,mpi,lapi,instances=3,us}
+	"
+} else {
+#	For use on HFI/Torrent system
+	set good4task "
+	{devname=hfi0,mpi,lapi,us,instances=3}
+	{sn_all,mpi,lapi,instances=2}
+	{sn_all,mpi,lapi,instances=3,us}
+	"
+}
 
 foreach test $good4task {
 	set test_code [create_nrtparams_4tasks $test]
@@ -176,3 +219,4 @@ if {$exit_code != 0} {
 } else {
 	send_user "\nSUCCESS\n"
 }
+exit $exit_code
