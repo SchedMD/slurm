@@ -9,7 +9,7 @@ You should be familiar with the SLURM's mode of operation on Linux clusters
 before studying the differences in Cray system operation described in this
 document.</p>
 
-<p>SLURM version 2.3 is designed to operate as a job scheduler over Cray's
+<p>Since version 2.3 SLURM is designed to operate as a job scheduler over Cray's
 Application Level Placement Scheduler (ALPS).
 Use SLURM's <i>sbatch</i> or <i>salloc</i> commands to create a resource
 allocation in ALPS.
@@ -32,7 +32,8 @@ Other than SLURM's <i>srun</i> command being replaced by <i>aprun</i>
 and the job steps not being visible, all other SLURM commands will operate
 as expected. Note that in order to build and install the aprun wrapper
 described above, execute "configure" with the <i>--with-srun2aprun</i>
-option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i> file.</p>
+option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i>
+file.  This option is set with rpms from Cray.</p>
 
 <h3>Node naming and node geometry on Cray XT/XE systems</h3>
 <p>SLURM node names will be of the form "nid#####" where "#####" is a five-digit sequence number.
@@ -209,61 +210,33 @@ default: # exit
 <p>All Cray-specific PrgEnv and compiler modules should be removed and root
 privileges will be required to install these files.</p>
 
-<h3>Create a build root</h3>
-
-<p>The build is done on a normal service node, where you like
-(e.g. <i>/ufs/slurm/build</i> would work).
-Most scripts check for the environment variable LIBROOT.
-You can either edit the scripts or export this variable. Easiest way:</p>
-
-<pre>
-login: # export LIBROOT=/ufs/slurm/build
-login: # mkdir -vp $LIBROOT
-login: # cd $LIBROOT
-</pre>
-
-<h3>Install SLURM modulefile</h3>
-
-<p>This file is distributed as part the SLURM tar-ball in
-<i>contribs/cray/opt_modulefiles_slurm</i>. Install it as
-<i>/opt/modulefiles/slurm</i> (or anywhere else in your module path).
-It means that you can use Munge as soon as it is built.</p>
-<pre>
-login: # scp ~/slurm/contribs/cray/opt_modulefiles_slurm root@boot:/rr/current/software/
-</pre>
-
-<h3>Build and install Munge</h3>
+<h3>Install Munge</h3>
 
 <p>Note the Munge installation process on Cray systems differs
 somewhat from that described in the
 <a href="http://code.google.com/p/munge/wiki/InstallationGuide">
 MUNGE Installation Guide</a>.</p>
 
-<p>Munge is the authentication daemon and needed by SLURM. Download
-munge-0.5.10.tar.bz2 or newer from
-<a href="http://code.google.com/p/munge/downloads/list">
-http://code.google.com/p/munge/downloads/list</a>. This is how one
-can build on a login node and install it.</p>
+<p>Munge is the authentication daemon and needed by SLURM. You can get
+munge rpms from Cray use the below method to install and test.  The
+Cray munge rpm installs munge in /opt/munge.</p>
+
+<p>If needed copy the rpms over to the boot node</p>
 <pre>
-login: # cd $LIBROOT
-login: # cp ~/slurm/contribs/cray/munge_build_script.sh $LIBROOT
-login: # mkdir -p ${LIBROOT}/munge/zip
-login: # curl -O http://munge.googlecode.com/files/munge-0.5.10.tar.bz2
-login: # cp munge-0.5.10.tar.bz2 ${LIBROOT}/munge/zip
-login: # chmod u+x ${LIBROOT}/munge/zip/munge_build_script.sh
-login: # ${LIBROOT}/munge/zip/munge_build_script.sh
-(generates lots of output and generates a tar-ball called
-$LIBROOT/munge_build-.*YYYY-MM-DD.tar.gz)
-login: # scp munge_build-2011-07-12.tar.gz root@boot:/rr/current/software
+login: # scp munge-*.rpm root@boot:/rr/current/software
 </pre>
 
-<p>Install the tar-ball by on the boot node and build an encryption
-key file executing:
+<p>Install the rpms on the boot node.  While this process creates a
+munge key it can't be use in /etc/munge directory.  So we make a
+/opt/munge/key directory instead and create a key there.</p>
 <pre>
 boot: # xtopview
-default: # tar -zxvf $LIBROOT/munge_build-*.tar.gz -C /rr/current /
-default: # dd if=/dev/urandom bs=1 count=1024 >/opt/slurm/munge/etc/munge.key
-default: # chmod go-rxw /opt/slurm/munge/etc/munge.key
+default: # rpm -ivh /software/munge-*.x86_64.rpm
+default: # mkdir /opt/munge/key
+default: # dd if=/dev/urandom bs=1 count=1024 >/opt/munge/key/munge.key
+default: # chmod go-rxw /opt/munge/key/munge.key
+default: # chown daemon /opt/munge/key/munge.key
+default: # perl -pi -e 's/#DAEMON_ARGS=/DAEMON_ARGS="--key-file \/opt\/munge\/key\/munge.key"/g' /etc/init.d/munge
 default: # exit
 </pre>
 
@@ -276,47 +249,29 @@ default: # exit
 </ul></p>
 
 <pre>
-login: # mkdir --mode=0711 -vp /var/lib/munge
-login: # mkdir --mode=0700 -vp /var/log/munge
-login: # mkdir --mode=0755 -vp /var/run/munge
-login: # module load slurm
-</pre>
-<pre>
 sdb: # mkdir --mode=0711 -vp /var/lib/munge
 sdb: # mkdir --mode=0700 -vp /var/log/munge
 sdb: # mkdir --mode=0755 -vp /var/run/munge
+sdb: # chown daemon /var/lib/munge
+sdb: # chown daemon /var/log/munge
+sdb: # chown daemon /var/run/munge
+sdb: # /etc/init.d/munge start
+
 </pre>
 
 <p>Start the munge daemon and test it.</p>
 <pre>
-login: # munged --key-file /opt/slurm/munge/etc/munge.key
+login: # export PATH=/opt/munge/bin:$PATH
 login: # munge -n
 MUNGE:AwQDAAAEy341MRViY+LacxYlz+mchKk5NUAGrYLqKRUvYkrR+MJzHTgzSm1JALqJcunWGDU6k3vpveoDFLD7fLctee5+OoQ4dCeqyK8slfAFvF9DT5pccPg=:
+login: # munge -n | unmunge
 </pre>
 
-<p>When done, verify network connectivity by executing:
+<p>When done, verify network connectivity by executing (You have to
+  have the munged started on the other-login-host as well):
 <ul>
 <li><i>munge -n | ssh other-login-host /opt/slurm/munge/bin/unmunge</i></li>
 </ul>
-
-
-<p>If you decide to keep the installation, you may be interested in automating
-the process using an <i>init.d</i> script distributed with the Munge. This
-should be installed on all nodes running munge, e.g., 'xtopview -c login' and
-'xtopview -n sdbNodeID'
-</p>
-<pre>
-boot: # xtopview -c login
-login: # cp /software/etc_init_d_munge /etc/init.d/munge
-login: # chmod u+x /etc/init.d/munge
-login: # chkconfig munge on
-login: # exit
-boot: # xtopview -n 31
-node/31: # cp /software/etc_init_d_munge /etc/init.d/munge
-node/31: # chmod u+x /etc/init.d/munge
-node/31: # chkconfig munge on
-node/31: # exit
-</pre>
 
 <h3>Enable the Cray job service</h3>
 
@@ -347,11 +302,13 @@ node/31:# emacs -nw /etc/pam.d/common-session
 (uncomment the pam_job.so line as shown above)
 </pre>
 
-<h3>Build and Configure SLURM</h3>
+<h3>Install and Configure SLURM</h3>
 
 <p>SLURM can be built and installed as on any other computer as described
 <a href="quickstart_admin.html">Quick Start Administrator Guide</a>.
-An example of building and installing SLURM version 2.3.0 is shown below.</p>
+You can also get current SLURM rpms from Cray.  An installation
+process for the rpms is described below.  The
+Cray SLURM rpms install in /opt/slurm.</p>
 
 <p><b>NOTE:</b> By default neither the <i>salloc</i> command or <i>srun</i>
 command wrapper can be executed as a background process. This is done for two
@@ -366,11 +323,12 @@ using terminal foreground process group IDs</li>
 </ol>
 <p>You can optionally enable <i>salloc</i> and <i>srun</i> to execute as
 background processes by using the configure option
-<i>"--enable-salloc-background"</i>, however doing will result in failed
+<i>"--enable-salloc-background"</i> (.rpmmacros option <i>"%_with_salloc_backgroud 1"</i>, however doing will result in failed
 resource allocations
 (<i>error: Failed to allocate resources: Requested reservation is in use</i>)
 if not executed sequentially and
-increase the likelyhood of orphaned processes.</p>
+increase the likelyhood of orphaned processes.  Specifically request
+this version when requesting rpms from Cray as this is not on by default.</p>
 <!-- Example:
  Modify srun script or ask user to execute "/usr/bin/setsid"
  before salloc or srun command -->
@@ -378,27 +336,17 @@ increase the likelyhood of orphaned processes.</p>
  salloc spawns zsh, zsh spawns bash, etc.
  when salloc terminates, bash becomes a child of init -->
 
+<p>If needed copy the rpms over to the boot node.</p>
 <pre>
-login: # mkdir build && cd build
-login: # slurm/configure \
-  --prefix=/opt/slurm/2.3.0 \
-  --with-munge=/opt/slurm/munge/ \
-  --with-mysql_config=/opt/cray/MySQL/5.0.64-1.0000.2899.20.2.gem/bin \
-  --with-srun2aprun
-login: # make -j
-login: # mkdir install
-login: # make DESTDIR=/tmp/slurm/build/install install
-login: # make DESTDIR=/tmp/slurm/build/install install-contrib
-login: # cd install
-login: # tar czf slurm_opt.tar.gz opt
-login: # scp slurm_opt.tar.gz boot:/rr/current/software
+login: # scp slurm-*.rpm root@boot:/rr/current/software
 </pre>
 
+<p>Install the rpms on the boot node.</p>
 <pre>
 boot: # xtopview
-default: # tar xzf /software/slurm_opt.tar.gz -C /
-default: # cd /opt/slurm/
-default: # ln -s 2.3.0 default
+default: # rpm -ivh /software/slurm-*.x86_64.rpm
+<i>edit /etc/slurm/slurm.conf and /etc/slurm/cray.conf</i>
+default: # exit
 </pre>
 
 <p>When building SLURM's <i>slurm.conf</i> configuration file, use the
@@ -639,15 +587,6 @@ ulimit -t unlimited	# max amount of CPU time in seconds
 ulimit -d unlimited	# max size of a process's data segment in KB
 </pre>
 
-<p>SLURM's <i>init.d</i> script should also be installed to automatically
-start SLURM daemons when nodes boot as shown below. Be sure to edit the script
-as appropriate to reference the proper file location (modify the variable
-<i>PREFIX</i>).
-
-<pre>
-login: # scp /home/crayadm/ben/slurm/etc/init.d.slurm boot:/rr/current/software/
-</pre>
-
 <p>SLURM will ignore any interactive jobs or nodes in interactive mode
 so set all your nodes to batch from any service node. Dropping the
 -n option will make all nodes batch.</p>
@@ -662,6 +601,7 @@ daemons on the sdb and login nodes as shown below.</p>
 <pre>
 sdb: # mkdir -p /ufs/slurm/log
 sdb: # mkdir -p /ufs/slurm/spool
+sdb: # module load slurm
 sdb: # /etc/init.d/slurm start
 </pre>
 
@@ -691,6 +631,6 @@ allocation.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 July 2012</p></td>
+<p style="text-align:center;">Last modified 17 Sept 2012</p></td>
 
 <!--#include virtual="footer.txt"-->

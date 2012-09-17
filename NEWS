@@ -65,6 +65,8 @@ documents those changes that are of interest to users and admins.
  -- task/cgroup/memory - ensure that ConstrainSwapSpace=no is correctly
     handled. Work by Matthieu Hautreux, CEA.
  -- CRAY - Fix for sacct -N option to work correctly
+ -- CRAY - Update documentation to describe installation from rpm instead
+    or previous piecemeal method.
 
 * Changes in SLURM 2.4.2
 ========================
