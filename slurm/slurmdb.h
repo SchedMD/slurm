@@ -600,7 +600,7 @@ typedef struct {
 				   * use with this qos */
 	uint64_t max_cpu_run_mins_pu; /* max number of cpu mins a user can
 				   * allocate at a given time when
-				   * using this qos */
+				   * using this qos (Not yet valid option) */
 	uint32_t max_cpus_pj; /* max number of cpus a job can
 			       * allocate with this qos */
 	uint32_t max_cpus_pu; /* max number of cpus a user can

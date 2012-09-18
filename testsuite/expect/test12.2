@@ -200,7 +200,7 @@ expect {
 	-re "Requested node configuration is not available" {
 		set config_prob 1
 		exp_continue
-	}		
+	}
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue

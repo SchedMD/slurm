@@ -280,7 +280,7 @@ login: # munge -n | unmunge
 <p>When done, verify network connectivity by executing the following (the
 Munged daemon must be started on the other-login-host as well):
 <ul>
-<li><i>munge -n | ssh other-login-host /opt/slurm/munge/bin/unmunge</i></li>
+<li><i>munge -n | ssh other-login-host /opt/munge/bin/unmunge</i></li>
 </ul>
 
 <h3>Enable the Cray job service</h3>
@@ -642,6 +642,6 @@ allocation.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 17 September 2012</p></td>
+<p style="text-align:center;">Last modified 18 September 2012</p></td>
 
 <!--#include virtual="footer.txt"-->
