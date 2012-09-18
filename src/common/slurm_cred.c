@@ -2272,9 +2272,12 @@ int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 		_pack_sbcast_cred(sbcast_cred, buffer);
 		/* NOTE: the verification checks that the credential was
 		 * created by SlurmUser or root */
-		rc = (*(g_crypto_context->ops.crypto_verify_sign))(ctx->key,
-								   get_buf_data(buffer), get_buf_offset(buffer),
-								   sbcast_cred->signature, sbcast_cred->siglen);
+		rc = (*(g_crypto_context->ops.crypto_verify_sign)) (
+						ctx->key,
+						get_buf_data(buffer),
+						get_buf_offset(buffer),
+						sbcast_cred->signature,
+						sbcast_cred->siglen);
 		free_buf(buffer);
 
 		if (rc) {
@@ -2287,7 +2290,7 @@ int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 		 * and reduces the possibility of a duplicate value */
 		for (i=0; i<sbcast_cred->siglen; i+=2) {
 			sig_num += (sbcast_cred->signature[i] << 8) +
-				sbcast_cred->signature[i+1];
+				   sbcast_cred->signature[i+1];
 		}
 		/* add to cache */
 		for (i=0; i<SBCAST_CACHE_SIZE; i++) {
@@ -2308,13 +2311,13 @@ int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 
 			/* overwrite the oldest */
 			cache_expire[oldest_cache_inx] = sbcast_cred->
-				expiration;
+							 expiration;
 			cache_value[oldest_cache_inx]  = sig_num;
 		}
 	} else {
 		for (i=0; i<sbcast_cred->siglen; i+=2) {
 			sig_num += (sbcast_cred->signature[i] << 8) +
-				sbcast_cred->signature[i+1];
+				   sbcast_cred->signature[i+1];
 		}
 		for (i=0; i<SBCAST_CACHE_SIZE; i++) {
 			if ((cache_expire[i] == sbcast_cred->expiration) &&
