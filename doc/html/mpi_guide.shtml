@@ -65,7 +65,10 @@ variable <i>SLURM_RESV_PORT</i>, which is equivalent to always including
 <i>--resv-ports</i> on srun's execute line.
 The ports reserved on every allocated node will be identified in an
 environment variable available to the tasks as shown here: <br>
-<i>SLURM_STEP_RESV_PORTS=12000-12015</i></p>
+<i>SLURM_STEP_RESV_PORTS=12000-12015</i><br>
+<b>NOTE:</b> In SLURM version 2.5, the <i>--resv-ports</i> option is
+automatically set when the MPI type is set to OpenMPI, either explictly with
+the <i>--mpi</i> option or by the <i>MpiDefault</i> configuration parameter.</p>
 
 <pre>
 $ salloc -n4 sh   # allocates 4 processors and spawns shell for job
@@ -440,6 +443,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 27 August 2012</p>
+<p style="text-align:center;">Last modified 18 September 2012</p>
 
 <!--#include virtual="footer.txt"-->
