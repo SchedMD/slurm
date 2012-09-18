@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.4.4
+========================
+
 * Changes in SLURM 2.4.3
 ========================
  -- Accounting - Fix so complete 32 bit numbers can be put in for a priority.
