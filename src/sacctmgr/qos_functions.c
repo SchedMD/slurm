@@ -203,7 +203,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 					" Bad Preempt Mode given: %s\n",
 					argv[i]);
 				exit_code = 1;
-			} else if (qos_cond->preempt_mode == PREEMPT_MODE_SUSPEND) {
+			} else if (qos_cond->preempt_mode ==
+				   PREEMPT_MODE_SUSPEND) {
 				printf("PreemptType and PreemptMode "
 					"values incompatible\n");
 				exit_code = 1;
@@ -635,6 +636,8 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 			qos->grp_wall = start_qos->grp_wall;
 
 			qos->max_cpu_mins_pj = start_qos->max_cpu_mins_pj;
+			qos->max_cpu_run_mins_pu =
+				start_qos->max_cpu_run_mins_pu;
 			qos->max_cpus_pj = start_qos->max_cpus_pj;
 			qos->max_cpus_pu = start_qos->max_cpus_pu;
 			qos->max_jobs_pu = start_qos->max_jobs_pu;
@@ -737,9 +740,13 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 	} else if(!list_count(format_list)) {
 		slurm_addto_char_list(format_list,
 				      "Name,Prio,GraceT,Preempt,PreemptM,"
-				      "Flags%40,UsageThres,GrpCPUs,GrpCPUMins,"
+				      "Flags%40,UsageThres,UsageFactor,"
+				      "GrpCPUs,GrpCPUMins,GrpCPURunMins,"
 				      "GrpJ,GrpMEM,GrpN,GrpS,GrpW,"
-				      "MaxCPUs,MaxCPUMins,MaxJ,MaxN,MaxS,MaxW");
+				      "MaxCPUs,MaxCPUMins,MaxN,MaxW,"
+				      "MaxCPUsPerUser,"
+				      "MaxJobsPerUser,MaxNodesPerUser,"
+				      "MaxSubmitJobsPerUser");
 	}
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
@@ -846,6 +853,12 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 				field->print_routine(
 					field,
 					qos->max_cpu_mins_pj,
+					(curr_inx == field_count));
+				break;
+			case PRINT_MAXCRM:
+				field->print_routine(
+					field,
+					qos->max_cpu_run_mins_pu,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXC:
