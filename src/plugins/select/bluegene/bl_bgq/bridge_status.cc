@@ -1381,9 +1381,9 @@ extern int bridge_status_fini(void)
 		return SLURM_ERROR;
 
 	bridge_status_inited = false;
-	rt_waiting = 1;
 
 #if defined HAVE_BG_FILES
+	rt_waiting = 1;
 	/* make the rt connection end. */
 	_bridge_status_disconnect();
 
