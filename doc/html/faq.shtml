@@ -138,6 +138,8 @@ core file?</a></li>
 SLURM?</a></li>
 <li><a href="#git_patch">How can a patch file be generated from a SLURM commit
 in github?</a></li>
+<li><a href="#enforce_limits">Why are the resource limits set in the database
+not being enforced?</a></li>
 </ol>
 
 
@@ -1511,8 +1513,16 @@ the resutling file. For an example, see:
 https://github.com/SchedMD/slurm/commit/91e543d433bed11e0df13ce0499be641774c99a3.patch</a>
 </p>
 
+<p><a name="enforce_limits"><b>45. Why are the resource limits set in the
+database not being enforced?</b></a></br>
+In order to enforce resource limits, set the value of
+<b>AccountingStorageEnforce</b> in each cluster's slurm.conf configuration
+file appropriately. If <b>AccountingStorageEnforce</b> does not contains
+an option of "limits", then resource limits will not be enforced on that cluster.
+See <a href="resource_limits.html">Resource Limits</a> for more information.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 24 June 2012</p>
+<p style="text-align:center;">Last modified 7 September 2012</p>
 
 <!--#include virtual="footer.txt"-->

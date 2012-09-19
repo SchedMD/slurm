@@ -196,6 +196,7 @@ int _verbose;
 opt_t opt;
 int error_exit = 1;
 int immediate_exit = 1;
+char *mpi_type = NULL;
 
 /*---- forward declarations of static functions  ----*/
 static bool mpi_initialized = false;
@@ -687,6 +688,8 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_MPI:
+		xfree(mpi_type);
+		mpi_type = xstrdup(val);
 		if (mpi_hook_client_init((char *)val) == SLURM_ERROR) {
 			error("\"%s=%s\" -- invalid MPI type, "
 			      "--mpi=list for acceptable types.",
@@ -1171,6 +1174,8 @@ static void set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_MPI:
+			xfree(mpi_type);
+			mpi_type = xstrdup(optarg);
 			if (mpi_hook_client_init((char *)optarg)
 			    == SLURM_ERROR) {
 				error("\"--mpi=%s\" -- long invalid MPI type, "
@@ -2074,12 +2079,17 @@ static bool _opt_verify(void)
 	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
 		opt.gid = opt.egid;
 
-	 if (slurm_verify_cpu_bind(NULL, &opt.cpu_bind,
-				   &opt.cpu_bind_type))
+	if (slurm_verify_cpu_bind(NULL, &opt.cpu_bind,
+				  &opt.cpu_bind_type))
 		exit(error_exit);
 
-	if (!mpi_initialized)
+	if (!mpi_initialized) {
+		mpi_type = slurm_get_mpi_default();
 		(void) mpi_hook_client_init(NULL);
+	}
+	if ((opt.resv_port_cnt == NO_VAL) && !strcmp(mpi_type, "openmpi"))
+		opt.resv_port_cnt = 0;
+	xfree(mpi_type);
 
 	return verified;
 }

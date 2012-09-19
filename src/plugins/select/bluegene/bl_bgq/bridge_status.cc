@@ -73,6 +73,7 @@ static bool bridge_status_inited = false;
 
 static bool initial_poll = true;
 static bool rt_running = false;
+static bool rt_waiting = false;
 
 /*
  * Handle compute block status changes as a result of a block allocate.
@@ -148,42 +149,30 @@ static void _bridge_status_disconnect()
 	}
 }
 
-static void _handle_bad_midplane(const char *mp_coords,
+/* ba_system_mutex && block_state_mutex must be unlocked before this */
+static void _handle_bad_midplane(char *bg_down_node,
 				 EnumWrapper<Hardware::State> state,
-				 bool block_state_locked)
+				 bool print_debug)
 {
-	char bg_down_node[128];
-
-	assert(mp_coords);
-
-	snprintf(bg_down_node, sizeof(bg_down_node), "%s%s",
-		 bg_conf->slurm_node_prefix, mp_coords);
+	assert(bg_down_node);
 
 	if (!node_already_down(bg_down_node)) {
-		if (rt_running
-		    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+		if (print_debug
+		    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 			error("Midplane %s, state went to '%s', "
 			      "marking midplane down.",
 			      bg_down_node,
 			      bridge_hardware_state_string(state.toValue()));
-		/* unlock mutex here since slurm_drain_nodes could produce
-		   deadlock */
-		slurm_mutex_unlock(&ba_system_mutex);
-		if (block_state_locked)
-			slurm_mutex_unlock(&block_state_mutex);
 		slurm_drain_nodes(
 			bg_down_node,
 			(char *)"select_bluegene: MMCS midplane not UP",
 			slurm_get_slurm_user_id());
-		if (block_state_locked)
-			slurm_mutex_lock(&block_state_mutex);
-		slurm_mutex_lock(&ba_system_mutex);
 	}
 }
 
 static void _handle_bad_switch(int dim, const char *mp_coords,
 			       EnumWrapper<Hardware::State> state,
-			       bool block_state_locked)
+			       bool block_state_locked, bool print_debug)
 {
 	char bg_down_node[128];
 
@@ -193,8 +182,8 @@ static void _handle_bad_switch(int dim, const char *mp_coords,
 		 bg_conf->slurm_node_prefix, mp_coords);
 
 	if (!node_already_down(bg_down_node)) {
-		if (rt_running
-		    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+		if (print_debug
+		    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 			error("Switch at dim '%d' on Midplane %s, "
 			      "state went to '%s', marking midplane down.",
 			      dim, bg_down_node,
@@ -213,16 +202,16 @@ static void _handle_bad_switch(int dim, const char *mp_coords,
 	}
 }
 
-static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
+/* ba_system_mutex && block_state_mutex must be unlocked before this */
+static void _handle_bad_nodeboard(const char *nb_name, char* bg_down_node,
 				  EnumWrapper<Hardware::State> state,
-				  char *reason, bool block_state_locked)
+				  char *reason, bool print_debug)
 {
-	char bg_down_node[128];
 	int io_start;
 	int rc;
 
 	assert(nb_name);
-	assert(mp_coords);
+	assert(bg_down_node);
 
 	/* From the first nodecard id we can figure
 	   out where to start from with the alloc of ionodes.
@@ -255,21 +244,11 @@ static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
 
 	/* we have to handle each nodecard separately to make
 	   sure we don't create holes in the system */
-	snprintf(bg_down_node, sizeof(bg_down_node), "%s%s",
-		 bg_conf->slurm_node_prefix, mp_coords);
 
-	/* unlock mutex here since down_nodecard could produce
-	   deadlock */
-	slurm_mutex_unlock(&ba_system_mutex);
-	if (block_state_locked)
-		slurm_mutex_unlock(&block_state_mutex);
 	rc = down_nodecard(bg_down_node, io_start, 0, reason);
-	if (block_state_locked)
-		slurm_mutex_lock(&block_state_mutex);
-	slurm_mutex_lock(&ba_system_mutex);
 
-	if (rt_running
-	    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME)) {
+	if (print_debug
+	    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME)) {
 		if (rc == SLURM_SUCCESS)
 			debug("nodeboard %s on %s is in an error state '%s'",
 			      nb_name, bg_down_node,
@@ -284,9 +263,10 @@ static void _handle_bad_nodeboard(const char *nb_name, const char* mp_coords,
 	return;
 }
 
+/* ba_system_mutex && block_state_mutex must be locked before this */
 static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 				EnumWrapper<Hardware::State> state,
-				List *delete_list)
+				List *delete_list, bool print_debug)
 {
 	Coordinates ibm_cnode_coords = getNodeMidplaneCoordinates(cnode_loc);
 	uint16_t cnode_coords[Dimension::NodeDims];
@@ -372,18 +352,24 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			 cnode_coords[3],
 			 cnode_coords[4],
 			 cnode_loc.c_str());
-		if (rt_running
-		    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+		if (print_debug
+		    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 			error("%s", reason);
+		/* unlock mutex here since _handle_bad_nodeboard could produce
+		   deadlock */
+		slurm_mutex_unlock(&ba_system_mutex);
+		slurm_mutex_unlock(&block_state_mutex);
 		_handle_bad_nodeboard(nc_name, ba_mp->coord_str,
-				      state, reason, 1);
+				      state, reason, print_debug);
+		slurm_mutex_lock(&block_state_mutex);
+		slurm_mutex_lock(&ba_system_mutex);
 	}
 
 	if (!changed)
 		return;
 	last_bg_update = time(NULL);
-	if (rt_running
-	    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+	if (print_debug
+	    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 		info("_handle_node_change: state for %s - %s is '%s'",
 		     ba_mp->coord_str, cnode_loc.c_str(),
 		     bridge_hardware_state_string(state.toValue()));
@@ -451,8 +437,8 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			if (!bg_record->err_ratio && bg_record->cnode_err_cnt)
 				bg_record->err_ratio = 1;
 
-			if (rt_running
-			    || (bg_conf->slurm_debug_flags
+			if (print_debug
+			    && (bg_conf->slurm_debug_flags
 				& DEBUG_FLAG_NO_REALTIME))
 				debug("count in error for %s is %u "
 				      "with ratio at %u",
@@ -540,7 +526,7 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 
 static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 				 EnumWrapper<Hardware::State> state,
-				 List *delete_list)
+				 List *delete_list, bool print_debug)
 {
 	select_nodeinfo_t *nodeinfo;
 	struct node_record *node_ptr = NULL;
@@ -559,8 +545,8 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 		assert(nodeinfo);
 
 		ba_mp->axis_switch[dim].usage &= (~BG_SWITCH_CABLE_ERROR_FULL);
-		if (rt_running
-		    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+		if (print_debug
+		    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 			info("Cable in dim '%u' on Midplane %s, "
 			     "has returned to service",
 			     dim, ba_mp->coord_str);
@@ -590,8 +576,8 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 
 		ba_mp->axis_switch[dim].usage |= BG_SWITCH_CABLE_ERROR_FULL;
 
-		if (rt_running
-		    || (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+		if (print_debug
+		    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 			error("Cable at dim '%d' on Midplane %s, "
 			      "state went to '%s', marking cable down.",
 			      dim, ba_mp->coord_str,
@@ -771,6 +757,8 @@ static void _do_block_poll(void)
 				    block_ptr->getStatus().toValue()),
 			    kill_job_list))
 			updated = 1;
+		if (rt_waiting || slurmctld_config.shutdown_time)
+			break;
 	}
 	slurm_mutex_unlock(&block_state_mutex);
 	unlock_slurmctld(job_read_lock);
@@ -779,34 +767,61 @@ static void _do_block_poll(void)
 
 	if (updated == 1)
 		last_bg_update = time(NULL);
-
 }
 
+/* Even though ba_mp should be coming from the main list
+ * ba_system_mutex && block_state_mutex must be unlocked before
+ * this.  Anywhere in this function where ba_mp is used should be
+ * locked.
+ */
 static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 				    ba_mp_t *ba_mp, List *delete_list)
 {
 	Midplane::ConstPtr mp_ptr = bridge_get_midplane(bgq, ba_mp);
 	int i;
 	Dimension dim;
+	char bg_down_node[128];
 
 	if (!mp_ptr) {
 		info("no midplane in the system at %s", ba_mp->coord_str);
 		return;
 	}
 
+	/* Handle this here so we don't have to lock if we don't have too. */
+	slurm_mutex_lock(&ba_system_mutex);
+	snprintf(bg_down_node, sizeof(bg_down_node), "%s%s",
+		 bg_conf->slurm_node_prefix, ba_mp->coord_str);
+	slurm_mutex_unlock(&ba_system_mutex);
+
 	if (mp_ptr->getState() != Hardware::Available) {
-		_handle_bad_midplane(ba_mp->coord_str, mp_ptr->getState(), 1);
+		_handle_bad_midplane(bg_down_node, mp_ptr->getState(), 0);
 		/* no reason to continue */
 		return;
 	} else {
 		Node::ConstPtrs vec = bridge_get_midplane_nodes(
 			mp_ptr->getLocation());
 		if (!vec.empty()) {
+			/* This, by far, is the most time consuming
+			   process in the polling (especially if there
+			   are changes).  So lock/unlock on each one
+			   so if there are other people waiting for
+			   the locks they don't have to wait for all
+			   this to finish.
+			*/
 			BOOST_FOREACH(const Node::ConstPtr& cnode_ptr, vec) {
+				lock_slurmctld(job_read_lock);
+				slurm_mutex_lock(&block_state_mutex);
+				slurm_mutex_lock(&ba_system_mutex);
 				_handle_node_change(ba_mp,
 						    cnode_ptr->getLocation(),
 						    cnode_ptr->getState(),
-						    delete_list);
+						    delete_list, 0);
+				slurm_mutex_unlock(&ba_system_mutex);
+				slurm_mutex_unlock(&block_state_mutex);
+				unlock_slurmctld(job_read_lock);
+				if (rt_waiting
+				    || slurmctld_config.shutdown_time)
+					return;
 			}
 		}
 	}
@@ -821,30 +836,49 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 		   itself is in an error state so procede.
 		*/
 		if (nb_ptr && !nb_ptr->isMetaState()
-		    && (nb_ptr->getState() != Hardware::Available))
+		    && (nb_ptr->getState() != Hardware::Available)) {
 			_handle_bad_nodeboard(
 				nb_ptr->getLocation().substr(7,3).c_str(),
-				ba_mp->coord_str, nb_ptr->getState(), NULL, 1);
+				bg_down_node, nb_ptr->getState(), NULL, 0);
+			if (rt_waiting || slurmctld_config.shutdown_time)
+				return;
+		}
 	}
 
 	for (dim=Dimension::A; dim<=Dimension::D; dim++) {
 		Switch::ConstPtr switch_ptr = bridge_get_switch(mp_ptr, dim);
 		if (switch_ptr) {
-			if (switch_ptr->getState() != Hardware::Available)
+			if (switch_ptr->getState() != Hardware::Available) {
 				_handle_bad_switch(dim,
-						   ba_mp->coord_str,
-						   switch_ptr->getState(), 1);
-			else {
+						   bg_down_node,
+						   switch_ptr->getState(),
+						   1, 0);
+				if (rt_waiting
+				    || slurmctld_config.shutdown_time)
+					return;
+			} else {
 				Cable::ConstPtr my_cable =
 					switch_ptr->getCable();
 				/* Dimensions of length 1 do not have a
 				   cable. (duh).
 				*/
-				if (my_cable)
+				if (my_cable) {
+					/* block_state_mutex may be
+					 * needed in _handle_cable_change,
+					 * so lock it first to avoid
+					 * dead lock */
+					slurm_mutex_lock(&block_state_mutex);
+					slurm_mutex_lock(&ba_system_mutex);
 					_handle_cable_change(
 						dim, ba_mp,
 						my_cable->getState(),
-						delete_list);
+						delete_list, 0);
+					slurm_mutex_unlock(&ba_system_mutex);
+					slurm_mutex_unlock(&block_state_mutex);
+					if (rt_waiting
+					    || slurmctld_config.shutdown_time)
+						return;
+				}
 			}
 		}
 	}
@@ -870,17 +904,18 @@ static void _do_hardware_poll(int level, uint16_t *coords,
 		     coords[level]++) {
 			/* handle the outter dims here */
 			_do_hardware_poll(level+1, coords, bgqsys);
+			if (rt_waiting || slurmctld_config.shutdown_time)
+				return;
 		}
 		return;
 	}
-	/* block_state_mutex may be needed in some of these functions,
-	 * so lock it first to avoid dead lock */
-	slurm_mutex_lock(&block_state_mutex);
-	slurm_mutex_lock(&ba_system_mutex);
+	/* We are ignoring locks here to deal with speed.
+	   _handle_midplane_update should handle the locks for us when
+	   needed.  Since the ba_mp list doesn't get destroyed until
+	   the very end this should be safe.
+	*/
 	if ((ba_mp = coord2ba_mp(coords)))
 		_handle_midplane_update(bgqsys, ba_mp, &delete_list);
-	slurm_mutex_unlock(&ba_system_mutex);
-	slurm_mutex_unlock(&block_state_mutex);
 
 	bg_status_process_kill_job_list(kill_job_list);
 
@@ -908,10 +943,10 @@ static void *_poll(void *no_data)
 		}
 		//debug("polling taking over, realtime is dead");
 		curr_time = time(NULL);
-		if (blocks_are_created)
+		if (!rt_waiting && blocks_are_created)
 			_do_block_poll();
 		/* only do every 30 seconds */
-		if ((curr_time - 30) >= last_ran) {
+		if (!rt_waiting && ((curr_time - 30) >= last_ran)) {
 			uint16_t coords[SYSTEM_DIMENSIONS];
 			_do_hardware_poll(0, coords,
 					  bridge_get_compute_hardware());
@@ -929,20 +964,42 @@ static void *_poll(void *no_data)
 	return NULL;
 }
 
+static void *_before_rt_poll(void *no_data)
+{
+	uint16_t coords[SYSTEM_DIMENSIONS];
+	/* To make sure we don't have any missing state */
+	if (!rt_waiting && blocks_are_created)
+		_do_block_poll();
+	if (!rt_waiting)
+		_do_hardware_poll(0, coords, bridge_get_compute_hardware());
+	return NULL;
+}
+
 void event_handler::handleRealtimeStartedRealtimeEvent(
 	const RealtimeStartedEventInfo& event)
 {
-	if (!rt_running) {
-		uint16_t coords[SYSTEM_DIMENSIONS];
+	if (!rt_running && !rt_waiting) {
+		pthread_attr_t thread_attr;
+		/* If we are in the middle of polling, break out since
+		   we are just going to do it again right after.
+		*/
+		rt_waiting = 1;
 		slurm_mutex_lock(&rt_mutex);
-		info("RealTime server started back up!");
-		/* To make sure we don't have any missing state */
-		if (blocks_are_created)
-			_do_block_poll();
-		/* only do every 30 seconds */
-		_do_hardware_poll(0, coords, bridge_get_compute_hardware());
+		rt_waiting = 0;
 		rt_running = 1;
-	}
+		info("RealTime server started back up!");
+		/* Since we need to exit this function for the
+		   realtime server to start giving us info spawn a
+		   thread that will do it for us in the background.
+		*/
+		slurm_attr_init(&thread_attr);
+		if (pthread_create(&poll_thread, &thread_attr,
+				   _before_rt_poll, NULL))
+			fatal("pthread_create error %m");
+		slurm_attr_destroy(&thread_attr);
+	} else if (rt_waiting)
+		info("Realtime server appears to have gone and come back "
+		      "while we were trying to bring it back");
 }
 
 void event_handler::handleRealtimeEndedRealtimeEvent(
@@ -952,6 +1009,9 @@ void event_handler::handleRealtimeEndedRealtimeEvent(
 		rt_running = 0;
 		slurm_mutex_unlock(&rt_mutex);
 		info("RealTime server stopped serving info");
+	} else {
+		info("RealTime server stopped serving info before "
+		      "we gave it back control.");
 	}
 }
 
@@ -970,10 +1030,10 @@ void event_handler::handleBlockStateChangedRealtimeEvent(
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record = find_bg_record_in_list(bg_lists->main, bg_block_id);
 	if (!bg_record) {
-		unlock_slurmctld(job_read_lock);
 		slurm_mutex_unlock(&block_state_mutex);
-		info("bridge_status: bg_record %s isn't in the main list",
-		     bg_block_id);
+		unlock_slurmctld(job_read_lock);
+		debug2("bridge_status: bg_record %s isn't in the main list",
+		       bg_block_id);
 		return;
 	}
 
@@ -996,6 +1056,7 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 	uint16_t coords[SYSTEM_DIMENSIONS];
 	ba_mp_t *ba_mp;
 	int dim;
+	char bg_down_node[128];
 
 	if (event.getPreviousState() == event.getState()) {
 		debug("Switch previous state was same as current (%s - %s)",
@@ -1032,8 +1093,12 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 	}
 
 	/* Else mark the midplane down */
-	_handle_bad_midplane(ba_mp->coord_str, event.getState(), 0);
+	snprintf(bg_down_node, sizeof(bg_down_node), "%s%s",
+		 bg_conf->slurm_node_prefix, ba_mp->coord_str);
 	slurm_mutex_unlock(&ba_system_mutex);
+
+	_handle_bad_midplane(bg_down_node, event.getState(), 1);
+
 	return;
 
 }
@@ -1045,6 +1110,7 @@ void event_handler::handleSwitchStateChangedRealtimeEvent(
 	uint16_t coords[SYSTEM_DIMENSIONS];
 	int dim;
 	ba_mp_t *ba_mp;
+	char bg_down_node[128];
 
 
 	if (event.getPreviousState() == event.getState()) {
@@ -1083,9 +1149,12 @@ void event_handler::handleSwitchStateChangedRealtimeEvent(
 		return;
 	}
 
-	/* Else mark the midplane down */
-	_handle_bad_switch(dim, ba_mp->coord_str, event.getState(), 0);
+	snprintf(bg_down_node, sizeof(bg_down_node), "%s%s",
+		 bg_conf->slurm_node_prefix, ba_mp->coord_str);
 	slurm_mutex_unlock(&ba_system_mutex);
+
+	/* Else mark the midplane down */
+	_handle_bad_switch(dim, bg_down_node, event.getState(), 0, 1);
 
 	return;
 }
@@ -1099,6 +1168,7 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 	uint16_t coords[SYSTEM_DIMENSIONS];
 	int dim;
 	ba_mp_t *ba_mp;
+	char bg_down_node[128];
 
 	if (event.getPreviousState() == event.getState()) {
 		debug("Nodeboard previous state was same as current (%s - %s)",
@@ -1145,11 +1215,13 @@ void event_handler::handleNodeBoardStateChangedRealtimeEvent(
 		return;
 	}
 
-	_handle_bad_nodeboard(nb_name, ba_mp->coord_str,
-			      event.getState(), NULL, 0);
+	snprintf(bg_down_node, sizeof(bg_down_node), "%s%s",
+		 bg_conf->slurm_node_prefix, ba_mp->coord_str);
+	slurm_mutex_unlock(&ba_system_mutex);
+
+	_handle_bad_nodeboard(nb_name, bg_down_node, event.getState(), NULL, 1);
 	xfree(nb_name);
 	xfree(mp_name);
-	slurm_mutex_unlock(&ba_system_mutex);
 
 	return;
 }
@@ -1173,8 +1245,9 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 	for (dim = 0; dim < SYSTEM_DIMENSIONS; dim++)
 		coords[dim] = ibm_coords[dim];
 
-	/* block_state_mutex may be needed in _handle_node_change,
-	 * so lock it first to avoid dead lock */
+	/* job_read_lock and block_state_mutex may be needed in
+	 * _handle_node_change, so lock it first to avoid dead lock */
+	lock_slurmctld(job_read_lock);
 	slurm_mutex_lock(&block_state_mutex);
 	slurm_mutex_lock(&ba_system_mutex);
 	ba_mp = coord2ba_mp(coords);
@@ -1188,6 +1261,7 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 		      bridge_hardware_state_string(event.getState()));
 		slurm_mutex_unlock(&ba_system_mutex);
 		slurm_mutex_unlock(&block_state_mutex);
+		unlock_slurmctld(job_read_lock);
 		return;
 	}
 
@@ -1197,9 +1271,10 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 	     bridge_hardware_state_string(event.getState()));
 
 	_handle_node_change(ba_mp, event.getLocation(), event.getState(),
-			    &delete_list);
+			    &delete_list, 1);
 	slurm_mutex_unlock(&ba_system_mutex);
 	slurm_mutex_unlock(&block_state_mutex);
+	unlock_slurmctld(job_read_lock);
 
 	bg_status_process_kill_job_list(kill_job_list);
 
@@ -1253,7 +1328,8 @@ void event_handler::handleTorusCableStateChangedRealtimeEvent(
 	}
 
 	/* Else mark the midplane down */
-	_handle_cable_change(dim, from_ba_mp, event.getState(), &delete_list);
+	_handle_cable_change(dim, from_ba_mp, event.getState(),
+			     &delete_list, 1);
 	slurm_mutex_unlock(&ba_system_mutex);
 	slurm_mutex_unlock(&block_state_mutex);
 
@@ -1305,7 +1381,10 @@ extern int bridge_status_fini(void)
 		return SLURM_ERROR;
 
 	bridge_status_inited = false;
+
 #if defined HAVE_BG_FILES
+	rt_waiting = 1;
+
 	/* make the rt connection end. */
 	_bridge_status_disconnect();
 
@@ -1325,6 +1404,7 @@ extern int bridge_status_fini(void)
 	}
 
 	pthread_mutex_destroy(&rt_mutex);
+
 	delete(rt_client_ptr);
 #endif
 	return SLURM_SUCCESS;
@@ -1343,7 +1423,9 @@ extern int bridge_status_update_block_list_state(List block_list)
 	while ((bg_record = (bg_record_t *) list_next(itr))) {
 		BlockFilter filter;
 		Block::Ptrs vec;
-		if (bg_record->magic != BLOCK_MAGIC) {
+		if (!bridge_status_inited)
+			break;
+		else if (bg_record->magic != BLOCK_MAGIC) {
 			/* block is gone */
 			list_remove(itr);
 			continue;

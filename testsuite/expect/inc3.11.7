@@ -53,7 +53,7 @@ proc inc3_11_7 {} {
 
 
 	# (First test) Submit the batch job: a simple job using just 1 core inside the reservation
-	set sbatch_pid [spawn $sbatch -n1 --reservation=$res_name $file_in]
+	set sbatch_pid [spawn $sbatch -n1 --reservation=$res_name --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -97,28 +97,12 @@ proc inc3_11_7 {} {
 
 	send_user "\n\033\[32mJOB is running as expected\033\[m\n"
 
-	# Cancel the job
-	spawn $scancel -v $job_id
-	expect {
-		-re "Invalid job_id" {
-			send_user "\n\033\[31mFAILURE: Error cancelling the job submitted "
-			send_user "to the reservation.  Job $job_id not found\033\[m\n"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			send_user "\n\033\[31mFAILURE: scancel not responding\033\[m\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
+	cancel_job $job_id
 
 	sleep 1
 
 	# (Second test) Submit the batch job: a job using all cores allocated by the reservation
-	set sbatch_pid [spawn $sbatch -n$core_res_num --reservation=$res_name $file_in]
+	set sbatch_pid [spawn $sbatch -n$core_res_num --reservation=$res_name --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -163,28 +147,12 @@ proc inc3_11_7 {} {
 
 	send_user "\n\033\[32mJOB is running as expected\033\[m\n"
 
-	# Cancel the job
-	spawn $scancel -v $job_id
-	expect {
-		-re "Invalid job_id" {
-			send_user "\n\033\[31mFAILURE: Error cancelling the job submitted "
-			send_user "to the reservation.  Job $job_id not found\033\[m\n"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			send_user "\n\033\[31mFAILURE: scancel not responding\033\[m\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
+	cancel_job $job_id
 
 	sleep 1
 
 	# (Third test) Submit the batch job: a job using all cores not allocated by the reservation
-	set sbatch_pid [spawn $sbatch -n$core_res_num --nodelist=$res_nodes $file_in]
+	set sbatch_pid [spawn $sbatch -n$core_res_num --nodelist=$res_nodes --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -229,27 +197,11 @@ proc inc3_11_7 {} {
 
 	send_user "\n\033\[32mJOB is running as expected\033\[m\n"
 
-	# Cancel the job
-	spawn $scancel -v $job_id
-	expect {
-		-re "Invalid job_id" {
-			send_user "\n\033\[31mFAILURE: Error cancelling the job submitted "
-			send_user "to the reservation.  Job $job_id not found\033\[m\n"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			send_user "\n\033\[31mFAILURE: scancel not responding\033\[m\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
+	cancel_job $job_id
 
 	set core_res_num [ expr ($core_res_num + 1) ]
 	# (Fourth test) Submit a batch job: a job using more cores than allocated by the reservation
-	set sbatch_pid [spawn $sbatch -n$core_res_num --reservation=$res_name $file_in]
+	set sbatch_pid [spawn $sbatch -n$core_res_num --reservation=$res_name --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -280,7 +232,6 @@ proc inc3_11_7 {} {
 		}
 		-re "JobState=PENDING" {
 			send_user "\n\033\[32mSUCCESS: Job $job_id is PENDING as expected\033\[m\n"
-			set exit_code 0
 			exp_continue
 		}
 		-re "JobState=RUNNING" {
@@ -297,27 +248,11 @@ proc inc3_11_7 {} {
 		}
 	}
 
-	# Cancel the job
-	spawn $scancel -v $job_id
-	expect {
-		-re "Invalid job_id" {
-			send_user "\n\033\[31mFAILURE: Error cancelling the job submitted "
-			send_user "to the reservation.  Job $job_id not found\033\[m\n"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			send_user "\n\033\[31mFAILURE: scancel not responding\033\[m\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
+	cancel_job $job_id
 
 	# (Fifth test) Submit a batch job: a job specifying node in reservation and
 	#              using more cores than allocated by the reservation
-	set sbatch_pid [spawn $sbatch -n$core_res_num --nodelist=$res_nodes --nodes=1 $file_in]
+	set sbatch_pid [spawn $sbatch -n$core_res_num --nodelist=$res_nodes --nodes=1 --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -348,7 +283,6 @@ proc inc3_11_7 {} {
 		}
 		-re "JobState=PENDING" {
 			send_user "\n\033\[32mSUCCESS: Job $job_id is PENDING as expected\033\[m\n"
-			set exit_code 0
 			exp_continue
 		}
 		-re "JobState=RUNNING" {
@@ -389,7 +323,6 @@ proc inc3_11_7 {} {
 		}
 		-re "JobState=RUNNING" {
 			send_user "\n\033\[32mSUCCESS: Job $job_id is RUNNING as expected\033\[m\n"
-			set exit_code 0
 			exp_continue
 		}
 		timeout {
@@ -400,21 +333,5 @@ proc inc3_11_7 {} {
 			wait
 		}
 	}
-	# Cancelling the job now
-	spawn $scancel -v $job_id
-	expect {
-		-re "Invalid job_id" {
-			send_user "\n\033\[31mFAILURE: Error cancelling the job submitted "
-			send_user "to the reservation.  Job $job_id not found\033\[m\n"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			send_user "\n\033\[31mFAILURE: scancel not responding\033\[m\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
+	cancel_job $job_id
 }

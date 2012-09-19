@@ -152,7 +152,7 @@ extern void print_select_ba_request(select_ba_request_t* ba_request)
 {
 	int dim;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	uint16_t cluster_dims = slurmdb_setup_cluster_name_dims();
+	uint16_t cluster_dims = slurmdb_setup_cluster_dims();
 
 	if (ba_request == NULL){
 		error("print_ba_request Error, request is NULL");

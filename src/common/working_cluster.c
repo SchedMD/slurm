@@ -83,9 +83,8 @@ extern uint16_t slurmdb_setup_cluster_name_dims(void)
 {
 	if (is_cray_system())
 		return 1;	/* Cray uses 1-dimensional hostlists */
-	else if (working_cluster_rec)
-		return working_cluster_rec->dimensions;
-	return SYSTEM_DIMENSIONS;
+
+	return slurmdb_setup_cluster_dims();
 }
 
 extern uint32_t slurmdb_setup_cluster_flags(void)

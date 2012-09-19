@@ -449,6 +449,8 @@ parameter in slurm.conf.
 
 .TP
 \fB\-\-exclusive\fR
+This option has two slightly different meanings for job and job step
+allocations.
 When used to initiate a job, the job allocation cannot share nodes with
 other running jobs.  This is the opposite of \-\-share, whichever option
 is seen last on the command line will win. The default shared/exclusive
@@ -717,10 +719,11 @@ This parameter would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR).
 Also see \fB\-\-mem\-per\-cpu\fR.
 \fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
-NOTE: Enforcement of memory limits currently requires enabling of
-accounting, which samples memory use on a periodic basis (data need
-not be stored, just collected). A task may exceed the memory limit
-until the next periodic accounting sample.
+NOTE: Enforcement of memory limits currently relies upon the task/cgroup plugin
+or enabling of accounting, which samples memory use on a periodic basis (data
+need not be stored, just collected). In both cases memory use is based upon
+the job's Resident Set Size (RSS). A task may exceed the memory limit until
+the next periodic accounting sample.
 
 .TP
 \fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>

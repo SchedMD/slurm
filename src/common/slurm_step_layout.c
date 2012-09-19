@@ -163,7 +163,6 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 {
 	uint32_t cpn = 1;
 	int cpu_cnt = 0, cpu_inx = 0, i, j;
-	hostlist_t hl = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 
 	if ((node_cnt <= 0) || (task_cnt <= 0 && !cpus_per_node) || !tlist) {
@@ -172,11 +171,6 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 		      node_cnt, task_cnt, tlist);
 		return NULL;
 	}
-
-	hl = hostlist_create(tlist);
-	/* make out how many cpus there are on each node */
-	if (task_cnt > 0)
-		cpn = (task_cnt + node_cnt - 1) / node_cnt;
 
 	step_layout = xmalloc(sizeof(slurm_step_layout_t));
 	step_layout->node_list = xstrdup(tlist);
@@ -201,6 +195,8 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 				cpu_cnt = 0;
 			}
 		} else {
+			cpn = ((task_cnt - step_layout->task_cnt) +
+			       (node_cnt - i) - 1) / (node_cnt - i);
 			if (step_layout->task_cnt >= task_cnt) {
 				step_layout->tasks[i] = 0;
 				step_layout->tids[i] = NULL;
@@ -212,7 +208,7 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 				for (j = 0; j < cpn; j++) {
 					step_layout->tids[i][j] =
 						step_layout->task_cnt++;
-					if(step_layout->task_cnt >= task_cnt) {
+					if (step_layout->task_cnt >= task_cnt) {
 						step_layout->tasks[i] = j + 1;
 						break;
 					}
@@ -220,7 +216,7 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 			}
 		}
 	}
-	hostlist_destroy(hl);
+
 	return step_layout;
 }
 

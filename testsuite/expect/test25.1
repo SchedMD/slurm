@@ -65,7 +65,7 @@ proc def_cpu_cnt { } {
 	set cpu_cnt 1
 	spawn $sinfo -h -o "%P %C" -p $partition --state=idle
 	expect {
-		-re "$partition ($number)(K?)/($number)(K?)" {
+		-re "$partition\\* ($number)(K?)/($number)(K?)" {
 			set cpu_cnt $expect_out(3,string)
 			if {[string compare $expect_out(4,string) ""]} {
 				set cpu_cnt [expr $cpu_cnt * 1024]

@@ -1136,8 +1136,55 @@ static int hostrange_hn_within(hostrange_t hr, hostname_t hn)
 	 *  If hostrange and hostname prefixes don't match, then
 	 *   there is way the hostname falls within the range [hr].
 	 */
-	if (strcmp(hr->prefix, hn->prefix) != 0)
-		return 0;
+	if (strcmp(hr->prefix, hn->prefix) != 0) {
+		int len1, len2, ldiff;
+		int dims = slurmdb_setup_cluster_name_dims();
+
+		if (dims != 1)
+			return 0;
+
+		/* Below logic was added since primarily for a cray
+		 * where people typically drop
+		 * leading zeros into the prefix so you can do
+		 * something like nid0000[2-7].  But doing this messes
+		 * up the hostlist_find since when someone queries
+		 * against nid00002 the prefixes don't match.  The
+		 * below code is there to make sure get the best
+		 * chance for comparison.
+		 */
+
+		/* First see if by taking some of the leading digits of the
+		 * suffix of hn and moving it to the end of the prefix if it
+		 * would be a match.
+		 */
+		len1  = strlen(hr->prefix);
+		len2  = strlen(hn->prefix);
+		ldiff = len1 - len2;
+
+		if (ldiff > 0 && (strlen(hn->suffix) >= ldiff)) {
+			char *p = '\0';
+			/* Tack on ldiff of the hostname's suffix to that of
+			 * it's prefix */
+			hn->prefix = realloc(hn->prefix, len2+ldiff+1);
+			strncat(hn->prefix, hn->suffix, ldiff);
+			/* Now adjust the suffix of the hostname object. */
+			hn->suffix += ldiff;
+			/* And the numeric representation just incase
+			 * whatever we just tacked on to the prefix
+			 * had something other than 0 in it.
+			 *
+			 * Since we are only going through this logic for
+			 * single dimension systems we will always use
+			 * the base 10.
+			 */
+			hn->num = strtoul(hn->suffix, &p, 10);
+
+			/* Now compare them and see if they match */
+			if (strcmp(hr->prefix, hn->prefix) != 0)
+				return 0;
+		} else
+			return 0;
+	}
 
 	/*
 	 *  Finally, check whether [hn], with a valid numeric suffix,

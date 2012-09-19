@@ -1,6 +1,28 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.5.0.pre4
+=============================
+
+* Changes in SLURM 2.5.0.pre3
+=============================
+ -- Add Google search to all web pages.
+ -- Add sinfo -T option to print reservation information. Work by Bill Brophy,
+    Bull.
+ -- Force slurmd exit after 2 minute wait, even if threads are hung.
+ -- Change node_req field in struct job_resources from 8 to 32 bits so we can
+    run more than 256 jobs per node.
+ -- sched/backfill: Improve accuracy of expected job start with respect to
+    reservations.
+ -- sinfo partition field size will be set the the length of the longest
+    partition name by default.
+ -- Make it so the parse_time will return a valid 0 if given epoch time and
+    set errno == ESLURM_INVALID_TIME_VALUE on error instead.
+ -- Correct srun --no-alloc logic when node count exceeds node list or task
+    task count is not a multiple of the node count. Work by Hongjia Cao, NUDT.
+ -- Completed integration with IBM Parallel Environment including POE and IBM's
+    NRT switch library.
+
 * Changes in SLURM 2.5.0.pre2
 =============================
  -- When running with multiple slurmd daemons per node, enable specifying a
@@ -20,18 +42,6 @@ documents those changes that are of interest to users and admins.
     frequency and thus it's power consumption. NOTE: cpu frequency is not
     currently preserved for jobs being suspended and later resumed. Work by
     Don Albert, Bull.
- -- Add Google search to all web pages.
- -- Add sinfo -T option to print reservation information. Work by Bill Brophy,
-    Bull.
- -- Force slurmd exit after 2 minute wait, even if threads are hung.
- -- Change node_req field in struct job_resources from 8 to 32 bits so we can
-    run more than 256 jobs per node.
- -- sched/backfill: Improve accuracy of expected job start with respect to
-    reservations.
- -- sinfo partition field size will be set the the length of the longest
-    partition name by default.
- -- Make it so the parse_time will return a valid 0 if given epoch time and
-    set errno == ESLURM_INVALID_TIME_VALUE on error instead.
 
 * Changes in SLURM 2.5.0.pre1
 =============================
@@ -46,6 +56,9 @@ documents those changes that are of interest to users and admins.
     jobs).
  -- Restructure of srun code to allow outside programs to utilize existing
     logic.
+
+* Changes in SLURM 2.4.4
+========================
 
 * Changes in SLURM 2.4.3
 ========================
@@ -91,6 +104,30 @@ documents those changes that are of interest to users and admins.
     accounting as well.
  -- BGQ - make it so you can signal steps when signaling the job allocation.
  -- BGQ - Remove extra overhead if a large block has many cnode failures.
+ -- Priority/Multifactor - Fix issue with age factor when a job is estimated to
+    start in the future but is able to run now.
+ -- CRAY - update to work with ALPS 5.1
+ -- BGQ - Handle issue of speed and mutexes when polling instead of using the
+    realtime server.
+ -- BGQ - Fix minor sorting issue with sview when sorting by midplanes.
+ -- Accounting - Fix for handling per user max node/cpus limits on a QOS
+    correctly for current job.
+ -- Update documentation for -/+= when updating a reservation's
+    users/accounts/flags
+ -- Update pam module to work if using aliases on nodes instead of actual
+    host names.
+ -- Correction to task layout logic in select/cons_res for job with minimum
+    and maximum node count.
+ -- BGQ - Put final poll after realtime comes back into service to avoid
+    having the realtime server go down over and over again while waiting
+    for the poll to finish.
+ -- task/cgroup/memory - ensure that ConstrainSwapSpace=no is correctly
+    handled. Work by Matthieu Hautreux, CEA.
+ -- CRAY - Fix for sacct -N option to work correctly
+ -- CRAY - Update documentation to describe installation from rpm instead
+    or previous piecemeal method.
+ -- Fix sacct to work with QOS' that have previously been deleted.
+ -- Added all available limits to the output of sacctmgr list qos
 
 * Changes in SLURM 2.4.2
 ========================

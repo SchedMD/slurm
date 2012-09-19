@@ -910,9 +910,12 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			break;
 		}
 		if (i >= p_ptr->num_rows) {
-			/* ERROR: could not find a row for this job */
+			/* Job started or resumed and it's allocated resources
+			 * are already in use by some other job. Typically due
+			 * to manually resuming a job. */
 			error("cons_res: ERROR: job overflow: "
-			      "could not find row for job");
+			      "could not find idle resources for job %u",
+			      job_ptr->job_id);
 			/* just add the job to the last row for now */
 			_add_job_to_row(job, &(p_ptr->row[p_ptr->num_rows-1]));
 		}
@@ -2565,7 +2568,8 @@ bitstr_t *_make_core_bitmap_filtered(bitstr_t *node_map, int filter)
 	return core_map;
 }
 
-/* Once here, if core_cnt=0, avail_bitmap has nodes not used by any job or reservation */
+/* Once here, if core_cnt=0, avail_bitmap has nodes not used by any job or
+ * reservation */
 bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			  uint32_t core_cnt, bitstr_t **core_bitmap)
 {
@@ -2591,13 +2595,13 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	if (core_cnt) { /* Reservation is using partial nodes */
 		debug2("Reservation is using partial nodes");
 		
-		/* if not NULL = Cores used by other core based reservations 
+		/* if not NULL = Cores used by other core based reservations
 		 * overlapping in time with this one */
-		if(*core_bitmap == NULL) 
-			*core_bitmap = 
-				_make_core_bitmap_filtered(avail_bitmap, 0); 
-
-		tmpcore = _make_core_bitmap_filtered(avail_bitmap, 0); 
+		if (*core_bitmap == NULL) {
+			*core_bitmap =
+				_make_core_bitmap_filtered(avail_bitmap, 0);
+		}
+		tmpcore = _make_core_bitmap_filtered(avail_bitmap, 0);
 		
 		/* remove all existing allocations from free_cores */
 		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
@@ -2606,7 +2610,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			for (i = 0; i < p_ptr->num_rows; i++) {
 				if (!p_ptr->row[i].row_bitmap)
 					continue;
-				bit_or(tmpcore, p_ptr->row[i].row_bitmap); 
+				bit_or(tmpcore, p_ptr->row[i].row_bitmap);
 			}
 		}
 		bit_not(tmpcore); /* tmpcore contains now current free cores */
@@ -2620,7 +2624,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			int local_cores;
 
 			inx = bit_ffs(avail_bitmap);
-			if(inx < 0){
+			if (inx < 0) {
 				info("reservation request can not be satisfied");
 				FREE_NULL_BITMAP(sp_avail_bitmap);
 				FREE_NULL_BITMAP(tmpcore);
@@ -2629,14 +2633,14 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			debug2("Using node %d", inx);
 
 			coff = cr_get_coremap_offset(inx);
-			/* TODO: is next right for the last possible node at 
+			/* TODO: is next right for the last possible node at
 			 * avail_bitmap? */
 			coff2 = cr_get_coremap_offset(inx + 1);
 			local_cores = coff2 - coff;
 
 			bit_clear(avail_bitmap, inx);
 
-			if(local_cores < cores_per_node)
+			if (local_cores < cores_per_node)
 				continue;
 
 			cores_in_node = 0;
@@ -2644,32 +2648,32 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			/* First let's see in there are enough cores in 
 			 * this node */
 			for (i = 0; i < local_cores; i++) {
-				if(bit_test(tmpcore, coff + i))
+				if (bit_test(tmpcore, coff + i))
 					cores_in_node++;
 			}
-			if(cores_in_node < cores_per_node)
+			if (cores_in_node < cores_per_node)
 				continue;
 
 			cores_in_node = 0;
 			for (i = 0; i < local_cores; i++) {
-				if(bit_test(tmpcore, coff + i)){
+				if (bit_test(tmpcore, coff + i)) {
 					bit_set(*core_bitmap, coff + i);
 					core_cnt--;
 					cores_in_node++;
-					if((cores_in_node == cores_per_node) || 
-							(core_cnt == 0))
+					if ((cores_in_node == cores_per_node) ||
+					    (core_cnt == 0))
 						break;
 				}
 			}
 
-			if(cores_in_node){ 
+			if (cores_in_node) { 
 				/* Add this node to the final node bitmap */
-				debug2("ALEJ: Reservation using %d cores in 
-						node %d", cores_in_node, inx);
+				debug2("Reservation using %d cores in "
+				       "node %d", cores_in_node, inx);
 				bit_set(sp_avail_bitmap, inx);
 			} else {
-				debug2("ALEJ: Reservation NOT using node %d", 
-						inx);
+				debug2("Reservation NOT using node %d",
+				       inx);
 			}
 
 		}

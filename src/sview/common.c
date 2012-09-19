@@ -368,15 +368,28 @@ static int _xlate_mp_coord(const char *name)
 
 /* Make a BlueGene node name into a numeric representation of
  * its location.
- * Value is low_node_coordinate * 1,000 + I/O node (999 if none)
- * with use of base 36 for the node coordinate:
+ * Value is (low_node_coordinate * io_val_max) + I/O node (io_val if none)
+ * with use of base 36 for the node coordinate on an L/P:
  * (e.g. bg123[4]    ->  1,371,004
  *       bg[234x235] ->  2,704,999
  *       bglZZZ      -> 46,655,999
  */
 static int _mp_coordinate(const char *name)
 {
-	int i, io_val = 999, low_val = -1;
+	int i, io_val, io_val_max, low_val = -1;
+
+	/* Since io_val needs to handle all dimensions of the ionode
+	   field with Q the number could be much bigger that 999.
+	   This will have to be handled when a new system comes with
+	   more dims.
+	*/
+	if (cluster_flags & CLUSTER_FLAG_BGQ) {
+		io_val = 99999;
+		io_val_max = 100000;
+	} else {
+		io_val = 999;
+		io_val_max = 1000;
+	}
 
 	for (i=0; name[i]; i++) {
 		if (name[i] == '[') {
@@ -396,7 +409,8 @@ static int _mp_coordinate(const char *name)
 
 	if (low_val < 0)
 		return low_val;
-	return ((low_val * 1000) + io_val);
+
+	return ((low_val * io_val_max) + io_val);
 }
 
 static int _sort_iter_compare_func_mp_list(GtkTreeModel *model,

@@ -844,7 +844,8 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 
 	/* get the dimensions of this cluster so we know how to deal
 	   with the hostlists */
-	query = xstrdup_printf("select dimensions from %s where name='%s'",
+	query = xstrdup_printf("select dimensions, flags from %s where "
+			       "name='%s'",
 			       cluster_table,
 			       (char *)list_peek(job_cond->cluster_list));
 
@@ -861,7 +862,14 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 		      (char *)list_peek(job_cond->cluster_list));
 		return NULL;
 	}
-	dims = atoi(row[0]);
+
+	/* On a Cray System when dealing with hostlists as we are here
+	   this always needs to be 1.
+	*/
+	if (slurm_atoul(row[1]) & CLUSTER_FLAG_CRAYXT)
+		dims = 1;
+	else
+		dims = atoi(row[0]);
 
 	temp_hl = hostlist_create_dims(job_cond->used_nodes, dims);
 	if (hostlist_count(temp_hl) <= 0) {
