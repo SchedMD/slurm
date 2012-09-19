@@ -86,6 +86,9 @@ struct node_record *node_record_table_ptr = NULL;	/* node records */
 struct node_record **node_hash_table = NULL;	/* node_record hash table */
 int node_record_count = 0;		/* count in node_record_table_ptr */
 
+uint16_t *cr_node_num_cores = NULL;
+uint32_t *cr_node_cores_offset = NULL;
+
 static void	_add_config_feature(char *feature, bitstr_t *node_bitmap);
 static int	_build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 					    struct config_record *config_ptr);
@@ -1031,3 +1034,10 @@ extern int state_str2int(const char *state_str, char *node_name)
 	}
 	return state_val;
 }
+
+/* return the coremap index to the first core of the given node */
+extern uint32_t cr_get_coremap_offset(uint32_t node_index)
+{
+	return cr_node_cores_offset[node_index];
+}
+
