@@ -59,6 +59,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.4.4
 ========================
+ -- BGQ - minor fix to make build work in emulated mode.
 
 * Changes in SLURM 2.4.3
 ========================
