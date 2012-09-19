@@ -4,6 +4,9 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.4.4
 ========================
  -- BGQ - minor fix to make build work in emulated mode.
+ -- BGQ - Fix if large block goes into error and the next highest priority jobs
+    are planning on using the block.  Previously it would fail those jobs
+    erroneously.
 
 * Changes in SLURM 2.4.3
 ========================

@@ -447,9 +447,14 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 				      bg_record->err_ratio);
 
 			/* If the state is available no reason to go
-			   kill jobs so just break out here instead.
-			*/
-			if (state == Hardware::Available)
+			 * kill jobs so just break out here instead.
+			 *
+			 * Also if we already issued a free on this
+			 * block there could of been a new job added
+			 * that is waiting for the block to be freed
+			 * so don't go around and fail it before it starts.
+			 */
+			if (state == Hardware::Available || bg_record->free_cnt)
 				break;
 
 			if (bg_record->job_ptr)
