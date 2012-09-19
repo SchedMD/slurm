@@ -162,6 +162,8 @@ extern struct node_record *node_record_table_ptr;  /* ptr to node records */
 extern int node_record_count;		/* count in node_record_table_ptr */
 extern time_t last_node_update;		/* time of last node record update */
 
+extern uint16_t *cr_node_num_cores;
+extern uint32_t *cr_node_cores_offset;
 
 
 /*

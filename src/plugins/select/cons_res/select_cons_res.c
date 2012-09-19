@@ -288,43 +288,6 @@ static void _dump_state(struct part_res_record *p_ptr)
 	return;
 }
 
-/* (re)set cr_node_num_cores arrays */
-static void _init_global_core_data(struct node_record *node_ptr, int node_cnt)
-{
-	uint32_t n;
-
-	xfree(cr_node_num_cores);
-	cr_node_num_cores = xmalloc(node_cnt * sizeof(uint16_t));
-
-	xfree(cr_node_cores_offset);
-	cr_node_cores_offset = xmalloc((node_cnt+1) * sizeof(uint32_t));
-
-	for (n = 0; n < node_cnt; n++) {
-		uint16_t cores;
-		if (select_fast_schedule) {
-			cores  = node_ptr[n].config_ptr->cores;
-			cores *= node_ptr[n].config_ptr->sockets;
-		} else {
-			cores  = node_ptr[n].cores;
-			cores *= node_ptr[n].sockets;
-		}
-		cr_node_num_cores[n] = cores;
-		if (n > 0) {
-			cr_node_cores_offset[n] = cr_node_cores_offset[n-1] +
-						  cr_node_num_cores[n-1] ;
-		} else
-			cr_node_cores_offset[0] = 0;
-	}
-
-	/* an extra value is added to get the total number of cores */
-	/* as cr_get_coremap_offset is sometimes used to get the total */
-	/* number of cores in the cluster */
-	cr_node_cores_offset[node_cnt] = cr_node_cores_offset[node_cnt-1] +
-					 cr_node_num_cores[node_cnt-1] ;
-
-}
-
-
 /* return the coremap index to the first core of the given node */
 extern uint32_t cr_get_coremap_offset(uint32_t node_index)
 {
@@ -1921,7 +1884,6 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	/* initial global core data structures */
 	select_state_initializing = true;
 	select_fast_schedule = slurm_get_fast_schedule();
-	_init_global_core_data(node_ptr, node_cnt);
 
 	_destroy_node_data(select_node_usage, select_node_record);
 	select_node_cnt  = node_cnt;
@@ -2668,11 +2630,11 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 			if (cores_in_node) { 
 				/* Add this node to the final node bitmap */
-				debug2("ALEJ: Reservation using %d cores in "
+				debug2("Reservation using %d cores in "
 				       "node %d", cores_in_node, inx);
 				bit_set(sp_avail_bitmap, inx);
 			} else {
-				debug2("ALEJ: Reservation NOT using node %d",
+				debug2("Reservation NOT using node %d",
 				       inx);
 			}
 
@@ -2686,6 +2648,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		if (core_cnt) {
 			info("reservation request can not be satisfied");
 			FREE_NULL_BITMAP(sp_avail_bitmap);
+			FREE_NULL_BITMAP(tmpcore);
 			return NULL;
 		}
 
