@@ -2547,7 +2547,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 	if (core_cnt) { /* Reservation is using partial nodes */
 		debug2("Reservation is using partial nodes");
-		
+
 		/* if not NULL = Cores used by other core based reservations
 		 * overlapping in time with this one */
 		if (*core_bitmap == NULL) {
@@ -2555,7 +2555,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 				_make_core_bitmap_filtered(avail_bitmap, 0);
 		}
 		tmpcore = _make_core_bitmap_filtered(avail_bitmap, 0);
-		
+
 		/* remove all existing allocations from free_cores */
 		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
 			if (!p_ptr->row)
@@ -2619,13 +2619,13 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 				}
 			}
 
-			if (cores_in_node) { 
+			if (cores_in_node) {
 				/* Add this node to the final node bitmap */
-				debug2("ALEJ: Reservation using %d cores in "
+				debug2("Reservation using %d cores in "
 				       "node %d", cores_in_node, inx);
 				bit_set(sp_avail_bitmap, inx);
 			} else {
-				debug2("ALEJ: Reservation NOT using node %d",
+				debug2("Reservation NOT using node %d",
 				       inx);
 			}
 
@@ -2769,7 +2769,7 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		    ((switch_record_table[j].level ==
 		      switch_record_table[best_fit_inx].level) &&
 		     (switches_node_cnt[j] < switches_node_cnt[best_fit_inx])))
-			/* ALEJ: We should use core count by switch here as well */
+			/* We should use core count by switch here as well */
 			best_fit_inx = j;
 	}
 	if (best_fit_inx == -1) {
@@ -2888,7 +2888,7 @@ fini:	for (i=0; i<switch_record_cnt; i++)
 		}
 
 		//bit_fmt(str, (sizeof(str) - 1), *core_bitmap);
-		//info("ALEJ: sequential pick using coremap: %s", str);
+		//info("sequential pick using coremap: %s", str);
 
 		if (core_cnt) {
 			info("reservation request can not be satisfied");
