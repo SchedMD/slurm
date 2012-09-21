@@ -202,7 +202,8 @@ static void _handle_bad_switch(int dim, const char *mp_coords,
 	}
 }
 
-/* ba_system_mutex && block_state_mutex must be unlocked before this */
+/* job_read_lock && ba_system_mutex && block_state_mutex must be
+ * unlocked before this */
 static void _handle_bad_nodeboard(const char *nb_name, char* bg_down_node,
 				  EnumWrapper<Hardware::State> state,
 				  char *reason, bool print_debug)
@@ -340,11 +341,15 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 		int nc_loc = ba_translate_coord2nc(cnode_coords);
 		char nc_name[10];
 		char reason[255];
+		char bg_down_node[128];
+
+		snprintf(bg_down_node, sizeof(bg_down_node), "%s%s",
+			 bg_conf->slurm_node_prefix, ba_mp->coord_str);
 		snprintf(nc_name, sizeof(nc_name), "N%d", nc_loc);
 		snprintf(reason, sizeof(reason),
 			 "_handle_node_change: On midplane %s nodeboard %s "
 			 "had cnode %u%u%u%u%u(%s) got into an error state.",
-			 ba_mp->coord_str,
+			 bg_down_node,
 			 nc_name,
 			 cnode_coords[0],
 			 cnode_coords[1],
@@ -357,12 +362,14 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			error("%s", reason);
 		/* unlock mutex here since _handle_bad_nodeboard could produce
 		   deadlock */
+		unlock_slurmctld(job_read_lock);
 		slurm_mutex_unlock(&ba_system_mutex);
 		slurm_mutex_unlock(&block_state_mutex);
-		_handle_bad_nodeboard(nc_name, ba_mp->coord_str,
+		_handle_bad_nodeboard(nc_name, bg_down_node,
 				      state, reason, print_debug);
 		slurm_mutex_lock(&block_state_mutex);
 		slurm_mutex_lock(&ba_system_mutex);
+		lock_slurmctld(job_read_lock);
 	}
 
 	if (!changed)
@@ -447,9 +454,14 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 				      bg_record->err_ratio);
 
 			/* If the state is available no reason to go
-			   kill jobs so just break out here instead.
-			*/
-			if (state == Hardware::Available)
+			 * kill jobs so just break out here instead.
+			 *
+			 * Also if we already issued a free on this
+			 * block there could of been a new job added
+			 * that is waiting for the block to be freed
+			 * so don't go around and fail it before it starts.
+			 */
+			if (state == Hardware::Available || bg_record->free_cnt)
 				break;
 
 			if (bg_record->job_ptr)
