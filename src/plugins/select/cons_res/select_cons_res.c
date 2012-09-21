@@ -176,8 +176,6 @@ uint16_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
 uint32_t select_debug_flags;
 uint16_t select_fast_schedule;
 
-uint16_t *cr_node_num_cores = NULL;
-uint32_t *cr_node_cores_offset = NULL;
 struct part_res_record *select_part_record = NULL;
 struct node_res_record *select_node_record = NULL;
 struct node_use_record *select_node_usage  = NULL;
@@ -287,13 +285,6 @@ static void _dump_state(struct part_res_record *p_ptr)
 	}
 	return;
 }
-
-/* return the coremap index to the first core of the given node */
-extern uint32_t cr_get_coremap_offset(uint32_t node_index)
-{
-	return cr_node_cores_offset[node_index];
-}
-
 
 /* Helper function for _dup_part_data: create a duplicate part_row_data array */
 static struct part_row_data *_dup_row_data(struct part_row_data *orig_row,
@@ -1805,8 +1796,7 @@ extern int fini(void)
 	select_node_usage = NULL;
 	_destroy_part_data(select_part_record);
 	select_part_record = NULL;
-	xfree(cr_node_num_cores);
-	xfree(cr_node_cores_offset);
+	cr_fini_global_core_data();
 
 	if (cr_type)
 		verbose("%s shutting down ...", plugin_name);
@@ -1884,6 +1874,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	/* initial global core data structures */
 	select_state_initializing = true;
 	select_fast_schedule = slurm_get_fast_schedule();
+	cr_init_global_core_data(node_ptr, node_cnt, select_fast_schedule);
 
 	_destroy_node_data(select_node_usage, select_node_record);
 	select_node_cnt  = node_cnt;
@@ -2556,7 +2547,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 	if (core_cnt) { /* Reservation is using partial nodes */
 		debug2("Reservation is using partial nodes");
-		
+
 		/* if not NULL = Cores used by other core based reservations
 		 * overlapping in time with this one */
 		if (*core_bitmap == NULL) {
@@ -2564,7 +2555,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 				_make_core_bitmap_filtered(avail_bitmap, 0);
 		}
 		tmpcore = _make_core_bitmap_filtered(avail_bitmap, 0);
-		
+
 		/* remove all existing allocations from free_cores */
 		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
 			if (!p_ptr->row)
@@ -2628,7 +2619,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 				}
 			}
 
-			if (cores_in_node) { 
+			if (cores_in_node) {
 				/* Add this node to the final node bitmap */
 				debug2("Reservation using %d cores in "
 				       "node %d", cores_in_node, inx);
@@ -2779,7 +2770,7 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		    ((switch_record_table[j].level ==
 		      switch_record_table[best_fit_inx].level) &&
 		     (switches_node_cnt[j] < switches_node_cnt[best_fit_inx])))
-			/* ALEJ: We should use core count by switch here as well */
+			/* We should use core count by switch here as well */
 			best_fit_inx = j;
 	}
 	if (best_fit_inx == -1) {
@@ -2898,7 +2889,7 @@ fini:	for (i=0; i<switch_record_cnt; i++)
 		}
 
 		//bit_fmt(str, (sizeof(str) - 1), *core_bitmap);
-		//info("ALEJ: sequential pick using coremap: %s", str);
+		//info("sequential pick using coremap: %s", str);
 
 		if (core_cnt) {
 			info("reservation request can not be satisfied");

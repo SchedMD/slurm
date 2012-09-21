@@ -1880,9 +1880,9 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 		return NULL;
 
 	//bit_fmt(str, (sizeof(str) - 1), node_map);
-	//info("ALEJ: _select_nodes nodemap: %s", str);
+	//info("_select_nodes nodemap: %s", str);
 	//bit_fmt(str, (sizeof(str) - 1), core_map);
-	//info("ALEJ: _select_nodes coremap: %s", str);
+	//info("_select_nodes coremap: %s", str);
 
 	/* get resource usage for this job from each available node */
 	_get_res_usage(job_ptr, node_map, core_map, cr_node_cnt,
@@ -1905,12 +1905,12 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 		xfree(cpu_cnt);
 		return NULL;
 	}
-    
-    //bit_fmt(str, (sizeof(str) - 1), node_map);
-    //info("ALEJ: _select_nodes nodemap: %s", str);
 
 	//bit_fmt(str, (sizeof(str) - 1), node_map);
-	//info("ALEJ: _select_nodes nodemap: %s", str);
+	//info("_select_nodes nodemap: %s", str);
+
+	//bit_fmt(str, (sizeof(str) - 1), node_map);
+	//info("_select_nodes nodemap: %s", str);
 
 	/* choose the best nodes for the job */
 	rc = _choose_nodes(job_ptr, node_map, min_nodes, max_nodes, req_nodes,

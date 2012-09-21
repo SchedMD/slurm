@@ -1384,7 +1384,6 @@ extern int bridge_status_fini(void)
 
 #if defined HAVE_BG_FILES
 	rt_waiting = 1;
-
 	/* make the rt connection end. */
 	_bridge_status_disconnect();
 

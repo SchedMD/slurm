@@ -165,7 +165,6 @@ extern time_t last_node_update;		/* time of last node record update */
 extern uint16_t *cr_node_num_cores;
 extern uint32_t *cr_node_cores_offset;
 
-
 /*
  * bitmap2node_name_sortable - given a bitmap, build a list of comma
  *	separated node names. names may include regular expressions
@@ -271,5 +270,14 @@ extern void rehash_node (void);
 
 /* Convert a node state string to it's equivalent enum value */
 extern int state_str2int(const char *state_str, char *node_name);
+
+/* (re)set cr_node_num_cores arrays */
+extern void cr_init_global_core_data(struct node_record *node_ptr,
+				     int node_cnt, uint16_t fast_schedule);
+
+extern void cr_fini_global_core_data();
+
+/*return the coremap index to the first core of the given node */
+extern uint32_t cr_get_coremap_offset(uint32_t node_index);
 
 #endif /* !_HAVE_NODE_CONF_H */
