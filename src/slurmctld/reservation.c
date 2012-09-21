@@ -2640,6 +2640,14 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	return i;
 }
 
+
+static void _create_cluster_core_bitmap(bitstr_t **core_bitmap)
+{
+	*core_bitmap = bit_alloc(cr_get_coremap_offset(node_record_count));
+	if(*core_bitmap == NULL)
+		fatal("bit_alloc: malloc failure");
+}
+
 /* Given a reservation create request, select appropriate nodes for use */
 static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			  struct part_record **part_ptr,
@@ -2674,12 +2682,18 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			if ((resv_ptr->node_bitmap == NULL) ||
 			    (resv_ptr->start_time >= resv_desc_ptr->end_time) ||
 			    (resv_ptr->end_time   <= resv_desc_ptr->start_time))
-			    /* TODO: to avoid reservations using full nodes *
-			     * (resv_ptr->full_nodes == 0)) */
 				continue;
-			bit_not(resv_ptr->node_bitmap);
-			bit_and(node_bitmap, resv_ptr->node_bitmap);
-			bit_not(resv_ptr->node_bitmap);
+			if (resv_ptr->full_nodes) {
+				bit_not(resv_ptr->node_bitmap);
+				bit_and(node_bitmap, resv_ptr->node_bitmap);
+				bit_not(resv_ptr->node_bitmap);
+			} else {
+				if (*core_bitmap == NULL) {
+					_create_cluster_core_bitmap(core_bitmap);
+				}
+				bit_or(*core_bitmap, resv_ptr->core_bitmap);
+
+			}
 		}
 		list_iterator_destroy(iter);
 	}
@@ -2854,7 +2868,8 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 }
 
 static void _check_job_compatibility(struct job_record *job_ptr,
-				     bitstr_t *avail_bitmap)
+				         bitstr_t *avail_bitmap,
+					 bitstr_t **core_bitmap)
 {
 	uint32_t total_nodes;
 	bitstr_t *full_node_bitmap;
@@ -2867,25 +2882,30 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 	total_nodes = bit_set_count(job_res->node_bitmap);
 
 	debug2("Checking %d (of %d) nodes for job %u, core_bitmap_size: %d",
-	       total_nodes, bit_size(job_res->node_bitmap),
-	       job_ptr->job_id, bit_size(job_res->core_bitmap));
+		total_nodes, bit_size(job_res->node_bitmap),
+		job_ptr->job_id, bit_size(job_res->core_bitmap));
 
 	bit_fmt(str, sizeof(str), job_res->core_bitmap);
 	debug2("job coremap: %s", str);
 
 	full_node_bitmap = bit_alloc(total_nodes);
-	if (full_node_bitmap == NULL)
+	if (full_node_bitmap == NULL) 
 		fatal("bit_alloc: malloc failure");
+
 	full_node_bitmap = bit_copy(job_res->node_bitmap);
 
 	debug2("Let's see core distribution for jobid: %u",
-	       job_ptr->job_id);
+		job_ptr->job_id);
 	debug2("Total number of nodes: %d", total_nodes);
+
+	if (*core_bitmap == NULL)
+		_create_cluster_core_bitmap(core_bitmap);
 
 	i_node = 0;
 	while (i_node < total_nodes){
 		int cores_in_a_node = (job_res->sockets_per_node[i_node] *
 				       job_res->cores_per_socket[i_node]);
+
 		int repeat_node_conf = job_res->sock_core_rep_count[rep_count++];
 		int node_bitmap_inx;
 
@@ -2897,8 +2917,11 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 
 		while (repeat_node_conf--) {
 			int allocated;
+			int global_core_start;
 
 			node_bitmap_inx = bit_ffs(full_node_bitmap);
+			global_core_start = 
+				cr_get_coremap_offset(node_bitmap_inx);
 			allocated = 0;
 
 			for (i_core=0;i_core < cores_in_a_node;i_core++) {
@@ -2907,13 +2930,15 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 				if (bit_test(job_ptr->job_resrcs->core_bitmap,
 					     i_core + start)) {
 					allocated++;
+					bit_set(*core_bitmap, 
+						global_core_start + i_core);
 				}
 			}
 			debug2("Checking node %d, allocated: %d, "
 			       "cores_in_a_node: %d", node_bitmap_inx,
 			       allocated, cores_in_a_node);
 
-			if (allocated == cores_in_a_node) {
+			if(allocated == cores_in_a_node){
 				/* We can exclude this node */
 				debug2("Excluding node %d", node_bitmap_inx);
 				bit_clear(avail_bitmap, node_bitmap_inx);
@@ -2953,12 +2978,12 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 			bit_not(job_ptr->node_bitmap);
 			bit_and(avail_bitmap, job_ptr->node_bitmap);
 			bit_not(job_ptr->node_bitmap);
-		} else {
-			/* is this really needed or select_cons just will not
-			 * use full allocated nodes ? */
-			_check_job_compatibility(job_ptr, avail_bitmap);
-		}
+		} else 
+			_check_job_compatibility(job_ptr, avail_bitmap, 
+						 core_bitmap);
+
 	}
+
 	list_iterator_destroy(job_iterator);
 	ret_bitmap = select_g_resv_test(avail_bitmap, node_cnt,
 					resv_desc_ptr->core_cnt, core_bitmap);
@@ -3371,11 +3396,11 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			    (resv_ptr->start_time >= job_end_time) ||
 			    (resv_ptr->end_time   <= job_start_time))
 				continue;
-			if (job_ptr->details->req_node_bitmap &&
-			     bit_overlap(job_ptr->details->req_node_bitmap,
-					 resv_ptr->node_bitmap) &&
-			     ((resv_ptr->cpu_cnt == 0) ||
-			      (!job_ptr->details->shared))) {
+			if (job_ptr->details->req_node_bitmap && 
+			    bit_overlap(job_ptr->details->req_node_bitmap,
+			    resv_ptr->node_bitmap) && 
+			    ((resv_ptr->cpu_cnt == 0) || 
+			    (!job_ptr->details->shared))) {
 				*when = resv_ptr->end_time;
 				rc = ESLURM_NODES_BUSY;
 				break;

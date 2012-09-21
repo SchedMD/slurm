@@ -2554,21 +2554,14 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			*core_bitmap =
 				_make_core_bitmap_filtered(avail_bitmap, 0);
 		}
-		tmpcore = _make_core_bitmap_filtered(avail_bitmap, 0);
 
-		/* remove all existing allocations from free_cores */
-		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
-			if (!p_ptr->row)
-			       	continue;
-			for (i = 0; i < p_ptr->num_rows; i++) {
-				if (!p_ptr->row[i].row_bitmap)
-					continue;
-				bit_or(tmpcore, p_ptr->row[i].row_bitmap);
-			}
-		}
+		tmpcore = bit_copy(*core_bitmap);
+		
 		bit_not(tmpcore); /* tmpcore contains now current free cores */
 		bit_fmt(str, (sizeof(str) - 1), tmpcore);
 		debug2("tmpcore contains just current free cores: %s", str);
+
+		bit_and(*core_bitmap, tmpcore); /* resetting core_bitmap */
 
 		while (core_cnt) {
 			int inx, coff, coff2;
