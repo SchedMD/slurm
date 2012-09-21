@@ -2644,7 +2644,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 static void _create_cluster_core_bitmap(bitstr_t **core_bitmap)
 {
 	*core_bitmap = bit_alloc(cr_get_coremap_offset(node_record_count));
-	if(*core_bitmap == NULL)
+	if (*core_bitmap == NULL)
 		fatal("bit_alloc: malloc failure");
 }
 
@@ -2688,11 +2688,9 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 				bit_and(node_bitmap, resv_ptr->node_bitmap);
 				bit_not(resv_ptr->node_bitmap);
 			} else {
-				if (*core_bitmap == NULL) {
+				if (*core_bitmap == NULL)
 					_create_cluster_core_bitmap(core_bitmap);
-				}
 				bit_or(*core_bitmap, resv_ptr->core_bitmap);
-
 			}
 		}
 		list_iterator_destroy(iter);
@@ -2868,8 +2866,8 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 }
 
 static void _check_job_compatibility(struct job_record *job_ptr,
-				         bitstr_t *avail_bitmap,
-					 bitstr_t **core_bitmap)
+				     bitstr_t *avail_bitmap,
+				     bitstr_t **core_bitmap)
 {
 	uint32_t total_nodes;
 	bitstr_t *full_node_bitmap;
@@ -2882,20 +2880,20 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 	total_nodes = bit_set_count(job_res->node_bitmap);
 
 	debug2("Checking %d (of %d) nodes for job %u, core_bitmap_size: %d",
-		total_nodes, bit_size(job_res->node_bitmap),
-		job_ptr->job_id, bit_size(job_res->core_bitmap));
+	       total_nodes, bit_size(job_res->node_bitmap),
+	       job_ptr->job_id, bit_size(job_res->core_bitmap));
 
 	bit_fmt(str, sizeof(str), job_res->core_bitmap);
 	debug2("job coremap: %s", str);
 
 	full_node_bitmap = bit_alloc(total_nodes);
-	if (full_node_bitmap == NULL) 
+	if (full_node_bitmap == NULL)
 		fatal("bit_alloc: malloc failure");
 
 	full_node_bitmap = bit_copy(job_res->node_bitmap);
 
 	debug2("Let's see core distribution for jobid: %u",
-		job_ptr->job_id);
+	       job_ptr->job_id);
 	debug2("Total number of nodes: %d", total_nodes);
 
 	if (*core_bitmap == NULL)
@@ -2938,7 +2936,7 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 			       "cores_in_a_node: %d", node_bitmap_inx,
 			       allocated, cores_in_a_node);
 
-			if(allocated == cores_in_a_node){
+			if (allocated == cores_in_a_node) {
 				/* We can exclude this node */
 				debug2("Excluding node %d", node_bitmap_inx);
 				bit_clear(avail_bitmap, node_bitmap_inx);
