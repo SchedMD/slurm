@@ -140,6 +140,9 @@ SLURM?</a></li>
 in github?</a></li>
 <li><a href="#enforce_limits">Why are the resource limits set in the database
 not being enforced?</a></li>
+<li><a href="#restore_priority">After manually setting a job priority value,
+how can it's priority value be returned to being managed by the
+priority/multifactor plugin?</a></li>
 </ol>
 
 
@@ -1521,8 +1524,17 @@ file appropriately. If <b>AccountingStorageEnforce</b> does not contains
 an option of "limits", then resource limits will not be enforced on that cluster.
 See <a href="resource_limits.html">Resource Limits</a> for more information.</p>
 
+<p><a name="restore_priority"><b>46. After manually setting a job priority
+value, how can it's priority value be returned to being managed by the
+priority/multifactor plugin?</b></a></br>
+Hold and then release the job as shown below.</p>
+<pre>
+$ scontrol hold &lt;jobid&gt;
+$ scontrol releasae &lt;jobid&gt;
+</pre>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 7 September 2012</p>
+<p style="text-align:center;">Last modified 22 September 2012</p>
 
 <!--#include virtual="footer.txt"-->
