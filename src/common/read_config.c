@@ -2290,9 +2290,9 @@ static void _init_slurm_conf(const char *file_name)
 		if (name == NULL)
 			name = default_slurm_config_file;
 	}
-       	if (conf_initialized) {
+	if (conf_initialized)
 		error("the conf_hashtbl is already inited");
-	}
+	debug("Reading slurm.conf file: %s", name);
 	conf_hashtbl = s_p_hashtbl_create(slurm_conf_options);
 	conf_ptr->last_update = time(NULL);
 
@@ -2300,7 +2300,7 @@ static void _init_slurm_conf(const char *file_name)
 	conf_ptr->hash_val = 0;
 	if ((_config_is_storage(conf_hashtbl, name) < 0) &&
 	    (s_p_parse_file(conf_hashtbl, &conf_ptr->hash_val, name, false)
- 	     == SLURM_ERROR)) {
+	     == SLURM_ERROR)) {
 		fatal("something wrong with opening/reading conf file");
 	}
 	/* s_p_dump_values(conf_hashtbl, slurm_conf_options); */
