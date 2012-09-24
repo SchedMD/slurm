@@ -34,6 +34,7 @@ Also see <a href="tutorials.html">Tutorials</a> and
 <li><a href="cpu_management.html">CPU Management User and Administrator Guide</a></li>
 <li><a href="big_sys.html">Large Cluster Administration Guide</a></li>
 <li><a href="power_save.html">Power Saving Guide</a></li>
+<li><a href="prolog_epilog.html">Prolog and Epilog Guide</a></li>
 <li><a href="troubleshoot.html">Troubleshooting Guide</a></li>
 <li>SLURM Scheduling</li>
 <ul>
@@ -100,6 +101,6 @@ Also see <a href="tutorials.html">Tutorials</a> and
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 6 July 2012</p>
+<p style="text-align:center;">Last modified 24 September 2012</p>
 
 <!--#include virtual="footer.txt"-->

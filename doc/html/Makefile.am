@@ -56,6 +56,7 @@ generated_html = \
 	priority_plugins.html \
 	proctrack_plugins.html \
 	programmer_guide.html \
+	prolog_epilog.html \
 	publications.html \
 	qos.html \
 	quickstart_admin.html \

@@ -11,9 +11,10 @@ organizations. Lead SLURM developers are:
 <p>SLURM contributors include:</p>
 <ul>
 <!-- FUNDING ORGANIZATIONS, PLEASE KEEP IN ALPHABETICAL ORDER -->
+<li><a href="http://www.bsc.es">Barcelona Supercomputer Center</a></li>
 <li><a href="http://www.bull.com">Bull</a></li>
 <li><a href="http://www.fhcrc.org">Fred Hutchinson Cancer Research Center</a></li>
-<li><a href="http://www.hp.com">HPr</a></li>
+<li><a href="http://www.hp.com">HP</a></li>
 <li><a href="http://www.llnl.gov">Lawrence Livermore National Laboratory</a></li>
 <li><a href="http://www.ornl.gov">Oak Ridge National Laboratory</a></li>
 <br><!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
@@ -101,6 +102,7 @@ organizations. Lead SLURM developers are:
 <li>Federico Sacerdoti (D.E. Shaw)</li>
 <li>Aleksej Saushev</li>
 <li>Rod Schultz (Bull)</li>
+<li>Jason Sollom (Cray)</li>
 <li>Tyler Strickland (University of Florida)</li>
 <li>Jeff Squyres (LAM MPI)</li>
 <li>Prashanth Tamraparni (HP, India)</li>
@@ -119,6 +121,6 @@ organizations. Lead SLURM developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 17 August 2012</p>
+<p style="text-align:center;">Last modified 24 September 2012</p>
 
 <!--#include virtual="footer.txt"-->

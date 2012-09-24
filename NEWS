@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.5.0.pre4
 =============================
+ -- Added Prolog and Epilog Guide (web page). Based upon work by Jason Sollom,
+    Cray Inc. and used by permission.
 
 * Changes in SLURM 2.5.0.pre3
 =============================
