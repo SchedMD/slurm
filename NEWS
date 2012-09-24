@@ -65,6 +65,7 @@ documents those changes that are of interest to users and admins.
     erroneously.
  -- BGQ - Fix issue when a cnode going to an error (not SoftwareError) state
     with a job running or trying to run on it.
+ -- Execute slurm_spank_job_epilog when there is no system Epilog configured.
 
 * Changes in SLURM 2.4.3
 ========================
