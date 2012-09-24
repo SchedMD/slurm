@@ -1,0 +1,308 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Prolog and Epilog Guide</h1>
+
+<p>SLURM supports a multitude of prolog and epilog programs.
+The first table below identifies what prologs and epilogs are available for job
+allocations, when and where they run.</p>
+
+<center>
+	<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="6" cellspacing="0" width="100%">
+		<colgroup><col width="15%">
+		<col width="15%">
+		<col width="15%">
+		<col width="15%">
+		<col width="40%">
+		</colgroup><tbody><tr>
+			<td bgcolor="#e0e0e0" height="18" width="15%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>Parameter
+				</b></font></p>
+			</td>
+			<td bgcolor="#e0e0e0" height="18" width="15%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>Location
+				</b></font></p>
+			</td>
+			<td bgcolor="#e0e0e0" width="15%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>Invoked by
+				</b></font></p>
+			</td>
+			<td bgcolor="#e0e0e0" width="15%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>User
+				</b></font></p>
+			</td>
+			<td bgcolor="#e0e0e0" width="40%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>When executed
+				</b></font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Prolog (from slurm.conf)</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Compute or front end node</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				slurmd daemon</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				SlurmdUser (normally user root)</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				First job or job step initaion on that node</font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				PrologSlurmctld (from slurm.conf)</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Head node (where slurmctld daemon runs)</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				slurmctld daemon</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				SlurmctldUser</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				At job allocation</font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Epilog (from slurm.conf)</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Compute or front end node</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				slurmd daemon</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				SlurmdUser (normally user root)</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				At job termination</font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				EpilogSlurmctld (from slurm.conf)</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Head node (where slurmctld daemon runs)</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				slurmctld daemon</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				SlurmctldUser</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				At job termination</font></p>
+			</td>
+		</tr>
+	</tbody></table>
+</center>
+
+<p>This second table below identifies what prologs and epilogs are available for job
+step allocations, when and where they run.</p>
+
+<center>
+	<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="6" cellspacing="0" width="100%">
+		<colgroup><col width="15%">
+		<col width="15%">
+		<col width="15%">
+		<col width="15%">
+		<col width="40%">
+		</colgroup><tbody><tr>
+			<td bgcolor="#e0e0e0" height="18" width="15%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>Parameter
+				</b></font></p>
+			</td>
+			<td bgcolor="#e0e0e0" height="18" width="15%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>Location
+				</b></font></p>
+			</td>
+			<td bgcolor="#e0e0e0" width="15%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>Invoked by
+				</b></font></p>
+			</td>
+			<td bgcolor="#e0e0e0" width="15%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>User
+				</b></font></p>
+			</td>
+			<td bgcolor="#e0e0e0" width="40%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>When executed
+				</b></font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				SrunProlog (from slurm.conf) or srun --prolog</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				srun invocation node</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				srun command</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				User invoking srun command</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Prior to launching job step</font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				TaskProlog (from slurm.conf)</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Compute node</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				slurmstepd daemon</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				User invoking srun command</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Prior to launching job step</font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				srun --task-prolog</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Compute node</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				slurmstepd daemon</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				User invoking srun command</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Prior to launching job step</font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				TaskEpilog (from slurm.conf)</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Compute node</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				slurmstepd daemon</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				User invoking srun command</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Completion job step</font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				srun --task-epilog</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Compute node</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				slurmstepd daemon</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				User invoking srun command</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Completion job step</font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				SrunEpilog (from slurm.conf) or srun --epilog</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				srun invocation node</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				srun command</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				User invoking srun command</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Completion job step</font></p>
+			</td>
+		</tr>
+	</tbody></table>
+</center>
+
+<p>Plugins functions are may also be useful to execute logic at various well
+defined points.</p>
+
+<p><a href="spank.html">SPANK</a> is another mechanism that may be useful
+to invoke logic in the user commands, slurmd daemon, and slurmstepd daemon.</p>
+
+<HR SIZE=4>
+
+<p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
+
+<p style="text-align:center;">Last modified 24 September 2012</p>
+
+<!--#include virtual="footer.txt"-->
