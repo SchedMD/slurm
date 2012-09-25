@@ -1140,7 +1140,7 @@ extern void slurm_free_block_info(block_info_t *block_info);
 extern void slurm_free_block_info_msg(block_info_msg_t *block_info_msg);
 extern void slurm_free_block_info_request_msg(
 		block_info_request_msg_t *msg);
-
+extern void slurm_free_node_energy_data_msg(node_energy_data_msg_t * msg);
 extern void slurm_free_job_notify_msg(job_notify_msg_t * msg);
 
 extern void slurm_free_accounting_update_msg(accounting_update_msg_t *msg);

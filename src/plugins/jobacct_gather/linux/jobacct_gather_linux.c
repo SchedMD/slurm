@@ -112,9 +112,9 @@ static int  _is_a_lwp(uint32_t pid);
 static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
 static int  _get_process_data_line(int in, prec_t *prec);
 static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
-		char *sbuf );
+					char *sbuf );
 static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
-		char * sbuf);
+				      char * sbuf);
 
 /*
  * _get_offspring_data() -- collect memory usage data for the offspring
@@ -138,8 +138,8 @@ static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
  * THREADSAFE! Only one thread ever gets here.
  */
 static void
-_get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid) {
-
+_get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid)
+{
 	ListIterator itr;
 	prec_t *prec = NULL;
 
@@ -164,12 +164,13 @@ _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid) {
 
 /* return weighted frequency in mhz */
 static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
-		char * sbuf) {
+				      char * sbuf)
+{
 	bool return_frequency = false;
 	int thisfreq = 0;
 
 	if (cpunfo_frequency)
-		/*scling not enabled*/
+		/* scaling not enabled */
 		thisfreq = cpunfo_frequency;
 	else
 		sscanf(sbuf, "%d", &thisfreq);
@@ -181,15 +182,14 @@ static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
 			jobacct->this_sampled_cputime * thisfreq;
 	if (return_frequency) {
 		if (jobacct->last_total_cputime)
-			/*return weighted frequency */
+			/* return weighted frequency */
 			return jobacct->current_weighted_freq;
 		else
 			return thisfreq;
 	} else
-		/*return estimated frequency */
+		/* return estimated frequency */
 		return jobacct->current_weighted_freq;
 }
-
 
 static char * skipdot (char *str)
 {
@@ -206,8 +206,8 @@ static char * skipdot (char *str)
 }
 
 static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
-		char * sbuf ) {
-
+					char * sbuf )
+{
 	int num_read, fd;
 	FILE *sys_fp = NULL;
 	char freq_file[80];
@@ -216,7 +216,7 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 	char cpufreq_line [10];
 
 	if (cpunfo_frequency)
-			/*scling not enabled,static freq obtained*/
+		/* scaling not enabled, static freq obtained */
 		return 1;
 
 	snprintf(freq_file, 79,
@@ -226,7 +226,7 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 			"filename = %s ",
 			freq_file);
 	if ((sys_fp = fopen(freq_file, "r"))!= NULL) {
-		/*frequency scaling enabled*/
+		/* frequency scaling enabled */
 		fd = fileno(sys_fp);
 		fcntl(fd, F_SETFD, FD_CLOEXEC);
 		num_read = read(fd, sbuf, (sizeof(sbuf) - 1));
@@ -236,7 +236,7 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 		}
 		fclose(sys_fp);
 	} else {
-		/*frequency scaling not enabled*/
+		/* frequency scaling not enabled */
 		if (!cpunfo_frequency){
 			snprintf(freq_file, 14,
 					"/proc/cpuinfo");
@@ -247,7 +247,7 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 				while (fgets(cpunfo_line, sizeof cpunfo_line,
 					sys_fp ) != NULL) {
 					if (strstr(cpunfo_line, "cpu MHz") ||
-						strstr(cpunfo_line, "cpu GHz")) {
+					    strstr(cpunfo_line, "cpu GHz")) {
 						break;
 					}
 				}
@@ -599,7 +599,7 @@ extern void jobacct_gather_p_poll_data(
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
 				       prec->usec, prec->ssec);
-				//compute frequency
+				/* compute frequency */
 				_get_sys_interface_freq_line(prec->last_cpu,
 						"cpuinfo_cur_freq", sbuf);
 				jobacct->this_sampled_cputime =
@@ -612,7 +612,7 @@ extern void jobacct_gather_p_poll_data(
 				jobacct->act_cpufreq = (uint32_t)
 					_update_weighted_freq(jobacct, sbuf);
 				debug2("frequency-based jobacct->act_cpufreq=%u",
-						jobacct->act_cpufreq);
+				       jobacct->act_cpufreq);
 				debug2(" pid %d mem size %u %u time %u(%u+%u) ",
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
@@ -620,7 +620,7 @@ extern void jobacct_gather_p_poll_data(
 				/* get energy consumption */
 				energy_accounting_g_getjoules_task(jobacct);
 				debug2("getjoules_task energy = %u",
-						jobacct->consumed_energy);
+				       jobacct->consumed_energy);
 				break;
 			}
 		}

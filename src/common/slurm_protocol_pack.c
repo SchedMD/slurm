@@ -210,13 +210,6 @@ static void _pack_update_job_time_msg(job_time_msg_t * msg, Buf buffer,
 static int _unpack_update_job_time_msg(job_time_msg_t ** msg, Buf buffer,
 				       uint16_t protocol_version);
 
-static void  _pack_job_step_create_response_msg(
-	job_step_create_response_msg_t * msg, Buf buffer,
-	uint16_t protocol_version);
-static int _unpack_job_step_create_response_msg(
-	job_step_create_response_msg_t ** msg, Buf buffer,
-	uint16_t protocol_version);
-
 static void _pack_node_energy_data_msg(node_energy_data_msg_t * msg,
 					Buf buffer, uint16_t protocol_version);
 static int _unpack_node_energy_data_msg(node_energy_data_msg_t ** msg,
@@ -749,7 +742,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case RESPONSE_NODE_ENERGY_UPDATE:
 		_pack_node_energy_data_msg((node_energy_data_msg_t *) msg->data,
-			 buffer, msg->protocol_version);
+					   buffer, msg->protocol_version);
 		break;
 	case REQUEST_RESOURCE_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_JOB:
@@ -1295,9 +1288,9 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			msg->protocol_version);
 		break;
 	case RESPONSE_NODE_ENERGY_UPDATE:
-		rc =_unpack_node_energy_data_msg(
-			(node_energy_data_msg_t **) & (msg->data),
-			 buffer, msg->protocol_version);
+		rc = _unpack_node_energy_data_msg(
+				(node_energy_data_msg_t **) & (msg->data),
+				buffer, msg->protocol_version);
 		break;
 	case REQUEST_RESOURCE_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_JOB:
@@ -2435,7 +2428,7 @@ _unpack_node_energy_data_msg(node_energy_data_msg_t ** msg,
 	*msg = node_data_ptr;
 
 	safe_unpackstr_xmalloc(&node_data_ptr->node_name,
-			&uint32_tmp, buffer);
+			       &uint32_tmp, buffer);
 	safe_unpack32(&node_data_ptr->current_watts, buffer);
 	safe_unpack32(&node_data_ptr->base_watts, buffer);
 	safe_unpack32(&node_data_ptr->consumed_energy, buffer);

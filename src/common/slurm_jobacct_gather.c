@@ -460,8 +460,8 @@ extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid)
 	struct jobacctinfo *jobacct = NULL;
 	ListIterator itr = NULL;
 
-	/*poll data one last time before removing task
-	  mainly for updating energy consumption*/
+	/* poll data one last time before removing task
+	 * mainly for updating energy consumption */
         _poll_data();
 
 	if (jobacct_shutdown)
@@ -777,7 +777,7 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 	if (protocol_type == PROTOCOL_TYPE_DBD)
 		rpc_version = slurmdbd_translate_rpc(rpc_version);
 
-	if(rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		if (!jobacct) {
 			for (i = 0; i < 14; i++)
 				pack32((uint32_t) 0, buffer);
@@ -854,7 +854,7 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 	if (protocol_type == PROTOCOL_TYPE_DBD)
 		rpc_version = slurmdbd_translate_rpc(rpc_version);
 
-	if(rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		*jobacct = xmalloc(sizeof(struct jobacctinfo));
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->user_cpu_sec = uint32_tmp;
@@ -924,9 +924,8 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	debug2("jobacctinfo_unpack:"
-		"unpack_error: size_buf(buffer) %u",
-	size_buf(buffer));
+	debug2("jobacctinfo_unpack: unpack_error: size_buf(buffer) %u",
+	       size_buf(buffer));
 	xfree(*jobacct);
        	return SLURM_ERROR;
 }

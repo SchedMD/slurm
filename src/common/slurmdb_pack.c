@@ -48,15 +48,15 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 {
 	int i=0;
 
-	if(rpc_version >= SLURMDBD_2_5_VERSION) {
-		if(!stats) {
-			for(i=0; i<4; i++)
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
+		if (!stats) {
+			for (i=0; i<4; i++)
 				pack32((uint32_t) 0, buffer);
 
-			for(i=0; i<4; i++)
+			for (i=0; i<6; i++)
 				packdouble(0, buffer);
 
-			for(i=0; i<4; i++) {
+			for (i=0; i<4; i++) {
 				pack32(0, buffer);
 				pack16(0, buffer);
 			}
@@ -72,6 +72,8 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 		packdouble(stats->rss_ave, buffer);
 		packdouble(stats->pages_ave, buffer);
 		packdouble(stats->cpu_ave, buffer);
+		packdouble(stats->act_cpufreq, buffer);
+		packdouble(stats->consumed_energy, buffer);
 
 		pack32(stats->vsize_max_nodeid, buffer);
 		pack16(stats->vsize_max_taskid, buffer);
@@ -81,9 +83,7 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 		pack16(stats->pages_max_taskid, buffer);
 		pack32(stats->cpu_min_nodeid, buffer);
 		pack16(stats->cpu_min_taskid, buffer);
-		packdouble(stats->act_cpufreq, buffer);
-		packdouble(stats->consumed_energy, buffer);
-	} else if(rpc_version >= SLURMDBD_VERSION_MIN) {
+	} else if (rpc_version >= SLURMDBD_VERSION_MIN) {
 		if(!stats) {
 			for(i=0; i<4; i++)
 				pack32((uint32_t) 0, buffer);
@@ -122,7 +122,7 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 				 uint16_t rpc_version, Buf buffer)
 {
-	if(rpc_version >= SLURMDBD_2_5_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		safe_unpack32(&stats->vsize_max, buffer);
 		safe_unpack32(&stats->rss_max, buffer);
 		safe_unpack32(&stats->pages_max, buffer);
@@ -132,6 +132,8 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		safe_unpackdouble(&stats->rss_ave, buffer);
 		safe_unpackdouble(&stats->pages_ave, buffer);
 		safe_unpackdouble(&stats->cpu_ave, buffer);
+		safe_unpackdouble(&stats->act_cpufreq, buffer);
+		safe_unpackdouble(&stats->consumed_energy, buffer);
 
 		safe_unpack32(&stats->vsize_max_nodeid, buffer);
 		safe_unpack16(&stats->vsize_max_taskid, buffer);
@@ -141,9 +143,7 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		safe_unpack16(&stats->pages_max_taskid, buffer);
 		safe_unpack32(&stats->cpu_min_nodeid, buffer);
 		safe_unpack16(&stats->cpu_min_taskid, buffer);
-		safe_unpackdouble(&stats->act_cpufreq, buffer);
-		safe_unpackdouble(&stats->consumed_energy, buffer);
-	} else if(rpc_version >= SLURMDBD_VERSION_MIN) {
+	} else if (rpc_version >= SLURMDBD_VERSION_MIN) {
 		safe_unpack32(&stats->vsize_max, buffer);
 		safe_unpack32(&stats->rss_max, buffer);
 		safe_unpack32(&stats->pages_max, buffer);
@@ -6606,12 +6606,12 @@ unpack_error:
 extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 				  uint16_t rpc_version, Buf buffer)
 {
-	if(rpc_version >= SLURMDBD_2_5_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		pack32(step->elapsed, buffer);
 		pack_time(step->end, buffer);
 		pack32((uint32_t)step->exitcode, buffer);
-		 /* the job_ptr is set up on the client side so does
-		    not need to be packed */
+		/* the job_ptr is set up on the client side so does
+		 * not need to be packed */
 		pack32(step->ncpus, buffer);
 		pack32(step->nnodes, buffer);
 		packstr(step->nodes, buffer);
@@ -6631,7 +6631,7 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 		pack32(step->tot_cpu_usec, buffer);
 		pack32(step->user_cpu_sec, buffer);
 		pack32(step->user_cpu_usec, buffer);
-	} else if(rpc_version >= SLURMDBD_VERSION_MIN) {
+	} else if (rpc_version >= SLURMDBD_VERSION_MIN) {
 		pack32(step->elapsed, buffer);
 		pack_time(step->end, buffer);
 		pack32((uint32_t)step->exitcode, buffer);
@@ -6667,7 +6667,7 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 
 	*step = step_ptr;
 
-	if(rpc_version >= 5) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		safe_unpack32(&step_ptr->elapsed, buffer);
 		safe_unpack_time(&step_ptr->end, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
@@ -6677,6 +6677,33 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 		safe_unpackstr_xmalloc(&step_ptr->nodes, &uint32_tmp, buffer);
 		safe_unpack32(&step_ptr->ntasks, buffer);
 		safe_unpack32(&step_ptr->req_cpufreq, buffer);
+		safe_unpack32(&step_ptr->requid, buffer);
+		if (_unpack_slurmdb_stats(&step_ptr->stats, rpc_version, buffer)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack_time(&step_ptr->start, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		step_ptr->state = uint16_tmp;
+		safe_unpack32(&step_ptr->stepid, buffer);
+		safe_unpackstr_xmalloc(&step_ptr->stepname,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&step_ptr->suspended, buffer);
+		safe_unpack32(&step_ptr->sys_cpu_sec, buffer);
+		safe_unpack32(&step_ptr->sys_cpu_usec, buffer);
+		safe_unpack16(&step_ptr->task_dist, buffer);
+		safe_unpack32(&step_ptr->tot_cpu_sec, buffer);
+		safe_unpack32(&step_ptr->tot_cpu_usec, buffer);
+		safe_unpack32(&step_ptr->user_cpu_sec, buffer);
+		safe_unpack32(&step_ptr->user_cpu_usec, buffer);
+	} else if (rpc_version >= SLURMDBD_VERSION_MIN) {
+		safe_unpack32(&step_ptr->elapsed, buffer);
+		safe_unpack_time(&step_ptr->end, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		step_ptr->exitcode = (int32_t)uint32_tmp;
+		safe_unpack32(&step_ptr->ncpus, buffer);
+		safe_unpack32(&step_ptr->nnodes, buffer);
+		safe_unpackstr_xmalloc(&step_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpack32(&step_ptr->ntasks, buffer);
 		safe_unpack32(&step_ptr->requid, buffer);
 		if(_unpack_slurmdb_stats(&step_ptr->stats, rpc_version, buffer)
 		   != SLURM_SUCCESS)

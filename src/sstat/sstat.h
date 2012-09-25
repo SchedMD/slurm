@@ -81,8 +81,8 @@
 /* On output, use fields 12-37 from JOB_STEP */
 
 typedef enum {
-		PRINT_AVECPU,
 		PRINT_ACT_CPUFREQ,
+		PRINT_AVECPU,
 		PRINT_AVEPAGES,
 		PRINT_AVERSS,
 		PRINT_AVEVSIZE,

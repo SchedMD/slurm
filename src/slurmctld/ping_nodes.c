@@ -410,8 +410,8 @@ extern void update_nodes_energy_data(void)
 		energy_agent_args->node_count++;
 	}
 #else
-	for (i=0, node_ptr=node_record_table_ptr;
-	     i<node_record_count; i++, node_ptr++) {
+	for (i = 0, node_ptr = node_record_table_ptr;
+	     i < node_record_count; i++, node_ptr++) {
 		if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWER_SAVE(node_ptr))
 			continue;

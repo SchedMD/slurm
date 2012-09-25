@@ -350,7 +350,6 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	bool admin, slurmdb_qos_rec_t *qos_rec, int *error_code)
 {
 	slurmdb_qos_rec_t *qos_ptr = NULL;
-	size_t resv_name_leng = 0;
 
 	/* If enforcing associations make sure this is a valid qos
 	   with the association.  If not just fill in the qos and

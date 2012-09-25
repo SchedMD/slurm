@@ -2520,7 +2520,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	 * the cluster name is lower case since sacctmgr makes sure
 	 * this is the case as well.
 	 */
-	if(conf->cluster_name) {
+	if (conf->cluster_name) {
 		int i;
 		for (i = 0; conf->cluster_name[i] != '\0'; i++)
 			conf->cluster_name[i] =
@@ -2627,8 +2627,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    "EnergyAccountingNodeFreq", hashtbl))
 		conf->energy_accounting_freq = 0;
 
-	if(!s_p_get_string(&conf->energy_accounting_type,
-			   "EnergyAccountingType", hashtbl))
+	if (!s_p_get_string(&conf->energy_accounting_type,
+			    "EnergyAccountingType", hashtbl))
 		conf->energy_accounting_type =
 			xstrdup(DEFAULT_ENERGY_ACCOUNTING_TYPE);
 

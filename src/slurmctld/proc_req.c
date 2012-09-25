@@ -1945,7 +1945,6 @@ static void _slurm_rpc_node_energy_update(slurm_msg_t * msg)
 {
 	/* init */
 	DEF_TIMERS;
-	int error_code = SLURM_SUCCESS;
 	node_energy_data_msg_t * energy_data_msg = msg->data;
 
 	START_TIMER;

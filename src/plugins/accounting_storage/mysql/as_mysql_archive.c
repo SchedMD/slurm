@@ -450,7 +450,7 @@ static int _unpack_local_job(local_job_t *object,
 static void _pack_local_step(local_step_t *object,
 			     uint16_t rpc_version, Buf buffer)
 {
-	if(rpc_version >= SLURMDBD_2_5_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		packstr(object->act_cpufreq, buffer);
 		packstr(object->ave_cpu, buffer);
 		packstr(object->ave_pages, buffer);
@@ -488,7 +488,7 @@ static void _pack_local_step(local_step_t *object,
 		packstr(object->task_dist, buffer);
 		packstr(object->user_sec, buffer);
 		packstr(object->user_usec, buffer);
-	} else if(rpc_version >= SLURMDBD_VERSION_MIN) {
+	} else if (rpc_version >= SLURMDBD_VERSION_MIN) {
 		packstr(object->ave_cpu, buffer);
 		packstr(object->ave_pages, buffer);
 		packstr(object->ave_rss, buffer);
@@ -534,7 +534,7 @@ static int _unpack_local_step(local_step_t *object,
 {
 	uint32_t tmp32;
 
-	if(rpc_version >= SLURMDBD_2_5_VERSION) {
+	if (rpc_version >= SLURMDBD_2_5_VERSION) {
 		unpackstr_ptr(&object->act_cpufreq, &tmp32, buffer);
 		unpackstr_ptr(&object->ave_cpu, &tmp32, buffer);
 		unpackstr_ptr(&object->ave_pages, &tmp32, buffer);
@@ -572,7 +572,7 @@ static int _unpack_local_step(local_step_t *object,
 		unpackstr_ptr(&object->task_dist, &tmp32, buffer);
 		unpackstr_ptr(&object->user_sec, &tmp32, buffer);
 		unpackstr_ptr(&object->user_usec, &tmp32, buffer);
-	} else if(rpc_version >= SLURMDBD_VERSION_MIN) {
+	} else if (rpc_version >= SLURMDBD_VERSION_MIN) {
 		unpackstr_ptr(&object->ave_cpu, &tmp32, buffer);
 		unpackstr_ptr(&object->ave_pages, &tmp32, buffer);
 		unpackstr_ptr(&object->ave_rss, &tmp32, buffer);

@@ -111,7 +111,7 @@ struct jobacctinfo {
 	uint32_t tot_cpu; /* total cpu time(used to figure out ave later) */
 	uint32_t act_cpufreq; /* actual cpu frequency */
 	uint32_t consumed_energy; /* energy */
-        uint32_t base_consumed_energy;	
+	uint32_t base_consumed_energy;	
 	uint32_t last_total_cputime;
 	uint32_t this_sampled_cputime;
 	uint32_t current_weighted_freq;

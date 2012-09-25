@@ -65,12 +65,12 @@ proc sacct_job { soption } {
 			set not_support 1
 			exp_continue
 		}
-		-re "AllocCPUS     Account       AssocID       AveCPU" {
+		-re "AllocCPUS.*Account *AssocID *AveCPU" {
 			if {$debug} {send_user "\nmatch1\n"}
 			incr matches
 			exp_continue
 		}
-		-re "AvePages      AveRSS        AveVMSize     BlockID" {
+		-re "AveCPUFreq *AvePages *AveRSS *AveVMSize" {
 			if {$debug} {send_user "\nmatch2\n"}
 			incr matches
 			exp_continue
