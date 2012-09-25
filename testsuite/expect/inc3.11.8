@@ -47,7 +47,7 @@ proc inc3_11_8 {} {
 
 
 	# (First test) Submit the batch job: a simple job using just 1 core inside the reservation
-	set sbatch_pid [spawn $sbatch --nodes=$num_nodes --ntasks-per-node=$core_res_num --output=/dev/null $file_in]
+	set sbatch_pid [spawn $sbatch --nodes=$num_nodes --time=30:00 --ntasks-per-node=$core_res_num $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -67,11 +67,28 @@ proc inc3_11_8 {} {
 		exit 1
 	}
 
-	if {[wait_for_job $job_id "RUNNING"] != 0} {
-		send_user "\nFAILURE: job failed to start\n"
-		cancel_job $job_id
-		exit 1
+	# Show the job
+	spawn $scontrol show job $job_id
+	expect {
+		-re "Invalid job id specified" {
+			send_user "\n\033\[31mFAILURE: Job $job_id not found\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		-re "JobState=PENDING" {
+			send_user "\n\033\[31mFAILURE: Job $job_id is PENDING\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: scontrol not responding\033\[m\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
+
 	send_user "\nJOB is running as expected\n"
 
 	# Make the reservation using free cores in a node
@@ -103,9 +120,10 @@ proc inc3_11_8 {} {
 
 	set core_res_num  [expr $core_res_num + 1]
 	# Make the reservation using more cores then free in a node
-	set ret_code [create_res "StartTime=now Duration=60 NodeCnt=1 CoreCnt=$core_res_num User=$user_name" 1]
+	set ret_code [create_res "StartTime=now Duration=60 NodeCnt=1 CoreCnt=$core_res_num User=$user_name" 0]
 	if {$ret_code != 0} {
 		send_user "\n\033\[32mSUCCESS: Reservation can not be created as expected\033\[m\n"
+		set exit_code 0
 	} else {
 		send_user "\n\033\[31mFAILURE: reservation was created when it should have not\033\[m\n"
 		set exit_code 1
@@ -114,5 +132,39 @@ proc inc3_11_8 {} {
 		set ret_code [delete_res $res_name]
 	}
 
-	cancel_job $job_id
+	set core_res_num  [expr $core_res_num + 1]
+	# Make the reservation using more cores then free in a node (now) but those cores being free at reservation start time
+	set ret_code [create_res "StartTime=now+3600 Duration=60 NodeCnt=1 CoreCnt=$core_res_num User=$user_name" 0]
+	if {$ret_code != 0} {
+		send_user "\n\033\[31mFAILURE: Reservation can not be created when it should\033\[m\n"
+		set exit_code 0
+	} else {
+		send_user "\n\033\[32mSUCCESS: reservation can be created as expected\033\[m\n"
+		set exit_code 1
+		
+		# Delete the reservation
+		set ret_code [delete_res $res_name]
+	}
+
+
+	# Cancel the job
+	spawn $scancel -v $job_id
+	expect {
+		-re "Invalid job_id" {
+			send_user "\n\033\[31mFAILURE: Error cancelling the job submitted "
+			send_user "to the reservation.  Job $job_id not found\033\[m\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\n\033\[31mFAILURE: scancel not responding\033\[m\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	exit $exit_code
+
 }
