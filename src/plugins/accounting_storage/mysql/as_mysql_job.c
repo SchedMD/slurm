@@ -981,6 +981,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			cpus = step_ptr->cpu_count;
 #endif
 	}
+
 	exit_code = step_ptr->exit_code;
 	if (WIFSIGNALED(exit_code)) {
 		comp_status = JOB_CANCELLED;
@@ -990,7 +991,6 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		step_ptr->requid = -1;
 		comp_status = JOB_COMPLETE;
 	}
-
 
 	/* figure out the ave of the totals sent */
 	if (cpus > 0) {
@@ -1007,7 +1007,6 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	if (jobacct->min_cpu != NO_VAL) {
 		ave_cpu2 = (double)jobacct->min_cpu;
 	}
-
 
 	if (!step_ptr->job_ptr->db_index) {
 		if (!(step_ptr->job_ptr->db_index =

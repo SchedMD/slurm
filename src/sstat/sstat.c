@@ -95,7 +95,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 	uint32_t act_cpufreq = 0;
 	uint32_t consumed_energy = 0;
 
-	debug2("requesting info for job %u.%u", jobid, stepid);
+	debug("requesting info for job %u.%u", jobid, stepid);
 	if((rc = slurm_job_step_stat(jobid, stepid, nodelist,
 				     &step_stat_response)) != SLURM_SUCCESS) {
 		error("problem getting step_layout for %u.%u: %s",

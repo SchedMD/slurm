@@ -210,7 +210,7 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 			debug2("_get_sys_interface_freq_line: "
 				"filename = %s ",
 				freq_file);
-			if ((sys_fp = fopen(freq_file, "r"))!=NULL) {
+			if ((sys_fp = fopen(freq_file, "r")) != NULL) {
 				while (fgets(cpunfo_line, sizeof cpunfo_line,
 					sys_fp ) != NULL) {
 					if (strstr(cpunfo_line, "cpu MHz") ||
@@ -228,7 +228,6 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 		return 1;
 	}
 	return 0;
-
 }
 
 static int _is_a_lwp(uint32_t pid) {
