@@ -90,8 +90,8 @@ proc inc3_11_1 {} {
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  PartitionName=$def_partition Flags=ignore_jobs}
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=Maint Flags=ignore_jobs}
 	{StartTime=now   Duration=5   NodeCnt=$num_nodes CoreCnt=$core_res_num  User=$user_name}
-	#{StartTime=now   Duration=5   NodeCnt=10 CoreCnt=11  User=$user_name}
 "
+	#{StartTime=now   Duration=5   NodeCnt=10 CoreCnt=11  User=$user_name}
 
 	foreach test $goodtests {
 		set ret_code [create_res $test 0]
