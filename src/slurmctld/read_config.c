@@ -860,7 +860,6 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	_sync_part_prio();
 	_build_bitmaps_pre_select();
-
 	if ((select_g_node_init(node_record_table_ptr, node_record_count)
 	     != SLURM_SUCCESS)						||
 	    (select_g_block_init(part_list) != SLURM_SUCCESS)		||
