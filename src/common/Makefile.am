@@ -89,6 +89,7 @@ libcommon_la_SOURCES = 			\
 	slurm_auth.c slurm_auth.h	\
 	slurm_accounting_storage.c slurm_accounting_storage.h \
 	slurm_jobacct_gather.c slurm_jobacct_gather.h \
+	slurm_energy_accounting.c slurm_energy_accounting.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
 	slurm_topology.c slurm_topology.h \
 	switch.c switch.h		\

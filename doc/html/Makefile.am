@@ -49,6 +49,7 @@ generated_html = \
 	overview.html \
 	platforms.html \
 	plugins.html \
+	energy_accounting_plugins.html \
 	power_save.html \
 	preempt.html \
 	preemption_plugins.html \

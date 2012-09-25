@@ -491,6 +491,10 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobacct_gather/aix/Makefile
 		 src/plugins/jobacct_gather/cgroup/Makefile
 		 src/plugins/jobacct_gather/none/Makefile
+		 src/plugins/energy_accounting/Makefile
+		 src/plugins/energy_accounting/rapl/Makefile
+		 src/plugins/energy_accounting/ipmi/Makefile
+		 src/plugins/energy_accounting/none/Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
 		 src/plugins/jobcomp/none/Makefile

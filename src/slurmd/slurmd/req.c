@@ -161,6 +161,7 @@ static void _rpc_pid2jid(slurm_msg_t *msg);
 static int  _rpc_file_bcast(slurm_msg_t *msg);
 static int  _rpc_ping(slurm_msg_t *);
 static int  _rpc_health_check(slurm_msg_t *);
+static int  _rpc_node_energy_update(slurm_msg_t *);
 static int  _rpc_step_complete(slurm_msg_t *msg);
 static int  _rpc_stat_jobacct(slurm_msg_t *msg);
 static int  _rpc_list_pids(slurm_msg_t *msg);
@@ -371,6 +372,12 @@ slurmd_req(slurm_msg_t *msg)
 	case REQUEST_HEALTH_CHECK:
 		debug2("Processing RPC: REQUEST_HEALTH_CHECK");
 		_rpc_health_check(msg);
+		last_slurmctld_msg = time(NULL);
+		/* No body to free */
+		break;
+	case REQUEST_NODE_ENERGY_UPDATE:
+		debug2("Processing RPC: REQUEST_NODE_ENERGY_UPDATE");
+		_rpc_node_energy_update(msg);
 		last_slurmctld_msg = time(NULL);
 		/* No body to free */
 		break;
@@ -1959,6 +1966,51 @@ _rpc_health_check(slurm_msg_t *msg)
 
 
 static int
+_rpc_node_energy_update(slurm_msg_t *msg)
+{
+	int        rc = SLURM_SUCCESS;
+	slurm_msg_t req;
+	node_energy_data_msg_t *en_msg;
+	/* Update node energy usage data */
+	energy_accounting_g_updatenodeenergy();
+	/* Return result. If the reply can't be sent this indicates that
+	 * 1. The network is broken OR
+	 * 2. slurmctld has died    OR
+	 * 3. slurmd was paged out due to full memory
+	 * If the reply request fails, we send an registration message to
+	 * slurmctld in hopes of avoiding having the node set DOWN due to
+	 * slurmd paging and not being able to respond in a timely fashion. */
+	if (slurm_send_rc_msg(msg, rc) < 0) {
+		error("Error responding to ping: %m");
+		send_registration_msg(SLURM_SUCCESS, false);
+	}
+
+	if (rc == SLURM_SUCCESS) {
+		en_msg = xmalloc (sizeof (node_energy_data_msg_t));
+
+		slurm_msg_t_init(&req);
+
+		en_msg->node_name = xstrdup (conf->node_name);
+		en_msg->current_watts = energy_accounting_g_getcurrentwatts();
+		en_msg->base_watts = energy_accounting_g_getbasewatts();
+		en_msg->consumed_energy =
+			energy_accounting_g_getnodeenergy((uint32_t)0);
+
+		req.msg_type = RESPONSE_NODE_ENERGY_UPDATE;
+		req.data     = en_msg;
+
+		if (slurm_send_only_controller_msg(&req) < 0) {
+			error("Unable to send node energy data: %m");
+			rc = SLURM_FAILURE;
+		}
+		slurm_free_node_energy_data_msg (en_msg);
+
+	}
+	return rc;
+}
+
+
+static int
 _signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
 		uint32_t signal)
 {
@@ -2816,7 +2868,6 @@ _get_job_uid(uint32_t jobid)
 			/* multiple jobs expected on shared nodes */
 			continue;
 		}
-
 		fd = stepd_connect(stepd->directory, stepd->nodename,
 				   stepd->jobid, stepd->stepid);
 		if (fd == -1) {

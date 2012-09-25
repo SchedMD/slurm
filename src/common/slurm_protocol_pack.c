@@ -210,6 +210,18 @@ static void _pack_update_job_time_msg(job_time_msg_t * msg, Buf buffer,
 static int _unpack_update_job_time_msg(job_time_msg_t ** msg, Buf buffer,
 				       uint16_t protocol_version);
 
+static void  _pack_job_step_create_response_msg(
+	job_step_create_response_msg_t * msg, Buf buffer,
+	uint16_t protocol_version);
+static int _unpack_job_step_create_response_msg(
+	job_step_create_response_msg_t ** msg, Buf buffer,
+	uint16_t protocol_version);
+
+static void _pack_node_energy_data_msg(node_energy_data_msg_t * msg,
+					Buf buffer, uint16_t protocol_version);
+static int _unpack_node_energy_data_msg(node_energy_data_msg_t ** msg,
+					Buf buffer, uint16_t protocol_version);
+
 static void _pack_part_info_request_msg(part_info_request_msg_t * msg,
 					Buf buffer, uint16_t protocol_version);
 static int _unpack_part_info_request_msg(part_info_request_msg_t ** msg,
@@ -735,6 +747,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			buffer,
 			msg->protocol_version);
 		break;
+	case RESPONSE_NODE_ENERGY_UPDATE:
+		_pack_node_energy_data_msg((node_energy_data_msg_t *) msg->data,
+			 buffer, msg->protocol_version);
+		break;
 	case REQUEST_RESOURCE_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_JOB:
 	case REQUEST_JOB_WILL_RUN:
@@ -763,6 +779,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_TAKEOVER:
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
+	case REQUEST_NODE_ENERGY_UPDATE:
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
@@ -1277,6 +1294,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			& (msg->data), buffer,
 			msg->protocol_version);
 		break;
+	case RESPONSE_NODE_ENERGY_UPDATE:
+		rc =_unpack_node_energy_data_msg(
+			(node_energy_data_msg_t **) & (msg->data),
+			 buffer, msg->protocol_version);
+		break;
 	case REQUEST_RESOURCE_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_JOB:
 	case REQUEST_JOB_WILL_RUN:
@@ -1306,6 +1328,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_TAKEOVER:
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
+	case REQUEST_NODE_ENERGY_UPDATE:
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
@@ -2390,6 +2413,42 @@ unpack_error:
 }
 
 static void
+_pack_node_energy_data_msg(node_energy_data_msg_t * msg,
+			   Buf buffer, uint16_t protocol_version)
+{
+	xassert(msg != NULL);
+
+	packstr(msg->node_name, buffer);
+	pack32(msg->current_watts, buffer);
+	pack32(msg->base_watts, buffer);
+	pack32(msg->consumed_energy, buffer);
+}
+static int
+_unpack_node_energy_data_msg(node_energy_data_msg_t ** msg,
+			     Buf buffer, uint16_t protocol_version)
+{
+	node_energy_data_msg_t *node_data_ptr;
+	uint32_t uint32_tmp;
+	/* alloc memory for structure */
+	xassert(msg != NULL);
+	node_data_ptr = xmalloc(sizeof(node_energy_data_msg_t));
+	*msg = node_data_ptr;
+
+	safe_unpackstr_xmalloc(&node_data_ptr->node_name,
+			&uint32_tmp, buffer);
+	safe_unpack32(&node_data_ptr->current_watts, buffer);
+	safe_unpack32(&node_data_ptr->base_watts, buffer);
+	safe_unpack32(&node_data_ptr->consumed_energy, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_node_energy_data_msg(node_data_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
 _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 				   msg, Buf buffer,
 				   uint16_t protocol_version)
@@ -2432,6 +2491,9 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 			packmem(get_buf_data(msg->gres_info), gres_info_size,
 				buffer);
 		}
+		pack32(msg->current_watts, buffer);
+		pack32(msg->base_watts, buffer);
+		pack32(msg->consumed_energy, buffer);
 	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		pack_time(msg->timestamp, buffer);
 		pack_time(msg->slurmd_start_time, buffer);
@@ -2535,6 +2597,9 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 			node_reg_ptr->gres_info = create_buf(gres_info,
 							     gres_info_size);
 		}
+		safe_unpack32(&node_reg_ptr->current_watts, buffer);
+		safe_unpack32(&node_reg_ptr->base_watts, buffer);
+		safe_unpack32(&node_reg_ptr->consumed_energy, buffer);
 	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&node_reg_ptr->timestamp, buffer);
@@ -2958,6 +3023,9 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpackstr_xmalloc(&node->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
+		safe_unpack32(&node->current_watts, buffer);
+		safe_unpack32(&node->base_watts, buffer);
+		safe_unpack32(&node->consumed_energy, buffer);
 	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->node_hostname, &uint32_tmp,
@@ -4414,6 +4482,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->debug_flags, buffer);
 		pack16(build_ptr->disable_root_jobs, buffer);
 
+		pack16(build_ptr->energy_accounting_freq, buffer);
+		packstr(build_ptr->energy_accounting_type, buffer);
 		pack16(build_ptr->enforce_part_limits, buffer);
 		packstr(build_ptr->epilog, buffer);
 		pack32(build_ptr->epilog_msg_time, buffer);
@@ -4582,7 +4652,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->vsize_factor, buffer);
 
 		pack16(build_ptr->wait_time, buffer);
-
 		pack16(build_ptr->z_16, buffer);
 		pack32(build_ptr->z_32, buffer);
 		packstr(build_ptr->z_char, buffer);
@@ -5050,6 +5119,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->def_mem_per_cpu, buffer);
 		safe_unpack32(&build_ptr->debug_flags, buffer);
 		safe_unpack16(&build_ptr->disable_root_jobs, buffer);
+
+		safe_unpack16(&build_ptr->energy_accounting_freq, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->energy_accounting_type,
+				       &uint32_tmp,buffer);
 
 		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->epilog, &uint32_tmp,

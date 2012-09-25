@@ -806,6 +806,9 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			packstr(dump_node_ptr->config_ptr->gres, buffer);
 		packstr(dump_node_ptr->os, buffer);
 		packstr(dump_node_ptr->reason, buffer);
+		pack32(dump_node_ptr->current_watts, buffer);
+		pack32(dump_node_ptr->base_watts, buffer);
+		pack32(dump_node_ptr->consumed_energy, buffer);
 	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		packstr (dump_node_ptr->name, buffer);
 		packstr (dump_node_ptr->node_hostname, buffer);
@@ -1663,6 +1666,21 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
 	return false;
 }
 
+extern int update_node_record_energy_data(node_energy_data_msg_t * msg)
+{
+	struct node_record *node_ptr;
+
+	node_ptr = find_node_record (msg->node_name);
+	if (node_ptr == NULL)
+		return ENOENT;
+
+	node_ptr->current_watts = msg->current_watts;
+	node_ptr->base_watts = msg->base_watts;
+	node_ptr->consumed_energy = msg->consumed_energy;
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * validate_node_specs - validate the node's specifications as valid,
  *	if not set state to down, in any case update last_response
@@ -1936,6 +1954,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		_sync_bitmaps(node_ptr, reg_msg->job_count);
 	}
 
+	node_ptr->current_watts = reg_msg->current_watts;
+	node_ptr->base_watts = reg_msg->base_watts;
+	node_ptr->consumed_energy = reg_msg->consumed_energy;
 	node_ptr->last_response = now;
 
 	return error_code;
@@ -2243,6 +2264,9 @@ extern int validate_nodes_via_front_end(
 				      (node_ptr->run_job_cnt +
 				       node_ptr->comp_job_cnt));
 		}
+		node_ptr->current_watts = reg_msg->current_watts;
+		node_ptr->base_watts = reg_msg->base_watts;
+		node_ptr->consumed_energy = reg_msg->consumed_energy;
 	}
 
 	if (reg_hostlist) {

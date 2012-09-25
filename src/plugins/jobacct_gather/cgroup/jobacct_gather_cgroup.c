@@ -107,13 +107,17 @@ typedef struct prec {	/* process record */
 	int	pages;	/* pages */
 	int	rss;	/* rss */
 	int	vsize;	/* virtual size */
-	int	cpu_cycles; /* cpu cycles */
-//	int	last_cpu;
+	int	act_cpufreq; /* actual average cpu frequency */
+	int	last_cpu;   /* last cpu */
 } prec_t;
 
 static int pagesize = 0;
 static DIR  *slash_proc = NULL;
 static pthread_mutex_t reading_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int cpunfo_frequency = 0;
+static int last_cpu = 0;
+static uint32_t pre_jobacct_total_cputime = 0;
+static uint32_t step_sampled_cputime = 0;
 static slurm_cgroup_conf_t slurm_cgroup_conf;
 
 /* Finally, pre-define all local routines. */
@@ -121,6 +125,112 @@ static slurm_cgroup_conf_t slurm_cgroup_conf;
 static void _destroy_prec(void *object);
 static int  _is_a_lwp(uint32_t pid);
 static int  _get_process_data_line(int in, prec_t *prec);
+static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
+		char *sbuf );
+static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
+		char * sbuf);
+
+
+/* return weighted frequency in mhz */
+static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
+		char * sbuf) {
+	bool return_frequency = false;
+	int thisfreq = 0;
+
+	if (cpunfo_frequency)
+		/*scling not enabled*/
+		thisfreq = cpunfo_frequency;
+	else
+		sscanf(sbuf, "%d", &thisfreq);
+
+	thisfreq /=1000;
+
+	jobacct->current_weighted_freq =
+			jobacct->current_weighted_freq +
+			jobacct->this_sampled_cputime * thisfreq;
+	if (return_frequency) {
+		if (jobacct->last_total_cputime)
+			/*return weighted frequency */
+			return jobacct->current_weighted_freq;
+		else
+			return thisfreq;
+	} else
+		/*return estimated frequency */
+		return jobacct->current_weighted_freq;
+}
+
+static char * skipdot (char *str)
+{
+	int pntr = 0;
+	while (str[pntr]) {
+		if (str[pntr] == '.') {
+			str[pntr] = '0';
+			break;
+		}
+		pntr++;
+	}
+	str[pntr+3] = '\0';
+	return str;
+}
+
+static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
+		char * sbuf ) {
+
+	int num_read, fd;
+	FILE *sys_fp = NULL;
+	char freq_file[80];
+	int cpunfo_frqline= 6;
+	char cpunfo_line [128];
+	char cpufreq_line [10];
+
+	if (cpunfo_frequency)
+			/*scling not enabled,static freq obtained*/
+		return 1;
+
+	snprintf(freq_file, 79,
+		 "/sys/devices/system/cpu/cpu%d/cpufreq/%s",
+		 cpu, filename);
+	debug2("_get_sys_interface_freq_line: "
+			"filename = %s ",
+			freq_file);
+	if ((sys_fp = fopen(freq_file, "r"))!= NULL) {
+		/*frequency scaling enabled*/
+		fd = fileno(sys_fp);
+		fcntl(fd, F_SETFD, FD_CLOEXEC);
+		num_read = read(fd, sbuf, (sizeof(sbuf) - 1));
+		if (num_read > 0) {
+			sbuf[num_read] = '\0';
+			debug2(" cpu %d freq= %s", cpu, sbuf);
+		}
+		fclose(sys_fp);
+	} else {
+		/*frequency scaling not enabled*/
+		if (!cpunfo_frequency){
+			snprintf(freq_file, 14,
+					"/proc/cpuinfo");
+			debug2("_get_sys_interface_freq_line: "
+				"filename = %s ",
+				freq_file);
+			if ((sys_fp = fopen(freq_file, "r"))!=NULL) {
+				while (fgets(cpunfo_line, sizeof cpunfo_line,
+					sys_fp ) != NULL) {
+					if (strstr(cpunfo_line, "cpu MHz") ||
+						strstr(cpunfo_line,"cpu GHz")){
+						break;
+					}
+				}
+				strncpy(cpufreq_line, cpunfo_line+11, 8);
+				skipdot(cpufreq_line);
+				sscanf(cpufreq_line, "%d", &cpunfo_frequency);
+				debug2("cpunfo_frequency=%d",cpunfo_frequency);
+				fclose(sys_fp);
+			}
+		}
+		return 1;
+	}
+	return 0;
+
+}
 
 static int _is_a_lwp(uint32_t pid) {
 
@@ -157,7 +267,7 @@ static int _is_a_lwp(uint32_t pid) {
 
 	/* if tgid differs from pid, this is a LWP (Thread POSIX) */
 	if ((uint32_t) tgid != (uint32_t) pid) {
-		debug3("jobacct_gather_cgroup: pid=%d is a lightweight process",
+		debug3("jobacct_gather_cgroup: pid=%d a lightweight process",
 		       tgid);
 		return 1;
 	} else
@@ -331,6 +441,10 @@ extern void jobacct_gather_p_poll_data(
 	struct jobacctinfo *jobacct = NULL;
 	static int processing = 0;
 	long	hertz;
+	char *act_cpufreq;
+	size_t act_cpufreq_size;
+	uint32_t user_act_cpufreq, system_act_cpufreq;
+	char		sbuf[72];
 	char *cpu_time, *memory_stat, *ptr;
 	size_t cpu_time_size, memory_stat_size;
 	int utime, stime, total_rss, total_pgpgin;
@@ -357,6 +471,15 @@ extern void jobacct_gather_p_poll_data(
 		/* get only the processes in the proctrack container */
 		slurm_container_get_pids(cont_id, &pids, &npids);
 		if (!npids) {
+			/*update consumed energy even if pids do not exist
+			 * any more, by iterating thru jobacctinfo structs */
+			itr = list_iterator_create(task_list);
+			while ((jobacct = list_next(itr))) {
+				jobacct->consumed_energy =
+				    energy_accounting_g_getjoules_task(jobacct);
+			}
+			list_iterator_destroy(itr);
+
 			debug4("no pids in this container %"PRIu64"", cont_id);
 			goto finished;
 		}
@@ -494,6 +617,7 @@ extern void jobacct_gather_p_poll_data(
 		goto finished;	/* We have no business being here! */
 
 	itr = list_iterator_create(task_list);
+	step_sampled_cputime = 0;
 	while ((jobacct = list_next(itr))) {
 		itr2 = list_iterator_create(prec_list);
 		while ((prec = list_next(itr2))) {
@@ -519,6 +643,28 @@ extern void jobacct_gather_p_poll_data(
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
 				       prec->usec, prec->ssec);
+				//compute frequency
+				_get_sys_interface_freq_line(prec->last_cpu,
+						"cpuinfo_cur_freq", sbuf);
+				jobacct->this_sampled_cputime =
+					(prec->ssec + prec->usec)
+					-  jobacct->last_total_cputime;
+				jobacct->last_total_cputime =
+						(prec->ssec + prec->usec);
+				step_sampled_cputime +=
+						jobacct->this_sampled_cputime;
+				jobacct->act_cpufreq = (uint32_t)
+					_update_weighted_freq(jobacct, sbuf);
+				debug2("frequency-based jobacct->act_cpufreq=%u",
+						jobacct->act_cpufreq);
+				debug2(" pid %d mem size %u %u time %u(%u+%u) ",
+				       jobacct->pid, jobacct->max_rss,
+				       jobacct->max_vsize, jobacct->tot_cpu,
+				       prec->usec, prec->ssec);
+				jobacct->consumed_energy =
+				    energy_accounting_g_getjoules_task(jobacct);
+				debug2("getjoules_task energy = %u",
+						jobacct->consumed_energy);
 				break;
 			}
 		}

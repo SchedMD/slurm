@@ -99,6 +99,25 @@ void print_fields(slurmdb_step_rec_t *step)
 					     tmp_char,
 					     (curr_inx == field_count));
 			xfree(tmp_char);
+		case PRINT_ACT_CPUFREQ:
+
+			convert_num_unit((float)step->stats.act_cpufreq,
+					 outbuf, sizeof(outbuf),
+					 UNIT_NONE);
+
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_CONSUMED_ENERGY:
+
+			convert_num_unit((float)step->stats.consumed_energy,
+					 outbuf, sizeof(outbuf),
+					 UNIT_NONE);
+
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
 			break;
 		case PRINT_AVEPAGES:
 			convert_num_unit((float)step->stats.pages_ave,

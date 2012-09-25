@@ -743,6 +743,7 @@ finished:	;
 	}
 	if ((agent_ptr->msg_type == REQUEST_PING) ||
 	    (agent_ptr->msg_type == REQUEST_HEALTH_CHECK) ||
+	    (agent_ptr->msg_type == REQUEST_NODE_ENERGY_UPDATE) ||
 	    (agent_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS))
 		ping_end();
 }

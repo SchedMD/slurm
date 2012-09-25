@@ -381,3 +381,55 @@ extern void run_health_check(void)
 		agent_queue_request(check_agent_args);
 	}
 }
+
+/* Update energy data for every node that is not DOWN */
+extern void update_nodes_energy_data(void)
+{
+#ifdef HAVE_FRONT_END
+	front_end_record_t *front_end_ptr;
+#else
+	struct node_record *node_ptr;
+#endif
+	int i;
+	char *host_str = NULL;
+	agent_arg_t *energy_agent_args = NULL;
+
+	energy_agent_args = xmalloc (sizeof (agent_arg_t));
+	energy_agent_args->msg_type = REQUEST_NODE_ENERGY_UPDATE;
+	energy_agent_args->retry = 0;
+	energy_agent_args->hostlist = hostlist_create("");
+	if (energy_agent_args->hostlist == NULL)
+		fatal("hostlist_create: malloc failure");
+
+#ifdef HAVE_FRONT_END
+	for (i = 0, front_end_ptr = front_end_nodes;
+	     i < front_end_node_cnt; i++, front_end_ptr++) {
+		if (IS_NODE_NO_RESPOND(front_end_ptr))
+			continue;
+		hostlist_push(energy_agent_args->hostlist, front_end_ptr->name);
+		energy_agent_args->node_count++;
+	}
+#else
+	for (i=0, node_ptr=node_record_table_ptr;
+	     i<node_record_count; i++, node_ptr++) {
+		if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_FUTURE(node_ptr) ||
+		    IS_NODE_POWER_SAVE(node_ptr))
+			continue;
+		hostlist_push(energy_agent_args->hostlist, node_ptr->name);
+		energy_agent_args->node_count++;
+	}
+#endif
+
+	if (energy_agent_args->node_count == 0) {
+		hostlist_destroy(energy_agent_args->hostlist);
+		xfree (energy_agent_args);
+	} else {
+		hostlist_uniq(energy_agent_args->hostlist);
+		host_str = hostlist_ranged_string_xmalloc(
+				energy_agent_args->hostlist);
+		debug("Updating energy data for %s", host_str);
+		xfree(host_str);
+		ping_begin();
+		agent_queue_request(energy_agent_args);
+	}
+}

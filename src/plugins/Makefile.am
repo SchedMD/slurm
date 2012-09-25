@@ -5,6 +5,7 @@ SUBDIRS = \
 	crypto			\
 	gres			\
 	jobacct_gather		\
+	energy_accounting	\
 	jobcomp			\
 	job_submit		\
 	launch			\

@@ -427,6 +427,37 @@ The default value is "NO", meaning user root will be able to execute jobs.
 \fBDisableRootJobs\fR may also be set by partition.
 
 .TP
+\fBEnergyAccountingNodeFreq\fR
+The energy accounting sampling interval for nodes.
+For \fBEnergyAccountingType=energy_accounting/none\fR this parameter is ignored.
+For all other values of \fBEnergyAccountingType\fR this parameter is the number 
+of seconds between samples of the node energy state.
+The default value is zero. This value disables energy accounting sampling 
+for nodes. Note: The energy accounting sampling interval for jobs is 
+determined by the value of \fBJobAcctGatherFrequency\fR.
+
+.TP
+\fBEnergyAccountingType\fR
+Identifies the plugin to be used for energy consumption accounting. 
+The jobacct_gather plugin and slurmd daemon use this mechanism to collect 
+energy consumption data for jobs and nodes.
+
+Configurable values at present are:
+.RS
+.TP 20
+\fBenergy_accounting/none\fR
+No energy consumption data is collected.
+.TP
+\fBenergy_accounting/ipmi\fR
+Energy consumption data is collected from the Baseboard Management Controller  
+(BMC) using the Intelligent Platform Management Interface (IPMI).
+.TP
+\fBenergy_accounting/rapl\fR
+Energy consumption data is collected from hardware sensors using the Running 
+Average Power Limit (RAPL) mechanism.
+.RE
+
+.TP
 \fBEnforcePartLimits\fR
 If set to "YES" then jobs which exceed a partition's size and/or time limits
 will be rejected at submission time. If set to "NO" then the job will be

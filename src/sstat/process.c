@@ -89,4 +89,6 @@ void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from)
 		dest->cpu_min_taskid = from->cpu_min_taskid;
 	}
 	dest->cpu_ave += from->cpu_ave;
+	dest->consumed_energy = from->consumed_energy;
+	dest->act_cpufreq = from->act_cpufreq;
 }

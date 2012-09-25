@@ -423,7 +423,8 @@ enum jobacct_data_type {
 	JOBACCT_DATA_MIN_CPU,	/* data-> uint32_t psize */
 	JOBACCT_DATA_MIN_CPU_ID,	/* data-> jobacct_id_t psize */
 	JOBACCT_DATA_TOT_CPU,	/* data-> uint32_t psize */
-	JOBACCT_DATA_CPU_CYCLES /* data-> uint32_t psize */
+	JOBACCT_DATA_ACT_CPUFREQ, /* data-> uint32_t psize hb*/
+	JOBACCT_DATA_CONSUMED_ENERGY /* data-> uint32_t psize hb*/
 };
 
 /* Possible task distributions across the nodes */
@@ -1449,6 +1450,9 @@ typedef struct node_info {
 	uint16_t threads;       /* number of threads per core */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
 	uint32_t weight;	/* arbitrary priority of node for scheduling */
+	uint32_t current_watts;
+	uint32_t base_watts;
+	uint32_t consumed_energy;
 	dynamic_plugin_data_t *select_nodeinfo;  /* opaque data structure,
 						  * use
 						  * slurm_get_select_nodeinfo()
@@ -1503,6 +1507,13 @@ typedef struct topo_info_response_msg {
 typedef struct job_alloc_info_msg {
 	uint32_t job_id;	/* job ID */
 } job_alloc_info_msg_t;
+
+typedef struct node_energy_data_msg {
+	char	*node_name;	  /* node name */
+	uint32_t current_watts;	  /* current power consump of node, in watts */
+	uint32_t base_watts;	  /* lowest power consump of node, in watts */
+	uint32_t consumed_energy; /* total energy consumed by node, in joules */
+} node_energy_data_msg_t;
 
 /* Current partition state information and used to set partition options
  * using slurm_update_partition(). */
@@ -1846,6 +1857,8 @@ typedef struct slurm_ctl_conf {
 	uint32_t debug_flags;	/* see DEBUG_FLAG_* above for values */
 	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint16_t disable_root_jobs; /* if set then user root can't run jobs */
+	uint16_t energy_accounting_freq; /* secs between node energy acctg */
+	char *energy_accounting_type; /* energy accounting type */
 	uint16_t enforce_part_limits;	/* if set, reject job exceeding
 					 * partition size and/or time limits */
 	char *epilog;		/* pathname of job epilog */
@@ -1865,8 +1878,6 @@ typedef struct slurm_ctl_conf {
 				 * inactive resource allocation is released */
 	uint16_t job_acct_gather_freq; /* poll frequency for job accounting
 					* gather plugins */
-	uint16_t xres_access_freq; /* poll frequency for 
-					* external-resource-access thread */
 	char *job_acct_gather_type; /* job accounting gather type */
 	char *job_ckpt_dir;	/* directory saving job record checkpoint */
 	char *job_comp_host;	/* job completion logging host */

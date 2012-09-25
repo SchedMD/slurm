@@ -109,6 +109,13 @@ struct jobacctinfo {
 	uint32_t min_cpu; /* min cpu time */
 	jobacct_id_t min_cpu_id; /* contains which task it was on */
 	uint32_t tot_cpu; /* total cpu time(used to figure out ave later) */
+	uint32_t act_cpufreq; /* actual cpu frequency */
+	uint32_t consumed_energy; /* energy */
+        uint32_t base_consumed_energy;	
+	uint32_t last_total_cputime;
+	uint32_t this_sampled_cputime;
+	uint32_t current_weighted_freq;
+	uint32_t current_weighted_power;
 };
 
 /* Define jobacctinfo_t below to avoid including extraneous slurm headers */
@@ -154,6 +161,8 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from);
 
 extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct);
+
+extern void jobacct_common_free_jobacct(void *object);
 
 #endif /*__SLURM_JOBACCT_GATHER_H__*/
 

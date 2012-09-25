@@ -180,6 +180,8 @@ typedef enum {
 	REQUEST_SET_SCHEDLOG_LEVEL,
 	REQUEST_SET_DEBUG_FLAGS,
 	REQUEST_REBOOT_NODES,
+	REQUEST_NODE_ENERGY_UPDATE,
+	RESPONSE_NODE_ENERGY_UPDATE,
 
 	REQUEST_BUILD_INFO = 2001,
 	RESPONSE_BUILD_INFO,
@@ -954,6 +956,9 @@ typedef struct slurm_node_registration_status_msg {
 	time_t timestamp;
 	uint32_t tmp_disk;
 	uint32_t up_time;	/* seconds since reboot */
+	uint32_t current_watts;
+	uint32_t base_watts;
+	uint32_t consumed_energy;
 } slurm_node_registration_status_msg_t;
 
 

@@ -1373,6 +1373,38 @@ uint16_t slurm_get_jobacct_gather_freq(void)
 	return freq;
 }
 
+/* slurm_get_energy_accounting_type
+ * get EnergyAccountingType from slurmctld_conf object
+ * RET char *   - energy_accounting type, MUST be xfreed by caller
+ */
+char *slurm_get_energy_accounting_type(void)
+{
+	char *energy_accounting_type = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		energy_accounting_type = xstrdup(conf->energy_accounting_type);
+		slurm_conf_unlock();
+	}
+	return energy_accounting_type;
+}
+
+uint16_t slurm_get_energy_accounting_freq(void)
+{
+	uint16_t freq = 0;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		freq = conf->energy_accounting_freq;
+		slurm_conf_unlock();
+	}
+	return freq;
+}
+
 /* slurm_get_jobcomp_type
  * returns the job completion logger type from slurmctld_conf object
  * RET char *    - job completion type,  MUST be xfreed by caller

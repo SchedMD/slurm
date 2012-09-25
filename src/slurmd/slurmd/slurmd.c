@@ -84,6 +84,7 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_energy_accounting.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/stepd_api.h"
@@ -680,6 +681,9 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
+	msg->current_watts = energy_accounting_g_getcurrentwatts();
+	msg->base_watts = energy_accounting_g_getbasewatts();
+	msg->consumed_energy = (energy_accounting_g_getnodeenergy(msg->up_time));
 	msg->timestamp = time(NULL);
 
 	return;
@@ -1017,6 +1021,11 @@ _read_config(void)
 	conf->debug_flags = cf->debug_flags;
 	conf->propagate_prio = cf->propagate_prio_process;
 	conf->job_acct_gather_freq = cf->job_acct_gather_freq;
+	conf->energy_accounting_freq = cf->energy_accounting_freq;
+	_free_and_set(&conf->energy_accounting_type,
+		xstrdup(cf->energy_accounting_type));
+	_free_and_set(&conf->job_acct_gather_type, 
+		xstrdup(cf->job_acct_gather_type));
 
 	if ( (conf->node_name == NULL) ||
 	     (conf->node_name[0] == '\0') )

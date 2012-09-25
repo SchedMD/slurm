@@ -153,6 +153,9 @@ struct node_record {
 					 * no need to save/restore */
 	time_t down_time;		/* When first set to DOWN state */
 #endif	/* HAVE_CRAY */
+	uint32_t current_watts;
+	uint32_t base_watts;
+	uint32_t consumed_energy;
 	dynamic_plugin_data_t *select_nodeinfo; /* opaque data structure,
 						 * use select_g_get_nodeinfo()
 						 * to access contents */

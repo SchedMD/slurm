@@ -493,6 +493,15 @@ extern void slurm_free_job_info_members(job_info_t * job)
 	}
 }
 
+
+extern void slurm_free_node_energy_data_msg(node_energy_data_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg->node_name);
+		xfree(msg);
+	}
+}
+
 extern void slurm_free_node_registration_status_msg(
 	slurm_node_registration_status_msg_t * msg)
 {
@@ -2457,6 +2466,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_JOB:
 		slurm_free_job_desc_msg(data);
 		break;
+	case RESPONSE_NODE_ENERGY_UPDATE:
+		slurm_free_node_energy_data_msg(data);
+		break;
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		slurm_free_node_registration_status_msg(data);
 		break;
@@ -2599,6 +2611,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_FORWARD_FAILED:
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
+	case REQUEST_NODE_ENERGY_UPDATE:
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:

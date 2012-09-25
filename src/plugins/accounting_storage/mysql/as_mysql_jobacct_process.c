@@ -164,7 +164,9 @@ char *step_req_inx[] = {
 	"t1.min_cpu",
 	"t1.min_cpu_task",
 	"t1.min_cpu_node",
-	"t1.ave_cpu"
+	"t1.ave_cpu",
+	"t1.act_cpufreq",
+	"t1.consumed_energy"
 };
 
 enum {
@@ -202,6 +204,8 @@ enum {
 	STEP_REQ_MIN_CPU_TASK,
 	STEP_REQ_MIN_CPU_NODE,
 	STEP_REQ_AVE_CPU,
+	STEP_REQ_ACT_CPUFREQ,
+	STEP_REQ_CONSUMED_ENERGY,
 	STEP_REQ_COUNT
 };
 
@@ -464,7 +468,6 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->alloc_nodes = slurm_atoul(row[JOB_REQ_ALLOC_NODES]);
 		job->associd = slurm_atoul(row[JOB_REQ_ASSOCID]);
 		job->resvid = slurm_atoul(row[JOB_REQ_RESVID]);
-
 		job->cluster = xstrdup(cluster_name);
 
 		/* we want a blank wckey if the name is null */
@@ -725,7 +728,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			/* figure this out by start stop */
 			step->suspended =
 				slurm_atoul(step_row[STEP_REQ_SUSPENDED]);
-			if (!step->end) {
+			if (!step->start) {
+				step->elapsed = 0;
+			} else if (!step->end) {
 				step->elapsed = now - step->start;
 			} else {
 				step->elapsed = step->end - step->start;
@@ -770,6 +775,10 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			step->stats.cpu_min_taskid =
 				slurm_atoul(step_row[STEP_REQ_MIN_CPU_TASK]);
 			step->stats.cpu_ave = atof(step_row[STEP_REQ_AVE_CPU]);
+			step->stats.act_cpufreq =
+					atof(step_row[STEP_REQ_ACT_CPUFREQ]);
+			step->stats.consumed_energy =
+					atof(step_row[STEP_REQ_CONSUMED_ENERGY]);
 			step->stepname = xstrdup(step_row[STEP_REQ_NAME]);
 			step->nodes = xstrdup(step_row[STEP_REQ_NODELIST]);
 			step->stats.vsize_max_nodeid =

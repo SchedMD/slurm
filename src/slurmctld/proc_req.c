@@ -126,6 +126,7 @@ inline static void  _slurm_rpc_job_step_create(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_get_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg);
 inline static void  _slurm_rpc_node_registration(slurm_msg_t * msg);
+inline static void  _slurm_rpc_node_energy_update(slurm_msg_t * msg);
 inline static void  _slurm_rpc_block_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg);
@@ -252,6 +253,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		_slurm_rpc_node_registration(msg);
 		slurm_free_node_registration_status_msg(msg->data);
+		break;
+	case RESPONSE_NODE_ENERGY_UPDATE:
+		_slurm_rpc_node_energy_update(msg);
+		slurm_free_node_energy_data_msg(msg->data);
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO:
 		_slurm_rpc_job_alloc_info(msg);
@@ -488,6 +493,9 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->def_mem_per_cpu     = conf->def_mem_per_cpu;
 	conf_ptr->debug_flags         = conf->debug_flags;
 	conf_ptr->disable_root_jobs   = conf->disable_root_jobs;
+	conf_ptr->energy_accounting_freq = conf->energy_accounting_freq;
+	conf_ptr->energy_accounting_type =
+		xstrdup(conf->energy_accounting_type);
 
 	conf_ptr->enforce_part_limits = conf->enforce_part_limits;
 	conf_ptr->epilog              = xstrdup(conf->epilog);
@@ -1930,6 +1938,20 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 		       node_reg_stat_msg->node_name, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
+}
+
+/* _slurm_rpc_node_energy_update - process RPC to return node energy data */
+static void _slurm_rpc_node_energy_update(slurm_msg_t * msg)
+{
+	/* init */
+	DEF_TIMERS;
+	int error_code = SLURM_SUCCESS;
+	node_energy_data_msg_t * energy_data_msg = msg->data;
+
+	START_TIMER;
+	debug2("Processing RPC: RESPONSE_NODE_ENERGY_UPDATE");
+	update_node_record_energy_data( energy_data_msg );
+	END_TIMER2("_slurm_rpc_node_energy_update");
 }
 
 /* _slurm_rpc_job_alloc_info - process RPC to get details on existing job */
