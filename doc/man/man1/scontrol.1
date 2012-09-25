@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "August 2011" "scontrol 2.4" "Slurm components"
+.TH SCONTROL "1" "September 2012" "scontrol 2.5" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -579,7 +579,10 @@ Set the job's priority to the specified value.
 Note that a job priority of zero prevents the job from ever being scheduled.
 By setting a job's priority to zero it is held.
 Set the priority to a non\-zero value to permit it to run.
-Explicitly setting a job's priority clears any previously set nice value.
+Explicitly setting a job's priority clears any previously set nice value and
+removes the priority/multifactor plugin's ability to manage a job's priority.
+In order to restore the priority/multifactor plugin's ability to manage a
+job's priority, hold and then release the job.
 .TP
 \fIQOS\fP=<name>
 Set the job's QOS (Quality Of Service) to the specified value.

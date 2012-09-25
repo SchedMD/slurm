@@ -3621,6 +3621,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	int		delay;
 	char           *resv_id = NULL;
 	slurm_ctl_conf_t *cf;
+	bool		have_spank = false;
+	struct stat	stat_buf;
 
 	debug("_rpc_terminate_job, uid = %d", uid);
 	/*
@@ -3712,6 +3714,12 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			_kill_all_active_steps(req->job_id, SIGTERM, true);
 	}
 
+	cf = slurm_conf_lock();
+	delay = MAX(cf->kill_wait, 5);
+	if (cf->plugstack && (stat(cf->plugstack, &stat_buf) == 0))
+		have_spank = true;
+	slurm_conf_unlock();
+
 	/*
 	 *  If there are currently no active job steps and no
 	 *    configured epilog to run, bypass asynchronous reply and
@@ -3719,8 +3727,9 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 *    request. We need to send current switch state on AIX
 	 *    systems, so this bypass can not be used.
 	 */
+
 #ifndef HAVE_AIX
-	if ((nsteps == 0) && !conf->epilog) {
+	if ((nsteps == 0) && !conf->epilog && !have_spank) {
 		debug4("sent ALREADY_COMPLETE");
 		if (msg->conn_fd >= 0)
 			slurm_send_rc_msg(msg,
@@ -3761,11 +3770,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	/*
 	 *  Check for corpses
 	 */
-	cf = slurm_conf_lock();
-	delay = MAX(cf->kill_wait, 5);
-	slurm_conf_unlock();
-	if ( !_pause_for_job_completion (req->job_id, req->nodes, delay)
-	&&   (xcpu_signal(SIGKILL, req->nodes) +
+	if ( !_pause_for_job_completion (req->job_id, req->nodes, delay) &&
+	     (xcpu_signal(SIGKILL, req->nodes) +
 	      _terminate_all_steps(req->job_id, true)) ) {
 		/*
 		 *  Block until all user processes are complete.
