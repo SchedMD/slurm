@@ -702,41 +702,6 @@ static void _sync_part_prio(void)
 	}
 }
 
-static void _init_global_core_data(struct node_record *node_ptr, int node_cnt)
-{
-	uint32_t n;
-
-	xfree(cr_node_num_cores);
-	cr_node_num_cores = xmalloc(node_cnt * sizeof(uint16_t));
-
-	xfree(cr_node_cores_offset);
-	cr_node_cores_offset = xmalloc((node_cnt+1) * sizeof(uint32_t));
-
-	for (n = 0; n < node_cnt; n++) {
-		uint16_t cores;
-		if (slurm_get_fast_schedule()) {
-			cores  = node_ptr[n].config_ptr->cores;
-			cores *= node_ptr[n].config_ptr->sockets;
-		} else {
-			cores  = node_ptr[n].cores;
-			cores *= node_ptr[n].sockets;
-		}
-		cr_node_num_cores[n] = cores;
-		if (n > 0) {
-			cr_node_cores_offset[n] = cr_node_cores_offset[n-1] +
-						  cr_node_num_cores[n-1] ;
-		} else
-			cr_node_cores_offset[0] = 0;
-	}
-
-	/* an extra value is added to get the total number of cores */
-	/* as cr_get_coremap_offset is sometimes used to get the total */
-	/* number of cores in the cluster */
-	cr_node_cores_offset[node_cnt] = cr_node_cores_offset[node_cnt-1] +
-					 cr_node_num_cores[node_cnt-1] ;
-
-}
-
 /*
  * read_slurm_conf - load the slurm configuration from the configured file.
  * read_slurm_conf can be called more than once if so desired.
@@ -895,8 +860,6 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	_sync_part_prio();
 	_build_bitmaps_pre_select();
-
-	_init_global_core_data(node_record_table_ptr, node_record_count);
 
 	if ((select_g_node_init(node_record_table_ptr, node_record_count)
 	     != SLURM_SUCCESS)						||
