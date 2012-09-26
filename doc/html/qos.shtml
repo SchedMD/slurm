@@ -10,6 +10,7 @@ the job in three ways:
 <li> <a href=#priority>Job Scheduling Priority</a>
 <li> <a href=#preemption>Job Preemption</a>
 <li> <a href=#limits>Job Limits</a>
+<li> <a href=#qos_other>Other QOS Options</a>
 </ul>
 
 <P> The QOS's are defined in the SLURM database using the <i>sacctmgr</i>
@@ -74,22 +75,76 @@ will take precedence over the association's limits.
 QOS</P>
 
 <UL>
-<LI><b>GrpCPUMins</b> Maximum number of CPU*minutes all jobs with this QOS can run.
-<LI><b>MaxCPUMinsPerJob</b> Maximum number of CPU*minutes any job with this QOS can run.
 <LI><b>GrpCpus</b> Maximum number of CPU's all jobs with this QOS can be allocated.
-<LI><b>MaxCpusPerJob</b> Maximum number of CPU's any job with this QOS can be allocated.
-<LI><b>MaxCpusPerUser</b> Maximum number of CPU's any user with this QOS can be allocated.
+<LI><b>GrpCPUMins</b> A hard limit of cpu minutes to be used by jobs
+  running from this QOS.  If this limit is reached all jobs running in
+  this group will be killed, and no new jobs will be allowed to run.
+<LI><b>GrpCPURunMins</b> Maximum number of CPU minutes all jobs
+  running with this QOS can run at the same time.  This takes into
+  consideration time limit of running jobs.  If the limit is reached
+  no new jobs are started until other jobs finish to allow time to
+  free up.
 <LI><b>GrpJobs</b> Maximum number of jobs that can run with this QOS.
-<LI><b>MaxJobsPerUser</b> Maximum number of jobs a user can run with this QOS.
 <LI><b>GrpMemory</b> Maximum amount of memory (MB) all jobs with this QOS can be allocated.
 <LI><b>GrpNodes</b> Maximum number of nodes that can be allocated to all jobs with this QOS.
-<LI><b>MaxNodesPerJob</b> Maximum number of nodes that can be allocated to any job with this QOS.
-<LI><b>MaxNodesPerUser</b> Maximum number of nodes that can be allocated to any user with this QOS.
 <LI><b>GrpSubmitJobs</b> Maximum number of jobs with this QOS that can be in the system (no matter what state).
-<LI><b>MaxSubmitJobsPerUser</b> Maximum number of jobs with this QOS that can be in the system.
 <LI><b>GrpWall</b> Wall clock limit for all jobs running with this QOS.
+<LI><b>MaxCpusPerJob</b> Maximum number of CPU's any job with this QOS can be allocated.
+<LI><b>MaxCPUMinsPerJob</b> Maximum number of CPU*minutes any job with this QOS can run.
+<LI><b>MaxNodesPerJob</b> Maximum number of nodes that can be allocated to any job with this QOS.
 <LI><b>MaxWallDurationPerJob</b> Wall clock limit for any jobs running with this QOS.
+<LI><b>MaxCpusPerUser</b> Maximum number of CPU's any user with this QOS can be allocated.
+<LI><b>MaxJobsPerUser</b> Maximum number of jobs a user can run with this QOS.
+<LI><b>MaxNodesPerUser</b> Maximum number of nodes that can be allocated to any user with this QOS.
+<LI><b>MaxSubmitJobsPerUser</b> Maximum number of jobs with this QOS that can be in the system.
 </UL>
+
+<a name=qos_other>
+<h2>Other QOS Options</h2></a>
+<ul>
+<li><b>Flags</b> Used by the slurmctld to override or enforce certain
+  characteristics. Valid options are
+
+<ul>
+<li><b>EnforceUsageThreshold</b> If set, and the QOS also has a UsageThreshold,
+any jobs submitted with this QOS that fall below the UsageThreshold
+will be held until their Fairshare Usage goes above the Threshold.
+
+<li><b>NoReserve</b> If this flag is set and backfill scheduling is used,
+jobs using this QOS will not reserve resources in the backfill
+schedule's  map of resources allocated through time. This flag is
+intended for use with a QOS that may be preempted by jobs associated
+with all other QOS (e.g use with a "standby" QOS). If the allocated is
+used with a QOS which can not be preempted by all other QOS, it could
+result in starvation of larger jobs.
+
+<li><b>PartitionMaxNodes</b> If set jobs using this QOS will be able to
+override the requested partition's MaxNodes limit.
+
+<li><b>PartitionMinNodes</b> If set jobs using this QOS will be able to
+override the requested partition's MinNodes limit.
+
+<li><b>PartitionTimeLimit</b> If set jobs using this QOS will be able to
+override the requested partition's TimeLimit.
+
+<li><b>RequiresReservaton</b> If set jobs using this QOS must designate a
+reservation when submitting a job.  This option can be useful in
+restricting usage of a QOS that may have greater preemptive capability
+or additional resources to be allowed only within a reservation.
+</ul>
+
+<li><b>GraceTime</b> Preemption grace time to be extended to a job
+  which has been selected for preemption.
+<li><b>UsageFactor</b> Usage factor when running with this QOS
+  (i.e. .5 would make it use only half the time as normal in
+  accounting and 2 would make it use twice as much.)
+<li><b>UsageThreshold</b>
+A float representing the lowest fairshare of an association allowable
+to run a job.  If an association falls below this threshold and has
+pending jobs or submits new jobs those jobs will be held until the
+usage goes back above the threshold.  Use <i>sshare</i> to see current
+shares on the system.
+</ul>
 
 <h2>Configuration</h2>
 
