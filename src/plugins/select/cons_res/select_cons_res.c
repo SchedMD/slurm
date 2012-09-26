@@ -2552,13 +2552,11 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	if (core_cnt) { /* Reservation is using partial nodes */
 		debug2("Reservation is using partial nodes");
 
+		tmpcore = _make_core_bitmap_filtered(avail_bitmap, 0);
 		/* if not NULL = Cores used by other core based reservations
 		 * overlapping in time with this one */
-		if (*core_bitmap == NULL) {
-			*core_bitmap =
-				_make_core_bitmap_filtered(avail_bitmap, 0);
-		}
-		tmpcore = _make_core_bitmap_filtered(avail_bitmap, 0);
+		if (*core_bitmap == NULL)
+			*core_bitmap = bit_copy(tmpcore);
 
 		/* remove all existing allocations from free_cores */
 		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
@@ -2629,8 +2627,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 				       "node %d", cores_in_node, inx);
 				bit_set(sp_avail_bitmap, inx);
 			} else {
-				debug2("Reservation NOT using node %d",
-				       inx);
+				debug2("Reservation NOT using node %d", inx);
 			}
 
 		}
