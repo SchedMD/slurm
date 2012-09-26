@@ -1069,11 +1069,15 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		packstr(resv_ptr->users,	buffer);
 
 		if (internal) {
+			uint32_t core_cnt = 0;
 			packstr(resv_ptr->assoc_list,	buffer);
 			pack32(resv_ptr->resv_id,	buffer);
 			pack_time(resv_ptr->start_time_prev,	buffer);
 			pack_time(resv_ptr->start_time,	buffer);
 			pack32(resv_ptr->duration,	buffer);
+			if (resv_ptr->core_bitmap)
+				core_cnt = bit_size(resv_ptr->core_bitmap);
+			pack32(core_cnt,		buffer);
 			pack_bit_fmt(resv_ptr->core_bitmap, buffer);
 		} else {
 			pack_bit_fmt(resv_ptr->node_bitmap, buffer);
@@ -1118,7 +1122,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 					  uint16_t protocol_version)
 {
 	slurmctld_resv_t *resv_ptr;
-	uint32_t uint32_tmp;
+	uint32_t core_cnt, uint32_tmp;
 	char *core_inx_str = NULL;
 
 	resv_ptr = xmalloc(sizeof(slurmctld_resv_t));
@@ -1150,21 +1154,13 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpack_time(&resv_ptr->start_time_prev, buffer);
 		safe_unpack_time(&resv_ptr->start_time, buffer);
 		safe_unpack32(&resv_ptr->duration,	buffer);
+		safe_unpack32(&core_cnt,		buffer);
 		safe_unpackstr_xmalloc(&core_inx_str, &uint32_tmp, buffer);
 		if (core_inx_str == NULL) {
 			debug2("Reservation %s has no core_bitmap",
 			     resv_ptr->name);
 		} else {
-			struct node_record *node_ptr;
-			node_ptr = find_node_record(resv_ptr->node_list);
-			if (!node_ptr) {
-				error("could not find node %s for "
-				      "reservation %s", resv_ptr->node_list,
-				      resv_ptr->name);
-				xfree(core_inx_str);
-				goto unpack_error;
-			}
-			resv_ptr->core_bitmap = bit_alloc(node_ptr->cores);
+			resv_ptr->core_bitmap = bit_alloc(core_cnt);
 			bit_unfmt(resv_ptr->core_bitmap, core_inx_str);
 			info("Reservation %s has core_bitmap %s on node %s",
 			     resv_ptr->name, core_inx_str,
@@ -2999,6 +2995,7 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 fini:	FREE_NULL_BITMAP(save_bitmap);
 #if 0
 	if (ret_bitmap) {
+		char str[300];
 		bit_fmt(str, (sizeof(str) - 1), ret_bitmap);
 		info("pick_idle_nodes getting %s from select cons_res", str);
 		if (*core_bitmap) {
