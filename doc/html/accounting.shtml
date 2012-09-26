@@ -637,7 +637,7 @@ options are available:
 privileges to this user. Valid options are
 <ul>
 <li>None</li>
-<li>Operator: can add, modify,and remove users, and add other operators)</li>
+<li>Operator: can add, modify,and remove users, and add other operators</li>
 <li>Admin: In addition to operator privileges these users can add, modify,
 and remove accounts and clusters</li>
 </ul>
