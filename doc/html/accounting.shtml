@@ -267,7 +267,8 @@ SlurmDBD executes</li>
 
 <li><b>AccountingStoragePass</b>: If using SlurmDBD with a second MUNGE
 daemon, store the pathname of the named socket used by MUNGE to provide
-enterprise-wide. Otherwise the default MUNGE daemon will be used.</li>
+enterprise-wide authentication (i.e. /var/run/munge/moab.socket.2). Otherwise
+the default MUNGE daemon will be used. </li>
 
 <li><b>AccountingStoragePort</b>:
 The network port that SlurmDBD accepts communication on.</li>
@@ -637,9 +638,18 @@ options are available:
 privileges to this user. Valid options are
 <ul>
 <li>None</li>
-<li>Operator: can add, modify,and remove users, and add other operators</li>
-<li>Admin: In addition to operator privileges these users can add, modify,
-and remove accounts and clusters</li>
+<li>Operator: can add, modify, and remove any database object (user,
+account, etc), and add other operators
+<br>On a SlurmDBD served slurmctld these users can<br>
+<ul>
+<li>View information that is blocked to regular uses by a PrivateData
+  flag</li>
+<li>Create/Alter/Delete Reservations</li>
+</ul>
+</li>
+<li>Admin: These users have the same level of privileges as an
+operator in the database.  They can also alter anything on a served
+slurmctld as if they were the slurm user or root.</li>
 </ul>
 
 <li><b>Cluster=</b> Only add to accounts on these clusters (default is all clusters)</li>
@@ -680,6 +690,13 @@ in the <a href="resource_limits.html">Resource Limits</a> document.</p>
   running from this association and its children.  If this limit is
   reached all jobs running in this group will be killed, and no new
   jobs will be allowed to run.
+</li>
+
+<li><b>GrpCPURunMins=</b> Maximum number of CPU minutes all jobs
+  running with this association and its children can run at the same
+  time.  This takes into consideration time limit of running jobs.  If
+  the limit is reached no new jobs are started until other jobs finish
+  to allow time to free up.
 </li>
 
 <li><b>GrpCPUs=</b> The total count of cpus able to be used at any given

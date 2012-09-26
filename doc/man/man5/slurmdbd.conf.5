@@ -29,8 +29,8 @@ The overall configuration parameters available include:
 \fBArchiveDir\fR
 If ArchiveScript is not set the slurmdbd will generate a file that can be
 read in anytime with sacctmgr load filename.  This directory is where the
-file will be placed archive has ran.  Default is /tmp.  The format for this
-files name is
+file will be placed after a purge event has happened and archive for that
+element is set to true.  Default is /tmp.  The format for this files name is
 .na
 $ArchiveDir/$ClusterName_$ArchiveObject_archive_$BeginTimeStamp_$endTimeStamp
 .ad
@@ -117,8 +117,8 @@ This may be fine for testing purposes, but
 "http://www.theether.org/authd/" for more information).
 "auth/munge" indicates that LLNL's Munge system is to be used
 (this is the best supported authentication mechanism for SLURM,
-see "http://home.gna.org/munge/" for more information).
-SlurmDbd must be terminated prior to changing the value of \fBAuthType\fR
+see "https://code.google.com/p/munge/" for more information).
+SlurmDBD must be terminated prior to changing the value of \fBAuthType\fR
 and later restarted.
 
 .TP

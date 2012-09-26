@@ -271,6 +271,14 @@ jobs submitted with associations in the group will be delayed until
 they are able to run inside the limit.
 
 .TP
+\fIGrpCPURunMins\fP=<max cpu run minutes>
+Maximum number of CPU minutes all jobs
+running with this association and all it's child associations can run
+at the same time.  This takes into consideration time limit of running
+jobs.  If the limit is reached no new jobs are started until other
+jobs finish to allow time to free up.
+
+.TP
 \fIGrpCPUs\fP=<max cpus>
 Maximum number of CPUs running jobs are able to be allocated in aggregate for
 this association and all associations which are children of this association.
@@ -565,6 +573,14 @@ parent association is used for fairshare.
 Maximum number of CPU minutes running jobs are able to be allocated in
 aggregate for this association and all associations which are children
 of this association.
+
+.TP
+\fIGrpCPURunMins\fP
+Maximum number of CPU minutes all jobs
+running with this association and all it's child associations can run
+at the same time.  This takes into consideration time limit of running
+jobs.  If the limit is reached no new jobs are started until other
+jobs finish to allow time to free up.
 
 .TP
 \fIGrpCPUs\fP
@@ -961,6 +977,13 @@ selected for preemption.
 \fIGrpCPUMins\fP
 Maximum number of CPU minutes running jobs are able to be allocated in
 aggregate for this QOS.
+
+.TP
+\fIGrpCPURunMins\fP Maximum number of CPU minutes all jobs
+running with this QOS can run at the same time.  This takes into
+consideration time limit of running jobs.  If the limit is reached
+no new jobs are started until other jobs finish to allow time to
+free up.
 
 .TP
 \fIGrpCPUs\fP
