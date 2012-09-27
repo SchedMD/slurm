@@ -47,7 +47,7 @@ proc inc3_11_8 {} {
 
 
 	# (First test) Submit the batch job: a simple job using just 1 core inside the reservation
-	set sbatch_pid [spawn $sbatch --nodes=$num_nodes --ntasks-per-node=$core_res_num --output=/dev/null $file_in]
+	set sbatch_pid [spawn $sbatch --nodes=$num_nodes --time=30:00 --ntasks-per-node=$core_res_num --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -110,6 +110,30 @@ proc inc3_11_8 {} {
 		send_user "\n\033\[31mFAILURE: reservation was created when it should have not\033\[m\n"
 		set exit_code 1
 		
+		# Delete the reservation
+		set ret_code [delete_res $res_name]
+	}
+
+	# Make the reservation using more cores than free in a node (now)
+	# but those cores being free at reservation start time
+	set ret_code [create_res "StartTime=now+3600 Duration=60 NodeCnt=1 CoreCnt=$core_res_num User=$user_name" 0]
+	if {$ret_code != 0} {
+		send_user "\n\033\[31mFAILURE: Reservation can not be created when it should\033\[m\n"
+		set exit_code 1
+	} else {
+		send_user "\n\033\[32mSUCCESS: Reservation can be created as expected\033\[m\n"
+		# Delete the reservation
+		set ret_code [delete_res $res_name]
+	}
+
+	# Make the reservation using more cores than free at reservation start time
+	set ret_code [create_res "StartTime=now+300 Duration=60 NodeCnt=1 CoreCnt=$core_res_num User=$user_name" 1]
+	if {$ret_code != 0} {
+		send_user "\n\033\[32mSUCCESS: Reservation can not be created as expected\033\[m\n"
+	} else {
+		send_user "\n\033\[31mFAILURE: Reservation can be created when it shouldnot \033\[m\n"
+		set exit_code 1
+
 		# Delete the reservation
 		set ret_code [delete_res $res_name]
 	}
