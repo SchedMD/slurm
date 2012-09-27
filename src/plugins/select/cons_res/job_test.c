@@ -2105,8 +2105,23 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bit_copybits(free_cores, avail_cores);
 
 	if (exc_core_bitmap) {
+		int exc_core_size  = bit_size(exc_core_bitmap);
+		int free_core_size = bit_size(free_cores);
+		if (exc_core_size != free_core_size) {
+			/* This would indicate that cores were added to or
+			 * removed from nodes in this reservation when the
+			 * slurmctld daemon restarted with a new slurm.conf
+			 * file. This can result in cores being lost from a
+			 * reservation. */
+			error("Bad core_bitmap size for reservation %s "
+			      "(%d != %d), ignoring core reservation",
+			      job_ptr->resv_name,
+			      exc_core_size, free_core_size);
+			exc_core_bitmap = NULL;	/* Clear local value */
+		}
+	}
+	if (exc_core_bitmap) {
 		char str[100];
-
 		bit_fmt(str, (sizeof(str) - 1), exc_core_bitmap);
 		debug2("excluding cores reserved: %s", str);
 
@@ -2499,7 +2514,7 @@ alloc_job:
 		return error_code;
 
 	/* load memory allocated array */
-	save_mem =details_ptr->pn_min_memory;
+	save_mem = details_ptr->pn_min_memory;
 	if (save_mem & MEM_PER_CPU) {
 		/* memory is per-cpu */
 		save_mem &= (~MEM_PER_CPU);

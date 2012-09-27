@@ -2623,8 +2623,8 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 			if (cores_in_node) {
 				/* Add this node to the final node bitmap */
-				debug2("Reservation using %d cores in "
-				       "node %d", cores_in_node, inx);
+				debug2("Reservation using %d cores in node %d",
+				       cores_in_node, inx);
 				bit_set(sp_avail_bitmap, inx);
 			} else {
 				debug2("Reservation NOT using node %d", inx);

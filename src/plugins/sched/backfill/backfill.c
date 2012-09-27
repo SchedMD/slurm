@@ -315,7 +315,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		job_ptr->details->shared = 0;
 		tmp_bitmap = bit_copy(*avail_bitmap);
 
-		if (exc_core_bitmap){
+		if (exc_core_bitmap) {
 			bit_fmt(str, (sizeof(str) - 1), exc_core_bitmap);
 			debug2(" _try_sched with exclude core bitmap: %s",str);
 		}
