@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- BGQ - If a job goes away while still trying to free it up in the
     database, and the job is running on a small block make sure we free up
     the correct node count.
+ -- BGQ - Logic added to make sure a job has finished on a block before it is
+    purged from the system if its front-end node goes down.
 
 * Changes in SLURM 2.4.3
 ========================

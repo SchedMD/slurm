@@ -271,6 +271,25 @@ static int _block_wait_for_jobs(char *bg_block_id, struct job_record *job_ptr)
 		return SLURM_ERROR;
 	}
 
+	/* This code can be used to simulate having a job hang in the
+	 * database.
+	 */
+	// if (job_ptr && (job_ptr->magic == JOB_MAGIC)) {
+	// 	uint32_t job_id = job_ptr->job_id;
+	// 	while (1) {
+	// 		debug("waiting on slurm job %u to "
+	// 		      "finish on block %s",
+	// 		      job_id, bg_block_id);
+	// 		sleep(3);
+	// 		if (job_ptr->magic != JOB_MAGIC) {
+	// 			info("bad magic");
+	// 			break;
+	// 		} else if (IS_JOB_COMPLETED(job_ptr)) {
+	// 			info("job completed");
+	// 			break;
+	// 		}
+	// 	}
+	// }
 #ifdef HAVE_BG_FILES
 
 	job_filter.setComputeBlockName(bg_block_id);
@@ -367,8 +386,17 @@ static void _remove_jobs_on_block_and_reset(char *block_id,
 	}
 
 	slurm_mutex_unlock(&block_state_mutex);
-	if (job_ptr)
+	if (job_ptr) {
+		if (job_ptr->magic == JOB_MAGIC) {
+			/* This signals the job purger that the job
+			   actually finished in the system.
+			*/
+			select_jobinfo_t *jobinfo = (select_jobinfo_t *)
+				job_ptr->select_jobinfo->data;
+			jobinfo->bg_record = NULL;
+		}
 		unlock_slurmctld(job_read_lock);
+	}
 
 	/* avoid locking issues just do this afterwards. */
 	if (mp_str) {
