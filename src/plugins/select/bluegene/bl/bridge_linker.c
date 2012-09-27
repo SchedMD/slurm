@@ -1956,6 +1956,20 @@ extern void bridge_block_post_job(char *bg_block_id, struct job_record *job_ptr)
 	jobs = 1;
 #endif
 	_remove_jobs_on_block_and_reset(job_list, jobs,	bg_block_id);
+	if (job_ptr) {
+		slurmctld_lock_t job_read_lock =
+			{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		lock_slurmctld(job_read_lock);
+		if (job_ptr->magic == JOB_MAGIC) {
+			/* This signals the job purger that the job
+			   actually finished in the system.
+			*/
+			select_jobinfo_t *jobinfo =
+				job_ptr->select_jobinfo->data;
+			jobinfo->bg_record = NULL;
+		}
+		unlock_slurmctld(job_read_lock);
+	}
 
 #if defined HAVE_BG_FILES
 	if ((rc = _free_job_list(job_list)) != SLURM_SUCCESS)

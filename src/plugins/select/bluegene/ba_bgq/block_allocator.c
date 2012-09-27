@@ -1561,6 +1561,12 @@ extern struct job_record *ba_remove_job_in_block_job_list(
 		 */
 		bad_magic = 1;
 		used_cnodes = bit_copy(ba_mp->cnode_bitmap);
+		/* Take out the part (if any) of the midplane that
+		   isn't part of the block.
+		*/
+		bit_not(ba_mp->cnode_usable_bitmap);
+		bit_and(used_cnodes, ba_mp->cnode_usable_bitmap);
+		bit_not(ba_mp->cnode_usable_bitmap);
 	}
 again:
 	itr = list_iterator_create(bg_record->job_list);
@@ -1631,8 +1637,10 @@ again:
 	}
 
 	if (bad_magic) {
-		num_unused_cpus +=
-			bit_set_count(used_cnodes) * bg_conf->cpu_ratio;
+		uint32_t current_cnode_cnt = bit_set_count(used_cnodes);
+
+		num_unused_cpus += current_cnode_cnt * bg_conf->cpu_ratio;
+
 		bit_not(used_cnodes);
 		bit_and(ba_mp->cnode_bitmap, used_cnodes);
 		bit_not(used_cnodes);
@@ -1640,8 +1648,7 @@ again:
 			debug("ba_remove_job_in_block_job_list: "
 			      "Removing old sub-block job using %d cnodes "
 			      "from block %s",
-			      bit_set_count(used_cnodes),
-			      bg_record->bg_block_id);
+			      current_cnode_cnt, bg_record->bg_block_id);
 		}
 	} else {
 		if (bg_conf->slurm_debug_flags & DEBUG_FLAG_SELECT_TYPE) {

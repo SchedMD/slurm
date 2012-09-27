@@ -5259,7 +5259,6 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->licenses);
 	if (job_ptr->license_list)
 		list_destroy(job_ptr->license_list);
-	job_ptr->magic = 0;
 	xfree(job_ptr->mail_user);
 	xfree(job_ptr->name);
 	xfree(job_ptr->network);
@@ -5314,6 +5313,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 {
 	time_t kill_age, min_age, now = time(NULL);;
 	struct job_record *job_ptr = (struct job_record *)job_entry;
+	void *block_in_use = NULL;
 
 	if (IS_JOB_COMPLETING(job_ptr)) {
 		kill_age = now - (slurmctld_conf.kill_wait +
@@ -5334,6 +5334,12 @@ static int _list_find_job_old(void *job_entry, void *key)
 
 	if (!(IS_JOB_FINISHED(job_ptr)))
 		return 0;	/* Job still active */
+
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_BLOCK_PTR,
+				    &block_in_use);
+	if (block_in_use)
+		return 0;      /* Job hasn't finished on block yet */
 
 	/* If we don't have a db_index by now and we are running with
 	   the slurmdbd lets put it on the list to be handled later
