@@ -5,8 +5,9 @@
 <h2>Index</h2>
 <ul>
 <li><a href="#24">SLURM Version 2.4, June 2012</a></li>
-<li><a href="#25">SLURM Version 2.5, scheduled for November 2012</a></li>
-<li><a href="#26">SLURM Version 2.6 and beyond</a></li>
+<li><a href="#25">SLURM Version 2.5, November 2012</a></li>
+<li><a href="#26">SLURM Version 2.6, scheduled for April 2013</a></li>
+<li><a href="#27">SLURM Version 2.7 and beyond</a></li>
 <li><a href="#security">Security Patches</a></li>
 </ul>
 
@@ -28,13 +29,14 @@ of "AMD").</li>
 </ul>
 
 <h2><a name="25">Major Updates in SLURM Version 2.5</a></h2>
-<p>SLURM Version 2.5 is scheduled for release in November 2012.
-Major enhancements planned include:
+<p>SLURM Version 2.5 was release in November 2012.
+Major enhancements include:
 <ul>
+<li>User control over CPU frequency of each job step.</li>
 <li>Recording power usage information for each job.</li>
 <li>Job specification of desired CPU frequency, which will effect it's
 power usage and possibly its execution cost.</li>
-<li>Integration with FlexLM license management.</li>
+<li>Advanced reservation of cores rather than whole nodes.</li>
 <li>Integration with IBM's
 <a href="http://www-03.ibm.com/systems/software/parallel/">Parallel Environment</a>
 including POE (Parallel Operating Environment) and NRT (Network Resource Table) API.</li>
@@ -42,14 +44,28 @@ including POE (Parallel Operating Environment) and NRT (Network Resource Table) 
 plugin.</li>
 </ul>
 
-<h2><a name="26">Major Updates in SLURM Version 2.6 and beyond</a></h2>
+<h2><a name="26">Major Updates in SLURM Version 2.6</a></h2>
+<p>SLURM Version 2.6 is scheduled for release in April 2013.
+Major enhancements planned include:
+<ul>
+<li><a href="http://en.wikipedia.org/wiki/MapReduce">MapReduce</a> support
+(launches ~1000x fater, runs ~10x faster).</li>
+<li>Scheduling optimized for energy efficiency.</li>
+<li>Integration with
+<a href="http://en.wikipedia.org/wiki/FlexNet_Publisher">FLEXlm (Flexnet Publisher)</a>
+license management.</li>
+<li>Faster and more powerful job step management support (e.g. step
+dependencies).</li>
+<li>Improved control over scheduling of CPUs and GPUs with multiple jobs per
+node (<i>MaxCPUsPerNode</i> allocated to all jobs in a partition/queue).</li>
+</ul>
+
+<h2><a name="27">Major Updates in SLURM Version 2.7 and beyond</a></h2>
 <p> Detailed plans for release dates and contents of additional SLURM releases
 have not been finalized. Anyone desiring to perform SLURM development should
 notify <a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>
 to coordinate activities. Future development plans includes:
 <ul>
-<li>Faster and more powerful job step management support  (e.g. step
-dependencies).</li>
 <li>Improved user support for fault-tolerance (e.g. "hot spare" resources).</li>
 <li>Numerous enhancements to advanced resource reservations (e.g. start or
 end the reservation early depending upon the workload).</li>
@@ -83,6 +99,6 @@ trojan library, then that library will be used by the SLURM daemon with
 unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 6 July 2012</p>
+<p style="text-align:center;">Last modified 28 September 2012</p>
 
 <!--#include virtual="footer.txt"-->
