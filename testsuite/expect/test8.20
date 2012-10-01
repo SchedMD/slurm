@@ -42,7 +42,11 @@ print_header $test_id
 if {([test_bluegene] == 0) || [string compare [get_bluegene_type] "Q"]} {
 	send_user "\nWARNING: This test is only compatable with Bluegene/Q systems\n"
 	exit $exit_code
+} elseif (![test_emulated]) {
+	send_user "\nWARNING: This test will only work on an emulated Blugene/Q system."
+	exit $exit_code
 }
+
 
 #
 # Spawn a job via salloc
