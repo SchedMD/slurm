@@ -39,6 +39,7 @@ set job_id           0
 set job_size         32
 set prompt           "PROMPT: "
 set mpicc            "/usr/local/bin/mpixlc_r"
+set mpicc_opts       "-q64"
 
 print_header $test_id
 
@@ -50,17 +51,16 @@ if {([test_bluegene] == 0) || [string compare [get_bluegene_type] "Q"]} {
 #
 # Test for existence of mpi compiler
 #
-if {[info exists mpicc] && [file executable $mpicc]} {
-	set mpicc "$mpicc -q64"
-} else {
+if {![info exists mpicc] || ![file executable $mpicc]} {
 	set mpicc $bin_cc
+	set mpicc_opts "-m64"
 }
 
 #
 # Delete left-over program and rebuild it
 #
 exec $bin_rm -f $test_prog ${test_prog}.o
-exec $mpicc -o $test_prog ${test_prog}.c
+exec $mpicc $mpicc_opts -o $test_prog ${test_prog}.c
 
 #
 # Spawn a job via salloc
