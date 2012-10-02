@@ -337,7 +337,7 @@ static void _init_options( void )
 	params.reconfig     = false;
 	params.time_limit   = false;
 	params.node_up      = false;
-	params.user_id      = 0;
+	params.user_id      = NO_VAL;
 	params.verbose      = 0;
 }
 
@@ -365,7 +365,10 @@ static void _print_options( void )
 	verbose("reconfig     = %s", params.reconfig ? "true" : "false");
 	verbose("time_limit   = %s", params.time_limit ? "true" : "false");
 	verbose("trigger_id   = %u", params.trigger_id);
-	verbose("user_id      = %u", params.user_id);
+	if (params.user_id == NO_VAL)
+		verbose("user_id      = N/A");
+	else
+		verbose("user_id      = %u", params.user_id);
 	verbose("verbose      = %d", params.verbose);
 	verbose("primary_slurmctld_failure            = %s",
 		params.pri_ctld_fail ? "true" : "false");
@@ -400,8 +403,8 @@ static void _validate_options( void )
 		exit(1);
 	}
 
-	if (params.mode_clear
-	&&  ((params.trigger_id + params.job_id + params.user_id) == 0)) {
+	if (params.mode_clear && (params.user_id == NO_VAL) &&
+	    (params.trigger_id == 0) && (params.job_id == 0)) {
 		error("You must specify a --id, --jobid, or --user to clear");
 		exit(1);
 	}

@@ -44,13 +44,32 @@ set file_err           "test$test_id.error"
 set test_prog          "test$test_id.prog"
 set job_id             0
 
-# Blue Gene cross-compiler info
-set task_cnt           16
-set mpicc              "/usr/local/bin/mpxlc"
-set mpicc_opts         "-qarch=440d"
-set mpirun_opts        "-nodes $task_cnt -exe [$bin_pwd]/$test_prog -cwd [$bin_pwd]"
 
 print_header $test_id
+
+if {[test_bluegene] == 0} {
+	send_user "\nWARNING: This test is only compatable with bluegene systems\n"
+	exit $exit_code
+}
+
+set type [get_bluegene_type]
+
+if {$type == 0} {
+	send_user "\nFAILURE: No bluegene type found \n"
+	exit 1
+}
+
+set task_cnt 16
+if {![string compare $type "P"] || ![string compare $type "L"]} {
+	# Blue Gene cross-compiler info
+	set mpicc      "/usr/local/bin/mpxlc"
+	set mpicc_opts "-qarch=440d"
+	set bg_exec    "$mpirun -nodes $task_cnt -exe [$bin_pwd]/$test_prog -cwd [$bin_pwd]"
+} else {
+	set mpicc      "/usr/local/bin/mpixlc_r"
+	set mpicc_opts "-q64"
+	set bg_exec    "$srun -n $task_cnt $test_prog"
+}
 
 #
 # Test for existence of mpi compiler
@@ -81,7 +100,7 @@ exec $mpicc $mpicc_opts -o $test_prog ${test_prog}.c
 exec $bin_rm -f $file_in $file_out $file_err
 exec echo "#!$bin_bash"					 >$file_in
 exec echo "$bin_env | $bin_grep MPIRUN_PARTITION"	>>$file_in
-exec echo "$mpirun $mpirun_opts"			>>$file_in
+exec echo "$bg_exec"            			>>$file_in
 exec echo "$bin_echo TEST_COMPLETE"			>>$file_in
 exec $bin_chmod 700 $file_in
 

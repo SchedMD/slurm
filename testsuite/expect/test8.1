@@ -109,6 +109,15 @@ if {$job_id == 0} {
 }
 
 #
+# Wait for job to start
+#
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: waiting for job to start\n"
+	cancel_job $job_id
+	exit 1
+}
+
+#
 # Confirm parameters passed into SLURM
 #
 set matches 0
@@ -169,6 +178,15 @@ expect {
 
 if {$job_id == 0} {
 	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+
+#
+# Wait for job to start
+#
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: waiting for job to start\n"
+	cancel_job $job_id
 	exit 1
 }
 
