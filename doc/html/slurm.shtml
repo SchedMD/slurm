@@ -1,8 +1,8 @@
 <!--#include virtual="header.txt"-->
 
-<h1>SLURM: A Highly Scalable Resource Manager</h1>
+<h1>SLURM Workload Manager</h1>
 
-<p>SLURM is an open-source resource manager designed for Linux clusters of
+<p>SLURM is an open-source workload manager designed for Linux clusters of
 all sizes.
 It provides three key functions.
 First it allocates exclusive and/or non-exclusive access to resources
@@ -28,7 +28,7 @@ world-class computer centers and rely upon a
 or supporting sophisticated
 <a href="priority_multifactor.html">job prioritization</a> algorithms.</p>
 
-<p>While other resource managers do exist, SLURM is unique in several
+<p>While other workload managers do exist, SLURM is unique in several
 respects:
 <ul>
 <li><b>Scalability</b>: It is designed to operate in a heterogeneous cluster
@@ -55,7 +55,7 @@ can specify size and time limit ranges.</li>
 help identify load imbalances and other anomalies.</li>
 </ul></p>
 
-<p>SLURM provides resource management on many of the most powerful computers in
+<p>SLURM provides workload management on many of the most powerful computers in
 the world including:
 <ul>
 <li><a href="https://asc.llnl.gov/computing_resources/sequoia/">Sequoia</a>
@@ -104,6 +104,6 @@ for molecular dynamics simulation using 512 custom-designed ASICs
 and a three-dimensional torus interconnect.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 28 September 2012</p>
+<p style="text-align:center;">Last modified 2 October 2012</p>
 
 <!--#include virtual="footer.txt"-->

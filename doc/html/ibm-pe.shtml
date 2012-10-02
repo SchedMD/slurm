@@ -400,7 +400,7 @@ For example:</p>
 
 <p>The poe command interacts with SLURM by loading a SLURM library providing
 a variety of functions for its use. You must specify the location of that
-library and note that SLURM is the resource manager in the file named
+library and note that SLURM is the workload manager in the file named
 "/etc/poe.limits".
 The library name is "libpermapi.so" and it is in installed with the other SLURM
 libraries in the subdirectory "lib/slurm". A sample "/etc/poe.limits" file is
@@ -494,6 +494,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 September 2012</p></td>
+<p style="text-align:center;">Last modified 2 October 2012</p></td>
 
 <!--#include virtual="footer.txt"-->

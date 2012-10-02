@@ -44,7 +44,7 @@ you will need to build and install MUNGE, available from
 <li><a href="http://sourceforge.net/projects/auks/">AUKS</a><br>
 AUKS is an utility designed to ease Kerberos V credential support addition 
 to non-interactive applications, like batch systems (SLURM, LSF, Torque, etc.).
-It includes a plugin for the SLURM resource manager. AUKS is not used as
+It includes a plugin for the SLURM workload manager. AUKS is not used as
 an authentication plugin by the SLURM code itself, but provides a mechanism
 for the application to manage Kerberos V credentials.</li>
 </ul><br>
@@ -139,7 +139,7 @@ http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2</a></li><br>
 
 <li><b>PAM Module (pam_slurm)</b><br>
 Pluggable Authentication Module (PAM) for restricting access to compute nodes
-where SLURM performs resource management. Access to the node is restricted to
+where SLURM performs workload management. Access to the node is restricted to
 user root and users who have been allocated resources on that node.
 NOTE: pam_slurm is included within the SLURM distribution for version 2.1
 or higher.
@@ -219,6 +219,6 @@ Portable Hardware Locality (hwloc)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 13 August 2012</p>
+<p style="text-align:center;">Last modified 2 October 2012</p>
 
 <!--#include virtual="footer.txt"-->

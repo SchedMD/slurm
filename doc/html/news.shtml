@@ -84,6 +84,6 @@ trojan library, then that library will be used by the SLURM daemon with
 unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 28 September 2012</p>
+<p style="text-align:center;">Last modified 2 October 2012</p>
 
 <!--#include virtual="footer.txt"-->
