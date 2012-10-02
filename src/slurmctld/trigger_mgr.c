@@ -298,7 +298,7 @@ extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg)
 			rc = ESLURM_INVALID_JOB_ID;
 			goto fini;
 		}
-	} else if ((trig_in->trig_id == 0) && (trig_in->user_id == 0)) {
+	} else if ((trig_in->trig_id == 0) && (trig_in->user_id == NO_VAL)) {
 		rc = EINVAL;
 		goto fini;
 	}
@@ -311,7 +311,7 @@ extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg)
 			continue;
 		if (job_id && (job_id != trig_test->job_id))
 			continue;
-		if (trig_in->user_id &&
+		if ((trig_in->user_id != NO_VAL) &&
 		    (trig_in->user_id != trig_test->user_id))
 			continue;
 		if (trig_test->state == 2)	/* wait for proc termination */

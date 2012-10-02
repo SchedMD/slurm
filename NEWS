@@ -16,6 +16,7 @@ documents those changes that are of interest to users and admins.
     the correct node count.
  -- BGQ - Logic added to make sure a job has finished on a block before it is
     purged from the system if its front-end node goes down.
+ -- Modify strigger so that a filter option of "--user=0" is supported.
 
 * Changes in SLURM 2.4.3
 ========================

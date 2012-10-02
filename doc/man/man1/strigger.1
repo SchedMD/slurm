@@ -76,7 +76,7 @@ Trigger event when backup slurmctld assumes control.
 .TP
 \fB\-\-clear\fP
 Clear or delete a previously defined event trigger.
-The \fB\-\-id\fR, \fB\-\-jobid\fR or \fB\-\-userid\fR
+The \fB\-\-id\fR, \fB\-\-jobid\fR or \fB\-\-user\fR
 option must be specified to identify the trigger(s) to
 be cleared.
 Only user root or the trigger's creator can delete a trigger.
@@ -225,7 +225,9 @@ from a DOWN state.
 
 .TP
 \fB\-\-user\fR=\fIuser_name_or_id\fR
-Clear or get triggers associated with the specified user.
+Clear or get triggers created by the specified user.
+For example, a trigger created by user \fIroot\fR for a job created by user
+\fIadam\fR could be cleared with an option \fI\-\-user=root\fR.
 Specify either a user name or user ID.
 
 .TP
