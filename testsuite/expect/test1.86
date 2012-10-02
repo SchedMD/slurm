@@ -431,6 +431,10 @@ if {[string compare $test_0 $test_1] != 0} {
 set processors 1
 send "$srun -l -c1 $bin_printenv $node_name_env\r"
 expect {
+	-re "($number)-($number):($alpha_numeric_under)" {
+		set processors [expr $processors + $expect_out(2,string) - $expect_out(1,string) + 1]
+		exp_continue
+	}
 	-re "($number): *($alpha_numeric_under)" {
 		incr processors
 		exp_continue
