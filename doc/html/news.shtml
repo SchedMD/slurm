@@ -4,29 +4,12 @@
 
 <h2>Index</h2>
 <ul>
-<li><a href="#24">SLURM Version 2.4, June 2012</a></li>
 <li><a href="#25">SLURM Version 2.5, November 2012</a></li>
 <li><a href="#26">SLURM Version 2.6, scheduled for April 2013</a></li>
 <li><a href="#27">SLURM Version 2.7 and beyond</a></li>
 <li><a href="#security">Security Patches</a></li>
 </ul>
 
-<h2><a name="24">Major Updates in SLURM Version 2.4</a></h2>
-<p>SLURM Version 2.4 was release in June 2012.
-Major enhancements include:
-<ul>
-<li>Major improvement in job throuhgput: Up to 500 jobs per second (actual
-throughput depends upon configuration, hardware, etc.).</li>
-<li>Support for BlueGene/Q computers.</li>
-<li>Resource reservations with a node count specification will select
-those nodes optimized for the system topology.</li>
-<li>Support for job and step constraints with resource counts (e.g. a job
-request for two nodes with a feature of "Intel" plus four nodes with a feature
-of "AMD").</li>
-<li>New tool <i>sdiag</i> reports scheduling statistics.</li>
-<li>Support for SLURM commands operating over a LoadLeveler resource manager
-(in branch of SLURM code, not in main release).</li>
-</ul>
 
 <h2><a name="25">Major Updates in SLURM Version 2.5</a></h2>
 <p>SLURM Version 2.5 was release in November 2012.
@@ -34,14 +17,15 @@ Major enhancements include:
 <ul>
 <li>User control over CPU frequency of each job step.</li>
 <li>Recording power usage information for each job.</li>
-<li>Job specification of desired CPU frequency, which will effect it's
-power usage and possibly its execution cost.</li>
 <li>Advanced reservation of cores rather than whole nodes.</li>
 <li>Integration with IBM's
 <a href="http://www-03.ibm.com/systems/software/parallel/">Parallel Environment</a>
 including POE (Parallel Operating Environment) and NRT (Network Resource Table) API.</li>
 <li>Highly optimized thoughput for serial jobs in a new "select/serial"
 plugin.</li>
+<li>CPU load is information available</li>
+<li>Configurable number of CPUs available to jobs in each SLURM partition,
+which provides a mechanism to reserve CPUs for use with GPUs.</li>
 </ul>
 
 <h2><a name="26">Major Updates in SLURM Version 2.6</a></h2>
@@ -49,15 +33,16 @@ plugin.</li>
 Major enhancements planned include:
 <ul>
 <li><a href="http://en.wikipedia.org/wiki/MapReduce">MapReduce</a> support
-(launches ~1000x fater, runs ~10x faster).</li>
+(launches ~1000x faster, runs ~10x faster).</li>
 <li>Scheduling optimized for energy efficiency.</li>
 <li>Integration with
 <a href="http://en.wikipedia.org/wiki/FlexNet_Publisher">FLEXlm (Flexnet Publisher)</a>
 license management.</li>
 <li>Faster and more powerful job step management support (e.g. step
 dependencies).</li>
-<li>Improved control over scheduling of CPUs and GPUs with multiple jobs per
-node (<i>MaxCPUsPerNode</i> allocated to all jobs in a partition/queue).</li>
+<li>Support for Intel MIC (Many Integrated Core) processor.</li>
+<li>Finer-grained BlueGene resouce management (partitions/queues and advanced
+reservations containing less than a whole midplane).</li>
 </ul>
 
 <h2><a name="27">Major Updates in SLURM Version 2.7 and beyond</a></h2>
