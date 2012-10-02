@@ -580,7 +580,7 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.id = resv_ptr->resv_id;
 	resv.time_end = resv_ptr->end_time;
 
-	if(!old_resv_ptr) {
+	if (!old_resv_ptr) {
 		resv.assocs = resv_ptr->assoc_list;
 		resv.cpus = resv_ptr->cpu_cnt;
 		resv.flags = resv_ptr->flags;
@@ -595,7 +595,7 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 		} else if(resv_ptr->assoc_list)
 			resv.assocs = resv_ptr->assoc_list;
 
-		if(old_resv_ptr->cpu_cnt != resv_ptr->cpu_cnt)
+		if (old_resv_ptr->cpu_cnt != resv_ptr->cpu_cnt)
 			resv.cpus = resv_ptr->cpu_cnt;
 		else
 			resv.cpus = (uint32_t)NO_VAL;
@@ -1510,6 +1510,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto bad_parse;
 		}
 		/* We do no allow to request cores with nodelist */
+		info("Reservation CoreCnt cleared due to Nodes specification");
 		resv_desc_ptr->core_cnt = 0;
 	} else if (((resv_desc_ptr->node_cnt == NULL) ||
 		    (resv_desc_ptr->node_cnt[0] == 0)) &&
@@ -1594,7 +1595,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->full_nodes = 0;
 	}
 
-	if((rc = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS)
+	if ((rc = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS)
 		goto bad_parse;
 
 	/* This needs to be done after all other setup is done. */
