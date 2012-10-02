@@ -2536,7 +2536,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	uint32_t cores_per_node = core_cnt / MAX(node_cnt, 1);
 	bitstr_t *tmpcore;
 
-	debug2("reserving %d cores per node in %d nodes",
+	debug2("reserving %u cores per node in %d nodes",
 	       cores_per_node, node_cnt);
 
 	sp_avail_bitmap = bit_alloc(bit_size(avail_bitmap));
@@ -2636,7 +2636,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	} else { /* Reservation is using full nodes */
 
 		while (node_cnt) {
-			uint32_t inx;
+			int inx;
 
 			inx = bit_ffs(avail_bitmap);
 			if (inx < 0)
