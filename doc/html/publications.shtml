@@ -7,6 +7,80 @@
 <h2>Presentations</h2>
 <ul>
 
+<!-- SLURM User Group Meeting 2012 -->
+<li><b>Presentations from SLURM User Group Meeting, October 2012</b></li>
+<ul>
+
+<li>Keynote: The OmSs Programming Model and its links to resource managers,
+Jesus Labarta, BSC</li>
+
+<li><a href="slurm_ug_2012/SUG_Oct2012_Status.pdf">SLURM Status Report</a>,
+Morris Jette and Danny Auble, SchedMD</li>
+
+<li>Site Report: BSC/RES,
+Alejandro Lucero and Carles Fenoy, BSC</li>
+
+<li>Site Report: CSCS,
+Stephen Trofinoff, CSCS</li>
+
+<li>Site Report: CEA,
+Matthieu Hautreux, CEA</li>
+
+<li>Site Report: CETA/CIEMAT,
+Alfonso Pardo Diaz, CIEMAT</li>
+
+<li>Porting SLURM to Bluegene/Q,
+Don Lipari, LLNL</li>
+
+<li>Tutorial: Configuration and use of SLURM database,
+Danny Auble, SchedMD</li>
+
+<li>Tutorial: How the SLURM scheduler works,
+Don Lipari, LLNL</li>
+
+<li>Tutorial: Cgroup support on SLURM,
+Yiannis Georgiou, Bull</li>
+
+<li>Tutorial: Kerberos and Auks with SLURM
+Matthieu Hautreux, CEA</li>
+
+<!-- day 2 -->
+
+<li>Keynote: Challenges in Evaluating Parallel Job Schedulers,
+Dror Feitelson, Hebrew University</li>
+
+<li><a href="slurm_ug_2012/SUG_Oct2012_PE.pdf">Integration of SLURM with IBM's Parallel Environment</a>,
+Morris Jette and Danny Auble, SchedMD</li>
+
+<li>SLURM Bank,
+Jimmy Tang, Trinity College, Dublin</li>
+
+<li>Using SLURM for Data Aware Scheduling in the Cloud,
+Martijn de Vries, Bright Computing</li>
+
+<li>Enhancing SLURM with Energy Consumption Monitoring and Control Features,
+Yiannis Georgiou, Bull</li>
+
+<li><a href="slurm_ug_2012/MapRedSLURM.pdf">MapReduce Support in SLURM: Releasing the Elephant</a>,
+Ralph H. Castain, et. al., Greenplum/EMC</li>
+
+<li>Using SLURM via Python,
+Mark Roberts (AWE) and Stephan Gorget (EDF)</li>
+
+<li><a href="slurm_ug_2012/SUG_Oct2012_HTC.pdf">High Throughput Computing with SLURM</a>,
+Morris Jette and Danny Auble, SchedMD</li>
+
+<li>Evaluating Scalability and Efficiency of SLURM on large HPC clusters,
+Yiannis Georgiou, Bull</li>
+
+<li>Integer Programming Based Herogeneous CPU-GPU Clusters,
+Seren Soner, Bogazici University</li>
+
+<li>Job Resource Utilizaiton as a Metric for Clusters Comparision and Optimization,
+Joseph Emeras, INRIA/LIG</li>
+
+</ul>
+
 <li><a href="pdfs/LCS_cgroups_BULL.pdf">Resource Management with Linux Control Groups in HPC Clusters</a>
 Yiannis Georgiou, Bull
 (6th Linux Collaboration Summit, April 2012)</li>
@@ -24,6 +98,7 @@ Eric Monchalin, Bull</li>
 Martijn de Vries, Bright Computing</li>
 </ul>
 
+<!-- SLURM User Group Meeting 2011 -->
 <li><b>Presentations from SLURM User Group Meeting, September 2011</b></li>
 <ul>
 
@@ -230,6 +305,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 11 April 2012</p>
+<p style="text-align:center;">Last modified 3 October 2012</p>
 
 <!--#include virtual="footer.txt"-->
