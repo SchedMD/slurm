@@ -182,3 +182,13 @@ void slurm_init_update_block_msg (update_block_msg_t *update_block_msg)
 	update_block_msg->node_use = (uint16_t)NO_VAL;
 	update_block_msg->state = (uint16_t)NO_VAL;
 }
+
+/*
+ * slurm_init_trigger_msg - initialize trigger clear/update message
+ * OUT trigger_info_msg - user defined trigger descriptor
+ */
+void slurm_init_trigger_msg (trigger_info_t *trigger_info_msg)
+{
+	memset(trigger_info_msg, 0, sizeof(trigger_info_t));
+	trigger_info_msg->user_id = NO_VAL;
+}

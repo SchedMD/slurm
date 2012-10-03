@@ -3585,6 +3585,12 @@ extern int slurm_pull_trigger PARAMS((trigger_info_t * trigger_pull));
  */
 extern void slurm_free_trigger_msg PARAMS((trigger_info_msg_t * trigger_free));
 
+/*
+ * slurm_init_trigger_msg - initialize trigger clear/update message
+ * OUT trigger_info_msg - user defined trigger descriptor
+ */
+void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
+
 END_C_DECLS
 
 #endif
