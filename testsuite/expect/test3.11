@@ -43,15 +43,17 @@ source ./inc3.11.8
 
 
 
-set test_id       "3.11"
-set file_in       "test$test_id.input"
-set exit_code     0
-set res_name      ""
-set res_name_save ""
-set user_name     ""
-set def_partition ""
-set def_node      ""
-set ii 0
+set test_id		"3.11"
+set file_in		"test$test_id.input"
+set exit_code		0
+set res_name		""
+set res_name_save	""
+set res_nodes		""
+set res_thread_cnt	0
+set user_name		""
+set def_partition 	""
+set def_node		""
+set ii			0
 
 print_header $test_id
 
@@ -63,11 +65,12 @@ print_header $test_id
 proc create_res { res_params failure_expected } {
 	#exp_internal 1
 	global scontrol
-	global alpha_numeric_under
+	global alpha_numeric_under number
 	global res_name
 	global res_nodes
 	global res_nodecnt
 	global res_corecnt
+	global res_thread_cnt
 
 	set ret_code 0
 	set res_name ""
@@ -151,6 +154,21 @@ proc create_res { res_params failure_expected } {
 		}
 		-re "CoreCnt=($alpha_numeric_under)" {
 			set res_corecnt $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set ret_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	spawn $scontrol show node $res_nodes
+	expect {
+		-re "ThreadsPerCore=($number)" {
+			set res_thread_cnt $expect_out(1,string)
 			exp_continue
 		}
 		timeout {

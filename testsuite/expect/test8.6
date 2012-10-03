@@ -264,7 +264,7 @@ if {!$started} {
 
 send_user "Started $started jobs\n"
 
-if {[wait_for_all_jobs file_in 1] != 0} {
+if {[wait_for_all_jobs $file_in 1] != 0} {
 	send_user "\nFAILURE: some submitted jobs failed to terminate\n"
 	set exit_code 1
 }

@@ -35,9 +35,7 @@ proc inc3_11_8 {} {
 	global bin_rm file_in bin_sleep sbatch number scontrol
 	global alpha_numeric_under scancel
 	global cluster_cpus cores_per_node def_partition
-
-	set num_nodes [available_nodes $def_partition]
-	set core_res_num [ expr ($cores_per_node / 2) ]
+	global res_nodes res_thread_cnt
 
 	send_user "\n+++++ STARTING TEST 8 +++++\n"
 
@@ -45,9 +43,24 @@ proc inc3_11_8 {} {
 	exec $bin_rm -f $file_in
 	make_bash_script $file_in "$bin_sleep 1000"
 
+	# Make a reservation, just to get node size infomation
+	set ret_code [create_res "StartTime=now Duration=1 NodeCnt=1 User=$user_name" 0]
+	if {$ret_code != 0} {
+		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation\033\[m\n"
+		exit $ret_code
+	}
+	# Delete the reservation
+	set ret_code [delete_res $res_name]
+	if {$ret_code != 0} {
+		exit $ret_code
+	}
 
-	# (First test) Submit the batch job: a simple job using just 1 core inside the reservation
-	set sbatch_pid [spawn $sbatch --nodes=$num_nodes --time=30:00 --ntasks-per-node=$core_res_num --output=/dev/null $file_in]
+	set num_nodes [available_nodes $def_partition]
+	set core_res_num   [ expr $cores_per_node / 2 ]
+	set thread_res_num [ expr $core_res_num * $res_thread_cnt ]
+
+	# (First test) Submit the batch job: a simple job using half the threads on the nodes
+	set sbatch_pid [spawn $sbatch --nodelist=$res_nodes --time=30:00 --ntasks-per-node=$thread_res_num --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -98,6 +111,7 @@ proc inc3_11_8 {} {
 	# Delete the reservation
 	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
+		cancel_job $job_id
 		exit $ret_code
 	}
 
@@ -114,28 +128,26 @@ proc inc3_11_8 {} {
 		set ret_code [delete_res $res_name]
 	}
 
-	# Make the reservation using more cores then free in a node (now) but those cores being free at reservation start time
+	# Make the reservation using more cores than free in a node (now)
+	# but those cores being free at reservation start time
 	set ret_code [create_res "StartTime=now+3600 Duration=60 NodeCnt=1 CoreCnt=$core_res_num User=$user_name" 0]
 	if {$ret_code != 0} {
 		send_user "\n\033\[31mFAILURE: Reservation can not be created when it should\033\[m\n"
-		set exit_code 0
-	} else {
-		send_user "\n\033\[32mSUCCESS: reservation can be created as expected\033\[m\n"
 		set exit_code 1
-		
+	} else {
+		send_user "\n\033\[32mSUCCESS: Reservation can be created as expected\033\[m\n"
 		# Delete the reservation
 		set ret_code [delete_res $res_name]
 	}
 
-	# Make the reservation using more cores then free in a node at reservation start time
+	# Make the reservation using more cores than free at reservation start time
 	set ret_code [create_res "StartTime=now+300 Duration=60 NodeCnt=1 CoreCnt=$core_res_num User=$user_name" 1]
 	if {$ret_code != 0} {
-		send_user "\n\033\[32mSUCCESS: Reservation can not be created as expexted\033\[m\n"
-		set exit_code 0
+		send_user "\n\033\[32mSUCCESS: Reservation can not be created as expected\033\[m\n"
 	} else {
-		send_user "\n\033\[31mFAILURE: reservation can be created but it should not\033\[m\n"
+		send_user "\n\033\[31mFAILURE: Reservation can be created when it should not\033\[m\n"
 		set exit_code 1
-		
+
 		# Delete the reservation
 		set ret_code [delete_res $res_name]
 	}

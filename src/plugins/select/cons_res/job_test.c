@@ -589,7 +589,7 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 {
 	uint16_t cpus;
 	uint32_t avail_mem, req_mem, gres_cpus;
-	int core_start_bit, core_end_bit;
+	int core_start_bit, core_end_bit, cpu_alloc_size;
 	struct node_record *node_ptr = node_record_table_ptr + node_i;
 	List gres_list;
 
@@ -599,12 +599,19 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		return cpus;
 	}
 
-	if (cr_type & CR_CORE)
+	if (cr_type & CR_CORE) {
 		cpus = _allocate_cores(job_ptr, core_map, node_i, false);
-	else if (cr_type & CR_SOCKET)
+		/* cpu_alloc_size = threads per core */
+		cpu_alloc_size = select_node_record[node_i].vpus;
+	} else if (cr_type & CR_SOCKET) {
 		cpus = _allocate_sockets(job_ptr, core_map, node_i);
-	else
+		/* cpu_alloc_size = threads per socket */
+		cpu_alloc_size = select_node_record[node_i].cores *
+				 select_node_record[node_i].vpus;
+	} else {
 		cpus = _allocate_cores(job_ptr, core_map, node_i, true);
+		cpu_alloc_size = 1;
+	}
 
 	core_start_bit = cr_get_coremap_offset(node_i);
 	core_end_bit   = cr_get_coremap_offset(node_i+1) - 1;
@@ -622,7 +629,7 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			/* memory is per-cpu */
 			while ((cpus > 0) && ((req_mem * cpus) > avail_mem))
-				cpus--;
+				cpus -= cpu_alloc_size;
 			if ((cpus < job_ptr->details->ntasks_per_node) ||
 			    ((job_ptr->details->cpus_per_task > 1) &&
 			     (cpus < job_ptr->details->cpus_per_task)))
@@ -648,8 +655,8 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	    ((job_ptr->details->cpus_per_task > 1) &&
 	     (gres_cpus < job_ptr->details->cpus_per_task)))
 		gres_cpus = 0;
-	if (gres_cpus < cpus)
-		cpus = gres_cpus;
+	while (gres_cpus < cpus)
+		cpus -= cpu_alloc_size;
 
 	if (cpus == 0)
 		bit_nclear(core_map, core_start_bit, core_end_bit);
@@ -746,8 +753,12 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 		/* node-level memory check */
 		if ((job_ptr->details->pn_min_memory) &&
 		    (cr_type & CR_MEMORY)) {
-			free_mem  = select_node_record[i].real_memory;
-			free_mem -= node_usage[i].alloc_memory;
+			if (select_node_record[i].real_memory >
+			    node_usage[i].alloc_memory)
+				free_mem = select_node_record[i].real_memory -
+					   node_usage[i].alloc_memory;
+			else
+				free_mem = 0;
 			if (free_mem < min_mem) {
 				debug3("cons_res: _vns: node %s no mem %u < %u",
 					select_node_record[i].node_ptr->name,
@@ -2105,8 +2116,23 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bit_copybits(free_cores, avail_cores);
 
 	if (exc_core_bitmap) {
+		int exc_core_size  = bit_size(exc_core_bitmap);
+		int free_core_size = bit_size(free_cores);
+		if (exc_core_size != free_core_size) {
+			/* This would indicate that cores were added to or
+			 * removed from nodes in this reservation when the
+			 * slurmctld daemon restarted with a new slurm.conf
+			 * file. This can result in cores being lost from a
+			 * reservation. */
+			error("Bad core_bitmap size for reservation %s "
+			      "(%d != %d), ignoring core reservation",
+			      job_ptr->resv_name,
+			      exc_core_size, free_core_size);
+			exc_core_bitmap = NULL;	/* Clear local value */
+		}
+	}
+	if (exc_core_bitmap) {
 		char str[100];
-
 		bit_fmt(str, (sizeof(str) - 1), exc_core_bitmap);
 		debug2("excluding cores reserved: %s", str);
 
@@ -2499,7 +2525,7 @@ alloc_job:
 		return error_code;
 
 	/* load memory allocated array */
-	save_mem =details_ptr->pn_min_memory;
+	save_mem = details_ptr->pn_min_memory;
 	if (save_mem & MEM_PER_CPU) {
 		/* memory is per-cpu */
 		save_mem &= (~MEM_PER_CPU);

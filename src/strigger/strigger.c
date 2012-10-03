@@ -116,7 +116,7 @@ static int _clear_trigger(void)
 
 	if (params.job_id)
 		verbose("triggers for job %s cleared", ti.res_id);
-	else if (params.user_id)
+	else if (params.user_id != NO_VAL)
 		verbose("triggers for user %u cleared", ti.user_id);
 	else
 		verbose("trigger %u cleared", ti.trig_id);
@@ -309,7 +309,7 @@ static int _get_trigger(void)
 			    trig_msg->trigger_array[i].trig_id)
 				continue;
 		}
-		if (params.user_id) {
+		if (params.user_id != NO_VAL) {
 			if (params.user_id !=
 			    trig_msg->trigger_array[i].user_id)
 				continue;

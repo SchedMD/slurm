@@ -35,17 +35,33 @@ proc inc3_11_7 {} {
 	global bin_rm file_in bin_sleep sbatch number scontrol
 	global alpha_numeric_under scancel
 	global cluster_cpus cores_per_node def_partition
-
-	set num_nodes [available_nodes $def_partition]
-	set core_res_num [ expr ($cores_per_node / 2) ]
+	global res_name res_thread_cnt
 
 	send_user "\n+++++ STARTING TEST 7 +++++\n"
-	# Make the reservation
+
+	# Make a reservation, just to get node size infomation
+	set ret_code [create_res "StartTime=now Duration=1 NodeCnt=1 User=$user_name" 0]
+	if {$ret_code != 0} {
+		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation\033\[m\n"
+		exit $ret_code
+	}
+	# Delete the reservation
+	set ret_code [delete_res $res_name]
+	if {$ret_code != 0} {
+		exit $ret_code
+	}
+
+	# Now make a reservation using half the cores on that node
+	# There is no way to specify a the Nodes in a reservation with CoreCnt,
+	# so hope that we get a node with the same size
+	set core_res_num   [ expr ($cores_per_node / 2) ]
 	set ret_code [create_res "StartTime=now Duration=60 NodeCnt=1 CoreCnt=$core_res_num User=$user_name" 0]
 	if {$ret_code != 0} {
 		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation\033\[m\n"
 		exit $ret_code
 	}
+	set core_res_num   [ expr ($cores_per_node / 2) ]
+	set thread_res_num [ expr $core_res_num * $res_thread_cnt ]
 
 	# Make the job script
 	exec $bin_rm -f $file_in
@@ -102,7 +118,7 @@ proc inc3_11_7 {} {
 	sleep 1
 
 	# (Second test) Submit the batch job: a job using all cores allocated by the reservation
-	set sbatch_pid [spawn $sbatch -n$core_res_num --reservation=$res_name --output=/dev/null $file_in]
+	set sbatch_pid [spawn $sbatch -n$thread_res_num --reservation=$res_name --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -152,7 +168,7 @@ proc inc3_11_7 {} {
 	sleep 1
 
 	# (Third test) Submit the batch job: a job using all cores not allocated by the reservation
-	set sbatch_pid [spawn $sbatch -n$core_res_num --nodelist=$res_nodes --output=/dev/null $file_in]
+	set sbatch_pid [spawn $sbatch -n$thread_res_num --nodelist=$res_nodes --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -199,9 +215,9 @@ proc inc3_11_7 {} {
 
 	cancel_job $job_id
 
-	set core_res_num [ expr ($core_res_num + 1) ]
 	# (Fourth test) Submit a batch job: a job using more cores than allocated by the reservation
-	set sbatch_pid [spawn $sbatch -n$core_res_num --reservation=$res_name --output=/dev/null $file_in]
+	set thread_res_num [ expr ($thread_res_num + 1) ]
+	set sbatch_pid [spawn $sbatch -n$thread_res_num --reservation=$res_name --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -252,7 +268,7 @@ proc inc3_11_7 {} {
 
 	# (Fifth test) Submit a batch job: a job specifying node in reservation and
 	#              using more cores than allocated by the reservation
-	set sbatch_pid [spawn $sbatch -n$core_res_num --nodelist=$res_nodes --nodes=1 --output=/dev/null $file_in]
+	set sbatch_pid [spawn $sbatch -n$thread_res_num --nodelist=$res_nodes --nodes=1 --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)

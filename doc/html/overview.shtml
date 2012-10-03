@@ -5,7 +5,7 @@
 <p>The Simple Linux Utility for Resource Management (SLURM) is an open source,
 fault-tolerant, and highly scalable cluster management and job scheduling system
 for large and small Linux clusters. SLURM requires no kernel modifications for
-its operation and is relatively self-contained. As a cluster resource manager,
+its operation and is relatively self-contained. As a cluster workload manager,
 SLURM has three key functions. First, it allocates exclusive and/or non-exclusive
 access to resources (compute nodes) to users for some duration of time so they
 can perform work. Second, it provides a framework for starting, executing, and
@@ -202,6 +202,6 @@ PartitionName=DEFAULT MaxTime=UNLIMITED MaxNodes=4096
 PartitionName=batch Nodes=lx[0041-9999]
 </pre>
 
-<p style="text-align:center;">Last modified 5 May 2011</p>
+<p style="text-align:center;">Last modified 2 October 2012</p>
 
 <!--#include virtual="footer.txt"-->

@@ -89,7 +89,7 @@ $srun -N1 -n1 --mem-per-cpu=$mem_per_step $bin_sleep $sleep_time
 set start_cnt 0
 set timeout 30
 for {set inx 0} {$inx < $job_cnt} {incr inx} {
-	set sbatch_pid [spawn $sbatch --job-name=$job_name --output=/dev/null --error=/dev/null -t5 $file_in]
+	set sbatch_pid [spawn $sbatch --job-name=$job_name --mem-per-cpu=[expr $mem_per_step * 10] --output=/dev/null --error=/dev/null -t5 $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			incr start_cnt

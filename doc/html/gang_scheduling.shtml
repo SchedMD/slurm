@@ -13,7 +13,7 @@ completes.
 See the <a href="preempt.html">Preemption</a> document for more information.
 </P>
 <P>
-A resource manager that supports timeslicing can improve responsiveness
+A workload manager that supports timeslicing can improve responsiveness
 and utilization by allowing more jobs to begin running sooner.
 Shorter-running jobs no longer have to wait in a queue behind longer-running
 jobs.
@@ -527,6 +527,6 @@ For now this idea could be experimented with by disabling memory support in
 the selector and submitting appropriately sized jobs.
 </P>
 
-<p style="text-align:center;">Last modified 29 June 2012</p>
+<p style="text-align:center;">Last modified 2 October 2012</p>
 
 <!--#include virtual="footer.txt"-->

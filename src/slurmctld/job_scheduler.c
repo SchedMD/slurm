@@ -1682,7 +1682,8 @@ static void _delayed_job_start_time(struct job_record *job_ptr)
 	while ((job_q_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!IS_JOB_PENDING(job_q_ptr) || !job_q_ptr->details ||
 		    (job_q_ptr->part_ptr != job_ptr->part_ptr) ||
-		    (job_q_ptr->priority < job_ptr->priority))
+		    (job_q_ptr->priority < job_ptr->priority) ||
+		    (job_q_ptr->job_id == job_ptr->job_id))
 			continue;
 		if (job_q_ptr->details->min_nodes == NO_VAL)
 			job_size_nodes = 1;

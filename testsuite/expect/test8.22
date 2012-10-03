@@ -34,10 +34,12 @@ source ./globals
 set test_id          "8.22"
 set exit_code        0
 set file_in          "test$test_id.in"
+set test_prog        "test$test_id.prog"
 set job_id           0
 set job_size         32
 set prompt           "PROMPT: "
-
+set mpicc            "/usr/local/bin/mpixlc_r"
+set mpicc_opts       "-q64"
 
 print_header $test_id
 
@@ -45,6 +47,20 @@ if {([test_bluegene] == 0) || [string compare [get_bluegene_type] "Q"]} {
 	send_user "\nWARNING: This test is only compatable with Bluegene/Q systems\n"
 	exit $exit_code
 }
+
+#
+# Test for existence of mpi compiler
+#
+if {![info exists mpicc] || ![file executable $mpicc]} {
+	set mpicc $bin_cc
+	set mpicc_opts "-m64"
+}
+
+#
+# Delete left-over program and rebuild it
+#
+exec $bin_rm -f $test_prog ${test_prog}.o
+exec $mpicc $mpicc_opts -o $test_prog ${test_prog}.c
 
 #
 # Spawn a job via salloc
@@ -141,9 +157,9 @@ if {$actual_job_size != $job_size} {
 
 make_bash_script $file_in "
 for ((inx=0; inx<$actual_job_size; inx++)) ; do
-	$srun -N4 sleep 1 &
-	$srun -N2 sleep 1 &
-	$srun -N1 sleep 1 &
+	$srun -N4 $test_prog 1 &
+	$srun -N2 $test_prog 1 &
+	$srun -N1 $test_prog 1 &
 done
 wait"
 
@@ -160,7 +176,7 @@ expect {
 }
 
 if {$exit_code == 0} {
-	exec rm -f $file_in
+	exec rm -f $file_in $test_prog
 	send_user "\nSUCCESS\n"
 } else {
 	cancel_job $job_id
