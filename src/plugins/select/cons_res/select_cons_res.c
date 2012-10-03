@@ -124,6 +124,8 @@ struct switch_record *switch_record_table __attribute__((weak_import));
 int switch_record_cnt __attribute__((weak_import));
 bitstr_t *avail_node_bitmap __attribute__((weak_import));
 bitstr_t *idle_node_bitmap __attribute__((weak_import));
+uint16_t *cr_node_num_cores __attribute__((weak_import));
+uint32_t *cr_node_cores_offset __attribute__((weak_import));
 #else
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr;
@@ -135,6 +137,8 @@ struct switch_record *switch_record_table;
 int switch_record_cnt;
 bitstr_t *avail_node_bitmap;
 bitstr_t *idle_node_bitmap;
+uint16_t *cr_node_num_cores;
+uint32_t *cr_node_cores_offset;
 #endif
 
 /*
@@ -2531,11 +2535,9 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	char str[300];
 	/* Just allowing symetric requests today */
 	uint32_t cores_per_node = core_cnt / MAX(node_cnt, 1);
-	struct part_res_record *p_ptr;
 	bitstr_t *tmpcore;
-	int i;
 
-	debug2("reserving %d cores per node in %d nodes",
+	debug2("reserving %u cores per node in %d nodes",
 	       cores_per_node, node_cnt);
 
 	sp_avail_bitmap = bit_alloc(bit_size(avail_bitmap));
@@ -2552,17 +2554,15 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		/* if not NULL = Cores used by other core based reservations
 		 * overlapping in time with this one */
 		if (*core_bitmap == NULL) {
-			*core_bitmap =
-				_make_core_bitmap_filtered(avail_bitmap, 0);
+			*core_bitmap = _make_core_bitmap_filtered(avail_bitmap,
+								  0);
 		}
-
 		tmpcore = bit_copy(*core_bitmap);
-		
+
 		bit_not(tmpcore); /* tmpcore contains now current free cores */
 		bit_fmt(str, (sizeof(str) - 1), tmpcore);
 		debug2("tmpcore contains just current free cores: %s", str);
-
-		bit_and(*core_bitmap, tmpcore); /* resetting core_bitmap */
+		bit_and(*core_bitmap, tmpcore);	/* clear core_bitmap */
 
 		while (core_cnt) {
 			int inx, coff, coff2;
@@ -2615,16 +2615,14 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 			if (cores_in_node) {
 				/* Add this node to the final node bitmap */
-				debug2("Reservation using %d cores in "
-				       "node %d", cores_in_node, inx);
+				debug2("Reservation using %d cores in node %d",
+				       cores_in_node, inx);
 				bit_set(sp_avail_bitmap, inx);
 			} else {
-				debug2("Reservation NOT using node %d",
-				       inx);
+				debug2("Reservation NOT using node %d", inx);
 			}
 
 		}
-
 		FREE_NULL_BITMAP(tmpcore);
 
 		bit_fmt(str, (sizeof(str) - 1), *core_bitmap);
@@ -2640,7 +2638,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	} else { /* Reservation is using full nodes */
 
 		while (node_cnt) {
-			uint32_t inx;
+			int inx;
 
 			inx = bit_ffs(avail_bitmap);
 			if (inx < 0)
@@ -2678,7 +2676,7 @@ static int _get_avail_core_in_node(bitstr_t *core_bitmap, int node)
 	total_cores = cr_node_num_cores[node];
 
 	for (i = 0; i < total_cores; i++)
-		if(!bit_test(core_bitmap, coff +i))
+		if (!bit_test(core_bitmap, coff +i))
 			avail++;
 	return avail;
 }
@@ -2738,7 +2736,6 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 	for (i=0; i<switch_record_cnt; i++) {
 		char str[100];
-
 		switches_bitmap[i] = bit_copy(switch_record_table[i].
 						  node_bitmap);
 		bit_and(switches_bitmap[i], avail_bitmap);
@@ -2754,16 +2751,16 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			bit_not(*core_bitmap);
 			bit_and(switches_core_bitmap[i], *core_bitmap);
 			bit_not(*core_bitmap);
-		}
+ 		}
 		bit_fmt(str, sizeof(str), switches_core_bitmap[i]);
 		debug2("Switch %d can use cores: %s", i, str);
-
+ 
 		switches_cpu_cnt[i] = bit_set_count(switches_core_bitmap[i]);
 
 		debug2("switch %d looking cores in %d nodes (%d)",
-		       i, switches_node_cnt[i], switches_cpu_cnt[i]);
-	}
-
+ 		       i, switches_node_cnt[i], switches_cpu_cnt[i]);
+ 	}
+ 
 	/* Let's check nodes with less avail cores than needed */
 
 	for (j=0; j<switch_record_cnt; j++) {
@@ -2780,7 +2777,6 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 				switches_node_cnt[j] -= c;
 		}
 	}
-
 
 #if SELECT_DEBUG
 	/* Don't compile this, it slows things down too much */
@@ -2831,7 +2827,6 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	avail_nodes_bitmap = bit_alloc(node_record_count);
 	while (rem_nodes > 0) {
 		int avail_cores_in_node;
-
 		best_fit_nodes = best_fit_sufficient = 0;
 		for (j=0; j<switch_record_cnt; j++) {
 			if (switches_node_cnt[j] == 0)
@@ -2872,7 +2867,6 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 				continue;
 			}
 
-			debug2("Looking this fuck issue with rem_nodes: %d", rem_nodes);
 			if (*core_bitmap) {
 				int coff;
 				avail_cores_in_node = 0;
@@ -2908,11 +2902,10 @@ fini:	for (i=0; i<switch_record_cnt; i++)
 	xfree(switches_node_cnt);
 	xfree(switches_required);
 
-	if (avail_nodes_bitmap && core_cnt) { /* Reservation is using partial nodes */
+	if (avail_nodes_bitmap && core_cnt) { 
+		/* Reservation is using partial nodes */
 		char str[100];
 		bitstr_t *exc_core_bitmap;
-
-		debug2("select_p_resv_test: Reservation is requesting partial nodes");
 
 		sp_avail_bitmap = bit_alloc(bit_size(avail_bitmap));
 		if (sp_avail_bitmap == NULL)
@@ -2926,7 +2919,6 @@ fini:	for (i=0; i<switch_record_cnt; i++)
 				_make_core_bitmap_filtered(avail_nodes_bitmap, 0);
 
 		cores_per_node = core_cnt / MAX(node_cnt, 1);
-		debug2("select_p_resv_test: looking for %d cores per node", cores_per_node);
 
 		while (core_cnt) {
 			uint32_t inx, coff;
@@ -2939,7 +2931,6 @@ fini:	for (i=0; i<switch_record_cnt; i++)
 
 			debug2("Using node inx %d cores_per_node: %d "
 			       "core_cnt: %d", inx, cores_per_node, core_cnt);
-
 			coff = cr_get_coremap_offset(inx);
 
 			/* Clear this node from the initial available bitmap */
@@ -2953,8 +2944,8 @@ fini:	for (i=0; i<switch_record_cnt; i++)
 				if (!bit_test(exc_core_bitmap, coff + i)) {
 					avail_cores_in_node++;
 				}
-			}
-
+ 			}
+ 
 			debug2("Node %d has %d available cores", inx, 
 				avail_cores_in_node);
 
@@ -2973,13 +2964,14 @@ fini:	for (i=0; i<switch_record_cnt; i++)
 					(core_cnt == 0))
 					break;
 			}
+
 			/* Add this node to the final node bitmap */
 			bit_set(sp_avail_bitmap, inx);
 
 		}
 
-		bit_fmt(str, (sizeof(str) - 1), *core_bitmap);
-		info("sequential pick using coremap: %s", str);
+		//bit_fmt(str, (sizeof(str) - 1), *core_bitmap);
+		//info("sequential pick using coremap: %s", str);
 
 		if (core_cnt) {
 			info("reservation request can not be satisfied");
