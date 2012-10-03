@@ -601,18 +601,17 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 
 	if (cr_type & CR_CORE) {
 		cpus = _allocate_cores(job_ptr, core_map, node_i, false);
-		/* cpu_alloc_size = threads per core */
+		/* cpu_alloc_size = CPUs per core */
 		cpu_alloc_size = select_node_record[node_i].vpus;
 	} else if (cr_type & CR_SOCKET) {
 		cpus = _allocate_sockets(job_ptr, core_map, node_i);
-		/* cpu_alloc_size = threads per socket */
+		/* cpu_alloc_size = CPUs per socket */
 		cpu_alloc_size = select_node_record[node_i].cores *
 				 select_node_record[node_i].vpus;
 	} else {
 		cpus = _allocate_cores(job_ptr, core_map, node_i, true);
 		cpu_alloc_size = 1;
 	}
-
 	core_start_bit = cr_get_coremap_offset(node_i);
 	core_end_bit   = cr_get_coremap_offset(node_i+1) - 1;
 	node_ptr = select_node_record[node_i].node_ptr;
