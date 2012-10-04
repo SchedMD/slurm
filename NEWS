@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Added Prolog and Epilog Guide (web page). Based upon work by Jason Sollom,
     Cray Inc. and used by permission.
+ -- Fix bug in allocating resources with Shared=NO and gang scheduling.
+    Preemptor was not being scheduled. Fix bugzilla #3.
 
 * Changes in SLURM 2.5.0.pre3
 =============================
