@@ -600,6 +600,19 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap, int mode,
 		}
 		goto alloc_job;
 	}
+
+	if (job_node_req == NODE_CR_ONE_ROW) {
+		/* This job CANNOT share CPUs regardless of priority,
+		 * so we fail here. Note that Shared=EXCLUSIVE was already
+		 * addressed in _verify_node_state() and job preemption
+		 * removes jobs from simulated resource allocation map
+		 * before this point. */
+		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+			info("select/serial: cr_job_test: test 1 fail - "
+			     "no idle resources available");
+		}
+		goto alloc_job;
+	}
 	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
 		info("select/serial: cr_job_test: test 1 fail - "
 		     "not enough idle resources");
