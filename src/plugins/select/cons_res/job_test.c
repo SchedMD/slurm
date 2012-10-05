@@ -1976,6 +1976,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			struct node_use_record *node_usage,
 			bitstr_t *exc_core_bitmap)
 {
+	static int gang_mode = -1;
 	int error_code = SLURM_SUCCESS, ll; /* ll = layout array index */
 	uint16_t *layout_ptr = NULL;
 	bitstr_t *orig_map, *avail_cores, *free_cores;
@@ -1987,6 +1988,13 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	struct job_details *details_ptr;
 	struct part_res_record *p_ptr, *jp_ptr;
 	uint16_t *cpu_count;
+
+	if (gang_mode == -1) {
+		if (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)
+			gang_mode = 1;
+		else
+			gang_mode = 0;
+	}
 
 	details_ptr = job_ptr->details;
 	layout_ptr  = details_ptr->req_node_layout;
@@ -2166,7 +2174,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		goto alloc_job;
 	}
 
-	if (job_node_req == NODE_CR_ONE_ROW) {
+	if ((gang_mode == 0) && (job_node_req == NODE_CR_ONE_ROW)) {
 		/* This job CANNOT share CPUs regardless of priority,
 		 * so we fail here. Note that Shared=EXCLUSIVE was already
 		 * addressed in _verify_node_state() and job preemption
