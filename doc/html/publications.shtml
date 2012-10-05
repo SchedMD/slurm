@@ -32,7 +32,8 @@ Alfonso Pardo Diaz, CIEMAT</li>
 <li>Porting SLURM to Bluegene/Q,
 Don Lipari, LLNL</li>
 
-<li>Tutorial: Configuration and use of SLURM database,
+<li><a href="slurm_ug_2012/SUG_Oct2012_DBD.pdf">Tutorial: SLURM Database Use,
+Accounting and Limits</a>,
 Danny Auble, SchedMD</li>
 
 <li>Tutorial: How the SLURM scheduler works,
@@ -52,8 +53,8 @@ Dror Feitelson, Hebrew University</li>
 <li><a href="slurm_ug_2012/SUG_Oct2012_PE.pdf">Integration of SLURM with IBM's Parallel Environment</a>,
 Morris Jette and Danny Auble, SchedMD</li>
 
-<li>SLURM Bank,
-Jimmy Tang, Trinity College, Dublin</li>
+<li><a href="slurm_ug_2012/SUG2012-TCHPC-sbank.pdf">SLURM Bank</a>,
+Jimmy Tang and Paddy Doyle, Trinity College, Dublin</li>
 
 <li>Using SLURM for Data Aware Scheduling in the Cloud,
 Martijn de Vries, Bright Computing</li>
@@ -61,7 +62,8 @@ Martijn de Vries, Bright Computing</li>
 <li>Enhancing SLURM with Energy Consumption Monitoring and Control Features,
 Yiannis Georgiou, Bull</li>
 
-<li><a href="slurm_ug_2012/MapRedSLURM.pdf">MapReduce Support in SLURM: Releasing the Elephant</a>,
+<li><a href="slurm_ug_2012/MapRedSLURM.pdf">MapReduce Support in SLURM:
+Releasing the Elephant</a>,
 Ralph H. Castain, et. al., Greenplum/EMC</li>
 
 <li>Using SLURM via Python,
@@ -305,6 +307,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 3 October 2012</p>
+<p style="text-align:center;">Last modified 5 October 2012</p>
 
 <!--#include virtual="footer.txt"-->
