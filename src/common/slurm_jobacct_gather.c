@@ -433,7 +433,7 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid)
 		}
 
 		itr = list_iterator_create(task_list);
-		while((jobacct = list_next(itr))) {
+		while ((jobacct = list_next(itr))) {
 			if(jobacct->pid == pid)
 				break;
 		}

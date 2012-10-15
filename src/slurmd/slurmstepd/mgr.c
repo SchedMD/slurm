@@ -1520,12 +1520,14 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 		jobacct_id.taskid = job->task[i]->gtid;
 		jobacct_id.job    = job;
 		if (i == (job->node_tasks - 1)) {
-			//start polling on the last task
+			/* start polling on the last task */
 			jobacct_gather_set_proctrack_container_id(job->cont_id);
-			jobacct_gather_add_task(job->task[i]->pid, &jobacct_id,1);
+			jobacct_gather_add_task(job->task[i]->pid, &jobacct_id,
+						1);
 		} else {
-			//don't poll
-			jobacct_gather_add_task(job->task[i]->pid, &jobacct_id,0);
+			/* don't poll yet */
+			jobacct_gather_add_task(job->task[i]->pid, &jobacct_id,
+						0);
 		}
 		if (spank_task_post_fork (job, i) < 0) {
 			error ("spank task %d post-fork failed", i);

@@ -320,16 +320,16 @@ static int _get_process_data_line(int in, prec_t *prec) {
 	long unsigned flags, minflt, cminflt, majflt, cmajflt;
 	long unsigned utime, stime, starttime, vsize;
 	long int cutime, cstime, priority, nice, timeout, itrealvalue, rss;
-	long int f1,f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12;
-	long int f13, f14, lastcpu;
+	long unsigned f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13;
+	int exit_signal, last_cpu;
 
 	num_read = read(in, sbuf, (sizeof(sbuf) - 1));
 	if (num_read <= 0)
 		return 0;
 	sbuf[num_read] = '\0';
 
-	tmp = strrchr(sbuf, ')');       /* split into "PID (cmd" and "<rest>" */
-	*tmp = '\0';		    /* replace trailing ')' with NUL */
+	tmp = strrchr(sbuf, ')');	/* split into "PID (cmd" and "<rest>" */
+	*tmp = '\0';			/* replace trailing ')' with NUL */
 	/* parse these two strings separately, skipping the leading "(". */
 	nvals = sscanf(sbuf, "%d (%39c", &prec->pid, cmd);
 	if (nvals < 2)
@@ -342,13 +342,13 @@ static int _get_process_data_line(int in, prec_t *prec) {
 		       "%ld %ld %lu %lu %ld "
 		       "%lu %lu %lu %lu %lu "
 		       "%lu %lu %lu %lu %lu "
-		       "%lu %lu %lu %ld %ld ",
+		       "%lu %lu %lu %d %d ",
 		       state, &ppid, &pgrp, &session, &tty_nr, &tpgid,
 		       &flags, &minflt, &cminflt, &majflt, &cmajflt,
 		       &utime, &stime, &cutime, &cstime, &priority, &nice,
 		       &timeout, &itrealvalue, &starttime, &vsize, &rss,
 		       &f1, &f2, &f3, &f4, &f5 ,&f6, &f7, &f8, &f9, &f10, &f11,
-		       &f12, &f13, &f14, &lastcpu);
+		       &f12, &f13, &exit_signal, &last_cpu);
 	/* There are some additional fields, which we do not scan or use */
 	if ((nvals < 37) || (rss < 0))
 		return 0;
@@ -365,7 +365,7 @@ static int _get_process_data_line(int in, prec_t *prec) {
 	prec->ssec  = stime;
 	prec->vsize = vsize / 1024;	      /* convert from bytes to KB */
 	prec->rss   = rss * getpagesize() / 1024;/* convert from pages to KB */
-	prec->last_cpu = lastcpu;
+	prec->last_cpu = last_cpu;
 	return 1;
 }
 
@@ -459,8 +459,8 @@ extern void jobacct_gather_p_poll_data(
 		/* get only the processes in the proctrack container */
 		slurm_container_get_pids(cont_id, &pids, &npids);
 		if (!npids) {
-			/*update consumed energy even if pids do not exist*/
-			itr = list_iterator_create(task_list);	
+			/* update consumed energy even if pids do not exist */
+			itr = list_iterator_create(task_list);
 			if ((jobacct = list_next(itr))) {
 				energy_accounting_g_getjoules_task(jobacct);
 				debug2("getjoules_task energy = %u",
@@ -515,23 +515,23 @@ extern void jobacct_gather_p_poll_data(
 		while ((slash_proc_entry = readdir(slash_proc))) {
 
 			/* Save a few cyles by simulating
-			   strcat(statFileName, slash_proc_entry->d_name);
-			   strcat(statFileName, "/stat");
-			   while checking for a numeric filename (which really
-			   should be a pid).
-			*/
+			 * strcat(statFileName, slash_proc_entry->d_name);
+			 * strcat(statFileName, "/stat");
+			 * while checking for a numeric filename (which really
+			 * should be a pid).
+			 */
 			optr = proc_stat_file + sizeof("/proc");
 			iptr = slash_proc_entry->d_name;
 			i = 0;
 			do {
-				if((*iptr < '0')
-				   || ((*optr++ = *iptr++) > '9')) {
+				if ((*iptr < '0') ||
+				    ((*optr++ = *iptr++) > '9')) {
 					i = -1;
 					break;
 				}
 			} while (*iptr);
 
-			if(i == -1)
+			if (i == -1)
 				continue;
 			iptr = (char*)"/stat";
 
@@ -592,8 +592,7 @@ extern void jobacct_gather_p_poll_data(
 					MAX(jobacct->max_pages, prec->pages);
 				jobacct->min_cpu = jobacct->tot_cpu =
 					MAX(jobacct->min_cpu,
-					    (prec->ssec / hertz +
-					     prec->usec / hertz));
+					    ((prec->ssec + prec->usec)/hertz));
 				debug2("%d mem size %u %u time %u(%u+%u)",
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
@@ -602,15 +601,15 @@ extern void jobacct_gather_p_poll_data(
 				_get_sys_interface_freq_line(prec->last_cpu,
 						"cpuinfo_cur_freq", sbuf);
 				jobacct->this_sampled_cputime =
-					(prec->ssec / hertz + prec->usec / hertz)
+					((prec->ssec + prec->usec) / hertz)
 					-  jobacct->last_total_cputime;
 				jobacct->last_total_cputime =
-						(prec->ssec / hertz + prec->usec / hertz);
+					((prec->ssec + prec->usec) / hertz);
 				jobacct->act_cpufreq = (uint32_t)
 					_update_weighted_freq(jobacct, sbuf);
 				debug2("Task average frequency = %u",
 				       jobacct->act_cpufreq);
-				debug2(" pid %d mem size %u %u time %u(%u+%u) ",
+				debug2(" pid %d mem size %u %u time %u(%u+%u)",
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
 				       prec->usec, prec->ssec);
@@ -630,7 +629,6 @@ extern void jobacct_gather_p_poll_data(
 		list_iterator_destroy(itr2);
 	}
 	list_iterator_destroy(itr);
-
 
 	jobacct_gather_handle_mem_limit(total_job_mem, total_job_vsize);
 
