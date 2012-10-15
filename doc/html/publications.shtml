@@ -23,16 +23,16 @@ Alejandro Lucero and Carles Fenoy, BSC</li>
 <li>Site Report: CSCS,
 Stephen Trofinoff, CSCS</li>
 
-<li>Site Report: CEA,
+<li><a href="slurm_ug_2012/CEA_site_report.pdf">Site Report: CEA</a>,
 Matthieu Hautreux, CEA</li>
 
 <li>Site Report: CETA/CIEMAT,
 Alfonso Pardo Diaz, CIEMAT</li>
 
 <li>Porting SLURM to Bluegene/Q,
-Don Lipari, LLNL</li>
+Don Lipari, LLNL (presentation not available)</li>
 
-<li><a href="slurm_ug_2012/SUG_Oct2012_DBD.pdf">Tutorial: SLURM Database Use,
+<li>Tutorial: <a href="slurm_ug_2012/SUG_Oct2012_DBD.pdf">SLURM Database Use,
 Accounting and Limits</a>,
 Danny Auble, SchedMD</li>
 
@@ -42,12 +42,12 @@ Don Lipari, LLNL</li>
 <li>Tutorial: Cgroup support on SLURM,
 Yiannis Georgiou, Bull</li>
 
-<li>Tutorial: Kerberos and Auks with SLURM
+<li>Tutorial: <a href="slurm_ug_2012/auks-tutorial.pdf">Kerberos and SLURM using Auks</a>,
 Matthieu Hautreux, CEA</li>
 
 <!-- day 2 -->
 
-<li>Keynote: Challenges in Evaluating Parallel Job Schedulers,
+<li>Keynote: <a href="slurm_ug_2012/2012-BSC-challenge.pdf">Challenges in Evaluating Parallel Job Schedulers</a>,
 Dror Feitelson, Hebrew University</li>
 
 <li><a href="slurm_ug_2012/SUG_Oct2012_PE.pdf">Integration of SLURM with IBM's Parallel Environment</a>,
@@ -59,7 +59,7 @@ Jimmy Tang and Paddy Doyle, Trinity College, Dublin</li>
 <li>Using SLURM for Data Aware Scheduling in the Cloud,
 Martijn de Vries, Bright Computing</li>
 
-<li>Enhancing SLURM with Energy Consumption Monitoring and Control Features,
+<li><a href="slurm_ug_2012/Energy_Accounting-BULL-SUG2012.pdf">Enhancing SLURM with Energy Consumption Monitoring and Control Features</a>,
 Yiannis Georgiou, Bull</li>
 
 <li><a href="slurm_ug_2012/MapRedSLURM.pdf">MapReduce Support in SLURM:
@@ -72,8 +72,9 @@ Mark Roberts (AWE) and Stephan Gorget (EDF)</li>
 <li><a href="slurm_ug_2012/SUG_Oct2012_HTC.pdf">High Throughput Computing with SLURM</a>,
 Morris Jette and Danny Auble, SchedMD</li>
 
-<li>Evaluating Scalability and Efficiency of SLURM on large HPC clusters,
-Yiannis Georgiou, Bull</li>
+<li><a href="slurm_ug_2012/RJMS-scalability_SUG2012.pdf">Evaluating Scalability
+and Efficiency of the Resource and Job Management System on large HPC clusters</a>,
+Yiannis Georgiou (Bull) and Matthieu Hautreux (CEA)</li>
 
 <li>Integer Programming Based Herogeneous CPU-GPU Clusters,
 Seren Soner, Bogazici University</li>
@@ -307,6 +308,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 5 October 2012</p>
+<p style="text-align:center;">Last modified 15 October 2012</p>
 
 <!--#include virtual="footer.txt"-->
