@@ -285,7 +285,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** power Line ******/
-	snprintf(tmp_line, sizeof(tmp_line), "CurrentWatts=%u LowestWatts=%u "
+	snprintf(tmp_line, sizeof(tmp_line), "CurrentWatts=%u LowestJoules=%u "
 		 "ConsumedJoules=%u",
 		 node_ptr->current_watts, node_ptr->base_watts,
 		 node_ptr->consumed_energy);

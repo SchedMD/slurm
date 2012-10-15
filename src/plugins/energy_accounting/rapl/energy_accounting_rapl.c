@@ -129,9 +129,8 @@ const char plugin_type[] = "energy_accounting/rapl";
 const uint32_t plugin_version = 100;
 
 static int freq = 0;
-static float base_watts = 5; // MNP - arbitrary value for testing only
-static float current_watts = 11; // MNP - arbitrary value for testing only
-static float energy_calibration= 1.0;
+static float base_watts = 0; 
+static float current_watts = 0; 
 static bool energy_accounting_shutdown = true;
 static uint32_t last_time = 0;
 static uint32_t node_consumed_energy = 0;
@@ -184,16 +183,13 @@ static int open_msr(int core) {
 		if ( errno == ENXIO ) {
 			error("No CPU %d", core);
 			pexit("msr");
-			return SLURM_ERROR;
 		} else if ( errno == EIO ) {
 			error("CPU %d doesn't support MSRs", core);
 			pexit("msr");
-			return SLURM_ERROR;
 		} else
 			pexit("msr");
-			return SLURM_ERROR;
 	}
-	return SLURM_SUCCESS;
+	return fd;
 }
 
 static void hardware (void) {
@@ -220,12 +216,6 @@ static void hardware (void) {
 	debug4 ("RAPL Found: %d packages", nb_pkg);
 }
 
-static void _task_sleep(int rem)
-{
-	while (rem)
-		rem = sleep(rem);	/* subject to interupt */
-}
-
 static int _update_weighted_energy(uint32_t step_sampled_cputime,
 				   struct jobacctinfo *jobacct)
 {
@@ -240,13 +230,11 @@ static int _readbasewatts(void)
 static int *_getjoules_rapl(void)
 {
 
-	int ipmi_ret = 0;
 	int rc, pkg, i;
 	int core = 0;
-	double energy_units, power_units;
+	double energy_units;
 	ulong result;
-	ulong max_power;
-	double ret;
+	double ret,ret_tmp;
 
 
 
@@ -262,7 +250,7 @@ static int *_getjoules_rapl(void)
 		for (i = 0; i < nb_pkg; i++)
 			result += get_package_energy(i) + get_dram_energy(i);
 		ret = (double)result*energy_units;
-	
+
 		node_current_energy = (int)ret;
 		if (node_consumed_energy != 0){
 			node_consumed_energy =  
@@ -272,6 +260,15 @@ static int *_getjoules_rapl(void)
 			node_consumed_energy = 1;
 			node_base_energy = node_current_energy;
 		}
+
+		sleep(1);
+		result=0;
+                for (i = 0; i < nb_pkg; i++)
+                        result += get_package_energy(i) + get_dram_energy(i);
+                ret_tmp = (double)result*energy_units;
+		current_watts=(float)(ret_tmp - ret);
+                base_watts=node_base_energy;
+		
 		debug2("_getjoules_rapl = %d sec, current %.6f Joules, "
 		       "consumed %d", freq, ret, node_consumed_energy);
 	}
@@ -285,10 +282,6 @@ extern int energy_accounting_p_updatenodeenergy(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	/* The code needs to update the following variables as well:
-	 *	base_watts
-	 *	current_watts
-	 */
 	_getjoules_rapl();
 	return rc;
 }
@@ -343,7 +336,7 @@ extern int energy_accounting_p_getjoules_scaled(uint32_t stp_smpled_time,
 
 extern int energy_accounting_p_setbasewatts(void)
 {
-	base_watts = 5; // MNP - arbitrary value for testing only
+	base_watts = 0;
 	return SLURM_SUCCESS;
 }
 

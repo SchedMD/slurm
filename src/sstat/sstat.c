@@ -161,6 +161,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 		step.stats.rss_ave /= (double)tot_tasks;
 		step.stats.vsize_ave /= (double)tot_tasks;
 		step.stats.pages_ave /= (double)tot_tasks;
+		step.stats.act_cpufreq /= (double)tot_tasks;
 		step.ntasks = tot_tasks;
 	}
 

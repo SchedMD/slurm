@@ -374,7 +374,7 @@ extern void jobacct_gather_resume_poll()
 	jobacct_suspended = false;
 }
 
-extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id)
+extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id, int poll)
 {
 	struct jobacctinfo *jobacct;
 
@@ -403,6 +403,9 @@ extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 	slurm_mutex_unlock(&task_list_lock);
 
 	(*(ops.add_task))(pid, jobacct_id);
+	
+	if (poll == 1)
+		_poll_data();
 
 	return SLURM_SUCCESS;
 error:
@@ -988,8 +991,10 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 		dest->sys_cpu_sec++;
 		dest->sys_cpu_usec -= 1E6;
 	}
-	dest->act_cpufreq	+= from->act_cpufreq;
-	dest->consumed_energy	+= from->consumed_energy;
+        dest->act_cpufreq 	+= from->act_cpufreq;
+        dest->consumed_energy   += from->consumed_energy;
+
+
 }
 
 extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)

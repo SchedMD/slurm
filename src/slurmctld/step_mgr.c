@@ -2706,6 +2706,12 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 
 	jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
 
+	/*we have been adding task average frequencies for
+	  jobacct->act_cpufreq so we need to divide with 
+	  the total number of tasks/cpus for the step average 
+	  frequency*/
+	step_ptr->jobacct->act_cpufreq /= step_ptr->cpu_count;
+
 	if (!step_ptr->exit_node_bitmap) {
 		/* initialize the node bitmap for exited nodes */
 		nodes = bit_set_count(step_ptr->step_node_bitmap);
