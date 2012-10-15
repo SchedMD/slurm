@@ -493,7 +493,17 @@ _make_tmpdir(slurmd_job_t *job)
 			      tmpdir, strerror(mkdir_errno));
 		} else if (!S_ISDIR(st.st_mode)) {  /* is it a directory? */
 			error("TMPDIR [%s] is not a directory", tmpdir);
-		} else if (eaccess(tmpdir, X_OK|W_OK)) /* check permissions */
+		}
+
+		/* Eaccess wasn't introduced until glibc 2.4 but euidaccess
+		 * has been around for a while.  So to make sure we
+		 * still work with older systems we include this check.
+		 */
+#if defined __GLIBC__ && __GLIBC_PREREQ(2, 4)
+		else if (eaccess(tmpdir, X_OK|W_OK)) /* check permissions */
+#else
+		else if (euidaccess(tmpdir, X_OK|W_OK))
+#endif
 			error("TMPDIR [%s] is not writeable", tmpdir);
 		else
 			return;
