@@ -51,6 +51,7 @@
 #  include <inttypes.h>
 #endif  /*  HAVE_CONFIG_H */
 
+extern int get_cpu_load(uint32_t *cpu_load);
 extern int get_mach_name(char *node_name);
 extern int get_memory(uint32_t *real_memory);
 extern int get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs);

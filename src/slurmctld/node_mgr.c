@@ -788,6 +788,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 #ifndef HAVE_BG
 		}
 #endif
+		pack32(dump_node_ptr->cpu_load, buffer);
 		pack32(dump_node_ptr->config_ptr->weight, buffer);
 		pack32(dump_node_ptr->reason_uid, buffer);
 
@@ -1811,6 +1812,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	xfree(node_ptr->os);
 	node_ptr->os = reg_msg->os;
 	reg_msg->os = NULL;	/* Nothing left to free */
+
+	node_ptr->cpu_load = reg_msg->cpu_load;
 
 	if (IS_NODE_NO_RESPOND(node_ptr)) {
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
@@ -2961,4 +2964,21 @@ extern void node_fini (void)
 	FREE_NULL_BITMAP(share_node_bitmap);
 	FREE_NULL_BITMAP(up_node_bitmap);
 	node_fini2();
+}
+
+/* Reset a node's CPU load value */
+extern void reset_node_load(char *node_name, uint32_t cpu_load)
+{
+#ifdef HAVE_FRONT_END
+	return;
+#else
+	struct node_record *node_ptr;
+
+	node_ptr = find_node_record(node_name);
+	if (node_ptr) {
+		node_ptr->cpu_load = cpu_load;
+		last_node_update = time(NULL);
+	} else
+		error("is_node_resp unable to find node %s", node_name);
+#endif
 }

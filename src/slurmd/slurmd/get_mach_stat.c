@@ -285,6 +285,44 @@ extern int get_up_time(uint32_t *up_time)
 	return 0;
 }
 
+extern int get_cpu_load(uint32_t *cpu_load)
+{
+#if defined(HAVE_AIX) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__)
+	/* Not sure how to get CPU load on above systems.
+	 * Perhaps some method below works. */
+	*cpu_load = 0;
+#elif defined(__CYGWIN__)
+	FILE *load_file;
+	char buffer[128];
+	char *space;
+	char *_load_path = "/proc/loadavg";
+
+	if (!(load_file = fopen(_load_path, "r"))) {
+		error("get_cpu_load: error %d opening %s", errno, _load_path);
+		return errno;
+	}
+
+	if (fgets(buffer, sizeof(buffer), load_file) &&
+	    (space = strchr(buffer, ' '))) {
+		*cpu_load = atof(space + 1) * 100.0;
+	} else
+		*cpu_load = 0;
+
+	fclose(load_file);
+#else
+	struct sysinfo info;
+	float shift_float = (float) (1 << SI_LOAD_SHIFT);
+
+	if (sysinfo(&info) < 0) {
+		*cpu_load = 0;
+		return errno;
+	}
+
+	*cpu_load = (info.loads[1] / shift_float) * 100.0;
+#endif
+	return 0;
+}
+
 #ifdef USE_CPU_SPEED
 /* _chk_cpuinfo_str
  *	check a line of cpuinfo data (buffer) for a keyword.  If it

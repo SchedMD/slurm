@@ -180,6 +180,7 @@ typedef enum {
 	REQUEST_SET_SCHEDLOG_LEVEL,
 	REQUEST_SET_DEBUG_FLAGS,
 	REQUEST_REBOOT_NODES,
+	RESPONSE_PING_SLURMD,
 
 	REQUEST_BUILD_INFO = 2001,
 	RESPONSE_BUILD_INFO,
@@ -928,6 +929,10 @@ typedef struct suspend_int_msg {
 	void *   switch_info;	/* opaque data for switch plugin */
 } suspend_int_msg_t;
 
+typedef struct ping_slurmd_resp_msg {
+	uint32_t cpu_load;	/* CPU load * 100 */
+} ping_slurmd_resp_msg_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -935,6 +940,7 @@ typedef struct slurm_node_registration_status_msg {
 	char *arch;
 	uint16_t cores;
 	uint16_t cpus;
+	uint32_t cpu_load;	/* CPU load * 100 */
 	Buf gres_info;		/* generic resource info */
 	uint32_t hash_val;      /* hash value of slurm.conf file
 				   existing on node */
@@ -1030,6 +1036,7 @@ extern void slurm_free_priority_factors_request_msg(
 extern void slurm_free_priority_factors_response_msg(
 	priority_factors_response_msg_t *msg);
 extern void slurm_free_forward_data_msg(forward_data_msg_t *msg);
+extern void slurm_free_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg);
 
 #define	slurm_free_timelimit_msg(msg) \
 	slurm_free_kill_job_msg(msg)

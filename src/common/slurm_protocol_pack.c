@@ -610,6 +610,11 @@ static void _pack_forward_data_msg(forward_data_msg_t *msg,
 static int _unpack_forward_data_msg(forward_data_msg_t **msg_ptr,
 				    Buf buffer, uint16_t protocol_version);
 
+static void _pack_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg,
+				   Buf buffer, uint16_t protocol_version);
+static int _unpack_ping_slurmd_resp(ping_slurmd_resp_msg_t **msg_ptr,
+				    Buf buffer, uint16_t protocol_version);
+
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
  * IN header - the header structure to pack
@@ -1195,6 +1200,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				       buffer, msg->protocol_version);
 		break;
 
+	case RESPONSE_PING_SLURMD:
+		_pack_ping_slurmd_resp((ping_slurmd_resp_msg_t *)msg->data,
+				       buffer, msg->protocol_version);
+		break;
+
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -1775,6 +1785,12 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_FORWARD_DATA:
 		rc = _unpack_forward_data_msg((forward_data_msg_t **)&msg->data,
 					      buffer, msg->protocol_version);
+		break;
+
+	case RESPONSE_PING_SLURMD:
+		rc = _unpack_ping_slurmd_resp((ping_slurmd_resp_msg_t **)
+					      &msg->data, buffer,
+					      msg->protocol_version);
 		break;
 
 	default:
@@ -2414,6 +2430,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		pack32(msg->tmp_disk, buffer);
 		pack32(msg->up_time, buffer);
 		pack32(msg->hash_val, buffer);
+		pack32(msg->cpu_load, buffer);
 
 		pack32(msg->job_count, buffer);
 		for (i = 0; i < msg->job_count; i++) {
@@ -2506,6 +2523,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpack32(&node_reg_ptr->tmp_disk, buffer);
 		safe_unpack32(&node_reg_ptr->up_time, buffer);
 		safe_unpack32(&node_reg_ptr->hash_val, buffer);
+		safe_unpack32(&node_reg_ptr->cpu_load, buffer);
 
 		safe_unpack32(&node_reg_ptr->job_count, buffer);
 		node_reg_ptr->job_id =
@@ -2943,6 +2961,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 
 		safe_unpack32(&node->real_memory, buffer);
 		safe_unpack32(&node->tmp_disk, buffer);
+		safe_unpack32(&node->cpu_load, buffer);
 		safe_unpack32(&node->weight, buffer);
 		safe_unpack32(&node->reason_uid, buffer);
 
@@ -2971,6 +2990,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 
 		safe_unpack32(&node->real_memory, buffer);
 		safe_unpack32(&node->tmp_disk, buffer);
+		node->cpu_load = NO_VAL;
 		safe_unpack32(&node->weight, buffer);
 		safe_unpack32(&node->reason_uid, buffer);
 
@@ -9164,9 +9184,35 @@ static int _unpack_forward_data_msg(forward_data_msg_t **msg_ptr,
 	safe_unpackmem_xmalloc(&msg->data, &temp32, buffer);
 
 	return SLURM_SUCCESS;
-	
+
 unpack_error:
 	slurm_free_forward_data_msg(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg,
+				   Buf buffer, uint16_t protocol_version)
+{
+	xassert (msg != NULL);
+
+	pack32(msg->cpu_load, buffer);
+}
+
+static int _unpack_ping_slurmd_resp(ping_slurmd_resp_msg_t **msg_ptr,
+				    Buf buffer, uint16_t protocol_version)
+{
+	ping_slurmd_resp_msg_t *msg;
+
+	xassert (msg_ptr != NULL);
+	msg = xmalloc(sizeof(ping_slurmd_resp_msg_t));
+	*msg_ptr = msg;
+	safe_unpack32(&msg->cpu_load, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_ping_slurmd_resp(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }

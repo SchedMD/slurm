@@ -812,6 +812,9 @@ static void *_thread_per_group_rpc(void *args)
 	/* Lock: Read node */
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	/* Lock: Write node */
+	slurmctld_lock_t node_write_lock = {
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 
 	xassert(args != NULL);
 	xsignal(SIGUSR1, _sig_handler);
@@ -844,10 +847,10 @@ static void *_thread_per_group_rpc(void *args)
  	info("sending message type %u to %s", msg_type, thread_ptr->nodelist);
 #endif
 	if (task_ptr->get_reply) {
-		if(thread_ptr->addr) {
+		if (thread_ptr->addr) {
 			msg.address = *thread_ptr->addr;
 
-			if(!(ret_list = slurm_send_addr_recv_msgs(
+			if (!(ret_list = slurm_send_addr_recv_msgs(
 				     &msg, thread_ptr->nodelist, 0))) {
 				error("_thread_per_group_rpc: "
 				      "no ret_list given");
@@ -856,7 +859,7 @@ static void *_thread_per_group_rpc(void *args)
 
 
 		} else {
-			if(!(ret_list = slurm_send_recv_msgs(
+			if (!(ret_list = slurm_send_recv_msgs(
 				     thread_ptr->nodelist,
 				     &msg, 0, true))) {
 				error("_thread_per_group_rpc: "
@@ -865,7 +868,7 @@ static void *_thread_per_group_rpc(void *args)
 			}
 		}
 	} else {
-		if(thread_ptr->addr) {
+		if (thread_ptr->addr) {
 			//info("got the address");
 			msg.address = *thread_ptr->addr;
 		} else {
@@ -897,8 +900,17 @@ static void *_thread_per_group_rpc(void *args)
 	while ((ret_data_info = list_next(itr)) != NULL) {
 		rc = slurm_get_return_code(ret_data_info->type,
 					   ret_data_info->data);
-		/* SPECIAL CASE: Mark node as IDLE if job already
-		   complete */
+		/* SPECIAL CASE: Record node's CPU load */
+		if (ret_data_info->type == RESPONSE_PING_SLURMD) {
+			ping_slurmd_resp_msg_t *ping_resp;
+			ping_resp = (ping_slurmd_resp_msg_t *)
+				    ret_data_info->data;
+			lock_slurmctld(node_write_lock);
+			reset_node_load(ret_data_info->node_name,
+					ping_resp->cpu_load);
+			unlock_slurmctld(node_write_lock);
+		}
+		/* SPECIAL CASE: Mark node as IDLE if job already complete */
 		if (is_kill_msg &&
 		    (rc == ESLURMD_KILL_JOB_ALREADY_COMPLETE)) {
 			kill_job_msg_t *kill_job;

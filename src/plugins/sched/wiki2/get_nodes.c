@@ -68,6 +68,7 @@ static int	_str_cmp(char *s1, char *s2);
  *				 colon separator
  *	CCLASS=<[part:cpus]>;	 SLURM partition with CPU count of node,
  *				 make have more than one partition
+ *	[CPULOAD=<load_ave>;]	 One minute BSD load average
  *	[ARCH=<architecture>;]	 Computer architecture
  *	[OS=<operating_system>;] Operating system
  *	CMEMORY=<MB>;		 MB of memory on node
@@ -358,6 +359,12 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 	}
 	if (i > 0)
 		xstrcat(buf, ";");
+
+	if (node_ptr->cpu_load != NO_VAL) {
+		snprintf(tmp, sizeof(tmp), "CPULOAD=%f;",
+			 (node_ptr->cpu_load / 100.0));
+		xstrcat(buf, tmp);
+	}
 
 	if (node_ptr->arch) {
 		snprintf(tmp, sizeof(tmp), "ARCH=%s;", node_ptr->arch);

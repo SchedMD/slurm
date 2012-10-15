@@ -156,6 +156,7 @@ struct node_record {
 	dynamic_plugin_data_t *select_nodeinfo; /* opaque data structure,
 						 * use select_g_get_nodeinfo()
 						 * to access contents */
+	uint32_t cpu_load;		/* CPU load * 100 */
 
 };
 extern struct node_record *node_record_table_ptr;  /* ptr to node records */

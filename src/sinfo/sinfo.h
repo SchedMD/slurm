@@ -98,6 +98,8 @@ typedef struct {
 	uint32_t max_mem;
 	uint32_t min_weight;
 	uint32_t max_weight;
+	uint32_t min_cpu_load;
+	uint32_t max_cpu_load;
 
 	char *features;
 	char *gres;
@@ -145,6 +147,7 @@ struct sinfo_match_flags {
 	bool weight_flag;
 	bool reason_timestamp_flag;
 	bool reason_user_flag;
+	bool cpu_load_flag;
 };
 
 /* Input parameters */

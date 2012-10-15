@@ -81,6 +81,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/plugstack.h"
 
+#include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/reverse_tree_math.h"
 #include "src/slurmd/slurmd/xcpu.h"
@@ -1905,16 +1906,28 @@ _rpc_ping(slurm_msg_t *msg)
 	}
 	first_msg = false;
 
-	/* Return result. If the reply can't be sent this indicates that
-	 * 1. The network is broken OR
-	 * 2. slurmctld has died    OR
-	 * 3. slurmd was paged out due to full memory
-	 * If the reply request fails, we send an registration message to
-	 * slurmctld in hopes of avoiding having the node set DOWN due to
-	 * slurmd paging and not being able to respond in a timely fashion. */
-	if (slurm_send_rc_msg(msg, rc) < 0) {
-		error("Error responding to ping: %m");
-		send_registration_msg(SLURM_SUCCESS, false);
+	if (rc != SLURM_SUCCESS) {
+		/* Return result. If the reply can't be sent this indicates
+		 * 1. The network is broken OR
+		 * 2. slurmctld has died    OR
+		 * 3. slurmd was paged out due to full memory
+		 * If the reply request fails, we send an registration message
+		 * to slurmctld in hopes of avoiding having the node set DOWN
+		 * due to slurmd paging and not being able to respond in a
+		 * timely fashion. */
+		if (slurm_send_rc_msg(msg, rc) < 0) {
+			error("Error responding to ping: %m");
+			send_registration_msg(SLURM_SUCCESS, false);
+		}
+	} else {
+		slurm_msg_t resp_msg;
+		ping_slurmd_resp_msg_t ping_resp;
+		get_cpu_load(&ping_resp.cpu_load);
+		slurm_msg_t_copy(&resp_msg, msg);
+		resp_msg.msg_type = RESPONSE_PING_SLURMD;
+		resp_msg.data     = &ping_resp;
+
+		slurm_send_node_msg(msg->conn_fd, &resp_msg);
 	}
 
 	/* Take this opportunity to enforce any job memory limits */

@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     Cray Inc. and used by permission.
  -- Restore gang scheduling functionality. Preemptor was not being scheduled.
     Fix for bugzilla #3.
+ -- Add "cpu_load" to node information. Populate CPULOAD in node information
+    reported to Moab cluster manager.
 
 * Changes in SLURM 2.5.0.pre3
 =============================
