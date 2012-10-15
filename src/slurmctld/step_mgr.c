@@ -2691,9 +2691,8 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 			*max_rc = step_ptr->exit_code;
 		jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
 		/* we don't want to delete the step record here since
-		   right after we delete this step again if we delete
-		   it here we won't find it when we try the second
-		   time */
+		 * right after we delete this step again if we delete
+		 * it here we won't find it when we try the second time */
 		//delete_step_record(job_ptr, req->job_step_id);
 		return SLURM_SUCCESS;
 	}

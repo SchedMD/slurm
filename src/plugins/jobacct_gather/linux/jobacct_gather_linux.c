@@ -175,10 +175,10 @@ static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
 	jobacct->current_weighted_freq =
 			jobacct->current_weighted_freq +
 			jobacct->this_sampled_cputime * thisfreq;
-	if (jobacct->last_total_cputime)
-		return (jobacct->current_weighted_freq
-                                /jobacct->last_total_cputime);
-	else 
+	if (jobacct->last_total_cputime) {
+		return (jobacct->current_weighted_freq /
+			jobacct->last_total_cputime);
+	} else 
 		return thisfreq;
 }
 
@@ -264,7 +264,7 @@ static int _is_a_lwp(uint32_t pid) {
 
 	if ( snprintf(proc_status_file, 256,
 		      "/proc/%d/status",pid) > 256 ) {
- 		debug("jobacct_gather_linux: unable to build proc_status "
+		debug("jobacct_gather_linux: unable to build proc_status "
 		      "fpath");
 		return -1;
 	}
@@ -313,60 +313,60 @@ static int _is_a_lwp(uint32_t pid) {
  * and %39c is used instead. (except for embedded ')' "(%[^)]c)" would work.
  */
 static int _get_process_data_line(int in, prec_t *prec) {
-        char sbuf[256], *tmp;
-        int num_read, nvals;
-        char cmd[40], state[1];
-        int ppid, pgrp, session, tty_nr, tpgid;
-        long unsigned flags, minflt, cminflt, majflt, cmajflt;
-        long unsigned utime, stime, starttime, vsize;
-        long int cutime, cstime, priority, nice, timeout, itrealvalue, rss;
-        long int f1,f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12;
-        long int f13, f14, lastcpu;
+	char sbuf[256], *tmp;
+	int num_read, nvals;
+	char cmd[40], state[1];
+	int ppid, pgrp, session, tty_nr, tpgid;
+	long unsigned flags, minflt, cminflt, majflt, cmajflt;
+	long unsigned utime, stime, starttime, vsize;
+	long int cutime, cstime, priority, nice, timeout, itrealvalue, rss;
+	long int f1,f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12;
+	long int f13, f14, lastcpu;
 
-        num_read = read(in, sbuf, (sizeof(sbuf) - 1));
-        if (num_read <= 0)
-                return 0;
-        sbuf[num_read] = '\0';
+	num_read = read(in, sbuf, (sizeof(sbuf) - 1));
+	if (num_read <= 0)
+		return 0;
+	sbuf[num_read] = '\0';
 
-        tmp = strrchr(sbuf, ')');       /* split into "PID (cmd" and "<rest>" */
-        *tmp = '\0';                    /* replace trailing ')' with NUL */
-        /* parse these two strings separately, skipping the leading "(". */
-        nvals = sscanf(sbuf, "%d (%39c", &prec->pid, cmd);
-        if (nvals < 2)
-                return 0;
+	tmp = strrchr(sbuf, ')');       /* split into "PID (cmd" and "<rest>" */
+	*tmp = '\0';		    /* replace trailing ')' with NUL */
+	/* parse these two strings separately, skipping the leading "(". */
+	nvals = sscanf(sbuf, "%d (%39c", &prec->pid, cmd);
+	if (nvals < 2)
+		return 0;
 
-        nvals = sscanf(tmp + 2,         /* skip space after ')' too */
-                "%c %d %d %d %d %d "
-                "%lu %lu %lu %lu %lu "
-                "%lu %lu %ld %ld %ld %ld "
-                "%ld %ld %lu %lu %ld "
-                "%lu %lu %lu %lu %lu "
-                "%lu %lu %lu %lu %lu "
-                "%lu %lu %lu %ld %ld ",
-                state, &ppid, &pgrp, &session, &tty_nr, &tpgid,
-                &flags, &minflt, &cminflt, &majflt, &cmajflt,
-                &utime, &stime, &cutime, &cstime, &priority, &nice,
-                &timeout, &itrealvalue, &starttime, &vsize, &rss,
-                &f1, &f2, &f3, &f4, &f5 ,&f6, &f7, &f8, &f9, &f10, &f11,
-                &f12, &f13, &f14, &lastcpu);
-        /* There are some additional fields, which we do not scan or use */
-        if ((nvals < 37) || (rss < 0))
-                return 0;
+	nvals = sscanf(tmp + 2,	 /* skip space after ')' too */
+		       "%c %d %d %d %d %d "
+		       "%lu %lu %lu %lu %lu "
+		       "%lu %lu %ld %ld %ld %ld "
+		       "%ld %ld %lu %lu %ld "
+		       "%lu %lu %lu %lu %lu "
+		       "%lu %lu %lu %lu %lu "
+		       "%lu %lu %lu %ld %ld ",
+		       state, &ppid, &pgrp, &session, &tty_nr, &tpgid,
+		       &flags, &minflt, &cminflt, &majflt, &cmajflt,
+		       &utime, &stime, &cutime, &cstime, &priority, &nice,
+		       &timeout, &itrealvalue, &starttime, &vsize, &rss,
+		       &f1, &f2, &f3, &f4, &f5 ,&f6, &f7, &f8, &f9, &f10, &f11,
+		       &f12, &f13, &f14, &lastcpu);
+	/* There are some additional fields, which we do not scan or use */
+	if ((nvals < 37) || (rss < 0))
+		return 0;
 
-        /* If current pid corresponds to a Light Weight Process (Thread POSIX) */
-        /* skip it, we will only account the original process (pid==tgid) */
-        if (_is_a_lwp(prec->pid) > 0)
-                return 0;
+	/* If current pid corresponds to a Light Weight Process (Thread POSIX) */
+	/* skip it, we will only account the original process (pid==tgid) */
+	if (_is_a_lwp(prec->pid) > 0)
+		return 0;
 
-        /* Copy the values that slurm records into our data structure */
-        prec->ppid  = ppid;
-        prec->pages = majflt;
-        prec->usec  = utime;
-        prec->ssec  = stime;
-        prec->vsize = vsize / 1024;              /* convert from bytes to KB */
-        prec->rss   = rss * getpagesize() / 1024;/* convert from pages to KB */
-        prec->last_cpu = lastcpu;
-        return 1;
+	/* Copy the values that slurm records into our data structure */
+	prec->ppid  = ppid;
+	prec->pages = majflt;
+	prec->usec  = utime;
+	prec->ssec  = stime;
+	prec->vsize = vsize / 1024;	      /* convert from bytes to KB */
+	prec->rss   = rss * getpagesize() / 1024;/* convert from pages to KB */
+	prec->last_cpu = lastcpu;
+	return 1;
 }
 
 static void _destroy_prec(void *object)
@@ -455,16 +455,16 @@ extern void jobacct_gather_p_poll_data(
 		hertz = 100;	/* default on many systems */
 	}
 
-	if(!pgid_plugin) {
+	if (!pgid_plugin) {
 		/* get only the processes in the proctrack container */
 		slurm_container_get_pids(cont_id, &pids, &npids);
-		if(!npids) {
+		if (!npids) {
 			/*update consumed energy even if pids do not exist*/
 			itr = list_iterator_create(task_list);	
 			if ((jobacct = list_next(itr))) {
-					energy_accounting_g_getjoules_task(jobacct);
-					debug2("getjoules_task energy = %u",
-                                                jobacct->consumed_energy);
+				energy_accounting_g_getjoules_task(jobacct);
+				debug2("getjoules_task energy = %u",
+				       jobacct->consumed_energy);
 			}
 			list_iterator_destroy(itr);
 
@@ -609,19 +609,19 @@ extern void jobacct_gather_p_poll_data(
 				jobacct->act_cpufreq = (uint32_t)
 					_update_weighted_freq(jobacct, sbuf);
 				debug2("Task average frequency = %u",
-                                                jobacct->act_cpufreq);
+				       jobacct->act_cpufreq);
 				debug2(" pid %d mem size %u %u time %u(%u+%u) ",
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
 				       prec->usec, prec->ssec);
 				/* get energy consumption 
-  			           only once is enough since we
- 				   report per node energy consumption */
+  				 * only once is enough since we
+ 				 * report per node energy consumption */
 				debug2("energycounted= %d", energy_counted);
-				if(energy_counted == 0){
+				if (energy_counted == 0) {
 					energy_accounting_g_getjoules_task(jobacct);
 					debug2("getjoules_task energy = %u ",
-				       		jobacct->consumed_energy);
+					       jobacct->consumed_energy);
 					energy_counted = 1;
 				}
 				break;

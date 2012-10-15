@@ -128,12 +128,13 @@ extern int jobacct_gather_init(void); /* load the plugin */
 extern int jobacct_gather_fini(void); /* unload the plugin */
 
 extern int  jobacct_gather_startpoll(uint16_t frequency);
-extern int  jobacct_gather_endpoll();
+extern int  jobacct_gather_endpoll(void);
 extern void jobacct_gather_change_poll(uint16_t frequency);
-extern void jobacct_gather_suspend_poll();
-extern void jobacct_gather_resume_poll();
+extern void jobacct_gather_suspend_poll(void);
+extern void jobacct_gather_resume_poll(void);
 
-extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id, int poll);
+extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
+				   int poll);
 /* must free jobacctinfo_t if not NULL */
 extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid);
 /* must free jobacctinfo_t if not NULL */

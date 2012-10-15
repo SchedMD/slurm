@@ -234,7 +234,7 @@ static int *_getjoules_rapl(void)
 	int core = 0;
 	double energy_units;
 	ulong result;
-	double ret,ret_tmp;
+	double ret, ret_tmp;
 
 
 
@@ -262,12 +262,12 @@ static int *_getjoules_rapl(void)
 		}
 
 		sleep(1);
-		result=0;
-                for (i = 0; i < nb_pkg; i++)
-                        result += get_package_energy(i) + get_dram_energy(i);
-                ret_tmp = (double)result*energy_units;
-		current_watts=(float)(ret_tmp - ret);
-                base_watts=node_base_energy;
+		result = 0;
+		for (i = 0; i < nb_pkg; i++)
+			result += get_package_energy(i) + get_dram_energy(i);
+		ret_tmp = (double)result * energy_units;
+		current_watts = (float)(ret_tmp - ret);
+		base_watts = node_base_energy;
 		
 		debug2("_getjoules_rapl = %d sec, current %.6f Joules, "
 		       "consumed %d", freq, ret, node_consumed_energy);

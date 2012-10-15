@@ -312,7 +312,7 @@ extern int jobacct_gather_startpoll(uint16_t frequency)
 	return retval;
 }
 
-extern int jobacct_gather_endpoll()
+extern int jobacct_gather_endpoll(void)
 {
 	int retval = SLURM_SUCCESS;
 
@@ -364,17 +364,18 @@ extern void jobacct_gather_change_poll(uint16_t frequency)
 	return;
 }
 
-extern void jobacct_gather_suspend_poll()
+extern void jobacct_gather_suspend_poll(void)
 {
 	jobacct_suspended = true;
 }
 
-extern void jobacct_gather_resume_poll()
+extern void jobacct_gather_resume_poll(void)
 {
 	jobacct_suspended = false;
 }
 
-extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id, int poll)
+extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
+				   int poll)
 {
 	struct jobacctinfo *jobacct;
 
@@ -991,10 +992,8 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 		dest->sys_cpu_sec++;
 		dest->sys_cpu_usec -= 1E6;
 	}
-        dest->act_cpufreq 	+= from->act_cpufreq;
-        dest->consumed_energy   += from->consumed_energy;
-
-
+	dest->act_cpufreq 	+= from->act_cpufreq;
+	dest->consumed_energy   += from->consumed_energy;
 }
 
 extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
