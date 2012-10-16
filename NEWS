@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     Fix for bugzilla #3.
  -- Add "cpu_load" to node information. Populate CPULOAD in node information
     reported to Moab cluster manager.
+ -- Preempt jobs only when insufficient idle resources exist to start job,
+    regardless of the node weight.
 
 * Changes in SLURM 2.5.0.pre3
 =============================

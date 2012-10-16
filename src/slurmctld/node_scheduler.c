@@ -923,6 +923,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool preempt_flag = false;
 	bool nodes_busy = false;
 	int shared = 0, select_mode;
+	List preemptee_cand;
 
 	if (test_only)
 		select_mode = SELECT_MODE_TEST_ONLY;
@@ -1159,13 +1160,20 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			}
 			if (job_ptr->details->req_node_bitmap == NULL)
 				bit_and(avail_bitmap, avail_node_bitmap);
+			/* Only preempt jobs when all possible nodes are being
+			 * considered for use, otherwise we would preempt jobs
+			 * to use the lowest weight nodes. */
+			if ((i+1) < node_set_size)
+				preemptee_cand = NULL;
+			else
+				preemptee_cand = preemptee_candidates;
 			pick_code = select_g_job_test(job_ptr,
 						      avail_bitmap,
 						      min_nodes,
 						      max_nodes,
 						      req_nodes,
 						      select_mode,
-						      preemptee_candidates,
+						      preemptee_cand,
 						      preemptee_job_list,
 						      exc_core_bitmap);
 #if 0
