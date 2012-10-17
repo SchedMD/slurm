@@ -1132,8 +1132,10 @@ Equivalent to \fB\-\-ntasks\-per\-node\fR.
 .TP
 \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
 Restrict node selection to nodes with at least the specified number of
-threads per core.  See additional information under \fB\-B\fR option
-above when task/affinity plugin is enabled.
+threads per core.  NOTE: "Threads" refers to the number of processing units on
+each core rather than the number of appliation tasks to be launched per core.
+See additional information under \fB\-B\fR option above when task/affinity
+plugin is enabled.
 
 .TP
 \fB\-\-time\-min\fR=<\fItime\fR>
