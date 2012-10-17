@@ -1222,6 +1222,36 @@ extern void bridge_block_post_job(char *bg_block_id,
 	_remove_jobs_on_block_and_reset(bg_block_id, job_ptr);
 }
 
+
+extern uint16_t bridge_block_get_action(char *bg_block_id)
+{
+	uint16_t action = BG_BLOCK_ACTION_NONE;
+
+#if defined HAVE_BG_FILES && defined HAVE_BG_GET_ACTION
+	BlockFilter filter;
+	Block::Ptrs vec;
+
+	/* This block hasn't been created yet. */
+	if (!bg_block_id)
+		return action;
+
+	filter.setName(string(bg_block_id));
+
+	vec = bridge_get_blocks(filter);
+	if (vec.empty()) {
+		error("bridge_block_get_action: "
+		      "block %s not found, this should never happen",
+		      bg_block_id);
+		/* block is gone? */
+		return BG_BLOCK_ACTION_NAV;
+	}
+
+	const Block::Ptr &block_ptr = *(vec.begin());
+	action = bridge_translate_action(block_ptr->getAction().toValue());
+#endif
+	return action;
+}
+
 extern int bridge_set_log_params(char *api_file_name, unsigned int level)
 {
 	if (!bridge_init(NULL))

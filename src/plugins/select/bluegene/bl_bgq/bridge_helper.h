@@ -98,6 +98,10 @@ extern int bridge_handle_realtime_protocol_errors(const char *function,
 
 /* traslate functions */
 extern uint16_t bridge_translate_status(bgsched::Block::Status state_in);
+#if defined HAVE_BG_GET_ACTION
+extern uint16_t bridge_translate_action(
+	bgsched::Block::Action::Value action_in);
+#endif
 extern uint16_t bridge_translate_switch_usage(bgsched::Switch::InUse usage_in);
 extern const char *bridge_hardware_state_string(const int state);
 

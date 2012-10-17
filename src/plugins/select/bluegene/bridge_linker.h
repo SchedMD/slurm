@@ -111,6 +111,8 @@ extern int bridge_blocks_load_curr(List curr_block_list);
 extern void bridge_reset_block_list(List block_list);
 extern void bridge_block_post_job(char *bg_block_id,
 				  struct job_record *job_ptr);
+extern uint16_t bridge_block_get_action(char *bg_block_id);
+
 extern int bridge_set_log_params(char *api_file_name, unsigned int level);
 
 #if defined HAVE_BG_FILES && defined HAVE_BG_L_P

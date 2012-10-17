@@ -333,6 +333,7 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	}
 
 	xfree(sec_record->bg_block_id);
+	sec_record->action = fir_record->action;
 	sec_record->bg_block_id = xstrdup(fir_record->bg_block_id);
 
 	if (sec_record->ba_mp_list)

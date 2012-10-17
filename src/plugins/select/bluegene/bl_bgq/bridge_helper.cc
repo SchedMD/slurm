@@ -465,6 +465,28 @@ extern uint16_t bridge_translate_status(bgsched::Block::Status state_in)
 	return BG_BLOCK_NAV;
 }
 
+#if defined HAVE_BG_GET_ACTION
+extern uint16_t bridge_translate_action(bgsched::Block::Action::Value action_in)
+{
+	switch (action_in) {
+	case Block::Action::None:
+		return BG_BLOCK_ACTION_NONE;
+		break;
+	case Block::Action::Boot:
+		return BG_BLOCK_ACTION_BOOT;
+		break;
+	case Block::Action::Free:
+		return BG_BLOCK_ACTION_FREE;
+	default:
+		error("unknown block action %d", action_in);
+		return BG_BLOCK_ACTION_NAV;
+		break;
+	}
+	error("unknown block action %d", action_in);
+	return BG_BLOCK_ACTION_NAV;
+}
+#endif
+
 extern uint16_t bridge_translate_switch_usage(bgsched::Switch::InUse usage_in)
 {
 	switch (usage_in) {

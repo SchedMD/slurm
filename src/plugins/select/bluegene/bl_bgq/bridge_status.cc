@@ -133,6 +133,7 @@ public:
 static List kill_job_list = NULL;
 static pthread_t real_time_thread;
 static pthread_t poll_thread;
+static pthread_t action_poll_thread;
 static bgsched::realtime::Client *rt_client_ptr = NULL;
 pthread_mutex_t rt_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -781,6 +782,33 @@ static void _do_block_poll(void)
 		last_bg_update = time(NULL);
 }
 
+static void _do_block_action_poll(void)
+{
+	bg_record_t *bg_record;
+	ListIterator itr;
+
+	if (!bg_lists->main)
+		return;
+
+	slurm_mutex_lock(&block_state_mutex);
+	itr = list_iterator_create(bg_lists->main);
+	while ((bg_record = (bg_record_t *) list_next(itr))) {
+		BlockFilter filter;
+		Block::Ptrs vec;
+
+		if ((bg_record->magic != BLOCK_MAGIC)
+		    || !bg_record->bg_block_id)
+			continue;
+
+		bg_record->action =
+			bridge_block_get_action(bg_record->bg_block_id);
+
+		if (rt_waiting || slurmctld_config.shutdown_time)
+			break;
+	}
+	slurm_mutex_unlock(&block_state_mutex);
+}
+
 /* Even though ba_mp should be coming from the main list
  * ba_system_mutex && block_state_mutex must be unlocked before
  * this.  Anywhere in this function where ba_mp is used should be
@@ -970,6 +998,18 @@ static void *_poll(void *no_data)
 		   break */
 		if (initial_poll)
 			break;
+		sleep(1);
+	}
+
+	return NULL;
+}
+
+static void *_block_action_poll(void *no_data)
+{
+	while (bridge_status_inited) {
+		//debug("polling for actions");
+		if (blocks_are_created)
+			_do_block_action_poll();
 		sleep(1);
 	}
 
@@ -1382,6 +1422,10 @@ extern int bridge_status_init(void)
 	slurm_attr_init(&thread_attr);
 	if (pthread_create(&poll_thread, &thread_attr, _poll, NULL))
 		fatal("pthread_create error %m");
+	slurm_attr_init(&thread_attr);
+	if (pthread_create(&action_poll_thread, &thread_attr,
+			   _block_action_poll, NULL))
+		fatal("pthread_create error %m");
 	slurm_attr_destroy(&thread_attr);
 #endif
 	return SLURM_SUCCESS;
@@ -1407,6 +1451,11 @@ extern int bridge_status_fini(void)
 	if (poll_thread) {
 		pthread_join(poll_thread, NULL);
 		poll_thread = 0;
+	}
+
+	if (action_poll_thread) {
+		pthread_join(action_poll_thread, NULL);
+		action_poll_thread = 0;
 	}
 
 	if (kill_job_list) {

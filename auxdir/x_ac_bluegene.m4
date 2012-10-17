@@ -304,6 +304,15 @@ AC_DEFUN([X_AC_BGQ],
 				[[ bgsched::Block::checkIO("", NULL, NULL);]])],
 			        [have_bgq_new_io_check=yes],
 				[AC_MSG_RESULT(Using old iocheck.)])
+		# In later versions of the driver IBM added an "action" to a
+		# block.  Here is a check to not break backwards compatibility
+		AC_LINK_IFELSE([AC_LANG_PROGRAM(
+                                [[#include <bgsched/bgsched.h>
+				#include <bgsched/Block.h>]],
+				[[ bgsched::Block::Ptr block_ptr;
+				block_ptr->getAction();]])],
+			        [have_bgq_get_action=yes],
+				[AC_MSG_RESULT(Blocks do not have actions!)])
 		AC_LANG_POP(C++)
 		LDFLAGS="$saved_LDFLAGS"
    	fi
@@ -323,6 +332,10 @@ AC_DEFUN([X_AC_BGQ],
 		#AC_DEFINE_UNQUOTED(BG_BRIDGE_SO, "$soloc", [Define the BG_BRIDGE_SO value])
 		if test ! -z "$have_bgq_new_io_check" ; then
 			AC_DEFINE(HAVE_BG_NEW_IO_CHECK, 1, [Define to 1 if using code with new iocheck])
+		fi
+
+		if test ! -z "$have_bgq_get_action" ; then
+			AC_DEFINE(HAVE_BG_GET_ACTION, 1, [Define to 1 if using code where blocks have actions])
 		fi
 
     		AC_MSG_NOTICE([Running on a legitimate BG/Q system])

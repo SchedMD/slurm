@@ -430,6 +430,22 @@ static bg_record_t *_find_matching_block(List block_list,
 				} else
 					slurm_mutex_unlock(&block_state_mutex);
 
+			} else if ((bg_record->action == BG_BLOCK_ACTION_FREE)
+				   && (bg_record->state == BG_BLOCK_INITED)) {
+				/* If we are in the action state of
+				   FREE of 'D' continue on and don't
+				   look at this block just yet.  Only
+				   do this if the block is still
+				   booted since the action happens on
+				   a regular free as well.
+				*/
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_BG_PICK)
+					info("block %s can't be used, "
+					     "it has an action item of 'D' "
+					     "on it.",
+					     bg_record->bg_block_id);
+				continue;
 			}
 		}
 

@@ -97,6 +97,9 @@ typedef struct {
 } bg_lists_t;
 
 typedef struct bg_record {
+	uint16_t action;                /* Any action that might be on
+					   the block.  At the moment,
+					   don't pack. */
 	bool avail_set;                 /* Used in sorting, don't copy
 					   or pack. */
 	uint32_t avail_cnode_cnt;       /* Used in sorting, don't copy
