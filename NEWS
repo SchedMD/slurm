@@ -27,6 +27,9 @@ documents those changes that are of interest to users and admins.
     This is needed for when a free request is added to a block but there are
     jobs finishing up so we don't start new jobs on the block since they will
     fail on start.
+ -- BGQ - Fixed InactiveLimit to work correctly to avoid scenarios where a
+    user's pending allocation was started with srun and then for some reason
+    the slurmctld was brought down and while it was down the srun was removed.
 
 * Changes in SLURM 2.4.3
 ========================
