@@ -970,7 +970,6 @@ static void _do_hardware_poll(int level, uint16_t *coords,
 
 static void *_poll(void *no_data)
 {
-	event_handler_t event_hand;
 	static time_t last_ran = 0;
 	time_t curr_time;
 
