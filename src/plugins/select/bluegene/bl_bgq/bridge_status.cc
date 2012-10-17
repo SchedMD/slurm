@@ -131,6 +131,7 @@ public:
 } event_handler_t;
 
 static List kill_job_list = NULL;
+static pthread_t before_rt_thread;
 static pthread_t real_time_thread;
 static pthread_t poll_thread;
 static pthread_t action_poll_thread;
@@ -1044,7 +1045,7 @@ void event_handler::handleRealtimeStartedRealtimeEvent(
 		   thread that will do it for us in the background.
 		*/
 		slurm_attr_init(&thread_attr);
-		if (pthread_create(&poll_thread, &thread_attr,
+		if (pthread_create(&before_rt_thread, &thread_attr,
 				   _before_rt_poll, NULL))
 			fatal("pthread_create error %m");
 		slurm_attr_destroy(&thread_attr);
@@ -1441,6 +1442,11 @@ extern int bridge_status_fini(void)
 	rt_waiting = 1;
 	/* make the rt connection end. */
 	_bridge_status_disconnect();
+
+	if (before_rt_thread) {
+		pthread_join(before_rt_thread, NULL);
+		before_rt_thread = 0;
+	}
 
 	if (real_time_thread) {
 		pthread_join(real_time_thread, NULL);
