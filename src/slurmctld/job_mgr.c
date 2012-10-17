@@ -6474,11 +6474,28 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			goto fini;
 		}
 
-		if (job_specs->min_nodes == NO_VAL)
+		if (job_specs->min_nodes == NO_VAL) {
+#ifdef HAVE_BG
+			select_g_select_jobinfo_get(
+				job_ptr->select_jobinfo,
+				SELECT_JOBDATA_NODE_CNT,
+				&job_specs->min_nodes);
+#else
 			job_specs->min_nodes = detail_ptr->min_nodes;
+#endif
+		}
 		if ((job_specs->max_nodes == NO_VAL) &&
-		    (detail_ptr->max_nodes != 0))
+		    (detail_ptr->max_nodes != 0)) {
+#ifdef HAVE_BG
+			select_g_select_jobinfo_get(
+				job_ptr->select_jobinfo,
+				SELECT_JOBDATA_NODE_CNT,
+				&job_specs->max_nodes);
+#else
 			job_specs->max_nodes = detail_ptr->max_nodes;
+#endif
+		}
+
 		if ((job_specs->time_min == NO_VAL) &&
 		    (job_ptr->time_min != 0))
 			job_specs->time_min = job_ptr->time_min;

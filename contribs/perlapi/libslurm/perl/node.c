@@ -137,6 +137,9 @@ node_info_msg_to_hv(node_info_msg_t *node_info_msg, HV *hv)
 	/* record_count implied in node_array */
 	av = newAV();
 	for(i = 0; i < node_info_msg->record_count; i ++) {
+		if (!node_info_msg->node_array[i].name)
+			continue;
+
 		hv_info =newHV();
 		if (node_info_to_hv(node_info_msg->node_array + i,
 				    node_info_msg->node_scaling, hv_info) < 0) {

@@ -362,14 +362,14 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			error("%s", reason);
 		/* unlock mutex here since _handle_bad_nodeboard could produce
 		   deadlock */
-		unlock_slurmctld(job_read_lock);
 		slurm_mutex_unlock(&ba_system_mutex);
 		slurm_mutex_unlock(&block_state_mutex);
+		unlock_slurmctld(job_read_lock);
 		_handle_bad_nodeboard(nc_name, bg_down_node,
 				      state, reason, print_debug);
+		lock_slurmctld(job_read_lock);
 		slurm_mutex_lock(&block_state_mutex);
 		slurm_mutex_lock(&ba_system_mutex);
-		lock_slurmctld(job_read_lock);
 	}
 
 	if (!changed)

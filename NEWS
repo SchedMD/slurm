@@ -85,6 +85,9 @@ documents those changes that are of interest to users and admins.
  -- Modify strigger so that a filter option of "--user=0" is supported.
  -- Correct --mem-per-cpu logic for core or socket allocations with multiple
     threads per core.
+ -- Fix for older < glibc 2.4 systems to use euidaccess() instead of eaccess().
+ -- BlueGene - Do not alter a pending job's node count when changing it's
+    partition.
 
 * Changes in SLURM 2.4.3
 ========================
