@@ -30,6 +30,7 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Fixed InactiveLimit to work correctly to avoid scenarios where a
     user's pending allocation was started with srun and then for some reason
     the slurmctld was brought down and while it was down the srun was removed.
+ -- Fixed InactiveLimit math to work correctly
 
 * Changes in SLURM 2.4.3
 ========================
