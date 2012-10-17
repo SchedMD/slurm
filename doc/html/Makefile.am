@@ -53,6 +53,7 @@ generated_html = \
 	preempt.html \
 	preemption_plugins.html \
 	priority_multifactor.html \
+	priority_multifactor2.html \
 	priority_plugins.html \
 	proctrack_plugins.html \
 	programmer_guide.html \
