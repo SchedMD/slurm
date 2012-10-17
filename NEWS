@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     reported to Moab cluster manager.
  -- Preempt jobs only when insufficient idle resources exist to start job,
     regardless of the node weight.
+ -- Added priority/multifactor2 plugin based upon ticket distribution system.
+    Work by Janne Blomqvist, Aalto University.
 
 * Changes in SLURM 2.5.0.pre3
 =============================
