@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed InactiveLimit math to work correctly
  -- BGQ - Add logic to make it so blocks can't use a midplane with a nodeboard
     in error for passthrough.
+ -- BGQ - Make it so if a nodeboard goes in error any block using that midplane
+    for passthrough gets removed on a dynamic system.
 
 * Changes in SLURM 2.4.3
 ========================
