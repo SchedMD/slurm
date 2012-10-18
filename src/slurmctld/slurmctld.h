@@ -330,6 +330,7 @@ typedef struct slurmctld_resv {
 	char *accounts;		/* names of accounts permitted to use	*/
 	int account_cnt;	/* count of accounts permitted to use	*/
 	char **account_list;	/* list of accounts permitted to use	*/
+	bool account_not;	/* account_list users NOT permitted to use */
 	char *assoc_list;	/* list of associations			*/
 	uint32_t cpu_cnt;	/* number of reserved CPUs		*/
 	bitstr_t *core_bitmap;	/* bitmap of reserved cores		*/
@@ -360,6 +361,7 @@ typedef struct slurmctld_resv {
 	char *users;		/* names of users permitted to use	*/
 	int user_cnt;		/* count of users permitted to use	*/
 	uid_t *user_list;	/* array of users permitted to use	*/
+	bool user_not;		/* user_list users NOT permitted to use	*/
 } slurmctld_resv_t;
 
 /*****************************************************************************\
