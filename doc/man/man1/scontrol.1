@@ -1078,9 +1078,11 @@ For create, if you do not want to give a reservation name, use
 List of accounts permitted to use the reserved nodes.
 E.g.  Accounts=physcode1,physcode2.  A user in any of the accounts
 may use the reserved nodes.
-A new reservation must specify Users and/or Accounts.  You can add or
-remove individual accounts from an existing reservation by adding
-a '+' or '\-' sign before the '=' sign.
+A new reservation must specify Users and/or Accounts.
+If both Users and Accounts are specified, a job must match both in order to
+use the reservation.
+You can add or remove individual accounts from an existing reservation by
+adding a '+' or '\-' sign before the '=' sign.
 
 .TP
 \fICoreCnt\fP=<num>
@@ -1219,9 +1221,11 @@ Value may be cleared with blank data value, "Features=".
 \fIUsers\fP=<user list>
 List of users permitted to use the reserved nodes.
 E.g.  Users=jones1,smith2.
-A new reservation must specify Users and/or Accounts.  You can add or
-remove individual users from an existing reservation by adding a '+'
-or '\-' sign before the '=' sign.
+A new reservation must specify Users and/or Accounts. 
+If both Users and Accounts are specified, a job must match both in order to
+use the reservation.
+You can add or remove individual users from an existing reservation by adding
+a '+' or '\-' sign before the '=' sign.
 
 .TP
 \fBSPECIFICATIONS FOR UPDATE BLOCK/SUBMP \fR

@@ -3034,6 +3034,7 @@ fini:	FREE_NULL_BITMAP(save_bitmap);
 static int _valid_job_access_resv(struct job_record *job_ptr,
 				  slurmctld_resv_t *resv_ptr)
 {
+	bool uid_match = false;
 	int i;
 
 	/* Determine if we have access */
@@ -3072,10 +3073,19 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 			assoc = assoc->usage->parent_assoc_ptr;
 		}
 	} else {
-no_assocs:	for (i=0; i<resv_ptr->user_cnt; i++) {
-			if (job_ptr->user_id == resv_ptr->user_list[i])
-				return SLURM_SUCCESS;
+no_assocs:	if (resv_ptr->user_cnt == 0)
+			uid_match = true;
+		for (i = 0; i < resv_ptr->user_cnt; i++) {
+			if (job_ptr->user_id == resv_ptr->user_list[i]) {
+				uid_match = true;
+				break;
+			}
 		}
+		if (!uid_match)
+			goto end_it;
+		if ((resv_ptr->user_cnt != 0) && (resv_ptr->account_cnt == 0))
+			return SLURM_SUCCESS;
+
 		for (i=0; (i<resv_ptr->account_cnt) && job_ptr->account; i++) {
 			if (resv_ptr->account_list[i] &&
 			    (strcmp(job_ptr->account,
