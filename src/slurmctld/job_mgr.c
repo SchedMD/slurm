@@ -5527,7 +5527,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 
 		pack_time(begin_time, buffer);
 		/* Actual or expected start time */
-		if((dump_job_ptr->start_time) || (begin_time <= time(NULL)))
+		if ((dump_job_ptr->start_time) || (begin_time <= time(NULL)))
 			pack_time(dump_job_ptr->start_time, buffer);
 		else	/* earliest start time in the future */
 			pack_time(begin_time, buffer);
@@ -5644,7 +5644,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 
 			if (detail_ptr->argv) {
 				/* Determine size needed for a string
-				   containing all arguments */
+				 * containing all arguments */
 				for (i=0; detail_ptr->argv[i]; i++) {
 					len += strlen(detail_ptr->argv[i]);
 				}

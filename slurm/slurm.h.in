@@ -1061,7 +1061,8 @@ typedef struct job_info {
 	uint16_t batch_flag;	/* 1 if batch: queued job with script */
 	char *batch_host;	/* name of host running batch script */
 	char *batch_script;	/* contents of batch script */
-	char *command;		/* command to be executed */
+	char *command;		/* command to be executed, built from submitted
+				 * job's argv and NULL for salloc command */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
 	uint16_t cpus_per_task;	/* number of processors required for
