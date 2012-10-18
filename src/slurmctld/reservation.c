@@ -417,7 +417,7 @@ static int _append_assoc_list(List assoc_list, slurmdb_association_rec_t *assoc)
 		    acct_db_conn, assoc,
 		    accounting_enforce,
 		    &assoc_ptr)) {
-		if(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) {
+		if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 			error("No association for user %u and account %s",
 			      assoc->uid, assoc->acct);
 		} else {
@@ -434,6 +434,7 @@ static int _append_assoc_list(List assoc_list, slurmdb_association_rec_t *assoc)
 
 	return rc;
 }
+
 /* Set a association list based upon accounts and users */
 static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 {
@@ -489,7 +490,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 				goto end_it;
 			}
 		}
-	} else if(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) {
+	} else if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 		error("We need at least 1 user or 1 account to "
 		      "create a reservtion.");
 		rc = SLURM_ERROR;
@@ -588,11 +589,11 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	} else {
 		time_t now = time(NULL);
 
-		if(old_resv_ptr->assoc_list && resv_ptr->assoc_list) {
-			if(strcmp(old_resv_ptr->assoc_list,
+		if (old_resv_ptr->assoc_list && resv_ptr->assoc_list) {
+			if (strcmp(old_resv_ptr->assoc_list,
 				  resv_ptr->assoc_list))
 				resv.assocs = resv_ptr->assoc_list;
-		} else if(resv_ptr->assoc_list)
+		} else if (resv_ptr->assoc_list)
 			resv.assocs = resv_ptr->assoc_list;
 
 		if (old_resv_ptr->cpu_cnt != resv_ptr->cpu_cnt)
@@ -600,16 +601,16 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 		else
 			resv.cpus = (uint32_t)NO_VAL;
 
-		if(old_resv_ptr->flags != resv_ptr->flags)
+		if (old_resv_ptr->flags != resv_ptr->flags)
 			resv.flags = resv_ptr->flags;
 		else
 			resv.flags = (uint16_t)NO_VAL;
 
-		if(old_resv_ptr->node_list && resv_ptr->node_list) {
-			if(strcmp(old_resv_ptr->node_list,
+		if (old_resv_ptr->node_list && resv_ptr->node_list) {
+			if (strcmp(old_resv_ptr->node_list,
 				  resv_ptr->node_list))
 				resv.nodes = resv_ptr->node_list;
-		} else if(resv_ptr->node_list)
+		} else if (resv_ptr->node_list)
 			resv.nodes = resv_ptr->node_list;
 
 		/* Here if the reservation has started already we need
@@ -617,11 +618,11 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 		 * variables are needed in accounting.  Right now if
 		 * the assocs, nodes, flags or cpu count changes we need a
 		 * new start time of now. */
-		if((resv_ptr->start_time < now)
-		   && (resv.assocs
-		       || resv.nodes
-		       || (resv.flags != (uint16_t)NO_VAL)
-		       || (resv.cpus != (uint32_t)NO_VAL))) {
+		if ((resv_ptr->start_time < now)
+		     && (resv.assocs
+		         || resv.nodes
+		         || (resv.flags != (uint16_t)NO_VAL)
+		         || (resv.cpus != (uint32_t)NO_VAL))) {
 			resv_ptr->start_time_prev = resv_ptr->start_time;
 			resv_ptr->start_time = now;
 		}
@@ -1808,7 +1809,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->start_time_prev = resv_ptr->start_time;
 		resv_ptr->start_time = resv_desc_ptr->start_time;
 		resv_ptr->start_time_first = resv_desc_ptr->start_time;
-		if(resv_ptr->duration) {
+		if (resv_ptr->duration) {
 			resv_ptr->end_time = resv_ptr->start_time_first +
 				(resv_ptr->duration * 60);
 		}
@@ -1925,7 +1926,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	_set_cpu_cnt(resv_ptr);
 
 	/* This needs to be after checks for both account and user
-	   changes */
+	 * changes */
 	if ((error_code = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS)
 		goto update_failure;
 
@@ -3634,7 +3635,7 @@ extern int send_resvs_to_accounting(void)
 	ListIterator itr = NULL;
 	slurmctld_resv_t *resv_ptr;
 
-	if(!resv_list)
+	if (!resv_list)
 		return SLURM_SUCCESS;
 
 	itr = list_iterator_create(resv_list);
