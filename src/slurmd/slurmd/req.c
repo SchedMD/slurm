@@ -128,7 +128,8 @@ typedef struct {
 static int  _abort_job(uint32_t job_id, uint32_t slurm_rc);
 static int  _abort_step(uint32_t job_id, uint32_t step_id);
 static char **_build_env(uint32_t jobid, uid_t uid, char *resv_id,
-			 char **spank_job_env, uint32_t spank_job_env_size);
+			 char **spank_job_env, uint32_t spank_job_env_size,
+			 char *node_list);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _destroy_env(char **env);
 static int  _get_grouplist(uid_t my_uid, gid_t my_gid, int *ngroups,
@@ -167,9 +168,11 @@ static int  _rpc_stat_jobacct(slurm_msg_t *msg);
 static int  _rpc_list_pids(slurm_msg_t *msg);
 static int  _rpc_daemon_status(slurm_msg_t *msg);
 static int  _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
-			char **spank_job_env, uint32_t spank_job_env_size);
+			char **spank_job_env, uint32_t spank_job_env_size,
+			char *node_list);
 static int  _run_epilog(uint32_t jobid, uid_t uid, char *resv_id,
-			char **spank_job_env, uint32_t spank_job_env_size);
+			char **spank_job_env, uint32_t spank_job_env_size,
+			char *node_list);
 static void _rpc_forward_data(slurm_msg_t *msg);
 
 
@@ -1020,7 +1023,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	     req->job_step_id, req->uid, req->gid, host, port);
 
 	/* this could be set previously and needs to be overwritten by
-	   this call for messages to work correctly for the new call */
+	 * this call for messages to work correctly for the new call */
 	env_array_overwrite(&req->env, "SLURM_SRUN_COMM_HOST", host);
 	req->envc = envcount(req->env);
 
@@ -1038,7 +1041,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	if (first_job_run) {
 		int rc;
 		rc =  _run_prolog(req->job_id, req->uid, NULL,
-				  req->spank_job_env, req->spank_job_env_size);
+				  req->spank_job_env, req->spank_job_env_size,
+				  req->complete_nodelist);
 		if (rc) {
 			int term_sig, exit_status;
 			if (WIFSIGNALED(rc)) {
@@ -1370,7 +1374,8 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 							  SELECT_PRINT_RESV_ID);
 #endif
 		rc = _run_prolog(req->job_id, req->uid, resv_id,
-				 req->spank_job_env, req->spank_job_env_size);
+				 req->spank_job_env, req->spank_job_env_size,
+				 req->nodes);
 		xfree(resv_id);
 		if (rc) {
 			int term_sig, exit_status;
@@ -3459,13 +3464,13 @@ _rpc_abort_job(slurm_msg_t *msg)
 						  SELECT_PRINT_RESV_ID);
 #endif
 	_run_epilog(req->job_id, req->job_uid, resv_id,
-		    req->spank_job_env, req->spank_job_env_size);
+		    req->spank_job_env, req->spank_job_env_size, req->nodes);
 	xfree(resv_id);
 }
 
 /* This is a variant of _rpc_terminate_job for use with select/serial */
 static void
-_rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id)
+_rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id, char *node_name)
 {
 	int             rc     = SLURM_SUCCESS;
 	int             nsteps = 0;
@@ -3542,7 +3547,7 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id)
 	save_cred_state(conf->vctx);
 
 	/* NOTE: We lack the job's SPANK environment variables */
-	rc = _run_epilog(job_id, (uid_t) user_id, NULL, NULL, 0);
+	rc = _run_epilog(job_id, (uid_t) user_id, NULL, NULL, 0, node_name);
 	if (rc) {
 		int term_sig, exit_status;
 		if (WIFSIGNALED(rc)) {
@@ -3583,7 +3588,7 @@ _rpc_complete_batch(slurm_msg_t *msg)
 	}
 
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
-	_rpc_terminate_batch_job(req->job_id, req->user_id);
+	_rpc_terminate_batch_job(req->job_id, req->user_id, req->node_name);
 
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type= REQUEST_COMPLETE_BATCH_JOB;
@@ -3814,7 +3819,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 						  SELECT_PRINT_RESV_ID);
 #endif
 	rc = _run_epilog(req->job_id, req->job_uid, resv_id,
-			 req->spank_job_env, req->spank_job_env_size);
+			 req->spank_job_env, req->spank_job_env_size,
+			 req->nodes);
 	xfree(resv_id);
 
 	if (rc) {
@@ -4035,7 +4041,7 @@ _rpc_update_time(slurm_msg_t *msg)
 /* NOTE: call _destroy_env() to free returned value */
 static char **
 _build_env(uint32_t jobid, uid_t uid, char *resv_id,
-	   char **spank_job_env, uint32_t spank_job_env_size)
+	   char **spank_job_env, uint32_t spank_job_env_size, char *node_list)
 {
 	char *name;
 	char **env = xmalloc(sizeof(char *));
@@ -4057,6 +4063,8 @@ _build_env(uint32_t jobid, uid_t uid, char *resv_id,
 	xfree(name);
 	setenvf(&env, "SLURM_JOBID", "%u", jobid);
 	setenvf(&env, "SLURM_UID",   "%u", uid);
+	if (node_list)
+		setenvf(&env, "SLURM_NODELIST", "%s", node_list);
 
 	slurm_mutex_lock(&conf->config_mutex);
 	setenvf(&env, "SLURMD_NODENAME", "%s", conf->node_name);
@@ -4175,12 +4183,13 @@ static int _run_job_script(const char *name, const char *path,
 /* a slow prolog is expected on bluegene systems */
 static int
 _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
-	    char **spank_job_env, uint32_t spank_job_env_size)
+	    char **spank_job_env, uint32_t spank_job_env_size,
+	    char *node_list)
 {
 	int rc;
 	char *my_prolog;
 	char **my_env = _build_env(jobid, uid, resv_id, spank_job_env,
-				   spank_job_env_size);
+				   spank_job_env_size, node_list);
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
@@ -4232,12 +4241,13 @@ static void *_prolog_timer(void *x)
 
 static int
 _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
-	    char **spank_job_env, uint32_t spank_job_env_size)
+	    char **spank_job_env, uint32_t spank_job_env_size,
+	    char *node_list)
 {
 	int rc, diff_time;
 	char *my_prolog;
 	char **my_env = _build_env(jobid, uid, resv_id, spank_job_env,
-				   spank_job_env_size);
+				   spank_job_env_size, node_list);
 	time_t start_time = time(NULL);
 	static uint16_t msg_timeout = 0;
 	pthread_t       timer_id;
@@ -4284,14 +4294,14 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 
 static int
 _run_epilog(uint32_t jobid, uid_t uid, char *resv_id,
-	    char **spank_job_env, uint32_t spank_job_env_size)
+	    char **spank_job_env, uint32_t spank_job_env_size, char *node_list)
 {
 	time_t start_time = time(NULL);
 	static uint16_t msg_timeout = 0;
 	int error_code, diff_time;
 	char *my_epilog;
 	char **my_env = _build_env(jobid, uid, resv_id, spank_job_env,
-				   spank_job_env_size);
+				   spank_job_env_size, node_list);
 
 	if (msg_timeout == 0)
 		msg_timeout = slurm_get_msg_timeout();

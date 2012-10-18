@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
     regardless of the node weight.
  -- Added priority/multifactor2 plugin based upon ticket distribution system.
     Work by Janne Blomqvist, Aalto University.
+ -- Add SLURM_NODELIST to environment variables available to Prolog and Epilog.
 
 * Changes in SLURM 2.5.0.pre3
 =============================
