@@ -112,6 +112,7 @@ extern void bridge_reset_block_list(List block_list);
 extern void bridge_block_post_job(char *bg_block_id,
 				  struct job_record *job_ptr);
 extern uint16_t bridge_block_get_action(char *bg_block_id);
+extern int bridge_check_nodeboards(char *mp_loc);
 
 extern int bridge_set_log_params(char *api_file_name, unsigned int level);
 

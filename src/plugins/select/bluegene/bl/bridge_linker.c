@@ -2008,6 +2008,11 @@ extern uint16_t bridge_block_get_action(char *bg_block_id)
 	return BG_BLOCK_ACTION_NONE;
 }
 
+extern int bridge_check_nodeboards(char *mp_loc)
+{
+	return 0;
+}
+
 extern int bridge_set_log_params(char *api_file_name, unsigned int level)
 {
 	static FILE *fp = NULL;

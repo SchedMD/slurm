@@ -117,6 +117,13 @@ typedef struct {
 					    block */
 	int start_req;                 /* state there was a start
 					  request */
+	bool full_check;               /* This request is to check all
+					* nodes and wires no matter
+					* what.  Primarily added to
+					* handle when a nodeboard
+					* goes down to avoid using
+					* the midplane for
+					* passthrough. */
 } select_ba_request_t;
 
 /*

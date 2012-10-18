@@ -624,6 +624,22 @@ extern NodeBoard::ConstPtr bridge_get_nodeboard(Midplane::ConstPtr mp_ptr,
 	return nb_ptr;
 }
 
+extern NodeBoard::ConstPtrs bridge_get_nodeboards(const std::string& mp_loc)
+{
+	NodeBoard::ConstPtrs nb_ptr;
+
+	try {
+		nb_ptr = getNodeBoards(mp_loc);
+	} catch (const bgsched::InputException& err) {
+		bridge_handle_input_errors("getNodeBoards",
+					   err.getError().toValue(),
+					   NULL);
+	} catch (...) {
+                error("Unknown error from getNodeBoards.");
+	}
+	return nb_ptr;
+}
+
 extern Switch::ConstPtr bridge_get_switch(Midplane::ConstPtr mp_ptr, int dim)
 {
 	Switch::ConstPtr switch_ptr;

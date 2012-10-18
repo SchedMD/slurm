@@ -1252,6 +1252,20 @@ extern uint16_t bridge_block_get_action(char *bg_block_id)
 	return action;
 }
 
+extern int bridge_check_nodeboards(char *mp_loc)
+{
+#ifdef HAVE_BG_FILES
+	NodeBoard::ConstPtrs vec = bridge_get_nodeboards(mp_loc);
+
+	BOOST_FOREACH(const NodeBoard::ConstPtr &nb_ptr, vec) {
+		if (!nb_ptr->isMetaState()
+		    && (nb_ptr->getState() != Hardware::Available))
+			return 1;
+	}
+#endif
+	return 0;
+}
+
 extern int bridge_set_log_params(char *api_file_name, unsigned int level)
 {
 	if (!bridge_init(NULL))

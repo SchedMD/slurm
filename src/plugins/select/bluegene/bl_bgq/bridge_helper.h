@@ -112,6 +112,7 @@ extern Midplane::ConstPtr bridge_get_midplane(ComputeHardware::ConstPtr bgqsys,
 extern Node::ConstPtrs bridge_get_midplane_nodes(const std::string& loc);
 extern NodeBoard::ConstPtr bridge_get_nodeboard(Midplane::ConstPtr mp_ptr,
 						int nodeboard_num);
+extern NodeBoard::ConstPtrs bridge_get_nodeboards(const std::string& mp_loc);
 extern Switch::ConstPtr bridge_get_switch(Midplane::ConstPtr mp_ptr, int dim);
 extern ComputeHardware::ConstPtr bridge_get_compute_hardware();
 

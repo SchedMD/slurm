@@ -1433,7 +1433,7 @@ static int _find_best_block_match(List block_list,
 						     "which is in an "
 						     "error state",
 						     bg_record->bg_block_id);
-				} else
+				} else {
 					/* This means we didn't have
 					   any jobs to take off
 					   anymore so we are making
@@ -1441,7 +1441,8 @@ static int _find_best_block_match(List block_list,
 					   node on the system.
 					*/
 					track_down_nodes = false;
-
+					request.full_check = true;
+				}
 				if (!(new_blocks = create_dynamic_block(
 					      block_list, &request, job_list,
 					      track_down_nodes))) {

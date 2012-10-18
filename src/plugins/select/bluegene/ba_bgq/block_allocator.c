@@ -89,7 +89,8 @@ static int _check_deny_pass(int dim);
 
 /* */
 static int _fill_in_wires(List mps, ba_mp_t *start_mp, int dim,
-			  uint16_t geometry, uint16_t conn_type);
+			  uint16_t geometry, uint16_t conn_type,
+			  bool full_check);
 
 /* */
 static void _setup_next_mps(int level, uint16_t *coords);
@@ -877,7 +878,8 @@ extern char *set_bg_block(List results, select_ba_request_t* ba_request)
 				if (!_fill_in_wires(
 					    main_mps, ba_mp, dim,
 					    ba_geo_table->geometry[dim],
-					    ba_request->conn_type[dim])) {
+					    ba_request->conn_type[dim],
+					    ba_request->full_check)) {
 					list_iterator_destroy(itr);
 					memcpy(ba_request->conn_type,
 					       orig_conn_type,
@@ -1899,7 +1901,8 @@ static int _check_deny_pass(int dim)
 }
 
 static int _fill_in_wires(List mps, ba_mp_t *start_mp, int dim,
-			  uint16_t geometry, uint16_t conn_type)
+			  uint16_t geometry, uint16_t conn_type,
+			  bool full_check)
 {
 	ba_mp_t *curr_mp = start_mp->next_mp[dim];
 	ba_switch_t *axis_switch = NULL;
@@ -1983,6 +1986,19 @@ static int _fill_in_wires(List mps, ba_mp_t *start_mp, int dim,
 			}
 		} else if (!_mp_out_used(curr_mp, dim)
 			   && !_check_deny_pass(dim)) {
+
+			if (!full_check
+			    && bridge_check_nodeboards(curr_mp->loc)) {
+				if (ba_debug_flags
+				    & DEBUG_FLAG_BG_ALGO_DEEP) {
+					info("_fill_in_wires: can't "
+					     "use mp %s(%d) "
+					     "as passthrough it has "
+					     "nodeboards not available",
+					     curr_mp->coord_str, dim);
+				}
+				return 0;
+			}
 			if (!(curr_mp->used & BA_MP_USED_ALTERED)) {
 				add = 1;
 				curr_mp->used |= BA_MP_USED_ALTERED_PASS;
