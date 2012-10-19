@@ -50,16 +50,26 @@ for the motivated end user to understand the source and add functionality.</li>
 <p>SLURM provides resource management on many of the most powerful computers in
 the world including:
 <ul>
+<li><a href="https://asc.llnl.gov/computing_resources/sequoia/">Sequoia</a>,
+a BlueGene/Q system at <a href="https://www.llnl.gov">LLNL</a>
+with 1.6 petabytes of memory, 96 racks, 98,304 compute nodes, and 1.6
+  million cores, with a peak performance of over 20 Petaflops.</li>
+
 <li><a href="http://www.nytimes.com/2010/10/28/technology/28compute.html?_r=1&partner=rss&emc=rss">
 Tianhe-1A</a> designed by 
 <a href="http://english.nudt.edu.cn">The National University of Defence Technology (NUDT)</a>
 in China with 14,336 Intel CPUs and 7,168 NVDIA Tesla M2050 GPUs, with a peak performance of 2.507 Petaflops.</li>
 
+<li><a href="http://www-hpc.cea.fr/en/complexe/tgcc-curie.htm">TGCC
+    Curie</a>, owned by GENCI and operated into the TGCC by CEA, Curie
+    is offering 3 different fractions of x86-64 computing resources
+    for addressing a wide range of scientific challenges and offering
+    an aggregate peak performance of 2 PetaFlops.</li>
+
 <li><a href="http://www.wcm.bull.com/internet/pr/rend.jsp?DocId=567851&lang=en">
 Tera 100</a> at <a href="http://www.cea.fr">CEA</a>
 with 140,000 Intel Xeon 7500 processing cores, 300TB of 
-central memory and a theoretical computing power of 1.25 Petaflops. Europe's
-most powerful supercomputer.</li>
+central memory and a theoretical computing power of 1.25 Petaflops.</li>
 
 <li><a href="http://compeng.uni-frankfurt.de/index.php?id=86">LOEWE-CSC</a>,
 a combined CPU-GPU Linux cluster
@@ -71,7 +81,7 @@ performance single precision and 599 Teraflops double precision) and
 QDR Infiniband interconnect.</li>
 
 <li><a href="https://asc.llnl.gov/computing_resources/sequoia/">Dawn</a>,
-a BlueGene/P system at <a href=https://www.llnl.gov">LLNL</a>
+a BlueGene/P system at <a href="https://www.llnl.gov">LLNL</a>
 with 147,456 PowerPC 450 cores with a peak
 performance of 0.5 Petaflops.</li>
 
@@ -84,15 +94,6 @@ named after Monte Rosa in the Swiss-Italian Alps, elevation 4,634m.
 <li><a href="http://c-r-labs.com/">EKA</a> at Computational Research Laboratories,
 India with 14,240 Xeon processors and Infiniband interconnect</li>
 
-<li><a href="http://www.bsc.es/plantillaA.php?cat_id=5">MareNostrum</a>
-a Linux cluster at the <a href="http://www.bsc.es">Barcelona Supercomputer Center</a>
-with 10,240 PowerPC processors and a Myrinet switch</li>
-
-<li><a href="http://en.wikipedia.org/wiki/Anton_(computer)">Anton</a>
-a massively parallel supercomputer designed and built by
-<a href="http://www.deshawresearch.com/">D. E. Shaw Research</a>
-for molecular dynamics simulation using 512 custom-designed ASICs
-and a three-dimensional torus interconnect.</li>
 </ul>
 
 <p style="text-align:center;">Last modified 26 November 2011</p>
