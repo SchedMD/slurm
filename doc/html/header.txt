@@ -17,7 +17,7 @@ Linux clusters, high-performance computing, Livermore Computing">
 <body><div id="container">
 
 <div id="banner">
-<img src="slurm_banner.gif" width="800" height="100" border="0" usemap="#Map">
+<img src="slurm_banner_schedmd.png" width="796" height="96" usemap="#Map">
 </div>
 
 <div id="cse" style="width: 97%;">Loading</div>
