@@ -111,6 +111,13 @@ typedef enum {
         BG_JOB_ERROR        //!< Job is in error status.
 } bg_job_status_t;
 
+typedef enum {
+	BG_BLOCK_ACTION_NAV = 0,
+	BG_BLOCK_ACTION_NONE,
+	BG_BLOCK_ACTION_BOOT,
+	BG_BLOCK_ACTION_FREE
+} bg_block_action_t;
+
 #define BG_BLOCK_ERROR_FLAG    0x1000  // Block is in error
 
 

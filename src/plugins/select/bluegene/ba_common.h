@@ -98,7 +98,7 @@ typedef struct ba_geo_table {
 typedef struct {
 	uint16_t dim_count;		/* Number of system dimensions */
 	int *dim_size;	        	/* System size in each dimension */
-	uint16_t total_size;		/* Total number of nodes in system */
+	uint32_t total_size;		/* Total number of nodes in system */
 
 	ba_geo_table_t **geo_table_ptr;	/* Pointers to possible geometries.
 					 * Index is request size */

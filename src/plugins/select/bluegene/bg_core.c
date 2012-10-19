@@ -294,6 +294,27 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 	return true;
 }
 
+extern bool block_mp_passthrough(bg_record_t *bg_record, int mp_bit)
+{
+	bool has_pass = 0;
+	ba_mp_t *ba_mp = NULL;
+	ListIterator itr;
+
+	/* no passthrough */
+	if (bg_record->mp_count == list_count(bg_record->ba_mp_list))
+		return 0;
+
+	itr = list_iterator_create(bg_record->ba_mp_list);
+	while ((ba_mp = list_next(itr))) {
+		if (ba_mp->index == mp_bit && ba_mp->used == BA_MP_USED_FALSE) {
+			has_pass = 1;
+			break;
+		}
+	}
+	list_iterator_destroy(itr);
+	return has_pass;
+}
+
 /* block_state_mutex must be unlocked before calling this. */
 extern void bg_requeue_job(uint32_t job_id, bool wait_for_start)
 {

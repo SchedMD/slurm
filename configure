@@ -5306,6 +5306,29 @@ $as_echo "Using old iocheck." >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
+		# In later versions of the driver IBM added an "action" to a
+		# block.  Here is a check to not break backwards compatibility
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <bgsched/bgsched.h>
+				#include <bgsched/Block.h>
+int
+main ()
+{
+ bgsched::Block::Ptr block_ptr;
+				block_ptr->getAction();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  have_bgq_get_action=yes
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: Blocks do not have actions!" >&5
+$as_echo "Blocks do not have actions!" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 		ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -5343,6 +5366,12 @@ $as_echo "#define HAVE_BG_FILES 1" >>confdefs.h
 		if test ! -z "$have_bgq_new_io_check" ; then
 
 $as_echo "#define HAVE_BG_NEW_IO_CHECK 1" >>confdefs.h
+
+		fi
+
+		if test ! -z "$have_bgq_get_action" ; then
+
+$as_echo "#define HAVE_BG_GET_ACTION 1" >>confdefs.h
 
 		fi
 

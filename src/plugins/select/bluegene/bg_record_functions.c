@@ -333,6 +333,7 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	}
 
 	xfree(sec_record->bg_block_id);
+	sec_record->action = fir_record->action;
 	sec_record->bg_block_id = xstrdup(fir_record->bg_block_id);
 
 	if (sec_record->ba_mp_list)
@@ -959,13 +960,14 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			 bool slurmctld_locked, char *reason)
 {
 	List requests = NULL;
-	List delete_list = NULL;
+	List delete_list = NULL, pass_list = NULL;
 	ListIterator itr = NULL;
 	bg_record_t *bg_record = NULL, *found_record = NULL,
 		tmp_record, *error_bg_record = NULL;
 	bg_record_t *smallest_bg_record = NULL;
 	struct node_record *node_ptr = NULL;
 	int mp_bit = 0;
+	bool has_pass = 0;
 	static int io_cnt = NO_VAL;
 	static int create_size = NO_VAL;
 	static select_ba_request_t blockreq;
@@ -1039,10 +1041,18 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 		if (bg_record->destroy)
 			continue;
 
-		if (!bit_test(bg_record->mp_bitmap, mp_bit))
+		if (!bit_test(bg_record->mp_bitmap, mp_bit)
+#ifndef HAVE_BG_L_P
+		    /* In BGQ if a nodeboard goes down you can no
+		       longer use any block using that nodeboard in a
+		       passthrough, so we need to remove it.
+		    */
+		    && !(has_pass = block_mp_passthrough(bg_record, mp_bit))
+#endif
+			)
 			continue;
 
-		if (!blocks_overlap(bg_record, &tmp_record))
+		if (!has_pass && !blocks_overlap(bg_record, &tmp_record))
 			continue;
 
 		if (bg_record->job_running > NO_JOB_RUNNING) {
@@ -1059,13 +1069,29 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 		/* If Running Dynamic mode and the block is
 		   smaller than the create size just continue on.
 		*/
-		if ((bg_conf->layout_mode == LAYOUT_DYNAMIC)
-		    && (bg_record->cnode_cnt < create_size)) {
-			if (!delete_list)
-				delete_list = list_create(NULL);
-			list_append(delete_list, bg_record);
+		if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
+			if (bg_record->cnode_cnt < create_size) {
+				if (!delete_list)
+					delete_list = list_create(NULL);
+				list_append(delete_list, bg_record);
+				continue;
+			} else if (has_pass) {
+				/* Set it up so the passthrough blocks
+				   get removed since they are no
+				   longer valid.
+				*/
+				if (!pass_list)
+					pass_list = list_create(NULL);
+				list_append(pass_list, bg_record);
+				continue;
+			}
+		} else if (has_pass) /* on non-dynamic systems this
+					block doesn't really mean
+					anything we just needed to
+					fail the job (which was
+					probably already failed).
+				     */
 			continue;
-		}
 
 		/* keep track of the smallest size that is at least
 		   the size of create_size. */
@@ -1293,7 +1319,11 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 		list_iterator_destroy(itr);
 	}
 
-	delete_list = list_create(NULL);
+	if (pass_list) {
+		delete_list = pass_list;
+		pass_list = NULL;
+	} else
+		delete_list = list_create(NULL);
 	while ((bg_record = list_pop(requests))) {
 		itr = list_iterator_create(bg_lists->main);
 		while ((found_record = list_next(itr))) {
@@ -1346,6 +1376,12 @@ cleanup:
 		if (slurmctld_locked)
 			lock_slurmctld(job_write_lock);
 	}
+
+	if (pass_list) {
+		delete_list = pass_list;
+		pass_list = NULL;
+	}
+
 	if (delete_list) {
 		bool delete_it = 0;
 		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
