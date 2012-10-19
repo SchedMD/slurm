@@ -444,38 +444,48 @@ static int _append_assoc_list(List assoc_list, slurmdb_association_rec_t *assoc)
 static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 {
 	int rc = SLURM_SUCCESS, i = 0, j = 0;
-	List assoc_list = NULL;
+	List assoc_list_allow = NULL, assoc_list_deny = NULL, assoc_list;
 	slurmdb_association_rec_t assoc, *assoc_ptr = NULL;
 
 	/* no need to do this if we can't ;) */
 	if (!association_based_accounting)
 		return rc;
 
-	assoc_list = list_create(NULL);
+	assoc_list_allow = list_create(NULL);
+	assoc_list_deny  = list_create(NULL);
 
 	memset(&assoc, 0, sizeof(slurmdb_association_rec_t));
 	xfree(resv_ptr->assoc_list);
 
-	if (resv_ptr->user_cnt) {
-		for (i=0; i < resv_ptr->user_cnt; i++) {
-			if (resv_ptr->account_cnt) {
+	if (resv_ptr->account_cnt && resv_ptr->user_cnt) {
+		if (!resv_ptr->account_not && !resv_ptr->user_not) {
+			/* Add every association that matches both account
+			 * and user */
+			for (i=0; i < resv_ptr->user_cnt; i++) {
 				for (j=0; j < resv_ptr->account_cnt; j++) {
 					memset(&assoc, 0,
 					       sizeof(slurmdb_association_rec_t));
-					assoc.uid = resv_ptr->user_list[i];
 					assoc.acct = resv_ptr->account_list[j];
-					rc = _append_assoc_list(assoc_list,
+					assoc.uid  = resv_ptr->user_list[i];
+					rc = _append_assoc_list(assoc_list_allow,
 								&assoc);
 					if (rc != SLURM_SUCCESS)
 						goto end_it;
 				}
-			} else {
+			}
+		} else {
+			if (resv_ptr->user_not)
+				assoc_list = assoc_list_deny;
+			else
+				assoc_list = assoc_list_allow;
+			for (i=0; i < resv_ptr->user_cnt; i++) {
 				memset(&assoc, 0,
 				       sizeof(slurmdb_association_rec_t));
 				assoc.uid = resv_ptr->user_list[i];
 				rc = assoc_mgr_get_user_assocs(
 					    acct_db_conn, &assoc,
-					    accounting_enforce, assoc_list);
+					    accounting_enforce,
+					    assoc_list);
 				if (rc != SLURM_SUCCESS) {
 					error("No associations for UID %u",
 					      assoc.uid);
@@ -483,13 +493,47 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 					goto end_it;
 				}
 			}
+			if (resv_ptr->account_not)
+				assoc_list = assoc_list_deny;
+			else
+				assoc_list = assoc_list_allow;
+			for (j=0; j < resv_ptr->account_cnt; j++) {
+				memset(&assoc, 0,
+				       sizeof(slurmdb_association_rec_t));
+				assoc.acct = resv_ptr->account_list[j];
+				assoc.uid  = (uint32_t)NO_VAL;
+				rc = _append_assoc_list(assoc_list, &assoc);
+				if (rc != SLURM_SUCCESS)
+					goto end_it;
+			}
+		}
+	} else if (resv_ptr->user_cnt) {
+		if (resv_ptr->user_not)
+			assoc_list = assoc_list_deny;
+		else
+			assoc_list = assoc_list_allow;
+		for (i=0; i < resv_ptr->user_cnt; i++) {
+			memset(&assoc, 0, sizeof(slurmdb_association_rec_t));
+			assoc.uid = resv_ptr->user_list[i];
+			rc = assoc_mgr_get_user_assocs(
+				    acct_db_conn, &assoc,
+				    accounting_enforce, assoc_list);
+			if (rc != SLURM_SUCCESS) {
+				error("No associations for UID %u",
+				      assoc.uid);
+				rc = ESLURM_INVALID_ACCOUNT;
+				goto end_it;
+			}
 		}
 	} else if (resv_ptr->account_cnt) {
+		if (resv_ptr->account_not)
+			assoc_list = assoc_list_deny;
+		else
+			assoc_list = assoc_list_allow;
 		for (i=0; i < resv_ptr->account_cnt; i++) {
-			memset(&assoc, 0,
-			       sizeof(slurmdb_association_rec_t));
-			assoc.uid = (uint32_t)NO_VAL;
+			memset(&assoc, 0, sizeof(slurmdb_association_rec_t));
 			assoc.acct = resv_ptr->account_list[i];
+			assoc.uid  = (uint32_t)NO_VAL;
 			if ((rc = _append_assoc_list(assoc_list, &assoc))
 			    != SLURM_SUCCESS) {
 				goto end_it;
@@ -501,11 +545,11 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 		rc = SLURM_ERROR;
 	}
 
-	if (list_count(assoc_list)) {
-		ListIterator itr = list_iterator_create(assoc_list);
+	xfree(resv_ptr->assoc_list);	/* clear for modify */
+	if (list_count(assoc_list_allow)) {
+		ListIterator itr = list_iterator_create(assoc_list_allow);
 		if (!itr)
 			fatal("malloc: list_iterator_create");
-		xfree(resv_ptr->assoc_list);	/* clear for modify */
 		while ((assoc_ptr = list_next(itr))) {
 			if (resv_ptr->assoc_list) {
 				xstrfmtcat(resv_ptr->assoc_list, "%u,",
@@ -517,9 +561,26 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 		}
 		list_iterator_destroy(itr);
 	}
+	if (list_count(assoc_list_deny)) {
+		ListIterator itr = list_iterator_create(assoc_list_deny);
+		if (!itr)
+			fatal("malloc: list_iterator_create");
+		while ((assoc_ptr = list_next(itr))) {
+			if (resv_ptr->assoc_list) {
+				xstrfmtcat(resv_ptr->assoc_list, "-%u,",
+					   assoc_ptr->id);
+			} else {
+				xstrfmtcat(resv_ptr->assoc_list, ",-%u,",
+					   assoc_ptr->id);
+			}
+		}
+		list_iterator_destroy(itr);
+	}
+	debug("assoc_list:%s", resv_ptr->assoc_list);
 
 end_it:
-	list_destroy(assoc_list);
+	list_destroy(assoc_list_allow);
+	list_destroy(assoc_list_deny);
 	return rc;
 }
 
@@ -2737,6 +2798,11 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			    (resv_ptr->start_time >= resv_desc_ptr->end_time) ||
 			    (resv_ptr->end_time   <= resv_desc_ptr->start_time))
 				continue;
+			if (!resv_ptr->core_bitmap && !resv_ptr->full_nodes) {
+				error("Reservation has no core_bitmap and "
+				      "full_nodes is zero");
+				resv_ptr->full_nodes = 1;
+			}
 			if (resv_ptr->full_nodes) {
 				bit_not(resv_ptr->node_bitmap);
 				bit_and(node_bitmap, resv_ptr->node_bitmap);
@@ -3123,12 +3189,35 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 
 		/* Check to see if the association is here or the parent
 		 * association is listed in the valid associations. */
-		assoc = job_ptr->assoc_ptr;
-		while (assoc) {
-			snprintf(tmp_char, sizeof(tmp_char), ",%u,", assoc->id);
-			if (strstr(resv_ptr->assoc_list, tmp_char))
-				return SLURM_SUCCESS;
-			assoc = assoc->usage->parent_assoc_ptr;
+		if (strchr(resv_ptr->assoc_list, '-')) {
+			assoc = job_ptr->assoc_ptr;
+			while (assoc) {
+				snprintf(tmp_char, sizeof(tmp_char), ",-%u,",
+					 assoc->id);
+				if (strstr(resv_ptr->assoc_list, tmp_char))
+					goto end_it;	/* explicitly denied */
+				assoc = assoc->usage->parent_assoc_ptr;
+			}
+		}
+		if (strstr(resv_ptr->assoc_list, ",1") ||
+		    strstr(resv_ptr->assoc_list, ",2") ||
+		    strstr(resv_ptr->assoc_list, ",3") ||
+		    strstr(resv_ptr->assoc_list, ",4") ||
+		    strstr(resv_ptr->assoc_list, ",5") ||
+		    strstr(resv_ptr->assoc_list, ",6") ||
+		    strstr(resv_ptr->assoc_list, ",7") ||
+		    strstr(resv_ptr->assoc_list, ",8") ||
+		    strstr(resv_ptr->assoc_list, ",9")) {
+			assoc = job_ptr->assoc_ptr;
+			while (assoc) {
+				snprintf(tmp_char, sizeof(tmp_char), ",%u,",
+					 assoc->id);
+				if (strstr(resv_ptr->assoc_list, tmp_char))
+					return SLURM_SUCCESS;
+				assoc = assoc->usage->parent_assoc_ptr;
+			}
+		} else {
+			return SLURM_SUCCESS;
 		}
 	} else {
 no_assocs:	if ((resv_ptr->user_cnt == 0) || resv_ptr->user_not)

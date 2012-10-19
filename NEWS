@@ -14,6 +14,7 @@ documents those changes that are of interest to users and admins.
  -- Added priority/multifactor2 plugin based upon ticket distribution system.
     Work by Janne Blomqvist, Aalto University.
  -- Add SLURM_NODELIST to environment variables available to Prolog and Epilog.
+ -- Permit reservations to allow or deny access by account and/or user.
 
 * Changes in SLURM 2.5.0.pre3
 =============================
