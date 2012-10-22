@@ -62,11 +62,12 @@ typedef struct xcgroup_ns {
 typedef struct xcgroup {
 
 	xcgroup_ns_t* ns; /* xcgroup namespace of this xcgroup */
-	char* name;       /* name of the xcgroup relative to the ns */
-	char* path;       /* absolute path of the xcgroup in the ns */
-	uid_t uid;        /* uid of the owner */
-	gid_t gid;        /* gid of the owner */
-	int   fd;         /* used for locking */
+	char*    name;    /* name of the xcgroup relative to the ns */
+	char*    path;    /* absolute path of the xcgroup in the ns */
+	uid_t    uid;     /* uid of the owner */
+	gid_t    gid;     /* gid of the owner */
+	int      fd;      /* used for locking */
+	uint32_t notify;  /* toggle notify_on_release flag (default=1) */
 
 } xcgroup_t;
 

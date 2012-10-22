@@ -381,6 +381,7 @@ int xcgroup_create(xcgroup_ns_t* cgns, xcgroup_t* cg,
 	cg->path = xstrdup(file_path);
 	cg->uid = uid;
 	cg->gid = gid;
+	cg->notify = 1;
 
 	return XCGROUP_SUCCESS;
 }
@@ -442,7 +443,7 @@ int xcgroup_instanciate(xcgroup_t* cg)
 	uid_t uid;
 	gid_t gid;
 	int create_only;
-	int notify;
+	uint32_t notify;
 
 	/* init variables based on input cgroup */
 	cgns = cg->ns;
@@ -450,7 +451,7 @@ int xcgroup_instanciate(xcgroup_t* cg)
 	uid = cg->uid;
 	gid = cg->gid;
 	create_only=0;
-	notify=1;
+	notify = cg->notify;
 
 	/* save current mask and apply working one */
 	cmask = S_IWGRP | S_IWOTH;
@@ -479,7 +480,7 @@ int xcgroup_instanciate(xcgroup_t* cg)
 	fstatus = XCGROUP_SUCCESS;
 
 	/* set notify on release flag */
-	if (notify && cgns->notify_prog)
+	if (notify == 1 && cgns->notify_prog)
 		xcgroup_set_params(cg, "notify_on_release=1");
 	else
 		xcgroup_set_params(cg, "notify_on_release=0");
@@ -513,6 +514,9 @@ int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri)
 	cg->path = xstrdup(file_path);
 	cg->uid = buf.st_uid;
 	cg->gid = buf.st_gid;
+
+	/* read the content of the notify flag */
+	xcgroup_get_uint32_param(cg,"notify_on_release",&(cg->notify));
 
 	return XCGROUP_SUCCESS;
 }
