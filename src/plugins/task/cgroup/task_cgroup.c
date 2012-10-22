@@ -241,6 +241,31 @@ extern int task_pre_setuid (slurmd_job_t *job)
 }
 
 /*
+ * task_pre_launch_priv() is called prior to exec of application task.
+ * in privileged mode, just after slurm_spank_task_init_privileged
+ */
+extern int task_pre_launch_priv (slurmd_job_t *job)
+{
+
+	if (use_cpuset) {
+		/* attach the task to the cpuset cgroup */
+		task_cgroup_cpuset_attach_task(job);
+	}
+
+	if (use_memory) {
+		/* attach the task to the memory cgroup */
+		task_cgroup_memory_attach_task(job);
+	}
+
+	if (use_devices) {
+		/* attach the task to the devices cgroup */
+		task_cgroup_devices_attach_task(job);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
  * task_pre_launch() is called prior to exec of application task.
  *	It is followed by TaskProlog program (from slurm.conf) and
  *	--task-prolog (from srun command line).
@@ -249,32 +274,11 @@ extern int task_pre_launch (slurmd_job_t *job)
 {
 
 	if (use_cpuset) {
-		/* attach the task ? not necessary but in case of future mods */
-		task_cgroup_cpuset_attach_task(job);
-
 		/* set affinity if requested */
 		if (slurm_cgroup_conf.task_affinity)
 			task_cgroup_cpuset_set_task_affinity(job);
 	}
 
-	if (use_memory) {
-		/* attach the task ? not necessary but in case of future mods */
-		task_cgroup_memory_attach_task(job);
-	}
-
-	if (use_devices) {
-		task_cgroup_devices_attach_task(job);
-	}
-
-	return SLURM_SUCCESS;
-}
-
-/*
- * task_pre_launch_priv() is called prior to exec of application task.
- * in privileged mode, just after slurm_spank_task_init_privileged
- */
-extern int task_pre_launch_priv (slurmd_job_t *job)
-{
 	return SLURM_SUCCESS;
 }
 
