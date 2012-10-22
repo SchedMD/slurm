@@ -839,7 +839,7 @@ int read_slurm_conf(int recover, bool reconfig)
 						 old_def_part_name,
 						 slurmctld_conf.reconfig_flags);
 			error_code = MAX(error_code, rc);  /* not fatal */
-                } else if (old_part_list && (slurmctld_conf.reconfig_flags &
+		} else if (old_part_list && (slurmctld_conf.reconfig_flags &
 					     RECONFIG_KEEP_PART_STAT)) {
 			info("restoring original partition state only (up/down)");
 			rc = _restore_part_state(old_part_list,
