@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
  -- Add SLURM_NODELIST to environment variables available to Prolog and Epilog.
  -- Permit reservations to allow or deny access by account and/or user.
  -- Add ReconfigFlags value of KeepPartState. See "man slurm.conf" for details.
+ -- Modify the task/cgroup plugin adding a task_pre_launch_priv function and
+    move slurmstepd outside of the step's cgroup. Work by Matthieu Hautreux.
 
 * Changes in SLURM 2.5.0.pre3
 =============================
