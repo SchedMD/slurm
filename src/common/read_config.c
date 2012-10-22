@@ -3676,6 +3676,11 @@ extern char * reconfig_flags2str(uint16_t reconfig_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "KeepPartInfo");
 	}
+	if (reconfig_flags & RECONFIG_KEEP_PART_STAT) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "KeepPartState");
+	}
 
 	return rc;
 }
@@ -3698,6 +3703,8 @@ extern uint16_t reconfig_str2flags(char *reconfig_flags)
 	while (tok) {
 		if (strcasecmp(tok, "KeepPartInfo") == 0)
 			rc |= RECONFIG_KEEP_PART_INFO;
+		else if (strcasecmp(tok, "KeepPartState") == 0)
+			rc |= RECONFIG_KEEP_PART_STAT;
 		else {
 			error("Invalid ReconfigFlag: %s", tok);
 			rc = (uint16_t) NO_VAL;

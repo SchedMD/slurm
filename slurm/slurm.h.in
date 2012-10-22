@@ -1817,6 +1817,7 @@ typedef struct reservation_name_msg {
 #define PREEMPT_MODE_GANG	0x8000	/* enable gang scheduling */
 
 #define RECONFIG_KEEP_PART_INFO 0x0001 /* keep dynamic partition info on scontrol reconfig */
+#define RECONFIG_KEEP_PART_STAT 0x0002 /* keep dynamic partition state on scontrol reconfig */
 
 typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */

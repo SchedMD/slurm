@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
     Work by Janne Blomqvist, Aalto University.
  -- Add SLURM_NODELIST to environment variables available to Prolog and Epilog.
  -- Permit reservations to allow or deny access by account and/or user.
+ -- Add ReconfigFlags value of KeepPartState. See "man slurm.conf" for details.
 
 * Changes in SLURM 2.5.0.pre3
 =============================

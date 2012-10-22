@@ -1310,9 +1310,21 @@ reconfig" command is issued. Currently the only option defined is:
 .TP 17
 \fBKeepPartInfo\fR
 If set, an "scontrol reconfig" command will maintain the in\-memory
-state of partitions that may have been dynamically updated by
-"scontrol update".  Partition information in the slurm.conf file will
-be merged with in\-memory data.  The default is not set, and the
+value of partition "state" and other parameters that may have been
+dynamically updated by "scontrol update".  Partition information in
+the slurm.conf file will be merged with in\-memory data.  This flag
+supersedes the KeepPartState flag.
+.TP
+\fBKeepPartState\fR
+If set, an "scontrol reconfig" command will preserve only the current
+"state" value of in\-memory partitions and will reset all other
+parameters of the partitions that may have been dynamically updated by
+"scontrol update" to the values from the slurm.conf file.  Partition
+information in the slurm.conf file will be merged with in\-memory
+data.
+.RE
+.RS 7
+The default for the above flags is not set, and the
 "scontrol reconfig" will rebuild the partition information using only
 the definitions in the slurm.conf file.
 .RE
