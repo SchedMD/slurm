@@ -63,6 +63,7 @@ typedef struct slurmd_task_ops {
 	int	(*slurmd_release_resources) (uint32_t job_id);
 
 	int	(*pre_setuid)		    (slurmd_job_t *job);
+	int	(*pre_launch_priv)	    (slurmd_job_t *job);
 	int	(*pre_launch)		    (slurmd_job_t *job);
 	int	(*post_term)		    (slurmd_job_t *job);
 	int	(*post_step)		    (slurmd_job_t *job);
@@ -79,6 +80,7 @@ static const char *syms[] = {
 	"task_slurmd_resume_job",
 	"task_slurmd_release_resources",
 	"task_pre_setuid",
+	"task_pre_launch_priv",
 	"task_pre_launch",
 	"task_post_term",
 	"task_post_step",
@@ -330,6 +332,26 @@ extern int pre_setuid(slurmd_job_t *job)
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; ((i < g_task_context_num) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].pre_setuid))(job);
+	slurm_mutex_unlock( &g_task_context_lock );
+
+	return (rc);
+}
+
+/*
+ * Note in privileged mode that a task launch is about to occur.
+ *
+ * RET - slurm error code
+ */
+extern int pre_launch_priv(slurmd_job_t *job)
+{
+	int i, rc = SLURM_SUCCESS;
+
+	if (slurmd_task_init())
+		return SLURM_ERROR;
+
+	slurm_mutex_lock( &g_task_context_lock );
+	for (i = 0; ((i < g_task_context_num) && (rc == SLURM_SUCCESS)); i++)
+		rc = (*(g_task_context[i]->ops.pre_launch_priv))(job);
 	slurm_mutex_unlock( &g_task_context_lock );
 
 	return (rc);

@@ -182,6 +182,17 @@ extern int task_pre_launch (slurmd_job_t *job)
 }
 
 /*
+ * task_pre_launch_priv() is called prior to exec of application task.
+ * in privileged mode, just after slurm_spank_task_init_privileged
+ */
+extern int task_pre_launch_priv (slurmd_job_t *job)
+{
+	debug("task_pre_launch_priv: %u.%u",
+		job->jobid, job->stepid);
+	return SLURM_SUCCESS;
+}
+
+/*
  * task_term() is called after termination of application task.
  *	It is preceded by --task-epilog (from srun command line)
  *	followed by TaskEpilog program (from slurm.conf).
