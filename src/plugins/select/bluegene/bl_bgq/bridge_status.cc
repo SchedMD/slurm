@@ -501,8 +501,13 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 				   only needs to happen once.
 				*/
 				if (!block_ptr_exist_in_list(
-					    *delete_list, bg_record))
+					    *delete_list, bg_record)) {
+					debug("_handle_node_change: going to "
+					      "remove block %s, bad hardware "
+					      "and no jobs running",
+					      bg_record->bg_block_id);
 					list_push(*delete_list, bg_record);
+				}
 			}
 
 			/* block_state_mutex is locked so handle this later */
@@ -619,6 +624,10 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 				continue;
 			if (!*delete_list)
 				*delete_list = list_create(NULL);
+
+			debug("_handle_cable_change: going to "
+			      "remove block %s, bad underlying cable.",
+			      bg_record->bg_block_id);
 			list_push(*delete_list, bg_record);
 		}
 		list_iterator_destroy(itr);
