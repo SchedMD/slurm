@@ -161,16 +161,43 @@ extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	     job_cgroup_path[0] == '\0' ||
 	     jobstep_cgroup_path[0] == '\0')
 		return SLURM_SUCCESS;
-
 	/*
-	 * Delete the step memory cgroup as all the tasks have now exited
-	 * The job memory cgroup will be removed by the release agent
-	 * if possible (no other step running).
-	 * The user memory cgroup will be removed by the release agent
-	 * when possible too (no other job running).
+	 * Lock the root memcg and try to remove the different memcgs.
+	 * The reason why we are locking here is that if a concurrent
+	 * step is in the process of being executed, he could try to
+	 * create the step memcg just after we remove the job memcg,
+	 * resulting in a failure.
+	 * First, delete step memcg as all the tasks have now exited.
+	 * Then, try to remove the job memcg.
+	 * If it fails, it is due to the fact that it is still in use by an
+	 * other running step.
+	 * After that, try to remove the user memcg. If it fails, it is due
+	 * to jobs that are still running for the same user on the node or 
+	 * because of tasks attached directly to the user cg by an other
+	 * component (PAM). The user memcg was created with the
+	 * notify_on_release=1 flag (default) so it will be removed 
+	 * automatically after that.
+	 * For now, do not try to detect if only externally attached tasks
+	 * are present to see if they can be be moved to an orhpan memcg. 
+	 * That could be done in the future, if it is necessary.
 	 */
-	if (xcgroup_delete(&step_memory_cg) != SLURM_SUCCESS)
-		error("task/cgroup: unable to remove step memcg : %m");
+	if (xcgroup_create(&memory_ns,&memory_cg,"",0,0) == XCGROUP_SUCCESS) {
+		if (xcgroup_lock(&memory_cg) == XCGROUP_SUCCESS) {
+			if (xcgroup_delete(&step_memory_cg) != SLURM_SUCCESS)
+				error("task/cgroup: unable to remove step "
+				      "memcg : %m");
+			if (xcgroup_delete(&job_memory_cg) != XCGROUP_SUCCESS)
+				info("task/cgroup: not removing "
+				     "job memcg : %m");
+			if (xcgroup_delete(&user_memory_cg) != XCGROUP_SUCCESS)
+				info("task/cgroup: not removing "
+				     "user memcg : %m");
+			xcgroup_unlock(&memory_cg);
+		} else
+			error("task/cgroup: unable to lock root memcg : %m");
+		xcgroup_destroy(&memory_cg);
+	} else
+		error("task/cgroup: unable to create root memcg : %m");
 
 	xcgroup_destroy(&user_memory_cg);
 	xcgroup_destroy(&job_memory_cg);
@@ -229,13 +256,16 @@ static uint64_t swap_limit_in_bytes (uint64_t mem)
 }
 
 static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
-		char *path, uint64_t mem_limit, uid_t uid, gid_t gid)
+			     char *path, uint64_t mem_limit, uid_t uid,
+			     gid_t gid, uint32_t notify)
 {
 	uint64_t mlb = mem_limit_in_bytes (mem_limit);
 	uint64_t mls = swap_limit_in_bytes  (mem_limit);
 
 	if (xcgroup_create (ns, cg, path, uid, gid) != XCGROUP_SUCCESS)
 		return -1;
+
+	cg->notify = notify; 
 
 	if (xcgroup_instanciate (cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy (cg);
@@ -375,9 +405,11 @@ extern int task_cgroup_memory_create(slurmd_job_t *job)
 	/*
 	 * Create job cgroup in the memory ns (it could already exist)
 	 * and set the associated memory limits.
+	 * Disable notify_on_release for this memcg, it will be
+	 * manually removed by the plugin at the end of the step.
 	 */
 	if (memcg_initialize (&memory_ns, &job_memory_cg, job_cgroup_path,
-	                      job->job_mem, getuid(), getgid()) < 0) {
+	                      job->job_mem, getuid(), getgid(), 0) < 0) {
 		xcgroup_destroy (&user_memory_cg);
 		goto error;
 	}
@@ -385,21 +417,14 @@ extern int task_cgroup_memory_create(slurmd_job_t *job)
 	/*
 	 * Create step cgroup in the memory ns (it should not exists)
 	 * and set the associated memory limits.
-	 * Then disable notify_on_release for the step memcg, it will be
+	 * Disable notify_on_release for the step memcg, it will be
 	 * manually removed by the plugin at the end of the step.
 	 */
 	if (memcg_initialize (&memory_ns, &step_memory_cg, jobstep_cgroup_path,
-	                      job->step_mem, uid, gid) < 0) {
+	                      job->step_mem, uid, gid, 0) < 0) {
 		xcgroup_destroy(&user_memory_cg);
 		xcgroup_destroy(&job_memory_cg);
 		goto error;
-	}
-	if (xcgroup_set_params(&step_memory_cg, "notify_on_release=0")
-	    != XCGROUP_SUCCESS) {
-		/* treat that error as a warning as the release agent would
-		 * purge the memcg in that case */
-		error("task/cgroup: unable to disable notify_on_release of "
-		      "step memcg '%s'",step_memory_cg.path);
 	}
 
 error:
