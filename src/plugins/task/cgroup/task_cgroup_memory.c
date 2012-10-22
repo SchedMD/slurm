@@ -163,23 +163,14 @@ extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		return SLURM_SUCCESS;
 
 	/*
-	 * Move the slurmstepd back to the root memory cg and remove[*]
-	 * the step cgroup to move its allocated pages to its parent.
-	 *
-	 * [*] Calling rmdir(2) on an empty cgroup moves all resident charged
-	 *  pages to the parent (i.e. the job cgroup). (If force_empty were
-	 *  used instead, only clean pages would be flushed). This keeps
-	 *  resident pagecache pages associated with the job. It is expected
-	 *  that the job epilog will then optionally force_empty the
-	 *  job cgroup (to flush pagecache), and then rmdir(2) the cgroup
-	 *  or wait for release notification from kernel.
+	 * Delete the step memory cgroup as all the tasks have now exited
+	 * The job memory cgroup will be removed by the release agent
+	 * if possible (no other step running).
+	 * The user memory cgroup will be removed by the release agent
+	 * when possible too (no other job running).
 	 */
-	if (xcgroup_create(&memory_ns,&memory_cg,"",0,0) == XCGROUP_SUCCESS) {
-		xcgroup_move_process(&memory_cg, getpid());
-		xcgroup_destroy(&memory_cg);
-		if (xcgroup_delete(&step_memory_cg) != XCGROUP_SUCCESS)
-			error ("cgroup: rmdir step memcg failed: %m");
-	}
+	if (xcgroup_delete(&step_memory_cg) != SLURM_SUCCESS)
+		error("task/cgroup: unable to remove step memcg : %m");
 
 	xcgroup_destroy(&user_memory_cg);
 	xcgroup_destroy(&job_memory_cg);
@@ -373,14 +364,17 @@ extern int task_cgroup_memory_create(slurmd_job_t *job)
 		xcgroup_destroy(&user_memory_cg);
 		goto error;
 	}
-	xcgroup_set_param(&user_memory_cg,"memory.use_hierarchy","1");
+	if ( xcgroup_set_param(&user_memory_cg,"memory.use_hierarchy","1")
+	     != XCGROUP_SUCCESS ) {
+		error("task/cgroup: unable to ask for hierarchical accounting"
+		      "of user memcg '%s'",user_memory_cg.path);
+		xcgroup_destroy (&user_memory_cg);
+		goto error;
+	}
 
 	/*
 	 * Create job cgroup in the memory ns (it could already exist)
 	 * and set the associated memory limits.
-	 * Ask for hierarchical memory accounting starting from the job
-	 * container in order to guarantee that a job will stay on track
-	 * regardless of the consumption of each step.
 	 */
 	if (memcg_initialize (&memory_ns, &job_memory_cg, job_cgroup_path,
 	                      job->job_mem, getuid(), getgid()) < 0) {
@@ -391,6 +385,8 @@ extern int task_cgroup_memory_create(slurmd_job_t *job)
 	/*
 	 * Create step cgroup in the memory ns (it should not exists)
 	 * and set the associated memory limits.
+	 * Then disable notify_on_release for the step memcg, it will be
+	 * manually removed by the plugin at the end of the step.
 	 */
 	if (memcg_initialize (&memory_ns, &step_memory_cg, jobstep_cgroup_path,
 	                      job->step_mem, uid, gid) < 0) {
@@ -398,18 +394,13 @@ extern int task_cgroup_memory_create(slurmd_job_t *job)
 		xcgroup_destroy(&job_memory_cg);
 		goto error;
 	}
-
-	/*
-	 * Attach the slurmstepd to the step memory cgroup
-	 */
-	pid = getpid();
-	rc = xcgroup_add_pids(&step_memory_cg,&pid,1);
-	if (rc != XCGROUP_SUCCESS) {
-		error("task/cgroup: unable to add slurmstepd to memory cg '%s'",
-		      step_memory_cg.path);
-		fstatus = SLURM_ERROR;
-	} else
-		fstatus = SLURM_SUCCESS;
+	if (xcgroup_set_params(&step_memory_cg, "notify_on_release=0")
+	    != XCGROUP_SUCCESS) {
+		/* treat that error as a warning as the release agent would
+		 * purge the memcg in that case */
+		error("task/cgroup: unable to disable notify_on_release of "
+		      "step memcg '%s'",step_memory_cg.path);
+	}
 
 error:
 	xcgroup_unlock(&memory_cg);
@@ -421,10 +412,18 @@ error:
 extern int task_cgroup_memory_attach_task(slurmd_job_t *job)
 {
 	int fstatus = SLURM_ERROR;
+	pid_t pid;
 
-	/* tasks are automatically attached as slurmstepd is in the step cg */
-	fstatus = SLURM_SUCCESS;
+	/*
+	 * Attach the current task to the step memory cgroup
+	 */
+	pid = getpid();
+	if (xcgroup_add_pids(&step_memory_cg,&pid,1) != XCGROUP_SUCCESS) {
+		error("task/cgroup: unable to add task[pid=%u] to "
+		      "memory cg '%s'",pid,step_memory_cg.path);
+		fstatus = SLURM_ERROR;
+	} else
+		fstatus = SLURM_SUCCESS;
 
 	return fstatus;
 }
-
