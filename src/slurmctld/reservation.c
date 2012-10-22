@@ -878,6 +878,8 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 	}
 
 	if (plus_account) {
+		if ((ac_cnt > 0) && (resv_ptr->account_cnt == 0))
+			resv_ptr->account_not = account_not;
 		for (i=0; i<ac_cnt; i++) {
 			if (ac_type[i] != 2)
 				continue;
@@ -1101,6 +1103,8 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 	}
 
 	if (plus_user) {
+		if ((u_cnt > 0) && (resv_ptr->user_cnt == 0))
+			resv_ptr->user_not = user_not;
 		for (i=0; i<u_cnt; i++) {
 			if (u_type[i] != 2)
 				continue;
@@ -3207,7 +3211,8 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 		    strstr(resv_ptr->assoc_list, ",6") ||
 		    strstr(resv_ptr->assoc_list, ",7") ||
 		    strstr(resv_ptr->assoc_list, ",8") ||
-		    strstr(resv_ptr->assoc_list, ",9")) {
+		    strstr(resv_ptr->assoc_list, ",9") ||
+		    strstr(resv_ptr->assoc_list, ",0")) {
 			assoc = job_ptr->assoc_ptr;
 			while (assoc) {
 				snprintf(tmp_char, sizeof(tmp_char), ",%u,",

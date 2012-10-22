@@ -1084,6 +1084,10 @@ use the reservation.
 Accounts can also be denied access to reservations by preceeding all of the
 account names with '!'. For example, "Accounts=!physcode1,!physcode2" will
 permit any account except physcode1 and physcode2 to use the reservation.
+Note that "!" is interpreted by many shells as a NOT operator.
+Escape the character if used on an execute line (e.g. "Account=\!foo")
+or start the command and then enter your input line directly to the scontrol
+command.
 You can add or remove individual accounts from an existing reservation by
 adding a '+' or '\-' sign before the '=' sign.
 
@@ -1230,6 +1234,9 @@ use the reservation.
 Users can also be denied access to reservations by preceeding all of the
 user names with '!'. For example, "User=!jones1,!smith2" will
 permit any user except jones1 and smith2 to use the reservation.
+Escape the character if used on an execute line (e.g. "User=\!jones1")
+or start the command and then enter your input line directly to the scontrol
+command.
 You can add or remove individual users from an existing reservation by adding
 a '+' or '\-' sign before the '=' sign.
 
