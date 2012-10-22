@@ -2878,7 +2878,6 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 	ListIterator itr, itr2;
 	ba_mp_t *ba_mp = NULL, *found_ba_mp;
 	int i;
-	uint32_t err_cnt = 0;
 
 	xassert(step_ptr);
 
@@ -2924,13 +2923,13 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = (bg_record_t *)list_next(itr))) {
+		float err_ratio;
 		if (!bit_overlap(step_ptr->step_node_bitmap,
 				 bg_record->mp_bitmap))
 			continue;
 		bg_record->cnode_err_cnt = 0;
 		itr2 = list_iterator_create(bg_record->ba_mp_list);
 		while ((found_ba_mp = (ba_mp_t *)list_next(itr2))) {
-			float err_ratio;
 
 			if (!found_ba_mp->used
 			    || !bit_test(step_ptr->step_node_bitmap,
