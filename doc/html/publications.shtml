@@ -20,7 +20,7 @@ Morris Jette and Danny Auble, SchedMD</li>
 <li>Site Report: <a href="slurm_ug_2012/BSC_Slurm_Site_Report_2012.pdf">BSC/RES</a>,
 Alejandro Lucero and Carles Fenoy, BSC</li>
 
-<li>Site Report: CSCS,
+<li>Site Report: <a href="slurm_ug_2012/SUG2012_CSCS_Site.pdf">CSCS</a>,
 Stephen Trofinoff, CSCS</li>
 
 <li>Site Report: <a href="slurm_ug_2012/CEA_site_report.pdf">CEA</a>,
@@ -81,7 +81,8 @@ Yiannis Georgiou (Bull) and Matthieu Hautreux (CEA)</li>
 Herogeneous CPU-GPU Clusters</a>,
 Seren Soner, Bogazici University</li>
 
-<li>Job Resource Utilizaiton as a Metric for Clusters Comparision and Optimization,
+<li><a href="slurm_ug_2012/SUG2012_Emeras.pdf">Job Resource Utilizaiton as a Metric for
+Clusters Comparision and Optimization</a>,
 Joseph Emeras, INRIA/LIG</li>
 
 </ul>
@@ -310,6 +311,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 17 October 2012</p>
+<p style="text-align:center;">Last modified 22 October 2012</p>
 
 <!--#include virtual="footer.txt"-->
