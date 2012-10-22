@@ -317,12 +317,15 @@ extern char* task_cgroup_create_slurm_cg (xcgroup_ns_t* ns) {
 	}
 #endif
 
-	/* create slurm cgroup in the ns (it could already exist) */
+	/* create slurm cgroup in the ns (it could already exist) 
+	 * disable notify_on_release to avoid the removal/creation
+	 * of this cgroup for each last/first running job on the node */
 	if (xcgroup_create(ns,&slurm_cg,pre,
 			   getuid(), getgid()) != XCGROUP_SUCCESS) {
 		xfree(pre);
 		return pre;
 	}
+	slurm_cg.notify = 0;
 	if (xcgroup_instanciate(&slurm_cg) != XCGROUP_SUCCESS) {
 		error("unable to build slurm cgroup for ns %s: %m",
 		      ns->subsystems);
