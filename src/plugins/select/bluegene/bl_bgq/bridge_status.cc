@@ -1379,7 +1379,7 @@ void event_handler::handleTorusCableStateChangedRealtimeEvent(
 		return;
 	}
 
-	/* Else mark the midplane down */
+	/* Else mark the cable down */
 	_handle_cable_change(dim, from_ba_mp, event.getState(),
 			     &delete_list, 1);
 	slurm_mutex_unlock(&ba_system_mutex);
