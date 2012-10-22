@@ -351,7 +351,7 @@ extern int pre_launch_priv(slurmd_job_t *job)
 
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; ((i < g_task_context_num) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(g_task_context[i]->ops.pre_launch_priv))(job);
+		rc = (*(ops[i].pre_launch_priv))(job);
 	slurm_mutex_unlock( &g_task_context_lock );
 
 	return (rc);
