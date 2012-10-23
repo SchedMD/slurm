@@ -160,7 +160,7 @@ static void _handle_bad_midplane(char *bg_down_node,
 
 	if (!node_already_down(bg_down_node)) {
 		if (print_debug
-		    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+		    && !(bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 			error("Midplane %s, state went to '%s', "
 			      "marking midplane down.",
 			      bg_down_node,
@@ -185,7 +185,7 @@ static void _handle_bad_switch(int dim, const char *mp_coords,
 
 	if (!node_already_down(bg_down_node)) {
 		if (print_debug
-		    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+		    && !(bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 			error("Switch at dim '%d' on Midplane %s, "
 			      "state went to '%s', marking midplane down.",
 			      dim, bg_down_node,
@@ -251,7 +251,7 @@ static void _handle_bad_nodeboard(const char *nb_name, char* bg_down_node,
 	rc = down_nodecard(bg_down_node, io_start, 0, reason);
 
 	if (print_debug
-	    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME)) {
+	    && !(bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME)) {
 		if (rc == SLURM_SUCCESS)
 			debug("nodeboard %s on %s is in an error state '%s'",
 			      nb_name, bg_down_node,
@@ -360,7 +360,7 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			 cnode_coords[4],
 			 cnode_loc.c_str());
 		if (print_debug
-		    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+		    && !(bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 			error("%s", reason);
 		/* unlock mutex here since _handle_bad_nodeboard could produce
 		   deadlock */
@@ -378,7 +378,7 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 		return;
 	last_bg_update = time(NULL);
 	if (print_debug
-	    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+	    && !(bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 		info("_handle_node_change: state for %s - %s is '%s'",
 		     ba_mp->coord_str, cnode_loc.c_str(),
 		     bridge_hardware_state_string(state.toValue()));
@@ -447,8 +447,8 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 				bg_record->err_ratio = 1;
 
 			if (print_debug
-			    && (bg_conf->slurm_debug_flags
-				& DEBUG_FLAG_NO_REALTIME))
+			    && !(bg_conf->slurm_debug_flags
+				 & DEBUG_FLAG_NO_REALTIME))
 				debug("count in error for %s is %u "
 				      "with ratio at %u",
 				      bg_record->bg_block_id,
@@ -501,8 +501,13 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 				   only needs to happen once.
 				*/
 				if (!block_ptr_exist_in_list(
-					    *delete_list, bg_record))
+					    *delete_list, bg_record)) {
+					debug("_handle_node_change: going to "
+					      "remove block %s, bad hardware "
+					      "and no jobs running",
+					      bg_record->bg_block_id);
 					list_push(*delete_list, bg_record);
+				}
 			}
 
 			/* block_state_mutex is locked so handle this later */
@@ -560,7 +565,7 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 
 		ba_mp->axis_switch[dim].usage &= (~BG_SWITCH_CABLE_ERROR_FULL);
 		if (print_debug
-		    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+		    && !(bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 			info("Cable in dim '%u' on Midplane %s, "
 			     "has returned to service",
 			     dim, ba_mp->coord_str);
@@ -591,7 +596,7 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 		ba_mp->axis_switch[dim].usage |= BG_SWITCH_CABLE_ERROR_FULL;
 
 		if (print_debug
-		    && (bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+		    && !(bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
 			error("Cable at dim '%d' on Midplane %s, "
 			      "state went to '%s', marking cable down.",
 			      dim, ba_mp->coord_str,
@@ -619,6 +624,10 @@ static void _handle_cable_change(int dim, ba_mp_t *ba_mp,
 				continue;
 			if (!*delete_list)
 				*delete_list = list_create(NULL);
+
+			debug("_handle_cable_change: going to "
+			      "remove block %s, bad underlying cable.",
+			      bg_record->bg_block_id);
 			list_push(*delete_list, bg_record);
 		}
 		list_iterator_destroy(itr);
@@ -1379,7 +1388,7 @@ void event_handler::handleTorusCableStateChangedRealtimeEvent(
 		return;
 	}
 
-	/* Else mark the midplane down */
+	/* Else mark the cable down */
 	_handle_cable_change(dim, from_ba_mp, event.getState(),
 			     &delete_list, 1);
 	slurm_mutex_unlock(&ba_system_mutex);
