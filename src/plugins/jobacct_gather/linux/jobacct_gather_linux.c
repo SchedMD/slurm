@@ -46,6 +46,7 @@
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_acct_gather_energy.h"
 #include "src/slurmd/common/proctrack.h"
 
 #define _DEBUG 0
@@ -436,7 +437,7 @@ extern void jobacct_gather_p_poll_data(
 	uint32_t user_act_cpufreq, system_act_cpufreq;
 	char		sbuf[72];
 	int energy_counted = 0;
-	
+
 	if (!pgid_plugin && (cont_id == (uint64_t)NO_VAL)) {
 		debug("cont_id hasn't been set yet not running poll");
 		return;
@@ -462,7 +463,7 @@ extern void jobacct_gather_p_poll_data(
 			/* update consumed energy even if pids do not exist */
 			itr = list_iterator_create(task_list);
 			if ((jobacct = list_next(itr))) {
-				energy_accounting_g_getjoules_task(jobacct);
+				acct_gather_energy_g_getjoules_task(jobacct);
 				debug2("getjoules_task energy = %u",
 				       jobacct->consumed_energy);
 			}
@@ -613,12 +614,13 @@ extern void jobacct_gather_p_poll_data(
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
 				       prec->usec, prec->ssec);
-				/* get energy consumption 
+				/* get energy consumption
   				 * only once is enough since we
  				 * report per node energy consumption */
 				debug2("energycounted= %d", energy_counted);
 				if (energy_counted == 0) {
-					energy_accounting_g_getjoules_task(jobacct);
+					acct_gather_energy_g_getjoules_task(
+						jobacct);
 					debug2("getjoules_task energy = %u ",
 					       jobacct->consumed_energy);
 					energy_counted = 1;

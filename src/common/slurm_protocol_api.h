@@ -473,9 +473,6 @@ char *slurm_get_jobacct_gather_type(void);
  */
 uint16_t slurm_get_jobacct_gather_freq(void);
 
-uint16_t slurm_get_energy_accounting_freq(void);
-
-
 /* slurm_get_jobcomp_type
  * returns the job completion logger type from slurmctld_conf object
  * RET char *    - job completion type,  MUST be xfreed by caller
@@ -535,11 +532,18 @@ extern uint16_t slurm_get_propagate_prio_process(void);
  */
 char *slurm_get_proctrack_type(void);
 
-/* slurm_get_energy_accounting_type
+/* slurm_get_acct_gather_energy_type
  * get EnergyAccountingType from slurmctld_conf object
- * RET char *   - energy_accounting type, MUST be xfreed by caller
+ * RET char *   - acct_gather_energy type, MUST be xfreed by caller
  */
-char *slurm_get_energy_accounting_type(void);
+char *slurm_get_acct_gather_energy_type(void);
+
+/* slurm_get_acct_gather_node_freq
+ * returns the accounting poll frequency for requesting info from a
+ * node from the slurmctld_conf object
+ * RET int    - accounting node frequency
+ */
+uint16_t slurm_get_acct_gather_node_freq(void);
 
 /* slurm_get_root_filter
  * RET uint16_t  - Value of SchedulerRootFilter */

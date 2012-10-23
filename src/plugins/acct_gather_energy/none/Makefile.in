@@ -15,7 +15,7 @@
 
 @SET_MAKE@
 
-# Makefile for energy_accounting/rapl plugin
+# Makefile for acct_gather_energy/none plugin
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -37,7 +37,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/energy_accounting/rapl
+subdir = src/plugins/acct_gather_energy/none
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -112,13 +112,13 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-energy_accounting_rapl_la_LIBADD =
-am_energy_accounting_rapl_la_OBJECTS = energy_accounting_rapl.lo
-energy_accounting_rapl_la_OBJECTS =  \
-	$(am_energy_accounting_rapl_la_OBJECTS)
-energy_accounting_rapl_la_LINK = $(LIBTOOL) --tag=CC \
+acct_gather_energy_none_la_LIBADD =
+am_acct_gather_energy_none_la_OBJECTS = acct_gather_energy_none.lo
+acct_gather_energy_none_la_OBJECTS =  \
+	$(am_acct_gather_energy_none_la_OBJECTS)
+acct_gather_energy_none_la_LINK = $(LIBTOOL) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(energy_accounting_rapl_la_LDFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS) $(acct_gather_energy_none_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -133,8 +133,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(energy_accounting_rapl_la_SOURCES)
-DIST_SOURCES = $(energy_accounting_rapl_la_SOURCES)
+SOURCES = $(acct_gather_energy_none_la_SOURCES)
+DIST_SOURCES = $(acct_gather_energy_none_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -343,13 +343,11 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = energy_accounting_rapl.la
+pkglib_LTLIBRARIES = acct_gather_energy_none.la
 
-# cpu/core energy accounting plugin.
-energy_accounting_rapl_la_SOURCES = energy_accounting_rapl.c \
-	energy_accounting_rapl.h
-
-energy_accounting_rapl_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+# Null job completion logging plugin.
+acct_gather_energy_none_la_SOURCES = acct_gather_energy_none.c
+acct_gather_energy_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -363,9 +361,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/energy_accounting/rapl/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/acct_gather_energy/none/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/plugins/energy_accounting/rapl/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/acct_gather_energy/none/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -415,8 +413,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-energy_accounting_rapl.la: $(energy_accounting_rapl_la_OBJECTS) $(energy_accounting_rapl_la_DEPENDENCIES) $(EXTRA_energy_accounting_rapl_la_DEPENDENCIES) 
-	$(energy_accounting_rapl_la_LINK) -rpath $(pkglibdir) $(energy_accounting_rapl_la_OBJECTS) $(energy_accounting_rapl_la_LIBADD) $(LIBS)
+acct_gather_energy_none.la: $(acct_gather_energy_none_la_OBJECTS) $(acct_gather_energy_none_la_DEPENDENCIES) $(EXTRA_acct_gather_energy_none_la_DEPENDENCIES) 
+	$(acct_gather_energy_none_la_LINK) -rpath $(pkglibdir) $(acct_gather_energy_none_la_OBJECTS) $(acct_gather_energy_none_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -424,7 +422,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/energy_accounting_rapl.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_gather_energy_none.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

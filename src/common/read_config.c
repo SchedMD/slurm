@@ -159,6 +159,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"AccountingStorageType", S_P_STRING},
 	{"AccountingStorageUser", S_P_STRING},
 	{"AccountingStoreJobComment", S_P_BOOLEAN},
+	{"AcctGatherEnergyType", S_P_STRING},
+	{"AcctGatherNodeFreq", S_P_UINT16},
 	{"AuthType", S_P_STRING},
 	{"BackupAddr", S_P_STRING},
 	{"BackupController", S_P_STRING},
@@ -180,8 +182,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"DefMemPerCPU", S_P_UINT32},
 	{"DefMemPerNode", S_P_UINT32},
 	{"DisableRootJobs", S_P_BOOLEAN},
-	{"EnergyAccountingNodeFreq", S_P_UINT16},
-	{"EnergyAccountingType", S_P_STRING},
 	{"EnforcePartLimits", S_P_BOOLEAN},
 	{"Epilog", S_P_STRING},
 	{"EpilogMsgTime", S_P_UINT32},
@@ -2002,7 +2002,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->crypto_type);
-	xfree (ctl_conf_ptr->energy_accounting_type);
+	xfree (ctl_conf_ptr->acct_gather_energy_type);
 	xfree (ctl_conf_ptr->epilog);
 	xfree (ctl_conf_ptr->epilog_slurmctld);
 	xfree (ctl_conf_ptr->gres_plugins);
@@ -2101,8 +2101,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->def_mem_per_cpu           = 0;
 	ctl_conf_ptr->debug_flags		= 0;
 	ctl_conf_ptr->disable_root_jobs         = 0;
-	ctl_conf_ptr->energy_accounting_freq	= 0;
-	xfree (ctl_conf_ptr->energy_accounting_type);
+	ctl_conf_ptr->acct_gather_node_freq	= 0;
+	xfree (ctl_conf_ptr->acct_gather_energy_type);
 	ctl_conf_ptr->enforce_part_limits       = 0;
 	xfree (ctl_conf_ptr->epilog);
 	ctl_conf_ptr->epilog_msg_time		= (uint32_t) NO_VAL;
@@ -2555,6 +2555,15 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		xfree(conf->backup_controller);
 	}
 
+	if (!s_p_get_string(&conf->acct_gather_energy_type,
+			    "AcctGatherEnergyType", hashtbl))
+		conf->acct_gather_energy_type =
+			xstrdup(DEFAULT_ACCT_GATHER_ENERGY_TYPE);
+
+	if (!s_p_get_uint16(&conf->acct_gather_node_freq,
+			    "AcctGatherNodeFreq", hashtbl))
+		conf->acct_gather_node_freq = 0;
+
 	s_p_get_string(&default_storage_type, "DefaultStorageType", hashtbl);
 	s_p_get_string(&default_storage_host, "DefaultStorageHost", hashtbl);
 	s_p_get_string(&default_storage_user, "DefaultStorageUser", hashtbl);
@@ -2622,15 +2631,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_boolean((bool *) &conf->disable_root_jobs,
 			     "DisableRootJobs", hashtbl))
 		conf->disable_root_jobs = DEFAULT_DISABLE_ROOT_JOBS;
-
-	if (!s_p_get_uint16(&conf->energy_accounting_freq,
-			    "EnergyAccountingNodeFreq", hashtbl))
-		conf->energy_accounting_freq = 0;
-
-	if (!s_p_get_string(&conf->energy_accounting_type,
-			    "EnergyAccountingType", hashtbl))
-		conf->energy_accounting_type =
-			xstrdup(DEFAULT_ENERGY_ACCOUNTING_TYPE);
 
 	if (!s_p_get_boolean((bool *) &conf->enforce_part_limits,
 			     "EnforcePartLimits", hashtbl))

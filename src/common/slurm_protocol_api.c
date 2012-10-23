@@ -1377,21 +1377,22 @@ uint16_t slurm_get_jobacct_gather_freq(void)
  * get EnergyAccountingType from slurmctld_conf object
  * RET char *   - energy_accounting type, MUST be xfreed by caller
  */
-char *slurm_get_energy_accounting_type(void)
+char *slurm_get_acct_gather_energy_type(void)
 {
-	char *energy_accounting_type = NULL;
+	char *acct_gather_energy_type = NULL;
 	slurm_ctl_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
-		energy_accounting_type = xstrdup(conf->energy_accounting_type);
+		acct_gather_energy_type =
+			xstrdup(conf->acct_gather_energy_type);
 		slurm_conf_unlock();
 	}
-	return energy_accounting_type;
+	return acct_gather_energy_type;
 }
 
-uint16_t slurm_get_energy_accounting_freq(void)
+uint16_t slurm_get_acct_gather_node_freq(void)
 {
 	uint16_t freq = 0;
 	slurm_ctl_conf_t *conf;
@@ -1399,7 +1400,7 @@ uint16_t slurm_get_energy_accounting_freq(void)
 	if (slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
-		freq = conf->energy_accounting_freq;
+		freq = conf->acct_gather_node_freq;
 		slurm_conf_unlock();
 	}
 	return freq;

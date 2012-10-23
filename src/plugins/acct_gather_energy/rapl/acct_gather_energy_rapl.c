@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  energy_accounting_rapl.c - slurm energy accounting plugin for rapl.
+ *  acct_gather_energy_rapl.c - slurm energy accounting plugin for rapl.
  *****************************************************************************
  *  Copyright (C) 2012
  *  Written by Bull- Yiannis Georgiou
@@ -38,7 +38,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-/*   energy_accounting_rapl
+/*   acct_gather_energy_rapl
  * This plugin does not initiate a node-level thread.
  * It will be used to load energy values from cpu/core
  * sensors when harware/drivers are available
@@ -64,7 +64,7 @@
 #include <inttypes.h>
 #include <unistd.h>
 #include <math.h>
-#include "energy_accounting_rapl.h"
+#include "acct_gather_energy_rapl.h"
 
 union {
 	ulong val;
@@ -124,14 +124,14 @@ uint32_t jobacct_vmem_limit;
  * minimum version for their plugins as the job accounting API
  * matures.
  */
-const char plugin_name[] = "Energy accounting RAPL plugin";
-const char plugin_type[] = "energy_accounting/rapl";
+const char plugin_name[] = "AcctGatherEnergy RAPL plugin";
+const char plugin_type[] = "acct_gather_energy/rapl";
 const uint32_t plugin_version = 100;
 
 static int freq = 0;
-static float base_watts = 0; 
-static float current_watts = 0; 
-static bool energy_accounting_shutdown = true;
+static float base_watts = 0;
+static float current_watts = 0;
+static bool acct_gather_energy_shutdown = true;
 static uint32_t last_time = 0;
 static uint32_t node_consumed_energy = 0;
 static uint32_t node_base_energy = 0;
@@ -204,7 +204,7 @@ static void hardware (void) {
 			sscanf(buf, "processor\t: %d", &cpu);
 			continue;
 		}
-		if (strncmp(buf, "physical id", sizeof("physical id") - 1) == 0) 
+		if (strncmp(buf, "physical id", sizeof("physical id") - 1) == 0)
 		{
 			sscanf(buf, "physical id\t: %d", &pkg);
 			if (pkg2cpu[pkg] == -1)
@@ -238,12 +238,12 @@ static int *_getjoules_rapl(void)
 
 
 
-	energy_accounting_shutdown = false;
-	if (!energy_accounting_shutdown ) {
+	acct_gather_energy_shutdown = false;
+	if (!acct_gather_energy_shutdown ) {
 		hardware();
 		for (i = 0; i < nb_pkg; i++)
 			fd[i] = open_msr(pkg2cpu[i]);
-			
+
 		result = read_msr(fd[0], MSR_RAPL_POWER_UNIT);
 		energy_units = pow(0.5,(double)((result>>8)&0x1f));
 		result = 0;
@@ -253,7 +253,7 @@ static int *_getjoules_rapl(void)
 
 		node_current_energy = (int)ret;
 		if (node_consumed_energy != 0){
-			node_consumed_energy =  
+			node_consumed_energy =
 					node_current_energy - node_base_energy;
 		}
 		if (node_consumed_energy == 0){
@@ -268,7 +268,7 @@ static int *_getjoules_rapl(void)
 		ret_tmp = (double)result * energy_units;
 		current_watts = (float)(ret_tmp - ret);
 		base_watts = node_base_energy;
-		
+
 		debug2("_getjoules_rapl = %d sec, current %.6f Joules, "
 		       "consumed %d", freq, ret, node_consumed_energy);
 	}
@@ -278,7 +278,7 @@ static int *_getjoules_rapl(void)
 }
 
 
-extern int energy_accounting_p_updatenodeenergy(void)
+extern int acct_gather_energy_p_updatenodeenergy(void)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -286,7 +286,7 @@ extern int energy_accounting_p_updatenodeenergy(void)
 	return rc;
 }
 
-extern void energy_accounting_p_getjoules_task(struct jobacctinfo *jobacct)
+extern void acct_gather_energy_p_getjoules_task(struct jobacctinfo *jobacct)
 {
 	int rc, pkg, i;
 	int core = 0;
@@ -304,7 +304,7 @@ extern void energy_accounting_p_getjoules_task(struct jobacctinfo *jobacct)
 	energy_units = pow(0.5, (double)((result>>8)&0x1f));
 	debug2("RAPL powercapture_debug Energy units = %.6f, "
 	       "Power Units = %.6f", energy_units, power_units);
-	max_power = power_units * 
+	max_power = power_units *
 			((read_msr(fd[0], MSR_PKG_POWER_INFO) >> 32) & 0x7fff);
 
 	debug2("RAPL Max power = %ld w", max_power);
@@ -328,34 +328,34 @@ extern void energy_accounting_p_getjoules_task(struct jobacctinfo *jobacct)
 
 }
 
-extern int energy_accounting_p_getjoules_scaled(uint32_t stp_smpled_time,
+extern int acct_gather_energy_p_getjoules_scaled(uint32_t stp_smpled_time,
 						ListIterator itr)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int energy_accounting_p_setbasewatts(void)
+extern int acct_gather_energy_p_setbasewatts(void)
 {
 	base_watts = 0;
 	return SLURM_SUCCESS;
 }
 
-extern int energy_accounting_p_readbasewatts(void)
+extern int acct_gather_energy_p_readbasewatts(void)
 {
 	return base_watts;
 }
 
-extern uint32_t energy_accounting_p_getcurrentwatts(void)
+extern uint32_t acct_gather_energy_p_getcurrentwatts(void)
 {
 	return current_watts;
 }
 
-extern uint32_t energy_accounting_p_getbasewatts()
+extern uint32_t acct_gather_energy_p_getbasewatts()
 {
 	return base_watts;
 }
 
-extern uint32_t energy_accounting_p_getnodeenergy(uint32_t up_time)
+extern uint32_t acct_gather_energy_p_getnodeenergy(uint32_t up_time)
 {
 	last_time = up_time;
 	return node_consumed_energy;

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  energy_accounting_ipmi.c - slurm energy accounting plugin for ipmi.
+ *  acct_gather_energy_ipmi.c - slurm energy accounting plugin for ipmi.
  *****************************************************************************
  *  Written by Bull-HN-PHX/d.rusak,
  *  Copyright (C) 2012 Bull-HN-PHX.
@@ -37,7 +37,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-/*   energy_accounting_ipmi
+/*   acct_gather_energy_ipmi
  * This plugin initiates a node-level thread to periodically
  * issue reads to a BMC over an ipmi interface driver 'kipmi0'
  *
@@ -56,14 +56,14 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmd/common/proctrack.h"
 
-//#include "src/plugins/energy_accounting/ipmi/ipmi_inttypes.h"
-//#include "src/plugins/energy_accounting/ipmi/ipmi.h"
-//#include "src/plugins/energy_accounting/ipmi/ipmi_intf.h"
-//#include "src/plugins/energy_accounting/ipmi/ipmi_sdr.h"
-//#include "src/plugins/energy_accounting/ipmi/ipmi_sel.h"
-//#include "src/plugins/energy_accounting/ipmi/ipmi_mc.h"
-//#include "src/plugins/energy_accounting/ipmi/ipmi_sensor.h"
-//#include "src/plugins/energy_accounting/ipmi/ipmi_sol.h"
+//#include "src/plugins/acct_gather_energy/ipmi/ipmi_inttypes.h"
+//#include "src/plugins/acct_gather_energy/ipmi/ipmi.h"
+//#include "src/plugins/acct_gather_energy/ipmi/ipmi_intf.h"
+//#include "src/plugins/acct_gather_energy/ipmi/ipmi_sdr.h"
+//#include "src/plugins/acct_gather_energy/ipmi/ipmi_sel.h"
+//#include "src/plugins/acct_gather_energy/ipmi/ipmi_mc.h"
+//#include "src/plugins/acct_gather_energy/ipmi/ipmi_sensor.h"
+//#include "src/plugins/acct_gather_energy/ipmi/ipmi_sol.h"
 
 
 #define _DEBUG 1
@@ -120,14 +120,14 @@ uint32_t jobacct_vmem_limit;
 int csv_output = 0;
 int ipmi_verbose = 0;
 
-const char plugin_name[] = "Energy accounting IPMI plugin";
-const char plugin_type[] = "energy_accounting/ipmi";
+const char plugin_name[] = "AcctGatherEnergy IPMI plugin";
+const char plugin_type[] = "acct_gather_energy/ipmi";
 const uint32_t plugin_version = 100;
 static int freq = 0;
 static float base_watts = 5; // MNP - arbitrary value for testing only
 static float current_watts = 11; // MNP - arbitrary value for testing only
 static float energy_calibration= 1.0;
-static bool energy_accounting_shutdown = true;
+static bool acct_gather_energy_shutdown = true;
 static double seed_joules = 74.0;
 static	char		joules_file[32];
 static uint32_t last_time = 0;
@@ -139,7 +139,7 @@ static void _task_sleep(int rem)
 		rem = sleep(rem);	/* subject to interupt */
 }
 
-static int _update_weighted_energy(uint32_t step_sampled_cputime, 
+static int _update_weighted_energy(uint32_t step_sampled_cputime,
 				   struct jobacctinfo *jobacct)
 {
 	return 0;
@@ -151,7 +151,7 @@ static int _readbasewatts(void)
 }
 
 
-extern int energy_accounting_p_updatenodeenergy(void)
+extern int acct_gather_energy_p_updatenodeenergy(void)
 {
 	int rc = SLURM_SUCCESS;
 	node_consumed_energy = 999; // MNP - arbitrary value for testing only
@@ -159,41 +159,41 @@ extern int energy_accounting_p_updatenodeenergy(void)
 }
 
 
-extern uint32_t energy_accounting_p_getjoules_task(struct jobacctinfo *jobacct)
+extern uint32_t acct_gather_energy_p_getjoules_task(struct jobacctinfo *jobacct)
 {
 	//TODO put joules acquisition here when available
 	return 88; // MNP - arbitrary value for testing only
 }
 
 
-extern int energy_accounting_p_getjoules_scaled(uint32_t stp_smpled_time,
+extern int acct_gather_energy_p_getjoules_scaled(uint32_t stp_smpled_time,
 		ListIterator itr)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int energy_accounting_p_setbasewatts(void)
+extern int acct_gather_energy_p_setbasewatts(void)
 {
 	base_watts = 5; // MNP - arbitrary value for testing only
 	return SLURM_SUCCESS;
 }
 
-extern int energy_accounting_p_readbasewatts(void)
+extern int acct_gather_energy_p_readbasewatts(void)
 {
 	return base_watts;
 }
 
-extern uint32_t energy_accounting_p_getcurrentwatts(void)
+extern uint32_t acct_gather_energy_p_getcurrentwatts(void)
 {
 	return current_watts;
 }
 
-extern uint32_t energy_accounting_p_getbasewatts()
+extern uint32_t acct_gather_energy_p_getbasewatts()
 {
 	return base_watts;
 }
 
-extern uint32_t energy_accounting_p_getnodeenergy(uint32_t up_time)
+extern uint32_t acct_gather_energy_p_getnodeenergy(uint32_t up_time)
 {
 	last_time = up_time;
 	return node_consumed_energy;
@@ -208,4 +208,3 @@ extern int init ( void )
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
-

@@ -44,6 +44,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_acct_gather_energy.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/common/xstring.h"
 #include "src/plugins/jobacct_gather/cgroup/jobacct_gather_cgroup.h"
@@ -474,7 +475,8 @@ extern void jobacct_gather_p_poll_data(
 			itr = list_iterator_create(task_list);
 			while ((jobacct = list_next(itr))) {
 				jobacct->consumed_energy =
-				    energy_accounting_g_getjoules_task(jobacct);
+					acct_gather_energy_g_getjoules_task(
+						jobacct);
 			}
 			list_iterator_destroy(itr);
 
@@ -660,7 +662,8 @@ extern void jobacct_gather_p_poll_data(
 				       jobacct->max_vsize, jobacct->tot_cpu,
 				       prec->usec, prec->ssec);
 				jobacct->consumed_energy =
-				    energy_accounting_g_getjoules_task(jobacct);
+					acct_gather_energy_g_getjoules_task(
+						jobacct);
 				debug2("getjoules_task energy = %u",
 				       jobacct->consumed_energy);
 				break;

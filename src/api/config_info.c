@@ -193,6 +193,18 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("AcctGatherEnergyType");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->acct_gather_energy_type);
+	list_append(ret_list, key_pair);
+
+	snprintf(tmp_str, sizeof(tmp_str), "%u sec",
+		 slurm_ctl_conf_ptr->acct_gather_node_freq);
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("AcctGatherNodeFreq");
+	key_pair->value = xstrdup(tmp_str);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AuthType");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->authtype);
 	list_append(ret_list, key_pair);
@@ -291,18 +303,6 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 		key_pair->value = xstrdup("YES");
 	else
 		key_pair->value = xstrdup("NO");
-
-	snprintf(tmp_str, sizeof(tmp_str), "%u sec",
-		 slurm_ctl_conf_ptr->energy_accounting_freq);
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyAccountingNodeFreq");
-	key_pair->value = xstrdup(tmp_str);
-	list_append(ret_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("EnergyAccountingType");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->energy_accounting_type);
-	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	list_append(ret_list, key_pair);

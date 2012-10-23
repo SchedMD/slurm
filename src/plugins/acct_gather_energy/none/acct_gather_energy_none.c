@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  energy_accounting_none.c - slurm energy accounting plugin for none.
+ *  acct_gather_energy_none.c - slurm energy accounting plugin for none.
  *****************************************************************************
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *  Written by Bull-HN-PHX/d.rusak,
@@ -39,9 +39,9 @@
 \*****************************************************************************/
 
 
-/*   energy_accounting_none
+/*   acct_gather_energy_none
  * This plugin does not initiate a node-level thread.
- * It is the energy_accounting stub.
+ * It is the acct_gather_energy stub.
  */
 
 #include <fcntl.h>
@@ -102,52 +102,52 @@ uint32_t jobacct_vmem_limit;
  * minimum version for their plugins as the job accounting API
  * matures.
  */
-const char plugin_name[] = "Energy accounting NONE plugin";
-const char plugin_type[] = "energy_accounting/none";
+const char plugin_name[] = "AcctGatherEnergy NONE plugin";
+const char plugin_type[] = "acct_gather_energy/none";
 const uint32_t plugin_version = 100;
 
-static bool energy_accounting_shutdown = 0;
+static bool acct_gather_energy_shutdown = 0;
 
-extern int energy_accounting_p_updatenodeenergy(void)
+extern int acct_gather_energy_p_updatenodeenergy(void)
 {
 	int rc = SLURM_SUCCESS;
 
 	return rc;
 }
 
-extern uint32_t energy_accounting_p_getjoules_task(struct jobacctinfo *jobacct)
+extern uint32_t acct_gather_energy_p_getjoules_task(struct jobacctinfo *jobacct)
 {
 	return 0;
 }
 
-extern int energy_accounting_p_getjoules_scaled(uint32_t stp_smpled_time,
+extern int acct_gather_energy_p_getjoules_scaled(uint32_t stp_smpled_time,
 						ListIterator itr)
 {
 
 	return SLURM_SUCCESS;
 }
 
-extern int energy_accounting_p_setbasewatts(void)
+extern int acct_gather_energy_p_setbasewatts(void)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int energy_accounting_p_readbasewatts(void)
+extern int acct_gather_energy_p_readbasewatts(void)
 {
 	return 0;
 }
 
-extern uint32_t energy_accounting_p_getcurrentwatts(void)
+extern uint32_t acct_gather_energy_p_getcurrentwatts(void)
 {
 	return 0;
 }
 
-extern uint32_t energy_accounting_p_getbasewatts(void)
+extern uint32_t acct_gather_energy_p_getbasewatts(void)
 {
 	return 0;
 }
 
-extern uint32_t energy_accounting_p_getnodeenergy(uint32_t up_time)
+extern uint32_t acct_gather_energy_p_getnodeenergy(uint32_t up_time)
 {
 
 	return 0;

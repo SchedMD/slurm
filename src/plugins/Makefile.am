@@ -1,11 +1,11 @@
 SUBDIRS = \
 	accounting_storage	\
+	acct_gather_energy	\
 	auth			\
 	checkpoint		\
 	crypto			\
 	gres			\
 	jobacct_gather		\
-	energy_accounting	\
 	jobcomp			\
 	job_submit		\
 	launch			\

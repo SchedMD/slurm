@@ -476,6 +476,11 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 		xstrdup(conf->accounting_storage_user);
 	conf_ptr->accounting_storage_port = conf->accounting_storage_port;
 	conf_ptr->acctng_store_job_comment = conf->acctng_store_job_comment;
+
+	conf_ptr->acct_gather_energy_type =
+		xstrdup(conf->acct_gather_energy_type);
+	conf_ptr->acct_gather_node_freq = conf->acct_gather_node_freq;
+
 	conf_ptr->authtype            = xstrdup(conf->authtype);
 
 	conf_ptr->backup_addr         = xstrdup(conf->backup_addr);
@@ -493,9 +498,6 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->def_mem_per_cpu     = conf->def_mem_per_cpu;
 	conf_ptr->debug_flags         = conf->debug_flags;
 	conf_ptr->disable_root_jobs   = conf->disable_root_jobs;
-	conf_ptr->energy_accounting_freq = conf->energy_accounting_freq;
-	conf_ptr->energy_accounting_type =
-		xstrdup(conf->energy_accounting_type);
 
 	conf_ptr->enforce_part_limits = conf->enforce_part_limits;
 	conf_ptr->epilog              = xstrdup(conf->epilog);

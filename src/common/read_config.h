@@ -74,8 +74,8 @@ extern char *default_plugstack;
 #define DEFAULT_INACTIVE_LIMIT      0
 #define DEFAULT_JOB_ACCT_GATHER_TYPE  "jobacct_gather/none"
 #define JOB_ACCT_GATHER_TYPE_NONE "jobacct_gather/none"
-#define DEFAULT_ENERGY_ACCOUNTING_TYPE "energy_accounting/none"
 #define DEFAULT_JOB_ACCT_GATHER_FREQ  30
+#define DEFAULT_ACCT_GATHER_ENERGY_TYPE "acct_gather_energy/none"
 #define ACCOUNTING_STORAGE_TYPE_NONE "accounting_storage/none"
 #define DEFAULT_DISABLE_ROOT_JOBS   0
 #define DEFAULT_ENFORCE_PART_LIMITS 0

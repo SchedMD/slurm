@@ -70,7 +70,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
-#include "src/common/slurm_energy_accounting.h"
+#include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
@@ -1973,7 +1973,7 @@ _rpc_node_energy_update(slurm_msg_t *msg)
 	slurm_msg_t req;
 	node_energy_data_msg_t *en_msg;
 	/* Update node energy usage data */
-	energy_accounting_g_updatenodeenergy();
+	acct_gather_energy_g_updatenodeenergy();
 	/* Return result. If the reply can't be sent this indicates that
 	 * 1. The network is broken OR
 	 * 2. slurmctld has died    OR
@@ -1992,10 +1992,9 @@ _rpc_node_energy_update(slurm_msg_t *msg)
 		slurm_msg_t_init(&req);
 
 		en_msg->node_name = xstrdup (conf->node_name);
-		en_msg->current_watts = energy_accounting_g_getcurrentwatts();
-		en_msg->base_watts = energy_accounting_g_getbasewatts();
-		en_msg->consumed_energy =
-			energy_accounting_g_getnodeenergy((uint32_t)0);
+		en_msg->current_watts = acct_gather_energy_g_getcurrentwatts();
+		en_msg->base_watts = acct_gather_energy_g_getbasewatts();
+		en_msg->consumed_energy = acct_gather_energy_g_getnodeenergy(0);
 
 		req.msg_type = RESPONSE_NODE_ENERGY_UPDATE;
 		req.data     = en_msg;

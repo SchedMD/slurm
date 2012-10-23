@@ -4456,6 +4456,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->accounting_storage_type, buffer);
 		packstr(build_ptr->accounting_storage_user, buffer);
 		pack16(build_ptr->acctng_store_job_comment, buffer);
+		packstr(build_ptr->acct_gather_energy_type, buffer);
+		pack16(build_ptr->acct_gather_node_freq, buffer);
 
 		packstr(build_ptr->authtype, buffer);
 
@@ -4475,8 +4477,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->debug_flags, buffer);
 		pack16(build_ptr->disable_root_jobs, buffer);
 
-		pack16(build_ptr->energy_accounting_freq, buffer);
-		packstr(build_ptr->energy_accounting_type, buffer);
 		pack16(build_ptr->enforce_part_limits, buffer);
 		packstr(build_ptr->epilog, buffer);
 		pack32(build_ptr->epilog_msg_time, buffer);
@@ -5086,6 +5086,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_user,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->acctng_store_job_comment, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->acct_gather_energy_type,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&build_ptr->acct_gather_node_freq, buffer);
 
 		safe_unpackstr_xmalloc(&build_ptr->authtype,
 				       &uint32_tmp, buffer);
@@ -5112,10 +5115,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->def_mem_per_cpu, buffer);
 		safe_unpack32(&build_ptr->debug_flags, buffer);
 		safe_unpack16(&build_ptr->disable_root_jobs, buffer);
-
-		safe_unpack16(&build_ptr->energy_accounting_freq, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->energy_accounting_type,
-				       &uint32_tmp,buffer);
 
 		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->epilog, &uint32_tmp,
