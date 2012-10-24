@@ -474,9 +474,9 @@ extern void jobacct_gather_p_poll_data(
 			 * any more, by iterating thru jobacctinfo structs */
 			itr = list_iterator_create(task_list);
 			while ((jobacct = list_next(itr))) {
-				jobacct->consumed_energy =
-					acct_gather_energy_g_getjoules_task(
-						jobacct);
+				acct_gather_energy_g_get_data(
+					ENERGY_DATA_JOULES_TASK,
+					&jobacct->energy);
 			}
 			list_iterator_destroy(itr);
 
@@ -661,11 +661,11 @@ extern void jobacct_gather_p_poll_data(
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
 				       prec->usec, prec->ssec);
-				jobacct->consumed_energy =
-					acct_gather_energy_g_getjoules_task(
-						jobacct);
+				acct_gather_energy_g_get_data(
+					ENERGY_DATA_JOULES_TASK,
+					&jobacct->energy);
 				debug2("getjoules_task energy = %u",
-				       jobacct->consumed_energy);
+				       jobacct->energy.consumed_energy);
 				break;
 			}
 		}

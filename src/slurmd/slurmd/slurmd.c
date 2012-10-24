@@ -681,9 +681,11 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
-	msg->current_watts = acct_gather_energy_g_getcurrentwatts();
-	msg->base_watts = acct_gather_energy_g_getbasewatts();
-	msg->consumed_energy = acct_gather_energy_g_getnodeenergy(msg->up_time);
+
+	if (!msg->energy)
+		msg->energy = acct_gather_energy_alloc();
+	acct_gather_energy_g_get_data(ENERGY_DATA_STRUCT, msg->energy);
+
 	msg->timestamp = time(NULL);
 
 	return;

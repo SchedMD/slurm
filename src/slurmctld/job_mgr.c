@@ -7938,9 +7938,7 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 		return;
 	}
 
-	node_ptr->current_watts = reg_msg->current_watts;
-	node_ptr->base_watts = reg_msg->base_watts;
-	node_ptr->consumed_energy = reg_msg->consumed_energy;
+	memcpy(node_ptr->energy, reg_msg->energy, sizeof(acct_gather_energy_t));
 
 	if (node_ptr->up_time > reg_msg->up_time) {
 		verbose("Node %s rebooted %u secs ago",

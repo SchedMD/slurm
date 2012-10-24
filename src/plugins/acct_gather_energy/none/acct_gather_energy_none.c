@@ -44,34 +44,17 @@
  * It is the acct_gather_energy stub.
  */
 
-#include <fcntl.h>
-#include <signal.h>
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmd/common/proctrack.h"
 
+#include <fcntl.h>
+#include <signal.h>
+
 #define _DEBUG 1
 #define _DEBUG_ENERGY 1
-
-/* These are defined here so when we link with something other than
- * the slurmd we will have these symbols defined.  They will get
- * overwritten when linking with the slurmd.
- */
-#if defined (__APPLE__)
-uint32_t jobacct_job_id __attribute__((weak_import));
-pthread_mutex_t jobacct_lock __attribute__((weak_import));
-uint32_t jobacct_mem_limit __attribute__((weak_import));
-uint32_t jobacct_step_id __attribute__((weak_import));
-uint32_t jobacct_vmem_limit __attribute__((weak_import));
-#else
-uint32_t jobacct_job_id;
-pthread_mutex_t jobacct_lock;
-uint32_t jobacct_mem_limit;
-uint32_t jobacct_step_id;
-uint32_t jobacct_vmem_limit;
-#endif
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -106,60 +89,36 @@ const char plugin_name[] = "AcctGatherEnergy NONE plugin";
 const char plugin_type[] = "acct_gather_energy/none";
 const uint32_t plugin_version = 100;
 
-static bool acct_gather_energy_shutdown = 0;
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
+extern int init(void)
+{
+	verbose("%s loaded", plugin_name);
+	return SLURM_SUCCESS;
+}
 
-extern int acct_gather_energy_p_updatenodeenergy(void)
+extern int fini(void)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int acct_gather_energy_p_update_node_energy(void)
 {
 	int rc = SLURM_SUCCESS;
 
 	return rc;
 }
 
-extern uint32_t acct_gather_energy_p_getjoules_task(struct jobacctinfo *jobacct)
-{
-	return 0;
-}
-
-extern int acct_gather_energy_p_getjoules_scaled(uint32_t stp_smpled_time,
-						ListIterator itr)
-{
-
-	return SLURM_SUCCESS;
-}
-
-extern int acct_gather_energy_p_setbasewatts(void)
+extern int acct_gather_energy_p_get_data(acct_gather_energy_t *energy,
+					 enum acct_energy_type data_type)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_energy_p_readbasewatts(void)
+extern int acct_gather_energy_p_set_data(acct_gather_energy_t *energy,
+					 enum acct_energy_type data_type)
 {
-	return 0;
-}
-
-extern uint32_t acct_gather_energy_p_getcurrentwatts(void)
-{
-	return 0;
-}
-
-extern uint32_t acct_gather_energy_p_getbasewatts(void)
-{
-	return 0;
-}
-
-extern uint32_t acct_gather_energy_p_getnodeenergy(uint32_t up_time)
-{
-
-	return 0;
-}
-
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-extern int init ( void )
-{
-	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
-

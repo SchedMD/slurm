@@ -603,7 +603,7 @@ extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 	memcpy(&jobacct->min_cpu_id, jobacct_id, sizeof(jobacct_id_t));
 	jobacct->tot_cpu = 0;
 	jobacct->act_cpufreq = 0;
-	jobacct->consumed_energy = 0;
+	memset(&jobacct->energy, 0, sizeof(acct_gather_energy_t));
 
 	return jobacct;
 }
@@ -677,7 +677,7 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
                 jobacct->act_cpufreq = *uint32;
                 break;
         case JOBACCT_DATA_CONSUMED_ENERGY:
-                jobacct->consumed_energy = *uint32;
+                jobacct->energy.consumed_energy = *uint32;
                 break;
 	default:
 		debug("jobacct_g_set_setinfo data_type %d invalid", type);
@@ -752,7 +752,7 @@ extern int jobacctinfo_getinfo(
         	*uint32 = jobacct->act_cpufreq;
                 break;
         case JOBACCT_DATA_CONSUMED_ENERGY:
-                *uint32 = jobacct->consumed_energy;
+                *uint32 = jobacct->energy.consumed_energy;
                 break;
 	default:
 		debug("jobacct_g_set_getinfo data_type %d invalid", type);
@@ -803,7 +803,7 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 		pack32((uint32_t)jobacct->min_cpu, buffer);
 		pack32((uint32_t)jobacct->tot_cpu, buffer);
 		pack32((uint32_t)jobacct->act_cpufreq, buffer);
-		pack32((uint32_t)jobacct->consumed_energy, buffer);
+		pack32((uint32_t)jobacct->energy.consumed_energy, buffer);
 
 		_pack_jobacct_id(&jobacct->max_vsize_id, rpc_version, buffer);
 		_pack_jobacct_id(&jobacct->max_rss_id, rpc_version, buffer);
@@ -877,7 +877,7 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 		safe_unpack32(&(*jobacct)->min_cpu, buffer);
 		safe_unpack32(&(*jobacct)->tot_cpu, buffer);
 		safe_unpack32(&(*jobacct)->act_cpufreq, buffer);
-		safe_unpack32(&(*jobacct)->consumed_energy, buffer);
+		safe_unpack32(&(*jobacct)->energy.consumed_energy, buffer);
 
 		if (_unpack_jobacct_id(&(*jobacct)->max_vsize_id, rpc_version,
 			buffer) != SLURM_SUCCESS)
@@ -993,7 +993,7 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 		dest->sys_cpu_usec -= 1E6;
 	}
 	dest->act_cpufreq 	+= from->act_cpufreq;
-	dest->consumed_energy   += from->consumed_energy;
+	dest->energy.consumed_energy   += from->energy.consumed_energy;
 }
 
 extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
@@ -1018,5 +1018,5 @@ extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
 	stats->cpu_min_taskid = jobacct->min_cpu_id.taskid;
 	stats->cpu_ave = (double)jobacct->tot_cpu;
 	stats->act_cpufreq = (double)jobacct->act_cpufreq;
-	stats->consumed_energy = (double)jobacct->consumed_energy;
+	stats->consumed_energy = (double)jobacct->energy.consumed_energy;
 }

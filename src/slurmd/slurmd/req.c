@@ -162,7 +162,7 @@ static void _rpc_pid2jid(slurm_msg_t *msg);
 static int  _rpc_file_bcast(slurm_msg_t *msg);
 static int  _rpc_ping(slurm_msg_t *);
 static int  _rpc_health_check(slurm_msg_t *);
-static int  _rpc_node_energy_update(slurm_msg_t *);
+static int  _rpc_acct_gather_update(slurm_msg_t *);
 static int  _rpc_step_complete(slurm_msg_t *msg);
 static int  _rpc_stat_jobacct(slurm_msg_t *msg);
 static int  _rpc_list_pids(slurm_msg_t *msg);
@@ -376,9 +376,9 @@ slurmd_req(slurm_msg_t *msg)
 		last_slurmctld_msg = time(NULL);
 		/* No body to free */
 		break;
-	case REQUEST_NODE_ENERGY_UPDATE:
-		debug2("Processing RPC: REQUEST_NODE_ENERGY_UPDATE");
-		_rpc_node_energy_update(msg);
+	case REQUEST_ACCT_GATHER_UPDATE:
+		debug2("Processing RPC: REQUEST_ACCT_GATHER_UPDATE");
+		_rpc_acct_gather_update(msg);
 		last_slurmctld_msg = time(NULL);
 		/* No body to free */
 		break;
@@ -1967,13 +1967,14 @@ _rpc_health_check(slurm_msg_t *msg)
 
 
 static int
-_rpc_node_energy_update(slurm_msg_t *msg)
+_rpc_acct_gather_update(slurm_msg_t *msg)
 {
 	int        rc = SLURM_SUCCESS;
 	slurm_msg_t req;
-	node_energy_data_msg_t *en_msg;
+	acct_gather_node_resp_msg_t acct_msg;
+
 	/* Update node energy usage data */
-	acct_gather_energy_g_updatenodeenergy();
+	acct_gather_energy_g_update_node_energy();
 	/* Return result. If the reply can't be sent this indicates that
 	 * 1. The network is broken OR
 	 * 2. slurmctld has died    OR
@@ -1987,24 +1988,22 @@ _rpc_node_energy_update(slurm_msg_t *msg)
 	}
 
 	if (rc == SLURM_SUCCESS) {
-		en_msg = xmalloc (sizeof (node_energy_data_msg_t));
-
+		memset(&acct_msg, 0, sizeof(acct_gather_node_resp_msg_t));
 		slurm_msg_t_init(&req);
 
-		en_msg->node_name = xstrdup (conf->node_name);
-		en_msg->current_watts = acct_gather_energy_g_getcurrentwatts();
-		en_msg->base_watts = acct_gather_energy_g_getbasewatts();
-		en_msg->consumed_energy = acct_gather_energy_g_getnodeenergy(0);
+		acct_msg.node_name = conf->node_name;
+		acct_msg.energy = acct_gather_energy_alloc();
+		acct_gather_energy_g_get_data(ENERGY_DATA_STRUCT,
+					      acct_msg.energy);
 
-		req.msg_type = RESPONSE_NODE_ENERGY_UPDATE;
-		req.data     = en_msg;
+		req.msg_type = RESPONSE_ACCT_GATHER_UPDATE;
+		req.data     = &acct_msg;
 
 		if (slurm_send_only_controller_msg(&req) < 0) {
 			error("Unable to send node energy data: %m");
 			rc = SLURM_FAILURE;
 		}
-		slurm_free_node_energy_data_msg (en_msg);
-
+		acct_gather_energy_destroy(acct_msg.energy);
 	}
 	return rc;
 }

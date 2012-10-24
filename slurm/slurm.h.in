@@ -427,6 +427,15 @@ enum jobacct_data_type {
 	JOBACCT_DATA_CONSUMED_ENERGY /* data-> uint32_t psize hb*/
 };
 
+enum acct_energy_type {
+	ENERGY_DATA_JOULES_TASK,
+	ENERGY_DATA_JOULES_SCALED,
+	ENERGY_DATA_CURR_WATTS,
+	ENERGY_DATA_BASE_WATTS,
+	ENERGY_DATA_NODE_ENERGY,
+	ENERGY_DATA_STRUCT,
+};
+
 /* Possible task distributions across the nodes */
 typedef enum task_dist_states {
 	/* NOTE: start SLURM_DIST_CYCLIC at 1 for HP MPI */
@@ -907,6 +916,13 @@ typedef struct dynamic_plugin_data {
 	void *data;
 	uint32_t plugin_id;
 } dynamic_plugin_data_t;
+
+typedef struct acct_gather_energy {
+	uint32_t base_consumed_energy;
+	uint32_t base_watts;	  /* lowest power consump of node, in watts */
+	uint32_t consumed_energy; /* total energy consumed by node, in joules */
+	uint32_t current_watts;	  /* current power consump of node, in watts */
+} acct_gather_energy_t;
 
 typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *account;		/* charge to specified account */
@@ -1450,9 +1466,7 @@ typedef struct node_info {
 	uint16_t threads;       /* number of threads per core */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
 	uint32_t weight;	/* arbitrary priority of node for scheduling */
-	uint32_t current_watts;
-	uint32_t base_watts;
-	uint32_t consumed_energy;
+	acct_gather_energy_t *energy;
 	dynamic_plugin_data_t *select_nodeinfo;  /* opaque data structure,
 						  * use
 						  * slurm_get_select_nodeinfo()
@@ -1508,12 +1522,10 @@ typedef struct job_alloc_info_msg {
 	uint32_t job_id;	/* job ID */
 } job_alloc_info_msg_t;
 
-typedef struct node_energy_data_msg {
-	char	*node_name;	  /* node name */
-	uint32_t current_watts;	  /* current power consump of node, in watts */
-	uint32_t base_watts;	  /* lowest power consump of node, in watts */
-	uint32_t consumed_energy; /* total energy consumed by node, in joules */
-} node_energy_data_msg_t;
+typedef struct acct_gather_node_resp_msg {
+	char *node_name;	  /* node name */
+	acct_gather_energy_t *energy;
+} acct_gather_node_resp_msg_t;
 
 /* Current partition state information and used to set partition options
  * using slurm_update_partition(). */

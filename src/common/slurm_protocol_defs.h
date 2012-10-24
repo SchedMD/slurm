@@ -180,8 +180,8 @@ typedef enum {
 	REQUEST_SET_SCHEDLOG_LEVEL,
 	REQUEST_SET_DEBUG_FLAGS,
 	REQUEST_REBOOT_NODES,
-	REQUEST_NODE_ENERGY_UPDATE,
-	RESPONSE_NODE_ENERGY_UPDATE,
+	REQUEST_ACCT_GATHER_UPDATE,
+	RESPONSE_ACCT_GATHER_UPDATE,
 
 	REQUEST_BUILD_INFO = 2001,
 	RESPONSE_BUILD_INFO,
@@ -937,6 +937,7 @@ typedef struct slurm_node_registration_status_msg {
 	char *arch;
 	uint16_t cores;
 	uint16_t cpus;
+	acct_gather_energy_t *energy;
 	Buf gres_info;		/* generic resource info */
 	uint32_t hash_val;      /* hash value of slurm.conf file
 				   existing on node */
@@ -956,9 +957,6 @@ typedef struct slurm_node_registration_status_msg {
 	time_t timestamp;
 	uint32_t tmp_disk;
 	uint32_t up_time;	/* seconds since reboot */
-	uint32_t current_watts;
-	uint32_t base_watts;
-	uint32_t consumed_energy;
 } slurm_node_registration_status_msg_t;
 
 
@@ -1140,7 +1138,8 @@ extern void slurm_free_block_info(block_info_t *block_info);
 extern void slurm_free_block_info_msg(block_info_msg_t *block_info_msg);
 extern void slurm_free_block_info_request_msg(
 		block_info_request_msg_t *msg);
-extern void slurm_free_node_energy_data_msg(node_energy_data_msg_t * msg);
+extern void slurm_free_acct_gather_node_resp_msg(
+	acct_gather_node_resp_msg_t *msg);
 extern void slurm_free_job_notify_msg(job_notify_msg_t * msg);
 
 extern void slurm_free_accounting_update_msg(accounting_update_msg_t *msg);

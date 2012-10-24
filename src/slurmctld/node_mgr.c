@@ -65,6 +65,7 @@
 #include "src/common/node_select.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_acct_gather_energy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/locks.h"
@@ -806,9 +807,8 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 			packstr(dump_node_ptr->config_ptr->gres, buffer);
 		packstr(dump_node_ptr->os, buffer);
 		packstr(dump_node_ptr->reason, buffer);
-		pack32(dump_node_ptr->current_watts, buffer);
-		pack32(dump_node_ptr->base_watts, buffer);
-		pack32(dump_node_ptr->consumed_energy, buffer);
+		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
+					protocol_version);
 	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		packstr (dump_node_ptr->name, buffer);
 		packstr (dump_node_ptr->node_hostname, buffer);
@@ -1666,17 +1666,16 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
 	return false;
 }
 
-extern int update_node_record_energy_data(node_energy_data_msg_t * msg)
+extern int update_node_record_acct_gather_data(
+	acct_gather_node_resp_msg_t *msg)
 {
 	struct node_record *node_ptr;
 
-	node_ptr = find_node_record (msg->node_name);
+	node_ptr = find_node_record(msg->node_name);
 	if (node_ptr == NULL)
 		return ENOENT;
 
-	node_ptr->current_watts = msg->current_watts;
-	node_ptr->base_watts = msg->base_watts;
-	node_ptr->consumed_energy = msg->consumed_energy;
+	memcpy(node_ptr->energy, msg->energy, sizeof(acct_gather_energy_t));
 
 	return SLURM_SUCCESS;
 }
@@ -1954,9 +1953,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		_sync_bitmaps(node_ptr, reg_msg->job_count);
 	}
 
-	node_ptr->current_watts = reg_msg->current_watts;
-	node_ptr->base_watts = reg_msg->base_watts;
-	node_ptr->consumed_energy = reg_msg->consumed_energy;
+	memcpy(node_ptr->energy, reg_msg->energy, sizeof(acct_gather_energy_t));
 	node_ptr->last_response = now;
 
 	return error_code;
@@ -2264,9 +2261,8 @@ extern int validate_nodes_via_front_end(
 				      (node_ptr->run_job_cnt +
 				       node_ptr->comp_job_cnt));
 		}
-		node_ptr->current_watts = reg_msg->current_watts;
-		node_ptr->base_watts = reg_msg->base_watts;
-		node_ptr->consumed_energy = reg_msg->consumed_energy;
+		memcpy(node_ptr->energy, reg_msg->energy,
+		       sizeof(acct_gather_energy_t));
 	}
 
 	if (reg_hostlist) {

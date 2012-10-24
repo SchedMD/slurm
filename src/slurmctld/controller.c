@@ -1469,7 +1469,7 @@ static void *_slurmctld_background(void *no_data)
 			now = time(NULL);
 			last_acct_gather_node_time = now;
 			lock_slurmctld(node_write_lock);
-			update_nodes_energy_data();
+			update_nodes_acct_gather_data();
 			unlock_slurmctld(node_write_lock);
 		}
 

@@ -110,8 +110,7 @@ struct jobacctinfo {
 	jobacct_id_t min_cpu_id; /* contains which task it was on */
 	uint32_t tot_cpu; /* total cpu time(used to figure out ave later) */
 	uint32_t act_cpufreq; /* actual cpu frequency */
-	uint32_t consumed_energy; /* energy */
-	uint32_t base_consumed_energy;	
+	acct_gather_energy_t energy;
 	uint32_t last_total_cputime;
 	uint32_t this_sampled_cputime;
 	uint32_t current_weighted_freq;

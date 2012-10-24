@@ -45,19 +45,15 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_acct_gather_energy.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 typedef struct slurm_acct_gather_energy_ops {
-	int (*acct_gather_energy_updatenodeenergy) (void);
-	uint32_t (*acct_gather_energy_p_getjoules_task)
-		(struct jobacctinfo *jobacct);
-	int (*acct_gather_energy_p_getjoules_scaled)
-		(uint32_t step_sampled_cputime, ListIterator itr);
-	int (*acct_gather_energy_p_setbasewatts) ();
-	uint32_t (*acct_gather_energy_p_getcurrentwatts) ();
-	uint32_t (*acct_gather_energy_p_getbasewatts) ();
-	uint32_t (*acct_gather_energy_p_getnodeenergy) (uint32_t up_time);
-	int (*init) ();
+	int (*update_node_energy) (void);
+	int (*get_data)           (enum acct_energy_type data_type,
+				   acct_gather_energy_t *energy);
+	int (*set_data)           (enum acct_energy_type data_type,
+				   acct_gather_energy_t *energy);
 } slurm_acct_gather_energy_ops_t;
 
 
@@ -137,14 +133,9 @@ _slurm_acct_gather_energy_get_ops( slurm_acct_gather_energy_context_t *c )
 	 * for slurm_acct_gather_energy_ops_t.
 	 */
 	static const char *syms[] = {
-		"acct_gather_energy_p_updatenodeenergy",
-		"acct_gather_energy_p_getjoules_task" ,
-		"acct_gather_energy_p_getjoules_scaled" ,
-		"acct_gather_energy_p_setbasewatts" ,
-		"acct_gather_energy_p_getcurrentwatts" ,
-		"acct_gather_energy_p_getbasewatts" ,
-		"acct_gather_energy_p_getnodeenergy" ,
-		"init"
+		"acct_gather_energy_p_update_node_energy",
+		"acct_gather_energy_p_get_data",
+		"acct_gather_energy_p_set_data",
 	};
 
 	int n_syms = sizeof( syms ) / sizeof( char * );
@@ -216,7 +207,7 @@ static int _slurm_acct_gather_energy_init(void)
 {
 
 	int	retval = SLURM_SUCCESS;
-	char *acct_gather_energy_type;
+	char *acct_gather_energy_type = NULL;
 
 	slurm_mutex_lock( &g_acct_gather_energy_context_lock );
 	if ( g_acct_gather_energy_context )
@@ -242,8 +233,6 @@ static int _slurm_acct_gather_energy_init(void)
 		g_acct_gather_energy_context = NULL;
 		retval = SLURM_ERROR;
 	}
-
-	retval = (*(g_acct_gather_energy_context->ops.init))();
 
 done:
 	slurm_mutex_unlock( &g_acct_gather_energy_context_lock );
@@ -272,91 +261,139 @@ extern int slurm_acct_gather_energy_fini(void)
 	return rc;
 }
 
-extern uint32_t acct_gather_energy_g_getcurrentwatts(void)
+extern acct_gather_energy_t *acct_gather_energy_alloc(void)
 {
-	uint32_t retval = 0;
-	if (_slurm_acct_gather_energy_init() < 0)
-		return SLURM_ERROR;
+	acct_gather_energy_t *energy =
+		xmalloc(sizeof(struct acct_gather_energy));
 
-	slurm_mutex_lock( &g_acct_gather_energy_context_lock );
-	if ( g_acct_gather_energy_context ) {
-		retval = (*(g_acct_gather_energy_context->
-			    ops.acct_gather_energy_p_getcurrentwatts))();
-	}
-	slurm_mutex_unlock( &g_acct_gather_energy_context_lock );
-
-	return retval;
+	return energy;
 }
 
-extern uint32_t acct_gather_energy_g_getbasewatts(void)
+extern void acct_gather_energy_destroy(acct_gather_energy_t *energy)
 {
-	uint32_t retval = 0;
-	if (_slurm_acct_gather_energy_init() < 0)
-		return SLURM_ERROR;
-
-	slurm_mutex_lock( &g_acct_gather_energy_context_lock );
-	if ( g_acct_gather_energy_context ) {
-		retval = (*(g_acct_gather_energy_context->
-			    ops.acct_gather_energy_p_getbasewatts))();
-	}
-	slurm_mutex_unlock( &g_acct_gather_energy_context_lock );
-
-	return retval;
+	xfree(energy);
 }
 
-extern uint32_t acct_gather_energy_g_getnodeenergy(uint32_t up_time)
+extern void acct_gather_energy_pack(acct_gather_energy_t *energy, Buf buffer,
+				    uint16_t protocol_version)
 {
-	uint32_t retval = 0;
-	if (_slurm_acct_gather_energy_init() < 0)
-		return SLURM_ERROR;
-
-	slurm_mutex_lock( &g_acct_gather_energy_context_lock );
-	if ( g_acct_gather_energy_context ) {
-		retval = (*(g_acct_gather_energy_context->
-			    ops.acct_gather_energy_p_getnodeenergy)) (up_time);
+	if (!energy) {
+		int i;
+		for (i=0; i<4; i++)
+			pack32(0, buffer);
+		return;
 	}
-	slurm_mutex_unlock( &g_acct_gather_energy_context_lock );
 
-	return retval;
+	pack32(energy->base_consumed_energy, buffer);
+	pack32(energy->base_watts, buffer);
+	pack32(energy->consumed_energy, buffer);
+	pack32(energy->current_watts, buffer);
 }
 
-
-extern uint32_t acct_gather_energy_g_getjoules_task(struct jobacctinfo *jobacct)
+extern int acct_gather_energy_unpack(acct_gather_energy_t **energy, Buf buffer,
+				     uint16_t protocol_version)
 {
-	int retval = SLURM_SUCCESS;
+	acct_gather_energy_t *energy_ptr = acct_gather_energy_alloc();
+	*energy = energy_ptr;
 
-	if (_slurm_acct_gather_energy_init() < 0)
-		return SLURM_ERROR;
+	safe_unpack32(&energy_ptr->base_consumed_energy, buffer);
+	safe_unpack32(&energy_ptr->base_watts, buffer);
+	safe_unpack32(&energy_ptr->consumed_energy, buffer);
+	safe_unpack32(&energy_ptr->current_watts, buffer);
 
-	slurm_mutex_lock( &g_acct_gather_energy_context_lock );
-	if ( g_acct_gather_energy_context ) {
-			retval = (*(g_acct_gather_energy_context->
-			    ops.acct_gather_energy_p_getjoules_task))(jobacct);
-	}
-	slurm_mutex_unlock( &g_acct_gather_energy_context_lock );
+	return SLURM_SUCCESS;
 
-	return retval;
+unpack_error:
+	acct_gather_energy_destroy(energy_ptr);
+	*energy = NULL;
+	return SLURM_ERROR;
 }
 
-extern int acct_gather_energy_g_getjoules_scaled(
-	uint32_t step_sampled_cputime, ListIterator itr)
-{
-	int retval = SLURM_SUCCESS;
+/* extern uint32_t acct_gather_energy_g_getcurrentwatts(void) */
+/* { */
+/* 	uint32_t retval = 0; */
+/* 	if (_slurm_acct_gather_energy_init() < 0) */
+/* 		return SLURM_ERROR; */
 
-	if (_slurm_acct_gather_energy_init() < 0)
-		return SLURM_ERROR;
+/* 	slurm_mutex_lock( &g_acct_gather_energy_context_lock ); */
+/* 	if ( g_acct_gather_energy_context ) { */
+/* 		retval = (*(g_acct_gather_energy_context-> */
+/* 			    ops.acct_gather_energy_p_getcurrentwatts))(); */
+/* 	} */
+/* 	slurm_mutex_unlock( &g_acct_gather_energy_context_lock ); */
 
-	slurm_mutex_lock( &g_acct_gather_energy_context_lock );
-	if ( g_acct_gather_energy_context ) {
-		retval = (*(g_acct_gather_energy_context->
-			    ops.acct_gather_energy_p_getjoules_scaled))
-			    (step_sampled_cputime, itr);
-	}
-	slurm_mutex_unlock( &g_acct_gather_energy_context_lock );
-	return retval;
-}
+/* 	return retval; */
+/* } */
 
-extern int acct_gather_energy_g_updatenodeenergy(void)
+/* extern uint32_t acct_gather_energy_g_getbasewatts(void) */
+/* { */
+/* 	uint32_t retval = 0; */
+/* 	if (_slurm_acct_gather_energy_init() < 0) */
+/* 		return SLURM_ERROR; */
+
+/* 	slurm_mutex_lock( &g_acct_gather_energy_context_lock ); */
+/* 	if ( g_acct_gather_energy_context ) { */
+/* 		retval = (*(g_acct_gather_energy_context-> */
+/* 			    ops.acct_gather_energy_p_getbasewatts))(); */
+/* 	} */
+/* 	slurm_mutex_unlock( &g_acct_gather_energy_context_lock ); */
+
+/* 	return retval; */
+/* } */
+
+/* extern uint32_t acct_gather_energy_g_getnodeenergy(uint32_t up_time) */
+/* { */
+/* 	uint32_t retval = 0; */
+/* 	if (_slurm_acct_gather_energy_init() < 0) */
+/* 		return SLURM_ERROR; */
+
+/* 	slurm_mutex_lock( &g_acct_gather_energy_context_lock ); */
+/* 	if ( g_acct_gather_energy_context ) { */
+/* 		retval = (*(g_acct_gather_energy_context-> */
+/* 			    ops.acct_gather_energy_p_getnodeenergy)) (up_time); */
+/* 	} */
+/* 	slurm_mutex_unlock( &g_acct_gather_energy_context_lock ); */
+
+/* 	return retval; */
+/* } */
+
+
+/* extern uint32_t acct_gather_energy_g_getjoules_task(struct jobacctinfo *jobacct) */
+/* { */
+/* 	int retval = SLURM_SUCCESS; */
+
+/* 	if (_slurm_acct_gather_energy_init() < 0) */
+/* 		return SLURM_ERROR; */
+
+/* 	slurm_mutex_lock( &g_acct_gather_energy_context_lock ); */
+/* 	if ( g_acct_gather_energy_context ) { */
+/* 			retval = (*(g_acct_gather_energy_context-> */
+/* 			    ops.acct_gather_energy_p_getjoules_task))(jobacct); */
+/* 	} */
+/* 	slurm_mutex_unlock( &g_acct_gather_energy_context_lock ); */
+
+/* 	return retval; */
+/* } */
+
+/* extern int acct_gather_energy_g_getjoules_scaled( */
+/* 	uint32_t step_sampled_cputime, ListIterator itr) */
+/* { */
+/* 	int retval = SLURM_SUCCESS; */
+
+/* 	if (_slurm_acct_gather_energy_init() < 0) */
+/* 		return SLURM_ERROR; */
+
+/* 	slurm_mutex_lock( &g_acct_gather_energy_context_lock ); */
+/* 	if ( g_acct_gather_energy_context ) { */
+/* 		retval = (*(g_acct_gather_energy_context-> */
+/* 			    ops.acct_gather_energy_p_getjoules_scaled)) */
+/* 			    (step_sampled_cputime, itr); */
+/* 	} */
+/* 	slurm_mutex_unlock( &g_acct_gather_energy_context_lock ); */
+/* 	return retval; */
+/* } */
+
+extern int acct_gather_energy_g_update_node_energy(void)
 {
 	int retval = SLURM_SUCCESS;
 
@@ -366,22 +403,45 @@ extern int acct_gather_energy_g_updatenodeenergy(void)
 	slurm_mutex_lock( &g_acct_gather_energy_context_lock );
 	if ( g_acct_gather_energy_context )
 		retval = (*(g_acct_gather_energy_context->ops.
-				acct_gather_energy_updatenodeenergy))();
+			    update_node_energy))();
 
 	slurm_mutex_unlock( &g_acct_gather_energy_context_lock );
 	return retval;
 }
 
 
-extern int acct_gather_energy_g_setbasewatts(void)
+/* extern int acct_gather_energy_g_setbasewatts(void) */
+/* { */
+/* 	int retval = SLURM_SUCCESS; */
+/* 	slurm_mutex_lock( &g_acct_gather_energy_context_lock ); */
+/* 	if ( g_acct_gather_energy_context ) */
+/* 		retval = (*(g_acct_gather_energy_context->ops. */
+/* 				acct_gather_energy_p_setbasewatts))(); */
+/* 	slurm_mutex_unlock( &g_acct_gather_energy_context_lock ); */
+/* 	return retval; */
+/* } */
+
+
+extern int acct_gather_energy_g_get_data(enum acct_energy_type data_type,
+					 acct_gather_energy_t *energy)
 {
 	int retval = SLURM_SUCCESS;
-	slurm_mutex_lock( &g_acct_gather_energy_context_lock );
-	if ( g_acct_gather_energy_context )
-		retval = (*(g_acct_gather_energy_context->ops.
-				acct_gather_energy_p_setbasewatts))();
-	slurm_mutex_unlock( &g_acct_gather_energy_context_lock );
+	slurm_mutex_lock(&g_acct_gather_energy_context_lock);
+	if (g_acct_gather_energy_context)
+		retval = (*(g_acct_gather_energy_context->ops.get_data))(
+			data_type, energy);
+	slurm_mutex_unlock(&g_acct_gather_energy_context_lock);
 	return retval;
 }
 
-
+extern int acct_gather_energy_g_set_data(enum acct_energy_type data_type,
+					 acct_gather_energy_t *energy)
+{
+	int retval = SLURM_SUCCESS;
+	slurm_mutex_lock(&g_acct_gather_energy_context_lock);
+	if (g_acct_gather_energy_context)
+		retval = (*(g_acct_gather_energy_context->ops.set_data))(
+			data_type, energy);
+	slurm_mutex_unlock(&g_acct_gather_energy_context_lock);
+	return retval;
+}

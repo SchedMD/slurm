@@ -1072,7 +1072,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		jobacct->min_cpu_id.nodeid,	/* min cpu node */
 		ave_cpu,	/* ave cpu */
 		jobacct->act_cpufreq,
-		jobacct->consumed_energy,
+		jobacct->energy.consumed_energy,
 		step_ptr->job_ptr->db_index, step_ptr->step_id);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);

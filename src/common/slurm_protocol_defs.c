@@ -61,6 +61,7 @@
 #include "src/common/job_options.h"
 #include "src/common/forward.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_acct_gather_energy.h"
 #include "src/plugins/select/bluegene/bg_enums.h"
 
 /*
@@ -494,10 +495,12 @@ extern void slurm_free_job_info_members(job_info_t * job)
 }
 
 
-extern void slurm_free_node_energy_data_msg(node_energy_data_msg_t * msg)
+extern void slurm_free_acct_gather_node_resp_msg(
+	acct_gather_node_resp_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->node_name);
+		acct_gather_energy_destroy(msg->energy);
 		xfree(msg);
 	}
 }
@@ -2466,8 +2469,8 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_JOB:
 		slurm_free_job_desc_msg(data);
 		break;
-	case RESPONSE_NODE_ENERGY_UPDATE:
-		slurm_free_node_energy_data_msg(data);
+	case RESPONSE_ACCT_GATHER_UPDATE:
+		slurm_free_acct_gather_node_resp_msg(data);
 		break;
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		slurm_free_node_registration_status_msg(data);
@@ -2611,7 +2614,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_FORWARD_FAILED:
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
-	case REQUEST_NODE_ENERGY_UPDATE:
+	case REQUEST_ACCT_GATHER_UPDATE:
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:

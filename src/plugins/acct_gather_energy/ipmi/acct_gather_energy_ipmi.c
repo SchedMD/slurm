@@ -69,24 +69,6 @@
 #define _DEBUG 1
 #define _DEBUG_ENERGY 1
 
-/* These are defined here so when we link with something other than
- * the slurmd we will have these symbols defined.  They will get
- * overwritten when linking with the slurmd.
- */
-#if defined (__APPLE__)
-uint32_t jobacct_job_id __attribute__((weak_import));
-pthread_mutex_t jobacct_lock __attribute__((weak_import));
-uint32_t jobacct_mem_limit __attribute__((weak_import));
-uint32_t jobacct_step_id __attribute__((weak_import));
-uint32_t jobacct_vmem_limit __attribute__((weak_import));
-#else
-uint32_t jobacct_job_id;
-pthread_mutex_t jobacct_lock;
-uint32_t jobacct_mem_limit;
-uint32_t jobacct_step_id;
-uint32_t jobacct_vmem_limit;
-#endif
-
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -117,87 +99,9 @@ uint32_t jobacct_vmem_limit;
  * matures.
  */
 
-int csv_output = 0;
-int ipmi_verbose = 0;
-
 const char plugin_name[] = "AcctGatherEnergy IPMI plugin";
 const char plugin_type[] = "acct_gather_energy/ipmi";
 const uint32_t plugin_version = 100;
-static int freq = 0;
-static float base_watts = 5; // MNP - arbitrary value for testing only
-static float current_watts = 11; // MNP - arbitrary value for testing only
-static float energy_calibration= 1.0;
-static bool acct_gather_energy_shutdown = true;
-static double seed_joules = 74.0;
-static	char		joules_file[32];
-static uint32_t last_time = 0;
-static uint32_t node_consumed_energy = 0;
-
-static void _task_sleep(int rem)
-{
-	while (rem)
-		rem = sleep(rem);	/* subject to interupt */
-}
-
-static int _update_weighted_energy(uint32_t step_sampled_cputime,
-				   struct jobacctinfo *jobacct)
-{
-	return 0;
-}
-
-static int _readbasewatts(void)
-{
-	return 0;
-}
-
-
-extern int acct_gather_energy_p_updatenodeenergy(void)
-{
-	int rc = SLURM_SUCCESS;
-	node_consumed_energy = 999; // MNP - arbitrary value for testing only
-	return rc;
-}
-
-
-extern uint32_t acct_gather_energy_p_getjoules_task(struct jobacctinfo *jobacct)
-{
-	//TODO put joules acquisition here when available
-	return 88; // MNP - arbitrary value for testing only
-}
-
-
-extern int acct_gather_energy_p_getjoules_scaled(uint32_t stp_smpled_time,
-		ListIterator itr)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int acct_gather_energy_p_setbasewatts(void)
-{
-	base_watts = 5; // MNP - arbitrary value for testing only
-	return SLURM_SUCCESS;
-}
-
-extern int acct_gather_energy_p_readbasewatts(void)
-{
-	return base_watts;
-}
-
-extern uint32_t acct_gather_energy_p_getcurrentwatts(void)
-{
-	return current_watts;
-}
-
-extern uint32_t acct_gather_energy_p_getbasewatts()
-{
-	return base_watts;
-}
-
-extern uint32_t acct_gather_energy_p_getnodeenergy(uint32_t up_time)
-{
-	last_time = up_time;
-	return node_consumed_energy;
-}
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -207,4 +111,53 @@ extern int init ( void )
 {
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
+}
+
+extern int acct_gather_energy_p_update_node_energy(void)
+{
+	int rc = SLURM_SUCCESS;
+	return rc;
+}
+
+extern int acct_gather_energy_p_get_data(acct_gather_energy_t *energy,
+					 enum acct_energy_type data_type)
+{
+	int rc = SLURM_SUCCESS;
+	switch (data_type) {
+	case ENERGY_DATA_JOULES_TASK:
+		break;
+	case ENERGY_DATA_JOULES_SCALED:
+		break;
+	case ENERGY_DATA_CURR_WATTS:
+		break;
+	case ENERGY_DATA_BASE_WATTS:
+		break;
+	case ENERGY_DATA_NODE_ENERGY:
+		break;
+	case ENERGY_DATA_STRUCT:
+		break;
+	default:
+		error("acct_gather_energy_p_get_data: unknown enum %d",
+		      data_type);
+		rc = SLURM_ERROR;
+		break;
+	}
+	return rc;
+}
+
+extern int acct_gather_energy_p_set_data(acct_gather_energy_t *energy,
+					 enum acct_energy_type data_type)
+{
+	int rc = SLURM_SUCCESS;
+
+	switch (data_type) {
+	case ENERGY_DATA_BASE_WATTS:
+		break;
+	default:
+		error("acct_gather_energy_p_set_data: unknown enum %d",
+		      data_type);
+		rc = SLURM_ERROR;
+		break;
+	}
+	return rc;
 }

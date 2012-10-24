@@ -48,7 +48,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include "src/common/slurm_xlator.h"
-#include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmd/common/proctrack.h"
@@ -76,24 +76,6 @@ union {
 
 #define _DEBUG 1
 #define _DEBUG_ENERGY 1
-
-/* These are defined here so when we link with something other than
- * the slurmd we will have these symbols defined.  They will get
- * overwritten when linking with the slurmd.
- */
-#if defined (__APPLE__)
-uint32_t jobacct_job_id __attribute__((weak_import));
-pthread_mutex_t jobacct_lock __attribute__((weak_import));
-uint32_t jobacct_mem_limit __attribute__((weak_import));
-uint32_t jobacct_step_id __attribute__((weak_import));
-uint32_t jobacct_vmem_limit __attribute__((weak_import));
-#else
-uint32_t jobacct_job_id;
-pthread_mutex_t jobacct_lock;
-uint32_t jobacct_mem_limit;
-uint32_t jobacct_step_id;
-uint32_t jobacct_vmem_limit;
-#endif
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -129,13 +111,9 @@ const char plugin_type[] = "acct_gather_energy/rapl";
 const uint32_t plugin_version = 100;
 
 static int freq = 0;
-static float base_watts = 0;
-static float current_watts = 0;
+static acct_gather_energy_t *local_energy = NULL;
 static bool acct_gather_energy_shutdown = true;
 static uint32_t last_time = 0;
-static uint32_t node_consumed_energy = 0;
-static uint32_t node_base_energy = 0;
-static uint32_t node_current_energy = 0;
 
 int pkg2cpu [MAX_PKGS] = {[0 ... MAX_PKGS-1] -1}; /* one cpu in the package */
 int fd[MAX_PKGS] = {[0 ... MAX_PKGS-1] -1};
@@ -227,19 +205,18 @@ static int _readbasewatts(void)
 	return 0;
 }
 
-static int *_getjoules_rapl(void)
+extern int acct_gather_energy_p_update_node_energy(void)
 {
-
-	int rc, pkg, i;
+	int rc = SLURM_SUCCESS;
+	int pkg, i;
 	int core = 0;
 	double energy_units;
 	ulong result;
 	double ret, ret_tmp;
 
-
-
 	acct_gather_energy_shutdown = false;
-	if (!acct_gather_energy_shutdown ) {
+	if (!acct_gather_energy_shutdown) {
+		uint32_t node_current_energy;
 		hardware();
 		for (i = 0; i < nb_pkg; i++)
 			fd[i] = open_msr(pkg2cpu[i]);
@@ -252,13 +229,13 @@ static int *_getjoules_rapl(void)
 		ret = (double)result*energy_units;
 
 		node_current_energy = (int)ret;
-		if (node_consumed_energy != 0){
-			node_consumed_energy =
-					node_current_energy - node_base_energy;
+		if (local_energy->consumed_energy != 0){
+			local_energy->consumed_energy =
+				node_current_energy - local_energy->base_watts;
 		}
-		if (node_consumed_energy == 0){
-			node_consumed_energy = 1;
-			node_base_energy = node_current_energy;
+		if (local_energy->consumed_energy == 0){
+			local_energy->consumed_energy = 1;
+			local_energy->base_watts = node_current_energy;
 		}
 
 		sleep(1);
@@ -266,27 +243,16 @@ static int *_getjoules_rapl(void)
 		for (i = 0; i < nb_pkg; i++)
 			result += get_package_energy(i) + get_dram_energy(i);
 		ret_tmp = (double)result * energy_units;
-		current_watts = (float)(ret_tmp - ret);
-		base_watts = node_base_energy;
+		local_energy->current_watts = (float)(ret_tmp - ret);
 
 		debug2("_getjoules_rapl = %d sec, current %.6f Joules, "
-		       "consumed %d", freq, ret, node_consumed_energy);
+		       "consumed %d", freq, ret, local_energy->consumed_energy);
 	}
 	debug2("_getjoules_rapl shutdown");
-
-	return NULL;
-}
-
-
-extern int acct_gather_energy_p_updatenodeenergy(void)
-{
-	int rc = SLURM_SUCCESS;
-
-	_getjoules_rapl();
 	return rc;
 }
 
-extern void acct_gather_energy_p_getjoules_task(struct jobacctinfo *jobacct)
+static void _get_joules_task(acct_gather_energy_t *energy)
 {
 	int rc, pkg, i;
 	int core = 0;
@@ -305,7 +271,7 @@ extern void acct_gather_energy_p_getjoules_task(struct jobacctinfo *jobacct)
 	debug2("RAPL powercapture_debug Energy units = %.6f, "
 	       "Power Units = %.6f", energy_units, power_units);
 	max_power = power_units *
-			((read_msr(fd[0], MSR_PKG_POWER_INFO) >> 32) & 0x7fff);
+		((read_msr(fd[0], MSR_PKG_POWER_INFO) >> 32) & 0x7fff);
 
 	debug2("RAPL Max power = %ld w", max_power);
 	result = 0;
@@ -315,58 +281,115 @@ extern void acct_gather_energy_p_getjoules_task(struct jobacctinfo *jobacct)
 	ret = (double)result*energy_units;
 	debug2("RAPL Result float %.6f Joules", ret);
 
-	if (jobacct->consumed_energy != 0) {
-		jobacct->consumed_energy =  ret - jobacct->base_consumed_energy;
+	if (energy->consumed_energy != 0) {
+		energy->consumed_energy =  ret - energy->base_consumed_energy;
 	}
-	if (jobacct->consumed_energy == 0) {
-		jobacct->consumed_energy = 1;
-		jobacct->base_consumed_energy = ret;
+	if (energy->consumed_energy == 0) {
+		energy->consumed_energy = 1;
+		energy->base_consumed_energy = ret;
 	}
 
-	debug2("getjoules_task energy = %.6f, base %u , current %u",
-	       ret, jobacct->base_consumed_energy, jobacct->consumed_energy);
+	debug2("_get_joules_task energy = %.6f, base %u , current %u",
+	       ret, energy->base_consumed_energy, energy->consumed_energy);
 
 }
 
 extern int acct_gather_energy_p_getjoules_scaled(uint32_t stp_smpled_time,
-						ListIterator itr)
+						 ListIterator itr)
 {
 	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_energy_p_setbasewatts(void)
 {
-	base_watts = 0;
+	local_energy->base_watts = 0;
 	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_energy_p_readbasewatts(void)
 {
-	return base_watts;
+	return local_energy->base_watts;
 }
 
 extern uint32_t acct_gather_energy_p_getcurrentwatts(void)
 {
-	return current_watts;
+	return local_energy->current_watts;
 }
 
 extern uint32_t acct_gather_energy_p_getbasewatts()
 {
-	return base_watts;
+	return local_energy->base_watts;
 }
 
 extern uint32_t acct_gather_energy_p_getnodeenergy(uint32_t up_time)
 {
 	last_time = up_time;
-	return node_consumed_energy;
+	return local_energy->consumed_energy;
 }
 
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-extern int init ( void )
+extern int init(void)
 {
 	verbose("%s loaded", plugin_name);
+	local_energy = acct_gather_energy_alloc();
 	return SLURM_SUCCESS;
+}
+
+extern int fini(void)
+{
+	acct_gather_energy_destroy(local_energy);
+	local_energy = NULL;
+	return SLURM_SUCCESS;
+}
+
+extern int acct_gather_energy_p_get_data(acct_gather_energy_t *energy,
+					 enum acct_energy_type data_type)
+{
+	int rc = SLURM_SUCCESS;
+	switch (data_type) {
+	case ENERGY_DATA_JOULES_TASK:
+		_get_joules_task(energy);
+		break;
+	case ENERGY_DATA_JOULES_SCALED:
+		break;
+	case ENERGY_DATA_CURR_WATTS:
+		energy->current_watts = local_energy->current_watts;
+		break;
+	case ENERGY_DATA_BASE_WATTS:
+		energy->base_watts = local_energy->base_watts;
+		break;
+	case ENERGY_DATA_NODE_ENERGY:
+		energy->consumed_energy = local_energy->consumed_energy;
+		break;
+	case ENERGY_DATA_STRUCT:
+		memcpy(energy, local_energy, sizeof(acct_gather_energy_t));
+		break;
+	default:
+		error("acct_gather_energy_p_get_data: unknown enum %d",
+		      data_type);
+		rc = SLURM_ERROR;
+		break;
+	}
+	return rc;
+}
+
+extern int acct_gather_energy_p_set_data(acct_gather_energy_t *energy,
+					 enum acct_energy_type data_type)
+{
+	int rc = SLURM_SUCCESS;
+
+	switch (data_type) {
+	case ENERGY_DATA_BASE_WATTS:
+		local_energy->base_watts = 0;
+		break;
+	default:
+		error("acct_gather_energy_p_set_data: unknown enum %d",
+		      data_type);
+		rc = SLURM_ERROR;
+		break;
+	}
+	return rc;
 }
