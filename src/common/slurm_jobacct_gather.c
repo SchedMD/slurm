@@ -404,7 +404,7 @@ extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 	slurm_mutex_unlock(&task_list_lock);
 
 	(*(ops.add_task))(pid, jobacct_id);
-	
+
 	if (poll == 1)
 		_poll_data();
 
@@ -466,7 +466,7 @@ extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid)
 
 	/* poll data one last time before removing task
 	 * mainly for updating energy consumption */
-        _poll_data();
+	_poll_data();
 
 	if (jobacct_shutdown)
 		return NULL;
@@ -558,7 +558,7 @@ extern void jobacct_gather_handle_mem_limit(
 		}
 		_acct_kill_step();
 	} else if (jobacct_job_id && jobacct_vmem_limit &&
-	           (total_job_vsize > jobacct_vmem_limit)) {
+		   (total_job_vsize > jobacct_vmem_limit)) {
 		if (jobacct_step_id == NO_VAL) {
 			error("Job %u exceeded %u KB virtual memory limit, "
 			      "being killed", jobacct_job_id,
@@ -673,12 +673,12 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 	case JOBACCT_DATA_TOT_CPU:
 		jobacct->tot_cpu = *uint32;
 		break;
-        case JOBACCT_DATA_ACT_CPUFREQ:
-                jobacct->act_cpufreq = *uint32;
-                break;
-        case JOBACCT_DATA_CONSUMED_ENERGY:
-                jobacct->energy.consumed_energy = *uint32;
-                break;
+	case JOBACCT_DATA_ACT_CPUFREQ:
+		jobacct->act_cpufreq = *uint32;
+		break;
+	case JOBACCT_DATA_CONSUMED_ENERGY:
+		jobacct->energy.consumed_energy = *uint32;
+		break;
 	default:
 		debug("jobacct_g_set_setinfo data_type %d invalid", type);
 	}
@@ -748,12 +748,12 @@ extern int jobacctinfo_getinfo(
 	case JOBACCT_DATA_TOT_CPU:
 		*uint32 = jobacct->tot_cpu;
 		break;
-        case JOBACCT_DATA_ACT_CPUFREQ:
-        	*uint32 = jobacct->act_cpufreq;
-                break;
-        case JOBACCT_DATA_CONSUMED_ENERGY:
-                *uint32 = jobacct->energy.consumed_energy;
-                break;
+	case JOBACCT_DATA_ACT_CPUFREQ:
+		*uint32 = jobacct->act_cpufreq;
+		break;
+	case JOBACCT_DATA_CONSUMED_ENERGY:
+		*uint32 = jobacct->energy.consumed_energy;
+		break;
 	default:
 		debug("jobacct_g_set_getinfo data_type %d invalid", type);
 	}
@@ -882,13 +882,13 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 		if (_unpack_jobacct_id(&(*jobacct)->max_vsize_id, rpc_version,
 			buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->max_rss_id, rpc_version, 
+		if (_unpack_jobacct_id(&(*jobacct)->max_rss_id, rpc_version,
 			buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 		if (_unpack_jobacct_id(&(*jobacct)->max_pages_id, rpc_version,
 			buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->min_cpu_id, rpc_version, 
+		if (_unpack_jobacct_id(&(*jobacct)->min_cpu_id, rpc_version,
 			buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 	} else {
@@ -910,21 +910,21 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 		safe_unpack32(&(*jobacct)->min_cpu, buffer);
 		safe_unpack32(&(*jobacct)->tot_cpu, buffer);
 
-		if (_unpack_jobacct_id(&(*jobacct)->max_vsize_id, rpc_version, 
+		if (_unpack_jobacct_id(&(*jobacct)->max_vsize_id, rpc_version,
 			buffer)!= SLURM_SUCCESS)
 			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->max_rss_id, rpc_version, 
+		if (_unpack_jobacct_id(&(*jobacct)->max_rss_id, rpc_version,
 			buffer)!= SLURM_SUCCESS)
 			goto unpack_error;
 		if (_unpack_jobacct_id(&(*jobacct)->max_pages_id, rpc_version,
 			buffer)!= SLURM_SUCCESS)
 			goto unpack_error;
-		if (_unpack_jobacct_id(&(*jobacct)->min_cpu_id, rpc_version, 
+		if (_unpack_jobacct_id(&(*jobacct)->min_cpu_id, rpc_version,
 			buffer)!= SLURM_SUCCESS)
 			goto unpack_error;
 
 	}
-	
+
 	return SLURM_SUCCESS;
 
 unpack_error:
