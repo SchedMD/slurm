@@ -5,6 +5,19 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Added Prolog and Epilog Guide (web page). Based upon work by Jason Sollom,
     Cray Inc. and used by permission.
+ -- Restore gang scheduling functionality. Preemptor was not being scheduled.
+    Fix for bugzilla #3.
+ -- Add "cpu_load" to node information. Populate CPULOAD in node information
+    reported to Moab cluster manager.
+ -- Preempt jobs only when insufficient idle resources exist to start job,
+    regardless of the node weight.
+ -- Added priority/multifactor2 plugin based upon ticket distribution system.
+    Work by Janne Blomqvist, Aalto University.
+ -- Add SLURM_NODELIST to environment variables available to Prolog and Epilog.
+ -- Permit reservations to allow or deny access by account and/or user.
+ -- Add ReconfigFlags value of KeepPartState. See "man slurm.conf" for details.
+ -- Modify the task/cgroup plugin adding a task_pre_launch_priv function and
+    move slurmstepd outside of the step's cgroup. Work by Matthieu Hautreux.
 
 * Changes in SLURM 2.5.0.pre3
 =============================
@@ -77,6 +90,25 @@ documents those changes that are of interest to users and admins.
  -- Modify strigger so that a filter option of "--user=0" is supported.
  -- Correct --mem-per-cpu logic for core or socket allocations with multiple
     threads per core.
+ -- Fix for older < glibc 2.4 systems to use euidaccess() instead of eaccess().
+ -- BLUEGENE - Do not alter a pending job's node count when changing it's
+    partition.
+ -- Fix for older < glibc 2.4 systems to use euidaccess instead of eaccess.
+ -- BGQ - Add functionality to make it so we track the actions on a block.
+    This is needed for when a free request is added to a block but there are
+    jobs finishing up so we don't start new jobs on the block since they will
+    fail on start.
+ -- BGQ - Fixed InactiveLimit to work correctly to avoid scenarios where a
+    user's pending allocation was started with srun and then for some reason
+    the slurmctld was brought down and while it was down the srun was removed.
+ -- Fixed InactiveLimit math to work correctly
+ -- BGQ - Add logic to make it so blocks can't use a midplane with a nodeboard
+    in error for passthrough.
+ -- BGQ - Make it so if a nodeboard goes in error any block using that midplane
+    for passthrough gets removed on a dynamic system.
+ -- BGQ - Fix for printing realtime server debug correctly.
+ -- BGQ - Cleaner handling of cnode failures when reported through the runjob
+    interface instead of through the normal method.
 
 * Changes in SLURM 2.4.3
 ========================

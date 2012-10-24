@@ -241,6 +241,31 @@ extern int task_pre_setuid (slurmd_job_t *job)
 }
 
 /*
+ * task_pre_launch_priv() is called prior to exec of application task.
+ * in privileged mode, just after slurm_spank_task_init_privileged
+ */
+extern int task_pre_launch_priv (slurmd_job_t *job)
+{
+
+	if (use_cpuset) {
+		/* attach the task to the cpuset cgroup */
+		task_cgroup_cpuset_attach_task(job);
+	}
+
+	if (use_memory) {
+		/* attach the task to the memory cgroup */
+		task_cgroup_memory_attach_task(job);
+	}
+
+	if (use_devices) {
+		/* attach the task to the devices cgroup */
+		task_cgroup_devices_attach_task(job);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
  * task_pre_launch() is called prior to exec of application task.
  *	It is followed by TaskProlog program (from slurm.conf) and
  *	--task-prolog (from srun command line).
@@ -249,21 +274,9 @@ extern int task_pre_launch (slurmd_job_t *job)
 {
 
 	if (use_cpuset) {
-		/* attach the task ? not necessary but in case of future mods */
-		task_cgroup_cpuset_attach_task(job);
-
 		/* set affinity if requested */
 		if (slurm_cgroup_conf.task_affinity)
 			task_cgroup_cpuset_set_task_affinity(job);
-	}
-
-	if (use_memory) {
-		/* attach the task ? not necessary but in case of future mods */
-		task_cgroup_memory_attach_task(job);
-	}
-
-	if (use_devices) {
-		task_cgroup_devices_attach_task(job);
 	}
 
 	return SLURM_SUCCESS;
@@ -304,12 +317,15 @@ extern char* task_cgroup_create_slurm_cg (xcgroup_ns_t* ns) {
 	}
 #endif
 
-	/* create slurm cgroup in the ns (it could already exist) */
+	/* create slurm cgroup in the ns (it could already exist) 
+	 * disable notify_on_release to avoid the removal/creation
+	 * of this cgroup for each last/first running job on the node */
 	if (xcgroup_create(ns,&slurm_cg,pre,
 			   getuid(), getgid()) != XCGROUP_SUCCESS) {
 		xfree(pre);
 		return pre;
 	}
+	slurm_cg.notify = 0;
 	if (xcgroup_instanciate(&slurm_cg) != XCGROUP_SUCCESS) {
 		error("unable to build slurm cgroup for ns %s: %m",
 		      ns->subsystems);

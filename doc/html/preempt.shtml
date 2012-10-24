@@ -120,7 +120,7 @@ jobs. Requeued jobs are permitted to be restarted on different resources.</LI>
 <LI>A value of <I>SUSPEND</I> will suspend and automatically resume the low
 priority jobs. The <I>SUSPEND</I> option must be used with the <I>GANG</I>
 option (e.g. "PreemptMode=SUSPEND,GANG") and with
-<I>BPreemptType=preempt/partition_prio</I> (the logic to suspend and resume
+<I>PreemptType=preempt/partition_prio</I> (the logic to suspend and resume
 jobs currently only has the data structures to support partitions).</LI>
 <LI>A value of <I>GANG</I> may be used with any of the above values and will
 execute a module responsible for resuming jobs previously suspended for either

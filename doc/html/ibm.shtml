@@ -6,6 +6,8 @@
 
 <p>This document describes the unique features of SLURM on the
 IBM AIX computers with a Federation switch.
+SLURM support for AIX has been thoroughly tested, but we
+know of no AIX installations using SLURM after 2008.
 You should be familiar with the SLURM's mode of operation on Linux clusters
 before studying the relatively few differences in IBM system operation
 described in this document.</p>
@@ -85,6 +87,6 @@ of LLNL, which established a contract with IBM for this purpose).</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 31 August 2005</p></td>
+<p style="text-align:center;">Last modified 5 October 2012</p>
 
 <!--#include virtual="footer.txt"-->

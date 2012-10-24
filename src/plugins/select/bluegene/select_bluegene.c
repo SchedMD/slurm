@@ -2870,12 +2870,13 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = (bg_record_t *)list_next(itr))) {
+		float err_ratio;
 		if (!bit_overlap(step_ptr->step_node_bitmap,
 				 bg_record->mp_bitmap))
 			continue;
+		bg_record->cnode_err_cnt = 0;
 		itr2 = list_iterator_create(bg_record->ba_mp_list);
 		while ((found_ba_mp = (ba_mp_t *)list_next(itr2))) {
-			float err_ratio;
 
 			if (!found_ba_mp->used
 			    || !bit_test(step_ptr->step_node_bitmap,
@@ -2896,25 +2897,25 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 
 			bit_or(found_ba_mp->cnode_err_bitmap,
 			       ba_mp->cnode_err_bitmap);
-			bg_record->cnode_err_cnt =
+			bg_record->cnode_err_cnt +=
 				bit_set_count(found_ba_mp->cnode_err_bitmap);
-
-
-			err_ratio = (float)bg_record->cnode_err_cnt
-				/ (float)bg_record->cnode_cnt;
-                        bg_record->err_ratio = err_ratio * 100;
-
-			/* handle really small ratios */
-			if (!bg_record->err_ratio && bg_record->cnode_err_cnt)
-				bg_record->err_ratio = 1;
-
-			debug("select_p_fail_cnode: "
-			      "count in error for %s is %u with ratio at %u",
-			      bg_record->bg_block_id,
-			      bg_record->cnode_err_cnt,
-			      bg_record->err_ratio);
 		}
 		list_iterator_destroy(itr2);
+
+		err_ratio = (float)bg_record->cnode_err_cnt
+			/ (float)bg_record->cnode_cnt;
+		bg_record->err_ratio = err_ratio * 100;
+
+		/* handle really small ratios */
+		if (!bg_record->err_ratio && bg_record->cnode_err_cnt)
+			bg_record->err_ratio = 1;
+
+		debug("select_p_fail_cnode: "
+		      "count in error for %s is %u with ratio at %u",
+		      bg_record->bg_block_id,
+		      bg_record->cnode_err_cnt,
+		      bg_record->err_ratio);
+
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&ba_system_mutex);

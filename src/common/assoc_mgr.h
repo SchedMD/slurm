@@ -128,6 +128,11 @@ struct assoc_mgr_association_usage {
 	uint32_t used_submit_jobs; /* count of jobs pending or running
 				    * (DON'T PACK) */
 
+	uint32_t tickets;       /* Number of tickets (for multifactor2
+				 * plugin). (DON'T PACK) */
+	unsigned active_seqno;  /* Sequence number for identifying
+				 * active associations (DON'T PACK) */
+
 	bitstr_t *valid_qos;    /* qos available for this association
 				 * derived from the qos_list.
 				 * (DON'T PACK) */

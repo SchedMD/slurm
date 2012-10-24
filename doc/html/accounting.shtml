@@ -155,9 +155,9 @@ LDAP server could also server as a way to gather this information.</p>
 
 <p>Presently job completion is not supported with the SlurmDBD, but can be
 written directly to a database, script or flat file. If you are
-running with the accounting storage, you may not need to run this
-since it contains much of the same information. If you would like
-to configure this, some of the more important parameters include:</p>
+running with the accounting storage plugin, use of the job completion plugin
+is probably redundant. If you would like to configure this, some of the more
+important parameters include:</p>
 
 <ul>
 <li><b>JobCompHost</b>:
@@ -803,7 +803,7 @@ as deleted.
 If an entity has existed for less than 1 day, the entity will be removed
 completely. This is meant to clean up after typographic errors.</p>
 
-<p style="text-align: center;">Last modified 26 July 2012</p>
+<p style="text-align: center;">Last modified 19 October 2012</p>
 
 <!--#include virtual="footer.txt"-->
 

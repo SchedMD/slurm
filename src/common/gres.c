@@ -567,20 +567,23 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 {
 	gres_slurmd_conf_t *p;
 
-	if (!gres_debug)
-		return 0;
-
 	p = (gres_slurmd_conf_t *) x;
 	xassert(p);
+
+	if (!gres_debug) {
+		verbose("Gres Name=%s Count=%u", p->name, p->count);
+		return 0;
+	}
+
 	if (p->cpus) {
-		info("Gres Name:%s Count:%u ID:%u File:%s CPUs:%s CpuCnt:%u",
+		info("Gres Name=%s Count=%u ID=%u File=%s CPUs=%s CpuCnt=%u",
 		     p->name, p->count, p->plugin_id, p->file, p->cpus,
 		     p->cpu_cnt);
 	} else if (p->file) {
-		info("Gres Name:%s Count:%u ID:%u File:%s",
+		info("Gres Name=%s Count=%u ID=%u File=%s",
 		     p->name, p->count, p->plugin_id, p->file);
 	} else {
-		info("Gres Name:%s Count:%u ID:%u", p->name, p->count,
+		info("Gres Name=%s Count=%u ID=%u", p->name, p->count,
 		     p->plugin_id);
 	}
 
@@ -1464,8 +1467,10 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 	if ((fast_schedule < 2) &&
 	    (gres_data->gres_cnt_found < gres_data->gres_cnt_config)) {
 		if (reason_down && (*reason_down == NULL)) {
-			xstrfmtcat(*reason_down, "%s count too low",
-				   context_ptr->gres_type);
+			xstrfmtcat(*reason_down, "%s count too low (%u < %u)",
+				   context_ptr->gres_type,
+				   gres_data->gres_cnt_found,
+				   gres_data->gres_cnt_config);
 		}
 		rc = EINVAL;
 	} else if ((fast_schedule == 2) && gres_data->topo_cnt &&

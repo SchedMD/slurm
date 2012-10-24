@@ -86,6 +86,11 @@ extern struct job_record *find_job_in_bg_record(bg_record_t *bg_record,
 	return NULL;
 }
 
+extern int bridge_check_nodeboards(char *mp_loc)
+{
+	return 0;
+}
+
 /** */
 int main(int argc, char** argv)
 {

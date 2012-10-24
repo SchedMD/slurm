@@ -370,6 +370,7 @@ man3_MANS = slurm_hostlist_create.3 \
 	slurm_init_job_desc_msg.3 \
 	slurm_init_part_desc_msg.3 \
 	slurm_init_resv_desc_msg.3 \
+	slurm_init_trigger_msg.3 \
 	slurm_init_update_node_msg.3 \
 	slurm_init_update_step_msg.3 \
 	slurm_job_cpus_allocated_on_node.3 \

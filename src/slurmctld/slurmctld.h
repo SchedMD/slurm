@@ -330,6 +330,7 @@ typedef struct slurmctld_resv {
 	char *accounts;		/* names of accounts permitted to use	*/
 	int account_cnt;	/* count of accounts permitted to use	*/
 	char **account_list;	/* list of accounts permitted to use	*/
+	bool account_not;	/* account_list users NOT permitted to use */
 	char *assoc_list;	/* list of associations			*/
 	uint32_t cpu_cnt;	/* number of reserved CPUs		*/
 	bitstr_t *core_bitmap;	/* bitmap of reserved cores		*/
@@ -360,6 +361,7 @@ typedef struct slurmctld_resv {
 	char *users;		/* names of users permitted to use	*/
 	int user_cnt;		/* count of users permitted to use	*/
 	uid_t *user_list;	/* array of users permitted to use	*/
+	bool user_not;		/* user_list users NOT permitted to use	*/
 } slurmctld_resv_t;
 
 /*****************************************************************************\
@@ -1572,6 +1574,9 @@ extern void reset_first_job_id(void);
  *	job_list - pointer to global job list
  */
 extern void reset_job_bitmaps (void);
+
+/* Reset a node's CPU load value */
+extern void reset_node_load(char *node_name, uint32_t cpu_load);
 
 /* Reset all scheduling statistics
  * level IN - clear backfilled_jobs count if set */

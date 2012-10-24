@@ -2,7 +2,7 @@
 
 <h1>Resource Reservation Guide</h1>
 
-<p>SLURM version 2.0 has the ability to reserve resources for jobs
+<p>SLURM has the ability to reserve resources for jobs
 being executed by select users and/or select bank accounts.
 A resource reservation identifies the resources in that reservation
 and a time period during which the reservation is available.
@@ -109,7 +109,7 @@ ReservationName=root_5 StartTime=2009-02-04T16:22:57
 <p>Our next example is to reserve ten nodes in the default
 SLURM partition starting at noon and with a duration of 60
 minutes occurring daily. The reservation will be available
-only to users alan and brenda.</p>
+only to users "alan" and "brenda".</p>
 <pre>
 $ scontrol create reservation user=alan,brenda \
    starttime=noon duration=60 flags=daily nodecnt=10
@@ -139,7 +139,7 @@ $ scontrol create reservation user=alan,brenda \
 Reservation created: alan_8
 
 $ scontrol show res
-ReservationName=alan_9 StartTime=2011-12-05T12:00:00
+ReservationName=alan_8 StartTime=2011-12-05T12:00:00
    EndTime=2011-12-05T13:00:00 Duration=60
    Nodes=bgp[000x011,210x311] NodeCnt=4096
    Features=(null) PartitionName=pdebug
@@ -174,6 +174,27 @@ $ scontrol create reservation starttime=2009-04-06T16:00:00 \
    duration=120 user=bob flags=license_only \
    licenses=cpu:32
 Reservation created: bob_5
+</pre>
+
+<p>Reservations can not only be created for the use of specific accounts and
+users, but specific accounts and/or users can be prevented from using them.
+In the following example, a reservation is created for account "foo", but user
+"alan" is prevented from using the reservation even when using the account
+"foo".<p>
+
+<pre>
+$ scontrol create reservation account=foo \
+   user=\!alan partition=pdebug \
+   starttime=noon duration=60 nodecnt=2k,2k
+Reservation created: alan_9
+
+$ scontrol show res
+ReservationName=alan_9 StartTime=2011-12-05T13:00:00
+   EndTime=2011-12-05T14:00:00 Duration=60
+   Nodes=bgp[000x011,210x311] NodeCnt=4096
+   Features=(null) PartitionName=pdebug
+   Flags= Licenses=(null)
+   Users=!alan Accounts=foo
 </pre>
 
 <h2>Reservation Use</h2>
@@ -301,7 +322,7 @@ before a reservation given fewer jobs to time-slice with.</li>
 nodes be reserved (work around described above).</li>
 </ol>
 
-<p style="text-align: center;">Last modified 23 May 2012</p>
+<p style="text-align: center;">Last modified 22 October 2012</p>
 
 <!--#include virtual="footer.txt"-->
 

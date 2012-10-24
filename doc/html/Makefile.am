@@ -53,6 +53,7 @@ generated_html = \
 	preempt.html \
 	preemption_plugins.html \
 	priority_multifactor.html \
+	priority_multifactor2.html \
 	priority_plugins.html \
 	proctrack_plugins.html \
 	programmer_guide.html \
@@ -101,6 +102,7 @@ html_DATA = \
 	plane_ex6.gif \
 	plane_ex7.gif \
 	slurm_banner.gif \
+	slurm_banner_schedmd.png \
 	slurm_design.pdf \
 	slurmstyles.css \
 	sponsors.gif \

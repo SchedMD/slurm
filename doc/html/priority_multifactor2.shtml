@@ -1,0 +1,199 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Multifactor 2 Priority Plugin</h1>
+
+<h2>Contents</h2>
+<ul>
+<li><a href=#intro>Introduction</a></li>
+<li><a href=#fairshare>Fair-share Factor</a></li>
+<li><a href=#config>Configuration</a></li>
+</ul>
+
+<!-------------------------------------------------------------------------->
+<a name=intro>
+<h2>Introduction</h2></a>
+
+<p>The priority/multifactor2 is an enhanced version of the
+priority/multifactor plugin. Only the differences are documented here;
+the reader is assumed to be familiar with the priority/multifactor
+plugin.</p>
+
+<!-------------------------------------------------------------------------->
+<a name=fairshare>
+<h2>Fair-share Factor</h2></a>
+
+<p><b>Note:</b> Computing the fair-share factor requires the installation
+and operation of the <a href="accounting.html">SLURM Accounting
+Database</a> to provide the assigned shares and the consumed,
+computing resources described below.</p>
+
+<p>In the multifactor2 plugin, the fair-share component of the job
+priority is calculated differently. The goal is to make sure that the
+priority strictly follows the account hierarchy, so that jobs under
+accounts with usage lower than their fair share will always have a
+higher priority than jobs belonging to accounts which are over their
+fair share.</p>
+
+<p>The algorithm is based on <i>ticket</i> scheduling, where at the
+root of the account hierarchy one starts with a number of tickets,
+which are then distributed per the fairshare policy to the child
+accounts and users.  Then, the job whose user has the highest number
+of tickets is assigned the fairshare priority of 1.0, and the other
+pending jobs are assigned priorities according to how many tickets
+their users have compared to the highest priority job.</p>
+
+<pre>
+Priority<sub>FS</sub> = Tickets<sub>user</sub> / Tickets<sub>max</sub>
+</pre>
+
+<p>The normalized share and normalized usage are calculated in the
+same way as for the multifactor plugin. However, the fair-share factor
+for an account/user is calculated as</p>
+
+<pre>
+F = S/U<sub>eff</sub>
+</pre>
+
+<p>where the effective usage U<sub>eff</sub> is defined as</p>
+
+<pre>
+U<sub>eff</sub> = max(U, 0.01 * s)
+</pre>
+
+<p>This prevents F from diverging as the usage U approaches zero. Another
+way of seeing it is that an account/user that has used less than 1%
+of its fair share will get the maximum factor (which has the value
+100). When the usage of an account/user is exactly proportional to its
+fair share, the fair-share factor will have the value 1.0.</p>
+
+<p>Compared to the fair-share factor formula in the multifactor
+plugin, this formula behaves better when one has users which are much
+above their fair share, which can easily happen e.g. if an account has
+many other users with very little usage.</p>
+
+
+<h3>Distributing tickets</h3>
+
+<p>Tickets are distributed to pending jobs as follows. At the root of
+the account tree, start with N tickets (the exact value doesn't
+matter, only the proportions). Those N tickets are distributed
+to <i>active</i> child nodes (accounts/users) proportional to the
+number of shares the node has multiplied by the fairshare factor (S *
+F). An active node is defined as one which has pending jobs, or where
+one of its child/grandchild/etc. nodes have pending jobs. Tickets are
+thus distributed to a node per the formula</p>
+
+<pre>
+T = T<sub>parent</sub> * S * F / SUM(S*F)<sub>active_siblings</sub>
+</pre>
+
+<h3>Example</h3>
+
+<p>Here the same example as in the multifactor plugin page is shown,
+calculated using the multifactor2 algorithm.</p>
+
+<ul>
+<li>User 1 normalized share: 0.3</li>
+<li>User 2 normalized share: 0.05</li>
+<li>User 3 normalized share: 0.05</li>
+<li>User 4 normalized share: 0.25</li>
+<li>User 5 normalized share: 0.35</li>
+</ul>
+
+<p>The effective usage for all the accounts equals the normalized usage,
+except for account F:</p>
+
+<ul>
+<li>Account F effective usage: max(0, 0.01 * 0.35) = 0.0035
+</ul>
+
+<p>The effective usage for all the users:</p>
+
+<ul>
+<li>User 1 effective usage: max(0.2, 0.01 * 0.3) = 0.2</li>
+<li>User 2 effective usage: max(0.25, 0.01 * 0.05) = 0.25</li>
+<li>User 3 effective usage: max(0.0, 0.01 * 0.05) = 0.0005</li>
+<li>User 4 effective usage: max(0.25, 0.01 * 0.25) = 0.25</li>
+<li>User 5 effective usage: max(0.0, 0.01 * 0.35) = 0.0035</li>
+</ul>
+
+<p>The fair-share factor for each account, calculated per the formula</p>
+
+<pre>
+F = S/U<sub>eff</sub>
+</pre>
+
+<p>is thus</p>
+
+<ul>
+<li>Account A fair-share factor: 0.4 / 0.45 = 0.89</li>
+<li>Account B fair-share factor: 0.3 / 0.2 = 1.50</li>
+<li>Account C fair-share factor: 0.1 / 0.25 = 0.4<priority_multifactor2.shtml /li>
+<li>Account D fair-share factor: 0.6 / 0.25 = 2.40</li>
+<li>Account E fair-share factor: 0.25 / 0.25 = 1</li>
+<li>Account F fair-share factor: 0.35 / 0.0035 = 100</li>
+</ul>
+
+<p>Similarly, the fair-share factor for each user is</p>
+
+<ul>
+<li>User 1 fair-share factor: 0.3 / 0.2 = 1.5</li>
+<li>User 2 fair-share factor: 0.05 / 0.25 = 0.2</li>
+<li>User 3 fair-share factor: 0.05 / 0.0005 = 100</li>
+<li>User 4 fair-share factor: 0.25 / 0.25 = 1</li>
+<li>User 5 fair-share factor: 0.35 / 0.0035 = 100</li>
+</ul>
+
+<p>Now that the fair-share factors for all nodes in the tree have been
+calculated, we can distribute the tickets to the active nodes. Assume
+that only user 2 and user 5 have pending jobs. Assume that we start
+with 1000 tickets at the root.</p>
+
+<p>Since both child accounts of the root account (A and D) are active,
+distribute tickets to both of them. Thus,</p>
+
+<ul>
+<li>Account A tickets: 1000 * 0.4 * 0.89 / (0.4 * 0.89 + 0.6 * 2.40) = 198
+<li>Account D tickets: 1000 * 0.6 * 2.40 / (0.4 * 0.89 + 0.6 * 2.40) = 802
+</ul>
+
+<p>For the children of account A, only account C is active, so all 198
+tickets are given to account C. Similarly, for the children of account D, only
+account F is active, so all 802 tickets are given to accountF.</p>
+
+<p>Finally, user 2 then gets 198 tickets, and user 5 802 tickets. As user
+5 has the most tickets, the jobs belonging to user 5 in account F thus
+get the fair-share priority 1.0. The jobs of user 2 get a fair-share
+priority of</p>
+
+<pre>
+Priority<sub>FS</sub> = 198 / 802 = 0.25
+</pre>
+
+<!-------------------------------------------------------------------------->
+<a name=config>
+<h2>Configuration</h2></a>
+
+<p> The following slurm.conf (SLURM_CONFIG_FILE) parameters are used to
+configure the Multi-factor Job Priority 2 Plugin.  See slurm.conf(5) man page
+for more details.</p>
+
+<dl>
+<dt>PriorityType
+<dd>Set this value to "priority/multifactor2" to enable the Multi-factor
+Job Priority 2 Plugin.  The default value for this variable is "priority/basic"
+which enables simple FIFO scheduling.
+</dl>
+
+<p>Note: The other configuration parameters are the same as for the
+priority/multifactor plugin.</p>
+
+<p>Note: As the multifactor2 algorithm ensures that the highest
+priority pending job will have the fair-share factor 1.0, there is a
+need to rebalance the relative weights of the different factors
+compared to the priority/multifactor plugin.</p>
+
+<!-------------------------------------------------------------------------->
+<p style="text-align:center;">Last modified 17 October 2012</p>
+
+<!--#include virtual="footer.txt"-->

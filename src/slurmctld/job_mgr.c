@@ -4832,8 +4832,8 @@ void job_time_limit(void)
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
-	time_t old = now - (slurmctld_conf.inactive_limit * 4 / 3) +
-			   slurmctld_conf.msg_timeout + 1;
+	time_t old = now - ((slurmctld_conf.inactive_limit * 4 / 3) +
+			    slurmctld_conf.msg_timeout + 1);
 	time_t over_run;
 	int resv_status = 0;
 	uint64_t job_cpu_usage_mins = 0;
@@ -5527,7 +5527,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 
 		pack_time(begin_time, buffer);
 		/* Actual or expected start time */
-		if((dump_job_ptr->start_time) || (begin_time <= time(NULL)))
+		if ((dump_job_ptr->start_time) || (begin_time <= time(NULL)))
 			pack_time(dump_job_ptr->start_time, buffer);
 		else	/* earliest start time in the future */
 			pack_time(begin_time, buffer);
@@ -5644,7 +5644,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 
 			if (detail_ptr->argv) {
 				/* Determine size needed for a string
-				   containing all arguments */
+				 * containing all arguments */
 				for (i=0; detail_ptr->argv[i]; i++) {
 					len += strlen(detail_ptr->argv[i]);
 				}
@@ -6474,11 +6474,28 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			goto fini;
 		}
 
-		if (job_specs->min_nodes == NO_VAL)
+		if (job_specs->min_nodes == NO_VAL) {
+#ifdef HAVE_BG
+			select_g_select_jobinfo_get(
+				job_ptr->select_jobinfo,
+				SELECT_JOBDATA_NODE_CNT,
+				&job_specs->min_nodes);
+#else
 			job_specs->min_nodes = detail_ptr->min_nodes;
+#endif
+		}
 		if ((job_specs->max_nodes == NO_VAL) &&
-		    (detail_ptr->max_nodes != 0))
+		    (detail_ptr->max_nodes != 0)) {
+#ifdef HAVE_BG
+			select_g_select_jobinfo_get(
+				job_ptr->select_jobinfo,
+				SELECT_JOBDATA_NODE_CNT,
+				&job_specs->max_nodes);
+#else
 			job_specs->max_nodes = detail_ptr->max_nodes;
+#endif
+		}
+
 		if ((job_specs->time_min == NO_VAL) &&
 		    (job_ptr->time_min != 0))
 			job_specs->time_min = job_ptr->time_min;

@@ -1303,7 +1303,7 @@ void do_dump(void)
 			       step->ncpus,
 			       step->ncpus,
 			       step->elapsed);
-			printf("%d %d %d %d %d %d %d %d",
+			printf("%d %d %d %d %d %d %d %d ",
 			       step->tot_cpu_sec,
 			       step->tot_cpu_usec,
 			       (int)step->user_cpu_sec,
@@ -1361,7 +1361,7 @@ void do_dump(void)
 			       job->alloc_cpus,
 			       job->alloc_cpus,
 			       job->elapsed);
-			printf("%d %d %d %d %d %d %d %d",
+			printf("%d %d %d %d %d %d %d %d ",
 			       job->tot_cpu_sec,
 			       job->tot_cpu_usec,
 			       (int)job->user_cpu_sec,

@@ -117,6 +117,13 @@ extern int slurmd_release_resources(uint32_t job_id);
 extern int pre_setuid(slurmd_job_t *job);
 
 /*
+ * Note in privileged mode that a task launch is about to occur.
+ *
+ * RET - slurm error code
+ */
+extern int pre_launch_priv(slurmd_job_t *job);
+
+/*
  * Note that a task launch is about to occur.
  *
  * RET - slurm error code

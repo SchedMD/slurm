@@ -5,7 +5,7 @@
 <h2> Overview</h2>
 <p> This document describes SLURM task management plugins and the API
 that defines them. It is intended as a resource to programmers wishing
-to write their own SLURM scheduler plugins. This is version 1 of the API.</p>
+to write their own SLURM scheduler plugins. This is version 2 of the API.</p>
 
 <p>SLURM task management plugins are SLURM plugins that implement the
 SLURM task management API described herein. They would typically be
@@ -136,6 +136,20 @@ appropriate value to indicate the reason for failure.</p>
 <p class="commandline">int task_pre_setuid (slurmd_job_t *job);</p>
 <p style="margin-left:.2in"><b>Description</b>: task_pre_setuid() is called
 before setting the UID for the user to launch his jobs.
+Executed by the <b>slurmstepd</b> program as user root.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline">job</span>&nbsp;&nbsp;&nbsp;(input)
+pointer to the job to be initiated.
+See <b>src/slurmd/slurmstepd/slurmstepd_job.h</b> for the
+data structure definition.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful.
+On failure, the plugin should return SLURM_ERROR and set the errno to an
+appropriate value to indicate the reason for failure.</p>
+
+<p class="commandline">int task_pre_launch_priv (slurmd_job_t *job);</p>
+<p style="margin-left:.2in"><b>Description</b>: task_pre_launch_priv() is called
+by each forked task just after the fork. Note that no particular task related
+information is available in the job structure at that time.
 Executed by the <b>slurmstepd</b> program as user root.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
 <span class="commandline">job</span>&nbsp;&nbsp;&nbsp;(input)

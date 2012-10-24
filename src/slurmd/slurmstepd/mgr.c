@@ -1112,13 +1112,16 @@ fail1:
 }
 
 static int
-_spank_task_privileged(slurmd_job_t *job, int taskid, struct priv_state *sp)
+_pre_task_privileged(slurmd_job_t *job, int taskid, struct priv_state *sp)
 {
 	if (_reclaim_privileges(sp) < 0)
 		return SLURM_ERROR;
 
 	if (spank_task_privileged (job, taskid) < 0)
 		return error("spank_task_init_privileged failed");
+
+	if (pre_launch_priv(job) < 0)
+		return error("pre_launch_priv failed");
 
 	return(_drop_privileges (job, true, sp));
 }
@@ -1422,7 +1425,7 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 			 *  Reclaim privileges and call any plugin hooks
 			 *   that may require elevated privs
 			 */
-			if (_spank_task_privileged(job, i, &sprivs) < 0)
+			if (_pre_task_privileged(job, i, &sprivs) < 0)
 				exit(1);
 
  			if (_become_user(job, &sprivs) < 0) {

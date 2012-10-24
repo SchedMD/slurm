@@ -46,6 +46,7 @@ enum {
 	SORTID_BOOT_TIME,
 	SORTID_COLOR,
 	SORTID_CPUS,
+	SORTID_CPU_LOAD,
 	SORTID_CORES,
 	SORTID_ERR_CPUS,
 	SORTID_FEATURES,
@@ -123,6 +124,8 @@ static display_data_t display_data_node[] = {
 	 create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_CPU_LOAD, "CPU Load", FALSE, EDIT_NONE,
+	 refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_ARCH, "Arch", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE,
@@ -213,6 +216,12 @@ static void _layout_node_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_CPUS),
+				   tmp_cnt);
+
+	snprintf(tmp_cnt, sizeof(tmp_cnt), "%.2f", (node_ptr->cpu_load/100.0));
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_CPU_LOAD),
 				   tmp_cnt);
 
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
@@ -338,8 +347,15 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	uint16_t alloc_cpus = 0, err_cpus = 0, idle_cpus;
 	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
 	char tmp_disk[20], tmp_cpus[20], tmp_err_cpus[20],
-		tmp_mem[20], tmp_used_cpus[20];
+		tmp_mem[20], tmp_used_cpus[20], tmp_cpu_load[20];
 	char *tmp_state_lower, *tmp_state_upper;
+
+	if (node_ptr->cpu_load == NO_VAL) {
+		strcpy(tmp_cpu_load, "N/A");
+	} else {
+		snprintf(tmp_cpu_load, sizeof(tmp_cpu_load),
+			 "%.2f", (node_ptr->cpu_load / 100.0));
+	}
 
 	convert_num_unit((float)node_ptr->cpus, tmp_cpus,
 			 sizeof(tmp_cpus), UNIT_NONE);
@@ -398,6 +414,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				% sview_colors_cnt],
 			   SORTID_CORES,     node_ptr->cores,
 			   SORTID_CPUS,      tmp_cpus,
+			   SORTID_CPU_LOAD,  tmp_cpu_load,
 			   SORTID_DISK,      tmp_disk,
 			   SORTID_ERR_CPUS,  tmp_err_cpus,
 			   SORTID_FEATURES,  node_ptr->features,

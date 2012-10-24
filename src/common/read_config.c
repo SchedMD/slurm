@@ -2640,16 +2640,16 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	s_p_get_string(&conf->gres_plugins, "GresTypes", hashtbl);
 
 	if (s_p_get_uint16(&conf->inactive_limit, "InactiveLimit", hashtbl)) {
-#ifdef HAVE_BG
-		/* Inactive limit must be zero on Blue Gene */
+#ifdef HAVE_BG_L_P
+		/* Inactive limit must be zero on BlueGene L/P */
 		if (conf->inactive_limit) {
-			error("InactiveLimit=%d is invalid on Blue Gene",
+			error("InactiveLimit=%d is invalid on BlueGene L/P",
 			      conf->inactive_limit);
 		}
 		conf->inactive_limit = 0;
 #endif
 	} else {
-#ifdef HAVE_BG
+#ifdef HAVE_BG_L_P
 		conf->inactive_limit = 0;
 #endif
 		conf->inactive_limit = DEFAULT_INACTIVE_LIMIT;
@@ -3676,6 +3676,11 @@ extern char * reconfig_flags2str(uint16_t reconfig_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "KeepPartInfo");
 	}
+	if (reconfig_flags & RECONFIG_KEEP_PART_STAT) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "KeepPartState");
+	}
 
 	return rc;
 }
@@ -3698,6 +3703,8 @@ extern uint16_t reconfig_str2flags(char *reconfig_flags)
 	while (tok) {
 		if (strcasecmp(tok, "KeepPartInfo") == 0)
 			rc |= RECONFIG_KEEP_PART_INFO;
+		else if (strcasecmp(tok, "KeepPartState") == 0)
+			rc |= RECONFIG_KEEP_PART_STAT;
 		else {
 			error("Invalid ReconfigFlag: %s", tok);
 			rc = (uint16_t) NO_VAL;

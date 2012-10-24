@@ -1046,9 +1046,10 @@ Cleared on the first day of each year at time 00:00.
 \fBPriorityType\fR
 This specifies the plugin to be used in establishing a job's scheduling
 priority. Supported values are "priority/basic" (jobs are prioritized
-by order of arrival, also suitable for sched/wiki and sched/wiki2) and
+by order of arrival, also suitable for sched/wiki and sched/wiki2),
 "priority/multifactor" (jobs are prioritized based upon size, age,
-fair\-share of allocation, etc).
+fair\-share of allocation, etc) and "priority/multifactor2" (a ticket based
+variation of priority/multifactor).
 The default value is "priority/basic".
 
 .TP
@@ -1309,9 +1310,21 @@ reconfig" command is issued. Currently the only option defined is:
 .TP 17
 \fBKeepPartInfo\fR
 If set, an "scontrol reconfig" command will maintain the in\-memory
-state of partitions that may have been dynamically updated by
-"scontrol update".  Partition information in the slurm.conf file will
-be merged with in\-memory data.  The default is not set, and the
+value of partition "state" and other parameters that may have been
+dynamically updated by "scontrol update".  Partition information in
+the slurm.conf file will be merged with in\-memory data.  This flag
+supersedes the KeepPartState flag.
+.TP
+\fBKeepPartState\fR
+If set, an "scontrol reconfig" command will preserve only the current
+"state" value of in\-memory partitions and will reset all other
+parameters of the partitions that may have been dynamically updated by
+"scontrol update" to the values from the slurm.conf file.  Partition
+information in the slurm.conf file will be merged with in\-memory
+data.
+.RE
+.RS 7
+The default for the above flags is not set, and the
 "scontrol reconfig" will rebuild the partition information using only
 the definitions in the slurm.conf file.
 .RE
@@ -2101,6 +2114,9 @@ to be printed to the job's standard output.
 Will clear environment variables for the task being spawned. 
 .TP
 The order of task prolog/epilog execution is as follows:
+.TP
+\fB1. pre_launch_priv()\fR
+Function in TaskPlugin
 .TP
 \fB1. pre_launch()\fR
 Function in TaskPlugin

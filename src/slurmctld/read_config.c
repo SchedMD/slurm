@@ -109,7 +109,8 @@ static int  _restore_job_dependencies(void);
 static int  _restore_node_state(int recover,
 				struct node_record *old_node_table_ptr,
 				int old_node_record_count);
-static int  _restore_part_state(List old_part_list, char *old_def_part_name);
+static int  _restore_part_state(List old_part_list, char *old_def_part_name,
+				uint16_t flags);
 static int  _strcmp(const char *s1, const char *s2);
 static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(void);
@@ -835,7 +836,15 @@ int read_slurm_conf(int recover, bool reconfig)
 		    (slurmctld_conf.reconfig_flags & RECONFIG_KEEP_PART_INFO))) {
 			info("restoring original partition state");
 			rc = _restore_part_state(old_part_list,
-						 old_def_part_name);
+						 old_def_part_name,
+						 slurmctld_conf.reconfig_flags);
+			error_code = MAX(error_code, rc);  /* not fatal */
+		} else if (old_part_list && (slurmctld_conf.reconfig_flags &
+					     RECONFIG_KEEP_PART_STAT)) {
+			info("restoring original partition state only (up/down)");
+			rc = _restore_part_state(old_part_list,
+						 old_def_part_name,
+						 slurmctld_conf.reconfig_flags);
 			error_code = MAX(error_code, rc);  /* not fatal */
 		}
 		load_last_job_id();
@@ -1153,7 +1162,8 @@ static int  _strcmp(const char *s1, const char *s2)
 }
 
 /* Restore partition information from saved records */
-static int  _restore_part_state(List old_part_list, char *old_def_part_name)
+static int  _restore_part_state(List old_part_list, char *old_def_part_name,
+				uint16_t flags)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator part_iterator;
@@ -1171,6 +1181,15 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 		xassert(old_part_ptr->magic == PART_MAGIC);
 		part_ptr = find_part_record(old_part_ptr->name);
 		if (part_ptr) {
+			if ( !(flags & RECONFIG_KEEP_PART_INFO) &&
+			     (flags & RECONFIG_KEEP_PART_STAT)	) {
+				if (part_ptr->state_up != old_part_ptr->state_up) {
+					info("Partition %s State differs from "
+					     "slurm.conf", part_ptr->name);
+					part_ptr->state_up = old_part_ptr->state_up;
+				}
+				continue;
+			}	
 			/* Current partition found in slurm.conf,
 			 * report differences from slurm.conf configuration */
 			if (_strcmp(part_ptr->allow_groups,
@@ -1293,6 +1312,12 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name)
 				part_ptr->state_up = old_part_ptr->state_up;
 			}
 		} else {
+			if ( !(flags & RECONFIG_KEEP_PART_INFO) &&
+			     (flags & RECONFIG_KEEP_PART_STAT) ) {
+				info("Partition %s missing from slurm.conf, "
+				     "not restoring it", old_part_ptr->name);
+				continue;
+			}
 			error("Partition %s missing from slurm.conf, "
 			      "restoring it", old_part_ptr->name);
 			part_ptr = create_part_record();

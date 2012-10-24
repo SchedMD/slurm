@@ -1061,7 +1061,8 @@ typedef struct job_info {
 	uint16_t batch_flag;	/* 1 if batch: queued job with script */
 	char *batch_host;	/* name of host running batch script */
 	char *batch_script;	/* contents of batch script */
-	char *command;		/* command to be executed */
+	char *command;		/* command to be executed, built from submitted
+				 * job's argv and NULL for salloc command */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
 	uint16_t cpus_per_task;	/* number of processors required for
@@ -1433,6 +1434,7 @@ typedef struct node_info {
 				 * the node */
 	char *features;		/* list of a node's features */
 	char *gres;		/* list of a node's generic resources */
+	uint32_t cpu_load;	/* CPU load * 100 */
 	char *name;		/* node name to slurm */
 	char *node_addr;	/* communication name (optional) */
 	char *node_hostname;	/* node's hostname (optional) */
@@ -1815,6 +1817,7 @@ typedef struct reservation_name_msg {
 #define PREEMPT_MODE_GANG	0x8000	/* enable gang scheduling */
 
 #define RECONFIG_KEEP_PART_INFO 0x0001 /* keep dynamic partition info on scontrol reconfig */
+#define RECONFIG_KEEP_PART_STAT 0x0002 /* keep dynamic partition state on scontrol reconfig */
 
 typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */
@@ -3584,6 +3587,12 @@ extern int slurm_pull_trigger PARAMS((trigger_info_t * trigger_pull));
  * slurm_get_triggers()
  */
 extern void slurm_free_trigger_msg PARAMS((trigger_info_msg_t * trigger_free));
+
+/*
+ * slurm_init_trigger_msg - initialize trigger clear/update message
+ * OUT trigger_info_msg - user defined trigger descriptor
+ */
+void slurm_init_trigger_msg PARAMS((trigger_info_t *trigger_info_msg));
 
 END_C_DECLS
 

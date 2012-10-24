@@ -17,7 +17,7 @@ Linux clusters, high-performance computing, Livermore Computing">
 <body><div id="container">
 
 <div id="banner">
-<img src="slurm_banner.gif" width="800" height="100" border="0" usemap="#Map">
+<img src="slurm_banner_schedmd.png" width="796" height="96" usemap="#Map">
 </div>
 
 <div id="cse" style="width: 97%;">Loading</div>
@@ -47,6 +47,7 @@ Linux clusters, high-performance computing, Livermore Computing">
 </ul>
 <h2>Using</h2>
 <ul>
+	  <li><a href="tutorials.shtml" class="nav">Tutorials</a></li>
 	  <li><a href="documentation.shtml" class="nav">Documentation</a></li>
 	  <li><a href="faq.shtml" class="nav">FAQ</a></li>
 	  <li><a href="help.shtml" class="nav">Getting Help</a></li>
@@ -57,7 +58,7 @@ Linux clusters, high-performance computing, Livermore Computing">
 	  <li><a href="platforms.shtml" class="nav">Platforms</a></li>
 	  <li><a href="download.shtml" class="nav">Download</a></li>
 	  <li><a href="download.shtml#related" class="nav">Related Software</a></li>
-	  <li><a href="quickstart_admin.shtml" class="nav">Guide</a></li>
+	  <li><a href="quickstart_admin.shtml" class="nav">Installation Guide</a></li>
 </ul>
 </div>
 

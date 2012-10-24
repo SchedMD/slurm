@@ -69,7 +69,9 @@ API CHANGES
 Changed members of the following structs
 ========================================
 slurm_step_launch_callbacks_t - added step_signal for signaling steps that
-			      are perhaps not running as srun.
+				are perhaps not running as srun.
+Added cpu_load to node_info.
+
 
 Added the following struct definitions
 ======================================
