@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 2.5" "June 2012" "SLURM Commands"
+.TH "salloc" "1" "SLURM 2.5" "October 2012" "SLURM Commands"
 
 .SH "NAME"
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command,
@@ -1121,13 +1121,13 @@ each dimension (i.e. M,T,T,T will give you a torus connection is all
 dimensions expect the first).
 
 .TP
-\fB\-g\fR, \fB\-\-geometry\fR=<\fIXxYxZ\fR>
-Specify the geometry requirements for the job. The three numbers
-represent the required geometry giving dimensions in the X, Y and
-Z directions. For example "\-\-geometry=2x3x4", specifies a block
-of nodes having 2 x 3 x 4 = 24 nodes (actually midplanes on
-Blue Gene).  On a BGQ system the dimensions are AxXxYxZ, and can not
-be used to allocation sub-blocks.
+\fB\-g\fR, \fB\-\-geometry\fR=<\fIXxYxZ\fR> | <\fIAxXxYxZ\fR>
+Specify the geometry requirements for the job. On BlueGene/L and BlueGene/P
+systems there are three numbers giving dimensions in the X, Y and Z directions,
+while on BlueGene/Q systems there are four numbers giving dimensions in the
+A, X, Y and Z directions and can not be used to allocate sub-blocks.
+For example "\-\-geometry=1x2x3x4", specifies a block of nodes having
+1 x 2 x 3 x 4 = 24 nodes (actually midplanes on BlueGene).
 
 .TP
 \fB\-\-ioload\-image\fR=<\fIpath\fR>
