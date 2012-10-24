@@ -139,10 +139,9 @@ int main(int argc, char *argv[])
 	if (!params.commandline) {
 		int check_width = min_screen_width;
 
-		init_grid(new_node_ptr);
-
-		signal(SIGWINCH, (void (*)(int))_resize_handler);
 		initscr();
+		init_grid(new_node_ptr, COLS);
+		signal(SIGWINCH, (void (*)(int))_resize_handler);
 
 		if (params.cluster_dims == 4) {
 			height = dim_size[2] * dim_size[3] + dim_size[2] + 3;
