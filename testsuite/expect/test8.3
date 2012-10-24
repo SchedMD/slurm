@@ -51,10 +51,7 @@ if {[test_bluegene] == 0} {
 # Delete left-over input script files
 # Build input script file
 #
-exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"         >$file_in
-exec echo "$bin_sleep 1 &"     >>$file_in
-exec $bin_chmod 700 $file_in
+make_bash_script $file_in "$bin_sleep 1 &"
 
 #
 # Submit a slurm job for blue gene with geometry of 2x1x1
