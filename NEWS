@@ -40,6 +40,8 @@ documents those changes that are of interest to users and admins.
     interface instead of through the normal method.
  -- smap - spread node information across multiple lines for larger systems.
  -- Cray - Defer salloc until after PrologSlurmctld completes.
+ -- Correction to slurmdbd communications failure handling logic, incorrect
+    error codes returned in some cases.
 
 * Changes in SLURM 2.4.3
 ========================

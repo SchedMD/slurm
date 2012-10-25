@@ -1293,7 +1293,7 @@ extern int acct_storage_p_remove_reservation(void *db_conn,
 	rc = slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION,
 					     &req, &resp_code);
 
-	if (resp_code != SLURM_SUCCESS)
+	if ((rc == SLURM_SUCCESS) && (resp_code != SLURM_SUCCESS))
 		rc = resp_code;
 
 	return rc;
