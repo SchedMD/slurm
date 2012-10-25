@@ -2631,7 +2631,6 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		if (core_cnt) {
 			info("reservation request can not be satisfied");
 			FREE_NULL_BITMAP(sp_avail_bitmap);
-			FREE_NULL_BITMAP(tmpcore);
 			return NULL;
 		}
 
@@ -2721,9 +2720,13 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	if (bit_set_count(avail_bitmap) < node_cnt)
 		return avail_nodes_bitmap;
 
+	if (*core_bitmap == NULL)
+		*core_bitmap = _make_core_bitmap_filtered(avail_bitmap, 0);
+	
 	rem_nodes = node_cnt;
 	rem_cores = core_cnt;
 
+	/* TODO: allowing asymmetric cluster */
 	cores_per_node = core_cnt / MAX(node_cnt, 1);
 
 	/* Construct a set of switch array entries,
@@ -2743,9 +2746,6 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 		switches_core_bitmap[i] = 
 			_make_core_bitmap_filtered(switches_bitmap[i], 1);
-
-		bit_fmt(str, sizeof(str), switches_core_bitmap[i]);
-		debug2("Switch %d can use cores: %s", i, str);
 
 		if (*core_bitmap) {
 			bit_not(*core_bitmap);
@@ -2871,15 +2871,17 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 				int coff;
 				avail_cores_in_node = 0;
 				coff = cr_get_coremap_offset(i);
-				debug2("Testing node %d, core offset %d", i, coff);
-				for (j = 0; j < cr_node_num_cores[i]; j++){
+				debug2("Testing node %d, core offset %d",
+				       i, coff);
+				for (j=0; j<cr_node_num_cores[i]; j++){
 					if (!bit_test(*core_bitmap, coff + j))
 						avail_cores_in_node++;
 				}
 				if (avail_cores_in_node < cores_per_node)
 					continue;
 				
-				debug2("Using node %d with %d cores available", i, avail_cores_in_node);
+				debug2("Using node %d with %d cores available",
+				       i, avail_cores_in_node);
 			}
 
 			bit_set(avail_nodes_bitmap, i);
@@ -2914,9 +2916,7 @@ fini:	for (i=0; i<switch_record_cnt; i++)
 		if (*core_bitmap){
 			exc_core_bitmap = bit_copy(*core_bitmap);
 			bit_nclear(*core_bitmap, 0, bit_size(*core_bitmap)-1);
-		} else 
-			*core_bitmap = 
-				_make_core_bitmap_filtered(avail_nodes_bitmap, 0);
+		}
 
 		cores_per_node = core_cnt / MAX(node_cnt, 1);
 
@@ -2946,8 +2946,8 @@ fini:	for (i=0; i<switch_record_cnt; i++)
 				}
  			}
  
-			debug2("Node %d has %d available cores", inx, 
-				avail_cores_in_node);
+			debug2("Node %d has %d available cores", inx,
+			       avail_cores_in_node);
 
 			if (avail_cores_in_node < cores_per_node)
 				continue;
@@ -2960,7 +2960,7 @@ fini:	for (i=0; i<switch_record_cnt; i++)
 					avail_cores_in_node++;
 				}
 
-				if((avail_cores_in_node == cores_per_node) || 
+				if ((avail_cores_in_node == cores_per_node) ||
 					(core_cnt == 0))
 					break;
 			}

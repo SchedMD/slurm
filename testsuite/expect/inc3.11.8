@@ -41,7 +41,7 @@ proc inc3_11_8 {} {
 
 	# Make the job script
 	exec $bin_rm -f $file_in
-	make_bash_script $file_in "$bin_sleep 1000"
+	make_bash_script $file_in "$bin_sleep 100"
 
 	# Make a reservation, just to get node size infomation
 	set ret_code [create_res "StartTime=now Duration=1 NodeCnt=1 User=$user_name" 0]
