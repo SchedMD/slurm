@@ -111,8 +111,8 @@ extern int acct_gather_energy_p_update_node_energy(void)
 	return rc;
 }
 
-extern int acct_gather_energy_p_get_data(acct_gather_energy_t *energy,
-					 enum acct_energy_type data_type)
+extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
+					 acct_gather_energy_t *energy)
 {
 	return SLURM_SUCCESS;
 }

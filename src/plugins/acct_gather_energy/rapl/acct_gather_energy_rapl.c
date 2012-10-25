@@ -345,8 +345,8 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_energy_p_get_data(acct_gather_energy_t *energy,
-					 enum acct_energy_type data_type)
+extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
+					 acct_gather_energy_t *energy)
 {
 	int rc = SLURM_SUCCESS;
 	switch (data_type) {
