@@ -15,6 +15,7 @@
 <p>SLURM Version 2.5 was release in November 2012.
 Major enhancements include:
 <ul>
+<li>Support for Intel&reg; Many Integrated Core (MIC) processors.</li> 
 <li>User control over CPU frequency of each job step.</li>
 <li>Recording power usage information for each job.</li>
 <li>Advanced reservation of cores rather than whole nodes.</li>
@@ -84,6 +85,6 @@ trojan library, then that library will be used by the SLURM daemon with
 unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 2 October 2012</p>
+<p style="text-align:center;">Last modified 5 October 2012</p>
 
 <!--#include virtual="footer.txt"-->
