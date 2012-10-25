@@ -110,6 +110,7 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Cleaner handling of cnode failures when reported through the runjob
     interface instead of through the normal method.
  -- smap - spread node information across multiple lines for larger systems.
+ -- Cray - Defer salloc until after PrologSlurmctld completes.
 
 * Changes in SLURM 2.4.3
 ========================
