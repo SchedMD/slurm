@@ -1799,8 +1799,9 @@ extern void update_logging(void);
  */
 extern int update_node ( update_node_msg_t * update_node_msg )  ;
 
-/* Update nodes energy usage data */
+/* Update nodes accounting usage data */
 extern void update_nodes_acct_gather_data(void);
+
 /*
  * update_node_record_acct_gather_data - update the energy data in the
  * node_record
@@ -1809,7 +1810,6 @@ extern void update_nodes_acct_gather_data(void);
  */
 extern int update_node_record_acct_gather_data(
 	acct_gather_node_resp_msg_t *msg);
-
 
 /*
  * update_part - create or update a partition's configuration data

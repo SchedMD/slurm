@@ -2665,6 +2665,9 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *)data)->return_code;
 		break;
+	case RESPONSE_ACCT_GATHER_UPDATE:
+		rc = SLURM_SUCCESS;
+		break;
 	case RESPONSE_FORWARD_FAILED:
 		/* There may be other reasons for the failure, but
 		 * this may be a slurm_msg_t data type lacking the

@@ -126,7 +126,6 @@ inline static void  _slurm_rpc_job_step_create(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_get_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg);
 inline static void  _slurm_rpc_node_registration(slurm_msg_t * msg);
-inline static void  _slurm_rpc_acct_gather_update(slurm_msg_t * msg);
 inline static void  _slurm_rpc_block_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg);
@@ -253,10 +252,6 @@ void slurmctld_req (slurm_msg_t * msg)
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		_slurm_rpc_node_registration(msg);
 		slurm_free_node_registration_status_msg(msg->data);
-		break;
-	case RESPONSE_ACCT_GATHER_UPDATE:
-		_slurm_rpc_acct_gather_update(msg);
-		slurm_free_acct_gather_node_resp_msg(msg->data);
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO:
 		_slurm_rpc_job_alloc_info(msg);
@@ -1940,19 +1935,6 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 		       node_reg_stat_msg->node_name, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
-}
-
-/* _slurm_rpc_acct_gather_update - process RPC to return node energy data */
-static void _slurm_rpc_acct_gather_update(slurm_msg_t * msg)
-{
-	/* init */
-	DEF_TIMERS;
-	acct_gather_node_resp_msg_t *resp_msg = msg->data;
-
-	START_TIMER;
-	debug2("Processing RPC: RESPONSE_ACCT_GATHER_UPDATE");
-	update_node_record_acct_gather_data(resp_msg);
-	END_TIMER2("_slurm_rpc_acct_gather_update");
 }
 
 /* _slurm_rpc_job_alloc_info - process RPC to get details on existing job */

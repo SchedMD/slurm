@@ -813,6 +813,9 @@ static void *_thread_per_group_rpc(void *args)
 	/* Lock: Read node */
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	/* Lock: Write node */
+	slurmctld_lock_t node_write_lock = {
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 
 	xassert(args != NULL);
 	xsignal(SIGUSR1, _sig_handler);
@@ -914,6 +917,15 @@ static void *_thread_per_group_rpc(void *args)
 				run_scheduler = true;
 			unlock_slurmctld(job_write_lock);
 		}
+
+		/* SPECIAL CASE: Record node's CPU load */
+		if (ret_data_info->type == RESPONSE_ACCT_GATHER_UPDATE) {
+			lock_slurmctld(node_write_lock);
+			update_node_record_acct_gather_data(
+				ret_data_info->data);
+			unlock_slurmctld(node_write_lock);
+		}
+
 		/* SPECIAL CASE: Kill non-startable batch job,
 		 * Requeue the job on ESLURMD_PROLOG_FAILED */
 		if ((msg_type == REQUEST_BATCH_JOB_LAUNCH) &&
