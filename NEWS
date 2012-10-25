@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
  -- Add ReconfigFlags value of KeepPartState. See "man slurm.conf" for details.
  -- Modify the task/cgroup plugin adding a task_pre_launch_priv function and
     move slurmstepd outside of the step's cgroup. Work by Matthieu Hautreux.
+ -- Intel MIC processor support added using gres/mic plugin. BIG thanks to
+    Olli-Pekka Lehto, CSC-IT Center for Science Ltd.
 
 * Changes in SLURM 2.5.0.pre3
 =============================

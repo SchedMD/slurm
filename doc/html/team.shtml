@@ -69,6 +69,7 @@ organizations. Lead SLURM developers are:
 <li>Sam Lang</li>
 <li>Puenlap Lee (Bull)</li>
 <li>Dennis Leepow</li>
+<li>Olli-Pekka Lehto (CSC-IT Center for Science Ltd., Finland)</li>
 <li>Bernard Li (Genome Sciences Centre, Canada)</li>
 <li>Eric Lin (Bull)</li>
 <li>Donald Lipari (Lawrence Livermore National Laboratory)</li>
@@ -121,6 +122,6 @@ organizations. Lead SLURM developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 24 September 2012</p>
+<p style="text-align:center;">Last modified 25 October 2012</p>
 
 <!--#include virtual="footer.txt"-->
