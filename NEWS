@@ -20,6 +20,9 @@ documents those changes that are of interest to users and admins.
     move slurmstepd outside of the step's cgroup. Work by Matthieu Hautreux.
  -- Intel MIC processor support added using gres/mic plugin. BIG thanks to
     Olli-Pekka Lehto, CSC-IT Center for Science Ltd.
+ -- Accounting - Change empty jobacctinfo structs to not actually be used
+    instead of putting 0's into the database we put NO_VALS and have sacct
+    figure out jobacct_gather wasn't used.
 
 * Changes in SLURM 2.5.0.pre3
 =============================

@@ -147,8 +147,8 @@ static void _pack_jobacct_id(jobacct_id_t *jobacct_id,
 		pack32((uint32_t) jobacct_id->nodeid, buffer);
 		pack16((uint16_t) jobacct_id->taskid, buffer);
 	} else {
-		pack32((uint32_t) 0, buffer);
-		pack16((uint16_t) 0, buffer);
+		pack32((uint32_t) NO_VAL, buffer);
+		pack16((uint16_t) NO_VAL, buffer);
 	}
 }
 
@@ -761,7 +761,7 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 
 	if (!jobacct) {
 		for (i = 0; i < 12; i++)
-			pack32((uint32_t) 0, buffer);
+			pack32((uint32_t)NO_VAL, buffer);
 		for (i = 0; i < 4; i++)
 			_pack_jobacct_id(NULL, rpc_version, buffer);
 		return;
@@ -849,7 +849,7 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 {
 	xassert(dest);
 
-	if (!from)
+	if (!from || (from->min_cpu == (uint32_t)NO_VAL))
 		return;
 
 	if (dest->max_vsize < from->max_vsize) {

@@ -931,8 +931,8 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	int cpus = 0;
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
 	struct jobacctinfo dummy_jobacct;
-	double ave_vsize = 0, ave_rss = 0, ave_pages = 0;
-	double ave_cpu = 0, ave_cpu2 = 0;
+	double ave_vsize = NO_VAL, ave_rss = NO_VAL, ave_pages = NO_VAL;
+	double ave_cpu = (double)NO_VAL;
 	char *query = NULL;
 	int rc =SLURM_SUCCESS;
 	uint32_t exit_code = 0;
@@ -991,7 +991,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	}
 
 	/* figure out the ave of the totals sent */
-	if (cpus > 0) {
+	if ((jobacct->min_cpu != NO_VAL) && cpus > 0) {
 		ave_vsize = (double)jobacct->tot_vsize;
 		ave_vsize /= (double)cpus;
 		ave_rss = (double)jobacct->tot_rss;
@@ -1000,10 +1000,6 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		ave_pages /= (double)cpus;
 		ave_cpu = (double)jobacct->tot_cpu;
 		ave_cpu /= (double)cpus;
-	}
-
-	if (jobacct->min_cpu != NO_VAL) {
-		ave_cpu2 = (double)jobacct->min_cpu;
 	}
 
 	if (!step_ptr->job_ptr->db_index) {
@@ -1037,7 +1033,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		"max_rss_node=%u, ave_rss=%f, "
 		"max_pages=%u, max_pages_task=%u, "
 		"max_pages_node=%u, ave_pages=%f, "
-		"min_cpu=%f, min_cpu_task=%u, "
+		"min_cpu=%u, min_cpu_task=%u, "
 		"min_cpu_node=%u, ave_cpu=%f "
 		"where job_db_inx=%d and id_step=%d",
 		mysql_conn->cluster_name, step_table, (int)now,
@@ -1064,7 +1060,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		jobacct->max_pages_id.taskid,	/* max pages task */
 		jobacct->max_pages_id.nodeid,	/* max pages node */
 		ave_pages,	/* ave pages */
-		ave_cpu2,	/* min cpu */
+		jobacct->min_cpu,	/* min cpu */
 		jobacct->min_cpu_id.taskid,	/* min cpu task */
 		jobacct->min_cpu_id.nodeid,	/* min cpu node */
 		ave_cpu,	/* ave cpu */

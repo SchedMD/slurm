@@ -1237,8 +1237,6 @@ void do_dump(void)
 
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
-		if(job->stats.cpu_min == NO_VAL)
-			job->stats.cpu_min = 0;
 
 		if(list_count(job->steps)) {
 			job->stats.cpu_ave /= list_count(job->steps);
@@ -1457,9 +1455,6 @@ void do_list(void)
 
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
-		if(job->stats.cpu_min == NO_VAL)
-			job->stats.cpu_min = 0;
-
 		if(list_count(job->steps)) {
 			int cnt = list_count(job->steps);
 			job->stats.cpu_ave /= (double)cnt;
