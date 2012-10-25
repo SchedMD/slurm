@@ -132,8 +132,6 @@ extern int node_config_load(List gres_conf_list)
 	iter = list_iterator_create(gres_conf_list);
 	if (iter == NULL)
 		fatal("list_iterator_create: malloc failure");
-
-	iter = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(iter))) {
 		if (strcmp(gres_slurmd_conf->name, gres_name))
 			continue;
@@ -155,6 +153,8 @@ extern int node_config_load(List gres_conf_list)
 	}
 
 	iter = list_iterator_create(gres_conf_list);
+	if (iter == NULL)
+		fatal("list_iterator_create: malloc failure");
 	while ((gres_slurmd_conf = list_next(iter))) {
 		if ((strcmp(gres_slurmd_conf->name, gres_name) == 0) &&
 		    gres_slurmd_conf->file) {
