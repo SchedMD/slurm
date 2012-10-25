@@ -351,9 +351,9 @@ int main(int argc, char *argv[])
 		/*
 		 * Allocation granted!
 		 */
-		info("Granted job allocation %u", alloc->job_id);
 		pending_job_id = alloc->job_id;
 #ifdef HAVE_BG
+		info("Granted job allocation %u", alloc->job_id);
 		if (!_wait_bluegene_block_ready(alloc)) {
 			if(!allocation_interrupted)
 				error("Something is wrong with the "
@@ -361,12 +361,15 @@ int main(int argc, char *argv[])
 			goto relinquish;
 		}
 #else
+		verbose("Granted job allocation %u, waiting for nodes to "
+			"become ready", alloc->job_id);
 		if (!_wait_nodes_ready(alloc)) {
 			if (!allocation_interrupted)
 				error("Something is wrong with the "
 				      "boot of the nodes.");
 			goto relinquish;
 		}
+		info("Granted job allocation %u", alloc->job_id);
 #endif
 	}
 
