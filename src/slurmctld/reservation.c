@@ -1783,6 +1783,10 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	if (!resv_ptr)
 		return ESLURM_RESERVATION_INVALID;
 
+	/* TODO: core based reservation updates */
+	if (resv_ptr->full_nodes == 0)
+		return ESLURM_RESERVATION_NOT_USABLE;
+
 	/* Make backup to restore state in case of failure */
 	resv_backup = _copy_resv(resv_ptr);
 
@@ -2462,6 +2466,7 @@ static void _validate_all_reservations(void)
 static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 {
 	bitstr_t *tmp_bitmap = NULL;
+	bitstr_t *core_bitmap = NULL;
 	int i;
 	resv_desc_msg_t resv_desc;
 
@@ -2482,7 +2487,8 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	resv_desc.features   = resv_ptr->features;
 	resv_desc.node_cnt   = xmalloc(sizeof(uint32_t) * 2);
 	resv_desc.node_cnt[0]= resv_ptr->node_cnt - i;
-	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp_bitmap, NULL);
+	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp_bitmap,
+			  &core_bitmap);
 	xfree(resv_desc.node_cnt);
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
@@ -2490,6 +2496,8 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 		bit_and(resv_ptr->node_bitmap, avail_node_bitmap);
 		bit_or(resv_ptr->node_bitmap, tmp_bitmap);
 		FREE_NULL_BITMAP(tmp_bitmap);
+		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
+		resv_ptr->core_bitmap = core_bitmap;
 		xfree(resv_ptr->node_list);
 		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
 		info("modified reservation %s due to unusable nodes, "
@@ -2691,6 +2699,7 @@ extern int validate_job_resv(struct job_record *job_ptr)
 static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 {
 	bitstr_t *tmp1_bitmap = NULL, *tmp2_bitmap = NULL;
+	bitstr_t *core_bitmap = NULL;
 	int delta_node_cnt, i;
 	resv_desc_msg_t resv_desc;
 
@@ -2746,13 +2755,16 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	resv_desc.flags      = resv_ptr->flags;
 	resv_desc.node_cnt   = xmalloc(sizeof(uint32_t) * 2);
 	resv_desc.node_cnt[0]= 0 - delta_node_cnt;
-	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp1_bitmap, NULL);
+	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp1_bitmap,
+			  &core_bitmap);
 	xfree(resv_desc.node_cnt);
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
 	if (i == SLURM_SUCCESS) {
 		bit_or(resv_ptr->node_bitmap, tmp1_bitmap);
 		FREE_NULL_BITMAP(tmp1_bitmap);
+		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
+		resv_ptr->core_bitmap = core_bitmap;
 		xfree(resv_ptr->node_list);
 		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
 		resv_ptr->node_cnt = node_cnt;
@@ -3515,7 +3527,8 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			    (res2_ptr == resv_ptr) ||
 			    (res2_ptr->node_bitmap == NULL) ||
 			    (res2_ptr->start_time >= job_end_time) ||
-			    (res2_ptr->end_time   <= job_start_time))
+			    (res2_ptr->end_time   <= job_start_time) ||
+			    (!res2_ptr->full_nodes))
 				continue;
 			bit_not(res2_ptr->node_bitmap);
 			bit_and(*node_bitmap, res2_ptr->node_bitmap);
@@ -3564,10 +3577,10 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			    (resv_ptr->end_time   <= job_start_time))
 				continue;
 			if (job_ptr->details->req_node_bitmap &&
-			     bit_overlap(job_ptr->details->req_node_bitmap,
-					 resv_ptr->node_bitmap) &&
-			     ((resv_ptr->cpu_cnt == 0) ||
-			      (!job_ptr->details->shared))) {
+			    bit_overlap(job_ptr->details->req_node_bitmap,
+					resv_ptr->node_bitmap) &&
+			    ((resv_ptr->cpu_cnt == 0) ||
+			    (!job_ptr->details->shared))) {
 				*when = resv_ptr->end_time;
 				rc = ESLURM_NODES_BUSY;
 				break;
@@ -3596,13 +3609,8 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 					*exc_core_bitmap = 
 						bit_copy(resv_ptr->core_bitmap);
 				} else {
-					char str[100];
-					bit_and(*exc_core_bitmap,
-						resv_ptr->core_bitmap);
-					bit_fmt(str, (sizeof(str) - 1), 
-							*exc_core_bitmap);
-					debug2("New exclude core bitmap %s", 
-						str);
+					bit_or(*exc_core_bitmap,
+					       resv_ptr->core_bitmap);
 				}
 			}
 		}
