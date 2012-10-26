@@ -2688,6 +2688,8 @@ static int _get_avail_core_in_node(bitstr_t *core_bitmap, int node)
  * IN avail_bitmap - nodes available for the reservation
  * IN node_cnt - count of required nodes
  * IN core_bitmap - cores which can not be used for this reservation
+ * OUT avail_bitmap - nodes allocated for the reservation
+ * OUT core_bitmap - cores which allocated to this reservation
  * RET - nodes selected for use by the reservation
  */
 extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
