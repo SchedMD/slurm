@@ -74,6 +74,7 @@ IMG.displayed {
   border-color:#066cb2;
   border-style:solid;
   display:table-cell;
+  position:fixed;
 }
 
 /* The main text of the page */
