@@ -2688,6 +2688,8 @@ static int _get_avail_core_in_node(bitstr_t *core_bitmap, int node)
  * IN avail_bitmap - nodes available for the reservation
  * IN node_cnt - count of required nodes
  * IN core_bitmap - cores which can not be used for this reservation
+ * OUT avail_bitmap - nodes allocated for the reservation
+ * OUT core_bitmap - cores which allocated to this reservation
  * RET - nodes selected for use by the reservation
  */
 extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
@@ -2914,14 +2916,9 @@ fini:	for (i=0; i<switch_record_cnt; i++) {
 		if (sp_avail_bitmap == NULL)
 			fatal ("memory allocation failure");
 
-		if (*core_bitmap) {
-			exc_core_bitmap = bit_alloc(bit_size(*core_bitmap));
-			if (!exc_core_bitmap)
-				fatal("bit_alloc: malloc failure");
-		} else {
-			error("select_p_resv_test: core_bitmap is NULL");
-			FREE_NULL_BITMAP(sp_avail_bitmap);
-			return NULL;
+		if (*core_bitmap){
+			exc_core_bitmap = bit_copy(*core_bitmap);
+			bit_nclear(*core_bitmap, 0, bit_size(*core_bitmap)-1);
 		}
 
 		cores_per_node = core_cnt / MAX(node_cnt, 1);
