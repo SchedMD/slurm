@@ -32,12 +32,18 @@ a.nav:visited {
  * and make the content section fill the width of the page.
  */
 @media print {
-  #navigation { display: none }
+  #container {
+      border: 0px solid gray;
+  }
   #content {
     margin-left: 0px;
-    border-left: 0px solid gray;
-    width: 90%;
+    border: 0px solid gray;
+    width: 95%;
   }
+  #cse { display: none }
+  #footer { display: none }
+  #footer2 { display: none }
+  #navigation { display: none }
 }
 
 /**
@@ -47,8 +53,8 @@ a.nav:visited {
 /* Slight reset to make the preview have ample padding. */
 .cse .gsc-control-cse,
 .gsc-control-cse {
-  padding: 1em;
-  width: auto;
+  margin-top: 13px;
+  margin-bottom: 13px;
 }
 .cse .gsc-control-wrapper-cse,
 .gsc-control-wrapper-cse {

@@ -11,8 +11,9 @@ body {
   text-align:center;
 }
 
-h1 { font-size: 130%; font-weight:bold; text-align:left; color: #066cb2; }
-h2 { font-size: 105%; font-weight:bold; text-align:left; color: #066cb2; }
+h1 { font-size: 150%; font-weight:bold; text-align:left; color: #066cb2; }
+h2 { font-size: 105%; font-weight:bold; text-align:left; padding-left: 5px;
+color: #066cb2; margin-bottom: -10px; }
 h3 { font-size: 100%; font-weight:bold; text-align:left; color: #066cb2; }
 p  { font-size: 90%; }
 p ul  { font-size: 90%; }
@@ -35,6 +36,11 @@ pre {font-size: 90%; font-family:"Courier New", Courier, monospace}
   border-style:solid;
   background-color: #FFFFFF;
   line-height:130%;
+  display:table;
+}
+
+#row {
+    display: table-row;
 }
 
 /* The Linux at Livermore banner graphic */
@@ -43,23 +49,38 @@ pre {font-size: 90%; font-family:"Courier New", Courier, monospace}
   border-color:#066cb2;
   border-style:solid;
   background-color: #FFFFFF;
+  width: 150px;
+  height: 195px;
   align: left;
+}
+
+IMG.displayed {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    border:0px;
 }
 
 /* The left-hand navigation links */
 #navigation {
   float: left;
   text-align:left;
-  margin-top: 20px;
-  width: 150px;
+  width: 175px;
   overflow: auto;
+  background-color: #d2cf82;
+  border:2px;
+  border-color:#066cb2;
+  border-style:solid;
+  display:table-cell;
 }
 
 /* The main text of the page */
 #content {
-  margin-left: 165px;
-  width: 75%;
-  padding: 1em;
+  float: right;
+  width: 605px;
+  display:table-cell;
 }
 
 #content h1 { margin: 0 0 .5em 0;
@@ -88,6 +109,7 @@ pre {font-size: 90%; font-family:"Courier New", Courier, monospace}
   width:400px;
   text-align: left;
   height: 22px;
+  display: table-cell;
 }
 
 #footer #right {
@@ -97,6 +119,7 @@ pre {font-size: 90%; font-family:"Courier New", Courier, monospace}
   background-color: #066cb2;
   text-align: right;
   height: 22px;
+  display: table-cell;
 }
 
 #footer2 #left2 {

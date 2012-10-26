@@ -12,15 +12,6 @@ Linux clusters, high-performance computing, Livermore Computing">
 <title>Simple Linux Utility for Resource Management</title>
 <link href="linuxstyles.css" rel="stylesheet" type="text/css">
 <link href="slurmstyles.css" rel="stylesheet" type="text/css">
-</head>
-
-<body><div id="container">
-
-<div id="banner">
-<img src="slurm_banner_schedmd.png" width="796" height="96" usemap="#Map">
-</div>
-
-<div id="cse" style="width: 97%;">Loading</div>
 <script src="http://www.google.com/jsapi" type="text/javascript"></script>
 <script type="text/javascript">
   google.load('search', '1', {language : 'en', style : google.loader.themes.V2_DEFAULT});
@@ -32,9 +23,12 @@ Linux clusters, high-performance computing, Livermore Computing">
   }, true);
 </script>
 
-<div id="navigation">
+</head>
 
-<h2><a href="slurm.shtml" class="nav">Home</a></h2>
+<body><div id="container"><div id="row">
+
+<div id="navigation">
+<a href="slurm.shtml"><img class="displayed" src="slurm_logo.png" width="130" usemap="#Map"></a>
 
 <h2>About</h2>
 <ul>
@@ -60,7 +54,9 @@ Linux clusters, high-performance computing, Livermore Computing">
 	  <li><a href="download.shtml#related" class="nav">Related Software</a></li>
 	  <li><a href="quickstart_admin.shtml" class="nav">Installation Guide</a></li>
 </ul>
+<a href="http://www.schedmd.com"><img class="displayed" src="schedmd.png" width="130" usemap="#Map"></a>
 </div>
 
 <div id="content">
 
+<div id="cse">Loading...</div>
