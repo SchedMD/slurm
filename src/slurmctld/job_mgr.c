@@ -8771,8 +8771,10 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 	if (rc)
 		rc = READY_NODE_STATE;
 
-	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr) ||
-	    (job_ptr->details && job_ptr->details->prolog_running))
+	if (job_ptr->details && job_ptr->details->prolog_running)
+		rc &= (~READY_NODE_STATE);
+
+	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 		rc |= READY_JOB_STATE;
 	if ((rc == (READY_NODE_STATE | READY_JOB_STATE)) &&
 	    job_ptr->alias_list && !strcmp(job_ptr->alias_list, "TBD") &&

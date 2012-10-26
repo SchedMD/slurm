@@ -351,9 +351,9 @@ int main(int argc, char *argv[])
 		/*
 		 * Allocation granted!
 		 */
+		info("Granted job allocation %u", alloc->job_id);
 		pending_job_id = alloc->job_id;
 #ifdef HAVE_BG
-		info("Granted job allocation %u", alloc->job_id);
 		if (!_wait_bluegene_block_ready(alloc)) {
 			if(!allocation_interrupted)
 				error("Something is wrong with the "
@@ -361,15 +361,12 @@ int main(int argc, char *argv[])
 			goto relinquish;
 		}
 #else
-		verbose("Granted job allocation %u, waiting for nodes to "
-			"become ready", alloc->job_id);
 		if (!_wait_nodes_ready(alloc)) {
 			if (!allocation_interrupted)
 				error("Something is wrong with the "
 				      "boot of the nodes.");
 			goto relinquish;
 		}
-		info("Granted job allocation %u", alloc->job_id);
 #endif
 	}
 
@@ -1076,10 +1073,12 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 
 	suspend_time = slurm_get_suspend_timeout();
 	resume_time  = slurm_get_resume_timeout();
-	if ((suspend_time == 0) || (resume_time == 0))
-		return 1;	/* Power save mode disabled */
-	max_delay = suspend_time + resume_time;
-	max_delay *= 5;		/* Allow for ResumeRate support */
+	if (suspend_time || resume_time) {
+		max_delay = suspend_time + resume_time;
+		max_delay *= 5;		/* Allow for ResumeRate support */
+	} else {
+		max_delay = 300;	/* Wait to 5 min for PrologSlurmctld */
+	}
 
 	pending_job_id = alloc->job_id;
 
@@ -1098,20 +1097,15 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			cur_delay += POLL_SLEEP;
 		}
 
-		if (opt.wait_all_nodes)
-			rc = slurm_job_node_ready(alloc->job_id);
-		else {
-			is_ready = 1;
-			break;
-		}
-
+		rc = slurm_job_node_ready(alloc->job_id);
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
 		if ((rc == READY_JOB_ERROR) || (rc == EAGAIN))
 			continue;			/* retry */
 		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
 			break;
-		if (rc & READY_NODE_STATE) {		/* job and node ready */
+		if ((rc & READY_JOB_STATE) && 
+		    ((rc & READY_NODE_STATE) || !opt.wait_all_nodes)) {
 			is_ready = 1;
 			break;
 		}
