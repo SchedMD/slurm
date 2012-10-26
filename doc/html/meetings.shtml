@@ -3,26 +3,32 @@
 <h1>Meetings</h1>
 
 <p><b>SLURM BoF at SC12</b><br>
-15 November 2012 12:15<br>
+15 November 2012, 12:15<br>
 Salt Lake City, UT</p>
+
+<p><b>SLURM User Group Meeting 2013</b><br>
+Summer 2013<br>
+San Fransisco, California, USA<br>
+Host: SchedMD</p>
+
+<br>
+<h2>Past User Group Meetings</h2>
 
 <p><b>SLURM User Group Meeting 2012</b><br>
 9-10 October 2012<br>
-Barcelona, Spain</p>
+Barcelona, Spain<br>
+Host: Barcelona Supercomputing Center</p>
 
-<p><a href="http://www.bsc.es/SlurmUserMeeting2012">Call for submissions</a><br>
-<a href="http://www.bsc.es/SlurmUserMeeting2012">Registration</a><br>
-<a href="http://www.bsc.es/SlurmUserMeeting2012">Agenda</a><br>
-</p>
+<p><b>SLURM User Group Meeting 2011</b><br>
+22-23 September 2011<br>
+Phoenix, Arizona, USA<br>
+Host: Bull</p>
 
-<!--<p><b>SLURM User Group Meeting 2011</b><br>
-September 22-23, 2011<br>
-Phoenix, Arizona, USA</p>-->
+<p><b>SLURM User Group Meeting 2010</b><br>
+5 October 2010<br>
+Paris, France<br>
+Host: CEA</p>
 
-<!--<p><b>SLURM User Group Meeting 2010</b><br>
-October 5, 2010<br>
-Paris, France</p>-->
-
-<p style="text-align:center;">Last modified 11 September 2012</p>
+<p style="text-align:center;">Last modified 26 October 2012</p>
 
 <!--#include virtual="footer.txt"-->
