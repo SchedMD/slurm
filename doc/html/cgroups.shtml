@@ -1,12 +1,13 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Cgroups Guide</h1>
+
 <h2>Cgroups Overview</h2>
-For a comprehensive description of Linux Control Groups (cgroups) see the
+<p>For a comprehensive description of Linux Control Groups (cgroups) see the
 <a href="http://www.kernel.org/doc/Documentation/cgroups/cgroups.txt">
 cgroups documentation</A> at kernel.org. Detailed knowledge of cgroups is not
 required to use cgroups in SLURM, but a basic understanding of the
-following features of cgroups is helpful:
+following features of cgroups is helpful:</p>
 <ul>
 <li><b>Cgroup</b> - a container for a set of processes subject to common
 controls or monitoring, implemented as a directory and a set of files
@@ -27,9 +28,13 @@ the cgroup.</li>
 <li>additional state objects specific to each subsystem.</li>
 </ul>
 </ul>
-<br>
+<p><b>NOTE:</b> There can be a serious performance problem with memory cgroups
+on conventional multi-socket, multi-core nodes in kernels prior to 2.6.38 due
+to contention between processors for a spinlock.  This problem seems to have
+been completely fixed in the 2.6.38 kernel.</p>
+
 <h2>Use of Cgroups in SLURM</h2>
-SLURM provides cgroup versions of a number of plugins.
+<p>SLURM provides cgroup versions of a number of plugins.</p>
 <ul>
 <li>proctrack (process tracking)</li>
 <li>task (task management)</li>
@@ -37,9 +42,9 @@ SLURM provides cgroup versions of a number of plugins.
 The cgroup plugins can provide a number of benefits over the
 other more standard plugins, as described below.
 </ul>
-<br>
+
 <h2>SLURM Cgroups Configuration Overview</h2>
-There are several sets of configuration options for SLURM cgroups:
+<p>There are several sets of configuration options for SLURM cgroups:</p>
 <ul>
 <li><a href="slurm.conf.html">slurm.conf</a> provides options to enable the
 cgroup plugins. Each plugin may be enabled or disabled independently
@@ -52,24 +57,25 @@ cgroups when they are no longer in use.
 See <a href="#cleanup">Cleanup of SLURM Cgroups</a> below for details.</li>
 </ul>
 <a name="available"></a>
-<br>
+
 <h2>Currently Available Cgroup Plugins</h2>
+
 <h3>proctrack/cgroup plugin</h3>
-The proctrack/cgroup plugin is an alternative to other proctrack
+<p>The proctrack/cgroup plugin is an alternative to other proctrack
 plugins such as proctrack/linux for process tracking and
 suspend/resume capability. proctrack/cgroup uses the freezer subsystem
-which is more reliable for tracking and control than proctrack/linux.
-<p>
-To enable this plugin, configure the following option in slurm.conf:
+which is more reliable for tracking and control than proctrack/linux.</p>
+<p>To enable this plugin, configure the following option in slurm.conf:
 <pre>ProctrackType=proctrack/cgroup</pre>
 </p>
-There are no specific options for this plugin in cgroup.conf, but the general
+<p>There are no specific options for this plugin in cgroup.conf, but the general
 options apply. See the <a href="cgroup.conf.html">cgroup.conf</a> man page for
-details.
+details.</p>
+
 <h3>task/cgroup plugin</h3>
-The task/cgroup plugin is an alternative other task plugins such as
+<p>The task/cgroup plugin is an alternative other task plugins such as
 task/affinity plugin for task management. task/cgroup provides the
-following features:
+following features:</p>
 <ul>
 <li>The ability to confine jobs and steps to their allocated cpuset.</li>
 <li>The ability to bind tasks to sockets, cores and threads within their step's
@@ -82,14 +88,13 @@ binding.</li>
 <li>The ability to confine jobs to their allocated set of generic resources
 (gres devices).</li>
 </ul>
-The task/cgroup plugin uses the cpuset, memory and devices subsystems.
-<p>
-To enable this plugin, configure the following option in slurm.conf:
-<pre>TaskPlugin=task/cgroup</pre>
-</p>
-There are many specific options for this plugin in cgroup.conf.  The general
+<p>The task/cgroup plugin uses the cpuset, memory and devices subsystems.</p>
+<p>To enable this plugin, configure the following option in slurm.conf:
+<pre>TaskPlugin=task/cgroup</pre></p>
+<p>There are many specific options for this plugin in cgroup.conf.  The general
 options also apply. See the <a href="cgroup.conf.html">cgroup.conf</a> man page
-for details.
+for details.</p>
+
 <h3>jobacct_gather/cgroup plugin</h3>
 <b>At present, jobacct_gather/cgroup should be considered experimental.</b>
 <p>
@@ -100,16 +105,15 @@ jobacct_gather/cgroup uses the cpuacct and memory subsystems. Note: the cpu and
 memory statistics collected by this plugin do not represent the same resources
 as the cpu and memory statistics collected by the jobacct_gather/linux plugin
 (sourced from /proc stat).
-<p>
-To enable this plugin, configure the following option in slurm.conf:
+<p>To enable this plugin, configure the following option in slurm.conf:
 <pre>JobacctGatherType=jobacct_gather/cgroup</pre>
 </p>
-There are no specific options for this plugin in cgroup.conf, but the general
+<p>There are no specific options for this plugin in cgroup.conf, but the general
 options apply. See the <a href="cgroup.conf.html">cgroup.conf</a> man page for
-details.
-<br><br>
+details.</p>
+
 <h2>Organization of SLURM Cgroups</h2>
-SLURM cgroups are organized as follows.  A base directory (mount point) is
+<p>SLURM cgroups are organized as follows.  A base directory (mount point) is
 created at /cgroup, or as configured by the <i>CgroupMountpoint</I> option in
 <a href="cgroup.conf.html">cgroup.conf</a>. All cgroup
 hierarchies are created below this base directory. A separate hierarchy is
@@ -122,17 +126,16 @@ step or task), followed by the relevant numeric id. The following example shows
 the path of the task cgroup in the cpuset hierarchy for taskid#2 of stepid#0 of
 jobid#123 for userid#100, using the default base directory (/cgroup):
 <p><pre>/cgroup/cpuset/slurm/uid_100/job_123/step_0/task_2</pre></p>
-Note that this structure applies to a specific compute node. Jobs that use more
-than one node will have a cgroup structure on each node.
-<a name="cleanup"></a>
-<br><br>
-<h2>Cleanup of SLURM Cgroups</h2>
-Linux provides a mechanism for the automatic removal of a cgroup when its
+<p>Note that this structure applies to a specific compute node. Jobs that use more
+than one node will have a cgroup structure on each node.</p>
+
+<a name="cleanup"><h2>Cleanup of SLURM Cgroups</h2></a>
+<p>Linux provides a mechanism for the automatic removal of a cgroup when its
 state changes from non-empty to empty.  A cgroup is empty when no processes are
 attached to it and it has no child cgroups.  The SLURM cgroups implementation
 allows this mechanism to be used to automatically remove the relevant SLURM
 cgroups when tasks, steps and jobs terminate. To enable this automatic removal
-feature, follow these steps:
+feature, follow these steps:</p>
 <ul>
 <li>If desired, configure the location of the SLURM Cgroup release agent
 directory. This is done using the <i>CgroupReleaseAgentDir</i> option in
@@ -171,6 +174,6 @@ the following example.</li>
 </ul>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 June 2012</p>
+<p style="text-align:center;">Last modified 26 October 2012</p>
 
 <!--#include virtual="footer.txt"-->

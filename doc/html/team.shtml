@@ -13,10 +13,13 @@ organizations. Lead SLURM developers are:
 <!-- FUNDING ORGANIZATIONS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 <li><a href="http://www.bsc.es">Barcelona Supercomputer Center</a></li>
 <li><a href="http://www.bull.com">Bull</a></li>
+<li><a href="http://www.cea.fr">CEA</a></li>
 <li><a href="http://www.fhcrc.org">Fred Hutchinson Cancer Research Center</a></li>
 <li><a href="http://www.hp.com">HP</a></li>
 <li><a href="http://www.llnl.gov">Lawrence Livermore National Laboratory</a></li>
+<li><a href="http://www.nvidia.com">NVIDIA</a></li>
 <li><a href="http://www.ornl.gov">Oak Ridge National Laboratory</a></li>
+<li><a href="http://www.schedmd.com">SchedMD</a></li>
 <br><!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 <li>Ramiro Alba (Centre Tecnol&ograve;gic de Tranfer&egrave;ncia de Calor, Spain)</li>
 <li>Amjad Majid Ali (Colorado State University)</li>
@@ -122,6 +125,6 @@ organizations. Lead SLURM developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 25 October 2012</p>
+<p style="text-align:center;">Last modified 26 October 2012</p>
 
 <!--#include virtual="footer.txt"-->
