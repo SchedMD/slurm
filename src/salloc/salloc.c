@@ -355,7 +355,7 @@ int main(int argc, char *argv[])
 		pending_job_id = alloc->job_id;
 #ifdef HAVE_BG
 		if (!_wait_bluegene_block_ready(alloc)) {
-			if(!allocation_interrupted)
+			if (!allocation_interrupted)
 				error("Something is wrong with the "
 				      "boot of the block.");
 			goto relinquish;
@@ -1090,7 +1090,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 	for (i=0; (cur_delay < max_delay); i++) {
 		if (i) {
 			if (i == 1)
-				info("Waiting for nodes to boot");
+				info("Waiting for resource configuration");
 			else
 				debug("still waiting");
 			sleep(POLL_SLEEP);
