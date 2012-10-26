@@ -164,7 +164,7 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 }
 
 /* Build the smap_system_ptr structure from the node records */
-extern void init_grid(node_info_msg_t *node_info_ptr)
+extern void init_grid(node_info_msg_t *node_info_ptr, int cols)
 {
 	int i, j, len;
 	int default_y_offset = 0;
@@ -265,11 +265,13 @@ extern void init_grid(node_info_msg_t *node_info_ptr)
 		default_y_offset = (dim_size[3] * dim_size[2]) +
 				   (dim_size[2] - dim_size[3]);
 	}
+	if (cols == 0)
+		cols = 80;
 	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
 		smap_node = smap_system_ptr->grid[i];
 		if (params.cluster_dims == 1) {
-			smap_node->grid_xcord = i + 1;
-			smap_node->grid_ycord = 1;
+			smap_node->grid_xcord = (i % cols) + 1;
+			smap_node->grid_ycord = (i / cols) + 1;
 		} else if (params.cluster_dims == 2) {
 			smap_node->grid_xcord = smap_node->coord[0] + 1;
 			smap_node->grid_ycord =

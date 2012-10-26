@@ -101,10 +101,10 @@ if {$matches != 3} {
 	send_user "\nFAILURE: processed $matches of 3 environment variables\n"
 	set exit_code 1
 }
+cancel_job $job_id
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
-cancel_job $job_id
 exit $exit_code

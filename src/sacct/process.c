@@ -61,29 +61,32 @@ char *find_hostname(uint32_t pos, char *hosts)
 
 void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from)
 {
-	if(dest->vsize_max < from->vsize_max) {
+	/* Means it is a blank record */
+	if (from->cpu_min == NO_VAL)
+		return;
+
+	if (dest->vsize_max < from->vsize_max) {
 		dest->vsize_max = from->vsize_max;
 		dest->vsize_max_nodeid = from->vsize_max_nodeid;
 		dest->vsize_max_taskid = from->vsize_max_taskid;
 	}
 	dest->vsize_ave += from->vsize_ave;
 
-	if(dest->rss_max < from->rss_max) {
+	if (dest->rss_max < from->rss_max) {
 		dest->rss_max = from->rss_max;
 		dest->rss_max_nodeid = from->rss_max_nodeid;
 		dest->rss_max_taskid = from->rss_max_taskid;
 	}
 	dest->rss_ave += from->rss_ave;
 
-	if(dest->pages_max < from->pages_max) {
+	if (dest->pages_max < from->pages_max) {
 		dest->pages_max = from->pages_max;
 		dest->pages_max_nodeid = from->pages_max_nodeid;
 		dest->pages_max_taskid = from->pages_max_taskid;
 	}
 	dest->pages_ave += from->pages_ave;
 
-	if((dest->cpu_min > from->cpu_min)
-	   || (dest->cpu_min == NO_VAL)) {
+	if ((dest->cpu_min > from->cpu_min) || (dest->cpu_min == NO_VAL)) {
 		dest->cpu_min = from->cpu_min;
 		dest->cpu_min_nodeid = from->cpu_min_nodeid;
 		dest->cpu_min_taskid = from->cpu_min_taskid;

@@ -32,6 +32,8 @@ HIGHLIGHTS
   nodes.
 - Added srun option "--cpu-freq" to enable user control over the job's CPU
   frequency and thus it's power consumption.
+- Added priority/multifactor2 plugin supporting ticket based shares.
+- Added gres/mic plugin supporting Intel Many Integrated Core (MIC) processors. 
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================

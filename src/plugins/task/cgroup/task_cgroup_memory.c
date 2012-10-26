@@ -302,7 +302,6 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 
 extern int task_cgroup_memory_create(slurmd_job_t *job)
 {
-	int rc;
 	int fstatus = SLURM_ERROR;
 
 	xcgroup_t memory_cg;
@@ -311,7 +310,6 @@ extern int task_cgroup_memory_create(slurmd_job_t *job)
 	uint32_t stepid = job->stepid;
 	uid_t uid = job->uid;
 	gid_t gid = job->gid;
-	pid_t pid;
 
 	char* slurm_cgpath ;
 

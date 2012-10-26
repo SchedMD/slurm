@@ -18,6 +18,11 @@ documents those changes that are of interest to users and admins.
  -- Add ReconfigFlags value of KeepPartState. See "man slurm.conf" for details.
  -- Modify the task/cgroup plugin adding a task_pre_launch_priv function and
     move slurmstepd outside of the step's cgroup. Work by Matthieu Hautreux.
+ -- Intel MIC processor support added using gres/mic plugin. BIG thanks to
+    Olli-Pekka Lehto, CSC-IT Center for Science Ltd.
+ -- Accounting - Change empty jobacctinfo structs to not actually be used
+    instead of putting 0's into the database we put NO_VALS and have sacct
+    figure out jobacct_gather wasn't used.
 
 * Changes in SLURM 2.5.0.pre3
 =============================
@@ -109,6 +114,10 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Fix for printing realtime server debug correctly.
  -- BGQ - Cleaner handling of cnode failures when reported through the runjob
     interface instead of through the normal method.
+ -- smap - spread node information across multiple lines for larger systems.
+ -- Cray - Defer salloc until after PrologSlurmctld completes.
+ -- Correction to slurmdbd communications failure handling logic, incorrect
+    error codes returned in some cases.
 
 * Changes in SLURM 2.4.3
 ========================

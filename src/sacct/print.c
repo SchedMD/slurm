@@ -209,6 +209,7 @@ void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
+
 			if (!fuzzy_equal(tmp_dub, NO_VAL))
 				tmp_char = _elapsed_time((long)tmp_dub, 0);
 
@@ -646,6 +647,8 @@ void print_fields(type_t type, void *object)
 				tmp_int = NO_VAL;
 				break;
 			}
+			if (tmp_int == (uint16_t)NO_VAL)
+				tmp_int = NO_VAL;
 			field->print_routine(field,
 					     tmp_int,
 					     (curr_inx == field_count));
@@ -709,6 +712,8 @@ void print_fields(type_t type, void *object)
 				tmp_int = NO_VAL;
 				break;
 			}
+			if (tmp_int == (uint16_t)NO_VAL)
+				tmp_int = NO_VAL;
 			field->print_routine(field,
 					     tmp_int,
 					     (curr_inx == field_count));
@@ -774,6 +779,8 @@ void print_fields(type_t type, void *object)
 				tmp_int = NO_VAL;
 				break;
 			}
+			if (tmp_int == (uint16_t)NO_VAL)
+				tmp_int = NO_VAL;
 			field->print_routine(field,
 					     tmp_int,
 					     (curr_inx == field_count));
@@ -835,6 +842,8 @@ void print_fields(type_t type, void *object)
 				tmp_int = NO_VAL;
 				break;
 			}
+			if (tmp_int == (uint16_t)NO_VAL)
+				tmp_int = NO_VAL;
 			field->print_routine(field,
 					     tmp_int,
 					     (curr_inx == field_count));

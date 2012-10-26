@@ -2,10 +2,9 @@
 
 <h1>Generic Resource (GRES) Scheduling</h1>
 
-<P>Beginning in SLURM version 2.2 generic resource (Gres) scheduling is
-supported through a flexible plugin mechanism. Support is initially provided
-for Graphics Processing Units (GPUs), although support for any resources is
-possible.</P>
+<P>Generic resource (GRES) scheduling is supported through a flexible plugin
+mechanism. Support is currently provided for Graphics Processing Units (GPUs)
+and Intel&reg; Many Integrated Core (MIC) processors.</P>
 
 <!-------------------------------------------------------------------------->
 <h2>Configuration</h2>
@@ -17,10 +16,10 @@ interest are:</P>
 
 <UL>
 <LI><B>GresTypes</B> a comma delimited list of generic resources to be
-managed (e.g. <I>GresTypes=gpu,nic</I>). This name may be that of an
+managed (e.g. <I>GresTypes=gpu,mic</I>). This name may be that of an
 optional plugin providing additional control over the resources.</LI>
 <LI><B>Gres</B> the specific generic resource and their count associated with
-each node (e.g. <I>NodeName=linux[0-999] Gres=gpu:8,nic:2</I>).</LI>
+each node (e.g. <I>NodeName=linux[0-999] Gres=gpu:1,mic:2</I>).</LI>
 </UL>
 
 <P>Note that the Gres specification for each node works in the same fashion
@@ -53,7 +52,7 @@ Multiple CPUs may be specified using a comma delimited list or a range may be
 specified using a "-" separator (e.g. "0,1,2,3" or "0-3").
 If not specified, then any CPU can be used with the resources.
 If any CPU can be used with the resources, then do not specify the
-<B>CPUs</B> option for improved speed in the SLURM scheduling logic.
+CPUs option for improved speed in the SLURM scheduling logic.
 
 <LI><B>File</B> Fully qualified pathname of the device files associated with a
 resource.
@@ -62,10 +61,10 @@ The name can include a numberic range suffix to be interpretted by SLURM
 This field is generally required if enforcement of generic resource
 allocations is to be supported (i.e. prevents a users from making
 use of resources allocated to a different user).
-If <B>File</B> is specified then <B>Count</B> must be either set to the number
+If File is specified then Count must be either set to the number
 of file names specified or not set (the default value is the number of files
 specified).
-NOTE: If you specify the <B>File</B> parameter for a resource on some node,
+NOTE: If you specify the File parameter for a resource on some node,
 the option must be specified on all nodes and SLURM will track the assignment
 of each specific resource on each node. Otherwise SLURM will only track a
 count of allocated resources rather than the state of each individual device
@@ -150,7 +149,28 @@ JobStep=1234.2 CUDA_VISIBLE_DEVICES=3
 <P>NOTE: Be sure to specify the <I>File</I> parameters in the <I>gres.conf</I>
 file and insure they are in the increasing numeric order.</P>
 <!-------------------------------------------------------------------------->
+<h2>MIC Management</h2>
 
-<p style="text-align: center;">Last modified 2 July 2012</p>
+<P>SLURM can be used to provide resource management for systems with the
+Intel&reg; Many Integrated Core (MIC) processor.
+SLURM sets an OFFLOAD_DEVICES environment variable, which controls the
+selection of MICs available to a job step.
+The OFFLOAD_DEVICES environment variable is used by both Intel
+LEO (Language Extensioins for Offload) and the MKL (Math Kernel Library)
+automatic offload.
+(This is very similar to how the CUDA_VISIBLE_DEVICES environment variable is
+used to control which GPUs can be used by CUDA&trade; software.)
+If no MICs are reserved via GRES, the OFFLOAD_DEVICES variable is set to
+-1. This causes the code to ignore the offload directives and run MKL
+routines on the CPU. The code will still run but only on the CPU. This
+also gives a somewhat cryptic warning:</P>
+<pre>offload warning: OFFLOAD_DEVICES device number -1 does not correspond
+to a physical device</pre>
+<P>The offloading is automatically scaled to all the devices, (e.g. if
+--gres=mic:2 is defined) then all offloads use two MICs unless
+explicitly defined in the offload pragmas.</P>
+<!-------------------------------------------------------------------------->
+
+<p style="text-align: center;">Last modified 25 October 2012</p>
 
 </body></html>

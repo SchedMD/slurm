@@ -2487,7 +2487,8 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	resv_desc.features   = resv_ptr->features;
 	resv_desc.node_cnt   = xmalloc(sizeof(uint32_t) * 2);
 	resv_desc.node_cnt[0]= resv_ptr->node_cnt - i;
-	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp_bitmap, &core_bitmap);
+	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp_bitmap,
+			  &core_bitmap);
 	xfree(resv_desc.node_cnt);
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
@@ -2495,6 +2496,8 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 		bit_and(resv_ptr->node_bitmap, avail_node_bitmap);
 		bit_or(resv_ptr->node_bitmap, tmp_bitmap);
 		FREE_NULL_BITMAP(tmp_bitmap);
+		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
+		resv_ptr->core_bitmap = core_bitmap;
 		xfree(resv_ptr->node_list);
 		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
 		info("modified reservation %s due to unusable nodes, "
@@ -2752,13 +2755,16 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	resv_desc.flags      = resv_ptr->flags;
 	resv_desc.node_cnt   = xmalloc(sizeof(uint32_t) * 2);
 	resv_desc.node_cnt[0]= 0 - delta_node_cnt;
-	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp1_bitmap, &core_bitmap);
+	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp1_bitmap,
+			  &core_bitmap);
 	xfree(resv_desc.node_cnt);
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
 	if (i == SLURM_SUCCESS) {
 		bit_or(resv_ptr->node_bitmap, tmp1_bitmap);
 		FREE_NULL_BITMAP(tmp1_bitmap);
+		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
+		resv_ptr->core_bitmap = core_bitmap;
 		xfree(resv_ptr->node_list);
 		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
 		resv_ptr->node_cnt = node_cnt;
@@ -3602,9 +3608,10 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				if (*exc_core_bitmap == NULL)
 					*exc_core_bitmap = 
 						bit_copy(resv_ptr->core_bitmap);
-				else 
+				} else {
 					bit_or(*exc_core_bitmap,
 					       resv_ptr->core_bitmap);
+				}
 			}
 		}
 		list_iterator_destroy(iter);
