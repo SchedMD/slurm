@@ -34,6 +34,7 @@ extern int dim_size[3];
  */
 struct select_jobinfo {
 	uint16_t		magic;
+	uint8_t			confirmed;
 	uint32_t		reservation_id;
 	uint64_t		confirm_cookie;
 	select_jobinfo_t	*other_jobinfo;

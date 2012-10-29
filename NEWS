@@ -23,6 +23,7 @@ documents those changes that are of interest to users and admins.
  -- Accounting - Change empty jobacctinfo structs to not actually be used
     instead of putting 0's into the database we put NO_VALS and have sacct
     figure out jobacct_gather wasn't used.
+ -- Cray - Prevent calling basil_confirm more than once per job using a flag.
 
 * Changes in SLURM 2.5.0.pre3
 =============================

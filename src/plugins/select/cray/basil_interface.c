@@ -21,6 +21,7 @@ static int _set_select_jobinfo(select_jobinfo_t *jobinfo,
 			       enum select_jobdata_type data_type, void *data)
 {
 	uint32_t *uint32 = (uint32_t *) data;
+	uint8_t  *uint8  = (uint8_t *)  data;
 
 	if (jobinfo == NULL) {
 		error("cray/set_select_jobinfo: jobinfo not set");
@@ -32,6 +33,9 @@ static int _set_select_jobinfo(select_jobinfo_t *jobinfo,
 	}
 
 	switch (data_type) {
+	case SELECT_JOBDATA_CONFIRMED:
+		jobinfo->confirmed = *uint8;
+		break;
 	case SELECT_JOBDATA_RESV_ID:
 		jobinfo->reservation_id = *uint32;
 		break;
@@ -48,6 +52,7 @@ static int _get_select_jobinfo(select_jobinfo_t *jobinfo,
 {
 	uint64_t *uint64 = (uint64_t *) data;
 	uint32_t *uint32 = (uint32_t *) data;
+	uint8_t  *uint8  = (uint8_t *)  data;
 
 	if (jobinfo == NULL) {
 		error("cray/get_select_jobinfo: jobinfo not set");
@@ -59,6 +64,9 @@ static int _get_select_jobinfo(select_jobinfo_t *jobinfo,
 	}
 
 	switch (data_type) {
+	case SELECT_JOBDATA_CONFIRMED:
+		*uint8 = jobinfo->confirmed;
+		break;
 	case SELECT_JOBDATA_RESV_ID:
 		*uint32 = jobinfo->reservation_id;
 		break;
@@ -878,8 +886,19 @@ extern int do_basil_reserve(struct job_record *job_ptr)
  */
 extern int do_basil_confirm(struct job_record *job_ptr)
 {
+	uint8_t  confirmed;
 	uint32_t resv_id;
 	uint64_t pagg_id;
+
+	if (_get_select_jobinfo(job_ptr->select_jobinfo->data,
+			SELECT_JOBDATA_CONFIRMED, &confirmed)
+			!= SLURM_SUCCESS) {
+		error("can not read confirmed for JobId=%u", job_ptr->job_id);
+	} else if (confirmed != 0) {
+		debug2("ALPS reservation for JobId %u previously confirmed",
+		       job_ptr->job_id);
+		return SLURM_SUCCESS;
+	}
 
 	if (_get_select_jobinfo(job_ptr->select_jobinfo->data,
 			SELECT_JOBDATA_RESV_ID, &resv_id) != SLURM_SUCCESS) {
@@ -906,6 +925,9 @@ extern int do_basil_confirm(struct job_record *job_ptr)
 		if (rc == 0) {
 			debug2("confirmed ALPS resId %u for JobId %u, pagg "
 			       "%"PRIu64"", resv_id, job_ptr->job_id, pagg_id);
+			confirmed = 1;
+			_set_select_jobinfo(job_ptr->select_jobinfo->data,
+				SELECT_JOBDATA_CONFIRMED, &confirmed);
 			return SLURM_SUCCESS;
 		} else if (rc == -BE_NO_RESID) {
 			/*

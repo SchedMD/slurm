@@ -356,6 +356,7 @@ enum select_jobdata_type {
 	SELECT_JOBDATA_START_LOC, /* data-> uint16_t
 				   * start_loc[SYSTEM_DIMENSIONS] */
 	SELECT_JOBDATA_USER_NAME, /* data-> char * user_name */
+	SELECT_JOBDATA_CONFIRMED, /* data-> uint8_t ALPS reservation confirmed */
 };
 
 enum select_nodedata_type {

@@ -630,9 +630,22 @@ extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
 {
 	int rc = SLURM_ERROR;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+		if (!jobinfo) {
+			pack8(0, buffer);
+			pack32(0, buffer);
+			pack64(0, buffer);
+			return SLURM_SUCCESS;
+		}
+		pack8(jobinfo->confirmed, buffer);
+		pack32(jobinfo->reservation_id, buffer);
+		pack64(jobinfo->confirm_cookie, buffer);
+		rc = other_select_jobinfo_pack(jobinfo->other_jobinfo, buffer,
+					       protocol_version);
+	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		if (!jobinfo) {
 			pack32(0, buffer);
+			pack64(0, buffer);
 			return SLURM_SUCCESS;
 		}
 		pack32(jobinfo->reservation_id, buffer);
@@ -652,7 +665,13 @@ extern int select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo_pptr,
 	*jobinfo_pptr = jobinfo;
 
 	jobinfo->magic = JOBINFO_MAGIC;
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+		safe_unpack8(&jobinfo->confirmed, buffer);
+		safe_unpack32(&jobinfo->reservation_id, buffer);
+		safe_unpack64(&jobinfo->confirm_cookie, buffer);
+		rc = other_select_jobinfo_unpack(&jobinfo->other_jobinfo,
+						 buffer, protocol_version);
+	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		safe_unpack32(&jobinfo->reservation_id, buffer);
 		safe_unpack64(&jobinfo->confirm_cookie, buffer);
 		rc = other_select_jobinfo_unpack(&jobinfo->other_jobinfo,
