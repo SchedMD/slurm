@@ -1,6 +1,5 @@
 html {
   min-height:100%;
-  margin-bottom: 1px;
 }
 
 body {
@@ -37,6 +36,9 @@ pre {font-size: 90%; font-family:"Courier New", Courier, monospace}
   background-color: #FFFFFF;
   line-height:130%;
   display:table;
+  min-height:670px;
+  height:auto;
+  height:670px;
 }
 
 #row {
