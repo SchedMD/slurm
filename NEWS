@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
     instead of putting 0's into the database we put NO_VALS and have sacct
     figure out jobacct_gather wasn't used.
  -- Cray - Prevent calling basil_confirm more than once per job using a flag.
+ -- Fix bug with topology/tree and job with min-max node count. Now try to
+    get max node count rather than minimizing leaf switches used.
 
 * Changes in SLURM 2.5.0.pre3
 =============================

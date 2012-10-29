@@ -1530,6 +1530,13 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		    (!_enough_nodes(switches_node_cnt[j], rem_nodes,
 				    min_nodes, req_nodes)))
 			continue;
+		if ((best_fit_inx != -1) && (req_nodes > min_nodes) &&
+		    (switches_node_cnt[best_fit_inx] < req_nodes) &&
+		    (switches_node_cnt[best_fit_inx] < switches_node_cnt[j])) {
+			/* Try to get up to the requested node count */
+			best_fit_inx = -1;
+		}
+
 		/*
 		 * If first possibility OR
 		 * first required switch OR
@@ -1576,12 +1583,6 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		goto fini;
 	}
 	bit_and(avail_nodes_bitmap, switches_bitmap[best_fit_inx]);
-	if ((min_nodes <  req_nodes) &&
-	    (min_nodes <= switches_node_cnt[best_fit_inx])) {
-		/* If job specifies a range of node counts, then allocate
-		 * resources with a minimal switch configuration */
-		rem_nodes = switches_node_cnt[best_fit_inx];
-	}
 
 	/* Identify usable leafs (within higher switch having best fit) */
 	for (j=0; j<switch_record_cnt; j++) {
@@ -1686,7 +1687,6 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 
 		/* accumulate resources from this leaf on a best-fit basis */
 		while ((max_nodes > 0) && ((rem_nodes > 0) || (rem_cpus > 0))) {
-			
 			/* pick a node using a best-fit approach */
 			/* if rem_cpus < 0, then we will search for nodes 
 			 * with lower free cpus nb first
