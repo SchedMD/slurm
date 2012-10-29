@@ -392,6 +392,10 @@ These functions are included in the libslurm library,
 which must be linked to your process for use
 (e.g. "cc \-lslurm myprog.c").
 .LP
+The \fIcommand\fR field in the job record will be the name of user program to
+be launched by the srun or sbatch command. The field is not set when either the
+salloc command is used or the sbatch command is used with the \-\-wrap option.
+.LP
 Some data structures contain index values to cross\-reference each other.
 If the \fIshow_flags\fP argument is not set to SHOW_ALL when getting this
 data, these index values will be invalid.
