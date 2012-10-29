@@ -2916,9 +2916,9 @@ fini:	for (i=0; i<switch_record_cnt; i++) {
 		if (sp_avail_bitmap == NULL)
 			fatal ("memory allocation failure");
 
-		if (*core_bitmap){
-			exc_core_bitmap = bit_copy(*core_bitmap);
-			bit_nclear(*core_bitmap, 0, bit_size(*core_bitmap)-1);
+		if (*core_bitmap) {
+			exc_core_bitmap = *core_bitmap;
+			*core_bitmap = bit_alloc(bit_size(exc_core_bitmap));
 		}
 
 		cores_per_node = core_cnt / MAX(node_cnt, 1);
