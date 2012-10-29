@@ -339,6 +339,7 @@ typedef struct slurmctld_resv {
 	time_t end_time;	/* end time of reservation		*/
 	char *features;		/* required node features		*/
 	uint16_t flags;		/* see RESERVE_FLAG_* in slurm.h	*/
+	bool full_nodes;	/* when reservation uses full nodes or not */
 	uint32_t job_pend_cnt;	/* number of pending jobs		*/
 	uint32_t job_run_cnt;	/* number of running jobs		*/
 	List license_list;	/* structure with license info		*/
@@ -348,7 +349,6 @@ typedef struct slurmctld_resv {
 	char *name;		/* name of reservation			*/
 	bitstr_t *node_bitmap;	/* bitmap of reserved nodes		*/
 	uint32_t node_cnt;	/* count of nodes required		*/
-	uint32_t full_nodes;	/* when reservation uses full nodes or not */
 	char *node_list;	/* list of reserved nodes or ALL	*/
 	char *partition;	/* name of partition to be used		*/
 	struct part_record *part_ptr;	/* pointer to partition used	*/

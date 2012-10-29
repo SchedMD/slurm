@@ -3925,16 +3925,16 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer,
 
 	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv->accounts,	&uint32_tmp, buffer);
+		safe_unpack32(&resv->core_cnt,		buffer);
 		safe_unpack_time(&resv->end_time,	buffer);
 		safe_unpackstr_xmalloc(&resv->features,	&uint32_tmp, buffer);
+		safe_unpack16(&resv->flags,		buffer);
 		safe_unpackstr_xmalloc(&resv->licenses, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&resv->name,	&uint32_tmp, buffer);
 		safe_unpack32(&resv->node_cnt,		buffer);
-		safe_unpack32(&resv->core_cnt,		buffer);
-		safe_unpackstr_xmalloc(&resv->node_list,&uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&resv->partition,&uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&resv->node_list, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&resv->partition, &uint32_tmp, buffer);
 		safe_unpack_time(&resv->start_time,	buffer);
-		safe_unpack16(&resv->flags,		buffer);
 		safe_unpackstr_xmalloc(&resv->users,	&uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node_inx_str,   &uint32_tmp, buffer);
 		if (node_inx_str == NULL)
