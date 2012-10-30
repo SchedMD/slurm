@@ -2674,9 +2674,14 @@ static int _get_avail_core_in_node(bitstr_t *core_bitmap, int node)
 	coff = cr_get_coremap_offset(node);
 	total_cores = cr_node_num_cores[node];
 
-	for (i = 0; i < total_cores; i++)
+	if (!core_bitmap)
+		return total_cores;
+
+	for (i = 0; i < total_cores; i++) {
 		if (!bit_test(core_bitmap, coff + i))
 			avail++;
+	}
+
 	return avail;
 }
 
@@ -2722,7 +2727,7 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	if (bit_set_count(avail_bitmap) < node_cnt)
 		return avail_nodes_bitmap;
 
-	if (*core_bitmap == NULL)
+	if (core_cnt && (*core_bitmap == NULL))
 		*core_bitmap = _make_core_bitmap_filtered(avail_bitmap, 0);
 	
 	rem_nodes = node_cnt;
