@@ -184,7 +184,7 @@ In the following example, a reservation is created for account "foo", but user
 
 <pre>
 $ scontrol create reservation account=foo \
-   user=\!alan partition=pdebug \
+   user=-alan partition=pdebug \
    starttime=noon duration=60 nodecnt=2k,2k
 Reservation created: alan_9
 
@@ -194,7 +194,7 @@ ReservationName=alan_9 StartTime=2011-12-05T13:00:00
    Nodes=bgp[000x011,210x311] NodeCnt=4096
    Features=(null) PartitionName=pdebug
    Flags= Licenses=(null)
-   Users=!alan Accounts=foo
+   Users=-alan Accounts=foo
 </pre>
 
 <h2>Reservation Use</h2>
@@ -322,7 +322,7 @@ before a reservation given fewer jobs to time-slice with.</li>
 nodes be reserved (work around described above).</li>
 </ol>
 
-<p style="text-align: center;">Last modified 22 October 2012</p>
+<p style="text-align: center;">Last modified 29 October 2012</p>
 
 <!--#include virtual="footer.txt"-->
 

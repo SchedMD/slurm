@@ -379,7 +379,7 @@ static void _generate_resv_name(resv_desc_msg_t *resv_ptr)
 		key = resv_ptr->accounts;
 	else
 		key = resv_ptr->users;
-	if (key[0] == '!')
+	if (key[0] == '-')
 		key++;
 	sep = strchr(key, ',');
 	if (sep)
@@ -737,16 +737,16 @@ static int _build_account_list(char *accounts, int *account_cnt,
 	tmp = xstrdup(accounts);
 	tok = strtok_r(tmp, ",", &last);
 	while (tok) {
-		if (tok[0] == '!') {
+		if (tok[0] == '-') {
 			if (ac_cnt == 0) {
 				*account_not = true;
 			} else if (*account_not != true) {
-				info("Reservation request has snoe not/accounts");
+				info("Reservation request has some not/accounts");
 				goto inval;
 			}
 			tok++;
 		} else if (*account_not != false) {
-			info("Reservation request has snoe not/accounts");
+			info("Reservation request has some not/accounts");
 			goto inval;
 		}
 		if (!_is_account_valid(tok)) {
@@ -796,10 +796,6 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 	ac_cpy = xstrdup(accounts);
 	tok = strtok_r(ac_cpy, ",", &last);
 	while (tok) {
-		if (tok[0] == '!') {
-			account_not = true;
-			tok++;
-		}
 		if (tok[0] == '-') {
 			ac_type[ac_cnt] = 1;	/* minus */
 			minus_account = 1;
@@ -840,18 +836,36 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 	}
 
 	/* Modification of existing account list */
+	if (resv_ptr->account_not) {
+		/* change minus_account to plus_account (add to NOT list) and
+		 * change plus_account to minus_account (remove from NOT list) */
+		for (i = 0; i < ac_cnt; i++) {
+			if (ac_type[i] == 1)
+				ac_type[i] = 2;
+			else if (ac_type[i] == 2)
+				ac_type[i] = 1;
+		}
+		if (minus_account && !plus_account) {
+			minus_account = false;
+			plus_account  = true;
+		} else if (!minus_account && plus_account) {
+			minus_account = true;
+			plus_account  = false;
+		}
+	}
 	if (minus_account) {
 		if (resv_ptr->account_cnt == 0)
 			goto inval;
 		for (i=0; i<ac_cnt; i++) {
-			if (ac_type[i] != 1)
+			if (ac_type[i] != 1)	/* not minus */
 				continue;
 			found_it = false;
 			for (j=0; j<resv_ptr->account_cnt; j++) {
-				if (strcmp(resv_ptr->account_list[j],
-					   ac_list[i])) {
+				char *test_name = resv_ptr->account_list[j];
+				if (test_name[0] == '-')
+					test_name++;
+				if (strcmp(test_name, ac_list[i]))
 					continue;
-				}
 				found_it = true;
 				xfree(resv_ptr->account_list[j]);
 				resv_ptr->account_cnt--;
@@ -866,14 +880,11 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 		}
 		xfree(resv_ptr->accounts);
 		for (i=0; i<resv_ptr->account_cnt; i++) {
-			if (i == 0) {
-				resv_ptr->accounts = xstrdup(resv_ptr->
-							     account_list[i]);
-			} else {
+			if (i)
 				xstrcat(resv_ptr->accounts, ",");
-				xstrcat(resv_ptr->accounts,
-					resv_ptr->account_list[i]);
-			}
+			if (resv_ptr->account_not)
+				xstrcat(resv_ptr->accounts, "-");
+			xstrcat(resv_ptr->accounts, resv_ptr->account_list[i]);
 		}
 	}
 
@@ -881,14 +892,15 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 		if ((ac_cnt > 0) && (resv_ptr->account_cnt == 0))
 			resv_ptr->account_not = account_not;
 		for (i=0; i<ac_cnt; i++) {
-			if (ac_type[i] != 2)
+			if (ac_type[i] != 2)	/* not plus */
 				continue;
 			found_it = false;
 			for (j=0; j<resv_ptr->account_cnt; j++) {
-				if (strcmp(resv_ptr->account_list[j],
-					   ac_list[i])) {
+				char *test_name = resv_ptr->account_list[j];
+				if (test_name[0] == '-')
+					test_name++;
+				if (strcmp(test_name, ac_list[i]))
 					continue;
-				}
 				found_it = true;
 				break;
 			}
@@ -901,14 +913,11 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 		}
 		xfree(resv_ptr->accounts);
 		for (i=0; i<resv_ptr->account_cnt; i++) {
-			if (i == 0) {
-				resv_ptr->accounts = xstrdup(resv_ptr->
-							     account_list[i]);
-			} else {
+			if (i)
 				xstrcat(resv_ptr->accounts, ",");
-				xstrcat(resv_ptr->accounts,
-					resv_ptr->account_list[i]);
-			}
+			if (resv_ptr->account_not)
+				xstrcat(resv_ptr->accounts, "-");
+			xstrcat(resv_ptr->accounts, resv_ptr->account_list[i]);
 		}
 	}
 
@@ -956,7 +965,7 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
 	tmp = xstrdup(users);
 	tok = strtok_r(tmp, ",", &last);
 	while (tok) {
-		if (tok[0] == '!') {
+		if (tok[0] == '-') {
 			if (u_cnt == 0) {
 				*user_not = true;
 			} else if (*user_not != true) {
@@ -1014,10 +1023,6 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 	u_cpy = xstrdup(users);
 	tok = strtok_r(u_cpy, ",", &last);
 	while (tok) {
-		if (tok[0] == '!') {
-			user_not = true;
-			tok++;
-		}
 		if (tok[0] == '-') {
 			u_type[u_cnt] = 1;	/* minus */
 			minus_user = 1;
@@ -1060,9 +1065,26 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 	}
 
 	/* Modification of existing user list */
+	if (resv_ptr->user_not) {
+		/* change minus_user to plus_user (add to NOT list) and
+		 * change plus_user to minus_user (remove from NOT list) */
+		for (i = 0; i < u_cnt; i++) {
+			if (u_type[i] == 1)
+				u_type[i] = 2;
+			else if (u_type[i] == 2)
+				u_type[i] = 1;
+		}
+		if (minus_user && !plus_user) {
+			minus_user = false;
+			plus_user  = true;
+		} else if (!minus_user && plus_user) {
+			minus_user = true;
+			plus_user  = false;
+		}
+	}
 	if (minus_user) {
 		for (i=0; i<u_cnt; i++) {
-			if (u_type[i] != 1)
+			if (u_type[i] != 1)	/* not minus */
 				continue;
 			found_it = false;
 			for (j=0; j<resv_ptr->user_cnt; j++) {
@@ -1078,15 +1100,20 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 			}
 			if (!found_it)
 				goto inval;
+
 			/* Now we need to remove from users string */
 			k = strlen(u_name[i]);
 			tmp = resv_ptr->users;
 			while ((tok = strstr(tmp, u_name[i]))) {
 				if (((tok != resv_ptr->users) &&
-				     (tok[-1] != ',')) ||
+				     (tok[-1] != ',') && (tok[-1] != '-')) ||
 				    ((tok[k] != '\0') && (tok[k] != ','))) {
 					tmp = tok + 1;
 					continue;
+				}
+				if (tok[-1] == '-') {
+					tok--;
+					k++;
 				}
 				if (tok[-1] == ',') {
 					tok--;
@@ -1100,13 +1127,18 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 				}
 			}
 		}
+		if ((resv_ptr->users == NULL) ||
+		    (strlen(resv_ptr->users) == 0)) {
+			resv_ptr->user_not = 0;
+			xfree(resv_ptr->users);
+		}
 	}
 
 	if (plus_user) {
 		if ((u_cnt > 0) && (resv_ptr->user_cnt == 0))
 			resv_ptr->user_not = user_not;
 		for (i=0; i<u_cnt; i++) {
-			if (u_type[i] != 2)
+			if (u_type[i] != 2)	/* not plus */
 				continue;
 			found_it = false;
 			for (j=0; j<resv_ptr->user_cnt; j++) {
@@ -1119,6 +1151,8 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 				continue;	/* duplicate entry */
 			if (resv_ptr->users && resv_ptr->users[0])
 				xstrcat(resv_ptr->users, ",");
+			if (resv_ptr->user_not)
+				xstrcat(resv_ptr->users, "-");
 			xstrcat(resv_ptr->users, u_name[i]);
 			xrealloc(resv_ptr->user_list,
 				 sizeof(uid_t) * (resv_ptr->user_cnt + 1));
@@ -1919,7 +1953,6 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		rc = _update_uid_list(resv_ptr, resv_desc_ptr->users);
 		if (rc) {
 			error_code = rc;
-			info("here");
 			goto update_failure;
 		}
 	}
@@ -2054,8 +2087,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	}
 	_set_cpu_cnt(resv_ptr);
 
-	/* This needs to be after checks for both account and user
-	 * changes */
+	/* This needs to be after checks for both account and user changes */
 	if ((error_code = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS)
 		goto update_failure;
 
@@ -2084,7 +2116,6 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	return error_code;
 
 update_failure:
-	info("failure");
 	_swap_resv(resv_backup, resv_ptr);
 	_del_resv_rec(resv_backup);
 	return error_code;
@@ -3282,8 +3313,9 @@ no_assocs:	if ((resv_ptr->user_cnt == 0) || resv_ptr->user_not)
 	}
 
 end_it:
-	info("Security violation, uid=%u attempt to use reservation %s",
-	     job_ptr->user_id, resv_ptr->name);
+	info("Security violation, uid=%u account=%s attempt to use "
+	     "reservation %s",
+	     job_ptr->user_id, job_ptr->account, resv_ptr->name);
 	return ESLURM_RESERVATION_ACCESS;
 }
 
