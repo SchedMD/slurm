@@ -46,14 +46,14 @@ can be found at the <a href="team.html">SLURM Team</a> web page.</p>
 including a copyright notice, the following copyright notices are found in
 SLURM's code and documenation files:<br>
 Copyright (C) 2011 Trinity Centre for High Performance Computing<br>
-Copyright (C) 2010-2011 SchedMD LLC<br>
+Copyright (C) 2010-2012 SchedMD LLC<br>
 Copyright (C) 2009 CEA/DAM/DIF<br>
 Copyright (C) 2009-2011 Centro Svizzero di Calcolo Scientifico (CSCS)<br>
 Copyright (C) 2008-2011 Lawrence Livermore National Security<br>
 Copyright (C) 2008 Vijay Ramasubramanian<br>
 Copyright (C) 2007-2008 Red Hat, Inc.<br>
 Copyright (C) 2007-2009 National University of Defense Technology, China<br>
-Copyright (C) 2007-2011 Bull<br>
+Copyright (C) 2007-2012 Bull<br>
 Copyright (C) 2005-2008 Hewlett-Packard Development Company, L.P.<br>
 Copyright (C) 2004-2009, Marcus Holland-Moritz<br>
 Copyright (C) 2002-2007 The Regents of the University of California<br>
@@ -84,7 +84,7 @@ necessarily state or reflect those of the United States government or
 Lawrence Livermore National Security, LLC, and shall not be used for 
 advertising or product endorsement purposes.</p>
 
-<p style="text-align: center;">Last modified 27 June 2010</p>
+<p style="text-align: center;">Last modified 30 October 2012</p>
 
 <!--#include virtual="footer.txt"-->
 
