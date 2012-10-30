@@ -209,15 +209,19 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	}
 	resv_copy_ptr->assoc_list = xstrdup(resv_orig_ptr->assoc_list);
 	resv_copy_ptr->cpu_cnt = resv_orig_ptr->cpu_cnt;
+	/* do we need core_bitmap? */
+	/* do we need duration? */
 	resv_copy_ptr->end_time = resv_orig_ptr->end_time;
 	resv_copy_ptr->features = xstrdup(resv_orig_ptr->features);
 	resv_copy_ptr->flags = resv_orig_ptr->flags;
+	resv_copy_ptr->full_nodes = resv_orig_ptr->full_nodes;
 	resv_copy_ptr->job_pend_cnt = resv_orig_ptr->job_pend_cnt;
 	resv_copy_ptr->job_run_cnt = resv_orig_ptr->job_run_cnt;
 	resv_copy_ptr->licenses = xstrdup(resv_orig_ptr->licenses);
 	resv_copy_ptr->license_list = _list_dup(resv_orig_ptr->
 						license_list);
 	resv_copy_ptr->magic = resv_orig_ptr->magic;
+	/* Do we need maint_set_node? */
 	resv_copy_ptr->name = xstrdup(resv_orig_ptr->name);
 	resv_copy_ptr->node_bitmap = bit_copy(resv_orig_ptr->node_bitmap);
 	resv_copy_ptr->node_cnt = resv_orig_ptr->node_cnt;
