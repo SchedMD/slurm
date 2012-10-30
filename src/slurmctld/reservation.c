@@ -1828,8 +1828,9 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	if (!resv_ptr)
 		return ESLURM_RESERVATION_INVALID;
 
-	/* TODO: core based reservation updates */
-	if (resv_ptr->full_nodes == 0)
+	/* FIXME: Support more core based reservation updates */
+	if ((resv_ptr->full_nodes == 0) &&
+	    (resv_desc_ptr->node_cnt || resv_desc_ptr->node_list))
 		return ESLURM_RESERVATION_NOT_USABLE;
 
 	/* Make backup to restore state in case of failure */
