@@ -840,6 +840,8 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 	}
 
 	/* Modification of existing account list */
+	if ((resv_ptr->account_cnt == 0) && minus_account)
+		resv_ptr->account_not = true;
 	if (resv_ptr->account_not) {
 		/* change minus_account to plus_account (add to NOT list) and
 		 * change plus_account to minus_account (remove from NOT list) */
@@ -893,8 +895,6 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 	}
 
 	if (plus_account) {
-		if ((ac_cnt > 0) && (resv_ptr->account_cnt == 0))
-			resv_ptr->account_not = account_not;
 		for (i=0; i<ac_cnt; i++) {
 			if (ac_type[i] != 2)	/* not plus */
 				continue;
@@ -1069,6 +1069,8 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 	}
 
 	/* Modification of existing user list */
+	if ((resv_ptr->user_cnt == 0) && minus_user)
+		resv_ptr->user_not = true;
 	if (resv_ptr->user_not) {
 		/* change minus_user to plus_user (add to NOT list) and
 		 * change plus_user to minus_user (remove from NOT list) */
@@ -1139,8 +1141,6 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 	}
 
 	if (plus_user) {
-		if ((u_cnt > 0) && (resv_ptr->user_cnt == 0))
-			resv_ptr->user_not = user_not;
 		for (i=0; i<u_cnt; i++) {
 			if (u_type[i] != 2)	/* not plus */
 				continue;
