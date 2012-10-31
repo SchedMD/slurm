@@ -767,13 +767,24 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	node_info_msg_t *new_node_ptr = NULL;
 	uint16_t show_flags = 0;
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
-	time_t now = time(NULL);
+	time_t now = time(NULL), delay;
 	static time_t last;
 	static bool changed = 0;
 	static uint16_t last_flags = 0;
 
-	if (g_node_info_ptr && !force
-	    && ((now - last) < working_sview_config.refresh_delay)) {
+	delay = now - last;
+	if (delay < 2) {
+		/* Avoid re-loading node information within 2 secs as the data
+		 * may still be in use. If we load new node data and free the
+		 * old data while it it still in use, the result is likely
+		 * invalid memory references. */
+		force = 0;
+		/* FIXME: Add an "in use" flag, copy the data, or otherwise
+		 * permit the timely loading of new node information. */
+	}
+
+	if (g_node_info_ptr && !force &&
+	    (delay < working_sview_config.refresh_delay)) {
 		if (*info_ptr != g_node_info_ptr)
 			error_code = SLURM_SUCCESS;
 		*info_ptr = g_node_info_ptr;
