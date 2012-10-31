@@ -218,7 +218,12 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 SORTID_CPUS),
 				   tmp_cnt);
 
-	snprintf(tmp_cnt, sizeof(tmp_cnt), "%.2f", (node_ptr->cpu_load/100.0));
+	if (node_ptr->cpu_load == NO_VAL) {
+		snprintf(tmp_cnt, sizeof(tmp_cnt), "N/A");
+	} else {
+		snprintf(tmp_cnt, sizeof(tmp_cnt), "%.2f",
+			 (node_ptr->cpu_load / 100.0));
+	}
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_CPU_LOAD),
@@ -490,15 +495,15 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 			if (gtk_tree_model_get_iter(
 				    model, &sview_node_info->iter_ptr, path)) {
 				do {
-					/* search for the jobid and
-					   check to see if it is in
-					   the list */
+					/* search for the node name and check
+					 * to see if it is in the list */
 					gtk_tree_model_get(
 						model,
 						&sview_node_info->iter_ptr,
 						SORTID_NAME,
 						&name, -1);
-					if (!strcmp(name, node_ptr->name)) {
+					if (name && node_ptr->name &&
+					    !strcmp(name, node_ptr->name)) {
 						/* update with new info */
 						g_free(name);
 						_update_node_record(
