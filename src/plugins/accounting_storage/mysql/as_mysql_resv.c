@@ -50,6 +50,36 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 		int start = 0;
 		int len = strlen(resv->assocs)-1;
 
+		if (strchr(resv->assocs, '-')) {
+			int i = 0, i2 = 0;
+			char * assocs = xmalloc(sizeof(char) * len);
+			/* We will remove the negative's here.  This
+			   is here so if we only have negatives in the
+			   reservation we don't want to keep track of
+			   every other id so don't keep track of any
+			   since everyone except a few can use it.
+			   These id's are only used to divide up idle
+			   time so it isn't that important.
+			*/
+			while (i < len) {
+				if (resv->assocs[i] == ',' &&
+				    resv->assocs[i+1] == '-') {
+					i+=2;
+					while (i < len) {
+						i++;
+						if (resv->assocs[i] == ',')
+							break;
+					}
+					continue;
+				}
+				assocs[i2++] = resv->assocs[i++];
+			}
+			xfree(resv->assocs);
+			len = i2-1;
+			resv->assocs = assocs;
+			assocs = NULL;
+		}
+
 		/* strip off extra ,'s */
 		if (resv->assocs[0] == ',')
 			start = 1;
