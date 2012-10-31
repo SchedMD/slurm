@@ -208,9 +208,12 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 				xstrdup(resv_orig_ptr->account_list[i]);
 	}
 	resv_copy_ptr->assoc_list = xstrdup(resv_orig_ptr->assoc_list);
+	if (resv_orig_ptr->core_bitmap) {
+		resv_copy_ptr->core_bitmap = bit_copy(resv_orig_ptr->
+						      core_bitmap);
+	}
 	resv_copy_ptr->cpu_cnt = resv_orig_ptr->cpu_cnt;
-	/* do we need core_bitmap? */
-	/* do we need duration? */
+	resv_copy_ptr->duration = resv_orig_ptr->duration;
 	resv_copy_ptr->end_time = resv_orig_ptr->end_time;
 	resv_copy_ptr->features = xstrdup(resv_orig_ptr->features);
 	resv_copy_ptr->flags = resv_orig_ptr->flags;
@@ -221,7 +224,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->license_list = _list_dup(resv_orig_ptr->
 						license_list);
 	resv_copy_ptr->magic = resv_orig_ptr->magic;
-	/* Do we need maint_set_node? */
+	resv_copy_ptr->maint_set_node = resv_orig_ptr->maint_set_node;
 	resv_copy_ptr->name = xstrdup(resv_orig_ptr->name);
 	resv_copy_ptr->node_bitmap = bit_copy(resv_orig_ptr->node_bitmap);
 	resv_copy_ptr->node_cnt = resv_orig_ptr->node_cnt;
