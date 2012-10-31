@@ -1043,6 +1043,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	uint32_t wall_mins;
 	uint32_t job_memory = 0;
 	bool admin_set_memory_limit = false;
+	bool safe_limits = false;
 	int parent = 0; /*flag to tell us if we are looking at the
 			 * parent or not
 			 */
@@ -1061,6 +1062,12 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	/* now see if we are enforcing limits */
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
 		return true;
+
+	/* check to see if we should be using safe limits, if so we
+	 * will only start a job if there are sufficient remaining
+	 * cpu-minutes for it to run to completion */
+	if (accounting_enforce & ACCOUNTING_ENFORCE_SAFE)
+		safe_limits = true;
 
 	/* clear old state reason */
 	if (!acct_policy_job_runnable_state(job_ptr))
@@ -1104,24 +1111,46 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		wall_mins = qos_ptr->usage->grp_used_wall / 60;
 		cpu_run_mins = qos_ptr->usage->grp_used_cpu_run_secs / 60;
 
-		/*
-		 * If the QOS has a GrpCPU limit set and the current usage
-		 * of the QOS exceeds that limit then hold the job
-		 */
-		if ((qos_ptr->grp_cpu_mins != (uint64_t)INFINITE)
-		    && (usage_mins >= qos_ptr->grp_cpu_mins)) {
-			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = WAIT_QOS_JOB_LIMIT;
-			debug2("Job %u being held, "
-			       "the job is at or exceeds QOS %s's "
-			       "group max cpu minutes of %"PRIu64" "
-			       "with %"PRIu64"",
-			       job_ptr->job_id,
-			       qos_ptr->name,
-			       qos_ptr->grp_cpu_mins,
-			       usage_mins);
-			rc = false;
-			goto end_it;
+		/* If the QOS has a GrpCPUMins limit set we may hold the job */
+		if (qos_ptr->grp_cpu_mins != (uint64_t)INFINITE) {
+			if (usage_mins >= qos_ptr->grp_cpu_mins) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = WAIT_QOS_JOB_LIMIT;
+				debug2("Job %u being held, "
+				       "the job is at or exceeds QOS %s's "
+				       "group max cpu minutes of %"PRIu64" "
+				       "with %"PRIu64"",
+				       job_ptr->job_id,
+				       qos_ptr->name,
+				       qos_ptr->grp_cpu_mins,
+				       usage_mins);
+				rc = false;
+				goto end_it;
+			} else if (safe_limits
+				   && ((job_cpu_time_limit + cpu_run_mins) >=
+				       (qos_ptr->grp_cpu_mins - usage_mins))) {
+				/*
+				 * If we're using safe limits start
+				 * the job only if there are
+				 * sufficient cpu-mins left such that
+				 * it will run to completion without
+				 * being killed
+				 */
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = WAIT_QOS_JOB_LIMIT;
+				debug2("Job %u being held, "
+				       "the job is at or exceeds QOS %s's "
+				       "group max cpu minutes of %"PRIu64" "
+				       "with usage %"PRIu64" and running "
+				       " cpu minutes %"PRIu64"",
+				       job_ptr->job_id,
+				       qos_ptr->name,
+				       qos_ptr->grp_cpu_mins,
+				       usage_mins,
+				       cpu_run_mins);
+				rc = false;
+				goto end_it;
+			}
 		}
 
 		/* If the JOB's cpu limit wasn't administratively set and the
@@ -1502,22 +1531,52 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		info("acct_job_limits: %u of %u",
 		     assoc_ptr->usage->used_jobs, assoc_ptr->max_jobs);
 #endif
+		/*
+		 * If the association has a GrpCPUMins limit set (and there
+		 * is no QOS with GrpCPUMins set) we may hold the job
+		 */
 		if ((!qos_ptr ||
 		     (qos_ptr && qos_ptr->grp_cpu_mins == (uint64_t)INFINITE))
-		    && (assoc_ptr->grp_cpu_mins != (uint64_t)INFINITE)
-		    && (usage_mins >= assoc_ptr->grp_cpu_mins)) {
-			xfree(job_ptr->state_desc);
-			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
-			debug2("job %u being held, "
-			       "assoc %u is at or exceeds "
-			       "group max cpu minutes limit %"PRIu64" "
-			       "with %Lf for account %s",
-			       job_ptr->job_id, assoc_ptr->id,
-			       assoc_ptr->grp_cpu_mins,
-			       assoc_ptr->usage->usage_raw, assoc_ptr->acct);
-
-			rc = false;
-			goto end_it;
+		    && (assoc_ptr->grp_cpu_mins != (uint64_t)INFINITE)) {
+			if (usage_mins >= assoc_ptr->grp_cpu_mins) {
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
+				debug2("job %u being held, "
+				       "assoc %u is at or exceeds "
+				       "group max cpu minutes limit %"PRIu64" "
+				       "with %Lf for account %s",
+				       job_ptr->job_id, assoc_ptr->id,
+				       assoc_ptr->grp_cpu_mins,
+				       assoc_ptr->usage->usage_raw,
+				       assoc_ptr->acct);
+				rc = false;
+				goto end_it;
+			} else if (safe_limits
+				   && ((job_cpu_time_limit + cpu_run_mins) >=
+				       (assoc_ptr->grp_cpu_mins
+					- usage_mins))) {
+				/*
+				 * If we're using safe limits start
+				 * the job only if there are
+				 * sufficient cpu-mins left such that
+				 * it will run to completion without
+				 * being killed
+				 */
+				xfree(job_ptr->state_desc);
+				job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
+				debug2("job %u being held, "
+				       "assoc %u is at or exceeds "
+				       "group max cpu minutes limit %"PRIu64" "
+				       "with usage %"PRIu64" and currently "
+				       "running cpu minutes "
+				       "%"PRIu64" for account %s",
+				       job_ptr->job_id, assoc_ptr->id,
+				       assoc_ptr->grp_cpu_mins,
+				       usage_mins, cpu_run_mins,
+				       assoc_ptr->acct);
+				rc = false;
+				goto end_it;
+			}
 		}
 
 		if ((job_ptr->limit_set_min_cpus != ADMIN_SET_LIMIT)

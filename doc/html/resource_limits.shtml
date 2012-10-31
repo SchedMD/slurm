@@ -57,6 +57,14 @@ default) a valid qos (Quality of Service).  QOS values are defined for
 each association in the database.  By setting this option, the
 'associations' option is also set.
 </li>
+<li>safe - This will ensure a job will only be launched when using an
+  association or qos that has a GrpCPUMins limit set if the job will be
+  able to run to completion. Without this option set, jobs will be
+  launched as long as their usage hasn't reached the cpu-minutes limit
+  which can lead to jobs being launched but then killed when the limit is
+  reached. By setting this option, both the 'associations' option and the
+  'limits' option are set automatically.
+</li>
 <li>wckeys - This will prevent users from running jobs under a wckey
   that they don't have access to.  By using this option, the
   'associations' option is also set.  The 'TrackWCKey' option is also
@@ -208,6 +216,6 @@ data maintained in the SLURM database.  More information can be found
 in the <a href="priority_multifactor.html">priority/multifactor</a>
 plugin description.</p>
 
-<p style="text-align: center;">Last modified 10 June 2011</p>
+<p style="text-align: center;">Last modified 30 October 2012</p>
 
 </ul></body></html>

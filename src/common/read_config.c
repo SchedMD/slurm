@@ -2827,6 +2827,15 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				|= ACCOUNTING_ENFORCE_LIMITS;
 		}
 
+		if (strstr(temp_str, "safe")) {
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_ASSOCS;
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_LIMITS;
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_SAFE;
+		}
+
 		if (strstr(temp_str, "wckeys")) {
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_ASSOCS;
