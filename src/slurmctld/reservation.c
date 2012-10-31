@@ -137,8 +137,6 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 static int  _set_assoc_list(slurmctld_resv_t *resv_ptr);
 static void _set_cpu_cnt(slurmctld_resv_t *resv_ptr);
 static void _set_nodes_maint(slurmctld_resv_t *resv_ptr, time_t now);
-static void _swap_resv(slurmctld_resv_t *resv_backup,
-		       slurmctld_resv_t *resv_ptr);
 static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 				 char *accounts);
 static int  _update_uid_list(slurmctld_resv_t *resv_ptr, char *users);
@@ -244,21 +242,6 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 		resv_copy_ptr->user_list[i] = resv_orig_ptr->user_list[i];
 
 	return resv_copy_ptr;
-}
-
-/* Swaping the contents of two reservation records */
-static void _swap_resv(slurmctld_resv_t *resv_backup,
-		       slurmctld_resv_t *resv_ptr)
-{
-	resv_desc_msg_t *resv_copy_ptr;
-
-	xassert(resv_backup->magic == RESV_MAGIC);
-	xassert(resv_ptr->magic    == RESV_MAGIC);
-	resv_copy_ptr = xmalloc(sizeof(slurmctld_resv_t));
-	memcpy(resv_copy_ptr, resv_backup, sizeof(slurmctld_resv_t));
-	memcpy(resv_backup, resv_ptr, sizeof(slurmctld_resv_t));
-	memcpy(resv_ptr, resv_copy_ptr, sizeof(slurmctld_resv_t));
-	xfree(resv_copy_ptr);
 }
 
 static void _del_resv_rec(void *x)
@@ -1813,10 +1796,11 @@ extern void resv_fini(void)
 extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 {
 	time_t now = time(NULL);
-	slurmctld_resv_t *resv_backup, *resv_ptr;
+	slurmctld_resv_t *resv_backup, *resv_ptr, *resv_next;
 	int error_code = SLURM_SUCCESS, i, rc;
 	char start_time[32], end_time[32];
 	char *name1, *name2, *val1, *val2;
+	ListIterator iter;
 
 	if (!resv_list)
 		resv_list = list_create(_del_resv_rec);
@@ -2124,8 +2108,20 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	return error_code;
 
 update_failure:
-	_swap_resv(resv_backup, resv_ptr);
-	_del_resv_rec(resv_backup);
+	/* Restore backup reservation data */
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("list_iterator_create: malloc failure");
+	while (resv_next = (slurmctld_resv_t *) list_next(iter)) {
+		if (strcmp(resv_next->name, resv_desc_ptr->name) == 0) {
+			list_delete_item(iter);
+			break;
+		}
+	}
+	if (!resv_next)
+		error("reservation list broken");
+	list_iterator_destroy(iter);
+	list_append(resv_list, resv_backup);
 	return error_code;
 }
 
