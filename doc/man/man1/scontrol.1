@@ -1087,6 +1087,9 @@ For example, "Accounts=-physcode1,-physcode2" or "Accounts-=physcode1,physcode2"
 will permit any account except physcode1 and physcode2 to use the reservation.
 You can add or remove individual accounts from an existing reservation by
 using the update command and adding a '+' or '\-' sign before the '=' sign.
+If accounts are denied access to a reservation (account name preceeded by a '\-'),
+then all other accounts are implicitly allowed to use the reservation and it is
+not possible to also explicitly specify allowed accounts.
 
 .TP
 \fICoreCnt\fP=<num>
@@ -1234,6 +1237,9 @@ For example, "User=-jones1,-smith2" or "User-=jones1,smith2"
 will permit any user except jones1 and smith2 to use the reservation.
 You can add or remove individual users from an existing reservation by
 using the update command and adding a '+' or '\-' sign before the '=' sign.
+If users are denied access to a reservation (user name preceeded by a '\-'),
+then all other users are implicitly allowed to use the reservation and it is
+not possible to also explicitly specify allowed users.
 
 .TP
 \fBSPECIFICATIONS FOR UPDATE BLOCK/SUBMP \fR
