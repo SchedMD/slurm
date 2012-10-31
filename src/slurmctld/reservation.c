@@ -257,6 +257,7 @@ static void _del_resv_rec(void *x)
 			xfree(resv_ptr->account_list[i]);
 		xfree(resv_ptr->account_list);
 		xfree(resv_ptr->assoc_list);
+		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
 		xfree(resv_ptr->features);
 		if (resv_ptr->license_list)
 			list_destroy(resv_ptr->license_list);
