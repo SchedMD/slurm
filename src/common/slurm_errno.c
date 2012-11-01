@@ -284,6 +284,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job can not start immediately"			},
 	{ ESLURM_INTERCONNECT_BUSY,
 	  "Switch resources currently not available"		},
+	{ ESLURM_RESERVATION_EMPTY,
+	  "Reservation request lacks users or accounts"		},
 
 	/* slurmd error codes */
 

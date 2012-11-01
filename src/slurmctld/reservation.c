@@ -1951,7 +1951,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	}
 	if ((resv_ptr->users == NULL) && (resv_ptr->accounts == NULL)) {
 		info("Reservation request lacks users or accounts");
-		error_code = ESLURM_INVALID_ACCOUNT;
+		error_code = ESLURM_RESERVATION_EMPTY;
 		goto update_failure;
 	}
 
