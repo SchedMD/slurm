@@ -2114,7 +2114,7 @@ update_failure:
 	if (!iter)
 		fatal("list_iterator_create: malloc failure");
 	while ((resv_next = (slurmctld_resv_t *) list_next(iter))) {
-		if (strcmp(resv_next->name, resv_desc_ptr->name) == 0) {
+		if (resv_next == resv_ptr) {
 			list_delete_item(iter);
 			break;
 		}
