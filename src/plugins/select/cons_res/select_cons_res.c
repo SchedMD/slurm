@@ -2977,6 +2977,7 @@ fini:	for (i=0; i<switch_record_cnt; i++) {
 			bit_set(sp_avail_bitmap, inx);
 
 		}
+		FREE_NULL_BITMAP(avail_nodes_bitmap);
 		FREE_NULL_BITMAP(exc_core_bitmap);
 
 		//bit_fmt(str, (sizeof(str) - 1), *core_bitmap);

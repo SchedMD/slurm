@@ -3124,6 +3124,7 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 			bit_clear(full_node_bitmap, node_bitmap_inx);
 		}
 	}
+	FREE_NULL_BITMAP(full_node_bitmap);
 }
 
 static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,

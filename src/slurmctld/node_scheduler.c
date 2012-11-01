@@ -660,12 +660,15 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			bit_and(resv_bitmap, avail_node_bitmap);
 			save_avail_node_bitmap = avail_node_bitmap;
 			avail_node_bitmap = resv_bitmap;
-		} else
+			resv_bitmap = NULL;
+		} else {
 			FREE_NULL_BITMAP(resv_bitmap);
+		}
 	} else {
 		time_t start_res = time(NULL);
 		rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
 				   &exc_core_bitmap);
+		FREE_NULL_BITMAP(resv_bitmap);
 		/* We do not care about return value.
 		 * We are just interested in exc_core_bitmap creation */
 	}
@@ -857,6 +860,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		FREE_NULL_BITMAP(avail_node_bitmap);
 		avail_node_bitmap = save_avail_node_bitmap;
 	}
+	FREE_NULL_BITMAP(exc_core_bitmap);
 
 	return error_code;
 }
