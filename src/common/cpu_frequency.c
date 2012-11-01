@@ -76,7 +76,7 @@ static uint16_t _cpu_freq_next_cpu(char **core_range, uint16_t *cpuidx,
  * called to check if the node supports setting cpu frequency
  * if so, initialize fields in cpu_freq_data structure
  */
-void
+extern void
 cpu_freq_init(slurmd_conf_t *conf)
 {
 	char path[SYSFS_PATH_MAX];
@@ -98,8 +98,11 @@ cpu_freq_init(slurmd_conf_t *conf)
 
 	/* get the cpu frequency info into the cpu_freq_data structure */
 	cpu_freq_count = conf->block_map_size;
-	cpufreq = (struct cpu_freq_data *) xmalloc(cpu_freq_count * 
-						   sizeof(struct cpu_freq_data));
+	if (!cpufreq) {
+		cpufreq = (struct cpu_freq_data *)
+			  xmalloc(cpu_freq_count *
+				  sizeof(struct cpu_freq_data));
+	}
 
 	info("Gathering cpu frequency information for %u cpus", cpu_freq_count);
 	for (i = 0; i < cpu_freq_count; i++) {
@@ -157,6 +160,11 @@ cpu_freq_init(slurmd_conf_t *conf)
 	return;
 }
 
+extern void
+cpu_freq_fini(void)
+{
+	xfree(cpufreq);
+}
 
 /*
  * Send the cpu_frequency table info to slurmstepd
@@ -188,8 +196,11 @@ cpu_freq_recv_info(int fd) {
 	safe_read(fd, &cpu_freq_count, sizeof(uint16_t));
 
 	if (cpu_freq_count) {
-		cpufreq = (struct cpu_freq_data *)
-			xmalloc(cpu_freq_count * sizeof(struct cpu_freq_data));
+		if (!cpufreq) {
+			cpufreq = (struct cpu_freq_data *)
+				  xmalloc(cpu_freq_count *
+					  sizeof(struct cpu_freq_data));
+		}
 		safe_read(fd, cpufreq,
 			  (cpu_freq_count * sizeof(struct cpu_freq_data)));
 		info("Received cpu frequency information for %u cpus",

@@ -48,6 +48,12 @@ void
 cpu_freq_init(slurmd_conf_t *conf);
 
 /* 
+ * free memory from cpu frequency table
+ */
+extern void
+cpu_freq_fini(void);
+
+/* 
  * Send the cpu_frequency table info to slurmstepd
  */
 void
