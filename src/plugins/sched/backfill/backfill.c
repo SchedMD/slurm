@@ -701,9 +701,9 @@ static int _attempt_backfill(void)
 		/* Determine impact of any resource reservations */
 		later_start = now;
  TRY_LATER:	FREE_NULL_BITMAP(avail_bitmap);
+		FREE_NULL_BITMAP(exc_core_bitmap);
 		start_res   = later_start;
 		later_start = 0;
-		exc_core_bitmap = NULL;
 		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
 				  &exc_core_bitmap);
 		if (j != SLURM_SUCCESS) {
@@ -890,6 +890,7 @@ static int _attempt_backfill(void)
 	xfree(uid);
 	xfree(njobs);
 	FREE_NULL_BITMAP(avail_bitmap);
+	FREE_NULL_BITMAP(exc_core_bitmap);
 	FREE_NULL_BITMAP(resv_bitmap);
 
 	for (i=0; ; ) {

@@ -196,8 +196,11 @@ static void _compute_start_times(void)
 
 		j = job_test_resv(job_ptr, &now, true, &avail_bitmap,
 				  &exc_core_bitmap);
-		if (j != SLURM_SUCCESS)
+		if (j != SLURM_SUCCESS) {
+			FREE_NULL_BITMAP(avail_bitmap);
+			FREE_NULL_BITMAP(exc_core_bitmap);
 			continue;
+		}
 
 		rc = select_g_job_test(job_ptr, avail_bitmap,
 				       min_nodes, max_nodes, req_nodes,
@@ -223,6 +226,7 @@ static void _compute_start_times(void)
 			last_job_alloc = job_ptr->start_time + time_limit;
 		}
 		FREE_NULL_BITMAP(avail_bitmap);
+		FREE_NULL_BITMAP(exc_core_bitmap);
 
 		if ((time(NULL) - sched_start) >= sched_timeout) {
 			debug("backfill: loop taking to long, breaking out");

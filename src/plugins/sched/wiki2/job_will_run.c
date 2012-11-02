@@ -181,6 +181,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 		*err_msg = "Job denied access to reservation";
 		error("wiki: reservation access denied for job %u", jobid);
 		FREE_NULL_BITMAP(avail_bitmap);
+		FREE_NULL_BITMAP(exc_core_bitmap);
 		return NULL;
 	}
 	start_time = MAX(start_time, start_res);
@@ -199,6 +200,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 		error("wiki: no nodes in partition %s for job %u",
 			part_ptr->name, jobid);
 		FREE_NULL_BITMAP(avail_bitmap);
+		FREE_NULL_BITMAP(exc_core_bitmap);
 		return NULL;
 	}
 
@@ -210,6 +212,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 		error("wiki: job %u not runnable on hosts=%s",
 		      jobid, node_list);
 		FREE_NULL_BITMAP(avail_bitmap);
+		FREE_NULL_BITMAP(exc_core_bitmap);
 		return NULL;
 	}
 	if (job_ptr->details->exc_node_bitmap) {
@@ -225,6 +228,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 		error("wiki: job %u not runnable on hosts=%s",
 		      jobid, node_list);
 		FREE_NULL_BITMAP(avail_bitmap);
+		FREE_NULL_BITMAP(exc_core_bitmap);
 		return NULL;
 	}
 
@@ -246,6 +250,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 		error("wiki: job %u not runnable on hosts=%s",
 		      jobid, node_list);
 		FREE_NULL_BITMAP(avail_bitmap);
+		FREE_NULL_BITMAP(exc_core_bitmap);
 		return NULL;
 	}
 
@@ -287,6 +292,7 @@ static char *	_will_run_test(uint32_t jobid, time_t start_time,
 	/* Restore pending job's expected start time */
 	job_ptr->start_time = orig_start_time;
 	FREE_NULL_BITMAP(avail_bitmap);
+	FREE_NULL_BITMAP(exc_core_bitmap);
 	return reply_msg;
 }
 
@@ -465,6 +471,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 		*err_msg = "Job denied access to reservation";
 		error("wiki: reservation access denied for job %u", jobid);
 		FREE_NULL_BITMAP(avail_bitmap);
+		FREE_NULL_BITMAP(exc_core_bitmap);
 		return NULL;
 	}
 	start_time = MAX(start_time, start_res);
@@ -483,6 +490,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 		error("wiki: no nodes in partition %s for job %u",
 			part_ptr->name, jobid);
 		FREE_NULL_BITMAP(avail_bitmap);
+		FREE_NULL_BITMAP(exc_core_bitmap);
 		return NULL;
 	}
 
@@ -494,6 +502,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 		error("wiki: job %u not runnable on hosts=%s",
 			jobid, node_list);
 		FREE_NULL_BITMAP(avail_bitmap);
+		FREE_NULL_BITMAP(exc_core_bitmap);
 		return NULL;
 	}
 	if (job_ptr->details->exc_node_bitmap) {
@@ -509,6 +518,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 		error("wiki: job %u not runnable on hosts=%s",
 			jobid, node_list);
 		FREE_NULL_BITMAP(avail_bitmap);
+		FREE_NULL_BITMAP(exc_core_bitmap);
 		return NULL;
 	}
 
@@ -530,6 +540,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 		error("wiki: job %u not runnable on hosts=%s",
 			jobid, node_list);
 		FREE_NULL_BITMAP(avail_bitmap);
+		FREE_NULL_BITMAP(exc_core_bitmap);
 		return NULL;
 	}
 
@@ -589,6 +600,7 @@ static char *	_will_run_test2(uint32_t jobid, time_t start_time,
 	job_ptr->start_time = orig_start_time;
 
 	FREE_NULL_BITMAP(avail_bitmap);
+	FREE_NULL_BITMAP(exc_core_bitmap);
 	return reply_msg;
 }
 
