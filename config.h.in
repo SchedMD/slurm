@@ -21,6 +21,9 @@
 /* Define to 1 for debugger partial task attach support. */
 #undef DEBUGGER_PARTIAL_ATTACH
 
+/* Define to 1 if using glib-2.32.0 or higher */
+#undef GLIB_NEW_THREADS
+
 /* Define to 1 if licensed under terms of the GNU General Public License. */
 #undef GPL_LICENSED
 
@@ -520,6 +523,11 @@
 
 /* Define location of XCPU directory */
 #undef XCPU_DIR
+
+/* Enable large inode numbers on Mac OS X 10.5.  */
+#ifndef _DARWIN_USE_64_BIT_INODE
+# define _DARWIN_USE_64_BIT_INODE 1
+#endif
 
 /* Number of bits in a file offset, on hosts where this is settable. */
 #undef _FILE_OFFSET_BITS
