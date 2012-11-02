@@ -25,7 +25,6 @@ documents those changes that are of interest to users and admins.
  -- Fix for older < glibc 2.4 systems to use euidaccess() instead of eaccess().
  -- BLUEGENE - Do not alter a pending job's node count when changing it's
     partition.
- -- Fix for older < glibc 2.4 systems to use euidaccess instead of eaccess.
  -- BGQ - Add functionality to make it so we track the actions on a block.
     This is needed for when a free request is added to a block but there are
     jobs finishing up so we don't start new jobs on the block since they will
