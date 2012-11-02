@@ -294,7 +294,8 @@ static void _page_switched(GtkNotebook     *notebook,
 		return;
 	else if (!grid_init && !started_grid_init) {
 		/* start the thread to make the grid only once */
-		if (!g_thread_create(_grid_init_thr, notebook, FALSE, &error)) {
+		if (!sview_thread_new(
+			    _grid_init_thr, notebook, FALSE, &error)) {
 			g_printerr ("Failed to create grid init thread: %s\n",
 				    error->message);
 			return;
@@ -327,7 +328,7 @@ static void _page_switched(GtkNotebook     *notebook,
 		page_thr->page_num = i;
 		page_thr->table = table;
 
-		if (!g_thread_create(_page_thr, page_thr, FALSE, &error)) {
+		if (!sview_thread_new(_page_thr, page_thr, FALSE, &error)) {
 			g_printerr ("Failed to create page thread: %s\n",
 				    error->message);
 			return;
@@ -1671,13 +1672,13 @@ int main(int argc, char *argv[])
 	cluster_dims = slurmdb_setup_cluster_dims();
 
 	_init_pages();
-	g_thread_init(NULL);
+	sview_thread_init(NULL);
 	gdk_threads_init();
 	gdk_threads_enter();
 	/* Initialize GTK */
 	gtk_init (&argc, &argv);
-	grid_mutex = g_mutex_new();
-	grid_cond = g_cond_new();
+	sview_mutex_new(&grid_mutex);
+	sview_cond_new(&grid_cond);
 	/* make sure the system is up */
 	grid_window = GTK_WIDGET(create_scrolled_window());
 	bin = GTK_BIN(&GTK_SCROLLED_WINDOW(grid_window)->container);

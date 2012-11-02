@@ -152,8 +152,8 @@ static void _open_block(GtkWidget *widget, GdkEventButton *event,
 			SEARCH_BLOCK_NODENAME;
 		popup_win->spec_info->search_info->gchar_data =
 			g_strdup(grid_button->node_name);
-		if (!g_thread_create((gpointer)popup_thr, popup_win,
-				     FALSE, &error)) {
+		if (!sview_thread_new((gpointer)popup_thr, popup_win,
+				      FALSE, &error)) {
 			g_printerr ("Failed to create block "
 				    "grid popup thread: %s\n",
 				    error->message);

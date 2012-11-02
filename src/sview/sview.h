@@ -59,15 +59,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#if defined(HAVE_AIX)
-/* AIX defines a func_data macro which conflicts with func_data
- * variable names in the gtk.h headers */
-#  undef func_data
-#  include <gtk/gtk.h>
-#else
-#  include <gtk/gtk.h>
-#endif
-
 #include "slurm/slurmdb.h"
 
 #include "src/common/bitstring.h"
@@ -83,6 +74,7 @@
 #include "src/common/xstring.h"
 
 #include "src/plugins/select/bluegene/bg_enums.h"
+#include "gthread_helper.h"
 
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_HELP	0x100

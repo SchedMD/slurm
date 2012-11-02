@@ -1713,9 +1713,8 @@ extern void popup_all_node_name(char *name, int id)
 		else
 			popup_win = create_popup_info(NODE_PAGE, id, title);
 		popup_win->spec_info->search_info->gchar_data = g_strdup(name);
-		if (!g_thread_create((gpointer)popup_thr, popup_win,
-				     FALSE, &error))
-		{
+		if (!sview_thread_new((gpointer)popup_thr, popup_win,
+				      FALSE, &error)) {
 			g_printerr ("Failed to create node popup thread: "
 				    "%s\n",
 				    error->message);

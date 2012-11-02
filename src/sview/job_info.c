@@ -3786,7 +3786,7 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	default:
 		g_print("jobs got %d\n", id);
 	}
-	if (!g_thread_create((gpointer)popup_thr, popup_win, FALSE, &error)) {
+	if (!sview_thread_new((gpointer)popup_thr, popup_win, FALSE, &error)) {
 		g_printerr ("Failed to create part popup thread: %s\n",
 			    error->message);
 		return;
