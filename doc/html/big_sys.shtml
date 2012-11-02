@@ -11,35 +11,39 @@ this document should help you off to a good start.
 A working knowledge of SLURM should be considered a prerequisite
 for this material.</p>
 
-<h2>Performance Results</h2>
+<h2>System configuration</h2>
 
-<p>SLURM has been used on clusters containing up to 4,184 nodes.
-At that scale, the total time to execute a simple program (resource
-allocation, task launch, I/O processing, and cleanup, e.g.
-"time srun -N4184 -n8368 uname") at 8,368 tasks
-across the 4,184 nodes was under 57 seconds. The table below shows
-total execution times for several large clusters with different architectures.</p>
-<table border>
-<caption>SLURM Total Job Execution Time</caption>
-<tr>
-<th>Nodes</th><th>Tasks</th><th>Seconds</th>
-</tr>
-<tr>
-<th>256</th><th>512</th><th>1.0</th>
-</tr>
-<tr>
-<th>512</th><th>1024</th><th>2.2</th>
-</tr>
-<tr>
-<th>1024</th><th>2048</th><th>3.7</th>
-</tr>
-<tr>
-<th>2123</th><th>4246</th><th>19.5</th>
-</tr>
-<tr>
-<th>4184</th><th>8368</th><th>56.6</th>
-</tr>
-</table>
+<p>Three system configuration parameters must be set to support a large number
+of open files and TCP connections with large bursts of messages. Changes can
+be made using the <b>/etc/rc.d/rc.local</b> or <b>/etc/sysctl.conf</b> 
+script to preserve changes after reboot. In either case, you can write values
+directly into these files
+(e.g. <i>"echo 32832 &gt; /proc/sys/fs/file-max"</i>).</p>
+<ul>
+<li><b>/proc/sys/fs/file-max</b>:
+The maximum number of concurrently open files.
+We recommend a limit of at least 32,832.</li>
+<li><b>/proc/sys/net/ipv4/tcp_max_syn_backlog</b>:
+Maximum number of remembered connection requests, which are still did not
+receive an acknowledgment from connecting client.
+The default value is 1024 for systems with more than 128Mb of memory, and 128
+for low memory machines. If server suffers of overload, try to increase this
+number.</li>
+<li><b>/proc/sys/net/core/somaxconn</b>:
+Limit of socket listen() backlog, known in userspace as SOMAXCONN. Defaults to
+128. The value should be raised substantially to support bursts of request.
+For example, to support a burst of 1024 requests, set somaxconn to 1024.</li>
+</ul>
+
+<p>The transmit queue length (<b>txqueuelen</b>) may also need to be modified
+using the ifconfig command. A value of 4096 has been found to work well for one
+site with a very large cluster
+(e.g. <i>"ifconfig <interface> txqueuelen 4096"</i>).</p>
+
+<h2>User limits</h2>
+
+<p>The <b>ulimit</b> values in effect for the <b>slurmctld</b> daemon should
+be set quite high for memory size, open file count and stack size.</p>
 
 <h2>Node Selection Plugin (SelectType)</h2>
 
@@ -140,6 +144,6 @@ the hard limit in order to process all of the standard input and output
 connections to the launched tasks. It is recommended that you set the
 open file hard limit to 8192 across the cluster.</p>
 
-<p style="text-align:center;">Last modified 13 May 2010</p>
+<p style="text-align:center;">Last modified 2 November 2012</p>
 
 <!--#include virtual="footer.txt"-->
