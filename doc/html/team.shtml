@@ -91,6 +91,7 @@ organizations. Lead SLURM developers are:
 <li>R&eacute;mi Palancher</li>
 <li>Alejandro Lucero Palau (Barcelona Supercomputing Center, Spain)</li>
 <li>Daniel Palermo (HP)</li>
+<li>Martin Perry (Bull)</li>
 <li>Dan Phung (Lawrence Livermore National Laboratory/Columbia University)</li>
 <li>Ashley Pittman (Quadrics, UK)</li>
 <li>Vijay Ramasubramanian (University of Maryland)</li>
@@ -127,6 +128,6 @@ organizations. Lead SLURM developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 26 October 2012</p>
+<p style="text-align:center;">Last modified 2 November 2012</p>
 
 <!--#include virtual="footer.txt"-->
