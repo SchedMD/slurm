@@ -238,21 +238,25 @@ if test -d "/opt/gnome/lib64/pkgconfig"; then
     PKG_CONFIG_PATH="/opt/gnome/lib64/pkgconfig/:$PKG_CONFIG_PATH"
 fi
 
-AM_PATH_GTK_2_0([2.7.1], [ac_have_gtk="yes"], [ac_have_gtk="no"], [gthread])
-AM_CONDITIONAL(HAVE_GTK, test "x$ac_have_gtk" = "xyes")
+AM_PATH_GLIB_2_0([2.7.1], [ac_glib_test="yes"], [ac_glib_test="no"], [gthread])
+AM_CONDITIONAL(BUILD_SVIEW, test "x$ac_glib_test" = "xyes")
 
-if test ${gtk_config_minor_version=0} -gt 10 ; then
+if test ${glib_config_minor_version=0} -ge 32 ; then
+       AC_DEFINE([GLIB_NEW_THREADS], 1, [Define to 1 if using glib-2.32.0 or higher])
+fi
+
+AM_PATH_GTK_2_0([2.7.1], [ac_gtk_test="yes"], [ac_gtk_test="no"], [gthread])
+if test ${gtk_config_minor_version=0} -ge 10 ; then
        AC_DEFINE([GTK2_USE_RADIO_SET], 1, [Define to 1 if using gtk+-2.10.0 or higher])
 fi
 
-if test ${gtk_config_minor_version=0} -gt 12 ; then
+if test ${gtk_config_minor_version=0} -ge 12 ; then
        AC_DEFINE([GTK2_USE_TOOLTIP], 1, [Define to 1 if using gtk+-2.12.0 or higher])
 fi
 
-if test ${gtk_config_minor_version=0} -gt 14 ; then
+if test ${gtk_config_minor_version=0} -ge 14 ; then
        AC_DEFINE([GTK2_USE_GET_FOCUS], 1, [Define to 1 if using gtk+-2.14.0 or higher])
 fi
-
 
 X_AC_DATABASES
 
@@ -389,12 +393,6 @@ if test "x$ac_have_some_curses" = "xyes" ; then
    ac_build_smap="yes"
 fi
 AM_CONDITIONAL(BUILD_SMAP, test "x$ac_build_smap" = "xyes")
-
-ac_build_sview="no"
-if test "x$ac_have_gtk" = "xyes" ; then
-   ac_build_sview="yes"
-fi
-AM_CONDITIONAL(BUILD_SVIEW, test "x$ac_build_sview" = "xyes")
 
 dnl All slurm Makefiles:
 
