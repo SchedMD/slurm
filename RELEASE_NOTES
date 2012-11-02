@@ -26,6 +26,9 @@ SLURM will result in loss of state information.
 HIGHLIGHTS
 ==========
 - Major performance improvements for high-throughput computing.
+- Added "boards" count to node information and "boards_per_node" to job request
+  and job information. Optimize resource allocation to minimize number of
+  boards used by a job.
 - Added support for IBM Parallel Environment (PE) including the launching of
   jobs using either the srun or poe command.
 - Add support for advanced reservation for specific cores rather than whole
@@ -37,7 +40,10 @@ HIGHLIGHTS
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
+- Added node configuration parameter of "Boards".
 - Added DebugFlag option of "Switch" to log switch plugin details.
+- Added "AcctGatherEnergy" configuration parameter to identify the plugin
+  to be used to gather energy consumption data for jobs.
 - When running with multiple slurmd daemons per node, enable specifying a
   range of ports on a single line of the node configuration in slurm.conf.
 - New SelectType plugin of "serial" provides highly optimized throughput for
@@ -70,9 +76,10 @@ API CHANGES
 
 Changed members of the following structs
 ========================================
+Added boards_per_node to job_info and job_desc_msg_t.
+Added boards and cpu_load to node_info.
 slurm_step_launch_callbacks_t - added step_signal for signaling steps that
 				are perhaps not running as srun.
-Added cpu_load to node_info.
 
 
 Added the following struct definitions
