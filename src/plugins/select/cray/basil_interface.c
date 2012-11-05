@@ -1033,6 +1033,7 @@ extern void queue_basil_signal(struct job_record *job_ptr, int signal,
 	if (pthread_attr_setdetachstate(&attr_sig_basil,
 					PTHREAD_CREATE_DETACHED)) {
 		error("pthread_attr_setdetachstate error %m");
+		slurm_attr_destroy(&attr_sig_basil);
 		return;
 	}
 	args_sig_basil = xmalloc(sizeof(args_sig_basil_t));
@@ -1042,6 +1043,8 @@ extern void queue_basil_signal(struct job_record *job_ptr, int signal,
 	if (pthread_create(&thread_sig_basil, &attr_sig_basil,
 			_sig_basil, (void *) args_sig_basil)) {
 		error("pthread_create error %m");
+		slurm_attr_destroy(&attr_sig_basil);
+		xfree(args_sig_basil);
 		return;
 	}
 	slurm_attr_destroy(&attr_sig_basil);
