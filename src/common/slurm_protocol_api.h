@@ -515,6 +515,12 @@ uint32_t slurm_get_jobcomp_port(void);
  */
 int slurm_set_jobcomp_port(uint32_t port);
 
+/* slurm_get_kill_wait
+ * returns kill_wait from slurmctld_conf object
+ * RET uint16_t        - kill_wait
+ */
+uint16_t slurm_get_kill_wait(void);
+
 /* slurm_get_preempt_type
  * get PreemptType from slurmctld_conf object
  * RET char *   - preempt type, MUST be xfreed by caller
