@@ -174,7 +174,163 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
 				    sig_atomic_t *destroy_job)
 {
-	/* FIXME: todo */
+	if (opt.cpus_per_task) {
+		xstrfmtcat(cmd_line, " -d %u", opt.cpus_per_task);
+	}
+
+
+	if (opt.nodelist) {
+		char *nids = _get_nids(opt.nodelist);
+		xstrfmtcat(cmd_line, " -L %s", nids);
+
+	}
+
+	if (opt.mem_per_cpu) {
+		xstrfmtcat(cmd_line, " -m %u", opt.mem_per_cpu) ;
+	}
+
+	if (opt.ntasks_per_node) {
+		xstrfmtcat(cmd_line, "-N %u", opt.ntasks_per_node);
+	}
+
+	if (opt.max_nodes) {
+		int task_per_node = int ((max_nodes + max_nodes-1)/max_nodes);
+		xstrfmtcat(cmd_line, "-N %u", opt.task_per_node);
+	}
+
+	if (opt.ntasks) {
+		xstrfmtcat(cmd_line, "-n %u", opt.ntasks);
+	}
+
+	if (opt.quiet) {
+		xstrcat(cmd_line, " -q");
+	}
+
+	if (opt.ntasks_per_socket) {
+		xstrfmtcat(cmd_line, " -S %u", opt.ntask_per_socket);
+	}
+
+	if (opt.sockets_per_node) {
+		xstrfmtcat(cmd_line, " -sn %u", opt.sockets_per_node);
+	}
+
+	if (opt.time_limit) {
+		int time_secs = get_seconds(opt.time_limit);
+		xstrfmtcat(cmd_line, " -t %u", time_secs);
+	}
+
+
+	/* These are not part of aprun, but here just in case in the
+	   future they add them.
+
+	   if (opt.disable_status) {
+	   xstrcat(cmd_line, " --disable-status");
+	   }
+
+	   if (opt.epilog) {
+	   xstrfmtcat(cmd_line, " --epilog=", opt.epilog);
+	   }
+
+	   if (kill_on_bad_exit) {
+	   xstrcat(cmd_line, " --kill-on-bad-exit");
+	   }
+
+	   if (label) {
+	   xstrcat(cmd_line, " --label");
+	   }
+
+	   if (opt.mpi_type) {
+	   xstrfmtcat(cmd_line, " --mpi=", opt.mpi_type);
+	   }
+
+	   if (opt.msg_timeout) {
+	   xstrfmtcat(cmd_line, " --msg-timeout=", opt.msg_timeout);
+	   }
+
+	   if (no_allocate) {
+	   xstrcat(cmd_line, " --no-allocate");
+	   }
+
+	   if (opt.open_mode) {
+	   xstrcat(cmd_line, " --open-mode=", opt.open_mode);
+	   }
+
+	   if (preserve_env) {
+	   xstrcat(cmd_line, " --preserve_env");
+	   }
+
+
+	   if (opt.prolog) {
+	   xstrcat(cmd_line, " --prolog=", opt.prolog );
+	   }
+
+
+	   if (opt.propagate) {
+	   xstrcat(cmd_line, " --propagate", opt.propagate );
+	   }
+
+	   if (pty) {
+	   xstrcat(cmd_line, " --pty");
+	   }
+
+	   if (quit_on_interrupt) {
+	   xstrcat(cmd_line, " --quit-on-interrupt");
+	   }
+
+
+	   if (opt.relative) {
+	   xstrfmtcat(cmd_line, " --relative=", opt.relative);
+	   }
+
+	   if (restart_dir) {
+	   xstrfmtcat(cmd_line, " --restart-dir=", opt.restart_dir);
+	   }
+
+
+	   if (resv_port) {
+	   xstrcat(cmd_line, "--resv-port");
+	   }
+
+	   if (opt.slurm_debug) {
+	   xstrfmtcat(cmd_line, " --slurmd-debug=", opt.slurm_debug);
+	   }
+
+	   if (opttask_epilog) {
+	   xstrfmtcat(cmd_line, " --task-epilog=", opt.task_epilog);
+	   }
+
+	   if (opt.task_prolog) {
+	   xstrfmtcat(cmd_line, " --task-prolog", opt.task_prolog);
+	   }
+
+	   if (test_only) {
+	   xstrcat(cmd_line, " --test-only");
+	   }
+
+	   if (unbuffered) {
+	   xstrcat(cmd_line, " --unbuffered");
+	   }
+
+	*/
+
+
+	if (opt.multi_prog) {
+		int script = get_multi_prog(opt.mult_prog);
+		xstrfmtcat(cmd_line, " %s", script);
+	}
+
+	if (opt.ifname) {
+		xstrfmtcat(cmd_line, " <%s", opt.ifname);
+	}
+
+	if (opt.ofname) {
+		xstrfmtcat(cmd_line, " >>%s", opt.ofname);
+	}
+
+	if (opt.ofname) {
+		xstrfmtcat(cmd_line, " >%s", opt.ofname);
+	}
+
 	return 0;
 }
 
