@@ -1504,6 +1504,24 @@ int slurm_set_jobcomp_port(uint32_t port)
 	return 0;
 }
 
+/* slurm_get_kill_wait
+ * returns kill_wait from slurmctld_conf object
+ * RET uint16_t        - kill_wait
+ */
+uint16_t slurm_get_kill_wait(void)
+{
+	uint16_t kill_wait = 0;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		kill_wait = conf->kill_wait;
+		slurm_conf_unlock();
+	}
+	return kill_wait;
+}
+
 /* slurm_get_preempt_type
  * get PreemptType from slurmctld_conf object
  * RET char *   - preempt type, MUST be xfreed by caller
