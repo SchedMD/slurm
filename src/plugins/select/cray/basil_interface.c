@@ -13,6 +13,11 @@
 
 int dim_size[3] = {0, 0, 0};
 
+typedef struct args_sig_basil {
+	uint32_t resv_id;
+	int      signal;
+	uint16_t delay;
+} args_sig_basil_t;
 
 /*
  * Following routines are from src/plugins/select/bluegene/plugin/jobinfo.c
@@ -973,6 +978,73 @@ extern int do_basil_signal(struct job_record *job_ptr, int signal)
 				basil_strerror(rc));
 	}
 	return SLURM_SUCCESS;
+}
+
+void *_sig_basil(void *args)
+{
+	args_sig_basil_t *args_sig_basil = (args_sig_basil_t *) args;
+	int rc;
+
+	sleep(args_sig_basil->delay);
+	rc = basil_signal_apids(args_sig_basil->resv_id,
+				args_sig_basil->signal, NULL);
+	if (rc) {
+		error("could not signal APIDs of resId %u: %s",
+		      args_sig_basil->resv_id, basil_strerror(rc));
+	}
+	xfree(args);
+	return NULL;
+}
+
+/**
+ * queue_basil_signal  -  queue job signal on to any APIDs
+ * IN job_ptr - job to be signalled
+ * IN signal  - signal(7) number
+ * IN delay   - how long to delay the signal, in seconds
+ * Only signal job if an ALPS reservation exists (non-0 reservation ID).
+ */
+extern void queue_basil_signal(struct job_record *job_ptr, int signal,
+			       uint16_t delay)
+{
+	args_sig_basil_t *args_sig_basil;
+	pthread_attr_t attr_sig_basil;
+	pthread_t thread_sig_basil;
+	uint32_t resv_id;
+
+	if (_get_select_jobinfo(job_ptr->select_jobinfo->data,
+			SELECT_JOBDATA_RESV_ID, &resv_id) != SLURM_SUCCESS) {
+		error("can not read resId for JobId=%u", job_ptr->job_id);
+		return;
+	}
+	if (resv_id == 0)
+		return;
+	if ((delay == 0) || (delay == (uint16_t) NO_VAL)) {
+		/* Send the signal now */
+		int rc = basil_signal_apids(resv_id, signal, NULL);
+
+		if (rc)
+			error("could not signal APIDs of resId %u: %s", resv_id,
+			      basil_strerror(rc));
+		return;
+	}
+
+	/* Create a thread to send the signal later */
+	slurm_attr_init(&attr_sig_basil);
+	if (pthread_attr_setdetachstate(&attr_sig_basil,
+					PTHREAD_CREATE_DETACHED)) {
+		error("pthread_attr_setdetachstate error %m");
+		return;
+	}
+	args_sig_basil = xmalloc(sizeof(args_sig_basil_t));
+	args_sig_basil->resv_id = resv_id;
+	args_sig_basil->signal  = signal;
+	args_sig_basil->delay   = delay;
+	if (pthread_create(&thread_sig_basil, &attr_sig_basil,
+			_sig_basil, (void *) args_sig_basil)) {
+		error("pthread_create error %m");
+		return;
+	}
+	slurm_attr_destroy(&attr_sig_basil);
 }
 
 /**

@@ -61,6 +61,8 @@ extern int do_basil_confirm(struct job_record *job_ptr);
 extern int do_basil_signal(struct job_record *job_ptr, int signal);
 extern int do_basil_release(struct job_record *job_ptr);
 extern int do_basil_switch(struct job_record *job_ptr, bool suspend);
+extern void queue_basil_signal(struct job_record *job_ptr, int signal,
+			       uint16_t delay);
 #else	/* !HAVE_CRAY */
 static inline int basil_node_ranking(struct node_record *ig, int nore)
 {
@@ -90,6 +92,12 @@ static inline int do_basil_confirm(struct job_record *job_ptr)
 static inline int do_basil_signal(struct job_record *job_ptr, int signal)
 {
 	return SLURM_SUCCESS;
+}
+
+static inline void queue_basil_signal(struct job_record *job_ptr, int signal,
+				      uint16_t delay)
+{
+	return;
 }
 
 static inline int do_basil_release(struct job_record *job_ptr)

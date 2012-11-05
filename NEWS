@@ -87,6 +87,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.4.5
 ========================
+ -- Cray - On job kill requeust, send SIGCONT, SIGTERM, wait KillWait and send
+    SIGKILL. Previously just sent SIGKILL to tasks.
 
 * Changes in SLURM 2.4.4
 ========================
