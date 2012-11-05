@@ -1,8 +1,9 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test if the job dies when the one of the pass over nodes are
-#          set to an error state.
+#          Bluegene/Q only: Test to make sure if a nodeboard goes unavailable
+#	   while another block is using it for passthrough to make sure the
+#	   job using the block with passthrough fails.
 #
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -60,15 +61,10 @@ if {([test_bluegene] == 0) || [string compare [get_bluegene_type] "Q"]} {
 	exit $exit_code
 }
 
-set type [get_bluegene_type]
-if {$type == 0} {
-	send_user "\nFAILURE: No blugene type found \n"
-	exit 1
-}
-
 spawn $scontrol show node
 expect {
-	-re "NodeName=($alpha_numeric).($digit)($digit)($digit)($digit)" {
+	-re "NodeName=($alpha_numeric)($digit)($digit)($digit)($digit)" {
+		set prefix $expect_out(1,string)
 		set a_size $expect_out(2,string)
 		set x_size $expect_out(3,string)
 		set y_size $expect_out(4,string)
@@ -150,27 +146,31 @@ expect {
 }
 
 if {$a_flag==1} {
-	set last_node "bgq$a_size$job_fini2$job_fini3$job_fini4"
+	set last_node "$prefix$a_size$job_fini2$job_fini3$job_fini4"
 } elseif {$x_flag==1} {
-	set last_node "bgq$job_fini1$x_size$job_fini3$job_fini4"
+	set last_node "$prefix$job_fini1$x_size$job_fini3$job_fini4"
 } elseif {$y_flag==1} {
-	set last_node "bgq$job_fini1$job_fini2$y_size$job_fini4"
+	set last_node "$prefix$job_fini1$job_fini2$y_size$job_fini4"
 } elseif {$z_flag==1} {
-	set last_node "bgq$job_fini1$job_fini2$job_fini3$z_size"
+	set last_node "$prefix$job_fini1$job_fini2$job_fini3$z_size"
 }
 
 change_subbp_state $last_node "0" "error"
 
 wait_for_job $job_id "DONE"
 
-spawn $squeue --state=failed -o%i
+exec $bin_rm -f $file_in
+
+set matches 0
+spawn $squeue --state=failed -o%i -j -h $job_id
 expect {
-	-re "($alpha_numeric)" {
-		set tmp $expect_out(1,string)
+	-re "$job_id" {
+		incr matches
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE:squeue is not responding\n"
+		change_subbp_state $last_node "0" "free"
 		exit 1
 	}
 	eof {
@@ -178,12 +178,11 @@ expect {
 	}
 }
 
-if {$tmp!=$job_id} {
+if {$matches != 1} {
 	send_user "\nFAILURE: Job $job_id did not fail\n"
+	change_subbp_state $last_node "0" "free"
 	exit 1
 }
-
-send_user "\nblock=$block\n"
 
 spawn $scontrol show block $block
 expect {
@@ -193,11 +192,19 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
+		change_subbp_state $last_node "0" "free"
 		exit 1
 	}
 	eof {
 		wait
 	}
+}
+
+if {$matches != 1} {
+	send_user "\nFAILURE: Block $block is still around?  It should of been removed\n"
+	change_subbp_state $last_node "0" "free"
+	cancel_job $job_id
+	exit 1
 }
 
 #Sets block back to free
