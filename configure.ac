@@ -503,6 +503,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/job_submit/lua/Makefile
 		 src/plugins/job_submit/partition/Makefile
 		 src/plugins/launch/Makefile
+		 src/plugins/launch/aprun/Makefile
 		 src/plugins/launch/poe/Makefile
 		 src/plugins/launch/runjob/Makefile
 		 src/plugins/launch/slurm/Makefile
