@@ -15,7 +15,7 @@
 
 @SET_MAKE@
 
-# Makefile for proctrack/linuxproc plugin
+# Makefile for proctrack/cgroup plugin
 
 VPATH = @srcdir@
 am__make_dryrun = \
