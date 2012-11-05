@@ -2338,3 +2338,77 @@ proc print_success { test_id } {
 	send_user "\n"
 	send_user "SUCCESS: test$test_id\n"
 }
+
+###############################################################
+#
+#Proc: change_subbp_state
+#
+#Purpose: Set sub mid plane state
+#
+#Returns SUCCESS if state of mid plane is changed
+#
+#
+###############################################################
+
+proc change_subbp_state { node ionodes state } {
+	global scontrol smap
+
+	set exit_code 0
+
+	set my_pid [spawn $scontrol update subbpname=$node\[$ionodes\] state=$state]
+	expect {
+		-re "slurm_update error:" {
+			set exit_code 1
+			exp_continue
+		}
+		-re "Unable to contact" {
+			send_user "\nFAILURE: slurm appears to be down\n"
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $my_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { $exit_code } {
+		return $exit_code
+	}
+
+	set match 0
+	set my_pid [spawn $smap -Db -c -h -n $node -I $ionodes]
+	expect {
+		-nocase -re "$state" {
+			incr match
+			exp_continue
+		}
+		-re "$node" {
+			incr match
+			exp_continue
+		}
+		-re "Unable to contact" {
+			send_user "\nFAILURE: slurm appears to be down\n"
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: smap not responding\n"
+			slow_kill $my_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$match != 2} {
+		send_user "\nFAILURE: Subbp did not go into $state state. $match\n"
+		set exit_code 1
+	}
+
+	return $exit_code
+}
+
