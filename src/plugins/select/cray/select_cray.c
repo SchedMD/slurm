@@ -348,9 +348,19 @@ extern int select_p_job_signal(struct job_record *job_ptr, int signal)
 				do_basil_release(job_ptr);
 	}
 
-	if ((!_zero_size_job(job_ptr)) &&
-	    (do_basil_signal(job_ptr, signal) != SLURM_SUCCESS))
-		return SLURM_ERROR;
+	if (!_zero_size_job(job_ptr)) {
+		if (signal != SIGKILL) {
+			if (do_basil_signal(job_ptr, signal) != SLURM_SUCCESS)
+				return SLURM_ERROR;
+		} else {
+			uint16_t kill_wait = slurm_get_kill_wait();
+			if (do_basil_signal(job_ptr, SIGCONT) != SLURM_SUCCESS)
+				return SLURM_ERROR;
+			if (do_basil_signal(job_ptr, SIGTERM) != SLURM_SUCCESS)
+				return SLURM_ERROR;
+			queue_basil_signal(job_ptr, SIGKILL, kill_wait);
+		}
+	}
 	return other_job_signal(job_ptr, signal);
 }
 
