@@ -258,10 +258,14 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 
 	log->opt = opt;
 
-	if (log->buf)
+	if (log->buf) {
 		cbuf_destroy(log->buf);
-	if (log->fbuf)
+		log->buf = NULL;
+	}
+	if (log->fbuf) {
 		cbuf_destroy(log->fbuf);
+		log->fbuf = NULL;
+	}
 
 	if (log->opt.buffered) {
 		log->buf  = cbuf_create(128, 8192);
@@ -342,10 +346,14 @@ _sched_log_init(char *prog, log_options_t opt, log_facility_t fac,
 
 	sched_log->opt = opt;
 
-	if (sched_log->buf)
+	if (sched_log->buf) {
 		cbuf_destroy(sched_log->buf);
-	if (sched_log->fbuf)
+		sched_log->buf = NULL;
+	}
+	if (sched_log->fbuf) {
 		cbuf_destroy(sched_log->fbuf);
+		sched_log->fbuf = NULL;
+	}
 
 	if (sched_log->opt.buffered) {
 		sched_log->buf  = cbuf_create(128, 8192);
@@ -410,7 +418,7 @@ int sched_log_init(char *prog, log_options_t opt, log_facility_t fac, char *logf
 	return rc;
 }
 
-void log_fini()
+void log_fini(void)
 {
 	if (!log)
 		return;
