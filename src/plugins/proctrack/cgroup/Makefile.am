@@ -1,4 +1,4 @@
-# Makefile for proctrack/linuxproc plugin
+# Makefile for proctrack/cgroup plugin
 
 AUTOMAKE_OPTIONS = foreign
 
