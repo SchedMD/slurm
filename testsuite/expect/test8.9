@@ -1,0 +1,212 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test if the job dies when the one of the pass over nodes are
+#          set to an error state.
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2011 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.schedmd.com/slurmdocs/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id	"8.9"
+set exit_code	0
+set file_in 	"test$test_id.input"
+set job_id      0
+set  geom       ""
+set a_size      ""
+set x_size      ""
+set y_size      ""
+set z_size      ""
+set job_fini1   ""
+set job_fini2   ""
+set job_fini3   ""
+set job_fini4   ""
+set a_flag      0
+set x_flag      0
+set y_flag      0
+set z_flag      0
+set tmp         0
+set block       0
+
+print_header $test_id
+
+
+if {([test_bluegene] == 0) || [string compare [get_bluegene_type] "Q"]} {
+	send_user "\nWARNING: This test is only compatible with bluegene systems\n"
+	exit $exit_code
+}
+
+set type [get_bluegene_type]
+if {$type == 0} {
+	send_user "\nFAILURE: No blugene type found \n"
+	exit 1
+}
+
+spawn $scontrol show node
+expect {
+	-re "NodeName=($alpha_numeric).($digit)($digit)($digit)($digit)" {
+		set a_size $expect_out(2,string)
+		set x_size $expect_out(3,string)
+		set y_size $expect_out(4,string)
+		set z_size $expect_out(5,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$a_size>2} {
+	set geom "2x1x1x1"
+	set a_flag 1
+} elseif {$x_size > 2} {
+	set geom "1x2x1x1"
+	set x_flag 1
+} elseif {$y_size >2} {
+	set geom "1x1x2x1"
+	set y_flag 1
+} elseif {$z_size >2} {
+	set geom "1x1x1x2"
+	set z_flag 1
+} else {
+	send_user "\nFAILURE: not enough dimenstions\n"
+	exit 1
+}
+
+make_bash_script $file_in "$bin_sleep 500"
+
+spawn $sbatch  --geometry=$geom --conn-type=T,T,T,T --output=/dev/null --error=/dev/null $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: Job was not submitted\n"
+		exp_continue
+		exit 1
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+wait_for_job $job_id "RUNNING"
+
+spawn $scontrol show job $job_id
+expect {
+	-re "MidplaneList=($alpha_numeric).($alpha_numeric)x($digit)($digit)($digit)($digit)" {
+		set job_fini1 $expect_out(3,string)
+		set job_fini2 $expect_out(4,string)
+		set job_fini3 $expect_out(5,string)
+		set job_fini4 $expect_out(6,string)
+		exp_continue
+
+	}
+	-re "Block_ID=($alpha_numeric)" {
+		set block $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+
+}
+
+if {$a_flag==1} {
+	set last_node "bgq$a_size$job_fini2$job_fini3$job_fini4"
+} elseif {$x_flag==1} {
+	set last_node "bgq$job_fini1$x_size$job_fini3$job_fini4"
+} elseif {$y_flag==1} {
+	set last_node "bgq$job_fini1$job_fini2$y_size$job_fini4"
+} elseif {$z_flag==1} {
+	set last_node "bgq$job_fini1$job_fini2$job_fini3$z_size"
+}
+
+change_subbp_state $last_node "0" "error"
+
+wait_for_job $job_id "DONE"
+
+spawn $squeue --state=failed -o%i
+expect {
+	-re "($alpha_numeric)" {
+		set tmp $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE:squeue is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$tmp!=$job_id} {
+	send_user "\nFAILURE: Job $job_id did not fail\n"
+	exit 1
+}
+
+send_user "\nblock=$block\n"
+
+spawn $scontrol show block $block
+expect {
+	-re "not found" {
+		send_user "\nBlock was not found, this is expected.\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+#Sets block back to free
+change_subbp_state $last_node "0" "free"
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
+}
+
+exit $exit_code
