@@ -56,13 +56,15 @@ if {[test_front_end]} {
 
 if {[test_launch_poe]} {
 #	Allow memory for the pmd process
-	set max_mem_error 140000
-	set step_id       1
-	set launch_poe    1
+	set max_time_error 10
+	set max_mem_error  140000
+	set step_id        1
+	set launch_poe     1
 } else {
-	set max_mem_error 4200
-	set step_id       0
-	set launch_poe    0
+	set max_time_error 5
+	set max_mem_error  4200
+	set step_id        0
+	set launch_poe     0
 }
 
 proc _get_mem {prog} {
@@ -313,7 +315,7 @@ expect {
 }
 set diff_time [expr $elapsed_time - $sleep_time]
 set error_time [expr abs($diff_time)]
-if {$error_time > 5} {
+if {$error_time > $max_time_error} {
 	send_user "\nFAILURE: sacct elapsed time discrepancy of $error_time secs\n"
 	send_user "  Wanted $sleep_time secs, got $elapsed_time secs\n"
 	set exit_code 1
