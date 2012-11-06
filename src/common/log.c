@@ -554,7 +554,7 @@ FILE *log_fp(void)
  * args are like printf, with the addition of the following format chars:
  * - %m expands to strerror(errno)
  * - %t expands to strftime("%x %X") [ locally preferred short date/time ]
- * - %T expands to rfc822 date time  [ "dd Mon yyyy hh:mm:ss GMT offset" ]
+ * - %T expands to rfc2822 date time  [ "dd, Mon yyyy hh:mm:ss GMT offset" ]
  *
  * simple format specifiers are handled explicitly to avoid calls to
  * vsnprintf and allow dynamic sizing of the message buffer. If a call
@@ -599,8 +599,8 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 			case 't': 	/* "%t" => locally preferred date/time*/
 				xstrftimecat(buf, "%x %X");
 				break;
-			case 'T': 	/* "%T" => "dd Mon yyyy hh:mm:ss off" */
-				xstrftimecat(buf, "%a %d %b %Y %H:%M:%S %z");
+			case 'T': 	/* "%T" => "dd, Mon yyyy hh:mm:ss off" */
+				xstrftimecat(buf, "%a, %d %b %Y %H:%M:%S %z");
 				break;
 #if defined USE_USEC_CLOCK
 			case 'M':       /* "%M" => "usec"                    */

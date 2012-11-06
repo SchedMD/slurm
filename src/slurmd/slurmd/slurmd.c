@@ -307,7 +307,7 @@ main (int argc, char *argv[])
 	if (pidfd >= 0)
 		fd_set_close_on_exec(pidfd);
 
-	RFC822_TIMESTAMP(time_stamp);
+	RFC2822_TIMESTAMP(time_stamp);
 	info("%s started on %s", xbasename(argv[0]), time_stamp);
 
 	_install_fork_handlers();

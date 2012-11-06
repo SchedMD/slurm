@@ -133,8 +133,8 @@ typedef struct {
 }
 
 
-#define RFC822_TIMESTAMP(timestamp_buf) \
-	MAKE_TIMESTAMP(timestamp_buf, "%a %d %b %Y %H:%M:%S %z");
+#define RFC2822_TIMESTAMP(timestamp_buf) \
+	MAKE_TIMESTAMP(timestamp_buf, "%a, %d %b %Y %H:%M:%S %z");
 
 #ifdef USE_ISO_8601
 #define LOG_TIMESTAMP(timestamp_buf)			\
@@ -250,7 +250,7 @@ void log_flush(void);
  * ~~~~    ~~~~~~~~~~~
  * "%m" => strerror(errno)
  * "%t" => strftime "%x %X"  (locally preferred short date/time)
- * "%T" => strftime "%a %d %b %Y %H:%M:%S %z" (rfc822 date/time)
+ * "%T" => strftime "%a, %d %b %Y %H:%M:%S %z" (rfc2822 date/time)
  */
 
 /* fatal() aborts program unless NDEBUG defined
