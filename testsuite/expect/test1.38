@@ -84,7 +84,7 @@ expect {
 #	exec $bin_pkill -INT -n -u $uid srun
 #
 set timeout $max_job_delay
-set match_run  0
+set match_int  0
 set match_term 0
 set match_wait 0
 set job_id  0
@@ -94,21 +94,16 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "srun: task 0: running" {
-		set match_run 1
-		cancel_job $job_id
-		exp_continue
-	}
-	-re "poe:.*tasks started" {
-		set match_run 1
-		cancel_job $job_id
-		exp_continue
-	}
 	-re "WAITING" {
 		set match_wait 1
 		# make sure the task gets started
 		sleep 1
 		exec $bin_kill -INT $srun_pid
+		exp_continue
+	}
+	-re "srun: interrupt" {
+		set match_int 1
+		cancel_job $job_id
 		exp_continue
 	}
 	-re "Force Terminated job" {
@@ -124,9 +119,9 @@ expect {
 		wait
 	}
 }
-if {[expr $match_run + $match_wait + $match_term] != 3} {
+if {[expr $match_wait + $match_int + $match_term] != 3} {
 	send_user "\nFAILURE: srun failed to properly process SIGINT, "
-	send_user "($match_run + $match_wait + $match_term != 3)\n"
+	send_user "($match_wait + $match_int + $match_term != 3)\n"
 	set exit_code 1
 }
 if {$exit_code == 0} {
@@ -140,7 +135,7 @@ if {$exit_code == 0} {
 # Note: For systems supporting proper pthreads, instead use
 #       exec $bin_kill -INT $srun_pid
 #
-set match_run  0
+set match_int  0
 set match_term 0
 set match_wait 0
 set job_id  0
@@ -156,11 +151,11 @@ expect {
 		exp_continue
 	}
 	-re "srun: interrupt" {
-		set match_run 999
+		set match_int 1
 		exp_continue
 	}
 	-re "srun: task 0: running" {
-		set match_run 999
+		set match_int 1
 		exp_continue
 	}
 	-re "srun: sending Ctrl-C" {
@@ -177,9 +172,13 @@ expect {
 	}
 }
 cancel_job $job_id
-if {[expr $match_run + $match_wait + $match_term] != 2} {
+if {[expr $match_wait + $match_int + $match_term] != 2} {
 	send_user "\nFAILURE: srun failed to properly process SIGINT, "
-	send_user "($match_run + $match_wait + $match_term != 2)\n"
+	send_user "($match_wait + $match_int + $match_term != 2)\n"
+	set exit_code 1
+} elseif {$match_int != 0} {
+	send_user "\nFAILURE: srun failed to properly process SIGINT, "
+	send_user "($match_int != 0)\n"
 	set exit_code 1
 }
 
