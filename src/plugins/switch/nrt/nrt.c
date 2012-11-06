@@ -2226,8 +2226,8 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				adapter_ptr->ipv6_addr = adapter_info.port[0].
 							 ipv6_addr;
 			}
+			xfree(adapter_info.window_list);
 		}
-		xfree(adapter_info.window_list);
 	}
 	if (status_array)
 		free(status_array);
@@ -4633,7 +4633,6 @@ extern int nrt_suspend_job_info_unpack(void **suspend_info, Buf buffer)
 		return SLURM_SUCCESS;
 
 	susp_info_ptr = xmalloc(sizeof(slurm_nrt_suspend_info_t));
-	susp_info_ptr->job_key = xmalloc(sizeof(nrt_job_key_t) * tmp_32);
 	susp_info_ptr->job_key_count = tmp_32;
 	susp_info_ptr->job_key_array_size = tmp_32;
 	safe_unpack32_array(&susp_info_ptr->job_key, &tmp_32, buffer);
