@@ -1522,7 +1522,6 @@ uint16_t slurm_get_kill_wait(void)
 	return kill_wait;
 }
 
-
 /* slurm_get_launch_type
  * get launch_type from slurmctld_conf object
  * RET char *   - launch_type, MUST be xfreed by caller

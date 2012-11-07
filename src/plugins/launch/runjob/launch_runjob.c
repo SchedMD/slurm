@@ -249,14 +249,10 @@ extern int launch_p_setup_srun_opt(char **rest)
 		 * handled after the allocation. */
 
 		/* Default location of the actual command to be ran. We always
-		 * have to add 3 options (calling prog, '--env-all' and ':') no
-		 * matter what. */
-		command_pos = 3;
+		 * have to add 5 options (calling prog, '-p', '--np',
+		 * '--env-all' and ':') no matter what. */
+		command_pos = 7;
 
-		if (opt.ntasks_per_node != NO_VAL)
-			command_pos += 2;
-		if (opt.ntasks_set)
-			command_pos += 2;
 		if (opt.cwd_set)
 			command_pos += 2;
 		if (opt.labelio)
@@ -296,16 +292,16 @@ extern int launch_p_setup_srun_opt(char **rest)
 		*/
 		opt.argv[i++] = xstrdup("srun");
 		/* srun launches tasks using runjob API. Slurmd is not used */
-		if (opt.ntasks_per_node != NO_VAL) {
-			opt.argv[i++]  = xstrdup("-p");
-			opt.argv[i++]  = xstrdup_printf("%d",
-							opt.ntasks_per_node);
-		}
+		/* We are always going to set ntasks_per_node and ntasks */
+		// if (opt.ntasks_per_node != NO_VAL) {
+		opt.argv[i++]  = xstrdup("-p");
+		opt.argv[i++]  = xstrdup_printf("%d", opt.ntasks_per_node);
+		// }
 
-		if (opt.ntasks_set) {
-			opt.argv[i++]  = xstrdup("--np");
-			opt.argv[i++]  = xstrdup_printf("%d", opt.ntasks);
-		}
+		// if (opt.ntasks_set) {
+		opt.argv[i++]  = xstrdup("--np");
+		opt.argv[i++]  = xstrdup_printf("%d", opt.ntasks);
+		// }
 
 		if (opt.cwd_set) {
 			opt.argv[i++]  = xstrdup("--cwd");
