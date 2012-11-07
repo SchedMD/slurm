@@ -2071,7 +2071,7 @@ int hostlist_push_list(hostlist_t h1, hostlist_t h2)
 char *hostlist_pop(hostlist_t hl)
 {
 	char *host = NULL;
-	if(!hl) {
+	if (!hl) {
 		error("hostlist_pop: no hostlist given");
 		return NULL;
 	}
