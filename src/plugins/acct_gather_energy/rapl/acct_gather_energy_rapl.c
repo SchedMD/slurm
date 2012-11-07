@@ -125,7 +125,6 @@ static ulong read_msr(int fd, int which) {
 
 	if (pread(fd, &data, sizeof data, which) != sizeof data) {
 		error("Check your cpu has RAPL support");
-		pexit("msr");
 	}
 	return (long long)data;
 }
@@ -160,12 +159,10 @@ static int open_msr(int core) {
 	if ( fd < 0 ) {
 		if ( errno == ENXIO ) {
 			error("No CPU %d", core);
-			pexit("msr");
 		} else if ( errno == EIO ) {
 			error("CPU %d doesn't support MSRs", core);
-			pexit("msr");
 		} else
-			pexit("msr");
+			error("MSR register problem");
 	}
 	return fd;
 }
@@ -194,17 +191,6 @@ static void hardware (void) {
 	debug4 ("RAPL Found: %d packages", nb_pkg);
 }
 
-static int _update_weighted_energy(uint32_t step_sampled_cputime,
-				   struct jobacctinfo *jobacct)
-{
-	return 0;
-}
-
-static int _readbasewatts(void)
-{
-	return 0;
-}
-
 extern int acct_gather_energy_p_update_node_energy(void)
 {
 	int rc = SLURM_SUCCESS;
@@ -228,22 +214,24 @@ extern int acct_gather_energy_p_update_node_energy(void)
 			result += get_package_energy(i) + get_dram_energy(i);
 		ret = (double)result*energy_units;
 
+		/* current_watts = the average power consumption between two
+		 *		   measurements
+		 * base_watts = base energy consumed
+		 */
 		node_current_energy = (int)ret;
-		if (local_energy->consumed_energy != 0){
+		if (local_energy->consumed_energy != 0) {
 			local_energy->consumed_energy =
 				node_current_energy - local_energy->base_watts;
+			local_energy->current_watts =
+				(float)(node_current_energy -
+				local_energy->previous_consumed_energy) /
+				slurm_get_acct_gather_node_freq();
 		}
 		if (local_energy->consumed_energy == 0){
 			local_energy->consumed_energy = 1;
 			local_energy->base_watts = node_current_energy;
 		}
-
-		sleep(1);
-		result = 0;
-		for (i = 0; i < nb_pkg; i++)
-			result += get_package_energy(i) + get_dram_energy(i);
-		ret_tmp = (double)result * energy_units;
-		local_energy->current_watts = (float)(ret_tmp - ret);
+		local_energy->previous_consumed_energy = node_current_energy;
 
 		debug2("_getjoules_rapl = %d sec, current %.6f Joules, "
 		       "consumed %d", freq, ret, local_energy->consumed_energy);
@@ -294,39 +282,6 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 
 }
 
-extern int acct_gather_energy_p_getjoules_scaled(uint32_t stp_smpled_time,
-						 ListIterator itr)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int acct_gather_energy_p_setbasewatts(void)
-{
-	local_energy->base_watts = 0;
-	return SLURM_SUCCESS;
-}
-
-extern int acct_gather_energy_p_readbasewatts(void)
-{
-	return local_energy->base_watts;
-}
-
-extern uint32_t acct_gather_energy_p_getcurrentwatts(void)
-{
-	return local_energy->current_watts;
-}
-
-extern uint32_t acct_gather_energy_p_getbasewatts()
-{
-	return local_energy->base_watts;
-}
-
-extern uint32_t acct_gather_energy_p_getnodeenergy(uint32_t up_time)
-{
-	last_time = up_time;
-	return local_energy->consumed_energy;
-}
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -353,17 +308,6 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	case ENERGY_DATA_JOULES_TASK:
 		_get_joules_task(energy);
 		break;
-	case ENERGY_DATA_JOULES_SCALED:
-		break;
-	case ENERGY_DATA_CURR_WATTS:
-		energy->current_watts = local_energy->current_watts;
-		break;
-	case ENERGY_DATA_BASE_WATTS:
-		energy->base_watts = local_energy->base_watts;
-		break;
-	case ENERGY_DATA_NODE_ENERGY:
-		energy->consumed_energy = local_energy->consumed_energy;
-		break;
 	case ENERGY_DATA_STRUCT:
 		memcpy(energy, local_energy, sizeof(acct_gather_energy_t));
 		break;
@@ -376,14 +320,13 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	return rc;
 }
 
-extern int acct_gather_energy_p_set_data(acct_gather_energy_t *energy,
-					 enum acct_energy_type data_type)
+extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
+					 acct_gather_energy_t *energy)
 {
 	int rc = SLURM_SUCCESS;
 
 	switch (data_type) {
-	case ENERGY_DATA_BASE_WATTS:
-		local_energy->base_watts = 0;
+	case ENERGY_DATA_STRUCT:
 		break;
 	default:
 		error("acct_gather_energy_p_set_data: unknown enum %d",

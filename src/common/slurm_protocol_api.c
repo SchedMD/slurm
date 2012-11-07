@@ -1392,7 +1392,7 @@ char *slurm_get_acct_gather_energy_type(void)
 	return acct_gather_energy_type;
 }
 
-uint16_t slurm_get_acct_gather_node_freq(void)
+extern uint16_t slurm_get_acct_gather_node_freq(void)
 {
 	uint16_t freq = 0;
 	slurm_ctl_conf_t *conf;

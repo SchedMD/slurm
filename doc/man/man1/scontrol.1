@@ -1263,7 +1263,26 @@ Identify the bluegene ionodes to be updated (i.e. bg000[0\-3]). This
 specification is required.
 NOTE: Even on BGQ where node names are given in bg0000[00000] format
 this option takes an ionode name bg0000[0].
+
 .TP
+\fBDESCRIPTION FOR SHOW COMMAND, NODES\fR
+.TP
+The meaning of the energy information is as follows:
+
+.TP
+\fICurrentWatts\fP
+The instantaneous power consumption of the node at the time of the last node
+energy accounting sample, in watts.
+
+.TP
+\fILowestJoules\fP
+The energy consumed by the node between the last time it was powered on and
+the last time it was registered by the slurmd daemon, in joules.
+
+.TP
+\fIConsumedJoules\fP
+The energy consumed by the node between the last time it was registered by
+the slurmd daemon and the last node energy accounting sample, in joules.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP

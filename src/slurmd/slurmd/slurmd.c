@@ -1657,6 +1657,8 @@ _slurmd_fini(void)
 	slurm_select_fini();
 	jobacct_gather_fini();
 	spank_slurmd_exit();
+	cpu_freq_fini();
+
 	return SLURM_SUCCESS;
 }
 

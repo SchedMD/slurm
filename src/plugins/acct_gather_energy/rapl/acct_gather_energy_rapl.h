@@ -68,16 +68,12 @@
 #define MSR_DRAM_PERF_STATUS            0x61B
 #define MSR_DRAM_POWER_INFO             0x61C
 
-
-extern int acct_gather_energy_p_updatenodeenergy(void);
-extern void acct_gather_energy_p_getjoules_task(struct jobacctinfo *jobacct);
-extern int acct_gather_energy_p_getjoules_scaled(uint32_t stp_smpled_time,
-						 ListIterator itr);
-extern int acct_gather_energy_p_setbasewatts(void);
-extern int acct_gather_energy_p_readbasewatts(void);
-extern uint32_t acct_gather_energy_p_getcurrentwatts(void);
-extern uint32_t acct_gather_energy_p_getbasewatts(void);
-extern uint32_t acct_gather_energy_p_getnodeenergy(uint32_t up_time);
+extern int acct_gather_energy_p_update_node_energy(void);
+extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
+					 acct_gather_energy_t *energy);
+extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
+					 acct_gather_energy_t *energy);
 extern int init ( void );
+extern int fini ( void );
 
 #endif

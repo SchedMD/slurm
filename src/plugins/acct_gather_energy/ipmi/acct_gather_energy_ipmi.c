@@ -126,14 +126,6 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	switch (data_type) {
 	case ENERGY_DATA_JOULES_TASK:
 		break;
-	case ENERGY_DATA_JOULES_SCALED:
-		break;
-	case ENERGY_DATA_CURR_WATTS:
-		break;
-	case ENERGY_DATA_BASE_WATTS:
-		break;
-	case ENERGY_DATA_NODE_ENERGY:
-		break;
 	case ENERGY_DATA_STRUCT:
 		break;
 	default:
@@ -145,13 +137,13 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	return rc;
 }
 
-extern int acct_gather_energy_p_set_data(acct_gather_energy_t *energy,
-					 enum acct_energy_type data_type)
+extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
+					 acct_gather_energy_t *energy)
 {
 	int rc = SLURM_SUCCESS;
 
 	switch (data_type) {
-	case ENERGY_DATA_BASE_WATTS:
+	case ENERGY_DATA_STRUCT:
 		break;
 	default:
 		error("acct_gather_energy_p_set_data: unknown enum %d",

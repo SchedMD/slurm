@@ -99,6 +99,7 @@ void print_fields(slurmdb_step_rec_t *step)
 					     tmp_char,
 					     (curr_inx == field_count));
 			xfree(tmp_char);
+			break;
 		case PRINT_ACT_CPUFREQ:
 
 			convert_num_unit((float)step->stats.act_cpufreq,

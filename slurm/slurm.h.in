@@ -429,10 +429,6 @@ enum jobacct_data_type {
 
 enum acct_energy_type {
 	ENERGY_DATA_JOULES_TASK,
-	ENERGY_DATA_JOULES_SCALED,
-	ENERGY_DATA_CURR_WATTS,
-	ENERGY_DATA_BASE_WATTS,
-	ENERGY_DATA_NODE_ENERGY,
 	ENERGY_DATA_STRUCT,
 };
 
@@ -918,6 +914,7 @@ typedef struct dynamic_plugin_data {
 } dynamic_plugin_data_t;
 
 typedef struct acct_gather_energy {
+	uint32_t previous_consumed_energy;
 	uint32_t base_consumed_energy;
 	uint32_t base_watts;	  /* lowest power consump of node, in watts */
 	uint32_t consumed_energy; /* total energy consumed by node, in joules */

@@ -4,6 +4,7 @@ htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
 generated_html = \
 	accounting.html \
 	accounting_storageplugins.html \
+	acct_gather_energy_plugins.html \
 	api.html \
 	authplugins.html \
 	big_sys.html \
@@ -49,7 +50,6 @@ generated_html = \
 	overview.html \
 	platforms.html \
 	plugins.html \
-	energy_accounting_plugins.html \
 	power_save.html \
 	preempt.html \
 	preemption_plugins.html \

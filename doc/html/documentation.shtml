@@ -90,7 +90,7 @@ Also see <a href="tutorials.html">Tutorials</a> and
 <li><a href="job_submit_plugins.html">Job Submission Plugin Programmer Guide</a></li>
 <li><a href="launch_plugins.html">Launch Plugin Programmer Guide</a></li>
 <li><a href="mpiplugins.html">MPI Plugin Programmer Guide</a></li>
-<li><a href="energy_accounting_plugins.html">Energy Accounting Plugin Programmer Guide</a></li>
+<li><a href="acct_gather_energy_plugins.html">Energy Accounting Plugin Programmer Guide</a></li>
 <li><a href="preemption_plugins.html">Preemption Plugin Programmer Guide</a></li>
 <li><a href="priority_plugins.html">Priority Plugin Programmer Guide</a></li>
 <li><a href="proctrack_plugins.html">Process Tracking Plugin Programmer Guide</a></li>
@@ -102,6 +102,6 @@ Also see <a href="tutorials.html">Tutorials</a> and
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 24 September 2012</p>
+<p style="text-align:center;">Last modified 31 October 2012</p>
 
 <!--#include virtual="footer.txt"-->

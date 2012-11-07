@@ -543,7 +543,7 @@ char *slurm_get_acct_gather_energy_type(void);
  * node from the slurmctld_conf object
  * RET int    - accounting node frequency
  */
-uint16_t slurm_get_acct_gather_node_freq(void);
+extern uint16_t slurm_get_acct_gather_node_freq(void);
 
 /* slurm_get_root_filter
  * RET uint16_t  - Value of SchedulerRootFilter */

@@ -75,13 +75,6 @@ extern int acct_gather_energy_unpack(acct_gather_energy_t **energy, Buf buffer,
 				     uint16_t protocol_version);
 
 extern int acct_gather_energy_g_update_node_energy(void);
-/* extern uint32_t acct_gather_energy_g_getcurrentwatts(void); */
-/* extern uint32_t acct_gather_energy_g_getbasewatts(void); */
-/* extern uint32_t acct_gather_energy_g_getnodeenergy(uint32_t up_time); */
-/* extern uint32_t acct_gather_energy_g_getjoules_task( */
-/* 	struct jobacctinfo *jobacct); */
-/* extern int acct_gather_energy_g_getjoules_scaled( */
-/* 	uint32_t step_sampled_cputime, ListIterator itr); */
 extern int acct_gather_energy_g_get_data(enum acct_energy_type data_type,
 					 acct_gather_energy_t *energy);
 extern int acct_gather_energy_g_set_data(enum acct_energy_type data_type,
