@@ -336,13 +336,13 @@ extern int select_p_job_signal(struct job_record *job_ptr, int signal)
 	 * lines from being executed.
 	 */
 	switch (signal) {
+		case SIGCHLD:
 		case SIGCONT:
 		case SIGSTOP:
 		case SIGTSTP:
 		case SIGTTIN:
 		case SIGTTOU:
 		case SIGURG:
-		case SIGCHLD:
 		case SIGWINCH:
 			break;
 		default:
