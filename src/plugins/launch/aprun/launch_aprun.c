@@ -167,6 +167,7 @@ static int _parse_prog_line(char *in_line, int *command_pos, int count)
 	}
 	if (in_line[i] == '\0')
 		goto bad_line;
+
 	cmd_inx = i;
 	for ( ; in_line[i]; i++) {
 		if (isspace(in_line[i])) {
@@ -375,6 +376,19 @@ extern int launch_p_setup_srun_opt(char **rest)
 			"%d", time_str2secs(opt.time_limit_str));
 	}
 
+	if (opt.launcher_opts) {
+		char *save_ptr = NULL, *tok;
+		char *tmp = xstrdup(opt.launcher_opts);
+		tok = strtok_r(tmp, " ", &save_ptr);
+		while (tok) {
+			opt.argc++;
+			xrealloc(opt.argv, opt.argc * sizeof(char *));
+			opt.argv[command_pos++]  = xstrdup(tok);
+			tok = strtok_r(NULL, " ", &save_ptr);
+		}
+		xfree(tmp);
+	}
+
 
 	/* These are srun options that are not supported by aprun, but
 	   here just in case in the future they add them.
@@ -535,8 +549,9 @@ extern int launch_p_step_launch(
 			error("dup2: %m");
 			return 1;
 		}
-
-		execvp(opt.argv[0], opt.argv);
+		sleep(20);
+		exit(0);
+		//execvp(opt.argv[0], opt.argv);
 		error("execv(aprun) error: %m");
 		return 1;
 	}

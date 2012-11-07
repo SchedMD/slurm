@@ -197,6 +197,9 @@ typedef struct srun_options {
 	int  max_exit_timeout;  /* Undocumented                 */
 	int  msg_timeout;       /* Undocumented                 */
 	bool launch_cmd;        /* --launch_cmd                 */
+	char *launcher_opts;	/* --launcher-opts commands to be sent
+				 * to the external launcher command if
+				 * not SLURM */
 	char *network;		/* --network=			*/
 
 	/* BLUEGENE SPECIFIC */
@@ -230,7 +233,6 @@ typedef struct srun_options {
 	int req_switch;		/* Minimum number of switches	*/
 	int wait4switch;	/* Maximum time to wait for minimum switches */
 	bool user_managed_io;   /* 0 for "normal" IO, 1 for "user manged" IO */
-	char *runjob_opts;	/* Runjob command options, BGQ only	*/
 } opt_t;
 
 extern opt_t opt;
