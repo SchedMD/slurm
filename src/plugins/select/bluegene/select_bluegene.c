@@ -3145,8 +3145,15 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		*/
 		if ((job_desc->min_cpus != NO_VAL)
 		    && (job_desc->min_cpus > job_desc->min_nodes)) {
-			float tmp_float = (float)job_desc->min_cpus
-				/ (float)bg_conf->cpu_ratio;
+			float tmp_float = (float)job_desc->min_cpus;
+
+			/* ntasks_per_node should be validated beforehand. */
+			if (job_desc->ntasks_per_node
+			    && (job_desc->ntasks_per_node != NO_VAL))
+				tmp_float /= (float)job_desc->ntasks_per_node;
+			else
+				tmp_float /= (float)bg_conf->cpu_ratio;
+
 			tmp = (uint32_t)tmp_float;
 			if (tmp_float != (float)tmp)
 				tmp++;
