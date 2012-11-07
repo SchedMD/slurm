@@ -1667,7 +1667,6 @@ extern void bg_figure_nodes_tasks()
 			opt.ntasks_per_node = ntpn;
 		}
 	}
-	info("got %d %d %d", opt.ntasks_per_node, node_cnt, opt.ntasks);
 }
 
 #endif
