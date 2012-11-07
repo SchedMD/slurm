@@ -13,10 +13,6 @@ EXTRA_DIST = \
 	pam_job.c			\
 	slurm-build-script.sh
 
-if BUILD_SRUN2APRUN
-  bin_SCRIPTS = srun
-endif
-
 srun:
 _perldir=$(exec_prefix)`perl -e 'use Config; $$T=$$Config{installsitearch}; $$P=$$Config{installprefix}; $$P1="$$P/local"; $$T =~ s/$$P1//; $$T =~ s/$$P//; print $$T;'`
 

@@ -593,9 +593,14 @@ The default action is to terminate the job upon node failure.
 
 .TP
 \fB\-\-launch-cmd\fR
-Print external launch command instead of running job normally through SLURM.
-This option is current supported on systems with IBM's Parallel
-Environment (PE) to print out the poe command for use with totalview.
+Print external launch command instead of running job normally through
+SLURM. This option is only valid if using something other than the
+\fIlaunch/slurm\fR plugin.
+
+.TP
+\fB\-\-launcher\-opts\fR=<\fIoptions\fR>
+Options for the external launcher if using something other than the
+\fIlaunch/slurm\fR plugin.
 
 .TP
 \fB\-l\fR, \fB\-\-label\fR
@@ -1198,11 +1203,6 @@ Allocate resources for the job from the named reservation.
 \fB\-\-restart\-dir\fR=<\fIdirectory\fR>
 Specifies the directory from which the job or job step's checkpoint should
 be read (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
-
-.TP
-\fB\-\-runjob\-opts\fR=<\fIoptions\fR>
-Options to the runjob command.
-For use only on IBM BlueGene/Q systems.
 
 .TP
 \fB\-s\fR, \fB\-\-share\fR

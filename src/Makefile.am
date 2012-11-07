@@ -4,10 +4,8 @@ SUBDIRS = common api db_api database \
 	sbatch sattach strigger sacct sacctmgr sreport sstat \
 	sshare sprio sdiag
 
-if !BUILD_SRUN2APRUN
 if !REAL_BG_L_P_LOADED
 SUBDIRS += srun
-endif
 endif
 
 if WITH_BLCR

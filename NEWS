@@ -31,6 +31,10 @@ documents those changes that are of interest to users and admins.
     GrpCPUMins limit.
  -- Add support for RFC 5424 timestamps in logfiles. Disable with configuration
     option of "--disable-rfc5424time". By Janne Blomqvist, Aalto University.
+ -- CRAY - Replace srun.pl with launch/aprun plugin to use srun to wrap the
+    aprun process instead of a perl script.
+ -- srun - Rename --runjob-opts to --launcher-opts to be used on systems other
+    than BGQ.
 
 * Changes in SLURM 2.5.0.pre3
 =============================

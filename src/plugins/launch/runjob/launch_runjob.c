@@ -265,9 +265,9 @@ extern int launch_p_setup_srun_opt(char **rest)
 				command_pos += 2;
 			}
 		}
-		if (opt.runjob_opts) {
+		if (opt.launch_opts) {
 			char *save_ptr = NULL, *tok;
-			char *tmp = xstrdup(opt.runjob_opts);
+			char *tmp = xstrdup(opt.launch_opts);
 			tok = strtok_r(tmp, " ", &save_ptr);
 			while (tok) {
 				command_pos++;
@@ -327,9 +327,9 @@ extern int launch_p_setup_srun_opt(char **rest)
 			opt.argv[i++]  = xstrdup_printf("%u", taskid);
 		}
 
-		if (opt.runjob_opts) {
+		if (opt.launcher_opts) {
 			char *save_ptr = NULL, *tok;
-			char *tmp = xstrdup(opt.runjob_opts);
+			char *tmp = xstrdup(opt.launcher_opts);
 			tok = strtok_r(tmp, " ", &save_ptr);
 			while (tok) {
 				opt.argv[i++]  = xstrdup(tok);

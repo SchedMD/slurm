@@ -15,7 +15,7 @@
 
 @SET_MAKE@
 
-# Makefile for jobacct_gather/none plugin
+# Makefile for launch/aprun plugin
 
 VPATH = @srcdir@
 am__make_dryrun = \
@@ -54,7 +54,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/jobacct_gather/none
+subdir = src/plugins/launch/aprun
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -129,12 +129,12 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-jobacct_gather_none_la_LIBADD =
-am_jobacct_gather_none_la_OBJECTS = jobacct_gather_none.lo
-jobacct_gather_none_la_OBJECTS = $(am_jobacct_gather_none_la_OBJECTS)
-jobacct_gather_none_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+launch_aprun_la_LIBADD =
+am_launch_aprun_la_OBJECTS = launch_aprun.lo
+launch_aprun_la_OBJECTS = $(am_launch_aprun_la_OBJECTS)
+launch_aprun_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(jobacct_gather_none_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(launch_aprun_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -148,8 +148,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(jobacct_gather_none_la_SOURCES)
-DIST_SOURCES = $(jobacct_gather_none_la_SOURCES)
+SOURCES = $(launch_aprun_la_SOURCES)
+DIST_SOURCES = $(launch_aprun_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -369,11 +369,9 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = jobacct_gather_none.la
-
-# Null job completion logging plugin.
-jobacct_gather_none_la_SOURCES = jobacct_gather_none.c
-jobacct_gather_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+pkglib_LTLIBRARIES = launch_aprun.la
+launch_aprun_la_SOURCES = launch_aprun.c
+launch_aprun_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -387,9 +385,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/jobacct_gather/none/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/launch/aprun/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/plugins/jobacct_gather/none/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/launch/aprun/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -440,8 +438,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-jobacct_gather_none.la: $(jobacct_gather_none_la_OBJECTS) $(jobacct_gather_none_la_DEPENDENCIES) $(EXTRA_jobacct_gather_none_la_DEPENDENCIES) 
-	$(jobacct_gather_none_la_LINK) -rpath $(pkglibdir) $(jobacct_gather_none_la_OBJECTS) $(jobacct_gather_none_la_LIBADD) $(LIBS)
+launch_aprun.la: $(launch_aprun_la_OBJECTS) $(launch_aprun_la_DEPENDENCIES) $(EXTRA_launch_aprun_la_DEPENDENCIES) 
+	$(launch_aprun_la_LINK) -rpath $(pkglibdir) $(launch_aprun_la_OBJECTS) $(launch_aprun_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -449,7 +447,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gather_none.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/launch_aprun.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

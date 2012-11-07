@@ -385,11 +385,6 @@ dnl
 X_AC_BLCR
 
 dnl
-dnl Check to build native SLURM srun command or an aprun (Cray ALPS) wrapper.
-dnl
-X_AC_SRUN2APRUN
-
-dnl
 dnl Set some configuration based upon multiple configuration parameters
 dnl
 ac_build_smap="no"
@@ -511,6 +506,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/job_submit/lua/Makefile
 		 src/plugins/job_submit/partition/Makefile
 		 src/plugins/launch/Makefile
+		 src/plugins/launch/aprun/Makefile
 		 src/plugins/launch/poe/Makefile
 		 src/plugins/launch/runjob/Makefile
 		 src/plugins/launch/slurm/Makefile

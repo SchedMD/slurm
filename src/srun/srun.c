@@ -184,13 +184,6 @@ int srun(int ac, char **av)
 	if (switch_init() != SLURM_SUCCESS )
 		fatal("failed to initialize switch plugin");
 
-#ifndef HAVE_CRAY_EMULATION
-	if (is_cray_system() || is_cray_select_type()) {
-		error("operation not supported on Cray systems - use aprun(1)");
-		exit(error_exit);
-	}
-#endif
-
 	init_srun(ac, av, &logopt, debug_level, 1);
 	create_srun_job(&job, &got_alloc, 0, 1);
 
