@@ -113,7 +113,6 @@ const uint32_t plugin_version = 100;
 static int freq = 0;
 static acct_gather_energy_t *local_energy = NULL;
 static bool acct_gather_energy_shutdown = true;
-static uint32_t last_time = 0;
 
 int pkg2cpu [MAX_PKGS] = {[0 ... MAX_PKGS-1] -1}; /* one cpu in the package */
 int fd[MAX_PKGS] = {[0 ... MAX_PKGS-1] -1};
@@ -150,7 +149,8 @@ static ulong get_dram_energy(int pkg)
 	return(dram_energy[pkg].val);
 }
 
-static int open_msr(int core) {
+static int open_msr(int core)
+{
 	char msr_filename[BUFSIZ];
 	int fd;
 
@@ -167,20 +167,20 @@ static int open_msr(int core) {
 	return fd;
 }
 
-static void hardware (void) {
+static void hardware (void)
+{
 	char buf[1024];
 	FILE *fd;
 	int cpu, pkg;
 
 	if ((fd = fopen("/proc/cpuinfo", "r")) == 0)
-		pexit("fopen");
+		error("fopen");
 	while (0 != fgets(buf, 1024, fd)) {
 		if (strncmp(buf, "processor", sizeof("processor") - 1) == 0) {
 			sscanf(buf, "processor\t: %d", &cpu);
 			continue;
 		}
-		if (strncmp(buf, "physical id", sizeof("physical id") - 1) == 0)
-		{
+		if (!strncmp(buf, "physical id", sizeof("physical id") - 1)) {
 			sscanf(buf, "physical id\t: %d", &pkg);
 			if (pkg2cpu[pkg] == -1)
 				nb_pkg++;
@@ -194,11 +194,10 @@ static void hardware (void) {
 extern int acct_gather_energy_p_update_node_energy(void)
 {
 	int rc = SLURM_SUCCESS;
-	int pkg, i;
-	int core = 0;
+	int i;
 	double energy_units;
 	ulong result;
-	double ret, ret_tmp;
+	double ret;
 
 	acct_gather_energy_shutdown = false;
 	if (!acct_gather_energy_shutdown) {
@@ -242,8 +241,7 @@ extern int acct_gather_energy_p_update_node_energy(void)
 
 static void _get_joules_task(acct_gather_energy_t *energy)
 {
-	int rc, pkg, i;
-	int core = 0;
+	int i;
 	double energy_units, power_units;
 	ulong result;
 	ulong max_power;

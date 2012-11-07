@@ -92,8 +92,6 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 	int ntasks = 0;
 	int tot_tasks = 0;
 	hostlist_t hl = NULL;
-	uint32_t act_cpufreq = 0;
-	uint32_t consumed_energy = 0;
 
 	debug("requesting info for job %u.%u", jobid, stepid);
 	if ((rc = slurm_job_step_stat(jobid, stepid, nodelist,

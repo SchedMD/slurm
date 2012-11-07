@@ -116,8 +116,6 @@ static int pagesize = 0;
 static DIR  *slash_proc = NULL;
 static pthread_mutex_t reading_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int cpunfo_frequency = 0;
-static int last_cpu = 0;
-static uint32_t pre_jobacct_total_cputime = 0;
 static uint32_t step_sampled_cputime = 0;
 static slurm_cgroup_conf_t slurm_cgroup_conf;
 
@@ -181,7 +179,6 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 	int num_read, fd;
 	FILE *sys_fp = NULL;
 	char freq_file[80];
-	int cpunfo_frqline= 6;
 	char cpunfo_line [128];
 	char cpufreq_line [10];
 
@@ -440,9 +437,6 @@ extern void jobacct_gather_p_poll_data(
 	struct jobacctinfo *jobacct = NULL;
 	static int processing = 0;
 	long	hertz;
-	char *act_cpufreq;
-	size_t act_cpufreq_size;
-	uint32_t user_act_cpufreq, system_act_cpufreq;
 	char		sbuf[72];
 	char *cpu_time, *memory_stat, *ptr;
 	size_t cpu_time_size, memory_stat_size;
