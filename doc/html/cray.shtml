@@ -25,23 +25,19 @@ Then use ALPS' <i>aprun</i> command to launch parallel jobs within the resource
 allocation.
 The resource allocation is terminated once the the batch script or the
 <i>salloc</i> command terminates.
-Alternately there is an <i>aprun</i> wrapper distributed with SLURM in
-<i>contribs/cray/srun</i> which will translate <i>srun</i> options
-into the equivalent <i>aprun</i> options. This wrapper will also execute
-<i>salloc</i> as needed to create a job allocation in which to run the
-<i>aprun</i> command. The <i>srun</i> script contains two new options:
-<i>--man</i> will print a summary of the options including notes about which
-<i>srun</i> options are not supported and <i>--alps="</i> which can be used
+With 2.5 there is a <i>launch/aprun</i> plugin that allow users to use
+<i>srun</i> to wrap <i>aprun</i> and translate <i>srun</i> options
+into the equivalent <i>aprun</i> options. Not all <i>srun</i> options
+can be translated so there are options that are not available.
+The <i>srun</i> option <i>--launcher-opts=</i> can be used
 to specify <i>aprun</i> options which lack an equivalent within <i>srun</i>.
-For example, <i>srun --alps="-a xt" -n 4 a.out</i>.
+For example, <i>srun --launcher-opts="-a xt" -n 4 a.out</i>.
 Since <i>aprun</i> is used to launch tasks (the equivalent of a SLURM
 job step), the job steps will not be visible using SLURM commands.
 Other than SLURM's <i>srun</i> command being replaced by <i>aprun</i>
 and the job steps not being visible, all other SLURM commands will operate
-as expected. Note that in order to build and install the aprun wrapper
-described above, execute "configure" with the <i>--with-srun2aprun</i>
-option or add <i>%_with_srun2aprun  1</i> to your <i>~/.rpmmacros</i>
-file.  This option is set with RPMs from Cray.</p>
+as expected. <i>srun</i> can also print the translated <i>aprun</i>
+line as well with the <i>--launch-cmd</i> option.</p>
 
 <h3>Node naming and node geometry on Cray XT/XE systems</h3>
 <p>SLURM node names will be of the form "nid#####" where "#####" is a five-digit sequence number.
@@ -173,6 +169,30 @@ zero compute node job requests.</p>
 <p><b>Note</b>: Job allocations with zero compute nodes can only be made in
 SLURM partitions explicitly configured with <b>MinNodes=0</b> (the default
 minimum node count for a partition is one compute node).</p>
+
+<h3>srun options translations on a Cray</h3>
+<p>The following <i>srun</i> options are translated to these <i>aprun</i>
+options.  If it isn't listed here there is no translation and while
+the option can be used for the allocation within Slurm it will not be propagated
+to <i>aprun</i>.</p>
+<div id="slurmtable">
+<div id="row"><div id="slurmtd"><b>srun option</b></div><div id="slurmtd"><b>aprun option</b></div></div>
+<div id="row"><div id="slurmtd">-c, --cpus-per-task</div><div id="slurmtd">-d</div></div>
+<div id="row"><div id="slurmtd">-s, --share</div><div id="slurmtd">-F share</div></div>
+<div id="row"><div id="slurmtd">--exclusive</div><div id="slurmtd">-F exclusive</div></div>
+<div id="row"><div id="slurmtd">-w, --nodelist</div><div id="slurmtd">-L</div></div>
+<div id="row"><div id="slurmtd">--mem-per-cpu</div><div id="slurmtd">-m</div></div>
+<div id="row"><div id="slurmtd">--ntasks-per-node</div><div id="slurmtd">-N</div></div>
+<div id="row"><div id="slurmtd">-n, --ntasks</div><div id="slurmtd">-n</div></div>
+<div id="row"><div id="slurmtd">-Q, --quiet</div><div id="slurmtd">-q</div></div>
+<div id="row"><div id="slurmtd">--ntasks-per-socket</div><div id="slurmtd">-S</div></div>
+<div id="row"><div id="slurmtd">--sockets-per-node</div><div id="slurmtd">-sn</div></div>
+<div id="row"><div id="slurmtd">--mem_bind=local</div><div id="slurmtd">-ss</div></div>
+<div id="row"><div id="slurmtd">-t, --time</div><div id="slurmtd">-t</div></div>
+</div>
+<p>The following aprun options have no equivalent in srun and must be
+  specified by using the <i>srun --launcher-opts</i>
+  <br>options: -a, -b, -B, -cc, -f, -r, and -sl.</p>
 
 <HR SIZE=4>
 
@@ -321,7 +341,7 @@ process for the RPMs is described below.  The
 Cray SLURM RPMs install in /opt/slurm.</p>
 
 <p><b>NOTE:</b> By default neither the <i>salloc</i> command or <i>srun</i>
-command wrapper can be executed as a background process. This is done for two
+command can be executed as a background process. This is done for two
 reasons:</p>
 <ol>
 <li>Only one ALPS reservation can be created from each session ID. The
@@ -620,28 +640,13 @@ sdb: # /etc/init.d/slurm start
 login: # /etc/init.d/slurm start
 </pre>
 
-<h3>Srun wrapper configuration</h3>
+<h3>launch/aprun plugin configuration</h3>
 
-<p>The <i>srun</i> wrapper to <i>aprun</i> might require modification to run
-as desired. Specifically the <i>$aprun</i> variable could be set to the
-absolute pathname of that executable file. Without that modification, the
-<i>aprun</i> command executed will depend upon the user's search path.</p>
-
-<p>In order to debug the <i>srun</i> wrapper, uncomment the line</p>
-<pre>
-print "comment=$command\n"
-</pre>
-<p>If the <i>srun</i> wrapper is executed from
-within an existing SLURM job allocation (i.e. within <i>salloc</i> or an
-<i>sbatch</i> script), then it just executes the <i>aprun</i> command with
-appropriate options. If executed without an allocation, the wrapper executes
-<i>salloc</i>, which then executes the <i>srun</i> wrapper again. This second
-execution of the <i>srun</i> wrapper is required in order to process environment
-variables that are set by the <i>salloc</i> command based upon the resource
-allocation.</p>
+<p>By default the launch plugin on a Cray is on set
+  to <i>launch/aprun</i>. Nothing extra is needed to enable it.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 18 September 2012</p></td>
+<p style="text-align:center;">Last modified 7 November 2012</p>
 
 <!--#include virtual="footer.txt"-->
