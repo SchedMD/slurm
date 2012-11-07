@@ -708,135 +708,6 @@ _massage_pathname(char **path)
 	}
 }
 
-#if HAVE_HWLOC
-/*
- * get_hwlocinfo - Return detailed cpuinfo on this system using hwloc library
- *     compatible with get_cpuinfo() in common/xcpuinfo.c
- * Input:  numproc - number of processors on the system
- * Output: p_sockets - number of physical processor sockets
- *         p_cores - total number of physical CPU cores
- *         p_threads - total number of hardware execution threads
- *         p_block_map - asbtract->physical block distribution map
- *         p_block_map_inv - physical->abstract block distribution map (inverse)
- *         return code - 0 if no error, otherwise errno
- * NOTE: User must xfree *p_block_map and *p_block_map_inv
- */
-static int
-_get_hwlocinfo(uint16_t *p_numproc,
-	       uint16_t *p_sockets, uint16_t *p_cores, uint16_t *p_threads,
-	       uint16_t *p_block_map_size,
-	       uint16_t **p_block_map, uint16_t **p_block_map_inv)
-{
-	enum { SOCKET=0, CORE=1, PU=2 };
-	hwloc_topology_t topology;
-	hwloc_obj_t obj;
-	hwloc_obj_type_t objtype[3];
-	unsigned idx[3];
-	int nobj[3];
-	int actual_cpus;
-	int macid;
-	int absid;
-	int i;
-
-	debug("hwloc_topology_init");
-	if (hwloc_topology_init(&topology)) {
-		/* error in initialize hwloc library */
-		debug("hwloc_topology_init() failed.");
-		return 1;
-	}
-
-	/* parse all system */
-	hwloc_topology_set_flags(topology, HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
-
-	/* ignores cache, group, misc */
-	hwloc_topology_ignore_type (topology, HWLOC_OBJ_CACHE);
-	hwloc_topology_ignore_type (topology, HWLOC_OBJ_GROUP);
-	hwloc_topology_ignore_type (topology, HWLOC_OBJ_MISC);
-
-	/* load topology */
-	debug("hwloc_topology_load");
-	if (hwloc_topology_load(topology)) {
-		/* error in load hardware topology */
-		debug("hwloc_topology_load() failed.");
-		hwloc_topology_destroy(topology);
-		return 2;
-	}
-	
-	if ( hwloc_get_type_depth(topology, HWLOC_OBJ_NODE) >
-	     hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET) ) {
-		/* One socket contains multiple NUMA-nodes 
-		 * like AMD Opteron 6000 series etc.
-		 * In such case, use NUMA-node instead of socket. */
-		objtype[SOCKET] = HWLOC_OBJ_NODE;
-		objtype[CORE]   = HWLOC_OBJ_CORE;
-		objtype[PU]     = HWLOC_OBJ_PU;
-	} else {
-		objtype[SOCKET] = HWLOC_OBJ_SOCKET;
-		objtype[CORE]   = HWLOC_OBJ_CORE;
-		objtype[PU]     = HWLOC_OBJ_PU;
-	}
-
-	/* number of objects */
-	nobj[SOCKET] = hwloc_get_nbobjs_by_type(topology, objtype[SOCKET]);
-	nobj[CORE]   = hwloc_get_nbobjs_by_type(topology, objtype[CORE]);
-	actual_cpus  = hwloc_get_nbobjs_by_type(topology, objtype[PU]);
-	nobj[PU]     = actual_cpus/nobj[CORE];  /* threads per core */
-	nobj[CORE]  /= nobj[SOCKET];            /* cores per socket */
-
-	debug4("Total %d CPUs, %d sockets, %d core/socket, %d pu/core",
-	       actual_cpus, nobj[SOCKET], nobj[CORE], nobj[PU]);
-
-	/* allocate block_map */
-	*p_block_map_size = (uint16_t)actual_cpus;
-	if (p_block_map && p_block_map_inv) {
-		*p_block_map     = xmalloc(actual_cpus * sizeof(uint16_t));
-		*p_block_map_inv = xmalloc(actual_cpus * sizeof(uint16_t));
-
-		/* initialize default as linear mapping */
-		for (i = 0; i < actual_cpus; i++) {
-			(*p_block_map)[i]     = i;
-			(*p_block_map_inv)[i] = i;
-		}
-		
-		/* create map with hwloc */
-		for (idx[SOCKET]=0; idx[SOCKET]<nobj[SOCKET]; ++idx[SOCKET]) {
-			for (idx[CORE]=0; idx[CORE]<nobj[CORE]; ++idx[CORE]) {
-				for (idx[PU]=0; idx[PU]<nobj[PU]; ++idx[PU]) {
-					/* get hwloc_obj by indexes */
-					obj=hwloc_get_obj_below_array_by_type(
-					            topology, 3, objtype, idx);
-					if (!obj)
-						continue;
-					macid = obj->os_index;
-					absid = idx[SOCKET]*nobj[CORE]*nobj[PU]
-					      + idx[CORE]*nobj[PU]
-					      + idx[PU];
-
-					if ((macid >= actual_cpus) ||
-					    (absid >= actual_cpus)) {
-						/* physical or logical ID are
-						 * out of range */
-						continue;
-					}
-					debug4("CPU map[%d]=>%d", absid, macid);
-					(*p_block_map)[absid]     = macid;
-					(*p_block_map_inv)[macid] = absid;
-				}
-			 }
-		}
-	}
-
-	hwloc_topology_destroy(topology);
-
-	/* update output parameters */
-	*p_numproc = actual_cpus;
-	*p_sockets = nobj[SOCKET];
-	*p_cores   = nobj[CORE];
-	*p_threads = nobj[PU];
-	return 0;
-}
-#endif /* HAVE_HWLOC */
-
 /*
  * Read the slurm configuration file (slurm.conf) and substitute some
  * values into the slurmd configuration in preference of the defaults.
@@ -913,23 +784,13 @@ _read_config(void)
 	_update_logging();
 	_update_nice();
 
-#if HAVE_HWLOC
-	_get_hwlocinfo(&conf->actual_cpus,
-	               &conf->actual_sockets,
-	               &conf->actual_cores,
-	               &conf->actual_threads,
-	               &conf->block_map_size,
-	               &conf->block_map, &conf->block_map_inv);
-#else
-	get_procs(&conf->actual_cpus);
-	get_cpuinfo(conf->actual_cpus,
+	get_cpuinfo(&conf->actual_cpus,
 		    &conf->actual_boards,
-		    &conf->actual_sockets,
-		    &conf->actual_cores,
-		    &conf->actual_threads,
-		    &conf->block_map_size,
-		    &conf->block_map, &conf->block_map_inv);
-#endif
+	            &conf->actual_sockets,
+	            &conf->actual_cores,
+	            &conf->actual_threads,
+	            &conf->block_map_size,
+	            &conf->block_map, &conf->block_map_inv);
 #ifdef HAVE_FRONT_END
 	/*
 	 * When running with multiple frontends, the slurmd S:C:T values are not
@@ -1270,23 +1131,14 @@ _print_config(void)
 
 	gethostname_short(name, sizeof(name));
 	printf("NodeName=%s ", name);
-#if HAVE_HWLOC
-	_get_hwlocinfo(&conf->actual_cpus,
-	               &conf->actual_sockets,
-	               &conf->actual_cores,
-	               &conf->actual_threads,
-	               &conf->block_map_size,
-	               &conf->block_map, &conf->block_map_inv);
-#else
-	get_procs(&conf->actual_cpus);
-	get_cpuinfo(conf->actual_cpus,
+
+	get_cpuinfo(&conf->actual_cpus,
 		    &conf->actual_boards,
-		    &conf->actual_sockets,
-		    &conf->actual_cores,
-		    &conf->actual_threads,
-		    &conf->block_map_size,
-		    &conf->block_map, &conf->block_map_inv);
-#endif
+	            &conf->actual_sockets,
+	            &conf->actual_cores,
+	            &conf->actual_threads,
+	            &conf->block_map_size,
+	            &conf->block_map, &conf->block_map_inv);
 	printf("CPUs=%u Boards=%u Sockets=%u CoresPerSocket=%u "
 	       "ThreadsPerCore=%u ",
 	       conf->actual_cpus, conf->actual_boards, conf->actual_sockets,
