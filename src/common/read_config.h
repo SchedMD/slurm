@@ -89,6 +89,8 @@ extern char *default_plugstack;
 
 #if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
 #  define DEFAULT_LAUNCH_TYPE         "launch/runjob"
+#elif defined HAVE_REAL_CRAY
+#  define DEFAULT_LAUNCH_TYPE         "launch/aprun"
 #else
 #  define DEFAULT_LAUNCH_TYPE         "launch/slurm"
 #endif

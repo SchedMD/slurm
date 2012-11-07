@@ -43,7 +43,9 @@
 #include <ctype.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/parse_time.h"
 #include "src/srun/libsrun/launch.h"
+#include "src/srun/libsrun/multi_prog.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -100,7 +102,120 @@ static char *_get_nids(char *nodelist)
 	return nids;
 }
 
-static void _unblock_signals (void)
+/*
+ * Parse a multi-prog input file line
+ * line IN - line to parse
+ * command_pos IN/OUT - where in opt.argv we are
+ * count IN - which command we are on
+ * return 0 if empty line, 1 if added
+ */
+static int _parse_prog_line(char *in_line, int *command_pos, int count)
+{
+	int i, cmd_inx;
+	int first_task_inx, last_task_inx;
+	hostset_t hs = NULL;
+	char *tmp_str = NULL;
+
+	xassert(opt.ntasks);
+
+	/* Get the task ID string */
+	for (i = 0; in_line[i]; i++)
+		if (!isspace(in_line[i]))
+			break;
+
+	if (!in_line[i]) /* empty line */
+		return 0;
+	else if (in_line[i] == '#')
+		return 0;
+	else if (!isdigit(in_line[i]))
+		goto bad_line;
+	first_task_inx = i;
+	for (i++; in_line[i]; i++) {
+		if (isspace(in_line[i]))
+			break;
+	}
+	if (!isspace(in_line[i]))
+		goto bad_line;
+	last_task_inx = i;
+
+
+	/* Now transfer data to the function arguments */
+	in_line[last_task_inx] = '\0';
+	xstrfmtcat(tmp_str, "[%s]", in_line + first_task_inx);
+	hs = hostset_create(tmp_str);
+	xfree(tmp_str);
+	in_line[last_task_inx] = ' ';
+	if (!hs)
+		goto bad_line;
+
+
+	if (count) {
+		opt.argc += 1;
+		xrealloc(opt.argv, opt.argc * sizeof(char *));
+		opt.argv[(*command_pos)++] = xstrdup(":");
+	}
+	opt.argc += 2;
+	xrealloc(opt.argv, opt.argc * sizeof(char *));
+	opt.argv[(*command_pos)++] = xstrdup("-n");
+	opt.argv[(*command_pos)++] = xstrdup_printf("%d", hostset_count(hs));
+	hostset_destroy(hs);
+
+	/* Get the command */
+	for (i++; in_line[i]; i++) {
+		if (!isspace(in_line[i]))
+			break;
+	}
+	if (in_line[i] == '\0')
+		goto bad_line;
+	cmd_inx = i;
+	for ( ; in_line[i]; i++) {
+		if (isspace(in_line[i])) {
+			if (i > cmd_inx) {
+				int diff = i - cmd_inx + 1;
+				char tmp_char[diff + 1];
+				snprintf(tmp_char, diff, "%s",
+					 in_line + cmd_inx);
+				opt.argc += 1;
+				xrealloc(opt.argv, opt.argc * sizeof(char *));
+				opt.argv[(*command_pos)++] = xstrdup(tmp_char);
+			}
+			cmd_inx = i + 1;
+		} else if (in_line[i] == '\n')
+			break;
+	}
+
+	return 1;
+
+bad_line:
+	error("invalid input line: %s", in_line);
+
+	return 0;
+}
+
+static void _handle_multi_prog(char *in_file, int *command_pos)
+{
+	char in_line[512];
+	FILE *fp;
+	int count = 0;
+
+	if (verify_multi_name(in_file, opt.ntasks))
+		exit(error_exit);
+
+	fp = fopen(in_file, "r");
+	if (!fp) {
+		fatal("fopen(%s): %m", in_file);
+		return;
+	}
+
+	while (fgets(in_line, sizeof(in_line), fp)) {
+		if (_parse_prog_line(in_line, command_pos, count))
+			count++;
+	}
+
+	return;
+}
+
+static void _unblock_signals(void)
 {
 	sigset_t set;
 	int i;
@@ -135,6 +250,8 @@ extern int fini(void)
 
 extern int launch_p_setup_srun_opt(char **rest)
 {
+	int command_pos = 0;
+
 	if (opt.test_only) {
 		error("--test-only not supported with aprun");
 		exit (1);
@@ -149,12 +266,9 @@ extern int launch_p_setup_srun_opt(char **rest)
 
 	opt.argc++;
 
-	/* We need to do +2 here just in case multi-prog is needed (we
-	 * add an extra argv on so just make space for it).
-	 */
-	opt.argv = (char **) xmalloc((opt.argc + 2) * sizeof(char *));
+	opt.argv = (char **) xmalloc(opt.argc * sizeof(char *));
 
-	opt.argv[0] = xstrdup("aprun");
+	opt.argv[command_pos++] = xstrdup("aprun");
 	/* Set default job name to the executable name rather than
 	 * "aprun" */
 	if (!opt.job_name_set_cmd && (1 < opt.argc)) {
@@ -162,66 +276,108 @@ extern int launch_p_setup_srun_opt(char **rest)
 		opt.job_name = xstrdup(rest[0]);
 	}
 
-	return 1;
-}
-
-extern int launch_p_handle_multi_prog_verify(int command_pos)
-{
-	return 0;
-}
-
-extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
-				    void (*signal_function)(int),
-				    sig_atomic_t *destroy_job)
-{
 	if (opt.cpus_per_task) {
-		xstrfmtcat(cmd_line, " -d %u", opt.cpus_per_task);
+		opt.argc += 2;
+		xrealloc(opt.argv, opt.argc * sizeof(char *));
+		opt.argv[command_pos++] = xstrdup("-d");
+		opt.argv[command_pos++] = xstrdup_printf(
+			"%u", opt.cpus_per_task);
 	}
 
+	if (opt.shared != (uint16_t)NO_VAL) {
+		opt.argc += 2;
+		xrealloc(opt.argv, opt.argc * sizeof(char *));
+		opt.argv[command_pos++] = xstrdup("-F");
+		opt.argv[command_pos++] = xstrdup("share");
+	} else if (opt.exclusive) {
+		opt.argc += 2;
+		xrealloc(opt.argv, opt.argc * sizeof(char *));
+		opt.argv[command_pos++] = xstrdup("-F");
+		opt.argv[command_pos++] = xstrdup("exclusive");
+	}
 
 	if (opt.nodelist) {
 		char *nids = _get_nids(opt.nodelist);
-		xstrfmtcat(cmd_line, " -L %s", nids);
-
+		opt.argc += 2;
+		xrealloc(opt.argv, opt.argc * sizeof(char *));
+		opt.argv[command_pos++] = xstrdup("-L");
+		opt.argv[command_pos++] = xstrdup(nids);
+		xfree(nids);
 	}
 
-	if (opt.mem_per_cpu) {
-		xstrfmtcat(cmd_line, " -m %u", opt.mem_per_cpu) ;
+	if (opt.mem_per_cpu != NO_VAL) {
+		opt.argc += 2;
+		xrealloc(opt.argv, opt.argc * sizeof(char *));
+		opt.argv[command_pos++] = xstrdup("-m");
+		opt.argv[command_pos++] = xstrdup_printf("%u", opt.mem_per_cpu);
 	}
 
-	if (opt.ntasks_per_node) {
-		xstrfmtcat(cmd_line, "-N %u", opt.ntasks_per_node);
-	}
-
-	if (opt.max_nodes) {
-		int task_per_node = int ((max_nodes + max_nodes-1)/max_nodes);
-		xstrfmtcat(cmd_line, "-N %u", opt.task_per_node);
+	if (opt.ntasks_per_node != NO_VAL) {
+		opt.argc += 2;
+		xrealloc(opt.argv, opt.argc * sizeof(char *));
+		opt.argv[command_pos++] = xstrdup("-N");
+		opt.argv[command_pos++] = xstrdup_printf(
+			"%u", opt.ntasks_per_node);
+		if (!opt.ntasks && opt.min_nodes)
+			opt.ntasks = opt.ntasks_per_node *  opt.min_nodes;
+	} else if (opt.min_nodes) {
+		uint32_t tasks_per_node;
+		if (!opt.ntasks)
+			opt.ntasks = opt.min_nodes;
+		tasks_per_node = (opt.ntasks + opt.min_nodes - 1) /
+			opt.min_nodes;
+		opt.argc += 2;
+		xrealloc(opt.argv, opt.argc * sizeof(char *));
+		opt.argv[command_pos++] = xstrdup("-N");
+		opt.argv[command_pos++] = xstrdup_printf("%u", tasks_per_node);
 	}
 
 	if (opt.ntasks) {
-		xstrfmtcat(cmd_line, "-n %u", opt.ntasks);
+		opt.argc += 2;
+		xrealloc(opt.argv, opt.argc * sizeof(char *));
+		opt.argv[command_pos++] = xstrdup("-n");
+		opt.argv[command_pos++] = xstrdup_printf("%u", opt.ntasks);
 	}
 
 	if (opt.quiet) {
-		xstrcat(cmd_line, " -q");
+		opt.argc += 1;
+		xrealloc(opt.argv, opt.argc * sizeof(char *));
+		opt.argv[command_pos++] = xstrdup("-q");
 	}
 
-	if (opt.ntasks_per_socket) {
-		xstrfmtcat(cmd_line, " -S %u", opt.ntask_per_socket);
+	if (opt.ntasks_per_socket != NO_VAL) {
+		opt.argc += 2;
+		xrealloc(opt.argv, opt.argc * sizeof(char *));
+		opt.argv[command_pos++] = xstrdup("-S");
+		opt.argv[command_pos++] = xstrdup_printf(
+			"%u", opt.ntasks_per_socket);
 	}
 
-	if (opt.sockets_per_node) {
-		xstrfmtcat(cmd_line, " -sn %u", opt.sockets_per_node);
+	if (opt.sockets_per_node != NO_VAL) {
+		opt.argc += 2;
+		xrealloc(opt.argv, opt.argc * sizeof(char *));
+		opt.argv[command_pos++] = xstrdup("-sn");
+		opt.argv[command_pos++] = xstrdup_printf(
+			"%u", opt.sockets_per_node);
 	}
 
-	if (opt.time_limit) {
-		int time_secs = get_seconds(opt.time_limit);
-		xstrfmtcat(cmd_line, " -t %u", time_secs);
+	if (opt.mem_bind && strstr(opt.mem_bind, "local")) {
+		opt.argc += 1;
+		xrealloc(opt.argv, opt.argc * sizeof(char *));
+		opt.argv[command_pos++] = xstrdup("-ss");
+	}
+
+	if (opt.time_limit_str) {
+		opt.argc += 2;
+		xrealloc(opt.argv, opt.argc * sizeof(char *));
+		opt.argv[command_pos++] = xstrdup("-t");
+		opt.argv[command_pos++] = xstrdup_printf(
+			"%d", time_str2secs(opt.time_limit_str));
 	}
 
 
-	/* These are not part of aprun, but here just in case in the
-	   future they add them.
+	/* These are srun options that are not supported by aprun, but
+	   here just in case in the future they add them.
 
 	   if (opt.disable_status) {
 	   xstrcat(cmd_line, " --disable-status");
@@ -313,24 +469,41 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 	*/
 
+	if (opt.multi_prog)
+		_handle_multi_prog(rest[0], &command_pos);
 
-	if (opt.multi_prog) {
-		int script = get_multi_prog(opt.mult_prog);
-		xstrfmtcat(cmd_line, " %s", script);
+	if (opt.launch_cmd) {
+		int i = 0;
+		char *cmd_line = NULL;
+
+		while (opt.argv[i])
+			xstrfmtcat(cmd_line, "%s ", opt.argv[i++]);
+		printf("%s\n", cmd_line);
+		xfree(cmd_line);
+		exit(0);
 	}
+	return command_pos;
+}
 
-	if (opt.ifname) {
-		xstrfmtcat(cmd_line, " <%s", opt.ifname);
+extern int launch_p_handle_multi_prog_verify(int command_pos)
+{
+	return 1;
+}
+
+extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
+				    void (*signal_function)(int),
+				    sig_atomic_t *destroy_job)
+{
+	if (opt.launch_cmd) {
+		int i = 0;
+		char *cmd_line = NULL;
+
+		while (opt.argv[i])
+			xstrfmtcat(cmd_line, "%s ", opt.argv[i++]);
+		printf("%s\n", cmd_line);
+		xfree(cmd_line);
+		exit(0);
 	}
-
-	if (opt.ofname) {
-		xstrfmtcat(cmd_line, " >>%s", opt.ofname);
-	}
-
-	if (opt.ofname) {
-		xstrfmtcat(cmd_line, " >%s", opt.ofname);
-	}
-
 	return 0;
 }
 
