@@ -938,28 +938,28 @@ _read_config(void)
 	 * Report actual hardware configuration, irrespective of FastSchedule.
 	 */
 	conf->cpus    = conf->actual_cpus;
-	conf->boards   = conf->actual_boards;
+	conf->boards  = conf->actual_boards;
 	conf->sockets = conf->actual_sockets;
 	conf->cores   = conf->actual_cores;
 	conf->threads = conf->actual_threads;
 #else
 	/* If the actual resources on a node differ than what is in
-	   the configuration file and we are using
-	   cons_res or gang scheduling we have to use what is in the
-	   configuration file because the slurmctld creates bitmaps
-	   for scheduling before these nodes check in.
-	*/
+	 * the configuration file and we are using
+	 * cons_res or gang scheduling we have to use what is in the
+	 * configuration file because the slurmctld creates bitmaps
+	 * for scheduling before these nodes check in.
+	 */
 	if (((cf->fast_schedule == 0) && !cr_flag && !gang_flag) ||
 	    ((cf->fast_schedule == 1) &&
 	     (conf->actual_cpus < conf->conf_cpus))) {
 		conf->cpus    = conf->actual_cpus;
-		conf->boards   = conf->actual_boards;
+		conf->boards  = conf->actual_boards;
 		conf->sockets = conf->actual_sockets;
 		conf->cores   = conf->actual_cores;
 		conf->threads = conf->actual_threads;
 	} else {
 		conf->cpus    = conf->conf_cpus;
-		conf->boards   = conf->conf_boards;
+		conf->boards  = conf->conf_boards;
 		conf->sockets = conf->conf_sockets;
 		conf->cores   = conf->conf_cores;
 		conf->threads = conf->conf_threads;
@@ -970,11 +970,12 @@ _read_config(void)
 	    (conf->cores   != conf->actual_cores)   ||
 	    (conf->threads != conf->actual_threads)) {
 		if (cf->fast_schedule) {
-			info("Node configuration differs from hardware\n"
-			     "   CPUs=%u:%u(hw) Sockets=%u:%u(hw)\n"
-			     "   CoresPerSocket=%u:%u(hw) "
+			info("Node configuration differs from hardware: "
+			     "CPUs=%u:%u(hw) Boards=%u:%u(hw) "
+			     "Sockets=%u:%u(hw) CoresPerSocket=%u:%u(hw) "
 			     "ThreadsPerCore=%u:%u(hw)",
 			     conf->cpus,    conf->actual_cpus,
+			     conf->boards,  conf->actual_boards,
 			     conf->sockets, conf->actual_sockets,
 			     conf->cores,   conf->actual_cores,
 			     conf->threads, conf->actual_threads);
@@ -985,10 +986,11 @@ _read_config(void)
 			      "will be what is in the slurm.conf because of "
 			      "the bitmaps the slurmctld must create before "
 			      "the slurmd registers.\n"
-			      "   CPUs=%u:%u(hw) Sockets=%u:%u(hw)\n"
-			      "   CoresPerSocket=%u:%u(hw) "
+			      "   CPUs=%u:%u(hw) Boards=%u:%u(hw) "
+			      "Sockets=%u:%u(hw) CoresPerSocket=%u:%u(hw) "
 			      "ThreadsPerCore=%u:%u(hw)",
 			      conf->cpus,    conf->actual_cpus,
+			      conf->boards,  conf->actual_boards,
 			      conf->sockets, conf->actual_sockets,
 			      conf->cores,   conf->actual_cores,
 			      conf->threads, conf->actual_threads);
@@ -1278,16 +1280,17 @@ _print_config(void)
 #else
 	get_procs(&conf->actual_cpus);
 	get_cpuinfo(conf->actual_cpus,
-			&conf->actual_boards,
+		    &conf->actual_boards,
 		    &conf->actual_sockets,
 		    &conf->actual_cores,
 		    &conf->actual_threads,
 		    &conf->block_map_size,
 		    &conf->block_map, &conf->block_map_inv);
 #endif
-	printf("CPUs=%u Sockets=%u CoresPerSocket=%u ThreadsPerCore=%u ",
-	       conf->actual_cpus, conf->actual_sockets, conf->actual_cores,
-	       conf->actual_threads);
+	printf("CPUs=%u Boards=%u Sockets=%u CoresPerSocket=%u "
+	       "ThreadsPerCore=%u ",
+	       conf->actual_cpus, conf->actual_boards, conf->actual_sockets,
+	       conf->actual_cores, conf->actual_threads);
 
 	get_memory(&conf->real_memory_size);
 	get_tmp_disk(&conf->tmp_disk_space, "/tmp");

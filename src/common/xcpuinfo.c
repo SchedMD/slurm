@@ -235,26 +235,20 @@ get_cpuinfo(uint16_t numproc, uint16_t *p_boards,
 
 #if DEBUG_DETAIL
 	/*** Display raw data ***/
-	debug3(" ");
-	debug3("Boards:           %u", *p_sockets);
-	debug3("Sockets:          %u", *p_sockets);
-	debug3("Cores per socket: %u", *p_cores);
-	debug3("Threads per core: %u", *p_threads);
-	debug3(" ");
-	hwloc_children(topology, hwloc_get_root_obj(topology), 0);
+	debug3("Boards:%u Sockets:%u CoresPerSocket:%u ThreadsPerCore:%u",
+	       *p_boards, *p_sockets, *p_cores, *p_threads);
 
 	/* Display the mapping tables */
 	if (block_map && block_map_inv) {
-		debug3("");
+		debug3("------");
 		debug3("Abstract -> Machine logical CPU ID block mapping:");
 		debug3("(AbstractId PhysicalId Inverse");
 		for (i = 0; i < numproc; i++) {
 			debug3("   %4d      %4u       %4u",
-				i,  (*block_map)[i],  (*block_map_inv)[i]);
+				i, (*block_map)[i], (*block_map_inv)[i]);
 		}
-		debug3("");
+		debug3("------");
 	}
-	debug3("");
 #endif
 	hwloc_topology_destroy(topology);
 	return 0;
