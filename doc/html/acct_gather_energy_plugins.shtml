@@ -24,10 +24,11 @@ The minor type can be any suitable name
 for the type of energy accounting. We currently use
 <ul>
 <li><b>none</b>&#151; No energy consumption data is provided.
-<li><b>ipmi</b>&#151;Gets energy consumption data from the BMC using the IPMI 
-interface tool.
+<li><b>ipmi</b>&#151;Gets energy consumption data from the
+BMC (Baseboard Management Controller) using the
+IPMI (Intelligent Platform Management Interface) tool.
 <li><b>rapl</b>&#151;Gets energy consumption data from hardware sensors on each 
-core/socket, using RAPL.
+core/socket, using RAPL (Running Average Power Limit) sensors.
 </ul>
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/acct_gather_energy/rapl</span> and 
@@ -44,7 +45,7 @@ implemented must be stubbed.
 Updates energy accounting data for a node.
 Sets/updates the energy and power accounting values in the acct_gather_energy_t
 structure for the node on which it is called.
-Called by slurmd.
+Called by the slurmd daemon.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline"> None</span>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
@@ -90,14 +91,14 @@ plugin and the frequency at which to gather node energy data.</p>
 </dl>
 
 <h2>Versioning</h2>
-<p> This document describes version 1 of the SLURM Energy Accounting API. Future
+<p>This document describes version 1 of the SLURM Energy Accounting API. Future
 releases of SLURM may revise this API. A, energy accounting plugin conveys its
 ability to implement a particular API version using the mechanism outlined
 for SLURM plugins.</p>
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 31 October 2012</p>
+<p style="text-align:center;">Last modified 7 November 2012</p>
 
 <!--#include virtual="footer.txt"-->
 
