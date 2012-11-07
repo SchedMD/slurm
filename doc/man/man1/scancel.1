@@ -1,4 +1,4 @@
-.TH SCANCEL "1" "January 2011" "scancel 2.3" "Slurm components"
+.TH SCANCEL "1" "November 2012" "scancel 2.5" "Slurm components"
 
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
@@ -190,6 +190,12 @@ time for the running job/step(s) to clean up.
 .LP
 If a signal value of "KILL" is sent to an entire job, this will cancel
 the active job steps but not cancel the job itself.
+.LP
+On Cray systems, all signals \fBexcept\fR
+SIGCHLD, SIGCONT, SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU, SIGURG, or SIGWINCH
+cause the ALPS reservation to be released.
+The job however will not be terminated except in the case of SIGKILL and
+may then be used for post processing.
 
 .SH "AUTHORIZATION"
 
