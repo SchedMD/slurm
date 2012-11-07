@@ -173,7 +173,6 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	    uint16_t *p_block_map_size,
 	    uint16_t **p_block_map, uint16_t **p_block_map_inv)
 {
-#if 1
 	enum { SOCKET=0, CORE=1, PU=2, LAST_OBJ=3 };
 	hwloc_topology_t topology;
 	hwloc_obj_t obj;
@@ -183,9 +182,10 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	int actual_cpus;
 	int macid;
 	int absid;
+	int actual_boards = 1, depth;
 	int i;
 
-	debug("hwloc_topology_init");
+	debug2("hwloc_topology_init");
 	if (hwloc_topology_init(&topology)) {
 		/* error in initialize hwloc library */
 		debug("hwloc_topology_init() failed.");
@@ -195,13 +195,12 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	/* parse all system */
 	hwloc_topology_set_flags(topology, HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
 
-	/* ignores cache, group, misc */
+	/* ignores cache, misc */
 	hwloc_topology_ignore_type (topology, HWLOC_OBJ_CACHE);
-	hwloc_topology_ignore_type (topology, HWLOC_OBJ_GROUP);
 	hwloc_topology_ignore_type (topology, HWLOC_OBJ_MISC);
 
 	/* load topology */
-	debug("hwloc_topology_load");
+	debug2("hwloc_topology_load");
 	if (hwloc_topology_load(topology)) {
 		/* error in load hardware topology */
 		debug("hwloc_topology_load() failed.");
@@ -224,14 +223,19 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 	}
 
 	/* number of objects */
+	depth = hwloc_get_type_depth(topology, HWLOC_OBJ_GROUP);
+	if (depth != HWLOC_TYPE_DEPTH_UNKNOWN) {
+		actual_boards = MAX(hwloc_get_nbobjs_by_depth(topology, depth),
+				    1);
+	}
 	nobj[SOCKET] = hwloc_get_nbobjs_by_type(topology, objtype[SOCKET]);
 	nobj[CORE]   = hwloc_get_nbobjs_by_type(topology, objtype[CORE]);
 	actual_cpus  = hwloc_get_nbobjs_by_type(topology, objtype[PU]);
 	nobj[PU]     = actual_cpus/nobj[CORE];  /* threads per core */
 	nobj[CORE]  /= nobj[SOCKET];            /* cores per socket */
 
-	debug4("Total %d CPUs, %d sockets, %d core/socket, %d pu/core",
-	       actual_cpus, nobj[SOCKET], nobj[CORE], nobj[PU]);
+	debug("CPUs:%d Boards:%u Sockets:%d CoresPerSocket:%d ThreadsPerCore:%d",
+	      actual_cpus, actual_boards, nobj[SOCKET], nobj[CORE], nobj[PU]);
 
 	/* allocate block_map */
 	*p_block_map_size = (uint16_t)actual_cpus;
@@ -277,88 +281,26 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 
 	/* update output parameters */
 	*p_cpus    = actual_cpus;
-*p_boards = 1;
+	*p_boards  = actual_boards;
 	*p_sockets = nobj[SOCKET];
 	*p_cores   = nobj[CORE];
 	*p_threads = nobj[PU];
-#else
-	hwloc_topology_t topology;
-	hwloc_obj_t obj;
-	int depth, i;
-	int boards, ncores, npu, nsockets;
-
-	/* Allocate and initialize topology object. */
-	hwloc_topology_init(&topology);
-	/* Perform the topology detection. */
-	hwloc_topology_load(topology);
-
-	boards = 1;
-	depth = hwloc_get_type_depth(topology, HWLOC_OBJ_GROUP);
-	if (depth != HWLOC_TYPE_DEPTH_UNKNOWN) {
-		boards = hwloc_get_nbobjs_by_depth(topology, depth);
-	}
-	*p_boards = boards;
-
-	nsockets = 1;
-	depth = hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET);
-	if (depth != HWLOC_TYPE_DEPTH_UNKNOWN) {
-		nsockets = hwloc_get_nbobjs_by_depth(topology, depth);
-	}
-	*p_sockets = nsockets;
-
-	ncores = 1;
-	*p_cores = 1;
-	depth = hwloc_get_type_depth(topology, HWLOC_OBJ_CORE);
-	if (depth != HWLOC_TYPE_DEPTH_UNKNOWN) {
-		ncores = hwloc_get_nbobjs_by_depth(topology, depth);
-	}
-	*p_cores = ncores / nsockets;
-
-	npu = 1;
-	depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PU);
-	if (depth != HWLOC_TYPE_DEPTH_UNKNOWN) {
-		npu = hwloc_get_nbobjs_by_depth(topology, depth);
-	}
-	*p_threads = npu / ncores;
-
-	*block_map_size = npu;
-	/* See notes on _compute_block_map for details
-	 * retval = _compute_block_map(*block_map_size,
-	 *                             block_map, block_map_inv); */
-
-	/* Compute abstract->machine block mapping (and inverse) */
-	if (block_map) {
-		*block_map = xmalloc(npu * sizeof(uint16_t));
-		for (i = 0; i < npu; i++) {
-			obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_PU, i);
-			(*block_map)[i] = obj->os_index;
-		}
-		if (block_map_inv) {
-			*block_map_inv = xmalloc(npu * sizeof(uint16_t));
-			for (i = 0; i < npu; i++) {
-				uint16_t idx = (*block_map)[i];
-				(*block_map_inv)[idx] = i;
-			}
-		}
-	}
-	hwloc_topology_destroy(topology);
-#endif
 
 #if DEBUG_DETAIL
 	/*** Display raw data ***/
-	debug3("Boards:%u Sockets:%u CoresPerSocket:%u ThreadsPerCore:%u",
-	       *p_boards, *p_sockets, *p_cores, *p_threads);
+	debug("CPUs:%u Boards:%u Sockets:%u CoresPerSocket:%u ThreadsPerCore:%u",
+	      *p_cpus, *p_boards, *p_sockets, *p_cores, *p_threads);
 
 	/* Display the mapping tables */
 	if (p_block_map && p_block_map_inv) {
-		debug3("------");
-		debug3("Abstract -> Machine logical CPU ID block mapping:");
-		debug3("AbstractId PhysicalId Inverse");
+		debug("------");
+		debug("Abstract -> Machine logical CPU ID block mapping:");
+		debug("AbstractId PhysicalId Inverse");
 		for (i = 0; i < *p_cpus; i++) {
 			debug3("   %4d      %4u       %4u",
 				i, (*p_block_map)[i], (*p_block_map_inv)[i]);
 		}
-		debug3("------");
+		debug("------");
 	}
 #endif
 	return 0;
