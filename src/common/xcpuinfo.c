@@ -328,7 +328,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 {
 	int retval;
 
-	uint16_t numprocs;
+	uint16_t numproc;
 	uint16_t numcpu	   = 0;		/* number of cpus seen */
 	uint16_t numphys   = 0;		/* number of unique "physical id"s */
 	uint16_t numcores  = 0;		/* number of unique "cores id"s */
@@ -359,7 +359,7 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 #endif
 
 	get_procs(&numproc);
-	*p_cpus = numprocs;
+	*p_cpus = numproc;
 	*p_boards = 1;		/* Boards not identified from /proc/cpuinfo */
 	*p_sockets = numproc;	/* initially all single core/thread */
 	*p_cores   = 1;
