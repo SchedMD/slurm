@@ -381,11 +381,6 @@ dnl
 X_AC_BLCR
 
 dnl
-dnl Check to build native SLURM srun command or an aprun (Cray ALPS) wrapper.
-dnl
-X_AC_SRUN2APRUN
-
-dnl
 dnl Set some configuration based upon multiple configuration parameters
 dnl
 ac_build_smap="no"

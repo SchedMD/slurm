@@ -24,7 +24,6 @@
 # --without readline %_without_readline 1    don't require readline-devel RPM to be installed
 # --with sgijob      %_with_sgijob      1    build proctrack-sgi-job RPM
 # --with sun_const   %_with_sun_const   1    build for Sun Constellation system
-# --with-srun2aprun  %_with_srun2aprun  1    build srun as aprun wrapper
 #
 #  Allow defining --with and --without build options or %_with and %without in .rpmmacors
 #    slurm_with    builds option by default unless --without is specified
@@ -44,7 +43,6 @@
 %slurm_without_opt cray
 %slurm_without_opt debug
 %slurm_without_opt sun_const
-%slurm_without_opt srun2aprun
 %slurm_without_opt salloc_background
 
 # These options are only here to force there to be these on the build.
@@ -290,15 +288,6 @@ Requires: slurm-perlapi
 %description torque
 Torque wrapper scripts used for helping migrate from Torque/PBS to SLURM.
 
-%if %{slurm_with srun2aprun}
-%package srun2aprun
-Summary: SLURM srun command is a wrapper for Cray/ALPS aprun command.
-Group: Development/System
-Requires: slurm-perlapi
-%description srun2aprun
-SLURM srun command is a wrapper for Cray/ALPS aprun command.
-%endif
-
 %package sjobexit
 Summary: SLURM job exit code management tools.
 Group: Development/System
@@ -408,7 +397,6 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 	%{?with_ssl}		\
 	%{?with_munge}      \
 	%{?with_blcr}      \
-	%{?slurm_with_srun2aprun:--with-srun2aprun} \
 	%{?slurm_with_salloc_background:--enable-salloc-background} \
 	%{!?slurm_with_readline:--without-readline} \
 	%{?with_cflags}
@@ -497,10 +485,6 @@ rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_sgi_job.so
 # Build man pages that are generated directly by the tools
 rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
 ${RPM_BUILD_ROOT}%{_bindir}/sjobexitmod --roff > $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
-%if %{slurm_with srun2aprun}
-    rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/srun.1
-    pod2man --section=1 contribs/cray/srun.pl > $RPM_BUILD_ROOT/%{_mandir}/man1/srun.1
-%endif
 
 # Build conditional file list for main package
 LIST=./slurm.files
@@ -628,9 +612,6 @@ rm -rf $RPM_BUILD_ROOT
 %if %{slurm_with blcr}
 %exclude %{_mandir}/man1/srun_cr*
 %exclude %{_bindir}/srun_cr
-%endif
-%if %{slurm_with srun2aprun}
-%exclude %{_bindir}/srun*
 %endif
 #############################################################################
 
@@ -774,14 +755,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/qstat
 %{_bindir}/qsub
 %{_bindir}/mpiexec
-#############################################################################
-
-%if %{slurm_with srun2aprun}
-%files srun2aprun
-
-%defattr(-,root,root)
-%{_bindir}/srun
-%endif
 #############################################################################
 
 %files sjobexit

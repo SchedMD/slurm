@@ -634,8 +634,6 @@ am__EXEEXT_TRUE
 LTLIBOBJS
 BUILD_SMAP_FALSE
 BUILD_SMAP_TRUE
-BUILD_SRUN2APRUN_FALSE
-BUILD_SRUN2APRUN_TRUE
 WITH_BLCR_FALSE
 WITH_BLCR_TRUE
 BLCR_LDFLAGS
@@ -963,7 +961,6 @@ with_ssl
 with_munge
 enable_multiple_slurmd
 with_blcr
-with_srun2aprun
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1675,8 +1672,6 @@ Optional Packages:
   --with-ssl=PATH         Specify path to OpenSSL installation
   --with-munge=PATH       Specify path to munge installation
   --with-blcr=PATH        Specify path to BLCR installation
-  --with-srun2aprun       use aprun wrapper instead of native SLURM srun
-                          command
 
 Some influential environment variables:
   CC          C compiler command
@@ -22557,37 +22552,6 @@ fi
 
 
 
-
-  ac_with_srun2aprun="no"
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for whether to include srun-aprun wrapper rather than native SLURM srun" >&5
-$as_echo_n "checking for whether to include srun-aprun wrapper rather than native SLURM srun... " >&6; }
-
-# Check whether --with-srun2aprun was given.
-if test "${with_srun2aprun+set}" = set; then :
-  withval=$with_srun2aprun;  case "$withval" in
-        yes) ac_with_srun2aprun=yes ;;
-        no)  ac_with_srun2aprun=no ;;
-        *)   { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
-$as_echo "doh!" >&6; }
-             as_fn_error $? "bad value \"$withval\" for --with-srun2aprun" "$LINENO" 5 ;;
-      esac
-
-
-fi
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_with_srun2aprun" >&5
-$as_echo "$ac_with_srun2aprun" >&6; }
-   if test "x$ac_with_srun2aprun" = "xyes"; then
-  BUILD_SRUN2APRUN_TRUE=
-  BUILD_SRUN2APRUN_FALSE='#'
-else
-  BUILD_SRUN2APRUN_TRUE='#'
-  BUILD_SRUN2APRUN_FALSE=
-fi
-
-
-
 ac_build_smap="no"
 if test "x$ac_have_some_curses" = "xyes" ; then
    ac_build_smap="yes"
@@ -22881,10 +22845,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_BLCR_TRUE}" && test -z "${WITH_BLCR_FALSE}"; then
   as_fn_error $? "conditional \"WITH_BLCR\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${BUILD_SRUN2APRUN_TRUE}" && test -z "${BUILD_SRUN2APRUN_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_SRUN2APRUN\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_SMAP_TRUE}" && test -z "${BUILD_SMAP_FALSE}"; then
