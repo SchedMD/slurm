@@ -173,6 +173,49 @@ static bool at_forked = false;
 #endif
 static void _log_flush(log_t *log);
 
+
+/* Write the current local time into the provided buffer. Returns the
+ * number of characters written into the buffer. */
+static size_t _make_timestamp(char *timestamp_buf, size_t max, 
+			      const char *timestamp_fmt)
+{
+	time_t timestamp_t = time(NULL);
+	struct tm timestamp_tm;
+	if (!localtime_r(&timestamp_t, &timestamp_tm)) {
+		fprintf(stderr, "localtime_r() failed\n");
+		return 0;
+	}
+	return strftime(timestamp_buf, max, timestamp_fmt, &timestamp_tm);
+}
+
+size_t rfc2822_timestamp(char *s, size_t max)
+{
+	return _make_timestamp(s, max, "%a, %d %b %Y %H:%M:%S %z");
+}
+
+size_t log_timestamp(char *s, size_t max)
+{
+#ifdef USE_RFC5424_TIME
+	size_t written = _make_timestamp(s, max, "%Y-%m-%dT%T%z");
+	if (max >= 26 && written == 24) {
+		/* The strftime %z format creates timezone offsets of
+		 * the form (+/-)hhmm, whereas the RFC 5424 format is
+		 * (+/-)hh:mm. So shift the minutes one step back and
+		 * insert the semicolon. */
+		s[25] = '\0';
+		s[24] = s[23];
+		s[23] = s[22];
+		s[22] = ':';
+		return written + 1;
+	}
+	return written;
+#elif defined USE_ISO_8601
+	return _make_timestamp(s, max, "%Y-%m-%dT%T");
+#else
+	return _make_timestamp(s, max, "%b %d %T");
+#endif
+}
+
 /* check to see if a file is writeable,
  * RET 1 if file can be written now,
  *     0 if can not be written to within 5 seconds
@@ -606,6 +649,10 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 			case 'M':       /* "%M" => "usec"                    */
 				snprintf(tmp, sizeof(tmp), "%ld", clock());
 				xstrcat(buf, tmp);
+				break;
+#elif defined USE_RFC5424_TIME
+			case 'M': /* "%M" => "yyyy-mm-ddThh:mm:ss(+/-)hh:mm" */
+				xrfc5424timecat(buf);
 				break;
 #elif defined USE_ISO_8601
 			case 'M':       /* "%M" => "yyyy-mm-ddThh:mm:ss"     */

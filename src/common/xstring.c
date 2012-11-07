@@ -217,6 +217,39 @@ void _xstrftimecat(char **buf, const char *fmt)
 }
 
 /*
+ * Append a RFC 5424 formatted timestamp to buffer buf, expand as
+ * needed
+ *
+ */
+void _xrfc5424timecat(char **buf)
+{
+	char p[26];
+	time_t t;
+	struct tm tm;
+
+	const char fmt[] = "%Y-%m-%dT%T%z";
+
+	if (time(&t) == (time_t) -1)
+		fprintf(stderr, "time() failed\n");
+
+	if (!localtime_r(&t, &tm))
+		fprintf(stderr, "localtime_r() failed\n");
+
+	if (strftime(p, sizeof(p), fmt, &tm) == 0)
+		fprintf(stderr, "strftime() returned 0\n");
+
+	/* The strftime %z format creates timezone offsets of the form
+	 * (+/-)hhmm, whereas the RFC 5424 format is (+/-)hh:mm. So
+	 * shift the minutes one step back and insert the semicolon. */
+	 p[25] = '\0';
+	 p[24] = p[23];
+	 p[23] = p[22];
+	 p[22] = ':';
+
+	_xstrcat(buf, p);
+}
+
+/*
  * append formatted string with printf-style args to buf, expanding
  * buf as needed
  */

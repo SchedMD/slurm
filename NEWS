@@ -29,6 +29,8 @@ documents those changes that are of interest to users and admins.
  -- Add AccountingStorageEnforce=safe option to provide method to avoid jobs
     launching that wouldn't be able to run to completion because of a
     GrpCPUMins limit.
+ -- Add support for RFC 5424 timestamps in logfiles. Disable with configuration
+    option of "--disable-rfc5424time". By Janne Blomqvist, Aalto University.
 
 * Changes in SLURM 2.5.0.pre3
 =============================

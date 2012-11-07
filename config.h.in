@@ -497,6 +497,9 @@
 /* define if using ISO 8601 time format */
 #undef USE_ISO_8601
 
+/* define if using RFC 5424 time format */
+#undef USE_RFC5424_TIME
+
 /* Version number of package */
 #undef VERSION
 
@@ -523,11 +526,6 @@
 
 /* Define location of XCPU directory */
 #undef XCPU_DIR
-
-/* Enable large inode numbers on Mac OS X 10.5.  */
-#ifndef _DARWIN_USE_64_BIT_INODE
-# define _DARWIN_USE_64_BIT_INODE 1
-#endif
 
 /* Number of bits in a file offset, on hosts where this is settable. */
 #undef _FILE_OFFSET_BITS

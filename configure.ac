@@ -163,6 +163,10 @@ dnl Check for PAM module support
 X_AC_PAM
 
 dnl
+dnl Check whether RFC 5424 time format should be used
+X_AC_RFC5424_TIME
+
+dnl
 dnl Check for ISO compliance
 X_AC_ISO
 

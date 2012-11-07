@@ -301,6 +301,7 @@
 #define	_xstrcatchar		slurm_xstrcatchar
 #define	_xslurm_strerrorcat	slurm_xslurm_strerrorcat
 #define	_xstrftimecat		slurm_xstrftimecat
+#define	_xrfc5424timecat	slurm_xrfc5424timecat
 #define	_xstrfmtcat		slurm_xstrfmtcat
 #define	_xmemcat		slurm_xmemcat
 #define	xstrdup			slurm_xstrdup

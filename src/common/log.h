@@ -123,26 +123,11 @@ typedef struct {
 #define SCHEDLOG_OPTS_INITIALIZER	\
 	{ LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, 0, 1 }
 
-#define MAKE_TIMESTAMP(timestamp_buf, timestamp_fmt) {	\
-	time_t timestamp_t = time(NULL);           \
-	struct tm timestamp_tm;	                \
-	if (!localtime_r(&timestamp_t, &timestamp_tm))\
-		fprintf(stderr, "localtime_r() failed\n"); \
-	strftime(timestamp_buf, sizeof(timestamp_buf), \
-		 timestamp_fmt, &timestamp_tm); \
-}
 
+/* Functions for filling in a char buffer with a timestamp. */
+size_t rfc2822_timestamp(char *, size_t);
+size_t log_timestamp(char *, size_t);
 
-#define RFC2822_TIMESTAMP(timestamp_buf) \
-	MAKE_TIMESTAMP(timestamp_buf, "%a, %d %b %Y %H:%M:%S %z");
-
-#ifdef USE_ISO_8601
-#define LOG_TIMESTAMP(timestamp_buf)			\
-	MAKE_TIMESTAMP(timestamp_buf, "%Y-%m-%dT%T");
-#else
-#define LOG_TIMESTAMP(timestamp_buf)		\
-	MAKE_TIMESTAMP(timestamp_buf, "%b %d %T");
-#endif
 
 /*
  * initialize log module (called only once)

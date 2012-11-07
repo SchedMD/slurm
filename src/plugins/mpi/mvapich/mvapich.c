@@ -1250,7 +1250,7 @@ mvapich_print_abort_message (mvapich_state_t *st, int rank,
 
 	host = slurm_step_layout_host_name (sl, rank);
 
-	LOG_TIMESTAMP(time_stamp);
+	log_timestamp(time_stamp, sizeof(time_stamp));
 	if (dest >= 0) {
 		const char *dsthost = slurm_step_layout_host_name (sl, dest);
 		info ("mvapich: %s: ABORT from MPI rank %d "

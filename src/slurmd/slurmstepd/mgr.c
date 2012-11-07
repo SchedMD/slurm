@@ -1464,7 +1464,7 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 
 		list_append (exec_wait_list, ei);
 
-		LOG_TIMESTAMP(time_stamp);
+		log_timestamp(time_stamp, sizeof(time_stamp));
 		verbose ("task %lu (%lu) started %s",
 			 (unsigned long) job->task[i]->gtid,
 			 (unsigned long) pid, time_stamp);
