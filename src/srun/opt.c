@@ -1563,6 +1563,102 @@ static bool _check_is_pow_of_2(int32_t n) {
 	 */
 	return ((n!=0) && (n&(-n))==n);
 }
+
+extern void bg_figure_nodes_tasks()
+{
+	/* A bit of setup for IBM's runjob.  runjob only has so many
+	   options, so it isn't that bad.
+	*/
+	int32_t node_cnt;
+	if (opt.max_nodes)
+		node_cnt = opt.max_nodes;
+	else
+		node_cnt = opt.min_nodes;
+
+	if (!opt.ntasks_set) {
+		if (opt.ntasks_per_node != NO_VAL)
+			opt.ntasks = node_cnt * opt.ntasks_per_node;
+		else {
+			opt.ntasks = node_cnt;
+			opt.ntasks_per_node = 1;
+		}
+		opt.ntasks_set = true;
+	} else {
+		int32_t ntpn;
+		bool figured = false;
+
+		if (opt.nodes_set) {
+			if (node_cnt > opt.ntasks) {
+				if (opt.nodes_set_opt)
+					info("You asked for %d nodes, "
+					     "but only %d tasks, resetting "
+					     "node count to %u.",
+					     node_cnt, opt.ntasks, opt.ntasks);
+				opt.max_nodes = opt.min_nodes = node_cnt
+					= opt.ntasks;
+			}
+		}
+		/* If nodes not set do not try to set min/max nodes
+		   yet since that would result in an incorrect
+		   allocation.  For a step allocation it is figured
+		   out later in srun_job.c _job_create_structure().
+		*/
+
+		if (!opt.ntasks_per_node || (opt.ntasks_per_node == NO_VAL)) {
+			/* We always want the next larger number if
+			   there is a fraction so we try to stay in
+			   the allocation requested.
+			*/
+			opt.ntasks_per_node =
+				(opt.ntasks + node_cnt - 1) / node_cnt;
+			figured = true;
+		}
+
+		/* On a Q we need ntasks_per_node to be a multiple of 2 */
+		ntpn = opt.ntasks_per_node;
+		while (!_check_is_pow_of_2(ntpn))
+			ntpn++;
+		if (!figured && (ntpn != opt.ntasks_per_node)) {
+			info("You requested --ntasks-per-node=%d, which is not "
+			     "a power of 2.  Setting --ntasks-per-node=%d "
+			     "for you.", opt.ntasks_per_node, ntpn);
+			figured = true;
+		}
+		opt.ntasks_per_node = ntpn;
+
+		ntpn = opt.ntasks / opt.ntasks_per_node;
+		/* Make sure we are requesting the correct number of nodes. */
+		if (node_cnt < ntpn) {
+			opt.max_nodes = opt.min_nodes = ntpn;
+			if (opt.nodes_set && !figured) {
+				fatal("You requested -N %d and -n %d "
+				      "with --ntasks-per-node=%d.  "
+				      "This isn't a valid request.",
+				      node_cnt, opt.ntasks,
+				      opt.ntasks_per_node);
+			}
+			node_cnt = opt.max_nodes;
+		}
+
+		/* Do this again to make sure we have a legitimate
+		   ratio. */
+		ntpn = opt.ntasks_per_node;
+		if ((node_cnt * ntpn) < opt.ntasks) {
+			ntpn++;
+			while (!_check_is_pow_of_2(ntpn))
+				ntpn++;
+			if (!figured && (ntpn != opt.ntasks_per_node))
+				info("You requested --ntasks-per-node=%d, "
+				     "which cannot spread across %d nodes "
+				     "correctly.  Setting --ntasks-per-node=%d "
+				     "for you.",
+				     opt.ntasks_per_node, node_cnt, ntpn);
+			opt.ntasks_per_node = ntpn;
+		}
+	}
+	info("got %d %d %d", opt.ntasks_per_node, node_cnt, opt.ntasks);
+}
+
 #endif
 
 /*
@@ -1636,89 +1732,8 @@ static void _opt_args(int argc, char **argv)
 	}
 
 #if defined HAVE_BG && !defined HAVE_BG_L_P
-	/* A bit of setup for IBM's runjob.  runjob only has so many
-	   options, so it isn't that bad.
-	*/
-	int32_t node_cnt;
-	if (opt.max_nodes)
-		node_cnt = opt.max_nodes;
-	else
-		node_cnt = opt.min_nodes;
 
-	if (!opt.ntasks_set) {
-		if (opt.ntasks_per_node != NO_VAL)
-			opt.ntasks = node_cnt * opt.ntasks_per_node;
-		else
-			opt.ntasks = node_cnt;
-		opt.ntasks_set = true;
-	} else {
-		int32_t ntpn;
-		bool figured = false;
-
-		if (opt.nodes_set) {
-			if (node_cnt > opt.ntasks) {
-				if (opt.nodes_set_opt)
-					info("You asked for %d nodes, "
-					     "but only %d tasks, resetting "
-					     "node count to %u.",
-					     node_cnt, opt.ntasks, opt.ntasks);
-				opt.max_nodes = opt.min_nodes = node_cnt
-					= opt.ntasks;
-			}
-		}
-
-		if (!opt.ntasks_per_node || (opt.ntasks_per_node == NO_VAL)) {
-			/* We always want the next larger number if
-			   there is a fraction so we try to stay in
-			   the allocation requested.
-			*/
-			opt.ntasks_per_node =
-				(opt.ntasks + node_cnt - 1) / node_cnt;
-			figured = true;
-		}
-
-		/* On a Q we need ntasks_per_node to be a multiple of 2 */
-		ntpn = opt.ntasks_per_node;
-		while (!_check_is_pow_of_2(ntpn))
-			ntpn++;
-		if (!figured && (ntpn != opt.ntasks_per_node)) {
-			info("You requested --ntasks-per-node=%d, which is not "
-			     "a power of 2.  Setting --ntasks-per-node=%d "
-			     "for you.", opt.ntasks_per_node, ntpn);
-			figured = true;
-		}
-		opt.ntasks_per_node = ntpn;
-
-		ntpn = opt.ntasks / opt.ntasks_per_node;
-		/* Make sure we are requesting the correct number of nodes. */
-		if (node_cnt < ntpn) {
-			opt.max_nodes = opt.min_nodes = ntpn;
-			if (opt.nodes_set && !figured) {
-				fatal("You requested -N %d and -n %d "
-				      "with --ntasks-per-node=%d.  "
-				      "This isn't a valid request.",
-				      node_cnt, opt.ntasks,
-				      opt.ntasks_per_node);
-			}
-			node_cnt = opt.max_nodes;
-		}
-
-		/* Do this again to make sure we have a legitimate
-		   ratio. */
-		ntpn = opt.ntasks_per_node;
-		if ((node_cnt * ntpn) < opt.ntasks) {
-			ntpn++;
-			while (!_check_is_pow_of_2(ntpn))
-				ntpn++;
-			if (!figured && (ntpn != opt.ntasks_per_node))
-				info("You requested --ntasks-per-node=%d, "
-				     "which cannot spread across %d nodes "
-				     "correctly.  Setting --ntasks-per-node=%d "
-				     "for you.",
-				     opt.ntasks_per_node, node_cnt, ntpn);
-			opt.ntasks_per_node = ntpn;
-		}
-	}
+	bg_figure_nodes_tasks();
 
 #if defined HAVE_BG_FILES
 	uint32_t taskid = NO_VAL;
@@ -1728,15 +1743,15 @@ static void _opt_args(int argc, char **argv)
 		 * things. All the extra options added to argv will be
 		 * handled after the allocation. */
 
-		/* Default location of the actual command to be ran. We always
-		 * have to add 3 options (calling prog, '--env-all' and ':') no
-		 * matter what. */
-		command_pos = 3;
+		/* We are always going to set ntasks_per_node and ntasks */
+		xassert(opt.ntasks_per_node != NO_VAL);
+		xassert(opt.ntasks_set);
 
-		if (opt.ntasks_per_node != NO_VAL)
-			command_pos += 2;
-		if (opt.ntasks_set)
-			command_pos += 2;
+		/* Default location of the actual command to be ran. We always
+		 * have to add 5 options (calling prog, '-p', '--np',
+		 * '--env-all' and ':') no matter what. */
+		command_pos = 7;
+
 		if (opt.cwd_set)
 			command_pos += 2;
 		if (opt.labelio)
@@ -1780,16 +1795,16 @@ static void _opt_args(int argc, char **argv)
 		*/
 		opt.argv[i++] = xstrdup("srun");
 		/* srun launches tasks using runjob API. Slurmd is not used */
-		if (opt.ntasks_per_node != NO_VAL) {
-			opt.argv[i++]  = xstrdup("-p");
-			opt.argv[i++]  = xstrdup_printf("%d",
-							opt.ntasks_per_node);
-		}
+		/* We are always going to set ntasks_per_node and ntasks */
+		// if (opt.ntasks_per_node != NO_VAL) {
+		opt.argv[i++]  = xstrdup("-p");
+		opt.argv[i++]  = xstrdup_printf("%d", opt.ntasks_per_node);
+		// }
 
-		if (opt.ntasks_set) {
-			opt.argv[i++]  = xstrdup("--np");
-			opt.argv[i++]  = xstrdup_printf("%d", opt.ntasks);
-		}
+		// if (opt.ntasks_set) {
+		opt.argv[i++]  = xstrdup("--np");
+		opt.argv[i++]  = xstrdup_printf("%d", opt.ntasks);
+		// }
 
 		if (opt.cwd_set) {
 			opt.argv[i++]  = xstrdup("--cwd");

@@ -471,10 +471,51 @@ _job_create_structure(allocation_info_t *ainfo)
  	job->nodelist = xstrdup(ainfo->nodelist);
 	job->stepid  = ainfo->stepid;
 
-#if defined HAVE_BGQ
+#if defined HAVE_BG && !defined HAVE_BG_L_P
 //#if defined HAVE_BGQ && defined HAVE_BG_FILES
-	job->nhosts   = ainfo->nnodes;
-	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &job->nhosts);
+	/* Since the allocation will have the correct cnode count get
+	   it if it is available.  Else grab it from opt.min_nodes
+	   (meaning the allocation happened before).
+	*/
+	if (ainfo->select_jobinfo)
+		select_g_select_jobinfo_get(ainfo->select_jobinfo,
+					    SELECT_JOBDATA_NODE_CNT,
+					    &job->nhosts);
+	else
+		job->nhosts   = opt.min_nodes;
+	/* If we didn't ask for nodes set it up correctly here so the
+	   step allocation does the correct thing.
+	*/
+	if (!opt.nodes_set) {
+		opt.min_nodes = opt.max_nodes = job->nhosts;
+		opt.nodes_set = true;
+		opt.ntasks_per_node = NO_VAL;
+		bg_figure_nodes_tasks();
+
+#if defined HAVE_BG_FILES
+		/* Replace the runjob line with correct information. */
+		int i, matches = 0;
+		for (i = 0; i < opt.argc; i++) {
+			if (!strcmp(opt.argv[i], "-p")) {
+				i++;
+				xfree(opt.argv[i]);
+				opt.argv[i]  = xstrdup_printf(
+					"%d", opt.ntasks_per_node);
+				matches++;
+			} else if (!strcmp(opt.argv[i], "--np")) {
+				i++;
+				xfree(opt.argv[i]);
+				opt.argv[i]  = xstrdup_printf(
+					"%d", opt.ntasks);
+				matches++;
+			}
+			if (matches == 2)
+				break;
+		}
+		xassert(matches == 2);
+#endif
+	}
+
 #elif defined HAVE_FRONT_END	/* Limited job step support */
 	opt.overcommit = true;
 	job->nhosts = 1;
