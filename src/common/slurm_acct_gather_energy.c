@@ -103,7 +103,7 @@ done:
 	return retval;
 }
 
-extern int slurm_acct_gather_energy_fini(void)
+extern int acct_gather_energy_fini(void)
 {
 	int rc;
 
