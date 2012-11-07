@@ -3092,19 +3092,12 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		*/
 		if ((job_desc->min_cpus != NO_VAL)
 		    && (job_desc->min_cpus > job_desc->min_nodes)) {
-			float tmp_float = (float)job_desc->min_cpus;
-
-			/* ntasks_per_node should be validated beforehand. */
-			if (job_desc->ntasks_per_node
-			    && (job_desc->ntasks_per_node != NO_VAL))
-				tmp_float /= (float)job_desc->ntasks_per_node;
-			else
-				tmp_float /= (float)bg_conf->cpu_ratio;
+			float tmp_float = (float)job_desc->min_cpus
+				/ (float)bg_conf->cpu_ratio;
 
 			tmp = (uint32_t)tmp_float;
 			if (tmp_float != (float)tmp)
 				tmp++;
-
 			if (tmp > job_desc->min_nodes) {
 				/* This means they actually asked for
 				   nodes and tasks.
@@ -3112,9 +3105,24 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				if ((job_desc->max_nodes != NO_VAL)
 				    && (tmp > job_desc->max_nodes)) {
 #ifndef HAVE_BG_L_P
-					error("Asking for more resources than "
-					      "possible.  Denied.");
-					return SLURM_ERROR;
+					float divisor = 0;
+					/* ntasks_per_node should be
+					 * validated beforehand. */
+					if (job_desc->ntasks_per_node
+					    && (job_desc->ntasks_per_node
+						!= NO_VAL))
+						divisor = (float)job_desc->
+							ntasks_per_node
+							/ bg_conf->cpu_ratio;
+					/* On Q systems you can have 2
+					   processes per thread */
+					if (!divisor || divisor > 2) {
+						error("Asking for more "
+						      "resources than "
+						      "possible.  Denied.");
+						return SLURM_ERROR;
+					} else
+						tmp /= divisor;
 #else
 					error("Asking for more resources than "
 					      "possible.  Requested %u nodes "

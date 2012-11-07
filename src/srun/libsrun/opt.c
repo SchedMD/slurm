@@ -1578,17 +1578,6 @@ extern void bg_figure_nodes_tasks()
 			opt.ntasks_per_node =
 				(opt.ntasks + node_cnt - 1) / node_cnt;
 			figured = true;
-			if ((opt.ntasks_per_node != 1)
-			    && (opt.ntasks_per_node != 2)
-			    && (opt.ntasks_per_node != 4)
-			    && (opt.ntasks_per_node != 8)
-			    && (opt.ntasks_per_node != 16)
-			    && (opt.ntasks_per_node != 32))
-				fatal("You requested -N %d and -n %d "
-				      "which gives --ntasks-per-node=%d.  "
-				      "This isn't a valid request.",
-				      node_cnt, opt.ntasks,
-				      opt.ntasks_per_node);
 		}
 
 		/* On a Q we need ntasks_per_node to be a multiple of 2 */
@@ -1632,6 +1621,18 @@ extern void bg_figure_nodes_tasks()
 				     opt.ntasks_per_node, node_cnt, ntpn);
 			opt.ntasks_per_node = ntpn;
 		}
+
+		if (opt.nodes_set && (opt.ntasks_per_node != 1)
+		    && (opt.ntasks_per_node != 2)
+		    && (opt.ntasks_per_node != 4)
+		    && (opt.ntasks_per_node != 8)
+		    && (opt.ntasks_per_node != 16)
+		    && (opt.ntasks_per_node != 32))
+			fatal("You requested -N %d and -n %d "
+			      "which gives --ntasks-per-node=%d.  "
+			      "This isn't a valid request.",
+			      node_cnt, opt.ntasks,
+			      opt.ntasks_per_node);
 	}
 }
 
