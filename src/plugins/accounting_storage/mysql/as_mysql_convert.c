@@ -728,6 +728,8 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 		{ "min_cpu_task", "smallint unsigned default 0 not null" },
 		{ "min_cpu_node", "int unsigned default 0 not null" },
 		{ "ave_cpu", "double unsigned default 0.0 not null" },
+		{ "act_cpufreq", "double unsigned default 0.0 not null" },
+		{ "consumed_energy", "double unsigned default 99.0 not null" },
 		{ NULL, NULL}
 	};
 

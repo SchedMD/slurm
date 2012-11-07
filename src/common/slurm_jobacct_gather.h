@@ -109,6 +109,12 @@ struct jobacctinfo {
 	uint32_t min_cpu; /* min cpu time */
 	jobacct_id_t min_cpu_id; /* contains which task it was on */
 	uint32_t tot_cpu; /* total cpu time(used to figure out ave later) */
+	uint32_t act_cpufreq; /* actual cpu frequency */
+	acct_gather_energy_t energy;
+	uint32_t last_total_cputime;
+	uint32_t this_sampled_cputime;
+	uint32_t current_weighted_freq;
+	uint32_t current_weighted_power;
 };
 
 /* Define jobacctinfo_t below to avoid including extraneous slurm headers */
@@ -121,12 +127,13 @@ extern int jobacct_gather_init(void); /* load the plugin */
 extern int jobacct_gather_fini(void); /* unload the plugin */
 
 extern int  jobacct_gather_startpoll(uint16_t frequency);
-extern int  jobacct_gather_endpoll();
+extern int  jobacct_gather_endpoll(void);
 extern void jobacct_gather_change_poll(uint16_t frequency);
-extern void jobacct_gather_suspend_poll();
-extern void jobacct_gather_resume_poll();
+extern void jobacct_gather_suspend_poll(void);
+extern void jobacct_gather_resume_poll(void);
 
-extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id);
+extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
+				   int poll);
 /* must free jobacctinfo_t if not NULL */
 extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid);
 /* must free jobacctinfo_t if not NULL */
@@ -154,6 +161,8 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from);
 
 extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct);
+
+extern void jobacct_common_free_jobacct(void *object);
 
 #endif /*__SLURM_JOBACCT_GATHER_H__*/
 

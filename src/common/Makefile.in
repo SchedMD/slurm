@@ -124,19 +124,21 @@ am__libcommon_la_SOURCES_DIST = xcgroup_read_config.c \
 	working_cluster.c working_cluster.h uid.c uid.h util-net.c \
 	util-net.h slurm_auth.c slurm_auth.h \
 	slurm_accounting_storage.c slurm_accounting_storage.h \
-	slurm_jobacct_gather.c slurm_jobacct_gather.h slurm_jobcomp.c \
-	slurm_jobcomp.h slurm_topology.c slurm_topology.h switch.c \
-	switch.h arg_desc.c arg_desc.h macros.h malloc.c malloc.h \
-	getopt.h getopt.c getopt1.c unsetenv.c unsetenv.h \
-	slurm_selecttype_info.c slurm_selecttype_info.h \
-	slurm_resource_info.c slurm_resource_info.h hostlist.c \
-	hostlist.h slurm_step_layout.c slurm_step_layout.h \
-	checkpoint.c checkpoint.h job_resources.c job_resources.h \
-	parse_time.c parse_time.h job_options.c job_options.h \
-	global_defaults.c timers.c timers.h slurm_xlator.h stepd_api.c \
-	stepd_api.h write_labelled_message.c write_labelled_message.h \
-	proc_args.c proc_args.h slurm_strcasestr.c slurm_strcasestr.h \
-	node_conf.h node_conf.c gres.h gres.c
+	slurm_jobacct_gather.c slurm_jobacct_gather.h \
+	slurm_acct_gather_energy.c slurm_acct_gather_energy.h \
+	slurm_jobcomp.c slurm_jobcomp.h slurm_topology.c \
+	slurm_topology.h switch.c switch.h arg_desc.c arg_desc.h \
+	macros.h malloc.c malloc.h getopt.h getopt.c getopt1.c \
+	unsetenv.c unsetenv.h slurm_selecttype_info.c \
+	slurm_selecttype_info.h slurm_resource_info.c \
+	slurm_resource_info.h hostlist.c hostlist.h \
+	slurm_step_layout.c slurm_step_layout.h checkpoint.c \
+	checkpoint.h job_resources.c job_resources.h parse_time.c \
+	parse_time.h job_options.c job_options.h global_defaults.c \
+	timers.c timers.h slurm_xlator.h stepd_api.c stepd_api.h \
+	write_labelled_message.c write_labelled_message.h proc_args.c \
+	proc_args.h slurm_strcasestr.c slurm_strcasestr.h node_conf.h \
+	node_conf.c gres.h gres.c
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = xcgroup_read_config.lo xcgroup.lo \
 	xcpuinfo.lo cpu_frequency.lo assoc_mgr.lo xmalloc.lo \
@@ -150,14 +152,14 @@ am_libcommon_la_OBJECTS = xcgroup_read_config.lo xcgroup.lo \
 	slurm_protocol_defs.lo slurm_rlimits_info.lo slurmdb_defs.lo \
 	slurmdb_pack.lo slurmdbd_defs.lo working_cluster.lo uid.lo \
 	util-net.lo slurm_auth.lo slurm_accounting_storage.lo \
-	slurm_jobacct_gather.lo slurm_jobcomp.lo slurm_topology.lo \
-	switch.lo arg_desc.lo malloc.lo getopt.lo getopt1.lo \
-	$(am__objects_1) slurm_selecttype_info.lo \
-	slurm_resource_info.lo hostlist.lo slurm_step_layout.lo \
-	checkpoint.lo job_resources.lo parse_time.lo job_options.lo \
-	global_defaults.lo timers.lo stepd_api.lo \
-	write_labelled_message.lo proc_args.lo slurm_strcasestr.lo \
-	node_conf.lo gres.lo
+	slurm_jobacct_gather.lo slurm_acct_gather_energy.lo \
+	slurm_jobcomp.lo slurm_topology.lo switch.lo arg_desc.lo \
+	malloc.lo getopt.lo getopt1.lo $(am__objects_1) \
+	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
+	slurm_step_layout.lo checkpoint.lo job_resources.lo \
+	parse_time.lo job_options.lo global_defaults.lo timers.lo \
+	stepd_api.lo write_labelled_message.lo proc_args.lo \
+	slurm_strcasestr.lo node_conf.lo gres.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 libcommon_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -487,6 +489,7 @@ libcommon_la_SOURCES = \
 	slurm_auth.c slurm_auth.h	\
 	slurm_accounting_storage.c slurm_accounting_storage.h \
 	slurm_jobacct_gather.c slurm_jobacct_gather.h \
+	slurm_acct_gather_energy.c slurm_acct_gather_energy.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
 	slurm_topology.c slurm_topology.h \
 	switch.c switch.h		\
@@ -651,6 +654,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/safeopen.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_accounting_storage.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_acct_gather_energy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_auth.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_cred.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_errno.Plo@am__quote@

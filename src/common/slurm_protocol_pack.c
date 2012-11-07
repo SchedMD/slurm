@@ -53,6 +53,7 @@
 #include "src/common/node_select.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
@@ -209,6 +210,13 @@ static void _pack_update_job_time_msg(job_time_msg_t * msg, Buf buffer,
 				      uint16_t protocol_version);
 static int _unpack_update_job_time_msg(job_time_msg_t ** msg, Buf buffer,
 				       uint16_t protocol_version);
+
+static void _pack_acct_gather_node_resp_msg(acct_gather_node_resp_msg_t * msg,
+					    Buf buffer,
+					    uint16_t protocol_version);
+static int _unpack_acct_gather_node_resp_msg(acct_gather_node_resp_msg_t ** msg,
+					     Buf buffer,
+					     uint16_t protocol_version);
 
 static void _pack_part_info_request_msg(part_info_request_msg_t * msg,
 					Buf buffer, uint16_t protocol_version);
@@ -740,6 +748,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			buffer,
 			msg->protocol_version);
 		break;
+	case RESPONSE_ACCT_GATHER_UPDATE:
+		_pack_acct_gather_node_resp_msg(
+			(acct_gather_node_resp_msg_t *) msg->data,
+			buffer, msg->protocol_version);
+		break;
 	case REQUEST_RESOURCE_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_JOB:
 	case REQUEST_JOB_WILL_RUN:
@@ -768,6 +781,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_TAKEOVER:
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
+	case REQUEST_ACCT_GATHER_UPDATE:
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
@@ -1287,6 +1301,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			& (msg->data), buffer,
 			msg->protocol_version);
 		break;
+	case RESPONSE_ACCT_GATHER_UPDATE:
+		rc = _unpack_acct_gather_node_resp_msg(
+			(acct_gather_node_resp_msg_t **)&(msg->data),
+			buffer, msg->protocol_version);
+		break;
 	case REQUEST_RESOURCE_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_JOB:
 	case REQUEST_JOB_WILL_RUN:
@@ -1316,6 +1335,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_TAKEOVER:
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
+	case REQUEST_ACCT_GATHER_UPDATE:
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
@@ -2406,6 +2426,40 @@ unpack_error:
 }
 
 static void
+_pack_acct_gather_node_resp_msg(acct_gather_node_resp_msg_t *msg,
+				Buf buffer, uint16_t protocol_version)
+{
+	xassert(msg != NULL);
+
+	packstr(msg->node_name, buffer);
+	acct_gather_energy_pack(msg->energy, buffer, protocol_version);
+}
+static int
+_unpack_acct_gather_node_resp_msg(acct_gather_node_resp_msg_t **msg,
+				  Buf buffer, uint16_t protocol_version)
+{
+	acct_gather_node_resp_msg_t *node_data_ptr;
+	uint32_t uint32_tmp;
+	/* alloc memory for structure */
+	xassert(msg != NULL);
+	node_data_ptr = xmalloc(sizeof(acct_gather_node_resp_msg_t));
+	*msg = node_data_ptr;
+
+	safe_unpackstr_xmalloc(&node_data_ptr->node_name,
+			       &uint32_tmp, buffer);
+	if (acct_gather_energy_unpack(&node_data_ptr->energy, buffer,
+				      protocol_version) != SLURM_SUCCESS)
+		goto unpack_error;
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_acct_gather_node_resp_msg(node_data_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
 _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 				   msg, Buf buffer,
 				   uint16_t protocol_version)
@@ -2449,6 +2503,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 			packmem(get_buf_data(msg->gres_info), gres_info_size,
 				buffer);
 		}
+		acct_gather_energy_pack(msg->energy, buffer, protocol_version);
 	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		pack_time(msg->timestamp, buffer);
 		pack_time(msg->slurmd_start_time, buffer);
@@ -2553,6 +2608,10 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 			node_reg_ptr->gres_info = create_buf(gres_info,
 							     gres_info_size);
 		}
+		if (acct_gather_energy_unpack(&node_reg_ptr->energy, buffer,
+					      protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
 	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&node_reg_ptr->timestamp, buffer);
@@ -2977,6 +3036,10 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpackstr_xmalloc(&node->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
+		if (acct_gather_energy_unpack(&node->energy, buffer,
+					      protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
 	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->node_hostname, &uint32_tmp,
@@ -4415,6 +4478,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->accounting_storage_type, buffer);
 		packstr(build_ptr->accounting_storage_user, buffer);
 		pack16(build_ptr->acctng_store_job_comment, buffer);
+		packstr(build_ptr->acct_gather_energy_type, buffer);
+		pack16(build_ptr->acct_gather_node_freq, buffer);
 
 		packstr(build_ptr->authtype, buffer);
 
@@ -4602,7 +4667,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->vsize_factor, buffer);
 
 		pack16(build_ptr->wait_time, buffer);
-
 		pack16(build_ptr->z_16, buffer);
 		pack32(build_ptr->z_32, buffer);
 		packstr(build_ptr->z_char, buffer);
@@ -5044,6 +5108,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_user,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->acctng_store_job_comment, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->acct_gather_energy_type,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&build_ptr->acct_gather_node_freq, buffer);
 
 		safe_unpackstr_xmalloc(&build_ptr->authtype,
 				       &uint32_tmp, buffer);

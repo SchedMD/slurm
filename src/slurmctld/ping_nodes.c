@@ -381,3 +381,54 @@ extern void run_health_check(void)
 		agent_queue_request(check_agent_args);
 	}
 }
+
+/* Update acct_gather data for every node that is not DOWN */
+extern void update_nodes_acct_gather_data(void)
+{
+#ifdef HAVE_FRONT_END
+	front_end_record_t *front_end_ptr;
+#else
+	struct node_record *node_ptr;
+#endif
+	int i;
+	char *host_str = NULL;
+	agent_arg_t *agent_args = NULL;
+
+	agent_args = xmalloc (sizeof (agent_arg_t));
+	agent_args->msg_type = REQUEST_ACCT_GATHER_UPDATE;
+	agent_args->retry = 0;
+	agent_args->hostlist = hostlist_create("");
+	if (agent_args->hostlist == NULL)
+		fatal("hostlist_create: malloc failure");
+
+#ifdef HAVE_FRONT_END
+	for (i = 0, front_end_ptr = front_end_nodes;
+	     i < front_end_node_cnt; i++, front_end_ptr++) {
+		if (IS_NODE_NO_RESPOND(front_end_ptr))
+			continue;
+		hostlist_push(agent_args->hostlist, front_end_ptr->name);
+		agent_args->node_count++;
+	}
+#else
+	for (i = 0, node_ptr = node_record_table_ptr;
+	     i < node_record_count; i++, node_ptr++) {
+		if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_FUTURE(node_ptr) ||
+		    IS_NODE_POWER_SAVE(node_ptr))
+			continue;
+		hostlist_push(agent_args->hostlist, node_ptr->name);
+		agent_args->node_count++;
+	}
+#endif
+
+	if (agent_args->node_count == 0) {
+		hostlist_destroy(agent_args->hostlist);
+		xfree (agent_args);
+	} else {
+		hostlist_uniq(agent_args->hostlist);
+		host_str = hostlist_ranged_string_xmalloc(agent_args->hostlist);
+		debug("Updating acct_gather data for %s", host_str);
+		xfree(host_str);
+		ping_begin();
+		agent_queue_request(agent_args);
+	}
+}

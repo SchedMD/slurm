@@ -66,7 +66,7 @@
 
 #define ERROR 2
 
-#define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks"
+#define STAT_FIELDS "jobid,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,avecpufreq,consumedenergy"
 
 #define STAT_FIELDS_PID "jobid,nodelist,pids"
 
@@ -81,10 +81,12 @@
 /* On output, use fields 12-37 from JOB_STEP */
 
 typedef enum {
+		PRINT_ACT_CPUFREQ,
 		PRINT_AVECPU,
 		PRINT_AVEPAGES,
 		PRINT_AVERSS,
 		PRINT_AVEVSIZE,
+		PRINT_CONSUMED_ENERGY,
 		PRINT_JOBID,
 		PRINT_MAXPAGES,
 		PRINT_MAXPAGESNODE,

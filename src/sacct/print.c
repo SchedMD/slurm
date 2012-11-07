@@ -179,6 +179,27 @@ void print_fields(type_t type, void *object)
 					     tmp_char,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_ACT_CPUFREQ:
+			switch (type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_dub = step->stats.act_cpufreq;
+				break;
+			case JOBSTEP:
+				tmp_dub = step->stats.act_cpufreq;
+				break;
+			default:
+				break;
+			}
+			if (!fuzzy_equal(tmp_dub, NO_VAL))
+				convert_num_unit((float)tmp_dub,
+						outbuf, sizeof(outbuf),
+						UNIT_NONE);
+
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_ASSOCID:
 			switch(type) {
 			case JOB:
@@ -330,6 +351,27 @@ void print_fields(type_t type, void *object)
 			}
 			field->print_routine(field,
 					     tmp_char,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_CONSUMED_ENERGY:
+			switch (type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_dub = step->stats.consumed_energy;
+				break;
+			case JOBSTEP:
+				tmp_dub = step->stats.consumed_energy;
+				break;
+			default:
+				break;
+			}
+			if (!fuzzy_equal(tmp_dub, NO_VAL))
+				convert_num_unit((float)tmp_dub,
+						 outbuf, sizeof(outbuf),
+						 UNIT_NONE);
+
+			field->print_routine(field,
+					     outbuf,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_CPU_TIME:

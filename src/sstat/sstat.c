@@ -52,9 +52,11 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist);
 sstat_parameters_t params;
 print_field_t fields[] = {
 	{10, "AveCPU", print_fields_str, PRINT_AVECPU},
+	{10, "AveCPUFreq", print_fields_str, PRINT_ACT_CPUFREQ},
 	{10, "AvePages", print_fields_str, PRINT_AVEPAGES},
 	{10, "AveRSS", print_fields_str, PRINT_AVERSS},
 	{10, "AveVMSize", print_fields_str, PRINT_AVEVSIZE},
+	{14, "ConsumedEnergy", print_fields_str, PRINT_CONSUMED_ENERGY},
 	{-12, "JobID", print_fields_str, PRINT_JOBID},
 	{8, "MaxPages", print_fields_str, PRINT_MAXPAGES},
 	{12, "MaxPagesNode", print_fields_str, PRINT_MAXPAGESNODE},
@@ -90,6 +92,8 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 	int ntasks = 0;
 	int tot_tasks = 0;
 	hostlist_t hl = NULL;
+	uint32_t act_cpufreq = 0;
+	uint32_t consumed_energy = 0;
 
 	debug("requesting info for job %u.%u", jobid, stepid);
 	if ((rc = slurm_job_step_stat(jobid, stepid, nodelist,
@@ -157,6 +161,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 		step.stats.rss_ave /= (double)tot_tasks;
 		step.stats.vsize_ave /= (double)tot_tasks;
 		step.stats.pages_ave /= (double)tot_tasks;
+		step.stats.act_cpufreq /= (double)tot_tasks;
 		step.ntasks = tot_tasks;
 	}
 
@@ -224,6 +229,7 @@ int main(int argc, char **argv)
 				      selected_step->jobid);
 				continue;
 			}
+
 			for (i = 0; i < step_ptr->job_step_count; i++) {
 				_do_stat(selected_step->jobid,
 					 step_ptr->job_steps[i].step_id,

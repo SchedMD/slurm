@@ -46,6 +46,7 @@
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_acct_gather_energy.h"
 #include "src/slurmd/common/proctrack.h"
 
 #define _DEBUG 0
@@ -93,11 +94,15 @@ typedef struct prec {	/* process record */
 	int     pages;  /* pages */
 	int	rss;	/* rss */
 	int	vsize;	/* virtual size */
+	int	act_cpufreq;	/* actual average cpu frequency */
+	int	last_cpu;	/* last cpu */
 } prec_t;
 
 static int pagesize = 0;
 static DIR  *slash_proc = NULL;
 static pthread_mutex_t reading_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int cpunfo_frequency = 0;
+static int last_cpu = 0;
 
 /* Finally, pre-define all local routines. */
 
@@ -105,6 +110,10 @@ static void _destroy_prec(void *object);
 static int  _is_a_lwp(uint32_t pid);
 static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
 static int  _get_process_data_line(int in, prec_t *prec);
+static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
+					char *sbuf );
+static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
+				      char * sbuf);
 
 /*
  * _get_offspring_data() -- collect memory usage data for the offspring
@@ -128,8 +137,8 @@ static int  _get_process_data_line(int in, prec_t *prec);
  * THREADSAFE! Only one thread ever gets here.
  */
 static void
-_get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid) {
-
+_get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid)
+{
 	ListIterator itr;
 	prec_t *prec = NULL;
 
@@ -152,6 +161,101 @@ _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid) {
 	return;
 }
 
+/* return weighted frequency in mhz */
+static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
+				      char * sbuf)
+{
+	int thisfreq = 0;
+
+	if (cpunfo_frequency)
+		/* scaling not enabled */
+		thisfreq = cpunfo_frequency;
+	else
+		sscanf(sbuf, "%d", &thisfreq);
+
+	jobacct->current_weighted_freq =
+			jobacct->current_weighted_freq +
+			jobacct->this_sampled_cputime * thisfreq;
+	if (jobacct->last_total_cputime) {
+		return (jobacct->current_weighted_freq /
+			jobacct->last_total_cputime);
+	} else 
+		return thisfreq;
+}
+
+static char * skipdot (char *str)
+{
+	int pntr = 0;
+	while (str[pntr]) {
+		if (str[pntr] == '.') {
+			str[pntr] = '0';
+			break;
+		}
+		pntr++;
+	}
+	str[pntr+3] = '\0';
+	return str;
+}
+
+static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
+					char * sbuf )
+{
+	int num_read, fd;
+	FILE *sys_fp = NULL;
+	char freq_file[80];
+	int cpunfo_frqline= 6;
+	char cpunfo_line [128];
+	char cpufreq_line [10];
+
+	if (cpunfo_frequency)
+		/* scaling not enabled, static freq obtained */
+		return 1;
+
+	snprintf(freq_file, 79,
+		 "/sys/devices/system/cpu/cpu%d/cpufreq/%s",
+		 cpu, filename);
+	debug2("_get_sys_interface_freq_line: "
+			"filename = %s ",
+			freq_file);
+	if ((sys_fp = fopen(freq_file, "r"))!= NULL) {
+		/* frequency scaling enabled */
+		fd = fileno(sys_fp);
+		fcntl(fd, F_SETFD, FD_CLOEXEC);
+		num_read = read(fd, sbuf, (sizeof(sbuf) - 1));
+		if (num_read > 0) {
+			sbuf[num_read] = '\0';
+			debug2(" cpu %d freq= %s", cpu, sbuf);
+		}
+		fclose(sys_fp);
+	} else {
+		/* frequency scaling not enabled */
+		if (!cpunfo_frequency){
+			snprintf(freq_file, 14,
+					"/proc/cpuinfo");
+			debug2("_get_sys_interface_freq_line: "
+				"filename = %s ",
+				freq_file);
+			if ((sys_fp = fopen(freq_file, "r")) != NULL) {
+				while (fgets(cpunfo_line, sizeof cpunfo_line,
+					sys_fp ) != NULL) {
+					if (strstr(cpunfo_line, "cpu MHz") ||
+					    strstr(cpunfo_line, "cpu GHz")) {
+						break;
+					}
+				}
+				strncpy(cpufreq_line, cpunfo_line+11, 8);
+				skipdot(cpufreq_line);
+				sscanf(cpufreq_line, "%d", &cpunfo_frequency);
+				debug2("cpunfo_frequency= %d",cpunfo_frequency);
+				fclose(sys_fp);
+			}
+		}
+		return 1;
+	}
+	return 0;
+
+}
+
 static int _is_a_lwp(uint32_t pid) {
 
 	FILE		*status_fp = NULL;
@@ -161,7 +265,7 @@ static int _is_a_lwp(uint32_t pid) {
 
 	if ( snprintf(proc_status_file, 256,
 		      "/proc/%d/status",pid) > 256 ) {
- 		debug("jobacct_gather_linux: unable to build proc_status "
+		debug("jobacct_gather_linux: unable to build proc_status "
 		      "fpath");
 		return -1;
 	}
@@ -204,10 +308,10 @@ static int _is_a_lwp(uint32_t pid) {
  * RETVAL:	==0 - no valid data
  * 		!=0 - data are valid
  *
- * Based upon stat2proc() from the ps command. It can handle arbitrary executable
- * file basenames for `cmd', i.e. those with embedded whitespace or embedded ')'s.
- * Such names confuse %s (see scanf(3)), so the string is split and %39c is used
- * instead. (except for embedded ')' "(%[^)]c)" would work.
+ * Based upon stat2proc() from the ps command. It can handle arbitrary
+ * executable file basenames for `cmd', i.e. those with embedded whitespace or 
+ * embedded ')'s. Such names confuse %s (see scanf(3)), so the string is split
+ * and %39c is used instead. (except for embedded ')' "(%[^)]c)" would work.
  */
 static int _get_process_data_line(int in, prec_t *prec) {
 	char sbuf[256], *tmp;
@@ -217,6 +321,8 @@ static int _get_process_data_line(int in, prec_t *prec) {
 	long unsigned flags, minflt, cminflt, majflt, cmajflt;
 	long unsigned utime, stime, starttime, vsize;
 	long int cutime, cstime, priority, nice, timeout, itrealvalue, rss;
+	long unsigned f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13;
+	int exit_signal, last_cpu;
 
 	num_read = read(in, sbuf, (sizeof(sbuf) - 1));
 	if (num_read <= 0)
@@ -230,33 +336,37 @@ static int _get_process_data_line(int in, prec_t *prec) {
 	if (nvals < 2)
 		return 0;
 
-	nvals = sscanf(tmp + 2,		/* skip space after ')' too */
-		"%c %d %d %d %d %d "
-		"%lu %lu %lu %lu %lu "
-		"%lu %lu %ld %ld %ld %ld "
-		"%ld %ld %lu %lu %ld",
-		state, &ppid, &pgrp, &session, &tty_nr, &tpgid,
-		&flags, &minflt, &cminflt, &majflt, &cmajflt,
-		&utime, &stime, &cutime, &cstime, &priority, &nice,
-		&timeout, &itrealvalue, &starttime, &vsize, &rss);
+	nvals = sscanf(tmp + 2,	 /* skip space after ')' too */
+		       "%c %d %d %d %d %d "
+		       "%lu %lu %lu %lu %lu "
+		       "%lu %lu %ld %ld %ld %ld "
+		       "%ld %ld %lu %lu %ld "
+		       "%lu %lu %lu %lu %lu "
+		       "%lu %lu %lu %lu %lu "
+		       "%lu %lu %lu %d %d ",
+		       state, &ppid, &pgrp, &session, &tty_nr, &tpgid,
+		       &flags, &minflt, &cminflt, &majflt, &cmajflt,
+		       &utime, &stime, &cutime, &cstime, &priority, &nice,
+		       &timeout, &itrealvalue, &starttime, &vsize, &rss,
+		       &f1, &f2, &f3, &f4, &f5 ,&f6, &f7, &f8, &f9, &f10, &f11,
+		       &f12, &f13, &exit_signal, &last_cpu);
 	/* There are some additional fields, which we do not scan or use */
-	if ((nvals < 22) || (rss < 0))
+	if ((nvals < 37) || (rss < 0))
 		return 0;
 
-	/* If current pid corresponds to a Light Weight Process
-	 * (Thread POSIX) skip it, we will only account the original
-	 * process (pid==tgid) */
+	/* If current pid corresponds to a Light Weight Process (Thread POSIX) */
+	/* skip it, we will only account the original process (pid==tgid) */
 	if (_is_a_lwp(prec->pid) > 0)
-  		return 0;
+		return 0;
 
 	/* Copy the values that slurm records into our data structure */
 	prec->ppid  = ppid;
 	prec->pages = majflt;
 	prec->usec  = utime;
 	prec->ssec  = stime;
-	prec->vsize = vsize / 1024;   /* convert from bytes to KB */
-	prec->rss   = rss * pagesize; /* convert from pages to KB */
-
+	prec->vsize = vsize / 1024;	      /* convert from bytes to KB */
+	prec->rss   = rss * getpagesize() / 1024;/* convert from pages to KB */
+	prec->last_cpu = last_cpu;
 	return 1;
 }
 
@@ -322,6 +432,11 @@ extern void jobacct_gather_p_poll_data(
 	struct jobacctinfo *jobacct = NULL;
 	static int processing = 0;
 	long		hertz;
+	char *act_cpufreq;
+	size_t act_cpufreq_size;
+	uint32_t user_act_cpufreq, system_act_cpufreq;
+	char		sbuf[72];
+	int energy_counted = 0;
 
 	if (!pgid_plugin && (cont_id == (uint64_t)NO_VAL)) {
 		debug("cont_id hasn't been set yet not running poll");
@@ -341,10 +456,21 @@ extern void jobacct_gather_p_poll_data(
 		hertz = 100;	/* default on many systems */
 	}
 
-	if(!pgid_plugin) {
+	if (!pgid_plugin) {
 		/* get only the processes in the proctrack container */
 		slurm_container_get_pids(cont_id, &pids, &npids);
-		if(!npids) {
+		if (!npids) {
+			/* update consumed energy even if pids do not exist */
+			itr = list_iterator_create(task_list);
+			if ((jobacct = list_next(itr))) {
+				acct_gather_energy_g_get_data(
+					ENERGY_DATA_JOULES_TASK,
+					&jobacct->energy);
+				debug2("getjoules_task energy = %u",
+				       jobacct->energy.consumed_energy);
+			}
+			list_iterator_destroy(itr);
+
 			debug4("no pids in this container %"PRIu64"", cont_id);
 			goto finished;
 		}
@@ -392,23 +518,23 @@ extern void jobacct_gather_p_poll_data(
 		while ((slash_proc_entry = readdir(slash_proc))) {
 
 			/* Save a few cyles by simulating
-			   strcat(statFileName, slash_proc_entry->d_name);
-			   strcat(statFileName, "/stat");
-			   while checking for a numeric filename (which really
-			   should be a pid).
-			*/
+			 * strcat(statFileName, slash_proc_entry->d_name);
+			 * strcat(statFileName, "/stat");
+			 * while checking for a numeric filename (which really
+			 * should be a pid).
+			 */
 			optr = proc_stat_file + sizeof("/proc");
 			iptr = slash_proc_entry->d_name;
 			i = 0;
 			do {
-				if((*iptr < '0')
-				   || ((*optr++ = *iptr++) > '9')) {
+				if ((*iptr < '0') ||
+				    ((*optr++ = *iptr++) > '9')) {
 					i = -1;
 					break;
 				}
 			} while (*iptr);
 
-			if(i == -1)
+			if (i == -1)
 				continue;
 			iptr = (char*)"/stat";
 
@@ -469,12 +595,39 @@ extern void jobacct_gather_p_poll_data(
 					MAX(jobacct->max_pages, prec->pages);
 				jobacct->min_cpu = jobacct->tot_cpu =
 					MAX(jobacct->min_cpu,
-					    (prec->ssec / hertz +
-					     prec->usec / hertz));
+					    ((prec->ssec + prec->usec)/hertz));
 				debug2("%d mem size %u %u time %u(%u+%u)",
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
 				       prec->usec, prec->ssec);
+				/* compute frequency */
+				_get_sys_interface_freq_line(prec->last_cpu,
+						"cpuinfo_cur_freq", sbuf);
+				jobacct->this_sampled_cputime =
+					((prec->ssec + prec->usec) / hertz)
+					-  jobacct->last_total_cputime;
+				jobacct->last_total_cputime =
+					((prec->ssec + prec->usec) / hertz);
+				jobacct->act_cpufreq = (uint32_t)
+					_update_weighted_freq(jobacct, sbuf);
+				debug2("Task average frequency = %u",
+				       jobacct->act_cpufreq);
+				debug2(" pid %d mem size %u %u time %u(%u+%u)",
+				       jobacct->pid, jobacct->max_rss,
+				       jobacct->max_vsize, jobacct->tot_cpu,
+				       prec->usec, prec->ssec);
+				/* get energy consumption
+  				 * only once is enough since we
+ 				 * report per node energy consumption */
+				debug2("energycounted= %d", energy_counted);
+				if (energy_counted == 0) {
+					acct_gather_energy_g_get_data(
+						ENERGY_DATA_JOULES_TASK,
+						&jobacct->energy);
+					debug2("getjoules_task energy = %u",
+					       jobacct->energy.consumed_energy);
+					energy_counted = 1;
+				}
 				break;
 			}
 		}

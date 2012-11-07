@@ -61,6 +61,7 @@
 #include "src/common/job_options.h"
 #include "src/common/forward.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_acct_gather_energy.h"
 #include "src/plugins/select/bluegene/bg_enums.h"
 
 /*
@@ -490,6 +491,17 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->state_desc);
 		xfree(job->wckey);
 		xfree(job->work_dir);
+	}
+}
+
+
+extern void slurm_free_acct_gather_node_resp_msg(
+	acct_gather_node_resp_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->node_name);
+		acct_gather_energy_destroy(msg->energy);
+		xfree(msg);
 	}
 }
 
@@ -2462,6 +2474,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_JOB:
 		slurm_free_job_desc_msg(data);
 		break;
+	case RESPONSE_ACCT_GATHER_UPDATE:
+		slurm_free_acct_gather_node_resp_msg(data);
+		break;
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		slurm_free_node_registration_status_msg(data);
 		break;
@@ -2604,6 +2619,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_FORWARD_FAILED:
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
+	case REQUEST_ACCT_GATHER_UPDATE:
 	case ACCOUNTING_FIRST_REG:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
@@ -2658,6 +2674,9 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 		rc = ((return_code_msg_t *)data)->return_code;
 		break;
 	case RESPONSE_PING_SLURMD:
+		rc = SLURM_SUCCESS;
+		break;
+	case RESPONSE_ACCT_GATHER_UPDATE:
 		rc = SLURM_SUCCESS;
 		break;
 	case RESPONSE_FORWARD_FAILED:

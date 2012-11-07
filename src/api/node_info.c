@@ -59,6 +59,7 @@
 
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -286,6 +287,19 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	}
 	snprintf(tmp_line, sizeof(tmp_line), "SlurmdStartTime=%s", time_str);
 	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** power Line ******/
+	snprintf(tmp_line, sizeof(tmp_line), "CurrentWatts=%u LowestJoules=%u "
+		 "ConsumedJoules=%u",
+		 node_ptr->energy->current_watts, node_ptr->energy->base_watts,
+		 node_ptr->energy->consumed_energy);
+
+	xstrcat(out, tmp_line);
+
 	if (one_liner)
 		xstrcat(out, " ");
 	else

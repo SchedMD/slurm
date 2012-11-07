@@ -743,6 +743,7 @@ finished:	;
 	}
 	if ((agent_ptr->msg_type == REQUEST_PING) ||
 	    (agent_ptr->msg_type == REQUEST_HEALTH_CHECK) ||
+	    (agent_ptr->msg_type == REQUEST_ACCT_GATHER_UPDATE) ||
 	    (agent_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS))
 		ping_end();
 }
@@ -925,6 +926,15 @@ static void *_thread_per_group_rpc(void *args)
 				run_scheduler = true;
 			unlock_slurmctld(job_write_lock);
 		}
+
+		/* SPECIAL CASE: Record node's CPU load */
+		if (ret_data_info->type == RESPONSE_ACCT_GATHER_UPDATE) {
+			lock_slurmctld(node_write_lock);
+			update_node_record_acct_gather_data(
+				ret_data_info->data);
+			unlock_slurmctld(node_write_lock);
+		}
+
 		/* SPECIAL CASE: Kill non-startable batch job,
 		 * Requeue the job on ESLURMD_PROLOG_FAILED */
 		if ((msg_type == REQUEST_BATCH_JOB_LAUNCH) &&

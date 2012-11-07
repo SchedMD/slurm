@@ -135,6 +135,7 @@ typedef struct slurmd_config {
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 	uint16_t        job_acct_gather_freq;
 	char *job_acct_gather_type; /* job accounting gather type */
+	char           *acct_gather_energy_type; /*  */
 	uint16_t	use_pam;
 	uint16_t	task_plugin_param; /* TaskPluginParams, expressed
 					 * using cpu_bind_type_t flags */

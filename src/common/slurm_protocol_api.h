@@ -538,6 +538,19 @@ extern uint16_t slurm_get_propagate_prio_process(void);
  */
 char *slurm_get_proctrack_type(void);
 
+/* slurm_get_acct_gather_energy_type
+ * get EnergyAccountingType from slurmctld_conf object
+ * RET char *   - acct_gather_energy type, MUST be xfreed by caller
+ */
+char *slurm_get_acct_gather_energy_type(void);
+
+/* slurm_get_acct_gather_node_freq
+ * returns the accounting poll frequency for requesting info from a
+ * node from the slurmctld_conf object
+ * RET int    - accounting node frequency
+ */
+extern uint16_t slurm_get_acct_gather_node_freq(void);
+
 /* slurm_get_root_filter
  * RET uint16_t  - Value of SchedulerRootFilter */
 extern uint16_t slurm_get_root_filter(void);

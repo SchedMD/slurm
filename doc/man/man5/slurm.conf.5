@@ -145,6 +145,39 @@ complete message sent to the Accounting Storage database.  The default
 is "YES".
 
 .TP
+\fBAcctGatherNodeFreq\fR
+The AcctGather plugins sampling interval for node accounting.
+For AcctGather plugin values of none, this parameter is ignored.
+For all other values this parameter is the number 
+of seconds between node accounting samples. For the
+acct_gather_energy/rapl plugin, set a value less
+than 300 because the counters may overflow beyond this rate.
+The default value is zero. This value disables accounting sampling
+for nodes. Note: The accounting sampling interval for jobs is
+determined by the value of \fBJobAcctGatherFrequency\fR.
+
+.TP
+\fBAcctGatherEnergyType\fR
+Identifies the plugin to be used for energy consumption accounting.
+The jobacct_gather plugin and slurmd daemon call this plugin to collect
+energy consumption data for jobs and nodes.
+
+Configurable values at present are:
+.RS
+.TP 20
+\fBacct_gather_energy/none\fR
+No energy consumption data is collected.
+.TP
+\fBacct_gather_energy/ipmi\fR
+Energy consumption data is collected from the Baseboard Management Controller
+(BMC) using the Intelligent Platform Management Interface (IPMI).
+.TP
+\fBacct_gather_energy/rapl\fR
+Energy consumption data is collected from hardware sensors using the Running
+Average Power Limit (RAPL) mechanism.
+.RE
+
+.TP
 \fBAuthType\fR
 The authentication method for communications between SLURM
 components.

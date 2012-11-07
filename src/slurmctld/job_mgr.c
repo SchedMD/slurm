@@ -3282,6 +3282,20 @@ static int _part_access_check(struct part_record *part_ptr,
 			      uid_t submit_uid)
 {
 	uint32_t total_nodes;
+	size_t resv_name_leng = 0;
+
+	if (job_desc->reservation != NULL) {
+		resv_name_leng = strlen(job_desc->reservation);
+	}
+
+	if ((part_ptr->flags & PART_FLAG_REQ_RESV) &&
+		((job_desc->reservation == NULL) ||
+		(resv_name_leng == 0))) {
+		info("_part_access_check: uid %u access to partition %s "
+		     "denied, requires reservation",
+		     (unsigned int) submit_uid, part_ptr->name);
+		return ESLURM_ACCESS_DENIED;
+	}
 
 
 	if ((part_ptr->flags & PART_FLAG_REQ_RESV) &&
@@ -7946,6 +7960,8 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 			reg_msg->node_name);
 		return;
 	}
+
+	memcpy(node_ptr->energy, reg_msg->energy, sizeof(acct_gather_energy_t));
 
 	if (node_ptr->up_time > reg_msg->up_time) {
 		verbose("Node %s rebooted %u secs ago",

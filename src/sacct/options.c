@@ -455,7 +455,7 @@ sacct [<OPTION>]                                                            \n\
                              maxrsstask,averss,maxpages,maxpagesnode,       \n\
                              maxpagestask,avepages,mincpu,mincpunode,       \n\
                              mincputask,avecpu,ntasks,alloccpus,elapsed,    \n\
-	                     state,exitcode'                                \n\
+	                     state,exitcode,avecpufreq,consumedenergy'       \n\
      -L, --allclusters:                                                     \n\
 	           Display jobs ran on all clusters. By default, only jobs  \n\
                    ran on the cluster from where sacct is called are        \n\
@@ -585,6 +585,7 @@ int get_data(void)
 				step->sys_cpu_sec;
 			job->sys_cpu_usec +=
 				step->sys_cpu_usec;
+
 			/* get the max for all the sacct_t struct */
 			aggregate_stats(&job->stats, &step->stats);
 		}
