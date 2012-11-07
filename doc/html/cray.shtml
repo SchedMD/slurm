@@ -154,12 +154,14 @@ file.  This option is set with RPMs from Cray.</p>
 <p>Cray/ALPS node ordering is a topic of ongoing work, some information can be found in the CUG-2010 paper
    "<i>ALPS, Topology, and Performance</i>" by Carl Albing and Mark Baker.</p>
 
-<h3>The scancel command and signalling jobs</h3>
-On Cray systems, all signals <b>except</b>
-SIGCHLD, SIGCONT, SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU, SIGURG, or SIGWINCH
-cause the ALPS reservation to be released.
+<h3>Other Command Differences</h3>
+<p>On Cray systems, all signals sent to the job using the scancel command
+<b>except</b> SIGCHLD, SIGCONT, SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU, SIGURG, or
+SIGWINCH cause the ALPS reservation to be released.
 The job however will not be terminated except in the case of SIGKILL and
-may then be used for post processing.
+may then be used for post processing.</p>
+
+<p>The sstat command is not supported on Cray systems.</p>
 
 <h3>GPU Use</h3>
 

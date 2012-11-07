@@ -171,6 +171,15 @@ int main(int argc, char **argv)
 	uint32_t stepid = 0;
 	slurmdb_selected_step_t *selected_step = NULL;
 
+#ifdef HAVE_CRAY
+	error("The sstat command is not supported on Cray systems");
+	return 1;
+#endif
+#ifdef HAVE_BG
+	error("The sstat command is not supported on IBM BlueGene systems");
+	return 1;
+#endif
+
 	print_fields_list = list_create(NULL);
 	print_fields_itr = list_iterator_create(print_fields_list);
 

@@ -70,7 +70,8 @@ have, for instance, the 4th nodeboard populated instead of the 1st.
 
 <p>The normal set of SLURM user tools: <i>sbatch</i>, <i>scancel</i>,
 <i>sinfo</i>, <i>squeue</i>, and <i>scontrol</i> provide all of the expected
-services except support for job steps, which is detailed later.</p>
+services except support for job steps, which is detailed later.
+The sstat command is not supported on Cray systems.</p>
 
 <p>Seven job submission options are available exclusively on BlueGene systems:</p>
 <table>
@@ -866,6 +867,6 @@ scheduling logic, etc. </p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 August 2012</p>
+<p style="text-align:center;">Last modified 7 November 2012</p>
 
 <!--#include virtual="footer.txt"-->
