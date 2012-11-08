@@ -1101,12 +1101,14 @@ static void
 _destroy_conf(void)
 {
 	if (conf) {
+		xfree(conf->acct_gather_energy_type);
 		xfree(conf->block_map);
 		xfree(conf->block_map_inv);
 		xfree(conf->conffile);
 		xfree(conf->epilog);
 		xfree(conf->health_check_program);
 		xfree(conf->hostname);
+		xfree(conf->job_acct_gather_type);
 		xfree(conf->logfile);
 		xfree(conf->node_name);
 		xfree(conf->node_addr);
@@ -1512,6 +1514,7 @@ _slurmd_fini(void)
 	fini_setproctitle();
 	slurm_select_fini();
 	jobacct_gather_fini();
+	acct_gather_energy_fini();
 	spank_slurmd_exit();
 	cpu_freq_fini();
 

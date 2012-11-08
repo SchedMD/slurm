@@ -47,8 +47,8 @@ main (int argc, char **argv)
 	mem_kb     = atoi(argv[3]);
 
 	mem = malloc(mem_kb * 1024);
-	/* need to do a memset on the memory or AIX will not give it
-	 * to me!
+	/* need to do a memset on the memory or AIX will not count
+	 * the memory in the job step's Resident Set Size
 	 */
 	memset(mem, 0, (mem_kb * 1024));
 	sleep(sleep_time);

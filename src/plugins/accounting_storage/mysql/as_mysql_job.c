@@ -764,8 +764,8 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		xfree(comment);
 	}
 
-	xstrfmtcat(query, ", exit_code=%d, kill_requid=%d "
-			"where job_db_inx=%d;",
+	xstrfmtcat(query,
+		   ", exit_code=%d, kill_requid=%d where job_db_inx=%d;",
 		   job_ptr->exit_code, job_ptr->requid,
 		   job_ptr->db_index);
 
@@ -1036,7 +1036,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		"max_pages=%u, max_pages_task=%u, "
 		"max_pages_node=%u, ave_pages=%f, "
 		"min_cpu=%u, min_cpu_task=%u, "
-		"min_cpu_node=%u, ave_cpu=%f "
+		"min_cpu_node=%u, ave_cpu=%f, "
 		"act_cpufreq=%u, consumed_energy=%u "
 		"where job_db_inx=%d and id_step=%d",
 		mysql_conn->cluster_name, step_table, (int)now,
