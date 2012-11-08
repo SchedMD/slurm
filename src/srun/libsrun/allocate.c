@@ -67,6 +67,15 @@
 #include "src/plugins/select/bluegene/bg_enums.h"
 #endif
 
+#ifdef HAVE_REAL_CRAY
+/*
+ * On Cray installations, the libjob headers are not automatically installed
+ * by default, while libjob.so always is, and kernels are > 2.6. Hence it is
+ * simpler to just duplicate the single declaration here.
+ */
+extern uint64_t job_getjid(pid_t pid);
+#endif
+
 #define MAX_ALLOC_WAIT	60	/* seconds */
 #define MIN_ALLOC_WAIT	5	/* seconds */
 #define MAX_RETRIES	10
@@ -551,6 +560,25 @@ job_desc_msg_create_from_opts (void)
 	hostlist_t hl = NULL;
 
 	slurm_init_job_desc_msg(j);
+#ifdef HAVE_REAL_CRAY
+	uint64_t pagg_id = job_getjid(getpid());
+	/*
+	 * Interactive sessions require pam_job.so in /etc/pam.d/common-session
+	 * since creating sgi_job containers requires root permissions. This is
+	 * the only exception where we allow the fallback of using the SID to
+	 * confirm the reservation (caught later, in do_basil_confirm).
+	 */
+	if (pagg_id == (uint64_t)-1) {
+		error("No SGI job container ID detected - please enable the "
+		      "Cray job service via /etc/init.d/job");
+	} else {
+		if (!j->select_jobinfo)
+			j->select_jobinfo = select_g_select_jobinfo_alloc();
+
+		select_g_select_jobinfo_set(j->select_jobinfo,
+					    SELECT_JOBDATA_PAGG_ID, &pagg_id);
+	}
+#endif
 
 	j->contiguous     = opt.contiguous;
 	j->features       = opt.constraints;

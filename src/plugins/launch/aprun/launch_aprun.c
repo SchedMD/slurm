@@ -265,7 +265,7 @@ extern int launch_p_setup_srun_opt(char **rest)
 		opt.slurmd_debug = LOG_LEVEL_QUIET;
 	}
 
-	opt.argc++;
+	opt.argc += 2;
 
 	opt.argv = (char **) xmalloc(opt.argc * sizeof(char *));
 
@@ -544,9 +544,7 @@ extern int launch_p_step_launch(
 			error("dup2: %m");
 			return 1;
 		}
-		sleep(20);
-		exit(0);
-		//execvp(opt.argv[0], opt.argv);
+		execvp(opt.argv[0], opt.argv);
 		error("execv(aprun) error: %m");
 		return 1;
 	}
