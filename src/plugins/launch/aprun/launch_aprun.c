@@ -501,7 +501,9 @@ extern int launch_p_setup_srun_opt(char **rest)
 
 extern int launch_p_handle_multi_prog_verify(int command_pos)
 {
-	return 1;
+	if (opt.multi_prog)
+		return 1;
+	return 0;
 }
 
 extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
