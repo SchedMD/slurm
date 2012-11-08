@@ -37,6 +37,7 @@ documents those changes that are of interest to users and admins.
     than BGQ.
  -- Added new DebugFlags - Energy for AcctGatherEnergy plugins.
  -- start deprecation of sacct --dump --fdump
+ -- BGQ - added --verbose=OFF when srun --quiet is used
 
 * Changes in SLURM 2.5.0.pre3
 =============================

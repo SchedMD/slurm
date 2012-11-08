@@ -259,6 +259,8 @@ extern int launch_p_setup_srun_opt(char **rest)
 			command_pos += 2;
 		if (_verbose)
 			command_pos += 2;
+		if (opt.quiet)
+			command_pos += 2;
 		if (opt.ifname) {
 			if (!parse_uint32(opt.ifname, &taskid)
 			    && ((int) taskid < opt.ntasks)) {
@@ -315,6 +317,11 @@ extern int launch_p_setup_srun_opt(char **rest)
 			 * don't want 2 sets (slurm's will always be 000)
 			 * remove it case. */
 			opt.labelio = 0;
+		}
+
+		if (opt.quiet) {
+			opt.argv[i++]  = xstrdup("--verbose");
+			opt.argv[i++]  = xstrdup("OFF");
 		}
 
 		if (_verbose) {
