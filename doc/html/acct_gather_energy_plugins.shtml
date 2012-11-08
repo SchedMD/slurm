@@ -28,7 +28,8 @@ for the type of energy accounting. We currently use
 BMC (Baseboard Management Controller) using the
 IPMI (Intelligent Platform Management Interface) tool.
 <li><b>rapl</b>&#151;Gets energy consumption data from hardware sensors on each 
-core/socket, using RAPL (Running Average Power Limit) sensors.
+core/socket, using RAPL (Running Average Power Limit) sensors. Note that
+enabling RAPL may require the execution of the command "sudo modprobe msr".
 </ul>
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/acct_gather_energy/rapl</span> and 
@@ -98,7 +99,7 @@ for SLURM plugins.</p>
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 7 November 2012</p>
+<p style="text-align:center;">Last modified 8 November 2012</p>
 
 <!--#include virtual="footer.txt"-->
 
