@@ -108,4 +108,11 @@ extern bool acct_policy_job_runnable_state(struct job_record *job_ptr);
  */
 extern int acct_policy_update_pending_job(struct job_record *job_ptr);
 
+/*
+ * acct_policy_job_runnable - Determine of the specified job has timed
+ *	out based on it's QOS or association. Returns True if job is
+ *	timed out and sets job_ptr->state_reason = FAIL_TIMEOUT;
+ */
+extern bool acct_policy_job_time_out(struct job_record *job_ptr);
+
 #endif /* !_HAVE_ACCT_POLICY_H */
