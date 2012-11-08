@@ -333,7 +333,7 @@ extern int launch_p_setup_srun_opt(char **rest)
 		opt.argv[command_pos++] = xstrdup_printf("%u", tasks_per_node);
 	}
 
-	if (opt.ntasks) {
+	if (opt.ntasks && !opt.multi_prog) {
 		opt.argc += 2;
 		xrealloc(opt.argv, opt.argc * sizeof(char *));
 		opt.argv[command_pos++] = xstrdup("-n");
@@ -483,19 +483,12 @@ extern int launch_p_setup_srun_opt(char **rest)
 
 	*/
 
-	if (opt.multi_prog)
+	if (opt.multi_prog) {
 		_handle_multi_prog(rest[0], &command_pos);
-
-	if (opt.launch_cmd) {
-		int i = 0;
-		char *cmd_line = NULL;
-
-		while (opt.argv[i])
-			xstrfmtcat(cmd_line, "%s ", opt.argv[i++]);
-		printf("%s\n", cmd_line);
-		xfree(cmd_line);
-		exit(0);
+		/* just so we don't tack on the script to the aprun line */
+		command_pos = opt.argc;
 	}
+
 	return command_pos;
 }
 
