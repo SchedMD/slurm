@@ -160,7 +160,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 	}
 
 	assoc_mgr_lock(&locks);
-	if (job_ptr->qos_ptr && (accounting_enforce & ACCOUNTING_ENFORCE_QOS)) {
+	if (job_ptr->qos_ptr) {
 		slurmdb_qos_rec_t *qos_ptr = NULL;
 		slurmdb_used_limits_t *used_limits = NULL;
 
