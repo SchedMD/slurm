@@ -120,17 +120,31 @@ int fd[MAX_PKGS] = {[0 ... MAX_PKGS-1] -1};
 
 int nb_pkg = 0;
 
-static ulong read_msr(int fd, int which) {
-	uint64_t data;
+static char *_msr_string(int which)
+{
+	if (which == MSR_RAPL_POWER_UNIT)
+		return "PowerUnit";
+	else if (which == MSR_PKG_POWER_INFO)
+		return "PowerInfo";
+	return "UnknownType";
+}
 
-	if (pread(fd, &data, sizeof data, which) != sizeof data) {
+static ulong _read_msr(int fd, int which)
+{
+	uint64_t data = 0;
+
+	if (lseek(fd, which, SEEK_SET) < 0)
+		error("lseek of /dev/cpu/#/msr: %m");
+	if (read(fd, &data, sizeof(data)) != sizeof(data)) {
 		if (which == MSR_DRAM_ENERGY_STATUS) {
 			if (debug_flags & DEBUG_FLAG_ENERGY)
 				info("It appears you don't have any DRAM, "
 				     "this can be common.  Check your system "
 				     "if you think this is in error.");
-		} else
-			error("Check your cpu has RAPL support %u", which);
+		} else {
+			error("Check if your CPU has RAPL support for %s: %m",
+			      _msr_string(which));
+		}
 	}
 	return (long long)data;
 }
@@ -138,7 +152,7 @@ static ulong read_msr(int fd, int which) {
 static ulong get_package_energy(int pkg)
 {
 	ulong result;
-	result = read_msr(fd[pkg], MSR_PKG_ENERGY_STATUS);
+	result = _read_msr(fd[pkg], MSR_PKG_ENERGY_STATUS);
 	if (result < package_energy[pkg].i.low)
 		package_energy[pkg].i.high++;
 	package_energy[pkg].i.low = result;
@@ -149,7 +163,7 @@ static ulong get_dram_energy(int pkg)
 {
 	ulong result;
 
-	result = read_msr(fd[pkg], MSR_DRAM_ENERGY_STATUS);
+	result = _read_msr(fd[pkg], MSR_DRAM_ENERGY_STATUS);
 	if (result < dram_energy[pkg].i.low)
 		dram_energy[pkg].i.high++;
 	dram_energy[pkg].i.low = result;
@@ -215,7 +229,7 @@ extern int acct_gather_energy_p_update_node_energy(void)
 		for (i = 0; i < nb_pkg; i++)
 			fd[i] = open_msr(pkg2cpu[i]);
 
-		result = read_msr(fd[0], MSR_RAPL_POWER_UNIT);
+		result = _read_msr(fd[0], MSR_RAPL_POWER_UNIT);
 		energy_units = pow(0.5,(double)((result>>8)&0x1f));
 		result = 0;
 		for (i = 0; i < nb_pkg; i++)
@@ -264,14 +278,14 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	for (i=0; i<nb_pkg; i++)
 		fd[i] = open_msr(pkg2cpu[i]);
 
-	result = read_msr(fd[0], MSR_RAPL_POWER_UNIT);
+	result = _read_msr(fd[0], MSR_RAPL_POWER_UNIT);
 	power_units = pow(0.5, (double)(result&0xf));
 	energy_units = pow(0.5, (double)((result>>8)&0x1f));
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("RAPL powercapture_debug Energy units = %.6f, "
 		     "Power Units = %.6f", energy_units, power_units);
 	max_power = power_units *
-		((read_msr(fd[0], MSR_PKG_POWER_INFO) >> 32) & 0x7fff);
+		((_read_msr(fd[0], MSR_PKG_POWER_INFO) >> 32) & 0x7fff);
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("RAPL Max power = %ld w", max_power);
 	result = 0;
