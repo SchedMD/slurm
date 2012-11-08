@@ -40,10 +40,8 @@ GThread *sview_thread_new(GThreadFunc func, gpointer data,
 			  gboolean joinable, GError **error)
 {
 #ifndef GLIB_NEW_THREADS
-	printf("not new threads\n");
 	return g_thread_create(func, data, joinable, error);
 #else
-	printf("new threads\n");
 	return g_thread_try_new(NULL, func, data, error);
 #endif
 }
