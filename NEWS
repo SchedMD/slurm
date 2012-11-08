@@ -35,6 +35,7 @@ documents those changes that are of interest to users and admins.
     aprun process instead of a perl script.
  -- srun - Rename --runjob-opts to --launcher-opts to be used on systems other
     than BGQ.
+ -- Added new DebugFlags - Energy for AcctGatherEnergy plugins.
 
 * Changes in SLURM 2.5.0.pre3
 =============================

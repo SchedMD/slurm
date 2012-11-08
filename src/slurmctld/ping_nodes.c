@@ -426,7 +426,8 @@ extern void update_nodes_acct_gather_data(void)
 	} else {
 		hostlist_uniq(agent_args->hostlist);
 		host_str = hostlist_ranged_string_xmalloc(agent_args->hostlist);
-		debug("Updating acct_gather data for %s", host_str);
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_ENERGY)
+			info("Updating acct_gather data for %s", host_str);
 		xfree(host_str);
 		ping_begin();
 		agent_queue_request(agent_args);

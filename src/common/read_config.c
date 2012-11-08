@@ -3556,6 +3556,11 @@ extern char * debug_flags2str(uint32_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "CPU_Bind");
 	}
+	if (debug_flags & DEBUG_FLAG_ENERGY) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Energy");
+	}
 	if (debug_flags & DEBUG_FLAG_FRONT_END) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -3648,6 +3653,8 @@ extern uint32_t debug_str2flags(char *debug_flags)
 			rc |= DEBUG_FLAG_BG_WIRES;
 		else if (strcasecmp(tok, "CPU_Bind") == 0)
 			rc |= DEBUG_FLAG_CPU_BIND;
+		else if (strcasecmp(tok, "Energy") == 0)
+			rc |= DEBUG_FLAG_ENERGY;
 		else if (strcasecmp(tok, "FrontEnd") == 0)
 			rc |= DEBUG_FLAG_FRONT_END;
 		else if (strcasecmp(tok, "Gang") == 0)

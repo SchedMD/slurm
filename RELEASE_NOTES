@@ -88,7 +88,7 @@ Added the following struct definitions
 
 Changed the following enums and #defines
 ========================================
-
+#debug DEBUG_FLAG_ENERGY - for AcctGatherEnergy plugin
 
 Added the following API's
 =========================

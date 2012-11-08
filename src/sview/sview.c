@@ -561,6 +561,14 @@ static void _get_current_debug_flags(GtkToggleAction *action)
 		gtk_toggle_action_set_active(toggle_action, new_state);
 
 	debug_action = gtk_action_group_get_action(menu_action_group,
+						  "flags_energy");
+	toggle_action = GTK_TOGGLE_ACTION(debug_action);
+	orig_state = gtk_toggle_action_get_active(toggle_action);
+	new_state = debug_flags & DEBUG_FLAG_ENERGY;
+	if (orig_state != new_state)
+		gtk_toggle_action_set_active(toggle_action, new_state);
+
+	debug_action = gtk_action_group_get_action(menu_action_group,
 						  "flags_front_end");
 	toggle_action = GTK_TOGGLE_ACTION(debug_action);
 	orig_state = gtk_toggle_action_get_active(toggle_action);
@@ -723,6 +731,10 @@ static void _set_flags_bg_wires(GtkToggleAction *action)
 static void _set_flags_cpu_bind(GtkToggleAction *action)
 {
 	_set_flags(action, DEBUG_FLAG_CPU_BIND);
+}
+static void _set_flags_energy(GtkToggleAction *action)
+{
+	_set_flags(action, DEBUG_FLAG_ENERGY);
 }
 static void _set_flags_front_end(GtkToggleAction *action)
 {
@@ -895,6 +907,7 @@ static char *_get_ui_description()
 		"        <menuitem action='flags_bg_pick'/>"
 		"        <menuitem action='flags_bg_wires'/>"
 		"        <menuitem action='flags_cpu_bind'/>"
+		"        <menuitem action='flags_energy'/>"
 		"        <menuitem action='flags_front_end'/>"
 		"        <menuitem action='flags_gang'/>"
 		"        <menuitem action='flags_gres'/>"
@@ -1130,6 +1143,8 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		 "BgBlockWires", G_CALLBACK(_set_flags_bg_wires), FALSE},
 		{"flags_cpu_bind", NULL, "CPU Bind", NULL,
 		 "CPU_Bind", G_CALLBACK(_set_flags_cpu_bind), FALSE},
+		{"flags_energy", NULL, "Energy", NULL,
+		 "Energy", G_CALLBACK(_set_flags_energy), FALSE},
 		{"flags_front_end", NULL, "FrontEnd", NULL,
 		 "FrontEnd", G_CALLBACK(_set_flags_front_end), FALSE},
 		{"flags_gang", NULL, "Gang", NULL,

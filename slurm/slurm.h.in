@@ -431,6 +431,7 @@ enum jobacct_data_type {
 enum acct_energy_type {
 	ENERGY_DATA_JOULES_TASK,
 	ENERGY_DATA_STRUCT,
+	ENERGY_DATA_RECONFIG,
 };
 
 /* Possible task distributions across the nodes */
@@ -1820,6 +1821,7 @@ typedef struct reservation_name_msg {
 						 * realtime server
 						 * dies on a bluegene system */
 #define DEBUG_FLAG_SWITCH	0x00020000	/* SwitchType plugin */
+#define DEBUG_FLAG_ENERGY	0x00040000	/* AcctGatherEnergy plugin */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to

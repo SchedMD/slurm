@@ -979,6 +979,9 @@ _reconfigure(void)
 		send_registration_msg(SLURM_SUCCESS, false);
 	}
 
+	/* reconfigure energy */
+	acct_gather_energy_g_set_data(ENERGY_DATA_RECONFIG, NULL);
+
 	/*
 	 * XXX: reopen slurmd port?
 	 */

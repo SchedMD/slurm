@@ -103,6 +103,8 @@ const char plugin_name[] = "AcctGatherEnergy IPMI plugin";
 const char plugin_type[] = "acct_gather_energy/ipmi";
 const uint32_t plugin_version = 100;
 
+static uint32_t debug_flags = 0;
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -110,6 +112,7 @@ const uint32_t plugin_version = 100;
 extern int init ( void )
 {
 	verbose("%s loaded", plugin_name);
+	debug_flags = slurm_get_debug_flags();
 	return SLURM_SUCCESS;
 }
 
@@ -143,7 +146,8 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 	int rc = SLURM_SUCCESS;
 
 	switch (data_type) {
-	case ENERGY_DATA_STRUCT:
+	case ENERGY_DATA_RECONFIG:
+		debug_flags = slurm_get_debug_flags();
 		break;
 	default:
 		error("acct_gather_energy_p_set_data: unknown enum %d",

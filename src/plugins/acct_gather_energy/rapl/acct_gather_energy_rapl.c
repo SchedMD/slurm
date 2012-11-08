@@ -113,6 +113,7 @@ const uint32_t plugin_version = 100;
 static int freq = 0;
 static acct_gather_energy_t *local_energy = NULL;
 static bool acct_gather_energy_shutdown = true;
+static uint32_t debug_flags = 0;
 
 int pkg2cpu [MAX_PKGS] = {[0 ... MAX_PKGS-1] -1}; /* one cpu in the package */
 int fd[MAX_PKGS] = {[0 ... MAX_PKGS-1] -1};
@@ -123,7 +124,13 @@ static ulong read_msr(int fd, int which) {
 	uint64_t data;
 
 	if (pread(fd, &data, sizeof data, which) != sizeof data) {
-		error("Check your cpu has RAPL support");
+		if (which == MSR_DRAM_ENERGY_STATUS) {
+			if (debug_flags & DEBUG_FLAG_ENERGY)
+				info("It appears you don't have any DRAM, "
+				     "this can be common.  Check your system "
+				     "if you think this is in error.");
+		} else
+			error("Check your cpu has RAPL support %u", which);
 	}
 	return (long long)data;
 }
@@ -188,7 +195,9 @@ static void hardware (void)
 			continue;
 		}
 	}
-	debug4 ("RAPL Found: %d packages", nb_pkg);
+
+	if (debug_flags & DEBUG_FLAG_ENERGY)
+		info("RAPL Found: %d packages", nb_pkg);
 }
 
 extern int acct_gather_energy_p_update_node_energy(void)
@@ -232,10 +241,14 @@ extern int acct_gather_energy_p_update_node_energy(void)
 		}
 		local_energy->previous_consumed_energy = node_current_energy;
 
-		debug2("_getjoules_rapl = %d sec, current %.6f Joules, "
-		       "consumed %d", freq, ret, local_energy->consumed_energy);
+		if (debug_flags & DEBUG_FLAG_ENERGY)
+			info("_getjoules_rapl = %d sec, current %.6f Joules, "
+			     "consumed %d",
+			     freq, ret, local_energy->consumed_energy);
 	}
-	debug2("_getjoules_rapl shutdown");
+
+	if (debug_flags & DEBUG_FLAG_ENERGY)
+		info("_getjoules_rapl shutdown");
 	return rc;
 }
 
@@ -254,18 +267,21 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	result = read_msr(fd[0], MSR_RAPL_POWER_UNIT);
 	power_units = pow(0.5, (double)(result&0xf));
 	energy_units = pow(0.5, (double)((result>>8)&0x1f));
-	debug2("RAPL powercapture_debug Energy units = %.6f, "
-	       "Power Units = %.6f", energy_units, power_units);
+	if (debug_flags & DEBUG_FLAG_ENERGY)
+		info("RAPL powercapture_debug Energy units = %.6f, "
+		     "Power Units = %.6f", energy_units, power_units);
 	max_power = power_units *
 		((read_msr(fd[0], MSR_PKG_POWER_INFO) >> 32) & 0x7fff);
-
-	debug2("RAPL Max power = %ld w", max_power);
+	if (debug_flags & DEBUG_FLAG_ENERGY)
+		info("RAPL Max power = %ld w", max_power);
 	result = 0;
 	for (i = 0; i < nb_pkg; i++)
 		result += get_package_energy(i) + get_dram_energy(i);
-	debug2("RAPL Result = %lu ", result);
+	if (debug_flags & DEBUG_FLAG_ENERGY)
+		info("RAPL Result = %lu ", result);
 	ret = (double)result*energy_units;
-	debug2("RAPL Result float %.6f Joules", ret);
+	if (debug_flags & DEBUG_FLAG_ENERGY)
+		info("RAPL Result float %.6f Joules", ret);
 
 	if (energy->consumed_energy != 0) {
 		energy->consumed_energy =  ret - energy->base_consumed_energy;
@@ -275,8 +291,10 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 		energy->base_consumed_energy = ret;
 	}
 
-	debug2("_get_joules_task energy = %.6f, base %u , current %u",
-	       ret, energy->base_consumed_energy, energy->consumed_energy);
+	if (debug_flags & DEBUG_FLAG_ENERGY)
+		info("_get_joules_task energy = %.6f, base %u , current %u",
+		     ret, energy->base_consumed_energy,
+		     energy->consumed_energy);
 
 }
 
@@ -288,6 +306,7 @@ extern int init(void)
 {
 	verbose("%s loaded", plugin_name);
 	local_energy = acct_gather_energy_alloc();
+	debug_flags = slurm_get_debug_flags();
 	return SLURM_SUCCESS;
 }
 
@@ -324,7 +343,8 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 	int rc = SLURM_SUCCESS;
 
 	switch (data_type) {
-	case ENERGY_DATA_STRUCT:
+	case ENERGY_DATA_RECONFIG:
+		debug_flags = slurm_get_debug_flags();
 		break;
 	default:
 		error("acct_gather_energy_p_set_data: unknown enum %d",
