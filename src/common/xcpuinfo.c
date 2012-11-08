@@ -207,7 +207,14 @@ get_cpuinfo(uint16_t *p_cpus, uint16_t *p_boards,
 		hwloc_topology_destroy(topology);
 		return 2;
 	}
-	
+
+	/* At least on a temporary basis, one could map AMD Bulldozer entities
+	 * onto the entities that Slurm does optimize placement for today (e.g.
+	 * map each Bulldozer core to a thread and each Bulldozer module to a
+	 * Slurm core, alternately map the Bulldozer module to a Slurm socket
+	 * and the Bulldozer socket to a Slurm board). Perhaps not ideal, but
+	 * it would achieve the desired locality. */
+
 	if ( hwloc_get_type_depth(topology, HWLOC_OBJ_NODE) >
 	     hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET) ) {
 		/* One socket contains multiple NUMA-nodes 
