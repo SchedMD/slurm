@@ -67,10 +67,10 @@ COMMAND CHANGES (see man pages for details)
   added to or removed from the reservation.
 - sinfo partition field size will be set the the length of the longest
   partition name by default.
+- Deprecation of sacct --dump --fdump.  This will go away in 2.6 completely.
 
 OTHER CHANGES
 =============
-
 
 API CHANGES
 ===========

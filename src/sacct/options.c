@@ -405,10 +405,8 @@ sacct [<OPTION>]                                                            \n\
 	           Use this comma separated list of accounts to select jobs \n\
                    to display.  By default, all accounts are selected.      \n\
      -b, --brief:                                                           \n\
-	           Equivalent to '--format=jobstep,state,error'. This option\n\
-	           has no effect if --dump is specified.                    \n\
+	           Equivalent to '--format=jobstep,state,error'.            \n\
      -c, --completion: Use job completion instead of accounting data.       \n\
-     -d, --dump:   Dump the raw data records                                \n\
      -D, --duplicates:                                                      \n\
 	           If SLURM job ids are reset, some job numbers will        \n\
 	           probably appear more than once refering to different jobs.\n\
@@ -464,8 +462,7 @@ sacct [<OPTION>]                                                            \n\
                    Only send data about these clusters. -1 for all clusters.\n\
      -n, --noheader:                                                        \n\
 	           No header will be added to the beginning of output.      \n\
-                   The default is to print a header; the option has no effect\n\
-                   if --dump is specified                                   \n\
+                   The default is to print a header.                        \n\
      -N, --nodelist:                                                        \n\
                    Display jobs that ran on any of these nodes,             \n\
                    can be one or more using a ranged string.                \n\
@@ -474,9 +471,6 @@ sacct [<OPTION>]                                                            \n\
      -o, --format:                                                          \n\
 	           Comma separated list of fields. (use \"--helpformat\"    \n\
                    for a list of available fields).                         \n\
-     -O, --formatted_dump:                                                  \n\
-	           Dump accounting records in an easy-to-read format,       \n\
-                   primarily for debugging.                                 \n\
      -p, --parsable: output will be '|' delimited with a '|' at the end     \n\
      -P, --parsable2: output will be '|' delimited without a '|' at the end \n\
      -q, --qos:                                                             \n\
@@ -705,6 +699,8 @@ void parse_command_line(int argc, char **argv)
 			slurm_addto_char_list(job_cond->cluster_list, optarg);
 			break;
 		case 'd':
+			error("--dump has been depricated and will go away "
+			      "in future releases.");
 			params.opt_dump = 1;
 			break;
 		case 'D':
@@ -812,6 +808,8 @@ void parse_command_line(int argc, char **argv)
 			xstrfmtcat(params.opt_field_list, "%s,", optarg);
 			break;
 		case 'O':
+			error("--formatted_dump has been depricated and "
+			      "will go away in future releases.");
 			params.opt_fdump = 1;
 			break;
 		case 'p':
@@ -959,16 +957,12 @@ void parse_command_line(int argc, char **argv)
 
 	debug("Options selected:\n"
 	      "\topt_completion=%d\n"
-	      "\topt_dump=%d\n"
 	      "\topt_dup=%d\n"
-	      "\topt_fdump=%d\n"
 	      "\topt_field_list=%s\n"
 	      "\topt_help=%d\n"
 	      "\topt_allocs=%d",
 	      params.opt_completion,
-	      params.opt_dump,
 	      params.opt_dup,
-	      params.opt_fdump,
 	      params.opt_field_list,
 	      params.opt_help,
 	      params.opt_allocs);
