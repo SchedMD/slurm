@@ -453,7 +453,7 @@ static int _cr_job_list_sort(void *x, void *y)
 {
 	struct job_record *job1_ptr = (struct job_record *) x;
 	struct job_record *job2_ptr = (struct job_record *) y;
-	return (int) difftime(job1_ptr->end_time, job2_ptr->end_time);
+	return (int) SLURM_DIFFTIME(job1_ptr->end_time, job2_ptr->end_time);
 }
 
 

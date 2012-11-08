@@ -77,6 +77,16 @@ typedef enum {false, true} bool;
 #  define MIN(a,b) ((a) < (b) ? (a) : (b))
 #endif
 
+/*
+ * NOTE: ISO C doesn't guarantee that the following works, but POSIX does,
+ * as well as Windows and all reasonable systems. For maximum portability,
+ * one should do:
+ * SLURM_DIFFTIME(a,b) difftime((a), (b))
+ * but this code can show up high in the profile, so use the faster
+ * (in principle unportable but in practice fine) code below.
+ */
+#define SLURM_DIFFTIME(a,b) ((a) - (b))
+
 /* Avoid going over 32 bits for a constant to avoid warnings on some systems */
 #  define UINT64_SWAP_LE_BE(val)      ((uint64_t) (                           \
         (((uint64_t) (val) &                                                  \
