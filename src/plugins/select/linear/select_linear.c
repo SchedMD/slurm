@@ -497,6 +497,10 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 #if SELECT_DEBUG
 	info("host %s HW_ cpus %u boards %u sockets %u cores %u threads %u ",
 	     node_ptr->name, cpus, boards, sockets, cores, threads);
+#else
+	/* Largely to avoid warning about unused variable "boards" */
+	debug2("host %s HW_ cpus %u boards %u sockets %u cores %u threads %u ",
+	       node_ptr->name, cpus, boards, sockets, cores, threads);
 #endif
 
 	avail_cpus = slurm_get_avail_procs(
