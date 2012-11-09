@@ -213,7 +213,8 @@ static void _opt_default(void)
 #else
 {
 	char *launch_type = slurm_get_launch_type();
-	if (!strcmp(launch_type, "launch/poe"))
+	if (!strcmp(launch_type, "launch/poe") ||
+	    !strcmp(launch_type, "launch/aprun"))
 		opt.ctld	= true;
 	else
 		opt.ctld	= false;
