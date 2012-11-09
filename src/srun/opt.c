@@ -1769,6 +1769,8 @@ static void _opt_args(int argc, char **argv)
 			command_pos += 2;
 		if (_verbose)
 			command_pos += 2;
+		if (opt.quiet)
+			command_pos += 2;
 		if (opt.ifname) {
 			if (!parse_uint32(opt.ifname, &taskid)
 			    && ((int) taskid < opt.ntasks)) {
@@ -1834,6 +1836,11 @@ static void _opt_args(int argc, char **argv)
 		if (_verbose) {
 			opt.argv[i++]  = xstrdup("--verbose");
 			opt.argv[i++]  = xstrdup_printf("%d", _verbose);
+		}
+
+		if (opt.quiet) {
+			opt.argv[i++]  = xstrdup("--verbose");
+			opt.argv[i++]  = xstrdup("OFF");
 		}
 
 		if (taskid != NO_VAL) {
