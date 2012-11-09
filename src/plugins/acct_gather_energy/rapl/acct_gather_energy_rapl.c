@@ -225,6 +225,8 @@ extern int acct_gather_energy_p_update_node_energy(void)
 	acct_gather_energy_shutdown = false;
 	if (!acct_gather_energy_shutdown) {
 		uint32_t node_current_energy;
+		float node_freq;
+
 		hardware();
 		for (i = 0; i < nb_pkg; i++)
 			fd[i] = open_msr(pkg2cpu[i]);
@@ -246,19 +248,22 @@ extern int acct_gather_energy_p_update_node_energy(void)
 				node_current_energy - local_energy->base_watts;
 			local_energy->current_watts =
 				(float)(node_current_energy -
-				local_energy->previous_consumed_energy) /
-				slurm_get_acct_gather_node_freq();
+				local_energy->previous_consumed_energy);
+			node_freq = slurm_get_acct_gather_node_freq();
+			if (node_freq)	/* Prevent divide by zero */
+				local_energy->current_watts /= node_freq;
 		}
-		if (local_energy->consumed_energy == 0){
+		if (local_energy->consumed_energy == 0) {
 			local_energy->consumed_energy = 1;
 			local_energy->base_watts = node_current_energy;
 		}
 		local_energy->previous_consumed_energy = node_current_energy;
 
-		if (debug_flags & DEBUG_FLAG_ENERGY)
+		if (debug_flags & DEBUG_FLAG_ENERGY) {
 			info("_getjoules_rapl = %d sec, current %.6f Joules, "
 			     "consumed %d",
 			     freq, ret, local_energy->consumed_energy);
+		}
 	}
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
