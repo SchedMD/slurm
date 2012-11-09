@@ -67,10 +67,10 @@
 #include "acct_gather_energy_rapl.h"
 
 union {
-	ulong val;
+	uint64_t val;
 	struct {
-		uint low;
-		uint high;
+		uint64_t low;
+		uint64_t high;
 	} i;
 } package_energy[MAX_PKGS], dram_energy[MAX_PKGS];
 
@@ -129,7 +129,7 @@ static char *_msr_string(int which)
 	return "UnknownType";
 }
 
-static ulong _read_msr(int fd, int which)
+static uint64_t _read_msr(int fd, int which)
 {
 	uint64_t data = 0;
 
@@ -146,12 +146,13 @@ static ulong _read_msr(int fd, int which)
 			      _msr_string(which));
 		}
 	}
-	return (long long)data;
+	return data;
 }
 
-static ulong get_package_energy(int pkg)
+static uint64_t _get_package_energy(int pkg)
 {
-	ulong result;
+	uint64_t result;
+
 	result = _read_msr(fd[pkg], MSR_PKG_ENERGY_STATUS);
 	if (result < package_energy[pkg].i.low)
 		package_energy[pkg].i.high++;
@@ -159,9 +160,9 @@ static ulong get_package_energy(int pkg)
 	return(package_energy[pkg].val);
 }
 
-static ulong get_dram_energy(int pkg)
+static uint64_t _get_dram_energy(int pkg)
 {
-	ulong result;
+	uint64_t result;
 
 	result = _read_msr(fd[pkg], MSR_DRAM_ENERGY_STATUS);
 	if (result < dram_energy[pkg].i.low)
@@ -219,7 +220,7 @@ extern int acct_gather_energy_p_update_node_energy(void)
 	int rc = SLURM_SUCCESS;
 	int i;
 	double energy_units;
-	ulong result;
+	uint64_t result;
 	double ret;
 
 	acct_gather_energy_shutdown = false;
@@ -235,8 +236,8 @@ extern int acct_gather_energy_p_update_node_energy(void)
 		energy_units = pow(0.5,(double)((result>>8)&0x1f));
 		result = 0;
 		for (i = 0; i < nb_pkg; i++)
-			result += get_package_energy(i) + get_dram_energy(i);
-		ret = (double)result*energy_units;
+			result += _get_package_energy(i) + _get_dram_energy(i);
+		ret = (double)result * energy_units;
 
 		/* current_watts = the average power consumption between two
 		 *		   measurements
@@ -275,7 +276,7 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 {
 	int i;
 	double energy_units, power_units;
-	ulong result;
+	uint64_t result;
 	ulong max_power;
 	double ret;
 
@@ -295,10 +296,10 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 		info("RAPL Max power = %ld w", max_power);
 	result = 0;
 	for (i = 0; i < nb_pkg; i++)
-		result += get_package_energy(i) + get_dram_energy(i);
+		result += _get_package_energy(i) + _get_dram_energy(i);
 	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("RAPL Result = %lu ", result);
-	ret = (double)result*energy_units;
+		info("RAPL Result = %"PRIu64"", result);
+	ret = (double)result * energy_units;
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("RAPL Result float %.6f Joules", ret);
 
@@ -310,11 +311,11 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 		energy->base_consumed_energy = ret;
 	}
 
-	if (debug_flags & DEBUG_FLAG_ENERGY)
+	if (debug_flags & DEBUG_FLAG_ENERGY) {
 		info("_get_joules_task energy = %.6f, base %u , current %u",
 		     ret, energy->base_consumed_energy,
 		     energy->consumed_energy);
-
+	}
 }
 
 /*
