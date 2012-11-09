@@ -380,6 +380,16 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
 				    sig_atomic_t *destroy_job)
 {
+	if (opt.launch_cmd) {
+		int i = 0;
+		char *cmd_line = NULL;
+
+		while (opt.argv[i])
+			xstrfmtcat(cmd_line, "%s ", opt.argv[i++]);
+		printf("%s\n", cmd_line);
+		xfree(cmd_line);
+		exit(0);
+	}
 	return launch_common_create_job_step(job, use_all_cpus,
 					     signal_function,
 					     destroy_job);
