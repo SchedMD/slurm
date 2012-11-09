@@ -16,11 +16,15 @@ plugin_name[]="<i>launch&nbsp;SLURM&nbsp;plugin</i>"</span>
 plugin_type[]="<i>launch/slurm</i>"</span><br>
 <p style="margin-left:.2in">
 
-<li><b>poe</b>&#151;Use IBM's poe to launch tasks - used with IBM's PE
-  typically when using an IBM proprietary interconnect.
-<li><b>runjob</b>&#151;Use IBM's runjob to launch tasks - used on
-  BlueGene/Q machines.
-<li><b>slurm</b>&#151;Use SLURM's default launching infrastructure<br>
+<ul>
+<li><b>aprun</b>&#151;Use Cray's aprun command to launch tasks - used on Cray
+systems with ALPS installed.</li>
+<li><b>poe</b>&#151;Use IBM's poe command to launch tasks - used on systems
+  IBM's parallel environment (PE) installed.</li>
+<li><b>runjob</b>&#151;Use IBM's runjob command to launch tasks - used on
+  BlueGene/Q systems.</li>
+<li><b>slurm</b>&#151;Use SLURM's default launching infrastructure</li>
+</ul>
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/launch/slurm/launch_slurm.c</span>
 for a sample implementation of a SLURM launch plugin.
@@ -123,6 +127,6 @@ for a sample implementation of a SLURM launch plugin.
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 28 June 2012</p>
+<p style="text-align:center;">Last modified 9 November 2012</p>
 
 <!--#include virtual="footer.txt"-->

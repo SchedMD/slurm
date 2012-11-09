@@ -786,10 +786,14 @@ The value may not exceed 65533.
 \fBLaunchType\fR
 Identifies the mechanism to be used to launch application tasks.
 Acceptable values include
+"launch/aprun" for use with Cray systems with ALPS,
 "launch/poe" for use with IBM Parallel Environment (PE),
 "launch/runjob" for use with IBM BlueGene/Q systems, and
 "launch/slurm" for all other systems.
-The default value is "launch/runjob" for IBM BlueGene/Q systems and
+The default value is
+"launch/aprun" for Cray systems,
+"launch/poe" for systems with the IBM NRT library installed,
+"launch/runjob" for IBM BlueGene/Q systems, and
 "launch/slurm" for all other systems.
 
 .TP
