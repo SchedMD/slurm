@@ -1,8 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 2.5.0.pre4
-=============================
+* Changes in SLURM 2.5.0
+========================
+
+* Changes in SLURM 2.5.0.rc1
+============================
  -- Added Prolog and Epilog Guide (web page). Based upon work by Jason Sollom,
     Cray Inc. and used by permission.
  -- Restore gang scheduling functionality. Preemptor was not being scheduled.
@@ -38,6 +41,8 @@ documents those changes that are of interest to users and admins.
  -- Added new DebugFlags - Energy for AcctGatherEnergy plugins.
  -- start deprecation of sacct --dump --fdump
  -- BGQ - added --verbose=OFF when srun --quiet is used
+ -- Added acct_gather_energy/rapl plugin to record power consumption by job.
+    Work by Yiannis Georgiou, Martin Perry, et. al., Bull
 
 * Changes in SLURM 2.5.0.pre3
 =============================
