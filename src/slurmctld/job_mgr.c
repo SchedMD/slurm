@@ -8686,21 +8686,22 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 #if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
 	static int notify_srun = 1;
 #else
+	static int notify_srun_static = -1;
 	int notify_srun = 0;
-	static int launch_poe = -1;
 
-	if (launch_poe == -1) {
+	if (notify_srun_static == -1) {
 		char *launch_type = slurm_get_launch_type();
-		if (!strcmp(launch_type, "launch/poe"))
-			launch_poe = 1;
+		if (!strcmp(launch_type, "launch/aprun") ||
+		    !strcmp(launch_type, "launch/poe"))
+			notify_srun_static = 1;
 		else
-			launch_poe = 0;
+			notify_srun_static = 0;
 		xfree(launch_type);
 	}
-	/* For launch/poe all signals are forwarded by by srun to poe to tasks
+	/* For launch/poe all signals are forwarded by srun to poe to tasks
 	 * except SIGSTOP/SIGCONT, which are used for job preemption. In that
 	 * case the slurmd must directly suspend tasks and switch resources. */
-	if (launch_poe && (signal != SIGSTOP) && (signal != SIGCONT))
+	if (notify_srun_static && (signal != SIGSTOP) && (signal != SIGCONT))
 		notify_srun = 1;
 #endif
 

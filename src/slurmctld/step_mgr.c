@@ -350,7 +350,8 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	static int notify_srun = -1;
 	if (notify_srun == -1) {
 		char *launch_type = slurm_get_launch_type();
-		if (!strcmp(launch_type, "launch/poe")) {
+		if (!strcmp(launch_type, "launch/aprun") ||
+		    !strcmp(launch_type, "launch/poe")) {
 			notify_srun = 1;
 			notify_slurmd = false;
 		} else
@@ -390,9 +391,9 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	}
 
 	/* If SIG_NODE_FAIL codes through it means we had nodes failed
-	   so handle that in the select plugin and switch the signal
-	   to KILL afterwards.
-	*/
+	 * so handle that in the select plugin and switch the signal
+	 * to KILL afterwards.
+	 */
 	if (signal == SIG_NODE_FAIL) {
 		select_g_fail_cnode(step_ptr);
 		signal = SIGKILL;
