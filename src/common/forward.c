@@ -330,7 +330,7 @@ void *_fwd_tree_thread(void *arg)
 		}
 
 		send_msg.forward.timeout = fwd_tree->timeout;
-		if((send_msg.forward.cnt = hostlist_count(fwd_tree->tree_hl))) {
+		if ((send_msg.forward.cnt = hostlist_count(fwd_tree->tree_hl))){
 			buf = hostlist_ranged_string_xmalloc(
 					fwd_tree->tree_hl);
 			send_msg.forward.nodelist = buf;
@@ -348,7 +348,7 @@ void *_fwd_tree_thread(void *arg)
 
 		xfree(send_msg.forward.nodelist);
 
-		if(ret_list) {
+		if (ret_list) {
 			slurm_mutex_lock(fwd_tree->tree_mutex);
 			list_transfer(fwd_tree->ret_list, ret_list);
 			pthread_cond_signal(fwd_tree->notify);
@@ -356,8 +356,8 @@ void *_fwd_tree_thread(void *arg)
 			list_destroy(ret_list);
 		} else {
 			/* This should never happen (when this was
-			   written slurm_send_addr_recv_msgs always
-			   returned a list */
+			 * written slurm_send_addr_recv_msgs always
+			 * returned a list */
 			error("fwd_tree_thread: no return list given from "
 			      "slurm_send_addr_recv_msgs spawned for %s",
 			      name);
@@ -560,7 +560,7 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 		fwd_tree->notify = &notify;
 		fwd_tree->tree_mutex = &tree_mutex;
 
-		if(fwd_tree->timeout <= 0) {
+		if (fwd_tree->timeout <= 0) {
 			/* convert secs to msec */
 			fwd_tree->timeout  = slurm_get_msg_timeout() * 1000;
 		}
