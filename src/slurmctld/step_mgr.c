@@ -1223,10 +1223,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 							 usable_cpu_cnt);
 			if (node_tmp == NULL) {
 				int avail_node_cnt = bit_set_count(nodes_avail);
-				if ((avail_node_cnt < node_idle_cnt) &&
-				    (step_spec->min_nodes <=
-				     (avail_node_cnt + nodes_picked_cnt +
-				      mem_blocked_nodes))) {
+				if (step_spec->min_nodes <=
+				    (avail_node_cnt + nodes_picked_cnt +
+				     mem_blocked_nodes)) {
 					*return_code = ESLURM_NODES_BUSY;
 				} else if (!bit_super_set(job_ptr->node_bitmap,
 							  up_node_bitmap)) {
