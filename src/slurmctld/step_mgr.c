@@ -1003,10 +1003,23 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			goto cleanup;
 		}
 		if (!bit_super_set(selected_nodes, nodes_avail)) {
-			*return_code = ESLURM_INVALID_TASK_MEMORY;
-			info ("_pick_step_nodes: requested nodes %s "
-			      "have inadequate memory",
-			       step_spec->node_list);
+			/*
+			 * If some nodes still have some memory allocated
+			 * to other steps, just defer the execution of the
+			 * step
+			 */
+			if (mem_blocked_nodes == 0) {
+				*return_code = ESLURM_INVALID_TASK_MEMORY;
+				info ("_pick_step_nodes: requested nodes %s "
+				      "have inadequate memory",
+				      step_spec->node_list);
+			}
+			else {
+				*return_code = ESLURM_NODES_BUSY;
+				info ("_pick_step_nodes: some requested nodes"
+				      " %s still have memory used by other steps",
+				      step_spec->node_list);
+			}
 			FREE_NULL_BITMAP(selected_nodes);
 			goto cleanup;
 		}
