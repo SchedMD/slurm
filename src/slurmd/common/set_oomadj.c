@@ -65,6 +65,12 @@ extern int set_oom_adj(int adj)
 					      oom_adj_file);
 				return -1;
 			}
+			/* Convert range from [-1000,1000] to [-17,15]
+			 * for use with older Linux kernel before 2.6.36 */
+			if (adj < 0)
+				adj = (adj * 17) / 1000;
+			else if (adj > 0)
+				adj = (adj * 15) / 1000;
 		} else {
 			error("failed to open %s: %m", oom_adj_file);
 			return -1;

@@ -168,12 +168,12 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
          *
          *  If an env value is already set for slurmstepd
          *  OOM killer behavior, keep it, otherwise set the
-         *  -17 value, wich means do not let OOM killer kill it
+         *  -1000 value, wich means do not let OOM killer kill it
          *
-         *  FYI, setting "export SLURMSTEPD_OOM_ADJ=-17"
+         *  FYI, setting "export SLURMSTEPD_OOM_ADJ=-1000"
          *  in /etc/sysconfig/slurm would be the same
          */
-        setenv("SLURMSTEPD_OOM_ADJ","-17",0);
+        setenv("SLURMSTEPD_OOM_ADJ", "-1000", 0);
 
 	return SLURM_SUCCESS;
 
