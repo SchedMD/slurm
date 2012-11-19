@@ -3093,6 +3093,18 @@ from an allocation are run on a node, it will never run the Prolog for that
 allocation.  The Epilog, on the other hand, always runs on every node of an
 allocation when the allocation is released.
 
+If the Epilog fails (returns a non\-zero exit code), this will result in the
+node being set to a DOWN state.
+If the EpilogSlurmctld fails (returns a non\-zero exit code), this will only
+be logged.
+If the Prolog fails (returns a non\-zero exit code), this will result in the
+node being set to a DOWN state and the job requeued to executed on another node.
+If the PrologSlurmctld fails (returns a non\-zero exit code), this will result
+in the job requeued to executed on another node if possible. Only batch jobs
+can be requeued. Interactive jobs (salloc and srun) will be cancelled if the
+PrologSlurmctld fails.
+
+
 Information about the job is passed to the script using environment
 variables.
 Unless otherwise specified, these environment variables are available
