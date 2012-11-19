@@ -1,7 +1,7 @@
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          to be called from test3.11
-#	   Several cases for core based reservations 
+#	   Several cases for core based reservations
 #          Pluging select/cons_res needed
 #
 ############################################################################
@@ -105,9 +105,9 @@ proc inc3_11_8 {} {
 		set exit_code 1
 		exit $ret_code
 	}
-	
+
 	send_user "\n\033\[32mSUCCESS: reservation was created as expected\033\[m\n"
-	
+
 	# Delete the reservation
 	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
@@ -123,7 +123,7 @@ proc inc3_11_8 {} {
 	} else {
 		send_user "\n\033\[31mFAILURE: reservation was created when it should have not\033\[m\n"
 		set exit_code 1
-		
+
 		# Delete the reservation
 		set ret_code [delete_res $res_name]
 	}
