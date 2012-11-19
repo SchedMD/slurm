@@ -72,6 +72,7 @@
 
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 
@@ -1753,6 +1754,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 
 	_post_resv_update(resv_ptr, resv_backup);
 	_del_resv_rec(resv_backup);
+	set_node_maint_mode(true);
 	last_resv_update = now;
 	schedule_resv_save();
 	return error_code;
@@ -3284,7 +3286,7 @@ extern int send_resvs_to_accounting(void)
 
 
 /* Set or clear NODE_STATE_MAINT for node_state as needed */
-extern void set_node_maint_mode(void)
+extern void set_node_maint_mode(bool reset_all)
 {
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
@@ -3293,10 +3295,21 @@ extern void set_node_maint_mode(void)
 	if (!resv_list)
 		return;
 
+	if (reset_all) {
+		int i;
+		struct node_record *node_ptr;
+		for (i = 0, node_ptr = node_record_table_ptr;
+		     i <= node_record_count;
+		     i++, node_ptr++) {
+			node_ptr->node_state &= (~NODE_STATE_MAINT);
+		}
+	}
 	iter = list_iterator_create(resv_list);
 	if (!iter)
 		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if (reset_all)
+			resv_ptr->maint_set_node = false;
 		if ((resv_ptr->flags & RESERVE_FLAG_MAINT) == 0)
 			continue;
 		if ((now >= resv_ptr->start_time) &&

@@ -1422,7 +1422,7 @@ static void *_slurmctld_background(void *no_data)
 			now = time(NULL);
 			last_resv_time = now;
 			lock_slurmctld(node_write_lock);
-			set_node_maint_mode();
+			set_node_maint_mode(false);
 			unlock_slurmctld(node_write_lock);
 		}
 
