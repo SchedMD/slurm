@@ -1229,7 +1229,10 @@ also be used to specify more than one program to run (e.g.
 the first job step.  The prolog script or scripts may be used to purge files,
 enable user login, etc.  By default there is no prolog. Any configured script
 is expected to complete execution quickly (in less time than
-\fBMessageTimeout\fR).  See \fBProlog and Epilog Scripts\fR for more information.
+\fBMessageTimeout\fR).
+If the prolog fails (returns a non\-zero exit code), this will result in the
+node being set to a DOWN state and the job requeued to executed on another node.
+See \fBProlog and Epilog Scripts\fR for more information.
 
 .TP
 \fBPrologSlurmctld\fR
@@ -1250,7 +1253,7 @@ If some node can not be made available for use, the program should drain
 the node (typically using the scontrol command) and terminate with a non\-zero
 exit code.
 A non\-zero exit code will result in the job being requeued (where possible)
-or killed.
+or killed. Note that only batch jobs can be requeued.
 See \fBProlog and Epilog Scripts\fR for more information.
 
 .TP
