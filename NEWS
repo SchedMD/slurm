@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Fix issue when running srun outside of an allocation and only
     specifying the number of tasks and not the number of nodes.
  -- BGQ - validate correct ntasks_per_node
+ -- BGQ - when srun -Q is given make runjob be quiet
 
 * Changes in SLURM 2.4.4
 ========================
