@@ -3289,6 +3289,26 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 #endif
 	kill_job_msg_t *kill_step;
 	agent_arg_t *agent_args = NULL;
+	static int notify_srun = -1;
+
+	if (notify_srun == -1) {
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+		notify_srun = 1;
+#else
+		char *launch_type = slurm_get_launch_type();
+		if (!strcmp(launch_type, "launch/aprun") ||
+		    !strcmp(launch_type, "launch/poe"))
+			notify_srun = 1;
+		else
+			notify_srun = 0;
+		xfree(launch_type);
+#endif
+	}
+
+	if (notify_srun) {
+		srun_step_timeout(step_ptr, now);
+		return;
+	}
 
 	xassert(step_ptr);
 	agent_args = xmalloc(sizeof(agent_arg_t));
