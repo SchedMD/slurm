@@ -46,6 +46,8 @@ set job_fini1   ""
 set job_fini2   ""
 set job_fini3   ""
 set job_fini4   ""
+set first_node  ""
+set connection  ""
 set a_flag      0
 set x_flag      0
 set y_flag      0
@@ -56,6 +58,71 @@ set block       0
 print_header $test_id
 
 
+proc submit_sbatch {sbatch_perams} {
+	global sbatch
+	global alpha_numeric_under number
+	global job_id
+	global file_in
+	global bin_sleep
+
+make_bash_script $file_in "$bin_sleep 10"
+
+	eval spawn $sbatch $sbatch_perams
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		-re "error" {
+			send_user "\nFAILURE: Job was not submitted\n"
+			exp_continue
+			exit 1
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch is not responding\n"
+			exit 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+proc check_job_state {state_perams} {
+	global squeue
+	global job_id
+	global matches
+	global last_node
+	global change_subbp_stat
+
+	set matches 0
+	eval spawn $squeue $state_perams
+	expect {
+		-re "$job_id" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE:squeue is not responding\n"
+			change_subbp_state $last_node "0" "free"
+			exit 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE: Job $job_id did not fail\n"
+		change_subbp_state $last_node "0" "free"
+		exit 1
+	}
+
+}
+
+
+
+#Test Starts
 if {([test_bluegene] == 0) || [string compare [get_bluegene_type] "Q"]} {
 	send_user "\nWARNING: This test is only compatible with bluegene systems\n"
 	exit $exit_code
@@ -97,33 +164,17 @@ if {$a_size>2} {
 	exit 1
 }
 
-make_bash_script $file_in "$bin_sleep 500"
 
-spawn $sbatch  --geometry=$geom --conn-type=T,T,T,T --output=/dev/null --error=/dev/null $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re "error" {
-		send_user "\nFAILURE: Job was not submitted\n"
-		exp_continue
-		exit 1
-	}
-	timeout {
-		send_user "\nFAILURE: sbatch is not responding\n"
-		exit 1
-	}
-	eof {
-		wait
-	}
-}
+
+submit_sbatch "--geometry=$geom --conn-type=T,T,T,T --output=/dev/null --error=/dev/null $file_in"
 
 wait_for_job $job_id "RUNNING"
 
 spawn $scontrol show job $job_id
 expect {
 	-re "MidplaneList=($alpha_numeric).($alpha_numeric)x($digit)($digit)($digit)($digit)" {
+		set prefix $expect_out(1,string)
+		set first_node $expect_out(2,string)
 		set job_fini1 $expect_out(3,string)
 		set job_fini2 $expect_out(4,string)
 		set job_fini3 $expect_out(5,string)
@@ -147,12 +198,16 @@ expect {
 
 if {$a_flag==1} {
 	set last_node "$prefix$a_size$job_fini2$job_fini3$job_fini4"
+	set last_job_node "$job_fini1$job_fini2$job_fini3$job_fini4"
 } elseif {$x_flag==1} {
 	set last_node "$prefix$job_fini1$x_size$job_fini3$job_fini4"
+	set last_job_node "$job_fini1$job_fini2$job_fini3$job_fini4"
 } elseif {$y_flag==1} {
 	set last_node "$prefix$job_fini1$job_fini2$y_size$job_fini4"
+	set last_job_node "$job_fini1$job_fini2$job_fini3$job_fini4"
 } elseif {$z_flag==1} {
 	set last_node "$prefix$job_fini1$job_fini2$job_fini3$z_size"
+	set last_job_node "$job_fini1$job_fini2$job_fini3$job_fini4"
 }
 
 change_subbp_state $last_node "0" "error"
@@ -161,39 +216,22 @@ wait_for_job $job_id "DONE"
 
 exec $bin_rm -f $file_in
 
+#checks if the job failed
+check_job_state "--state=failed -o%i -j -h $job_id"
+
+#Check if the block was destroyed
 set matches 0
-spawn $squeue --state=failed -o%i -j -h $job_id
-expect {
-	-re "$job_id" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE:squeue is not responding\n"
-		change_subbp_state $last_node "0" "free"
-		exit 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	send_user "\nFAILURE: Job $job_id did not fail\n"
-	change_subbp_state $last_node "0" "free"
-	exit 1
-}
-
 spawn $scontrol show block $block
 expect {
 	-re "not found" {
 		send_user "\nBlock was not found, this is expected.\n"
+		incr matches
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		change_subbp_state $last_node "0" "free"
-		exit 1
+	        exit 1
 	}
 	eof {
 		wait
@@ -207,13 +245,71 @@ if {$matches != 1} {
 	exit 1
 }
 
+if {$a_flag==1} {
+	set connection M,T,T,T
+} elseif {$x_flag==1} {
+	set connection T,M,T,T
+} elseif {$y_flag==1} {
+	set connection T,T,M,T
+} elseif {$z_flag==1} {
+	set connection T,T,T,M
+}
+
+set node_range "$prefix$first_node\,$prefix$last_job_node"
+submit_sbatch " --nodelist=$node_range --geometry=$geom --conn-type=$connection --output=/dev/null --error=/dev/null $file_in"
+
+wait_for_job $job_id "RUNNING"
+
+#checks if the job is running
+check_job_state "--state=running -o%i -j -h $job_id"
+
+spawn $scontrol show job $job_id
+expect {
+	-re "Block_ID=($alpha_numeric)" {
+		set block $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		change_subbp_state $last_node "0" "free"
+		exit 1
+	}
+	eof {
+		wait
+	}
+
+}
+
+#checks if the block is still there
+spawn $scontrol show block $block
+expect {
+	-re "BlockName=($alpha_numeric)" {
+		set tmp_block $expect_out(1,string)
+		if {$block==$tmp_block} {
+			send_user "\nBlock is still here, this is expected\n"
+			exp_continue
+		} else {
+			send_user "\nFAILURE: block was not found\n"
+			exit 1
+		}
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		change_subbp_state $last_node "0" "free"
+	        exit 1
+	}
+	eof {
+		wait
+	}
+}
+
 #Sets block back to free
 change_subbp_state $last_node "0" "free"
 
+wait_for_job $job_id "DONE"
+
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
-} else {
-	send_user "\nFAILURE\n"
 }
 
 exit $exit_code
