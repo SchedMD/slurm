@@ -1120,6 +1120,12 @@ _handle_msg(slurm_msg_t *msg)
 		info("%s", um->msg);
 		slurm_free_srun_user_msg(msg->data);
 		break;
+	case SRUN_TIMEOUT:
+		um = msg->data;
+		debug("received job step timeout message");
+		runjob_signal(SIGKILL);
+		slurm_free_srun_timeout_msg(msg->data);
+		break;
 	case SRUN_STEP_SIGNAL:
 		ss = msg->data;
 		debug("received step signal %u RPC", ss->signal);

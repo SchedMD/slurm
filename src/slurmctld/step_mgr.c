@@ -3396,6 +3396,12 @@ extern void step_checkpoint(void)
 static void _signal_step_timelimit(struct job_record *job_ptr,
 				   struct step_record *step_ptr, time_t now)
 {
+
+#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
+	srun_step_timeout(step_ptr, now);
+	return;
+#endif
+
 #ifndef HAVE_FRONT_END
 	int i;
 #endif

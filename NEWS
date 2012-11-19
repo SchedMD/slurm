@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
     or later. NOTE: If you were setting the environment variable
     SLURMSTEPD_OOM_ADJ=-17, it should be set to -1000 for Linux 2.6.36 kernel
     or later.
+ -- BGQ - Fix job step timeout actually happen when done from within an
+    allocation.
 
 * Changes in SLURM 2.4.4
 ========================
