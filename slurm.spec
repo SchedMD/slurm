@@ -509,6 +509,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if64.so &&
    echo %{_libdir}/slurm/libsched_if64.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/runjob_plugin.so &&
    echo %{_libdir}/slurm/runjob_plugin.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_runjob.so &&
+   echo %{_libdir}/slurm/launch_runjob.so >> $LIST
 
 %endif
 
@@ -525,6 +527,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_nrt.so  	&&
   echo %{_libdir}/slurm/switch_nrt.so			>> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libpermapi.so  	&&
   echo %{_libdir}/slurm/libpermapi.so			>> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_poe.so          &&
+   echo %{_libdir}/slurm/launch_poe.so                  >> $LIST
 
 
 LIST=./slurmdbd.files
@@ -552,6 +556,10 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
    echo %{_libdir}/slurm/task_affinity.so            >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cgroup.so              &&
    echo %{_libdir}/slurm/task_cgroup.so              >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_slurm.so             &&
+   echo %{_libdir}/slurm/launch_slurm.so             >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_aprun.so             &&
+   echo %{_libdir}/slurm/launch_aprun.so             >> $LIST
 
 LIST=./pam.files
 touch $LIST
