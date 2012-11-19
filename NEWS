@@ -106,6 +106,11 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Fix issue when running srun outside of an allocation and only
     specifying the number of tasks and not the number of nodes.
  -- BGQ - validate correct ntasks_per_node
+ -- BGQ - when srun -Q is given make runjob be quiet
+ -- Modify use of OOM (out of memory protection) for Linux 2.6.36 kernel
+    or later. NOTE: If you were setting the environment variable
+    SLURMSTEPD_OOM_ADJ=-17, it should be set to -1000 for Linux 2.6.36 kernel
+    or later.
 
 * Changes in SLURM 2.4.4
 ========================
