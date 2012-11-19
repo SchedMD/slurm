@@ -113,6 +113,7 @@ documents those changes that are of interest to users and admins.
     or later.
  -- BGQ - Fix job step timeout actually happen when done from within an
     allocation.
+ -- Reset node MAINT state flag when a reservation's nodes or flags change.
 
 * Changes in SLURM 2.4.4
 ========================
