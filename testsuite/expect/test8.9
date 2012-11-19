@@ -214,8 +214,6 @@ change_subbp_state $last_node "0" "error"
 
 wait_for_job $job_id "DONE"
 
-exec $bin_rm -f $file_in
-
 #checks if the job failed
 check_job_state "--state=failed -o%i -j -h $job_id"
 
@@ -258,55 +256,21 @@ if {$a_flag==1} {
 set node_range "$prefix$first_node\,$prefix$last_job_node"
 submit_sbatch " --nodelist=$node_range --geometry=$geom --conn-type=$connection --output=/dev/null --error=/dev/null $file_in"
 
-wait_for_job $job_id "RUNNING"
+if {[wait_for_job $job_id "RUNNING"]} {
+	change_subbp_state $last_node "0" "free"
+	cancel_job $job_id
+	exec $bin_rm -f $file_in
+	exit 1
+}
 
 #checks if the job is running
 check_job_state "--state=running -o%i -j -h $job_id"
 
-spawn $scontrol show job $job_id
-expect {
-	-re "Block_ID=($alpha_numeric)" {
-		set block $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		change_subbp_state $last_node "0" "free"
-		exit 1
-	}
-	eof {
-		wait
-	}
+cancel_job $job_id
+exec $bin_rm -f $file_in
 
-}
-
-#checks if the block is still there
-spawn $scontrol show block $block
-expect {
-	-re "BlockName=($alpha_numeric)" {
-		set tmp_block $expect_out(1,string)
-		if {$block==$tmp_block} {
-			send_user "\nBlock is still here, this is expected\n"
-			exp_continue
-		} else {
-			send_user "\nFAILURE: block was not found\n"
-			exit 1
-		}
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		change_subbp_state $last_node "0" "free"
-	        exit 1
-	}
-	eof {
-		wait
-	}
-}
-
-#Sets block back to free
+#Sets bad block back to free
 change_subbp_state $last_node "0" "free"
-
-wait_for_job $job_id "DONE"
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
