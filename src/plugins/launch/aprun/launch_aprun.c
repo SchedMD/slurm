@@ -340,7 +340,7 @@ extern int launch_p_setup_srun_opt(char **rest)
 		opt.argv[command_pos++] = xstrdup_printf("%u", opt.ntasks);
 	}
 
-	if (opt.quiet) {
+	if ((_verobse < 3) || opt.quiet) {
 		opt.argc += 1;
 		xrealloc(opt.argv, opt.argc * sizeof(char *));
 		opt.argv[command_pos++] = xstrdup("-q");
