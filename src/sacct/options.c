@@ -1256,7 +1256,7 @@ void do_dump(void)
 			       job->blockid,	/* block id */
 			       "-");	/* reserved 1 */
 
-			printf("JOB_START 1 16 %d %d %s %d %d %d %s %s\n",
+			printf("JOB_START 1 17 %d %d %s %d %d %d %s %s\n",
 			       job->uid,
 			       job->gid,
 			       job->jobname,
@@ -1286,7 +1286,7 @@ void do_dump(void)
 				step->end = job->end;
 
 			gmtime_r(&step->end, &ts);
-			printf("JOB_STEP 1 50 %u %04d%02d%02d%02d%02d%02d ",
+			printf("JOB_STEP 1 41 %u %04d%02d%02d%02d%02d%02d ",
 			       step->stepid,
 			       1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
 			            ts.tm_hour, ts.tm_min, ts.tm_sec);
@@ -1343,7 +1343,7 @@ void do_dump(void)
 			       job->blockid,	/* block id */
 			       "-");	/* reserved 1 */
 			gmtime_r(&job->end, &ts);
-			printf("JOB_TERMINATED 1 50 %d ",
+			printf("JOB_TERMINATED 1 42 %d ",
 			       job->elapsed);
 			printf("%04d%02d%02d%02d%02d%02d ",
 			1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
