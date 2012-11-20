@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Fix job step timeout actually happen when done from within an
     allocation.
  -- Reset node MAINT state flag when a reservation's nodes or flags change.
+ -- Accounting - Fix issue where QOS usage was being zeroed out on a
+    slurmctld restart.
 
 * Changes in SLURM 2.4.4
 ========================

@@ -389,6 +389,7 @@ int main(int argc, char *argv[])
 	   way.  If we get an error we can't do anything about it.
 	*/
 	load_assoc_usage(slurmctld_conf.state_save_location);
+	load_qos_usage(slurmctld_conf.state_save_location);
 
 	/* This thread is looking for when we get correct data from
 	   the database so we can update the assoc_ptr's in the jobs
