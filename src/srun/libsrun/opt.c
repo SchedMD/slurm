@@ -1709,6 +1709,9 @@ static void _opt_args(int argc, char **argv)
 			opt.argc++;
 	}
 
+	if (!rest)
+		fatal("No command given to execute.");
+
 #if defined HAVE_BG && !defined HAVE_BG_L_P
 	/* Since this is needed on an emulated system don't put this code in
 	 * the launch plugin.
