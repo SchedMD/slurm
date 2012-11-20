@@ -78,7 +78,7 @@ expect {
 		exp_continue
 	}
 	# needed for cray systems
-	-re "Granted job allocation ($number)" {
+	-re "jobid ($number)" {
 		incr matches
 		exp_continue
 	}

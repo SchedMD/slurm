@@ -43,6 +43,11 @@ if { [test_launch_poe] } {
 	exit $exit_code
 }
 
+if { [test_cray] } {
+	send_user "\nWARNING: This test is incompatable with cray systems\n"
+	exit $exit_code
+}
+
 #
 # Spawn a program via srun with stdout forwarding disabled
 #

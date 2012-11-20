@@ -46,10 +46,9 @@ if {[test_cray]} {
 	array set good_vars {
 	    SLURM_CPUS_PER_TASK 1
 	    SLURM_JOB_ID 1
-	    SLURM_NNODES 0
-	    SLURM_NODELIST 0
+	    SLURM_NNODES 1
+	    SLURM_NODELIST 1
 	    SLURM_NTASKS 1
-	    SLURM_STEPID 0
 	}
 } elseif {[test_launch_poe]} {
 	array set good_vars {

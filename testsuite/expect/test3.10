@@ -126,7 +126,7 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun -N1 -t1 -v $bin_sleep 10]
 set srun_spawn_id $spawn_id
 expect {
-	-re "launching ($number).($number)" {
+	-re "jobid ($number)" {
 		set job_id $expect_out(1,string)
 	}
 	timeout {

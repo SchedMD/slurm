@@ -52,7 +52,7 @@ if { [test_bluegene] } {
 	}
 } elseif {[test_cray]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
+	exit 0
 } elseif {[test_serial]} {
 	set min_nodes        1
 	set max_nodes        1
