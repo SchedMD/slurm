@@ -218,6 +218,8 @@ int srun(int ac, char **av)
 
 		env->select_jobinfo = job->select_jobinfo;
 		env->nodelist = job->nodelist;
+		env->nhosts = job->nhosts;
+		env->ntasks = job->ntasks;
 		env->task_count = _uint16_array_to_str(job->nhosts, tasks);
 		env->jobid = job->jobid;
 		env->stepid = job->stepid;
