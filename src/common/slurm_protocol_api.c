@@ -79,7 +79,6 @@
 /* #DEFINES */
 #define _DEBUG	0
 #define MAX_SHUTDOWN_RETRY 5
-#define MAX_RETRIES 3
 
 /* STATIC VARIABLES */
 /* static pthread_mutex_t config_lock = PTHREAD_MUTEX_INITIALIZER; */
@@ -3497,12 +3496,27 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
  */
 List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 {
+	static uint16_t conn_timeout = (uint16_t) NO_VAL;
 	List ret_list = NULL;
 	slurm_fd_t fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
 	ListIterator itr;
+	int i;
 
-	if ((fd = slurm_open_msg_conn(&msg->address)) < 0) {
+	if (conn_timeout == (uint16_t) NO_VAL)
+		conn_timeout = MIN(slurm_get_msg_timeout(), 10);
+	/* This connect retry logic permits Slurm hierarchical communications
+	 * to better survive slurmd restarts */
+	for (i = 0; i <= conn_timeout; i++) {
+		if (i > 0)
+			sleep(1);
+		fd = slurm_open_msg_conn(&msg->address);
+		if ((fd >= 0) || (errno != ECONNREFUSED))
+			break;
+		if (i == 0)
+			debug3("connect refused, retrying");
+	}
+	if (fd < 0) {
 		mark_as_failed_forward(&ret_list, name,
 				       SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 		errno = SLURM_COMMUNICATIONS_CONNECTION_ERROR;
@@ -3517,6 +3531,8 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 		return ret_list;
 	} else {
 		itr = list_iterator_create(ret_list);
+		if (!itr)
+			fatal("list_iterator_create: malloc failure");
 		while ((ret_data_info = list_next(itr)))
 			if (!ret_data_info->node_name) {
 				ret_data_info->node_name = xstrdup(name);
