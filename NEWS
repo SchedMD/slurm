@@ -5,6 +5,9 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Modify sbcast logic to survive slurmd daemon restart while file a
     transmission is in progress.
+ -- Add retry logic to munge encode/decode calls. This is needed if the munge
+    deamon is under very heavy load (e.g. with 1000 slurmd daemons per compute
+    node).
 
 * Changes in SLURM 2.5.0.rc1
 ============================

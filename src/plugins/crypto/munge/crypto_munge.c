@@ -196,14 +196,21 @@ extern int
 crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
 	    unsigned int *sig_size_p)
 {
+	int retry = 2;
 	char *cred;
 	munge_err_t err;
 
-	err = munge_encode(&cred, (munge_ctx_t) key,
-			   buffer, buf_size);
-
-	if (err != EMUNGE_SUCCESS)
+    again:
+	err = munge_encode(&cred, (munge_ctx_t) key, buffer, buf_size);
+	if (err != EMUNGE_SUCCESS) {
+		if ((err == EMUNGE_SOCKET) && retry--) {
+#ifdef MULTIPLE_SLURMD
+			sleep(1);
+#endif
+			goto again;
+		}
 		return err;
+	}
 
 	*sig_size_p = strlen(cred) + 1;
 	*sig_pp = xstrdup(cred);
@@ -215,6 +222,7 @@ extern int
 crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 		   char *signature, unsigned int sig_size)
 {
+	int retry = 2;
 	uid_t uid;
 	gid_t gid;
 	void *buf_out = NULL;
@@ -222,23 +230,28 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 	int   rc = 0;
 	munge_err_t err;
 
+    again:
 	err = munge_decode(signature, (munge_ctx_t) key,
 			   &buf_out, &buf_out_size,
 			   &uid, &gid);
 
 	if (err != EMUNGE_SUCCESS) {
+		if ((err == EMUNGE_SOCKET) && retry--) {
+			error ("Munge decode failed: %s (retrying ...)",
+				munge_ctx_strerror((munge_ctx_t) key));
 #ifdef MULTIPLE_SLURMD
-		/* In multple slurmd mode this will happen all the
-		 * time since we are authenticating with the same
-		 * munged.
-		 */
+			sleep(1);
+#endif
+			goto again;
+		}
+
+#ifdef MULTIPLE_SLURMD
 		if (err != EMUNGE_CRED_REPLAYED) {
 			rc = err;
 			goto end_it;
 		} else {
-			debug2("We had a replayed crypto, "
-			       "but this is expected in multiple "
-			       "slurmd mode.");
+			debug2("We had a replayed crypto, but this "
+			       "is expected in multiple slurmd mode.");
 		}
 #else
 		goto end_it;

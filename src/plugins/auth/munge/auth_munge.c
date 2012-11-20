@@ -225,9 +225,16 @@ slurm_auth_create( void *argv[], char *socket )
 	ohandler = xsignal(SIGALRM, SIG_BLOCK);
 
     again:
-	if ((e = munge_encode(&cred->m_str, ctx, cred->buf, cred->len))) {
-		if (e == EMUNGE_SOCKET && retry--)
+	e = munge_encode(&cred->m_str, ctx, cred->buf, cred->len);
+	if (e != EMUNGE_SUCCESS) {
+		if ((e == EMUNGE_SOCKET) && retry--) {
+			error ("Munge encode failed: %s (retrying ...)",
+				munge_ctx_strerror(ctx));
+#ifdef MULTIPLE_SLURMD
+			sleep(1);
+#endif
 			goto again;
+		}
 
 		error("Munge encode failed: %s", munge_ctx_strerror(ctx));
 		xfree( cred );
@@ -508,8 +515,8 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 
     again:
 	c->buf = NULL;
-	if ((e = munge_decode(c->m_str, ctx, &c->buf, &c->len, &c->uid,
-			      &c->gid))) {
+	e = munge_decode(c->m_str, ctx, &c->buf, &c->len, &c->uid, &c->gid);
+	if (e != EMUNGE_SUCCESS) {
 		if (c->buf) {
 			free(c->buf);
 			c->buf = NULL;
@@ -517,6 +524,9 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 		if ((e == EMUNGE_SOCKET) && retry--) {
 			error ("Munge decode failed: %s (retrying ...)",
 				munge_ctx_strerror(ctx));
+#ifdef MULTIPLE_SLURMD
+			sleep(1);
+#endif
 			goto again;
 		}
 #ifdef MULTIPLE_SLURMD
