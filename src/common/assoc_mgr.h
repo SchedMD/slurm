@@ -352,10 +352,14 @@ extern void assoc_mgr_remove_assoc_usage(slurmdb_association_rec_t *assoc);
 extern int dump_assoc_mgr_state(char *state_save_location);
 
 /*
- * Read in the usage for association if the database
- * is up when starting.
+ * Read in the past usage for associations.
  */
 extern int load_assoc_usage(char *state_save_location);
+
+/*
+ * Read in the past usage for qos.
+ */
+extern int load_qos_usage(char *state_save_location);
 
 /*
  * Read in the information of the association mgr if the database
