@@ -181,9 +181,9 @@ minimum node count for a partition is one compute node).</p>
 
 <h3>srun options translations on a Cray</h3>
 <p>The following <i>srun</i> options are translated to these <i>aprun</i>
-options.  If it isn't listed here there is no translation and while
-the option can be used for the allocation within Slurm it will not be propagated
-to <i>aprun</i>.</p>
+options. <i>srun</i> options not listed below have no equivalent <i>aprun</i>
+translation and while the option can be used for the allocation within Slurm it
+will not be propagated to <i>aprun</i>.</p>
 <div id="slurmtable">
 <div id="row"><div id="slurmtd"><b>srun option</b></div><div id="slurmtd"><b>aprun option</b></div></div>
 <div id="row"><div id="slurmtd">-c, --cpus-per-task</div><div id="slurmtd">-d</div></div>
@@ -656,6 +656,6 @@ login: # /etc/init.d/slurm start
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 7 November 2012</p>
+<p style="text-align:center;">Last modified 19 November 2012</p>
 
 <!--#include virtual="footer.txt"-->
