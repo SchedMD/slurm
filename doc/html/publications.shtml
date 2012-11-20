@@ -7,6 +7,23 @@
 <h2>Presentations</h2>
 <ul>
 
+<!-- SC12 Slurm BOF-->
+<li><b>Presentations from Slurm Birds of a Feather, SuperComputing 2012, November 2012</b></li>
+<ul>
+<li><a href="SC12_BOF/SC12_Status.pdf">Slurm Workload Manager Project Report</a>,
+Morris Jette and Danny Auble, SchedMD</li>
+
+<li><a href="SC12_BOF/Bright_Slurm_BoF.pdf">Using Slurm for Data Aware Scheduling in the Cloud</a>,
+Martijn de Vries, BrightComputing</li>
+
+<li><a href="SC12_BOF/Bull_Slurm_BOF.pdf">Slurm Roadmap</a>,
+Eric Monchalin, Bull</li>
+
+<li><a href="SC12_BOF/MapReduce_BOF.pdf">MapReduce Support in Slurm: Releasing the Elephant</a>,
+Ralph H. Castain, Wangda Tan, Jimmy Cao and Michael Lv, Greenplum/EMC</li>
+
+</ul>
+
 <!-- SLURM User Group Meeting 2012 -->
 <li><b>Presentations from SLURM User Group Meeting, October 2012</b></li>
 <ul>
@@ -30,7 +47,7 @@ Matthieu Hautreux, CEA</li>
 Alfonso Pardo Diaz, CIEMAT</li>
 
 <li>Porting SLURM to Bluegene/Q,
-Don Lipari, LLNL (presentation not available)</li>
+Don Lipari, LLNL</li>
 
 <li>Tutorial: <a href="slurm_ug_2012/SUG_Oct2012_DBD.pdf">SLURM Database Use,
 Accounting and Limits</a>,
@@ -311,6 +328,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 22 October 2012</p>
+<p style="text-align:center;">Last modified 19 November 2012</p>
 
 <!--#include virtual="footer.txt"-->
