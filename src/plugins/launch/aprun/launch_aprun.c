@@ -47,6 +47,9 @@
 #include "src/srun/libsrun/launch.h"
 #include "src/srun/libsrun/multi_prog.h"
 
+#include "src/api/step_ctx.h"
+#include "src/api/step_launch.h"
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -79,6 +82,8 @@ const char plugin_type[]        = "launch/aprun";
 const uint32_t plugin_version   = 101;
 
 static pid_t aprun_pid = 0;
+
+extern void launch_p_fwd_signal(int signal);
 
 /* Convert a SLURM hostlist expression into the equivalent node index
  * value expression.
@@ -228,6 +233,159 @@ static void _unblock_signals(void)
 	}
 	sigemptyset(&set);
 	xsignal_set_mask (&set);
+}
+
+static void _send_step_complete_rpc(srun_job_t *srun_job, int step_rc)
+{
+	slurm_msg_t req;
+	step_complete_msg_t msg;
+	int rc;
+
+	memset(&msg, 0, sizeof(step_complete_msg_t));
+	msg.job_id = srun_job->jobid;
+	msg.job_step_id = srun_job->stepid;
+	msg.range_first = 0;
+	msg.range_last = 0;
+	msg.step_rc = step_rc;
+	msg.jobacct = jobacctinfo_create(NULL);
+
+	slurm_msg_t_init(&req);
+	req.msg_type = REQUEST_STEP_COMPLETE;
+	req.data = &msg;
+/*	req.address = step_complete.parent_addr; */
+
+	debug3("Sending step complete RPC to slurmctld");
+	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
+		error("Error sending step complete RPC to slurmctld");
+	jobacctinfo_destroy(msg.jobacct);
+}
+
+static void _handle_step_complete(srun_job_complete_msg_t *comp_msg)
+{
+	launch_p_fwd_signal(SIGKILL);
+	return;
+}
+
+static void _handle_timeout(srun_timeout_msg_t *timeout_msg)
+{
+	time_t now = time(NULL);
+	char time_str[24];
+
+	if (now < timeout_msg->timeout) {
+		slurm_make_time_str(&timeout_msg->timeout,
+				    time_str, sizeof(time_str));
+		debug("step %u.%u. will timeout at %s",
+		      timeout_msg->job_id, timeout_msg->step_id, time_str);
+		return;
+	}
+
+	slurm_make_time_str(&now, time_str, sizeof(time_str));
+
+	error("*** STEP %u.%u CANCELLED AT %s DUE TO TIME LIMIT ***",
+	      timeout_msg->job_id, timeout_msg->step_id, time_str);
+	launch_p_fwd_signal(SIGKILL);
+	return;
+}
+
+static void _handle_msg(slurm_msg_t *msg)
+{
+	static uint32_t slurm_uid = NO_VAL;
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	uid_t uid = getuid();
+	job_step_kill_msg_t *ss;
+	srun_user_msg_t *um;
+
+	if (slurm_uid == NO_VAL)
+		slurm_uid = slurm_get_slurm_user_id();
+	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
+		error ("Security violation, slurm message from uid %u",
+		       (unsigned int) req_uid);
+		return;
+	}
+
+	switch (msg->msg_type) {
+	case SRUN_PING:
+		debug3("slurmctld ping received");
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		slurm_free_srun_ping_msg(msg->data);
+		break;
+	case SRUN_JOB_COMPLETE:
+		debug("received job step complete message");
+		_handle_step_complete(msg->data);
+		slurm_free_srun_job_complete_msg(msg->data);
+		break;
+	case SRUN_USER_MSG:
+		um = msg->data;
+		info("%s", um->msg);
+		slurm_free_srun_user_msg(msg->data);
+		break;
+	case SRUN_TIMEOUT:
+		debug2("received job step timeout message");
+		_handle_timeout(msg->data);
+		slurm_free_srun_timeout_msg(msg->data);
+		break;
+	case SRUN_STEP_SIGNAL:
+		ss = msg->data;
+		debug("received step signal %u RPC", ss->signal);
+		launch_p_fwd_signal(ss->signal);
+		slurm_free_job_step_kill_msg(msg->data);
+		break;
+	default:
+		debug("received spurious message type: %u",
+		      msg->msg_type);
+		break;
+	}
+	return;
+}
+
+static void *_msg_thr_internal(void *arg)
+{
+	slurm_addr_t cli_addr;
+	slurm_fd_t newsockfd;
+	slurm_msg_t *msg;
+	int *slurmctld_fd_ptr = (int *)arg;
+
+	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+	while (!srun_shutdown) {
+		newsockfd = slurm_accept_msg_conn(*slurmctld_fd_ptr, &cli_addr);
+		if (newsockfd == SLURM_SOCKET_ERROR) {
+			if (errno != EINTR)
+				error("slurm_accept_msg_conn: %m");
+			continue;
+		}
+		msg = xmalloc(sizeof(slurm_msg_t));
+		if (slurm_receive_msg(newsockfd, msg, 0) != 0) {
+			error("slurm_receive_msg: %m");
+			/* close the new socket */
+			slurm_close_accepted_conn(newsockfd);
+			continue;
+		}
+		_handle_msg(msg);
+		slurm_free_msg(msg);
+		slurm_close_accepted_conn(newsockfd);
+	}
+	return NULL;
+}
+
+static pthread_t _spawn_msg_handler(srun_job_t *job)
+{
+	pthread_attr_t attr;
+	pthread_t msg_thread;
+	static int slurmctld_fd;
+
+	slurmctld_fd = job->step_ctx->launch_state->slurmctld_socket_fd;
+	if (slurmctld_fd < 0)
+		return (pthread_t) 0;
+	job->step_ctx->launch_state->slurmctld_socket_fd = -1;
+
+	slurm_attr_init(&attr);
+	if (pthread_create(&msg_thread, &attr, _msg_thr_internal,
+			   (void *) &slurmctld_fd))
+		error("pthread_create of message thread: %m");
+	slurm_attr_destroy(&attr);
+	return msg_thread;
 }
 
 /*
@@ -513,7 +671,9 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		xfree(cmd_line);
 		exit(0);
 	}
-	return 0;
+	return launch_common_create_job_step(job, use_all_cpus,
+					     signal_function,
+					     destroy_job);
 }
 
 extern int launch_p_step_launch(
@@ -521,6 +681,8 @@ extern int launch_p_step_launch(
 	slurm_step_launch_callbacks_t *step_callbacks)
 {
 	int rc = 0;
+
+	pthread_t msg_thread = _spawn_msg_handler(job);
 
 	aprun_pid = fork();
 	if (aprun_pid < 0) {
@@ -547,6 +709,13 @@ extern int launch_p_step_launch(
 		execvp(opt.argv[0], opt.argv);
 		error("execv(aprun) error: %m");
 		return 1;
+	}
+
+	_send_step_complete_rpc(job, *global_rc);
+	if (msg_thread) {
+		srun_shutdown = true;
+		pthread_cancel(msg_thread);
+		pthread_join(msg_thread, NULL);
 	}
 
 	return rc;
