@@ -1013,8 +1013,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				info ("_pick_step_nodes: requested nodes %s "
 				      "have inadequate memory",
 				      step_spec->node_list);
-			}
-			else {
+			} else {
 				*return_code = ESLURM_NODES_BUSY;
 				info ("_pick_step_nodes: some requested nodes"
 				      " %s still have memory used by other steps",
