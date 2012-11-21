@@ -452,7 +452,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 extern int launch_p_step_launch(
 	srun_job_t *job, slurm_step_io_fds_t *cio_fds, uint32_t *global_rc,
-	void (*signal_function)(int))
+	slurm_step_launch_callbacks_t *step_callbacks)
 {
 	slurm_step_launch_params_t launch_params;
 	slurm_step_launch_callbacks_t callbacks;
@@ -460,7 +460,7 @@ extern int launch_p_step_launch(
 	bool first_launch = 0;
 
 	slurm_step_launch_params_t_init(&launch_params);
-	memset(&callbacks, 0, sizeof(callbacks));
+	memcpy(&callbacks, step_callbacks, sizeof(callbacks));
 
 	if (!task_state) {
 		task_state = task_state_create(job->ntasks);
@@ -517,14 +517,14 @@ extern int launch_p_step_launch(
 	   than srun (poe) is using this logic to launch tasks then we
 	   can use this to signal the step.
 	*/
-	callbacks.step_signal = signal_function;
 	callbacks.task_start = _task_start;
 	/* If poe is using this code with multi-prog it always returns
 	   1 for each task which could be confusing since no real
 	   error happened.
 	*/
 	if (!launch_params.multi_prog
-	    || (!signal_function || (signal_function == launch_g_fwd_signal))) {
+	    || (!callbacks.step_signal
+		|| (callbacks.step_signal == launch_g_fwd_signal))) {
 		callbacks.task_finish = _task_finish;
 	}
 
@@ -625,4 +625,16 @@ extern void launch_p_fwd_signal(int signal)
 		slurm_step_launch_fwd_signal(local_srun_job->step_ctx, signal);
 		break;
 	}
+}
+
+extern void launch_p_step_timeout(srun_timeout_msg_t *timeout_msg)
+{
+	/* nothing needed */
+	return;
+}
+
+extern void launch_p_step_complete(srun_job_complete_msg_t *comp_msg)
+{
+	/* nothing needed */
+	return;
 }

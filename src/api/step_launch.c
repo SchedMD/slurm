@@ -1119,8 +1119,8 @@ _job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
 			step_msg->job_id, step_msg->step_id);
 	}
 
-	if (sls->callback.step_signal)
-		(sls->callback.step_signal)(SIGKILL);
+	if (sls->callback.step_complete)
+		(sls->callback.step_complete)(step_msg);
 
 	force_terminated_job = true;
 	pthread_mutex_lock(&sls->lock);
@@ -1132,12 +1132,13 @@ _job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
 static void
 _timeout_handler(struct step_launch_state *sls, slurm_msg_t *timeout_msg)
 {
-	if (sls->callback.step_signal)
-		(sls->callback.step_signal)(SIGKILL);
+	srun_timeout_msg_t *step_msg =
+		(srun_timeout_msg_t *) timeout_msg->data;
 
-	force_terminated_job = true;
+	if (sls->callback.step_timeout)
+		(sls->callback.step_timeout)(step_msg);
+
 	pthread_mutex_lock(&sls->lock);
-	sls->abort = true;
 	pthread_cond_broadcast(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
 }

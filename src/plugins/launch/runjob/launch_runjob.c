@@ -403,7 +403,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 extern int launch_p_step_launch(
 	srun_job_t *job, slurm_step_io_fds_t *cio_fds, uint32_t *global_rc,
-	void (*signal_function)(int))
+	slurm_step_launch_callbacks_t *step_callbacks)
 {
 	pthread_t msg_thread;
 
@@ -447,4 +447,16 @@ extern void launch_p_print_status(void)
 extern void launch_p_fwd_signal(int signal)
 {
 	runjob_signal(signal);
+}
+
+extern void launch_p_step_timeout(srun_timeout_msg_t *timeout_msg)
+{
+	/* handled with the internal message thread */
+	return;
+}
+
+extern void launch_p_step_complete(srun_job_complete_msg_t *comp_msg)
+{
+	/* handled with the internal message thread */
+	return;
 }

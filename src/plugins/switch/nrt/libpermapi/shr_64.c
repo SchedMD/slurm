@@ -956,7 +956,13 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	}
 	xfree(total_node_list);
 	job->fir_nodeid = orig_task_num;
-	if (launch_g_step_launch(job, &cio_fds, &global_rc, _self_signal)) {
+
+	memset(&step_callbacks, 0, sizeof(step_callbacks));
+	step_callbacks.step_complete = launch_g_step_complete;
+	step_callbacks.step_signal   = _self_signal;
+	step_callbacks.step_timeout  = launch_g_step_timeout;
+
+	if (launch_g_step_launch(job, &cio_fds, &global_rc, &step_callbacks)) {
 		*error_msg = xstrdup_printf(
 			"pe_rm_connect: problem with launch: %s",
 			slurm_strerror(errno));

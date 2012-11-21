@@ -164,6 +164,7 @@ int srun(int ac, char **av)
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	bool got_alloc = false;
 	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
+	slurm_step_launch_callbacks_t step_callbacks;
 
 	env->stepid = -1;
 	env->procid = -1;
@@ -251,14 +252,18 @@ int srun(int ac, char **av)
 	xfree(env);
 	_set_node_alias();
 
+	memset(&step_callbacks, 0, sizeof(step_callbacks));
+	step_callbacks.step_complete = launch_g_step_complete;
+	step_callbacks.step_signal   = launch_g_fwd_signal;
+	step_callbacks.step_timeout  = launch_g_step_timeout;
+
 	/* re_launch: */
 relaunch:
 	pre_launch_srun_job(job, 0, 1);
 
 	launch_common_set_stdio_fds(job, &cio_fds);
 
-	if (!launch_g_step_launch(job, &cio_fds, &global_rc,
-				  launch_g_fwd_signal)) {
+	if (!launch_g_step_launch(job, &cio_fds, &global_rc, &step_callbacks)) {
 		if (launch_g_step_wait(job, got_alloc) == -1)
 			goto relaunch;
 	}

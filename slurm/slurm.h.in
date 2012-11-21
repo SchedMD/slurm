@@ -1361,7 +1361,9 @@ typedef struct {
 } slurm_step_launch_params_t;
 
 typedef struct {
+	void (*step_complete)(srun_job_complete_msg_t *);
 	void (*step_signal)(int);
+	void (*step_timeout)(srun_timeout_msg_t *);
 	void (*task_start)(launch_tasks_response_msg_t *);
 	void (*task_finish)(task_exit_msg_t *);
 } slurm_step_launch_callbacks_t;

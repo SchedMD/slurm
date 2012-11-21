@@ -743,7 +743,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 extern int launch_p_step_launch(
 	srun_job_t *job, slurm_step_io_fds_t *cio_fds, uint32_t *global_rc,
-	void (*signal_function)(int))
+	slurm_step_launch_callbacks_t *step_callbacks)
 {
 	int rc = 0;
 
@@ -798,4 +798,31 @@ extern void launch_p_fwd_signal(int signal)
 {
 	if (poe_pid)
 		kill(poe_pid, signal);
+}
+
+extern void launch_p_step_timeout(srun_timeout_msg_t *timeout_msg)
+{
+	time_t now = time(NULL);
+	char time_str[24];
+
+	if (now < timeout_msg->timeout) {
+		slurm_make_time_str(&timeout_msg->timeout,
+				    time_str, sizeof(time_str));
+		debug("step %u.%u. will timeout at %s",
+		      timeout_msg.job_id, timeout_msg.step_id, time_str);
+		return;
+	}
+
+	slurm_make_time_str(&now, time_str, sizeof(time_str));
+
+	error("*** STEP %u.%u CANCELLED AT %s DUE TO TIME LIMIT ***",
+	      timeout_msg.job_id, timeout_msg.step_id, time_str);
+	launch_p_fwd_signal(SIGKILL);
+	return;
+}
+
+extern void launch_p_step_complete(srun_job_complete_msg_t *comp_msg)
+{
+	launch_p_fwd_signal(SIGKILL);
+	return;
 }
