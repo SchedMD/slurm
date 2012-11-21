@@ -1162,7 +1162,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	}
 
 	if (step_spec->min_nodes) {
-		int cpus_needed, node_avail_cnt, node_idle_cnt, nodes_needed;
+		int cpus_needed, node_avail_cnt, nodes_needed;
 
 		if (usable_cpu_cnt == NULL) {
 			usable_cpu_cnt = xmalloc(sizeof(uint32_t) *
@@ -1212,10 +1212,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				nodes_needed = 0;
 			}
 		}
-		if (nodes_idle)
-			node_idle_cnt = bit_set_count(nodes_idle);
-		else
-			node_idle_cnt = 0;
 		if (nodes_avail)
 			node_avail_cnt = bit_set_count(nodes_avail);
 		else
