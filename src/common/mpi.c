@@ -110,6 +110,23 @@ int _mpi_init (char *mpi_type)
 		retval = SLURM_ERROR;
 		goto done;
 	}
+
+	if (!strcmp(mpi_type, "list")) {
+		char *plugin_dir;
+		plugrack_t mpi_rack;
+
+		mpi_rack = plugrack_create();
+		if (!mpi_rack) {
+			error("Unable to create a plugin manager");
+			exit(0);
+		}
+		plugrack_set_major_type(mpi_rack, "mpi");
+		plugin_dir = slurm_get_plugin_dir();
+		plugrack_read_dir(mpi_rack, plugin_dir);
+		plugrack_print_all_plugin(mpi_rack);
+		exit(0);
+	}
+
 	setenvf(NULL, "SLURM_MPI_TYPE", "%s", mpi_type);
 
 	type = xstrdup_printf("mpi/%s", mpi_type);
