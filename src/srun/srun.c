@@ -253,9 +253,7 @@ int srun(int ac, char **av)
 	_set_node_alias();
 
 	memset(&step_callbacks, 0, sizeof(step_callbacks));
-	step_callbacks.step_complete = launch_g_step_complete;
 	step_callbacks.step_signal   = launch_g_fwd_signal;
-	step_callbacks.step_timeout  = launch_g_step_timeout;
 
 	/* re_launch: */
 relaunch:

@@ -448,15 +448,3 @@ extern void launch_p_fwd_signal(int signal)
 {
 	runjob_signal(signal);
 }
-
-extern void launch_p_step_timeout(srun_timeout_msg_t *timeout_msg)
-{
-	/* handled with the internal message thread */
-	return;
-}
-
-extern void launch_p_step_complete(srun_job_complete_msg_t *comp_msg)
-{
-	/* handled with the internal message thread */
-	return;
-}

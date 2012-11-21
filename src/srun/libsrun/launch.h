@@ -173,17 +173,4 @@ extern void launch_g_print_status(void);
  */
 extern void launch_g_fwd_signal(int signal);
 
-/*
- * launch_g_step_timeout() handle a timeout of a step.
- *
- */
-extern void launch_g_step_timeout(srun_timeout_msg_t *timeout_msg);
-
-/*
- * launch_g_step_complete() handle a step completion message sent from
- * slurmctld.
- *
- */
-extern void launch_g_step_complete(srun_job_complete_msg_t *comp_msg);
-
 #endif /* _LAUNCH_H */

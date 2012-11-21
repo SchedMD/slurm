@@ -59,8 +59,6 @@ typedef struct {
 	int (*step_terminate)      (void);
 	void (*print_status)       (void);
 	void (*fwd_signal)         (int signal);
-	void (*step_timeout)       (srun_timeout_msg_t *timeout_msg);
-	void (*step_complete)      (srun_job_complete_msg_t *comp_msg);
 } plugin_ops_t;
 
 /*
@@ -75,8 +73,6 @@ static const char *syms[] = {
 	"launch_p_step_terminate",
 	"launch_p_print_status",
 	"launch_p_fwd_signal",
-	"launch_p_step_timeout",
-	"launch_p_step_complete",
 };
 
 static plugin_ops_t ops;
@@ -503,20 +499,3 @@ extern void launch_g_fwd_signal(int signal)
 
 	(*(ops.fwd_signal))(signal);
 }
-
-extern void launch_g_step_timeout(srun_timeout_msg_t *timeout_msg)
-{
-	if (launch_init() < 0)
-		return;
-
-	(*(ops.step_timeout))(timeout_msg);
-}
-
-extern void launch_g_step_complete(srun_job_complete_msg_t *comp_msg)
-{
-	if (launch_init() < 0)
-		return;
-
-	(*(ops.step_complete))(comp_msg);
-}
-
