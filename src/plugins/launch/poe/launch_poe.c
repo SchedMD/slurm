@@ -809,14 +809,14 @@ extern void launch_p_step_timeout(srun_timeout_msg_t *timeout_msg)
 		slurm_make_time_str(&timeout_msg->timeout,
 				    time_str, sizeof(time_str));
 		debug("step %u.%u. will timeout at %s",
-		      timeout_msg.job_id, timeout_msg.step_id, time_str);
+		      timeout_msg->job_id, timeout_msg->step_id, time_str);
 		return;
 	}
 
 	slurm_make_time_str(&now, time_str, sizeof(time_str));
 
 	error("*** STEP %u.%u CANCELLED AT %s DUE TO TIME LIMIT ***",
-	      timeout_msg.job_id, timeout_msg.step_id, time_str);
+	      timeout_msg->job_id, timeout_msg->step_id, time_str);
 	launch_p_fwd_signal(SIGKILL);
 	return;
 }
