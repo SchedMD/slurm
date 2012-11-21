@@ -48,9 +48,12 @@ exec $bin_rm -f $hostfile
 if { [test_front_end] } {
 	send_user "\nWARNING: This test incompatible with front-end Systems\n"
 	exit $exit_code
+} elseif {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
 }
 
-#find out if we have enough nodes to test functionality
+# Determine if we have enough nodes to test functionality
 set def_part [default_partition]
 spawn $scontrol show partition $def_part
 expect {
@@ -116,6 +119,7 @@ for {set i 0} {$i<3} {incr i} {
 		puts $file "$node1\n$node0\n$node2"
 		close $file
 	}
+
 	#
 	# execute srun with a specific node count
 	#
