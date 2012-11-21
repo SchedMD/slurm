@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Add retry logic to munge encode/decode calls. This is needed if the munge
     deamon is under very heavy load (e.g. with 1000 slurmd daemons per compute
     node).
+ -- Add launch and acct_gather_energy plugins to RPMs.
 
 * Changes in SLURM 2.5.0.rc1
 ============================
