@@ -868,6 +868,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 			 rm_connect_param *connect_param,
 			 int *rm_sockfds, int rm_timeout, char **error_msg)
 {
+	slurm_step_launch_callbacks_t step_callbacks;
 //	srun_job_t *job = *(srun_job_t **)resource_mgr;
 	int my_argc = 1;
 	char *my_argv[2] = { connect_param->executable, NULL };

@@ -47,6 +47,8 @@
 #include "src/common/slurm_xlator.h"
 #include "src/srun/libsrun/launch.h"
 #include "src/common/env.h"
+#include "src/common/parse_time.h"
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
