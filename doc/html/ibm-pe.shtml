@@ -484,7 +484,7 @@ logging of POE debug messages. To enable fairly detailed logging, set
 
 <p>The Protocol Network Services Daemon (PNSD) manages the Network Resource
 Table (NRT) information on each node. It's logs are written to the file
-<b>/etc/serverlog</b>, which may be useful to diagnose problems. In order to
+<b>/tmp/serverlog</b>, which may be useful to diagnose problems. In order to
 execute PNSD in debug node (for extra debugging information), run the following
 commands as user root:</p>
 <pre>
@@ -494,6 +494,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 2 October 2012</p></td>
+<p style="text-align:center;">Last modified 21 November 2012</p></td>
 
 <!--#include virtual="footer.txt"-->
