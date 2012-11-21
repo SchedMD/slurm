@@ -34,11 +34,12 @@ source ./globals
 
 set test_id     "23.2"
 set exit_code   0
-set file_in1    "test.$test_id.input1"
-set file_in2    "test.$test_id.input2"
-set file_in3    "test.$test_id.input3"
+set file_in1    "test$test_id.input1"
+set file_in2    "test$test_id.input2"
+set file_in3    "test$test_id.input3"
 set test_acct   "test_acct"
-set timeout 60
+set timeout     $max_job_delay
+
 print_header $test_id
 
 set ac		AveCPU
@@ -82,8 +83,8 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 # Identify the user and his current default account
 #
 set acct_name ""
+set user_gid  ""
 set user_name ""
-set user_gid ""
 spawn $bin_id -u -n
 expect {
 	 -re "($alpha_numeric_under)" {
@@ -166,28 +167,41 @@ expect {
 	}
 }
 
+set job_mem_opt  "--mem=1"
+set step_mem_opt "--mem=2"
+log_user 0
+spawn $scontrol show node
+expect {
+	-re "RealMemory=1 " {
+		set job_mem_opt  "--comment=no_mem_limit"
+		set step_mem_opt ""
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+
 #
 # Build input script file1
 #
 make_bash_script $file_in1 "
-$srun --mem=2 $file_in2
-
+  $srun $step_mem_opt $file_in2
 "
 
 #
 # Build input script file2
 #
 make_bash_script $file_in2 "
-$srun --mem=2 $file_in3
-
+  $srun $step_mem_opt $file_in3
 "
 
 #
 # Build input script file3
 #
 make_bash_script $file_in3 "
-$srun --mem=2 sleep 10
-
+  $srun $step_mem_opt sleep 10
 "
 
 #
@@ -196,7 +210,7 @@ $srun --mem=2 sleep 10
 #       step per job if DefMemPerCPU or DefMemPerNode is configured.
 #
 set job_id3 0
-spawn $sbatch -N1 -t1 -v --mem=10 --account=$test_acct --output=/dev/null $file_in1
+spawn $sbatch -N1 -t1 -v $job_mem_opt --account=$test_acct --output=/dev/null $file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id3 $expect_out(1,string)
