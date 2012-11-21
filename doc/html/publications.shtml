@@ -22,6 +22,9 @@ Eric Monchalin, Bull</li>
 <li><a href="SC12_BOF/MapReduce_BOF.pdf">MapReduce Support in Slurm: Releasing the Elephant</a>,
 Ralph H. Castain, Wangda Tan, Jimmy Cao and Michael Lv, Greenplum/EMC</li>
 
+<li><a href="SC12_BOF/wickberg_slurm_sc12.pdf">Slurm at Rensselaer</a>,
+Tim Wickberg, Rensselaer Polytechnic Institute</li>
+
 </ul>
 
 <!-- SLURM User Group Meeting 2012 -->
@@ -328,6 +331,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 19 November 2012</p>
+<p style="text-align:center;">Last modified 20 November 2012</p>
 
 <!--#include virtual="footer.txt"-->
