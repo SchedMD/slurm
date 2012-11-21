@@ -77,12 +77,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	# needed for cray systems
 	-re "jobid ($number)" {
-		incr matches
-		exp_continue
-	}
-	-re "tasks started" {
 		incr matches
 		exp_continue
 	}
