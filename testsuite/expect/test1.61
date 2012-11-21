@@ -85,18 +85,18 @@ if {[wait_for_job $job_id DONE] != 0} {
 }
 
 if {[wait_for_file $file_out] == 0} {
-	set tl 0
+	set timed_out 0
 	spawn cat $file_out
 	expect {
 		-re " TimeLimit=00:01:00" {
-			set tl 1
+			set timed_out 1
 			exp_continue
 		}
 		eof {
 			wait
 		}
 	}
-	if {$tl == 0} {
+	if {$timed_out == 0} {
 		send_user "\nFAILURE: srun time limit not found\n"
 		set exit_code 1
 	}
@@ -106,24 +106,24 @@ if {[wait_for_file $file_out] == 0} {
 }
 
 if {[wait_for_file $file_err] == 0} {
-	set tl 0
+	set timed_out 0
 	spawn cat $file_err
 	expect {
 		-re " STEP $job_id.1 CANCELLED AT.*DUE TO TIME LIMIT " {
-			set tl 1
+			set timed_out 1
 			exp_continue
 		}
 		# With POE we can't get the output from the slurmd so we
 		# expect this error
 		-re "ERROR: 0031-250  task 0: Terminated" {
-			set tl 1
+			set timed_out 1
 			exp_continue
 		}
 		eof {
 			wait
 		}
 	}
-	if {$tl == 0} {
+	if {$timed_out == 0} {
 		send_user "\nFAILURE: srun time limit not enforced\n"
 		set exit_code 1
 	}
