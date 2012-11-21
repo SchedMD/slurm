@@ -836,9 +836,33 @@ static void _re_write_cmdfile(char *slurm_cmd_fname, char *poe_cmd_fname,
 	xfree(buf);
 }
 
+void _self_complete(srun_job_complete_msg_t *comp_msg)
+{
+	kill(getpid(), SIGKILL);
+}
+
 void _self_signal(int signal)
 {
 	kill(getpid(), signal);
+}
+
+void _self_timeout(srun_timeout_msg_t *timeout_msg)
+{
+	time_t now = time(NULL);
+	char time_str[24];
+
+	if (now < timeout_msg->timeout) {
+		slurm_make_time_str(&timeout_msg->timeout,
+				    time_str, sizeof(time_str));
+		debug("step %u.%u will timeout at %s",
+		      timeout_msg->job_id, timeout_msg->step_id, time_str);
+		return;
+	}
+
+	slurm_make_time_str(&now, time_str, sizeof(time_str));
+	error("*** STEP %u.%u CANCELLED AT %s DUE TO TIME LIMIT ***",
+	      timeout_msg->job_id, timeout_msg->step_id, time_str);
+	kill(getpid(), SIGKILL);
 }
 
 /************************************/
@@ -959,9 +983,9 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	job->fir_nodeid = orig_task_num;
 
 	memset(&step_callbacks, 0, sizeof(step_callbacks));
-	step_callbacks.step_complete = launch_g_step_complete;
+	step_callbacks.step_complete = _self_complete;
 	step_callbacks.step_signal   = _self_signal;
-	step_callbacks.step_timeout  = launch_g_step_timeout;
+	step_callbacks.step_timeout  = _self_timeout;
 
 	if (launch_g_step_launch(job, &cio_fds, &global_rc, &step_callbacks)) {
 		*error_msg = xstrdup_printf(

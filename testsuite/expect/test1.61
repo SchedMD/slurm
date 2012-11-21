@@ -105,17 +105,16 @@ if {[wait_for_file $file_out] == 0} {
 	set exit_code 1
 }
 
+if {[test_launch_poe]} {
+	set step_id 2
+} else {
+	set step_id 1
+}
 if {[wait_for_file $file_err] == 0} {
 	set timed_out 0
 	spawn cat $file_err
 	expect {
-		-re " STEP $job_id.1 CANCELLED AT.*DUE TO TIME LIMIT " {
-			set timed_out 1
-			exp_continue
-		}
-		# With POE we can't get the output from the slurmd so we
-		# expect this error
-		-re "ERROR: 0031-250  task 0: Terminated" {
+		-re " STEP $job_id.$step_id CANCELLED AT.*DUE TO TIME LIMIT " {
 			set timed_out 1
 			exp_continue
 		}
