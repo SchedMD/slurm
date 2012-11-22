@@ -427,7 +427,7 @@ extern int launch_p_setup_srun_opt(char **rest)
 		opt.slurmd_debug = LOG_LEVEL_QUIET;
 	}
 
-	opt.argc++;
+	opt.argc += 2;
 
 	opt.argv = (char **) xmalloc(opt.argc * sizeof(char *));
 
