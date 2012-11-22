@@ -84,6 +84,8 @@ const uint32_t plugin_version   = 101;
 
 static srun_job_t *local_srun_job = NULL;
 
+extern void launch_p_fwd_signal(int signal);
+
 static void _send_step_complete_rpc(int step_rc)
 {
 	slurm_msg_t req;
@@ -107,6 +109,31 @@ static void _send_step_complete_rpc(int step_rc)
 	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
 		error("Error sending step complete RPC to slurmctld");
 	jobacctinfo_destroy(msg.jobacct);
+}
+
+static void _handle_timeout(srun_timeout_msg_t *timeout_msg)
+{
+	time_t now = time(NULL);
+	char time_str[24];
+
+	/* It turns out if we wait for this to happen it will never
+	   happen if srun is the caller without being in an
+	   allocation.  So just exit instead of wait.
+	*/
+	/* if (now < timeout_msg->timeout) { */
+	/* 	slurm_make_time_str(&timeout_msg->timeout, */
+	/* 			    time_str, sizeof(time_str)); */
+	/* 	debug("step %u.%u will timeout at %s", */
+	/* 	      timeout_msg->job_id, timeout_msg->step_id, time_str); */
+	/* 	return; */
+	/* } */
+
+	slurm_make_time_str(&now, time_str, sizeof(time_str));
+
+	error("*** STEP %u.%u CANCELLED AT %s DUE TO TIME LIMIT ***",
+	      timeout_msg->job_id, timeout_msg->step_id, time_str);
+	launch_p_fwd_signal(SIGKILL);
+	return;
 }
 
 static void
@@ -142,9 +169,8 @@ _handle_msg(slurm_msg_t *msg)
 		slurm_free_srun_user_msg(msg->data);
 		break;
 	case SRUN_TIMEOUT:
-		um = msg->data;
 		debug("received job step timeout message");
-		runjob_signal(SIGKILL);
+		_handle_timeout(msg->data);
 		slurm_free_srun_timeout_msg(msg->data);
 		break;
 	case SRUN_STEP_SIGNAL:
