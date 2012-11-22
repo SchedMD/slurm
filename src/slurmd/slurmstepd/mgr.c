@@ -1017,7 +1017,7 @@ job_manager(slurmd_job_t *job)
 	/* if we are not polling then we need to make sure we get some
 	 * information here
 	 */
-	if(!conf->job_acct_gather_freq)
+	if (!conf->job_acct_gather_freq)
 		jobacct_gather_stat_task(0);
 
 	/* Send job launch response with list of pids */

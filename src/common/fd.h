@@ -150,4 +150,8 @@ int fd_is_blocking(int fd);
  * Return 0 otherwise.
  */
 
+extern int wait_fd_readable(int fd, int time_limit);
+/* Wait for a file descriptor to be readable (up to time_limit seconds).
+ * Return 0 when readable or -1 on error */
+
 #endif /* !_FD_H */

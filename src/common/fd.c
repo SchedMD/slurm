@@ -1,6 +1,4 @@
 /*****************************************************************************\
- *  $Id$
- *****************************************************************************
  *  Copyright (C) 2001-2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Chris Dunlap <cdunlap@llnl.gov>.
@@ -275,4 +273,37 @@ ssize_t fd_read_line(int fd, void *buf, size_t maxlen)
 
 	*p = '\0';                          /* NUL-terminate, like fgets() */
 	return(n);
+}
+
+
+/* Wait for a file descriptor to be readable (up to time_limit seconds).
+ * Return 0 when readable or -1 on error */
+extern int wait_fd_readable(int fd, int time_limit)
+{
+	fd_set except_fds, read_fds;
+	struct timeval timeout;
+	int rc;
+
+	FD_ZERO(&except_fds);
+	FD_SET(fd, &except_fds);
+	FD_ZERO(&read_fds);
+	FD_SET(fd, &read_fds);
+	timeout.tv_sec  = time_limit;
+	timeout.tv_usec = 0;
+	while (1) {
+		rc = select(fd+1, &read_fds, NULL, &except_fds, &timeout);
+
+		if (rc > 0) {	/* activity on this fd */
+			if (FD_ISSET(fd, &read_fds))
+				return 0;
+			else	/* Exception */
+				return -1;
+		} else if (rc == 0) {
+			error("Timeout waiting for slurmstepd");
+			return -1;
+		} else if (errno == EINTR) {
+			error("select(): %m");
+			return -1;
+		}
+	}
 }
