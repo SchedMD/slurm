@@ -39,10 +39,13 @@
 #  include "config.h"
 #endif
 
+#include <stdlib.h>
+
 #include "src/common/slurm_xlator.h"
 #include "src/common/proc_args.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/parse_time.h"
 
 #include "src/api/step_ctx.h"
 #include "src/api/step_launch.h"
@@ -299,9 +302,9 @@ extern int launch_p_setup_srun_opt(char **rest)
 				command_pos += 2;
 			}
 		}
-		if (opt.launch_opts) {
+		if (opt.launcher_opts) {
 			char *save_ptr = NULL, *tok;
-			char *tmp = xstrdup(opt.launch_opts);
+			char *tmp = xstrdup(opt.launcher_opts);
 			tok = strtok_r(tmp, " ", &save_ptr);
 			while (tok) {
 				command_pos++;
