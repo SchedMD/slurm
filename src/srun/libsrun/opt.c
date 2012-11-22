@@ -1644,7 +1644,7 @@ extern void bg_figure_nodes_tasks()
  */
 static void _opt_args(int argc, char **argv)
 {
-	int i, command_pos = 0;
+	int i, command_pos = 0, command_args = 0;
 	char **rest = NULL;
 
 	set_options(argc, argv);
@@ -1709,6 +1709,8 @@ static void _opt_args(int argc, char **argv)
 			opt.argc++;
 	}
 
+	command_args = opt.argc;
+
 	if (!rest)
 		fatal("No command given to execute.");
 
@@ -1731,9 +1733,15 @@ static void _opt_args(int argc, char **argv)
 	}
 
 #endif
-	for (i = command_pos; i < opt.argc; i++)
+	/* make sure we have allocated things correctly */
+	xassert((command_pos + command_args) <= opt.argc);
+
+	for (i = command_pos; i < opt.argc; i++) {
+		if (!rest[i-command_pos])
+			break;
 		opt.argv[i] = xstrdup(rest[i-command_pos]);
-	opt.argv[opt.argc] = NULL;	/* End of argv's (for possible execv) */
+	}
+	opt.argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if (!launch_g_handle_multi_prog_verify(command_pos)
 	    && (opt.argc > command_pos)) {
