@@ -61,12 +61,6 @@ typedef enum {
 	SRUN_JOB_LAUNCHING,        /* Launch thread is running              */
 	SRUN_JOB_STARTING,         /* Launch thread is complete             */
 	SRUN_JOB_RUNNING,          /* Launch thread complete                */
-	SRUN_JOB_TERMINATING,      /* Once first task terminates            */
-	SRUN_JOB_TERMINATED,       /* All tasks terminated (may have IO)    */
-	SRUN_JOB_WAITING_ON_IO,    /* All tasks terminated; waiting for IO  */
-	SRUN_JOB_DONE,             /* tasks and IO complete                 */
-	SRUN_JOB_DETACHED,         /* Detached IO from job (Not used now)   */
-	SRUN_JOB_FAILED,           /* Job failed for some reason            */
 	SRUN_JOB_CANCELLED,        /* CTRL-C cancelled                      */
 	SRUN_JOB_FORCETERM         /* Forced termination of IO thread       */
 } srun_job_state_t;
