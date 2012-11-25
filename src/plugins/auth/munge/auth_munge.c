@@ -524,9 +524,7 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 		if ((e == EMUNGE_SOCKET) && retry--) {
 			error ("Munge decode failed: %s (retrying ...)",
 				munge_ctx_strerror(ctx));
-#ifdef MULTIPLE_SLURMD
-			sleep(1);
-#endif
+			usleep(10000);	/* Likely munged too busy */
 			goto again;
 		}
 #ifdef MULTIPLE_SLURMD
