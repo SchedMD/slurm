@@ -1776,8 +1776,11 @@ _wait_for_all_tasks(slurmd_job_t *job)
 static void *_kill_thr(void *args)
 {
 	kill_thread_t *kt = ( kill_thread_t *) args;
-	sleep(kt->secs);
-	pthread_kill(kt->thread_id, SIGKILL);
+	unsigned int pause = kt->secs;
+	do {
+		pause = sleep(pause);
+	} while (pause > 0);
+	pthread_cancel(kt->thread_id);
 	xfree(kt);
 	return NULL;
 }
