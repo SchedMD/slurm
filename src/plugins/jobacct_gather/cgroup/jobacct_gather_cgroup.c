@@ -394,6 +394,7 @@ extern int fini (void)
 {
 	jobacct_gather_cgroup_cpuacct_fini(&slurm_cgroup_conf);
 	jobacct_gather_cgroup_memory_fini(&slurm_cgroup_conf);
+	acct_gather_energy_fini();
 
 	/* unload configuration */
 	free_slurm_cgroup_conf(&slurm_cgroup_conf);
