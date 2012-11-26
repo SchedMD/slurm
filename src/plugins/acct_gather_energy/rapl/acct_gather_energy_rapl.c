@@ -199,19 +199,28 @@ static void _hardware(void)
 
 	if ((fd = fopen("/proc/cpuinfo", "r")) == 0)
 		error("fopen");
-	while (0 != fgets(buf, 1024, fd)) {
+	while (fgets(buf, 1024, fd)) {
 		if (strncmp(buf, "processor", sizeof("processor") - 1) == 0) {
 			sscanf(buf, "processor\t: %d", &cpu);
 			continue;
 		}
 		if (!strncmp(buf, "physical id", sizeof("physical id") - 1)) {
 			sscanf(buf, "physical id\t: %d", &pkg);
-			if (pkg2cpu[pkg] == -1)
+
+			if (pkg > MAX_PKGS)
+				fatal("Slurm can only handle %d sockets for "
+				      "rapl, you seem to have more than that.  "
+				      "Update src/plugins/acct_gather_energy/"
+				      "rapl/acct_gather_energy_rapl.h "
+				      "(MAX_PKGS) and recompile.", MAX_PKGS);
+			if (pkg2cpu[pkg] == -1) {
 				nb_pkg++;
-			pkg2cpu[pkg] = cpu;
+				pkg2cpu[pkg] = cpu;
+			}
 			continue;
 		}
 	}
+	fclose(fd);
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("RAPL Found: %d packages", nb_pkg);
