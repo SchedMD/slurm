@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- CRAY - Introduce step accounting for a Cray.
  -- Modify srun to abandon I/O 60 seconds after the last task ends. Otherwise
     an aborted slurmstepd can cause the srun process to hang indefinitely.
+ -- ENERGY - RAPL - alter code to close open files (and only open them once
+    where needed)
 
 * Changes in SLURM 2.5.0.rc1
 ============================

@@ -115,10 +115,12 @@ static acct_gather_energy_t *local_energy = NULL;
 static bool acct_gather_energy_shutdown = true;
 static uint32_t debug_flags = 0;
 
-int pkg2cpu [MAX_PKGS] = {[0 ... MAX_PKGS-1] -1}; /* one cpu in the package */
-int fd[MAX_PKGS] = {[0 ... MAX_PKGS-1] -1};
+/* one cpu in the package */
+static int pkg2cpu[MAX_PKGS] = {[0 ... MAX_PKGS-1] -1};
+static int pkg_fd[MAX_PKGS] = {[0 ... MAX_PKGS-1] -1};
 
-int nb_pkg = 0;
+
+static int nb_pkg = 0;
 
 static char *_msr_string(int which)
 {
@@ -153,7 +155,7 @@ static uint64_t _get_package_energy(int pkg)
 {
 	uint64_t result;
 
-	result = _read_msr(fd[pkg], MSR_PKG_ENERGY_STATUS);
+	result = _read_msr(pkg_fd[pkg], MSR_PKG_ENERGY_STATUS);
 	if (result < package_energy[pkg].i.low)
 		package_energy[pkg].i.high++;
 	package_energy[pkg].i.low = result;
@@ -164,14 +166,14 @@ static uint64_t _get_dram_energy(int pkg)
 {
 	uint64_t result;
 
-	result = _read_msr(fd[pkg], MSR_DRAM_ENERGY_STATUS);
+	result = _read_msr(pkg_fd[pkg], MSR_DRAM_ENERGY_STATUS);
 	if (result < dram_energy[pkg].i.low)
 		dram_energy[pkg].i.high++;
 	dram_energy[pkg].i.low = result;
 	return(dram_energy[pkg].val);
 }
 
-static int open_msr(int core)
+static int _open_msr(int core)
 {
 	char msr_filename[BUFSIZ];
 	int fd;
@@ -189,7 +191,7 @@ static int open_msr(int core)
 	return fd;
 }
 
-static void hardware (void)
+static void _hardware(void)
 {
 	char buf[1024];
 	FILE *fd;
@@ -228,11 +230,9 @@ extern int acct_gather_energy_p_update_node_energy(void)
 		uint32_t node_current_energy;
 		uint16_t node_freq;
 
-		hardware();
-		for (i = 0; i < nb_pkg; i++)
-			fd[i] = open_msr(pkg2cpu[i]);
+		xassert(pkg_fd[0] != -1);
 
-		result = _read_msr(fd[0], MSR_RAPL_POWER_UNIT);
+		result = _read_msr(pkg_fd[0], MSR_RAPL_POWER_UNIT);
 		energy_units = pow(0.5,(double)((result>>8)&0x1f));
 		result = 0;
 		for (i = 0; i < nb_pkg; i++)
@@ -280,18 +280,16 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	ulong max_power;
 	double ret;
 
-	hardware();
-	for (i=0; i<nb_pkg; i++)
-		fd[i] = open_msr(pkg2cpu[i]);
+	xassert(pkg_fd[0] != -1);
 
-	result = _read_msr(fd[0], MSR_RAPL_POWER_UNIT);
+	result = _read_msr(pkg_fd[0], MSR_RAPL_POWER_UNIT);
 	power_units = pow(0.5, (double)(result&0xf));
 	energy_units = pow(0.5, (double)((result>>8)&0x1f));
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("RAPL powercapture_debug Energy units = %.6f, "
 		     "Power Units = %.6f", energy_units, power_units);
 	max_power = power_units *
-		((_read_msr(fd[0], MSR_PKG_POWER_INFO) >> 32) & 0x7fff);
+		((_read_msr(pkg_fd[0], MSR_PKG_POWER_INFO) >> 32) & 0x7fff);
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("RAPL Max power = %ld w", max_power);
 	result = 0;
@@ -324,14 +322,28 @@ static void _get_joules_task(acct_gather_energy_t *energy)
  */
 extern int init(void)
 {
-	verbose("%s loaded", plugin_name);
+	int i;
+	_hardware();
+	for (i = 0; i < nb_pkg; i++)
+		pkg_fd[i] = _open_msr(pkg2cpu[i]);
+
 	local_energy = acct_gather_energy_alloc();
 	debug_flags = slurm_get_debug_flags();
+	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 
 extern int fini(void)
 {
+	int i;
+
+	for (i = 0; i < nb_pkg; i++) {
+		if (pkg_fd[i] != -1) {
+			close(pkg_fd[i]);
+			pkg_fd[i] = -1;
+		}
+	}
+
 	acct_gather_energy_destroy(local_energy);
 	local_energy = NULL;
 	return SLURM_SUCCESS;
