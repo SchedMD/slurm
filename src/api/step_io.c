@@ -73,6 +73,11 @@ struct io_buf {
 	io_hdr_t header;
 };
 
+typedef struct kill_thread {
+	pthread_t thread_id;
+	int       secs;
+} kill_thread_t;
+
 static struct io_buf *_alloc_io_buf(void);
 #if 0
 static void     _free_io_buf(struct io_buf *buf);
@@ -1167,6 +1172,40 @@ client_io_handler_start(client_io_t *cio)
 	return SLURM_SUCCESS;
 }
 
+static void *_kill_thr(void *args)
+{
+	kill_thread_t *kt = ( kill_thread_t *) args;
+	unsigned int pause = kt->secs;
+	do {
+		pause = sleep(pause);
+	} while (pause > 0);
+	pthread_cancel(kt->thread_id);
+	xfree(kt);
+	return NULL;
+}
+
+static void _delay_kill_thread(pthread_t thread_id, int secs)
+{
+	pthread_t kill_id;
+	pthread_attr_t attr;
+	kill_thread_t *kt = xmalloc(sizeof(kill_thread_t));
+	int retries = 0;
+
+	kt->thread_id = thread_id;
+	kt->secs = secs;
+	slurm_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	while (pthread_create(&kill_id, &attr, &_kill_thr, (void *) kt)) {
+		error("_delay_kill_thread: pthread_create: %m");
+		if (++retries > MAX_RETRIES) {
+			error("_delay_kill_thread: Can't create pthread");
+			break;
+		}
+		usleep(10);	/* sleep and again */
+	}
+	slurm_attr_destroy(&attr);
+}
+
 int
 client_io_handler_finish(client_io_t *cio)
 {
@@ -1174,6 +1213,7 @@ client_io_handler_finish(client_io_t *cio)
 		return SLURM_SUCCESS;
 
 	eio_signal_shutdown(cio->eio);
+	_delay_kill_thread(cio->ioid, 60);
 	if (pthread_join(cio->ioid, NULL) < 0) {
 		error("Waiting for client io pthread: %m");
 		return SLURM_ERROR;

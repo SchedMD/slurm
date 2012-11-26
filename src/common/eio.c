@@ -51,6 +51,10 @@
 #include "src/common/eio.h"
 #include "src/common/slurm_protocol_api.h"
 
+/* How many seconds to wait after eio_signal_shutdown() is called before
+ * terminating the job and abandoning any I/O remaining to be processed */
+#define EIO_SHUTDOWN_WAIT 60
+
 /*
  * outside threads can stick new objects on the new_objs List and
  * the eio thread will move them to the main obj_list the next time
@@ -76,6 +80,8 @@ static void         _poll_dispatch(struct pollfd *, unsigned int, eio_obj_t **,
 		                   List objList);
 static void         _poll_handle_event(short revents, eio_obj_t *obj,
 		                       List objList);
+
+static time_t eio_shutdown_time = (time_t) 0;
 
 eio_handle_t *eio_handle_create(void)
 {
@@ -198,6 +204,7 @@ int eio_signal_shutdown(eio_handle_t *eio)
 {
 	char c = 1;
 
+	eio_shutdown_time = time(NULL);
 	if (eio && (write(eio->fds[1], &c, sizeof(char)) != 1))
 		return error("eio_handle_signal_shutdown: write; %m");
 	return 0;
@@ -288,6 +295,14 @@ int eio_handle_mainloop(eio_handle_t *eio)
 			_eio_wakeup_handler(eio);
 
 		_poll_dispatch(pollfds, nfds-1, map, eio->obj_list);
+
+		if (eio_shutdown_time &&
+		    (difftime(time(NULL), eio_shutdown_time) >=
+		     EIO_SHUTDOWN_WAIT)) {
+			error("Abandoning IO %d secs after job shutdown "
+			      "initiated", EIO_SHUTDOWN_WAIT);
+			break;
+		}
 	}
   error:
 	retval = -1;
@@ -300,8 +315,13 @@ int eio_handle_mainloop(eio_handle_t *eio)
 static int
 _poll_internal(struct pollfd *pfds, unsigned int nfds)
 {
-	int n;
-	while ((n = poll(pfds, nfds, -1)) < 0) {
+	int n, timeout;
+
+	if (eio_shutdown_time)
+		timeout = 1000;	/* Return every 1000 msec during shutdown */
+	else
+		timeout = -1;
+	while ((n = poll(pfds, nfds, timeout)) < 0) {
 		switch (errno) {
 		case EINTR :
 			return 0;
@@ -312,6 +332,7 @@ _poll_internal(struct pollfd *pfds, unsigned int nfds)
 			return -1;
 		}
 	}
+
 	return n;
 }
 
@@ -340,17 +361,28 @@ _poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[], List l)
 		readable = _is_readable(obj);
 		if (writable && readable) {
 			pfds[nfds].fd     = obj->fd;
-			pfds[nfds].events = POLLOUT | POLLIN;
+#ifdef POLLRDHUP
+/* Available since Linux 2.6.17 */
+			pfds[nfds].events = POLLOUT | POLLIN |
+					    POLLHUP | POLLRDHUP;
+#else
+			pfds[nfds].events = POLLOUT | POLLIN | POLLHUP;
+#endif
 			map[nfds]         = obj;
 			nfds++;
 		} else if (readable) {
 			pfds[nfds].fd     = obj->fd;
+#ifdef POLLRDHUP
+/* Available since Linux 2.6.17 */
+			pfds[nfds].events = POLLIN | POLLRDHUP;
+#else
 			pfds[nfds].events = POLLIN;
+#endif
 			map[nfds]         = obj;
 			nfds++;
 		} else if (writable) {
 			pfds[nfds].fd     = obj->fd;
-			pfds[nfds].events = POLLOUT;
+			pfds[nfds].events = POLLOUT | POLLHUP;
 			map[nfds]         = obj;
 			nfds++;
 		}
