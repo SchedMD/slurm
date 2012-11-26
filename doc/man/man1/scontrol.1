@@ -1129,7 +1129,10 @@ Identify the node(s) to be reserved. Multiple node names
 may be specified using simple node range expressions (e.g. "Nodes=lx[10\-20]").
 Specify a blank data value to remove all nodes from a reservation: "Nodes=".
 A new reservation must specify one or more resource to be included: NodeCnt,
-Nodes and/or Licenses. A specification of "ALL" will reserve all nodes.
+Nodes and/or Licenses. A specification of "ALL" will reserve all nodes. Set
+\fIFlags=PART_NODES\fP and \fIPartitionName=\fP in order for changes in the
+nodes associated with a partition to also be reflected in the nodes associated
+with a reservation.
 
 .TP
 \fIStartTime\fP=<time_spec>

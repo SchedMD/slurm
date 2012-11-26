@@ -2430,7 +2430,17 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		resv_ptr->user_list = user_list;
 		resv_ptr->user_not  = user_not;
 	}
-	if (resv_ptr->node_list) {		/* Change bitmap last */
+	if ((resv_ptr->flags & RESERVE_FLAG_PART_NODES) &&
+	    resv_ptr->part_ptr && resv_ptr->part_ptr->node_bitmap) {
+		xfree(resv_ptr->node_list);
+		resv_ptr->node_list = xstrdup(resv_ptr->part_ptr->nodes);
+		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
+		resv_ptr->node_bitmap = bit_copy(resv_ptr->part_ptr->
+						 node_bitmap);
+		resv_ptr->node_cnt = bit_set_count(resv_ptr->node_bitmap);
+		_set_cpu_cnt(resv_ptr);
+		last_resv_update = time(NULL);
+	} else if (resv_ptr->node_list) {	/* Change bitmap last */
 		bitstr_t *node_bitmap;
 		if (strcasecmp(resv_ptr->node_list, "ALL") == 0) {
 			node_bitmap = bit_alloc(node_record_count);
@@ -3979,6 +3989,7 @@ extern void update_part_nodes_in_resv(struct part_record *part_ptr)
 							   node_bitmap);
 			xfree(resv_ptr->node_list);
 			resv_ptr->node_list = xstrdup(parti_ptr->nodes);
+			_set_cpu_cnt(resv_ptr);
 			last_resv_update = time(NULL);
 		}
 	}
