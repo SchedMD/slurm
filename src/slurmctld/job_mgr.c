@@ -4933,7 +4933,7 @@ void job_time_limit(void)
 
 		acct_policy_job_time_out(job_ptr);
 
-		if(job_ptr->state_reason == FAIL_TIMEOUT) {
+		if (job_ptr->state_reason == FAIL_TIMEOUT) {
 			last_job_update = now;
 			_job_timed_out(job_ptr);
 			xfree(job_ptr->state_desc);
@@ -4995,6 +4995,7 @@ static void _job_timed_out(struct job_record *job_ptr)
 {
 	xassert(job_ptr);
 
+	srun_timeout(job_ptr);
 	if (job_ptr->details) {
 		time_t now      = time(NULL);
 		job_ptr->end_time           = now;
