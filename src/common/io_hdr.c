@@ -41,6 +41,7 @@
 #  include "config.h"
 #endif
 
+#include "src/common/fd.h"
 #include "src/common/io_hdr.h"
 #include "src/common/slurm_protocol_defs.h"
 
@@ -252,7 +253,6 @@ again:
 	return SLURM_SUCCESS;
 }
 
-
 int
 io_init_msg_read_from_fd(int fd, struct slurm_io_init_msg *msg)
 {
@@ -263,6 +263,11 @@ io_init_msg_read_from_fd(int fd, struct slurm_io_init_msg *msg)
 	xassert(msg);
 
 	debug2("Entering io_init_msg_read_from_fd");
+	if (wait_fd_readable(fd, 300)) {
+		error("io_init_msg_read timed out");
+		return SLURM_ERROR;
+	}
+
 	buf = init_buf(io_init_msg_packed_size());
 	ptr = get_buf_data(buf);
 again:
@@ -273,7 +278,7 @@ again:
 		return SLURM_ERROR;
 	}
 	if (n != io_init_msg_packed_size()) {
-		error("io init msg read too small");
+		error("io_init_msg_read too small");
 		free_buf(buf);
 		return SLURM_ERROR;
 	}

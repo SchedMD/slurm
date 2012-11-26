@@ -56,6 +56,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -910,38 +911,6 @@ rwfail:
 	return -1;
 }
 
-/* Wait for a file descriptor to be readable (up to 300 seconds).
- * Return 0 when readable or -1 on error */
-static int _wait_fd_readable(int fd)
-{
-	fd_set except_fds, read_fds;
-	struct timeval timeout;
-	int rc;
-
-	FD_ZERO(&except_fds);
-	FD_SET(fd, &except_fds);
-	FD_ZERO(&read_fds);
-	FD_SET(fd, &read_fds);
-	timeout.tv_sec  = 300;
-	timeout.tv_usec = 0;
-	while (1) {
-		rc = select(fd+1, &read_fds, NULL, &except_fds, &timeout);
-
-		if (rc > 0) {	/* activity on this fd */
-			if (FD_ISSET(fd, &read_fds))
-				return 0;
-			else	/* Exception */
-				return -1;
-		} else if (rc == 0) {
-			error("Timeout waiting for slurmstepd");
-			return -1;
-		} else if (errno == EINTR) {
-			error("select(): %m");
-			return -1;
-		}
-	}
-}
-
 /*
  *
  * Returns jobacctinfo_t struct on success, NULL on error.
@@ -964,7 +933,7 @@ stepd_stat_jobacct(int fd, job_step_id_msg_t *sent, job_step_stat_t *resp)
 	/* Do not attempt reading data until there is something to read.
 	 * Avoid locking the jobacct_gather plugin early and creating
 	 * possible deadlock. */
-	if (_wait_fd_readable(fd))
+	if (wait_fd_readable(fd, 300))
 		goto rwfail;
 	rc = jobacctinfo_getinfo(resp->jobacct, JOBACCT_DATA_PIPE, &fd);
 

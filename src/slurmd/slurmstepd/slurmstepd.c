@@ -121,8 +121,8 @@ main (int argc, char *argv[])
 	dup2(STDERR_FILENO, STDIN_FILENO);
 
 	/* Create the slurmd_job_t, mostly from info in a
-	   launch_tasks_request_msg_t or a batch_job_launch_msg_t */
-	if(!(job = _step_setup(cli, self, msg))) {
+	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */
+	if (!(job = _step_setup(cli, self, msg))) {
 		_send_fail_to_slurmd(STDOUT_FILENO);
 		rc = SLURM_FAILURE;
 		goto ending;
@@ -131,7 +131,7 @@ main (int argc, char *argv[])
 	job->gids = gids;
 
 	/* fork handlers cause mutexes on some global data structures
-	   to be re-initialized after the fork. */
+	 * to be re-initialized after the fork. */
 	list_install_fork_handlers();
 	slurm_conf_install_fork_handlers();
 
@@ -150,7 +150,7 @@ main (int argc, char *argv[])
 	dup2(STDERR_FILENO, STDOUT_FILENO);
 
 	/* This does most of the stdio setup, then launches all the tasks,
-	   and blocks until the step is complete */
+	 * and blocks until the step is complete */
 	rc = job_manager(job);
 
 	/* signal the message thread to shutdown, and wait for it */
