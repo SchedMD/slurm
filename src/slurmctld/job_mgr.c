@@ -6162,7 +6162,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
 
 	/* Make sure anything that may be put in the database will be
-	   lower case */
+	 * lower case */
 	xstrtolower(job_specs->account);
 	xstrtolower(job_specs->wckey);
 

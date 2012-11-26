@@ -255,8 +255,7 @@ extern int job_submit_plugin_modify(struct job_descriptor *job_desc,
 	rc = job_submit_plugin_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i=0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].modify))(job_desc, job_ptr,
-						       submit_uid);
+		rc = (*(ops[i].modify))(job_desc, job_ptr, submit_uid);
 	slurm_mutex_unlock(&g_context_lock);
 	return rc;
 }

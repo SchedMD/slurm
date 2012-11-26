@@ -444,7 +444,7 @@ char *slurm_strerror(int errnum)
 /*
  * Get errno
  */
-int slurm_get_errno()
+int slurm_get_errno(void)
 {
 	return errno;
 }
