@@ -38,6 +38,123 @@ set job_id     0
 
 print_header $test_id
 
+proc check_job { job_id nodes tasks task_per_cpu } {
+	global exit_code scontrol number
+
+	#Checks a job allocation
+	set matches 0
+	spawn $scontrol show job $job_id
+	expect {
+		-re "NumNodes=($number)(K?)" {
+			set node_cnt $expect_out(1,string)
+			if {[string compare $expect_out(2,string) ""]} {
+				set node_cnt [expr $node_cnt * 1024]
+			}
+			if {$node_cnt != $nodes} {
+				send_user "\nFAILURE: NumNodes is not $nodes ($node_cnt)\n"
+				set exit_code 1
+			} else {
+				incr matches
+			}
+			exp_continue
+		}
+		-re "NumCPUs=($number)(K?)" {
+			set task_cnt $expect_out(1,string)
+			if {[string compare $expect_out(2,string) ""]} {
+				set task_cnt [expr $task_cnt * 1024]
+			}
+			if {$task_cnt != $tasks} {
+				send_user "\nFAILURE: NumCPUs is not $tasks ($task_cnt)\n"
+				set exit_code 1
+			} else {
+				incr matches
+			}
+			exp_continue
+		}
+		-re "CPUs/Task=($number)(K?)" {
+			set tasks_per_cnt $expect_out(1,string)
+			if {[string compare $expect_out(2,string) ""]} {
+				set tasks_per_cnt [expr $tasks_per_cnt * 1024]
+			}
+			if {$tasks_per_cnt != 1} {
+				send_user "\nFAILURE: CPUs per Task is not $tasks_per_cpu ($tasks_per_cnt)\n"
+				set exit_code 1
+			} else {
+				incr matches
+			}
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 3} {
+		send_user "\nNumber of nodes and tasks are correct\n"
+		set exit_code 1
+		return 1
+	}
+	return 0
+}
+
+proc check_step { job_id step_id nodes tasks } {
+	global exit_code scontrol number
+
+	#Checks a job step
+	set matches 0
+	spawn $scontrol show step $job_id.$step_id
+	expect {
+		-re "Nodes=($number)(K?)" {
+			set node_cnt $expect_out(1,string)
+			if {[string compare $expect_out(2,string) ""]} {
+				set node_cnt [expr $node_cnt * 1024]
+			}
+			if {$node_cnt != $nodes} {
+				send_user "\nFAILURE: NumNodes is not $nodes ($node_cnt)\n"
+				set exit_code 1
+			} else {
+				incr matches
+			}
+			exp_continue
+		}
+		-re "Tasks=($number)(K?)" {
+			set task_cnt $expect_out(1,string)
+			if {[string compare $expect_out(2,string) ""]} {
+				set task_cnt [expr $task_cnt * 1024]
+			}
+			if {$task_cnt != $tasks} {
+				send_user "\nFAILURE: NumCPUs is not $tasks ($task_cnt)\n"
+				set exit_code 1
+			} else {
+				incr matches
+			}
+			exp_continue
+		}
+		-re "not found" {
+			send_user "\nFAILURE: step was not found\n"
+			set exit_code 1
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 2} {
+		send_user "\nNumber of nodes and tasks are correct\n"
+		set exit_code 1
+		return 1
+	}
+
+	return 0
+}
+
 if {([test_bluegene] == 0) || [string compare [get_bluegene_type] "Q"]} {
 	send_user "\nWARNING: This test is only compatible with bluegene systems\n"
 	exit 1
@@ -62,45 +179,13 @@ expect {
 #wait for job to start
 sleep 1
 
-#Checks the job steps
-set matches 0
-spawn $scontrol show step $job_id
-expect {
-	-re "Nodes=($number)" {
-		set tmp1 $expect_out(1,string)
-		if {$tmp1!=32} {
-			send_user "\nFAILURE: NumNodes is not 32\n"
-			exit 1
-		} else {
-			incr matches
-		}
-		exp_continue
-	}
-	-re "Tasks=($number)" {
-		set tmp2 $expect_out(1,string)
-		if {$tmp2!=512} {
-			send_user "\nFAILURE: NumCPUs is not 512\n"
-			exit 1
-		} else {
-			incr matches
-		}
-		exp_continue
-	}
-	-re "not found" {
-		send_user "\nFAILURE: step was not found\n"
-		exit 1
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		exit 1
-	}
-	eof {
-		wait
-	}
+#Checks job
+if {[check_job $job_id 32 512 1]} {
+	exit exit_code
 }
-
-if {$matches !=0} {
-	send_user "\nNumber of nodes and tasks are correct\n"
+#Checks the job step
+if {[check_step $job_id 0 32 512]} {
+	exit exit_code
 }
 
 #submit allocation and runs job
@@ -126,49 +211,12 @@ if {$matches !=1} {
 }
 
 #Checks job
-set matches 0
-spawn $scontrol show job $job_id
-expect {
-	-re "NumNodes=($number)" {
-		set tmp1 $expect_out(1,string)
-		if {$tmp1!=32} {
-			send_user "\nFAILURE: NumNodes is not 32\n"
-			exit 1
-		} else {
-			incr matches
-		}
-		exp_continue
-	}
-	-re "NumCPUs=($number)" {
-		set tmp2 $expect_out(1,string)
-		if {$tmp2!=512} {
-			send_user "\nFAILURE: NumCPUs is not 512\n"
-			exit 1
-		} else {
-			incr matches
-		}
-		exp_continue
-	}
-	-re "CPUs/Task=($number)" {
-		set tmp3 $expect_out(1,string)
-		if {$tmp3!=1} {
-			send_user "\nFAILURE: CPUs per Task is not 1\n"
-			exit 1
-		} else {
-			incr matches
-		}
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		exit 1
-	}
-	eof {
-		wait
-	}
+if {[check_job $job_id 32 512 1]} {
+	exit exit_code
 }
-if {$matches !=0} {
-	send_user "\nNumber of nodes and tasks are correct\n"
+#Checks the job step
+if {[check_step $job_id 0 32 512]} {
+	exit exit_code
 }
 
 if {$exit_code == 0} {
