@@ -189,6 +189,7 @@ typedef enum {
 	BG_ERROR_INVALID_INPUT,
 	BG_ERROR_INCONSISTENT_DATA,
 	BG_ERROR_NO_IOBLOCK_CONNECTED,
+	BG_ERROR_FREE,
 } bg_errno_t;
 
 #endif	/* #ifndef ATTACH_BG_H */

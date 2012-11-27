@@ -322,8 +322,8 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		*/
 		if (!bg_record->free_cnt)
 			break;
-		debug("waiting for block %s to free for job %u %d "
-		      "other(s) trying to free it",
+		debug("Waiting for block %s to free for job %u.  "
+		      "%d thread(s) trying to free it",
 		      bg_record->bg_block_id, req_job_id,
 		      bg_record->free_cnt);
 		slurm_mutex_unlock(&block_state_mutex);
