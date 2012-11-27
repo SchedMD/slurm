@@ -157,7 +157,7 @@ proc check_step { job_id step_id nodes tasks } {
 
 if {([test_bluegene] == 0) || [string compare [get_bluegene_type] "Q"]} {
 	send_user "\nWARNING: This test is only compatible with bluegene systems\n"
-	exit 1
+	exit 0
 }
 
 #submit a step with 512 tasks
