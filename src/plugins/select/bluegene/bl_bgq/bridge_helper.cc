@@ -269,7 +269,7 @@ extern int bridge_handle_runtime_errors(const char *function,
 	}
 	case bgsched::RuntimeErrors::BlockFreeError:
 		/* not a real error */
-		rc = BG_ERROR_INVALID_STATE;
+		rc = BG_ERROR_FREE;
 		debug2("%s: Error freeing block %s.", function,
 		       bg_record->bg_block_id);
 		break;

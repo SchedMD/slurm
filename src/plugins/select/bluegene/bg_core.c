@@ -401,6 +401,15 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 					      bg_record->bg_block_id);
 					bg_record->state = BG_BLOCK_FREE;
 					break;
+				} else if (rc == BG_ERROR_FREE) {
+					if (bg_conf->slurm_debug_flags
+					    & DEBUG_FLAG_SELECT_TYPE)
+						info("bridge_block_free"
+						     "(%s): %s State = %s",
+						     bg_record->bg_block_id,
+						     bg_err_str(rc),
+						     bg_block_state_string(
+							     bg_record->state));
 				} else if (rc == BG_ERROR_INVALID_STATE) {
 #ifndef HAVE_BGL
 					/* If the state is error and
@@ -662,6 +671,8 @@ extern const char *bg_err_str(int inx)
 		return "Inconsistent data";
 	case BG_ERROR_NO_IOBLOCK_CONNECTED:
 		return "No IO Block Connected";
+	case BG_ERROR_FREE:
+		return "BlockFreeError (Most likely the block has pending action, should clear up shortly, check bridgeapi.log for further info)";
 	}
 	/* I know this isn't the best way to handle this, but it only
 	   happens very rarely and usually in debugging, so it
