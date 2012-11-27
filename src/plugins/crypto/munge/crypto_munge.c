@@ -241,6 +241,7 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 			       "slurmd mode.");
 		}
 #else
+		rc = err;
 		goto end_it;
 #endif
 	}
