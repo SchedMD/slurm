@@ -1656,17 +1656,29 @@ extern void bg_figure_nodes_tasks()
 			opt.ntasks_per_node = ntpn;
 		}
 
-		if (opt.nodes_set && (opt.ntasks_per_node != 1)
-		    && (opt.ntasks_per_node != 2)
-		    && (opt.ntasks_per_node != 4)
-		    && (opt.ntasks_per_node != 8)
-		    && (opt.ntasks_per_node != 16)
-		    && (opt.ntasks_per_node != 32))
-			fatal("You requested -N %d and -n %d "
-			      "which gives --ntasks-per-node=%d.  "
-			      "This isn't a valid request.",
-			      node_cnt, opt.ntasks,
-			      opt.ntasks_per_node);
+		if (opt.nodes_set) {
+			if ((opt.ntasks_per_node != 1)
+			    && (opt.ntasks_per_node != 2)
+			    && (opt.ntasks_per_node != 4)
+			    && (opt.ntasks_per_node != 8)
+			    && (opt.ntasks_per_node != 16)
+			    && (opt.ntasks_per_node != 32)
+			    && (opt.ntasks_per_node != 64))
+				fatal("You requested -N %d and -n %d "
+				      "which gives --ntasks-per-node=%d.  "
+				      "This isn't a valid request.",
+				      node_cnt, opt.ntasks,
+				      opt.ntasks_per_node);
+			else if (!opt.overcommit
+				 && ((opt.ntasks_per_node == 32)
+				     || (opt.ntasks_per_node == 64)))
+				fatal("You requested -N %d and -n %d "
+				      "which gives --ntasks-per-node=%d.  "
+				      "This isn't a valid request "
+				      "without --overcommit.",
+				      node_cnt, opt.ntasks,
+				      opt.ntasks_per_node);
+		}
 	}
 }
 
