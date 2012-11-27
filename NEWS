@@ -20,6 +20,10 @@ documents those changes that are of interest to users and admins.
     slurmctld restart.
  -- BGQ - Add 64 tasks per node as a valid option for srun when used with
     overcommit.
+ -- BLUEGENE - With Dynamic layout mode - Fix issue where if a larger block
+    was already in error and isn't deallocating and underlying hardware goes
+    bad one could get overlapping blocks in error making the code assert when
+    a new job request comes in.
 
 * Changes in SLURM 2.4.4
 ========================

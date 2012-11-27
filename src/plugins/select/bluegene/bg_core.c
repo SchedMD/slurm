@@ -95,11 +95,11 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 		return SLURM_SUCCESS;
 	}
 
-	/* If we are here we are done with the destroy so just reset it. */
-	bg_record->destroy = 0;
-
-	if (!(bg_record->state & BG_BLOCK_ERROR_FLAG)
-	    && (bg_record->state != BG_BLOCK_FREE)) {
+	/* Even if the block is already in error state we need to do this to
+	   avoid any overlapping blocks that may have been created due
+	   to bad hardware.
+	*/
+	if ((bg_record->state & (~BG_BLOCK_ERROR_FLAG)) != BG_BLOCK_FREE) {
 		/* Something isn't right, go mark this one in an error
 		   state. */
 		update_block_msg_t block_msg;
@@ -115,8 +115,13 @@ static int _post_block_free(bg_record_t *bg_record, bool restore)
 		slurm_mutex_unlock(&block_state_mutex);
 		select_g_update_block(&block_msg);
 		slurm_mutex_lock(&block_state_mutex);
+		if (block_ptr_exist_in_list(bg_lists->main, bg_record))
+			bg_record->destroy = 0;
 		return SLURM_SUCCESS;
 	}
+
+	/* If we are here we are done with the destroy so just reset it. */
+	bg_record->destroy = 0;
 
 	/* A bit of a sanity check to make sure blocks are being
 	   removed out of all the lists.
