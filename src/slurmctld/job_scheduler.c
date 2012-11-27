@@ -2079,7 +2079,7 @@ static void *_run_prolog(void *arg)
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
 	bitstr_t *node_bitmap = NULL;
-	static int last_job_requeue = 0;
+
 	lock_slurmctld(config_read_lock);
 	argv[0] = xstrdup(slurmctld_conf.prolog_slurmctld);
 	argv[1] = NULL;
@@ -2129,16 +2129,11 @@ static void *_run_prolog(void *arg)
 		error("prolog_slurmctld job %u prolog exit status %u:%u",
 		      job_id, WEXITSTATUS(status), WTERMSIG(status));
 		lock_slurmctld(job_write_lock);
-		if (last_job_requeue == job_id) {
-			info("prolog_slurmctld failed again for job %u",
-			     job_id);
-			kill_job = true;
-		} else if ((rc = job_requeue(0, job_id, -1,
-					     (uint16_t)NO_VAL, false))) {
+		if ((rc = job_requeue(0, job_id, -1, (uint16_t) NO_VAL,
+				      false))) {
 			info("unable to requeue job %u: %m", job_id);
 			kill_job = true;
-		} else
-			last_job_requeue = job_id;
+		
 		if (kill_job) {
 			srun_user_message(job_ptr,
 					  "PrologSlurmctld failed, job killed");
