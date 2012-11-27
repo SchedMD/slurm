@@ -130,6 +130,8 @@ documents those changes that are of interest to users and admins.
  -- Reset node MAINT state flag when a reservation's nodes or flags change.
  -- Accounting - Fix issue where QOS usage was being zeroed out on a
     slurmctld restart.
+ -- BGQ - Add 64 tasks per node as a valid option for srun when used with
+    overcommit.
 
 * Changes in SLURM 2.4.4
 ========================
