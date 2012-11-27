@@ -54,6 +54,14 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+static int _nodes_in_list(char *node_list)
+{
+	hostset_t host_set = hostset_create(node_list);
+	int count = hostset_count(host_set);
+	hostset_destroy(host_set);
+	return count;
+}
+
 static int _sort_pids_by_name(job_step_pids_t *rec_a, job_step_pids_t *rec_b)
 {
 	int diff = 0;
@@ -134,6 +142,7 @@ char *
 slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 			    int one_liner )
 {
+	char tmp_node_cnt[40];
 	char time_str[32];
 	char limit_str[32];
 	char tmp_line[128];
@@ -164,15 +173,22 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		select_g_select_jobinfo_get(job_step_ptr->select_jobinfo,
 					    SELECT_JOBDATA_IONODES,
 					    &io_nodes);
-		snprintf(tmp_line, sizeof(tmp_line),
-			"Partition=%s MidplaneList=%s[%s] Gres=%s",
-			job_step_ptr->partition,
-			job_step_ptr->nodes, io_nodes,
-			job_step_ptr->gres);
-		xfree(io_nodes);
+		if (io_nodes) {
+			snprintf(tmp_line, sizeof(tmp_line),
+				 "Partition=%s MidplaneList=%s[%s] Gres=%s",
+				 job_step_ptr->partition,
+				 job_step_ptr->nodes, io_nodes,
+				 job_step_ptr->gres);
+			xfree(io_nodes);
+		} else
+			snprintf(tmp_line, sizeof(tmp_line),
+				 "Partition=%s MidplaneList=%s Gres=%s",
+				 job_step_ptr->partition,
+				 job_step_ptr->nodes,
+				 job_step_ptr->gres);
 	} else {
 		snprintf(tmp_line, sizeof(tmp_line),
-			"Partition=%s Nodes=%s Gres=%s",
+			"Partition=%s NodeList=%s Gres=%s",
 			job_step_ptr->partition, job_step_ptr->nodes,
 			job_step_ptr->gres);
 	}
@@ -183,9 +199,23 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 3 ******/
+
+	if (cluster_flags & CLUSTER_FLAG_BGQ) {
+		uint32_t nodes = 0;
+		select_g_select_jobinfo_get(job_step_ptr->select_jobinfo,
+					    SELECT_JOBDATA_NODE_CNT,
+					    &nodes);
+		convert_num_unit((float)nodes, tmp_node_cnt,
+				 sizeof(tmp_node_cnt), UNIT_NONE);
+	} else {
+		convert_num_unit((float)_nodes_in_list(job_step_ptr->nodes),
+				 tmp_node_cnt, sizeof(tmp_node_cnt),
+				 UNIT_NONE);
+	}
+
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Tasks=%u Name=%s Network=%s",
-		job_step_ptr->num_tasks, job_step_ptr->name,
+		"Nodes=%s Tasks=%u Name=%s Network=%s",
+		 tmp_node_cnt, job_step_ptr->num_tasks, job_step_ptr->name,
 		job_step_ptr->network);
 	xstrcat(out, tmp_line);
 	if (one_liner)
