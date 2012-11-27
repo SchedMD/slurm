@@ -30,6 +30,8 @@ Linux clusters, high-performance computing, Livermore Computing">
 <div id="navigation">
 <a href="slurm.shtml"><img class="displayed" src="slurm_logo.png" width="130" usemap="#Map"></a>
 
+<div id="version">Version 2.5</div>
+
 <h2>About</h2>
 <ul>
 	  <li><a href="overview.shtml" class="nav">Overview</a></li>

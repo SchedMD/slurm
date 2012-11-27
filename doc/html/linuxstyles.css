@@ -161,6 +161,13 @@ IMG.displayed {
   padding: 0px 5px 0px 10px;
 }
 
+#version {
+  text-align: center;
+  font-size: 150%;
+  font-weight:bold;
+  color: #066cb2;
+}
+
 .figcaption {
   font-family: Arial, Verdana, Helvetica, sans-serif;
   text-align: left;
