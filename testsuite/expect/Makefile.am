@@ -219,6 +219,7 @@ EXTRA_DIST = \
 	test8.7.prog.c			\
 	test8.8				\
 	test8.9				\
+	test8.10			\
 	test8.20			\
 	test8.21			\
 	test8.21.bash			\

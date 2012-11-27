@@ -1,0 +1,180 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Bluegene/Q only: Test to make sure that the correct number of
+#          nodes and tasks in a job and a step.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2011 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.schedmd.com/slurmdocs/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id    "8.10"
+set exit_code  0
+set file_in    "test$test_id.input"
+set job_id     0
+
+print_header $test_id
+
+if {([test_bluegene] == 0) || [string compare [get_bluegene_type] "Q"]} {
+	send_user "\nWARNING: This test is only compatible with bluegene systems\n"
+	exit 1
+}
+
+#submit a step with 512 tasks
+spawn $srun -n512 -v $bin_sleep 50
+expect {
+	-re "jobid ($number)" {
+		set job_id $expect_out(1,string)
+		send_user "\nGot job id $job_id\n"
+	}
+	timeout {
+		send_user "\nFAILURE: srun is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+#wait for job to start
+sleep 1
+
+#Checks the job steps
+set matches 0
+spawn $scontrol show step $job_id
+expect {
+	-re "Nodes=($number)" {
+		set tmp1 $expect_out(1,string)
+		if {$tmp1!=32} {
+			send_user "\nFAILURE: NumNodes is not 32\n"
+			exit 1
+		} else {
+			incr matches
+		}
+		exp_continue
+	}
+	-re "Tasks=($number)" {
+		set tmp2 $expect_out(1,string)
+		if {$tmp2!=512} {
+			send_user "\nFAILURE: NumCPUs is not 512\n"
+			exit 1
+		} else {
+			incr matches
+		}
+		exp_continue
+	}
+	-re "not found" {
+		send_user "\nFAILURE: step was not found\n"
+		exit 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches !=0} {
+	send_user "\nNumber of nodes and tasks are correct\n"
+}
+
+#submit allocation and runs job
+set matches 0
+spawn $salloc -n512 $srun $bin_sleep
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		incr matches
+	}
+	timeout {
+		send_user "\nFAILURE: salloc is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches !=1} {
+	send_user "\nFAILURE: jobs were not submitted\n"
+	exit 1
+}
+
+#Checks job
+set matches 0
+spawn $scontrol show job $job_id
+expect {
+	-re "NumNodes=($number)" {
+		set tmp1 $expect_out(1,string)
+		if {$tmp1!=32} {
+			send_user "\nFAILURE: NumNodes is not 32\n"
+			exit 1
+		} else {
+			incr matches
+		}
+		exp_continue
+	}
+	-re "NumCPUs=($number)" {
+		set tmp2 $expect_out(1,string)
+		if {$tmp2!=512} {
+			send_user "\nFAILURE: NumCPUs is not 512\n"
+			exit 1
+		} else {
+			incr matches
+		}
+		exp_continue
+	}
+	-re "CPUs/Task=($number)" {
+		set tmp3 $expect_out(1,string)
+		if {$tmp3!=1} {
+			send_user "\nFAILURE: CPUs per Task is not 1\n"
+			exit 1
+		} else {
+			incr matches
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches !=0} {
+	send_user "\nNumber of nodes and tasks are correct\n"
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
+}
+
+exit $exit_code
