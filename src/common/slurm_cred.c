@@ -80,7 +80,6 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 
 #define EXTREME_DEBUG   0
 #define MAX_TIME 0x7fffffff
-#define SBCAST_CACHE_SIZE 256
 
 /*
  * slurm job credential state
@@ -222,11 +221,17 @@ static const char *syms[] = {
 	"crypto_str_error"
 };
 
+struct sbcast_cache {
+	time_t       expire;	/* Time that the cred was created	*/
+	uint32_t     value;	/* SLURM job id for this credential	*/
+};
+
 static slurm_crypto_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 static time_t crypto_restart_time = (time_t) 0;
+static List sbcast_cache_list = NULL;
 
 /*
  * Static prototypes:
@@ -273,6 +278,9 @@ static void _cred_state_pack(slurm_cred_ctx_t ctx, Buf buffer);
 static void _job_state_pack_one(job_state_t *j, Buf buffer);
 static void _cred_state_pack_one(cred_state_t *s, Buf buffer);
 
+static void _sbast_cache_add(sbcast_cred_t *sbcast_cred);
+static void _sbcast_cache_del(void *x);
+
 #ifndef DISABLE_LOCALTIME
 static char * timestr (const time_t *tp, char *buf, size_t n);
 #endif
@@ -301,6 +309,7 @@ static int _slurm_crypto_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
+	sbcast_cache_list = list_create(_sbcast_cache_del);
 	init_run = true;
 
 done:
@@ -318,6 +327,8 @@ static int _slurm_crypto_fini(void)
 		return SLURM_SUCCESS;
 
 	init_run = false;
+	list_destroy(sbcast_cache_list);
+	sbcast_cache_list = NULL;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 	return rc;
@@ -2138,12 +2149,11 @@ void delete_sbcast_cred(sbcast_cred_t *sbcast_cred)
 	}
 }
 
-static void _sbast_cache_add(sbcast_cred_t *sbcast_cred, time_t now,
-			     time_t *cache_expire, uint32_t *cache_value,
-			     int *oldest_cache_inx, time_t *oldest_cache_time)
+static void _sbast_cache_add(sbcast_cred_t *sbcast_cred)
 {
-	uint32_t sig_num = 0;
 	int i;
+	uint32_t sig_num = 0;
+	struct sbcast_cache *new_cache_rec;
 
 	/* Using two bytes at a time gives us a larger number
 	 * and reduces the possibility of a duplicate value */
@@ -2152,27 +2162,15 @@ static void _sbast_cache_add(sbcast_cred_t *sbcast_cred, time_t now,
 			   sbcast_cred->signature[i+1];
 	}
 
-	/* add to cache */
-	for (i = 0; i < SBCAST_CACHE_SIZE; i++) {
-		if (now < cache_expire[i]) {
-			if ((i == 0) ||
-			    (*oldest_cache_time > cache_expire[i])) {
-				*oldest_cache_inx = i;
-				*oldest_cache_time = cache_expire[i];
-			}
-			continue;
-		}
-		cache_expire[i] = sbcast_cred->expiration;
-		cache_value[i]  = sig_num;
-		break;
-	}
-	if (i >= SBCAST_CACHE_SIZE) {
-		error("sbcast_cred verify: cache overflow");
+	new_cache_rec = xmalloc(sizeof(struct sbcast_cache));
+	new_cache_rec->expire = sbcast_cred->expiration;
+	new_cache_rec->value  = sig_num;
+	list_append(sbcast_cache_list, new_cache_rec);
+}
 
-		/* overwrite the oldest */
-		cache_expire[*oldest_cache_inx] = sbcast_cred->expiration;
-		cache_value [*oldest_cache_inx] = sig_num;
-	}
+static void _sbcast_cache_del(void *x)
+{
+	xfree(x);
 }
 
 /* Extract contents of an sbcast credential verifying the digital signature.
@@ -2186,11 +2184,10 @@ int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 			sbcast_cred_t *sbcast_cred, uint16_t block_no,
 			uint32_t *job_id, char **nodes)
 {
-	static time_t   cache_expire[SBCAST_CACHE_SIZE];
-	static uint32_t cache_value[SBCAST_CACHE_SIZE];
+	struct sbcast_cache *next_cache_rec;
 	uint32_t sig_num = 0;
-	int i, oldest_cache_inx = 0, rc;
-	time_t now = time(NULL), oldest_cache_time = (time_t) 0;
+	int i, rc;
+	time_t now = time(NULL);
 	Buf buffer;
 
 	*job_id = 0xffffffff;
@@ -2218,22 +2215,34 @@ int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 			      (*(ops.crypto_str_error))(rc));
 			return -1;
 		}
-		_sbast_cache_add(sbcast_cred, now, cache_expire, cache_value,
-				 &oldest_cache_inx, &oldest_cache_time);
+		_sbast_cache_add(sbcast_cred);
 
 	} else {
+		char *err_str = NULL;
+		bool cache_match_found = false;
+		ListIterator sbcast_iter;
 		for (i = 0; i < sbcast_cred->siglen; i += 2) {
 			sig_num += (sbcast_cred->signature[i] << 8) +
 				   sbcast_cred->signature[i+1];
 		}
-		for (i = 0; i < SBCAST_CACHE_SIZE; i++) {
-			if ((cache_expire[i] == sbcast_cred->expiration) &&
-			    (cache_value[i]  == sig_num))
-				break;	/* match */
+
+		sbcast_iter = list_iterator_create(sbcast_cache_list);
+		if (!sbcast_iter)
+			fatal("list_iterator_create: malloc failure");
+		while ((next_cache_rec = 
+			(struct sbcast_cache *) list_next(sbcast_iter))) {
+			if ((next_cache_rec->expire == sbcast_cred->expiration) &&
+			    (next_cache_rec->value  == sig_num)) {
+				cache_match_found = true;
+				break;
+			}
+			if (next_cache_rec->expire <= now)
+				list_delete_item(sbcast_iter);
 		}
-		if (i >= SBCAST_CACHE_SIZE) {
+		list_iterator_destroy(sbcast_iter);
+
+		if (!cache_match_found) {
 			error("sbcast_cred verify: signature not in cache");
-			_slurm_crypto_init();
 			if (SLURM_DIFFTIME(now, crypto_restart_time) > 60)
 				return -1;	/* restarted >60 secs ago */
 			buffer = init_buf(4096);
@@ -2243,15 +2252,14 @@ int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 				get_buf_offset(buffer),
 				sbcast_cred->signature, sbcast_cred->siglen);
 			free_buf(buffer);
-			if (rc) {
-				error("sbcast_cred verify: %s",
-				      (*(ops.crypto_str_error))(rc));
+			if (rc)
+				err_str = (char *)(*(ops.crypto_str_error))(rc);
+			if (err_str && strcmp(err_str, "Credential replayed")) {
+				error("sbcast_cred verify: %s", err_str);
 				return -1;
 			}
 			info("sbcast_cred verify: signature revalidated");
-			_sbast_cache_add(sbcast_cred, now, cache_expire,
-					 cache_value, &oldest_cache_inx,
-					 &oldest_cache_time);
+			_sbast_cache_add(sbcast_cred);
 		}
 	}
 

@@ -105,6 +105,7 @@ enum local_error_code {
 	ESIG_BUF_DATA_MISMATCH = 5000,
 	ESIG_BUF_SIZE_MISMATCH,
 	ESIG_BAD_USERID,
+	ESIG_CRED_REPLAYED,
 };
 
 static uid_t slurm_user = 0;
@@ -187,6 +188,8 @@ crypto_str_error(int errnum)
 		return "Credential data size mismatch";
 	else if (errnum == ESIG_BAD_USERID)
 		return "Credential created by invalid user";
+	else if (errnum == ESIG_CRED_REPLAYED)
+		return "Credential replayed";
 	else
 		return munge_strerror ((munge_err_t) errnum);
 }
@@ -254,7 +257,10 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 			       "is expected in multiple slurmd mode.");
 		}
 #else
-		rc = err;
+		if (err == EMUNGE_CRED_REPLAYED)
+			rc = ESIG_CRED_REPLAYED;
+		else
+			rc = err;
 		goto end_it;
 #endif
 	}
