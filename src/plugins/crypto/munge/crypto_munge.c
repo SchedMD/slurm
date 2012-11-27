@@ -254,6 +254,7 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 			       "is expected in multiple slurmd mode.");
 		}
 #else
+		rc = err;
 		goto end_it;
 #endif
 	}
