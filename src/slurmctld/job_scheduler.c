@@ -2133,7 +2133,7 @@ static void *_run_prolog(void *arg)
 				      false))) {
 			info("unable to requeue job %u: %m", job_id);
 			kill_job = true;
-		
+		}
 		if (kill_job) {
 			srun_user_message(job_ptr,
 					  "PrologSlurmctld failed, job killed");
