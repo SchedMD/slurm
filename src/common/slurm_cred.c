@@ -80,7 +80,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 
 #define EXTREME_DEBUG   0
 #define MAX_TIME 0x7fffffff
-#define SBCAST_CACHE_SIZE 64
+#define SBCAST_CACHE_SIZE 256
 
 /*
  * slurm job credential state
