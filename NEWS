@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.5.0
 ========================
+
+* Changes in SLURM 2.5.0.rc2
+============================
  -- Modify sbcast logic to survive slurmd daemon restart while file a
     transmission is in progress.
  -- Add retry logic to munge encode/decode calls. This is needed if the munge
