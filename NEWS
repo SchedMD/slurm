@@ -4,7 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.5.0
 ========================
 
-* Changes in SLURM 2.5.0.rc2
+* Changes in SLURM 2.5.0-rc2
 ============================
  -- Modify sbcast logic to survive slurmd daemon restart while file a
     transmission is in progress.
@@ -21,7 +21,7 @@ documents those changes that are of interest to users and admins.
  -- If the PrologSlurmctld fails, then requeue the job an indefinite number
     of times instead of only one time.
 
-* Changes in SLURM 2.5.0.rc1
+* Changes in SLURM 2.5.0-rc1
 ============================
  -- Added Prolog and Epilog Guide (web page). Based upon work by Jason Sollom,
     Cray Inc. and used by permission.
