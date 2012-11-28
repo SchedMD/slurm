@@ -34,6 +34,7 @@ documents those changes that are of interest to users and admins.
     happen when the job ends, but this does make things cleaner.
  -- If an salloc is waiting for an allocation to happen and is canceled by the
     user mark the state canceled instead of completed.
+ -- Fix issue in accounting if a user puts a '\' in their job name.
 
 * Changes in SLURM 2.4.4
 ========================

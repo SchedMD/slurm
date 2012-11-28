@@ -153,7 +153,7 @@ extern char *slurm_add_slash_to_quotes(char *str)
 	/* make a buffer 2 times the size just to be safe */
 	copy = dup = xmalloc((2 * len) + 1);
 	if (copy)
-		do if (*str == '\'' || *str == '"')
+		do if (*str == '\\' || *str == '\'' || *str == '"')
 			   *dup++ = '\\';
 		while ((*dup++ = *str++));
 
