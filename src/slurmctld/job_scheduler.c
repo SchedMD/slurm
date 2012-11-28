@@ -2071,6 +2071,7 @@ extern int prolog_slurmctld(struct job_record *job_ptr)
 static void *_run_prolog(void *arg)
 {
 	struct job_record *job_ptr = (struct job_record *) arg;
+	struct node_record *node_ptr;
 	uint32_t job_id;
 	pid_t cpid;
 	int i, rc, status, wait_rc;
@@ -2079,6 +2080,8 @@ static void *_run_prolog(void *arg)
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
 	bitstr_t *node_bitmap = NULL;
+	time_t now = time(NULL);
+	uint16_t resume_timeout = slurm_get_resume_timeout();
 
 	lock_slurmctld(config_read_lock);
 	argv[0] = xstrdup(slurmctld_conf.prolog_slurmctld);
@@ -2087,11 +2090,15 @@ static void *_run_prolog(void *arg)
 	job_id = job_ptr->job_id;
 	if (job_ptr->node_bitmap) {
 		node_bitmap = bit_copy(job_ptr->node_bitmap);
-		for (i=0; i<node_record_count; i++) {
+		for (i = 0; i < node_record_count; i++) {
 			if (bit_test(node_bitmap, i) == 0)
 				continue;
-			node_record_table_ptr[i].node_state |=
-				NODE_STATE_POWER_UP;
+			node_ptr = node_record_table_ptr + i;
+			/* Prepare node state for reboot. These flags get
+			 * cleared when node registration message arrives. */
+			node_ptr->node_state |= NODE_STATE_NO_RESPOND;
+			node_ptr->node_state |= NODE_STATE_POWER_UP;
+			node_ptr->last_response = now + resume_timeout;
 		}
 	}
 	unlock_slurmctld(config_read_lock);
