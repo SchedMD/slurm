@@ -934,6 +934,10 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 			if (local_cluster->end == 0) {
 				local_cluster->end = now;
 				(*curr_cluster) = local_cluster;
+			} else if (!(*curr_cluster)
+				   || (((local_cluster_t *)(*curr_cluster))->end
+				       < local_cluster->end)) {
+				(*curr_cluster) = local_cluster;
 			}
 		} else
 			_destroy_local_cluster(local_cluster);

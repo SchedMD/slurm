@@ -137,6 +137,10 @@ documents those changes that are of interest to users and admins.
     bad one could get overlapping blocks in error making the code assert when
     a new job request comes in.
  -- BGQ - handle pending actions on a block better when trying to deallocate it.
+ -- Accounting - Fixed issue where if nodenames have changed on a system and
+    you query against that with -N and -E you will get all jobs during that
+    time instead of only the ones running on -N.
+ -- BGP - Fix for HTC mode
 
 * Changes in SLURM 2.4.4
 ========================
