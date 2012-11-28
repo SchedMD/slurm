@@ -28,6 +28,7 @@ documents those changes that are of interest to users and admins.
  -- Accounting - Fixed issue where if nodenames have changed on a system and
     you query against that with -N and -E you will get all jobs during that
     time instead of only the ones running on -N.
+ -- BGP - Fix for HTC mode
 
 * Changes in SLURM 2.4.4
 ========================
