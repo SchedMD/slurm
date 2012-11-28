@@ -813,7 +813,7 @@ static void _signal_while_allocating(int signo)
 {
 	allocation_interrupted = true;
 	if (pending_job_id != 0) {
-		slurm_complete_job(pending_job_id, 0);
+		slurm_complete_job(pending_job_id, NO_VAL);
 	}
 }
 
