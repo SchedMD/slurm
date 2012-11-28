@@ -29,6 +29,9 @@ documents those changes that are of interest to users and admins.
     you query against that with -N and -E you will get all jobs during that
     time instead of only the ones running on -N.
  -- BGP - Fix for HTC mode
+ -- Accounting - If a job start message fails to the SlurmDBD reset the db_inx
+    so it gets sent again.  This isn't a major problem since the start will
+    happen when the job ends, but this does make things cleaner.
 
 * Changes in SLURM 2.4.4
 ========================

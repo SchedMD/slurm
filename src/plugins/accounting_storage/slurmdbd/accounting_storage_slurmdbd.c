@@ -291,6 +291,7 @@ static void *_set_db_inx_thread(void *no_data)
 			slurmdbd_msg_t req, resp;
 			dbd_list_msg_t send_msg, *got_msg;
 			int rc = SLURM_SUCCESS;
+			bool reset = 0;
 
 			memset(&send_msg, 0, sizeof(dbd_list_msg_t));
 
@@ -301,20 +302,23 @@ static void *_set_db_inx_thread(void *no_data)
 			rc = slurm_send_recv_slurmdbd_msg(
 				SLURMDBD_VERSION, &req, &resp);
 			list_destroy(local_job_list);
-			if (rc != SLURM_SUCCESS)
+			if (rc != SLURM_SUCCESS) {
 				error("slurmdbd: DBD_SEND_MULT_JOB_START "
 				      "failure: %m");
-			else if (resp.msg_type == DBD_RC) {
+				reset = 1;
+			} else if (resp.msg_type == DBD_RC) {
 				dbd_rc_msg_t *msg = resp.data;
 				if (msg->return_code == SLURM_SUCCESS) {
 					info("%s", msg->comment);
 				} else
 					error("%s", msg->comment);
 				slurmdbd_free_rc_msg(msg);
+				reset = 1;
 			} else if (resp.msg_type != DBD_GOT_MULT_JOB_START) {
 				error("slurmdbd: response type not "
 				      "DBD_GOT_MULT_JOB_START: %u",
 				      resp.msg_type);
+				reset = 1;
 			} else {
 				dbd_id_rc_msg_t *id_ptr = NULL;
 				got_msg = (dbd_list_msg_t *) resp.data;
@@ -330,6 +334,19 @@ static void *_set_db_inx_thread(void *no_data)
 				unlock_slurmctld(job_write_lock);
 
 				slurmdbd_free_list_msg(got_msg);
+			}
+
+			if (reset) {
+				lock_slurmctld(job_read_lock);
+				/* USE READ LOCK, SEE ABOVE on first
+				 * read lock */
+				itr = list_iterator_create(job_list);
+				while ((job_ptr = list_next(itr))) {
+					if (job_ptr->db_index == NO_VAL)
+						job_ptr->db_index = 0;
+				}
+				list_iterator_destroy(itr);
+				unlock_slurmctld(job_read_lock);
 			}
 		}
 
