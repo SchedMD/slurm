@@ -505,8 +505,10 @@ upon termination of a job allocation (e.g.
 "/usr/local/slurm/epilog_controller").
 The program executes as SlurmUser, which gives it permission to drain
 nodes and requeue the job if a failure occurs or cancel the job if appropriate.
-The program can be used to reboot nodes or perform other work to prepare
-resources for use.
+Exactly what the program does and how it accomplishes this is completely at
+the discression of the system administrator.
+Information about the job being initiated, it's allocated nodes, etc. are
+passed to the program using environment variables.
 See \fBProlog and Epilog Scripts\fR for more information.
 
 .TP
@@ -1236,13 +1238,18 @@ See \fBProlog and Epilog Scripts\fR for more information.
 
 .TP
 \fBPrologSlurmctld\fR
-Fully qualified pathname of a program for the slurmctld to execute
+Fully qualified pathname of a program for the slurmctld daemon to execute
 before granting a new job allocation (e.g.
 "/usr/local/slurm/prolog_controller").
-The program executes as SlurmUser, which gives it permission to drain
+The program executes as SlurmUser on the same node where the slurmctld daemon
+executes, giving it permission to drain
 nodes and requeue the job if a failure occurs or cancel the job if appropriate.
 The program can be used to reboot nodes or perform other work to prepare
 resources for use.
+Exactly what the program does and how it accomplishes this is completely at
+the discression of the system administrator.
+Information about the job being initiated, it's allocated nodes, etc. are
+passed to the program using environment variables.
 While this program is running, the nodes associated with the job will be
 have a POWER_UP/CONFIGURING flag set in their state, which can be readily
 viewed.
