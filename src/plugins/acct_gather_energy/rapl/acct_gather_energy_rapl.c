@@ -156,7 +156,13 @@ static uint64_t _get_package_energy(int pkg)
 {
 	uint64_t result;
 
+	/* MSR_PKG_ENERGY_STATUS
+	 * Total Energy Consumed - bits 31:0
+	 * Reserved - bits 63:32
+	 * See: Intel 64 and IA-32 Architectures Software Developer's
+	 * Manual, Volume 3 for details */
 	result = _read_msr(pkg_fd[pkg], MSR_PKG_ENERGY_STATUS);
+	results &= 0xffffffff;
 	if (result < package_energy[pkg].i.low)
 		package_energy[pkg].i.high++;
 	package_energy[pkg].i.low = result;
@@ -167,7 +173,13 @@ static uint64_t _get_dram_energy(int pkg)
 {
 	uint64_t result;
 
+	/* MSR_DRAM_ENERGY_STATUS
+	 * Total Energy Consumed - bits 31:0
+	 * Reserved - bits 63:32
+	 * See: Intel 64 and IA-32 Architectures Software Developer's
+	 * Manual, Volume 3 for details */
 	result = _read_msr(pkg_fd[pkg], MSR_DRAM_ENERGY_STATUS);
+	results &= 0xffffffff;
 	if (result < dram_energy[pkg].i.low)
 		dram_energy[pkg].i.high++;
 	dram_energy[pkg].i.low = result;
@@ -248,6 +260,12 @@ extern int acct_gather_energy_p_update_node_energy(void)
 
 		xassert(pkg_fd[0] != -1);
 
+		/* MSR_RAPL_POWER_UNIT
+		 * Power Units - bits 3:0
+		 * Energy Status Units - bits 12:8
+		 * Time Units - bits 19:16
+		 * See: Intel 64 and IA-32 Architectures Software Developer's
+		 * Manual, Volume 3 for details */
 		result = _read_msr(pkg_fd[0], MSR_RAPL_POWER_UNIT);
 		energy_units = pow(0.5,(double)((result>>8)&0x1f));
 		result = 0;
@@ -298,16 +316,31 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 
 	xassert(pkg_fd[0] != -1);
 
+	/* MSR_RAPL_POWER_UNIT
+	 * Power Units - bits 3:0
+	 * Energy Status Units - bits 12:8
+	 * Time Units - bits 19:16
+	 * See: Intel 64 and IA-32 Architectures Software Developer's
+	 * Manual, Volume 3 for details */
 	result = _read_msr(pkg_fd[0], MSR_RAPL_POWER_UNIT);
 	power_units = pow(0.5, (double)(result&0xf));
 	energy_units = pow(0.5, (double)((result>>8)&0x1f));
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("RAPL powercapture_debug Energy units = %.6f, "
 		     "Power Units = %.6f", energy_units, power_units);
-	max_power = power_units *
-		((_read_msr(pkg_fd[0], MSR_PKG_POWER_INFO) >> 32) & 0x7fff);
+
+	/* MSR_PKG_POWER_INFO
+	 * Thermal Spec Power - bits 14:0
+	 * Minimum Power - bits 30:16
+	 * Maximum Power - bits 46:32
+	 * Maximum Time Window - bits 53:48
+	 * See: Intel 64 and IA-32 Architectures Software Developer's
+	 * Manual, Volume 3 for details */
+	result = _read_msr(pkg_fd[0], MSR_PKG_POWER_INFO);
+	max_power = power_units * ((results >> 32) & 0x7fff);
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("RAPL Max power = %ld w", max_power);
+
 	result = 0;
 	for (i = 0; i < nb_pkg; i++)
 		result += _get_package_energy(i) + _get_dram_energy(i);
