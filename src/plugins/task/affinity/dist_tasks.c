@@ -677,14 +677,17 @@ static void _blot_mask(bitstr_t *mask, uint16_t blot)
  * for each task, consider which other bits are set in avail_map
  * on the same socket */
 static void _blot_mask_sockets(const uint32_t maxtasks, const uint32_t task,
-			       bitstr_t **masks, uint16_t blot,
+			       bitstr_t **masks, uint16_t hw_sockets,
+			       uint16_t hw_cores, uint16_t hw_threads,
 			       bitstr_t *avail_map)
 {
   	uint16_t i, j, size = 0;
+	int blot;
 
 	if (!masks[task])
  		return;
 
+	blot = bit_size(avail_map) / hw_sockets;
 	size = bit_size(masks[task]);
 	for (i = 0; i < size; i++) {
 		if (bit_test(masks[task], i)) {
@@ -722,8 +725,8 @@ static void _expand_masks(uint16_t cpu_bind_type, const uint32_t maxtasks,
 		if (hw_threads*hw_cores < 2)
 			return;
 		for (i = 0; i < maxtasks; i++) {
-   			_blot_mask_sockets(maxtasks, i, masks,
-					   hw_threads*hw_cores, avail_map);
+   			_blot_mask_sockets(maxtasks, i, masks, hw_sockets,
+					   hw_cores, hw_threads, avail_map);
 		}
 		return;
 	}
