@@ -70,8 +70,8 @@
 union {
 	uint64_t val;
 	struct {
-		uint64_t low;
-		uint64_t high;
+		uint32_t low;
+		uint32_t high;
 	} i;
 } package_energy[MAX_PKGS], dram_energy[MAX_PKGS];
 
