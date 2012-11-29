@@ -1244,6 +1244,8 @@ empty:
 		if (!user_cond->assoc_cond->user_list)
 			user_cond->assoc_cond->user_list = list_create(NULL);
 
+		user_cond->assoc_cond->with_deleted = user_cond->with_deleted;
+
 		assoc_list = as_mysql_get_assocs(
 			mysql_conn, uid, user_cond->assoc_cond);
 

@@ -35,6 +35,8 @@ documents those changes that are of interest to users and admins.
  -- If an salloc is waiting for an allocation to happen and is canceled by the
     user mark the state canceled instead of completed.
  -- Fix issue in accounting if a user puts a '\' in their job name.
+ -- Accounting - Fix for if asking for users or accounts that were deleted
+    with associations get the deleted associations as well.
 
 * Changes in SLURM 2.4.4
 ========================
