@@ -496,9 +496,10 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			       qos_ptr->name);
 			rc = false;
 			goto end_it;
-		} else if (reason && (job_desc->min_cpus != NO_VAL)
+		} else if (strict_checking && (job_desc->min_cpus != NO_VAL)
 			   && (job_desc->min_cpus > qos_ptr->grp_cpus)) {
-			*reason = WAIT_QOS_RESOURCE_LIMIT;
+			if (reason)
+				*reason = WAIT_QOS_RESOURCE_LIMIT;
 			debug2("job submit for user %s(%u): "
 			       "min cpu request %u exceeds "
 			       "group max cpu limit %u for qos '%s'",
@@ -533,10 +534,11 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		/* for validation we don't need to look at
 		 * qos_ptr->grp_jobs.
 		 */
-		if (!admin_set_memory_limit && reason
+		if (!admin_set_memory_limit && strict_checking
 		    && (qos_ptr->grp_mem != INFINITE)
 		    && (job_memory > qos_ptr->grp_mem)) {
-			*reason = WAIT_QOS_JOB_LIMIT;
+			if (reason)
+				*reason = WAIT_QOS_JOB_LIMIT;
 			debug2("job submit for user %s(%u): "
 			       "min memory request %u exceeds "
 			       "group max memory limit %u for qos '%s'",
@@ -569,9 +571,10 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			       qos_ptr->name);
 			rc = false;
 			goto end_it;
-		} else if (reason && (job_desc->min_nodes != NO_VAL)
+		} else if (strict_checking && (job_desc->min_nodes != NO_VAL)
 			   && (job_desc->min_nodes > qos_ptr->grp_nodes)) {
-			*reason = WAIT_QOS_JOB_LIMIT;
+			if (reason)
+				*reason = WAIT_QOS_JOB_LIMIT;
 			debug2("job submit for user %s(%u): "
 			       "min node request %u exceeds "
 			       "group max node limit %u for qos '%s'",
