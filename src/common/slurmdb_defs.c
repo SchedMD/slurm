@@ -302,6 +302,9 @@ static int _setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 
 static uint32_t _str_2_qos_flags(char *flags)
 {
+	if (slurm_strcasestr(flags, "DenyOnLimit"))
+		return QOS_FLAG_DENY_LIMIT;
+
 	if (slurm_strcasestr(flags, "EnforceUsageThreshold"))
 		return QOS_FLAG_ENFORCE_USAGE_THRES;
 
@@ -1201,6 +1204,8 @@ extern char *slurmdb_qos_flags_str(uint32_t flags)
 		xstrcat(qos_flags, "Add,");
 	if (flags & QOS_FLAG_REMOVE)
 		xstrcat(qos_flags, "Remove,");
+	if (flags & QOS_FLAG_DENY_LIMIT)
+		xstrcat(qos_flags, "DenyOnLimit,");
 	if (flags & QOS_FLAG_ENFORCE_USAGE_THRES)
 		xstrcat(qos_flags, "EnforceUsageThreshold,");
 	if (flags & QOS_FLAG_NO_RESERVE)

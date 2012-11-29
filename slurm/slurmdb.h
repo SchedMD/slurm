@@ -143,6 +143,7 @@ typedef enum {
 #define	QOS_FLAG_ENFORCE_USAGE_THRES 0x00000008
 #define	QOS_FLAG_NO_RESERVE          0x00000010
 #define	QOS_FLAG_REQ_RESV            0x00000020
+#define	QOS_FLAG_DENY_LIMIT          0x00000040
 
 /* Archive / Purge time flags */
 #define SLURMDB_PURGE_BASE    0x0000ffff   /* Apply to get the number

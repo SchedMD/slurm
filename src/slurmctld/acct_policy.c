@@ -469,6 +469,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 
 	if (qos_ptr) {
 		slurmdb_used_limits_t *used_limits = NULL;
+		bool strict_checking =
+			(reason || (qos_ptr->flags & QOS_FLAG_DENY_LIMIT));
 		/* for validation we don't need to look at
 		 * qos_ptr->grp_cpu_mins.
 		 */
@@ -479,9 +481,10 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		    || (update_call && (job_desc->max_cpus == NO_VAL))) {
 			/* no need to check/set */
 
-		} else if (reason && (job_desc->min_cpus != NO_VAL)
+		} else if (strict_checking && (job_desc->min_cpus != NO_VAL)
 			   && (job_desc->min_cpus > qos_ptr->max_cpus_pu)) {
-			*reason = WAIT_QOS_RESOURCE_LIMIT;
+			if (reason)
+				*reason = WAIT_QOS_RESOURCE_LIMIT;
 
 			debug2("job submit for user %s(%u): "
 			       "min cpu request %u exceeds "
@@ -511,8 +514,10 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			       && (job_desc->max_cpus > qos_max_cpus_limit))) {
 			job_desc->max_cpus = qos_max_cpus_limit;
 			acct_policy_limit_set->max_cpus = 1;
-		} else if (reason && job_desc->max_cpus > qos_max_cpus_limit) {
-			*reason = WAIT_QOS_RESOURCE_LIMIT;
+		} else if (strict_checking
+			   && (job_desc->max_cpus > qos_max_cpus_limit)) {
+			if (reason)
+				*reason = WAIT_QOS_RESOURCE_LIMIT;
 			info("job submit for user %s(%u): "
 			     "max cpu changed %u -> %u because "
 			     "of qos limit",
@@ -550,9 +555,10 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		    || (qos_max_nodes_limit == INFINITE)
 		    || (update_call && (job_desc->max_nodes == NO_VAL))) {
 			/* no need to check/set */
-		} else if (reason && (job_desc->min_nodes != NO_VAL)
+		} else if (strict_checking && (job_desc->min_nodes != NO_VAL)
 			   && (job_desc->min_nodes > qos_ptr->max_nodes_pu)) {
-			*reason = WAIT_QOS_RESOURCE_LIMIT;
+			if (reason)
+				*reason = WAIT_QOS_RESOURCE_LIMIT;
 			debug2("job submit for user %s(%u): "
 			       "min node request %u exceeds "
 			       "per-user max node limit %u for qos '%s'",
@@ -582,9 +588,10 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				   > qos_max_nodes_limit))) {
 			job_desc->max_nodes = qos_max_nodes_limit;
 			acct_policy_limit_set->max_nodes = 1;
-		} else if (reason
+		} else if (strict_checking
 			   && job_desc->max_nodes > qos_max_nodes_limit) {
-			*reason = WAIT_QOS_JOB_LIMIT;
+			if (reason)
+				*reason = WAIT_QOS_JOB_LIMIT;
 			info("job submit for user %s(%u): "
 			     "max node changed %u -> %u because "
 			     "of qos limit",
@@ -626,9 +633,10 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		    || (qos_ptr->max_cpus_pj == INFINITE)
 		    || (update_call && (job_desc->max_cpus == NO_VAL))) {
 			/* no need to check/set */
-		} else if (reason && (job_desc->min_cpus != NO_VAL)
+		} else if (strict_checking && (job_desc->min_cpus != NO_VAL)
 			   && (job_desc->min_cpus > qos_ptr->max_cpus_pj)) {
-			*reason = WAIT_QOS_JOB_LIMIT;
+			if (reason)
+				*reason = WAIT_QOS_JOB_LIMIT;
 			debug2("job submit for user %s(%u): "
 			       "min cpu limit %u exceeds "
 			       "qos max %u",
@@ -667,9 +675,10 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		    || (qos_ptr->max_nodes_pj == INFINITE)
 		    || (update_call && (job_desc->max_nodes == NO_VAL))) {
 			/* no need to check/set */
-		} else if (reason && (job_desc->min_nodes != NO_VAL)
+		} else if (strict_checking && (job_desc->min_nodes != NO_VAL)
 			   && (job_desc->min_nodes > qos_ptr->max_nodes_pj)) {
-			*reason = WAIT_QOS_JOB_LIMIT;
+			if (reason)
+				*reason = WAIT_QOS_JOB_LIMIT;
 			debug2("job submit for user %s(%u): "
 			       "min node limit %u exceeds "
 			       "qos max %u",
@@ -685,9 +694,10 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				   > qos_ptr->max_nodes_pj))) {
 			job_desc->max_nodes = qos_ptr->max_nodes_pj;
 			acct_policy_limit_set->max_nodes = 1;
-		} else if (reason
+		} else if (strict_checking
 			   && job_desc->max_nodes > qos_ptr->max_nodes_pj) {
-			*reason = WAIT_QOS_JOB_LIMIT;
+			if (reason)
+				*reason = WAIT_QOS_JOB_LIMIT;
 			info("job submit for user %s(%u): "
 			     "max node changed %u -> %u because "
 			     "of qos limit",
@@ -734,9 +744,10 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			} else if (acct_policy_limit_set->time &&
 				   job_desc->time_limit > time_limit) {
 				job_desc->time_limit = time_limit;
-			} else if (reason
+			} else if (strict_checking
 				   && job_desc->time_limit > time_limit) {
-				*reason = WAIT_QOS_JOB_LIMIT;
+				if (reason)
+					*reason = WAIT_QOS_JOB_LIMIT;
 				debug2("job submit for user %s(%u): "
 				       "time limit %u exceeds qos max %u",
 				       user_name,
