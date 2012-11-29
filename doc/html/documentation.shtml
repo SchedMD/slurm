@@ -2,8 +2,11 @@
 
 <h1> Documentation</h1>
 
-Also see <a href="tutorials.html">Tutorials</a> and
-<a href="publications.html">Publications and Presentations</a>.
+<p><b>NOTE: This documentation is for Slurm version @SLURM_VERSION@.<br>
+Documenation for other versions of Slurm is distributed with the code</b></p>
+
+<p>Also see <a href="tutorials.html">Tutorials</a> and
+<a href="publications.html">Publications and Presentations</a>.</p>
 
 <h2>SLURM Users</h2>
 <ul>
@@ -103,6 +106,6 @@ Also see <a href="tutorials.html">Tutorials</a> and
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 31 October 2012</p>
+<p style="text-align:center;">Last modified 29 November 2012</p>
 
 <!--#include virtual="footer.txt"-->

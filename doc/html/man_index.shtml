@@ -2,6 +2,9 @@
 
 <h1>Man Pages</h1>
 
+<p><b>NOTE: This documentation is for Slurm version @SLURM_VERSION@.<br>
+Documenation for other versions of Slurm is distributed with the code</b></p>
+
 <table border="1">
 <tr><td><a href="sacct.html">sacct</a></td><td>displays accounting data for all jobs and job steps in the SLURM job accounting log or SLURM database</td></tr>
 <tr><td><a href="sacctmgr.html">sacctmgr</a></td><td>Used to view and modify Slurm account information.</td></tr>
@@ -38,6 +41,6 @@
 </table>
 
 
-<p style="text-align:center;">Last modified 15 October 2010</p>
+<p style="text-align:center;">Last modified 29 November 2012</p>
 
 <!--#include virtual="footer.txt"-->
