@@ -162,7 +162,7 @@ static uint64_t _get_package_energy(int pkg)
 	 * See: Intel 64 and IA-32 Architectures Software Developer's
 	 * Manual, Volume 3 for details */
 	result = _read_msr(pkg_fd[pkg], MSR_PKG_ENERGY_STATUS);
-	results &= 0xffffffff;
+	result &= 0xffffffff;
 	if (result < package_energy[pkg].i.low)
 		package_energy[pkg].i.high++;
 	package_energy[pkg].i.low = result;
@@ -179,7 +179,7 @@ static uint64_t _get_dram_energy(int pkg)
 	 * See: Intel 64 and IA-32 Architectures Software Developer's
 	 * Manual, Volume 3 for details */
 	result = _read_msr(pkg_fd[pkg], MSR_DRAM_ENERGY_STATUS);
-	results &= 0xffffffff;
+	result &= 0xffffffff;
 	if (result < dram_energy[pkg].i.low)
 		dram_energy[pkg].i.high++;
 	dram_energy[pkg].i.low = result;
@@ -337,7 +337,7 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	 * See: Intel 64 and IA-32 Architectures Software Developer's
 	 * Manual, Volume 3 for details */
 	result = _read_msr(pkg_fd[0], MSR_PKG_POWER_INFO);
-	max_power = power_units * ((results >> 32) & 0x7fff);
+	max_power = power_units * ((result >> 32) & 0x7fff);
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("RAPL Max power = %ld w", max_power);
 
