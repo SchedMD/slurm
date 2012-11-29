@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.5.0
 ========================
+ -- Add DenyOnLimit flag for QOS to deny jobs at submission time if they
+    request resources that reach a 'Max' limit.
 
 * Changes in SLURM 2.5.0-rc2
 ============================

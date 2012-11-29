@@ -106,6 +106,10 @@ QOS</P>
   characteristics. Valid options are
 
 <ul>
+<li><b>DenyOnLimit</b> If set jobs using this QOS will be rejected at
+submission time if they do not conform to the QOS 'Max' limits.  By default
+jobs that go over these limits will pend until they conform.
+
 <li><b>EnforceUsageThreshold</b> If set, and the QOS also has a UsageThreshold,
 any jobs submitted with this QOS that fall below the UsageThreshold
 will be held until their Fairshare Usage goes above the Threshold.

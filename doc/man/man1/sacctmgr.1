@@ -936,6 +936,11 @@ Used by the slurmctld to override or enforce certain characteristics.
 Valid options are
 .RS
 .TP
+\fIDenyOnLimit\fP
+If set jobs using this QOS will be rejected at
+submission time if they do not conform to the QOS 'Max' limits.  By default
+jobs that go over these limits will pend until they conform.
+.TP
 \fIEnforceUsageThreshold\fP
 If set, and the QOS also has a UsageThreshold,
 any jobs submitted with this QOS that fall below the UsageThreshold
