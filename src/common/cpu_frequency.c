@@ -170,8 +170,8 @@ cpu_freq_fini(void)
  * Send the cpu_frequency table info to slurmstepd
  */
 void
-cpu_freq_send_info(int fd) {
-
+cpu_freq_send_info(int fd)
+{
 	if (cpu_freq_count) {
 		safe_write(fd, &cpu_freq_count, sizeof(uint16_t));
 		safe_write(fd, cpufreq,
@@ -191,8 +191,8 @@ rwfail:
  * Receive the cpu_frequency table info from slurmd
  */
 void
-cpu_freq_recv_info(int fd) {
-
+cpu_freq_recv_info(int fd)
+{
 	safe_read(fd, &cpu_freq_count, sizeof(uint16_t));
 
 	if (cpu_freq_count) {
@@ -221,8 +221,8 @@ rwfail:
  *  a pointer to a hex map string of the cpus to be used by this step
  */
 void
-cpu_freq_cpuset_validate(slurmd_job_t *job) {
-
+cpu_freq_cpuset_validate(slurmd_job_t *job)
+{
 	int cpuidx;
 	bitstr_t *cpus_to_set;
 	bitstr_t *cpu_map;
@@ -290,8 +290,8 @@ cpu_freq_cpuset_validate(slurmd_job_t *job) {
  *  the list of cpus to be used by this step
  */
 void
-cpu_freq_cgroup_validate(slurmd_job_t *job, char *step_alloc_cores) {
-
+cpu_freq_cgroup_validate(slurmd_job_t *job, char *step_alloc_cores)
+{
 	uint16_t start  = USHRT_MAX;
 	uint16_t end    = USHRT_MAX;
 	uint16_t cpuidx =  0;
@@ -334,8 +334,8 @@ cpu_freq_cgroup_validate(slurmd_job_t *job, char *step_alloc_cores) {
  */
 uint16_t
 _cpu_freq_next_cpu(char **core_range, uint16_t *cpuidx,
-		   uint16_t *start, uint16_t *end) {
-
+		   uint16_t *start, uint16_t *end)
+{
 	int i;
 	char *p;
 
@@ -408,8 +408,8 @@ _cpu_freq_next_cpu(char **core_range, uint16_t *cpuidx,
  * sets "frequency_to_set" table entry if valid value found
  */
 void
-_cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx) {
-
+_cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx)
+{
 	unsigned int j, freq_med = 0;
 	uint32_t  freq_list[FREQ_LIST_MAX] =  { 0 };
 	char path[SYSFS_PATH_MAX];
@@ -535,8 +535,8 @@ _cpu_freq_find_valid(uint32_t cpu_freq, int cpuidx) {
  * returns -1 on error, 0 otherwise
  */
 int 
-cpu_freq_verify_param(const char *arg, uint32_t *cpu_freq) {
-
+cpu_freq_verify_param(const char *arg, uint32_t *cpu_freq)
+{
 	char *end;
 	uint32_t frequency;
 
