@@ -129,7 +129,7 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-acct_gather_energy_rapl_la_LIBADD =
+acct_gather_energy_rapl_la_DEPENDENCIES =
 am_acct_gather_energy_rapl_la_OBJECTS = acct_gather_energy_rapl.lo
 acct_gather_energy_rapl_la_OBJECTS =  \
 	$(am_acct_gather_energy_rapl_la_OBJECTS)
@@ -378,7 +378,7 @@ acct_gather_energy_rapl_la_SOURCES = acct_gather_energy_rapl.c \
 	acct_gather_energy_rapl.h
 
 acct_gather_energy_rapl_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-acct_gather_energy_rapl_la_LIBADD  = -lm
+acct_gather_energy_rapl_la_LIBADD = -lm
 all: all-am
 
 .SUFFIXES:

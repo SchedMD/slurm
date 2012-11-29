@@ -681,7 +681,7 @@ uninstall-am: uninstall-htmlDATA
 
 
 .shtml.html:
-	`dirname $<`/shtml2html.py $<
+	`dirname $<`/shtml2html.py @SLURM_MAJOR@.@SLURM_MINOR@ $<
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

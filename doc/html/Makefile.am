@@ -119,4 +119,4 @@ EXTRA_DIST = $(html_DATA)
 SUFFIXES = .html
 
 .shtml.html:
-	`dirname $<`/shtml2html.py $<
+	`dirname $<`/shtml2html.py @SLURM_MAJOR@.@SLURM_MINOR@ $<

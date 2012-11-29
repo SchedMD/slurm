@@ -10,6 +10,9 @@ include_regex = re.compile(include_pat)
 url_pat = r'(\s+href\s*=\s*")([^"#]+)(#[^"]+)?(")'
 url_regex = re.compile(url_pat)
 
+version_pat = r'(@SLURM_VERSION@)'
+version_regex = re.compile(version_pat)
+
 dirname = ''
 
 def include_virtual(matchobj):
@@ -44,9 +47,15 @@ def url_rewrite(matchobj):
     else:
         return matchobj.group(0)
 
+def version_rewrite(matchobj):
+    global version
+    return version
+
 # Make sure all of the files on the command line have the .shtml extension.
+version = sys.argv[1]
+
 files = []
-for f in sys.argv[1:]:
+for f in sys.argv[2:]:
     if f[-6:] == '.shtml':
         files.append(f)
     else:
@@ -62,6 +71,7 @@ for filename in files:
 
     for line in shtml.readlines():
         line = include_regex.sub(include_virtual, line)
+        line = version_regex.sub(version_rewrite, line)
         line = url_regex.sub(url_rewrite, line)
         html.write(line)
 
