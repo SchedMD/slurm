@@ -108,7 +108,7 @@ static int _make_sure_block_still_exists(bg_action_t *bg_action_ptr,
 			      "job %u requeueing if possible.",
 			      bg_action_ptr->bg_block_id,
 			      bg_action_ptr->job_ptr->job_id);
-			bg_requeue_job(bg_action_ptr->job_ptr->job_id, 1);
+			bg_requeue_job(bg_action_ptr->job_ptr->job_id, 1, 0);
 		}
 		return 0;
 	}
@@ -209,7 +209,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 		error("block %s not found in bg_lists->main",
 		      bg_action_ptr->bg_block_id);
-		bg_requeue_job(req_job_id, 1);
+		bg_requeue_job(req_job_id, 1, 0);
 		return;
 	}
 
@@ -279,7 +279,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 
 		bg_record->modifying = 0;
 		slurm_mutex_unlock(&block_state_mutex);
-		bg_requeue_job(req_job_id, 0);
+		bg_requeue_job(req_job_id, 0, 0);
 		return;
 	}
 
@@ -304,7 +304,7 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		}
 
 		if (IS_JOB_CONFIGURING(bg_action_ptr->job_ptr))
-			bg_requeue_job(req_job_id, 0);
+			bg_requeue_job(req_job_id, 0, 0);
 		return;
 	}
 

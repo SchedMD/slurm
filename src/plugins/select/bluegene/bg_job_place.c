@@ -712,6 +712,49 @@ static bg_record_t *_find_matching_block(List block_list,
 	return bg_record;
 }
 
+/* job_write_lock and block_state_mutex should be locked before this */
+static List _handle_jobs_unusable_block(bg_record_t *bg_record)
+{
+	kill_job_struct_t *freeit = NULL;
+	List kill_job_list = NULL;
+	/* We need to make sure if a job is running here to not
+	   call the regular method since we are inside the job write
+	   lock already.
+	*/
+	if (bg_record->job_ptr && !IS_JOB_FINISHED(bg_record->job_ptr)) {
+		info("Somehow block %s is being freed, but appears "
+		     "to already have a job %u(%u) running on it.",
+		     bg_record->bg_block_id,
+		     bg_record->job_ptr->job_id,
+		     bg_record->job_running);
+		kill_job_list =	bg_status_create_kill_job_list();
+		freeit = (kill_job_struct_t *)xmalloc(sizeof(freeit));
+		freeit->jobid = bg_record->job_ptr->job_id;
+		list_push(kill_job_list, freeit);
+	} else if (bg_record->job_list && list_count(bg_record->job_list)) {
+		ListIterator itr = list_iterator_create(bg_record->job_list);
+		struct job_record *job_ptr = NULL;
+		while ((job_ptr = list_next(itr))) {
+			if (IS_JOB_FINISHED(job_ptr))
+				continue;
+			info("Somehow block %s is being freed, but appears "
+			     "to already have a job %u(%u) running on it.",
+			     bg_record->bg_block_id,
+			     job_ptr->job_id,
+			     bg_record->job_running);
+			if (!kill_job_list)
+				kill_job_list =
+					bg_status_create_kill_job_list();
+			freeit = (kill_job_struct_t *)xmalloc(sizeof(freeit));
+			freeit->jobid = bg_record->job_ptr->job_id;
+			list_push(kill_job_list, freeit);
+		}
+		list_iterator_destroy(itr);
+	}
+
+	return kill_job_list;
+}
+
 static int _check_for_booted_overlapping_blocks(
 	List block_list, ListIterator bg_record_itr,
 	bg_record_t *bg_record, int overlap_check, List overlapped_list,
@@ -840,6 +883,7 @@ static int _check_for_booted_overlapping_blocks(
 
 				if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
 					List tmp_list = list_create(NULL);
+					List kill_job_list = NULL;
 					/* this will remove and
 					 * destroy the memory for
 					 * bg_record
@@ -890,46 +934,18 @@ static int _check_for_booted_overlapping_blocks(
 						destroy_bg_record(bg_record);
 
 					list_push(tmp_list, found_record);
+
+					kill_job_list =
+						_handle_jobs_unusable_block(
+							found_record);
+
 					slurm_mutex_unlock(&block_state_mutex);
 
-					/* We need to make sure if a
-					   job is running here to not
-					   call the regular method since
-					   we are inside the job write
-					   lock already.
-					*/
-					if (found_record->job_ptr
-					    && !IS_JOB_FINISHED(
-						    found_record->job_ptr)) {
-						info("Somehow block %s "
-						     "is being freed, but "
-						     "appears to already have "
-						     "a job %u(%u) running "
-						     "on it.",
-						     found_record->bg_block_id,
-						     found_record->
-						     job_ptr->job_id,
-						     found_record->job_running);
-						if (job_requeue(0,
-								found_record->
-								job_ptr->job_id,
-								-1,
-								(uint16_t)
-								NO_VAL,
-								false)) {
-							error("Couldn't "
-							      "requeue job %u, "
-							      "failing it: %s",
-							      found_record->
-							      job_ptr->job_id,
-							      slurm_strerror(
-								      rc));
-							job_fail(found_record->
-								 job_ptr->
-								 job_id);
-						}
+					if (kill_job_list) {
+						bg_status_process_kill_job_list(
+							kill_job_list, 1);
+						list_destroy(kill_job_list);
 					}
-
 					free_block_list(NO_VAL, tmp_list, 1, 0);
 					list_destroy(tmp_list);
 				}

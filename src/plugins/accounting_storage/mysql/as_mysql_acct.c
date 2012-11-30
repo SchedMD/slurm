@@ -675,6 +675,7 @@ empty:
 		if (acct_cond->assoc_cond->acct_list)
 			list_destroy(acct_cond->assoc_cond->acct_list);
 		acct_cond->assoc_cond->acct_list = list_create(NULL);
+		acct_cond->assoc_cond->with_deleted = acct_cond->with_deleted;
 	}
 
 	while ((row = mysql_fetch_row(result))) {

@@ -562,12 +562,12 @@ extern void requeue_and_error(bg_record_t *bg_record, char *reason)
 	}
 
 	if (bg_record->job_running > NO_JOB_RUNNING)
-		bg_requeue_job(bg_record->job_running, 0);
+		bg_requeue_job(bg_record->job_running, 0, 0);
 	else if (bg_record->job_list) {
 		ListIterator itr = list_iterator_create(bg_record->job_list);
 		struct job_record *job_ptr;
 		while ((job_ptr = list_next(itr)))
-			bg_requeue_job(job_ptr->job_id, 0);
+			bg_requeue_job(job_ptr->job_id, 0, 0);
 		list_iterator_destroy(itr);
 	}
 	slurm_mutex_lock(&block_state_mutex);
