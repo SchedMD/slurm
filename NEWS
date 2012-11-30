@@ -39,6 +39,7 @@ documents those changes that are of interest to users and admins.
     with associations get the deleted associations as well.
  -- BGQ - Handle shared blocks that need to be removed and have jobs running
     on them.  This should only happen in extreme conditions.
+ -- Fix inconsistency for hostlists that have more than 1 range.
 
 * Changes in SLURM 2.4.4
 ========================
