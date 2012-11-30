@@ -542,6 +542,9 @@ extern int free_block_list(uint32_t job_id, List track_list,
 		if (destroy && !bg_record->destroy)
 			bg_record->destroy = destroy;
 
+		if (destroy && (bg_record->state & BG_BLOCK_ERROR_FLAG))
+			resume_block(bg_record);
+
 		if (bg_record->job_ptr
 		    && !IS_JOB_FINISHED(bg_record->job_ptr)) {
 			info("We are freeing a block (%s) that "
