@@ -321,7 +321,8 @@ extern bool block_mp_passthrough(bg_record_t *bg_record, int mp_bit)
 }
 
 /* block_state_mutex must be unlocked before calling this. */
-extern void bg_requeue_job(uint32_t job_id, bool wait_for_start)
+extern void bg_requeue_job(uint32_t job_id, bool wait_for_start,
+			   bool slurmctld_locked)
 {
 	int rc;
 	slurmctld_lock_t job_write_lock = {
@@ -333,13 +334,15 @@ extern void bg_requeue_job(uint32_t job_id, bool wait_for_start)
 	if (wait_for_start)
 		sleep(2);
 
-	lock_slurmctld(job_write_lock);
+	if (!slurmctld_locked)
+		lock_slurmctld(job_write_lock);
 	if ((rc = job_requeue(0, job_id, -1, (uint16_t)NO_VAL, false))) {
 		error("Couldn't requeue job %u, failing it: %s",
 		      job_id, slurm_strerror(rc));
 		job_fail(job_id);
 	}
-	unlock_slurmctld(job_write_lock);
+	if (!slurmctld_locked)
+		unlock_slurmctld(job_write_lock);
 }
 
 /* if SLURM_ERROR you will need to fail the job with
@@ -585,7 +588,7 @@ extern int free_block_list(uint32_t job_id, List track_list,
 	slurm_mutex_unlock(&block_state_mutex);
 
 	if (kill_job_list) {
-		bg_status_process_kill_job_list(kill_job_list);
+		bg_status_process_kill_job_list(kill_job_list, 0);
 		list_destroy(kill_job_list);
 		kill_job_list = NULL;
 	}

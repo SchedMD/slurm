@@ -786,7 +786,7 @@ static void _do_block_poll(void)
 	slurm_mutex_unlock(&block_state_mutex);
 	unlock_slurmctld(job_read_lock);
 
-	bg_status_process_kill_job_list(kill_job_list);
+	bg_status_process_kill_job_list(kill_job_list, 0);
 
 	if (updated == 1)
 		last_bg_update = time(NULL);
@@ -967,7 +967,7 @@ static void _do_hardware_poll(int level, uint16_t *coords,
 	if ((ba_mp = coord2ba_mp(coords)))
 		_handle_midplane_update(bgqsys, ba_mp, &delete_list);
 
-	bg_status_process_kill_job_list(kill_job_list);
+	bg_status_process_kill_job_list(kill_job_list, 0);
 
 	if (delete_list) {
 		bool delete_it = 0;
@@ -1105,7 +1105,7 @@ void event_handler::handleBlockStateChangedRealtimeEvent(
 	slurm_mutex_unlock(&block_state_mutex);
 	unlock_slurmctld(job_read_lock);
 
-	bg_status_process_kill_job_list(kill_job_list);
+	bg_status_process_kill_job_list(kill_job_list, 0);
 
 	last_bg_update = time(NULL);
 }
@@ -1337,7 +1337,7 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 	slurm_mutex_unlock(&block_state_mutex);
 	unlock_slurmctld(job_read_lock);
 
-	bg_status_process_kill_job_list(kill_job_list);
+	bg_status_process_kill_job_list(kill_job_list, 0);
 
 	if (delete_list) {
 		/* The only reason blocks are added to this list is if

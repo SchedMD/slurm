@@ -356,7 +356,8 @@ extern List bg_status_create_kill_job_list(void)
 	return list_create(_destroy_kill_struct);
 }
 
-extern void bg_status_process_kill_job_list(List kill_job_list)
+extern void bg_status_process_kill_job_list(List kill_job_list,
+					    bool slurmctld_locked)
 {
 	kill_job_struct_t *freeit = NULL;
 
@@ -366,7 +367,7 @@ extern void bg_status_process_kill_job_list(List kill_job_list)
 	/* kill all the jobs from unexpectedly freed blocks */
 	while ((freeit = list_pop(kill_job_list))) {
 		debug2("Trying to requeue job %u", freeit->jobid);
-		bg_requeue_job(freeit->jobid, 0);
+		bg_requeue_job(freeit->jobid, 0, slurmctld_locked);
 		_destroy_kill_struct(freeit);
 	}
 }

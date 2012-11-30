@@ -48,7 +48,8 @@ extern int bg_status_update_block_state(bg_record_t *bg_record,
 					uint16_t state,
 					List kill_job_list);
 extern List bg_status_create_kill_job_list(void);
-extern void bg_status_process_kill_job_list(List kill_job_list);
+extern void bg_status_process_kill_job_list(List kill_job_list,
+					    bool slurmctld_locked);
 
 /* defined in the various bridge_status' */
 extern int bridge_status_init(void);
