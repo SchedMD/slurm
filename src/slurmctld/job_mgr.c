@@ -8694,8 +8694,8 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 
 	if (notify_srun_static == -1) {
 		char *launch_type = slurm_get_launch_type();
-		if (!strcmp(launch_type, "launch/aprun") ||
-		    !strcmp(launch_type, "launch/poe"))
+		/* do this for all but slurm (poe, aprun, etc...) */
+		if (strcmp(launch_type, "launch/slurm"))
 			notify_srun_static = 1;
 		else
 			notify_srun_static = 0;
