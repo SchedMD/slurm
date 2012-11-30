@@ -424,7 +424,7 @@ test14.6   Test sbcast logging (--verbose option).
 test14.7   Test sbcast security issues.
 test14.8   Test sbcast transmission buffer options (--size and
            --fanout options).
-
+test14.9   Verify that an sbcast credential is properly validated.
 
 test15.#   Testing of salloc options.
 =====================================
