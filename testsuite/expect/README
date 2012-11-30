@@ -321,6 +321,8 @@ test7.13   Verify the correct setting of a job's ExitCode
 test7.14   Verify the ability to modify the Derived Exit Code/String fields
            of a job record in the database
 test7.15   Verify signal mask of tasks have no ignored signals.
+test7.16   Verify that auth/munge credential is properly validated.
+
 
 test8.#    Test of Blue Gene specific functionality.
 =================================================
