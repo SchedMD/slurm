@@ -248,6 +248,14 @@ int initialize_and_process_args(int argc, char *argv[])
 		_opt_list();
 
 	if (opt.launch_cmd) {
+		char *launch_type = slurm_get_launch_type();
+		if (!strcmp(launch_type, "launch/slurm")) {
+			error("--launch-cmd option is invalid with %s",
+			      launch_type);
+			xfree(launch_type);
+			exit(1);
+		}
+		xfree(launch_type);
 		launch_g_create_job_step(NULL, 0, NULL, NULL);
 		exit(0);
 	}
