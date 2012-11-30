@@ -2271,11 +2271,24 @@ int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 /* Pack an sbcast credential into a buffer including the digital signature */
 void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer)
 {
+	static int bad_cred_test = -1;
 	xassert(sbcast_cred);
 	xassert(sbcast_cred->siglen > 0);
 
 	_pack_sbcast_cred(sbcast_cred, buffer);
-	packmem(sbcast_cred->signature, sbcast_cred->siglen, buffer);
+	if (bad_cred_test == -1) {
+		char *sbcast_env = getenv("SLURM_SBCAST_AUTH_FAIL_TEST");
+		bad_cred_test = atoi(sbcast_env);
+	}
+	if (bad_cred_test > 0) {
+		int i = ((int) time(NULL)) % sbcast_cred->siglen;
+		char save_sig = sbcast_cred->signature[i];
+		sbcast_cred->signature[i]++;
+		packmem(sbcast_cred->signature, sbcast_cred->siglen, buffer);
+		sbcast_cred->signature[i] = save_sig;
+	} else {
+		packmem(sbcast_cred->signature, sbcast_cred->siglen, buffer);
+	}
 }
 
 /* Pack an sbcast credential into a buffer including the digital signature */
