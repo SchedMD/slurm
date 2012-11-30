@@ -1161,7 +1161,8 @@ static int hostrange_hn_within(hostrange_t hr, hostname_t hn)
 		len2  = strlen(hn->prefix);
 		ldiff = len1 - len2;
 
-		if (ldiff > 0 && (strlen(hn->suffix) >= ldiff)) {
+		if (ldiff > 0 && isdigit(hr->prefix[len1-1])
+		    && (strlen(hn->suffix) >= ldiff)) {
 			char *p = '\0';
 			/* Tack on ldiff of the hostname's suffix to that of
 			 * it's prefix */
