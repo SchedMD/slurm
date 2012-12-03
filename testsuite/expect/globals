@@ -721,9 +721,20 @@ proc wait_for_all_jobs { job_name incr_sleep } {
 				}
 			}
 		}
+		if {$matches == -1} {
+			break
+		}
 	}
 	if {$matches != 0} {
-		exec $scancel -n $job_name
+		spawn $scancel -n $job_name
+		expect {
+			timeout {
+				send_user "No response from scancel\n"
+			}
+			eof {
+				wait
+			}
+		}
 	}
 	return $matches
 }

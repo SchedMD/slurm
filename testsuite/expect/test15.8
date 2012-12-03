@@ -42,6 +42,7 @@ print_header $test_id
 # Spawn a srun immediate execution job with hold (priority==0) option,
 # The job can't run immediately with a priority of zero
 #
+set job_id  0
 set timeout 10
 set salloc_pid [spawn $salloc --immediate=3 --hold -t1 -v $bin_pwd]
 expect {

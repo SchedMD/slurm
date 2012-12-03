@@ -54,7 +54,8 @@ exec $bin_cc -o $file_prog $file_prog.c
 # submit job to run 4 mins, but get signaled 2 mins before time limit
 # so it should execute between 1 and 2 minutes before signal
 #
-set run_time 0
+set began_flag 0
+set run_time   0
 set timeout [expr $max_job_delay + 120]
 set srun_pid [spawn $srun -t4 --signal=2@120 ./$file_prog]
 expect {

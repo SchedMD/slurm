@@ -68,7 +68,9 @@ proc sdiag_all { } {
 
 sdiag_all
 
-set perm_denied 0
+set jobs_started   0
+set jobs_submitted 0
+set perm_denied    0
 spawn $sdiag --reset
 expect {
 	-re "permission denied" {

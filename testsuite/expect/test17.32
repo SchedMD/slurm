@@ -125,7 +125,7 @@ if {$matches != 2} {
 }
 if {$tasks != $task_cnt} {
 	send_user "\nFAILURE: Did not get proper number of tasks: "
-	send_user "($task != $task_cnt)\n"
+	send_user "($tasks != $task_cnt)\n"
 	set exit_code 1
 }
 
