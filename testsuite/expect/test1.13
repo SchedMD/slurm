@@ -70,6 +70,7 @@ if {$matches != 1} {
 # Note the small value of timeout
 #
 set matches 0
+set timeout $max_job_delay
 set srun_pid [spawn $srun --immediate -v -t1 $bin_pwd]
 expect {
 	-re "error" {

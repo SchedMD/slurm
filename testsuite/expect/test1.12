@@ -55,6 +55,7 @@ make_bash_script $file_in "
   $scontrol show step \$SLURM_JOB_ID.\$SLURM_STEPID
 "
 
+set timeout $max_job_delay
 set srun_pid [spawn $srun -N1 -t1 --checkpoint=$ckpt_in ./$file_in]
 expect {
 	-re "Checkpoint=($number)" {

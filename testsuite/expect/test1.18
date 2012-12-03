@@ -41,7 +41,8 @@ print_header $test_id
 #
 # Run a job attempting to get some dummy license name
 #
-set match 0
+set match   0
+set timeout $max_job_delay
 set srun_pid [spawn $srun --licenses=DUMMY_FOR_TESTING $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Invalid license" {

@@ -55,7 +55,7 @@ print_header $test_id
 #
 set job_name      "AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHHIIIIIJJJJJKKKKKLLLLLMMMMM"
 set job_id         0
-
+set timeout        $max_job_delay
 set srun_pid [spawn $srun --verbose --job-name=$job_name -t1 $bin_id]
 expect {
 	# needed for cray systems
