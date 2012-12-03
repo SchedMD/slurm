@@ -2278,7 +2278,10 @@ void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer)
 	_pack_sbcast_cred(sbcast_cred, buffer);
 	if (bad_cred_test == -1) {
 		char *sbcast_env = getenv("SLURM_SBCAST_AUTH_FAIL_TEST");
-		bad_cred_test = atoi(sbcast_env);
+		if (sbcast_env)
+			bad_cred_test = atoi(sbcast_env);
+		else
+			bad_cred_test = 0;
 	}
 	if (bad_cred_test > 0) {
 		int i = ((int) time(NULL)) % sbcast_cred->siglen;
