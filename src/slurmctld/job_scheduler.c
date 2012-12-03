@@ -172,6 +172,11 @@ extern List build_job_queue(bool clear_start)
 		job_is_pending = IS_JOB_PENDING(job_ptr);
 		if (!job_is_pending || IS_JOB_COMPLETING(job_ptr))
 			continue;
+#ifdef HAVE_FRONT_END
+		/* At least one front-end node up at this point */
+		if (job_ptr->state_reason == WAIT_FRONT_END)
+			job_ptr->state_reason = WAIT_NO_REASON;
+#endif
 		/* ensure dependency shows current values behind a hold */
 		job_indepen = job_independent(job_ptr, 0);
 		if (job_is_pending && clear_start)
