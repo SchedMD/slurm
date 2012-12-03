@@ -158,6 +158,12 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 	if (!IS_JOB_PENDING(job_ptr) || IS_JOB_COMPLETING(job_ptr))
 		return false;
 
+#ifdef HAVE_FRONT_END
+	/* At least one front-end node up at this point */
+	if (job_ptr->state_reason == WAIT_FRONT_END)
+		job_ptr->state_reason = WAIT_NO_REASON;
+#endif
+
 	job_indepen = job_independent(job_ptr, 0);
 	if (clear_start)
 		job_ptr->start_time = (time_t) 0;
