@@ -803,9 +803,6 @@ static void _do_block_action_poll(void)
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = (bg_record_t *) list_next(itr))) {
-		BlockFilter filter;
-		Block::Ptrs vec;
-
 		if ((bg_record->magic != BLOCK_MAGIC)
 		    || !bg_record->bg_block_id)
 			continue;
