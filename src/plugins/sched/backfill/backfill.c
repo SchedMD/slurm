@@ -693,7 +693,7 @@ static int _attempt_backfill(void)
 		comp_time_limit = time_limit;
 		orig_time_limit = job_ptr->time_limit;
 		qos_ptr = job_ptr->qos_ptr;
-		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
+		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE) && slurm_get_preempt_mode())
 			time_limit = job_ptr->time_limit = 1;
 		else if (job_ptr->time_min && (job_ptr->time_min < time_limit))
 			time_limit = job_ptr->time_limit = job_ptr->time_min;
