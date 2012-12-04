@@ -3914,7 +3914,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			error_code = ESLURM_INVALID_NODE_NAME;
 			goto cleanup_fail;
 		}
-		if (job_desc->contiguous)
+		if ((job_desc->contiguous != (uint16_t) NO_VAL) &&
+		    (job_desc->contiguous))
 			bit_fill_gaps(req_bitmap);
 		i = bit_set_count(req_bitmap);
 		if (i > job_desc->min_nodes)
