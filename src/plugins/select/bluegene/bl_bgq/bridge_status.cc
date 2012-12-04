@@ -810,7 +810,7 @@ static void _do_block_action_poll(void)
 		bg_record->action =
 			bridge_block_get_action(bg_record->bg_block_id);
 
-		if (rt_waiting || slurmctld_config.shutdown_time)
+		if (slurmctld_config.shutdown_time)
 			break;
 	}
 	slurm_mutex_unlock(&block_state_mutex);
