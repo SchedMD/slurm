@@ -137,6 +137,7 @@ static pthread_t poll_thread;
 static pthread_t action_poll_thread;
 static bgsched::realtime::Client *rt_client_ptr = NULL;
 pthread_mutex_t rt_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t get_hardware_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* rt_mutex must be locked before calling this. */
 static void _bridge_status_disconnect()
@@ -1028,8 +1029,16 @@ static void *_before_rt_poll(void *no_data)
 	/* To make sure we don't have any missing state */
 	if (!rt_waiting && blocks_are_created)
 		_do_block_poll();
+	/* Since the RealTime server could YoYo this could be called
+	   many, many times.  bridge_get_compute_hardware is a heavy
+	   function so to avoid it being called too many times we will
+	   serialize things here.
+	*/
+	slurm_mutex_lock(&get_hardware_mutex);
 	if (!rt_waiting)
 		_do_hardware_poll(0, coords, bridge_get_compute_hardware());
+	slurm_mutex_unlock(&get_hardware_mutex);
+
 	return NULL;
 }
 
@@ -1475,6 +1484,7 @@ extern int bridge_status_fini(void)
 	}
 
 	pthread_mutex_destroy(&rt_mutex);
+	pthread_mutex_destroy(&get_hardware_mutex);
 
 	delete(rt_client_ptr);
 #endif
