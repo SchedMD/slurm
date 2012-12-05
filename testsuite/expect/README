@@ -339,6 +339,8 @@ test8.9    Bluegene/Q only: Test to make sure if a nodeboard goes unavailable
 	   job using the block with passthrough fails.
 test8.10   Bluegene/Q only: Test to make sure that the correct number of
 	   nodes and tasks in a job and a step.
+test8.11   Bluegene/Q only: Test that certain number of tasks will submit to
+           srun.
 test8.20   Bluegene/Q only: Test that job step allocations are a valid size
            and within the job's allocation
 test8.21   Bluegene/Q only: Test that multple job step allocations are
