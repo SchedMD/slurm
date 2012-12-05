@@ -75,6 +75,8 @@ static bool initial_poll = true;
 static bool rt_running = false;
 static bool rt_waiting = false;
 
+static void *_before_rt_poll(void *no_data);
+
 /*
  * Handle compute block status changes as a result of a block allocate.
  */
@@ -698,6 +700,13 @@ static void *_real_time(void *no_data)
 		}
 
 		if (rc == SLURM_SUCCESS) {
+			pthread_attr_t thread_attr;
+			slurm_attr_init(&thread_attr);
+			if (pthread_create(&before_rt_thread, &thread_attr,
+					   _before_rt_poll, NULL))
+				fatal("pthread_create error %m");
+			slurm_attr_destroy(&thread_attr);
+
 			/* receiveMessages will set this to false if
 			   all is well.  Otherwise we did fail.
 			*/
@@ -1001,10 +1010,6 @@ static void *_poll(void *no_data)
 		}
 
 		slurm_mutex_unlock(&rt_mutex);
-		/* This means we are doing outside of the thread so
-		   break */
-		if (initial_poll)
-			break;
 		sleep(1);
 	}
 
@@ -1027,7 +1032,7 @@ static void *_before_rt_poll(void *no_data)
 {
 	uint16_t coords[SYSTEM_DIMENSIONS];
 	/* To make sure we don't have any missing state */
-	if (!rt_waiting && blocks_are_created)
+	if ((!rt_waiting || initial_poll) && blocks_are_created)
 		_do_block_poll();
 	/* Since the RealTime server could YoYo this could be called
 	   many, many times.  bridge_get_compute_hardware is a heavy
@@ -1035,10 +1040,14 @@ static void *_before_rt_poll(void *no_data)
 	   serialize things here.
 	*/
 	slurm_mutex_lock(&get_hardware_mutex);
-	if (!rt_waiting)
+	if (!rt_waiting || initial_poll)
 		_do_hardware_poll(0, coords, bridge_get_compute_hardware());
 	slurm_mutex_unlock(&get_hardware_mutex);
-
+	/* If this was the first time through set to false so we
+	   handle things differently on every other call.
+	*/
+	if (initial_poll)
+		initial_poll = false;
 	return NULL;
 }
 
@@ -1424,10 +1433,6 @@ extern int bridge_status_init(void)
 
 	if (!kill_job_list)
 		kill_job_list = bg_status_create_kill_job_list();
-
-	/* get initial state */
-	_poll(NULL);
-	initial_poll = false;
 
 	rt_client_ptr = new(bgsched::realtime::Client);
 

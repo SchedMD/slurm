@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     request resources that reach a 'Max' limit.
  -- Permit SlurmUser or operator to change QOS of non-pending jobs (e.g.
     running jobs).
+ -- BGQ - move initial poll to beginning of realtime interaction, which will
+    also cause it to run if the realtime server ever goes away.
 
 * Changes in SLURM 2.5.0-rc2
 ============================
