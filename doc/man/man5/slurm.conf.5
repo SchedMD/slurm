@@ -160,7 +160,12 @@ determined by the value of \fBJobAcctGatherFrequency\fR.
 \fBAcctGatherEnergyType\fR
 Identifies the plugin to be used for energy consumption accounting.
 The jobacct_gather plugin and slurmd daemon call this plugin to collect
-energy consumption data for jobs and nodes.
+energy consumption data for jobs and nodes. The collection of energy 
+consumption data takes place on node level, hence only in case of exclusive 
+job allocation the energy consumption measurements will reflect the jobs 
+real consumption. In case of node sharing between jobs the reported consumed 
+energy per job (through sstat or sacct) will not reflect the real energy 
+consumed by the jobs. 
 
 Configurable values at present are:
 .RS
