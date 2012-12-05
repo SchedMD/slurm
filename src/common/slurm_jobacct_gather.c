@@ -1034,7 +1034,7 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 	if (from->energy.consumed_energy == NO_VAL)
 		dest->energy.consumed_energy = NO_VAL;
 	else
-	dest->energy.consumed_energy   += from->energy.consumed_energy;
+		dest->energy.consumed_energy += from->energy.consumed_energy;
 }
 
 extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
@@ -1062,5 +1062,5 @@ extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
 	if (jobacct->energy.consumed_energy == NO_VAL)
 		stats->consumed_energy = NO_VAL;
 	else
-	stats->consumed_energy = (double)jobacct->energy.consumed_energy;
+		stats->consumed_energy = (double)jobacct->energy.consumed_energy;
 }

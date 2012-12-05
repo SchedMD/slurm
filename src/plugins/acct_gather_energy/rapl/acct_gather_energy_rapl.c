@@ -416,7 +416,7 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 		if (local_energy->current_watts == NO_VAL)
 			energy->consumed_energy = NO_VAL;
 		else
-		_get_joules_task(energy);
+			_get_joules_task(energy);
 		break;
 	case ENERGY_DATA_STRUCT:
 		memcpy(energy, local_energy, sizeof(acct_gather_energy_t));
