@@ -6508,7 +6508,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		goto fini;
 
 	if (job_specs->qos) {
-		if (!authorized && !IS_JOB_PENDING(job_ptr)d)
+		if (!authorized && !IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
 		else {
 			slurmdb_qos_rec_t qos_rec;
