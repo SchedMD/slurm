@@ -1931,12 +1931,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 			      "and ending job.",
 			      job_ptr->job_id, jobinfo->bg_block_id);
 			slurm_mutex_unlock(&block_state_mutex);
-			if ((rc = job_requeue(0, job_ptr->job_id,
-					      -1, (uint16_t)NO_VAL, false))) {
-				error("Couldn't requeue job %u, failing it: %s",
-				      job_ptr->job_id, slurm_strerror(rc));
-				job_fail(job_ptr->job_id);
-			}
+			bg_requeue_job(job_ptr->job_id, 0, 1);
 			return NULL;
 		}
 		error("select_p_step_pick_nodes: Whoa, some how we got a "
