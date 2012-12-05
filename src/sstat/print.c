@@ -90,6 +90,7 @@ void print_fields(slurmdb_step_rec_t *step)
 	while ((field = list_next(print_fields_itr))) {
 		char *tmp_char = NULL;
 
+		memset(&outbuf, 0, sizeof(outbuf));
 		switch(field->type) {
 		case PRINT_AVECPU:
 
@@ -111,8 +112,9 @@ void print_fields(slurmdb_step_rec_t *step)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_CONSUMED_ENERGY:
-
-			convert_num_unit((float)step->stats.consumed_energy,
+			if (!fuzzy_equal(step->stats.consumed_energy, NO_VAL))
+				convert_num_unit((float)
+						step->stats.consumed_energy,
 					 outbuf, sizeof(outbuf),
 					 UNIT_NONE);
 

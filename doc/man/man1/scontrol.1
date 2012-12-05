@@ -1298,12 +1298,17 @@ energy accounting sample, in watts.
 .TP
 \fILowestJoules\fP
 The energy consumed by the node between the last time it was powered on and
-the last time it was registered by the slurmd daemon, in joules.
+the last time it was registered by slurmd, in joules.
 
 .TP
 \fIConsumedJoules\fP
 The energy consumed by the node between the last time it was registered by
 the slurmd daemon and the last node energy accounting sample, in joules.
+
+.PP
+If the reported value is "n/s" (not supported), the node does not support the
+configured \fBAcctGatherEnergyType\fR plugin. If the reported value is zero, energy
+accounting for nodes is disabled.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP
