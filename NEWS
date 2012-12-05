@@ -163,6 +163,8 @@ documents those changes that are of interest to users and admins.
  -- Fix inconsistency for hostlists that have more than 1 range.
  -- BGQ - Add mutex around recovery for the Real Time server to avoid hitting
     DB2 so hard.
+ -- BGQ - If an allocation exists on a block that has a 'D' action on it fail
+    job on future step creation attempts.
 
 * Changes in SLURM 2.4.4
 ========================
