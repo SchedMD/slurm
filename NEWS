@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Add DenyOnLimit flag for QOS to deny jobs at submission time if they
     request resources that reach a 'Max' limit.
+ -- Permit SlurmUser or operator to change QOS of non-pending jobs (e.g.
+    running jobs).
 
 * Changes in SLURM 2.5.0-rc2
 ============================
