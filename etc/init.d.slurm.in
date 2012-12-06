@@ -254,7 +254,7 @@ case "$1" in
 	slurmstop
 	;;
     status)
-	anystop=0
+	anystop=1
 	for prog in `$BINDIR/scontrol show daemons`; do
 	   slurmstatus $prog
 	   rc=$?
