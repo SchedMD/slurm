@@ -86,8 +86,7 @@
 #define NODE_STATE_VERSION      "VER006"
 #define NODE_2_5_STATE_VERSION  "VER006"	/* SLURM version 2.5 */
 #define NODE_2_4_STATE_VERSION  "VER005"	/* SLURM version 2.4 */
-#define NODE_2_2_STATE_VERSION  "VER004"	/* SLURM version 2.2 & 2.3 */
-#define NODE_2_1_STATE_VERSION  "VER003"	/* SLURM version 2.1 */
+#define NODE_2_3_STATE_VERSION  "VER004"	/* SLURM version 2.3 */
 
 /* Global variables */
 bitstr_t *avail_node_bitmap = NULL;	/* bitmap of available nodes */
@@ -339,7 +338,8 @@ extern int load_all_node_state ( bool state_only )
 			protocol_version = SLURM_PROTOCOL_VERSION;
 		} else if (!strcmp(ver_str, NODE_2_4_STATE_VERSION)) {
 			protocol_version = SLURM_2_4_PROTOCOL_VERSION;
-		}
+		} else if (!strcmp(ver_str, NODE_2_3_STATE_VERSION))
+			protocol_version = SLURM_2_3_PROTOCOL_VERSION;
 	}
 
 	if (protocol_version == (uint16_t)NO_VAL) {
