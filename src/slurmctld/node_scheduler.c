@@ -647,16 +647,18 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		time_t start_res = time(NULL);
 		rc = job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
 				   &exc_core_bitmap);
-		if ((rc != SLURM_SUCCESS) ||
-		    (bit_set_count(resv_bitmap) < min_nodes) ||
-		    (job_ptr->details->req_node_bitmap &&
-		     (!bit_super_set(job_ptr->details->req_node_bitmap,
-				     resv_bitmap)))) {
+		if (rc == ESLURM_NODES_BUSY) {
+			save_avail_node_bitmap = avail_node_bitmap;
+			avail_node_bitmap = bit_alloc(node_record_count);
 			FREE_NULL_BITMAP(resv_bitmap);
+			/* Continue executing through _pick_best_nodes() below
+			 * in order reject job if it can never run */
+		} else if (rc != SLURM_SUCCESS) {
+			FREE_NULL_BITMAP(resv_bitmap);
+			FREE_NULL_BITMAP(exc_core_bitmap);
 			return ESLURM_NODES_BUSY;	/* reserved */
-		}
-		if (resv_bitmap &&
-		    (!bit_equal(resv_bitmap, avail_node_bitmap))) {
+		} else if (resv_bitmap &&
+			   (!bit_equal(resv_bitmap, avail_node_bitmap))) {
 			bit_and(resv_bitmap, avail_node_bitmap);
 			save_avail_node_bitmap = avail_node_bitmap;
 			avail_node_bitmap = resv_bitmap;
