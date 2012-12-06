@@ -682,7 +682,7 @@ _reformat_hostlist(char *hostlist)
  *	expression
  */
 extern int
-scontrol_encode_hostlist(char *hostlist)
+scontrol_encode_hostlist(char *hostlist, bool sorted)
 {
 	char *io_buf = NULL, *tmp_list, *ranged_string;
 	int buf_size = 1024 * 1024;
@@ -719,6 +719,8 @@ scontrol_encode_hostlist(char *hostlist)
 		fprintf(stderr, "Invalid hostlist: %s\n", tmp_list);
 		return SLURM_ERROR;
 	}
+	if (sorted)
+		hostlist_sort(hl);
 	ranged_string = hostlist_ranged_string_xmalloc(hl);
 	printf("%s\n", ranged_string);
 	hostlist_destroy(hl);

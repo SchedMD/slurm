@@ -307,7 +307,8 @@ contents of the slurm.conf configuration file.
 Display the state of the specified entity with the specified identification.
 \fIENTITY\fP may be \fIaliases\fP, \fIconfig\fP, \fIdaemons\fP, \fIfrontend\fP,
 \fIjob\fP, \fInode\fP, \fIpartition\fP, \fIreservation\fP, \fIslurmd\fP,
-\fIstep\fP, \fItopology\fP, \fIhostlist\fP or \fIhostnames\fP
+\fIstep\fP, \fItopology\fP, \fIhostlist\fP, \fIhostlistsorted\fP or
+\fIhostnames\fP
 (also \fIblock\fP or \fIsubmp\fP on BlueGene systems).
 \fIID\fP can be used to identify a specific element of the identified
 entity: the configuration parameter name, job ID, node name, partition name,
@@ -340,6 +341,9 @@ element. The job step ID is of the form "job_id.step_id", (e.g. "1234.1").
 \fIslurmd\fP reports the current status of the slurmd daemon executing
 on the same node from which the scontrol command is executed (the
 local host). It can be useful to diagnose problems.
+By default \fIhostlist\fP does not sort the node list or make it
+unique (e.g. tux2,tux1,tux2 = tux[2,1-2]).  If you wanted a sorted
+list use \fIhostlistsorted\fP (e.g. tux2,tux1,tux2 = tux[1-2,2]).
 By default, all elements of the entity type specified are printed.
 For an \fIENTITY\fP of \fIjob\fP, if the job does not specify
 socket-per-node, cores-per-socket or threads-per-core then it
