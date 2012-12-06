@@ -1923,7 +1923,6 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		bg_record = find_bg_record_in_list(
 			bg_lists->main, jobinfo->bg_block_id);
 		if (!bg_record || (bg_record->magic != BLOCK_MAGIC)) {
-			int rc;
 			error("select_p_step_pick_nodes: "
 			      "Whoa, some how we got a bad block for job %u, "
 			      "it should be %s but we couldn't find "
