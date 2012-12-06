@@ -24,6 +24,6 @@ EXTRA_DIST += $(html_DATA)
 SUFFIXES = .html
 
 .8.html:
-	`dirname $<`/../man2html.py $(srcdir)/../../html/header.txt $(srcdir)/../../html/footer.txt $<
+	`dirname $<`/../man2html.py @SLURM_MAJOR@.@SLURM_MINOR@ $(srcdir)/../../html/header.txt $(srcdir)/../../html/footer.txt $<
 
 endif
