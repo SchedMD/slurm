@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.4.6
+========================
+
 * Changes in SLURM 2.4.5
 ========================
  -- Cray - On job kill requeust, send SIGCONT, SIGTERM, wait KillWait and send
