@@ -72,10 +72,11 @@
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/xmalloc.h"
+#include "src/common/strnatcmp.h"
 #include "src/common/timers.h"
-#include "src/common/xassert.h"
 #include "src/common/working_cluster.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -901,7 +902,7 @@ static int hostrange_prefix_cmp(hostrange_t h1, hostrange_t h2)
 	if (h2 == NULL)
 		return -1;
 
-	retval = strcmp(h1->prefix, h2->prefix);
+	retval = strnatcmp(h1->prefix, h2->prefix);
 	return retval == 0 ? h2->singlehost - h1->singlehost : retval;
 }
 
