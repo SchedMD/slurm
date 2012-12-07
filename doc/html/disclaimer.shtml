@@ -62,10 +62,11 @@ Copyright (C) 2002-2003 Linux NetworX<br>
 Copyright (C) 2002 University of Chicago<br>
 Copyright (C) 2001 Paul Marquess<br>
 Copyright (C) 2000 Markus Friedl<br>
+Copyright (C) 2000, 2004 by Martin Pool (mbp sourcefrog net)<br>
 Copyright (C) 1999 Kenneth Albanowski<br>
-Copyright (C) 1998 Todd C. Miller <Todd.Miller@courtesan.com><br>
+Copyright (C) 1998 Todd C. Miller (Todd.Miller@courtesan.com)<br>
 Copyright (C) 1996-2003 Maximum Entropy Data Consultants Ltd,<br>
-Copyright (C) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland<br>
+Copyright (C) 1995 Tatu Ylonen (ylo@cs.hut.fi), Espoo, Finland<br>
 Copyright (C) 1989-1994, 1996-1999, 2001 Free Software Foundation, Inc.</p>
 
 <p>Much of the work was performed under the auspices of the U.S. Department of
@@ -85,7 +86,7 @@ necessarily state or reflect those of the United States government or
 Lawrence Livermore National Security, LLC, and shall not be used for 
 advertising or product endorsement purposes.</p>
 
-<p style="text-align: center;">Last modified 30 October 2012</p>
+<p style="text-align: center;">Last modified 7 December 2012</p>
 
 <!--#include virtual="footer.txt"-->
 
