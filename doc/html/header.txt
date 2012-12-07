@@ -7,7 +7,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management,
-Linux clusters, high-performance computing, Livermore Computing">
+Linux clusters, high-performance computing">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <title>Simple Linux Utility for Resource Management</title>
 <link href="linuxstyles.css" rel="stylesheet" type="text/css">
@@ -21,6 +21,21 @@ Linux clusters, high-performance computing, Livermore Computing">
     customSearchControl.setResultSetSize(google.search.Search.SMALL_RESULTSET);
     customSearchControl.draw('cse');
   }, true);
+
+function window_check ()
+{
+	obj = document.getElementById('navigation');
+	if ((window.innerWidth>=800) && (window.innerHeight>=700) &&
+	    (screen.width>=800) && (screen.height>=700)) {
+	   obj.style.position = 'fixed';
+	} else {
+	   obj.style.position = 'absolute';
+	}
+}
+
+window.onload = window_check;
+window.onresize = window_check;
+
 </script>
 
 </head>
