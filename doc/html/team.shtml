@@ -1,14 +1,15 @@
 <!--#include virtual="header.txt"-->
 
-<h1>SLURM Team</h1>
-<p>SLURM development has been a joint effort of many companies and
-organizations. Lead SLURM developers are:
+<h1>Slurm Team</h1>
+<p>Slurm development has been a joint effort of many companies and
+organizations. Over 100 individuals have contributed to the project.
+Lead Slurm developers are:
 <ul>
 <li>Danny Auble (SchedMD, formerly with Lawrence Livermore National Laboratory)</li>
 <li>Morris Jette (SchedMD, formerly with Lawrence Livermore National Laboratory)</li>
 </ul>
 
-<p>SLURM contributors include:</p>
+<p>Slurm contributors include:</p>
 <ul>
 <!-- FUNDING ORGANIZATIONS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 <li><a href="http://www.bsc.es">Barcelona Supercomputing Center</a></li>
@@ -128,6 +129,6 @@ organizations. Lead SLURM developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 2 November 2012</p>
+<p style="text-align:center;">Last modified 7 December 2012</p>
 
 <!--#include virtual="footer.txt"-->
