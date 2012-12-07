@@ -31,8 +31,8 @@ Linux clusters, high-performance computing, Livermore Computing">
 <a href="slurm.shtml"><img class="displayed" src="slurm_logo.png" width="130" usemap="#Map"></a>
 
 <div id="version">Version @SLURM_VERSION@</div>
-
-<h2>About</h2>
+<p></p>
+<div id="slurmh2">About</div>
 <ul>
 	  <li><a href="overview.shtml" class="nav">Overview</a></li>
 	  <li><a href="meetings.shtml" class="nav">Meetings</a></li>
@@ -41,7 +41,7 @@ Linux clusters, high-performance computing, Livermore Computing">
 	  <li><a href="testimonials.shtml" class="nav">Testimonials</a></li>
 	  <li><a href="team.shtml" class="nav">SLURM Team</a></li>
 </ul>
-<h2>Using</h2>
+<div id="slurmh2">Using</div>
 <ul>
 	  <li><a href="tutorials.shtml" class="nav">Tutorials</a></li>
 	  <li><a href="documentation.shtml" class="nav">Documentation</a></li>
@@ -49,7 +49,7 @@ Linux clusters, high-performance computing, Livermore Computing">
 	  <li><a href="help.shtml" class="nav">Getting Help</a></li>
 	  <li><a href="mail.shtml"  class="nav">Mailing Lists</a></p>
 </ul>
-<h2>Installing</h2>
+<div id="slurmh2">Installing</div>
 <ul>
 	  <li><a href="platforms.shtml" class="nav">Platforms</a></li>
 	  <li><a href="download.shtml" class="nav">Download</a></li>

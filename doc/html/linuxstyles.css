@@ -11,8 +11,7 @@ body {
 }
 
 h1 { font-size: 150%; font-weight:bold; text-align:left; color: #066cb2; }
-h2 { font-size: 105%; font-weight:bold; text-align:left; padding-left: 5px;
-color: #066cb2; margin-bottom: -10px; }
+h2 { font-size: 105%; font-weight:bold; text-align:left; color: #066cb2; }
 h3 { font-size: 100%; font-weight:bold; text-align:left; color: #066cb2; }
 p  { font-size: 90%; }
 p ul  { font-size: 90%; }
@@ -21,6 +20,10 @@ ol {font-size: 90%;}
 ul ul { font-size: 100%; }
 li li { font-size: 100%; }
 pre {font-size: 90%; font-family:"Courier New", Courier, monospace}
+
+#slurmh2 { font-size: 105%; font-weight:bold; text-align:left;
+	   padding-left: 5px; color: #066cb2; margin-bottom: -10px; }
+
 #slurmtd {
     border:1px;
     border-color:#066cb2;
