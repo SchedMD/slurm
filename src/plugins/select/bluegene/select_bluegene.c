@@ -1870,7 +1870,6 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		bg_record = find_bg_record_in_list(
 			bg_lists->main, jobinfo->bg_block_id);
 		if (!bg_record || (bg_record->magic != BLOCK_MAGIC)) {
-			int rc;
 			error("select_p_step_pick_nodes: "
 			      "Whoa, some how we got a bad block for job %u, "
 			      "it should be %s but we couldn't find "
@@ -1878,12 +1877,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 			      "and ending job.",
 			      job_ptr->job_id, jobinfo->bg_block_id);
 			slurm_mutex_unlock(&block_state_mutex);
-			if ((rc = job_requeue(0, job_ptr->job_id,
-					      -1, (uint16_t)NO_VAL, false))) {
-				error("Couldn't requeue job %u, failing it: %s",
-				      job_ptr->job_id, slurm_strerror(rc));
-				job_fail(job_ptr->job_id);
-			}
+			bg_requeue_job(job_ptr->job_id, 0, 1);
 			return NULL;
 		}
 		error("select_p_step_pick_nodes: Whoa, some how we got a "
@@ -1891,7 +1885,21 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		      "(we found it so no big deal, but strange)",
 		      job_ptr->job_id, jobinfo->bg_block_id);
 		jobinfo->bg_record = bg_record;
+	} else if ((bg_record->action == BG_BLOCK_ACTION_FREE)
+		   && (bg_record->state == BG_BLOCK_INITED)) {
+		/* If we are in the action state of
+		   FREE of 'D' since the block won't be able to run any future
+		   jobs on it.
+		*/
+		info("select_p_step_pick_nodes: "
+		     "Already selected block %s can't be used, "
+		     "it has an action item of 'D' on it, ending job %u.",
+		     bg_record->bg_block_id, job_ptr->job_id);
+		slurm_mutex_unlock(&block_state_mutex);
+		bg_requeue_job(job_ptr->job_id, 0, 1);
+		return NULL;
 	}
+
 	xassert(!step_jobinfo->units_used);
 
 	xfree(step_jobinfo->bg_block_id);

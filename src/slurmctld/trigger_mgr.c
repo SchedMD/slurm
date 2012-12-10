@@ -74,8 +74,7 @@
 /* Change TRIGGER_STATE_VERSION value when changing the state save format */
 #define TRIGGER_STATE_VERSION      "VER004"
 #define TRIGGER_2_4_STATE_VERSION  "VER004"	/* SLURM version 2.4 */
-#define TRIGGER_2_2_STATE_VERSION  "VER003"	/* SLURM version 2.2 */
-#define TRIGGER_2_1_STATE_VERSION  "VER002"	/* SLURM version 2.1 */
+#define TRIGGER_2_3_STATE_VERSION  "VER003"	/* SLURM version 2.3 */
 
 List trigger_list;
 uint32_t next_trigger_id = 1;
@@ -748,7 +747,7 @@ static int _load_trigger_state(Buf buffer, uint16_t protocol_version)
 	if (trig_ptr->res_id)
 		trig_ptr->orig_res_id = xstrdup(trig_ptr->res_id);
 	trig_ptr->orig_time = trig_ptr->trig_time;
-	
+
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_list == NULL)
 		trigger_list = list_create(_trig_del);
@@ -931,7 +930,8 @@ extern int trigger_state_restore(void)
 	if (ver_str) {
 		if (!strcmp(ver_str, TRIGGER_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
-		}
+		} else if (!strcmp(ver_str, TRIGGER_2_3_STATE_VERSION))
+			protocol_version = SLURM_2_3_PROTOCOL_VERSION;
 	}
 
 	if (protocol_version == (uint16_t) NO_VAL) {

@@ -1400,7 +1400,14 @@ _show_it (int argc, char *argv[])
 			exit_code = 1;
 			fprintf(stderr, "invalid encode argument\n");
 			_usage();
-		} else if (scontrol_encode_hostlist(val))
+		} else if (scontrol_encode_hostlist(val, 0))
+			exit_code = 1;
+	} else if (strncasecmp (tag, "hostlistsorted", MAX(tag_len, 9)) == 0) {
+		if (!val) {
+			exit_code = 1;
+			fprintf(stderr, "invalid encode argument\n");
+			_usage();
+		} else if (scontrol_encode_hostlist(val, 1))
 			exit_code = 1;
 	} else if (strncasecmp (tag, "jobs", MAX(tag_len, 1)) == 0 ||
 		   strncasecmp (tag, "jobid", MAX(tag_len, 1)) == 0 ) {
@@ -1795,8 +1802,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      !!                       Repeat the last command entered.             \n\
 									   \n\
   <ENTITY> may be \"aliases\", \"config\", \"daemons\", \"frontend\",      \n\
-       \"hostlist\", \"hostnames\", \"job\", \"node\", \"partition\",      \n\
-       \"reservation\", \"slurmd\", \"step\", or \"topology\"              \n\
+       \"hostlist\", \"hostlistsorted\", \"hostnames\", \"job\", \"node\", \n\
+       \"partition\", \"reservation\", \"slurmd\", \"step\", or \"topology\"\n\
        (also for BlueGene only: \"block\" or \"subbp\").                   \n\
 									   \n\
   <ID> may be a configuration parameter name, job id, node name, partition \n\

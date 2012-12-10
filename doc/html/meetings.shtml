@@ -2,10 +2,6 @@
 
 <h1>Meetings</h1>
 
-<p><b>SLURM BoF at SC12</b><br>
-15 November 2012, 12:15<br>
-Salt Lake City, UT</p>
-
 <p><b>SLURM User Group Meeting 2013</b><br>
 Summer 2013<br>
 San Francisco, California, USA<br>
@@ -29,6 +25,6 @@ Host: Bull</p>
 Paris, France<br>
 Host: CEA</p>
 
-<p style="text-align:center;">Last modified 26 October 2012</p>
+<p style="text-align:center;">Last modified 6 December 2012</p>
 
 <!--#include virtual="footer.txt"-->

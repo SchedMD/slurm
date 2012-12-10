@@ -1,0 +1,162 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Bluegene/Q only: Test that checks that certain number of tasks
+#          will submit to srun.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2012 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.schedmd.com/slurmdocs/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id   "8.11"
+set exit_code 0
+set job_id    0
+set ret_code  0
+
+if {([test_bluegene] == 0) || [string compare [get_bluegene_type] "Q"]} {
+	send_user "\nWARNING: This test is only compatible with bluegene systems\n"
+	exit 0
+}
+
+# test number of jobs without overcommit
+proc submit_job { num_task } {
+	global exit_code srun job_id number bin_sleep ret_code
+
+	spawn $srun -N1 -n$num_task --ntasks-per-node=$num_task -v $bin_sleep 50
+	expect {
+		-re "jobid ($number)" {
+			set job_id $expect_out(1,string)
+			incr id_match
+			set ret_code 0
+		}
+		-re "You requested" {
+		        incr id_match
+			incr ret_code
+		}
+		timeout {
+			send_user "\nFAILURE: srun is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+}
+
+# test number of tasks with overcommit
+proc submit_job_over {num_task} {
+    	global exit_code srun job_id number bin_sleep ret_code
+
+	set id_match 0
+	spawn $srun -N1 -n$num_task --ntasks-per-node=$num_task -O -v $bin_sleep 50
+	expect {
+		-re "jobid ($number)" {
+			set job_id $expect_out(1,string)
+			incr id_match
+			set ret_code 0
+		}
+		-re "You requested" {
+		        incr id_match
+			incr ret_code
+		}
+		timeout {
+			send_user "\nFAILURE: srun is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+}
+
+# These number of tasks should pass with flying colors
+set goodtest "
+{1}
+{2}
+{4}
+{8}
+{16}
+"
+
+send_user "\nGood Tests:\n"
+foreach test $goodtest {
+	submit_job $test
+	if {$ret_code == 0} {
+		send_user "\nJob: $job_id was submitted as expected\n"
+	} else {
+		send_user "\nFAILURE: job should have been submitted but was not\n"
+		set exit_code 1
+	}
+}
+
+# Test these number of tasks with overcommit
+set overcommit_test "
+{32}
+{64}
+"
+send_user "\nTest with overcommit\n"
+foreach test $overcommit_test {
+	submit_job_over $test
+	if {$ret_code == 0} {
+		send_user "\nJob: $job_id was submitted as expected\n"
+	} else {
+		send_user "\nFAILURE: job should have been submitted but was not\n"
+		set exit_code 1
+	}
+}
+
+# These number of tasks should not pass
+set badtest "
+{3}
+{5}
+{9}
+{11}
+{13}
+{17}
+{32}
+{64}
+{128}
+"
+send_user "\nBad Tests:\n"
+foreach test $badtest {
+	submit_job $test
+	if {$ret_code != 0} {
+		send_user "\nThis error is expected do not worry\n"
+	} else {
+		send_user "\nFAILURE:Job was submitted when it should not have\n"
+		set exit_code 1
+	}
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
+}
+
+exit $exit_code

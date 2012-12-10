@@ -1031,7 +1031,10 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 		dest->sys_cpu_usec -= 1E6;
 	}
 	dest->act_cpufreq 	+= from->act_cpufreq;
-	dest->energy.consumed_energy   += from->energy.consumed_energy;
+	if (from->energy.consumed_energy == NO_VAL)
+		dest->energy.consumed_energy = NO_VAL;
+	else
+		dest->energy.consumed_energy += from->energy.consumed_energy;
 }
 
 extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
@@ -1056,5 +1059,8 @@ extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
 	stats->cpu_min_taskid = jobacct->min_cpu_id.taskid;
 	stats->cpu_ave = (double)jobacct->tot_cpu;
 	stats->act_cpufreq = (double)jobacct->act_cpufreq;
-	stats->consumed_energy = (double)jobacct->energy.consumed_energy;
+	if (jobacct->energy.consumed_energy == NO_VAL)
+		stats->consumed_energy = NO_VAL;
+	else
+		stats->consumed_energy = (double)jobacct->energy.consumed_energy;
 }

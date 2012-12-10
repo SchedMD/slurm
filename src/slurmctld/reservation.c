@@ -1334,11 +1334,11 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		/* Fields saved for internal use only (save state) */
 		safe_unpackstr_xmalloc(&resv_ptr->assoc_list,
 				       &uint32_tmp,	buffer);
+		safe_unpack32(&resv_ptr->cpu_cnt,	buffer);
 		safe_unpack32(&resv_ptr->resv_id,	buffer);
 		safe_unpack_time(&resv_ptr->start_time_prev, buffer);
 		safe_unpack_time(&resv_ptr->start_time, buffer);
 		safe_unpack32(&resv_ptr->duration,	buffer);
-		safe_unpackstr_xmalloc(&core_inx_str, &uint32_tmp, buffer);
 	}
 	return resv_ptr;
 

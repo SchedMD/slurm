@@ -145,7 +145,7 @@ static uint64_t _read_msr(int fd, int which)
 				     "this can be common.  Check your system "
 				     "if you think this is in error.");
 		} else {
-			error("Check if your CPU has RAPL support for %s: %m",
+			debug("Check if your CPU has RAPL support for %s: %m",
 			      _msr_string(which));
 		}
 	}
@@ -253,6 +253,8 @@ extern int acct_gather_energy_p_update_node_energy(void)
 	uint64_t result;
 	double ret;
 
+	if (local_energy->current_watts == NO_VAL)
+		return rc;
 	acct_gather_energy_shutdown = false;
 	if (!acct_gather_energy_shutdown) {
 		uint32_t node_current_energy;
@@ -372,11 +374,18 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 extern int init(void)
 {
 	int i;
+	uint64_t result;
+
 	_hardware();
 	for (i = 0; i < nb_pkg; i++)
 		pkg_fd[i] = _open_msr(pkg2cpu[i]);
 
 	local_energy = acct_gather_energy_alloc();
+
+	result = _read_msr(pkg_fd[0], MSR_RAPL_POWER_UNIT);
+	if (result == 0)
+		local_energy->current_watts = NO_VAL;
+
 	debug_flags = slurm_get_debug_flags();
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
@@ -404,7 +413,10 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	int rc = SLURM_SUCCESS;
 	switch (data_type) {
 	case ENERGY_DATA_JOULES_TASK:
-		_get_joules_task(energy);
+		if (local_energy->current_watts == NO_VAL)
+			energy->consumed_energy = NO_VAL;
+		else
+			_get_joules_task(energy);
 		break;
 	case ENERGY_DATA_STRUCT:
 		memcpy(energy, local_energy, sizeof(acct_gather_energy_t));
