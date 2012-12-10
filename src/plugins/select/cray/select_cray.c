@@ -848,7 +848,7 @@ extern int select_p_reconfigure(void)
 }
 
 extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
-				     uint32_t core_cnt, bitstr_t **core_bitmap)
+				     uint32_t *core_cnt, bitstr_t **core_bitmap)
 {
 	return other_resv_test(avail_bitmap, node_cnt, core_cnt, core_bitmap);
 }

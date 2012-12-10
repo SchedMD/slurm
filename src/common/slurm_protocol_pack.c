@@ -3182,7 +3182,15 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, Buf buffer,
 		} else
 			array_len = 0;
 		pack32_array(msg->node_cnt, array_len, buffer);
-		pack32(msg->core_cnt,      buffer);
+		if (msg->core_cnt) {
+			for (array_len = 0; msg->core_cnt[array_len];
+			     array_len++) {
+				/* determine array length */
+			}
+			array_len++;	/* Include trailing zero */
+		} else
+			array_len = 0;
+		pack32_array(msg->core_cnt, array_len, buffer);
 		packstr(msg->node_list,    buffer);
 		packstr(msg->features,     buffer);
 		packstr(msg->licenses,     buffer);
@@ -3264,7 +3272,15 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, Buf buffer,
 			/* This avoids a pointer to a zero length buffer */
 			xfree(tmp_ptr->node_cnt);
 		}
-		safe_unpack32(&tmp_ptr->core_cnt,      buffer);
+		safe_unpack32_array(&tmp_ptr->core_cnt, &uint32_tmp, buffer);
+		if (uint32_tmp > 0) {
+			/* Must be zero terminated */
+			if (tmp_ptr->core_cnt[uint32_tmp-1] != 0)
+				goto unpack_error;
+		} else {
+			/* This avoids a pointer to a zero length buffer */
+			xfree(tmp_ptr->core_cnt);
+		}
 		safe_unpackstr_xmalloc(&tmp_ptr->node_list,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->features,
