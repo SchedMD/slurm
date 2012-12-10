@@ -1,4 +1,4 @@
-.TH "slurm.conf" "8" "November 2012" "slurm.conf 2.5" "Slurm configuration file"
+.TH "slurm.conf" "8" "December 2012" "slurm.conf 2.5" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -953,9 +953,13 @@ on SPANK plugins, see the \fBspank\fR(8) manual.
 .TP
 \fBPreemptMode\fR
 Enables gang scheduling and/or controls the mechanism used to preempt
-jobs.  When the \fBPreemptType\fR parameter is set to enable
-preemption, the \fBPreemptMode\fR selects the mechanism used to
-preempt the lower priority jobs.  The \fBGANG\fR option is used to
+jobs.  When the \fBPreemptType\fR parameter is set to enable preemption, the
+\fBPreemptMode\fR selects the default mechanism used to preempt the lower
+priority jobs for the cluster. \fBPreemptMode\fR may be specified on a
+per partition basis to over ride this default value if
+\fBPreemptType=preempt/partition_prio\fR, but a valid default \fBPreemptMode\fR
+value must be specified for the cluster as a whole when preemption is enabled.
+The \fBGANG\fR option is used to
 enable gang scheduling independent of whether preemption is enabled
 (the \fBPreemptType\fR setting).  The \fBGANG\fR option can be
 specified in addition to a \fBPreemptMode\fR setting with the two
@@ -1009,6 +1013,7 @@ This is the default.
 Job preemption is based upon partition priority.
 Jobs in higher priority partitions (queues) may preempt jobs from lower
 priority partitions.
+This is not compatible with \fBPreemptMode=OFF\fR.
 .TP
 \fBpreempt/qos\fR
 Job preemption rules are specified by Quality Of Service (QOS) specifications

@@ -99,8 +99,9 @@ parameters are not critical.
 </LI>
 <LI>
 <B>PreemptMode</B>: Specifies the mechanism used to preempt low priority jobs.
-The PreemptMode can be specified on a system-wide basis or on a per-partition
-basis when <I>PreemptType=preempt/partition_prio</I>. Note that when specified 
+The PreemptMode should be specified for the cluster as a whole, although
+different values can be configured on each partition when
+<I>PreemptType=preempt/partition_prio</I>. Note that when specified 
 on a partition, a compatible mode must also be specified system-wide;
 specifically if a PreemptMode is set to SUSPEND for any partition, then
 the system-wide PreemptMode must include the GANG parameter so the module
@@ -391,6 +392,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 16 May 2011</p>
+<p style="text-align:center;">Last modified 10 December 2012</p>
 
 <!--#include virtual="footer.txt"-->
