@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "September 2012" "scontrol 2.5" "Slurm components"
+.TH SCONTROL "1" "December 2012" "scontrol 2.5" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -849,6 +849,11 @@ The "NoResp" state will only set the "NoResp" flag for a node without
 changing its underlying state.
 While all of the above states are valid, some of them are not valid new
 node states given their prior state.
+If the node state code printed is followed by "~", this indicates
+the node is presently in a power saving mode (typically
+running at reduced frequency).
+If the node state code is followed by "#", this indicates
+the node is presently being powered up or configured.
 Generally only "DRAIN", "FAIL" and "RESUME" should be used.
 NOTE: The scontrol command should not be used to change node state on Cray
 systems. Use Cray tools such as \fIxtprocadmin\fR instead.
