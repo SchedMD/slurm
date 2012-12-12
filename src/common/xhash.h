@@ -49,8 +49,8 @@ void* xhash_get(xhash_t* table, const char* key);
  * @returns the newly allocated hash table. Must be freed with xhash_free.
  */
 xhash_t* xhash_init(xhash_idfunc_t idfunc,
-                xhash_hashfunc_t hashfunc, /* Currently: should be NULL */
-                uint32_t table_size);      /* Currently: unused         */
+		    xhash_hashfunc_t hashfunc, /* Currently: should be NULL */
+		    uint32_t table_size);      /* Currently: unused         */
 
 /** Add an item to the hash table.
  * @param table is the hash table you want to add the item to.

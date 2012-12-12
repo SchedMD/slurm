@@ -41,7 +41,9 @@ static xhash_item_t* xhash_find(xhash_t* table, const char* key)
 {
 	xhash_item_t* hash_item = NULL;
 	uint32_t      key_size  = 0;
-	if (!table || !key) return NULL;
+
+	if (!table || !key)
+		return NULL;
 	key_size = strlen(key);
 	HASH_FIND(hh, table->ht, key, key_size, hash_item);
 	return hash_item;
@@ -50,16 +52,18 @@ static xhash_item_t* xhash_find(xhash_t* table, const char* key)
 void* xhash_get(xhash_t* table, const char* key)
 {
 	xhash_item_t* item = xhash_find(table, key);
-	if (!item) return NULL;
+	if (!item)
+		return NULL;
 	return item->item;
 }
 
 xhash_t* xhash_init(xhash_idfunc_t idfunc,
-                xhash_hashfunc_t hashfunc,
-                uint32_t table_size)
+		    xhash_hashfunc_t hashfunc,
+		    uint32_t table_size)
 {
 	xhash_t* table = NULL;
-	if (!idfunc) return NULL;
+	if (!idfunc)
+		return NULL;
 	table = (xhash_t*)xmalloc(sizeof(xhash_t));
 	table->ht = NULL; /* required by uthash */
 	table->count = 0;
@@ -70,7 +74,8 @@ xhash_t* xhash_init(xhash_idfunc_t idfunc,
 void* xhash_add(xhash_t* table, void* item)
 {
 	xhash_item_t* hash_item = NULL;
-	if (!table || !item) return NULL;
+	if (!table || !item)
+		return NULL;
 	hash_item          = (xhash_item_t*)xmalloc(sizeof(xhash_item_t));
 	hash_item->item    = item;
 	hash_item->key     = table->identify(item);
@@ -84,7 +89,8 @@ void* xhash_add(xhash_t* table, void* item)
 void xhash_delete(xhash_t* table, const char* key)
 {
 	xhash_item_t* item = xhash_find(table, key);
-	if (!item) return;
+	if (!item)
+		return;
 	HASH_DELETE(hh, table->ht, item);
 	xfree(item);
 	--table->count;
@@ -92,7 +98,8 @@ void xhash_delete(xhash_t* table, const char* key)
 
 uint32_t xhash_count(xhash_t* table)
 {
-	if (!table) return 0;
+	if (!table)
+		return 0;
 	return table->count;
 }
 
@@ -102,9 +109,10 @@ void xhash_walk(xhash_t* table,
 {
 	xhash_item_t* current_item = NULL;
 	xhash_item_t* tmp = NULL;
-	if (!table || !callback) return;
+	if (!table || !callback)
+		return;
 	HASH_ITER(hh, table->ht, current_item, tmp) {
-		callback(current_item->item, arg);
+		  callback(current_item->item, arg);
 	}
 }
 
@@ -112,10 +120,12 @@ void xhash_free(xhash_t* table)
 {
 	xhash_item_t* current_item = NULL;
 	xhash_item_t* tmp = NULL;
-	if (!table) return;
+
+	if (!table)
+		return;
 	HASH_ITER(hh, table->ht, current_item, tmp) {
-		HASH_DEL(table->ht, current_item);
-		xfree(current_item);
+		  HASH_DEL(table->ht, current_item);
+		  xfree(current_item);
 	}
 	xfree(table);
 }

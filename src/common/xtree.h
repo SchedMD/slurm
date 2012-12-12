@@ -91,9 +91,9 @@ uint32_t xtree_get_count(xtree_t* tree);
  * root node. This function assumes a flag is given or abort o/w.
  */
 xtree_node_t* xtree_add_child(xtree_t* tree,
-                        xtree_node_t* parent,
-                        void* data,
-                        uint8_t flags);
+			      xtree_node_t* parent,
+			      void* data,
+			      uint8_t flags);
 
 /** Add a sibling to a node.
  * @param tree is the tree to manage, NULL tree is illegal.
@@ -109,9 +109,9 @@ xtree_node_t* xtree_add_child(xtree_t* tree,
  * @returns the new child node added or NULL for illegal parameter.
  */
 xtree_node_t* xtree_add_sibling(xtree_t* tree,
-                       xtree_node_t* node,
-                       void* data,
-                       uint8_t flags);
+				xtree_node_t* node,
+				void* data,
+				uint8_t flags);
 
 /** Calculate a tree depth by calling xtree_walk to browse the tree.
  * This function browse the complete tree to determine the greatest depth of
@@ -167,9 +167,9 @@ uint32_t xtree_node_depth(const xtree_node_t* node);
  *          through the tree, nonzero value continue the browsing.
  */
 typedef uint8_t (*xtree_walk_function_t)(xtree_node_t* node,
-                uint8_t which,
-                uint32_t level,
-                void* arg);
+					 uint8_t which,
+					 uint32_t level,
+					 void* arg);
 
 /** Browse the tree depth-first, left-to-right. It mimics the C twalk
  * function.
@@ -191,15 +191,15 @@ typedef uint8_t (*xtree_walk_function_t)(xtree_node_t* node,
  * @returns the lastest node for which action was aborted or NULL.
  */
 xtree_node_t* xtree_walk(xtree_t* tree,
-                 xtree_node_t* node,
-                 uint32_t min_level,
-                 uint32_t max_level,
-                 xtree_walk_function_t action,
-                 void* arg);
+			 xtree_node_t* node,
+			 uint32_t min_level,
+			 uint32_t max_level,
+			 xtree_walk_function_t action,
+			 void* arg);
 
 /** @see xtree_find */
 typedef uint8_t (*xtree_find_compare_t)(const void* node_data,
-                const void* arg);
+					const void* arg);
 
 /** Convenient function which calls xtree_walk to find a node according to
  * a compare function.
@@ -213,8 +213,8 @@ typedef uint8_t (*xtree_find_compare_t)(const void* node_data,
  * @returns the found node or NULL.
  */
 xtree_node_t* xtree_find(xtree_t* tree,
-                xtree_find_compare_t compare,
-                const void* arg);
+			 xtree_find_compare_t compare,
+			 const void* arg);
 
 /** Deletes a node from the tree. You can use xtree_find or xtree_walk to
  * find the wanted node. This function frees the node data thanks to the
@@ -242,8 +242,8 @@ xtree_node_t* xtree_delete(xtree_t* tree, xtree_node_t* node);
  *          array number of elements, the array is null terminated.
  */
 xtree_node_t** xtree_get_parents(xtree_t* tree,
-                xtree_node_t* node,
-                uint32_t* size);
+				 xtree_node_t* node,
+				 uint32_t* size);
 
 /** Get common ancestor of all given nodes.
  * Example: 1 -> 2 -> 7, common ancestor of 2 and 7 is 1.
@@ -260,8 +260,8 @@ xtree_node_t** xtree_get_parents(xtree_t* tree,
  *          no ancestor).
  */
 xtree_node_t* xtree_common(xtree_t* tree,
-                const xtree_node_t* const* nodes,
-                uint32_t size);
+			   const xtree_node_t* const* nodes,
+			   uint32_t size);
 
 /** Get recursive list of leaves starting from node.
  * User is responsible for `xfree`'ing the returned list.
@@ -275,8 +275,8 @@ xtree_node_t* xtree_common(xtree_t* tree,
  *          array number of elements, the array is null terminated.
  */
 xtree_node_t** xtree_get_leaves(xtree_t* tree,
-                xtree_node_t* node,
-                uint32_t* size);
+				xtree_node_t* node,
+				uint32_t* size);
 
 #endif
 
