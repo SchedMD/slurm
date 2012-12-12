@@ -3077,7 +3077,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			 && (job_desc->min_cpus != NO_VAL)) {
 			job_desc->min_nodes = job_desc->min_cpus;
 			if (job_desc->ntasks_per_node
-			    && job_desc->ntasks_per_node != NO_VAL)
+			    && job_desc->ntasks_per_node != (uint16_t)NO_VAL)
 				job_desc->min_nodes /=
 					job_desc->ntasks_per_node;
 		}
@@ -3118,7 +3118,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					 * validated beforehand. */
 					if (job_desc->ntasks_per_node
 					    && (job_desc->ntasks_per_node
-						!= NO_VAL))
+						!= (uint16_t)NO_VAL))
 						divisor = (float)job_desc->
 							ntasks_per_node
 							/ bg_conf->cpu_ratio;
