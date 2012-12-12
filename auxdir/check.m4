@@ -1,3 +1,17 @@
+##*****************************************************************************
+#  COPYRIGHT:
+#    Copyright (C) 2012 CEA/DAM/DIF
+#
+#  SYNOPSIS:
+#    AM_PATH_CHECK
+#
+#  DESCRIPTION:
+#    Test for check header file and library are installed
+#
+#  WARNINGS:
+#    This macro must be placed after AC_PROG_CC or equivalent.
+##*****************************************************************************
+
 dnl AM_PATH_CHECK([MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]]])
 dnl Test for check, and define CHECK_CFLAGS and CHECK_LIBS
 dnl
