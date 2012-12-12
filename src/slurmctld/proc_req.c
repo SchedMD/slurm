@@ -1790,6 +1790,27 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 	}
 }
 
+static bool _is_valid_will_run_user(job_desc_msg_t *job_desc_msg, uid_t uid)
+{
+	char *account = "";
+
+	if ((uid == job_desc_msg->user_id) || validate_operator(uid))
+		return true;
+
+	if (job_desc_msg->job_id == NO_VAL) {
+		struct job_record *job_ptr;
+		job_ptr = find_job_record(job_desc_msg->job_id);
+		if (job_ptr)
+			account = job_ptr->account;
+	} else if (job_desc_msg->account) {
+		account = job_desc_msg->account;
+	}
+	if (assoc_mgr_is_user_acct_coord(acct_db_conn, uid, account))
+		return true;
+
+	return false;
+}
+
 /* _slurm_rpc_job_will_run - process RPC to determine if job with given
  *	configuration can be initiated */
 static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
@@ -1797,7 +1818,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	/* init */
 	DEF_TIMERS;
 	int error_code = SLURM_SUCCESS;
-	struct job_record *job_ptr;
+	struct job_record *job_ptr = NULL;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
 	/* Locks: Write job, read node, read partition */
 	slurmctld_lock_t job_write_lock = {
@@ -1811,9 +1832,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	debug2("Processing RPC: REQUEST_JOB_WILL_RUN from uid=%d", uid);
 
 	/* do RPC call */
-	if ( (uid != job_desc_msg->user_id) && (!validate_operator(uid)) &&
-	     !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					   job_ptr->account) ) {
+	if (!_is_valid_will_run_user(job_desc_msg, uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, JOB_WILL_RUN RPC from uid=%d", uid);
 	}
