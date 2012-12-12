@@ -814,6 +814,7 @@ static void _do_block_action_poll(void)
 		if (slurmctld_config.shutdown_time)
 			break;
 	}
+	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
 }
 
