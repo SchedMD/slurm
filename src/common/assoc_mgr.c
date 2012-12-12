@@ -1973,6 +1973,9 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
 				   NO_LOCK, READ_LOCK, NO_LOCK };
 
+	if (!acct_name)
+		return false;
+
 	if (!assoc_mgr_user_list)
 		if (_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
 			return false;
