@@ -133,6 +133,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.4.6
 ========================
  -- Correct WillRun authentication logic when issued for non-job owner.
+ -- BGQ - fix memory leak
 
 * Changes in SLURM 2.4.5
 ========================
