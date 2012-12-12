@@ -1797,7 +1797,7 @@ static bool _is_valid_will_run_user(job_desc_msg_t *job_desc_msg, uid_t uid)
 	if ((uid == job_desc_msg->user_id) || validate_operator(uid))
 		return true;
 
-	if (job_desc_msg->job_id == NO_VAL) {
+	if (job_desc_msg->job_id != NO_VAL) {
 		struct job_record *job_ptr;
 		job_ptr = find_job_record(job_desc_msg->job_id);
 		if (job_ptr)
