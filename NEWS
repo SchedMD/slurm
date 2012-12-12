@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Correction to hostlist sorting for hostnames that contain two numeric
     components and the first numeric component has various sizes (e.g.
     "rack9blade1" should come before "rack10blade1")
+ -- BGQ - Only poll on initialized blocks instead of calling getBlocks on
+    each block independently.
 
 * Changes in SLURM 2.5.0
 ========================
