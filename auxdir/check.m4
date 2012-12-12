@@ -38,9 +38,10 @@ AC_DEFUN([AM_PATH_CHECK],
 int main ()
 {
   int major, minor, micro;
+  int rc;
   char *tmp_version;
 
-  system ("touch conf.check-test");
+  rc = system ("touch conf.check-test");
 
   /* HP/UX 9 (%@#!) writes to sscanf strings */
   tmp_version = strdup("$min_check_version");
