@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = 	-I$(top_srcdir)
-LDADD =		$(top_builddir)/src/api/libslurm.o $(DL_LIBS)
+INCLUDES = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
+LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) $(HWLOC_LIBS)
 
 check_PROGRAMS = \
 	$(TESTS)

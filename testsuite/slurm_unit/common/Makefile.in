@@ -373,8 +373,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-INCLUDES = -I$(top_srcdir)
-LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
+INCLUDES = -I$(top_srcdir)  $(HWLOC_CPPFLAGS)
+LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS) $(HWLOC_LIBS)
 @HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@ -Wall -ansi -pedantic \
 @HAVE_CHECK_TRUE@	-std=c99 -D_ISO99_SOURCE \
 @HAVE_CHECK_TRUE@	-Wunused-but-set-variable \
