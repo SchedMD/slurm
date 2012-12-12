@@ -128,6 +128,10 @@ documents those changes that are of interest to users and admins.
  -- Restructure of srun code to allow outside programs to utilize existing
     logic.
 
+* Changes in SLURM 2.4.6
+========================
+ -- Correct WillRun authentication logic when issued for non-job owner.
+
 * Changes in SLURM 2.4.5
 ========================
  -- Cray - On job kill requeust, send SIGCONT, SIGTERM, wait KillWait and send
