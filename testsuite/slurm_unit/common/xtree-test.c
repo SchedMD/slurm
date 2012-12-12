@@ -3,11 +3,11 @@
  * framework (si jamais il y a déjà des exemples).
  */
 
-#include <stdlib.h>
-#include <xmalloc.h>
 #include <check.h>
+#include <stdlib.h>
 
-#include <xtree.h>
+#include <src/common/xmalloc.h>
+#include <src/common/xtree.h>
 
 /*****************************************************************************
  * FIXTURE                                                                   *

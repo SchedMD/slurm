@@ -1,9 +1,9 @@
 #include <check.h>
-#include <xmalloc.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <xhash.h>
+#include <src/common/xhash.h>
+#include <src/common/xmalloc.h>
 
 /* FIXME: how to check memory leaks with valgrind ? (to check if xhash_free
  * does free all structures correctly). */
