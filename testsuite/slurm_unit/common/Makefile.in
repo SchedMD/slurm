@@ -51,13 +51,17 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-check_PROGRAMS = $(am__EXEEXT_1)
-TESTS = pack-test$(EXEEXT) log-test$(EXEEXT) bitstring-test$(EXEEXT)
+check_PROGRAMS = $(am__EXEEXT_2)
+TESTS = pack-test$(EXEEXT) log-test$(EXEEXT) bitstring-test$(EXEEXT) \
+	$(am__EXEEXT_1)
+@HAVE_CHECK_TRUE@am__append_1 = xtree-test \
+@HAVE_CHECK_TRUE@		 xhash-test
+
 subdir = testsuite/slurm_unit/common
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
-	$(top_srcdir)/auxdir/libtool.m4 \
+	$(top_srcdir)/auxdir/check.m4 $(top_srcdir)/auxdir/libtool.m4 \
 	$(top_srcdir)/auxdir/ltoptions.m4 \
 	$(top_srcdir)/auxdir/ltsugar.m4 \
 	$(top_srcdir)/auxdir/ltversion.m4 \
@@ -99,8 +103,10 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__EXEEXT_1 = pack-test$(EXEEXT) log-test$(EXEEXT) \
-	bitstring-test$(EXEEXT)
+@HAVE_CHECK_TRUE@am__EXEEXT_1 = xtree-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	xhash-test$(EXEEXT)
+am__EXEEXT_2 = pack-test$(EXEEXT) log-test$(EXEEXT) \
+	bitstring-test$(EXEEXT) $(am__EXEEXT_1)
 bitstring_test_SOURCES = bitstring-test.c
 bitstring_test_OBJECTS = bitstring-test.$(OBJEXT)
 bitstring_test_LDADD = $(LDADD)
@@ -117,6 +123,18 @@ pack_test_OBJECTS = pack-test.$(OBJEXT)
 pack_test_LDADD = $(LDADD)
 pack_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
 	$(am__DEPENDENCIES_1)
+xhash_test_SOURCES = xhash-test.c
+xhash_test_OBJECTS = xhash_test-xhash-test.$(OBJEXT)
+xhash_test_DEPENDENCIES =
+xhash_test_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(xhash_test_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+xtree_test_SOURCES = xtree-test.c
+xtree_test_OBJECTS = xtree_test-xtree-test.$(OBJEXT)
+xtree_test_DEPENDENCIES =
+xtree_test_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(xtree_test_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -130,8 +148,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = bitstring-test.c log-test.c pack-test.c
-DIST_SOURCES = bitstring-test.c log-test.c pack-test.c
+SOURCES = bitstring-test.c log-test.c pack-test.c xhash-test.c \
+	xtree-test.c
+DIST_SOURCES = bitstring-test.c log-test.c pack-test.c xhash-test.c \
+	xtree-test.c
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -164,6 +184,8 @@ BLUEGENE_LOADED = @BLUEGENE_LOADED@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CHECK_CFLAGS = @CHECK_CFLAGS@
+CHECK_LIBS = @CHECK_LIBS@
 CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -353,6 +375,15 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
 LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
+@HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@ -Wall -ansi -pedantic \
+@HAVE_CHECK_TRUE@	-std=c99 -D_ISO99_SOURCE \
+@HAVE_CHECK_TRUE@	-Wunused-but-set-variable \
+@HAVE_CHECK_TRUE@	-I$(top_srcdir)/src/common \
+@HAVE_CHECK_TRUE@	$(top_builddir)/src/common/libcommon.la
+@HAVE_CHECK_TRUE@xtree_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@xtree_test_LDADD = @CHECK_LIBS@
+@HAVE_CHECK_TRUE@xhash_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@xhash_test_LDADD = @CHECK_LIBS@
 all: all-am
 
 .SUFFIXES:
@@ -405,6 +436,12 @@ log-test$(EXEEXT): $(log_test_OBJECTS) $(log_test_DEPENDENCIES) $(EXTRA_log_test
 pack-test$(EXEEXT): $(pack_test_OBJECTS) $(pack_test_DEPENDENCIES) $(EXTRA_pack_test_DEPENDENCIES) 
 	@rm -f pack-test$(EXEEXT)
 	$(LINK) $(pack_test_OBJECTS) $(pack_test_LDADD) $(LIBS)
+xhash-test$(EXEEXT): $(xhash_test_OBJECTS) $(xhash_test_DEPENDENCIES) $(EXTRA_xhash_test_DEPENDENCIES) 
+	@rm -f xhash-test$(EXEEXT)
+	$(xhash_test_LINK) $(xhash_test_OBJECTS) $(xhash_test_LDADD) $(LIBS)
+xtree-test$(EXEEXT): $(xtree_test_OBJECTS) $(xtree_test_DEPENDENCIES) $(EXTRA_xtree_test_DEPENDENCIES) 
+	@rm -f xtree-test$(EXEEXT)
+	$(xtree_test_LINK) $(xtree_test_OBJECTS) $(xtree_test_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -415,6 +452,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bitstring-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack-test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xhash_test-xhash-test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xtree_test-xtree-test.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -436,6 +475,34 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
+
+xhash_test-xhash-test.o: xhash-test.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xhash_test_CFLAGS) $(CFLAGS) -MT xhash_test-xhash-test.o -MD -MP -MF $(DEPDIR)/xhash_test-xhash-test.Tpo -c -o xhash_test-xhash-test.o `test -f 'xhash-test.c' || echo '$(srcdir)/'`xhash-test.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/xhash_test-xhash-test.Tpo $(DEPDIR)/xhash_test-xhash-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='xhash-test.c' object='xhash_test-xhash-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xhash_test_CFLAGS) $(CFLAGS) -c -o xhash_test-xhash-test.o `test -f 'xhash-test.c' || echo '$(srcdir)/'`xhash-test.c
+
+xhash_test-xhash-test.obj: xhash-test.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xhash_test_CFLAGS) $(CFLAGS) -MT xhash_test-xhash-test.obj -MD -MP -MF $(DEPDIR)/xhash_test-xhash-test.Tpo -c -o xhash_test-xhash-test.obj `if test -f 'xhash-test.c'; then $(CYGPATH_W) 'xhash-test.c'; else $(CYGPATH_W) '$(srcdir)/xhash-test.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/xhash_test-xhash-test.Tpo $(DEPDIR)/xhash_test-xhash-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='xhash-test.c' object='xhash_test-xhash-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xhash_test_CFLAGS) $(CFLAGS) -c -o xhash_test-xhash-test.obj `if test -f 'xhash-test.c'; then $(CYGPATH_W) 'xhash-test.c'; else $(CYGPATH_W) '$(srcdir)/xhash-test.c'; fi`
+
+xtree_test-xtree-test.o: xtree-test.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xtree_test_CFLAGS) $(CFLAGS) -MT xtree_test-xtree-test.o -MD -MP -MF $(DEPDIR)/xtree_test-xtree-test.Tpo -c -o xtree_test-xtree-test.o `test -f 'xtree-test.c' || echo '$(srcdir)/'`xtree-test.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/xtree_test-xtree-test.Tpo $(DEPDIR)/xtree_test-xtree-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='xtree-test.c' object='xtree_test-xtree-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xtree_test_CFLAGS) $(CFLAGS) -c -o xtree_test-xtree-test.o `test -f 'xtree-test.c' || echo '$(srcdir)/'`xtree-test.c
+
+xtree_test-xtree-test.obj: xtree-test.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xtree_test_CFLAGS) $(CFLAGS) -MT xtree_test-xtree-test.obj -MD -MP -MF $(DEPDIR)/xtree_test-xtree-test.Tpo -c -o xtree_test-xtree-test.obj `if test -f 'xtree-test.c'; then $(CYGPATH_W) 'xtree-test.c'; else $(CYGPATH_W) '$(srcdir)/xtree-test.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/xtree_test-xtree-test.Tpo $(DEPDIR)/xtree_test-xtree-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='xtree-test.c' object='xtree_test-xtree-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xtree_test_CFLAGS) $(CFLAGS) -c -o xtree_test-xtree-test.obj `if test -f 'xtree-test.c'; then $(CYGPATH_W) 'xtree-test.c'; else $(CYGPATH_W) '$(srcdir)/xtree-test.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
