@@ -376,9 +376,9 @@ extern int task_pre_launch (slurmd_job_t *job)
 		pid_t mypid  = job->envtp->task_pid;
 
 		slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
-
 		if (get_cpuset(&new_mask, job) &&
 		    (!(job->cpu_bind_type & CPU_BIND_NONE))) {
+			reset_cpuset(&new_mask, &cur_mask);
 			if (conf->task_plugin_param & CPU_BIND_CPUSETS) {
 				rc = slurm_set_cpuset(base, path, mypid,
 						sizeof(new_mask),

@@ -271,6 +271,34 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 	return false;
 }
 
+/* Translate global CPU index to local CPU index. This is needed for
+ * Power7 processors with multi-threading disabled. On those processors,
+ * the CPU mask has gaps for the unused threads (different from Intel
+ * processors) which need to be skipped over in the mask used in the
+ * set system call. */
+void reset_cpuset(cpu_set_t *new_mask, cpu_set_t *cur_mask)
+{
+	cpu_set_t newer_mask;
+	int cur_offset, new_offset = 0, last_set = -1;
+
+	CPU_ZERO(&newer_mask);
+	for (cur_offset = 0; cur_offset < CPU_SETSIZE; cur_offset++) {
+		if (!CPU_ISSET(cur_offset, cur_mask))
+			continue;
+		if (CPU_ISSET(new_offset, new_mask)) {
+			CPU_SET(cur_offset, &newer_mask);
+			last_set = cur_offset;
+		}
+		new_offset++;
+	}
+
+	CPU_ZERO(new_mask);
+	for (cur_offset = 0; cur_offset <= last_set; cur_offset++) {
+		if (CPU_ISSET(cur_offset, &newer_mask))
+			CPU_SET(cur_offset, new_mask);
+	}
+}
+
 int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask)
 {
 	int rval;

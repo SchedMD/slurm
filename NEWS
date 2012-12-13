@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     "rack9blade1" should come before "rack10blade1")
  -- BGQ - Only poll on initialized blocks instead of calling getBlocks on
     each block independently.
+ -- Fix of task/affinity plugin logic for Power7 processors having hyper-
+    threading disabled (cpu mask has gaps).
 
 * Changes in SLURM 2.5.0
 ========================
