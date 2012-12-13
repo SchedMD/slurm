@@ -154,7 +154,7 @@ static int _apply_decay(double decay_factor)
 	   everything out so don't waste time doing it */
 	if (!decay_factor)
 		return SLURM_ERROR;
-	else if (!calc_fairshare)
+	else if (!calc_fairshare || (decay_factor == 1))
 		return SLURM_SUCCESS;
 
 	assoc_mgr_lock(&locks);
