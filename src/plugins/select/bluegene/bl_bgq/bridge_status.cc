@@ -75,6 +75,8 @@ static bool initial_poll = true;
 static bool rt_running = false;
 static bool rt_waiting = false;
 
+static void *_before_rt_poll(void *no_data);
+
 /*
  * Handle compute block status changes as a result of a block allocate.
  */
@@ -137,6 +139,7 @@ static pthread_t poll_thread;
 static pthread_t action_poll_thread;
 static bgsched::realtime::Client *rt_client_ptr = NULL;
 pthread_mutex_t rt_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t get_hardware_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* rt_mutex must be locked before calling this. */
 static void _bridge_status_disconnect()
@@ -697,6 +700,13 @@ static void *_real_time(void *no_data)
 		}
 
 		if (rc == SLURM_SUCCESS) {
+			pthread_attr_t thread_attr;
+			slurm_attr_init(&thread_attr);
+			if (pthread_create(&before_rt_thread, &thread_attr,
+					   _before_rt_poll, NULL))
+				fatal("pthread_create error %m");
+			slurm_attr_destroy(&thread_attr);
+
 			/* receiveMessages will set this to false if
 			   all is well.  Otherwise we did fail.
 			*/
@@ -803,9 +813,6 @@ static void _do_block_action_poll(void)
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
 	while ((bg_record = (bg_record_t *) list_next(itr))) {
-		BlockFilter filter;
-		Block::Ptrs vec;
-
 		if ((bg_record->magic != BLOCK_MAGIC)
 		    || !bg_record->bg_block_id)
 			continue;
@@ -813,7 +820,7 @@ static void _do_block_action_poll(void)
 		bg_record->action =
 			bridge_block_get_action(bg_record->bg_block_id);
 
-		if (rt_waiting || slurmctld_config.shutdown_time)
+		if (slurmctld_config.shutdown_time)
 			break;
 	}
 	slurm_mutex_unlock(&block_state_mutex);
@@ -1003,10 +1010,6 @@ static void *_poll(void *no_data)
 		}
 
 		slurm_mutex_unlock(&rt_mutex);
-		/* This means we are doing outside of the thread so
-		   break */
-		if (initial_poll)
-			break;
 		sleep(1);
 	}
 
@@ -1029,10 +1032,22 @@ static void *_before_rt_poll(void *no_data)
 {
 	uint16_t coords[SYSTEM_DIMENSIONS];
 	/* To make sure we don't have any missing state */
-	if (!rt_waiting && blocks_are_created)
+	if ((!rt_waiting || initial_poll) && blocks_are_created)
 		_do_block_poll();
-	if (!rt_waiting)
+	/* Since the RealTime server could YoYo this could be called
+	   many, many times.  bridge_get_compute_hardware is a heavy
+	   function so to avoid it being called too many times we will
+	   serialize things here.
+	*/
+	slurm_mutex_lock(&get_hardware_mutex);
+	if (!rt_waiting || initial_poll)
 		_do_hardware_poll(0, coords, bridge_get_compute_hardware());
+	slurm_mutex_unlock(&get_hardware_mutex);
+	/* If this was the first time through set to false so we
+	   handle things differently on every other call.
+	*/
+	if (initial_poll)
+		initial_poll = false;
 	return NULL;
 }
 
@@ -1419,10 +1434,6 @@ extern int bridge_status_init(void)
 	if (!kill_job_list)
 		kill_job_list = bg_status_create_kill_job_list();
 
-	/* get initial state */
-	_poll(NULL);
-	initial_poll = false;
-
 	rt_client_ptr = new(bgsched::realtime::Client);
 
 	slurm_attr_init(&thread_attr);
@@ -1478,6 +1489,7 @@ extern int bridge_status_fini(void)
 	}
 
 	pthread_mutex_destroy(&rt_mutex);
+	pthread_mutex_destroy(&get_hardware_mutex);
 
 	delete(rt_client_ptr);
 #endif

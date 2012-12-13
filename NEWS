@@ -5,6 +5,10 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Add DenyOnLimit flag for QOS to deny jobs at submission time if they
     request resources that reach a 'Max' limit.
+ -- Permit SlurmUser or operator to change QOS of non-pending jobs (e.g.
+    running jobs).
+ -- BGQ - move initial poll to beginning of realtime interaction, which will
+    also cause it to run if the realtime server ever goes away.
 
 * Changes in SLURM 2.5.0-rc2
 ============================
@@ -157,6 +161,10 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Handle shared blocks that need to be removed and have jobs running
     on them.  This should only happen in extreme conditions.
  -- Fix inconsistency for hostlists that have more than 1 range.
+ -- BGQ - Add mutex around recovery for the Real Time server to avoid hitting
+    DB2 so hard.
+ -- BGQ - If an allocation exists on a block that has a 'D' action on it fail
+    job on future step creation attempts.
 
 * Changes in SLURM 2.4.4
 ========================

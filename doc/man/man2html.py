@@ -9,6 +9,9 @@ include_regex = re.compile(include_pat)
 url_pat = r'(\s+href\s*=\s*")([^"#]+)(#[^"]+)?(")'
 url_regex = re.compile(url_pat)
 
+version_pat = r'(@SLURM_VERSION@)'
+version_regex = re.compile(version_pat)
+
 dirname = ''
 
 # Instert tags for options
@@ -149,8 +152,13 @@ def url_rewrite(matchobj):
     else:
         return matchobj.group(0)
 
+def version_rewrite(matchobj):
+    global version
+    return version
+
 files = []
-for f in sys.argv[3:]:
+version = sys.argv[1]
+for f in sys.argv[4:]:
     posLastDot = f.rfind(".")
     mhtmlname = f[:posLastDot] + ".mhtml"
     cmd = "man2html " + f + "> " + mhtmlname
@@ -165,8 +173,9 @@ for filename in files:
     shtml = file(filename, 'r')
     html = file(newfilename, 'w')
 
-    lines = file(sys.argv[1], 'r').read()
+    lines = file(sys.argv[2], 'r').read()
     lines = lines.replace(".shtml",".html")
+    lines = version_regex.sub(version_rewrite, lines)
     html.write(lines)
 #    html.write(<!--#include virtual="header.txt"-->)
     for line in shtml.readlines():
@@ -191,7 +200,8 @@ for filename in files:
 
         line = url_regex.sub(url_rewrite, line)
         html.write(line)
-    lines = file(sys.argv[2], 'r').read()
+    lines = file(sys.argv[3], 'r').read()
+    lines = version_regex.sub(version_rewrite, lines)
     html.write(lines)
 #    html.write(<!--#include virtual="footer.txt"-->)
     html.close()

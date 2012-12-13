@@ -404,10 +404,6 @@ void Plugin::execute(const bgsched::runjob::Terminated& data)
 
 	boost::lock_guard<boost::mutex> lock( _mutex );
 
-	// output failed nodes
-	const bgsched::runjob::Terminated::Nodes& nodes =
-		data.software_error_nodes();
-
 	slurm_mutex_lock(&runjob_list_lock);
 	if (runjob_list) {
 		itr = list_iterator_create(runjob_list);
@@ -438,23 +434,6 @@ void Plugin::execute(const bgsched::runjob::Terminated& data)
 		   send it.
 		*/
 		sig = SIG_NODE_FAIL;
-	} else if (!nodes.empty()) {
-		char tmp_char[6];
-
-		std::cerr << runjob_job->job_id << "." << runjob_job->step_id
-			  << " had " << nodes.size() << " nodes fail"
-			  << std::endl;
-		BOOST_FOREACH(const bgsched::runjob::Node& i, nodes) {
-			sprintf(tmp_char, "%u%u%u%u%u",
-				i.coordinates().a(),
-				i.coordinates().b(),
-				i.coordinates().c(),
-				i.coordinates().d(),
-				i.coordinates().e());
-			std::cerr << i.location() << ": "
-				  << i.coordinates()
-				  << tmp_char << std::endl;
-		}
 	} else if (!data.message().empty()) {
 		std::cerr << runjob_job->job_id << "." << runjob_job->step_id
 			  << " had a message of '" << data.message()

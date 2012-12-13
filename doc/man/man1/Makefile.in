@@ -670,7 +670,7 @@ uninstall-man: uninstall-man1
 
 
 @HAVE_MAN2HTML_TRUE@.1.html:
-@HAVE_MAN2HTML_TRUE@	`dirname $<`/../man2html.py $(srcdir)/../../html/header.txt $(srcdir)/../../html/footer.txt $<
+@HAVE_MAN2HTML_TRUE@	`dirname $<`/../man2html.py @SLURM_MAJOR@.@SLURM_MINOR@  $(srcdir)/../../html/header.txt $(srcdir)/../../html/footer.txt $<
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

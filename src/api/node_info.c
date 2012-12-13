@@ -293,11 +293,15 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** power Line ******/
-	snprintf(tmp_line, sizeof(tmp_line), "CurrentWatts=%u LowestJoules=%u "
-		 "ConsumedJoules=%u",
-		 node_ptr->energy->current_watts, node_ptr->energy->base_watts,
+	if (node_ptr->energy->current_watts == NO_VAL)
+		snprintf(tmp_line, sizeof(tmp_line), "CurrentWatts=n/s "
+				"LowestJoules=n/s ConsumedJoules=n/s");
+	else
+		snprintf(tmp_line, sizeof(tmp_line), "CurrentWatts=%u "
+				"LowestJoules=%u ConsumedJoules=%u",
+				node_ptr->energy->current_watts,
+				node_ptr->energy->base_watts,
 		 node_ptr->energy->consumed_energy);
-
 	xstrcat(out, tmp_line);
 
 	if (one_liner)
