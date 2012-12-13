@@ -1097,9 +1097,11 @@ not possible to also explicitly specify allowed accounts.
 
 .TP
 \fICoreCnt\fP=<num>
-Identify number of cores to be reserved. This should only be used for
-reservations that are less than one node in size. Otherwise use the
-\fINodeCnt\fP option described below.
+This option is only suported when SelectType=select/cons_res. Identify number of 
+cores to be reserved. If NodeCnt is used, this is the total number of cores to 
+reserve where cores per node is CoreCnt/NodeCnt. If a nodelist is used, this 
+should be an array of core numbers by node: Nodes=node[1-5] CoreCnt=2,2,3,3,4
+	
 
 .TP
 \fILicenses\fP=<license>
