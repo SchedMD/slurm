@@ -32,7 +32,7 @@
 ############################################################################
 
 proc inc3_11_1 {} {
-	global def_node user_name def_partition exit_code cluster_cpus res_name
+	global def_node user_name def_partition exit_code cluster_cpus res_name def_node_name
 
 	set num_nodes [available_nodes $def_partition]
 	
@@ -60,6 +60,7 @@ proc inc3_11_1 {} {
 	{StartTime=now+10minutes   EndTime=now   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name Licenses=DUMMY_FOR_TESTING Flags=ignore_jobs}
 	{StartTime=now   Duration=5   NodeCnt=1 CoreCnt=$core_res_num  User=$user_name}
+	{StartTime=now   Duration=5   Nodes=$def_node_name\[1\-2\] CoreCnt=1  User=$user_name}
 "
 	#{StartTime=now   Duration=5   Nodes=$def_node   Account=badaccountname}
 
