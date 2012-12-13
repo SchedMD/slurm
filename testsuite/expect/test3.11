@@ -358,14 +358,14 @@ expect {
 }
 
 inc3_11_1
-#inc3_11_2
-#inc3_11_3
-#inc3_11_4
-#inc3_11_5
-#inc3_11_6
+inc3_11_2
+inc3_11_3
+inc3_11_4
+inc3_11_5
+inc3_11_6
 if {$cons_res_actived == 1} {
-	#inc3_11_7
-	#inc3_11_8
+	inc3_11_7
+	inc3_11_8
 	inc3_11_9
 }
 
