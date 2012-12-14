@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
     threading disabled (cpu mask has gaps).
  -- Fix of job priority ordering with sched/builtin and priority/multifactor.
     Patch from Chris Reed.
+ -- CRAY - Fix for setting up the aprun for a large job (+2000 nodes).
 
 * Changes in SLURM 2.5.0
 ========================

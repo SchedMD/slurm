@@ -736,11 +736,10 @@ struct basil_accel_param* build_accel_param(struct job_record* job_ptr)
 extern int do_basil_reserve(struct job_record *job_ptr)
 {
 	struct nodespec *ns_head = NULL;
-	uint16_t mppwidth = 0, mppdepth, mppnppn;
 	/* mppmem must be at least 1 for gang scheduling to work so
 	 * if you are wondering why gang scheduling isn't working you
 	 * should check your slurm.conf for DefMemPerNode */
-	uint32_t mppmem = 0, node_min_mem = 0;
+	uint32_t mppdepth, mppnppn, mppwidth = 0, mppmem = 0, node_min_mem = 0;
 	uint32_t resv_id;
 	int i, first_bit, last_bit;
 	long rc;
@@ -839,7 +838,7 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 
 	/* mppwidth */
 	for (i = 0; i < job_ptr->job_resrcs->nhosts; i++) {
-		uint16_t node_tasks = job_ptr->job_resrcs->cpus[i] / mppdepth;
+		uint32_t node_tasks = job_ptr->job_resrcs->cpus[i] / mppdepth;
 
 		if (mppnppn && mppnppn < node_tasks)
 			node_tasks = mppnppn;
