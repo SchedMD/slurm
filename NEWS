@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
     each block independently.
  -- Fix of task/affinity plugin logic for Power7 processors having hyper-
     threading disabled (cpu mask has gaps).
+ -- Fix of job priority ordering with sched/builtin and priority/multifactor.
+    Patch from Chris Reed.
 
 * Changes in SLURM 2.5.0
 ========================

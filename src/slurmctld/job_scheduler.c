@@ -668,18 +668,21 @@ extern int schedule(uint32_t job_limit)
 	if (sched_update != slurmctld_conf.last_update) {
 		char *sched_params, *tmp_ptr;
 		char *sched_type = slurm_get_sched_type();
+		char *prio_type = slurm_get_priority_type();
 #ifdef HAVE_BG
 		/* On BlueGene, do FIFO only with sched/backfill */
 		if (strcmp(sched_type, "sched/backfill") == 0)
 			backfill_sched = true;
 #endif
-		if (strcmp(sched_type, "sched/builtin") == 0)
+		if ((strcmp(sched_type, "sched/builtin") == 0) &&
+		    (strcmp(prio_type, "priority/basic") == 0))
 			fifo_sched = true;
 		/* Disable avoiding of fragmentation with sched/wiki */
 		if ((strcmp(sched_type, "sched/wiki") == 0) ||
 		    (strcmp(sched_type, "sched/wiki2") == 0))
 			wiki_sched = true;
 		xfree(sched_type);
+		xfree(prio_type);
 
 		sched_params = slurm_get_sched_params();
 		if (sched_params &&
