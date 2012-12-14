@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- Fix of job priority ordering with sched/builtin and priority/multifactor.
     Patch from Chris Reed.
  -- CRAY - Fix for setting up the aprun for a large job (+2000 nodes).
+ -- Fix for race condition related to compute node boot resulting in node being
+    set down with reason of "Node <name> unexpectedly rebooted"
 
 * Changes in SLURM 2.5.0
 ========================

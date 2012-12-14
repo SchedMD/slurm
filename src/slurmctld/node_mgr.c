@@ -2346,7 +2346,10 @@ static void _node_did_resp(struct node_record *node_ptr)
 	time_t now = time(NULL);
 
 	node_inx = node_ptr - node_record_table_ptr;
-	node_ptr->last_response = now;
+	/* Do not change last_response value (in the future) for nodes being
+	 *  booted so unexpected reboots are recognized */
+	if (node_ptr->last_response < now)
+		node_ptr->last_response = now;
 	if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_POWER_UP(node_ptr)) {
 		info("Node %s now responding", node_ptr->name);
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
