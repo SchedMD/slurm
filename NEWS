@@ -136,6 +136,7 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Correct WillRun authentication logic when issued for non-job owner.
  -- BGQ - fix memory leak
+ -- BGQ - Fix to check block for action 'D' if it also has nodes in error.
 
 * Changes in SLURM 2.4.5
 ========================
