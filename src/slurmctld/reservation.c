@@ -1663,11 +1663,14 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			int nodeinx = 0;
 			while (nodeinx < nodecnt) {
 				if (!resv_desc_ptr->core_cnt[nodeinx]) {
-					info("Core count for reservation node list is not consistent!");
+					info("Core count for reservation node \
+					      list is not consistent!");
 					rc = ESLURM_INVALID_NODE_NAME;
 					goto bad_parse;
 				}
-				debug2("Requesting %d cores for node_list %d", resv_desc_ptr->core_cnt[nodeinx], nodeinx);
+				debug2("Requesting %d cores for node_list %d", 
+					resv_desc_ptr->core_cnt[nodeinx], 
+					nodeinx);
 				nodeinx++;
 			}
 			if ((rc = _select_nodes(resv_desc_ptr, &part_ptr, &node_bitmap,

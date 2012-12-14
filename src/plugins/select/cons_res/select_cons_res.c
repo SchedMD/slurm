@@ -2550,7 +2550,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 	if ((node_cnt) && (core_cnt)) {
 		debug2("reserving %u cores per node in %d nodes",
-				cores_per_node, node_cnt);
+			cores_per_node, node_cnt);
 		total_core_cnt = core_cnt[0];
 		cores_per_node = core_cnt[0] / MAX(node_cnt, 1);
 	}
@@ -2559,10 +2559,8 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		int i;
 		bit_fmt(str, (sizeof(str) - 1), avail_bitmap);
 		debug2("Reserving cores from nodes: %s", str);
-		for (i=0; i < num_nodes; i++) {
-			debug2("It requires %d cores in node %d", core_cnt[i], i);
+		for (i=0; i < num_nodes; i++)
 			total_core_cnt += core_cnt[i];
-		}
 	}
 
 	debug2("Reservations requires %d cores", total_core_cnt);
@@ -2598,13 +2596,8 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			int local_cores;
 			int node_list_inx;
 
-			if (node_cnt == 0) {
+			if (node_cnt == 0)
 				cores_per_node = core_cnt[node_list_inx];
-				debug2("Looking for %d cores in this node...", cores_per_node);
-			} else {
-				debug2("This should not be happening. Node count should be 0");
-			}
-
 
 			inx = bit_ffs(avail_bitmap);
 			if (inx < 0) {
@@ -2616,8 +2609,6 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			debug2("Using node %d", inx);
 
 			coff = cr_get_coremap_offset(inx);
-			/* TODO: is next right for the last possible node at
-			 * avail_bitmap? */
 			coff2 = cr_get_coremap_offset(inx + 1);
 			local_cores = coff2 - coff;
 
@@ -2637,7 +2628,8 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			if (cores_in_node < cores_per_node)
 				continue;
 
-			debug2("Using node %d (avail: %d, needed: %d)", inx, cores_in_node, cores_per_node);
+			debug2("Using node %d (avail: %d, needed: %d)", 
+				inx, cores_in_node, cores_per_node);
 
 			cores_in_node = 0;
 			for (i = 0; i < local_cores; i++) {
@@ -2879,10 +2871,11 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			if (switches_node_cnt[j] == 0)
 				continue;
 			if(core_cnt)
-				sufficient = (switches_node_cnt[j] >= rem_nodes) &&
-					     (switches_cpu_cnt[j] >= core_cnt[0]);
+				sufficient = 
+					(switches_node_cnt[j] >= rem_nodes) &&
+					(switches_cpu_cnt[j] >= core_cnt[0]);
 			else
-				sufficient = (switches_node_cnt[j] >= rem_nodes);
+				sufficient = switches_node_cnt[j] >= rem_nodes;
 			/* If first possibility OR */
 			/* first set large enough for request OR */
 			/* tightest fit (less resource waste) OR */
@@ -2981,8 +2974,8 @@ fini:	for (i=0; i<switch_record_cnt; i++) {
 			if ((inx < 0) || (inx > bit_size(avail_bitmap)))
 				break;
 
-			debug2("Using node inx %d cores_per_node: %d "
-			       "core_cnt: %d", inx, cores_per_node, core_cnt[0]);
+			debug2("Using node inx %d cores_per_node %d "
+			       "core_cnt %d", inx, cores_per_node, core_cnt[0]);
 			coff = cr_get_coremap_offset(inx);
 
 			/* Clear this node from the initial available bitmap */
