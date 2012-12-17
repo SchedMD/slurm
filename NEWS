@@ -4,6 +4,9 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 2.6.0-pre1
 =============================
  -- Add "state" field to job step information reported by scontrol.
+ -- Notify srun to retry step creation upon completion of other job steps
+    rather than polling. This results in much faster throughput for job step
+    execution with --exclusive option.
 
 * Changes in SLURM 2.5.1
 ========================

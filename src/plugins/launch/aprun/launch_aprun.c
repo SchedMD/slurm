@@ -326,7 +326,8 @@ static void _handle_msg(slurm_msg_t *msg)
 	case SRUN_STEP_SIGNAL:
 		ss = msg->data;
 		debug("received step signal %u RPC", ss->signal);
-		launch_p_fwd_signal(ss->signal);
+		if (ss->signal)
+			launch_p_fwd_signal(ss->signal);
 		slurm_free_job_step_kill_msg(msg->data);
 		break;
 	default:

@@ -28,7 +28,9 @@ HIGHLIGHTS
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
-
+- Much faster throughput for job step execution with --exclusive option. The
+  srun process is notified when resources become available rather than periodic
+  polling.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

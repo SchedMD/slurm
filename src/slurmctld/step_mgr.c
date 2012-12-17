@@ -187,7 +187,7 @@ static struct step_record * _create_step_record(struct job_record *job_ptr)
 
 /* The step with a state of PENDING is used as a placeholder for a host and
  * port that can be used to wake a pending srun as soon another step ends */
-static void _build_pending_step(struct job_record  *job_ptr,
+static void _build_pending_step(struct job_record *job_ptr,
 				job_step_create_request_msg_t *step_specs)
 {
 	struct step_record *step_ptr;
@@ -528,6 +528,30 @@ void signal_step_tasks_on_node(char* node_name, struct step_record *step_ptr,
 	return;
 }
 
+/* A step just completed, signal srun processes with pending steps to retry */
+static void _wake_pending_steps(struct job_record *job_ptr)
+{
+	int max_wake = 5;
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+
+	if (!job_ptr->step_list)
+		return;
+	step_iterator = list_iterator_create(job_ptr->step_list);
+	if (!step_iterator)
+		fatal("list_iterator_create: malloc failure");
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		if (step_ptr->state == JOB_PENDING) {
+			srun_step_signal(step_ptr, 0);
+			list_remove (step_iterator);
+			_free_step_rec(step_ptr);
+			if (max_wake-- <= 0)
+				break;
+		}
+	}
+	list_iterator_destroy (step_iterator);
+}
+
 /*
  * job_step_complete - note normal completion the specified job step
  * IN job_id - id of the job to be completed
@@ -578,6 +602,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		     step_id);
 		return ESLURM_ALREADY_DONE;
 	}
+	_wake_pending_steps(job_ptr);
 	return SLURM_SUCCESS;
 }
 
@@ -1924,7 +1949,9 @@ step_create(job_step_create_request_msg_t *step_specs,
 		if (step_gres_list)
 			list_destroy(step_gres_list);
 		select_g_select_jobinfo_free(select_jobinfo);
-		if (ret_code == ESLURM_NODES_BUSY)
+		if ((ret_code == ESLURM_NODES_BUSY) ||
+		    (ret_code == ESLURM_PORTS_BUSY) ||
+		    (ret_code == ESLURM_INTERCONNECT_BUSY))
 			_build_pending_step(job_ptr, step_specs);
 		return ret_code;
 	}

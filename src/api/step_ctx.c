@@ -42,6 +42,7 @@
 #endif
 
 #include <errno.h>
+#include <poll.h>
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -148,8 +149,7 @@ slurm_step_ctx_create (const slurm_step_ctx_params_t *step_params)
 	short port = 0;
 	int errnum = 0;
 
-	/* First copy the user's step_params into a step request
-	 * struct */
+	/* First copy the user's step_params into a step request struct */
 	step_req = _create_step_request(step_params);
 
 	/* We will handle the messages in the step_launch.c mesage handler,
@@ -167,6 +167,80 @@ slurm_step_ctx_create (const slurm_step_ctx_params_t *step_params)
 
 	if ((slurm_job_step_create(step_req, &step_resp) < 0) ||
 	    (step_resp == NULL)) {
+		errnum = errno;
+		slurm_free_job_step_create_request_msg(step_req);
+		close(sock);
+		goto fail;
+	}
+
+	ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
+	ctx->launch_state = NULL;
+	ctx->magic	= STEP_CTX_MAGIC;
+	ctx->job_id	= step_req->job_id;
+	ctx->user_id	= step_req->user_id;
+	ctx->step_req   = step_req;
+	ctx->step_resp	= step_resp;
+	ctx->verbose_level = step_params->verbose_level;
+
+	ctx->launch_state = step_launch_state_create(ctx);
+	ctx->launch_state->slurmctld_socket_fd = sock;
+fail:
+	errno = errnum;
+	return (slurm_step_ctx_t *)ctx;
+}
+
+/*
+ * slurm_step_ctx_create - Create a job step and its context.
+ * IN step_params - job step parameters
+ * IN timeout - in microseconds
+ * RET the step context or NULL on failure with slurm errno set
+ * NOTE: Free allocated memory using slurm_step_ctx_destroy.
+ */
+extern slurm_step_ctx_t *
+slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
+			       int timeout)
+{
+	struct slurm_step_ctx_struct *ctx = NULL;
+	job_step_create_request_msg_t *step_req = NULL;
+	job_step_create_response_msg_t *step_resp = NULL;
+	int rc, time_left = timeout / 1000;
+	int sock = -1;
+	short port = 0;
+	int errnum = 0;
+
+	/* First copy the user's step_params into a step request struct */
+	step_req = _create_step_request(step_params);
+
+	/* We will handle the messages in the step_launch.c mesage handler,
+	 * but we need to open the socket right now so we can tell the
+	 * controller which port to use.
+	 */
+	if (net_stream_listen(&sock, &port) < 0) {
+		errnum = errno;
+		error("unable to initialize step context socket: %m");
+		slurm_free_job_step_create_request_msg(step_req);
+		goto fail;
+	}
+	step_req->port = port;
+	step_req->host = xshort_hostname();
+
+	rc = slurm_job_step_create(step_req, &step_resp);
+	if ((rc < 0) &&
+	    ((errno == ESLURM_NODES_BUSY) ||
+	     (errno == ESLURM_PORTS_BUSY) ||
+	     (errno == ESLURM_INTERCONNECT_BUSY))) {
+		struct pollfd fds;
+		fds.fd = sock;
+		fds.events = POLLIN;
+		while ((rc = poll(&fds, 1, time_left)) <= 0) {
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			break;
+		}
+		rc = slurm_job_step_create(step_req, &step_resp);
+	}
+
+	if ((rc < 0) || (step_resp == NULL)) {
 		errnum = errno;
 		slurm_free_job_step_create_request_msg(step_req);
 		close(sock);
