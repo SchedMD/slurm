@@ -474,13 +474,14 @@ GresTypes=gpu_mem
 #---------------------------------------------------------------------
 # PATHS
 #---------------------------------------------------------------------
-SlurmdSpoolDir=/ufs/slurm/spool
+# slurmd spool directories (using %n for Slurm front end node name)
+SlurmdSpoolDir=/ufs/slurm/spool/%n
 StateSaveLocation=/ufs/slurm/spool/state
 
 # main logfile
 SlurmctldLogFile=/ufs/slurm/log/slurmctld.log
-# slurmd logfiles (using %h for hostname)
-SlurmdLogFile=/ufs/slurm/log/%h.log
+# slurmd logfiles (using %n for Slurm node name)
+SlurmdLogFile=/ufs/slurm/log/%n.log
 
 # PIDs
 SlurmctldPidFile=/var/run/slurmctld.pid
@@ -656,6 +657,6 @@ login: # /etc/init.d/slurm start
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 19 November 2012</p>
+<p style="text-align:center;">Last modified 17 December 2012</p>
 
 <!--#include virtual="footer.txt"-->

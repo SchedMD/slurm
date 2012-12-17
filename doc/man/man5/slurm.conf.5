@@ -1,4 +1,4 @@
-.TH "slurm.conf" "8" "December 2012" "slurm.conf 2.5" "Slurm configuration file"
+.TH "slurm.conf" "17" "December 2012" "slurm.conf 2.5" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1915,12 +1915,11 @@ Fully qualified pathname of a directory into which the \fBslurmd\fR
 daemon's state information and batch job script information are written. This
 must be a common pathname for all nodes, but should represent a directory which
 is local to each node (reference a local file system). The default value
-is "/var/spool/slurmd." \fBNOTE\fR: This directory is also used to store
-\fBslurmd\fR's
-shared memory lockfile, and \fBshould not be changed\fR unless the system
-is being cleanly restarted. If the location of \fBSlurmdSpoolDir\fR is
-changed and \fBslurmd\fR is restarted, the new daemon will attach to a
-different shared memory region and lose track of any running jobs.
+is "/var/spool/slurmd".
+Any "%h" within the name is replaced with the hostname on which the
+\fBslurmd\fR is running.
+Any "%n" within the name is replaced with the SLURM node name on which the
+\fBslurmd\fR is running.
 
 .TP
 \fBSlurmdTimeout\fR
