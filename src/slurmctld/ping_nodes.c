@@ -262,7 +262,12 @@ void ping_nodes (void)
 			continue;
 		}
 
-		if (restart_flag)
+		/* If we are resuming nodes from power save we need to
+		   keep the larger last_response so we don't
+		   accidentally mark them as "unexpectedly rebooted".
+		*/
+		if (restart_flag
+		    && (node_ptr->last_response < slurmctld_conf.last_update))
 			node_ptr->last_response = slurmctld_conf.last_update;
 
 		/* Request a node registration if its state is UNKNOWN or
