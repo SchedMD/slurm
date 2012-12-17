@@ -1407,6 +1407,7 @@ typedef struct {
 						* slurm_get_select_jobinfo()
 						*/
 	time_t start_time;	/* step start time */
+	uint16_t state;		/* state of the step, see enum job_states */
 	uint32_t step_id;	/* step ID */
 	uint32_t time_limit;	/* step time limit */
 	uint32_t user_id;	/* user the job runs as */
@@ -2456,6 +2457,17 @@ extern void slurm_step_ctx_params_t_init PARAMS((slurm_step_ctx_params_t *ptr));
  */
 extern slurm_step_ctx_t *slurm_step_ctx_create PARAMS(
 	(const slurm_step_ctx_params_t *step_params));
+
+/*
+ * slurm_step_ctx_create_timeout - Create a job step and its context.
+ * IN step_params - job step parameters
+ * IN timeout - in microseconds
+ * RET the step context or NULL on failure with slurm errno set
+ * NOTE: Free allocated memory using slurm_step_ctx_destroy.
+ */
+extern slurm_step_ctx_t *
+slurm_step_ctx_create_timeout PARAMS(
+	(const slurm_step_ctx_params_t *step_params, int timeout));
 
 /*
  * slurm_step_ctx_create_no_alloc - Create a job step and its context without

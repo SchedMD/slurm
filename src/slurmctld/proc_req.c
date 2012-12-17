@@ -1727,7 +1727,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 #endif
 		job_step_resp.cred           = slurm_cred;
 		job_step_resp.select_jobinfo = step_rec->select_jobinfo;
-		job_step_resp.switch_job     =  step_rec->switch_job;
+		job_step_resp.switch_job     = step_rec->switch_job;
 
 		unlock_slurmctld(job_write_lock);
 		slurm_msg_t_init(&resp);

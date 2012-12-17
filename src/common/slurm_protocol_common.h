@@ -70,7 +70,8 @@
  * In slurm_protocol_util.c check_header_version(), and init_header()
  * need to be updated also when changes are added */
 #define SLURM_PROTOCOL_VERSION ((SLURM_API_MAJOR << 8) | SLURM_API_AGE)
-#define SLURM_2_5_PROTOCOL_VERSION SLURM_PROTOCOL_VERSION
+#define SLURM_2_6_PROTOCOL_VERSION SLURM_PROTOCOL_VERSION
+#define SLURM_2_5_PROTOCOL_VERSION ((25 << 8) | 0)
 #define SLURM_2_4_PROTOCOL_VERSION ((24 << 8) | 0)
 #define SLURM_2_3_PROTOCOL_VERSION ((23 << 8) | 0)
 #if 0

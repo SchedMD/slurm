@@ -1,10 +1,10 @@
-RELEASE NOTES FOR SLURM VERSION 2.5
-8 November 2012
+RELEASE NOTES FOR SLURM VERSION 2.6
+8 December 2012
 
 
 IMPORTANT NOTE:
 If using the slurmdbd (SLURM DataBase Daemon) you must update this first.
-The 2.5 slurmdbd will work with SLURM daemons of version 2.3 and above.
+The 2.6 slurmdbd will work with SLURM daemons of version 2.4 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.  No real harm will come from updating
@@ -18,56 +18,23 @@ innodb_buffer_pool_size=64M
 under the [mysqld] reference in the my.cnf file and restarting the mysqld.
 This is needed when converting large tables over to the new database schema.
 
-SLURM can be upgraded from version 2.3 or 2.4 to version 2.5 without loss of
+SLURM can be upgraded from version 2.4 or 2.5 to version 2.6 without loss of
 jobs or other state information. Upgrading directly from an earlier version of
 SLURM will result in loss of state information.
 
 
 HIGHLIGHTS
 ==========
-- Major performance improvements for high-throughput computing.
-- Added "boards" count to node information and "boards_per_node" to job request
-  and job information. Optimize resource allocation to minimize number of
-  boards used by a job.
-- Added support for IBM Parallel Environment (PE) including the launching of
-  jobs using either the srun or poe command.
-- Add support for advanced reservation for specific cores rather than whole
-  nodes.
-- Added srun option "--cpu-freq" to enable user control over the job's CPU
-  frequency and thus it's power consumption.
-- Added priority/multifactor2 plugin supporting ticket based shares.
-- Added gres/mic plugin supporting Intel Many Integrated Core (MIC) processors.
-- Added launch plugin to support srun interface to launch tasks using different
-  methods like IBM's poe or Cray's aprun.
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
-- Added node configuration parameter of "Boards".
-- Added DebugFlag option of "Switch" to log switch plugin details.
-- Added "AcctGatherEnergy" configuration parameter to identify the plugin
-  to be used to gather energy consumption data for jobs.
-- When running with multiple slurmd daemons per node, enable specifying a
-  range of ports on a single line of the node configuration in slurm.conf.
-- New SelectType plugin of "serial" provides highly optimized throughput for
-  serial (single CPU) jobs.
-- New SwitchType plugin of "nrt" provides support for IBM Network Resource
-  Table API.
-- Added configuration option of "LaunchType" to control the mechanism used for
-  launching application tasks. Available plugins include "slurm" (native SLURM
-  mode), "runjob" (for use with IBM BlueGene/Q systems) and "poe" (for use with
-  IBM Parallel Environment).
+- Much faster throughput for job step execution with --exclusive option. The
+  srun process is notified when resources become available rather than periodic
+  polling.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
-- Added sinfo option of "-T" to print reservation information.
-- Added LicensesUsed field to output of "scontrol show configuration" command.
-  Output is of the form "name:used/total".
-- Add reservation flag of "Part_Nodes" to allocate all nodes in a partition to
-  a reservation and automatically change the reservation when nodes are
-  added to or removed from the reservation.
-- sinfo partition field size will be set the the length of the longest
-  partition name by default.
-- Deprecation of sacct --dump --fdump.  This will go away in 2.6 completely.
+Added step "State" field to scontrol output.
 
 OTHER CHANGES
 =============
@@ -77,57 +44,17 @@ API CHANGES
 
 Changed members of the following structs
 ========================================
-Added boards_per_node to job_info and job_desc_msg_t.
-Added acct_gather_energy_t, boards and cpu_load to node_info_t.
-Added step_signal to slurm_step_launch_callbacks_t - for signaling steps that
-      are perhaps not running as srun.
-Added acct_gather_energy_type, acct_gather_node_freq launch_type, licenses,
-      and licenses_used to slurm_ctl_conf_t
-Added ntasks_per_board, boards_per_node, sockets_per_board to slurm_job_info_t
-Added ntasks_per_board, boards_per_node job_desc_msg_t
-Added cpu_freq to slurm_step_ctx_params_t
-Added cpu_freq to slurm_step_launch_params_t
-Added cpu_freq to job_step_info_t
-Added (*step_signal) to slurm_step_launch_callbacks_t
-Added core_cnt to reserve_info_t
-Added core_cnt to resv_desc_msg_t
-Added actual_boards to slurmd_status_t
-Added act_cpufreq, consumed_energy, and req_cpufreq to slurmdb_stats_t
+Added "state" field to job_step_info_t.
 
 Added the following struct definitions
 ======================================
-acct_gather_energy_t
-acct_gather_node_resp_msg_t
-Changed job_info_t to slurm_job_info_t since IBM PE machines have a job_info_t
-	structure already defined. job_info_t is defined as slurm_job_info_t on
-	will still work in a non IBM PE environment, but shouldn't be used in
-	future code.
 
 Changed the following enums and #defines
 ========================================
-added #define DEBUG_FLAG_SWITCH
-added #define DEBUG_FLAG_ENERGY
-added #define CPU_FREQ_RANGE_FLAG
-added #define CPU_FREQ_LOW
-added #define CPU_FREQ_MEDIUM
-added #define CPU_FREQ_HIGH
-added #define CR_BOARD
-added #define RESERVE_FLAG_PART_NODES
-added #define RESERVE_FLAG_NO_PART_NODES
-added #define RECONFIG_KEEP_PART_STAT
-added enum acct_energy_type
-added SELECT_JOBDATA_CONFIRMED to enum select_jobdata_type
-added JOBACCT_DATA_ACT_CPUFREQ and JOBACCT_DATA_CONSUMED_ENERGY
-      to enum jobacct_data_type
-Added CPU_BIND_TO_BOARDS to enum cpu_bind_type
 
 Added the following API's
 =========================
-slurm_step_launch_add - added for adding tasks to steps that were
-		       	previously started.  (Note: it currently has only been
-			tested with user managed io jobs.)
-slurm_init_trigger_msg - added to initialize trigger clear/update message
 
 Changed the following API's
 ===========================
-slurm_step_ctx_daemon_per_node_hack - ported to newer poe interface
+

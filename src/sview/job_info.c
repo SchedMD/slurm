@@ -2630,7 +2630,7 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		return NULL;
 	}
 
-	for(i=0; i<job_info_ptr->record_count; i++) {
+	for (i=0; i<job_info_ptr->record_count; i++) {
 		job_ptr = &(job_info_ptr->job_array[i]);
 
 		sview_job_info_ptr = xmalloc(sizeof(sview_job_info_t));
@@ -2656,9 +2656,10 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 				   just keep tacking on ionodes to a
 				   node list */
 				sview_job_info_ptr->nodes = xstrdup(tmp_char);
-			} else
+			} else {
 				sview_job_info_ptr->nodes =
 					xstrdup(job_ptr->nodes);
+			}
 			xfree(ionodes);
 		} else
 			sview_job_info_ptr->nodes = xstrdup(job_ptr->nodes);
@@ -2666,9 +2667,10 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		if (!sview_job_info_ptr->node_cnt)
 			sview_job_info_ptr->node_cnt = _get_node_cnt(job_ptr);
 
-		for(j = 0; j < step_info_ptr->job_step_count; j++) {
+		for (j = 0; j < step_info_ptr->job_step_count; j++) {
 			step_ptr = &(step_info_ptr->job_steps[j]);
-			if (step_ptr->job_id == job_ptr->job_id) {
+			if ((step_ptr->job_id == job_ptr->job_id) &&
+			    (step_ptr->state == JOB_RUNNING)) {
 				list_append(sview_job_info_ptr->step_list,
 					    step_ptr);
 			}
@@ -3326,7 +3328,7 @@ display_it:
 	if (!display_widget) {
 		tree_view = create_treeview(local_display_data,
 					    &grid_button_list);
-		/*set multiple capability here*/
+		/* set multiple capability here */
 		gtk_tree_selection_set_mode(
 			gtk_tree_view_get_selection(tree_view),
 			GTK_SELECTION_MULTIPLE);
@@ -3334,9 +3336,8 @@ display_it:
 		gtk_table_attach_defaults(GTK_TABLE(table),
 					  GTK_WIDGET(tree_view),
 					  0, 1, 0, 1);
-		/* since this function sets the model of the tree_view
-		   to the treestore we don't really care about
-		   the return value */
+		/* since this function sets the model of the tree_view to the
+		 * treestore we don't really care about the return value */
 		create_treestore(tree_view, display_data_job,
 				 SORTID_CNT, SORTID_TIME_SUBMIT, SORTID_COLOR);
 	}
@@ -3458,9 +3459,8 @@ display_it:
 		gtk_table_attach_defaults(popup_win->table,
 					  GTK_WIDGET(tree_view),
 					  0, 1, 0, 1);
-		/* since this function sets the model of the tree_view
-		   to the treestore we don't really care about
-		   the return value */
+		/* since this function sets the model of the tree_view to the
+		 * treestore we don't really care about the return value */
 		create_treestore(tree_view, popup_win->display_data,
 				 SORTID_CNT, SORTID_TIME_SUBMIT, SORTID_COLOR);
 	}
@@ -3475,7 +3475,7 @@ display_it:
 
 
 	/* just linking to another list, don't free the inside, just
-	   the list */
+	 * the list */
 	send_info_list = list_create(NULL);
 	itr = list_iterator_create(info_list);
 	i = -1;
@@ -3498,19 +3498,21 @@ display_it:
 				if (job_ptr->job_id != search_info->int_data) {
 					continue;
 				}
+#if 0
 				/* if we ever want to display just the step
-				   this is where we would do it */
-/* 				if (spec_info->search_info->int_data2 */
-/* 				   == NO_VAL) */
-/* 				break; */
-/* 			step_itr = list_iterator_create( */
-/* 				sview_job_info->step_list); */
-/* 			while ((step_ptr = list_next(itr))) { */
-/* 				if (step_ptr->step_id  */
-/* 				   == spec_info->search_info->int_data2) { */
-/* 					break; */
-/* 				} */
-/* 			} */
+				 * this is where we would do it */
+				if (spec_info->search_info->int_data2
+				    == NO_VAL)
+					break;
+				step_itr = list_iterator_create(
+					sview_job_info->step_list);
+				while ((step_ptr = list_next(itr))) {
+					if (step_ptr->step_id ==
+					    spec_info->search_info->int_data2) {
+						break;
+					}
+				}
+#endif
 				break;
 			case SEARCH_JOB_USER:
 				if (!search_info->gchar_data)

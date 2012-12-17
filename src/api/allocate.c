@@ -324,7 +324,7 @@ int slurm_job_will_run (job_desc_msg_t *req)
 			return SLURM_PROTOCOL_ERROR;
 		break;
 	case RESPONSE_JOB_WILL_RUN:
-		if(cluster_flags & CLUSTER_FLAG_BG)
+		if (cluster_flags & CLUSTER_FLAG_BG)
 			type = "cnodes";
 		will_run_resp = (will_run_response_msg_t *) resp_msg.data;
 		slurm_make_time_str(&will_run_resp->start_time,
