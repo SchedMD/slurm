@@ -708,6 +708,10 @@ GOBJECT_QUERY
 GLIB_GENMARSHAL
 GLIB_LIBS
 GLIB_CFLAGS
+HAVE_CHECK_FALSE
+HAVE_CHECK_TRUE
+CHECK_LIBS
+CHECK_CFLAGS
 HAVE_SOME_CURSES
 HAVE_SOME_CURSES_FALSE
 HAVE_SOME_CURSES_TRUE
@@ -939,6 +943,7 @@ enable_sun_const
 with_dimensions
 with_hwloc
 with_xcpu
+with_check
 enable_glibtest
 enable_gtktest
 with_mysql_config
@@ -1658,6 +1663,7 @@ Optional Packages:
                           system
   --with-hwloc=PATH       Specify path to hwloc installation
   --with-xcpu=PATH        specify path to XCPU directory
+  --with-check=PATH       prefix where check is installed default=auto
   --with-mysql_config=PATH
                           Specify path to mysql_config binary
   --with-pg_config=PATH   Specify path to pg_config binary
@@ -20047,6 +20053,181 @@ fi
 
 
 #
+#  Tests for Check
+#
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: AM_PATH_CHECK() is deprecated" >&5
+$as_echo "$as_me: WARNING: AM_PATH_CHECK() is deprecated" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: use PKG_CHECK_MODULES([CHECK], [check >= 0.9.4]) instead" >&5
+$as_echo "$as_me: WARNING: use PKG_CHECK_MODULES([CHECK], [check >= 0.9.4]) instead" >&2;}
+
+# Check whether --with-check was given.
+if test "${with_check+set}" = set; then :
+  withval=$with_check;
+fi
+
+
+  min_check_version=0.9.8
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for check - version >= $min_check_version" >&5
+$as_echo_n "checking for check - version >= $min_check_version... " >&6; }
+
+  if test x$with_check = xno; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: disabled" >&5
+$as_echo "disabled" >&6; }
+    ac_have_gtk="no"
+  else
+    if test "x$with_check" != x; then
+      CHECK_CFLAGS="-I$with_check/include"
+      CHECK_LIBS="-L$with_check/lib -lcheck"
+    else
+      CHECK_CFLAGS=""
+      CHECK_LIBS="-lcheck"
+    fi
+
+    ac_save_CFLAGS="$CFLAGS"
+    ac_save_LIBS="$LIBS"
+
+    CFLAGS="$CFLAGS $CHECK_CFLAGS"
+    LIBS="$CHECK_LIBS $LIBS"
+
+    rm -f conf.check-test
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$ac_includes_default
+#include <check.h>
+
+int main ()
+{
+  int major, minor, micro;
+  char *tmp_version;
+
+  system ("touch conf.check-test");
+
+  /* HP/UX 9 (%@#!) writes to sscanf strings */
+  tmp_version = strdup("$min_check_version");
+  if (sscanf(tmp_version, "%d.%d.%d", &major, &minor, &micro) != 3) {
+     printf("%s, bad version string\n", "$min_check_version");
+     return 1;
+   }
+
+  if ((CHECK_MAJOR_VERSION != check_major_version) ||
+      (CHECK_MINOR_VERSION != check_minor_version) ||
+      (CHECK_MICRO_VERSION != check_micro_version))
+    {
+      printf("\n*** The check header file (version %d.%d.%d) does not match\n",
+	     CHECK_MAJOR_VERSION, CHECK_MINOR_VERSION, CHECK_MICRO_VERSION);
+      printf("*** the check library (version %d.%d.%d).\n",
+	     check_major_version, check_minor_version, check_micro_version);
+      return 1;
+    }
+
+  if ((check_major_version > major) ||
+      ((check_major_version == major) && (check_minor_version > minor)) ||
+      ((check_major_version == major) && (check_minor_version == minor) && (check_micro_version >= micro)))
+    {
+      return 0;
+    }
+  else
+    {
+      printf("\n*** An old version of check (%d.%d.%d) was found.\n",
+             check_major_version, check_minor_version, check_micro_version);
+      printf("*** You need a version of check being at least %d.%d.%d.\n", major, minor, micro);
+      printf("***\n");
+      printf("*** If you have already installed a sufficiently new version, this error\n");
+      printf("*** probably means that the wrong copy of the check library and header\n");
+      printf("*** file is being found. Rerun configure with the --with-check=PATH option\n");
+      printf("*** to specify the prefix where the correct version was installed.\n");
+    }
+
+  return 1;
+}
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+else
+  no_check=yes
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+    CFLAGS="$ac_save_CFLAGS"
+    LIBS="$ac_save_LIBS"
+
+    if test "x$no_check" = x ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+      ac_have_check="yes"
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+      if test -f conf.check-test ; then
+        :
+      else
+        echo "*** Could not run check test program, checking why..."
+        CFLAGS="$CFLAGS $CHECK_CFLAGS"
+        LIBS="$CHECK_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <check.h>
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+   echo "*** The test program compiled, but did not run. This usually means"
+        echo "*** that the run-time linker is not finding check. You'll need to set your"
+        echo "*** LD_LIBRARY_PATH environment variable, or edit /etc/ld.so.conf to point"
+        echo "*** to the installed location  Also, make sure you have run ldconfig if that"
+        echo "*** is required on your system"
+	echo "***"
+        echo "*** If you have an old version installed, it is best to remove it, although"
+        echo "*** you may also be able to get things to work by modifying LD_LIBRARY_PATH"
+else
+   echo "*** The test program failed to compile or link. See the file config.log for"
+        echo "*** the exact error that occured."
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+        CFLAGS="$ac_save_CFLAGS"
+        LIBS="$ac_save_LIBS"
+      fi
+
+      CHECK_CFLAGS=""
+      CHECK_LIBS=""
+
+      rm -f conf.check-test
+      ac_have_gtk="no"
+    fi
+
+
+
+
+    rm -f conf.check-test
+
+  fi
+
+ if test "x$ac_have_check" = "xyes"; then
+  HAVE_CHECK_TRUE=
+  HAVE_CHECK_FALSE='#'
+else
+  HAVE_CHECK_TRUE='#'
+  HAVE_CHECK_FALSE=
+fi
+
+
+#
 #  Tests for GTK+
 #
 
@@ -22810,6 +22991,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_SOME_CURSES_TRUE}" && test -z "${HAVE_SOME_CURSES_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_SOME_CURSES\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_CHECK_TRUE}" && test -z "${HAVE_CHECK_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_CHECK\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_SVIEW_TRUE}" && test -z "${BUILD_SVIEW_FALSE}"; then

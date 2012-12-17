@@ -39,6 +39,7 @@ Lead Slurm developers are:
 <li>Jon Bringhurst (Los Alamos National Laboratory)</li>
 <li>Bill Brophy (Bull)</li>
 <li>Hongjia Cao (National University of Defense Technology, China)</li>
+<li>Fran&ccedil;ois Chevallier (CEA)</li>
 <li>Daniel Christians (HP)</li>
 <li>Gilles Civario (Bull)</li>
 <li>Chuck Clouston (Bull)</li>
@@ -130,6 +131,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 7 December 2012</p>
+<p style="text-align:center;">Last modified 12 December 2012</p>
 
 <!--#include virtual="footer.txt"-->
