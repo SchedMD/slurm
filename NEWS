@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.6.0-pre1
+=============================
+ -- Add "state" field to job step information reported by scontrol, squeue, and
+    sview.
+
 * Changes in SLURM 2.5.1
 ========================
  -- Correction to hostlist sorting for hostnames that contain two numeric

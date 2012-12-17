@@ -1407,6 +1407,7 @@ typedef struct {
 						* slurm_get_select_jobinfo()
 						*/
 	time_t start_time;	/* step start time */
+	uint16_t state;		/* state of the step, see enum job_states */
 	uint32_t step_id;	/* step ID */
 	uint32_t time_limit;	/* step time limit */
 	uint32_t user_id;	/* user the job runs as */

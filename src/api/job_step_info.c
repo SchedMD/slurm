@@ -158,9 +158,9 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		secs2time_str ((time_t)job_step_ptr->time_limit * 60,
 				limit_str, sizeof(limit_str));
 	snprintf(tmp_line, sizeof(tmp_line),
-		"StepId=%u.%u UserId=%u StartTime=%s TimeLimit=%s",
-		job_step_ptr->job_id, job_step_ptr->step_id,
-		job_step_ptr->user_id, time_str, limit_str);
+		 "StepId=%u.%u UserId=%u StartTime=%s TimeLimit=%s",
+		 job_step_ptr->job_id, job_step_ptr->step_id,
+		 job_step_ptr->user_id, time_str, limit_str);
 	out = xstrdup(tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
@@ -168,6 +168,10 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 2 ******/
+	snprintf(tmp_line, sizeof(tmp_line),
+		 "State=%s ",
+		 job_state_string(job_step_ptr->state));
+	xstrcat(out, tmp_line);
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		char *io_nodes;
 		select_g_select_jobinfo_get(job_step_ptr->select_jobinfo,
@@ -199,7 +203,6 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 3 ******/
-
 	if (cluster_flags & CLUSTER_FLAG_BGQ) {
 		uint32_t nodes = 0;
 		select_g_select_jobinfo_get(job_step_ptr->select_jobinfo,
@@ -235,10 +238,10 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 5 ******/
-	if (job_step_ptr->cpu_freq == NO_VAL)
+	if (job_step_ptr->cpu_freq == NO_VAL) {
 		snprintf(tmp_line, sizeof(tmp_line), 
 			 "CPUFreqReq=Default\n\n");
-	else if (job_step_ptr->cpu_freq & CPU_FREQ_RANGE_FLAG) {
+	} else if (job_step_ptr->cpu_freq & CPU_FREQ_RANGE_FLAG) {
 		switch (job_step_ptr->cpu_freq) 
 		{
 		case CPU_FREQ_LOW :
@@ -257,10 +260,10 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 			snprintf(tmp_line, sizeof(tmp_line),
 				 "CPUFreqReq=Unknown\n\n");
 		}
-	}
-	else 
+	} else {
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "CPUFreqReq=%u\n\n", job_step_ptr->cpu_freq);
+	}
 	xstrcat(out, tmp_line);
 
 	return out;
