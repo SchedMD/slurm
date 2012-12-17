@@ -76,6 +76,8 @@
 
 #define MAX_RETRIES 10
 
+static void _build_pending_step(struct job_record  *job_ptr,
+				job_step_create_request_msg_t *step_specs);
 static int  _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t *usable_cpu_cnt);
 static struct step_record * _create_step_record(struct job_record *job_ptr);
@@ -172,18 +174,36 @@ static struct step_record * _create_step_record(struct job_record *job_ptr)
 	step_ptr = (struct step_record *) xmalloc(sizeof(struct step_record));
 
 	last_job_update = time(NULL);
-	step_ptr->job_ptr = job_ptr;
-	step_ptr->start_time = time(NULL);
-	step_ptr->state = JOB_RUNNING;
+	step_ptr->job_ptr    = job_ptr;
+	step_ptr->exit_code  = NO_VAL;
 	step_ptr->time_limit = INFINITE;
-	step_ptr->jobacct = jobacctinfo_create(NULL);
-	step_ptr->requid = -1;
+	step_ptr->jobacct    = jobacctinfo_create(NULL);
+	step_ptr->requid     = -1;
 	if (list_append (job_ptr->step_list, step_ptr) == NULL)
 		fatal ("_create_step_record: unable to allocate memory");
 
 	return step_ptr;
 }
 
+/* The step with a state of PENDING is used as a placeholder for a host and
+ * port that can be used to wake a pending srun as soon another step ends */
+static void _build_pending_step(struct job_record  *job_ptr,
+				job_step_create_request_msg_t *step_specs)
+{
+	struct step_record *step_ptr;
+
+	if ((step_specs->host == NULL) || (step_specs->port == 0))
+		return;
+
+	step_ptr = _create_step_record(job_ptr);
+	if (step_ptr == NULL)
+		return;
+
+	step_ptr->port    = step_specs->port;
+	step_ptr->host    = xstrdup(step_specs->host);
+	step_ptr->state   = JOB_PENDING;
+	step_ptr->step_id = NO_VAL;
+}
 
 /*
  * delete_step_records - delete step record for specified job_ptr
@@ -1840,10 +1860,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (cpus_per_mp == (uint16_t)NO_VAL)
 		select_g_alter_node_cnt(SELECT_GET_NODE_CPU_CNT,
 					&cpus_per_mp);
-	/* Below is done to get the correct cpu_count and then we need
-	   to set the cpu_count to 0 later so just pretend we are
-	   overcommitting.
-	*/
+	/* Below is done to get the correct cpu_count and then we need to set
+	 * the cpu_count to 0 later so just pretend we are overcommitting. */
 	step_specs->cpu_count = node_count * cpus_per_mp;
 	step_specs->overcommit = 1;
 	step_specs->exclusive = 0;
@@ -1868,7 +1886,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		return ESLURM_BAD_TASK_COUNT;
 
 	/* we set cpus_per_task to 0 if we can't spread them evenly
-	   over the nodes (hetergeneous systems) */
+	 * over the nodes (hetergeneous systems) */
 	if (!step_specs->cpu_count
 	    || (step_specs->cpu_count % step_specs->num_tasks))
 		cpus_per_task = 0;
@@ -1906,6 +1924,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 		if (step_gres_list)
 			list_destroy(step_gres_list);
 		select_g_select_jobinfo_free(select_jobinfo);
+		if (ret_code == ESLURM_NODES_BUSY)
+			_build_pending_step(job_ptr, step_specs);
 		return ret_code;
 	}
 #ifdef HAVE_CRAY
@@ -1914,8 +1934,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 #endif
 #ifdef HAVE_BGQ
 	/* Things might of changed here since sometimes users ask for
-	   the wrong size in cnodes to make a block.
-	*/
+	 * the wrong size in cnodes to make a block. */
 	select_g_select_jobinfo_get(select_jobinfo,
 				    SELECT_JOBDATA_NODE_CNT,
 				    &node_count);
@@ -1951,7 +1970,9 @@ step_create(job_step_create_request_msg_t *step_specs,
 		select_g_select_jobinfo_free(select_jobinfo);
 		return ESLURMD_TOOMANYSTEPS;
 	}
-	step_ptr->step_id = job_ptr->next_step_id++;
+	step_ptr->start_time = time(NULL);
+	step_ptr->state      = JOB_RUNNING;
+	step_ptr->step_id    = job_ptr->next_step_id++;
 
 	/* Here is where the node list is set for the step */
 	if (step_specs->node_list &&

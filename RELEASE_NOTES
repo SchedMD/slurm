@@ -32,7 +32,7 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
-Added step "State" field to scontrol, squeue and sview output.
+Added step "State" field to scontrol output.
 
 OTHER CHANGES
 =============

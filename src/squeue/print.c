@@ -1523,6 +1523,9 @@ static int _filter_step(job_step_info_t * step)
 	char *part;
 	squeue_job_step_t *job_step_id;
 
+	if (step->state == JOB_PENDING)
+		return 1;
+
 	if (params.job_list) {
 		filter = 1;
 		iterator = list_iterator_create(params.job_list);
