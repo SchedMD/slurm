@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
  -- CRAY - Fix for setting up the aprun for a large job (+2000 nodes).
  -- Fix for race condition related to compute node boot resulting in node being
     set down with reason of "Node <name> unexpectedly rebooted"
+ -- RAPL - Fix for handling errors when opening msr files.
 
 * Changes in SLURM 2.5.0
 ========================

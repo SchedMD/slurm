@@ -194,19 +194,20 @@ static int _open_msr(int core)
 	sprintf(msr_filename, "/dev/cpu/%d/msr", core);
 	fd = open(msr_filename, O_RDONLY);
 
-	/* If this is loaded in the slurmd we need to make sure it
-	   gets closed when a slurmstepd launches.
-	*/
-	fd_set_close_on_exec(fd);
-
-	if ( fd < 0 ) {
+	if (fd < 0) {
 		if ( errno == ENXIO ) {
 			error("No CPU %d", core);
 		} else if ( errno == EIO ) {
 			error("CPU %d doesn't support MSRs", core);
 		} else
-			error("MSR register problem");
+			error("MSR register problem: %m");
+	} else {
+		/* If this is loaded in the slurmd we need to make sure it
+		   gets closed when a slurmstepd launches.
+		*/
+		fd_set_close_on_exec(fd);
 	}
+
 	return fd;
 }
 
