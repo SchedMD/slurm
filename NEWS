@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
  -- Notify srun to retry step creation upon completion of other job steps
     rather than polling. This results in much faster throughput for job step
     execution with --exclusive option.
+ -- Added ResvEpilog and ResvProlog configuration parameters to execute a
+    program at the beginning and end of each reservation.
 
 * Changes in SLURM 2.5.1
 ========================

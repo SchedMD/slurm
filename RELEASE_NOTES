@@ -28,9 +28,8 @@ HIGHLIGHTS
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
-- Much faster throughput for job step execution with --exclusive option. The
-  srun process is notified when resources become available rather than periodic
-  polling.
+ - Added ResvEpilog and ResvProlog configuration parameters to execute a
+   program at the beginning and end of a reservation.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
@@ -38,6 +37,9 @@ Added step "State" field to scontrol output.
 
 OTHER CHANGES
 =============
+- Much faster throughput for job step execution with --exclusive option. The
+  srun process is notified when resources become available rather than periodic
+  polling.
 
 API CHANGES
 ===========
@@ -45,6 +47,7 @@ API CHANGES
 Changed members of the following structs
 ========================================
 Added "state" field to job_step_info_t.
+Added "resv_epilog" and "resv_prolog" to slurm_ctl_conf_t.
 
 Added the following struct definitions
 ======================================

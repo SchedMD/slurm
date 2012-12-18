@@ -253,7 +253,9 @@ s_p_options_t slurm_conf_options[] = {
 	{"ResumeProgram", S_P_STRING},
 	{"ResumeRate", S_P_UINT16},
 	{"ResumeTimeout", S_P_UINT16},
+	{"ResvEpilog", S_P_STRING},
 	{"ResvOverRun", S_P_UINT16},
+	{"ResvProlog", S_P_STRING},
 	{"ReturnToService", S_P_UINT16},
 	{"SallocDefaultCommand", S_P_STRING},
 	{"SchedulerAuth", S_P_STRING, _defunct_option},
@@ -2035,6 +2037,8 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->reboot_program);
 	xfree (ctl_conf_ptr->resume_program);
+	xfree (ctl_conf_ptr->resv_epilog);
+	xfree (ctl_conf_ptr->resv_prolog);
 	xfree (ctl_conf_ptr->salloc_default_command);
 	xfree (ctl_conf_ptr->sched_logfile);
 	xfree (ctl_conf_ptr->sched_params);
@@ -2158,7 +2162,9 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->resume_timeout		= 0;
 	xfree (ctl_conf_ptr->resume_program);
 	ctl_conf_ptr->resume_rate		= (uint16_t) NO_VAL;
+	xfree (ctl_conf_ptr->resv_epilog);
 	ctl_conf_ptr->resv_over_run		= 0;
+	xfree (ctl_conf_ptr->resv_prolog);
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL;
 	xfree( ctl_conf_ptr->salloc_default_command);
 	xfree( ctl_conf_ptr->sched_params );
@@ -3174,7 +3180,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		fatal("ReturnToService > 1 is not supported on Cray");
 #endif
 
+	s_p_get_string(&conf->resv_epilog, "ResvEpilog", hashtbl);
 	s_p_get_uint16(&conf->resv_over_run, "ResvOverRun", hashtbl);
+	s_p_get_string(&conf->resv_prolog, "ResvProlog", hashtbl);
 
 	s_p_get_string(&conf->resume_program, "ResumeProgram", hashtbl);
 	if (!s_p_get_uint16(&conf->resume_rate, "ResumeRate", hashtbl))

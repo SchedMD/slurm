@@ -1,4 +1,4 @@
-.TH "slurm.conf" "17" "December 2012" "slurm.conf 2.5" "Slurm configuration file"
+.TH "slurm.conf" "17" "December 2012" "slurm.conf 2.6" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1447,6 +1447,14 @@ More information is available at the SLURM web site
 ( http://www.schedmd.com/slurmdocs/power_save.html ).
 
 .TP
+\fBResvEpilog\fR
+Fully qualified pathname of a program for the slurmctld to execute
+when a reservation ends. The program can be used to cancel jobs, modify
+partition configuration, etc.
+The reservation named will be passed as an argument to the program.
+By default there is no epilog.
+
+.TP
 \fBResvOverRun\fR
 Describes how long a job already running in a reservation should be
 permitted to execute after the end time of the reservation has been
@@ -1456,6 +1464,14 @@ The time period is specified in minutes and the default value is 0
 The value may not exceed 65533 minutes, although a value of "UNLIMITED"
 is supported to permit a job to run indefinitely after its reservation
 is terminated.
+
+.TP
+\fBResvProlog\fR
+Fully qualified pathname of a program for the slurmctld to execute
+when a reservation begins. The program can be used to cancel jobs, modify
+partition configuration, etc.
+The reservation named will be passed as an argument to the program.
+By default there is no prolog.
 
 .TP
 \fBReturnToService\fR

@@ -795,6 +795,11 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ResvEpilog");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->resv_epilog);
+	list_append(ret_list, key_pair);
+
 	if (slurm_ctl_conf_ptr->resv_over_run == (uint16_t) INFINITE)
 		snprintf(tmp_str, sizeof(tmp_str), "UNLIMITED");
 	else
@@ -803,6 +808,11 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ResvOverRun");
 	key_pair->value = xstrdup(tmp_str);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ResvProlog");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->resv_prolog);
 	list_append(ret_list, key_pair);
 
 	snprintf(tmp_str, sizeof(tmp_str), "%u",

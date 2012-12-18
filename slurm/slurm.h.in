@@ -1970,8 +1970,10 @@ typedef struct slurm_ctl_conf {
 	uint16_t resume_rate;	/* nodes to make full power, per minute */
 	uint16_t resume_timeout;/* time required in order to perform a node
 				 * resume operation */
+	char *resv_epilog;	/* path of reservation epilog run by slurmctld */
 	uint16_t resv_over_run;	/* how long a running job can exceed
 				 * reservation time */
+	char *resv_prolog;	/* path of reservation prolog run by slurmctld */
 	uint16_t ret2service;	/* 1 return DOWN node to service at
 				 * registration */
 	char *salloc_default_command; /* default salloc command */

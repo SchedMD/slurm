@@ -587,7 +587,9 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->resume_program      = xstrdup(conf->resume_program);
 	conf_ptr->resume_rate         = conf->resume_rate;
 	conf_ptr->resume_timeout      = conf->resume_timeout;
+	conf_ptr->resv_epilog         = xstrdup(conf->resv_epilog);
 	conf_ptr->resv_over_run       = conf->resv_over_run;
+	conf_ptr->resv_prolog         = xstrdup(conf->resv_prolog);
 	conf_ptr->ret2service         = conf->ret2service;
 
 	conf_ptr->salloc_default_command = xstrdup(conf->
