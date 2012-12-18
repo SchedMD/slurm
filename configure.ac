@@ -233,7 +233,7 @@ AC_SUBST(HAVE_SOME_CURSES)
 #  Tests for Check
 #
 
-AM_PATH_CHECK([0.9.8], [ac_have_check="yes"], [ac_have_gtk="no"])
+PKG_CHECK_MODULES([CHECK], [check >= 0.9.8], [ac_have_check="yes"], [ac_have_check="no"])
 AM_CONDITIONAL(HAVE_CHECK, test "x$ac_have_check" = "xyes")
 
 #
