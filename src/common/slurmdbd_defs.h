@@ -76,7 +76,8 @@
  *	communicating with it (e.g. it will not accept messages with a
  *	version higher than SLURMDBD_VERSION).
  */
-#define SLURMDBD_VERSION       11
+#define SLURMDBD_VERSION       12
+#define SLURMDBD_2_6_VERSION   12 /* 2.6 */
 #define SLURMDBD_2_5_VERSION   11 /* 2.5 */
 #define SLURMDBD_2_4_VERSION   10 /* 2.4 */
 #define SLURMDBD_2_3_VERSION	9 /* 2.3 */
