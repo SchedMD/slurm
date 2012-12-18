@@ -52,8 +52,10 @@ uint16_t _get_slurm_version(uint32_t rpc_version)
 {
 	uint16_t version;
 
-	if (rpc_version >= 11)
+	if (rpc_version >= 12)
 		version = SLURM_PROTOCOL_VERSION;
+	else if (rpc_version >= 11)
+		version = SLURM_2_5_PROTOCOL_VERSION;
 	else if (rpc_version >= 10)
 		version = SLURM_2_4_PROTOCOL_VERSION;
 	else
@@ -78,6 +80,7 @@ int check_header_version(header_t * header)
 
 	if (slurmdbd_conf) {
 		if ((header->version != SLURM_PROTOCOL_VERSION)     &&
+		    (header->version != SLURM_2_5_PROTOCOL_VERSION) &&
 		    (header->version != SLURM_2_4_PROTOCOL_VERSION) &&
 		    (header->version != SLURM_2_3_PROTOCOL_VERSION))
 			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
@@ -140,7 +143,8 @@ int check_header_version(header_t * header)
 		case REQUEST_UPDATE_NODE:
 		case REQUEST_UPDATE_PARTITION:
 		case REQUEST_UPDATE_RESERVATION:
-			if ((header->version == SLURM_2_5_PROTOCOL_VERSION) ||
+			if ((header->version == SLURM_2_6_PROTOCOL_VERSION) ||
+			    (header->version == SLURM_2_5_PROTOCOL_VERSION) ||
 			    (header->version == SLURM_2_4_PROTOCOL_VERSION) ||
 			    (header->version == SLURM_2_3_PROTOCOL_VERSION))
 				break;
