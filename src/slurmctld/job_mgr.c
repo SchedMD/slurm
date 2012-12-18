@@ -101,7 +101,8 @@
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 
 /* Change JOB_STATE_VERSION value when changing the state save format */
-#define JOB_STATE_VERSION      "VER013"
+#define JOB_STATE_VERSION      "VER014"
+#define JOB_2_6_STATE_VERSION  "VER014"		/* SLURM version 2.5 */
 #define JOB_2_5_STATE_VERSION  "VER013"		/* SLURM version 2.5 */
 #define JOB_2_4_STATE_VERSION  "VER012"		/* SLURM version 2.4 */
 #define JOB_2_3_STATE_VERSION  "VER011"		/* SLURM version 2.3 */
@@ -626,10 +627,10 @@ extern int load_all_job_state(void)
 	if (ver_str) {
 		if (!strcmp(ver_str, JOB_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
+		} else if (!strcmp(ver_str, JOB_2_5_STATE_VERSION)) {
+			protocol_version = SLURM_2_5_PROTOCOL_VERSION;
 		} else if (!strcmp(ver_str, JOB_2_4_STATE_VERSION)) {
 			protocol_version = SLURM_2_4_PROTOCOL_VERSION;
-		} else if (!strcmp(ver_str, JOB_2_3_STATE_VERSION)) {
-			protocol_version = SLURM_2_3_PROTOCOL_VERSION;
 		}
 	}
 
@@ -918,6 +919,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	bool job_finished = false;
 
 	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+		/* NOTE: As of 12/18/12 the job state of v2.5 and v2.6 are
+		 * the same, but the step states differ */
 		safe_unpack32(&assoc_id, buffer);
 		safe_unpack32(&job_id, buffer);
 
