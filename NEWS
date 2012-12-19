@@ -19,6 +19,7 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Fix for salloc/sbatch to do the correct allocation when asking for
     -N1 -n#.
  -- BGQ - in emulation make it so we can pretend to run large jobs (>64k nodes)
+ -- BLUEGENE - Correct method to update conn_type of a job.
 
 * Changes in SLURM 2.5.0
 ========================
