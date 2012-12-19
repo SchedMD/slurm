@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
  -- RAPL - Fix for handling errors when opening msr files.
  -- BGQ - Fix for salloc/sbatch to do the correct allocation when asking for
     -N1 -n#.
+ -- BGQ - in emulation make it so we can pretend to run large jobs (>64k nodes)
 
 * Changes in SLURM 2.5.0
 ========================

@@ -804,8 +804,9 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls = xmalloc(sizeof(struct step_launch_state));
 	sls->slurmctld_socket_fd = -1;
 #if defined HAVE_BGQ
-//#if defined HAVE_BGQ && defined HAVE_BG_FILES
-	sls->tasks_requested = 1;
+	/* This means we are on an emulated system, so only launch 1
+	   task to avoid overflows with large jobs. */
+	layout->node_cnt = layout->task_cnt = sls->tasks_requested = 1;
 #else
 	/* Hack for LAM-MPI's lamboot, launch one task per node */
 	if (mpi_hook_client_single_task_per_node())
