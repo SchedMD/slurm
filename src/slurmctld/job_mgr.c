@@ -871,8 +871,12 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 
 	/* Dump job steps */
 	step_iterator = list_iterator_create(dump_job_ptr->step_list);
+	if (!step_iterator)
+		fatal("list_iterator_create: malloc failure");
 	while ((step_ptr = (struct step_record *)
 		list_next(step_iterator))) {
+		if (step_ptr->state != JOB_RUNNING)
+			continue;
 		pack16((uint16_t) STEP_FLAG, buffer);
 		dump_job_step_state(dump_job_ptr, step_ptr, buffer);
 	}
