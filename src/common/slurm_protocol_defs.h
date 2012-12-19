@@ -222,6 +222,7 @@ typedef enum {
 	RESPONSE_STATS_INFO,
 	REQUEST_STATS_RESET,
 	RESPONSE_STATS_RESET,
+	REQUEST_JOB_USER_INFO,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -492,6 +493,11 @@ typedef struct job_id_msg {
 	uint32_t job_id;
 	uint16_t show_flags;
 } job_id_msg_t;
+
+typedef struct job_user_id_msg {
+	uint32_t user_id;
+	uint16_t show_flags;
+} job_user_id_msg_t;
 
 typedef struct job_step_id_msg {
 	uint32_t job_id;
@@ -1058,6 +1064,7 @@ extern void slurm_free_job_info(job_info_t * job);
 extern void slurm_free_job_info_members(job_info_t * job);
 
 extern void slurm_free_job_id_msg(job_id_msg_t * msg);
+extern void slurm_free_job_user_id_msg(job_user_id_msg_t * msg);
 extern void slurm_free_job_id_request_msg(job_id_request_msg_t * msg);
 extern void slurm_free_job_id_response_msg(job_id_response_msg_t * msg);
 

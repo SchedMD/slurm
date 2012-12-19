@@ -311,6 +311,11 @@ extern void slurm_free_job_id_msg(job_id_msg_t * msg)
 	xfree(msg);
 }
 
+extern void slurm_free_job_user_id_msg(job_user_id_msg_t * msg)
+{
+	xfree(msg);
+}
+
 extern void slurm_free_job_step_id_msg(job_step_id_msg_t * msg)
 {
 	xfree(msg);
@@ -2539,6 +2544,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_JOB_REQUEUE:
 	case REQUEST_JOB_INFO_SINGLE:
 		slurm_free_job_id_msg(data);
+		break;
+	case REQUEST_JOB_USER_INFO:
+		slurm_free_job_user_id_msg(data);
 		break;
 	case REQUEST_SHARE_INFO:
 		slurm_free_shares_request_msg(data);

@@ -210,6 +210,17 @@ _print_job ( bool clear_old )
 		}
 	} else if (job_id) {
 		error_code = slurm_load_job(&new_job_ptr, job_id, show_flags);
+	} else if (params.user_list && (list_count(params.user_list) == 1)) {
+		ListIterator iterator;
+		uint32_t user_id = 0, *uid_ptr;
+		iterator = list_iterator_create(params.user_list);
+		while ((uid_ptr = list_next(iterator))) {
+			user_id = *uid_ptr;
+			break;
+		}
+		list_iterator_destroy(iterator);
+		error_code = slurm_load_job_user(&new_job_ptr, user_id,
+					     show_flags);
 	} else {
 		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr,
 					     show_flags);

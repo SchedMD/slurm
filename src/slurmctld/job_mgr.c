@@ -5256,13 +5256,14 @@ static int _list_find_job_old(void *job_entry, void *key)
  * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - job filtering options
  * IN uid - uid of user making request (for partition filtering)
+ * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
  *	whenever the data format changes
  */
 extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
-			  uint16_t show_flags, uid_t uid,
+			  uint16_t show_flags, uid_t uid, uint32_t filter_uid,
 			  uint16_t protocol_version)
 {
 	ListIterator job_iterator;
@@ -5304,6 +5305,9 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 		if ((min_age > 0) && (job_ptr->end_time < min_age) &&
 		    (! IS_JOB_COMPLETING(job_ptr)) && IS_JOB_FINISHED(job_ptr))
 			continue;	/* job ready for purging, don't dump */
+
+		if ((filter_uid != NO_VAL) && (filter_uid != job_ptr->user_id))
+			continue;
 
 		pack_job(job_ptr, show_flags, buffer, protocol_version, uid);
 		jobs_packed++;

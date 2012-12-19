@@ -33,7 +33,7 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
-Added step "State" field to scontrol output.
+- Added step "State" field to scontrol output.
 
 OTHER CHANGES
 =============
@@ -46,8 +46,8 @@ API CHANGES
 
 Changed members of the following structs
 ========================================
-Added "state" field to job_step_info_t.
-Added "resv_epilog" and "resv_prolog" to slurm_ctl_conf_t.
+- Added "state" field to job_step_info_t.
+- Added "resv_epilog" and "resv_prolog" to slurm_ctl_conf_t.
 
 Added the following struct definitions
 ======================================
@@ -57,6 +57,9 @@ Changed the following enums and #defines
 
 Added the following API's
 =========================
+- Added "slurm_load_job_user" function. This is a variation of
+  "slurm_load_jobs", but accepts a user ID argument, potentially resulting
+  in substantial performance improvement.
 
 Changed the following API's
 ===========================

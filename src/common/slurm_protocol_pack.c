@@ -127,6 +127,11 @@ static void _pack_job_ready_msg(job_id_msg_t * msg, Buf buffer,
 static int _unpack_job_ready_msg(job_id_msg_t ** msg_ptr, Buf buffer,
 				 uint16_t protocol_version);
 
+static void _pack_job_user_msg(job_user_id_msg_t * msg, Buf buffer,
+			       uint16_t protocol_version);
+static int _unpack_job_user_msg(job_user_id_msg_t ** msg_ptr, Buf buffer,
+				uint16_t protocol_version);
+
 static void
 _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *
 				       msg, Buf buffer,
@@ -1091,6 +1096,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				    msg->protocol_version);
 		break;
 
+	case REQUEST_JOB_USER_INFO:
+		_pack_job_user_msg((job_user_id_msg_t *)msg->data, buffer,
+				   msg->protocol_version);
+		break;
+
 	case REQUEST_SHARE_INFO:
 		_pack_shares_request_msg((shares_request_msg_t *)msg->data,
 					 buffer,
@@ -1669,6 +1679,13 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					   & msg->data, buffer,
 					   msg->protocol_version);
 		break;
+
+	case REQUEST_JOB_USER_INFO:
+		rc = _unpack_job_user_msg((job_user_id_msg_t **)
+					  &msg->data, buffer,
+					  msg->protocol_version);
+		break;
+
 	case REQUEST_SHARE_INFO:
 		rc = _unpack_shares_request_msg(
 			(shares_request_msg_t **)&msg->data,
@@ -9134,8 +9151,8 @@ _pack_job_ready_msg(job_id_msg_t * msg, Buf buffer,
 {
 	xassert ( msg != NULL );
 
-	pack32((uint32_t)msg->job_id  , buffer ) ;
-	pack16((uint16_t)msg->show_flags, buffer);
+	pack32(msg->job_id  , buffer ) ;
+	pack16(msg->show_flags, buffer);
 }
 
 static int
@@ -9155,6 +9172,36 @@ _unpack_job_ready_msg(job_id_msg_t ** msg_ptr, Buf buffer,
 unpack_error:
 	*msg_ptr = NULL;
 	slurm_free_job_id_msg(msg);
+	return SLURM_ERROR;
+}
+
+static void
+_pack_job_user_msg(job_user_id_msg_t * msg, Buf buffer,
+		   uint16_t protocol_version)
+{
+	xassert ( msg != NULL );
+
+	pack32(msg->user_id  , buffer ) ;
+	pack16(msg->show_flags, buffer);
+}
+
+static int
+_unpack_job_user_msg(job_user_id_msg_t ** msg_ptr, Buf buffer,
+		     uint16_t protocol_version)
+{
+	job_user_id_msg_t * msg;
+	xassert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (job_user_id_msg_t) );
+	*msg_ptr = msg ;
+
+	safe_unpack32(&msg->user_id  , buffer ) ;
+	safe_unpack16(&msg->show_flags, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	*msg_ptr = NULL;
+	slurm_free_job_user_id_msg(msg);
 	return SLURM_ERROR;
 }
 
