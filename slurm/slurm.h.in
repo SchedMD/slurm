@@ -2463,7 +2463,7 @@ extern slurm_step_ctx_t *slurm_step_ctx_create PARAMS(
 /*
  * slurm_step_ctx_create_timeout - Create a job step and its context.
  * IN step_params - job step parameters
- * IN timeout - in microseconds
+ * IN timeout - in milliseconds
  * RET the step context or NULL on failure with slurm errno set
  * NOTE: Free allocated memory using slurm_step_ctx_destroy.
  */

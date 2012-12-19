@@ -192,7 +192,7 @@ fail:
 /*
  * slurm_step_ctx_create - Create a job step and its context.
  * IN step_params - job step parameters
- * IN timeout - in microseconds
+ * IN timeout - in milliseconds
  * RET the step context or NULL on failure with slurm errno set
  * NOTE: Free allocated memory using slurm_step_ctx_destroy.
  */
@@ -203,7 +203,7 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 	struct slurm_step_ctx_struct *ctx = NULL;
 	job_step_create_request_msg_t *step_req = NULL;
 	job_step_create_response_msg_t *step_resp = NULL;
-	int rc, time_left = timeout / 1000;
+	int rc, time_left = timeout;
 	int sock = -1;
 	short port = 0;
 	int errnum = 0;

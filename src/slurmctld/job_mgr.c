@@ -5876,6 +5876,8 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		if (step_ptr->state != JOB_RUNNING)
+			continue;
 		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 		if (step_ptr->step_layout &&
 		    step_ptr->step_layout->node_list &&
@@ -8021,6 +8023,8 @@ static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
 	xassert(job_ptr);
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		if (step_ptr->state != JOB_RUNNING)
+			continue;
 		if (!bit_test(step_ptr->step_node_bitmap, node_inx))
 			continue;
 		if (step_ptr->time_last_active >= now) {
@@ -8773,6 +8777,8 @@ static void *_switch_suspend_info(struct job_record *job_ptr)
 	if (!step_iterator)
 		fatal("list_iterator_create: malloc failure");
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		if (step_ptr->state != JOB_RUNNING)
+			continue;
 		interconnect_suspend_info_get(step_ptr->switch_job,
 					      &switch_suspend_info);
 	}
@@ -8951,6 +8957,8 @@ static int _job_suspend_switch_test(struct job_record *job_ptr)
 	if (!step_iterator)
 		fatal("list_iterator_create: malloc failure");
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		if (step_ptr->state != JOB_RUNNING)
+			continue;
 		rc = interconnect_suspend_test(step_ptr->switch_job);
 		if (rc != SLURM_SUCCESS)
 			break;
@@ -9630,6 +9638,8 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 		while ((step_ptr = (struct step_record *)
 					list_next (step_iterator))) {
 			char *image_dir = NULL;
+			if (step_ptr->state != JOB_RUNNING)
+				continue;
 			if (ckpt_ptr->image_dir) {
 				image_dir = xstrdup(ckpt_ptr->image_dir);
 			} else {
