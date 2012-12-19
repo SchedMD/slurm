@@ -3234,7 +3234,7 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 		if (display_widget)
 			gtk_widget_destroy(display_widget);
 		view = ERROR_VIEW;
-		sprintf(error_char, "slurm_load_job: %s",
+		sprintf(error_char, "slurm_load_jobs: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		gtk_table_attach_defaults(table, label, 0, 1, 0, 1);
@@ -3404,7 +3404,7 @@ extern void specific_info_job(popup_info_t *popup_win)
 		if (spec_info->display_widget)
 			gtk_widget_destroy(spec_info->display_widget);
 
-		sprintf(error_char, "slurm_load_job: %s",
+		sprintf(error_char, "slurm_load_jobs: %s",
 			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		gtk_table_attach_defaults(GTK_TABLE(popup_win->table),

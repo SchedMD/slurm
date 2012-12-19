@@ -83,11 +83,11 @@ extern void get_job(void)
 			if (!params.commandline) {
 				mvwprintw(text_win,
 					  main_ycord, 1,
-					  "slurm_load_job: %s",
+					  "slurm_load_jobs: %s",
 					  slurm_strerror(slurm_get_errno()));
 				main_ycord++;
 			} else {
-				printf("slurm_load_job: %s\n",
+				printf("slurm_load_jobs: %s\n",
 				       slurm_strerror(slurm_get_errno()));
 			}
 		}
