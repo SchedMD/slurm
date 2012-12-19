@@ -86,6 +86,11 @@
 #define RESV_2_5_STATE_VERSION      "VER004"
 #define RESV_2_4_STATE_VERSION      "VER003"
 
+typedef struct resv_thread_args {
+	char *script;
+	char *resv_name;
+} resv_thread_args_t;
+
 time_t    last_resv_update = (time_t) 0;
 List      resv_list = (List) NULL;
 uint32_t  resv_over_run;
@@ -106,6 +111,8 @@ static void _del_resv_rec(void *x);
 static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode);
 static int  _find_resv_id(void *x, void *key);
 static int  _find_resv_name(void *x, void *key);
+static void *_fork_script(void *x);
+static void _free_script_arg(resv_thread_args_t *args);
 static void _generate_resv_id(void);
 static void _generate_resv_name(resv_desc_msg_t *resv_ptr);
 static uint32_t _get_job_duration(struct job_record *job_ptr);
@@ -132,6 +139,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt);
 static bool _resv_overlap(time_t start_time, time_t end_time,
 			  uint16_t flags, bitstr_t *node_bitmap,
 			  slurmctld_resv_t *this_resv_ptr);
+static void _run_script(char *script, slurmctld_resv_t *resv_ptr);
 static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			  struct part_record **part_ptr,
 			  bitstr_t **resv_bitmap, bitstr_t **core_bitmap);
@@ -3817,6 +3825,91 @@ static void _advance_resv_time(slurmctld_resv_t *resv_ptr)
 	}
 }
 
+static void _free_script_arg(resv_thread_args_t *args)
+{
+	if (args) {
+		xfree(args->script);
+		xfree(args->resv_name);
+		xfree(args);
+	}
+}
+
+static void *_fork_script(void *x)
+{
+	resv_thread_args_t *args = (resv_thread_args_t *) x;
+	char *argv[3], *envp[1];
+	int status, wait_rc;
+	pid_t cpid;
+
+	argv[0] = args->script;
+	argv[1] = args->resv_name;
+	argv[2] = NULL;
+	envp[0] = NULL;
+	if ((cpid = fork()) < 0) {
+		error("_fork_script fork error: %m");
+		goto fini;
+	}
+	if (cpid == 0) {
+#ifdef SETPGRP_TWO_ARGS
+		setpgrp(0, 0);
+#else
+		setpgrp();
+#endif
+		execve(argv[0], argv, envp);
+		exit(127);
+	}
+
+	while (1) {
+		wait_rc = waitpid(cpid, &status, 0);
+		if (wait_rc < 0) {
+			if (errno == EINTR)
+				continue;
+			error("_fork_script waitpid error: %m");
+			break;
+		} else if (wait_rc > 0) {
+			killpg(cpid, SIGKILL);	/* kill children too */
+			break;
+		}
+	}
+fini:	_free_script_arg(args);
+	return NULL;
+}
+
+static void _run_script(char *script, slurmctld_resv_t *resv_ptr)
+{
+	int rc;
+	resv_thread_args_t *args;
+	pthread_t thread_id_prolog;
+	pthread_attr_t thread_attr_prolog;
+
+	if (!script || !script[0])
+		return;
+	if (access(script, X_OK) < 0) {
+		error("Invalid ResvProlog or ResvEpilog(%s): %m", script);
+		return;
+	}
+
+	slurm_attr_init(&thread_attr_prolog);
+	pthread_attr_setdetachstate(&thread_attr_prolog,
+				    PTHREAD_CREATE_DETACHED);
+	args = xmalloc(sizeof(resv_thread_args_t));
+	args->script    = xstrdup(script);
+	args->resv_name = xstrdup(resv_ptr->name);
+	while (1) {
+		rc = pthread_create(&thread_id_prolog, &thread_attr_prolog,
+				    _fork_script, (void *) args);
+		if (rc != 0) {
+			if (errno == EAGAIN)
+				continue;
+			error("pthread_create: %m");
+		}
+		break;
+	}
+	slurm_attr_destroy(&thread_attr_prolog);
+	if (rc != 0)
+		_free_script_arg(args);
+}
+
 /* Finish scan of all jobs for valid reservations
  *
  * Purge vestigial reservation records.
@@ -3836,7 +3929,9 @@ extern void fini_job_resv_check(void)
 	if (!iter)
 		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		if (resv_ptr->end_time > now) { /* reservation not over */
+		if (!resv_ptr->run_prolog || !resv_ptr->run_epilog)
+			continue;
+		if (resv_ptr->end_time >= now) { /* reservation not over */
 			_validate_node_choice(resv_ptr);
 			continue;
 		}
@@ -3904,6 +3999,14 @@ extern void set_node_maint_mode(bool reset_all)
 	if (!iter)
 		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if ((resv_ptr->start_time <= now) && !resv_ptr->run_prolog) {
+			resv_ptr->run_prolog = true;
+			_run_script(slurmctld_conf.resv_prolog, resv_ptr);
+		}
+		if ((resv_ptr->end_time <= now) && !resv_ptr->run_epilog) {
+			resv_ptr->run_epilog = true;
+			_run_script(slurmctld_conf.resv_epilog, resv_ptr);
+		}
 		if (reset_all)
 			resv_ptr->maint_set_node = false;
 		if ((resv_ptr->flags & RESERVE_FLAG_MAINT) == 0)

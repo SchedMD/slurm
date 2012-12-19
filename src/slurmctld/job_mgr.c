@@ -4864,6 +4864,8 @@ void job_time_limit(void)
 
 	begin_job_resv_check();
 	job_iterator = list_iterator_create(job_list);
+	if (!job_iterator)
+		fatal("list_iterator_create: malloc failure");
 	while ((job_ptr =(struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 
@@ -4950,7 +4952,6 @@ void job_time_limit(void)
 		if (job_ptr->end_time <= (now + PERIODIC_TIMEOUT * 2))
 			srun_timeout (job_ptr);
 	}
-
 	list_iterator_destroy(job_iterator);
 	fini_job_resv_check();
 }
