@@ -6158,7 +6158,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	acct_policy_limit_set_t acct_policy_limit_set;
 
 #ifdef HAVE_BG
-	uint16_t conn_type = (uint16_t) NO_VAL;
+	uint16_t conn_type[SYSTEM_DIMENSIONS] = {(uint16_t) NO_VAL};
 	uint16_t reboot = (uint16_t) NO_VAL;
 	uint16_t rotate = (uint16_t) NO_VAL;
 	uint16_t geometry[SYSTEM_DIMENSIONS] = {(uint16_t) NO_VAL};
@@ -7509,42 +7509,45 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 #ifdef HAVE_BG
 	select_g_select_jobinfo_get(job_specs->select_jobinfo,
 				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
-	if (conn_type != (uint16_t) NO_VAL) {
+	if (conn_type[0] != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else {
-			if((conn_type >= SELECT_SMALL)
+			char *conn_type_char = conn_type_string_full(conn_type);
+			if((conn_type[0] >= SELECT_SMALL)
 			   && (detail_ptr->min_cpus >= cpus_per_mp)) {
 				info("update_job: could not change "
 				     "conn_type to '%s' because cpu "
 				     "count is %u for job %u making "
 				     "the conn_type invalid.",
-				     conn_type_string(conn_type),
+				     conn_type_char,
 				     detail_ptr->min_cpus,
 				     job_ptr->job_id);
 				error_code = ESLURM_INVALID_NODE_COUNT;
-			} else if(((conn_type == SELECT_TORUS)
-				   || (conn_type == SELECT_MESH))
+			} else if(((conn_type[0] == SELECT_TORUS)
+				   || (conn_type[0] == SELECT_MESH))
 				  && (detail_ptr->min_cpus < cpus_per_mp)) {
 				info("update_job: could not change "
 				     "conn_type to '%s' because cpu "
 				     "count is %u for job %u making "
 				     "the conn_type invalid.",
-				     conn_type_string(conn_type),
+				     conn_type_char,
 				     detail_ptr->min_cpus,
 				     job_ptr->job_id);
 				error_code = ESLURM_INVALID_NODE_COUNT;
 			} else {
 				info("update_job: setting conn_type to '%s' "
 				     "for jobid %u",
-				     conn_type_string(conn_type),
+				     conn_type_char,
 				     job_ptr->job_id);
 				select_g_select_jobinfo_set(
 					job_ptr->select_jobinfo,
 					SELECT_JOBDATA_CONN_TYPE, &conn_type);
 			}
+			xfree(conn_type_char);
 		}
 	}
+
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
@@ -7552,15 +7555,17 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
 	if(detail_ptr &&
-	   (((conn_type >= SELECT_SMALL)
+	   (((conn_type[0] >= SELECT_SMALL)
 	     && (detail_ptr->min_cpus >= cpus_per_mp))
-	    || (((conn_type == SELECT_TORUS)|| (conn_type == SELECT_MESH))
+	    || (((conn_type[0] == SELECT_TORUS)|| (conn_type[0] == SELECT_MESH))
 		&& (detail_ptr->min_cpus < cpus_per_mp)))) {
+		char *conn_type_char = conn_type_string_full(conn_type);
 		info("update_job: With cpu count at %u our conn_type "
 		     "of '%s' is invalid for job %u.",
 		     detail_ptr->min_cpus,
-		     conn_type_string(conn_type),
+		     conn_type_char,
 		     job_ptr->job_id);
+		xfree(conn_type_char);
 		error_code = ESLURM_INVALID_NODE_COUNT;
 		goto fini;
 	}

@@ -64,6 +64,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/assoc_mgr.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define _DEBUG 0
@@ -243,6 +244,21 @@ static void _register_lua_slurm_output_functions (void)
 	lua_setglobal (L, "slurm");
 }
 
+/* Get the default account for a user (or NULL if not present) */
+static char *_get_default_account(uint32_t user_id)
+{
+	slurmdb_user_rec_t user;
+
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
+	user.uid = user_id;
+	if (assoc_mgr_fill_in_user(acct_db_conn,
+				   &user, 0, NULL) != SLURM_ERROR) {
+		return user.default_acct;
+	} else {
+		return NULL;
+	}
+}
+
 /* Get fields in an existing slurmctld job record
  * NOTE: This is an incomplete list of job record fields.
  * Add more as needed and send patches to slurm-dev@llnl.gov */
@@ -335,6 +351,8 @@ static int _get_job_req_field (lua_State *L)
 		lua_pushnumber (L, job_desc->contiguous);
 	} else if (!strcmp(name, "cores_per_socket")) {
 		lua_pushnumber (L, job_desc->cores_per_socket);
+	} else if (!strcmp(name, "default_account")) {
+		lua_pushstring (L, _get_default_account(job_desc->user_id));
 	} else if (!strcmp(name, "dependency")) {
 		lua_pushstring (L, job_desc->dependency);
 	} else if (!strcmp(name, "end_time")) {

@@ -3073,7 +3073,14 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 		if (job_desc->min_nodes == (uint32_t) NO_VAL)
 			return SLURM_SUCCESS;
-		else if ((job_desc->min_nodes == 1)
+
+#ifdef HAVE_BG_L_P
+		/* This code might not be relavant anymore.  It was
+		   originally done for L and P to protect against
+		   unaware users now since one can actually ask for 1
+		   cnode this code doesn't do the correct thing.
+		*/
+		if ((job_desc->min_nodes == 1)
 			 && (job_desc->min_cpus != NO_VAL)) {
 			job_desc->min_nodes = job_desc->min_cpus;
 			if (job_desc->ntasks_per_node
@@ -3081,6 +3088,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				job_desc->min_nodes /=
 					job_desc->ntasks_per_node;
 		}
+#endif
 
 		get_select_jobinfo(job_desc->select_jobinfo->data,
 				   SELECT_JOBDATA_GEOMETRY, &req_geometry);

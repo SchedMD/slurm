@@ -1903,8 +1903,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						break;
 				}
 			}
+
+			list_iterator_reset(itr);
+
 			if (!found_record) {
-				list_iterator_reset(itr);
 				error("Job %u wasn't found running anywhere, "
 				      "can't preempt",
 				      preempt_job_ptr->job_id);
@@ -1921,8 +1923,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				     &bg_record, local_mode, avail_cpus))
 			    == SLURM_SUCCESS)
 				break;
-
-			list_iterator_reset(itr);
 		}
 		list_iterator_destroy(itr);
 		list_iterator_destroy(job_itr);

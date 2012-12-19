@@ -25,6 +25,12 @@ documents those changes that are of interest to users and admins.
  -- Fix for race condition related to compute node boot resulting in node being
     set down with reason of "Node <name> unexpectedly rebooted"
  -- RAPL - Fix for handling errors when opening msr files.
+ -- BGQ - Fix for salloc/sbatch to do the correct allocation when asking for
+    -N1 -n#.
+ -- BGQ - in emulation make it so we can pretend to run large jobs (>64k nodes)
+ -- BLUEGENE - Correct method to update conn_type of a job.
+ -- BLUEGENE - Fix issue with preemption when needing to preempt multiple jobs
+    to make one job run.
 
 * Changes in SLURM 2.5.0
 ========================
