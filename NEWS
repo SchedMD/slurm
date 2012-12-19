@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
  -- Fix for race condition related to compute node boot resulting in node being
     set down with reason of "Node <name> unexpectedly rebooted"
  -- RAPL - Fix for handling errors when opening msr files.
+ -- BGQ - Fix for salloc/sbatch to do the correct allocation when asking for
+    -N1 -n#.
 
 * Changes in SLURM 2.5.0
 ========================
