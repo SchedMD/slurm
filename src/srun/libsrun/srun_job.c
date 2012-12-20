@@ -1305,7 +1305,8 @@ static int _shepard_spawn(srun_job_t *job, bool got_alloc)
 		}
 	}
 
-	(void) slurm_terminate_job_step(job->jobid, job->stepid);
+	(void) slurm_kill_job_step(job->jobid, job->stepid, SIGKILL);
+
 	if (got_alloc)
 		slurm_complete_job(job->jobid, NO_VAL);
 	exit(0);
