@@ -592,7 +592,7 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 		 * Spawn process to insure clean-up of job and/or step
 		 * on abnormal termination
 		 */
-		shepard_fd = _shepard_spawn(job, got_alloc);
+		shepard_fd = _shepard_spawn(job, *got_alloc);
 	}
 
 	*p_job = job;

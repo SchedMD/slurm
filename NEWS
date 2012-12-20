@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Correct method to update conn_type of a job.
  -- BLUEGENE - Fix issue with preemption when needing to preempt multiple jobs
     to make one job run.
+ -- Fixed issue where if an srun dies inside of an allocation abnormally it
+    would of also killed the allocation.
 
 * Changes in SLURM 2.5.0
 ========================
