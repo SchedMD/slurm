@@ -362,6 +362,14 @@ extern void slurm_free_node_info_request_msg(node_info_request_msg_t *msg)
 	xfree(msg);
 }
 
+extern void slurm_free_node_info_single_msg(node_info_single_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->node_name);
+		xfree(msg);
+	}
+}
+
 extern void slurm_free_part_info_request_msg(part_info_request_msg_t *msg)
 {
 	xfree(msg);
@@ -2449,6 +2457,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_NODE_INFO:
 		slurm_free_node_info_request_msg(data);
+		break;
+	case REQUEST_NODE_INFO_SINGLE:
+		slurm_free_node_info_single_msg(data);
 		break;
 	case REQUEST_PARTITION_INFO:
 		slurm_free_part_info_request_msg(data);

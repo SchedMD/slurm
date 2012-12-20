@@ -1875,7 +1875,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 						tmp++;
 				}
 				/* get the row with the largest cpu
-				   count on it. */
+				 * count on it. */
 				if (tmp > tmp_16)
 					tmp_16 = tmp;
 			}

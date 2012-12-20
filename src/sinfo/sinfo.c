@@ -276,14 +276,23 @@ _query_server(partition_info_msg_t ** part_pptr,
 	if (old_node_ptr) {
 		if (clear_old)
 			old_node_ptr->last_update = 0;
-		error_code = slurm_load_node(old_node_ptr->last_update,
-					     &new_node_ptr, show_flags);
+		if (params.node_name_single) {
+			error_code = slurm_load_node_single(&new_node_ptr,
+							    params.nodes,
+							    show_flags);
+		} else {
+			error_code = slurm_load_node(old_node_ptr->last_update,
+						     &new_node_ptr, show_flags);
+		}
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_node_info_msg(old_node_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_node_ptr = old_node_ptr;
 		}
+	} else if (params.node_name_single) {
+		error_code = slurm_load_node_single(&new_node_ptr, params.nodes,
+						    show_flags);
 	} else {
 		error_code = slurm_load_node((time_t) NULL, &new_node_ptr,
 					     show_flags);

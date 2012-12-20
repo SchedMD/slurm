@@ -196,7 +196,7 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int) 'n':
 			xfree(params.nodes);
-			params.nodes= xstrdup(optarg);
+			params.nodes = xstrdup(optarg);
 			/*
 			 * confirm valid nodelist entry
 			 */
@@ -206,6 +206,10 @@ extern void parse_command_line(int argc, char *argv[])
 				      optarg);
 				exit(1);
 			}
+			if (hostlist_count(host_list) == 1)
+				params.node_name_single = true;
+			else
+				params.node_name_single = false;
 			hostlist_destroy(host_list);
 			break;
 		case (int) 'N':

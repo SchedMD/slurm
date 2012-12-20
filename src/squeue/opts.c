@@ -400,14 +400,21 @@ parse_command_line( int argc, char* argv[] )
 		_print_options();
 }
 
-/* Return the maximum number of processors for any node in the cluster */
+/* Return the maximum number of processors for any node in the cluster. */
 static int   _max_cpus_per_node(void)
 {
 	int error_code, max_cpus = 1;
 	node_info_msg_t *node_info_ptr = NULL;
 
+	/* Since slurm_load_node() is a high-overhead function call, use
+	 * slurm_load_node_single() instead and assume a homogeneous cluster */
+#if 0
 	error_code = slurm_load_node ((time_t) NULL, &node_info_ptr,
 				      params.all_flag);
+#else
+	error_code = slurm_load_node_single(&node_info_ptr, NULL,
+					    params.all_flag);
+#endif
 	if (error_code == SLURM_SUCCESS) {
 		int i;
 		node_info_t *node_ptr = node_info_ptr->node_array;

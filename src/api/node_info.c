@@ -362,7 +362,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
  * slurm_load_node - issue RPC to get slurm all node configuration information
  *	if changed since update_time
  * IN update_time - time of current configuration data
- * IN node_info_msg_pptr - place to store a node configuration pointer
+ * OUT resp - place to store a node configuration pointer
  * IN show_flags - node filtering options
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_node_info_msg
@@ -380,6 +380,52 @@ extern int slurm_load_node (time_t update_time,
 	req.last_update  = update_time;
 	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_NODE_INFO;
+	req_msg.data     = &req;
+
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+		return SLURM_ERROR;
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_NODE_INFO:
+		*resp = (node_info_msg_t *) resp_msg.data;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		if (rc)
+			slurm_seterrno_ret(rc);
+		*resp = NULL;
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
+
+	return SLURM_PROTOCOL_SUCCESS;
+}
+
+/*
+ * slurm_load_node_single - issue RPC to get slurm configuration information
+ *	for a specific node
+ * OUT resp - place to store a node configuration pointer
+ * IN node_name - name of the node for which information is requested
+ * IN show_flags - node filtering options
+ * RET 0 or a slurm error code
+ * NOTE: free the response using slurm_free_node_info_msg
+ */
+extern int slurm_load_node_single (node_info_msg_t **resp,
+				   char *node_name, uint16_t show_flags)
+{
+	int rc;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+	node_info_single_msg_t req;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+	req.node_name    = node_name;
+	req.show_flags   = show_flags;
+	req_msg.msg_type = REQUEST_NODE_INFO_SINGLE;
 	req_msg.data     = &req;
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)

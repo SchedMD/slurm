@@ -11,7 +11,10 @@ documents those changes that are of interest to users and admins.
     program at the beginning and end of each reservation.
  -- Added "slurm_load_job_user" function. This is a variation of
     "slurm_load_jobs", but accepts a user ID argument, potentially resulting
-    in substantial performance improvement.
+    in substantial performance improvement for "squeue --user=ID"
+ -- Added "slurm_load_node_single" function. This is a variation of
+    "slurm_load_nodes", but accepts a node name argument, potentially resulting
+    in substantial performance improvement for "sinfo --nodes=NAME".
 
 * Changes in SLURM 2.5.1
 ========================

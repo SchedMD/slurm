@@ -165,6 +165,12 @@ static int _unpack_node_info_request_msg(
 	node_info_request_msg_t ** msg, Buf bufer,
 	uint16_t protocol_version);
 
+static void _pack_node_info_single_msg(node_info_single_msg_t * msg,
+				       Buf buffer, uint16_t protocol_version);
+
+static int _unpack_node_info_single_msg(node_info_single_msg_t ** msg,
+					Buf buffer, uint16_t protocol_version);
+
 static int _unpack_node_info_msg(node_info_msg_t ** msg, Buf buffer,
 				 uint16_t protocol_version);
 static int _unpack_node_info_members(node_info_t * node, Buf buffer,
@@ -717,6 +723,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					    msg->data, buffer,
 					    msg->protocol_version);
 		break;
+	case REQUEST_NODE_INFO_SINGLE:
+		_pack_node_info_single_msg((node_info_single_msg_t *)
+					   msg->data, buffer,
+					   msg->protocol_version);
+		break;
 	case REQUEST_PARTITION_INFO:
 		_pack_part_info_request_msg((part_info_request_msg_t *)
 					    msg->data, buffer,
@@ -1267,6 +1278,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_node_info_request_msg((node_info_request_msg_t **)
 						   & (msg->data), buffer,
 						   msg->protocol_version);
+		break;
+	case REQUEST_NODE_INFO_SINGLE:
+		rc = _unpack_node_info_single_msg((node_info_single_msg_t **)
+						  & (msg->data), buffer,
+						  msg->protocol_version);
 		break;
 	case REQUEST_PARTITION_INFO:
 		rc = _unpack_part_info_request_msg((part_info_request_msg_t **)
@@ -8427,7 +8443,7 @@ _pack_node_info_request_msg(node_info_request_msg_t * msg, Buf buffer,
 			    uint16_t protocol_version)
 {
 	pack_time(msg->last_update, buffer);
-	pack16((uint16_t)msg->show_flags, buffer);
+	pack16(msg->show_flags, buffer);
 }
 
 static int
@@ -8445,6 +8461,34 @@ _unpack_node_info_request_msg(node_info_request_msg_t ** msg, Buf buffer,
 
 unpack_error:
 	slurm_free_node_info_request_msg(node_info);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_node_info_single_msg(node_info_single_msg_t * msg, Buf buffer,
+			   uint16_t protocol_version)
+{
+	packstr(msg->node_name, buffer);
+	pack16(msg->show_flags, buffer);
+}
+
+static int
+_unpack_node_info_single_msg(node_info_single_msg_t ** msg, Buf buffer,
+			     uint16_t protocol_version)
+{
+	node_info_single_msg_t* node_info;
+	uint32_t uint32_tmp;
+
+	node_info = xmalloc(sizeof(node_info_single_msg_t));
+	*msg = node_info;
+
+	safe_unpackstr_xmalloc(&node_info->node_name, &uint32_tmp, buffer);
+	safe_unpack16(&node_info->show_flags, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_node_info_single_msg(node_info);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

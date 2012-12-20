@@ -686,7 +686,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	buffer = init_buf (BUF_SIZE*16);
 	nodes_packed = 0;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
 		/* write header: count and time */
 		pack32(nodes_packed, buffer);
 		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
@@ -744,6 +744,86 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	buffer_ptr[0] = xfer_buf_data (buffer);
 }
 
+/*
+ * pack_one_node - dump all configuration and node information for one node
+ *	in machine independent form (for network transmission)
+ * OUT buffer_ptr - pointer to the stored data
+ * OUT buffer_size - set to size of the buffer in bytes
+ * IN show_flags - node filtering options
+ * IN uid - uid of user making request (for partition filtering)
+ * IN node_name - name of node for which information is desired,
+ *		  use first node if name is NULL
+ * IN protocol_version - slurm protocol version of client
+ * global: node_record_table_ptr - pointer to global node table
+ * NOTE: the caller must xfree the buffer at *buffer_ptr
+ * NOTE: change slurm_load_node() in api/node_info.c when data format changes
+ * NOTE: READ lock_slurmctld config before entry
+ */
+extern void pack_one_node (char **buffer_ptr, int *buffer_size,
+			   uint16_t show_flags, uid_t uid, char *node_name,
+			   uint16_t protocol_version)
+{
+	uint32_t nodes_packed, tmp_offset, node_scaling;
+	Buf buffer;
+	time_t now = time(NULL);
+	struct node_record *node_ptr;
+	bool hidden;
+
+	buffer_ptr[0] = NULL;
+	*buffer_size = 0;
+
+	buffer = init_buf (BUF_SIZE);
+	nodes_packed = 0;
+
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+		/* write header: count and time */
+		pack32(nodes_packed, buffer);
+		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
+					&node_scaling);
+		pack32(node_scaling, buffer);
+
+		pack_time(now, buffer);
+
+		/* write node records */
+		part_filter_set(uid);
+		if (node_name)
+			node_ptr = find_node_record(node_name);
+		else
+			node_ptr = node_record_table_ptr;
+		if (node_ptr) {
+			hidden = false;
+			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
+			    (_node_is_hidden(node_ptr)))
+				hidden = true;
+			else if (IS_NODE_FUTURE(node_ptr) &&
+				 !IS_NODE_MAINT(node_ptr)) /* reboot req sent */
+				hidden = true;
+			else if (IS_NODE_CLOUD(node_ptr) &&
+				 IS_NODE_POWER_SAVE(node_ptr))
+				hidden = true;
+			else if ((node_ptr->name == NULL) ||
+				 (node_ptr->name[0] == '\0'))
+				hidden = true;
+
+			if (!hidden) {
+				_pack_node(node_ptr, buffer, protocol_version);
+				nodes_packed++;
+			}
+		}
+		part_filter_clear();
+	} else {
+		error("select_g_select_jobinfo_pack: protocol_version "
+		      "%hu not supported", protocol_version);
+	}
+
+	tmp_offset = get_buf_offset (buffer);
+	set_buf_offset (buffer, 0);
+	pack32  (nodes_packed, buffer);
+	set_buf_offset (buffer, tmp_offset);
+
+	*buffer_size = get_buf_offset (buffer);
+	buffer_ptr[0] = xfer_buf_data (buffer);
+}
 
 /*
  * _pack_node - dump all configuration information about a specific node in

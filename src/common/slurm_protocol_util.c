@@ -81,8 +81,7 @@ int check_header_version(header_t * header)
 	if (slurmdbd_conf) {
 		if ((header->version != SLURM_PROTOCOL_VERSION)     &&
 		    (header->version != SLURM_2_5_PROTOCOL_VERSION) &&
-		    (header->version != SLURM_2_4_PROTOCOL_VERSION) &&
-		    (header->version != SLURM_2_3_PROTOCOL_VERSION))
+		    (header->version != SLURM_2_4_PROTOCOL_VERSION))
 			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
 	} else if (header->version != check_version) {
 		/* Starting with 2.2 we will handle previous versions
@@ -110,8 +109,10 @@ int check_header_version(header_t * header)
 		case REQUEST_JOB_READY:
 		case REQUEST_JOB_REQUEUE:
 		case REQUEST_JOB_STEP_INFO:
+		case REQUEST_JOB_USER_INFO:
 		case REQUEST_JOB_WILL_RUN:
 		case REQUEST_NODE_INFO:
+		case REQUEST_NODE_INFO_SINGLE:
 		case REQUEST_PARTITION_INFO:
 		case REQUEST_PING:
 		case REQUEST_PRIORITY_FACTORS:
@@ -145,8 +146,7 @@ int check_header_version(header_t * header)
 		case REQUEST_UPDATE_RESERVATION:
 			if ((header->version == SLURM_2_6_PROTOCOL_VERSION) ||
 			    (header->version == SLURM_2_5_PROTOCOL_VERSION) ||
-			    (header->version == SLURM_2_4_PROTOCOL_VERSION) ||
-			    (header->version == SLURM_2_3_PROTOCOL_VERSION))
+			    (header->version == SLURM_2_4_PROTOCOL_VERSION))
 				break;
 		default:
 			debug("unsupported RPC %d", header->msg_type);

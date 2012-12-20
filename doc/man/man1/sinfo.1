@@ -1,4 +1,4 @@
-.TH SINFO "1" "August 2012" "sinfo 2.5" "Slurm components"
+.TH SINFO "1" "December 2012" "sinfo 2.6" "Slurm components"
 
 .SH "NAME"
 sinfo \- view information about SLURM nodes and partitions.
@@ -13,7 +13,7 @@ system running SLURM.
 
 .TP
 \fB\-a\fR, \fB\-\-all\fR
-Display information about all partions. This causes information to be
+Display information about all partitions. This causes information to be
 displayed about partitions that are configured as hidden and partitions that
 are unavailable to user's group.
 
@@ -69,6 +69,8 @@ Print information only about the specified node(s).
 Multiple nodes may be comma separated or expressed using a
 node range expression. For example "linux[00\-07]" would
 indicate eight nodes, "linux00" through "linux07."
+Performance of the command can be measurably improved for systems with large
+numbers of nodes when a single node name is specified.
 
 .TP
 \fB\-N\fR, \fB\-\-Node\fR
@@ -268,10 +270,10 @@ This is ignored if the \fB\-\-format\fR option is specified.
 .TP
 \fB\-S <sort_list>\fR, \fB\-\-sort=<sort_list>\fR
 Specification of the order in which records should be reported.
-This uses the same field specifciation as the <output_format>.
+This uses the same field specification as the <output_format>.
 Multiple sorts may be performed by listing multiple sort fields
 separated by commas.  The field specifications may be preceded
-by "+" or "\-" for assending (default) and desending order
+by "+" or "\-" for ascending (default) and descending order
 respectively.  The partition field specification, "P", may be
 preceded by a "#" to report partitions in the same order that
 they appear in SLURM's  configuration file, \fBslurm.conf\fR.
@@ -465,7 +467,7 @@ man page or the \fBslurm.conf\fR(5) man page for more information.
 The node is not allocated to any jobs and is available for use.
 .TP
 \fBMAINT\fR
-The node is currently in a reservation with a flag value of "maintainence".
+The node is currently in a reservation with a flag value of "maintenance".
 .TP
 \fBUNKNOWN\fR
 The SLURM controller has just started and the node's state

@@ -223,6 +223,7 @@ typedef enum {
 	REQUEST_STATS_RESET,
 	RESPONSE_STATS_RESET,
 	REQUEST_JOB_USER_INFO,
+	REQUEST_NODE_INFO_SINGLE,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -520,6 +521,11 @@ typedef struct node_info_request_msg {
 	time_t last_update;
 	uint16_t show_flags;
 } node_info_request_msg_t;
+
+typedef struct node_info_single_msg {
+	char *node_name;
+	uint16_t show_flags;
+} node_info_single_msg_t;
 
 typedef struct front_end_info_request_msg {
 	time_t last_update;
@@ -1030,6 +1036,7 @@ extern void slurm_free_job_step_info_request_msg(
 extern void slurm_free_front_end_info_request_msg(
 		front_end_info_request_msg_t *msg);
 extern void slurm_free_node_info_request_msg(node_info_request_msg_t *msg);
+extern void slurm_free_node_info_single_msg(node_info_single_msg_t *msg);
 extern void slurm_free_part_info_request_msg(part_info_request_msg_t *msg);
 extern void slurm_free_stats_info_request_msg(stats_info_request_msg_t *msg);
 extern void slurm_free_stats_response_msg(stats_info_response_msg_t *msg);
