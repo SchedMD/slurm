@@ -48,11 +48,13 @@ By default, prints a time stamp with the header.
 Requests a comma separated list of job ids to display.  Defaults to all jobs.
 The \fB\-\-jobs=<job_id_list>\fR option may be used in conjunction with the
 \fB\-\-steps\fR option to print step information about specific jobs.
-Note: If a list of job ids is provided, the jobs are displayed even if
+Note: If a list of job IDs is provided, the jobs are displayed even if
 they are on hidden partitions. Since this option's argument is optional,
 for proper parsing the single letter option must be followed immediately
 with the value and not include a space between them. For example "\-j1008"
-and not "\-j 1008". 
+and not "\-j 1008".
+Performance of the command can be measurably improved for systems with large
+numbers of jobs when a single job ID is specified.
 
 .TP
 \fB\-l\fR, \fB\-\-long\fR
@@ -408,7 +410,7 @@ See the \fBJOB STATE CODES\fR section below for more information.
 Request jobs or job steps from a comma separated list of users.
 The list can consist of user names or user id numbers.
 Performance of the command can be measurably improved for systems with large
-numbers of jobs when a single user filter is specified.
+numbers of jobs when a single user is specified.
 
 .TP
 \fB\-\-usage\fR

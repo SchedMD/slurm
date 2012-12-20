@@ -1023,7 +1023,7 @@ static void _slurm_rpc_dump_jobs_user(slurm_msg_t * msg)
 		      g_slurm_auth_get_uid(msg->auth_cred, NULL),
 		      job_info_request_msg->user_id, msg->protocol_version);
 	unlock_slurmctld(job_read_lock);
-	END_TIMER2("_slurm_rpc_dump_jobs");
+	END_TIMER2("_slurm_rpc_dump_job_user");
 #if 0
 	info("_slurm_rpc_dump_user_jobs, size=%d %s", dump_size, TIME_STR);
 #endif
@@ -1065,7 +1065,9 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t * msg)
 			  msg->protocol_version);
 	unlock_slurmctld(job_read_lock);
 	END_TIMER2("_slurm_rpc_dump_job_single");
-/* 	info("_slurm_rpc_dump_job_single, size=%d %s",dump_size, TIME_STR); */
+#if 0
+	info("_slurm_rpc_dump_job_single, size=%d %s", dump_size, TIME_STR);
+#endif
 
 	/* init response_msg structure */
 	if (rc != SLURM_SUCCESS) {
