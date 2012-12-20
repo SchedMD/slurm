@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "June 2011" "squeue 2.3" "Slurm components"
+.TH SQUEUE "1" "December 2012" "squeue 2.6" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -19,7 +19,7 @@ list of account names. This has no effect when listing job steps.
 
 .TP
 \fB\-a\fR, \fB\-\-all\fR
-Display information about jobs and job steps in all partions.
+Display information about jobs and job steps in all partitions.
 This causes information to be displayed about partitions that are configured as
 hidden and partitions that are unavailable to user's group.
 
@@ -33,7 +33,7 @@ Print a help message describing all options \fBsqueue\fR.
 
 .TP
 \fB\-\-hide\fR
-Do not display information about jobs and job steps in all partions. By default,
+Do not display information about jobs and job steps in all partitions. By default,
 information about partitions that are configured as hidden or are not available
 to the user's group will not be displayed (i.e. this is the default behavior).
 
@@ -366,7 +366,7 @@ and not include a space between them. For example "\-s1008.0" and not
 .TP
 \fB\-S <sort_list>\fR, \fB\-\-sort=<sort_list>\fR
 Specification of the order in which records should be reported.
-This uses the same field specifciation as the <output_format>.
+This uses the same field specification as the <output_format>.
 Multiple sorts may be performed by listing multiple sort fields
 separated by commas.
 The field specifications may be preceded by "+" or "\-" for
@@ -400,13 +400,15 @@ jobs are reported. Valid states (in both extended and compact form) include:
 PENDING (PD), RUNNING (R), SUSPENDED (S),
 COMPLETING (CG), COMPLETED (CD), CONFIGURING (CF), CANCELLED (CA),
 FAILED (F), TIMEOUT (TO), PREEMPTED (PR) and NODE_FAIL (NF). Note the
-\fB<state_list>\fR supplied is case insensitve ("pd" and "PD" work the same).
+\fB<state_list>\fR supplied is case insensitive ("pd" and "PD" work the same).
 See the \fBJOB STATE CODES\fR section below for more information.
 
 .TP
 \fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
-Request jobs or job steps from a comma separated list of users.  The
-list can consist of user names or user id numbers.
+Request jobs or job steps from a comma separated list of users.
+The list can consist of user names or user id numbers.
+Performance of the command can be measurably improved for systems with large
+numbers of jobs when a single user filter is specified.
 
 .TP
 \fB\-\-usage\fR
