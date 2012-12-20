@@ -511,7 +511,7 @@ upon termination of a job allocation (e.g.
 The program executes as SlurmUser, which gives it permission to drain
 nodes and requeue the job if a failure occurs or cancel the job if appropriate.
 Exactly what the program does and how it accomplishes this is completely at
-the discression of the system administrator.
+the discretion of the system administrator.
 Information about the job being initiated, it's allocated nodes, etc. are
 passed to the program using environment variables.
 See \fBProlog and Epilog Scripts\fR for more information.
@@ -602,6 +602,26 @@ Also see the \fBGroupUpdateForce\fR parameter.
 \fBHealthCheckInterval\fR
 The interval in seconds between executions of \fBHealthCheckProgram\fR.
 The default value is zero, which disables execution.
+
+.TP
+\fBHealthCheckNodeState\fR
+Identify what node states should execute the \fBHealthCheckProgram\fR.
+Multiple state values may be specified with a comma separator.
+The default value is ANY to execute on nodes in any state.
+.RS
+.TP 12
+\fBALLOC\fR
+Run on nodes in the ALLOC state (all CPUs allocated).
+.TP
+\fBANY\fR
+Run on nodes in any state.
+.TP
+\fBIDLE\fR
+Run on nodes in the IDLE state.
+.TP
+\fBMIXED\fR
+Run on nodes in the MIXED state (some CPUs idle and other CPUs allocated).
+.RE
 
 .TP
 \fBHealthCheckProgram\fR
@@ -1258,7 +1278,7 @@ nodes and requeue the job if a failure occurs or cancel the job if appropriate.
 The program can be used to reboot nodes or perform other work to prepare
 resources for use.
 Exactly what the program does and how it accomplishes this is completely at
-the discression of the system administrator.
+the discretion of the system administrator.
 Information about the job being initiated, it's allocated nodes, etc. are
 passed to the program using environment variables.
 While this program is running, the nodes associated with the job will be

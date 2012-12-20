@@ -870,7 +870,7 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
-	if(nodeinfo) {
+	if (nodeinfo) {
 		nodedata = nodeinfo->data;
 		plugin_id = nodeinfo->plugin_id;
 	} else

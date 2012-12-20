@@ -343,7 +343,7 @@ extern void run_health_check(void)
 #else
 	struct node_record *node_ptr;
 #endif
-	int i;
+	int i, node_states = slurmctld_conf.health_check_node_state;
 	char *host_str = NULL;
 	agent_arg_t *check_agent_args = NULL;
 
@@ -363,11 +363,43 @@ extern void run_health_check(void)
 		check_agent_args->node_count++;
 	}
 #else
+	if ((node_states != HEALTH_CHECK_NODE_ANY) &&
+	    (node_states != HEALTH_CHECK_NODE_IDLE)) {
+		/* Update each node's alloc_cpus count */
+		select_g_select_nodeinfo_set_all();
+	}
+
 	for (i=0, node_ptr=node_record_table_ptr;
 	     i<node_record_count; i++, node_ptr++) {
 		if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWER_SAVE(node_ptr))
 			continue;
+		if (node_states != HEALTH_CHECK_NODE_ANY) {
+			uint16_t cpus_total, cpus_used = 0;
+			if (slurmctld_conf.fast_schedule) {
+				cpus_total = node_ptr->config_ptr->cpus;
+			} else {
+				cpus_total = node_ptr->cpus;
+			}
+			if (!IS_NODE_IDLE(node_ptr)) {
+				select_g_select_nodeinfo_get(
+						node_ptr->select_nodeinfo,
+						SELECT_NODEDATA_SUBCNT,
+						NODE_STATE_ALLOCATED,
+						&cpus_used);
+			}
+			if (cpus_used == 0) {
+				if (!(node_states & HEALTH_CHECK_NODE_IDLE))
+					continue;
+			} else if (cpus_used < cpus_total) {
+				if (!(node_states & HEALTH_CHECK_NODE_MIXED))
+					continue;
+			} else {
+				if (!(node_states & HEALTH_CHECK_NODE_ALLOC))
+					continue;
+			}
+		}
+
 		hostlist_push(check_agent_args->hostlist, node_ptr->name);
 		check_agent_args->node_count++;
 	}

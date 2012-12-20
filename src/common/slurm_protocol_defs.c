@@ -1315,6 +1315,34 @@ extern char *trigger_res_type(uint16_t res_type)
 		return "unknown";
 }
 
+/* Convert HealthCheckNodeState numeric value to a string.
+ * Caller must xfree() the return value */
+extern char *health_check_node_state_str(uint16_t node_state)
+{
+	char *state_str = NULL;
+
+	if (node_state == HEALTH_CHECK_NODE_ANY) {
+		state_str = xstrdup("ANY");
+		return state_str;
+	}
+
+	state_str = xstrdup("");
+	if (node_state & HEALTH_CHECK_NODE_IDLE)
+		xstrcat(state_str, "IDLE");
+	if (node_state & HEALTH_CHECK_NODE_ALLOC) {
+		if (state_str[0])
+			xstrcat(state_str, ",");
+		xstrcat(state_str, "ALLOC");
+	}
+	if (node_state & HEALTH_CHECK_NODE_MIXED) {
+		if (state_str[0])
+			xstrcat(state_str, ",");
+		xstrcat(state_str, "MIXED");
+	}
+
+	return state_str;
+}
+
 extern char *trigger_type(uint32_t trig_type)
 {
 	if      (trig_type == TRIGGER_TYPE_UP)

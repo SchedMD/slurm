@@ -7,7 +7,7 @@ documents those changes that are of interest to users and admins.
  -- Notify srun to retry step creation upon completion of other job steps
     rather than polling. This results in much faster throughput for job step
     execution with --exclusive option.
- -- Added ResvEpilog and ResvProlog configuration parameters to execute a
+ -- Added "ResvEpilog" and "ResvProlog" configuration parameters to execute a
     program at the beginning and end of each reservation.
  -- Added "slurm_load_job_user" function. This is a variation of
     "slurm_load_jobs", but accepts a user ID argument, potentially resulting
@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
  -- Added "slurm_load_node_single" function. This is a variation of
     "slurm_load_nodes", but accepts a node name argument, potentially resulting
     in substantial performance improvement for "sinfo --nodes=NAME".
+ -- Added "HealthCheckNodeState" configuration parameter identify node states
+    on which HealthCheckProgram should be executed.
 
 * Changes in SLURM 2.5.1
 ========================
