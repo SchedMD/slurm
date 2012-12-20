@@ -597,13 +597,8 @@ static int _cancel_step_id(uint32_t job_id, uint32_t step_id,
 	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
 		/* NOTE: RPC always sent to slurmctld rather than directly
 		 * to slurmd daemons */
-		if (signal == SIGKILL) {
-			error_code = slurm_terminate_job_step(job_id, step_id);
+		error_code = slurm_kill_job_step(job_id, step_id, signal);
 
-		} else {
-			error_code = slurm_kill_job_step(job_id, step_id,
-							 signal);
-		}
 		if (error_code == 0
 		    || (errno != ESLURM_TRANSITION_STATE_NO_UPDATE
 			&& errno != ESLURM_JOB_PENDING))
