@@ -1265,7 +1265,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 			      uid, msg->protocol_version);
 		unlock_slurmctld(node_write_lock);
 		END_TIMER2("_slurm_rpc_dump_nodes");
-#if 1
+#if 0
 		info("_slurm_rpc_dump_nodes, size=%d %s", dump_size, TIME_STR);
 #endif
 
@@ -1320,7 +1320,7 @@ static void _slurm_rpc_dump_node_single(slurm_msg_t * msg)
 		      uid, node_req_msg->node_name, msg->protocol_version);
 	unlock_slurmctld(node_read_lock);
 	END_TIMER2("_slurm_rpc_dump_node_single");
-#if 1
+#if 0
 	info("_slurm_rpc_dump_node_single, name=%s size=%d %s",
 	     node_req_msg->node_name, dump_size, TIME_STR);
 #endif
