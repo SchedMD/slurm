@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     in substantial performance improvement for "sinfo --nodes=NAME".
  -- Added "HealthCheckNodeState" configuration parameter identify node states
     on which HealthCheckProgram should be executed.
+ -- Remove sacct --dump --formatted-dump options which were deprecated in
+    2.5.
 
 * Changes in SLURM 2.5.1
 ========================

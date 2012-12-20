@@ -86,17 +86,6 @@ static FILE *_open_log_file(char *logfile)
 	return fd;
 }
 
-static void _do_fdump(List job_info_list, int lc)
-{
-	filetxt_jobcomp_info_t *jobcomp_info = NULL;
-	ListIterator itr = list_iterator_create(job_info_list);
-
-	printf("\n------- Line %d -------\n", lc);
-	while((jobcomp_info = list_next(itr))) {
-		printf("%12s: %s\n", jobcomp_info->name, jobcomp_info->val);
-	}
-}
-
 static jobcomp_job_rec_t *_parse_line(List job_info_list)
 {
 	ListIterator itr = NULL;
@@ -198,17 +187,6 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	List job_info_list = NULL;
 	filetxt_jobcomp_info_t *jobcomp_info = NULL;
 	List job_list = list_create(jobcomp_destroy_job);
-	int fdump_flag = 0;
-
-	/* we grab the fdump only for the filetxt plug through the
-	   FDUMP_FLAG on the job_cond->duplicates variable.  We didn't
-	   add this extra field to the structure since it only applies
-	   to this plugin.
-	*/
-	if(job_cond) {
-		fdump_flag = job_cond->duplicates & FDUMP_FLAG;
-		job_cond->duplicates &= (~FDUMP_FLAG);
-	}
 
 	filein = slurm_get_jobcomp_loc();
 	fd = _open_log_file(filein);
@@ -282,12 +260,6 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 			continue;	/* no match */
 		}
 	foundp:
-
-		if (fdump_flag) {
-			_do_fdump(job_info_list, lc);
-			continue;
-		}
-
 
 		job = _parse_line(job_info_list);
 

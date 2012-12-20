@@ -111,8 +111,6 @@ List jobs = NULL;
 int main(int argc, char **argv)
 {
 	enum {
-		SACCT_DUMP,
-		SACCT_FDUMP,
 		SACCT_LIST,
 		SACCT_HELP,
 		SACCT_USAGE
@@ -128,27 +126,11 @@ int main(int argc, char **argv)
 
 	if (params.opt_help)
 		op = SACCT_HELP;
-	else if (params.opt_dump) {
-		op = SACCT_DUMP;
-	} else if (params.opt_fdump) {
-		op = SACCT_FDUMP;
-	} else
+	else
 		op = SACCT_LIST;
 
 
 	switch (op) {
-	case SACCT_DUMP:
-		if(get_data() == SLURM_ERROR)
-			exit(errno);
-		if(params.opt_completion)
-			do_dump_completion();
-		else
-			do_dump();
-		break;
-	case SACCT_FDUMP:
-		if(get_data() == SLURM_ERROR)
-			exit(errno);
-		break;
 	case SACCT_LIST:
 		print_fields_header(print_fields_list);
 		if(get_data() == SLURM_ERROR)

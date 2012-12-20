@@ -545,9 +545,6 @@ int get_data(void)
 		jobs = slurmdb_jobs_get(acct_db_conn, job_cond);
 	}
 
-	if (params.opt_fdump)
-		return SLURM_SUCCESS;
-
 	if(!jobs)
 		return SLURM_ERROR;
 
@@ -613,7 +610,6 @@ void parse_command_line(int argc, char **argv)
                 {"allocations",    no_argument,       &params.opt_allocs,     OPT_LONG_ALLOCS},
                 {"brief",          no_argument,       0,                      'b'},
                 {"completion",     no_argument,       &params.opt_completion, 'c'},
-                {"dump",           no_argument,       0,                      'd'},
                 {"duplicates",     no_argument,       &params.opt_dup,        OPT_LONG_DUP},
                 {"helpformat",     no_argument,       0,                      'e'},
                 {"help-fields",    no_argument,       0,                      'e'},
@@ -637,7 +633,6 @@ void parse_command_line(int argc, char **argv)
                 {"noheader",       no_argument,       0,                      'n'},
                 {"fields",         required_argument, 0,                      'o'},
                 {"format",         required_argument, 0,                      'o'},
-                {"formatted_dump", no_argument,       0,                      'O'},
                 {"parsable",       no_argument,       0,                      'p'},
                 {"parsable2",      no_argument,       0,                      'P'},
                 {"qos",            required_argument, 0,                      'q'},
@@ -697,11 +692,6 @@ void parse_command_line(int argc, char **argv)
 				job_cond->cluster_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->cluster_list, optarg);
-			break;
-		case 'd':
-			error("--dump has been depricated and will go away "
-			      "in future releases.");
-			params.opt_dump = 1;
 			break;
 		case 'D':
 			params.opt_dup = 1;
@@ -807,11 +797,6 @@ void parse_command_line(int argc, char **argv)
 		case 'o':
 			xstrfmtcat(params.opt_field_list, "%s,", optarg);
 			break;
-		case 'O':
-			error("--formatted_dump has been depricated and "
-			      "will go away in future releases.");
-			params.opt_fdump = 1;
-			break;
 		case 'p':
 			print_fields_parsable_print =
 				PRINT_FIELDS_PARSABLE_ENDING;
@@ -915,9 +900,6 @@ void parse_command_line(int argc, char **argv)
 	/* Now set params.opt_dup, unless they've already done so */
 	if (params.opt_dup < 0)	/* not already set explicitly */
 		params.opt_dup = 0;
-
-	if (params.opt_fdump)
-		params.opt_dup |= FDUMP_FLAG;
 
 	job_cond->duplicates = params.opt_dup;
 	job_cond->without_steps = params.opt_allocs;
@@ -1155,8 +1137,6 @@ void parse_command_line(int argc, char **argv)
 	}
 
 	if (params.opt_field_list==NULL) {
-		if (params.opt_dump)
-			goto endopt;
 		if(params.opt_completion)
 			dot = DEFAULT_COMP_FIELDS;
 		else
@@ -1197,7 +1177,7 @@ void parse_command_line(int argc, char **argv)
 		start = end + 1;
 	}
 	field_count = list_count(print_fields_list);
-endopt:
+
 	if (optind < argc) {
 		debug2("Error: Unknown arguments:");
 		for (i=optind; i<argc; i++)
@@ -1206,210 +1186,6 @@ endopt:
 		exit(1);
 	}
 	return;
-}
-
-/* Note: do_dump() strives to present data in an upward-compatible
- * manner so that apps written to use data from `sacct -d` in slurm
- * v1.0 will continue to work in v1.1 and later.
- *
- * To help ensure this compatibility,
- * a. The meaning of an existing field never changes
- * b. New fields are appended to the end of a record
- *
- * The "numfields" field of the record can be used as a sub-version
- * number, as it will never decrease for the life of the current
- * record version number (currently 1). For example, if your app needs
- * to use field 28, a record with numfields<28 is too old a version
- * for you, while numfields>=28 will provide what you are expecting.
- */
-void do_dump(void)
-{
-	ListIterator itr = NULL;
-	ListIterator itr_step = NULL;
-	slurmdb_job_rec_t *job = NULL;
-	slurmdb_step_rec_t *step = NULL;
-	struct tm ts;
-
-	itr = list_iterator_create(jobs);
-	while((job = list_next(itr))) {
-
-		if(list_count(job->steps)) {
-			job->stats.cpu_ave /= list_count(job->steps);
-			job->stats.rss_ave /= list_count(job->steps);
-			job->stats.vsize_ave /= list_count(job->steps);
-			job->stats.pages_ave /= list_count(job->steps);
-		}
-
-		/* JOB_START */
-		if (job->show_full) {
-			gmtime_r(&job->start, &ts);
-			printf("%u %s %04d%02d%02d%02d%02d%02d %d %s %s ",
-			       job->jobid,
-			       job->partition,
-			       1900+(ts.tm_year),
-			       1+(ts.tm_mon),
-			       ts.tm_mday,
-			       ts.tm_hour,
-			       ts.tm_min,
-			       ts.tm_sec,
-			       (int)job->submit,
-			       job->blockid,	/* block id */
-			       "-");	/* reserved 1 */
-
-			printf("JOB_START 1 16 %d %d %s %d %d %d %s %s\n",
-			       job->uid,
-			       job->gid,
-			       job->jobname,
-			       job->track_steps,
-			       job->priority,
-			       job->alloc_cpus,
-			       job->nodes,
-			       job->account);
-		}
-		/* JOB_STEP */
-		itr_step = list_iterator_create(job->steps);
-		while((step = list_next(itr_step))) {
-			gmtime_r(&step->start, &ts);
-			printf("%u %s %04d%02d%02d%02d%02d%02d %d %s %s ",
-			       job->jobid,
-			       job->partition,
-			       1900+(ts.tm_year),
-			       1+(ts.tm_mon),
-			       ts.tm_mday,
-			       ts.tm_hour,
-			       ts.tm_min,
-			       ts.tm_sec,
-			       (int)job->submit,
-			       job->blockid,	/* block id */
-			       "-");	/* reserved 1 */
-			if(step->end == 0)
-				step->end = job->end;
-
-			gmtime_r(&step->end, &ts);
-			printf("JOB_STEP 1 50 %u %04d%02d%02d%02d%02d%02d ",
-			       step->stepid,
-			       1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
-			            ts.tm_hour, ts.tm_min, ts.tm_sec);
-			printf("%s %d %d %d %d ",
-			       job_state_string_compact(step->state),
-			       step->exitcode,
-			       step->ncpus,
-			       step->ncpus,
-			       step->elapsed);
-			printf("%d %d %d %d %d %d %d %d ",
-			       step->tot_cpu_sec,
-			       step->tot_cpu_usec,
-			       (int)step->user_cpu_sec,
-			       (int)step->user_cpu_usec,
-			       (int)step->sys_cpu_sec,
-			       (int)step->sys_cpu_usec,
-			       step->stats.vsize_max/1024,
-			       step->stats.rss_max/1024);
-			/* Data added in Slurm v1.1 */
-			printf("%u %u %.2f %u %u %.2f %d %u %u %.2f "
-			       "%.u %u %u %.2f %s %s %s\n",
-			       step->stats.vsize_max_nodeid,
-			       step->stats.vsize_max_taskid,
-			       step->stats.vsize_ave/1024,
-			       step->stats.rss_max_nodeid,
-			       step->stats.rss_max_taskid,
-			       step->stats.rss_ave/1024,
-			       step->stats.pages_max,
-			       step->stats.pages_max_nodeid,
-			       step->stats.pages_max_taskid,
-			       step->stats.pages_ave,
-			       step->stats.cpu_min,
-			       step->stats.cpu_min_nodeid,
-			       step->stats.cpu_min_taskid,
-			       step->stats.cpu_ave,
-			       step->stepname,
-			       step->nodes,
-			       job->account);
-		}
-		list_iterator_destroy(itr_step);
-		/* JOB_TERMINATED */
-		if (job->show_full) {
-			gmtime_r(&job->start, &ts);
-			printf("%u %s %04d%02d%02d%02d%02d%02d %d %s %s ",
-			       job->jobid,
-			       job->partition,
-			       1900+(ts.tm_year),
-			       1+(ts.tm_mon),
-			       ts.tm_mday,
-			       ts.tm_hour,
-			       ts.tm_min,
-			       ts.tm_sec,
-			       (int)job->submit,
-			       job->blockid,	/* block id */
-			       "-");	/* reserved 1 */
-			gmtime_r(&job->end, &ts);
-			printf("JOB_TERMINATED 1 50 %d ",
-			       job->elapsed);
-			printf("%04d%02d%02d%02d%02d%02d ",
-			1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
-			      ts.tm_hour, ts.tm_min, ts.tm_sec);
-			printf("%s %d %d %d %d ",
-			       job_state_string_compact(job->state),
-			       job->exitcode,
-			       job->alloc_cpus,
-			       job->alloc_cpus,
-			       job->elapsed);
-			printf("%d %d %d %d %d %d %d %d ",
-			       job->tot_cpu_sec,
-			       job->tot_cpu_usec,
-			       (int)job->user_cpu_sec,
-			       (int)job->user_cpu_usec,
-			       (int)job->sys_cpu_sec,
-			       (int)job->sys_cpu_usec,
-			       job->stats.vsize_max/1024,
-			       job->stats.rss_max/1024);
-			/* Data added in Slurm v1.1 */
-			printf("%u %u %.2f %u %u %.2f %d %u %u %.2f "
-			       "%.u %u %u %.2f %s %s %s %d\n",
-			       job->stats.vsize_max_nodeid,
-			       job->stats.vsize_max_taskid,
-			       job->stats.vsize_ave/1024,
-			       job->stats.rss_max_nodeid,
-			       job->stats.rss_max_taskid,
-			       job->stats.rss_ave/1024,
-			       job->stats.pages_max,
-			       job->stats.pages_max_nodeid,
-			       job->stats.pages_max_taskid,
-			       job->stats.pages_ave,
-			       job->stats.cpu_min,
-			       job->stats.cpu_min_nodeid,
-			       job->stats.cpu_min_taskid,
-			       job->stats.cpu_ave,
-			       "-",
-			       job->nodes,
-			       job->account,
-			       job->requid);
-		}
-	}
-	list_iterator_destroy(itr);
-}
-
-void do_dump_completion(void)
-{
-	ListIterator itr = NULL;
-	jobcomp_job_rec_t *job = NULL;
-
-	itr = list_iterator_create(jobs);
-	while((job = list_next(itr))) {
-		printf("JOB %u %s %s %s %s(%u) %u(%s) %u %s %s %s %s",
-		       job->jobid, job->partition, job->start_time,
-		       job->end_time, job->uid_name, job->uid, job->gid,
-		       job->gid_name, job->node_cnt, job->nodelist,
-		       job->jobname, job->state,
-		       job->timelimit);
-		if(job->blockid)
-			printf(" %s %s %s %s %u %s %s",
-			       job->blockid, job->connection, job->reboot,
-			       job->rotate, job->max_procs, job->geo,
-			       job->bg_start_point);
-		printf("\n");
-	}
-	list_iterator_destroy(itr);
 }
 
 void do_help(void)

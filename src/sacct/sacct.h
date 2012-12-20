@@ -156,9 +156,7 @@ typedef enum {
 typedef struct {
 	slurmdb_job_cond_t *job_cond;
 	int opt_completion;	/* --completion */
-	int opt_dump;		/* --dump */
 	int opt_dup;		/* --duplicates; +1 = explicitly set */
-	int opt_fdump;		/* --formattted_dump */
 	char *opt_field_list;	/* --fields= */
 	int opt_gid;		/* running persons gid */
 	int opt_help;		/* --help */
@@ -188,8 +186,6 @@ void print_fields(type_t type, void *object);
 /* options.c */
 int get_data(void);
 void parse_command_line(int argc, char **argv);
-void do_dump(void);
-void do_dump_completion(void);
 void do_help(void);
 void do_list(void);
 void do_list_completion(void);

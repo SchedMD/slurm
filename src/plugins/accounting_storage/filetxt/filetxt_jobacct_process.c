@@ -469,20 +469,6 @@ static FILE *_open_log_file(char *logfile)
 	return fd;
 }
 
-static char *_convert_type(int rec_type)
-{
-	switch(rec_type) {
-	case JOB_START:
-		return "JOB_START";
-	case JOB_STEP:
-		return "JOB_STEP";
-	case JOB_TERMINATED:
-		return "JOB_TERMINATED";
-	default:
-		return "UNKNOWN";
-	}
-}
-
 static int _cmp_jrec(const void *a1, const void *a2) {
 	expired_rec_t *j1 = (expired_rec_t *) a1;
 	expired_rec_t *j2 = (expired_rec_t *) a2;
@@ -506,120 +492,6 @@ static void _show_rec(char *f[])
 		fprintf(stderr, " %s", f[i]);
 	fprintf(stderr, "\n");
 	return;
-}
-
-static void _do_fdump(char* f[], int lc)
-{
-	int	i=0, j=0;
-	char **type;
-	char    *header[] = {"job",       /* F_JOB */
-			     "partition", /* F_PARTITION */
-			     "job_submit", /* F_JOB_SUBMIT */
-			     "timestamp", /* F_TIMESTAMP */
-			     "uid",	 /* F_UIDGID */
-			     "gid",	 /* F_UIDGID */
-			     "BlockID",  /* F_BLOCKID */
-			     "reserved-2",/* F_RESERVED1 */
-			     "recordType",/* F_RECTYPE */
-			     NULL};
-
-	char	*start[] = {"jobName",	 /* F_JOBNAME */
-			    "TrackSteps", /* F_TRACK_STEPS */
-			    "priority",	 /* F_PRIORITY */
-			    "ncpus",	 /* F_NCPUS */
-			    "nodeList", /* F_NODES */
-			    "account",   /* F_JOB_ACCOUNT */
-			    NULL};
-
-	char	*step[] = {"jobStep",	 /* F_JOBSTEP */
-			   "status",	 /* F_STATUS */
-			   "exitcode",	 /* F_EXITCODE */
-			   "ntasks",	 /* F_NTASKS */
-			   "ncpus",	 /* F_STEPNCPUS */
-			   "elapsed",	 /* F_ELAPSED */
-			   "cpu_sec",	 /* F_CPU_SEC */
-			   "cpu_usec",	 /* F_CPU_USEC */
-			   "user_sec",	 /* F_USER_SEC */
-			   "user_usec",	 /* F_USER_USEC */
-			   "sys_sec",	 /* F_SYS_SEC */
-			   "sys_usec",	 /* F_SYS_USEC */
-			   "rss",	 /* F_RSS */
-			   "ixrss",	 /* F_IXRSS */
-			   "idrss",	 /* F_IDRSS */
-			   "isrss",	 /* F_ISRSS */
-			   "minflt",	 /* F_MINFLT */
-			   "majflt",	 /* F_MAJFLT */
-			   "nswap",	 /* F_NSWAP */
-			   "inblocks",	 /* F_INBLOCKS */
-			   "oublocks",	 /* F_OUTBLOCKS */
-			   "msgsnd",	 /* F_MSGSND */
-			   "msgrcv",	 /* F_MSGRCV */
-			   "nsignals",	 /* F_NSIGNALS */
-			   "nvcsw",	 /* F_VCSW */
-			   "nivcsw",	 /* F_NIVCSW */
-			   "max_vsize",	 /* F_MAX_VSIZE */
-			   "max_vsize_task",	 /* F_MAX_VSIZE_TASK */
-			   "ave_vsize",	 /* F_AVE_VSIZE */
-			   "max_rss",	 /* F_MAX_RSS */
-			   "max_rss_task",	 /* F_MAX_RSS_TASK */
-			   "ave_rss",	 /* F_AVE_RSS */
-			   "max_pages",	 /* F_MAX_PAGES */
-			   "max_pages_task",	 /* F_MAX_PAGES_TASK */
-			   "ave_pages",	 /* F_AVE_PAGES */
-			   "min_cputime",	 /* F_MIN_CPU */
-			   "min_cputime_task",	 /* F_MIN_CPU_TASK */
-			   "ave_cputime",	 /* F_AVE_RSS */
-			   "StepName",	 /* F_STEPNAME */
-			   "StepNodes",	 /* F_STEPNODES */
-			   "max_vsize_node",	 /* F_MAX_VSIZE_NODE */
-			   "max_rss_node",	 /* F_MAX_RSS_NODE */
-			   "max_pages_node",	 /* F_MAX_PAGES_NODE */
-			   "min_cputime_node",	 /* F_MIN_CPU_NODE */
-			   "account",    /* F_STEP_ACCOUNT */
-			   "requid",     /* F_STEP_REQUID */
-			   NULL};
-
-	char	*suspend[] = {"Suspend/Run time", /* F_TOT_ELAPSED */
-			      "status",	 /* F_STATUS */
-			      NULL};
-
-	char	*term[] = {"totElapsed", /* F_TOT_ELAPSED */
-			   "status",	 /* F_STATUS */
-			   "requid",     /* F_JOB_REQUID */
-			   "exitcode",	 /* F_EXITCODE */
-			   NULL};
-
-	i = atoi(f[F_RECTYPE]);
-	printf("\n------- Line %d %s -------\n", lc, _convert_type(i));
-
-	for(j=0; j < HEADER_LENGTH; j++)
-		printf("%12s: %s\n", header[j], f[j]);
-	switch(i) {
-	case JOB_START:
-		type = start;
-		j = JOB_START_LENGTH;
-		break;
-	case JOB_STEP:
-		type = step;
-		j = JOB_STEP_LENGTH;
-		break;
-	case JOB_SUSPEND:
-		type = suspend;
-		j = JOB_TERM_LENGTH;
-	case JOB_TERMINATED:
-		type = term;
-		j = JOB_TERM_LENGTH;
-		break;
-	default:
-		while(f[j]) {
-			printf("      Field[%02d]: %s\n", j, f[j]);
-			j++;
-		}
-		return;
-	}
-
-	for(i=HEADER_LENGTH; i < j; i++)
-       		printf("%12s: %s\n", type[i-HEADER_LENGTH], f[i]);
 }
 
 static filetxt_job_rec_t *_find_job_record(List job_list,
@@ -1045,20 +917,12 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	char *object = NULL;
 	ListIterator itr = NULL, itr2 = NULL;
 	int show_full = 0;
-	int fdump_flag = 0;
 	List ret_job_list = list_create(slurmdb_destroy_job_rec);
 	List job_list = list_create(_destroy_filetxt_job_rec);
 
 	filein = slurm_get_accounting_storage_loc();
 
-	/* we grab the fdump only for the filetxt plug through the
-	   FDUMP_FLAG on the job_cond->duplicates variable.  We didn't
-	   add this extra field to the structure since it only applies
-	   to this plugin.
-	*/
-	if(job_cond) {
-		fdump_flag = job_cond->duplicates & FDUMP_FLAG;
-		job_cond->duplicates &= (~FDUMP_FLAG);
+	if (job_cond) {
 		if(!job_cond->duplicates)
 			itr2 = list_iterator_create(ret_job_list);
 	}
@@ -1183,10 +1047,6 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 			continue;	/* no match */
 		}
 	foundp:
-		if (fdump_flag) {
-			_do_fdump(f, lc);
-			continue;
-		}
 
 	no_cond:
 

@@ -46,18 +46,6 @@
 #include "src/common/xstring.h"
 #include "mysql_jobcomp_process.h"
 
-static void _do_fdump(MYSQL_ROW row, int lc)
-{
-	int i = 0;
-	printf("\n------- Line %d -------\n", lc);
-	while(jobcomp_table_fields[i].name) {
-		printf("%12s: %s\n",  jobcomp_table_fields[i].name, row[i]);
-		i++;
-	}
-
-	return;
-}
-
 extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 
@@ -76,17 +64,6 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	char time_str[32];
 	time_t temp_time;
 	List job_list = list_create(jobcomp_destroy_job);
-	int fdump_flag = 0;
-
-	/* we grab the fdump only for the filetxt plug through the
-	   FDUMP_FLAG on the job_cond->duplicates variable.  We didn't
-	   add this extra field to the structure since it only applies
-	   to this plugin.
-	*/
-	if(job_cond) {
-		fdump_flag = job_cond->duplicates & FDUMP_FLAG;
-		job_cond->duplicates &= (~FDUMP_FLAG);
-	}
 
 	if(job_cond->step_list && list_count(job_cond->step_list)) {
 		set = 0;
@@ -154,10 +131,6 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	while((row = mysql_fetch_row(result))) {
 		lc++;
 
-		if (fdump_flag) {
-			_do_fdump(row, lc);
-			continue;
-		}
 		job = xmalloc(sizeof(jobcomp_job_rec_t));
 		if(row[JOBCOMP_REQ_JOBID])
 			job->jobid = atoi(row[JOBCOMP_REQ_JOBID]);
