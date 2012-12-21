@@ -394,7 +394,28 @@ parse_command_line( int argc, char* argv[] )
 		}
 	}
 
-	params.max_cpus = _max_cpus_per_node();
+	if (params.job_list && (list_count(params.job_list) == 1)) {
+		ListIterator iterator;
+		uint32_t *job_id_ptr;
+		iterator = list_iterator_create(params.job_list);
+		job_id_ptr = list_next(iterator);
+		params.job_id = *job_id_ptr;
+		list_iterator_destroy(iterator);
+	}
+	if (params.user_list && (list_count(params.user_list) == 1)) {
+		ListIterator iterator;
+		uint32_t *uid_ptr;
+		iterator = list_iterator_create(params.user_list);
+		while ((uid_ptr = list_next(iterator))) {
+			params.user_id = *uid_ptr;
+			break;
+		}
+		list_iterator_destroy(iterator);
+	}
+	if (params.job_id || params.user_id)
+		params.max_cpus = 1;	/* To minimize overhead */
+	else
+		params.max_cpus = _max_cpus_per_node();
 
 	if ( params.verbose )
 		_print_options();
