@@ -27,6 +27,9 @@ documents those changes that are of interest to users and admins.
  -- FRONTEND - fixed issue where if a systems nodes weren't defined in the
     slurm.conf with NodeAddr's signals going to a step could be handled
     incorrectly.
+ -- If sched/backfill starts a job with a QOS having NO_RESERVE and not job
+    time limit, start it with the partition time limit (or one year if the
+    partition has no time limit) rather than NO_VAL (140 year time limit);
 
 * Changes in SLURM 2.5.0
 ========================
