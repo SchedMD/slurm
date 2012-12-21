@@ -193,6 +193,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"GroupUpdateForce", S_P_UINT16},
 	{"GroupUpdateTime", S_P_UINT16},
 	{"HealthCheckInterval", S_P_UINT16},
+	{"HealthCheckNodeState", S_P_STRING},
 	{"HealthCheckProgram", S_P_STRING},
 	{"InactiveLimit", S_P_UINT16},
 	{"JobAcctGatherType", S_P_STRING},
@@ -2478,6 +2479,34 @@ static void _normalize_debug_level(uint16_t *level)
 	/* level is uint16, always > LOG_LEVEL_QUIET(0), can't underflow */
 }
 
+/* Convert HealthCheckNodeState string to numeric value */
+static uint16_t _health_node_state(char *state_str)
+{
+	uint16_t state_num = 0;
+	char *tmp_str = xstrdup(state_str);
+	char *token, *last = NULL;
+
+	token = strtok_r(tmp_str, ",", &last);
+	while (token) {
+		if (!strcasecmp(token, "ANY"))
+			state_num |= HEALTH_CHECK_NODE_ANY;
+		else if (!strcasecmp(token, "ALLOC"))
+			state_num |= HEALTH_CHECK_NODE_ALLOC;
+		else if (!strcasecmp(token, "IDLE"))
+			state_num |= HEALTH_CHECK_NODE_IDLE;
+		else if (!strcasecmp(token, "MIXED"))
+			state_num |= HEALTH_CHECK_NODE_MIXED;
+		else {
+			error("Invalid HealthCheckNodeState value %s ignored",
+			      token);
+		}
+		token = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp_str);
+
+	return state_num;
+}
+
 /*
  *
  * IN/OUT ctl_conf_ptr - a configuration as loaded by read_slurm_conf_ctl
@@ -2762,6 +2791,12 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	s_p_get_uint16(&conf->health_check_interval, "HealthCheckInterval",
 		       hashtbl);
+	if (s_p_get_string(&temp_str, "HealthCheckNodeState", hashtbl)) {
+		conf->health_check_node_state = _health_node_state(temp_str);
+		xfree(temp_str);
+	} else
+		conf->health_check_node_state = HEALTH_CHECK_NODE_ANY;
+
 	s_p_get_string(&conf->health_check_program, "HealthCheckProgram",
 		       hashtbl);
 

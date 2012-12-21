@@ -28,8 +28,10 @@ HIGHLIGHTS
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
- - Added ResvEpilog and ResvProlog configuration parameters to execute a
+ - Added "ResvEpilog" and "ResvProlog" configuration parameters to execute a
    program at the beginning and end of a reservation.
+ - Added "HealthCheckNodeState" configuration parameter identify node states
+   on which HealthCheckProgram should be executed.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

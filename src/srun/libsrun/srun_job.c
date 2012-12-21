@@ -592,7 +592,7 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 		 * Spawn process to insure clean-up of job and/or step
 		 * on abnormal termination
 		 */
-		shepard_fd = _shepard_spawn(job, got_alloc);
+		shepard_fd = _shepard_spawn(job, *got_alloc);
 	}
 
 	*p_job = job;
@@ -1305,7 +1305,8 @@ static int _shepard_spawn(srun_job_t *job, bool got_alloc)
 		}
 	}
 
-	(void) slurm_terminate_job_step(job->jobid, job->stepid);
+	(void) slurm_kill_job_step(job->jobid, job->stepid, SIGKILL);
+
 	if (got_alloc)
 		slurm_complete_job(job->jobid, NO_VAL);
 	exit(0);

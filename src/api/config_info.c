@@ -394,6 +394,12 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("HealthCheckNodeState");
+	key_pair->value = health_check_node_state_str(slurm_ctl_conf_ptr->
+						      health_check_node_state);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("HealthCheckProgram");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->health_check_program);
 	list_append(ret_list, key_pair);

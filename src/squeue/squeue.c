@@ -172,7 +172,6 @@ _print_job ( bool clear_old )
 	static job_info_msg_t * old_job_ptr = NULL, * new_job_ptr;
 	int error_code;
 	uint16_t show_flags = 0;
-	uint32_t job_id = 0;
 
 	if (params.all_flag || (params.job_list && list_count(params.job_list)))
 		show_flags |= SHOW_ALL;
@@ -181,22 +180,17 @@ _print_job ( bool clear_old )
 	if (params.format && strstr(params.format, "C"))
 		show_flags |= SHOW_DETAIL;
 
-	if (params.job_list && (list_count(params.job_list) == 1)) {
-		ListIterator iterator;
-		uint32_t *job_id_ptr;
-		iterator = list_iterator_create(params.job_list);
-		job_id_ptr = list_next(iterator);
-		job_id = *job_id_ptr;
-		list_iterator_destroy(iterator);
-	}
-
 	if (old_job_ptr) {
 		if (clear_old)
 			old_job_ptr->last_update = 0;
-		if (job_id) {
+		if (params.job_id) {
 			error_code = slurm_load_job(
-				&new_job_ptr, job_id,
+				&new_job_ptr, params.job_id,
 				show_flags);
+		} else if (params.user_id) {
+			error_code = slurm_load_job_user(&new_job_ptr,
+							 params.user_id,
+							 show_flags);
 		} else {
 			error_code = slurm_load_jobs(
 				old_job_ptr->last_update,
@@ -208,19 +202,12 @@ _print_job ( bool clear_old )
 			error_code = SLURM_SUCCESS;
 			new_job_ptr = old_job_ptr;
 		}
-	} else if (job_id) {
-		error_code = slurm_load_job(&new_job_ptr, job_id, show_flags);
-	} else if (params.user_list && (list_count(params.user_list) == 1)) {
-		ListIterator iterator;
-		uint32_t user_id = 0, *uid_ptr;
-		iterator = list_iterator_create(params.user_list);
-		while ((uid_ptr = list_next(iterator))) {
-			user_id = *uid_ptr;
-			break;
-		}
-		list_iterator_destroy(iterator);
-		error_code = slurm_load_job_user(&new_job_ptr, user_id,
-					     show_flags);
+	} else if (params.job_id) {
+		error_code = slurm_load_job(&new_job_ptr, params.job_id,
+					    show_flags);
+	} else if (params.user_id) {
+		error_code = slurm_load_job_user(&new_job_ptr, params.user_id,
+						 show_flags);
 	} else {
 		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr,
 					     show_flags);
@@ -231,7 +218,7 @@ _print_job ( bool clear_old )
 		return SLURM_ERROR;
 	}
 	old_job_ptr = new_job_ptr;
-	if (job_id)
+	if (params.job_id || params.job_id)
 		old_job_ptr->last_update = (time_t) 0;
 
 	if (params.verbose) {

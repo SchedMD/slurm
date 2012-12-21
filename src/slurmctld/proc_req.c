@@ -519,6 +519,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	conf_ptr->hash_val            = conf->hash_val;
 	conf_ptr->health_check_interval = conf->health_check_interval;
+	conf_ptr->health_check_node_state = conf->health_check_node_state;
 	conf_ptr->health_check_program = xstrdup(conf->health_check_program);
 
 	conf_ptr->job_acct_gather_freq  = conf->job_acct_gather_freq;

@@ -1845,6 +1845,12 @@ typedef struct reservation_name_msg {
 #define RECONFIG_KEEP_PART_INFO 0x0001 /* keep dynamic partition info on scontrol reconfig */
 #define RECONFIG_KEEP_PART_STAT 0x0002 /* keep dynamic partition state on scontrol reconfig */
 
+#define HEALTH_CHECK_NODE_IDLE	0x0001	/* execute on idle nodes */
+#define HEALTH_CHECK_NODE_ALLOC	0x0002	/* execute on fully allocated nodes */
+#define HEALTH_CHECK_NODE_MIXED	0x0004	/* execute on partially allocated nodes */
+#define HEALTH_CHECK_NODE_ANY	0xffff	/* execute on all node states */
+
+
 typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */
 	uint16_t accounting_storage_enforce; /* job requires valid association:
@@ -1891,6 +1897,9 @@ typedef struct slurm_ctl_conf {
 	uint16_t group_info;	/* see GROUP_* fields above */
 	uint32_t hash_val;      /* Hash value of the slurm.conf file */
 	uint16_t health_check_interval;	/* secs between health checks */
+	uint16_t health_check_node_state; /* Node states on which to execute
+				 * health check program, see
+				 * HEALTH_CHECK_NODE_* above */
 	char * health_check_program;	/* pathname of health check program */
 	uint16_t inactive_limit;/* seconds of inactivity before a
 				 * inactive resource allocation is released */

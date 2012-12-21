@@ -1176,6 +1176,10 @@ extern uint16_t preempt_mode_num(const char *preempt_mode);
 extern char *log_num2string(uint16_t inx);
 extern uint16_t log_string2num(char *name);
 
+/* Convert HealthCheckNodeState numeric value to a string.
+ * Caller must xfree() the return value */
+extern char *health_check_node_state_str(uint16_t node_state);
+
 extern char *sched_param_type_string(uint16_t select_type_param);
 extern char *job_reason_string(enum job_state_reason inx);
 extern char *job_state_string(uint16_t inx);
