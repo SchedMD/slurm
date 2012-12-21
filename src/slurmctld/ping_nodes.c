@@ -49,6 +49,7 @@
 #include <string.h>
 
 #include "src/common/hostlist.h"
+#include "src/common/node_select.h"
 #include "src/common/read_config.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/front_end.h"
