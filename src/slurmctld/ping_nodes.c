@@ -343,8 +343,9 @@ extern void run_health_check(void)
 	front_end_record_t *front_end_ptr;
 #else
 	struct node_record *node_ptr;
+	int node_states = slurmctld_conf.health_check_node_state;
 #endif
-	int i, node_states = slurmctld_conf.health_check_node_state;
+	int i;
 	char *host_str = NULL;
 	agent_arg_t *check_agent_args = NULL;
 
