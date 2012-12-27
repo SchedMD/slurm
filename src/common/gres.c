@@ -672,8 +672,6 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	if (s_p_get_string(&p->cpus, "CPUs", tbl)) {
 		bitstr_t *cpu_bitmap;	/* Just use to validate config */
 		cpu_bitmap = bit_alloc(gres_cpu_cnt);
-		if (cpu_bitmap == NULL)
-			fatal("bit_alloc: malloc failure");
 		i = bit_unfmt(cpu_bitmap, p->cpus);
 		if (i != 0) {
 			fatal("Invalid gres data for %s, CPUs=%s (only %u CPUs"
@@ -740,8 +738,6 @@ static void _validate_config(slurm_gres_context_t *context_ptr)
 	int has_file = -1, rec_count = 0;
 
 	iter = list_iterator_create(gres_conf_list);
-	if (iter == NULL)
-		fatal("list_iterator_create: malloc failure");
 	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
 		if (gres_slurmd_conf->plugin_id != context_ptr->plugin_id)
 			continue;
@@ -791,8 +787,6 @@ extern int gres_plugin_node_config_devices_path(char **dev_path,
 		fatal("error opening/reading %s", gres_conf_file);
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
-	if (gres_conf_list == NULL)
-		fatal("list_create: malloc failure");
 	if (s_p_get_array((void ***) &gres_array, &count, "Name", tbl)) {
 		if (count > array_len) {
 			error("GRES device count exceeds array size (%d > %d)",
@@ -825,8 +819,6 @@ static int _no_gres_conf(uint32_t cpu_cnt)
 	slurm_mutex_lock(&gres_context_lock);
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
-	if (gres_conf_list == NULL)
-		fatal("list_create: malloc failure");
 	p = xmalloc(sizeof(gres_slurmd_conf_t *) * gres_context_cnt);
 	for (i = 0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		p = xmalloc(sizeof(gres_slurmd_conf_t));
@@ -877,8 +869,6 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt)
 		fatal("error opening/reading %s", gres_conf_file);
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
-	if (gres_conf_list == NULL)
-		fatal("list_create: malloc failure");
 	if (s_p_get_array((void ***) &gres_array, &count, "Name", tbl)) {
 		for (i = 0; i < count; i++) {
 			list_append(gres_conf_list, gres_array[i]);
@@ -921,8 +911,6 @@ extern int gres_plugin_node_config_pack(Buf buffer)
 	pack16(rec_cnt, buffer);
 	if (rec_cnt) {
 		iter = list_iterator_create(gres_conf_list);
-		if (iter == NULL)
-			fatal("list_iterator_create: malloc failure");
 		while ((gres_slurmd_conf =
 			(gres_slurmd_conf_t *) list_next(iter))) {
 			pack32(magic, buffer);
@@ -958,8 +946,6 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
-	if (gres_conf_list == NULL)
-		fatal("list_create: malloc failure");
 
 	safe_unpack16(&version, buffer);
 	if (version != SLURM_PROTOCOL_VERSION)
@@ -1198,8 +1184,6 @@ static int _node_config_init(char *node_name, char *orig_config,
 		gres_data->gres_bit_alloc =
 			bit_realloc(gres_data->gres_bit_alloc,
 				    gres_data->gres_cnt_avail);
-		if (gres_data->gres_bit_alloc == NULL)
-			fatal("bit_alloc: malloc failure");
 	}
 
 	return rc;
@@ -1223,8 +1207,6 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
 		*gres_list = list_create(_gres_node_list_delete);
-		if (*gres_list == NULL)
-			fatal("list_create malloc failure");
 	}
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		/* Find or create gres_state entry on the list */
@@ -1268,8 +1250,6 @@ static uint32_t _get_tot_gres_cnt(uint32_t plugin_id, uint32_t *set_cnt)
 		return gres_cnt;
 
 	iter = list_iterator_create(gres_conf_list);
-	if (iter == NULL)
-		fatal("list_iterator_create: malloc failure");
 	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
 		if (gres_slurmd_conf->plugin_id != plugin_id)
 			continue;
@@ -1309,8 +1289,6 @@ extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
 	}
 
 	iter = list_iterator_create(gres_conf_list);
-	if (iter == NULL)
-		fatal("list_iterator_create: malloc failure");
 	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
 		if (gres_slurmd_conf->plugin_id != gres_id)
 			continue;
@@ -1373,32 +1351,22 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		gres_data->topo_gres_cnt_alloc =
 			xrealloc(gres_data->topo_gres_cnt_alloc,
 				 set_cnt * sizeof(uint32_t));
-		if (gres_data->topo_gres_cnt_alloc == NULL)
-			fatal("xrealloc: malloc failure");
 		gres_data->topo_gres_cnt_avail =
 			xrealloc(gres_data->topo_gres_cnt_avail,
 				 set_cnt * sizeof(uint32_t));
-		if (gres_data->topo_gres_cnt_alloc == NULL)
-			fatal("xrealloc: malloc failure");
 		for (i=0; i<gres_data->topo_cnt; i++)
 			FREE_NULL_BITMAP(gres_data->topo_gres_bitmap[i]);
 		gres_data->topo_gres_bitmap =
 			xrealloc(gres_data->topo_gres_bitmap,
 				 set_cnt * sizeof(bitstr_t *));
-		if (gres_data->topo_gres_bitmap == NULL)
-			fatal("xrealloc: malloc failure");
 		for (i=0; i<gres_data->topo_cnt; i++)
 			FREE_NULL_BITMAP(gres_data->topo_cpus_bitmap[i]);
 		gres_data->topo_cpus_bitmap =
 			xrealloc(gres_data->topo_cpus_bitmap,
 				 set_cnt * sizeof(bitstr_t *));
-		if (gres_data->topo_cpus_bitmap == NULL)
-			fatal("xrealloc: malloc failure");
 		gres_data->topo_cnt = set_cnt;
 
 		iter = list_iterator_create(gres_conf_list);
-		if (iter == NULL)
-			fatal("list_iterator_create: malloc failure");
 		gres_inx = i = 0;
 		while ((gres_slurmd_conf = (gres_slurmd_conf_t *)
 			list_next(iter))) {
@@ -1409,8 +1377,6 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 					gres_slurmd_conf->count;
 			gres_data->topo_cpus_bitmap[i] =
 					bit_alloc(gres_slurmd_conf->cpu_cnt);
-			if (gres_data->topo_cpus_bitmap[i] == NULL)
-				fatal("bit_alloc: malloc failure");
 			if (gres_slurmd_conf->cpus) {
 				bit_unfmt(gres_data->topo_cpus_bitmap[i],
 					  gres_slurmd_conf->cpus);
@@ -1422,8 +1388,6 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 					 (gres_slurmd_conf->cpu_cnt - 1));
 			}
 			gres_data->topo_gres_bitmap[i] = bit_alloc(gres_cnt);
-			if (gres_data->topo_gres_bitmap[i] == NULL)
-				fatal("bit_alloc: malloc failure");
 			for (j=0; j<gres_slurmd_conf->count; j++) {
 				bit_set(gres_data->topo_gres_bitmap[i],
 					gres_inx++);
@@ -1460,8 +1424,6 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 				bit_realloc(gres_data->gres_bit_alloc,
 					    gres_data->gres_cnt_avail);
 		}
-		if (gres_data->gres_bit_alloc == NULL)
-			fatal("bit_alloc: malloc failure");
 	}
 
 	if ((fast_schedule < 2) &&
@@ -1531,8 +1493,6 @@ extern int gres_plugin_node_config_validate(char *node_name,
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
 		*gres_list = list_create(_gres_node_list_delete);
-		if (*gres_list == NULL)
-			fatal("list_create malloc failure");
 	}
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		/* Find or create gres_state entry on the list */
@@ -1591,8 +1551,6 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 				bit_realloc(gres_data->gres_bit_alloc,
 					    gres_data->gres_cnt_avail);
 		}
-		if (gres_data->gres_bit_alloc == NULL)
-			fatal("bit_alloc: malloc failure");
 	}
 
 	if ((fast_schedule < 2) &&
@@ -1638,8 +1596,6 @@ extern int gres_plugin_node_reconfig(char *node_name,
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
 		*gres_list = list_create(_gres_node_list_delete);
-		if (*gres_list == NULL)
-			fatal("list_create malloc failure");
 	}
 	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		/* Find gres_state entry on the list */
@@ -1744,11 +1700,8 @@ extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 	rc = gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
-	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
+	if ((gres_context_cnt > 0) && (*gres_list == NULL))
 		*gres_list = list_create(_gres_node_list_delete);
-		if (*gres_list == NULL)
-			fatal("list_create malloc failure");
-	}
 
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
@@ -1783,8 +1736,6 @@ extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 		if (has_bitmap) {
 			gres_node_ptr->gres_bit_alloc =
 				bit_alloc(gres_cnt_avail);
-			if (gres_node_ptr->gres_bit_alloc == NULL)
-				fatal("bit_alloc: malloc failure");
 		}
 		gres_ptr = xmalloc(sizeof(gres_state_t));
 		gres_ptr->plugin_id = gres_context[i].plugin_id;
@@ -1834,9 +1785,6 @@ static void *_node_state_dup(void *gres_data)
 			bit_copy(gres_ptr->topo_cpus_bitmap[i]);
 		new_gres->topo_gres_bitmap[i] =
 			bit_copy(gres_ptr->topo_gres_bitmap[i]);
-		if ((new_gres->topo_cpus_bitmap[i] == NULL) ||
-		    (new_gres->topo_gres_bitmap[i] == NULL))
-			fatal("bit_copy: malloc failure");
 		new_gres->topo_gres_cnt_alloc[i] =
 			gres_ptr->topo_gres_cnt_alloc[i];
 		new_gres->topo_gres_cnt_avail[i] =
@@ -1866,8 +1814,6 @@ extern List gres_plugin_node_state_dup(List gres_list)
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0)) {
 		new_list = list_create(_gres_node_list_delete);
-		if (new_list == NULL)
-			fatal("list_create malloc failure");
 	}
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
@@ -2132,11 +2078,8 @@ extern int gres_plugin_job_state_validate(char *req_config, List *gres_list)
 						  &gres_context[i]);
 			if ((rc2 != SLURM_SUCCESS) || (job_gres_data == NULL))
 				continue;
-			if (*gres_list == NULL) {
+			if (*gres_list == NULL)
 				*gres_list = list_create(_gres_job_list_delete);
-				if (*gres_list == NULL)
-					fatal("list_create malloc failure");
-			}
 			gres_ptr = xmalloc(sizeof(gres_state_t));
 			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			gres_ptr->gres_data = job_gres_data;
@@ -2236,8 +2179,6 @@ List gres_plugin_job_state_extract(List gres_list, int node_index)
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
-	if (gres_iter == NULL)
-		fatal("list_iterator_create: malloc failure");
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		if (node_index == -1)
 			new_gres_data = _job_state_dup(gres_ptr->gres_data);
@@ -2249,8 +2190,6 @@ List gres_plugin_job_state_extract(List gres_list, int node_index)
 			break;
 		if (new_gres_list == NULL) {
 			new_gres_list = list_create(_gres_job_list_delete);
-			if (new_gres_list == NULL)
-				fatal("list_create: malloc failure");
 		}
 		new_gres_state = xmalloc(sizeof(gres_state_t));
 		new_gres_state->plugin_id = gres_ptr->plugin_id;
@@ -2378,8 +2317,6 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
 		*gres_list = list_create(_gres_job_list_delete);
-		if (*gres_list == NULL)
-			fatal("list_create malloc failure");
 	}
 
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
@@ -2473,8 +2410,6 @@ static bitstr_t *_cpu_bitmap_rebuild(bitstr_t *old_cpu_bitmap, int new_size)
 	bitstr_t *new_cpu_bitmap;
 
 	new_cpu_bitmap = bit_alloc(new_size);
-	if (new_cpu_bitmap == NULL)
-		fatal("bit_alloc: malloc failure");
 	old_size = bit_size(old_cpu_bitmap);
 	if (old_size > new_size) {
 		ratio = old_size / new_size;
@@ -2619,8 +2554,6 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 
 		/* Pick the topology entries with the most CPUs available */
 		alloc_cpu_bitmap = bit_alloc(cpus_ctld);
-		if (alloc_cpu_bitmap == NULL)
-			fatal("bit_alloc: malloc failure");
 		gres_avail = 0;
 		while (gres_avail < job_gres_ptr->gres_cnt_alloc) {
 			top_inx = -1;
@@ -2829,8 +2762,6 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 	} else if (node_gres_ptr->gres_bit_alloc) {
 		job_gres_ptr->gres_bit_alloc[node_offset] =
 				bit_alloc(node_gres_ptr->gres_cnt_avail);
-		if (job_gres_ptr->gres_bit_alloc[node_offset] == NULL)
-			fatal("bit_copy: malloc failure");
 		for (i=0; i<node_gres_ptr->gres_cnt_avail && gres_cnt>0; i++) {
 			if (bit_test(node_gres_ptr->gres_bit_alloc, i))
 				continue;
@@ -3135,8 +3066,6 @@ extern void gres_plugin_job_merge(List from_job_gres_list,
 	if (!to_job_gres_list)
 		goto step2;
 	gres_iter = list_iterator_create(to_job_gres_list);
-	if (!gres_iter)
-		fatal("list_iterator_create: malloc failure");
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		gres_job_ptr = (gres_job_state_t *) gres_ptr->gres_data;
 		new_gres_bit_alloc = xmalloc(sizeof(bitstr_t *) *
@@ -3196,12 +3125,8 @@ step2:	if (!from_job_gres_list)
 		goto step3;
 	if (!to_job_gres_list) {
 		to_job_gres_list = list_create(_gres_job_list_delete);
-		if (!to_job_gres_list)
-			fatal("list_create: malloc failure");
 	}
 	gres_iter = list_iterator_create(from_job_gres_list);
-	if (!gres_iter)
-		fatal("list_iterator_create: malloc failure");
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		gres_job_ptr = (gres_job_state_t *) gres_ptr->gres_data;
 		gres_ptr2 = list_find_first(to_job_gres_list, _gres_find_id,
@@ -3435,8 +3360,6 @@ extern void gres_plugin_job_state_file(List gres_list, int *gres_bit_alloc,
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
-	if (!gres_iter)
-		fatal("list_iterator_create: malloc failure");
 	
 	for (j=0; j<gres_context_cnt; j++) {
 		found = 0;
@@ -3633,8 +3556,6 @@ extern int gres_plugin_step_state_validate(char *req_config,
 			/* Now make sure the step's request isn't too big for
 			 * the job's gres allocation */
 			job_gres_iter = list_iterator_create(job_gres_list);
-			if (job_gres_iter == NULL)
-				fatal("list_iterator_create: malloc failure");
 			while ((job_gres_ptr = (gres_state_t *)
 					list_next(job_gres_iter))) {
 				if (job_gres_ptr->plugin_id ==
@@ -3664,8 +3585,6 @@ extern int gres_plugin_step_state_validate(char *req_config,
 			if (*step_gres_list == NULL) {
 				*step_gres_list = list_create(
 						  _gres_step_list_delete);
-				if (*step_gres_list == NULL)
-					fatal("list_create malloc failure");
 			}
 			step_gres_ptr = xmalloc(sizeof(gres_state_t));
 			step_gres_ptr->plugin_id = gres_context[i].plugin_id;
@@ -3768,8 +3687,6 @@ List gres_plugin_step_state_extract(List gres_list, int node_index)
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
-	if (!gres_iter)
-		fatal("list_iterator_create: malloc failure");
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		if (node_index == -1)
 			new_gres_data = _step_state_dup(gres_ptr->gres_data);
@@ -3779,8 +3696,6 @@ List gres_plugin_step_state_extract(List gres_list, int node_index)
 		}
 		if (new_gres_list == NULL) {
 			new_gres_list = list_create(_gres_step_list_delete);
-			if (new_gres_list == NULL)
-				fatal("list_create: malloc failure");
 		}
 		new_gres_state = xmalloc(sizeof(gres_state_t));
 		new_gres_state->plugin_id = gres_ptr->plugin_id;
@@ -3820,8 +3735,6 @@ void gres_plugin_step_state_rebase(List gres_list,
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
-	if (!gres_iter)
-		fatal("list_iterator_create: malloc failure");
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		gres_step_ptr = (gres_step_state_t *) gres_ptr->gres_data;
 		if (!gres_step_ptr)
@@ -3843,8 +3756,6 @@ void gres_plugin_step_state_rebase(List gres_list,
 			continue;
 		}
 		new_node_in_use = bit_alloc(new_node_cnt);
-		if (!new_node_in_use)
-			fatal("bit_alloc: malloc failure");
 
 		old_inx = new_inx = -1;
 		for (i = i_first; i <= i_last; i++) {
@@ -3979,8 +3890,6 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
 		*gres_list = list_create(_gres_step_list_delete);
-		if (*gres_list == NULL)
-			fatal("list_create malloc failure");
 	}
 
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
@@ -4266,8 +4175,6 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 	step_gres_ptr->node_cnt = job_gres_ptr->node_cnt;
 	if (step_gres_ptr->node_in_use == NULL) {
 		step_gres_ptr->node_in_use = bit_alloc(job_gres_ptr->node_cnt);
-		if (step_gres_ptr->node_in_use == NULL)
-			fatal("bit_alloc malloc failure");
 	}
 	bit_set(step_gres_ptr->node_in_use, node_offset);
 	job_gres_ptr->gres_cnt_step_alloc[node_offset] +=
@@ -4281,8 +4188,6 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 	}
 
 	gres_bit_alloc = bit_copy(job_gres_ptr->gres_bit_alloc[node_offset]);
-	if (gres_bit_alloc == NULL)
-		fatal("bit_copy malloc failure");
 	if (job_gres_ptr->gres_bit_step_alloc &&
 	    job_gres_ptr->gres_bit_step_alloc[node_offset]) {
 		bit_not(job_gres_ptr->gres_bit_step_alloc[node_offset]);
@@ -4596,8 +4501,6 @@ extern int gres_num_gres_alloced_all(List gres_list, int arrlen,
 	slurm_mutex_lock(&gres_context_lock);
 
 	node_gres_iter = list_iterator_create(gres_list);
-	if (!node_gres_iter)
-		fatal("list_iterator_create: malloc failure");
 	while ((node_gres_ptr = (gres_state_t*) list_next(node_gres_iter))) {
 		gres_node_state_t *node_gres_state_ptr;
 		val = 0;
@@ -4645,8 +4548,6 @@ extern void gres_plugin_step_state_file(List gres_list, int *gres_bit_alloc,
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
-	if (!gres_iter)
-		fatal("list_iterator_create: malloc failure");
 
 	for (j=0; j<gres_context_cnt; j++) {
 		found = 0;

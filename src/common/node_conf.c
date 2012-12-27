@@ -113,8 +113,6 @@ static void _add_config_feature(char *feature, bitstr_t *node_bitmap)
 
 	/* If feature already exists in feature_list, just update the bitmap */
 	feature_iter = list_iterator_create(feature_list);
-	if (feature_iter == NULL)
-		fatal("list_iterator_create malloc failure");
 	while ((feature_ptr = (struct features_record *)
 			list_next(feature_iter))) {
 		if (strcmp(feature, feature_ptr->name))
@@ -502,8 +500,6 @@ char * bitmap2node_name_sortable (bitstr_t *bitmap, bool sort)
 
 	last  = bit_fls(bitmap);
 	hl = hostlist_create("");
-	if (hl == NULL)
-		fatal("hostlist_create: malloc error");
 	for (i = first; i <= last; i++) {
 		if (bit_test(bitmap, i) == 0)
 			continue;
@@ -601,8 +597,7 @@ extern int build_all_frontend_info (bool is_slurmd_context)
 		while ((fe_name = hostlist_shift(hl_name))) {
 			fe_addr = hostlist_shift(hl_addr);
 			fe_single = xmalloc(sizeof(slurm_conf_frontend_t));
-			if (list_append(front_end_list, fe_single) == NULL)
-				fatal("list_append: malloc failure");
+			list_append(front_end_list, fe_single);
 			fe_single->frontends = xstrdup(fe_name);
 			fe_single->addresses = xstrdup(fe_addr);
 			free(fe_name);
