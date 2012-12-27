@@ -40,12 +40,13 @@
 \*****************************************************************************/
 
 #include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -106,10 +107,13 @@ bit_alloc(bitoff_t nbits)
 	bitstr_t *new;
 
 	new = (bitstr_t *)calloc(_bitstr_words(nbits), sizeof(bitstr_t));
-	if (new) {
-		_bitstr_magic(new) = BITSTR_MAGIC;
-		_bitstr_bits(new) = nbits;
+	if (!new) {
+		fprintf(log_fp(), "bit_alloc: calloc failed\n");
+		abort();
 	}
+
+	_bitstr_magic(new) = BITSTR_MAGIC;
+	_bitstr_bits(new) = nbits;
 	return new;
 }
 
@@ -128,12 +132,15 @@ bit_realloc(bitstr_t *b, bitoff_t nbits)
 	_assert_bitstr_valid(b);
 	obits = _bitstr_bits(b);
 	new = realloc(b, _bitstr_words(nbits) * sizeof(bitstr_t));
-	if (new) {
-		_assert_bitstr_valid(new);
-		_bitstr_bits(new) = nbits;
-		if (nbits > obits)
-			bit_nclear(new, obits, nbits - 1);
+	if (!new) {
+		fprintf(log_fp(), "bit_realloc: realloc failed\n");
+		abort();
 	}
+
+	_assert_bitstr_valid(new);
+	_bitstr_bits(new) = nbits;
+	if (nbits > obits)
+		bit_nclear(new, obits, nbits - 1);
 	return new;
 }
 
