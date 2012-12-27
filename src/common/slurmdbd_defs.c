@@ -1812,8 +1812,6 @@ static Buf _recv_msg(int read_timeout)
 	}
 
 	buffer = create_buf(msg, msg_size);
-	if (buffer == NULL)
-		fatal("create_buf: malloc failure");
 	return buffer;
 }
 
@@ -1947,8 +1945,6 @@ static void _create_agent(void)
 
 	if (agent_list == NULL) {
 		agent_list = list_create(slurmdbd_free_buffer);
-		if (agent_list == NULL)
-			fatal("list_create: malloc failure");
 		_load_dbd_state();
 	}
 
@@ -2399,8 +2395,6 @@ static Buf _load_dbd_rec(int fd)
 	}
 
 	buffer = init_buf((int) msg_size);
-	if (buffer == NULL)
-		fatal("slurmdbd: create_buf malloc failure");
 	set_buf_offset(buffer, msg_size);
 	msg = get_buf_data(buffer);
 	size = msg_size;

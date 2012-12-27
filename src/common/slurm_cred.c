@@ -1134,19 +1134,8 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name,
 		}
 	}
 
-	job_core_bitmap = bit_alloc(i_last_bit - i_first_bit);
-	if (job_core_bitmap == NULL) {
-		error("bit_alloc malloc failure");
-		hostset_destroy(hset);
-		return;
-	}
+	job_core_bitmap  = bit_alloc(i_last_bit - i_first_bit);
 	step_core_bitmap = bit_alloc(i_last_bit - i_first_bit);
-	if (step_core_bitmap == NULL) {
-		error("bit_alloc malloc failure");
-		FREE_NULL_BITMAP(job_core_bitmap);
-		hostset_destroy(hset);
-		return;
-	}
 	for (i = i_first_bit, j = 0; i < i_last_bit; i++, j++) {
 		if (bit_test(cred->job_core_bitmap, i)) {
 			bit_set(job_core_bitmap, j);
@@ -1824,8 +1813,6 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 	last_scan = now;
 
 	i = list_iterator_create(ctx->job_list);
-	if (!i)
-		fatal("list_iterator_create: malloc failure");
 	while ((j = list_next(i))) {
 #if DEBUG_TIME
 		char t1[64], t2[64], t3[64];
@@ -2227,8 +2214,6 @@ int extract_sbcast_cred(slurm_cred_ctx_t ctx,
 		}
 
 		sbcast_iter = list_iterator_create(sbcast_cache_list);
-		if (!sbcast_iter)
-			fatal("list_iterator_create: malloc failure");
 		while ((next_cache_rec = 
 			(struct sbcast_cache *) list_next(sbcast_iter))) {
 			if ((next_cache_rec->expire == sbcast_cred->expiration) &&

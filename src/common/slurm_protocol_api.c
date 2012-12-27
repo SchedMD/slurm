@@ -3531,8 +3531,6 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 		return ret_list;
 	} else {
 		itr = list_iterator_create(ret_list);
-		if (!itr)
-			fatal("list_iterator_create: malloc failure");
 		while ((ret_data_info = list_next(itr)))
 			if (!ret_data_info->node_name) {
 				ret_data_info->node_name = xstrdup(name);

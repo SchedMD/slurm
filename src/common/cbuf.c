@@ -51,7 +51,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "cbuf.h"
+#include "src/common/cbuf.h"
+#include "src/common/log.h"
 
 
 /*********************
@@ -66,11 +67,11 @@
 #    include <errno.h>
 #    include <stdio.h>
 #    include <string.h>
-#    define lsd_fatal_error(file, line, mesg)                                 \
-       do {                                                                   \
-           fprintf(stderr, "ERROR: [%s:%d] %s: %s\n",                         \
-                   file, line, mesg, strerror(errno));                        \
-       } while (0)
+	static void lsd_fatal_error(char *file, int line, char *mesg)
+	{
+		fprintf(log_fp(), "ERROR: [%s:%d] %s: %s\n",
+			file, line, mesg, strerror(errno));
+	}
 #  endif /* !lsd_fatal_error */
 #endif /* !WITH_LSD_FATAL_ERROR_FUNC */
 
@@ -84,7 +85,13 @@
    extern void * lsd_nomem_error(char *file, int line, char *mesg);
 #else /* !WITH_LSD_NOMEM_ERROR_FUNC */
 #  ifndef lsd_nomem_error
-#    define lsd_nomem_error(file, line, mesg) (NULL)
+	static void * lsd_nomem_error(char *file, int line, char *mesg)
+	{
+		fprintf(log_fp(), "ERROR: [%s:%d] %s: %s\n",
+			file, line, mesg, strerror(errno));
+		abort();
+		return NULL;
+	}
 #  endif /* !lsd_nomem_error */
 #endif /* !WITH_LSD_NOMEM_ERROR_FUNC */
 

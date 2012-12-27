@@ -37,7 +37,10 @@
 \*****************************************************************************/
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
+
+#include "src/common/log.h"
 
 extern int unsetenv (const char *name)
 {
@@ -49,6 +52,11 @@ extern int unsetenv (const char *name)
 
 	len = strlen(name);
 	tmp = malloc(len + 3);
+	if (!tmp) {
+		fprintf(log_fp(), "unsetenvc: %s\n",
+			strerror(errno));
+		abort();
+	}
 	strcpy(tmp, name);
 	strcat(tmp, "=x");
 	if ((rc = putenv(tmp)) != 0)

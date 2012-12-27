@@ -662,8 +662,6 @@ extern int build_all_nodeline_info (bool set_bitmap)
 	if (set_bitmap) {
 		ListIterator config_iterator;
 		config_iterator = list_iterator_create(config_list);
-		if (config_iterator == NULL)
-			fatal ("memory allocation failure");
 		while ((config_ptr = (struct config_record *)
 				list_next(config_iterator))) {
 			node_name2bitmap(config_ptr->nodes, true,
@@ -868,9 +866,6 @@ extern int init_node_conf (void)
 		config_list    = list_create (_list_delete_config);
 		feature_list   = list_create (_list_delete_feature);
 		front_end_list = list_create (destroy_frontend);
-		if ((config_list == NULL) || (feature_list == NULL) ||
-		    (front_end_list == NULL))
-			fatal("list_create malloc failure");
 	}
 
 	return SLURM_SUCCESS;
@@ -920,8 +915,6 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 	hostlist_t host_list;
 
 	my_bitmap = (bitstr_t *) bit_alloc (node_record_count);
-	if (my_bitmap == NULL)
-		fatal("bit_alloc malloc failure");
 	*bitmap = my_bitmap;
 
 	if (node_names == NULL) {

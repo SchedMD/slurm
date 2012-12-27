@@ -120,9 +120,6 @@ extern int build_job_resources(job_resources_t *job_resrcs,
 #ifndef HAVE_BG
 	job_resrcs->core_bitmap      = bit_alloc(core_cnt);
 	job_resrcs->core_bitmap_used = bit_alloc(core_cnt);
-	if ((job_resrcs->core_bitmap == NULL) ||
-	    (job_resrcs->core_bitmap_used == NULL))
-		fatal("bit_alloc malloc failure");
 #endif
 	return SLURM_SUCCESS;
 }

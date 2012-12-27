@@ -986,8 +986,6 @@ extern List slurmdb_get_info_cluster(char *cluster_names)
 		}
 	} else {
 		itr2 = list_iterator_create(cluster_cond.cluster_list);
-		if (itr2 == NULL)
-			fatal("list_iterator_create: malloc failure");
 		while ((cluster_name = list_next(itr2))) {
 			while ((cluster_rec = list_next(itr))) {
 				if (!strcmp(cluster_name, cluster_rec->name))

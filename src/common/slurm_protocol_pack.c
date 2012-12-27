@@ -10187,8 +10187,6 @@ _pack_will_run_response_msg(will_run_response_msg_t *msg, Buf buffer,
 	pack32(count, buffer);
 	if (count && (count != NO_VAL)) {
 		ListIterator itr = list_iterator_create(msg->preemptee_job_id);
-		if (itr == NULL)
-			fatal("list_iterator_create: malloc failure");
 		while ((job_id_ptr = list_next(itr)))
 			pack32(job_id_ptr[0], buffer);
 		list_iterator_destroy(itr);

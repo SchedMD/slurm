@@ -73,6 +73,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/gres.h"
 #include "src/common/list.h"
+#include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
@@ -2742,8 +2743,6 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 			node_gres_ptr->gres_bit_alloc =
 				bit_copy(job_gres_ptr->
 					 gres_bit_alloc[node_offset]);
-			if (node_gres_ptr->gres_bit_alloc == NULL)
-				fatal("bit_copy: malloc failure");
 			node_gres_ptr->gres_cnt_alloc +=
 				bit_set_count(node_gres_ptr->gres_bit_alloc);
 		} else if (node_gres_ptr->gres_bit_alloc) {
@@ -3074,9 +3073,6 @@ extern void gres_plugin_job_merge(List from_job_gres_list,
 						  new_node_cnt);
 		new_gres_cnt_step_alloc = xmalloc(sizeof(uint32_t) *
 						  new_node_cnt);
-		if (!new_gres_bit_alloc || !new_gres_bit_step_alloc ||
-		    !new_gres_cnt_step_alloc)
-			fatal("malloc failure");
 
 		from_inx = to_inx = new_inx = -1;
 		for (i = i_first; i <= i_last; i++) {
@@ -4456,8 +4452,6 @@ extern uint32_t gres_get_value_by_type(List job_gres_list, char* gres_name)
 
 	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
-	if (!job_gres_iter)
-		fatal("list_iterator_create: malloc failure");
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
 		for (i=0; i<gres_context_cnt; i++) {
 			if (job_gres_ptr->plugin_id != plugin_id)

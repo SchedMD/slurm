@@ -653,8 +653,6 @@ plugrack_print_all_plugin(plugrack_t rack)
 
 	xassert(rack->entries);
 	itr = list_iterator_create(rack->entries);
-	if (!itr)
-		fatal("list_iterator_create: malloc failure");
 	info("MPI types are...");
 	while ((e = list_next(itr)) != NULL ) {
 		info("%s", e->full_type);
