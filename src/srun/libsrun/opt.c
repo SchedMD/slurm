@@ -1741,6 +1741,10 @@ static void _opt_args(int argc, char **argv)
 	bg_figure_nodes_tasks();
 #endif
 
+	if (launch_init() != SLURM_SUCCESS) {
+		fatal("Unable to load launch plugin, check LaunchType "
+		      "configuration");
+	}
 	command_pos = launch_g_setup_srun_opt(rest);
 
 	/* Since this is needed on an emulated system don't put this code in
