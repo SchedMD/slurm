@@ -74,90 +74,44 @@ int check_header_version(header_t * header)
 {
 	uint16_t check_version = SLURM_PROTOCOL_VERSION;
 
-	if (working_cluster_rec)
+	if (working_cluster_rec) {
 		check_version = _get_slurm_version(
 			working_cluster_rec->rpc_version);
+	}
 
 	if (slurmdbd_conf) {
 		if ((header->version != SLURM_PROTOCOL_VERSION)     &&
 		    (header->version != SLURM_2_5_PROTOCOL_VERSION) &&
-		    (header->version != SLURM_2_4_PROTOCOL_VERSION))
+		    (header->version != SLURM_2_4_PROTOCOL_VERSION)) {
+			debug("unsupported RPC version %hu", header->version);
 			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
+		}
 	} else if (header->version != check_version) {
-		/* Starting with 2.2 we will handle previous versions
-		 * of SLURM for some calls */
-		switch(header->msg_type) {
-		case MESSAGE_NODE_REGISTRATION_STATUS:
-		case REQUEST_ACCT_GATHER_UPDATE:
-		case REQUEST_BLOCK_INFO:
-		case REQUEST_BUILD_INFO:
-		case REQUEST_CANCEL_JOB_STEP:
-		case REQUEST_CHECKPOINT:
-		case REQUEST_CHECKPOINT_COMP:
-		case REQUEST_CHECKPOINT_TASK_COMP:
-		case REQUEST_COMPLETE_BATCH_SCRIPT:	/* From slurmstepd */
-		case REQUEST_COMPLETE_JOB_ALLOCATION:
-		case REQUEST_CREATE_PARTITION:
-		case REQUEST_CREATE_RESERVATION:
-		case REQUEST_DELETE_PARTITION:
-		case REQUEST_DELETE_RESERVATION:
-		case REQUEST_FRONT_END_INFO:
-		case REQUEST_JOB_ALLOCATION_INFO:
-		case REQUEST_JOB_ALLOCATION_INFO_LITE:
-		case REQUEST_JOB_END_TIME:
-		case REQUEST_JOB_INFO:
-		case REQUEST_JOB_INFO_SINGLE:
-		case REQUEST_JOB_NOTIFY:
-		case REQUEST_JOB_READY:
-		case REQUEST_JOB_REQUEUE:
-		case REQUEST_JOB_STEP_INFO:
-		case REQUEST_JOB_USER_INFO:
-		case REQUEST_JOB_WILL_RUN:
-		case REQUEST_NODE_INFO:
-		case REQUEST_NODE_INFO_SINGLE:
-		case REQUEST_PARTITION_INFO:
-		case REQUEST_PING:
-		case REQUEST_PRIORITY_FACTORS:
-		case REQUEST_REBOOT_NODES:
-		case REQUEST_RECONFIGURE:
-		case REQUEST_RESERVATION_INFO:
-		case REQUEST_SET_DEBUG_FLAGS:
-		case REQUEST_SET_DEBUG_LEVEL:
-		case REQUEST_SET_SCHEDLOG_LEVEL:
-		case REQUEST_SHARE_INFO:
-		case REQUEST_SHUTDOWN:
-		case REQUEST_SHUTDOWN_IMMEDIATE:
-		case REQUEST_SPANK_ENVIRONMENT:
-		case REQUEST_STEP_COMPLETE:		/* From slurmstepd */
-		case REQUEST_STEP_LAYOUT:
-		case REQUEST_SUBMIT_BATCH_JOB:
-		case REQUEST_SUSPEND:
-		case REQUEST_TERMINATE_JOB:
-		case REQUEST_TERMINATE_TASKS:
-		case REQUEST_TOPO_INFO:
-		case REQUEST_TRIGGER_CLEAR:
-		case REQUEST_TRIGGER_GET:
-		case REQUEST_TRIGGER_PULL:
-		case REQUEST_TRIGGER_SET:
-		case REQUEST_UPDATE_BLOCK:
-		case REQUEST_UPDATE_FRONT_END:
-		case REQUEST_UPDATE_JOB:
-		case REQUEST_UPDATE_JOB_STEP:
-		case REQUEST_UPDATE_NODE:
-		case REQUEST_UPDATE_PARTITION:
-		case REQUEST_UPDATE_RESERVATION:
-		case RESPONSE_ACCT_GATHER_UPDATE:
-		case RESPONSE_SLURM_RC:
-			if ((header->version == SLURM_2_6_PROTOCOL_VERSION) ||
-			    (header->version == SLURM_2_5_PROTOCOL_VERSION) ||
-			    (header->version == SLURM_2_4_PROTOCOL_VERSION))
-				break;
-		default:
-			debug("unsupported RPC %d", header->msg_type);
+		switch (header->msg_type) {
+		case REQUEST_JOB_STEP_CREATE:
+		case REQUEST_LAUNCH_TASKS:
+		case REQUEST_RUN_JOB_STEP:
+		case RESPONSE_JOB_STEP_CREATE:
+		case RESPONSE_LAUNCH_TASKS:
+		case RESPONSE_RUN_JOB_STEP:
+			/* Disable job step creation/launch between major
+			 * releases. Other RPCs should all be supported. */
+			debug("unsupported RPC type %hu", header->msg_type);
 			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
 			break;
+		default:
+			if ((header->version != SLURM_PROTOCOL_VERSION)     &&
+			    (header->version != SLURM_2_5_PROTOCOL_VERSION) &&
+			    (header->version != SLURM_2_4_PROTOCOL_VERSION)) {
+				debug("unsupported RPC version %hu",
+				      header->version);
+				slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
+			}
+			break;
+
 		}
 	}
+
 	return SLURM_PROTOCOL_SUCCESS;
 }
 
