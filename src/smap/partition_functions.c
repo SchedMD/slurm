@@ -257,10 +257,6 @@ extern void get_bg_part(void)
 		list_flush(block_list);
 	} else {
 		block_list = list_create(_block_list_del);
-		if (!block_list) {
-			fprintf(stderr, "malloc error\n");
-			return;
-		}
 	}
 	if (!params.commandline)
 		if ((new_bg_ptr->record_count - text_line_cnt)

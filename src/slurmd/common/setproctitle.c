@@ -85,6 +85,7 @@
 #  endif
 #endif
 
+#include <errno.h>
 #if defined(__NetBSD__)
 #include <stdlib.h>
 #include <string.h>
@@ -306,6 +307,12 @@ init_setproctitle(int argc, char *argv[])
 	 * Duplicate and move the environment out of the way
 	 */
 	new_environ = malloc(sizeof(char *) * (i + 1));
+	if (!new_environ) {
+		fprintf(stderr, "ERROR: [%s:%d] %s: %s\n",
+			__FILE__, __LINE__, "init_setproctitle",
+			strerror(errno));
+		abort();
+	}
 	for (i = 0; environ[i] != NULL; i++) {
 		new_environ[i] = strdup(environ[i]);
 		//free(environ[i]);

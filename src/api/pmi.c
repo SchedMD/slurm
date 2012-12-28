@@ -119,6 +119,20 @@ struct kvs_rec {
 
 #define _DEBUG 0
 
+#ifdef WITH_PMI_NOMEM_ERROR_FUNC
+#  undef pmi_nomem_error
+   extern void pmi_nomem_error(char *file, int line, char *mesg);
+#else /* !WITH_PMI_NOMEM_ERROR_FUNC */
+#  ifndef pmi_nomem_error
+	static void pmi_nomem_error(char *file, int line, char *mesg)
+	{
+		fprintf(stderr, "ERROR: [%s:%d] %s: %s\n",
+			file, line, mesg, strerror(errno));
+		abort();
+	}
+#  endif /* !pmi_nomem_error */
+#endif /* !WITH_PMI_NOMEM_ERROR_FUNC */
+
 static void _del_kvs_rec( struct kvs_rec *kvs_ptr );
 static void _init_kvs( char kvsname[] );
 inline static void _kvs_dump(void);
@@ -867,10 +881,13 @@ static void _init_kvs( char kvsname[] )
 	i = kvs_rec_cnt;
 	kvs_rec_cnt++;
 	kvs_recs = realloc(kvs_recs, (sizeof(struct kvs_rec) * kvs_rec_cnt));
+	if (!kvs_recs)
+		pmi_nomem_error(__FILE__, __LINE__, "_init_kvs");
 	/* DO NOT CHANGE TO STRNDUP(), NOT SUPPORTED ON AIX */
 	kvs_recs[i].kvs_name = malloc(PMI_MAX_KVSNAME_LEN);
-	if (kvs_recs[i].kvs_name)
-		strncpy(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN);
+	if (!kvs_recs[i].kvs_name)
+		pmi_nomem_error(__FILE__, __LINE__, "_init_kvs");
+	strncpy(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN);
 	kvs_recs[i].kvs_state = KVS_STATE_LOCAL;
 	kvs_recs[i].kvs_cnt = 0;
 	kvs_recs[i].kvs_inx = 0;
@@ -1120,9 +1137,10 @@ static int _kvs_put( const char kvsname[], const char key[], const char value[],
 			/* DO NOT CHANGE TO STRNDUP(), NOT SUPPORTED ON AIX */
 			if (kvs_recs[i].kvs_values[j] == NULL)
 				kvs_recs[i].kvs_values[j] = malloc(PMI_MAX_VAL_LEN);
-			if (kvs_recs[i].kvs_values[j] == NULL)
-				rc = PMI_FAIL;	/* malloc error */
-			else {
+			if (kvs_recs[i].kvs_values[j] == NULL) {
+				pmi_nomem_error(__FILE__, __LINE__, "_kvs_put");
+				rc = PMI_FAIL;
+			} else {
 				rc = PMI_SUCCESS;
 				strncpy(kvs_recs[i].kvs_values[j], value,
 					PMI_MAX_VAL_LEN);
@@ -1138,10 +1156,11 @@ no_dup:
 			(sizeof (char *) * kvs_recs[i].kvs_cnt));
 		kvs_recs[i].kvs_keys = realloc(kvs_recs[i].kvs_keys,
 			(sizeof (char *) * kvs_recs[i].kvs_cnt));
-		if ((kvs_recs[i].kvs_key_states == NULL)
-		||  (kvs_recs[i].kvs_values     == NULL)
-		||  (kvs_recs[i].kvs_keys       == NULL)) {
-			rc = PMI_FAIL;	/* malloc error */
+		if ((kvs_recs[i].kvs_key_states == NULL) ||
+		    (kvs_recs[i].kvs_values     == NULL) ||
+		    (kvs_recs[i].kvs_keys       == NULL)) {
+			pmi_nomem_error(__FILE__, __LINE__, "_kvs_put");
+			rc = PMI_FAIL;
 			goto fini;
 		}
 		if (local)
@@ -1151,10 +1170,11 @@ no_dup:
 		/* DO NOT CHANGE TO STRNDUP(), NOT SUPPORTED ON AIX */
 		kvs_recs[i].kvs_values[j] = malloc(PMI_MAX_VAL_LEN);
 		kvs_recs[i].kvs_keys[j]   = malloc(PMI_MAX_KEY_LEN);
-		if ((kvs_recs[i].kvs_values[j] == NULL)
-		||  (kvs_recs[i].kvs_keys[j] == NULL))
-			rc = PMI_FAIL;	/* malloc error */
-		else {
+		if ((kvs_recs[i].kvs_values[j] == NULL) ||
+		    (kvs_recs[i].kvs_keys[j] == NULL)) {
+			pmi_nomem_error(__FILE__, __LINE__, "_kvs_put");
+			rc = PMI_FAIL;
+		} else {
 			rc = PMI_SUCCESS;
 			strncpy(kvs_recs[i].kvs_values[j], value,
 				PMI_MAX_VAL_LEN);
@@ -1210,6 +1230,8 @@ int PMI_KVS_Commit( const char kvsname[] )
 	 * rather than the full set. */
 	kvs_set.host_cnt      = 1;
 	kvs_set.kvs_host_ptr  = malloc(sizeof(struct kvs_hosts));
+	if (!kvs_set.kvs_host_ptr)
+		pmi_nomem_error(__FILE__, __LINE__, "PMI_KVS_Commit");
 	kvs_set.kvs_host_ptr->task_id  = pmi_rank;
 	kvs_set.kvs_host_ptr->port     = 0;
 	kvs_set.kvs_host_ptr->hostname = NULL;
@@ -1235,8 +1257,12 @@ int PMI_KVS_Commit( const char kvsname[] )
 		kvs_set.kvs_comm_ptr = realloc(kvs_set.kvs_comm_ptr,
 			(sizeof(struct kvs_comm *) *
 			(kvs_set.kvs_comm_recs+1)));
+		if (!kvs_set.kvs_comm_ptr)
+			pmi_nomem_error(__FILE__, __LINE__, "PMI_KVS_Commit");
 		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs] =
 			malloc(sizeof(struct kvs_comm));
+		if (!kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs])
+			pmi_nomem_error(__FILE__, __LINE__, "PMI_KVS_Commit");
 		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs]->kvs_name   =
 			kvs_recs[i].kvs_name;
 		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs]->kvs_cnt    =
@@ -1617,8 +1643,10 @@ int PMI_Parse_option(int num_args, char *args[], int *num_parsed,
 
 	cp = args[0];
 	temp = (PMI_keyval_t *) malloc(num_args * (sizeof (PMI_keyval_t)));
-	if (temp == NULL)
+	if (temp == NULL) {
+		pmi_nomem_error(__FILE__, __LINE__, "PMI_Parse_option");
 		return PMI_FAIL;
+	}
 
 	cp = args[0];
 	while (i < num_args) {
@@ -1635,6 +1663,7 @@ int PMI_Parse_option(int num_args, char *args[], int *num_parsed,
 		len = cp - kp;
 		temp[s].key = (char *) malloc((len+1) * sizeof (char));
 		if (temp[s].key == NULL) {
+			pmi_nomem_error(__FILE__, __LINE__, "PMI_Parse_option");
 			temp[s].val = NULL;
 			PMI_Free_keyvals(temp, s);
 			return PMI_FAIL;
@@ -1652,6 +1681,7 @@ int PMI_Parse_option(int num_args, char *args[], int *num_parsed,
 		len = cp - vp + 1;
 		temp[s].val = (char *) malloc((len+1) * sizeof (char));
 		if (temp[s].val == NULL) {
+			pmi_nomem_error(__FILE__, __LINE__, "PMI_Parse_option");
 			PMI_Free_keyvals(temp, s+1);
 			return PMI_FAIL;
 		}
@@ -1728,8 +1758,10 @@ int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp,
 		return PMI_ERR_INVALID_ARG;
 
 	temp = (PMI_keyval_t *) malloc(cnt * (sizeof (PMI_keyval_t)));
-	if (temp == NULL)
+	if (temp == NULL) {
+		pmi_nomem_error(__FILE__, __LINE__, "PMI_Args_to_keyval");
 		return PMI_FAIL;
+	}
 
 	j = 0;
 	i = 0;
@@ -1737,6 +1769,8 @@ int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp,
 	if (argv[i][0] != '-') {
 		temp[j].val = (char *) malloc((strlen(argv[i])+1) * sizeof (char));
 		if (temp[j].val == NULL) {
+			pmi_nomem_error(__FILE__, __LINE__,
+					"PMI_Args_to_keyval");
 			temp[j].key = NULL;
 			PMI_Free_keyvals(temp, j);
 			return PMI_FAIL;
@@ -1753,6 +1787,8 @@ int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp,
 			temp[j].key = (char *) malloc((strlen(argv[i])+1) *
 					sizeof (char));
 			if (temp[j].key == NULL) {
+				pmi_nomem_error(__FILE__, __LINE__,
+						"PMI_Args_to_keyval");
 				temp[j].val = NULL;
 				PMI_Free_keyvals(temp, j);
 				return PMI_FAIL;
@@ -1765,6 +1801,8 @@ int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp,
 						(strlen(argv[i])+1) *
 						sizeof (char));
 				if (temp[j].val == NULL) {
+					pmi_nomem_error(__FILE__, __LINE__,
+							"PMI_Args_to_keyval");
 					PMI_Free_keyvals(temp, j+1);
 					return PMI_FAIL;
 				}

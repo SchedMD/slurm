@@ -544,13 +544,6 @@ line6:
 				job_resrcs->cores_per_socket[sock_inx];
 
 			core_bitmap = bit_alloc(bit_reps);
-			if (core_bitmap == NULL) {
-				error("bit_alloc malloc failure");
-				hostlist_destroy(hl_last);
-				hostlist_destroy(hl);
-				return NULL;
-			}
-
 			for (j=0; j < bit_reps; j++) {
 				if (bit_test(job_resrcs->core_bitmap, bit_inx))
 					bit_set(core_bitmap, j);

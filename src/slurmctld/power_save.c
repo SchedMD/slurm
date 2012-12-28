@@ -620,8 +620,6 @@ static void *_init_power_save(void *arg)
 		goto fini;
 
 	suspend_node_bitmap = bit_alloc(node_record_count);
-	if (suspend_node_bitmap == NULL)
-		fatal("power_save: malloc error");
 
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);

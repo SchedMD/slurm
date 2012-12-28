@@ -250,8 +250,7 @@ static char *_getline(const char *prompt)
 	int len;
 	printf("%s", prompt);
 
-	/* we only set this here to avoid a warning.  We throw it away
-	   later. */
+	/* Set "line" here to avoid a warning, discard later */
 	line = fgets(buf, 4096, stdin);
 	len = strlen(buf);
 	if ((len > 0) && (buf[len-1] == '\n'))
@@ -259,6 +258,8 @@ static char *_getline(const char *prompt)
 	else
 		len++;
 	line = malloc (len * sizeof(char));
+	if (!line)
+		return NULL;
 	return strncpy(line, buf, len);
 }
 #endif

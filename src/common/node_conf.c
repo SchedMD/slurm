@@ -684,8 +684,6 @@ extern void  build_config_feature_list(struct config_record *config_ptr)
 	/* Clear these nodes from the feature_list record,
 	 * then restore as needed */
 	feature_iter = list_iterator_create(feature_list);
-	if (feature_iter == NULL)
-		fatal("list_iterator_create malloc failure");
 	bit_not(config_ptr->node_bitmap);
 	while ((feature_ptr = (struct features_record *)
 			list_next(feature_iter))) {

@@ -317,8 +317,6 @@ parse_command_line( int argc, char* argv[] )
 		char *name1 = NULL;
 		char *name2 = NULL;
 		hostset_t nodenames = hostset_create(NULL);
-		if (nodenames == NULL)
-			fatal("malloc failure");
 
 		while ( hostset_count(params.nodes) > 0 ) {
 			name1 = hostset_pop(params.nodes);

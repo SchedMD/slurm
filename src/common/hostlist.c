@@ -3624,9 +3624,6 @@ int hostset_intersects(hostset_t set, const char *hosts)
 	assert(set->hl->magic == HOSTLIST_MAGIC);
 
 	hl = hostlist_create(hosts);
-	if (!hl)	/* malloc failure, should never return */
-		return retval;
-
 	while ((hostname = hostlist_pop(hl)) != NULL) {
 		retval += hostset_find_host(set, hostname);
 		free(hostname);
