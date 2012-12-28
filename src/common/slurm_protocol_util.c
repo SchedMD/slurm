@@ -85,6 +85,7 @@ int check_header_version(header_t * header)
 		/* Starting with 2.2 we will handle previous versions
 		 * of SLURM for some calls */
 		switch(header->msg_type) {
+		case MESSAGE_NODE_REGISTRATION_STATUS:
 		case REQUEST_BLOCK_INFO:
 		case REQUEST_BUILD_INFO:
 		case REQUEST_CANCEL_JOB_STEP:
@@ -140,6 +141,7 @@ int check_header_version(header_t * header)
 		case REQUEST_UPDATE_NODE:
 		case REQUEST_UPDATE_PARTITION:
 		case REQUEST_UPDATE_RESERVATION:
+		case RESPONSE_SLURM_RC:
 			if ((header->version == SLURM_2_5_PROTOCOL_VERSION) ||
 			    (header->version == SLURM_2_4_PROTOCOL_VERSION) ||
 			    (header->version == SLURM_2_3_PROTOCOL_VERSION))

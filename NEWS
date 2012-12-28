@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
     partition has no time limit) rather than NO_VAL (140 year time limit);
  -- Alter hostlist logic to allocate large grid dynamically instead of on
     stack.
+ -- Change RPC version checks to support version 2.5 slurmctld with version 2.4
+    slurmd daemons.
 
 * Changes in SLURM 2.5.0
 ========================
