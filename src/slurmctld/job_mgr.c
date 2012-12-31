@@ -2297,6 +2297,14 @@ extern int kill_running_job_by_node_name(char *node_name)
 		if ((job_ptr->node_bitmap == NULL) ||
 		    (!bit_test(job_ptr->node_bitmap, bit_position)))
 			continue;	/* job not on this node */
+		if (IS_NODE_NO_RESPOND(node_ptr) &&
+		    !bit_overlap(job_ptr->node_bitmap, avail_node_bitmap)) {
+			/* If all nodes associated with a job are unavailable,
+			 * (e.g. not responding) then do not kill it. This can
+			 * more gracefully handle global failures without
+			 * killing all of the jobs. */
+			continue;
+		}
 		if (IS_JOB_SUSPENDED(job_ptr)) {
 			enum job_states suspend_job_state = job_ptr->job_state;
 			/* we can't have it as suspended when we call the
