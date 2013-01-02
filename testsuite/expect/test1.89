@@ -40,6 +40,11 @@ set prompt      "PROMPT:"
 
 print_header $test_id
 
+if {[test_serial]} {
+	send_user "\nWARNING: This test is incompatible with select/serial systems\n"
+	exit 0
+}
+
 #
 # Test if task affinity support is supported.
 #
