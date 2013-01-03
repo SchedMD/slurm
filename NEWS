@@ -35,6 +35,7 @@ documents those changes that are of interest to users and admins.
  -- Change RPC version checks to support version 2.5 slurmctld with version 2.4
     slurmd daemons.
  -- Correct core reservation logic for use with select/serial plugin.
+ -- Exit scontrol command on stdin EOF.
 
 * Changes in SLURM 2.5.0
 ========================

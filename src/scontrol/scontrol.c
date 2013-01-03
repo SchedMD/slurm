@@ -216,7 +216,7 @@ main (int argc, char *argv[])
 	else
 		error_code = _get_command (&input_field_count, input_fields);
 
-	while (error_code == SLURM_SUCCESS) {
+	while ((error_code == SLURM_SUCCESS) && !exit_flag) {
 		error_code = _process_command (input_field_count,
 					       input_fields);
 		if (error_code || exit_flag)
@@ -253,12 +253,13 @@ static char *_getline(const char *prompt)
 
 	printf("%s", prompt);
 
-	/* we only set this here to avoid a warning.  We throw it away
-	   later. */
+	/* Set "line" here to avoid a warning.  We throw it away later. */
 	line = fgets(buf, 4096, stdin);
 
 	len = strlen(buf);
-	if ((len > 0) && (buf[len-1] == '\n'))
+	if (len == 0)
+		return NULL;
+	if (buf[len-1] == '\n')
 		buf[len-1] = '\0';
 	else
 		len++;
@@ -287,9 +288,10 @@ _get_command (int *argc, char **argv)
 #else
 	in_line = _getline("scontrol: ");
 #endif
-	if (in_line == NULL)
+	if (in_line == NULL) {
+		exit_flag = true;
 		return 0;
-	else if (strcmp (in_line, "!!") == 0) {
+	} else if (strcmp (in_line, "!!") == 0) {
 		free (in_line);
 		in_line = last_in_line;
 		in_line_size = last_in_line_size;
