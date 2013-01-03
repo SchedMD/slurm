@@ -998,7 +998,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 }
 
 /* Determine the node requirements for the job:
- * - does the job need exclusive nodes? (NODE_CR_RESERVED)
+ * - does the job need exclusive nodes? (NODE_CR_RESERVED, disables for serial)
  * - can the job run on shared nodes?   (NODE_CR_ONE_ROW)
  * - can the job run on overcommitted resources? (NODE_CR_AVAILABLE)
  */
@@ -1012,11 +1012,6 @@ static uint16_t _get_job_node_share(struct job_record *job_ptr)
 	/* Partition is Shared=FORCE */
 	if (max_share & SHARED_FORCE)
 		return NODE_CR_AVAILABLE;
-
-	/* Partition is Shared=NO or Shared=YES */
-	if (job_ptr->details->shared == 0)
-		/* user has requested exclusive nodes */
-		return NODE_CR_RESERVED;
 
 	if ((max_share > 1) && (job_ptr->details->shared == 1))
 		/* part allows sharing, and the user has requested it */
@@ -1516,6 +1511,11 @@ static bool _is_job_spec_serial(struct job_record *job_ptr)
 	struct multi_core_data *mc_ptr = NULL;
 
 	if (details_ptr) {
+		if (job_ptr->details->shared == 0) {
+			info("Clearing exclusive flag for job %u",
+			     job_ptr->job_id);
+			job_ptr->details->shared = 1;
+		}
 		if ((details_ptr->cpus_per_task > 1) &&
 		    (details_ptr->cpus_per_task != (uint16_t) NO_VAL))
 			return false;
