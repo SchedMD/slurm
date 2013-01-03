@@ -1,6 +1,7 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+
 * Changes in SLURM 2.6.0-pre1
 =============================
  -- Add "state" field to job step information reported by scontrol.
@@ -19,6 +20,9 @@ documents those changes that are of interest to users and admins.
     on which HealthCheckProgram should be executed.
  -- Remove sacct --dump --formatted-dump options which were deprecated in
     2.5.
+
+* Changes in SLURM 2.5.2
+========================
 
 * Changes in SLURM 2.5.1
 ========================
