@@ -829,13 +829,13 @@ line15:
  * slurm_load_jobs - issue RPC to get all job configuration
  *	information if changed since update_time
  * IN update_time - time of current configuration data
- * IN job_info_msg_pptr - place to store a job configuration pointer
+ * IN/OUT job_info_msg_pptr - place to store a job configuration pointer
  * IN show_flags -  job filtering option: 0, SHOW_ALL or SHOW_DETAIL
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
 extern int
-slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
+slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 		 uint16_t show_flags)
 {
 	int rc;
@@ -856,7 +856,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_INFO:
-		*resp = (job_info_msg_t *)resp_msg.data;
+		*job_info_msg_pptr = (job_info_msg_t *)resp_msg.data;
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
@@ -875,13 +875,14 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 /*
  * slurm_load_job_user - issue RPC to get slurm information about all jobs
  *	to be run as the specified user
- * IN job_info_msg_pptr - place to store a job configuration pointer
+ * IN/OUT job_info_msg_pptr - place to store a job configuration pointer
  * IN user_id - ID of user we want information for
  * IN show_flags - job filtering options
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
-extern int slurm_load_job_user (job_info_msg_t **resp, uint32_t user_id,
+extern int slurm_load_job_user (job_info_msg_t **job_info_msg_pptr,
+				uint32_t user_id,
 				uint16_t show_flags)
 {
 	int rc;
@@ -902,7 +903,7 @@ extern int slurm_load_job_user (job_info_msg_t **resp, uint32_t user_id,
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_INFO:
-		*resp = (job_info_msg_t *)resp_msg.data;
+		*job_info_msg_pptr = (job_info_msg_t *)resp_msg.data;
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
