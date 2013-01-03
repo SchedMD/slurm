@@ -3480,20 +3480,18 @@ hostset_t hostset_create(const char *hostlist)
 {
 	hostset_t new;
 
-	if (!(new = (hostset_t) malloc(sizeof(*new))))
-		goto error1;
+	if (!(new = (hostset_t) malloc(sizeof(*new)))) {
+		out_of_memory("hostset_create");
+		return NULL;
+	}
 
-	if (!(new->hl = hostlist_create(hostlist)))
-		goto error2;
+	if (!(new->hl = hostlist_create(hostlist))) {
+		free(new);
+		return NULL;
+	}
 
 	hostlist_uniq(new->hl);
 	return new;
-
-error2:
-	free(new);
-error1:
-	out_of_memory("hostset_create");
-	return NULL;
 }
 
 hostset_t hostset_copy(const hostset_t set)
