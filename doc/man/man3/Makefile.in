@@ -417,7 +417,9 @@ man3_MANS = slurm_hostlist_create.3 \
 	slurm_load_front_end.3 \
 	slurm_load_job.3 \
 	slurm_load_jobs.3 \
+	slurm_load_job_user.3 \
 	slurm_load_node.3 \
+	slurm_load_node_single.3 \
 	slurm_load_partitions.3 \
 	slurm_load_reservations.3 \
 	slurm_load_slurmd_status.3 \
