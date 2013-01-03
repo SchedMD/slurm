@@ -223,7 +223,7 @@ static char *_getline(const char *prompt)
 		len++;
 	line = malloc (len * sizeof(char));
 	if (!line)
-		return NULL
+		return NULL;
 	return strncpy(line, buf, len);
 }
 #endif
