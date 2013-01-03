@@ -34,7 +34,7 @@ documents those changes that are of interest to users and admins.
     stack.
  -- Change RPC version checks to support version 2.5 slurmctld with version 2.4
     slurmd daemons.
- -- Correct core_reservation logic for use with select/serial plugin.
+ -- Correct core reservation logic for use with select/serial plugin.
 
 * Changes in SLURM 2.5.0
 ========================
