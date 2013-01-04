@@ -22581,13 +22581,6 @@ fi
 LIBS="$savedLIBS"
 
 
-$as_echo "#define WITH_LSD_FATAL_ERROR_FUNC 1" >>confdefs.h
-
-
-$as_echo "#define WITH_LSD_NOMEM_ERROR_FUNC 1" >>confdefs.h
-
-
-
 
   _x_ac_blcr_dirs="/usr /usr/local /opt/freeware /opt/blcr"
   _x_ac_blcr_libs="lib64 lib"

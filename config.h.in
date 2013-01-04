@@ -503,12 +503,6 @@
 /* Version number of package */
 #undef VERSION
 
-/* Have definition of lsd_fatal_error() */
-#undef WITH_LSD_FATAL_ERROR_FUNC
-
-/* Have definition of lsd_nomem_error() */
-#undef WITH_LSD_NOMEM_ERROR_FUNC
-
 /* Define if you have pthreads. */
 #undef WITH_PTHREADS
 

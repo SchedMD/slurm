@@ -382,10 +382,6 @@ AC_CHECK_LIB(util, openpty, [UTIL_LIBS="-lutil"], [])
 AC_SUBST(UTIL_LIBS)
 LIBS="$savedLIBS"
 
-dnl Add LSD-Tools defines:
-AC_DEFINE(WITH_LSD_FATAL_ERROR_FUNC, 1, [Have definition of lsd_fatal_error()])
-AC_DEFINE(WITH_LSD_NOMEM_ERROR_FUNC, 1, [Have definition of lsd_nomem_error()])
-
 dnl
 dnl Check for compilation of SLURM with BLCR support:
 dnl
