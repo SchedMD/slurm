@@ -1924,6 +1924,7 @@ void update_logging(void)
 	int rc;
 	uid_t slurm_user_id  = slurmctld_conf.slurm_user_id;
 	gid_t slurm_user_gid = gid_from_uid(slurm_user_id);
+	char *log_fname = NULL;
 
 	/* Preserve execute line arguments (if any) */
 	if (debug_level) {
@@ -1943,13 +1944,13 @@ void update_logging(void)
 
 	if (daemonize) {
 		log_opts.stderr_level = LOG_LEVEL_QUIET;
-		if (slurmctld_conf.slurmctld_logfile)
+		if (slurmctld_conf.slurmctld_logfile) {
 			log_opts.syslog_level = LOG_LEVEL_FATAL;
+			log_fname = slurmctld_conf.slurmctld_logfile;
+		}
 	} else
 		log_opts.syslog_level = LOG_LEVEL_QUIET;
-
-	log_alter(log_opts, SYSLOG_FACILITY_DAEMON,
-		  slurmctld_conf.slurmctld_logfile);
+	log_alter(log_opts, SYSLOG_FACILITY_DAEMON, log_fname);
 
 	/*
 	 * SchedLogLevel restore

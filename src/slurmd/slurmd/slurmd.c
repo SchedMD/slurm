@@ -1700,6 +1700,7 @@ static void _update_logging(void)
 {
 	log_options_t *o = &conf->log_opts;
 	slurm_ctl_conf_t *cf;
+	char *log_fname = NULL;
 
 	/*
 	 * Initialize debug level if not already set
@@ -1723,12 +1724,14 @@ static void _update_logging(void)
 	 */
 	if (conf->daemonize) {
 		o->stderr_level = LOG_LEVEL_QUIET;
-		if (conf->logfile)
+		if (conf->logfile) {
 			o->syslog_level = LOG_LEVEL_FATAL;
+			log_fname = conf->logfile;
+		}
 	} else
 		o->syslog_level  = LOG_LEVEL_QUIET;
 
-	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
+	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, log_fname);
 }
 
 /* Reset slurmd nice value */
