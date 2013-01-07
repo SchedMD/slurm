@@ -3503,7 +3503,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->topology_plugin, "TopologyPlugin", hashtbl))
 		conf->topology_plugin = xstrdup(DEFAULT_TOPOLOGY_PLUGIN);
 #ifdef HAVE_BG
-	if (strcmp(conf->proctrack_type, "topology/none")) {
+	if (strcmp(conf->topology_plugin, "topology/none")) {
 		fatal("On IBM BlueGene systems TopologyPlugin=topology/none "
 		      "is required");
 	}
