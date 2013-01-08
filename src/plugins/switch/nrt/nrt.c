@@ -1531,8 +1531,6 @@ _print_adapter_status(nrt_cmd_status_adapter_t *status_adapter)
 	hostset_t hs;
 
 	hs = hostset_create("");
-	if (hs == NULL)
-		fatal("hostset_create malloc failure");
 	info("--Begin Adapter Status--");
 	info("  adapter_name: %s", status_adapter->adapter_name);
 	info("  adapter_type: %s",
@@ -1621,8 +1619,6 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 
 		info("    window_count: %hu", a->window_count);
 		hs = hostset_create("");
-		if (hs == NULL)
-			fatal("hostset_create malloc failure");
 		w = a->window_list;
 		for (j = 0; j < a->window_count; j++) {
 			if ((w[j].state == NRT_WIN_AVAILABLE) &&
@@ -4279,8 +4275,6 @@ nrt_clear_node_state(void)
 				}
 
 				hs = hostset_create("");
-				if (hs == NULL)
-					fatal("hostset_create malloc failure");
 			}
 			for (k = 0; k < window_count; k++) {
 				if (debug_flags & DEBUG_FLAG_SWITCH) {

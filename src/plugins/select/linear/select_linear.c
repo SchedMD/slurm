@@ -572,8 +572,6 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	job_ptr->job_resrcs = job_resrcs_ptr = _create_job_resources(node_cnt);
 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
 	job_resrcs_ptr->nodes = bitmap2node_name(bitmap);
-	if (job_resrcs_ptr->node_bitmap == NULL)
-		fatal("bit_copy malloc failure");
 	job_resrcs_ptr->ncpus = job_ptr->total_cpus;
 	if (build_job_resources(job_resrcs_ptr, (void *)select_node_ptr,
 				select_fast_schedule))
@@ -1619,12 +1617,8 @@ static int _job_expand(struct job_record *from_job_ptr,
 	}
 
 	tmp_bitmap = bit_copy(to_job_resrcs_ptr->node_bitmap);
-	if (!tmp_bitmap)
-		fatal("bit_copy: malloc failure");
 	bit_or(tmp_bitmap, from_job_resrcs_ptr->node_bitmap);
 	tmp_bitmap2 = bit_copy(to_job_ptr->node_bitmap);
-	if (!tmp_bitmap)
-		fatal("bit_copy: malloc failure");
 	bit_or(tmp_bitmap2, from_job_ptr->node_bitmap);
 	bit_and(tmp_bitmap, tmp_bitmap2);
 	bit_free(tmp_bitmap2);
@@ -2148,8 +2142,6 @@ static void _init_node_cr(void)
 
 	/* build partition records */
 	part_iterator = list_iterator_create(part_list);
-	if (part_iterator == NULL)
-		fatal("list_iterator_create: malloc failure");
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		for (i = 0; i < select_node_cnt; i++) {
 			if (part_ptr->node_bitmap == NULL)
@@ -2302,8 +2294,6 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 	uint32_t save_mem;
 
 	orig_map = bit_copy(bitmap);
-	if (!orig_map)
-		fatal("bit_copy: malloc failure");
 
 	/* Try to run with currently available nodes */
 	i = _job_count_bitmap(cr_ptr, job_ptr, orig_map, bitmap,
@@ -2352,8 +2342,6 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 	uint16_t pass_count = 0;
 
 	orig_map = bit_copy(bitmap);
-	if (!orig_map)
-		fatal("bit_copy: malloc failure");
 
 	for (max_run_job=0; ((max_run_job<max_share) && (rc != SLURM_SUCCESS));
 	     max_run_job++) {
@@ -2457,8 +2445,6 @@ top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 			 * actually used */
 			if (*preemptee_job_list == NULL) {
 				*preemptee_job_list = list_create(NULL);
-				if (*preemptee_job_list == NULL)
-					fatal("list_create malloc failure");
 			}
 			preemptee_iterator = list_iterator_create(
 				preemptee_candidates);
@@ -2503,8 +2489,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	max_run_jobs = MAX((max_share - 1), 1);	/* exclude this job */
 	orig_map = bit_copy(bitmap);
-	if (!orig_map)
-		fatal("bit_copy: malloc failure");
 
 	/* Try to run with currently available nodes */
 	i = _job_count_bitmap(cr_ptr, job_ptr, orig_map, bitmap,
@@ -2605,8 +2589,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		 * in selected plugin, but by Moab or something else. */
 		if (*preemptee_job_list == NULL) {
 			*preemptee_job_list = list_create(NULL);
-			if (*preemptee_job_list == NULL)
-				fatal("list_create malloc failure");
 		}
 		preemptee_iterator =list_iterator_create(preemptee_candidates);
 		while ((tmp_job_ptr = (struct job_record *)

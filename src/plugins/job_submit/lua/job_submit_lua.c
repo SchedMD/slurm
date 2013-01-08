@@ -688,8 +688,6 @@ static void _push_partition_list(uint32_t user_id, uint32_t submit_uid)
 
 	lua_newtable(L);
 	part_iterator = list_iterator_create(part_list);
-	if (!part_iterator)
-		fatal("list_iterator_create malloc");
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		if (!_user_can_use_part(user_id, submit_uid, part_ptr))
 			continue;

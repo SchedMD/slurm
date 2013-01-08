@@ -874,8 +874,6 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 
 	/* Dump job steps */
 	step_iterator = list_iterator_create(dump_job_ptr->step_list);
-	if (!step_iterator)
-		fatal("list_iterator_create: malloc failure");
 	while ((step_ptr = (struct step_record *)
 		list_next(step_iterator))) {
 		if (step_ptr->state != JOB_RUNNING)
@@ -1935,8 +1933,6 @@ static void _rebuild_part_name_list(struct job_record  *job_ptr)
 		job_pending = true;
 
 	part_iterator = list_iterator_create(job_ptr->part_ptr_list);
-	if (part_iterator == NULL)
-		fatal("list_iterator_create malloc failure");
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		if (job_pending) {
 			/* Reset job's one partition to a valid one */
@@ -1982,8 +1978,6 @@ extern int kill_job_by_part_name(char *part_name)
 			bool rebuild_name_list = false;
 			part_iterator = list_iterator_create(job_ptr->
 							     part_ptr_list);
-			if (part_iterator == NULL)
-				fatal("list_iterator_create malloc failure");
 			while ((part2_ptr = (struct part_record *)
 					list_next(part_iterator))) {
 				if (part2_ptr != part_ptr)
@@ -2231,8 +2225,6 @@ extern bool partition_in_use(char *part_name)
 		return false;
 
 	job_iterator = list_iterator_create(job_list);
-	if (job_iterator == NULL)
-		fatal("list_iterator_create: malloc failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (job_ptr->part_ptr == part_ptr) {
 			if (!IS_JOB_FINISHED(job_ptr)) {
@@ -2264,8 +2256,6 @@ extern bool allocated_session_in_use(job_desc_msg_t *new_alloc)
 
 	lock_slurmctld(job_read_lock);
 	job_iter = list_iterator_create(job_list);
-	if (job_iter == NULL)
-		fatal("list_iterator_create: malloc failure");
 
 	while ((job_ptr = (struct job_record *)list_next(job_iter))) {
 		if (job_ptr->batch_flag || IS_JOB_FINISHED(job_ptr))
@@ -2302,8 +2292,6 @@ extern int kill_running_job_by_node_name(char *node_name)
 	bit_position = node_ptr - node_record_table_ptr;
 
 	job_iterator = list_iterator_create(job_list);
-	if (job_iterator == NULL)
-		fatal("list_iterator_create: malloc failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		bool suspended = false;
 		if ((job_ptr->node_bitmap == NULL) ||
@@ -4059,8 +4047,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		bitstr_t *tmp_bitmap = NULL;
 		bitoff_t first_set;
 		tmp_bitmap = bit_copy(exc_bitmap);
-		if (tmp_bitmap == NULL)
-			fatal("bit_copy malloc failure");
 		bit_and(tmp_bitmap, req_bitmap);
 		first_set = bit_ffs(tmp_bitmap);
 		FREE_NULL_BITMAP(tmp_bitmap);
@@ -5207,8 +5193,6 @@ void job_time_limit(void)
 
 	begin_job_resv_check();
 	job_iterator = list_iterator_create(job_list);
-	if (!job_iterator)
-		fatal("list_iterator_create: malloc failure");
 	while ((job_ptr =(struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 
@@ -8210,8 +8194,6 @@ static void _send_job_kill(struct job_record *job_ptr)
 	agent_args->msg_type = REQUEST_TERMINATE_JOB;
 	agent_args->retry = 0;	/* re_kill_job() resends as needed */
 	agent_args->hostlist = hostlist_create("");
-	if (agent_args->hostlist == NULL)
-		fatal("hostlist_create: malloc failure");
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	last_node_update    = time(NULL);
 	kill_job->job_id    = job_ptr->job_id;
@@ -8794,8 +8776,6 @@ _xmit_new_end_time(struct job_record *job_ptr)
 	agent_args->msg_type = REQUEST_UPDATE_JOB_TIME;
 	agent_args->retry = 1;
 	agent_args->hostlist = hostlist_create("");
-	if (agent_args->hostlist == NULL)
-		fatal("hostlist_create: malloc failure");
 	job_time_msg_ptr = xmalloc(sizeof(job_time_msg_t));
 	job_time_msg_ptr->job_id          = job_ptr->job_id;
 	job_time_msg_ptr->expiration_time = job_ptr->end_time;
@@ -9212,8 +9192,6 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 	agent_args->msg_type = REQUEST_SIGNAL_JOB;
 	agent_args->retry = 1;
 	agent_args->hostlist = hostlist_create("");
-	if (agent_args->hostlist == NULL)
-		fatal("hostlist_create: malloc failure");
 	signal_job_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	signal_job_msg->job_id = job_ptr->job_id;
 	signal_job_msg->signal = signal;
@@ -9250,8 +9228,6 @@ static void *_switch_suspend_info(struct job_record *job_ptr)
 	void *switch_suspend_info = NULL;
 
 	step_iterator = list_iterator_create (job_ptr->step_list);
-	if (!step_iterator)
-		fatal("list_iterator_create: malloc failure");
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		if (step_ptr->state != JOB_RUNNING)
 			continue;
@@ -9285,8 +9261,6 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 				 * quickly induce huge backlog
 				 * of agent.c RPCs */
 	agent_args->hostlist = hostlist_create("");
-	if (agent_args->hostlist == NULL)
-		fatal("hostlist_create: malloc failure");
 	sus_ptr = xmalloc(sizeof(suspend_int_msg_t));
 	sus_ptr->job_id = job_ptr->job_id;
 	sus_ptr->op = op;
@@ -9430,8 +9404,6 @@ static int _job_suspend_switch_test(struct job_record *job_ptr)
 	struct step_record *step_ptr;
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
-	if (!step_iterator)
-		fatal("list_iterator_create: malloc failure");
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		if (step_ptr->state != JOB_RUNNING)
 			continue;

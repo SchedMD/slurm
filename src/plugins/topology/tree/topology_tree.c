@@ -295,8 +295,6 @@ static void _validate_switches(void)
 			if (switch_ptr->level != -1)
 				continue;
 			hl = hostlist_create(switch_ptr->switches);
-			if (!hl)
-				fatal("hostlist_create: malloc failure");
 			while ((child = hostlist_pop(hl))) {
 				j = _get_switch_inx(child);
 				if ((j < 0) || (j == i)) {
@@ -548,8 +546,6 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 	hostlist_t host_list;
 
 	my_bitmap = (bitstr_t *) bit_alloc(node_record_count);
-	if (my_bitmap == NULL)
-		fatal("bit_alloc malloc failure");
 	*bitmap = my_bitmap;
 
 	if (node_names == NULL) {

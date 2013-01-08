@@ -458,8 +458,6 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 	agent_args->msg_type = msg_type;
 	agent_args->retry    = 1;
 	agent_args->hostlist = hostlist_create("");
-	if (agent_args->hostlist == NULL)
-		fatal("hostlist_create: malloc failure");
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	kill_tasks_msg->job_id      = step_ptr->job_ptr->job_id;
 	kill_tasks_msg->job_step_id = step_ptr->step_id;
@@ -468,8 +466,6 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 #ifdef HAVE_FRONT_END
 	xassert(step_ptr->job_ptr->batch_host);
 	hostlist_push(agent_args->hostlist, step_ptr->job_ptr->batch_host);
-	if (agent_args->hostlist == NULL)
-		fatal("hostlist_create: malloc failure");
 	agent_args->node_count = 1;
 #else
 	for (i = 0; i < node_record_count; i++) {
@@ -519,8 +515,6 @@ void signal_step_tasks_on_node(char* node_name, struct step_record *step_ptr,
 	agent_args->node_count++;
 	agent_args->hostlist = hostlist_create(node_name);
 #endif
-	if (agent_args->hostlist == NULL)
-		fatal("hostlist_create: malloc failure");
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	kill_tasks_msg->job_id      = step_ptr->job_ptr->job_id;
 	kill_tasks_msg->job_step_id = step_ptr->step_id;
@@ -545,8 +539,6 @@ static void _wake_pending_steps(struct job_record *job_ptr, int cpu_count)
 	 * Try to start a bit more based upon step sizes. Effectiveness
 	 * varies with step sizes, constraints and order. */
 	step_iterator = list_iterator_create(job_ptr->step_list);
-	if (!step_iterator)
-		fatal("list_iterator_create: malloc failure");
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		if ((step_ptr->state == JOB_PENDING) &&
 		    ((start_count < 8) ||
@@ -776,8 +768,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	return NULL;
 #endif
 	nodes_avail = bit_copy (job_ptr->node_bitmap);
-	if (nodes_avail == NULL)
-		fatal("bit_copy malloc failure");
 	bit_and (nodes_avail, up_node_bitmap);
 	if (step_spec->features) {
 		/* We only select for a single feature name here.
@@ -1142,8 +1132,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			} else if (step_spec->min_nodes &&
 				   (node_cnt > step_spec->min_nodes)) {
 				nodes_picked = bit_alloc(bit_size(nodes_avail));
-				if (nodes_picked == NULL)
-					fatal("bit_alloc malloc failure");
 				FREE_NULL_BITMAP(nodes_avail);
 				nodes_avail = selected_nodes;
 				selected_nodes = NULL;
@@ -1156,8 +1144,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		}
 	} else {
 		nodes_picked = bit_alloc(bit_size(nodes_avail));
-		if (nodes_picked == NULL)
-			fatal("bit_alloc malloc failure");
 	}
 
 	/* In case we are in relative mode, do not look for idle nodes
@@ -1180,8 +1166,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		FREE_NULL_BITMAP (relative_nodes);
 	} else {
 		nodes_idle = bit_alloc (bit_size (nodes_avail) );
-		if (nodes_idle == NULL)
-			fatal("bit_alloc malloc failure");
 		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_p = (struct step_record *)
 			list_next(step_iterator))) {
@@ -3420,8 +3404,6 @@ extern void step_checkpoint(void)
 			continue; /* ignore periodic step ckpt */
 		}
 		step_iterator = list_iterator_create (job_ptr->step_list);
-		if (!step_iterator)
-			fatal("list_iterator_create: malloc failure");
 		while ((step_ptr = (struct step_record *)
 				list_next (step_iterator))) {
 			char *image_dir = NULL;
@@ -3494,8 +3476,6 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 	agent_args->msg_type = REQUEST_KILL_TIMELIMIT;
 	agent_args->retry = 1;
 	agent_args->hostlist = hostlist_create("");
-	if (agent_args->hostlist == NULL)
-		fatal("hostlist_create: malloc failure");
 	kill_step = xmalloc(sizeof(kill_job_msg_t));
 	kill_step->job_id    = job_ptr->job_id;
 	kill_step->step_id   = step_ptr->step_id;
@@ -3613,8 +3593,6 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	 * any steps with any time limit */
 	if (req->step_id == NO_VAL) {
 		step_iterator = list_iterator_create(job_ptr->step_list);
-		if (step_iterator == NULL)
-			fatal("list_iterator_create: malloc failure");
 		while ((step_ptr = (struct step_record *)
 				   list_next (step_iterator))) {
 			if (step_ptr->state != JOB_RUNNING)
@@ -3677,8 +3655,6 @@ extern void rebuild_step_bitmaps(struct job_record *job_ptr,
 		return;
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
-	if (step_iterator == NULL)
-		fatal("list_iterator_create: malloc failure");
 	while ((step_ptr = (struct step_record *)
 			   list_next (step_iterator))) {
 		if (step_ptr->state != JOB_RUNNING)

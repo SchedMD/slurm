@@ -1051,8 +1051,6 @@ static void _scan_slurm_job_list(void)
 	if (gs_debug_flags & DEBUG_FLAG_GANG)
 		info("gang: _scan_slurm_job_list: job_list exists...");
 	job_iterator = list_iterator_create(job_list);
-	if (job_iterator == NULL)
-		fatal("list_iterator_create: malloc failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (gs_debug_flags & DEBUG_FLAG_GANG) {
 			info("gang: _scan_slurm_job_list: checking job %u",

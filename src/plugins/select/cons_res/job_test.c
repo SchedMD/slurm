@@ -1816,8 +1816,6 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		max_nodes = job_ptr->details->min_cpus;
 
 	origmap = bit_copy(node_map);
-	if (origmap == NULL)
-		fatal("bit_copy malloc failure");
 
 	ec = _eval_nodes(job_ptr, node_map, min_nodes, max_nodes,
 			 req_nodes, cr_node_cnt, cpu_cnt);
@@ -2424,8 +2422,6 @@ alloc_job:
 	job_res                   = create_job_resources();
 	job_res->node_bitmap      = bit_copy(bitmap);
 	job_res->nodes            = bitmap2node_name(bitmap);
-	if (job_res->node_bitmap == NULL)
-		fatal("bit_copy malloc failure");
 	job_res->nhosts           = bit_set_count(bitmap);
 	job_res->ncpus            = job_res->nhosts;
 	if (job_ptr->details->ntasks_per_node)

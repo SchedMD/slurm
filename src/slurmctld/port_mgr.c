@@ -92,8 +92,6 @@ static void _rebuild_port_array(struct step_record *step_ptr)
 	sprintf(tmp_char, "[%s]", step_ptr->resv_ports);
 	hl = hostlist_create(tmp_char);
 	xfree(tmp_char);
-	if (hl == NULL)
-		fatal("malloc failure: hostlist_create");
 
 	step_ptr->resv_port_array = xmalloc(sizeof(int) *
 					    step_ptr->resv_port_cnt);
@@ -256,8 +254,6 @@ extern int resv_port_alloc(struct step_record *step_ptr)
 
 	/* Reserve selected ports */
 	hl = hostlist_create(NULL);
-	if (hl == NULL)
-		fatal("malloc: hostlist_create");
 	for (i=0; i<port_inx; i++) {
 		/* NOTE: We give the port a name like "[1234]" rather than
 		 * just "1234" to avoid hostlists of the form "1[234-236]" */

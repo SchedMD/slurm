@@ -1083,8 +1083,6 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	save_bitmap = bit_copy(bitmap);
 top:	orig_map = bit_copy(save_bitmap);
-	if (!orig_map)
-		fatal("bit_copy: malloc failure");
 
 	rc = cr_job_test(job_ptr, bitmap,
 			 SELECT_MODE_RUN_NOW, cr_type, job_node_share,
@@ -1172,8 +1170,6 @@ top:	orig_map = bit_copy(save_bitmap);
 			 * actually used */
 			if (*preemptee_job_list == NULL) {
 				*preemptee_job_list = list_create(NULL);
-				if (*preemptee_job_list == NULL)
-					fatal("list_create malloc failure");
 			}
 			preemptee_iterator = list_iterator_create(
 				preemptee_candidates);
@@ -1225,8 +1221,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	time_t now = time(NULL);
 
 	orig_map = bit_copy(bitmap);
-	if (!orig_map)
-		fatal("bit_copy: malloc failure");
 
 	/* Try to run with currently available nodes */
 	rc = cr_job_test(job_ptr, bitmap,
@@ -1335,8 +1329,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		 * in selected plugin, but by Moab or something else. */
 		if (*preemptee_job_list == NULL) {
 			*preemptee_job_list = list_create(NULL);
-			if (*preemptee_job_list == NULL)
-				fatal("list_create malloc failure");
 		}
 		preemptee_iterator =list_iterator_create(preemptee_candidates);
 		if (preemptee_iterator == NULL)

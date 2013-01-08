@@ -174,8 +174,6 @@ extern int sbatch_set_first_avail_cluster(job_desc_msg_t *req)
 	}
 
 	ret_list = list_create(_destroy_local_cluster_rec);
-	if (ret_list == NULL)
-		fatal("list_create malloc failure");
 	itr = list_iterator_create(opt.clusters);
 	while ((working_cluster_rec = list_next(itr))) {
 		if ((local_cluster = _job_will_run(req)))

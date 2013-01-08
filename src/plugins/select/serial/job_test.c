@@ -327,8 +327,6 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map)
 	nodes = bit_size(node_map);
 	size = cr_get_coremap_offset(nodes);
 	bitstr_t *core_map = bit_alloc(size);
-	if (!core_map)
-		fatal("bit_alloc: malloc failure");
 
 	i_first = bit_ffs(node_map);
 	if (i_first >= 0)
@@ -853,8 +851,6 @@ alloc_job:
 	job_res                   = create_job_resources();
 	job_res->node_bitmap      = bit_copy(bitmap);
 	job_res->nodes            = bitmap2node_name(bitmap);
-	if (job_res->node_bitmap == NULL)
-		fatal("bit_copy malloc failure");
 	job_res->nhosts           = bit_set_count(bitmap);
 	job_res->ncpus            = job_res->nhosts;
 	if (job_ptr->details->ntasks_per_node)

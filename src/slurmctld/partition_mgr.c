@@ -117,13 +117,9 @@ static int _build_part_bitmap(struct part_record *part_ptr)
 
 	if (part_ptr->node_bitmap == NULL) {
 		part_ptr->node_bitmap = bit_alloc(node_record_count);
-		if (part_ptr->node_bitmap == NULL)
-			fatal("bit_alloc malloc failure");
 		old_bitmap = NULL;
 	} else {
 		old_bitmap = bit_copy(part_ptr->node_bitmap);
-		if (old_bitmap == NULL)
-			fatal("bit_copy malloc failure");
 		bit_nclear(part_ptr->node_bitmap, 0,
 			   node_record_count - 1);
 	}
@@ -313,8 +309,6 @@ int dump_all_part_state(void)
 	/* write partition records to buffer */
 	lock_slurmctld(part_read_lock);
 	part_iterator = list_iterator_create(part_list);
-	if (!part_iterator)
-		fatal("list_iterator_create malloc");
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		xassert (part_ptr->magic == PART_MAGIC);
 		_dump_part_state(part_ptr, buffer);
@@ -686,8 +680,6 @@ extern List get_part_list(char *name)
 		if (part_ptr) {
 			if (job_part_list == NULL) {
 				job_part_list = list_create(NULL);
-				if (job_part_list == NULL)
-					fatal("list_create: malloc failure");
 			}
 			list_append(job_part_list, part_ptr);
 		} else {

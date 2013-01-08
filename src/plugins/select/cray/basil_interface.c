@@ -320,11 +320,7 @@ extern int basil_inventory(void)
 		struct job_record *job_ptr;
 		uint32_t resv_id;
 
-		if (job_iter == NULL)
-			fatal("list_iterator_create: malloc failure");
-
 		while ((job_ptr = (struct job_record *)list_next(job_iter))) {
-
 			if (_get_select_jobinfo(job_ptr->select_jobinfo->data,
 						SELECT_JOBDATA_RESV_ID,
 						&resv_id) == SLURM_SUCCESS

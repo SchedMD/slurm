@@ -215,8 +215,6 @@ static uid_t *_get_group_cache(char *group_name)
 	}
 
 	iter = list_iterator_create(group_cache_list);
-	if (!iter)
-		fatal("list_iterator_create: malloc failure");
 	while ((cache_rec = (struct group_cache_rec *) list_next(iter))) {
 		if (strcmp(group_name, cache_rec->group_name))
 			continue;
@@ -250,8 +248,6 @@ static void _put_group_cache(char *group_name, void *group_uids, int uid_cnt)
 	pthread_mutex_lock(&group_cache_mutex);
 	if (!group_cache_list) {
 		group_cache_list = list_create(_cache_del_func);
-		if (!group_cache_list)
-			fatal("list_create: malloc failure:");
 	}
 
 	sz = sizeof(uid_t) * (uid_cnt);

@@ -1100,9 +1100,6 @@ static List _get_config(void)
 	config_key_pair_t *key_pair;
 	List my_list = list_create(destroy_config_key_pair);
 
-	if (!my_list)
-		fatal("malloc failure on list_create");
-
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("DefaultConnType");
 	key_pair->value = conn_type_string_full(bg_conf->default_conn_type);
@@ -1928,8 +1925,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 				     bg_record->bg_block_id, job_ptr->job_id);
 			goto end_it;
 		}
-		if (!(picked_mps = bit_copy(job_ptr->node_bitmap)))
-			fatal("bit_copy malloc failure");
+		picked_mps = bit_copy(job_ptr->node_bitmap);
 
 		if (cluster_flags & CLUSTER_FLAG_BGQ) {
 			bitstr_t *used_bitmap;
@@ -1992,8 +1988,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 			FREE_NULL_BITMAP(total_bitmap);
 
 		node_count = step_jobinfo->cnode_cnt;
-		if (!(picked_mps = bit_copy(job_ptr->node_bitmap)))
-			fatal("bit_copy malloc failure");
+		picked_mps = bit_copy(job_ptr->node_bitmap);
 		bit_or(jobinfo->units_used, step_jobinfo->units_used);
 		for (dim = 0; dim < step_jobinfo->dim_cnt; dim++) {
 			/* The IBM software works off a relative
@@ -2017,8 +2012,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		}
 	} else if ((ba_mp = ba_sub_block_in_record(
 			    bg_record, &node_count, step_jobinfo))) {
-		if (!(picked_mps = bit_alloc(bit_size(job_ptr->node_bitmap))))
-			fatal("bit_copy malloc failure");
+		picked_mps = bit_alloc(bit_size(job_ptr->node_bitmap));
 		bit_set(picked_mps, ba_mp->index);
 		for (dim = 0; dim < step_jobinfo->dim_cnt; dim++) {
 			/* The IBM software works off a relative
@@ -3359,8 +3353,6 @@ extern bitstr_t *select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	tmp_bitmap = bit_copy(avail_bitmap);
 
 	preemptee_candidates = list_create(NULL);
-	if (preemptee_candidates == NULL)
-		fatal("list_create: malloc failure");
 
 	rc = submit_job(&job_rec, tmp_bitmap, node_cnt, node_cnt, node_cnt,
 			SELECT_MODE_WILL_RUN, preemptee_candidates,

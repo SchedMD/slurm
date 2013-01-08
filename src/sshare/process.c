@@ -78,8 +78,6 @@ extern int process(shares_response_msg_t *resp)
 		return SLURM_ERROR;
 
 	format_list = list_create(slurm_destroy_char);
-	if (!format_list)
-		fatal("list_create: malloc failure");
 	if (long_flag) {
 		slurm_addto_char_list(format_list,
 				      "A,User,RawShares,NormShares,"
@@ -92,11 +90,7 @@ extern int process(shares_response_msg_t *resp)
 	}
 
 	print_fields_list = list_create(destroy_print_field);
-	if (!print_fields_list)
-		fatal("list_create: malloc failure");
 	itr = list_iterator_create(format_list);
-	if (!itr)
-		fatal("list_iterator_create: malloc failure");
 	while ((object = list_next(itr))) {
 		char *tmp_char = NULL;
 		field = xmalloc(sizeof(print_field_t));
@@ -183,8 +177,6 @@ extern int process(shares_response_msg_t *resp)
 	}
 
 	itr2 = list_iterator_create(print_fields_list);
-	if (!itr2)
-		fatal("list_iterator_create: malloc failure");
 	print_fields_header(print_fields_list);
 
 	field_count = list_count(print_fields_list);
@@ -193,11 +185,7 @@ extern int process(shares_response_msg_t *resp)
 		return SLURM_SUCCESS;
 
 	tree_list = list_create(slurmdb_destroy_print_tree);
-	if (!tree_list)
-		fatal("list_create: malloc failure");
 	itr = list_iterator_create(resp->assoc_shares_list);
-	if (!itr)
-		fatal("list_iterator_create: malloc failure");
 	while ((share = list_next(itr))) {
 		int curr_inx = 1;
 		char *tmp_char = NULL;

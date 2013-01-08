@@ -610,9 +610,6 @@ extern List dump_config(void)
 	config_key_pair_t *key_pair;
 	List my_list = list_create(destroy_config_key_pair);
 
-	if (!my_list)
-		fatal("malloc failure on list_create");
-
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveDir");
 	key_pair->value = xstrdup(slurmdbd_conf->archive_dir);

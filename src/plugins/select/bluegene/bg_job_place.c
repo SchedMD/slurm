@@ -1611,10 +1611,7 @@ static void _build_job_resources_struct(
 	job_resrcs_ptr->cpus_used = xmalloc(sizeof(uint16_t) * node_cnt);
 /* 	job_resrcs_ptr->nhosts = node_cnt; */
 	job_resrcs_ptr->nhosts = bit_set_count(bitmap);
-
-	if (!(job_resrcs_ptr->node_bitmap = bit_copy(bitmap)))
-		fatal("bit_copy malloc failure");
-
+	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
 	job_resrcs_ptr->nodes = xstrdup(bg_record->mp_str);
 
 	job_resrcs_ptr->cpu_array_cnt = 1;

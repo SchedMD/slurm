@@ -117,8 +117,6 @@ static List _build_user_job_list(uint32_t user_id, char* job_name)
 	if (job_queue == NULL)
 		fatal("list_create memory allocation failure");
 	job_iterator = list_iterator_create(job_list);
-	if (job_iterator == NULL)
-		fatal("list_iterator_create malloc failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 		if (job_ptr->user_id != user_id)
@@ -234,9 +232,7 @@ extern List build_job_queue(bool clear_start)
 		if (job_ptr->part_ptr_list) {
 			part_iterator = list_iterator_create(job_ptr->
 							     part_ptr_list);
-			if (part_iterator == NULL)
-				fatal("list_iterator_create malloc failure");
-			while ((part_ptr = (struct part_record *)
+	      			while ((part_ptr = (struct part_record *)
 					list_next(part_iterator))) {
 				job_ptr->part_ptr = part_ptr;
 				if (job_limits_check(&job_ptr) !=
@@ -478,8 +474,6 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 		if (job_ptr->part_ptr_list) {
 			part_iterator = list_iterator_create(job_ptr->
 							     part_ptr_list);
-			if (!part_iterator)
-				fatal("list_iterator_create: malloc failure");
 next_part:		part_ptr = (struct part_record *)
 				   list_next(part_iterator);
 			if (part_ptr) {
@@ -499,7 +493,7 @@ next_part:		part_ptr = (struct part_record *)
 			if (job_ptr->part_ptr)
 				assoc_rec.partition = job_ptr->part_ptr->name;
 			assoc_rec.uid       = job_ptr->user_id;
-	
+
 			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 						     accounting_enforce,
 						     (slurmdb_association_rec_t **)
@@ -784,8 +778,6 @@ extern int schedule(uint32_t job_limit)
 			if (job_ptr->part_ptr_list) {
 				part_iterator = list_iterator_create(
 							job_ptr->part_ptr_list);
-				if (!part_iterator)
-					fatal("list_iterator_create: malloc failure");
 next_part:			part_ptr = (struct part_record *)
 					   list_next(part_iterator);
 				if (part_ptr) {
@@ -834,7 +826,7 @@ next_part:			part_ptr = (struct part_record *)
 			if (job_ptr->part_ptr)
 				assoc_rec.partition = job_ptr->part_ptr->name;
 			assoc_rec.uid       = job_ptr->user_id;
-	
+
 			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 						    accounting_enforce,
 						    (slurmdb_association_rec_t **)
@@ -1347,8 +1339,6 @@ extern int test_job_dependency(struct job_record *job_ptr)
 							 job_ptr->name);
  			run_now = true;
 			job_iterator = list_iterator_create(job_queue);
-			if (job_iterator == NULL)
-				fatal("list_iterator_create malloc failure");
 			while ((qjob_ptr = (struct job_record *)
 					   list_next(job_iterator))) {
 				/* already running/suspended job or previously
@@ -1477,8 +1467,6 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	}
 
 	new_depend_list = list_create(_depend_list_del);
-	if (new_depend_list == NULL)
-		fatal("list_create: malloc failure");
 
 	/* validate new dependency string */
 	while (rc == SLURM_SUCCESS) {
@@ -1663,8 +1651,7 @@ static bool _scan_depend(List dependency_list, uint32_t job_id)
 
 	xassert(job_id);
 	iter = list_iterator_create(dependency_list);
-	if (iter == NULL)
-		fatal("list_iterator_create malloc failure");
+
 	while (!rc && (dep_ptr = (struct depend_spec *) list_next(iter))) {
 		if (dep_ptr->job_id == 0)	/* Singleton */
 			continue;
@@ -1790,8 +1777,6 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	if (job_ptr->details->exc_node_bitmap) {
 		bitstr_t *exc_node_mask = NULL;
 		exc_node_mask = bit_copy(job_ptr->details->exc_node_bitmap);
-		if (exc_node_mask == NULL)
-			fatal("bit_copy malloc failure");
 		bit_not(exc_node_mask);
 		bit_and(avail_bitmap, exc_node_mask);
 		FREE_NULL_BITMAP(exc_node_mask);
@@ -1873,8 +1858,6 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			uint32_t *preemptee_jid;
 			struct job_record *tmp_job_ptr;
 			resp_data->preemptee_job_id=list_create(_pre_list_del);
-			if (resp_data->preemptee_job_id == NULL)
-				fatal("list_create: malloc failure");
 			preemptee_iterator = list_iterator_create(
 							preemptee_job_list);
 			while ((tmp_job_ptr = (struct job_record *)
@@ -2432,8 +2415,6 @@ static int _valid_node_feature(char *feature)
 	/* Clear these nodes from the feature_list record,
 	 * then restore as needed */
 	feature_iter = list_iterator_create(feature_list);
-	if (feature_iter == NULL)
-		fatal("list_inerator_create malloc failure");
 	while ((feature_ptr = (struct features_record *)
 			list_next(feature_iter))) {
 		if (strcmp(feature_ptr->name, feature))
@@ -2460,8 +2441,6 @@ extern void rebuild_job_part_list(struct job_record *job_ptr)
 	job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
 
 	part_iterator = list_iterator_create(job_ptr->part_ptr_list);
-	if (part_iterator == NULL)
-		fatal("list_iterator_create malloc failure");
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		if (part_ptr == job_ptr->part_ptr)
 			continue;

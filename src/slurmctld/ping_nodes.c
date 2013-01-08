@@ -195,8 +195,6 @@ void ping_nodes (void)
 			else {
 				down_hostlist =
 					hostlist_create(front_end_ptr->name);
-				if (down_hostlist == NULL)
-					fatal("hostlist_create: malloc error");
 			}
 			set_front_end_down(front_end_ptr, "Not responding");
 			front_end_ptr->not_responding = false;
@@ -255,8 +253,6 @@ void ping_nodes (void)
 			else {
 				down_hostlist =
 					hostlist_create(node_ptr->name);
-				if (down_hostlist == NULL)
-					fatal("hostlist_create: malloc error");
 			}
 			set_node_down_ptr(node_ptr, "Not responding");
 			node_ptr->not_responding = false;  /* logged below */
@@ -353,9 +349,6 @@ extern void run_health_check(void)
 	check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
 	check_agent_args->retry = 0;
 	check_agent_args->hostlist = hostlist_create("");
-	if (check_agent_args->hostlist == NULL)
-		fatal("hostlist_create: malloc failure");
-
 #ifdef HAVE_FRONT_END
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
@@ -437,8 +430,6 @@ extern void update_nodes_acct_gather_data(void)
 	agent_args->msg_type = REQUEST_ACCT_GATHER_UPDATE;
 	agent_args->retry = 0;
 	agent_args->hostlist = hostlist_create("");
-	if (agent_args->hostlist == NULL)
-		fatal("hostlist_create: malloc failure");
 
 #ifdef HAVE_FRONT_END
 	for (i = 0, front_end_ptr = front_end_nodes;

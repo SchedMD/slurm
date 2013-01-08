@@ -183,11 +183,7 @@ static List _list_dup(List license_list)
 		return lic_list;
 
 	lic_list = list_create(license_free_rec);
-	if (lic_list == NULL)
-		fatal("list_create malloc failure");
 	iter = list_iterator_create(license_list);
-	if (!iter)
-		fatal("list_interator_create malloc failure");
 	while ((license_src = (licenses_t *) list_next(iter))) {
 		license_dest = xmalloc(sizeof(licenses_t));
 		license_dest->name = xstrdup(license_src->name);
@@ -548,8 +544,6 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 	xfree(resv_ptr->assoc_list);	/* clear for modify */
 	if (list_count(assoc_list_allow)) {
 		ListIterator itr = list_iterator_create(assoc_list_allow);
-		if (!itr)
-			fatal("malloc: list_iterator_create");
 		while ((assoc_ptr = list_next(itr))) {
 			if (resv_ptr->assoc_list) {
 				xstrfmtcat(resv_ptr->assoc_list, "%u,",
@@ -563,8 +557,6 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 	}
 	if (list_count(assoc_list_deny)) {
 		ListIterator itr = list_iterator_create(assoc_list_deny);
-		if (!itr)
-			fatal("malloc: list_iterator_create");
 		while ((assoc_ptr = list_next(itr))) {
 			if (resv_ptr->assoc_list) {
 				xstrfmtcat(resv_ptr->assoc_list, "-%u,",
@@ -686,9 +678,9 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 		 * new start time of now. */
 		if ((resv_ptr->start_time < now)
 		     && (resv.assocs
-		         || resv.nodes
-		         || (resv.flags != (uint16_t)NO_VAL)
-		         || (resv.cpus != (uint32_t)NO_VAL))) {
+			 || resv.nodes
+			 || (resv.flags != (uint16_t)NO_VAL)
+			 || (resv.cpus != (uint32_t)NO_VAL))) {
 			resv_ptr->start_time_prev = resv_ptr->start_time;
 			resv_ptr->start_time = now;
 		}
@@ -1207,7 +1199,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		cnode_cnt = resv_ptr->node_cnt;
 		if (cnodes_per_bp && !internal)
 			cnode_cnt *= cnodes_per_bp;
-		pack32(cnode_cnt,	        buffer);
+		pack32(cnode_cnt,		buffer);
 #else
 		pack32(resv_ptr->node_cnt,	buffer);
 #endif
@@ -1247,7 +1239,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		cnode_cnt = resv_ptr->node_cnt;
 		if (cnodes_per_bp && !internal)
 			cnode_cnt *= cnodes_per_bp;
-		pack32(cnode_cnt,	        buffer);
+		pack32(cnode_cnt,		buffer);
 #else
 		pack32(resv_ptr->node_cnt,	buffer);
 #endif
@@ -1372,8 +1364,6 @@ static bool _job_overlap(time_t start_time, uint16_t flags,
 		return overlap;
 
 	job_iterator = list_iterator_create(job_list);
-	if (!job_iterator)
-		fatal("malloc: list_iterator_create");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (IS_JOB_RUNNING(job_ptr)		&&
 		    (job_ptr->end_time > start_time)	&&
@@ -1408,8 +1398,6 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 		return rc;
 
 	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
 
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (resv_ptr == this_resv_ptr)
@@ -2122,8 +2110,6 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 update_failure:
 	/* Restore backup reservation data */
 	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("list_iterator_create: malloc failure");
 	while ((resv_next = (slurmctld_resv_t *) list_next(iter))) {
 		if (resv_next == resv_ptr) {
 			list_delete_item(iter);
@@ -2145,8 +2131,6 @@ static bool _is_resv_used(slurmctld_resv_t *resv_ptr)
 	bool match = false;
 
 	job_iterator = list_iterator_create(job_list);
-	if (!job_iterator)
-		fatal("malloc: list_iterator_create");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((!IS_JOB_FINISHED(job_ptr)) &&
 		    (job_ptr->resv_id == resv_ptr->resv_id)) {
@@ -2166,8 +2150,6 @@ static void _clear_job_resv(slurmctld_resv_t *resv_ptr)
 	struct job_record *job_ptr;
 
 	job_iterator = list_iterator_create(job_list);
-	if (!job_iterator)
-		fatal("malloc: list_iterator_create");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (job_ptr->resv_ptr != resv_ptr)
 			continue;
@@ -2195,8 +2177,6 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 		info("delete_resv: Name=%s", resv_desc_ptr->name);
 
 	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (strcmp(resv_ptr->name, resv_desc_ptr->name))
 			continue;
@@ -2257,8 +2237,6 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
 
 	/* write individual reservation records */
 	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if ((slurmctld_conf.private_data & PRIVATE_DATA_RESERVATIONS)
 		    && !validate_operator(uid)) {
@@ -2313,8 +2291,6 @@ extern int dump_all_resv_state(void)
 	/* write reservation records to buffer */
 	lock_slurmctld(resv_read_lock);
 	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter)))
 		_pack_resv(resv_ptr, buffer, true, SLURM_PROTOCOL_VERSION);
 	list_iterator_destroy(iter);
@@ -2479,8 +2455,6 @@ static void _validate_all_reservations(void)
 	uint32_t res_num;
 
 	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (!_validate_one_reservation(resv_ptr)) {
 			error("Purging invalid reservation record %s",
@@ -2501,8 +2475,6 @@ static void _validate_all_reservations(void)
 
 	/* Validate all job reservation pointers */
 	iter = list_iterator_create(job_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
 	while ((job_ptr = (struct job_record *) list_next(iter))) {
 		if (job_ptr->resv_name == NULL)
 			continue;
@@ -2841,8 +2813,6 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 static void _create_cluster_core_bitmap(bitstr_t **core_bitmap)
 {
 	*core_bitmap = bit_alloc(cr_get_coremap_offset(node_record_count));
-	if (*core_bitmap == NULL)
-		fatal("bit_alloc: malloc failure");
 }
 
 /* Given a reservation create request, select appropriate nodes for use */
@@ -2871,8 +2841,6 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	/* Don't use node already reserved */
 	if (!(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP)) {
 		iter = list_iterator_create(resv_list);
-		if (!iter)
-			fatal("malloc: list_iterator_create");
 		while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 			if (resv_ptr->end_time <= now)
 				_advance_resv_time(resv_ptr);
@@ -2908,9 +2876,6 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		ListIterator feature_iter;
 		bool match;
 
-		if (feature_bitmap == NULL)
-			fatal("bit_copy malloc failure");
-
 		while (1) {
 			for (i=0; ; i++) {
 				if (token[i] == '\0') {
@@ -2932,8 +2897,6 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 
 			match = false;
 			feature_iter = list_iterator_create(feature_list);
-			if (feature_iter == NULL)
-				fatal("list_iterator_create malloc failure");
 			while ((feature_ptr = (struct features_record *)
 					list_next(feature_iter))) {
 				if (strcmp(token, feature_ptr->name))
@@ -3089,8 +3052,6 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 	debug2("job coremap: %s", str);
 
 	full_node_bitmap = bit_copy(job_res->node_bitmap);
-	if (full_node_bitmap == NULL)
-		fatal("bit_alloc: malloc failure");
 
 	debug2("Let's see core distribution for jobid: %u",
 	       job_ptr->job_id);
@@ -3164,8 +3125,6 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 	save_bitmap = bit_copy(avail_bitmap);
 	bit_or(avail_bitmap, save_bitmap);	/* restore avail_bitmap */
 	job_iterator = list_iterator_create(job_list);
-	if (job_iterator == NULL)
-		fatal("list_iterator_create: malloc failure");
 
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
@@ -3195,8 +3154,6 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 	 * the unsorted job list. */
 	if (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) {
 		job_iterator = list_iterator_create(job_list);
-		if (!job_iterator)
-			fatal("list_iterator_create: malloc failure");
 		while ((job_ptr = (struct job_record *)
 			list_next(job_iterator))) {
 			if (!IS_JOB_RUNNING(job_ptr) &&
@@ -3396,8 +3353,6 @@ extern void job_time_adj_resv(struct job_record *job_ptr)
 	int32_t resv_begin_time;
 
 	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (resv_ptr->end_time <= now)
 			_advance_resv_time(resv_ptr);
@@ -3433,8 +3388,6 @@ static int _license_cnt(List license_list, char *lic_name)
 		return lic_cnt;
 
 	iter = list_iterator_create(license_list);
-	if (!iter)
-		fatal("list_interator_create malloc failure");
 	while ((license_ptr = list_next(iter))) {
 		if (strcmp(license_ptr->name, lic_name) == 0)
 			lic_cnt += license_ptr->total;
@@ -3491,8 +3444,6 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
 	job_start_time = when;
 	job_end_time   = when + _get_job_duration(job_ptr);
 	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (resv_ptr->end_time <= now)
 			_advance_resv_time(resv_ptr);
@@ -3579,8 +3530,6 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		}
 		if (resv_ptr->flags & RESERVE_FLAG_LIC_ONLY) {
 			*node_bitmap = bit_alloc(node_record_count);
-			if (*node_bitmap == NULL)
-				fatal("bit_alloc: malloc failure");
 			bit_nset(*node_bitmap, 0, (node_record_count - 1));
 		} else
 			*node_bitmap = bit_copy(resv_ptr->node_bitmap);
@@ -3588,8 +3537,6 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		/* if there are any overlapping reservations, we need to
 		 * prevent the job from using those nodes (e.g. MAINT nodes) */
 		iter = list_iterator_create(resv_list);
-		if (!iter)
-			fatal("malloc: list_iterator_create");
 		while ((res2_ptr = (slurmctld_resv_t *) list_next(iter))) {
 			if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
 			    (resv_ptr->flags & RESERVE_FLAG_OVERLAP) ||
@@ -3624,8 +3571,6 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 
 	job_ptr->resv_ptr = NULL;	/* should be redundant */
 	*node_bitmap = bit_alloc(node_record_count);
-	if (*node_bitmap == NULL)
-		fatal("bit_alloc: malloc failure");
 	bit_nset(*node_bitmap, 0, (node_record_count - 1));
 	if (list_count(resv_list) == 0)
 		return SLURM_SUCCESS;
@@ -3636,8 +3581,6 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		lic_resv_time = (time_t) 0;
 
 		iter = list_iterator_create(resv_list);
-		if (!iter)
-			fatal("malloc: list_iterator_create");
 		while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 			if (resv_ptr->end_time <= now)
 				_advance_resv_time(resv_ptr);
@@ -3675,7 +3618,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				info("job_test_resv: %s reservation uses "
 					"partial nodes", resv_ptr->name);
 				if (*exc_core_bitmap == NULL) {
-					*exc_core_bitmap = 
+					*exc_core_bitmap =
 						bit_copy(resv_ptr->core_bitmap);
 				} else {
 					bit_or(*exc_core_bitmap,
@@ -3726,8 +3669,6 @@ extern time_t find_resv_end(time_t start_time)
 		return end_time;
 
 	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if ((start_time < resv_ptr->start_time) ||
 		    (start_time > resv_ptr->end_time))
@@ -3758,8 +3699,6 @@ extern void begin_job_resv_check(void)
 		resv_over_run *= 60;
 
 	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		resv_ptr->job_pend_cnt = 0;
 		resv_ptr->job_run_cnt  = 0;
@@ -3797,7 +3736,7 @@ extern int job_resv_check(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-/* Advance a expired reservation's time stamps one day or one week 
+/* Advance a expired reservation's time stamps one day or one week
  * as appropriate. */
 static void _advance_resv_time(slurmctld_resv_t *resv_ptr)
 {
@@ -3927,8 +3866,6 @@ extern void fini_job_resv_check(void)
 		return;
 
 	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (!resv_ptr->run_prolog || !resv_ptr->run_epilog)
 			continue;
@@ -3966,8 +3903,6 @@ extern int send_resvs_to_accounting(void)
 		return SLURM_SUCCESS;
 
 	itr = list_iterator_create(resv_list);
-	if (!itr)
-		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = list_next(itr))) {
 		_post_resv_create(resv_ptr);
 	}
@@ -3997,8 +3932,6 @@ extern void set_node_maint_mode(bool reset_all)
 		}
 	}
 	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if ((resv_ptr->start_time <= now) && !resv_ptr->run_prolog) {
 			resv_ptr->run_prolog = true;
@@ -4039,8 +3972,6 @@ extern bool is_node_in_maint_reservation(int nodenum)
 		return false;
 
 	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if ((resv_ptr->flags & RESERVE_FLAG_MAINT) == 0)
 			continue;
@@ -4063,8 +3994,6 @@ extern void update_assocs_in_resvs(void)
 		error("No reservation list given for updating associations");
 
 	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = list_next(iter))) {
 		_set_assoc_list(resv_ptr);
 	}
@@ -4079,8 +4008,6 @@ extern void update_part_nodes_in_resv(struct part_record *part_ptr)
 	xassert(part_ptr);
 
 	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if ((resv_ptr->flags & RESERVE_FLAG_PART_NODES) &&
 		    (resv_ptr->partition != NULL) &&

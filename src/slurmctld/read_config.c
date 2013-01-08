@@ -292,13 +292,6 @@ static int _build_bitmaps(void)
 	power_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	share_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	up_node_bitmap    = (bitstr_t *) bit_alloc(node_record_count);
-	if ((avail_node_bitmap    == NULL) ||
-	    (cg_node_bitmap       == NULL) ||
-	    (idle_node_bitmap     == NULL) ||
-	    (power_node_bitmap    == NULL) ||
-	    (share_node_bitmap    == NULL) ||
-	    (up_node_bitmap       == NULL))
-		fatal ("bit_alloc malloc failure");
 
 	/* initialize the configuration bitmaps */
 	config_iterator = list_iterator_create(config_list);
@@ -309,8 +302,6 @@ static int _build_bitmaps(void)
 		FREE_NULL_BITMAP(config_ptr->node_bitmap);
 		config_ptr->node_bitmap =
 		    (bitstr_t *) bit_alloc(node_record_count);
-		if (config_ptr->node_bitmap == NULL)
-			fatal ("bit_alloc malloc failure");
 	}
 	list_iterator_destroy(config_iterator);
 
@@ -327,8 +318,6 @@ static int _build_bitmaps(void)
 		    (job_ptr->details->shared != 0))
 			continue;
 		tmp_bits = bit_copy(job_ptr->node_bitmap);
-		if (tmp_bits == NULL)
-			fatal ("bit_copy malloc failure");
 		bit_not(tmp_bits);
 		bit_and(share_node_bitmap, tmp_bits);
 		FREE_NULL_BITMAP(tmp_bits);
@@ -683,8 +672,6 @@ static void _sync_part_prio(void)
 
 	part_max_priority = 0;
 	itr = list_iterator_create(part_list);
-	if (itr == NULL)
-		fatal("list_iterator_create malloc failure");
 	while ((part_ptr = list_next(itr))) {
 		if (part_ptr->priority > part_max_priority)
 			part_max_priority = part_ptr->priority;
@@ -693,8 +680,6 @@ static void _sync_part_prio(void)
 
 	if (part_max_priority) {
 		itr = list_iterator_create(part_list);
-		if (itr == NULL)
-			fatal("list_iterator_create malloc failure");
 		while ((part_ptr = list_next(itr))) {
 			part_ptr->norm_priority = (double)part_ptr->priority /
 						  (double)part_max_priority;
@@ -1058,7 +1043,7 @@ static int _restore_node_state(int recover,
 			      node_ptr->config_ptr->cpus);
 		}
 #endif
-		node_ptr->boot_time     = old_node_ptr->boot_time; 
+		node_ptr->boot_time     = old_node_ptr->boot_time;
 		node_ptr->cpus          = old_node_ptr->cpus;
 		node_ptr->cores         = old_node_ptr->cores;
 		node_ptr->last_idle     = old_node_ptr->last_idle;
@@ -1066,7 +1051,7 @@ static int _restore_node_state(int recover,
 		node_ptr->sockets       = old_node_ptr->sockets;
 		node_ptr->threads       = old_node_ptr->threads;
 		node_ptr->real_memory   = old_node_ptr->real_memory;
-		node_ptr->slurmd_start_time = old_node_ptr->slurmd_start_time; 
+		node_ptr->slurmd_start_time = old_node_ptr->slurmd_start_time;
 		node_ptr->tmp_disk      = old_node_ptr->tmp_disk;
 		node_ptr->weight        = old_node_ptr->weight;
 
@@ -1174,8 +1159,6 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 
 	/* For each part in list, find and update recs */
 	part_iterator = list_iterator_create(old_part_list);
-	if (!part_iterator)
-		fatal("list_iterator_create malloc");
 	while ((old_part_ptr = (struct part_record *)
 			       list_next(part_iterator))) {
 		xassert(old_part_ptr->magic == PART_MAGIC);
@@ -1189,7 +1172,7 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 					part_ptr->state_up = old_part_ptr->state_up;
 				}
 				continue;
-			}	
+			}
 			/* Current partition found in slurm.conf,
 			 * report differences from slurm.conf configuration */
 			if (_strcmp(part_ptr->allow_groups,

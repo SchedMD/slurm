@@ -1406,8 +1406,6 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 	 * update it (if all nodes updated) or split it into
 	 * a new entry */
 	config_iterator = list_iterator_create(config_list);
-	if (config_iterator == NULL)
-		fatal("list_iterator_create malloc failure");
 	while ((config_ptr = (struct config_record *)
 			list_next(config_iterator))) {
 		if (config_ptr == first_new)
@@ -1477,8 +1475,6 @@ static int _update_node_features(char *node_names, char *features)
 	 * update it (if all nodes updated) or split it into
 	 * a new entry */
 	config_iterator = list_iterator_create(config_list);
-	if (config_iterator == NULL)
-		fatal("list_iterator_create malloc failure");
 	while ((config_ptr = (struct config_record *)
 			list_next(config_iterator))) {
 		if (config_ptr == first_new)
@@ -1554,8 +1550,6 @@ static int _update_node_gres(char *node_names, char *gres)
 	 * update it (if all nodes updated) or split it into
 	 * a new entry */
 	config_iterator = list_iterator_create(config_list);
-	if (config_iterator == NULL)
-		fatal("list_iterator_create malloc failure");
 	while ((config_ptr = (struct config_record *)
 			list_next(config_iterator))) {
 		if (config_ptr == first_new)
@@ -2709,8 +2703,6 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	kill_agent_args->msg_type = msg_type;
 	kill_agent_args->retry = 0;
 	kill_agent_args->hostlist = hostlist_create("");
-	if (kill_agent_args->hostlist == NULL)
-		fatal("hostlist_create: malloc failure");
 	if (msg_type == REQUEST_SHUTDOWN) {
  		shutdown_req = xmalloc(sizeof(shutdown_msg_t));
 		shutdown_req->options = 0;

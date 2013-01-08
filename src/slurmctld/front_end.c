@@ -368,8 +368,6 @@ extern void restore_front_end_state(int recover)
 		return;		/* No front ends in slurm.conf */
 
 	iter = list_iterator_create(front_end_list);
-	if (iter == NULL)
-		fatal("list_iterator_create: malloc failure");
 	while ((slurm_conf_fe_ptr = (slurm_conf_frontend_t *)
 				    list_next(iter))) {
 		if (slurm_conf_fe_ptr->frontends == NULL)

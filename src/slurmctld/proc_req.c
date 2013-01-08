@@ -3890,8 +3890,6 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	agent_arg_ptr->retry = 0;
 	xassert(job_ptr->batch_host);
 	agent_arg_ptr->hostlist = hostlist_create(job_ptr->batch_host);
-	if (agent_arg_ptr->hostlist == NULL)
-		fatal("hostlist_create: malloc failure");
 	agent_arg_ptr->msg_type = REQUEST_BATCH_JOB_LAUNCH;
 	agent_arg_ptr->msg_args = (void *) launch_msg_ptr;
 
@@ -4263,8 +4261,6 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 		nodelist = reboot_msg->node_list;
 	if (!nodelist || !strcasecmp(nodelist, "ALL")) {
 		bitmap = bit_alloc(node_record_count);
-		if (!bitmap)
-			fatal("malloc failure");
 		bit_nset(bitmap, 0, (node_record_count - 1));
 	} else if (node_name2bitmap(nodelist, false, &bitmap) != 0) {
 		FREE_NULL_BITMAP(bitmap);

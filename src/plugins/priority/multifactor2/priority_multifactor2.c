@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2012  Aalto University
  *  Written by Janne Blomqvist <janne.blomqvist@aalto.fi>
- * 
+ *
  *  Based on priority_multifactor.c, whose copyright information is
  *  reproduced below:
  *
@@ -173,8 +173,6 @@ static int _apply_decay(double decay_factor)
 	xassert(assoc_mgr_qos_list);
 
 	itr = list_iterator_create(assoc_mgr_association_list);
-	if (!itr)
-		fatal("list_iterator_create: malloc failure");
 	/* We want to do this to all associations including
 	 * root.  All usage_raws are calculated from the bottom up. */
 	while ((assoc = list_next(itr))) {
@@ -184,8 +182,6 @@ static int _apply_decay(double decay_factor)
 	list_iterator_destroy(itr);
 
 	itr = list_iterator_create(assoc_mgr_qos_list);
-	if (!itr)
-		fatal("list_iterator_create: malloc failure");
 	while ((qos = list_next(itr))) {
 		qos->usage->usage_raw *= decay_factor;
 		qos->usage->grp_used_wall *= decay_factor;
@@ -217,8 +213,6 @@ static int _reset_usage(void)
 	xassert(assoc_mgr_association_list);
 
 	itr = list_iterator_create(assoc_mgr_association_list);
-	if (!itr)
-		fatal("list_iterator_create: malloc failure");
 	/* We want to do this to all associations including
 	 * root.  All usage_raws are calculated from the bottom up. */
 	while ((assoc = list_next(itr))) {
@@ -381,19 +375,19 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 /* Set the effective usage of a node. */
 static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
 {
-        if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
-            && assoc->usage->parent_assoc_ptr) {
+	if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
+	    && assoc->usage->parent_assoc_ptr) {
 		assoc->usage->shares_norm =
-                        assoc->usage->parent_assoc_ptr->usage->shares_norm;
-                assoc->usage->usage_norm =
-                        assoc->usage->parent_assoc_ptr->usage->usage_norm;
-        }
+			assoc->usage->parent_assoc_ptr->usage->shares_norm;
+		assoc->usage->usage_norm =
+			assoc->usage->parent_assoc_ptr->usage->usage_norm;
+	}
 
-	if (assoc->usage->usage_norm > MIN_USAGE_FACTOR 
+	if (assoc->usage->usage_norm > MIN_USAGE_FACTOR
 		    * (assoc->shares_raw / assoc->usage->level_shares)) {
 		assoc->usage->usage_efctv = assoc->usage->usage_norm;
 	} else {
-		assoc->usage->usage_efctv =  MIN_USAGE_FACTOR 
+		assoc->usage->usage_efctv =  MIN_USAGE_FACTOR
 		  * (assoc->shares_raw / assoc->usage->level_shares);
 	}
 }
@@ -417,8 +411,6 @@ static int _set_children_usage_efctv(List childern_list)
 		return SLURM_SUCCESS;
 
 	itr = list_iterator_create(childern_list);
-	if (!itr)
-		fatal("list_iterator_create: malloc failure");
 	while ((assoc = list_next(itr))) {
 		if (assoc->user) {
 			assoc->usage->usage_efctv = (long double)NO_VAL;
@@ -446,41 +438,37 @@ static int _distribute_tickets(List childern_list, uint32_t tickets)
 		return SLURM_SUCCESS;
 
 	itr = list_iterator_create(childern_list);
-	if (!itr)
-		fatal("list_iterator_create: malloc failure");
 	while ((assoc = list_next(itr))) {
-		if (assoc->usage->active_seqno 
+		if (assoc->usage->active_seqno
 		    != assoc_mgr_root_assoc->usage->active_seqno)
 			continue;
-		fs = priority_p_calc_fs_factor(assoc->usage->usage_efctv, 
+		fs = priority_p_calc_fs_factor(assoc->usage->usage_efctv,
 					       assoc->usage->shares_norm);
 		sfsum += assoc->usage->shares_norm * fs;
 	}
 	list_iterator_destroy(itr);
 
 	itr = list_iterator_create(childern_list);
-	if (!itr)
-		fatal("list_iterator_create: malloc failure");
 	while ((assoc = list_next(itr))) {
-		if (assoc->usage->active_seqno 
+		if (assoc->usage->active_seqno
 		    != assoc_mgr_root_assoc->usage->active_seqno)
 			continue;
-		fs = priority_p_calc_fs_factor(assoc->usage->usage_efctv, 
+		fs = priority_p_calc_fs_factor(assoc->usage->usage_efctv,
 					       assoc->usage->shares_norm);
-		assoc->usage->tickets = tickets * assoc->usage->shares_norm 
+		assoc->usage->tickets = tickets * assoc->usage->shares_norm
 			* fs / sfsum;
 		if (priority_debug) {
 			if (assoc->user)
 				info("User %s in account %s gets %u tickets",
-				     assoc->user, assoc->acct, 
+				     assoc->user, assoc->acct,
 				     assoc->usage->tickets);
 			else
-				info("Account %s gets %u tickets", 
+				info("Account %s gets %u tickets",
 				     assoc->acct, assoc->usage->tickets);
 		}
 		if (assoc->user && assoc->usage->tickets > max_tickets)
 			max_tickets = assoc->usage->tickets;
-		_distribute_tickets(assoc->usage->childern_list, 
+		_distribute_tickets(assoc->usage->childern_list,
 				    assoc->usage->tickets);
 	}
 	list_iterator_destroy(itr);
@@ -525,7 +513,7 @@ static double _get_fairshare_priority( struct job_record *job_ptr)
 		priority_p_set_assoc_usage(fs_assoc);
 
 	/* Priority is 0 -> 1 */
-	if (fs_assoc->usage->active_seqno 
+	if (fs_assoc->usage->active_seqno
 	    == assoc_mgr_root_assoc->usage->active_seqno && max_tickets)
 		priority_fs = (double) fs_assoc->usage->tickets / max_tickets;
 	else
@@ -728,12 +716,12 @@ static bool _mark_assoc_active(struct job_record *job_ptr)
 		return false;
 	}
 
-	for (assoc = job_assoc; assoc != assoc_mgr_root_assoc; 
+	for (assoc = job_assoc; assoc != assoc_mgr_root_assoc;
 	     assoc = assoc->usage->parent_assoc_ptr) {
-		if (assoc->usage->active_seqno 
+		if (assoc->usage->active_seqno
 		    == assoc_mgr_root_assoc->usage->active_seqno)
 			break;
-		assoc->usage->active_seqno 
+		assoc->usage->active_seqno
 			= assoc_mgr_root_assoc->usage->active_seqno;
 	}
 	return true;
@@ -832,8 +820,6 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 
 	lock_slurmctld(job_read_lock);
 	itr = list_iterator_create(job_list);
-	if (itr == NULL)
-		fatal("list_iterator_create: malloc failure");
 
 	assoc_mgr_lock(&locks);
 	while ((job_ptr = list_next(itr))) {
@@ -1046,7 +1032,7 @@ static void *_decay_thread(void *no_data)
 	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	slurmctld_lock_t job_read_lock = 
+	slurmctld_lock_t job_read_lock =
 		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
@@ -1172,7 +1158,7 @@ static void *_decay_thread(void *no_data)
 				&& last_ran)
 				_apply_new_usage(job_ptr, decay_factor,
 						 last_ran, start_time);
-					
+
 			if (IS_JOB_PENDING(job_ptr) && job_ptr->assoc_ptr) {
 				assoc_mgr_lock(&locks);
 				_mark_assoc_active(job_ptr);
@@ -1190,7 +1176,7 @@ static void *_decay_thread(void *no_data)
 		assoc_mgr_lock(&locks);
 		max_tickets = 0;
 		assoc_mgr_root_assoc->usage->tickets = (uint32_t) -1;
-		_distribute_tickets (assoc_mgr_root_assoc->usage->childern_list, 
+		_distribute_tickets (assoc_mgr_root_assoc->usage->childern_list,
 				     (uint32_t) -1);
 		assoc_mgr_unlock(&locks);
 
@@ -1504,8 +1490,6 @@ extern List priority_p_get_priority_factors_list(
 		ret_list = list_create(slurm_destroy_priority_factors_object);
 		lock_slurmctld(job_read_lock);
 		itr = list_iterator_create(job_list);
-		if (itr == NULL)
-			fatal("list_iterator_create: malloc failure");
 		while ((job_ptr = list_next(itr))) {
 			/*
 			 * We are only looking for pending jobs

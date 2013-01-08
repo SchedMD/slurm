@@ -126,8 +126,6 @@ _multi_cluster(List clusters)
 	int rc = 0, rc2;
 
 	itr = list_iterator_create(clusters);
-	if (!itr)
-		fatal("list_iterator_create: malloc failure");
 	while ((working_cluster_rec = list_next(itr))) {
 		rc2 = _proc_cluster();
 		rc = MAX(rc, rc2);

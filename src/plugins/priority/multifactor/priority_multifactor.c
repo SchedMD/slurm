@@ -709,8 +709,6 @@ void _init_grp_used_cpu_run_secs(time_t last_ran)
 
 	lock_slurmctld(job_read_lock);
 	itr = list_iterator_create(job_list);
-	if (itr == NULL)
-		fatal("list_iterator_create: malloc failure");
 
 	assoc_mgr_lock(&locks);
 	while ((job_ptr = list_next(itr))) {
@@ -1367,8 +1365,6 @@ extern List priority_p_get_priority_factors_list(
 		ret_list = list_create(slurm_destroy_priority_factors_object);
 		lock_slurmctld(job_read_lock);
 		itr = list_iterator_create(job_list);
-		if (itr == NULL)
-			fatal("list_iterator_create: malloc failure");
 		while ((job_ptr = list_next(itr))) {
 			/*
 			 * We are only looking for pending jobs
