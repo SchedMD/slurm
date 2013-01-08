@@ -188,6 +188,13 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 			}
 			exp_continue
 		}
+		-re "mix ($number)(K?) $node" {
+			set num_alloc $expect_out(1,string)
+			if {[string compare $expect_out(2,string) ""]} {
+				set num_alloc [expr $inode_procs * 1024]
+			}
+			exp_continue
+		}
 		-re $prompt {
 		}
 		timeout {
