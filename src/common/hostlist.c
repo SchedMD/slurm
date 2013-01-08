@@ -77,6 +77,7 @@
 #include "src/common/working_cluster.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/bitstring.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -300,18 +301,13 @@ struct _range {
 char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /* logic for block node description */
-
-/* to speed things up we will do some calculations once to avoid
- * having to do it multiple times.  We need to calculate the size of
- * the maximum sized array for each dimension.  This way we can be
- * prepared for any size coming in.
- */
-static bool *grid = NULL;
+static bitstr_t *bit_grid = NULL;
 
 static int grid_start[HIGHEST_DIMENSIONS];
 static int grid_end[HIGHEST_DIMENSIONS];
 static int offset[HIGHEST_DIMENSIONS];
 static int dim_grid_size  = -1;
+static uint64_t grid_size = 1;
 
 /* used to protect the above grid, grid_start, and grid_end. */
 static pthread_mutex_t multi_dim_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -2715,7 +2711,7 @@ static int _tell_if_used(int dim, int curr,
 	for (last[dim]=start[dim]; last[dim]<=grid_end[dim]; last[dim]++) {
 		curr = start_curr + (last[dim] * offset[dim]);
 		if(dim == (dims-1)) {
-			if (!grid[curr]) {
+			if (!bit_test(bit_grid, curr)) {
 /* 				for(i = 0; i<dims; i++) { */
 /* 					coord[i] = alpha_num[last[i]]; */
 /* 				} */
@@ -2938,9 +2934,12 @@ _set_box_in_grid(int dim, int curr, int *start,
 
 	for (i=start[dim]; i<=end[dim]; i++) {
 		curr = start_curr + (i * offset[dim]);
-		if(dim == (dims-1))
-			grid[curr] = value;
-		else
+		if (dim == (dims-1)) {
+			if (value)
+				bit_set(bit_grid, curr);
+			else
+				bit_clear(bit_grid, curr);
+		} else
 			_set_box_in_grid(dim+1, curr, start, end, value, dims);
 
 	}
@@ -3005,7 +3004,7 @@ static void _set_min_max_of_grid(int dim, int curr,
 	for (pos[dim]=start[dim]; pos[dim]<=end[dim]; pos[dim]++) {
 		curr = start_curr + (pos[dim] * offset[dim]);
 		if(dim == (dims-1)) {
-			if(!grid[curr])
+			if (!bit_test(bit_grid, curr))
 				continue;
 			for(i = 0; i<dims; i++) {
 				min[i] = MIN(min[i], pos[i]);
@@ -3051,7 +3050,7 @@ _test_box_in_grid(int dim, int curr,
 	for (i=start[dim]; i<=end[dim]; i++) {
 		curr = start_curr + (i * offset[dim]);
 		if(dim == (dims-1)) {
-			if(!grid[curr])
+			if (!bit_test(bit_grid, curr))
 				return false;
 		} else {
 			if(!_test_box_in_grid(dim+1, curr, start, end, dims))
@@ -3119,17 +3118,16 @@ ssize_t hostlist_ranged_string_dims(hostlist_t hl, size_t n,
 	int hostlist_base;
 	static int last_dims = -1;
 	static int max_dims = 1;
-	DEF_TIMERS;
+//	DEF_TIMERS;
 
 	if (!dims)
 		dims = slurmdb_setup_cluster_name_dims();
 	hostlist_base = hostlist_get_base(dims);
 
-	START_TIMER;
+//	START_TIMER;
 	LOCK_HOSTLIST(hl);
 
 	if (dims > 1 && hl->nranges) {	/* logic for block node description */
-		static uint64_t grid_size = 1;
 		slurm_mutex_lock(&multi_dim_lock);
 
 		/* compute things that only need to be calculated once
@@ -3147,24 +3145,20 @@ ssize_t hostlist_ranged_string_dims(hostlist_t hl, size_t n,
 				offset[i] = offset[i+1] * hostlist_base;
 		}
 
-		/* This will leave an allocation when ending but it
-		   isn't overwriting and this makes it so we don't
-		   have to allocate it over and over again we fill
-		   this isn't too bad of an alternative.  We were
-		   defining this on the stack at first (we wanted to
-		   avoid that).
+		/* Set this bitmap up once and clear it when everytime
+		   instead of reallocing.  Turns out to be about 5
+		   times faster doing it this way.  It does leak the
+		   last alloc, but that shouldn't be a big deal.
 		*/
-		if (!grid || (grid && (max_dims < dims))) {
+		if (max_dims < dims) {
 			grid_size = 1;
 			max_dims = dims;
-			xfree(grid);
-
 			for (i=0; i<dims; i++)
 				grid_size *= HIGHEST_BASE;
-			grid_size *= sizeof(bool);
-			grid = xmalloc(grid_size);
+			FREE_NULL_BITMAP(bit_grid);
+			bit_grid = bit_alloc(grid_size);
 		} else
-			memset(grid, 0, grid_size);
+			bit_nclear(bit_grid, 0, grid_size - 1);
 
 		memset(grid_start, hostlist_base, dim_grid_size);
 		memset(grid_end, -1, dim_grid_size);
@@ -3252,7 +3246,7 @@ notbox:
 	} else
 		buf[len] = '\0';
 
-	END_TIMER;
+//	END_TIMER;
 
 //	info("time was %s", TIME_STR);
 	return truncated ? -1 : len;
