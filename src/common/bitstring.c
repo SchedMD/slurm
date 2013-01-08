@@ -899,8 +899,8 @@ bit_pick_cnt(bitstr_t *b, bitoff_t nbits) {
  * types is architecture/compiler dependent, so this may have to be tweaked.
  */
 #ifdef	USE_64BIT_BITSTR
-#define BITSTR_RANGE_FMT	"%llu-%llu,"
-#define BITSTR_SINGLE_FMT	"%llu,"
+#define BITSTR_RANGE_FMT	"%"PRIu64"-%"PRIu64","
+#define BITSTR_SINGLE_FMT	"%"PRIu64","
 #else
 #define BITSTR_RANGE_FMT	"%u-%u,"
 #define BITSTR_SINGLE_FMT	"%u,"
@@ -1274,7 +1274,11 @@ bit_get_pos_num(bitstr_t *b, bitoff_t pos)
 	assert(pos <= bit_cnt);
 
 	if (!bit_test(b, pos)) {
+#ifdef	USE_64BIT_BITSTR
+		error("bit %"PRIu64" not set", pos);
+#else
 		error("bit %d not set", pos);
+#endif
 		return cnt;
 	}
 	for (bit = 0; bit <= pos; bit++) {
