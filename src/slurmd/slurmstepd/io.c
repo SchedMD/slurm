@@ -284,9 +284,6 @@ _client_writable(eio_obj_t *obj)
 		struct io_buf *msg;
 		client->msg_queue = list_create(NULL); /* need destructor */
 		msgs = list_iterator_create(client->job->outgoing_cache);
-		if (!msgs)
-			fatal("Could not allocate iterator");
-
 		while ((msg = list_next(msgs))) {
 			msg->ref_count++;
 			list_enqueue(client->msg_queue, msg);
@@ -1214,10 +1211,7 @@ _send_connection_okay_response(slurmd_job_t *job)
 	}
 
 	clients = list_iterator_create(job->clients);
-	if (!clients)
-		fatal("Could not allocate memory");
-
-	while((eio = list_next(clients))) {
+	while ((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		if (client->out_eof || client->is_local_file)
 			continue;
@@ -1287,10 +1281,7 @@ _route_msg_task_to_client(eio_obj_t *obj)
 
 		/* Add message to the msg_queue of all clients */
 		clients = list_iterator_create(out->job->clients);
-		if (!clients)
-			fatal("Could not allocate iterator");
-
-		while((eio = list_next(clients))) {
+		while ((eio = list_next(clients))) {
 			client = (struct client_io_info *)eio->arg;
 			if (client->out_eof == true)
 				continue;
@@ -1372,8 +1363,6 @@ _free_all_outgoing_msgs(List msg_queue, slurmd_job_t *job)
 	struct io_buf *msg;
 
 	msgs = list_iterator_create(msg_queue);
-	if (!msgs)
-		fatal("Could not allocate iterator");
 	while((msg = list_next(msgs))) {
 		_free_outgoing_msg(msg, job);
 	}
@@ -1435,8 +1424,6 @@ io_close_local_fds(slurmd_job_t *job)
 		return;
 
 	clients = list_iterator_create(job->clients);
-	if (!clients)
-		fatal("Could not allocate iterator");
 	while((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		if (client->is_local_file) {
@@ -1750,8 +1737,6 @@ _send_eof_msg(struct task_read_info *out)
 
 	/* Add eof message to the msg_queue of all clients */
 	clients = list_iterator_create(out->job->clients);
-	if (!clients)
-		fatal("Could not allocate iterator");
 	while((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		debug5("======================== Enqueued eof message");

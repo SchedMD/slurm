@@ -91,6 +91,8 @@ static void _rebuild_port_array(struct step_record *step_ptr)
 	tmp_char = xmalloc(i+3);
 	sprintf(tmp_char, "[%s]", step_ptr->resv_ports);
 	hl = hostlist_create(tmp_char);
+	if (!hl)
+		fatal("Invalid reserved ports: %s", step_ptr->resv_ports);
 	xfree(tmp_char);
 
 	step_ptr->resv_port_array = xmalloc(sizeof(int) *

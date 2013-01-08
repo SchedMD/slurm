@@ -339,8 +339,6 @@ static void _build_parts(void)
 
 	gs_part_list = list_create(_destroy_parts);
 	part_iterator = list_iterator_create(part_list);
-	if (part_iterator == NULL)
-		fatal ("memory allocation failure");
 	while ((p_ptr = (struct part_record *) list_next(part_iterator))) {
 		gs_part_ptr = xmalloc(sizeof(struct gs_part));
 		gs_part_ptr->part_name = xstrdup(p_ptr->name);
@@ -419,8 +417,6 @@ static int _job_fits_in_active_row(struct job_record *job_ptr,
 
 	/* gr_type == GS_NODE || gr_type == GS_CPU */
 	job_map = bit_copy(job_res->node_bitmap);
-	if (!job_map)
-		fatal("gang: memory allocation error");
 	bit_and(job_map, p_ptr->active_resmap);
 	/* any set bits indicate contention for the same resource */
 	count = bit_set_count(job_map);
@@ -702,8 +698,6 @@ static void _cast_shadow(struct gs_job *j_ptr, uint16_t priority)
 	int i;
 
 	part_iterator = list_iterator_create(gs_part_list);
-	if (part_iterator == NULL)
-		fatal("memory allocation failure");
 	while ((p_ptr = (struct gs_part *) list_next(part_iterator))) {
 		if (p_ptr->priority >= priority)
 			continue;
@@ -744,8 +738,6 @@ static void _clear_shadow(struct gs_job *j_ptr)
 	int i;
 
 	part_iterator = list_iterator_create(gs_part_list);
-	if (part_iterator == NULL)
-		fatal("memory allocation failure");
 	while ((p_ptr = (struct gs_part *) list_next(part_iterator))) {
 		if (!p_ptr->shadow)
 			continue;
@@ -878,8 +870,6 @@ static void _update_all_active_rows(void)
 	list_sort(gs_part_list, _sort_partitions);
 
 	part_iterator = list_iterator_create(gs_part_list);
-	if (part_iterator == NULL)
-		fatal("memory allocation failure");
 	while ((p_ptr = (struct gs_part *) list_next(part_iterator)))
 		_update_active_row(p_ptr, 1);
 	list_iterator_destroy(part_iterator);
@@ -1363,8 +1353,6 @@ extern int gs_reconfig(void)
 
 	/* scan the old part list and add existing jobs to the new list */
 	part_iterator = list_iterator_create(old_part_list);
-	if (part_iterator == NULL)
-		fatal ("memory allocation failure");
 	while ((p_ptr = (struct gs_part *) list_next(part_iterator))) {
 		newp_ptr = (struct gs_part *) list_find_first(gs_part_list,
 							      _find_gs_part,
@@ -1588,8 +1576,6 @@ static void *_timeslicer_thread(void *arg)
 		if (gs_debug_flags & DEBUG_FLAG_GANG)
 			info("gang: _timeslicer_thread: scanning partitions");
 		part_iterator = list_iterator_create(gs_part_list);
-		if (part_iterator == NULL)
-			fatal("memory allocation failure");
 		while ((p_ptr = (struct gs_part *) list_next(part_iterator))) {
 			if (gs_debug_flags & DEBUG_FLAG_GANG) {
 				info("gang: _timeslicer_thread: part %s: "

@@ -198,6 +198,10 @@ static char *	_dump_all_nodes(int *node_cnt, time_t update_time)
 					hostlist_push(hl, node_ptr->name);
 				} else {
 					hl = hostlist_create(node_ptr->name);
+					if (!hl) {
+						fatal("Invalid node_name: %s",
+						      node_ptr->name);
+					}
 				}
 				continue;
 			} else {
@@ -205,6 +209,10 @@ static char *	_dump_all_nodes(int *node_cnt, time_t update_time)
 						     update_time);
 				hostlist_destroy(hl);
 				hl = hostlist_create(node_ptr->name);
+				if (!hl) {
+					fatal("Invalid node_name: %s",
+					      node_ptr->name);
+				}
 				uniq_node_ptr = node_ptr;
 			}
 		} else {

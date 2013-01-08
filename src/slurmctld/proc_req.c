@@ -3890,6 +3890,8 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	agent_arg_ptr->retry = 0;
 	xassert(job_ptr->batch_host);
 	agent_arg_ptr->hostlist = hostlist_create(job_ptr->batch_host);
+	if (!agent_arg_ptr->hostlist)
+		fatal("Invalid batch host: %s", job_ptr->batch_host);
 	agent_arg_ptr->msg_type = REQUEST_BATCH_JOB_LAUNCH;
 	agent_arg_ptr->msg_args = (void *) launch_msg_ptr;
 

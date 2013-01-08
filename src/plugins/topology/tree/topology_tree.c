@@ -295,6 +295,10 @@ static void _validate_switches(void)
 			if (switch_ptr->level != -1)
 				continue;
 			hl = hostlist_create(switch_ptr->switches);
+			if (!hl) {
+				fatal("Invalid switches: %s",
+				      switch_ptr->switches);
+			}
 			while ((child = hostlist_pop(hl))) {
 				j = _get_switch_inx(child);
 				if ((j < 0) || (j == i)) {

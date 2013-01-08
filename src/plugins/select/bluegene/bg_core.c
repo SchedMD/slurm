@@ -611,8 +611,7 @@ extern int free_block_list(uint32_t job_id, List track_list,
 			      bg_free_list)) {
 		error("pthread_create error %m");
 		if (++retries > MAX_PTHREAD_RETRIES)
-			fatal("Can't create "
-			      "pthread");
+			fatal("Can't create pthread");
 		/* sleep and retry */
 		usleep(1000);
 	}

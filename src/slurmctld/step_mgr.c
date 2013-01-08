@@ -179,8 +179,7 @@ static struct step_record * _create_step_record(struct job_record *job_ptr)
 	step_ptr->time_limit = INFINITE;
 	step_ptr->jobacct    = jobacctinfo_create(NULL);
 	step_ptr->requid     = -1;
-	if (list_append (job_ptr->step_list, step_ptr) == NULL)
-		fatal ("_create_step_record: unable to allocate memory");
+	(void) list_append (job_ptr->step_list, step_ptr);
 
 	return step_ptr;
 }
@@ -511,9 +510,13 @@ void signal_step_tasks_on_node(char* node_name, struct step_record *step_ptr,
 	xassert(step_ptr->job_ptr->batch_host);
 	agent_args->node_count++;
 	agent_args->hostlist = hostlist_create(step_ptr->job_ptr->batch_host);
+	if (!agent_args->hostlist)
+		fatal("Invalid batch_host: %s", step_ptr->job_ptr->batch_host);
 #else
 	agent_args->node_count++;
 	agent_args->hostlist = hostlist_create(node_name);
+	if (!agent_args->hostlist)
+		fatal("Invalid node_name: %s", node_name);
 #endif
 	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
 	kill_tasks_msg->job_id      = step_ptr->job_ptr->job_id;
@@ -2810,8 +2813,6 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		req->range_last = nodes - 1;
 #endif
 		step_ptr->exit_node_bitmap = bit_alloc(nodes);
-		if (step_ptr->exit_node_bitmap == NULL)
-			fatal("bit_alloc: %m");
 		step_ptr->exit_code = req->step_rc;
 	} else {
 		nodes = _bitstr_bits(step_ptr->exit_node_bitmap);
@@ -3303,8 +3304,6 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		 * is actively in progress at step save time. Otherwise
 		 * the bitmap is NULL. */
 		step_ptr->exit_node_bitmap = bit_alloc(bit_cnt);
-		if (step_ptr->exit_node_bitmap == NULL)
-			fatal("bit_alloc: %m");
 		if (bit_unfmt(step_ptr->exit_node_bitmap, bit_fmt)) {
 			error("error recovering exit_node_bitmap from %s",
 				bit_fmt);

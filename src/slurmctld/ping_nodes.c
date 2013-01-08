@@ -195,6 +195,10 @@ void ping_nodes (void)
 			else {
 				down_hostlist =
 					hostlist_create(front_end_ptr->name);
+				if (!down_hostlist) {
+					fatal("invalid front_end list: %s",
+					      front_end_ptr->name);
+				}
 			}
 			set_front_end_down(front_end_ptr, "Not responding");
 			front_end_ptr->not_responding = false;
@@ -253,6 +257,10 @@ void ping_nodes (void)
 			else {
 				down_hostlist =
 					hostlist_create(node_ptr->name);
+				if (!down_hostlist) {
+					fatal("Invalid host name: %s",
+					      node_ptr->name);
+				}
 			}
 			set_node_down_ptr(node_ptr, "Not responding");
 			node_ptr->not_responding = false;  /* logged below */

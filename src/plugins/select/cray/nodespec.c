@@ -153,9 +153,6 @@ char *ns_to_string(const struct nodespec *head)
 		size *= CRAY_MAX_DIGITS + 1;
 
 		buf = xmalloc(size);
-		if (buf == NULL)
-			fatal("can not allocate %d", (int)size);
-
 		if (ns_ranged_string(head, buf, size) < 0)
 			fatal("can not expand nodelist expression");
 	}

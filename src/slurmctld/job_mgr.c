@@ -232,15 +232,12 @@ struct job_record *create_job_record(int *error_code)
 	job_ptr->details = detail_ptr;
 	job_ptr->prio_factors = xmalloc(sizeof(priority_factors_object_t));
 	job_ptr->step_list = list_create(NULL);
-	if (job_ptr->step_list == NULL)
-		fatal("memory allocation failure");
 
 	xassert (detail_ptr->magic = DETAILS_MAGIC); /* set value */
 	detail_ptr->submit_time = time(NULL);
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet  */
-	if (list_append(job_list, job_ptr) == 0)
-		fatal("list_append memory allocation failure");
+	(void) list_append(job_list, job_ptr);
 
 	return job_ptr;
 }
@@ -2446,8 +2443,6 @@ extern void excise_node_from_job(struct job_record *job_ptr,
 	xassert(job_resrcs_ptr->cpus_used);
 
 	orig_bitmap = bit_copy(job_ptr->node_bitmap);
-	if (!orig_bitmap)
-		fatal("bit_copy memory allocation failure");
 	make_node_idle(node_ptr, job_ptr); /* updates bitmap */
 	xfree(job_ptr->nodes);
 	job_ptr->nodes = bitmap2node_name(job_ptr->node_bitmap);
@@ -2674,8 +2669,6 @@ int init_job_conf(void)
 	if (job_list == NULL) {
 		job_count = 0;
 		job_list = list_create(_list_delete_job);
-		if (job_list == NULL)
-			fatal ("Memory allocation failure");
 	}
 
 	last_job_update = time(NULL);
@@ -2713,7 +2706,7 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	int i;
 
 	job_ptr_new = create_job_record(&error_code);
-	if (!job_ptr_new)
+	if (!job_ptr_new)     /* MaxJobCount checked when job array submitted */
 		fatal("job array create_job_record error");
 	if (!job_ptr_new || (error_code != SLURM_SUCCESS))
 		return job_ptr_new;
@@ -10599,6 +10592,4 @@ extern void build_cg_bitmap(struct job_record *job_ptr)
 		job_ptr->node_bitmap_cg = bit_alloc(node_record_count);
 		job_ptr->job_state &= (~JOB_COMPLETING);
 	}
-	if (job_ptr->node_bitmap_cg == NULL)
-		fatal("bit_copy: memory allocation failure");
 }

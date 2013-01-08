@@ -1544,8 +1544,7 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 		if (!mail_list)
 			fatal("list_create failed");
 	}
-	if (!list_enqueue(mail_list, (void *) mi))
-		fatal("list_enqueue failed");
+	(void) list_enqueue(mail_list, (void *) mi);
 	slurm_mutex_unlock(&mail_mutex);
 	return;
 }

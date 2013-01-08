@@ -254,8 +254,7 @@ struct part_record *create_part_record(void)
 	else
 		part_ptr->nodes = NULL;
 
-	if (list_append(part_list, part_ptr) == NULL)
-		fatal("create_part_record: unable to allocate memory");
+	(void) list_append(part_list, part_ptr);
 
 	return part_ptr;
 }
@@ -734,9 +733,6 @@ int init_part_conf(void)
 		(void) _delete_part_record(NULL);
 	else
 		part_list = list_create(_list_delete_part);
-
-	if (part_list == NULL)
-		fatal ("memory allocation failure");
 
 	xfree(default_part_name);
 	default_part_loc = (struct part_record *) NULL;

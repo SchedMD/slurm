@@ -114,8 +114,6 @@ static List _build_user_job_list(uint32_t user_id, char* job_name)
 	struct job_record *job_ptr = NULL;
 
 	job_queue = list_create(NULL);
-	if (job_queue == NULL)
-		fatal("list_create memory allocation failure");
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
@@ -220,11 +218,7 @@ extern List build_job_queue(bool clear_start)
 	struct part_record *part_ptr;
 
 	job_queue = list_create(_job_queue_rec_del);
-	if (job_queue == NULL)
-		fatal("list_create memory allocation failure");
 	job_iterator = list_iterator_create(job_list);
-	if (job_iterator == NULL)
-		fatal("list_iterator_create memory allocation failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!_job_runnable_test1(job_ptr, clear_start))
 			continue;
@@ -434,8 +428,6 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 		goto send_reply;
 	}
 	job_iterator = list_iterator_create(job_list);
-	if (job_iterator == NULL)
-		fatal("list_iterator_create memory allocation failure");
 	while (1) {
 		if (job_ptr && part_iterator)
 			goto next_part;
@@ -759,8 +751,6 @@ extern int schedule(uint32_t job_limit)
 	if (fifo_sched) {
 		slurmctld_diag_stats.schedule_queue_len = list_count(job_list);
 		job_iterator = list_iterator_create(job_list);
-		if (job_iterator == NULL)
-			fatal("list_iterator_create memory allocation failure");
 	} else {
 		job_queue = build_job_queue(false);
 		slurmctld_diag_stats.schedule_queue_len = list_count(job_queue);
@@ -1281,8 +1271,6 @@ extern void print_job_dependency(struct job_record *job_ptr)
 		return;
 
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
-	if (!depend_iter)
-		fatal("list_iterator_create memory allocation failure");
 	while ((dep_ptr = list_next(depend_iter))) {
 		if      (dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) {
 			info("  singleton");
@@ -1327,8 +1315,6 @@ extern int test_job_dependency(struct job_record *job_ptr)
 
 	count = list_count(job_ptr->details->depend_list);
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
-	if (!depend_iter)
-		fatal("list_iterator_create memory allocation failure");
 	while ((dep_ptr = list_next(depend_iter))) {
 		bool clear_dep = false;
 		count--;
@@ -1478,10 +1464,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			dep_ptr->depend_type = depend_type;
 			/* dep_ptr->job_id = 0;		set by xmalloc */
 			/* dep_ptr->job_ptr = NULL;	set by xmalloc */
-			if (!list_append(new_depend_list, dep_ptr)) {
-				fatal("list_append memory allocation "
-				      "failure for singleton");
-			}
+			(void) list_append(new_depend_list, dep_ptr);
 			if ( *(tok + 9 ) == ',' ) {
 				tok += 10;
 				continue;
@@ -1509,8 +1492,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			dep_ptr->depend_type = SLURM_DEPEND_AFTER_ANY;
 			dep_ptr->job_id = job_id;
 			dep_ptr->job_ptr = dep_job_ptr;
-			if (!list_append(new_depend_list, dep_ptr))
-				fatal("list_append memory allocation failure");
+			(void) list_append(new_depend_list, dep_ptr);
 			break;
 		} else if (sep_ptr == NULL) {
 			rc = ESLURM_DEPENDENCY;
@@ -1574,10 +1556,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				dep_ptr->depend_type = depend_type;
 				dep_ptr->job_id = job_id;
 				dep_ptr->job_ptr = dep_job_ptr;
-				if (!list_append(new_depend_list, dep_ptr)) {
-					fatal("list_append memory allocation "
-						"failure");
-				}
+				(void) list_append(new_depend_list, dep_ptr);
 			}
 			if (sep_ptr2[0] != ':')
 				break;
@@ -1698,8 +1677,6 @@ static void _delayed_job_start_time(struct job_record *job_ptr)
 		part_cpus_per_node = 1;
 
 	job_iterator = list_iterator_create(job_list);
-	if (job_iterator == NULL)
-		fatal("list_iterator_create memory allocation failure");
 	while ((job_q_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!IS_JOB_PENDING(job_q_ptr) || !job_q_ptr->details ||
 		    (job_q_ptr->part_ptr != job_ptr->part_ptr) ||

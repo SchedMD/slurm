@@ -219,9 +219,6 @@ static void _build_bitmaps_pre_select(void)
 
 	/* scan partition table and identify nodes in each */
 	part_iterator = list_iterator_create(part_list);
-	if (part_iterator == NULL)
-		fatal ("memory allocation failure");
-
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		FREE_NULL_BITMAP(part_ptr->node_bitmap);
 
@@ -295,8 +292,6 @@ static int _build_bitmaps(void)
 
 	/* initialize the configuration bitmaps */
 	config_iterator = list_iterator_create(config_list);
-	if (config_iterator == NULL)
-		fatal ("memory allocation failure");
 	while ((config_ptr = (struct config_record *)
 				      list_next(config_iterator))) {
 		FREE_NULL_BITMAP(config_ptr->node_bitmap);
@@ -354,8 +349,6 @@ static int _build_bitmaps(void)
 	}
 
 	config_iterator = list_iterator_create(config_list);
-	if (config_iterator == NULL)
-		fatal ("memory allocation failure");
 	while ((config_ptr = (struct config_record *)
 				      list_next(config_iterator))) {
 		build_config_feature_list(config_ptr);

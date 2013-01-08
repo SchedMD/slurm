@@ -2385,8 +2385,6 @@ top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 	    (exp_cr = _dup_cr(cr_ptr))) {
 		/* Remove all preemptable jobs from simulated environment */
 		job_iterator = list_iterator_create(preemptee_candidates);
-		if (job_iterator == NULL)
-			fatal ("memory allocation failure in linear");
 		while ((tmp_job_ptr = (struct job_record *)
 			list_next(job_iterator))) {
 			bool remove_all = false;
@@ -2514,8 +2512,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* Build list of running and suspended jobs */
 	cr_job_list = list_create(NULL);
-	if (!cr_job_list)
-		fatal("list_create: memory allocation failure");
 	job_iterator = list_iterator_create(job_list);
 	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
