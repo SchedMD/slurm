@@ -988,10 +988,18 @@ int _print_size(sinfo_data_t * sinfo_data, int width,
 int _print_state_compact(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
+	char *upper_state, *lower_state;
+	uint16_t my_state;
+
 	if (sinfo_data && sinfo_data->nodes_total) {
-		char *upper_state = node_state_string_compact(
-			sinfo_data->node_state);
-		char *lower_state = _str_tolower(upper_state);
+		my_state = sinfo_data->node_state;
+		if (sinfo_data->cpus_alloc &&
+		    (sinfo_data->cpus_alloc != sinfo_data->cpus_total)) {
+			my_state &= NODE_STATE_FLAGS;
+			my_state |= NODE_STATE_MIXED;
+		}
+		upper_state = node_state_string_compact(my_state);
+		lower_state = _str_tolower(upper_state);
 		_print_str(lower_state, width, right_justify, true);
 		xfree(lower_state);
 	} else if (sinfo_data)
@@ -1007,9 +1015,18 @@ int _print_state_compact(sinfo_data_t * sinfo_data, int width,
 int _print_state_long(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
+	char *upper_state, *lower_state;
+	uint16_t my_state;
+
 	if (sinfo_data && sinfo_data->nodes_total) {
-		char *upper_state = node_state_string(sinfo_data->node_state);
-		char *lower_state = _str_tolower(upper_state);
+		my_state = sinfo_data->node_state;
+		if (sinfo_data->cpus_alloc &&
+		    (sinfo_data->cpus_alloc != sinfo_data->cpus_total)) {
+			my_state &= NODE_STATE_FLAGS;
+			my_state |= NODE_STATE_MIXED;
+		}
+		upper_state = node_state_string(my_state);
+		lower_state = _str_tolower(upper_state);
 		_print_str(lower_state, width, right_justify, true);
 		xfree(lower_state);
 	} else if (sinfo_data)
