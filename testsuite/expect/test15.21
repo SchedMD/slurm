@@ -49,6 +49,9 @@ if {[test_front_end] != 0} {
 } elseif {[test_topology] != 0} {
 	send_user "\nWARNING: This test is incompatible topology configured systems\n"
 	exit 0
+} elseif {[test_serial]} {
+	send_user "\nWARNING: This test is not compatible with serial system\n"
+	exit 0
 }
 
 set available [available_nodes [default_partition]]
