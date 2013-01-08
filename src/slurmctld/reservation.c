@@ -1314,6 +1314,7 @@ slurmctld_resv_t *_load_reservation_state(Buf buffer,
 		safe_unpack_time(&resv_ptr->start_time, buffer);
 		safe_unpack8((uint8_t *)&resv_ptr->user_not,	buffer);
 	} else {
+		resv_ptr->full_nodes = 1;	/* Added in v2.5 */
 		safe_unpackstr_xmalloc(&resv_ptr->accounts,
 				       &uint32_tmp,	buffer);
 		safe_unpack_time(&resv_ptr->end_time,	buffer);
