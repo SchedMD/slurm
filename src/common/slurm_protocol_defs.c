@@ -1483,9 +1483,12 @@ extern char *node_state_string(uint16_t inx)
 	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
 
 	if (maint_flag) {
-		if (no_resp_flag)
+		if ((base == NODE_STATE_ALLOCATED) ||
+		    (base == NODE_STATE_MIXED))
+			;
+		else if (no_resp_flag)
 			return "MAINT*";
-		if (base != NODE_STATE_ALLOCATED)
+		else
 			return "MAINT";
 	}
 	if (drain_flag) {
@@ -1601,9 +1604,11 @@ extern char *node_state_string_compact(uint16_t inx)
 	inx = (uint16_t) (inx & NODE_STATE_BASE);
 
 	if (maint_flag) {
-		if (no_resp_flag)
+		if ((inx == NODE_STATE_ALLOCATED) || (inx == NODE_STATE_MIXED))
+			;
+		else if (no_resp_flag)
 			return "MAINT*";
-		if (inx != NODE_STATE_ALLOCATED)
+		else
 			return "MAINT";
 	}
 	if (drain_flag) {
