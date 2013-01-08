@@ -2138,6 +2138,7 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	int rem_nodes = node_cnt;
 	int rem_cores = core_cnt;
 	bitstr_t *new_bitmap;
+	bool enforce_node_cnt = (node_cnt != 0);
 
 	xassert(avail_bitmap);
 	new_bitmap = bit_copy(avail_bitmap);
@@ -2168,7 +2169,6 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			continue;
 		}
 
-		rem_nodes--;
 		for (j = 0; j < node_cores; j++) {
 			if (bit_test(*core_bitmap, core_inx)) {
 				bit_clear(*core_bitmap, core_inx);
@@ -2178,6 +2178,9 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			}
 			core_inx++;
 		}
+		rem_nodes--;
+		if (enforce_node_cnt && (rem_nodes <= 0))
+			break;
 	}
 	if ((rem_cores > 0) || (rem_nodes > 0))
 		FREE_NULL_BITMAP(new_bitmap);
