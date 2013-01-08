@@ -309,9 +309,14 @@ int _print_job_batch_host(job_info_t * job, int width, bool right, char* suffix)
 
 int _print_job_job_id(job_info_t * job, int width, bool right, char* suffix)
 {
-	if (job == NULL)	/* Print the Header instead */
+	if (job == NULL) {	/* Print the Header instead */
 		_print_str("JOBID", width, right, true);
-	else {
+	} else if (job->array_job_id) {
+		char id[FORMAT_STRING_SIZE];
+		snprintf(id, FORMAT_STRING_SIZE, "%u_%u",
+			 job->array_job_id, job->array_task_id);
+		_print_str(id, width, right, true);
+	} else {
 		char id[FORMAT_STRING_SIZE];
 		snprintf(id, FORMAT_STRING_SIZE, "%u", job->job_id);
 		_print_str(id, width, right, true);
@@ -1196,9 +1201,14 @@ int _print_step_id(job_step_info_t * step, int width, bool right, char* suffix)
 {
 	char id[FORMAT_STRING_SIZE];
 
-	if (step == NULL)	/* Print the Header instead */
+	if (step == NULL) {	/* Print the Header instead */
 		_print_str("STEPID", width, right, true);
-	else {
+	} else if (step->array_job_id) {
+		snprintf(id, FORMAT_STRING_SIZE, "%u_%u.%u",
+			 step->array_job_id, step->array_task_id,
+			 step->step_id);
+		_print_str(id, width, right, true);
+	} else {
 		snprintf(id, FORMAT_STRING_SIZE, "%u.%u", step->job_id,
 			 step->step_id);
 		_print_str(id, width, right, true);

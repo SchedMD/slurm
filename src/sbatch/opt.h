@@ -154,6 +154,7 @@ typedef struct sbatch_options {
 	char *ramdiskimage;     /* --ramdisk-image RamDiskImage for block */
 	/*********************/
 
+	char *array_inx;	/* -a, --array			*/
 	time_t begin;		/* --begin			*/
 	uint16_t mail_type;	/* --mail-type			*/
 	char *mail_user;	/* --mail-user			*/

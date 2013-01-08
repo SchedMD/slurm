@@ -550,6 +550,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->licenses_used       = get_licenses_used();
 
 	conf_ptr->mail_prog           = xstrdup(conf->mail_prog);
+	conf_ptr->max_array_sz        = conf->max_array_sz;
 	conf_ptr->max_job_cnt         = conf->max_job_cnt;
 	conf_ptr->max_job_id          = conf->max_job_id;
 	conf_ptr->max_mem_per_cpu     = conf->max_mem_per_cpu;
@@ -2686,6 +2687,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	int schedule_cnt = 1;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_JOB from uid=%d", uid);
@@ -2705,8 +2707,11 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		error_code = ESLURM_INVALID_NODE_NAME;
 		error("REQUEST_SUBMIT_BATCH_JOB lacks alloc_node from uid=%d", uid);
 	}
-	if (error_code == SLURM_SUCCESS)
+	if (error_code == SLURM_SUCCESS) {
 		error_code = validate_job_create_req(job_desc_msg);
+		if (job_desc_msg->array_bitmap)
+			schedule_cnt = 0;	/* Do full schedule cycle */
+	}
 	dump_job_desc(job_desc_msg);
 	if (error_code == SLURM_SUCCESS) {
 		lock_slurmctld(job_write_lock);
@@ -2821,7 +2826,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		 * We also run schedule() even if this job could not start,
 		 * say due to a higher priority job, since the locks are
 		 * released above and we might start some other job here. */
-		schedule(1);		/* has own locks */
+		schedule(schedule_cnt);	/* has own locks */
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
 	}

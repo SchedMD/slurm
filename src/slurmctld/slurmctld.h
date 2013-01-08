@@ -85,6 +85,11 @@
 /*****************************************************************************\
  *  GENERAL CONFIGURATION parameters and data structures
 \*****************************************************************************/
+/* Maximum index for a job array. The minimum index will always be 0. */
+#ifndef MAX_JOB_ARRAY_VALUE
+#define MAX_JOB_ARRAY_VALUE 1000
+#endif
+
 /* Maximum parallel threads to service incoming RPCs.
  * Since some systems schedule pthread on a First-In-Last-Out basis,
  * increasing this value is strongly discouraged. */
@@ -469,6 +474,8 @@ struct job_record {
 	char    *alloc_node;		/* local node making resource alloc */
 	uint16_t alloc_resp_port;	/* RESPONSE_RESOURCE_ALLOCATION port */
 	uint32_t alloc_sid;		/* local sid making resource alloc */
+	uint32_t array_job_id;		/* job_id of a job array or 0 if N/A */
+	uint16_t array_task_id;		/* task_id of a job array */
 	uint32_t assoc_id;              /* used for accounting plugins */
 	void    *assoc_ptr;		/* job's association record ptr, it is
 					 * void* because of interdependencies
@@ -794,6 +801,13 @@ extern int delete_step_record (struct job_record *job_ptr, uint32_t step_id);
 extern void delete_step_records (struct job_record *job_ptr);
 
 /*
+ * Copy a job's dependency list
+ * IN depend_list_src - a job's depend_lst
+ * RET copy of depend_list_src, must bee freed by caller
+ */
+extern List depended_list_copy(List depend_list_src);
+
+/*
  * drain_nodes - drain one or more nodes,
  *  no-op for nodes already drained or draining
  * IN nodes - nodes to drain
@@ -839,6 +853,13 @@ extern void dump_step_desc(job_step_create_request_msg_t *step_spec);
 /* Remove one node from a job's allocation */
 extern void excise_node_from_job(struct job_record *job_ptr,
                                  struct node_record *node_ptr);
+
+/*
+ * Copy a job's feature list
+ * IN feature_list_src - a job's depend_lst
+ * RET copy of depend_list_src, must be freed by caller
+ */
+extern List feature_list_copy(List feature_list_src);
 
 /*
  * find_job_record - return a pointer to the job record with the given job_id
@@ -1547,6 +1568,13 @@ extern void part_filter_set(uid_t uid);
 
 /* part_fini - free all memory associated with partition records */
 extern void part_fini (void);
+
+/*
+ * Create a copy of a job's part_list *partition list
+ * IN part_list_src - a job's part_list
+ * RET copy of part_list_src, must be freed by caller
+ */
+extern List part_list_copy(List part_list_src);
 
 /*
  * Determine of the specified job can execute right now or is currently

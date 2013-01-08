@@ -387,6 +387,8 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 				xfree(msg->argv[i]);
 		}
 		xfree(msg->argv);
+		FREE_NULL_BITMAP(msg->array_bitmap);
+		xfree(msg->array_inx);
 		xfree(msg->blrtsimage);
 		xfree(msg->ckpt_dir);
 		xfree(msg->comment);

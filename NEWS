@@ -20,6 +20,8 @@ documents those changes that are of interest to users and admins.
     on which HealthCheckProgram should be executed.
  -- Remove sacct --dump --formatted-dump options which were deprecated in
     2.5.
+ -- Added support for job arrays (phase 1 of effort). See "man sbatch" option
+    -a/--array for details.
 
 * Changes in SLURM 2.5.2
 ========================

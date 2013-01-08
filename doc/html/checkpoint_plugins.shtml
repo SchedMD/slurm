@@ -5,7 +5,7 @@
 <h2> Overview</h2>
 <p> This document describes SLURM job checkpoint plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own SLURM
-job checkpoint plugins. This is version 0 of the API.</p>
+job checkpoint plugins. This is version 100 of the API.</p>
 
 <p>SLURM job checkpoint plugins are SLURM plugins that implement the SLURM
 API for checkpointing and restarting jobs.
@@ -75,25 +75,34 @@ checkpoint data that was previously allocated by slurm_ckpt_alloc_job.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_ckpt_pack_job (check_jobinfo_t jobinfo, Buf buffer);</p>
+<p class="commandline">int slurm_ckpt_pack_job (check_jobinfo_t jobinfo, Buf buffer, uint16_t protocol_version);</p>
 <p style="margin-left:.2in"><b>Description</b>: Store job-step specific checkpoint data
 into a buffer.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <b>jobinfo</b> (input) pointer to the previously allocated storage.<br>
-<b>Buf</b> (input/output) buffer to which jobinfo has been appended.</p>
+<b>Buf</b> (input/output) buffer to which jobinfo has been appended.<br>
+<b>protocol_version</b> (input) communication protocol version.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_ckpt_unpack_job (check_jobinfo_t jobinfo, Buf buffer);</p>
+<p class="commandline">int slurm_ckpt_unpack_job (check_jobinfo_t jobinfo, Buf buffer, uint16_t protocol_version);</p>
 <p style="margin-left:.2in"><b>Description</b>: Retrieve job-step specific checkpoint data
 from a buffer.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:</br>
 <b>jobinfo</b> (output) pointer to the previously allocated storage.<br>
-<b>Buf</b> (input/output) buffer from which jobinfo has been removed.</p>
+<b>Buf</b> (input/output) buffer to which jobinfo has been appended.<br>
+<b>protocol_version</b> (input) communication protocol version.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
+
+
+<p class="commandline">check_jobinfo_t slurm_ckpt_copy_job (check_jobinfo_t jobinfo);</p>
+<p style="margin-left:.2in"><b>Description</b>: Duplicate job-step specific checkpoint data.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:</br>
+<b>jobinfo</b> (input) pointer to the previously allocated storage.<br>
+<p style="margin-left:.2in"><b>Returns</b>: copy of jobinfo if successful. NULL on failure.</p>
 
 <p class="commandline">int slurm_ckpt_op ( uint32_t job_id, uint32_t step_id,
 struct step_record *step_ptr, uint16_t op, uint16_t data,
@@ -186,6 +195,6 @@ A checkpoint plugin conveys its ability to implement a particular API
 version using the mechanism outlined for SLURM plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 20 June 2012</p>
+<p style="text-align:center;">Last modified 7 January 2013</p>
 
 <!--#include virtual="footer.txt"-->

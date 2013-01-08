@@ -115,6 +115,7 @@
 #define OPT_EXPORT        0x17
 #define OPT_CLUSTERS      0x18
 #define OPT_TIME_VAL      0x19
+#define OPT_ARRAY_INX     0x20
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
@@ -444,6 +445,7 @@ struct env_vars {
 
 env_vars_t env_vars[] = {
   {"SBATCH_ACCOUNT",       OPT_STRING,     &opt.account,       NULL          },
+  {"SBATCH_ARRAY_INX",     OPT_STRING,     &opt.array_inx,     NULL          },
   {"SBATCH_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL          },
   {"SBATCH_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL          },
   {"SBATCH_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL      },
@@ -545,6 +547,10 @@ _process_env_var(env_vars_t *e, const char *val)
 			*((bool *)e->arg) = false;
 		}
 		break;
+
+	case OPT_ARRAY_INX:
+		xfree(opt.array_inx);
+		opt.array_inx = xstrdup(val);
 
 	case OPT_DEBUG:
 		if (val != NULL) {
@@ -663,6 +669,7 @@ _process_env_var(env_vars_t *e, const char *val)
 
 static struct option long_options[] = {
 	{"account",       required_argument, 0, 'A'},
+	{"array",         required_argument, 0, 'a'},
 	{"batch",         no_argument,       0, 'b'}, /* batch option
 							 is only here for
 							 moab tansition
@@ -759,7 +766,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+bA:B:c:C:d:D:e:F:g:hHi:IJ:kL:m:M:n:N:o:Op:P:QRst:uU:vVw:x:";
+	"+ba:A:B:c:C:d:D:e:F:g:hHi:IJ:kL:m:M:n:N:o:Op:P:QRst:uU:vVw:x:";
 char *pos_delimit;
 
 
@@ -796,8 +803,8 @@ char *process_options_first_pass(int argc, char **argv)
 	opt.progname = xbasename(argv[0]);
 	optind = 0;
 
-	while((opt_char = getopt_long(argc, argv, opt_string,
-				      optz, &option_index)) != -1) {
+	while ((opt_char = getopt_long(argc, argv, opt_string,
+				       optz, &option_index)) != -1) {
 		switch (opt_char) {
 		case '?':
 			fprintf(stderr, "Try \"sbatch --help\" for more "
@@ -1135,12 +1142,16 @@ static void _set_options(int argc, char **argv)
 	}
 
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, opt_string,
-				      optz, &option_index)) != -1) {
+	while ((opt_char = getopt_long(argc, argv, opt_string,
+				       optz, &option_index)) != -1) {
 		switch (opt_char) {
 		case '?':
 			error("Try \"sbatch --help\" for more information");
 			exit(error_exit);
+			break;
+		case 'a':
+			xfree(opt.array_inx);
+			opt.array_inx = xstrdup(optarg);
 			break;
 		case 'A':
 		case 'U':	/* backwards compatibility */
@@ -2763,6 +2774,8 @@ static void _opt_list(void)
 		slurm_make_time_str(&opt.begin, time_str, sizeof(time_str));
 		info("begin             : %s", time_str);
 	}
+	info("array             : %s",
+	     opt.array_inx == NULL ? "N/A" : opt.array_inx);
 	info("mail_type         : %s", print_mail_type(opt.mail_type));
 	info("mail_user         : %s", opt.mail_user);
 	info("sockets-per-node  : %d", opt.sockets_per_node);
@@ -2819,6 +2832,7 @@ static void _usage(void)
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
 "              [--switches=max-switches{@max-time-to-wait}]\n"
+"              [--array=index_values]\n"
 "              [--export[=names]] [--export-file=file|fd] executable [args...]\n");
 }
 
@@ -2830,6 +2844,7 @@ static void _help(void)
 "Usage: sbatch [OPTIONS...] executable [args...]\n"
 "\n"
 "Parallel run options:\n"
+"  -a, --array=indecies        job array index values\n"
 "  -A, --account=name          charge job to specified account\n"
 "      --begin=time            defer job until HH:MM MM/DD/YY\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"

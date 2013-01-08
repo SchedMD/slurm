@@ -289,6 +289,16 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer,
 	return SLURM_ERROR;
 }
 
+extern check_jobinfo_t slurm_ckpt_copy_job(check_jobinfo_t jobinfo)
+{
+	struct check_job_info *jobinfo_src, *jobinfo_dest;
+
+	jobinfo_src  = (struct check_job_info *)jobinfo;
+	jobinfo_dest = xmalloc(sizeof(struct check_job_info));
+	memcpy(jobinfo_dest, jobinfo_src, sizeof(struct check_job_info));
+	return (check_jobinfo_t) jobinfo_dest;
+}
+
 static int _ckpt_step(struct step_record * step_ptr, uint16_t wait, int vacate)
 {
 	struct check_job_info *check_ptr;

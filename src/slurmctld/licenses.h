@@ -67,6 +67,13 @@ extern void license_free(void);
 extern void license_free_rec(void *x);
 
 /*
+ * license_job_copy - create a copy of a job's license list
+ * IN license_list_src - job license list to be copied
+ * RET a copy of the original job license list
+ */
+extern List license_job_copy(List license_list_src);
+
+/*
  * license_job_get - Get the licenses required for a job
  * IN job_ptr - job identification
  * RET SLURM_SUCCESS or failure code

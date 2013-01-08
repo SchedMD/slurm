@@ -937,6 +937,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * ALLOC_SID_* flags */
 	uint32_t argc;		/* number of arguments to the script */
 	char **argv;		/* arguments to the script */
+	char *array_inx;	/* job array index values */
+	void *array_bitmap;	/* NOTE: Set by slurmctld */
 	time_t begin_time;	/* delay initiation until this time */
 	uint16_t ckpt_interval;	/* periodically checkpoint this job */
 	char *ckpt_dir;	 	/* directory to store checkpoint images */
@@ -1073,6 +1075,8 @@ typedef struct job_info {
 	char *account;		/* charge to specified account */
 	char    *alloc_node;	/* local node making resource alloc */
 	uint32_t alloc_sid;	/* local sid making resource alloc */
+	uint32_t array_job_id;	/* job_id of a job array or 0 if N/A */
+	uint16_t array_task_id;	/* task_id of a job array */
 	uint32_t assoc_id;	/* association id for job */
 	uint16_t batch_flag;	/* 1 if batch: queued job with script */
 	char *batch_host;	/* name of host running batch script */
@@ -1386,6 +1390,8 @@ typedef struct {
 } slurm_trigger_callbacks_t;
 
 typedef struct {
+	uint32_t array_job_id;	/* job_id of a job array or 0 if N/A */
+	uint16_t array_task_id;	/* task_id of a job array */
 	char *ckpt_dir;		/* path to store checkpoint image files */
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
 	char *gres;		/* generic resources required */
@@ -1927,6 +1933,7 @@ typedef struct slurm_ctl_conf {
 	char *licenses;		/* licenses available on this cluster */
 	char *licenses_used;	/* licenses used on this cluster */
 	char *mail_prog;	/* pathname of mail program */
+	uint16_t max_array_sz;	/* Maximum job array size */
 	uint32_t max_job_cnt;	/* maximum number of active jobs */
 	uint32_t max_job_id;	/* maximum job id before using first_job_id */
 	uint32_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */

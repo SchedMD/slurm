@@ -422,7 +422,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 {
 	uint32_t time_limit;
 	slurmdb_association_rec_t *assoc_ptr = assoc_in;
-	int parent = 0;
+	int parent = 0, job_cnt = 1;
 	char *user_name = NULL;
 	bool rc = true;
 	uint32_t qos_max_cpus_limit = INFINITE;
@@ -464,6 +464,9 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			       "job_memory set to %u", job_memory);
 		}
 	}
+
+	if (job_desc->array_bitmap)
+		job_cnt = bit_set_count(job_desc->array_bitmap);
 
 	assoc_mgr_lock(&locks);
 
@@ -608,8 +611,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		}
 
 		if ((qos_ptr->grp_submit_jobs != INFINITE) &&
-		    (qos_ptr->usage->grp_used_submit_jobs
-		     >= qos_ptr->grp_submit_jobs)) {
+		    ((qos_ptr->usage->grp_used_submit_jobs + job_cnt)
+		     > qos_ptr->grp_submit_jobs)) {
 			debug2("job submit for user %s(%u): "
 			       "group max submit job limit exceeded %u "
 			       "for qos '%s'",
@@ -718,8 +721,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				used_limits = _get_used_limits_for_user(
 					qos_ptr->usage->user_limit_list,
 					job_desc->user_id);
-			if (used_limits && (used_limits->submit_jobs
-					    >= qos_ptr->max_submit_jobs_pu)) {
+			if (used_limits && ((used_limits->submit_jobs + job_cnt)
+					    > qos_ptr->max_submit_jobs_pu)) {
 				debug2("job submit for user %s(%u): "
 				       "qos max submit job limit exceeded %u",
 				       user_name,
@@ -861,8 +864,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		if ((!qos_ptr ||
 		     (qos_ptr && qos_ptr->grp_submit_jobs == INFINITE)) &&
 		    (assoc_ptr->grp_submit_jobs != INFINITE) &&
-		    (assoc_ptr->usage->used_submit_jobs
-		     >= assoc_ptr->grp_submit_jobs)) {
+		    ((assoc_ptr->usage->used_submit_jobs + job_cnt)
+		     > assoc_ptr->grp_submit_jobs)) {
 			debug2("job submit for user %s(%u): "
 			       "group max submit job limit exceeded %u "
 			       "for account '%s'",
@@ -970,8 +973,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		if ((!qos_ptr ||
 		     (qos_ptr && qos_ptr->max_submit_jobs_pu == INFINITE)) &&
 		    (assoc_ptr->max_submit_jobs != INFINITE) &&
-		    (assoc_ptr->usage->used_submit_jobs
-		     >= assoc_ptr->max_submit_jobs)) {
+		    ((assoc_ptr->usage->used_submit_jobs + job_cnt)
+		     > assoc_ptr->max_submit_jobs)) {
 			debug2("job submit for user %s(%u): "
 			       "account max submit job limit exceeded %u",
 			       user_name,

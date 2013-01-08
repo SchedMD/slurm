@@ -99,6 +99,7 @@ extern char *default_plugstack;
 #endif
 
 #define DEFAULT_MAIL_PROG           "/bin/mail"
+#define DEFAULT_MAX_ARRAY_SIZE      1001
 #define DEFAULT_MAX_JOB_COUNT       10000
 #define DEFAULT_MAX_JOB_ID          0xffff0000
 #define DEFAULT_MAX_STEP_COUNT      40000

@@ -1251,6 +1251,31 @@ static void _depend_list_del(void *dep_ptr)
 	xfree(dep_ptr);
 }
 
+/*
+ * Copy a job's dependency list
+ * IN depend_list_src - a job's depend_lst
+ * RET copy of depend_list_src, must bee freed by caller
+ */
+extern List depended_list_copy(List depend_list_src)
+{
+	struct depend_spec *dep_src, *dep_dest;
+	ListIterator iter;
+	List depend_list_dest = NULL;
+
+	if (!depend_list_src)
+		return depend_list_dest;
+
+	depend_list_dest = list_create(_depend_list_del);
+	iter = list_iterator_create(depend_list_src);
+	while ((dep_src = (struct depend_spec *) list_next(iter))) {
+		dep_dest = xmalloc(sizeof(struct depend_spec));
+		memcpy(dep_dest, dep_src, sizeof(struct depend_spec));
+		list_append(depend_list_dest, dep_dest);
+	}
+	list_iterator_destroy(iter);
+	return depend_list_dest;
+}
+
 /* Print a job's dependency information based upon job_ptr->depend_list */
 extern void print_job_dependency(struct job_record *job_ptr)
 {
@@ -2197,6 +2222,32 @@ static void *_run_prolog(void *arg)
 	FREE_NULL_BITMAP(node_bitmap);
 
 	return NULL;
+}
+
+/*
+ * Copy a job's feature list
+ * IN feature_list_src - a job's depend_lst
+ * RET copy of depend_list_src, must be freed by caller
+ */
+extern List feature_list_copy(List feature_list_src)
+{
+	struct feature_record *feat_src, *feat_dest;
+	ListIterator iter;
+	List feature_list_dest = NULL;
+
+	if (!feature_list_src)
+		return feature_list_dest;
+
+	feature_list_dest = list_create(_feature_list_delete);
+	iter = list_iterator_create(feature_list_src);
+	while ((feat_src = (struct feature_record *) list_next(iter))) {
+		feat_dest = xmalloc(sizeof(struct feature_record));
+		memcpy(feat_dest, feat_src, sizeof(struct feature_record));
+		feat_dest->name = xstrdup(feat_src->name);
+		list_append(feature_list_dest, feat_dest);
+	}
+	list_iterator_destroy(iter);
+	return feature_list_dest;
 }
 
 /*

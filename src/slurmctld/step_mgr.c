@@ -2337,6 +2337,8 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 #endif
 
 	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		pack32(step_ptr->job_ptr->array_job_id, buffer);
+		pack16(step_ptr->job_ptr->array_task_id, buffer);
 		pack32(step_ptr->job_ptr->job_id, buffer);
 		pack32(step_ptr->step_id, buffer);
 		pack16(step_ptr->ckpt_interval, buffer);

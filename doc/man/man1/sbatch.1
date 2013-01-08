@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 2.5" "October 2012" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 2.6" "January 2013" "SLURM Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to SLURM.
@@ -32,6 +32,18 @@ http://www.schedmd.com/slurmdocs/cpu_management.html
 
 .SH "OPTIONS"
 .LP
+
+.TP
+\fB\-a\fR, \fB\-\-array\fR=<\fIindecies\fR>
+Submit a job array, multiple jobs to be executed with identical parameters.
+The \fIindecies\fR specification identifies what array index values should
+be used. Multiple values may be specified using a comma separated list and/or
+a range of values with a "\-" separator. For example, "\-\-array=0\-15" or 
+"\-\-array=0,6,16\-32".
+A step function can also be specified with a suffix containing a colon and
+number. For example, "\-\-array=0\-15:4" is equivalent to "\-\-array=0,4,8,12".
+The minimum index value is 0.
+the maximum value is one less than the configuration parameter MaxArraySize.
 
 .TP
 \fB\-A\fR, \fB\-\-account\fR=<\fIaccount\fR>

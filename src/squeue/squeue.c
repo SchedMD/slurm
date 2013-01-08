@@ -228,10 +228,10 @@ _print_job ( bool clear_old )
 
 	if (params.format == NULL) {
 		if (params.long_list)
-			params.format = "%.7i %.9P %.8j %.8u %.8T %.10M %.9l "
+			params.format = "%.12i %.9P %.8j %.8u %.8T %.10M %.9l "
 				"%.6D %R";
 		else
-			params.format = "%.7i %.9P %.8j %.8u  %.2t %.10M %.6D %R";
+			params.format = "%.12i %.9P %.8j %.8u  %.2t %.10M %.6D %R";
 	}
 	if (params.format_list == NULL)
 		parse_format(params.format);
@@ -283,7 +283,7 @@ _print_job_steps( bool clear_old )
 	}
 
 	if (params.format == NULL)
-		params.format = "%10i %.8j %.9P %.8u %.9M %N";
+		params.format = "%.15i %.8j %.9P %.8u %.9M %N";
 	if (params.format_list == NULL)
 		parse_format(params.format);
 

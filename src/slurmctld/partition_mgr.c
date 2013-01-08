@@ -641,6 +641,30 @@ struct part_record *find_part_record(char *name)
 }
 
 /*
+ * Create a copy of a job's part_list *partition list
+ * IN part_list_src - a job's part_list
+ * RET copy of part_list_src, must be freed by caller
+ */
+extern List part_list_copy(List part_list_src)
+{
+	struct part_record *part_ptr;
+	ListIterator iter;
+	List part_list_dest = NULL;
+
+	if (!part_list_src)
+		return part_list_dest;
+
+	part_list_dest = list_create(NULL);
+	iter = list_iterator_create(part_list_src);
+	while ((part_ptr = (struct part_record *) list_next(iter))) {
+		list_append(part_list_dest, part_ptr);
+	}
+	list_iterator_destroy(iter);
+
+	return part_list_dest;
+}
+
+/*
  * get_part_list - find record for named partition(s)
  * IN name - partition name(s) in a comma separated list
  * RET List of pointers to the partitions or NULL if not found

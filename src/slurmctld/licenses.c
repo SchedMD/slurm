@@ -413,6 +413,32 @@ extern int license_job_test(struct job_record *job_ptr, time_t when)
 }
 
 /*
+ * license_job_copy - create a copy of a job's license list
+ * IN license_list_src - job license list to be copied
+ * RET a copy of the original job license list
+ */
+extern List license_job_copy(List license_list_src)
+{
+	licenses_t *license_entry_src, *license_entry_dest;
+	ListIterator iter;
+	List license_list_dest = NULL;
+
+	if (!license_list_src)
+		return license_list_dest;
+
+	license_list_dest = list_create(license_free_rec);
+	iter = list_iterator_create(license_list_src);
+	while ((license_entry_src = (licenses_t *) list_next(iter))) {
+		license_entry_dest = xmalloc(sizeof(licenses_t));
+		license_entry_dest->name = xstrdup(license_entry_src->name);
+		license_entry_dest->total = license_entry_src->total;
+		list_push(license_list_dest, license_entry_dest);
+	}
+	list_iterator_destroy(iter);
+	return license_list_dest;
+}
+
+/*
  * license_job_get - Get the licenses required for a job
  * IN job_ptr - job identification
  * RET SLURM_SUCCESS or failure code

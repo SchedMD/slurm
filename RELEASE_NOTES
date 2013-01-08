@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.6
-8 December 2012
+4 January 2012
 
 
 IMPORTANT NOTE:
@@ -25,31 +25,44 @@ SLURM will result in loss of state information.
 
 HIGHLIGHTS
 ==========
+ - Added support for job arrays, which increases performance and ease of use
+   for sets of similar jobs.
+ - Added prolog and epilog support for advanced reservations.
+ - Much faster throughput for job step execution with --exclusive option. The
+   srun process is notified when resources become available rather than
+   periodic polling.
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
+ - Added "HealthCheckNodeState" configuration parameter identifing node states
+   on which HealthCheckProgram should be executed.
+ - Added "MaxArraySize" configuration parameter specifying maximum job array
+   size.
  - Added "ResvEpilog" and "ResvProlog" configuration parameters to execute a
    program at the beginning and end of a reservation.
- - Added "HealthCheckNodeState" configuration parameter identify node states
-   on which HealthCheckProgram should be executed.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
-- Added step "State" field to scontrol output.
+ - Added step "State" field to scontrol output.
+ - Added "--array" option to sbatch for job array support.
+ - Enlarged default JOBID and STEPID field sizes in squeue output to better
+   support job arrays. For job arrays, the job ID is no longer a single number
+   but has the format "JOBID_TASKID" while a step ID format is now
+   "JOBID_TASKID.STEPID".
 
 OTHER CHANGES
 =============
-- Much faster throughput for job step execution with --exclusive option. The
-  srun process is notified when resources become available rather than periodic
-  polling.
 
 API CHANGES
 ===========
+Added function "slurm_ckpt_copy_job" to checkpoint plugins.
 
 Changed members of the following structs
 ========================================
 - Added "state" field to job_step_info_t.
 - Added "resv_epilog" and "resv_prolog" to slurm_ctl_conf_t.
+- Added "array_inx" field to job_desc_msg_t.
+- Added "array_job_id" and "array_job_id" fields to slurm_job_info_t.
 
 Added the following struct definitions
 ======================================

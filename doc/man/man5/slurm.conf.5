@@ -1,4 +1,4 @@
-.TH "slurm.conf" "17" "December 2012" "slurm.conf 2.6" "Slurm configuration file"
+.TH "slurm.conf" "17" "January 2013" "slurm.conf 2.6" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -841,6 +841,15 @@ not explicitly listed in the job submission specification.
 \fBMailProg\fR
 Fully qualified pathname to the program used to send email per user request.
 The default value is "/bin/mail".
+
+.TP
+\fBMaxArraySize\fR
+The maximum job array size.
+The maximum job array task index value will be one less than MaxArraySize
+to allow for an index value of zero.
+Configure MaxArraySize to 0 in order to disable job array use.
+The value may not exceed 65533.
+Default value is 1001.
 
 .TP
 \fBMaxJobCount\fR
