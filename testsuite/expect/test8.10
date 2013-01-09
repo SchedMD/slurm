@@ -181,16 +181,16 @@ sleep 1
 
 #Checks job
 if {[check_job $job_id 32 512 1]} {
-	exit exit_code
+	exit $exit_code
 }
 #Checks the job step
 if {[check_step $job_id 0 32 512]} {
-	exit exit_code
+	exit $exit_code
 }
 
 #submit allocation and runs job
 set matches 0
-spawn $salloc -n512 $srun $bin_sleep
+spawn $salloc -n512 $srun $bin_sleep 50
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -212,11 +212,11 @@ if {$matches !=1} {
 
 #Checks job
 if {[check_job $job_id 32 512 1]} {
-	exit exit_code
+	exit $exit_code
 }
 #Checks the job step
 if {[check_step $job_id 0 32 512]} {
-	exit exit_code
+	exit $exit_code
 }
 
 if {$exit_code == 0} {
