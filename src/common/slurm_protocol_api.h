@@ -406,7 +406,7 @@ int slurm_set_accounting_storage_host(char *host);
 /* slurm_get_accounting_storage_enforce
  * returns what level to enforce associations at
  */
-int slurm_get_accounting_storage_enforce(void);
+uint16_t slurm_get_accounting_storage_enforce(void);
 
 /* slurm_get_is_association_based_accounting
  * returns if we are doing accounting by associations

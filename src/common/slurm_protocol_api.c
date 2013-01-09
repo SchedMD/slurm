@@ -1176,9 +1176,9 @@ int slurm_set_accounting_storage_loc(char *loc)
 /* slurm_get_accounting_storage_enforce
  * returns what level to enforce associations at
  */
-int slurm_get_accounting_storage_enforce(void)
+uint16_t slurm_get_accounting_storage_enforce(void)
 {
-	int enforce = 0;
+	uint16_t enforce = 0;
 	slurm_ctl_conf_t *conf;
 
 	if (slurmdbd_conf) {
