@@ -2245,11 +2245,15 @@ static void _layout_step_record(GtkTreeView *treeview,
 		now_time -= step_ptr->start_time;
 		secs2time_str(now_time, tmp_time, sizeof(tmp_time));
 		_get_step_nodelist(step_ptr, tmp_nodes, sizeof(tmp_nodes));
-		if (cluster_flags & CLUSTER_FLAG_BGQ)
+		if (cluster_flags & CLUSTER_FLAG_BGQ) {
+			uint32_t nodes = 0;
+			select_g_select_jobinfo_get(step_ptr->select_jobinfo,
+						    SELECT_JOBDATA_NODE_CNT,
+						    &nodes);
 			convert_num_unit(
-				(float)step_ptr->num_tasks,
+				(float)nodes,
 				tmp_char, sizeof(tmp_char), UNIT_NONE);
-		else if (cluster_flags & CLUSTER_FLAG_BG)
+		} else if (cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit(
 				(float)step_ptr->num_tasks / cpus_per_node,
 				tmp_char, sizeof(tmp_char), UNIT_NONE);
