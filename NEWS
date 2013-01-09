@@ -22,6 +22,9 @@ documents those changes that are of interest to users and admins.
     2.5.
  -- Added support for job arrays (phase 1 of effort). See "man sbatch" option
     -a/--array for details.
+ -- Add new AccountStorageEnforce options of 'nojobs' and 'nosteps' which will
+    allow the use of accounting features like associations, qos and limits but
+    not keep track of jobs or steps in accounting.
 
 * Changes in SLURM 2.5.2
 ========================

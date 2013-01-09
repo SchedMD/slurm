@@ -54,22 +54,35 @@ Only used for database type storage plugins, ignored otherwise.
 \fBAccountingStorageEnforce\fR
 This controls what level of association\-based enforcement to impose
 on job submissions.  Valid options are any combination of
-\fIassociations\fR, \fIlimits\fR, \fIqos\fR, \fIsafe\fR, and \fIwckeys\fR, or
-\fIall\fR for all things.  If limits, qos, or wckeys are set,
-associations will automatically be set.  In addition, if wckeys is
-set, TrackWCKey will automatically be set.  If safe is set, limits and
-associations will automatically be set.  By enforcing Associations no
-new job is allowed to run unless a corresponding association exists in
-the system.  If limits are enforced users can be limited by association
-to whatever job size or run time limits are defined.  If safe is
-enforced a job will only be launched against an association or qos that
-has a GrpCPUMins limit set if the job will be able to run to completion.
+\fIassociations\fR, \fIlimits\fR, \fInojobs\fR, \fInosteps\fR, \fIqos\fR, \fIsafe\fR, and \fIwckeys\fR, or
+\fIall\fR for all things.
+
+If limits, qos, or wckeys are set, associations will automatically be set.
+
+If wckeys is set, TrackWCKey will automatically be set.
+
+If safe is set, limits and associations will automatically be set.
+
+If nojobs is set nosteps will automatically be set.
+
+By enforcing Associations no new job is allowed to run unless a corresponding
+association exists in the system.  If limits are enforced users can be
+limited by association to whatever job size or run time limits are defined.
+
+If nojobs is set Slurm will not account for any jobs or steps on the system,
+like wise if nosteps is set Slurm will not account for any steps ran limits
+will still be enforced.
+
+If safe is enforced a job will only be launched against an association or qos
+that has a GrpCPUMins limit set if the job will be able to run to completion.
 Without this option set, jobs will be launched as long as their usage
 hasn't reached the cpu-minutes limit which can lead to jobs being
-launched but then killed when the limit is reached. With qos and/or
-wckeys enforced jobs will not be scheduled unless a valid qos and/or
-workload characterization key is specified.  When
-\fBAccountingStorageEnforce\fR is changed, a restart of the slurmctld
+launched but then killed when the limit is reached.
+
+With qos and/or wckeys enforced jobs will not be scheduled unless a valid qos
+and/or workload characterization key is specified.
+
+When \fBAccountingStorageEnforce\fR is changed, a restart of the slurmctld
 daemon is required (not just a "scontrol reconfig").
 
 .TP

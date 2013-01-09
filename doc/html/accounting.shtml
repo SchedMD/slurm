@@ -239,6 +239,14 @@ prevent users from accessing invalid accounts.
   is used and has limits those as well.  By setting
   this option, the 'associations' option is automatically set.
 </li>
+<li>nojobs - This will make it so no job information is stored in
+  accounting.  By setting this 'nosteps' is also set.
+</li>
+<li>nosteps - This will make it so no step information is stored in
+  accounting. Both nojobs and nosteps could be helpful in an
+  environment where you want to use limits but don't really care about
+  utilization.
+</li>
 <li>qos - This will require all jobs to specify (either overtly or by
   default) a valid qos (Quality of Service).  QOS values are defined for
   each association in the database.  By setting this option, the

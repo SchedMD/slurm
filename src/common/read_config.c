@@ -2911,6 +2911,19 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				|= ACCOUNTING_ENFORCE_QOS;
 		}
 
+		if (strstr(temp_str, "nojobs")) {
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_NO_JOBS;
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_NO_STEPS;
+		}
+
+		if (strstr(temp_str, "nosteps")) {
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_NO_STEPS;
+		}
+
+
 		if (strstr(temp_str, "all")) {
 			conf->accounting_storage_enforce = 0xffff;
 			conf->track_wckey = true;

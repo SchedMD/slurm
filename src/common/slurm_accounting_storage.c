@@ -257,6 +257,7 @@ static slurm_acct_storage_ops_t ops;
 static plugin_context_t *plugin_context = NULL;
 static pthread_mutex_t plugin_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
+static uint16_t enforce = 0;
 
 /*
  * Initialize context for acct_storage plugin
@@ -289,7 +290,7 @@ extern int slurm_acct_storage_init(char *loc)
 		goto done;
 	}
 	init_run = true;
-
+	enforce = slurm_get_accounting_storage_enforce();
 done:
 	slurm_mutex_unlock(&plugin_context_lock);
 	xfree(type);
@@ -443,6 +444,7 @@ extern List acct_storage_g_modify_job(void *db_conn, uint32_t uid,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
+
 	return (*(ops.modify_job))(db_conn, uid, job_cond, job);
 }
 
@@ -768,6 +770,8 @@ extern int jobacct_storage_g_job_start(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
+	if (enforce & ACCOUNTING_ENFORCE_NO_JOBS)
+		return SLURM_SUCCESS;
 
 	/* A pending job's start_time is it's expected initiation time
 	 * (changed in slurm v2.1). Rather than changing a bunch of code
@@ -793,6 +797,8 @@ extern int jobacct_storage_g_job_complete(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
+	if (enforce & ACCOUNTING_ENFORCE_NO_JOBS)
+		return SLURM_SUCCESS;
 	return (*(ops.job_complete))(db_conn, job_ptr);
 }
 
@@ -804,6 +810,8 @@ extern int jobacct_storage_g_step_start(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
+	if (enforce & ACCOUNTING_ENFORCE_NO_STEPS)
+		return SLURM_SUCCESS;
 	return (*(ops.step_start))(db_conn, step_ptr);
 }
 
@@ -815,6 +823,8 @@ extern int jobacct_storage_g_step_complete(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
+	if (enforce & ACCOUNTING_ENFORCE_NO_STEPS)
+		return SLURM_SUCCESS;
 	return (*(ops.step_complete))(db_conn, step_ptr);
 }
 
@@ -826,6 +836,8 @@ extern int jobacct_storage_g_job_suspend(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
+	if (enforce & ACCOUNTING_ENFORCE_NO_JOBS)
+		return SLURM_SUCCESS;
 	return (*(ops.job_suspend))(db_conn, job_ptr);
 }
 
