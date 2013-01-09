@@ -1736,12 +1736,17 @@ extern void accounting_enforce_string(uint16_t enforce, char *str, int str_len)
 			strcat(str, ",");
 		strcat(str, "qos"); //4 len
 	}
+	if (enforce & ACCOUNTING_ENFORCE_SAFE) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "safe"); //5 len
+	}
 	if (enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 		if (str[0])
 			strcat(str, ",");
 		strcat(str, "wckeys"); //7 len
 	}
-	// total len 30
+	// total len 35
 
 	if (str[0] == '\0')
 		strcat(str, "none");
