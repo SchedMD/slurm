@@ -1,0 +1,29 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Contributor Agreement</h1>
+
+<p>In order to help insure the legal integrity of Slurm and provide protection
+for all contributors and users a contributor agreement is required for all
+substantial contributions.
+Each individual making contributions should complete the<br>
+<a href="Slurm_Individual.pdf">Slurm Workload Manager Individual Contributor License Agreement</a>.<br>
+In addition the individual's organization should complete the<br>
+<a href="Slurm_Entity.pdf">Slurm Workload Manager Entity Contributor License Agreement</a>.</p>
+
+<p>Signed forms or questions should be directed to
+<a href="mailto:support@schedmd.com">support@schedmd.com</a> or posted to<br><br>
+SchedMD LLC<br>
+39 South Livermore Avenue<br>
+Suite 201<br>
+Livermore, CA 94550<br>
+USA</p>
+
+<p>Contacting SchedMD before starting any substantial development effort is
+recommended to coordinate development and avoid duplication of effort.
+SchedMD can provide design review, code review, integration and long-term
+support at reasonable cost. SchedMD can also perform custom development work
+to satisfy your requirements.</p>
+
+<p style="text-align:center;">Last modified 9 January 2013</p>
+
+<!--#include virtual="footer.txt"-->

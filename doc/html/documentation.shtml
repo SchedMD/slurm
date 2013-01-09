@@ -73,6 +73,7 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 
 <h2>SLURM Developers</h2>
 <ul>
+<li><a href="contributor.html">Contributor Agreement</a></li>
 <li><a href="programmer_guide.html">Programmer Guide</a></li>
 <li><a href="api.html">Application Programmer Interface (API) Guide</a></li>
 <li>Design Information</li>

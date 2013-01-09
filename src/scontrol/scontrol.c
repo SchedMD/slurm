@@ -217,13 +217,16 @@ main (int argc, char *argv[])
 		error_code = _get_command (&input_field_count, input_fields);
 
 	while (error_code == SLURM_SUCCESS) {
+		if (exit_flag) {	/* EOF */
+			putchar('\n');
+			break;
+		}
+
 		error_code = _process_command (input_field_count,
 					       input_fields);
 		if (error_code || exit_flag)
 			break;
 		error_code = _get_command (&input_field_count, input_fields);
-		if (exit_flag)
-			break;
 	}
 	if (clusters)
 		list_destroy(clusters);
