@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Fix advanced reservation recovery logic when upgrading from version 2.4.
  -- BLUEGENE - fix for QOS/Association node limits.
  -- Add missing "safe" flag from print of AccountStorageEnforce option.
+ -- Fix logic to optimize GRES topology with respect to allocated CPUs.
 
 * Changes in SLURM 2.5.1
 ========================
