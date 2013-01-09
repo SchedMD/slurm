@@ -14,6 +14,7 @@ generated_html = \
 	checkpoint_plugins.html \
 	cons_res.html \
 	cons_res_share.html \
+	contributor.html \
 	cpu_management.html \
 	cray.html \
 	crypto_plugins.html \
@@ -106,6 +107,8 @@ html_DATA = \
 	schedmd.png \
 	slurm_design.pdf \
 	slurmstyles.css \
+	Slurm_Entity.pdf \
+	Slurm_Individual.pdf \
 	sponsors.gif \
 	topo_ex1.gif \
 	topo_ex2.gif \
