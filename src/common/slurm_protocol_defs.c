@@ -1774,6 +1774,16 @@ extern void accounting_enforce_string(uint16_t enforce, char *str, int str_len)
 			strcat(str, ",");
 		strcat(str, "limits"); //7 len
 	}
+	if (enforce & ACCOUNTING_ENFORCE_NO_JOBS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "nojobs"); //7 len
+	}
+	if (enforce & ACCOUNTING_ENFORCE_NO_JOBS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "nosteps"); //8 len
+	}
 	if (enforce & ACCOUNTING_ENFORCE_QOS) {
 		if (str[0])
 			strcat(str, ",");
@@ -1789,7 +1799,7 @@ extern void accounting_enforce_string(uint16_t enforce, char *str, int str_len)
 			strcat(str, ",");
 		strcat(str, "wckeys"); //7 len
 	}
-	// total len 35
+	// total len 50
 
 	if (str[0] == '\0')
 		strcat(str, "none");
