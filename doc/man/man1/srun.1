@@ -1878,7 +1878,10 @@ if specified on the execute line.
 \-\-cpu_bind type (none,rank,map_cpu:,mask_cpu:)
 .TP
 \fBSLURM_CPU_BIND_LIST\fR
-\-\-cpu_bind map or mask list (<list of IDs or masks for this node>)
+\-\-cpu_bind map or mask list (list of SLURM CPU IDs or masks for this node,
+CPU_ID = Board_ID x threads_per_board +
+Socket_ID x threads_per_socket +
+Core_ID x threads_per_core + Thread_ID).
 
 .TP
 \fBSLURM_CPU_FREQ_REQ\fR

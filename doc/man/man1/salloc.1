@@ -1257,6 +1257,12 @@ The reservation ID on Cray systems running ALPS/BASIL only.
 \fBSLURM_CPU_BIND\fR
 Set to value of the \-\-cpu_bind\fR option.
 .TP
+\fBSLURM_CPU_BIND_LIST\fR
+\-\-cpu_bind map or mask list (list of SLURM CPU IDs or masks for this node,
+CPU_ID = Board_ID x threads_per_board +
+Socket_ID x threads_per_socket +
+Core_ID x threads_per_core + Thread_ID).
+.TP
 \fBSLURM_JOB_ID\fR (and \fBSLURM_JOBID\fR for backwards compatibility)
 The ID of the job allocation.
 .TP
