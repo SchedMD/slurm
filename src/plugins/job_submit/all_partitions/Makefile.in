@@ -15,7 +15,7 @@
 
 @SET_MAKE@
 
-# Makefile for job_submit/partition plugin
+# Makefile for job_submit/all_partitions plugin
 
 VPATH = @srcdir@
 am__make_dryrun = \
@@ -129,13 +129,13 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-job_submit_partition_la_LIBADD =
-am_job_submit_partition_la_OBJECTS = job_submit_partition.lo
-job_submit_partition_la_OBJECTS =  \
-	$(am_job_submit_partition_la_OBJECTS)
-job_submit_partition_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+job_submit_all_partitions_la_LIBADD =
+am_job_submit_all_partitions_la_OBJECTS = job_submit_all_partitions.lo
+job_submit_all_partitions_la_OBJECTS =  \
+	$(am_job_submit_all_partitions_la_OBJECTS)
+job_submit_all_partitions_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(job_submit_partition_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(job_submit_all_partitions_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -149,8 +149,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(job_submit_partition_la_SOURCES)
-DIST_SOURCES = $(job_submit_partition_la_SOURCES)
+SOURCES = $(job_submit_all_partitions_la_SOURCES)
+DIST_SOURCES = $(job_submit_all_partitions_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -370,11 +370,11 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = job_submit_partition.la
+pkglib_LTLIBRARIES = job_submit_all_partitions.la
 
-# Job submit partition plugin.
-job_submit_partition_la_SOURCES = job_submit_partition.c
-job_submit_partition_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+# Job submit all_partitions plugin.
+job_submit_all_partitions_la_SOURCES = job_submit_all_partitions.c
+job_submit_all_partitions_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -441,8 +441,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-job_submit_partition.la: $(job_submit_partition_la_OBJECTS) $(job_submit_partition_la_DEPENDENCIES) $(EXTRA_job_submit_partition_la_DEPENDENCIES) 
-	$(job_submit_partition_la_LINK) -rpath $(pkglibdir) $(job_submit_partition_la_OBJECTS) $(job_submit_partition_la_LIBADD) $(LIBS)
+job_submit_all_partitions.la: $(job_submit_all_partitions_la_OBJECTS) $(job_submit_all_partitions_la_DEPENDENCIES) $(EXTRA_job_submit_all_partitions_la_DEPENDENCIES) 
+	$(job_submit_all_partitions_la_LINK) -rpath $(pkglibdir) $(job_submit_all_partitions_la_OBJECTS) $(job_submit_all_partitions_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -450,7 +450,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_submit_partition.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_submit_all_partitions.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

@@ -104,7 +104,6 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 {
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
-	struct part_record *top_prio_part = NULL;
 
 	if (job_desc->partition)	/* job already specified partition */
 		return SLURM_SUCCESS;
@@ -113,6 +112,8 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		if (!(part_ptr->state_up & PARTITION_SUBMIT))
 			continue;	/* nobody can submit jobs here */
+		if (job_desc->partition)
+			xstrcat(job_desc->partition, ",");
 		xstrcat(job_desc->partition, part_ptr->name);
 	}
 	list_iterator_destroy(part_iterator);
