@@ -49,6 +49,7 @@ COMMAND CHANGES (see man pages for details)
    support job arrays. For job arrays, the job ID is no longer a single number
    but has the format "JOBID_TASKID" while a step ID format is now
    "JOBID_TASKID.STEPID".
+ - Fully removed deprecated sacct --dump --fdump options.
 
 OTHER CHANGES
 =============
