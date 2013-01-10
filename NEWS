@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - fix for QOS/Association node limits.
  -- Add missing "safe" flag from print of AccountStorageEnforce option.
  -- Fix logic to optimize GRES topology with respect to allocated CPUs.
+ -- Add job_submit/all_partitions plugin to set a job's default partition
+    to ALL available partitions in the cluster.
 
 * Changes in SLURM 2.5.1
 ========================
