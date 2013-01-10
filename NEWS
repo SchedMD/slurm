@@ -25,6 +25,8 @@ documents those changes that are of interest to users and admins.
  -- Add new AccountStorageEnforce options of 'nojobs' and 'nosteps' which will
     allow the use of accounting features like associations, qos and limits but
     not keep track of jobs or steps in accounting.
+ -- Cray - Add new cray.conf parameter of "AlpsEngine" to specify the
+    communication protocol to be used for ALPS/BASIL.
 
 * Changes in SLURM 2.5.2
 ========================

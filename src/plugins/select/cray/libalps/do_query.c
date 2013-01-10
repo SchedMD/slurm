@@ -15,6 +15,11 @@ static const char *_get_alps_engine(char *buf, size_t buflen)
 {
 	struct basil_parse_data bp = {0};
 
+	if (cray_conf->alps_engine) {
+		strncpy(buf, cray_conf->alps_engine, buflen);
+		return buf;
+	}
+
 	/* For this query use Basil 1.0 as lowest common denominator */
 	bp.version = BV_1_0;
 	bp.method  = BM_engine;
@@ -75,7 +80,8 @@ extern enum basil_version get_basil_version(void)
 
 	if (_get_alps_engine(engine_version, sizeof(engine_version)) == NULL)
 		fatal("can not determine ALPS Engine version");
-	else if (strncmp(engine_version, "5.1.0", 5) == 0)
+	else if ((strncmp(engine_version, "latest", 6) == 0) || 
+		 (strncmp(engine_version, "5.1.0", 5) == 0))
 		bv = BV_5_1;
 	else if (strncmp(engine_version, "5.0.1", 5) == 0)
 		bv = BV_5_0;

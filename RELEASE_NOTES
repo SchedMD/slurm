@@ -40,6 +40,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
    size.
  - Added "ResvEpilog" and "ResvProlog" configuration parameters to execute a
    program at the beginning and end of a reservation.
+ - Added new cray.conf parameter of "AlpsEngine" to specify the communication
+   protocol to be used for ALPS/BASIL.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
