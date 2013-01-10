@@ -83,7 +83,7 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 }
 # Allow time for the step to start
 # This could take a while with launch/poe
-sleep 10
+sleep 20
 
 #
 # Test verbose scancel
