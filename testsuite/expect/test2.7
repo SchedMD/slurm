@@ -108,7 +108,7 @@ if {$rem_time > 60} {
 	send_user "\nFAILURE: job remaining time is wrong $rem_time\n"
 	set exit_code 1
 }
-if {$rem_time < 58} {
+if {$rem_time < 56} {
 	send_user "\nFAILURE: job remaining time seems too small\n"
 	set exit_code 1
 }

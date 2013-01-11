@@ -67,6 +67,8 @@ proc inc3_11_7 {} {
 	exec $bin_rm -f $file_in
 	make_bash_script $file_in "$bin_sleep 100"
 
+	# Sleep short time in case clocks are not synchronized
+	sleep 5
 
 	# (First test) Submit the batch job: a simple job using just 1 core inside the reservation
 	set sbatch_pid [spawn $sbatch -n1 --reservation=$res_name --output=/dev/null $file_in]
