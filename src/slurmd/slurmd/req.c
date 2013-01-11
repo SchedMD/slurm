@@ -2675,9 +2675,11 @@ _rpc_file_bcast(slurm_msg_t *msg)
 #endif
 #endif
 
-	if ((rc = _valid_sbcast_cred(req, req_uid, req->block_no)) !=
-	    SLURM_SUCCESS)
-		return rc;
+	if (!_slurm_authorized_user(req_uid)) {
+		rc = _valid_sbcast_cred(req, req_uid, req->block_no);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	}
 
 	info("sbcast req_uid=%u fname=%s block_no=%u",
 	     req_uid, req->fname, req->block_no);
