@@ -35,7 +35,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <permapi.h>
 #include <ctype.h>
 #include <dlfcn.h>
 #include <fcntl.h>
@@ -45,6 +44,17 @@
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
+#endif
+
+#if HAVE_NRT_H
+# include <nrt.h>
+#else
+# error "Must have nrt.h to compile this module!"
+#endif
+#if HAVE_PERMAPI_H
+# include <permapi.h>
+#else
+# error "Must have permapi.h to compile this module!"
 #endif
 
 #include "src/common/slurm_xlator.h"

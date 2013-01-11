@@ -182,6 +182,9 @@
 /* Define to 1 if you have the <netdb.h> header file. */
 #undef HAVE_NETDB_H
 
+/* define if you have nrt.h */
+#undef HAVE_NRT_H
+
 /* define if numa library installed */
 #undef HAVE_NUMA
 
@@ -196,6 +199,9 @@
 
 /* Define to 1 if you have the <paths.h> header file. */
 #undef HAVE_PATHS_H
+
+/* define if you have permapi_h */
+#undef HAVE_PERMAPI_H
 
 /* Define to 1 if using PostgreSQL libaries */
 #undef HAVE_PGSQL

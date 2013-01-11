@@ -27,7 +27,9 @@ AC_DEFUN([X_AC_NRT],
       if test -f "$nrt_dir/nrt.h" -a -f "$nrt_dir/permapi.h"; then
          ac_have_nrt_h="yes"
          NRT_CPPFLAGS="-I$nrt_dir"
-	 break;
+         AC_DEFINE(HAVE_NRT_H, 1, [define if you have nrt.h])
+         AC_DEFINE(HAVE_PERMAPI_H, 1, [define if you have permapi_h])
+         break;
       fi
    done
    if test "x$ac_have_nrt_h" != "xyes" ; then
@@ -58,13 +60,12 @@ AC_DEFUN([X_AC_NRT],
 
    if test "x$ac_have_libnrt" != "xyes" ; then
       AC_MSG_RESULT([no])
-      AC_MSG_NOTICE([Cannot support IBM NRT API without libnrt.so])
    else
       AC_MSG_RESULT([yes])
       AC_DEFINE(HAVE_LIBNRT, 1, [define if you have libnrt.so])
    fi
 
-   if test "x$ac_have_nrt_h" = "xyes" && test "x$ac_have_libnrt" = "xyes"; then
+   if test "x$ac_have_nrt_h" = "xyes"; then
       ac_have_nrt="yes"
    fi
    AM_CONDITIONAL(HAVE_NRT, test "x$ac_have_nrt" = "xyes")

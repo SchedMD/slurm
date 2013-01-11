@@ -58,10 +58,10 @@
 #  include "config.h"
 #endif
 
-#if HAVE_LIBNRT
+#if HAVE_NRT_H
 # include <nrt.h>
 #else
-# error "Must have libnrt to compile this module!"
+# error "Must have nrt.h to compile this module!"
 #endif
 
 #include <arpa/inet.h>
@@ -75,6 +75,14 @@
 #include "src/common/node_conf.h"
 #include "src/plugins/switch/nrt/nrt_keys.h"
 #include "src/plugins/switch/nrt/slurm_nrt.h"
+
+/* If the head node has nrt.h, but no libnrt.so, we need to build the
+ * switch/nrt plugin in order to manage the nrt data structures, but
+ * will not make use of the nrt_command function. */
+#if !HAVE_LIBNRT
+  int nrt_command(int version, nrt_cmd_type_t cmd_type, void *cmd)
+  { fatal("nrt_command not supported without libnrt"); return 0; }
+#endif
 
 extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid );
 

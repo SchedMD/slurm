@@ -130,12 +130,14 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 job_submit_all_partitions_la_LIBADD =
-am_job_submit_all_partitions_la_OBJECTS = job_submit_all_partitions.lo
+am_job_submit_all_partitions_la_OBJECTS =  \
+	job_submit_all_partitions.lo
 job_submit_all_partitions_la_OBJECTS =  \
 	$(am_job_submit_all_partitions_la_OBJECTS)
-job_submit_all_partitions_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(job_submit_all_partitions_la_LDFLAGS) $(LDFLAGS) -o $@
+job_submit_all_partitions_la_LINK = $(LIBTOOL) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(job_submit_all_partitions_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
