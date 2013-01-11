@@ -21662,7 +21662,13 @@ $as_echo_n "checking Checking NRT and PERMAPI header files... " >&6; }
       if test -f "$nrt_dir/nrt.h" -a -f "$nrt_dir/permapi.h"; then
          ac_have_nrt_h="yes"
          NRT_CPPFLAGS="-I$nrt_dir"
-	 break;
+
+$as_echo "#define HAVE_NRT_H 1" >>confdefs.h
+
+
+$as_echo "#define HAVE_PERMAPI_H 1" >>confdefs.h
+
+         break;
       fi
    done
    if test "x$ac_have_nrt_h" != "xyes" ; then
@@ -21703,8 +21709,6 @@ $as_echo_n "checking whether to enable IBM NRT support... " >&6; }
    if test "x$ac_have_libnrt" != "xyes" ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-      { $as_echo "$as_me:${as_lineno-$LINENO}: Cannot support IBM NRT API without libnrt.so" >&5
-$as_echo "$as_me: Cannot support IBM NRT API without libnrt.so" >&6;}
    else
       { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
@@ -21713,7 +21717,7 @@ $as_echo "#define HAVE_LIBNRT 1" >>confdefs.h
 
    fi
 
-   if test "x$ac_have_nrt_h" = "xyes" && test "x$ac_have_libnrt" = "xyes"; then
+   if test "x$ac_have_nrt_h" = "xyes"; then
       ac_have_nrt="yes"
    fi
     if test "x$ac_have_nrt" = "xyes"; then

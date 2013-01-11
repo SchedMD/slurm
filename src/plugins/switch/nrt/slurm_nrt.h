@@ -47,10 +47,10 @@
 #ifndef _SLURM_NRT_INCLUDED
 #define _SLURM_NRT_INCLUDED
 
-#if HAVE_LIBNRT
+#if HAVE_NRT_H
 # include <nrt.h>
 #else
-# error "Must have libnrt to compile this module!"
+# error "Must have nrt.h to compile this module!"
 #endif
 
 /* opaque data structures - no peeking! */
