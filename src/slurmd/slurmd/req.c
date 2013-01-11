@@ -470,6 +470,10 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	 * to send step completion messages to the controller.
 	 */
 	if (step_hset == NULL) {
+		if (type == LAUNCH_TASKS) {
+			info("task rank unavailable due to invalid job "
+			     "credential, step completion RPC impossible");
+		}
 		rank = -1;
 		parent_rank = -1;
 		children = 0;
