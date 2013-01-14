@@ -66,10 +66,9 @@ window.onresize = window_check;
 </ul>
 <div id="slurmh2">Installing</div>
 <ul>
-	  <li><a href="platforms.shtml" class="nav">Platforms</a></li>
 	  <li><a href="download.shtml" class="nav">Download</a></li>
-	  <li><a href="download.shtml#related" class="nav">Related Software</a></li>
 	  <li><a href="quickstart_admin.shtml" class="nav">Installation Guide</a></li>
+	  <li><a href="platforms.shtml" class="nav">Platforms</a></li>
 </ul>
 <a href="http://www.schedmd.com"><img class="displayed" src="schedmd.png" width="130" usemap="#Map"></a>
 </div>
