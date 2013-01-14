@@ -378,6 +378,9 @@ should be written to a MySQL database specified by the
 The value "accounting_storage/pgsql" indicates that accounting records
 should be written to a PostgreSQL database specified by the
 <i>StorageLoc</i> parameter.
+Note: The PostgreSQL plugin is not
+complete and should not be used if wanting to use associations.  It
+will however work with basic accounting of jobs and job steps.
 This value must be specified.</li>
 
 <li><b>StorageUser</b>:
