@@ -1743,6 +1743,10 @@ prevents memory over subscription with job preemption or gang scheduling.
 The following values are supported for \fBSelectType=select/cons_res\fR:
 .RS
 .TP
+\fBCR_ALLOCATE_FULL_SOCKET\fR
+Jobs are allocated whole sockets rather than individual cores.
+Must be used with \fBCR_Socket\fR or \fBCR_Socket_Memory\fR option.
+.TP
 \fBCR_CPU\fR
 CPUs are consumable resources.
 Configure the number of \fBCPUs\fR on each node, which may be equal to the

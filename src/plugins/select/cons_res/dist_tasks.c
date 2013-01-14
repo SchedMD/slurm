@@ -326,13 +326,13 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 	if (cr_type & CR_CORE)
 		alloc_cores = true;
-#ifdef ALLOCATE_FULL_SOCKET
-	if (cr_type & CR_SOCKET)
-		alloc_sockets = true;
-#else
-	if (cr_type & CR_SOCKET)
-		alloc_cores = true;
-#endif
+	if (slurmctld_conf.select_type_param & CR_ALLOCATE_FULL_SOCKET) {
+		if (cr_type & CR_SOCKET)
+			alloc_sockets = true;
+	} else {
+		if (cr_type & CR_SOCKET)
+			alloc_cores = true;
+	}
 
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
@@ -660,13 +660,13 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 
 	if (cr_type & CR_CORE)
 		alloc_cores = true;
-#ifdef ALLOCATE_FULL_SOCKET
-	if (cr_type & CR_SOCKET)
-		alloc_sockets = true;
-#else
-	if (cr_type & CR_SOCKET)
-		alloc_cores = true;
-#endif
+	if (slurmctld_conf.select_type_param & CR_ALLOCATE_FULL_SOCKET) {
+		if (cr_type & CR_SOCKET)
+			alloc_sockets = true;
+	} else {
+		if (cr_type & CR_SOCKET)
+			alloc_cores = true;
+	}
 	core_map = job_res->core_bitmap;
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;

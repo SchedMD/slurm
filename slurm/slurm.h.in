@@ -584,6 +584,8 @@ enum ctx_keys {
 #define CR_CORE_DEFAULT_DIST_BLOCK 0x1000
 /* By default, distribute cores using a block
  * approach inside the nodes */
+#define CR_ALLOCATE_FULL_SOCKET 0x2000
+/* Allocate full sockets to jobs rather than individual cores */
 
 #define MEM_PER_CPU  0x80000000
 #define SHARED_FORCE 0x8000
