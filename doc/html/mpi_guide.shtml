@@ -242,7 +242,8 @@ $ srun -n20 a.out
 <li>Some MPICH2 functions are not currently supported by the PMI
 library integrated with SLURM</li>
 <li>Set the environment variable <b>PMI_DEBUG</b> to a numeric value
-of 1 or higher for the PMI library to print debugging information</li>
+of 1 or higher for the PMI library to print debugging information.
+Use srun's -l option for better clarity.</li>
 <li>Set the environment variable <b>SLURM_PMI_KVS_NO_DUP_KEYS</b> for
 improved performance with MPICH2 by eliminating a test for duplicate keys.</li>
 <li>The environment variables can be used to tune performance depending upon
