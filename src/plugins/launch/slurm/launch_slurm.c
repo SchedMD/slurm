@@ -533,21 +533,22 @@ extern int launch_p_step_launch(
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	launch_start_time = time(NULL);
 	if (first_launch) {
-		if (slurm_step_launch(
-			    job->step_ctx, &launch_params, &callbacks) !=
-		    SLURM_SUCCESS) {
+		if (slurm_step_launch(job->step_ctx, &launch_params,
+				      &callbacks) != SLURM_SUCCESS) {
+			rc = errno;
+			*local_global_rc = errno;
 			error("Application launch failed: %m");
-			*local_global_rc = 1;
 			slurm_step_launch_abort(job->step_ctx);
 			slurm_step_launch_wait_finish(job->step_ctx);
 			goto cleanup;
 		}
 	} else {
 		if (slurm_step_launch_add(job->step_ctx, &launch_params,
-					  job->nodelist, job->fir_nodeid) !=
-		    SLURM_SUCCESS) {
+					  job->nodelist, job->fir_nodeid)
+		    != SLURM_SUCCESS) {
+			rc = errno;
+			*local_global_rc = errno;
 			error("Application launch add failed: %m");
-			*local_global_rc = 1;
 			slurm_step_launch_abort(job->step_ctx);
 			slurm_step_launch_wait_finish(job->step_ctx);
 			goto cleanup;

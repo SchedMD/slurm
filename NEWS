@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
  -- Add job_submit/all_partitions plugin to set a job's default partition
     to ALL available partitions in the cluster.
  -- Modify switch/nrt logic to permit build without libnrt.so library.
+ -- Handle srun task launch failure without duplicate error messages or abort.
 
 * Changes in SLURM 2.5.1
 ========================
