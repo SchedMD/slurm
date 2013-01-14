@@ -647,8 +647,10 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	pthread_mutex_lock(&sls->lock);
 	pmi_kvs_free();
 
-	if (sls->msg_handle)
+	if (sls->msg_handle) {
 		eio_handle_destroy(sls->msg_handle);
+		sls->msg_handle = NULL;
+	}
 
 	/* Shutdown the io timeout thread, if one exists */
 	if (sls->io_timeout_thread_created) {
@@ -667,6 +669,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 		pthread_mutex_lock(&sls->lock);
 
 		client_io_handler_destroy(sls->io.normal);
+		sls->io.normal = NULL;
 	}
 
 	mpi_hook_client_fini(sls->mpi_state);
