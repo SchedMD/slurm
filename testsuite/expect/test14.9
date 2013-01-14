@@ -43,6 +43,9 @@ print_header $test_id
 if {[test_front_end] != 0} {
 	send_user "\nWARNING: This test is incompatible with front-end systems\n"
 	exit 0
+} elseif {[test_super_user] != 0} {
+	send_user "\nWARNING: This test can not be run as SlurmUser or root\n"
+	exit 0
 }
 
 # Delete left-over stdout/err files

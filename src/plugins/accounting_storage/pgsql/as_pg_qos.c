@@ -459,7 +459,7 @@ check_qos_tables(PGconn *db_conn)
                                 "(%ld, %ld, 0, 0, $$%s$$, $$%s$$, "
 				"NULL, NULL, NULL, NULL, NULL, NULL, NULL, "
 				"NULL, NULL, NULL, NULL, NULL, NULL, NULL, "
-				"'', 0, 0, 1.0)"
+				"NULL, '', 0, 0, 1.0)"
                                 ")",
                                 (long)now, (long)now,
 				/* deleted=0, id not used */ qos, desc
