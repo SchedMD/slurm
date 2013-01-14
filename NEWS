@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
     not keep track of jobs or steps in accounting.
  -- Cray - Add new cray.conf parameter of "AlpsEngine" to specify the
     communication protocol to be used for ALPS/BASIL.
+ -- select/cons_res plugin: Correction to CPU allocation count logic in for
+    cores without hyperthreading.
 
 * Changes in SLURM 2.5.2
 ========================
