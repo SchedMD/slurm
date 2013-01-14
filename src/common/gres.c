@@ -2746,6 +2746,33 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 	return cpu_cnt;
 }
 
+/*
+ * Determine if specific GRES index on node is available to a job's allocated
+ *	cores
+ * IN core_bitmap - bitmap of cores allocated to the job on this node
+ * IN node_gres_ptr - GRES data for this node
+ * IN gres_inx - index of GRES being considered for use
+ * RET true if available to those core, false otherwise
+ */
+static bool _cores_on_gres(bitstr_t *core_bitmap,
+			   gres_node_state_t *node_gres_ptr, int gres_inx)
+{
+	int core_size, i;
+
+	if ((core_bitmap == NULL) || (node_gres_ptr->topo_cnt == 0))
+		return true;
+
+	core_size = bit_size(core_bitmap);
+	for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
+		if (bit_size(node_gres_ptr->topo_cpus_bitmap[i]) != core_size)
+			continue;
+		if (bit_overlap(node_gres_ptr->topo_cpus_bitmap[i],
+				core_bitmap))
+			return true;
+	}
+	return false;
+}
+
 extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 		      int node_cnt, int node_offset, uint32_t cpu_cnt,
 		      char *gres_name, uint32_t job_id, char *node_name,
@@ -2834,12 +2861,7 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 		for (i=0; i<node_gres_ptr->gres_cnt_avail && gres_cnt>0; i++) {
 			if (bit_test(node_gres_ptr->gres_bit_alloc, i))
 				continue;
-			/* Use only GRES on the job's allocated CPUs */
-			if (core_bitmap &&
-			    (bit_size(core_bitmap) ==
-			     bit_size(node_gres_ptr->topo_cpus_bitmap[i])) &&
-			    !bit_overlap(core_bitmap,
-					 node_gres_ptr->topo_cpus_bitmap[i]))
+			if (!_cores_on_gres(core_bitmap, node_gres_ptr, i))
 				continue;
 			bit_set(node_gres_ptr->gres_bit_alloc, i);
 			bit_set(job_gres_ptr->gres_bit_alloc[node_offset], i);
@@ -2847,7 +2869,7 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 			gres_cnt--;
 		}
 		if (gres_cnt)
-			error("Gres topology sub-optimal for job %u", job_id);
+			verbose("Gres topology sub-optimal for job %u", job_id);
 		for (i=0; i<node_gres_ptr->gres_cnt_avail && gres_cnt>0; i++) {
 			if (bit_test(node_gres_ptr->gres_bit_alloc, i))
 				continue;
