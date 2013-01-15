@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     to ALL available partitions in the cluster.
  -- Modify switch/nrt logic to permit build without libnrt.so library.
  -- Handle srun task launch failure without duplicate error messages or abort.
+ -- Fix bug in QoS limits enforcement when slurmctld restarts and user not yet
+    added to the QOS list.
 
 * Changes in SLURM 2.5.1
 ========================
