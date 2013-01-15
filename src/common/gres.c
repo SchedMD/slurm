@@ -2681,8 +2681,8 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
  * IN cpu_end_bit    - index into cpu_bitmap for this node's last CPU
  * IN job_id         - job's ID (for logging)
  * IN node_name      - name of the node (for logging)
- * RET: NO_VAL    - All CPUs on node are available
- *      otherwise - Specific CPU count
+ * RET: NO_VAL    - All cores on node are available
+ *      otherwise - Count of available cores
  */
 extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 				     bool use_total_gres, bitstr_t *cpu_bitmap,
