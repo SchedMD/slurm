@@ -1059,6 +1059,7 @@ static void *_decay_ticket_thread(void *no_data)
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
+	/* See "DECAY_FACTOR DESCRIPTION" below for details. */
 	if (decay_hl > 0)
 		decay_factor = 1 - (0.693 / decay_hl);
 
@@ -1263,6 +1264,39 @@ static void *_decay_usage_thread(void *no_data)
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
+	/*
+	 * DECAY_FACTOR DESCRIPTION:
+	 *
+	 * The decay thread applies an exponential decay over the past
+	 * consumptions using a rolling approach.
+	 * Every calc period p in seconds, the already computed usage is
+	 * computed again applying the decay factor of that slice :
+	 * decay_factor_slice.
+	 *
+	 * To ease the computation, the notion of decay_factor
+	 * is introduced and corresponds to the decay factor
+	 * required for a slice of 1 second. Thus, for any given
+	 * slice ot time of n seconds, decay_factor_slice will be
+	 * defined as : df_slice = pow(df,n)
+	 *
+	 * For a slice corresponding to the defined half life 'decay_hl' and
+	 * a usage x, we will therefore have :
+	 *    >>  x * pow(decay_factor,decay_hl) = 1/2 x  <<
+	 *
+	 * This expression helps to define the value of decay_factor that
+	 * is necessary to apply the previously described logic.
+	 *
+	 * The expression is equivalent to :
+	 *    >> decay_hl * ln(decay_factor) = ln(1/2)
+	 *    >> ln(decay_factor) = ln(1/2) / decay_hl
+	 *    >> decay_factor = e( ln(1/2) / decay_hl )
+	 *
+	 * Applying THe power series e(x) = sum(x^n/n!) for n from 0 to infinity
+	 *    >> decay_factor = 1 + ln(1/2)/decay_hl
+	 *    >> decay_factor = 1 - ( 0.693 / decay_hl)
+	 *
+	 * This explain the following declaration.
+	 */
 	if (decay_hl > 0)
 		decay_factor = 1 - (0.693 / decay_hl);
 
