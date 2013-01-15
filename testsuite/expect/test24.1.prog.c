@@ -298,9 +298,8 @@ int main (int argc, char **argv)
 	xfree(conf->accounting_storage_type);
 	conf->accounting_storage_type = xstrdup("accounting_storage/slurmdbd");
 	/* set up a known environment to test against.  Since we are
-	   only concerned about the fairshare we won't look at the other
-	   factors here.
-	*/
+	 * only concerned about the fairshare we won't look at the other
+	 * factors here. */
 	conf->priority_decay_hl = 1;
 	conf->priority_favor_small = 0;
 	conf->priority_max_age = conf->priority_decay_hl;
@@ -325,7 +324,7 @@ int main (int argc, char **argv)
 	if (slurm_priority_init() != SLURM_SUCCESS)
 		fatal("failed to initialize priority plugin");
 	/* on some systems that don't have multiple cores we need to
-	   sleep to make sure the thread gets started. */
+	 * sleep to make sure the thread gets started. */
 	sleep(1);
 	memset(&resp, 0, sizeof(shares_response_msg_t));
 	resp.assoc_shares_list = assoc_mgr_get_shares(NULL, 0, NULL, NULL);
@@ -334,13 +333,13 @@ int main (int argc, char **argv)
 	/* free memory */
 	if (slurm_priority_fini() != SLURM_SUCCESS)
 		fatal("failed to finalize priority plugin");
-	if(job_list)
+	if (job_list)
 		list_destroy(job_list);
-	if(resp.assoc_shares_list)
+	if (resp.assoc_shares_list)
 		list_destroy(resp.assoc_shares_list);
-	if(assoc_mgr_association_list)
+	if (assoc_mgr_association_list)
 		list_destroy(assoc_mgr_association_list);
-	if(assoc_mgr_qos_list)
+	if (assoc_mgr_qos_list)
 		list_destroy(assoc_mgr_qos_list);
 	return 0;
 }
