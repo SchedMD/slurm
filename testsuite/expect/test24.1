@@ -135,7 +135,7 @@ expect {
 }
 
 if {$matches != 13} {
-	send_user "\nFAILURE: we didn't get the correct priorities from the plugin $matches\n"
+	send_user "\nFAILURE: we didn't get the correct priorities from the plugin ($matches != 13)\n"
 	set exit_code 1
 }
 

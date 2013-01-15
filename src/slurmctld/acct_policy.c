@@ -735,8 +735,11 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				used_limits = _get_used_limits_for_user(
 					qos_ptr->usage->user_limit_list,
 					job_desc->user_id);
-			if (used_limits && ((used_limits->submit_jobs + job_cnt)
-					    > qos_ptr->max_submit_jobs_pu)) {
+			if ((!used_limits &&
+			     qos_ptr->max_submit_jobs_pu == 0) ||
+			    (used_limits &&
+			     ((used_limits->submit_jobs + job_cnt) >=
+			      qos_ptr->max_submit_jobs_pu))) {
 				debug2("job submit for user %s(%u): "
 				       "qos max submit job limit exceeded %u",
 				       user_name,
@@ -1065,6 +1068,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 {
 	slurmdb_qos_rec_t *qos_ptr;
 	slurmdb_association_rec_t *assoc_ptr;
+	slurmdb_used_limits_t *used_limits = NULL;
+	bool free_used_limits = false;
 	uint32_t time_limit;
 	uint64_t cpu_time_limit;
 	uint64_t job_cpu_time_limit;
@@ -1137,10 +1142,22 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	assoc_mgr_lock(&locks);
 	qos_ptr = job_ptr->qos_ptr;
 	if (qos_ptr) {
-		slurmdb_used_limits_t *used_limits = NULL;
 		usage_mins = (uint64_t)(qos_ptr->usage->usage_raw / 60.0);
 		wall_mins = qos_ptr->usage->grp_used_wall / 60;
 		cpu_run_mins = qos_ptr->usage->grp_used_cpu_run_secs / 60;
+
+		/*
+		 * Try to get the used limits for the user or initialise a local
+		 * nullified one if not available.
+		 */
+		used_limits = _get_used_limits_for_user(
+			qos_ptr->usage->user_limit_list,
+			job_ptr->user_id);
+		if (!used_limits) {
+			used_limits = xmalloc(sizeof(slurmdb_used_limits_t));
+			used_limits->uid = job_ptr->user_id;
+			free_used_limits = true;
+		}
 
 		/* If the QOS has a GrpCPUMins limit set we may hold the job */
 		if (qos_ptr->grp_cpu_mins != (uint64_t)INFINITE) {
@@ -1414,13 +1431,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			/* Hold the job if the user has exceeded
 			 * the QOS per-user CPU limit with their
 			 * current usage */
-			if (!used_limits)
-				used_limits = _get_used_limits_for_user(
-					qos_ptr->usage->user_limit_list,
-					job_ptr->user_id);
-			if (used_limits && ((used_limits->cpus +
-					     job_ptr->details->min_cpus)
-					    > qos_ptr->max_cpus_pu)) {
+			if ((used_limits->cpus + job_ptr->details->min_cpus)
+			    > qos_ptr->max_cpus_pu) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason =
 					WAIT_QOS_RESOURCE_LIMIT;
@@ -1439,13 +1451,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		}
 
 		if (qos_ptr->max_jobs_pu != INFINITE) {
-			if (!used_limits)
-				used_limits = _get_used_limits_for_user(
-					qos_ptr->usage->user_limit_list,
-					job_ptr->user_id);
-
-			if (used_limits && (used_limits->jobs
-					    >= qos_ptr->max_jobs_pu)) {
+			if (used_limits->jobs >= qos_ptr->max_jobs_pu) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason =
 					WAIT_QOS_RESOURCE_LIMIT;
@@ -1504,13 +1510,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			* the QOS per-user CPU limit with their
 			* current usage
 			*/
-			if (!used_limits)
-				used_limits = _get_used_limits_for_user(
-					qos_ptr->usage->user_limit_list,
-					job_ptr->user_id);
-			if (used_limits && ((used_limits->nodes
-					     + job_ptr->details->min_nodes)
-					    > qos_ptr->max_nodes_pu)) {
+			if ((used_limits->nodes + job_ptr->details->min_nodes)
+			    > qos_ptr->max_nodes_pu) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason =
 					WAIT_QOS_RESOURCE_LIMIT;
@@ -1902,6 +1903,9 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	}
 end_it:
 	assoc_mgr_unlock(&locks);
+
+	if (free_used_limits)
+		xfree(used_limits);
 
 	return rc;
 }

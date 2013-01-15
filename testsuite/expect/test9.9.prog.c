@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  test9.9.prog.c - link and test algo of the multifactor plugin.
+ *  test9.9.prog.c - Timing test for 5000 jobs.
  *
  *  Usage: test9.9.prog <sbatch_path> <exec_prog> <prog_name> <iterations>
  *
