@@ -612,9 +612,12 @@ enum ctx_keys {
 					 * value that is higher than slurmd */
 
 #define PRIORITY_FLAGS_ACCRUE_ALWAYS	0x0001	/* Flag to always accrue age
-					 * priority to pending jobs ignoring
-					 * dependencies or holds */
-
+						 * priority to pending jobs ignoring
+						 * dependencies or holds */
+#define PRIORITY_FLAGS_TICKET_BASED     0x0002 /* Enable the ticket based multifactor
+						* plugin. The default is usage based
+						* multifactor plugin.
+						*/
 
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS

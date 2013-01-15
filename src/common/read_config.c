@@ -955,7 +955,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 
 		if (!s_p_get_uint32(&p->def_mem_per_cpu, "DefMemPerNode",
 				    tbl) &&
-		    !s_p_get_uint32(&p->def_mem_per_cpu, "DefMemPerNode", 
+		    !s_p_get_uint32(&p->def_mem_per_cpu, "DefMemPerNode",
 				    dflt)) {
 			if (s_p_get_uint32(&p->def_mem_per_cpu,
 					   "DefMemPerCPU", tbl) ||
@@ -969,7 +969,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 
 		if (!s_p_get_uint32(&p->max_mem_per_cpu, "MaxMemPerNode",
 				    tbl) &&
-		    !s_p_get_uint32(&p->max_mem_per_cpu, "MaxMemPerNode", 
+		    !s_p_get_uint32(&p->max_mem_per_cpu, "MaxMemPerNode",
 				    dflt)) {
 			if (s_p_get_uint32(&p->max_mem_per_cpu,
 					   "MaxMemPerCPU", tbl) ||
@@ -1620,7 +1620,7 @@ extern char *slurm_conf_get_nodename(const char *node_hostname)
 	names_ll_t *p;
 #ifdef HAVE_FRONT_END
 	slurm_conf_frontend_t *front_end_ptr = NULL;
- 
+
  	slurm_conf_lock();
 	if (!front_end_list) {
 		debug("front_end_list is NULL");
@@ -3088,7 +3088,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (s_p_get_string(&temp_str, "PriorityFlags", hashtbl)) {
 		if (strstr(temp_str, "ACCRUE_ALWAYS"))
 			conf->priority_flags |= PRIORITY_FLAGS_ACCRUE_ALWAYS;
-	}		
+		if (strstr(temp_str, "TICKET_BASED"))
+			conf->priority_flags |= PRIORITY_FLAGS_TICKET_BASED;
+	}
 	if (s_p_get_string(&temp_str, "PriorityMaxAge", hashtbl)) {
 		int max_time = time_str2mins(temp_str);
 		if ((max_time < 0) && (max_time != INFINITE)) {

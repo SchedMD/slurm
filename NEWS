@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
  -- select/cons_res plugin: Correction to CPU allocation count logic in for
     cores without hyperthreading.
  -- Added new SelectTypeParameter value of "CR_ALLOCATE_FULL_SOCKET".
+ -- Added PriorityFlags value of "TICKET_BASED" and merged priority/multifactor2
+    plugin into priority/multifactor plugin.
 
 * Changes in SLURM 2.5.2
 ========================
