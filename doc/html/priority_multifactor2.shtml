@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Multifactor 2 Priority Plugin</h1>
+<h1>Ticket-Based Multifactor Priority Plugin</h1>
 
 <h2>Contents</h2>
 <ul>
@@ -13,10 +13,9 @@
 <a name=intro>
 <h2>Introduction</h2></a>
 
-<p>The priority/multifactor2 is an enhanced version of the
-priority/multifactor plugin. Only the differences are documented here;
-the reader is assumed to be familiar with the priority/multifactor
-plugin.</p>
+<p>A ticket-based variant of the priority/multifactor plugin is available.
+The reader is assumed to be familiar with the priority/multifactor plugin
+and only the differences are documented here.</p>
 
 <!-------------------------------------------------------------------------->
 <a name=fairshare>
@@ -27,7 +26,7 @@ and operation of the <a href="accounting.html">SLURM Accounting
 Database</a> to provide the assigned shares and the consumed,
 computing resources described below.</p>
 
-<p>In the multifactor2 plugin, the fair-share component of the job
+<p>In the ticket-based variant, the fair-share component of the job
 priority is calculated differently. The goal is to make sure that the
 priority strictly follows the account hierarchy, so that jobs under
 accounts with usage lower than their fair share will always have a
@@ -90,7 +89,7 @@ T = T<sub>parent</sub> * S * F / SUM(S*F)<sub>active_siblings</sub>
 <h3>Example</h3>
 
 <p>Here the same example as in the multifactor plugin page is shown,
-calculated using the multifactor2 algorithm.</p>
+calculated using the ticket-based algorithm.</p>
 
 <ul>
 <li>User 1 normalized share: 0.3</li>
@@ -128,7 +127,7 @@ F = S/U<sub>eff</sub>
 <ul>
 <li>Account A fair-share factor: 0.4 / 0.45 = 0.89</li>
 <li>Account B fair-share factor: 0.3 / 0.2 = 1.50</li>
-<li>Account C fair-share factor: 0.1 / 0.25 = 0.4<priority_multifactor2.shtml /li>
+<li>Account C fair-share factor: 0.1 / 0.25 = 0.4</li>
 <li>Account D fair-share factor: 0.6 / 0.25 = 2.40</li>
 <li>Account E fair-share factor: 0.25 / 0.25 = 1</li>
 <li>Account F fair-share factor: 0.35 / 0.0035 = 100</li>
@@ -179,21 +178,20 @@ configure the Multi-factor Job Priority 2 Plugin.  See slurm.conf(5) man page
 for more details.</p>
 
 <dl>
+<dt>PriorityFlags
+<dd>Set to "TICKET_BASED".
 <dt>PriorityType
-<dd>Set this value to "priority/multifactor2" to enable the Multi-factor
-Job Priority 2 Plugin.  The default value for this variable is "priority/basic"
+<dd>Set this value to "priority/multifactor".
+The default value for this variable is "priority/basic"
 which enables simple FIFO scheduling.
 </dl>
 
-<p>Note: The other configuration parameters are the same as for the
-priority/multifactor plugin.</p>
-
-<p>Note: As the multifactor2 algorithm ensures that the highest
+<p>Note: As the ticket-based algorithm ensures that the highest
 priority pending job will have the fair-share factor 1.0, there is a
 need to rebalance the relative weights of the different factors
 compared to the priority/multifactor plugin.</p>
 
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 17 October 2012</p>
+<p style="text-align:center;">Last modified 14 January 2013</p>
 
 <!--#include virtual="footer.txt"-->

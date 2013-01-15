@@ -738,7 +738,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/preempt_qos.so
 %{_libdir}/slurm/priority_basic.so
 %{_libdir}/slurm/priority_multifactor.so
-%{_libdir}/slurm/priority_multifactor2.so
 %{_libdir}/slurm/proctrack_cgroup.so
 %{_libdir}/slurm/proctrack_linuxproc.so
 %{_libdir}/slurm/proctrack_pgid.so

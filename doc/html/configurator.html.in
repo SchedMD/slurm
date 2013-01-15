@@ -226,6 +226,7 @@ function displayfile()
    "# <br>" +
    "# <br>" +
    "# JOB PRIORITY <br>" +
+   "#PriorityFlags= <br>" +
    "#PriorityType=priority/basic <br>" +
    "#PriorityDecayHalfLife= <br>" +
    "#PriorityCalcPeriod= <br>" +
@@ -861,5 +862,5 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 2 August 2012</P>
+Last modified 14 January 2013</P>
 </BODY>

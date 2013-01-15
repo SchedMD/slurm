@@ -47,7 +47,7 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="gres.html">Generic Resource (GRES) Scheduling</a></li>
 <li><a href="high_throughput.html">High Throughput Computing Guide</a></li>
 <li><a href="priority_multifactor.html">Multifactor Job Priority</a></li>
-<li><a href="priority_multifactor2.html">Multifactor2 Job Priority (Ticket Based)</a></li>
+<li><a href="priority_multifactor2.html">Ticket-Based Multifactor Job Priority</a></li>
 <li><a href="preempt.html">Preemption</a></li>
 <li><a href="qos.html">Quality of Service (QOS)</a></li>
 <li><a href="resource_limits.html">Resource Limits</a></li>
@@ -107,6 +107,6 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 29 November 2012</p>
+<p style="text-align:center;">Last modified 14 January 2013</p>
 
 <!--#include virtual="footer.txt"-->
