@@ -1421,14 +1421,13 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	int error_code = SLURM_SUCCESS, i, node_set_size = 0;
 	bitstr_t *select_bitmap = NULL;
 	struct node_set *node_set_ptr = NULL;
-	struct part_record *part_ptr = NULL, *orig_part_ptr = NULL;
+	struct part_record *part_ptr = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	enum job_state_reason fail_reason;
 	time_t now = time(NULL);
 	bool configuring = false;
 	List preemptee_job_list = NULL;
 	slurmdb_qos_rec_t *qos_ptr = NULL;
-	int attempt=1;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -1436,12 +1435,12 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	if (!acct_policy_job_runnable(job_ptr))
 		return ESLURM_ACCOUNTING_POLICY;
 
-	orig_part_ptr = part_ptr = job_ptr->part_ptr;
+	part_ptr = job_ptr->part_ptr;
 	qos_ptr = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
 
 	/* identify partition */
 	if (part_ptr == NULL) {
-		orig_part_ptr = part_ptr = find_part_record(job_ptr->partition);
+		part_ptr = find_part_record(job_ptr->partition);
 		xassert(part_ptr);
 		job_ptr->part_ptr = part_ptr;
 		error("partition pointer reset for job %u, part %s",
@@ -1469,7 +1468,7 @@ retry:
 	/* build sets of usable nodes based upon their configuration */
 	error_code = _build_node_list(job_ptr, &node_set_ptr, &node_set_size);
 	if (error_code)
-		goto cleanup;
+		return error_code;
 
 	/* insure that selected nodes are in these node sets */
 	if (job_ptr->details->req_node_bitmap) {
@@ -1667,28 +1666,6 @@ retry:
 	slurm_sched_newalloc(job_ptr);
 
       cleanup:
-
-	if (error_code && job_ptr->part_ptr_list
-	    && (attempt < list_count(job_ptr->part_ptr_list))) {
-		ListIterator part_iterator = list_iterator_create(
-			job_ptr->part_ptr_list);
-		int part_cnt = 0;
-		while ((part_ptr = list_next(part_iterator))) {
-			if (part_cnt == attempt)
-				break;
-			part_cnt++;
-		}
-		list_iterator_destroy(part_iterator);
-		if (part_ptr) {
-			attempt++;
-			job_ptr->part_ptr = part_ptr;
-			debug2("Trying job %u on next requested partition %s",
-			       job_ptr->job_id, part_ptr->name);
-			goto retry;
-		}
-		job_ptr->part_ptr = orig_part_ptr;
-	}
-
 	if (preemptee_job_list)
 		list_destroy(preemptee_job_list);
 	if (select_node_bitmap)

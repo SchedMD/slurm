@@ -14,8 +14,6 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in QoS limits enforcement when slurmctld restarts and user not yet
     added to the QOS list.
  -- Fix issue where sjstat and sjobexitmod was installed in 2 different rpms
- -- Check all requested partitions to make sure at least one is valid on job
-    submission.
 
 * Changes in SLURM 2.5.1
 ========================
