@@ -1499,10 +1499,13 @@ would run the shell in the user's $SHELL environment variable.
 and
 
 .nf
-    SallocDefaultCommand = "xterm \-T Job_$SLURM_JOB_ID"
+    SallocDefaultCommand = "srun \-n1 \-N1 \-\-mem\-per\-cpu=0 \-\-pty \-\-preserve\-env \-\-mpi=none $SHELL"
 .fi
 
-would run \fBxterm\fR with the title set to the SLURM jobid.
+would run spawn the user's default shell on the allocated resources, but not
+consume any of the CPU or memory resources, configure it as a pseudo\-terminal,
+and preserve all of the job's environment variables (i.e. and not over\-write
+them with the job step's allocation information).
 
 .TP
 \fBSchedulerParameters\fR
