@@ -72,18 +72,20 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "src/common/eio.h"
-#include "src/common/io_hdr.h"
 #include "src/common/cbuf.h"
+#include "src/common/eio.h"
+#include "src/common/fd.h"
+#include "src/common/io_hdr.h"
+#include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/fd.h"
-#include "src/common/list.h"
+#include "src/common/net.h"
 #include "src/common/read_config.h"
+#include "src/common/write_labelled_message.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/write_labelled_message.h"
+
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
@@ -1921,6 +1923,7 @@ _user_managed_io_connect(srun_info_t *srun, uint32_t gtid)
 	if (fd == -1)
 		return -1;
 
+	net_set_keep_alive(fd);
 	if (slurm_send_node_msg(fd, &msg) == -1) {
 		close(fd);
 		return -1;

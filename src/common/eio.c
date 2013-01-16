@@ -43,13 +43,14 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "src/common/xmalloc.h"
-#include "src/common/xassert.h"
-#include "src/common/log.h"
-#include "src/common/list.h"
 #include "src/common/fd.h"
 #include "src/common/eio.h"
+#include "src/common/log.h"
+#include "src/common/list.h"
+#include "src/common/net.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
 
 /* How many seconds to wait after eio_signal_shutdown() is called before
  * terminating the job and abandoning any I/O remaining to be processed */
@@ -167,11 +168,12 @@ int eio_message_socket_accept(eio_obj_t *obj, List objs)
 		return SLURM_SUCCESS;
 	}
 
+	net_set_keep_alive(fd);
 	fd_set_close_on_exec(fd);
 	fd_set_blocking(fd);
 
 	/* Should not call slurm_get_addr() because the IP may not be
-	   in /etc/hosts. */
+	 * in /etc/hosts. */
 	uc = (unsigned char *)&addr.sin_addr.s_addr;
 	port = addr.sin_port;
 	debug2("got message connection from %u.%u.%u.%u:%hu %d",
@@ -181,7 +183,7 @@ int eio_message_socket_accept(eio_obj_t *obj, List objs)
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
 again:
-	if(slurm_receive_msg(fd, msg, obj->ops->timeout) != 0) {
+	if (slurm_receive_msg(fd, msg, obj->ops->timeout) != 0) {
 		if (errno == EINTR) {
 			goto again;
 		}

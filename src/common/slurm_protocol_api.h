@@ -515,6 +515,12 @@ uint32_t slurm_get_jobcomp_port(void);
  */
 int slurm_set_jobcomp_port(uint32_t port);
 
+/* slurm_get_keep_alive_time
+ * returns keep_alive_time slurmctld_conf object
+ * RET uint16_t        - keep_alive_time
+ */
+uint16_t slurm_get_keep_alive_time(void);
+
 /* slurm_get_kill_wait
  * returns kill_wait from slurmctld_conf object
  * RET uint16_t        - kill_wait

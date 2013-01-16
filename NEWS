@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
  -- Added new SelectTypeParameter value of "CR_ALLOCATE_FULL_SOCKET".
  -- Added PriorityFlags value of "TICKET_BASED" and merged priority/multifactor2
     plugin into priority/multifactor plugin.
+ -- Add "KeepAliveTime" configuration parameter controlling how long sockets
+    used for srun/slurmstepd communications are kept alive after disconnect.
 
 * Changes in SLURM 2.5.2
 ========================

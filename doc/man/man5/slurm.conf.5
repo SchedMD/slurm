@@ -811,6 +811,15 @@ the installation directory).
 No job submission plugins are used by default.
 
 .TP
+\fBKeepAliveTime\fR
+Specifies how long sockets communications used between the srun command and its
+slurmstepd process are kept alive after disconnect.
+Longer values can be used to improve reliability of communications in the
+event of network failures.
+The default value leaves the system default value.
+The value may not exceed 65533.
+
+.TP
 \fBKillOnBadExit\fR
 If set to 1, the job will be terminated immediately when one of the
 processes is crashed or aborted. With the default value of 0, if one of

@@ -542,6 +542,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	conf_ptr->get_env_timeout     = conf->get_env_timeout;
 
+	conf_ptr->keep_alive_time     = conf->keep_alive_time;
 	conf_ptr->kill_wait           = conf->kill_wait;
 	conf_ptr->kill_on_bad_exit    = conf->kill_on_bad_exit;
 

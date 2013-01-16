@@ -1536,6 +1536,25 @@ int slurm_set_jobcomp_port(uint32_t port)
 	return 0;
 }
 
+/* slurm_get_keep_alive_time
+ * returns keep_alive_time slurmctld_conf object
+ * RET uint16_t        - keep_alive_time
+ */
+uint16_t slurm_get_keep_alive_time(void)
+{
+	uint16_t keep_alive_time = (uint16_t) NO_VAL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		keep_alive_time = conf->keep_alive_time;
+		slurm_conf_unlock();
+	}
+	return keep_alive_time;
+}
+
+
 /* slurm_get_kill_wait
  * returns kill_wait from slurmctld_conf object
  * RET uint16_t        - kill_wait
