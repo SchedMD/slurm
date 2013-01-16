@@ -1464,7 +1464,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	}
 
-retry:
 	/* build sets of usable nodes based upon their configuration */
 	error_code = _build_node_list(job_ptr, &node_set_ptr, &node_set_size);
 	if (error_code)
