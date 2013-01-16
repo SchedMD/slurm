@@ -277,7 +277,7 @@ extern int state_str2int(const char *state_str, char *node_name);
 extern void cr_init_global_core_data(struct node_record *node_ptr,
 				     int node_cnt, uint16_t fast_schedule);
 
-extern void cr_fini_global_core_data();
+extern void cr_fini_global_core_data(void);
 
 /*return the coremap index to the first core of the given node */
 extern uint32_t cr_get_coremap_offset(uint32_t node_index);

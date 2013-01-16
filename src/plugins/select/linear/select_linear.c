@@ -2661,6 +2661,7 @@ extern int fini ( void )
 #ifdef HAVE_XCPU
 	rc = _fini_status_pthread();
 #endif
+	cr_fini_global_core_data();
 	slurm_mutex_lock(&cr_mutex);
 	_free_cr(cr_ptr);
 	cr_ptr = NULL;
@@ -2720,6 +2721,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	select_node_ptr = node_ptr;
 	select_node_cnt = node_cnt;
 	select_fast_schedule = slurm_get_fast_schedule();
+	cr_init_global_core_data(node_ptr, node_cnt, select_fast_schedule);
 
 	return SLURM_SUCCESS;
 }
