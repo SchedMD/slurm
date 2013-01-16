@@ -23,6 +23,8 @@ The minor type can be any suitable name
 for the type of accounting package.
 We include samples in the SLURM distribution for
 <ul>
+<li><b>all_partitions</b>&#151;Set default partition to all partitions on
+the cluster.</li>
 <li><b>defaults</b>&#151;Set default values for job submission or modify
 requests.</li>
 <li><b>logging</b>&#151;Log select job submission and modification
@@ -35,7 +37,10 @@ the same location as the SLURM configuration file, <i>slurm.conf</i>.</li>
 <li><b>partition</b>&#151;Sets a job's default partition based upon job
 submission parameters and available partitions.</li>
 </ul>
-<p>SLURM can be configured to use multiple job_submit plugins if desired.
+<p>SLURM can be configured to use multiple job_submit plugins if desired,
+however the lua plugin will only execute one lua script named "job_submit.lua"
+and located in default script directory (typically the subdirectory "etc" of
+the installation directory).</p>
 
 <p class="footer"><a href="#top">top</a>
 
@@ -135,6 +140,6 @@ appropriate error message printed for that errno.
 releases of SLURM may revise this API.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 29 April 2011</p>
+<p style="text-align:center;">Last modified 16 January 2013</p>
 
 <!--#include virtual="footer.txt"-->

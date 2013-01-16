@@ -217,8 +217,14 @@ past as well as what resources they used. Download the code from:<br>
 Portable Hardware Locality (hwloc)</a></li>
 </ul><br>
 
+<li><b>Node Health Check</b><br>
+Probably the most comprehensive and lightweight health check tool out
+there is
+<a href="http://warewulf.lbl.gov/trac/wiki/Node%20Health%20Check">Node Health Check</a>.  
+It has integration with Slurm as well as Torque resource managers.</li><br>
+
 </ul>
 
-<p style="text-align:center;">Last modified 2 October 2012</p>
+<p style="text-align:center;">Last modified 16 January 2013</p>
 
 <!--#include virtual="footer.txt"-->

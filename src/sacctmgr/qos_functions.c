@@ -662,6 +662,11 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 	list_iterator_destroy(itr);
 	list_destroy(name_list);
 
+	if (g_qos_list) {
+		list_destroy(g_qos_list);
+		g_qos_list = NULL;
+	}
+
 	if(!list_count(qos_list)) {
 		printf(" Nothing new added.\n");
 		goto end_it;

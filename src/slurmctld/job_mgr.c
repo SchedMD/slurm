@@ -2877,6 +2877,45 @@ static void _create_job_array(struct job_record *job_ptr,
 }
 
 /*
+ * Wrapper for select_nodes() function that will test all valid partitions
+ * for a new job
+ * IN job_ptr - pointer to the job record
+ * IN test_only - if set do not allocate nodes, just confirm they
+ *	could be allocated now
+ * IN select_node_bitmap - bitmap of nodes to be used for the
+ *	job's resource allocation (not returned if NULL), caller
+ *	must free
+ */
+static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
+			       bitstr_t **select_node_bitmap)
+{
+	struct part_record *part_ptr;
+	ListIterator iter;
+	int rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+
+	if (job_ptr->part_ptr_list) {
+		iter = list_iterator_create(job_ptr->part_ptr_list);
+		while ((part_ptr = list_next(iter))) {
+			job_ptr->part_ptr = part_ptr;
+			debug2("Try job %u on next partition %s",
+			       job_ptr->job_id, part_ptr->name);
+			if (job_limits_check(&job_ptr) != WAIT_NO_REASON)
+				continue;
+			rc = select_nodes(job_ptr, test_only,
+					  select_node_bitmap);
+			if ((rc != ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
+			    (rc != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE))
+				break;
+		}
+		list_iterator_destroy(iter);
+	} else {
+		rc = select_nodes(job_ptr, test_only, select_node_bitmap);
+	}
+
+	return rc;
+}
+
+/*
  * job_allocate - create job_records for the supplied job specification and
  *	allocate nodes for it.
  * IN job_specs - job specifications
@@ -3003,8 +3042,9 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		debug("sched: job_allocate() returning, no front end nodes "
 		       "are available");
 		error_code = ESLURM_NODES_BUSY;
-	} else
-		error_code = select_nodes(job_ptr, no_alloc, NULL);
+	} else {
+		error_code = _select_nodes_parts(job_ptr, no_alloc, NULL);
+	}
 	if (!test_only) {
 		last_job_update = now;
 		slurm_sched_schedule();	/* work for external scheduler */

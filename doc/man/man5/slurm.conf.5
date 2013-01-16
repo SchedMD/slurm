@@ -800,10 +800,14 @@ A comma delimited list of job submission plugins to be used.
 The specified plugins will be executed in the order listed.
 These are intended to be site\-specific plugins which can be used to set
 default job parameters and/or logging events.
-Sample plugins available in the distribution include "cnode", "defaults",
-"logging", "lua", and "partition".
+Sample plugins available in the distribution include "all_partitions", "cnode",
+"defaults", "logging", "lua", and "partition".
 For examples of use, see the SLURM code in "src/plugins/job_submit" and
 "contribs/lua/job_submit*.lua" then modify the code to satisfy your needs.
+SLURM can be configured to use multiple job_submit plugins if desired,
+however the lua plugin will only execute one lua script named "job_submit.lua"
+and located in default script directory (typically the subdirectory "etc" of
+the installation directory).
 No job submission plugins are used by default.
 
 .TP
@@ -1560,10 +1564,13 @@ would run the shell in the user's $SHELL environment variable.
 and
 
 .nf
-    SallocDefaultCommand = "xterm \-T Job_$SLURM_JOB_ID"
+    SallocDefaultCommand = "srun \-n1 \-N1 \-\-mem\-per\-cpu=0 \-\-pty \-\-preserve\-env \-\-mpi=none $SHELL"
 .fi
 
-would run \fBxterm\fR with the title set to the SLURM jobid.
+would run spawn the user's default shell on the allocated resources, but not
+consume any of the CPU or memory resources, configure it as a pseudo\-terminal,
+and preserve all of the job's environment variables (i.e. and not over\-write
+them with the job step's allocation information).
 
 .TP
 \fBSchedulerParameters\fR

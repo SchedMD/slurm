@@ -998,6 +998,12 @@ next_part:			part_ptr = (struct part_record *)
 				launch_job(job_ptr);
 			rebuild_job_part_list(job_ptr);
 			job_cnt++;
+		} else if ((error_code ==
+			    ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
+			   job_ptr->part_ptr_list) {
+			debug("JobId=%u non-runnable in partition %s: %s",
+			      job_ptr->job_id, job_ptr->part_ptr->name,
+			      slurm_strerror(error_code));
 		} else if ((error_code !=
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			   (error_code != ESLURM_NODE_NOT_AVAIL)      &&

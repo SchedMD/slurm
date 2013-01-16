@@ -45,7 +45,9 @@ documents those changes that are of interest to users and admins.
  -- Handle srun task launch failure without duplicate error messages or abort.
  -- Fix bug in QoS limits enforcement when slurmctld restarts and user not yet
     added to the QOS list.
- -- Fix issue where sjstat and sjobexitmod was installed in 2 different rpms
+ -- Fix issue where sjstat and sjobexitmod was installed in 2 different RPMs.
+ -- Fix for job request of multiple partitions in which some partitions lack
+    nodes with required features.
 
 * Changes in SLURM 2.5.1
 ========================
