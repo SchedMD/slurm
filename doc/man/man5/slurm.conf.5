@@ -767,10 +767,14 @@ A comma delimited list of job submission plugins to be used.
 The specified plugins will be executed in the order listed.
 These are intended to be site\-specific plugins which can be used to set
 default job parameters and/or logging events.
-Sample plugins available in the distribution include "cnode", "defaults",
-"logging", "lua", and "partition".
+Sample plugins available in the distribution include "all_partitions", "cnode",
+"defaults", "logging", "lua", and "partition".
 For examples of use, see the SLURM code in "src/plugins/job_submit" and
 "contribs/lua/job_submit*.lua" then modify the code to satisfy your needs.
+SLURM can be configured to use multiple job_submit plugins if desired,
+however the lua plugin will only execute one lua script named "job_submit.lua"
+and located in default script directory (typically the subdirectory "etc" of
+the installation directory).
 No job submission plugins are used by default.
 
 .TP
