@@ -633,7 +633,8 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 	struct node_record *node_ptr;
 	uint32_t job_memory_cpu = 0, job_memory_node = 0;
 	uint32_t alloc_mem = 0, job_mem = 0, avail_mem = 0;
-	uint32_t cpu_cnt, gres_cpus;
+	uint32_t cpu_cnt, gres_cpus, gres_cores;
+	int core_start_bit, core_end_bit, cpus_per_core;
 	List gres_list;
 	bool use_total_gres = true;
 
@@ -673,11 +674,16 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 			gres_list = cr_ptr->nodes[i].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_cpus = gres_plugin_job_test(job_ptr->gres_list,
-						 gres_list, use_total_gres,
-						 NULL, 0, 0, job_ptr->job_id,
-						 node_ptr->name);
+		core_start_bit = cr_get_coremap_offset(i);
+		core_end_bit   = cr_get_coremap_offset(i+1) - 1;
+		cpus_per_core  = cpu_cnt / (core_end_bit - core_start_bit + 1);
+		gres_cores = gres_plugin_job_test(job_ptr->gres_list,
+						  gres_list, use_total_gres,
+						  NULL, 0, 0, job_ptr->job_id,
+						  node_ptr->name);
+		gres_cpus = gres_cores;
 		if (gres_cpus != NO_VAL) {
+			gres_cpus *= cpus_per_core;
 			if ((gres_cpus < cpu_cnt) ||
 			    (gres_cpus < job_ptr->details->ntasks_per_node) ||
 			    ((job_ptr->details->cpus_per_task > 1) &&
@@ -2633,6 +2639,7 @@ extern int fini ( void )
 #ifdef HAVE_XCPU
 	rc = _fini_status_pthread();
 #endif
+	cr_fini_global_core_data();
 	slurm_mutex_lock(&cr_mutex);
 	_free_cr(cr_ptr);
 	cr_ptr = NULL;
@@ -2692,6 +2699,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	select_node_ptr = node_ptr;
 	select_node_cnt = node_cnt;
 	select_fast_schedule = slurm_get_fast_schedule();
+	cr_init_global_core_data(node_ptr, node_cnt, select_fast_schedule);
 
 	return SLURM_SUCCESS;
 }

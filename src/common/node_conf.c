@@ -1061,7 +1061,7 @@ extern void cr_init_global_core_data(struct node_record *node_ptr, int node_cnt,
 
 }
 
-extern void cr_fini_global_core_data()
+extern void cr_fini_global_core_data(void)
 {
 	xfree(cr_node_num_cores);
 	xfree(cr_node_cores_offset);

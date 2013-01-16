@@ -2615,8 +2615,8 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
  * IN cpu_end_bit    - index into cpu_bitmap for this node's last CPU
  * IN job_id         - job's ID (for logging)
  * IN node_name      - name of the node (for logging)
- * RET: NO_VAL    - All CPUs on node are available
- *      otherwise - Specific CPU count
+ * RET: NO_VAL    - All cores on node are available
+ *      otherwise - Count of available cores
  */
 extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 				     bool use_total_gres, bitstr_t *cpu_bitmap,
@@ -2691,19 +2691,14 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 static bool _cores_on_gres(bitstr_t *core_bitmap,
 			   gres_node_state_t *node_gres_ptr, int gres_inx)
 {
-	int core_size, i;
-
 	if ((core_bitmap == NULL) || (node_gres_ptr->topo_cnt == 0))
 		return true;
 
-	core_size = bit_size(core_bitmap);
-	for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
-		if (bit_size(node_gres_ptr->topo_cpus_bitmap[i]) != core_size)
-			continue;
-		if (bit_overlap(node_gres_ptr->topo_cpus_bitmap[i],
-				core_bitmap))
-			return true;
-	}
+	if (bit_size(node_gres_ptr->topo_cpus_bitmap[gres_inx]) !=
+	    bit_size(core_bitmap))
+		return false;
+	if (bit_overlap(node_gres_ptr->topo_cpus_bitmap[gres_inx], core_bitmap))
+		return true;
 	return false;
 }
 

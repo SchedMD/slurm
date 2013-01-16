@@ -584,6 +584,8 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,0755)
 %{_mandir}/../doc
 %{_bindir}/s*
+%exclude %{_bindir}/sjobexitmod
+%exclude %{_bindir}/sjstat
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
 %{_sbindir}/slurmstepd
