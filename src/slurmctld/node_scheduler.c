@@ -1475,8 +1475,9 @@ retry:
 		error_code = _nodes_in_sets(job_ptr->details->req_node_bitmap,
 					    node_set_ptr, node_set_size);
 		if (error_code) {
-			info("No nodes satisfy requirements for JobId=%u",
-			     job_ptr->job_id);
+			info("No nodes satisfy requirements for JobId=%u "
+			     "in partition %s",
+			     job_ptr->job_id, job_ptr->part_ptr->name);
 			goto cleanup;
 		}
 	}
@@ -2180,8 +2181,8 @@ static int _build_node_list(struct job_record *job_ptr,
 	FREE_NULL_BITMAP(usable_node_mask);
 
 	if (node_set_inx == 0) {
-		info("No nodes satisfy job %u requirements",
-		     job_ptr->job_id);
+		info("No nodes satisfy job %u requirements in partition %s",
+		     job_ptr->job_id, job_ptr->part_ptr->name);
 		xfree(node_set_ptr);
 		if (job_ptr->resv_name) {
 			job_ptr->state_reason = WAIT_RESERVATION;
