@@ -2695,6 +2695,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		     slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
+		int sched_count = 1;	/* Job count to attempt to schedule */
+		if (job_ptr->part_ptr_list)
+			sched_count = list_count(job_ptr->part_ptr_list);
 		info("_slurm_rpc_submit_batch_job JobId=%u %s",
 		     job_ptr->job_id, TIME_STR);
 		/* send job_ID */
@@ -2709,7 +2712,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		 * We also run schedule() even if this job could not start,
 		 * say due to a higher priority job, since the locks are
 		 * released above and we might start some other job here. */
-		schedule(1);		/* has own locks */
+		schedule(sched_count);	/* has own locks */
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
 	}
