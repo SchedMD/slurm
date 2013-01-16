@@ -2757,19 +2757,14 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 static bool _cores_on_gres(bitstr_t *core_bitmap,
 			   gres_node_state_t *node_gres_ptr, int gres_inx)
 {
-	int core_size, i;
-
 	if ((core_bitmap == NULL) || (node_gres_ptr->topo_cnt == 0))
 		return true;
 
-	core_size = bit_size(core_bitmap);
-	for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
-		if (bit_size(node_gres_ptr->topo_cpus_bitmap[i]) != core_size)
-			continue;
-		if (bit_overlap(node_gres_ptr->topo_cpus_bitmap[i],
-				core_bitmap))
-			return true;
-	}
+	if (bit_size(node_gres_ptr->topo_cpus_bitmap[gres_inx]) !=
+	    bit_size(core_bitmap))
+		return false;
+	if (bit_overlap(node_gres_ptr->topo_cpus_bitmap[gres_inx], core_bitmap))
+		return true;
 	return false;
 }
 
