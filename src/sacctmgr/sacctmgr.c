@@ -230,6 +230,12 @@ main (int argc, char *argv[])
 			exit_code = 0;
 		}
 	}
+	/* readline library writes \n when echoes the input string, it does
+	 * not when it sees the EOF, so in that case we have to print it to
+	 * align the terminal prompt.
+	 */
+	if (exit_flag == 2)
+		putchar('\n');
 	if(local_exit_code)
 		exit_code = local_exit_code;
 	acct_storage_g_close_connection(&db_conn);
@@ -283,9 +289,10 @@ _get_command (int *argc, char **argv)
 #else
 	in_line = _getline("sacctmgr: ");
 #endif
-	if (in_line == NULL)
+	if (in_line == NULL) {
+		exit_flag = 2;
 		return 0;
-	else if (strncmp (in_line, "#", 1) == 0) {
+	} else if (strncmp (in_line, "#", 1) == 0) {
 		free (in_line);
 		return 0;
 	} else if (strcmp (in_line, "!!") == 0) {
