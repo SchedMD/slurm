@@ -143,6 +143,8 @@ not being enforced?</a></li>
 <li><a href="#restore_priority">After manually setting a job priority value,
 how can it's priority value be returned to being managed by the
 priority/multifactor plugin?</a></li>
+<li><a href="#health_check_example">Does any one have an example node health check
+script for Slurm?</a></li>
 </ol>
 
 
@@ -1533,8 +1535,15 @@ $ scontrol hold &lt;jobid&gt;
 $ scontrol releasae &lt;jobid&gt;
 </pre>
 
+<p><a name="health_check_example"><b>47. Does any one have an example node
+health check script for Slurm?</b></a></br>
+Probably the most comprehensive and lightweight health check tool out
+there is
+<a href="http://warewulf.lbl.gov/trac/wiki/Node%20Health%20Check">Node Health Check</a>.  
+It has integration with Slurm as well as Torque resource managers.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 22 September 2012</p>
+<p style="text-align:center;">Last modified 16 January 2013</p>
 
 <!--#include virtual="footer.txt"-->
