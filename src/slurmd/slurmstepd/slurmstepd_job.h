@@ -105,6 +105,7 @@ typedef struct task_info {
 	bool            esent;      /* true if exit status has been sent    */
 	bool            exited;     /* true if task has exited              */
 	int             estatus;    /* this task's exit status              */
+	bool		socket_io;  /* true if stdin/out/err_fd are sockets */
 
 	uint32_t	argc;
 	char	      **argv;

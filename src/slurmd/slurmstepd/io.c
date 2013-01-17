@@ -1377,9 +1377,15 @@ io_close_task_fds(slurmd_job_t *job)
 	int i;
 
 	for (i = 0; i < job->node_tasks; i++) {
-		close(job->task[i]->stdin_fd);
-		close(job->task[i]->stdout_fd);
-		close(job->task[i]->stderr_fd);
+		if (job->task[i]->socket_io) {
+			shutdown(job->task[i]->stdin_fd,  SHUT_RDWR);
+			shutdown(job->task[i]->stdout_fd, SHUT_RDWR);
+			shutdown(job->task[i]->stderr_fd, SHUT_RDWR);
+		} else {
+			close(job->task[i]->stdin_fd);
+			close(job->task[i]->stdout_fd);
+			close(job->task[i]->stderr_fd);
+		}
 	}
 }
 
@@ -1954,6 +1960,7 @@ user_managed_io_client_connect(int node_tasks, srun_info_t *srun,
 		tasks[i]->from_stdout = -1;
 		tasks[i]->stderr_fd = fd;
 		tasks[i]->from_stderr = -1;
+		tasks[i]->socket_io = true;
 	}
 
 	return SLURM_SUCCESS;
