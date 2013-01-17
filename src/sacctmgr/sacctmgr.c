@@ -256,7 +256,7 @@ static char *_getline(const char *prompt)
 	int len;
 	printf("%s", prompt);
 
-	/* Set "line" here to avoid a warning and discard it away later. */
+	/* Set "line" here to avoid a warning and discard it later. */
 	line = fgets(buf, 4096, stdin);
 	if (line == NULL)
 		return NULL;
