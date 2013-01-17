@@ -178,8 +178,9 @@ int net_set_low_water(int sock, size_t size)
 /* set keep alive time on socket */
 extern int net_set_keep_alive(int sock)
 {
-	int opt_val;
+	int opt_int;
 	socklen_t opt_len;
+	struct linger opt_linger;
 	static bool keep_alive_set  = false;
 	static int  keep_alive_time = (uint16_t) NO_VAL;
 
@@ -191,20 +192,26 @@ extern int net_set_keep_alive(int sock)
 	if (keep_alive_time == (uint16_t) NO_VAL)
 		return 0;
 
+	opt_len = sizeof(struct linger);
+	opt_linger.l_onoff = 1;
+	opt_linger.l_linger = keep_alive_time;
+	if (setsockopt(sock, SOL_SOCKET, SO_LINGER, &opt_linger, opt_len) < 0)
+		error("Unable to set linger socket option: %m");
+
 	opt_len = sizeof(int);
-	opt_val = 1;
-	if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &opt_val, opt_len) < 0) {
+	opt_int = 1;
+	if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &opt_int, opt_len) < 0) {
 		error("Unable to set keep alive socket option: %m");
 		return -1;
 	}
-	opt_val = keep_alive_time;
-	if (setsockopt(sock, SOL_TCP, TCP_KEEPIDLE, &opt_val, opt_len) < 0) {
+	opt_int = keep_alive_time;
+	if (setsockopt(sock, SOL_TCP, TCP_KEEPIDLE, &opt_int, opt_len) < 0) {
 		error("Unable to set keep alive socket time: %m");
 		return -1;
 	}
 #if 0
-	getsockopt(sock, SOL_TCP, TCP_KEEPIDLE, &opt_val, &opt_len);
-	info("keep_alive time is %d", opt_val);
+	getsockopt(sock, SOL_TCP, TCP_KEEPIDLE, &opt_int, &opt_len);
+	info("keep_alive time is %d", opt_int);
 #endif
 
 	return 0;
