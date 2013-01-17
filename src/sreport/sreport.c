@@ -197,7 +197,8 @@ main (int argc, char *argv[])
 			break;
 		error_code = _get_command (&input_field_count, input_fields);
 	}
-
+	if (exit_flag == 2)
+		putchar('\n');
 	slurmdb_connection_close(&db_conn);
 	slurm_acct_storage_fini();
 	exit(exit_code);
@@ -216,6 +217,8 @@ static char *_getline(const char *prompt)
 
 	/* Set "line" here to avoid a warning, discard later */
 	line = fgets(buf, 4096, stdin);
+	if (line == NULL)
+		return NULL;
 	len = strlen(buf);
 	if ((len > 0) && (buf[len-1] == '\n'))
 		buf[len-1] = '\0';
@@ -381,8 +384,10 @@ _get_command (int *argc, char **argv)
 #else
 	in_line = _getline("sreport: ");
 #endif
-	if (in_line == NULL)
+	if (in_line == NULL) {
+		exit_flag = 2;
 		return 0;
+	}
 	else if (strncmp (in_line, "#", 1) == 0) {
 		free (in_line);
 		return 0;

@@ -258,6 +258,8 @@ static char *_getline(const char *prompt)
 
 	/* Set "line" here to avoid a warning, discard later */
 	line = fgets(buf, 4096, stdin);
+	if (line == NULL)
+		return NULL;
 	len = strlen(buf);
 	if ((len > 0) && (buf[len-1] == '\n'))
 		buf[len-1] = '\0';
