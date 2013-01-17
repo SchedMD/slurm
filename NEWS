@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
  -- Fix issue where sjstat and sjobexitmod was installed in 2 different RPMs.
  -- Fix for job request of multiple partitions in which some partitions lack
     nodes with required features.
+ -- Permit a job to use a QOS they do not have access to if an administrator
+    manually set the job's QOS (previously the job would be rejected).
 
 * Changes in SLURM 2.5.1
 ========================

@@ -515,7 +515,8 @@ next_part:		part_ptr = (struct part_record *)
 			assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
 			if (assoc_ptr &&
 			    !bit_test(assoc_ptr->usage->valid_qos,
-				      job_ptr->qos_id)) {
+				      job_ptr->qos_id) &&
+			    !job_ptr->limit_set_qos) {
 				info("sched: JobId=%u has invalid QOS",
 					job_ptr->job_id);
 				xfree(job_ptr->state_desc);
@@ -850,7 +851,8 @@ next_part:			part_ptr = (struct part_record *)
 			assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
 			if (assoc_ptr &&
 			    !bit_test(assoc_ptr->usage->valid_qos,
-				      job_ptr->qos_id)) {
+				      job_ptr->qos_id) &&
+			    !job_ptr->limit_set_qos) {
 				info("sched: JobId=%u has invalid QOS",
 					job_ptr->job_id);
 				xfree(job_ptr->state_desc);
