@@ -66,6 +66,7 @@ generated_html = \
 	quickstart.html \
 	reservations.html \
 	resource_limits.html \
+	rosetta.html \
 	schedplugins.html \
 	select_design.html \
 	selectplugins.html \
@@ -103,6 +104,8 @@ html_DATA = \
 	plane_ex5.gif \
 	plane_ex6.gif \
 	plane_ex7.gif \
+	rosetta.gif \
+	rosetta.pdf \
 	slurm_logo.png \
 	schedmd.png \
 	slurm_design.pdf \

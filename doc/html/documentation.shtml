@@ -12,6 +12,7 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <ul>
 <li><a href="quickstart.html">Quick Start User Guide</a></li>
 <li><a href="man_index.html">Man Pages</a></li>
+<li><a href="rosetta.html">Rosetta Stone of Workload Managers</a></li>
 <li><a href="cpu_management.html">CPU Management User and Administrator Guide</a></li>
 <li><a href="mpi_guide.html">MPI and UPC Users Guide</a></li>
 <li><a href="mc_support.html">Support for Multi-core/Multi-threaded Architectures</a></li>
@@ -107,6 +108,6 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 14 January 2013</p>
+<p style="text-align:center;">Last modified 17 January 2013</p>
 
 <!--#include virtual="footer.txt"-->
