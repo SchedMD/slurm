@@ -941,7 +941,7 @@ extern int init_job_conf (void);
  * global: node_record_table_ptr - pointer to global node table
  *         default_node_record - default values for node records
  *         default_config_record - default values for configuration records
- *         hash_table - table of hash indecies
+ *         hash_table - table of hash indexes
  *         last_node_update - time of last node table update
  */
 extern int init_node_conf ();

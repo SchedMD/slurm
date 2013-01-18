@@ -2844,7 +2844,7 @@ static void _help(void)
 "Usage: sbatch [OPTIONS...] executable [args...]\n"
 "\n"
 "Parallel run options:\n"
-"  -a, --array=indecies        job array index values\n"
+"  -a, --array=indexes        job array index values\n"
 "  -A, --account=name          charge job to specified account\n"
 "      --begin=time            defer job until HH:MM MM/DD/YY\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"

@@ -326,7 +326,7 @@ static int _delete_config_record (void)
  * _dump_hash - print the node_hash_table contents, used for debugging
  *	or analysis of hash technique
  * global: node_record_table_ptr - pointer to global node table
- *         node_hash_table - table of hash indecies
+ *         node_hash_table - table of hash indexes
  */
 static void _dump_hash (void)
 {
@@ -353,7 +353,7 @@ static void _dump_hash (void)
  * input: name - name to be aliased of the desired node
  * output: return pointer to node record or NULL if not found
  * global: node_record_table_ptr - pointer to global node table
- *         node_hash_table - table of hash indecies
+ *         node_hash_table - table of hash indexes
  */
 static struct node_record *_find_alias_node_record (char *name)
 {
