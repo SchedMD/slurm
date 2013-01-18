@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
     manually set the job's QOS (previously the job would be rejected).
  -- Make more variables available to job_submit/lua plugin: slurm.MEM_PER_CPU,
     slurm.NO_VAL, etc.
+ -- Fix topology/tree logic when nodes defined in slurm.conf get re-ordered.
 
 * Changes in SLURM 2.5.1
 ========================
