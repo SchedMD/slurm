@@ -492,8 +492,6 @@ static int _build_all_nodeline_info(void)
 		info("WARNING: No node %s configured", node_000);
 	xfree(node_000);
 }
-#else	/* HAVE_BG */
-	slurm_topo_build_config();
 #endif	/* HAVE_BG */
 
 	return rc;
@@ -798,6 +796,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		_reorder_nodes_by_rank();
 	else
 		_reorder_nodes_by_name();
+	slurm_topo_build_config();
 
 	rehash_node();
 	rehash_jobs();
