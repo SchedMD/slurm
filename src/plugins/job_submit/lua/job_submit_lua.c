@@ -241,6 +241,30 @@ static void _register_lua_slurm_output_functions (void)
 	lua_pushnumber (L, SLURM_SUCCESS);
 	lua_setfield (L, -2, "SUCCESS");
 
+
+	/*
+	 * Other definitions needed to interpret data
+	 * slurm.MEM_PER_CPU, slurm.NO_VAL, etc.
+	 */
+	lua_pushnumber (L, ALLOC_SID_ADMIN_HOLD);
+	lua_setfield (L, -2, "ALLOC_SID_ADMIN_HOLD");
+	lua_pushnumber (L, ALLOC_SID_USER_HOLD);
+	lua_setfield (L, -2, "ALLOC_SID_USER_HOLD");
+	lua_pushnumber (L, MAIL_JOB_BEGIN);
+	lua_setfield (L, -2, "MAIL_JOB_BEGIN");
+	lua_pushnumber (L, MAIL_JOB_END);
+	lua_setfield (L, -2, "MAIL_JOB_END");
+	lua_pushnumber (L, MAIL_JOB_FAIL);
+	lua_setfield (L, -2, "MAIL_FAIL");
+	lua_pushnumber (L, MAIL_JOB_REQUEUE);
+	lua_setfield (L, -2, "MAIL_JOB_REQUEUE");
+	lua_pushnumber (L, MEM_PER_CPU);
+	lua_setfield (L, -2, "MEM_PER_CPU");
+	lua_pushnumber (L, NICE_OFFSET);
+	lua_setfield (L, -2, "NICE_OFFSET");
+	lua_pushnumber (L, NO_VAL);
+	lua_setfield (L, -2, "NO_VAL");
+
 	lua_setglobal (L, "slurm");
 }
 
