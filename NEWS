@@ -55,6 +55,8 @@ documents those changes that are of interest to users and admins.
  -- Make more variables available to job_submit/lua plugin: slurm.MEM_PER_CPU,
     slurm.NO_VAL, etc.
  -- Fix topology/tree logic when nodes defined in slurm.conf get re-ordered.
+ -- In select/cons_res, correct logic to allocate whole sockets to jobs. Work
+    by Magnus Jonsson, Umea University.
 
 * Changes in SLURM 2.5.1
 ========================
