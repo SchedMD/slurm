@@ -573,13 +573,13 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 				 * release remaining cores unless
 				 * we are allocating whole sockets
 				 */
-				if ( cpus == 0 && alloc_sockets ) {
-					if ( bit_test(job_res->core_bitmap,j) )
+				if (cpus == 0) {
+					if (alloc_sockets) {
+						bit_set(job_res->core_bitmap,j);
 						core_cnt++;
-					continue;
-				}
-				else if ( cpus == 0 ) {
-					bit_clear(job_res->core_bitmap,j);
+					} else {
+						bit_clear(job_res->core_bitmap,j);
+					}
 					continue;
 				}
 
@@ -594,8 +594,12 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 						cpus = 0;
 					else
 						cpus -= vpus;
+				} else if (alloc_sockets) {
+					/* If the core is not used, add it
+					 * anyway if allocating whole sockets */
+					bit_set(job_res->core_bitmap, j);
+					core_cnt++;
 				}
-
 			}
 
 			/* loop again if more cpus required */
@@ -762,6 +766,9 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 			if ((select_node_record[n].vpus >= 1) &&
 			    (alloc_sockets || alloc_cores) && sock_used[s]) {
 				for (j=sock_start[s]; j<sock_end[s]; j++) {
+					/* Mark all cores as used */
+					if (alloc_sockets)
+						bit_set(core_map, j);
 					if (bit_test(core_map, j))
 						core_cnt++;
 				}
