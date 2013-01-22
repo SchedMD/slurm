@@ -117,6 +117,7 @@ Lead Slurm developers are:
 <li>Aleksej Saushev</li>
 <li>Rod Schultz (Bull)</li>
 <li>Jason Sollom (Cray)</li>
+<li>Erik Soyez (Science + Computing)</li>
 <li>Tyler Strickland (University of Florida)</li>
 <li>Jeff Squyres (LAM MPI)</li>
 <li>Prashanth Tamraparni (HP, India)</li>
@@ -136,6 +137,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 28 December 2012</p>
+<p style="text-align:center;">Last modified 22 January 2013</p>
 
 <!--#include virtual="footer.txt"-->
