@@ -57,6 +57,7 @@ COMMAND CHANGES (see man pages for details)
    but has the format "JOBID_TASKID" while a step ID format is now
    "JOBID_TASKID.STEPID".
  - Fully removed deprecated sacct --dump --fdump options.
+ - Added SLURM_SUBMIT_HOST to salloc, sbatch and srun job environment.
 
 OTHER CHANGES
 =============

@@ -34,6 +34,7 @@ documents those changes that are of interest to users and admins.
     plugin into priority/multifactor plugin.
  -- Add "KeepAliveTime" configuration parameter controlling how long sockets
     used for srun/slurmstepd communications are kept alive after disconnect.
+ -- Added SLURM_SUBMIT_HOST to salloc, sbatch and srun job environment.
 
 * Changes in SLURM 2.5.2
 ========================

@@ -1,4 +1,4 @@
-.TH "srun" "1" "SLURM 2.5" "October 2012" "SLURM Commands"
+.TH "srun" "1" "SLURM 2.6" "January 2013" "SLURM Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -1972,6 +1972,9 @@ The step ID of the current job
 .TP
 \fBSLURM_SUBMIT_DIR\fR
 The directory from which \fBsrun\fR was invoked.
+.TP
+\fBSLURM_SUBMIT_HOST\fR
+The hostname of the computer from which \fBsalloc\fR was invoked.
 .TP
 \fBSLURM_TASK_PID\fR
 The process ID of the task being started.
