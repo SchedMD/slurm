@@ -3848,7 +3848,8 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->argc = job_desc_msg->argc;
 	launch_msg_ptr->argv = xduparray(job_desc_msg->argc,
 					 job_desc_msg->argv);
-	launch_msg_ptr->array_id = job_ptr->array_task_id;
+	launch_msg_ptr->array_job_id = job_ptr->array_job_id;
+	launch_msg_ptr->array_task_id = job_ptr->array_task_id;
 	launch_msg_ptr->spank_job_env_size = job_ptr->spank_job_env_size;
 	launch_msg_ptr->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 						  job_ptr->spank_job_env);

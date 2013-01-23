@@ -527,6 +527,12 @@ Supported replacement symbols are:
 .PD
 .RS
 .TP
+\fB%A\fR
+Job array's master job allocation number.
+.TP
+\fB%a\fR
+Job array ID (index) number.
+.TP
 \fB%j\fR
 Job allocation number.
 .TP
@@ -1402,7 +1408,10 @@ the batch script.
 The reservation ID on Cray systems running ALPS/BASIL only.
 .TP
 \fBSLURM_ARRAY_ID\fR
-Index of job array element.
+Job array ID (index) number.
+.TP
+\fBSLURM_ARRAY_JOBID\fR
+Job array's master job ID number.
 .TP
 \fBSLURM_CPU_BIND\fR
 Set to value of the \-\-cpu_bind\fR option.

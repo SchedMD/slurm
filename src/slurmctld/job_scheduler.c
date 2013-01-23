@@ -1101,7 +1101,8 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr)
 				xmalloc(sizeof(batch_job_launch_msg_t));
 	launch_msg_ptr->job_id = job_ptr->job_id;
 	launch_msg_ptr->step_id = NO_VAL;
-	launch_msg_ptr->array_id = job_ptr->array_task_id;
+	launch_msg_ptr->array_job_id = job_ptr->array_job_id;
+	launch_msg_ptr->array_task_id = job_ptr->array_task_id;
 	launch_msg_ptr->uid = job_ptr->user_id;
 	launch_msg_ptr->gid = job_ptr->group_id;
 	launch_msg_ptr->ntasks = job_ptr->details->num_tasks;

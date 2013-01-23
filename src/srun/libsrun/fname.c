@@ -69,7 +69,9 @@ fname_create(srun_job_t *job, char *format)
 	unsigned int wid     = 0;
 	unsigned long int taskid  = 0;
 	fname_t *fname = NULL;
-	char *p, *q, *name;
+	char *p, *q, *name, *tmp_env;
+	uint32_t array_job_id  = job->jobid;
+	uint16_t array_task_id = (uint16_t) NO_VAL;
 
 	fname = xmalloc(sizeof(*fname));
 	fname->type = IO_ALL;
@@ -125,6 +127,23 @@ fname_create(srun_job_t *job, char *format)
 			}
 
 			switch (*p) {
+			 case 'a':  /* '%a' => array task id   */
+				tmp_env = getenv("SLURM_ARRAY_ID");
+				if (tmp_env)
+					array_task_id = atoi(tmp_env);
+				xmemcat(name, q, p - 1);
+				xstrfmtcat(name, "%0*d", wid, array_task_id);
+				q = ++p;
+				break;
+			 case 'A':  /* '%A' => array master job id */
+				tmp_env = getenv("SLURM_ARRAY_JOBID");
+				if (tmp_env)
+					array_job_id = atoi(tmp_env);
+				xmemcat(name, q, p - 1);
+				xstrfmtcat(name, "%0*d", wid, array_job_id);
+				q = ++p;
+				break;
+
 			 case 't':  /* '%t' => taskid         */
 			 case 'n':  /* '%n' => nodeid         */
 			 case 'N':  /* '%N' => node name      */
