@@ -149,7 +149,7 @@ enum spank_item {
     S_JOB_LOCAL_TASK_COUNT,  /* Number of local tasks (uint32_t *)           */
     S_JOB_TOTAL_TASK_COUNT,  /* Total number of tasks in job (uint32_t *)    */
     S_JOB_NCPUS,             /* Number of CPUs used by this job (uint16_t *) */
-    S_JOB_ARGV,              /* Command args (int, char ***)                 */
+    S_JOB_ARGV,              /* Command args (int *, char ***)               */
     S_JOB_ENV,               /* Job env array (char ***)                     */
     S_TASK_ID,               /* Local task id (int *)                        */
     S_TASK_GLOBAL_ID,        /* Global task id (uint32_t *)                  */
