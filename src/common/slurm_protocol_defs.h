@@ -793,6 +793,7 @@ typedef struct reattach_tasks_response_msg {
 } reattach_tasks_response_msg_t;
 
 typedef struct batch_job_launch_msg {
+	uint16_t array_id;	/* job array ID or NO_VAL */
 	uint32_t job_id;
 	uint32_t step_id;
 	uint32_t uid;

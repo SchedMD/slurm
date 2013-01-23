@@ -3746,6 +3746,9 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	agent_arg_t *agent_arg_ptr;
 	struct node_record *node_ptr;
 
+	if (job_desc_msg->array_inx && job_desc_msg->array_inx[0])
+		return ESLURM_INVALID_ARRAY;
+
 	/*
 	 * Create a job step. Note that a credential is not necessary,
 	 * since the slurmctld will be submitting this job directly to
@@ -3845,6 +3848,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->argc = job_desc_msg->argc;
 	launch_msg_ptr->argv = xduparray(job_desc_msg->argc,
 					 job_desc_msg->argv);
+	launch_msg_ptr->array_id = job_ptr->array_task_id;
 	launch_msg_ptr->spank_job_env_size = job_ptr->spank_job_env_size;
 	launch_msg_ptr->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 						  job_ptr->spank_job_env);

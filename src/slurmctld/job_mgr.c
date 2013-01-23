@@ -229,6 +229,7 @@ struct job_record *create_job_record(int *error_code)
 	detail_ptr = (struct job_details *)xmalloc(sizeof(struct job_details));
 
 	job_ptr->magic = JOB_MAGIC;
+	job_ptr->array_task_id = (uint16_t) NO_VAL;
 	job_ptr->details = detail_ptr;
 	job_ptr->prio_factors = xmalloc(sizeof(priority_factors_object_t));
 	job_ptr->step_list = list_create(NULL);
@@ -893,7 +894,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t preempt_time = 0;
 	time_t resize_time = 0, now = time(NULL);
-	uint16_t array_task_id = 0, job_state, details, batch_flag, step_flag;
+	uint16_t array_task_id = (uint16_t) NO_VAL;
+	uint16_t job_state, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, direct_set_prio;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
 	uint16_t restart_cnt, resv_flags, ckpt_interval;

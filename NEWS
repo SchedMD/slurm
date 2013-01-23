@@ -35,6 +35,7 @@ documents those changes that are of interest to users and admins.
  -- Add "KeepAliveTime" configuration parameter controlling how long sockets
     used for srun/slurmstepd communications are kept alive after disconnect.
  -- Added SLURM_SUBMIT_HOST to salloc, sbatch and srun job environment.
+ -- Added SLURM_ARRAY_ID to environment of job array.
 
 * Changes in SLURM 2.5.2
 ========================
