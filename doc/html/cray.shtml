@@ -45,7 +45,7 @@ line as well with the <i>--launch-cmd</i> option.</p>
    field and it's component label in the <i>HostNodeName</i> field.
    The format of the component label is "c#-#c#s#n#" where the "#" fields represent in order:
    cabinet, row, cage, blade or slot, and node.
-   For example "c0-1c2s5n3" is cabinet 0, row 1, cage 3, slot 5 and node 3.</p>
+   For example "c0-1c2s5n3" is cabinet 0, row 1, cage 2, slot 5 and node 3.</p>
 
 <p>Cray XT/XE systems come with a 3D torus by default. On smaller systems the cabling in X dimension is
    omitted, resulting in a two-dimensional torus (1 x Y x Z). On Gemini/XE systems, pairs of adjacent nodes
