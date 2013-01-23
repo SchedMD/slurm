@@ -23,6 +23,7 @@ documents those changes that are of interest to users and admins.
  -- Fix topology/tree logic when nodes defined in slurm.conf get re-ordered.
  -- In select/cons_res, correct logic to allocate whole sockets to jobs. Work
     by Magnus Jonsson, Umea University.
+ -- In select/cons_res, correct logic when job removed from only some nodes.
 
 * Changes in SLURM 2.5.1
 ========================

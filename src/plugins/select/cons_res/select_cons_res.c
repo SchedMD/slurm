@@ -583,14 +583,8 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 				size = bit_size(this_row->row_bitmap);
 				bit_nclear(this_row->row_bitmap, 0, size-1);
 			}
-		} else {
-			xassert(job_ptr);
-			xassert(job_ptr->job_resrcs);
-			remove_job_from_cores(job_ptr->job_resrcs,
-					      &this_row->row_bitmap,
-					      cr_node_num_cores);
+			return;
 		}
-		return;
 	}
 
 	/* gather data */
