@@ -33,6 +33,7 @@ generated_html = \
 	ibm.html \
 	ibm-pe.html \
 	jobacct_gatherplugins.html \
+	job_array.html \
 	job_exit_code.html \
 	job_launch.html \
 	job_submit_plugins.html \

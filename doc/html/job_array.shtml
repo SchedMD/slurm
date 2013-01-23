@@ -1,0 +1,62 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Job Array Support</h1>
+
+<h2>Overview</h2>
+
+<p>Support for job arrays was added in Slurm version 2.6.
+Job arrays offer a mechanism for submitting and managing collections of similar
+jobs.
+All jobs must have the same initial options (e.g. size, time limit, etc.),
+however it is possible to change some of these options after the job has begun
+execution using the <i>scontrol update job ...</i> command.
+Job arrays are only supported for batch jobs and the array index values are
+specified using the <i>--array</i> or <i>-a</i> option of the <i>sbatch</i>
+command. The option argument can be specific array index values, a range of
+index values, and an optional step size as shown in the examples below.
+Note the the minimum index value is zero and the maximum value a Slurm
+configuration parameter <i>MaxArraySize</i> minus one.
+Jobs which are part of a job array will have the environment variable
+<i>SLURM_ARRAY_ID</i> set to its array index value.</p>
+
+<pre>
+# Submit a job array with index values between 0 and 31
+$ sbatch --array=0-31    -N1 tmp
+
+# Submit a job array with index values of 1, 3, 5 and 7
+$ sbatch --array=1,3,5,7 -N1 tmp
+
+# Submit a job array with index values between 1 and 7
+# with a step size of 2 (i.e. 1, 3, 5 and 7)
+$ sbatch --array=1-7:2   -N1 tmp
+</pre>
+
+<h2>Scontrol Command Use</h2>
+
+<p>When a job array is submitted using the <i>sbatch</i> command an independent
+job is submitted for each element of the array, however substantial performance
+improvement is realized through the use of a single job submit request and only
+needing to validate the request options one time.
+Use of the <i>scontrol show job</i> option shows two new fields related to
+job array support.
+The <i>JobID</i> is a unique identifier for the job.
+The <i>ArrayJobID</i> is the <i>JobID</i> of the first element of the job
+array.
+The <i>ArrayTaskID</i> is the array index of this particular entry.
+In order to modify a job, always use the <i>JobID</i> specification.</p>
+
+<pre>
+$ scontrol show job
+JobId=13 ArrayJobId=13 ArrayTaskId=1 Name=tmp
+...
+JobId=14 ArrayJobId=13 ArrayTaskId=2 Name=tmp
+...
+JobId=15 ArrayJobId=13 ArrayTaskId=3 Name=tmp
+....
+
+$ scontrol update JobId=15 TimeLimit=30
+</pre>
+
+<p style="text-align:center;">Last modified 23 January 2013</p>
+
+<!--#include virtual="footer.txt"-->
