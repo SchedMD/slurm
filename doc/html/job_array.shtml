@@ -19,7 +19,7 @@ index values, and an optional step size as shown in the examples below.
 Note the the minimum index value is zero and the maximum value a Slurm
 configuration parameter (<i>MaxArraySize</i> minus one).
 Jobs which are part of a job array will have the environment variable
-<i>SLURM_ARRAY_ID</i> set to its array index value.</p>
+<i>SLURM_ARRAY_TASK_ID</i> set to its array index value.</p>
 
 <pre>
 # Submit a job array with index values between 0 and 31
@@ -33,11 +33,25 @@ $ sbatch --array=1,3,5,7 -N1 tmp
 $ sbatch --array=1-7:2   -N1 tmp
 </pre>
 
+<p>Slurm support for job arrays at this time does not use a meta-job data
+structure, but creates a separate job record for each element of the array.
+Two additional fields were added to Slurm's job record for managing job arrays.
+The first new field is intenally called "array_job_id" and is the job ID of
+the first job in the array.
+Subsequent elements of the job array will have a unique Slurm "job_id", but
+all will have the same "array_job_id" value.
+Some Slurm commands intepret the array_job_id as representing all elements of
+the job array, while other commands use the unique job_id assigned to each.
+Support for Slurm job arrays can be expected to improve in later releases.
+The second new field is called "array_task_id" which is the job array index
+value of the job array element.
+More details about these new fields follow.</p>
+
 <h2>Job ID and Environment Variables</h2>
 
 <p>Job arrays will have two additional environment variable set.
-<b>SLURM_ARRAY_JOBID</b> will be set to the first job ID of the array.
-<b>SLURM_ARRAY_ID</b> will be set to the job array index value.
+<b>SLURM_ARRAY_JOB_ID</b> will be set to the first job ID of the array.
+<b>SLURM_ARRAY_TASK_ID</b> will be set to the job array index value.
 For example a job submission of this sort<br>
 <i>sbatch --array=1-3 -N1 tmp</i><br>
 will generate a job array containing three jobs. If the sbatch command responds<br>
@@ -46,20 +60,20 @@ then the environment variables will be set as
 follows:<br>
 <br>
 SLURM_JOBID=36<br>
-SLURM_ARRAY_JOBID=36<br>
-SLURM_ARRAY_ID=1<br>
+SLURM_ARRAY_JOB_ID=36<br>
+SLURM_ARRAY_TASK_ID=1<br>
 <br>
 SLURM_JOBID=37<br>
-SLURM_ARRAY_JOBID=36<br>
-SLURM_ARRAY_ID=2<br>
+SLURM_ARRAY_JOB_ID=36<br>
+SLURM_ARRAY_TASK_ID=2<br>
 <br>
 SLURM_JOBID=38<br>
-SLURM_ARRAY_JOBID=36<br>
-SLURM_ARRAY_ID=3<br>
+SLURM_ARRAY_JOB_ID=36<br>
+SLURM_ARRAY_TASK_ID=3<br>
 </p>
 
 <p>All Slurm commands and APIs recognize the SLURM_JOBID value.
-Some commands also recognize the SLURM_ARRAY_JOBID plus SLURM_ARRAY_ID
+Some commands also recognize the SLURM_ARRAY_JOB_ID plus SLURM_ARRAY_TASK_ID
 values separated by an underscore as identifying an element of a job array.
 Using the example above, "37" or "36_2" would be equivalent ways to identify
 the second array element of job 36.</p>
@@ -68,9 +82,9 @@ the second array element of job 36.</p>
 
 <p>Two additional options are available to specify a job's stdin, stdout, and
 stderr file names:
-<b>%A</b> will be replaced by the value of SLURM_ARRAY_JOBID (as defined above)
+<b>%A</b> will be replaced by the value of SLURM_ARRAY_JOB_ID (as defined above)
 and
-<b>%a</b> will be replaced by the value of SLURM_ARRAY_ID (as defined above).
+<b>%a</b> will be replaced by the value of SLURM_ARRAY_TASK_ID (as defined above).
 An example of its use is:<br>
 <i>sbatch -o "slurm-%A_%a.out" --array=1-3 -N1 tmp</i><br>
 which would generated
@@ -96,7 +110,10 @@ $ scancel 20
 
 <h2>Squeue Command Use</h2>
 
-<p>TBD</p>
+<p>Two additional job output formats have been added:<br>
+<b>%F</b> prints the array_job_id value<br>
+<b>%K</b> prints the array_task_id value<br>
+(all of the obvious letters to use were already assigned to other job fields).</p>
 
 <h2>Scontrol Command Use</h2>
 
@@ -134,6 +151,15 @@ sview.
 The sview command has been modified to permit display of a job's ArrayJobId
 and ArrayTaskId fields. Both fields are displayed with a value of "N/A" if
 the job is not part of a job array.</p>
+
+<h2>System Administration</h2>
+
+<p>A new configuration parameter has been added to control the maximum
+job array size: <b>MaxArraySize</b>. The smallest index that can be specified
+by a user is zero and the maximum index is MaxArraySize minus one.
+The default value of MaxArraySize is 1001. Be mindful about the value of
+MaxArraySize as job arrays offer an easy way for users to submit large numbers
+of jobs very quickly.</p>
 
 <p style="text-align:center;">Last modified 24 January 2013</p>
 

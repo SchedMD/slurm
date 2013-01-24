@@ -636,6 +636,12 @@ extern int parse_format( char* format )
 							 field_size,
 							 right_justify,
 							 suffix );
+			else if (field[0] == 'F')
+				job_format_add_array_job_id(
+							params.format_list,
+							field_size,
+							right_justify,
+							suffix );
 			else if (field[0] == 'g')
 				job_format_add_group_name( params.format_list,
 							   field_size,
@@ -676,6 +682,12 @@ extern int parse_format( char* format )
 							suffix );
 			else if (field[0] == 'k')
 				job_format_add_comment( params.format_list,
+							field_size,
+							right_justify,
+							suffix );
+			else if (field[0] == 'K')
+				job_format_add_array_task_id(
+							params.format_list,
 							field_size,
 							right_justify,
 							suffix );

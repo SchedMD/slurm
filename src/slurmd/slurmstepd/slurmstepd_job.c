@@ -230,12 +230,12 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->array_job_id  = msg->job_id;
 	job->array_task_id = (uint16_t) NO_VAL;
 	for (i = 0; i < msg->envc; i++) {
-		/*                         123456789012345678 */
-		if (!strncmp(msg->env[i], "SLURM_ARRAY_JOBID=", 18))
-			job->array_job_id = atoi(msg->env[i] + 18);
-		/*                         123456789012345 */
-		if (!strncmp(msg->env[i], "SLURM_ARRAY_ID=", 15))
-			job->array_task_id = atoi(msg->env[i] + 15);
+		/*                         1234567890123456789 */
+		if (!strncmp(msg->env[i], "SLURM_ARRAY_JOB_ID=", 19))
+			job->array_job_id = atoi(msg->env[i] + 19);
+		/*                         12345678901234567890 */
+		if (!strncmp(msg->env[i], "SLURM_ARRAY_TASK_ID=", 20))
+			job->array_task_id = atoi(msg->env[i] + 20);
 	}
 
 	job->eio     = eio_handle_create();

@@ -1139,9 +1139,9 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 					"%u", num_nodes);
 	}
 	if (batch->array_task_id != (uint16_t) NO_VAL) {
-		env_array_overwrite_fmt(dest, "SLURM_ARRAY_JOBID", "%u",
+		env_array_overwrite_fmt(dest, "SLURM_ARRAY_JOB_ID", "%u",
 					batch->array_job_id);
-		env_array_overwrite_fmt(dest, "SLURM_ARRAY_ID", "%u",
+		env_array_overwrite_fmt(dest, "SLURM_ARRAY_TASK_ID", "%u",
 					batch->array_task_id);
 	}
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", batch->nodes);

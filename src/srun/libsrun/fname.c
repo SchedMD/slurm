@@ -128,7 +128,7 @@ fname_create(srun_job_t *job, char *format)
 
 			switch (*p) {
 			 case 'a':  /* '%a' => array task id   */
-				tmp_env = getenv("SLURM_ARRAY_ID");
+				tmp_env = getenv("SLURM_ARRAY_TASK_ID");
 				if (tmp_env)
 					array_task_id = atoi(tmp_env);
 				xmemcat(name, q, p - 1);
@@ -136,7 +136,7 @@ fname_create(srun_job_t *job, char *format)
 				q = ++p;
 				break;
 			 case 'A':  /* '%A' => array master job id */
-				tmp_env = getenv("SLURM_ARRAY_JOBID");
+				tmp_env = getenv("SLURM_ARRAY_JOB_ID");
 				if (tmp_env)
 					array_job_id = atoi(tmp_env);
 				xmemcat(name, q, p - 1);

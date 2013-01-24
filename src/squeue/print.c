@@ -291,6 +291,40 @@ job_format_add_function(List list, int width, bool right, char *suffix,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_array_job_id(job_info_t * job, int width, bool right,
+			    char* suffix)
+{
+	if (job == NULL) {	/* Print the Header instead */
+		_print_str("ARRAY_JOB_ID", width, right, true);
+	} else if (job->array_task_id != (uint16_t) NO_VAL) {
+		char id[FORMAT_STRING_SIZE];
+		snprintf(id, FORMAT_STRING_SIZE, "%u", job->array_job_id);
+		_print_str(id, width, right, true);
+	} else {
+		_print_str("N/A", width, right, true);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_array_task_id(job_info_t * job, int width, bool right,
+			     char* suffix)
+{
+	if (job == NULL) {	/* Print the Header instead */
+		_print_str("ARRAY_TASK_ID", width, right, true);
+	} else if (job->array_task_id != (uint16_t) NO_VAL) {
+		char id[FORMAT_STRING_SIZE];
+		snprintf(id, FORMAT_STRING_SIZE, "%u", job->array_task_id);
+		_print_str(id, width, right, true);
+	} else {
+		_print_str("N/A", width, right, true);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_batch_host(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
