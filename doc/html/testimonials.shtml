@@ -3,6 +3,25 @@
 <h1>Customer Testimonials</h1>
 
 <i>
+"In 2010, when we embarked upon our mission to port SLURM to our Cray XT and XE
+systems, we discovered first-hand the high quality software engineering that
+has gone into the creation of this product. From its very core SLURM has been
+designed to be extensible and flexible. Moreover, as our work progressed, we
+discovered the high level of technical expertise possessed by SchedMD who was
+very quick to respond to our questions with insightful advice, suggestions and
+clarifications. In the end we arrived at a solution that more than satisfied
+our needs. The project was so successful we have now migrated all our production
+science systems to Slurm, including our 20 cabinet Cray XT5 system. The ease
+with which we have made this transition is testament to the robustness and
+high quality of the product but also to the no-fuss installation and
+configuration procedure and the high quality documentation. We have no qualms
+about recommending SLURM to any facility, large or small, who wish to make the
+break from the various commercial options available today"<br><br>
+Colin McMurtrie, Head of Systems, Swiss National Supercomputing Centre
+</i>
+<HR SIZE=4>
+
+<i>
 "Thank you for SLURM! It is one of the nicest pieces of free software
 for managing HPC clusters we have come across in a long time.
 Both of our Blue Genes are running SLURM and it works fantastically
@@ -133,6 +152,6 @@ Bill Celmaster, XC Program Manager, Hewlett-Packard Company
 </i>
 <HR SIZE=4>
 
-<p style="text-align:center;">Last modified 8 April 2011</p>
+<p style="text-align:center;">Last modified 23 January 2013</p>
 
 <!--#include virtual="footer.txt"-->
