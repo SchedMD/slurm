@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "December 2012" "squeue 2.6" "Slurm components"
+.TH SQUEUE "1" "January 2013" "squeue 2.6" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -22,6 +22,12 @@ list of account names. This has no effect when listing job steps.
 Display information about jobs and job steps in all partitions.
 This causes information to be displayed about partitions that are configured as
 hidden and partitions that are unavailable to user's group.
+
+.TP
+\fB\-r\fR, \fB\-\-array\fR
+Optimize display for use with job arrays.
+Pending job array elements will be combined on one line of output with the
+array index values printed using a regular expression.
 
 .TP
 \fB\-h\fR, \fB\-\-noheader\fR
@@ -559,6 +565,9 @@ Another suggested value is "%a %T" for a day of week and time stamp (e.g.
 .TP
 \fBSQUEUE_ALL\fR
 \fB\-a, \-\-all\fR
+.TP
+\fBSQUEUE_ARRAY\fR
+\fB\-r, \-\-array\fR
 .TP
 \fBSQUEUE_NAMES\fR
 \fB\-\-name=<name_list>\fR

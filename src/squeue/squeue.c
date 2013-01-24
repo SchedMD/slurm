@@ -99,8 +99,7 @@ main (int argc, char *argv[])
 		if ( params.iterate ) {
 			printf( "\n");
 			sleep( params.iterate );
-		}
-		else
+		} else
 			break;
 	}
 
@@ -225,17 +224,23 @@ _print_job ( bool clear_old )
 	}
 
 	if (params.format == NULL) {
-		if (params.long_list)
-			params.format = "%.12i %.9P %.8j %.8u %.8T %.10M %.9l "
-				"%.6D %R";
+		if (params.array_flag)
+			params.format = xstrdup("%.18i ");
 		else
-			params.format = "%.12i %.9P %.8j %.8u  %.2t %.10M %.6D %R";
+			params.format = xstrdup("%.12i ");
+		if (params.long_list) {
+			xstrcat(params.format,
+				"%.9P %.8j %.8u %.8T %.10M %.9l %.6D %R");
+		} else {
+			xstrcat(params.format,
+				"%.9P %.8j %.8u  %.2t %.10M %.6D %R");
+		}
 	}
 	if (params.format_list == NULL)
 		parse_format(params.format);
 
-	print_jobs_array( new_job_ptr->job_array, new_job_ptr->record_count ,
-			  params.format_list ) ;
+	print_jobs_array(new_job_ptr->job_array, new_job_ptr->record_count,
+			 params.format_list) ;
 	return SLURM_SUCCESS;
 }
 

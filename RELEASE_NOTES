@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.6
-4 January 2012
+24 January 2012
 
 
 IMPORTANT NOTE:
@@ -57,11 +57,12 @@ COMMAND CHANGES (see man pages for details)
    but has the format "JOBID_TASKID" while a step ID format is now
    "JOBID_TASKID.STEPID".
  - Fully removed deprecated sacct --dump --fdump options.
- - Added SLURM_SUBMIT_HOST to salloc, sbatch and srun job environment.
- - Added SLURM_ARRAY_ID to environment of job array.
 
 OTHER CHANGES
 =============
+ - Added SLURM_SUBMIT_HOST to salloc, sbatch and srun job environment.
+ - Added SLURM_ARRAY_TASK_ID and SLURM_ARRAY_TASK_ID to environment of job
+   array.
 
 API CHANGES
 ===========

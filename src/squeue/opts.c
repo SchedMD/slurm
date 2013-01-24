@@ -99,6 +99,7 @@ parse_command_line( int argc, char* argv[] )
 	static struct option long_options[] = {
 		{"accounts",   required_argument, 0, 'A'},
 		{"all",        no_argument,       0, 'a'},
+		{"array",      no_argument,       0, 'r'},
 		{"format",     required_argument, 0, 'o'},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
 		{"hide",       no_argument,       0, OPT_LONG_HIDE},
@@ -129,6 +130,8 @@ parse_command_line( int argc, char* argv[] )
 
 	if (getenv("SQUEUE_ALL"))
 		params.all_flag = true;
+	if (getenv("SQUEUE_ARRAY"))
+		params.array_flag = true;
 	if ( ( env_val = getenv("SQUEUE_SORT") ) )
 		params.sort = xstrdup(env_val);
 	if ( ( env_val = getenv("SLURM_CLUSTERS") ) ) {
@@ -144,7 +147,7 @@ parse_command_line( int argc, char* argv[] )
 	}
 
 	while ((opt_char = getopt_long(argc, argv,
-				       "A:ahi:j::ln:M:o:p:q:R:s::S:t:u:U:vVw:",
+				       "A:ahi:j::ln:M:o:p:q:R:rs::S:t:u:U:vVw:",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -224,6 +227,9 @@ parse_command_line( int argc, char* argv[] )
 		case (int) 'R':
 			xfree(params.reservation);
 			params.reservation = xstrdup(optarg);
+			break;
+		case (int)'r':
+			params.array_flag = true;
 			break;
 		case (int) 's':
 			if (optarg) {
@@ -909,6 +915,7 @@ _print_options(void)
 
 	printf( "-----------------------------\n" );
 	printf( "all         = %s\n", params.all_flag ? "true" : "false");
+	printf( "array       = %s\n", params.array_flag ? "true" : "false");
 	printf( "format      = %s\n", params.format );
 	printf( "iterate     = %d\n", params.iterate );
 	printf( "job_flag    = %d\n", params.job_flag );

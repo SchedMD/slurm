@@ -78,6 +78,7 @@ typedef struct job_step squeue_job_step_t;
 
 struct squeue_parameters {
 	bool all_flag;
+	bool array_flag;
 	bool job_flag;
 	bool start_flag;
 	bool step_flag;
