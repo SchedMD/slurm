@@ -1705,6 +1705,15 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_STATE),
 				   job_state_string(job_ptr->job_state));
 
+	secs2time_str((time_t) job_ptr->wait4switch, time_buf,
+			sizeof(time_buf));
+	snprintf(tmp_char, sizeof(tmp_char), "%u@%s",
+			job_ptr->req_switch, time_buf);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_SWITCHES),
+				   tmp_char);
+
 	slurm_make_time_str((time_t *)&job_ptr->eligible_time, tmp_char,
 			    sizeof(tmp_char));
 	add_display_treestore_line(update, treestore, &iter,
@@ -1775,15 +1784,6 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_TIME_SUSPEND),
-				   tmp_char);
-
-	secs2time_str((time_t) job_ptr->wait4switch, time_buf,
-			sizeof(time_buf));
-	snprintf(tmp_char, sizeof(tmp_char), "%u@%s\n",
-			job_ptr->req_switch, time_buf);
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_job,
-						 SORTID_SWITCHES),
 				   tmp_char);
 
 	uname = uid_to_string((uid_t)job_ptr->user_id);
