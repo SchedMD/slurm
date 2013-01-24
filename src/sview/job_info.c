@@ -97,6 +97,8 @@ enum {
 	SORTID_ALLOC,
 	SORTID_ALLOC_NODE,
 	SORTID_ALPS_RESV_ID,
+	SORTID_ARRAY_JOB_ID,
+	SORTID_ARRAY_TASK_ID,
 	SORTID_BATCH,
 	SORTID_BATCH_HOST,
 	SORTID_BLOCK,
@@ -207,6 +209,10 @@ static display_data_t display_data_job[] = {
 	 EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_ALLOC, NULL, FALSE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_ARRAY_JOB_ID, "Array_Job_ID", FALSE, EDIT_NONE,
+	 refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_ARRAY_TASK_ID, "Array_Task_ID", FALSE, EDIT_NONE,
+	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_PARTITION, "Partition", FALSE,
 	 EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 #ifdef HAVE_BG
@@ -1317,6 +1323,29 @@ static void _layout_job_record(GtkTreeView *treeview,
 						   tmp_char,
 						   sizeof(tmp_char),
 						   SELECT_PRINT_DATA));
+
+	if (job_ptr->array_task_id != (uint16_t) NO_VAL) {
+		snprintf(tmp_char, sizeof(tmp_char), "%u",
+			 job_ptr->array_job_id);
+	} else {
+		snprintf(tmp_char, sizeof(tmp_char), "N/A");
+	}
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_ARRAY_JOB_ID),
+				   tmp_char);
+
+	if (job_ptr->array_task_id != (uint16_t) NO_VAL) {
+		snprintf(tmp_char, sizeof(tmp_char), "%u",
+			 job_ptr->array_task_id);
+	} else {
+		snprintf(tmp_char, sizeof(tmp_char), "N/A");
+	}
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_ARRAY_TASK_ID),
+				   tmp_char);
+
 	if (job_ptr->batch_flag)
 		sprintf(tmp_char, "yes");
 	else
@@ -1806,6 +1835,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			       GtkTreeStore *treestore)
 {
+	char tmp_array_job_id[20], tmp_array_task_id[20];
 	char tmp_time_run[40],  tmp_time_resize[40], tmp_time_submit[40];
 	char tmp_time_elig[40], tmp_time_start[40],  tmp_time_end[40];
 	char tmp_time_sus[40],  tmp_time_limit[40],  tmp_alloc_node[40];
@@ -1828,6 +1858,16 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	snprintf(tmp_alloc_node, sizeof(tmp_alloc_node), "%s:%u",
 		 job_ptr->alloc_node, job_ptr->alloc_sid);
+
+	if (job_ptr->array_task_id != (uint16_t) NO_VAL) {
+		snprintf(tmp_array_job_id,  sizeof(tmp_array_job_id),  "%u",
+			 job_ptr->array_job_id);
+		snprintf(tmp_array_task_id, sizeof(tmp_array_task_id), "%u",
+			 job_ptr->array_task_id);
+	} else {
+		snprintf(tmp_array_job_id,  sizeof(tmp_array_job_id),  "N/A");
+		snprintf(tmp_array_task_id, sizeof(tmp_array_task_id), "N/A");
+	}
 
 	if (job_ptr->batch_flag)
 		tmp_batch = "yes";
@@ -2020,6 +2060,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   SORTID_ACCOUNT,      job_ptr->account,
 			   SORTID_ALLOC,        1,
 			   SORTID_ALLOC_NODE,   tmp_alloc_node,
+			   SORTID_ARRAY_JOB_ID, tmp_array_job_id,
+			   SORTID_ARRAY_TASK_ID,tmp_array_task_id,
 			   SORTID_BATCH,        tmp_batch,
 			   SORTID_BATCH_HOST,   job_ptr->batch_host,
 			   SORTID_COLOR,

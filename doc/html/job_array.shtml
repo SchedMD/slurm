@@ -94,7 +94,7 @@ $ scancel 20_3 20_5
 $ scancel 20
 </pre>
 
-<h2>Squeue and Sview Command Use</h2>
+<h2>Squeue Command Use</h2>
 
 <p>TBD</p>
 
@@ -110,6 +110,7 @@ The <i>JobID</i> is a unique identifier for the job.
 The <i>ArrayJobID</i> is the <i>JobID</i> of the first element of the job
 array.
 The <i>ArrayTaskID</i> is the array index of this particular entry.
+Neiher field is displayed if the job is not part of a job array.
 In order to modify a job, always use the <i>JobID</i> specification.</p>
 
 <pre>
@@ -128,7 +129,11 @@ $ scontrol update JobId=15 TimeLimit=30
 
 <p>The following Slurm commands do not currently recognize job arrays and their
 use requires the use of SLurm job IDs, which are unique for each array element:
-sacct, sattach, sbcast, smap, sprio, sreport, sshare, sstat and strigger.</p>
+sacct, sattach, sbcast, smap, sprio, sreport, sshare, sstat, strigger, and
+sview.
+The sview command has been modified to permit display of a job's ArrayJobId
+and ArrayTaskId fields. Both fields are displayed with a value of "N/A" if
+the job is not part of a job array.</p>
 
 <p style="text-align:center;">Last modified 24 January 2013</p>
 
