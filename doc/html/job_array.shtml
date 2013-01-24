@@ -69,6 +69,20 @@ If these file name options are used without being part of a job array then
 "%A" will be replaced by the current job ID and "%a" will be replaced by
 65534 (NO_VAL).</p>
 
+<h2>Scancel Command Use</h2>
+
+<p>If the job ID of a job array is specified as input to the scancel command
+then all elements of that job array will be cancelled.
+Alternately a specific array ID may be specified for cancellation.</p>
+
+<pre>
+# Cancel array ID 3 and 5 from job array 20
+$ scancel 20_3 20_5
+
+# Cancel all elements from job array 20
+$ scancel 20
+</pre>
+
 <h2>Scontrol Command Use</h2>
 
 <p>When a job array is submitted using the <i>sbatch</i> command an independent

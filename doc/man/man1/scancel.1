@@ -1,18 +1,23 @@
-.TH SCANCEL "1" "November 2012" "scancel 2.5" "Slurm components"
+.TH SCANCEL "1" "January 2013" "scancel 2.6" "Slurm components"
 
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
 
 .SH "SYNOPSIS"
-\fBscancel\fR [\fIOPTIONS\fR...] [\fIjob_id\fR[.\fIstep_id\fR]] [\fIjob_id\fR[.\fIstep_id\fR]...]
+\fBscancel\fR [\fIOPTIONS\fR...] [\fIjob_id\fR[_\fIarray_id\fR][.\fIstep_id\fR]] [\fIjob_id\fR[_\fIarray_id\fR][.\fIstep_id\fR]...]
 
 .SH "DESCRIPTION"
-\fBscancel\fR is used to signal or cancel jobs or job steps. An arbitrary number
-of jobs or job steps may be signaled using job specification filters or a
-space separated list of specific job and/or job step IDs. A job or job step
-can only be signaled by the owner of that job or user root. If an attempt is
-made by an unauthorized user to signal a job or job step, an error message will
-be printed and the job will not be signaled.
+\fBscancel\fR is used to signal or cancel jobs, job arrays or job steps.
+An arbitrary number of jobs or job steps may be signaled using job
+specification filters or a space separated list of specific job and/or
+job step IDs.
+If the job ID of a job array is specified with an array ID value then only that
+job array element will be cancelled.
+If the job ID of a job array is specified without an array ID value then all
+job array elements will be cancelled.
+A job or job step can only be signaled by the owner of that job or user root.
+If an attempt is made by an unauthorized user to signal a job or job step, an
+error message will be printed and the job will not be signaled.
 
 .SH "OPTIONS"
 
@@ -223,6 +228,10 @@ scancel \-\-signal=USR1 \-\-batch 1236
 .TP
 Cancel job all pending jobs belonging to user "bob" in partition "debug":
 scancel \-\-state=PENDING \-\-user=bob \-\-partition=debug
+
+.TP
+Cancel only array ID 4 of job array 1237
+scancel 1237_4
 
 .SH "COPYING"
 Copyright (C) 2002-2007 The Regents of the University of California.

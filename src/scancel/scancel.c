@@ -175,6 +175,23 @@ _load_job_records (void)
 	}
 }
 
+static bool
+_match_job(int opt_inx, int job_inx)
+{
+	job_info_t *job_ptr = job_buffer_ptr->job_array;
+
+	job_ptr += job_inx;
+	if (opt.array_id[opt_inx] == (uint16_t) NO_VAL) {
+		if ((opt.job_id[opt_inx] == job_ptr->job_id) ||
+		    (opt.job_id[opt_inx] == job_ptr->array_job_id))
+			return true;
+	} else {
+		if ((opt.array_id[opt_inx] == job_ptr->array_task_id) &&
+		    (opt.job_id[opt_inx]   == job_ptr->array_job_id))
+			return true;
+	}
+	return false;
+}
 
 static int
 _verify_job_ids (void)
@@ -187,7 +204,7 @@ _verify_job_ids (void)
 
 	for (j = 0; j < opt.job_cnt; j++ ) {
 		for (i = 0; i < job_buffer_ptr->record_count; i++) {
-			if (job_ptr[i].job_id == opt.job_id[j])
+			if (_match_job(j, i))
 				break;
 		}
 		if (((job_ptr[i].job_state >= JOB_COMPLETE) ||
@@ -358,7 +375,7 @@ _cancel_jobs_by_state(uint16_t job_state)
 		 * included a step id */
 		if (opt.job_cnt) {
 			for (j = 0; j < opt.job_cnt; j++ ) {
-				if (job_ptr[i].job_id != opt.job_id[j])
+				if (!_match_job(j, i))
 					continue;
 				if (opt.interactive &&
 				    (_confirmation(i, opt.step_id[j]) == 0))

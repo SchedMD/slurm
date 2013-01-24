@@ -454,8 +454,9 @@ _xlate_job_step_ids(char **rest)
 			opt.job_cnt++;
 	}
 
-	opt.job_id  = xmalloc(opt.job_cnt * sizeof(uint32_t));
-	opt.step_id = xmalloc(opt.job_cnt * sizeof(uint32_t));
+	opt.array_id = xmalloc(opt.job_cnt * sizeof(uint16_t));
+	opt.job_id   = xmalloc(opt.job_cnt * sizeof(uint32_t));
+	opt.step_id  = xmalloc(opt.job_cnt * sizeof(uint32_t));
 
 	for (i=0; i<opt.job_cnt; i++) {
 		tmp_l = strtol(rest[i], &next_str, 10);
@@ -464,6 +465,18 @@ _xlate_job_step_ids(char **rest)
 			exit (1);
 		}
 		opt.job_id[i] = tmp_l;
+
+		if (next_str[0] == '_') {
+			tmp_l = strtol(&next_str[1], &next_str, 10);
+			if (tmp_l < 0) {
+				error ("Invalid job id %s", rest[i]);
+				exit (1);
+			}
+			opt.array_id[i] = tmp_l;
+		} else {
+			opt.array_id[i] = (uint16_t) NO_VAL;
+		}
+
 
 		if (next_str[0] == '.') {
 			tmp_l = strtol(&next_str[1], &next_str, 10);
@@ -548,12 +561,12 @@ static void _usage(void)
 	printf("Usage: scancel [-A account] [--batch] [--interactive] [-n job_name]\n");
 	printf("               [-p partition] [-Q] [-q qos] [-R reservation][-s signal | integer]\n");
 	printf("               [-t PENDING | RUNNING | SUSPENDED] [--usage] [-u user_name]\n");
-	printf("               [-V] [-v] [-w hosts...] [--wckey=wckey] [job_id[.step_id]]\n");
+	printf("               [-V] [-v] [-w hosts...] [--wckey=wckey] [job_id[_array_id][.step_id]]\n");
 }
 
 static void _help(void)
 {
-	printf("Usage: scancel [OPTIONS] [job_id[.step_id]]\n");
+	printf("Usage: scancel [OPTIONS] [job_id[_array_id][.step_id]]\n");
 	printf("  -A, --account=account           act only on jobs charging this account\n");
 	printf("  -b, --batch                     signal batch shell for specified job\n");
 /*	printf("      --ctld                      send request directly to slurmctld\n"); */
