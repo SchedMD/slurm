@@ -9,13 +9,15 @@ Job arrays offer a mechanism for submitting and managing collections of similar
 jobs.
 All jobs must have the same initial options (e.g. size, time limit, etc.),
 however it is possible to change some of these options after the job has begun
-execution using the <i>scontrol update job ...</i> command.
-Job arrays are only supported for batch jobs and the array index values are
+execution using the command<br>
+<i>scontrol update job ...</i></p>
+
+<p>Job arrays are only supported for batch jobs and the array index values are
 specified using the <i>--array</i> or <i>-a</i> option of the <i>sbatch</i>
 command. The option argument can be specific array index values, a range of
 index values, and an optional step size as shown in the examples below.
 Note the the minimum index value is zero and the maximum value a Slurm
-configuration parameter <i>MaxArraySize</i> minus one.
+configuration parameter (<i>MaxArraySize</i> minus one).
 Jobs which are part of a job array will have the environment variable
 <i>SLURM_ARRAY_ID</i> set to its array index value.</p>
 
@@ -31,14 +33,16 @@ $ sbatch --array=1,3,5,7 -N1 tmp
 $ sbatch --array=1-7:2   -N1 tmp
 </pre>
 
-<h2>Environment Variables</h2>
+<h2>Job ID and Environment Variables</h2>
 
 <p>Job arrays will have two additional environment variable set.
 <b>SLURM_ARRAY_JOBID</b> will be set to the first job ID of the array.
 <b>SLURM_ARRAY_ID</b> will be set to the job array index value.
-For example a job submission of this sort <i>sbatch --array=1-3 -N1 tmp</i>
-will generate a job array containing three jobs. If the sbatch command responds
-<i>Submitted batch job 36</i> then the environment variables will be set as
+For example a job submission of this sort<br>
+<i>sbatch --array=1-3 -N1 tmp</i><br>
+will generate a job array containing three jobs. If the sbatch command responds<br>
+<i>Submitted batch job 36</i><br>
+then the environment variables will be set as
 follows:<br>
 <br>
 SLURM_JOBID=36<br>
@@ -54,6 +58,12 @@ SLURM_ARRAY_JOBID=36<br>
 SLURM_ARRAY_ID=3<br>
 </p>
 
+<p>All Slurm commands and APIs recognize the SLURM_JOBID value.
+Some commands also recognize the SLURM_ARRAY_JOBID plus SLURM_ARRAY_ID
+values separated by an underscore as identifying an element of a job array.
+Using the example above, "37" or "36_2" would be equivalent ways to identify
+the second array element of job 36.</p>
+
 <h2>File Names</h2>
 
 <p>Two additional options are available to specify a job's stdin, stdout, and
@@ -62,7 +72,8 @@ stderr file names:
 and
 <b>%a</b> will be replaced by the value of SLURM_ARRAY_ID (as defined above).
 An example of its use is:<br>
-<i>sbatch -o "slurm-%A_%a.out" --array=1-3 -N1 tmp</i> which would generated
+<i>sbatch -o "slurm-%A_%a.out" --array=1-3 -N1 tmp</i><br>
+which would generated
 output files names of this sort "slurm-36_1.out", "slurm-36_2.out" and
 "slurm-36_3.out".
 If these file name options are used without being part of a job array then
@@ -82,6 +93,10 @@ $ scancel 20_3 20_5
 # Cancel all elements from job array 20
 $ scancel 20
 </pre>
+
+<h2>Squeue and Sview Command Use</h2>
+
+<p>TBD</p>
 
 <h2>Scontrol Command Use</h2>
 
@@ -109,6 +124,12 @@ JobId=15 ArrayJobId=13 ArrayTaskId=3 Name=tmp
 $ scontrol update JobId=15 TimeLimit=30
 </pre>
 
-<p style="text-align:center;">Last modified 23 January 2013</p>
+<h2>Other Command Use</h2>
+
+<p>The following Slurm commands do not currently recognize job arrays and their
+use requires the use of SLurm job IDs, which are unique for each array element:
+sacct, sattach, sbcast, smap, sprio, sreport, sshare, sstat and strigger.</p>
+
+<p style="text-align:center;">Last modified 24 January 2013</p>
 
 <!--#include virtual="footer.txt"-->
