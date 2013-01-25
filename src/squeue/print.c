@@ -1482,7 +1482,9 @@ static int _filter_job(job_info_t * job)
 		filter = 1;
 		iterator = list_iterator_create(params.job_list);
 		while ((job_id = list_next(iterator))) {
-			if (*job_id == job->job_id) {
+			if ((*job_id == job->job_id) ||
+			    ((job->array_task_id != (uint16_t) NO_VAL) &&
+			     (*job_id == job->array_job_id))) {
 				filter = 0;
 				break;
 			}
@@ -1631,7 +1633,9 @@ static int _filter_step(job_step_info_t * step)
 		filter = 1;
 		iterator = list_iterator_create(params.job_list);
 		while ((job_id = list_next(iterator))) {
-			if (*job_id == step->job_id) {
+			if ((*job_id == step->job_id) ||
+			    ((step->array_task_id != (uint16_t) NO_VAL) &&
+			     (*job_id == step->array_job_id))) {
 				filter = 0;
 				break;
 			}

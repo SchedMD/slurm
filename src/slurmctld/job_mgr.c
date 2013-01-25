@@ -5701,15 +5701,24 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	uint32_t jobs_packed = 0;
+	uint32_t jobs_packed = 0, tmp_offset;
 	Buf buffer;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 
+	buffer = init_buf(BUF_SIZE);
+
+	/* write message body header : size and time */
+	/* put in a place holder job record count of 0 for now */
+	pack32(jobs_packed, buffer);
+	pack_time(time(NULL), buffer);
+
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (job_ptr->job_id != job_id)
+		if ((job_ptr->job_id != job_id) &&
+		    ((job_ptr->array_task_id == (uint16_t) NO_VAL) ||
+		     (job_ptr->array_job_id  != job_id)))
 			continue;
 
 		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
@@ -5718,20 +5727,25 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 						  job_ptr->account))
 			break;
 
+		pack_job(job_ptr, show_flags, buffer, protocol_version, uid);
 		jobs_packed++;
-		break;
 	}
 	list_iterator_destroy(job_iterator);
-	if (jobs_packed == 0)
-		return ESLURM_INVALID_JOB_ID;
 
-	buffer = init_buf(BUF_SIZE);
+	if (jobs_packed == 0) {
+		free_buf(buffer);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	/* put the real record count in the message body header */
+	tmp_offset = get_buf_offset(buffer);
+	set_buf_offset(buffer, 0);
 	pack32(jobs_packed, buffer);
-	pack_time(time(NULL), buffer);
-	pack_job(job_ptr, show_flags, buffer, protocol_version, uid);
+	set_buf_offset(buffer, tmp_offset);
 
 	*buffer_size = get_buf_offset(buffer);
 	buffer_ptr[0] = xfer_buf_data(buffer);
+
 	return SLURM_SUCCESS;
 }
 
