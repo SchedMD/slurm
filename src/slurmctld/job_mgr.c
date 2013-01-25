@@ -3209,6 +3209,8 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 			if ((job_ptr->array_job_id != job_id) ||
 			    (job_ptr->array_task_id == (uint16_t)NO_VAL))
 				continue;
+			if (IS_JOB_FINISHED(job_ptr))
+				continue;
 			rc1 = job_signal(job_ptr->job_id, signal, flags,
 					 uid, preempt);
 			rc = MAX(rc, rc1);
