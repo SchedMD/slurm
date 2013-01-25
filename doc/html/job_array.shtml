@@ -98,11 +98,15 @@ If these file name options are used without being part of a job array then
 
 <p>If the job ID of a job array is specified as input to the scancel command
 then all elements of that job array will be cancelled.
-Alternately a specific array ID may be specified for cancellation.</p>
+Alternately a array ID, optionally using regular expressions may be specified
+for job cancellation.</p>
 
 <pre>
-# Cancel array ID 3 and 5 from job array 20
-$ scancel 20_3 20_5
+# Cancel array ID 1 to 3 from job array 20
+$ scancel 20_[1-3]
+
+# Cancel array ID 4 and 5 from job array 20
+$ scancel 20_4 20_5
 
 # Cancel all elements from job array 20
 $ scancel 20
@@ -194,6 +198,6 @@ The default value of MaxArraySize is 1001. Be mindful about the value of
 MaxArraySize as job arrays offer an easy way for users to submit large numbers
 of jobs very quickly.</p>
 
-<p style="text-align:center;">Last modified 24 January 2013</p>
+<p style="text-align:center;">Last modified 25 January 2013</p>
 
 <!--#include virtual="footer.txt"-->
