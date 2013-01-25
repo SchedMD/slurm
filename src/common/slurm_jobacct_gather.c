@@ -134,7 +134,7 @@ static void _acct_kill_step(void)
 	req.job_id      = jobacct_job_id;
 	req.job_step_id = jobacct_step_id;
 	req.signal      = SIGKILL;
-	req.batch_flag  = 0;
+	req.flags       = 0;
 	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
 	msg.data        = &req;
 

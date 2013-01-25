@@ -2385,15 +2385,18 @@ extern void slurm_free_sbcast_cred_msg PARAMS((job_sbcast_cred_msg_t * msg));
  *	JOB/STEP SIGNALING FUNCTIONS
 \*****************************************************************************/
 
+#define KILL_JOB_BATCH	0x0001	/* signal batch shell only */
+#define KILL_JOB_ARRAY	0x0002	/* kill all elements of a job array */
+
 /*
  * slurm_kill_job - send the specified signal to all steps of an existing job
  * IN job_id     - the job's id
  * IN signal     - signal number
- * IN batch_flag - 1 to signal batch shell only, otherwise 0
+ * IN flags      - see KILL_JOB_* flags above
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_kill_job PARAMS((uint32_t job_id, uint16_t signal,
-				  uint16_t batch_flag));
+				  uint16_t flags));
 
 /*
  * slurm_kill_job_step - send the specified signal to an existing job step

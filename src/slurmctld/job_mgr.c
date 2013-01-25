@@ -3170,12 +3170,12 @@ extern int job_fail(uint32_t job_id)
  * job_signal - signal the specified job
  * IN job_id - id of the job to be signaled
  * IN signal - signal to send, SIGKILL == cancel the job
- * IN batch_flag - signal batch shell only if set
+ * IN flags  - see KILL_JOB_* flags in slurm.h
  * IN uid - uid of requesting user
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
+extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 		      uid_t uid, bool preempt)
 {
 	struct job_record *job_ptr;
@@ -3276,7 +3276,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 			build_cg_bitmap(job_ptr);
 			job_completion_logger(job_ptr, false);
 			deallocate_nodes(job_ptr, false, false, preempt);
-		} else if (batch_flag) {
+		} else if (flags & KILL_JOB_BATCH) {
 			if (job_ptr->batch_flag)
 				_signal_batch_job(job_ptr, signal);
 			else

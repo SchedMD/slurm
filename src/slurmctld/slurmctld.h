@@ -1098,12 +1098,12 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid,
  * job_signal - signal the specified job
  * IN job_id - id of the job to be signaled
  * IN signal - signal to send, SIGKILL == cancel the job
- * IN batch_flag - signal batch shell only if set
+ * IN flags  - see KILL_JOB_* flags in slurm.h
  * IN uid - uid of requesting user
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
+extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 		      uid_t uid, bool preempt);
 
 /*
