@@ -3197,6 +3197,25 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 	}
 
 	job_ptr = find_job_record(job_id);
+	if ((flags & KILL_JOB_ARRAY) &&		/* signal entire job array */
+	    ((job_ptr == NULL) ||
+	     (job_ptr->array_task_id != (uint16_t) NO_VAL))) {
+		int rc = SLURM_SUCCESS, rc1;
+		ListIterator job_iter;
+
+		flags &= (~KILL_JOB_ARRAY);
+		job_iter = list_iterator_create(job_list);
+		while ((job_ptr = (struct job_record *) list_next(job_iter))) {
+			if ((job_ptr->array_job_id != job_id) ||
+			    (job_ptr->array_task_id == (uint16_t)NO_VAL))
+				continue;
+			rc1 = job_signal(job_ptr->job_id, signal, flags,
+					 uid, preempt);
+			rc = MAX(rc, rc1);
+		}
+		list_iterator_destroy(job_iter);
+		return rc;
+	}
 	if (job_ptr == NULL) {
 		info("job_signal: invalid job id %u", job_id);
 		return ESLURM_INVALID_JOB_ID;
