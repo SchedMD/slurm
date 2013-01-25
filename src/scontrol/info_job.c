@@ -285,11 +285,16 @@ scontrol_print_job (char * job_id_str)
 {
 	int error_code = SLURM_SUCCESS, i, print_cnt = 0;
 	uint32_t job_id = 0;
+	uint16_t array_id = (uint16_t) NO_VAL;
 	job_info_msg_t * job_buffer_ptr = NULL;
 	job_info_t *job_ptr = NULL;
+	char *end_ptr = NULL;
 
-	if (job_id_str)
-		job_id = (uint32_t) strtol (job_id_str, (char **)NULL, 10);
+	if (job_id_str) {
+		job_id = (uint32_t) strtol (job_id_str, &end_ptr, 10);
+		if (end_ptr[0] == '_')
+			array_id = strtol( end_ptr + 1, &end_ptr, 10 );
+	}
 
 	error_code = _scontrol_load_jobs(&job_buffer_ptr, job_id);
 	if (error_code) {
@@ -307,16 +312,26 @@ scontrol_print_job (char * job_id_str)
 	}
 
 	job_ptr = job_buffer_ptr->job_array ;
-	for (i = 0; i < job_buffer_ptr->record_count; i++) {
+	for (i = 0, job_ptr = job_buffer_ptr->job_array;
+	     i < job_buffer_ptr->record_count; i++, job_ptr++) {
+		if ((array_id != (uint16_t) NO_VAL) &&
+		    (array_id != job_ptr->array_task_id))
+			continue;
+		slurm_print_job_info(stdout, job_ptr, one_liner);
 		print_cnt++;
-		slurm_print_job_info (stdout, & job_ptr[i], one_liner ) ;
 	}
 
 	if (print_cnt == 0) {
 		if (job_id_str) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				printf ("Job %u not found\n", job_id);
+			if (quiet_flag != 1) {
+				if (array_id == (uint16_t) NO_VAL) {
+					printf("Job %u not found\n", job_id);
+				} else {
+					printf("Job %u_%u not found\n",
+					       job_id, array_id);
+				}
+			}
 		} else if (quiet_flag != 1)
 			printf ("No jobs in the system\n");
 	}
@@ -330,27 +345,30 @@ scontrol_print_job (char * job_id_str)
 extern void
 scontrol_print_step (char *job_step_id_str)
 {
-	int error_code, i;
+	int error_code, i, print_cnt = 0;
 	uint32_t job_id = NO_VAL, step_id = NO_VAL;
+	uint16_t array_id = (uint16_t) NO_VAL;
 	char *next_str;
 	job_step_info_response_msg_t *job_step_info_ptr;
 	job_step_info_t * job_step_ptr;
-	static uint32_t last_job_id = 0, last_step_id = 0;
+	static uint32_t last_job_id = 0, last_array_id, last_step_id = 0;
 	static job_step_info_response_msg_t *old_job_step_info_ptr = NULL;
 	static uint16_t last_show_flags = 0xffff;
 	uint16_t show_flags = 0;
 
 	if (job_step_id_str) {
 		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
+		if (next_str[0] == '_')
+			array_id = (uint16_t) strtol(next_str+1, &next_str, 10);
 		if (next_str[0] == '.')
-			step_id = (uint32_t) strtol (&next_str[1], NULL, 10);
+			step_id = (uint32_t) strtol (next_str+1, NULL, 10);
 	}
 
 	if (all_flag)
 		show_flags |= SHOW_ALL;
 
-	if ((old_job_step_info_ptr) &&
-	    (last_job_id == job_id) && (last_step_id == step_id)) {
+	if ((old_job_step_info_ptr) && (last_job_id == job_id) &&
+	    (last_array_id == array_id) && (last_step_id == step_id)) {
 		if (last_show_flags != show_flags)
 			old_job_step_info_ptr->last_update = (time_t) 0;
 		error_code = slurm_get_job_steps (
@@ -366,8 +384,7 @@ scontrol_print_step (char *job_step_id_str)
 			if (quiet_flag == -1)
 				printf ("slurm_get_job_steps no change in data\n");
 		}
-	}
-	else {
+	} else {
 		if (old_job_step_info_ptr) {
 			slurm_free_job_step_info_response_msg (
 				old_job_step_info_ptr);
@@ -399,17 +416,27 @@ scontrol_print_step (char *job_step_id_str)
 	}
 
 	job_step_ptr = job_step_info_ptr->job_steps ;
-	for (i = 0; i < job_step_info_ptr->job_step_count; i++) {
-		slurm_print_job_step_info (stdout, & job_step_ptr[i],
-		                           one_liner ) ;
+	for (i = 0, job_step_ptr = job_step_info_ptr->job_steps;
+	     i < job_step_info_ptr->job_step_count; i++, job_step_ptr++) {
+		if ((array_id != (uint16_t) NO_VAL) &&
+		    (array_id != job_step_ptr->array_task_id))
+			continue;
+		slurm_print_job_step_info(stdout, job_step_ptr, one_liner);
+		print_cnt++;
 	}
 
-	if (job_step_info_ptr->job_step_count == 0) {
+	if (print_cnt == 0) {
 		if (job_step_id_str) {
 			exit_code = 1;
-			if (quiet_flag != 1)
-				printf ("Job step %u.%u not found\n",
-				        job_id, step_id);
+			if (quiet_flag != 1) {
+				if (array_id == (uint16_t) NO_VAL) {
+					printf ("Job step %u.%u not found\n",
+						job_id, step_id);
+				} else {
+					printf ("Job step %u_%u.%u not found\n",
+						job_id, array_id, step_id);
+				}
+			}
 		} else if (quiet_flag != 1)
 			printf ("No job steps in the system\n");
 	}

@@ -1017,7 +1017,8 @@ static List
 _build_job_list( char* str )
 {
 	List my_list;
-	char *end_ptr, *job = NULL, *tmp_char = NULL, *my_job_list = NULL;
+	char *end_ptr = NULL, *job = NULL, *tmp_char = NULL;
+	char *my_job_list = NULL;
 	int job_id, array_id;
 	squeue_job_step_t *job_step_id;
 
@@ -1140,7 +1141,7 @@ static List
 _build_step_list( char* str )
 {
 	List my_list;
-	char *end_ptr, *step = NULL, *tmp_char = NULL, *tmps_char = NULL;
+	char *end_ptr = NULL, *step = NULL, *tmp_char = NULL, *tmps_char = NULL;
 	char *job_name = NULL, *step_name = NULL, *my_step_list = NULL;
 	int job_id, array_id, step_id;
 	squeue_job_step_t *job_step_id = NULL;

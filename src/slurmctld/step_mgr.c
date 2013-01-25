@@ -2454,12 +2454,13 @@ extern int pack_ctld_job_step_info_response_msg(
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
-		if ((job_id != NO_VAL) && (job_ptr->job_id != job_id))
+		if ((job_id != NO_VAL) && (job_id != job_ptr->job_id) &&
+		    (job_id != job_ptr->array_job_id))
 			continue;
 
-		if (((show_flags & SHOW_ALL) == 0)
-		    && (job_ptr->part_ptr)
-		    && (job_ptr->part_ptr->flags & PART_FLAG_HIDDEN))
+		if (((show_flags & SHOW_ALL) == 0) &&
+		    (job_ptr->part_ptr) &&
+		    (job_ptr->part_ptr->flags & PART_FLAG_HIDDEN))
 			continue;
 
 		if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&
@@ -2472,8 +2473,8 @@ extern int pack_ctld_job_step_info_response_msg(
 
 		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_ptr = list_next(step_iterator))) {
-			if ((step_id != NO_VAL)
-			    && (step_ptr->step_id != step_id))
+			if ((step_id != NO_VAL) &&
+			    (step_ptr->step_id != step_id))
 				continue;
 			_pack_ctld_job_step_info(step_ptr, buffer,
 						 protocol_version);
