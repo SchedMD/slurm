@@ -1474,17 +1474,19 @@ static int _filter_job(job_info_t * job)
 {
 	int filter;
 	ListIterator iterator;
-	uint32_t *job_id, *user;
+	uint32_t *user;
 	uint16_t *state_id;
 	char *account, *part, *qos, *name;
+	squeue_job_step_t *job_step_id;
 
 	if (params.job_list) {
 		filter = 1;
 		iterator = list_iterator_create(params.job_list);
-		while ((job_id = list_next(iterator))) {
-			if ((*job_id == job->job_id) ||
-			    ((job->array_task_id != (uint16_t) NO_VAL) &&
-			     (*job_id == job->array_job_id))) {
+		while ((job_step_id = list_next(iterator))) {
+			if (((job_step_id->array_id == (uint16_t) NO_VAL) &&
+			     (job_step_id->job_id   == job->array_job_id)) ||
+			    ((job_step_id->array_id == job->array_task_id) &&
+			     (job_step_id->job_id   == job->array_job_id))) {
 				filter = 0;
 				break;
 			}
@@ -1622,7 +1624,7 @@ static int _filter_step(job_step_info_t * step)
 {
 	int filter;
 	ListIterator iterator;
-	uint32_t *job_id, *user;
+	uint32_t *user;
 	char *part;
 	squeue_job_step_t *job_step_id;
 
@@ -1632,10 +1634,11 @@ static int _filter_step(job_step_info_t * step)
 	if (params.job_list) {
 		filter = 1;
 		iterator = list_iterator_create(params.job_list);
-		while ((job_id = list_next(iterator))) {
-			if ((*job_id == step->job_id) ||
-			    ((step->array_task_id != (uint16_t) NO_VAL) &&
-			     (*job_id == step->array_job_id))) {
+		while ((job_step_id = list_next(iterator))) {
+			if (((job_step_id->array_id == (uint16_t) NO_VAL) &&
+			     (job_step_id->job_id   == step->array_job_id)) ||
+			    ((job_step_id->array_id == step->array_task_id) &&
+			     (job_step_id->job_id   == step->array_job_id))) {
 				filter = 0;
 				break;
 			}
@@ -1663,8 +1666,12 @@ static int _filter_step(job_step_info_t * step)
 		filter = 1;
 		iterator = list_iterator_create(params.step_list);
 		while ((job_step_id = list_next(iterator))) {
-			if ((job_step_id->job_id == step->job_id) &&
-			    (job_step_id->step_id == step->step_id)) {
+			if (job_step_id->step_id != step->step_id)
+				continue;
+			if (((job_step_id->array_id == (uint16_t) NO_VAL) &&
+			     (job_step_id->job_id   == step->array_job_id)) ||
+			    ((job_step_id->array_id == step->array_task_id) &&
+			     (job_step_id->job_id   == step->array_job_id))) {
 				filter = 0;
 				break;
 			}

@@ -904,7 +904,6 @@ _print_options(void)
 	uint32_t *user;
 	enum job_states *state_id;
 	squeue_job_step_t *job_step_id;
-	uint32_t *job_id;
 	char hostlist[8192];
 
 	if (params.nodes) {
@@ -936,8 +935,15 @@ _print_options(void)
 	if ((params.verbose > 1) && params.job_list) {
 		i = 0;
 		iterator = list_iterator_create( params.job_list );
-		while ( (job_id = list_next( iterator )) ) {
-			printf( "job_list[%d] = %u\n", i++, *job_id);
+		while ( (job_step_id = list_next( iterator )) ) {
+			if (job_step_id->array_id == (uint16_t) NO_VAL) {
+				printf( "job_list[%d] = %u\n", i++,
+					job_step_id->job_id );
+			} else {
+				printf( "job_list[%d] = %u_%u\n", i++,
+					job_step_id->job_id,
+					job_step_id->array_id );
+			}
 		}
 		list_iterator_destroy( iterator );
 	}
@@ -975,8 +981,16 @@ _print_options(void)
 		i = 0;
 		iterator = list_iterator_create( params.step_list );
 		while ( (job_step_id = list_next( iterator )) ) {
-			printf( "step_list[%d] = %u.%u\n", i++,
-				job_step_id->job_id, job_step_id->step_id );
+			if (job_step_id->array_id == (uint16_t) NO_VAL) {
+				printf( "step_list[%d] = %u.%u\n", i++,
+					job_step_id->job_id,
+					job_step_id->step_id );
+			} else {
+				printf( "step_list[%d] = %u_%u.%u\n", i++,
+					job_step_id->job_id,
+					job_step_id->array_id,
+					job_step_id->step_id );
+			}
 		}
 		list_iterator_destroy( iterator );
 	}
@@ -1003,9 +1017,9 @@ static List
 _build_job_list( char* str )
 {
 	List my_list;
-	char *job = NULL, *tmp_char = NULL, *my_job_list = NULL;
-	int i;
-	uint32_t *job_id = NULL;
+	char *end_ptr, *job = NULL, *tmp_char = NULL, *my_job_list = NULL;
+	int job_id, array_id;
+	squeue_job_step_t *job_step_id;
 
 	if ( str == NULL )
 		return NULL;
@@ -1013,14 +1027,20 @@ _build_job_list( char* str )
 	my_job_list = xstrdup( str );
 	job = strtok_r( my_job_list, ",", &tmp_char );
 	while (job) {
-		i = strtol( job, (char **) NULL, 10 );
-		if (i <= 0) {
+		job_id = strtol( job, &end_ptr, 10 );
+		if (end_ptr[0] == '_')
+			array_id = strtol( end_ptr + 1, &end_ptr, 10 );
+		else
+			array_id = (uint16_t) NO_VAL;
+		if (job_id <= 0) {
 			error( "Invalid job id: %s", job );
 			exit( 1 );
 		}
-		job_id = xmalloc( sizeof( uint32_t ) );
-		*job_id = (uint32_t) i;
-		list_append( my_list, job_id );
+
+		job_step_id = xmalloc( sizeof( squeue_job_step_t ) );
+		job_step_id->job_id   = (uint32_t) job_id;
+		job_step_id->array_id = (uint16_t) array_id;
+		list_append( my_list, job_step_id );
 		job = strtok_r (NULL, ",", &tmp_char);
 	}
 	return my_list;
@@ -1113,16 +1133,16 @@ _build_all_states_list( void )
 
 /*
  * _build_step_list- build a list of job/step_ids
- * IN str - comma separated list of job_id.step_ids
+ * IN str - comma separated list of job_id[array_id].step_id values
  * RET List of job/step_ids (structure of uint32_t's)
  */
 static List
 _build_step_list( char* str )
 {
 	List my_list;
-	char *step = NULL, *tmp_char = NULL, *tmps_char = NULL;
+	char *end_ptr, *step = NULL, *tmp_char = NULL, *tmps_char = NULL;
 	char *job_name = NULL, *step_name = NULL, *my_step_list = NULL;
-	int i, j;
+	int job_id, array_id, step_id;
 	squeue_job_step_t *job_step_id = NULL;
 
 	if ( str == NULL)
@@ -1130,25 +1150,29 @@ _build_step_list( char* str )
 	my_list = list_create( NULL );
 	my_step_list = xstrdup( str );
 	step = strtok_r( my_step_list, ",", &tmp_char );
-	while (step)
-	{
+	while (step) {
 		job_name = strtok_r( step, ".", &tmps_char );
 		step_name = strtok_r( NULL, ".", &tmps_char );
-		i = strtol( job_name, (char **) NULL, 10 );
+		job_id = strtol( job_name, &end_ptr, 10 );
+		if (end_ptr[0] == '_')
+			array_id = strtol( end_ptr + 1, &end_ptr, 10 );
+		else
+			array_id = (uint16_t) NO_VAL;
 		if (step_name == NULL) {
 			error ( "Invalid job_step id: %s.??",
 				 job_name );
 			exit( 1 );
 		}
-		j = strtol( step_name, (char **) NULL, 10 );
-		if ((i <= 0) || (j < 0)) {
+		step_id = strtol( step_name, &end_ptr, 10 );
+		if ((job_id <= 0) || (step_id < 0)) {
 			error( "Invalid job_step id: %s.%s",
 				job_name, step_name );
 			exit( 1 );
 		}
 		job_step_id = xmalloc( sizeof( squeue_job_step_t ) );
-		job_step_id->job_id  = (uint32_t) i;
-		job_step_id->step_id = (uint32_t) j;
+		job_step_id->job_id   = (uint32_t) job_id;
+		job_step_id->array_id = (uint16_t) array_id;
+		job_step_id->step_id  = (uint32_t) step_id;
 		list_append( my_list, job_step_id );
 		step = strtok_r( NULL, ",", &tmp_char);
 	}
