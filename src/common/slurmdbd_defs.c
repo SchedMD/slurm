@@ -1868,6 +1868,7 @@ static bool _fd_readable(slurm_fd_t fd, int read_timeout)
 			return false;
 		}
 		/* revents == POLLIN */
+		errno = 0;
 		return true;
 	}
 	return false;
@@ -1929,6 +1930,7 @@ static int _fd_writeable(slurm_fd_t fd)
 			return 0;
 		}
 		/* revents == POLLOUT */
+		errno = 0;
 		return 1;
 	}
 	return 0;
