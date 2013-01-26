@@ -282,8 +282,9 @@ _print_job_steps( bool clear_old )
 	old_step_ptr = new_step_ptr;
 
 	if (params.verbose) {
-		printf ("last_update_time=%ld\n",
-		        (long) new_step_ptr->last_update);
+		printf ("last_update_time=%ld records=%u\n",
+		        (long) new_step_ptr->last_update,
+			new_step_ptr->job_step_count);
 	}
 
 	if (params.format == NULL)

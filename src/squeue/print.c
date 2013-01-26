@@ -120,7 +120,7 @@ int print_steps_array(job_step_info_t * steps, int size, List format)
 		print_step_from_format(NULL, format);
 
 	if (size > 0) {
-		int i = 0;
+		int i;
 		List step_list;
 		ListIterator step_iterator;
 		job_step_info_t *step_ptr;
@@ -128,7 +128,7 @@ int print_steps_array(job_step_info_t * steps, int size, List format)
 		step_list = list_create(NULL);
 
 		/* Filter out the jobs of interest */
-		for (; i < size; i++) {
+		for (i = 0; i < size; i++) {
 			if (_filter_step(&steps[i]))
 				continue;
 			list_append(step_list, (void *) &steps[i]);
@@ -1670,8 +1670,9 @@ static int _filter_step(job_step_info_t * step)
 		while ((job_step_id = list_next(iterator))) {
 			if (job_step_id->step_id != step->step_id)
 				continue;
-			if (((job_step_id->array_id == (uint16_t) NO_VAL) &&
-			     (job_step_id->job_id   == step->array_job_id)) ||
+			if (((job_step_id->array_id == (uint16_t) NO_VAL)  &&
+			     ((job_step_id->job_id  == step->array_job_id) ||
+			      (job_step_id->job_id  == step->job_id)))      ||
 			    ((job_step_id->array_id == step->array_task_id) &&
 			     (job_step_id->job_id   == step->array_job_id))) {
 				filter = 0;
