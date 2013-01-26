@@ -219,8 +219,9 @@ _print_job ( bool clear_old )
 		old_job_ptr->last_update = (time_t) 0;
 
 	if (params.verbose) {
-		printf ("last_update_time=%ld\n",
-		        (long) new_job_ptr->last_update);
+		printf ("last_update_time=%ld records=%u\n",
+		        (long) new_job_ptr->last_update,
+			new_job_ptr->record_count);
 	}
 
 	if (params.format == NULL) {

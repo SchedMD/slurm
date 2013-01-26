@@ -84,7 +84,7 @@ int print_steps(List steps, List format)
 
 int print_jobs_array(job_info_t * jobs, int size, List format)
 {
-	int i = 0;
+	int i;
 	List l;
 	node_info_msg_t *ni = NULL;
 
@@ -93,7 +93,7 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 		print_job_from_format(NULL, format);
 
 	/* Filter out the jobs of interest */
-	for (; i < size; i++) {
+	for (i = 0; i < size; i++) {
 		if (_filter_job(&jobs[i]))
 			continue;
 		if (_merge_job_array(l, &jobs[i]))
@@ -1483,9 +1483,10 @@ static int _filter_job(job_info_t * job)
 		filter = 1;
 		iterator = list_iterator_create(params.job_list);
 		while ((job_step_id = list_next(iterator))) {
-			if (((job_step_id->array_id == (uint16_t) NO_VAL) &&
-			     (job_step_id->job_id   == job->array_job_id)) ||
-			    ((job_step_id->array_id == job->array_task_id) &&
+			if (((job_step_id->array_id == (uint16_t) NO_VAL)   &&
+			     ((job_step_id->job_id   == job->array_job_id) ||
+			      (job_step_id->job_id   == job->job_id)))      ||
+			    ((job_step_id->array_id == job->array_task_id)  &&
 			     (job_step_id->job_id   == job->array_job_id))) {
 				filter = 0;
 				break;
@@ -1635,8 +1636,9 @@ static int _filter_step(job_step_info_t * step)
 		filter = 1;
 		iterator = list_iterator_create(params.job_list);
 		while ((job_step_id = list_next(iterator))) {
-			if (((job_step_id->array_id == (uint16_t) NO_VAL) &&
-			     (job_step_id->job_id   == step->array_job_id)) ||
+			if (((job_step_id->array_id == (uint16_t) NO_VAL)   &&
+			     ((job_step_id->job_id  == step->array_job_id)  ||
+			      (job_step_id->job_id  == step->job_id)))      ||
 			    ((job_step_id->array_id == step->array_task_id) &&
 			     (job_step_id->job_id   == step->array_job_id))) {
 				filter = 0;
