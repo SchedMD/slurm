@@ -254,7 +254,7 @@ scontrol_get_job_state(uint32_t job_id)
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag == -1)
-			slurm_perror ("slurm_load_jobs error");
+			slurm_perror ("slurm_load_job error");
 		return (uint16_t) NO_VAL;
 	}
 	if (quiet_flag == -1) {

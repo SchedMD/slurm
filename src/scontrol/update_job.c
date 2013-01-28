@@ -234,36 +234,38 @@ static uint32_t _get_job_time(uint32_t job_id)
 extern int
 scontrol_hold(char *op, char *job_id_str)
 {
-	int rc = SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS;
+	char *next_str;
 	job_desc_msg_t job_msg;
-	uint16_t job_state;
-
-	slurm_init_job_desc_msg (&job_msg);
-
-	/* set current user, needed e.g., for AllowGroups checks */
-	job_msg.user_id = getuid();
+	uint32_t job_id;
+	uint16_t array_id;
+	job_info_msg_t *resp;
+	slurm_job_info_t *job_ptr;
 
 	if (job_id_str) {
-		job_msg.job_id = slurm_xlate_job_id(job_id_str);
-		if (job_msg.job_id == 0) {
+		job_id = (uint32_t) strtol(job_id_str, &next_str, 10);
+		if (next_str[0] == '_')
+			array_id = (uint16_t) strtol(next_str+1, &next_str, 10);
+		else
+			array_id = (uint16_t) NO_VAL;
+		if ((job_msg.job_id == 0) || (next_str[0] != '\0')) {
 			fprintf(stderr, "Invalid job id specified\n");
-			exit_code = 1;
-			return 0;
+			return 1;
 		}
 	} else {
 		fprintf(stderr, "Invalid job id specified\n");
-		exit_code = 1;
-		return 0;
+		return 1;
 	}
 
-	job_state = scontrol_get_job_state(job_msg.job_id);
-	if (job_state == (uint16_t) NO_VAL)
-		return SLURM_ERROR;
-	if ((job_state & JOB_STATE_BASE) != JOB_PENDING) {
-		slurm_seterrno(ESLURM_JOB_NOT_PENDING);
-		return ESLURM_JOB_NOT_PENDING;
-	}
+	if (scontrol_load_job(&resp, job_id)) {
+		if (quiet_flag == -1)
+			slurm_perror ("slurm_load_job error");
+		return 1;
+	}	
 
+	slurm_init_job_desc_msg (&job_msg);
+	/* set current user, needed e.g., for AllowGroups checks */
+	job_msg.user_id = getuid();
 	if ((strncasecmp(op, "holdu", 5) == 0) ||
 	    (strncasecmp(op, "uhold", 5) == 0)) {
 		job_msg.priority = 0;
@@ -273,9 +275,24 @@ scontrol_hold(char *op, char *job_id_str)
 		job_msg.alloc_sid = 0;
 	} else
 		job_msg.priority = INFINITE;
+	for (i = 0, job_ptr = resp->job_array; i < resp->record_count;
+	     i++, job_ptr++) {
+		if ((array_id != (uint16_t) NO_VAL) &&
+		    (job_ptr->array_task_id != array_id))
+			continue;
 
-	if (slurm_update_job(&job_msg))
-		return slurm_get_errno();
+		if (!IS_JOB_PENDING(job_ptr)) {
+			if ((array_id == (uint16_t) NO_VAL) &&
+			    (job_ptr->array_task_id != (uint16_t) NO_VAL))
+				continue;
+			slurm_seterrno(ESLURM_JOB_NOT_PENDING);
+			return ESLURM_JOB_NOT_PENDING;
+		}
+
+		job_msg.job_id = job_ptr->job_id;
+		if (slurm_update_job(&job_msg))
+			rc = slurm_get_errno();	
+	}
 
 	return rc;
 }

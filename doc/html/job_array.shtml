@@ -161,6 +161,10 @@ The <i>ArrayJobID</i> is the <i>JobID</i> of the first element of the job
 array.
 The <i>ArrayTaskID</i> is the array index of this particular entry.
 Neither field is displayed if the job is not part of a job array.
+The optional job ID specified with the <i>scontrol show job</i> or
+<i>scontrol show step</i> commands can identify job array elements by
+using specifying two numbers with an underscore between the two:
+"&lt;job_id&gt;_&lt;array_id&gt;".
 In order to modify a job, always use the <i>JobID</i> specification.</p>
 
 <pre>
@@ -173,6 +177,16 @@ JobId=15 ArrayJobId=13 ArrayTaskId=3 Name=tmp
 ....
 
 $ scontrol update JobId=15 TimeLimit=30
+</pre>
+
+<p>The scontrol hold, holdu and release commands will operate on all
+elements of a job array or individual elements as shown below.</p>
+<pre>
+# Hold all elements of job array 13
+$ scontrol hold 13
+
+# Release element 2 of job array 13
+$ scontrol release 13_2
 </pre>
 
 <h2>Other Command Use</h2>
@@ -207,6 +221,6 @@ Support for Slurm job arrays can be expected to improve in later releases.
 The second new field is called "array_task_id" which is the job array index
 value of the job array element.</p>
 
-<p style="text-align:center;">Last modified 25 January 2013</p>
+<p style="text-align:center;">Last modified 28 January 2013</p>
 
 <!--#include virtual="footer.txt"-->
