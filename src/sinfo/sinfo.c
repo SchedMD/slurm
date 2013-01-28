@@ -513,7 +513,7 @@ static bool _filter_out(node_info_t *node_ptr)
 					SELECT_NODEDATA_SUBCNT,
 					NODE_STATE_ERROR,
 					&cpus);
-				if(cpus) {
+				if (cpus) {
 					match = true;
 					break;
 				}
@@ -523,7 +523,7 @@ static bool _filter_out(node_info_t *node_ptr)
 					SELECT_NODEDATA_SUBCNT,
 					NODE_STATE_ALLOCATED,
 					&cpus);
-				if(cpus) {
+				if (cpus) {
 					match = true;
 					break;
 				}
@@ -920,21 +920,21 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 		iterator = list_iterator_create(params.state_list);
 
 	for(i=0; i<state_cnt; i++) {
-		if(iterator) {
+		if (iterator) {
 			node_info_t tmp_node, *tmp_node_ptr = &tmp_node;
 			while ((node_state = list_next(iterator))) {
 				tmp_node_ptr->node_state = *node_state;
-				if((((state[i] == NODE_STATE_ALLOCATED)
+				if ((((state[i] == NODE_STATE_ALLOCATED)
 				     && IS_NODE_DRAINING(tmp_node_ptr))
 				    || (*node_state == NODE_STATE_DRAIN))
 				   || (*node_state == state[i]))
 					break;
 			}
 			list_iterator_reset(iterator);
-			if(!node_state)
+			if (!node_state)
 				continue;
 		}
-		if(select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+		if (select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 						SELECT_NODEDATA_SUBCNT,
 						state[i],
 						&size) == SLURM_SUCCESS
@@ -948,22 +948,22 @@ static int _handle_subgrps(List sinfo_list, uint16_t part_num,
 	}
 
 	/* now handle the idle */
-	if(iterator) {
+	if (iterator) {
 		while ((node_state = list_next(iterator))) {
 			node_info_t tmp_node, *tmp_node_ptr = &tmp_node;
 			tmp_node_ptr->node_state = *node_state;
-			if(((*node_state == NODE_STATE_DRAIN)
+			if (((*node_state == NODE_STATE_DRAIN)
 			    || IS_NODE_DRAINED(tmp_node_ptr))
 			   || (*node_state == NODE_STATE_IDLE))
 				break;
 		}
 		list_iterator_destroy(iterator);
-		if(!node_state)
+		if (!node_state)
 			return SLURM_SUCCESS;
 	}
 	node_ptr->node_state &= NODE_STATE_FLAGS;
 	node_ptr->node_state |= NODE_STATE_IDLE;
-	if((int)node_scaling > 0)
+	if ((int)node_scaling > 0)
 		_insert_node_ptr(sinfo_list, part_num, part_ptr,
 				 node_ptr, node_scaling);
 

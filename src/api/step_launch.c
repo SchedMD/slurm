@@ -1006,7 +1006,7 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 	/* multiple jobs (easily induced via no_alloc) and highly
 	 * parallel jobs using PMI sometimes result in slow message
 	 * responses and timeouts. Raise the default timeout for srun. */
-	if(!message_socket_ops.timeout)
+	if (!message_socket_ops.timeout)
 		message_socket_ops.timeout = slurm_get_msg_timeout() * 8000;
 
 	for (i = 0; i < sls->num_resp_port; i++) {

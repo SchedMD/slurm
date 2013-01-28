@@ -440,7 +440,7 @@ char *xstrstrip(char *str)
 	char quote_c = '\0';
 	int quote = 0;
 
-	if(!str)
+	if (!str)
 		return NULL;
 
 	/* first strip off the ("|')'s */
@@ -452,13 +452,13 @@ char *xstrstrip(char *str)
 	start = i;
 
 	while(str[i]) {
-		if(quote && str[i] == quote_c) {
+		if (quote && str[i] == quote_c) {
 			found = 1;
 			break;
 		}
 		i++;
 	}
-	if(found) {
+	if (found) {
 		meat = xmalloc((i-start)+1);
 		memcpy(meat, str+start, (i-start));
 	} else
@@ -515,7 +515,7 @@ bool xstring_is_whitespace(const char *str)
  */
 char *xstrtolower(char *str)
 {
-	if(str) {
+	if (str) {
 		int j = 0;
 		while(str[j]) {
 			str[j] = tolower((int)str[j]);
@@ -540,7 +540,7 @@ static char *_xstrdup_vprintf(const char *fmt, va_list ap)
 	char *p = NULL;
 	va_list our_ap;
 
-	if((p = xmalloc(size)) == NULL)
+	if ((p = xmalloc(size)) == NULL)
 		return NULL;
 	while(1) {
 		/* Try to print in the allocated space. */

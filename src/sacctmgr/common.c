@@ -155,7 +155,7 @@ static print_field_t *_get_print_field(char *object)
 	char *tmp_char = NULL;
 	int command_len, field_len = 0;
 
-	if((tmp_char = strstr(object, "\%"))) {
+	if ((tmp_char = strstr(object, "\%"))) {
 		field_len = atoi(tmp_char+1);
 		tmp_char[0] = '\0';
 	}
@@ -248,22 +248,22 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Descr");
 		field->len = 20;
 		field->print_routine = print_fields_str;
-	} else if(!strncasecmp("Duration", object, MAX(command_len, 2))) {
+	} else if (!strncasecmp("Duration", object, MAX(command_len, 2))) {
 		field->type = PRINT_DURATION;
 		field->name = xstrdup("Duration");
 		field->len = 13;
 		field->print_routine = print_fields_time_from_secs;
-	} else if(!strncasecmp("End", object, MAX(command_len, 2))) {
+	} else if (!strncasecmp("End", object, MAX(command_len, 2))) {
 		field->type = PRINT_END;
 		field->name = xstrdup("End");
 		field->len = 19;
 		field->print_routine = print_fields_date;
-	} else if(!strncasecmp("EventRaw", object, MAX(command_len, 6))) {
+	} else if (!strncasecmp("EventRaw", object, MAX(command_len, 6))) {
 		field->type = PRINT_EVENTRAW;
 		field->name = xstrdup("EventRaw");
 		field->len = 8;
 		field->print_routine = print_fields_uint;
-	} else if(!strncasecmp("Event", object, MAX(command_len, 2))) {
+	} else if (!strncasecmp("Event", object, MAX(command_len, 2))) {
 		field->type = PRINT_EVENT;
 		field->name = xstrdup("Event");
 		field->len = 7;
@@ -617,7 +617,7 @@ extern int sacctmgr_remove_assoc_usage(slurmdb_association_cond_t *assoc_cond)
 		}
 	}
 
-	if(!commit_check("Would you like to reset usage?")) {
+	if (!commit_check("Would you like to reset usage?")) {
 		printf(" Changes Discarded\n");
 		return rc;
 	}
@@ -1567,7 +1567,7 @@ extern List sacctmgr_process_format_list(List format_list)
 	char *object = NULL;
 
 	while((object = list_next(itr))) {
-		if(!(field = _get_print_field(object)))
+		if (!(field = _get_print_field(object)))
 			exit(1);
 
 		list_append(print_fields_list, field);

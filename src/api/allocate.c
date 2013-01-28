@@ -745,7 +745,7 @@ _accept_msg_connection(int listen_fd,
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
 
-	if((rc = slurm_receive_msg(conn_fd, msg, 0)) != 0) {
+	if ((rc = slurm_receive_msg(conn_fd, msg, 0)) != 0) {
 		slurm_free_msg(msg);
 
 		if (errno == EINTR) {

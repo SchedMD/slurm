@@ -197,14 +197,14 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 			used_limits->submit_jobs++;
 			break;
 		case ACCT_POLICY_REM_SUBMIT:
-			if(qos_ptr->usage->grp_used_submit_jobs)
+			if (qos_ptr->usage->grp_used_submit_jobs)
 				qos_ptr->usage->grp_used_submit_jobs--;
 			else
 				debug2("acct_policy_remove_job_submit: "
 				       "grp_submit_jobs underflow for qos %s",
 				       qos_ptr->name);
 
-			if(used_limits->submit_jobs)
+			if (used_limits->submit_jobs)
 				used_limits->submit_jobs--;
 			else
 				debug2("acct_policy_remove_job_submit: "
@@ -240,7 +240,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 			}
 
 			qos_ptr->usage->grp_used_mem -= job_memory;
-			if((int32_t)qos_ptr->usage->grp_used_mem < 0) {
+			if ((int32_t)qos_ptr->usage->grp_used_mem < 0) {
 				qos_ptr->usage->grp_used_mem = 0;
 				debug2("acct_policy_job_fini: grp_used_mem "
 				       "underflow for qos %s", qos_ptr->name);
@@ -1799,7 +1799,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		 * parents since we have pre-propogated them, so just
 		 * continue with the next parent
 		 */
-		if(parent) {
+		if (parent) {
 			assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 			continue;
 		}
@@ -2179,7 +2179,7 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 
 		assoc = assoc->usage->parent_assoc_ptr;
 		/* these limits don't apply to the root assoc */
-		if(assoc == assoc_mgr_root_assoc)
+		if (assoc == assoc_mgr_root_assoc)
 			break;
 	}
 job_failed:

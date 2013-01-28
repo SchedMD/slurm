@@ -105,7 +105,7 @@ main (int argc, char *argv[])
 
 	/* Check to see if we are running a supported accounting plugin */
 	temp = slurm_get_accounting_storage_type();
-	if(strcasecmp(temp, "accounting_storage/slurmdbd")
+	if (strcasecmp(temp, "accounting_storage/slurmdbd")
 	   && strcasecmp(temp, "accounting_storage/mysql")) {
 		fprintf (stderr, "You are not running a supported "
 			 "accounting_storage plugin\n(%s).\n"
@@ -180,7 +180,7 @@ main (int argc, char *argv[])
 
 	db_conn = slurmdb_connection_get();
 
-	if(errno) {
+	if (errno) {
 		error("Problem talking to the database: %m");
 		exit(1);
 	}

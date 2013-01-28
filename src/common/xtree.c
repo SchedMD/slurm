@@ -339,7 +339,7 @@ xtree_node_t* xtree_walk(xtree_t* tree,
 			--level;
 			if (!current_node) {
 				return NULL;
-			} else if(current_node == node) {
+			} else if (current_node == node) {
 				if (level >= min_level &&
 				    !action(current_node,
 					    XTREE_ENDORDER,

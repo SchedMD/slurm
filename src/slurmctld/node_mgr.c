@@ -188,11 +188,11 @@ int dump_all_node_state ( void )
 		(void) unlink (new_file);
 	else {	/* file shuffle */
 		(void) unlink (old_file);
-		if(link(reg_file, old_file))
+		if (link(reg_file, old_file))
 			debug4("unable to create link for %s -> %s: %m",
 			       reg_file, old_file);
 		(void) unlink (reg_file);
-		if(link(new_file, reg_file))
+		if (link(new_file, reg_file))
 			debug4("unable to create link for %s -> %s: %m",
 			       new_file, reg_file);
 		(void) unlink (new_file);
@@ -2869,7 +2869,7 @@ void make_node_idle(struct node_record *node_ptr,
 	bitstr_t *node_bitmap = NULL;
 
 	if (job_ptr) { /* Specific job completed */
-		if(job_ptr->node_bitmap_cg)
+		if (job_ptr->node_bitmap_cg)
 			node_bitmap = job_ptr->node_bitmap_cg;
 		else
 			node_bitmap = job_ptr->node_bitmap;
@@ -2988,7 +2988,7 @@ extern int send_nodes_to_accounting(time_t event_time)
 	/* send nodes not in not 'up' state */
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if(node_ptr->reason)
+		if (node_ptr->reason)
 			reason = node_ptr->reason;
 		else
 			reason = "First Registration";
@@ -2998,14 +2998,14 @@ extern int send_nodes_to_accounting(time_t event_time)
 			/* At this point, the node appears to be up,
 			   but on some systems we need to make sure there
 			   aren't some part of a node in an error state. */
-			if(node_ptr->select_nodeinfo) {
+			if (node_ptr->select_nodeinfo) {
 				uint16_t err_cpus = 0;
 				select_g_select_nodeinfo_get(
 					node_ptr->select_nodeinfo,
 					SELECT_NODEDATA_SUBCNT,
 					NODE_STATE_ERROR,
 					&err_cpus);
-				if(err_cpus) {
+				if (err_cpus) {
 					struct node_record send_node;
 					struct config_record config_rec;
 					int cpus_per_node = 1;
@@ -3020,7 +3020,7 @@ extern int send_nodes_to_accounting(time_t event_time)
 						SELECT_GET_NODE_SCALING,
 						&node_scaling);
 
-					if(node_scaling)
+					if (node_scaling)
 						cpus_per_node = node_ptr->cpus
 							/ node_scaling;
 					err_cpus *= cpus_per_node;

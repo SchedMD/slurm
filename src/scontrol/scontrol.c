@@ -611,7 +611,7 @@ _process_command (int argc, char *argv[])
 		if (quiet_flag == -1)
 			fprintf(stderr, "no input");
 		return 0;
-	} else if(tag)
+	} else if (tag)
 		tag_len = strlen(tag);
 	else {
 		if (quiet_flag == -1)
@@ -681,17 +681,17 @@ _process_command (int argc, char *argv[])
 		old_res_info_ptr = NULL;
 		slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
 		old_slurm_ctl_conf_ptr = NULL;
-		/* if(old_block_info_ptr) */
+		/* if (old_block_info_ptr) */
 		/* 	old_block_info_ptr->last_update = 0; */
-		/* if(old_job_info_ptr) */
+		/* if (old_job_info_ptr) */
 		/* 	old_job_info_ptr->last_update = 0; */
-		/* if(old_node_info_ptr) */
+		/* if (old_node_info_ptr) */
 		/* 	old_node_info_ptr->last_update = 0; */
-		/* if(old_part_info_ptr) */
+		/* if (old_part_info_ptr) */
 		/* 	old_part_info_ptr->last_update = 0; */
-		/* if(old_res_info_ptr) */
+		/* if (old_res_info_ptr) */
 		/* 	old_res_info_ptr->last_update = 0; */
-		/* if(old_slurm_ctl_conf_ptr) */
+		/* if (old_slurm_ctl_conf_ptr) */
 		/* 	old_slurm_ctl_conf_ptr->last_update = 0; */
 	}
 	else if (strncasecmp (tag, "create", MAX(tag_len, 2)) == 0) {
@@ -1315,7 +1315,7 @@ _delete_it (int argc, char *argv[])
 			slurm_perror(errmsg);
 		}
 	} else if (strncasecmp (tag, "BlockName", MAX(tag_len, 3)) == 0) {
-		if(cluster_flags & CLUSTER_FLAG_BG) {
+		if (cluster_flags & CLUSTER_FLAG_BG) {
 			update_block_msg_t   block_msg;
 			slurm_init_update_block_msg ( &block_msg );
 			block_msg.bg_block_id = val;
@@ -1524,7 +1524,7 @@ _update_it (int argc, char *argv[])
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in update command\n");
 		fprintf(stderr, "Input line must include \"NodeName\", ");
-		if(cluster_flags & CLUSTER_FLAG_BG) {
+		if (cluster_flags & CLUSTER_FLAG_BG) {
 			fprintf(stderr, "\"BlockName\", \"SubMPName\" "
 				"(i.e. bgl000[0-3]),");
 		}
@@ -1552,7 +1552,7 @@ _update_bluegene_block (int argc, char *argv[])
 	int i, update_cnt = 0;
 	update_block_msg_t block_msg;
 
-	if(!(cluster_flags & CLUSTER_FLAG_BG)) {
+	if (!(cluster_flags & CLUSTER_FLAG_BG)) {
 		exit_code = 1;
 		fprintf(stderr, "This only works on a bluegene system.\n");
 		return 0;
@@ -1609,7 +1609,7 @@ _update_bluegene_block (int argc, char *argv[])
 		}
 	}
 
-	if(!block_msg.bg_block_id) {
+	if (!block_msg.bg_block_id) {
 		error("You didn't supply a block name.");
 		return 0;
 	} else if (block_msg.state == (uint16_t)NO_VAL) {
@@ -1639,7 +1639,7 @@ _update_bluegene_subbp (int argc, char *argv[])
 	int i, update_cnt = 0;
 	update_block_msg_t block_msg;
 
-	if(!(cluster_flags & CLUSTER_FLAG_BG)) {
+	if (!(cluster_flags & CLUSTER_FLAG_BG)) {
 		exit_code = 1;
 		fprintf(stderr, "This only works on a bluegene system.\n");
 		return 0;
@@ -1688,7 +1688,7 @@ _update_bluegene_subbp (int argc, char *argv[])
 		}
 	}
 
-	if(!block_msg.mp_str) {
+	if (!block_msg.mp_str) {
 		error("You didn't supply an ionode list.");
 		return 0;
 	} else if (block_msg.state == (uint16_t)NO_VAL) {

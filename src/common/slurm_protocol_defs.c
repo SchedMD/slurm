@@ -149,7 +149,7 @@ extern char *slurm_add_slash_to_quotes(char *str)
 {
 	char *dup, *copy = NULL;
 	int len = 0;
-	if(!str || !(len = strlen(str)))
+	if (!str || !(len = strlen(str)))
 		return NULL;
 
 	/* make a buffer 2 times the size just to be safe */
@@ -710,7 +710,7 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 		xfree(msg->spank_job_env[i]);
 	}
 	xfree(msg->spank_job_env);
-	if(msg->nnodes && msg->global_task_ids)
+	if (msg->nnodes && msg->global_task_ids)
 		for(i=0; i<msg->nnodes; i++) {
 			xfree(msg->global_task_ids[i]);
 		}
@@ -2337,7 +2337,7 @@ extern void slurm_free_job_step_stat(void *object)
 extern void slurm_free_job_step_pids(void *object)
 {
 	job_step_pids_t *msg = (job_step_pids_t *)object;
-	if(msg) {
+	if (msg) {
 		xfree(msg->node_name);
 		xfree(msg->pid);
 		xfree(msg);
@@ -2358,7 +2358,7 @@ extern void slurm_free_block_job_info(void *object)
 
 extern void slurm_free_block_info_members(block_info_t *block_info)
 {
-	if(block_info) {
+	if (block_info) {
 		xfree(block_info->bg_block_id);
 		xfree(block_info->blrtsimage);
 		xfree(block_info->ionode_inx);
@@ -2374,7 +2374,7 @@ extern void slurm_free_block_info_members(block_info_t *block_info)
 
 extern void slurm_free_block_info(block_info_t *block_info)
 {
-	if(block_info) {
+	if (block_info) {
 		slurm_free_block_info_members(block_info);
 		xfree(block_info);
 	}
@@ -2382,7 +2382,7 @@ extern void slurm_free_block_info(block_info_t *block_info)
 
 extern void slurm_free_block_info_msg(block_info_msg_t *block_info_msg)
 {
-	if(block_info_msg) {
+	if (block_info_msg) {
 		if (block_info_msg->block_array) {
 			int i;
 			for(i=0; i<block_info_msg->record_count; i++)
@@ -2427,7 +2427,7 @@ extern void slurm_destroy_association_shares_object(void *object)
 	association_shares_object_t *obj_ptr =
 		(association_shares_object_t *)object;
 
-	if(obj_ptr) {
+	if (obj_ptr) {
 		xfree(obj_ptr->cluster);
 		xfree(obj_ptr->name);
 		xfree(obj_ptr->parent);
@@ -2437,10 +2437,10 @@ extern void slurm_destroy_association_shares_object(void *object)
 
 extern void slurm_free_shares_request_msg(shares_request_msg_t *msg)
 {
-	if(msg) {
-		if(msg->acct_list)
+	if (msg) {
+		if (msg->acct_list)
 			list_destroy(msg->acct_list);
-		if(msg->user_list)
+		if (msg->user_list)
 			list_destroy(msg->user_list);
 		xfree(msg);
 	}
@@ -2448,8 +2448,8 @@ extern void slurm_free_shares_request_msg(shares_request_msg_t *msg)
 
 extern void slurm_free_shares_response_msg(shares_response_msg_t *msg)
 {
-	if(msg) {
-		if(msg->assoc_shares_list)
+	if (msg) {
+		if (msg->assoc_shares_list)
 			list_destroy(msg->assoc_shares_list);
 		xfree(msg);
 	}
@@ -2472,10 +2472,10 @@ extern void slurm_destroy_priority_factors_object(void *object)
 extern void slurm_free_priority_factors_request_msg(
 	priority_factors_request_msg_t *msg)
 {
-	if(msg) {
-		if(msg->job_id_list)
+	if (msg) {
+		if (msg->job_id_list)
 			list_destroy(msg->job_id_list);
-		if(msg->uid_list)
+		if (msg->uid_list)
 			list_destroy(msg->uid_list);
 		xfree(msg);
 	}
@@ -2484,8 +2484,8 @@ extern void slurm_free_priority_factors_request_msg(
 extern void slurm_free_priority_factors_response_msg(
 	priority_factors_response_msg_t *msg)
 {
-	if(msg) {
-		if(msg->priority_factors_list)
+	if (msg) {
+		if (msg->priority_factors_list)
 			list_destroy(msg->priority_factors_list);
 		xfree(msg);
 	}
@@ -2494,8 +2494,8 @@ extern void slurm_free_priority_factors_response_msg(
 
 extern void slurm_free_accounting_update_msg(accounting_update_msg_t *msg)
 {
-	if(msg) {
-		if(msg->update_list)
+	if (msg) {
+		if (msg->update_list)
 			list_destroy(msg->update_list);
 		xfree(msg);
 	}

@@ -107,7 +107,7 @@ main (int argc, char *argv[])
 			all_users = 1;
 			break;
 		case 'A':
-			if(!req_msg.acct_list)
+			if (!req_msg.acct_list)
 				req_msg.acct_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(req_msg.acct_list, optarg);
@@ -121,9 +121,9 @@ main (int argc, char *argv[])
 			long_flag = 1;
 			break;
 		case 'M':
-			if(clusters)
+			if (clusters)
 				list_destroy(clusters);
-			if(!(clusters =
+			if (!(clusters =
 			     slurmdb_get_info_cluster(optarg))) {
 				error("'%s' can't be reached now, "
 				      "or it is an invalid entry for "
@@ -146,12 +146,12 @@ main (int argc, char *argv[])
 			PRINT_FIELDS_PARSABLE_NO_ENDING;
 			break;
 		case 'u':
-			if(!strcmp(optarg, "-1")) {
+			if (!strcmp(optarg, "-1")) {
 				all_users = 1;
 				break;
 			}
 			all_users = 0;
-			if(!req_msg.user_list)
+			if (!req_msg.user_list)
 				req_msg.user_list =
 					list_create(slurm_destroy_char);
 			_addto_name_char_list(req_msg.user_list, optarg, 0);
@@ -182,13 +182,13 @@ main (int argc, char *argv[])
 		log_alter(opts, 0, NULL);
 	}
 
-	if(all_users) {
-		if(req_msg.user_list
+	if (all_users) {
+		if (req_msg.user_list
 		   && list_count(req_msg.user_list)) {
 			list_destroy(req_msg.user_list);
 			req_msg.user_list = NULL;
 		}
-		if(verbosity)
+		if (verbosity)
 			fprintf(stderr, "Users requested:\n\t: all\n");
 	} else if (verbosity && req_msg.user_list
 	    && list_count(req_msg.user_list)) {
@@ -197,40 +197,40 @@ main (int argc, char *argv[])
 		while((temp = list_next(itr)))
 			fprintf(stderr, "\t: %s\n", temp);
 		list_iterator_destroy(itr);
-	} else if(!req_msg.user_list || !list_count(req_msg.user_list)) {
+	} else if (!req_msg.user_list || !list_count(req_msg.user_list)) {
 		struct passwd *pwd = getpwuid(getuid());
-		if(!req_msg.user_list)
+		if (!req_msg.user_list)
 			req_msg.user_list = list_create(slurm_destroy_char);
 		temp = xstrdup(pwd->pw_name);
 		list_append(req_msg.user_list, temp);
-		if(verbosity) {
+		if (verbosity) {
 			fprintf(stderr, "Users requested:\n");
 			fprintf(stderr, "\t: %s\n", temp);
 		}
 	}
 
-	if(req_msg.acct_list && list_count(req_msg.acct_list)) {
+	if (req_msg.acct_list && list_count(req_msg.acct_list)) {
 		fprintf(stderr, "Accounts requested:\n");
 		ListIterator itr = list_iterator_create(req_msg.acct_list);
 		while((temp = list_next(itr)))
 			fprintf(stderr, "\t: %s\n", temp);
 		list_iterator_destroy(itr);
 	} else {
-		if(req_msg.acct_list
+		if (req_msg.acct_list
 		   && list_count(req_msg.acct_list)) {
 			list_destroy(req_msg.acct_list);
 			req_msg.acct_list = NULL;
 		}
-		if(verbosity)
+		if (verbosity)
 			fprintf(stderr, "Accounts requested:\n\t: all\n");
 
 	}
 
 	error_code = _get_info(&req_msg, &resp_msg);
 
-	if(req_msg.acct_list)
+	if (req_msg.acct_list)
 		list_destroy(req_msg.acct_list);
-	if(req_msg.user_list)
+	if (req_msg.user_list)
 		list_destroy(req_msg.user_list);
 
 	if (error_code) {
@@ -291,13 +291,13 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 	int quote = 0;
 	int count = 0;
 
-	if(!char_list) {
+	if (!char_list) {
 		error("No list was given to fill in");
 		return 0;
 	}
 
 	itr = list_iterator_create(char_list);
-	if(names) {
+	if (names) {
 		if (names[i] == '\"' || names[i] == '\'') {
 			quote_c = names[i];
 			quote = 1;
@@ -306,12 +306,12 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 		start = i;
 		while(names[i]) {
 			//info("got %d - %d = %d", i, start, i-start);
-			if(quote && names[i] == quote_c)
+			if (quote && names[i] == quote_c)
 				break;
 			else if (names[i] == '\"' || names[i] == '\'')
 				names[i] = '`';
-			else if(names[i] == ',') {
-				if((i-start) > 0) {
+			else if (names[i] == ',') {
+				if ((i-start) > 0) {
 					name = xmalloc((i-start+1));
 					memcpy(name, names+start, (i-start));
 					//info("got %s %d", name, i-start);
@@ -323,11 +323,11 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 					}
 
 					while((tmp_char = list_next(itr))) {
-						if(!strcasecmp(tmp_char, name))
+						if (!strcasecmp(tmp_char, name))
 							break;
 					}
 
-					if(!tmp_char) {
+					if (!tmp_char) {
 						list_append(char_list, name);
 						count++;
 					} else
@@ -336,7 +336,7 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 				}
 				i++;
 				start = i;
-				if(!names[i]) {
+				if (!names[i]) {
 					info("There is a problem with "
 					     "your request.  It appears you "
 					     "have spaces inside your list.");
@@ -345,7 +345,7 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 			}
 			i++;
 		}
-		if((i-start) > 0) {
+		if ((i-start) > 0) {
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
 
@@ -356,11 +356,11 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 			}
 
 			while((tmp_char = list_next(itr))) {
-				if(!strcasecmp(tmp_char, name))
+				if (!strcasecmp(tmp_char, name))
 					break;
 			}
 
-			if(!tmp_char) {
+			if (!tmp_char) {
 				list_append(char_list, name);
 				count++;
 			} else
@@ -375,7 +375,7 @@ static char *_convert_to_name(int id, bool gid)
 {
 	char *name = NULL;
 
-	if(gid) {
+	if (gid) {
 		struct group *grp;
 		if (!(grp=getgrgid(id))) {
 			fprintf(stderr, "Invalid group id: %s\n", name);

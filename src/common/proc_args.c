@@ -118,7 +118,7 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
 	} else {
 		/* -m plane=<plane_size> */
 		dist_str = strchr(arg,'=');
-		if(dist_str != NULL) {
+		if (dist_str != NULL) {
 			*plane_size=atoi(dist_str+1);
 			len = dist_str-arg;
 			plane_dist = true;
@@ -426,7 +426,7 @@ bool verify_node_list(char **node_list_pptr, enum task_dist_states dist,
 	/* If we are using Arbitrary grab count out of the hostfile
 	   using them exactly the way we read it in since we are
 	   saying, lay it out this way! */
-	if(dist == SLURM_DIST_ARBITRARY)
+	if (dist == SLURM_DIST_ARBITRARY)
 		nodelist = slurm_read_hostfile(*node_list_pptr, task_count);
 	else
 		nodelist = slurm_read_hostfile(*node_list_pptr, NO_VAL);
@@ -470,7 +470,7 @@ bool get_resource_arg_range(const char *arg, const char *what, int* min,
 	if (*p == 'k' || *p == 'K') {
 		result *= 1024;
 		p++;
-	} else if(*p == 'm' || *p == 'M') {
+	} else if (*p == 'm' || *p == 'M') {
 		result *= 1048576;
 		p++;
 	}
@@ -498,7 +498,7 @@ bool get_resource_arg_range(const char *arg, const char *what, int* min,
 	if ((*p == 'k') || (*p == 'K')) {
 		result *= 1024;
 		p++;
-	} else if(*p == 'm' || *p == 'M') {
+	} else if (*p == 'm' || *p == 'M') {
 		result *= 1048576;
 		p++;
 	}

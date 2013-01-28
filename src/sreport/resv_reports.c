@@ -79,18 +79,18 @@ static int _set_resv_cond(int *start, int argc, char *argv[],
 	time_t start_time, end_time;
 	int command_len = 0;
 
-	if(!resv_cond) {
+	if (!resv_cond) {
 		error("We need an slurmdb_reservation_cond to call this");
 		return SLURM_ERROR;
 	}
 
 	resv_cond->with_usage = 1;
 
-	if(!resv_cond->cluster_list)
+	if (!resv_cond->cluster_list)
 		resv_cond->cluster_list = list_create(slurm_destroy_char);
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if(!end)
+		if (!end)
 			command_len=strlen(argv[i]);
 		else {
 			command_len=end-1;
@@ -99,13 +99,13 @@ static int _set_resv_cond(int *start, int argc, char *argv[],
 			}
 		}
 
-		if(!end && !strncasecmp(argv[i], "all_clusters",
+		if (!end && !strncasecmp(argv[i], "all_clusters",
 					       MAX(command_len, 1))) {
 			local_cluster_flag = 1;
-		} else if(!end
+		} else if (!end
 			  || !strncasecmp (argv[i], "Names",
 					 MAX(command_len, 1))) {
-			if(!resv_cond->name_list)
+			if (!resv_cond->name_list)
 				resv_cond->name_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(resv_cond->name_list,
@@ -126,19 +126,19 @@ static int _set_resv_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 2))) {
-			if(format_list)
+			if (format_list)
 				slurm_addto_char_list(format_list,
 						      argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Ids",
 					 MAX(command_len, 1))) {
-			if(!resv_cond->id_list)
+			if (!resv_cond->id_list)
 				resv_cond->id_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(resv_cond->id_list, argv[i]+end);
 			set = 1;
-		} else if(!strncasecmp (argv[i], "Nodes",
+		} else if (!strncasecmp (argv[i], "Nodes",
 					 MAX(command_len, 1))) {
-			if(resv_cond->nodes) {
+			if (resv_cond->nodes) {
 				error("You already specified nodes '%s' "
 				      " combine your request into 1 nodes=.",
 				      resv_cond->nodes);
@@ -159,9 +159,9 @@ static int _set_resv_cond(int *start, int argc, char *argv[],
 	}
 	(*start) = i;
 
-	if(!local_cluster_flag && !list_count(resv_cond->cluster_list)) {
+	if (!local_cluster_flag && !list_count(resv_cond->cluster_list)) {
 		char *temp = slurm_get_cluster_name();
-		if(temp)
+		if (temp)
 			list_append(resv_cond->cluster_list, temp);
 	}
 
@@ -184,14 +184,14 @@ static int _setup_print_fields_list(List format_list)
 	print_field_t *field = NULL;
 	char *object = NULL;
 
-	if(!format_list || !list_count(format_list)) {
+	if (!format_list || !list_count(format_list)) {
 		exit_code=1;
 			fprintf(stderr, " we need a format list "
 				"to set up the print.\n");
 		return SLURM_ERROR;
 	}
 
-	if(!print_fields_list)
+	if (!print_fields_list)
 		print_fields_list = list_create(destroy_print_field);
 
 	itr = list_iterator_create(format_list);
@@ -200,7 +200,7 @@ static int _setup_print_fields_list(List format_list)
 		int command_len = 0;
 		int newlen = 0;
 
-		if((tmp_char = strstr(object, "\%"))) {
+		if ((tmp_char = strstr(object, "\%"))) {
 			newlen = atoi(tmp_char+1);
 			tmp_char[0] = '\0';
 		}
@@ -208,85 +208,85 @@ static int _setup_print_fields_list(List format_list)
 		command_len = strlen(object);
 
 		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("allocated", object,
+		if (!strncasecmp("allocated", object,
 				MAX(command_len, 2))) {
 			field->type = PRINT_RESV_ACPU;
 			field->name = xstrdup("Allocated");
-			if(time_format == SLURMDB_REPORT_TIME_SECS_PER
+			if (time_format == SLURMDB_REPORT_TIME_SECS_PER
 			   || time_format == SLURMDB_REPORT_TIME_MINS_PER
 			   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
 				field->len = 20;
 			else
 				field->len = 9;
 			field->print_routine = slurmdb_report_print_time;
-		} else if(!strncasecmp("Associations",
+		} else if (!strncasecmp("Associations",
 				       object, MAX(command_len, 2))) {
 			field->type = PRINT_RESV_ASSOCS;
 			field->name = xstrdup("Associations");
 			field->len = 15;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Cluster", object,
+		} else if (!strncasecmp("Cluster", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_RESV_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("cpucount", object,
+		} else if (!strncasecmp("cpucount", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_RESV_CPUS;
 			field->name = xstrdup("CPU count");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("down", object, MAX(command_len, 1))) {
+		} else if (!strncasecmp("down", object, MAX(command_len, 1))) {
 			field->type = PRINT_RESV_DCPU;
 			field->name = xstrdup("Down");
-			if(time_format == SLURMDB_REPORT_TIME_SECS_PER
+			if (time_format == SLURMDB_REPORT_TIME_SECS_PER
 			   || time_format == SLURMDB_REPORT_TIME_MINS_PER
 			   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
 				field->len = 20;
 			else
 				field->len = 9;
 			field->print_routine = slurmdb_report_print_time;
-		} else if(!strncasecmp("idle", object, MAX(command_len, 1))) {
+		} else if (!strncasecmp("idle", object, MAX(command_len, 1))) {
 			field->type = PRINT_RESV_ICPU;
 			field->name = xstrdup("Idle");
-			if(time_format == SLURMDB_REPORT_TIME_SECS_PER
+			if (time_format == SLURMDB_REPORT_TIME_SECS_PER
 			   || time_format == SLURMDB_REPORT_TIME_MINS_PER
 			   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
 				field->len = 20;
 			else
 				field->len = 9;
 			field->print_routine = slurmdb_report_print_time;
-		} else if(!strncasecmp("Nodes", object, MAX(command_len, 2))) {
+		} else if (!strncasecmp("Nodes", object, MAX(command_len, 2))) {
 			field->type = PRINT_RESV_NODES;
 			field->name = xstrdup("Nodes");
 			field->len = 15;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Name", object,
+		} else if (!strncasecmp("Name", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_RESV_NAME;
 			field->name = xstrdup("Name");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Start", object,
+		} else if (!strncasecmp("Start", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_RESV_START;
 			field->name = xstrdup("Start");
 			field->len = 19;
 			field->print_routine = print_fields_date;
-		} else if(!strncasecmp("End", object,
+		} else if (!strncasecmp("End", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_RESV_END;
 			field->name = xstrdup("End");
 			field->len = 19;
 			field->print_routine = print_fields_date;
-		} else if(!strncasecmp("TotalTime", object,
+		} else if (!strncasecmp("TotalTime", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_RESV_TIME;
 			field->name = xstrdup("TotalTime");
 			field->len = 9;
 			field->print_routine = print_fields_time_from_secs;
-		} else if(!strncasecmp("CPUTime", object,
+		} else if (!strncasecmp("CPUTime", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_RESV_CPUTIME;
 			field->name = xstrdup("CPUTime");
@@ -299,7 +299,7 @@ static int _setup_print_fields_list(List format_list)
 			continue;
 		}
 
-		if(newlen)
+		if (newlen)
 			field->len = newlen;
 
 		list_append(print_fields_list, field);
@@ -322,13 +322,13 @@ static List _get_resv_list(int argc, char *argv[],
 	_set_resv_cond(&i, argc, argv, resv_cond, format_list);
 
 	resv_list = slurmdb_reservations_get(db_conn, resv_cond);
-	if(!resv_list) {
+	if (!resv_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with resv query.\n");
 		return NULL;
 	}
 
-	if(print_fields_have_header) {
+	if (print_fields_have_header) {
 		char start_char[20];
 		char end_char[20];
 		time_t my_start = resv_cond->time_start;
@@ -380,12 +380,12 @@ extern int resv_utilization(int argc, char *argv[])
 	print_fields_list = list_create(destroy_print_field);
 
 
-	if(!(resv_list = _get_resv_list(argc, argv,
+	if (!(resv_list = _get_resv_list(argc, argv,
 					"Reservation Utilization",
 					format_list)))
 		goto end_it;
 
-	if(!list_count(format_list))
+	if (!list_count(format_list))
 		slurm_addto_char_list(format_list,
 				      "Cl,name,start,end,al,i");
 
@@ -412,7 +412,7 @@ extern int resv_utilization(int argc, char *argv[])
 	*/
 	while((resv = list_next(itr))) {
 		while((tot_resv = list_next(tot_itr))) {
-			if(tot_resv->id == resv->id) {
+			if (tot_resv->id == resv->id) {
 				/* get an average of cpus if the
 				   reservation changes we will just
 				   get an average.
@@ -421,14 +421,14 @@ extern int resv_utilization(int argc, char *argv[])
 				tot_resv->cpus /= 2;
 				tot_resv->alloc_secs += resv->alloc_secs;
 				tot_resv->down_secs += resv->down_secs;
-				if(resv->time_start < tot_resv->time_start)
+				if (resv->time_start < tot_resv->time_start)
 					tot_resv->time_start = resv->time_start;
-				if(resv->time_end > tot_resv->time_end)
+				if (resv->time_end > tot_resv->time_end)
 					tot_resv->time_end = resv->time_end;
 				break;
 			}
 		}
-		if(!tot_resv)
+		if (!tot_resv)
 			list_append(tot_resv_list, resv);
 
 		list_iterator_reset(tot_itr);
@@ -441,7 +441,7 @@ extern int resv_utilization(int argc, char *argv[])
 		int curr_inx = 1;
 
 		total_time = tot_resv->time_end - tot_resv->time_start;
-		if(total_time <= 0)
+		if (total_time <= 0)
 			continue;
 		total_reported = (uint64_t)(total_time * tot_resv->cpus);
 
@@ -542,15 +542,15 @@ extern int resv_utilization(int argc, char *argv[])
 	list_iterator_destroy(itr);
 
 end_it:
-	if(resv_list) {
+	if (resv_list) {
 		list_destroy(resv_list);
 		resv_list = NULL;
 	}
-	if(tot_resv_list) {
+	if (tot_resv_list) {
 		list_destroy(tot_resv_list);
 		tot_resv_list = NULL;
 	}
-	if(print_fields_list) {
+	if (print_fields_list) {
 		list_destroy(print_fields_list);
 		print_fields_list = NULL;
 	}

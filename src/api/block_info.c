@@ -155,14 +155,14 @@ char *slurm_sprint_block_info(
 	tmp_char = conn_type_string_full(block_ptr->conn_type);
 	xstrfmtcat(out, "ConnType=%s", tmp_char);
 	xfree(tmp_char);
-	if(cluster_flags & CLUSTER_FLAG_BGL)
+	if (cluster_flags & CLUSTER_FLAG_BGL)
 		xstrfmtcat(out, " NodeUse=%s",
 			   node_use_string(block_ptr->node_use));
 
 	xstrcat(out, line_end);
 
 	/****** Line 3 ******/
-	if(block_ptr->ionode_str)
+	if (block_ptr->ionode_str)
 		xstrfmtcat(out, "MidPlanes=%s[%s] MPIndices=",
 			   block_ptr->mp_str, block_ptr->ionode_str);
 	else

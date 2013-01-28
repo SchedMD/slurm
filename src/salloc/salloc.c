@@ -1058,7 +1058,7 @@ static int _blocks_dealloc(void)
 		return -1;
 	}
 	for (i=0; i<new_bg_ptr->record_count; i++) {
-		if(new_bg_ptr->block_array[i].state == BG_BLOCK_TERM) {
+		if (new_bg_ptr->block_array[i].state == BG_BLOCK_TERM) {
 			rc = 1;
 			break;
 		}

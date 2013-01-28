@@ -754,7 +754,7 @@ scontrol_update_job (int argc, char *argv[])
 		}
 		else if (strncasecmp(tag, "Conn-Type", MAX(taglen, 2)) == 0) {
 			verify_conn_type(val, job_msg.conn_type);
-			if(job_msg.conn_type[0] != (uint16_t)NO_VAL)
+			if (job_msg.conn_type[0] != (uint16_t)NO_VAL)
 				update_cnt++;
 		}
 		else if (strncasecmp(tag, "Licenses", MAX(taglen, 1)) == 0) {

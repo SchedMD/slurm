@@ -1579,7 +1579,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		}
 		/* make sure we have this job completed in the
 		 * database */
-		if(IS_JOB_FINISHED(job_ptr)) {
+		if (IS_JOB_FINISHED(job_ptr)) {
 			jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 			job_finished = 1;
 		}
@@ -5622,7 +5622,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 	   the slurmdbd lets put it on the list to be handled later
 	   when it comes back up since we won't get another chance.
 	*/
-	if(with_slurmdbd && !job_ptr->db_index)
+	if (with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 	return 1;		/* Purge the job */
 }
@@ -6095,7 +6095,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 				pack32((uint32_t) 0, buffer);
 			} else {
 				pack32(detail_ptr->min_cpus, buffer);
-				if(detail_ptr->max_cpus != NO_VAL)
+				if (detail_ptr->max_cpus != NO_VAL)
 					pack32(detail_ptr->max_cpus, buffer);
 				else
 					pack32((uint32_t) 0, buffer);
@@ -8035,7 +8035,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_DISABLED;
 		else {
 			char *conn_type_char = conn_type_string_full(conn_type);
-			if((conn_type[0] >= SELECT_SMALL)
+			if ((conn_type[0] >= SELECT_SMALL)
 			   && (detail_ptr->min_cpus >= cpus_per_mp)) {
 				info("update_job: could not change "
 				     "conn_type to '%s' because cpu "
@@ -8045,7 +8045,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				     detail_ptr->min_cpus,
 				     job_ptr->job_id);
 				error_code = ESLURM_INVALID_NODE_COUNT;
-			} else if(((conn_type[0] == SELECT_TORUS)
+			} else if (((conn_type[0] == SELECT_TORUS)
 				   || (conn_type[0] == SELECT_MESH))
 				  && (detail_ptr->min_cpus < cpus_per_mp)) {
 				info("update_job: could not change "
@@ -8075,7 +8075,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	/* check to make sure we didn't mess up with the proc count */
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_CONN_TYPE, &conn_type);
-	if(detail_ptr &&
+	if (detail_ptr &&
 	   (((conn_type[0] >= SELECT_SMALL)
 	     && (detail_ptr->min_cpus >= cpus_per_mp))
 	    || (((conn_type[0] == SELECT_TORUS)|| (conn_type[0] == SELECT_MESH))
@@ -8318,7 +8318,7 @@ extern void job_pre_resize_acctg(struct job_record *job_ptr)
 	/* if we don't have a db_index go a start this one up since if
 	   running with the slurmDBD the job may not have started yet.
 	*/
-	if(!job_ptr->db_index)
+	if (!job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	job_ptr->job_state |= JOB_RESIZING;
@@ -9816,13 +9816,13 @@ extern int job_hold_by_assoc_id(uint32_t assoc_id)
 			job_ptr->assoc_ptr =
 				((slurmdb_association_rec_t *)
 				 job_ptr->assoc_ptr)->usage->parent_assoc_ptr;
-			if(job_ptr->assoc_ptr)
+			if (job_ptr->assoc_ptr)
 				job_ptr->assoc_id =
 					((slurmdb_association_rec_t *)
 					 job_ptr->assoc_ptr)->id;
 		}
 
-		if(IS_JOB_FINISHED(job_ptr))
+		if (IS_JOB_FINISHED(job_ptr))
 			continue;
 
 		info("Association deleted, holding job %u",
@@ -9861,20 +9861,20 @@ extern int job_hold_by_qos_id(uint32_t qos_id)
 			continue;
 
 		/* move up to the parent that should still exist */
-		if(job_ptr->qos_ptr) {
+		if (job_ptr->qos_ptr) {
 			/* Force a start so the association doesn't
 			   get lost.  Since there could be some delay
 			   in the start of the job when running with
 			   the slurmdbd.
 			*/
-			if(!job_ptr->db_index) {
+			if (!job_ptr->db_index) {
 				jobacct_storage_g_job_start(acct_db_conn,
 							    job_ptr);
 			}
 			job_ptr->qos_ptr = NULL;
 		}
 
-		if(IS_JOB_FINISHED(job_ptr))
+		if (IS_JOB_FINISHED(job_ptr))
 			continue;
 
 		info("QOS deleted, holding job %u", job_ptr->job_id);
@@ -9986,7 +9986,7 @@ extern int update_job_wckey(char *module, struct job_record *job_ptr,
 		info("%s: invalid wckey %s for job_id %u",
 		     module, new_wckey, job_ptr->job_id);
 		return ESLURM_INVALID_WCKEY;
-	} else if(association_based_accounting
+	} else if (association_based_accounting
 		  && !wckey_ptr
 		  && !(accounting_enforce & ACCOUNTING_ENFORCE_WCKEYS)) {
 		/* if not enforcing associations we want to look for
@@ -9996,7 +9996,7 @@ extern int update_job_wckey(char *module, struct job_record *job_ptr,
 		wckey_rec.name = NULL;
 		assoc_mgr_fill_in_wckey(acct_db_conn, &wckey_rec,
 					accounting_enforce, &wckey_ptr);
-		if(!wckey_ptr) {
+		if (!wckey_ptr) {
 			debug("%s: we didn't have a wckey record for wckey "
 			      "'%s' and user '%u', and we can't seem to find "
 			      "a default one either.  Setting it anyway. "
@@ -10263,11 +10263,11 @@ static int _checkpoint_job_record (struct job_record *job_ptr, char *image_dir)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
 		(void) unlink(old_file);
-		if(link(ckpt_file, old_file))
+		if (link(ckpt_file, old_file))
 			debug4("unable to create link for %s -> %s: %m",
 			       ckpt_file, old_file);
 		(void) unlink(ckpt_file);
-		if(link(new_file, ckpt_file))
+		if (link(new_file, ckpt_file))
 			debug4("unable to create link for %s -> %s: %m",
 			       new_file, ckpt_file);
 		(void) unlink(new_file);

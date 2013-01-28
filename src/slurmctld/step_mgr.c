@@ -2304,7 +2304,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 
 	if (step_ptr->job_ptr->total_cpus)
 		cpu_cnt = step_ptr->job_ptr->total_cpus;
-	else if(step_ptr->job_ptr->details)
+	else if (step_ptr->job_ptr->details)
 		cpu_cnt = step_ptr->job_ptr->details->min_cpus;
 	else
 		cpu_cnt = step_ptr->job_ptr->cpu_cnt;

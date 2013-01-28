@@ -133,9 +133,9 @@ int main(int argc, char **argv)
 	switch (op) {
 	case SACCT_LIST:
 		print_fields_header(print_fields_list);
-		if(get_data() == SLURM_ERROR)
+		if (get_data() == SLURM_ERROR)
 			exit(errno);
-		if(params.opt_completion)
+		if (params.opt_completion)
 			do_list_completion();
 		else
 			do_list();

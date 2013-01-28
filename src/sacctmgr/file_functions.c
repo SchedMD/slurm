@@ -785,7 +785,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   file_opts->grp_jobs);
 	}
 
-	if((file_opts->grp_mem != NO_VAL)
+	if ((file_opts->grp_mem != NO_VAL)
 	   && (assoc->grp_mem != file_opts->grp_mem)) {
 		mod_assoc.grp_mem = file_opts->grp_mem;
 		changed = 1;
@@ -1758,7 +1758,7 @@ extern int print_file_add_limits_to_line(char **line,
 	if (assoc->grp_jobs != INFINITE)
 		xstrfmtcat(*line, ":GrpJobs=%u", assoc->grp_jobs);
 
-	if(assoc->grp_mem != INFINITE)
+	if (assoc->grp_mem != INFINITE)
 		xstrfmtcat(*line, ":GrpMemory=%u", assoc->grp_mem);
 
 	if (assoc->grp_nodes != INFINITE)

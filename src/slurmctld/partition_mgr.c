@@ -233,7 +233,7 @@ struct part_record *create_part_record(void)
 	part_ptr->preempt_mode      = default_part.preempt_mode;
 	part_ptr->priority          = default_part.priority;
 	part_ptr->grace_time 	    = default_part.grace_time;
-	if(part_max_priority)
+	if (part_max_priority)
 		part_ptr->norm_priority = (double)default_part.priority
 			/ (double)part_max_priority;
 	part_ptr->node_bitmap       = NULL;
@@ -498,7 +498,7 @@ int load_all_part_state(void)
 
 	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 	debug3("Version string in part_state header is %s", ver_str);
-	if(ver_str) {
+	if (ver_str) {
 		if (!strcmp(ver_str, PART_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
 		}
@@ -1133,7 +1133,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		 * the normalized priorities of all the other
 		 * partitions. If not then just set this partition.
 		 */
-		if(part_ptr->priority > part_max_priority) {
+		if (part_ptr->priority > part_max_priority) {
 			ListIterator itr = list_iterator_create(part_list);
 			struct part_record *part2 = NULL;
 

@@ -429,12 +429,12 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		thread_ptr[thr_count].state      = DSH_NEW;
 		thread_ptr[thr_count].addr = agent_arg_ptr->addr;
 		name = hostlist_shift(agent_arg_ptr->hostlist);
-		if(!name) {
+		if (!name) {
 			debug3("no more nodes to send to");
 			break;
 		}
 		hl = hostlist_create(name);
-		if(thread_ptr[thr_count].addr && span[thr_count]) {
+		if (thread_ptr[thr_count].addr && span[thr_count]) {
 			debug("warning: you will only be sending this to %s",
 			      name);
 			span[thr_count] = 0;
@@ -874,7 +874,7 @@ static void *_thread_per_group_rpc(void *args)
 			msg.address = *thread_ptr->addr;
 		} else {
 			//info("no address given");
-			if(slurm_conf_get_addr(thread_ptr->nodelist,
+			if (slurm_conf_get_addr(thread_ptr->nodelist,
 					       &msg.address) == SLURM_ERROR) {
 				error("_thread_per_group_rpc: "
 				      "can't find address for host %s, "
@@ -1006,7 +1006,7 @@ static void *_thread_per_group_rpc(void *args)
 			}
 			if (srun_agent)
 				thread_state = DSH_FAILED;
-			else if(ret_data_info->type == RESPONSE_FORWARD_FAILED)
+			else if (ret_data_info->type == RESPONSE_FORWARD_FAILED)
 				/* check if a forward failed */
 				thread_state = DSH_NO_RESP;
 			else {	/* some will fail that don't mean anything went
@@ -1058,7 +1058,7 @@ static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 		debug("got the name %s to resend out of %d",
 		      ret_data_info->node_name, count);
 
-		if(agent_arg_ptr) {
+		if (agent_arg_ptr) {
 			hostlist_push(agent_arg_ptr->hostlist,
 				      ret_data_info->node_name);
 
@@ -1098,7 +1098,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 
 	j = 0;
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
-		if(!thread_ptr[i].ret_list) {
+		if (!thread_ptr[i].ret_list) {
 			if (thread_ptr[i].state != DSH_NO_RESP)
 				continue;
 
@@ -1110,7 +1110,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 			if ((++j) == count)
 				break;
 		} else {
-			if(_setup_requeue(agent_arg_ptr, &thread_ptr[i],
+			if (_setup_requeue(agent_arg_ptr, &thread_ptr[i],
 					  count, &j))
 				break;
 		}
@@ -1459,9 +1459,9 @@ static void _mail_proc(mail_info_t *mi)
 		(void) close(1);
 		(void) close(2);
 		fd = open("/dev/null", O_RDWR); // 0
-		if(dup(fd) == -1) // 1
+		if (dup(fd) == -1) // 1
 			error("Couldn't do a dup for 1: %m");
-		if(dup(fd) == -1) // 2
+		if (dup(fd) == -1) // 2
 			error("Couldn't do a dup for 2 %m");
 		execle(slurmctld_conf.mail_prog, "mail",
 			"-s", mi->message, mi->user_name,

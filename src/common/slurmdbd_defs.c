@@ -195,11 +195,11 @@ extern int slurm_open_slurmdbd_conn(char *auth_info,
 
 	if ((callbacks != NULL) && ((agent_tid == 0) || (agent_list == NULL)))
 		_create_agent();
-	else if(agent_list)
+	else if (agent_list)
 		_load_dbd_state();
 
 	slurm_mutex_unlock(&agent_lock);
-	if(tmp_errno) {
+	if (tmp_errno) {
 		errno = tmp_errno;
 		return tmp_errno;
 	} else if (slurmdbd_fd < 0)
@@ -313,7 +313,7 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 	if (slurmdbd_fd < 0) {
 		/* Either slurm_open_slurmdbd_conn() was not executed or
 		 * the connection to Slurm DBD has been closed */
-		if(req->msg_type == DBD_GET_CONFIG)
+		if (req->msg_type == DBD_GET_CONFIG)
 			_open_slurmdbd_fd(0);
 		else
 			_open_slurmdbd_fd(1);
@@ -323,7 +323,7 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 		}
 	}
 
-	if(!(buffer = pack_slurmdbd_msg(req, rpc_version))) {
+	if (!(buffer = pack_slurmdbd_msg(req, rpc_version))) {
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -453,7 +453,7 @@ again:
 			if (try_backup) {
 				try_backup = false;
 				xfree(slurmdbd_host);
-				if((slurmdbd_host =
+				if ((slurmdbd_host =
 				    slurm_get_accounting_storage_backup_host()))
 					goto again;
 			}
@@ -853,157 +853,157 @@ unpack_error:
 
 extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 {
-	if(!msg_type) {
+	if (!msg_type) {
 		return NO_VAL;
-	} else if(!strcasecmp(msg_type, "Init")) {
+	} else if (!strcasecmp(msg_type, "Init")) {
 		return DBD_INIT;
-	} else if(!strcasecmp(msg_type, "Fini")) {
+	} else if (!strcasecmp(msg_type, "Fini")) {
 		return DBD_FINI;
-	} else if(!strcasecmp(msg_type, "Add Accounts")) {
+	} else if (!strcasecmp(msg_type, "Add Accounts")) {
 		return DBD_ADD_ACCOUNTS;
-	} else if(!strcasecmp(msg_type, "Add Account Coord")) {
+	} else if (!strcasecmp(msg_type, "Add Account Coord")) {
 		return DBD_ADD_ACCOUNT_COORDS;
-	} else if(!strcasecmp(msg_type, "Add Associations")) {
+	} else if (!strcasecmp(msg_type, "Add Associations")) {
 		return DBD_ADD_ASSOCS;
-	} else if(!strcasecmp(msg_type, "Add Clusters")) {
+	} else if (!strcasecmp(msg_type, "Add Clusters")) {
 		return DBD_ADD_CLUSTERS;
-	} else if(!strcasecmp(msg_type, "Add Users")) {
+	} else if (!strcasecmp(msg_type, "Add Users")) {
 		return DBD_ADD_USERS;
-	} else if(!strcasecmp(msg_type, "Cluster Processors")) {
+	} else if (!strcasecmp(msg_type, "Cluster Processors")) {
 		return DBD_CLUSTER_CPUS;
-	} else if(!strcasecmp(msg_type, "Flush Jobs")) {
+	} else if (!strcasecmp(msg_type, "Flush Jobs")) {
 		return DBD_FLUSH_JOBS;
-	} else if(!strcasecmp(msg_type, "Get Accounts")) {
+	} else if (!strcasecmp(msg_type, "Get Accounts")) {
 		return DBD_GET_ACCOUNTS;
-	} else if(!strcasecmp(msg_type, "Get Associations")) {
+	} else if (!strcasecmp(msg_type, "Get Associations")) {
 		return DBD_GET_ASSOCS;
-	} else if(!strcasecmp(msg_type, "Get Association Usage")) {
+	} else if (!strcasecmp(msg_type, "Get Association Usage")) {
 		return DBD_GET_ASSOC_USAGE;
-	} else if(!strcasecmp(msg_type, "Get Clusters")) {
+	} else if (!strcasecmp(msg_type, "Get Clusters")) {
 		return DBD_GET_CLUSTERS;
-	} else if(!strcasecmp(msg_type, "Get Cluster Usage")) {
+	} else if (!strcasecmp(msg_type, "Get Cluster Usage")) {
 		return DBD_GET_CLUSTER_USAGE;
-	} else if(!strcasecmp(msg_type, "Get Events")) {
+	} else if (!strcasecmp(msg_type, "Get Events")) {
 		return DBD_GET_EVENTS;
-	} else if(!strcasecmp(msg_type, "Get Jobs")) {
+	} else if (!strcasecmp(msg_type, "Get Jobs")) {
 		return DBD_GET_JOBS;
-	} else if(!strcasecmp(msg_type, "Get Problems")) {
+	} else if (!strcasecmp(msg_type, "Get Problems")) {
 		return DBD_GET_PROBS;
-	} else if(!strcasecmp(msg_type, "Get Users")) {
+	} else if (!strcasecmp(msg_type, "Get Users")) {
 		return DBD_GET_USERS;
-	} else if(!strcasecmp(msg_type, "Got Accounts")) {
+	} else if (!strcasecmp(msg_type, "Got Accounts")) {
 		return DBD_GOT_ACCOUNTS;
-	} else if(!strcasecmp(msg_type, "Got Associations")) {
+	} else if (!strcasecmp(msg_type, "Got Associations")) {
 		return DBD_GOT_ASSOCS;
-	} else if(!strcasecmp(msg_type, "Got Association Usage")) {
+	} else if (!strcasecmp(msg_type, "Got Association Usage")) {
 		return DBD_GOT_ASSOC_USAGE;
-	} else if(!strcasecmp(msg_type, "Got Clusters")) {
+	} else if (!strcasecmp(msg_type, "Got Clusters")) {
 		return DBD_GOT_CLUSTERS;
-	} else if(!strcasecmp(msg_type, "Got Cluster Usage")) {
+	} else if (!strcasecmp(msg_type, "Got Cluster Usage")) {
 		return DBD_GOT_CLUSTER_USAGE;
-	} else if(!strcasecmp(msg_type, "Got Events")) {
+	} else if (!strcasecmp(msg_type, "Got Events")) {
 		return DBD_GOT_EVENTS;
-	} else if(!strcasecmp(msg_type, "Got Jobs")) {
+	} else if (!strcasecmp(msg_type, "Got Jobs")) {
 		return DBD_GOT_JOBS;
-	} else if(!strcasecmp(msg_type, "Got List")) {
+	} else if (!strcasecmp(msg_type, "Got List")) {
 		return DBD_GOT_LIST;
-	} else if(!strcasecmp(msg_type, "Got Problems")) {
+	} else if (!strcasecmp(msg_type, "Got Problems")) {
 		return DBD_GOT_PROBS;
-	} else if(!strcasecmp(msg_type, "Got Users")) {
+	} else if (!strcasecmp(msg_type, "Got Users")) {
 		return DBD_GOT_USERS;
-	} else if(!strcasecmp(msg_type, "Job Complete")) {
+	} else if (!strcasecmp(msg_type, "Job Complete")) {
 		return DBD_JOB_COMPLETE;
-	} else if(!strcasecmp(msg_type, "Job Start")) {
+	} else if (!strcasecmp(msg_type, "Job Start")) {
 		return DBD_JOB_START;
-	} else if(!strcasecmp(msg_type, "ID RC")) {
+	} else if (!strcasecmp(msg_type, "ID RC")) {
 		return DBD_ID_RC;
-	} else if(!strcasecmp(msg_type, "Job Suspend")) {
+	} else if (!strcasecmp(msg_type, "Job Suspend")) {
 		return DBD_JOB_SUSPEND;
-	} else if(!strcasecmp(msg_type, "Modify Accounts")) {
+	} else if (!strcasecmp(msg_type, "Modify Accounts")) {
 		return DBD_MODIFY_ACCOUNTS;
-	} else if(!strcasecmp(msg_type, "Modify Associations")) {
+	} else if (!strcasecmp(msg_type, "Modify Associations")) {
 		return DBD_MODIFY_ASSOCS;
-	} else if(!strcasecmp(msg_type, "Modify Clusters")) {
+	} else if (!strcasecmp(msg_type, "Modify Clusters")) {
 		return DBD_MODIFY_CLUSTERS;
-	} else if(!strcasecmp(msg_type, "Modify Job")) {
+	} else if (!strcasecmp(msg_type, "Modify Job")) {
 		return DBD_MODIFY_JOB;
-	} else if(!strcasecmp(msg_type, "Modify QOS")) {
+	} else if (!strcasecmp(msg_type, "Modify QOS")) {
 		return DBD_MODIFY_QOS;
-	} else if(!strcasecmp(msg_type, "Modify Users")) {
+	} else if (!strcasecmp(msg_type, "Modify Users")) {
 		return DBD_MODIFY_USERS;
-	} else if(!strcasecmp(msg_type, "Node State")) {
+	} else if (!strcasecmp(msg_type, "Node State")) {
 		return DBD_NODE_STATE;
-	} else if(!strcasecmp(msg_type, "RC")) {
+	} else if (!strcasecmp(msg_type, "RC")) {
 		return DBD_RC;
-	} else if(!strcasecmp(msg_type, "Register Cluster")) {
+	} else if (!strcasecmp(msg_type, "Register Cluster")) {
 		return DBD_REGISTER_CTLD;
-	} else if(!strcasecmp(msg_type, "Remove Accounts")) {
+	} else if (!strcasecmp(msg_type, "Remove Accounts")) {
 		return DBD_REMOVE_ACCOUNTS;
-	} else if(!strcasecmp(msg_type, "Remove Account Coords")) {
+	} else if (!strcasecmp(msg_type, "Remove Account Coords")) {
 		return DBD_REMOVE_ACCOUNT_COORDS;
-	} else if(!strcasecmp(msg_type, "Archive Dump")) {
+	} else if (!strcasecmp(msg_type, "Archive Dump")) {
 		return DBD_ARCHIVE_DUMP;
-	} else if(!strcasecmp(msg_type, "Archive Load")) {
+	} else if (!strcasecmp(msg_type, "Archive Load")) {
 		return DBD_ARCHIVE_LOAD;
-	} else if(!strcasecmp(msg_type, "Remove Associations")) {
+	} else if (!strcasecmp(msg_type, "Remove Associations")) {
 		return DBD_REMOVE_ASSOCS;
-	} else if(!strcasecmp(msg_type, "Remove Clusters")) {
+	} else if (!strcasecmp(msg_type, "Remove Clusters")) {
 		return DBD_REMOVE_CLUSTERS;
-	} else if(!strcasecmp(msg_type, "Remove Users")) {
+	} else if (!strcasecmp(msg_type, "Remove Users")) {
 		return DBD_REMOVE_USERS;
-	} else if(!strcasecmp(msg_type, "Roll Usage")) {
+	} else if (!strcasecmp(msg_type, "Roll Usage")) {
 		return DBD_ROLL_USAGE;
-	} else if(!strcasecmp(msg_type, "Step Complete")) {
+	} else if (!strcasecmp(msg_type, "Step Complete")) {
 		return DBD_STEP_COMPLETE;
-	} else if(!strcasecmp(msg_type, "Step Start")) {
+	} else if (!strcasecmp(msg_type, "Step Start")) {
 		return DBD_STEP_START;
-	} else if(!strcasecmp(msg_type, "Get Jobs Conditional")) {
+	} else if (!strcasecmp(msg_type, "Get Jobs Conditional")) {
 		return DBD_GET_JOBS_COND;
-	} else if(!strcasecmp(msg_type, "Get Transations")) {
+	} else if (!strcasecmp(msg_type, "Get Transations")) {
 		return DBD_GET_TXN;
-	} else if(!strcasecmp(msg_type, "Got Transations")) {
+	} else if (!strcasecmp(msg_type, "Got Transations")) {
 		return DBD_GOT_TXN;
-	} else if(!strcasecmp(msg_type, "Add QOS")) {
+	} else if (!strcasecmp(msg_type, "Add QOS")) {
 		return DBD_ADD_QOS;
-	} else if(!strcasecmp(msg_type, "Get QOS")) {
+	} else if (!strcasecmp(msg_type, "Get QOS")) {
 		return DBD_GET_QOS;
-	} else if(!strcasecmp(msg_type, "Got QOS")) {
+	} else if (!strcasecmp(msg_type, "Got QOS")) {
 		return DBD_GOT_QOS;
-	} else if(!strcasecmp(msg_type, "Remove QOS")) {
+	} else if (!strcasecmp(msg_type, "Remove QOS")) {
 		return DBD_REMOVE_QOS;
-	} else if(!strcasecmp(msg_type, "Add WCKeys")) {
+	} else if (!strcasecmp(msg_type, "Add WCKeys")) {
 		return DBD_ADD_WCKEYS;
-	} else if(!strcasecmp(msg_type, "Get WCKeys")) {
+	} else if (!strcasecmp(msg_type, "Get WCKeys")) {
 		return DBD_GET_WCKEYS;
-	} else if(!strcasecmp(msg_type, "Got WCKeys")) {
+	} else if (!strcasecmp(msg_type, "Got WCKeys")) {
 		return DBD_GOT_WCKEYS;
-	} else if(!strcasecmp(msg_type, "Remove WCKeys")) {
+	} else if (!strcasecmp(msg_type, "Remove WCKeys")) {
 		return DBD_REMOVE_WCKEYS;
-	} else if(!strcasecmp(msg_type, "Get WCKey Usage")) {
+	} else if (!strcasecmp(msg_type, "Get WCKey Usage")) {
 		return DBD_GET_WCKEY_USAGE;
-	} else if(!strcasecmp(msg_type, "Got WCKey Usage")) {
+	} else if (!strcasecmp(msg_type, "Got WCKey Usage")) {
 		return DBD_GOT_WCKEY_USAGE;
-	} else if(!strcasecmp(msg_type, "Add Reservation")) {
+	} else if (!strcasecmp(msg_type, "Add Reservation")) {
 		return DBD_ADD_RESV;
-	} else if(!strcasecmp(msg_type, "Remove Reservation")) {
+	} else if (!strcasecmp(msg_type, "Remove Reservation")) {
 		return DBD_REMOVE_RESV;
-	} else if(!strcasecmp(msg_type, "Modify Reservation")) {
+	} else if (!strcasecmp(msg_type, "Modify Reservation")) {
 		return DBD_MODIFY_RESV;
-	} else if(!strcasecmp(msg_type, "Get Reservations")) {
+	} else if (!strcasecmp(msg_type, "Get Reservations")) {
 		return DBD_GET_RESVS;
-	} else if(!strcasecmp(msg_type, "Got Reservations")) {
+	} else if (!strcasecmp(msg_type, "Got Reservations")) {
 		return DBD_GOT_RESVS;
-	} else if(!strcasecmp(msg_type, "Get Config")) {
+	} else if (!strcasecmp(msg_type, "Get Config")) {
 		return DBD_GET_CONFIG;
-	} else if(!strcasecmp(msg_type, "Got Config")) {
+	} else if (!strcasecmp(msg_type, "Got Config")) {
 		return DBD_GOT_CONFIG;
-	} else if(!strcasecmp(msg_type, "Send Multiple Job Starts")) {
+	} else if (!strcasecmp(msg_type, "Send Multiple Job Starts")) {
 		return DBD_SEND_MULT_JOB_START;
-	} else if(!strcasecmp(msg_type, "Got Multiple Job Starts")) {
+	} else if (!strcasecmp(msg_type, "Got Multiple Job Starts")) {
 		return DBD_GOT_MULT_JOB_START;
-	} else if(!strcasecmp(msg_type, "Send Multiple Messages")) {
+	} else if (!strcasecmp(msg_type, "Send Multiple Messages")) {
 		return DBD_SEND_MULT_MSG;
-	} else if(!strcasecmp(msg_type, "Got Multiple Message Returns")) {
+	} else if (!strcasecmp(msg_type, "Got Multiple Message Returns")) {
 		return DBD_GOT_MULT_MSG;
 	} else {
 		return NO_VAL;
@@ -1016,451 +1016,451 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 {
 	switch(msg_type) {
 	case DBD_INIT:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_INIT";
 		} else
 			return "Init";
 		break;
 	case DBD_FINI:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_FINI";
 		} else
 			return "Fini";
 		break;
 	case DBD_ADD_ACCOUNTS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_ADD_ACCOUNTS";
 		} else
 			return "Add Accounts";
 		break;
 	case DBD_ADD_ACCOUNT_COORDS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_ADD_ACCOUNT_COORDS";
 		} else
 			return "Add Account Coord";
 		break;
 	case DBD_ADD_ASSOCS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_ADD_ASSOCS";
 		} else
 			return "Add Associations";
 		break;
 	case DBD_ADD_CLUSTERS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_ADD_CLUSTERS";
 		} else
 			return "Add Clusters";
 		break;
 	case DBD_ADD_USERS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_ADD_USERS";
 		} else
 			return "Add Users";
 		break;
 	case DBD_CLUSTER_CPUS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_CLUSTER_CPUS";
 		} else
 			return "Cluster Processors";
 		break;
 	case DBD_FLUSH_JOBS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_FLUSH_JOBS";
 		} else
 			return "Flush Jobs";
 		break;
 	case DBD_GET_ACCOUNTS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GET_ACCOUNTS";
 		} else
 			return "Get Accounts";
 		break;
 	case DBD_GET_ASSOCS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GET_ASSOCS";
 		} else
 			return "Get Associations";
 		break;
 	case DBD_GET_ASSOC_USAGE:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GET_ASSOC_USAGE";
 		} else
 			return "Get Association Usage";
 		break;
 	case DBD_GET_CLUSTERS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GET_CLUSTERS";
 		} else
 			return "Get Clusters";
 		break;
 	case DBD_GET_CLUSTER_USAGE:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GET_CLUSTER_USAGE";
 		} else
 			return "Get Cluster Usage";
 		break;
 	case DBD_GET_EVENTS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GET_EVENTS";
 		} else
 			return "Get Events";
 		break;
 	case DBD_GET_JOBS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GET_JOBS";
 		} else
 			return "Get Jobs";
 		break;
 	case DBD_GET_PROBS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GET_PROBS";
 		} else
 			return "Get Problems";
 		break;
 	case DBD_GET_USERS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GET_USERS";
 		} else
 			return "Get Users";
 		break;
 	case DBD_GOT_ACCOUNTS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_ACCOUNTS";
 		} else
 			return "Got Accounts";
 		break;
 	case DBD_GOT_ASSOCS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_ASSOCS";
 		} else
 			return "Got Associations";
 		break;
 	case DBD_GOT_ASSOC_USAGE:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_ASSOC_USAGE";
 		} else
 			return "Got Association Usage";
 		break;
 	case DBD_GOT_CLUSTERS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_CLUSTERS";
 		} else
 			return "Got Clusters";
 		break;
 	case DBD_GOT_CLUSTER_USAGE:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_CLUSTER_USAGE";
 		} else
 			return "Got Cluster Usage";
 		break;
 	case DBD_GOT_EVENTS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_EVENTS";
 		} else
 			return "Got Events";
 		break;
 	case DBD_GOT_JOBS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_JOBS";
 		} else
 			return "Got Jobs";
 		break;
 	case DBD_GOT_LIST:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_LIST";
 		} else
 			return "Got List";
 		break;
 	case DBD_GOT_PROBS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_PROBS";
 		} else
 			return "Got Problems";
 		break;
 	case DBD_GOT_USERS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_USERS";
 		} else
 			return "Got Users";
 		break;
 	case DBD_JOB_COMPLETE:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_JOB_COMPLETE";
 		} else
 			return "Job Complete";
 		break;
 	case DBD_JOB_START:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_JOB_START";
 		} else
 			return "Job Start";
 		break;
 	case DBD_ID_RC:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_ID_RC";
 		} else
 			return "ID RC";
 		break;
 	case DBD_JOB_SUSPEND:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_JOB_SUSPEND";
 		} else
 			return "Job Suspend";
 		break;
 	case DBD_MODIFY_ACCOUNTS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_MODIFY_ACCOUNTS";
 		} else
 			return "Modify Accounts";
 		break;
 	case DBD_MODIFY_ASSOCS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_MODIFY_ASSOCS";
 		} else
 			return "Modify Associations";
 		break;
 	case DBD_MODIFY_CLUSTERS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_MODIFY_CLUSTERS";
 		} else
 			return "Modify Clusters";
 		break;
 	case DBD_MODIFY_JOB:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_MODIFY_JOB";
 		} else
 			return "Modify Job";
 		break;
 	case DBD_MODIFY_QOS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_MODIFY_QOS";
 		} else
 			return "Modify QOS";
 		break;
 	case DBD_MODIFY_USERS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_MODIFY_USERS";
 		} else
 			return "Modify Users";
 		break;
 	case DBD_NODE_STATE:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_NODE_STATE";
 		} else
 			return "Node State";
 		break;
 	case DBD_RC:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_RC";
 		} else
 			return "Return Code";
 		break;
 	case DBD_REGISTER_CTLD:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_REGISTER_CTLD";
 		} else
 			return "Register Cluster";
 		break;
 	case DBD_REMOVE_ACCOUNTS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_REMOVE_ACCOUNTS";
 		} else
 			return "Remove Accounts";
 		break;
 	case DBD_REMOVE_ACCOUNT_COORDS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_REMOVE_ACCOUNT_COORDS";
 		} else
 			return "Remove Account Coords";
 		break;
 	case DBD_ARCHIVE_DUMP:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_ARCHIVE_DUMP";
 		} else
 			return "Archive Dump";
 		break;
 	case DBD_ARCHIVE_LOAD:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_ARCHIVE_LOAD";
 		} else
 			return "Archive Load";
 		break;
 	case DBD_REMOVE_ASSOCS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_REMOVE_ASSOCS";
 		} else
 			return "Remove Associations";
 		break;
 	case DBD_REMOVE_CLUSTERS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_REMOVE_CLUSTERS";
 		} else
 			return "Remove Clusters";
 		break;
 	case DBD_REMOVE_USERS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_REMOVE_USERS";
 		} else
 			return "Remove Users";
 		break;
 	case DBD_ROLL_USAGE:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_ROLL_USAGE";
 		} else
 			return "Roll Usage";
 		break;
 	case DBD_STEP_COMPLETE:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_STEP_COMPLETE";
 		} else
 			return "Step Complete";
 		break;
 	case DBD_STEP_START:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_STEP_START";
 		} else
 			return "Step Start";
 		break;
 	case DBD_GET_JOBS_COND:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GET_JOBS_COND";
 		} else
 			return "Get Jobs Conditional";
 		break;
 	case DBD_GET_TXN:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GET_TXN";
 		} else
 			return "Get Transations";
 		break;
 	case DBD_GOT_TXN:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_TXN";
 		} else
 			return "Got Transations";
 		break;
 	case DBD_ADD_QOS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_ADD_QOS";
 		} else
 			return "Add QOS";
 		break;
 	case DBD_GET_QOS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GET_QOS";
 		} else
 			return "Get QOS";
 		break;
 	case DBD_GOT_QOS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_QOS";
 		} else
 			return "Got QOS";
 		break;
 	case DBD_REMOVE_QOS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_REMOVE_QOS";
 		} else
 			return "Remove QOS";
 		break;
 	case DBD_ADD_WCKEYS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_ADD_WCKEYS";
 		} else
 			return "Add WCKeys";
 		break;
 	case DBD_GET_WCKEYS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GET_WCKEYS";
 		} else
 			return "Get WCKeys";
 		break;
 	case DBD_GOT_WCKEYS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_WCKEYS";
 		} else
 			return "Got WCKeys";
 		break;
 	case DBD_REMOVE_WCKEYS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_REMOVE_WCKEYS";
 		} else
 			return "Remove WCKeys";
 		break;
 	case DBD_GET_WCKEY_USAGE:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GET_WCKEY_USAGE";
 		} else
 			return "Get WCKey Usage";
 		break;
 	case DBD_GOT_WCKEY_USAGE:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_WCKEY_USAGE";
 		} else
 			return "Got WCKey Usage";
 		break;
 	case DBD_ADD_RESV:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_ADD_RESV";
 		} else
 			return "Add Reservation";
 		break;
 	case DBD_REMOVE_RESV:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_REMOVE_RESV";
 		} else
 			return "Remove Reservation";
 		break;
 	case DBD_MODIFY_RESV:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_MODIFY_RESV";
 		} else
 			return "Modify Reservation";
 		break;
 	case DBD_GET_RESVS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GET_RESVS";
 		} else
 			return "Get Reservations";
 		break;
 	case DBD_GOT_RESVS:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_RESVS";
 		} else
 			return "Got Reservations";
 		break;
 	case DBD_GET_CONFIG:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GET_CONFIG";
 		} else
 			return "Get Config";
 		break;
 	case DBD_GOT_CONFIG:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_CONFIG";
 		} else
 			return "Got Config";
 		break;
 	case DBD_SEND_MULT_JOB_START:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_SEND_MULT_JOB_START";
 		} else
 			return "Send Multiple Job Starts";
 		break;
 	case DBD_GOT_MULT_JOB_START:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_MULT_JOB_START";
 		} else
 			return "Got Multiple Job Starts";
 		break;
 	case DBD_SEND_MULT_MSG:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_SEND_MULT_MSG";
 		} else
 			return "Send Multiple Messages";
 		break;
 	case DBD_GOT_MULT_MSG:
-		if(get_enum) {
+		if (get_enum) {
 			return "DBD_GOT_MULT_MSG";
 		} else
 			return "Got Multiple Message Returns";
@@ -1476,7 +1476,7 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 extern void slurmdbd_free_buffer(void *x)
 {
 	Buf buffer = (Buf) x;
-	if(buffer)
+	if (buffer)
 		free_buf(buffer);
 }
 
@@ -1509,9 +1509,9 @@ static int _send_init_msg()
 
 	read_timeout = slurm_get_msg_timeout() * 1000;
 	rc = _get_return_code(SLURMDBD_VERSION, read_timeout);
-	if(tmp_errno)
+	if (tmp_errno)
 		errno = tmp_errno;
-	else if(rc != SLURM_SUCCESS)
+	else if (rc != SLURM_SUCCESS)
 		errno = rc;
 	return rc;
 }
@@ -1523,7 +1523,7 @@ static int _send_fini_msg(void)
 
 	/* If the connection is already gone, we don't need to send a
 	   fini. */
-	if(_fd_writeable(slurmdbd_fd) == -1)
+	if (_fd_writeable(slurmdbd_fd) == -1)
 		return SLURM_SUCCESS;
 
 	buffer = init_buf(1024);
@@ -1572,7 +1572,7 @@ static int _send_msg(Buf buffer)
 			return EAGAIN;
 		/* if errno is ACCESS_DENIED do not try to reopen to
 		   connection just return that */
-		if(errno == ESLURM_ACCESS_DENIED)
+		if (errno == ESLURM_ACCESS_DENIED)
 			return ESLURM_ACCESS_DENIED;
 		_reopen_slurmdbd_fd();
 		rc = _fd_writeable(slurmdbd_fd);
@@ -2023,7 +2023,7 @@ static void *_agent(void *x)
 	while (agent_shutdown == 0) {
 		/* START_TIMER; */
 		slurm_mutex_lock(&slurmdbd_lock);
-		if(halt_agent)
+		if (halt_agent)
 			pthread_cond_wait(&slurmdbd_cond, &slurmdbd_lock);
 
 		if ((slurmdbd_fd < 0) &&
@@ -2080,7 +2080,7 @@ static void *_agent(void *x)
 			slurm_mutex_unlock(&slurmdbd_lock);
 
 			slurm_mutex_lock(&assoc_cache_mutex);
-			if(slurmdbd_fd >= 0 && running_cache)
+			if (slurmdbd_fd >= 0 && running_cache)
 				pthread_cond_signal(&assoc_cache_cond);
 			slurm_mutex_unlock(&assoc_cache_mutex);
 
@@ -2113,7 +2113,7 @@ static void *_agent(void *x)
 		}
 		slurm_mutex_unlock(&slurmdbd_lock);
 		slurm_mutex_lock(&assoc_cache_mutex);
-		if(slurmdbd_fd >= 0 && running_cache)
+		if (slurmdbd_fd >= 0 && running_cache)
 			pthread_cond_signal(&assoc_cache_cond);
 		slurm_mutex_unlock(&assoc_cache_mutex);
 
@@ -2137,7 +2137,7 @@ static void *_agent(void *x)
 			/* We still need to free a mult_msg even if we
 			   got a failure.
 			*/
-			if(list_msg.my_list) {
+			if (list_msg.my_list) {
 				if (list_msg.my_list != agent_list)
 					list_destroy(list_msg.my_list);
 				list_msg.my_list = NULL;
@@ -2210,7 +2210,7 @@ static void _save_dbd_state(void)
 			set_buf_offset(buffer, 0);
 			unpack16(&msg_type, buffer);
 			set_buf_offset(buffer, offset);
-			if(msg_type == DBD_REGISTER_CTLD) {
+			if (msg_type == DBD_REGISTER_CTLD) {
 				free_buf(buffer);
 				continue;
 			}
@@ -2243,7 +2243,7 @@ static void _load_dbd_state(void)
 	fd = open(dbd_fname, O_RDONLY);
 	if (fd < 0) {
 		/* don't print an error message if there is no file */
-		if(errno == ENOENT)
+		if (errno == ENOENT)
 			debug4("slurmdbd: There is no state save file to "
 			       "open by name %s", dbd_fname);
 		else
@@ -2462,8 +2462,8 @@ static int _purge_job_start_req(void)
 \****************************************************************************/
 extern void slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg)
 {
-	if(msg) {
-		if(msg->acct_list) {
+	if (msg) {
+		if (msg->acct_list) {
 			list_destroy(msg->acct_list);
 			msg->acct_list = NULL;
 		}
@@ -2496,7 +2496,7 @@ extern void slurmdbd_free_rec_msg(dbd_rec_msg_t *msg,
 			fatal("Unknown rec type");
 			return;
 		}
-		if(msg->rec)
+		if (msg->rec)
 			(*(my_destroy))(msg->rec);
 		xfree(msg);
 	}
@@ -2553,7 +2553,7 @@ extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 			fatal("Unknown cond type");
 			return;
 		}
-		if(msg->cond)
+		if (msg->cond)
 			(*(my_destroy))(msg->cond);
 		xfree(msg);
 	}
@@ -2561,7 +2561,7 @@ extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 
 extern void slurmdbd_free_init_msg(dbd_init_msg_t *msg)
 {
-	if(msg) {
+	if (msg) {
 		xfree(msg->cluster_name);
 		xfree(msg);
 	}
@@ -2613,7 +2613,7 @@ extern void slurmdbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg)
 extern void slurmdbd_free_list_msg(dbd_list_msg_t *msg)
 {
 	if (msg) {
-		if(msg->my_list)
+		if (msg->my_list)
 			list_destroy(msg->my_list);
 		xfree(msg);
 	}
@@ -2656,9 +2656,9 @@ extern void slurmdbd_free_modify_msg(dbd_modify_msg_t *msg,
 			return;
 		}
 
-		if(msg->cond)
+		if (msg->cond)
 			(*(destroy_cond))(msg->cond);
-		if(msg->rec)
+		if (msg->rec)
 			(*(destroy_rec))(msg->rec);
 		xfree(msg);
 	}
@@ -2675,7 +2675,7 @@ extern void slurmdbd_free_node_state_msg(dbd_node_state_msg_t *msg)
 
 extern void slurmdbd_free_rc_msg(dbd_rc_msg_t *msg)
 {
-	if(msg) {
+	if (msg) {
 		xfree(msg->comment);
 		xfree(msg);
 	}
@@ -2732,7 +2732,7 @@ extern void slurmdbd_free_usage_msg(dbd_usage_msg_t *msg,
 			return;
 		}
 
-		if(msg->rec)
+		if (msg->rec)
 			(*(destroy_rec))(msg->rec);
 		xfree(msg);
 	}
@@ -2749,11 +2749,11 @@ slurmdbd_pack_acct_coord_msg(dbd_acct_coord_msg_t *msg,
 	ListIterator itr = NULL;
 	uint32_t count = 0;
 
-	if(msg->acct_list)
+	if (msg->acct_list)
 		count = list_count(msg->acct_list);
 
 	pack32(count, buffer);
-	if(count) {
+	if (count) {
 		itr = list_iterator_create(msg->acct_list);
 		while((acct = list_next(itr))) {
 			packstr(acct, buffer);
@@ -2777,7 +2777,7 @@ slurmdbd_unpack_acct_coord_msg(dbd_acct_coord_msg_t **msg,
 	*msg = msg_ptr;
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if (count) {
 		msg_ptr->acct_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&acct, &uint32_tmp, buffer);
@@ -2785,7 +2785,7 @@ slurmdbd_unpack_acct_coord_msg(dbd_acct_coord_msg_t **msg,
 		}
 	}
 
-	if(slurmdb_unpack_user_cond((void *)&msg_ptr->cond, rpc_version, buffer)
+	if (slurmdb_unpack_user_cond((void *)&msg_ptr->cond, rpc_version, buffer)
 	   == SLURM_ERROR)
 		goto unpack_error;
 	return SLURM_SUCCESS;
@@ -2873,7 +2873,7 @@ extern int slurmdbd_unpack_rec_msg(dbd_rec_msg_t **msg,
 	msg_ptr = xmalloc(sizeof(dbd_rec_msg_t));
 	*msg = msg_ptr;
 
-	if((*(my_function))(&msg_ptr->rec, rpc_version, buffer) == SLURM_ERROR)
+	if ((*(my_function))(&msg_ptr->rec, rpc_version, buffer) == SLURM_ERROR)
 		goto unpack_error;
 
 	return SLURM_SUCCESS;
@@ -2995,7 +2995,7 @@ extern int slurmdbd_unpack_cond_msg(dbd_cond_msg_t **msg,
 	msg_ptr = xmalloc(sizeof(dbd_cond_msg_t));
 	*msg = msg_ptr;
 
-	if((*(my_function))(&msg_ptr->cond, rpc_version, buffer) == SLURM_ERROR)
+	if ((*(my_function))(&msg_ptr->cond, rpc_version, buffer) == SLURM_ERROR)
 		goto unpack_error;
 
 	return SLURM_SUCCESS;
@@ -3056,7 +3056,7 @@ slurmdbd_unpack_init_msg(dbd_init_msg_t **msg,
 
 	/* We find out the version of the caller right here so use
 	   that as the rpc_version. */
-	if(msg_ptr->version >= 7) {
+	if (msg_ptr->version >= 7) {
 		safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &tmp32, buffer);
 	}
 
@@ -3068,7 +3068,7 @@ slurmdbd_unpack_init_msg(dbd_init_msg_t **msg,
 		goto unpack_error;
 	}
 	msg_ptr->uid = g_slurm_auth_get_uid(auth_cred, auth_info);
-	if(g_slurm_auth_errno(auth_cred) != SLURM_SUCCESS) {
+	if (g_slurm_auth_errno(auth_cred) != SLURM_SUCCESS) {
 		error("Bad authentication: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
 		rc = ESLURM_ACCESS_DENIED;
@@ -3080,7 +3080,7 @@ slurmdbd_unpack_init_msg(dbd_init_msg_t **msg,
 unpack_error:
 	slurmdbd_free_init_msg(msg_ptr);
 	*msg = NULL;
-	if(rc == SLURM_SUCCESS)
+	if (rc == SLURM_SUCCESS)
 		rc = SLURM_ERROR;
 	return rc;
 }
@@ -3426,14 +3426,14 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 		return;
 	}
 
-	if(msg->my_list) {
+	if (msg->my_list) {
 		count = list_count(msg->my_list);
 		pack32(count, buffer);
 	} else {
 		// to let user know there wasn't a list (error)
 		pack32((uint32_t)-1, buffer);
 	}
-	if(count) {
+	if (count) {
 		itr = list_iterator_create(msg->my_list);
 		while((object = list_next(itr))) {
 			(*(my_function))(object, rpc_version, buffer);
@@ -3441,7 +3441,7 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
 		list_iterator_destroy(itr);
 	}
 
-	if(rpc_version >= 8)
+	if (rpc_version >= 8)
 		pack32(msg->return_code, buffer);
 }
 
@@ -3533,21 +3533,21 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 	*msg = msg_ptr;
 
 	safe_unpack32(&count, buffer);
-	if((int)count > -1) {
+	if ((int)count > -1) {
 		/* here we are looking to make the list if -1 or
 		   higher than 0.  If -1 we don't want to have the
 		   list be NULL meaning an error occured.
 		*/
 		msg_ptr->my_list = list_create((*(my_destroy)));
 		for(i=0; i<count; i++) {
-			if(((*(my_function))(&object, rpc_version, buffer))
+			if (((*(my_function))(&object, rpc_version, buffer))
 			   == SLURM_ERROR)
 				goto unpack_error;
 			list_append(msg_ptr->my_list, object);
 		}
 	}
 
-	if(rpc_version >= 8)
+	if (rpc_version >= 8)
 		safe_unpack32(&msg_ptr->return_code, buffer);
 
 	return SLURM_SUCCESS;
@@ -3641,9 +3641,9 @@ extern int slurmdbd_unpack_modify_msg(dbd_modify_msg_t **msg,
 		return SLURM_ERROR;
 	}
 
-	if((*(my_cond))(&msg_ptr->cond, rpc_version, buffer) == SLURM_ERROR)
+	if ((*(my_cond))(&msg_ptr->cond, rpc_version, buffer) == SLURM_ERROR)
 		goto unpack_error;
-	if((*(my_rec))(&msg_ptr->rec, rpc_version, buffer) == SLURM_ERROR)
+	if ((*(my_rec))(&msg_ptr->rec, rpc_version, buffer) == SLURM_ERROR)
 		goto unpack_error;
 
 	return SLURM_SUCCESS;
@@ -3952,7 +3952,7 @@ extern int slurmdbd_unpack_usage_msg(dbd_usage_msg_t **msg,
 		return SLURM_ERROR;
 	}
 
-	if((*(my_rec))(&msg_ptr->rec, rpc_version, buffer) == SLURM_ERROR)
+	if ((*(my_rec))(&msg_ptr->rec, rpc_version, buffer) == SLURM_ERROR)
 		goto unpack_error;
 
 	unpack_time(&msg_ptr->start, buffer);
@@ -3985,7 +3985,7 @@ extern int slurmdbd_unpack_buffer(void **out,
 	uint32_t uint32_tmp;
 
 	safe_unpackmem_xmalloc(&msg, &uint32_tmp, buffer);
-	if(!(out_ptr = create_buf(msg, uint32_tmp)))
+	if (!(out_ptr = create_buf(msg, uint32_tmp)))
 		goto unpack_error;
 	*out = out_ptr;
 

@@ -325,7 +325,7 @@ int main(int argc, char *argv[])
 	association_based_accounting =
 		slurm_get_is_association_based_accounting();
 	accounting_enforce = slurmctld_conf.accounting_storage_enforce;
-	if(!strcasecmp(slurmctld_conf.accounting_storage_type,
+	if (!strcasecmp(slurmctld_conf.accounting_storage_type,
 		       "accounting_storage/slurmdbd")) {
 		with_slurmdbd = 1;
 		/* we need job_list not to be NULL */
@@ -1132,7 +1132,7 @@ static int _accounting_cluster_ready()
 						cluster_nodes,
 						cluster_cpus, event_time);
 	xfree(cluster_nodes);
-	if(rc == ACCOUNTING_FIRST_REG) {
+	if (rc == ACCOUNTING_FIRST_REG) {
 		/* see if we are running directly to a database
 		 * instead of a slurmdbd.
 		 */
@@ -1163,7 +1163,7 @@ static int _accounting_mark_all_nodes_down(char *reason)
 	}
 	xfree(state_file);
 
-	if((rc = acct_storage_g_flush_jobs_on_cluster(acct_db_conn,
+	if ((rc = acct_storage_g_flush_jobs_on_cluster(acct_db_conn,
 						      event_time))
 	   == SLURM_ERROR)
 		return rc;
@@ -1172,7 +1172,7 @@ static int _accounting_mark_all_nodes_down(char *reason)
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == '\0')
 			continue;
-		if((rc = clusteracct_storage_g_node_down(
+		if ((rc = clusteracct_storage_g_node_down(
 			    acct_db_conn,
 			    node_ptr, event_time,
 			    reason, slurm_get_slurm_user_id()))
@@ -1787,12 +1787,12 @@ static void _parse_commandline(int argc, char *argv[])
 			break;
 		case 'r':
 			recover = 1;
-			if(!bg_recover_override)
+			if (!bg_recover_override)
 				bg_recover = 1;
 			break;
 		case 'R':
 			recover = 2;
-			if(!bg_recover_override)
+			if (!bg_recover_override)
 				bg_recover = 1;
 			break;
 		case 'v':
@@ -2076,13 +2076,13 @@ static void *_assoc_cache_mgr(void *no_data)
 		/* This is here to see if we are exiting.  If we get
 		   NO_VAL then just return since we are closing down.
 		*/
-		if(running_cache == (uint16_t)NO_VAL) {
+		if (running_cache == (uint16_t)NO_VAL) {
 			slurm_mutex_unlock(&assoc_cache_mutex);
 			return NULL;
 		}
 		lock_slurmctld(job_write_lock);
 		assoc_mgr_refresh_lists(acct_db_conn, NULL);
-		if(running_cache)
+		if (running_cache)
 			unlock_slurmctld(job_write_lock);
 		slurm_mutex_unlock(&assoc_cache_mutex);
 	}
@@ -2117,10 +2117,10 @@ static void *_assoc_cache_mgr(void *no_data)
 			      (size_t)job_ptr->assoc_ptr, job_ptr->assoc_id,
 			      job_ptr->job_id);
 		}
-		if(job_ptr->qos_id) {
+		if (job_ptr->qos_id) {
 			memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 			qos_rec.id = job_ptr->qos_id;
-			if((assoc_mgr_fill_in_qos(
+			if ((assoc_mgr_fill_in_qos(
 				    acct_db_conn, &qos_rec,
 				    accounting_enforce,
 				    (slurmdb_qos_rec_t **)&job_ptr->qos_ptr))

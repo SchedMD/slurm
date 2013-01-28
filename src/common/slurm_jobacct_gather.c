@@ -327,7 +327,7 @@ extern int jobacct_gather_endpoll(void)
 
 	jobacct_shutdown = true;
 	slurm_mutex_lock(&task_list_lock);
-	if(task_list)
+	if (task_list)
 		list_destroy(task_list);
 	task_list = NULL;
 	slurm_mutex_unlock(&task_list_lock);
@@ -443,7 +443,7 @@ extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid)
 
 		itr = list_iterator_create(task_list);
 		while ((jobacct = list_next(itr))) {
-			if(jobacct->pid == pid)
+			if (jobacct->pid == pid)
 				break;
 		}
 		list_iterator_destroy(itr);
@@ -491,13 +491,13 @@ extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid)
 
 	itr = list_iterator_create(task_list);
 	while((jobacct = list_next(itr))) {
-		if(jobacct->pid == pid) {
+		if (jobacct->pid == pid) {
 			list_remove(itr);
 			break;
 		}
 	}
 	list_iterator_destroy(itr);
-	if(jobacct) {
+	if (jobacct) {
 		debug2("removing task %u pid %d from jobacct",
 		       jobacct->max_vsize_id.taskid, jobacct->pid);
 	} else {
