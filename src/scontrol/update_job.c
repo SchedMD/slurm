@@ -403,7 +403,8 @@ scontrol_update_job (int argc, char *argv[])
 		}
 
 		if (strncasecmp(tag, "JobId", MAX(taglen, 3)) == 0) {
-			if (parse_uint32(val, &job_msg.job_id)) {
+			job_msg.job_id = slurm_xlate_job_id(val);
+			if (job_msg.job_id == 0) {
 				error ("Invalid JobId value: %s", val);
 				exit_code = 1;
 				return 0;

@@ -179,9 +179,14 @@ JobId=15 ArrayJobId=13 ArrayTaskId=3 Name=tmp
 $ scontrol update JobId=15 TimeLimit=30
 </pre>
 
-<p>The scontrol hold, holdu and release commands will operate on all
+<p>The scontrol command will accept a job array element specification for
+the update job command, but only operate on one job (or job array element).
+The scontrol hold, holdu and release commands will operate on all
 elements of a job array or individual elements as shown below.</p>
 <pre>
+# Modify a job
+$ scontrol update jobid=13_1 ...
+
 # Hold all elements of job array 13
 $ scontrol hold 13
 
@@ -193,8 +198,9 @@ $ scontrol release 13_2
 
 <p>The following Slurm commands do not currently recognize job arrays and their
 use requires the use of Slurm job IDs, which are unique for each array element:
-sacct, sattach, sbcast, smap, sprio, sreport, sshare, sstat, strigger, and
-sview.
+sacct, sbcast, smap, sreport, sshare, sstat, strigger, and sview.
+The sattach, sprio and sstat commands have been modified to permit
+specification of either job IDs or job array elements.
 The sview command has been modified to permit display of a job's ArrayJobId
 and ArrayTaskId fields. Both fields are displayed with a value of "N/A" if
 the job is not part of a job array.</p>

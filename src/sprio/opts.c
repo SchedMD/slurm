@@ -439,9 +439,8 @@ _build_job_list( char* str )
 	my_list = list_create( NULL );
 	my_job_list = xstrdup( str );
 	job = strtok_r( my_job_list, ",", &tmp_char );
-	while (job)
-	{
-		i = strtol( job, (char **) NULL, 10 );
+	while (job) {
+		i = slurm_xlate_job_id(job);
 		if (i <= 0) {
 			error( "Invalid job id: %s", job );
 			exit( 1 );
