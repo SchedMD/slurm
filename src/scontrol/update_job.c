@@ -235,7 +235,6 @@ extern int
 scontrol_hold(char *op, char *job_id_str)
 {
 	int rc = SLURM_SUCCESS;
-	char *next_str;
 	job_desc_msg_t job_msg;
 	uint16_t job_state;
 
@@ -245,8 +244,8 @@ scontrol_hold(char *op, char *job_id_str)
 	job_msg.user_id = getuid();
 
 	if (job_id_str) {
-		job_msg.job_id = (uint32_t) strtol(job_id_str, &next_str, 10);
-		if ((job_msg.job_id == 0) || (next_str[0] != '\0')) {
+		job_msg.job_id = slurm_xlate_job_id(job_id_str);
+		if (job_msg.job_id == 0) {
 			fprintf(stderr, "Invalid job id specified\n");
 			exit_code = 1;
 			return 0;

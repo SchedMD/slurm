@@ -64,6 +64,44 @@
 #include "src/common/xstring.h"
 
 /*
+ * slurm_xlate_job_id - Translate a Slurm job ID string into a slurm job ID
+ *	number. If this job ID contains an array index, map this to the
+ *	equivalent Slurm job ID number (e.g. "123_2" to 124)
+ *
+ * IN job_id_str - String containing a single job ID number
+ * RET - equivalent job ID number or 0 on error
+ */
+extern uint32_t slurm_xlate_job_id(char *job_id_str)
+{
+	char *next_str;
+	uint32_t i, job_id;
+	uint16_t array_id;
+	job_info_msg_t *resp;
+	slurm_job_info_t *job_ptr;
+
+	job_id = (uint32_t) strtol(job_id_str, &next_str, 10);
+	if (next_str[0] == '\0')
+		return job_id;
+	if (next_str[0] != '_')
+		return (uint32_t) 0;
+	array_id = (uint16_t) strtol(next_str + 1, &next_str, 10);
+	if (next_str[0] != '\0')
+		return (uint32_t) 0;
+	if (slurm_load_job(&resp, job_id, SHOW_ALL) != 0)
+		return (uint32_t) 0;
+	job_id = 0;
+	for (i = 0, job_ptr = resp->job_array; i < resp->record_count;
+	     i++, job_ptr++) {
+		if (job_ptr->array_task_id == array_id) {
+			job_id = job_ptr->job_id;
+			break;
+		}	
+	}
+	slurm_free_job_info_msg(resp);
+	return job_id;
+}
+
+/*
  * slurm_print_job_info_msg - output information about all Slurm
  *	jobs based upon message as loaded using slurm_load_jobs
  * IN out - file to write to

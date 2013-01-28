@@ -47,8 +47,7 @@
 #define POLL_SLEEP	3	/* retry interval in seconds  */
 
 static bool	_in_node_bit_list(int inx, int *node_list_array);
-static int	_scontrol_load_jobs(job_info_msg_t ** job_buffer_pptr,
-				    uint32_t job_id);
+
 /*
  * Determine if a node index is in a node list pair array.
  * RET -  true if specified index is in the array
@@ -73,8 +72,8 @@ _in_node_bit_list(int inx, int *node_list_array)
 }
 
 /* Load current job table information into *job_buffer_pptr */
-static int
-_scontrol_load_jobs(job_info_msg_t ** job_buffer_pptr, uint32_t job_id)
+extern int
+scontrol_load_job(job_info_msg_t ** job_buffer_pptr, uint32_t job_id)
 {
 	int error_code;
 	static uint16_t last_show_flags = 0xffff;
@@ -175,7 +174,7 @@ scontrol_print_completing (void)
 	node_info_msg_t *node_info_msg;
 	uint16_t         show_flags = 0;
 
-	error_code = _scontrol_load_jobs (&job_info_msg, 0);
+	error_code = scontrol_load_job (&job_info_msg, 0);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
@@ -251,7 +250,7 @@ scontrol_get_job_state(uint32_t job_id)
 	int error_code = SLURM_SUCCESS, i;
 	job_info_t *job_ptr = NULL;
 
-	error_code = _scontrol_load_jobs(&job_buffer_ptr, job_id);
+	error_code = scontrol_load_job(&job_buffer_ptr, job_id);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag == -1)
@@ -296,7 +295,7 @@ scontrol_print_job (char * job_id_str)
 			array_id = strtol( end_ptr + 1, &end_ptr, 10 );
 	}
 
-	error_code = _scontrol_load_jobs(&job_buffer_ptr, job_id);
+	error_code = scontrol_load_job(&job_buffer_ptr, job_id);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
