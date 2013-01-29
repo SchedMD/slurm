@@ -197,7 +197,7 @@ make_bash_script $file_in "
 #
 set config_prob 0
 set timeout [expr $max_job_delay + $sleep_time]
-set job_mem_limit [expr ($mem_size + $max_mem_error)  / 1024 + 1]
+set job_mem_limit [expr ($mem_size + $max_mem_error)  / 1024 + 4]
 set sbatch_pid [spawn $sbatch --mem-per-cpu=$job_mem_limit --output=$file_out --error=$file_err -t2 $file_in]
 expect {
 	-re "Requested node configuration is not available" {
