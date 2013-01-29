@@ -154,7 +154,7 @@ static bool _merge_job_array(List l, job_info_t * job_ptr)
 	ListIterator iter;
 	bool merge = false;
 
-	if (!params.array_flag)
+	if (params.array_flag)
 		return merge;
 	if (job_ptr->array_task_id == (uint16_t) NO_VAL)
 		return merge;
@@ -390,7 +390,7 @@ int _print_job_job_id(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL) {	/* Print the Header instead */
 		_print_str("JOBID", width, right, true);
 	} else if ((job->array_task_id != (uint16_t) NO_VAL) &&
-		   params.array_flag && IS_JOB_PENDING(job)  &&
+		   !params.array_flag && IS_JOB_PENDING(job)  &&
 		   job->node_inx) {
 		int i;
 		char id[FORMAT_STRING_SIZE], task_str[FORMAT_STRING_SIZE];

@@ -6,7 +6,8 @@
 
 <p>Support for job arrays was added in Slurm version 2.6.
 Job arrays offer a mechanism for submitting and managing collections of similar
-jobs.
+jobs quickly and easily; tens of thousands of jobs can be submitted in under
+one second.
 All jobs must have the same initial options (e.g. size, time limit, etc.),
 however it is possible to change some of these options after the job has begun
 execution using the command<br>
@@ -100,12 +101,27 @@ $ scancel 20
 
 <h2>Squeue Command Use</h2>
 
-<p>By default the squeue command prints each element of the job array.
-The JOBID field printed for a job ID is the "array_job_id" value followed by
-an underscore and the "array_task_id" value as shown below:</p>
+<p>By default, the squeue command will combine all pending elements of a job
+array on one line and use a regular expression to indicate the
+"array_task_id" values as shown below.</p>
 
 <pre>
 $ squeue
+ JOBID     PARTITION  NAME  USER  ST  TIME  NODES NODELIST(REASON)
+1080_[5-1024]  debug   tmp   mac  PD  0:00      1 (Resources)
+1080_1         debug   tmp   mac   R  0:17      1 tux0
+1080_2         debug   tmp   mac   R  0:16      1 tux1
+1080_3         debug   tmp   mac   R  0:03      1 tux2
+1080_4         debug   tmp   mac   R  0:03      1 tux3
+</pre>
+
+<p>An option of "--array" or "-r" has also been added to the squeue command
+to print one job array element per line as shown below.
+The environment variable "SQUEUE_ARRAY" is equivalent to including the "--array"
+option on the squeue command line.</p>
+
+<pre>
+$ squeue -r
  JOBID PARTITION  NAME  USER  ST  TIME  NODES NODELIST(REASON)
 1082_3     debug   tmp   mac  PD  0:00      1 (Resources)
 1082_4     debug   tmp   mac  PD  0:00      1 (Priority)
@@ -113,24 +129,6 @@ $ squeue
   1081     debug   tmp   mac   R  0:16      1 tux1
 1082_1     debug   tmp   mac   R  0:03      1 tux2
 1082_2     debug   tmp   mac   R  0:03      1 tux3
-</pre>
-
-<p>An option of "--array" or "-r" has also been added to the squeue command
-to generate output in a form optimized for job arrays.
-This option will combine all pending elements of a job array onto one line
-and use a regular expression to indicate the "array_task_id" values as shown
-below.
-The environment variable "SQUEUE_ARRAY" is equivalent to including the "--array"
-option on the squeue command line.</p>
-
-<pre>
-$ squeue
- JOBID     PARTITION  NAME  USER  ST  TIME  NODES NODELIST(REASON)
-1088_[5-1024]  debug   tmp   mac  PD  0:00      1 (Resources)
-1088_1         debug   tmp   mac   R  0:17      1 tux0
-1088_2         debug   tmp   mac   R  0:16      1 tux1
-1088_3         debug   tmp   mac   R  0:03      1 tux2
-1088_4         debug   tmp   mac   R  0:03      1 tux3
 </pre>
 
 <p>The squeue --step/-s and --job/-j options can accept job or step

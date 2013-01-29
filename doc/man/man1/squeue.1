@@ -25,9 +25,10 @@ hidden and partitions that are unavailable to user's group.
 
 .TP
 \fB\-r\fR, \fB\-\-array\fR
-Optimize display for use with job arrays.
-Pending job array elements will be combined on one line of output with the
-array index values printed using a regular expression.
+Display one job array element per line.
+Without this option, the display will be optimized for use with job arrays
+(pending job array elements will be combined on one line of output with the
+array index values printed using a regular expression).
 
 .TP
 \fB\-h\fR, \fB\-\-noheader\fR
@@ -87,10 +88,10 @@ The default formats with various options are
 .RS
 .TP 15
 \fIdefault\fR
-"%.12i %.9P %.8j %.8u %.2t %.10M %.6D %R"
+"%.18i %.9P %.8j %.8u %.2t %.10M %.6D %R"
 .TP
 \fI\-l, \-\-long\fR
-"%.12i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R"
+"%.18i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R"
 .TP
 \fI\-s, \-\-steps\fR
 "%.15i %.8j %.9P %.8u %.9M %N"

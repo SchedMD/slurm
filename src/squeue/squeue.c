@@ -225,16 +225,12 @@ _print_job ( bool clear_old )
 	}
 
 	if (params.format == NULL) {
-		if (params.array_flag)
-			params.format = xstrdup("%.18i ");
-		else
-			params.format = xstrdup("%.12i ");
 		if (params.long_list) {
 			xstrcat(params.format,
-				"%.9P %.8j %.8u %.8T %.10M %.9l %.6D %R");
+				"%.18i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R");
 		} else {
 			xstrcat(params.format,
-				"%.9P %.8j %.8u  %.2t %.10M %.6D %R");
+				"%.18i %.9P %.8j %.8u  %.2t %.10M %.6D %R");
 		}
 	}
 	if (params.format_list == NULL)
