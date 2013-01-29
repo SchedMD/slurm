@@ -534,7 +534,7 @@ static char *_get_gres_conf(void)
 		return xstrdup(GRES_CONFIG_FILE);
 
 	/* Replace file name on end of path */
-	i = strlen(val) - strlen("slurm.conf") + strlen("gres.conf") + 1;
+	i = strlen(val) - strlen("slurm.conf") + strlen("gres.conf") + 2;
 	rc = xmalloc(i);
 	strcpy(rc, val);
 	val = strrchr(rc, (int)'/');
