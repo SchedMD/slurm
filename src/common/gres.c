@@ -834,7 +834,13 @@ static int _no_gres_conf(uint32_t cpu_cnt)
 		p->name		= xstrdup(gres_context[i].gres_name);
 		p->plugin_id	= gres_context[i].plugin_id;
 		list_append(gres_conf_list, p);
-		rc = (*(gres_context[i].ops.node_config_load))(gres_conf_list);
+		/* If there is no plugin specific shared
+		 * library the exported methods are NULL.
+		 */
+		if (gres_context[i].ops.node_config_load) {
+			rc = (*(gres_context[i].ops.node_config_load))
+				(gres_conf_list);
+		}
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
