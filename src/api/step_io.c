@@ -1,6 +1,5 @@
 /****************************************************************************\
  *  step_io.c - process stdin, stdout, and stderr for parallel jobs.
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -1373,10 +1372,3 @@ done:
 	pthread_mutex_unlock(&cio->ioservers_lock);
 	return rc;
 }
-
-
-
-
-
-
-
