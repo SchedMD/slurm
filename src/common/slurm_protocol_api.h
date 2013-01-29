@@ -220,6 +220,13 @@ char *slurm_get_gres_plugins(void);
  */
 char *slurm_get_job_submit_plugins(void);
 
+/* slurm_get_slurmctld_plugstack
+ * get slurmctld_plugstack from slurmctld_conf object from
+ * slurmctld_conf object
+ * RET char *   - slurmctld_plugstack, MUST be xfreed by caller
+ */
+char *slurm_get_slurmctld_plugstack(void);
+
 /* slurm_get_plugin_dir
  * get plugin directory from slurmctld_conf object from slurmctld_conf object
  * RET char *   - plugin directory, MUST be xfreed by caller

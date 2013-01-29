@@ -103,12 +103,13 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="proctrack_plugins.html">Process Tracking Plugin Programmer Guide</a></li>
 <li><a href="schedplugins.html">Scheduler Plugin Programmer Guide</a></li>
 <li><a href="selectplugins.html">Resource Selection Plugin Programmer Guide</a></li>
+<li><a href="slurmctld_plugstack.html">Slurmctld Generic Plugin Programmer Guide</a></li>
 <li><a href="switchplugins.html">Switch (Interconnect) Plugin Programmer Guide</a></li>
 <li><a href="taskplugins.html">Task Plugin Programmer Guide</a></li>
 <li><a href="topology_plugin.html">Topology Plugin Programmer Guide</a></li>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 23 January 2013</p>
+<p style="text-align:center;">Last modified 29 January 2013</p>
 
 <!--#include virtual="footer.txt"-->

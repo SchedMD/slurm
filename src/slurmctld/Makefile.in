@@ -110,11 +110,12 @@ am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
 	job_scheduler.$(OBJEXT) job_submit.$(OBJEXT) \
 	licenses.$(OBJEXT) locks.$(OBJEXT) node_mgr.$(OBJEXT) \
 	node_scheduler.$(OBJEXT) partition_mgr.$(OBJEXT) \
-	ping_nodes.$(OBJEXT) port_mgr.$(OBJEXT) power_save.$(OBJEXT) \
-	preempt.$(OBJEXT) proc_req.$(OBJEXT) read_config.$(OBJEXT) \
-	reservation.$(OBJEXT) sched_plugin.$(OBJEXT) \
-	srun_comm.$(OBJEXT) state_save.$(OBJEXT) statistics.$(OBJEXT) \
-	step_mgr.$(OBJEXT) trigger_mgr.$(OBJEXT)
+	ping_nodes.$(OBJEXT) slurmctld_plugstack.$(OBJEXT) \
+	port_mgr.$(OBJEXT) power_save.$(OBJEXT) preempt.$(OBJEXT) \
+	proc_req.$(OBJEXT) read_config.$(OBJEXT) reservation.$(OBJEXT) \
+	sched_plugin.$(OBJEXT) srun_comm.$(OBJEXT) \
+	state_save.$(OBJEXT) statistics.$(OBJEXT) step_mgr.$(OBJEXT) \
+	trigger_mgr.$(OBJEXT)
 slurmctld_OBJECTS = $(am_slurmctld_OBJECTS)
 am__DEPENDENCIES_1 =
 slurmctld_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
@@ -390,6 +391,8 @@ slurmctld_SOURCES = \
 	partition_mgr.c \
 	ping_nodes.c	\
 	ping_nodes.h	\
+	slurmctld_plugstack.c \
+	slurmctld_plugstack.h \
 	port_mgr.c	\
 	port_mgr.h	\
 	power_save.c	\
@@ -533,6 +536,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reservation.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sched_plugin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmctld_plugstack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun_comm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/state_save.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/statistics.Po@am__quote@

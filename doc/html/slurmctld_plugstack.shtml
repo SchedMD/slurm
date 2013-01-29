@@ -1,0 +1,42 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">Slurmctld Generic Plugin Programmer Guide</a></h1>
+
+<h2> Overview</h2>
+
+<p> This document describes slurmctld daemon's generic plugins and the API that
+defines them. It is intended as a resource to programmers wishing to write
+their own slurmctld generic plugins. This is version 100 of the API.
+
+<p>The slurmctld generic plugin must conform to the
+Slurm Plugin API with the following specifications:
+
+<p><span class="commandline">const char
+plugin_name[]="<i>full&nbsp;text&nbsp;name</i>"</span>
+<p style="margin-left:.2in">
+A free-formatted ASCII text string that identifies the plugin.
+
+<p><span class="commandline">const char
+plugin_type[]="<i>major/minor</i>"</span><br>
+<p style="margin-left:.2in">
+The major type must be &quot;slurmctld_plugstack.&quot;
+The minor type can be any suitable name for the type of slurmctld package.
+Slurm can be configured to use multiple slurmctld_plugstack plugins if desired.</p>
+
+<h2>API Functions</h2>
+
+<p>Only the init and fini functions of the plugin will be called.
+The init function will be called when the slurmctld daemon begins accepting RPCs.
+The fini function will be called when the slurmctld daemon stops accepting RPCs.
+In the cased of the backup slurmctld daemon, the init and fini functions may
+be called multiple times (when it assumes control functions and then when it
+reliquishes them to the primary slurmctld daemon).</p>
+
+<h2>Versioning</h2>
+<p> This document describes version 100 of the SLURM Job Submission API. Future
+releases of SLURM may revise this API.
+<p class="footer"><a href="#top">top</a>
+
+<p style="text-align:center;">Last modified 23 January 2013</p>
+
+<!--#include virtual="footer.txt"-->

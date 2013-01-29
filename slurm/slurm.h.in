@@ -1956,8 +1956,7 @@ typedef struct slurm_ctl_conf {
 	uint16_t over_time_limit; /* job's time limit can be exceeded by this
 				   * number of minutes before cancellation */
 	char *plugindir;	/* pathname to plugins */
-	char *plugstack;        /* pathname to plugin stack config
-				 * file */
+	char *plugstack;        /* pathname to plugin stack config file */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	char *preempt_type;	/* job preemption selection plugin */
 	uint32_t priority_decay_hl; /* priority decay half life in
@@ -2021,6 +2020,7 @@ typedef struct slurm_ctl_conf {
 	uint16_t slurmctld_debug; /* slurmctld logging level */
 	char *slurmctld_logfile;/* where slurmctld error log gets written */
 	char *slurmctld_pidfile;/* where to put slurmctld pidfile         */
+	char *slurmctld_plugstack;/* generic slurmctld plugins */
 	uint32_t slurmctld_port;  /* default communications port to slurmctld */
 	uint16_t slurmctld_port_count; /* number of slurmctld comm ports */
 	uint16_t slurmctld_timeout;/* seconds that backup controller waits

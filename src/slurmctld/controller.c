@@ -100,6 +100,7 @@
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/slurmctld_plugstack.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
@@ -516,10 +517,10 @@ int main(int argc, char *argv[])
 
 		if (slurm_priority_init() != SLURM_SUCCESS)
 			fatal("failed to initialize priority plugin");
-
 		if (slurm_sched_init() != SLURM_SUCCESS)
 			fatal("failed to initialize scheduling plugin");
-
+		if (slurmctld_plugstack_init())
+			fatal("failed to initialize slurmctld_plugstack");
 
 		/*
 		 * create attached thread to process RPCs
@@ -575,6 +576,7 @@ int main(int argc, char *argv[])
 		switch_save(dir_name);
 		xfree(dir_name);
 		slurm_priority_fini();
+		slurmctld_plugstack_fini();
 		shutdown_state_save();
 		pthread_join(slurmctld_config.thread_id_sig,  NULL);
 		pthread_join(slurmctld_config.thread_id_rpc,  NULL);

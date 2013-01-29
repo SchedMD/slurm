@@ -1017,6 +1017,25 @@ char *slurm_get_job_submit_plugins(void)
 	return job_submit_plugins;
 }
 
+/* slurm_get_slurmctld_plugstack
+ * get slurmctld_plugstack from slurmctld_conf object from
+ * slurmctld_conf object
+ * RET char *   - slurmctld_plugstack, MUST be xfreed by caller
+ */
+char *slurm_get_slurmctld_plugstack(void)
+{
+	char *slurmctld_plugstack = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		slurmctld_plugstack = xstrdup(conf->slurmctld_plugstack);
+		slurm_conf_unlock();
+	}
+	return slurmctld_plugstack;
+}
+
 /* slurm_get_accounting_storage_type
  * returns the accounting storage type from slurmctld_conf object
  * RET char *    - accounting storage type,  MUST be xfreed by caller

@@ -1904,6 +1904,12 @@ may write its process id. This may be used for automated signal processing.
 The default value is "/var/run/slurmctld.pid".
 
 .TP
+\fBSlurmctldPlugstack\fR
+A comma delimited list of SLURM controller plugins to be started when the
+daemon begins and terminated when it ends.
+Only the plugin's init and fini functions are called.
+
+.TP
 \fBSlurmctldPort\fR
 The port number that the SLURM controller, \fBslurmctld\fR, listens
 to for work. The default value is SLURMCTLD_PORT as established at system

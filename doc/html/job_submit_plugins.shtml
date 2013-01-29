@@ -19,8 +19,7 @@ A free-formatted ASCII text string that identifies the plugin.
 plugin_type[]="<i>major/minor</i>"</span><br>
 <p style="margin-left:.2in">
 The major type must be &quot;job_submit.&quot;
-The minor type can be any suitable name
-for the type of accounting package.
+The minor type can be any suitable name for the type of job submission package.
 We include samples in the SLURM distribution for
 <ul>
 <li><b>all_partitions</b>&#151;Set default partition to all partitions on

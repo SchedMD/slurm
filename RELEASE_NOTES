@@ -47,6 +47,9 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
    plugin into priority/multifactor plugin.
  - Added "KeepAliveTime" controlling how long sockets used for srun/slurmstepd
    communications are kept alive after disconnect.
+ - Added "SlurmctldPlugstack" configuration parameter for generic stack of
+   slurmctld daemon plugins. Only the plugin's init and fini functions are
+   called.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
