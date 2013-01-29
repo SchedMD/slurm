@@ -2107,7 +2107,6 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       uint16_t plane_size)
 {
 	uint16_t cpus_per_node[node_count];
-	uint32_t cpu_count_reps[node_count];
 	struct job_record *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 #ifndef HAVE_BGQ
@@ -2117,6 +2116,9 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	int set_nodes = 0/* , set_tasks = 0 */;
 	int pos = -1, job_node_offset = -1;
 	int first_bit, last_bit;
+	uint32_t cpu_count_reps[node_count];
+#else
+	uint32_t cpu_count_reps[1];
 #endif
 
 	xassert(job_resrcs_ptr);
