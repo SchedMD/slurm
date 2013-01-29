@@ -619,13 +619,8 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 		count = list_count(ret_list);
 		debug2("Tree head got back %d", count);
 	}
-	debug2("Tree head got them all");
-	if (count < host_count) {
-		error("Tree head did not get them all, but "
-		      "no more active fwd threads!");
-	} else {
-		debug2("Tree head got them all");
-	}
+	xassert(count >= host_count);	/* Tree head did not get all responses,
+					 * but no more active fwd threads!*/
 	slurm_mutex_unlock(&tree_mutex);
 
 	slurm_mutex_destroy(&tree_mutex);
