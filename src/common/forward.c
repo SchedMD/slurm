@@ -64,6 +64,7 @@
 
 typedef struct {
 	pthread_cond_t *notify;
+	int            *p_thr_count;
 	slurm_msg_t *orig_msg;
 	List ret_list;
 	int timeout;
@@ -76,6 +77,16 @@ void _destroy_tree_fwd(fwd_tree_t *fwd_tree)
 	if (fwd_tree) {
 		if (fwd_tree->tree_hl)
 			hostlist_destroy(fwd_tree->tree_hl);
+
+		/*
+		 * Lock and decrease thread counter, start_msg_tree is waiting
+		 * for a null thread count to exit its main loop
+		 */
+		slurm_mutex_lock(fwd_tree->tree_mutex);
+		(*(fwd_tree->p_thr_count))--;
+		pthread_cond_signal(fwd_tree->notify);
+		slurm_mutex_unlock(fwd_tree->tree_mutex);
+
 		xfree(fwd_tree);
 	}
 }
@@ -558,6 +569,7 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 		fwd_tree->ret_list = ret_list;
 		fwd_tree->timeout = timeout;
 		fwd_tree->notify = &notify;
+		fwd_tree->p_thr_count = &thr_count;
 		fwd_tree->tree_mutex = &tree_mutex;
 
 		if (fwd_tree->timeout <= 0) {
@@ -575,6 +587,17 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 			free(name);
 		}
 
+		/*
+		 * Lock and increase thread counter, we need that to protect
+		 * the start_msg_tree waiting loop that was originally designed
+		 * around a "while((count < host_count))" loop. In case where a
+		 * fwd thread was not able to get all the return codes from
+		 * children, the waiting loop was deadlocked.
+		 */
+		slurm_mutex_lock(&tree_mutex);
+		thr_count++;
+		slurm_mutex_unlock(&tree_mutex);
+
 		while (pthread_create(&thread_agent, &attr_agent,
 				      _fwd_tree_thread, (void *)fwd_tree)) {
 			error("pthread_create error %m");
@@ -583,7 +606,7 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 			sleep(1);	/* sleep and try again */
 		}
 		slurm_attr_destroy(&attr_agent);
-		thr_count++;
+
 	}
 	xfree(span);
 
@@ -591,12 +614,18 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 
 	count = list_count(ret_list);
 	debug2("Tree head got back %d looking for %d", count, host_count);
-	while ((count < host_count)) {
+	while (thr_count > 0) {
 		pthread_cond_wait(&notify, &tree_mutex);
 		count = list_count(ret_list);
 		debug2("Tree head got back %d", count);
 	}
 	debug2("Tree head got them all");
+	if (count < host_count) {
+		error("Tree head did not get them all, but "
+		      "no more active fwd threads!");
+	} else {
+		debug2("Tree head got them all");
+	}
 	slurm_mutex_unlock(&tree_mutex);
 
 	slurm_mutex_destroy(&tree_mutex);
