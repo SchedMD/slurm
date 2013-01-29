@@ -1532,7 +1532,7 @@ priority/multifactor plugin?</b></a></br>
 Hold and then release the job as shown below.</p>
 <pre>
 $ scontrol hold &lt;jobid&gt;
-$ scontrol releasae &lt;jobid&gt;
+$ scontrol release &lt;jobid&gt;
 </pre>
 
 <p><a name="health_check_example"><b>47. Does any one have an example node
