@@ -106,7 +106,7 @@ void *_forward_thread(void *arg)
 	int start_timeout = fwd_msg->timeout;
 
 	/* repeat until we are sure the message was sent */
-	while((name = hostlist_shift(hl))) {
+	while ((name = hostlist_shift(hl))) {
 		if (slurm_conf_get_addr(name, &addr) == SLURM_ERROR) {
 			error("forward_thread: can't find address for host "
 			      "%s, check slurm.conf", name);
@@ -193,7 +193,7 @@ void *_forward_thread(void *arg)
 			list_push(fwd_msg->ret_list, ret_data_info);
 			ret_data_info->node_name = xstrdup(name);
 			free(name);
-			while((name = hostlist_shift(hl))) {
+			while ((name = hostlist_shift(hl))) {
 				ret_data_info =
 					xmalloc(sizeof(ret_data_info_t));
 				list_push(fwd_msg->ret_list, ret_data_info);
@@ -254,10 +254,10 @@ void *_forward_thread(void *arg)
 			      "but only got %d back",
 			      (fwd_msg->header.forward.cnt+1),
 			      list_count(ret_list));
-			while((tmp = hostlist_next(host_itr))) {
+			while ((tmp = hostlist_next(host_itr))) {
 				int node_found = 0;
 				itr = list_iterator_create(ret_list);
-				while((ret_data_info = list_next(itr))) {
+				while ((ret_data_info = list_next(itr))) {
 					if (!ret_data_info->node_name) {
 						first_node_found = 1;
 						ret_data_info->node_name =
@@ -289,7 +289,7 @@ void *_forward_thread(void *arg)
 	}
 	slurm_mutex_lock(fwd_msg->forward_mutex);
 	if (ret_list) {
-		while((ret_data_info = list_pop(ret_list)) != NULL) {
+		while ((ret_data_info = list_pop(ret_list)) != NULL) {
 			if (!ret_data_info->node_name) {
 				ret_data_info->node_name = xstrdup(name);
 			}
@@ -451,7 +451,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 	hl = hostlist_create(header->forward.nodelist);
 	hostlist_uniq(hl);
 
-	while((name = hostlist_shift(hl))) {
+	while ((name = hostlist_shift(hl))) {
 		pthread_attr_t attr_agent;
 		pthread_t thread_agent;
 		char *buf = NULL;
@@ -501,7 +501,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		hostlist_destroy(forward_hl);
 		forward_init(&forward_msg->header.forward, NULL);
 		forward_msg->header.forward.nodelist = buf;
-		while(pthread_create(&thread_agent, &attr_agent,
+		while (pthread_create(&thread_agent, &attr_agent,
 				     _forward_thread,
 				     (void *)forward_msg)) {
 			error("pthread_create error %m");
@@ -590,7 +590,7 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 		/*
 		 * Lock and increase thread counter, we need that to protect
 		 * the start_msg_tree waiting loop that was originally designed
-		 * around a "while((count < host_count))" loop. In case where a
+		 * around a "while ((count < host_count))" loop. In case where a
 		 * fwd thread was not able to get all the return codes from
 		 * children, the waiting loop was deadlocked.
 		 */
@@ -667,7 +667,7 @@ extern void forward_wait(slurm_msg_t * msg)
 			count = list_count(msg->ret_list);
 
 		debug2("Got back %d", count);
-		while((count < msg->forward_struct->fwd_cnt)) {
+		while ((count < msg->forward_struct->fwd_cnt)) {
 			pthread_cond_wait(&msg->forward_struct->notify,
 					  &msg->forward_struct->forward_mutex);
 
