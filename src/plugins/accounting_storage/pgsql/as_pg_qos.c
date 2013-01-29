@@ -209,7 +209,7 @@ _make_qos_record_for_add(slurmdb_qos_rec_t *object, time_t now,
 		xstrfmtcat(*rec, "'', ");
 	}
 
-	if((object->preempt_mode != (uint16_t)NO_VAL)
+	if ((object->preempt_mode != (uint16_t)NO_VAL)
 	   && ((int16_t)object->preempt_mode >= 0)) {
 		object->preempt_mode &= (~PREEMPT_MODE_GANG);
 		xstrfmtcat(*rec, "%u, ", object->preempt_mode);
@@ -295,7 +295,7 @@ _make_qos_vals_for_modify(slurmdb_qos_rec_t *qos, char **vals,
 	concat_limit_64("grp_cpu_mins", qos->grp_cpu_mins, NULL, vals);
 	concat_limit_64("grp_cpu_run_mins", qos->grp_cpu_run_mins, NULL, vals);
 
-	if(qos->preempt_list && list_count(qos->preempt_list)) {
+	if (qos->preempt_list && list_count(qos->preempt_list)) {
 		char *preempt_val = NULL;
 		char *tmp_char = NULL, *begin_preempt = NULL;
 		ListIterator preempt_itr =
@@ -304,25 +304,25 @@ _make_qos_vals_for_modify(slurmdb_qos_rec_t *qos, char **vals,
 		begin_preempt = xstrdup("preempt");
 
 		while((tmp_char = list_next(preempt_itr))) {
-			if(tmp_char[0] == '-') {
+			if (tmp_char[0] == '-') {
 				xstrfmtcat(preempt_val,
 					   "replace(%s, ',%s', '')",
 					   begin_preempt, tmp_char+1);
 				xfree(begin_preempt);
 				begin_preempt = preempt_val;
-			} else if(tmp_char[0] == '+') {
+			} else if (tmp_char[0] == '+') {
 				xstrfmtcat(preempt_val,
 					   "(replace(%s, ',%s', '') || ',%s')",
 					   begin_preempt,
 					   tmp_char+1, tmp_char+1);
-				if(added_preempt)
+				if (added_preempt)
 					xstrfmtcat(*added_preempt, ",%s",
 						   tmp_char+1);
 				xfree(begin_preempt);
 				begin_preempt = preempt_val;
-			} else if(tmp_char[0]) {
+			} else if (tmp_char[0]) {
 				xstrfmtcat(preempt_val, ",%s", tmp_char);
-				if(added_preempt)
+				if (added_preempt)
 					xstrfmtcat(*added_preempt, ",%s",
 						   tmp_char);
 			} else
@@ -335,9 +335,9 @@ _make_qos_vals_for_modify(slurmdb_qos_rec_t *qos, char **vals,
 
 	concat_limit_32("priority", qos->priority, NULL, vals);
 
-	if(qos->usage_factor >= 0) {
+	if (qos->usage_factor >= 0) {
 		xstrfmtcat(*vals, ", usage_factor=%f", qos->usage_factor);
-	} else if((int)qos->usage_factor == INFINITE) {
+	} else if ((int)qos->usage_factor == INFINITE) {
 		xstrcat(*vals, ", usage_factor=1.0");
 	}
 	return;
@@ -362,7 +362,7 @@ _preemption_loop(pgsql_conn_t *pg_conn, int begin_qosid,
 
 	/* check in the preempt list for all qos's preempted */
 	for(i=0; i<bit_size(preempt_bitstr); i++) {
-		if(!bit_test(preempt_bitstr, i))
+		if (!bit_test(preempt_bitstr, i))
 			continue;
 
 		memset(&qos_rec, 0, sizeof(qos_rec));
@@ -372,19 +372,19 @@ _preemption_loop(pgsql_conn_t *pg_conn, int begin_qosid,
 				      NULL);
 		/* check if the begin_qosid is preempted by this qos
 		 * if so we have a loop */
-		if(qos_rec.preempt_bitstr
+		if (qos_rec.preempt_bitstr
 		   && bit_test(qos_rec.preempt_bitstr, begin_qosid)) {
 			error("QOS id %d has a loop at QOS %s",
 			      begin_qosid, qos_rec.name);
 			rc = 1;
 			break;
-		} else if(qos_rec.preempt_bitstr) {
+		} else if (qos_rec.preempt_bitstr) {
 			/*
 			 * qos_rec.preempt_bitstr are also (newly introduced)
 			 * preemptees of begin_qosid.
 			 * i.e., preemption is transitive
 			 */
-			if((rc = _preemption_loop(pg_conn, begin_qosid,
+			if ((rc = _preemption_loop(pg_conn, begin_qosid,
 						  qos_rec.preempt_bitstr)))
 				break;
 		}
@@ -402,7 +402,7 @@ _set_qos_cnt(PGconn *db_conn)
 
 	result = pgsql_db_query_ret(db_conn, query);
 	xfree(query);
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 	if (PQntuples(result) == 0) {
 		PQclear(result);
@@ -443,7 +443,7 @@ check_qos_tables(PGconn *db_conn)
 		char *qos = NULL, *desc = NULL, *query = NULL;
 		time_t now = time(NULL);
 
-		if(slurmdbd_conf && slurmdbd_conf->default_qos) {
+		if (slurmdbd_conf && slurmdbd_conf->default_qos) {
 			slurm_addto_char_list(char_list,
 					      slurmdbd_conf->default_qos);
 			desc = "Added as default";
@@ -470,14 +470,14 @@ check_qos_tables(PGconn *db_conn)
 			DEBUG_QUERY;
 			qos_id = pgsql_query_ret_id(db_conn, query);
 			xfree(query);
-			if(!qos_id)
+			if (!qos_id)
 				fatal("problem add default qos '%s'", qos);
 			xstrfmtcat(default_qos_str, ",%d", qos_id);
 		}
 		list_iterator_destroy(itr);
 		list_destroy(char_list);
 
-		if(_set_qos_cnt(db_conn) != SLURM_SUCCESS)
+		if (_set_qos_cnt(db_conn) != SLURM_SUCCESS)
 			return SLURM_ERROR;
 	}
 	return rc;
@@ -506,7 +506,7 @@ as_pg_add_qos(pgsql_conn_t *pg_conn, uint32_t uid, List qos_list)
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(qos_list);
 	while((object = list_next(itr))) {
-		if(!object->name || !object->name[0]) {
+		if (!object->name || !object->name[0]) {
 			error("as/pg: add_qos: We need a qos name to add.");
 			rc = SLURM_ERROR;
 			continue;
@@ -520,7 +520,7 @@ as_pg_add_qos(pgsql_conn_t *pg_conn, uint32_t uid, List qos_list)
 
 		xstrfmtcat(query, "SELECT public.add_qos(%s);", rec);
 		object->id = DEF_QUERY_RET_ID;
-		if(!object->id) {
+		if (!object->id) {
 			error("as/pg: couldn't add qos %s", object->name);
 			added=0;
 			break;
@@ -528,10 +528,10 @@ as_pg_add_qos(pgsql_conn_t *pg_conn, uint32_t uid, List qos_list)
 
 		rc = add_txn(pg_conn, now, "", DBD_ADD_QOS, object->name,
 			     user_name, txn);
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add txn");
 		} else {
-			if(addto_update_list(pg_conn->update_list,
+			if (addto_update_list(pg_conn->update_list,
 					     SLURMDB_ADD_QOS,
 					     object) == SLURM_SUCCESS)
 				list_remove(itr);
@@ -541,7 +541,7 @@ as_pg_add_qos(pgsql_conn_t *pg_conn, uint32_t uid, List qos_list)
 	list_iterator_destroy(itr);
 	xfree(user_name);
 
-	if(!added)
+	if (!added)
 		reset_pgsql_conn(pg_conn);
 
 	return rc;
@@ -568,15 +568,15 @@ as_pg_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 	time_t now = time(NULL);
 	int rc = SLURM_SUCCESS, loop = 0;
 
-	if(!qos_cond || !qos) {
+	if (!qos_cond || !qos) {
 		error("as/pg: modify_qos: we need something to change");
 		return NULL;
 	}
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	_make_qos_vals_for_modify(qos, &vals, &added_preempt);
-	if(!vals) {
+	if (!vals) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
@@ -598,7 +598,7 @@ as_pg_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 			       "WHERE deleted=0 %s;", qos_table, cond);
 	xfree(cond);
 	result = DEF_QUERY_RET;
-	if(!result) {
+	if (!result) {
 		xfree (vals);
 		return NULL;
 	}
@@ -616,7 +616,7 @@ as_pg_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 		}
 		object = xstrdup(ROW(0));
 		list_append(ret_list, object);
-		if(!rc) {
+		if (!rc) {
 			xstrfmtcat(name_char, "(name='%s'", object);
 			rc = 1;
 		} else  {
@@ -645,7 +645,7 @@ as_pg_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 		qos_rec->preempt_mode = qos->preempt_mode;
 		qos_rec->priority = qos->priority;
 
-		if(qos->preempt_list) {
+		if (qos->preempt_list) {
 			ListIterator new_preempt_itr =
 				list_iterator_create(qos->preempt_list);
 			char *preempt = ROW(0);
@@ -653,18 +653,18 @@ as_pg_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 			int cleared = 0;
 
 			qos_rec->preempt_bitstr = bit_alloc(g_qos_count);
-			if(preempt && preempt[0])
+			if (preempt && preempt[0])
 				bit_unfmt(qos_rec->preempt_bitstr, preempt+1);
 
 			while((new_preempt = list_next(new_preempt_itr))) {
-				if(new_preempt[0] == '-') {
+				if (new_preempt[0] == '-') {
 					bit_clear(qos_rec->preempt_bitstr,
 						  atoi(new_preempt+1));
-				} else if(new_preempt[0] == '+') {
+				} else if (new_preempt[0] == '+') {
 					bit_set(qos_rec->preempt_bitstr,
 						atoi(new_preempt+1));
 				} else {
-					if(!cleared) {
+					if (!cleared) {
 						cleared = 1;
 						bit_nclear(
 							qos_rec->preempt_bitstr,
@@ -691,7 +691,7 @@ as_pg_modify_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 		return NULL;
 	}
 
-	if(!list_count(ret_list)) {
+	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything");
 		xfree(vals);
@@ -756,16 +756,16 @@ as_pg_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 	char *qos = NULL, *delta_qos = NULL, *tmp = NULL;
 	time_t now = time(NULL);
 
-	if(!qos_cond) {
+	if (!qos_cond) {
 		error("as/pg: remove_qos: we need something to remove");
 		return NULL;
 	}
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	cond = _make_qos_cond(qos_cond);
-	if(!cond) {
+	if (!cond) {
 		error("Nothing to remove");
 		return NULL;
 	}
@@ -774,7 +774,7 @@ as_pg_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 			       qos_table, cond);
 	xfree(cond);
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return NULL;
 
 	name_char = NULL;
@@ -787,7 +787,7 @@ as_pg_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 		char *name = ROW(1);
 
 		list_append(ret_list, xstrdup(name));
-		if(!name_char)
+		if (!name_char)
 			xstrfmtcat(name_char, "id_qos='%s'", id);
 		else
 			xstrfmtcat(name_char, " OR id_qos='%s'", id);
@@ -809,7 +809,7 @@ as_pg_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 	} END_EACH_ROW;
 	PQclear(result);
 
-	if(!list_count(ret_list)) {
+	if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything");
 		return ret_list;
@@ -825,7 +825,7 @@ as_pg_remove_qos(pgsql_conn_t *pg_conn, uint32_t uid,
 	xfree(qos);
 	xfree(delta_qos);
 	rc = DEF_QUERY_RET_RC;
-	if(rc != SLURM_SUCCESS) {
+	if (rc != SLURM_SUCCESS) {
 		reset_pgsql_conn(pg_conn);
 		list_destroy(ret_list);
 		return NULL;
@@ -903,15 +903,15 @@ as_pg_get_qos(pgsql_conn_t *pg_conn, uid_t uid,
 		F_COUNT
 	};
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if(!qos_cond) {
+	if (!qos_cond) {
 		query = xstrdup_printf("SELECT %s FROM %s WHERE deleted=0;",
 				       gq_fields, qos_table);
 	} else {
 		cond = _make_qos_cond(qos_cond);
-		if(qos_cond->with_deleted)
+		if (qos_cond->with_deleted)
 			query = xstrdup_printf("SELECT %s FROM %s WHERE "
 					       "(deleted=0 OR deleted=1) %s",
 					       gq_fields, qos_table,
@@ -933,15 +933,15 @@ as_pg_get_qos(pgsql_conn_t *pg_conn, uid_t uid,
 		slurmdb_qos_rec_t *qos = xmalloc(sizeof(slurmdb_qos_rec_t));
 		list_append(qos_list, qos);
 
-		if(! ISEMPTY(F_DESC))
+		if (! ISEMPTY(F_DESC))
 			qos->description = xstrdup(ROW(F_DESC));
 
 		qos->id = atoi(ROW(F_ID));
 
-		if(! ISEMPTY(F_NAME))
+		if (! ISEMPTY(F_NAME))
 			qos->name =  xstrdup(ROW(F_NAME));
 
-		if(! ISNULL(F_GCM))
+		if (! ISNULL(F_GCM))
 			qos->grp_cpu_mins = atoll(ROW(F_GCM));
 		else
 			qos->grp_cpu_mins = (uint64_t)INFINITE;
@@ -949,71 +949,71 @@ as_pg_get_qos(pgsql_conn_t *pg_conn, uid_t uid,
 			qos->grp_cpu_run_mins = atoll(ROW(F_GCRM));
 		else
 			qos->grp_cpu_run_mins = (uint64_t)INFINITE;
-		if(! ISNULL(F_GC))
+		if (! ISNULL(F_GC))
 			qos->grp_cpus = atoi(ROW(F_GC));
 		else
 			qos->grp_cpus = INFINITE;
-		if(! ISNULL(F_GJ))
+		if (! ISNULL(F_GJ))
 			qos->grp_jobs = atoi(ROW(F_GJ));
 		else
 			qos->grp_jobs = INFINITE;
-		if(! ISNULL(F_GMEM))
+		if (! ISNULL(F_GMEM))
 			qos->grp_mem = atoi(ROW(F_GMEM));
 		else
 			qos->grp_mem = INFINITE;
-		if(! ISNULL(F_GN))
+		if (! ISNULL(F_GN))
 			qos->grp_nodes = atoi(ROW(F_GN));
 		else
 			qos->grp_nodes = INFINITE;
-		if(! ISNULL(F_GSJ))
+		if (! ISNULL(F_GSJ))
 			qos->grp_submit_jobs = atoi(ROW(F_GSJ));
 		else
 			qos->grp_submit_jobs = INFINITE;
-		if(! ISNULL(F_GW))
+		if (! ISNULL(F_GW))
 			qos->grp_wall = atoi(ROW(F_GW));
 		else
 			qos->grp_wall = INFINITE;
 
-		if(! ISNULL(F_MCMPJ))
+		if (! ISNULL(F_MCMPJ))
 			qos->max_cpu_mins_pj = atoll(ROW(F_MCMPJ));
 		else
 			qos->max_cpu_mins_pj = (uint64_t)INFINITE;
-		if(! ISNULL(F_MCRMPU))
+		if (! ISNULL(F_MCRMPU))
 			qos->max_cpu_run_mins_pu = atoll(ROW(F_MCRMPU));
 		else
 			qos->max_cpu_run_mins_pu = (uint64_t)INFINITE;
-		if(! ISNULL(F_MCPJ))
+		if (! ISNULL(F_MCPJ))
 			qos->max_cpus_pj = atoi(ROW(F_MCPJ));
 		else
 			qos->max_cpus_pj = INFINITE;
-		if(! ISNULL(F_MJPU))
+		if (! ISNULL(F_MJPU))
 			qos->max_jobs_pu = atoi(ROW(F_MJPU));
 		else
 			qos->max_jobs_pu = INFINITE;
-		if(! ISNULL(F_MNPJ))
+		if (! ISNULL(F_MNPJ))
 			qos->max_nodes_pj = atoi(ROW(F_MNPJ));
 		else
 			qos->max_nodes_pj = INFINITE;
-		if(! ISNULL(F_MSJPU))
+		if (! ISNULL(F_MSJPU))
 			qos->max_submit_jobs_pu = atoi(ROW(F_MSJPU));
 		else
 			qos->max_submit_jobs_pu = INFINITE;
-		if(! ISNULL(F_MWPJ))
+		if (! ISNULL(F_MWPJ))
 			qos->max_wall_pj = atoi(ROW(F_MWPJ));
 		else
 			qos->max_wall_pj = INFINITE;
 
-		if(! ISEMPTY(F_PREE)) {
-			if(!qos->preempt_bitstr)
+		if (! ISEMPTY(F_PREE)) {
+			if (!qos->preempt_bitstr)
 				qos->preempt_bitstr = bit_alloc(g_qos_count);
 			bit_unfmt(qos->preempt_bitstr, ROW(F_PREE)+1);
 		}
-		if(! ISNULL(F_PREEM))
+		if (! ISNULL(F_PREEM))
 			qos->preempt_mode = atoi(ROW(F_PREEM));
-		if(! ISNULL(F_PRIO))
+		if (! ISNULL(F_PRIO))
 			qos->priority = atoi(ROW(F_PRIO));
 
-		if(! ISNULL(F_UF))
+		if (! ISNULL(F_UF))
 			qos->usage_factor = atof(ROW(F_UF));
 	} END_EACH_ROW;
 	PQclear(result);

@@ -3064,7 +3064,7 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 {
-	if(nodeinfo) {
+	if (nodeinfo) {
 		if (nodeinfo->magic != NODEINFO_MAGIC) {
 			error("select_p_select_nodeinfo_free: "
 			      "nodeinfo magic bad");
@@ -3104,7 +3104,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 					     SELECT_NODEDATA_PTR, 0,
 					     (void *)&nodeinfo);
-		if(!nodeinfo) {
+		if (!nodeinfo) {
 			error("no nodeinfo returned from structure");
 			continue;
 		}

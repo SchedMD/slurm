@@ -149,7 +149,7 @@ as_pg_add_wckeys(pgsql_conn_t *pg_conn, uint32_t uid, List wckey_list)
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(wckey_list);
 	while((object = list_next(itr))) {
-		if(!object->cluster || !object->cluster[0] ||
+		if (!object->cluster || !object->cluster[0] ||
 		   !object->user || !object->user[0]) {
 			error("as/pg: add_wckeys: we need a wckey name, "
 			      "cluster, and user to add.");
@@ -164,7 +164,7 @@ as_pg_add_wckeys(pgsql_conn_t *pg_conn, uint32_t uid, List wckey_list)
 		DEBUG_QUERY;
 		object->id = pgsql_query_ret_id(pg_conn->db_conn, query);
 		xfree(query);
-		if(!object->id) {
+		if (!object->id) {
 			error("Couldn't add wckey %s", object->name);
 			added=0;
 			break;
@@ -176,10 +176,10 @@ as_pg_add_wckeys(pgsql_conn_t *pg_conn, uint32_t uid, List wckey_list)
 			     id_str, user_name, info);
 		xfree(id_str);
 		xfree(info);
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add txn");
 		} else {
-			if(addto_update_list(pg_conn->update_list,
+			if (addto_update_list(pg_conn->update_list,
 					     SLURMDB_ADD_WCKEY,
 					     object) == SLURM_SUCCESS)
 				list_remove(itr);
@@ -189,8 +189,8 @@ as_pg_add_wckeys(pgsql_conn_t *pg_conn, uint32_t uid, List wckey_list)
 	list_iterator_destroy(itr);
 	xfree(user_name);
 
-	if(!added) {
-		if(pg_conn->rollback) {
+	if (!added) {
+		if (pg_conn->rollback) {
 			pgsql_db_rollback(pg_conn->db_conn);
 		}
 		list_flush(pg_conn->update_list);
@@ -242,7 +242,7 @@ _cluster_remove_wckeys(pgsql_conn_t *pg_conn, char *cluster, char *user_name,
 	FOR_EACH_ROW {
 		slurmdb_wckey_rec_t *wckey_rec = NULL;
 		list_append(ret_list, xstrdup(ROW(1)));
-		if(!name_char)
+		if (!name_char)
 			xstrfmtcat(name_char, "id_wckey=%s",
 				   ROW(0));
 		else
@@ -295,7 +295,7 @@ as_pg_remove_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
 		return NULL;
 	}
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	cond = _make_wckey_cond(wckey_cond);
@@ -318,7 +318,7 @@ as_pg_remove_wckeys(pgsql_conn_t *pg_conn, uint32_t uid,
 		reset_pgsql_conn(pg_conn);
 		list_destroy(ret_list);
 		ret_list = NULL;
-	} else if(!list_count(ret_list)) {
+	} else if (!list_count(ret_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("as/pg: remove_wckeys: didn't effect anything");
 	}
@@ -351,7 +351,7 @@ _cluster_get_wckeys(pgsql_conn_t *pg_conn, char *cluster,
 			       "ORDER BY wckey_name, user_name;",
 			       gw_fields, cluster, wckey_table, cond ?: "");
 	result = DEF_QUERY_RET;
-	if(!result) {
+	if (!result) {
 		error("as/pg: get_wckeys: failed to get wckey");
 		return SLURM_ERROR;
 	}
@@ -366,14 +366,14 @@ _cluster_get_wckeys(pgsql_conn_t *pg_conn, char *cluster,
 		wckey->user = xstrdup(ROW(GW_USER));
 		wckey->cluster = xstrdup(cluster);
 		/* we want a blank wckey if the name is null */
-		if(ROW(GW_NAME))
+		if (ROW(GW_NAME))
 			wckey->name = xstrdup(ROW(GW_NAME));
 		else
 			wckey->name = xstrdup("");
 	} END_EACH_ROW;
 	PQclear(result);
 
-	if(with_usage && list_count(wckey_list)) {
+	if (with_usage && list_count(wckey_list)) {
 		get_usage_for_wckey_list(pg_conn, cluster, wckey_list,
 					 wckey_cond->usage_start,
 					 wckey_cond->usage_end);
@@ -427,7 +427,7 @@ as_pg_get_wckeys(pgsql_conn_t *pg_conn, uid_t uid,
 			 */
 			continue;
 		}
-		if(_cluster_get_wckeys(pg_conn, cluster_name, wckey_cond,
+		if (_cluster_get_wckeys(pg_conn, cluster_name, wckey_cond,
 				       cond, wckey_list)
 		   != SLURM_SUCCESS) {
 			list_destroy(wckey_list);
@@ -463,18 +463,18 @@ get_wckeyid(pgsql_conn_t *pg_conn, char **name,
 	/* since we are unable to rely on uids here (someone could
 	   not have there uid in the system yet) we must
 	   first get the user name from the associd */
-	if(!(user = get_user_from_associd(pg_conn, cluster, associd))) {
+	if (!(user = get_user_from_associd(pg_conn, cluster, associd))) {
 		error("No user for associd %u", associd);
 		return 0;
 	}
 
 	/* get the default key */
-	if(!*name) {
+	if (!*name) {
 		slurmdb_user_rec_t user_rec;
 		memset(&user_rec, 0, sizeof(slurmdb_user_rec_t));
 		user_rec.uid = NO_VAL;
 		user_rec.name = user;
-		if(assoc_mgr_fill_in_user(pg_conn, &user_rec,
+		if (assoc_mgr_fill_in_user(pg_conn, &user_rec,
 					  1, NULL) != SLURM_SUCCESS) {
 			error("No user by name of %s assoc %u",
 			      user, associd);
@@ -482,7 +482,7 @@ get_wckeyid(pgsql_conn_t *pg_conn, char **name,
 			goto no_wckeyid;
 		}
 
-		if(user_rec.default_wckey)
+		if (user_rec.default_wckey)
 			*name = xstrdup_printf("*%s",
 					       user_rec.default_wckey);
 		else
@@ -494,7 +494,7 @@ get_wckeyid(pgsql_conn_t *pg_conn, char **name,
 	wckey_rec.uid = NO_VAL;
 	wckey_rec.user = user;
 	wckey_rec.cluster = cluster;
-	if(assoc_mgr_fill_in_wckey(pg_conn, &wckey_rec,
+	if (assoc_mgr_fill_in_wckey(pg_conn, &wckey_rec,
 				   ACCOUNTING_ENFORCE_WCKEYS,
 				   NULL) != SLURM_SUCCESS) {
 		List wckey_list = NULL;
@@ -513,7 +513,7 @@ get_wckeyid(pgsql_conn_t *pg_conn, char **name,
 		/* we have already checked to make
 		   sure this was the slurm user before
 		   calling this */
-		if(acct_storage_p_add_wckeys(
+		if (acct_storage_p_add_wckeys(
 			   pg_conn,
 			   slurm_get_slurm_user_id(),
 			   wckey_list)

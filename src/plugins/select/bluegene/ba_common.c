@@ -109,11 +109,11 @@ static int _unpack_ba_switch(ba_switch_t *ba_switch,
 	if ((cluster_flags & CLUSTER_FLAG_BGL)
 	    || (cluster_flags & CLUSTER_FLAG_BGP)) {
 		for (i=0; i< NUM_PORTS_PER_NODE; i++) {
-			if(_unpack_ba_connection(&ba_switch->int_wire[i],
+			if (_unpack_ba_connection(&ba_switch->int_wire[i],
 						 buffer, protocol_version)
 			   != SLURM_SUCCESS)
 				goto unpack_error;
-			if(_unpack_ba_connection(&ba_switch->ext_wire[i],
+			if (_unpack_ba_connection(&ba_switch->ext_wire[i],
 						 buffer, protocol_version)
 			   != SLURM_SUCCESS)
 				goto unpack_error;

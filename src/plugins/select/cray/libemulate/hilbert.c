@@ -53,9 +53,9 @@ int      n)            // I    dimension
     {
         P = Q - 1;
         for( i = n-1; i; i-- )
-            if( X[i] & Q ) X[0] ^= P;                              // invert
+            if ( X[i] & Q ) X[0] ^= P;                              // invert
             else{ t = (X[0] ^ X[i]) & P;  X[0] ^= t;  X[i] ^= t; } // exchange
-        if( X[0] & Q ) X[0] ^= P;                                  // invert
+        if ( X[0] & Q ) X[0] ^= P;                                  // invert
     }
 }
 extern void AxestoTranspose(
@@ -70,9 +70,9 @@ int      n)            // I    dimension
     for( Q = 1 << (b - 1); Q > 1; Q >>= 1 )
     {
         P = Q - 1;
-        if( X[0] & Q ) X[0] ^= P;                                  // invert
+        if ( X[0] & Q ) X[0] ^= P;                                  // invert
         for( i = 1; i < n; i++ )
-            if( X[i] & Q ) X[0] ^= P;                              // invert
+            if ( X[i] & Q ) X[0] ^= P;                              // invert
             else{ t = (X[0] ^ X[i]) & P;  X[0] ^= t;  X[i] ^= t; } // exchange
     }
 

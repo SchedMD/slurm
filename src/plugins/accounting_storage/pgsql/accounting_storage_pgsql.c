@@ -100,7 +100,7 @@ static pgsql_db_info_t *_pgsql_acct_create_db_info()
 {
 	pgsql_db_info_t *db_info = xmalloc(sizeof(pgsql_db_info_t));
 	db_info->port = slurm_get_accounting_storage_port();
-	if(!db_info->port) {
+	if (!db_info->port) {
 		db_info->port = DEFAULT_PGSQL_PORT;
 		slurm_set_accounting_storage_port(db_info->port);
 	}
@@ -167,11 +167,11 @@ extern int init ( void )
 
 	/* since this can be loaded from many different places
 	   only tell us once. */
-	if(!first)
+	if (!first)
 		return SLURM_SUCCESS;
 	first = 0;
 
-	if(!slurmdbd_conf) {
+	if (!slurmdbd_conf) {
 		char *cluster_name = NULL;
 		if (!(cluster_name = slurm_get_cluster_name()))
 			fatal("%s requires ClusterName in slurm.conf",
@@ -226,7 +226,7 @@ extern void *acct_storage_p_get_connection(const slurm_trigger_callbacks_t *cb,
 {
 	pgsql_conn_t *pg_conn = xmalloc(sizeof(pgsql_conn_t));
 
-	if(!pgsql_db_info)
+	if (!pgsql_db_info)
 		init();
 
 	debug2("as/pg: get_connection: request new connection: %d", rollback);
@@ -241,7 +241,7 @@ extern void *acct_storage_p_get_connection(const slurm_trigger_callbacks_t *cb,
 	pgsql_get_db_connection(&pg_conn->db_conn,
 				pgsql_db_name, pgsql_db_info);
 
-	if(pg_conn->db_conn && rollback) {
+	if (pg_conn->db_conn && rollback) {
 		pgsql_db_start_transaction(pg_conn->db_conn);
 	}
 	return (void *)pg_conn;
@@ -249,7 +249,7 @@ extern void *acct_storage_p_get_connection(const slurm_trigger_callbacks_t *cb,
 
 extern int acct_storage_p_close_connection(pgsql_conn_t **pg_conn)
 {
-	if(!pg_conn || !*pg_conn)
+	if (!pg_conn || !*pg_conn)
 		return SLURM_SUCCESS;
 
 	acct_storage_p_commit((*pg_conn), 0); /* discard changes */
@@ -272,14 +272,14 @@ extern int acct_storage_p_commit(pgsql_conn_t *pg_conn, bool commit)
 	debug4("as/pg: commit: got %d commits",
 	       list_count(pg_conn->update_list));
 
-	if(pg_conn->rollback) {
-		if(!commit) {
-			if(pgsql_db_rollback(pg_conn->db_conn)) {
+	if (pg_conn->rollback) {
+		if (!commit) {
+			if (pgsql_db_rollback(pg_conn->db_conn)) {
 				error("as/pg: commit: rollback failed");
 				return SLURM_ERROR;
 			}
 		} else {
-			if(pgsql_db_commit(pg_conn->db_conn)) {
+			if (pgsql_db_commit(pg_conn->db_conn)) {
 				error("as/pg: commit: commit failed");
 				return SLURM_ERROR;
 			}
@@ -288,7 +288,7 @@ extern int acct_storage_p_commit(pgsql_conn_t *pg_conn, bool commit)
 		pgsql_db_start_transaction(pg_conn->db_conn);
 	}
 
-	if(commit && list_count(pg_conn->update_list)) {
+	if (commit && list_count(pg_conn->update_list)) {
 		query = xstrdup_printf(
 			"SELECT name, control_host, control_port, rpc_version "
 			"  FROM %s WHERE deleted=0 AND control_port!=0",
@@ -564,7 +564,7 @@ extern int clusteracct_storage_p_node_down(pgsql_conn_t *pg_conn,
 					   time_t event_time, char *reason,
 					   uint32_t reason_uid)
 {
-	if(!pg_conn->cluster_name) {
+	if (!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}
@@ -576,7 +576,7 @@ extern int clusteracct_storage_p_node_up(pgsql_conn_t *pg_conn,
 					 struct node_record *node_ptr,
 					 time_t event_time)
 {
-	if(!pg_conn->cluster_name) {
+	if (!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}
@@ -587,7 +587,7 @@ extern int clusteracct_storage_p_node_up(pgsql_conn_t *pg_conn,
 extern int clusteracct_storage_p_register_ctld(pgsql_conn_t *pg_conn,
 					       uint16_t port)
 {
-	if(!pg_conn->cluster_name) {
+	if (!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}
@@ -613,7 +613,7 @@ extern int clusteracct_storage_p_cluster_cpus(pgsql_conn_t *pg_conn,
 					      uint32_t cpus,
 					      time_t event_time)
 {
-	if(!pg_conn->cluster_name) {
+	if (!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}
@@ -628,7 +628,7 @@ extern int clusteracct_storage_p_cluster_cpus(pgsql_conn_t *pg_conn,
 extern int jobacct_storage_p_job_start(pgsql_conn_t *pg_conn,
 				       struct job_record *job_ptr)
 {
-	if(!pg_conn->cluster_name) {
+	if (!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}
@@ -642,7 +642,7 @@ extern int jobacct_storage_p_job_start(pgsql_conn_t *pg_conn,
 extern int jobacct_storage_p_job_complete(pgsql_conn_t *pg_conn,
 					  struct job_record *job_ptr)
 {
-	if(!pg_conn->cluster_name) {
+	if (!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}
@@ -656,7 +656,7 @@ extern int jobacct_storage_p_job_complete(pgsql_conn_t *pg_conn,
 extern int jobacct_storage_p_step_start(pgsql_conn_t *pg_conn,
 					struct step_record *step_ptr)
 {
-	if(!pg_conn->cluster_name) {
+	if (!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}
@@ -670,7 +670,7 @@ extern int jobacct_storage_p_step_start(pgsql_conn_t *pg_conn,
 extern int jobacct_storage_p_step_complete(pgsql_conn_t *pg_conn,
 					   struct step_record *step_ptr)
 {
-	if(!pg_conn->cluster_name) {
+	if (!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}
@@ -684,7 +684,7 @@ extern int jobacct_storage_p_step_complete(pgsql_conn_t *pg_conn,
 extern int jobacct_storage_p_suspend(pgsql_conn_t *pg_conn,
 				     struct job_record *job_ptr)
 {
-	if(!pg_conn->cluster_name) {
+	if (!pg_conn->cluster_name) {
 		error("%s:%d no cluster name", THIS_FILE, __LINE__);
 		return SLURM_ERROR;
 	}

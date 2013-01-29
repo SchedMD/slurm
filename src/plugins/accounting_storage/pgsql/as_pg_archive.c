@@ -68,7 +68,7 @@ _archive_record(PGresult *result, char *cluster_name, time_t period_end,
 	pack32(cnt, buffer);
 
 	FOR_EACH_ROW {
-		if(!period_start)
+		if (!period_start)
 			period_start = atoi(ROW(0)); /* XXX: ROW(0) must be time_start */
 		for (i = 0; i < field_cnt; i ++) {
 			packstr(ROW(i), buffer);
@@ -80,7 +80,7 @@ _archive_record(PGresult *result, char *cluster_name, time_t period_end,
 					arch_dir, desc, archive_period);
 	free_buf(buffer);
 
-	if(error_code != SLURM_SUCCESS)
+	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
 	return cnt;
@@ -99,7 +99,7 @@ _load_record(uint16_t rpc_version, Buf buffer, char *cluster_name,
 		   cluster_name, table, fields);
 
 	for(i = 0; i < rec_cnt; i ++) {
-		if(i)
+		if (i)
 			xstrcat(insert, ", ");
 
 		for (j = 0; j < field_cnt; j ++) {
@@ -291,18 +291,18 @@ _execute_archive(pgsql_conn_t *pg_conn, char *cluster_name,
 	time_t curr_end;
 	time_t last_submit = time(NULL);
 
-	if(arch_cond->archive_script)
+	if (arch_cond->archive_script)
 		return archive_run_script(arch_cond, cluster_name, last_submit);
-	else if(!arch_cond->archive_dir) {
+	else if (!arch_cond->archive_dir) {
 		error("No archive dir given, can't process");
 		return SLURM_ERROR;
 	}
 
-	if(arch_cond->purge_event != NO_VAL) {
+	if (arch_cond->purge_event != NO_VAL) {
 		/* remove all data from event table that was older than
 		 * period_start * arch_cond->purge_event.
 		 */
-		if(!(curr_end = archive_setup_end_time(
+		if (!(curr_end = archive_setup_end_time(
 			     last_submit, arch_cond->purge_event))) {
 			error("Parsing purge event");
 			return SLURM_ERROR;
@@ -311,13 +311,13 @@ _execute_archive(pgsql_conn_t *pg_conn, char *cluster_name,
 		debug4("Purging event entries before %ld for %s",
 		       (long)curr_end, cluster_name);
 
-		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_event)) {
+		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_event)) {
 			rc = _archive_events(pg_conn, cluster_name,
 					     curr_end, arch_cond->archive_dir,
 					     arch_cond->purge_event);
-			if(!rc)
+			if (!rc)
 				goto exit_events;
-			else if(rc == SLURM_ERROR)
+			else if (rc == SLURM_ERROR)
 				return rc;
 		}
 		query = xstrdup_printf("DELETE FROM %s.%s WHERE "
@@ -325,7 +325,7 @@ _execute_archive(pgsql_conn_t *pg_conn, char *cluster_name,
 				       cluster_name, event_table,
 				       (long)curr_end);
 		rc = DEF_QUERY_RET_RC;
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't remove old event data");
 			return SLURM_ERROR;
 		}
@@ -333,11 +333,11 @@ _execute_archive(pgsql_conn_t *pg_conn, char *cluster_name,
 
 exit_events:
 
-	if(arch_cond->purge_suspend != NO_VAL) {
+	if (arch_cond->purge_suspend != NO_VAL) {
 		/* remove all data from suspend table that was older than
 		 * period_start * arch_cond->purge_suspend.
 		 */
-		if(!(curr_end = archive_setup_end_time(
+		if (!(curr_end = archive_setup_end_time(
 			     last_submit, arch_cond->purge_suspend))) {
 			error("Parsing purge suspend");
 			return SLURM_ERROR;
@@ -346,13 +346,13 @@ exit_events:
 		debug4("Purging suspend entries before %ld for %s",
 		       (long)curr_end, cluster_name);
 
-		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_suspend)) {
+		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_suspend)) {
 			rc = _archive_suspend(pg_conn, cluster_name,
 					      curr_end, arch_cond->archive_dir,
 					      arch_cond->purge_suspend);
-			if(!rc)
+			if (!rc)
 				goto exit_suspend;
-			else if(rc == SLURM_ERROR)
+			else if (rc == SLURM_ERROR)
 				return rc;
 		}
 		query = xstrdup_printf("DELETE FROM %s.%s WHERE "
@@ -360,7 +360,7 @@ exit_events:
 				       cluster_name, suspend_table,
 				       (long)curr_end);
 		rc = DEF_QUERY_RET_RC;
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't remove old suspend data");
 			return SLURM_ERROR;
 		}
@@ -368,11 +368,11 @@ exit_events:
 
 exit_suspend:
 
-	if(arch_cond->purge_step != NO_VAL) {
+	if (arch_cond->purge_step != NO_VAL) {
 		/* remove all data from step table that was older than
 		 * start * arch_cond->purge_step.
 		 */
-		if(!(curr_end = archive_setup_end_time(
+		if (!(curr_end = archive_setup_end_time(
 			     last_submit, arch_cond->purge_step))) {
 			error("Parsing purge step");
 			return SLURM_ERROR;
@@ -381,13 +381,13 @@ exit_suspend:
 		debug4("Purging step entries before %ld for %s",
 		       (long)curr_end, cluster_name);
 
-		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_step)) {
+		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_step)) {
 			rc = _archive_steps(pg_conn, cluster_name,
 					    curr_end, arch_cond->archive_dir,
 					    arch_cond->purge_step);
-			if(!rc)
+			if (!rc)
 				goto exit_steps;
-			else if(rc == SLURM_ERROR)
+			else if (rc == SLURM_ERROR)
 				return rc;
 		}
 
@@ -396,18 +396,18 @@ exit_suspend:
 				       cluster_name, step_table,
 				       (long)curr_end);
 		rc = DEF_QUERY_RET_RC;
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't remove old step data");
 			return SLURM_ERROR;
 		}
 	}
 exit_steps:
 
-	if(arch_cond->purge_job != NO_VAL) {
+	if (arch_cond->purge_job != NO_VAL) {
 		/* remove all data from job table that was older than
 		 * last_submit * arch_cond->purge_job.
 		 */
-		if(!(curr_end = archive_setup_end_time(
+		if (!(curr_end = archive_setup_end_time(
 			     last_submit, arch_cond->purge_job))) {
 			error("Parsing purge job");
 			return SLURM_ERROR;
@@ -416,13 +416,13 @@ exit_steps:
 		debug4("Purging job entires before %ld for %s",
 		       (long)curr_end, cluster_name);
 
-		if(SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_job)) {
+		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_job)) {
 			rc = _archive_jobs(pg_conn, cluster_name,
 					   curr_end, arch_cond->archive_dir,
 					   arch_cond->purge_job);
-			if(!rc)
+			if (!rc)
 				goto exit_jobs;
-			else if(rc == SLURM_ERROR)
+			else if (rc == SLURM_ERROR)
 				return rc;
 		}
 
@@ -430,7 +430,7 @@ exit_steps:
 				       "time_submit<=%ld AND time_end!=0",
 				       cluster_name, job_table, (long)curr_end);
 		rc = DEF_QUERY_RET_RC;
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't remove old job data");
 			return SLURM_ERROR;
 		}
@@ -452,7 +452,7 @@ js_pg_archive(pgsql_conn_t *pg_conn, slurmdb_archive_cond_t *arch_cond)
 	int rc = SLURM_SUCCESS;
 	List cluster_list = NULL;
 
-	if(!arch_cond) {
+	if (!arch_cond) {
 		error("No arch_cond was given to archive from. returning");
 		return SLURM_ERROR;
 	}
@@ -491,7 +491,7 @@ js_pg_archive_load(pgsql_conn_t *pg_conn,
 	uint16_t type = 0, ver = 0;
 	uint32_t data_size = 0, rec_cnt = 0, tmp32 = 0;
 
-	if(!arch_rec) {
+	if (!arch_rec) {
 		error("We need a slurmdb_archive_rec to load anything.");
 		return SLURM_ERROR;
 	}
@@ -499,9 +499,9 @@ js_pg_archive_load(pgsql_conn_t *pg_conn,
 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	if(arch_rec->insert) {
+	if (arch_rec->insert) {
 		data = xstrdup(arch_rec->insert);
-	} else if(arch_rec->archive_file) {
+	} else if (arch_rec->archive_file) {
 		int data_allocated, data_read = 0;
 		int state_fd = open(arch_rec->archive_file, O_RDONLY);
 		if (state_fd < 0) {
@@ -530,7 +530,7 @@ js_pg_archive_load(pgsql_conn_t *pg_conn,
 			}
 			close(state_fd);
 		}
-		if(error_code != SLURM_SUCCESS) {
+		if (error_code != SLURM_SUCCESS) {
 			xfree(data);
 			return error_code;
 		}
@@ -540,7 +540,7 @@ js_pg_archive_load(pgsql_conn_t *pg_conn,
 		return SLURM_ERROR;
 	}
 
-	if(!data) {
+	if (!data) {
 		error("It doesn't appear we have anything to load.");
 		return SLURM_ERROR;
 	}
@@ -563,7 +563,7 @@ js_pg_archive_load(pgsql_conn_t *pg_conn,
 	unpackstr_ptr(&cluster_name, &tmp32, buffer);
 	safe_unpack32(&rec_cnt, buffer);
 
-	if(!rec_cnt) {
+	if (!rec_cnt) {
 		error("we didn't get any records from this file of type '%s'",
 		      slurmdbd_msg_type_2_str(type, 0));
 		free_buf(buffer);
@@ -590,7 +590,7 @@ js_pg_archive_load(pgsql_conn_t *pg_conn,
 	free_buf(buffer);
 
 got_sql:
-	if(!data) {
+	if (!data) {
 		error("No data to load");
 		return SLURM_ERROR;
 	}

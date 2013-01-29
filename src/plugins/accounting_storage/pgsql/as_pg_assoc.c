@@ -551,12 +551,12 @@ _make_assoc_rec(slurmdb_association_rec_t *assoc, time_t now, int deleted,
 	concat_limit_64("grp_cpu_mins", assoc->grp_cpu_mins, rec, txn);
 	concat_limit_64("grp_cpu_run_mins", assoc->grp_cpu_run_mins, rec, txn);
 
-	if(assoc->def_qos_id == INFINITE) {
+	if (assoc->def_qos_id == INFINITE) {
 		xstrcat(*rec, "NULL, ");
 		xstrcat(*txn, ", def_qos_id=NULL");
 		/* 0 is the no def_qos_id, so it that way */
 		assoc->def_qos_id = 0;
-	} else if((assoc->def_qos_id != NO_VAL)
+	} else if ((assoc->def_qos_id != NO_VAL)
 		  && ((int32_t)assoc->def_qos_id > 0)) {
 		xstrfmtcat(*rec, "%u, ", assoc->def_qos_id);
 		xstrfmtcat(*txn, ", def_qos_id=%u", assoc->def_qos_id);
@@ -573,7 +573,7 @@ _make_assoc_rec(slurmdb_association_rec_t *assoc, time_t now, int deleted,
 		while((tmp = list_next(itr))) {
 			if (!tmp[0])
 				continue;
-			if(!delta && (tmp[0] == '+' || tmp[0] == '-'))
+			if (!delta && (tmp[0] == '+' || tmp[0] == '-'))
 				delta = 1;
 			/* XXX: always with ',' prefix */
 			xstrfmtcat(qos_val, ",%s", tmp);
@@ -668,9 +668,9 @@ _make_cluster_root_assoc_rec(time_t now, slurmdb_cluster_rec_t *cluster,
 		concat_limit_64("grp_cpu_run_mins",
 				ra->grp_cpu_run_mins, rec, txn);
 
-		if(ra->def_qos_id == INFINITE) {
+		if (ra->def_qos_id == INFINITE) {
 			xstrcat(*rec, "NULL, ");
-		} else if((ra->def_qos_id != NO_VAL)
+		} else if ((ra->def_qos_id != NO_VAL)
 			  && ((int32_t)ra->def_qos_id > 0)) {
 			xstrfmtcat(*rec, "%u, ", ra->def_qos_id);
 		} else {
@@ -685,7 +685,7 @@ _make_cluster_root_assoc_rec(time_t now, slurmdb_cluster_rec_t *cluster,
 			while((tmp = list_next(itr))) {
 				if (!tmp[0])
 					continue;
-				if(!delta && (tmp[0] == '+' || tmp[0] == '-'))
+				if (!delta && (tmp[0] == '+' || tmp[0] == '-'))
 					delta = 1;
 				/* XXX: always with ',' prefix */
 				xstrfmtcat(qos_val, ",%s", tmp);
@@ -871,7 +871,7 @@ _move_parent(pgsql_conn_t *pg_conn, char *cluster, char *id, uint32_t *lft,
 	}
 	PQclear(result);
 
-	if(rc != SLURM_SUCCESS)
+	if (rc != SLURM_SUCCESS)
 		return rc;
 
 	/*
@@ -880,10 +880,10 @@ _move_parent(pgsql_conn_t *pg_conn, char *cluster, char *id, uint32_t *lft,
 	query = xstrdup_printf("SELECT lft, rgt FROM %s.%s WHERE id_assoc=%s;",
 			       cluster, assoc_table, id);
 	result = DEF_QUERY_RET;
-	if(! result)
+	if (! result)
 		return SLURM_ERROR;
 
-	if(PQntuples(result) > 0) {
+	if (PQntuples(result) > 0) {
 		/* move account to destination */
 		*lft = atoi(PG_VAL(0));
 		*rgt = atoi(PG_VAL(1));
@@ -914,10 +914,10 @@ _make_assoc_cond(slurmdb_association_cond_t *assoc_cond)
 	char *prefix = "t1";
 	int set = 0;
 
-	if(!assoc_cond)
+	if (!assoc_cond)
 		return NULL;
 
-	if(assoc_cond->qos_list && list_count(assoc_cond->qos_list)) {
+	if (assoc_cond->qos_list && list_count(assoc_cond->qos_list)) {
 		/*
 		 * QOSLevel applies to all sub-associations in hierarchy.
 		 * So find all sub-associations like WithSubAccounts
@@ -930,7 +930,7 @@ _make_assoc_cond(slurmdb_association_cond_t *assoc_cond)
 		set = 0;
 		itr = list_iterator_create(assoc_cond->qos_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(cond, " OR ");
 			xstrfmtcat(cond,
 				   "(%s.qos ~ ',%s(,.+)?$' "
@@ -940,7 +940,7 @@ _make_assoc_cond(slurmdb_association_cond_t *assoc_cond)
 		}
 		list_iterator_destroy(itr);
 		xstrcat(cond, ") AND");
-	} else if(assoc_cond->with_sub_accts) {
+	} else if (assoc_cond->with_sub_accts) {
 		prefix = "t2";
 		xstrfmtcat(cond, ", %%s.%s AS t2 WHERE "
 			   "(t1.lft BETWEEN t2.lft AND t2.rgt) AND",
@@ -948,7 +948,7 @@ _make_assoc_cond(slurmdb_association_cond_t *assoc_cond)
 	} else 			/* No QOS condition, no WithSubAccounts */
 		xstrcat(cond, " WHERE");
 
-	if(assoc_cond->with_deleted)
+	if (assoc_cond->with_deleted)
 		xstrfmtcat(cond, " (%s.deleted=0 OR %s.deleted=1)",
 			   prefix, prefix);
 	else
@@ -1001,7 +1001,7 @@ _make_assoc_cond(slurmdb_association_cond_t *assoc_cond)
 		concat_cond_list(assoc_cond->user_list,
 				 prefix, "user_name", &cond);
 		/* user_name specified */
-	} else if(assoc_cond->user_list) {
+	} else if (assoc_cond->user_list) {
 		/* we want all the users, but no non-user(account)
 		   associations */
 		debug4("no user specified looking at users");
@@ -1023,10 +1023,10 @@ _make_assoc_limit_vals(slurmdb_association_rec_t *assoc, char **vals)
 {
 	char *tmp = NULL;
 
-	if(!assoc)
+	if (!assoc)
 		return SLURM_ERROR;
 
-	if((int)assoc->shares_raw >= 0) {
+	if ((int)assoc->shares_raw >= 0) {
 		xstrfmtcat(*vals, ", shares=%u", assoc->shares_raw);
 	} else if (((int)assoc->shares_raw == INFINITE)) {
 		xstrcat(*vals, ", shares=1");
@@ -1122,7 +1122,7 @@ _modify_unset_users(pgsql_conn_t *pg_conn, char *cluster,
 		F_COUNT
 	};
 
-	if(!ret_list || !acct)
+	if (!ret_list || !acct)
 		return SLURM_ERROR;
 
 	/* We want all the sub accounts and user accounts */
@@ -1133,7 +1133,7 @@ _modify_unset_users(pgsql_conn_t *pg_conn, char *cluster,
 			       "  ORDER BY lft;", ma_fields, cluster,
 			       assoc_table, lft, rgt, acct, acct);
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 
 	FOR_EACH_ROW {
@@ -1146,55 +1146,55 @@ _modify_unset_users(pgsql_conn_t *pg_conn, char *cluster,
 		mod_assoc->id = atoi(ROW(F_ID));
 		mod_assoc->cluster = xstrdup(cluster);
 
-		if(ISNULL(F_MJ) && assoc->max_jobs != NO_VAL) {
+		if (ISNULL(F_MJ) && assoc->max_jobs != NO_VAL) {
 			mod_assoc->max_jobs = assoc->max_jobs;
 			modified = 1;
 		}
 
-		if(ISNULL(F_MSJ) && assoc->max_submit_jobs != NO_VAL) {
+		if (ISNULL(F_MSJ) && assoc->max_submit_jobs != NO_VAL) {
 			mod_assoc->max_submit_jobs = assoc->max_submit_jobs;
 			modified = 1;
 		}
 
-		if(ISNULL(F_MNPJ) && assoc->max_nodes_pj != NO_VAL) {
+		if (ISNULL(F_MNPJ) && assoc->max_nodes_pj != NO_VAL) {
 			mod_assoc->max_nodes_pj = assoc->max_nodes_pj;
 			modified = 1;
 		}
 
-		if(ISNULL(F_MCPJ) && assoc->max_cpus_pj != NO_VAL) {
+		if (ISNULL(F_MCPJ) && assoc->max_cpus_pj != NO_VAL) {
 			mod_assoc->max_cpus_pj = assoc->max_cpus_pj;
 			modified = 1;
 		}
 
-		if(ISNULL(F_MWPJ) && assoc->max_wall_pj != NO_VAL) {
+		if (ISNULL(F_MWPJ) && assoc->max_wall_pj != NO_VAL) {
 			mod_assoc->max_wall_pj = assoc->max_wall_pj;
 			modified = 1;
 		}
 
-		if(ISNULL(F_MCMPJ) &&
+		if (ISNULL(F_MCMPJ) &&
 		   assoc->max_cpu_mins_pj != (uint64_t)NO_VAL) {
 			mod_assoc->max_cpu_mins_pj = assoc->max_cpu_mins_pj;
 			modified = 1;
 		}
 
-		if(ISNULL(F_MCRM) &&
+		if (ISNULL(F_MCRM) &&
 		   assoc->max_cpu_run_mins != (uint64_t)NO_VAL) {
 			mod_assoc->max_cpu_run_mins = assoc->max_cpu_run_mins;
 			modified = 1;
 		}
 
-		if(ISNULL(F_DEF_QOS) && assoc->def_qos_id != NO_VAL) {
+		if (ISNULL(F_DEF_QOS) && assoc->def_qos_id != NO_VAL) {
 			mod_assoc->def_qos_id = assoc->def_qos_id;
 			modified = 1;
 		}
 
-		if(ISEMPTY(F_QOS) && assoc->qos_list) {
+		if (ISEMPTY(F_QOS) && assoc->qos_list) {
 			List delta_qos_list = NULL;
 			char *qos_char = NULL, *delta_char = NULL;
 			ListIterator delta_itr = NULL;
 			ListIterator qos_itr =
 				list_iterator_create(assoc->qos_list);
-			if(! ISEMPTY(F_DELTA_QOS)) {
+			if (! ISEMPTY(F_DELTA_QOS)) {
 				delta_qos_list =
 					list_create(slurm_destroy_char);
 				slurm_addto_char_list(delta_qos_list,
@@ -1209,27 +1209,27 @@ _modify_unset_users(pgsql_conn_t *pg_conn, char *cluster,
 			   it to the parent.
 			*/
 			while((qos_char = list_next(qos_itr))) {
-				if(delta_itr && qos_char[0] != '=') {
+				if (delta_itr && qos_char[0] != '=') {
 					while((delta_char =
 					       list_next(delta_itr))) {
 
-						if((qos_char[0]
+						if ((qos_char[0]
 						    != delta_char[0])
 						   && (!strcmp(qos_char+1,
 							       delta_char+1)))
 							break;
 					}
 					list_iterator_reset(delta_itr);
-					if(delta_char)
+					if (delta_char)
 						continue;
 				}
 				list_append(mod_assoc->qos_list,
 					    xstrdup(qos_char));
 			}
 			list_iterator_destroy(qos_itr);
-			if(delta_itr)
+			if (delta_itr)
 				list_iterator_destroy(delta_itr);
-			if(list_count(mod_assoc->qos_list)
+			if (list_count(mod_assoc->qos_list)
 			   || !list_count(assoc->qos_list))
 				modified = 1;
 			else {
@@ -1239,11 +1239,11 @@ _modify_unset_users(pgsql_conn_t *pg_conn, char *cluster,
 		}
 
 		/* We only want to add those that are modified here */
-		if(modified) {
+		if (modified) {
 			/* Since we aren't really changing this non
 			 * user association we don't want to send it.
 			 */
-			if(ISEMPTY(F_USER)) {
+			if (ISEMPTY(F_USER)) {
 				/* This is a sub account so run it
 				 * through as if it is a parent.
 				 */
@@ -1259,7 +1259,7 @@ _modify_unset_users(pgsql_conn_t *pg_conn, char *cluster,
 			}
 			/* We do want to send all user accounts though */
 			mod_assoc->shares_raw = NO_VAL;
-			if(! ISEMPTY(F_PART)) {
+			if (! ISEMPTY(F_PART)) {
 				// see if there is a partition name
 				object = xstrdup_printf(
 					"C = %-10s A = %-20s U = %-9s P = %s",
@@ -1274,10 +1274,10 @@ _modify_unset_users(pgsql_conn_t *pg_conn, char *cluster,
 
 			list_append(ret_list, object);
 
-			if(moved_parent)
+			if (moved_parent)
 				slurmdb_destroy_association_rec(mod_assoc);
 			else
-				if(addto_update_list(pg_conn->update_list,
+				if (addto_update_list(pg_conn->update_list,
 						     SLURMDB_MODIFY_ASSOC,
 						     mod_assoc)
 				   != SLURM_SUCCESS)
@@ -1344,7 +1344,7 @@ _get_parent_limits(pgsql_conn_t *pg_conn, char *cluster,
 		"SELECT * FROM %s.get_parent_limits('%s');",
 		cluster, pacct);
 	result = DEF_QUERY_RET;
-	if(! result)
+	if (! result)
 		return SLURM_ERROR;
 
 	if (PQntuples(result) == 0) {
@@ -1446,7 +1446,7 @@ _concat_user_get_assoc_cond(pgsql_conn_t *pg_conn, char *cluster,
 	query = xstrdup_printf(
 		"SELECT lft, rgt FROM %s.%s WHERE user_name='%s'",
 		cluster, assoc_table, user->name);
-	if(user->coord_accts) {
+	if (user->coord_accts) {
 		slurmdb_coord_rec_t *coord = NULL;
 		itr = list_iterator_create(user->coord_accts);
 		while((coord = list_next(itr))) {
@@ -1455,11 +1455,11 @@ _concat_user_get_assoc_cond(pgsql_conn_t *pg_conn, char *cluster,
 		list_iterator_destroy(itr);
 	}
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 
 	FOR_EACH_ROW {
-		if(set) {
+		if (set) {
 			xstrfmtcat(*cond, " OR (t1.lft BETWEEN %s AND %s)",
 				   ROW(0), ROW(1));
 		} else {
@@ -1468,7 +1468,7 @@ _concat_user_get_assoc_cond(pgsql_conn_t *pg_conn, char *cluster,
 				   ROW(0), ROW(1));
 		}
 	} END_EACH_ROW;
-	if(set)
+	if (set)
 		xstrcat(*cond,")");
 	PQclear(result);
 	return SLURM_SUCCESS;
@@ -1554,7 +1554,7 @@ _cluster_get_assocs(pgsql_conn_t *pg_conn, char *cluster,
 			       ga_fields, cluster, assoc_table, cond);
 	xfree(cond);
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 
 	assoc_list = list_create(slurmdb_destroy_association_rec);
@@ -1569,9 +1569,9 @@ _cluster_get_assocs(pgsql_conn_t *pg_conn, char *cluster,
 		assoc->rgt = atoi(ROW(F_RGT));
 		assoc->cluster = xstrdup(cluster);
 		assoc->acct = xstrdup(ROW(F_ACCT));
-		if(! ISEMPTY(F_USER))
+		if (! ISEMPTY(F_USER))
 			assoc->user = xstrdup(ROW(F_USER));
-		if(! ISEMPTY(F_PART))
+		if (! ISEMPTY(F_PART))
 			assoc->partition = xstrdup(ROW(F_PART));
 
 		assoc->grp_jobs = ISNULL(F_GJ) ? INFINITE : atoi(ROW(F_GJ));
@@ -1587,11 +1587,11 @@ _cluster_get_assocs(pgsql_conn_t *pg_conn, char *cluster,
 		assoc->shares_raw = ISNULL(F_FS) ? INFINITE : atoi(ROW(F_FS));
 
 		parent_acct = ROW(F_ACCT);
-		if(!without_parent_info
+		if (!without_parent_info
 		   && !ISEMPTY(F_PARENT)) {
 			assoc->parent_acct = xstrdup(ROW(F_PARENT));
 			parent_acct = ROW(F_PARENT);
-		} else if(!assoc->user) {
+		} else if (!assoc->user) {
 			/* (parent_acct='' AND user_name='') => acct='root' */
 			parent_acct = NULL;
 			parent_id = 0;
@@ -1599,15 +1599,15 @@ _cluster_get_assocs(pgsql_conn_t *pg_conn, char *cluster,
 			last_acct = NULL;
 		}
 
-		if(!without_parent_info && parent_acct &&
+		if (!without_parent_info && parent_acct &&
 		   (!last_acct || strcmp(parent_acct, last_acct))) {
 
 			_init_parent_limits(&p_assoc);
 			xfree(p_qos);
 			xfree(p_delta);
 			parent_id = _get_parent_id(pg_conn, cluster, parent_acct);
-			if(!without_parent_limits) {
-				if(_get_parent_limits(pg_conn, cluster,
+			if (!without_parent_limits) {
+				if (_get_parent_limits(pg_conn, cluster,
 						      parent_acct, &p_assoc,
 						      &p_qos, &p_delta)
 				   != SLURM_SUCCESS) {
@@ -1639,27 +1639,27 @@ _cluster_get_assocs(pgsql_conn_t *pg_conn, char *cluster,
 
 		assoc->qos_list = list_create(slurm_destroy_char);
 		/* alway with a ',' in qos and delta_qos */
-		if(! ISEMPTY(F_QOS))
+		if (! ISEMPTY(F_QOS))
 			slurm_addto_char_list(assoc->qos_list,
 					      ROW(F_QOS)+1);
 		else {
 			/* add the parents first */
-			if(p_qos)
+			if (p_qos)
 				slurm_addto_char_list(assoc->qos_list,
 						      p_qos+1);
 			/* then add the parents delta */
-			if(p_delta)
+			if (p_delta)
 				slurm_addto_char_list(delta_qos_list,
 						      p_delta+1);
 			/* now add the associations */
-			if(! ISEMPTY(F_DELTA_QOS))
+			if (! ISEMPTY(F_DELTA_QOS))
 				slurm_addto_char_list(delta_qos_list,
 						      ROW(F_DELTA_QOS)+1);
 		}
 
-		if(with_raw_qos && list_count(delta_qos_list)) {
+		if (with_raw_qos && list_count(delta_qos_list)) {
 			list_transfer(assoc->qos_list, delta_qos_list);
-		} else if(list_count(delta_qos_list)) {
+		} else if (list_count(delta_qos_list)) {
 			merge_delta_qos_list(assoc->qos_list, delta_qos_list);
 		}
 		list_flush(delta_qos_list);
@@ -1674,7 +1674,7 @@ _cluster_get_assocs(pgsql_conn_t *pg_conn, char *cluster,
 	xfree(p_delta);
 	xfree(p_qos);
 
-	if(with_usage && assoc_list)
+	if (with_usage && assoc_list)
 		get_usage_for_assoc_list(pg_conn, cluster, assoc_list,
 					 assoc_cond->usage_start,
 					 assoc_cond->usage_end);
@@ -1730,7 +1730,7 @@ _clusters_assoc_update(pgsql_conn_t *pg_conn, List cluster_list, uid_t uid)
 
 	itr = list_iterator_create(assoc_list);
 	while((assoc = list_next(itr))) {
-		if(addto_update_list(pg_conn->update_list,
+		if (addto_update_list(pg_conn->update_list,
 				     SLURMDB_MODIFY_ASSOC,
 				     assoc) == SLURM_SUCCESS)
 			list_remove(itr);
@@ -1752,9 +1752,9 @@ _set_assoc_limits_for_add(pgsql_conn_t *pg_conn,
 
 	xassert(assoc);
 
-	if(assoc->parent_acct)
+	if (assoc->parent_acct)
 		p_acct = assoc->parent_acct;
-	else if(assoc->user)
+	else if (assoc->user)
 		p_acct = assoc->acct;
 	else
 		return SLURM_SUCCESS;
@@ -1763,37 +1763,37 @@ _set_assoc_limits_for_add(pgsql_conn_t *pg_conn,
 			       &p_qos, &p_delta) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if(p_assoc.def_qos_id && assoc->def_qos_id == NO_VAL)
+	if (p_assoc.def_qos_id && assoc->def_qos_id == NO_VAL)
 		assoc->def_qos_id = p_assoc.def_qos_id;
-	else if(assoc->def_qos_id == NO_VAL)
+	else if (assoc->def_qos_id == NO_VAL)
 		assoc->def_qos_id = 0;
 
-	if(p_assoc.max_jobs && assoc->max_jobs == NO_VAL)
+	if (p_assoc.max_jobs && assoc->max_jobs == NO_VAL)
 		assoc->max_jobs = p_assoc.max_jobs;
-	if(p_assoc.max_submit_jobs && assoc->max_submit_jobs == NO_VAL)
+	if (p_assoc.max_submit_jobs && assoc->max_submit_jobs == NO_VAL)
 		assoc->max_submit_jobs = p_assoc.max_submit_jobs;
-	if(p_assoc.max_cpus_pj && assoc->max_cpus_pj == NO_VAL)
+	if (p_assoc.max_cpus_pj && assoc->max_cpus_pj == NO_VAL)
 		assoc->max_cpus_pj = p_assoc.max_cpus_pj;
-	if(p_assoc.max_nodes_pj && assoc->max_nodes_pj == NO_VAL)
+	if (p_assoc.max_nodes_pj && assoc->max_nodes_pj == NO_VAL)
 		assoc->max_nodes_pj = p_assoc.max_nodes_pj;
-	if(p_assoc.max_wall_pj && assoc->max_wall_pj == NO_VAL)
+	if (p_assoc.max_wall_pj && assoc->max_wall_pj == NO_VAL)
 		assoc->max_wall_pj = p_assoc.max_wall_pj;
-	if(p_assoc.max_cpu_mins_pj && assoc->max_cpu_mins_pj == (uint64_t)NO_VAL)
+	if (p_assoc.max_cpu_mins_pj && assoc->max_cpu_mins_pj == (uint64_t)NO_VAL)
 		assoc->max_cpu_mins_pj = p_assoc.max_cpu_mins_pj;
-	if(p_assoc.max_cpu_run_mins && assoc->max_cpu_run_mins == (uint64_t)NO_VAL)
+	if (p_assoc.max_cpu_run_mins && assoc->max_cpu_run_mins == (uint64_t)NO_VAL)
 		assoc->max_cpu_run_mins = p_assoc.max_cpu_run_mins;
 
-	if(assoc->qos_list) {
+	if (assoc->qos_list) {
 		int set = 0;
 		char *tmp_char = NULL;
 		ListIterator qos_itr = list_iterator_create(assoc->qos_list);
 		while((tmp_char = list_next(qos_itr))) {
 			/* we don't want to include blank names */
-			if(!tmp_char[0])
+			if (!tmp_char[0])
 				continue;
 
-			if(!set) {
-				if(tmp_char[0] != '+' && tmp_char[0] != '-')
+			if (!set) {
+				if (tmp_char[0] != '+' && tmp_char[0] != '-')
 					break;
 				set = 1;
 			}
@@ -1801,20 +1801,20 @@ _set_assoc_limits_for_add(pgsql_conn_t *pg_conn,
 		}
 		list_iterator_destroy(qos_itr);
 
-		if(tmp_char) {
+		if (tmp_char) {
 			goto end_it;
 		}
 		list_flush(assoc->qos_list);
 	} else
 		assoc->qos_list = list_create(slurm_destroy_char);
 
-	if(p_qos)
+	if (p_qos)
 		slurm_addto_char_list(assoc->qos_list, p_qos+1);
 
-	if(p_delta)
+	if (p_delta)
 		slurm_addto_char_list(assoc->qos_list,
 				      p_delta+1);
-	if(qos_delta) {
+	if (qos_delta) {
 		slurm_addto_char_list(assoc->qos_list, qos_delta+1);
 	}
 
@@ -1872,7 +1872,7 @@ as_pg_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 		F_COUNT
 	};
 
-	if(!assoc_list) {
+	if (!assoc_list) {
 		error("as/pg: add_associations: no association list given");
 		return SLURM_ERROR;
 	}
@@ -1886,7 +1886,7 @@ as_pg_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 
 	itr = list_iterator_create(assoc_list);
 	while((object = list_next(itr))) {
-		if(!object->cluster || !object->cluster[0] ||
+		if (!object->cluster || !object->cluster[0] ||
 		   !object->acct || !object->acct[0]) {
 			error("We need an association cluster and "
 			      "acct to add one.");
@@ -1913,21 +1913,21 @@ as_pg_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 			   assoc_table, cond);
 		xfree(cond);
 		result = DEF_QUERY_RET;
-		if(!result) {
+		if (!result) {
 			error("couldn't query the database");
 			rc = SLURM_ERROR;
 			break;
 		}
 
-		if(PQntuples(result) == 0) { /* assoc not in table */
-			if(!old_parent || !old_cluster
+		if (PQntuples(result) == 0) { /* assoc not in table */
+			if (!old_parent || !old_cluster
 			   || strcasecmp(parent, old_parent)
 			   || strcasecmp(object->cluster, old_cluster)) {
-				if(incr) { /* make space for newly
+				if (incr) { /* make space for newly
 					    * added assocs */
 					rc = _make_space(pg_conn, old_cluster,
 							 p_lft, incr);
-					if(rc != SLURM_SUCCESS) {
+					if (rc != SLURM_SUCCESS) {
 						error("Couldn't make space");
 						break;
 					}
@@ -1954,7 +1954,7 @@ as_pg_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 			query = xstrdup_printf("SELECT %s.add_assoc(%s);",
 					       object->cluster, rec);
 			xfree(rec);
-		} else if(atoi(PG_VAL(F_DELETED)) == 0) {
+		} else if (atoi(PG_VAL(F_DELETED)) == 0) {
 			/* assoc exists and not deleted */
 			/* We don't need to do anything here */
 			debug("This association was added already");
@@ -1964,11 +1964,11 @@ as_pg_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 			uint32_t lft = atoi(PG_VAL(F_LFT));
 			uint32_t rgt = atoi(PG_VAL(F_RGT));
 
-			if(object->parent_acct
+			if (object->parent_acct
 			   && strcasecmp(object->parent_acct,
 					 PG_VAL(F_PACCT))) {
 				/* We need to move the parent! */
-				if(_move_parent(pg_conn,
+				if (_move_parent(pg_conn,
 						object->cluster,
 						PG_VAL(F_ID),
 						&lft, &rgt,
@@ -2011,7 +2011,7 @@ as_pg_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 			object->parent_id = p_id;
 
 			_set_assoc_limits_for_add(pg_conn, object);
-			if(addto_update_list(pg_conn->update_list,
+			if (addto_update_list(pg_conn->update_list,
 					     SLURMDB_ADD_ASSOC,
 					     object) == SLURM_SUCCESS) {
 				list_remove(itr);
@@ -2019,7 +2019,7 @@ as_pg_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 		}
 
 		/* add to txn query string */
-		if(txn_query)
+		if (txn_query)
 			xstrfmtcat(txn_query,
 				   ", (%ld, %d, '%d', '%s', $$%s$$)",
 				   now, DBD_ADD_ASSOCS, object->id, user_name,
@@ -2036,28 +2036,28 @@ as_pg_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 	list_iterator_destroy(itr);
 	xfree(user_name);
 
-	if(rc == SLURM_SUCCESS && incr) {
+	if (rc == SLURM_SUCCESS && incr) {
 		/* _make_space() change delete=2 => deleted=0 */
 		rc = _make_space(pg_conn, old_cluster, p_lft, incr);
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			error("Couldn't make space 2");
 		}
 	}
 
-	if(!moved_parent) {
+	if (!moved_parent) {
 		slurmdb_update_object_t *update_object = NULL;
 
 		itr = list_iterator_create(pg_conn->update_list);;
 		while((update_object = list_next(itr))) {
-			if(!update_object->objects
+			if (!update_object->objects
 			   || !list_count(update_object->objects))
 				continue;
-			if(update_object->type == SLURMDB_ADD_ASSOC)
+			if (update_object->type == SLURMDB_ADD_ASSOC)
 				break;
 		}
 		list_iterator_destroy(itr);
 
-		if(update_object && update_object->objects
+		if (update_object && update_object->objects
 		   && list_count(update_object->objects)) {
 			ListIterator itr2 =
 				list_iterator_create(update_object->objects);
@@ -2065,7 +2065,7 @@ as_pg_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 			FOR_EACH_CLUSTER(NULL) {
 				uint32_t smallest_lft = 0xFFFFFFFF;
 				while((object = list_next(itr2))) {
-					if(object->lft < smallest_lft
+					if (object->lft < smallest_lft
 					   && !strcmp(object->cluster,
 						      cluster_name))
 						smallest_lft = object->lft;
@@ -2073,7 +2073,7 @@ as_pg_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 				list_iterator_reset(itr2);
 				/* now get the lowest lft from the
 				   added files by cluster */
-				if(smallest_lft != 0xFFFFFFFF)
+				if (smallest_lft != 0xFFFFFFFF)
 					rc = pgsql_get_modified_lfts(
 						pg_conn, cluster_name,
 						smallest_lft);
@@ -2082,19 +2082,19 @@ as_pg_add_associations(pgsql_conn_t *pg_conn, uint32_t uid,
 		}
 	}
 
-	if(rc == SLURM_SUCCESS) {
-		if(txn_query) {
+	if (rc == SLURM_SUCCESS) {
+		if (txn_query) {
 			xstrcat(txn_query, ";");
 			debug3("as/pg(%s:%d) query\n%s", THIS_FILE,
 			       __LINE__, txn_query);
 			rc = pgsql_db_query(pg_conn->db_conn, txn_query);
 			xfree(txn_query);
-			if(rc != SLURM_SUCCESS) {
+			if (rc != SLURM_SUCCESS) {
 				error("Couldn't add txn");
 				rc = SLURM_SUCCESS;
 			}
 		}
-		if(moved_parent) {
+		if (moved_parent) {
 			list_flush(pg_conn->update_list);
 			if (_clusters_assoc_update(pg_conn,
 						   update_cluster_list, uid)
@@ -2146,7 +2146,7 @@ _cluster_modify_associations(pgsql_conn_t *pg_conn, char *cluster,
 			       ma_fields, cluster, assoc_table, cond);
 	xfree(cond);
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 
 	if (PQntuples(result) == 0) {
@@ -2179,14 +2179,14 @@ _cluster_modify_associations(pgsql_conn_t *pg_conn, char *cluster,
 		 * association so account is really the parent
 		 * of the user a coord can change that all day long.
 		 */
-		if(!ISEMPTY(F_PACCT))
+		if (!ISEMPTY(F_PACCT))
 			/* parent_acct != '' => user_name = '' */
 			account = ROW(F_PACCT);
 
-		if(!is_admin) {
+		if (!is_admin) {
 
 			if (!is_user_coord(user, account)) {
-				if(!ISEMPTY(F_PACCT))
+				if (!ISEMPTY(F_PACCT))
 					error("User %s(%d) can not modify "
 					      "account (%s) because they "
 					      "are not coordinators of "
@@ -2207,19 +2207,19 @@ _cluster_modify_associations(pgsql_conn_t *pg_conn, char *cluster,
 			}
 		}
 
-		if(! ISEMPTY(F_PART)) { 	/* partition != '' */
+		if (! ISEMPTY(F_PART)) { 	/* partition != '' */
 			object = xstrdup_printf(
 				"C = %-10s A = %-20s U = %-9s P = %s",
 				cluster, ROW(F_ACCT),
 				ROW(F_USER), ROW(F_PART));
-		} else if(! ISEMPTY(F_USER)){ /* user != '' */
+		} else if (! ISEMPTY(F_USER)){ /* user != '' */
 			object = xstrdup_printf(
 				"C = %-10s A = %-20s U = %-9s",
 				cluster, ROW(F_ACCT),
 				ROW(F_USER));
 		} else {
-			if(assoc->parent_acct) {
-				if(!strcasecmp(ROW(F_ACCT),
+			if (assoc->parent_acct) {
+				if (!strcasecmp(ROW(F_ACCT),
 					       assoc->parent_acct)) {
 					error("You can't make an account be "
 					      "child of it's self");
@@ -2239,7 +2239,7 @@ _cluster_modify_associations(pgsql_conn_t *pg_conn, char *cluster,
 
 				moved_parent = 1;
 			}
-			if(! ISEMPTY(F_PACCT)) {
+			if (! ISEMPTY(F_PACCT)) {
 				object = xstrdup_printf(
 					"C = %-10s A = %s of %s",
 					cluster, ROW(F_ACCT),
@@ -2253,7 +2253,7 @@ _cluster_modify_associations(pgsql_conn_t *pg_conn, char *cluster,
 		}
 		list_append(ret_list, object);
 
-		if(!set) {
+		if (!set) {
 			xstrfmtcat(name_char, "(id_assoc=%s", ROW(F_ID));
 			set = 1;
 		} else {
@@ -2269,10 +2269,10 @@ _cluster_modify_associations(pgsql_conn_t *pg_conn, char *cluster,
 
 		/* no need to get the parent id since if we moved
 		 * parent id's we will get it when we send the total list */
-		if(ISEMPTY(F_USER))
+		if (ISEMPTY(F_USER))
 			mod_assoc->parent_acct = xstrdup(assoc->parent_acct);
 
-		if(assoc->qos_list && list_count(assoc->qos_list)) {
+		if (assoc->qos_list && list_count(assoc->qos_list)) {
 			ListIterator new_qos_itr =
 				list_iterator_create(assoc->qos_list);
 			char *new_qos = NULL, *tmp_qos = NULL;
@@ -2281,11 +2281,11 @@ _cluster_modify_associations(pgsql_conn_t *pg_conn, char *cluster,
 
 			mod_assoc->qos_list = list_create(slurm_destroy_char);
 			while((new_qos = list_next(new_qos_itr))) {
-				if(new_qos[0] == '-' || new_qos[0] == '+') {
+				if (new_qos[0] == '-' || new_qos[0] == '+') {
 					list_append(mod_assoc->qos_list,
 						    xstrdup(new_qos));
 					delta = 1;
-				} else if(new_qos[0]) {
+				} else if (new_qos[0]) {
 					list_append(mod_assoc->qos_list,
 						    xstrdup_printf("=%s",
 								   new_qos));
@@ -2350,11 +2350,11 @@ _cluster_modify_associations(pgsql_conn_t *pg_conn, char *cluster,
 		/* TODO: how about here set_assoc_parent_limits_... */
 		_set_assoc_limits_for_add(pg_conn, mod_assoc); /* XXX: parent account?  */
 
-		if(addto_update_list(pg_conn->update_list,
+		if (addto_update_list(pg_conn->update_list,
 				     SLURMDB_MODIFY_ASSOC,
 				     mod_assoc) != SLURM_SUCCESS)
 			error("couldn't add to the update list");
-		if(account_type) { /* propagate change to sub account and users */
+		if (account_type) { /* propagate change to sub account and users */
 			_modify_unset_users(pg_conn,
 					    cluster,
 					    mod_assoc,
@@ -2366,13 +2366,13 @@ _cluster_modify_associations(pgsql_conn_t *pg_conn, char *cluster,
 	} END_EACH_ROW;
 	PQclear(result);
 
-	if(assoc->parent_acct) {
+	if (assoc->parent_acct) {
 		if ((rc == ESLURM_INVALID_PARENT_ACCOUNT ||
 		     rc == ESLURM_SAME_PARENT_ACCOUNT) &&
 		    list_count(ret_list))
 			rc = SLURM_SUCCESS;
 
-		if(rc != SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
 			list_destroy(ret_list);
 			errno = rc;
 			return SLURM_ERROR;
@@ -2380,7 +2380,7 @@ _cluster_modify_associations(pgsql_conn_t *pg_conn, char *cluster,
 	}
 
 
-	if(!list_count(ret_list)) {
+	if (!list_count(ret_list)) {
 		debug3("didn't effect anything");
 		xfree(vals);
 		list_destroy(ret_list);
@@ -2389,7 +2389,7 @@ _cluster_modify_associations(pgsql_conn_t *pg_conn, char *cluster,
 	}
 	xstrcat(name_char, ")");
 
-	if(vals) {
+	if (vals) {
 		char *table = xstrdup_printf("%s.%s", cluster, assoc_table);
 		user_name = uid_to_string((uid_t) user->uid);
 		rc = pgsql_modify_common(pg_conn, DBD_MODIFY_ASSOCS, now,
@@ -2404,7 +2404,7 @@ _cluster_modify_associations(pgsql_conn_t *pg_conn, char *cluster,
 			return rc;
 		}
 	}
-	if(moved_parent) {
+	if (moved_parent) {
 		List cl = list_create(NULL);
 		list_append(cl, cluster);
 		rc = _clusters_assoc_update(pg_conn, cl, user->uid);
@@ -2436,7 +2436,7 @@ as_pg_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
  	int is_admin=0, rc = SLURM_SUCCESS;
  	slurmdb_user_rec_t user;
 
- 	if(!assoc_cond || !assoc) {
+ 	if (!assoc_cond || !assoc) {
  		error("as/pg: modify_associations: nothing to change");
  		return NULL;
  	}
@@ -2473,7 +2473,7 @@ as_pg_modify_associations(pgsql_conn_t *pg_conn, uint32_t uid,
  	}
 
  	_make_assoc_limit_vals(assoc, &vals);
- 	if((!vals && !assoc->parent_acct
+ 	if ((!vals && !assoc->parent_acct
  	    && (!assoc->qos_list || !list_count(assoc->qos_list)))) {
  		error("Nothing to change");
  		xfree(cond);
@@ -2531,7 +2531,7 @@ _get_assoc_running_jobs(pgsql_conn_t *pg_conn, char *cluster, char *assoc_cond)
  		job = xstrdup_printf(
  			"JobID = %-10s C = %-10s A = %-10s U = %-9s",
  			ROW(0), ROW(4), ROW(1), ROW(2));
- 		if(!ISEMPTY(3))
+ 		if (!ISEMPTY(3))
  			xstrfmtcat(job, " P = %s", ROW(3));
  		if (!job_list)
  			job_list = list_create(slurm_destroy_char);
@@ -2595,11 +2595,11 @@ _cluster_remove_associations(pgsql_conn_t *pg_conn, char *cluster,
  			       cluster, assoc_table, cond);
  	xfree(cond);
  	result = DEF_QUERY_RET;
- 	if(!result)
+ 	if (!result)
  		return SLURM_ERROR;
 
  	FOR_EACH_ROW {
- 		if(! name_char)
+ 		if (! name_char)
  			xstrfmtcat(name_char, "lft BETWEEN %s AND %s",
  				   ROW(0), ROW(1));
  		else
@@ -2608,7 +2608,7 @@ _cluster_remove_associations(pgsql_conn_t *pg_conn, char *cluster,
  	} END_EACH_ROW;
  	PQclear(result);
 
- 	if(!name_char) {
+ 	if (!name_char) {
  		return SLURM_SUCCESS;
  	}
 
@@ -2626,7 +2626,7 @@ _cluster_remove_associations(pgsql_conn_t *pg_conn, char *cluster,
  	FOR_EACH_ROW {
  		uint32_t lft;
  		slurmdb_association_rec_t *rem_assoc = NULL;
- 		if(!is_admin && !is_user_coord(user, ROW(F_ACCT))) {
+ 		if (!is_admin && !is_user_coord(user, ROW(F_ACCT))) {
  			error("User %s(%d) does not have the "
  			      "ability to change this account (%s)",
  			      user->name, user->uid, ROW(F_ACCT));
@@ -2634,18 +2634,18 @@ _cluster_remove_associations(pgsql_conn_t *pg_conn, char *cluster,
  			rc = SLURM_ERROR;
  			break;
  		}
- 		if(! ISEMPTY(F_PART)) {
+ 		if (! ISEMPTY(F_PART)) {
  			object = xstrdup_printf(
  				"C = %-10s A = %-10s U = %-9s P = %s",
  				cluster, ROW(F_ACCT),
  				ROW(F_USER), ROW(F_PART));
- 		} else if(! ISEMPTY(F_USER)){
+ 		} else if (! ISEMPTY(F_USER)){
  			object = xstrdup_printf(
  				"C = %-10s A = %-10s U = %-9s",
  				cluster, ROW(F_ACCT),
  				ROW(F_USER));
  		} else {
- 			if(! ISEMPTY(F_PACCT)) {
+ 			if (! ISEMPTY(F_PACCT)) {
  				object = xstrdup_printf(
  					"C = %-10s A = %s of %s",
  					cluster, ROW(F_ACCT),
@@ -2658,7 +2658,7 @@ _cluster_remove_associations(pgsql_conn_t *pg_conn, char *cluster,
  		}
  		list_append(ret_list, object);
  		list_append(assoc_id_list, xstrdup(ROW(F_ID)));
- 		if(! assoc_char)
+ 		if (! assoc_char)
  			xstrfmtcat(assoc_char, "t1.id_assoc=%s", ROW(F_ID));
  		else
  			xstrfmtcat(assoc_char, " OR t1.id_assoc=%s", ROW(F_ID));
@@ -2671,14 +2671,14 @@ _cluster_remove_associations(pgsql_conn_t *pg_conn, char *cluster,
  		   the modified lfts after it.
  		*/
  		lft = atoi(ROW(F_LFT));
- 		if(lft < smallest_lft)
+ 		if (lft < smallest_lft)
  			smallest_lft = lft;
 
  		rem_assoc = xmalloc(sizeof(slurmdb_association_rec_t));
  		slurmdb_init_association_rec(rem_assoc, 0);
  		rem_assoc->id = atoi(ROW(F_ID));
  		rem_assoc->cluster = xstrdup(cluster);
- 		if(addto_update_list(pg_conn->update_list,
+ 		if (addto_update_list(pg_conn->update_list,
  				     SLURMDB_REMOVE_ASSOC,
  				     rem_assoc) != SLURM_SUCCESS)
  			error("couldn't add to the update list");
@@ -2753,7 +2753,7 @@ as_pg_remove_associations(pgsql_conn_t *pg_conn, uint32_t uid,
  	slurmdb_user_rec_t user;
  	char *cond;
 
- 	if(!assoc_cond) {
+ 	if (!assoc_cond) {
  		error("as/pg: remove_associations: no condition given");
  		return NULL;
  	}
@@ -2830,7 +2830,7 @@ as_pg_get_associations(pgsql_conn_t *pg_conn, uid_t uid,
  	}
 
 
- 	if(!assoc_cond)
+ 	if (!assoc_cond)
  		xstrcat(cond, " WHERE deleted=0");
  	else
  		cond = _make_assoc_cond(assoc_cond);
@@ -2901,7 +2901,7 @@ get_user_from_associd(pgsql_conn_t *pg_conn, char *cluster,
  	query = xstrdup_printf("SELECT user_name FROM %s.%s WHERE id_assoc=%u",
  			       cluster, assoc_table, associd);
   	result = DEF_QUERY_RET;
-  	if(!result)
+  	if (!result)
   		return NULL;
 	if (PQntuples(result))
 		user_name = xstrdup(PG_VAL(0));
@@ -2933,7 +2933,7 @@ pgsql_get_modified_lfts(pgsql_conn_t *pg_conn,
 		assoc->id = atoi(ROW(0));
 		assoc->lft = atoi(ROW(1));
 		assoc->cluster = xstrdup(cluster_name);
-		if(addto_update_list(pg_conn->update_list,
+		if (addto_update_list(pg_conn->update_list,
 				     SLURMDB_MODIFY_ASSOC,
 				     assoc) != SLURM_SUCCESS)
 			slurmdb_destroy_association_rec(assoc);

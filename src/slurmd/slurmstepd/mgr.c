@@ -258,7 +258,7 @@ static uint32_t _get_exit_code(slurmd_job_t *job)
 	for (i = 0; i < job->node_tasks; i++) {
 		/* If signalled we only need to check one and then
 		 * break out of the loop */
-		if(WIFSIGNALED(job->task[i]->estatus)) {
+		if (WIFSIGNALED(job->task[i]->estatus)) {
 			step_rc = job->task[i]->estatus;
 			break;
 		}
@@ -554,7 +554,7 @@ _setup_normal_io(slurmd_job_t *job)
 			}
 		}
 
-		if(io_initial_client_connect(srun, job, srun_stdout_tasks,
+		if (io_initial_client_connect(srun, job, srun_stdout_tasks,
 					     srun_stderr_tasks) < 0) {
 			rc = ESLURMD_IO_ERROR;
 			goto claim;
@@ -2108,7 +2108,7 @@ _drop_privileges(slurmd_job_t *job, bool do_setuid, struct priv_state *ps)
 
 	ps->gid_list = (gid_t *) xmalloc(ps->ngids * sizeof(gid_t));
 
-	if(getgroups(ps->ngids, ps->gid_list) == -1) {
+	if (getgroups(ps->ngids, ps->gid_list) == -1) {
 		error("_drop_privileges: couldn't get %d groups: %m",
 		      ps->ngids);
 		xfree(ps->gid_list);
@@ -2418,7 +2418,7 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 			exit(127);
 		}
 
-		if(chdir(job->cwd) == -1)
+		if (chdir(job->cwd) == -1)
 			error("run_script_as_user: couldn't "
 			      "change working dir to %s: %m", job->cwd);
 #ifdef SETPGRP_TWO_ARGS

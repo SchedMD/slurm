@@ -304,7 +304,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 			 * know it is less than the number of nodes
 			 * in the allocation
 			 */
-			if(opt.ntasks_set && (opt.ntasks < ai->nnodes))
+			if (opt.ntasks_set && (opt.ntasks < ai->nnodes))
 				opt.min_nodes = opt.ntasks;
 			else
 				opt.min_nodes = ai->nnodes;

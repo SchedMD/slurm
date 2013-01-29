@@ -626,7 +626,7 @@ _get_assoc_usage(pgsql_conn_t *pg_conn, uid_t uid,
 		return SLURM_ERROR;
 	}
 	cluster = slurmdb_assoc->cluster;
-	if(!slurmdb_assoc->id) {
+	if (!slurmdb_assoc->id) {
 		error("We need an assoc id to set data for getting usage");
 		return SLURM_ERROR;
 	}
@@ -642,27 +642,27 @@ _get_assoc_usage(pgsql_conn_t *pg_conn, uid_t uid,
 		ListIterator itr = NULL;
 		slurmdb_coord_rec_t *coord = NULL;
 
-		if(slurmdb_assoc->user &&
+		if (slurmdb_assoc->user &&
 		   !strcmp(slurmdb_assoc->user, user.name))
 			goto is_user;
 
-		if(!user.coord_accts) {
+		if (!user.coord_accts) {
 			debug4("This user isn't a coord.");
 			goto bad_user;
 		}
-		if(!slurmdb_assoc->acct) {
+		if (!slurmdb_assoc->acct) {
 			debug("No account name given "
 			      "in association.");
 			goto bad_user;
 		}
 		itr = list_iterator_create(user.coord_accts);
 		while((coord = list_next(itr))) {
-			if(!strcasecmp(coord->name,
+			if (!strcasecmp(coord->name,
 				       slurmdb_assoc->acct))
 				break;
 		}
 		list_iterator_destroy(itr);
-		if(coord)
+		if (coord)
 			goto is_user;
 
 	bad_user:
@@ -672,7 +672,7 @@ _get_assoc_usage(pgsql_conn_t *pg_conn, uid_t uid,
 
 is_user:
 	usage_table = assoc_day_table;
-	if(set_usage_information(&usage_table, DBD_GET_ASSOC_USAGE,
+	if (set_usage_information(&usage_table, DBD_GET_ASSOC_USAGE,
 				 &start, &end) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
@@ -686,10 +686,10 @@ is_user:
 		cluster, usage_table, cluster, assoc_table, cluster,
 		assoc_table, end, start, slurmdb_assoc->id);
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 
-	if(!slurmdb_assoc->accounting_list)
+	if (!slurmdb_assoc->accounting_list)
 		slurmdb_assoc->accounting_list =
 			list_create(slurmdb_destroy_accounting_rec);
 
@@ -737,7 +737,7 @@ _get_wckey_usage(pgsql_conn_t *pg_conn, uid_t uid,
 		return SLURM_ERROR;
 	}
 	cluster = slurmdb_wckey->cluster;
-	if(!slurmdb_wckey->id) {
+	if (!slurmdb_wckey->id) {
 		error("We need an wckey id to set data for getting usage");
 		return SLURM_ERROR;
 	}
@@ -750,7 +750,7 @@ _get_wckey_usage(pgsql_conn_t *pg_conn, uid_t uid,
 	}
 	
 	if (!is_admin) {
-		if(! slurmdb_wckey->user ||
+		if (! slurmdb_wckey->user ||
 		   strcmp(slurmdb_wckey->user, user.name)) {
 			errno = ESLURM_ACCESS_DENIED;
 			return SLURM_ERROR;
@@ -758,7 +758,7 @@ _get_wckey_usage(pgsql_conn_t *pg_conn, uid_t uid,
 	}
 
 	usage_table = wckey_day_table;
-	if(set_usage_information(&usage_table, DBD_GET_WCKEY_USAGE,
+	if (set_usage_information(&usage_table, DBD_GET_WCKEY_USAGE,
 				 &start, &end) != SLURM_SUCCESS) {
 		return SLURM_ERROR;
 	}
@@ -769,10 +769,10 @@ _get_wckey_usage(pgsql_conn_t *pg_conn, uid_t uid,
 		"AND id_wckey=%d ORDER BY id_wckey, time_start;", cluster, 
 		usage_table, end, start, slurmdb_wckey->id);
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 
-	if(!slurmdb_wckey->accounting_list)
+	if (!slurmdb_wckey->accounting_list)
 		slurmdb_wckey->accounting_list =
 			list_create(slurmdb_destroy_accounting_rec);
 
@@ -821,12 +821,12 @@ _get_cluster_usage(pgsql_conn_t *pg_conn, uid_t uid,
                 F_COUNT
         };
 
-        if(!cluster_rec->name || !cluster_rec->name[0]) {
+        if (!cluster_rec->name || !cluster_rec->name[0]) {
                 error("We need a cluster name to set data for");
                 return SLURM_ERROR;
         }
 
-        if(set_usage_information(&usage_table, DBD_GET_CLUSTER_USAGE,
+        if (set_usage_information(&usage_table, DBD_GET_CLUSTER_USAGE,
 				 &start, &end) != SLURM_SUCCESS) {
                 return SLURM_ERROR;
         }
@@ -840,7 +840,7 @@ _get_cluster_usage(pgsql_conn_t *pg_conn, uid_t uid,
 	if (!result)
 		return SLURM_ERROR;
 
-	if(!cluster_rec->accounting_list)
+	if (!cluster_rec->accounting_list)
                 cluster_rec->accounting_list =
                         list_create(slurmdb_destroy_cluster_accounting_rec);
 
@@ -926,19 +926,19 @@ get_usage_for_assoc_list(pgsql_conn_t *pg_conn, char *cluster, List assoc_list,
 		F_COUNT
 	};
 
-	if(!assoc_list) {
+	if (!assoc_list) {
 		error("We need an object to set data for getting usage");
 		return SLURM_ERROR;
 	}
 	usage_table = assoc_day_table;
-	if(set_usage_information(&usage_table, DBD_GET_ASSOC_USAGE,
+	if (set_usage_information(&usage_table, DBD_GET_ASSOC_USAGE,
 				 &start, &end) != SLURM_SUCCESS) {
 		return SLURM_ERROR;
 	}
 
 	itr = list_iterator_create(assoc_list);
 	while((assoc = list_next(itr))) {
-		if(id_str)
+		if (id_str)
 			xstrfmtcat(id_str, " OR t3.id_assoc=%d", assoc->id);
 		else
 			xstrfmtcat(id_str, "t3.id_assoc=%d", assoc->id);
@@ -956,7 +956,7 @@ get_usage_for_assoc_list(pgsql_conn_t *pg_conn, char *cluster, List assoc_list,
 		assoc_table, end, start, id_str);
 	xfree(id_str);
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 
 	usage_list = list_create(slurmdb_destroy_accounting_rec);
@@ -974,16 +974,16 @@ get_usage_for_assoc_list(pgsql_conn_t *pg_conn, char *cluster, List assoc_list,
 	itr = list_iterator_create(assoc_list);
 	while((assoc = list_next(itr))) {
 		int found = 0;
-		if(!assoc->accounting_list)
+		if (!assoc->accounting_list)
 			assoc->accounting_list = list_create(
 				slurmdb_destroy_accounting_rec);
 		while((accounting_rec = list_next(u_itr))) {
-			if(assoc->id == accounting_rec->id) {
+			if (assoc->id == accounting_rec->id) {
 				list_append(assoc->accounting_list,
 					    accounting_rec);
 				list_remove(u_itr);
 				found = 1;
-			} else if(found) {
+			} else if (found) {
 				/* here we know the
 				   list is in id order so
 				   if the next record
@@ -1002,7 +1002,7 @@ get_usage_for_assoc_list(pgsql_conn_t *pg_conn, char *cluster, List assoc_list,
 	list_iterator_destroy(itr);
 	list_iterator_destroy(u_itr);
 
-	if(list_count(usage_list))
+	if (list_count(usage_list))
 		error("we have %d records not added "
 		      "to the association list",
 		      list_count(usage_list));
@@ -1037,20 +1037,20 @@ get_usage_for_wckey_list(pgsql_conn_t *pg_conn, char *cluster, List wckey_list,
 		F_COUNT
 	};
 
-	if(!wckey_list) {
+	if (!wckey_list) {
 		error("We need an object to set data for getting usage");
 		return SLURM_ERROR;
 	}
 
 	usage_table = wckey_day_table;
-	if(set_usage_information(&usage_table, DBD_GET_WCKEY_USAGE,
+	if (set_usage_information(&usage_table, DBD_GET_WCKEY_USAGE,
 				 &start, &end) != SLURM_SUCCESS) {
 		return SLURM_ERROR;
 	}
 
 	itr = list_iterator_create(wckey_list);
 	while((wckey = list_next(itr))) {
-		if(id_str)
+		if (id_str)
 			xstrfmtcat(id_str, " OR id_wckey=%d", wckey->id);
 		else
 			xstrfmtcat(id_str, "id_wckey=%d", wckey->id);
@@ -1064,7 +1064,7 @@ get_usage_for_wckey_list(pgsql_conn_t *pg_conn, char *cluster, List wckey_list,
 		cluster, usage_table, end, start, id_str);
 	xfree(id_str);
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 
 	usage_list = list_create(slurmdb_destroy_accounting_rec);
@@ -1082,16 +1082,16 @@ get_usage_for_wckey_list(pgsql_conn_t *pg_conn, char *cluster, List wckey_list,
 	itr = list_iterator_create(wckey_list);
 	while((wckey = list_next(itr))) {
 		int found = 0;
-		if(!wckey->accounting_list)
+		if (!wckey->accounting_list)
 			wckey->accounting_list = list_create(
 				slurmdb_destroy_accounting_rec);
 		while((accounting_rec = list_next(u_itr))) {
-			if(wckey->id == accounting_rec->id) {
+			if (wckey->id == accounting_rec->id) {
 				list_append(wckey->accounting_list,
 					    accounting_rec);
 				list_remove(u_itr);
 				found = 1;
-			} else if(found) {
+			} else if (found) {
 				/* here we know the
 				   list is in id order so
 				   if the next record
@@ -1110,7 +1110,7 @@ get_usage_for_wckey_list(pgsql_conn_t *pg_conn, char *cluster, List wckey_list,
 	list_iterator_destroy(itr);
 	list_iterator_destroy(u_itr);
 
-	if(list_count(usage_list))
+	if (list_count(usage_list))
 		error("we have %d records not added "
 		      "to the wckey list",
 		      list_count(usage_list));

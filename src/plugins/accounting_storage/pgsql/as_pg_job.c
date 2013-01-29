@@ -157,10 +157,10 @@ _get_db_index(pgsql_conn_t *pg_conn, time_t submit, uint32_t jobid,
 		" AND id_job=%u AND id_assoc=%u", pg_conn->cluster_name,
 		job_table, submit, jobid, associd);
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return 0;
 
-	if(!PQntuples(result)) {
+	if (!PQntuples(result)) {
 		debug("We can't get a db_index for this combo, "
 		      "time_submit=%ld and id_job=%u and id_assoc=%u."
 		      "We must not have heard about the start yet, "
@@ -190,7 +190,7 @@ _check_job_db_index(pgsql_conn_t *pg_conn, struct job_record *job_ptr)
 	else
 		submit_time = job_ptr->details->submit_time;
 
-	if(!job_ptr->db_index) {
+	if (!job_ptr->db_index) {
 		job_ptr->db_index = _get_db_index(
 			pg_conn,
 			submit_time,
@@ -200,7 +200,7 @@ _check_job_db_index(pgsql_conn_t *pg_conn, struct job_record *job_ptr)
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(jobacct_storage_p_job_start(pg_conn, job_ptr)
+			if (jobacct_storage_p_job_start(pg_conn, job_ptr)
 			   == SLURM_ERROR) {
 				error("couldn't add job %u ",
 				      job_ptr->job_id);
@@ -406,9 +406,9 @@ js_pg_job_start(pgsql_conn_t *pg_conn,
 	 * removed. This is most likely the only time we are going to
 	 * be notified of the change also so make the state without
 	 * the resize. */
-	if(IS_JOB_RESIZING(job_ptr)) {
+	if (IS_JOB_RESIZING(job_ptr)) {
 		/* If we have a db_index lets end the previous record. */
-		if(job_ptr->db_index)
+		if (job_ptr->db_index)
 			js_pg_job_complete(pg_conn, job_ptr);
 		else
 			error("We don't have a db_index for job %u, "
@@ -440,7 +440,7 @@ js_pg_job_start(pgsql_conn_t *pg_conn,
 		check_time = submit_time;
 
 	slurm_mutex_lock(&usage_rollup_lock);
-	if(check_time < global_last_rollup) {
+	if (check_time < global_last_rollup) {
 		PGresult *result = NULL;
 		/* check to see if we are hearing about this time for the
 		 * first time.
@@ -451,7 +451,7 @@ js_pg_job_start(pgsql_conn_t *pg_conn,
 			pg_conn->cluster_name, job_table, job_ptr->job_id,
 			submit_time, begin_time, start_time);
 		result = DEF_QUERY_RET;
-		if(!result) {
+		if (!result) {
 			 slurm_mutex_unlock(&usage_rollup_lock);
 			return SLURM_ERROR;
 		}
@@ -465,13 +465,13 @@ js_pg_job_start(pgsql_conn_t *pg_conn,
 		}
 		PQclear(result);
 
-		if(job_ptr->start_time)
+		if (job_ptr->start_time)
 			debug("Need to reroll usage from %s Job %u "
 			      "from %s started then and we are just "
 			      "now hearing about it.",
 			      ctime(&check_time),
 			      job_ptr->job_id, pg_conn->cluster_name);
-		else if(begin_time)
+		else if (begin_time)
 			debug("Need to reroll usage from %s Job %u "
 			      "from %s became eligible then and we are just "
 			      "now hearing about it.",
@@ -509,17 +509,17 @@ no_rollup_change:
 	else
 		nodes = "None assigned";
 
-	if(job_ptr->batch_flag)
+	if (job_ptr->batch_flag)
 		track_steps = 1;
 
-	if(slurmdbd_conf) {
+	if (slurmdbd_conf) {
 		block_id = xstrdup(job_ptr->comment);
 		node_cnt = job_ptr->total_nodes;
 		node_inx = job_ptr->network;
 	} else {
 		char temp_bit[BUF_SIZE];
 
-		if(job_ptr->node_bitmap) {
+		if (job_ptr->node_bitmap) {
 			node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
 					   job_ptr->node_bitmap);
 		}
@@ -537,13 +537,13 @@ no_rollup_change:
 
 	/* If there is a start_time get the wckeyid.  If the job is
 	 * cancelled before the job starts we also want to grab it. */
-	if(job_ptr->assoc_id &&
+	if (job_ptr->assoc_id &&
 	   (job_ptr->start_time || IS_JOB_CANCELLED(job_ptr)))
 		wckeyid = get_wckeyid(pg_conn, &job_ptr->wckey,
 				      job_ptr->user_id, pg_conn->cluster_name,
 				      job_ptr->assoc_id);
 
-	if(!job_ptr->db_index) {
+	if (!job_ptr->db_index) {
 		if (!begin_time)
 			begin_time = submit_time;
 
@@ -595,7 +595,7 @@ no_rollup_change:
 		job_ptr->db_index = pgsql_query_ret_id(pg_conn->db_conn,
 						       query);
 		if (!job_ptr->db_index) {
-			if(!reinit) {
+			if (!reinit) {
 				error("It looks like the storage has gone "
 				      "away trying to reconnect");
 				check_db_connection(pg_conn);
@@ -608,17 +608,17 @@ no_rollup_change:
 	} else {
 		query = xstrdup_printf("UPDATE %s.%s SET nodelist='%s', ",
 				       pg_conn->cluster_name, job_table, nodes);
-		if(job_ptr->account)
+		if (job_ptr->account)
 			xstrfmtcat(query, "account='%s', ",
 				   job_ptr->account);
-		if(job_ptr->partition)
+		if (job_ptr->partition)
 			xstrfmtcat(query, "partition='%s', ",
 				   job_ptr->partition);
-		if(block_id)
+		if (block_id)
 			xstrfmtcat(query, "blockid='%s', ", block_id);
-		if(job_ptr->wckey)
+		if (job_ptr->wckey)
 			xstrfmtcat(query, "wckey='%s', ", job_ptr->wckey);
-		if(node_inx)
+		if (node_inx)
 			xstrfmtcat(query, "node_inx='%s', ", node_inx);
 
 		xstrfmtcat(query, "time_start=%ld, job_name='%s', state=%d, "
@@ -686,7 +686,7 @@ js_pg_job_complete(pgsql_conn_t *pg_conn,
 	}
 
 	slurm_mutex_lock(&usage_rollup_lock);
-	if(end_time < global_last_rollup) {
+	if (end_time < global_last_rollup) {
 		global_last_rollup = job_ptr->end_time;
 		slurm_mutex_unlock(&usage_rollup_lock);
 
@@ -757,17 +757,17 @@ js_pg_step_start(pgsql_conn_t *pg_conn,
 
 	if (step_ptr->job_ptr->resize_time) {
 		submit_time = start_time = step_ptr->job_ptr->resize_time;
-		if(step_ptr->start_time > submit_time)
+		if (step_ptr->start_time > submit_time)
 			start_time = step_ptr->start_time;
 	} else {
 		start_time = step_ptr->start_time;
 		submit_time = step_ptr->job_ptr->details->submit_time;
 	}
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	if(slurmdbd_conf) {
+	if (slurmdbd_conf) {
 		tasks = step_ptr->job_ptr->details->num_tasks;
 		cpus = step_ptr->cpu_count;
 		snprintf(node_list, BUFFER_SIZE, "%s",
@@ -778,7 +778,7 @@ js_pg_step_start(pgsql_conn_t *pg_conn,
 	} else {
 		char temp_bit[BUF_SIZE];
 
-		if(step_ptr->step_node_bitmap) {
+		if (step_ptr->step_node_bitmap) {
 			node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
 					   step_ptr->step_node_bitmap);
 		}
@@ -787,7 +787,7 @@ js_pg_step_start(pgsql_conn_t *pg_conn,
 		select_g_select_jobinfo_get(step_ptr->job_ptr->select_jobinfo,
 					    SELECT_JOBDATA_IONODES,
 					    &ionodes);
-		if(ionodes) {
+		if (ionodes) {
 			snprintf(node_list, BUFFER_SIZE,
 				 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
 			xfree(ionodes);
@@ -798,7 +798,7 @@ js_pg_step_start(pgsql_conn_t *pg_conn,
 					    SELECT_JOBDATA_NODE_CNT,
 					    &nodes);
 #else
-		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
+		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 			tasks = cpus = step_ptr->job_ptr->total_cpus;
 			snprintf(node_list, BUFFER_SIZE, "%s",
 				 step_ptr->job_ptr->nodes);
@@ -888,14 +888,14 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 
 	if (step_ptr->job_ptr->resize_time) {
 		submit_time = start_time = step_ptr->job_ptr->resize_time;
-		if(step_ptr->start_time > submit_time)
+		if (step_ptr->start_time > submit_time)
 			start_time = step_ptr->start_time;
 	} else {
 		start_time = step_ptr->start_time;
 		submit_time = step_ptr->job_ptr->details->submit_time;
 	}
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	if (jobacct == NULL) {
@@ -904,7 +904,7 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 		jobacct = &dummy_jobacct;
 	}
 
-	if(slurmdbd_conf) {
+	if (slurmdbd_conf) {
 		now = step_ptr->job_ptr->end_time;
 		cpus = step_ptr->cpu_count;
 	} else {
@@ -913,7 +913,7 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 		cpus = step_ptr->job_ptr->details->min_cpus;
 
 #else
-		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
+		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
 			cpus = step_ptr->job_ptr->total_cpus;
 		else
 			cpus = step_ptr->cpu_count;
@@ -934,7 +934,7 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 	}
 
 	/* figure out the ave of the totals sent */
-	if(cpus > 0) {
+	if (cpus > 0) {
 		ave_vsize = (double)jobacct->tot_vsize;
 		ave_vsize /= (double)cpus;
 		ave_rss = (double)jobacct->tot_rss;
@@ -945,7 +945,7 @@ js_pg_step_complete(pgsql_conn_t *pg_conn,
 		ave_cpu /= (double)cpus;
 	}
 
-	if(jobacct->min_cpu != (uint32_t)NO_VAL) {
+	if (jobacct->min_cpu != (uint32_t)NO_VAL) {
 		ave_cpu2 = (double)jobacct->min_cpu;
 	}
 
@@ -1087,7 +1087,7 @@ as_pg_flush_jobs_on_cluster(pgsql_conn_t *pg_conn, time_t event_time)
  	char *id_char = NULL;
  	char *suspended_char = NULL;
 
- 	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+ 	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
  		return ESLURM_DB_CONNECTION;
 
  	if (! cluster_in_db(pg_conn, pg_conn->cluster_name) ) {
@@ -1107,8 +1107,8 @@ as_pg_flush_jobs_on_cluster(pgsql_conn_t *pg_conn, time_t event_time)
 
  	FOR_EACH_ROW {
  		int state = atoi(ROW(1));
- 		if(state == JOB_SUSPENDED) {
- 			if(suspended_char)
+ 		if (state == JOB_SUSPENDED) {
+ 			if (suspended_char)
  				xstrfmtcat(suspended_char,
  					   " OR job_db_inx=%s", ROW(0));
  			else
@@ -1116,14 +1116,14 @@ as_pg_flush_jobs_on_cluster(pgsql_conn_t *pg_conn, time_t event_time)
  					   ROW(0));
  		}
 
- 		if(id_char)
+ 		if (id_char)
  			xstrfmtcat(id_char, " OR job_db_inx=%s", ROW(0));
  		else
  			xstrfmtcat(id_char, "job_db_inx=%s", ROW(0));
  	} END_EACH_ROW;
  	PQclear(result);
 
- 	if(suspended_char) {
+ 	if (suspended_char) {
  		xstrfmtcat(query,
  			   "UPDATE %s.%s SET time_suspended=%ld-time_suspended "
  			   "WHERE %s;", pg_conn->cluster_name, job_table,
@@ -1139,7 +1139,7 @@ as_pg_flush_jobs_on_cluster(pgsql_conn_t *pg_conn, time_t event_time)
  			   suspended_char);
  		xfree(suspended_char);
  	}
- 	if(id_char) {
+ 	if (id_char) {
  		xstrfmtcat(query,
  			   "UPDATE %s.%s SET state=%d, time_end=%ld WHERE %s;",
  			   pg_conn->cluster_name, job_table,
@@ -1151,7 +1151,7 @@ as_pg_flush_jobs_on_cluster(pgsql_conn_t *pg_conn, time_t event_time)
  		xfree(id_char);
  	}
 
- 	if(query)
+ 	if (query)
  		rc = DEF_QUERY_RET_RC;
 
  	return rc;
