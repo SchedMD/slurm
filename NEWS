@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
  -- Avoid apparent kernel bug in 2.6.32 which apparently is solved in
     at least 3.5.0.  This avoids a stack overflow when running jobs on
     more than 120k nodes.
+ -- BLUEGENE - If we made a block that isn't runnable because of a overlapping
+    block, destroy it correctly.
 
 * Changes in SLURM 2.5.1
 ========================

@@ -881,7 +881,11 @@ static int _check_for_booted_overlapping_blocks(
 					     found_record->job_running,
 					     found_record->bg_block_id);
 
-				if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
+				if (!bg_record->bg_block_id
+				    && bg_conf->layout_mode == LAYOUT_DYNAMIC)
+					list_delete_item(bg_record_itr);
+				else if (bg_conf->layout_mode
+					 == LAYOUT_DYNAMIC) {
 					List tmp_list = list_create(NULL);
 					List kill_job_list = NULL;
 					/* this will remove and
