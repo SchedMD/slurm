@@ -1281,7 +1281,7 @@ client_io_handler_downnodes(client_io_t *cio,
 void
 client_io_handler_abort(client_io_t *cio)
 {
-	struct server_io_info *info;
+	struct server_io_info *io_info;
 	int i;
 
 	if (cio == NULL)
@@ -1293,12 +1293,12 @@ client_io_handler_abort(client_io_t *cio)
 			cio->ioservers_ready =
 				bit_set_count(cio->ioservers_ready_bits);
 		} else if (cio->ioserver[i] != NULL) {
-			info = (struct server_io_info *)cio->ioserver[i]->arg;
+			io_info = (struct server_io_info *)cio->ioserver[i]->arg;
 			/* Trick the server eio_obj_t into closing its
 			 * connection. */
-			info->remote_stdout_objs = 0;
-			info->remote_stderr_objs = 0;
-			info->testing_connection = false;
+			io_info->remote_stdout_objs = 0;
+			io_info->remote_stderr_objs = 0;
+			io_info->testing_connection = false;
 			cio->ioserver[i]->shutdown = true;
 		}
 	}
