@@ -421,6 +421,29 @@ set_slcb(HV *callbacks)
 }
 
 static void
+step_complete_cb(srun_job_complete_msg_t *comp_msg)
+{
+	FREETMPS;
+	LEAVE;
+}
+
+static void
+step_signal_cb(int signo)
+{
+	FREETMPS;
+	LEAVE;
+
+}
+
+static void
+step_timeout_cb(srun_timeout_msg_t *timeout_msg)
+{
+	FREETMPS;
+	LEAVE;
+
+}
+
+static void
 task_start_cb(launch_tasks_response_msg_t *resp_msg)
 {
 	HV *hv;
@@ -489,6 +512,9 @@ task_finish_cb(task_exit_msg_t *exit_msg)
 }
 
 slurm_step_launch_callbacks_t slcb = {
+	step_complete_cb,
+	step_signal_cb,
+	step_timeout_cb,
 	task_start_cb, 
 	task_finish_cb
 };
