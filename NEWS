@@ -39,6 +39,7 @@ documents those changes that are of interest to users and admins.
  -- Added squeue --array/-r option to optimize output for job arrays.
  -- Added "SlurmctldPlugstack" configuration parameter for generic stack of
     slurmctld daemon plugins.
+ -- Removed contribs/arrayrun tool. Use native support for job arrays.
 
 * Changes in SLURM 2.5.2
 ========================

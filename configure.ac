@@ -402,7 +402,6 @@ AC_CONFIG_FILES([Makefile
 		 config.xml
 		 auxdir/Makefile
 		 contribs/Makefile
-		 contribs/arrayrun/Makefile
 		 contribs/cray/Makefile
 		 contribs/cray/opt_modulefiles_slurm
 		 contribs/lua/Makefile

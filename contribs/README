@@ -7,12 +7,6 @@ Subdirectories contain the source-code for the various contributations for
 SLURM as their documentation. A quick description of the subdirectories
 of the SLURM contribs distribution follows:
 
-  arrayrun            [Adds support for array jobs]
-     README                - Description of the arrayrun tool and its use
-     arrayrun              - Command used to submit job arrays
-     arrayrun_worker       - Back-end to the arrayrun command responsible for
-			     spawning the jobs in the array
-
   cray                [Tools for use on Cray systems]
      etc_init_d_munge      - /etc/init.d/munge script for use with Munge
      etc_sysconfig_slurm   - /etc/sysconfig/slurm for Cray XT/XE systems
