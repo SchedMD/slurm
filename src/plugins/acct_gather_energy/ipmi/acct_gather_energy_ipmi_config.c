@@ -56,8 +56,6 @@
 
 /* Local functions */
 static void _clear_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf);
-static char * _get_conf_path(void);
-
 extern void free_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 {
 	_clear_slurm_ipmi_conf(slurm_ipmi_conf);
@@ -145,7 +143,7 @@ extern int read_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 
 
 	/* Get the ipmi.conf path and validate the file */
-	conf_path = _get_conf_path();
+	conf_path = get_extra_conf_path("ipmi.conf");
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
 		info("No ipmi.conf file (%s)", conf_path);
 	} else {
@@ -245,29 +243,4 @@ extern int read_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 	xfree(conf_path);
 
 	return SLURM_SUCCESS;
-}
-
-/* Return the pathname of the ipmi.conf file.
- * xfree() the value returned */
-static char * _get_conf_path(void)
-{
-	char *val = getenv("SLURM_CONF");
-	char *path = NULL;
-	int i;
-
-	if (!val)
-		val = default_slurm_config_file;
-
-	/* Replace file name on end of path */
-	i = strlen(val) + 15;
-	path = xmalloc(i);
-	strcpy(path, val);
-	val = strrchr(path, (int)'/');
-	if (val)	/* absolute path */
-		val++;
-	else		/* not absolute path */
-		val = path;
-	strcpy(val, "ipmi.conf");
-
-	return path;
 }
