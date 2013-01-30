@@ -261,20 +261,11 @@ static int _init_ipmi_config (void)
 		}
 	}
 	/* Must call otherwise only default interpretations ever used */
-	if (sensor_config_file) {
-		if (ipmi_monitoring_ctx_sensor_config_file (ipmi_ctx,
-						sensor_config_file) < 0) {
-			error("ipmi_monitoring_ctx_sensor_config_file: %s",
-				ipmi_monitoring_ctx_errormsg (ipmi_ctx));
-			return SLURM_FAILURE;
-		}
-	} else {
-		if (ipmi_monitoring_ctx_sensor_config_file (ipmi_ctx, NULL)
-									< 0) {
-			error("ipmi_monitoring_ctx_sensor_config_file: %s",
-				ipmi_monitoring_ctx_errormsg (ipmi_ctx));
-			return SLURM_FAILURE;
-		}
+	if (ipmi_monitoring_ctx_sensor_config_file(
+		    ipmi_ctx, sensor_config_file) < 0) {
+		error("ipmi_monitoring_ctx_sensor_config_file: %s",
+		      ipmi_monitoring_ctx_errormsg(ipmi_ctx));
+		return SLURM_FAILURE;
 	}
 
 	if (slurm_ipmi_conf.reread_sdr_cache)
