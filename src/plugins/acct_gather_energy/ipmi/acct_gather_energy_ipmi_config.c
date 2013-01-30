@@ -141,10 +141,8 @@ extern int read_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 	uint32_t tmp;
 
 	/* Set initial values */
-	if (slurm_ipmi_conf == NULL) {
-		return SLURM_ERROR;
-	}
-	_clear_slurm_ipmi_conf(slurm_ipmi_conf);
+	xassert(slurm_ipmi_conf);
+
 
 	/* Get the ipmi.conf path and validate the file */
 	conf_path = _get_conf_path();
@@ -161,72 +159,72 @@ extern int read_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 		}
 
 		/* ipmi initialisation parameters */
-		s_p_get_uint32 (&slurm_ipmi_conf->driver_type,
-				"DriverType", tbl);
-		s_p_get_uint32 (&slurm_ipmi_conf->disable_auto_probe,
-				"DisableAutoProbe", tbl);
-		s_p_get_uint32 (&slurm_ipmi_conf->driver_address,
-				"DriverAddress", tbl);
-		s_p_get_uint32 (&slurm_ipmi_conf->register_spacing,
-				"RegisterSpacing", tbl);
+		s_p_get_uint32(&slurm_ipmi_conf->driver_type,
+			       "DriverType", tbl);
+		s_p_get_uint32(&slurm_ipmi_conf->disable_auto_probe,
+			       "DisableAutoProbe", tbl);
+		s_p_get_uint32(&slurm_ipmi_conf->driver_address,
+			       "DriverAddress", tbl);
+		s_p_get_uint32(&slurm_ipmi_conf->register_spacing,
+			       "RegisterSpacing", tbl);
 
 		s_p_get_string(&slurm_ipmi_conf->driver_device,
-				"DriverDevice", tbl);
+			       "DriverDevice", tbl);
 
-		s_p_get_uint32 (&slurm_ipmi_conf->protocol_version,
-				"ProtocolVersion", tbl);
+		s_p_get_uint32(&slurm_ipmi_conf->protocol_version,
+			       "ProtocolVersion", tbl);
 
-		s_p_get_string(&slurm_ipmi_conf->username,
-				"Username", tbl);
-		if (! slurm_ipmi_conf->username)
-			slurm_ipmi_conf->username =
-				xstrdup("foousername");
+		if (!s_p_get_string(&slurm_ipmi_conf->username,
+				    "Username", tbl))
+			slurm_ipmi_conf->username = xstrdup("foousername");
 
 		s_p_get_string(&slurm_ipmi_conf->password,
-				"Password", tbl);
+			       "Password", tbl);
 		if (! slurm_ipmi_conf->password)
 			slurm_ipmi_conf->password =
 				xstrdup("foopassword");
 
-		s_p_get_uint32 (&slurm_ipmi_conf->privilege_level,
-				"PrivilegeLevel", tbl);
-		s_p_get_uint32 (&slurm_ipmi_conf->authentication_type,
-				"AuthenticationType", tbl);
-		s_p_get_uint32 (&slurm_ipmi_conf->cipher_suite_id,
-				"CipherSuiteId", tbl);
-		s_p_get_uint32 (&slurm_ipmi_conf->session_timeout,
-				"SessionTimeout", tbl);
-		s_p_get_uint32 (&slurm_ipmi_conf->retransmission_timeout,
-				"RetransmissionTimeout", tbl);
-		s_p_get_uint32 (&slurm_ipmi_conf-> workaround_flags,
-				"WorkaroundFlags", tbl);
+		s_p_get_uint32(&slurm_ipmi_conf->privilege_level,
+			       "PrivilegeLevel", tbl);
+		s_p_get_uint32(&slurm_ipmi_conf->authentication_type,
+			       "AuthenticationType", tbl);
+		s_p_get_uint32(&slurm_ipmi_conf->cipher_suite_id,
+			       "CipherSuiteId", tbl);
+		s_p_get_uint32(&slurm_ipmi_conf->session_timeout,
+			       "SessionTimeout", tbl);
+		s_p_get_uint32(&slurm_ipmi_conf->retransmission_timeout,
+			       "RetransmissionTimeout", tbl);
+		s_p_get_uint32(&slurm_ipmi_conf-> workaround_flags,
+			       "WorkaroundFlags", tbl);
 
 		if (!s_p_get_boolean(&slurm_ipmi_conf->reread_sdr_cache,
-				"RereadSdrCache", tbl))
+				     "RereadSdrCache", tbl))
 			slurm_ipmi_conf->reread_sdr_cache = false;
-		if (!s_p_get_boolean(&slurm_ipmi_conf->ignore_non_interpretable_sensors,
-				"IgnoreNonInterpretableSensors", tbl))
-			slurm_ipmi_conf->ignore_non_interpretable_sensors = false;
+		if (!s_p_get_boolean(&slurm_ipmi_conf->
+				     ignore_non_interpretable_sensors,
+				     "IgnoreNonInterpretableSensors", tbl))
+			slurm_ipmi_conf->ignore_non_interpretable_sensors =
+				false;
 		if (!s_p_get_boolean(&slurm_ipmi_conf->bridge_sensors,
-				"BridgeSensors", tbl))
+				     "BridgeSensors", tbl))
 			slurm_ipmi_conf->bridge_sensors = false;
 		if (!s_p_get_boolean(&slurm_ipmi_conf->interpret_oem_data,
-				"InterpretOemData", tbl))
+				     "InterpretOemData", tbl))
 			slurm_ipmi_conf->interpret_oem_data = false;
 		if (!s_p_get_boolean(&slurm_ipmi_conf->shared_sensors,
-				"SharedSensors", tbl))
+				     "SharedSensors", tbl))
 			slurm_ipmi_conf->shared_sensors = false;
 		if (!s_p_get_boolean(&slurm_ipmi_conf->discrete_reading,
-				"DiscreteReading", tbl))
+				     "DiscreteReading", tbl))
 			slurm_ipmi_conf->discrete_reading = false;
 		if (!s_p_get_boolean(&slurm_ipmi_conf->ignore_scanning_disabled,
-				"IgnoreScanningDisabled", tbl))
+				     "IgnoreScanningDisabled", tbl))
 			slurm_ipmi_conf->ignore_scanning_disabled = false;
 		if (!s_p_get_boolean(&slurm_ipmi_conf->assume_bmc_owner,
-				"AssumeBmcOwner", tbl))
+				     "AssumeBmcOwner", tbl))
 			slurm_ipmi_conf->assume_bmc_owner = false;
 		if (!s_p_get_boolean(&slurm_ipmi_conf->entity_sensor_names,
-				"EntitySensorNames", tbl))
+				     "EntitySensorNames", tbl))
 			slurm_ipmi_conf->entity_sensor_names = false;
 
 		s_p_get_uint32 (&tmp,

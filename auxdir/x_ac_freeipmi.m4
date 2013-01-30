@@ -38,7 +38,7 @@ AC_DEFUN([X_AC_FREEIPMI],
 [int err;]
 [unsigned int flag = 0;]
 [return ipmi_monitoring_init (flag, &err);],
-					AS_VAR_SET(x_ac_cv_freeipmi_dir, $d), [])
+AS_VAR_SET(x_ac_cv_freeipmi_dir, $d), [])
           CPPFLAGS="$_x_ac_freeipmi_cppflags_save"
           LIBS="$_x_ac_freeipmi_libs_save"
           test -n "$x_ac_cv_freeipmi_dir" && break
