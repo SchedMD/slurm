@@ -339,9 +339,12 @@ job_create(launch_tasks_request_msg_t *msg)
 static char *
 _batchfilename(slurmd_job_t *job, const char *name)
 {
-	if (name == NULL)
-		return fname_create(job, "slurm-%J.out", 0);
-	else
+	if (name == NULL) {
+		if (job->array_task_id == (uint16_t) NO_VAL)
+			return fname_create(job, "slurm-%J.out", 0);
+		else
+			return fname_create(job, "slurm-%A_%a.out", 0);
+	} else
 		return fname_create(job, name, 0);
 }
 
