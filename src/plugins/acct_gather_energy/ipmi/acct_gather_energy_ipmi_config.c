@@ -55,13 +55,7 @@
 #include "acct_gather_energy_ipmi_config.h"
 
 /* Local functions */
-static void _clear_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf);
-extern void free_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
-{
-	_clear_slurm_ipmi_conf(slurm_ipmi_conf);
-}
-
-static void _clear_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
+extern void reset_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 {
 	if (slurm_ipmi_conf) {
 		slurm_ipmi_conf->power_sensor_num = -1;
@@ -141,6 +135,7 @@ extern int read_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 	/* Set initial values */
 	xassert(slurm_ipmi_conf);
 
+	reset_slurm_ipmi_conf(slurm_ipmi_conf);
 
 	/* Get the ipmi.conf path and validate the file */
 	conf_path = get_extra_conf_path("ipmi.conf");

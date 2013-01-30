@@ -590,7 +590,7 @@ static int _thread_fini(void)
 	//local_energy = NULL;
 	if (ipmi_ctx)
 		ipmi_monitoring_ctx_destroy(ipmi_ctx);
-	free_slurm_ipmi_conf(&slurm_ipmi_conf);
+	reset_slurm_ipmi_conf(&slurm_ipmi_conf);
 	return SLURM_SUCCESS;
 }
 
