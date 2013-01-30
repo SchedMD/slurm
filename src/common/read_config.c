@@ -89,6 +89,7 @@
 ** for details.
  */
 strong_alias(destroy_config_key_pair, slurm_destroy_config_key_pair);
+strong_alias(get_extra_conf_path, slurm_get_extra_conf_path);
 strong_alias(sort_key_pairs, slurm_sort_key_pairs);
 
 /* Instantiation of the "extern slurm_ctl_conf_t slurmcltd_conf"
