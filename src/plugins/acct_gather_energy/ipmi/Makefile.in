@@ -134,15 +134,27 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-acct_gather_energy_ipmi_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_acct_gather_energy_ipmi_la_OBJECTS = acct_gather_energy_ipmi.lo \
-	acct_gather_energy_ipmi_config.lo
+@BUILD_IPMI_TRUE@acct_gather_energy_ipmi_la_DEPENDENCIES =  \
+@BUILD_IPMI_TRUE@	$(am__DEPENDENCIES_1)
+am__acct_gather_energy_ipmi_la_SOURCES_DIST =  \
+	acct_gather_energy_ipmi.c acct_gather_energy_ipmi.h \
+	acct_gather_energy_ipmi_config.c \
+	acct_gather_energy_ipmi_config.h
+@BUILD_IPMI_TRUE@am_acct_gather_energy_ipmi_la_OBJECTS =  \
+@BUILD_IPMI_TRUE@	acct_gather_energy_ipmi.lo \
+@BUILD_IPMI_TRUE@	acct_gather_energy_ipmi_config.lo
+am__EXTRA_acct_gather_energy_ipmi_la_SOURCES_DIST =  \
+	acct_gather_energy_ipmi.c acct_gather_energy_ipmi.h \
+	acct_gather_energy_ipmi_config.c \
+	acct_gather_energy_ipmi_config.h
 acct_gather_energy_ipmi_la_OBJECTS =  \
 	$(am_acct_gather_energy_ipmi_la_OBJECTS)
 acct_gather_energy_ipmi_la_LINK = $(LIBTOOL) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(acct_gather_energy_ipmi_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
+@BUILD_IPMI_TRUE@am_acct_gather_energy_ipmi_la_rpath = -rpath \
+@BUILD_IPMI_TRUE@	$(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -156,8 +168,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(acct_gather_energy_ipmi_la_SOURCES)
-DIST_SOURCES = $(acct_gather_energy_ipmi_la_SOURCES)
+SOURCES = $(acct_gather_energy_ipmi_la_SOURCES) \
+	$(EXTRA_acct_gather_energy_ipmi_la_SOURCES)
+DIST_SOURCES = $(am__acct_gather_energy_ipmi_la_SOURCES_DIST) \
+	$(am__EXTRA_acct_gather_energy_ipmi_la_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -380,20 +394,25 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(FREEIPMI_CPPFLAGS)
-pkglib_LTLIBRARIES = acct_gather_energy_ipmi.la
+@BUILD_IPMI_TRUE@PLUGIN_FLAGS = -module -avoid-version --export-dynamic
+@BUILD_IPMI_TRUE@pkglib_LTLIBRARIES = acct_gather_energy_ipmi.la
 
 # Energy accounting ipmi plugin.
-acct_gather_energy_ipmi_la_SOURCES = acct_gather_energy_ipmi.c \
-                                     acct_gather_energy_ipmi.h \
-                                     acct_gather_energy_ipmi_config.c \
-                                     acct_gather_energy_ipmi_config.h
+@BUILD_IPMI_TRUE@acct_gather_energy_ipmi_la_SOURCES = acct_gather_energy_ipmi.c \
+@BUILD_IPMI_TRUE@                                     acct_gather_energy_ipmi.h \
+@BUILD_IPMI_TRUE@                                     acct_gather_energy_ipmi_config.c \
+@BUILD_IPMI_TRUE@                                     acct_gather_energy_ipmi_config.h
 
 
 #acct_gather_energy_ipmi_la_CFLAGS = $(MYSQL_CFLAGS)
-acct_gather_energy_ipmi_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(FREEIPMI_LDFLAGS)
-acct_gather_energy_ipmi_la_LIBADD = $(FREEIPMI_LIBS)
+@BUILD_IPMI_TRUE@acct_gather_energy_ipmi_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(FREEIPMI_LDFLAGS)
+@BUILD_IPMI_TRUE@acct_gather_energy_ipmi_la_LIBADD = $(FREEIPMI_LIBS)
+@BUILD_IPMI_FALSE@EXTRA_acct_gather_energy_ipmi_la_SOURCES = acct_gather_energy_ipmi.c \
+@BUILD_IPMI_FALSE@                                     acct_gather_energy_ipmi.h \
+@BUILD_IPMI_FALSE@                                     acct_gather_energy_ipmi_config.c \
+@BUILD_IPMI_FALSE@                                     acct_gather_energy_ipmi_config.h
+
 all: all-am
 
 .SUFFIXES:
@@ -461,7 +480,7 @@ clean-pkglibLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 acct_gather_energy_ipmi.la: $(acct_gather_energy_ipmi_la_OBJECTS) $(acct_gather_energy_ipmi_la_DEPENDENCIES) $(EXTRA_acct_gather_energy_ipmi_la_DEPENDENCIES) 
-	$(acct_gather_energy_ipmi_la_LINK) -rpath $(pkglibdir) $(acct_gather_energy_ipmi_la_OBJECTS) $(acct_gather_energy_ipmi_la_LIBADD) $(LIBS)
+	$(acct_gather_energy_ipmi_la_LINK) $(am_acct_gather_energy_ipmi_la_rpath) $(acct_gather_energy_ipmi_la_OBJECTS) $(acct_gather_energy_ipmi_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

@@ -59,4 +59,6 @@ AS_VAR_SET(x_ac_cv_freeipmi_dir, $d), [])
   AC_SUBST(FREEIPMI_LIBS)
   AC_SUBST(FREEIPMI_CPPFLAGS)
   AC_SUBST(FREEIPMI_LDFLAGS)
+  AM_CONDITIONAL(BUILD_IPMI, test -n "$x_ac_cv_freeipmi_dir")
+
 ])

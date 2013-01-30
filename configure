@@ -718,6 +718,8 @@ HAVE_SOME_CURSES_TRUE
 NCURSES
 SEMAPHORE_LIBS
 SEMAPHORE_SOURCES
+BUILD_IPMI_FALSE
+BUILD_IPMI_TRUE
 FREEIPMI_LDFLAGS
 FREEIPMI_CPPFLAGS
 FREEIPMI_LIBS
@@ -19905,6 +19907,15 @@ $as_echo "#define HAVE_FREEIPMI 1" >>confdefs.h
 
 
 
+   if test -n "$x_ac_cv_freeipmi_dir"; then
+  BUILD_IPMI_TRUE=
+  BUILD_IPMI_FALSE='#'
+else
+  BUILD_IPMI_TRUE='#'
+  BUILD_IPMI_FALSE=
+fi
+
+
 
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether XCPU is enabled" >&5
@@ -22974,6 +22985,10 @@ fi
 
 if test -z "${HAVE_UNSETENV_TRUE}" && test -z "${HAVE_UNSETENV_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_UNSETENV\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_IPMI_TRUE}" && test -z "${BUILD_IPMI_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_IPMI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_SOME_CURSES_TRUE}" && test -z "${HAVE_SOME_CURSES_FALSE}"; then
