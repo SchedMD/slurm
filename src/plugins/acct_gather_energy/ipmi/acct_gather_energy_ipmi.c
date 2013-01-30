@@ -211,6 +211,14 @@ static uint32_t _get_additional_consumption(time_t time0, time_t time1,
  */
 static int _init_ipmi_config (void)
 {
+	int errnum;
+	/* Initialization flags
+	 * Most commonly bitwise OR IPMI_MONITORING_FLAGS_DEBUG and/or
+	 * IPMI_MONITORING_FLAGS_DEBUG_IPMI_PACKETS for extra debugging
+	 * information.
+	 */
+	unsigned int ipmimonitoring_init_flags = 0;
+
 	ipmi_config.driver_type = (int) slurm_ipmi_conf.driver_type;
 	ipmi_config.disable_auto_probe =
 		(int) slurm_ipmi_conf.disable_auto_probe;
@@ -234,13 +242,6 @@ static int _init_ipmi_config (void)
 	ipmi_config.workaround_flags =
 		(unsigned int) slurm_ipmi_conf.workaround_flags;
 
-	int errnum;
-	/* Initialization flags
-	 * Most commonly bitwise OR IPMI_MONITORING_FLAGS_DEBUG and/or
-	 * IPMI_MONITORING_FLAGS_DEBUG_IPMI_PACKETS for extra debugging
-	 * information.
-	 */
-	unsigned int ipmimonitoring_init_flags = 0;
 	if (ipmi_monitoring_init(ipmimonitoring_init_flags, &errnum) < 0) {
 		error("ipmi_monitoring_init: %s",
 		      ipmi_monitoring_ctx_strerror(errnum));
@@ -602,15 +603,16 @@ static int _thread_fini(void)
  */
 static void *_thread_ipmi_write(void *no_data)
 {
+	int pipe;
+	char *name = NULL;
+	ipmi_message_t message;
+
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("ipmi-thread-write: launched");
 
 	flag_thread_run_running = true;
 	flag_energy_accounting_shutdown = false;
 
-	int pipe;
-	char *name = NULL;
-	ipmi_message_t message;
 	xstrfmtcat(name, "%s/%s_ipmi_pipe", conf->spooldir, conf->node_name);
 	remove(name);
 
@@ -649,15 +651,16 @@ rwfail:
  */
 static void *_thread_ipmi_run(void *no_data)
 {
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("ipmi-thread: launched");
-
-	flag_thread_write_running = true;
 	ipmi_message_t message_trash;
 // need input (attr)
 	int time_lost;
 	pthread_attr_t attr_write;
 	int rc = SLURM_SUCCESS;
+
+	if (debug_flags & DEBUG_FLAG_ENERGY)
+		info("ipmi-thread: launched");
+
+	flag_thread_write_running = true;
 	flag_energy_accounting_shutdown = false;
 
 	if (_thread_init() != SLURM_SUCCESS) {
