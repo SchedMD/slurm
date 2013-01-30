@@ -45,6 +45,7 @@ documents those changes that are of interest to users and admins.
     _slurm_sysconfdir %{_prefix}/etc/slurm
     _mandir %{_prefix}/share/man
     _infodir %{_prefix}/share/info
+ -- Add acct_gather_energy/ipmi which works off freeipmi for energy gathering
 
 * Changes in SLURM 2.5.2
 ========================
