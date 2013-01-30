@@ -106,6 +106,7 @@ extern int read_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 		{"ProtocolVersion", S_P_UINT32},
 		{"Username", S_P_STRING},
 		{"Password", S_P_STRING},
+/* FIXME: remove these from the structure? */
 //		{"k_g", S_P_STRING},
 //		{"k_g_len", S_P_UINT32},
 		{"PrivilegeLevel", S_P_UINT32},
