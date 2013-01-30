@@ -249,16 +249,15 @@ of MAINT to prevent additional jobs from being initiated.
 Instruct all Slurm daemons to re\-read the configuration file.
 This command does not restart the daemons.
 This mechanism would be used to modify configuration parameters (Epilog,
-Prolog, SlurmctldLogFile, SlurmdLogFile, etc.) register the physical
-addition or removal of nodes from the cluster or recognize the change
-of a node's configuration, such as the addition of memory or processors.
+Prolog, SlurmctldLogFile, SlurmdLogFile, etc.).
 The Slurm controller (slurmctld) forwards the request all other daemons
 (slurmd daemon on each compute node). Running jobs continue execution.
 Most configuration parameters can be changed by just running this command,
 however, SLURM daemons should be shutdown and restarted if any of these
 parameters are to be changed: AuthType, BackupAddr, BackupController,
 ControlAddr, ControlMach, PluginDir, StateSaveLocation, SlurmctldPort
-or SlurmdPort.
+or SlurmdPort. The slurmctld daemon must be restarted if nodes are added to
+or removed from the cluster.
 
 .TP
 \fBrelease\fP \fIjob_id\fP
