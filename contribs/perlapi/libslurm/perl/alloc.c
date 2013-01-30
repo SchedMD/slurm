@@ -350,6 +350,24 @@ job_sbcast_cred_msg_to_hv(job_sbcast_cred_msg_t *msg, HV *hv)
 	return 0;
 }
 
+int
+srun_job_complete_msg_to_hv(srun_job_complete_msg_t *msg, HV *hv)
+{
+	STORE_FIELD(hv, msg, job_id, uint32_t);
+	STORE_FIELD(hv, msg, step_id, uint32_t);
+	return 0;
+}
+
+int
+srun_timeout_msg_to_hv(srun_timeout_msg_t *msg, HV *hv)
+{
+	STORE_FIELD(hv, msg, job_id, uint32_t);
+	STORE_FIELD(hv, msg, step_id, uint32_t);
+	STORE_FIELD(hv, msg, timeout, time_t);
+	return 0;
+}
+
+
 
 /********** pending_callback for slurm_allocate_resources_blocking() **********/
 static SV* sarb_cb_sv = NULL;
@@ -396,23 +414,6 @@ srun_ping_msg_to_hv(srun_ping_msg_t *msg, HV *hv)
 {
 	STORE_FIELD(hv, msg, job_id, uint32_t);
 	STORE_FIELD(hv, msg, step_id, uint32_t);
-	return 0;
-}
-
-static int
-srun_job_complete_msg_to_hv(srun_job_complete_msg_t *msg, HV *hv)
-{
-	STORE_FIELD(hv, msg, job_id, uint32_t);
-	STORE_FIELD(hv, msg, step_id, uint32_t);
-	return 0;
-}
-
-static int
-srun_timeout_msg_to_hv(srun_timeout_msg_t *msg, HV *hv)
-{
-	STORE_FIELD(hv, msg, job_id, uint32_t);
-	STORE_FIELD(hv, msg, step_id, uint32_t);
-	STORE_FIELD(hv, msg, timeout, time_t);
 	return 0;
 }
 
