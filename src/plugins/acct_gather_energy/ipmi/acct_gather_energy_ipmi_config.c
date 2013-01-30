@@ -130,7 +130,6 @@ extern int read_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL;
 	struct stat buf;
-	uint32_t tmp;
 
 	/* Set initial values */
 	xassert(slurm_ipmi_conf);
@@ -231,9 +230,8 @@ extern int read_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 				     "CalcAdjustment", tbl))
 			slurm_ipmi_conf->adjustment = false;
 
-		s_p_get_uint32 (&tmp,
+		s_p_get_uint32 (&slurm_ipmi_conf->power_sensor_num,
 				"PowerSensor", tbl);
-		slurm_ipmi_conf->power_sensor_num = (uint32_t) tmp;
 
 		s_p_hashtbl_destroy(tbl);
 	}
