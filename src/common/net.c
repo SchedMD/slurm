@@ -210,8 +210,16 @@ extern int net_set_keep_alive(int sock)
 		return -1;
 	}
 #if 0
+	opt_linger.l_onoff = 0;
+	opt_linger.l_linger = 0;
+	opt_len = sizeof(struct linger);
+	getsockopt(sock, SOL_SOCKET, SO_LINGER, &opt_linger, &opt_len);
+	info("got linger time of %d:%d on fd %d", opt_linger.l_onoff,
+	     opt_linger.l_linger, sock);
+
+	opt_len = sizeof(int);
 	getsockopt(sock, SOL_TCP, TCP_KEEPIDLE, &opt_int, &opt_len);
-	info("keep_alive time is %d", opt_int);
+	info("got keep_alive time is %d on fd %d", opt_int, sock);
 #endif
 
 	return 0;

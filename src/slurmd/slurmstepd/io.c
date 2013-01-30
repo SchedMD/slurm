@@ -1371,6 +1371,8 @@ _free_all_outgoing_msgs(List msg_queue, slurmd_job_t *job)
 	list_iterator_destroy(msgs);
 }
 
+/* Close I/O file descriptors created by slurmstepd. The connections have
+ * all been moved to the spawned tasks stdin/out/err file descriptors. */
 extern void
 io_close_task_fds(slurmd_job_t *job)
 {
