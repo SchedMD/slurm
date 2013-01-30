@@ -228,7 +228,7 @@ extern int read_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 			      "in ipmi.conf.");
 
 		if (!s_p_get_boolean(&(slurm_ipmi_conf->adjustment),
-				"CalcAdjustment", tbl))
+				     "CalcAdjustment", tbl))
 			slurm_ipmi_conf->adjustment = false;
 
 		s_p_get_uint32 (&tmp,
