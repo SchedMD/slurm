@@ -225,9 +225,12 @@ extern int read_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 				     "EntitySensorNames", tbl))
 			slurm_ipmi_conf->entity_sensor_names = false;
 
-		s_p_get_uint32 (&tmp,
-				"Frequency", tbl);
-		slurm_ipmi_conf->freq = (time_t) tmp;
+		if (!s_p_get_uint32(&slurm_ipmi_conf->freq, "Frequency", tbl))
+			slurm_ipmi_conf->freq = DEFAULT_IPMI_FREQ;
+
+		if ((int)slurm_ipmi_conf->freq <= 0)
+			fatal("Frequency must be a positive integer "
+			      "in ipmi.conf.");
 
 		if (!s_p_get_boolean(&(slurm_ipmi_conf->adjustment),
 				"CalcAdjustment", tbl))

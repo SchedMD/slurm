@@ -37,12 +37,13 @@
 #ifndef _IPMI_READ_CONFIG_H
 #define _IPMI_READ_CONFIG_H
 
+#define DEFAULT_IPMI_FREQ 30
 typedef struct slurm_ipmi_conf {
 	/* Options for SLURM IPMI plugin*/
 	/* sensor num (only for power) */
 	uint32_t power_sensor_num;
 	/* frequency for ipmi call*/
-	time_t freq;
+	uint32_t freq;
 	/* Adjust/approach the consumption
 	 * in function of time between ipmi update and read call */
 	bool adjustment;

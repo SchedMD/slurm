@@ -172,7 +172,7 @@ typedef struct ipmi_message {
 	time_t time;
 } ipmi_message_t;
 
-static void _task_sleep(time_t rem)
+static void _task_sleep(int rem)
 {
 	while (rem)
 		rem = sleep(rem);	// subject to interupt
@@ -552,10 +552,6 @@ static int _thread_init(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (slurm_ipmi_conf.freq <= 0) {
-		error("Frequency must be a positive integer in ipmi.conf.");
-		return SLURM_ERROR;
-	}
 	if (_init_ipmi_config() != SLURM_SUCCESS) {
 		//TODO verbose error?
 		if (ipmi_ctx)
