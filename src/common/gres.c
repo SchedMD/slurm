@@ -82,6 +82,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/read_config.h"
 
 #define GRES_MAGIC 0x438a34d4
 
@@ -135,7 +136,6 @@ static bitstr_t *_cpu_bitmap_rebuild(bitstr_t *old_cpu_bitmap, int new_size);
 static void	_destroy_gres_slurmd_conf(void *x);
 static uint32_t	_get_gres_cnt(char *orig_config, char *gres_name,
 			      char *gres_name_colon, int gres_name_colon_len);
-static char *	_get_gres_conf(void);
 static uint32_t	_get_tot_gres_cnt(uint32_t plugin_id, uint32_t *set_cnt);
 static int	_gres_find_id(void *x, void *key);
 static void	_gres_job_list_delete(void *list_element);
@@ -523,31 +523,6 @@ extern int gres_plugin_reconfig(bool *did_change)
 }
 
 /*
- * Return the pathname of the gres.conf file
- */
-static char *_get_gres_conf(void)
-{
-	char *val = getenv("SLURM_CONF");
-	char *rc = NULL;
-	int i;
-
-	if (!val)
-		return xstrdup(GRES_CONFIG_FILE);
-
-	/* Replace file name on end of path */
-	i = strlen(val) - strlen("slurm.conf") + strlen("gres.conf") + 2;
-	rc = xmalloc(i);
-	strcpy(rc, val);
-	val = strrchr(rc, (int)'/');
-	if (val)	/* absolute path */
-		val++;
-	else		/* not absolute path */
-		val = rc;
-	strcpy(val, "gres.conf");
-	return rc;
-}
-
-/*
  * Destroy a gres_slurmd_conf_t record, free it's memory
  */
 static void _destroy_gres_slurmd_conf(void *x)
@@ -775,7 +750,7 @@ extern int gres_plugin_node_config_devices_path(char **dev_path,
 	char *gres_conf_file;
 
 	gres_plugin_init();
-	gres_conf_file = _get_gres_conf();
+	gres_conf_file = get_extra_conf_path("gres.conf");
 	if (stat(gres_conf_file, &config_stat) < 0) {
 		error("can't stat gres.conf file %s: %m", gres_conf_file);
 		xfree(gres_conf_file);
@@ -861,7 +836,7 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt)
 	if (gres_context_cnt == 0)
 		return SLURM_SUCCESS;
 
-	gres_conf_file = _get_gres_conf();
+	gres_conf_file = get_extra_conf_path("gres.conf");
 	if (stat(gres_conf_file, &config_stat) < 0) {
 		error("can't stat gres.conf file %s, assuming zero resource "
 		      "counts", gres_conf_file);

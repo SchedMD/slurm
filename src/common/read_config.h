@@ -491,6 +491,11 @@ extern void pack_config_key_pair(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_config_key_pair(void **object, uint16_t rpc_version,
 				  Buf buffer);
 extern int sort_key_pairs(config_key_pair_t *key_a, config_key_pair_t *key_b);
+/*
+ * Return the pathname of the extra .conf file
+ * return value must be xfreed
+ */
+extern char *get_extra_conf_path(char *conf_name);
 
 
 #endif /* !_READ_CONFIG_H */

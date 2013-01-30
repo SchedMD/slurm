@@ -97,7 +97,6 @@ static char* topo_conf = NULL;
 static void _destroy_switches(void *ptr);
 static void _free_switch_record_table(void);
 static int  _get_switch_inx(const char *name);
-static char *_get_topo_conf(void);
 static void _log_switches(void);
 static int  _node_name2bitmap(char *node_names, bitstr_t **bitmap, 
 			      hostlist_t *invalid_hostlist);
@@ -429,28 +428,6 @@ static void _free_switch_record_table(void)
 	}
 }
 
-static char *_get_topo_conf(void)
-{
-	char *val = getenv("SLURM_CONF");
-	char *rc;
-	int i;
-
-	if (!val)
-		return xstrdup(TOPOLOGY_CONFIG_FILE);
-
-	/* Replace file name on end of path */
-	i = strlen(val) - strlen("slurm.conf") + strlen("topology.conf") + 1;
-	rc = xmalloc(i);
-	strcpy(rc, val);
-	val = strrchr(rc, (int)'/');
-	if (val)	/* absolute path */
-		val++;
-	else		/* not absolute path */
-		val = rc;
-	strcpy(val, "topology.conf");
-	return rc;
-}
-
 /* Return count of switch configuration entries read */
 extern int  _read_topo_file(slurm_conf_switches_t **ptr_array[])
 {
@@ -463,7 +440,7 @@ extern int  _read_topo_file(slurm_conf_switches_t **ptr_array[])
 
 	debug("Reading the topology.conf file");
 	if (!topo_conf)
-		topo_conf = _get_topo_conf();
+		topo_conf = get_extra_conf_path("topology.conf");
 
 	conf_hashtbl = s_p_hashtbl_create(switch_options);
 	if (s_p_parse_file(conf_hashtbl, NULL, topo_conf, false) ==

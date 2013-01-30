@@ -64,7 +64,6 @@ slurm_cgroup_conf_t *slurm_cgroup_conf = NULL;
 
 /* Local functions */
 static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf);
-static char * _get_conf_path(void);
 
 /*
  * free_slurm_cgroup_conf - free storage associated with the global variable
@@ -165,7 +164,7 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	_clear_slurm_cgroup_conf(slurm_cgroup_conf);
 
 	/* Get the cgroup.conf path and validate the file */
-	conf_path = _get_conf_path();
+	conf_path = get_extra_conf_path("cgroup.conf");
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
 		info("No cgroup.conf file (%s)", conf_path);
 	} else {
@@ -265,29 +264,4 @@ extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	xfree(conf_path);
 
 	return SLURM_SUCCESS;
-}
-
-/* Return the pathname of the cgroup.conf file.
- * xfree() the value returned */
-static char * _get_conf_path(void)
-{
-	char *val = getenv("SLURM_CONF");
-	char *path = NULL;
-	int i;
-
-	if (!val)
-		val = default_slurm_config_file;
-
-	/* Replace file name on end of path */
-	i = strlen(val) + 15;
-	path = xmalloc(i);
-	strcpy(path, val);
-	val = strrchr(path, (int)'/');
-	if (val)	/* absolute path */
-		val++;
-	else		/* not absolute path */
-		val = path;
-	strcpy(val, "cgroup.conf");
-
-	return path;
 }

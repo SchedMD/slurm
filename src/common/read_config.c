@@ -3874,3 +3874,20 @@ extern int sort_key_pairs(config_key_pair_t *key_a, config_key_pair_t *key_b)
 
 	return 0;
 }
+/*
+ * Return the pathname of the extra .conf file
+ */
+extern char *get_extra_conf_path(char *conf_name)
+{
+	char *val = getenv("SLURM_CONF");
+	char *rc = NULL;
+
+	if (!val)
+		val = default_slurm_config_file;
+
+	/* Replace file name on end of path */
+	rc = xstrdup(val);
+	xstrsubstitute(rc, "slurm.conf", conf_name);
+
+	return rc;
+}

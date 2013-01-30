@@ -101,28 +101,6 @@ static int _reopen_bridge_log(void)
 	return rc;
 }
 
-static char *_get_bg_conf(void)
-{
-	char *val = getenv("SLURM_CONF");
-	char *rc = NULL;
-	int i;
-
-	if (!val)
-		return xstrdup(BLUEGENE_CONFIG_FILE);
-
-	/* Replace file name on end of path */
-	i = strlen(val) - strlen("slurm.conf") + strlen("bluegene.conf") + 1;
-	rc = xmalloc(i);
-	strcpy(rc, val);
-	val = strrchr(rc, (int)'/');
-	if (val)	/* absolute path */
-		val++;
-	else		/* not absolute path */
-		val = rc;
-	strcpy(val, "bluegene.conf");
-	return rc;
-}
-
 static void _destroy_bitmap(void *object)
 {
 	bitstr_t *bitstr = (bitstr_t *)object;
@@ -362,7 +340,7 @@ extern int read_bg_conf(void)
 		info("Reading the bluegene.conf file");
 
 	/* check if config file has changed */
-	bg_conf_file = _get_bg_conf();
+	bg_conf_file = get_extra_conf_path("bluegene.conf");
 
 	if (stat(bg_conf_file, &config_stat) < 0)
 		fatal("can't stat bluegene.conf file %s: %m", bg_conf_file);

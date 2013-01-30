@@ -443,7 +443,6 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = -DGRES_CONFIG_FILE=\"$(sysconfdir)/gres.conf\"
 AUTOMAKE_OPTIONS = foreign
 @HAVE_UNSETENV_FALSE@build_unsetenv_src = unsetenv.c unsetenv.h
 @HAVE_UNSETENV_TRUE@build_unsetenv_src = 
