@@ -38,6 +38,8 @@
 #define _IPMI_READ_CONFIG_H
 
 #define DEFAULT_IPMI_FREQ 30
+#define DEFAULT_IPMI_USER "foousername"
+
 typedef struct slurm_ipmi_conf {
 	/* Options for SLURM IPMI plugin*/
 	/* sensor num (only for power) */

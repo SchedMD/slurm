@@ -168,7 +168,7 @@ extern int read_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 
 		if (!s_p_get_string(&slurm_ipmi_conf->username,
 				    "Username", tbl))
-			slurm_ipmi_conf->username = xstrdup("foousername");
+			slurm_ipmi_conf->username = xstrdup(DEFAULT_IPMI_USER);
 
 		s_p_get_string(&slurm_ipmi_conf->password,
 			       "Password", tbl);
