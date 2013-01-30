@@ -322,15 +322,11 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 EXTRA_DIST = \
-	etc_init_d_munge		\
 	etc_sysconfig_slurm		\
 	libalps_test_programs.tar.gz	\
-	munge_build_script.sh		\
 	opt_modulefiles_slurm		\
-	pam_job.c			\
-	slurm-build-script.sh
+	pam_job.c
 
-_perldir = $(exec_prefix)`perl -e 'use Config; $$T=$$Config{installsitearch}; $$P=$$Config{installprefix}; $$P1="$$P/local"; $$T =~ s/$$P1//; $$T =~ s/$$P//; print $$T;'`
 all: all-am
 
 .SUFFIXES:
@@ -443,6 +439,8 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+clean: clean-am
+
 clean-am: clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
@@ -520,26 +518,6 @@ uninstall-am:
 	maintainer-clean-generic mostlyclean mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am
 
-
-srun:
-
-install-binSCRIPTS: $(bin_SCRIPTS)
-	@$(NORMAL_INSTALL)
-	test -z "$(DESTDIR)$(bindir)" || $(mkdir_p) "$(DESTDIR)$(bindir)"
-	@list='$(bin_SCRIPTS)'; for p in $$list; do \
-	   echo "sed 's%use lib .*%use lib qw(${_perldir});%' $(top_srcdir)/contribs/cray/$$p.pl | sed 's%BINDIR%@bindir@%' > $(DESTDIR)$(bindir)/$$p"; \
-	         sed "s%use lib .*%use lib qw(${_perldir});%" $(top_srcdir)/contribs/cray/$$p.pl | sed "s%BINDIR%@bindir@%" > $(DESTDIR)$(bindir)/$$p; \
-	   chmod 755 $(DESTDIR)$(bindir)/$$p;\
-	done
-
-uninstall-binSCRIPTS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(bin_SCRIPTS)'; for p in $$list; do \
-	  echo " rm -f '$(DESTDIR)$(bindir)/$$p'"; \
-	  rm -f "$(DESTDIR)$(bindir)/$$p"; \
-	done
-
-clean:
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
