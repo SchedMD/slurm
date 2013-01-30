@@ -526,6 +526,7 @@ static int _attempt_backfill(void)
 	uint32_t *uid = NULL, nuser = 0;
 	uint16_t *njobs = NULL;
 	bool already_counted;
+	uint32_t reject_array_job_id = 0;
 
 #ifdef HAVE_CRAY
 	/*
@@ -601,6 +602,12 @@ static int _attempt_backfill(void)
 		xfree(job_queue_rec);
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;	/* started in other partition */
+		if (job_ptr->array_task_id != (uint16_t) NO_VAL) {
+			if (reject_array_job_id == job_ptr->array_job_id)
+				continue;  /* already rejected array element */
+			/* assume reject whole array for now, clear if OK */
+			reject_array_job_id = job_ptr->array_job_id;
+		}
 		job_ptr->part_ptr = part_ptr;
 
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
@@ -842,6 +849,7 @@ static int _attempt_backfill(void)
 				break;
 			} else {
 				/* Started this job, move to next one */
+				reject_array_job_id = 0;
 				continue;
 			}
 		} else
@@ -880,6 +888,7 @@ static int _attempt_backfill(void)
 		 */
 		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
 			continue;
+		reject_array_job_id = 0;
 		bit_not(avail_bitmap);
 		_add_reservation(job_ptr->start_time, end_reserve,
 				 avail_bitmap, node_space, &node_space_recs);
