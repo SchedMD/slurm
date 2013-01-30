@@ -292,9 +292,12 @@ static int _init_ipmi_config (void)
 	if (slurm_ipmi_conf.assume_bmc_owner)
 		sensor_reading_flags |=
 			IPMI_MONITORING_SENSOR_READING_FLAGS_ASSUME_BMC_OWNER;
-	if (slurm_ipmi_conf.entity_sensor_names)
-		sensor_reading_flags |=
-			IPMI_MONITORING_SENSOR_READING_FLAGS_ENTITY_SENSOR_NAMES;
+	/* FIXME: This is not included until later versions of IPMI, so don't
+	   always have it.
+	*/
+	/* if (slurm_ipmi_conf.entity_sensor_names) */
+	/* 	sensor_reading_flags |= */
+	/* 		IPMI_MONITORING_SENSOR_READING_FLAGS_ENTITY_SENSOR_NAMES; */
 
 	return SLURM_SUCCESS;
 }
