@@ -185,6 +185,7 @@ static void _task_sleep(int rem)
 static uint32_t _get_additional_consumption(time_t time0, time_t time1,
 					    uint32_t watt0, uint32_t watt1)
 {
+	/* FIXME: Always use method 3?  Why the switch then? */
 	int method=3;
 	uint32_t consumption=0;
 
@@ -199,7 +200,7 @@ static uint32_t _get_additional_consumption(time_t time0, time_t time1,
 		break;
 	case 3:
 		//mean of watt (affine function) is used on each time window
-		consumption = (uint32_t) ((time1 - time0)*(watt1 + watt0)/2.);
+		consumption = (uint32_t) ((time1 - time0)*(watt1 + watt0)/2);
 		break;
 	}
 
