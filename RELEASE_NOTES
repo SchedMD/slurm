@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.6
-24 January 2012
+30 January 2012
 
 
 IMPORTANT NOTE:
@@ -31,6 +31,11 @@ HIGHLIGHTS
  - Much faster throughput for job step execution with --exclusive option. The
    srun process is notified when resources become available rather than
    periodic polling.
+ - Modify default installation locations for RPMs to match "make install":
+   _prefix /usr/local
+   _slurm_sysconfdir %{_prefix}/etc/slurm
+   _mandir %{_prefix}/share/man
+   _infodir %{_prefix}/share/info
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================

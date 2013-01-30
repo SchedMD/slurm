@@ -29,6 +29,10 @@
 #    slurm_with    builds option by default unless --without is specified
 #    slurm_without builds option iff --with specified
 #
+%define _prefix /usr/local
+%define _slurm_sysconfdir %{_prefix}/etc/slurm
+%define _mandir %{_prefix}/share/man
+%define _infodir %{_prefix}/share/info
 %define slurm_with_opt() %{expand:%%{!?_without_%{1}:%%global slurm_with_%{1} 1}}
 %define slurm_without_opt() %{expand:%%{?_with_%{1}:%%global slurm_with_%{1} 1}}
 #
@@ -170,7 +174,7 @@ partition management, job management, scheduling and accounting modules.
 #  Allow override of sysconfdir via _slurm_sysconfdir.
 #  Note 'global' instead of 'define' needed here to work around apparent
 #   bug in rpm macro scoping (or something...)
-%{!?_slurm_sysconfdir: %global _slurm_sysconfdir /etc/slurm}
+%{!?_slurm_sysconfdir: %global _slurm_sysconfdir %{_prefix}/etc/slurm}
 %define _sysconfdir %_slurm_sysconfdir
 
 #

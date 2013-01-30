@@ -40,6 +40,11 @@ documents those changes that are of interest to users and admins.
  -- Added "SlurmctldPlugstack" configuration parameter for generic stack of
     slurmctld daemon plugins.
  -- Removed contribs/arrayrun tool. Use native support for job arrays.
+ -- Modify default installation locations for RPMs to match "make install":
+    _prefix /usr/local
+    _slurm_sysconfdir %{_prefix}/etc/slurm
+    _mandir %{_prefix}/share/man
+    _infodir %{_prefix}/share/info
 
 * Changes in SLURM 2.5.2
 ========================
