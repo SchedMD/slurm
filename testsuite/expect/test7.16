@@ -90,8 +90,8 @@ expect {
 	}
 }
 if {$job_id != 0} {
-	send_user "\FAILURE: allocation grated with bad Munge credential\n"
-	exit $exit_code
+	send_user "\FAILURE: allocation granted with bad Munge credential\n"
+	exit 1
 }
 
 if { $exit_code == 0 } {
