@@ -718,6 +718,9 @@ HAVE_SOME_CURSES_TRUE
 NCURSES
 SEMAPHORE_LIBS
 SEMAPHORE_SOURCES
+FREEIPMI_LDFLAGS
+FREEIPMI_CPPFLAGS
+FREEIPMI_LIBS
 HWLOC_LDFLAGS
 HWLOC_CPPFLAGS
 HWLOC_LIBS
@@ -942,6 +945,7 @@ enable_load_env_no_login
 enable_sun_const
 with_dimensions
 with_hwloc
+with_freeipmi
 with_xcpu
 enable_glibtest
 enable_gtktest
@@ -1663,6 +1667,7 @@ Optional Packages:
   --with-dimensions=N     set system dimension count for generic computer
                           system
   --with-hwloc=PATH       Specify path to hwloc installation
+  --with-freeipmi=PATH    Specify path to freeipmi installation
   --with-xcpu=PATH        specify path to XCPU directory
   --with-mysql_config=PATH
                           Specify path to mysql_config binary
@@ -19822,6 +19827,79 @@ $as_echo "#define HAVE_HWLOC 1" >>confdefs.h
 $as_echo "#define HAVE_HWLOC_PCI 1" >>confdefs.h
 
     fi
+  fi
+
+
+
+
+
+
+  _x_ac_freeipmi_dirs="/usr /usr/local"
+  _x_ac_freeipmi_libs="lib64 lib"
+
+
+# Check whether --with-freeipmi was given.
+if test "${with_freeipmi+set}" = set; then :
+  withval=$with_freeipmi; _x_ac_freeipmi_dirs="$withval $_x_ac_freeipmi_dirs"
+fi
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for freeipmi installation" >&5
+$as_echo_n "checking for freeipmi installation... " >&6; }
+if ${x_ac_cv_freeipmi_dir+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+      for d in $_x_ac_freeipmi_dirs; do
+        test -d "$d" || continue
+        test -d "$d/include" || continue
+        test -f "$d/include/ipmi_monitoring.h" || continue
+	for bit in $_x_ac_freeipmi_libs; do
+          test -d "$d/$bit" || continue
+          _x_ac_freeipmi_cppflags_save="$CPPFLAGS"
+          CPPFLAGS="-I$d/include $CPPFLAGS"
+ 	  _x_ac_freeipmi_libs_save="$LIBS"
+          LIBS="-L$d/$bit -lipmimonitoring $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <ipmi_monitoring.h>
+#include <ipmi_monitoring_bitmasks.h>
+int
+main ()
+{
+int err;
+unsigned int flag = 0;
+return ipmi_monitoring_init (flag, &err);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  x_ac_cv_freeipmi_dir=$d
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          CPPFLAGS="$_x_ac_freeipmi_cppflags_save"
+          LIBS="$_x_ac_freeipmi_libs_save"
+          test -n "$x_ac_cv_freeipmi_dir" && break
+	done
+        test -n "$x_ac_cv_freeipmi_dir" && break
+      done
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_freeipmi_dir" >&5
+$as_echo "$x_ac_cv_freeipmi_dir" >&6; }
+
+  if test -z "$x_ac_cv_freeipmi_dir"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate freeipmi installation" >&5
+$as_echo "$as_me: WARNING: unable to locate freeipmi installation" >&2;}
+  else
+    FREEIPMI_CPPFLAGS="-I$x_ac_cv_freeipmi_dir/include"
+    FREEIPMI_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_freeipmi_dir/$bit -L$x_ac_cv_freeipmi_dir/$bit"
+    FREEIPMI_LIBS="-lipmimonitoring"
+
+$as_echo "#define HAVE_FREEIPMI 1" >>confdefs.h
+
   fi
 
 

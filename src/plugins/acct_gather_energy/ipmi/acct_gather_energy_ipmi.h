@@ -1,9 +1,8 @@
 /*****************************************************************************\
- *  slurm_acct_gather_energy.h - implementation-independent job energy
- *  accounting plugin definitions
+ *  acct_gather_energy_ipmi.h - slurm energy accounting plugin for ipmi.
  *****************************************************************************
- *  Written by Bull-HN-PHX/d.rusak,
- *  Copyright (C) 2012 Bull-HN-PHX
+ *  Copyright (C) 2012
+ *  Written by Bull- Thomas Cadeau
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.schedmd.com/slurmdocs/>.
@@ -33,54 +32,23 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+ *
+ *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
+ *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifndef __SLURM_ACCT_GATHER_ENERGY_H__
-#define __SLURM_ACCT_GATHER_ENERGY_H__
+#ifndef _ENERGY_GATHER_IMPI_H_
+#define _ENERGY_GATHER_IMPI_H_
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
-#else				/* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif				/*  HAVE_CONFIG_H */
-
-#include <sys/resource.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
-
-#include "slurm/slurm.h"
-#include "slurm/slurmdb.h"
-
-#include "src/common/macros.h"
-#include "src/common/pack.h"
-#include "src/common/list.h"
-#include "src/common/xmalloc.h"
-#include "src/common/slurm_jobacct_gather.h"
-
-extern int acct_gather_energy_init(void); /* load the plugin */
-extern int acct_gather_energy_fini(void); /* unload the plugin */
-extern acct_gather_energy_t *acct_gather_energy_alloc(void);
-extern void acct_gather_energy_destroy(acct_gather_energy_t *energy);
-extern void acct_gather_energy_pack(acct_gather_energy_t *energy, Buf buffer,
-				    uint16_t protocol_version);
-extern int acct_gather_energy_unpack(acct_gather_energy_t **energy, Buf buffer,
-				     uint16_t protocol_version);
-
-extern int acct_gather_energy_g_update_node_energy(void);
-extern int acct_gather_energy_g_get_data(enum acct_energy_type data_type,
+extern int acct_gather_energy_p_update_node_energy(void);
+extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 					 acct_gather_energy_t *energy);
-extern int acct_gather_energy_g_set_data(enum acct_energy_type data_type,
+extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 					 acct_gather_energy_t *energy);
+extern int init ( void );
+extern int fini ( void );
 
-extern int acct_gather_energy_g_start_thread(void);
-extern int acct_gather_energy_g_end_thread(void);
+extern int acct_gather_energy_p_start_thread(void);
+extern int acct_gather_energy_p_end_thread(void);
 
-#endif /*__SLURM_ACCT_GATHER_ENERGY_H__*/
+#endif

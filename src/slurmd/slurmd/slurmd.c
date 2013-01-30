@@ -298,6 +298,10 @@ main (int argc, char *argv[])
 		fatal("Unable to clear interconnect state.");
 	switch_g_slurmd_init();
 
+	//	potentially set up node-level thread for energy accounting
+	if (acct_gather_energy_g_start_thread()) {
+		error( "cannot create a power mgmt thread ");
+	}
 	_create_msg_socket();
 
 	conf->pid = getpid();
@@ -1511,6 +1515,7 @@ _slurmd_fini(void)
 	slurm_proctrack_fini();
 	slurm_auth_fini();
 	node_fini2();
+	acct_gather_energy_g_end_thread();
 	gres_plugin_fini();
 	slurm_topo_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */

@@ -1,0 +1,91 @@
+.TH "ipmi.conf" "5" "November 2012" "ipmi.conf 1.0" "Slurm ipmi configuration file"
+
+.SH "NAME"
+ipmi.conf \- Slurm configuration file for the ipmi plugin
+
+.SH "DESCRIPTION"
+
+\fBipmi.conf\fP is an ASCII file which defines parameters used by
+Slurm's ipmi related plugins.
+The file location can be modified at system build time using the
+DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
+environment variable. The file will always be located in the
+same directory as the \fBslurm.conf\fP file.
+.LP
+Parameter names are case insensitive.
+Any text following a "#" in the configuration file is treated
+as a comment through the end of that line.
+The size of each line in the file is limited to 1024 characters.
+Changes to the configuration file take effect upon restart of
+SLURM daemons, daemon receipt of the SIGHUP signal, or execution
+of the command "scontrol reconfigure" unless otherwise noted.
+
+.LP
+The following ipmi.conf parameters are defined to control the general behavior
+of Slurm ipmi plugins.
+
+.TP
+\fBFrequency\fR=<number>
+This parameter is the number of seconds between BMC access samples.
+
+.TP
+\fBCalcAdjustment\fR=<yes|no>
+If set to "yes", the consumption between the last BMC access sample and
+a step consumption update is approximated to get more accurate task consumption.
+The adjustment is made at the step start and each time the consumption
+is updated, including the step end. The approximations are not cumulated, only
+the first and last adjustments are used to calculated the consumption.
+The default is "no".
+
+.TP
+\fBPowerSensor\fR=<number>
+This parameter is optional. The plugin will not search all available sensors to
+find the power sensor, but will just check the sensor is in Watt.
+
+.LP
+The following ipmi.conf parameters are defined to control the
+IPMI config default values for libipmiconsole.
+
+.TP
+\fBUsername\fR=\fIUSERNAME\fR
+Specify BMC Username.
+
+.TP
+\fBPassword\fR=\fIPASSWORD\fR
+Specify BMC Password.
+
+.SH "EXAMPLE"
+.LP
+.br
+###
+.br
+# Slurm ipmi configuration file
+.br
+###
+.br
+Frequency=10
+.br
+CalcAdjustment=yes
+.br
+#
+
+.SH "COPYING"
+Copyright (C) 2012-2013 Bull.
+Produced at Bull (cf, DISCLAIMER).
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <http://www.schedmd.com/slurmdocs/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5)

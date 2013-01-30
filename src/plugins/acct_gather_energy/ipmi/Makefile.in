@@ -78,6 +78,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
 	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
+	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_gpl_licensed.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_iso.m4 \
@@ -132,8 +133,10 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-acct_gather_energy_ipmi_la_LIBADD =
-am_acct_gather_energy_ipmi_la_OBJECTS = acct_gather_energy_ipmi.lo
+am__DEPENDENCIES_1 =
+acct_gather_energy_ipmi_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am_acct_gather_energy_ipmi_la_OBJECTS = acct_gather_energy_ipmi.lo \
+	acct_gather_energy_ipmi_config.lo
 acct_gather_energy_ipmi_la_OBJECTS =  \
 	$(am_acct_gather_energy_ipmi_la_OBJECTS)
 acct_gather_energy_ipmi_la_LINK = $(LIBTOOL) --tag=CC \
@@ -207,6 +210,9 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FREEIPMI_CPPFLAGS = @FREEIPMI_CPPFLAGS@
+FREEIPMI_LDFLAGS = @FREEIPMI_LDFLAGS@
+FREEIPMI_LIBS = @FREEIPMI_LIBS@
 GLIB_CFLAGS = @GLIB_CFLAGS@
 GLIB_COMPILE_RESOURCES = @GLIB_COMPILE_RESOURCES@
 GLIB_GENMARSHAL = @GLIB_GENMARSHAL@
@@ -375,14 +381,19 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(FREEIPMI_CPPFLAGS)
 pkglib_LTLIBRARIES = acct_gather_energy_ipmi.la
 
-# Null energy accounting ipmi plugin.
-acct_gather_energy_ipmi_la_SOURCES = acct_gather_energy_ipmi.c
+# Energy accounting ipmi plugin.
+acct_gather_energy_ipmi_la_SOURCES = acct_gather_energy_ipmi.c \
+                                     acct_gather_energy_ipmi.h \
+                                     acct_gather_energy_ipmi_config.c \
+                                     acct_gather_energy_ipmi_config.h
+
 
 #acct_gather_energy_ipmi_la_CFLAGS = $(MYSQL_CFLAGS)
-acct_gather_energy_ipmi_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+acct_gather_energy_ipmi_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(FREEIPMI_LDFLAGS)
+acct_gather_energy_ipmi_la_LIBADD = $(FREEIPMI_LIBS)
 all: all-am
 
 .SUFFIXES:
@@ -459,6 +470,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_gather_energy_ipmi.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_gather_energy_ipmi_config.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

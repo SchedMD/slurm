@@ -115,6 +115,9 @@
 /* Define to 1 if you have the `fdatasync' function. */
 #undef HAVE_FDATASYNC
 
+/* Define to 1 if freeipmi library found */
+#undef HAVE_FREEIPMI
+
 /* Define to 1 if running slurmd on front-end only */
 #undef HAVE_FRONT_END
 
