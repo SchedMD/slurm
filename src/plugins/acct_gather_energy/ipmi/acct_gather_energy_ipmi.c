@@ -415,10 +415,13 @@ static int _find_power_sensor(void)
 		rc = SLURM_SUCCESS;
 		break;
 	}
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("Power sensor found: %d",slurm_ipmi_conf.power_sensor_num);
+
 	if (rc != SLURM_SUCCESS)
 		info("Power sensor not found.");
+	else if (debug_flags & DEBUG_FLAG_ENERGY)
+		info("Power sensor found: %d",
+		     slurm_ipmi_conf.power_sensor_num);
+
 	return rc;
 }
 
