@@ -31,6 +31,7 @@ documents those changes that are of interest to users and admins.
     block, destroy it correctly.
  -- Switch/nrt - Dynamically load libnrt.so from within the plugin as needed.
     This eliminates the need for libnrt.so on the head node.
+ -- BLUEGENE - Fix in reservation logic that could cause abort.
 
 * Changes in SLURM 2.5.1
 ========================
