@@ -51,18 +51,16 @@ AC_DEFUN([X_AC_NRT],
       fi
       # search for required NRT API libraries
       if test -f "$nrt_dir/libnrt.so"; then
+      	AC_DEFINE_UNQUOTED(LIBNRT_SO, "$nrt_dir/libnrt.so", [Define the libnrt.so location])
          ac_have_libnrt="yes"
-         NRT_LDFLAGS="-Wl,-rpath -Wl,$nrt_dir -L$nrt_dir -lnrt"
 	 break;
       fi
    done
-   AC_SUBST(NRT_LDFLAGS)
 
    if test "x$ac_have_libnrt" != "xyes" ; then
       AC_MSG_RESULT([no])
    else
       AC_MSG_RESULT([yes])
-      AC_DEFINE(HAVE_LIBNRT, 1, [define if you have libnrt.so])
    fi
 
    if test "x$ac_have_nrt_h" = "xyes"; then

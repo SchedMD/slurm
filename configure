@@ -671,7 +671,6 @@ HAVE_SGI_JOB_TRUE
 HAVE_NRT
 HAVE_NRT_FALSE
 HAVE_NRT_TRUE
-NRT_LDFLAGS
 NRT_CPPFLAGS
 SLURM_PREFIX
 SLURMCTLD_PORT_COUNT
@@ -21699,12 +21698,15 @@ $as_echo_n "checking whether to enable IBM NRT support... " >&6; }
       fi
       # search for required NRT API libraries
       if test -f "$nrt_dir/libnrt.so"; then
+
+cat >>confdefs.h <<_ACEOF
+#define LIBNRT_SO "$nrt_dir/libnrt.so"
+_ACEOF
+
          ac_have_libnrt="yes"
-         NRT_LDFLAGS="-Wl,-rpath -Wl,$nrt_dir -L$nrt_dir -lnrt"
 	 break;
       fi
    done
-
 
    if test "x$ac_have_libnrt" != "xyes" ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -21712,9 +21714,6 @@ $as_echo "no" >&6; }
    else
       { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-
-$as_echo "#define HAVE_LIBNRT 1" >>confdefs.h
-
    fi
 
    if test "x$ac_have_nrt_h" = "xyes"; then
