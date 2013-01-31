@@ -3042,6 +3042,9 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 	char str[200];
 	job_resources_t *job_res = job_ptr->job_resrcs;
 
+	if (!job_res->core_bitmap)
+		return;
+
 	total_nodes = bit_set_count(job_res->node_bitmap);
 
 	debug2("Checking %d (of %d) nodes for job %u, core_bitmap_size: %d",
