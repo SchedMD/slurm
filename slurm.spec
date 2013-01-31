@@ -552,6 +552,10 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_pgsql.so            &&
    echo %{_libdir}/slurm/jobcomp_pgsql.so            >> $LIST
 
 LIST=./plugins.files
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_ipmi.so  &&
+   echo %{_libdir}/slurm/acct_gather_energy_ipmi.so  >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_rapl.so  &&
+   echo %{_libdir}/slurm/acct_gather_energy_rapl.so  >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so           &&
    echo %{_libdir}/slurm/crypto_openssl.so           >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/select_bluegene.so          &&
@@ -712,9 +716,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/accounting_storage_filetxt.so
 %{_libdir}/slurm/accounting_storage_none.so
 %{_libdir}/slurm/accounting_storage_slurmdbd.so
-%{_libdir}/slurm/acct_gather_energy_ipmi.so
 %{_libdir}/slurm/acct_gather_energy_none.so
-%{_libdir}/slurm/acct_gather_energy_rapl.so
 %{_libdir}/slurm/checkpoint_none.so
 %{_libdir}/slurm/checkpoint_ompi.so
 %{_libdir}/slurm/gres_gpu.so
