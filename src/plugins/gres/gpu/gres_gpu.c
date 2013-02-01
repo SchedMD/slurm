@@ -212,7 +212,6 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
 		error("gres/gpu unable to set CUDA_VISIBLE_DEVICES, "
 		      "no device files configured");
 	} else {
-		error("gres/gpu set job nodevfiles");
 		xstrcat(dev_list, "NoDevFiles");
 	}
 
@@ -256,7 +255,6 @@ extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
 		error("gres/gpu unable to set CUDA_VISIBLE_DEVICES, "
 		      "no device files configured");
 	} else {
-		error("gres/gpu set step nodevfiles");
 		xstrcat(dev_list, "NoDevFiles");
 	}
 
