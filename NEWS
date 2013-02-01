@@ -1,9 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.6.0pre2
+============================
 
-* Changes in SLURM 2.6.0-pre1
-=============================
+* Changes in SLURM 2.6.0pre1
+============================
  -- Add "state" field to job step information reported by scontrol.
  -- Notify srun to retry step creation upon completion of other job steps
     rather than polling. This results in much faster throughput for job step
@@ -46,6 +48,10 @@ documents those changes that are of interest to users and admins.
     _mandir %{_prefix}/share/man
     _infodir %{_prefix}/share/info
  -- Add acct_gather_energy/ipmi which works off freeipmi for energy gathering
+
+* Changes in SLURM 2.5.3
+========================
+
 
 * Changes in SLURM 2.5.2
 ========================

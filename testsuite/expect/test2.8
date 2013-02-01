@@ -46,6 +46,7 @@ if {[test_launch_poe]} {
 } else {
 	set step_id 0
 }
+set is_bluegene [test_bluegene]
 
 #
 # Build input script file
@@ -215,8 +216,14 @@ expect {
 	}
 
 }
-if {$matches != 4} {
-	send_user "\nFAILURE: scontrol failed to find matching job ($matches != 4)\n"
+if {$is_bluegene == 0} {
+	set match_target 4
+} else {
+#	No CPU_IDs on Bluegene
+	set match_target 2
+}
+if {$matches != $match_target} {
+	send_user "\nFAILURE: scontrol failed to find matching job ($matches != $match_target)\n"
 	set exit_code 1
 }
 
@@ -271,8 +278,14 @@ expect {
 	}
 
 }
-if {$matches != 6} {
-	send_user "\nFAILURE: scontrol failed to find matching job ($matches != 6)\n"
+if {$is_bluegene == 0} {
+	set match_target 6
+} else {
+#	No CPU_IDs on Bluegene
+	set match_target 4
+}
+if {$matches != $match_target} {
+	send_user "\nFAILURE: scontrol failed to find matching job ($matches != $match_target)\n"
 	set exit_code 1
 }
 
