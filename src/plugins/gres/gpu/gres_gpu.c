@@ -202,16 +202,19 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
 			else
 				xstrfmtcat(dev_list, "%d", i);
 		}
-	}
-	if (dev_list) {
-		env_array_overwrite(job_env_ptr,"CUDA_VISIBLE_DEVICES",
-				    dev_list);
-		xfree(dev_list);
-	} else {
+	} else if (gres_job_ptr && (gres_job_ptr->gres_cnt_alloc > 0)) {
 		/* The gres.conf file must identify specific device files
 		 * in order to set the CUDA_VISIBLE_DEVICES env var */
 		error("gres/gpu unable to set CUDA_VISIBLE_DEVICES, "
 		      "no device files configured");
+	} else {
+		xstrcat(dev_list, "NoDevFiles");
+	}
+
+	if (dev_list) {
+		env_array_overwrite(job_env_ptr,"CUDA_VISIBLE_DEVICES",
+				    dev_list);
+		xfree(dev_list);
 	}
 }
 
@@ -242,16 +245,19 @@ extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
 			else
 				xstrfmtcat(dev_list, "%d", i);
 		}
-	}
-	if (dev_list) {
-		env_array_overwrite(job_env_ptr,"CUDA_VISIBLE_DEVICES",
-				    dev_list);
-		xfree(dev_list);
-	} else {
+	} else if (gres_step_ptr && (gres_step_ptr->gres_cnt_alloc > 0)) {
 		/* The gres.conf file must identify specific device files
 		 * in order to set the CUDA_VISIBLE_DEVICES env var */
 		error("gres/gpu unable to set CUDA_VISIBLE_DEVICES, "
 		      "no device files configured");
+	} else {
+		xstrcat(dev_list, "NoDevFiles");
+	}
+
+	if (dev_list) {
+		env_array_overwrite(job_env_ptr,"CUDA_VISIBLE_DEVICES",
+				    dev_list);
+		xfree(dev_list);
 	}
 }
 

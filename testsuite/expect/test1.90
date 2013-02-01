@@ -52,8 +52,10 @@ expect {
 		set fast_sched $expect_out(1,string)
 		exp_continue
 	}
-	-re "affinity" {
-		set affinity 1
+	-re "TaskPlugin *= task/($alpha)" {
+		if {![string compare $expect_out(1,string) "affinity"] || ![string compare $expect_out(1,string) "cgroup"]} {
+			set affinity 1
+		}
 		exp_continue
 	}
 	eof {

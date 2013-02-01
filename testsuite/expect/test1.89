@@ -52,8 +52,10 @@ set affinity 0
 log_user 0
 spawn $scontrol show config
 expect {
-	-re "affinity" {
-		set affinity 1
+	-re "TaskPlugin *= task/($alpha)" {
+		if {![string compare $expect_out(1,string) "affinity"] || ![string compare $expect_out(1,string) "cgroup"]} {
+			set affinity 1
+		}
 		exp_continue
 	}
 	eof {

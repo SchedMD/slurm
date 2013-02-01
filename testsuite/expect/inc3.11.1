@@ -63,7 +63,8 @@ proc inc3_11_1 {} {
 "
 	#{StartTime=now   Duration=5   Nodes=$def_node   Account=badaccountname}
 	if {$cons_res_actived == 1} {
-		lappend badtests "{StartTime=now   Duration=5   NodeCnt=1 CoreCnt=$core_res_num  User=$user_name}"
+		set more_badtests "StartTime=now   Duration=5   NodeCnt=1 CoreCnt=$core_res_num  User=$user_name"
+		lappend badtests $more_badtests
 	}
 
 	foreach test $badtests {
@@ -94,7 +95,8 @@ proc inc3_11_1 {} {
 "
 	#{StartTime=now   Duration=5   NodeCnt=10 CoreCnt=11  User=$user_name}
 	if {$cons_res_actived == 1} {
-		lappend goodtests "{StartTime=now   Duration=5   NodeCnt=$num_nodes CoreCnt=$core_res_num  User=$user_name}"
+		set more_goodtests "StartTime=now   Duration=5   NodeCnt=$num_nodes CoreCnt=$core_res_num  User=$user_name"
+		lappend goodtests $more_goodtests
 	}
 
 	foreach test $goodtests {

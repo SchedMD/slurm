@@ -51,6 +51,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 2.5.3
 ========================
+ -- Gres/gpu plugin - If no GPUs requested, set CUDA_VISIBLE_DEVICES=NoDevFiles.
+    This bug was introduced in 2.5.2 for the case where a GPU count was
+    configured, but without device files.
 
 
 * Changes in SLURM 2.5.2
