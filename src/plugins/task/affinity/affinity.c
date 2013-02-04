@@ -290,6 +290,7 @@ static bool _is_power_cpu(void)
 		is_power = 0;
 		while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
 			if (strstr(buffer, "POWER7")) {
+error("buffer:%s", buffer);
 				is_power = 1;
 				break;
 			}
@@ -297,7 +298,7 @@ static bool _is_power_cpu(void)
 		fclose(cpu_info_file);
 	}
 
-	if (is_power = 1)
+	if (is_power == 1)
 		return true;
 	return false;
 }
@@ -312,7 +313,7 @@ void reset_cpuset(cpu_set_t *new_mask, cpu_set_t *cur_mask)
 	cpu_set_t newer_mask;
 	int cur_offset, new_offset = 0, last_set = -1;
 
-	if (!is_power_cpu())
+	if (!_is_power_cpu())
 		return;
 
 	CPU_ZERO(&newer_mask);
