@@ -290,7 +290,6 @@ static bool _is_power_cpu(void)
 		is_power = 0;
 		while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
 			if (strstr(buffer, "POWER7")) {
-error("buffer:%s", buffer);
 				is_power = 1;
 				break;
 			}
