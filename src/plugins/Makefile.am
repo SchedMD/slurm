@@ -14,6 +14,7 @@ SUBDIRS = \
 	priority		\
 	proctrack		\
 	sched			\
+	slurmctld		\
 	select			\
 	switch			\
 	task			\
