@@ -36,6 +36,8 @@
 
 #include "affinity.h"
 
+static int is_power = -1;
+
 void slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval)
 {
 	char *bind_type, *action, *status, *units;
@@ -271,6 +273,35 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 	return false;
 }
 
+/* Return true if Power7 processor */
+static bool _is_power_cpu(void)
+{
+	if (is_power == -1) {
+		FILE *cpu_info_file;
+		char buffer[128];
+		char* _cpuinfo_path = "/proc/cpuinfo";
+		cpu_info_file = fopen(_cpuinfo_path, "r");
+		if (cpu_info_file == NULL) {
+			error("_get_is_power: error %d opening %s", errno,
+			      _cpuinfo_path);
+			return false;	/* assume not power processor */
+		}
+
+		is_power = 0;
+		while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
+			if (strstr(buffer, "POWER7")) {
+				is_power = 1;
+				break;
+			}
+		}
+		fclose(cpu_info_file);
+	}
+
+	if (is_power == 1)
+		return true;
+	return false;
+}
+
 /* Translate global CPU index to local CPU index. This is needed for
  * Power7 processors with multi-threading disabled. On those processors,
  * the CPU mask has gaps for the unused threads (different from Intel
@@ -278,12 +309,20 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
  * set system call. */
 void reset_cpuset(cpu_set_t *new_mask, cpu_set_t *cur_mask)
 {
-	cpu_set_t newer_mask;
+	cpu_set_t full_mask, newer_mask;
 	int cur_offset, new_offset = 0, last_set = -1;
 
+	if (!_is_power_cpu())
+		return;
+
+	if (slurm_getaffinity(1, sizeof(full_mask), &full_mask)) {
+		/* Try to get full CPU mask from process init */
+		CPU_ZERO(&full_mask);
+		CPU_OR(&full_mask, &full_mask, cur_mask);
+	}
 	CPU_ZERO(&newer_mask);
 	for (cur_offset = 0; cur_offset < CPU_SETSIZE; cur_offset++) {
-		if (!CPU_ISSET(cur_offset, cur_mask))
+		if (!CPU_ISSET(cur_offset, &full_mask))
 			continue;
 		if (CPU_ISSET(new_offset, new_mask)) {
 			CPU_SET(cur_offset, &newer_mask);
