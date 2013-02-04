@@ -309,15 +309,20 @@ static bool _is_power_cpu(void)
  * set system call. */
 void reset_cpuset(cpu_set_t *new_mask, cpu_set_t *cur_mask)
 {
-	cpu_set_t newer_mask;
+	cpu_set_t full_mask, newer_mask;
 	int cur_offset, new_offset = 0, last_set = -1;
 
 	if (!_is_power_cpu())
 		return;
 
+	if (slurm_getaffinity(1, sizeof(full_mask), &full_mask)) {
+		/* Try to get full CPU mask from process init */
+		CPU_ZERO(&full_mask);
+		CPU_OR(&full_mask, &full_mask, cur_mask);
+	}
 	CPU_ZERO(&newer_mask);
 	for (cur_offset = 0; cur_offset < CPU_SETSIZE; cur_offset++) {
-		if (!CPU_ISSET(cur_offset, cur_mask))
+		if (!CPU_ISSET(cur_offset, &full_mask))
 			continue;
 		if (CPU_ISSET(new_offset, new_mask)) {
 			CPU_SET(cur_offset, &newer_mask);
