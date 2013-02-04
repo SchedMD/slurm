@@ -571,7 +571,7 @@ extern Midplane::ConstPtr bridge_get_midplane(ComputeHardware::ConstPtr bgqsys,
 	assert(ba_mp);
 
 	try {
-		Coordinates::Coordinates coords(
+		Coordinates coords(
 			ba_mp->coord[0], ba_mp->coord[1],
 			ba_mp->coord[2], ba_mp->coord[3]);
 		mp_ptr = bgqsys->getMidplane(coords);

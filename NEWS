@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     configured, but without device files.
  -- task/affinity plugin - Fix bug in CPU masks for some processors.
  -- Modify sacct command to get format from SACCT_FORMAT environment variable.
+ -- BGQ - Changed order of library inclusions and fixed incorrect declaration
+    to compile correctly on newer compilers
 
 * Changes in SLURM 2.5.2
 ========================

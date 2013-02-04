@@ -244,9 +244,9 @@ AC_DEFUN([X_AC_BGQ],
       		if test -z "$have_bg_ar" -a -f "$soloc" ; then
 			have_bgq_ar=yes
 			if test "$ac_with_rpath" = "yes"; then
-				bg_ldflags="$bg_ldflags -Wl,-rpath -Wl,$bg_dir/hlcs/lib -L$bg_dir/hlcs/lib -l$libname"
+				bg_libs="$bg_libs -Wl,-rpath -Wl,$bg_dir/hlcs/lib -L$bg_dir/hlcs/lib -l$libname"
 			else
-				bg_ldflags="$bg_ldflags -L$bg_dir/hlcs/lib -l$libname"
+				bg_libs="$bg_libs -L$bg_dir/hlcs/lib -l$libname"
 			fi
 		fi
 
@@ -254,9 +254,9 @@ AC_DEFUN([X_AC_BGQ],
     		if test -z "$have_bg_ar" -a -f "$soloc" ; then
 			have_bgq_ar=yes
 			if test "$ac_with_rpath" = "yes"; then
-				bg_ldflags="$bg_ldflags -Wl,-rpath -Wl,$bg_dir/extlib/lib -L$bg_dir/extlib/lib -l$loglibname"
+				bg_libs="$bg_libs -Wl,-rpath -Wl,$bg_dir/extlib/lib -L$bg_dir/extlib/lib -l$loglibname"
 			else
-				bg_ldflags="$bg_ldflags -L$bg_dir/extlib/lib -l$loglibname"
+				bg_libs="$bg_libs -L$bg_dir/extlib/lib -l$loglibname"
 			fi
 		fi
 
@@ -285,8 +285,10 @@ AC_DEFUN([X_AC_BGQ],
    	if test ! -z "$have_bgq_ar" -a ! -z "$have_bgq_hdr" ; then
       		# ac_with_readline="no"
 		# Test to make sure the api is good
-		saved_LDFLAGS="$LDFLAGS"
-      	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags -m64 $bg_includes"
+		saved_LIBS="$LIBS"
+		saved_CPPFLAGS="$CPPFLAGS"
+		LIBS="$saved_LIBS $bg_libs"
+		CPPFLAGS="$saved_CPPFLAGS -m64 $bg_includes"
 		AC_LANG_PUSH(C++)
 		AC_LINK_IFELSE([AC_LANG_PROGRAM(
                                 [[#include <bgsched/bgsched.h>
@@ -314,11 +316,12 @@ AC_DEFUN([X_AC_BGQ],
 			        [have_bgq_get_action=yes],
 				[AC_MSG_RESULT(Blocks do not have actions!)])
 		AC_LANG_POP(C++)
-		LDFLAGS="$saved_LDFLAGS"
+		LIBS="$saved_LIBS"
+		CPPFLAGS="$saved_CPPFLAGS"
    	fi
 
   	if test ! -z "$have_bgq_files" ; then
-      		BG_LDFLAGS="$bg_ldflags"
+		BG_LDFLAGS="$bg_libs"
 		RUNJOB_LDFLAGS="$runjob_ldflags"
       		BG_INCLUDES="$bg_includes"
 		CFLAGS="$CFLAGS -m64"
