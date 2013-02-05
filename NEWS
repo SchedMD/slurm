@@ -518,6 +518,8 @@ documents those changes that are of interest to users and admins.
     a reconfiguration, the node's bitmap was not cleared resulting in an
     underflow upon job termination or removal from scheduling matrix by the
     backfill scheduler.
+ -- Fix race condition in job dependency logic which can result in invalid
+    memory reference.
 
 * Changes in SLURM 2.3.5
 ========================
