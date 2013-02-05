@@ -1225,6 +1225,9 @@ static bool _scan_depend(List dependency_list, uint32_t job_id)
 			continue;
 		if (dep_ptr->job_id == job_id)
 			rc = true;
+		else if ((dep_ptr->job_id != dep_ptr->job_ptr->job_id) ||
+			 (dep_ptr->job_ptr->magic != JOB_MAGIC))
+			continue;	/* purged job, ptr not yet cleared */
 		else if (dep_ptr->job_ptr->details &&
 			 dep_ptr->job_ptr->details->depend_list) {
 			rc = _scan_depend(dep_ptr->job_ptr->details->
