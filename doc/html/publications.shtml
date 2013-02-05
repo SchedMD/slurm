@@ -156,7 +156,7 @@ Moe Jette, SchedMD LLC
 
 <!-- day 2 -->
 
-<li><a href="slurm_ug_2011/SLURM-Keynode-v.pdf">Challenges and Opportunities for Exscale
+<li><a href="slurm_ug_2011/SLURM-Keynote-v.pdf">Challenges and Opportunities for Exscale
 Resource Management and How Today's Petascale Systems are Guiding the Way</a>,
 William Kramer, NCSA
 </li>
@@ -331,6 +331,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 20 November 2012</p>
+<p style="text-align:center;">Last modified 4 February 2013</p>
 
 <!--#include virtual="footer.txt"-->

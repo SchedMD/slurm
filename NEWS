@@ -55,6 +55,7 @@ documents those changes that are of interest to users and admins.
     This bug was introduced in 2.5.2 for the case where a GPU count was
     configured, but without device files.
  -- task/affinity plugin - Fix bug in CPU masks for some processors.
+ -- Modify sacct command to get format from SACCT_FORMAT environment variable.
 
 
 * Changes in SLURM 2.5.2
@@ -764,6 +765,8 @@ documents those changes that are of interest to users and admins.
     a reconfiguration, the node's bitmap was not cleared resulting in an
     underflow upon job termination or removal from scheduling matrix by the
     backfill scheduler.
+ -- Fix race condition in job dependency logic which can result in invalid
+    memory reference.
 
 * Changes in SLURM 2.3.5
 ========================

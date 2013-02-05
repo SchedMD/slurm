@@ -250,7 +250,11 @@ NOTE: When using the format option for listing various fields you can put a
 
 e.g. format=name%30 will print 30 characters of field name right
 justified.  A %\-30 will print 30 characters left justified.
-.IP
+
+When set, the SACCT_FORMAT environment variable will override the
+default format.  For example:
+
+SACCT_FORMAT="jobid,user,account,cluster"
 
 .TP
 \f3\-p\fP\f3,\fP \f3\-\-parsable\fP
