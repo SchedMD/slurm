@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
  -- Modify sacct command to get format from SACCT_FORMAT environment variable.
  -- BGQ - Changed order of library inclusions and fixed incorrect declaration
     to compile correctly on newer compilers
+ -- Fix for not building sview if glib exists on a system but not the gtk libs.
 
 * Changes in SLURM 2.5.2
 ========================

@@ -697,10 +697,10 @@ WITH_MYSQL_TRUE
 MYSQL_CFLAGS
 MYSQL_LIBS
 HAVEMYSQLCONFIG
-GTK_LIBS
-GTK_CFLAGS
 BUILD_SVIEW_FALSE
 BUILD_SVIEW_TRUE
+GTK_LIBS
+GTK_CFLAGS
 GLIB_COMPILE_RESOURCES
 GLIB_MKENUMS
 GOBJECT_QUERY
@@ -20417,14 +20417,6 @@ rm -f core conftest.err conftest.$ac_objext \
 
   rm -f conf.glibtest
 
- if test "x$ac_glib_test" = "xyes"; then
-  BUILD_SVIEW_TRUE=
-  BUILD_SVIEW_FALSE='#'
-else
-  BUILD_SVIEW_TRUE='#'
-  BUILD_SVIEW_FALSE=
-fi
-
 
 if test ${glib_config_minor_version=0} -ge 32 ; then
 
@@ -20708,6 +20700,15 @@ if test ${gtk_config_minor_version=0} -ge 14 ; then
 $as_echo "#define GTK2_USE_GET_FOCUS 1" >>confdefs.h
 
 fi
+
+ if test "x$ac_glib_test" = "xyes" && test "x$ac_gtk_test" = "xyes"; then
+  BUILD_SVIEW_TRUE=
+  BUILD_SVIEW_FALSE='#'
+else
+  BUILD_SVIEW_TRUE='#'
+  BUILD_SVIEW_FALSE=
+fi
+
 
 
 	#Check for MySQL

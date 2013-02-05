@@ -243,7 +243,6 @@ if test -d "/opt/gnome/lib64/pkgconfig"; then
 fi
 
 AM_PATH_GLIB_2_0([2.7.1], [ac_glib_test="yes"], [ac_glib_test="no"], [gthread])
-AM_CONDITIONAL(BUILD_SVIEW, test "x$ac_glib_test" = "xyes")
 
 if test ${glib_config_minor_version=0} -ge 32 ; then
        AC_DEFINE([GLIB_NEW_THREADS], 1, [Define to 1 if using glib-2.32.0 or higher])
@@ -261,6 +260,8 @@ fi
 if test ${gtk_config_minor_version=0} -ge 14 ; then
        AC_DEFINE([GTK2_USE_GET_FOCUS], 1, [Define to 1 if using gtk+-2.14.0 or higher])
 fi
+
+AM_CONDITIONAL(BUILD_SVIEW, [test "x$ac_glib_test" = "xyes"] && [test "x$ac_gtk_test" = "xyes"])
 
 X_AC_DATABASES
 
