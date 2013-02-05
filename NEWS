@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
     This bug was introduced in 2.5.2 for the case where a GPU count was
     configured, but without device files.
  -- task/affinity plugin - Fix bug in CPU masks for some processors.
+ -- Modify sacct command to get format from SACCT_FORMAT environment variable.
 
 * Changes in SLURM 2.5.2
 ========================

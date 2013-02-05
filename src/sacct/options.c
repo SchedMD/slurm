@@ -599,6 +599,7 @@ void parse_command_line(int argc, char **argv)
 	ListIterator itr = NULL;
 	struct stat stat_buf;
 	char *dot = NULL;
+	char *env_val = NULL;
 	bool brief_output = FALSE, long_output = FALSE;
 	bool all_users = 0;
 	bool all_clusters = 0;
@@ -1159,6 +1160,8 @@ void parse_command_line(int argc, char **argv)
 			goto endopt;
 		if(params.opt_completion)
 			dot = DEFAULT_COMP_FIELDS;
+		else if ( ( env_val = getenv("SACCT_FORMAT") ) )
+			dot = xstrdup(env_val);
 		else
 			dot = DEFAULT_FIELDS;
 
