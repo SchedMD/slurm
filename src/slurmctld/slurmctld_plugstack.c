@@ -121,9 +121,9 @@ extern int slurmctld_plugstack_init(void)
 			      (g_context_cnt + 1)));
 		xrealloc(g_context,
 			 (sizeof(plugin_context_t *) * (g_context_cnt + 1)));
-		if (strncmp(type, "slurmctld_plugstack/", 20) == 0)
-			type += 20; /* backward compatibility */
-		type = xstrdup_printf("slurmctld_plugstack/%s", type);
+		if (strncmp(type, "slurmctld/", 10) == 0)
+			type += 10; /* backward compatibility */
+		type = xstrdup_printf("slurmctld/%s", type);
 		g_context[g_context_cnt] = plugin_context_create(
 			plugin_type, type, (void **)&ops[g_context_cnt],
 			syms, sizeof(syms));
