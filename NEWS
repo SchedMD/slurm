@@ -56,6 +56,13 @@ documents those changes that are of interest to users and admins.
     configured, but without device files.
  -- task/affinity plugin - Fix bug in CPU masks for some processors.
  -- Modify sacct command to get format from SACCT_FORMAT environment variable.
+ -- BGQ - Changed order of library inclusions and fixed incorrect declaration
+    to compile correctly on newer compilers
+ -- Fix for not building sview if glib exists on a system but not the gtk libs.
+ -- BGQ - Fix for handling a job cleanup on a small block if the job has long
+    since left the system.
+ -- Fix race condition in job dependency logic which can result in invalid
+    memory reference.
 
 
 * Changes in SLURM 2.5.2

@@ -1634,7 +1634,13 @@ again:
 			      in_job_ptr->job_id, bg_record->bg_block_id);
 		}
 		bad_magic = 1;
-		used_cnodes = bit_copy(ba_mp->cnode_bitmap);
+		if ((bg_record->conn_type[0] >= SELECT_SMALL)
+		    && ba_mp->cnode_usable_bitmap) {
+			bit_not(ba_mp->cnode_usable_bitmap);
+			used_cnodes = bit_copy(ba_mp->cnode_usable_bitmap);
+			bit_not(ba_mp->cnode_usable_bitmap);
+		} else
+			used_cnodes = bit_copy(ba_mp->cnode_bitmap);
 		goto again;
 	}
 
