@@ -2500,7 +2500,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 {
 	bitstr_t *sp_avail_bitmap;
 	char str[300];
-	uint32_t cores_per_node;
+	uint32_t cores_per_node = 0;
 	bitstr_t *tmpcore;
 	int total_core_cnt = 0;
 
@@ -2537,6 +2537,8 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	bit_fmt(str, (sizeof(str) - 1), sp_avail_bitmap);
 
 	if (core_cnt) { /* Reservation is using partial nodes */
+		int node_list_inx = 0;
+
 		debug2("Reservation is using partial nodes");
 
 		/* if not NULL = Cores used by other core based reservations
@@ -2557,7 +2559,6 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			int i;
 			int cores_in_node;
 			int local_cores;
-			int node_list_inx;
 
 			if (node_cnt == 0)
 				cores_per_node = core_cnt[node_list_inx];
