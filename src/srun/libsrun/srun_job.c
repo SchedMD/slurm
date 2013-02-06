@@ -304,7 +304,7 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 			 * know it is less than the number of nodes
 			 * in the allocation
 			 */
-			if(opt.ntasks_set && (opt.ntasks < ai->nnodes))
+			if (opt.ntasks_set && (opt.ntasks < ai->nnodes))
 				opt.min_nodes = opt.ntasks;
 			else
 				opt.min_nodes = ai->nnodes;
@@ -592,7 +592,7 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 		 * Spawn process to insure clean-up of job and/or step
 		 * on abnormal termination
 		 */
-		shepard_fd = _shepard_spawn(job, got_alloc);
+		shepard_fd = _shepard_spawn(job, *got_alloc);
 	}
 
 	*p_job = job;
@@ -1207,20 +1207,21 @@ static int _set_rlimit_env(void)
 	return rc;
 }
 
-/* Set SLURM_SUBMIT_DIR environment variable with current state */
+/* Set SLURM_SUBMIT_DIR and SLURM_SUBMIT_HOST environment variables within
+ * current state */
 static void _set_submit_dir_env(void)
 {
-	char buf[MAXPATHLEN + 1];
+	char buf[MAXPATHLEN + 1], host[256];
 
-	if ((getcwd(buf, MAXPATHLEN)) == NULL) {
+	if ((getcwd(buf, MAXPATHLEN)) == NULL)
 		error("getcwd failed: %m");
-		exit(error_exit);
-	}
-
-	if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", buf) < 0) {
+	else if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", buf) < 0)
 		error("unable to set SLURM_SUBMIT_DIR in environment");
-		return;
-	}
+
+	if ((gethostname(host, sizeof(host))))
+		error("gethostname_short failed: %m");
+	else if (setenvf(NULL, "SLURM_SUBMIT_HOST", "%s", host) < 0)
+		error("unable to set SLURM_SUBMIT_HOST in environment");
 }
 
 /* Set some environment variables with current state */
@@ -1305,7 +1306,8 @@ static int _shepard_spawn(srun_job_t *job, bool got_alloc)
 		}
 	}
 
-	(void) slurm_terminate_job_step(job->jobid, job->stepid);
+	(void) slurm_kill_job_step(job->jobid, job->stepid, SIGKILL);
+
 	if (got_alloc)
 		slurm_complete_job(job->jobid, NO_VAL);
 	exit(0);

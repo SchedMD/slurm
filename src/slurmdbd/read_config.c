@@ -66,7 +66,6 @@ pthread_mutex_t conf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Local functions */
 static void _clear_slurmdbd_conf(void);
-static char * _get_conf_path(void);
 
 static time_t boot_time;
 
@@ -181,7 +180,7 @@ extern int read_slurmdbd_conf(void)
 	_clear_slurmdbd_conf();
 
 	/* Get the slurmdbd.conf path and validate the file */
-	conf_path = _get_conf_path();
+	conf_path = get_extra_conf_path("slurmdbd.conf");
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
 		info("No slurmdbd.conf file (%s)", conf_path);
 	} else {
@@ -578,40 +577,12 @@ extern void slurmdbd_conf_unlock(void)
 }
 
 
-/* Return the pathname of the slurmdbd.conf file.
- * xfree() the value returned */
-static char * _get_conf_path(void)
-{
-	char *val = getenv("SLURM_CONF");
-	char *path = NULL;
-	int i;
-
-	if (!val)
-		val = default_slurm_config_file;
-
-	/* Replace file name on end of path */
-	i = strlen(val) + 15;
-	path = xmalloc(i);
-	strcpy(path, val);
-	val = strrchr(path, (int)'/');
-	if (val)	/* absolute path */
-		val++;
-	else		/* not absolute path */
-		val = path;
-	strcpy(val, "slurmdbd.conf");
-
-	return path;
-}
-
 /* Dump the configuration in name,value pairs for output to
  *	"statsmgr show config", caller must call list_destroy() */
 extern List dump_config(void)
 {
 	config_key_pair_t *key_pair;
 	List my_list = list_create(destroy_config_key_pair);
-
-	if (!my_list)
-		fatal("malloc failure on list_create");
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveDir");
@@ -770,7 +741,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SLURMDBD_CONF");
-	key_pair->value = _get_conf_path();
+	key_pair->value = get_extra_conf_path("slurmdbd.conf");
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

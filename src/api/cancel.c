@@ -53,11 +53,11 @@
  * slurm_kill_job - send the specified signal to all steps of an existing job
  * IN job_id     - the job's id
  * IN signal     - signal number
- * IN batch_flag - 1 to signal batch shell only, otherwise 0
+ * IN flags      - see KILL_JOB_* flags above
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int
-slurm_kill_job (uint32_t job_id, uint16_t signal, uint16_t batch_flag)
+slurm_kill_job (uint32_t job_id, uint16_t signal, uint16_t flags)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -70,7 +70,7 @@ slurm_kill_job (uint32_t job_id, uint16_t signal, uint16_t batch_flag)
 	req.job_id      = job_id;
 	req.job_step_id = NO_VAL;
 	req.signal      = signal;
-	req.batch_flag  = (uint16_t) batch_flag;
+	req.flags       = flags;
 	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
 	msg.data        = &req;
 
@@ -105,7 +105,7 @@ slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	req.job_id      = job_id;
 	req.job_step_id = step_id;
 	req.signal      = signal;
-	req.batch_flag	= false;
+	req.flags	= 0;
 	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
         msg.data        = &req;
 

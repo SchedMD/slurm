@@ -191,13 +191,6 @@ void batch_bind(batch_job_launch_msg_t *req)
 			 (conf->sockets * conf->cores));
 	req_map = (bitstr_t *) bit_alloc(num_cpus);
 	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
-	if (!req_map || !hw_map) {
-		error("task/affinity: malloc error");
-		FREE_NULL_BITMAP(req_map);
-		FREE_NULL_BITMAP(hw_map);
-		slurm_cred_free_args(&arg);
-		return;
-	}
 
 #ifdef HAVE_FRONT_END
 {
@@ -497,11 +490,6 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 		return NULL;
 
 	alloc_mask = bit_alloc(bit_size(alloc_bitmap));
-	if (!alloc_mask) {
-		error("malloc error");
-		FREE_NULL_BITMAP(alloc_bitmap);
-		return NULL;
-	}
 
 	i = 0;
 	for (s=0, s_miss=false; s<sockets; s++) {
@@ -603,13 +591,6 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	req_map = (bitstr_t *) bit_alloc(num_cpus);
 	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
 
-	if (!req_map || !hw_map) {
-		error("task/affinity: malloc error");
-		FREE_NULL_BITMAP(req_map);
-		FREE_NULL_BITMAP(hw_map);
-		slurm_cred_free_args(&arg);
-		return NULL;
-	}
 	/* Transfer core_bitmap data to local req_map.
 	 * The MOD function handles the case where fewer processes
 	 * physically exist than are configured (slurmd is out of
@@ -1082,7 +1063,7 @@ static bitstr_t *_lllp_map_abstract_mask(bitstr_t *bitmask)
 	for (i = 0; i < num_bits; i++) {
 		if (bit_test(bitmask,i)) {
 			bit = BLOCK_MAP(i);
-			if(bit < bit_size(newmask))
+			if (bit < bit_size(newmask))
 				bit_set(newmask, bit);
 			else
 				error("_lllp_map_abstract_mask: can't go from "

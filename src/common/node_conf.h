@@ -234,7 +234,7 @@ extern struct node_record *create_node_record (
  * find_node_record - find a record for node with specified name
  * input: name - name of the desired node
  * output: return pointer to node record or NULL if not found
- *         node_hash_table - table of hash indecies
+ *         node_hash_table - table of hash indexes
  */
 extern struct node_record *find_node_record (char *name);
 
@@ -277,7 +277,7 @@ extern int state_str2int(const char *state_str, char *node_name);
 extern void cr_init_global_core_data(struct node_record *node_ptr,
 				     int node_cnt, uint16_t fast_schedule);
 
-extern void cr_fini_global_core_data();
+extern void cr_fini_global_core_data(void);
 
 /*return the coremap index to the first core of the given node */
 extern uint32_t cr_get_coremap_offset(uint32_t node_index);

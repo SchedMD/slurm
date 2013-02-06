@@ -396,7 +396,8 @@ extern int init ( void )
 		verbose("%s loaded with AuthInfo=%s",
 			plugin_name, slurmdbd_auth_info);
 
-		if (job_list) {
+		if (job_list && !(slurm_get_accounting_storage_enforce() &
+				  ACCOUNTING_ENFORCE_NO_JOBS)) {
 			/* only do this when job_list is defined
 			 * (in the slurmctld) */
 			pthread_attr_t thread_attr;

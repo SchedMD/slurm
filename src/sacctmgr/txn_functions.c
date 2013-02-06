@@ -51,7 +51,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if(!end)
+		if (!end)
 			command_len=strlen(argv[i]);
 		else {
 			command_len=end-1;
@@ -60,14 +60,14 @@ static int _set_cond(int *start, int argc, char *argv[],
 			}
 		}
 
-		if(!end && !strncasecmp(argv[i], "where",
+		if (!end && !strncasecmp(argv[i], "where",
 					MAX(command_len, 5))) {
 			continue;
-		} else if(!end && !strncasecmp(argv[i], "withassocinfo",
+		} else if (!end && !strncasecmp(argv[i], "withassocinfo",
 					  MAX(command_len, 5))) {
 			txn_cond->with_assoc_info = 1;
 			set = 1;
-		} else if(!end
+		} else if (!end
 			  || (!strncasecmp (argv[i], "Ids",
 					    MAX(command_len, 1)))
 			  || (!strncasecmp (argv[i], "Txn",
@@ -76,11 +76,11 @@ static int _set_cond(int *start, int argc, char *argv[],
 			char *temp = NULL;
 			uint32_t id = 0;
 
-			if(!txn_cond->id_list)
+			if (!txn_cond->id_list)
 				txn_cond->id_list =
 					list_create(slurm_destroy_char);
 
-			if(slurm_addto_char_list(txn_cond->id_list,
+			if (slurm_addto_char_list(txn_cond->id_list,
 						 argv[i]+end))
 				set = 1;
 
@@ -96,37 +96,37 @@ static int _set_cond(int *start, int argc, char *argv[],
 			list_iterator_destroy(itr);
 		} else if (!strncasecmp (argv[i], "Accounts",
 					 MAX(command_len, 3))) {
-			if(!txn_cond->acct_list)
+			if (!txn_cond->acct_list)
 				txn_cond->acct_list =
 					list_create(slurm_destroy_char);
-			if(slurm_addto_char_list(txn_cond->acct_list,
+			if (slurm_addto_char_list(txn_cond->acct_list,
 						 argv[i]+end))
 				set = 1;
 		} else if (!strncasecmp (argv[i], "Action",
 					 MAX(command_len, 4))) {
-			if(!txn_cond->action_list)
+			if (!txn_cond->action_list)
 				txn_cond->action_list =
 					list_create(slurm_destroy_char);
 
-			if(addto_action_char_list(txn_cond->action_list,
+			if (addto_action_char_list(txn_cond->action_list,
 						  argv[i]+end))
 				set = 1;
 			else
 				exit_code=1;
 		} else if (!strncasecmp (argv[i], "Actors",
 					 MAX(command_len, 4))) {
-			if(!txn_cond->actor_list)
+			if (!txn_cond->actor_list)
 				txn_cond->actor_list =
 					list_create(slurm_destroy_char);
-			if(slurm_addto_char_list(txn_cond->actor_list,
+			if (slurm_addto_char_list(txn_cond->actor_list,
 						 argv[i]+end))
 				set = 1;
 		} else if (!strncasecmp (argv[i], "Clusters",
 					 MAX(command_len, 3))) {
-			if(!txn_cond->cluster_list)
+			if (!txn_cond->cluster_list)
 				txn_cond->cluster_list =
 					list_create(slurm_destroy_char);
-			if(slurm_addto_char_list(txn_cond->cluster_list,
+			if (slurm_addto_char_list(txn_cond->cluster_list,
 						 argv[i]+end))
 				set = 1;
 		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
@@ -134,7 +134,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 1))) {
-			if(format_list)
+			if (format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Start",
 					 MAX(command_len, 1))) {
@@ -142,10 +142,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Users",
 					 MAX(command_len, 1))) {
-			if(!txn_cond->user_list)
+			if (!txn_cond->user_list)
 				txn_cond->user_list =
 					list_create(slurm_destroy_char);
-			if(slurm_addto_char_list(txn_cond->user_list,
+			if (slurm_addto_char_list(txn_cond->user_list,
 						 argv[i]+end))
 				set = 1;
 		} else {
@@ -183,15 +183,15 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 		_set_cond(&i, argc, argv, txn_cond, format_list);
 	}
 
-	if(exit_code) {
+	if (exit_code) {
 		slurmdb_destroy_txn_cond(txn_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	}
 
-	if(!list_count(format_list)) {
+	if (!list_count(format_list)) {
 		slurm_addto_char_list(format_list, "T,Action,Actor,Where,Info");
-		if(txn_cond->with_assoc_info)
+		if (txn_cond->with_assoc_info)
 			slurm_addto_char_list(format_list,
 					      "User,Account,Cluster");
 	}
@@ -199,7 +199,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 	print_fields_list = sacctmgr_process_format_list(format_list);
 	list_destroy(format_list);
 
-	if(exit_code) {
+	if (exit_code) {
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
 	}
@@ -207,7 +207,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 	txn_list = acct_storage_g_get_txn(db_conn, my_uid, txn_cond);
 	slurmdb_destroy_txn_cond(txn_cond);
 
-	if(!txn_list) {
+	if (!txn_list) {
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",
 			slurm_strerror(errno));

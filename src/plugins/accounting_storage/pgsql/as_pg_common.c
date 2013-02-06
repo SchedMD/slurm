@@ -72,11 +72,11 @@ concat_cond_list(List cond_list, char *prefix, char *col, char **cond_str)
 	char *object;
 	ListIterator itr = NULL;
 
-	if(cond_list && list_count(cond_list)) {
+	if (cond_list && list_count(cond_list)) {
 		xstrcat(*cond_str, " AND (");
 		itr = list_iterator_create(cond_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(*cond_str, " OR ");
 			if (prefix)
 				xstrfmtcat(*cond_str, "%s.%s='%s'",
@@ -98,11 +98,11 @@ concat_node_state_cond_list(List cond_list, char *prefix,
 	char *object;
 	ListIterator itr = NULL;
 
-	if(cond_list && list_count(cond_list)) {
+	if (cond_list && list_count(cond_list)) {
 		xstrcat(*cond_str, " AND (");
 		itr = list_iterator_create(cond_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(*cond_str, " OR ");
 			/* node states are numeric */
 			/* TODO: NODE_STATE_UNKNOWN == 0, fails the condition*/
@@ -136,11 +136,11 @@ concat_like_cond_list(List cond_list, char *prefix, char *col, char **cond_str)
 	char *object;
 	ListIterator itr = NULL;
 
-	if(cond_list && list_count(cond_list)) {
+	if (cond_list && list_count(cond_list)) {
 		xstrcat(*cond_str, " AND (");
 		itr = list_iterator_create(cond_list);
 		while((object = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(*cond_str, " OR ");
 			/* XXX: strings cond_list turned to lower case
 			   by slurm_addto_char_list().
@@ -238,7 +238,7 @@ pgsql_modify_common(pgsql_conn_t *pg_conn, uint16_t type, time_t now,
 		rc = add_txn(pg_conn, now, cluster, type, name_char,
 			     user_name, (vals+2));
 
-	if(rc != SLURM_SUCCESS) {
+	if (rc != SLURM_SUCCESS) {
 		reset_pgsql_conn(pg_conn);
 		return SLURM_ERROR;
 	}
@@ -259,7 +259,7 @@ check_db_connection(pgsql_conn_t *pg_conn)
 		error("as/pg: we need a connection to run this");
 		errno = SLURM_ERROR;
 		return SLURM_ERROR;
-	} else if(!pg_conn->db_conn ||
+	} else if (!pg_conn->db_conn ||
 		  PQstatus(pg_conn->db_conn) != CONNECTION_OK) {
 		info("as/pg: database connection lost.");
 		PQreset(pg_conn->db_conn);
@@ -327,8 +327,8 @@ check_table(PGconn *db_conn, char *schema, char *table,
 static void _destroy_local_cluster(void *object)
 {
 	local_cluster_t *local_cluster = (local_cluster_t *)object;
-	if(local_cluster) {
-		if(local_cluster->hl)
+	if (local_cluster) {
+		if (local_cluster->hl)
 			hostlist_destroy(local_cluster->hl);
 		FREE_NULL_BITMAP(local_cluster->asked_bitmap);
 		xfree(local_cluster);
@@ -349,10 +349,10 @@ setup_cluster_nodes(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond)
 	hostlist_t temp_hl = NULL;
 	hostlist_iterator_t h_itr = NULL;
 
-	if(!job_cond || !job_cond->used_nodes)
+	if (!job_cond || !job_cond->used_nodes)
 		return NULL;
 
-	if(!job_cond->cluster_list || list_count(job_cond->cluster_list) != 1) {
+	if (!job_cond->cluster_list || list_count(job_cond->cluster_list) != 1) {
 		error("If you are doing a query against nodes "
 		      "you must only have 1 cluster "
 		      "you are asking for.");
@@ -360,7 +360,7 @@ setup_cluster_nodes(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond)
 	}
 
 	temp_hl = hostlist_create(job_cond->used_nodes);
-	if(!hostlist_count(temp_hl)) {
+	if (!hostlist_count(temp_hl)) {
 		error("we didn't get any real hosts to look for.");
 		hostlist_destroy(temp_hl);
 		return NULL;
@@ -372,8 +372,8 @@ setup_cluster_nodes(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond)
 			       (char *)list_peek(job_cond->cluster_list),
 			       event_table);
 
-	if(job_cond->usage_start) {
-		if(!job_cond->usage_end)
+	if (job_cond->usage_start) {
+		if (!job_cond->usage_end)
 			job_cond->usage_end = now;
 
 		xstrfmtcat(query, " AND ((time_start<%ld) "
@@ -382,7 +382,7 @@ setup_cluster_nodes(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond)
 	}
 
 	result = DEF_QUERY_RET;
-	if(!result) {
+	if (!result) {
 		hostlist_destroy(temp_hl);
 		return NULL;
 	}
@@ -401,15 +401,15 @@ setup_cluster_nodes(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond)
 		local_cluster->asked_bitmap =
 			bit_alloc(hostlist_count(local_cluster->hl));
 		while((host = hostlist_next(h_itr))) {
-			if((loc = hostlist_find(
+			if ((loc = hostlist_find(
 				    local_cluster->hl, host)) != -1)
 				bit_set(local_cluster->asked_bitmap, loc);
 			free(host);
 		}
 		hostlist_iterator_reset(h_itr);
-		if(bit_ffs(local_cluster->asked_bitmap) != -1) {
+		if (bit_ffs(local_cluster->asked_bitmap) != -1) {
 			list_append(cnodes->cluster_list, local_cluster);
-			if(local_cluster->end == 0) {
+			if (local_cluster->end == 0) {
 				local_cluster->end = now;
 				cnodes->curr_cluster = local_cluster;
 			}
@@ -418,7 +418,7 @@ setup_cluster_nodes(pgsql_conn_t *pg_conn, slurmdb_job_cond_t *job_cond)
 	} END_EACH_ROW;
 	PQclear(result);
 	hostlist_iterator_destroy(h_itr);
-	if(!list_count(cnodes->cluster_list)) {
+	if (!list_count(cnodes->cluster_list)) {
 		destroy_cluster_nodes(cnodes);
 		cnodes = NULL;
 	}
@@ -448,17 +448,17 @@ good_nodes_from_inx(cluster_nodes_t *cnodes, char *node_inx, int submit)
 	if (! cnodes)
 		return 1;
 
-	if(!node_inx || !node_inx[0])
+	if (!node_inx || !node_inx[0])
 		return 0;
 
-	if(!cnodes->curr_cluster ||
+	if (!cnodes->curr_cluster ||
 	   (submit < (cnodes->curr_cluster)->start) ||
 	   (submit > (cnodes->curr_cluster)->end)) {
 		local_cluster_t *local_cluster = NULL;
 		ListIterator itr =
 			list_iterator_create(cnodes->cluster_list);
 		while((local_cluster = list_next(itr))) {
-			if((submit >= local_cluster->start)
+			if ((submit >= local_cluster->start)
 			   && (submit <= local_cluster->end)) {
 				cnodes->curr_cluster = local_cluster;
 				break;
@@ -470,7 +470,7 @@ good_nodes_from_inx(cluster_nodes_t *cnodes, char *node_inx, int submit)
 	}
 	job_bitmap = bit_alloc(hostlist_count((cnodes->curr_cluster)->hl));
 	bit_unfmt(job_bitmap, node_inx);
-	if(!bit_overlap((cnodes->curr_cluster)->asked_bitmap, job_bitmap)) {
+	if (!bit_overlap((cnodes->curr_cluster)->asked_bitmap, job_bitmap)) {
 		FREE_NULL_BITMAP(job_bitmap);
 		return 0;
 	}
@@ -484,7 +484,7 @@ reset_pgsql_conn(pgsql_conn_t *pg_conn)
 {
 	int saved_errno = errno;
 
-	if(pg_conn->rollback) {
+	if (pg_conn->rollback) {
 		pgsql_db_rollback(pg_conn->db_conn);
 	}
 	list_flush(pg_conn->update_list);

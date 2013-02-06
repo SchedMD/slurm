@@ -48,11 +48,13 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "list.h"
 #include "macros.h"
 #include "xmalloc.h"
+#include "src/common/log.h"
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -92,20 +94,17 @@ strong_alias(list_install_fork_handlers, slurm_list_install_fork_handlers);
 #include <unistd.h>
 #ifdef WITH_LSD_FATAL_ERROR_FUNC
 #  undef lsd_fatal_error
-   extern void lsd_fatal_error(char *file, int line, char *mesg);
+	extern void lsd_fatal_error(char *file, int line, char *mesg);
 #else /* !WITH_LSD_FATAL_ERROR_FUNC */
 #  ifndef lsd_fatal_error
-#    include <errno.h>
-#    include <stdio.h>
-#    include <string.h>
-#    define lsd_fatal_error(file, line, mesg)                                 \
-       do {                                                                   \
-	   fprintf(stderr, "ERROR: [%s:%d] %s: %s\n",                         \
-		   file, line, mesg, strerror(errno));                        \
-       } while (0)
+	static void lsd_fatal_error(char *file, int line, char *mesg)
+	{
+		fprintf(log_fp(), "ERROR: [%s:%d] %s: %s\n",
+			file, line, mesg, strerror(errno));
+		fflush(log_fp());
+	}
 #  endif /* !lsd_fatal_error */
 #endif /* !WITH_LSD_FATAL_ERROR_FUNC */
-
 
 /*********************
  *  lsd_nomem_error  *
@@ -116,7 +115,14 @@ strong_alias(list_install_fork_handlers, slurm_list_install_fork_handlers);
    extern void * lsd_nomem_error(char *file, int line, char *mesg);
 #else /* !WITH_LSD_NOMEM_ERROR_FUNC */
 #  ifndef lsd_nomem_error
-#    define lsd_nomem_error(file, line, mesg) (NULL)
+	static void * lsd_nomem_error(char *file, int line, char *mesg)
+	{
+		fprintf(log_fp(), "ERROR: [%s:%d] %s: %s\n",
+			file, line, mesg, strerror(errno));
+		fflush(log_fp());
+		abort();
+		return NULL;
+	}
 #  endif /* !lsd_nomem_error */
 #endif /* !WITH_LSD_NOMEM_ERROR_FUNC */
 
@@ -384,7 +390,7 @@ list_append_list (List l, List sub)
     assert(sub != NULL);
     itr = list_iterator_create(sub);
     while((v = list_next(itr))) {
-	if(list_append(l, v))
+	if (list_append(l, v))
 	    n++;
 	else
 	    break;
@@ -404,10 +410,10 @@ list_transfer (List l, List sub)
     assert(sub != NULL);
     assert(l->fDel == sub->fDel);
     while((v = list_pop(sub))) {
-	if(list_append(l, v))
+	if (list_append(l, v))
 	    n++;
 	else {
-	    if(l->fDel)
+	    if (l->fDel)
 		l->fDel(v);
 	    break;
 	}
@@ -1009,8 +1015,10 @@ list_reinit_mutexes (void)
 void list_install_fork_handlers (void)
 {
 	int err;
-	if ((err = pthread_atfork(NULL, NULL, &list_reinit_mutexes)))
+	if ((err = pthread_atfork(NULL, NULL, &list_reinit_mutexes))) {
 		lsd_fatal_error(__FILE__, __LINE__, "list atfork install");
+		abort();
+	}
 	return;
 }
 #else

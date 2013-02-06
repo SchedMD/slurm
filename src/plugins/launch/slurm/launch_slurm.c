@@ -288,8 +288,18 @@ static void _task_finish(task_exit_msg_t *msg)
 	char *hosts;
 	uint32_t rc = 0;
 	int normal_exit = 0;
+	static int reduce_task_exit_msg = -1;
+	static int msg_printed = 0, last_task_exit_rc;
 
 	const char *task_str = _taskstr(msg->num_tasks);
+
+	if (reduce_task_exit_msg == -1) {
+		char *ptr = getenv("SLURM_SRUN_REDUCE_TASK_EXIT_MSG");
+		if (ptr && atoi(ptr) != 0)
+			reduce_task_exit_msg = 1;
+		else
+			reduce_task_exit_msg = 0;
+	}
 
 	verbose("Received task exit notification for %d %s (status=0x%04x).",
 		msg->num_tasks, task_str, msg->return_code);
@@ -306,8 +316,13 @@ static void _task_finish(task_exit_msg_t *msg)
 			_handle_openmpi_port_error(tasks, hosts,
 						   local_srun_job->step_ctx);
 		} else {
-			error("%s: %s %s: Exited with exit code %d",
-			      hosts, task_str, tasks, rc);
+			if (reduce_task_exit_msg == 0 || 
+			    msg_printed == 0 ||
+			    msg->return_code != last_task_exit_rc) {
+				error("%s: %s %s: Exited with exit code %d",
+				      hosts, task_str, tasks, rc);
+				msg_printed = 1;
+			}
 		}
 		if (!WIFEXITED(*local_global_rc)
 		    || (rc > WEXITSTATUS(*local_global_rc)))
@@ -325,8 +340,14 @@ static void _task_finish(task_exit_msg_t *msg)
 				hosts, task_str, tasks, signal_str, core_str);
 		} else {
 			rc = msg->return_code;
-			error("%s: %s %s: %s%s",
-			      hosts, task_str, tasks, signal_str, core_str);
+			if (reduce_task_exit_msg == 0 ||
+			    msg_printed == 0 ||
+			    msg->return_code != last_task_exit_rc) {
+				error("%s: %s %s: %s%s",
+				      hosts, task_str, tasks, signal_str,
+				      core_str);
+				msg_printed = 1;
+			}
 		}
 		if (*local_global_rc == 0)
 			*local_global_rc = msg->return_code;
@@ -344,6 +365,8 @@ static void _task_finish(task_exit_msg_t *msg)
 
 	if (task_state_first_exit(task_state) && (opt.max_wait > 0))
 		_setup_max_wait_timer();
+
+	last_task_exit_rc = msg->return_code;
 }
 
 /* Load the multi_prog config file into argv, pass the  entire file contents
@@ -533,21 +556,22 @@ extern int launch_p_step_launch(
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	launch_start_time = time(NULL);
 	if (first_launch) {
-		if (slurm_step_launch(
-			    job->step_ctx, &launch_params, &callbacks) !=
-		    SLURM_SUCCESS) {
+		if (slurm_step_launch(job->step_ctx, &launch_params,
+				      &callbacks) != SLURM_SUCCESS) {
+			rc = errno;
+			*local_global_rc = errno;
 			error("Application launch failed: %m");
-			*local_global_rc = 1;
 			slurm_step_launch_abort(job->step_ctx);
 			slurm_step_launch_wait_finish(job->step_ctx);
 			goto cleanup;
 		}
 	} else {
 		if (slurm_step_launch_add(job->step_ctx, &launch_params,
-					  job->nodelist, job->fir_nodeid) !=
-		    SLURM_SUCCESS) {
+					  job->nodelist, job->fir_nodeid)
+		    != SLURM_SUCCESS) {
+			rc = errno;
+			*local_global_rc = errno;
 			error("Application launch add failed: %m");
-			*local_global_rc = 1;
 			slurm_step_launch_abort(job->step_ctx);
 			slurm_step_launch_wait_finish(job->step_ctx);
 			goto cleanup;

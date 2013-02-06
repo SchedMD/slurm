@@ -341,7 +341,7 @@ expect {
 	}
 }
 
-
+log_user 0
 set cons_res_actived 0
 spawn $scontrol show config
 expect {
@@ -356,6 +356,7 @@ expect {
 		wait
 	}
 }
+log_user 1
 
 inc3_11_1
 inc3_11_2

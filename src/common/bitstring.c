@@ -40,12 +40,13 @@
 \*****************************************************************************/
 
 #include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -106,10 +107,13 @@ bit_alloc(bitoff_t nbits)
 	bitstr_t *new;
 
 	new = (bitstr_t *)calloc(_bitstr_words(nbits), sizeof(bitstr_t));
-	if (new) {
-		_bitstr_magic(new) = BITSTR_MAGIC;
-		_bitstr_bits(new) = nbits;
+	if (!new) {
+		fprintf(log_fp(), "bit_alloc: calloc failed\n");
+		abort();
 	}
+
+	_bitstr_magic(new) = BITSTR_MAGIC;
+	_bitstr_bits(new) = nbits;
 	return new;
 }
 
@@ -128,12 +132,15 @@ bit_realloc(bitstr_t *b, bitoff_t nbits)
 	_assert_bitstr_valid(b);
 	obits = _bitstr_bits(b);
 	new = realloc(b, _bitstr_words(nbits) * sizeof(bitstr_t));
-	if (new) {
-		_assert_bitstr_valid(new);
-		_bitstr_bits(new) = nbits;
-		if (nbits > obits)
-			bit_nclear(new, obits, nbits - 1);
+	if (!new) {
+		fprintf(log_fp(), "bit_realloc: realloc failed\n");
+		abort();
 	}
+
+	_assert_bitstr_valid(new);
+	_bitstr_bits(new) = nbits;
+	if (nbits > obits)
+		bit_nclear(new, obits, nbits - 1);
 	return new;
 }
 
@@ -892,8 +899,8 @@ bit_pick_cnt(bitstr_t *b, bitoff_t nbits) {
  * types is architecture/compiler dependent, so this may have to be tweaked.
  */
 #ifdef	USE_64BIT_BITSTR
-#define BITSTR_RANGE_FMT	"%llu-%llu,"
-#define BITSTR_SINGLE_FMT	"%llu,"
+#define BITSTR_RANGE_FMT	"%"PRIu64"-%"PRIu64","
+#define BITSTR_SINGLE_FMT	"%"PRIu64","
 #else
 #define BITSTR_RANGE_FMT	"%u-%u,"
 #define BITSTR_SINGLE_FMT	"%u,"
@@ -1031,7 +1038,7 @@ inx2bitfmt (int *inx)
 		return NULL;
 
 	while (inx[j] >= 0) {
-		if(bit_char_ptr)
+		if (bit_char_ptr)
 			xstrfmtcat(bit_char_ptr, ",%d-%d", inx[j], inx[j+1]);
 		else
 			xstrfmtcat(bit_char_ptr, "%d-%d", inx[j], inx[j+1]);
@@ -1237,13 +1244,13 @@ bit_get_bit_num(bitstr_t *b, int pos)
 
 	for (bit = 0; bit < bit_cnt; bit++) {
 		if (bit_test(b, bit)) {	/* we got one */
-			if(cnt == pos)
+			if (cnt == pos)
 				break;
 			cnt++;
 		}
 	}
 
-	if(bit >= bit_cnt)
+	if (bit >= bit_cnt)
 		bit = -1;
 
 	return bit;
@@ -1267,7 +1274,11 @@ bit_get_pos_num(bitstr_t *b, bitoff_t pos)
 	assert(pos <= bit_cnt);
 
 	if (!bit_test(b, pos)) {
+#ifdef	USE_64BIT_BITSTR
+		error("bit %"PRIu64" not set", pos);
+#else
 		error("bit %d not set", pos);
+#endif
 		return cnt;
 	}
 	for (bit = 0; bit <= pos; bit++) {

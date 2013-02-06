@@ -51,6 +51,7 @@
 \*****************************************************************************/
 
 #include <assert.h>
+#include <dlfcn.h>
 #include <pthread.h>
 #include <stdlib.h>
 
@@ -58,10 +59,10 @@
 #  include "config.h"
 #endif
 
-#if HAVE_LIBNRT
+#if HAVE_NRT_H
 # include <nrt.h>
 #else
-# error "Must have libnrt to compile this module!"
+# error "Must have nrt.h to compile this module!"
 #endif
 
 #include <arpa/inet.h>
@@ -75,6 +76,44 @@
 #include "src/common/node_conf.h"
 #include "src/plugins/switch/nrt/nrt_keys.h"
 #include "src/plugins/switch/nrt/slurm_nrt.h"
+
+/* This plugin may execute on a head node WITHOUT the libnrt.so file.
+ * Dynamically load the library only on demand. */
+void *nrt_handle = NULL;
+char *nrt_sym[]  = {
+	"nrt_command",
+	NULL
+};
+typedef struct {
+	int (*nrt_command)(int version, nrt_cmd_type_t cmd_type, void *cmd);
+} nrt_api_t;
+nrt_api_t nrt_api;
+
+static int nrt_cmd_wrap(int version, nrt_cmd_type_t cmd_type, void *cmd)
+{
+	int i, rc;
+
+	if (!nrt_handle) {
+		void **api_pptr = (void **) &nrt_api;
+#ifdef LIBNRT_SO
+		nrt_handle = dlopen(LIBNRT_SO, RTLD_LAZY);
+#endif
+		if (!nrt_handle)
+			fatal("Can not open libnrt.so");
+
+		dlerror();	/* Clear any existing error */
+		for ( i = 0; nrt_sym[i]; ++i ) {
+		        api_pptr[i] = dlsym(nrt_handle, nrt_sym[i]);
+		        if (!api_pptr[i]) {
+				fatal("Can't find %s in libnrt.so",
+				      nrt_sym[i]);
+			}
+		}
+	}
+
+	rc = ((*(nrt_api.nrt_command))(version, cmd_type, cmd));
+	return rc;
+}
 
 extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid );
 
@@ -340,17 +379,17 @@ _fill_in_adapter_cache(void)
 	adapter_types.num_adapter_types = &num_adapter_types;
 	adapter_types.adapter_types = adapter_type;
 	for (i = 0; i < 2; i++) {
-		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
-				  &adapter_types);
+		err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
+				   &adapter_types);
 		if (err != NRT_EAGAIN)
 			break;
-		error("nrt_command(adapter_types): %s", nrt_err_str(err));
+		error("nrt_cmd_wrap(adapter_types): %s", nrt_err_str(err));
 		error("Is pnsd daemon started? Retrying...");
 		/* Run "/opt/ibmhpc/pecurrent/ppe.pami/pnsd/pnsd -A" */
 		sleep(5);
 	}
 	if (err != NRT_SUCCESS) {
-		error("nrt_command(adapter_types): %s", nrt_err_str(err));
+		error("nrt_cmd_wrap(adapter_types): %s", nrt_err_str(err));
 		return SLURM_ERROR;
 	}
 
@@ -361,10 +400,10 @@ _fill_in_adapter_cache(void)
 		adapter_names.adapter_type = adapter_type[i];
 		adapter_names.num_adapter_names = &num_adapter_names;
 		adapter_names.max_windows = &max_windows;
-		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
-				  &adapter_names);
+		err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
+				   &adapter_names);
 		if (err != NRT_SUCCESS) {
-			error("nrt_command(adapter_names, %u): %s",
+			error("nrt_cmd_wrap(adapter_names, %u): %s",
 			      adapter_names.adapter_type, nrt_err_str(err));
 			rc = SLURM_ERROR;
 			continue;
@@ -1531,8 +1570,6 @@ _print_adapter_status(nrt_cmd_status_adapter_t *status_adapter)
 	hostset_t hs;
 
 	hs = hostset_create("");
-	if (hs == NULL)
-		fatal("hostset_create malloc failure");
 	info("--Begin Adapter Status--");
 	info("  adapter_name: %s", status_adapter->adapter_name);
 	info("  adapter_type: %s",
@@ -1621,8 +1658,6 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 
 		info("    window_count: %hu", a->window_count);
 		hs = hostset_create("");
-		if (hs == NULL)
-			fatal("hostset_create malloc failure");
 		w = a->window_list;
 		for (j = 0; j < a->window_count; j++) {
 			if ((w[j].state == NRT_WIN_AVAILABLE) &&
@@ -1955,14 +1990,14 @@ static int _get_my_id(void)
 	adapter_types.adapter_types = adapter_type;
 	adapter_info.window_list = NULL;
 	for (i = 0; i < 2; i++) {
-		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
-				  &adapter_types);
+		err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
+				   &adapter_types);
 		if (err != NRT_EAGAIN)
 			break;
 		usleep(1000);
 	}
 	if (err != NRT_SUCCESS) {
-		error("nrt_command(adapter_types): %s", nrt_err_str(err));
+		error("nrt_cmd_wrap(adapter_types): %s", nrt_err_str(err));
 		return SLURM_ERROR;
 	}
 
@@ -1970,10 +2005,10 @@ static int _get_my_id(void)
 		adapter_names.adapter_type = adapter_type[i];
 		adapter_names.num_adapter_names = &num_adapter_names;
 		adapter_names.max_windows = &max_windows;
-		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
+		err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
 				  &adapter_names);
 		if (err != NRT_SUCCESS) {
-			error("nrt_command(adapter_names, %s): %s",
+			error("nrt_cmd_wrap(adapter_names, %s): %s",
 			      _adapter_type_str(adapter_names.adapter_type),
 			      nrt_err_str(err));
 			rc = SLURM_ERROR;
@@ -1992,11 +2027,11 @@ static int _get_my_id(void)
 			query_adapter_info.adapter_info = &adapter_info;
 			adapter_info.window_list = xmalloc(max_windows *
 						   sizeof(nrt_window_id_t));
-			err = nrt_command(NRT_VERSION,
-					  NRT_CMD_QUERY_ADAPTER_INFO,
-					  &query_adapter_info);
+			err = nrt_cmd_wrap(NRT_VERSION,
+					   NRT_CMD_QUERY_ADAPTER_INFO,
+					   &query_adapter_info);
 			if (err != NRT_SUCCESS) {
-				error("nrt_command(adapter_into, %s, %s): %s",
+				error("nrt_cmd_wrap(adapter_into, %s, %s): %s",
 				      query_adapter_info.adapter_name,
 				      _adapter_type_str(query_adapter_info.
 							adapter_type),
@@ -2050,23 +2085,23 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 	adapter_types.adapter_types = adapter_type;
 	adapter_info.window_list = NULL;
 	for (i = 0; i < 2; i++) {
-		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
-				  &adapter_types);
+		err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
+				   &adapter_types);
 		if (err != NRT_EAGAIN)
 			break;
-		error("nrt_command(adapter_types): %s", nrt_err_str(err));
+		error("nrt_cmd_wrap(adapter_types): %s", nrt_err_str(err));
 		error("Is PNSD daemon started? Retrying...");
 		/* Run "/opt/ibmhpc/pecurrent/ppe.pami/pnsd/pnsd -A" */
 		sleep(5);
 	}
 	if (err != NRT_SUCCESS) {
-		error("nrt_command(adapter_types): %s", nrt_err_str(err));
+		error("nrt_cmd_wrap(adapter_types): %s", nrt_err_str(err));
 		return SLURM_ERROR;
 	}
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		for (i = 0; i < num_adapter_types; i++) {
-			info("nrt_command(adapter_types): %s",
-			    _adapter_type_str(adapter_types.adapter_types[i]));
+			info("nrt_cmd_wrap(adapter_types): %s",
+			     _adapter_type_str(adapter_types.adapter_types[i]));
 		}
 	}
 
@@ -2074,10 +2109,10 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 		adapter_names.adapter_type = adapter_type[i];
 		adapter_names.num_adapter_names = &num_adapter_names;
 		adapter_names.max_windows = &max_windows;
-		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
-				  &adapter_names);
+		err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
+				   &adapter_names);
 		if (err != NRT_SUCCESS) {
-			error("nrt_command(adapter_names, %s): %s",
+			error("nrt_cmd_wrap(adapter_names, %s): %s",
 			      _adapter_type_str(adapter_names.adapter_type),
 			      nrt_err_str(err));
 			rc = SLURM_ERROR;
@@ -2085,7 +2120,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 		}
 		if (debug_flags & DEBUG_FLAG_SWITCH) {
 			for (j = 0; j < num_adapter_names; j++) {
-				info("nrt_command(adapter_names, %s, %s) "
+				info("nrt_cmd_wrap(adapter_names, %s, %s) "
 				     "max_windows: %hu",
 				      adapter_names.adapter_names[j],
 				      _adapter_type_str(adapter_names.
@@ -2105,10 +2140,10 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 						      adapter_type;
 			adapter_status.status_array = &status_array;
 			adapter_status.window_count = &window_count;
-			err = nrt_command(NRT_VERSION, NRT_CMD_STATUS_ADAPTER,
-					  &adapter_status);
+			err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_STATUS_ADAPTER,
+					   &adapter_status);
 			if (err != NRT_SUCCESS) {
-				error("nrt_command(status_adapter, %s, %s): %s",
+				error("nrt_cmd_wrap(status_adapter, %s, %s): %s",
 				      adapter_status.adapter_name,
 				      _adapter_type_str(adapter_status.
 							adapter_type),
@@ -2124,7 +2159,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 					reason = ", Known libnrt bug";
 				else
 					reason = "";
-				debug("nrt_command(status_adapter, %s, %s): "
+				debug("nrt_cmd_wrap(status_adapter, %s, %s): "
 				      "window_count > max_windows (%u > %hu)%s",
 				      adapter_status.adapter_name,
 				      _adapter_type_str(adapter_status.
@@ -2134,7 +2169,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				window_count = max_windows;
 			}
 			if (debug_flags & DEBUG_FLAG_SWITCH) {
-				info("nrt_command(status_adapter, %s, %s)",
+				info("nrt_cmd_wrap(status_adapter, %s, %s)",
 				     adapter_status.adapter_name,
 				     _adapter_type_str(adapter_status.
 						       adapter_type));
@@ -2169,11 +2204,11 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 			query_adapter_info.adapter_info = &adapter_info;
 			adapter_info.window_list = xmalloc(max_windows *
 						   sizeof(nrt_window_id_t));
-			err = nrt_command(NRT_VERSION,
-					  NRT_CMD_QUERY_ADAPTER_INFO,
-					  &query_adapter_info);
+			err = nrt_cmd_wrap(NRT_VERSION,
+					   NRT_CMD_QUERY_ADAPTER_INFO,
+					   &query_adapter_info);
 			if (err != NRT_SUCCESS) {
-				error("nrt_command(adapter_into, %s, %s): %s",
+				error("nrt_cmd_wrap(adapter_into, %s, %s): %s",
 				      query_adapter_info.adapter_name,
 				      _adapter_type_str(query_adapter_info.
 							adapter_type),
@@ -2182,7 +2217,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				continue;
 			}
 			if (debug_flags & DEBUG_FLAG_SWITCH) {
-				info("nrt_command(adapter_info, %s, %s)",
+				info("nrt_cmd_wrap(adapter_info, %s, %s)",
 				     query_adapter_info.adapter_name,
 				     _adapter_type_str(query_adapter_info.
 						       adapter_type));
@@ -3520,8 +3555,8 @@ _wait_for_window_unloaded(char *adapter_name, nrt_adapter_t adapter_type,
 			free(status_array);
 			status_array = NULL;
 		}
-		err = nrt_command(NRT_VERSION, NRT_CMD_STATUS_ADAPTER,
-				  &status_adapter);
+		err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_STATUS_ADAPTER,
+				   &status_adapter);
 		if (err != NRT_SUCCESS) {
 			error("nrt_status_adapter(%s, %s): %s", adapter_name,
 			      _adapter_type_str(adapter_type),
@@ -3734,10 +3769,10 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 		if (debug_flags & DEBUG_FLAG_SWITCH)
 			_print_load_table(&load_table);
 
-		err = nrt_command(NRT_VERSION, NRT_CMD_LOAD_TABLE,
-				  &load_table);
+		err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_LOAD_TABLE,
+				   &load_table);
 		if (err != NRT_SUCCESS) {
-			error("nrt_command(load table): %s", nrt_err_str(err));
+			error("nrt_cmd_wrap(load table): %s", nrt_err_str(err));
 			return SLURM_ERROR;
 		}
 	}
@@ -3770,13 +3805,13 @@ _unload_window(char *adapter_name, nrt_adapter_t adapter_type,
 			unload_window.window_id = window_id;
 		}
 		if (debug_flags & DEBUG_FLAG_SWITCH) {
-			info("nrt_command(unload_window, %s, %s, %u, %hu)",
+			info("nrt_cmd_wrap(unload_window, %s, %s, %u, %hu)",
 			      adapter_name, _adapter_type_str(adapter_type),
 			      job_key, window_id);
 		}
 
-		err = nrt_command(NRT_VERSION, NRT_CMD_UNLOAD_WINDOW,
-				  &unload_window);
+		err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_UNLOAD_WINDOW,
+				   &unload_window);
 		if (err == NRT_SUCCESS)
 			return SLURM_SUCCESS;
 		debug("Unable to unload window for job_key %u, "
@@ -3790,8 +3825,8 @@ _unload_window(char *adapter_name, nrt_adapter_t adapter_type,
 			clean_window.leave_inuse_or_kill = KILL;
 			clean_window.window_id = window_id;
 		}
-		err = nrt_command(NRT_VERSION, NRT_CMD_CLEAN_WINDOW,
-				  &clean_window);
+		err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_CLEAN_WINDOW,
+				   &clean_window);
 		if (err == NRT_SUCCESS)
 			return SLURM_SUCCESS;
 		error("Unable to clean window for job_key %u, "
@@ -3816,9 +3851,9 @@ _unload_window_all_jobs(char *adapter_name, nrt_adapter_t adapter_type,
 	nrt_jobs.adapter_type = adapter_type;
 	nrt_jobs.job_count = &job_count;
 	nrt_jobs.job_keys = &job_keys;
-	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_JOBS, &nrt_jobs);
+	err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_QUERY_JOBS, &nrt_jobs);
 	if (err != NRT_SUCCESS) {
-		error("nrt_command(query_jobs, %s, %s): %s",
+		error("nrt_cmd_wrap(query_jobs, %s, %s): %s",
 		       adapter_name, _adapter_type_str(adapter_type),
 		       nrt_err_str(err));
 		if (job_keys)
@@ -3832,10 +3867,10 @@ _unload_window_all_jobs(char *adapter_name, nrt_adapter_t adapter_type,
 		unload_window.job_key = job_keys[i];
 		unload_window.window_id = window_id;
 
-		err = nrt_command(NRT_VERSION, NRT_CMD_UNLOAD_WINDOW,
-				  &unload_window);
+		err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_UNLOAD_WINDOW,
+				   &unload_window);
 		if (err == NRT_SUCCESS) {
-			info("nrt_command(unload_window, %s, %s, %u, %hu)",
+			info("nrt_cmd_wrap(unload_window, %s, %s, %u, %hu)",
 			      adapter_name, _adapter_type_str(adapter_type),
 			      job_keys[i], window_id);
 		}
@@ -3861,8 +3896,8 @@ static int _unload_job_table(slurm_nrt_jobinfo_t *jp)
 			     unload_table.job_key, unload_table.context_id,
 			     unload_table.table_id);
 			}
-		err = nrt_command(NRT_VERSION, NRT_CMD_UNLOAD_TABLE,
-				  &unload_table);
+		err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_UNLOAD_TABLE,
+				   &unload_table);
 		if (err != NRT_SUCCESS) {
 			error("Unable to unload table for job_key:%u "
 			      "context_id:%u table_id:%u error:%s",
@@ -4161,22 +4196,22 @@ nrt_clear_node_state(void)
 	adapter_types.num_adapter_types = &num_adapter_types;
 	adapter_types.adapter_types = adapter_type;
 	for (i = 0; i < 2; i++) {
-		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
-				  &adapter_types);
+		err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_TYPES,
+				   &adapter_types);
 		if (err != NRT_EAGAIN)
 			break;
-		error("nrt_command(adapter_types): %s", nrt_err_str(err));
+		error("nrt_cmd_wrap(adapter_types): %s", nrt_err_str(err));
 		error("Is pnsd daemon started? Retrying...");
 		/* Run "/opt/ibmhpc/pecurrent/ppe.pami/pnsd/pnsd -A" */
 		sleep(5);
 	}
 	if (err != NRT_SUCCESS) {
-		error("nrt_command(adapter_types): %s", nrt_err_str(err));
+		error("nrt_cmd_wrap(adapter_types): %s", nrt_err_str(err));
 		return SLURM_ERROR;
 	}
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		for (i = 0; i < num_adapter_types; i++) {
-			info("nrt_command(adapter_types): %s",
+			info("nrt_cmd_wrap(adapter_types): %s",
 			    _adapter_type_str(adapter_types.adapter_types[i]));
 		}
 	}
@@ -4185,10 +4220,10 @@ nrt_clear_node_state(void)
 		adapter_names.adapter_type = adapter_type[i];
 		adapter_names.num_adapter_names = &num_adapter_names;
 		adapter_names.max_windows = &max_windows;
-		err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
-				  &adapter_names);
+		err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_QUERY_ADAPTER_NAMES,
+				   &adapter_names);
 		if (err != NRT_SUCCESS) {
-			error("nrt_command(adapter_names, %s): %s",
+			error("nrt_cmd_wrap(adapter_names, %s): %s",
 			      _adapter_type_str(adapter_names.adapter_type),
 			      nrt_err_str(err));
 			rc = SLURM_ERROR;
@@ -4196,7 +4231,7 @@ nrt_clear_node_state(void)
 		}
 		if (debug_flags & DEBUG_FLAG_SWITCH) {
 			for (j = 0; j < num_adapter_names; j++) {
-				info("nrt_command(adapter_names, %s, %s) "
+				info("nrt_cmd_wrap(adapter_names, %s, %s) "
 				     "max_windows: %hu",
 				     adapter_names.adapter_names[j],
 				     _adapter_type_str(adapter_names.
@@ -4216,10 +4251,10 @@ nrt_clear_node_state(void)
 						      adapter_type;
 			adapter_status.status_array = &status_array;
 			adapter_status.window_count = &window_count;
-			err = nrt_command(NRT_VERSION, NRT_CMD_STATUS_ADAPTER,
-					  &adapter_status);
+			err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_STATUS_ADAPTER,
+					   &adapter_status);
 			if (err != NRT_SUCCESS) {
-				error("nrt_command(status_adapter, %s, %s): %s",
+				error("nrt_cmd_wrap(status_adapter, %s, %s): %s",
 				      adapter_status.adapter_name,
 				      _adapter_type_str(adapter_status.
 							adapter_type),
@@ -4236,7 +4271,7 @@ nrt_clear_node_state(void)
 				else
 					reason = "";
 				if (first_use) {
-					error("nrt_command(status_adapter, "
+					error("nrt_cmd_wrap(status_adapter, "
 					      "%s, %s): window_count > "
 					      "max_windows (%u > %hu)%s",
 					      adapter_status.adapter_name,
@@ -4245,7 +4280,7 @@ nrt_clear_node_state(void)
 					      window_count, max_windows,
 					      reason);
 				} else {
-					debug("nrt_command(status_adapter, "
+					debug("nrt_cmd_wrap(status_adapter, "
 					      "%s, %s): window_count > "
 					      "max_windows (%u > %hu)%s",
 					      adapter_status.adapter_name,
@@ -4258,7 +4293,7 @@ nrt_clear_node_state(void)
 				window_count = max_windows;
 			}
 			if (debug_flags & DEBUG_FLAG_SWITCH) {
-				info("nrt_command(status_adapter, %s, %s) "
+				info("nrt_cmd_wrap(status_adapter, %s, %s) "
 				     "window_count: %hu",
 				     adapter_status.adapter_name,
 				     _adapter_type_str(adapter_status.
@@ -4279,8 +4314,6 @@ nrt_clear_node_state(void)
 				}
 
 				hs = hostset_create("");
-				if (hs == NULL)
-					fatal("hostset_create malloc failure");
 			}
 			for (k = 0; k < window_count; k++) {
 				if (debug_flags & DEBUG_FLAG_SWITCH) {
@@ -4305,13 +4338,13 @@ nrt_clear_node_state(void)
 				clean_window.leave_inuse_or_kill = KILL;
 				clean_window.window_id = status_array[k].
 							 window_id;
-				err = nrt_command(NRT_VERSION,
-						  NRT_CMD_CLEAN_WINDOW,
-						  &clean_window);
+				err = nrt_cmd_wrap(NRT_VERSION,
+						   NRT_CMD_CLEAN_WINDOW,
+						   &clean_window);
 				if (err == NRT_WRONG_WINDOW_STATE)
 					orphan_procs = true;
 				if (err != NRT_SUCCESS) {
-					error("nrt_command(clean_window, "
+					error("nrt_cmd_wrap(clean_window, "
 					      "%s, %s, %u): %s",
 					      clean_window.adapter_name,
 					      _adapter_type_str(clean_window.
@@ -4327,7 +4360,7 @@ nrt_clear_node_state(void)
 					hostset_ranged_string(hs,
 							      sizeof(window_str),
 							      window_str);
-					info("nrt_command(clean_window, "
+					info("nrt_cmd_wrap(clean_window, "
 					     "%s, %s, %s)",
 					     adapter_names.adapter_names[j],
 					     _adapter_type_str(adapter_names.
@@ -4470,10 +4503,10 @@ static preemption_state_t _job_preempt_state(nrt_job_key_t job_key)
 
 	preempt_state.job_key	= job_key;
 	preempt_state.state	= &state;
-	err = nrt_command(NRT_VERSION, NRT_CMD_QUERY_PREEMPTION_STATE,
-			  &preempt_state);
+	err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_QUERY_PREEMPTION_STATE,
+			   &preempt_state);
 	if (err != NRT_SUCCESS) {
-		error("nrt_command(preempt_state, %u): %s",
+		error("nrt_cmd_wrap(preempt_state, %u): %s",
 		      job_key, nrt_err_str(err));
 		return PES_INIT;	/* No good return value for error */
 	}
@@ -4683,18 +4716,18 @@ static int _preempt_job(nrt_job_key_t job_key, int max_wait_secs)
 		return SLURM_ERROR;
 	/* NOTE: This function is non-blocking.
 	 * To detect completeion, poll on NRT_CMD_QUERY_PREEMPTION_STATE */
-	err = nrt_command(NRT_VERSION, NRT_CMD_PREEMPT_JOB, &preempt_job);
+	err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_PREEMPT_JOB, &preempt_job);
 	if (err != NRT_SUCCESS) {
-		error("nrt_command(preempt job, %u): %s", job_key,
+		error("nrt_cmd_wrap(preempt job, %u): %s", job_key,
 		      nrt_err_str(err));
 		return SLURM_ERROR;
 	}
 	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("nrt_command(preempting job, %u)", job_key);
+		info("nrt_cmd_wrap(preempting job, %u)", job_key);
 	if (_wait_job(job_key, PES_JOB_PREEMPTED, max_wait_secs))
 		return SLURM_ERROR;
 	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("nrt_command(preempted job, %u)", job_key);
+		info("nrt_cmd_wrap(preempted job, %u)", job_key);
 	return SLURM_SUCCESS;
 }
 
@@ -4729,18 +4762,18 @@ static int _resume_job(nrt_job_key_t job_key, int max_wait_secs)
 	resume_job.timeout_val	= NULL;    /* Should be set? What value? */
 	/* NOTE: This function is non-blocking.
 	 * To detect completeion, poll on NRT_CMD_QUERY_PREEMPTION_STATE */
-	err = nrt_command(NRT_VERSION, NRT_CMD_RESUME_JOB, &resume_job);
+	err = nrt_cmd_wrap(NRT_VERSION, NRT_CMD_RESUME_JOB, &resume_job);
 	if (err != NRT_SUCCESS) {
-		error("nrt_command(resume job, %u): %s", job_key,
+		error("nrt_cmd_wrap(resume job, %u): %s", job_key,
 		      nrt_err_str(err));
 		return SLURM_ERROR;
 	}
 	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("nrt_command(resuming job, %u)", job_key);
+		info("nrt_cmd_wrap(resuming job, %u)", job_key);
 	if (_wait_job(job_key, PES_JOB_RUNNING, max_wait_secs))
 		return SLURM_ERROR;
 	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("nrt_command(resumed job, %u)", job_key);
+		info("nrt_cmd_wrap(resumed job, %u)", job_key);
 	return SLURM_SUCCESS;
 }
 

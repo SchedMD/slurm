@@ -392,8 +392,8 @@ static void _parse_jobid_stepid(char *jobid_str)
 		step = ptr + 1;
 	}
 
-	jobid = strtol(job, &ptr, 10);
-	if (!xstring_is_whitespace(ptr)) {
+	jobid = slurm_xlate_job_id(job);
+	if (jobid == 0) {
 		error("\"%s\" does not look like a jobid", job);
 		_usage();
 		xfree(job);

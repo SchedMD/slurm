@@ -1017,6 +1017,25 @@ char *slurm_get_job_submit_plugins(void)
 	return job_submit_plugins;
 }
 
+/* slurm_get_slurmctld_plugstack
+ * get slurmctld_plugstack from slurmctld_conf object from
+ * slurmctld_conf object
+ * RET char *   - slurmctld_plugstack, MUST be xfreed by caller
+ */
+char *slurm_get_slurmctld_plugstack(void)
+{
+	char *slurmctld_plugstack = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		slurmctld_plugstack = xstrdup(conf->slurmctld_plugstack);
+		slurm_conf_unlock();
+	}
+	return slurmctld_plugstack;
+}
+
 /* slurm_get_accounting_storage_type
  * returns the accounting storage type from slurmctld_conf object
  * RET char *    - accounting storage type,  MUST be xfreed by caller
@@ -1176,9 +1195,9 @@ int slurm_set_accounting_storage_loc(char *loc)
 /* slurm_get_accounting_storage_enforce
  * returns what level to enforce associations at
  */
-int slurm_get_accounting_storage_enforce(void)
+uint16_t slurm_get_accounting_storage_enforce(void)
 {
-	int enforce = 0;
+	uint16_t enforce = 0;
 	slurm_ctl_conf_t *conf;
 
 	if (slurmdbd_conf) {
@@ -1535,6 +1554,25 @@ int slurm_set_jobcomp_port(uint32_t port)
 	}
 	return 0;
 }
+
+/* slurm_get_keep_alive_time
+ * returns keep_alive_time slurmctld_conf object
+ * RET uint16_t        - keep_alive_time
+ */
+uint16_t slurm_get_keep_alive_time(void)
+{
+	uint16_t keep_alive_time = (uint16_t) NO_VAL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		keep_alive_time = conf->keep_alive_time;
+		slurm_conf_unlock();
+	}
+	return keep_alive_time;
+}
+
 
 /* slurm_get_kill_wait
  * returns kill_wait from slurmctld_conf object
@@ -3531,8 +3569,6 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 		return ret_list;
 	} else {
 		itr = list_iterator_create(ret_list);
-		if (!itr)
-			fatal("list_iterator_create: malloc failure");
 		while ((ret_data_info = list_next(itr)))
 			if (!ret_data_info->node_name) {
 				ret_data_info->node_name = xstrdup(name);

@@ -406,7 +406,7 @@ _init_from_slurmd(int sock, char **argv,
 	safe_read(sock, incoming_buffer, len);
 	buffer = create_buf(incoming_buffer,len);
 	cli = xmalloc(sizeof(slurm_addr_t));
-	if(slurm_unpack_slurm_addr_no_alloc(cli, buffer) == SLURM_ERROR)
+	if (slurm_unpack_slurm_addr_no_alloc(cli, buffer) == SLURM_ERROR)
 		fatal("slurmstepd: problem with unpack of slurmd_conf");
 	free_buf(buffer);
 
@@ -453,7 +453,7 @@ _init_from_slurmd(int sock, char **argv,
 		fatal("Unrecognized launch RPC");
 		break;
 	}
-	if(unpack_msg(msg, buffer) == SLURM_ERROR)
+	if (unpack_msg(msg, buffer) == SLURM_ERROR)
 		fatal("slurmstepd: we didn't unpack the request correctly");
 	free_buf(buffer);
 

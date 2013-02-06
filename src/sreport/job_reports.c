@@ -73,7 +73,7 @@ static int _sort_cluster_grouping_dec(
 {
 	int diff = 0;
 
-	if(!cluster_a->cluster || !cluster_b->cluster)
+	if (!cluster_a->cluster || !cluster_b->cluster)
 		return 0;
 
 	diff = strcmp(cluster_a->cluster, cluster_b->cluster);
@@ -103,7 +103,7 @@ static int _sort_acct_grouping_dec(slurmdb_report_acct_grouping_t *acct_a,
 	char tmp_acct_b[200];
 	char *wckey_a = NULL, *wckey_b = NULL;
 
-	if(!acct_a->acct || !acct_b->acct)
+	if (!acct_a->acct || !acct_b->acct)
 		return 0;
 
 	snprintf(tmp_acct_a, sizeof(tmp_acct_a), "%s", acct_a->acct);
@@ -121,7 +121,7 @@ static int _sort_acct_grouping_dec(slurmdb_report_acct_grouping_t *acct_a,
 	else if (diff < 0)
 		return -1;
 
-	if(!wckey_a || !wckey_b)
+	if (!wckey_a || !wckey_b)
 		return 0;
 
 	diff = strcmp(wckey_a, wckey_b);
@@ -157,13 +157,13 @@ static int _addto_uid_char_list(List char_list, char *names)
 	int quote = 0;
 	int count = 0;
 
-	if(!char_list) {
+	if (!char_list) {
 		error("No list was given to fill in");
 		return 0;
 	}
 
 	itr = list_iterator_create(char_list);
-	if(names) {
+	if (names) {
 		if (names[i] == '\"' || names[i] == '\'') {
 			quote_c = names[i];
 			quote = 1;
@@ -172,23 +172,23 @@ static int _addto_uid_char_list(List char_list, char *names)
 		start = i;
 		while(names[i]) {
 			//info("got %d - %d = %d", i, start, i-start);
-			if(quote && names[i] == quote_c)
+			if (quote && names[i] == quote_c)
 				break;
 			else if (names[i] == '\"' || names[i] == '\'')
 				names[i] = '`';
-			else if(names[i] == ',') {
-				if((i-start) > 0) {
+			else if (names[i] == ',') {
+				if ((i-start) > 0) {
 					name = xmalloc((i-start+1));
 					memcpy(name, names+start, (i-start));
 					//info("got %s %d", name, i-start);
 					name = _string_to_uid( name );
 
 					while((tmp_char = list_next(itr))) {
-						if(!strcasecmp(tmp_char, name))
+						if (!strcasecmp(tmp_char, name))
 							break;
 					}
 
-					if(!tmp_char) {
+					if (!tmp_char) {
 						list_append(char_list, name);
 						count++;
 					} else
@@ -197,7 +197,7 @@ static int _addto_uid_char_list(List char_list, char *names)
 				}
 				i++;
 				start = i;
-				if(!names[i]) {
+				if (!names[i]) {
 					info("There is a problem with "
 					     "your request.  It appears you "
 					     "have spaces inside your list.");
@@ -206,17 +206,17 @@ static int _addto_uid_char_list(List char_list, char *names)
 			}
 			i++;
 		}
-		if((i-start) > 0) {
+		if ((i-start) > 0) {
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
 			name = _string_to_uid( name );
 
 			while((tmp_char = list_next(itr))) {
-				if(!strcasecmp(tmp_char, name))
+				if (!strcasecmp(tmp_char, name))
 					break;
 			}
 
-			if(!tmp_char) {
+			if (!tmp_char) {
 				list_append(char_list, name);
 				count++;
 			} else
@@ -238,21 +238,21 @@ static int _set_cond(int *start, int argc, char *argv[],
 	time_t start_time, end_time;
 	int command_len = 0;
 
-	if(!job_cond->cluster_list)
+	if (!job_cond->cluster_list)
 		job_cond->cluster_list = list_create(slurm_destroy_char);
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if(!end)
+		if (!end)
 			command_len=strlen(argv[i]);
 		else
 			command_len=end-1;
 
-		if(!end && !strncasecmp(argv[i], "all_clusters",
+		if (!end && !strncasecmp(argv[i], "all_clusters",
 					       MAX(command_len, 1))) {
 			local_cluster_flag = 1;
 			continue;
-		} else if(!end && !strncasecmp(argv[i], "PrintJobCount",
+		} else if (!end && !strncasecmp(argv[i], "PrintJobCount",
 					       MAX(command_len, 2))) {
 			print_job_count = 1;
 			continue;
@@ -260,7 +260,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 					 MAX(command_len, 2))) {
 			flat_view = true;
 			continue;
-		} else if(!end
+		} else if (!end
 			  || !strncasecmp (argv[i], "Clusters",
 					   MAX(command_len, 1))) {
 			slurm_addto_char_list(job_cond->cluster_list,
@@ -270,7 +270,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 					 MAX(command_len, 2))
 			   || !strncasecmp(argv[i], "Acct",
 					   MAX(command_len, 4))) {
-			if(!job_cond->acct_list)
+			if (!job_cond->acct_list)
 				job_cond->acct_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->acct_list,
@@ -278,7 +278,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Associations",
 					 MAX(command_len, 2))) {
-			if(!job_cond->associd_list)
+			if (!job_cond->associd_list)
 				job_cond->associd_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->associd_list,
@@ -289,10 +289,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 2))) {
-			if(format_list)
+			if (format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Gid", MAX(command_len, 2))) {
-			if(!job_cond->groupid_list)
+			if (!job_cond->groupid_list)
 				job_cond->groupid_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->groupid_list,
@@ -300,9 +300,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "grouping",
 					 MAX(command_len, 2))) {
-			if(!strncasecmp(argv[i]+end, "individual", 1)) {
+			if (!strncasecmp(argv[i]+end, "individual", 1)) {
 				individual_grouping = 1;
-			} else if(grouping_list)
+			} else if (grouping_list)
 				slurm_addto_char_list(grouping_list,
 						      argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Jobs",
@@ -310,7 +310,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			char *end_char = NULL, *start_char = argv[i]+end;
 			slurmdb_selected_step_t *selected_step = NULL;
 			char *dot = NULL;
-			if(!job_cond->step_list)
+			if (!job_cond->step_list)
 				job_cond->step_list =
 					list_create(slurm_destroy_char);
 
@@ -319,7 +319,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				*end_char = 0;
 				while (isspace(*start_char))
 					start_char++;  /* discard whitespace */
-				if(!(int)*start_char)
+				if (!(int)*start_char)
 					continue;
 				selected_step = xmalloc(
 					sizeof(slurmdb_selected_step_t));
@@ -338,9 +338,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 			}
 
 			set = 1;
-		} else if(!strncasecmp (argv[i], "Nodes",
+		} else if (!strncasecmp (argv[i], "Nodes",
 					 MAX(command_len, 1))) {
-			if(job_cond->used_nodes) {
+			if (job_cond->used_nodes) {
 				error("You already specified nodes '%s' "
 				      " combine your request into 1 nodes=.",
 				      job_cond->used_nodes);
@@ -351,7 +351,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Partitions",
 					 MAX(command_len, 2))) {
-			if(!job_cond->partition_list)
+			if (!job_cond->partition_list)
 				job_cond->partition_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->partition_list,
@@ -363,7 +363,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Users",
 					 MAX(command_len, 1))) {
-			if(!job_cond->userid_list)
+			if (!job_cond->userid_list)
 				job_cond->userid_list =
 					list_create(slurm_destroy_char);
 			_addto_uid_char_list(job_cond->userid_list,
@@ -371,7 +371,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Wckeys",
 					 MAX(command_len, 2))) {
-			if(!job_cond->wckey_list)
+			if (!job_cond->wckey_list)
 				job_cond->wckey_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->wckey_list,
@@ -385,9 +385,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 	}
 	(*start) = i;
 
-	if(!local_cluster_flag && !list_count(job_cond->cluster_list)) {
+	if (!local_cluster_flag && !list_count(job_cond->cluster_list)) {
 		char *temp = slurm_get_cluster_name();
-		if(temp)
+		if (temp)
 			list_append(job_cond->cluster_list, temp);
 	}
 
@@ -411,14 +411,14 @@ static int _setup_print_fields_list(List format_list)
 	print_field_t *field = NULL;
 	char *object = NULL;
 
-	if(!format_list || !list_count(format_list)) {
+	if (!format_list || !list_count(format_list)) {
 		exit_code=1;
 		fprintf(stderr,
 			" We need a format list to set up the print.\n");
 		return SLURM_ERROR;
 	}
 
-	if(!print_fields_list)
+	if (!print_fields_list)
 		print_fields_list = list_create(destroy_print_field);
 
 	itr = list_iterator_create(format_list);
@@ -427,7 +427,7 @@ static int _setup_print_fields_list(List format_list)
 		int command_len = 0;
 		int newlen = 0;
 
-		if((tmp_char = strstr(object, "\%"))) {
+		if ((tmp_char = strstr(object, "\%"))) {
 			newlen = atoi(tmp_char+1);
 			tmp_char[0] = '\0';
 		}
@@ -435,49 +435,49 @@ static int _setup_print_fields_list(List format_list)
 		command_len = strlen(object);
 
 		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("Account", object, MAX(command_len, 1))
+		if (!strncasecmp("Account", object, MAX(command_len, 1))
 		   || !strncasecmp("Acct", object, MAX(command_len, 4))) {
 			field->type = PRINT_JOB_ACCOUNT;
 			field->name = xstrdup("Account");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Cluster", object,
+		} else if (!strncasecmp("Cluster", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_JOB_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("CpuCount", object,
+		} else if (!strncasecmp("CpuCount", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_JOB_CPUS;
 			field->name = xstrdup("CPU Count");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("Duration", object,
+		} else if (!strncasecmp("Duration", object,
 				       MAX(command_len, 1))) {
 			field->type = PRINT_JOB_DUR;
 			field->name = xstrdup("Duration");
 			field->len = 12;
 			field->print_routine = print_fields_time;
-		} else if(!strncasecmp("JobCount", object,
+		} else if (!strncasecmp("JobCount", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_JOB_COUNT;
 			field->name = xstrdup("Job Count");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("NodeCount", object,
+		} else if (!strncasecmp("NodeCount", object,
 				       MAX(command_len, 2))) {
 			field->type = PRINT_JOB_NODES;
 			field->name = xstrdup("Node Count");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("User", object,
+		} else if (!strncasecmp("User", object,
 				       MAX(command_len, 1))) {
 			field->type = PRINT_JOB_USER;
 			field->name = xstrdup("User");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Wckey", object,
+		} else if (!strncasecmp("Wckey", object,
 				       MAX(command_len, 1))) {
 			field->type = PRINT_JOB_WCKEY;
 			field->name = xstrdup("Wckey");
@@ -490,7 +490,7 @@ static int _setup_print_fields_list(List format_list)
 			continue;
 		}
 
-		if(newlen)
+		if (newlen)
 			field->len = newlen;
 
 		list_append(print_fields_list, field);
@@ -510,72 +510,72 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 	uint32_t size = 0;
 	char *tmp_char = NULL;
 
-	if(!grouping_list || !list_count(grouping_list)) {
+	if (!grouping_list || !list_count(grouping_list)) {
 		exit_code=1;
 		fprintf(stderr, " We need a grouping list to "
 			"set up the print.\n");
 		return SLURM_ERROR;
 	}
 
-	if(!grouping_print_fields_list)
+	if (!grouping_print_fields_list)
 		grouping_print_fields_list = list_create(destroy_print_field);
 
 	itr = list_iterator_create(grouping_list);
 	while((object = list_next(itr))) {
 		field = xmalloc(sizeof(print_field_t));
 		size = atoi(object);
-		if(print_job_count)
+		if (print_job_count)
 			field->type = PRINT_JOB_COUNT;
 		else
 			field->type = PRINT_JOB_SIZE;
-		if(individual_grouping)
+		if (individual_grouping)
 			field->name = xstrdup_printf("%u cpus", size);
 		else
 			field->name = xstrdup_printf("%u-%u cpus",
 						     last_size, size-1);
-		if(time_format == SLURMDB_REPORT_TIME_SECS_PER
+		if (time_format == SLURMDB_REPORT_TIME_SECS_PER
 		   || time_format == SLURMDB_REPORT_TIME_MINS_PER
 		   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
 			field->len = 20;
 		else
 			field->len = 13;
 
-		if(print_job_count)
+		if (print_job_count)
 			field->print_routine = print_fields_uint;
 		else
 			field->print_routine = slurmdb_report_print_time;
 		last_size = size;
 		last_object = object;
-		if((tmp_char = strstr(object, "\%"))) {
+		if ((tmp_char = strstr(object, "\%"))) {
 			int newlen = atoi(tmp_char+1);
-			if(newlen)
+			if (newlen)
 				field->len = newlen;
 		}
 		list_append(grouping_print_fields_list, field);
 	}
 	list_iterator_destroy(itr);
 
-	if(last_size && !individual_grouping) {
+	if (last_size && !individual_grouping) {
 		field = xmalloc(sizeof(print_field_t));
-		if(print_job_count)
+		if (print_job_count)
 			field->type = PRINT_JOB_COUNT;
 		else
 			field->type = PRINT_JOB_SIZE;
 
 		field->name = xstrdup_printf(">= %u cpus", last_size);
-		if(time_format == SLURMDB_REPORT_TIME_SECS_PER
+		if (time_format == SLURMDB_REPORT_TIME_SECS_PER
 		   || time_format == SLURMDB_REPORT_TIME_MINS_PER
 		   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
 			field->len = 20;
 		else
 			field->len = 13;
-		if(print_job_count)
+		if (print_job_count)
 			field->print_routine = print_fields_uint;
 		else
 			field->print_routine = slurmdb_report_print_time;
-		if((tmp_char = strstr(last_object, "\%"))) {
+		if ((tmp_char = strstr(last_object, "\%"))) {
 			int newlen = atoi(tmp_char+1);
-			if(newlen)
+			if (newlen)
 				field->len = newlen;
 		}
 		list_append(grouping_print_fields_list, field);
@@ -621,16 +621,16 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 	_set_cond(&i, argc, argv, job_cond, format_list, grouping_list);
 
-	if(!list_count(format_list))
+	if (!list_count(format_list))
 		slurm_addto_char_list(format_list, "Cl,a");
 
-	if(!individual_grouping && !list_count(grouping_list))
+	if (!individual_grouping && !list_count(grouping_list))
 		slurm_addto_char_list(grouping_list, "50,250,500,1000");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
 
-	if(!(slurmdb_report_cluster_grouping_list =
+	if (!(slurmdb_report_cluster_grouping_list =
 	     slurmdb_report_job_sizes_grouped_by_top_account(db_conn,
 		     job_cond, grouping_list, flat_view))) {
 		exit_code = 1;
@@ -639,7 +639,7 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 	_setup_grouping_print_fields_list(grouping_list);
 
-	if(print_fields_have_header) {
+	if (print_fields_have_header) {
 		char start_char[20];
 		char end_char[20];
 		time_t my_start = job_cond->usage_start;
@@ -652,7 +652,7 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 		printf("Job Sizes %s - %s (%d secs)\n",
 		       start_char, end_char,
 		       (int)(job_cond->usage_end - job_cond->usage_start));
-		if(print_job_count)
+		if (print_job_count)
 			printf("Units are in number of jobs ran\n");
 		else
 			printf("Time reported in %s\n", time_format_string);
@@ -757,35 +757,35 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 end_it:
 	xfree(total_field.name);
-	if(print_job_count)
+	if (print_job_count)
 		print_job_count = 0;
 
-	if(individual_grouping)
+	if (individual_grouping)
 		individual_grouping = 0;
 
 	slurmdb_destroy_job_cond(job_cond);
 
-	if(grouping_list) {
+	if (grouping_list) {
 		list_destroy(grouping_list);
 		grouping_list = NULL;
 	}
 
-	if(assoc_list) {
+	if (assoc_list) {
 		list_destroy(assoc_list);
 		assoc_list = NULL;
 	}
 
-	if(slurmdb_report_cluster_grouping_list) {
+	if (slurmdb_report_cluster_grouping_list) {
 		list_destroy(slurmdb_report_cluster_grouping_list);
 		slurmdb_report_cluster_grouping_list = NULL;
 	}
 
-	if(print_fields_list) {
+	if (print_fields_list) {
 		list_destroy(print_fields_list);
 		print_fields_list = NULL;
 	}
 
-	if(grouping_print_fields_list) {
+	if (grouping_print_fields_list) {
 		list_destroy(grouping_print_fields_list);
 		grouping_print_fields_list = NULL;
 	}
@@ -829,16 +829,16 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 
 	_set_cond(&i, argc, argv, job_cond, format_list, grouping_list);
 
-	if(!list_count(format_list))
+	if (!list_count(format_list))
 		slurm_addto_char_list(format_list, "Cl,wc");
 
-	if(!individual_grouping && !list_count(grouping_list))
+	if (!individual_grouping && !list_count(grouping_list))
 		slurm_addto_char_list(grouping_list, "50,250,500,1000");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
 
-	if(!(slurmdb_report_cluster_grouping_list =
+	if (!(slurmdb_report_cluster_grouping_list =
 	     slurmdb_report_job_sizes_grouped_by_wckey(db_conn,
 		     job_cond, grouping_list))) {
 		exit_code = 1;
@@ -847,7 +847,7 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 
 	_setup_grouping_print_fields_list(grouping_list);
 
-	if(print_fields_have_header) {
+	if (print_fields_have_header) {
 		char start_char[20];
 		char end_char[20];
 		time_t my_start = job_cond->usage_start;
@@ -860,7 +860,7 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 		printf("Job Sizes by Wckey %s - %s (%d secs)\n",
 		       start_char, end_char,
 		       (int)(job_cond->usage_end - job_cond->usage_start));
-		if(print_job_count)
+		if (print_job_count)
 			printf("Units are in number of jobs ran\n");
 		else
 			printf("Time reported in %s\n", time_format_string);
@@ -965,35 +965,35 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 
 end_it:
 	xfree(total_field.name);
-	if(print_job_count)
+	if (print_job_count)
 		print_job_count = 0;
 
-	if(individual_grouping)
+	if (individual_grouping)
 		individual_grouping = 0;
 
 	slurmdb_destroy_job_cond(job_cond);
 
-	if(grouping_list) {
+	if (grouping_list) {
 		list_destroy(grouping_list);
 		grouping_list = NULL;
 	}
 
-	if(wckey_list) {
+	if (wckey_list) {
 		list_destroy(wckey_list);
 		wckey_list = NULL;
 	}
 
-	if(slurmdb_report_cluster_grouping_list) {
+	if (slurmdb_report_cluster_grouping_list) {
 		list_destroy(slurmdb_report_cluster_grouping_list);
 		slurmdb_report_cluster_grouping_list = NULL;
 	}
 
-	if(print_fields_list) {
+	if (print_fields_list) {
 		list_destroy(print_fields_list);
 		print_fields_list = NULL;
 	}
 
-	if(grouping_print_fields_list) {
+	if (grouping_print_fields_list) {
 		list_destroy(grouping_print_fields_list);
 		grouping_print_fields_list = NULL;
 	}
@@ -1038,16 +1038,16 @@ extern int job_sizes_grouped_by_top_acct_and_wckey(int argc, char *argv[])
 
 	_set_cond(&i, argc, argv, job_cond, format_list, grouping_list);
 
-	if(!list_count(format_list))
+	if (!list_count(format_list))
 		slurm_addto_char_list(format_list, "Cl,a%-20");
 
-	if(!individual_grouping && !list_count(grouping_list))
+	if (!individual_grouping && !list_count(grouping_list))
 		slurm_addto_char_list(grouping_list, "50,250,500,1000");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
 
-	if(!(slurmdb_report_cluster_grouping_list =
+	if (!(slurmdb_report_cluster_grouping_list =
 	     slurmdb_report_job_sizes_grouped_by_top_account_then_wckey(
 		     db_conn, job_cond, grouping_list, flat_view))) {
 		exit_code = 1;
@@ -1056,7 +1056,7 @@ extern int job_sizes_grouped_by_top_acct_and_wckey(int argc, char *argv[])
 
 	_setup_grouping_print_fields_list(grouping_list);
 
-	if(print_fields_have_header) {
+	if (print_fields_have_header) {
 		char start_char[20];
 		char end_char[20];
 		time_t my_start = job_cond->usage_start;
@@ -1069,7 +1069,7 @@ extern int job_sizes_grouped_by_top_acct_and_wckey(int argc, char *argv[])
 		printf("Job Sizes %s - %s (%d secs)\n",
 		       start_char, end_char,
 		       (int)(job_cond->usage_end - job_cond->usage_start));
-		if(print_job_count)
+		if (print_job_count)
 			printf("Units are in number of jobs ran\n");
 		else
 			printf("Time reported in %s\n", time_format_string);
@@ -1174,35 +1174,35 @@ extern int job_sizes_grouped_by_top_acct_and_wckey(int argc, char *argv[])
 
 end_it:
 	xfree(total_field.name);
-	if(print_job_count)
+	if (print_job_count)
 		print_job_count = 0;
 
-	if(individual_grouping)
+	if (individual_grouping)
 		individual_grouping = 0;
 
 	slurmdb_destroy_job_cond(job_cond);
 
-	if(grouping_list) {
+	if (grouping_list) {
 		list_destroy(grouping_list);
 		grouping_list = NULL;
 	}
 
-	if(assoc_list) {
+	if (assoc_list) {
 		list_destroy(assoc_list);
 		assoc_list = NULL;
 	}
 
-	if(slurmdb_report_cluster_grouping_list) {
+	if (slurmdb_report_cluster_grouping_list) {
 		list_destroy(slurmdb_report_cluster_grouping_list);
 		slurmdb_report_cluster_grouping_list = NULL;
 	}
 
-	if(print_fields_list) {
+	if (print_fields_list) {
 		list_destroy(print_fields_list);
 		print_fields_list = NULL;
 	}
 
-	if(grouping_print_fields_list) {
+	if (grouping_print_fields_list) {
 		list_destroy(grouping_print_fields_list);
 		grouping_print_fields_list = NULL;
 	}

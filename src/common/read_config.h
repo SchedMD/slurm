@@ -58,6 +58,8 @@ extern char *default_plugstack;
 #define ACCOUNTING_ENFORCE_WCKEYS 0x0004
 #define ACCOUNTING_ENFORCE_QOS    0x0008
 #define ACCOUNTING_ENFORCE_SAFE   0x0010
+#define ACCOUNTING_ENFORCE_NO_JOBS 0x0020
+#define ACCOUNTING_ENFORCE_NO_STEPS 0x0040
 
 #define DEFAULT_ACCOUNTING_DB      "slurm_acct_db"
 #define DEFAULT_ACCOUNTING_ENFORCE  0
@@ -84,6 +86,7 @@ extern char *default_plugstack;
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
 #define DEFAULT_JOB_COMP_LOC        "/var/log/slurm_jobcomp.log"
 #define DEFAULT_JOB_COMP_DB         "slurm_jobcomp_db"
+#define DEFAULT_KEEP_ALIVE_TIME     ((uint16_t) NO_VAL)
 #define DEFAULT_KILL_ON_BAD_EXIT    0
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30
@@ -99,6 +102,7 @@ extern char *default_plugstack;
 #endif
 
 #define DEFAULT_MAIL_PROG           "/bin/mail"
+#define DEFAULT_MAX_ARRAY_SIZE      1001
 #define DEFAULT_MAX_JOB_COUNT       10000
 #define DEFAULT_MAX_JOB_ID          0xffff0000
 #define DEFAULT_MAX_STEP_COUNT      40000
@@ -487,6 +491,11 @@ extern void pack_config_key_pair(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_config_key_pair(void **object, uint16_t rpc_version,
 				  Buf buffer);
 extern int sort_key_pairs(config_key_pair_t *key_a, config_key_pair_t *key_b);
+/*
+ * Return the pathname of the extra .conf file
+ * return value must be xfreed
+ */
+extern char *get_extra_conf_path(char *conf_name);
 
 
 #endif /* !_READ_CONFIG_H */

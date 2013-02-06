@@ -206,7 +206,7 @@ enum {	F_TOT_ELAPSED = HEADER_LENGTH,
 static void _destroy_exp(void *object)
 {
 	expired_rec_t *exp_rec = (expired_rec_t *)object;
-	if(exp_rec) {
+	if (exp_rec) {
 		xfree(exp_rec->line);
 		xfree(exp_rec);
 	}
@@ -215,7 +215,7 @@ static void _destroy_exp(void *object)
 static void _free_filetxt_header(void *object)
 {
 	filetxt_header_t *header = (filetxt_header_t *)object;
-	if(header) {
+	if (header) {
 		xfree(header->partition);
 #ifdef HAVE_BG
 		xfree(header->blockid);
@@ -227,7 +227,7 @@ static void _destroy_filetxt_job_rec(void *object)
 {
 	filetxt_job_rec_t *job = (filetxt_job_rec_t *)object;
 	if (job) {
-		if(job->steps)
+		if (job->steps)
 			list_destroy(job->steps);
 		_free_filetxt_header(&job->header);
 		xfree(job->jobname);
@@ -258,7 +258,7 @@ static slurmdb_step_rec_t *_slurmdb_create_step_rec(
 	slurmdb_step->end = filetxt_step->header.timestamp;
 	slurmdb_step->exitcode = filetxt_step->exitcode;
 	slurmdb_step->ncpus = filetxt_step->ncpus;
-	if(filetxt_step->nodes) {
+	if (filetxt_step->nodes) {
 		hostlist_t hl = hostlist_create(filetxt_step->nodes);
 		slurmdb_step->nnodes = hostlist_count(hl);
 		hostlist_destroy(hl);
@@ -289,7 +289,7 @@ static slurmdb_job_rec_t *_slurmdb_create_job_rec(
 	ListIterator itr = NULL;
 	filetxt_step_rec_t *filetxt_step = NULL;
 
-	if(!job_cond)
+	if (!job_cond)
 		goto no_cond;
 
 	if (job_cond->state_list
@@ -324,7 +324,7 @@ no_cond:
 	slurmdb_job->partition = xstrdup(filetxt_job->header.partition);
 	slurmdb_job->req_cpus = filetxt_job->ncpus;
 	slurmdb_job->alloc_cpus = filetxt_job->ncpus;
-	if(filetxt_job->nodes) {
+	if (filetxt_job->nodes) {
 		hostlist_t hl = hostlist_create(filetxt_job->nodes);
 		slurmdb_job->alloc_nodes = hostlist_count(hl);
 		hostlist_destroy(hl);
@@ -340,14 +340,14 @@ no_cond:
 	slurmdb_job->state = filetxt_job->status;
 
 	slurmdb_job->steps = list_create(slurmdb_destroy_step_rec);
-	if(filetxt_job->steps) {
+	if (filetxt_job->steps) {
 		itr = list_iterator_create(filetxt_job->steps);
 		while((filetxt_step = list_next(itr))) {
 			slurmdb_step_rec_t *step =
 				_slurmdb_create_step_rec(filetxt_step);
-			if(step) {
+			if (step) {
 				step->job_ptr = slurmdb_job;
-				if(!slurmdb_job->first_step_ptr)
+				if (!slurmdb_job->first_step_ptr)
 					slurmdb_job->first_step_ptr = step;
 				list_append(slurmdb_job->steps, step);
 			}
@@ -469,20 +469,6 @@ static FILE *_open_log_file(char *logfile)
 	return fd;
 }
 
-static char *_convert_type(int rec_type)
-{
-	switch(rec_type) {
-	case JOB_START:
-		return "JOB_START";
-	case JOB_STEP:
-		return "JOB_STEP";
-	case JOB_TERMINATED:
-		return "JOB_TERMINATED";
-	default:
-		return "UNKNOWN";
-	}
-}
-
 static int _cmp_jrec(const void *a1, const void *a2) {
 	expired_rec_t *j1 = (expired_rec_t *) a1;
 	expired_rec_t *j2 = (expired_rec_t *) a2;
@@ -490,7 +476,7 @@ static int _cmp_jrec(const void *a1, const void *a2) {
 	if (j1->job <  j2->job)
 		return -1;
 	else if (j1->job == j2->job) {
-		if(j1->job_submit == j2->job_submit)
+		if (j1->job_submit == j2->job_submit)
 			return 0;
 		else
 			return 1;
@@ -508,120 +494,6 @@ static void _show_rec(char *f[])
 	return;
 }
 
-static void _do_fdump(char* f[], int lc)
-{
-	int	i=0, j=0;
-	char **type;
-	char    *header[] = {"job",       /* F_JOB */
-			     "partition", /* F_PARTITION */
-			     "job_submit", /* F_JOB_SUBMIT */
-			     "timestamp", /* F_TIMESTAMP */
-			     "uid",	 /* F_UIDGID */
-			     "gid",	 /* F_UIDGID */
-			     "BlockID",  /* F_BLOCKID */
-			     "reserved-2",/* F_RESERVED1 */
-			     "recordType",/* F_RECTYPE */
-			     NULL};
-
-	char	*start[] = {"jobName",	 /* F_JOBNAME */
-			    "TrackSteps", /* F_TRACK_STEPS */
-			    "priority",	 /* F_PRIORITY */
-			    "ncpus",	 /* F_NCPUS */
-			    "nodeList", /* F_NODES */
-			    "account",   /* F_JOB_ACCOUNT */
-			    NULL};
-
-	char	*step[] = {"jobStep",	 /* F_JOBSTEP */
-			   "status",	 /* F_STATUS */
-			   "exitcode",	 /* F_EXITCODE */
-			   "ntasks",	 /* F_NTASKS */
-			   "ncpus",	 /* F_STEPNCPUS */
-			   "elapsed",	 /* F_ELAPSED */
-			   "cpu_sec",	 /* F_CPU_SEC */
-			   "cpu_usec",	 /* F_CPU_USEC */
-			   "user_sec",	 /* F_USER_SEC */
-			   "user_usec",	 /* F_USER_USEC */
-			   "sys_sec",	 /* F_SYS_SEC */
-			   "sys_usec",	 /* F_SYS_USEC */
-			   "rss",	 /* F_RSS */
-			   "ixrss",	 /* F_IXRSS */
-			   "idrss",	 /* F_IDRSS */
-			   "isrss",	 /* F_ISRSS */
-			   "minflt",	 /* F_MINFLT */
-			   "majflt",	 /* F_MAJFLT */
-			   "nswap",	 /* F_NSWAP */
-			   "inblocks",	 /* F_INBLOCKS */
-			   "oublocks",	 /* F_OUTBLOCKS */
-			   "msgsnd",	 /* F_MSGSND */
-			   "msgrcv",	 /* F_MSGRCV */
-			   "nsignals",	 /* F_NSIGNALS */
-			   "nvcsw",	 /* F_VCSW */
-			   "nivcsw",	 /* F_NIVCSW */
-			   "max_vsize",	 /* F_MAX_VSIZE */
-			   "max_vsize_task",	 /* F_MAX_VSIZE_TASK */
-			   "ave_vsize",	 /* F_AVE_VSIZE */
-			   "max_rss",	 /* F_MAX_RSS */
-			   "max_rss_task",	 /* F_MAX_RSS_TASK */
-			   "ave_rss",	 /* F_AVE_RSS */
-			   "max_pages",	 /* F_MAX_PAGES */
-			   "max_pages_task",	 /* F_MAX_PAGES_TASK */
-			   "ave_pages",	 /* F_AVE_PAGES */
-			   "min_cputime",	 /* F_MIN_CPU */
-			   "min_cputime_task",	 /* F_MIN_CPU_TASK */
-			   "ave_cputime",	 /* F_AVE_RSS */
-			   "StepName",	 /* F_STEPNAME */
-			   "StepNodes",	 /* F_STEPNODES */
-			   "max_vsize_node",	 /* F_MAX_VSIZE_NODE */
-			   "max_rss_node",	 /* F_MAX_RSS_NODE */
-			   "max_pages_node",	 /* F_MAX_PAGES_NODE */
-			   "min_cputime_node",	 /* F_MIN_CPU_NODE */
-			   "account",    /* F_STEP_ACCOUNT */
-			   "requid",     /* F_STEP_REQUID */
-			   NULL};
-
-	char	*suspend[] = {"Suspend/Run time", /* F_TOT_ELAPSED */
-			      "status",	 /* F_STATUS */
-			      NULL};
-
-	char	*term[] = {"totElapsed", /* F_TOT_ELAPSED */
-			   "status",	 /* F_STATUS */
-			   "requid",     /* F_JOB_REQUID */
-			   "exitcode",	 /* F_EXITCODE */
-			   NULL};
-
-	i = atoi(f[F_RECTYPE]);
-	printf("\n------- Line %d %s -------\n", lc, _convert_type(i));
-
-	for(j=0; j < HEADER_LENGTH; j++)
-		printf("%12s: %s\n", header[j], f[j]);
-	switch(i) {
-	case JOB_START:
-		type = start;
-		j = JOB_START_LENGTH;
-		break;
-	case JOB_STEP:
-		type = step;
-		j = JOB_STEP_LENGTH;
-		break;
-	case JOB_SUSPEND:
-		type = suspend;
-		j = JOB_TERM_LENGTH;
-	case JOB_TERMINATED:
-		type = term;
-		j = JOB_TERM_LENGTH;
-		break;
-	default:
-		while(f[j]) {
-			printf("      Field[%02d]: %s\n", j, f[j]);
-			j++;
-		}
-		return;
-	}
-
-	for(i=HEADER_LENGTH; i < j; i++)
-       		printf("%12s: %s\n", type[i-HEADER_LENGTH], f[i]);
-}
-
 static filetxt_job_rec_t *_find_job_record(List job_list,
 					   filetxt_header_t header,
 					   int type)
@@ -631,19 +503,19 @@ static filetxt_job_rec_t *_find_job_record(List job_list,
 
 	while((job = (filetxt_job_rec_t *)list_next(itr)) != NULL) {
 		if (job->header.jobnum == header.jobnum) {
-			if(job->header.job_submit == 0 && type == JOB_START) {
+			if (job->header.job_submit == 0 && type == JOB_START) {
 				list_remove(itr);
 				_destroy_filetxt_job_rec(job);
 				job = NULL;
 				break;
 			}
 
-			if(job->header.job_submit == BATCH_JOB_TIMESTAMP) {
+			if (job->header.job_submit == BATCH_JOB_TIMESTAMP) {
 				job->header.job_submit = header.job_submit;
 				break;
 			}
 
-			if(job->header.job_submit == header.job_submit)
+			if (job->header.job_submit == header.job_submit)
 				break;
 			else {
 				/* If we're looking for a later
@@ -667,7 +539,7 @@ static filetxt_step_rec_t *_find_step_record(filetxt_job_rec_t *job,
 	filetxt_step_rec_t *step = NULL;
 	ListIterator itr = NULL;
 
-	if(!list_count(job->steps))
+	if (!list_count(job->steps))
 		return step;
 
 	itr = list_iterator_create(job->steps);
@@ -755,7 +627,7 @@ static int _parse_line(char *f[], void **data, int len)
 		(*step)->rusage.ru_nvcsw = atoi(f[F_NVCSW]);
 		(*step)->rusage.ru_nivcsw = atoi(f[F_NIVCSW]);
 		(*step)->stats.vsize_max = atoi(f[F_MAX_VSIZE]);
-		if(len > F_STEPNODES) {
+		if (len > F_STEPNODES) {
 			(*step)->stats.vsize_max_taskid =
 				atoi(f[F_MAX_VSIZE_TASK]);
 			(*step)->stats.vsize_ave = atof(f[F_AVE_VSIZE]);
@@ -788,7 +660,7 @@ static int _parse_line(char *f[], void **data, int len)
 			(*step)->stepname = NULL;
 			(*step)->nodes = NULL;
 		}
-		if(len > F_MIN_CPU_NODE) {
+		if (len > F_MIN_CPU_NODE) {
 			(*step)->stats.vsize_max_nodeid =
 				atoi(f[F_MAX_VSIZE_NODE]);
 			(*step)->stats.rss_max_nodeid =
@@ -803,9 +675,9 @@ static int _parse_line(char *f[], void **data, int len)
 			(*step)->stats.pages_max_nodeid = NO_VAL;
 			(*step)->stats.cpu_min_nodeid = NO_VAL;
 		}
-		if(len > F_STEP_ACCOUNT)
+		if (len > F_STEP_ACCOUNT)
 			(*step)->account = xstrdup(f[F_STEP_ACCOUNT]);
-		if(len > F_STEP_REQUID)
+		if (len > F_STEP_REQUID)
 			(*step)->requid = atoi(f[F_STEP_REQUID]);
 		break;
 	case JOB_SUSPEND:
@@ -813,9 +685,9 @@ static int _parse_line(char *f[], void **data, int len)
 		*job = _create_filetxt_job_rec(header);
 		(*job)->elapsed = atoi(f[F_TOT_ELAPSED]);
 		(*job)->status = atoi(f[F_STATUS]);
-		if(len > F_JOB_REQUID)
+		if (len > F_JOB_REQUID)
 			(*job)->requid = atoi(f[F_JOB_REQUID]);
-		if(len > F_JOB_EXITCODE)
+		if (len > F_JOB_EXITCODE)
 			(*job)->exitcode = atoi(f[F_JOB_EXITCODE]);
 		break;
 	default:
@@ -918,7 +790,7 @@ static void _process_step(List job_list, char *f[], int lc,
 	step = temp;
 	temp = NULL;
 	list_append(job->steps, step);
-	if(!job->track_steps) {
+	if (!job->track_steps) {
 		/* If we don't have track_steps we want to see
 		   if we have multiple steps.  If we only have
 		   1 step check the job name against the step
@@ -926,19 +798,19 @@ static void _process_step(List job_list, char *f[], int lc,
 		   different.  If it is different print out
 		   the step separate.
 		*/
-		if(list_count(job->steps) > 1)
+		if (list_count(job->steps) > 1)
 			job->track_steps = 1;
-		else if(step && step->stepname && job->jobname) {
-			if(strcmp(step->stepname, job->jobname))
+		else if (step && step->stepname && job->jobname) {
+			if (strcmp(step->stepname, job->jobname))
 				job->track_steps = 1;
 		}
 	}
 
-	if(job->header.timestamp == 0)
+	if (job->header.timestamp == 0)
 		job->header.timestamp = step->header.timestamp;
 	job->job_step_seen = 1;
 	job->ntasks += step->ntasks;
-	if(!job->nodes || !strcmp(job->nodes, "(unknown)")) {
+	if (!job->nodes || !strcmp(job->nodes, "(unknown)")) {
 		xfree(job->nodes);
 		job->nodes = xstrdup(step->nodes);
 	}
@@ -1020,7 +892,7 @@ static void _process_terminated(List job_list, char *f[], int lc,
 	job->status = temp->status;
 	job->requid = temp->requid;
 	job->exitcode = temp->exitcode;
-	if(list_count(job->steps) > 1)
+	if (list_count(job->steps) > 1)
 		job->track_steps = 1;
 	job->show_full = show_full;
 
@@ -1045,21 +917,13 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	char *object = NULL;
 	ListIterator itr = NULL, itr2 = NULL;
 	int show_full = 0;
-	int fdump_flag = 0;
 	List ret_job_list = list_create(slurmdb_destroy_job_rec);
 	List job_list = list_create(_destroy_filetxt_job_rec);
 
 	filein = slurm_get_accounting_storage_loc();
 
-	/* we grab the fdump only for the filetxt plug through the
-	   FDUMP_FLAG on the job_cond->duplicates variable.  We didn't
-	   add this extra field to the structure since it only applies
-	   to this plugin.
-	*/
-	if(job_cond) {
-		fdump_flag = job_cond->duplicates & FDUMP_FLAG;
-		job_cond->duplicates &= (~FDUMP_FLAG);
-		if(!job_cond->duplicates)
+	if (job_cond) {
+		if (!job_cond->duplicates)
 			itr2 = list_iterator_create(ret_job_list);
 	}
 
@@ -1094,12 +958,12 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		uid = atoi(f[F_UID]);
 		gid = atoi(f[F_GID]);
 
-		if(rec_type == JOB_STEP)
+		if (rec_type == JOB_STEP)
 			step_id = atoi(f[F_JOBSTEP]);
 		else
 			step_id = NO_VAL;
 
-		if(!job_cond) {
+		if (!job_cond) {
 			show_full = 1;
 			goto no_cond;
 		}
@@ -1153,7 +1017,7 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 				if (selected_step->jobid != job_id)
 					continue;
 				/* job matches; does the step? */
-				if(selected_step->stepid == NO_VAL) {
+				if (selected_step->stepid == NO_VAL) {
 					show_full = 1;
 					list_iterator_destroy(itr);
 					goto foundjob;
@@ -1183,31 +1047,27 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 			continue;	/* no match */
 		}
 	foundp:
-		if (fdump_flag) {
-			_do_fdump(f, lc);
-			continue;
-		}
 
 	no_cond:
 
 		/* Build suitable tables with all the data */
 		switch(rec_type) {
 		case JOB_START:
-			if(i < F_JOB_ACCOUNT) {
+			if (i < F_JOB_ACCOUNT) {
 				error("Bad data on a Job Start");
 				_show_rec(f);
 			} else
 				_process_start(job_list, f, lc, show_full, i);
 			break;
 		case JOB_STEP:
-			if(i < F_MAX_VSIZE) {
+			if (i < F_MAX_VSIZE) {
 				error("Bad data on a Step entry");
 				_show_rec(f);
 			} else
 				_process_step(job_list, f, lc, show_full, i);
 			break;
 		case JOB_SUSPEND:
-			if(i < F_JOB_REQUID) {
+			if (i < F_JOB_REQUID) {
 				error("Bad data on a Suspend entry");
 				_show_rec(f);
 			} else
@@ -1215,7 +1075,7 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 						 show_full, i);
 			break;
 		case JOB_TERMINATED:
-			if(i < F_JOB_REQUID) {
+			if (i < F_JOB_REQUID) {
 				error("Bad data on a Job Term");
 				_show_rec(f);
 			} else
@@ -1240,9 +1100,9 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	while((filetxt_job = list_next(itr))) {
 		slurmdb_job_rec_t *slurmdb_job =
 			_slurmdb_create_job_rec(filetxt_job, job_cond);
-		if(slurmdb_job) {
+		if (slurmdb_job) {
 			slurmdb_job_rec_t *curr_job = NULL;
-			if(itr2) {
+			if (itr2) {
 				list_iterator_reset(itr2);
 				while((curr_job = list_next(itr2))) {
 					if (curr_job->jobid ==
@@ -1258,7 +1118,7 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		}
 	}
 
-	if(itr2)
+	if (itr2)
 		list_iterator_destroy(itr2);
 
 	list_iterator_destroy(itr);
@@ -1303,14 +1163,14 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 	/* Figure out our expiration date */
 	time_t		expiry;
 
-	if(!arch_cond || !arch_cond->job_cond) {
+	if (!arch_cond || !arch_cond->job_cond) {
 		error("no job_cond was given for archive");
 		return SLURM_ERROR;
 	}
 
 	job_cond = arch_cond->job_cond;
 
-	if(!arch_cond->archive_script)
+	if (!arch_cond->archive_script)
 		filein = slurm_get_accounting_storage_loc();
 	else
 		filein = arch_cond->archive_script;
@@ -1390,7 +1250,7 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 						break;
 
 				list_iterator_destroy(itr);
-				if(!object)
+				if (!object)
 					continue;	/* no match */
 			}
 
@@ -1419,7 +1279,7 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 
 	if (new_file) {  /* By default, the expired file looks like the log */
 		chmod(logfile_name, prot);
-		if(chown(logfile_name, uid, gid) == -1)
+		if (chown(logfile_name, uid, gid) == -1)
 			error("Couldn't change ownership of %s to %u:%u",
 			      logfile_name, uid, gid);
 	}
@@ -1434,7 +1294,7 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 		goto finished;
 	}
 	chmod(logfile_name, prot);     /* preserve file protection */
-	if(chown(logfile_name, uid, gid) == -1)/* and ownership */
+	if (chown(logfile_name, uid, gid) == -1)/* and ownership */
 		error("2 Couldn't change ownership of %s to %u:%u",
 		      logfile_name, uid, gid);
 	/* Use line buffering to allow us to safely write
@@ -1461,7 +1321,7 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 	while((exp_rec = list_next(itr))) {
 		itr2 = list_iterator_create(other_list);
 		while((exp_rec2 = list_next(itr2))) {
-			if((exp_rec2->job != exp_rec->job)
+			if ((exp_rec2->job != exp_rec->job)
 			   || (exp_rec2->job_submit != exp_rec->job_submit))
 				continue;
 			if (fputs(exp_rec2->line, expired_logfile)<0) {
@@ -1490,7 +1350,7 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 	while((exp_rec = list_next(itr))) {
 		itr2 = list_iterator_create(other_list);
 		while((exp_rec2 = list_next(itr2))) {
-			if(exp_rec2->job != exp_rec->job)
+			if (exp_rec2->job != exp_rec->job)
 				continue;
 			if (fputs(exp_rec2->line, new_logfile)<0) {
 				perror("writing keep_logfile");

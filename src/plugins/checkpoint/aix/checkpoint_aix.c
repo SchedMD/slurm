@@ -359,6 +359,16 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer,
 	return SLURM_ERROR;
 }
 
+extern check_jobinfo_t slurm_ckpt_copy_job(check_jobinfo_t jobinfo)
+{
+	struct check_job_info *jobinfo_src, *jobinfo_dest;
+
+	jobinfo_src  = (struct check_job_info *)jobinfo_src;
+	jobinfo_dest = xmalloc(sizeof(struct check_job_info));
+	memcpy(jobinfo_dest, jobinfo_src, sizeof(struct check_job_info));
+	return (check_jobinfo_t) jobinfo_dest;
+}
+
 /* Send a signal RPC to a specific node */
 static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 		char *node_name, slurm_addr_t node_addr)

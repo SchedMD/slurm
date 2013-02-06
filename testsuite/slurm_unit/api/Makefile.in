@@ -74,6 +74,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
 	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
+	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_gpl_licensed.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_iso.m4 \
@@ -190,6 +191,8 @@ BLUEGENE_LOADED = @BLUEGENE_LOADED@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CHECK_CFLAGS = @CHECK_CFLAGS@
+CHECK_LIBS = @CHECK_LIBS@
 CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -210,6 +213,9 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FREEIPMI_CPPFLAGS = @FREEIPMI_CPPFLAGS@
+FREEIPMI_LDFLAGS = @FREEIPMI_LDFLAGS@
+FREEIPMI_LIBS = @FREEIPMI_LIBS@
 GLIB_CFLAGS = @GLIB_CFLAGS@
 GLIB_COMPILE_RESOURCES = @GLIB_COMPILE_RESOURCES@
 GLIB_GENMARSHAL = @GLIB_GENMARSHAL@
@@ -257,7 +263,6 @@ NCURSES = @NCURSES@
 NM = @NM@
 NMEDIT = @NMEDIT@
 NRT_CPPFLAGS = @NRT_CPPFLAGS@
-NRT_LDFLAGS = @NRT_LDFLAGS@
 NUMA_LIBS = @NUMA_LIBS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@

@@ -61,5 +61,7 @@ int net_accept_stream(int fd);
  */
 int net_set_low_water(int sock, size_t size);
 
+/* set keep alive time on socket */
+extern int net_set_keep_alive(int sock);
 
 #endif /* !_NET_H */

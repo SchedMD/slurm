@@ -46,19 +46,6 @@
 #include "src/common/xstring.h"
 #include "pgsql_jobcomp_process.h"
 
-static void _do_fdump(PGresult *result, int lc)
-{
-	int i = 0;
-	printf("\n------- Line %d -------\n", lc);
-	while(jobcomp_table_fields[i].name) {
-		printf("%12s: %s\n",  jobcomp_table_fields[i].name,
-		       PQgetvalue(result, lc, i));
-		i++;
-	}
-
-	return;
-}
-
 extern List pgsql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 
@@ -75,24 +62,13 @@ extern List pgsql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	char time_str[32];
 	time_t temp_time;
 	List job_list = NULL;
-	int fdump_flag = 0;
 
-	/* we grab the fdump only for the filetxt plug through the
-	   FDUMP_FLAG on the job_cond->duplicates variable.  We didn't
-	   add this extra field to the structure since it only applies
-	   to this plugin.
-	*/
-	if(job_cond) {
-		fdump_flag = job_cond->duplicates & FDUMP_FLAG;
-		job_cond->duplicates &= (~FDUMP_FLAG);
-	}
-
-	if(job_cond->step_list && list_count(job_cond->step_list)) {
+	if (job_cond->step_list && list_count(job_cond->step_list)) {
 		set = 0;
 		xstrcat(extra, " where (");
 		itr = list_iterator_create(job_cond->step_list);
 		while((selected_step = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(extra, " || ");
 			tmp = xstrdup_printf("jobid=%d",
 					      selected_step->jobid);
@@ -104,16 +80,16 @@ extern List pgsql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		xstrcat(extra, ")");
 	}
 
-	if(job_cond->partition_list && list_count(job_cond->partition_list)) {
+	if (job_cond->partition_list && list_count(job_cond->partition_list)) {
 		set = 0;
-		if(extra)
+		if (extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " where (");
 
 		itr = list_iterator_create(job_cond->partition_list);
 		while((selected_part = list_next(itr))) {
-			if(set)
+			if (set)
 				xstrcat(extra, " || ");
 			tmp = xstrdup_printf("partition='%s'",
 					      selected_part);
@@ -127,7 +103,7 @@ extern List pgsql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 
 	i = 0;
 	while(jobcomp_table_fields[i].name) {
-		if(i)
+		if (i)
 			xstrcat(tmp, ", ");
 		xstrcat(tmp, jobcomp_table_fields[i].name);
 		i++;
@@ -136,13 +112,13 @@ extern List pgsql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	query = xstrdup_printf("select %s from %s", tmp, jobcomp_table);
 	xfree(tmp);
 
-	if(extra) {
+	if (extra) {
 		xstrcat(query, extra);
 		xfree(extra);
 	}
 
 	//info("query = %s", query);
-	if(!(result =
+	if (!(result =
 	     pgsql_db_query_ret(jobcomp_pgsql_db, query))) {
 		xfree(query);
 		return NULL;
@@ -151,13 +127,8 @@ extern List pgsql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 
 	job_list = list_create(jobcomp_destroy_job);
 	for (i = 0; i < PQntuples(result); i++) {
-
-		if (fdump_flag) {
-			_do_fdump(result, i);
-			continue;
-		}
 		job = xmalloc(sizeof(jobcomp_job_rec_t));
-		if(PQgetvalue(result, i, JOBCOMP_REQ_JOBID))
+		if (PQgetvalue(result, i, JOBCOMP_REQ_JOBID))
 			job->jobid =
 				atoi(PQgetvalue(result, i, JOBCOMP_REQ_JOBID));
 		job->partition =
@@ -174,12 +145,12 @@ extern List pgsql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 				    sizeof(time_str));
 		job->end_time = xstrdup(time_str);
 
-		if(PQgetvalue(result, i, JOBCOMP_REQ_UID))
+		if (PQgetvalue(result, i, JOBCOMP_REQ_UID))
 			job->uid =
 				atoi(PQgetvalue(result, i, JOBCOMP_REQ_UID));
 		job->uid_name =
 			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_USER_NAME));
-		if(PQgetvalue(result, i, JOBCOMP_REQ_GID))
+		if (PQgetvalue(result, i, JOBCOMP_REQ_GID))
 			job->gid =
 				atoi(PQgetvalue(result, i, JOBCOMP_REQ_GID));
 		job->gid_name =
@@ -188,16 +159,16 @@ extern List pgsql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_NAME));
 		job->nodelist =
 			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_NODELIST));
-		if(PQgetvalue(result, i, JOBCOMP_REQ_NODECNT))
+		if (PQgetvalue(result, i, JOBCOMP_REQ_NODECNT))
 			job->node_cnt =
 				atoi(PQgetvalue(result, i, JOBCOMP_REQ_NODECNT));
-		if(PQgetvalue(result, i, JOBCOMP_REQ_STATE)) {
+		if (PQgetvalue(result, i, JOBCOMP_REQ_STATE)) {
 			int j = atoi(PQgetvalue(result, i, JOBCOMP_REQ_STATE));
 			job->state = xstrdup(job_state_string(j));
 		}
 		job->timelimit =
 			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_TIMELIMIT));
-		if(PQgetvalue(result, i, JOBCOMP_REQ_MAXPROCS))
+		if (PQgetvalue(result, i, JOBCOMP_REQ_MAXPROCS))
 			job->max_procs =
 				atoi(PQgetvalue(result, i,
 						JOBCOMP_REQ_MAXPROCS));

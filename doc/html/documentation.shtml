@@ -12,6 +12,8 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <ul>
 <li><a href="quickstart.html">Quick Start User Guide</a></li>
 <li><a href="man_index.html">Man Pages</a></li>
+<li><a href="rosetta.html">Rosetta Stone of Workload Managers</a></li>
+<li><a href="job_array.html">Job Array Support</a></li>
 <li><a href="cpu_management.html">CPU Management User and Administrator Guide</a></li>
 <li><a href="mpi_guide.html">MPI and UPC Users Guide</a></li>
 <li><a href="mc_support.html">Support for Multi-core/Multi-threaded Architectures</a></li>
@@ -47,7 +49,7 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="gres.html">Generic Resource (GRES) Scheduling</a></li>
 <li><a href="high_throughput.html">High Throughput Computing Guide</a></li>
 <li><a href="priority_multifactor.html">Multifactor Job Priority</a></li>
-<li><a href="priority_multifactor2.html">Multifactor2 Job Priority (Ticket Based)</a></li>
+<li><a href="priority_multifactor2.html">Ticket-Based Multifactor Job Priority</a></li>
 <li><a href="preempt.html">Preemption</a></li>
 <li><a href="qos.html">Quality of Service (QOS)</a></li>
 <li><a href="resource_limits.html">Resource Limits</a></li>
@@ -73,6 +75,7 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 
 <h2>SLURM Developers</h2>
 <ul>
+<li><a href="contributor.html">Contributor Agreement</a></li>
 <li><a href="programmer_guide.html">Programmer Guide</a></li>
 <li><a href="api.html">Application Programmer Interface (API) Guide</a></li>
 <li>Design Information</li>
@@ -100,12 +103,13 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="proctrack_plugins.html">Process Tracking Plugin Programmer Guide</a></li>
 <li><a href="schedplugins.html">Scheduler Plugin Programmer Guide</a></li>
 <li><a href="selectplugins.html">Resource Selection Plugin Programmer Guide</a></li>
+<li><a href="slurmctld_plugstack.html">Slurmctld Generic Plugin Programmer Guide</a></li>
 <li><a href="switchplugins.html">Switch (Interconnect) Plugin Programmer Guide</a></li>
 <li><a href="taskplugins.html">Task Plugin Programmer Guide</a></li>
 <li><a href="topology_plugin.html">Topology Plugin Programmer Guide</a></li>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 29 November 2012</p>
+<p style="text-align:center;">Last modified 29 January 2013</p>
 
 <!--#include virtual="footer.txt"-->

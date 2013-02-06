@@ -40,6 +40,8 @@
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
+#include "src/common/log.h"
 
 /* Comment out all this code if we are using the GNU C Library, and are not
    actually compiling the library itself.  This code is part of the GNU C
@@ -318,16 +320,17 @@ exchange (argv)
       /* We must extend the array.  The user plays games with us and
 	 presents new arguments.  */
       char *new_str = malloc (top + 1);
-      if (new_str == NULL)
+      if (new_str == NULL) {
 	nonoption_flags_len = nonoption_flags_max_len = 0;
-      else
-	{
+	fprintf(log_fp(), "exchange: malloc failure\n");
+	abort();
+      } else {
 	  memset (__mempcpy (new_str, __getopt_nonoption_flags,
 			     nonoption_flags_max_len),
 		  '\0', top + 1 - nonoption_flags_max_len);
 	  nonoption_flags_max_len = top + 1;
 	  __getopt_nonoption_flags = new_str;
-	}
+      }
     }
 #endif
 
@@ -430,11 +433,14 @@ _getopt_initialize (argc, argv, optstring)
 		nonoption_flags_max_len = argc;
 	      __getopt_nonoption_flags =
 		(char *) malloc (nonoption_flags_max_len);
-	      if (__getopt_nonoption_flags == NULL)
+	      if (__getopt_nonoption_flags == NULL) {
+		fprintf(log_fp(), "exchange: malloc failure\n");
+		abort();
 		nonoption_flags_max_len = -1;
-	      else
+	      } else {
 		memset (__mempcpy (__getopt_nonoption_flags, orig_str, len),
 			'\0', nonoption_flags_max_len - len);
+	      }
 	    }
 	}
       nonoption_flags_len = nonoption_flags_max_len;

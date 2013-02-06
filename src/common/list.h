@@ -64,6 +64,9 @@
  *  This macro may be redefined to invoke another routine instead.
  *
  *  If WITH_PTHREADS is defined, these routines will be thread-safe.
+ *
+ *  SLURM's versions of these functions write directly to the log file, using
+ *  fprintf to avoid consuming more memory.
  */
 
 

@@ -117,13 +117,9 @@ static int _build_part_bitmap(struct part_record *part_ptr)
 
 	if (part_ptr->node_bitmap == NULL) {
 		part_ptr->node_bitmap = bit_alloc(node_record_count);
-		if (part_ptr->node_bitmap == NULL)
-			fatal("bit_alloc malloc failure");
 		old_bitmap = NULL;
 	} else {
 		old_bitmap = bit_copy(part_ptr->node_bitmap);
-		if (old_bitmap == NULL)
-			fatal("bit_copy malloc failure");
 		bit_nclear(part_ptr->node_bitmap, 0,
 			   node_record_count - 1);
 	}
@@ -237,7 +233,7 @@ struct part_record *create_part_record(void)
 	part_ptr->preempt_mode      = default_part.preempt_mode;
 	part_ptr->priority          = default_part.priority;
 	part_ptr->grace_time 	    = default_part.grace_time;
-	if(part_max_priority)
+	if (part_max_priority)
 		part_ptr->norm_priority = (double)default_part.priority
 			/ (double)part_max_priority;
 	part_ptr->node_bitmap       = NULL;
@@ -258,8 +254,7 @@ struct part_record *create_part_record(void)
 	else
 		part_ptr->nodes = NULL;
 
-	if (list_append(part_list, part_ptr) == NULL)
-		fatal("create_part_record: unable to allocate memory");
+	(void) list_append(part_list, part_ptr);
 
 	return part_ptr;
 }
@@ -313,8 +308,6 @@ int dump_all_part_state(void)
 	/* write partition records to buffer */
 	lock_slurmctld(part_read_lock);
 	part_iterator = list_iterator_create(part_list);
-	if (!part_iterator)
-		fatal("list_iterator_create malloc");
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		xassert (part_ptr->magic == PART_MAGIC);
 		_dump_part_state(part_ptr, buffer);
@@ -505,7 +498,7 @@ int load_all_part_state(void)
 
 	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 	debug3("Version string in part_state header is %s", ver_str);
-	if(ver_str) {
+	if (ver_str) {
 		if (!strcmp(ver_str, PART_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
 		}
@@ -641,6 +634,30 @@ struct part_record *find_part_record(char *name)
 }
 
 /*
+ * Create a copy of a job's part_list *partition list
+ * IN part_list_src - a job's part_list
+ * RET copy of part_list_src, must be freed by caller
+ */
+extern List part_list_copy(List part_list_src)
+{
+	struct part_record *part_ptr;
+	ListIterator iter;
+	List part_list_dest = NULL;
+
+	if (!part_list_src)
+		return part_list_dest;
+
+	part_list_dest = list_create(NULL);
+	iter = list_iterator_create(part_list_src);
+	while ((part_ptr = (struct part_record *) list_next(iter))) {
+		list_append(part_list_dest, part_ptr);
+	}
+	list_iterator_destroy(iter);
+
+	return part_list_dest;
+}
+
+/*
  * get_part_list - find record for named partition(s)
  * IN name - partition name(s) in a comma separated list
  * RET List of pointers to the partitions or NULL if not found
@@ -662,8 +679,6 @@ extern List get_part_list(char *name)
 		if (part_ptr) {
 			if (job_part_list == NULL) {
 				job_part_list = list_create(NULL);
-				if (job_part_list == NULL)
-					fatal("list_create: malloc failure");
 			}
 			list_append(job_part_list, part_ptr);
 		} else {
@@ -718,9 +733,6 @@ int init_part_conf(void)
 		(void) _delete_part_record(NULL);
 	else
 		part_list = list_create(_list_delete_part);
-
-	if (part_list == NULL)
-		fatal ("memory allocation failure");
 
 	xfree(default_part_name);
 	default_part_loc = (struct part_record *) NULL;
@@ -1121,7 +1133,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		 * the normalized priorities of all the other
 		 * partitions. If not then just set this partition.
 		 */
-		if(part_ptr->priority > part_max_priority) {
+		if (part_ptr->priority > part_max_priority) {
 			ListIterator itr = list_iterator_create(part_list);
 			struct part_record *part2 = NULL;
 

@@ -141,6 +141,11 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer,
 	return SLURM_SUCCESS;
 }
 
+extern check_jobinfo_t slurm_ckpt_copy_job(check_jobinfo_t jobinfo)
+{
+	return NULL;
+}
+
 extern int slurm_ckpt_task_comp (struct step_record * step_ptr,
 				 uint32_t task_id, time_t event_time,
 				 uint32_t error_code, char *error_msg )

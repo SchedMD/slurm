@@ -740,9 +740,6 @@ extern int build_nodes_bitmap(char *node_names, bitstr_t **bitmap)
 		g_print("...............build_nodes_bitmap............%s\n",
 			node_names);
 	my_bitmap = (bitstr_t *) bit_alloc(g_node_info_ptr->record_count);
-	if (!my_bitmap) {
-		fatal("bit_alloc malloc failure");
-	}
 	*bitmap = my_bitmap;
 
 	if (!node_names) {

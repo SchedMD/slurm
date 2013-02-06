@@ -85,6 +85,11 @@
 /*****************************************************************************\
  *  GENERAL CONFIGURATION parameters and data structures
 \*****************************************************************************/
+/* Maximum index for a job array. The minimum index will always be 0. */
+#ifndef MAX_JOB_ARRAY_VALUE
+#define MAX_JOB_ARRAY_VALUE 1000
+#endif
+
 /* Maximum parallel threads to service incoming RPCs.
  * Since some systems schedule pthread on a First-In-Last-Out basis,
  * increasing this value is strongly discouraged. */
@@ -353,6 +358,8 @@ typedef struct slurmctld_resv {
 	char *partition;	/* name of partition to be used		*/
 	struct part_record *part_ptr;	/* pointer to partition used	*/
 	uint32_t resv_id;	/* unique reservation ID, internal use	*/
+	bool run_epilog;	/* set if epilog has been executed	*/
+	bool run_prolog;	/* set if prolog has been executed	*/
 	time_t start_time;	/* start time of reservation		*/
 	time_t start_time_first;/* when the reservation first started	*/
 	time_t start_time_prev;	/* If start time was changed this is
@@ -467,6 +474,8 @@ struct job_record {
 	char    *alloc_node;		/* local node making resource alloc */
 	uint16_t alloc_resp_port;	/* RESPONSE_RESOURCE_ALLOCATION port */
 	uint32_t alloc_sid;		/* local sid making resource alloc */
+	uint32_t array_job_id;		/* job_id of a job array or 0 if N/A */
+	uint16_t array_task_id;		/* task_id of a job array */
 	uint32_t assoc_id;              /* used for accounting plugins */
 	void    *assoc_ptr;		/* job's association record ptr, it is
 					 * void* because of interdependencies
@@ -668,6 +677,7 @@ struct 	step_record {
 	time_t start_time;      	/* step allocation start time */
 	uint32_t time_limit;      	/* step allocation time limit */
 	dynamic_plugin_data_t *select_jobinfo;/* opaque data, BlueGene */
+	uint16_t state;			/* state of the step. See job_states */
 	uint32_t step_id;		/* step number */
 	slurm_step_layout_t *step_layout;/* info about how tasks are laid out
 					  * in the step */
@@ -791,6 +801,13 @@ extern int delete_step_record (struct job_record *job_ptr, uint32_t step_id);
 extern void delete_step_records (struct job_record *job_ptr);
 
 /*
+ * Copy a job's dependency list
+ * IN depend_list_src - a job's depend_lst
+ * RET copy of depend_list_src, must bee freed by caller
+ */
+extern List depended_list_copy(List depend_list_src);
+
+/*
  * drain_nodes - drain one or more nodes,
  *  no-op for nodes already drained or draining
  * IN nodes - nodes to drain
@@ -836,6 +853,13 @@ extern void dump_step_desc(job_step_create_request_msg_t *step_spec);
 /* Remove one node from a job's allocation */
 extern void excise_node_from_job(struct job_record *job_ptr,
                                  struct node_record *node_ptr);
+
+/*
+ * Copy a job's feature list
+ * IN feature_list_src - a job's depend_lst
+ * RET copy of depend_list_src, must be freed by caller
+ */
+extern List feature_list_copy(List feature_list_src);
 
 /*
  * find_job_record - return a pointer to the job record with the given job_id
@@ -917,7 +941,7 @@ extern int init_job_conf (void);
  * global: node_record_table_ptr - pointer to global node table
  *         default_node_record - default values for node records
  *         default_config_record - default values for configuration records
- *         hash_table - table of hash indecies
+ *         hash_table - table of hash indexes
  *         last_node_update - time of last node table update
  */
 extern int init_node_conf ();
@@ -1074,12 +1098,12 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid,
  * job_signal - signal the specified job
  * IN job_id - id of the job to be signaled
  * IN signal - signal to send, SIGKILL == cancel the job
- * IN batch_flag - signal batch shell only if set
+ * IN flags  - see KILL_JOB_* flags in slurm.h
  * IN uid - uid of requesting user
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
+extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 		      uid_t uid, bool preempt);
 
 /*
@@ -1409,6 +1433,7 @@ extern void node_no_resp_msg(void);
  * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - job filtering options
  * IN uid - uid of user making request (for partition filtering)
+ * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
  * IN protocol_version - slurm protocol version of client
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
@@ -1416,7 +1441,7 @@ extern void node_no_resp_msg(void);
  *	whenever the data format changes
  */
 extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
-			  uint16_t show_flags, uid_t uid,
+			  uint16_t show_flags, uid_t uid, uint32_t filter_uid,
 			  uint16_t protocol_version);
 
 /*
@@ -1514,6 +1539,25 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 			uint32_t job_id, uint16_t show_flags, uid_t uid,
 			uint16_t protocol_version);
 
+/*
+ * pack_one_node - dump all configuration and node information for one node
+ *	in machine independent form (for network transmission)
+ * OUT buffer_ptr - pointer to the stored data
+ * OUT buffer_size - set to size of the buffer in bytes
+ * IN show_flags - node filtering options
+ * IN uid - uid of user making request (for partition filtering)
+ * IN node_name - name of node for which information is desired,
+ *		  use first node if name is NULL
+ * IN protocol_version - slurm protocol version of client
+ * global: node_record_table_ptr - pointer to global node table
+ * NOTE: the caller must xfree the buffer at *buffer_ptr
+ * NOTE: change slurm_load_node() in api/node_info.c when data format changes
+ * NOTE: READ lock_slurmctld config before entry
+ */
+extern void pack_one_node (char **buffer_ptr, int *buffer_size,
+			   uint16_t show_flags, uid_t uid, char *node_name,
+			   uint16_t protocol_version);
+
 /* part_filter_clear - Clear the partition's hidden flag based upon a user's
  * group access. This must follow a call to part_filter_set() */
 extern void part_filter_clear(void);
@@ -1524,6 +1568,13 @@ extern void part_filter_set(uid_t uid);
 
 /* part_fini - free all memory associated with partition records */
 extern void part_fini (void);
+
+/*
+ * Create a copy of a job's part_list *partition list
+ * IN part_list_src - a job's part_list
+ * RET copy of part_list_src, must be freed by caller
+ */
+extern List part_list_copy(List part_list_src);
 
 /*
  * Determine of the specified job can execute right now or is currently

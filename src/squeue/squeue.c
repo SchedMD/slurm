@@ -99,8 +99,7 @@ main (int argc, char *argv[])
 		if ( params.iterate ) {
 			printf( "\n");
 			sleep( params.iterate );
-		}
-		else
+		} else
 			break;
 	}
 
@@ -117,8 +116,6 @@ static int _multi_cluster(List clusters)
 	int rc = 0, rc2;
 
 	itr = list_iterator_create(clusters);
-	if (!itr)
-		fatal("list_iterator_create: malloc failure");
 	while ((working_cluster_rec = list_next(itr))) {
 		if (first)
 			first = false;
@@ -172,7 +169,6 @@ _print_job ( bool clear_old )
 	static job_info_msg_t * old_job_ptr = NULL, * new_job_ptr;
 	int error_code;
 	uint16_t show_flags = 0;
-	uint32_t job_id = 0;
 
 	if (params.all_flag || (params.job_list && list_count(params.job_list)))
 		show_flags |= SHOW_ALL;
@@ -181,22 +177,17 @@ _print_job ( bool clear_old )
 	if (params.format && strstr(params.format, "C"))
 		show_flags |= SHOW_DETAIL;
 
-	if (params.job_list && (list_count(params.job_list) == 1)) {
-		ListIterator iterator;
-		uint32_t *job_id_ptr;
-		iterator = list_iterator_create(params.job_list);
-		job_id_ptr = list_next(iterator);
-		job_id = *job_id_ptr;
-		list_iterator_destroy(iterator);
-	}
-
 	if (old_job_ptr) {
 		if (clear_old)
 			old_job_ptr->last_update = 0;
-		if (job_id) {
+		if (params.job_id) {
 			error_code = slurm_load_job(
-				&new_job_ptr, job_id,
+				&new_job_ptr, params.job_id,
 				show_flags);
+		} else if (params.user_id) {
+			error_code = slurm_load_job_user(&new_job_ptr,
+							 params.user_id,
+							 show_flags);
 		} else {
 			error_code = slurm_load_jobs(
 				old_job_ptr->last_update,
@@ -208,8 +199,12 @@ _print_job ( bool clear_old )
 			error_code = SLURM_SUCCESS;
 			new_job_ptr = old_job_ptr;
 		}
-	} else if (job_id) {
-		error_code = slurm_load_job(&new_job_ptr, job_id, show_flags);
+	} else if (params.job_id) {
+		error_code = slurm_load_job(&new_job_ptr, params.job_id,
+					    show_flags);
+	} else if (params.user_id) {
+		error_code = slurm_load_job_user(&new_job_ptr, params.user_id,
+						 show_flags);
 	} else {
 		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr,
 					     show_flags);
@@ -220,26 +215,29 @@ _print_job ( bool clear_old )
 		return SLURM_ERROR;
 	}
 	old_job_ptr = new_job_ptr;
-	if (job_id)
+	if (params.job_id || params.job_id)
 		old_job_ptr->last_update = (time_t) 0;
 
 	if (params.verbose) {
-		printf ("last_update_time=%ld\n",
-		        (long) new_job_ptr->last_update);
+		printf ("last_update_time=%ld records=%u\n",
+		        (long) new_job_ptr->last_update,
+			new_job_ptr->record_count);
 	}
 
 	if (params.format == NULL) {
-		if (params.long_list)
-			params.format = "%.7i %.9P %.8j %.8u %.8T %.10M %.9l "
-				"%.6D %R";
-		else
-			params.format = "%.7i %.9P %.8j %.8u  %.2t %.10M %.6D %R";
+		if (params.long_list) {
+			xstrcat(params.format,
+				"%.18i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R");
+		} else {
+			xstrcat(params.format,
+				"%.18i %.9P %.8j %.8u  %.2t %.10M %.6D %R");
+		}
 	}
 	if (params.format_list == NULL)
 		parse_format(params.format);
 
-	print_jobs_array( new_job_ptr->job_array, new_job_ptr->record_count ,
-			  params.format_list ) ;
+	print_jobs_array(new_job_ptr->job_array, new_job_ptr->record_count,
+			 params.format_list) ;
 	return SLURM_SUCCESS;
 }
 
@@ -280,12 +278,13 @@ _print_job_steps( bool clear_old )
 	old_step_ptr = new_step_ptr;
 
 	if (params.verbose) {
-		printf ("last_update_time=%ld\n",
-		        (long) new_step_ptr->last_update);
+		printf ("last_update_time=%ld records=%u\n",
+		        (long) new_step_ptr->last_update,
+			new_step_ptr->job_step_count);
 	}
 
 	if (params.format == NULL)
-		params.format = "%10i %.8j %.9P %.8u %.9M %N";
+		params.format = "%.15i %.8j %.9P %.8u %.9M %N";
 	if (params.format_list == NULL)
 		parse_format(params.format);
 

@@ -58,6 +58,7 @@
 static int	_filter_job(job_info_t * job);
 static int	_filter_step(job_step_info_t * step);
 static int	_get_node_cnt(job_info_t * job);
+static bool	_merge_job_array(List l, job_info_t * job_ptr);
 static int	_nodes_in_list(char *node_list);
 static int	_print_str(char *str, int width, bool right, bool cut_output);
 
@@ -83,7 +84,7 @@ int print_steps(List steps, List format)
 
 int print_jobs_array(job_info_t * jobs, int size, List format)
 {
-	int i = 0;
+	int i;
 	List l;
 	node_info_msg_t *ni = NULL;
 
@@ -92,8 +93,10 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 		print_job_from_format(NULL, format);
 
 	/* Filter out the jobs of interest */
-	for (; i < size; i++) {
+	for (i = 0; i < size; i++) {
 		if (_filter_job(&jobs[i]))
+			continue;
+		if (_merge_job_array(l, &jobs[i]))
 			continue;
 		list_append(l, (void *) &jobs[i]);
 	}
@@ -117,7 +120,7 @@ int print_steps_array(job_step_info_t * steps, int size, List format)
 		print_step_from_format(NULL, format);
 
 	if (size > 0) {
-		int i = 0;
+		int i;
 		List step_list;
 		ListIterator step_iterator;
 		job_step_info_t *step_ptr;
@@ -125,7 +128,7 @@ int print_steps_array(job_step_info_t * steps, int size, List format)
 		step_list = list_create(NULL);
 
 		/* Filter out the jobs of interest */
-		for (; i < size; i++) {
+		for (i = 0; i < size; i++) {
 			if (_filter_step(&steps[i]))
 				continue;
 			list_append(step_list, (void *) &steps[i]);
@@ -143,6 +146,47 @@ int print_steps_array(job_step_info_t * steps, int size, List format)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+static bool _merge_job_array(List l, job_info_t * job_ptr)
+{
+	job_info_t *list_job_ptr;
+	ListIterator iter;
+	bool merge = false;
+
+	if (params.array_flag)
+		return merge;
+	if (job_ptr->array_task_id == (uint16_t) NO_VAL)
+		return merge;
+	if (!IS_JOB_PENDING(job_ptr))
+		return merge;
+	xfree(job_ptr->node_inx);
+	if (!l)
+		return merge;
+
+	iter = list_iterator_create(l);
+	while ((list_job_ptr = list_next(iter))) {
+		if ((list_job_ptr->array_task_id == (uint16_t) NO_VAL) ||
+		    (job_ptr->array_job_id != list_job_ptr->array_job_id) ||
+		    (!IS_JOB_PENDING(list_job_ptr)))
+			continue;
+		/* We re-purpose the job's node_inx array to store the
+		 * array_task_id values */
+		if (!list_job_ptr->node_inx) {
+			list_job_ptr->node_inx = xmalloc(sizeof(int) * 0xffff);
+			list_job_ptr->node_inx[0] = 1;		/* offset */
+			list_job_ptr->node_inx[1] =
+				list_job_ptr->array_task_id;
+		}
+		list_job_ptr->node_inx[0]++;
+		list_job_ptr->node_inx[list_job_ptr->node_inx[0]] =
+				job_ptr->array_task_id;
+		merge = true;
+		break;
+	}
+	list_iterator_destroy(iter);
+
+	return merge;
 }
 
 static int _print_str(char *str, int width, bool right, bool cut_output)
@@ -291,6 +335,40 @@ job_format_add_function(List list, int width, bool right, char *suffix,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_array_job_id(job_info_t * job, int width, bool right,
+			    char* suffix)
+{
+	if (job == NULL) {	/* Print the Header instead */
+		_print_str("ARRAY_JOB_ID", width, right, true);
+	} else if (job->array_task_id != (uint16_t) NO_VAL) {
+		char id[FORMAT_STRING_SIZE];
+		snprintf(id, FORMAT_STRING_SIZE, "%u", job->array_job_id);
+		_print_str(id, width, right, true);
+	} else {
+		_print_str("N/A", width, right, true);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_array_task_id(job_info_t * job, int width, bool right,
+			     char* suffix)
+{
+	if (job == NULL) {	/* Print the Header instead */
+		_print_str("ARRAY_TASK_ID", width, right, true);
+	} else if (job->array_task_id != (uint16_t) NO_VAL) {
+		char id[FORMAT_STRING_SIZE];
+		snprintf(id, FORMAT_STRING_SIZE, "%u", job->array_task_id);
+		_print_str(id, width, right, true);
+	} else {
+		_print_str("N/A", width, right, true);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_batch_host(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
@@ -309,9 +387,27 @@ int _print_job_batch_host(job_info_t * job, int width, bool right, char* suffix)
 
 int _print_job_job_id(job_info_t * job, int width, bool right, char* suffix)
 {
-	if (job == NULL)	/* Print the Header instead */
+	if (job == NULL) {	/* Print the Header instead */
 		_print_str("JOBID", width, right, true);
-	else {
+	} else if ((job->array_task_id != (uint16_t) NO_VAL) &&
+		   !params.array_flag && IS_JOB_PENDING(job)  &&
+		   job->node_inx) {
+		int i;
+		char id[FORMAT_STRING_SIZE], task_str[FORMAT_STRING_SIZE];
+		bitstr_t *task_bits = bit_alloc(0xffff);
+		for (i = 1; i <= job->node_inx[0]; i++)
+			bit_set(task_bits, job->node_inx[i]);
+		bit_fmt(task_str, sizeof(task_str), task_bits);
+		snprintf(id, FORMAT_STRING_SIZE, "%u_[%s]",
+			 job->array_job_id, task_str);
+		_print_str(id, width, right, true);
+		bit_free(task_bits);
+	} else if (job->array_task_id != (uint16_t) NO_VAL) {
+		char id[FORMAT_STRING_SIZE];
+		snprintf(id, FORMAT_STRING_SIZE, "%u_%u",
+			 job->array_job_id, job->array_task_id);
+		_print_str(id, width, right, true);
+	} else {
 		char id[FORMAT_STRING_SIZE];
 		snprintf(id, FORMAT_STRING_SIZE, "%u", job->job_id);
 		_print_str(id, width, right, true);
@@ -613,7 +709,7 @@ int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL) {       /* Print the Header instead */
 		char *title = "NODELIST";
-		if(params.cluster_flags & CLUSTER_FLAG_BG)
+		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			title = "MIDPLANELIST";
 		_print_str(title, width, right, false);
 	} else {
@@ -644,7 +740,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 {
 	if (job == NULL) {	/* Print the Header instead */
 		char *title = "NODELIST(REASON)";
-		if(params.cluster_flags & CLUSTER_FLAG_BG)
+		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			title = "MIDPLANELIST(REASON)";
 		_print_str(title, width, right, false);
 	} else if (!IS_JOB_COMPLETING(job)
@@ -665,7 +761,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		select_g_select_jobinfo_get(job->select_jobinfo,
 					    SELECT_JOBDATA_IONODES,
 					    &ionodes);
-		if(ionodes) {
+		if (ionodes) {
 			xstrfmtcat(nodes, "[%s]", ionodes);
 			xfree(ionodes);
 			_print_str(nodes, width, right, false);
@@ -705,7 +801,7 @@ int _print_job_num_cpus(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CPUS", width, right, true);
 	else {
-		if(params.cluster_flags & CLUSTER_FLAG_BG)
+		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit((float)job->num_cpus, tmp_char,
 					 sizeof(tmp_char), UNIT_NONE);
 		else
@@ -727,7 +823,7 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("NODES", width, right_justify, true);
 	else {
-		if(params.cluster_flags & CLUSTER_FLAG_BG)
+		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			select_g_select_jobinfo_get(job->select_jobinfo,
 						    SELECT_JOBDATA_NODE_CNT,
 						    &node_cnt);
@@ -735,7 +831,7 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 		if ((node_cnt == 0) || (node_cnt == NO_VAL))
 			node_cnt = _get_node_cnt(job);
 
-		if(params.cluster_flags & CLUSTER_FLAG_BG)
+		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit((float)node_cnt, tmp_char,
 					 sizeof(tmp_char), UNIT_NONE);
 		else
@@ -1196,9 +1292,14 @@ int _print_step_id(job_step_info_t * step, int width, bool right, char* suffix)
 {
 	char id[FORMAT_STRING_SIZE];
 
-	if (step == NULL)	/* Print the Header instead */
+	if (step == NULL) {	/* Print the Header instead */
 		_print_str("STEPID", width, right, true);
-	else {
+	} else if (step->array_job_id) {
+		snprintf(id, FORMAT_STRING_SIZE, "%u_%u.%u",
+			 step->array_job_id, step->array_task_id,
+			 step->step_id);
+		_print_str(id, width, right, true);
+	} else {
 		snprintf(id, FORMAT_STRING_SIZE, "%u.%u", step->job_id,
 			 step->step_id);
 		_print_str(id, width, right, true);
@@ -1316,7 +1417,7 @@ int _print_step_nodes(job_step_info_t * step, int width, bool right,
 {
 	if (step == NULL) {	/* Print the Header instead */
 		char *title = "NODELIST";
-		if(params.cluster_flags & CLUSTER_FLAG_BG)
+		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			title = "MIDPLANELIST";
 
 		_print_str(title, width, right, false);
@@ -1373,15 +1474,20 @@ static int _filter_job(job_info_t * job)
 {
 	int filter;
 	ListIterator iterator;
-	uint32_t *job_id, *user;
+	uint32_t *user;
 	uint16_t *state_id;
 	char *account, *part, *qos, *name;
+	squeue_job_step_t *job_step_id;
 
 	if (params.job_list) {
 		filter = 1;
 		iterator = list_iterator_create(params.job_list);
-		while ((job_id = list_next(iterator))) {
-			if (*job_id == job->job_id) {
+		while ((job_step_id = list_next(iterator))) {
+			if (((job_step_id->array_id == (uint16_t) NO_VAL)   &&
+			     ((job_step_id->job_id   == job->array_job_id) ||
+			      (job_step_id->job_id   == job->job_id)))      ||
+			    ((job_step_id->array_id == job->array_task_id)  &&
+			     (job_step_id->job_id   == job->array_job_id))) {
 				filter = 0;
 				break;
 			}
@@ -1519,15 +1625,22 @@ static int _filter_step(job_step_info_t * step)
 {
 	int filter;
 	ListIterator iterator;
-	uint32_t *job_id, *user;
+	uint32_t *user;
 	char *part;
 	squeue_job_step_t *job_step_id;
+
+	if (step->state == JOB_PENDING)
+		return 1;
 
 	if (params.job_list) {
 		filter = 1;
 		iterator = list_iterator_create(params.job_list);
-		while ((job_id = list_next(iterator))) {
-			if (*job_id == step->job_id) {
+		while ((job_step_id = list_next(iterator))) {
+			if (((job_step_id->array_id == (uint16_t) NO_VAL)   &&
+			     ((job_step_id->job_id  == step->array_job_id)  ||
+			      (job_step_id->job_id  == step->job_id)))      ||
+			    ((job_step_id->array_id == step->array_task_id) &&
+			     (job_step_id->job_id   == step->array_job_id))) {
 				filter = 0;
 				break;
 			}
@@ -1555,8 +1668,13 @@ static int _filter_step(job_step_info_t * step)
 		filter = 1;
 		iterator = list_iterator_create(params.step_list);
 		while ((job_step_id = list_next(iterator))) {
-			if ((job_step_id->job_id == step->job_id) &&
-			    (job_step_id->step_id == step->step_id)) {
+			if (job_step_id->step_id != step->step_id)
+				continue;
+			if (((job_step_id->array_id == (uint16_t) NO_VAL)  &&
+			     ((job_step_id->job_id  == step->array_job_id) ||
+			      (job_step_id->job_id  == step->job_id)))      ||
+			    ((job_step_id->array_id == step->array_task_id) &&
+			     (job_step_id->job_id   == step->array_job_id))) {
 				filter = 0;
 				break;
 			}

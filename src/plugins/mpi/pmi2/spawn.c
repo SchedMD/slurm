@@ -481,7 +481,7 @@ _exec_srun_single(spawn_req_t *req, char **env)
 			xstrfmtcat(argv[j ++], "--chdir=%s",
 				   subcmd->info_vals[i]);
 			
-		} else if(! strcmp(subcmd->info_keys[i], "path")) {
+		} else if (! strcmp(subcmd->info_keys[i], "path")) {
 			env_array_overwrite_fmt(&env, "PATH", "%s",
 						subcmd->info_vals[i]);
 			

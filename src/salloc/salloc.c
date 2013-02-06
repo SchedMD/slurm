@@ -567,19 +567,22 @@ static void _set_spank_env(void)
 	}
 }
 
-/* Set SLURM_SUBMIT_DIR environment variable with current state */
+/* Set SLURM_SUBMIT_DIR and SLURM_SUBMIT_HOST environment variables within
+ * current state */
 static void _set_submit_dir_env(void)
 {
-	work_dir = xmalloc(MAXPATHLEN + 1);
-	if ((getcwd(work_dir, MAXPATHLEN)) == NULL) {
-		error("getcwd failed: %m");
-		exit(error_exit);
-	}
+	char host[256];
 
-	if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", work_dir) < 0) {
+	work_dir = xmalloc(MAXPATHLEN + 1);
+	if ((getcwd(work_dir, MAXPATHLEN)) == NULL)
+		error("getcwd failed: %m");
+	else if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", work_dir) < 0)
 		error("unable to set SLURM_SUBMIT_DIR in environment");
-		return;
-	}
+
+	if ((gethostname(host, sizeof(host))))
+		error("gethostname_short failed: %m");
+	else if (setenvf(NULL, "SLURM_SUBMIT_HOST", "%s", host) < 0)
+		error("unable to set SLURM_SUBMIT_HOST in environment");
 }
 
 /* Returns 0 on success, -1 on failure */
@@ -1055,7 +1058,7 @@ static int _blocks_dealloc(void)
 		return -1;
 	}
 	for (i=0; i<new_bg_ptr->record_count; i++) {
-		if(new_bg_ptr->block_array[i].state == BG_BLOCK_TERM) {
+		if (new_bg_ptr->block_array[i].state == BG_BLOCK_TERM) {
 			rc = 1;
 			break;
 		}

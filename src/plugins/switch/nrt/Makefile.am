@@ -20,7 +20,7 @@ SUBDIRS = libpermapi
 pkglib_LTLIBRARIES = switch_nrt.la
 
 switch_nrt_la_SOURCES = $(SWITCH_NRT_LA_SOURCES)
-switch_nrt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(NRT_LDFLAGS)
+switch_nrt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 else
 pkglib_LTLIBRARIES =

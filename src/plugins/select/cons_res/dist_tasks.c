@@ -41,7 +41,7 @@
 #include "select_cons_res.h"
 #include "dist_tasks.h"
 
-#if(0)
+#if (0)
 /* Using CR_SOCKET or CR_SOCKET_MEMORY will not allocate a socket to more
  * than one job at a time, but it also will not grant a job access to more
  * CPUs on the socket than requested. If ALLOCATE_FULL_SOCKET is defined,
@@ -326,13 +326,13 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 	if (cr_type & CR_CORE)
 		alloc_cores = true;
-#ifdef ALLOCATE_FULL_SOCKET
-	if (cr_type & CR_SOCKET)
-		alloc_sockets = true;
-#else
-	if (cr_type & CR_SOCKET)
-		alloc_cores = true;
-#endif
+	if (slurmctld_conf.select_type_param & CR_ALLOCATE_FULL_SOCKET) {
+		if (cr_type & CR_SOCKET)
+			alloc_sockets = true;
+	} else {
+		if (cr_type & CR_SOCKET)
+			alloc_cores = true;
+	}
 
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
@@ -573,13 +573,13 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 				 * release remaining cores unless
 				 * we are allocating whole sockets
 				 */
-				if ( cpus == 0 && alloc_sockets ) {
-					if ( bit_test(job_res->core_bitmap,j) )
+				if (cpus == 0) {
+					if (alloc_sockets) {
+						bit_set(job_res->core_bitmap,j);
 						core_cnt++;
-					continue;
-				}
-				else if ( cpus == 0 ) {
-					bit_clear(job_res->core_bitmap,j);
+					} else {
+						bit_clear(job_res->core_bitmap,j);
+					}
 					continue;
 				}
 
@@ -594,8 +594,12 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 						cpus = 0;
 					else
 						cpus -= vpus;
+				} else if (alloc_sockets) {
+					/* If the core is not used, add it
+					 * anyway if allocating whole sockets */
+					bit_set(job_res->core_bitmap, j);
+					core_cnt++;
 				}
-
 			}
 
 			/* loop again if more cpus required */
@@ -622,7 +626,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 
 		/* adjust cpus count of the current node */
 		if ((alloc_cores || alloc_sockets) &&
-		    (select_node_record[n].vpus > 1)) {
+		    (select_node_record[n].vpus >= 1)) {
 			job_res->cpus[i] = core_cnt *
 				select_node_record[n].vpus;
 		}
@@ -660,13 +664,13 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 
 	if (cr_type & CR_CORE)
 		alloc_cores = true;
-#ifdef ALLOCATE_FULL_SOCKET
-	if (cr_type & CR_SOCKET)
-		alloc_sockets = true;
-#else
-	if (cr_type & CR_SOCKET)
-		alloc_cores = true;
-#endif
+	if (slurmctld_conf.select_type_param & CR_ALLOCATE_FULL_SOCKET) {
+		if (cr_type & CR_SOCKET)
+			alloc_sockets = true;
+	} else {
+		if (cr_type & CR_SOCKET)
+			alloc_cores = true;
+	}
 	core_map = job_res->core_bitmap;
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
@@ -759,16 +763,19 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				bit_nclear(core_map, sock_start[s],
 					   sock_end[s]-1);
 			}
-			if ((select_node_record[n].vpus > 1) &&
+			if ((select_node_record[n].vpus >= 1) &&
 			    (alloc_sockets || alloc_cores) && sock_used[s]) {
 				for (j=sock_start[s]; j<sock_end[s]; j++) {
+					/* Mark all cores as used */
+					if (alloc_sockets)
+						bit_set(core_map, j);
 					if (bit_test(core_map, j))
 						core_cnt++;
 				}
 			}
 		}
 		if ((alloc_cores || alloc_sockets) &&
-		    (select_node_record[n].vpus > 1)) {
+		    (select_node_record[n].vpus >= 1)) {
 			job_res->cpus[i] = core_cnt *
 					   select_node_record[n].vpus;
 		}

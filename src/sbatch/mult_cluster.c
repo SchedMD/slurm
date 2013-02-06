@@ -68,9 +68,9 @@ static int _sort_local_cluster(local_cluster_rec_t* rec_a,
 	else if (rec_a->preempt_cnt > rec_b->preempt_cnt)
 		return 1;
 
-	if(!strcmp(local_cluster_name, rec_a->cluster_rec->name))
+	if (!strcmp(local_cluster_name, rec_a->cluster_rec->name))
 		return -1;
-	else if(!strcmp(local_cluster_name, rec_b->cluster_rec->name))
+	else if (!strcmp(local_cluster_name, rec_b->cluster_rec->name))
 		return 1;
 
 	return 0;
@@ -174,8 +174,6 @@ extern int sbatch_set_first_avail_cluster(job_desc_msg_t *req)
 	}
 
 	ret_list = list_create(_destroy_local_cluster_rec);
-	if (ret_list == NULL)
-		fatal("list_create malloc failure");
 	itr = list_iterator_create(opt.clusters);
 	while ((working_cluster_rec = list_next(itr))) {
 		if ((local_cluster = _job_will_run(req)))

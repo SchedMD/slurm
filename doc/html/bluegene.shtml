@@ -395,6 +395,9 @@ The value of <i>SelectType</i> must be set to "select/bluegene" (which
 happens automatically) in order to have
 node selection performed using a system aware of the system's topography
 and interfaces.
+The value of <i>TopologyPlugin</i> must be set to "topology/none" (which
+happens automatically) since topology information is managed by the
+select/bluegene plugin.
 The value of <i>Prolog</i> should be set to the full pathname of a program that
 will delay execution until the job's block is ready for
 use by the user running the job. It is recommended that you construct a script
@@ -867,6 +870,6 @@ scheduling logic, etc. </p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 7 November 2012</p>
+<p style="text-align:center;">Last modified 21 December 2012</p>
 
 <!--#include virtual="footer.txt"-->

@@ -1,4 +1,4 @@
-.TH "srun" "1" "SLURM 2.5" "October 2012" "SLURM Commands"
+.TH "srun" "1" "SLURM 2.6" "January 2013" "SLURM Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -142,7 +142,7 @@ Supported \fbconstraint\fR options include:
 Only nodes which have the specified feature will be used.
 For example, \fB\-\-constraint="intel"\fR
 .TP
-\fBNode Count\fB
+\fBNode Count\fR
 A request can specify the number of nodes needed with some feature
 by appending an asterisk and count after the feature name.
 For example "\fB\-\-nodes=16 \-\-constraint=graphics*4 ..."\fR
@@ -266,6 +266,7 @@ where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
 CPU IDs are interpreted as decimal values unless they are preceded
 with '0x' in which case they are interpreted as hexadecimal values.
 Not supported unless the entire node is allocated to the job.
+This option is currently only supported by the task/affinity plugin.
 .TP
 .B mask_cpu:<list>
 Bind by setting CPU masks on tasks as specified
@@ -273,6 +274,7 @@ where <list> is <mask1>,<mask2>,...<maskN>.
 CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
 preceded with an optional '0x'.
 Not supported unless the entire node is allocated to the job.
+This option is currently only supported by the task/affinity plugin.
 .TP
 .B rank_ldom
 Bind to a NUMA locality domain by rank
@@ -732,7 +734,7 @@ the next periodic accounting sample.
 
 .TP
 \fB\-\-mem\-per\-cpu\fR=<\fIMB\fR>
-Mimimum memory required per allocated CPU in MegaBytes.
+Minimum memory required per allocated CPU in MegaBytes.
 Default value is \fBDefMemPerCPU\fR and the maximum value is \fBMaxMemPerCPU\fR
 (see exception below). If configured, both of parameters can be
 seen using the \fBscontrol show config\fR command.
@@ -997,12 +999,12 @@ Create a IP version 4 connection for LAPI communications on one switch network
 for each task.
 .TP
 \fBInstances=2,US,LAPI,MPI\fR
-Create two user space connections each for LAPI and MPI communcations on every
+Create two user space connections each for LAPI and MPI communications on every
 switch network for each task. Note that SN_ALL is the default option so every
 switch network is used. Also note that Instances=2 specifies that two
 connections are established for each protocol (LAPI and MPI) and each task.
 If there are two networks and four tasks on the node then a total
-of 32 connections are estabhished (2 instances x 2 protocols x 2 networks x
+of 32 connections are established (2 instances x 2 protocols x 2 networks x
 4 tasks).
 .RE
 
@@ -1278,7 +1280,7 @@ limit is the partition's default time limit.  When the time limit is reached,
 each task in each job step is sent SIGTERM followed by SIGKILL.  The
 limit is for the job, all job steps are signaled. If the time limit is
 for a single job step within an existing job allocation, only that job
-step will be affected. A job time limit supercedes all job step time
+step will be affected. A job time limit supersedes all job step time
 limits. The interval between SIGTERM and SIGKILL is specified by the
 SLURM configuration parameter \fBKillWait\fR.  A time limit of zero
 requests that no time limit be imposed.  Acceptable time formats
@@ -1318,7 +1320,7 @@ will be executed directly by the slurmd dameon.
 \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
 Restrict node selection to nodes with at least the specified number of
 threads per core.  NOTE: "Threads" refers to the number of processing units on
-each core rather than the number of appliation tasks to be launched per core.
+each core rather than the number of application tasks to be launched per core.
 See additional information under \fB\-B\fR option above when task/affinity
 plugin is enabled.
 
@@ -1591,6 +1593,12 @@ the corresponding tasks. Note that any format string containing
 rather than the node where \fBsrun\fR executes.
 .RS 10
 .TP
+\fB%A\fR
+Job array's master job allocation number.
+.TP
+\fB%a\fR
+Job array ID (index) number.
+.TP
 %J
 jobid.stepid of the running job. (e.g. "128.0")
 .TP
@@ -1828,9 +1836,17 @@ Same as \fB\-e, \-\-error\fR
 \fBSLURM_STDINMODE\fR
 Same as \fB\-i, \-\-input\fR
 .TP
+\fBSLURM_SRUN_REDUCE_TASK_EXIT_MSG\fR
+if set and non-zero, successive task exit messages with the same exit code will
+be printed only once.
+.TP
 \fBSLURM_STEP_GRES\fR
 Same as \fB\-\-gres\fR (only applies to job steps, not to job allocations).
 Also see \fBSLURM_GRES\fR
+.TP
+\fBSLURM_STEP_KILLED_MSG_NODE_ID\fR=ID
+If set, only the specified node will log when the job or step are killed
+by a signal.
 .TP
 \fBSLURM_STDOUTMODE\fR
 Same as \fB\-o, \-\-output\fR
@@ -1878,7 +1894,10 @@ if specified on the execute line.
 \-\-cpu_bind type (none,rank,map_cpu:,mask_cpu:)
 .TP
 \fBSLURM_CPU_BIND_LIST\fR
-\-\-cpu_bind map or mask list (<list of IDs or masks for this node>)
+\-\-cpu_bind map or mask list (list of SLURM CPU IDs or masks for this node,
+CPU_ID = Board_ID x threads_per_board +
+Socket_ID x threads_per_socket +
+Core_ID x threads_per_core + Thread_ID).
 
 .TP
 \fBSLURM_CPU_FREQ_REQ\fR
@@ -1961,6 +1980,9 @@ The step ID of the current job
 .TP
 \fBSLURM_SUBMIT_DIR\fR
 The directory from which \fBsrun\fR was invoked.
+.TP
+\fBSLURM_SUBMIT_HOST\fR
+The hostname of the computer from which \fBsalloc\fR was invoked.
 .TP
 \fBSLURM_TASK_PID\fR
 The process ID of the task being started.

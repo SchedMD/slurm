@@ -189,7 +189,8 @@ static int _addto_job_list(List job_list, char *names)
 							selected_step->stepid =
 								atoi(dot);
 					}
-					selected_step->jobid = atoi(name);
+					selected_step->jobid =
+						slurm_xlate_job_id(name);
 					xfree(name);
 
 					while ((curr_step = list_next(itr))) {
@@ -233,7 +234,7 @@ static int _addto_job_list(List job_list, char *names)
 				else
 					selected_step->stepid = atoi(dot);
 			}
-			selected_step->jobid = atoi(name);
+			selected_step->jobid = slurm_xlate_job_id(name);
 			xfree(name);
 
 			while ((curr_step = list_next(itr))) {

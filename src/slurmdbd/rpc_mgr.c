@@ -372,6 +372,7 @@ static bool _fd_readable(slurm_fd_t fd)
 		}
 		break;
 	}
+	errno = 0;
 	return true;
 }
 
@@ -429,6 +430,7 @@ extern bool fd_writeable(slurm_fd_t fd)
 		}
 		break;
 	}
+	errno = 0;
 	return true;
 }
 

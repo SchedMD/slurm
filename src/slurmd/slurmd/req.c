@@ -470,6 +470,10 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	 * to send step completion messages to the controller.
 	 */
 	if (step_hset == NULL) {
+		if (type == LAUNCH_TASKS) {
+			info("task rank unavailable due to invalid job "
+			     "credential, step completion RPC impossible");
+		}
 		rank = -1;
 		parent_rank = -1;
 		children = 0;
@@ -755,7 +759,7 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 		}
 		fd_set_noclose_on_exec(STDERR_FILENO);
 		log_fini();
-		if(!failed) {
+		if (!failed) {
 			execvp(argv[0], argv);
 			error("exec of slurmstepd failed: %m");
 		}
@@ -1751,7 +1755,7 @@ _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
 	kill_req.job_id      = job_id;
 	kill_req.job_step_id = step_id;
 	kill_req.signal      = SIGKILL;
-	kill_req.batch_flag  = (uint16_t) 0;
+	kill_req.flags       = (uint16_t) 0;
 	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
 	msg.data        = &kill_req;
 	slurm_send_only_controller_msg(&msg);
@@ -2675,9 +2679,11 @@ _rpc_file_bcast(slurm_msg_t *msg)
 #endif
 #endif
 
-	if ((rc = _valid_sbcast_cred(req, req_uid, req->block_no)) !=
-	    SLURM_SUCCESS)
-		return rc;
+	if (!_slurm_authorized_user(req_uid)) {
+		rc = _valid_sbcast_cred(req, req_uid, req->block_no);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	}
 
 	info("sbcast req_uid=%u fname=%s block_no=%u",
 	     req_uid, req->fname, req->block_no);
@@ -4152,7 +4158,7 @@ _destroy_env(char **env)
 {
 	int i=0;
 
-	if(env) {
+	if (env) {
 		for(i=0; env[i]; i++) {
 			xfree(env[i]);
 		}
@@ -4514,7 +4520,7 @@ _getgroups(void)
 		return NULL;
 	}
 	gg = (gid_t *)xmalloc(n * sizeof(gid_t));
-	if(getgroups(n, gg) == -1) {
+	if (getgroups(n, gg) == -1) {
 		error("_getgroups: couldn't get %d groups: %m", n);
 		xfree(gg);
 		return NULL;
@@ -4555,7 +4561,7 @@ init_gids_cache(int cache)
 		return;
 	}
 	orig_gids = (gid_t *)xmalloc(ngids * sizeof(gid_t));
-	if(getgroups(ngids, orig_gids) == -1) {
+	if (getgroups(ngids, orig_gids) == -1) {
 		error("init_gids_cache: couldn't get %d groups: %m", ngids);
 		xfree(orig_gids);
 		return;

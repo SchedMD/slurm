@@ -1,4 +1,4 @@
-.TH "slurm.conf" "8" "November 2012" "slurm.conf 2.5" "Slurm configuration file"
+.TH "slurm.conf" "17" "January 2013" "slurm.conf 2.6" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -19,7 +19,7 @@ option on the command line.
 The contents of the file are case insensitive except for the names of nodes
 and partitions. Any text following a "#" in the configuration file is treated
 as a comment through the end of that line.
-The size of each line in the file is limited to 1024 characters.
+The size of each line in the file is limited to 4096 characters.
 Changes to the configuration file take effect upon restart of
 SLURM daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
@@ -54,22 +54,35 @@ Only used for database type storage plugins, ignored otherwise.
 \fBAccountingStorageEnforce\fR
 This controls what level of association\-based enforcement to impose
 on job submissions.  Valid options are any combination of
-\fIassociations\fR, \fIlimits\fR, \fIqos\fR, \fIsafe\fR, and \fIwckeys\fR, or
-\fIall\fR for all things.  If limits, qos, or wckeys are set,
-associations will automatically be set.  In addition, if wckeys is
-set, TrackWCKey will automatically be set.  If safe is set, limits and
-associations will automatically be set.  By enforcing Associations no
-new job is allowed to run unless a corresponding association exists in
-the system.  If limits are enforced users can be limited by association
-to whatever job size or run time limits are defined.  If safe is
-enforced a job will only be launched against an association or qos that
-has a GrpCPUMins limit set if the job will be able to run to completion.
+\fIassociations\fR, \fIlimits\fR, \fInojobs\fR, \fInosteps\fR, \fIqos\fR, \fIsafe\fR, and \fIwckeys\fR, or
+\fIall\fR for all things.
+
+If limits, qos, or wckeys are set, associations will automatically be set.
+
+If wckeys is set, TrackWCKey will automatically be set.
+
+If safe is set, limits and associations will automatically be set.
+
+If nojobs is set nosteps will automatically be set.
+
+By enforcing Associations no new job is allowed to run unless a corresponding
+association exists in the system.  If limits are enforced users can be
+limited by association to whatever job size or run time limits are defined.
+
+If nojobs is set Slurm will not account for any jobs or steps on the system,
+like wise if nosteps is set Slurm will not account for any steps ran limits
+will still be enforced.
+
+If safe is enforced a job will only be launched against an association or qos
+that has a GrpCPUMins limit set if the job will be able to run to completion.
 Without this option set, jobs will be launched as long as their usage
 hasn't reached the cpu-minutes limit which can lead to jobs being
-launched but then killed when the limit is reached. With qos and/or
-wckeys enforced jobs will not be scheduled unless a valid qos and/or
-workload characterization key is specified.  When
-\fBAccountingStorageEnforce\fR is changed, a restart of the slurmctld
+launched but then killed when the limit is reached.
+
+With qos and/or wckeys enforced jobs will not be scheduled unless a valid qos
+and/or workload characterization key is specified.
+
+When \fBAccountingStorageEnforce\fR is changed, a restart of the slurmctld
 daemon is required (not just a "scontrol reconfig").
 
 .TP
@@ -126,7 +139,7 @@ default value is "accounting_storage/none" and indicates that account
 records are not maintained.
 Note: The filetxt plugin records only a limited subset of accounting
 information and will prevent some sacct options from proper operation.
-Note: the PostgreSQL plugin is not
+Note: The PostgreSQL plugin is not
 complete and should not be used if wanting to use associations.  It
 will however work with basic accounting of jobs and job steps.  If
 interested in completing, please email slurm-dev@lists.llnl.gov.  Also
@@ -511,7 +524,7 @@ upon termination of a job allocation (e.g.
 The program executes as SlurmUser, which gives it permission to drain
 nodes and requeue the job if a failure occurs or cancel the job if appropriate.
 Exactly what the program does and how it accomplishes this is completely at
-the discression of the system administrator.
+the discretion of the system administrator.
 Information about the job being initiated, it's allocated nodes, etc. are
 passed to the program using environment variables.
 See \fBProlog and Epilog Scripts\fR for more information.
@@ -604,16 +617,37 @@ The interval in seconds between executions of \fBHealthCheckProgram\fR.
 The default value is zero, which disables execution.
 
 .TP
+\fBHealthCheckNodeState\fR
+Identify what node states should execute the \fBHealthCheckProgram\fR.
+Multiple state values may be specified with a comma separator.
+The default value is ANY to execute on nodes in any state.
+.RS
+.TP 12
+\fBALLOC\fR
+Run on nodes in the ALLOC state (all CPUs allocated).
+.TP
+\fBANY\fR
+Run on nodes in any state.
+.TP
+\fBIDLE\fR
+Run on nodes in the IDLE state.
+.TP
+\fBMIXED\fR
+Run on nodes in the MIXED state (some CPUs idle and other CPUs allocated).
+.RE
+
+.TP
 \fBHealthCheckProgram\fR
 Fully qualified pathname of a script to execute as user root periodically
-on all compute nodes that are not in the NOT_RESPONDING state. This may be
-used to verify the node is fully operational and DRAIN the node or send email
-if a problem is detected.
+on all compute nodes that are \fBnot\fR in the NOT_RESPONDING state. This
+program may be used to verify the node is fully operational and DRAIN the node
+or send email if a problem is detected.
 Any action to be taken must be explicitly performed by the program
 (e.g. execute
 "scontrol update NodeName=foo State=drain Reason=tmp_file_system_full"
 to drain a node).
-The interval is controlled using the \fBHealthCheckInterval\fR parameter.
+The execution interval is controlled using the \fBHealthCheckInterval\fR
+parameter.
 Note that the \fBHealthCheckProgram\fR will be executed at the same time
 on all nodes to minimize its impact upon parallel programs.
 This program is will be killed if it does not terminate normally within
@@ -766,11 +800,24 @@ A comma delimited list of job submission plugins to be used.
 The specified plugins will be executed in the order listed.
 These are intended to be site\-specific plugins which can be used to set
 default job parameters and/or logging events.
-Sample plugins available in the distribution include "cnode", "defaults",
-"logging", "lua", and "partition".
+Sample plugins available in the distribution include "all_partitions", "cnode",
+"defaults", "logging", "lua", and "partition".
 For examples of use, see the SLURM code in "src/plugins/job_submit" and
 "contribs/lua/job_submit*.lua" then modify the code to satisfy your needs.
+SLURM can be configured to use multiple job_submit plugins if desired,
+however the lua plugin will only execute one lua script named "job_submit.lua"
+and located in default script directory (typically the subdirectory "etc" of
+the installation directory).
 No job submission plugins are used by default.
+
+.TP
+\fBKeepAliveTime\fR
+Specifies how long sockets communications used between the srun command and its
+slurmstepd process are kept alive after disconnect.
+Longer values can be used to improve reliability of communications in the
+event of network failures.
+The default value leaves the system default value.
+The value may not exceed 65533.
 
 .TP
 \fBKillOnBadExit\fR
@@ -820,6 +867,15 @@ not explicitly listed in the job submission specification.
 \fBMailProg\fR
 Fully qualified pathname to the program used to send email per user request.
 The default value is "/bin/mail".
+
+.TP
+\fBMaxArraySize\fR
+The maximum job array size.
+The maximum job array task index value will be one less than MaxArraySize
+to allow for an index value of zero.
+Configure MaxArraySize to 0 in order to disable job array use.
+The value may not exceed 65533.
+Default value is 1001.
 
 .TP
 \fBMaxJobCount\fR
@@ -953,9 +1009,13 @@ on SPANK plugins, see the \fBspank\fR(8) manual.
 .TP
 \fBPreemptMode\fR
 Enables gang scheduling and/or controls the mechanism used to preempt
-jobs.  When the \fBPreemptType\fR parameter is set to enable
-preemption, the \fBPreemptMode\fR selects the mechanism used to
-preempt the lower priority jobs.  The \fBGANG\fR option is used to
+jobs.  When the \fBPreemptType\fR parameter is set to enable preemption, the
+\fBPreemptMode\fR selects the default mechanism used to preempt the lower
+priority jobs for the cluster. \fBPreemptMode\fR may be specified on a
+per partition basis to over ride this default value if
+\fBPreemptType=preempt/partition_prio\fR, but a valid default \fBPreemptMode\fR
+value must be specified for the cluster as a whole when preemption is enabled.
+The \fBGANG\fR option is used to
 enable gang scheduling independent of whether preemption is enabled
 (the \fBPreemptType\fR setting).  The \fBGANG\fR option can be
 specified in addition to a \fBPreemptMode\fR setting with the two
@@ -1009,6 +1069,7 @@ This is the default.
 Job preemption is based upon partition priority.
 Jobs in higher priority partitions (queues) may preempt jobs from lower
 priority partitions.
+This is not compatible with \fBPreemptMode=OFF\fR.
 .TP
 \fBpreempt/qos\fR
 Job preemption rules are specified by Quality Of Service (QOS) specifications
@@ -1050,6 +1111,9 @@ Applicable only if PriorityType=priority/multifactor.
 \fBACCRUE_ALWAYS\fR
 If set, priority age factor will be increased despite job dependencies 
 or holds.
+.TP
+\fBTICKET_BASED\fR
+If set, priority will be calculated based on the ticket system.
 .RE
 
 .TP
@@ -1102,8 +1166,8 @@ This specifies the plugin to be used in establishing a job's scheduling
 priority. Supported values are "priority/basic" (jobs are prioritized
 by order of arrival, also suitable for sched/wiki and sched/wiki2),
 "priority/multifactor" (jobs are prioritized based upon size, age,
-fair\-share of allocation, etc) and "priority/multifactor2" (a ticket based
-variation of priority/multifactor).
+fair\-share of allocation, etc).
+Also see \fBPriorityFlags\fR for configuration options. 
 The default value is "priority/basic".
 
 .TP
@@ -1252,7 +1316,7 @@ nodes and requeue the job if a failure occurs or cancel the job if appropriate.
 The program can be used to reboot nodes or perform other work to prepare
 resources for use.
 Exactly what the program does and how it accomplishes this is completely at
-the discression of the system administrator.
+the discretion of the system administrator.
 Information about the job being initiated, it's allocated nodes, etc. are
 passed to the program using environment variables.
 While this program is running, the nodes associated with the job will be
@@ -1441,6 +1505,14 @@ More information is available at the SLURM web site
 ( http://www.schedmd.com/slurmdocs/power_save.html ).
 
 .TP
+\fBResvEpilog\fR
+Fully qualified pathname of a program for the slurmctld to execute
+when a reservation ends. The program can be used to cancel jobs, modify
+partition configuration, etc.
+The reservation named will be passed as an argument to the program.
+By default there is no epilog.
+
+.TP
 \fBResvOverRun\fR
 Describes how long a job already running in a reservation should be
 permitted to execute after the end time of the reservation has been
@@ -1450,6 +1522,14 @@ The time period is specified in minutes and the default value is 0
 The value may not exceed 65533 minutes, although a value of "UNLIMITED"
 is supported to permit a job to run indefinitely after its reservation
 is terminated.
+
+.TP
+\fBResvProlog\fR
+Fully qualified pathname of a program for the slurmctld to execute
+when a reservation begins. The program can be used to cancel jobs, modify
+partition configuration, etc.
+The reservation named will be passed as an argument to the program.
+By default there is no prolog.
 
 .TP
 \fBReturnToService\fR
@@ -1493,10 +1573,13 @@ would run the shell in the user's $SHELL environment variable.
 and
 
 .nf
-    SallocDefaultCommand = "xterm \-T Job_$SLURM_JOB_ID"
+    SallocDefaultCommand = "srun \-n1 \-N1 \-\-mem\-per\-cpu=0 \-\-pty \-\-preserve\-env \-\-mpi=none $SHELL"
 .fi
 
-would run \fBxterm\fR with the title set to the SLURM jobid.
+would run spawn the user's default shell on the allocated resources, but not
+consume any of the CPU or memory resources, configure it as a pseudo\-terminal,
+and preserve all of the job's environment variables (i.e. and not over\-write
+them with the job step's allocation information).
 
 .TP
 \fBSchedulerParameters\fR
@@ -1679,6 +1762,10 @@ prevents memory over subscription with job preemption or gang scheduling.
 The following values are supported for \fBSelectType=select/cons_res\fR:
 .RS
 .TP
+\fBCR_ALLOCATE_FULL_SOCKET\fR
+Jobs are allocated whole sockets rather than individual cores.
+Must be used with \fBCR_Socket\fR or \fBCR_Socket_Memory\fR option.
+.TP
 \fBCR_CPU\fR
 CPUs are consumable resources.
 Configure the number of \fBCPUs\fR on each node, which may be equal to the
@@ -1817,6 +1904,12 @@ may write its process id. This may be used for automated signal processing.
 The default value is "/var/run/slurmctld.pid".
 
 .TP
+\fBSlurmctldPlugstack\fR
+A comma delimited list of SLURM controller plugins to be started when the
+daemon begins and terminated when it ends.
+Only the plugin's init and fini functions are called.
+
+.TP
 \fBSlurmctldPort\fR
 The port number that the SLURM controller, \fBslurmctld\fR, listens
 to for work. The default value is SLURMCTLD_PORT as established at system
@@ -1909,12 +2002,11 @@ Fully qualified pathname of a directory into which the \fBslurmd\fR
 daemon's state information and batch job script information are written. This
 must be a common pathname for all nodes, but should represent a directory which
 is local to each node (reference a local file system). The default value
-is "/var/spool/slurmd." \fBNOTE\fR: This directory is also used to store
-\fBslurmd\fR's
-shared memory lockfile, and \fBshould not be changed\fR unless the system
-is being cleanly restarted. If the location of \fBSlurmdSpoolDir\fR is
-changed and \fBslurmd\fR is restarted, the new daemon will attach to a
-different shared memory region and lose track of any running jobs.
+is "/var/spool/slurmd".
+Any "%h" within the name is replaced with the hostname on which the
+\fBslurmd\fR is running.
+Any "%n" within the name is replaced with the SLURM node name on which the
+\fBslurmd\fR is running.
 
 .TP
 \fBSlurmdTimeout\fR

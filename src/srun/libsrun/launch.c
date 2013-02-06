@@ -159,7 +159,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 					 sig_atomic_t *destroy_job)
 {
 	int i, rc;
-	unsigned long my_sleep = 0;
+	unsigned long my_sleep  = 0;
 	time_t begin_time;
 
 	if (!job) {
@@ -269,12 +269,20 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	begin_time = time(NULL);
 
 	for (i=0; (!(*destroy_job)); i++) {
+		bool blocking_step_create = false;
 		if (opt.no_alloc) {
 			job->step_ctx = slurm_step_ctx_create_no_alloc(
 				&job->ctx_params, job->stepid);
-		} else
+		} else if (opt.immediate) {
 			job->step_ctx = slurm_step_ctx_create(
 				&job->ctx_params);
+		} else {
+			/* Wait 60 to 70 seconds for response */
+			my_sleep = (getpid() % 10) * 1000 + 60000;
+			job->step_ctx = slurm_step_ctx_create_timeout(
+						&job->ctx_params, my_sleep);
+			blocking_step_create = true;
+		}
 		if (job->step_ctx != NULL) {
 			if (i > 0)
 				info("Job step created");
@@ -307,14 +315,18 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 			xsignal_unblock(sig_array);
 			for (i = 0; sig_array[i]; i++)
 				xsignal(sig_array[i], signal_function);
-
-			my_sleep = (getpid() % 1000) * 100 + 100000;
+			if (!blocking_step_create)
+				my_sleep = (getpid() % 1000) * 100 + 100000;
 		} else {
 			verbose("Job step creation still disabled, retrying");
-			my_sleep = MIN((my_sleep * 2), 29000000);
+			if (!blocking_step_create)
+				my_sleep *= 2;
 		}
-		/* sleep 0.1 to 29 secs with exponential back-off */
-		usleep(my_sleep);
+		if (!blocking_step_create) {
+			/* sleep 0.1 to 29 secs with exponential back-off */
+			my_sleep = MIN(my_sleep, 29000000);
+			usleep(my_sleep);
+		}
 		if (*destroy_job) {
 			/* cancelled by signal */
 			break;

@@ -79,7 +79,6 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-#define FDUMP_FLAG 0x04
 #define PROTOCOL_TYPE_SLURM 0
 #define PROTOCOL_TYPE_DBD 1
 typedef struct {

@@ -1,3 +1,3 @@
 # Makefile for job_submit plugins
 
-SUBDIRS = cnode defaults logging lua partition
+SUBDIRS = all_partitions cnode defaults logging lua partition

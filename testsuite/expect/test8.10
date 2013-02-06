@@ -8,7 +8,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2011 SchedMD LLC
+# Copyright (C) 2011-2013 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
@@ -45,7 +45,7 @@ proc check_job { job_id nodes tasks task_per_cpu } {
 	set matches 0
 	spawn $scontrol show job $job_id
 	expect {
-		-re "NumNodes=($number)(K?)" {
+		-re "NumNodes=($number)(\[K\]*)" {
 			set node_cnt $expect_out(1,string)
 			if {[string compare $expect_out(2,string) ""]} {
 				set node_cnt [expr $node_cnt * 1024]
@@ -58,7 +58,7 @@ proc check_job { job_id nodes tasks task_per_cpu } {
 			}
 			exp_continue
 		}
-		-re "NumCPUs=($number)(K?)" {
+		-re "NumCPUs=($number)(\[K\]*)" {
 			set task_cnt $expect_out(1,string)
 			if {[string compare $expect_out(2,string) ""]} {
 				set task_cnt [expr $task_cnt * 1024]
@@ -71,7 +71,7 @@ proc check_job { job_id nodes tasks task_per_cpu } {
 			}
 			exp_continue
 		}
-		-re "CPUs/Task=($number)(K?)" {
+		-re "CPUs/Task=($number)(\[K\]*)" {
 			set tasks_per_cnt $expect_out(1,string)
 			if {[string compare $expect_out(2,string) ""]} {
 				set tasks_per_cnt [expr $tasks_per_cnt * 1024]
@@ -92,10 +92,8 @@ proc check_job { job_id nodes tasks task_per_cpu } {
 			wait
 		}
 	}
-	if {$matches != 3} {
+	if {$matches == 3} {
 		send_user "\nNumber of nodes and tasks are correct\n"
-		set exit_code 1
-		return 1
 	}
 	return 0
 }
@@ -107,7 +105,7 @@ proc check_step { job_id step_id nodes tasks } {
 	set matches 0
 	spawn $scontrol show step $job_id.$step_id
 	expect {
-		-re "Nodes=($number)(K?)" {
+		-re "Nodes=($number)(\[K\]*)" {
 			set node_cnt $expect_out(1,string)
 			if {[string compare $expect_out(2,string) ""]} {
 				set node_cnt [expr $node_cnt * 1024]
@@ -120,7 +118,7 @@ proc check_step { job_id step_id nodes tasks } {
 			}
 			exp_continue
 		}
-		-re "Tasks=($number)(K?)" {
+		-re "Tasks=($number)(\[K\]*)" {
 			set task_cnt $expect_out(1,string)
 			if {[string compare $expect_out(2,string) ""]} {
 				set task_cnt [expr $task_cnt * 1024]
@@ -146,21 +144,21 @@ proc check_step { job_id step_id nodes tasks } {
 		}
 	}
 
-	if {$matches != 2} {
+	if {$matches == 2} {
 		send_user "\nNumber of nodes and tasks are correct\n"
-		set exit_code 1
-		return 1
 	}
 
 	return 0
 }
 
 if {([test_bluegene] == 0) || [string compare [get_bluegene_type] "Q"]} {
-	send_user "\nWARNING: This test is only compatible with bluegene systems\n"
+	send_user "\nWARNING: This test is only compatible with BluegeneQ systems\n"
 	exit 0
 }
 
-#submit a step with 512 tasks
+send_user "\n################## Test 1 Starts Here #######################\n"
+# Submit a step with 512 tasks
+set job_id 0
 spawn $srun -n512 -v $bin_sleep 50
 expect {
 	-re "jobid ($number)" {
@@ -176,25 +174,264 @@ expect {
 	}
 }
 
-#wait for job to start
-sleep 1
+# Wait for job to start
+sleep 5
 
-#Checks job
+# Checks the job
 if {[check_job $job_id 32 512 1]} {
-	exit exit_code
+	exit $exit_code
 }
-#Checks the job step
+# Checks the job step
 if {[check_step $job_id 0 32 512]} {
-	exit exit_code
+	exit $exit_code
+}
+cancel_job $job_id
+
+# EXIT HERE, CONTINUE WORK ON TEST LATER
+exit $exit_code
+
+send_user "\n################## Test 2 Starts Here #######################\n"
+# Submit a step with 32 task
+set job_id 0
+spawn $srun -O -n32 --ntasks-per-node=64 -v $bin_sleep 10
+expect {
+	-re "jobid ($number)" {
+		set job_id $expect_out(1,string)
+		send_user "\nGot job id $job_id\n"
+	}
+	timeout {
+		send_user "\nFAILURE: srun is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
 }
 
-#submit allocation and runs job
-set matches 0
-spawn $salloc -n512 $srun $bin_sleep
+# Wait for job to start
+sleep 5
+
+# Checks the job step
+if {[check_step $job_id 0 1 32]} {
+	exit $exit_code
+}
+cancel_job $job_id
+
+send_user "\n################## Test 3 Starts Here #######################\n"
+# Submit a step with 32 task
+set job_id 0
+spawn $srun -O -n96 --ntasks-per-node=64 -v $bin_sleep 10
+expect {
+	-re "jobid ($number)" {
+		set job_id $expect_out(1,string)
+		send_user "\nGot job id $job_id\n"
+	}
+	timeout {
+		send_user "\nFAILURE: srun is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Wait for job to start
+sleep 5
+
+# Checks the job
+if {[check_job $job_id 2 32 1]} {
+	exit $exit_code
+}
+cancel_job $job_id
+
+send_user "\n################## Test 4 Starts Here #######################\n"
+# Submit a step with 4 nodes
+set job_id 0
+spawn $srun -O -N4 --ntasks-per-node=32 -v $bin_sleep 10
+expect {
+	-re "jobid ($number)" {
+		set job_id $expect_out(1,string)
+		send_user "\nGot job id $job_id\n"
+	}
+	timeout {
+		send_user "\nFAILURE: srun is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Wait for job to start
+sleep 5
+
+# Checks the job step
+if {[check_step $job_id 0 4 128]} {
+	exit $exit_code
+}
+cancel_job $job_id
+
+send_user "\n################## Test 5 Starts Here #######################\n"
+set job_id 0
+spawn $srun -N1 -v $bin_sleep 10
+expect {
+	-re "error" {
+		send_user "\nThis error is expected do not worry\n"
+		exp_continue
+	}
+	-re "jobid ($number)" {
+		send_user "\nFAILURE: srun should have failed but did not\n"
+		set job_id $expect_out(1,string)
+		cancel_job $job_id
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+send_user "\n################## Test 6 Starts Here #######################\n"
+# Submit allocation and runs job
+set job_id 0
+spawn $salloc -n512 $srun $bin_sleep 10
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		incr matches
+	}
+	timeout {
+		send_user "\nFAILURE: salloc is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: jobs were not submitted\n"
+	exit 1
+}
+
+# Wait for jobs to start
+sleep 5
+
+# Checks job
+if {[check_job $job_id 32 512 1]} {
+	exit $exit_code
+}
+# Checks the job step
+if {[check_step $job_id 0 32 512]} {
+	exit $exit_code
+}
+cancel_job $job_id
+
+send_user "\n################## Test 7 Starts Here #######################\n"
+# Submit job with 32 tasks
+set job_id 0
+spawn $salloc -O -n32 --ntasks-per-node=64 $srun $bin_sleep 10
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+	}
+	timeout {
+		send_user "\nFAILURE: salloc is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: jobs were not submitted\n"
+	exit 1
+}
+
+# Wait for jobs to start
+sleep 5
+
+# Checks the job step
+if {[check_step $job_id 0 1 32]} {
+	exit $exit_code
+}
+cancel_job $job_id
+
+send_user "\n################## Test 8 Starts Here #######################\n"
+# Submit allocation with 96 task and runs job
+set job_id 0
+spawn $salloc -O -n96 --ntasks-per-node=64 $srun  $bin_sleep 10
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+	}
+	timeout {
+		send_user "\nFAILURE: salloc is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: jobs were not submitted\n"
+	exit 1
+}
+
+# Wait for jobs to start
+sleep 5
+
+# Checks the job
+if {[check_job $job_id 2 32 1]} {
+	exit $exit_code
+}
+cancel_job $job_id
+
+send_user "\n################## Test 9 Starts Here #######################\n"
+# Submit allocation with 4 nodes task and runs job
+set job_id 0
+spawn $salloc -O -N4 --ntasks-per-node=32 $srun $bin_sleep 10
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+	}
+	timeout {
+		send_user "\nFAILURE: salloc is not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: jobs were not submitted\n"
+	exit 1
+}
+
+# Wait for jobs to start
+sleep 5
+
+# Checks the job step
+if {[check_step $job_id 0 4 128]} {
+	exit $exit_code
+}
+cancel_job $job_id
+
+send_user "\n################## Test 10 Starts Here #######################\n"
+set job_id 0
+spawn $salloc -N1 $srun $bin_sleep 10
+expect {
+	-re "error" {
+		send_user "\nThis error is expected do not worry\n"
+		incr match
+	}
+	-re "Granted job allocation ($number)" {
+		send_user "\FAILURE: salloc should have failed but did not\n"
+		set job_id $expect_out(1,string)
+		cancel_job $job_id
+		set exit_code 1
 	}
 	timeout {
 		send_user "\nFAILURE: salloc is not responding\n"
@@ -205,24 +442,9 @@ expect {
 	}
 }
 
-if {$matches !=1} {
-	send_user "\nFAILURE: jobs were not submitted\n"
-	exit 1
-}
-
-#Checks job
-if {[check_job $job_id 32 512 1]} {
-	exit exit_code
-}
-#Checks the job step
-if {[check_step $job_id 0 32 512]} {
-	exit exit_code
-}
-
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 } else {
 	send_user "\nFAILURE\n"
 }
-
 exit $exit_code

@@ -802,29 +802,62 @@ static void _do_block_poll(void)
 		last_bg_update = time(NULL);
 }
 
+#ifdef HAVE_BG_GET_ACTION
 static void _do_block_action_poll(void)
 {
 	bg_record_t *bg_record;
 	ListIterator itr;
+	BlockFilter filter;
+	BlockFilter::Statuses statuses;
+	Block::Ptrs vec;
 
 	if (!bg_lists->main)
 		return;
 
+	/* IBM says only asking for initialized blocks is much more
+	   efficient than asking for each block individually.
+	*/
+	statuses.insert(Block::Initialized);
+	filter.setStatuses(&statuses);
+	vec = bridge_get_blocks(filter);
+	if (vec.empty())
+		return;
+
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_lists->main);
-	while ((bg_record = (bg_record_t *) list_next(itr))) {
-		if ((bg_record->magic != BLOCK_MAGIC)
-		    || !bg_record->bg_block_id)
-			continue;
+	BOOST_FOREACH(const Block::Ptr& block_ptr, vec) {
+		while ((bg_record = (bg_record_t *) list_next(itr))) {
+			if ((bg_record->magic != BLOCK_MAGIC)
+			    || !bg_record->bg_block_id
+			    || (bg_record->state != BG_BLOCK_INITED)
+			    || strcmp(bg_record->bg_block_id,
+				      block_ptr->getName().c_str()))
+				continue;
 
-		bg_record->action =
-			bridge_block_get_action(bg_record->bg_block_id);
-
+			bg_record->action = bridge_translate_action(
+				block_ptr->getAction().toValue());
+			break;
+		}
 		if (slurmctld_config.shutdown_time)
 			break;
+		list_iterator_reset(itr);
 	}
+	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
 }
+
+static void *_block_action_poll(void *no_data)
+{
+	while (bridge_status_inited) {
+		//debug("polling for actions");
+		if (blocks_are_created)
+			_do_block_action_poll();
+		sleep(1);
+	}
+
+	return NULL;
+}
+#endif
 
 /* Even though ba_mp should be coming from the main list
  * ba_system_mutex && block_state_mutex must be unlocked before
@@ -1010,18 +1043,6 @@ static void *_poll(void *no_data)
 		}
 
 		slurm_mutex_unlock(&rt_mutex);
-		sleep(1);
-	}
-
-	return NULL;
-}
-
-static void *_block_action_poll(void *no_data)
-{
-	while (bridge_status_inited) {
-		//debug("polling for actions");
-		if (blocks_are_created)
-			_do_block_action_poll();
 		sleep(1);
 	}
 
@@ -1443,10 +1464,12 @@ extern int bridge_status_init(void)
 	if (pthread_create(&poll_thread, &thread_attr, _poll, NULL))
 		fatal("pthread_create error %m");
 	slurm_attr_init(&thread_attr);
+#ifdef HAVE_BG_GET_ACTION
 	if (pthread_create(&action_poll_thread, &thread_attr,
 			   _block_action_poll, NULL))
 		fatal("pthread_create error %m");
 	slurm_attr_destroy(&thread_attr);
+#endif
 #endif
 	return SLURM_SUCCESS;
 }

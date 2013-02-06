@@ -66,8 +66,6 @@ static inline void _licenses_print(char *header, List licenses, int job_id)
 		return;
 
 	iter = list_iterator_create(licenses);
-	if (iter == NULL)
-		fatal("malloc failure from list_iterator_create");
   	while ((license_entry = (licenses_t *) list_next(iter))) {
 		if (job_id == 0) {
 			info("licenses: %s=%s total=%u used=%u", 
@@ -176,8 +174,6 @@ static char * _build_license_string(List license_list)
 		return licenses;
 
 	iter = list_iterator_create(license_list);
-	if (iter == NULL)
-		fatal("malloc failure from list_iterator_create");
 	while ((license_entry = (licenses_t *) list_next(iter))) {
 		if (licenses)
 			sep = ",";
@@ -202,8 +198,6 @@ extern char *get_licenses_used(void)
 	slurm_mutex_lock(&license_mutex);
 	if (license_list) {
 		iter = list_iterator_create(license_list);
-		if (iter == NULL)
-			fatal("malloc failure from list_iterator_create");
 		while ((license_entry = (licenses_t *) list_next(iter))) {
 			if (licenses_used)
 				xstrcat(licenses_used, ",");
@@ -258,8 +252,6 @@ extern int license_update(char *licenses)
 	}
 
 	iter = list_iterator_create(license_list);
-	if (iter == NULL)
-		fatal("malloc failure from list_iterator_create");
 	while ((license_entry = (licenses_t *) list_next(iter))) {
 		match = list_find_first(new_list, _license_find_rec,
 			license_entry->name);
@@ -314,8 +306,6 @@ extern List license_validate(char *licenses, bool *valid)
 	slurm_mutex_lock(&license_mutex);
 	_licenses_print("request_license", job_license_list, 0);
 	iter = list_iterator_create(job_license_list);
-	if (iter == NULL)
-		fatal("malloc failure from list_iterator_create");
 	while ((license_entry = (licenses_t *) list_next(iter))) {
 		if (license_list) {
 			match = list_find_first(license_list,
@@ -377,8 +367,6 @@ extern int license_job_test(struct job_record *job_ptr, time_t when)
 
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
-	if (iter == NULL)
-		fatal("malloc failure from list_iterator_create");
 	while ((license_entry = (licenses_t *) list_next(iter))) {
 		match = list_find_first(license_list, _license_find_rec,
 			license_entry->name);
@@ -413,6 +401,32 @@ extern int license_job_test(struct job_record *job_ptr, time_t when)
 }
 
 /*
+ * license_job_copy - create a copy of a job's license list
+ * IN license_list_src - job license list to be copied
+ * RET a copy of the original job license list
+ */
+extern List license_job_copy(List license_list_src)
+{
+	licenses_t *license_entry_src, *license_entry_dest;
+	ListIterator iter;
+	List license_list_dest = NULL;
+
+	if (!license_list_src)
+		return license_list_dest;
+
+	license_list_dest = list_create(license_free_rec);
+	iter = list_iterator_create(license_list_src);
+	while ((license_entry_src = (licenses_t *) list_next(iter))) {
+		license_entry_dest = xmalloc(sizeof(licenses_t));
+		license_entry_dest->name = xstrdup(license_entry_src->name);
+		license_entry_dest->total = license_entry_src->total;
+		list_push(license_list_dest, license_entry_dest);
+	}
+	list_iterator_destroy(iter);
+	return license_list_dest;
+}
+
+/*
  * license_job_get - Get the licenses required for a job
  * IN job_ptr - job identification
  * RET SLURM_SUCCESS or failure code
@@ -428,8 +442,6 @@ extern int license_job_get(struct job_record *job_ptr)
 
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
-	if (iter == NULL)
-		fatal("malloc failure from list_iterator_create");
 	while ((license_entry = (licenses_t *) list_next(iter))) {
 		match = list_find_first(license_list, _license_find_rec,
 			license_entry->name);
@@ -464,8 +476,6 @@ extern int license_job_return(struct job_record *job_ptr)
 
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
-	if (iter == NULL)
-		fatal("malloc failure from list_iterator_create");
 	while ((license_entry = (licenses_t *) list_next(iter))) {
 		match = list_find_first(license_list, _license_find_rec,
 			license_entry->name);
@@ -505,8 +515,6 @@ extern bool license_list_overlap(List list_1, List list_2)
 		return false;
 
 	iter = list_iterator_create(list_1);
-	if (iter == NULL)
-		fatal("malloc failure from list_iterator_create");
 	while ((license_entry = (licenses_t *) list_next(iter))) {
 		if (list_find_first(list_2, _license_find_rec,
 				    license_entry->name)) {

@@ -8,10 +8,10 @@
   Meta:		1
   Name:		slurm
   Major:	2
-  Minor:	5
+  Minor:	6
   Micro:	0
-  Version:	2.5.0
-  Release:	1
+  Version:	2.6.0
+  Release:	0pre1
 
 ##
 #  When changing API_CURRENT update src/common/slurm_protocol_common.h
@@ -21,6 +21,6 @@
 #  and _get_slurm_version()
 #  need to be updated also when changes are added also.
 ##
-  API_CURRENT:	25
+  API_CURRENT:	26
   API_AGE:	0
   API_REVISION:	0

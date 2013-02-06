@@ -54,6 +54,8 @@ typedef struct slurm_acct_gather_energy_ops {
 				   acct_gather_energy_t *energy);
 	int (*set_data)           (enum acct_energy_type data_type,
 				   acct_gather_energy_t *energy);
+	int (*start_thread)       (void);
+	int (*end_thread)         (void);
 } slurm_acct_gather_energy_ops_t;
 /*
  * These strings must be kept in the same order as the fields
@@ -63,6 +65,8 @@ static const char *syms[] = {
 	"acct_gather_energy_p_update_node_energy",
 	"acct_gather_energy_p_get_data",
 	"acct_gather_energy_p_set_data",
+	"acct_gather_energy_p_start_thread",
+	"acct_gather_energy_p_end_thread",
 };
 
 static slurm_acct_gather_energy_ops_t ops;
@@ -199,6 +203,30 @@ extern int acct_gather_energy_g_set_data(enum acct_energy_type data_type,
 		return retval;
 
 	retval = (*(ops.set_data))(data_type, energy);
+
+	return retval;
+}
+
+extern int acct_gather_energy_g_start_thread(void)
+{
+	int retval = SLURM_ERROR;
+
+	if (slurm_acct_gather_energy_init() < 0)
+		return retval;
+
+	retval = (*(ops.start_thread))();
+
+	return retval;
+}
+
+extern int acct_gather_energy_g_end_thread(void)
+{
+	int retval = SLURM_ERROR;
+
+	if (slurm_acct_gather_energy_init() < 0)
+		return retval;
+
+	retval = (*(ops.end_thread))();
 
 	return retval;
 }

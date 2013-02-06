@@ -1,8 +1,8 @@
 <!--#include virtual="header.txt"-->
 
-<h1>SLURM Workload Manager</h1>
+<h1>Slurm Workload Manager</h1>
 
-<p>SLURM is an open-source workload manager designed for Linux clusters of
+<p>Slurm is an open-source workload manager designed for Linux clusters of
 all sizes.
 It provides three key functions.
 First it allocates exclusive and/or non-exclusive access to resources
@@ -12,7 +12,7 @@ Second, it provides a framework for starting, executing, and monitoring work
 Finally, it arbitrates contention for resources by managing a queue of
 pending work. </p>
 
-<p>SLURM's design is very modular with dozens of optional plugins.
+<p>Slurm's design is very modular with dozens of optional plugins.
 In its simplest configuration, it can be installed and configured in a
 couple of minutes (see <a href="http://www.linux-mag.com/id/7239/1/">
 Caos NSA and Perceus: All-in-one Cluster Software Stack</a>
@@ -28,7 +28,7 @@ world-class computer centers and rely upon a
 or supporting sophisticated
 <a href="priority_multifactor.html">job prioritization</a> algorithms.</p>
 
-<p>While other workload managers do exist, SLURM is unique in several
+<p>While other workload managers do exist, Slurm is unique in several
 respects:
 <ul>
 <li><b>Scalability</b>: It is designed to operate in a heterogeneous cluster
@@ -55,52 +55,63 @@ can specify size and time limit ranges.</li>
 help identify load imbalances and other anomalies.</li>
 </ul></p>
 
-<p>SLURM provides workload management on many of the most powerful computers in
+<p>Slurm provides workload management on many of the most powerful computers in
 the world including:
 <ul>
 <li><a href="https://asc.llnl.gov/computing_resources/sequoia/">Sequoia</a>,
-a BlueGene/Q system at <a href="https://www.llnl.gov">LLNL</a>
+an <a href="http://www.ibm.com">IBM</a> BlueGene/Q system at
+<a href="https://www.llnl.gov">Lawrence Livermore National Laboratory</a>
 with 1.6 petabytes of memory, 96 racks, 98,304 compute nodes, and 1.6
-  million cores, with a peak performance of over 20 Petaflops.</li>
+million cores, with a peak performance of over 20 Petaflops.</li>
+
+<li><a href="http://www.tacc.utexas.edu/stampede">Stampede</a> at the
+<a href="http://www.tacc.utexas.edu">Texas Advanced Computing Center/University of Texas</a>
+is a <a herf="http://www.dell.com">Dell</a> with over
+80,000 <a href="http://www.intel.com">Intel</a> Xeon cores,
+Intel Phi co-processors, plus
+128 <a href="http://www.nvidia.com">NVIDIA</a> GPUs
+delivering 2.66 Petaflops.</li>
 
 <li><a href="http://www.nytimes.com/2010/10/28/technology/28compute.html?_r=1&partner=rss&emc=rss">
 Tianhe-1A</a> designed by 
 <a href="http://english.nudt.edu.cn">The National University of Defense Technology (NUDT)</a>
-in China with 14,336 Intel CPUs and 7,168 NVDIA Tesla M2050 GPUs, with a peak performance of 2.507 Petaflops.</li>
+in China with 14,336 Intel CPUs and 7,168 NVDIA Tesla M2050 GPUs,
+with a peak performance of 2.507 Petaflops.</li>
 
-<li><a href="http://www-hpc.cea.fr/en/complexe/tgcc-curie.htm">TGCC
-    Curie</a>, owned by GENCI and operated into the TGCC by CEA, Curie
-    is offering 3 different fractions of x86-64 computing resources
-    for addressing a wide range of scientific challenges and offering
-    an aggregate peak performance of 2 PetaFlops.</li>
+<li><a href="http://www-hpc.cea.fr/en/complexe/tgcc-curie.htm">TGCC Curie</a>,
+owned by <a href="http://www.genci.fr">GENCI</a> and operated in the TGCC by
+<a href="http://www.cea.fr">CEA</a>, Curie is offering 3 different fractions
+of x86-64 computing resources for addressing a wide range of scientific
+challenges and offering an aggregate peak performance of 2 PetaFlops.</li>
 
 <li><a href="http://www.wcm.bull.com/internet/pr/rend.jsp?DocId=567851&lang=en">
 Tera 100</a> at <a href="http://www.cea.fr">CEA</a>
 with 140,000 Intel Xeon 7500 processing cores, 300TB of 
 central memory and a theoretical computing power of 1.25 Petaflops.</li>
 
+<li><a href="http://hpc.msu.ru/?q=node/59">Lomonosov</a>, a
+<a href="http://www.t-platforms.com">T-Platforms</a> system at
+<a href="http://hpc.msu.ru">Moscow State University Research Computing Center</a> 
+with 52,168 Intel Xeon processing cores and 8,840 NVIDIA GPUs.</li>
+
 <li><a href="http://compeng.uni-frankfurt.de/index.php?id=86">LOEWE-CSC</a>,
-a combined CPU-GPU Linux cluster
-at <a href="http://csc.uni-frankfurt.de">The Center for Scientific
-Computing (CSC)</a> of the Goethe University Frankfurt, Germany,
+a combined CPU-GPU Linux cluster at
+<a href="http://csc.uni-frankfurt.de">The Center for Scientific Computing (CSC)</a>
+of the Goethe University Frankfurt, Germany,
 with 20,928 AMD Magny-Cours CPU cores (176 Teraflops peak
 performance) plus 778 ATI Radeon 5870 GPUs (2.1 Petaflops peak
 performance single precision and 599 Teraflops double precision) and
 QDR Infiniband interconnect.</li>
 
-<li><a href="https://asc.llnl.gov/computing_resources/sequoia/">Dawn</a>,
-a BlueGene/P system at <a href="https://www.llnl.gov">LLNL</a>
-with 147,456 PowerPC 450 cores with a peak
-performance of 0.5 Petaflops.</li>
-
 <li><a href="http://www.cscs.ch/compute_resources">Rosa</a>,
-a CRAY XT5 at the <a href="http://www.cscs.ch">Swiss National Supercomputer Centre</a>
+a <a href="http://www.cray.com">Cray</a> XT5 at the
+<a href="http://www.cscs.ch">Swiss National Supercomputer Centre</a>
 named after Monte Rosa in the Swiss-Italian Alps, elevation 4,634m.
 3,688 AMD hexa-core Opteron @ 2.4 GHz, 28.8 TB DDR2 RAM, 290 TB Disk,
 9.6 GB/s interconnect bandwidth (Seastar).</li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 2 October 2012</p>
+<p style="text-align:center;">Last modified 7 December 2012</p>
 
 <!--#include virtual="footer.txt"-->

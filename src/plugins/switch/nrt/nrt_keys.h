@@ -39,10 +39,10 @@
 #ifndef _NRT_KEYS_INCLUDED
 #define _NRT_KEYS_INCLUDED
 
-#if HAVE_LIBNRT
+#if HAVE_NRT_H
 # include <nrt.h>
 #else
-# error "Must have libnrt to compile this module!"
+# error "Must have nrt.h to compile this module!"
 #endif
 
 enum {

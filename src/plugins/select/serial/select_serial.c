@@ -125,6 +125,7 @@ struct part_res_record *select_part_record = NULL;
 struct node_res_record *select_node_record = NULL;
 struct node_use_record *select_node_usage  = NULL;
 static bool select_state_initializing = true;
+static int select_core_cnt = 0;
 static int select_node_cnt = 0;
 static bool job_preemption_enabled = false;
 static bool job_preemption_killing = false;
@@ -355,9 +356,6 @@ static void _create_part_data(void)
 	this_ptr = select_part_record;
 
 	part_iterator = list_iterator_create(part_list);
-	if (part_iterator == NULL)
-		fatal ("memory allocation failure");
-
 	while ((p_ptr = (struct part_record *) list_next(part_iterator))) {
 		this_ptr->part_ptr = p_ptr;
 		this_ptr->num_rows = p_ptr->max_share;
@@ -997,7 +995,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 }
 
 /* Determine the node requirements for the job:
- * - does the job need exclusive nodes? (NODE_CR_RESERVED)
+ * - does the job need exclusive nodes? (NODE_CR_RESERVED, disables for serial)
  * - can the job run on shared nodes?   (NODE_CR_ONE_ROW)
  * - can the job run on overcommitted resources? (NODE_CR_AVAILABLE)
  */
@@ -1011,11 +1009,6 @@ static uint16_t _get_job_node_share(struct job_record *job_ptr)
 	/* Partition is Shared=FORCE */
 	if (max_share & SHARED_FORCE)
 		return NODE_CR_AVAILABLE;
-
-	/* Partition is Shared=NO or Shared=YES */
-	if (job_ptr->details->shared == 0)
-		/* user has requested exclusive nodes */
-		return NODE_CR_RESERVED;
 
 	if ((max_share > 1) && (job_ptr->details->shared == 1))
 		/* part allows sharing, and the user has requested it */
@@ -1087,8 +1080,6 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	save_bitmap = bit_copy(bitmap);
 top:	orig_map = bit_copy(save_bitmap);
-	if (!orig_map)
-		fatal("bit_copy: malloc failure");
 
 	rc = cr_job_test(job_ptr, bitmap,
 			 SELECT_MODE_RUN_NOW, cr_type, job_node_share,
@@ -1112,8 +1103,6 @@ top:	orig_map = bit_copy(save_bitmap);
 		}
 
 		job_iterator = list_iterator_create(preemptee_candidates);
-		if (job_iterator == NULL)
-			fatal ("memory allocation failure");
 		while ((tmp_job_ptr = (struct job_record *)
 			list_next(job_iterator))) {
 			if (!IS_JOB_RUNNING(tmp_job_ptr) &&
@@ -1176,13 +1165,9 @@ top:	orig_map = bit_copy(save_bitmap);
 			 * actually used */
 			if (*preemptee_job_list == NULL) {
 				*preemptee_job_list = list_create(NULL);
-				if (*preemptee_job_list == NULL)
-					fatal("list_create malloc failure");
 			}
 			preemptee_iterator = list_iterator_create(
 				preemptee_candidates);
-			if (preemptee_iterator == NULL)
-				fatal ("memory allocation failure");
 			while ((tmp_job_ptr = (struct job_record *)
 				list_next(preemptee_iterator))) {
 				mode = slurm_job_preempt_mode(tmp_job_ptr);
@@ -1229,8 +1214,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	time_t now = time(NULL);
 
 	orig_map = bit_copy(bitmap);
-	if (!orig_map)
-		fatal("bit_copy: malloc failure");
 
 	/* Try to run with currently available nodes */
 	rc = cr_job_test(job_ptr, bitmap,
@@ -1262,8 +1245,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	if (!cr_job_list)
 		fatal("list_create: memory allocation error");
 	job_iterator = list_iterator_create(job_list);
-	if (job_iterator == NULL)
-		fatal ("memory allocation failure");
 	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
 		    !IS_JOB_SUSPENDED(tmp_job_ptr))
@@ -1304,8 +1285,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	if (rc != SLURM_SUCCESS) {
 		list_sort(cr_job_list, _cr_job_list_sort);
 		job_iterator = list_iterator_create(cr_job_list);
-		if (job_iterator == NULL)
-			fatal ("memory allocation failure");
 		while ((tmp_job_ptr = list_next(job_iterator))) {
 		        int ovrlap;
 			bit_or(bitmap, orig_map);
@@ -1339,12 +1318,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		 * in selected plugin, but by Moab or something else. */
 		if (*preemptee_job_list == NULL) {
 			*preemptee_job_list = list_create(NULL);
-			if (*preemptee_job_list == NULL)
-				fatal("list_create malloc failure");
 		}
 		preemptee_iterator =list_iterator_create(preemptee_candidates);
-		if (preemptee_iterator == NULL)
-			fatal ("memory allocation failure");
 		while ((tmp_job_ptr = (struct job_record *)
 			list_next(preemptee_iterator))) {
 			if (bit_overlap(bitmap,
@@ -1470,6 +1445,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	select_node_usage  = xmalloc(node_cnt *
 				     sizeof(struct node_use_record));
 
+	select_core_cnt = 0;
 	for (i = 0; i < select_node_cnt; i++) {
 		select_node_record[i].node_ptr = &node_ptr[i];
 		if (select_fast_schedule) {
@@ -1491,6 +1467,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		}
 		tot_core = select_node_record[i].sockets *
 			   select_node_record[i].cores;
+		select_core_cnt += tot_core;
 		if (tot_core >= select_node_record[i].cpus)
 			select_node_record[i].vpus = 1;
 		select_node_usage[i].node_state = NODE_CR_AVAILABLE;
@@ -1513,6 +1490,11 @@ static bool _is_job_spec_serial(struct job_record *job_ptr)
 	struct multi_core_data *mc_ptr = NULL;
 
 	if (details_ptr) {
+		if (job_ptr->details->shared == 0) {
+			info("Clearing exclusive flag for job %u",
+			     job_ptr->job_id);
+			job_ptr->details->shared = 1;
+		}
 		if ((details_ptr->cpus_per_task > 1) &&
 		    (details_ptr->cpus_per_task != (uint16_t) NO_VAL))
 			return false;
@@ -1875,7 +1857,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 						tmp++;
 				}
 				/* get the row with the largest cpu
-				   count on it. */
+				 * count on it. */
 				if (tmp > tmp_16)
 					tmp_16 = tmp;
 			}
@@ -2098,8 +2080,6 @@ extern int select_p_reconfigure(void)
 
 	/* reload job data */
 	job_iterator = list_iterator_create(job_list);
-	if (job_iterator == NULL)
-		fatal ("memory allocation failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (IS_JOB_RUNNING(job_ptr)) {
 			/* add the job */
@@ -2115,10 +2095,73 @@ extern int select_p_reconfigure(void)
 	return SLURM_SUCCESS;
 }
 
-extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt)
+/*
+ * select_p_resv_test - Identify the nodes which "best" satisfy a reservation
+ *	request. "best" is defined as either single set of consecutive nodes
+ *	satisfying the request and leaving the minimum number of unused nodes
+ *	OR the fewest number of consecutive node sets
+ * IN avail_bitmap - nodes available for the reservation
+ * IN node_cnt - count of required nodes
+ * IN core_bitmap - cores which can not be used for this reservation
+ * OUT avail_bitmap - nodes allocated for the reservation
+ * OUT core_bitmap - cores which allocated to this reservation
+ * RET - nodes selected for use by the reservation
+ */
+extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
+				     uint32_t core_cnt, bitstr_t **core_bitmap)
 {
+	int i, j;
+	int core_inx = 0, node_cores;
+	int rem_nodes = node_cnt;
+	int rem_cores = core_cnt;
+	bitstr_t *new_bitmap;
+	bool enforce_node_cnt = (node_cnt != 0);
+
 	xassert(avail_bitmap);
-	return bit_pick_cnt(avail_bitmap, node_cnt);
+	new_bitmap = bit_copy(avail_bitmap);
+	if (*core_bitmap == NULL)
+		*core_bitmap = bit_alloc(select_core_cnt);
+	for (i = 0; i < select_node_cnt; i++) {
+		node_cores = select_node_record[i].cores *
+			     select_node_record[i].sockets;
+		if ((rem_nodes <= 0) && (rem_cores <= 0)) {
+			bit_clear(avail_bitmap, i);
+		} else if (!bit_test(avail_bitmap, i)) {
+			;
+		} else {
+			for (j = 0; j < node_cores; j++) {
+				if (!bit_test(*core_bitmap, core_inx + j))
+					break;	/* some CPUs avail for use */
+			}
+			if (j >= node_cores)	/* No available CPUs */
+				bit_clear(avail_bitmap, i);
+		}
+		if (!bit_test(avail_bitmap, i)) {
+			/* Do not use this node or it's CPUs */
+			bit_clear(new_bitmap, i);
+			for (j = 0; j < node_cores; j++) {
+				bit_clear(*core_bitmap, core_inx);
+				core_inx++;
+			}
+			continue;
+		}
+
+		for (j = 0; j < node_cores; j++) {
+			if (bit_test(*core_bitmap, core_inx)) {
+				bit_clear(*core_bitmap, core_inx);
+			} else {
+				bit_set(*core_bitmap, core_inx);
+				rem_cores--;
+			}
+			core_inx++;
+		}
+		rem_nodes--;
+		if (enforce_node_cnt && (rem_nodes <= 0))
+			break;
+	}
+	if ((rem_cores > 0) || (rem_nodes > 0))
+		FREE_NULL_BITMAP(new_bitmap);
+	return new_bitmap;
 }
 
 extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)

@@ -58,7 +58,7 @@ _get_acct_no_assocs(pgsql_conn_t *pg_conn, slurmdb_association_cond_t *assoc_q,
 		concat_cond_list(assoc_q->acct_list, NULL, "name", &query);
 
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 
 	FOR_EACH_ROW {
@@ -74,7 +74,7 @@ _get_acct_no_assocs(pgsql_conn_t *pg_conn, slurmdb_association_cond_t *assoc_q,
 		} END_EACH_CLUSTER;
 		xstrcat(query, " LIMIT 1;");
 		result2 = DEF_QUERY_RET;
-		if(!result2) {
+		if (!result2) {
 			rc = SLURM_ERROR;
 			break;
 		}
@@ -126,7 +126,7 @@ _get_acct_no_users(pgsql_conn_t *pg_conn, slurmdb_association_cond_t *assoc_q,
 	xfree(cond);
 	xstrcat(query, " ORDER BY cluster, acct;");
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 
 	FOR_EACH_ROW {
@@ -134,13 +134,13 @@ _get_acct_no_users(pgsql_conn_t *pg_conn, slurmdb_association_cond_t *assoc_q,
 			xmalloc(sizeof(slurmdb_association_rec_t));
 		list_append(ret_list, assoc);
 		assoc->id = SLURMDB_PROBLEM_ACCT_NO_USERS;
-/* 		if(ROW(F_USER)[0]) */
+/* 		if (ROW(F_USER)[0]) */
 /* 			assoc->user = xstrdup(ROW(F_USER)); */
 		assoc->acct = xstrdup(ROW(F_ACCT));
 		assoc->cluster = xstrdup(ROW(F_COUNT));
-		if(ROW(F_PARENT)[0])
+		if (ROW(F_PARENT)[0])
 			assoc->parent_acct = xstrdup(ROW(F_PARENT));
-/* 		if(ROW(F_PART)[0]) */
+/* 		if (ROW(F_PART)[0]) */
 /* 			assoc->partition = xstrdup(ROW(F_PART)); */
 	} END_EACH_ROW;
 	PQclear(result);
@@ -161,11 +161,11 @@ _get_user_no_assocs_or_no_uid(pgsql_conn_t *pg_conn,
 
 	query = xstrdup_printf("SELECT name FROM %s WHERE deleted=0",
 			       user_table);
-	if(assoc_q)
+	if (assoc_q)
 		concat_cond_list(assoc_q->user_list, NULL, "name", &query);
 
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 
 	FOR_EACH_ROW {
@@ -191,7 +191,7 @@ _get_user_no_assocs_or_no_uid(pgsql_conn_t *pg_conn,
 		} END_EACH_CLUSTER;
 		xstrcat(query, " LIMIT 1;");
 		result2 = DEF_QUERY_RET;
-		if(!result2) {
+		if (!result2) {
 			rc = SLURM_ERROR;
 			break;
 		}
@@ -221,20 +221,20 @@ as_pg_get_problems(pgsql_conn_t *pg_conn, uid_t uid,
 {
 	List ret_list = NULL;
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return NULL;
 
 	ret_list = list_create(slurmdb_destroy_association_rec);
 
-	if(_get_acct_no_assocs(pg_conn, assoc_q, ret_list)
+	if (_get_acct_no_assocs(pg_conn, assoc_q, ret_list)
 	   != SLURM_SUCCESS)
 		goto end_it;
 
-	if(_get_acct_no_users(pg_conn, assoc_q, ret_list)
+	if (_get_acct_no_users(pg_conn, assoc_q, ret_list)
 	   != SLURM_SUCCESS)
 		goto end_it;
 
-	if(_get_user_no_assocs_or_no_uid(pg_conn, assoc_q, ret_list)
+	if (_get_user_no_assocs_or_no_uid(pg_conn, assoc_q, ret_list)
 	   != SLURM_SUCCESS)
 		goto end_it;
 

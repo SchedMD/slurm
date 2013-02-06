@@ -2,6 +2,11 @@
 
 <h1>SLURM Tutorials</h1>
 
+<h2>Slurm Workload Manager: Architecture, Configuration and Use</h2>
+<p>Introduction to the SLURM Resource Manager for users and system
+administrators, plus some material for Slurm programmers:
+<a href="http://www.open-mpi.org/video/?category=slurm">Slurm Workload Manager</a></p>
+
 <h2>Introduction to SLURM Tutorial</h2>
 <p>Introduction to the SLURM Resource Manager for users and system
 administrators. Tutorial covers SLURM architecture, daemons and commands.
@@ -39,6 +44,6 @@ resource limits, fair share scheduling, and accounting configuration.</p>
 
 <h2>More Tutorials Coming Soon...</h2>
 
-<p style="text-align:center;">Last modified 27 August 2012</p>
+<p style="text-align:center;">Last modified 18 January 2013</p>
 
 <!--#include virtual="footer.txt"-->

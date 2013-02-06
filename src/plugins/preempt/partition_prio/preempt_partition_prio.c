@@ -122,8 +122,6 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 		/* This job is a preemption candidate */
 		if (preemptee_job_list == NULL) {
 			preemptee_job_list = list_create(NULL);
-			if (preemptee_job_list == NULL)
-				fatal("list_create malloc failure");
 		}
 		list_append(preemptee_job_list, job_p);
 	}

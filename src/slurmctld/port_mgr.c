@@ -91,9 +91,9 @@ static void _rebuild_port_array(struct step_record *step_ptr)
 	tmp_char = xmalloc(i+3);
 	sprintf(tmp_char, "[%s]", step_ptr->resv_ports);
 	hl = hostlist_create(tmp_char);
+	if (!hl)
+		fatal("Invalid reserved ports: %s", step_ptr->resv_ports);
 	xfree(tmp_char);
-	if (hl == NULL)
-		fatal("malloc failure: hostlist_create");
 
 	step_ptr->resv_port_array = xmalloc(sizeof(int) *
 					    step_ptr->resv_port_cnt);
@@ -149,6 +149,8 @@ static void _make_all_resv(void)
 		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_ptr = (struct step_record *)
 				   list_next(step_iterator))) {
+			if (step_ptr->state != JOB_RUNNING)
+				continue;
 			_make_step_resv(step_ptr);
 		}
 		list_iterator_destroy(step_iterator);
@@ -254,8 +256,6 @@ extern int resv_port_alloc(struct step_record *step_ptr)
 
 	/* Reserve selected ports */
 	hl = hostlist_create(NULL);
-	if (hl == NULL)
-		fatal("malloc: hostlist_create");
 	for (i=0; i<port_inx; i++) {
 		/* NOTE: We give the port a name like "[1234]" rather than
 		 * just "1234" to avoid hostlists of the form "1[234-236]" */

@@ -101,6 +101,12 @@ By default, no nodes are excluded.</li>
 List of partitions with nodes to never place in power saving mode.
 Multiple partitions may be specified using a comma separator.
 By default, no nodes are excluded.</li>
+
+<li><b>BatchStartTime</b>:
+Specifies how long to wait after a batch job start request is issued
+before we expect the batch job to be running on the compute node.
+Depending upon how nodes are returned to service, this value may need to
+be increased above its default value of 10 seconds.</li>
 </ul></p>
 
 <p>Note that <i>SuspendProgram</i> and <i>ResumeProgram</i> execute as
@@ -248,6 +254,6 @@ and perform the following actions:
 <li>Boot the appropriate image for each node</li>
 </ol>
 
-<p style="text-align:center;">Last modified 28 April 2010</p>
+<p style="text-align:center;">Last modified 10 December 2012</p>
 
 <!--#include virtual="footer.txt"-->

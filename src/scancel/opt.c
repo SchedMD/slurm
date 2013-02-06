@@ -443,27 +443,69 @@ static void _opt_args(int argc, char **argv)
 static void
 _xlate_job_step_ids(char **rest)
 {
-	int i;
-	long tmp_l;
+	int buf_size, buf_offset, i;
+	long job_id, tmp_l;
 	char *next_str;
 
 	opt.job_cnt = 0;
 
-	if (rest != NULL) {
-		while (rest[opt.job_cnt] != NULL)
-			opt.job_cnt++;
-	}
+	buf_size   = 0xffff;
+	buf_offset = 0;
+	opt.array_id = xmalloc(buf_size * sizeof(uint16_t));
+	opt.job_id   = xmalloc(buf_size * sizeof(uint32_t));
+	opt.step_id  = xmalloc(buf_size * sizeof(uint32_t));
 
-	opt.job_id  = xmalloc(opt.job_cnt * sizeof(uint32_t));
-	opt.step_id = xmalloc(opt.job_cnt * sizeof(uint32_t));
-
-	for (i=0; i<opt.job_cnt; i++) {
-		tmp_l = strtol(rest[i], &next_str, 10);
-		if (tmp_l <= 0) {
+	for (i = 0; rest[i] && (buf_offset < buf_size); i++) {
+		job_id = strtol(rest[i], &next_str, 10);
+		if (job_id <= 0) {
 			error ("Invalid job_id %s", rest[i]);
 			exit (1);
 		}
-		opt.job_id[i] = tmp_l;
+		opt.job_id[buf_offset] = job_id;
+
+		if ((next_str[0] == '_') && (next_str[1] == '[')) {
+			hostlist_t hl;
+			char save_char, *next_elem;
+			char *end_char = strchr(next_str + 2, ']');
+			if (!end_char || (end_char[1] != '\0')) {
+				error ("Invalid job id %s", rest[i]);
+				exit (1);
+			}
+			save_char = end_char[1];
+			end_char[1] = '\0';
+			hl = hostlist_create(next_str + 1);
+			if (!hl) {
+				error ("Invalid job id %s", rest[i]);
+				exit (1);
+			}
+			while ((next_elem = hostlist_shift(hl))) {
+				tmp_l = strtol(next_elem, &next_str, 10);
+				if (tmp_l < 0) {
+					error ("Invalid job id %s", rest[i]);
+					exit (1);
+				}
+				opt.job_id[buf_offset] = job_id;
+				opt.array_id[buf_offset] = tmp_l;
+				opt.step_id[buf_offset] = SLURM_BATCH_SCRIPT;
+				free(next_elem);
+				if (++buf_offset >= buf_size)
+					break;
+			}
+			hostlist_destroy(hl);
+			end_char[1] = save_char;
+			/* No step ID support for job array range */
+			break;
+		} else if (next_str[0] == '_') {
+			tmp_l = strtol(&next_str[1], &next_str, 10);
+			if (tmp_l < 0) {
+				error ("Invalid job id %s", rest[i]);
+				exit (1);
+			}
+			opt.array_id[buf_offset] = tmp_l;
+		} else {
+			opt.array_id[buf_offset] = (uint16_t) NO_VAL;
+		}
+
 
 		if (next_str[0] == '.') {
 			tmp_l = strtol(&next_str[1], &next_str, 10);
@@ -471,15 +513,17 @@ _xlate_job_step_ids(char **rest)
 				error ("Invalid job id %s", rest[i]);
 				exit (1);
 			}
-			opt.step_id[i] = tmp_l;
+			opt.step_id[buf_offset] = tmp_l;
 		} else
-			opt.step_id[i] = SLURM_BATCH_SCRIPT;
+			opt.step_id[buf_offset] = SLURM_BATCH_SCRIPT;
+		buf_offset++;
 
 		if (next_str[0] != '\0') {
 			error ("Invalid job ID %s", rest[i]);
 			exit (1);
 		}
 	}
+	opt.job_cnt = buf_offset;
 }
 
 
@@ -548,12 +592,12 @@ static void _usage(void)
 	printf("Usage: scancel [-A account] [--batch] [--interactive] [-n job_name]\n");
 	printf("               [-p partition] [-Q] [-q qos] [-R reservation][-s signal | integer]\n");
 	printf("               [-t PENDING | RUNNING | SUSPENDED] [--usage] [-u user_name]\n");
-	printf("               [-V] [-v] [-w hosts...] [--wckey=wckey] [job_id[.step_id]]\n");
+	printf("               [-V] [-v] [-w hosts...] [--wckey=wckey] [job_id[_array_id][.step_id]]\n");
 }
 
 static void _help(void)
 {
-	printf("Usage: scancel [OPTIONS] [job_id[.step_id]]\n");
+	printf("Usage: scancel [OPTIONS] [job_id[_array_id][.step_id]]\n");
 	printf("  -A, --account=account           act only on jobs charging this account\n");
 	printf("  -b, --batch                     signal batch shell for specified job\n");
 /*	printf("      --ctld                      send request directly to slurmctld\n"); */

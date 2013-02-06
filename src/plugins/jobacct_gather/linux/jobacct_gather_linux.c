@@ -441,7 +441,7 @@ extern void jobacct_gather_p_poll_data(
 		return;
 	}
 
-	if(processing) {
+	if (processing) {
 		debug("already running, returning");
 		return;
 	}

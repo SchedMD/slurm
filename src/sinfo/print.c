@@ -438,7 +438,7 @@ int _print_cpus_aiot(sinfo_data_t * sinfo_data, int width,
 	char tmpo[8];
 	char tmpt[8];
 	if (sinfo_data) {
-		if(params.cluster_flags & CLUSTER_FLAG_BG) {
+		if (params.cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit((float)sinfo_data->cpus_alloc,
 					 tmpa, sizeof(tmpa), UNIT_NONE);
 			convert_num_unit((float)sinfo_data->cpus_idle,
@@ -687,7 +687,7 @@ int _print_node_list(sinfo_data_t * sinfo_data, int width,
 		xfree(tmp);
 	} else {
 		char *title = "NODELIST";
-		if(params.cluster_flags & CLUSTER_FLAG_BG)
+		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			title = "MIDPLANELIST";
 
 		_print_str(title, width, right_justify, false);
@@ -726,7 +726,7 @@ int _print_nodes_t(sinfo_data_t * sinfo_data, int width,
 	char id[FORMAT_STRING_SIZE];
 	char tmp[8];
 	if (sinfo_data) {
-		if(params.cluster_flags & CLUSTER_FLAG_BG)
+		if (params.cluster_flags & CLUSTER_FLAG_BG)
 			convert_num_unit((float)sinfo_data->nodes_total,
 					 tmp, sizeof(tmp), UNIT_NONE);
 		else
@@ -749,7 +749,7 @@ int _print_nodes_ai(sinfo_data_t * sinfo_data, int width,
 	char tmpa[8];
 	char tmpi[8];
 	if (sinfo_data) {
-		if(params.cluster_flags & CLUSTER_FLAG_BG) {
+		if (params.cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit((float)sinfo_data->nodes_alloc,
 					 tmpa, sizeof(tmpa), UNIT_NONE);
 			convert_num_unit((float)sinfo_data->nodes_idle,
@@ -780,7 +780,7 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 	char tmpo[8];
 	char tmpt[8];
 	if (sinfo_data) {
-		if(params.cluster_flags & CLUSTER_FLAG_BG) {
+		if (params.cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit((float)sinfo_data->nodes_alloc,
 					 tmpa, sizeof(tmpa), UNIT_NONE);
 			convert_num_unit((float)sinfo_data->nodes_idle,
@@ -988,10 +988,18 @@ int _print_size(sinfo_data_t * sinfo_data, int width,
 int _print_state_compact(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
+	char *upper_state, *lower_state;
+	uint16_t my_state;
+
 	if (sinfo_data && sinfo_data->nodes_total) {
-		char *upper_state = node_state_string_compact(
-			sinfo_data->node_state);
-		char *lower_state = _str_tolower(upper_state);
+		my_state = sinfo_data->node_state;
+		if (sinfo_data->cpus_alloc &&
+		    (sinfo_data->cpus_alloc != sinfo_data->cpus_total)) {
+			my_state &= NODE_STATE_FLAGS;
+			my_state |= NODE_STATE_MIXED;
+		}
+		upper_state = node_state_string_compact(my_state);
+		lower_state = _str_tolower(upper_state);
 		_print_str(lower_state, width, right_justify, true);
 		xfree(lower_state);
 	} else if (sinfo_data)
@@ -1007,9 +1015,18 @@ int _print_state_compact(sinfo_data_t * sinfo_data, int width,
 int _print_state_long(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
+	char *upper_state, *lower_state;
+	uint16_t my_state;
+
 	if (sinfo_data && sinfo_data->nodes_total) {
-		char *upper_state = node_state_string(sinfo_data->node_state);
-		char *lower_state = _str_tolower(upper_state);
+		my_state = sinfo_data->node_state;
+		if (sinfo_data->cpus_alloc &&
+		    (sinfo_data->cpus_alloc != sinfo_data->cpus_total)) {
+			my_state &= NODE_STATE_FLAGS;
+			my_state |= NODE_STATE_MIXED;
+		}
+		upper_state = node_state_string(my_state);
+		lower_state = _str_tolower(upper_state);
 		_print_str(lower_state, width, right_justify, true);
 		xfree(lower_state);
 	} else if (sinfo_data)

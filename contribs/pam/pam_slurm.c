@@ -321,8 +321,8 @@ _slurm_match_allocation(uid_t uid)
 
 	DBG ("does uid %ld have \"%s\" allocated?", uid, nodename);
 
-	if (slurm_load_jobs((time_t) 0, &msg, SHOW_ALL) < 0) {
-		_log_msg(LOG_ERR, "slurm_load_jobs: %s",
+	if (slurm_load_job_user(&msg, uid, SHOW_ALL) < 0) {
+		_log_msg(LOG_ERR, "slurm_load_job_user: %s",
 			 slurm_strerror(errno));
 		return 0;
 	}
@@ -332,7 +332,7 @@ _slurm_match_allocation(uid_t uid)
 	for (i = 0; i < msg->record_count; i++) {
 		job_info_t *j = &msg->job_array[i];
 
-		if (  (j->user_id == uid) && (j->job_state == JOB_RUNNING)) {
+		if (j->job_state == JOB_RUNNING) {
 
 			DBG ("jobid %ld: nodes=\"%s\"", j->job_id, j->nodes);
 

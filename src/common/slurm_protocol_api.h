@@ -220,6 +220,13 @@ char *slurm_get_gres_plugins(void);
  */
 char *slurm_get_job_submit_plugins(void);
 
+/* slurm_get_slurmctld_plugstack
+ * get slurmctld_plugstack from slurmctld_conf object from
+ * slurmctld_conf object
+ * RET char *   - slurmctld_plugstack, MUST be xfreed by caller
+ */
+char *slurm_get_slurmctld_plugstack(void);
+
 /* slurm_get_plugin_dir
  * get plugin directory from slurmctld_conf object from slurmctld_conf object
  * RET char *   - plugin directory, MUST be xfreed by caller
@@ -406,7 +413,7 @@ int slurm_set_accounting_storage_host(char *host);
 /* slurm_get_accounting_storage_enforce
  * returns what level to enforce associations at
  */
-int slurm_get_accounting_storage_enforce(void);
+uint16_t slurm_get_accounting_storage_enforce(void);
 
 /* slurm_get_is_association_based_accounting
  * returns if we are doing accounting by associations
@@ -514,6 +521,12 @@ uint32_t slurm_get_jobcomp_port(void);
  * RET 0 or error code
  */
 int slurm_set_jobcomp_port(uint32_t port);
+
+/* slurm_get_keep_alive_time
+ * returns keep_alive_time slurmctld_conf object
+ * RET uint16_t        - keep_alive_time
+ */
+uint16_t slurm_get_keep_alive_time(void);
 
 /* slurm_get_kill_wait
  * returns kill_wait from slurmctld_conf object

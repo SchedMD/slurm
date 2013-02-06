@@ -226,8 +226,6 @@ static int _num_feature_count(struct job_record *job_ptr)
 		return rc;
 
 	feat_iter = list_iterator_create(detail_ptr->feature_list);
-	if (feat_iter == NULL)
-		fatal("list_iterator_create: malloc failure");
 	while ((feat_ptr = (struct feature_record *) list_next(feat_iter))) {
 		if (feat_ptr->count)
 			rc++;
@@ -270,8 +268,6 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		list_size = list_count(detail_ptr->feature_list);
 		feat_cnt_orig = xmalloc(sizeof(uint16_t) * list_size);
 		feat_iter = list_iterator_create(detail_ptr->feature_list);
-		if (feat_iter == NULL)
-			fatal("list_iterator_create: malloc failure");
 		while ((feat_ptr =
 			(struct feature_record *) list_next(feat_iter))) {
 			high_cnt = MAX(high_cnt, feat_ptr->count);
@@ -530,6 +526,7 @@ static int _attempt_backfill(void)
 	uint32_t *uid = NULL, nuser = 0;
 	uint16_t *njobs = NULL;
 	bool already_counted;
+	uint32_t reject_array_job_id = 0;
 
 #ifdef HAVE_CRAY
 	/*
@@ -605,6 +602,12 @@ static int _attempt_backfill(void)
 		xfree(job_queue_rec);
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;	/* started in other partition */
+		if (job_ptr->array_task_id != (uint16_t) NO_VAL) {
+			if (reject_array_job_id == job_ptr->array_job_id)
+				continue;  /* already rejected array element */
+			/* assume reject whole array for now, clear if OK */
+			reject_array_job_id = job_ptr->array_job_id;
+		}
 		job_ptr->part_ptr = part_ptr;
 
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
@@ -818,6 +821,8 @@ static int _attempt_backfill(void)
 		if (job_ptr->start_time <= now) {
 			int rc = _start_job(job_ptr, resv_bitmap);
 			if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE)){
+				if (orig_time_limit == NO_VAL)
+					orig_time_limit = comp_time_limit;
 				job_ptr->time_limit = orig_time_limit;
 				job_ptr->end_time = job_ptr->start_time +
 						    (orig_time_limit * 60);
@@ -844,6 +849,7 @@ static int _attempt_backfill(void)
 				break;
 			} else {
 				/* Started this job, move to next one */
+				reject_array_job_id = 0;
 				continue;
 			}
 		} else
@@ -882,6 +888,7 @@ static int _attempt_backfill(void)
 		 */
 		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE))
 			continue;
+		reject_array_job_id = 0;
 		bit_not(avail_bitmap);
 		_add_reservation(job_ptr->start_time, end_reserve,
 				 avail_bitmap, node_space, &node_space_recs);

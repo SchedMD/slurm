@@ -389,12 +389,12 @@ int setup_env(env_t *env, bool preserve_env)
 	}
 
 	if (!preserve_env && env->ntasks) {
-		if(setenvf(&env->env, "SLURM_NTASKS", "%d", env->ntasks)) {
+		if (setenvf(&env->env, "SLURM_NTASKS", "%d", env->ntasks)) {
 			error("Unable to set SLURM_NTASKS "
 			      "environment variable");
 			rc = SLURM_FAILURE;
 		}
-		if(setenvf(&env->env, "SLURM_NPROCS", "%d", env->ntasks)) {
+		if (setenvf(&env->env, "SLURM_NPROCS", "%d", env->ntasks)) {
 			error("Unable to set SLURM_NPROCS "
 			      "environment variable");
 			rc = SLURM_FAILURE;
@@ -437,13 +437,13 @@ int setup_env(env_t *env, bool preserve_env)
 	}
 
 	_set_distribution(env->distribution, &dist, &lllp_dist);
-	if(dist)
+	if (dist)
 		if (setenvf(&env->env, "SLURM_DISTRIBUTION", "%s", dist)) {
 			error("Can't set SLURM_DISTRIBUTION env variable");
 			rc = SLURM_FAILURE;
 		}
 
-	if(env->distribution == SLURM_DIST_PLANE)
+	if (env->distribution == SLURM_DIST_PLANE)
 		if (setenvf(&env->env, "SLURM_DIST_PLANESIZE", "%u",
 			    env->plane_size)) {
 			error("Can't set SLURM_DIST_PLANESIZE "
@@ -451,7 +451,7 @@ int setup_env(env_t *env, bool preserve_env)
 			rc = SLURM_FAILURE;
 		}
 
-	if(lllp_dist)
+	if (lllp_dist)
 		if (setenvf(&env->env, "SLURM_DIST_LLLP", "%s", lllp_dist)) {
 			error("Can't set SLURM_DIST_LLLP env variable");
 			rc = SLURM_FAILURE;
@@ -799,7 +799,7 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_FAILURE;
 	}
 
-	if(cluster_flags & CLUSTER_FLAG_AIX) {
+	if (cluster_flags & CLUSTER_FLAG_AIX) {
 		char res_env[128];
 		char *debug_env = (char *)getenv("SLURM_LL_API_DEBUG");
 		int  debug_num = 0;
@@ -875,7 +875,7 @@ static char *_uint16_array_to_str(int array_len, const uint16_t *array)
 	char *sep = ",";  /* seperator */
 	char *str = xstrdup("");
 
-	if(array == NULL)
+	if (array == NULL)
 		return str;
 
 	for (i = 0; i < array_len; i++) {
@@ -1041,7 +1041,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", node_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", alloc->node_list);
 
-	if(num_tasks == NO_VAL) {
+	if (num_tasks == NO_VAL) {
 		/* If we know how many tasks we are going to do then
 		   we set SLURM_TASKS_PER_NODE */
 		int i=0;
@@ -1054,20 +1054,20 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 			num_tasks += alloc->cpu_count_reps[i]
 				* alloc->cpus_per_node[i];
 		}
-		if((int)desc->cpus_per_task > 1
+		if ((int)desc->cpus_per_task > 1
 		   && desc->cpus_per_task != (uint16_t)NO_VAL)
 			num_tasks /= desc->cpus_per_task;
 		//num_tasks = desc->min_cpus;
 	}
 
-	if(desc->task_dist == SLURM_DIST_ARBITRARY) {
+	if (desc->task_dist == SLURM_DIST_ARBITRARY) {
 		tmp = desc->req_nodes;
 		env_array_overwrite_fmt(dest, "SLURM_ARBITRARY_NODELIST",
 					"%s", tmp);
 	} else
 		tmp = alloc->node_list;
 
-	if(!(step_layout = slurm_step_layout_create(tmp,
+	if (!(step_layout = slurm_step_layout_create(tmp,
 						    alloc->cpus_per_node,
 						    alloc->cpu_count_reps,
 						    node_cnt,
@@ -1134,10 +1134,16 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", batch->job_id);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u", num_nodes);
-	if(cluster_flags & CLUSTER_FLAG_BG)
+	if (cluster_flags & CLUSTER_FLAG_BG) {
 		env_array_overwrite_fmt(dest, "SLURM_BG_NUM_NODES",
 					"%u", num_nodes);
-
+	}
+	if (batch->array_task_id != (uint16_t) NO_VAL) {
+		env_array_overwrite_fmt(dest, "SLURM_ARRAY_JOB_ID", "%u",
+					batch->array_job_id);
+		env_array_overwrite_fmt(dest, "SLURM_ARRAY_TASK_ID", "%u",
+					batch->array_task_id);
+	}
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", batch->nodes);
 	env_array_overwrite_fmt(dest, "SLURM_NODE_ALIASES", "%s",
 				batch->alias_list);
@@ -1163,7 +1169,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	else
 		cpus_per_task = 1;	/* default value */
 
-	if(num_tasks) {
+	if (num_tasks) {
 		env_array_overwrite_fmt(dest, "SLURM_NTASKS", "%u",
 					num_tasks);
 		/* keep around for old scripts */
@@ -1173,21 +1179,21 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 		num_tasks = num_cpus / cpus_per_task;
 	}
 
-	if((tmp = getenvp(*dest, "SLURM_ARBITRARY_NODELIST"))) {
+	if ((tmp = getenvp(*dest, "SLURM_ARBITRARY_NODELIST"))) {
 		task_dist = SLURM_DIST_ARBITRARY;
 	} else {
 		tmp = batch->nodes;
 		task_dist = SLURM_DIST_BLOCK;
 	}
 
-	if(!(step_layout = slurm_step_layout_create(tmp,
-						    batch->cpus_per_node,
-						    batch->cpu_count_reps,
-						    num_nodes,
-						    num_tasks,
-						    cpus_per_task,
-						    task_dist,
-						    (uint16_t)NO_VAL)))
+	if (!(step_layout = slurm_step_layout_create(tmp,
+						     batch->cpus_per_node,
+						     batch->cpu_count_reps,
+						     num_nodes,
+						     num_tasks,
+						     cpus_per_task,
+						     task_dist,
+						     (uint16_t)NO_VAL)))
 		return SLURM_ERROR;
 
 	tmp = _uint16_array_to_str(step_layout->node_cnt,

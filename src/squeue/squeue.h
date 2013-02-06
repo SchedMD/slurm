@@ -70,14 +70,15 @@
 #include "src/common/slurmdb_defs.h"
 #include "src/squeue/print.h"
 
-struct job_step {
+typedef struct job_step {
 	uint32_t job_id;
+	uint16_t array_id;
 	uint32_t step_id;
-};
-typedef struct job_step squeue_job_step_t;
+} squeue_job_step_t;
 
 struct squeue_parameters {
 	bool all_flag;
+	bool array_flag;
 	bool job_flag;
 	bool start_flag;
 	bool step_flag;
@@ -101,6 +102,9 @@ struct squeue_parameters {
 	char* states;
 	char* steps;
 	char* users;
+
+	uint32_t job_id;	/* set if request for a single job ID */
+	uint32_t user_id;	/* set if request for a single user ID */
 
 	List  account_list;
 	List  format_list;

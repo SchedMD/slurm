@@ -77,6 +77,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
 	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
+	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_gpl_licensed.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_iso.m4 \
@@ -132,6 +133,8 @@ BLUEGENE_LOADED = @BLUEGENE_LOADED@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CHECK_CFLAGS = @CHECK_CFLAGS@
+CHECK_LIBS = @CHECK_LIBS@
 CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -152,6 +155,9 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FREEIPMI_CPPFLAGS = @FREEIPMI_CPPFLAGS@
+FREEIPMI_LDFLAGS = @FREEIPMI_LDFLAGS@
+FREEIPMI_LIBS = @FREEIPMI_LIBS@
 GLIB_CFLAGS = @GLIB_CFLAGS@
 GLIB_COMPILE_RESOURCES = @GLIB_COMPILE_RESOURCES@
 GLIB_GENMARSHAL = @GLIB_GENMARSHAL@
@@ -199,7 +205,6 @@ NCURSES = @NCURSES@
 NM = @NM@
 NMEDIT = @NMEDIT@
 NRT_CPPFLAGS = @NRT_CPPFLAGS@
-NRT_LDFLAGS = @NRT_LDFLAGS@
 NUMA_LIBS = @NUMA_LIBS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
@@ -320,15 +325,11 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 EXTRA_DIST = \
-	etc_init_d_munge		\
 	etc_sysconfig_slurm		\
 	libalps_test_programs.tar.gz	\
-	munge_build_script.sh		\
 	opt_modulefiles_slurm		\
-	pam_job.c			\
-	slurm-build-script.sh
+	pam_job.c
 
-_perldir = $(exec_prefix)`perl -e 'use Config; $$T=$$Config{installsitearch}; $$P=$$Config{installprefix}; $$P1="$$P/local"; $$T =~ s/$$P1//; $$T =~ s/$$P//; print $$T;'`
 all: all-am
 
 .SUFFIXES:
@@ -441,6 +442,8 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+clean: clean-am
+
 clean-am: clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
@@ -518,26 +521,6 @@ uninstall-am:
 	maintainer-clean-generic mostlyclean mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am
 
-
-srun:
-
-install-binSCRIPTS: $(bin_SCRIPTS)
-	@$(NORMAL_INSTALL)
-	test -z "$(DESTDIR)$(bindir)" || $(mkdir_p) "$(DESTDIR)$(bindir)"
-	@list='$(bin_SCRIPTS)'; for p in $$list; do \
-	   echo "sed 's%use lib .*%use lib qw(${_perldir});%' $(top_srcdir)/contribs/cray/$$p.pl | sed 's%BINDIR%@bindir@%' > $(DESTDIR)$(bindir)/$$p"; \
-	         sed "s%use lib .*%use lib qw(${_perldir});%" $(top_srcdir)/contribs/cray/$$p.pl | sed "s%BINDIR%@bindir@%" > $(DESTDIR)$(bindir)/$$p; \
-	   chmod 755 $(DESTDIR)$(bindir)/$$p;\
-	done
-
-uninstall-binSCRIPTS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(bin_SCRIPTS)'; for p in $$list; do \
-	  echo " rm -f '$(DESTDIR)$(bindir)/$$p'"; \
-	  rm -f "$(DESTDIR)$(bindir)/$$p"; \
-	done
-
-clean:
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

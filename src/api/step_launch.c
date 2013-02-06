@@ -647,8 +647,10 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	pthread_mutex_lock(&sls->lock);
 	pmi_kvs_free();
 
-	if (sls->msg_handle)
+	if (sls->msg_handle) {
 		eio_handle_destroy(sls->msg_handle);
+		sls->msg_handle = NULL;
+	}
 
 	/* Shutdown the io timeout thread, if one exists */
 	if (sls->io_timeout_thread_created) {
@@ -667,6 +669,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 		pthread_mutex_lock(&sls->lock);
 
 		client_io_handler_destroy(sls->io.normal);
+		sls->io.normal = NULL;
 	}
 
 	mpi_hook_client_fini(sls->mpi_state);
@@ -804,8 +807,9 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls = xmalloc(sizeof(struct step_launch_state));
 	sls->slurmctld_socket_fd = -1;
 #if defined HAVE_BGQ
-//#if defined HAVE_BGQ && defined HAVE_BG_FILES
-	sls->tasks_requested = 1;
+	/* This means we are on an emulated system, so only launch 1
+	   task to avoid overflows with large jobs. */
+	layout->node_cnt = layout->task_cnt = sls->tasks_requested = 1;
 #else
 	/* Hack for LAM-MPI's lamboot, launch one task per node */
 	if (mpi_hook_client_single_task_per_node())
@@ -1002,7 +1006,7 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 	/* multiple jobs (easily induced via no_alloc) and highly
 	 * parallel jobs using PMI sometimes result in slow message
 	 * responses and timeouts. Raise the default timeout for srun. */
-	if(!message_socket_ops.timeout)
+	if (!message_socket_ops.timeout)
 		message_socket_ops.timeout = slurm_get_msg_timeout() * 8000;
 
 	for (i = 0; i < sls->num_resp_port; i++) {

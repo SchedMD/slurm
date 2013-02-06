@@ -29,6 +29,10 @@
 #    slurm_with    builds option by default unless --without is specified
 #    slurm_without builds option iff --with specified
 #
+%define _prefix /usr/local
+%define _slurm_sysconfdir %{_prefix}/etc/slurm
+%define _mandir %{_prefix}/share/man
+%define _infodir %{_prefix}/share/info
 %define slurm_with_opt() %{expand:%%{!?_without_%{1}:%%global slurm_with_%{1} 1}}
 %define slurm_without_opt() %{expand:%%{?_with_%{1}:%%global slurm_with_%{1} 1}}
 #
@@ -170,7 +174,7 @@ partition management, job management, scheduling and accounting modules.
 #  Allow override of sysconfdir via _slurm_sysconfdir.
 #  Note 'global' instead of 'define' needed here to work around apparent
 #   bug in rpm macro scoping (or something...)
-%{!?_slurm_sysconfdir: %global _slurm_sysconfdir /etc/slurm}
+%{!?_slurm_sysconfdir: %global _slurm_sysconfdir %{_prefix}/etc/slurm}
 %define _sysconfdir %_slurm_sysconfdir
 
 #
@@ -548,6 +552,10 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_pgsql.so            &&
    echo %{_libdir}/slurm/jobcomp_pgsql.so            >> $LIST
 
 LIST=./plugins.files
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_ipmi.so  &&
+   echo %{_libdir}/slurm/acct_gather_energy_ipmi.so  >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_rapl.so  &&
+   echo %{_libdir}/slurm/acct_gather_energy_rapl.so  >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so           &&
    echo %{_libdir}/slurm/crypto_openssl.so           >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/select_bluegene.so          &&
@@ -584,6 +592,8 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,0755)
 %{_mandir}/../doc
 %{_bindir}/s*
+%exclude %{_bindir}/sjobexitmod
+%exclude %{_bindir}/sjstat
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
 %{_sbindir}/slurmstepd
@@ -706,9 +716,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/accounting_storage_filetxt.so
 %{_libdir}/slurm/accounting_storage_none.so
 %{_libdir}/slurm/accounting_storage_slurmdbd.so
-%{_libdir}/slurm/acct_gather_energy_ipmi.so
 %{_libdir}/slurm/acct_gather_energy_none.so
-%{_libdir}/slurm/acct_gather_energy_rapl.so
 %{_libdir}/slurm/checkpoint_none.so
 %{_libdir}/slurm/checkpoint_ompi.so
 %{_libdir}/slurm/gres_gpu.so
@@ -738,7 +746,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/preempt_qos.so
 %{_libdir}/slurm/priority_basic.so
 %{_libdir}/slurm/priority_multifactor.so
-%{_libdir}/slurm/priority_multifactor2.so
 %{_libdir}/slurm/proctrack_cgroup.so
 %{_libdir}/slurm/proctrack_linuxproc.so
 %{_libdir}/slurm/proctrack_pgid.so

@@ -101,7 +101,7 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 			      bool test_only)
 {
 	uint16_t cpus;
-	uint32_t avail_mem, req_mem, gres_cpus;
+	uint32_t avail_mem, req_mem, gres_cpus, gres_cores, cpus_per_core;
 	int core_start_bit, core_end_bit;
 	struct node_record *node_ptr = node_record_table_ptr + node_i;
 	List gres_list;
@@ -117,7 +117,8 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	core_start_bit = cr_get_coremap_offset(node_i);
 	core_end_bit   = cr_get_coremap_offset(node_i + 1) - 1;
 	node_ptr = select_node_record[node_i].node_ptr;
-
+	cpus_per_core  = select_node_record[node_i].cpus /
+			 (core_end_bit - core_start_bit + 1);
 	if ((cr_type & CR_MEMORY) && cpus) {
 		req_mem   = job_ptr->details->pn_min_memory & ~MEM_PER_CPU;
 		avail_mem = select_node_record[node_i].real_memory;
@@ -131,11 +132,14 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		gres_list = node_usage[node_i].gres_list;
 	else
 		gres_list = node_ptr->gres_list;
-	gres_cpus = gres_plugin_job_test(job_ptr->gres_list,
-					 gres_list, test_only,
-					 core_map, core_start_bit,
-					 core_end_bit, job_ptr->job_id,
-					 node_ptr->name);
+	gres_cores = gres_plugin_job_test(job_ptr->gres_list,
+					  gres_list, test_only,
+					  core_map, core_start_bit,
+					  core_end_bit, job_ptr->job_id,
+					  node_ptr->name);
+	gres_cpus = gres_cores;
+	if (gres_cpus != NO_VAL)
+		gres_cpus *= cpus_per_core;
 	if ((gres_cpus < job_ptr->details->ntasks_per_node) ||
 	    ((job_ptr->details->cpus_per_task > 1) &&
 	     (gres_cpus < job_ptr->details->cpus_per_task)))
@@ -215,8 +219,9 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			      enum node_cr_state job_node_req)
 {
 	struct node_record *node_ptr;
-	uint32_t i, free_mem, gres_cpus, min_mem;
+	uint32_t i, free_mem, gres_cpus, gres_cores, min_mem;
 	int i_first, i_last;
+	int core_start_bit, core_end_bit, cpus_per_core;
 	List gres_list;
 
 	if (job_ptr->details->pn_min_memory & MEM_PER_CPU)
@@ -232,7 +237,10 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 		if (!bit_test(bitmap, i))
 			continue;
 		node_ptr = select_node_record[i].node_ptr;
-
+		core_start_bit = cr_get_coremap_offset(i);
+		core_end_bit   = cr_get_coremap_offset(i+1) - 1;
+		cpus_per_core  = select_node_record[i].cpus /
+				 (core_end_bit - core_start_bit + 1);
 		/* node-level memory check */
 		if ((job_ptr->details->pn_min_memory) &&
 		    (cr_type & CR_MEMORY)) {
@@ -251,10 +259,13 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			gres_list = node_usage[i].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_cpus = gres_plugin_job_test(job_ptr->gres_list, 
-						 gres_list, true,
-						 NULL, 0, 0, job_ptr->job_id,
-						 node_ptr->name);
+		gres_cores = gres_plugin_job_test(job_ptr->gres_list,
+						  gres_list, true,
+						  NULL, 0, 0, job_ptr->job_id,
+						  node_ptr->name);
+		gres_cpus = gres_cores;
+		if (gres_cpus != NO_VAL)
+			gres_cpus *= cpus_per_core;
 		if (gres_cpus == 0) {
 			debug3("select/serial: node %s lacks gres",
 			       node_ptr->name);
@@ -327,8 +338,6 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map)
 	nodes = bit_size(node_map);
 	size = cr_get_coremap_offset(nodes);
 	bitstr_t *core_map = bit_alloc(size);
-	if (!core_map)
-		fatal("bit_alloc: malloc failure");
 
 	i_first = bit_ffs(node_map);
 	if (i_first >= 0)
@@ -853,8 +862,6 @@ alloc_job:
 	job_res                   = create_job_resources();
 	job_res->node_bitmap      = bit_copy(bitmap);
 	job_res->nodes            = bitmap2node_name(bitmap);
-	if (job_res->node_bitmap == NULL)
-		fatal("bit_copy malloc failure");
 	job_res->nhosts           = bit_set_count(bitmap);
 	job_res->ncpus            = job_res->nhosts;
 	if (job_ptr->details->ntasks_per_node)

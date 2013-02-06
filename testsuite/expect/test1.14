@@ -69,7 +69,7 @@ make_bash_script $file_in "
     inx=\$((inx+1))
   done
   $bin_sleep 2
-  $srun -v --exclusive -n1 $bin_printenv $node_name_env &
+  $srun -v --exclusive -n1 $scontrol show steps &
   wait
 "
 
@@ -112,16 +112,11 @@ if {[wait_for_file $file_out] != 0} {
 	send_user "\nFAILURE: Output file $file_out is missing\n"
 	exit 1
 }
-set match1 0
-set match2 0
+set matches 0
 spawn $bin_cat $file_out
 expect {
-	-re "Job step creation temporarily disabled, retrying" {
-		incr match1
-		exp_continue
-	}
-	-re "Job step created" {
-		incr match2
+	-re "StepId=$job_id" {
+		incr matches
 		exp_continue
 	}
 	eof {
@@ -129,9 +124,9 @@ expect {
 	}
 }
 
-if { $match1 != 1 || $match2 != 1 } {
+if { $matches != 1 } {
 	send_user "\nFAILURE: Problem with exclusive resource allocation "
-	send_user "for step ($match1, $match2)\n"
+	send_user "for step ($matches)\n"
 	set exit_code 1
 }
 
@@ -156,7 +151,7 @@ make_bash_script $file_in "
     inx=\$((inx+1))
   done
   $bin_sleep 2
-  $srun --exclusive -n1 --immediate hostname &
+  $srun -v --exclusive -n1 --immediate $scontrol show steps &
   wait
 "
 
@@ -199,17 +194,17 @@ if {[wait_for_file $file_out] != 0} {
 	send_user "\nFAILURE: Output file $file_out is missing\n"
 	exit 1
 }
-set match1 0
+set matches 0
 spawn $bin_cat $file_out
 expect {
-	-re "Job step creation temporarily disabled, retrying" {
+	-re "StepId=$job_id" {
 		send_user "\nFAILURE: Problem --exclusive and --immediate option for step\n"
 		set exit_code 1
 		exp_continue
 	}
 	-re "Unable to create job step" {
 		send_user "This error was expected, no worries\n"
-		incr match1
+		incr matches
 		exp_continue
 	}
 	eof {
@@ -217,8 +212,8 @@ expect {
 	}
 }
 
-if { $match1 != 1 } {
-	send_user "\nFAILURE: Problem --exclusive and --immediate option for step\n"
+if { $matches != 1 } {
+	send_user "\nFAILURE: Problem --exclusive and --immediate option for step ($matches)\n"
 	set exit_code 1
 }
 

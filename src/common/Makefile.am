@@ -8,7 +8,6 @@
 # only be 1 address per symbol.  If you link to the libcommon.la in
 # a plugin you will get 2 addresses for one symbol which could lead to problems.
 
-AM_CPPFLAGS = -DGRES_CONFIG_FILE=\"$(sysconfdir)/gres.conf\"
 AUTOMAKE_OPTIONS = foreign
 
 if HAVE_UNSETENV
@@ -45,6 +44,8 @@ libcommon_la_SOURCES = 			\
 	forward.c forward.h     	\
 	strlcpy.c strlcpy.h		\
 	list.c list.h 			\
+	xtree.c xtree.h			\
+	xhash.c xhash.h			\
 	net.c net.h                     \
 	log.c log.h			\
 	cbuf.c cbuf.h			\
@@ -119,8 +120,11 @@ libcommon_la_SOURCES = 			\
 	node_conf.h node_conf.c		\
 	gres.h gres.c
 
-EXTRA_libcommon_la_SOURCES = 	\
-	$(extra_unsetenv_src)
+EXTRA_libcommon_la_SOURCES = 		\
+	$(extra_unsetenv_src)		\
+	uthash/LICENSE			\
+	uthash/README			\
+	uthash/uthash.h
 
 libdaemonize_la_SOURCES =  		\
 	daemonize.c       	 	\

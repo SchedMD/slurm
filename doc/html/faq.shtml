@@ -114,7 +114,7 @@ jobid") sometimes not display a job's estimated start time?</a></li>
   execute on DOWN nodes?</a></li>
 <li><a href="#batch_lost">What is the meaning of the error
   &quot;Batch JobId=# missing from master node, killing it&quot;?</a></li>
-<li><a href="#accept_again">What does the messsage
+<li><a href="#accept_again">What does the message
   &quot;srun: error: Unable to accept connection: Resources temporarily unavailable&quot;
   indicate?</a></li>
 <li><a href="#task_prolog">How could I automatically print a job's
@@ -143,6 +143,9 @@ not being enforced?</a></li>
 <li><a href="#restore_priority">After manually setting a job priority value,
 how can it's priority value be returned to being managed by the
 priority/multifactor plugin?</a></li>
+<li><a href="#health_check_example">Does any one have an example node health check
+script for Slurm?</a></li>
+<li><a href="#add_nodes">What process should I follow to add nodes to Slurm?</a></li>
 </ol>
 
 
@@ -573,7 +576,7 @@ full advantage of this limit (e.g. by adding something like
 <i>"ulimit -l unlimited"</i> to the <i>/etc/init.d/slurm</i>
 script used to initiate <i>slurmd</i>). It may also be desirable to lock
 the slurmd daemon's memory to help insure that it keeps responding if memory
-swapping begings. A sample <i>/etc/sysconfig/slurm</i> file is shown below.
+swapping begins. A sample <i>/etc/sysconfig/slurm</i> file is shown below.
 Related information about <a href="#pam">PAM</a> is also available.</p>
 <pre>
 #
@@ -692,7 +695,7 @@ job to be expanded.</li>
 <p>Use the <i>scontrol</i> command to change a job's size either by specifying
 a new node count (<i>NumNodes=</i>) for the job or identify the specific nodes
 (<i>NodeList=</i>) that you want the job to retain.
-Any job steps running on the nodes which are reliquished by the job will be
+Any job steps running on the nodes which are relinquished by the job will be
 killed unless initiated with the <i>--no-kill</i> option.
 After the job size is changed, some environment variables created by SLURM
 containing information about the job's environment will no longer be valid and
@@ -749,7 +752,7 @@ into that of the original job by executing:<br>
 The <i>jobid</i> above is that of the job to relinquish it's resources.
 To provides more control over when the job expansion occurs, the resources are
 not merged into the original job until explicitly requested.
-These resources will be transfered to the original job and the scontrol
+These resources will be transferred to the original job and the scontrol
 command will generate a script to reset variables in the second
 job's environment to reflect it's modified resource allocation (which would
 be no resources).
@@ -766,7 +769,7 @@ CPU count, hostlist, etc.), any srun command will only consider the resources
 in the original resource allocation.
 Note that the original job may have active job steps at the time of it's
 expansion, but they will not be effected by the change.
-An example of the proceedure is shown below in which the original job
+An example of the procedure is shown below in which the original job
 allocation waits until the second resource allocation request can be
 satisfied. The job requesting additional resources could also use the sbatch
 command and permit the original job to continue execution at its initial size.
@@ -1352,7 +1355,7 @@ failure that cannot be recovered from. The equivalent message in
 earlier releases of slurm is
 &quot;Master node lost JobId=#, killing it&quot;.
 
-<p><a name="accept_again"><b>33. What does the messsage
+<p><a name="accept_again"><b>33. What does the message
 &quot;srun: error: Unable to accept connection: Resources temporarily unavailable&quot;
 indicate?</b></a><br>
 This has been reported on some larger clusters running SUSE Linux when
@@ -1478,7 +1481,7 @@ simple first-login script that configures the virtual cluster for me.</p>
 <p><a name="core_dump"><b>42. If a SLURM daemon core dumps, where can I find the
 core file?</b></a></br>
 <p>For <i>slurmctld</i> the core file will be in the same directory as its
-log files (<i>SlurmctldLogFile</i>) iif configured using an fully qualified
+log files (<i>SlurmctldLogFile</i>) if configured using an fully qualified
 pathname (starting with "/").
 Otherwise it will be found in directory used for saving state
 (<i>StateSaveLocation</i>).</p>
@@ -1530,11 +1533,35 @@ priority/multifactor plugin?</b></a></br>
 Hold and then release the job as shown below.</p>
 <pre>
 $ scontrol hold &lt;jobid&gt;
-$ scontrol releasae &lt;jobid&gt;
+$ scontrol release &lt;jobid&gt;
 </pre>
+
+<p><a name="health_check_example"><b>47. Does any one have an example node
+health check script for Slurm?</b></a></br>
+Probably the most comprehensive and lightweight health check tool out
+there is
+<a href="http://warewulf.lbl.gov/trac/wiki/Node%20Health%20Check">Node Health Check</a>.  
+It has integration with Slurm as well as Torque resource managers.</p>
+
+<p><a name="add_nodes"><b>48. What process should I follow to add nodes to Slurm?</b></a></br>
+The slurmctld daemon has a multitude of bitmaps to track state of nodes and cores
+in the system. Adding nodes to a running system would require the slurmctld daemon
+rebuild all of those bitmaps, which the developers feel would be safer to do by
+restarting the daemon. Communications from the slurmd daemons on the compute
+nodes to the slurmctld daemon include a configuration file checksum, so you
+probably also want to maintain a common slurm.conf file on all nodes. The
+following procedure is recommended:
+<ol>
+<li>Stop the slurmctld daemon (e.g. "/etc/init.d/slurm stop" on the head node)</li>
+<li>Update the slurm.conf file on all nodes in the cluster</li>
+<li>Restart the slurmctld daemon (e.g. "/etc/init.d/slurm start" on the head node)</li>
+<li>Start the slurmd daemons on the new nodes (e.g. "/etc/init.d/slurm start" on those node)</li>
+<li>Have all slurmd daemons read the new configuration file (e.g.
+"scontrol reconfig", no need to restart the daemons)</li>
+</ol>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 22 September 2012</p>
+<p style="text-align:center;">Last modified 30 January 2013</p>
 
 <!--#include virtual="footer.txt"-->

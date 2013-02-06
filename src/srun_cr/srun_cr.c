@@ -544,9 +544,6 @@ _read_info_from_srun(int srun_fd)
 
 	xfree(nodelist);
 	nodelist = (char *)xmalloc(len + 1);
-	if (!nodelist) {
-		fatal("failed to malloc nodelist: %m");
-	}
 	if (read(srun_fd, nodelist, len + 1) != len + 1) {
 		fatal("failed to read nodelist: %m");
 	}

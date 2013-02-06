@@ -298,6 +298,10 @@ main (int argc, char *argv[])
 		fatal("Unable to clear interconnect state.");
 	switch_g_slurmd_init();
 
+	//	potentially set up node-level thread for energy accounting
+	if (acct_gather_energy_g_start_thread()) {
+		error( "cannot create a power mgmt thread ");
+	}
 	_create_msg_socket();
 
 	conf->pid = getpid();
@@ -529,7 +533,7 @@ _service_connection(void *arg)
 
 	debug3("in the service_connection");
 	slurm_msg_t_init(msg);
-	if((rc = slurm_receive_msg_and_forward(con->fd, con->cli_addr, msg, 0))
+	if ((rc = slurm_receive_msg_and_forward(con->fd, con->cli_addr, msg, 0))
 	   != SLURM_SUCCESS) {
 		error("service_connection: slurm_receive_msg: %m");
 		/* if this fails we need to make sure the nodes we forward
@@ -963,7 +967,7 @@ _reconfigure(void)
 				   stepd->jobid, stepd->stepid);
 		if (fd == -1)
 			continue;
-		if(stepd_reconfig(fd) != SLURM_SUCCESS)
+		if (stepd_reconfig(fd) != SLURM_SUCCESS)
 			debug("Reconfig jobid=%u.%u failed: %m",
 			      stepd->jobid, stepd->stepid);
 		close(fd);
@@ -1511,6 +1515,7 @@ _slurmd_fini(void)
 	slurm_proctrack_fini();
 	slurm_auth_fini();
 	node_fini2();
+	acct_gather_energy_g_end_thread();
 	gres_plugin_fini();
 	slurm_topo_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
@@ -1563,11 +1568,11 @@ int save_cred_state(slurm_cred_ctx_t ctx)
 		goto cleanup;
 	}
 	(void) unlink(old_file);
-	if(link(reg_file, old_file))
+	if (link(reg_file, old_file))
 		debug4("unable to create link for %s -> %s: %m",
 		       reg_file, old_file);
 	(void) unlink(reg_file);
-	if(link(new_file, reg_file))
+	if (link(new_file, reg_file))
 		debug4("unable to create link for %s -> %s: %m",
 		       new_file, reg_file);
 	(void) unlink(new_file);
@@ -1700,6 +1705,7 @@ static void _update_logging(void)
 {
 	log_options_t *o = &conf->log_opts;
 	slurm_ctl_conf_t *cf;
+	char *log_fname = NULL;
 
 	/*
 	 * Initialize debug level if not already set
@@ -1723,12 +1729,14 @@ static void _update_logging(void)
 	 */
 	if (conf->daemonize) {
 		o->stderr_level = LOG_LEVEL_QUIET;
-		if (conf->logfile)
+		if (conf->logfile) {
 			o->syslog_level = LOG_LEVEL_FATAL;
+			log_fname = conf->logfile;
+		}
 	} else
 		o->syslog_level  = LOG_LEVEL_QUIET;
 
-	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
+	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, log_fname);
 }
 
 /* Reset slurmd nice value */

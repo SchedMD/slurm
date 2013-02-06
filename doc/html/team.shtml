@@ -1,14 +1,15 @@
 <!--#include virtual="header.txt"-->
 
-<h1>SLURM Team</h1>
-<p>SLURM development has been a joint effort of many companies and
-organizations. Lead SLURM developers are:
+<h1>Slurm Team</h1>
+<p>Slurm development has been a joint effort of many companies and
+organizations. Over 100 individuals have contributed to the project.
+Lead Slurm developers are:
 <ul>
 <li>Danny Auble (SchedMD, formerly with Lawrence Livermore National Laboratory)</li>
 <li>Morris Jette (SchedMD, formerly with Lawrence Livermore National Laboratory)</li>
 </ul>
 
-<p>SLURM contributors include:</p>
+<p>Slurm contributors include:</p>
 <ul>
 <!-- FUNDING ORGANIZATIONS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 <li><a href="http://www.bsc.es">Barcelona Supercomputing Center</a></li>
@@ -22,55 +23,70 @@ organizations. Lead SLURM developers are:
 <li><a href="http://www.ornl.gov">Oak Ridge National Laboratory</a></li>
 <li><a href="http://www.schedmd.com">SchedMD</a></li>
 <li><a href="http://www.cscs.ch">Swiss National Supercomputing Centre</a></li>
-<br><!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
+<br><!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER --><br>
 <li>Ramiro Alba (Centre Tecnol&ograve;gic de Tranfer&egrave;ncia de Calor, Spain)</li>
 <li>Amjad Majid Ali (Colorado State University)</li>
 <li>P&auml;r Andersson (National Supercomputer Centre, Sweden)</li>
 <li>Don Albert (Bull)</li>
 <li>Ernest Artiaga (Barcelona Supercomputing Center, Spain)</li>
+<br>
 <li>Susanne Balle (HP)</li>
 <li>Ralph Bean (Rochester Institute of Technology)</li>
 <li>Alexander Bersenev (Institute of Mathematics and Mechanics, Russia)</li>
+<li>David Bigagli (SchedMD)</li>
 <li>Nicolas Bigaouette</li>
 <li>Anton Blanchard (Samba)</li>
 <li>Janne Blomqvist (Aalto University, Finland)</li>
 <li>David Bremer (Lawrence Livermore National Laboratory)</li>
 <li>Jon Bringhurst (Los Alamos National Laboratory)</li>
 <li>Bill Brophy (Bull)</li>
+<br>
 <li>Hongjia Cao (National University of Defense Technology, China)</li>
+<li>Ralph Castain (Greenplum/EMC)</li>
+<li>Fran&ccedil;ois Chevallier (CEA)</li>
 <li>Daniel Christians (HP)</li>
 <li>Gilles Civario (Bull)</li>
 <li>Chuck Clouston (Bull)</li>
+<br>
 <li>Yuri D'Elia (Center for Biomedicine, EURAC Research, Italy)</li>
 <li>Francois Diakhate (CEA, France)</li>
 <li>Joseph Donaghy (Lawrence Livermore National Laboratory)</li>
 <li>Chris Dunlap (Lawrence Livermore National Laboratory)</li>
+<br>
 <li>Phil Eckert (Lawrence Livermore National Laboratory)</li>
 <li>Joey Ekstrom (Lawrence Livermore National Laboratory/Bringham Young University)</li>
 <li>Josh England (TGS Management Corporation)</li>
 <li>Kent Engstr&ouml;m  (National Supercomputer Centre, Sweden)</li>
+<br>
 <li>Carles Fenoy (Barcelona Supercomputing Center, Spain)</li>
 <li>Damien Fran&ccedil;ois (Universit&eacute; catholique de Louvain, Belgium)</li>
+<br>
 <li>Jim Garlick (Lawrence Livermore National Laboratory)</li>
 <li>Didier Gazen (Laboratoire d'Aerologie, France)</li>
 <li>Raphael Geissert (Debian)</li>
 <li>Yiannis Georgiou (Bull)</li>
 <li>Mark Grondona (Lawrence Livermore National Laboratory)</li>
 <li>Andriy Grytsenko (Massive Solutions Limited, Ukraine)</li>
+<br>
+<li>Chris Harwell (D. E. Shaw Research)</li>
 <li>Takao Hatazaki (HP)</li>
 <li>Matthieu Hautreux (CEA, France)</li>
 <li>Chris Holmes (HP)</li>
 <li>David H&ouml;ppner</li>
 <li>Nathan Huff (North Dakota State University)</li>
+<br>
 <li>David Jackson (Adaptive Computing)</li>
 <li>Alec Jensen (SchedMD)</li>
 <li>Klaus Joas (University Karlsruhe, Germany)</li>
 <li>Greg Johnson (Los Alamos National Laboratory)</li>
+<li>Magnus Jonsson (Ume&aring; University, Sweden)</li>
+<br>
 <li>Jason King (Lawrence Livermore National Laboratory)</li>
 <li>Yury Kiryanov (Intel)</li>
 <li>Aaron Knister (Environmental Protection Agency, UMBC)</li>
 <li>Nancy Kritkausky (Bull)</li>
 <li>Roman Kurakin (Institute of Natural Science and Ecology, Russia)</li>
+<br>
 <li>Sam Lang</li>
 <li>Puenlap Lee (Bull)</li>
 <li>Dennis Leepow</li>
@@ -78,24 +94,30 @@ organizations. Lead SLURM developers are:
 <li>Bernard Li (Genome Sciences Centre, Canada)</li>
 <li>Eric Lin (Bull)</li>
 <li>Donald Lipari (Lawrence Livermore National Laboratory)</li>
+<br>
 <li>Komoto Masahiro</li>
 <li>Steven McDougall (SiCortex)</li>
 <li>Donna Mecozzi (Lawrence Livermore National Laboratory)</li>
 <li>Bj&oslash;rn-Helge Mevik (University of Oslo, Norway)</li>
 <li>Chris Morrone (Lawrence Livermore National Laboratory)</li>
 <li>Pere Munt (Barcelona Supercomputing Center, Spain)</li>
+<br>
 <li>Mark Nelson (IBM)</li>
 <li>Michal Novotny (Masaryk University, Czech Republic)</li>
+<br>
 <li>Bryan O'Sullivan (Pathscale)</li>
 <li>Gennaro Oliva (Institute of High Performance Computing and Networking, Italy)</li>
+<br>
 <li>R&eacute;mi Palancher</li>
 <li>Alejandro Lucero Palau (Barcelona Supercomputing Center, Spain)</li>
 <li>Daniel Palermo (HP)</li>
 <li>Martin Perry (Bull)</li>
 <li>Dan Phung (Lawrence Livermore National Laboratory/Columbia University)</li>
 <li>Ashley Pittman (Quadrics, UK)</li>
+<br>
 <li>Vijay Ramasubramanian (University of Maryland)</li>
 <li>Krishnakumar Ravi[KK] (HP)</li>
+<li>Chris Read</li>
 <li>Petter Reinholdtsen (University of Oslo, Norway)</li>
 <li>Gerrit Renker (Swiss National Supercomputing Centre)</li>
 <li>Andy Riebs (HP)</li>
@@ -106,28 +128,34 @@ organizations. Lead SLURM developers are:
 <li>Simon Ruderich</li>
 <li>Dan Rusak (Bull)</li>
 <li>Eygene Ryabinkin (Kurchatov Institute, Russia)</li>
-<li>Federico Sacerdoti (D.E. Shaw)</li>
+<br>
+<li>Federico Sacerdoti (D. E. Shaw Research)</li>
 <li>Aleksej Saushev</li>
 <li>Rod Schultz (Bull)</li>
 <li>Jason Sollom (Cray)</li>
+<li>Erik Soyez (Science + Computing)</li>
 <li>Tyler Strickland (University of Florida)</li>
 <li>Jeff Squyres (LAM MPI)</li>
+<br>
 <li>Prashanth Tamraparni (HP, India)</li>
 <li>Jimmy Tang (Trinity College, Ireland)</li>
 <li>Kevin Tew (Lawrence Livermore National Laboratory/Bringham Young University)</li>
 <li>John Thiltges (University of Nebraska-Lincoln)</li>
 <li>Adam Todorski (Rensselaer Polytechnic Institute)</li>
 <li>Stephen Trofinoff (Swiss National Supercomputing Centre)</li>
+<br>
 <li>Nathan Weeks (Iowa State University)</li>
 <li>Andy Wettstein (University of Chicago)</li>
 <li>Tim Wickberg (Rensselaer Polytechnic Institute)</li>
 <li>Ramiro Brito Willmersdorf (Universidade Federal de Pemambuco, Brazil)</li>
 <li>Jay Windley (Linux NetworX)</li>
 <li>Anne-Marie Wunderlin (Bull)</li>
+<br>
+<li>Yair Yarom (The Hebrew University of Jerusalem, Israel)</li>
 <li>Nathan Yee (SchedMD)</li>
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 2 November 2012</p>
+<p style="text-align:center;">Last modified 23 January 2013</p>
 
 <!--#include virtual="footer.txt"-->

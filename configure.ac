@@ -222,12 +222,20 @@ X_AC_DIMENSIONS
 
 X_AC_CFLAGS
 X_AC_HWLOC
+X_AC_FREEIPMI
 X_AC_XCPU
 X_AC_SLURM_SEMAPHORE
 
 X_AC_NCURSES
 AM_CONDITIONAL(HAVE_SOME_CURSES, test "x$ac_have_some_curses" = "xyes")
 AC_SUBST(HAVE_SOME_CURSES)
+
+#
+#  Tests for Check
+#
+
+PKG_CHECK_MODULES([CHECK], [check >= 0.9.8], [ac_have_check="yes"], [ac_have_check="no"])
+AM_CONDITIONAL(HAVE_CHECK, test "x$ac_have_check" = "xyes")
 
 #
 #  Tests for GTK+
@@ -243,7 +251,6 @@ if test -d "/opt/gnome/lib64/pkgconfig"; then
 fi
 
 AM_PATH_GLIB_2_0([2.7.1], [ac_glib_test="yes"], [ac_glib_test="no"], [gthread])
-AM_CONDITIONAL(BUILD_SVIEW, test "x$ac_glib_test" = "xyes")
 
 if test ${glib_config_minor_version=0} -ge 32 ; then
        AC_DEFINE([GLIB_NEW_THREADS], 1, [Define to 1 if using glib-2.32.0 or higher])
@@ -261,6 +268,8 @@ fi
 if test ${gtk_config_minor_version=0} -ge 14 ; then
        AC_DEFINE([GTK2_USE_GET_FOCUS], 1, [Define to 1 if using gtk+-2.14.0 or higher])
 fi
+
+AM_CONDITIONAL(BUILD_SVIEW, [test "x$ac_glib_test" = "xyes"] && [test "x$ac_gtk_test" = "xyes"])
 
 X_AC_DATABASES
 
@@ -375,10 +384,6 @@ AC_CHECK_LIB(util, openpty, [UTIL_LIBS="-lutil"], [])
 AC_SUBST(UTIL_LIBS)
 LIBS="$savedLIBS"
 
-dnl Add LSD-Tools defines:
-AC_DEFINE(WITH_LSD_FATAL_ERROR_FUNC, 1, [Have definition of lsd_fatal_error()])
-AC_DEFINE(WITH_LSD_NOMEM_ERROR_FUNC, 1, [Have definition of lsd_nomem_error()])
-
 dnl
 dnl Check for compilation of SLURM with BLCR support:
 dnl
@@ -399,7 +404,6 @@ AC_CONFIG_FILES([Makefile
 		 config.xml
 		 auxdir/Makefile
 		 contribs/Makefile
-		 contribs/arrayrun/Makefile
 		 contribs/cray/Makefile
 		 contribs/cray/opt_modulefiles_slurm
 		 contribs/lua/Makefile
@@ -500,6 +504,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobcomp/mysql/Makefile
 		 src/plugins/jobcomp/pgsql/Makefile
 		 src/plugins/job_submit/Makefile
+		 src/plugins/job_submit/all_partitions/Makefile
 		 src/plugins/job_submit/cnode/Makefile
 		 src/plugins/job_submit/defaults/Makefile
 		 src/plugins/job_submit/logging/Makefile
@@ -517,7 +522,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/priority/Makefile
 		 src/plugins/priority/basic/Makefile
 		 src/plugins/priority/multifactor/Makefile
-		 src/plugins/priority/multifactor2/Makefile
 		 src/plugins/proctrack/Makefile
 		 src/plugins/proctrack/aix/Makefile
 		 src/plugins/proctrack/cgroup/Makefile
@@ -544,6 +548,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/cray/libemulate/Makefile
 		 src/plugins/select/linear/Makefile
 		 src/plugins/select/serial/Makefile
+		 src/plugins/slurmctld/Makefile
+		 src/plugins/slurmctld/sock_insec/Makefile
 		 src/plugins/switch/Makefile
 		 src/plugins/switch/none/Makefile
 		 src/plugins/switch/nrt/Makefile

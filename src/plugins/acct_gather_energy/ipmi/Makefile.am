@@ -5,15 +5,29 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(FREEIPMI_CPPFLAGS)
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+if BUILD_IPMI
+
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 pkglib_LTLIBRARIES = acct_gather_energy_ipmi.la
 
-# Null energy accounting ipmi plugin.
-acct_gather_energy_ipmi_la_SOURCES = acct_gather_energy_ipmi.c
+# Energy accounting ipmi plugin.
+acct_gather_energy_ipmi_la_SOURCES = acct_gather_energy_ipmi.c \
+                                     acct_gather_energy_ipmi.h \
+                                     acct_gather_energy_ipmi_config.c \
+                                     acct_gather_energy_ipmi_config.h
 
 #acct_gather_energy_ipmi_la_CFLAGS = $(MYSQL_CFLAGS)
 
-acct_gather_energy_ipmi_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+acct_gather_energy_ipmi_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(FREEIPMI_LDFLAGS)
+acct_gather_energy_ipmi_la_LIBADD = $(FREEIPMI_LIBS)
+
+else
+
+EXTRA_acct_gather_energy_ipmi_la_SOURCES = acct_gather_energy_ipmi.c \
+                                     acct_gather_energy_ipmi.h \
+                                     acct_gather_energy_ipmi_config.c \
+                                     acct_gather_energy_ipmi_config.h
+endif

@@ -67,7 +67,6 @@ int      init_prio_mode = PRIO_HOLD;
 uint16_t kill_wait;
 uint16_t use_host_exp = 0;
 
-static char *	_get_wiki_conf_path(void);
 static void *	_msg_thread(void *no_data);
 static int	_parse_msg(char *msg, char **req);
 static void	_proc_msg(slurm_fd_t new_fd, char *msg);
@@ -205,33 +204,6 @@ static void *_msg_thread(void *no_data)
 }
 
 /*****************************************************************************\
- * _get_wiki_conf_path - return the pathname of the wiki.conf file
- * return value must be xfreed
-\*****************************************************************************/
-static char * _get_wiki_conf_path(void)
-{
-	char *val = getenv("SLURM_CONF");
-	char *path = NULL;
-	int i;
-
-	if (!val)
-		val = default_slurm_config_file;
-
-	/* Replace file name on end of path */
-	i = strlen(val) + 10;
-	path = xmalloc(i);
-	strcpy(path, val);
-	val = strrchr(path, (int)'/');
-	if (val)	/* absolute path */
-		val++;
-	else		/* not absolute path */
-		val = path;
-	strcpy(val, "wiki.conf");
-
-	return path;
-}
-
-/*****************************************************************************\
  * parse_wiki_config - Results go into global variables
  * RET SLURM_SUCESS or error code
  *
@@ -276,7 +248,7 @@ extern int parse_wiki_config(void)
 	kill_wait = conf->kill_wait;
 	slurm_conf_unlock();
 
-	wiki_conf = _get_wiki_conf_path();
+	wiki_conf = get_extra_conf_path("wiki.conf");
 	if ((wiki_conf == NULL) || (stat(wiki_conf, &buf) == -1)) {
 		debug("No wiki.conf file (%s)", wiki_conf);
 		xfree(wiki_conf);

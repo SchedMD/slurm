@@ -83,7 +83,7 @@ fname_create(slurmd_job_t *job, const char *format, int taskid)
 	}
 
 	q = p = orig;
-	while(*p != '\0') {
+	while (*p != '\0') {
 		if (*p == '%') {
 			if (isdigit(*(++p))) {
 				unsigned long in_width = 0;
@@ -98,6 +98,18 @@ fname_create(slurmd_job_t *job, const char *format, int taskid)
 			}
 
 			switch (*p) {
+			case 'a':  /* '%a' => array task id   */
+				xmemcat(name, q, p - 1);
+				xstrfmtcat(name, "%0*d", wid,
+					   job->array_task_id);
+				q = ++p;
+				break;
+			case 'A':  /* '%A' => array master job id */
+				xmemcat(name, q, p - 1);
+				xstrfmtcat(name, "%0*d", wid,
+					   job->array_job_id);
+				q = ++p;
+				break;
 			case 's':  /* '%s' => step id        */
 				xmemcat(name, q, p - 1);
 				xstrfmtcat(name, "%0*d", wid, job->stepid);

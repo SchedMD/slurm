@@ -103,6 +103,9 @@ extern int  checkpoint_pack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer,
 extern int  checkpoint_unpack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer,
 					uint16_t protocol_version);
 
+/* copy a job's checkpoint context */
+extern check_jobinfo_t checkpoint_copy_jobinfo(check_jobinfo_t jobinfo);
+
 /* create the necessary threads before forking the tasks */
 extern int checkpoint_stepd_prefork (void *slurmd_job);
 

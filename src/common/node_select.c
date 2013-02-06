@@ -276,11 +276,11 @@ extern int slurm_select_init(bool only_default)
 		if (dir_array[i] == ':') {
 			dir_array[i] = '\0';
 			got_colon = 1;
-		} else if(dir_array[i] != '\0')
+		} else if (dir_array[i] != '\0')
 			continue;
 
 		/* Open the directory. */
-		if(!(dirp = opendir(head))) {
+		if (!(dirp = opendir(head))) {
 			error("cannot open plugin directory %s", head);
 			goto done;
 		}
@@ -288,7 +288,7 @@ extern int slurm_select_init(bool only_default)
 		while (1) {
 			char full_name[128];
 
-			if(!(e = readdir( dirp )))
+			if (!(e = readdir( dirp )))
 				break;
 			/* Check only files with select_ in them. */
 			if (strncmp(e->d_name, "select_", 7))
@@ -832,8 +832,8 @@ extern int select_g_select_nodeinfo_free(dynamic_plugin_data_t *nodeinfo)
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
-	if(nodeinfo) {
-		if(nodeinfo->data)
+	if (nodeinfo) {
+		if (nodeinfo->data)
 			rc = (*(ops[nodeinfo->plugin_id].
 				nodeinfo_free))(nodeinfo->data);
 		xfree(nodeinfo);
@@ -870,7 +870,7 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
-	if(nodeinfo) {
+	if (nodeinfo) {
 		nodedata = nodeinfo->data;
 		plugin_id = nodeinfo->plugin_id;
 	} else
@@ -927,7 +927,7 @@ extern int select_g_select_jobinfo_set(dynamic_plugin_data_t *jobinfo,
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
-	if(jobinfo) {
+	if (jobinfo) {
 		jobdata = jobinfo->data;
 		plugin_id = jobinfo->plugin_id;
 	} else
@@ -952,7 +952,7 @@ extern int select_g_select_jobinfo_get(dynamic_plugin_data_t *jobinfo,
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
-	if(jobinfo) {
+	if (jobinfo) {
 		jobdata = jobinfo->data;
 		plugin_id = jobinfo->plugin_id;
 	} else
@@ -975,7 +975,7 @@ extern dynamic_plugin_data_t *select_g_select_jobinfo_copy(
 		return NULL;
 
 	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	if(jobinfo) {
+	if (jobinfo) {
 		jobinfo_ptr->plugin_id = jobinfo->plugin_id;
 		jobinfo_ptr->data = (*(ops[jobinfo->plugin_id].
 				       jobinfo_copy))(jobinfo->data);
@@ -1083,7 +1083,7 @@ extern char *select_g_select_jobinfo_sprint(dynamic_plugin_data_t *jobinfo,
 
 	if (slurm_select_init(0) < 0)
 		return NULL;
-	if(jobinfo) {
+	if (jobinfo) {
 		data = jobinfo->data;
 		plugin_id = jobinfo->plugin_id;
 	} else
@@ -1107,7 +1107,7 @@ extern char *select_g_select_jobinfo_xstrdup(
 	if (slurm_select_init(0) < 0)
 		return NULL;
 
-	if(jobinfo) {
+	if (jobinfo) {
 		data = jobinfo->data;
 		plugin_id = jobinfo->plugin_id;
 	} else

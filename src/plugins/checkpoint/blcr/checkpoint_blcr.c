@@ -380,6 +380,16 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer,
 	return SLURM_ERROR;
 }
 
+extern check_jobinfo_t slurm_ckpt_copy_job(check_jobinfo_t jobinfo)
+{
+	struct check_job_info *jobinfo_src, *jobinfo_dest;
+
+	jobinfo_src  = (struct check_job_info *)jobinfo;
+	jobinfo_dest = xmalloc(sizeof(struct check_job_info));
+	memcpy(jobinfo_dest, jobinfo_src, sizeof(struct check_job_info));
+	return (check_jobinfo_t) jobinfo_dest;
+}
+
 extern int slurm_ckpt_stepd_prefork(slurmd_job_t *job)
 {
 	char *old_env = NULL, *new_env = NULL, *ptr = NULL, *save_ptr = NULL;

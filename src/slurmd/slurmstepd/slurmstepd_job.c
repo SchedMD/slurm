@@ -48,6 +48,7 @@
 
 #include <grp.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <sys/types.h>
 
 #include "src/common/eio.h"
@@ -162,7 +163,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	srun_info_t   *srun = NULL;
 	slurm_addr_t     resp_addr;
 	slurm_addr_t     io_addr;
-	int            nodeid = NO_VAL;
+	int            i, nodeid = NO_VAL;
 
 	xassert(msg != NULL);
 	xassert(msg->complete_nodelist != NULL);
@@ -197,7 +198,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	nodeid = 0;
 	job->node_name = xstrdup(msg->complete_nodelist);
 #endif
-	if(nodeid < 0) {
+	if (nodeid < 0) {
 		error("couldn't find node %s in %s",
 		      job->node_name, msg->complete_nodelist);
 		job_destroy(job);
@@ -226,6 +227,17 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->cpus_per_task = msg->cpus_per_task;
 
 	job->env     = _array_copy(msg->envc, msg->env);
+	job->array_job_id  = msg->job_id;
+	job->array_task_id = (uint16_t) NO_VAL;
+	for (i = 0; i < msg->envc; i++) {
+		/*                         1234567890123456789 */
+		if (!strncmp(msg->env[i], "SLURM_ARRAY_JOB_ID=", 19))
+			job->array_job_id = atoi(msg->env[i] + 19);
+		/*                         12345678901234567890 */
+		if (!strncmp(msg->env[i], "SLURM_ARRAY_TASK_ID=", 20))
+			job->array_task_id = atoi(msg->env[i] + 20);
+	}
+
 	job->eio     = eio_handle_create();
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 	job->clients = list_create(NULL); /* FIXME! Needs destructor */
@@ -327,9 +339,12 @@ job_create(launch_tasks_request_msg_t *msg)
 static char *
 _batchfilename(slurmd_job_t *job, const char *name)
 {
-	if (name == NULL)
-		return fname_create(job, "slurm-%J.out", 0);
-	else
+	if (name == NULL) {
+		if (job->array_task_id == (uint16_t) NO_VAL)
+			return fname_create(job, "slurm-%J.out", 0);
+		else
+			return fname_create(job, "slurm-%A_%a.out", 0);
+	} else
 		return fname_create(job, name, 0);
 }
 
@@ -355,8 +370,8 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		_pwd_destroy(pwd);
 		return NULL;
 	}
-	if(msg->job_mem && (msg->acctg_freq != (uint16_t) NO_VAL)
-	   && (msg->acctg_freq > conf->job_acct_gather_freq)) {
+	if (msg->job_mem && (msg->acctg_freq != (uint16_t) NO_VAL) &&
+	    (msg->acctg_freq > conf->job_acct_gather_freq)) {
 		error("Can't set frequency to %u, it is higher than %u.  "
 		      "We need it to be at least at this level to "
 		      "monitor memory usage.",
@@ -376,6 +391,8 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->ntasks  = msg->ntasks;
 	job->jobid   = msg->job_id;
 	job->stepid  = msg->step_id;
+	job->array_job_id  = msg->array_job_id;
+	job->array_task_id = msg->array_task_id;
 
 	job->batch   = true;
 	if (msg->acctg_freq != (uint16_t) NO_VAL)

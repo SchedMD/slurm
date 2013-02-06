@@ -66,13 +66,13 @@ extern int _addto_uid_char_list(List char_list, char *names)
 	int quote = 0;
 	int count = 0;
 
-	if(!char_list) {
+	if (!char_list) {
 		error("No list was given to fill in");
 		return 0;
 	}
 
 	itr = list_iterator_create(char_list);
-	if(names) {
+	if (names) {
 		if (names[i] == '\"' || names[i] == '\'') {
 			quote_c = names[i];
 			quote = 1;
@@ -81,23 +81,23 @@ extern int _addto_uid_char_list(List char_list, char *names)
 		start = i;
 		while(names[i]) {
 			//info("got %d - %d = %d", i, start, i-start);
-			if(quote && names[i] == quote_c)
+			if (quote && names[i] == quote_c)
 				break;
 			else if (names[i] == '\"' || names[i] == '\'')
 				names[i] = '`';
-			else if(names[i] == ',') {
-				if((i-start) > 0) {
+			else if (names[i] == ',') {
+				if ((i-start) > 0) {
 					name = xmalloc((i-start+1));
 					memcpy(name, names+start, (i-start));
 					//info("got %s %d", name, i-start);
 					name = _string_to_uid( name );
 
 					while((tmp_char = list_next(itr))) {
-						if(!strcasecmp(tmp_char, name))
+						if (!strcasecmp(tmp_char, name))
 							break;
 					}
 
-					if(!tmp_char) {
+					if (!tmp_char) {
 						list_append(char_list, name);
 						count++;
 					} else
@@ -106,7 +106,7 @@ extern int _addto_uid_char_list(List char_list, char *names)
 				}
 				i++;
 				start = i;
-				if(!names[i]) {
+				if (!names[i]) {
 					info("There is a problem with "
 					     "your request.  It appears you "
 					     "have spaces inside your list.");
@@ -115,17 +115,17 @@ extern int _addto_uid_char_list(List char_list, char *names)
 			}
 			i++;
 		}
-		if((i-start) > 0) {
+		if ((i-start) > 0) {
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
 			name = _string_to_uid( name );
 
 			while((tmp_char = list_next(itr))) {
-				if(!strcasecmp(tmp_char, name))
+				if (!strcasecmp(tmp_char, name))
 					break;
 			}
 
-			if(!tmp_char) {
+			if (!tmp_char) {
 				list_append(char_list, name);
 				count++;
 			} else
@@ -146,17 +146,17 @@ static int _set_cond(int *start, int argc, char *argv[],
  	uint32_t tmp;
 	slurmdb_job_cond_t *job_cond = NULL;
 
-	if(!arch_cond) {
+	if (!arch_cond) {
 		error("No arch_cond given");
 		return -1;
 	}
-	if(!arch_cond->job_cond)
+	if (!arch_cond->job_cond)
 		arch_cond->job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
 	job_cond = arch_cond->job_cond;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if(!end)
+		if (!end)
 			command_len=strlen(argv[i]);
 		else {
 			command_len=end-1;
@@ -165,29 +165,29 @@ static int _set_cond(int *start, int argc, char *argv[],
 			}
 		}
 
-		if(!end && !strncasecmp(argv[i], "where",
+		if (!end && !strncasecmp(argv[i], "where",
 					MAX(command_len, 5))) {
 			continue;
-		} else if(!end && !strncasecmp(argv[i], "events",
+		} else if (!end && !strncasecmp(argv[i], "events",
 					  MAX(command_len, 1))) {
 			arch_cond->purge_event |= SLURMDB_PURGE_ARCHIVE;
 			set = 1;
-		} else if(!end && !strncasecmp(argv[i], "jobs",
+		} else if (!end && !strncasecmp(argv[i], "jobs",
 					  MAX(command_len, 1))) {
 			arch_cond->purge_job |= SLURMDB_PURGE_ARCHIVE;
 			set = 1;
-		} else if(!end && !strncasecmp(argv[i], "steps",
+		} else if (!end && !strncasecmp(argv[i], "steps",
 					  MAX(command_len, 1))) {
 			arch_cond->purge_step |= SLURMDB_PURGE_ARCHIVE;
 			set = 1;
-		} else if(!end && !strncasecmp(argv[i], "suspend",
+		} else if (!end && !strncasecmp(argv[i], "suspend",
 					  MAX(command_len, 1))) {
 			arch_cond->purge_suspend |= SLURMDB_PURGE_ARCHIVE;
 			set = 1;
-		} else if(!end
+		} else if (!end
 			  || !strncasecmp(argv[i], "Clusters",
 					  MAX(command_len, 1))) {
-			if(!job_cond->cluster_list)
+			if (!job_cond->cluster_list)
 				job_cond->cluster_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->cluster_list,
@@ -195,7 +195,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Accounts",
 					 MAX(command_len, 2))) {
-			if(!job_cond->acct_list)
+			if (!job_cond->acct_list)
 				job_cond->acct_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->acct_list,
@@ -203,7 +203,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Associations",
 					 MAX(command_len, 2))) {
-			if(!job_cond->associd_list)
+			if (!job_cond->associd_list)
 				job_cond->associd_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->associd_list,
@@ -218,7 +218,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			job_cond->usage_end = parse_time(argv[i]+end, 1);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Gid", MAX(command_len, 2))) {
-			if(!job_cond->groupid_list)
+			if (!job_cond->groupid_list)
 				job_cond->groupid_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->groupid_list,
@@ -229,7 +229,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			char *end_char = NULL, *start_char = argv[i]+end;
 			slurmdb_selected_step_t *selected_step = NULL;
 			char *dot = NULL;
-			if(!job_cond->step_list)
+			if (!job_cond->step_list)
 				job_cond->step_list =
 					list_create(slurm_destroy_char);
 
@@ -238,7 +238,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				*end_char = 0;
 				while (isspace(*start_char))
 					start_char++;  /* discard whitespace */
-				if(!(int)*start_char)
+				if (!(int)*start_char)
 					continue;
 				selected_step = xmalloc(
 					sizeof(slurmdb_selected_step_t));
@@ -259,7 +259,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Partitions",
 					 MAX(command_len, 2))) {
-			if(!job_cond->partition_list)
+			if (!job_cond->partition_list)
 				job_cond->partition_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->partition_list,
@@ -353,7 +353,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Users",
 					 MAX(command_len, 1))) {
-			if(!job_cond->userid_list)
+			if (!job_cond->userid_list)
 				job_cond->userid_list =
 					list_create(slurm_destroy_char);
 			_addto_uid_char_list(job_cond->userid_list,
@@ -386,22 +386,22 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 		_set_cond(&i, argc, argv, arch_cond);
 	}
 
-	if(!arch_cond->purge_event)
+	if (!arch_cond->purge_event)
 		arch_cond->purge_event = NO_VAL;
-	if(!arch_cond->purge_job)
+	if (!arch_cond->purge_job)
 		arch_cond->purge_job = NO_VAL;
-	if(!arch_cond->purge_step)
+	if (!arch_cond->purge_step)
 		arch_cond->purge_step = NO_VAL;
-	if(!arch_cond->purge_suspend)
+	if (!arch_cond->purge_suspend)
 		arch_cond->purge_suspend = NO_VAL;
 
-	if(exit_code) {
+	if (exit_code) {
 		slurmdb_destroy_archive_cond(arch_cond);
 		return SLURM_ERROR;
 	}
 
 	if (arch_cond->archive_dir) {
-		if(stat(arch_cond->archive_dir, &st) < 0) {
+		if (stat(arch_cond->archive_dir, &st) < 0) {
 			exit_code = errno;
 			fprintf(stderr, " dump: Failed to stat %s: %m\n "
 				"Note: For archive dump, "
@@ -429,7 +429,7 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 	}
 
 	if (arch_cond->archive_script) {
-		if(stat(arch_cond->archive_script, &st) < 0) {
+		if (stat(arch_cond->archive_script, &st) < 0) {
 			exit_code = errno;
 			fprintf(stderr, " dump: Failed to stat %s: %m\n "
 				"Note: For archive dump, the script must be on "
@@ -455,8 +455,8 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 	}
 
 	rc = jobacct_storage_g_archive(db_conn, arch_cond);
-	if(rc == SLURM_SUCCESS) {
-		if(commit_check("Would you like to commit changes?")) {
+	if (rc == SLURM_SUCCESS) {
+		if (commit_check("Would you like to commit changes?")) {
 			acct_storage_g_commit(db_conn, 1);
 		} else {
 			printf(" Changes Discarded\n");
@@ -483,7 +483,7 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 
 	for (i=0; i<argc; i++) {
 		int end = parse_option_end(argv[i]);
-		if(!end)
+		if (!end)
 			command_len=strlen(argv[i]);
 		else {
 			command_len=end-1;
@@ -492,7 +492,7 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 			}
 		}
 
-		if(!end
+		if (!end
 		   || !strncasecmp (argv[i], "File", MAX(command_len, 1))) {
 			arch_rec->archive_file =
 				strip_quotes(argv[i]+end, NULL, 0);
@@ -505,7 +505,7 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 		}
 	}
 
-	if(exit_code) {
+	if (exit_code) {
 		slurmdb_destroy_archive_rec(arch_rec);
 		return SLURM_ERROR;
 	}
@@ -524,7 +524,7 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 			arch_rec->archive_file = fullpath;
 		}
 
-		if(stat(arch_rec->archive_file, &st) < 0) {
+		if (stat(arch_rec->archive_file, &st) < 0) {
 			exit_code = errno;
 			fprintf(stderr, " load: Failed to stat %s: %m\n "
 				"Note: For archive load, the file must be on "
@@ -535,8 +535,8 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 	}
 
 	rc = jobacct_storage_g_archive_load(db_conn, arch_rec);
-	if(rc == SLURM_SUCCESS) {
-		if(commit_check("Would you like to commit changes?")) {
+	if (rc == SLURM_SUCCESS) {
+		if (commit_check("Would you like to commit changes?")) {
 			acct_storage_g_commit(db_conn, 1);
 		} else {
 			printf(" Changes Discarded\n");

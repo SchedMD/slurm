@@ -114,11 +114,7 @@ static List _build_user_job_list(uint32_t user_id, char* job_name)
 	struct job_record *job_ptr = NULL;
 
 	job_queue = list_create(NULL);
-	if (job_queue == NULL)
-		fatal("list_create memory allocation failure");
 	job_iterator = list_iterator_create(job_list);
-	if (job_iterator == NULL)
-		fatal("list_iterator_create malloc failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 		if (job_ptr->user_id != user_id)
@@ -222,11 +218,7 @@ extern List build_job_queue(bool clear_start)
 	struct part_record *part_ptr;
 
 	job_queue = list_create(_job_queue_rec_del);
-	if (job_queue == NULL)
-		fatal("list_create memory allocation failure");
 	job_iterator = list_iterator_create(job_list);
-	if (job_iterator == NULL)
-		fatal("list_iterator_create memory allocation failure");
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!_job_runnable_test1(job_ptr, clear_start))
 			continue;
@@ -234,9 +226,7 @@ extern List build_job_queue(bool clear_start)
 		if (job_ptr->part_ptr_list) {
 			part_iterator = list_iterator_create(job_ptr->
 							     part_ptr_list);
-			if (part_iterator == NULL)
-				fatal("list_iterator_create malloc failure");
-			while ((part_ptr = (struct part_record *)
+	      			while ((part_ptr = (struct part_record *)
 					list_next(part_iterator))) {
 				job_ptr->part_ptr = part_ptr;
 				if (job_limits_check(&job_ptr) !=
@@ -438,8 +428,6 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 		goto send_reply;
 	}
 	job_iterator = list_iterator_create(job_list);
-	if (job_iterator == NULL)
-		fatal("list_iterator_create memory allocation failure");
 	while (1) {
 		if (job_ptr && part_iterator)
 			goto next_part;
@@ -478,8 +466,6 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 		if (job_ptr->part_ptr_list) {
 			part_iterator = list_iterator_create(job_ptr->
 							     part_ptr_list);
-			if (!part_iterator)
-				fatal("list_iterator_create: malloc failure");
 next_part:		part_ptr = (struct part_record *)
 				   list_next(part_iterator);
 			if (part_ptr) {
@@ -499,7 +485,7 @@ next_part:		part_ptr = (struct part_record *)
 			if (job_ptr->part_ptr)
 				assoc_rec.partition = job_ptr->part_ptr->name;
 			assoc_rec.uid       = job_ptr->user_id;
-	
+
 			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 						     accounting_enforce,
 						     (slurmdb_association_rec_t **)
@@ -515,7 +501,8 @@ next_part:		part_ptr = (struct part_record *)
 			assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
 			if (assoc_ptr &&
 			    !bit_test(assoc_ptr->usage->valid_qos,
-				      job_ptr->qos_id)) {
+				      job_ptr->qos_id) &&
+			    !job_ptr->limit_set_qos) {
 				info("sched: JobId=%u has invalid QOS",
 					job_ptr->job_id);
 				xfree(job_ptr->state_desc);
@@ -668,18 +655,21 @@ extern int schedule(uint32_t job_limit)
 	if (sched_update != slurmctld_conf.last_update) {
 		char *sched_params, *tmp_ptr;
 		char *sched_type = slurm_get_sched_type();
+		char *prio_type = slurm_get_priority_type();
 #ifdef HAVE_BG
 		/* On BlueGene, do FIFO only with sched/backfill */
 		if (strcmp(sched_type, "sched/backfill") == 0)
 			backfill_sched = true;
 #endif
-		if (strcmp(sched_type, "sched/builtin") == 0)
+		if ((strcmp(sched_type, "sched/builtin") == 0) &&
+		    (strcmp(prio_type, "priority/basic") == 0))
 			fifo_sched = true;
 		/* Disable avoiding of fragmentation with sched/wiki */
 		if ((strcmp(sched_type, "sched/wiki") == 0) ||
 		    (strcmp(sched_type, "sched/wiki2") == 0))
 			wiki_sched = true;
 		xfree(sched_type);
+		xfree(prio_type);
 
 		sched_params = slurm_get_sched_params();
 		if (sched_params &&
@@ -762,8 +752,6 @@ extern int schedule(uint32_t job_limit)
 	if (fifo_sched) {
 		slurmctld_diag_stats.schedule_queue_len = list_count(job_list);
 		job_iterator = list_iterator_create(job_list);
-		if (job_iterator == NULL)
-			fatal("list_iterator_create memory allocation failure");
 	} else {
 		job_queue = build_job_queue(false);
 		slurmctld_diag_stats.schedule_queue_len = list_count(job_queue);
@@ -781,8 +769,6 @@ extern int schedule(uint32_t job_limit)
 			if (job_ptr->part_ptr_list) {
 				part_iterator = list_iterator_create(
 							job_ptr->part_ptr_list);
-				if (!part_iterator)
-					fatal("list_iterator_create: malloc failure");
 next_part:			part_ptr = (struct part_record *)
 					   list_next(part_iterator);
 				if (part_ptr) {
@@ -831,7 +817,7 @@ next_part:			part_ptr = (struct part_record *)
 			if (job_ptr->part_ptr)
 				assoc_rec.partition = job_ptr->part_ptr->name;
 			assoc_rec.uid       = job_ptr->user_id;
-	
+
 			if (!assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 						    accounting_enforce,
 						    (slurmdb_association_rec_t **)
@@ -847,7 +833,8 @@ next_part:			part_ptr = (struct part_record *)
 			assoc_ptr = (slurmdb_association_rec_t *)job_ptr->assoc_ptr;
 			if (assoc_ptr &&
 			    !bit_test(assoc_ptr->usage->valid_qos,
-				      job_ptr->qos_id)) {
+				      job_ptr->qos_id) &&
+			    !job_ptr->limit_set_qos) {
 				info("sched: JobId=%u has invalid QOS",
 					job_ptr->job_id);
 				xfree(job_ptr->state_desc);
@@ -1013,6 +1000,12 @@ next_part:			part_ptr = (struct part_record *)
 				launch_job(job_ptr);
 			rebuild_job_part_list(job_ptr);
 			job_cnt++;
+		} else if ((error_code ==
+			    ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
+			   job_ptr->part_ptr_list) {
+			debug("JobId=%u non-runnable in partition %s: %s",
+			      job_ptr->job_id, job_ptr->part_ptr->name,
+			      slurm_strerror(error_code));
 		} else if ((error_code !=
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 			   (error_code != ESLURM_NODE_NOT_AVAIL)      &&
@@ -1108,6 +1101,8 @@ extern batch_job_launch_msg_t *build_launch_job_msg(struct job_record *job_ptr)
 				xmalloc(sizeof(batch_job_launch_msg_t));
 	launch_msg_ptr->job_id = job_ptr->job_id;
 	launch_msg_ptr->step_id = NO_VAL;
+	launch_msg_ptr->array_job_id = job_ptr->array_job_id;
+	launch_msg_ptr->array_task_id = job_ptr->array_task_id;
 	launch_msg_ptr->uid = job_ptr->user_id;
 	launch_msg_ptr->gid = job_ptr->group_id;
 	launch_msg_ptr->ntasks = job_ptr->details->num_tasks;
@@ -1248,6 +1243,31 @@ static void _depend_list_del(void *dep_ptr)
 	xfree(dep_ptr);
 }
 
+/*
+ * Copy a job's dependency list
+ * IN depend_list_src - a job's depend_lst
+ * RET copy of depend_list_src, must bee freed by caller
+ */
+extern List depended_list_copy(List depend_list_src)
+{
+	struct depend_spec *dep_src, *dep_dest;
+	ListIterator iter;
+	List depend_list_dest = NULL;
+
+	if (!depend_list_src)
+		return depend_list_dest;
+
+	depend_list_dest = list_create(_depend_list_del);
+	iter = list_iterator_create(depend_list_src);
+	while ((dep_src = (struct depend_spec *) list_next(iter))) {
+		dep_dest = xmalloc(sizeof(struct depend_spec));
+		memcpy(dep_dest, dep_src, sizeof(struct depend_spec));
+		list_append(depend_list_dest, dep_dest);
+	}
+	list_iterator_destroy(iter);
+	return depend_list_dest;
+}
+
 /* Print a job's dependency information based upon job_ptr->depend_list */
 extern void print_job_dependency(struct job_record *job_ptr)
 {
@@ -1261,8 +1281,6 @@ extern void print_job_dependency(struct job_record *job_ptr)
 		return;
 
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
-	if (!depend_iter)
-		fatal("list_iterator_create memory allocation failure");
 	while ((dep_ptr = list_next(depend_iter))) {
 		if      (dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) {
 			info("  singleton");
@@ -1307,8 +1325,6 @@ extern int test_job_dependency(struct job_record *job_ptr)
 
 	count = list_count(job_ptr->details->depend_list);
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
-	if (!depend_iter)
-		fatal("list_iterator_create memory allocation failure");
 	while ((dep_ptr = list_next(depend_iter))) {
 		bool clear_dep = false;
 		count--;
@@ -1319,8 +1335,6 @@ extern int test_job_dependency(struct job_record *job_ptr)
 							 job_ptr->name);
  			run_now = true;
 			job_iterator = list_iterator_create(job_queue);
-			if (job_iterator == NULL)
-				fatal("list_iterator_create malloc failure");
 			while ((qjob_ptr = (struct job_record *)
 					   list_next(job_iterator))) {
 				/* already running/suspended job or previously
@@ -1449,8 +1463,6 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	}
 
 	new_depend_list = list_create(_depend_list_del);
-	if (new_depend_list == NULL)
-		fatal("list_create: malloc failure");
 
 	/* validate new dependency string */
 	while (rc == SLURM_SUCCESS) {
@@ -1462,10 +1474,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			dep_ptr->depend_type = depend_type;
 			/* dep_ptr->job_id = 0;		set by xmalloc */
 			/* dep_ptr->job_ptr = NULL;	set by xmalloc */
-			if (!list_append(new_depend_list, dep_ptr)) {
-				fatal("list_append memory allocation "
-				      "failure for singleton");
-			}
+			(void) list_append(new_depend_list, dep_ptr);
 			if ( *(tok + 9 ) == ',' ) {
 				tok += 10;
 				continue;
@@ -1493,8 +1502,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			dep_ptr->depend_type = SLURM_DEPEND_AFTER_ANY;
 			dep_ptr->job_id = job_id;
 			dep_ptr->job_ptr = dep_job_ptr;
-			if (!list_append(new_depend_list, dep_ptr))
-				fatal("list_append memory allocation failure");
+			(void) list_append(new_depend_list, dep_ptr);
 			break;
 		} else if (sep_ptr == NULL) {
 			rc = ESLURM_DEPENDENCY;
@@ -1558,10 +1566,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				dep_ptr->depend_type = depend_type;
 				dep_ptr->job_id = job_id;
 				dep_ptr->job_ptr = dep_job_ptr;
-				if (!list_append(new_depend_list, dep_ptr)) {
-					fatal("list_append memory allocation "
-						"failure");
-				}
+				(void) list_append(new_depend_list, dep_ptr);
 			}
 			if (sep_ptr2[0] != ':')
 				break;
@@ -1635,13 +1640,15 @@ static bool _scan_depend(List dependency_list, uint32_t job_id)
 
 	xassert(job_id);
 	iter = list_iterator_create(dependency_list);
-	if (iter == NULL)
-		fatal("list_iterator_create malloc failure");
+
 	while (!rc && (dep_ptr = (struct depend_spec *) list_next(iter))) {
 		if (dep_ptr->job_id == 0)	/* Singleton */
 			continue;
 		if (dep_ptr->job_id == job_id)
 			rc = true;
+		else if ((dep_ptr->job_id != dep_ptr->job_ptr->job_id) ||
+			 (dep_ptr->job_ptr->magic != JOB_MAGIC))
+			continue;	/* purged job, ptr not yet cleared */
 		else if (dep_ptr->job_ptr->details &&
 			 dep_ptr->job_ptr->details->depend_list) {
 			rc = _scan_depend(dep_ptr->job_ptr->details->
@@ -1683,8 +1690,6 @@ static void _delayed_job_start_time(struct job_record *job_ptr)
 		part_cpus_per_node = 1;
 
 	job_iterator = list_iterator_create(job_list);
-	if (job_iterator == NULL)
-		fatal("list_iterator_create memory allocation failure");
 	while ((job_q_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!IS_JOB_PENDING(job_q_ptr) || !job_q_ptr->details ||
 		    (job_q_ptr->part_ptr != job_ptr->part_ptr) ||
@@ -1762,8 +1767,6 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	if (job_ptr->details->exc_node_bitmap) {
 		bitstr_t *exc_node_mask = NULL;
 		exc_node_mask = bit_copy(job_ptr->details->exc_node_bitmap);
-		if (exc_node_mask == NULL)
-			fatal("bit_copy malloc failure");
 		bit_not(exc_node_mask);
 		bit_and(avail_bitmap, exc_node_mask);
 		FREE_NULL_BITMAP(exc_node_mask);
@@ -1845,8 +1848,6 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			uint32_t *preemptee_jid;
 			struct job_record *tmp_job_ptr;
 			resp_data->preemptee_job_id=list_create(_pre_list_del);
-			if (resp_data->preemptee_job_id == NULL)
-				fatal("list_create: malloc failure");
 			preemptee_iterator = list_iterator_create(
 							preemptee_job_list);
 			while ((tmp_job_ptr = (struct job_record *)
@@ -2197,6 +2198,32 @@ static void *_run_prolog(void *arg)
 }
 
 /*
+ * Copy a job's feature list
+ * IN feature_list_src - a job's depend_lst
+ * RET copy of depend_list_src, must be freed by caller
+ */
+extern List feature_list_copy(List feature_list_src)
+{
+	struct feature_record *feat_src, *feat_dest;
+	ListIterator iter;
+	List feature_list_dest = NULL;
+
+	if (!feature_list_src)
+		return feature_list_dest;
+
+	feature_list_dest = list_create(_feature_list_delete);
+	iter = list_iterator_create(feature_list_src);
+	while ((feat_src = (struct feature_record *) list_next(iter))) {
+		feat_dest = xmalloc(sizeof(struct feature_record));
+		memcpy(feat_dest, feat_src, sizeof(struct feature_record));
+		feat_dest->name = xstrdup(feat_src->name);
+		list_append(feature_list_dest, feat_dest);
+	}
+	list_iterator_destroy(iter);
+	return feature_list_dest;
+}
+
+/*
  * build_feature_list - Translate a job's feature string into a feature_list
  * IN  details->features
  * OUT details->feature_list
@@ -2378,8 +2405,6 @@ static int _valid_node_feature(char *feature)
 	/* Clear these nodes from the feature_list record,
 	 * then restore as needed */
 	feature_iter = list_iterator_create(feature_list);
-	if (feature_iter == NULL)
-		fatal("list_inerator_create malloc failure");
 	while ((feature_ptr = (struct features_record *)
 			list_next(feature_iter))) {
 		if (strcmp(feature_ptr->name, feature))
@@ -2406,8 +2431,6 @@ extern void rebuild_job_part_list(struct job_record *job_ptr)
 	job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
 
 	part_iterator = list_iterator_create(job_ptr->part_ptr_list);
-	if (part_iterator == NULL)
-		fatal("list_iterator_create malloc failure");
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		if (part_ptr == job_ptr->part_ptr)
 			continue;

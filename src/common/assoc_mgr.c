@@ -554,8 +554,6 @@ static int _post_association_list(List assoc_list)
 				continue;
 			itr2 = list_iterator_create(
 				assoc->usage->childern_list);
-			if (itr2 == NULL)
-				fatal("list_iterator_create: malloc failure");
 			while ((assoc2 = list_next(itr2))) {
 				if (assoc2->shares_raw != SLURMDB_FS_USE_PARENT)
 					count += assoc2->shares_raw;
@@ -1972,6 +1970,9 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 	slurmdb_user_rec_t * found_user = NULL;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK,
 				   NO_LOCK, READ_LOCK, NO_LOCK };
+
+	if (!acct_name)
+		return false;
 
 	if (!assoc_mgr_user_list)
 		if (_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)

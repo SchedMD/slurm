@@ -35,7 +35,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <permapi.h>
 #include <ctype.h>
 #include <dlfcn.h>
 #include <fcntl.h>
@@ -45,6 +44,17 @@
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
+#endif
+
+#if HAVE_NRT_H
+# include <nrt.h>
+#else
+# error "Must have nrt.h to compile this module!"
+#endif
+#if HAVE_PERMAPI_H
+# include <permapi.h>
+#else
+# error "Must have permapi.h to compile this module!"
 #endif
 
 #include "src/common/slurm_xlator.h"
@@ -445,7 +455,7 @@ static char *_uint16_array_to_str(int array_len, const uint16_t *array)
 	char *sep = ",";  /* seperator */
 	char *str = xstrdup("");
 
-	if(array == NULL)
+	if (array == NULL)
 		return str;
 
 	for (i = 0; i < array_len; i++) {

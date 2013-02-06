@@ -239,6 +239,14 @@ prevent users from accessing invalid accounts.
   is used and has limits those as well.  By setting
   this option, the 'associations' option is automatically set.
 </li>
+<li>nojobs - This will make it so no job information is stored in
+  accounting.  By setting this 'nosteps' is also set.
+</li>
+<li>nosteps - This will make it so no step information is stored in
+  accounting. Both nojobs and nosteps could be helpful in an
+  environment where you want to use limits but don't really care about
+  utilization.
+</li>
 <li>qos - This will require all jobs to specify (either overtly or by
   default) a valid qos (Quality of Service).  QOS values are defined for
   each association in the database.  By setting this option, the
@@ -378,6 +386,9 @@ should be written to a MySQL database specified by the
 The value "accounting_storage/pgsql" indicates that accounting records
 should be written to a PostgreSQL database specified by the
 <i>StorageLoc</i> parameter.
+Note: The PostgreSQL plugin is not
+complete and should not be used if wanting to use associations.  It
+will however work with basic accounting of jobs and job steps.
 This value must be specified.</li>
 
 <li><b>StorageUser</b>:

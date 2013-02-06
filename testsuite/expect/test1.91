@@ -44,6 +44,9 @@ print_header $test_id
 if {[test_launch_poe]} {
 	send_user "\nWARNING: This test is incompatible with launch/poe systems\n"
 	exit 0
+} elseif {[test_serial]} {
+	send_user "\nWARNING: This test is incompatible with select/serial systems\n"
+	exit 0
 }
 
 #
@@ -53,8 +56,10 @@ set affinity 0
 log_user 0
 spawn $scontrol show config
 expect {
-	-re "affinity" {
-		set affinity 1
+	-re "TaskPlugin *= task/($alpha)" {
+		if {![string compare $expect_out(1,string) "affinity"] || ![string compare $expect_out(1,string) "cgroup"]} {
+			set affinity 1
+		}
 		exp_continue
 	}
 	eof {

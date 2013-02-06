@@ -196,7 +196,7 @@ extern void jobacct_gather_p_poll_data(
 		return;
 	}
 
-	if(processing) {
+	if (processing) {
 		debug("already running, returning");
 		return;
 	}
@@ -204,7 +204,7 @@ extern void jobacct_gather_p_poll_data(
 	processing = 1;
 	prec_list = list_create(_destroy_prec);
 
-	if(!pgid_plugin) {
+	if (!pgid_plugin) {
 		/* get only the processes in the proctrack container */
 		slurm_container_get_pids(cont_id, &pids, &npids);
 		if (!npids) {

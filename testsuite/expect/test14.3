@@ -39,6 +39,11 @@ set version     0
 
 print_header $test_id
 
+if {[test_bluegene]} {
+	send_user "\nWARNING: This test is incompatible with a Bluegene system\n"
+	exit $exit_code
+}
+
 #
 # Report the sbcast version number
 #

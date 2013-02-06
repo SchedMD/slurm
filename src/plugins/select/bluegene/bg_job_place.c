@@ -329,6 +329,22 @@ static bg_record_t *_find_matching_block(List block_list,
 					     "skipping",
 					     bg_record->bg_block_id);
 				continue;
+			} else if ((bg_record->action == BG_BLOCK_ACTION_FREE)
+				   && (bg_record->state == BG_BLOCK_INITED)) {
+				/* If we are in the action state of
+				   FREE of 'D' continue on and don't
+				   look at this block just yet.  Only
+				   do this if the block is still
+				   booted since the action happens on
+				   a regular free as well.
+				*/
+				if (bg_conf->slurm_debug_flags
+				    & DEBUG_FLAG_BG_PICK)
+					info("block %s can't be used, "
+					     "it has an action item of 'D' "
+					     "on it.",
+					     bg_record->bg_block_id);
+				continue;
 			} else if ((bg_record->job_running == BLOCK_ERROR_STATE)
 				   || (bg_record->state
 				       & BG_BLOCK_ERROR_FLAG)) {
@@ -430,22 +446,6 @@ static bg_record_t *_find_matching_block(List block_list,
 				} else
 					slurm_mutex_unlock(&block_state_mutex);
 
-			} else if ((bg_record->action == BG_BLOCK_ACTION_FREE)
-				   && (bg_record->state == BG_BLOCK_INITED)) {
-				/* If we are in the action state of
-				   FREE of 'D' continue on and don't
-				   look at this block just yet.  Only
-				   do this if the block is still
-				   booted since the action happens on
-				   a regular free as well.
-				*/
-				if (bg_conf->slurm_debug_flags
-				    & DEBUG_FLAG_BG_PICK)
-					info("block %s can't be used, "
-					     "it has an action item of 'D' "
-					     "on it.",
-					     bg_record->bg_block_id);
-				continue;
 			}
 		}
 
@@ -881,7 +881,11 @@ static int _check_for_booted_overlapping_blocks(
 					     found_record->job_running,
 					     found_record->bg_block_id);
 
-				if (bg_conf->layout_mode == LAYOUT_DYNAMIC) {
+				if (!bg_record->bg_block_id
+				    && bg_conf->layout_mode == LAYOUT_DYNAMIC)
+					list_delete_item(bg_record_itr);
+				else if (bg_conf->layout_mode
+					 == LAYOUT_DYNAMIC) {
 					List tmp_list = list_create(NULL);
 					List kill_job_list = NULL;
 					/* this will remove and
@@ -1611,10 +1615,7 @@ static void _build_job_resources_struct(
 	job_resrcs_ptr->cpus_used = xmalloc(sizeof(uint16_t) * node_cnt);
 /* 	job_resrcs_ptr->nhosts = node_cnt; */
 	job_resrcs_ptr->nhosts = bit_set_count(bitmap);
-
-	if (!(job_resrcs_ptr->node_bitmap = bit_copy(bitmap)))
-		fatal("bit_copy malloc failure");
-
+	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
 	job_resrcs_ptr->nodes = xstrdup(bg_record->mp_str);
 
 	job_resrcs_ptr->cpu_array_cnt = 1;
@@ -1903,8 +1904,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						break;
 				}
 			}
+
+			list_iterator_reset(itr);
+
 			if (!found_record) {
-				list_iterator_reset(itr);
 				error("Job %u wasn't found running anywhere, "
 				      "can't preempt",
 				      preempt_job_ptr->job_id);
@@ -1921,8 +1924,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				     &bg_record, local_mode, avail_cpus))
 			    == SLURM_SUCCESS)
 				break;
-
-			list_iterator_reset(itr);
 		}
 		list_iterator_destroy(itr);
 		list_iterator_destroy(job_itr);

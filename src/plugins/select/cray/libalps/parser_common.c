@@ -536,14 +536,14 @@ static void _start_handler(void *user_data,
 			   it up here.
 			*/
 			if (ud->bp->method == BM_switch) {
-				if(!strcmp(table[tag].tag, "ReservationArray"))
+				if (!strcmp(table[tag].tag, "ReservationArray"))
 					tag = BT_SWITCHRESARRAY;
-				else if(!strcmp(table[tag].tag, "Reservation"))
+				else if (!strcmp(table[tag].tag, "Reservation"))
 					tag = BT_SWITCHRES;
-				else if(!strcmp(table[tag].tag,
+				else if (!strcmp(table[tag].tag,
 						"ApplicationArray"))
 					tag = BT_SWITCHAPPARRAY;
-				else if(!strcmp(table[tag].tag,	"Application"))
+				else if (!strcmp(table[tag].tag,	"Application"))
 					tag = BT_SWITCHAPP;
 			}
 			break;
@@ -597,16 +597,16 @@ static void _end_handler(void *user_data, const XML_Char *el)
 			   it up here.
 			*/
 			if (ud->bp->method == BM_switch) {
-				if(!strcmp(table[end_tag].tag,
+				if (!strcmp(table[end_tag].tag,
 					   "ReservationArray"))
 					end_tag = BT_SWITCHRESARRAY;
-				else if(!strcmp(table[end_tag].tag,
+				else if (!strcmp(table[end_tag].tag,
 						"Reservation"))
 					end_tag = BT_SWITCHRES;
-				else if(!strcmp(table[end_tag].tag,
+				else if (!strcmp(table[end_tag].tag,
 						"ApplicationArray"))
 					end_tag = BT_SWITCHAPPARRAY;
-				else if(!strcmp(table[end_tag].tag,
+				else if (!strcmp(table[end_tag].tag,
 						"Application"))
 					end_tag = BT_SWITCHAPP;
 			}

@@ -52,8 +52,9 @@
 
 #include "slurm/slurm_errno.h"
 
-#include "src/common/pack.h"
+#include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/pack.h"
 #include "src/common/xmalloc.h"
 
 /* If we unpack a buffer that contains bad data, we want to avoid
@@ -149,7 +150,7 @@ Buf init_buf(int size)
 		error("init_buf: buffer size too large");
 		return NULL;
 	}
-	if(size <= 0)
+	if (size <= 0)
 		size = BUF_SIZE;
 	my_buf = xmalloc(sizeof(struct slurm_buf));
 	my_buf->magic = BUF_MAGIC;
@@ -614,6 +615,11 @@ int unpackmem_malloc(char **valp, uint32_t * size_valp, Buf buffer)
 		if (remaining_buf(buffer) < *size_valp)
 			return SLURM_ERROR;
 		*valp = malloc(*size_valp);
+		if (*valp == NULL) {
+			fprintf(log_fp(), "unpackmem_malloc: %s\n",
+				strerror(errno));
+			abort();
+		}
 		memcpy(*valp, &buffer->head[buffer->processed],
 		       *size_valp);
 		buffer->processed += *size_valp;

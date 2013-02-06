@@ -1,6 +1,139 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 2.6.0pre2
+============================
+
+* Changes in SLURM 2.6.0pre1
+============================
+ -- Add "state" field to job step information reported by scontrol.
+ -- Notify srun to retry step creation upon completion of other job steps
+    rather than polling. This results in much faster throughput for job step
+    execution with --exclusive option.
+ -- Added "ResvEpilog" and "ResvProlog" configuration parameters to execute a
+    program at the beginning and end of each reservation.
+ -- Added "slurm_load_job_user" function. This is a variation of
+    "slurm_load_jobs", but accepts a user ID argument, potentially resulting
+    in substantial performance improvement for "squeue --user=ID"
+ -- Added "slurm_load_node_single" function. This is a variation of
+    "slurm_load_nodes", but accepts a node name argument, potentially resulting
+    in substantial performance improvement for "sinfo --nodes=NAME".
+ -- Added "HealthCheckNodeState" configuration parameter identify node states
+    on which HealthCheckProgram should be executed.
+ -- Remove sacct --dump --formatted-dump options which were deprecated in
+    2.5.
+ -- Added support for job arrays (phase 1 of effort). See "man sbatch" option
+    -a/--array for details.
+ -- Add new AccountStorageEnforce options of 'nojobs' and 'nosteps' which will
+    allow the use of accounting features like associations, qos and limits but
+    not keep track of jobs or steps in accounting.
+ -- Cray - Add new cray.conf parameter of "AlpsEngine" to specify the
+    communication protocol to be used for ALPS/BASIL.
+ -- select/cons_res plugin: Correction to CPU allocation count logic in for
+    cores without hyperthreading.
+ -- Added new SelectTypeParameter value of "CR_ALLOCATE_FULL_SOCKET".
+ -- Added PriorityFlags value of "TICKET_BASED" and merged priority/multifactor2
+    plugin into priority/multifactor plugin.
+ -- Add "KeepAliveTime" configuration parameter controlling how long sockets
+    used for srun/slurmstepd communications are kept alive after disconnect.
+ -- Added SLURM_SUBMIT_HOST to salloc, sbatch and srun job environment.
+ -- Added SLURM_ARRAY_TASK_ID to environment of job array.
+ -- Added squeue --array/-r option to optimize output for job arrays.
+ -- Added "SlurmctldPlugstack" configuration parameter for generic stack of
+    slurmctld daemon plugins.
+ -- Removed contribs/arrayrun tool. Use native support for job arrays.
+ -- Modify default installation locations for RPMs to match "make install":
+    _prefix /usr/local
+    _slurm_sysconfdir %{_prefix}/etc/slurm
+    _mandir %{_prefix}/share/man
+    _infodir %{_prefix}/share/info
+ -- Add acct_gather_energy/ipmi which works off freeipmi for energy gathering
+
+* Changes in SLURM 2.5.3
+========================
+ -- Gres/gpu plugin - If no GPUs requested, set CUDA_VISIBLE_DEVICES=NoDevFiles.
+    This bug was introduced in 2.5.2 for the case where a GPU count was
+    configured, but without device files.
+ -- task/affinity plugin - Fix bug in CPU masks for some processors.
+ -- Modify sacct command to get format from SACCT_FORMAT environment variable.
+ -- BGQ - Changed order of library inclusions and fixed incorrect declaration
+    to compile correctly on newer compilers
+ -- Fix for not building sview if glib exists on a system but not the gtk libs.
+ -- BGQ - Fix for handling a job cleanup on a small block if the job has long
+    since left the system.
+ -- Fix race condition in job dependency logic which can result in invalid
+    memory reference.
+
+
+* Changes in SLURM 2.5.2
+========================
+ -- Fix advanced reservation recovery logic when upgrading from version 2.4.
+ -- BLUEGENE - fix for QOS/Association node limits.
+ -- Add missing "safe" flag from print of AccountStorageEnforce option.
+ -- Fix logic to optimize GRES topology with respect to allocated CPUs.
+ -- Add job_submit/all_partitions plugin to set a job's default partition
+    to ALL available partitions in the cluster.
+ -- Modify switch/nrt logic to permit build without libnrt.so library.
+ -- Handle srun task launch failure without duplicate error messages or abort.
+ -- Fix bug in QoS limits enforcement when slurmctld restarts and user not yet
+    added to the QOS list.
+ -- Fix issue where sjstat and sjobexitmod was installed in 2 different RPMs.
+ -- Fix for job request of multiple partitions in which some partitions lack
+    nodes with required features.
+ -- Permit a job to use a QOS they do not have access to if an administrator
+    manually set the job's QOS (previously the job would be rejected).
+ -- Make more variables available to job_submit/lua plugin: slurm.MEM_PER_CPU,
+    slurm.NO_VAL, etc.
+ -- Fix topology/tree logic when nodes defined in slurm.conf get re-ordered.
+ -- In select/cons_res, correct logic to allocate whole sockets to jobs. Work
+    by Magnus Jonsson, Umea University.
+ -- In select/cons_res, correct logic when job removed from only some nodes.
+ -- Avoid apparent kernel bug in 2.6.32 which apparently is solved in
+    at least 3.5.0.  This avoids a stack overflow when running jobs on
+    more than 120k nodes.
+ -- BLUEGENE - If we made a block that isn't runnable because of a overlapping
+    block, destroy it correctly.
+ -- Switch/nrt - Dynamically load libnrt.so from within the plugin as needed.
+    This eliminates the need for libnrt.so on the head node.
+ -- BLUEGENE - Fix in reservation logic that could cause abort.
+
+* Changes in SLURM 2.5.1
+========================
+ -- Correction to hostlist sorting for hostnames that contain two numeric
+    components and the first numeric component has various sizes (e.g.
+    "rack9blade1" should come before "rack10blade1")
+ -- BGQ - Only poll on initialized blocks instead of calling getBlocks on
+    each block independently.
+ -- Fix of task/affinity plugin logic for Power7 processors having hyper-
+    threading disabled (cpu mask has gaps).
+ -- Fix of job priority ordering with sched/builtin and priority/multifactor.
+    Patch from Chris Read.
+ -- CRAY - Fix for setting up the aprun for a large job (+2000 nodes).
+ -- Fix for race condition related to compute node boot resulting in node being
+    set down with reason of "Node <name> unexpectedly rebooted"
+ -- RAPL - Fix for handling errors when opening msr files.
+ -- BGQ - Fix for salloc/sbatch to do the correct allocation when asking for
+    -N1 -n#.
+ -- BGQ - in emulation make it so we can pretend to run large jobs (>64k nodes)
+ -- BLUEGENE - Correct method to update conn_type of a job.
+ -- BLUEGENE - Fix issue with preemption when needing to preempt multiple jobs
+    to make one job run.
+ -- Fixed issue where if an srun dies inside of an allocation abnormally it
+    would of also killed the allocation.
+ -- FRONTEND - fixed issue where if a systems nodes weren't defined in the
+    slurm.conf with NodeAddr's signals going to a step could be handled
+    incorrectly.
+ -- If sched/backfill starts a job with a QOS having NO_RESERVE and not job
+    time limit, start it with the partition time limit (or one year if the
+    partition has no time limit) rather than NO_VAL (140 year time limit);
+ -- Alter hostlist logic to allocate large grid dynamically instead of on
+    stack.
+ -- Change RPC version checks to support version 2.5 slurmctld with version 2.4
+    slurmd daemons.
+ -- Correct core reservation logic for use with select/serial plugin.
+ -- Exit scontrol command on stdin EOF.
+ -- Disable job --exclusive option with select/serial plugin.
+
 * Changes in SLURM 2.5.0
 ========================
  -- Add DenyOnLimit flag for QOS to deny jobs at submission time if they
@@ -121,6 +254,12 @@ documents those changes that are of interest to users and admins.
     jobs).
  -- Restructure of srun code to allow outside programs to utilize existing
     logic.
+
+* Changes in SLURM 2.4.6
+========================
+ -- Correct WillRun authentication logic when issued for non-job owner.
+ -- BGQ - fix memory leak
+ -- BGQ - Fix to check block for action 'D' if it also has nodes in error.
 
 * Changes in SLURM 2.4.5
 ========================
@@ -633,6 +772,8 @@ documents those changes that are of interest to users and admins.
     a reconfiguration, the node's bitmap was not cleared resulting in an
     underflow upon job termination or removal from scheduling matrix by the
     backfill scheduler.
+ -- Fix race condition in job dependency logic which can result in invalid
+    memory reference.
 
 * Changes in SLURM 2.3.5
 ========================

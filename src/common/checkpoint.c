@@ -76,6 +76,7 @@ typedef struct slurm_checkpoint_ops {
 				      uint16_t protocol_version);
 	int	(*ckpt_unpack_jobinfo) (check_jobinfo_t jobinfo, Buf buffer,
 					uint16_t protocol_version);
+	check_jobinfo_t (*ckpt_copy_jobinfo) (check_jobinfo_t jobinfo);
 	int     (*ckpt_stepd_prefork) (void *slurmd_job);
 	int     (*ckpt_signal_tasks) (void *slurmd_job, char *image_dir);
 	int     (*ckpt_restart_task) (void *slurmd_job, char *image_dir,
@@ -94,6 +95,7 @@ static const char *syms[] = {
 	"slurm_ckpt_free_job",
 	"slurm_ckpt_pack_job",
 	"slurm_ckpt_unpack_job",
+	"slurm_ckpt_copy_job",
 	"slurm_ckpt_stepd_prefork",
 	"slurm_ckpt_signal_tasks",
 	"slurm_ckpt_restart_task"
@@ -276,6 +278,20 @@ extern int  checkpoint_unpack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer,
 	else {
 		error ("slurm_checkpoint plugin context not initialized");
 		retval = ENOENT;
+	}
+	slurm_mutex_unlock( &context_lock );
+	return retval;
+}
+
+extern check_jobinfo_t checkpoint_copy_jobinfo(check_jobinfo_t jobinfo)
+{
+	check_jobinfo_t retval = NULL;
+
+	slurm_mutex_lock( &context_lock );
+	if ( g_context ) {
+		retval = (*(ops.ckpt_copy_jobinfo))(jobinfo);
+	} else {
+		error ("slurm_checkpoint plugin context not initialized");
 	}
 	slurm_mutex_unlock( &context_lock );
 	return retval;

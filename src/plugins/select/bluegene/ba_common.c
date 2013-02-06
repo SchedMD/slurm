@@ -109,11 +109,11 @@ static int _unpack_ba_switch(ba_switch_t *ba_switch,
 	if ((cluster_flags & CLUSTER_FLAG_BGL)
 	    || (cluster_flags & CLUSTER_FLAG_BGP)) {
 		for (i=0; i< NUM_PORTS_PER_NODE; i++) {
-			if(_unpack_ba_connection(&ba_switch->int_wire[i],
+			if (_unpack_ba_connection(&ba_switch->int_wire[i],
 						 buffer, protocol_version)
 			   != SLURM_SUCCESS)
 				goto unpack_error;
-			if(_unpack_ba_connection(&ba_switch->ext_wire[i],
+			if (_unpack_ba_connection(&ba_switch->ext_wire[i],
 						 buffer, protocol_version)
 			   != SLURM_SUCCESS)
 				goto unpack_error;
@@ -212,8 +212,6 @@ static ba_geo_combos_t *_build_geo_bitmap_arrays(int size)
 	for (i = 1; i <= combos->elem_count; i++) {
 		bool some_bit_set = false, some_gap_set = false;
 		combos->set_bits_array[i-1] = bit_alloc(size);
-		if (combos->set_bits_array[i-1] == NULL)
-			fatal("bit_alloc: malloc failure");
 
 		gap_count = 0;
 		gap_start = -1;
@@ -1254,8 +1252,6 @@ extern void ba_free_geo_table(ba_geo_system_t *my_geo_system)
 extern bitstr_t *ba_node_map_alloc(ba_geo_system_t *my_geo_system)
 {
 	bitstr_t *cnode_map = bit_alloc(my_geo_system->total_size);
-	if (cnode_map == NULL)
-		fatal("bit_alloc: malloc failure");
 	return cnode_map;
 }
 

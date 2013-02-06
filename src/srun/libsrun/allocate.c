@@ -301,7 +301,7 @@ static int _blocks_dealloc(void)
 		return -1;
 	}
 	for (i=0; i<new_bg_ptr->record_count; i++) {
-		if(new_bg_ptr->block_array[i].state == BG_BLOCK_TERM) {
+		if (new_bg_ptr->block_array[i].state == BG_BLOCK_TERM) {
 			rc = 1;
 			break;
 		}
@@ -380,7 +380,7 @@ allocate_test(void)
 {
 	int rc;
 	job_desc_msg_t *j = job_desc_msg_create_from_opts();
-	if(!j)
+	if (!j)
 		return SLURM_ERROR;
 
 	rc = slurm_job_will_run(j);
@@ -444,7 +444,7 @@ allocate_nodes(bool handle_signals)
 		pending_job_id = resp->job_id;
 #ifdef HAVE_BG
 		if (!_wait_bluegene_block_ready(resp)) {
-			if(!destroy_job)
+			if (!destroy_job)
 				error("Something is wrong with the "
 				      "boot of the block.");
 			goto relinquish;
@@ -603,7 +603,7 @@ job_desc_msg_create_from_opts (void)
 
 	/* simplify the job allocation nodelist,
 	 * not laying out tasks until step */
-	if(j->req_nodes) {
+	if (j->req_nodes) {
 		hl = hostlist_create(j->req_nodes);
 		xfree(opt.nodelist);
 		opt.nodelist = hostlist_ranged_string_xmalloc(hl);
@@ -614,7 +614,7 @@ job_desc_msg_create_from_opts (void)
 
 	}
 
-	if(opt.distribution == SLURM_DIST_ARBITRARY
+	if (opt.distribution == SLURM_DIST_ARBITRARY
 	   && !j->req_nodes) {
 		error("With Arbitrary distribution you need to "
 		      "specify a nodelist or hostfile with the -w option");

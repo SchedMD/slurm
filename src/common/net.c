@@ -41,6 +41,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <sys/time.h>
@@ -51,9 +52,10 @@
 #include <errno.h>
 #include <stdint.h>
 
-#include "src/common/macros.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/net.h"
+#include "src/common/slurm_protocol_api.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
@@ -165,10 +167,60 @@ int readn(int fd, void *buf, size_t nbytes)
 int net_set_low_water(int sock, size_t size)
 {
 	if (setsockopt(sock, SOL_SOCKET, SO_RCVLOWAT,
-	  (const void *) &size, sizeof(size)) < 0) {
+		       (const void *) &size, sizeof(size)) < 0) {
 		error("Unable to set low water socket option: %m");
 		return -1;
 	}
+
+	return 0;
+}
+
+/* set keep alive time on socket */
+extern int net_set_keep_alive(int sock)
+{
+	int opt_int;
+	socklen_t opt_len;
+	struct linger opt_linger;
+	static bool keep_alive_set  = false;
+	static int  keep_alive_time = (uint16_t) NO_VAL;
+
+	if (!keep_alive_set) {
+		keep_alive_time = slurm_get_keep_alive_time();
+		keep_alive_set = true;
+	}
+
+	if (keep_alive_time == (uint16_t) NO_VAL)
+		return 0;
+
+	opt_len = sizeof(struct linger);
+	opt_linger.l_onoff = 1;
+	opt_linger.l_linger = keep_alive_time;
+	if (setsockopt(sock, SOL_SOCKET, SO_LINGER, &opt_linger, opt_len) < 0)
+		error("Unable to set linger socket option: %m");
+
+	opt_len = sizeof(int);
+	opt_int = 1;
+	if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &opt_int, opt_len) < 0) {
+		error("Unable to set keep alive socket option: %m");
+		return -1;
+	}
+	opt_int = keep_alive_time;
+	if (setsockopt(sock, SOL_TCP, TCP_KEEPIDLE, &opt_int, opt_len) < 0) {
+		error("Unable to set keep alive socket time: %m");
+		return -1;
+	}
+#if 0
+	opt_linger.l_onoff = 0;
+	opt_linger.l_linger = 0;
+	opt_len = sizeof(struct linger);
+	getsockopt(sock, SOL_SOCKET, SO_LINGER, &opt_linger, &opt_len);
+	info("got linger time of %d:%d on fd %d", opt_linger.l_onoff,
+	     opt_linger.l_linger, sock);
+
+	opt_len = sizeof(int);
+	getsockopt(sock, SOL_TCP, TCP_KEEPIDLE, &opt_int, &opt_len);
+	info("got keep_alive time is %d on fd %d", opt_int, sock);
+#endif
 
 	return 0;
 }

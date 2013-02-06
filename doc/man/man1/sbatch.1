@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 2.5" "October 2012" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 2.6" "January 2013" "SLURM Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to SLURM.
@@ -32,6 +32,18 @@ http://www.schedmd.com/slurmdocs/cpu_management.html
 
 .SH "OPTIONS"
 .LP
+
+.TP
+\fB\-a\fR, \fB\-\-array\fR=<\fIindexes\fR>
+Submit a job array, multiple jobs to be executed with identical parameters.
+The \fIindexes\fR specification identifies what array index values should
+be used. Multiple values may be specified using a comma separated list and/or
+a range of values with a "\-" separator. For example, "\-\-array=0\-15" or 
+"\-\-array=0,6,16\-32".
+A step function can also be specified with a suffix containing a colon and
+number. For example, "\-\-array=0\-15:4" is equivalent to "\-\-array=0,4,8,12".
+The minimum index value is 0.
+the maximum value is one less than the configuration parameter MaxArraySize.
 
 .TP
 \fB\-A\fR, \fB\-\-account\fR=<\fIaccount\fR>
@@ -160,7 +172,7 @@ Supported \fbconstraint\fR options include:
 Only nodes which have the specified feature will be used.
 For example, \fB\-\-constraint="intel"\fR
 .TP
-\fBNode Count\fB
+\fBNode Count\fR
 A request can specify the number of nodes needed with some feature
 by appending an asterisk and count after the feature name.
 For example "\fB\-\-nodes=16 \-\-constraint=graphics*4 ..."\fR
@@ -371,9 +383,11 @@ it is executed.
 \fB\-e\fR, \fB\-\-error\fR=<\fIfilename pattern\fR>
 Instruct SLURM to connect the batch script's standard error directly to the
 file name specified in the "\fIfilename pattern\fR".
-By default both standard output and standard error are directed to a file of
-the name "slurm\-%j.out", where the "%j" is replaced with the job allocation
-number.
+By default both standard output and standard error are directed to the same file.
+For job arrays, the default file name is "slurm-%A_%a.out", "%A" is replaced
+by the job ID and "%a" with the array index.
+For other jobs, the default file name is "slurm-%J.out", where the "%J" is
+replaced by the job ID.
 See the \fB\-\-input\fR option for filename specification options.
 
 .TP
@@ -514,6 +528,12 @@ a percent sign "%" followed by a letter (e.g. %j).
 Supported replacement symbols are:
 .PD
 .RS
+.TP
+\fB%A\fR
+Job array's master job allocation number.
+.TP
+\fB%a\fR
+Job array ID (index) number.
 .TP
 \fB%j\fR
 Job allocation number.
@@ -977,9 +997,11 @@ allowing more than one task per processor.  However no more than
 \fB\-o\fR, \fB\-\-output\fR=<\fIfilename pattern\fR>
 Instruct SLURM to connect the batch script's standard output directly to the
 file name specified in the "\fIfilename pattern\fR".
-By default both standard output and standard error are directed to a file of
-the name "slurm\-%j.out", where the "%j" is replaced with the job allocation
-number.
+By default both standard output and standard error are directed to the same file.
+For job arrays, the default file name is "slurm-%A_%a.out", "%A" is replaced
+by the job ID and "%a" with the array index.
+For other jobs, the default file name is "slurm-%J.out", where the "%J" is
+replaced by the job ID.
 See the \fB\-\-input\fR option for filename specification options.
 
 .TP
@@ -1376,6 +1398,10 @@ Same as \fB\-t, \-\-time\fR
 .TP
 \fBSBATCH_WAIT_ALL_NODES\fR
 Same as \fB\-\-wait\-all\-nodes\fR
+.TP
+\fBSLURM_STEP_KILLED_MSG_NODE_ID\fR=ID
+If set, only the specified node will log when the job or step are killed
+by a signal.
 
 .SH "OUTPUT ENVIRONMENT VARIABLES"
 .PP
@@ -1385,8 +1411,20 @@ the batch script.
 \fBBASIL_RESERVATION_ID\fR
 The reservation ID on Cray systems running ALPS/BASIL only.
 .TP
+\fBSLURM_ARRAY_TASK_ID\fR
+Job array ID (index) number.
+.TP
+\fBSLURM_ARRAY_JOB_ID\fR
+Job array's master job ID number.
+.TP
 \fBSLURM_CPU_BIND\fR
 Set to value of the \-\-cpu_bind\fR option.
+.TP
+\fBSLURM_CPU_BIND_LIST\fR
+\-\-cpu_bind map or mask list (list of SLURM CPU IDs or masks for this node,
+CPU_ID = Board_ID x threads_per_board +
+Socket_ID x threads_per_socket +
+Core_ID x threads_per_core + Thread_ID).
 .TP
 \fBSLURM_JOB_ID\fR (and \fBSLURM_JOBID\fR for backwards compatibility)
 The ID of the job allocation.
@@ -1454,6 +1492,9 @@ the job has been restarted.
 .TP
 \fBSLURM_SUBMIT_DIR\fR
 The directory from which \fBsbatch\fR was invoked.
+.TP
+\fBSLURM_SUBMIT_HOST\fR
+The hostname of the computer from which \fBsbatch\fR was invoked.
 .TP
 \fBMPIRUN_PARTITION\fR
 The block name on Blue Gene systems only.

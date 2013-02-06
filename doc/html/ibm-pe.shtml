@@ -2,7 +2,12 @@
 
 <h1>IBM Parallel Environment User and Administrator Guide</h1>
 
-<h2>Overview</h2>
+<p>
+<a href="#overview">Overview</a><br>
+<a href="#user">User Tools</a><br>
+<a href="#admin">System Administration</a></p>
+
+<h2><a name="overview">Overview</a></h2>
 
 <p>This document describes the unique features of SLURM on the
 IBM computers with the
@@ -11,7 +16,7 @@ software. You should be familiar with the SLURM's mode of operation on Linux
 clusters before studying the relatively few differences in operation on systems
 with PE, which are described in this document.</p>
 
-<h2>User Tools</h2>
+<h2><a name="user">User Tools</a></h2>
 
 <p>The normal set of SLURM user tools: srun, scancel, sinfo, squeue, scontrol,
 etc. provide all of the expected services.
@@ -128,8 +133,8 @@ Allocate one switch window per task on each node and every network supporting
 MPI and a second window supporting PAMI.
 <br><br>
 <b>--network=devtype=ib,instances=2,lapi,mpi</b><br>
-On every Infiniband network connection, allocate two switch windows each for 
-both lapi and mpi interfaces. If each node has one Infinband network connection,
+On every InfiniBand network connection, allocate two switch windows each for 
+both lapi and mpi interfaces. If each node has one InfiniBand network connection,
 this would result in four switch windows per task.
 </p>
 
@@ -249,7 +254,7 @@ $ ls -l ~/.slurm/slurm_cmdfile.*
 $ rm    ~/.slurm/slurm_cmdfile.*
 </pre>
 
-<p>The -L/--label option differs slighly in that when the output from multiple
+<p>The -L/--label option differs slightly in that when the output from multiple
 tasks are identical, they are combined on a single line with the prefix
 identifying which task(s) generated the output. In addition, there is a colon
 but no space between the task IDs and output. For example:</p>
@@ -270,7 +275,7 @@ but no space between the task IDs and output. For example:</p>
 
 <p>In addition, when srun's --multi-prog option (for Multiple Program,
 Multiple Data configurations) is used with the -L/--label option then a job
-step ID, colon and space will preceed the task ID and colon. For example:</p>
+step ID, colon and space will precede the task ID and colon. For example:</p>
 <pre>
 # SLURM OUTPUT
 0: zero
@@ -284,7 +289,7 @@ step ID, colon and space will preceed the task ID and colon. For example:</p>
 </pre>
 
 <p>The srun command is not able to report task status upon receipt of a SIGINT
-signal (ctrl-c interupt from keyboard), however two SIGINT signals within a
+signal (ctrl-c interrupt from keyboard), however two SIGINT signals within a
 one second interval will terminate the job as on other SLURM configurations.</p>
 
 <h3>Environment Variables</h3>
@@ -345,7 +350,7 @@ instead of the users tasks.  The exit code of the job allocation if
 started with srun will be correct as we will grab the exit code from
 the wrapped poe.</p>
 
-<h2>System Administration</h2>
+<h2><a name="admin">System Administration</a></h2>
 
 <p>There are several critical SLURM configuration parameters for use with PE.
 These configuration parameters should be set in your <b>slurm.conf</b> file.
@@ -354,7 +359,8 @@ to <b>launch/poe</b>. This configuration means that poe will be used to launch
 all applications.
 <b>SwitchType</b> defines the mechanism used to manage the network switch and
 it must be set to <b>switch/nrt</b> and use IBM's Network Resource Table (NRT)
-interface.
+interface on ALL nodes in the cluster (only a few of them will actually interact
+with IBM's NRT library, but all need to work with the NRT data structures).
 Task launch is slower in this environment than with a typical Linux cluster
 and the <b>MessageTimeout</b> must be configured to a sufficiently large value
 so that large parallel jobs can be launched without SLURM's job step
@@ -381,11 +387,17 @@ ProctrackType=proctrack/cgroup
 <p>In order for these plugins to be built, the locations of the POE Resource
 Manager header file (permapi.h) the NRT header file (nrt.h) and NRT library
 (libnrt.so) must be identified at the time the SLURM is built.
-SLURM searches for the header files in the /usr/include directory by default.
+The header files are needed at build time to get NRT data structures, function
+return codes, etc.
+The NRT library location is needed to identify where the library is to be
+loaded from by Slurm's switch/nrt plugin, but the library is only actually
+when needed and only by the slurmd daemon.</p>
+
+<p>SLURM searches for the header files in the /usr/include directory by default.
 If the files are not installed there, you can specify a different location using
 the <b>--with-nrth=PATH</b> option to the configure program, where "PATH" is
-the fully qualified pathname of the parent directory of the nrt.h and permapi.h
-files.
+the fully qualified pathname of the parent directory(ies) of the nrt.h and
+permapi.h files.
 SLURM searches for the libnrt.so file in the /usr/lib and /usr/lib64 directories
 by default. If the file is not installed there, you can specify a different
 location using the <b>--with-nrtlib=PATH</b> option to the configure program,
@@ -438,12 +450,12 @@ export MP_TIMEOUT=600
 Environment. Job's can be explicitly preempted and later resumed using the
 <b>scontrol suspend &lt;jobid&gt;</b> and <b>scontrol resume &lt;jobid&gt;</b>
 commands. This functionality relies upon NRT functions to suspend/resume
-programs and reset MPI timeouts. Note that SLURM suports the preemption only
+programs and reset MPI timeouts. Note that SLURM supports the preemption only
 of whole jobs rather than individual job steps. A suspended job will relinquish
 CPU resources, but retain memory and switch window resources. Note that the
 long term suspension of jobs with any allocated Collective Acceleration
 Units (CAU) is disabled and an error message to that effect will be generated
-in response to such a request. In addition, verion 1200 or higher of IBM's NRT
+in response to such a request. In addition, version 1200 or higher of IBM's NRT
 API is required to support this functionality.</p>
 
 <h3>Design Notes</h3>
@@ -460,7 +472,7 @@ node.</p>
 <p>It is possible to configure SLURM and LoadLeveler to simultaneously exist
 on a cluster, however each scheduler must be configured to manage different
 compute nodes (e.g. LoadLeveler can manage compute nodes "tux[1-8]" and SLURM
-can manaage compute nodes "tux[9-16]" on the same cluster). In addition, the
+can manage compute nodes "tux[9-16]" on the same cluster). In addition, the
 /etc/poe.limits file on each node must identify the MP_PE_RMLIB appropriate
 for that node (e.g. IBM's or SLURM's libpermapi.so)</p>
 
@@ -469,7 +481,7 @@ Then poe uses the <b>launch/slurm</b> plugin to launch the "pmd" process on the
 compute nodes, so two launch plugins are actually used.</p>
 
 <p>Depending upon job size and network options, allocating and deallocating
-switch resources can take multple seconds per node and the process of launching
+switch resources can take multiple seconds per node and the process of launching
 applications on multiple nodes is not well parallelized.
 This is outside of SLURM's control.</p>
 
@@ -478,7 +490,7 @@ This is outside of SLURM's control.</p>
 <p>It is possible to generate detailed logging of all switch/nrt actions and
 data by configuring <b>DebugFlags=switch</b>.</p>
 
-<p>The envirnoment variable <b>MP_INFOLEVEL</b> can be used to enable the
+<p>The environment variable <b>MP_INFOLEVEL</b> can be used to enable the
 logging of POE debug messages. To enable fairly detailed logging, set
 <b>MP_INFOLEVEL=6</b>.</p>
 
@@ -494,6 +506,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 21 November 2012</p></td>
+<p style="text-align:center;">Last modified 31 January 2013</p></td>
 
 <!--#include virtual="footer.txt"-->

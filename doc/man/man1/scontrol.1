@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "September 2012" "scontrol 2.5" "Slurm components"
+.TH SCONTROL "1" "December 2012" "scontrol 2.5" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -237,22 +237,27 @@ Terminate the execution of scontrol.
 Reboot all nodes in the system when they become idle using the
 \fBRebootProgram\fP as configured in SLURM's slurm.conf file.
 Accepts an option list of nodes to reboot. By default all nodes are rebooted.
+NOTE: This command does not prevent additional jobs from being scheduled on
+these nodes, so many jobs can be executed on the nodes prior to them being
+rebooted. You can explicitly drain the nodes in order to reboot nodes as soon
+as possible, but the nodes must also explicitly be returned to service after
+being rebooted. You can alternately create an advanced reservation with a flag
+of MAINT to prevent additional jobs from being initiated.
 
 .TP
 \fBreconfigure\fP
 Instruct all Slurm daemons to re\-read the configuration file.
 This command does not restart the daemons.
 This mechanism would be used to modify configuration parameters (Epilog,
-Prolog, SlurmctldLogFile, SlurmdLogFile, etc.) register the physical
-addition or removal of nodes from the cluster or recognize the change
-of a node's configuration, such as the addition of memory or processors.
+Prolog, SlurmctldLogFile, SlurmdLogFile, etc.).
 The Slurm controller (slurmctld) forwards the request all other daemons
 (slurmd daemon on each compute node). Running jobs continue execution.
 Most configuration parameters can be changed by just running this command,
 however, SLURM daemons should be shutdown and restarted if any of these
 parameters are to be changed: AuthType, BackupAddr, BackupController,
 ControlAddr, ControlMach, PluginDir, StateSaveLocation, SlurmctldPort
-or SlurmdPort.
+or SlurmdPort. The slurmctld daemon must be restarted if nodes are added to
+or removed from the cluster.
 
 .TP
 \fBrelease\fP \fIjob_id\fP
@@ -849,6 +854,11 @@ The "NoResp" state will only set the "NoResp" flag for a node without
 changing its underlying state.
 While all of the above states are valid, some of them are not valid new
 node states given their prior state.
+If the node state code printed is followed by "~", this indicates
+the node is presently in a power saving mode (typically
+running at reduced frequency).
+If the node state code is followed by "#", this indicates
+the node is presently being powered up or configured.
 Generally only "DRAIN", "FAIL" and "RESUME" should be used.
 NOTE: The scontrol command should not be used to change node state on Cray
 systems. Use Cray tools such as \fIxtprocadmin\fR instead.

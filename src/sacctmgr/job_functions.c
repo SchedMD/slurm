@@ -112,7 +112,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if(!end)
+		if (!end)
 			command_len=strlen(argv[i]);
 		else {
 			command_len=end-1;
@@ -124,10 +124,10 @@ static int _set_rec(int *start, int argc, char *argv[],
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))) {
 			i--;
 			break;
-		} else if(!end && !strncasecmp(argv[i], "set",
+		} else if (!end && !strncasecmp(argv[i], "set",
 					       MAX(command_len, 3))) {
 			continue;
-		} else if(!end) {
+		} else if (!end) {
 			exit_code=1;
 			fprintf(stderr,
 				" Bad format on %s: End your option with "
@@ -146,7 +146,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 					 MAX(command_len, 12))) ||
 			   (!strncasecmp(argv[i], "DerivedES",
 					 MAX(command_len, 9)))) {
-			if(job->derived_es)
+			if (job->derived_es)
 				xfree(job->derived_es);
 			job->derived_es = strip_quotes(argv[i]+end, NULL, 1);
 			set = 1;

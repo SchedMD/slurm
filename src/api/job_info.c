@@ -64,6 +64,44 @@
 #include "src/common/xstring.h"
 
 /*
+ * slurm_xlate_job_id - Translate a Slurm job ID string into a slurm job ID
+ *	number. If this job ID contains an array index, map this to the
+ *	equivalent Slurm job ID number (e.g. "123_2" to 124)
+ *
+ * IN job_id_str - String containing a single job ID number
+ * RET - equivalent job ID number or 0 on error
+ */
+extern uint32_t slurm_xlate_job_id(char *job_id_str)
+{
+	char *next_str;
+	uint32_t i, job_id;
+	uint16_t array_id;
+	job_info_msg_t *resp;
+	slurm_job_info_t *job_ptr;
+
+	job_id = (uint32_t) strtol(job_id_str, &next_str, 10);
+	if (next_str[0] == '\0')
+		return job_id;
+	if (next_str[0] != '_')
+		return (uint32_t) 0;
+	array_id = (uint16_t) strtol(next_str + 1, &next_str, 10);
+	if (next_str[0] != '\0')
+		return (uint32_t) 0;
+	if (slurm_load_job(&resp, job_id, SHOW_ALL) != 0)
+		return (uint32_t) 0;
+	job_id = 0;
+	for (i = 0, job_ptr = resp->job_array; i < resp->record_count;
+	     i++, job_ptr++) {
+		if (job_ptr->array_task_id == array_id) {
+			job_id = job_ptr->job_id;
+			break;
+		}	
+	}
+	slurm_free_job_info_msg(resp);
+	return job_id;
+}
+
+/*
  * slurm_print_job_info_msg - output information about all Slurm
  *	jobs based upon message as loaded using slurm_load_jobs
  * IN out - file to write to
@@ -92,14 +130,14 @@ static void _sprint_range(char *str, uint32_t str_size,
 	char tmp[128];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	if(cluster_flags & CLUSTER_FLAG_BG) {
+	if (cluster_flags & CLUSTER_FLAG_BG) {
 		convert_num_unit((float)lower, tmp, sizeof(tmp), UNIT_NONE);
 	} else {
 		snprintf(tmp, sizeof(tmp), "%u", lower);
 	}
 	if (upper > 0) {
     		char tmp2[128];
-		if(cluster_flags & CLUSTER_FLAG_BG) {
+		if (cluster_flags & CLUSTER_FLAG_BG) {
 			convert_num_unit((float)upper, tmp2,
 					 sizeof(tmp2), UNIT_NONE);
 		} else {
@@ -168,9 +206,16 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 
 	/****** Line 1 ******/
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "JobId=%u Name=%s", job_ptr->job_id, job_ptr->name);
+	snprintf(tmp_line, sizeof(tmp_line), "JobId=%u ", job_ptr->job_id);
 	out = xstrdup(tmp_line);
+	if (job_ptr->array_job_id) {
+		snprintf(tmp_line, sizeof(tmp_line), 
+			 "ArrayJobId=%u ArrayTaskId=%u ",
+			 job_ptr->array_job_id, job_ptr->array_task_id);
+		xstrcat(out, tmp_line);
+	}
+	snprintf(tmp_line, sizeof(tmp_line), "Name=%s", job_ptr->name);
+	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
 	else
@@ -195,7 +240,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		 "Priority=%u Account=%s QOS=%s",
 		 job_ptr->priority, job_ptr->account, job_ptr->qos);
 	xstrcat(out, tmp_line);
-	if(slurm_get_track_wckey()) {
+	if (slurm_get_track_wckey()) {
 		snprintf(tmp_line, sizeof(tmp_line),
 			 " WCKey=%s", job_ptr->wckey);
 		xstrcat(out, tmp_line);
@@ -402,7 +447,7 @@ line6:
 	/****** Line 13 ******/
 	xstrfmtcat(out, "%s=", nodelist);
 	xstrcat(out, job_ptr->nodes);
-	if(job_ptr->nodes && ionodes) {
+	if (job_ptr->nodes && ionodes) {
 		snprintf(tmp_line, sizeof(tmp_line), "[%s]", ionodes);
 		xstrcat(out, tmp_line);
 		xfree(ionodes);
@@ -431,7 +476,7 @@ line6:
 		if ((min_nodes == 0) || (min_nodes == NO_VAL)) {
 			min_nodes = job_ptr->num_nodes;
 			max_nodes = job_ptr->max_nodes;
-		} else if(job_ptr->max_nodes)
+		} else if (job_ptr->max_nodes)
 			max_nodes = min_nodes;
 	} else {
 		min_nodes = job_ptr->num_nodes;
@@ -464,7 +509,7 @@ line6:
 	if (!job_resrcs)
 		goto line15;
 
-	if(cluster_flags & CLUSTER_FLAG_BG) {
+	if (cluster_flags & CLUSTER_FLAG_BG) {
 		if ((job_resrcs->cpu_array_cnt > 0) &&
 		    (job_resrcs->cpu_array_value) &&
 		    (job_resrcs->cpu_array_reps)) {
@@ -544,13 +589,6 @@ line6:
 				job_resrcs->cores_per_socket[sock_inx];
 
 			core_bitmap = bit_alloc(bit_reps);
-			if (core_bitmap == NULL) {
-				error("bit_alloc malloc failure");
-				hostlist_destroy(hl_last);
-				hostlist_destroy(hl);
-				return NULL;
-			}
-
 			for (j=0; j < bit_reps; j++) {
 				if (bit_test(job_resrcs->core_bitmap, bit_inx))
 					bit_set(core_bitmap, j);
@@ -635,7 +673,7 @@ line15:
 	} else
 		tmp6_ptr = "Node";
 
-	if(cluster_flags & CLUSTER_FLAG_BG) {
+	if (cluster_flags & CLUSTER_FLAG_BG) {
 		convert_num_unit((float)job_ptr->pn_min_cpus,
 				 tmp1, sizeof(tmp1), UNIT_NONE);
 		snprintf(tmp_line, sizeof(tmp_line), "MinCPUsNode=%s",	tmp1);
@@ -694,7 +732,7 @@ line15:
 		 job_ptr->work_dir);
 	xstrcat(out, tmp_line);
 
-	if(cluster_flags & CLUSTER_FLAG_BG) {
+	if (cluster_flags & CLUSTER_FLAG_BG) {
 		/****** Line 20 (optional) ******/
 		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
 					       select_buf, sizeof(select_buf),
@@ -721,7 +759,7 @@ line15:
 			xstrcat(out, select_buf);
 		}
 
-		if(cluster_flags & CLUSTER_FLAG_BGL) {
+		if (cluster_flags & CLUSTER_FLAG_BGL) {
 			/****** Line 22 (optional) ******/
 			select_g_select_jobinfo_sprint(
 				job_ptr->select_jobinfo,
@@ -746,7 +784,7 @@ line15:
 				xstrcat(out, " ");
 			else
 				xstrcat(out, "\n   ");
-			if(cluster_flags & CLUSTER_FLAG_BGL)
+			if (cluster_flags & CLUSTER_FLAG_BGL)
 				snprintf(tmp_line, sizeof(tmp_line),
 					 "LinuxImage=%s", select_buf);
 			else
@@ -777,7 +815,7 @@ line15:
 				xstrcat(out, " ");
 			else
 				xstrcat(out, "\n   ");
-			if(cluster_flags & CLUSTER_FLAG_BGL)
+			if (cluster_flags & CLUSTER_FLAG_BGL)
 				snprintf(tmp_line, sizeof(tmp_line),
 					 "RamDiskImage=%s", select_buf);
 			else
@@ -836,13 +874,13 @@ line15:
  * slurm_load_jobs - issue RPC to get all job configuration
  *	information if changed since update_time
  * IN update_time - time of current configuration data
- * IN job_info_msg_pptr - place to store a job configuration pointer
+ * IN/OUT job_info_msg_pptr - place to store a job configuration pointer
  * IN show_flags -  job filtering option: 0, SHOW_ALL or SHOW_DETAIL
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
 extern int
-slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
+slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 		 uint16_t show_flags)
 {
 	int rc;
@@ -854,7 +892,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 	slurm_msg_t_init(&resp_msg);
 
 	req.last_update  = update_time;
-	req.show_flags = show_flags;
+	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_JOB_INFO;
 	req_msg.data     = &req;
 
@@ -863,7 +901,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_INFO:
-		*resp = (job_info_msg_t *)resp_msg.data;
+		*job_info_msg_pptr = (job_info_msg_t *)resp_msg.data;
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
@@ -876,7 +914,54 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS ;
+	return SLURM_PROTOCOL_SUCCESS;
+}
+
+/*
+ * slurm_load_job_user - issue RPC to get slurm information about all jobs
+ *	to be run as the specified user
+ * IN/OUT job_info_msg_pptr - place to store a job configuration pointer
+ * IN user_id - ID of user we want information for
+ * IN show_flags - job filtering options
+ * RET 0 or -1 on error
+ * NOTE: free the response using slurm_free_job_info_msg
+ */
+extern int slurm_load_job_user (job_info_msg_t **job_info_msg_pptr,
+				uint32_t user_id,
+				uint16_t show_flags)
+{
+	int rc;
+	slurm_msg_t resp_msg;
+	slurm_msg_t req_msg;
+	job_user_id_msg_t req;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	req.show_flags   = show_flags;
+	req.user_id      = user_id;
+	req_msg.msg_type = REQUEST_JOB_USER_INFO;
+	req_msg.data     = &req;
+
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+		return SLURM_ERROR;
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_JOB_INFO:
+		*job_info_msg_pptr = (job_info_msg_t *)resp_msg.data;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		if (rc)
+			slurm_seterrno_ret(rc);
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
+
+	return SLURM_PROTOCOL_SUCCESS;
 }
 
 /*
@@ -944,8 +1029,8 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
-	if(cluster_flags & CLUSTER_FLAG_MULTSD) {
-		if((this_addr = getenv("SLURMD_NODENAME"))) {
+	if (cluster_flags & CLUSTER_FLAG_MULTSD) {
+		if ((this_addr = getenv("SLURMD_NODENAME"))) {
 			slurm_conf_get_addr(this_addr, &req_msg.address);
 		} else {
 			this_addr = "localhost";
@@ -974,13 +1059,13 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 
 	rc = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 
-	if(rc != 0 || !resp_msg.auth_cred) {
+	if (rc != 0 || !resp_msg.auth_cred) {
 		error("slurm_pid2jobid: %m");
-		if(resp_msg.auth_cred)
+		if (resp_msg.auth_cred)
 			g_slurm_auth_destroy(resp_msg.auth_cred);
 		return SLURM_ERROR;
 	}
-	if(resp_msg.auth_cred)
+	if (resp_msg.auth_cred)
 		g_slurm_auth_destroy(resp_msg.auth_cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_ID:
@@ -1186,7 +1271,7 @@ extern int slurm_job_cpus_allocated_on_node_id(
 
 	for (i = 0; i < job_resrcs_ptr->cpu_array_cnt; i++) {
 		start_node += job_resrcs_ptr->cpu_array_reps[i];
-		if(start_node >= node_id)
+		if (start_node >= node_id)
 			break;
 	}
 

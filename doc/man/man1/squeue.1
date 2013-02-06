@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "June 2011" "squeue 2.3" "Slurm components"
+.TH SQUEUE "1" "January 2013" "squeue 2.6" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -19,9 +19,16 @@ list of account names. This has no effect when listing job steps.
 
 .TP
 \fB\-a\fR, \fB\-\-all\fR
-Display information about jobs and job steps in all partions.
+Display information about jobs and job steps in all partitions.
 This causes information to be displayed about partitions that are configured as
 hidden and partitions that are unavailable to user's group.
+
+.TP
+\fB\-r\fR, \fB\-\-array\fR
+Display one job array element per line.
+Without this option, the display will be optimized for use with job arrays
+(pending job array elements will be combined on one line of output with the
+array index values printed using a regular expression).
 
 .TP
 \fB\-h\fR, \fB\-\-noheader\fR
@@ -33,7 +40,7 @@ Print a help message describing all options \fBsqueue\fR.
 
 .TP
 \fB\-\-hide\fR
-Do not display information about jobs and job steps in all partions. By default,
+Do not display information about jobs and job steps in all partitions. By default,
 information about partitions that are configured as hidden or are not available
 to the user's group will not be displayed (i.e. this is the default behavior).
 
@@ -45,14 +52,17 @@ By default, prints a time stamp with the header.
 
 .TP
 \fB\-j <job_id_list>\fR, \fB\-\-jobs=<job_id_list>\fR
-Requests a comma separated list of job ids to display.  Defaults to all jobs.
+Requests a comma separated list of job IDs to display.  Defaults to all jobs.
 The \fB\-\-jobs=<job_id_list>\fR option may be used in conjunction with the
 \fB\-\-steps\fR option to print step information about specific jobs.
-Note: If a list of job ids is provided, the jobs are displayed even if
+Note: If a list of job IDs is provided, the jobs are displayed even if
 they are on hidden partitions. Since this option's argument is optional,
 for proper parsing the single letter option must be followed immediately
 with the value and not include a space between them. For example "\-j1008"
-and not "\-j 1008". 
+and not "\-j 1008".
+The job ID format is "job_id[_array_id]".
+Performance of the command can be measurably improved for systems with large
+numbers of jobs when a single job ID is specified.
 
 .TP
 \fB\-l\fR, \fB\-\-long\fR
@@ -78,13 +88,13 @@ The default formats with various options are
 .RS
 .TP 15
 \fIdefault\fR
-"%.7i %.9P %.8j %.8u %.2t %.10M %.6D %R"
+"%.18i %.9P %.8j %.8u %.2t %.10M %.6D %R"
 .TP
 \fI\-l, \-\-long\fR
-"%.7i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R"
+"%.18i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R"
 .TP
 \fI\-s, \-\-steps\fR
-"%10i %.8j %.9P %.8u %.9M %N"
+"%.15i %.8j %.9P %.8u %.9M %N"
 .RE
 
 .IP
@@ -168,6 +178,10 @@ completes.  A value of zero implies this job has no dependencies.
 Features required by the job.
 (Valid for jobs only)
 .TP
+\fB%F\fR
+Job array's job ID.
+(Valid for jobs only)
+.TP
 \fB%g\fR
 Group name of the job.
 (Valid for jobs only)
@@ -208,6 +222,10 @@ When \-\-threads\-per\-core has not been set, "*" is displayed.
 .TP
 \fB%k\fR
 Comment associated with the job.
+(Valid for jobs only)
+.TP
+\fB%K\fR
+Job array index.
 (Valid for jobs only)
 .TP
 \fB%l\fR
@@ -357,7 +375,7 @@ Specify the reservation of the jobs to view.
 \fB\-s\fR, \fB\-\-steps\fR
 Specify the job steps to view.  This flag indicates that a comma separated list
 of job steps to view follows without an equal sign (see examples).
-The job step format is "job_id.step_id". Defaults to all job
+The job step format is "job_id[_array_id].step_id". Defaults to all job
 steps. Since this option's argument is optional, for proper parsing
 the single letter option must be followed immediately with the value
 and not include a space between them. For example "\-s1008.0" and not
@@ -366,7 +384,7 @@ and not include a space between them. For example "\-s1008.0" and not
 .TP
 \fB\-S <sort_list>\fR, \fB\-\-sort=<sort_list>\fR
 Specification of the order in which records should be reported.
-This uses the same field specifciation as the <output_format>.
+This uses the same field specification as the <output_format>.
 Multiple sorts may be performed by listing multiple sort fields
 separated by commas.
 The field specifications may be preceded by "+" or "\-" for
@@ -400,13 +418,15 @@ jobs are reported. Valid states (in both extended and compact form) include:
 PENDING (PD), RUNNING (R), SUSPENDED (S),
 COMPLETING (CG), COMPLETED (CD), CONFIGURING (CF), CANCELLED (CA),
 FAILED (F), TIMEOUT (TO), PREEMPTED (PR) and NODE_FAIL (NF). Note the
-\fB<state_list>\fR supplied is case insensitve ("pd" and "PD" work the same).
+\fB<state_list>\fR supplied is case insensitive ("pd" and "PD" work the same).
 See the \fBJOB STATE CODES\fR section below for more information.
 
 .TP
 \fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
-Request jobs or job steps from a comma separated list of users.  The
-list can consist of user names or user id numbers.
+Request jobs or job steps from a comma separated list of users.
+The list can consist of user names or user id numbers.
+Performance of the command can be measurably improved for systems with large
+numbers of jobs when a single user is specified.
 
 .TP
 \fB\-\-usage\fR
@@ -547,6 +567,9 @@ Another suggested value is "%a %T" for a day of week and time stamp (e.g.
 .TP
 \fBSQUEUE_ALL\fR
 \fB\-a, \-\-all\fR
+.TP
+\fBSQUEUE_ARRAY\fR
+\fB\-r, \-\-array\fR
 .TP
 \fBSQUEUE_NAMES\fR
 \fB\-\-name=<name_list>\fR

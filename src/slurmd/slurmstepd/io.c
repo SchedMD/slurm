@@ -72,18 +72,20 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "src/common/eio.h"
-#include "src/common/io_hdr.h"
 #include "src/common/cbuf.h"
+#include "src/common/eio.h"
+#include "src/common/fd.h"
+#include "src/common/io_hdr.h"
+#include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/fd.h"
-#include "src/common/list.h"
+#include "src/common/net.h"
 #include "src/common/read_config.h"
+#include "src/common/write_labelled_message.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/write_labelled_message.h"
+
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
@@ -284,9 +286,6 @@ _client_writable(eio_obj_t *obj)
 		struct io_buf *msg;
 		client->msg_queue = list_create(NULL); /* need destructor */
 		msgs = list_iterator_create(client->job->outgoing_cache);
-		if (!msgs)
-			fatal("Could not allocate iterator");
-
 		while ((msg = list_next(msgs))) {
 			msg->ref_count++;
 			list_enqueue(client->msg_queue, msg);
@@ -1214,10 +1213,7 @@ _send_connection_okay_response(slurmd_job_t *job)
 	}
 
 	clients = list_iterator_create(job->clients);
-	if (!clients)
-		fatal("Could not allocate memory");
-
-	while((eio = list_next(clients))) {
+	while ((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		if (client->out_eof || client->is_local_file)
 			continue;
@@ -1287,10 +1283,7 @@ _route_msg_task_to_client(eio_obj_t *obj)
 
 		/* Add message to the msg_queue of all clients */
 		clients = list_iterator_create(out->job->clients);
-		if (!clients)
-			fatal("Could not allocate iterator");
-
-		while((eio = list_next(clients))) {
+		while ((eio = list_next(clients))) {
 			client = (struct client_io_info *)eio->arg;
 			if (client->out_eof == true)
 				continue;
@@ -1372,14 +1365,14 @@ _free_all_outgoing_msgs(List msg_queue, slurmd_job_t *job)
 	struct io_buf *msg;
 
 	msgs = list_iterator_create(msg_queue);
-	if (!msgs)
-		fatal("Could not allocate iterator");
 	while((msg = list_next(msgs))) {
 		_free_outgoing_msg(msg, job);
 	}
 	list_iterator_destroy(msgs);
 }
 
+/* Close I/O file descriptors created by slurmstepd. The connections have
+ * all been moved to the spawned tasks stdin/out/err file descriptors. */
 extern void
 io_close_task_fds(slurmd_job_t *job)
 {
@@ -1435,8 +1428,6 @@ io_close_local_fds(slurmd_job_t *job)
 		return;
 
 	clients = list_iterator_create(job->clients);
-	if (!clients)
-		fatal("Could not allocate iterator");
 	while((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		if (client->is_local_file) {
@@ -1750,8 +1741,6 @@ _send_eof_msg(struct task_read_info *out)
 
 	/* Add eof message to the msg_queue of all clients */
 	clients = list_iterator_create(out->job->clients);
-	if (!clients)
-		fatal("Could not allocate iterator");
 	while((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		debug5("======================== Enqueued eof message");
@@ -1936,6 +1925,7 @@ _user_managed_io_connect(srun_info_t *srun, uint32_t gtid)
 	if (fd == -1)
 		return -1;
 
+	net_set_keep_alive(fd);
 	if (slurm_send_node_msg(fd, &msg) == -1) {
 		close(fd);
 		return -1;

@@ -115,6 +115,9 @@
 /* Define to 1 if you have the `fdatasync' function. */
 #undef HAVE_FDATASYNC
 
+/* Define to 1 if freeipmi library found */
+#undef HAVE_FREEIPMI
+
 /* Define to 1 if running slurmd on front-end only */
 #undef HAVE_FRONT_END
 
@@ -148,9 +151,6 @@
 /* Define to 1 if you have the `job' library (-ljob). */
 #undef HAVE_LIBJOB
 
-/* define if you have libnrt.so */
-#undef HAVE_LIBNRT
-
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
 
@@ -182,6 +182,9 @@
 /* Define to 1 if you have the <netdb.h> header file. */
 #undef HAVE_NETDB_H
 
+/* define if you have nrt.h */
+#undef HAVE_NRT_H
+
 /* define if numa library installed */
 #undef HAVE_NUMA
 
@@ -196,6 +199,9 @@
 
 /* Define to 1 if you have the <paths.h> header file. */
 #undef HAVE_PATHS_H
+
+/* define if you have permapi_h */
+#undef HAVE_PERMAPI_H
 
 /* Define to 1 if using PostgreSQL libaries */
 #undef HAVE_PGSQL
@@ -354,6 +360,9 @@
    member named physmem. */
 #undef HAVE__SYSTEM_CONFIGURATION
 
+/* Define the libnrt.so location */
+#undef LIBNRT_SO
+
 /* Define to 1 for --get-user-env to load user environment without .login */
 #undef LOAD_ENV_NO_LOGIN
 
@@ -502,12 +511,6 @@
 
 /* Version number of package */
 #undef VERSION
-
-/* Have definition of lsd_fatal_error() */
-#undef WITH_LSD_FATAL_ERROR_FUNC
-
-/* Have definition of lsd_nomem_error() */
-#undef WITH_LSD_NOMEM_ERROR_FUNC
 
 /* Define if you have pthreads. */
 #undef WITH_PTHREADS

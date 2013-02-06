@@ -41,19 +41,64 @@ if {([test_bluegene] == 0) || [string compare [get_bluegene_type] "Q"]} {
 	exit 0
 }
 
+#########salloc test###########
+# test salloc without overcommit
+proc salloc_submit {num_task} {
+	global exit_code salloc srun job_id number bin_sleep ret_code
+
+	spawn $salloc -N1 -n$num_task --ntasks-per-node=$num_task $srun -v $bin_sleep 50
+	expect {
+		-re "launching" {
+			set ret_code 0
+		}
+		-re "You requested" {
+			incr ret_code
+		}
+		timeout {
+			send_user "\nFAILURE: salloc is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+}
+
+# test salloc with overcommit
+proc salloc_overcommit {num_task} {
+	global exit_code salloc srun job_id number bin_sleep ret_code
+
+	spawn $salloc -N1 -n$num_task -O  --ntasks-per-node=$num_task $srun -v $bin_sleep 50
+	expect {
+		-re "launching" {
+			set ret_code 0
+		}
+		-re "You requested" {
+			incr ret_code
+		}
+		timeout {
+			send_user "\nFAILURE: salloc is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+##########srun test###########
 # test number of jobs without overcommit
-proc submit_job { num_task } {
+proc srun_submit { num_task } {
 	global exit_code srun job_id number bin_sleep ret_code
 
 	spawn $srun -N1 -n$num_task --ntasks-per-node=$num_task -v $bin_sleep 50
 	expect {
 		-re "jobid ($number)" {
 			set job_id $expect_out(1,string)
-			incr id_match
 			set ret_code 0
 		}
 		-re "You requested" {
-		        incr id_match
 			incr ret_code
 		}
 		timeout {
@@ -68,19 +113,16 @@ proc submit_job { num_task } {
 }
 
 # test number of tasks with overcommit
-proc submit_job_over {num_task} {
+proc srun_overcommit {num_task} {
     	global exit_code srun job_id number bin_sleep ret_code
 
-	set id_match 0
 	spawn $srun -N1 -n$num_task --ntasks-per-node=$num_task -O -v $bin_sleep 50
 	expect {
 		-re "jobid ($number)" {
 			set job_id $expect_out(1,string)
-			incr id_match
 			set ret_code 0
 		}
 		-re "You requested" {
-		        incr id_match
 			incr ret_code
 		}
 		timeout {
@@ -102,10 +144,19 @@ set goodtest "
 {8}
 {16}
 "
-
-send_user "\nGood Tests:\n"
+send_user "\nsrun Good test:\n"
 foreach test $goodtest {
-	submit_job $test
+	srun_submit $test
+	if {$ret_code == 0} {
+		send_user "\nJob: $job_id was submitted as expected\n"
+	} else {
+		send_user "\nFAILURE: job should have been submitted but was not\n"
+		set exit_code 1
+	}
+}
+send_user "\nsalloc Good test:\n"
+foreach test $goodtest {
+	salloc_submit $test
 	if {$ret_code == 0} {
 		send_user "\nJob: $job_id was submitted as expected\n"
 	} else {
@@ -119,9 +170,20 @@ set overcommit_test "
 {32}
 {64}
 "
-send_user "\nTest with overcommit\n"
+send_user "\nsrun Test with overcommit:\n"
 foreach test $overcommit_test {
-	submit_job_over $test
+	srun_overcommit $test
+	if {$ret_code == 0} {
+		send_user "\nJob: $job_id was submitted as expected\n"
+	} else {
+		send_user "\nFAILURE: job should have been submitted but was not\n"
+		set exit_code 1
+	}
+}
+
+send_user "\nsalloc test with overcommit:\n"
+foreach test $overcommit_test {
+	salloc_overcommit $test
 	if {$ret_code == 0} {
 		send_user "\nJob: $job_id was submitted as expected\n"
 	} else {
@@ -142,9 +204,19 @@ set badtest "
 {64}
 {128}
 "
-send_user "\nBad Tests:\n"
+send_user "\nsrun Bad Tests:\n"
 foreach test $badtest {
-	submit_job $test
+	srun_submit $test
+	if {$ret_code != 0} {
+		send_user "\nThis error is expected do not worry\n"
+	} else {
+		send_user "\nFAILURE:Job was submitted when it should not have\n"
+		set exit_code 1
+	}
+}
+send_user "\nsalloc Bad Tests:\n"
+foreach test $badtest {
+	salloc_submit $test
 	if {$ret_code != 0} {
 		send_user "\nThis error is expected do not worry\n"
 	} else {

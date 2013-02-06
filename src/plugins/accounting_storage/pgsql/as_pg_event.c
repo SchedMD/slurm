@@ -155,7 +155,7 @@ cs_pg_node_down(pgsql_conn_t *pg_conn, struct node_record *node_ptr,
 	uint16_t cpus;
 	char *query = NULL, *my_reason;
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	if (!cluster_in_db(pg_conn, pg_conn->cluster_name)) {
@@ -199,7 +199,7 @@ cs_pg_node_up(pgsql_conn_t *pg_conn, struct node_record *node_ptr,
 {
 	char* query;
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	if (!cluster_in_db(pg_conn, pg_conn->cluster_name)) {
@@ -231,11 +231,11 @@ cs_pg_register_ctld(pgsql_conn_t *pg_conn, char *cluster, uint16_t port)
 	time_t now = time(NULL);
 	uint32_t flags = slurmdb_setup_cluster_flags();
 
-	if(slurmdbd_conf)
+	if (slurmdbd_conf)
 		fatal("clusteracct_storage_g_register_ctld "
 		      "should never be called from the slurmdbd.");
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	if (!pg_conn->cluster_name)
@@ -251,7 +251,7 @@ cs_pg_register_ctld(pgsql_conn_t *pg_conn, char *cluster, uint16_t port)
 	gethostname(hostname, sizeof(hostname));
 
 	/* check if we are running on the backup controller */
-	if(slurmctld_conf.backup_controller
+	if (slurmctld_conf.backup_controller
 	   && !strcmp(slurmctld_conf.backup_controller, hostname)) {
 		address = slurmctld_conf.backup_addr;
 	} else
@@ -290,7 +290,7 @@ cs_pg_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster_nodes,
 	char* query;
 	int rc = SLURM_SUCCESS, got_cpus = 0, first = 0;
 
-	if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+	if (check_db_connection(pg_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
 	if (!cluster_in_db(pg_conn, pg_conn->cluster_name)) {
@@ -304,11 +304,11 @@ cs_pg_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster_nodes,
 		"AND node_name='' LIMIT 1;", pg_conn->cluster_name,
 		event_table);
 	result = DEF_QUERY_RET;
-	if(!result)
+	if (!result)
 		return SLURM_ERROR;
 
 	/* we only are checking the first one here */
-	if(!PQntuples(result)) {
+	if (!PQntuples(result)) {
 		debug("We don't have an entry for this machine %s "
 		      "most likely a first time running.",
 		      pg_conn->cluster_name);
@@ -324,12 +324,12 @@ cs_pg_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster_nodes,
 		goto add_it;
 	}
 	got_cpus = atoi(PG_VAL(0));
-	if(got_cpus == cpus) {
+	if (got_cpus == cpus) {
 		debug3("we have the same cpu count as before for %s, "
 		       "no need to update the database.",
 		       pg_conn->cluster_name);
-		if(cluster_nodes) {
-			if(PG_EMPTY(1)) {
+		if (cluster_nodes) {
+			if (PG_EMPTY(1)) {
 				debug("Adding cluster nodes '%s' to "
 				      "last instance of cluster '%s'.",
 				      cluster_nodes, pg_conn->cluster_name);
@@ -340,7 +340,7 @@ cs_pg_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster_nodes,
 					event_table, cluster_nodes);
 				rc = DEF_QUERY_RET_RC;
 				goto end_it;
-			} else if(!strcmp(cluster_nodes,
+			} else if (!strcmp(cluster_nodes,
 					  PG_VAL(1))) {
 				debug3("we have the same nodes in the cluster "
 				       "as before no need to "
@@ -361,7 +361,7 @@ cs_pg_cluster_cpus(pgsql_conn_t *pg_conn, char *cluster_nodes,
 		pg_conn->cluster_name, event_table, (event_time-1));
 	rc = DEF_QUERY_RET_RC;
 	first = 1;
-	if(rc != SLURM_SUCCESS)
+	if (rc != SLURM_SUCCESS)
 		goto end_it;
 add_it:
 	query = xstrdup_printf(
@@ -409,15 +409,15 @@ as_pg_get_events(pgsql_conn_t *pg_conn, uid_t uid,
                 F_COUNT
         };
 
-        if(check_db_connection(pg_conn) != SLURM_SUCCESS)
+        if (check_db_connection(pg_conn) != SLURM_SUCCESS)
                 return NULL;
 
 	cond = xstrdup("WHERE TRUE");
-        if(!event_cond)
+        if (!event_cond)
                 goto empty;
 
-        if(event_cond->cpus_min) {
-                if(event_cond->cpus_max) {
+        if (event_cond->cpus_min) {
+                if (event_cond->cpus_max) {
                         xstrfmtcat(cond, " AND (cpu_count BETWEEN %u AND %u)",
                                    event_cond->cpus_min, event_cond->cpus_max);
 
@@ -442,8 +442,8 @@ as_pg_get_events(pgsql_conn_t *pg_conn, uid_t uid,
         }
 
 	concat_cond_list(event_cond->node_list, NULL, "node_name", &cond);
-        if(event_cond->period_start) {
-                if(!event_cond->period_end)
+        if (event_cond->period_start) {
+                if (!event_cond->period_end)
                         event_cond->period_end = now;
                 xstrfmtcat(cond,
                            " AND (time_start < %ld) "
@@ -479,7 +479,7 @@ empty:
 			list_append(ret_list, event);
                        
 			event->cluster = xstrdup(cluster_name);
-			if(ISEMPTY(F_NODE)) {
+			if (ISEMPTY(F_NODE)) {
 				event->event_type = SLURMDB_EVENT_CLUSTER;
 			} else {
 				event->node_name = xstrdup(ROW(F_NODE));
@@ -489,10 +489,10 @@ empty:
 			event->state = atoi(ROW(F_STATE));
 			event->period_start = atoi(ROW(F_START));
 			event->period_end = atoi(ROW(F_END));
-			if(!ISEMPTY(F_REASON))
+			if (!ISEMPTY(F_REASON))
 				event->reason = xstrdup(ROW(F_REASON));
 			event->reason_uid = atoi(ROW(F_REASON_UID));
-			if(!ISEMPTY(F_CNODES))
+			if (!ISEMPTY(F_CNODES))
 				event->cluster_nodes =
 					xstrdup(ROW(F_CNODES));
 		} END_EACH_ROW;

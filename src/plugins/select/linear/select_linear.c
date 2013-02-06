@@ -572,8 +572,6 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	job_ptr->job_resrcs = job_resrcs_ptr = _create_job_resources(node_cnt);
 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
 	job_resrcs_ptr->nodes = bitmap2node_name(bitmap);
-	if (job_resrcs_ptr->node_bitmap == NULL)
-		fatal("bit_copy malloc failure");
 	job_resrcs_ptr->ncpus = job_ptr->total_cpus;
 	if (build_job_resources(job_resrcs_ptr, (void *)select_node_ptr,
 				select_fast_schedule))
@@ -635,7 +633,8 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 	struct node_record *node_ptr;
 	uint32_t job_memory_cpu = 0, job_memory_node = 0;
 	uint32_t alloc_mem = 0, job_mem = 0, avail_mem = 0;
-	uint32_t cpu_cnt, gres_cpus;
+	uint32_t cpu_cnt, gres_cpus, gres_cores;
+	int core_start_bit, core_end_bit, cpus_per_core;
 	List gres_list;
 	bool use_total_gres = true;
 
@@ -675,11 +674,16 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 			gres_list = cr_ptr->nodes[i].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_cpus = gres_plugin_job_test(job_ptr->gres_list,
-						 gres_list, use_total_gres,
-						 NULL, 0, 0, job_ptr->job_id,
-						 node_ptr->name);
+		core_start_bit = cr_get_coremap_offset(i);
+		core_end_bit   = cr_get_coremap_offset(i+1) - 1;
+		cpus_per_core  = cpu_cnt / (core_end_bit - core_start_bit + 1);
+		gres_cores = gres_plugin_job_test(job_ptr->gres_list,
+						  gres_list, use_total_gres,
+						  NULL, 0, 0, job_ptr->job_id,
+						  node_ptr->name);
+		gres_cpus = gres_cores;
 		if (gres_cpus != NO_VAL) {
+			gres_cpus *= cpus_per_core;
 			if ((gres_cpus < cpu_cnt) ||
 			    (gres_cpus < job_ptr->details->ntasks_per_node) ||
 			    ((job_ptr->details->cpus_per_task > 1) &&
@@ -1619,12 +1623,8 @@ static int _job_expand(struct job_record *from_job_ptr,
 	}
 
 	tmp_bitmap = bit_copy(to_job_resrcs_ptr->node_bitmap);
-	if (!tmp_bitmap)
-		fatal("bit_copy: malloc failure");
 	bit_or(tmp_bitmap, from_job_resrcs_ptr->node_bitmap);
 	tmp_bitmap2 = bit_copy(to_job_ptr->node_bitmap);
-	if (!tmp_bitmap)
-		fatal("bit_copy: malloc failure");
 	bit_or(tmp_bitmap2, from_job_ptr->node_bitmap);
 	bit_and(tmp_bitmap, tmp_bitmap2);
 	bit_free(tmp_bitmap2);
@@ -2148,8 +2148,6 @@ static void _init_node_cr(void)
 
 	/* build partition records */
 	part_iterator = list_iterator_create(part_list);
-	if (part_iterator == NULL)
-		fatal("list_iterator_create: malloc failure");
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		for (i = 0; i < select_node_cnt; i++) {
 			if (part_ptr->node_bitmap == NULL)
@@ -2302,8 +2300,6 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 	uint32_t save_mem;
 
 	orig_map = bit_copy(bitmap);
-	if (!orig_map)
-		fatal("bit_copy: malloc failure");
 
 	/* Try to run with currently available nodes */
 	i = _job_count_bitmap(cr_ptr, job_ptr, orig_map, bitmap,
@@ -2352,8 +2348,6 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 	uint16_t pass_count = 0;
 
 	orig_map = bit_copy(bitmap);
-	if (!orig_map)
-		fatal("bit_copy: malloc failure");
 
 	for (max_run_job=0; ((max_run_job<max_share) && (rc != SLURM_SUCCESS));
 	     max_run_job++) {
@@ -2397,8 +2391,6 @@ top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 	    (exp_cr = _dup_cr(cr_ptr))) {
 		/* Remove all preemptable jobs from simulated environment */
 		job_iterator = list_iterator_create(preemptee_candidates);
-		if (job_iterator == NULL)
-			fatal ("memory allocation failure in linear");
 		while ((tmp_job_ptr = (struct job_record *)
 			list_next(job_iterator))) {
 			bool remove_all = false;
@@ -2457,8 +2449,6 @@ top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 			 * actually used */
 			if (*preemptee_job_list == NULL) {
 				*preemptee_job_list = list_create(NULL);
-				if (*preemptee_job_list == NULL)
-					fatal("list_create malloc failure");
 			}
 			preemptee_iterator = list_iterator_create(
 				preemptee_candidates);
@@ -2503,8 +2493,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	max_run_jobs = MAX((max_share - 1), 1);	/* exclude this job */
 	orig_map = bit_copy(bitmap);
-	if (!orig_map)
-		fatal("bit_copy: malloc failure");
 
 	/* Try to run with currently available nodes */
 	i = _job_count_bitmap(cr_ptr, job_ptr, orig_map, bitmap,
@@ -2530,8 +2518,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* Build list of running and suspended jobs */
 	cr_job_list = list_create(NULL);
-	if (!cr_job_list)
-		fatal("list_create: memory allocation failure");
 	job_iterator = list_iterator_create(job_list);
 	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
@@ -2605,8 +2591,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		 * in selected plugin, but by Moab or something else. */
 		if (*preemptee_job_list == NULL) {
 			*preemptee_job_list = list_create(NULL);
-			if (*preemptee_job_list == NULL)
-				fatal("list_create malloc failure");
 		}
 		preemptee_iterator =list_iterator_create(preemptee_candidates);
 		while ((tmp_job_ptr = (struct job_record *)
@@ -2655,6 +2639,7 @@ extern int fini ( void )
 #ifdef HAVE_XCPU
 	rc = _fini_status_pthread();
 #endif
+	cr_fini_global_core_data();
 	slurm_mutex_lock(&cr_mutex);
 	_free_cr(cr_ptr);
 	cr_ptr = NULL;
@@ -2714,6 +2699,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	select_node_ptr = node_ptr;
 	select_node_cnt = node_cnt;
 	select_fast_schedule = slurm_get_fast_schedule();
+	cr_init_global_core_data(node_ptr, node_cnt, select_fast_schedule);
 
 	return SLURM_SUCCESS;
 }
@@ -3078,7 +3064,7 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 {
-	if(nodeinfo) {
+	if (nodeinfo) {
 		if (nodeinfo->magic != NODEINFO_MAGIC) {
 			error("select_p_select_nodeinfo_free: "
 			      "nodeinfo magic bad");
@@ -3118,7 +3104,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 					     SELECT_NODEDATA_PTR, 0,
 					     (void *)&nodeinfo);
-		if(!nodeinfo) {
+		if (!nodeinfo) {
 			error("no nodeinfo returned from structure");
 			continue;
 		}

@@ -64,6 +64,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/assoc_mgr.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define _DEBUG 0
@@ -240,7 +241,46 @@ static void _register_lua_slurm_output_functions (void)
 	lua_pushnumber (L, SLURM_SUCCESS);
 	lua_setfield (L, -2, "SUCCESS");
 
+
+	/*
+	 * Other definitions needed to interpret data
+	 * slurm.MEM_PER_CPU, slurm.NO_VAL, etc.
+	 */
+	lua_pushnumber (L, ALLOC_SID_ADMIN_HOLD);
+	lua_setfield (L, -2, "ALLOC_SID_ADMIN_HOLD");
+	lua_pushnumber (L, ALLOC_SID_USER_HOLD);
+	lua_setfield (L, -2, "ALLOC_SID_USER_HOLD");
+	lua_pushnumber (L, MAIL_JOB_BEGIN);
+	lua_setfield (L, -2, "MAIL_JOB_BEGIN");
+	lua_pushnumber (L, MAIL_JOB_END);
+	lua_setfield (L, -2, "MAIL_JOB_END");
+	lua_pushnumber (L, MAIL_JOB_FAIL);
+	lua_setfield (L, -2, "MAIL_FAIL");
+	lua_pushnumber (L, MAIL_JOB_REQUEUE);
+	lua_setfield (L, -2, "MAIL_JOB_REQUEUE");
+	lua_pushnumber (L, MEM_PER_CPU);
+	lua_setfield (L, -2, "MEM_PER_CPU");
+	lua_pushnumber (L, NICE_OFFSET);
+	lua_setfield (L, -2, "NICE_OFFSET");
+	lua_pushnumber (L, NO_VAL);
+	lua_setfield (L, -2, "NO_VAL");
+
 	lua_setglobal (L, "slurm");
+}
+
+/* Get the default account for a user (or NULL if not present) */
+static char *_get_default_account(uint32_t user_id)
+{
+	slurmdb_user_rec_t user;
+
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
+	user.uid = user_id;
+	if (assoc_mgr_fill_in_user(acct_db_conn,
+				   &user, 0, NULL) != SLURM_ERROR) {
+		return user.default_acct;
+	} else {
+		return NULL;
+	}
 }
 
 /* Get fields in an existing slurmctld job record
@@ -335,6 +375,8 @@ static int _get_job_req_field (lua_State *L)
 		lua_pushnumber (L, job_desc->contiguous);
 	} else if (!strcmp(name, "cores_per_socket")) {
 		lua_pushnumber (L, job_desc->cores_per_socket);
+	} else if (!strcmp(name, "default_account")) {
+		lua_pushstring (L, _get_default_account(job_desc->user_id));
 	} else if (!strcmp(name, "dependency")) {
 		lua_pushstring (L, job_desc->dependency);
 	} else if (!strcmp(name, "end_time")) {
@@ -670,8 +712,6 @@ static void _push_partition_list(uint32_t user_id, uint32_t submit_uid)
 
 	lua_newtable(L);
 	part_iterator = list_iterator_create(part_list);
-	if (!part_iterator)
-		fatal("list_iterator_create malloc");
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		if (!_user_can_use_part(user_id, submit_uid, part_ptr))
 			continue;

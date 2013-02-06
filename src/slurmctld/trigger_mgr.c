@@ -215,8 +215,6 @@ extern int trigger_pull(trigger_info_msg_t *msg)
 
 	if (trigger_list == NULL) {
 		trigger_list = list_create(_trig_del);
-		if (trigger_list == NULL)
-			fatal("list_create: malloc failure");
 	}
 
 	/* validate the request, designated trigger must be set */

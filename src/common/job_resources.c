@@ -120,9 +120,6 @@ extern int build_job_resources(job_resources_t *job_resrcs,
 #ifndef HAVE_BG
 	job_resrcs->core_bitmap      = bit_alloc(core_cnt);
 	job_resrcs->core_bitmap_used = bit_alloc(core_cnt);
-	if ((job_resrcs->core_bitmap == NULL) ||
-	    (job_resrcs->core_bitmap_used == NULL))
-		fatal("bit_alloc malloc failure");
 #endif
 	return SLURM_SUCCESS;
 }
@@ -1180,8 +1177,6 @@ extern bitstr_t * copy_job_resources_node(job_resources_t *job_resrcs_ptr,
 	}
 
 	core_bitmap = bit_alloc(core_cnt);
-	if (!core_bitmap)
-		fatal("copy_job_resources_node: bit_alloc(%d): %m", core_cnt);
 	for (i = 0; i < core_cnt; i++) {
 		if (bit_test(job_resrcs_ptr->core_bitmap, bit_inx++))
 			bit_set(core_bitmap, i);
@@ -1274,8 +1269,6 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 		for (i = 0; i < node_record_count; i++)
 			size += bits_per_node[i];
 		*full_core_bitmap = bit_alloc(size);
-		if (!*full_core_bitmap)
-			fatal("add_job_to_cores: bitmap memory error");
 	}
 
 	for (full_node_inx = 0; full_node_inx < node_record_count;
@@ -1316,8 +1309,6 @@ extern void remove_job_from_cores(job_resources_t *job_resrcs_ptr,
 		for (i = 0; i < node_record_count; i++)
 			size += bits_per_node[i];
 		*full_core_bitmap = bit_alloc(size);
-		if (!*full_core_bitmap)
-			fatal("add_job_to_cores: bitmap memory error");
 	}
 
 	for (full_node_inx = 0; full_node_inx < node_record_count;

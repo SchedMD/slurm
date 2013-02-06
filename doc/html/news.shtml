@@ -15,7 +15,7 @@
 <p>SLURM Version 2.5 was release in November 2012.
 Major enhancements include:
 <ul>
-<li>Support for Intel&reg; Many Integrated Core (MIC) processors.</li> 
+<li>Support added for Intel&reg; Many Integrated Core (MIC) processors.</li> 
 <li>User control over CPU frequency of each job step.</li>
 <li>Recording power usage information for each job.</li>
 <li>Advanced reservation of cores rather than whole nodes.</li>
@@ -33,15 +33,15 @@ which provides a mechanism to reserve CPUs for use with GPUs.</li>
 <p>SLURM Version 2.6 is scheduled for release in April 2013.
 Major enhancements planned include:
 <ul>
+<li>Support added for job arrays.</li>
 <li><a href="http://en.wikipedia.org/wiki/MapReduce">MapReduce</a> support
 (launches ~1000x faster, runs ~10x faster).</li>
 <li>Scheduling optimized for energy efficiency.</li>
 <li>Integration with
 <a href="http://en.wikipedia.org/wiki/FlexNet_Publisher">FLEXlm (Flexnet Publisher)</a>
 license management.</li>
-<li>Faster and more powerful job step management support (e.g. step
-dependencies).</li>
-<li>Support for Intel MIC (Many Integrated Core) processor.</li>
+<li>Faster and more powerful job step management support.</li>
+<li>Support improved for Intel MIC (Many Integrated Core) processor.</li>
 <li>Finer-grained BlueGene resouce management (partitions/queues and advanced
 reservations containing less than a whole midplane).</li>
 </ul>
@@ -85,6 +85,6 @@ trojan library, then that library will be used by the SLURM daemon with
 unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 5 October 2012</p>
+<p style="text-align:center;">Last modified 24 January 2013</p>
 
 <!--#include virtual="footer.txt"-->

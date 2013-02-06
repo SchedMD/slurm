@@ -46,12 +46,12 @@ char *find_hostname(uint32_t pos, char *hosts)
 	hostlist_t hostlist = NULL;
 	char *temp = NULL, *host = NULL;
 
-	if(!hosts || (pos == (uint32_t)NO_VAL))
+	if (!hosts || (pos == (uint32_t)NO_VAL))
 		return NULL;
 
 	hostlist = hostlist_create(hosts);
 	temp = hostlist_nth(hostlist, pos);
-	if(temp) {
+	if (temp) {
 		host = xstrdup(temp);
 		free(temp);
 	}

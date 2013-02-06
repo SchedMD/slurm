@@ -48,6 +48,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <time.h>
+#include <stdlib.h>
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/fd.h"
@@ -591,6 +592,7 @@ _handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int signal;
+	char *ptr = NULL;
 
 	debug3("_handle_signal_process_group for job %u.%u",
 	      job->jobid, job->stepid);
@@ -628,8 +630,11 @@ _handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid)
 	/*
 	 * Print a message in the step output before killing when
 	 * SIGTERM or SIGKILL are sent
+	 * hjcao: print JOB/STEP KILLED msg on specific node id only
 	 */
-	if ((signal == SIGTERM) || (signal == SIGKILL)) {
+	ptr = getenvp(job->env, "SLURM_STEP_KILLED_MSG_NODE_ID");
+	if ((!ptr || atoi(ptr) == job->nodeid) &&
+	    ((signal == SIGTERM) || (signal == SIGKILL))) {
 		time_t now = time(NULL);
 		char entity[24], time_str[24];
 		if (job->stepid == SLURM_BATCH_SCRIPT) {
@@ -1427,7 +1432,7 @@ _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid)
 
 	for (i = 0; i < job->node_tasks; i++) {
 		temp_jobacct = jobacct_gather_stat_task(job->task[i]->pid);
-		if(temp_jobacct) {
+		if (temp_jobacct) {
 			jobacctinfo_aggregate(jobacct, temp_jobacct);
 			jobacctinfo_destroy(temp_jobacct);
 			num_tasks++;

@@ -126,6 +126,8 @@ extern void	scontrol_list_pids(const char *jobid_str,
 				   const char *node_name);
 extern int	scontrol_load_front_end(front_end_info_msg_t **
 					front_end_buffer_pptr);
+extern int	scontrol_load_job(job_info_msg_t ** job_buffer_pptr,
+				  uint32_t job_id);
 extern int 	scontrol_load_jobs (job_info_msg_t ** job_buffer_pptr);
 extern int 	scontrol_load_nodes (node_info_msg_t ** node_buffer_pptr,
 				     uint16_t show_flags);

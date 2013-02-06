@@ -318,6 +318,9 @@ static PerlInterpreter *main_perl = NULL;
 static pthread_key_t cbs_key;
 
 typedef struct thread_callbacks {
+	SV *step_complete;
+	SV *step_signal;
+	SV *step_timeout;
 	SV *task_start;
 	SV *task_finish;
 } thread_callbacks_t;
@@ -421,6 +424,100 @@ set_slcb(HV *callbacks)
 }
 
 static void
+step_complete_cb(srun_job_complete_msg_t *comp_msg)
+{
+	HV *hv;
+	thread_callbacks_t *cbs = NULL;
+
+	set_thread_perl();
+	set_thread_callbacks();
+
+	cbs = GET_THREAD_CALLBACKS;
+	if (cbs->step_complete == NULL)
+		return;
+
+	hv = newHV();
+	if (srun_job_complete_msg_to_hv(comp_msg, hv) < 0) {
+		Perl_warn( aTHX_ "failed to prepare parameter for step_complete callback");
+		SvREFCNT_dec(hv);
+		return;
+	}
+
+	dSP;
+
+	ENTER;
+	SAVETMPS;
+	PUSHMARK(SP);
+	XPUSHs(sv_2mortal(newRV_noinc((SV*)hv)));
+	PUTBACK;
+
+	call_sv(cbs->step_complete, G_SCALAR);
+
+	FREETMPS;
+	LEAVE;
+}
+
+static void
+step_signal_cb(int signo)
+{
+	thread_callbacks_t *cbs = NULL;
+
+	set_thread_perl();
+	set_thread_callbacks();
+
+	cbs = GET_THREAD_CALLBACKS;
+	if (cbs->step_signal == NULL)
+		return;
+
+	dSP;
+
+	ENTER;
+	SAVETMPS;
+	PUSHMARK(SP);
+	XPUSHs(sv_2mortal(newSViv(signo)));
+	PUTBACK;
+
+	call_sv(cbs->step_signal, G_SCALAR);
+
+	FREETMPS;
+	LEAVE;
+}
+
+static void
+step_timeout_cb(srun_timeout_msg_t *timeout_msg)
+{
+	HV *hv;
+	thread_callbacks_t *cbs = NULL;
+
+	set_thread_perl();
+	set_thread_callbacks();
+
+	cbs = GET_THREAD_CALLBACKS;
+	if (cbs->step_timeout == NULL)
+		return;
+
+	hv = newHV();
+	if (srun_timeout_msg_to_hv(timeout_msg, hv) < 0) {
+		Perl_warn( aTHX_ "failed to prepare parameter for step_timeout callback");
+		SvREFCNT_dec(hv);
+		return;
+	}
+
+	dSP;
+
+	ENTER;
+	SAVETMPS;
+	PUSHMARK(SP);
+	XPUSHs(sv_2mortal(newRV_noinc((SV*)hv)));
+	PUTBACK;
+
+	call_sv(cbs->step_timeout, G_SCALAR);
+
+	FREETMPS;
+	LEAVE;
+}
+
+static void
 task_start_cb(launch_tasks_response_msg_t *resp_msg)
 {
 	HV *hv;
@@ -489,6 +586,9 @@ task_finish_cb(task_exit_msg_t *exit_msg)
 }
 
 slurm_step_launch_callbacks_t slcb = {
-	task_start_cb, 
+	step_complete_cb,
+	step_signal_cb,
+	step_timeout_cb,
+	task_start_cb,
 	task_finish_cb
 };

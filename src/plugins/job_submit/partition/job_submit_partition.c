@@ -144,8 +144,6 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 		return SLURM_SUCCESS;
 
 	part_iterator = list_iterator_create(part_list);
-	if (!part_iterator)
-		fatal("list_iterator_create malloc");
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		if (!(part_ptr->state_up & PARTITION_SUBMIT))
 			continue;	/* nobody can submit jobs here */

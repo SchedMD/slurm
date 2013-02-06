@@ -222,6 +222,8 @@ typedef enum {
 	RESPONSE_STATS_INFO,
 	REQUEST_STATS_RESET,
 	RESPONSE_STATS_RESET,
+	REQUEST_JOB_USER_INFO,
+	REQUEST_NODE_INFO_SINGLE,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -479,7 +481,7 @@ typedef struct job_step_kill_msg {
 	uint32_t job_id;
 	uint32_t job_step_id;
 	uint16_t signal;
-	uint16_t batch_flag;
+	uint16_t flags;
 } job_step_kill_msg_t;
 
 typedef struct job_notify_msg {
@@ -492,6 +494,11 @@ typedef struct job_id_msg {
 	uint32_t job_id;
 	uint16_t show_flags;
 } job_id_msg_t;
+
+typedef struct job_user_id_msg {
+	uint32_t user_id;
+	uint16_t show_flags;
+} job_user_id_msg_t;
 
 typedef struct job_step_id_msg {
 	uint32_t job_id;
@@ -514,6 +521,11 @@ typedef struct node_info_request_msg {
 	time_t last_update;
 	uint16_t show_flags;
 } node_info_request_msg_t;
+
+typedef struct node_info_single_msg {
+	char *node_name;
+	uint16_t show_flags;
+} node_info_single_msg_t;
 
 typedef struct front_end_info_request_msg {
 	time_t last_update;
@@ -781,6 +793,8 @@ typedef struct reattach_tasks_response_msg {
 } reattach_tasks_response_msg_t;
 
 typedef struct batch_job_launch_msg {
+	uint32_t array_job_id;	/* job array master job ID */
+	uint16_t array_task_id;	/* job array ID or NO_VAL */
 	uint32_t job_id;
 	uint32_t step_id;
 	uint32_t uid;
@@ -1024,6 +1038,7 @@ extern void slurm_free_job_step_info_request_msg(
 extern void slurm_free_front_end_info_request_msg(
 		front_end_info_request_msg_t *msg);
 extern void slurm_free_node_info_request_msg(node_info_request_msg_t *msg);
+extern void slurm_free_node_info_single_msg(node_info_single_msg_t *msg);
 extern void slurm_free_part_info_request_msg(part_info_request_msg_t *msg);
 extern void slurm_free_stats_info_request_msg(stats_info_request_msg_t *msg);
 extern void slurm_free_stats_response_msg(stats_info_response_msg_t *msg);
@@ -1058,6 +1073,7 @@ extern void slurm_free_job_info(job_info_t * job);
 extern void slurm_free_job_info_members(job_info_t * job);
 
 extern void slurm_free_job_id_msg(job_id_msg_t * msg);
+extern void slurm_free_job_user_id_msg(job_user_id_msg_t * msg);
 extern void slurm_free_job_id_request_msg(job_id_request_msg_t * msg);
 extern void slurm_free_job_id_response_msg(job_id_response_msg_t * msg);
 
@@ -1161,6 +1177,10 @@ extern uint16_t preempt_mode_num(const char *preempt_mode);
 
 extern char *log_num2string(uint16_t inx);
 extern uint16_t log_string2num(char *name);
+
+/* Convert HealthCheckNodeState numeric value to a string.
+ * Caller must xfree() the return value */
+extern char *health_check_node_state_str(uint16_t node_state);
 
 extern char *sched_param_type_string(uint16_t select_type_param);
 extern char *job_reason_string(enum job_state_reason inx);

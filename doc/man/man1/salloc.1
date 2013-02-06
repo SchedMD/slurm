@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 2.5" "October 2012" "SLURM Commands"
+.TH "salloc" "1" "SLURM 2.6" "January 2013" "SLURM Commands"
 
 .SH "NAME"
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command,
@@ -151,7 +151,7 @@ Supported \fbconstraint\fR options include:
 Only nodes which have the specified feature will be used.
 For example, \fB\-\-constraint="intel"\fR
 .TP
-\fBNode Count\fB
+\fBNode Count\fR
 A request can specify the number of nodes needed with some feature
 by appending an asterisk and count after the feature name.
 For example "\fB\-\-nodes=16 \-\-constraint=graphics*4 ..."\fR
@@ -1257,6 +1257,12 @@ The reservation ID on Cray systems running ALPS/BASIL only.
 \fBSLURM_CPU_BIND\fR
 Set to value of the \-\-cpu_bind\fR option.
 .TP
+\fBSLURM_CPU_BIND_LIST\fR
+\-\-cpu_bind map or mask list (list of SLURM CPU IDs or masks for this node,
+CPU_ID = Board_ID x threads_per_board +
+Socket_ID x threads_per_socket +
+Core_ID x threads_per_core + Thread_ID).
+.TP
 \fBSLURM_JOB_ID\fR (and \fBSLURM_JOBID\fR for backwards compatibility)
 The ID of the job allocation.
 .TP
@@ -1279,6 +1285,9 @@ Set to value of the \-\-mem_bind\fR option.
 .TP
 \fBSLURM_SUBMIT_DIR\fR
 The directory from which \fBsalloc\fR was invoked.
+.TP
+\fBSLURM_SUBMIT_HOST\fR
+The hostname of the computer from which \fBsalloc\fR was invoked.
 .TP
 \fBSLURM_NODE_ALIASES\fR
 Sets of node name, communication address and hostname for nodes allocated to

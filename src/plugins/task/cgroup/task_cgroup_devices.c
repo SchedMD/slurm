@@ -468,7 +468,7 @@ static int read_allowed_devices_file(char **allowed_devices)
 			line[strlen(line)-1] = '\0';
 			
 			/* global pattern matching and return the list of matches*/
-			if(glob(line, GLOB_NOSORT, NULL, &globbuf) != 0){
+			if (glob(line, GLOB_NOSORT, NULL, &globbuf) != 0){
 				debug3("Device %s does not exist", line);	
 			}else{
 				for(l=0; l < globbuf.gl_pathc; l++){
