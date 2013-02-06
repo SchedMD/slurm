@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 2.6.0pre2
 ============================
+ -- Do not purge inactive interactive jobs that lack a port to ping (added
+    for MR+ operation).
 
 * Changes in SLURM 2.6.0pre1
 ============================

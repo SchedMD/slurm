@@ -5274,6 +5274,7 @@ void job_time_limit(void)
 		if (slurmctld_conf.inactive_limit &&
 		    (job_ptr->batch_flag == 0)    &&
 		    (job_ptr->time_last_active <= old) &&
+		    (job_ptr->other_port) &&
 		    (job_ptr->part_ptr) &&
 		    (!(job_ptr->part_ptr->flags & PART_FLAG_ROOT_ONLY))) {
 			/* job inactive, kill it */
