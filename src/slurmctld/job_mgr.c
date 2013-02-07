@@ -3514,7 +3514,13 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 
 	/* Validate job limits against partition limits */
 	if (job_desc->min_nodes == NO_VAL) {
-		job_desc->min_nodes = min_nodes_orig;
+		/* Avoid setting the job request to 0 nodes if the
+		   user didn't ask for 0.
+		*/
+		if (!min_nodes_orig)
+			job_desc->min_nodes = 1;
+		else
+			job_desc->min_nodes = min_nodes_orig;
 	} else if ((job_desc->min_nodes > max_nodes_orig) &&
 		   slurmctld_conf.enforce_part_limits) {
 		info("_valid_job_part: job's min nodes greater than "

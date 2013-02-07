@@ -5,6 +5,9 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fix bug in PrologSlurmctld use that would block job steps until node
     responds.
+ -- CRAY - If a partition has MinNodes=0 and a batch job doesn't request nodes
+    put the allocation to 1 instead of 0 which prevents the allocation to
+    happen.
 
 * Changes in SLURM 2.5.3
 ========================
