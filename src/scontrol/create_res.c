@@ -295,8 +295,29 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 		           strncasecmp(tag, "CoreCount", MAX(taglen,5)) == 0 ||
 		           strncasecmp(tag, "CPUCnt",    MAX(taglen,5)) == 0 ||
 			   strncasecmp(tag, "CPUCount",  MAX(taglen,5)) == 0) {
-			char *endptr = NULL;
-			resv_msg_ptr->core_cnt = strtol(val, &endptr, 10);
+
+			char *endptr = NULL, *core_cnt, *tok, *ptrptr = NULL;
+			int node_inx = 0;
+
+			core_cnt = xstrdup(val);
+			tok = strtok_r(core_cnt, ",", &ptrptr);
+			while (tok) {
+				xrealloc(resv_msg_ptr->core_cnt,
+					 sizeof(uint32_t) * (node_inx + 2));
+				resv_msg_ptr->core_cnt[node_inx] =
+					strtol(tok, &endptr, 10);
+				if ((endptr == NULL) ||
+				   (endptr[0] != '\0') ||
+				   (tok[0] == '\0')) {
+					exit_code = 1;
+					error("Invalid core count %s.  %s", argv[i], msg);
+					xfree(core_cnt);
+					return -1;
+				}
+				node_inx++;
+				tok = strtok_r(NULL, ",", &ptrptr);
+			}
+			xfree(core_cnt);
 
 		} else if (strncasecmp(tag, "Nodes", MAX(taglen, 5)) == 0) {
 			resv_msg_ptr->node_list = val;

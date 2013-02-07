@@ -675,7 +675,7 @@ extern int select_g_step_finish(struct step_record *step_ptr);
  * RET - nodes selected for use by the reservation
  */
 extern bitstr_t * select_g_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
-				     uint32_t core_cnt,
+				     uint32_t *core_cnt,
 				     bitstr_t **core_bitmap);
 
 /*****************************\

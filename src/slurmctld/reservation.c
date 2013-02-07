@@ -1406,6 +1406,8 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 			continue;	/* no specific nodes in reservation */
 		if (!bit_overlap(resv_ptr->node_bitmap, node_bitmap))
 			continue;	/* no overlap */
+		if (!resv_ptr->full_nodes)
+			continue;	
 
 		for (i=0; ((i<7) && (!rc)); i++) {  /* look forward one week */
 			s_time1 = start_time;
@@ -1579,9 +1581,6 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 	}
 
-	if (resv_desc_ptr->core_cnt == NO_VAL)
-		resv_desc_ptr->core_cnt = 0;
-
 #ifdef HAVE_BG
 	if (!cnodes_per_bp) {
 		select_g_alter_node_cnt(SELECT_GET_NODE_SCALING,
@@ -1648,18 +1647,37 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 		total_node_cnt = bit_set_count(node_bitmap);
 		if (!(resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) &&
+		    !resv_desc_ptr->core_cnt &&
 		    _job_overlap(resv_desc_ptr->start_time,
 				 resv_desc_ptr->flags, node_bitmap)) {
 			info("Reservation request overlaps jobs");
 			rc = ESLURM_NODES_BUSY;
 			goto bad_parse;
 		}
-		/* We do no allow to request cores with nodelist */
-		info("Reservation CoreCnt cleared due to Nodes specification");
-		resv_desc_ptr->core_cnt = 0;
+		/* We do allow to request cores with nodelist */
+		if (resv_desc_ptr->core_cnt) {
+			int nodecnt = bit_set_count(node_bitmap);
+			int nodeinx = 0;
+			while (nodeinx < nodecnt) {
+				if (!resv_desc_ptr->core_cnt[nodeinx]) {
+					info("Core count for reservation node \
+					      list is not consistent!");
+					rc = ESLURM_INVALID_NODE_NAME;
+					goto bad_parse;
+				}
+				debug2("Requesting %d cores for node_list %d", 
+					resv_desc_ptr->core_cnt[nodeinx], 
+					nodeinx);
+				nodeinx++;
+			}
+			if ((rc = _select_nodes(resv_desc_ptr, &part_ptr, &node_bitmap,
+				       &core_bitmap)) != SLURM_SUCCESS) {
+				goto bad_parse; 
+			}
+		}
 	} else if (((resv_desc_ptr->node_cnt == NULL) ||
 		    (resv_desc_ptr->node_cnt[0] == 0)) &&
-		    (resv_desc_ptr->core_cnt == 0) &&
+		    (!resv_desc_ptr->core_cnt) &&
 		   ((resv_desc_ptr->flags & RESERVE_FLAG_LIC_ONLY) == 0)) {
 		info("Reservation request lacks node specification");
 		rc = ESLURM_INVALID_NODE_NAME;
@@ -1731,14 +1749,14 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_ptr->user_not	= user_not;
 	resv_desc_ptr->users 	= NULL;		/* Nothing left to free */
 
-	if (resv_desc_ptr->core_cnt == 0) {
+	if (!resv_desc_ptr->core_cnt) {
 		debug2("reservation using full nodes");
 		_set_cpu_cnt(resv_ptr);
 		resv_ptr->full_nodes = 1;
 	} else {
 		debug2("reservation using partial nodes: core count %u",
-		       resv_desc_ptr->core_cnt);
-		resv_ptr->cpu_cnt = resv_desc_ptr->core_cnt;
+		       bit_set_count(resv_ptr->core_bitmap));
+		resv_ptr->cpu_cnt = bit_set_count(resv_ptr->core_bitmap);
 		resv_ptr->full_nodes = 0;
 	}
 
@@ -2836,7 +2854,10 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	}
 
 	/* Start with all nodes in the partition */
-	node_bitmap = bit_copy((*part_ptr)->node_bitmap);
+	if (*resv_bitmap)
+		node_bitmap = bit_copy(*resv_bitmap);
+	else
+		node_bitmap = bit_copy((*part_ptr)->node_bitmap);
 
 	/* Don't use node already reserved */
 	if (!(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP)) {
@@ -3135,7 +3156,7 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 		if (job_ptr->end_time < resv_desc_ptr->start_time)
 			continue;
 
-		if (resv_desc_ptr->core_cnt == 0) {
+		if (!resv_desc_ptr->core_cnt) {
 			bit_not(job_ptr->node_bitmap);
 			bit_and(avail_bitmap, job_ptr->node_bitmap);
 			bit_not(job_ptr->node_bitmap);

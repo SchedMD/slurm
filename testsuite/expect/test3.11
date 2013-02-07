@@ -40,6 +40,7 @@ source ./inc3.11.5
 source ./inc3.11.6
 source ./inc3.11.7
 source ./inc3.11.8
+source ./inc3.11.9
 
 
 
@@ -53,6 +54,7 @@ set res_thread_cnt	0
 set user_name		""
 set def_partition 	""
 set def_node		""
+set def_node_name	""
 set ii			0
 
 print_header $test_id
@@ -276,6 +278,16 @@ spawn $sinfo -h -o "=%N=" -p $def_partition
 expect {
 	-re "=(.+)=" {
 		set def_node $expect_out(1,string)
+		send_user "\nDefault node $def_node\n";
+	}
+	eof {
+		wait
+	}
+}
+spawn $sinfo -h -o "=%N=" -p $def_partition
+expect {
+	-re "=($alpha_numeric)(\[)($alpha_numeric)-($alpha_numeric)(\])=" {
+		set def_node_name $expect_out(1,string)
 		exp_continue
 	}
 	eof {
@@ -355,6 +367,7 @@ inc3_11_6
 if {$cons_res_actived == 1} {
 	inc3_11_7
 	inc3_11_8
+	inc3_11_9
 }
 
 if {$exit_code == 0} {
