@@ -121,11 +121,7 @@ main (int argc, char *argv[])
 		all_flag= 1;
 	if ((env_val = getenv("SLURM_CLUSTERS"))) {
 		if (!(clusters = slurmdb_get_info_cluster(env_val))) {
-			error("'%s' can't be reached now, "
-			      "or it is an invalid entry for "
-			      "SLURM_CLUSTERS.  Use 'sacctmgr --list "
-			      "cluster' to see available clusters.",
-			      env_val);
+			print_db_notok(env_val, 1);
 			exit(1);
 		}
 		working_cluster_rec = list_peek(clusters);
@@ -160,11 +156,7 @@ main (int argc, char *argv[])
 				working_cluster_rec = NULL;
 			}
 			if (!(clusters = slurmdb_get_info_cluster(optarg))) {
-				error("'%s' can't be reached now, "
-				      "or it is an invalid entry for "
-				      "--cluster.  Use 'sacctmgr --list "
-				      "cluster' to see available clusters.",
-				      optarg);
+				print_db_notok(optarg, 0);
 				exit(1);
 			}
 			working_cluster_rec = list_peek(clusters);
@@ -652,11 +644,7 @@ _process_command (int argc, char *argv[])
 		}
 		if (argc >= 2) {
 			if (!(clusters = slurmdb_get_info_cluster(argv[1]))) {
-				error("'%s' can't be reached now, "
-				      "or it is an invalid entry for "
-				      "--cluster.  Use 'sacctmgr --list "
-				      "cluster' to see available clusters.",
-				      optarg);
+				print_db_notok(argv[1], 0);
 				exit(1);
 			}
 			working_cluster_rec = list_peek(clusters);

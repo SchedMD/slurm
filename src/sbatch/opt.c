@@ -641,11 +641,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 	case OPT_CLUSTERS:
 		if (!(opt.clusters = slurmdb_get_info_cluster((char *)val))) {
-			error("'%s' can't be reached now, "
-			      "or it is an invalid entry for "
-			      "--cluster.  Use 'sacctmgr --list "
-			      "cluster' to see available clusters.",
-			      optarg);
+			print_db_notok(val, 1);
 			exit(1);
 		}
 		break;
@@ -1245,11 +1241,7 @@ static void _set_options(int argc, char **argv)
 				list_destroy(opt.clusters);
 			if (!(opt.clusters =
 			      slurmdb_get_info_cluster(optarg))) {
-				error("'%s' can't be reached now, "
-				      "or it is an invalid entry for "
-				      "--cluster.  Use 'sacctmgr --list "
-				      "cluster' to see available clusters.",
-				      optarg);
+				print_db_notok(optarg, 0);
 				exit(1);
 			}
 			break;
@@ -2264,7 +2256,7 @@ static bool _opt_verify(void)
 		error("Can't set SLURM_DIST_LLLP env variable");
 	}
 
-	
+
 
 	/* bound threads/cores from ntasks_cores/sockets */
 	if (opt.ntasks_per_core > 0) {

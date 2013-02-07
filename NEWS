@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- CRAY - If a partition has MinNodes=0 and a batch job doesn't request nodes
     put the allocation to 1 instead of 0 which prevents the allocation to
     happen.
+ -- Better debug when the database is down and using the --cluster option in
+    the user commands.
 
 * Changes in SLURM 2.5.3
 ========================

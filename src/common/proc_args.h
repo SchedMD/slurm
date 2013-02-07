@@ -161,4 +161,13 @@ extern int	parse_uint16(char *aval, uint16_t *ival);
  */
 extern int	parse_uint32(char *aval, uint32_t *ival);
 
+/* print_db_notok() - Print an error message about slurmdbd
+ *                    is unreachable or wrong cluster name.
+ * IN  cname - char * cluster name
+ * IN  isenv - bool   cluster name from env or from command line option.
+ */
+extern void print_db_notok(const char *cname, bool isenv);
+
+
+
 #endif /* !_PROC_ARGS_H */

@@ -949,3 +949,25 @@ extern int parse_uint16(char *aval, uint16_t *ival)
 
 	return 0;
 }
+
+/* print_db_notok() - Print an error message about slurmdbd
+ *                    is unreachable or wrong cluster name.
+ * IN  cname - char * cluster name
+ * IN  isenv - bool  cluster name from env or from command line option.
+ */
+void print_db_notok(const char *cname, bool isenv)
+{
+	char *v;
+
+	v = "--cluster";
+	if (isenv)
+		v = "SLURM_CLUSTERS";
+
+	if (errno)
+		error("'%s' can't be reached now.", cname);
+	else
+		error("'%s' is an invalid entry for %s. "
+		      "Use 'sacctmgr list "
+		      "cluster' to see available clusters.",
+		      cname, v);
+}
