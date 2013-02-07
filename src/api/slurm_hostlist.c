@@ -46,19 +46,19 @@
 #include "src/common/hostlist.h"
 
 // make wrappers
-extern hostlist_t slurm_hostlist_count(const char *hostlist)
+extern int slurm_hostlist_count(hostlist_t hl)
 {
-	return hostlist_create(hostlist);
+	return hostlist_count(hostlist);
 }
 
-extern int slurm_hostlist_create(hostlist_t hl)
+extern hostlist_t slurm_hostlist_create(const char *hostlist)
 {
-	return hostlist_count(hl);
+	return hostlist_create(hl);
 }
 
 extern void slurm_hostlist_destroy(hostlist_t hl)
 {
-	hostlist_count(hl);
+	hostlist_destroy(hl);
 	return;
 }
 
