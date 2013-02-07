@@ -2097,14 +2097,11 @@ static void *_run_prolog(void *arg)
 	job_id = job_ptr->job_id;
 	if (job_ptr->node_bitmap) {
 		node_bitmap = bit_copy(job_ptr->node_bitmap);
-		for (i = 0; i < node_record_count; i++) {
-			if (bit_test(node_bitmap, i) == 0)
+		for (i = 0, node_ptr = node_record_table_ptr;
+		     i < node_record_count; i++, node_ptr++) {
+			if (!bit_test(node_bitmap, i))
 				continue;
-			node_ptr = node_record_table_ptr + i;
-			/* Prepare node state for reboot. These flags get
-			 * cleared when node registration message arrives. */
-			node_ptr->node_state |= NODE_STATE_NO_RESPOND;
-			node_ptr->node_state |= NODE_STATE_POWER_UP;
+			/* Allow time for possible reboot */
 			node_ptr->last_response = now + resume_timeout;
 		}
 	}
