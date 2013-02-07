@@ -223,7 +223,7 @@ typedef struct slurm_select_ops {
 	int		(*reconfigure)		(void);
 	bitstr_t *      (*resv_test)            (bitstr_t *avail_bitmap,
 						 uint32_t node_cnt,
-						 uint32_t core_cnt,
+						 uint32_t *core_cnt,
 						 bitstr_t **core_bitmap);
 	void            (*ba_init)              (node_info_msg_t *node_info_ptr,
 						 bool sanity_check);

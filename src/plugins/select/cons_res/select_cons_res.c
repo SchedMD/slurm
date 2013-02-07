@@ -2730,8 +2730,12 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	rem_cores = core_cnt[0];
 
 	/* Assuming symmetric cluster */
-	if(core_cnt)
+	if (core_cnt)
 		cores_per_node = core_cnt[0] / MAX(node_cnt, 1);
+	else if (cr_node_num_cores)
+		cores_per_node = cr_node_num_cores[0];
+	else
+		cores_per_node = 1;
 
 	/* Construct a set of switch array entries,
 	 * use the same indexes as switch_record_table in slurmctld */
@@ -2834,11 +2838,11 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		for (j=0; j<switch_record_cnt; j++) {
 			if (switches_node_cnt[j] == 0)
 				continue;
-			if(core_cnt)
+			if (core_cnt) {
 				sufficient = 
 					(switches_node_cnt[j] >= rem_nodes) &&
 					(switches_cpu_cnt[j] >= core_cnt[0]);
-			else
+			} else
 				sufficient = switches_node_cnt[j] >= rem_nodes;
 			/* If first possibility OR */
 			/* first set large enough for request OR */

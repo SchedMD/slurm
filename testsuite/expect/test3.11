@@ -55,6 +55,8 @@ set user_name		""
 set def_partition 	""
 set def_node		""
 set def_node_name	""
+set def_node_inx_min	-1
+set def_node_inx_max	-1
 set ii			0
 
 print_header $test_id
@@ -286,8 +288,10 @@ expect {
 }
 spawn $sinfo -h -o "=%N=" -p $def_partition
 expect {
-	-re "=($alpha_numeric)(\[)($alpha_numeric)-($alpha_numeric)(\])=" {
+	-re "=($alpha_numeric).($number)-($number).=" {
 		set def_node_name $expect_out(1,string)
+		set def_node_inx_min $expect_out(2,string)
+		set def_node_inx_max $expect_out(3,string)
 		exp_continue
 	}
 	eof {
@@ -372,5 +376,7 @@ if {$cons_res_actived == 1} {
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
 }
 exit $exit_code

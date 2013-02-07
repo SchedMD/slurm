@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ============================
  -- Do not purge inactive interactive jobs that lack a port to ping (added
     for MR+ operation).
+ -- Advanced reservations with hostname and core counts now supports asymetric
+    reservations (e.g. specific different core count for each node).
 
 * Changes in SLURM 2.6.0pre1
 ============================
