@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
     happen.
  -- Better debug when the database is down and using the --cluster option in
     the user commands.
+ -- When asking for job states with sacct default to 'now' instead of midnight
+    of the current day.
 
 * Changes in SLURM 2.5.3
 ========================
