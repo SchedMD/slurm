@@ -957,17 +957,18 @@ extern int parse_uint16(char *aval, uint16_t *ival)
  */
 void print_db_notok(const char *cname, bool isenv)
 {
-	char *v;
-
-	v = "--cluster";
-	if (isenv)
-		v = "SLURM_CLUSTERS";
-
 	if (errno)
-		error("'%s' can't be reached now.", cname);
+		error("There is a problem talking to the database: %m.  "
+		      "Only local cluster communication is available, remove "
+		      "%s or contact your admin to resolve the problem.",
+		      isenv ? "SLURM_CLUSTERS from your environment" :
+		      "--cluster from your command line");
+	else if (!strcasecmp("all", cname))
+		error("No clusters can be reached now. "
+		      "Contact your admin to resolve the problem.");
 	else
-		error("'%s' is an invalid entry for %s. "
-		      "Use 'sacctmgr list "
-		      "cluster' to see available clusters.",
-		      cname, v);
+		error("'%s' can't be reached now, "
+		      "or it is an invalid entry for %s.  "
+		      "Use 'sacctmgr list clusters' to see available clusters.",
+		      cname, isenv ? "SLURM_CLUSTERS" : "--cluster");
 }
