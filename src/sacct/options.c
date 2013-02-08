@@ -485,7 +485,8 @@ sacct [<OPTION>]                                                            \n\
                    and node_fail (nf).                                      \n\
      -S, --starttime:                                                       \n\
                    Select jobs eligible after this time.  Default is        \n\
-                   midnight of current day.                                 \n\
+                   00:00:00 of the current day, unless '-s' is set then     \n\
+                   the default is 'now'.                                    \n\
      -T, --truncate:                                                        \n\
                    Truncate time.  So if a job started before --starttime   \n\
                    the start time would be truncated to --starttime.        \n\
