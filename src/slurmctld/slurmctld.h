@@ -318,6 +318,7 @@ struct part_record {
 	uint16_t state_up;	/* See PARTITION_* states in slurm.h */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
+	uint16_t cr_type;	/* Custom CR values for partition (if supported by select plugin) */
 };
 
 extern List part_list;			/* list of part_record entries */

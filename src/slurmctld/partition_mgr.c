@@ -233,6 +233,7 @@ struct part_record *create_part_record(void)
 	part_ptr->preempt_mode      = default_part.preempt_mode;
 	part_ptr->priority          = default_part.priority;
 	part_ptr->grace_time 	    = default_part.grace_time;
+	part_ptr->cr_type	    = default_part.cr_type;
 	if (part_max_priority)
 		part_ptr->norm_priority = (double)default_part.priority
 			/ (double)part_max_priority;
@@ -451,7 +452,7 @@ int load_all_part_state(void)
 	uint32_t grace_time = 0;
 	time_t time;
 	uint16_t flags;
-	uint16_t max_share, preempt_mode, priority, state_up;
+	uint16_t max_share, preempt_mode, priority, state_up, cr_type;
 	struct part_record *part_ptr;
 	uint32_t data_size = 0, name_len;
 	int data_allocated, data_read = 0, error_code = 0, part_cnt = 0;
@@ -533,6 +534,7 @@ int load_all_part_state(void)
 				part_max_priority = priority;
 
 			safe_unpack16(&state_up, buffer);
+			safe_unpack16(&cr_type, buffer);
 			safe_unpackstr_xmalloc(&allow_groups,
 					       &name_len, buffer);
 			safe_unpackstr_xmalloc(&allow_alloc_nodes,
@@ -600,6 +602,7 @@ int load_all_part_state(void)
 			part_ptr->preempt_mode   = preempt_mode;
 		part_ptr->priority       = priority;
 		part_ptr->state_up       = state_up;
+		part_ptr->cr_type	 = cr_type;
 		xfree(part_ptr->allow_groups);
 		part_ptr->allow_groups   = allow_groups;
 		xfree(part_ptr->allow_alloc_nodes);
@@ -722,6 +725,7 @@ int init_part_conf(void)
 	default_part.total_nodes    = 0;
 	default_part.total_cpus     = 0;
 	default_part.grace_time     = 0;
+	default_part.cr_type	    = 0;
 	xfree(default_part.nodes);
 	xfree(default_part.allow_groups);
 	xfree(default_part.allow_uids);

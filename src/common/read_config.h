@@ -231,6 +231,7 @@ typedef struct slurm_conf_partition {
 	uint16_t state_up;	/* for states see PARTITION_* in slurm.h */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
+	uint16_t cr_type;	/* Custom CR values for partition (if supported by select plugin) */
 } slurm_conf_partition_t;
 
 typedef struct slurm_conf_downnodes {
