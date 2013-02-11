@@ -1,3 +1,3 @@
 # Makefile for slurmctld plugins
 
-SUBDIRS = sock_insec
+SUBDIRS = dynalloc sock_insec

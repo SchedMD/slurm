@@ -568,6 +568,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_slurm.so             &&
    echo %{_libdir}/slurm/launch_slurm.so             >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_aprun.so             &&
    echo %{_libdir}/slurm/launch_aprun.so             >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/slurmctld_dynalloc.so       &&
+   echo %{_libdir}/slurm/slurmctld_dynalloc.so       >> $LIST
 
 LIST=./pam.files
 touch $LIST

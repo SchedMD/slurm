@@ -3487,7 +3487,8 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		build_cg_bitmap(job_ptr);
 		deallocate_nodes(job_ptr, false, suspended, false);
 	}
-	info("sched: job_complete for JobId=%u successful", job_id);
+	info("sched: job_complete for JobId=%u successful, exit code=%u",
+	     job_id, job_return_code);
 	return SLURM_SUCCESS;
 }
 

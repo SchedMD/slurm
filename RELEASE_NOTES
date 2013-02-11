@@ -27,6 +27,7 @@ HIGHLIGHTS
 ==========
  - Added support for job arrays, which increases performance and ease of use
    for sets of similar jobs.
+ - Added slurmctld/dynalloc plugin for MapReduce+ support. 
  - Added prolog and epilog support for advanced reservations.
  - Much faster throughput for job step execution with --exclusive option. The
    srun process is notified when resources become available rather than
@@ -57,6 +58,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
  - Added "SlurmctldPlugstack" configuration parameter for generic stack of
    slurmctld daemon plugins. Only the plugin's init and fini functions are
    called.
+ - Added "JobSubmitDynAllocPort" configuration parameter for use by
+   slurmctld/dynalloc plugin.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
