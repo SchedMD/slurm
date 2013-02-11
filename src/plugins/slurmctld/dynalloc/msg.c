@@ -86,6 +86,20 @@ static size_t	_write_bytes(int fd, char *buf, size_t size);
 extern int spawn_msg_thread(void)
 {
 	pthread_attr_t thread_attr_msg;
+	slurm_ctl_conf_t *conf;
+	/* Locks: Read configurationn */
+	slurmctld_lock_t config_read_lock = {
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+
+	lock_slurmctld(config_read_lock);
+	conf = slurm_conf_lock();
+	sched_port = conf->dynalloc_port;
+	slurm_conf_unlock();
+	unlock_slurmctld(config_read_lock);
+	if (sched_port == 0) {
+		error("DynAllocPort == 0, not spawning communication thread");
+		return SLURM_ERROR;
+	}
 
 	pthread_mutex_lock( &thread_flag_mutex );
 	if (thread_running) {
@@ -150,17 +164,7 @@ static void *_msg_thread(void *no_data)
 	slurm_fd_t sock_fd = -1, new_fd;
 	slurm_addr_t cli_addr;
 	char *msg;
-	slurm_ctl_conf_t *conf;
 	int i;
-	/* Locks: Read configurationn */
-	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-
-	lock_slurmctld(config_read_lock);
-	conf = slurm_conf_lock();
-	sched_port = conf->dynalloc_port;
-	slurm_conf_unlock();
-	unlock_slurmctld(config_read_lock);
 
 	/* If JobSubmitDynAllocPort is already taken, keep trying to open it
 	 * once per minute. Slurmctld will continue to function
