@@ -390,7 +390,7 @@ with to store the job accounting data.</li>
 
 <h2>MySQL Configuration</h2>
 
-<p>While SLURM will create the database automatically you will need to
+<p>While SLURM will create the database tables automatically you will need to
 make sure the StorageUser is given permissions in MySQL to do so.
 As the <i>mysql</i> user grant privileges to that user using a
 command such as:</p>
@@ -402,6 +402,9 @@ command such as:</p>
 usage there is a line that starts with '->'. This a continuation
 prompt since the previous mysql statement did not end with a ';'. It
 assumes that you wish to input more info.)</p>
+
+<p>If you want Slurm to create the database itself, and any future databases,
+you can change your grant line to be *.* instead of StorageLoc.*</p>
 
 <p>Live example:</p>
 
@@ -437,6 +440,11 @@ system name:</p>
 mysql> grant all on slurm_acct_db.* TO 'slurm'@'system0'
     -> identified by 'some_pass' with grant option;
 where 'system0' is the localhost or database storage host.
+</pre>
+
+<p>Then create the database:</p>
+<pre>
+mysql> create database slurm_acct_db;
 </pre>
 
 <p>This will grant user 'slurm' access to do what it needs to do on the local
@@ -814,7 +822,7 @@ as deleted.
 If an entity has existed for less than 1 day, the entity will be removed
 completely. This is meant to clean up after typographic errors.</p>
 
-<p style="text-align: center;">Last modified 30 October 2012</p>
+<p style="text-align: center;">Last modified 11 February 2013</p>
 
 <!--#include virtual="footer.txt"-->
 
