@@ -4721,6 +4721,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack32(build_ptr->def_mem_per_cpu, buffer);
 		pack32(build_ptr->debug_flags, buffer);
 		pack16(build_ptr->disable_root_jobs, buffer);
+		pack16(build_ptr->dynalloc_port, buffer);
 
 		pack16(build_ptr->enforce_part_limits, buffer);
 		packstr(build_ptr->epilog, buffer);
@@ -5372,6 +5373,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->def_mem_per_cpu, buffer);
 		safe_unpack32(&build_ptr->debug_flags, buffer);
 		safe_unpack16(&build_ptr->disable_root_jobs, buffer);
+		safe_unpack16(&build_ptr->dynalloc_port, buffer);
 
 		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->epilog, &uint32_tmp,

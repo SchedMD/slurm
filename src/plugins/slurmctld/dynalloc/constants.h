@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef CONSTANTS_H_
-#define CONSTANTS_H_
+#ifndef DYNALLOC_CONSTANTS_H_
+#define DYNALLOC_CONSTANTS_H_
 
 #if HAVE_STDBOOL_H
 #  include <stdbool.h>
@@ -48,4 +48,4 @@ typedef enum {false, true} bool;
 #define SIZE 8192
 
 
-#endif /* CONSTANTS_H_ */
+#endif /* DYNALLOC_CONSTANTS_H_ */

@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef INFO_H_
-#define INFO_H_
+#ifndef DYNALLOC_INFO_H_
+#define DYNALLOC_INFO_H_
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -59,11 +59,8 @@
  *	OUT Parameter:
  *		nodes: number of nodes in slurm
  *		slots: number of slots in slurm
- *	RET OUT
- *		-1 if slurm load node information error
- *		0  successful
  */
-extern int get_total_nodes_slots(uint16_t *nodes, uint16_t *slots);
+extern void get_total_nodes_slots(uint16_t *nodes, uint16_t *slots);
 
 /**
  *	get number of available nodes and slots in slurm.
@@ -72,11 +69,8 @@ extern int get_total_nodes_slots(uint16_t *nodes, uint16_t *slots);
  *	OUT Parameter:
  *		nodes: number of available nodes in slurm
  *		slots: number of available slots in slurm
- *	RET OUT
- *		-1 if slurm load node information error
- *		0  successful
  */
-extern int get_free_nodes_slots(uint16_t *nodes, uint16_t *slots);
+extern void get_free_nodes_slots(uint16_t *nodes, uint16_t *slots);
 
 /**
  *	get available node list in slurm.
@@ -85,9 +79,8 @@ extern int get_free_nodes_slots(uint16_t *nodes, uint16_t *slots);
  *	OUT Parameter:
  *	RET OUT:
  *		hostlist_t: available node list in slurm
- *		NULL if slurm load node information error
  */
-extern hostlist_t get_available_host_list_system();
+extern hostlist_t get_available_host_list_system(void);
 
 /**
  *	get the range of available node list in slurm.
@@ -137,4 +130,4 @@ extern char* get_hostlist_subset(const char *host_name_list, uint16_t node_num);
  */
 extern char* seperate_nodelist_with_comma(const char *node_list);
 
-#endif /* INFO_H_ */
+#endif /* DYNALLOC_INFO_H_ */

@@ -75,7 +75,7 @@ int argv_append_nosize(char ***argv, const char *arg)
 		(*argv)[1] = NULL;
 	}
 
-    /* Extend existing argv. */
+	/* Extend existing argv. */
 	else {
 		/* count how many entries currently exist */
 		argc = argv_count(*argv);
@@ -136,8 +136,8 @@ int argv_append_unique_nosize(char ***argv, const char *arg, bool overwrite)
 	int i;
 
 	/* if the provided array is NULL, then the arg cannot be present,
-     * so just go ahead and append
-     */
+	 * so just go ahead and append
+	 */
 	if (NULL == *argv) {
 		return argv_append_nosize(argv, arg);
 	}
@@ -357,8 +357,8 @@ char *argv_join_range(char **argv, size_t start, size_t end, int delimiter)
 
 	for (i = 0; i < str_len; ++i) {
 		if ('\0' == *pp) {
-			/* End of a string, fill in a delimiter and go to the next
-			 * string. */
+			/* End of a string, fill in a delimiter and go to the
+			 * next string. */
 			str[i] = (char) delimiter;
 			++p;
 			pp = *p;
@@ -445,7 +445,7 @@ int argv_delete(int *argc, char ***argv, int start, int num_to_delete)
 		suffix_count = 0;
 	}
 
-    /* Free all items that are being deleted */
+	/* Free all items that are being deleted */
 	for (i = start; i < count && i < start + num_to_delete; ++i) {
 		free((*argv)[i]);
 	}
@@ -493,7 +493,8 @@ int argv_insert(char ***target, int start, char **source)
 	else {
 		/* Alloc out new space */
 		*target = (char**) realloc(*target,
-				sizeof(char *) * (target_count + source_count + 1));
+					   sizeof(char *) *
+					   (target_count + source_count + 1));
 
 		/* Move suffix items down to the end */
 		suffix_count = target_count - start;

@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef ARGV_H_
-#define ARGV_H_
+#ifndef DYNALLOC_ARGV_H_
+#define DYNALLOC_ARGV_H_
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -129,7 +129,8 @@ extern int argv_prepend_nosize(char ***argv, const char *arg);
  * except that it only appends the provided argument if it does not already
  * exist in the provided array, or overwrites it if it is.
  */
-extern  int argv_append_unique_nosize(char ***argv, const char *arg, bool overwrite);
+extern  int argv_append_unique_nosize(char ***argv, const char *arg,
+				      bool overwrite);
 
 /**
    * Free a NULL-terminated argv array.
@@ -210,7 +211,8 @@ extern  int argv_count(char **argv);
    */
 extern  char *argv_join(char **argv, int delimiter) ;
 
-extern char *argv_join_range(char **argv, size_t start, size_t end, int delimiter);
+extern char *argv_join_range(char **argv, size_t start, size_t end,
+			     int delimiter);
 
   /**
    * Return the number of bytes consumed by an argv array.
@@ -312,4 +314,4 @@ extern  int argv_insert(char ***target, int start, char **source);
 extern  int argv_insert_element(char ***target, int location, char *source);
 
 
-#endif /* ARGV_H_ */
+#endif /* DYNALLOC_ARGV_H_ */

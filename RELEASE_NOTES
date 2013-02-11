@@ -58,8 +58,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
  - Added "SlurmctldPlugstack" configuration parameter for generic stack of
    slurmctld daemon plugins. Only the plugin's init and fini functions are
    called.
- - Added "JobSubmitDynAllocPort" configuration parameter for use by
-   slurmctld/dynalloc plugin.
+ - Added "DynAllocPort" configuration parameter for use by slurmctld/dynalloc
+   plugin.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

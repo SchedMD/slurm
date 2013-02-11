@@ -488,6 +488,11 @@ The default value is "NO", meaning user root will be able to execute jobs.
 \fBDisableRootJobs\fR may also be set by partition.
 
 .TP
+\fBDynallocPort\fR
+Socket port used for MapReduce dynamic allocation communications.
+Used only by the slurmctld/dynalloc plugin.
+
+.TP
 \fBEnforcePartLimits\fR
 If set to "YES" then jobs which exceed a partition's size and/or time limits
 will be rejected at submission time. If set to "NO" then the job will be

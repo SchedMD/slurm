@@ -1,5 +1,6 @@
 /*****************************************************************************\
- *  msg.c - Message/communcation manager for dynalloc (resource dynamic allocation) plugin
+ *  msg.c - Message/communcation manager for dynalloc (resource dynamic
+ *  allocation) plugin
  *****************************************************************************
  *  Copyright (C) 2012-2013 Los Alamos National Security, LLC.
  *  Written by Jimmy Cao <Jimmy.Cao@emc.com>, Ralph Castain <rhc@open-mpi.org>
@@ -56,8 +57,6 @@
 #include "argv.h"
 #include "constants.h"
 
-
-
 #define _DEBUG 0
 
 /* When a remote socket closes on AIX, we have seen poll() return EAGAIN
@@ -97,7 +96,7 @@ extern int spawn_msg_thread(void)
 
 	slurm_attr_init(&thread_attr_msg);
 	if (pthread_create(&msg_thread_id, &thread_attr_msg,
-			_msg_thread, NULL))
+	    _msg_thread, NULL))
 		fatal("pthread_create %m");
 	else
 		info("dynalloc: msg thread create successful!");
@@ -153,17 +152,15 @@ static void *_msg_thread(void *no_data)
 	char *msg;
 	slurm_ctl_conf_t *conf;
 	int i;
-	/* Locks: Write configuration, job, node, and partition */
-	slurmctld_lock_t config_write_lock = {
-		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
+	/* Locks: Read configurationn */
+	slurmctld_lock_t config_read_lock = {
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
+	lock_slurmctld(config_read_lock);
 	conf = slurm_conf_lock();
-	sched_port = conf->js_dynallocport;
+	sched_port = conf->dynalloc_port;
 	slurm_conf_unlock();
-
-	/* Wait until configuration is completely loaded */
-	lock_slurmctld(config_write_lock);
-	unlock_slurmctld(config_write_lock);
+	unlock_slurmctld(config_read_lock);
 
 	/* If JobSubmitDynAllocPort is already taken, keep trying to open it
 	 * once per minute. Slurmctld will continue to function
@@ -321,7 +318,7 @@ static size_t	_send_msg(slurm_fd_t new_fd, char *buf, size_t size)
 	data_sent = _write_bytes((int) new_fd, buf, size);
 	if (data_sent != size) {
 		error("dynalloc: unable to write data message (%lu of %lu) %m",
-			(long unsigned) data_sent, (long unsigned) size);
+		      (long unsigned) data_sent, (long unsigned) size);
 	}
 
 	return data_sent;
@@ -333,43 +330,34 @@ static size_t	_send_msg(slurm_fd_t new_fd, char *buf, size_t size)
 static void	_proc_msg(slurm_fd_t new_fd, char *msg)
 {
 	char send_buf[SIZE];
-	uint16_t nodes, slots;
-	int rc;
+	uint16_t nodes = 0, slots = 0;
 
 	info("AAA: received from client: %s", msg);
 
 	if (new_fd < 0)
 		return;
 
-	if (!msg){
+	if (!msg) {
 		strcpy(send_buf, "NULL request, failure");
 		info("BBB: send to client: %s", send_buf);
 		send_reply(new_fd, send_buf);
-	}else{
+	} else {
 		//identify the cmd
-		if(0 == strcasecmp(msg, "get total nodes and slots")){
-			rc = get_total_nodes_slots(&nodes, &slots);
-
-			if(SLURM_SUCCESS == rc)
-				sprintf(send_buf, "total_nodes=%d total_slots=%d", nodes, slots);
-			else
-				strcpy(send_buf, "query failure");
-
+		if (0 == strcasecmp(msg, "get total nodes and slots")) {
+			get_total_nodes_slots(&nodes, &slots);
+			sprintf(send_buf, "total_nodes=%d total_slots=%d",
+				nodes, slots);
 			info("BBB: send to client: %s", send_buf);
 			send_reply(new_fd, send_buf);
-		}else if(0 == strcasecmp(msg, "get available nodes and slots")){
-			rc = get_free_nodes_slots(&nodes, &slots);
-
-			if(SLURM_SUCCESS == rc)
-				sprintf(send_buf, "avail_nodes=%d avail_slots=%d", nodes, slots);
-			else
-				strcpy(send_buf, "query failure");
-
+		} else if (0 == strcasecmp(msg, "get available nodes and slots")) {
+			get_free_nodes_slots(&nodes, &slots);
+			sprintf(send_buf, "avail_nodes=%d avail_slots=%d",
+				nodes, slots);
 			info("BBB: send to client: %s", send_buf);
 			send_reply(new_fd, send_buf);
-		}else if(0 == strncasecmp(msg, "allocate", 8)){
+		} else if (0 == strncasecmp(msg, "allocate", 8)) {
 			allocate_job_op(new_fd, msg);
-		}else if(0 == strncasecmp(msg, "deallocate", 10)){
+		} else if (0 == strncasecmp(msg, "deallocate", 10)) {
 			deallocate(new_fd, msg);
 		}
 	}

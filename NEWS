@@ -8,7 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Advanced reservations with hostname and core counts now supports asymetric
     reservations (e.g. specific different core count for each node).
  -- Added slurmctld/dynalloc plugin for MapReduce+ support.
- -- Added "JobSubmitDynAllocPort" configuration parameter.
+ -- Added "DynAllocPort" configuration parameter.
 
 * Changes in SLURM 2.6.0pre1
 ============================

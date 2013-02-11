@@ -68,12 +68,12 @@ int deallocate(slurm_fd_t new_fd, const char *msg)
 
 	while(*tmp_jobid_argv){
 		/* to identify the slurm_job */
-		if(NULL != (pos = strstr(*tmp_jobid_argv, "slurm_jobid="))){
+		if (NULL != (pos = strstr(*tmp_jobid_argv, "slurm_jobid="))) {
 			pos = pos + strlen("slurm_jobid=");  /* step over */
 			sscanf(pos, "%u", &slurm_jobid);
 		}
 
-		if(NULL != (pos = strstr(*tmp_jobid_argv, "job_return_code="))){
+		if (NULL != (pos = strstr(*tmp_jobid_argv, "job_return_code="))) {
 			pos = pos + strlen("job_return_code=");  /* step over*/
 			sscanf(pos, "%u", &job_return_code);
 		}
@@ -84,16 +84,16 @@ int deallocate(slurm_fd_t new_fd, const char *msg)
 		};
 		lock_slurmctld(job_write_lock);
 		rc = job_complete(slurm_jobid, uid, job_requeue,
-							node_fail, job_return_code);
+				  node_fail, job_return_code);
 		unlock_slurmctld(job_write_lock);
 
 		/* return result */
 		if (rc) {
 			info("deallocate JobId=%u: %s ",
-					slurm_jobid, slurm_strerror(rc));
+			     slurm_jobid, slurm_strerror(rc));
 		} else {
 			debug2("deallocate JobId=%u ", slurm_jobid);
-			(void) schedule_job_save();		/* Has own locking */
+			(void) schedule_job_save();	/* Has own locking */
 			(void) schedule_node_save();	/* Has own locking */
 		}
 

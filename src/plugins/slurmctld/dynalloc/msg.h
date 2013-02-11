@@ -35,6 +35,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#ifndef DYNALLOC_MSG_H_
+#define DYNALLOC_MSG_H_
+
 #if HAVE_CONFIG_H
 #  include "config.h"
 #  if HAVE_INTTYPES_H
@@ -85,3 +88,5 @@ extern void	term_msg_thread(void);
  * Send message
  */
 extern void	send_reply(slurm_fd_t new_fd, char *response);
+
+#endif /* DYNALLOC_MSG_H_ */

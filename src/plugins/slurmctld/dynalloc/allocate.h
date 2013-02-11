@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef ALLOCATE_H_
-#define ALLOCATE_H_
+#ifndef DYNALLOC_ALLOCATE_H_
+#define DYNALLOC_ALLOCATE_H_
 
 
 #if HAVE_CONFIG_H
@@ -76,9 +76,9 @@
  *		0  successful, final_req_node_list is returned
  */
 extern int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
-				char *node_range_list, const char *flag,
-				time_t timeout, uint32_t *slurm_jobid,
-				char *reponse_node_list, char *tasks_per_node);
+			     char *node_range_list, const char *flag,
+			     time_t timeout, uint32_t *slurm_jobid,
+			     char *reponse_node_list, char *tasks_per_node);
 
 /**
  *	select n nodes from the given node_range_list directly through
@@ -106,9 +106,9 @@ extern int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
  *		0  successful, final_req_node_list is returned
  */
 extern int allocate_node(uint32_t np, uint32_t request_node_num,
-				char *node_range_list, const char *flag,
-				time_t timeout, uint32_t *slurm_jobid,
-				char *reponse_node_list, char *tasks_per_node);
+			 char *node_range_list, const char *flag,
+			 time_t timeout, uint32_t *slurm_jobid,
+			 char *reponse_node_list, char *tasks_per_node);
 
 /**
  *	cancel a job
@@ -123,4 +123,4 @@ extern int allocate_node(uint32_t np, uint32_t request_node_num,
  */
 extern int cancel_job(uint32_t job_id, uid_t uid);
 
-#endif /* ALLOCATE_H_ */
+#endif /* DYNALLOC_ALLOCATE_H_ */

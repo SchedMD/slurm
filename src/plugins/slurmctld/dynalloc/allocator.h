@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef ALLOCATOR_H_
-#define ALLOCATOR_H_
+#ifndef DYNALLOC_ALLOCATOR_H_
+#define DYNALLOC_ALLOCATOR_H_
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -67,4 +67,4 @@
  */
 extern int allocate_job_op(slurm_fd_t new_fd, const char *msg);
 
-#endif /* ALLOCATOR_H_ */
+#endif /* DYNALLOC_ALLOCATOR_H_ */

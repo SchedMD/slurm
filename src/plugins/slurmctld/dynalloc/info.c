@@ -43,8 +43,13 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
+#include "src/common/node_conf.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/slurmctld/locks.h"
 
 #include "info.h"
+
+static uint16_t fast_schedule = (uint16_t) NO_VAL;
 
 /**
  *	get total number of nodes and slots in slurm.
@@ -53,29 +58,29 @@
  *	OUT Parameter:
  *		nodes: number of nodes in slurm
  *		slots: number of slots in slurm
- *	RET OUT
- *		-1 if slurm load node information error
- *		0  successful
  */
-int get_total_nodes_slots (uint16_t *nodes, uint16_t *slots)
+void get_total_nodes_slots (uint16_t *nodes, uint16_t *slots)
 {
 	int i;
-	node_info_msg_t *node_info_msg_t_ptr = NULL;
+	struct node_record *node_ptr;
+        /* Locks: Read node */
+        slurmctld_lock_t node_read_lock = {
+                        NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
-	*nodes = 0;
+	if (fast_schedule == (uint16_t) NO_VAL)
+		fast_schedule = slurm_get_fast_schedule();
+
 	*slots = 0;
-	//get node info
-	if(slurm_load_node((time_t)NULL, &node_info_msg_t_ptr, SHOW_ALL)){
-		error("slurm_load_node");
-		return SLURM_FAILURE;
+	lock_slurmctld(node_read_lock);
+	*nodes = node_record_count;
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		if (fast_schedule == 2)
+			(*slots) += node_ptr->config_ptr->cpus;
+		else
+			(*slots) += node_ptr->cpus;
 	}
-
-	*nodes = node_info_msg_t_ptr->record_count;
-
-	for(i = 0; i < *nodes; i++)
-		(*slots) += node_info_msg_t_ptr->node_array[i].cpus;
-
-	return SLURM_SUCCESS;
+	unlock_slurmctld(node_read_lock);
 }
 
 /**
@@ -85,32 +90,32 @@ int get_total_nodes_slots (uint16_t *nodes, uint16_t *slots)
  *	OUT Parameter:
  *		nodes: number of available nodes in slurm
  *		slots: number of available slots in slurm
- *	RET OUT
- *		-1 if slurm load node information error
- *		0  successful
  */
-int get_free_nodes_slots (uint16_t *nodes, uint16_t *slots)
+void get_free_nodes_slots (uint16_t *nodes, uint16_t *slots)
 {
-
-	node_info_msg_t *node_info_msg_t_ptr = NULL;
 	int i;
+	struct node_record *node_ptr;
+        /* Locks: Read node */
+        slurmctld_lock_t node_read_lock = {
+                        NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+
+	if (fast_schedule == (uint16_t) NO_VAL)
+		fast_schedule = slurm_get_fast_schedule();
 
 	*nodes = 0;
 	*slots = 0;
-
-	//get node info
-	if(slurm_load_node((time_t)NULL, &node_info_msg_t_ptr, SHOW_ALL)){
-		error("slurm_load_node");
-		return SLURM_FAILURE;
-	}
-
-	for(i = 0; i < node_info_msg_t_ptr->record_count; i++){
-		if(NODE_STATE_IDLE == node_info_msg_t_ptr->node_array[i].node_state){
+	lock_slurmctld(node_read_lock);
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		if (IS_NODE_IDLE(node_ptr)) {
 			(*nodes) ++;
-			(*slots) += node_info_msg_t_ptr->node_array[i].cpus;
+			if (fast_schedule == 2)
+				(*slots) += node_ptr->config_ptr->cpus;
+			else
+				(*slots) += node_ptr->cpus;
 		}
 	}
-	return SLURM_SUCCESS;
+	unlock_slurmctld(node_read_lock);
 }
 
 /**
@@ -120,29 +125,27 @@ int get_free_nodes_slots (uint16_t *nodes, uint16_t *slots)
  *	OUT Parameter:
  *	RET OUT:
  *		hostlist_t: available node list in slurm
- *		NULL if slurm load node information error
  */
-hostlist_t get_available_host_list_system()
+hostlist_t get_available_host_list_system(void)
 {
-	node_info_msg_t *node_info_ptr = NULL;
-	hostlist_t hostlist;
 	int i;
-
-	if(slurm_load_node((time_t)NULL, &node_info_ptr, SHOW_ALL)){
-		error("slurm_load_node");
-		return NULL;
-	}
+	struct node_record *node_ptr;
+	hostlist_t hostlist;
+        /* Locks: Read node */
+        slurmctld_lock_t node_read_lock = {
+                        NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
 	hostlist = slurm_hostlist_create(NULL);
-	for(i = 0; i < node_info_ptr->record_count;  i++){
-		if(NODE_STATE_IDLE == node_info_ptr->node_array[i].node_state){
-			 slurm_hostlist_push_host(hostlist,
-					 node_info_ptr->node_array[i].name);
+	lock_slurmctld(node_read_lock);
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		if (IS_NODE_IDLE(node_ptr)) {
+			 slurm_hostlist_push_host(hostlist, node_ptr->name);
 		}
 	}
+	unlock_slurmctld(node_read_lock);
 
-	slurm_free_node_info_msg (node_info_ptr);
-	return hostlist;
+	return SLURM_SUCCESS;
 }
 
 /**
@@ -184,8 +187,8 @@ hostlist_t choose_available_from_node_list(const char *node_list)
 	avail_hl_system  = get_available_host_list_system();
 	result_hl = slurm_hostlist_create(NULL);
 
-	while((hostname = slurm_hostlist_shift(given_hl))){
-		if(-1 != slurm_hostlist_find (avail_hl_system, hostname)) {
+	while ((hostname = slurm_hostlist_shift(given_hl))) {
+		if (-1 != slurm_hostlist_find (avail_hl_system, hostname)) {
 			slurm_hostlist_push_host(result_hl, hostname);
 		}
 	}
@@ -218,14 +221,14 @@ char* get_hostlist_subset(const char *host_name_list, uint16_t node_num)
 	hostlist = slurm_hostlist_create(host_name_list);
 	sum = slurm_hostlist_count(hostlist);
 
-	if(sum < node_num){
+	if (sum < node_num) {
 		error ("node_num > sum of host in hostlist");
 		return NULL;
 	}
 
 	temp_hl = slurm_hostlist_create(NULL);
 
-	for(i = 0; i < node_num; i++){
+	for (i = 0; i < node_num; i++) {
 		hostname = slurm_hostlist_shift(hostlist);
 		slurm_hostlist_push_host(temp_hl, hostname);
 	}
@@ -256,17 +259,20 @@ char* seperate_nodelist_with_comma(const char *node_list)
 	char *nodename;
 	hostlist_t given_hl;
 
-	if(NULL == node_list)
+	if (NULL == node_list)
 		return NULL;
 
 	given_hl = slurm_hostlist_create(node_list);
 
-	while((nodename = slurm_hostlist_shift(given_hl))){
-		if(NULL == parsed_nodelist)
+	while ((nodename = slurm_hostlist_shift(given_hl))) {
+		if (NULL == parsed_nodelist)
 			parsed_nodelist = strdup(nodename);
 		else {
-			(void) asprintf(&tmp, "%s,%s", parsed_nodelist,
-					nodename);
+			if (asprintf(&tmp, "%s,%s", parsed_nodelist,
+				     nodename) < 0) {
+				error("slurmctld/dynalloc: asprintf(%s,%s): %m",
+				      parsed_nodelist, nodename);
+			}
 			free(parsed_nodelist);
 			parsed_nodelist = tmp;
 		}

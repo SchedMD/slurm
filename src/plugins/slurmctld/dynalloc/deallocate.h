@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef DEALLOCATE_H_
-#define DEALLOCATE_H_
+#ifndef DYNALLOC_DEALLOCATE_H_
+#define DYNALLOC_DEALLOCATE_H_
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -59,4 +59,4 @@
 
 extern int deallocate(slurm_fd_t new_fd, const char *msg);
 
-#endif /* DEALLOCATE_H_ */
+#endif /* DYNALLOC_DEALLOCATE_H_ */
