@@ -265,7 +265,8 @@ char* seperate_nodelist_with_comma(const char *node_list)
 		if(NULL == parsed_nodelist)
 			parsed_nodelist = strdup(nodename);
 		else {
-			asprintf(&tmp, "%s,%s", parsed_nodelist, nodename);
+			(void) asprintf(&tmp, "%s,%s", parsed_nodelist,
+					nodename);
 			free(parsed_nodelist);
 			parsed_nodelist = tmp;
 		}
