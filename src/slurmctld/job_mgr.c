@@ -4125,6 +4125,7 @@ cleanup_fail:
 		xfree(job_ptr->state_desc);
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
 		_purge_job_record(job_ptr->job_id);
+		*job_pptr = (struct job_record *) NULL;
 	}
 	FREE_NULL_LIST(license_list);
 	FREE_NULL_LIST(part_ptr_list);

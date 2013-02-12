@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
     the user commands.
  -- When asking for job states with sacct default to 'now' instead of midnight
     of the current day.
+ -- Fix for handling a test-only job or immediate job that fails while being
+    built.
 
 * Changes in SLURM 2.5.3
 ========================
