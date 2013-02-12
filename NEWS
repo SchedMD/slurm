@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
  -- Comment out all of the logic in the job_submit/defaults plugin. The logic
     is only an example and not meant for actual use.
  -- Eliminate configuration file 4096 character line limitation.
+ -- More robust logic for tree message forward
 
 * Changes in SLURM 2.5.3
 ========================
