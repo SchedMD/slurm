@@ -870,13 +870,14 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 		   bool ignore_new)
 {
 	FILE *f;
-	char line[BUFFER_SIZE];
 	char *leftover = NULL;
 	int rc = SLURM_SUCCESS;
 	int line_number;
 	int merged_lines;
 	int inc_rc;
 	struct stat stat_buf;
+	int buffer_size;
+	char *line = NULL;
 
 	if (!filename) {
 		error("s_p_parse_file: No filename given.");
@@ -899,9 +900,11 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 		return SLURM_ERROR;
 	}
 
+	buffer_size = stat_buf.st_size;
+	line = xmalloc(sizeof(char) * buffer_size);
 	line_number = 1;
 	while ((merged_lines = _get_next_line(
-			line, BUFFER_SIZE, hash_val, f)) > 0) {
+			line, buffer_size, hash_val, f)) > 0) {
 		/* skip empty lines */
 		if (line[0] == '\0') {
 			line_number += merged_lines;
@@ -937,6 +940,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 		line_number += merged_lines;
 	}
 
+	xfree(line);
 	fclose(f);
 	return rc;
 }
