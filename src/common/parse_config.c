@@ -876,7 +876,6 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 	int merged_lines;
 	int inc_rc;
 	struct stat stat_buf;
-	int buffer_size;
 	char *line = NULL;
 
 	if (!filename) {
@@ -900,11 +899,10 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 		return SLURM_ERROR;
 	}
 
-	buffer_size = stat_buf.st_size;
-	line = xmalloc(sizeof(char) * buffer_size);
+	line = xmalloc(sizeof(char) * stat_buf.st_size);
 	line_number = 1;
 	while ((merged_lines = _get_next_line(
-			line, buffer_size, hash_val, f)) > 0) {
+			line, stat_buf.st_size, hash_val, f)) > 0) {
 		/* skip empty lines */
 		if (line[0] == '\0') {
 			line_number += merged_lines;
