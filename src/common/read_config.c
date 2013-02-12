@@ -910,7 +910,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"Priority", S_P_UINT16},
 		{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
 		{"ReqResv", S_P_BOOLEAN}, /* YES or NO */
-		{"SelectType", S_P_STRING}, /* CR_Socket, CR_Core */
+		{"SelectTypeParameters", S_P_STRING}, /* CR_Socket, CR_Core */
 		{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
 		{"State", S_P_STRING}, /* UP, DOWN, INACTIVE or DRAIN */
 		{NULL}
@@ -1074,13 +1074,14 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		    !s_p_get_uint16(&p->priority, "Priority", dflt))
 			p->priority = 1;
 
-		if (s_p_get_string(&tmp, "SelectType", tbl)) {
+		if (s_p_get_string(&tmp, "SelectTypeParameters", tbl)) {
 			if (strncasecmp(tmp, "CR_Socket", 9) == 0)
 				p->cr_type = CR_SOCKET;
 			else if (strncasecmp(tmp, "CR_Core", 7) == 0)
 				p->cr_type = CR_CORE;
 			else {
-				error("Bad value \"%s\" for SelectType", tmp);
+				error("Bad value for SelectTypeParameters: %s",
+				      tmp);
 				_destroy_partitionname(p);
 				s_p_hashtbl_destroy(tbl);
 				xfree(tmp);

@@ -320,11 +320,11 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	xstrcat(out, tmp_line);
 
 	if (part_ptr->cr_type & CR_CORE)
-		sprintf(tmp_line, " SelectType=CR_CORE");
+		sprintf(tmp_line, " SelectTypeParameters=CR_CORE");
 	else if (part_ptr->cr_type & CR_SOCKET)
-		sprintf(tmp_line, " SelectType=CR_SOCKET");
+		sprintf(tmp_line, " SelectTypeParameters=CR_SOCKET");
 	else
-		sprintf(tmp_line, " SelectType=N/A");
+		sprintf(tmp_line, " SelectTypeParameters=N/A");
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
