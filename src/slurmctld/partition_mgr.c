@@ -71,9 +71,9 @@
 
 
 /* Change PART_STATE_VERSION value when changing the state save format */
-#define PART_STATE_VERSION      "VER003"
-#define PART_2_2_STATE_VERSION  "VER003"	/* SLURM version 2.2 */
-#define PART_2_1_STATE_VERSION  "VER002"	/* SLURM version 2.1 */
+#define PART_STATE_VERSION      "VER004"
+#define PART_2_6_STATE_VERSION  "VER004"	/* SLURM version 2.6 */
+#define PART_2_5_STATE_VERSION  "VER003"	/* SLURM version 2.5 to 2.2 */
 
 /* Global variables */
 struct part_record default_part;	/* default configuration values */
@@ -221,6 +221,7 @@ struct part_record *create_part_record(void)
 	xassert (part_ptr->magic = PART_MAGIC);  /* set value */
 	part_ptr->name              = xstrdup("DEFAULT");
 	part_ptr->alternate         = xstrdup(default_part.alternate);
+	part_ptr->cr_type	    = default_part.cr_type;
 	part_ptr->flags             = default_part.flags;
 	part_ptr->max_time          = default_part.max_time;
 	part_ptr->default_time      = default_part.default_time;
@@ -233,7 +234,6 @@ struct part_record *create_part_record(void)
 	part_ptr->preempt_mode      = default_part.preempt_mode;
 	part_ptr->priority          = default_part.priority;
 	part_ptr->grace_time 	    = default_part.grace_time;
-	part_ptr->cr_type	    = default_part.cr_type;
 	if (part_max_priority)
 		part_ptr->norm_priority = (double)default_part.priority
 			/ (double)part_max_priority;
@@ -401,6 +401,8 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 	pack16(part_ptr->priority,       buffer);
 
 	pack16(part_ptr->state_up,       buffer);
+	pack16(part_ptr->cr_type,        buffer);
+
 	packstr(part_ptr->allow_groups,  buffer);
 	packstr(part_ptr->allow_alloc_nodes, buffer);
 	packstr(part_ptr->alternate,     buffer);
@@ -502,6 +504,8 @@ int load_all_part_state(void)
 	if (ver_str) {
 		if (!strcmp(ver_str, PART_STATE_VERSION)) {
 			protocol_version = SLURM_PROTOCOL_VERSION;
+		} else if (!strcmp(ver_str, PART_2_5_STATE_VERSION)) {
+			protocol_version = SLURM_2_5_PROTOCOL_VERSION;
 		}
 	}
 
@@ -517,7 +521,7 @@ int load_all_part_state(void)
 	safe_unpack_time(&time, buffer);
 
 	while (remaining_buf(buffer) > 0) {
-		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
 			safe_unpack32(&grace_time, buffer);
 			safe_unpack32(&max_time, buffer);
@@ -535,6 +539,39 @@ int load_all_part_state(void)
 
 			safe_unpack16(&state_up, buffer);
 			safe_unpack16(&cr_type, buffer);
+
+			safe_unpackstr_xmalloc(&allow_groups,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_alloc_nodes,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
+			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
+			if ((flags & PART_FLAG_DEFAULT_CLR) ||
+			    (flags & PART_FLAG_HIDDEN_CLR)  ||
+			    (flags & PART_FLAG_NO_ROOT_CLR) ||
+			    (flags & PART_FLAG_ROOT_ONLY_CLR) ||
+			    (flags & PART_FLAG_REQ_RESV_CLR)) {
+				error("Invalid data for partition %s: flags=%u",
+				      part_name, flags);
+				error_code = EINVAL;
+			}
+		} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
+			safe_unpack32(&grace_time, buffer);
+			safe_unpack32(&max_time, buffer);
+			safe_unpack32(&default_time, buffer);
+			safe_unpack32(&max_nodes, buffer);
+			safe_unpack32(&min_nodes, buffer);
+
+			safe_unpack16(&flags,        buffer);
+			safe_unpack16(&max_share,    buffer);
+			safe_unpack16(&preempt_mode, buffer);
+			safe_unpack16(&priority,     buffer);
+
+			if (priority > part_max_priority)
+				part_max_priority = priority;
+
+			safe_unpack16(&state_up, buffer);
 			safe_unpackstr_xmalloc(&allow_groups,
 					       &name_len, buffer);
 			safe_unpackstr_xmalloc(&allow_alloc_nodes,
@@ -910,7 +947,38 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 {
 	uint32_t altered;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		if (default_part_loc == part_ptr)
+			part_ptr->flags |= PART_FLAG_DEFAULT;
+		else
+			part_ptr->flags &= (~PART_FLAG_DEFAULT);
+
+		packstr(part_ptr->name, buffer);
+		pack32(part_ptr->grace_time, buffer);
+		pack32(part_ptr->max_time, buffer);
+		pack32(part_ptr->default_time, buffer);
+		pack32(part_ptr->max_nodes_orig, buffer);
+		pack32(part_ptr->min_nodes_orig, buffer);
+		altered = part_ptr->total_nodes;
+		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &altered);
+		pack32(altered,              buffer);
+		pack32(part_ptr->total_cpus, buffer);
+		pack32(part_ptr->def_mem_per_cpu, buffer);
+		pack32(part_ptr->max_mem_per_cpu, buffer);
+
+		pack16(part_ptr->flags,      buffer);
+		pack16(part_ptr->max_share,  buffer);
+		pack16(part_ptr->preempt_mode, buffer);
+		pack16(part_ptr->priority,   buffer);
+		pack16(part_ptr->state_up, buffer);
+		pack16(part_ptr->cr_type, buffer);
+
+		packstr(part_ptr->allow_groups, buffer);
+		packstr(part_ptr->allow_alloc_nodes, buffer);
+		packstr(part_ptr->alternate, buffer);
+		packstr(part_ptr->nodes, buffer);
+		pack_bit_fmt(part_ptr->node_bitmap, buffer);
+	} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;
 		else

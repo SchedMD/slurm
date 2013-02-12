@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     reservations (e.g. specific different core count for each node).
  -- Added slurmctld/dynalloc plugin for MapReduce+ support.
  -- Added "DynAllocPort" configuration parameter.
+ -- Added partition paramter of SelectType to override system-wide value.
+    Added cr_type to partition_info data structure.
 
 * Changes in SLURM 2.6.0pre1
 ============================

@@ -1443,14 +1443,17 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 		      uint32_t req_nodes, uint16_t job_node_req)
 {
 	int rc;
-
 	uint16_t tmp_cr_type = cr_type;
-	if(job_ptr->part_ptr->cr_type) {
-		if( ( (cr_type & CR_SOCKET) || (cr_type & CR_CORE) ) && (cr_type & CR_ALLOCATE_FULL_SOCKET) ) {
+
+	if (job_ptr->part_ptr->cr_type) {
+		if (((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) &&
+		    (cr_type & CR_ALLOCATE_FULL_SOCKET)) {
 			tmp_cr_type &= ~(CR_SOCKET|CR_CORE);
 			tmp_cr_type |= job_ptr->part_ptr->cr_type;
 		} else {
-			info("cons_res: Can't use Partition SelectType unless using CR_Socket or CR_Core and CR_ALLOCATE_FULL_SOCKET");
+			info("cons_res: Can't use Partition SelectType unless "
+			     "using CR_Socket or CR_Core and "
+			     "CR_ALLOCATE_FULL_SOCKET");
 		}
 	}
 
@@ -1497,12 +1500,15 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 	save_bitmap = bit_copy(bitmap);
 top:	orig_map = bit_copy(save_bitmap);
 
-	if(job_ptr->part_ptr->cr_type) {
-		if( ( (cr_type & CR_SOCKET) || (cr_type & CR_CORE) ) && (cr_type & CR_ALLOCATE_FULL_SOCKET) ) {
+	if (job_ptr->part_ptr->cr_type) {
+		if (((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) &&
+		    (cr_type & CR_ALLOCATE_FULL_SOCKET)) {
 			tmp_cr_type &= ~(CR_SOCKET|CR_CORE);
 			tmp_cr_type |= job_ptr->part_ptr->cr_type;
 		} else {
-			info("cons_res: Can't use Partition SelectType unless using CR_Socket or CR_Core and CR_ALLOCATE_FULL_SOCKET");
+			info("cons_res: Can't use Partition SelectType unless "
+			     "using CR_Socket or CR_Core and "
+			     "CR_ALLOCATE_FULL_SOCKET");
 		}
 	}
 
@@ -1645,12 +1651,15 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	orig_map = bit_copy(bitmap);
 
-	if(job_ptr->part_ptr->cr_type) {
-		if( ( (cr_type & CR_SOCKET) || (cr_type & CR_CORE) ) && (cr_type & CR_ALLOCATE_FULL_SOCKET) ) {
+	if (job_ptr->part_ptr->cr_type) {
+		if (((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) &&
+		    (cr_type & CR_ALLOCATE_FULL_SOCKET)) {
 			tmp_cr_type &= ~(CR_SOCKET|CR_CORE);
 			tmp_cr_type |= job_ptr->part_ptr->cr_type;
 		} else {
-			info("cons_res: Can't use Partition SelectType unless using CR_Socket or CR_Core and CR_ALLOCATE_FULL_SOCKET");
+			info("cons_res: Can't use Partition SelectType unless "
+			     "using CR_Socket or CR_Core and "
+			     "CR_ALLOCATE_FULL_SOCKET");
 		}
 	}
 

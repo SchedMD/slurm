@@ -3090,6 +3090,13 @@ Possible values are "YES" and "NO".
 The default value is "NO".
 
 .TP
+\fBSelectType\fR
+Partition\-specific resource allocation type.
+Supported values are \fBCR_Core\fR and \fBCR_Socket\fR.
+Use requires the system\-wide \fBSelectType\fR value be set plus
+\fBCR_ALLOCATE_FULL_SOCKET\fR.
+
+.TP
 \fBShared\fR
 Controls the ability of the partition to execute more than one job at a
 time on each resource (node, socket or core depending upon the value
@@ -3626,7 +3633,7 @@ See the \fBlogrotate\fR man page for more details.
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
-Portions Copyright (C) 2010-2012 SchedMD <http://www.sched\-md.com>.
+Portions Copyright (C) 2010-2013 SchedMD <http://www.sched\-md.com>.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP

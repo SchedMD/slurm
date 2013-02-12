@@ -3969,7 +3969,7 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 	uint32_t uint32_tmp;
 	char *node_inx_str = NULL;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&part->name, &uint32_tmp, buffer);
 		if (part->name == NULL)
 			part->name = xmalloc(1);/* part->name = "" implicit */
@@ -3982,12 +3982,48 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 		safe_unpack32(&part->total_cpus,   buffer);
 		safe_unpack32(&part->def_mem_per_cpu, buffer);
 		safe_unpack32(&part->max_mem_per_cpu, buffer);
+
 		safe_unpack16(&part->flags,        buffer);
 		safe_unpack16(&part->max_share,    buffer);
 		safe_unpack16(&part->preempt_mode, buffer);
 		safe_unpack16(&part->priority,     buffer);
+		safe_unpack16(&part->state_up,     buffer);
+		safe_unpack16(&part->cr_type ,     buffer);
 
-		safe_unpack16(&part->state_up, buffer);
+		safe_unpackstr_xmalloc(&part->allow_groups, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&part->allow_alloc_nodes, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&part->alternate, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&part->nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node_inx_str, &uint32_tmp, buffer);
+		if (node_inx_str == NULL)
+			part->node_inx = bitfmt2int("");
+		else {
+			part->node_inx = bitfmt2int(node_inx_str);
+			xfree(node_inx_str);
+			node_inx_str = NULL;
+		}
+	} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&part->name, &uint32_tmp, buffer);
+		if (part->name == NULL)
+			part->name = xmalloc(1);/* part->name = "" implicit */
+		safe_unpack32(&part->grace_time,   buffer);
+		safe_unpack32(&part->max_time,     buffer);
+		safe_unpack32(&part->default_time, buffer);
+		safe_unpack32(&part->max_nodes,    buffer);
+		safe_unpack32(&part->min_nodes,    buffer);
+		safe_unpack32(&part->total_nodes,  buffer);
+		safe_unpack32(&part->total_cpus,   buffer);
+		safe_unpack32(&part->def_mem_per_cpu, buffer);
+		safe_unpack32(&part->max_mem_per_cpu, buffer);
+
+		safe_unpack16(&part->flags,        buffer);
+		safe_unpack16(&part->max_share,    buffer);
+		safe_unpack16(&part->preempt_mode, buffer);
+		safe_unpack16(&part->priority,     buffer);
+		safe_unpack16(&part->state_up,     buffer);
+
 		safe_unpackstr_xmalloc(&part->allow_groups, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&part->allow_alloc_nodes, &uint32_tmp,

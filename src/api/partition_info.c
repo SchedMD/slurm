@@ -309,6 +309,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	sprintf(tmp_line, " TotalCPUs=%s", tmp1);
 	xstrcat(out, tmp_line);
+
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)part_ptr->total_nodes, tmp2,
 				 sizeof(tmp2), UNIT_NONE);
@@ -318,15 +319,28 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	sprintf(tmp_line, " TotalNodes=%s", tmp2);
 	xstrcat(out, tmp_line);
 
+	if (part_ptr->cr_type & CR_CORE)
+		sprintf(tmp_line, " SelectType=CR_CORE");
+	else if (part_ptr->cr_type & CR_SOCKET)
+		sprintf(tmp_line, " SelectType=CR_SOCKET");
+	else
+		sprintf(tmp_line, " SelectType=N/A");
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 8 ******/
 	if (part_ptr->def_mem_per_cpu & MEM_PER_CPU) {
-		snprintf(tmp_line, sizeof(tmp_line), " DefMemPerCPU=%u",
+		snprintf(tmp_line, sizeof(tmp_line), "DefMemPerCPU=%u",
 			 part_ptr->def_mem_per_cpu & (~MEM_PER_CPU));
 		xstrcat(out, tmp_line);
 
 	} else if (part_ptr->def_mem_per_cpu == 0) {
-		xstrcat(out, " DefMemPerNode=UNLIMITED");
+		xstrcat(out, "DefMemPerNode=UNLIMITED");
 	} else {
-		snprintf(tmp_line, sizeof(tmp_line), " DefMemPerNode=%u",
+		snprintf(tmp_line, sizeof(tmp_line), "DefMemPerNode=%u",
 			 part_ptr->def_mem_per_cpu);
 		xstrcat(out, tmp_line);
 	}

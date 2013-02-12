@@ -1565,6 +1565,7 @@ typedef struct partition_info {
 	char *allow_groups;	/* comma delimited list of groups,
 				 * null indicates all */
 	char *alternate; 	/* name of alternate partition */
+	uint16_t cr_type;	/* see CR_* values */
 	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	uint16_t flags;		/* see PART_FLAG_* above */

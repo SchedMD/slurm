@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.6
-30 January 2012
+11 February 2012
 
 
 IMPORTANT NOTE:
@@ -70,6 +70,7 @@ COMMAND CHANGES (see man pages for details)
    but has the format "JOBID_TASKID" while a step ID format is now
    "JOBID_TASKID.STEPID".
  - Fully removed deprecated sacct --dump --fdump options.
+ - Added partition "SelectType" field to scontrol output.
 
 OTHER CHANGES
 =============
@@ -88,6 +89,7 @@ Changed members of the following structs
  - Added "array_inx" field to job_desc_msg_t.
  - Added "array_job_id" and "array_job_id" fields to slurm_job_info_t.
  - Changed "core_cnt" from uint32_t to uint32_t* in resv_desc_msg_t.
+ - Added "cr_type" field to partition_info_t.
 
 Added the following struct definitions
 ======================================
