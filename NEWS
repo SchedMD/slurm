@@ -10,10 +10,12 @@ documents those changes that are of interest to users and admins.
     happen.
  -- Better debug when the database is down and using the --cluster option in
     the user commands.
- -- When asking for job states with sacct default to 'now' instead of midnight
+ -- When asking for job states with sacct, default to 'now' instead of midnight
     of the current day.
  -- Fix for handling a test-only job or immediate job that fails while being
     built.
+ -- Comment out all of the logic in the job_submit/defaults plugin. The logic
+    is only an example and not meant for actual use.
 
 * Changes in SLURM 2.5.3
 ========================
