@@ -125,11 +125,7 @@ main (int argc, char *argv[])
 				list_destroy(clusters);
 			if (!(clusters =
 			     slurmdb_get_info_cluster(optarg))) {
-				error("'%s' can't be reached now, "
-				      "or it is an invalid entry for "
-				      "--cluster.  Use 'sacctmgr --list "
-				      "cluster' to see available clusters.",
-				      optarg);
+				print_db_notok(optarg, 0);
 				exit(1);
 			}
 			working_cluster_rec = list_peek(clusters);

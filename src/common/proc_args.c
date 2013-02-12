@@ -889,7 +889,7 @@ int sig_name2num(char *signal_name)
 /*
  * parse_uint32 - Convert anscii string to a 32 bit unsigned int.
  * IN      aval - ascii string.
- * IN/OUT  ival - 32 bit pointer. 
+ * IN/OUT  ival - 32 bit pointer.
  * RET     0 if no error, 1 otherwise.
  */
 extern int parse_uint32(char *aval, uint32_t *ival)
@@ -921,7 +921,7 @@ extern int parse_uint32(char *aval, uint32_t *ival)
 /*
  * parse_uint16 - Convert anscii string to a 16 bit unsigned int.
  * IN      aval - ascii string.
- * IN/OUT  ival - 16 bit pointer. 
+ * IN/OUT  ival - 16 bit pointer.
  * RET     0 if no error, 1 otherwise.
  */
 extern int parse_uint16(char *aval, uint16_t *ival)
@@ -948,4 +948,27 @@ extern int parse_uint16(char *aval, uint16_t *ival)
 	*ival = (uint16_t) tval;
 
 	return 0;
+}
+
+/* print_db_notok() - Print an error message about slurmdbd
+ *                    is unreachable or wrong cluster name.
+ * IN  cname - char * cluster name
+ * IN  isenv - bool  cluster name from env or from command line option.
+ */
+void print_db_notok(const char *cname, bool isenv)
+{
+	if (errno)
+		error("There is a problem talking to the database: %m.  "
+		      "Only local cluster communication is available, remove "
+		      "%s or contact your admin to resolve the problem.",
+		      isenv ? "SLURM_CLUSTERS from your environment" :
+		      "--cluster from your command line");
+	else if (!strcasecmp("all", cname))
+		error("No clusters can be reached now. "
+		      "Contact your admin to resolve the problem.");
+	else
+		error("'%s' can't be reached now, "
+		      "or it is an invalid entry for %s.  "
+		      "Use 'sacctmgr list clusters' to see available clusters.",
+		      cname, isenv ? "SLURM_CLUSTERS" : "--cluster");
 }
