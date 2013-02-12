@@ -192,6 +192,7 @@ static bool job_preemption_tested  = false;
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
 	uint16_t alloc_cpus;
+	uint32_t alloc_memory;
 };
 
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);
@@ -2156,7 +2157,12 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer,
 					 uint16_t protocol_version)
 {
-	pack16(nodeinfo->alloc_cpus, buffer);
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		pack16(nodeinfo->alloc_cpus, buffer);
+		pack32(nodeinfo->alloc_memory, buffer);
+	} else {
+		pack16(nodeinfo->alloc_cpus, buffer);
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -2170,7 +2176,12 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
 	*nodeinfo = nodeinfo_ptr;
 
-	safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
+		safe_unpack32(&nodeinfo_ptr->alloc_memory, buffer);
+	} else {
+		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
+	}
 
 	return SLURM_SUCCESS;
 
@@ -2213,7 +2224,6 @@ extern int select_p_select_nodeinfo_set_all(void)
 	uint16_t tmp, tmp_16 = 0;
 	static time_t last_set_all = 0;
 	uint32_t node_threads, node_cpus;
-	select_nodeinfo_t *nodeinfo = NULL;
 
 	/* only set this once when the last_node_update is newer than
 	 * the last time we set things up. */
@@ -2225,14 +2235,12 @@ extern int select_p_select_nodeinfo_set_all(void)
 	}
 	last_set_all = last_node_update;
 
-	for (n=0; n < select_node_cnt; n++) {
-		node_ptr = &(node_record_table_ptr[n]);
-
-		/* We have to use the '_g_' here to make sure we get
-		   the correct data to work on.  i.e. cray calls this
-		   plugin from within select/cray which has it's own
-		   struct.
-		*/
+	for (n = 0, node_ptr = node_record_table_ptr;
+	     n < select_node_cnt; n++, node_ptr++) {
+		select_nodeinfo_t *nodeinfo = NULL;
+		/* We have to use the '_g_' here to make sure we get the
+		 * correct data to work on.  i.e. cray calls this plugin
+		 * from within select/cray which has it's own struct. */
 		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 					     SELECT_NODEDATA_PTR, 0,
 					     (void *)&nodeinfo);
@@ -2264,10 +2272,8 @@ extern int select_p_select_nodeinfo_set_all(void)
 						     c))
 						tmp++;
 				}
-				/* get the row with the largest cpu
-				   count on it. */
-				if (tmp > tmp_16)
-					tmp_16 = tmp;
+				/* Report row with largest CPU count */
+				tmp_16 = MAX(tmp_16, tmp);
 			}
 		}
 
@@ -2277,6 +2283,12 @@ extern int select_p_select_nodeinfo_set_all(void)
 			tmp_16 *= node_threads;
 
 		nodeinfo->alloc_cpus = tmp_16;
+		if (select_node_record) {
+			nodeinfo->alloc_memory =
+				select_node_usage[n].alloc_memory;
+		} else {
+			nodeinfo->alloc_memory = 0;
+		}
 	}
 
 	return SLURM_SUCCESS;
@@ -2304,6 +2316,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
+	uint32_t *uint32 = (uint32_t *) data;
 	char **tmp_char = (char **) data;
 	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
 
@@ -2333,6 +2346,9 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	case SELECT_NODEDATA_RACK_MP:
 	case SELECT_NODEDATA_EXTRA_INFO:
 		*tmp_char = NULL;
+		break;
+	case SELECT_NODEDATA_MEM_ALLOC:
+		*uint32 = nodeinfo->alloc_memory;
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);

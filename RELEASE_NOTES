@@ -71,6 +71,8 @@ COMMAND CHANGES (see man pages for details)
    "JOBID_TASKID.STEPID".
  - Fully removed deprecated sacct --dump --fdump options.
  - Added partition "SelectTypeParameters" field to scontrol output.
+ - Added Allocated Memory to node information displayed by sview and scontrol
+   commands.
 
 OTHER CHANGES
 =============
@@ -90,6 +92,8 @@ Changed members of the following structs
  - Added "array_job_id" and "array_job_id" fields to slurm_job_info_t.
  - Changed "core_cnt" from uint32_t to uint32_t* in resv_desc_msg_t.
  - Added "cr_type" field to partition_info_t.
+ - Added allocated memory to node information available (within the existing
+   select_nodeinfo field of the node_info_t data structure)
 
 Added the following struct definitions
 ======================================

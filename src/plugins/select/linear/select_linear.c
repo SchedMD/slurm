@@ -108,6 +108,7 @@ int switch_record_cnt;
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
 	uint16_t alloc_cpus;
+	uint32_t alloc_memory;
 };
 
 static int  _add_job_to_nodes(struct cr_record *cr_ptr,
@@ -3027,7 +3028,12 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer,
 					 uint16_t protocol_version)
 {
-	pack16(nodeinfo->alloc_cpus, buffer);
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		pack16(nodeinfo->alloc_cpus, buffer);
+		pack32(nodeinfo->alloc_memory, buffer);
+	} else {
+		pack16(nodeinfo->alloc_cpus, buffer);
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -3041,7 +3047,12 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
 	*nodeinfo = nodeinfo_ptr;
 
-	safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
+		safe_unpack32(&nodeinfo_ptr->alloc_memory, buffer);
+	} else {
+		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
+	}
 
 	return SLURM_SUCCESS;
 
@@ -3079,7 +3090,7 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 extern int select_p_select_nodeinfo_set_all(void)
 {
 	struct node_record *node_ptr = NULL;
-	int i=0;
+	int n;
 	static time_t last_set_all = 0;
 
 	/* only set this once when the last_node_update is newer than
@@ -3092,15 +3103,12 @@ extern int select_p_select_nodeinfo_set_all(void)
 	}
 	last_set_all = last_node_update;
 
-	for (i=0; i<node_record_count; i++) {
+	for (n = 0, node_ptr = node_record_table_ptr;
+	     n < select_node_cnt; n++, node_ptr++) {
 		select_nodeinfo_t *nodeinfo = NULL;
-
-		node_ptr = node_record_table_ptr + i;
-		/* We have to use the '_g_' here to make sure we get
-		   the correct data to work on.  i.e. cray calls this
-		   plugin from within select/cray which has it's own
-		   struct.
-		*/
+		/* We have to use the '_g_' here to make sure we get the
+		 * correct data to work on.  i.e. cray calls this plugin
+		 * from within select/cray which has it's own struct. */
 		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 					     SELECT_NODEDATA_PTR, 0,
 					     (void *)&nodeinfo);
@@ -3118,6 +3126,11 @@ extern int select_p_select_nodeinfo_set_all(void)
 				nodeinfo->alloc_cpus = node_ptr->cpus;
 		} else
 			nodeinfo->alloc_cpus = 0;
+		if (cr_ptr && cr_ptr->nodes) {
+			nodeinfo->alloc_memory = cr_ptr->nodes[n].alloc_memory;
+		} else {
+			nodeinfo->alloc_memory = 0;
+		}
 	}
 
 	return SLURM_SUCCESS;
@@ -3142,6 +3155,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
+	uint32_t *uint32 = (uint32_t *) data;
 	char **tmp_char = (char **) data;
 	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
 
@@ -3171,6 +3185,9 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	case SELECT_NODEDATA_RACK_MP:
 	case SELECT_NODEDATA_EXTRA_INFO:
 		*tmp_char = NULL;
+		break;
+	case SELECT_NODEDATA_MEM_ALLOC:
+		*uint32 = nodeinfo->alloc_memory;
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);

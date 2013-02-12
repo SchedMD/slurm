@@ -11,7 +11,10 @@ documents those changes that are of interest to users and admins.
  -- Added "DynAllocPort" configuration parameter.
  -- Added partition paramter of SelectTypeParameters to override system-wide
     value.
-    Added cr_type to partition_info data structure.
+ -- Added cr_type to partition_info data structure.
+ -- Added allocated memory to node information available (within the existing
+    select_nodeinfo field of the node_info_t data structure). Added Allocated
+    Memory to node information displayed by sview and scontrol commands.
 
 * Changes in SLURM 2.6.0pre1
 ============================

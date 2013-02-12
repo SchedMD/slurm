@@ -373,6 +373,7 @@ enum select_nodedata_type {
 				      * freed with xfree */
 	SELECT_NODEDATA_RACK_MP,     /* data-> char * needs to be
 				      * freed with xfree */
+	SELECT_NODEDATA_MEM_ALLOC,   /* data-> uint32_t */
 };
 
 enum select_print_mode {
