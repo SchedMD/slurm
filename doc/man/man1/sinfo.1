@@ -102,7 +102,7 @@ when running with various options are
 "%20E %9u %19H %N"
 .TP
 .I "\-\-long \-\-list\-reasons"
-"%20R %12u %19H %6t %N"
+"%20E %12U %19H %6t %N"
 .RE
 
 .IP
@@ -137,8 +137,6 @@ Number of nodes
 .TP
 \fB%E\fR
 The reason a node is unavailable (down, drained, or draining states).
-This is the same as \fB%R\fR except the entries will be sorted by
-time rather than the reason string.
 .TP
 \fB%f\fR
 Features associated with the nodes
