@@ -44,7 +44,7 @@ set array_size  4
 print_header $test_id
 
 if {[get_array_config] < [expr $array_size + 1]} {
-	send_user "\nWARNING: MaxArraySize is to small\n"
+	send_user "\nWARNING: MaxArraySize is too small\n"
 	exit 0
 }
 
@@ -153,7 +153,7 @@ expect {
 set job_cnt [multi_scontrol_check $job_id]
 if {$job_cnt != $array_size} {
 	send_user "\nFAILURE: job count found by scontrol bad ($job_cnt != $array_size)\n"
-	set exit_code 1
+	set exit_code
 }
 
 # uses squeue to check for the jobs
@@ -184,12 +184,10 @@ expect {
 scontrol_check $job_id\_$array_id
 
 # cancels the entire job array
-set idmatch 0
 spawn $scancel -v $job_id
 expect {
 	-re "Terminating job" {
 		exp_continue
-		incr idmatch
 	}
 	timeout {
 		send_user "\nFAILURE: scancel not responding\n"
@@ -204,7 +202,7 @@ expect {
 scontrol_check $job_id
 
 if {$exit_code == 0} {
-	file delete $file_in $file_out
+	file delete $file_in $file_out $file_script
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

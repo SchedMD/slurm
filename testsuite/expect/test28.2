@@ -1,0 +1,163 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          checks that the --array environment varibles are correct, and
+#          checks that the --output and --error files were created and
+#          contain the correct information.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2011-2013 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.schedmd.com/slurmdocs/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id      "28.2"
+set file_script  "test$test_id.sh"
+set file_out     "test$test_id-%A_%a.output"
+set file_error   "test$test_id-%A_%a.error"
+set job_id       0
+set array_begin  "0"
+set array_end    "4"
+set array_id     ""
+set array_in     ""
+set array_var    ""
+set exit_code    0
+
+if {[get_array_config] < [expr $array_end + 1]} {
+	send_user "\nWARNING: MaxArraySize is too small\n"
+	exit 0
+}
+
+proc delete_file {} {
+
+	global test_id job_id bin_rm array_end file_script
+
+	set cnt 0
+	for {set cnt 0} {$cnt<$array_end} {incr cnt} {
+		exec $bin_rm -f test$test_id-$job_id\_$cnt\.output
+		exec $bin_rm -f test$test_id-$job_id\_$cnt\.error
+
+	}
+	exec $bin_rm -f $file_script
+}
+
+# delete any remaining output files
+delete_file
+
+make_bash_script $file_script "
+$bin_echo array_id=\$SLURM_ARRAY_JOB_ID
+$bin_echo task_id=\$SLURM_ARRAY_TASK_ID
+$bin_sleep aaaa
+exit 0
+"
+
+# submit a batch with an array from 0 to 3; array size 4
+set job_id 0
+spawn $sbatch --array=$array_begin-[expr $array_end -1] --output=$file_out --error=$file_error -t1 $file_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch did not submit jobs\n"
+	exit 1
+}
+
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	set exit_code 1
+}
+
+# Checks that the correct error and output files were created with the correct format
+for {set cnt 0} {$cnt<$array_end} {incr cnt} {
+	if {[wait_for_file test$test_id-$job_id\_$cnt\.output] != 0} {
+		send_user "\nFAILURE: outout file was not created or not the correct format. test$test_id-$job_id\_$cnt\.output not found\n"
+		set exit_code 1
+	}
+	if {[wait_for_file test$test_id-$job_id\_$cnt\.error] !=0} {
+		send_user "\nFAILURE: error file was not created or not the correct format. test$test_id-$job_id\_$cnt\.error not found\n"
+		set exit_code 1
+	}
+}
+send_user "\nchecking environment variables\n"
+# Checks that the array job ids are correct
+for {set index 0} {$index < $array_end} {incr index} {
+	set env_cnt 0
+	spawn $bin_cat test$test_id-$job_id\_$index\.output
+	expect {
+		-re "array_id=$job_id" {
+			incr env_cnt
+			exp_continue
+		}
+		-re "task_id=$index" {
+			incr env_cnt
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$env_cnt != 2} {
+		send_user "\nFAILURE: Missing environment variables in file test$test_id-$job_id\_$index\.output\n"
+		set exit_code 1
+	}
+}
+
+# checks the contents of of the error file
+for {set index 0} {$index < $array_end} {incr index} {
+	set err_match 0
+	spawn $bin_cat test$test_id-$job_id\_$index\.error
+	expect {
+		-re "invalid time" {
+			send_user "\nDo not worry this error is expected\n"
+			incr err_match
+		}
+		eof {
+			wait
+		}
+	}
+	if {$err_match != 1} {
+		send_user "\nFAILURE: Bad contents in the error file test$test_id-$job_id\_$index\.error\n"
+		set exit_code 1
+	}
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
+}
+delete_file
+exit $exit_code
