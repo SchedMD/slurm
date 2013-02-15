@@ -78,6 +78,8 @@ documents those changes that are of interest to users and admins.
     is only an example and not meant for actual use.
  -- Eliminate configuration file 4096 character line limitation.
  -- More robust logic for tree message forward
+ -- BGQ - When cnodes fail in a timeout fashion correctly look up parent
+    midplane.
 
 * Changes in SLURM 2.5.3
 ========================
