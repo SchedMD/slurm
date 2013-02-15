@@ -80,6 +80,7 @@ documents those changes that are of interest to users and admins.
  -- More robust logic for tree message forward
  -- BGQ - When cnodes fail in a timeout fashion correctly look up parent
     midplane.
+ -- Correct sinfo "%c" (node's CPU count) output value for Bluegene systems.
 
 * Changes in SLURM 2.5.3
 ========================
