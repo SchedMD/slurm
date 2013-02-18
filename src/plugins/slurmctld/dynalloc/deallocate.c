@@ -76,7 +76,7 @@ extern void deallocate(const char *msg)
 	/* jobid_argv will be freed */
 	tmp_jobid_argv = jobid_argv;
 
-	while(*tmp_jobid_argv){
+	while (*tmp_jobid_argv) {
 		/* to identify the slurm_job */
 		if (NULL != (pos = strstr(*tmp_jobid_argv, "slurm_jobid="))) {
 			pos = pos + strlen("slurm_jobid=");  /* step over */

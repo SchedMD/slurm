@@ -82,16 +82,16 @@ static void _parse_job_params(const char *cmd, char *orte_jobid,
 
 	tmp = xstrdup(cmd);
 	p_str = strtok(tmp, " ");
-	while(p_str){
-		if(strstr(p_str, "jobid")){
+	while (p_str) {
+		if (strstr(p_str, "jobid")) {
 			pos = strchr(p_str, '=');
 			pos++;  /* step over the = */
 			strcpy(orte_jobid, pos);
-		}else if(strstr(p_str, "return")){
+		} else if (strstr(p_str, "return")) {
 			pos = strchr(p_str, '=');
 			pos++;  /* step over the = */
 			strcpy(return_flag, pos);
-		}else if(strstr(p_str, "timeout")){
+		} else if (strstr(p_str, "timeout")) {
 			pos = strchr(p_str, '=');
 			pos++;  /* step over the = */
 			*job_timeout = atol(pos);
@@ -130,24 +130,24 @@ static void _parse_app_params(const char *cmd, char *appid,
 
 	tmp = xstrdup(cmd);
 	p_str = strtok(tmp, " ");
-	while(p_str){
-		if(strstr(p_str, "app")){
+	while (p_str) {
+		if (strstr(p_str, "app")) {
 			pos = strchr(p_str, '=');
 			pos++;  /* step over the = */
 			strcpy(appid, pos);
-		}else if(strstr(p_str, "np")){
+		} else if (strstr(p_str, "np")) {
 			pos = strchr(p_str, '=');
 			pos++;  /* step over the = */
 			*np = atoi(pos);
-		}else if(strstr(p_str, "N=")){
+		} else if (strstr(p_str, "N=")) {
 			pos =  strchr(p_str, '=');
 			pos++;  /* step over the = */
 			*request_node_num = atoi(pos);
-		}else  if(strstr(p_str, "node_list")){
+		} else  if (strstr(p_str, "node_list")) {
 			pos = strchr(p_str, '=');
 			pos++;  /* step over the = */
             strcpy(node_range_list, pos);
-		}else  if(strstr(p_str, "flag")){
+		} else  if (strstr(p_str, "flag")) {
 			pos = strchr(p_str, '=');
 			pos++;  /* step over the = */
             strcpy(flag, pos);
@@ -189,7 +189,7 @@ static void _allocate_app_op(const char *msg_app,
 	rc = allocate_node(np, request_node_num, node_range_list, flag,
 				app_timeout, &slurm_jobid, resp_node_list, tasks_per_node);
 
-	if(SLURM_SUCCESS == rc){
+	if (SLURM_SUCCESS == rc) {
 		sprintf(app_resp_msg,
 				"app=%s slurm_jobid=%u allocated_node_list=%s tasks_per_node=%s",
 				appid, slurm_jobid, resp_node_list, tasks_per_node);
@@ -228,18 +228,19 @@ extern void allocate_job_op(slurm_fd_t new_fd, const char *msg)
 	app_count = argv_count(app_argv) - 1;
 	/* app_argv will be freed */
 	tmp_app_argv = app_argv;
-	while(*tmp_app_argv){
-		if(strstr(*tmp_app_argv, "allocate")){
+	while (*tmp_app_argv) {
+		if (strstr(*tmp_app_argv, "allocate")) {
 			_parse_job_params(*tmp_app_argv, orte_jobid,
 								return_flag, &job_timeout);
-		}else if(strstr(*tmp_app_argv, "app")){
+		} else if (strstr(*tmp_app_argv, "app")) {
 			app_timeout = job_timeout / app_count;
 
 			_allocate_app_op(*tmp_app_argv, app_timeout, app_resp_msg);
 
-			if(0 == strcmp(return_flag, "all") && 0 != strlen(app_resp_msg)){
+			if (0 == strcmp(return_flag, "all")
+					&& 0 != strlen(app_resp_msg)) {
 				argv_append_nosize(&all_resp_msg_argv, app_resp_msg);
-			}else if(0 != strlen(app_resp_msg)){
+			} else if (0 != strlen(app_resp_msg)) {
 				/* if return_flag != "all",
 				 * each app's allocation will be sent individually */
 				sprintf(send_buf, "jobid=%s:%s", orte_jobid, app_resp_msg);
@@ -252,11 +253,11 @@ extern void allocate_job_op(slurm_fd_t new_fd, const char *msg)
 	/* free app_argv */
 	argv_free(app_argv);
 
-	if(0 == strcmp(return_flag, "all")){
+	if (0 == strcmp(return_flag, "all")) {
 		sprintf(send_buf, "jobid=%s", orte_jobid);
 		/* all_resp_msg_argv will be freed */
 		tmp_all_resp_msg_argv = all_resp_msg_argv;
-		while(*tmp_all_resp_msg_argv){
+		while (*tmp_all_resp_msg_argv) {
 			sprintf(send_buf, "%s:%s", send_buf, *tmp_all_resp_msg_argv);
 			tmp_all_resp_msg_argv++;
 		}

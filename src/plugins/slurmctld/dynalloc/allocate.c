@@ -187,13 +187,12 @@ static int _get_nodelist_mandatory(uint16_t request_node_num,
 		strcpy(final_req_node_list, subset);
 
 		free(subset);
-		free(avail_node_range);
-
 		rc = SLURM_SUCCESS;
 	} else {
 		rc = SLURM_FAILURE;
 	}
 
+	free(avail_node_range);
 	slurm_hostlist_destroy(avail_hl);
 	return rc;
 }
@@ -516,6 +515,9 @@ int allocate_node(uint32_t np, uint32_t request_node_num,
 				  job_desc_msg.user_id, &job_ptr);
 	unlock_slurmctld(job_write_lock);
 
+	/* cleanup */
+	xfree(job_desc_msg.partition);
+
 	if ((error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) ||
 		(error_code == ESLURM_RESERVATION_NOT_USABLE) ||
 		(error_code == ESLURM_QOS_THRES) ||
@@ -577,8 +579,6 @@ int allocate_node(uint32_t np, uint32_t request_node_num,
 					    tasks_per_node);
 
 			/* cleanup */
-			xfree(job_desc_msg.partition);
-
 			xfree(alloc_msg.cpu_count_reps);
 			xfree(alloc_msg.cpus_per_node);
 			xfree(alloc_msg.node_list);

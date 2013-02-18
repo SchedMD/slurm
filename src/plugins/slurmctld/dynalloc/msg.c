@@ -73,7 +73,7 @@ static int   err_code;
 static uint16_t sched_port;
 
 static void *	_msg_thread(void *no_data);
-static void	_proc_msg(slurm_fd_t new_fd, char *msg);
+static void		_proc_msg(slurm_fd_t new_fd, char *msg);
 static char *	_recv_msg(slurm_fd_t new_fd);
 static size_t	_send_msg(slurm_fd_t new_fd, char *buf, size_t size);
 static size_t	_read_bytes(int fd, char *buf, size_t size);
