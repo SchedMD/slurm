@@ -80,7 +80,7 @@ extern void get_free_nodes_slots(uint16_t *nodes, uint16_t *slots);
  *	RET OUT:
  *		hostlist_t: available node list in slurm
  */
-extern hostlist_t get_available_host_list_system(void);
+extern hostlist_t get_available_host_list_system_m(void);
 
 /**
  *	get the range of available node list in slurm.
@@ -90,7 +90,7 @@ extern hostlist_t get_available_host_list_system(void);
  *	RET OUT:
  *		a string indicating the range of available node list in slurm
  */
-extern char* get_available_host_list_range_sytem();
+extern char* get_available_host_list_range_sytem_m();
 
 /**
  *	get available node list within a given node list
@@ -101,7 +101,7 @@ extern char* get_available_host_list_range_sytem();
  *	RET OUT
  *		available node list
  */
-extern hostlist_t choose_available_from_node_list(const char *node_list);
+extern hostlist_t choose_available_from_node_list_m(const char *node_list);
 
 /**
  *	get a subset node range with node_num nodes from a host_name_list
@@ -114,7 +114,7 @@ extern hostlist_t choose_available_from_node_list(const char *node_list);
  *		the subset node range, NULL if the node number of subset is
  *		larger than the node number of host_name_list
  */
-extern char* get_hostlist_subset(const char *host_name_list, uint16_t node_num);
+extern char* get_hostlist_subset_m(const char *host_name_list, uint16_t node_num);
 
 /**
  *	transform nodelist with regular expression into
@@ -128,6 +128,6 @@ extern char* get_hostlist_subset(const char *host_name_list, uint16_t node_num);
  *	RET OUT
  *		comma seperated nodelist
  */
-extern char* seperate_nodelist_with_comma(const char *node_list);
+extern char* seperate_nodelist_with_comma_m(const char *node_list);
 
 #endif /* DYNALLOC_INFO_H_ */
