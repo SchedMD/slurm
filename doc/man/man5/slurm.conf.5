@@ -1690,8 +1690,14 @@ Acceptable values include:
 .RS
 .TP
 \fBsched/builtin\fR
-for the built\-in FIFO (First In First Out) scheduler.
-This is the default.
+Initiate jobs in priority order.
+If any job in the partition can not be scheduled, no lower priority job in that
+partition will be scheduled.
+An exception is made for jobs can not run due to partition constraints
+(e.g. the time limit) or down/drained nodes.
+In that case, lower priority jobs can be initiated and not impact the higher
+priority job.
+This is the default configuration.
 .TP
 \fBsched/backfill\fR
 for a backfill scheduling module to augment the default FIFO scheduling.
