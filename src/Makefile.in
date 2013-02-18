@@ -52,7 +52,6 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @REAL_BG_L_P_LOADED_FALSE@am__append_1 = srun
-@WITH_BLCR_TRUE@am__append_2 = srun_cr
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -124,7 +123,7 @@ CTAGS = ctags
 DIST_SUBDIRS = common api db_api database slurmctld slurmd slurmdbd \
 	plugins sbcast scontrol scancel squeue sinfo smap sview salloc \
 	sbatch sattach strigger sacct sacctmgr sreport sstat sshare \
-	sprio sdiag srun srun_cr
+	sprio sdiag srun_cr srun
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -366,7 +365,7 @@ top_srcdir = @top_srcdir@
 SUBDIRS = common api db_api database slurmctld slurmd slurmdbd plugins \
 	sbcast scontrol scancel squeue sinfo smap sview salloc sbatch \
 	sattach strigger sacct sacctmgr sreport sstat sshare sprio \
-	sdiag $(am__append_1) $(am__append_2)
+	sdiag srun_cr $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:

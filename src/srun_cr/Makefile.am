@@ -1,9 +1,10 @@
-#
+# Makefile for srun_cr
 
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
-
 INCLUDES = -I$(top_srcdir) $(BLCR_CPPFLAGS)
+
+if WITH_BLCR
 
 bin_PROGRAMS = srun_cr
 
@@ -20,3 +21,8 @@ force:
 $(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
+else
+
+EXTRA_srun_cr_SOURCES = srun_cr.c
+
+endif

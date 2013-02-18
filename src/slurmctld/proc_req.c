@@ -503,6 +503,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->def_mem_per_cpu     = conf->def_mem_per_cpu;
 	conf_ptr->debug_flags         = conf->debug_flags;
 	conf_ptr->disable_root_jobs   = conf->disable_root_jobs;
+	conf_ptr->dynalloc_port       = conf->dynalloc_port;
 
 	conf_ptr->enforce_part_limits = conf->enforce_part_limits;
 	conf_ptr->epilog              = xstrdup(conf->epilog);

@@ -337,9 +337,10 @@ starttime is 'now'.
 
 .TP
 \f3\-S\fP\f3,\fP \f3\-\-starttime\fP
-Select jobs eligible after the specified time. Default is midnight of
-current day.  If states are given with the \-s option then return jobs
-in this state at this time, 'now' is also used as the default time.
+Select jobs eligible after the specified time. Default is 00:00:00 of the
+current day, unless '\-s' is set then the default is 'now'.  If states
+are given with the '\-s' option then only jobs in this state at this
+time will be returned.
 
 Valid time formats are...
 .sp

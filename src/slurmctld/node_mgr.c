@@ -890,7 +890,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 		packstr(dump_node_ptr->reason, buffer);
 		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
 					protocol_version);
-	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
 		packstr (dump_node_ptr->name, buffer);
 		packstr (dump_node_ptr->node_hostname, buffer);
 		packstr (dump_node_ptr->comm_name, buffer);

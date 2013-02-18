@@ -207,6 +207,8 @@ typedef struct slurm_conf_partition {
 	char *allow_groups;	/* comma delimited list of groups,
 				 * NULL indicates all */
 	char *alternate;	/* name of alternate partition */
+	uint16_t cr_type;	/* Custom CR values for partition (supported
+				 * by select/cons_res plugin only) */
 	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	bool default_flag;	/* Set if default partition */
 	uint32_t default_time;	/* minutes or INFINITE */

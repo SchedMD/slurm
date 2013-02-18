@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.6
-30 January 2012
+11 February 2012
 
 
 IMPORTANT NOTE:
@@ -27,6 +27,7 @@ HIGHLIGHTS
 ==========
  - Added support for job arrays, which increases performance and ease of use
    for sets of similar jobs.
+ - Added slurmctld/dynalloc plugin for MapReduce+ support. 
  - Added prolog and epilog support for advanced reservations.
  - Much faster throughput for job step execution with --exclusive option. The
    srun process is notified when resources become available rather than
@@ -36,6 +37,8 @@ HIGHLIGHTS
    _slurm_sysconfdir %{_prefix}/etc/slurm
    _mandir %{_prefix}/share/man
    _infodir %{_prefix}/share/info
+ - Advanced reservations with hostname and core counts now supports asymetric
+   reservations (e.g. specific different core count for each node).
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
@@ -55,6 +58,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
  - Added "SlurmctldPlugstack" configuration parameter for generic stack of
    slurmctld daemon plugins. Only the plugin's init and fini functions are
    called.
+ - Added "DynAllocPort" configuration parameter for use by slurmctld/dynalloc
+   plugin.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
@@ -65,6 +70,9 @@ COMMAND CHANGES (see man pages for details)
    but has the format "JOBID_TASKID" while a step ID format is now
    "JOBID_TASKID.STEPID".
  - Fully removed deprecated sacct --dump --fdump options.
+ - Added partition "SelectTypeParameters" field to scontrol output.
+ - Added Allocated Memory to node information displayed by sview and scontrol
+   commands.
 
 OTHER CHANGES
 =============
@@ -74,14 +82,18 @@ OTHER CHANGES
 
 API CHANGES
 ===========
-Added function "slurm_ckpt_copy_job" to checkpoint plugins.
+ - Added function "slurm_ckpt_copy_job" to checkpoint plugins.
 
 Changed members of the following structs
 ========================================
-- Added "state" field to job_step_info_t.
-- Added "resv_epilog" and "resv_prolog" to slurm_ctl_conf_t.
-- Added "array_inx" field to job_desc_msg_t.
-- Added "array_job_id" and "array_job_id" fields to slurm_job_info_t.
+ - Added "state" field to job_step_info_t.
+ - Added "resv_epilog" and "resv_prolog" to slurm_ctl_conf_t.
+ - Added "array_inx" field to job_desc_msg_t.
+ - Added "array_job_id" and "array_job_id" fields to slurm_job_info_t.
+ - Changed "core_cnt" from uint32_t to uint32_t* in resv_desc_msg_t.
+ - Added "cr_type" field to partition_info_t.
+ - Added allocated memory to node information available (within the existing
+   select_nodeinfo field of the node_info_t data structure)
 
 Added the following struct definitions
 ======================================
@@ -91,12 +103,12 @@ Changed the following enums and #defines
 
 Added the following API's
 =========================
-- Added "slurm_load_job_user" function. This is a variation of
-  "slurm_load_jobs", but accepts a user ID argument, potentially resulting
-  in substantial performance improvement for "squeue --user=ID"
-- Added "slurm_load_node_single" function. This is a variation of
-  "slurm_load_nodes", but accepts a node name argument, potentially resulting
-  in substantial performance improvement for "sinfo --nodes=NAME".
+ - Added "slurm_load_job_user" function. This is a variation of
+   "slurm_load_jobs", but accepts a user ID argument, potentially resulting
+   in substantial performance improvement for "squeue --user=ID"
+ - Added "slurm_load_node_single" function. This is a variation of
+   "slurm_load_nodes", but accepts a node name argument, potentially resulting
+   in substantial performance improvement for "sinfo --nodes=NAME".
 
 Changed the following API's
 ===========================

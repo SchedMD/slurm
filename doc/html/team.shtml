@@ -18,6 +18,7 @@ Lead Slurm developers are:
 <li><a href="http://www.fhcrc.org">Fred Hutchinson Cancer Research Center</a></li>
 <li><a href="http://www.hp.com">HP</a></li>
 <li><a href="http://www.llnl.gov">Lawrence Livermore National Laboratory</a></li>
+<li><a href="http://www.lanl.gov">Los Alamos National Laboratory</a></li>
 <li><a href="http://english.nudt.edu.cn">National University of Defense Technology (NUDT, China)</a></li>
 <li><a href="http://www.nvidia.com">NVIDIA</a></li>
 <li><a href="http://www.ornl.gov">Oak Ridge National Laboratory</a></li>
@@ -42,7 +43,8 @@ Lead Slurm developers are:
 <li>Bill Brophy (Bull)</li>
 <br>
 <li>Hongjia Cao (National University of Defense Technology, China)</li>
-<li>Ralph Castain (Greenplum/EMC)</li>
+<li>Jimmy Cao (Greenplum/EMC)</li>
+<li>Ralph Castain (Los Alamos National Laboratory, Greenplum/EMC)</li>
 <li>Fran&ccedil;ois Chevallier (CEA)</li>
 <li>Daniel Christians (HP)</li>
 <li>Gilles Civario (Bull)</li>
@@ -156,6 +158,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 23 January 2013</p>
+<p style="text-align:center;">Last modified 11 February 2013</p>
 
 <!--#include virtual="footer.txt"-->

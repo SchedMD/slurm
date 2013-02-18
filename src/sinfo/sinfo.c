@@ -608,7 +608,7 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		return true;
 
 	if (params.match_flags.cpus_flag &&
-	    ((node_ptr->cpus / g_node_scaling) != sinfo_ptr->min_cpus))
+	    (node_ptr->cpus        != sinfo_ptr->min_cpus))
 		return false;
 
 	if (params.match_flags.sockets_flag &&
@@ -704,8 +704,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 	uint16_t base_state;
 	uint16_t used_cpus = 0, error_cpus = 0;
 	int total_cpus = 0, total_nodes = 0;
-	/* since node_scaling could be less here we need to use the
-	   global node scaling which should never change. */
+	/* since node_scaling could be less here, we need to use the
+	 * global node scaling which should never change. */
 	int single_node_cpus = (node_ptr->cpus / g_node_scaling);
 
  	base_state = node_ptr->node_state & NODE_STATE_BASE;
@@ -717,8 +717,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		sinfo_ptr->reason     = node_ptr->reason;
 		sinfo_ptr->reason_time= node_ptr->reason_time;
 		sinfo_ptr->reason_uid = node_ptr->reason_uid;
-		sinfo_ptr->min_cpus   = single_node_cpus;
-		sinfo_ptr->max_cpus   = single_node_cpus;
+		sinfo_ptr->min_cpus    = node_ptr->cpus;
+		sinfo_ptr->max_cpus    = node_ptr->cpus;
 		sinfo_ptr->min_sockets = node_ptr->sockets;
 		sinfo_ptr->max_sockets = node_ptr->sockets;
 		sinfo_ptr->min_cores   = node_ptr->cores;
@@ -738,10 +738,10 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		 * just return, don't duplicate */
 		return;
 	} else {
-		if (sinfo_ptr->min_cpus > single_node_cpus)
-			sinfo_ptr->min_cpus = single_node_cpus;
-		if (sinfo_ptr->max_cpus < single_node_cpus)
-			sinfo_ptr->max_cpus = single_node_cpus;
+		if (sinfo_ptr->min_cpus > node_ptr->cpus)
+			sinfo_ptr->min_cpus = node_ptr->cpus;
+		if (sinfo_ptr->max_cpus < node_ptr->cpus)
+			sinfo_ptr->max_cpus = node_ptr->cpus;
 
 		if (sinfo_ptr->min_sockets > node_ptr->sockets)
 			sinfo_ptr->min_sockets = node_ptr->sockets;
@@ -799,16 +799,16 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 		if (!params.match_flags.state_flag &&
 		    (used_cpus || error_cpus)) {
 			/* We only get one shot at this (because all states
-			   are combined together), so we need to make
-			   sure we get all the subgrps accounted. (So use
-			   g_node_scaling for safe measure) */
+			 * are combined together), so we need to make
+			 * sure we get all the subgrps accounted. (So use
+			 * g_node_scaling for safe measure) */
 			total_nodes = g_node_scaling;
 
 			sinfo_ptr->nodes_alloc += used_cpus;
 			sinfo_ptr->nodes_other += error_cpus;
 			sinfo_ptr->nodes_idle +=
 				(total_nodes - (used_cpus + error_cpus));
-			used_cpus *= single_node_cpus;
+			used_cpus  *= single_node_cpus;
 			error_cpus *= single_node_cpus;
 		} else {
 			/* process only for this subgrp and then return */

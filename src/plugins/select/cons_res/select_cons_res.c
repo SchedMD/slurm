@@ -192,6 +192,7 @@ static bool job_preemption_tested  = false;
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
 	uint16_t alloc_cpus;
+	uint32_t alloc_memory;
 };
 
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);
@@ -1443,9 +1444,22 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 		      uint32_t req_nodes, uint16_t job_node_req)
 {
 	int rc;
+	uint16_t tmp_cr_type = cr_type;
+
+	if (job_ptr->part_ptr->cr_type) {
+		if (((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) &&
+		    (cr_type & CR_ALLOCATE_FULL_SOCKET)) {
+			tmp_cr_type &= ~(CR_SOCKET|CR_CORE);
+			tmp_cr_type |= job_ptr->part_ptr->cr_type;
+		} else {
+			info("cons_res: Can't use Partition SelectType unless "
+			     "using CR_Socket or CR_Core and "
+			     "CR_ALLOCATE_FULL_SOCKET");
+		}
+	}
 
 	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
-			 SELECT_MODE_TEST_ONLY, cr_type, job_node_req,
+			 SELECT_MODE_TEST_ONLY, tmp_cr_type, job_node_req,
 			 select_node_cnt, select_part_record,
 			 select_node_usage, NULL);
 	return rc;
@@ -1482,12 +1496,25 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 	bool remove_some_jobs = false;
 	uint16_t pass_count = 0;
 	uint16_t mode;
+	uint16_t tmp_cr_type = cr_type;
 
 	save_bitmap = bit_copy(bitmap);
 top:	orig_map = bit_copy(save_bitmap);
 
+	if (job_ptr->part_ptr->cr_type) {
+		if (((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) &&
+		    (cr_type & CR_ALLOCATE_FULL_SOCKET)) {
+			tmp_cr_type &= ~(CR_SOCKET|CR_CORE);
+			tmp_cr_type |= job_ptr->part_ptr->cr_type;
+		} else {
+			info("cons_res: Can't use Partition SelectType unless "
+			     "using CR_Socket or CR_Core and "
+			     "CR_ALLOCATE_FULL_SOCKET");
+		}
+	}
+
 	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
-			 SELECT_MODE_RUN_NOW, cr_type, job_node_req,
+			 SELECT_MODE_RUN_NOW, tmp_cr_type, job_node_req,
 			 select_node_cnt, select_part_record,
 			 select_node_usage, exc_core_bitmap);
 
@@ -1525,7 +1552,7 @@ top:	orig_map = bit_copy(save_bitmap);
 			rc = cr_job_test(job_ptr, bitmap, min_nodes,
 					 max_nodes, req_nodes,
 					 SELECT_MODE_WILL_RUN,
-					 cr_type, job_node_req,
+					 tmp_cr_type, job_node_req,
 					 select_node_cnt,
 					 future_part, future_usage,
 					 exc_core_bitmap);
@@ -1621,12 +1648,25 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bitstr_t *orig_map;
 	int action, rc = SLURM_ERROR;
 	time_t now = time(NULL);
+	uint16_t tmp_cr_type = cr_type;
 
 	orig_map = bit_copy(bitmap);
 
+	if (job_ptr->part_ptr->cr_type) {
+		if (((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) &&
+		    (cr_type & CR_ALLOCATE_FULL_SOCKET)) {
+			tmp_cr_type &= ~(CR_SOCKET|CR_CORE);
+			tmp_cr_type |= job_ptr->part_ptr->cr_type;
+		} else {
+			info("cons_res: Can't use Partition SelectType unless "
+			     "using CR_Socket or CR_Core and "
+			     "CR_ALLOCATE_FULL_SOCKET");
+		}
+	}
+
 	/* Try to run with currently available nodes */
 	rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes,
-			 SELECT_MODE_WILL_RUN, cr_type, job_node_req,
+			 SELECT_MODE_WILL_RUN, tmp_cr_type, job_node_req,
 			 select_node_cnt, select_part_record,
 			 select_node_usage, exc_core_bitmap);
 	if (rc == SLURM_SUCCESS) {
@@ -1682,7 +1722,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	if (preemptee_candidates) {
 		bit_or(bitmap, orig_map);
 		rc = cr_job_test(job_ptr, bitmap, min_nodes, max_nodes,
-				 req_nodes, SELECT_MODE_WILL_RUN, cr_type,
+				 req_nodes, SELECT_MODE_WILL_RUN, tmp_cr_type,
 				 job_node_req, select_node_cnt, future_part,
 				 future_usage, exc_core_bitmap);
 		if (rc == SLURM_SUCCESS)
@@ -1706,7 +1746,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					 tmp_job_ptr, 0);
 			rc = cr_job_test(job_ptr, bitmap, min_nodes,
 					 max_nodes, req_nodes,
-					 SELECT_MODE_WILL_RUN, cr_type,
+					 SELECT_MODE_WILL_RUN, tmp_cr_type,
 					 job_node_req, select_node_cnt,
 					 future_part, future_usage,
 					 exc_core_bitmap);
@@ -2117,7 +2157,12 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer,
 					 uint16_t protocol_version)
 {
-	pack16(nodeinfo->alloc_cpus, buffer);
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		pack16(nodeinfo->alloc_cpus, buffer);
+		pack32(nodeinfo->alloc_memory, buffer);
+	} else {
+		pack16(nodeinfo->alloc_cpus, buffer);
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -2131,7 +2176,12 @@ extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
 	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
 	*nodeinfo = nodeinfo_ptr;
 
-	safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
+		safe_unpack32(&nodeinfo_ptr->alloc_memory, buffer);
+	} else {
+		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
+	}
 
 	return SLURM_SUCCESS;
 
@@ -2174,7 +2224,6 @@ extern int select_p_select_nodeinfo_set_all(void)
 	uint16_t tmp, tmp_16 = 0;
 	static time_t last_set_all = 0;
 	uint32_t node_threads, node_cpus;
-	select_nodeinfo_t *nodeinfo = NULL;
 
 	/* only set this once when the last_node_update is newer than
 	 * the last time we set things up. */
@@ -2186,14 +2235,12 @@ extern int select_p_select_nodeinfo_set_all(void)
 	}
 	last_set_all = last_node_update;
 
-	for (n=0; n < select_node_cnt; n++) {
-		node_ptr = &(node_record_table_ptr[n]);
-
-		/* We have to use the '_g_' here to make sure we get
-		   the correct data to work on.  i.e. cray calls this
-		   plugin from within select/cray which has it's own
-		   struct.
-		*/
+	for (n = 0, node_ptr = node_record_table_ptr;
+	     n < select_node_cnt; n++, node_ptr++) {
+		select_nodeinfo_t *nodeinfo = NULL;
+		/* We have to use the '_g_' here to make sure we get the
+		 * correct data to work on.  i.e. cray calls this plugin
+		 * from within select/cray which has it's own struct. */
 		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 					     SELECT_NODEDATA_PTR, 0,
 					     (void *)&nodeinfo);
@@ -2225,10 +2272,8 @@ extern int select_p_select_nodeinfo_set_all(void)
 						     c))
 						tmp++;
 				}
-				/* get the row with the largest cpu
-				   count on it. */
-				if (tmp > tmp_16)
-					tmp_16 = tmp;
+				/* Report row with largest CPU count */
+				tmp_16 = MAX(tmp_16, tmp);
 			}
 		}
 
@@ -2238,6 +2283,12 @@ extern int select_p_select_nodeinfo_set_all(void)
 			tmp_16 *= node_threads;
 
 		nodeinfo->alloc_cpus = tmp_16;
+		if (select_node_record) {
+			nodeinfo->alloc_memory =
+				select_node_usage[n].alloc_memory;
+		} else {
+			nodeinfo->alloc_memory = 0;
+		}
 	}
 
 	return SLURM_SUCCESS;
@@ -2265,6 +2316,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
+	uint32_t *uint32 = (uint32_t *) data;
 	char **tmp_char = (char **) data;
 	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
 
@@ -2294,6 +2346,9 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	case SELECT_NODEDATA_RACK_MP:
 	case SELECT_NODEDATA_EXTRA_INFO:
 		*tmp_char = NULL;
+		break;
+	case SELECT_NODEDATA_MEM_ALLOC:
+		*uint32 = nodeinfo->alloc_memory;
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);
@@ -2730,8 +2785,12 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	rem_cores = core_cnt[0];
 
 	/* Assuming symmetric cluster */
-	if(core_cnt)
+	if (core_cnt)
 		cores_per_node = core_cnt[0] / MAX(node_cnt, 1);
+	else if (cr_node_num_cores)
+		cores_per_node = cr_node_num_cores[0];
+	else
+		cores_per_node = 1;
 
 	/* Construct a set of switch array entries,
 	 * use the same indexes as switch_record_table in slurmctld */
@@ -2834,11 +2893,11 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		for (j=0; j<switch_record_cnt; j++) {
 			if (switches_node_cnt[j] == 0)
 				continue;
-			if(core_cnt)
+			if (core_cnt) {
 				sufficient = 
 					(switches_node_cnt[j] >= rem_nodes) &&
 					(switches_cpu_cnt[j] >= core_cnt[0]);
-			else
+			} else
 				sufficient = switches_node_cnt[j] >= rem_nodes;
 			/* If first possibility OR */
 			/* first set large enough for request OR */

@@ -1,8 +1,20 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 2.6.0pre2
+* Changes in Slurm 2.6.0pre2
 ============================
+ -- Do not purge inactive interactive jobs that lack a port to ping (added
+    for MR+ operation).
+ -- Advanced reservations with hostname and core counts now supports asymetric
+    reservations (e.g. specific different core count for each node).
+ -- Added slurmctld/dynalloc plugin for MapReduce+ support.
+ -- Added "DynAllocPort" configuration parameter.
+ -- Added partition paramter of SelectTypeParameters to override system-wide
+    value.
+ -- Added cr_type to partition_info data structure.
+ -- Added allocated memory to node information available (within the existing
+    select_nodeinfo field of the node_info_t data structure). Added Allocated
+    Memory to node information displayed by sview and scontrol commands.
 
 * Changes in SLURM 2.6.0pre1
 ============================
@@ -48,6 +60,27 @@ documents those changes that are of interest to users and admins.
     _mandir %{_prefix}/share/man
     _infodir %{_prefix}/share/info
  -- Add acct_gather_energy/ipmi which works off freeipmi for energy gathering
+
+* Changes in Slurm 2.5.4
+========================
+ -- Fix bug in PrologSlurmctld use that would block job steps until node
+    responds.
+ -- CRAY - If a partition has MinNodes=0 and a batch job doesn't request nodes
+    put the allocation to 1 instead of 0 which prevents the allocation to
+    happen.
+ -- Better debug when the database is down and using the --cluster option in
+    the user commands.
+ -- When asking for job states with sacct, default to 'now' instead of midnight
+    of the current day.
+ -- Fix for handling a test-only job or immediate job that fails while being
+    built.
+ -- Comment out all of the logic in the job_submit/defaults plugin. The logic
+    is only an example and not meant for actual use.
+ -- Eliminate configuration file 4096 character line limitation.
+ -- More robust logic for tree message forward
+ -- BGQ - When cnodes fail in a timeout fashion correctly look up parent
+    midplane.
+ -- Correct sinfo "%c" (node's CPU count) output value for Bluegene systems.
 
 * Changes in SLURM 2.5.3
 ========================

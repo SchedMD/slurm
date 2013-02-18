@@ -1660,8 +1660,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			int nodeinx = 0;
 			while (nodeinx < nodecnt) {
 				if (!resv_desc_ptr->core_cnt[nodeinx]) {
-					info("Core count for reservation node \
-					      list is not consistent!");
+					info("Core count for reservation node "
+					     "list is not consistent!");
 					rc = ESLURM_INVALID_NODE_NAME;
 					goto bad_parse;
 				}
@@ -1670,10 +1670,10 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					nodeinx);
 				nodeinx++;
 			}
-			if ((rc = _select_nodes(resv_desc_ptr, &part_ptr, &node_bitmap,
-				       &core_bitmap)) != SLURM_SUCCESS) {
+			rc = _select_nodes(resv_desc_ptr, &part_ptr,
+					   &node_bitmap, &core_bitmap);
+			if (rc != SLURM_SUCCESS)
 				goto bad_parse; 
-			}
 		}
 	} else if (((resv_desc_ptr->node_cnt == NULL) ||
 		    (resv_desc_ptr->node_cnt[0] == 0)) &&
@@ -1754,9 +1754,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		_set_cpu_cnt(resv_ptr);
 		resv_ptr->full_nodes = 1;
 	} else {
-		debug2("reservation using partial nodes: core count %u",
-		       bit_set_count(resv_ptr->core_bitmap));
 		resv_ptr->cpu_cnt = bit_set_count(resv_ptr->core_bitmap);
+		debug2("reservation using partial nodes: core count %u",
+		       resv_ptr->cpu_cnt);
 		resv_ptr->full_nodes = 0;
 	}
 

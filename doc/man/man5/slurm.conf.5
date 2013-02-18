@@ -19,7 +19,6 @@ option on the command line.
 The contents of the file are case insensitive except for the names of nodes
 and partitions. Any text following a "#" in the configuration file is treated
 as a comment through the end of that line.
-The size of each line in the file is limited to 4096 characters.
 Changes to the configuration file take effect upon restart of
 SLURM daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
@@ -486,6 +485,11 @@ Also see \fBAccountingStorageUser\fR and \fBJobCompUser\fR.
 If set to "YES" then user root will be prevented from running any jobs.
 The default value is "NO", meaning user root will be able to execute jobs.
 \fBDisableRootJobs\fR may also be set by partition.
+
+.TP
+\fBDynallocPort\fR
+Socket port used for MapReduce dynamic allocation communications.
+Used only by the slurmctld/dynalloc plugin.
 
 .TP
 \fBEnforcePartLimits\fR
@@ -3085,6 +3089,13 @@ Possible values are "YES" and "NO".
 The default value is "NO".
 
 .TP
+\fBSelectTypeParameters\fR
+Partition\-specific resource allocation type.
+Supported values are \fBCR_Core\fR and \fBCR_Socket\fR.
+Use requires the system\-wide \fBSelectTypeParameters\fR value be set plus
+\fBCR_ALLOCATE_FULL_SOCKET\fR.
+
+.TP
 \fBShared\fR
 Controls the ability of the partition to execute more than one job at a
 time on each resource (node, socket or core depending upon the value
@@ -3621,7 +3632,7 @@ See the \fBlogrotate\fR man page for more details.
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
-Portions Copyright (C) 2010-2012 SchedMD <http://www.sched\-md.com>.
+Portions Copyright (C) 2010-2013 SchedMD <http://www.sched\-md.com>.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP

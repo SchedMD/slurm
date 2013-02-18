@@ -138,13 +138,13 @@ Plugin::Plugin() :
 
 	runjob_list = list_create(_destroy_runjob_job);
 
-	std::cout << "Slurm runjob plugin loaded version "
+	std::cerr << "Slurm runjob plugin loaded version "
 		  << SLURM_VERSION_STRING << std::endl;
 }
 
 Plugin::~Plugin()
 {
-	std::cout << "Slurm runjob plugin finished" << std::endl;
+	std::cerr << "Slurm runjob plugin finished" << std::endl;
 	slurm_mutex_lock(&runjob_list_lock);
 	list_destroy(runjob_list);
 	runjob_list = NULL;

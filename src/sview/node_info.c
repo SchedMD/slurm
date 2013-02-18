@@ -65,6 +65,7 @@ enum {
 	SORTID_DISK,	/* TmpDisk */
 	SORTID_UPDATED,
 	SORTID_USED_CPUS,
+	SORTID_USED_MEMORY,
 	SORTID_WEIGHT,
 	SORTID_CNT
 };
@@ -119,6 +120,8 @@ static display_data_t display_data_node[] = {
 	{G_TYPE_INT, SORTID_THREADS, "ThreadsPerCore", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_MEMORY, "Real Memory", FALSE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_USED_MEMORY, "Used Memory", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_DISK, "Tmp Disk", FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
@@ -183,6 +186,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 	char *upper = NULL, *lower = NULL;
 	GtkTreeIter iter;
 	uint16_t err_cpus = 0, alloc_cpus = 0;
+	uint32_t alloc_memory = 0;
 	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
 	int idle_cpus = node_ptr->cpus;
 	GtkTreeStore *treestore =
@@ -308,6 +312,16 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 SORTID_MEMORY),
 				   tmp_cnt);
 
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+				     SELECT_NODEDATA_MEM_ALLOC,
+				     NODE_STATE_ALLOCATED,
+				     &alloc_memory);
+	snprintf(tmp_cnt, sizeof(tmp_cnt), "%uM", alloc_memory);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_USED_MEMORY),
+				   tmp_cnt);
+
 	convert_num_unit((float)node_ptr->tmp_disk, tmp_cnt, sizeof(tmp_cnt),
 			 UNIT_MEGA);
 	add_display_treestore_line(update, treestore, &iter,
@@ -350,9 +364,11 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				GtkTreeStore *treestore)
 {
 	uint16_t alloc_cpus = 0, err_cpus = 0, idle_cpus;
+	uint32_t alloc_memory;
 	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
-	char tmp_disk[20], tmp_cpus[20], tmp_err_cpus[20],
-		tmp_mem[20], tmp_used_cpus[20], tmp_cpu_load[20];
+	char tmp_disk[20], tmp_cpus[20], tmp_err_cpus[20];
+	char tmp_mem[20], tmp_used_memory[20];
+	char tmp_used_cpus[20], tmp_cpu_load[20];
 	char *tmp_state_lower, *tmp_state_upper;
 
 	if (node_ptr->cpu_load == NO_VAL) {
@@ -378,6 +394,15 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			alloc_cpus *= cpus_per_node;
 	}
 	idle_cpus = node_ptr->cpus - alloc_cpus;
+	convert_num_unit((float)alloc_cpus, tmp_used_cpus,
+			 sizeof(tmp_used_cpus), UNIT_NONE);
+
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+				     SELECT_NODEDATA_MEM_ALLOC,
+				     NODE_STATE_ALLOCATED,
+				     &alloc_memory);
+	snprintf(tmp_used_memory, sizeof(tmp_used_memory), "%uM", alloc_memory);
+
 	convert_num_unit((float)alloc_cpus, tmp_used_cpus,
 			 sizeof(tmp_used_cpus), UNIT_NONE);
 
@@ -437,6 +462,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_STATE_NUM, node_ptr->node_state,
 			   SORTID_THREADS,   node_ptr->threads,
 			   SORTID_USED_CPUS, tmp_used_cpus,
+			   SORTID_USED_MEMORY, tmp_used_memory,
 			   SORTID_WEIGHT,    node_ptr->weight,
 			   SORTID_UPDATED,   1,
 			  -1);

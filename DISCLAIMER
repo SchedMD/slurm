@@ -1,15 +1,16 @@
 SLURM was produced at Lawrence Livermore National Laboratory in collaboration
 with various organizations.
 
+Copyright (C) 2012-2013 Los Alamos National Security, LLC.
 Copyright (C) 2011 Trinity Centre for High Performance Computing
-Copyright (C) 2010-2011 SchedMD LLC
-Copyright (C) 2009 CEA/DAM/DIF
+Copyright (C) 2010-2013 SchedMD LLC
+Copyright (C) 2009-2013 CEA/DAM/DIF
 Copyright (C) 2009-2011 Centro Svizzero di Calcolo Scientifico (CSCS)
 Copyright (C) 2008-2011 Lawrence Livermore National Security
 Copyright (C) 2008 Vijay Ramasubramanian
 Copyright (C) 2007-2008 Red Hat, Inc.
-Copyright (C) 2007-2009 National University of Defense Technology, China
-Copyright (C) 2007-2011 Bull
+Copyright (C) 2007-2013 National University of Defense Technology, China
+Copyright (C) 2007-2013 Bull
 Copyright (C) 2005-2008 Hewlett-Packard Development Company, L.P.
 Copyright (C) 2004-2009, Marcus Holland-Moritz
 Copyright (C) 2002-2007 The Regents of the University of California

@@ -485,7 +485,8 @@ sacct [<OPTION>]                                                            \n\
                    and node_fail (nf).                                      \n\
      -S, --starttime:                                                       \n\
                    Select jobs eligible after this time.  Default is        \n\
-                   midnight of current day.                                 \n\
+                   00:00:00 of the current day, unless '-s' is set then     \n\
+                   the default is 'now'.                                    \n\
      -T, --truncate:                                                        \n\
                    Truncate time.  So if a job started before --starttime   \n\
                    the start time would be truncated to --starttime.        \n\
@@ -908,17 +909,22 @@ void parse_command_line(int argc, char **argv)
 	if (!job_cond->usage_start && !job_cond->step_list) {
 		struct tm start_tm;
 		job_cond->usage_start = time(NULL);
-
-		if (!localtime_r(&job_cond->usage_start, &start_tm)) {
-			error("Couldn't get localtime from %ld",
-			      (long)job_cond->usage_start);
-			return;
+		/* If we are looking for job states default to now.
+		   If not default to midnight of the current day.
+		*/
+		if (!job_cond->state_list
+		    || !list_count(job_cond->state_list)) {
+			if (!localtime_r(&job_cond->usage_start, &start_tm)) {
+				error("Couldn't get localtime from %ld",
+				      (long)job_cond->usage_start);
+				return;
+			}
+			start_tm.tm_sec = 0;
+			start_tm.tm_min = 0;
+			start_tm.tm_hour = 0;
+			start_tm.tm_isdst = -1;
+			job_cond->usage_start = mktime(&start_tm);
 		}
-		start_tm.tm_sec = 0;
-		start_tm.tm_min = 0;
-		start_tm.tm_hour = 0;
-		start_tm.tm_isdst = -1;
-		job_cond->usage_start = mktime(&start_tm);
 	}
 
 	if (verbosity > 0) {

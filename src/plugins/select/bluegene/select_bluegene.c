@@ -2839,7 +2839,11 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 	for (i=0; i<bit_size(step_ptr->step_node_bitmap); i++) {
 		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
-		ba_mp = ba_inx2ba_mp(i);
+		node_ptr = &(node_record_table_ptr[i]);
+		xassert(node_ptr->select_nodeinfo);
+		nodeinfo = (select_nodeinfo_t *)node_ptr->select_nodeinfo->data;
+		xassert(nodeinfo);
+		ba_mp = nodeinfo->ba_mp;
 		xassert(ba_mp);
 
 		if (!ba_mp->cnode_err_bitmap)
@@ -2853,10 +2857,7 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 			bit_nset(ba_mp->cnode_err_bitmap, 0,
 				 bit_size(ba_mp->cnode_err_bitmap)-1);
 		}
-		node_ptr = &(node_record_table_ptr[ba_mp->index]);
-		xassert(node_ptr->select_nodeinfo);
-		nodeinfo = (select_nodeinfo_t *)node_ptr->select_nodeinfo->data;
-		xassert(nodeinfo);
+
 		xfree(nodeinfo->failed_cnodes);
 		nodeinfo->failed_cnodes = ba_node_map_ranged_hostlist(
 			ba_mp->cnode_err_bitmap, ba_mp_geo_system);

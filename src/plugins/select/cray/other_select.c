@@ -743,7 +743,7 @@ extern int other_reconfigure (void)
  * RET - nodes selected for use by the reservation
  */
 extern bitstr_t * other_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
-				  uint32_t core_cnt, bitstr_t **core_bitmap)
+				  uint32_t *core_cnt, bitstr_t **core_bitmap)
 {
 	if (other_select_init() < 0)
 		return NULL;

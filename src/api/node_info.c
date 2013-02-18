@@ -131,6 +131,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	int cpus_per_node = 1;
 	int total_used = node_ptr->cpus;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	uint32_t alloc_memory;
 
 	if (node_scaling)
 		cpus_per_node = node_ptr->cpus / node_scaling;
@@ -247,9 +248,14 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		snprintf(tmp_line, sizeof(tmp_line), "OS=%s ", node_ptr->os);
 		xstrcat(out, tmp_line);
 	}
+	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
+				  SELECT_NODEDATA_MEM_ALLOC,
+				  NODE_STATE_ALLOCATED,
+				  &alloc_memory);
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "RealMemory=%u Sockets=%u Boards=%u",
-		 node_ptr->real_memory, node_ptr->sockets, node_ptr->boards);
+		 "RealMemory=%u AllocMem=%u Sockets=%u Boards=%u",
+		 node_ptr->real_memory, alloc_memory,
+		 node_ptr->sockets, node_ptr->boards);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

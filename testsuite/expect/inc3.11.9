@@ -5,11 +5,15 @@
 #          Pluging select/cons_res needed
 #
 ############################################################################
+<<<<<<< HEAD
 # Copyright (C) 2009 Lawrence Livermore National Security
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Dave Bremer <dbremer@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
 #
+=======
+# Copyright (C) 2013 Barcelona Supercomputing Center
+>>>>>>> cd713cb4b0e0accbebcc0c782280b49dfaedb259
 #
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.schedmd.com/slurmdocs/>.
@@ -36,7 +40,7 @@ proc inc3_11_9 {} {
 	global alpha_numeric_under scancel
 	global cluster_cpus cores_per_node def_partition
 	global res_nodes res_thread_cnt node_count
-	global def_node_name
+	global def_node_name def_node_inx_min def_node_inx_max
 
 	send_user "\n+++++ STARTING TEST 9 +++++\n"
 
@@ -89,15 +93,15 @@ proc inc3_11_9 {} {
 	send_user "\nJOB is running as expected\n"
 
 	# Make a reservation using 1 core per node in first 5 nodes
-
 	if {$num_nodes < 5} {
-		send_user "\nWARNING: test can not work with current nodes\n";
+		send_user "\nWARNING: Insufficient node count for remaining test\n";
 		cancel_job $job_id
-		exit 1
-
+		return
 	}
-	
-	set ret_code [create_res "StartTime=now Duration=60 Nodes=$def_node_name\[1\-5\] CoreCnt=1,1,1,1,1 User=$user_name" 0]
+
+	set min_node_inx $def_node_inx_min
+	set max_node_inx [expr $def_node_inx_min + 4]
+	set ret_code [create_res "StartTime=now Duration=60 Nodes=$def_node_name\[$min_node_inx\-$max_node_inx\] CoreCnt=1,1,1,1,1 User=$user_name" 0]
 	if {$ret_code != 0} {
 		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation\033\[m\n"
 		exit $ret_code
@@ -105,14 +109,12 @@ proc inc3_11_9 {} {
 
 	if {$res_nodecnt != 5} {
 		send_user "\n\033\[31mFAILURE: reservation created with $res_nodecnt nodes when 5 were requested\033\[m\n"
-		set exit_code 1
-		exit $ret_code
+		exit 1
 	}
 
 	if {$res_corecnt != 5} {
 		send_user "\n\033\[31mFAILURE: reservation created with $res_corecnt cores when just 5 was requested\033\[m\n"
-		set exit_code 1
-		exit $ret_code
+		exit 1
 	}
 
 	send_user "\n\033\[32mSUCCESS: reservation was created as expected\033\[m\n"
@@ -126,7 +128,7 @@ proc inc3_11_9 {} {
 
 	set core_res_num  [expr $core_res_num + 1]
 	# Make the reservation using more cores then free in a node
-	set ret_code [create_res "StartTime=now Duration=60 Nodes=$def_node_name\[1\-5\] CoreCnt=1,1,1,1,$core_res_num User=$user_name" 1]
+	set ret_code [create_res "StartTime=now Duration=60 Nodes=$def_node_name\[$min_node_inx\-$max_node_inx\] CoreCnt=1,1,1,1,$core_res_num User=$user_name" 1]
 	if {$ret_code != 0} {
 		send_user "\n\033\[32mSUCCESS: Reservation can not be created as expected\033\[m\n"
 	} else {
@@ -139,7 +141,7 @@ proc inc3_11_9 {} {
 
 	# Make the reservation using more cores than free in a node (now)
 	# but those cores being free at reservation start time
-	set ret_code [create_res "StartTime=now+3600 Duration=60 Nodes=$def_node_name\[1\-5\] CoreCnt=1,1,1,1,$core_res_num User=$user_name" 0]
+	set ret_code [create_res "StartTime=now+3600 Duration=60 Nodes=$def_node_name\[$min_node_inx\-$max_node_inx\] CoreCnt=1,1,1,1,$core_res_num User=$user_name" 0]
 	if {$ret_code != 0} {
 		send_user "\n\033\[31mFAILURE: Reservation can not be created when it should\033\[m\n"
 		set exit_code 1
@@ -150,7 +152,7 @@ proc inc3_11_9 {} {
 	}
 
 	# Make the reservation using more cores than free at reservation start time
-	set ret_code [create_res "StartTime=now+300 Duration=60 Nodes=$def_node_name\[1\-5\] CoreCnt=1,1,1,1,$core_res_num User=$user_name" 1]
+	set ret_code [create_res "StartTime=now+300 Duration=60 Nodes=$def_node_name\[$min_node_inx\-$max_node_inx\] CoreCnt=1,1,1,1,$core_res_num User=$user_name" 1]
 	if {$ret_code != 0} {
 		send_user "\n\033\[32mSUCCESS: Reservation can not be created as expected\033\[m\n"
 	} else {
@@ -187,7 +189,7 @@ proc inc3_11_9 {} {
 
 	set total_core_res   [ expr $core_res_num + 1 ]
 	# Now creating a reservation using first 5 nodes and more cores per node than available
-	set ret_code [create_res "StartTime=now Duration=60 Nodes=$def_node_name\[1\-5\] CoreCnt=1,1,1,1,$total_core_res User=$user_name" 0]
+	set ret_code [create_res "StartTime=now Duration=60 Nodes=$def_node_name\[$min_node_inx\-$max_node_inx\] CoreCnt=1,1,1,1,$total_core_res User=$user_name" 0]
 	if {$ret_code == 0} {
 		send_user "\n\033\[31mFAILURE: reservation was created when it should not\033\[m\n"
 		set ret_code [delete_res $res_name1]
@@ -197,7 +199,7 @@ proc inc3_11_9 {} {
 	send_user "\n\033\[32mSUCCESS: reservation was not created as expected\033\[m\n"
 
 	# Now creating a reservation using first 5 nodes and just 1 core per node
-	set ret_code [create_res "StartTime=now Duration=60 Nodes=$def_node_name\[1\-5\] CoreCnt=1,1,1,1,1 User=$user_name" 1]
+	set ret_code [create_res "StartTime=now Duration=60 Nodes=$def_node_name\[$min_node_inx\-$max_node_inx\] CoreCnt=1,1,1,1,1 User=$user_name" 1]
 	if {$ret_code != 0} {
 		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation\033\[m\n"
 		set ret_code [delete_res $res_name1]
@@ -209,7 +211,7 @@ proc inc3_11_9 {} {
 	# Submit a batch job: a job using cores availbale in first 5 nodes 
 	set core_res_num   [ expr $cores_per_node / 2 ]
 	set core_res_num   [ expr $core_res_num - 1 ]
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=$core_res_num --nodelist=$def_node_name\[1\-5\] --output=/dev/null $file_in]
+	set sbatch_pid [spawn $sbatch --ntasks-per-node=$core_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -266,7 +268,7 @@ proc inc3_11_9 {} {
 
 	# Submit a batch job: a job using more cores than availbale in first 5 nodes 
 	set core_res_num   [ expr $cores_per_node / 2 ]
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=$core_res_num --nodelist=$def_node_name\[1\-5\] --output=/dev/null $file_in]
+	set sbatch_pid [spawn $sbatch --ntasks-per-node=$core_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -324,7 +326,7 @@ proc inc3_11_9 {} {
 
 	# Submit a batch job: a job using cores reserved in first reservation
 	set core_res_num   [ expr $cores_per_node / 2 ]
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=$core_res_num --nodelist=$def_node_name\[1\-5\] --reservation=$res_name1 --output=/dev/null $file_in]
+	set sbatch_pid [spawn $sbatch --ntasks-per-node=$core_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name1 --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -384,7 +386,7 @@ proc inc3_11_9 {} {
 	set core_res_num   [ expr $cores_per_node / 2 ]
 	set core_res_num   [ expr $core_res_num * 5 ]
 	set core_res_num   [ expr $core_res_num + 1 ]
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=$core_res_num --nodelist=$def_node_name\[1\-5\] --reservation=$res_name1 --output=/dev/null $file_in]
+	set sbatch_pid [spawn $sbatch --ntasks-per-node=$core_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name1 --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -441,7 +443,7 @@ proc inc3_11_9 {} {
 	cancel_job $job_id
 
 	# Submit a batch job: a job using cores reserved in second reservation
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=1 --nodelist=$def_node_name\[1\-5\] --reservation=$res_name --output=/dev/null $file_in]
+	set sbatch_pid [spawn $sbatch --ntasks-per-node=1 --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -498,7 +500,7 @@ proc inc3_11_9 {} {
 	cancel_job $job_id
 
 	# Submit a batch job: a job using more cores than reserved in second reservation
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=2 --nodelist=$def_node_name\[1\-5\] --reservation=$res_name --output=/dev/null $file_in]
+	set sbatch_pid [spawn $sbatch --ntasks-per-node=2 --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -517,6 +519,7 @@ proc inc3_11_9 {} {
 		send_user "\n\033\[31mFAILURE: batch submit failure\033\[m\n"
 		set ret_code [delete_res $res_name1]
 		set ret_code [delete_res $res_name]
+		set exit_code 1
 		exit 1
 	}
 
@@ -549,12 +552,11 @@ proc inc3_11_9 {} {
 	if { $exit_code == 1 } {
 		set ret_code [delete_res $res_name1]
 		set ret_code [delete_res $res_name]
-		exit 1
+		return
 	}
 
 	cancel_job $job_id
 
 	set ret_code [delete_res $res_name1]
 	set ret_code [delete_res $res_name]
-
 }

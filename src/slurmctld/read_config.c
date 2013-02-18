@@ -575,6 +575,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->priority       = part->priority;
 	part_ptr->state_up       = part->state_up;
 	part_ptr->grace_time     = part->grace_time;
+	part_ptr->cr_type        = part->cr_type;
 
 	if (part->allow_groups) {
 		xfree(part_ptr->allow_groups);

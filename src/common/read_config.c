@@ -4,8 +4,9 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2013 SchedMD <http://www.schedmd.com>.
  *  Portions (boards) copyright (C) 2012 Bull, <rod.schultz@bull.com>
+ *  Copyright (C) 2012-2013 Los Alamos National Security, LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -183,6 +184,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"DefMemPerCPU", S_P_UINT32},
 	{"DefMemPerNode", S_P_UINT32},
 	{"DisableRootJobs", S_P_BOOLEAN},
+	{"DynAllocPort", S_P_UINT16},
 	{"EnforcePartLimits", S_P_BOOLEAN},
 	{"Epilog", S_P_STRING},
 	{"EpilogMsgTime", S_P_UINT32},
@@ -908,6 +910,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"Priority", S_P_UINT16},
 		{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
 		{"ReqResv", S_P_BOOLEAN}, /* YES or NO */
+		{"SelectTypeParameters", S_P_STRING}, /* CR_Socket, CR_Core */
 		{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
 		{"State", S_P_STRING}, /* UP, DOWN, INACTIVE or DRAIN */
 		{NULL}
@@ -1035,7 +1038,12 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_uint32(&p->min_nodes, "MinNodes", tbl)
 		    && !s_p_get_uint32(&p->min_nodes, "MinNodes", dflt))
 			p->min_nodes = 1;
-
+#ifndef HAVE_CRAY
+		if (!p->min_nodes)
+			fatal("Partition '%s' has invalid MinNodes=0, this is "
+			      "currently valid only on a Cray system.",
+			      p->name);
+#endif
 		if (!s_p_get_string(&p->nodes, "Nodes", tbl)
 		    && !s_p_get_string(&p->nodes, "Nodes", dflt))
 			p->nodes = NULL;
@@ -1070,6 +1078,23 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_uint16(&p->priority, "Priority", tbl) &&
 		    !s_p_get_uint16(&p->priority, "Priority", dflt))
 			p->priority = 1;
+
+		if (s_p_get_string(&tmp, "SelectTypeParameters", tbl)) {
+			if (strncasecmp(tmp, "CR_Socket", 9) == 0)
+				p->cr_type = CR_SOCKET;
+			else if (strncasecmp(tmp, "CR_Core", 7) == 0)
+				p->cr_type = CR_CORE;
+			else {
+				error("Bad value for SelectTypeParameters: %s",
+				      tmp);
+				_destroy_partitionname(p);
+				s_p_hashtbl_destroy(tbl);
+				xfree(tmp);
+				return -1;
+			}
+			xfree(tmp);
+		} else
+			p->cr_type = 0;
 
 		if (s_p_get_string(&tmp, "Shared", tbl) ||
 		    s_p_get_string(&tmp, "Shared", dflt)) {
@@ -2113,6 +2138,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->disable_root_jobs         = 0;
 	ctl_conf_ptr->acct_gather_node_freq	= 0;
 	xfree (ctl_conf_ptr->acct_gather_energy_type);
+	ctl_conf_ptr->dynalloc_port		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->enforce_part_limits       = 0;
 	xfree (ctl_conf_ptr->epilog);
 	ctl_conf_ptr->epilog_msg_time		= (uint32_t) NO_VAL;
@@ -2677,6 +2703,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_boolean((bool *) &conf->disable_root_jobs,
 			     "DisableRootJobs", hashtbl))
 		conf->disable_root_jobs = DEFAULT_DISABLE_ROOT_JOBS;
+
+	if (s_p_get_uint16(&conf->dynalloc_port, "DynAllocPort", hashtbl)) {
+		if (conf->dynalloc_port == 0) {
+			error("DynAllocPort=0 is invalid");
+		}
+	} else {
+		conf->dynalloc_port = 0;
+	}
 
 	if (!s_p_get_boolean((bool *) &conf->enforce_part_limits,
 			     "EnforcePartLimits", hashtbl))

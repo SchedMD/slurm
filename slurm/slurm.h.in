@@ -3,7 +3,8 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2013 SchedMD <http://www.schedmd.com>.
+ *  Copyright (C) 2012-2013 Los Alamos National Security, LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -372,6 +373,7 @@ enum select_nodedata_type {
 				      * freed with xfree */
 	SELECT_NODEDATA_RACK_MP,     /* data-> char * needs to be
 				      * freed with xfree */
+	SELECT_NODEDATA_MEM_ALLOC,   /* data-> uint32_t */
 };
 
 enum select_print_mode {
@@ -1564,6 +1566,7 @@ typedef struct partition_info {
 	char *allow_groups;	/* comma delimited list of groups,
 				 * null indicates all */
 	char *alternate; 	/* name of alternate partition */
+	uint16_t cr_type;	/* see CR_* values */
 	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	uint16_t flags;		/* see PART_FLAG_* above */
@@ -1894,6 +1897,7 @@ typedef struct slurm_ctl_conf {
 	uint32_t debug_flags;	/* see DEBUG_FLAG_* above for values */
 	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint16_t disable_root_jobs; /* if set then user root can't run jobs */
+	uint16_t dynalloc_port;  /* port for dynamic allocation connection */
 	uint16_t enforce_part_limits;	/* if set, reject job exceeding
 					 * partition size and/or time limits */
 	char *epilog;		/* pathname of job epilog */
