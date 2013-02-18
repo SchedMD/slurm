@@ -73,11 +73,11 @@ static int _allocate_app_op(const char *msg_app,
 static void _parse_job_params(const char *cmd, char *orte_jobid,
 					char *return_flag,	size_t *job_timeout)
 {
-	char *tmp;
-	char *p_str;
-	char *pos;
+	char *tmp = NULL;
+	char *p_str = NULL;
+	char *pos = NULL;
 
-	tmp = strdup(cmd);
+	tmp = xstrdup(cmd);
 	p_str = strtok(tmp, " ");
 	while(p_str){
 		if(strstr(p_str, "jobid")){
@@ -95,8 +95,9 @@ static void _parse_job_params(const char *cmd, char *orte_jobid,
 		}
 		p_str = strtok(NULL, " ");
 	}
-		/* cleanup */
-		free(tmp);
+
+	/* cleanup */
+	xfree(tmp);
 }
 
 /*
@@ -117,11 +118,11 @@ static void _parse_app_params(const char *cmd, char *appid,
 					uint32_t *np, uint32_t *request_node_num,
 					char *node_range_list, char *flag)
 {
-	char *tmp;
-	char *p_str;
-	char *pos;
+	char *tmp = NULL;
+	char *p_str = NULL;
+	char *pos = NULL;
 
-	tmp = strdup(cmd);
+	tmp = xstrdup(cmd);
 	p_str = strtok(tmp, " ");
 	while(p_str){
 		if(strstr(p_str, "app")){
@@ -147,8 +148,9 @@ static void _parse_app_params(const char *cmd, char *appid,
 		}
 		p_str = strtok(NULL, " ");
 	}
-        /* cleanup */
-        free(tmp);
+
+	/* cleanup */
+	xfree(tmp);
 }
 
 /*
@@ -187,7 +189,7 @@ static int _allocate_app_op(const char *msg_app,
 		sprintf(app_resp_msg,
 				"app=%s slurm_jobid=%u allocated_node_list=%s tasks_per_node=%s",
 				appid, slurm_jobid, resp_node_list, tasks_per_node);
-	} else{
+	} else {
 		sprintf(app_resp_msg, "app=%s allocate_failure", appid);
 	}
 	return SLURM_SUCCESS;

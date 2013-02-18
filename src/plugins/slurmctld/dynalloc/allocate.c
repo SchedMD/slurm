@@ -73,7 +73,8 @@ static int _get_tasks_per_node(
 			const resource_allocation_response_msg_t *alloc,
 		  	const job_desc_msg_t *desc, char *tasks_per_node);
 
-static char *_uint16_array_to_str(int array_len, const uint16_t *array);
+static char *_uint16_array_to_str_xmalloc(int array_len,
+								const uint16_t *array);
 
 static int _setup_job_desc_msg(uint32_t np, uint32_t request_node_num,
 			       char *node_range_list, const char *flag,
@@ -102,29 +103,31 @@ static int _get_nodelist_optional(uint16_t request_node_num,
 				  const char *node_range_list,
 				  char *final_req_node_list)
 {
-	hostlist_t avail_hl_system;  //available hostlist in slurm
-	hostlist_t avail_hl_pool;    //available hostlist in the given node pool
-	hostlist_t hostlist;
-	char *avail_pool_range;
+	hostlist_t avail_hl_system = NULL;  //available hostlist in slurm
+	hostlist_t avail_hl_pool = NULL;    //available hostlist in the given node pool
+	hostlist_t hostlist = NULL;
+	char *avail_pool_range = NULL;
 	int avail_pool_num;
 	int extra_needed_num;
-	char *subset;
-	char *hostname;
+	char *subset = NULL;
+	char *hostname = NULL;
+	char *tmp = NULL;
 	int i;
 
 	/* get all available hostlist in SLURM system */
-	avail_hl_system = get_available_host_list_system();
+	avail_hl_system = get_available_host_list_system_m();
 
 	if (request_node_num > slurm_hostlist_count(avail_hl_system))
 		return SLURM_FAILURE;
 
-	avail_hl_pool = choose_available_from_node_list(node_range_list);
+	avail_hl_pool = choose_available_from_node_list_m(node_range_list);
 	avail_pool_range = slurm_hostlist_ranged_string_malloc(avail_hl_pool);
 	avail_pool_num = slurm_hostlist_count(avail_hl_pool);
 
 	if (request_node_num <= avail_pool_num) {
-		subset = get_hostlist_subset(avail_pool_range,request_node_num);
+		subset = get_hostlist_subset_m(avail_pool_range,request_node_num);
 		strcpy(final_req_node_list, subset);
+		free(subset);
 	} else { /* avail_pool_num < reqeust_node_num <= avail_node_num_system */
 		hostlist = slurm_hostlist_create(avail_pool_range);
 		extra_needed_num = request_node_num - avail_pool_num;
@@ -135,11 +138,19 @@ static int _get_nodelist_optional(uint16_t request_node_num,
 				slurm_hostlist_push_host(hostlist, hostname);
 				i++;
 			}
+			free(hostname);
 		}
 
-		strcpy(final_req_node_list,
-		       slurm_hostlist_ranged_string_xmalloc(hostlist));
+		tmp = slurm_hostlist_ranged_string_xmalloc(hostlist);
+		strcpy(final_req_node_list, tmp);
+		xfree(tmp);
 	}
+
+	free(avail_pool_range);
+	slurm_hostlist_destroy(avail_hl_system);
+	slurm_hostlist_destroy(avail_hl_pool);
+	slurm_hostlist_destroy(hostlist);
+
 	return SLURM_SUCCESS;
 }
 
@@ -162,24 +173,37 @@ static int _get_nodelist_mandatory(uint16_t request_node_num,
 				   const char *node_range_list,
 				   char *final_req_node_list)
 {
-	hostlist_t avail_hl;
-	char *avail_node_range;
-	char *subset;
+	hostlist_t avail_hl = NULL;
+	char *avail_node_range = NULL;
+	char *subset = NULL;
+	int rc;
 
 	/* select n (request_node_num) available nodes from node_range_list */
-	avail_hl = choose_available_from_node_list(node_range_list);
+	avail_hl = choose_available_from_node_list_m(node_range_list);
 	avail_node_range = slurm_hostlist_ranged_string_malloc(avail_hl);
 
 	if (request_node_num <= slurm_hostlist_count(avail_hl)) {
-		subset = get_hostlist_subset(avail_node_range, request_node_num);
+		subset = get_hostlist_subset_m(avail_node_range, request_node_num);
 		strcpy(final_req_node_list, subset);
-		return SLURM_SUCCESS;
+
+		free(subset);
+		free(avail_node_range);
+
+		rc = SLURM_SUCCESS;
 	} else {
-		return SLURM_FAILURE;
+		rc = SLURM_FAILURE;
 	}
+
+	slurm_hostlist_destroy(avail_hl);
+	return rc;
 }
 
-static char *_uint16_array_to_str(int array_len, const uint16_t *array)
+/*
+ * Note: the return should be xfree(ptr)
+ */
+
+static char* _uint16_array_to_str_xmalloc(int array_len,
+								const uint16_t *array)
 {
 	int i;
 	int previous = 0;
@@ -256,10 +280,12 @@ static int _get_tasks_per_node(
 							desc->plane_size)))
 		return SLURM_FAILURE;
 
-	tmp = _uint16_array_to_str(step_layout->node_cnt, step_layout->tasks);
+	tmp = _uint16_array_to_str_xmalloc(step_layout->node_cnt, step_layout->tasks);
+
 	slurm_step_layout_destroy(step_layout);
 	if (NULL != tmp)
 		strcpy(tasks_per_node, tmp);
+
 	xfree(tmp);
 	return SLURM_SUCCESS;
 }
@@ -285,7 +311,7 @@ static int _setup_job_desc_msg(uint32_t np, uint32_t request_node_num,
 {
 	char final_req_node_list[SIZE] = "";
 	int rc;
-	hostlist_t hostlist;
+	hostlist_t hostlist = NULL;
 
 	job_desc_msg->user_id = getuid();
 	job_desc_msg->group_id = getgid();
@@ -353,6 +379,7 @@ static int _setup_job_desc_msg(uint32_t np, uint32_t request_node_num,
 		/* if N == 0 && node_list == "", do nothing */
 	}
 
+	slurm_hostlist_destroy(hostlist);
 	return SLURM_SUCCESS;
 }
 
@@ -388,7 +415,7 @@ int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
 		      char *reponse_node_list, char *tasks_per_node)
 {
 	job_desc_msg_t job_desc_msg;
-	resource_allocation_response_msg_t *job_alloc_resp_msg;
+	resource_allocation_response_msg_t *job_alloc_resp_msg = NULL;
 	int rc;
 
 	slurm_init_job_desc_msg (&job_desc_msg);
@@ -459,7 +486,7 @@ int allocate_node(uint32_t np, uint32_t request_node_num,
 
 	resource_allocation_response_msg_t alloc_msg;
 	job_desc_msg_t job_desc_msg;
-	struct job_record *job_ptr;
+	struct job_record *job_ptr = NULL;
 	bool job_waiting = false;
 	uid_t uid = getuid();
 
@@ -537,7 +564,7 @@ int allocate_node(uint32_t np, uint32_t request_node_num,
 			alloc_msg.node_list      = xstrdup(job_ptr->nodes);
 			alloc_msg.alias_list     = xstrdup(job_ptr->alias_list);
 			alloc_msg.select_jobinfo =
-			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
+					select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 			if (job_ptr->details) {
 					alloc_msg.pn_min_memory = job_ptr->details->
 								  pn_min_memory;
@@ -550,9 +577,13 @@ int allocate_node(uint32_t np, uint32_t request_node_num,
 					    tasks_per_node);
 
 			/* cleanup */
+			xfree(job_desc_msg.partition);
+
 			xfree(alloc_msg.cpu_count_reps);
 			xfree(alloc_msg.cpus_per_node);
 			xfree(alloc_msg.node_list);
+			xfree(alloc_msg.alias_list);
+
 			select_g_select_jobinfo_free(alloc_msg.select_jobinfo);
 			schedule_job_save();	/* has own locks */
 			schedule_node_save();	/* has own locks */

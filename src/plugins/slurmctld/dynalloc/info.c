@@ -45,6 +45,8 @@
 #include "src/common/log.h"
 #include "src/common/node_conf.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
+
 #include "src/slurmctld/locks.h"
 
 #include "info.h"
@@ -63,9 +65,9 @@ void get_total_nodes_slots (uint16_t *nodes, uint16_t *slots)
 {
 	int i;
 	struct node_record *node_ptr;
-        /* Locks: Read node */
-        slurmctld_lock_t node_read_lock = {
-                        NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	/* Locks: Read node */
+	slurmctld_lock_t node_read_lock = {
+					NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
 	if (fast_schedule == (uint16_t) NO_VAL)
 		fast_schedule = slurm_get_fast_schedule();
@@ -95,9 +97,9 @@ void get_free_nodes_slots (uint16_t *nodes, uint16_t *slots)
 {
 	int i;
 	struct node_record *node_ptr;
-        /* Locks: Read node */
-        slurmctld_lock_t node_read_lock = {
-                        NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	/* Locks: Read node */
+	slurmctld_lock_t node_read_lock = {
+					NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
 	if (fast_schedule == (uint16_t) NO_VAL)
 		fast_schedule = slurm_get_fast_schedule();
@@ -125,15 +127,18 @@ void get_free_nodes_slots (uint16_t *nodes, uint16_t *slots)
  *	OUT Parameter:
  *	RET OUT:
  *		hostlist_t: available node list in slurm
+ *
+ *	Note: the return result should be slurm_hostlist_destroy(hostlist)
  */
-hostlist_t get_available_host_list_system(void)
+hostlist_t get_available_host_list_system_m(void)
 {
 	int i;
 	struct node_record *node_ptr;
-	hostlist_t hostlist;
-        /* Locks: Read node */
-        slurmctld_lock_t node_read_lock = {
-                        NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	hostlist_t hostlist = NULL;
+
+	/* Locks: Read node */
+	slurmctld_lock_t node_read_lock = {
+					NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
 	hostlist = slurm_hostlist_create(NULL);
 	lock_slurmctld(node_read_lock);
@@ -145,7 +150,7 @@ hostlist_t get_available_host_list_system(void)
 	}
 	unlock_slurmctld(node_read_lock);
 
-	return SLURM_SUCCESS;
+	return hostlist;
 }
 
 /**
@@ -155,13 +160,15 @@ hostlist_t get_available_host_list_system(void)
  *	OUT Parameter:
  *	RET OUT:
  *		a string indicating the range of available node list in slurm
+ *
+ *	Note: the return result should be free(str)
  */
-char* get_available_host_list_range_sytem()
+char* get_available_host_list_range_sytem_m()
 {
-	hostlist_t hostlist;
-	char *range;
+	hostlist_t hostlist = NULL;
+	char *range = NULL;
 
-	hostlist = get_available_host_list_system();
+	hostlist = get_available_host_list_system_m();
 	range = slurm_hostlist_ranged_string_malloc (hostlist);
 	slurm_hostlist_destroy(hostlist);
 	return range;
@@ -175,22 +182,28 @@ char* get_available_host_list_range_sytem()
  *	OUT Parameter:
  *	RET OUT
  *		available node list
+ *
+ * Note: the return result should be slurm_hostlist_destroy(hostlist)
  */
-hostlist_t choose_available_from_node_list(const char *node_list)
+hostlist_t choose_available_from_node_list_m(const char *node_list)
 {
-	char *hostname;
-	hostlist_t given_hl;
-	hostlist_t avail_hl_system;
-	hostlist_t result_hl;
+	char *hostname = NULL;
+	hostlist_t given_hl = NULL;
+	hostlist_t avail_hl_system = NULL;
+	hostlist_t result_hl = NULL;
 
 	given_hl = slurm_hostlist_create (node_list);
-	avail_hl_system  = get_available_host_list_system();
+	avail_hl_system  = get_available_host_list_system_m();
 	result_hl = slurm_hostlist_create(NULL);
 
 	while ((hostname = slurm_hostlist_shift(given_hl))) {
 		if (-1 != slurm_hostlist_find (avail_hl_system, hostname)) {
 			slurm_hostlist_push_host(result_hl, hostname);
 		}
+		/* Note: to free memory after slurm_hostlist_shift(),
+		 * 	remember to use free(str), not xfree(str)
+		 */
+		free(hostname);
 	}
 
 	slurm_hostlist_destroy(given_hl);
@@ -208,15 +221,20 @@ hostlist_t choose_available_from_node_list(const char *node_list)
  *	RET OUT
  *		the subset node range, NULL if the node number of subset is
  *		larger than the node number of host_name_list
+ *
+ *	Note: the return should be free(str)
  */
-char* get_hostlist_subset(const char *host_name_list, uint16_t node_num)
+char* get_hostlist_subset_m(const char *host_name_list, uint16_t node_num)
 {
-	hostlist_t hostlist;
-	hostlist_t temp_hl;
+	hostlist_t hostlist = NULL;
+	hostlist_t temp_hl = NULL;
 	int sum;
-	char *hostname;
-	char *range;
+	char *hostname = NULL;
+	char *range = NULL;
 	int i;
+
+	if(NULL == host_name_list)
+		return NULL;
 
 	hostlist = slurm_hostlist_create(host_name_list);
 	sum = slurm_hostlist_count(hostlist);
@@ -230,7 +248,13 @@ char* get_hostlist_subset(const char *host_name_list, uint16_t node_num)
 
 	for (i = 0; i < node_num; i++) {
 		hostname = slurm_hostlist_shift(hostlist);
-		slurm_hostlist_push_host(temp_hl, hostname);
+		if (NULL != hostname) {
+			slurm_hostlist_push_host(temp_hl, hostname);
+			/* Note: to free memory after slurm_hostlist_shift(),
+			 * 	remember to use free(str), not xfree(str)
+			 */
+			free(hostname);
+		}
 	}
 
 	range = slurm_hostlist_ranged_string_malloc(temp_hl);
@@ -251,13 +275,15 @@ char* get_hostlist_subset(const char *host_name_list, uint16_t node_num)
  *	OUT Parameter:
  *	RET OUT
  *		comma seperated nodelist
+ *
+ *	Note: the return should be free(str)
  */
-char* seperate_nodelist_with_comma(const char *node_list)
+char* seperate_nodelist_with_comma_m(const char *node_list)
 {
 	char *parsed_nodelist = NULL;
-	char *tmp;
-	char *nodename;
-	hostlist_t given_hl;
+	char *tmp = NULL;
+	char *nodename = NULL;
+	hostlist_t given_hl = NULL;
 
 	if (NULL == node_list)
 		return NULL;
@@ -272,11 +298,18 @@ char* seperate_nodelist_with_comma(const char *node_list)
 				     nodename) < 0) {
 				error("slurmctld/dynalloc: asprintf(%s,%s): %m",
 				      parsed_nodelist, nodename);
+
 			}
 			free(parsed_nodelist);
 			parsed_nodelist = tmp;
+			/* tmp should not be freed*/
 		}
+		/* Note: to free memory after slurm_hostlist_shift(),
+		 * 	remember to use free(str), not xfree(str)
+		 */
+		free(nodename);
 	}
 
+	slurm_hostlist_destroy(given_hl);
 	return parsed_nodelist;
 }
