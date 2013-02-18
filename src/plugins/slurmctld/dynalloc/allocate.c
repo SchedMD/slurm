@@ -87,11 +87,11 @@ static int _setup_job_desc_msg(uint32_t np, uint32_t request_node_num,
  *	node_range_list, allocation should include all nodes
  *	in the given list that are currently available. If
  *	that isn't enough to meet the request_node_num,
- * 	then take  any other nodes that are available to
+ * 	then take any other nodes that are available to
  * 	fill out the requested number.
  *
  *	IN:
- *		request_node_num: requested node num
+ *		request_node_num: requested node number
  *		node_range_list: specified node range to select from
  *	OUT Parameter:
  *		final_req_node_list
@@ -161,12 +161,12 @@ static int _get_nodelist_optional(uint16_t request_node_num,
  *	from node_range_list
  *
  *	IN:
- *		request_node_num: requested node num
+ *		request_node_num: requested node number
  *		node_range_list: specified node range to select from
  *	OUT Parameter:
  *		final_req_node_list
  *	RET OUT
- *		-1 if requested node number is larger than available or timeout
+ *		-1 if requested node number is larger than available
  *		0  successful, final_req_node_list is returned
  */
 static int _get_nodelist_mandatory(uint16_t request_node_num,
@@ -199,9 +199,8 @@ static int _get_nodelist_mandatory(uint16_t request_node_num,
 }
 
 /*
- * Note: the return should be xfree(ptr)
+ * Note: the return should be xfree(str)
  */
-
 static char* _uint16_array_to_str_xmalloc(int array_len,
 								const uint16_t *array)
 {
@@ -243,7 +242,7 @@ static char* _uint16_array_to_str_xmalloc(int array_len,
  *	OUT Parameter:
  *		tasks_per_node
  *	RET OUT
- *		-1 if timeout
+ *		-1 if failed
  *		0  successful, tasks_per_node is returned
  */
 static int _get_tasks_per_node(
@@ -283,6 +282,7 @@ static int _get_tasks_per_node(
 	tmp = _uint16_array_to_str_xmalloc(step_layout->node_cnt, step_layout->tasks);
 
 	slurm_step_layout_destroy(step_layout);
+
 	if (NULL != tmp)
 		strcpy(tasks_per_node, tmp);
 
@@ -295,14 +295,14 @@ static int _get_tasks_per_node(
  *
  *	IN:
  *		np: number of process to run
- *		request_node_num: requested node amount
+ *		request_node_num: the amount of requested node
  *		node_range_list: requested node pool
  *		flag: optional or mandatory
  *		timeout:
  *	OUT Parameter:
  *		job_desc_msg
  *	RET OUT
- *		-1 if timeout
+ *		-1 if failed
  *		0  successful, job_desc_msg is returned
  */
 static int _setup_job_desc_msg(uint32_t np, uint32_t request_node_num,
@@ -395,20 +395,19 @@ static int _setup_job_desc_msg(uint32_t np, uint32_t request_node_num,
  *  nodes that are available to fill out the requested number.
  *
  *	IN:
- *		request_node_num: requested node num
+ *		np: number of process to run
+ *		request_node_num: requested node number
  *		node_range_list: specified node range to select from
  *		flag: optional or mandatory
  *		timeout: timeout
- *		hint: to indicate this function is first called or iteration
  *	OUT Parameter:
  *		jobid: slurm jobid
  *		reponse_node_list:
  *		tasks_per_node: like 4(x2) 3,2
- *	RET OUT
+ *	RET OUT:
  *		-1 if requested node number is larger than available or timeout
  *		0  successful
  */
-
 int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
 		      char *node_range_list, const char *flag,
 		      time_t timeout, uint32_t *slurm_jobid,
@@ -465,15 +464,16 @@ int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
  *  nodes that are available to fill out the requested number.
  *
  *	IN:
- *		request_node_num: requested node num
+ *		np: number of process to run
+ *		request_node_num: requested node number
  *		node_range_list: specified node range to select from
  *		flag: optional or mandatory
  *		timeout: timeout
- *		hint: to indicate this function is first called or iteration
  *	OUT Parameter:
- *		jobid: slurm jobid
+ *		slurm_jobid: slurm jobid
  *		reponse_node_list:
- *	RET OUT
+ *		tasks_per_node: like 4(x2) 3,2
+ *	RET OUT:
  *		-1 if requested node number is larger than available or timeout
  *		0  successful, final_req_node_list is returned
  */
@@ -606,8 +606,8 @@ int allocate_node(uint32_t np, uint32_t request_node_num,
  *		job_id: slurm jobid
  *		uid: user id
  *	OUT Parameter:
- *	RET OUT
- *		-1 failure
+ *	RET OUT:
+ *		-1 failed
  *		0  successful
  */
 int cancel_job(uint32_t job_id, uid_t uid)

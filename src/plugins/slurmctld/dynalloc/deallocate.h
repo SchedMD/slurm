@@ -57,6 +57,16 @@
 
 #include "msg.h"
 
-extern int deallocate(slurm_fd_t new_fd, const char *msg);
+/**
+ * deallocate the resources for slurm jobs.
+ *
+ * the deallocate msg can be like "deallocate slurm_jobid=123
+ * job_return_code=0:slurm_jobid=124 job_return_code=0"
+ *
+ * IN:
+ *	msg: the deallocate msg
+ *
+ */
+extern void deallocate(const char *msg);
 
 #endif /* DYNALLOC_DEALLOCATE_H_ */

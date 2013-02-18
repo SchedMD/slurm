@@ -52,6 +52,7 @@
 #endif  /*  HAVE_CONFIG_H */
 
 #include "slurm/slurm.h"
+
 /**
  *	get total number of nodes and slots in slurm.
  *
@@ -79,6 +80,8 @@ extern void get_free_nodes_slots(uint16_t *nodes, uint16_t *slots);
  *	OUT Parameter:
  *	RET OUT:
  *		hostlist_t: available node list in slurm
+ *
+ *	Note: the return result should be slurm_hostlist_destroy(hostlist)
  */
 extern hostlist_t get_available_host_list_system_m(void);
 
@@ -89,17 +92,21 @@ extern hostlist_t get_available_host_list_system_m(void);
  *	OUT Parameter:
  *	RET OUT:
  *		a string indicating the range of available node list in slurm
+ *
+ *	Note: the return result should be free(str)
  */
-extern char* get_available_host_list_range_sytem_m();
+extern char* get_available_host_list_range_sytem_m(void);
 
 /**
- *	get available node list within a given node list
+ *	get available node list within a given node list range
  *
  *	IN:
- *		node_list: the given node list
+ *		node_list: the given node list range
  *	OUT Parameter:
  *	RET OUT
  *		available node list
+ *
+ * Note: the return result should be slurm_hostlist_destroy(hostlist)
  */
 extern hostlist_t choose_available_from_node_list_m(const char *node_list);
 
@@ -112,22 +119,10 @@ extern hostlist_t choose_available_from_node_list_m(const char *node_list);
  *	OUT Parameter:
  *	RET OUT
  *		the subset node range, NULL if the node number of subset is
- *		larger than the node number of host_name_list
+ *		larger than the node number in host_name_list
+ *
+ *	Note: the return should be free(str)
  */
 extern char* get_hostlist_subset_m(const char *host_name_list, uint16_t node_num);
-
-/**
- *	transform nodelist with regular expression into
- *	comma seperated nodelist, like:
- *	host[2-3] will be host2,host3
- *	host[3,5] will be host3,host5
- *
- *	IN:
- *		node_list: the given node_list
- *	OUT Parameter:
- *	RET OUT
- *		comma seperated nodelist
- */
-extern char* seperate_nodelist_with_comma_m(const char *node_list);
 
 #endif /* DYNALLOC_INFO_H_ */

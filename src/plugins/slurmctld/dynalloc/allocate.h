@@ -63,17 +63,18 @@
  *  nodes that are available to fill out the requested number.
  *
  *	IN:
- *		request_node_num: requested node num
+ *		np: number of process to run
+ *		request_node_num: requested node number
  *		node_range_list: specified node range to select from
  *		flag: optional or mandatory
  *		timeout: timeout
- *		hint: to indicate this function is first called or iteration
  *	OUT Parameter:
  *		jobid: slurm jobid
  *		reponse_node_list:
- *	RET OUT
+ *		tasks_per_node: like 4(x2) 3,2
+ *	RET OUT:
  *		-1 if requested node number is larger than available or timeout
- *		0  successful, final_req_node_list is returned
+ *		0  successful
  */
 extern int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
 			     char *node_range_list, const char *flag,
@@ -92,16 +93,16 @@ extern int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
  *  nodes that are available to fill out the requested number.
  *
  *	IN:
- *		np: number of process
- *		request_node_num: requested node num
+ *		np: number of process to run
+ *		request_node_num: requested node number
  *		node_range_list: specified node range to select from
  *		flag: optional or mandatory
  *		timeout: timeout
- *		hint: to indicate this function is first called or iteration
  *	OUT Parameter:
- *		jobid: slurm jobid
+ *		slurm_jobid: slurm jobid
  *		reponse_node_list:
- *	RET OUT
+ *		tasks_per_node: like 4(x2) 3,2
+ *	RET OUT:
  *		-1 if requested node number is larger than available or timeout
  *		0  successful, final_req_node_list is returned
  */
@@ -117,8 +118,8 @@ extern int allocate_node(uint32_t np, uint32_t request_node_num,
  *		job_id: slurm jobid
  *		uid: user id
  *	OUT Parameter:
- *	RET OUT
- *		-1 failure
+ *	RET OUT:
+ *		-1 failed
  *		0  successful
  */
 extern int cancel_job(uint32_t job_id, uid_t uid);

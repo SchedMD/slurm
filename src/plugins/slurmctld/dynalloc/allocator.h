@@ -56,15 +56,15 @@
 
 /*
  * allocate resources for a job.
- * The job can consist of several apps.
+ *
+ * The job will consist of at least one app, e.g., "allocate
+ * jobid=100 return=all timeout=10:app=0 np=5 N=2
+ * node_list=vm2,vm3 flag=mandatory:app=1 N=2".
  *
  * IN:
  * 	new_fd: send allocation result to socket_fd
- * 	msg: resource requirement
- * OUT Parameter:
- * RET OUT:
- *
+ * 	msg: resource requirement cmd
  */
-extern int allocate_job_op(slurm_fd_t new_fd, const char *msg);
+extern void allocate_job_op(slurm_fd_t new_fd, const char *msg);
 
 #endif /* DYNALLOC_ALLOCATOR_H_ */

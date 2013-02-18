@@ -54,21 +54,24 @@ static void _parse_app_params(const char *cmd, char *appid,
 					uint32_t *np, uint32_t *request_node_num,
 					char *node_range_list, char *flag);
 
-static int _allocate_app_op(const char *msg_app,
+static void _allocate_app_op(const char *msg_app,
 							size_t app_timeout,
 							char *app_resp_msg);
 
 /*
  * Parse the job part of msg(cmd) to obtain job parameters
  *
+ *	e.g., if a allocate request is like "allocate jobid=100
+ *	return=all timeout=10:app=0 np=5 N=2 node_list=vm2,vm3
+ *	flag=mandatory:app=1 N=2", then the job part of msg is
+ *	"jobid=100 return=all timeout=10".
+ *
  * IN:
  * 	cmd: job part of msg
  * OUT Parameter:
- * 	orte_jobid
- * 	return_flag
- * 	job_timeout
- * RET OUT:
- * 	void
+ * 	orte_jobid:
+ * 	return_flag:
+ * 	job_timeout: timeout of resource allocation for the whole job
  */
 static void _parse_job_params(const char *cmd, char *orte_jobid,
 					char *return_flag,	size_t *job_timeout)
@@ -103,16 +106,19 @@ static void _parse_job_params(const char *cmd, char *orte_jobid,
 /*
  * Parse the app part of msg(cmd) to obtain app parameters
  *
+ *	e.g., if a allocate request is like "allocate jobid=100
+ *	return=all timeout=10:app=0 np=5 N=2 node_list=vm2,vm3
+ *	flag=mandatory:app=1 N=2", then the app part of msg is
+ *	"app=0 np=5 N=2 node_list=vm2,vm3 flag=mandatory:app=1 N=2".
+ *
  * IN:
  * 	cmd: app part of msg
  * OUT Parameter:
- * 	appid
+ * 	appid:
  * 	np: number of process
- * 	request_node_num
- * 	node_range_list
- * 	flag
- * RET OUT:
- * 	void
+ * 	request_node_num:
+ * 	node_range_list:
+ * 	flag: mandatory or optional
  */
 static void _parse_app_params(const char *cmd, char *appid,
 					uint32_t *np, uint32_t *request_node_num,
@@ -154,17 +160,15 @@ static void _parse_app_params(const char *cmd, char *appid,
 }
 
 /*
- * allocate resource for app
+ * allocate resource for an app
  *
  * IN:
  * 	msg_app: cmd of allocation requirement
  * 	app_timeout:
  * OUT Parameter:
  * 	app_resp_msg: allocation result
- * RET OUT:
- *
  */
-static int _allocate_app_op(const char *msg_app,
+static void _allocate_app_op(const char *msg_app,
 							size_t app_timeout,
 							char *app_resp_msg)
 {
@@ -197,16 +201,16 @@ static int _allocate_app_op(const char *msg_app,
 
 /*
  * allocate resources for a job.
- * The job can consist of several apps.
+ *
+ * The job will consist of at least one app, e.g., "allocate
+ * jobid=100 return=all timeout=10:app=0 np=5 N=2
+ * node_list=vm2,vm3 flag=mandatory:app=1 N=2".
  *
  * IN:
  * 	new_fd: send allocation result to socket_fd
- * 	msg: resource requirement
- * OUT Parameter:
- * RET OUT:
- *
+ * 	msg: resource requirement cmd
  */
-extern int allocate_job_op(slurm_fd_t new_fd, const char *msg)
+extern void allocate_job_op(slurm_fd_t new_fd, const char *msg)
 {
 	char orte_jobid[16] = "";
 	char return_flag[16] = "";
@@ -262,6 +266,4 @@ extern int allocate_job_op(slurm_fd_t new_fd, const char *msg)
 		info("BBB: send to client: %s", send_buf);
 		send_reply(new_fd, send_buf);
 	}
-
-	return SLURM_SUCCESS;
 }

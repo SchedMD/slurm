@@ -163,7 +163,7 @@ hostlist_t get_available_host_list_system_m(void)
  *
  *	Note: the return result should be free(str)
  */
-char* get_available_host_list_range_sytem_m()
+char* get_available_host_list_range_sytem_m(void)
 {
 	hostlist_t hostlist = NULL;
 	char *range = NULL;
@@ -175,10 +175,10 @@ char* get_available_host_list_range_sytem_m()
 }
 
 /**
- *	get available node list within a given node list
+ *	get available node list within a given node list range
  *
  *	IN:
- *		node_list: the given node list
+ *		node_list: the given node list range
  *	OUT Parameter:
  *	RET OUT
  *		available node list
@@ -220,7 +220,7 @@ hostlist_t choose_available_from_node_list_m(const char *node_list)
  *	OUT Parameter:
  *	RET OUT
  *		the subset node range, NULL if the node number of subset is
- *		larger than the node number of host_name_list
+ *		larger than the node number in host_name_list
  *
  *	Note: the return should be free(str)
  */
@@ -262,54 +262,4 @@ char* get_hostlist_subset_m(const char *host_name_list, uint16_t node_num)
 	slurm_hostlist_destroy(temp_hl);
 	slurm_hostlist_destroy(hostlist);
 	return range;
-}
-
-/**
- *	transform nodelist with regular expression into
- *	comma seperated nodelist, like:
- *	host[2-3] will be host2,host3
- *	host[3,5] will be host3,host5
- *
- *	IN:
- *		node_list: the given node_list
- *	OUT Parameter:
- *	RET OUT
- *		comma seperated nodelist
- *
- *	Note: the return should be free(str)
- */
-char* seperate_nodelist_with_comma_m(const char *node_list)
-{
-	char *parsed_nodelist = NULL;
-	char *tmp = NULL;
-	char *nodename = NULL;
-	hostlist_t given_hl = NULL;
-
-	if (NULL == node_list)
-		return NULL;
-
-	given_hl = slurm_hostlist_create(node_list);
-
-	while ((nodename = slurm_hostlist_shift(given_hl))) {
-		if (NULL == parsed_nodelist)
-			parsed_nodelist = strdup(nodename);
-		else {
-			if (asprintf(&tmp, "%s,%s", parsed_nodelist,
-				     nodename) < 0) {
-				error("slurmctld/dynalloc: asprintf(%s,%s): %m",
-				      parsed_nodelist, nodename);
-
-			}
-			free(parsed_nodelist);
-			parsed_nodelist = tmp;
-			/* tmp should not be freed*/
-		}
-		/* Note: to free memory after slurm_hostlist_shift(),
-		 * 	remember to use free(str), not xfree(str)
-		 */
-		free(nodename);
-	}
-
-	slurm_hostlist_destroy(given_hl);
-	return parsed_nodelist;
 }

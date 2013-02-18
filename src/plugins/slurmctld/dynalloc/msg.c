@@ -362,7 +362,7 @@ static void	_proc_msg(slurm_fd_t new_fd, char *msg)
 		} else if (0 == strncasecmp(msg, "allocate", 8)) {
 			allocate_job_op(new_fd, msg);
 		} else if (0 == strncasecmp(msg, "deallocate", 10)) {
-			deallocate(new_fd, msg);
+			deallocate(msg);
 		}
 	}
 	return;
