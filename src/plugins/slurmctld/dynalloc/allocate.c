@@ -117,8 +117,10 @@ static int _get_nodelist_optional(uint16_t request_node_num,
 	/* get all available hostlist in SLURM system */
 	avail_hl_system = get_available_host_list_system_m();
 
-	if (request_node_num > slurm_hostlist_count(avail_hl_system))
+	if (request_node_num > slurm_hostlist_count(avail_hl_system)){
+		slurm_hostlist_destroy(avail_hl_system);
 		return SLURM_FAILURE;
+	}
 
 	avail_hl_pool = choose_available_from_node_list_m(node_range_list);
 	avail_pool_range = slurm_hostlist_ranged_string_malloc(avail_hl_pool);
@@ -144,12 +146,12 @@ static int _get_nodelist_optional(uint16_t request_node_num,
 		tmp = slurm_hostlist_ranged_string_xmalloc(hostlist);
 		strcpy(final_req_node_list, tmp);
 		xfree(tmp);
+		slurm_hostlist_destroy(hostlist);
 	}
 
 	free(avail_pool_range);
 	slurm_hostlist_destroy(avail_hl_system);
 	slurm_hostlist_destroy(avail_hl_pool);
-	slurm_hostlist_destroy(hostlist);
 
 	return SLURM_SUCCESS;
 }
@@ -371,6 +373,7 @@ static int _setup_job_desc_msg(uint32_t np, uint32_t request_node_num,
 					job_desc_msg->min_nodes = request_node_num;
 				}
 
+				slurm_hostlist_destroy(hostlist);
 			} else {  /* flag == "mandatory" */
 				job_desc_msg->req_nodes = node_range_list;
 			}
@@ -378,7 +381,6 @@ static int _setup_job_desc_msg(uint32_t np, uint32_t request_node_num,
 		/* if N == 0 && node_list == "", do nothing */
 	}
 
-	slurm_hostlist_destroy(hostlist);
 	return SLURM_SUCCESS;
 }
 

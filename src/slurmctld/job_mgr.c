@@ -184,7 +184,7 @@ static int  _reset_detail_bitmaps(struct job_record *job_ptr);
 static void _reset_step_bitmaps(struct job_record *job_ptr);
 static int  _resume_job_nodes(struct job_record *job_ptr, bool indf_susp);
 static void _send_job_kill(struct job_record *job_ptr);
-static void _set_job_id(struct job_record *job_ptr);
+static int  _set_job_id(struct job_record *job_ptr);
 static void _signal_batch_job(struct job_record *job_ptr, uint16_t signal);
 static void _signal_job(struct job_record *job_ptr, int signal);
 static void _suspend_job(struct job_record *job_ptr, uint16_t op,
@@ -2714,7 +2714,8 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 		return job_ptr_new;
 
 	/* Set job-specific ID and hash table */
-	_set_job_id(job_ptr_new);
+	if (_set_job_id(job_ptr_new))
+		fatal("job array create_job_record error");
 	_add_job_hash(job_ptr_new);
 
 	/* Copy most of original job data.
@@ -4986,10 +4987,13 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 
 	job_ptr->partition = xstrdup(job_desc->partition);
 
-	if (job_desc->job_id != NO_VAL)		/* already confirmed unique */
+	if (job_desc->job_id != NO_VAL) {	/* already confirmed unique */
 		job_ptr->job_id = job_desc->job_id;
-	else
-		_set_job_id(job_ptr);
+	} else {
+		error_code = _set_job_id(job_ptr);
+		if (error_code)
+			return error_code;
+	}
 
 	if (job_desc->name)
 		job_ptr->name = xstrdup(job_desc->name);
@@ -6463,7 +6467,7 @@ extern uint32_t get_next_job_id(void)
  * _set_job_id - set a default job_id, insure that it is unique
  * IN job_ptr - pointer to the job_record
  */
-static void _set_job_id(struct job_record *job_ptr)
+static int _set_job_id(struct job_record *job_ptr)
 {
 	int i;
 	uint32_t new_id;
@@ -6480,12 +6484,14 @@ static void _set_job_id(struct job_record *job_ptr)
 		new_id = job_id_sequence;
 		if (find_job_record(new_id) == NULL) {
 			job_ptr->job_id = new_id;
-			return;
+			return SLURM_SUCCESS;
 		}
 	}
-	fatal("We have exhausted our supply of valid job id values."
+	error("We have exhausted our supply of valid job id values. "
 	      "FirstJobId=%u MaxJobId=%u", slurmctld_conf.first_job_id,
 	      slurmctld_conf.max_job_id);
+	job_ptr->job_id = NO_VAL;
+	return EAGAIN;
 }
 
 

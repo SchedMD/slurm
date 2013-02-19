@@ -241,6 +241,7 @@ char* get_hostlist_subset_m(const char *host_name_list, uint16_t node_num)
 
 	if (sum < node_num) {
 		error ("node_num > sum of host in hostlist");
+		slurm_hostlist_destroy(hostlist);
 		return NULL;
 	}
 
