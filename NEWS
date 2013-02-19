@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
     Memory to node information displayed by sview and scontrol commands.
  -- Make sched/backfill the default scheduling plugin rather than sched/builtin
     (FIFO).
+ -- Added support for a job having different priorities in different partitions.
 
 * Changes in SLURM 2.6.0pre1
 ============================

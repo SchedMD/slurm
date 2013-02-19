@@ -572,6 +572,7 @@ struct job_record {
 	time_t preempt_time;		/* job preemption signal time */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
+	List priority_list;		/* partition based priority */
 	priority_factors_object_t *prio_factors; /* cached value used
 						  * by sprio command */
 	uint32_t qos_id;		/* quality of service id */
