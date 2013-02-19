@@ -5559,6 +5559,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->partition);
 	if (job_ptr->part_ptr_list)
+		list_destroy(job_ptr->part_ptr_list);
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
 	slurm_destroy_priority_factors_object(job_ptr->prio_factors);
 	xfree(job_ptr->resp_host);
