@@ -4218,6 +4218,20 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr = *job_pptr;
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->part_ptr_list = part_ptr_list;
+
+	if (part_ptr_list) {
+		job_ptr->priority_list = list_create(NULL);
+	       	for (i = 0; i < list_count(part_ptr_list); i++) {
+			uint32_t *prio_per_part;
+			prio_per_part = xmalloc(sizeof(uint32_t));
+			if (!prio_per_part)
+				fatal("malloc fails for part_per_prio pointer");
+			debug("job %u using more than one partition. Adding "
+			      "element to job priority_list", job_ptr->job_id);
+			list_append(job_ptr->priority_list, prio_per_part);
+		}
+	}
+
 	part_ptr_list = NULL;
 	if ((error_code = checkpoint_alloc_jobinfo(&(job_ptr->check_job)))) {
 		error("Failed to allocate checkpoint info for job");
@@ -5561,6 +5575,9 @@ static void _list_delete_job(void *job_entry)
 	if (job_ptr->part_ptr_list)
 		list_destroy(job_ptr->part_ptr_list);
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
+	if (job_ptr->priority_list)
+		list_destroy(job_ptr->priority_list);
+	FREE_NULL_LIST(job_ptr->priority_list);
 	slurm_destroy_priority_factors_object(job_ptr->prio_factors);
 	xfree(job_ptr->resp_host);
 	xfree(job_ptr->resv_name);
