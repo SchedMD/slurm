@@ -196,7 +196,6 @@ static void _allocate_app_op(const char *msg_app,
 	} else {
 		sprintf(app_resp_msg, "app=%s allocate_failure", appid);
 	}
-	return SLURM_SUCCESS;
 }
 
 /*

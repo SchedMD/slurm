@@ -112,6 +112,4 @@ extern void deallocate(const char *msg)
 	}
 	/* free app_argv */
 	argv_free(jobid_argv);
-
-	return SLURM_SUCCESS;
 }
