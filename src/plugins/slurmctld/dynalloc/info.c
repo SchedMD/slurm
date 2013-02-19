@@ -251,9 +251,6 @@ char* get_hostlist_subset_m(const char *host_name_list, uint16_t node_num)
 		hostname = slurm_hostlist_shift(hostlist);
 		if (NULL != hostname) {
 			slurm_hostlist_push_host(temp_hl, hostname);
-			/* Note: to free memory after slurm_hostlist_shift(),
-			 * 	remember to use free(str), not xfree(str)
-			 */
 			free(hostname);
 		}
 	}
