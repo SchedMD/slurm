@@ -686,29 +686,29 @@ static uint32_t _get_priority_internal(time_t start_time,
 		+ job_ptr->prio_factors->priority_qos
 		- (double)(job_ptr->prio_factors->nice - NICE_OFFSET);
 
-	if (job_ptr->part_ptr_list) {
+	if (job_ptr->part_ptr_list && job_ptr->priority_array) {
 		struct part_record *part_ptr;
 		double priority_part;
-		uint32_t *job_priority;
-
 		ListIterator part_iterator;
-		ListIterator priority_iterator;
+		int i = 0;
 
 		part_iterator = list_iterator_create(job_ptr->part_ptr_list);
-		priority_iterator = list_iterator_create(job_ptr->priority_list);
-
-		while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
-
-			job_priority = (uint32_t *) list_next(priority_iterator);
-			priority_part = part_ptr->priority / (double)part_max_priority * (double)weight_part;
-			*job_priority = (uint32_t)(job_ptr->prio_factors->priority_age
-				     + job_ptr->prio_factors->priority_fs
-				     + job_ptr->prio_factors->priority_js
-				     + priority_part
-				     + job_ptr->prio_factors->priority_qos
-				     - (double)(job_ptr->prio_factors->nice - NICE_OFFSET));
+		while ((part_ptr = (struct part_record *)
+				   list_next(part_iterator))) {
+			priority_part = part_ptr->priority /
+					(double)part_max_priority *
+					(double)weight_part;
+			job_ptr->priority_array[i] = (uint32_t)
+					(job_ptr->prio_factors->priority_age
+					+ job_ptr->prio_factors->priority_fs
+					+ job_ptr->prio_factors->priority_js
+					+ priority_part
+					+ job_ptr->prio_factors->priority_qos
+					- (double)(job_ptr->prio_factors->nice
+					- NICE_OFFSET));
 			debug("Job %u has more than one partition (%s)(%u)",
-			      job_ptr->job_id, part_ptr->name, *job_priority);
+			      job_ptr->job_id, part_ptr->name,
+			      job_ptr->priority_array[i++]);
 		}
 	}
 	/* Priority 0 is reserved for held jobs */

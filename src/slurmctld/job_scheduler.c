@@ -1064,10 +1064,8 @@ extern int sort_job_queue2(void *x, void *y)
 	static time_t config_update = 0;
 	static bool preemption_enabled = true;
 	ListIterator part_iterator;
-	ListIterator prio_iterator;
 	struct part_record *part_ptr;
-	uint32_t *job_priority;
-	uint32_t p1,p2;
+	uint32_t p1, p2;
 
 	/* The following block of code is designed to minimize run time in
 	 * typical configurations for this frequently executed function. */
@@ -1089,50 +1087,39 @@ extern int sort_job_queue2(void *x, void *y)
 	if (!has_resv1 && has_resv2)
 		return 1;
 
-	if (job_rec1->job_ptr->part_ptr_list) {
+	p1 = job_rec1->job_ptr->priority;
+	if (job_rec1->job_ptr->part_ptr_list &&
+	    job_rec1->job_ptr->priority_array) {
+		int i = 0;
 		part_iterator = list_iterator_create(job_rec1->job_ptr
 				->part_ptr_list);
-		prio_iterator = list_iterator_create(job_rec1->job_ptr
-				->priority_list);
-
-		if ((part_iterator == NULL) || prio_iterator == NULL)
-			fatal("list_iterator_create malloc failure");
-
 		while ((part_ptr = (struct part_record *)
 				   list_next(part_iterator))) {
-			job_priority = (uint32_t *) list_next(prio_iterator);
 			if (job_rec1->part_ptr == part_ptr) {
-				p1 = *job_priority;
+				p1 = job_rec1->job_ptr->priority_array[i];
 				break;
 			}
+			i++;
 		}
 		list_iterator_destroy(part_iterator);
-		list_iterator_destroy(prio_iterator);
-	} else
-		p1 = job_rec1->job_ptr->priority;
+	}
 
-	if (job_rec2->job_ptr->part_ptr_list) {
+	p2 = job_rec2->job_ptr->priority;
+	if (job_rec2->job_ptr->part_ptr_list &&
+	    job_rec2->job_ptr->priority_array) {
+		int i = 0;
 		part_iterator = list_iterator_create(job_rec2->job_ptr
 				->part_ptr_list);
-		prio_iterator = list_iterator_create(job_rec2->job_ptr
-				->priority_list);
-
-		if ((part_iterator == NULL) || prio_iterator == NULL)
-			fatal("list_iterator_create malloc failure");
-
 		while ((part_ptr = (struct part_record *)
-					list_next(part_iterator))) {
-
-			job_priority = (uint32_t *) list_next(prio_iterator);
+				   list_next(part_iterator))) {
 			if (job_rec2->part_ptr == part_ptr) {
-				p2 = *job_priority;
+				p2 = job_rec2->job_ptr->priority_array[i];
 				break;
 			}
+			i++;
 		}
 		list_iterator_destroy(part_iterator);
-		list_iterator_destroy(prio_iterator);
-	} else
-		p2 = job_rec2->job_ptr->priority;
+	}
 
 	if (p1 < p2)
 		return 1;

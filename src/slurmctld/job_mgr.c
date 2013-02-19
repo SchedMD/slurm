@@ -1012,23 +1012,16 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			part_ptr_list = get_part_list(partition);
 			if (part_ptr_list) {
 				part_ptr = list_peek(part_ptr_list);
-				job_ptr->priority_list = list_create(NULL);
-				for (i = 0; i < list_count(part_ptr_list); i++) {
-					uint32_t *prio_per_part;
-					prio_per_part = xmalloc(sizeof(uint32_t));
-					if (!prio_per_part)
-						fatal("malloc fails for part_per_prio pointer");
-					debug("job %u using more than one partition. Adding "
-					      "element to job priority_list", job_ptr->job_id);
-					list_append(job_ptr->priority_list, prio_per_part);
-				}
+				job_ptr->priority_array = xmalloc(
+						sizeof(uint32_t) *
+						list_count(part_ptr_list));
+			} else {
+				verbose("Invalid partition (%s) for job_id %u",
+					partition, job_id);
+				/* not fatal error, partition could have been
+				 * removed, reset_job_bitmaps() will clean-up
+				 * this job */
 			}
-		}
-		if (part_ptr == NULL) {
-			verbose("Invalid partition (%s) for job_id %u",
-				partition, job_id);
-			/* not fatal error, partition could have been removed,
-			 * reset_job_bitmaps() will clean-up this job */
 		}
 
 		safe_unpackstr_xmalloc(&name, &name_len, buffer);
@@ -4229,18 +4222,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr = *job_pptr;
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->part_ptr_list = part_ptr_list;
-
 	if (part_ptr_list) {
-		job_ptr->priority_list = list_create(NULL);
-		for (i = 0; i < list_count(part_ptr_list); i++) {
-			uint32_t *prio_per_part;
-			prio_per_part = xmalloc(sizeof(uint32_t));
-			if (!prio_per_part)
-				fatal("malloc fails for part_per_prio pointer");
-			debug("job %u using more than one partition. Adding "
-			      "element to job priority_list", job_ptr->job_id);
-			list_append(job_ptr->priority_list, prio_per_part);
-		}
+		job_ptr->priority_array = xmalloc(sizeof(uint32_t) *
+						  list_count(part_ptr_list));
 	}
 
 	part_ptr_list = NULL;
@@ -5584,7 +5568,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->partition);
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
-	FREE_NULL_LIST(job_ptr->priority_list);
+	xfree(job_ptr->priority_array);
 	slurm_destroy_priority_factors_object(job_ptr->prio_factors);
 	xfree(job_ptr->resp_host);
 	xfree(job_ptr->resv_name);
