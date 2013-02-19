@@ -1010,8 +1010,19 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		part_ptr = find_part_record (partition);
 		if (part_ptr == NULL) {
 			part_ptr_list = get_part_list(partition);
-			if (part_ptr_list)
+			if (part_ptr_list){
 				part_ptr = list_peek(part_ptr_list);
+				job_ptr->priority_list = list_create(NULL);
+				for (i = 0; i < list_count(part_ptr_list); i++) {
+					uint32_t *prio_per_part;
+					prio_per_part = xmalloc(sizeof(uint32_t));
+					if (!prio_per_part)
+						fatal("malloc fails for part_per_prio pointer");
+					debug("job %u using more than one partition. Adding "
+					      "element to job priority_list", job_ptr->job_id);
+					list_append(job_ptr->priority_list, prio_per_part);
+				}
+			}
 		}
 		if (part_ptr == NULL) {
 			verbose("Invalid partition (%s) for job_id %u",
