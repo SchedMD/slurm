@@ -1010,7 +1010,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		part_ptr = find_part_record (partition);
 		if (part_ptr == NULL) {
 			part_ptr_list = get_part_list(partition);
-			if (part_ptr_list){
+			if (part_ptr_list) {
 				part_ptr = list_peek(part_ptr_list);
 				job_ptr->priority_list = list_create(NULL);
 				for (i = 0; i < list_count(part_ptr_list); i++) {
@@ -5583,11 +5583,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->partition);
-	if (job_ptr->part_ptr_list)
-		list_destroy(job_ptr->part_ptr_list);
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
-	if (job_ptr->priority_list)
-		list_destroy(job_ptr->priority_list);
 	FREE_NULL_LIST(job_ptr->priority_list);
 	slurm_destroy_priority_factors_object(job_ptr->prio_factors);
 	xfree(job_ptr->resp_host);
