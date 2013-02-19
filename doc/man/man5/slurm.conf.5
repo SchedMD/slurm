@@ -1689,18 +1689,8 @@ if desired.
 Acceptable values include:
 .RS
 .TP
-\fBsched/builtin\fR
-Initiate jobs in priority order.
-If any job in the partition can not be scheduled, no lower priority job in that
-partition will be scheduled.
-An exception is made for jobs can not run due to partition constraints
-(e.g. the time limit) or down/drained nodes.
-In that case, lower priority jobs can be initiated and not impact the higher
-priority job.
-This is the default configuration.
-.TP
 \fBsched/backfill\fR
-for a backfill scheduling module to augment the default FIFO scheduling.
+For a backfill scheduling module to augment the default FIFO scheduling.
 Backfill scheduling will initiate lower\-priority jobs if doing
 so does not delay the expected initiation time of any higher
 priority job.
@@ -1708,19 +1698,29 @@ Effectiveness of backfill scheduling is dependent upon users specifying
 job time limits, otherwise all jobs will have the same time limit and
 backfilling is impossible.
 Note documentation for the \fBSchedulerParameters\fR option above.
+This is the default configuration.
+.TP
+\fBsched/builtin\fR
+This is the FIFO scheduler which initiates jobs in priority order.
+If any job in the partition can not be scheduled, no lower priority job in that
+partition will be scheduled.
+An exception is made for jobs can not run due to partition constraints
+(e.g. the time limit) or down/drained nodes.
+In that case, lower priority jobs can be initiated and not impact the higher
+priority job.
 .TP
 \fBsched/gang\fR
 Defunct option. See \fBPreemptType\fR and \fBPreemptMode\fR options.
 .TP
 \fBsched/hold\fR
-to hold all newly arriving jobs if a file "/etc/slurm.hold"
+To hold all newly arriving jobs if a file "/etc/slurm.hold"
 exists otherwise use the built\-in FIFO scheduler
 .TP
 \fBsched/wiki\fR
-for the Wiki interface to the Maui Scheduler
+For the Wiki interface to the Maui Scheduler
 .TP
 \fBsched/wiki2\fR
-for the Wiki interface to the Moab Cluster Suite
+For the Wiki interface to the Moab Cluster Suite
 .RE
 
 .TP
