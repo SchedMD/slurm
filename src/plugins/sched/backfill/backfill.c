@@ -601,8 +601,8 @@ static int _attempt_backfill(void)
 			job_ptr->time_limit = orig_time_limit;
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
-				info("backfill: yielding locks after testing "
-				     "%d jobs, %s",
+				info("backfill: completed yielding locks "
+				     "after testing %d jobs, %s",
 				     job_test_count, TIME_STR);
 			}
 			if (_yield_locks(1)) {
@@ -639,8 +639,10 @@ static int _attempt_backfill(void)
 			for (j = 0; j < nuser; j++) {
 				if (job_ptr->user_id == uid[j]) {
 					njobs[j]++;
-					debug2("backfill: user %u: #jobs %u",
-					       uid[j], njobs[j]);
+					if (debug_flags & DEBUG_FLAG_BACKFILL)
+						debug("backfill: user %u: "
+						      "#jobs %u",
+						      uid[j], njobs[j]);
 					break;
 				}
 			}
@@ -654,18 +656,21 @@ static int _attempt_backfill(void)
 					      "queue. Consider increasing "
 					      "BF_MAX_USERS");
 				}
-				debug2("backfill: found new user %u. "
-				       "Total #users now %u",
-				       job_ptr->user_id, nuser);
+				if (debug_flags & DEBUG_FLAG_BACKFILL)
+					debug2("backfill: found new user %u. "
+					       "Total #users now %u",
+					       job_ptr->user_id, nuser);
 			} else {
 				if (njobs[j] > max_backfill_job_per_user) {
 					/* skip job */
-					debug("backfill: have already checked "
-					      "%u jobs for user %u; skipping "
-					      "job %u",
-					      max_backfill_job_per_user,
-					      job_ptr->user_id,
-					      job_ptr->job_id);
+					if (debug_flags & DEBUG_FLAG_BACKFILL)
+						debug("backfill: have already "
+						      "checked %u jobs for "
+						      "user %u; skipping "
+						      "job %u",
+						      max_backfill_job_per_user,
+						      job_ptr->user_id,
+						      job_ptr->job_id);
 					continue;
 				}
 			}
