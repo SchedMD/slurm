@@ -524,8 +524,8 @@ static int _attempt_backfill(void)
 	time_t now, sched_start, later_start, start_res, resv_end;
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
-	static int sched_timeout = 0;
-	int this_sched_timeout = 0, rc = 0;
+	int sched_timeout = 2;
+	int rc = 0;
 	int job_test_count = 0;
 	uint32_t *uid = NULL, nuser = 0;
 	uint16_t *njobs = NULL;
@@ -555,12 +555,6 @@ static int _attempt_backfill(void)
 	if (debug_flags & DEBUG_FLAG_BACKFILL)
 		info("backfill: beginning");
 	sched_start = now = time(NULL);
-	if (sched_timeout == 0) {
-		sched_timeout = slurm_get_msg_timeout() / 2;
-		sched_timeout = MAX(sched_timeout, 1);
-		sched_timeout = MIN(sched_timeout, 10);
-	}
-	this_sched_timeout = sched_timeout;
 
 	if (slurm_get_root_filter())
 		filter_root = true;
@@ -768,7 +762,7 @@ static int _attempt_backfill(void)
 		resv_bitmap = bit_copy(avail_bitmap);
 		bit_not(resv_bitmap);
 
-		if ((time(NULL) - sched_start) >= this_sched_timeout) {
+		if ((time(NULL) - sched_start) >= sched_timeout) {
 			uint32_t save_time_limit = job_ptr->time_limit;
 			job_ptr->time_limit = orig_time_limit;
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
@@ -777,7 +771,7 @@ static int _attempt_backfill(void)
 				     "%d jobs, %s",
 				     job_test_count, TIME_STR);
 			}
-			if (_yield_locks(backfill_interval)) {
+			if (_yield_locks(1)) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
 					info("backfill: system state changed, "
 					     "breaking out after testing %d "
