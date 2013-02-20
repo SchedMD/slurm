@@ -4,32 +4,32 @@
  *  Copyright (C) 2011-2012 National University of Defense Technology.
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.
  *  All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <https://computing.llnl.gov/linux/slurm/>.
+ *  For details, see <http://www.schedmd.com/slurmdocs/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -68,7 +68,7 @@
  *      <application>/<method>
  *
  * where <application> is a description of the intended application of
- * the plugin (e.g., "switch" for SLURM switch) and <method> is a description 
+ * the plugin (e.g., "switch" for SLURM switch) and <method> is a description
  * of how this plugin satisfies that application.  SLURM will only load
  * a switch plugin if the plugin_type string has a prefix of "switch/".
  *
@@ -83,39 +83,39 @@ const char plugin_type[]        = "mpi/pmi2";
 const uint32_t plugin_version   = 100;
 
 /*
- * The following is executed in slurmstepd. 
+ * The following is executed in slurmstepd.
  */
 
 int p_mpi_hook_slurmstepd_prefork(const slurmd_job_t *job,
-                                  char ***env)
+				  char ***env)
 {
 	int rc;
-	
+
 	debug("using mpi/pmi2");
-	
+
 	if (job->batch)
 		return SLURM_SUCCESS;
-	
+
 	rc = pmi2_setup_stepd(job, env);
 	if (rc != SLURM_SUCCESS)
 		return rc;
-	
+
 	if (pmi2_start_agent() < 0) {
 		error ("mpi/pmi2: failed to create pmi2 agent thread");
 		return SLURM_ERROR;
 	}
 
-        return SLURM_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 int p_mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job,
 				char ***env)
 {
 	int i;
-	
+
 	env_array_overwrite_fmt(env, "PMI_FD", "%u",
 				TASK_PMI_SOCK(job->ltaskid));
-	
+
 	env_array_overwrite_fmt(env, "PMI_JOBID", "%s",
 				job_info.pmi_jobid);
 	env_array_overwrite_fmt(env, "PMI_RANK", "%u", job->gtaskid);
@@ -146,7 +146,7 @@ mpi_plugin_client_state_t *
 p_mpi_hook_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
 {
 	int rc;
-	
+
 	debug("mpi/pmi2: client_prelaunch");
 
 	rc = pmi2_setup_srun(job, env);
@@ -158,7 +158,7 @@ p_mpi_hook_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
 		error("failed to start PMI2 agent thread");
 		return NULL;
 	}
-	
+
 	return (void *)0x12345678;
 }
 
@@ -171,12 +171,11 @@ int p_mpi_hook_client_fini(mpi_plugin_client_state_t *state)
 {
 
 	pmi2_stop_agent();
-	
+
 	/* the job may be allocated by this srun.
 	 * or exit of this srun may cause the job script to exit.
 	 * wait for the spawned steps. */
 	spawn_job_wait();
-	
+
 	return SLURM_SUCCESS;
 }
-

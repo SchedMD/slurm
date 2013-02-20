@@ -4,32 +4,32 @@
  *  Copyright (C) 2011-2012 National University of Defense Technology.
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.
  *  All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <https://computing.llnl.gov/linux/slurm/>.
+ *  For details, see <http://www.schedmd.com/slurmdocs/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -88,7 +88,7 @@ set_pmi_version(int version, int subversion)
 {
 	if ( (version == PMI11_VERSION && subversion == PMI11_SUBVERSION) ||
 	     (version == PMI20_VERSION && subversion == PMI20_SUBVERSION) ) {
-		
+
 		if (pmi_version && (pmi_version != version ||
 				    pmi_subversion != subversion)) {
 			error("mpi/pmi2: inconsistent client PMI version: "
@@ -121,7 +121,7 @@ _parse_cmd(client_req_t *req)
 			req->term = '\n';
 			return SLURM_SUCCESS;
 	}
-	
+
 	len = strlen (CMD_KEY"=");
 	if (strncmp(req->buf, CMD_KEY"=", len)) {
 		error("mpi/pmi2: request not begin with '" CMD_KEY "='");
@@ -155,9 +155,9 @@ _parse_cmd(client_req_t *req)
 	req->buf[i] = '\0';	/* make it nul terminated */
 
 	req->parse_idx = i + 1;
-	
+
 	/* TODO: concat processing */
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -172,11 +172,11 @@ client_req_init(uint32_t len, char *buf)
 	req->buf = buf;
 	req->buf_len = len;
 	req->parse_idx = 0;
-	
+
 	if (_parse_cmd(req) != SLURM_SUCCESS) {
 		req = NULL;
 	}
-	
+
 	return req;
 }
 
@@ -217,7 +217,7 @@ client_req_parse_body(client_req_t *req)
 		req->buf[i] = '\0'; /* make it nul terminated */
 		i ++;
 		debug3("mpi/pmi2: client req key %s", key);
-		
+
 		/* search for val */
 		val = &req->buf[i];
 		while (req->buf[i] != req->sep &&
@@ -250,7 +250,7 @@ client_req_parse_body(client_req_t *req)
 	/* add a pair of NULL at the end, without increasing req->pairs_cnt */
 	req->pairs[KEY_INDEX(req->pairs_cnt)] = NULL;
 	req->pairs[VAL_INDEX(req->pairs_cnt)] = NULL;
-	
+
 	return rc;
 }
 
@@ -260,16 +260,16 @@ client_req_parse_spawn_req(client_req_t *req)
 	spawn_req_t *spawn_req = NULL;
 	spawn_subcmd_t *subcmd = NULL;
 	int i = 0, j = 0, pi = 0;
-	
+
 	/* req body already parsed */
 	pi = 0;
-	
+
 	if (req->pairs_cnt - pi < 5) {
 		/* NCMDS, PREPUTCOUNT, SUBCMD, MAXPROCS, ARGC */
 		error("mpi/pmi2: wrong number of key-val pairs in spawn cmd");
 		return NULL;
 	}
-	
+
 	spawn_req = spawn_req_new();
 
 	/* ncmds */
@@ -334,7 +334,7 @@ client_req_parse_spawn_req(client_req_t *req)
 			error("mpi/pmi2: '" MAXPROCS_KEY
 			      "' expected in spawn cmd");
 			goto req_err;
-			
+
 		}
 		subcmd->max_procs = atoi(MP_VAL(req, pi));
 		pi ++;
@@ -343,7 +343,7 @@ client_req_parse_spawn_req(client_req_t *req)
 			error("mpi/pmi2: '" ARGC_KEY
 			      "' expected in spawn cmd");
 			goto req_err;
-			
+
 		}
 		subcmd->argc = atoi(MP_VAL(req, pi));
 		pi ++;
@@ -425,10 +425,10 @@ client_req_parse_spawn_req(client_req_t *req)
 			pi ++;
 		}
 	}
-	
+
 	debug("mpi/pmi2: out client_req_parse_spawn");
 	return spawn_req;
-	
+
 req_err:
 	spawn_req_free(spawn_req);
 	return NULL;
@@ -487,7 +487,7 @@ client_req_get_str(client_req_t *req, const char *key, char **pval)
 	val = _client_req_get_val(req, key);
 	if (val == NULL)
 		return false;
-	
+
 	*pval = xstrdup(val);
 	return true;
 }
@@ -513,7 +513,7 @@ client_req_get_bool(client_req_t *req, const char *key, bool *pval)
 	val = _client_req_get_val(req, key);
 	if (val == NULL)
 		return false;
-	
+
 	if (!strcasecmp(val, TRUE_VAL))
 		*pval = true;
 	else
@@ -548,9 +548,9 @@ client_resp_send(client_resp_t *resp, int fd)
 		debug2("mpi/pmi2: client_resp_send: %s", resp->buf);
 	}
 	safe_write(fd, resp->buf, len);
-	
+
 	return SLURM_SUCCESS;
-	
+
 rwfail:
 	return SLURM_ERROR;
 }
@@ -563,4 +563,3 @@ client_resp_free(client_resp_t *resp)
 		xfree(resp);
 	}
 }
-

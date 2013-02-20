@@ -4,32 +4,32 @@
  *  Copyright (C) 2011-2012 National University of Defense Technology.
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.
  *  All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <https://computing.llnl.gov/linux/slurm/>.
+ *  For details, see <http://www.schedmd.com/slurmdocs/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -91,7 +91,7 @@ temp_kvs_init(void)
 	uint16_t cmd;
 	uint32_t nodeid, num_children, size;
 	Buf buf = NULL;
-	
+
 	xfree(temp_kvs_buf);
 	temp_kvs_cnt = 0;
 	temp_kvs_size = TEMP_KVS_SIZE_INC;
@@ -110,7 +110,7 @@ temp_kvs_init(void)
 		nodeid = job_info.nodeid;
 		/* XXX: TBC */
 		num_children = tree_info.num_children + 1;
-		
+
 		pack32((uint32_t)nodeid, buf); /* from_nodeid */
 		packstr(tree_info.this_node, buf); /* from_node */
 		pack32((uint32_t)num_children, buf); /* num_children */
@@ -126,7 +126,7 @@ temp_kvs_init(void)
 
 	tasks_to_wait = 0;
 	children_to_wait = 0;
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -135,7 +135,7 @@ temp_kvs_add(char *key, char *val)
 {
 	Buf buf;
 	uint32_t size;
-	
+
 	if ( key == NULL || val == NULL )
 		return SLURM_SUCCESS;
 
@@ -150,7 +150,7 @@ temp_kvs_add(char *key, char *val)
 	memcpy(&temp_kvs_buf[temp_kvs_cnt], get_buf_data(buf), size);
 	temp_kvs_cnt += size;
 	free_buf(buf);
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -173,7 +173,7 @@ temp_kvs_merge(Buf buf)
 	}
 	memcpy(&temp_kvs_buf[temp_kvs_cnt], &data[offset], size);
 	temp_kvs_cnt += size;
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -183,7 +183,7 @@ temp_kvs_send(void)
 	int rc;
 
 	/* cmd included in temp_kvs_buf */
-	
+
 	if (! in_stepd()) {	/* srun */
 		rc = tree_msg_to_stepds(job_info.step_nodelist,
 					temp_kvs_cnt,
@@ -209,7 +209,7 @@ kvs_init(void)
 	debug3("mpi/pmi2: in kvs_init");
 
 	hash_size = ((job_info.ntasks + TASKS_PER_BUCKET - 1) / TASKS_PER_BUCKET);
-	
+
 	kvs_hash = xmalloc(hash_size * sizeof(kvs_bucket_t));
 
 	if (getenv(PMI2_KVS_NO_DUP_KEYS_ENV))
@@ -219,7 +219,7 @@ kvs_init(void)
 }
 
 /*
- * returned value is not dup-ed 
+ * returned value is not dup-ed
  */
 extern char *
 kvs_get(char *key)
@@ -229,11 +229,11 @@ kvs_get(char *key)
 	int i;
 
 	debug3("mpi/pmi2: in kvs_get, key=%s", key);
-	
+
 	bucket = &kvs_hash[HASH(key)];
 	if (bucket->count > 0) {
 		for(i = 0; i < bucket->count; i ++) {
-			if (! strcmp(key, bucket->pairs[KEY_INDEX(i)])) { 
+			if (! strcmp(key, bucket->pairs[KEY_INDEX(i)])) {
 				val = bucket->pairs[VAL_INDEX(i)];
 				break;
 			}
@@ -241,7 +241,7 @@ kvs_get(char *key)
 	}
 
 	debug3("mpi/pmi2: out kvs_get, val=%s", val);
-	
+
 	return val;
 }
 
@@ -275,7 +275,7 @@ kvs_put(char *key, char *val)
 	bucket->pairs[KEY_INDEX(i)] = xstrdup(key);
 	bucket->pairs[VAL_INDEX(i)] = xstrdup(val);
 	bucket->count ++;
-	
+
 	debug3("mpi/pmi2: put kvs %s=%s", key, val);
 	return SLURM_SUCCESS;
 }
@@ -285,7 +285,7 @@ kvs_clear(void)
 {
 	kvs_bucket_t *bucket;
 	int i, j;
-	
+
 	for (i = 0; i < hash_size; i ++){
 		bucket = &kvs_hash[i];
 		for (j = 0; j < bucket->count; j ++) {

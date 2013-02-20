@@ -4,32 +4,32 @@
  *  Copyright (C) 2011-2012 National University of Defense Technology.
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.
  *  All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <https://computing.llnl.gov/linux/slurm/>.
+ *  For details, see <http://www.schedmd.com/slurmdocs/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -90,7 +90,7 @@ _handle_task_request(int fd, int lrank)
 	int rc = SLURM_SUCCESS;
 
 	debug3("mpi/pmi2: in _handle_task_request, lrank=%d", lrank);
-	
+
 	if (initialized[lrank] == 0) {
 		rc = _handle_pmi1_init(fd, lrank);
 		initialized[lrank] = 1;
@@ -109,7 +109,7 @@ _handle_tree_request(int fd)
 {
 	uint32_t temp;
 	int rc = SLURM_SUCCESS;
-	
+
 	if (in_stepd()) {	/* skip uid passed from slurmd */
 		safe_read(fd, &temp, sizeof(uint32_t));
 		temp = ntohl(temp);
@@ -126,15 +126,15 @@ rwfail:
 static bool
 _is_fd_ready(int fd)
 {
-        struct pollfd pfd[1];
-        int    rc;
+	struct pollfd pfd[1];
+	int    rc;
 
-        pfd[0].fd     = fd;
-        pfd[0].events = POLLIN;
+	pfd[0].fd     = fd;
+	pfd[0].events = POLLIN;
 
-        rc = poll(pfd, 1, 10);
+	rc = poll(pfd, 1, 10);
 
-        return ((rc == 1) && (pfd[0].revents & POLLIN));
+	return ((rc == 1) && (pfd[0].revents & POLLIN));
 }
 
 static bool
@@ -162,25 +162,25 @@ _tree_listen_read(eio_obj_t *obj, List objs)
 	char buf[INET_ADDRSTRLEN];
 
 	debug2("mpi/pmi2: _tree_listen_read");
-	
-	while (1) {
-                /* 
-                 * Return early if fd is not now ready
-                 */
-                if (!_is_fd_ready(obj->fd))
-                        return 0;
 
-                while ((sd = accept(obj->fd, &addr, &size)) < 0) {
-                        if (errno == EINTR)
-                                continue;
-                        if (errno == EAGAIN)    /* No more connections */
-                                return 0;
-                        if ((errno == ECONNABORTED) ||
-                            (errno == EWOULDBLOCK)) {
-                                return 0;
-                        }
-                        error("mpi/pmi2: unable to accept new connection: %m");
-                        return 0;
+	while (1) {
+		/*
+		 * Return early if fd is not now ready
+		 */
+		if (!_is_fd_ready(obj->fd))
+			return 0;
+
+		while ((sd = accept(obj->fd, &addr, &size)) < 0) {
+			if (errno == EINTR)
+				continue;
+			if (errno == EAGAIN)    /* No more connections */
+				return 0;
+			if ((errno == ECONNABORTED) ||
+			    (errno == EWOULDBLOCK)) {
+				return 0;
+			}
+			error("mpi/pmi2: unable to accept new connection: %m");
+			return 0;
 		}
 
 		if (! in_stepd()) {
@@ -189,11 +189,11 @@ _tree_listen_read(eio_obj_t *obj, List objs)
 			debug3("mpi/pmi2: accepted tree connection: ip=%s sd=%d",
 			       buf, sd);
 		}
-		
+
 		/* read command from socket and handle it */
 		_handle_tree_request(sd);
 		close(sd);
-        }
+	}
 	return 0;
 }
 
@@ -203,7 +203,7 @@ static bool
 _task_readable(eio_obj_t *obj)
 {
 	int lrank;
-	
+
 	debug2("mpi/pmi2: _task_readable");
 
 	lrank = (int)(long)(obj->arg);
@@ -211,7 +211,7 @@ _task_readable(eio_obj_t *obj)
 		debug2("    false, finalized");
 		return false;
 	}
-	
+
 	if (obj->shutdown == true) {
 		if (obj->fd != -1) {
 			close(obj->fd);
@@ -268,7 +268,7 @@ _handle_pmi1_init(int fd, int lrank)
 		get_pmi_version(&version, &subversion);
 	} else
 		rc = 0;
-	
+
 send_response:
 	snprintf(buf, 64, "cmd=response_to_init rc=%d pmi_version=%d "
 		 "pmi_subversion=%d\n", rc, version, subversion);
@@ -278,7 +278,7 @@ send_response:
 		error ("mpi/pmi2: failed to write PMI1 init response");
 		return SLURM_ERROR;
 	}
-	
+
 	debug3("mpi/pmi2: out _handle_pmi1_init");
 	return SLURM_SUCCESS;
 }
@@ -295,14 +295,14 @@ _agent(void * unused)
 	eio_handle_t *pmi2_handle;
 	eio_obj_t *tree_listen_obj, *task_obj;
 	int i;
-	
+
 	pmi2_handle = eio_handle_create();
 
 	//fd_set_nonblocking(tree_sock);
 	tree_listen_obj = eio_obj_create(tree_sock, &tree_listen_ops,
 					 (void *)(-1));
 	eio_new_initial_obj(pmi2_handle, tree_listen_obj);
-	
+
 	/* for stepd, add the sockets to tasks */
 	if (in_stepd()) {
 		for (i = 0; i < job_info.ltasks; i ++) {
@@ -313,7 +313,7 @@ _agent(void * unused)
 		initialized = xmalloc(job_info.ltasks * sizeof(int));
 		finalized = xmalloc(job_info.ltasks * sizeof(int));
 	}
-	
+
 	eio_handle_mainloop(pmi2_handle);
 
 	debug("mpi/pmi2: agent thread exit");
@@ -329,24 +329,24 @@ extern int
 pmi2_start_agent(void)
 {
 	int retries = 0;
-        pthread_attr_t attr;
+	pthread_attr_t attr;
 
-        pthread_attr_init(&attr);
+	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-        while ((errno = pthread_create(&pmi2_agent_tid, &attr,
+	while ((errno = pthread_create(&pmi2_agent_tid, &attr,
 				       &_agent, NULL))) {
-                if (++retries > MAX_RETRIES) {
-                        error ("mpi/pmi2: pthread_create error %m");
-                        slurm_attr_destroy(&attr);
-                        return SLURM_ERROR;
-                }
-                sleep(1);
-        }
-        slurm_attr_destroy(&attr);
-        debug("mpi/pmi2: started agent thread (%lu)",
+		if (++retries > MAX_RETRIES) {
+			error ("mpi/pmi2: pthread_create error %m");
+			slurm_attr_destroy(&attr);
+			return SLURM_ERROR;
+		}
+		sleep(1);
+	}
+	slurm_attr_destroy(&attr);
+	debug("mpi/pmi2: started agent thread (%lu)",
 	      (unsigned long) pmi2_agent_tid);
 
-        return SLURM_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*

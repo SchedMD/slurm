@@ -4,32 +4,32 @@
  *  Copyright (C) 2011-2012 National University of Defense Technology.
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.
  *  All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <https://computing.llnl.gov/linux/slurm/>.
+ *  For details, see <http://www.schedmd.com/slurmdocs/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -82,7 +82,7 @@ extern void
 spawn_subcmd_free(spawn_subcmd_t *subcmd)
 {
 	int i;
-	
+
 	if (subcmd) {
 		xfree(subcmd->cmd);
 		if (subcmd->argv) {
@@ -122,7 +122,7 @@ extern void
 spawn_req_free(spawn_req_t *req)
 {
 	int i;
-	
+
 	if (req) {
 		xfree(req->from_node);
 		if (req->pp_keys) {
@@ -232,7 +232,7 @@ spawn_req_unpack(spawn_req_t **req_ptr, Buf buf)
 	for (i = 0; i < req->subcmd_cnt; i ++) {
 		req->subcmds[i] = spawn_subcmd_new();
 		subcmd = req->subcmds[i];
-		
+
 		safe_unpackstr_xmalloc(&(subcmd->cmd), &temp32, buf);
 		safe_unpack32(&(subcmd->max_procs), buf);
 		safe_unpack32(&(subcmd->argc), buf);
@@ -259,7 +259,7 @@ spawn_req_unpack(spawn_req_t **req_ptr, Buf buf)
 	}
 	*req_ptr = req;
 	return SLURM_SUCCESS;
-	
+
 unpack_error:
 	spawn_req_free(req);
 	return SLURM_ERROR;
@@ -311,7 +311,7 @@ extern void
 spawn_resp_pack(spawn_resp_t *resp, Buf buf)
 {
 	int i;
-	
+
 	pack32(resp->seq, buf);
 	pack32((uint32_t)resp->rc, buf);
 	packstr(resp->jobid, buf);
@@ -360,7 +360,7 @@ spawn_resp_send_to_stepd(spawn_resp_t *resp, char *node)
 	cmd = TREE_CMD_SPAWN_RESP;
 	pack16(cmd, buf);
 	spawn_resp_pack(resp, buf);
-	
+
 	rc = tree_msg_to_stepds(node, get_buf_offset(buf), get_buf_data(buf));
 	free_buf(buf);
 	return rc;
@@ -378,7 +378,7 @@ spawn_resp_send_to_srun(spawn_resp_t *resp)
 	cmd = TREE_CMD_SPAWN_RESP;
 	pack16(cmd, buf);
 	spawn_resp_pack(resp, buf);
-	
+
 	rc = tree_msg_to_srun(get_buf_offset(buf), get_buf_data(buf));
 	free_buf(buf);
 	return rc;
@@ -389,7 +389,7 @@ spawn_resp_send_to_fd(spawn_resp_t *resp, int fd)
 {
 	Buf buf;
 	int rc;
-	
+
 	buf = init_buf(1024);
 
 	/* sync with spawn_req_send_to_srun */
@@ -457,11 +457,11 @@ _exec_srun_single(spawn_req_t *req, char **env)
 	char **argv = NULL;
 	spawn_subcmd_t *subcmd;
 
-	debug3("mpi/mpi2: in _exec_srun_single");	
+	debug3("mpi/mpi2: in _exec_srun_single");
 	subcmd = req->subcmds[0];
 	argc = subcmd->argc + 7;
 	xrealloc(argv, (argc + 1) * sizeof(char *));
-	
+
 	j = 0;
 	argv[j ++] = "srun";
 	argv[j ++] = "--mpi=pmi2";
@@ -469,22 +469,22 @@ _exec_srun_single(spawn_req_t *req, char **env)
 	/* TODO: inherit options from srun_opt. */
 	for (i = 0; i < subcmd->info_cnt; i ++) {
 		if (0) {
-			
+
 		} else if (! strcmp(subcmd->info_keys[i], "host")) {
 			xstrfmtcat(argv[j ++], "--nodelist=%s",
 				   subcmd->info_vals[i]);
-			
+
 		} else if (! strcmp(subcmd->info_keys[i], "arch")) {
 			error("mpi/pmi2: spawn info key 'arch' not supported");
-			
+
 		} else if (! strcmp(subcmd->info_keys[i], "wdir")) {
 			xstrfmtcat(argv[j ++], "--chdir=%s",
 				   subcmd->info_vals[i]);
-			
-		} else if(! strcmp(subcmd->info_keys[i], "path")) {
+
+		} else if (! strcmp(subcmd->info_keys[i], "path")) {
 			env_array_overwrite_fmt(&env, "PATH", "%s",
 						subcmd->info_vals[i]);
-			
+
 		} else if (! strcmp(subcmd->info_keys[i], "file")) {
 			error("mpi/pmi2: spawn info key 'file' not supported");
 
@@ -501,7 +501,7 @@ _exec_srun_single(spawn_req_t *req, char **env)
 		argv[j ++] = subcmd->argv[i];
 	}
 	argv[j ++] = NULL;
-	
+
 	{
 		debug3("mpi/mpi2: to execve");
 		for (i = 0; i < j; i ++) {
@@ -555,7 +555,7 @@ _exec_srun_multiple(spawn_req_t *req, char **env)
 
 	argc = 7;
 	xrealloc(argv, argc * sizeof(char *));
-	
+
 	j = 0;
 	argv[j ++] = "srun";
 	argv[j ++] = "--mpi=pmi2";
@@ -582,11 +582,11 @@ _setup_exec_srun(spawn_req_t *req)
 	spawn_resp_t *resp;
 
 	debug3("mpi/pmi2: in _setup_exec_srun");
-	
+
 	/* setup environments */
 	env = env_array_copy((const char **)job_info.job_env);
 	/* TODO: unset some env-vars */
-	
+
 	env_array_overwrite_fmt(&env, "SLURM_JOB_ID", "%u", job_info.jobid);
 	env_array_overwrite_fmt(&env, PMI2_SPAWNER_JOBID_ENV, "%s",
 				job_info.pmi_jobid);
@@ -618,7 +618,7 @@ _setup_exec_srun(spawn_req_t *req)
 	xstrfmtcat(resp->jobid, "%s-%u", job_info.pmi_jobid, req->seq);
 	resp->error_cnt = 0;
 	resp->rc = rc;
-	
+
 	/* fake a srun address */
 	tree_info.srun_addr = xmalloc(sizeof(slurm_addr_t));
 	slurm_set_addr(tree_info.srun_addr, tree_info.pmi_port,
@@ -677,7 +677,7 @@ spawn_job_wait(void)
 	} else {
 		wait = 0;
 	}
-	
+
 	if (wait == 0)		/* TODO: wait indefinitely */
 		wait = 60;
 	exited = _wait_for_all();

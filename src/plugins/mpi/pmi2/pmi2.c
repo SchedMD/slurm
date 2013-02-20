@@ -4,32 +4,32 @@
  *  Copyright (C) 2011-2012 National University of Defense Technology.
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.
  *  All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <https://computing.llnl.gov/linux/slurm/>.
+ *  For details, see <http://www.schedmd.com/slurmdocs/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -55,7 +55,7 @@
 #include "setup.h"
 #include "agent.h"
 
-/* PMI2 command handlers */ 
+/* PMI2 command handlers */
 static int _handle_fullinit(int fd, int lrank, client_req_t *req);
 static int _handle_finalize(int fd, int lrank, client_req_t *req);
 static int _handle_abort(int fd, int lrank, client_req_t *req);
@@ -109,7 +109,7 @@ _handle_fullinit(int fd, int lrank, client_req_t *req)
 	debug3("mpi/pmi2: _handle_fullinit");
 
 	client_req_parse_body(req);
-	
+
 	found = client_req_get_int(req, PMIJOBID_KEY, &pmi_jobid);
 	if (! found) {
 		error(PMIJOBID_KEY" missing in fullinit command");
@@ -130,7 +130,7 @@ _handle_fullinit(int fd, int lrank, client_req_t *req)
 	}
 
 	/* TODO: use threaded */
-	
+
 response:
 	resp = client_resp_new();
 	/* what's the difference between DEBUGGED and VERBOSE? */
@@ -227,7 +227,7 @@ _handle_kvs_put(int fd, int lrank, client_req_t *req)
 	client_req_parse_body(req);
 	client_req_get_str(req, KEY_KEY, &key);
 	client_req_get_str(req, VALUE_KEY, &val);
-	
+
 	/* no need to add k-v to hash. just get it ready to be up-forward */
 	rc = temp_kvs_add(key, val);
 
@@ -244,7 +244,7 @@ static int
 _handle_kvs_fence(int fd, int lrank, client_req_t *req)
 {
 	int rc = 0;
-	
+
 	debug3("mpi/pmi2: in _handle_kvs_fence, from task %d",
 	       job_info.gtids[lrank]);
 	if (tasks_to_wait == 0 && children_to_wait == 0) {
@@ -271,10 +271,10 @@ _handle_kvs_get(int fd, int lrank, client_req_t *req)
 	char *key, *val;
 
 	debug3("mpi/pmi2: in _handle_kvs_get");
-	
+
 	client_req_parse_body(req);
 	client_req_get_str(req, KEY_KEY, &key);
-	
+
 	val = kvs_get(key);
 
 	resp = client_resp_new();
@@ -300,7 +300,7 @@ _handle_info_getnodeattr(int fd, int lrank, client_req_t *req)
 	client_resp_t *resp;
 	char *key, *val;
 	bool wait = false;
-	
+
 	debug3("mpi/pmi2: in _handle_info_getnodeattr from lrank %d", lrank);
 
 	client_req_parse_body(req);
@@ -324,7 +324,7 @@ _handle_info_getnodeattr(int fd, int lrank, client_req_t *req)
 	} else {
 		rc = enqueue_nag_req(fd, lrank, key);
 	}
-	
+
 	debug3("mpi/pmi2: out _handle_info_getnodeattr");
 	return rc;
 }
@@ -335,13 +335,13 @@ _handle_info_putnodeattr(int fd, int lrank, client_req_t *req)
 	char *key, *val;
 	client_resp_t *resp;
 	int rc = 0;
-	
+
 	debug3("mpi/pmi2: in _handle_info_putnodeattr");
 
 	client_req_parse_body(req);
 	client_req_get_str(req, KEY_KEY, &key);
 	client_req_get_str(req, VALUE_KEY, &val);
-	
+
 	rc = node_attr_put(key, val);
 
 	resp = client_resp_new();
@@ -365,7 +365,7 @@ _handle_info_getjobattr(int fd, int lrank, client_req_t *req)
 	client_req_get_str(req, KEY_KEY, &key);
 
 	val = job_attr_get(key);
-	
+
 	resp = client_resp_new();
 	client_resp_append(resp, CMD_KEY"="GETJOBATTRRESP_CMD";" RC_KEY"=0;");
 	if (val != NULL) {
@@ -408,7 +408,7 @@ _handle_spawn(int fd, int lrank, client_req_t *req)
 	spawn_req_t *spawn_req = NULL;
 	spawn_resp_t *spawn_resp = NULL;
 	client_resp_t *task_resp;
-	
+
 	debug3("mpi/pmi2: in _handle_spawn");
 
 	client_req_parse_body(req);
@@ -423,7 +423,7 @@ _handle_spawn(int fd, int lrank, client_req_t *req)
 		client_resp_free(task_resp);
 		return SLURM_ERROR;
 	}
-	
+
 	/* a resp will be send back from srun.
 	 * this will not be forwarded to the tasks */
 	rc = spawn_req_send_to_srun(spawn_req, &spawn_resp);
@@ -470,13 +470,13 @@ handle_pmi2_cmd(int fd, int lrank)
 	buf[len] = '\0';
 
 	debug2("mpi/pmi2: got client request: %s %s", len_buf, buf);
-	
+
 	req = client_req_init(len, buf);
 	if (req == NULL) {
 		error("mpi/pmi2: invalid client request");
 		return SLURM_ERROR;
 	}
-	
+
 	i = 0;
 	while (pmi2_cmd_handlers[i].cmd != NULL) {
 		if (!strcmp(req->cmd, pmi2_cmd_handlers[i].cmd))
@@ -492,11 +492,10 @@ handle_pmi2_cmd(int fd, int lrank)
 	client_req_free(req);
 
 	debug3("mpi/pmi2: out handle_pmi2_cmd");
-	
+
 	return rc;
 
 rwfail:
 	xfree(buf);
 	return SLURM_ERROR;
 }
-
