@@ -1012,9 +1012,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			part_ptr_list = get_part_list(partition);
 			if (part_ptr_list) {
 				part_ptr = list_peek(part_ptr_list);
-				job_ptr->priority_array = xmalloc(
-						sizeof(uint32_t) *
-						list_count(part_ptr_list));
 			} else {
 				verbose("Invalid partition (%s) for job_id %u",
 					partition, job_id);
@@ -4222,10 +4219,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr = *job_pptr;
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->part_ptr_list = part_ptr_list;
-	if (part_ptr_list) {
-		job_ptr->priority_array = xmalloc(sizeof(uint32_t) *
-						  list_count(part_ptr_list));
-	}
 
 	part_ptr_list = NULL;
 	if ((error_code = checkpoint_alloc_jobinfo(&(job_ptr->check_job)))) {
@@ -6990,6 +6983,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			xfree(job_ptr->partition);
 			job_ptr->partition = xstrdup(job_specs->partition);
 			job_ptr->part_ptr = tmp_part_ptr;
+			xfree(job_ptr->priority_array);	/* Rebuilt in plugin */
 			FREE_NULL_LIST(job_ptr->part_ptr_list);
 			job_ptr->part_ptr_list = part_ptr_list;
 			part_ptr_list = NULL;	/* nothing to free */

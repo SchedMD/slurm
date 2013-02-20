@@ -686,12 +686,16 @@ static uint32_t _get_priority_internal(time_t start_time,
 		+ job_ptr->prio_factors->priority_qos
 		- (double)(job_ptr->prio_factors->nice - NICE_OFFSET);
 
-	if (job_ptr->part_ptr_list && job_ptr->priority_array) {
+	if (job_ptr->part_ptr_list) {
 		struct part_record *part_ptr;
 		double priority_part;
 		ListIterator part_iterator;
 		int i = 0;
 
+		if (!job_ptr->priority_array) {
+			job_ptr->priority_array = xmalloc(sizeof(uint32_t) *
+					list_count(job_ptr->part_ptr_list));
+		}
 		part_iterator = list_iterator_create(job_ptr->part_ptr_list);
 		while ((part_ptr = (struct part_record *)
 				   list_next(part_iterator))) {
