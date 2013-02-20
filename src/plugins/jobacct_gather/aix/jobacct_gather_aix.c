@@ -271,8 +271,9 @@ extern void jobacct_gather_p_poll_data(
 						    prec->pid);
 
 				/* tally their usage */
-				jobacct->max_rss = jobacct->tot_rss =
-					MAX(jobacct->max_rss, (int)prec->rss);
+				jobacct->max_rss = MAX(jobacct->max_rss,
+						       (int)prec->rss);
+				jobacct->tot_rss = (int) prec->rss;
 				total_job_mem += jobacct->max_rss;
 				jobacct->max_vsize = jobacct->tot_vsize =
 					MAX(jobacct->max_vsize,
