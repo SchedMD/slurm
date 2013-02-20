@@ -809,7 +809,7 @@ static int _attempt_backfill(void)
 		now = time(NULL);
 		if (j != SLURM_SUCCESS) {
 			job_ptr->time_limit = orig_time_limit;
-			job_ptr->start_time = 0;	
+			job_ptr->start_time = 0;
 			continue;	/* not runable */
 		}
 
@@ -839,12 +839,12 @@ static int _attempt_backfill(void)
 			}
 			if (rc == ESLURM_ACCOUNTING_POLICY) {
 				/* Unknown future start time, just skip job */
-				job_ptr->start_time = 0;	
+				job_ptr->start_time = 0;
 				continue;
 			} else if (rc != SLURM_SUCCESS) {
 				/* Planned to start job, but something bad
 				 * happended. */
-				job_ptr->start_time = 0;	
+				job_ptr->start_time = 0;
 				break;
 			} else {
 				/* Started this job, move to next one */
