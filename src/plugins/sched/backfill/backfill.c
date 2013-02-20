@@ -593,9 +593,37 @@ static int _attempt_backfill(void)
 	}
 	while ((job_queue_rec = (job_queue_rec_t *)
 				list_pop_bottom(job_queue, sort_job_queue2))) {
-		job_test_count++;
 		job_ptr  = job_queue_rec->job_ptr;
+		orig_time_limit = job_ptr->time_limit;
+
+		if ((time(NULL) - sched_start) >= sched_timeout) {
+			uint32_t save_time_limit = job_ptr->time_limit;
+			job_ptr->time_limit = orig_time_limit;
+			if (debug_flags & DEBUG_FLAG_BACKFILL) {
+				END_TIMER;
+				info("backfill: yielding locks after testing "
+				     "%d jobs, %s",
+				     job_test_count, TIME_STR);
+			}
+			if (_yield_locks(1)) {
+				if (debug_flags & DEBUG_FLAG_BACKFILL) {
+					info("backfill: system state changed, "
+					     "breaking out after testing %d "
+					     "jobs", job_test_count);
+				}
+				rc = 1;
+				break;
+			}
+			job_ptr->time_limit = save_time_limit;
+			/* Reset backfill scheduling timers, resume testing */
+			sched_start = time(NULL);
+			job_test_count = 0;
+			START_TIMER;
+		}
+
 		part_ptr = job_queue_rec->part_ptr;
+		job_test_count++;
+
 		xfree(job_queue_rec);
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;	/* started in other partition */
@@ -685,7 +713,6 @@ static int _attempt_backfill(void)
 						 part_ptr->max_time);
 		}
 		comp_time_limit = time_limit;
-		orig_time_limit = job_ptr->time_limit;
 		qos_ptr = job_ptr->qos_ptr;
 		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE) &&
 		    slurm_get_preempt_mode())
@@ -762,30 +789,6 @@ static int _attempt_backfill(void)
 		resv_bitmap = bit_copy(avail_bitmap);
 		bit_not(resv_bitmap);
 
-		if ((time(NULL) - sched_start) >= sched_timeout) {
-			uint32_t save_time_limit = job_ptr->time_limit;
-			job_ptr->time_limit = orig_time_limit;
-			if (debug_flags & DEBUG_FLAG_BACKFILL) {
-				END_TIMER;
-				info("backfill: yielding locks after testing "
-				     "%d jobs, %s",
-				     job_test_count, TIME_STR);
-			}
-			if (_yield_locks(1)) {
-				if (debug_flags & DEBUG_FLAG_BACKFILL) {
-					info("backfill: system state changed, "
-					     "breaking out after testing %d "
-					     "jobs", job_test_count);
-				}
-				rc = 1;
-				break;
-			}
-			job_ptr->time_limit = save_time_limit;
-			/* Reset backfill scheduling timers, resume testing */
-			sched_start = time(NULL);
-			job_test_count = 0;
-			START_TIMER;
-		}
 		/* this is the time consuming operation */
 		debug2("backfill: entering _try_sched for job %u.",
 		       job_ptr->job_id);
