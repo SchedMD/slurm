@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
  -- BGQ - When cnodes fail in a timeout fashion correctly look up parent
     midplane.
  -- Correct sinfo "%c" (node's CPU count) output value for Bluegene systems.
+ -- Backfill - Responsive improvements for systems with large numbers of jobs
+    (>5000) and using the SchedulerParameters option bf_max_job_user.
 
 * Changes in SLURM 2.5.3
 ========================
