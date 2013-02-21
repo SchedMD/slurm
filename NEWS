@@ -26,6 +26,9 @@ documents those changes that are of interest to users and admins.
  -- slurmstepd: ensure that IO redirection openings from/to files correctly
     handle interruption
  -- BGQ - Able to handle when midplanes go into Hardware::SoftwareFailure
+ -- GRES - Correct tracking of specific resources used after slurmctld restart.
+    Counts would previously go negative as jobs terminate and decrement from
+    a base value of zero.
 
 * Changes in SLURM 2.5.3
 ========================
