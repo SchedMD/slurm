@@ -111,7 +111,7 @@ typedef struct node_space_map {
 
 /* Diag statistics */
 extern diag_stats_t slurmctld_diag_stats;
-int bf_last_ints = 0;
+int bf_last_yields = 0;
 
 /*********************** local variables *********************/
 static bool stop_backfill = false;
@@ -419,22 +419,24 @@ extern void backfill_reconfig(void)
 	config_flag = true;
 }
 
-static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2)
+static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2,
+			   int yield_sleep)
 {
-	long delta_t;
-	long bf_interval_usecs = backfill_interval * 1000000;
+	uint32_t yield_sleep_usecs = yield_sleep * 1000000;
+	uint32_t delta_t, real_time;
 
 	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
 	delta_t +=  tv2->tv_usec - tv1->tv_usec;
 
+	real_time = (delta_t - (bf_last_yields * yield_sleep_usecs));
+
 	slurmctld_diag_stats.bf_cycle_counter++;
-	slurmctld_diag_stats.bf_cycle_sum += (delta_t -(bf_last_ints *
-							bf_interval_usecs));
-   	slurmctld_diag_stats.bf_cycle_last = delta_t - (bf_last_ints *
-							bf_interval_usecs);
+	slurmctld_diag_stats.bf_cycle_sum += real_time;
+	slurmctld_diag_stats.bf_cycle_last = real_time;
+
 	slurmctld_diag_stats.bf_depth_sum += slurmctld_diag_stats.bf_last_depth;
-	slurmctld_diag_stats.bf_depth_try_sum += slurmctld_diag_stats.
-						 bf_last_depth_try;
+	slurmctld_diag_stats.bf_depth_try_sum +=
+		slurmctld_diag_stats.bf_last_depth_try;
 	if (slurmctld_diag_stats.bf_cycle_last >
 	    slurmctld_diag_stats.bf_cycle_max) {
 		slurmctld_diag_stats.bf_cycle_max = slurmctld_diag_stats.
@@ -493,7 +495,7 @@ static int _yield_locks(int secs)
 	part_update = last_part_update;
 
 	unlock_slurmctld(all_locks);
-	bf_last_ints++;
+	bf_last_yields++;
 	_my_sleep(secs);
 	lock_slurmctld(all_locks);
 
@@ -524,7 +526,7 @@ static int _attempt_backfill(void)
 	time_t now, sched_start, later_start, start_res, resv_end;
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
-	int sched_timeout = 2;
+	int sched_timeout = 2, yield_sleep = 1;
 	int rc = 0;
 	int job_test_count = 0;
 	uint32_t *uid = NULL, nuser = 0;
@@ -574,7 +576,7 @@ static int _attempt_backfill(void)
 	slurmctld_diag_stats.bf_last_depth = 0;
 	slurmctld_diag_stats.bf_last_depth_try = 0;
 	slurmctld_diag_stats.bf_when_last_cycle = now;
-	bf_last_ints = 0;
+	bf_last_yields = 0;
 	slurmctld_diag_stats.bf_active = 1;
 
 	node_space = xmalloc(sizeof(node_space_map_t) *
@@ -605,7 +607,7 @@ static int _attempt_backfill(void)
 				     "after testing %d jobs, %s",
 				     job_test_count, TIME_STR);
 			}
-			if (_yield_locks(1)) {
+			if (_yield_locks(yield_sleep)) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
 					info("backfill: system state changed, "
 					     "breaking out after testing %d "
@@ -737,7 +739,7 @@ static int _attempt_backfill(void)
 				     "after testing %d jobs, %s",
 				     job_test_count, TIME_STR);
 			}
-			if (_yield_locks(1)) {
+			if (_yield_locks(yield_sleep)) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
 					info("backfill: system state changed, "
 					     "breaking out after testing %d "
@@ -932,7 +934,7 @@ static int _attempt_backfill(void)
 	xfree(node_space);
 	list_destroy(job_queue);
 	gettimeofday(&bf_time2, NULL);
-	_do_diag_stats(&bf_time1, &bf_time2);
+	_do_diag_stats(&bf_time1, &bf_time2, yield_sleep);
 	if (debug_flags & DEBUG_FLAG_BACKFILL) {
 		END_TIMER;
 		info("backfill: completed testing %d jobs, %s",
