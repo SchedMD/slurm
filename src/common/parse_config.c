@@ -71,7 +71,7 @@ strong_alias(s_p_parse_file,		slurm_s_p_parse_file);
 
 #define BUFFER_SIZE 4096
 
-#define CONF_HASH_LEN 26
+#define CONF_HASH_LEN 173
 
 static regex_t keyvalue_re;
 static char *keyvalue_pattern =
@@ -100,16 +100,12 @@ struct s_p_values {
  */
 static int _conf_hashtbl_index(const char *key)
 {
-	int i;
-	int idx = 0;
+	unsigned int hashval;
 
 	xassert(key);
-	for (i = 0; i < 10; i++) {
-		if (key[i] == '\0')
-			break;
-		idx += tolower((int)key[i]);
-	}
-	return idx % CONF_HASH_LEN;
+	for (hashval = 0; *key != 0; key++)
+		hashval = tolower(*key) + 31 * hashval;
+	return hashval % CONF_HASH_LEN;
 }
 
 static void _conf_hashtbl_insert(s_p_hashtbl_t *hashtbl,
@@ -945,7 +941,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 
 /*
  * s_p_hashtbl_merge
- * 
+ *
  * Merge the contents of two s_p_hashtbl_t data structures. Anything in
  * from_hashtbl that does not also appear in to_hashtbl is transfered to it.
  * This is intended primary to support multiple lines of DEFAULT configuration

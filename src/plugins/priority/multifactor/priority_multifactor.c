@@ -145,6 +145,8 @@ extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc);
 extern double priority_p_calc_fs_factor(long double usage_efctv,
 					long double shares_norm);
 
+extern uint16_t part_max_priority;
+
 /*
  * apply decay factor to all associations usage_raw
  * IN: decay_factor - decay to be applied to each associations' used
@@ -684,6 +686,35 @@ static uint32_t _get_priority_internal(time_t start_time,
 		+ job_ptr->prio_factors->priority_qos
 		- (double)(job_ptr->prio_factors->nice - NICE_OFFSET);
 
+	if (job_ptr->part_ptr_list) {
+		struct part_record *part_ptr;
+		double priority_part;
+		ListIterator part_iterator;
+		int i = 0;
+
+		if (!job_ptr->priority_array) {
+			job_ptr->priority_array = xmalloc(sizeof(uint32_t) *
+					list_count(job_ptr->part_ptr_list));
+		}
+		part_iterator = list_iterator_create(job_ptr->part_ptr_list);
+		while ((part_ptr = (struct part_record *)
+				   list_next(part_iterator))) {
+			priority_part = part_ptr->priority /
+					(double)part_max_priority *
+					(double)weight_part;
+			job_ptr->priority_array[i] = (uint32_t)
+					(job_ptr->prio_factors->priority_age
+					+ job_ptr->prio_factors->priority_fs
+					+ job_ptr->prio_factors->priority_js
+					+ priority_part
+					+ job_ptr->prio_factors->priority_qos
+					- (double)(job_ptr->prio_factors->nice
+					- NICE_OFFSET));
+			debug("Job %u has more than one partition (%s)(%u)",
+			      job_ptr->job_id, part_ptr->name,
+			      job_ptr->priority_array[i++]);
+		}
+	}
 	/* Priority 0 is reserved for held jobs */
 	if (priority < 1)
 		priority = 1;

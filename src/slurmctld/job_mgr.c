@@ -184,7 +184,7 @@ static int  _reset_detail_bitmaps(struct job_record *job_ptr);
 static void _reset_step_bitmaps(struct job_record *job_ptr);
 static int  _resume_job_nodes(struct job_record *job_ptr, bool indf_susp);
 static void _send_job_kill(struct job_record *job_ptr);
-static void _set_job_id(struct job_record *job_ptr);
+static int  _set_job_id(struct job_record *job_ptr);
 static void _signal_batch_job(struct job_record *job_ptr, uint16_t signal);
 static void _signal_job(struct job_record *job_ptr, int signal);
 static void _suspend_job(struct job_record *job_ptr, uint16_t op,
@@ -1010,14 +1010,15 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		part_ptr = find_part_record (partition);
 		if (part_ptr == NULL) {
 			part_ptr_list = get_part_list(partition);
-			if (part_ptr_list)
+			if (part_ptr_list) {
 				part_ptr = list_peek(part_ptr_list);
-		}
-		if (part_ptr == NULL) {
-			verbose("Invalid partition (%s) for job_id %u",
-				partition, job_id);
-			/* not fatal error, partition could have been removed,
-			 * reset_job_bitmaps() will clean-up this job */
+			} else {
+				verbose("Invalid partition (%s) for job_id %u",
+					partition, job_id);
+				/* not fatal error, partition could have been
+				 * removed, reset_job_bitmaps() will clean-up
+				 * this job */
+			}
 		}
 
 		safe_unpackstr_xmalloc(&name, &name_len, buffer);
@@ -2714,7 +2715,8 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 		return job_ptr_new;
 
 	/* Set job-specific ID and hash table */
-	_set_job_id(job_ptr_new);
+	if (_set_job_id(job_ptr_new))
+		fatal("job array create_job_record error");
 	_add_job_hash(job_ptr_new);
 
 	/* Copy most of original job data.
@@ -4217,6 +4219,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr = *job_pptr;
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->part_ptr_list = part_ptr_list;
+
 	part_ptr_list = NULL;
 	if ((error_code = checkpoint_alloc_jobinfo(&(job_ptr->check_job)))) {
 		error("Failed to allocate checkpoint info for job");
@@ -4986,10 +4989,13 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 
 	job_ptr->partition = xstrdup(job_desc->partition);
 
-	if (job_desc->job_id != NO_VAL)		/* already confirmed unique */
+	if (job_desc->job_id != NO_VAL) {	/* already confirmed unique */
 		job_ptr->job_id = job_desc->job_id;
-	else
-		_set_job_id(job_ptr);
+	} else {
+		error_code = _set_job_id(job_ptr);
+		if (error_code)
+			return error_code;
+	}
 
 	if (job_desc->name)
 		job_ptr->name = xstrdup(job_desc->name);
@@ -5555,6 +5561,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->partition);
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
+	xfree(job_ptr->priority_array);
 	slurm_destroy_priority_factors_object(job_ptr->prio_factors);
 	xfree(job_ptr->resp_host);
 	xfree(job_ptr->resv_name);
@@ -6463,7 +6470,7 @@ extern uint32_t get_next_job_id(void)
  * _set_job_id - set a default job_id, insure that it is unique
  * IN job_ptr - pointer to the job_record
  */
-static void _set_job_id(struct job_record *job_ptr)
+static int _set_job_id(struct job_record *job_ptr)
 {
 	int i;
 	uint32_t new_id;
@@ -6480,12 +6487,14 @@ static void _set_job_id(struct job_record *job_ptr)
 		new_id = job_id_sequence;
 		if (find_job_record(new_id) == NULL) {
 			job_ptr->job_id = new_id;
-			return;
+			return SLURM_SUCCESS;
 		}
 	}
-	fatal("We have exhausted our supply of valid job id values."
+	error("We have exhausted our supply of valid job id values. "
 	      "FirstJobId=%u MaxJobId=%u", slurmctld_conf.first_job_id,
 	      slurmctld_conf.max_job_id);
+	job_ptr->job_id = NO_VAL;
+	return EAGAIN;
 }
 
 
@@ -6974,6 +6983,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			xfree(job_ptr->partition);
 			job_ptr->partition = xstrdup(job_specs->partition);
 			job_ptr->part_ptr = tmp_part_ptr;
+			xfree(job_ptr->priority_array);	/* Rebuilt in plugin */
 			FREE_NULL_LIST(job_ptr->part_ptr_list);
 			job_ptr->part_ptr_list = part_ptr_list;
 			part_ptr_list = NULL;	/* nothing to free */

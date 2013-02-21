@@ -54,6 +54,7 @@ void *acct_db_conn = NULL;
 uint32_t cluster_cpus = 50;
 int long_flag = 1;
 int exit_code = 0;
+uint16_t part_max_priority = 1;
 sshare_time_format_t time_format = SSHARE_TIME_MINS;
 char *time_format_string = "Minutes";
 time_t last_job_update = (time_t) 0;

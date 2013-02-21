@@ -15,6 +15,9 @@ documents those changes that are of interest to users and admins.
  -- Added allocated memory to node information available (within the existing
     select_nodeinfo field of the node_info_t data structure). Added Allocated
     Memory to node information displayed by sview and scontrol commands.
+ -- Make sched/backfill the default scheduling plugin rather than sched/builtin
+    (FIFO).
+ -- Added support for a job having different priorities in different partitions.
 
 * Changes in SLURM 2.6.0pre1
 ============================

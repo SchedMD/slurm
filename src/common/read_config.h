@@ -135,7 +135,7 @@ extern char *default_plugstack;
 #define DEFAULT_SCHEDULER_PORT      7321
 #define DEFAULT_SCHED_LOG_LEVEL     0
 #define DEFAULT_SCHED_TIME_SLICE    30
-#define DEFAULT_SCHEDTYPE           "sched/builtin"
+#define DEFAULT_SCHEDTYPE           "sched/backfill"
 #ifdef HAVE_BG	/* Blue Gene specific default configuration parameters */
 #  define DEFAULT_SELECT_TYPE       "select/bluegene"
 #elif defined HAVE_CRAY

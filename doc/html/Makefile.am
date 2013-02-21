@@ -22,6 +22,7 @@ generated_html = \
 	dist_plane.html \
 	documentation.html \
 	download.html \
+	dynalloc.html \
 	elastic_computing.html \
 	faq.html \
 	gang_scheduling.html \

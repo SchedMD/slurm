@@ -1966,7 +1966,7 @@ void update_logging(void)
 	if (slurmctld_conf.slurmctld_logfile) {
 		rc = chown(slurmctld_conf.slurmctld_logfile,
 			   slurm_user_id, slurm_user_gid);
-		if (rc) {
+		if (rc && daemonize) {
 			error("chown(%s, %d, %d): %m",
 			      slurmctld_conf.slurmctld_logfile,
 			      (int) slurm_user_id, (int) slurm_user_gid);
@@ -1975,7 +1975,7 @@ void update_logging(void)
 	if (slurmctld_conf.sched_logfile) {
 		rc = chown(slurmctld_conf.sched_logfile,
 			   slurm_user_id, slurm_user_gid);
-		if (rc) {
+		if (rc && daemonize) {
 			error("chown(%s, %d, %d): %m",
 			      slurmctld_conf.sched_logfile,
 			      (int) slurm_user_id, (int) slurm_user_gid);

@@ -1063,6 +1063,9 @@ extern int sort_job_queue2(void *x, void *y)
 	bool has_resv1, has_resv2;
 	static time_t config_update = 0;
 	static bool preemption_enabled = true;
+	ListIterator part_iterator;
+	struct part_record *part_ptr;
+	uint32_t p1, p2;
 
 	/* The following block of code is designed to minimize run time in
 	 * typical configurations for this frequently executed function. */
@@ -1084,9 +1087,43 @@ extern int sort_job_queue2(void *x, void *y)
 	if (!has_resv1 && has_resv2)
 		return 1;
 
-	if (job_rec1->job_ptr->priority < job_rec2->job_ptr->priority)
+	p1 = job_rec1->job_ptr->priority;
+	if (job_rec1->job_ptr->part_ptr_list &&
+	    job_rec1->job_ptr->priority_array) {
+		int i = 0;
+		part_iterator = list_iterator_create(job_rec1->job_ptr
+				->part_ptr_list);
+		while ((part_ptr = (struct part_record *)
+				   list_next(part_iterator))) {
+			if (job_rec1->part_ptr == part_ptr) {
+				p1 = job_rec1->job_ptr->priority_array[i];
+				break;
+			}
+			i++;
+		}
+		list_iterator_destroy(part_iterator);
+	}
+
+	p2 = job_rec2->job_ptr->priority;
+	if (job_rec2->job_ptr->part_ptr_list &&
+	    job_rec2->job_ptr->priority_array) {
+		int i = 0;
+		part_iterator = list_iterator_create(job_rec2->job_ptr
+				->part_ptr_list);
+		while ((part_ptr = (struct part_record *)
+				   list_next(part_iterator))) {
+			if (job_rec2->part_ptr == part_ptr) {
+				p2 = job_rec2->job_ptr->priority_array[i];
+				break;
+			}
+			i++;
+		}
+		list_iterator_destroy(part_iterator);
+	}
+
+	if (p1 < p2)
 		return 1;
-	if (job_rec1->job_ptr->priority > job_rec2->job_ptr->priority)
+	if (p1 > p2)
 		return -1;
 	return 0;
 }
