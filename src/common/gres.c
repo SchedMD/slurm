@@ -1384,7 +1384,7 @@ extern int _node_config_validate(char *node_name, char *orig_config,
 		gres_data->topo_gres_cnt_avail =
 			xrealloc(gres_data->topo_gres_cnt_avail,
 				 set_cnt * sizeof(uint32_t));
-		if (gres_data->topo_gres_cnt_alloc == NULL)
+		if (gres_data->topo_gres_cnt_avail == NULL)
 			fatal("xrealloc: malloc failure");
 		for (i=0; i<gres_data->topo_cnt; i++)
 			FREE_NULL_BITMAP(gres_data->topo_gres_bitmap[i]);
