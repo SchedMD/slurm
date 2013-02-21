@@ -994,11 +994,13 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 #else
 	if (task->ifname != NULL) {
 #endif
+		int count = 0;
 		/* open file on task's stdin */
 		debug5("  stdin file name = %s", task->ifname);
 		do {
 			task->stdin_fd = open(task->ifname, O_RDONLY);
-		} while (task->stdin_fd == -1 && errno == EINTR);
+			++count;
+		} while (task->stdin_fd == -1 && errno == EINTR && count < 10);
 		if (task->stdin_fd == -1) {
 			error("Could not open stdin file %s: %m", task->ifname);
 			return SLURM_ERROR;
@@ -1050,11 +1052,13 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	if (task->ofname != NULL &&
 	    (!job->labelio || strcmp(task->ofname, "/dev/null")==0) ) {
 #endif
+		int count = 0;
 		/* open file on task's stdout */
 		debug5("  stdout file name = %s", task->ofname);
 		do {
 			task->stdout_fd = open(task->ofname, file_flags, 0666);
-		} while (task->stdout_fd == -1 && errno == EINTR);
+			++count;
+		} while (task->stdout_fd == -1 && errno == EINTR && count < 10);
 		if (task->stdout_fd == -1) {
 			error("Could not open stdout file %s: %m",
 			      task->ofname);
@@ -1110,11 +1114,13 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	if (task->efname != NULL &&
 	    (!job->labelio || strcmp(task->efname, "/dev/null")==0) ) {
 #endif
+		int count = 0;
 		/* open file on task's stdout */
 		debug5("  stderr file name = %s", task->efname);
 		do {
 			task->stderr_fd = open(task->efname, file_flags, 0666);
-		} while (task->stderr_fd == -1 && errno == EINTR);
+			++count;
+		} while (task->stderr_fd == -1 && errno == EINTR && count < 10);
 		if (task->stderr_fd == -1) {
 			error("Could not open stderr file %s: %m",
 			      task->efname);
