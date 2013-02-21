@@ -1963,8 +1963,14 @@ static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 	xassert(gres_data);
 	gres_node_ptr = (gres_node_state_t *) gres_data;
 	info("gres/%s: state for %s", gres_name, node_name);
-	info("  gres_cnt found:%u configured:%u avail:%u alloc:%u",
-	     gres_node_ptr->gres_cnt_found, gres_node_ptr->gres_cnt_config,
+	if (gres_node_ptr->gres_cnt_found == NO_VAL) {
+		snprintf(tmp_str, sizeof(tmp_str), "TBD");
+	} else {
+		snprintf(tmp_str, sizeof(tmp_str), "%u",
+			 gres_node_ptr->gres_cnt_found);
+	}
+	info("  gres_cnt found:%s configured:%u avail:%u alloc:%u",
+	     tmp_str, gres_node_ptr->gres_cnt_config,
 	     gres_node_ptr->gres_cnt_avail, gres_node_ptr->gres_cnt_alloc);
 	if (gres_node_ptr->gres_bit_alloc) {
 		bit_fmt(tmp_str, sizeof(tmp_str), gres_node_ptr->gres_bit_alloc);
