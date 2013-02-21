@@ -431,6 +431,12 @@ static int _get_job_req_field (lua_State *L)
 		lua_pushnumber (L, job_desc->shared);
 	} else if (!strcmp(name, "sockets_per_node")) {
 		lua_pushnumber (L, job_desc->sockets_per_node);
+	} else if (!strcmp(name, "std_err")) {
+		lua_pushstring (L, job_desc->std_err);
+	} else if (!strcmp(name, "std_in")) {
+		lua_pushstring (L, job_desc->std_in);
+	} else if (!strcmp(name, "std_out")) {
+		lua_pushstring (L, job_desc->std_out);
 	} else if (!strcmp(name, "threads_per_core")) {
 		lua_pushnumber (L, job_desc->threads_per_core);
 	} else if (!strcmp(name, "time_limit")) {
@@ -441,6 +447,8 @@ static int _get_job_req_field (lua_State *L)
 		lua_pushnumber (L, job_desc->user_id);
 	} else if (!strcmp(name, "wait4switch")) {
 		lua_pushnumber (L, job_desc->wait4switch);
+	} else if (!strcmp(name, "work_dir")) {
+		lua_pushstring (L, job_desc->work_dir);
 	} else if (!strcmp(name, "wckey")) {
 		lua_pushstring (L, job_desc->wckey);
 	} else {
@@ -559,6 +567,21 @@ static int _set_job_req_field (lua_State *L)
 		job_desc->shared = luaL_checknumber(L, 3);
 	} else if (!strcmp(name, "sockets_per_node")) {
 		job_desc->sockets_per_node = luaL_checknumber(L, 3);
+	} else if (!strcmp(name, "std_err")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->std_err);
+		if (strlen(value_str))
+			job_desc->std_err = xstrdup(value_str);
+	} else if (!strcmp(name, "std_in")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->std_in);
+		if (strlen(value_str))
+			job_desc->std_in = xstrdup(value_str);
+	} else if (!strcmp(name, "std_out")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->std_out);
+		if (strlen(value_str))
+			job_desc->std_out = xstrdup(value_str);
 	} else if (!strcmp(name, "threads_per_core")) {
 		job_desc->threads_per_core = luaL_checknumber(L, 3);
 	} else if (!strcmp(name, "time_limit")) {
@@ -572,6 +595,11 @@ static int _set_job_req_field (lua_State *L)
 		xfree(job_desc->wckey);
 		if (strlen(value_str))
 			job_desc->wckey = xstrdup(value_str);
+	} else if (!strcmp(name, "work_dir")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->work_dir);
+		if (strlen(value_str))
+			job_desc->work_dir = xstrdup(value_str);
 	} else {
 		error("_set_job_field: unrecognized field: %s", name);
 	}
