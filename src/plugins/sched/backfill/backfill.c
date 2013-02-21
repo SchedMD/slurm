@@ -727,7 +727,33 @@ static int _attempt_backfill(void)
 
 		/* Determine impact of any resource reservations */
 		later_start = now;
- TRY_LATER:	FREE_NULL_BITMAP(avail_bitmap);
+ TRY_LATER:
+		if ((time(NULL) - sched_start) >= sched_timeout) {
+			uint32_t save_time_limit = job_ptr->time_limit;
+			job_ptr->time_limit = orig_time_limit;
+			if (debug_flags & DEBUG_FLAG_BACKFILL) {
+				END_TIMER;
+				info("backfill: completed yielding locks 2"
+				     "after testing %d jobs, %s",
+				     job_test_count, TIME_STR);
+			}
+			if (_yield_locks(1)) {
+				if (debug_flags & DEBUG_FLAG_BACKFILL) {
+					info("backfill: system state changed, "
+					     "breaking out after testing %d "
+					     "jobs", job_test_count);
+				}
+				rc = 1;
+				break;
+			}
+			job_ptr->time_limit = save_time_limit;
+			/* Reset backfill scheduling timers, resume testing */
+			sched_start = time(NULL);
+			job_test_count = 1;
+			START_TIMER;
+		}
+
+		FREE_NULL_BITMAP(avail_bitmap);
 		FREE_NULL_BITMAP(exc_core_bitmap);
 		start_res   = later_start;
 		later_start = 0;
