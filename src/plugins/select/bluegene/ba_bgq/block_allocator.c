@@ -639,12 +639,13 @@ extern int check_and_set_mp_list(List mps)
 				continue;
 			else if (ba_switch->usage
 				 & BG_SWITCH_CABLE_ERROR_FULL) {
-				error("check_and_set_mp_list: Somehow we got "
-				      "a switch with an error set in it.  "
-				      "This should never happen except "
-				      "on a system with missing cables such "
-				      "as a half rack system. %u",
-				      ba_switch->usage);
+				debug2("check_and_set_mp_list: We have "
+				       "a switch with an error set in it.  "
+				       "This can happen on a system with "
+				       "missing cables such as a half rack "
+				       "system, or when a nodeboard has "
+				       "been set in a service state. %u",
+				       ba_switch->usage);
 				continue;
 			}
 
