@@ -154,6 +154,102 @@ static void _bridge_status_disconnect()
 	}
 }
 
+/* ba_system_mutex and block_state_mutex must be locked before this */
+static void _handle_soft_error_midplane(ba_mp_t *ba_mp,
+					EnumWrapper<Hardware::State> state,
+					bool print_debug)
+{
+	ListIterator itr, itr2;
+	bg_record_t *bg_record;
+
+	if ((state != Hardware::Available)
+	    && (state != Hardware::SoftwareFailure)) {
+		error("_handle_soft_error_midplane: The state %s isn't "
+		      "handled here",
+		      bridge_hardware_state_string(state.toValue()));
+		return;
+	}
+
+	assert(ba_mp);
+
+	if (!ba_mp->cnode_err_bitmap)
+		ba_mp->cnode_err_bitmap = bit_alloc(bg_conf->mp_cnode_cnt);
+
+	if (state == Hardware::SoftwareFailure)
+		bit_nset(ba_mp->cnode_err_bitmap, 0,
+			 bit_size(ba_mp->cnode_err_bitmap)-1);
+	else {
+		if (bit_ffs(ba_mp->cnode_err_bitmap) == -1)
+			return;
+
+		bit_nclear(ba_mp->cnode_err_bitmap, 0,
+			   bit_size(ba_mp->cnode_err_bitmap)-1);
+	}
+
+	itr = list_iterator_create(bg_lists->main);
+	while ((bg_record = (bg_record_t *)list_next(itr))) {
+		float err_ratio;
+		ba_mp_t *found_ba_mp;
+
+		if (!bit_test(bg_record->mp_bitmap, ba_mp->index))
+			continue;
+
+		itr2 = list_iterator_create(bg_record->ba_mp_list);
+		while ((found_ba_mp = (ba_mp_t *)list_next(itr2))) {
+			if (!found_ba_mp->used
+			    || (found_ba_mp->index != ba_mp->index))
+				continue;
+
+			if (!found_ba_mp->cnode_err_bitmap)
+				found_ba_mp->cnode_err_bitmap =
+					bit_alloc(bg_conf->mp_cnode_cnt);
+
+			if (state == Hardware::SoftwareFailure) {
+				bit_nset(found_ba_mp->cnode_err_bitmap, 0,
+					 bit_size(found_ba_mp->
+						  cnode_err_bitmap)-1);
+				if (bg_record->cnode_cnt
+				    < bg_conf->mp_cnode_cnt)
+					bg_record->cnode_err_cnt =
+						bg_record->cnode_cnt;
+				else
+					bg_record->cnode_err_cnt +=
+						bg_conf->mp_cnode_cnt;
+			} else {
+				bit_nclear(found_ba_mp->cnode_err_bitmap, 0,
+					   bit_size(found_ba_mp->
+						    cnode_err_bitmap)-1);
+				if (bg_record->cnode_cnt
+				    < bg_conf->mp_cnode_cnt)
+					bg_record->cnode_err_cnt = 0;
+				else
+					bg_record->cnode_err_cnt -=
+						bg_conf->mp_cnode_cnt;
+			}
+			break;
+		}
+		list_iterator_destroy(itr2);
+
+		err_ratio = (float)bg_record->cnode_err_cnt
+			/ (float)bg_record->cnode_cnt;
+		bg_record->err_ratio = err_ratio * 100;
+
+		/* handle really small ratios (Shouldn't be needed
+		 * here but here just to be safe) */
+		if (!bg_record->err_ratio && bg_record->cnode_err_cnt)
+			bg_record->err_ratio = 1;
+
+		if (print_debug
+		    && !(bg_conf->slurm_debug_flags & DEBUG_FLAG_NO_REALTIME))
+			debug("_handle_soft_error_midplane: "
+			      "count in error for %s is %u with ratio at %u",
+			      bg_record->bg_block_id,
+			      bg_record->cnode_err_cnt,
+			      bg_record->err_ratio);
+	}
+	list_iterator_destroy(itr);
+}
+
 /* ba_system_mutex && block_state_mutex must be unlocked before this */
 static void _handle_bad_midplane(char *bg_down_node,
 				 EnumWrapper<Hardware::State> state,
@@ -883,11 +979,37 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 		 bg_conf->slurm_node_prefix, ba_mp->coord_str);
 	slurm_mutex_unlock(&ba_system_mutex);
 
-	if (mp_ptr->getState() != Hardware::Available) {
+	if (mp_ptr->getState() == Hardware::SoftwareFailure) {
+		slurm_mutex_lock(&block_state_mutex);
+		slurm_mutex_lock(&ba_system_mutex);
+		info("Midplane %s(%s), went into %s state",
+		     mp_ptr->getLocation().c_str(),
+		     ba_mp->coord_str,
+		     bridge_hardware_state_string(
+			     mp_ptr->getState().toValue()));
+		_handle_soft_error_midplane(ba_mp, mp_ptr->getState(), 0);
+		slurm_mutex_unlock(&ba_system_mutex);
+		slurm_mutex_unlock(&block_state_mutex);
+	} else if (mp_ptr->getState() != Hardware::Available) {
 		_handle_bad_midplane(bg_down_node, mp_ptr->getState(), 0);
 		/* no reason to continue */
 		return;
 	} else {
+		slurm_mutex_lock(&block_state_mutex);
+		slurm_mutex_lock(&ba_system_mutex);
+		if (ba_mp->cnode_err_bitmap
+		    && bit_ffs(ba_mp->cnode_err_bitmap) != -1) {
+			info("Midplane %s(%s), went into %s state",
+			     mp_ptr->getLocation().c_str(),
+			     ba_mp->coord_str,
+			     bridge_hardware_state_string(
+				     mp_ptr->getState().toValue()));
+			_handle_soft_error_midplane(
+				ba_mp, mp_ptr->getState(), 0);
+		}
+		slurm_mutex_unlock(&ba_system_mutex);
+		slurm_mutex_unlock(&block_state_mutex);
+
 		Node::ConstPtrs vec = bridge_get_midplane_nodes(
 			mp_ptr->getLocation());
 		if (!vec.empty()) {
@@ -1186,15 +1308,31 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 		     event.getLocation().c_str(),
 		     ba_mp->coord_str);
 		slurm_mutex_unlock(&ba_system_mutex);
-		return;
+		if (event.getPreviousState() == Hardware::SoftwareFailure) {
+			slurm_mutex_lock(&block_state_mutex);
+			slurm_mutex_lock(&ba_system_mutex);
+			_handle_soft_error_midplane(ba_mp, event.getState(), 1);
+			slurm_mutex_unlock(&ba_system_mutex);
+			slurm_mutex_unlock(&block_state_mutex);
+		}
+	} else if (event.getState() == Hardware::SoftwareFailure) {
+		info("Midplane %s(%s), went into %s state",
+		     event.getLocation().c_str(),
+		     ba_mp->coord_str,
+		     bridge_hardware_state_string(event.getState()));
+		slurm_mutex_unlock(&ba_system_mutex);
+		slurm_mutex_lock(&block_state_mutex);
+		slurm_mutex_lock(&ba_system_mutex);
+		_handle_soft_error_midplane(ba_mp, event.getState(), 1);
+		slurm_mutex_unlock(&ba_system_mutex);
+		slurm_mutex_unlock(&block_state_mutex);
+	} else {
+		/* Else mark the midplane down */
+		snprintf(bg_down_node, sizeof(bg_down_node), "%s%s",
+			 bg_conf->slurm_node_prefix, ba_mp->coord_str);
+		slurm_mutex_unlock(&ba_system_mutex);
+		_handle_bad_midplane(bg_down_node, event.getState(), 1);
 	}
-
-	/* Else mark the midplane down */
-	snprintf(bg_down_node, sizeof(bg_down_node), "%s%s",
-		 bg_conf->slurm_node_prefix, ba_mp->coord_str);
-	slurm_mutex_unlock(&ba_system_mutex);
-
-	_handle_bad_midplane(bg_down_node, event.getState(), 1);
 
 	return;
 

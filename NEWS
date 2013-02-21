@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
     (>5000) and using the SchedulerParameters option bf_max_job_user.
  -- slurmstepd: ensure that IO redirection openings from/to files correctly
     handle interruption
+ -- BGQ - Able to handle when midplanes go into Hardware::SoftwareFailure
 
 * Changes in SLURM 2.5.3
 ========================
