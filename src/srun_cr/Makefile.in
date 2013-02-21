@@ -54,7 +54,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-bin_PROGRAMS = srun_cr$(EXEEXT)
+@WITH_BLCR_TRUE@bin_PROGRAMS = srun_cr$(EXEEXT)
 subdir = src/srun_cr
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -103,12 +103,16 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_srun_cr_OBJECTS = srun_cr.$(OBJEXT)
+am__srun_cr_SOURCES_DIST = srun_cr.c
+@WITH_BLCR_TRUE@am_srun_cr_OBJECTS = srun_cr.$(OBJEXT)
+am__EXTRA_srun_cr_SOURCES_DIST = srun_cr.c
 srun_cr_OBJECTS = $(am_srun_cr_OBJECTS)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
-srun_cr_DEPENDENCIES = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1)
+@WITH_BLCR_TRUE@am__DEPENDENCIES_2 =  \
+@WITH_BLCR_TRUE@	$(top_builddir)/src/api/libslurm.o \
+@WITH_BLCR_TRUE@	$(am__DEPENDENCIES_1)
+@WITH_BLCR_TRUE@srun_cr_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+@WITH_BLCR_TRUE@	$(am__DEPENDENCIES_1)
 srun_cr_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(srun_cr_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -125,8 +129,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(srun_cr_SOURCES)
-DIST_SOURCES = $(srun_cr_SOURCES)
+SOURCES = $(srun_cr_SOURCES) $(EXTRA_srun_cr_SOURCES)
+DIST_SOURCES = $(am__srun_cr_SOURCES_DIST) \
+	$(am__EXTRA_srun_cr_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -344,13 +349,14 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
-INCLUDES = -I$(top_srcdir) $(BLCR_CPPFLAGS)
-srun_cr_SOURCES = srun_cr.c
-convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
-srun_cr_LDADD = $(convenience_libs) $(BLCR_LIBS)
-srun_cr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BLCR_LDFLAGS) \
-	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
+@WITH_BLCR_TRUE@INCLUDES = -I$(top_srcdir) $(BLCR_CPPFLAGS)
+@WITH_BLCR_TRUE@srun_cr_SOURCES = srun_cr.c
+@WITH_BLCR_TRUE@convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
+@WITH_BLCR_TRUE@srun_cr_LDADD = $(convenience_libs) $(BLCR_LIBS)
+@WITH_BLCR_TRUE@srun_cr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BLCR_LDFLAGS) \
+@WITH_BLCR_TRUE@	$(HWLOC_LDFLAGS) $(HWLOC_LIBS)
 
+@WITH_BLCR_FALSE@EXTRA_srun_cr_SOURCES = srun_cr.c
 all: all-am
 
 .SUFFIXES:
@@ -677,9 +683,9 @@ uninstall-am: uninstall-binPROGRAMS
 	uninstall-binPROGRAMS
 
 
-force:
-$(convenience_libs) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@WITH_BLCR_TRUE@force:
+@WITH_BLCR_TRUE@$(convenience_libs) : force
+@WITH_BLCR_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
