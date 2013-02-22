@@ -452,6 +452,8 @@ static int _distribute_tickets(List childern_list, uint32_t tickets)
 		if (assoc->usage->active_seqno 
 		    != assoc_mgr_root_assoc->usage->active_seqno)
 			continue;
+		if (fuzzy_equal(assoc->usage->usage_efctv, NO_VAL))
+			priority_p_set_assoc_usage(assoc);
 		fs = priority_p_calc_fs_factor(assoc->usage->usage_efctv, 
 					       assoc->usage->shares_norm);
 		sfsum += assoc->usage->shares_norm * fs;

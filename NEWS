@@ -29,6 +29,8 @@ documents those changes that are of interest to users and admins.
  -- GRES - Correct tracking of specific resources used after slurmctld restart.
     Counts would previously go negative as jobs terminate and decrement from
     a base value of zero.
+ -- Fix for priority/multifactor2 plugin to not assert when configured with
+    --enable-debug.
 
 * Changes in SLURM 2.5.3
 ========================
