@@ -414,9 +414,12 @@ static bg_record_t *_find_matching_block(List block_list,
 							     "cnodes went into "
 							     "error after no "
 							     "jobs were "
-							     "running.",
+							     "running, "
+							     "count %u%%.",
 							     bg_record->
-							     bg_block_id);
+							     bg_block_id,
+							     bg_record->
+							     err_ratio);
 
 						list_push(tmp_list,
 							  found_record);
