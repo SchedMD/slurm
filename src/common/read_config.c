@@ -2645,18 +2645,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	s_p_get_string(&conf->job_credential_public_certificate,
 		      "JobCredentialPublicCertificate", hashtbl);
 
-	if (!s_p_get_uint16(&conf->max_array_sz, "MaxArraySize", hashtbl))
-		conf->max_array_sz = DEFAULT_MAX_ARRAY_SIZE;
-
-	if (s_p_get_uint32(&conf->max_job_cnt, "MaxJobCount", hashtbl) &&
-	    (conf->max_job_cnt < 1))
-		fatal("MaxJobCount=%u, No jobs permitted", conf->max_job_cnt);
-	if (s_p_get_uint32(&conf->max_step_cnt, "MaxStepCount", hashtbl) &&
-	    (conf->max_step_cnt < 1)) {
-		fatal("MaxStepCount=%u, No steps permitted",
-		      conf->max_step_cnt);
-	}
-
 	if (!s_p_get_string(&conf->authtype, "AuthType", hashtbl))
 		conf->authtype = xstrdup(DEFAULT_AUTH_TYPE);
 
@@ -2729,8 +2717,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint32(&conf->first_job_id, "FirstJobId", hashtbl))
 		conf->first_job_id = DEFAULT_FIRST_JOB_ID;
-	if (!s_p_get_uint32(&conf->max_job_id, "MaxJobId", hashtbl))
-		conf->max_job_id = DEFAULT_MAX_JOB_ID;
 
 	s_p_get_string(&conf->gres_plugins, "GresTypes", hashtbl);
 
@@ -2863,11 +2849,29 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->mail_prog, "MailProg", hashtbl))
 		conf->mail_prog = xstrdup(DEFAULT_MAIL_PROG);
 
+
+	if (!s_p_get_uint16(&conf->max_array_sz, "MaxArraySize", hashtbl))
+		conf->max_array_sz = DEFAULT_MAX_ARRAY_SIZE;
+
 	if (!s_p_get_uint32(&conf->max_job_cnt, "MaxJobCount", hashtbl))
 		conf->max_job_cnt = DEFAULT_MAX_JOB_COUNT;
+	else if (conf->max_job_cnt < 1)
+		fatal("MaxJobCount=%u, No jobs permitted", conf->max_job_cnt);
 
 	if (!s_p_get_uint32(&conf->max_job_id, "MaxJobId", hashtbl))
 		conf->max_job_id = DEFAULT_MAX_JOB_ID;
+
+	if (conf->first_job_id > conf->max_job_id)
+		fatal("FirstJobId > MaxJobId");
+	else {
+		uint32_t tmp32 = conf->max_job_id - conf->first_job_id + 1;
+		if (conf->max_job_cnt > tmp32) {
+			/* Needed for job array support */
+			info("Resetting MaxJobCnt to %u "
+			     "(MaxJobId - FirstJobId + 1)", tmp32);
+			conf->max_job_cnt = tmp32;
+		}
+	}
 
 	if (s_p_get_uint32(&conf->max_mem_per_cpu,
 			   "MaxMemPerCPU", hashtbl)) {
@@ -2879,6 +2883,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint32(&conf->max_step_cnt, "MaxStepCount", hashtbl))
 		conf->max_step_cnt = DEFAULT_MAX_STEP_COUNT;
+	else if (conf->max_step_cnt < 1) {
+		fatal("MaxStepCount=%u, No steps permitted",
+		      conf->max_step_cnt);
+	}
 
 	if (!s_p_get_uint16(&conf->max_tasks_per_node, "MaxTasksPerNode",
 			    hashtbl)) {
