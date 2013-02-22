@@ -655,8 +655,9 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 	uint16_t cps = 0, cpus, vpus, sockets, sock_size;
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bitstr_t *core_map;
-	bool *sock_used, alloc_cores = false, alloc_sockets = false;
-	uint16_t ntasks_per_core = 0xffff;
+	bool *sock_used, *sock_avoid;
+	bool alloc_cores = false, alloc_sockets = false;
+	uint16_t ntasks_per_core = 0xffff, ntasks_per_socket = 0xffff;
 	int error_code = SLURM_SUCCESS;
 
 	if ((job_res == NULL) || (job_res->core_bitmap == NULL))
@@ -682,9 +683,13 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		    (mc_ptr->threads_per_core <  ntasks_per_core)) {
 			ntasks_per_core = mc_ptr->threads_per_core;
 		}
+
+		if (mc_ptr->ntasks_per_socket)
+			ntasks_per_socket = mc_ptr->ntasks_per_socket;
 	}
 
 	sock_size  = select_node_record[0].sockets;
+	sock_avoid = xmalloc(sock_size * sizeof(bool));
 	sock_start = xmalloc(sock_size * sizeof(uint32_t));
 	sock_end   = xmalloc(sock_size * sizeof(uint32_t));
 	sock_used  = xmalloc(sock_size * sizeof(bool));
@@ -711,6 +716,7 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 
 		if (sockets > sock_size) {
 			sock_size = sockets;
+			xrealloc(sock_avoid, sock_size * sizeof(bool));
 			xrealloc(sock_start, sock_size * sizeof(uint32_t));
 			xrealloc(sock_end,   sock_size * sizeof(uint32_t));
 			xrealloc(sock_used,  sock_size * sizeof(bool));
@@ -722,10 +728,40 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		}
 		core_cnt = 0;
 		cpus  = job_res->cpus[i];
+
+		if (ntasks_per_socket != 0xffff) {
+			int x_cpus;
+			uint32_t total_cpus = 0;
+			uint32_t *cpus_cnt = xmalloc(sizeof(uint32_t)* sockets);
+			for (s = 0; s < sockets; s++) {
+				for (j = sock_start[s]; j < sock_end[s]; j++) {
+					if (bit_test(core_map, j))
+						cpus_cnt[s] += vpus;
+				}
+				total_cpus += cpus_cnt[s];
+			}
+			for (s = 0; s < sockets && total_cpus > cpus; s++) {
+				if (cpus_cnt[s] > ntasks_per_socket) {
+					x_cpus = cpus_cnt[s] -ntasks_per_socket;
+					cpus_cnt[s] = ntasks_per_socket;
+					total_cpus -= x_cpus;
+				}
+			}
+			for (s = 0; s < sockets && total_cpus > cpus; s++) {
+				if ((cpus_cnt[s] <= ntasks_per_socket) &&
+				    (total_cpus - cpus_cnt[s] >= cpus)) {
+					sock_avoid[s] = true;
+					total_cpus -= cpus_cnt[s];
+				}
+			}
+			xfree(cpus_cnt);
+		}
+
 		while (cpus > 0) {
 			uint16_t prev_cpus = cpus;
 			for (s = 0; s < sockets && cpus > 0; s++) {
-
+				if (sock_avoid[s])
+					continue;
 				while (sock_start[s] < sock_end[s]) {
 					if (bit_test(core_map,sock_start[s])) {
 						sock_used[s] = true;
@@ -754,6 +790,7 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				goto fini;
 			}
 		}
+
 		/* clear the rest of the cores in each socket
 		 * FIXME: do we need min_core/min_socket checks here? */
 		for (s = 0; s < sockets; s++) {
@@ -783,7 +820,8 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		/* advance 'c' to the beginning of the next node */
 		c += sockets * cps;
 	}
-fini:	xfree(sock_start);
+fini:	xfree(sock_avoid);
+	xfree(sock_start);
 	xfree(sock_end);
 	xfree(sock_used);
 	return error_code;

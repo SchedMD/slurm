@@ -31,6 +31,9 @@ documents those changes that are of interest to users and admins.
     a base value of zero.
  -- Fix for priority/multifactor2 plugin to not assert when configured with
     --enable-debug.
+ -- Select/cons_res - If the job request specified --ntasks-per-socket and the
+    allocation using is cores, then pack the tasks onto the sockets up to the
+    specified value.
 
 * Changes in SLURM 2.5.3
 ========================
