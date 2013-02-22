@@ -196,6 +196,8 @@ static void _handle_soft_error_midplane(ba_mp_t *ba_mp,
 
 		itr2 = list_iterator_create(bg_record->ba_mp_list);
 		while ((found_ba_mp = (ba_mp_t *)list_next(itr2))) {
+			int set_count;
+
 			if (!found_ba_mp->used
 			    || (found_ba_mp->index != ba_mp->index))
 				continue;
@@ -203,6 +205,12 @@ static void _handle_soft_error_midplane(ba_mp_t *ba_mp,
 			if (!found_ba_mp->cnode_err_bitmap)
 				found_ba_mp->cnode_err_bitmap =
 					bit_alloc(bg_conf->mp_cnode_cnt);
+
+			/* Check to make sure we haven't already got
+			   some of these or not through the cnode catch.
+			*/
+			set_count = bit_set_count(
+				found_ba_mp->cnode_err_bitmap);
 
 			if (state == Hardware::SoftwareFailure) {
 				bit_nset(found_ba_mp->cnode_err_bitmap, 0,
@@ -214,7 +222,8 @@ static void _handle_soft_error_midplane(ba_mp_t *ba_mp,
 						bg_record->cnode_cnt;
 				else
 					bg_record->cnode_err_cnt +=
-						bg_conf->mp_cnode_cnt;
+						(bg_conf->mp_cnode_cnt
+						 - set_count);
 			} else {
 				bit_nclear(found_ba_mp->cnode_err_bitmap, 0,
 					   bit_size(found_ba_mp->
@@ -223,8 +232,7 @@ static void _handle_soft_error_midplane(ba_mp_t *ba_mp,
 				    < bg_conf->mp_cnode_cnt)
 					bg_record->cnode_err_cnt = 0;
 				else
-					bg_record->cnode_err_cnt -=
-						bg_conf->mp_cnode_cnt;
+					bg_record->cnode_err_cnt -= set_count;
 			}
 			break;
 		}
