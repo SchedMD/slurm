@@ -78,6 +78,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_selecttype_info.h"
+#include "src/common/slurm_strcasestr.h"
 #include "src/common/strlcpy.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
@@ -2919,18 +2920,20 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 
 	if (s_p_get_string(&temp_str, "AccountingStorageEnforce", hashtbl)) {
-		if (strstr(temp_str, "1") || strstr(temp_str, "associations"))
+		if (slurm_strcasestr(temp_str, "1")
+		    || slurm_strcasestr(temp_str, "associations"))
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_ASSOCS;
 
-		if (strstr(temp_str, "2") || strstr(temp_str, "limits")) {
+		if (slurm_strcasestr(temp_str, "2")
+		    || slurm_strcasestr(temp_str, "limits")) {
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_ASSOCS;
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_LIMITS;
 		}
 
-		if (strstr(temp_str, "safe")) {
+		if (slurm_strcasestr(temp_str, "safe")) {
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_ASSOCS;
 			conf->accounting_storage_enforce
@@ -2939,7 +2942,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				|= ACCOUNTING_ENFORCE_SAFE;
 		}
 
-		if (strstr(temp_str, "wckeys")) {
+		if (slurm_strcasestr(temp_str, "wckeys")) {
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_ASSOCS;
 			conf->accounting_storage_enforce
@@ -2947,27 +2950,26 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->track_wckey = true;
 		}
 
-		if (strstr(temp_str, "qos")) {
+		if (slurm_strcasestr(temp_str, "qos")) {
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_ASSOCS;
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_QOS;
 		}
 
-		if (strstr(temp_str, "nojobs")) {
+		if (slurm_strcasestr(temp_str, "nojobs")) {
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_NO_JOBS;
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_NO_STEPS;
 		}
 
-		if (strstr(temp_str, "nosteps")) {
+		if (slurm_strcasestr(temp_str, "nosteps")) {
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_NO_STEPS;
 		}
 
-
-		if (strstr(temp_str, "all")) {
+		if (slurm_strcasestr(temp_str, "all")) {
 			conf->accounting_storage_enforce = 0xffff;
 			conf->track_wckey = true;
 		}
@@ -3129,9 +3131,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	conf->priority_flags = 0;
 	if (s_p_get_string(&temp_str, "PriorityFlags", hashtbl)) {
-		if (strstr(temp_str, "ACCRUE_ALWAYS"))
+		if (slurm_strcasestr(temp_str, "ACCRUE_ALWAYS"))
 			conf->priority_flags |= PRIORITY_FLAGS_ACCRUE_ALWAYS;
-		if (strstr(temp_str, "TICKET_BASED"))
+		if (slurm_strcasestr(temp_str, "TICKET_BASED"))
 			conf->priority_flags |= PRIORITY_FLAGS_TICKET_BASED;
 	}
 	if (s_p_get_string(&temp_str, "PriorityMaxAge", hashtbl)) {
@@ -3225,21 +3227,21 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	conf->private_data = 0; /* Set to default before parsing PrivateData */
 	if (s_p_get_string(&temp_str, "PrivateData", hashtbl)) {
-		if (strstr(temp_str, "account"))
+		if (slurm_strcasestr(temp_str, "account"))
 			conf->private_data |= PRIVATE_DATA_ACCOUNTS;
-		if (strstr(temp_str, "job"))
+		if (slurm_strcasestr(temp_str, "job"))
 			conf->private_data |= PRIVATE_DATA_JOBS;
-		if (strstr(temp_str, "node"))
+		if (slurm_strcasestr(temp_str, "node"))
 			conf->private_data |= PRIVATE_DATA_NODES;
-		if (strstr(temp_str, "partition"))
+		if (slurm_strcasestr(temp_str, "partition"))
 			conf->private_data |= PRIVATE_DATA_PARTITIONS;
-		if (strstr(temp_str, "reservation"))
+		if (slurm_strcasestr(temp_str, "reservation"))
 			conf->private_data |= PRIVATE_DATA_RESERVATIONS;
-		if (strstr(temp_str, "usage"))
+		if (slurm_strcasestr(temp_str, "usage"))
 			conf->private_data |= PRIVATE_DATA_USAGE;
-		if (strstr(temp_str, "user"))
+		if (slurm_strcasestr(temp_str, "user"))
 			conf->private_data |= PRIVATE_DATA_USERS;
-		if (strstr(temp_str, "all"))
+		if (slurm_strcasestr(temp_str, "all"))
 			conf->private_data = 0xffff;
 		xfree(temp_str);
 	}
