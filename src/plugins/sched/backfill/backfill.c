@@ -111,7 +111,7 @@ typedef struct node_space_map {
 
 /* Diag statistics */
 extern diag_stats_t slurmctld_diag_stats;
-int bf_last_ints = 0;
+int bf_last_yields = 0;
 
 /*********************** local variables *********************/
 static bool stop_backfill = false;
@@ -415,22 +415,24 @@ extern void backfill_reconfig(void)
 	config_flag = true;
 }
 
-static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2)
+static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2,
+			   int yield_sleep)
 {
-	long delta_t;
-	long bf_interval_usecs = backfill_interval * 1000000;
+	uint32_t yield_sleep_usecs = yield_sleep * 1000000;
+	uint32_t delta_t, real_time;
 
 	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
 	delta_t +=  tv2->tv_usec - tv1->tv_usec;
 
+	real_time = (delta_t - (bf_last_yields * yield_sleep_usecs));
+
 	slurmctld_diag_stats.bf_cycle_counter++;
-	slurmctld_diag_stats.bf_cycle_sum += (delta_t -(bf_last_ints *
-							bf_interval_usecs));
-   	slurmctld_diag_stats.bf_cycle_last = delta_t - (bf_last_ints *
-							bf_interval_usecs);
+	slurmctld_diag_stats.bf_cycle_sum += real_time;
+	slurmctld_diag_stats.bf_cycle_last = real_time;
+
 	slurmctld_diag_stats.bf_depth_sum += slurmctld_diag_stats.bf_last_depth;
-	slurmctld_diag_stats.bf_depth_try_sum += slurmctld_diag_stats.
-						 bf_last_depth_try;
+	slurmctld_diag_stats.bf_depth_try_sum +=
+		slurmctld_diag_stats.bf_last_depth_try;
 	if (slurmctld_diag_stats.bf_cycle_last >
 	    slurmctld_diag_stats.bf_cycle_max) {
 		slurmctld_diag_stats.bf_cycle_max = slurmctld_diag_stats.
@@ -489,7 +491,7 @@ static int _yield_locks(int secs)
 	part_update = last_part_update;
 
 	unlock_slurmctld(all_locks);
-	bf_last_ints++;
+	bf_last_yields++;
 	_my_sleep(secs);
 	lock_slurmctld(all_locks);
 
@@ -520,8 +522,8 @@ static int _attempt_backfill(void)
 	time_t now, sched_start, later_start, start_res, resv_end;
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
-	static int sched_timeout = 0;
-	int this_sched_timeout = 0, rc = 0;
+	int sched_timeout = 2, yield_sleep = 1;
+	int rc = 0;
 	int job_test_count = 0;
 	uint32_t *uid = NULL, nuser = 0;
 	uint16_t *njobs = NULL;
@@ -552,12 +554,6 @@ static int _attempt_backfill(void)
 	if (debug_flags & DEBUG_FLAG_BACKFILL)
 		info("backfill: beginning");
 	sched_start = now = time(NULL);
-	if (sched_timeout == 0) {
-		sched_timeout = slurm_get_msg_timeout() / 2;
-		sched_timeout = MAX(sched_timeout, 1);
-		sched_timeout = MIN(sched_timeout, 10);
-	}
-	this_sched_timeout = sched_timeout;
 
 	if (slurm_get_root_filter())
 		filter_root = true;
@@ -577,7 +573,7 @@ static int _attempt_backfill(void)
 	slurmctld_diag_stats.bf_last_depth = 0;
 	slurmctld_diag_stats.bf_last_depth_try = 0;
 	slurmctld_diag_stats.bf_when_last_cycle = now;
-	bf_last_ints = 0;
+	bf_last_yields = 0;
 	slurmctld_diag_stats.bf_active = 1;
 
 	node_space = xmalloc(sizeof(node_space_map_t) *
@@ -596,9 +592,37 @@ static int _attempt_backfill(void)
 	}
 	while ((job_queue_rec = (job_queue_rec_t *)
 				list_pop_bottom(job_queue, sort_job_queue2))) {
-		job_test_count++;
 		job_ptr  = job_queue_rec->job_ptr;
+		orig_time_limit = job_ptr->time_limit;
+
+		if ((time(NULL) - sched_start) >= sched_timeout) {
+			uint32_t save_time_limit = job_ptr->time_limit;
+			job_ptr->time_limit = orig_time_limit;
+			if (debug_flags & DEBUG_FLAG_BACKFILL) {
+				END_TIMER;
+				info("backfill: completed yielding locks "
+				     "after testing %d jobs, %s",
+				     job_test_count, TIME_STR);
+			}
+			if (_yield_locks(yield_sleep)) {
+				if (debug_flags & DEBUG_FLAG_BACKFILL) {
+					info("backfill: system state changed, "
+					     "breaking out after testing %d "
+					     "jobs", job_test_count);
+				}
+				rc = 1;
+				break;
+			}
+			job_ptr->time_limit = save_time_limit;
+			/* Reset backfill scheduling timers, resume testing */
+			sched_start = time(NULL);
+			job_test_count = 0;
+			START_TIMER;
+		}
+
 		part_ptr = job_queue_rec->part_ptr;
+		job_test_count++;
+
 		xfree(job_queue_rec);
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;	/* started in other partition */
@@ -620,8 +644,10 @@ static int _attempt_backfill(void)
 			for (j = 0; j < nuser; j++) {
 				if (job_ptr->user_id == uid[j]) {
 					njobs[j]++;
-					debug2("backfill: user %u: #jobs %u",
-					       uid[j], njobs[j]);
+					if (debug_flags & DEBUG_FLAG_BACKFILL)
+						debug("backfill: user %u: "
+						      "#jobs %u",
+						      uid[j], njobs[j]);
 					break;
 				}
 			}
@@ -635,18 +661,21 @@ static int _attempt_backfill(void)
 					      "queue. Consider increasing "
 					      "BF_MAX_USERS");
 				}
-				debug2("backfill: found new user %u. "
-				       "Total #users now %u",
-				       job_ptr->user_id, nuser);
+				if (debug_flags & DEBUG_FLAG_BACKFILL)
+					debug2("backfill: found new user %u. "
+					       "Total #users now %u",
+					       job_ptr->user_id, nuser);
 			} else {
 				if (njobs[j] > max_backfill_job_per_user) {
 					/* skip job */
-					debug("backfill: have already checked "
-					      "%u jobs for user %u; skipping "
-					      "job %u",
-					      max_backfill_job_per_user,
-					      job_ptr->user_id,
-					      job_ptr->job_id);
+					if (debug_flags & DEBUG_FLAG_BACKFILL)
+						debug("backfill: have already "
+						      "checked %u jobs for "
+						      "user %u; skipping "
+						      "job %u",
+						      max_backfill_job_per_user,
+						      job_ptr->user_id,
+						      job_ptr->job_id);
 					continue;
 				}
 			}
@@ -694,7 +723,6 @@ static int _attempt_backfill(void)
 						 part_ptr->max_time);
 		}
 		comp_time_limit = time_limit;
-		orig_time_limit = job_ptr->time_limit;
 		qos_ptr = job_ptr->qos_ptr;
 		if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE) &&
 		    slurm_get_preempt_mode())
@@ -704,7 +732,33 @@ static int _attempt_backfill(void)
 
 		/* Determine impact of any resource reservations */
 		later_start = now;
- TRY_LATER:	FREE_NULL_BITMAP(avail_bitmap);
+ TRY_LATER:
+		if ((time(NULL) - sched_start) >= sched_timeout) {
+			uint32_t save_time_limit = job_ptr->time_limit;
+			job_ptr->time_limit = orig_time_limit;
+			if (debug_flags & DEBUG_FLAG_BACKFILL) {
+				END_TIMER;
+				info("backfill: completed yielding locks 2"
+				     "after testing %d jobs, %s",
+				     job_test_count, TIME_STR);
+			}
+			if (_yield_locks(yield_sleep)) {
+				if (debug_flags & DEBUG_FLAG_BACKFILL) {
+					info("backfill: system state changed, "
+					     "breaking out after testing %d "
+					     "jobs", job_test_count);
+				}
+				rc = 1;
+				break;
+			}
+			job_ptr->time_limit = save_time_limit;
+			/* Reset backfill scheduling timers, resume testing */
+			sched_start = time(NULL);
+			job_test_count = 1;
+			START_TIMER;
+		}
+
+		FREE_NULL_BITMAP(avail_bitmap);
 		FREE_NULL_BITMAP(exc_core_bitmap);
 		start_res   = later_start;
 		later_start = 0;
@@ -771,30 +825,6 @@ static int _attempt_backfill(void)
 		resv_bitmap = bit_copy(avail_bitmap);
 		bit_not(resv_bitmap);
 
-		if ((time(NULL) - sched_start) >= this_sched_timeout) {
-			uint32_t save_time_limit = job_ptr->time_limit;
-			job_ptr->time_limit = orig_time_limit;
-			if (debug_flags & DEBUG_FLAG_BACKFILL) {
-				END_TIMER;
-				info("backfill: yielding locks after testing "
-				     "%d jobs, %s",
-				     job_test_count, TIME_STR);
-			}
-			if (_yield_locks(backfill_interval)) {
-				if (debug_flags & DEBUG_FLAG_BACKFILL) {
-					info("backfill: system state changed, "
-					     "breaking out after testing %d "
-					     "jobs", job_test_count);
-				}
-				rc = 1;
-				break;
-			}
-			job_ptr->time_limit = save_time_limit;
-			/* Reset backfill scheduling timers, resume testing */
-			sched_start = time(NULL);
-			job_test_count = 0;
-			START_TIMER;
-		}
 		/* this is the time consuming operation */
 		debug2("backfill: entering _try_sched for job %u.",
 		       job_ptr->job_id);
@@ -810,7 +840,7 @@ static int _attempt_backfill(void)
 		now = time(NULL);
 		if (j != SLURM_SUCCESS) {
 			job_ptr->time_limit = orig_time_limit;
-			job_ptr->start_time = 0;	
+			job_ptr->start_time = 0;
 			continue;	/* not runable */
 		}
 
@@ -840,12 +870,12 @@ static int _attempt_backfill(void)
 			}
 			if (rc == ESLURM_ACCOUNTING_POLICY) {
 				/* Unknown future start time, just skip job */
-				job_ptr->start_time = 0;	
+				job_ptr->start_time = 0;
 				continue;
 			} else if (rc != SLURM_SUCCESS) {
 				/* Planned to start job, but something bad
 				 * happended. */
-				job_ptr->start_time = 0;	
+				job_ptr->start_time = 0;
 				break;
 			} else {
 				/* Started this job, move to next one */
@@ -909,7 +939,7 @@ static int _attempt_backfill(void)
 	xfree(node_space);
 	list_destroy(job_queue);
 	gettimeofday(&bf_time2, NULL);
-	_do_diag_stats(&bf_time1, &bf_time2);
+	_do_diag_stats(&bf_time1, &bf_time2, yield_sleep);
 	if (debug_flags & DEBUG_FLAG_BACKFILL) {
 		END_TIMER;
 		info("backfill: completed testing %d jobs, %s",

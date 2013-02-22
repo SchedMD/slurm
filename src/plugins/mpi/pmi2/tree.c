@@ -4,32 +4,32 @@
  *  Copyright (C) 2011-2012 National University of Defense Technology.
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.
  *  All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <https://computing.llnl.gov/linux/slurm/>.
+ *  For details, see <http://www.schedmd.com/slurmdocs/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -72,7 +72,7 @@ static char *tree_cmd_names[] = {
 	"TREE_CMD_SPAWN_RESP",
 	NULL,
 };
-	
+
 static int
 _handle_kvs_fence(int fd, Buf buf)
 {
@@ -82,7 +82,7 @@ _handle_kvs_fence(int fd, Buf buf)
 	safe_unpack32(&from_nodeid, buf);
 	safe_unpackstr_xmalloc(&from_node, &temp32, buf);
 	safe_unpack32(&num_children, buf);
-	
+
 	debug3("mpi/pmi2: in _handle_kvs_fence, from node %u(%s) representing"
 	       " %u offspring", from_nodeid, from_node, num_children);
 
@@ -158,7 +158,7 @@ _handle_spawn(int fd, Buf buf)
 	spawn_resp_t *resp = NULL;
 
 	debug3("mpi/pmi2: in _handle_spawn");
-	
+
 	rc = spawn_req_unpack(&req, buf);
 	if (rc != SLURM_SUCCESS) {
 		error("mpi/pmi2: failed to unpack spawn request spawn cmd");
@@ -176,7 +176,7 @@ _handle_spawn(int fd, Buf buf)
 	resp->seq = req->seq;
 	resp->jobid = NULL;
 	resp->error_cnt = 0;
-	
+
 	/* fork srun */
 	rc = spawn_job_do_spawn(req);
 	if (rc != SLURM_SUCCESS) {
@@ -203,7 +203,7 @@ _send_task_spawn_resp_pmi20(spawn_resp_t *spawn_resp, int task_fd,
 	int i, rc;
 	client_resp_t *task_resp;
 	char *error_codes = NULL;
-	
+
 	task_resp = client_resp_new();
 	client_resp_append(task_resp,
 			   CMD_KEY"="SPAWNRESP_CMD";"
@@ -221,7 +221,7 @@ _send_task_spawn_resp_pmi20(spawn_resp_t *spawn_resp, int task_fd,
 		} else {
 			xstrfmtcat(error_codes, "%d", spawn_resp->error_codes[0]);
 		}
-			
+
 		for (i = 1; i < spawn_resp->error_cnt; i ++) {
 			xstrfmtcat(error_codes, ",%d",
 				   spawn_resp->error_codes[i]);
@@ -232,7 +232,7 @@ _send_task_spawn_resp_pmi20(spawn_resp_t *spawn_resp, int task_fd,
 				   error_codes);
 		xfree(error_codes);
 	}
-		
+
 	rc = client_resp_send(task_resp, task_fd);
 	client_resp_free(task_resp);
 	return rc;
@@ -263,7 +263,7 @@ _send_task_spawn_resp_pmi11(spawn_resp_t *spawn_resp, int task_fd,
 		} else {
 			xstrfmtcat(error_codes, "%d", spawn_resp->error_codes[0]);
 		}
-			
+
 		for (i = 1; i < spawn_resp->error_cnt; i ++) {
 			xstrfmtcat(error_codes, ",%d",
 				   spawn_resp->error_codes[i]);
@@ -276,7 +276,7 @@ _send_task_spawn_resp_pmi11(spawn_resp_t *spawn_resp, int task_fd,
 	} else {
 		client_resp_append(task_resp, "\n");
 	}
-	
+
 	rc = client_resp_send(task_resp, task_fd);
 	client_resp_free(task_resp);
 	return rc;
@@ -291,7 +291,7 @@ _handle_spawn_resp(int fd, Buf buf)
 	char *from_node = NULL;
 
 	debug3("mpi/pmi2: in _handle_spawn_resp");
-	
+
 	rc = spawn_resp_unpack(&spawn_resp, buf);
 	if (rc != SLURM_SUCCESS) {
 		error("mpi/pmi2: failed to unpack spawn response tree cmd");
@@ -320,7 +320,7 @@ _handle_spawn_resp(int fd, Buf buf)
 		xfree(from_node);
 	}
 	spawn_resp_free(spawn_resp);
-	
+
 	return rc;
 }
 
@@ -356,7 +356,7 @@ handle_tree_cmd(int fd)
 	free_buf (buf);
 	debug3("mpi/pmi2: out handle_tree_cmd");
 	return rc;
-	
+
 rwfail:
 	xfree(req_buf);
 	return SLURM_ERROR;
@@ -366,7 +366,7 @@ extern int
 tree_msg_to_srun(uint32_t len, char *msg)
 {
 	int fd, rc;
-	
+
 	fd = _slurm_open_stream(tree_info.srun_addr, true);
 	rc = _slurm_msg_sendto(fd, msg, len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
 	close(fd);
@@ -397,7 +397,7 @@ tree_msg_to_srun_with_resp(uint32_t len, char *msg, Buf *resp_ptr)
 	}
 	close(fd);
 	return rc;
-	
+
 rwfail:
 	close (fd);
 	xfree(data);
@@ -414,4 +414,3 @@ tree_msg_to_stepds(char *nodelist, uint32_t len, char *msg)
 				msg);
 	return rc;
 }
-

@@ -2431,7 +2431,10 @@ May not exceed 65533 seconds.
 The configuration of nodes (or machines) to be managed by SLURM is
 also specified in \fB/etc/slurm.conf\fR.
 Changes in node configuration (e.g. adding nodes, changing their
-processor count, etc.) require restarting the slurmctld daemon.
+processor count, etc.) require restarting both the slurmctld daemon
+and the slurmd daemons.
+All slurmd daemons must know each node in the system to forward
+messages in support of hierarchical communications.
 Only the NodeName must be supplied in the configuration file.
 All other node configuration information is optional.
 It is advisable to establish baseline node configurations,

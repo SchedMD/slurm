@@ -4,32 +4,32 @@
  *  Copyright (C) 2011-2012 National University of Defense Technology.
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.
  *  All rights reserved.
- *  
+ *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <https://computing.llnl.gov/linux/slurm/>.
+ *  For details, see <http://www.schedmd.com/slurmdocs/>.
  *  Please also read the included file: DISCLAIMER.
- *  
+ *
  *  SLURM is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
  *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
  *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
+ *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
- *  
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
@@ -71,7 +71,7 @@ extern char **environ;
 static bool run_in_stepd = 0;
 
 int  tree_sock;
-int *task_socks;	
+int *task_socks;
 char tree_sock_addr[128];
 pmi2_job_info_t job_info;
 pmi2_tree_info_t tree_info;
@@ -95,7 +95,7 @@ _setup_stepd_job_info(const slurmd_job_t *job, char ***env)
 	int i;
 
 	memset(&job_info, 0, sizeof(job_info));
-	
+
 	job_info.jobid  = job->jobid;
 	job_info.stepid = job->stepid;
 	job_info.nnodes = job->nnodes;
@@ -140,9 +140,9 @@ _setup_stepd_job_info(const slurmd_job_t *job, char ***env)
 		job_info.step_nodelist = xstrdup(p);
 		unsetenvp(*env, PMI2_STEP_NODES_ENV);
 	}
-	/* 
+	/*
 	 * how to get the mapping info from stepd directly?
-	 * there is the task distribution info in the launch_tasks_request_msg_t, 
+	 * there is the task distribution info in the launch_tasks_request_msg_t,
 	 * but it is not stored in the slurmd_job_t.
 	 */
 	p = getenvp(*env, PMI2_PROC_MAPPING_ENV);
@@ -155,7 +155,7 @@ _setup_stepd_job_info(const slurmd_job_t *job, char ***env)
 	}
 
 	job_info.job_env = env_array_copy((const char **)*env);
-		
+
 	job_info.srun_job = NULL;
 	job_info.srun_opt = NULL;
 
@@ -193,7 +193,7 @@ _setup_stepd_tree_info(const slurmd_job_t *job, char ***env)
 		tree_width = slurm_get_tree_width();
 	}
 
-        /* TODO: cannot launch 0 tasks on node */
+	/* TODO: cannot launch 0 tasks on node */
 
 	/*
 	 * In tree position calculation, root of the tree is srun with id 0.
@@ -214,7 +214,7 @@ _setup_stepd_tree_info(const slurmd_job_t *job, char ***env)
 	hostlist_destroy(hl);
 
 	tree_info.pmi_port = 0;	/* not used */
-	
+
 	p = getenvp(*env, "SLURM_SRUN_COMM_HOST");
 	if (!p) {
 		error("mpi/pmi2: unable to find srun comm ifhn in env");
@@ -242,36 +242,36 @@ _setup_stepd_tree_info(const slurmd_job_t *job, char ***env)
 static int
 _setup_stepd_sockets(const slurmd_job_t *job, char ***env)
 {
-        struct sockaddr_un sa;
+	struct sockaddr_un sa;
 	int i;
 
 	debug("mpi/pmi2: setup sockets");
 
-        tree_sock = socket(AF_UNIX, SOCK_STREAM, 0);
-        if (tree_sock < 0) {
-                error("mpi/pmi2: failed to create tree socket: %m");
-                return SLURM_ERROR;
-        }
-        sa.sun_family = PF_UNIX;
+	tree_sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (tree_sock < 0) {
+		error("mpi/pmi2: failed to create tree socket: %m");
+		return SLURM_ERROR;
+	}
+	sa.sun_family = PF_UNIX;
 	snprintf(sa.sun_path, sizeof(sa.sun_path), PMI2_SOCK_ADDR_FMT,
 		 job->jobid, job->stepid);
-        unlink(sa.sun_path);    /* remove possible old socket */
-	
-        if (bind(tree_sock, (struct sockaddr *)&sa, SUN_LEN(&sa)) < 0) {
-                error("mpi/pmi2: failed to bind tree socket: %m");
-                unlink(sa.sun_path);
-                return SLURM_ERROR;
-        }
-        if (listen(tree_sock, 64) < 0) {
-                error("mpi/pmi2: failed to listen tree socket: %m");
-                unlink(sa.sun_path);
-                return SLURM_ERROR;
-        }
+	unlink(sa.sun_path);    /* remove possible old socket */
+
+	if (bind(tree_sock, (struct sockaddr *)&sa, SUN_LEN(&sa)) < 0) {
+		error("mpi/pmi2: failed to bind tree socket: %m");
+		unlink(sa.sun_path);
+		return SLURM_ERROR;
+	}
+	if (listen(tree_sock, 64) < 0) {
+		error("mpi/pmi2: failed to listen tree socket: %m");
+		unlink(sa.sun_path);
+		return SLURM_ERROR;
+	}
 
 	/* remove the tree socket file on exit */
 	strncpy(tree_sock_addr, sa.sun_path, 128);
 	atexit(_remove_tree_sock);
-	
+
 	task_socks = xmalloc(2 * job->node_tasks * sizeof(int));
 	for (i = 0; i < job->node_tasks; i ++) {
 		socketpair(AF_UNIX, SOCK_STREAM, 0, &task_socks[i * 2]);
@@ -286,7 +286,7 @@ _setup_stepd_kvs(const slurmd_job_t *job, char ***env)
 {
 	int rc = SLURM_SUCCESS, i = 0, pp_cnt = 0;
 	char *p, env_key[32], *ppkey, *ppval;
-	
+
 	rc = temp_kvs_init();
 	if (rc != SLURM_SUCCESS)
 		return rc;
@@ -320,7 +320,7 @@ _setup_stepd_kvs(const slurmd_job_t *job, char ***env)
 	 * is rather costly.
 	 */
 	kvs_put("PMI_process_mapping", job_info.proc_mapping);
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -330,7 +330,7 @@ pmi2_setup_stepd(const slurmd_job_t *job, char ***env)
 	int rc;
 
 	run_in_stepd = true;
-	
+
 	/* job info */
 	rc = _setup_stepd_job_info(job, env);
 	if (rc != SLURM_SUCCESS)
@@ -340,7 +340,7 @@ pmi2_setup_stepd(const slurmd_job_t *job, char ***env)
 	rc = _setup_stepd_tree_info(job, env);
 	if (rc != SLURM_SUCCESS)
 		return rc;
-	
+
 	/* sockets */
 	rc = _setup_stepd_sockets(job, env);
 	if (rc != SLURM_SUCCESS)
@@ -350,7 +350,7 @@ pmi2_setup_stepd(const slurmd_job_t *job, char ***env)
 	rc = _setup_stepd_kvs(job, env);
 	if (rc != SLURM_SUCCESS)
 		return rc;
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -371,7 +371,7 @@ _get_proc_mapping(const mpi_plugin_client_info_t *job)
 	task_dist = job->step_layout->task_dist;
 	tasks = job->step_layout->tasks;
 	tids = job->step_layout->tids;
-	
+
 	/* for now, PMI2 only supports vector processor mapping */
 
 	if (task_dist == SLURM_DIST_CYCLIC ||
@@ -387,7 +387,7 @@ _get_proc_mapping(const mpi_plugin_client_info_t *job)
 			while (start_id < node_cnt) {
 				while (start_id < node_cnt &&
 				       ( rounds[start_id] >= tasks[start_id] ||
-				         (task_mapped !=
+					 (task_mapped !=
 					  tids[start_id][rounds[start_id]]) )) {
 					start_id ++;
 				}
@@ -398,7 +398,7 @@ _get_proc_mapping(const mpi_plugin_client_info_t *job)
 				end_id = start_id;
 				while (end_id < node_cnt &&
 				       ( rounds[end_id] < tasks[end_id] &&
-				         (task_mapped ==
+					 (task_mapped ==
 					  tids[end_id][rounds[end_id]]) )) {
 					rounds[end_id] ++;
 					task_mapped ++;
@@ -420,7 +420,7 @@ _get_proc_mapping(const mpi_plugin_client_info_t *job)
 		mapping = xstrdup("(vector");
 		xstrfmtcat(mapping, ",(0,%u,1)", job->step_layout->task_cnt);
 		xstrcat(mapping, ")");
-		
+
 	} else if (task_dist == SLURM_DIST_PLANE) {
 		mapping = xstrdup("(vector");
 
@@ -432,7 +432,7 @@ _get_proc_mapping(const mpi_plugin_client_info_t *job)
 			while (start_id < node_cnt) {
 				while (start_id < node_cnt &&
 				       ( rounds[start_id] >= tasks[start_id] ||
-				         (task_mapped !=
+					 (task_mapped !=
 					  tids[start_id][rounds[start_id]]) )) {
 					start_id ++;
 				}
@@ -450,7 +450,7 @@ _get_proc_mapping(const mpi_plugin_client_info_t *job)
 				/* find end_id */
 				end_id = start_id + 1;
 				while (end_id < node_cnt &&
-				       (rounds[end_id] + block - 1 < 
+				       (rounds[end_id] + block - 1 <
 					tasks[end_id])) {
 					for (i = 0; i < tasks[end_id] - rounds[end_id]; i ++) {
 						if (task_mapped + i !=
@@ -471,7 +471,7 @@ _get_proc_mapping(const mpi_plugin_client_info_t *job)
 		}
 		xfree(rounds);
 		xstrcat(mapping, ")");
-		
+
 	} else {		/* BLOCK mode */
 		mapping = xstrdup("(vector");
 		start_id = 0;
@@ -499,7 +499,7 @@ _setup_srun_job_info(const mpi_plugin_client_info_t *job)
 	void *handle = NULL, *sym = NULL;
 
 	memset(&job_info, 0, sizeof(job_info));
-	       
+
 	job_info.jobid  = job->jobid;
 	job_info.stepid = job->stepid;
 	job_info.nnodes = job->step_layout->node_cnt;
@@ -525,7 +525,7 @@ _setup_srun_job_info(const mpi_plugin_client_info_t *job)
 		job_info.spawn_seq = 0;
 		job_info.spawner_jobid = NULL;
 	}
-	
+
 	job_info.step_nodelist = xstrdup(job->step_layout->node_list);
 	job_info.proc_mapping = _get_proc_mapping(job);
 	if (job_info.proc_mapping == NULL) {
@@ -539,7 +539,7 @@ _setup_srun_job_info(const mpi_plugin_client_info_t *job)
 			   job->stepid);
 	}
 	job_info.job_env = env_array_copy((const char **)environ);
-	
+
 	/* hjcao: this is really dirty.
 	   But writing a new launcher is not desirable. */
 	handle = dlopen(NULL, RTLD_LAZY);
@@ -563,7 +563,7 @@ _setup_srun_job_info(const mpi_plugin_client_info_t *job)
 		job_info.srun_opt = (opt_t *)sym;
 	}
 	dlclose(handle);
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -574,11 +574,11 @@ _setup_srun_tree_info(const mpi_plugin_client_info_t *job)
 	uint16_t p_port;
 
 	memset(&tree_info, 0, sizeof(tree_info));
-	
+
 	tree_info.this_node = "launcher"; /* not used */
 	tree_info.parent_id = -2;   /* not used */
 	tree_info.parent_node = NULL; /* not used */
-	tree_info.num_children = job_info.nnodes; 
+	tree_info.num_children = job_info.nnodes;
 	tree_info.depth = 0;	 /* not used */
 	tree_info.max_depth = 0; /* not used */
 	/* pmi_port set in _setup_srun_sockets */
@@ -614,7 +614,7 @@ static int
 _setup_srun_kvs(const mpi_plugin_client_info_t *job)
 {
 	int rc;
-	
+
 	rc = temp_kvs_init();
 	return rc;
 }
@@ -671,24 +671,24 @@ _setup_srun_task_launch_detection(void)
 {
 	int retries = 0;
 	pthread_t tid;
-        pthread_attr_t attr;
+	pthread_attr_t attr;
 
-        pthread_attr_init(&attr);
+	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-        while ((errno = pthread_create(&tid, &attr,
+	while ((errno = pthread_create(&tid, &attr,
 				       &_task_launch_detection, NULL))) {
-                if (++retries > 5) {
-                        error ("mpi/pmi2: pthread_create error %m");
-                        slurm_attr_destroy(&attr);
-                        return SLURM_ERROR;
-                }
-                sleep(1);
-        }
-        slurm_attr_destroy(&attr);
-        debug("mpi/pmi2: task launch detection thread (%lu) started",
+		if (++retries > 5) {
+			error ("mpi/pmi2: pthread_create error %m");
+			slurm_attr_destroy(&attr);
+			return SLURM_ERROR;
+		}
+		sleep(1);
+	}
+	slurm_attr_destroy(&attr);
+	debug("mpi/pmi2: task launch detection thread (%lu) started",
 	      (unsigned long) tid);
 
-        return SLURM_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 extern int
@@ -697,23 +697,23 @@ pmi2_setup_srun(const mpi_plugin_client_info_t *job, char ***env)
 	int rc;
 
 	run_in_stepd = false;
-	
+
 	rc = _setup_srun_job_info(job);
 	if (rc != SLURM_SUCCESS)
 		return rc;
-	
+
 	rc = _setup_srun_tree_info(job);
 	if (rc != SLURM_SUCCESS)
 		return rc;
-	
+
 	rc = _setup_srun_socket(job);
 	if (rc != SLURM_SUCCESS)
 		return rc;
-	
+
 	rc = _setup_srun_kvs(job);
 	if (rc != SLURM_SUCCESS)
 		return rc;
-	
+
 	rc = _setup_srun_environ(job, env);
 	if (rc != SLURM_SUCCESS)
 		return rc;
@@ -723,7 +723,6 @@ pmi2_setup_srun(const mpi_plugin_client_info_t *job, char ***env)
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	}
-	
+
 	return SLURM_SUCCESS;
 }
-
