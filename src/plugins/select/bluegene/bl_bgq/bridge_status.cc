@@ -154,10 +154,12 @@ static void _bridge_status_disconnect()
 	}
 }
 
-/* ba_system_mutex and block_state_mutex must be locked before this */
+/* ba_system_mutex and block_state_mutex must be locked before this.
+ * If the state == Hardware::SoftwareFailure job lock must be locked
+ * as well. */
 static void _handle_soft_error_midplane(ba_mp_t *ba_mp,
 					EnumWrapper<Hardware::State> state,
-					bool print_debug)
+					List *delete_list, bool print_debug)
 {
 	ListIterator itr, itr2;
 	bg_record_t *bg_record;
@@ -224,6 +226,9 @@ static void _handle_soft_error_midplane(ba_mp_t *ba_mp,
 					bg_record->cnode_err_cnt +=
 						(bg_conf->mp_cnode_cnt
 						 - set_count);
+				bg_status_remove_jobs_from_failed_block(
+					bg_record, ba_mp->index,
+					1, delete_list, &kill_job_list);
 			} else {
 				bit_nclear(found_ba_mp->cnode_err_bitmap, 0,
 					   bit_size(found_ba_mp->
@@ -504,7 +509,6 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 		itr2 = list_iterator_create(bg_record->ba_mp_list);
 		while ((found_ba_mp = (ba_mp_t *)list_next(itr2))) {
 			float err_ratio;
-			struct job_record *job_ptr = NULL;
 
 			if (found_ba_mp->index != ba_mp->index)
 				continue;
@@ -573,75 +577,8 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			if (state == Hardware::Available || bg_record->free_cnt)
 				break;
 
-			if (bg_record->job_ptr)
-				job_ptr = bg_record->job_ptr;
-			else if (bg_record->job_list
-				 && list_count(bg_record->job_list)) {
-				ListIterator job_itr = list_iterator_create(
-					bg_record->job_list);
-				while ((job_ptr = (struct job_record *)
-					list_next(job_itr))) {
-					select_jobinfo_t *jobinfo =
-						(select_jobinfo_t *)
-						job_ptr->select_jobinfo->data;
-					/* If no units_avail we are
-					   using the whole thing, else
-					   check the index.
-					*/
-					if (!jobinfo->units_avail
-					    || bit_test(jobinfo->units_avail,
-							inx))
-						break;
-				}
-				list_iterator_destroy(job_itr);
-			} else {
-				if (!*delete_list)
-					*delete_list = list_create(NULL);
-				/* If there are no jobs running just
-				   free the thing. (This rarely
-				   happens when a mmcs job goes into
-				   error right after it finishes.
-				   Weird, I know.)  Here we are going
-				   to just remove the block since else
-				   wise we could try to free this
-				   block over and over again, which
-				   only needs to happen once.
-				*/
-				if (!block_ptr_exist_in_list(
-					    *delete_list, bg_record)) {
-					debug("_handle_node_change: going to "
-					      "remove block %s, bad hardware "
-					      "and no jobs running",
-					      bg_record->bg_block_id);
-					list_push(*delete_list, bg_record);
-				}
-			}
-
-			/* block_state_mutex is locked so handle this later */
-			if (job_ptr && job_ptr->kill_on_node_fail) {
-				kill_job_struct_t *freeit = NULL;
-				ListIterator kill_job_itr =
-					list_iterator_create(kill_job_list);
-				/* Since lots of cnodes could fail at
-				   the same time effecting the same
-				   job make sure we only add it once
-				   since there is no reason to do the
-				   same process over and over again.
-				*/
-				while ((freeit = (kill_job_struct_t *)
-					list_next(kill_job_itr))) {
-					if (freeit->jobid == job_ptr->job_id)
-						break;
-				}
-				list_iterator_destroy(kill_job_itr);
-
-				if (!freeit) {
-					freeit = (kill_job_struct_t *)
-						xmalloc(sizeof(freeit));
-					freeit->jobid = job_ptr->job_id;
-					list_push(kill_job_list, freeit);
-				}
-			}
+			bg_status_remove_jobs_from_failed_block(
+				bg_record, inx, 0, delete_list, &kill_job_list);
 
 			break;
 		}
@@ -988,11 +925,14 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 	slurm_mutex_unlock(&ba_system_mutex);
 
 	if (mp_ptr->getState() == Hardware::SoftwareFailure) {
+		lock_slurmctld(job_read_lock);
 		slurm_mutex_lock(&block_state_mutex);
 		slurm_mutex_lock(&ba_system_mutex);
-		_handle_soft_error_midplane(ba_mp, mp_ptr->getState(), 0);
+		_handle_soft_error_midplane(
+			ba_mp, mp_ptr->getState(), delete_list, 0);
 		slurm_mutex_unlock(&ba_system_mutex);
 		slurm_mutex_unlock(&block_state_mutex);
+		unlock_slurmctld(job_read_lock);
 	} else if (mp_ptr->getState() != Hardware::Available) {
 		_handle_bad_midplane(bg_down_node, mp_ptr->getState(), 0);
 		/* no reason to continue */
@@ -1003,7 +943,7 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 		if (ba_mp->cnode_err_bitmap
 		    && bit_ffs(ba_mp->cnode_err_bitmap) != -1)
 			_handle_soft_error_midplane(
-				ba_mp, mp_ptr->getState(), 0);
+				ba_mp, mp_ptr->getState(), delete_list, 0);
 		slurm_mutex_unlock(&ba_system_mutex);
 		slurm_mutex_unlock(&block_state_mutex);
 
@@ -1273,6 +1213,7 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 	ba_mp_t *ba_mp;
 	int dim;
 	char bg_down_node[128];
+	List delete_list = NULL;
 
 	if (event.getPreviousState() == event.getState()) {
 		debug("Switch previous state was same as current (%s - %s)",
@@ -1308,7 +1249,8 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 		if (event.getPreviousState() == Hardware::SoftwareFailure) {
 			slurm_mutex_lock(&block_state_mutex);
 			slurm_mutex_lock(&ba_system_mutex);
-			_handle_soft_error_midplane(ba_mp, event.getState(), 1);
+			_handle_soft_error_midplane(ba_mp, event.getState(),
+						    &delete_list, 1);
 			slurm_mutex_unlock(&ba_system_mutex);
 			slurm_mutex_unlock(&block_state_mutex);
 		}
@@ -1318,11 +1260,15 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 		     ba_mp->coord_str,
 		     bridge_hardware_state_string(event.getState()));
 		slurm_mutex_unlock(&ba_system_mutex);
+		lock_slurmctld(job_read_lock);
 		slurm_mutex_lock(&block_state_mutex);
 		slurm_mutex_lock(&ba_system_mutex);
-		_handle_soft_error_midplane(ba_mp, event.getState(), 1);
+		_handle_soft_error_midplane(ba_mp, event.getState(),
+					    &delete_list, 1);
 		slurm_mutex_unlock(&ba_system_mutex);
 		slurm_mutex_unlock(&block_state_mutex);
+		unlock_slurmctld(job_read_lock);
+		bg_status_process_kill_job_list(kill_job_list, 0);
 	} else {
 		/* Else mark the midplane down */
 		snprintf(bg_down_node, sizeof(bg_down_node), "%s%s",
@@ -1331,8 +1277,15 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 		_handle_bad_midplane(bg_down_node, event.getState(), 1);
 	}
 
-	return;
+	if (delete_list) {
+		bool delete_it = 0;
+		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
+			delete_it = 1;
+		free_block_list(NO_VAL, delete_list, delete_it, 0);
+		list_destroy(delete_list);
+	}
 
+	return;
 }
 
 void event_handler::handleSwitchStateChangedRealtimeEvent(

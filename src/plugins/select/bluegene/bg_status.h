@@ -59,4 +59,14 @@ extern int bridge_block_check_mp_states(char *bg_block_id,
 /* This needs to have block_state_mutex locked before hand. */
 extern int bridge_status_update_block_list_state(List block_list);
 
+
+/* This needs to have job_read locked before hand. */
+extern void bg_status_add_job_kill_list(
+	struct job_record *job_ptr, List *killing_list);
+/* This needs to have block_state_mutex and job_read locked before hand. */
+extern void bg_status_remove_jobs_from_failed_block(
+	bg_record_t *bg_record, int inx,
+	bool midplane, List *delete_list,
+	List *killing_list);
+
 #endif
