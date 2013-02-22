@@ -982,11 +982,6 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 	if (mp_ptr->getState() == Hardware::SoftwareFailure) {
 		slurm_mutex_lock(&block_state_mutex);
 		slurm_mutex_lock(&ba_system_mutex);
-		info("Midplane %s(%s), went into %s state",
-		     mp_ptr->getLocation().c_str(),
-		     ba_mp->coord_str,
-		     bridge_hardware_state_string(
-			     mp_ptr->getState().toValue()));
 		_handle_soft_error_midplane(ba_mp, mp_ptr->getState(), 0);
 		slurm_mutex_unlock(&ba_system_mutex);
 		slurm_mutex_unlock(&block_state_mutex);
@@ -998,15 +993,9 @@ static void _handle_midplane_update(ComputeHardware::ConstPtr bgq,
 		slurm_mutex_lock(&block_state_mutex);
 		slurm_mutex_lock(&ba_system_mutex);
 		if (ba_mp->cnode_err_bitmap
-		    && bit_ffs(ba_mp->cnode_err_bitmap) != -1) {
-			info("Midplane %s(%s), went into %s state",
-			     mp_ptr->getLocation().c_str(),
-			     ba_mp->coord_str,
-			     bridge_hardware_state_string(
-				     mp_ptr->getState().toValue()));
+		    && bit_ffs(ba_mp->cnode_err_bitmap) != -1)
 			_handle_soft_error_midplane(
 				ba_mp, mp_ptr->getState(), 0);
-		}
 		slurm_mutex_unlock(&ba_system_mutex);
 		slurm_mutex_unlock(&block_state_mutex);
 
