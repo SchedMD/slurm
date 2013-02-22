@@ -1641,6 +1641,11 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			rc = ESLURM_INVALID_NODE_NAME;
 			goto bad_parse;
 		}
+		if (bit_set_count(node_bitmap) == 0) {
+			info("Reservation node list is empty");
+			rc = ESLURM_INVALID_NODE_NAME;
+			goto bad_parse;
+		}
 		if (!(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP) &&
 		    _resv_overlap(resv_desc_ptr->start_time,
 				  resv_desc_ptr->end_time,
