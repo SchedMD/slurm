@@ -1944,7 +1944,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		/* To support in the future, the reservation resources would
 		 * need to be selected again. For now, administrator can
 		 * delete this reservation and create a new one. */
-		info("Attempt to change features of reservation %s",
+		info("Attempt to change features of reservation %s. "
+		     "Delete the reservation and create a new one.",
 		     resv_desc_ptr->name);
 		error_code = ESLURM_NOT_SUPPORTED;
 		goto update_failure;
