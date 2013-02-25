@@ -1077,9 +1077,10 @@ static void _do_hardware_poll(int level, uint16_t *coords,
 
 	if (delete_list) {
 		bool delete_it = 0;
-		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
+		if (initial_poll && bg_conf->sub_mp_sys)
 			delete_it = 1;
-		free_block_list(NO_VAL, delete_list, delete_it, 0);
+
+		free_block_list(NO_VAL, delete_list, 1, 0);
 		list_destroy(delete_list);
 	}
 }
@@ -1285,10 +1286,7 @@ void event_handler::handleMidplaneStateChangedRealtimeEvent(
 	}
 
 	if (delete_list) {
-		bool delete_it = 0;
-		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
-			delete_it = 1;
-		free_block_list(NO_VAL, delete_list, delete_it, 0);
+		free_block_list(NO_VAL, delete_list, 0, 0);
 		list_destroy(delete_list);
 	}
 
@@ -1471,11 +1469,7 @@ void event_handler::handleNodeStateChangedRealtimeEvent(
 	bg_status_process_kill_job_list(kill_job_list, 0);
 
 	if (delete_list) {
-		/* The only reason blocks are added to this list is if
-		   there are missing cnodes on the block so remove
-		   them from the mix.
-		*/
-		free_block_list(NO_VAL, delete_list, 1, 0);
+		free_block_list(NO_VAL, delete_list, 0, 0);
 		list_destroy(delete_list);
 	}
 
@@ -1526,10 +1520,7 @@ void event_handler::handleTorusCableStateChangedRealtimeEvent(
 	slurm_mutex_unlock(&block_state_mutex);
 
 	if (delete_list) {
-		bool delete_it = 0;
-		if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
-			delete_it = 1;
-		free_block_list(NO_VAL, delete_list, delete_it, 0);
+		free_block_list(NO_VAL, delete_list, 0, 0);
 		list_destroy(delete_list);
 	}
 	return;
