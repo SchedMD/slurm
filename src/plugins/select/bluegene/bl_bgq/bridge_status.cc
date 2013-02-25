@@ -577,8 +577,15 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 			if (state == Hardware::Available || bg_record->free_cnt)
 				break;
 
+			/* If the state is Hardware::Error send NULL
+			   since we do not want to free the block that
+			   we just put into an Error state above that
+			   might not be running a job anymore.
+			*/
 			bg_status_remove_jobs_from_failed_block(
-				bg_record, inx, 0, delete_list, &kill_job_list);
+				bg_record, inx, 0,
+				(state != Hardware::Error) ? delete_list : NULL,
+				&kill_job_list);
 
 			break;
 		}

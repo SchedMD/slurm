@@ -34,6 +34,8 @@ documents those changes that are of interest to users and admins.
  -- Select/cons_res - If the job request specified --ntasks-per-socket and the
     allocation using is cores, then pack the tasks onto the sockets up to the
     specified value.
+ -- BGQ - If a cnode goes into an 'error' state and the block containing the
+    cnode does not have a job running on it do not resume the block.
 
 * Changes in SLURM 2.5.3
 ========================

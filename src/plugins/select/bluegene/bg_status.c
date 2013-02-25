@@ -444,7 +444,7 @@ extern void bg_status_remove_jobs_from_failed_block(
 			}
 		}
 		list_iterator_destroy(job_itr);
-	} else {
+	} else if (delete_list) {
 		if (!*delete_list)
 			*delete_list = list_create(NULL);
 		/* If there are no jobs running just
