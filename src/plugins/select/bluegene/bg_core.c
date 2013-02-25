@@ -541,8 +541,8 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 }
 
 /* block_state_mutex should be unlocked before calling this */
-extern int free_block_list(uint32_t job_id, List track_list,
-			   bool destroy, bool wait)
+extern void free_block_list(uint32_t job_id, List track_list,
+			    bool destroy, bool wait)
 {
 	bg_record_t *bg_record = NULL;
 	int retries;
@@ -554,7 +554,7 @@ extern int free_block_list(uint32_t job_id, List track_list,
 	kill_job_struct_t *freeit;
 
 	if (!track_list || !list_count(track_list))
-		return SLURM_SUCCESS;
+		return;
 
 	bg_free_list = xmalloc(sizeof(bg_free_block_list_t));
 	bg_free_list->track_list = list_create(NULL);
@@ -629,7 +629,7 @@ extern int free_block_list(uint32_t job_id, List track_list,
 		   and frees the memory of bg_free_list.
 		*/
 		_track_freeing_blocks(bg_free_list);
-		return SLURM_SUCCESS;
+		return;
 	}
 
 	/* _track_freeing_blocks handles cleanup */
@@ -648,7 +648,7 @@ extern int free_block_list(uint32_t job_id, List track_list,
 		usleep(1000);
 	}
 	slurm_attr_destroy(&attr_agent);
-	return SLURM_SUCCESS;
+	return;
 }
 
 /* Determine if specific slurm node is already in DOWN or DRAIN state */

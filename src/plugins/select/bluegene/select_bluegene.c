@@ -2422,7 +2422,14 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 			if (found_record->job_running > NO_JOB_RUNNING) {
 				if (found_record->job_ptr
 				    && IS_JOB_CONFIGURING(
-					    found_record->job_ptr))
+					    found_record->job_ptr)) {
+					/* If the block is waiting for
+					   a block that isn't freeing
+					   we have to remove the
+					   modifying flag or the block
+					   won't be freed correctly.
+					*/
+					found_record->modifying = 0;
 					info("Pending job %u on block %s "
 					     "will try to be requeued "
 					     "because overlapping block %s "
@@ -2430,7 +2437,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 					     found_record->job_running,
 					     found_record->bg_block_id,
 					     bg_record->bg_block_id);
-				else
+				} else
 					info("Failing job %u on block %s "
 					     "because overlapping block %s "
 					     "is in an error state.",
