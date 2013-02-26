@@ -79,8 +79,8 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked);
 
 extern void *mult_free_block(void *args);
 extern void *mult_destroy_block(void *args);
-extern int free_block_list(uint32_t job_id, List track_list,
-			   bool destroy, bool wait);
+extern void free_block_list(uint32_t job_id, List track_list,
+			    bool destroy, bool wait);
 extern int read_bg_conf();
 extern int node_already_down(char *node_name);
 extern const char *bg_err_str(int inx);

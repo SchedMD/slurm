@@ -460,81 +460,14 @@ host or the storage host system.  This must be done before the SlurmDBD will
 work properly. After you grant permission to the user 'slurm' in mysql then
 you can start SlurmDBD and the other SLURM daemons. You start SlurmDBD by
 typing its pathname '/usr/sbin/slurmdbd' or '/etc/init.d/slurmdbd start'. You
-can verify that SlurmDBD is running by typing 'ps aux | grep slurmdbd'. After 
-the SlurmDBD and slurmctld daemons start, you can verify that the database
-was created by using the mysql command 'show databases;'. You can display the
-tables that slurm created in the database by using the mysql command
-'use slurm_acct_db;' and then 'show tables;'.</p>
+can verify that SlurmDBD is running by typing 'ps aux | grep
+slurmdbd'.
 
-<p>Use the mysql 'show databases;' command</p>
-
-<pre>
-mysql> show databases;
-
-+--------------------+
-| Database           |
-+--------------------+
-| information_schema |
-| slurm_acct_db      |
-| test               |
-+--------------------+
-
-3 rows in set (0.00 sec)
-</pre>
-
-<p>Select the database that you created.</p>
-
-<pre>
-mysql> use slurm_acct_db;
-
-Reading table information for completion of table and column names
-You can turn off this feature to get a quicker startup with -A
-
-Database changed
-</pre>
-
-<p>Now do a mysql 'show tables;' command.</p>
-
-<pre>
-mysql> show tables;
-
-+---------------------------+
-| Tables_in_slurm_acct_db   |
-+---------------------------+
-| acct_coord_table          |
-| acct_table                |
-| assoc_day_usage_table     |
-| assoc_hour_usage_table    |
-| assoc_month_usage_table   |
-| assoc_table               |
-| cluster_day_usage_table   |
-| cluster_event_table       |
-| cluster_hour_usage_table  |
-| cluster_month_usage_table |
-| cluster_table             |
-| job_table                 |
-| last_ran_table            |
-| qos_table                 |
-| resv_table                |
-| step_table                |
-| suspend_table             |
-| table_defs_table          |
-| txn_table                 |
-| user_table                |
-| wckey_day_usage_table     |
-| wckey_hour_usage_table    |
-| wckey_month_usage_table   |
-| wckey_table               |
-+---------------------------+
-
-24 rows in set (0.02 sec)
-
-mysql> quit
-</pre>
-
-<p>If the database is not created or SlurmDBD is not running you can
+<p>If the SlurmDBD is not running you can
 use the -v option when you start SlurmDBD to get more detailed
-information.</p>
+information.  Starting the SlurmDBD in daemon mode with the '-D' option can
+also help in debugging so you don't have to go to the log to find the
+problem.</p>
 
 <h2>Tools</h2>
 
@@ -830,7 +763,7 @@ as deleted.
 If an entity has existed for less than 1 day, the entity will be removed
 completely. This is meant to clean up after typographic errors.</p>
 
-<p style="text-align: center;">Last modified 11 February 2013</p>
+<p style="text-align: center;">Last modified 25 February 2013</p>
 
 <!--#include virtual="footer.txt"-->
 
