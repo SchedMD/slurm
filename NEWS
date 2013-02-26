@@ -39,6 +39,7 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Handle blocks that don't free themselves in a reasonable time better.
  -- BGQ - Fix for signaling steps when allocation ends before step.
  -- Fix for backfill scheduling logic with job preemption; starts more jobs.
+ -- xcgroup - remove bugs with EINTR management in write calls
 
 * Changes in SLURM 2.5.3
 ========================
