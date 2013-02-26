@@ -474,6 +474,7 @@ static int _thread_update_node_energy(void)
 
 	rc = _read_ipmi_values();
 
+	slurm_mutex_lock(&ipmi_mutex);
 	if (rc == SLURM_SUCCESS) {
 		uint32_t additional_consumption;
 		if (previous_update_time == 0) {
@@ -496,17 +497,16 @@ static int _thread_update_node_energy(void)
 			local_energy->base_watts = 0;
 			local_energy->current_watts = last_update_watt;
 		}
-		slurm_mutex_unlock(&ipmi_mutex);
 	}
 	if (debug_flags & DEBUG_FLAG_ENERGY) {
-		slurm_mutex_lock(&ipmi_mutex);
 		info("ipmi-thread = %d sec, current %d Watts, "
 		     "consumed %d Joules",
 		     (int) (last_update_time - previous_update_time),
 		     local_energy->current_watts,
 		     local_energy->consumed_energy);
-		slurm_mutex_unlock(&ipmi_mutex);
 	}
+	slurm_mutex_unlock(&ipmi_mutex);
+
 	return rc;
 }
 
@@ -847,8 +847,10 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	int rc = SLURM_SUCCESS;
 	switch (data_type) {
 	case ENERGY_DATA_JOULES_TASK:
+		slurm_mutex_lock(&ipmi_mutex);
 		_get_joules_task();
 		memcpy(energy, local_energy, sizeof(acct_gather_energy_t));
+		slurm_mutex_unlock(&ipmi_mutex);
 		break;
 	case ENERGY_DATA_STRUCT:
 		slurm_mutex_lock(&ipmi_mutex);
