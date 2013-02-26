@@ -38,6 +38,7 @@ documents those changes that are of interest to users and admins.
     cnode does not have a job running on it do not resume the block.
  -- BGQ - Handle blocks that don't free themselves in a reasonable time better.
  -- BGQ - Fix for signaling steps when allocation ends before step.
+ -- Fix for backfill scheduling logic with job preemption; starts more jobs.
 
 * Changes in SLURM 2.5.3
 ========================

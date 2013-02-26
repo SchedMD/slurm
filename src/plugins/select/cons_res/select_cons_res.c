@@ -1704,8 +1704,12 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				 req_nodes, SELECT_MODE_WILL_RUN, cr_type,
 				 job_node_req, select_node_cnt, future_part,
 				 future_usage, exc_core_bitmap);
-		if (rc == SLURM_SUCCESS)
-			job_ptr->start_time = now + 1;
+		if (rc == SLURM_SUCCESS) {
+			/* Actual start time will actually be later than "now",
+			 * but return "now" for backfill scheduler to
+			 * initiate preemption. */
+			job_ptr->start_time = now;
+		}
 	}
 
 	/* Remove the running jobs one at a time from exp_node_cr and try
