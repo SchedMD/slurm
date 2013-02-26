@@ -63,24 +63,16 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "acct_gather_energy_ipmi_config.h"
 #include "acct_gather_energy_ipmi.h"
+
 /*
  * freeipmi includes for the lib
  */
 #include <ipmi_monitoring.h>
 #include <ipmi_monitoring_bitmasks.h>
 
-//#include "src/plugins/acct_gather_energy/ipmi/ipmi_inttypes.h"
-//#include "src/plugins/acct_gather_energy/ipmi/ipmi.h"
-//#include "src/plugins/acct_gather_energy/ipmi/ipmi_intf.h"
-//#include "src/plugins/acct_gather_energy/ipmi/ipmi_sdr.h"
-//#include "src/plugins/acct_gather_energy/ipmi/ipmi_sel.h"
-//#include "src/plugins/acct_gather_energy/ipmi/ipmi_mc.h"
-//#include "src/plugins/acct_gather_energy/ipmi/ipmi_sensor.h"
-//#include "src/plugins/acct_gather_energy/ipmi/ipmi_sol.h"
-
-
 #define _DEBUG 1
 #define _DEBUG_ENERGY 1
+#define TIMEOUT 10
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -115,27 +107,6 @@
 const char plugin_name[] = "AcctGatherEnergy IPMI plugin";
 const char plugin_type[] = "acct_gather_energy/ipmi";
 const uint32_t plugin_version = 100;
-/*
- * The static functions are organized as follows
- * general functions:
- *     _task_sleep
- *     _get_additional_consumption
- * freeipmi functions are called in:
- *     _init_ipmi_config
- *     _check_power_sensor
- *     _find_power_sensor
- *     _read_ipmi_values
- * the thread calling freeipmi function is:
- *     _thread_ipmi_run
- * it calls functions:
- *     _thread_update_node_energy
- *     _thread_init
- *     _thread_fini
- * and create the thread writing on the pipe:
- *     _thread_ipmi_write
- * the pipe is read in function:
- *     _read_last_consumed_energy
- */
 
 /*
  * freeipmi variable declaration
@@ -149,7 +120,6 @@ char *hostname = NULL;
 /* Set to an appropriate alternate if desired */
 char *sdr_cache_directory = "/tmp";
 char *sensor_config_file = NULL;
-
 /*
  * internal variables
  */
@@ -159,18 +129,32 @@ static time_t previous_update_time = 0;
 static acct_gather_energy_t *local_energy = NULL;
 static slurm_ipmi_conf_t slurm_ipmi_conf;
 static uint32_t debug_flags = 0;
-static uint32_t flag_energy_accounting_shutdown = 0;
-static uint32_t flag_thread_run_running = false;
-static uint32_t flag_thread_write_running = false;
+static bool flag_energy_accounting_shutdown = false;
+static bool flag_thread_run_running = false;
+static bool flag_thread_write_running = false;
+static bool flag_thread_started = false;
+static bool flag_slurmd_process = false;
 static pthread_mutex_t ipmi_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_t thread_ipmi_id_run = (pthread_t) -1;
 pthread_t thread_ipmi_id_write = (pthread_t) -1;
+//__progname may need security for portability
+extern char *__progname;
 
 typedef struct ipmi_message {
 	uint32_t energy;
 	uint32_t watts;
 	time_t time;
 } ipmi_message_t;
+
+static bool _is_thread_launcher(void)
+{
+	if (__progname == NULL)
+		return false;
+	if (strcmp(__progname,"slurmd")==0) {
+		return true;
+	}
+	return false;
+}
 
 static void _task_sleep(int rem)
 {
@@ -185,24 +169,8 @@ static void _task_sleep(int rem)
 static uint32_t _get_additional_consumption(time_t time0, time_t time1,
 					    uint32_t watt0, uint32_t watt1)
 {
-	/* FIXME: Always use method 3?  Why the switch then? */
-	int method=3;
-	uint32_t consumption=0;
-
-	switch (method) {
-	case 1:
-		//watt0 is used on all time window
-		consumption = (uint32_t) ((time1 - time0)*watt0);
-		break;
-	case 2:
-		//watt1 is used on all time window
-		consumption = (uint32_t) ((time1 - time0)*watt1);
-		break;
-	case 3:
-		//mean of watt (affine function) is used on each time window
-		consumption = (uint32_t) ((time1 - time0)*(watt1 + watt0)/2);
-		break;
-	}
+	uint32_t consumption;
+	consumption = (uint32_t) ((time1 - time0)*(watt1 + watt0)/2);
 
 	return consumption;
 }
@@ -507,7 +475,6 @@ static int _thread_update_node_energy(void)
 	rc = _read_ipmi_values();
 
 	if (rc == SLURM_SUCCESS) {
-		slurm_mutex_lock(&ipmi_mutex);
 		uint32_t additional_consumption;
 		if (previous_update_time == 0) {
 			additional_consumption = 0;
@@ -559,12 +526,8 @@ static int _thread_init(void)
 		if ((slurm_ipmi_conf.power_sensor_num == -1
 		     && _find_power_sensor() != SLURM_SUCCESS)
 		    || _check_power_sensor() != SLURM_SUCCESS) {
-			local_energy->consumed_energy=0;
-			local_energy->base_watts=0;
 			local_energy->current_watts = NO_VAL;
 		} else {
-			local_energy->consumed_energy=0;
-			local_energy->base_watts=0;
 			local_energy->current_watts = 0;
 		}
 	}
@@ -604,7 +567,7 @@ static void *_thread_ipmi_write(void *no_data)
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("ipmi-thread-write: launched");
 
-	flag_thread_run_running = true;
+	flag_thread_write_running = true;
 	flag_energy_accounting_shutdown = false;
 
 	xstrfmtcat(name, "%s/%s_ipmi_pipe", conf->spooldir, conf->node_name);
@@ -633,7 +596,7 @@ static void *_thread_ipmi_write(void *no_data)
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("ipmi-thread-write: ended");
 
-	flag_thread_run_running = false;
+	flag_thread_write_running = false;
 	return NULL;
 rwfail:
 	error("Unable to send consumption information.");
@@ -651,17 +614,20 @@ static void *_thread_ipmi_run(void *no_data)
 	pthread_attr_t attr_write;
 	int rc = SLURM_SUCCESS;
 
+	flag_thread_run_running = true;
+	flag_energy_accounting_shutdown = false;
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("ipmi-thread: launched");
 
-	flag_thread_write_running = true;
-	flag_energy_accounting_shutdown = false;
 
 	if (_thread_init() != SLURM_SUCCESS) {
 		if (debug_flags & DEBUG_FLAG_ENERGY)
 			info("ipmi-thread: aborted");
+		flag_thread_run_running = false;
 		return NULL;
 	}
+
+	flag_thread_started = true;
 
 	//launch _thread_ipmi_write
 	slurm_attr_init(&attr_write);
@@ -687,13 +653,105 @@ static void *_thread_ipmi_run(void *no_data)
 		_thread_update_node_energy();
 	}
 
-	flag_thread_write_running = false;
+	flag_thread_run_running = false;
 	_read_last_consumed_energy(&message_trash);
 	_thread_fini();
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("ipmi-thread: ended");
 
 	return NULL;
+}
+
+static int _thread_launcher(void)
+{
+	//what arg would countain? frequency, socket?
+	int rc = SLURM_SUCCESS;
+	pthread_attr_t attr_run;
+	flag_slurmd_process = true;
+	//my_struct *arg = xmalloc(sizeof(my_struct));
+	//arg->bla = bla;
+
+	slurm_attr_init(&attr_run);
+	rc = pthread_attr_setdetachstate(&attr_run, PTHREAD_CREATE_DETACHED);
+	if (rc != 0) {
+		//xfree(arg);
+		error("Unable to set detachstate on attr: %m");
+		slurm_attr_destroy(&attr_run);
+		return rc;
+	}
+	if (pthread_create(&thread_ipmi_id_run, &attr_run,
+			   &_thread_ipmi_run, NULL)) {
+		//if (pthread_create(... (void *)arg)) {
+		debug("energy accounting failed to create _thread_ipmi_run "
+		      "thread: %m");
+	}
+	slurm_attr_destroy(&attr_run);
+
+	if (debug_flags & DEBUG_FLAG_ENERGY)
+		info("%s thread launched", plugin_name);
+
+	return rc;
+}
+
+static int _get_joules_task(void)
+{
+	ipmi_message_t message;
+	time_t time_call = time(NULL);
+	if (local_energy->consumed_energy == NO_VAL ||
+		local_energy->base_consumed_energy == 0 ||
+		_read_last_consumed_energy(&message) !=
+		SLURM_SUCCESS) {
+		local_energy->consumed_energy = NO_VAL;
+		return SLURM_ERROR;
+	}
+
+	if (slurm_ipmi_conf.adjustment) {
+		local_energy->consumed_energy =
+			message.energy -
+			local_energy->base_consumed_energy +
+			_get_additional_consumption(
+				message.time,time_call,
+				message.watts,message.watts);
+	} else {
+		local_energy->consumed_energy =
+			message.energy -
+			local_energy->base_consumed_energy;
+	}
+
+	if (debug_flags & DEBUG_FLAG_ENERGY) {
+		info("_get_joules_task_ipmi = consumed %d Joules"
+		     "(received %d from ipmi thread)",
+		     local_energy->consumed_energy,message.energy);
+	}
+	return SLURM_SUCCESS;
+}
+
+static int _first_update_task_energy(void)
+{
+	ipmi_message_t message;
+	time_t time_call = time(NULL);
+	if (_read_last_consumed_energy(&message)
+	    != SLURM_SUCCESS) {
+		local_energy->consumed_energy = NO_VAL;
+		return SLURM_ERROR;
+	}
+	if (slurm_ipmi_conf.adjustment) {
+		local_energy->base_consumed_energy =
+			message.energy +
+			_get_additional_consumption(
+				message.time,time_call,
+				message.watts,message.watts);
+		local_energy->consumed_energy = 0;
+	} else {
+		local_energy->base_consumed_energy =
+			message.energy;
+		local_energy->consumed_energy = 0;
+	}
+	if (debug_flags & DEBUG_FLAG_ENERGY) {
+		info("_get_joules_task_ipmi = first %d Joules",
+		     local_energy->base_consumed_energy);
+	}
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -703,19 +761,64 @@ static void *_thread_ipmi_run(void *no_data)
 extern int init(void)
 {
 	int rc = SLURM_SUCCESS;
+	debug_flags = slurm_get_debug_flags();
 	local_energy = acct_gather_energy_alloc();
 	local_energy->consumed_energy=0;
 	local_energy->base_consumed_energy=0;
+	local_energy->base_watts=0;
 	if (read_slurm_ipmi_conf(&slurm_ipmi_conf)!=SLURM_SUCCESS) {
-		return SLURM_ERROR;
+		local_energy->consumed_energy = NO_VAL;
+		rc = SLURM_ERROR;
 	}
-	verbose("%s loaded", plugin_name);
-	debug_flags = slurm_get_debug_flags();
+	flag_slurmd_process = _is_thread_launcher();
+	if (flag_slurmd_process) {
+		rc = _thread_launcher();
+		time_t begin_time = time(NULL);
+		while (rc == SLURM_SUCCESS) {
+			if (time(NULL) - begin_time > TIMEOUT) {
+				error("ipmi thread launch timeout");
+				rc = SLURM_ERROR;
+				break;
+			}
+			if (flag_thread_run_running) {
+				break;
+			}
+			_task_sleep(1);
+		}
+		begin_time = time(NULL);
+		while (rc == SLURM_SUCCESS) {
+			if (time(NULL) - begin_time > TIMEOUT) {
+				error("ipmi thread init timeout");
+				rc = SLURM_ERROR;
+				break;
+			}
+			if (!flag_thread_run_running) {
+				error("ipmi thread lost");
+				rc = SLURM_ERROR;
+				break;
+			}
+			if (flag_thread_started) {
+				break;
+			}
+			_task_sleep(1);
+		}
+		if (rc != SLURM_SUCCESS) {
+			if (debug_flags & DEBUG_FLAG_ENERGY)
+				info("%s failed to start", plugin_name);
+			flag_energy_accounting_shutdown = true;
+		}
+	} else {
+		_first_update_task_energy();
+	}
+	if (rc == SLURM_SUCCESS) {
+		verbose("%s loaded", plugin_name);
+	}
 	return rc;
 }
 
 extern int fini(void)
 {
+	flag_energy_accounting_shutdown = true;
 	time_t begin_fini = time(NULL);
 	while (flag_thread_run_running || flag_thread_write_running) {
 		if ((time(NULL) - begin_fini) > (slurm_ipmi_conf.freq + 1)) {
@@ -731,68 +834,21 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-
 extern int acct_gather_energy_p_update_node_energy(void)
 {
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+
+	return rc;
 }
 
 extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 					 acct_gather_energy_t *energy)
 {
 	int rc = SLURM_SUCCESS;
-	ipmi_message_t message;
-	time_t time_call;
-
 	switch (data_type) {
 	case ENERGY_DATA_JOULES_TASK:
-		// TODO if fail -> NC
-		time_call = time(NULL);
-		if (local_energy->consumed_energy == NO_VAL ||
-		    _read_last_consumed_energy(&message) !=
-		    SLURM_SUCCESS) {
-			rc = SLURM_ERROR;
-			local_energy->consumed_energy = NO_VAL;
-			break;
-		}
-		local_energy->consumed_energy = message.energy;
-		local_energy->current_watts = message.watts;
-		last_update_time = message.time;
-		if (energy->base_consumed_energy != 0) {
-			if (slurm_ipmi_conf.adjustment) {
-				energy->consumed_energy =
-					local_energy->consumed_energy -
-					energy->base_consumed_energy +
-					_get_additional_consumption(
-						last_update_time,time_call,
-						local_energy->current_watts,
-						local_energy->current_watts);
-			} else {
-				energy->consumed_energy =
-					local_energy->consumed_energy -
-					energy->base_consumed_energy;
-			}
-		} else {
-			if (slurm_ipmi_conf.adjustment) {
-				energy->base_consumed_energy =
-					local_energy->consumed_energy +
-					_get_additional_consumption(
-						last_update_time,time_call,
-						local_energy->current_watts,
-						local_energy->current_watts);
-				energy->consumed_energy = 0;
-			} else {
-				energy->base_consumed_energy =
-					local_energy->consumed_energy;
-				energy->consumed_energy = 0;
-			}
-		}
-		if (debug_flags & DEBUG_FLAG_ENERGY) {
-			info("_get_joules_task_ipmi = consumed %d Joules"
-			     "(received %d from ipmi thread)",
-			     energy->consumed_energy,local_energy->
-			     consumed_energy);
-		}
+		_get_joules_task();
+		memcpy(energy, local_energy, sizeof(acct_gather_energy_t));
 		break;
 	case ENERGY_DATA_STRUCT:
 		slurm_mutex_lock(&ipmi_mutex);
@@ -827,45 +883,5 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 		rc = SLURM_ERROR;
 		break;
 	}
-	return rc;
-}
-
-
-extern int acct_gather_energy_p_start_thread(void)
-{
-//what arg would countain? frequency, socket?
-	int rc = SLURM_SUCCESS;
-	pthread_attr_t attr_run;
-	//my_struct *arg = xmalloc(sizeof(my_struct));
-	//arg->bla = bla;
-
-	slurm_attr_init(&attr_run);
-	rc = pthread_attr_setdetachstate(&attr_run, PTHREAD_CREATE_DETACHED);
-	if (rc != 0) {
-		//xfree(arg);
-		error("Unable to set detachstate on attr: %m");
-		slurm_attr_destroy(&attr_run);
-		return rc;
-	}
-	if (pthread_create(&thread_ipmi_id_run, &attr_run,
-			   &_thread_ipmi_run, NULL)) {
-		//if (pthread_create(... (void *)arg)) {
-		debug("energy accounting failed to create _thread_ipmi_run "
-		      "thread: %m");
-	}
-	slurm_attr_destroy(&attr_run);
-
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("%s thread launched", plugin_name);
-
-	return rc;
-}
-
-extern int acct_gather_energy_p_end_thread(void)
-{
-	int rc = SLURM_SUCCESS;
-
-	flag_energy_accounting_shutdown = true;
-
 	return rc;
 }

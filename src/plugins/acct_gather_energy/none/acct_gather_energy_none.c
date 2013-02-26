@@ -122,17 +122,3 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 {
 	return SLURM_SUCCESS;
 }
-
-extern int acct_gather_energy_p_start_thread(void)
-{
-	int rc = SLURM_SUCCESS;
-
-	return rc;
-}
-
-extern int acct_gather_energy_p_end_thread(void)
-{
-	int rc = SLURM_SUCCESS;
-
-	return rc;
-}

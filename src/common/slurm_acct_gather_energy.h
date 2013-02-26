@@ -80,7 +80,4 @@ extern int acct_gather_energy_g_get_data(enum acct_energy_type data_type,
 extern int acct_gather_energy_g_set_data(enum acct_energy_type data_type,
 					 acct_gather_energy_t *energy);
 
-extern int acct_gather_energy_g_start_thread(void);
-extern int acct_gather_energy_g_end_thread(void);
-
 #endif /*__SLURM_ACCT_GATHER_ENERGY_H__*/
