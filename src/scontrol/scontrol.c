@@ -1791,7 +1791,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      takeover                 ask slurm backup controller to take over     \n\
      uhold <job_id>           place user hold on specified job (see release)\n\
      update <SPECIFICATIONS>  update job, node, partition, reservation,    \n\
-			      step or bluegene block/subbp configuration   \n\
+			      step or bluegene block/submp configuration   \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
      wait_job <job_id>        wait until the nodes allocated to the job    \n\
@@ -1801,7 +1801,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
   <ENTITY> may be \"aliases\", \"config\", \"daemons\", \"frontend\",      \n\
        \"hostlist\", \"hostlistsorted\", \"hostnames\", \"job\", \"node\", \n\
        \"partition\", \"reservation\", \"slurmd\", \"step\", or \"topology\"\n\
-       (also for BlueGene only: \"block\" or \"subbp\").                   \n\
+       (also for BlueGene only: \"block\" or \"submp\").                   \n\
 									   \n\
   <ID> may be a configuration parameter name, job id, node name, partition \n\
        name, reservation name, job step id, or hostlist or pathname to a   \n\
@@ -1827,7 +1827,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 									   \n\
   <SPECIFICATIONS> are specified in the same format as the configuration   \n\
   file. You may wish to use the \"show\" keyword then use its output as    \n\
-  input for the update keyword, editing as needed.  Bluegene blocks/subbps \n\
+  input for the update keyword, editing as needed.  Bluegene blocks/submps \n\
   are only able to be set to an error or free state.  You can also remove  \n\
   blocks by specifying 'remove' as the state.  The remove option is only   \n\
   valid on Dynamic layout systems.                                         \n\

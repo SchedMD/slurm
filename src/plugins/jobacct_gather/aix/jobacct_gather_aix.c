@@ -266,27 +266,31 @@ extern void jobacct_gather_p_poll_data(
 		while ((prec = list_next(itr2))) {
 			//debug2("pid %d ? %d", prec->ppid, jobacct->pid);
 			if (prec->pid == jobacct->pid) {
+				uint32_t cpu_calc = prec->ssec + prec->usec;
+
 				/* find all my descendents */
 				_get_offspring_data(prec_list, prec,
 						    prec->pid);
 
 				/* tally their usage */
-				jobacct->max_rss = jobacct->tot_rss =
+				jobacct->max_rss =
 					MAX(jobacct->max_rss, (int)prec->rss);
-				total_job_mem += jobacct->max_rss;
-				jobacct->max_vsize = jobacct->tot_vsize =
+				jobacct->tot_rss = prec->rss;
+				total_job_mem += prec->rss;
+				jobacct->max_vsize =
 					MAX(jobacct->max_vsize,
 					    (int)prec->vsize);
+				jobacct->tot_vsize = prec->vsize;
 				total_job_vsize += prec->vsize;
-				jobacct->max_pages = jobacct->tot_pages =
+				jobacct->max_pages =
 					MAX(jobacct->max_pages, prec->pages);
-				jobacct->min_cpu = jobacct->tot_cpu =
-					MAX(jobacct->min_cpu,
-					    (prec->usec + prec->ssec));
+				jobacct->tot_pages = prec->pages;
+				jobacct->min_cpu =
+					MAX(jobacct->min_cpu, cpu_calc);
+				jobacct->tot_cpu = cpu_calc;
 				debug2("%d size now %d %d time %d",
 				      jobacct->pid, jobacct->max_rss,
 				      jobacct->max_vsize, jobacct->tot_cpu);
-
 				break;
 			}
 		}

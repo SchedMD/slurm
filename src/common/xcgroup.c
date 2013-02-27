@@ -901,7 +901,7 @@ int _file_write_uint64s(char* file_path, uint64_t* values, int nb)
 		do {
 			rc = write(fd, tstr, strlen(tstr)+1);
 		}
-		while (rc != 0 && errno == EINTR);
+		while (rc < 0 && errno == EINTR);
 		if (rc < 1) {
 			debug2("unable to add value '%s' to file '%s' : %m",
 			       tstr, file_path);
@@ -1126,7 +1126,7 @@ int _file_write_content(char* file_path, char* content, size_t csize)
 	do {
 		rc = write(fd, content, csize);
 	}
-	while (rc != 0 && errno == EINTR);
+	while (rc < 0 && errno == EINTR);
 
 	/* check read size */
 	if (rc < csize) {
