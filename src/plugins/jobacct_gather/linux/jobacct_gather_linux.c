@@ -178,7 +178,7 @@ static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
 	if (jobacct->last_total_cputime) {
 		return (jobacct->current_weighted_freq /
 			jobacct->last_total_cputime);
-	} else 
+	} else
 		return thisfreq;
 }
 
@@ -598,15 +598,15 @@ extern void jobacct_gather_p_poll_data(
 				jobacct->tot_pages = prec->pages;
 				jobacct->min_cpu =
 					MAX(jobacct->min_cpu, cpu_calc);
-				/* this - last */
-				jobacct->this_sampled_cputime =
-					cpu_calc - jobacct->tot_cpu;
+				jobacct->last_total_cputime = jobacct->tot_cpu;
 				jobacct->tot_cpu = cpu_calc;
 				debug2("%d mem size %u %u time %u(%u+%u)",
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
 				       prec->usec, prec->ssec);
 				/* compute frequency */
+				jobacct->this_sampled_cputime =
+					cpu_calc - jobacct->last_total_cputime;
 				_get_sys_interface_freq_line(
 					prec->last_cpu,
 					"cpuinfo_cur_freq", sbuf);

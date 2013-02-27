@@ -636,9 +636,7 @@ extern void jobacct_gather_p_poll_data(
 				jobacct->tot_pages = prec->pages;
 				jobacct->min_cpu =
 					MAX(jobacct->min_cpu, cpu_calc);
-				/* new - last */
-				jobacct->this_sampled_cputime =
-					cpu_calc - jobacct->tot_cpu;
+				jobacct->last_total_cputime = jobacct->tot_cpu;
 				jobacct->tot_cpu = cpu_calc;
 
 				debug2("%d mem size %u %u time %u(%u+%u) ",
@@ -646,9 +644,11 @@ extern void jobacct_gather_p_poll_data(
 				       jobacct->max_vsize, jobacct->tot_cpu,
 				       prec->usec, prec->ssec);
 				/* compute frequency */
+				jobacct->this_sampled_cputime =
+					cpu_calc - jobacct->last_total_cputime;
 				_get_sys_interface_freq_line(prec->last_cpu,
 						"cpuinfo_cur_freq", sbuf);
-				jobacct->act_cpufreq = (uint32_t)
+				jobacct->act_cpufreq =
 					_update_weighted_freq(jobacct, sbuf);
 				debug2("Task average frequency = %u",
 				       jobacct->act_cpufreq);
