@@ -617,23 +617,31 @@ extern void jobacct_gather_p_poll_data(
 		itr2 = list_iterator_create(prec_list);
 		while ((prec = list_next(itr2))) {
 			if (prec->pid == jobacct->pid) {
+				uint32_t cpu_calc =
+					(prec->ssec + prec->usec)/hertz;
 #if _DEBUG
 				info("pid:%u ppid:%u rss:%d KB",
 				     prec->pid, prec->ppid, prec->rss);
 #endif
 				/* tally their usage */
-				jobacct->max_rss = jobacct->tot_rss =
+				jobacct->max_rss =
 					MAX(jobacct->max_rss, prec->rss);
+				jobacct->tot_rss = prec->rss;
 				total_job_mem += prec->rss;
-				jobacct->max_vsize = jobacct->tot_vsize =
+				jobacct->max_vsize =
 					MAX(jobacct->max_vsize, prec->vsize);
+				jobacct->tot_vsize = prec->vsize;
 				total_job_vsize += prec->vsize;
-				jobacct->max_pages = jobacct->tot_pages =
+				jobacct->max_pages =
 					MAX(jobacct->max_pages, prec->pages);
-				jobacct->min_cpu = jobacct->tot_cpu =
-					MAX(jobacct->min_cpu,
-					    (prec->ssec / hertz +
-					     prec->usec / hertz));
+				jobacct->tot_pages = prec->pages;
+				jobacct->min_cpu =
+					MAX(jobacct->min_cpu, cpu_calc);
+				/* new - last */
+				jobacct->this_sampled_cputime =
+					cpu_calc - jobacct->tot_cpu;
+				jobacct->tot_cpu = cpu_calc;
+
 				debug2("%d mem size %u %u time %u(%u+%u) ",
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
@@ -641,16 +649,9 @@ extern void jobacct_gather_p_poll_data(
 				/* compute frequency */
 				_get_sys_interface_freq_line(prec->last_cpu,
 						"cpuinfo_cur_freq", sbuf);
-				jobacct->this_sampled_cputime =
-					(prec->ssec + prec->usec)
-					-  jobacct->last_total_cputime;
-				jobacct->last_total_cputime =
-						(prec->ssec + prec->usec);
-				step_sampled_cputime +=
-						jobacct->this_sampled_cputime;
 				jobacct->act_cpufreq = (uint32_t)
 					_update_weighted_freq(jobacct, sbuf);
-				debug2("frequency-based jobacct->act_cpufreq=%u",
+				debug2("Task average frequency = %u",
 				       jobacct->act_cpufreq);
 				debug2(" pid %d mem size %u %u time %u(%u+%u) ",
 				       jobacct->pid, jobacct->max_rss,

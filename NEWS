@@ -40,6 +40,7 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Fix for signaling steps when allocation ends before step.
  -- Fix for backfill scheduling logic with job preemption; starts more jobs.
  -- xcgroup - remove bugs with EINTR management in write calls
+ -- jobacct_gather - fix total values to not always == the max values.
 
 * Changes in SLURM 2.5.3
 ========================
