@@ -116,7 +116,6 @@ static int pagesize = 0;
 static DIR  *slash_proc = NULL;
 static pthread_mutex_t reading_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int cpunfo_frequency = 0;
-static uint32_t step_sampled_cputime = 0;
 static slurm_cgroup_conf_t slurm_cgroup_conf;
 
 /* Finally, pre-define all local routines. */
@@ -442,6 +441,7 @@ extern void jobacct_gather_p_poll_data(
 	char *cpu_time, *memory_stat, *ptr;
 	size_t cpu_time_size, memory_stat_size;
 	int utime, stime, total_rss, total_pgpgin;
+	int energy_counted = 0;
 
 	if (!pgid_plugin && cont_id == (uint64_t)NO_VAL) {
 		debug("cont_id hasn't been set yet not running poll");
@@ -612,7 +612,6 @@ extern void jobacct_gather_p_poll_data(
 		goto finished;	/* We have no business being here! */
 
 	itr = list_iterator_create(task_list);
-	step_sampled_cputime = 0;
 	while ((jobacct = list_next(itr))) {
 		itr2 = list_iterator_create(prec_list);
 		while ((prec = list_next(itr2))) {
@@ -657,11 +656,15 @@ extern void jobacct_gather_p_poll_data(
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
 				       prec->usec, prec->ssec);
-				acct_gather_energy_g_get_data(
-					ENERGY_DATA_JOULES_TASK,
-					&jobacct->energy);
-				debug2("getjoules_task energy = %u",
-				       jobacct->energy.consumed_energy);
+				debug2("energycounted= %d", energy_counted);
+				if (energy_counted == 0) {
+					acct_gather_energy_g_get_data(
+						ENERGY_DATA_JOULES_TASK,
+						&jobacct->energy);
+					debug2("getjoules_task energy = %u",
+					       jobacct->energy.consumed_energy);
+					energy_counted = 1;
+				}
 				break;
 			}
 		}
