@@ -92,6 +92,18 @@ typedef struct {
 } local_job_t;
 
 typedef struct {
+	char *assocs;
+	char *cpus;
+	char *flags;
+	char *id;
+	char *name;
+	char *nodes;
+	char *node_inx;
+	char *time_end;
+	char *time_start;
+} local_resv_t;
+
+typedef struct {
 	char *ave_cpu;
 	char *ave_pages;
 	char *ave_rss;
@@ -232,6 +244,32 @@ enum {
 	JOB_REQ_WCKEY,
 	JOB_REQ_WCKEYID,
 	JOB_REQ_COUNT
+};
+
+/* if this changes you will need to edit the corresponding enum */
+char *resv_req_inx[] = {
+	"id_resv",
+	"assoclist",
+	"cpus",
+	"flags",
+	"nodelist",
+	"node_inx",
+	"resv_name",
+	"time_start",
+	"time_end",
+};
+
+enum {
+	RESV_REQ_ID,
+	RESV_REQ_ASSOCS,
+	RESV_REQ_CPUS,
+	RESV_REQ_FLAGS,
+	RESV_REQ_NODES,
+	RESV_REQ_NODE_INX,
+	RESV_REQ_NAME,
+	RESV_REQ_START,
+	RESV_REQ_END,
+	RESV_REQ_COUNT
 };
 
 /* if this changes you will need to edit the corresponding
@@ -443,6 +481,40 @@ static int _unpack_local_job(local_job_t *object,
 	unpackstr_ptr(&object->uid, &tmp32, buffer);
 	unpackstr_ptr(&object->wckey, &tmp32, buffer);
 	unpackstr_ptr(&object->wckey_id, &tmp32, buffer);
+
+	return SLURM_SUCCESS;
+}
+
+static void _pack_local_resv(local_resv_t *object,
+			     uint16_t rpc_version, Buf buffer)
+{
+	packstr(object->assocs, buffer);
+	packstr(object->cpus, buffer);
+	packstr(object->flags, buffer);
+	packstr(object->id, buffer);
+	packstr(object->name, buffer);
+	packstr(object->nodes, buffer);
+	packstr(object->node_inx, buffer);
+	packstr(object->time_end, buffer);
+	packstr(object->time_start, buffer);
+}
+
+/* this needs to be allocated before calling, and since we aren't
+ * doing any copying it needs to be used before destroying buffer */
+static int _unpack_local_resv(local_resv_t *object,
+			      uint16_t rpc_version, Buf buffer)
+{
+	uint32_t tmp32;
+
+	unpackstr_ptr(&object->assocs, &tmp32, buffer);
+	unpackstr_ptr(&object->cpus, &tmp32, buffer);
+	unpackstr_ptr(&object->flags, &tmp32, buffer);
+	unpackstr_ptr(&object->id, &tmp32, buffer);
+	unpackstr_ptr(&object->name, &tmp32, buffer);
+	unpackstr_ptr(&object->nodes, &tmp32, buffer);
+	unpackstr_ptr(&object->node_inx, &tmp32, buffer);
+	unpackstr_ptr(&object->time_end, &tmp32, buffer);
+	unpackstr_ptr(&object->time_start, &tmp32, buffer);
 
 	return SLURM_SUCCESS;
 }
@@ -1451,6 +1523,135 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 	return insert;
 }
 
+/* returns count of resvations archived or SLURM_ERROR on error */
+static uint32_t _archive_resvs(mysql_conn_t *mysql_conn, char *cluster_name,
+			       time_t period_end, char *arch_dir,
+			       uint32_t archive_period)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *tmp = NULL, *query = NULL;
+	time_t period_start = 0;
+	uint32_t cnt = 0;
+	local_resv_t resv;
+	Buf buffer;
+	int error_code = 0, i = 0;
+
+	xfree(tmp);
+	xstrfmtcat(tmp, "%s", resv_req_inx[0]);
+	for(i=1; i<RESV_REQ_COUNT; i++) {
+		xstrfmtcat(tmp, ", %s", resv_req_inx[i]);
+	}
+
+	/* get all the events started before this time listed */
+	query = xstrdup_printf("select %s from \"%s_%s\" where "
+			       "time_start <= %ld "
+			       "&& time_end != 0 order by time_start asc",
+			       tmp, cluster_name, resv_table, period_end);
+	xfree(tmp);
+
+//	START_TIMER;
+	debug3("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	if (!(cnt = mysql_num_rows(result))) {
+		mysql_free_result(result);
+		return 0;
+	}
+
+	buffer = init_buf(high_buffer_size);
+	pack16(SLURMDBD_VERSION, buffer);
+	pack_time(time(NULL), buffer);
+	pack16(DBD_GOT_RESVS, buffer);
+	packstr(cluster_name, buffer);
+	pack32(cnt, buffer);
+
+	while ((row = mysql_fetch_row(result))) {
+		if (!period_start)
+			period_start = slurm_atoul(row[RESV_REQ_START]);
+
+		memset(&resv, 0, sizeof(local_resv_t));
+
+		resv.assocs = row[RESV_REQ_ASSOCS];
+		resv.cpus = row[RESV_REQ_CPUS];
+		resv.flags = row[RESV_REQ_FLAGS];
+		resv.id = row[RESV_REQ_ID];
+		resv.name = row[RESV_REQ_NAME];
+		resv.nodes = row[RESV_REQ_NODES];
+		resv.node_inx = row[RESV_REQ_NODE_INX];
+		resv.time_end = row[RESV_REQ_END];
+		resv.time_start = row[RESV_REQ_START];
+
+		_pack_local_resv(&resv, SLURMDBD_VERSION, buffer);
+	}
+	mysql_free_result(result);
+
+//	END_TIMER2("step query");
+//	info("event query took %s", TIME_STR);
+
+	error_code = archive_write_file(buffer, cluster_name,
+					period_start, period_end,
+					arch_dir, "resv", archive_period);
+	free_buf(buffer);
+
+	if (error_code != SLURM_SUCCESS)
+		return error_code;
+
+	return cnt;
+}
+
+/* returns sql statement from archived data or NULL on error */
+static char *_load_resvs(uint16_t rpc_version, Buf buffer,
+			 char *cluster_name, uint32_t rec_cnt)
+{
+	char *insert = NULL, *format = NULL;
+	local_resv_t object;
+	int i = 0;
+
+	xstrfmtcat(insert, "insert into \"%s_%s\" (%s",
+		   cluster_name, resv_table, resv_req_inx[0]);
+	xstrcat(format, "('%s'");
+	for(i=1; i<RESV_REQ_COUNT; i++) {
+		xstrfmtcat(insert, ", %s", resv_req_inx[i]);
+		xstrcat(format, ", '%s'");
+	}
+	xstrcat(insert, ") values ");
+	xstrcat(format, ")");
+	for(i=0; i<rec_cnt; i++) {
+		memset(&object, 0, sizeof(local_resv_t));
+		if (_unpack_local_resv(&object, rpc_version, buffer)
+		    != SLURM_SUCCESS) {
+			error("issue unpacking");
+			xfree(format);
+			xfree(insert);
+			break;
+		}
+		if (i)
+			xstrcat(insert, ", ");
+
+		xstrfmtcat(insert, format,
+			   object.assocs,
+			   object.cpus,
+			   object.flags,
+			   object.id,
+			   object.name,
+			   object.nodes,
+			   object.node_inx,
+			   object.time_end,
+			   object.time_start);
+	}
+//	END_TIMER2("step query");
+//	info("resv query took %s", TIME_STR);
+	xfree(format);
+
+	return insert;
+}
+
 /* returns count of steps archived or SLURM_ERROR on error */
 static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 			       time_t period_end, char *arch_dir,
@@ -1921,6 +2122,44 @@ exit_steps:
 		}
 	}
 exit_jobs:
+
+	if (arch_cond->purge_resv != NO_VAL) {
+		/* remove all data from resv table that was older than
+		 * last_submit * arch_cond->purge_resv.
+		 */
+		if (!(curr_end = archive_setup_end_time(
+			      last_submit, arch_cond->purge_resv))) {
+			error("Parsing purge resv");
+			return SLURM_ERROR;
+		}
+
+		debug4("Purging resv entires before %ld for %s",
+		       curr_end, cluster_name);
+
+		if (SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_resv)) {
+			rc = _archive_resvs(mysql_conn, cluster_name,
+					   curr_end, arch_cond->archive_dir,
+					   arch_cond->purge_resv);
+			if (!rc)
+				goto exit_resvs;
+			else if (rc == SLURM_ERROR)
+				return rc;
+		}
+
+		query = xstrdup_printf("delete from \"%s_%s\" "
+				       "where time_submit <= %ld "
+				       "&& time_end != 0",
+				       cluster_name, resv_table, curr_end);
+		debug3("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, THIS_FILE, __LINE__, query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+		if (rc != SLURM_SUCCESS) {
+			error("Couldn't remove old resv data");
+			return SLURM_ERROR;
+		}
+	}
+exit_resvs:
 	return SLURM_SUCCESS;
 }
 
@@ -2061,6 +2300,9 @@ extern int as_mysql_jobacct_process_archive_load(
 		break;
 	case DBD_GOT_JOBS:
 		data = _load_jobs(ver, buffer, cluster_name, rec_cnt);
+		break;
+	case DBD_GOT_RESVS:
+		data = _load_resvs(ver, buffer, cluster_name, rec_cnt);
 		break;
 	case DBD_STEP_START:
 		data = _load_steps(ver, buffer, cluster_name, rec_cnt);

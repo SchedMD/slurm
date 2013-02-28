@@ -24,6 +24,7 @@ documents those changes that are of interest to users and admins.
     submitted. This can result in lower priority jobs from being backfill
     scheduled instead of newly arrived higher priority jobs, but will permit
     more queued jobs to be considered for backfill scheduling.
+ -- Added support to purge reservation records from accounting.
 
 * Changes in SLURM 2.6.0pre1
 ============================
