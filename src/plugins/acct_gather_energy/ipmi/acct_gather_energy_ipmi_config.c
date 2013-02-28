@@ -136,11 +136,13 @@ extern int read_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 	xassert(slurm_ipmi_conf);
 
 	reset_slurm_ipmi_conf(slurm_ipmi_conf);
+	slurm_ipmi_conf->freq = DEFAULT_IPMI_FREQ;
 
 	/* Get the ipmi.conf path and validate the file */
 	conf_path = get_extra_conf_path("ipmi.conf");
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
-		info("No ipmi.conf file (%s)", conf_path);
+		info("No ipmi.conf file (%s) Frequency=%d",
+		     conf_path, slurm_ipmi_conf->freq);
 	} else {
 		debug("Reading ipmi.conf file %s", conf_path);
 
@@ -220,8 +222,7 @@ extern int read_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 				     "EntitySensorNames", tbl))
 			slurm_ipmi_conf->entity_sensor_names = false;
 
-		if (!s_p_get_uint32(&slurm_ipmi_conf->freq, "Frequency", tbl))
-			slurm_ipmi_conf->freq = DEFAULT_IPMI_FREQ;
+		s_p_get_uint32(&slurm_ipmi_conf->freq, "Frequency", tbl);
 
 		if ((int)slurm_ipmi_conf->freq <= 0)
 			fatal("Frequency must be a positive integer "

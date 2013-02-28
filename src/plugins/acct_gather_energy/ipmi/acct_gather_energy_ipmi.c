@@ -135,8 +135,9 @@ static bool flag_thread_write_running = false;
 static bool flag_thread_started = false;
 static bool flag_slurmd_process = false;
 static pthread_mutex_t ipmi_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_t thread_ipmi_id_run = (pthread_t) -1;
-pthread_t thread_ipmi_id_write = (pthread_t) -1;
+pthread_t thread_ipmi_id_launcher = 0;
+pthread_t thread_ipmi_id_run = 0;
+pthread_t thread_ipmi_id_write = 0;
 //__progname may need security for portability
 extern char *__progname;
 
@@ -187,7 +188,7 @@ static int _init_ipmi_config (void)
 	 * information.
 	 */
 	unsigned int ipmimonitoring_init_flags = 0;
-
+	memset(&ipmi_config, 0, sizeof(struct ipmi_monitoring_ipmi_config));
 	ipmi_config.driver_type = (int) slurm_ipmi_conf.driver_type;
 	ipmi_config.disable_auto_probe =
 		(int) slurm_ipmi_conf.disable_auto_probe;
@@ -287,7 +288,7 @@ static int _check_power_sensor(void)
 		     sensor_reading_flags,
 		     record_ids,
 		     record_ids_length,
-		     NULL,NULL)) != record_ids_length) {
+		     NULL, NULL)) != record_ids_length) {
 		error("ipmi_monitoring_sensor_readings_by_record_id: %s",
 		      ipmi_monitoring_ctx_errormsg(ipmi_ctx));
 		return SLURM_FAILURE;
@@ -519,8 +520,6 @@ static int _thread_init(void)
 
 	if (_init_ipmi_config() != SLURM_SUCCESS) {
 		//TODO verbose error?
-		if (ipmi_ctx)
-			ipmi_monitoring_ctx_destroy(ipmi_ctx);
 		rc = SLURM_FAILURE;
 	} else {
 		if ((slurm_ipmi_conf.power_sensor_num == -1
@@ -536,6 +535,10 @@ static int _thread_init(void)
 	local_energy->base_watts = 0;
 	local_energy->current_watts = last_update_watt;
 	slurm_mutex_unlock(&ipmi_mutex);
+
+	if (rc != SLURM_SUCCESS)
+		if (ipmi_ctx)
+			ipmi_monitoring_ctx_destroy(ipmi_ctx);
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("%s thread init", plugin_name);
@@ -563,6 +566,9 @@ static void *_thread_ipmi_write(void *no_data)
 	int pipe;
 	char *name = NULL;
 	ipmi_message_t message;
+
+	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("ipmi-thread-write: launched");
@@ -612,7 +618,9 @@ static void *_thread_ipmi_run(void *no_data)
 // need input (attr)
 	int time_lost;
 	pthread_attr_t attr_write;
-	int rc = SLURM_SUCCESS;
+
+	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	flag_thread_run_running = true;
 	flag_energy_accounting_shutdown = false;
@@ -631,13 +639,6 @@ static void *_thread_ipmi_run(void *no_data)
 
 	//launch _thread_ipmi_write
 	slurm_attr_init(&attr_write);
-	rc = pthread_attr_setdetachstate(&attr_write, PTHREAD_CREATE_DETACHED);
-	if (rc != 0) {
-		//xfree(arg);
-		error("Unable to set detachstate on attr: %m");
-		slurm_attr_destroy(&attr_write);
-		return NULL;
-	}
 	if (pthread_create(&thread_ipmi_id_write, &attr_write,
 			   &_thread_ipmi_write, NULL)) {
 		//if (pthread_create(... (void *)arg)) {
@@ -662,23 +663,16 @@ static void *_thread_ipmi_run(void *no_data)
 	return NULL;
 }
 
-static int _thread_launcher(void)
+static void *_thread_launcher(void *no_data)
 {
 	//what arg would countain? frequency, socket?
-	int rc = SLURM_SUCCESS;
 	pthread_attr_t attr_run;
+	time_t begin_time;
+	int rc = SLURM_SUCCESS;
+
 	flag_slurmd_process = true;
-	//my_struct *arg = xmalloc(sizeof(my_struct));
-	//arg->bla = bla;
 
 	slurm_attr_init(&attr_run);
-	rc = pthread_attr_setdetachstate(&attr_run, PTHREAD_CREATE_DETACHED);
-	if (rc != 0) {
-		//xfree(arg);
-		error("Unable to set detachstate on attr: %m");
-		slurm_attr_destroy(&attr_run);
-		return rc;
-	}
 	if (pthread_create(&thread_ipmi_id_run, &attr_run,
 			   &_thread_ipmi_run, NULL)) {
 		//if (pthread_create(... (void *)arg)) {
@@ -687,10 +681,54 @@ static int _thread_launcher(void)
 	}
 	slurm_attr_destroy(&attr_run);
 
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("%s thread launched", plugin_name);
+	begin_time = time(NULL);
+	while (rc == SLURM_SUCCESS) {
+		if (time(NULL) - begin_time > TIMEOUT) {
+			error("ipmi thread launch timeout");
+			rc = SLURM_ERROR;
+			break;
+		}
+		if (flag_thread_run_running)
+			break;
+		_task_sleep(1);
+	}
 
-	return rc;
+	begin_time = time(NULL);
+	while (rc == SLURM_SUCCESS) {
+		if (time(NULL) - begin_time > TIMEOUT) {
+			error("ipmi thread init timeout");
+			rc = SLURM_ERROR;
+			break;
+		}
+		if (!flag_thread_run_running) {
+			error("ipmi thread lost");
+			rc = SLURM_ERROR;
+			break;
+		}
+		if (flag_thread_started)
+			break;
+		_task_sleep(1);
+	}
+
+	if (rc != SLURM_SUCCESS) {
+		error("%s threads failed to start in a timely manner",
+		     plugin_name);
+		if (thread_ipmi_id_write) {
+			pthread_cancel(thread_ipmi_id_write);
+			pthread_join(thread_ipmi_id_write, NULL);
+		}
+		flag_thread_write_running = false;
+
+		if (thread_ipmi_id_run) {
+			pthread_cancel(thread_ipmi_id_run);
+			pthread_join(thread_ipmi_id_run, NULL);
+		}
+		flag_thread_run_running = false;
+
+		flag_energy_accounting_shutdown = true;
+	}
+
+	return NULL;
 }
 
 static int _get_joules_task(void)
@@ -766,53 +804,32 @@ extern int init(void)
 	local_energy->consumed_energy=0;
 	local_energy->base_consumed_energy=0;
 	local_energy->base_watts=0;
-	if (read_slurm_ipmi_conf(&slurm_ipmi_conf)!=SLURM_SUCCESS) {
+	if (read_slurm_ipmi_conf(&slurm_ipmi_conf) != SLURM_SUCCESS) {
 		local_energy->consumed_energy = NO_VAL;
 		rc = SLURM_ERROR;
 	}
 	flag_slurmd_process = _is_thread_launcher();
 	if (flag_slurmd_process) {
-		rc = _thread_launcher();
-		time_t begin_time = time(NULL);
-		while (rc == SLURM_SUCCESS) {
-			if (time(NULL) - begin_time > TIMEOUT) {
-				error("ipmi thread launch timeout");
-				rc = SLURM_ERROR;
-				break;
-			}
-			if (flag_thread_run_running) {
-				break;
-			}
-			_task_sleep(1);
+		pthread_attr_t attr;
+		slurm_attr_init(&attr);
+		if (pthread_create(&thread_ipmi_id_launcher, &attr,
+				   &_thread_launcher, NULL)) {
+			//if (pthread_create(... (void *)arg)) {
+			debug("energy accounting failed to create "
+			      "_thread_launcher thread: %m");
+			rc = SLURM_ERROR;
 		}
-		begin_time = time(NULL);
-		while (rc == SLURM_SUCCESS) {
-			if (time(NULL) - begin_time > TIMEOUT) {
-				error("ipmi thread init timeout");
-				rc = SLURM_ERROR;
-				break;
-			}
-			if (!flag_thread_run_running) {
-				error("ipmi thread lost");
-				rc = SLURM_ERROR;
-				break;
-			}
-			if (flag_thread_started) {
-				break;
-			}
-			_task_sleep(1);
-		}
-		if (rc != SLURM_SUCCESS) {
-			if (debug_flags & DEBUG_FLAG_ENERGY)
-				info("%s failed to start", plugin_name);
-			flag_energy_accounting_shutdown = true;
-		}
-	} else {
+		slurm_attr_destroy(&attr);
+		if (debug_flags & DEBUG_FLAG_ENERGY)
+			info("%s thread launched", plugin_name);
+	} else
 		_first_update_task_energy();
-	}
-	if (rc == SLURM_SUCCESS) {
+
+	if (rc == SLURM_SUCCESS)
 		verbose("%s loaded", plugin_name);
-	}
+	else
+		flag_energy_accounting_shutdown = true;
+
 	return rc;
 }
 
@@ -820,10 +837,19 @@ extern int fini(void)
 {
 	flag_energy_accounting_shutdown = true;
 	time_t begin_fini = time(NULL);
+
 	while (flag_thread_run_running || flag_thread_write_running) {
 		if ((time(NULL) - begin_fini) > (slurm_ipmi_conf.freq + 1)) {
 			error("Ipmi threads not finilized in appropriate time. "
 			      "Exit plugin without finalizing threads.");
+			if (thread_ipmi_id_write) {
+				pthread_cancel(thread_ipmi_id_write);
+				pthread_join(thread_ipmi_id_write, NULL);
+			}
+			if (thread_ipmi_id_run) {
+				pthread_cancel(thread_ipmi_id_run);
+				pthread_join(thread_ipmi_id_run, NULL);
+			}
 			break;
 		}
 		_task_sleep(1);
@@ -845,6 +871,7 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 					 acct_gather_energy_t *energy)
 {
 	int rc = SLURM_SUCCESS;
+
 	switch (data_type) {
 	case ENERGY_DATA_JOULES_TASK:
 		slurm_mutex_lock(&ipmi_mutex);
