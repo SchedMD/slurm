@@ -78,7 +78,8 @@ static char *_uint16_array_to_str_xmalloc(int array_len,
 
 static int _setup_job_desc_msg(uint32_t np, uint32_t request_node_num,
 			       char *node_range_list, const char *flag,
-			       time_t timeout, job_desc_msg_t *job_desc_msg);
+			       time_t timeout, const char *cpu_bind,
+			       uint32_t mem_per_cpu, job_desc_msg_t *job_desc_msg);
 
 /**
  *	select n nodes from the given node_range_list.
@@ -300,6 +301,8 @@ static int _get_tasks_per_node(
  *		node_range_list: requested node pool
  *		flag: optional or mandatory
  *		timeout:
+ *		cpu_bind: e.g., cores, sockets, threads
+ *		mem_per_cpu: memory size per CPU (MB)
  *	OUT Parameter:
  *		job_desc_msg
  *	RET OUT
@@ -308,7 +311,8 @@ static int _get_tasks_per_node(
  */
 static int _setup_job_desc_msg(uint32_t np, uint32_t request_node_num,
 			       char *node_range_list, const char *flag,
-			       time_t timeout, job_desc_msg_t *job_desc_msg)
+			       time_t timeout, const char *cpu_bind,
+			       uint32_t mem_per_cpu, job_desc_msg_t *job_desc_msg)
 {
 	char final_req_node_list[SIZE] = "";
 	int rc;
@@ -381,6 +385,18 @@ static int _setup_job_desc_msg(uint32_t np, uint32_t request_node_num,
 		/* if N == 0 && node_list == "", do nothing */
 	}
 
+	/* for cgroup */
+	if (mem_per_cpu > 0)
+		job_desc_msg->pn_min_memory =  mem_per_cpu | MEM_PER_CPU;
+
+	if (NULL != cpu_bind || 0 != strlen(cpu_bind)) {
+		if(0 == strcmp(cpu_bind, "cores"))
+			job_desc_msg->cpu_bind_type = CPU_BIND_TO_CORES;
+		else if (0 == strcmp(cpu_bind, "sockets"))
+			job_desc_msg->cpu_bind_type = CPU_BIND_TO_SOCKETS;
+		else if (0 == strcmp(cpu_bind, "threads"))
+			job_desc_msg->cpu_bind_type = CPU_BIND_TO_THREADS;
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -401,6 +417,8 @@ static int _setup_job_desc_msg(uint32_t np, uint32_t request_node_num,
  *		node_range_list: specified node range to select from
  *		flag: optional or mandatory
  *		timeout: timeout
+ *		cpu_bind：e.g., cores, threads, sockets
+ *		mem_per_cpu: memory size per CPU (MB)
  *	OUT Parameter:
  *		jobid: slurm jobid
  *		reponse_node_list:
@@ -411,7 +429,8 @@ static int _setup_job_desc_msg(uint32_t np, uint32_t request_node_num,
  */
 int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
 		      char *node_range_list, const char *flag,
-		      time_t timeout, uint32_t *slurm_jobid,
+		      time_t timeout, const char *cpu_bind,
+		      uint32_t mem_per_cpu, uint32_t *slurm_jobid,
 		      char *reponse_node_list, char *tasks_per_node)
 {
 	job_desc_msg_t job_desc_msg;
@@ -420,7 +439,7 @@ int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
 
 	slurm_init_job_desc_msg (&job_desc_msg);
 	rc = _setup_job_desc_msg(np, request_node_num, node_range_list, flag,
-							timeout, &job_desc_msg);
+					 timeout, cpu_bind, mem_per_cpu, &job_desc_msg);
 	if (rc)
 		return SLURM_FAILURE;
 
@@ -470,6 +489,8 @@ int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
  *		node_range_list: specified node range to select from
  *		flag: optional or mandatory
  *		timeout: timeout
+ *		cpu_bind: cpu bind type, e.g., cores, socket
+ *		mem_per_cpu: memory size per cpu (MB)
  *	OUT Parameter:
  *		slurm_jobid: slurm jobid
  *		reponse_node_list:
@@ -480,7 +501,8 @@ int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
  */
 int allocate_node(uint32_t np, uint32_t request_node_num,
 		  char *node_range_list, const char *flag,
-		  time_t timeout, uint32_t *slurm_jobid,
+		  time_t timeout, const char *cpu_bind,
+		  uint32_t mem_per_cpu, uint32_t *slurm_jobid,
 		  char *reponse_node_list, char *tasks_per_node)
 {
 	int rc, error_code, i;
@@ -493,7 +515,7 @@ int allocate_node(uint32_t np, uint32_t request_node_num,
 
 	slurm_init_job_desc_msg (&job_desc_msg);
 	rc = _setup_job_desc_msg(np, request_node_num, node_range_list, flag,
-				 timeout, &job_desc_msg);
+				 timeout, cpu_bind, mem_per_cpu, &job_desc_msg);
 
 	if (rc)
 		return SLURM_FAILURE;
