@@ -1956,7 +1956,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		_sync_bitmaps(node_ptr, reg_msg->job_count);
 	}
 
-	memcpy(node_ptr->energy, reg_msg->energy, sizeof(acct_gather_energy_t));
+	if (reg_msg->energy)
+		memcpy(node_ptr->energy, reg_msg->energy,
+		       sizeof(acct_gather_energy_t));
 	node_ptr->last_response = now;
 
 	return error_code;
@@ -2264,8 +2266,9 @@ extern int validate_nodes_via_front_end(
 				      (node_ptr->run_job_cnt +
 				       node_ptr->comp_job_cnt));
 		}
-		memcpy(node_ptr->energy, reg_msg->energy,
-		       sizeof(acct_gather_energy_t));
+		if (reg_msg->energy)
+			memcpy(node_ptr->energy, reg_msg->energy,
+			       sizeof(acct_gather_energy_t));
 	}
 
 	if (reg_hostlist) {
