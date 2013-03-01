@@ -150,7 +150,7 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 			/* Make sure the conn type is correct with the
 			 * new count */
 			if (new_size > 1) {
-				if (first_conn_type != (uint16_t)NO_VAL)
+				if (first_conn_type == (uint16_t)NO_VAL)
 					jobinfo->conn_type[i] = SELECT_NAV;
 				else if (first_conn_type >= SELECT_SMALL)
 					jobinfo->conn_type[i] =
