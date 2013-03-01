@@ -254,6 +254,7 @@ static char *_getline(const char *prompt)
 	char buf[4096];
 	char *line;
 	int len;
+
 	printf("%s", prompt);
 
 	/* Set "line" here to avoid a warning, discard later */
@@ -261,11 +262,13 @@ static char *_getline(const char *prompt)
 	if (line == NULL)
 		return NULL;
 	len = strlen(buf);
-	if ((len > 0) && (buf[len-1] == '\n'))
+	if ((len == 0) || (len >= 4096))
+		return NULL;
+	if (buf[len-1] == '\n')
 		buf[len-1] = '\0';
 	else
 		len++;
-	line = malloc (len * sizeof(char));
+	line = malloc(len * sizeof(char));
 	if (!line)
 		return NULL;
 	return strncpy(line, buf, len);

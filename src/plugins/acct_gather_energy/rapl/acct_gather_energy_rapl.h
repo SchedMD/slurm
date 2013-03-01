@@ -65,7 +65,4 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 extern int init ( void );
 extern int fini ( void );
 
-extern int acct_gather_energy_p_start_thread(void);
-extern int acct_gather_energy_p_end_thread(void);
-
 #endif

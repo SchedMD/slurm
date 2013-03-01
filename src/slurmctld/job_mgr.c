@@ -1012,23 +1012,13 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			part_ptr_list = get_part_list(partition);
 			if (part_ptr_list) {
 				part_ptr = list_peek(part_ptr_list);
-				job_ptr->priority_list = list_create(NULL);
-				for (i = 0; i < list_count(part_ptr_list); i++) {
-					uint32_t *prio_per_part;
-					prio_per_part = xmalloc(sizeof(uint32_t));
-					if (!prio_per_part)
-						fatal("malloc fails for part_per_prio pointer");
-					debug("job %u using more than one partition. Adding "
-					      "element to job priority_list", job_ptr->job_id);
-					list_append(job_ptr->priority_list, prio_per_part);
-				}
+			} else {
+				verbose("Invalid partition (%s) for job_id %u",
+					partition, job_id);
+				/* not fatal error, partition could have been
+				 * removed, reset_job_bitmaps() will clean-up
+				 * this job */
 			}
-		}
-		if (part_ptr == NULL) {
-			verbose("Invalid partition (%s) for job_id %u",
-				partition, job_id);
-			/* not fatal error, partition could have been removed,
-			 * reset_job_bitmaps() will clean-up this job */
 		}
 
 		safe_unpackstr_xmalloc(&name, &name_len, buffer);
@@ -4230,19 +4220,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->part_ptr_list = part_ptr_list;
 
-	if (part_ptr_list) {
-		job_ptr->priority_list = list_create(NULL);
-	       	for (i = 0; i < list_count(part_ptr_list); i++) {
-			uint32_t *prio_per_part;
-			prio_per_part = xmalloc(sizeof(uint32_t));
-			if (!prio_per_part)
-				fatal("malloc fails for part_per_prio pointer");
-			debug("job %u using more than one partition. Adding "
-			      "element to job priority_list", job_ptr->job_id);
-			list_append(job_ptr->priority_list, prio_per_part);
-		}
-	}
-
 	part_ptr_list = NULL;
 	if ((error_code = checkpoint_alloc_jobinfo(&(job_ptr->check_job)))) {
 		error("Failed to allocate checkpoint info for job");
@@ -5584,7 +5561,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->partition);
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
-	FREE_NULL_LIST(job_ptr->priority_list);
+	xfree(job_ptr->priority_array);
 	slurm_destroy_priority_factors_object(job_ptr->prio_factors);
 	xfree(job_ptr->resp_host);
 	xfree(job_ptr->resv_name);
@@ -7006,6 +6983,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			xfree(job_ptr->partition);
 			job_ptr->partition = xstrdup(job_specs->partition);
 			job_ptr->part_ptr = tmp_part_ptr;
+			xfree(job_ptr->priority_array);	/* Rebuilt in plugin */
 			FREE_NULL_LIST(job_ptr->part_ptr_list);
 			job_ptr->part_ptr_list = part_ptr_list;
 			part_ptr_list = NULL;	/* nothing to free */
@@ -8412,7 +8390,9 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 		return;
 	}
 
-	memcpy(node_ptr->energy, reg_msg->energy, sizeof(acct_gather_energy_t));
+	if (reg_msg->energy)
+		memcpy(node_ptr->energy, reg_msg->energy,
+		       sizeof(acct_gather_energy_t));
 
 	if (node_ptr->up_time > reg_msg->up_time) {
 		verbose("Node %s rebooted %u secs ago",

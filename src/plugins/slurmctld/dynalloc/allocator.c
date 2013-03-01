@@ -52,7 +52,8 @@ static void _parse_job_params(const char *cmd, char *orte_jobid,
 
 static void _parse_app_params(const char *cmd, char *appid,
 					uint32_t *np, uint32_t *request_node_num,
-					char *node_range_list, char *flag);
+					char *node_range_list, char *flag,
+					char *cpu_bind, uint32_t *mem_per_cpu);
 
 static void _allocate_app_op(const char *msg_app,
 							size_t app_timeout,
@@ -119,10 +120,13 @@ static void _parse_job_params(const char *cmd, char *orte_jobid,
  * 	request_node_num:
  * 	node_range_list:
  * 	flag: mandatory or optional
+ * 	cpu_bind: cpu bind type, e.g., cores
+ * 	mem_per_cpu: memory per cpu (MB)
  */
 static void _parse_app_params(const char *cmd, char *appid,
 					uint32_t *np, uint32_t *request_node_num,
-					char *node_range_list, char *flag)
+					char *node_range_list, char *flag,
+					char *cpu_bind, uint32_t *mem_per_cpu)
 {
 	char *tmp = NULL;
 	char *p_str = NULL;
@@ -151,6 +155,14 @@ static void _parse_app_params(const char *cmd, char *appid,
 			pos = strchr(p_str, '=');
 			pos++;  /* step over the = */
             strcpy(flag, pos);
+		} else if (strstr(p_str, "cpu_bind")) {
+			pos = strchr(p_str, '=');
+			pos++;
+			strcpy(cpu_bind, pos);
+		} else if (strstr(p_str, "mem_per_cpu")) {
+			pos = strchr(p_str, '=');
+			pos++;
+			*mem_per_cpu = atoi(pos);
 		}
 		p_str = strtok(NULL, " ");
 	}
@@ -177,6 +189,9 @@ static void _allocate_app_op(const char *msg_app,
 	uint32_t  request_node_num = 0;
 	char node_range_list[SIZE] = "";
 	char flag[16] = "mandatory";  /* if not specified, by default */
+
+	char cpu_bind[32] = "";
+	uint32_t mem_per_cpu = 0;
 	/* out params */
 	uint32_t slurm_jobid;
 	char resp_node_list[SIZE];
@@ -184,10 +199,11 @@ static void _allocate_app_op(const char *msg_app,
 	int rc;
 
 	_parse_app_params(msg_app, appid, &np, &request_node_num,
-									node_range_list, flag);
+					node_range_list, flag, cpu_bind, &mem_per_cpu);
 
 	rc = allocate_node(np, request_node_num, node_range_list, flag,
-				app_timeout, &slurm_jobid, resp_node_list, tasks_per_node);
+						app_timeout, cpu_bind, mem_per_cpu,
+						&slurm_jobid, resp_node_list, tasks_per_node);
 
 	if (SLURM_SUCCESS == rc) {
 		sprintf(app_resp_msg,
@@ -196,7 +212,6 @@ static void _allocate_app_op(const char *msg_app,
 	} else {
 		sprintf(app_resp_msg, "app=%s allocate_failure", appid);
 	}
-	return SLURM_SUCCESS;
 }
 
 /*

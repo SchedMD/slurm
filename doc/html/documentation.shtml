@@ -44,6 +44,7 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li>SLURM Scheduling</li>
 <ul>
 <li><a href="cons_res.html">Consumable Resources Guide</a></li>
+<li><a href="dynalloc.html">Dynamic Resources Allocation (dynalloc)</a></li>
 <li><a href="elastic_computing.html">Elastic Computing</a></li>
 <li><a href="gang_scheduling.html">Gang Scheduling</a></li>
 <li><a href="gres.html">Generic Resource (GRES) Scheduling</a></li>
@@ -110,6 +111,6 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 29 January 2013</p>
+<p style="text-align:center;">Last modified 19 February 2013</p>
 
 <!--#include virtual="footer.txt"-->

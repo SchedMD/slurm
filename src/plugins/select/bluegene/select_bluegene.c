@@ -1351,8 +1351,6 @@ extern int select_p_state_save(char *dir_name)
 	char *old_file, *new_file, *reg_file;
 	uint32_t blocks_packed = 0, tmp_offset, block_offset;
 	Buf buffer = init_buf(BUF_SIZE);
-	slurmctld_lock_t job_read_lock =
-		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 
 	DEF_TIMERS;
 
@@ -2152,9 +2150,6 @@ extern int select_p_pack_select_info(time_t last_query_time,
 
 		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 			if (bg_lists->main) {
-				slurmctld_lock_t job_read_lock =
-					{ NO_LOCK, READ_LOCK,
-					  NO_LOCK, NO_LOCK };
 				/* Lock job read before block to avoid
 				 * deadlock job lock is needed because
 				 * we look at the job_ptr's to send
@@ -2421,7 +2416,14 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 			if (found_record->job_running > NO_JOB_RUNNING) {
 				if (found_record->job_ptr
 				    && IS_JOB_CONFIGURING(
-					    found_record->job_ptr))
+					    found_record->job_ptr)) {
+					/* If the block is waiting for
+					   a block that isn't freeing
+					   we have to remove the
+					   modifying flag or the block
+					   won't be freed correctly.
+					*/
+					found_record->modifying = 0;
 					info("Pending job %u on block %s "
 					     "will try to be requeued "
 					     "because overlapping block %s "
@@ -2429,7 +2431,7 @@ extern int select_p_update_block(update_block_msg_t *block_desc_ptr)
 					     found_record->job_running,
 					     found_record->bg_block_id,
 					     bg_record->bg_block_id);
-				else
+				} else
 					info("Failing job %u on block %s "
 					     "because overlapping block %s "
 					     "is in an error state.",
@@ -2923,6 +2925,9 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&ba_system_mutex);
 	slurm_mutex_unlock(&block_state_mutex);
+	if (step_ptr->job_ptr->kill_on_node_fail)
+		bg_requeue_job(step_ptr->job_ptr->job_id, 0, 1);
+
 #endif
 	return SLURM_SUCCESS;
 }

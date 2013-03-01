@@ -483,9 +483,40 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 
 	rc = SLURM_SUCCESS;
 	if ((bg_record->state == BG_BLOCK_FREE)
-	    || (bg_record->state & BG_BLOCK_ERROR_FLAG))
+	    || (bg_record->state & BG_BLOCK_ERROR_FLAG)) {
+
+		if (bg_record->err_ratio
+		    && (bg_record->state == BG_BLOCK_FREE)) {
+			/* Sometime the realtime server can report
+			   software error on cnodes even though the
+			   block is free.  If this is the case we need
+			   to manually clear them.
+			*/
+			ba_mp_t *found_ba_mp;
+			ListIterator itr =
+				list_iterator_create(bg_record->ba_mp_list);
+			debug("block %s is free, but has %u cnodes in error",
+			      bg_record->bg_block_id, bg_record->cnode_err_cnt);
+			while ((found_ba_mp = list_next(itr))) {
+				if (!found_ba_mp->used)
+					continue;
+
+				if (!found_ba_mp->cnode_err_bitmap)
+					found_ba_mp->cnode_err_bitmap =
+						bit_alloc(
+							bg_conf->mp_cnode_cnt);
+
+				bit_nclear(found_ba_mp->cnode_err_bitmap, 0,
+					   bit_size(found_ba_mp->
+						    cnode_err_bitmap)-1);
+			}
+			list_iterator_destroy(itr);
+			bg_record->cnode_err_cnt = 0;
+			bg_record->err_ratio = 0;
+		}
+
 		remove_from_bg_list(bg_lists->booted, bg_record);
-	else if (count >= MAX_FREE_RETRIES) {
+	} else if (count >= MAX_FREE_RETRIES) {
 		/* Something isn't right, go mark this one in an error
 		   state. */
 		update_block_msg_t block_msg;
@@ -510,8 +541,8 @@ extern int bg_free_block(bg_record_t *bg_record, bool wait, bool locked)
 }
 
 /* block_state_mutex should be unlocked before calling this */
-extern int free_block_list(uint32_t job_id, List track_list,
-			   bool destroy, bool wait)
+extern void free_block_list(uint32_t job_id, List track_list,
+			    bool destroy, bool wait)
 {
 	bg_record_t *bg_record = NULL;
 	int retries;
@@ -523,7 +554,7 @@ extern int free_block_list(uint32_t job_id, List track_list,
 	kill_job_struct_t *freeit;
 
 	if (!track_list || !list_count(track_list))
-		return SLURM_SUCCESS;
+		return;
 
 	bg_free_list = xmalloc(sizeof(bg_free_block_list_t));
 	bg_free_list->track_list = list_create(NULL);
@@ -598,7 +629,7 @@ extern int free_block_list(uint32_t job_id, List track_list,
 		   and frees the memory of bg_free_list.
 		*/
 		_track_freeing_blocks(bg_free_list);
-		return SLURM_SUCCESS;
+		return;
 	}
 
 	/* _track_freeing_blocks handles cleanup */
@@ -616,7 +647,7 @@ extern int free_block_list(uint32_t job_id, List track_list,
 		usleep(1000);
 	}
 	slurm_attr_destroy(&attr_agent);
-	return SLURM_SUCCESS;
+	return;
 }
 
 /* Determine if specific slurm node is already in DOWN or DRAIN state */

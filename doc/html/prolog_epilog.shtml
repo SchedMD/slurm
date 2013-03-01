@@ -293,6 +293,13 @@ step allocations, when and where they run.</p>
 	</tbody></table>
 </center>
 
+<p>The task prolog is executed with the same environment as the user tasks to
+be initiated. The standard output of that program is read and processed as
+follows:<br>
+<i>export name=value</i> sets an environment variable for the user task<br>
+<i>unset name</i> clears an environment variable from the user task<br>
+<i>print ...</i> writes to the task's standard output.</p>
+
 <p>Plugins functions are may also be useful to execute logic at various well
 defined points.</p>
 
@@ -315,6 +322,6 @@ PrologSlurmctld fails.</p>
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 26 November 2012</p>
+<p style="text-align:center;">Last modified 26 February 2013</p>
 
 <!--#include virtual="footer.txt"-->

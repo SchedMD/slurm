@@ -523,10 +523,10 @@ Select one value for <B>ReturnToService</B>:<BR>
 <H2>Scheduling</H2>
 Define the mechanism to be used for controlling job ordering.<BR>
 Select one value for <B>SchedulerType</B>:<BR>
-<input type="radio" name="sched_type" value="builtin">  <B>Builtin</B>: First-In
-First-Out (FIFO)<BR>
 <input type="radio" name="sched_type" value="backfill" checked> <B>Backfill</B>:
 FIFO with backfill<BR>
+<input type="radio" name="sched_type" value="builtin">  <B>Builtin</B>: First-In
+First-Out (FIFO)<BR>
 <input type="radio" name="sched_type" value="gang">  <B>Gang</B>: Gang scheduling
 (time-slicing for parallel jobs)<BR>
 <input type="radio" name="sched_type" value="wiki"> <B>Wiki</B>: Wiki interface

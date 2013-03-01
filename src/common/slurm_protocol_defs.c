@@ -1163,7 +1163,7 @@ extern uint16_t log_string2num(char *name)
  * NOTE: Not reentrant */
 extern char *sched_param_type_string(uint16_t select_type_param)
 {
-	static char select_str[64];
+	static char select_str[128];
 
 	select_str[0] = '\0';
 	if ((select_type_param & CR_CPU) &&

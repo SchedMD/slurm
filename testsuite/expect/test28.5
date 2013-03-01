@@ -1,0 +1,194 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          test that a scontrol can hold and release a whole job array
+#          or an indevidual job index.
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2011-2013 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.schedmd.com/slurmdocs/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id      "28.5"
+set exit_code    0
+set job_id       0
+set array_in     2
+set array_size   4
+set file_script  "test$test_id.sh"
+
+print_header $test_id
+
+if {[get_array_config] < [expr $array_size + 1]} {
+	send_user "\nWARNING: MaxArraySize is to small for this test\n"
+	exit 0
+}
+
+proc hold_job {job} {
+
+	global scontrol exit_code
+
+	spawn $scontrol hold $job
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 0
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+proc release_job {job} {
+
+	global scontrol exit_code
+
+	spawn $scontrol release $job
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 0
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+#change this so it checks through all the jobs in the array
+proc check_hold_job {job} {
+
+	global scontrol exit_code number
+
+	set pmatch 0
+	spawn $scontrol show job $job
+	expect {
+		-re "Priority=($number)" {
+			if {$expect_out(1,string) == 0} {
+				incr pmatch
+			}
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$pmatch!=1} {
+		send_user "\nFAILURE: job $job did not hold\n"
+		set exit_code 1
+	}
+}
+
+proc check_release_job { job } {
+
+	global scontrol exit_code number
+
+	set pmatch 0
+	spawn $scontrol show job $job
+	expect {
+		-re "Priority=($number)" {
+			if {$expect_out(1,string) != 0} {
+				incr pmatch
+			}
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$pmatch!=1} {
+		send_user "\nFAILURE: job $job was not released\n"
+		set exit_code 1
+	}
+}
+
+################Test Starts Here################
+make_bash_script $file_script "sleep 10"
+
+spawn $sbatch -N1 --array=0-[expr $array_size -1] --begin=midnight --output=/dev/null -t1 $file_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		send_user "\njob $job_id was submitted\n"
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: sbatch did not submit jobs\n"
+		set exit_code 1
+	}
+	timout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+
+# hold the whole array then release individual jobs in the array
+if {$job_id != 0} {
+
+	send_user "\nHolding entire job array\n"
+	hold_job $job_id
+	check_hold_job ${job_id}_0
+	check_hold_job ${job_id}_1
+
+	send_user "\nReleasing job index $array_in in the array\n"
+	release_job ${job_id}_$array_in
+	check_hold_job ${job_id}_0
+	check_release_job ${job_id}_$array_in
+
+	send_user "\nReleasing the entire job array\n"
+	release_job $job_id
+	check_release_job ${job_id}_0
+	check_release_job ${job_id}_1
+
+	send_user "\nHolding job index $array_in in the array\n"
+	hold_job ${job_id}_$array_in
+	check_hold_job ${job_id}_$array_in
+
+	send_user "\nReleasing job index $array_in in the array\n"
+	release_job ${job_id}_$array_in
+	check_release_job ${job_id}_$array_in
+
+	cancel_job $job_id
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_script
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

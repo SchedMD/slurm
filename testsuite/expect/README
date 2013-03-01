@@ -626,3 +626,9 @@ test28.1   Confirms sbatch --array and scancel of the job arrays.
 test28.2   checks that the --array environment varibles are correct, and
 	   checks that the --output and -error files were created and
 	   contain the correct information.
+test28.3   Validates that the scontrol show job contains the job array
+	   fields
+test28.4   Validates scontrol update command for a job array with
+	   a job array index and the whole job array.
+test28.5   Validates that scontrol can hold and release a whole job
+	   array or an individual jobid index.

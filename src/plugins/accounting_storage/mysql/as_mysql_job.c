@@ -955,9 +955,10 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		submit_time = step_ptr->job_ptr->details->submit_time;
 
 	if (jobacct == NULL) {
-		/* JobAcctGather=slurmdb_gather/none, no data to process */
+		/* JobAcctGather=jobacct_gather/none, no data to process */
 		memset(&dummy_jobacct, 0, sizeof(dummy_jobacct));
 		jobacct = &dummy_jobacct;
+		jobacct->min_cpu = NO_VAL;
 	}
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)

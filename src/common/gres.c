@@ -1844,10 +1844,16 @@ static void _node_state_dealloc(gres_state_t *gres_ptr)
 		}
 		error("gres_plugin_node_state_dealloc_all: gres/%s topo_cnt!=0 "
 		      "and topo_gres_cnt_alloc is NULL", gres_name);
-	} else {
+	} else if (gres_node_ptr->topo_cnt) {
 		for (i=0; i<gres_node_ptr->topo_cnt; i++) {
 			gres_node_ptr->topo_gres_cnt_alloc[i] = 0;
 		}
+	} else {
+		/* This array can be set at startup if a job has been allocated
+		 * specific GRES and the node has not registered with the
+		 * details needed to track individual GRES (rather than only
+		 * a GRES count). */
+		xfree(gres_node_ptr->topo_gres_cnt_alloc);
 	}
 }
 
@@ -1885,8 +1891,14 @@ static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 	xassert(gres_data);
 	gres_node_ptr = (gres_node_state_t *) gres_data;
 	info("gres/%s: state for %s", gres_name, node_name);
-	info("  gres_cnt found:%u configured:%u avail:%u alloc:%u",
-	     gres_node_ptr->gres_cnt_found, gres_node_ptr->gres_cnt_config,
+	if (gres_node_ptr->gres_cnt_found == NO_VAL) {
+		snprintf(tmp_str, sizeof(tmp_str), "TBD");
+	} else {
+		snprintf(tmp_str, sizeof(tmp_str), "%u",
+			 gres_node_ptr->gres_cnt_found);
+	}
+	info("  gres_cnt found:%s configured:%u avail:%u alloc:%u",
+	     tmp_str, gres_node_ptr->gres_cnt_config,
 	     gres_node_ptr->gres_cnt_avail, gres_node_ptr->gres_cnt_alloc);
 	if (gres_node_ptr->gres_bit_alloc) {
 		bit_fmt(tmp_str, sizeof(tmp_str), gres_node_ptr->gres_bit_alloc);
@@ -2808,6 +2820,22 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 					       topo_gres_bitmap[i]);
 			node_gres_ptr->topo_gres_cnt_alloc[i] += gres_cnt;
 		}
+	} else if (job_gres_ptr->gres_bit_alloc &&
+		   job_gres_ptr->gres_bit_alloc[node_offset]) {
+		int len;	/* length of the gres bitmap on this node */
+		len = bit_size(job_gres_ptr->gres_bit_alloc[node_offset]);
+		if (!node_gres_ptr->topo_gres_cnt_alloc) {
+			node_gres_ptr->topo_gres_cnt_alloc =
+				xmalloc(sizeof(uint32_t) * len);
+		} else {
+			len = MIN(len, node_gres_ptr->gres_cnt_config);
+		}
+		for (i = 0; i < len; i++) {
+			if (bit_test(job_gres_ptr->
+				     gres_bit_alloc[node_offset], i)) {
+				node_gres_ptr->topo_gres_cnt_alloc[i]++;
+			}
+		}
 	}
 
 	return SLURM_SUCCESS;
@@ -2958,7 +2986,24 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 					       gres_bit_alloc[node_offset],
 					       node_gres_ptr->
 					       topo_gres_bitmap[i]);
-			node_gres_ptr->topo_gres_cnt_alloc[i] -= gres_cnt;
+			if (node_gres_ptr->topo_gres_cnt_alloc[i] >= gres_cnt) {
+				node_gres_ptr->topo_gres_cnt_alloc[i] -=
+					gres_cnt;
+			} else {
+				error("gres/%s: job %u dealloc node %s topo "
+				      "gres count underflow", gres_name, job_id,
+				      node_name);
+				node_gres_ptr->topo_gres_cnt_alloc[i] = 0;
+			}
+		}
+	} else if (job_gres_ptr->gres_bit_alloc &&
+		   job_gres_ptr->gres_bit_alloc[node_offset] &&
+		   node_gres_ptr->topo_gres_cnt_alloc) {
+		for (i = 0; i < node_gres_ptr->gres_cnt_config; i++) {
+			if (bit_test(job_gres_ptr->
+				     gres_bit_alloc[node_offset], i) &&
+			    node_gres_ptr->topo_gres_cnt_alloc[i])
+				node_gres_ptr->topo_gres_cnt_alloc[i]--;
 		}
 	}
 

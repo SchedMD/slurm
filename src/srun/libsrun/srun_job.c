@@ -502,7 +502,7 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 			 * and a node went DOWN or it used a node count range
 			 * specification, was checkpointed from one size and
 			 * restarted at a different size */
-			error("SLURM_NNODES environment varariable "
+			error("SLURM_NNODES environment variable "
 			      "conflicts with allocated node count (%u!=%u).",
 			      opt.min_nodes, resp->node_cnt);
 			/* Modify options to match resource allocation.

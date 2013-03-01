@@ -63,26 +63,26 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
-	
+
 	buffer = init_buf(BUF_SIZE);
-	
+
 	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
 		parts_packed = resp;
 		pack32(parts_packed, buffer);
-	
+
 		if (resp) {
 			pack_time(now, buffer);
-			debug("pack_all_stat: time = %u",
-			      (uint32_t) last_proc_req_start);
+			debug3("pack_all_stat: time = %u",
+			       (uint32_t) last_proc_req_start);
 			pack_time(last_proc_req_start, buffer);
-			
-			debug("pack_all_stat: server_thread_count = %u",
-			      slurmctld_config.server_thread_count);
+
+			debug3("pack_all_stat: server_thread_count = %u",
+			       slurmctld_config.server_thread_count);
 			pack32(slurmctld_config.server_thread_count, buffer);
-			
+
 			agent_queue_size = retry_list_size();
 			pack32(agent_queue_size, buffer);
-			
+
 			pack32(slurmctld_diag_stats.jobs_submitted, buffer);
 			pack32(slurmctld_diag_stats.jobs_started, buffer);
 			pack32(slurmctld_diag_stats.jobs_completed, buffer);
@@ -100,7 +100,7 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			pack32(slurmctld_diag_stats.schedule_cycle_depth,
 			       buffer);
 			pack32(slurmctld_diag_stats.schedule_queue_len, buffer);
-		
+
 			pack32(slurmctld_diag_stats.backfilled_jobs, buffer);
 			pack32(slurmctld_diag_stats.last_backfilled_jobs,
 			       buffer);

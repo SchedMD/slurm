@@ -400,7 +400,7 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 		if (mc_ptr->cores_per_socket != (uint16_t) NO_VAL) {
 			min_cores   = mc_ptr->cores_per_socket;
 		}
-		if (mc_ptr->sockets_per_node != (uint16_t) NO_VAL){
+		if (mc_ptr->sockets_per_node != (uint16_t) NO_VAL) {
 			min_sockets = mc_ptr->sockets_per_node;
 		}
 		if (mc_ptr->ntasks_per_core) {

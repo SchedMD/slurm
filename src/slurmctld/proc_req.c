@@ -4422,8 +4422,8 @@ static void _slurm_rpc_dump_stats(slurm_msg_t * msg)
 		return;
 	}
 
-	debug("SIM: Processing RPC: MESSAGE_REALTIME_STATS (command: %u)",
-	      request_msg->command_id);
+	debug2("Processing RPC: MESSAGE_REALTIME_STATS (command: %u)",
+	       request_msg->command_id);
 
 	slurm_msg_t_init(&response_msg);
 	response_msg.protocol_version = msg->protocol_version;

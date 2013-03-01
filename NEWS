@@ -15,6 +15,9 @@ documents those changes that are of interest to users and admins.
  -- Added allocated memory to node information available (within the existing
     select_nodeinfo field of the node_info_t data structure). Added Allocated
     Memory to node information displayed by sview and scontrol commands.
+ -- Make sched/backfill the default scheduling plugin rather than sched/builtin
+    (FIFO).
+ -- Added support for a job having different priorities in different partitions.
 
 * Changes in SLURM 2.6.0pre1
 ============================
@@ -81,6 +84,28 @@ documents those changes that are of interest to users and admins.
  -- BGQ - When cnodes fail in a timeout fashion correctly look up parent
     midplane.
  -- Correct sinfo "%c" (node's CPU count) output value for Bluegene systems.
+ -- Backfill - Responsive improvements for systems with large numbers of jobs
+    (>5000) and using the SchedulerParameters option bf_max_job_user.
+ -- slurmstepd: ensure that IO redirection openings from/to files correctly
+    handle interruption
+ -- BGQ - Able to handle when midplanes go into Hardware::SoftwareFailure
+ -- GRES - Correct tracking of specific resources used after slurmctld restart.
+    Counts would previously go negative as jobs terminate and decrement from
+    a base value of zero.
+ -- Fix for priority/multifactor2 plugin to not assert when configured with
+    --enable-debug.
+ -- Select/cons_res - If the job request specified --ntasks-per-socket and the
+    allocation using is cores, then pack the tasks onto the sockets up to the
+    specified value.
+ -- BGQ - If a cnode goes into an 'error' state and the block containing the
+    cnode does not have a job running on it do not resume the block.
+ -- BGQ - Handle blocks that don't free themselves in a reasonable time better.
+ -- BGQ - Fix for signaling steps when allocation ends before step.
+ -- Fix for backfill scheduling logic with job preemption; starts more jobs.
+ -- xcgroup - remove bugs with EINTR management in write calls
+ -- jobacct_gather - fix total values to not always == the max values.
+ -- Fix for handling node registration messages from older versions without
+    energy data.
 
 * Changes in SLURM 2.5.3
 ========================

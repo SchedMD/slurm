@@ -287,26 +287,8 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 
 	if (bg_conf->layout_mode == LAYOUT_DYNAMIC)
 		delete_it = 1;
-	rc = free_block_list(req_job_id, delete_list, delete_it, 1);
+	free_block_list(req_job_id, delete_list, delete_it, 1);
 	list_destroy(delete_list);
-	if (rc != SLURM_SUCCESS) {
-		error("Problem with deallocating blocks to run job %u "
-		      "on block %s", req_job_id,
-		      bg_action_ptr->bg_block_id);
-		slurm_mutex_lock(&block_state_mutex);
-		/* Failure will unlock block_state_mutex so no need to
-		   unlock before return.  No need to reset modifying
-		   here if the block doesn't exist.
-		*/
-		if (_make_sure_block_still_exists(bg_action_ptr, bg_record)) {
-			bg_record->modifying = 0;
-			slurm_mutex_unlock(&block_state_mutex);
-		}
-
-		if (IS_JOB_CONFIGURING(bg_action_ptr->job_ptr))
-			bg_requeue_job(req_job_id, 0, 0);
-		return;
-	}
 
 	while (1) {
 		slurm_mutex_lock(&block_state_mutex);
@@ -314,8 +296,12 @@ static void _start_agent(bg_action_t *bg_action_ptr)
 		   unlock before return.  No need to reset modifying
 		   here if the block doesn't exist.
 		*/
-		if (!_make_sure_block_still_exists(bg_action_ptr, bg_record))
+		if (!_make_sure_block_still_exists(bg_action_ptr, bg_record)) {
+			error("Problem with deallocating blocks to run job %u "
+			      "on block %s", req_job_id,
+			      bg_action_ptr->bg_block_id);
 			return;
+		}
 		/* If another thread is freeing this block we need to
 		   wait until it is done or we will get into a state
 		   where this job will be killed.

@@ -1794,7 +1794,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	if (gres_plugin_node_config_unpack(reg_msg->gres_info,
 					   node_ptr->name) != SLURM_SUCCESS) {
 		error_code = SLURM_ERROR;
-		reason_down = "Could not unpack gres data";
+		xstrcat(reason_down, "Could not unpack gres data");
 	} else if (gres_plugin_node_config_validate(
 			   node_ptr->name, config_ptr->gres,
 			   &node_ptr->gres, &node_ptr->gres_list,
@@ -1822,13 +1822,17 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			      "(%d < %d)",
 			      reg_msg->node_name, threads1, threads2);
 			error_code = EINVAL;
-			reason_down = "Low socket*core*thread count";
+			if (reason_down)
+				xstrcat(reason_down, ", ");
+			xstrcat(reason_down, "Low socket*core*thread count");
 		} else if ((slurmctld_conf.fast_schedule == 0) &&
 			   ((cr_flag == 1) || gang_flag) && (cores1 < cores2)) {
 			error("Node %s has low socket*core count (%d < %d)",
 			      reg_msg->node_name, cores1, cores2);
 			error_code = EINVAL;
-			reason_down = "Low socket*core count";
+			if (reason_down)
+				xstrcat(reason_down, ", ");
+			xstrcat(reason_down, "Low socket*core count");
 		} else if ((slurmctld_conf.fast_schedule == 0) &&
 			   ((cr_flag == 1) || gang_flag) &&
 			   ((sockets1 > sockets2) || (cores1 > cores2) ||
@@ -1848,7 +1852,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			      reg_msg->node_name, reg_msg->cpus,
 			      config_ptr->cpus);
 			error_code  = EINVAL;
-			reason_down = "Low CPUs";
+			if (reason_down)
+				xstrcat(reason_down, ", ");
+			xstrcat(reason_down, "Low CPUs");
 		} else if ((slurmctld_conf.fast_schedule == 0) &&
 			   ((cr_flag == 1) || gang_flag) &&
 			   (reg_msg->cpus > config_ptr->cpus)) {
@@ -1882,7 +1888,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		      reg_msg->node_name, reg_msg->real_memory,
 		      config_ptr->real_memory);
 		error_code  = EINVAL;
-		reason_down = "Low RealMemory";
+		if (reason_down)
+			xstrcat(reason_down, ", ");
+		xstrcat(reason_down, "Low RealMemory");
 	}
 	node_ptr->real_memory = reg_msg->real_memory;
 
@@ -1892,7 +1900,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		      reg_msg->node_name, reg_msg->tmp_disk,
 		      config_ptr->tmp_disk);
 		error_code = EINVAL;
-		reason_down = "Low TmpDisk";
+		if (reason_down)
+			xstrcat(reason_down, ", ");
+		xstrcat(reason_down, "Low TmpDisk");
 	}
 	node_ptr->tmp_disk = reg_msg->tmp_disk;
 
@@ -2030,7 +2040,11 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		_sync_bitmaps(node_ptr, reg_msg->job_count);
 	}
 
-	memcpy(node_ptr->energy, reg_msg->energy, sizeof(acct_gather_energy_t));
+	xfree(reason_down);
+	if (reg_msg->energy)
+		memcpy(node_ptr->energy, reg_msg->energy,
+		       sizeof(acct_gather_energy_t));
+
 	node_ptr->last_response = now;
 
 	return error_code;
@@ -2098,7 +2112,7 @@ static front_end_record_t * _front_end_reg(
 extern int validate_nodes_via_front_end(
 		slurm_node_registration_status_msg_t *reg_msg)
 {
-	int error_code = 0, i, j;
+	int error_code = 0, i, j, rc;
 	bool update_node_state = false;
 	struct job_record *job_ptr;
 	struct config_record *config_ptr;
@@ -2106,7 +2120,7 @@ extern int validate_nodes_via_front_end(
 	time_t now = time(NULL);
 	ListIterator job_iterator;
 	hostlist_t reg_hostlist = NULL;
-	char *host_str = NULL;
+	char *host_str = NULL, *reason_down = NULL;
 	uint16_t node_flags;
 	front_end_record_t *front_end_ptr;
 
@@ -2228,13 +2242,22 @@ extern int validate_nodes_via_front_end(
 		config_ptr = node_ptr->config_ptr;
 		node_ptr->last_response = now;
 
-		(void) gres_plugin_node_config_validate(node_ptr->name,
-							config_ptr->gres,
-							&node_ptr->gres,
-							&node_ptr->gres_list,
-							slurmctld_conf.
-							fast_schedule,
-							NULL);
+		rc = gres_plugin_node_config_validate(node_ptr->name,
+						      config_ptr->gres,
+						      &node_ptr->gres,
+						      &node_ptr->gres_list,
+						      slurmctld_conf.
+						      fast_schedule,
+						      &reason_down);
+		if (rc) {
+			if (!IS_NODE_DOWN(node_ptr)) {
+				error("Setting node %s state to DOWN",
+				      node_ptr->name);
+			}
+			set_node_down(node_ptr->name, reason_down);
+			last_node_update = now;
+		}
+		xfree(reason_down);
 		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 
 		if (reg_msg->up_time) {
@@ -2338,8 +2361,9 @@ extern int validate_nodes_via_front_end(
 				      (node_ptr->run_job_cnt +
 				       node_ptr->comp_job_cnt));
 		}
-		memcpy(node_ptr->energy, reg_msg->energy,
-		       sizeof(acct_gather_energy_t));
+		if (reg_msg->energy)
+			memcpy(node_ptr->energy, reg_msg->energy,
+			       sizeof(acct_gather_energy_t));
 	}
 
 	if (reg_hostlist) {

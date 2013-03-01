@@ -2,9 +2,10 @@
 
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
-INCLUDES = -I$(top_srcdir) $(BLCR_CPPFLAGS)
 
 if WITH_BLCR
+
+INCLUDES = -I$(top_srcdir) $(BLCR_CPPFLAGS)
 
 bin_PROGRAMS = srun_cr
 

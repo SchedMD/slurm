@@ -1,0 +1,120 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">Dynamic Resource Allocation (dynalloc)</a></h1>
+
+<h2>Overview</h2>
+<p>This document describes SLURM resource dynamic allocation (dynalloc)
+and the manual how to enable it.</p>
+
+<p>SLURM dynamic resource allocation (dynalloc) works as a optional running
+thread when SLURM's control daemon (slurmctld) starts up. After spawned, the
+dynalloc thread runs as a socket server to accept requests such as resource
+query, allocation, and deallocation. After receiving such requests, the 
+dynalloc parses message, performs actions, and then responds to the request.</p>
+
+
+<h2>Configuration</h2>
+
+<p>To enable the dynalloc, some configurations should be made in SLURM side.</p>
+
+<h3>SLURM Configuration</h3>
+
+<h4>configure</h4>
+<p>When building from the SLURM source code, add <i>--enable-dynamic-allocation</i>
+to the execute line of <i>./configure</i>.</p>
+
+<h4>slurm.conf</h4>
+<p>After installation, set the config parameters in <i>slurm.conf</i>
+as follows:</p>
+<pre>
+SlurmctldPlugstack=dynalloc
+DynAllocPort=6820
+</pre>
+
+<p>The default value of <i>DynAllocPort</i> is 6820. You can chenge it if needed.</p>
+
+<p class="footer"><a href="#top">top</a>
+
+<h2>Functionalities</h2>
+
+<h3>Resource Query</h3>
+<p>The client might send messages to query how many nodes and slots either 
+in total or available in SLURM.</p>
+
+<h4>Get Total Nodes and Slots</h4>
+<p>the request message from client: "get total nodes and slots"<br>
+the response message could be like: "total_nodes=4 total_slots=16"</p>
+
+<h4>Get Available Nodes and Slots</h4>
+<p>the request message from client: "get available nodes and slots"<br>
+the response message could be like: "avail_nodes=4 avail_slots=16"</p>
+
+<h3>Resource Allocation</h3>
+<p>The client might send request to SLURM for allocating resources.</p> 
+<p>An allocation request message will consist of two part:</p>
+<ol>
+<li>Job part, like "jobid=100 return=all timeout=10"</li>
+<li>App part, like "app=0 np=5 N=2 node_list=vm[2-3] flag=mandatory"</li>
+</ol>
+<p>An allocation message can have one job part and at least one
+app (application) part. 
+For example:<br>
+"allocate jobid=100 return=all timeout=10:app=0 np=5 N=2 node_list=vm[2-3]
+flag=mandatory cpu_bind=cores mem_per_cpu=100:app=1 N=2"</p>
+
+<p>In the job part of the above message, <b>jobid</b> is optional and will 
+be sent back to client for identifying the allocation results; the <b>return</b>
+flag is also optional, if the return flag ("return=all") is specified, all 
+app's allocation result will be sent back in ONE message, like 
+"jobid=100:app=0 slurm_jobid=679 allocated_node_list=vm2,vm3 
+tasks_per_node=3,2:app=1 slurm_jobid=680 allocated_node_list=vm4,vm5 
+tasks_per_node=4(x2)". Otherwise, the allocation result of each app will 
+be sent back respectively, like, msg-1) "jobid=100:app=0 slurm_jobid=681 
+allocated_node_list=vm2,vm3 tasks_per_node=3,2" , and msg-2) "jobid=100:app=1 
+slurm_jobid=682 allocated_node_list=vm4,vm5 tasks_per_node=4(x2). 
+<b>timeout</b> (in sec.) is the time interval during which the client will 
+wait for the allocation response.
+</p>
+
+<p>In the app part of the above message, <b>app</b> is the application/task 
+id which will be sent back to client for identifying the allocation result; 
+<b>np</b> is the number of process will run, namely the number of slots 
+should be allocated for this app; <b>N</b> is the number of nodes should 
+be allocated; <b>node_list</b> is the node pool from which to select nodes;
+<b>flag</b> is the allocation requirement which can be "mandatory" or 
+"optional", if "flag=mandatory", all requested nodes must be allocated 
+from <b>node_list</b>; else if "flag=optional", try best to allocate node 
+from <b>node_list</b>, and the allocation should include all nodes in the 
+given list that are currently available, if that is not enough to meet the 
+requested node number <b>N</b>, then take any other nodes that are available
+to fill out the requested number. <b>cpu_bind</b> is to bind tasks to CPUs, 
+which is used only when the task/affinity or task/cgroup plugin is enabled 
+(please refer to 'man salloc'). <b>mem_per_cpu</b> is mimimum memory required
+per allocated CPU in MegaBytes, which is used when the task/cgroup plugin is 
+enabled.
+</p>
+
+<p>A response message might be like "jobid=100:app=0 slurm_jobid=679 
+allocated_node_list=vm2,vm3 tasks_per_node=3,2:app=1 allocate_failure". 
+In this example, 'app=0' gets a successful allocation while the allocation 
+for 'app=1' fails. <b>Note that</b> in the response message with successful
+allocation for an app, a <b>slurm_jobid</b> is returned for later operation, 
+e.g., process launch, resource deallocation, etc.
+</p>
+
+<p class="footer"><a href="#top">top</a>
+
+<h3>Resource Deallocation</h3>
+
+<p>After job execution, the client might release resources to SLURM.</p>
+<p>A resource deallocation request message from client can be like: 
+"<b>deallocate</b> slurm_jobid=744 job_return_code=0:slurm_jobid=745 
+job_return_code=-1". Note that it is possible to release a number of 
+allocations in ONE message, and each allocation is labeled by a 
+<b>slurm_jobid</b>.</p>
+
+<p class="footer"><a href="#top">top</a>
+
+<p style="text-align:center;">Last modified 19 February 2013</p>
+
+<!--#include virtual="footer.txt"-->
