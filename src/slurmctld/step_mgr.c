@@ -374,7 +374,8 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		verbose("job_step_signal: step %u.%u can not be sent signal "
 			"%u from state=%s", job_id, step_id, signal,
 			job_state_string(job_ptr->job_state));
-		return ESLURM_TRANSITION_STATE_NO_UPDATE;
+		if (signal != SIG_NODE_FAIL)
+			return ESLURM_TRANSITION_STATE_NO_UPDATE;
 	}
 
 	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
