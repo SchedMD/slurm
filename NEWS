@@ -44,6 +44,7 @@ documents those changes that are of interest to users and admins.
  -- Fix for handling node registration messages from older versions without
     energy data.
  -- BGQ - Allow user to request full dimensional mesh.
+ -- sdiag command - Correction to jobs started value reported.
 
 * Changes in SLURM 2.5.3
 ========================

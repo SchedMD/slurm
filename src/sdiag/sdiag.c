@@ -111,8 +111,7 @@ static int _print_info(void)
 	printf("Server thread count: %d\n", buf->server_thread_count);
 	printf("Agent queue size:    %d\n\n", buf->agent_queue_size);
 	printf("Jobs submitted: %d\n", buf->jobs_submitted);
-	printf("Jobs started:   %d\n",
-	       buf->jobs_started + buf->bf_last_backfilled_jobs);
+	printf("Jobs started:   %d\n", buf->jobs_started);
 	printf("Jobs completed: %d\n", buf->jobs_completed);
 	printf("Jobs canceled:  %d\n", buf->jobs_canceled);
 	printf("Jobs failed:    %d\n", buf->jobs_failed);
