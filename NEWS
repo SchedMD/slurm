@@ -45,6 +45,8 @@ documents those changes that are of interest to users and admins.
     energy data.
  -- BGQ - Allow user to request full dimensional mesh.
  -- sdiag command - Correction to jobs started value reported.
+ -- Prevent slurmctld assert when invalid change to reservation with running
+    jobs is made.
 
 * Changes in SLURM 2.5.3
 ========================

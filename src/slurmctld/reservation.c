@@ -129,6 +129,8 @@ static int  _post_resv_delete(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_update(slurmctld_resv_t *resv_ptr,
 			      slurmctld_resv_t *old_resv_ptr);
 static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt);
+static void _restore_resv(slurmctld_resv_t *dest_resv,
+			  slurmctld_resv_t *src_resv);
 static bool _resv_overlap(time_t start_time, time_t end_time,
 			  uint16_t flags, bitstr_t *node_bitmap,
 			  slurmctld_resv_t *this_resv_ptr);
@@ -243,6 +245,96 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 		resv_copy_ptr->user_list[i] = resv_orig_ptr->user_list[i];
 
 	return resv_copy_ptr;
+}
+
+/* Move the contents of src_resv into dest_resv.
+ * NOTE: This is a destructive function with respect to the contents of
+ *       src_resv. The data structure src_resv is suitable only for destruction
+ *       after this function is called */
+static void _restore_resv(slurmctld_resv_t *dest_resv,
+			  slurmctld_resv_t *src_resv)
+{
+	int i;
+
+	xfree(dest_resv->accounts);
+	dest_resv->accounts = src_resv->accounts;
+	src_resv->accounts = NULL;
+
+	for (i = 0; i < dest_resv->account_cnt; i++)
+		xfree(dest_resv->account_list[i]);
+	xfree(dest_resv->account_list);
+	dest_resv->account_cnt = src_resv->account_cnt;
+	src_resv->account_cnt = 0;
+	dest_resv->account_list = src_resv->account_list;
+	src_resv->account_list = NULL;
+
+	dest_resv->account_not = src_resv->account_not;
+
+	xfree(dest_resv->assoc_list);
+	dest_resv->assoc_list = src_resv->assoc_list;
+	src_resv->assoc_list = NULL;
+
+	FREE_NULL_BITMAP(dest_resv->core_bitmap);
+	dest_resv->core_bitmap = src_resv->core_bitmap;
+	src_resv->core_bitmap = NULL;
+
+	dest_resv->cpu_cnt = src_resv->cpu_cnt;
+	dest_resv->duration = src_resv->duration;
+	dest_resv->end_time = src_resv->end_time;
+
+	xfree(dest_resv->features);
+	dest_resv->features = src_resv->features;
+	src_resv->features = NULL;
+
+	dest_resv->flags = src_resv->flags;
+	dest_resv->full_nodes = src_resv->full_nodes;
+	dest_resv->job_pend_cnt = src_resv->job_pend_cnt;
+	dest_resv->job_run_cnt = src_resv->job_run_cnt;
+
+	xfree(dest_resv->licenses);
+	dest_resv->licenses = src_resv->licenses;
+	src_resv->licenses = NULL;
+
+	if (dest_resv->license_list)
+		list_destroy(dest_resv->license_list);
+	dest_resv->license_list = src_resv->license_list;
+	src_resv->license_list = NULL;
+
+	dest_resv->magic = src_resv->magic;
+	dest_resv->maint_set_node = src_resv->maint_set_node;
+
+	xfree(dest_resv->name);
+	dest_resv->name = src_resv->name;
+	src_resv->name = NULL;
+
+	FREE_NULL_BITMAP(dest_resv->node_bitmap);
+	dest_resv->node_bitmap = src_resv->node_bitmap;
+	src_resv->node_bitmap = NULL;
+
+	dest_resv->node_cnt = src_resv->node_cnt;
+
+	xfree(dest_resv->node_list);
+	dest_resv->node_list = src_resv->node_list;
+	src_resv->node_list = NULL;
+
+	xfree(dest_resv->partition);
+	dest_resv->partition = src_resv->partition;
+	src_resv->partition = NULL;
+
+	dest_resv->part_ptr = src_resv->part_ptr;
+	dest_resv->resv_id = src_resv->resv_id;
+	dest_resv->start_time = src_resv->start_time;
+	dest_resv->start_time_first = src_resv->start_time_first;
+	dest_resv->start_time_prev = src_resv->start_time_prev;
+
+	xfree(dest_resv->users);
+	dest_resv->users = src_resv->users;
+	src_resv->users = NULL;
+
+	dest_resv->user_cnt = src_resv->user_cnt;
+	xfree(dest_resv->user_list);
+	dest_resv->user_list = src_resv->user_list;
+	src_resv->user_list = NULL;
 }
 
 static void _del_resv_rec(void *x)
@@ -1804,11 +1896,10 @@ extern void resv_fini(void)
 extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 {
 	time_t now = time(NULL);
-	slurmctld_resv_t *resv_backup, *resv_ptr, *resv_next;
+	slurmctld_resv_t *resv_backup, *resv_ptr;
 	int error_code = SLURM_SUCCESS, i, rc;
 	char start_time[32], end_time[32];
 	char *name1, *name2, *val1, *val2;
-	ListIterator iter;
 
 	if (!resv_list)
 		resv_list = list_create(_del_resv_rec);
@@ -2119,19 +2210,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 
 update_failure:
 	/* Restore backup reservation data */
-	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("list_iterator_create: malloc failure");
-	while ((resv_next = (slurmctld_resv_t *) list_next(iter))) {
-		if (resv_next == resv_ptr) {
-			list_delete_item(iter);
-			break;
-		}
-	}
-	if (!resv_next)
-		error("reservation list broken");
-	list_iterator_destroy(iter);
-	list_append(resv_list, resv_backup);
+	_restore_resv(resv_ptr, resv_backup);
+	_del_resv_rec(resv_backup);
 	return error_code;
 }
 
