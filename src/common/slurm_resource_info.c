@@ -116,6 +116,8 @@ static bool _have_task_affinity(void)
  * IN/OUT threads    - Available thread count
  * IN alloc_cores    - Allocated cores (per socket) count to other jobs
  * IN cr_type        - Consumable Resource type
+ * IN job_id         - job ID
+ * IN name           - Node name
  *
  * Note: currently only used in the select/linear plugin.
  */
