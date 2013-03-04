@@ -69,6 +69,11 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
    scheduled instead of newly arrived higher priority jobs, but will permit
    more queued jobs to be considered for backfill scheduling.
 
+DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
+====================================================================
+ - Added "ArchiveResvs" and "PurgeResvAfter" options to be able to handle old
+   reservations in the database.
+
 COMMAND CHANGES (see man pages for details)
 ===========================================
  - Added step "State" field to scontrol output.
