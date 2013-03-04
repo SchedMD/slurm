@@ -18,6 +18,12 @@ documents those changes that are of interest to users and admins.
  -- Make sched/backfill the default scheduling plugin rather than sched/builtin
     (FIFO).
  -- Added support for a job having different priorities in different partitions.
+ -- Added new SchedulerParameters configuration parameter of "bf_continue"
+    which permits the backfill scheduler to continue considering jobs for
+    backfill scheduling after yielding locks even if new jobs have been
+    submitted. This can result in lower priority jobs from being backfill
+    scheduled instead of newly arrived higher priority jobs, but will permit
+    more queued jobs to be considered for backfill scheduling.
 
 * Changes in SLURM 2.6.0pre1
 ============================

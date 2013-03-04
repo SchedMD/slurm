@@ -62,6 +62,12 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
    called.
  - Added "DynAllocPort" configuration parameter for use by slurmctld/dynalloc
    plugin.
+ - Added new "SchedulerParameters" configuration parameter of "bf_continue"
+   which permits the backfill scheduler to continue considering jobs for
+   backfill scheduling after yielding locks even if new jobs have been
+   submitted. This can result in lower priority jobs from being backfill
+   scheduled instead of newly arrived higher priority jobs, but will permit
+   more queued jobs to be considered for backfill scheduling.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
