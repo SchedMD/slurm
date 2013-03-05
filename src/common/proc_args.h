@@ -170,4 +170,10 @@ extern void print_db_notok(const char *cname, bool isenv);
 
 
 
+extern void bg_figure_nodes_tasks(int *min_nodes, int *max_nodes,
+				  int *ntasks_per_node, bool *ntasks_set,
+				  int *ntasks, bool nodes_set,
+				  bool nodes_set_opt, bool overcommit,
+				  bool set_tasks);
+
 #endif /* !_PROC_ARGS_H */

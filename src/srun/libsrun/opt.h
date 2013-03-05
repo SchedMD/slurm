@@ -275,8 +275,4 @@ extern int   spank_unset_job_env(const char *name);
  *	via salloc or sbatch commands */
 extern void init_spank_env(void);
 
-#if defined HAVE_BG && !defined HAVE_BG_L_P
-extern void bg_figure_nodes_tasks(void);
-#endif
-
 #endif	/* _HAVE_OPT_H */

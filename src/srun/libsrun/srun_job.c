@@ -70,6 +70,7 @@
 #include "src/common/forward.h"
 #include "src/common/fd.h"
 #include "src/common/uid.h"
+#include "src/common/proc_args.h"
 
 #include "src/api/step_launch.h"
 
@@ -785,7 +786,10 @@ _job_create_structure(allocation_info_t *ainfo)
 		opt.min_nodes = opt.max_nodes = job->nhosts;
 		opt.nodes_set = true;
 		opt.ntasks_per_node = NO_VAL;
-		bg_figure_nodes_tasks();
+		bg_figure_nodes_tasks(&opt.min_nodes, &opt.max_nodes,
+				      &opt.ntasks_per_node, &opt.ntasks_set,
+				      &opt.ntasks, opt.nodes_set,
+				      opt.nodes_set_opt, opt.overcommit, 1);
 
 #if defined HAVE_BG_FILES
 		/* Replace the runjob line with correct information. */
