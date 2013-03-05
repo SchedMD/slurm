@@ -2,16 +2,29 @@
 
 <h1>Large Cluster Administration Guide</h1>
 
-<p>This document contains SLURM administrator information specifically
+<p>This document contains Slurm administrator information specifically
 for clusters containing 1,024 nodes or more.
-Virtually all SLURM components have been validated (through emulation)
-for clusters containing up to 65,536 compute nodes.
+The largest system currently managed by Slurm is 122,880 compute nodes
+and 1,966,080 cores (IBM Bluegene/Q at Lawrence Livermore National Laboratory).
+Slurm operation on systems orders of magnitude larger has been validated
+using emulation.
 Getting optimal performance at that scale does require some tuning and
 this document should help you off to a good start.
-A working knowledge of SLURM should be considered a prerequisite
+A working knowledge of Slurm should be considered a prerequisite
 for this material.</p>
 
-<h2>System configuration</h2>
+<h2>Performance</h2>
+
+<p>Times below are for execution of an MPI program printing "Hello world" and
+exiting and includes the time for processing output. Your performance may
+vary due to differences hardware, software, and configuration.</p>
+<ul>
+<li>1,966,080 tasks on 122,880 compute nodes of a BlueGene/Q: 322 seconds</li>
+<li>49,152 tasks on 4,096 compute nodes of a Linux cluster: 96 seconds</li>
+<li>16,384 tasks on 1,024 compute nodes of a Linux cluster: 51 seconds</li>
+</ul>
+
+<h2>System Configuration</h2>
 
 <p>Three system configuration parameters must be set to support a large number
 of open files and TCP connections with large bursts of messages. Changes can
@@ -40,7 +53,7 @@ using the ifconfig command. A value of 4096 has been found to work well for one
 site with a very large cluster
 (e.g. <i>"ifconfig <interface> txqueuelen 4096"</i>).</p>
 
-<h2>User limits</h2>
+<h2>User Limits</h2>
 
 <p>The <b>ulimit</b> values in effect for the <b>slurmctld</b> daemon should
 be set quite high for memory size, open file count and stack size.</p>
@@ -72,7 +85,7 @@ on data transmission.</p>
 
 <h2>Node Configuration</h2>
 
-<p>While SLURM can track the amount of memory and disk space actually found
+<p>While Slurm can track the amount of memory and disk space actually found
 on each compute node and use it for scheduling purposes, this entails
 extra overhead.
 Optimize performance by specifying the expected configuration using
@@ -81,7 +94,7 @@ the available parameters (<i>RealMemory</i>, <i>CPUs</i>, and
 If the node is found to contain less resources than configured,
 it will be marked DOWN and not used.
 Also set the <i>FastSchedule</i> parameter.
-While SLURM can easily handle a heterogeneous cluster, configuring
+While Slurm can easily handle a heterogeneous cluster, configuring
 the nodes using the minimal number of lines in <i>slurm.conf</i>
 will both make for easier administration and better performance.</p>
 
@@ -90,7 +103,7 @@ will both make for easier administration and better performance.</p>
 <p>If a high throughput of jobs is anticipated (i.e. large numbers of jobs
 with brief execution times) then configure <i>MinJobAge</i> to the smallest
 interval practical for your environment. <i>MinJobAge</i> specifies the
-minimum number of seconds that a terminated job will be retained by SLURM's
+minimum number of seconds that a terminated job will be retained by Slurm's
 control daemon before purging. After this time, information about terminated
 jobs will only be available through accounting records.</p>
 
@@ -127,7 +140,7 @@ but this will result in a delay for reallocating resources to new jobs.</p>
 
 <h2>Other</h2>
 
-<p>SLURM uses hierarchical communications between the slurmd daemons
+<p>Slurm uses hierarchical communications between the slurmd daemons
 in order to increase parallelism and improve performance. The
 <i>TreeWidth</i> configuration parameter controls the fanout of messages.
 The default value is 50, meaning each slurmd daemon can communicate
@@ -144,6 +157,6 @@ the hard limit in order to process all of the standard input and output
 connections to the launched tasks. It is recommended that you set the
 open file hard limit to 8192 across the cluster.</p>
 
-<p style="text-align:center;">Last modified 2 November 2012</p>
+<p style="text-align:center;">Last modified 1 March 2013</p>
 
 <!--#include virtual="footer.txt"-->

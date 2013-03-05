@@ -100,6 +100,7 @@ static void _clear_slurmdbd_conf(void)
 		slurmdbd_conf->private_data = 0;
 		slurmdbd_conf->purge_event = 0;
 		slurmdbd_conf->purge_job = 0;
+		slurmdbd_conf->purge_resv = 0;
 		slurmdbd_conf->purge_step = 0;
 		slurmdbd_conf->purge_suspend = 0;
 		slurmdbd_conf->slurm_user_id = NO_VAL;
@@ -128,6 +129,7 @@ extern int read_slurmdbd_conf(void)
 		{"ArchiveDir", S_P_STRING},
 		{"ArchiveEvents", S_P_BOOLEAN},
 		{"ArchiveJobs", S_P_BOOLEAN},
+		{"ArchiveResvs", S_P_BOOLEAN},
 		{"ArchiveScript", S_P_STRING},
 		{"ArchiveSteps", S_P_BOOLEAN},
 		{"ArchiveSuspend", S_P_BOOLEAN},
@@ -147,6 +149,7 @@ extern int read_slurmdbd_conf(void)
 		{"PrivateData", S_P_STRING},
 		{"PurgeEventAfter", S_P_STRING},
 		{"PurgeJobAfter", S_P_STRING},
+		{"PurgeResvAfter", S_P_STRING},
 		{"PurgeStepAfter", S_P_STRING},
 		{"PurgeSuspendAfter", S_P_STRING},
 		{"PurgeEventMonths", S_P_UINT32},
@@ -184,7 +187,8 @@ extern int read_slurmdbd_conf(void)
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
 		info("No slurmdbd.conf file (%s)", conf_path);
 	} else {
-		bool a_events = 0, a_jobs = 0, a_steps = 0, a_suspend = 0;
+		bool a_events = 0, a_jobs = 0, a_resv = 0,
+			a_steps = 0, a_suspend = 0;
 		debug("Reading slurmdbd.conf file %s", conf_path);
 
 		tbl = s_p_hashtbl_create(options);
@@ -200,6 +204,7 @@ extern int read_slurmdbd_conf(void)
 				xstrdup(DEFAULT_SLURMDBD_ARCHIVE_DIR);
 		s_p_get_boolean(&a_events, "ArchiveEvents", tbl);
 		s_p_get_boolean(&a_jobs, "ArchiveJobs", tbl);
+		s_p_get_boolean(&a_resv, "ArchiveResvs", tbl);
 		s_p_get_string(&slurmdbd_conf->archive_script, "ArchiveScript",
 			       tbl);
 		s_p_get_boolean(&a_steps, "ArchiveSteps", tbl);
@@ -281,6 +286,15 @@ extern int read_slurmdbd_conf(void)
   			if ((slurmdbd_conf->purge_job =
 			     slurmdb_parse_purge(temp_str)) == NO_VAL) {
 				fatal("Bad value \"%s\" for PurgeJobAfter",
+				      temp_str);
+			}
+			xfree(temp_str);
+		}
+		if (s_p_get_string(&temp_str, "PurgeResvAfter", tbl)) {
+			/* slurmdb_parse_purge will set SLURMDB_PURGE_FLAGS */
+			if ((slurmdbd_conf->purge_resv =
+			     slurmdb_parse_purge(temp_str)) == NO_VAL) {
+				fatal("Bad value \"%s\" for PurgeResvAfter",
 				      temp_str);
 			}
 			xfree(temp_str);
@@ -378,6 +392,8 @@ extern int read_slurmdbd_conf(void)
 			slurmdbd_conf->purge_event |= SLURMDB_PURGE_ARCHIVE;
 		if (a_jobs)
 			slurmdbd_conf->purge_job |= SLURMDB_PURGE_ARCHIVE;
+		if (a_resv)
+			slurmdbd_conf->purge_resv |= SLURMDB_PURGE_ARCHIVE;
 		if (a_steps)
 			slurmdbd_conf->purge_step |= SLURMDB_PURGE_ARCHIVE;
 		if (a_suspend)
@@ -481,7 +497,7 @@ extern int read_slurmdbd_conf(void)
 		slurmdbd_conf->purge_step = NO_VAL;
 	if (!slurmdbd_conf->purge_suspend)
 		slurmdbd_conf->purge_suspend = NO_VAL;
-	
+
 	slurm_mutex_unlock(&conf_mutex);
 	return SLURM_SUCCESS;
 }
@@ -525,6 +541,13 @@ extern void log_config(void)
 	else
 		sprintf(tmp_str, "NONE");
 	debug2("PurgeJobAfter     = %s", tmp_str);
+
+	if (slurmdbd_conf->purge_resv != NO_VAL)
+		slurmdb_purge_string(slurmdbd_conf->purge_resv,
+				     tmp_str, sizeof(tmp_str), 1);
+	else
+		sprintf(tmp_str, "NONE");
+	debug2("PurgeResvAfter    = %s", tmp_str);
 
 	if (slurmdbd_conf->purge_step != NO_VAL)
 		slurmdb_purge_string(slurmdbd_conf->purge_step,
@@ -714,6 +737,16 @@ extern List dump_config(void)
 	if (slurmdbd_conf->purge_job != NO_VAL) {
 		key_pair->value = xmalloc(32);
 		slurmdb_purge_string(slurmdbd_conf->purge_job,
+				     key_pair->value, 32, 1);
+	} else
+		key_pair->value = xstrdup("NONE");
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("PurgeResvAfter");
+	if (slurmdbd_conf->purge_resv != NO_VAL) {
+		key_pair->value = xmalloc(32);
+		slurmdb_purge_string(slurmdbd_conf->purge_resv,
 				     key_pair->value, 32, 1);
 	} else
 		key_pair->value = xstrdup("NONE");

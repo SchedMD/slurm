@@ -343,6 +343,10 @@ typedef struct {
 			     * by default set the
 			     * SLURMDB_PURGE_ARCHIVE bit for
 			     * archiving */
+	uint32_t purge_resv; /* purge reservations older than this in months
+			      * by default set the
+			      * SLURMDB_PURGE_ARCHIVE bit for
+			      * archiving */
 	uint32_t purge_step; /* purge steps older than this in months
 			      * by default set the
 			      * SLURMDB_PURGE_ARCHIVE bit for

@@ -125,6 +125,7 @@ static int backfill_resolution = BACKFILL_RESOLUTION;
 static int backfill_window = BACKFILL_WINDOW;
 static int max_backfill_job_cnt = 50;
 static int max_backfill_job_per_user = 0;
+static bool backfill_continue = false;
 
 /*********************** local functions *********************/
 static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
@@ -406,6 +407,12 @@ static void _load_config(void)
 		      max_backfill_job_per_user);
 	}
 
+	/* bf_continue makes backfill continue where it was if interrupted
+	 */
+	if (sched_params && (strstr(sched_params, "bf_continue"))) {
+		backfill_continue = true;
+	}
+
 	xfree(sched_params);
 }
 
@@ -604,7 +611,7 @@ static int _attempt_backfill(void)
 				     "after testing %d jobs, %s",
 				     job_test_count, TIME_STR);
 			}
-			if (_yield_locks(yield_sleep)) {
+			if (_yield_locks(yield_sleep) && !backfill_continue) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
 					info("backfill: system state changed, "
 					     "breaking out after testing %d "
@@ -742,7 +749,7 @@ static int _attempt_backfill(void)
 				     "after testing %d jobs, %s",
 				     job_test_count, TIME_STR);
 			}
-			if (_yield_locks(yield_sleep)) {
+			if (_yield_locks(yield_sleep) && !backfill_continue) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
 					info("backfill: system state changed, "
 					     "breaking out after testing %d "

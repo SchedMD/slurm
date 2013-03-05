@@ -517,26 +517,26 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 	/* if this changes you will need to edit the corresponding enum */
 	char *resv_req_inx[] = {
 		"id_resv",
-		"resv_name",
-		"cpus",
 		"assoclist",
+		"cpus",
+		"flags",
 		"nodelist",
 		"node_inx",
+		"resv_name",
 		"time_start",
 		"time_end",
-		"flags",
 	};
 
 	enum {
 		RESV_REQ_ID,
-		RESV_REQ_NAME,
-		RESV_REQ_CPUS,
 		RESV_REQ_ASSOCS,
+		RESV_REQ_CPUS,
+		RESV_REQ_FLAGS,
 		RESV_REQ_NODES,
 		RESV_REQ_NODE_INX,
+		RESV_REQ_NAME,
 		RESV_REQ_START,
 		RESV_REQ_END,
-		RESV_REQ_FLAGS,
 		RESV_REQ_COUNT
 	};
 

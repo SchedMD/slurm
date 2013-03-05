@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "March 2012" "slurmdbd.conf 2.4" "Slurm configuration file"
+.TH "slurmdbd.conf" "28" "Feb 2013" "slurmdbd.conf 2.6" "Slurm configuration file"
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
 
@@ -43,6 +43,11 @@ no other wise.  Default is no.
 \fBArchiveJobs\fR
 When purging jobs also achive them.  Boolean, yes to archive job data,
 no other wise.  Default is no.
+
+.TP
+\fBArchiveResvs\fR
+When purging reservations also achive them.  Boolean, yes to archive
+reservation data, no other wise.  Default is no.
 
 .TP
 \fBArchiveScript\fR
@@ -269,6 +274,16 @@ everything older than 12 hours.)
 If not set (default), then job records are never purged.
 
 .TP
+\fBPurgeResvAfter\fR
+Individual reservation records over this age are purged from the database.
+Aggregated information will be preserved indefinitely.
+The time is a numeric value and is a number of months.  If you want to purge
+more often you can include hours, or days behind the numeric value to get
+those more frequent purges. (i.e. a value of '12hours' would purge
+everything older than 12 hours.)
+If not set (default), then reservation records are never purged.
+
+.TP
 \fBPurgeStepAfter\fR
 Individual job step records over this age are purged from the database.
 Aggregated information will be preserved indefinitely.
@@ -378,6 +393,8 @@ ArchiveEvents=yes
 .br
 ArchiveJobs=yes
 .br
+ArchiveResv=yes
+.br
 ArchiveSteps=no
 .br
 ArchiveSuspend=no
@@ -395,6 +412,8 @@ DebugLevel=4
 PurgeEventAfter=1month
 .br
 PurgeJobAfter=12month
+.br
+PurgeResvAfter=1month
 .br
 PurgeStepAfter=1month
 .br

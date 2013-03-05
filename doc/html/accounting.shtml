@@ -646,17 +646,21 @@ in the <a href="resource_limits.html">Resource Limits</a> document.</p>
   this means that the parent association is used for fairshare.
 </li>
 
-<li><b>GrpCPUMins=</b> A hard limit of cpu minutes to be used by jobs
+<li><b>GrpCPUMins=</b> The total number of cpu minutes that can
+  possibly be used by past, present and future jobs
   running from this association and its children.  If this limit is
   reached all jobs running in this group will be killed, and no new
-  jobs will be allowed to run.
+  jobs will be allowed to run.  This usage is decayed (at a rate of
+  PriorityDecayHalfLife).  It can also be reset (according to
+  PriorityUsageResetPeriod) in order to allow jobs to run against the
+  association tree again.
 </li>
 
-<li><b>GrpCPURunMins=</b> Maximum number of CPU minutes all jobs
-  running with this association and its children can run at the same
-  time.  This takes into consideration time limit of running jobs.  If
-  the limit is reached no new jobs are started until other jobs finish
-  to allow time to free up.
+<li><b>GrpCPURunMins=</b> Used to limit the combined total number of CPU
+  minutes used by all jobs running with this association and its
+  children.  This takes into consideration time limit of
+  running jobs and consumes it, if the limit is reached no new jobs
+  are started until other jobs finish to allow time to free up.
 </li>
 
 <li><b>GrpCPUs=</b> The total count of cpus able to be used at any given

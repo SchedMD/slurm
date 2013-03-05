@@ -1,4 +1,4 @@
-.TH "slurm.conf" "17" "January 2013" "slurm.conf 2.6" "Slurm configuration file"
+.TH "slurm.conf" "17" "March 2013" "slurm.conf 2.6" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1605,6 +1605,17 @@ scheduling multiple jobs simultaneously may be possible.
 This option may improve system responsiveness when large numbers of jobs
 (many hundreds) are submitted at the same time, but it will delay the
 initiation time of individual jobs. Also see \fBdefault_queue_depth\fR above.
+.TP
+\fBbf_continue\fR
+The backfill scheduler periodically releases locks in order to permit other
+operations to proceed rather than blocking all activity for what could be an
+extended period of time.
+Setting this option will cause the backfill scheduler to continue processing
+pending jobs from its original job list after releasing locks even if job
+or node state changes.
+This can result in lower priority jobs from being backfill scheduled instead
+of newly arrived higher priority jobs, but will permit more queued jobs to be
+considered for backfill scheduling.
 .TP
 \fBbf_interval=#\fR
 The number of seconds between iterations.
