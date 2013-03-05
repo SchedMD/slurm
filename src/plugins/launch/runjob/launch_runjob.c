@@ -320,10 +320,10 @@ extern int launch_p_setup_srun_opt(char **rest)
 	if (!opt.test_only) {
 		int i = 0;
 		/* First arg has to be something when sending it to the
-		   runjob api.  This can be anything, srun seemed most
-		   logical, but it doesn't matter.
+		   runjob api.  This can be anything, we put runjob
+		   here so --launch-cmd looks nice :), but it doesn't matter.
 		*/
-		opt.argv[i++] = xstrdup("srun");
+		opt.argv[i++] = xstrdup("runjob");
 		/* srun launches tasks using runjob API. Slurmd is not used */
 		/* We are always going to set ntasks_per_node and ntasks */
 		// if (opt.ntasks_per_node != NO_VAL) {
