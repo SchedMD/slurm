@@ -1674,11 +1674,18 @@ proc available_nodes { partition } {
 	global sinfo
 
 	set available -1
-	send_user "$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D\n"
+	#send_user "$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D\n"
 	set fd [open "|$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D"]
 	gets $fd line
 	catch {close $fd}
 	regexp {\d+} $line available
+	if {[string match *K $line]} {
+		set available [expr $available * 1024]
+	} elseif {[string match *M $line]} {
+		set available [expr $available * 1048576]
+	}
+
+
 	return $available
 }
 
