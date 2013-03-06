@@ -944,8 +944,9 @@ First, enable SLURM's use of PAM by setting <i>UsePAM=1</i> in
 Second, establish a PAM configuration file for slurm in <i>/etc/pam.d/slurm</i>.
 A basic configuration you might use is:</p>
 <pre>
-auth     required  pam_localuser.so
 account  required  pam_unix.so
+account  required  pam_slurm.so
+auth     required  pam_localuser.so
 session  required  pam_limits.so
 </pre>
 <p>Third, set the desired limits in <i>/etc/security/limits.conf</i>.
