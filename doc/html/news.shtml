@@ -33,14 +33,18 @@ which provides a mechanism to reserve CPUs for use with GPUs.</li>
 <p>SLURM Version 2.6 is scheduled for release in April 2013.
 Major enhancements planned include:
 <ul>
+<li>Support for job arrays, which increases performance and ease of use
+   for sets of similar jobs.</li>
 <li><a href="http://en.wikipedia.org/wiki/MapReduce">MapReduce</a> support
 (launches ~1000x faster, runs ~10x faster).</li>
-<li>Scheduling optimized for energy efficiency.</li>
-<li>Integration with
-<a href="http://en.wikipedia.org/wiki/FlexNet_Publisher">FLEXlm (Flexnet Publisher)</a>
-license management.</li>
+<li>Prolog and epilog support for advanced reservations.</li>
+<li>Much faster throughput for job step execution with --exclusive option. The
+srun process is notified when resources become available rather than
+periodic polling.</li>
 <li>Faster and more powerful job step management support (e.g. step
 dependencies).</li>
+<li>Advanced reservations with hostname and core counts now supports asymetric
+reservations (e.g. specific different core count for each node).</li>
 <li>Support for Intel MIC (Many Integrated Core) processor.</li>
 <li>Finer-grained BlueGene resouce management (partitions/queues and advanced
 reservations containing less than a whole midplane).</li>
@@ -59,6 +63,10 @@ end the reservation early depending upon the workload).</li>
 and refresh.</li>
 <li>Improved support for provisioning and virtualization.</li> 
 <li>Provide a web-based SLURM administration tool.</li>
+<li>Scheduling optimized for energy efficiency.</li>
+<li>Integration with
+<a href="http://en.wikipedia.org/wiki/FlexNet_Publisher">FLEXlm (Flexnet Publisher)</a>
+license management.</li>
 </ul>
 
 <h2><a name="security">Security Patches</a></h2>
@@ -85,6 +93,6 @@ trojan library, then that library will be used by the SLURM daemon with
 unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 5 October 2012</p>
+<p style="text-align:center;">Last modified 6 March 2013</p>
 
 <!--#include virtual="footer.txt"-->
