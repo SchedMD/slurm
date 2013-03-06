@@ -117,6 +117,10 @@ documents those changes that are of interest to users and admins.
  -- sdiag command - Correction to jobs started value reported.
  -- Prevent slurmctld assert when invalid change to reservation with running
     jobs is made.
+ -- BGQ - If signal is NODE_FAIL allow forward even if job is completing
+    and timeout in the runjob_mux trying to send in this situation.
+ -- BGQ - More robust checking for correct node, task, and ntasks-per-node
+    options in srun, and push that logic to salloc and sbatch.
 
 * Changes in SLURM 2.5.3
 ========================

@@ -2140,6 +2140,7 @@ static bool _opt_verify(void)
 {
 	bool verified = true;
 	char *dist = NULL, *lllp_dist = NULL;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (opt.quiet && opt.verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
@@ -2149,6 +2150,12 @@ static bool _opt_verify(void)
 	_fullpath(&opt.efname, opt.cwd);
 	_fullpath(&opt.ifname, opt.cwd);
 	_fullpath(&opt.ofname, opt.cwd);
+
+	if (cluster_flags & CLUSTER_FLAG_BGQ)
+		bg_figure_nodes_tasks(&opt.min_nodes, &opt.max_nodes,
+				      &opt.ntasks_per_node, &opt.ntasks_set,
+				      &opt.ntasks, opt.nodes_set, opt.nodes_set,
+				      opt.overcommit, 0);
 
 	if ((opt.ntasks_per_node > 0) && (!opt.ntasks_set) &&
 	    (opt.max_nodes == 0)) {

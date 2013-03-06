@@ -1261,11 +1261,18 @@ static int _salloc_default_command (int *argcp, char **argvp[])
 static bool _opt_verify(void)
 {
 	bool verified = true;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (opt.quiet && opt.verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;
 	}
+
+	if (cluster_flags & CLUSTER_FLAG_BGQ)
+		bg_figure_nodes_tasks(&opt.min_nodes, &opt.max_nodes,
+				      &opt.ntasks_per_node, &opt.ntasks_set,
+				      &opt.ntasks, opt.nodes_set, opt.nodes_set,
+				      opt.overcommit, 0);
 
 	if ((opt.ntasks_per_node > 0) && (!opt.ntasks_set)) {
 		opt.ntasks = opt.min_nodes * opt.ntasks_per_node;
