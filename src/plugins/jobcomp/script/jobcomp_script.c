@@ -50,6 +50,9 @@
  *  PARTITION		Partition name used to run job
  *  PROCS		Count of allocated CPUs
  *  START		Time of job start, UTS
+ *  STDERR		Job's stderr file name (if any)
+ *  STDIN		Job's stdin file name (if any)
+ *  STDOUT		Job's stdout file name (if any)
  *  SUBMIT		Time of job submission, UTS
  *  UID			User ID of job owner
  *  WORK_DIR		Job's working directory
