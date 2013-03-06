@@ -962,11 +962,12 @@ limit from being propagated:<i>PropagateResourceLimitsExcept=MEMLOCK</i>.</p>
 
 <p>We also have a PAM module for SLURM that prevents users from
 logging into nodes that they have not been allocated (except for user
-root, which can always login. pam_slurm is available for download from
-<a href="https://sourceforge.net/projects/slurm/">
-https://sourceforge.net/projects/slurm/</a> or use the
-<a href="http://www.debian.org/">Debian</a> package
-named <i>libpam-slurm</i>.
+root, which can always login.
+This pam_slurm module is included with the Slurm distribution.
+The module is built by default, but can be disabled using the
+.rpmmacros option "%_without_pam 1" or by entering the command line
+option "--without pam" when the configure program is executed.
+It's source code is in the directory "contribs/pam".
 The use of pam_slurm does not require <i>UsePAM</i> being set. The
 two uses of PAM are independent.
 
