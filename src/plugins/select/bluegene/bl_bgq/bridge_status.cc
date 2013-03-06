@@ -462,7 +462,7 @@ static void _handle_node_change(ba_mp_t *ba_mp, const std::string& cnode_loc,
 		snprintf(nc_name, sizeof(nc_name), "N%d", nc_loc);
 		snprintf(reason, sizeof(reason),
 			 "_handle_node_change: On midplane %s nodeboard %s "
-			 "had cnode %u%u%u%u%u(%s) got into an error state.",
+			 "had cnode %u%u%u%u%u(%s) go into an error state.",
 			 bg_down_node,
 			 nc_name,
 			 cnode_coords[0],
