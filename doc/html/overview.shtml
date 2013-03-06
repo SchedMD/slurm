@@ -55,32 +55,35 @@ infrastructures. This permits a wide variety of SLURM configurations using a
 building block approach. These plugins presently include:
 <ul>
 <li><a href="accounting_storageplugins.html">Accounting Storage</a>:
-Primarily Used to store historical data about jobs.  When used with
-  SlurmDBD (Slurm Database Daemon) it can also supply a
+  Primarily Used to store historical data about jobs.  When used with
+  SlurmDBD (Slurm Database Daemon), it can also supply a
   limits based system along with historical system status.
 </li>
 
-<li><a href="acct_gather_energy_plugins.html">Account Gather
-    Energy</a>: Gather energy comsumption per job or nodes in the
-    system.  This is tied to
-    the <a href="accounting_storageplugins.html">Accounting
-    Storage</a> and <a href="jobacct_gatherplugins.html"> Job Account
-    Gather plugins.
+<li><a href="acct_gather_energy_plugins.html">Account Gather Energy</a>:
+  Gather energy comsumption data per job or nodes in the system.
+  This plugin is integrated with the
+  <a href="accounting_storageplugins.html">Accounting Storage</a> and
+  <a href="jobacct_gatherplugins.html"> Job Account Gather</a> plugins.
 </li>
 
 <li><a href="authplugins.html">Authentication of communications</a>:
-How communication is authenticated between various components of
-  Slurm.
+  Provides authentication mechanism between various components of Slurm.
 </li>
 
-<li><a href="checkpoint_plugins.html">Checkpoint</a>: Used to supply
-  interface with various checkpoint methods.
+<li><a href="checkpoint_plugins.html">Checkpoint</a>:
+  Interface to various checkpoint mechanisms.
 </li>
 
 <li><a href="crypto_plugins.html">Cryptography (Digital Signature
-    Generation)</a>:
-Various methods to implement a digital signature used to validate a
-  job step is able to run on the nodes it claims to be able to.
+  Generation)</a>:
+  Mechanism used to generate a digital signature, which is used to validate
+  that job step is authorized to execute on specific nodes.
+  This is distinct from the plugin used for
+  <a href="authplugins.html">Authentication</a> since the job step
+  request is send from the user's srun command rather than directly from the
+  slurmctld daemon, which generates the job step credential and its
+  digitial signature.
 </li>
 
 <li><a href="gres.html">Generic Resources</a>: Provide interface to
@@ -88,59 +91,67 @@ Various methods to implement a digital signature used to validate a
   Many Integrated Core (MIC) processors.
 </li>
 
-<li><a href="job_submit_plugins.html">Job Submit</a>: Custom plugin to
-  allow site specific alteration of job requirements on submission
-  and update.
+<li><a href="job_submit_plugins.html">Job Submit</a>:
+  Custom plugin to allow site specific control over job requirements at
+  submission and update.
 </li>
 
 <li><a href="jobacct_gatherplugins.html">Job Accounting Gather</a>:
-  Gather job step resource utilization.
+  Gather job step resource utilization data.
 </li>
 
 <li><a href="jobcompplugins.html">Job Completion Logging</a>:
-Log job's finishing states.  This is typically a subset of data stored by
-an <a href="accounting_storageplugins.html">Accounting Storage
-    Plugin</a>.
+  Log a job's termination data. This is typically a subset of data stored by
+  an <a href="accounting_storageplugins.html">Accounting Storage Plugin</a>.
 </li>
 
-<li><a href="launch_plugins.html">Launchers</a>: To determine what
-  method <a href="srun.html">'srun'</a> uses to launch a parallel job.
+<li><a href="launch_plugins.html">Launchers</a>:
+  Controls the mechanism used by the <a href="srun.html">'srun'</a> command
+  to launch the tasks.
 </li>
 
-<li><a href="mpiplugins.html">MPI</a>: Provides different hooks for
-  the various MPI implementations.
+<li><a href="mpiplugins.html">MPI</a>:
+  Provides different hooks for the various MPI implementations.
+  For example, this can set MPI specific environment variables.
 </li>
 
 <li><a href="preempt.html">Preempt</a>:
-Method of how preemption is allowed on your system.
+  Determines which jobs can preempt other jobs and the preemption mechanism
+  to be used.
 </li>
 
 <li><a href="priority_plugins.html">Priority</a>:
-Assigns priorities to jobs as they arrive, and how the workflow changes.
+  Assigns priorities to jobs upon submission and on an ongoing basis
+  (e.g. as they age).
 </li>
 
 <li><a href="proctrack_plugins.html">Process tracking (for signaling)</a>:
-Different methods for keeping track of processes started for each job.
+  Provides a mechanism for identifying the processes associated with each job.
+  Used for job accounting and signalling.
 </li>
 
 <li><a href="schedplugins.html">Scheduler</a>:
-Plugin determine how and when Slurm schedules jobs.
+  Plugin determines how and when Slurm schedules jobs.
 </li>
 
 <li><a href="selectplugins.html">Node selection</a>:
-Plugin used to determine how Slurm selects the resources used for a
-  job.
+  Plugin used to determine the resources used for a job allocation.
 </li>
 
 <li><a href="switchplugins.html">Switch or interconnect</a>:
-Plugin to interface with a switch or interconnect.  For most systems
-  (infiniband) this isn't needed.</li>
+  Plugin to interface with a switch or interconnect.
+  For most systems (ethernet or infiniband) this is not needed.
+</li>
 
 <li><a href="taskplugins.html">Task Affinity</a>:
-How tasks are bound or not to resources.</li>
+  Provides mechanism to bind a job and it's individual tasks to specific
+  processors.
+</li>
 
 <li><a href="topology_plugin.html">Network Topology</a>:
-Optimize resource selection based upon topology.</li>
+  Optimizes resource selection based upon the network topology.
+  Used for both job allocations and advanced reservation.
+</li>
 
 </ul>
 
