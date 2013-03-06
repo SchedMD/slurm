@@ -25,6 +25,8 @@ for the type of accounting package. We currently use
 <li><b>filetxt</b>&#151;Information written to a text file.
 <li><b>mysql</b>&#151; Store information in a mysql database.
 <li><b>pgsql</b>&#151; Store information in a postgresql database.
+<li><b>slurmdbd</b>&#151; Send information to the Slurm Database
+  Daemon (SlurmDBD).  Extra configuration is needed and described <a href="accounting.html">here</a>.
 <li><b>none</b>&#151; Information is not stored anywhere.
 </ul>
 <p>The programmer is urged to study
@@ -985,6 +987,6 @@ ability to implement a particular API version using the mechanism outlined
 for SLURM plugins.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 29 March 2010</p>
+<p style="text-align:center;">Last modified 6 March 2013</p>
 
 <!--#include virtual="footer.txt"-->
