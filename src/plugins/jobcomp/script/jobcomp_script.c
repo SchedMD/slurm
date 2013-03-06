@@ -189,6 +189,9 @@ struct jobcomp_info {
 	char *jobstate;
 	char *account;
 	char *work_dir;
+	char *std_in;
+	char *std_out;
+	char *std_err;
 #ifdef HAVE_BG
 	char *connect_type;
 	char *geometry;
@@ -246,6 +249,15 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 		j->work_dir = xstrdup(job->details->work_dir);
 	else
 		j->work_dir = xstrdup("unknown");
+	if (job->details) {
+		if (job->details->std_in)
+			j->std_in = xstrdup(job->details->std_in);
+		if (job->details->std_out)
+			j->std_out = xstrdup(job->details->std_out);
+		if (job->details->std_err)
+			j->std_err = xstrdup(job->details->std_err);
+	}
+		
 #ifdef HAVE_BG
 	j->connect_type = select_g_select_jobinfo_xstrdup(job->select_jobinfo,
 						   SELECT_PRINT_CONNECTION);
@@ -267,6 +279,9 @@ static void _jobcomp_info_destroy (struct jobcomp_info *j)
 	xfree (j->jobstate);
 	xfree (j->account);
 	xfree (j->work_dir);
+	xfree (j->std_in);
+	xfree (j->std_out);
+	xfree (j->std_err);
 #ifdef HAVE_BG
 	xfree (j->connect_type);
 	xfree (j->geometry);
@@ -379,6 +394,12 @@ static char ** _create_environment (struct jobcomp_info *job)
 	_env_append (&env, "JOBSTATE",  job->jobstate);
 	_env_append (&env, "PARTITION", job->partition);
 	_env_append (&env, "WORK_DIR",  job->work_dir);
+	if (job->std_in)
+		_env_append (&env, "STDIN",     job->std_in);
+	if (job->std_out)
+		_env_append (&env, "STDOUT",     job->std_out);
+	if (job->std_err)
+		_env_append (&env, "STDERR",     job->std_err);
 
 #ifdef HAVE_BG
 	_env_append (&env, "BLOCKID",      job->blockid);
