@@ -122,6 +122,7 @@ documents those changes that are of interest to users and admins.
     and timeout in the runjob_mux trying to send in this situation.
  -- BGQ - More robust checking for correct node, task, and ntasks-per-node
     options in srun, and push that logic to salloc and sbatch.
+ -- GRES topology bug in core selection logic fixed.
 
 * Changes in SLURM 2.5.3
 ========================
