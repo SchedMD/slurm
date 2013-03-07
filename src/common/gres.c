@@ -2616,6 +2616,17 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			cpus_ctld = bit_size(node_gres_ptr->
 					     topo_cpus_bitmap[0]);
 		}
+
+		alloc_cpu_bitmap = bit_alloc(cpus_ctld);
+		if (cpu_bitmap) {
+			for (j = 0; j < cpus_ctld; j++) {
+				if (bit_test(cpu_bitmap, cpu_start_bit+j))
+					bit_set(alloc_cpu_bitmap, j);
+			}
+		} else {
+			bit_nset(alloc_cpu_bitmap, 0, cpus_ctld - 1);
+		}
+
 		cpus_avail = xmalloc(sizeof(uint32_t)*node_gres_ptr->topo_cnt);
 		for (i=0; i<node_gres_ptr->topo_cnt; i++) {
 			if (node_gres_ptr->topo_gres_cnt_avail[i] == 0)
@@ -2636,9 +2647,6 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		}
 
 		/* Pick the topology entries with the most CPUs available */
-		alloc_cpu_bitmap = bit_alloc(cpus_ctld);
-		if (alloc_cpu_bitmap == NULL)
-			fatal("bit_alloc: malloc failure");
 		gres_avail = 0;
 		while (gres_avail < job_gres_ptr->gres_cnt_alloc) {
 			top_inx = -1;
@@ -2655,8 +2663,10 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			}
 			cpus_avail[top_inx] = 0;
 			i = node_gres_ptr->topo_gres_cnt_avail[top_inx];
-			if (!use_total_gres)
-			    i -= node_gres_ptr->topo_gres_cnt_alloc[top_inx];
+			if (!use_total_gres) {
+				i -= node_gres_ptr->
+				     topo_gres_cnt_alloc[top_inx];
+			}
 			if (i < 0) {
 				error("gres/%s: topology allocation error on "
 				      "node %s", gres_name, node_name);
@@ -2664,8 +2674,8 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			}
 			/* update counts of allocated CPUs and GRES */
 			gres_avail += i;
-			bit_or(alloc_cpu_bitmap,
-			       node_gres_ptr->topo_cpus_bitmap[top_inx]);
+			bit_and(alloc_cpu_bitmap,
+			        node_gres_ptr->topo_cpus_bitmap[top_inx]);
 			cpu_cnt = bit_set_count(alloc_cpu_bitmap);
 		}
 		if (cpu_bitmap && (cpu_cnt > 0)) {
