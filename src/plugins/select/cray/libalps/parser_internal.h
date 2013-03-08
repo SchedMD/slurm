@@ -37,7 +37,7 @@ struct ud {
 /*
  * Tag handler lookup
  *
- * @tag:	NUL-terminated tag name
+ * @tag:	NULL-terminated tag name
  * @depth:	depth at which this tag expected (not valid for all tags)
  * @uniq:	whether @tag should be unique within document
  * @hnd:	attribute-parsing function
@@ -58,6 +58,7 @@ extern const struct element_handler basil_1_0_elements[];
 extern const struct element_handler basil_1_1_elements[];
 extern const struct element_handler basil_3_1_elements[];
 extern const struct element_handler basil_4_0_elements[];
+extern const struct element_handler basil_5_1_elements[];
 /* atoul.c */
 extern int atou64(const char *str, uint64_t *value);
 extern int atou32(const char *str, uint32_t *value);
@@ -103,9 +104,14 @@ extern void eh_node_3_1(struct ud *ud, const XML_Char **attrs);
 extern void eh_resv_3_1(struct ud *ud, const XML_Char **attrs);
 
 /* Basil 4.0 and above common handlers */
+extern void eh_released_4_0(struct ud *ud, const XML_Char **attrs);
+extern void eh_node_array_4_0(struct ud *ud, const XML_Char **attrs);
 extern void eh_accel(struct ud *ud, const XML_Char **attrs);
 extern void eh_accel_alloc(struct ud *ud, const XML_Char **attrs);
 extern void eh_switch_res(struct ud *ud, const XML_Char **attrs);
+/* st on think the name of the following was a mistake, should be ...resv
+   hence I added the new line after */
+extern void eh_switch_resv(struct ud *ud, const XML_Char **attrs);
 extern void eh_switch_app(struct ud *ud, const XML_Char **attrs);
 
 #endif /*__PARSER_INTERNAL_H__ */
