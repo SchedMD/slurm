@@ -30,7 +30,7 @@ Learn how to build, configure, and install SLURM.</p>
 </ul>
 
 <h2>SLURM Database Usage</h2>
-<p>SLURM Resource Manager databasae for users and system administrators.
+<p>SLURM Resource Manager database for users and system administrators.
 Tutorial covers SLURM architecture for database use, accounting commands,
 resource limits, fair share scheduling, and accounting configuration.</p>
 

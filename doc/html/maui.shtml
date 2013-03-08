@@ -117,7 +117,7 @@ supported by the sched/wiki2 plugin for use with the
 Moab Scheduler.</p>
 
 <p>SLURM version 2.0 and higher have internal scheduling capabilities
-that are not compatable with Maui.
+that are not compatible with Maui.
 <ol>
 <li>Do not configure SLURM to use the "priority/multifactor" plugin
 as it would set job priorities which conflict with those set by Maui.</li>

@@ -45,7 +45,7 @@ new job, a bitmap identifying nodes which could be used, node counts (minimum,
 maximum, and desired), a count of how many jobs of that partition the job can
 share resources with, and a list of jobs which can be preempted to initiate the
 new job. The first phase is to determine of all usable nodes, which nodes
-would best satisfy the resource requirement. This consistes of a best-fit
+would best satisfy the resource requirement. This consists of a best-fit
 algorithm that groups nodes based upon network topology (if the topology/tree
 plugin is configured) or based upon consecutive nodes (by default). Once the
 best nodes are identified, resources are accumulated for the new job until its

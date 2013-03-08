@@ -72,7 +72,7 @@ to indicate the reason for failure.</p>
 <p style="margin-left:.2in"><b>Description</b>: Note that a job is about to
 terminate or change size. The job's state will include the JOB_RESIZING flag
 if and only if it is about to change size. Otherwise the job is terminating.
-Note the existance of <i>resize_time</i> in the job record if one wishes to
+Note the existence of <i>resize_time</i> in the job record if one wishes to
 record information about a job at each size (i.e. a history of the job as
 its size changes through time).</p>
 <p style="margin-left:.2in"><b>Argument</b>: <br>

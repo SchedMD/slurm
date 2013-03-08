@@ -1516,7 +1516,7 @@ dset TV::parallel_configs {
 <p><a name="git_patch"><b>44. How can a patch file be generated from a SLURM
 commit in github?</b></a></br>
 <p>Find and open the commit in github then append ".patch" to the URL and save
-the resutling file. For an example, see:
+the resulting file. For an example, see:
 <a href="https://github.com/SchedMD/slurm/commit/91e543d433bed11e0df13ce0499be641774c99a3.patch">
 https://github.com/SchedMD/slurm/commit/91e543d433bed11e0df13ce0499be641774c99a3.patch</a>
 </p>

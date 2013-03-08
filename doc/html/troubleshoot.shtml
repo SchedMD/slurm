@@ -258,7 +258,7 @@ manually</a></h2>
 <ul>
 <li><b>Using sfree</b></li>
 <ol>
-<li>To free a specifc block run "<i>sfree -b BLOCKNAME</i>".</li>
+<li>To free a specific block run "<i>sfree -b BLOCKNAME</i>".</li>
 <li>To free all the blocks on the system run "<i>sfree -a</i>".</li>
 </ol>
 <li><b>Using scontrol</b></li>

@@ -83,7 +83,7 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
   Default value is zero.
   Applies only to IBM Power7-IH processors.
   POE requires that if <b>cau</b> has a non-zero value then <b>us</b>,
-  <b>devtype=IB</b> or <b>devtype=HFI</b> must be explictly specified otherwise
+  <b>devtype=IB</b> or <b>devtype=HFI</b> must be explicitly specified otherwise
   the request may attempt to allocate CAU with IP communications and fail.
   <li><b>devname=<i>name</i></b>
   Specify the name of an individual network adapter to use.

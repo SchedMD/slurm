@@ -393,7 +393,7 @@ value of those variables (e.g. "\-\-export=EDITOR") or specific values
 for the variables may be exported (e.g.. "\-\-export=EDITOR=/bin/vi").
 This option particularly important for jobs that are submitted on one cluster
 and execute on a different cluster (e.g. with different paths). By default all
-environment variables are propagaged. If the argument is \fINONE\fR or
+environment variables are propagated. If the argument is \fINONE\fR or
 specific environment variable names, then the \fB\-\-get\-user\-env\fR
 option will implicitly be set to load other environment variables based upon
 the user's configuration on the cluster which executes the job.
@@ -496,7 +496,7 @@ The batch script will only be submitted to the controller if the resources
 necessary to grant its job allocation are immediately available.  If the
 job allocation will have to wait in a queue of pending jobs, the batch script
 will not be submitted.
-NOTE: There is limitted support for this option with batch jobs.
+NOTE: There is limited support for this option with batch jobs.
 
 .TP
 \fB\-i\fR, \fB\-\-input\fR=<\fIfilename pattern\fR>
@@ -823,7 +823,7 @@ IBM infrastructure as of Parallel Environment version 2.2 and no value should
 be specified at this time.
 .TP
 \fBCAU\fR=<\fIcount\fR>
-Number of Collecitve Accelleration Units (CAU) required.
+Number of Collective Acceleration Units (CAU) required.
 Applies only to IBM Power7-IH processors.
 Default value is zero.
 Independent CAU will be allocated for each programming interface (MPI, LAPI, etc.)
@@ -898,12 +898,12 @@ Create a IP version 4 connection for LAPI communications on one switch network
 for each task.
 .TP
 \fBInstances=2,US,LAPI,MPI\fR
-Create two user space connections each for LAPI and MPI communcations on every
+Create two user space connections each for LAPI and MPI communications on every
 switch network for each task. Note that SN_ALL is the default option so every
 switch network is used. Also note that Instances=2 specifies that two
 connections are established for each protocol (LAPI and MPI) and each task.
 If there are two networks and four tasks on the node then a total
-of 32 connections are estabhished (2 instances x 2 protocols x 2 networks x
+of 32 connections are established (2 instances x 2 protocols x 2 networks x
 4 tasks).
 .RE
 
@@ -997,7 +997,7 @@ than one partition, specify their names in a comma separate list and the one
 offering earliest initiation will be used.
 
 .TP
-\fB\-\-propagate\fR[=\fIrlimits\fR]
+\fB\-\-propagate\fR[=\fIrlimitfR]
 Allows users to specify which of the modifiable (soft) resource limits
 to propagate to the compute nodes and apply to their jobs.  If
 \fIrlimits\fR is not specified, then all resource limits will be
@@ -1133,7 +1133,7 @@ Equivalent to \fB\-\-ntasks\-per\-node\fR.
 \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
 Restrict node selection to nodes with at least the specified number of
 threads per core.  NOTE: "Threads" refers to the number of processing units on
-each core rather than the number of appliation tasks to be launched per core.
+each core rather than the number of application tasks to be launched per core.
 See additional information under \fB\-B\fR option above when task/affinity
 plugin is enabled.
 
