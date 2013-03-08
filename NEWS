@@ -52,6 +52,8 @@ documents those changes that are of interest to users and admins.
  -- BGQ - More robust checking for correct node, task, and ntasks-per-node
     options in srun, and push that logic to salloc and sbatch.
  -- GRES topology bug in core selection logic fixed.
+ -- Fix to handle init.d script for querying status and not return 1 on
+    success.
 
 * Changes in SLURM 2.5.3
 ========================
