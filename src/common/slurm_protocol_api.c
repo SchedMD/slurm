@@ -2261,7 +2261,6 @@ int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout)
 		header.ret_list = NULL;
 	}
 
-
 	/* Forward message to other nodes */
 	if (header.forward.cnt > 0) {
 		error("We need to forward this to other nodes use "
@@ -2318,6 +2317,7 @@ total_return:
 		msg->auth_cred = (void *) NULL;
 		error("slurm_receive_msg: %s", slurm_strerror(rc));
 		rc = -1;
+		usleep(10000);	/* Discourage brute force attack */
 	} else {
 		rc = 0;
 	}
@@ -2488,6 +2488,7 @@ total_return:
 			list_push(ret_list, ret_data_info);
 		}
 		error("slurm_receive_msgs: %s", slurm_strerror(rc));
+		usleep(10000);	/* Discourage brute force attack */
 	} else {
 		if (!ret_list)
 			ret_list = list_create(destroy_data_info);
@@ -2718,6 +2719,7 @@ total_return:
 		msg->data = NULL;
 		error("slurm_receive_msg_and_forward: %s",
 		      slurm_strerror(rc));
+		usleep(10000);	/* Discourage brute force attack */
 	} else {
 		rc = 0;
 	}
