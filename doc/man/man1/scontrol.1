@@ -388,7 +388,7 @@ primary SLURM controller is scheduled down.
 Prevent a pending job from being started (sets it's priority to 0).
 Use the \fIrelease\fP command to permit the job to be scheduled.
 This command is designed for a system administrator to hold a job so that
-the job owner may release it rather than requiring the interventon of a
+the job owner may release it rather than requiring the intervention of a
 system administrator (also see the \fBhold\fP command).
 
 .TP
@@ -680,9 +680,9 @@ days\-hours:minutes:seconds.
 Time resolution is one minute and second values are rounded up to
 the next minute.
 If changing the time limit of a job, either specify a new time limit value or
-preceed the time with a "+" or "\-" to increment or decrement the current
+precede the time with a "+" or "\-" to increment or decrement the current
 time limit (e.g. "TimeLimit=+30"). In order to increment or decrement the
-current time limit, the \fIJobId\fP specification must preceed the
+current time limit, the \fIJobId\fP specification must precede the
 \fITimeLimit\fP specification.
 
 .TP
@@ -745,7 +745,7 @@ Time the job ran prior to last suspend.
 The reason job is not running: e.g., waiting "Resources".
 .TP
 \fISubmitTime\fP
-The time  and  date stamp (in Universal Time Coordiated, UTC)
+The time  and  date stamp (in Universal Time Coordinated, UTC)
 the job was submitted.  The format of the output is identical
 to that of the EndTime field.
 
@@ -790,9 +790,9 @@ days\-hours:minutes:seconds.
 Time resolution is one minute and second values are rounded up to
 the next minute.
 If changing the time limit of a step, either specify a new time limit value or
-preceed the time with a "+" or "\-" to increment or decrement the current
+precede the time with a "+" or "\-" to increment or decrement the current
 time limit (e.g. "TimeLimit=+30"). In order to increment or decrement the
-current time limit, the \fIStepId\fP specification must preceed the
+current time limit, the \fIStepId\fP specification must precede the
 \fITimeLimit\fP specification.
 
 .TP
@@ -1095,13 +1095,13 @@ A user in any of the accounts may use the reserved nodes.
 A new reservation must specify Users and/or Accounts.
 If both Users and Accounts are specified, a job must match both in order to
 use the reservation.
-Accounts can also be denied access to reservations by preceeding all of the
-account names with '\-'. Alternately preceed the equal sign with '\-'.
+Accounts can also be denied access to reservations by preceding all of the
+account names with '\-'. Alternately precede the equal sign with '\-'.
 For example, "Accounts=-physcode1,-physcode2" or "Accounts-=physcode1,physcode2"
 will permit any account except physcode1 and physcode2 to use the reservation.
 You can add or remove individual accounts from an existing reservation by
 using the update command and adding a '+' or '\-' sign before the '=' sign.
-If accounts are denied access to a reservation (account name preceeded by a '\-'),
+If accounts are denied access to a reservation (account name preceded by a '\-'),
 then all other accounts are implicitly allowed to use the reservation and it is
 not possible to also explicitly specify allowed accounts.
 
@@ -1249,13 +1249,13 @@ List of users permitted to use the reserved nodes, for example
 A new reservation must specify Users and/or Accounts.
 If both Users and Accounts are specified, a job must match both in order to
 use the reservation.
-Users can also be denied access to reservations by preceeding all of the
-user names with '\-'. Alternately preceed the equal sign with '\-'.
+Users can also be denied access to reservations by preceding all of the
+user names with '\-'. Alternately precede the equal sign with '\-'.
 For example, "User=-jones1,-smith2" or "User-=jones1,smith2"
 will permit any user except jones1 and smith2 to use the reservation.
 You can add or remove individual users from an existing reservation by
 using the update command and adding a '+' or '\-' sign before the '=' sign.
-If users are denied access to a reservation (user name preceeded by a '\-'),
+If users are denied access to a reservation (user name preceded by a '\-'),
 then all other users are implicitly allowed to use the reservation and it is
 not possible to also explicitly specify allowed users.
 

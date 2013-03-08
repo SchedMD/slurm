@@ -100,7 +100,7 @@ a single task can run at one time.</p>
 to fork and exec of user tasks.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> job</span>&nbsp;&nbsp;&nbsp;(input)
-Pointer to the slurmd sturcture for the job that is running.<br>
+Pointer to the slurmd structure for the job that is running.<br>
 <span class="commandline"> env</span>&nbsp;&nbsp;&nbsp;(input)
 Environment variables for tasks to be spawned.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,

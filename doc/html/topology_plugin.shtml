@@ -77,7 +77,7 @@ false otherwise.</p>
 <b>paddr</b> (output) returns the topology address of the node and connected
 switches. If there are multiple switches at some level in the hierarchy, they
 will be represented using SLURM's hostlist expression (e.g. "s0" and "s1" are
-reported as "s[0-1]").  Each level in the hiearchy is separated by a period.
+reported as "s[0-1]").  Each level in the hierarchy is separated by a period.
 The last element will always be the node's name (i.e. "s0.s10.nodename")<br>
 <b>ppatt</b> (output) returns the pattern of the topology address. Each level
 in the hierarchy is separated by a period. The final element will always be

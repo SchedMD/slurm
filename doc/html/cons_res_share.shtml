@@ -41,7 +41,7 @@ other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
 option.</TD>
 </TR><TR>
 <TD>Shared=FORCE</TD>
-<TD>Each whole node can be allocated to multple jobs up to the count specified
+<TD>Each whole node can be allocated to multiple jobs up to the count specified
 per partition/queue (default 4 jobs per node)</TD>
 </TR><TR>
 <TD ROWSPAN=3>SelectType=<B>select/cons_res</B><BR>

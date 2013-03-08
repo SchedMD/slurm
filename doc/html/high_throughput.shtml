@@ -117,7 +117,7 @@ of these parameters).</li>
 </ul></li>
 <li><b>SchedulerType</b>:
 If most jobs are short lived then use of the <i>sched/builtin</i> plugin is
-recomended. This manages a queue of jobs on a First-In-First-Out (FIFO) basis
+recommended. This manages a queue of jobs on a First-In-First-Out (FIFO) basis
 and eliminates logic used to sort the queue by priority.
 <li><b>SelectType</b>:
 If only serial jobs (single CPU jobs) are to be executed, use of the
@@ -151,7 +151,7 @@ Writing to local storage is recommended.</li>
 Avoid using <i>task/cgroup</i> it is slower than other
 alternatives. It is not as heavy as the cgroup proctrack
 plugin, but still added overhead.  On the same note <i>task/affinity</i> does
-not appear to add any mesurable overhead.</li>
+not appear to add any measurable overhead.</li>
 <li><b>Other</b>: Configure logging, accounting and other overhead to a minimum
 appropriate for your environment.</li>
 </ul>
