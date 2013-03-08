@@ -133,7 +133,7 @@ enum basil_element {
 	BT_SOCKET,              /* Basil 1.3/5.1 Inventory/Socket */
 	BT_COMUARRAY,           /* Basil 1.3/5.1 Inventory/ComputeUnitArray */
 	BT_COMPUNIT,            /* Basil 1.3/5.1 Inventory/ComputeUnit */
-#define	BT_5_1_MAX              (BT_COMPUNIT + 1)       /* End of Basil x.x */
+#define	BT_5_1_MAX              (BT_COMPUNIT + 1)       /* End of Basil 5.1 */
 	BT_MAX			/* End of Basil tags */
 };
 

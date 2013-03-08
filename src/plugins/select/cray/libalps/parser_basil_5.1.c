@@ -7,7 +7,7 @@
 #include "parser_internal.h"
 
 /** Basil 5.1 'NodeArray' element */
-static void eh_node_array_5_1(struct ud *ud, const XML_Char **attrs)
+void eh_node_array_5_1(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "schedchangecount" };
 	/*
@@ -25,14 +25,14 @@ static void eh_node_array_5_1(struct ud *ud, const XML_Char **attrs)
 
 	if ( ud->bp->mdata.inv->sched_change_count
 	     > ud->bp->mdata.inv->change_count)
-		fatal("illegal sched_change_count = %d, must be "
-		      "< change_count (%d)",
+		fatal("illegal sched_change_count = %"PRIu64", must be "
+		      "< change_count (%"PRIu64")",
 			ud->bp->mdata.inv->sched_change_count,
 			ud->bp->mdata.inv->change_count);
 }
 
 /** Basil 5.1 'Socket' element */
-static void eh_socket_5_1(struct ud *ud, const XML_Char **attrs)
+void eh_socket_5_1(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "ordinal", "architecture", "clock_mhz" };
 
@@ -45,7 +45,7 @@ static void eh_socket_5_1(struct ud *ud, const XML_Char **attrs)
 	ud->counter[BT_SEGMARRAY]  = 0;
 }
 /** Basil 5.1 'Compute' element */
-static void eh_compute_5_1(struct ud *ud, const XML_Char **attrs)
+void eh_compute_5_1(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "ordinal" };
 

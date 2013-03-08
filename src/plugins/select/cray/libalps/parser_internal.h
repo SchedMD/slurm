@@ -114,4 +114,9 @@ extern void eh_switch_res(struct ud *ud, const XML_Char **attrs);
 extern void eh_switch_resv(struct ud *ud, const XML_Char **attrs);
 extern void eh_switch_app(struct ud *ud, const XML_Char **attrs);
 
+/* Basil 5.1 and above comon handlers */
+extern void eh_node_array_5_1(struct ud *ud, const XML_Char **attrs);
+extern void eh_socket_5_1(struct ud *ud, const XML_Char **attrs);
+extern void eh_compute_5_1(struct ud *ud, const XML_Char **attrs);
+
 #endif /*__PARSER_INTERNAL_H__ */

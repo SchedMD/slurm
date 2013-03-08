@@ -72,7 +72,8 @@ static void _init_log_config(void)
 	}
 }
 
-static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r, enum basil_version version)
+static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r,
+				    enum basil_version version)
 {
 	struct basil_rsvn_param *param;
 
@@ -123,7 +124,8 @@ static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r, enum 
 			_write_xml(fp, "   <LabelParamArray>\n");
 			for (label = param->labels; label; label = label->next)
 				_write_xml(fp, "    <LabelParam name=\"%s\""
-					   " type=\"%s\" disposition=\"%s\"/>\n",
+					   " type=\"%s\" "
+					   "disposition=\"%s\"/>\n",
 					   label->name,
 					   nam_labeltype[label->type],
 					   nam_ldisp[label->disp]);
