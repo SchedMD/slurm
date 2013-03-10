@@ -55,6 +55,7 @@
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/state_save.h"
+#include "src/slurmctld/port_mgr.h"
 
 #include "allocate.h"
 #include "info.h"
@@ -430,11 +431,14 @@ static int _setup_job_desc_msg(uint32_t np, uint32_t request_node_num,
 int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
 		      char *node_range_list, const char *flag,
 		      time_t timeout, const char *cpu_bind,
-		      uint32_t mem_per_cpu, uint32_t *slurm_jobid,
-		      char *reponse_node_list, char *tasks_per_node)
+		      uint32_t mem_per_cpu, uint32_t required_port_cnt,
+		      uint32_t *slurm_jobid, char *reponse_node_list,
+		      char *tasks_per_node, char *resv_ports)
 {
 	job_desc_msg_t job_desc_msg;
 	resource_allocation_response_msg_t *job_alloc_resp_msg = NULL;
+	struct job_record *job_ptr = NULL;
+	struct step_record step_ptr;
 	int rc;
 
 	slurm_init_job_desc_msg (&job_desc_msg);
@@ -460,6 +464,19 @@ int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
 
 	/* free the allocated resource msg */
 	slurm_free_resource_allocation_response_msg(job_alloc_resp_msg);
+
+	/**************************\
+	 * 		resv port 		  *
+	\**************************/
+	job_ptr = find_job_record(job_alloc_resp_msg->job_id);
+	 step_ptr.resv_port_cnt = required_port_cnt;
+	 step_ptr.job_ptr = job_ptr;
+	 step_ptr.step_node_bitmap = job_ptr->node_bitmap;
+	 resv_port_alloc(&step_ptr);
+	 strcpy(resv_ports, step_ptr.resv_ports);
+	 info("reserved ports %s for job %u", step_ptr.resv_ports, step_ptr.job_ptr->job_id);
+	 xfree(step_ptr.resv_ports);
+	 xfree(step_ptr.resv_port_array);
 
 #if 0
 	//kill the job, release the resource, just for test
@@ -502,8 +519,9 @@ int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
 int allocate_node(uint32_t np, uint32_t request_node_num,
 		  char *node_range_list, const char *flag,
 		  time_t timeout, const char *cpu_bind,
-		  uint32_t mem_per_cpu, uint32_t *slurm_jobid,
-		  char *reponse_node_list, char *tasks_per_node)
+		  uint32_t mem_per_cpu, uint32_t required_port_cnt,
+		  uint32_t *slurm_jobid, char *reponse_node_list,
+		  char *tasks_per_node, char *resv_ports)
 {
 	int rc, error_code, i;
 
@@ -512,6 +530,7 @@ int allocate_node(uint32_t np, uint32_t request_node_num,
 	struct job_record *job_ptr = NULL;
 	bool job_waiting = false;
 	uid_t uid = getuid();
+	struct step_record step_ptr;
 
 	slurm_init_job_desc_msg (&job_desc_msg);
 	rc = _setup_job_desc_msg(np, request_node_num, node_range_list, flag,
@@ -611,6 +630,19 @@ int allocate_node(uint32_t np, uint32_t request_node_num,
 			select_g_select_jobinfo_free(alloc_msg.select_jobinfo);
 			schedule_job_save();	/* has own locks */
 			schedule_node_save();	/* has own locks */
+
+			/**************************\
+			 * 		resv port 		  *
+			\**************************/
+			 step_ptr.resv_port_cnt = required_port_cnt;
+			 step_ptr.job_ptr = job_ptr;
+			 step_ptr.step_node_bitmap = job_ptr->node_bitmap;
+			 resv_port_alloc(&step_ptr);
+			 strcpy(resv_ports, step_ptr.resv_ports);
+			 info("reserved ports %s for job %u", step_ptr.resv_ports, step_ptr.job_ptr->job_id);
+			 xfree(step_ptr.resv_ports);
+			 xfree(step_ptr.resv_port_array);
+
 
 #if 0
 			/* only for test */
