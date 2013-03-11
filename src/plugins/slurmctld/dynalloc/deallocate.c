@@ -120,6 +120,15 @@ extern void deallocate(const char *msg)
 	argv_free(jobid_argv);
 }
 
+/**
+ * deallocate the ports for a slurm job.
+ *
+ * deallocate the ports and remove the entry from List.
+ *
+ * IN:
+ *	slurm_jobid: slurm jobid
+ *
+ */
 extern void deallocate_port(uint32_t slurm_jobid)
 {
 	job_ports_t *item = NULL;

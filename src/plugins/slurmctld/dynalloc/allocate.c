@@ -490,7 +490,8 @@ int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
 				i, step.resv_port_array[i]);
 	}
 
-	/* keep slurm_jobid and resv_port_array in a List for future release port */
+	/* keep slurm_jobid and resv_port_array in a List
+	 * for future release port */
 	append_job_ports_item(job_ptr->job_id, step.resv_port_cnt,
 			step.resv_ports, step.resv_port_array);
 

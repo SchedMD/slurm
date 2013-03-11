@@ -54,13 +54,14 @@ the response message could be like: "avail_nodes=4 avail_slots=16"</p>
 <p>An allocation request message will consist of two part:</p>
 <ol>
 <li>Job part, like "jobid=100 return=all timeout=10"</li>
-<li>App part, like "app=0 np=5 N=2 node_list=vm[2-3] flag=mandatory"</li>
+<li>App part, like "app=0 np=5 N=2 node_list=vm[2-3] flag=mandatory 
+cpu_bind=cores mem_per_cpu=100 resv_port_cnt=2"</li>
 </ol>
-<p>An allocation message can have one job part and at least one
+<p>An allocation message might consist of one job part and at least one
 app (application) part. 
 For example:<br>
 "allocate jobid=100 return=all timeout=10:app=0 np=5 N=2 node_list=vm[2-3]
-flag=mandatory cpu_bind=cores mem_per_cpu=100:app=1 N=2"</p>
+flag=mandatory cpu_bind=cores mem_per_cpu=100 resv_port_cnt=2:app=1 N=2"</p>
 
 <p>In the job part of the above message, <b>jobid</b> is optional and will 
 be sent back to client for identifying the allocation results; the <b>return</b>
@@ -91,15 +92,16 @@ to fill out the requested number. <b>cpu_bind</b> is to bind tasks to CPUs,
 which is used only when the task/affinity or task/cgroup plugin is enabled 
 (please refer to 'man salloc'). <b>mem_per_cpu</b> is mimimum memory required
 per allocated CPU in MegaBytes, which is used when the task/cgroup plugin is 
-enabled.
+enabled. <b>resv_port_cnt</b> is the port count required to be allocated, if 
+not specified, resv_port_cnt=1 by default.   
 </p>
 
 <p>A response message might be like "jobid=100:app=0 slurm_jobid=679 
-allocated_node_list=vm2,vm3 tasks_per_node=3,2:app=1 allocate_failure". 
-In this example, 'app=0' gets a successful allocation while the allocation 
-for 'app=1' fails. <b>Note that</b> in the response message with successful
-allocation for an app, a <b>slurm_jobid</b> is returned for later operation, 
-e.g., process launch, resource deallocation, etc.
+allocated_node_list=vm2,vm3 tasks_per_node=3,2 resv_ports=12001-12002:app=1 
+allocate_failure". In this example, 'app=0' gets a successful allocation 
+while the allocation for 'app=1' fails. <b>Note that</b> in the response 
+message with successful allocation for an app, a <b>slurm_jobid</b> is 
+returned for later operation, e.g., process launch, resource deallocation, etc.
 </p>
 
 <p class="footer"><a href="#top">top</a>
@@ -111,7 +113,9 @@ e.g., process launch, resource deallocation, etc.
 "<b>deallocate</b> slurm_jobid=744 job_return_code=0:slurm_jobid=745 
 job_return_code=-1". Note that it is possible to release a number of 
 allocations in ONE message, and each allocation is labeled by a 
-<b>slurm_jobid</b>.</p>
+<b>slurm_jobid</b>. All resources related with the slurm_job will be 
+released, e.g., cores/nodes, memory, and ports.  
+</p>
 
 <p class="footer"><a href="#top">top</a>
 
