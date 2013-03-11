@@ -128,6 +128,12 @@ static int _process_purge(mysql_conn_t *mysql_conn,
 		arch_cond.purge_job = slurmdbd_conf->purge_job;
 	else
 		arch_cond.purge_job = NO_VAL;
+
+	if (purge_period & slurmdbd_conf->purge_resv)
+		arch_cond.purge_resv = slurmdbd_conf->purge_resv;
+	else
+		arch_cond.purge_resv = NO_VAL;
+
 	if (purge_period & slurmdbd_conf->purge_step)
 		arch_cond.purge_step = slurmdbd_conf->purge_step;
 	else

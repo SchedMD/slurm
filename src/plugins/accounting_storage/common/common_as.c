@@ -691,6 +691,20 @@ extern int archive_run_script(slurmdb_archive_cond_t *arch_cond,
 				     (long)curr_end);
 	}
 
+	if (arch_cond->purge_resv != NO_VAL) {
+		if (!(curr_end = archive_setup_end_time(
+			     last_submit, arch_cond->purge_job))) {
+			error("Parsing purge job failed");
+			return SLURM_ERROR;
+		}
+
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_RESV", "%u",
+				     SLURMDB_PURGE_ARCHIVE_SET(
+					     arch_cond->purge_job));
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_RESV", "%ld",
+				     (long)curr_end);
+	}
+
 	if (arch_cond->purge_step != NO_VAL) {
 		if (!(curr_end = archive_setup_end_time(
 			     last_submit, arch_cond->purge_step))) {

@@ -907,6 +907,8 @@ static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn,
 		arch_cond->purge_event = slurmdbd_conf->purge_event;
 	if (arch_cond->purge_job == NO_VAL)
 		arch_cond->purge_job = slurmdbd_conf->purge_job;
+	if (arch_cond->purge_resv == NO_VAL)
+		arch_cond->purge_resv = slurmdbd_conf->purge_resv;
 	if (arch_cond->purge_step == NO_VAL)
 		arch_cond->purge_step = slurmdbd_conf->purge_step;
 	if (arch_cond->purge_suspend == NO_VAL)
