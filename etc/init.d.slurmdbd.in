@@ -4,7 +4,7 @@
 # description: SLURMDBD is a database server interface for \
 #              SLURM (Simple Linux Utility for Resource Management).
 #
-# processname: /usr/sbin/slurmdbd
+# processname: @sbindir@/slurmdbd
 # pidfile: /var/run/slurmdbd.pid
 #
 # config: /etc/sysconfig/slurm
@@ -179,7 +179,9 @@ case "$1" in
 	fi
 	;;
     reconfig)
+	echo -n $"Reloading slurmdbd daemon configuration: "
 	killproc slurmdbd -HUP
+	echo
 	;;
     *)
 	echo "Usage: $0 {start|stop|status|restart|condrestart|reconfig}"
