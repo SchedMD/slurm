@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 2.5.5
 ========================
+ -- Fix for sacctmgr add qos to handle the 'flags' option.
 
 * Changes in Slurm 2.5.4
 ========================
