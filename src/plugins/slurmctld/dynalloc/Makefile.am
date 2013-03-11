@@ -19,6 +19,8 @@ AS_DYNALLOC_SOURCES = \
 	deallocate.h \
 	info.c	\
 	info.h	\
+	job_ports_list.c \
+	job_ports_list.h \
 	msg.c	\
 	msg.h	\
 	slurmctld_dynalloc.c

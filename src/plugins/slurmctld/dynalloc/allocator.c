@@ -54,7 +54,7 @@ static void _parse_app_params(const char *cmd, char *appid,
 					uint32_t *np, uint32_t *request_node_num,
 					char *node_range_list, char *flag,
 					char *cpu_bind, uint32_t *mem_per_cpu,
-					uint32_t *required_port_cnt);
+					uint32_t *resv_port_cnt);
 
 static void _allocate_app_op(const char *msg_app,
 							size_t app_timeout,
@@ -128,7 +128,7 @@ static void _parse_app_params(const char *cmd, char *appid,
 					uint32_t *np, uint32_t *request_node_num,
 					char *node_range_list, char *flag,
 					char *cpu_bind, uint32_t *mem_per_cpu,
-					uint32_t *required_port_cnt)
+					uint32_t *resv_port_cnt)
 {
 	char *tmp = NULL;
 	char *p_str = NULL;
@@ -165,10 +165,10 @@ static void _parse_app_params(const char *cmd, char *appid,
 			pos = strchr(p_str, '=');
 			pos++;
 			*mem_per_cpu = strtoul(pos, NULL, 10);
-		} else if (strstr(p_str, "required_port_cnt")) {
+		} else if (strstr(p_str, "resv_port_cnt")) {
 			pos = strchr(p_str, '=');
 			pos++;
-			*required_port_cnt = strtoul(pos, NULL, 10);
+			*resv_port_cnt = strtoul(pos, NULL, 10);
 		}
 		p_str = strtok(NULL, " ");
 	}
@@ -198,7 +198,7 @@ static void _allocate_app_op(const char *msg_app,
 
 	char cpu_bind[32] = "";
 	uint32_t mem_per_cpu = 0;
-	uint32_t required_port_cnt = 0;
+	uint32_t resv_port_cnt = 1;
 	/* out params */
 	uint32_t slurm_jobid;
 	char resp_node_list[SIZE];
@@ -207,10 +207,10 @@ static void _allocate_app_op(const char *msg_app,
 	int rc;
 
 	_parse_app_params(msg_app, appid, &np, &request_node_num,
-					node_range_list, flag, cpu_bind, &mem_per_cpu, &required_port_cnt);
+					node_range_list, flag, cpu_bind, &mem_per_cpu, &resv_port_cnt);
 
 	rc = allocate_node(np, request_node_num, node_range_list, flag,
-						app_timeout, cpu_bind, mem_per_cpu, required_port_cnt,
+						app_timeout, cpu_bind, mem_per_cpu, resv_port_cnt,
 						&slurm_jobid, resp_node_list, tasks_per_node, resv_ports);
 
 	if (SLURM_SUCCESS == rc) {

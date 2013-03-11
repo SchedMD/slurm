@@ -81,7 +81,7 @@
 int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
 		      char *node_range_list, const char *flag,
 		      time_t timeout, const char *cpu_bind,
-		      uint32_t mem_per_cpu, uint32_t required_port_cnt,
+		      uint32_t mem_per_cpu, uint32_t resv_port_cnt,
 		      uint32_t *slurm_jobid, char *reponse_node_list,
 		      char *tasks_per_node, char *resv_ports);
 
@@ -115,7 +115,7 @@ int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
 int allocate_node(uint32_t np, uint32_t request_node_num,
 		  char *node_range_list, const char *flag,
 		  time_t timeout, const char *cpu_bind,
-		  uint32_t mem_per_cpu, uint32_t required_port_cnt,
+		  uint32_t mem_per_cpu, uint32_t resv_port_cnt,
 		  uint32_t *slurm_jobid, char *reponse_node_list,
 		  char *tasks_per_node, char *resv_ports);
 
