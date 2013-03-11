@@ -1433,10 +1433,16 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 	if (qos->preempt_list && !g_qos_list)
 		g_qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
 
-	if (qos->grace_time != NO_VAL)
-		printf("  GraceTime       = %d\n", qos->grace_time);
-	else
-		printf("  GraceTime       = NONE\n");
+	if (qos->flags && (qos->flags != QOS_FLAG_NOTSET)) {
+		char *tmp_char = slurmdb_qos_flags_str(qos->flags);
+		printf("  Flags          = %s\n", tmp_char);
+		xfree(tmp_char);
+	}
+
+	if (qos->grace_time == INFINITE)
+		printf("  GraceTime      = NONE\n");
+	else if (qos->grace_time != NO_VAL)
+		printf("  GraceTime      = %d\n", qos->grace_time);
 
 	if (qos->grp_cpu_mins == INFINITE)
 		printf("  GrpCPUMins     = NONE\n");
@@ -1534,7 +1540,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		}
 	}
 
-	if (qos->preempt_mode) {
+	if (qos->preempt_mode && (qos->preempt_mode != (uint16_t)NO_VAL)) {
 		printf("  PreemptMode    = %s\n",
 		       preempt_mode_string(qos->preempt_mode));
 	}
