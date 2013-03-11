@@ -230,6 +230,14 @@ static void _env_merge_filter(job_desc_msg_t *desc)
 		tok = strtok_r(NULL, ",", &last);
 	}
 	xfree(tmp);
+
+	for (i = 0; environ[i]; i++) {
+		if (strncmp("SLURM_", environ[i], 6))
+			continue;
+		save_env[0] = environ[i];
+		env_array_merge(&desc->environment,
+				(const char **)save_env);
+	}
 }
 
 /* Returns SLURM_ERROR if settings are invalid for chosen cluster */

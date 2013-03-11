@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in Slurm 2.5.5
 ========================
  -- Fix for sacctmgr add qos to handle the 'flags' option.
+ -- Export SLURM_ environment variables from sbatch, even if "--export"
+    option does not explicitly list them.
 
 * Changes in Slurm 2.5.4
 ========================
