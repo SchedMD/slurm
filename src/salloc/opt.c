@@ -400,6 +400,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
   {"SALLOC_QOS",           OPT_STRING,     &opt.qos,           NULL          },
+  {"SALLOC_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
   {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
   {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
   {"SALLOC_WAIT",          OPT_IMMEDIATE,  NULL,               NULL          },
