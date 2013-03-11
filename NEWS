@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
  -- If step requests more CPUs than possible in specified node count of job
     allocation then return ESLURM_TOO_MANY_REQUESTED_CPUS rather than
     ESLURM_NODES_BUSY and retrying.
+ -- CRAY - Fix SLURM_TASKS_PER_NODE to be set correctly.
 
 * Changes in Slurm 2.5.4
 ========================
