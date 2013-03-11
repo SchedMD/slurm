@@ -543,6 +543,7 @@ env_vars_t env_vars[] = {
 {"SLURM_QOS",           OPT_STRING,     &opt.qos,           NULL             },
 {"SLURM_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL             },
 {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL             },
+{"SLURM_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL             },
 {"SLURM_RESTART_DIR",   OPT_STRING,     &opt.restart_dir ,  NULL             },
 {"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
 {"SLURM_SIGNAL",        OPT_SIGNAL,     NULL,               NULL             },
