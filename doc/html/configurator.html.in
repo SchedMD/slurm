@@ -186,7 +186,7 @@ function displayfile()
    get_task_plugin_param() + "<br>" +
    get_field("TaskProlog",document.config.task_prolog) + "<br>" +
    "#TopologyPlugin=topology/tree <br>" +
-   "#TmpFs=/tmp <br>" +
+   "#TmpFS=/tmp <br>" +
    "#TrackWCKey=no <br>" +
    "#TreeWidth= <br>" +
    "#UnkillableStepProgram= <br>" +
