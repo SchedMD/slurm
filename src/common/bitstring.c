@@ -683,15 +683,16 @@ bit_set_count(bitstr_t *b)
 int
 bit_set_count_range(bitstr_t *b, int start, int end)
 {
-	int count = 0;
-	bitoff_t bit, bit_cnt;
+	int count = 0, eow;
+	bitoff_t bit;
 	const int word_size = sizeof(bitstr_t) * 8;
 
 	_assert_bitstr_valid(b);
 	_assert_bit_valid(b,start);
 
-	end = MIN(end,_bitstr_bits(b));
-	for ( bit = start; bit < end && bit < ((start+word_size-1)/word_size) * word_size; bit++) {
+	end = MIN(end, _bitstr_bits(b));
+	eow = ((start+word_size-1)/word_size) * word_size;  /* end of word */
+	for ( bit = start; bit < end && bit < eow; bit++) {
 		if (bit_test(b, bit))
 			count++;
 	}
