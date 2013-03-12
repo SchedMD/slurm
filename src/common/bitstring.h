@@ -172,6 +172,7 @@ void	bit_and(bitstr_t *b1, bitstr_t *b2);
 void	bit_not(bitstr_t *b);
 void	bit_or(bitstr_t *b1, bitstr_t *b2);
 int	bit_set_count(bitstr_t *b);
+int bit_set_count_range(bitstr_t *b, int start, int end);
 int	bit_clear_count(bitstr_t *b);
 int	bit_nset_max_count(bitstr_t *b);
 int	int_and_set_count(int *i1, int ilen, bitstr_t *b2);
