@@ -612,7 +612,13 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 }
 
 /* Pick nodes to be allocated to a job step. If a CPU count is also specified,
- * then select nodes with a sufficient CPU count. */
+ * then select nodes with a sufficient CPU count.
+ * IN job_ptr - job to contain step allocation
+ * IN/OUT node_bitmap - nodes available (IN), selectect for use (OUT)
+ * IN node_cnt - step node count specification
+ * IN cpu_cnt - step CPU count specification
+ * IN usable_cpu_cnt - count of usable CPUs on each node in node_bitmap
+ */
 static bitstr_t *_pick_step_nodes_cpus(struct job_record *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
 				       int cpu_cnt, uint32_t *usable_cpu_cnt)
@@ -755,8 +761,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		return NULL;
 	}
 
-	if (step_spec->max_nodes &&
-	    (step_spec->max_nodes < step_spec->min_nodes)) {
+	if (step_spec->max_nodes == 0)
+		step_spec->max_nodes = job_ptr->node_cnt;
+
+	if (step_spec->max_nodes < step_spec->min_nodes) {
 		*return_code = ESLURM_INVALID_NODE_COUNT;
 		return NULL;
 	}
@@ -931,8 +939,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				}
 			}
 
-			if (step_spec->max_nodes &&
-			    (nodes_picked_cnt >= step_spec->max_nodes))
+			if (nodes_picked_cnt >= step_spec->max_nodes)
 				bit_clear(nodes_avail, i);
 			else if ((avail_tasks <= 0) ||
 				 ((selected_nodes == NULL) &&
@@ -1124,10 +1131,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			 * Other than that copy the nodes selected as
 			 * the nodes we want.
 			 */
-			if (step_spec->min_nodes || step_spec->max_nodes)
-				node_cnt = bit_set_count(selected_nodes);
-			if (step_spec->max_nodes &&
-			    (node_cnt > step_spec->max_nodes)) {
+			node_cnt = bit_set_count(selected_nodes);
+			if (node_cnt > step_spec->max_nodes) {
 				info("_pick_step_nodes: requested nodes %s "
 				     "exceed max node count for job step %u",
 				     step_spec->node_list, job_ptr->job_id);
@@ -1216,8 +1221,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		    job_ptr->job_resrcs->cpu_array_value[0];
 		step_spec->min_nodes = (i > step_spec->min_nodes) ?
 					i : step_spec->min_nodes ;
-		if (step_spec->max_nodes &&
-		    (step_spec->max_nodes < step_spec->min_nodes)) {
+		if (step_spec->max_nodes < step_spec->min_nodes) {
 			info("Job step %u max node count incompatible with CPU "
 			     "count", job_ptr->job_id);
 			*return_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
@@ -1295,9 +1299,12 @@ _pick_step_nodes (struct job_record  *job_ptr,
 							 usable_cpu_cnt);
 			if (node_tmp == NULL) {
 				int avail_node_cnt = bit_set_count(nodes_avail);
-				if (step_spec->min_nodes <=
-				    (avail_node_cnt + nodes_picked_cnt +
-				     mem_blocked_nodes)) {
+				avail_node_cnt += nodes_picked_cnt;
+				if (step_spec->max_nodes <= avail_node_cnt) {
+					*return_code =
+						ESLURM_TOO_MANY_REQUESTED_CPUS;
+				} else if (step_spec->min_nodes <=
+					   (avail_node_cnt+mem_blocked_nodes)) {
 					*return_code = ESLURM_NODES_BUSY;
 				} else if (!bit_super_set(job_ptr->node_bitmap,
 							  up_node_bitmap)) {
@@ -1313,8 +1320,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			nodes_picked_cnt = step_spec->min_nodes;
 			nodes_needed = 0;
 		} else if (nodes_needed > 0) {
-			if (step_spec->min_nodes <=
-			    (nodes_picked_cnt + mem_blocked_nodes)) {
+			if (step_spec->max_nodes <= nodes_picked_cnt) {
+				*return_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
+			} else if (step_spec->min_nodes <=
+				   (nodes_picked_cnt + mem_blocked_nodes)) {
 				*return_code = ESLURM_NODES_BUSY;
 			} else if (!bit_super_set(job_ptr->node_bitmap,
 						  up_node_bitmap)) {
@@ -1327,8 +1336,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		cpus_picked_cnt = _count_cpus(job_ptr, nodes_picked,
 					      usable_cpu_cnt);
 		if ((step_spec->cpu_count > cpus_picked_cnt) &&
-		    ((step_spec->max_nodes == 0) ||
-		     (step_spec->max_nodes > nodes_picked_cnt))) {
+		    (step_spec->max_nodes > nodes_picked_cnt)) {
 			/* Attempt to add more nodes to allocation */
 			nodes_picked_cnt = bit_set_count(nodes_picked);
 			while (step_spec->cpu_count > cpus_picked_cnt) {
@@ -1357,8 +1365,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 					step_spec->min_nodes = nodes_picked_cnt;
 
 				cpus_picked_cnt += cpu_cnt;
-				if (step_spec->max_nodes &&
-				    (nodes_picked_cnt >= step_spec->max_nodes))
+				if (nodes_picked_cnt >= step_spec->max_nodes)
 					break;
 			}
 		}

@@ -81,6 +81,9 @@ documents those changes that are of interest to users and admins.
  -- Export SLURM_ environment variables from sbatch, even if "--export"
     option does not explicitly list them.
  -- If node is in more than one partition, correct counting of allocated CPUs.
+ -- If step requests more CPUs than possible in specified node count of job
+    allocation then return ESLURM_TOO_MANY_REQUESTED_CPUS rather than
+    ESLURM_NODES_BUSY and retrying.
 
 * Changes in Slurm 2.5.4
 ========================
