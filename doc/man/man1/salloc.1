@@ -1257,6 +1257,15 @@ the executed program:
 \fBBASIL_RESERVATION_ID\fR
 The reservation ID on Cray systems running ALPS/BASIL only.
 .TP
+\fBMPIRUN_NOALLOCATE\fR
+Do not allocate a block on Blue Gene L/P systems only.
+.TP
+\fBMPIRUN_NOFREE\fR
+Do not free a block on Blue Gene L/P systems only.
+.TP
+\fBMPIRUN_PARTITION\fR
+The block name on Blue Gene systems only.
+.TP
 \fBSLURM_CPU_BIND\fR
 Set to value of the \-\-cpu_bind\fR option.
 .TP
@@ -1295,6 +1304,9 @@ the job from the cloud. Each element in the set if colon separated and each
 set is comma separated. For example:
 SLURM_NODE_ALIASES=ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
 .TP
+\fBSLURM_NTASKS\fR
+Same as \fB\-n, \-\-ntasks\fR
+.TP
 \fBSLURM_NTASKS_PER_NODE\fR
 Set to value of the \-\-ntasks\-per\-node\fR option, if specified.
 .TP
@@ -1306,15 +1318,6 @@ count, that count is followed by "(x#)" where "#" is the
 repetition count. For example, "SLURM_TASKS_PER_NODE=2(x3),1"
 indicates that the first three nodes will each execute three
 tasks and the fourth node will execute one task.
-.TP
-\fBMPIRUN_NOALLOCATE\fR
-Do not allocate a block on Blue Gene systems only.
-.TP
-\fBMPIRUN_NOFREE\fR
-Do not free a block on Blue Gene systems only.
-.TP
-\fBMPIRUN_PARTITION\fR
-The block name on Blue Gene systems only.
 
 .SH "SIGNALS"
 .LP

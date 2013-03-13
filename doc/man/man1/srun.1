@@ -1777,6 +1777,12 @@ Same as \fB\-\-network\fR
 \fBSLURM_NNODES\fR
 Same as \fB\-N, \-\-nodes\fR
 .TP
+\fBSLURM_NO_ROTATE\fR
+Same as \fB\-R, \-\-no\-rotate\fR
+.TP
+\fBSLURM_NTASKS\fR
+Same as \fB\-n, \-\-ntasks\fR
+.TP
 \fBSLURM_NTASKS_PER_CORE\fR
 Same as \fB\-\-ntasks\-per\-core\fR
 .TP
@@ -1785,12 +1791,6 @@ Same as \fB\-\-ntasks\-per\-node\fR
 .TP
 \fBSLURM_NTASKS_PER_SOCKET\fR
 Same as \fB\-\-ntasks\-per\-socket\fR
-.TP
-\fBSLURM_NO_ROTATE\fR
-Same as \fB\-R, \-\-no\-rotate\fR
-.TP
-\fBSLURM_NTASKS\fR
-Same as \fB\-n, \-\-ntasks\fR
 .TP
 \fBSLURM_OPEN_MODE\fR
 Same as \fB\-\-open\-mode\fR
@@ -2002,16 +2002,6 @@ Set to the logging level of the \fBsrun\fR command.
 Default value is 3 (info level).
 The value is incremented or decremented based upon the \-\-verbose and
 \-\-quiet options.
-
-.TP
-\fBMPIRUN_NOALLOCATE\fR
-Do not allocate a block on Blue Gene systems only.
-.TP
-\fBMPIRUN_NOFREE\fR
-Do not free a block on Blue Gene systems only.
-.TP
-\fBMPIRUN_PARTITION\fR
-The block name on Blue Gene systems only.
 
 .SH "SIGNALS AND ESCAPE SEQUENCES"
 Signals sent to the \fBsrun\fR command are automatically forwarded to
