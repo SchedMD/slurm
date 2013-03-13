@@ -92,6 +92,10 @@ OTHER CHANGES
  - Added SLURM_SUBMIT_HOST to salloc, sbatch and srun job environment.
  - Added SLURM_ARRAY_TASK_ID and SLURM_ARRAY_TASK_ID to environment of job
    array.
+ - Added milliseconds to default log message header with the (default)
+   RFC5424 time format. Disable milliseconds logging using the configure
+   parameter "--enable-rfc5424time-secs". Sample time stamp format is as
+   follows: "2013-03-13T14:28:17.767-07:00".
 
 API CHANGES
 ===========

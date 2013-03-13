@@ -506,6 +506,9 @@
 /* define if using RFC 5424 time format */
 #undef USE_RFC5424_TIME
 
+/* RFC 5424 time format to second resolution */
+#undef USE_RFC5424_TIME_SECS
+
 /* Version number of package */
 #undef VERSION
 

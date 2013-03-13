@@ -30,5 +30,28 @@ AC_DEFUN([X_AC_RFC5424_TIME], [
   else
     AC_MSG_RESULT([no])
   fi
+
+  if test "$x_ac_rfc5424time" = yes; then
+    AC_MSG_CHECKING([resolution of RFC 5424 time to the second])
+    AC_ARG_ENABLE(
+      [rfc5424time-secs],
+      AS_HELP_STRING(--enable-rfc5424time-secs, record RFC 5424 time to second resolution),
+      [ case "$enableval" in
+          yes) x_ac_rfc5424time_secs=yes ;;
+           no) x_ac_rfc5424time_secs=no ;;
+            *) AC_MSG_RESULT([doh!])
+               AC_MSG_ERROR([bad value "$enableval" for --enable-rfc5424time-secs]) ;;
+        esac
+      ],
+      [x_ac_rfc5424time_secs=no]
+    )
+
+    if test "$x_ac_rfc5424time_secs" = yes; then
+      AC_MSG_RESULT([yes])
+      AC_DEFINE(USE_RFC5424_TIME_SECS,,[RFC 5424 time format to second resolution])
+    else
+      AC_MSG_RESULT([no])
+    fi
+  fi
 ])
 

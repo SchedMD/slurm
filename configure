@@ -943,6 +943,7 @@ with_cpusetdir
 enable_pam
 with_pam_dir
 enable_rfc5424time
+enable_rfc5424time_secs
 enable_iso8601
 enable_load_env_no_login
 enable_sun_const
@@ -1630,6 +1631,8 @@ Optional Features:
   --enable-pam            enable PAM (Pluggable Authentication Modules)
                           support
   --disable-rfc5424time   disable RFC 5424 time format support
+  --enable-rfc5424time-secs
+                          record RFC 5424 time to second resolution
   --disable-iso8601       disable ISO 8601 time format support
   --enable-load-env-no-login
                           enable --get-user-env option to load user
@@ -18767,6 +18770,37 @@ $as_echo "#define USE_RFC5424_TIME /**/" >>confdefs.h
   else
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
+  fi
+
+  if test "$x_ac_rfc5424time" = yes; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking resolution of RFC 5424 time to the second" >&5
+$as_echo_n "checking resolution of RFC 5424 time to the second... " >&6; }
+    # Check whether --enable-rfc5424time-secs was given.
+if test "${enable_rfc5424time_secs+set}" = set; then :
+  enableval=$enable_rfc5424time_secs;  case "$enableval" in
+          yes) x_ac_rfc5424time_secs=yes ;;
+           no) x_ac_rfc5424time_secs=no ;;
+            *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
+$as_echo "doh!" >&6; }
+               as_fn_error $? "bad value \"$enableval\" for --enable-rfc5424time-secs" "$LINENO" 5 ;;
+        esac
+
+else
+  x_ac_rfc5424time_secs=no
+
+fi
+
+
+    if test "$x_ac_rfc5424time_secs" = yes; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define USE_RFC5424_TIME_SECS /**/" >>confdefs.h
+
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    fi
   fi
 
 

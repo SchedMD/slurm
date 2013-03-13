@@ -3,6 +3,10 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 2.6.0pre3
 ============================
+ -- Add milliseconds to default log message header with the (default)
+    RFC5424 time format. Disable milliseconds logging using the configure
+    parameter "--enable-rfc5424time-secs". Sample time stamp format is as
+    follows: "2013-03-13T14:28:17.767-07:00".
 
 * Changes in Slurm 2.6.0pre2
 ============================
