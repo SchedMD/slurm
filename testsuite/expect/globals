@@ -1374,14 +1374,31 @@ proc test_switch_nrt { } {
 ################################################################
 
 proc test_launch_poe { } {
-	global scontrol bin_bash bin_grep
+	if {![string compare [test_launch_type] "poe"]} {
+		return 1
+	}
+	return 0
+}
+
+################################################################
+#
+# Proc: test_launch_type
+#
+# Purpose: Determine launch type plugin.
+#
+# Returns 1 if the system is running launch/poe, 0 otherwise
+#
+################################################################
+
+proc test_launch_type { } {
+	global scontrol bin_bash bin_grep alpha_numeric_under
 
 	log_user 0
-	set launch_poe 0
+	set type ""
 	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep LaunchType"
 	expect {
-		"launch/poe" {
-			set launch_poe 1
+		-re "launch/($alpha_numeric_under)" {
+			set type $expect_out(1,string)
 			exp_continue
 		}
 		eof {
@@ -1390,7 +1407,7 @@ proc test_launch_poe { } {
 	}
 	log_user 1
 
-	return $launch_poe
+	return $type
 }
 
 ################################################################
@@ -1674,11 +1691,18 @@ proc available_nodes { partition } {
 	global sinfo
 
 	set available -1
-	send_user "$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D\n"
+	#send_user "$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D\n"
 	set fd [open "|$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D"]
 	gets $fd line
 	catch {close $fd}
 	regexp {\d+} $line available
+	if {[string match *K $line]} {
+		set available [expr $available * 1024]
+	} elseif {[string match *M $line]} {
+		set available [expr $available * 1048576]
+	}
+
+
 	return $available
 }
 

@@ -55,10 +55,12 @@
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/state_save.h"
+#include "src/slurmctld/port_mgr.h"
 
 #include "allocate.h"
 #include "info.h"
 #include "constants.h"
+#include "job_ports_list.h"
 
 
 static int _get_nodelist_optional(uint16_t request_node_num,
@@ -430,12 +432,16 @@ static int _setup_job_desc_msg(uint32_t np, uint32_t request_node_num,
 int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
 		      char *node_range_list, const char *flag,
 		      time_t timeout, const char *cpu_bind,
-		      uint32_t mem_per_cpu, uint32_t *slurm_jobid,
-		      char *reponse_node_list, char *tasks_per_node)
+		      uint32_t mem_per_cpu, uint32_t resv_port_cnt,
+		      uint32_t *slurm_jobid, char *reponse_node_list,
+		      char *tasks_per_node, char *resv_ports)
 {
 	job_desc_msg_t job_desc_msg;
 	resource_allocation_response_msg_t *job_alloc_resp_msg = NULL;
-	int rc;
+	struct job_record *job_ptr = NULL;
+	struct step_record step;
+	uid_t uid = getuid();
+	int rc, i;
 
 	slurm_init_job_desc_msg (&job_desc_msg);
 	rc = _setup_job_desc_msg(np, request_node_num, node_range_list, flag,
@@ -460,6 +466,37 @@ int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
 
 	/* free the allocated resource msg */
 	slurm_free_resource_allocation_response_msg(job_alloc_resp_msg);
+
+	job_ptr = find_job_record(job_alloc_resp_msg->job_id);
+	/**************************\
+	 * 		resv port 		  *
+	\**************************/
+	if (0 == resv_port_cnt)
+		resv_port_cnt = 1;
+	step.resv_port_cnt = resv_port_cnt;
+	step.job_ptr = job_ptr;
+	step.step_node_bitmap = job_ptr->node_bitmap;
+	rc = resv_port_alloc(&step);
+	if (SLURM_SUCCESS != rc) {
+		cancel_job(job_ptr->job_id, uid);
+		xfree(step.resv_ports);
+		xfree(step.resv_port_array);
+		return SLURM_FAILURE;
+	}
+	strcpy(resv_ports, step.resv_ports);
+	for (i = 0; i < step.resv_port_cnt; i++) {
+		info("reserved ports %s for job %u : resv_port_array[%d]=%u",
+				step.resv_ports, step.job_ptr->job_id,
+				i, step.resv_port_array[i]);
+	}
+
+	/* keep slurm_jobid and resv_port_array in a List
+	 * for future release port */
+	append_job_ports_item(job_ptr->job_id, step.resv_port_cnt,
+			step.resv_ports, step.resv_port_array);
+
+	xfree(step.resv_ports);
+	xfree(step.resv_port_array);
 
 #if 0
 	//kill the job, release the resource, just for test
@@ -502,8 +539,9 @@ int allocate_node_rpc(uint32_t np, uint32_t request_node_num,
 int allocate_node(uint32_t np, uint32_t request_node_num,
 		  char *node_range_list, const char *flag,
 		  time_t timeout, const char *cpu_bind,
-		  uint32_t mem_per_cpu, uint32_t *slurm_jobid,
-		  char *reponse_node_list, char *tasks_per_node)
+		  uint32_t mem_per_cpu, uint32_t resv_port_cnt,
+		  uint32_t *slurm_jobid, char *reponse_node_list,
+		  char *tasks_per_node, char *resv_ports)
 {
 	int rc, error_code, i;
 
@@ -512,6 +550,7 @@ int allocate_node(uint32_t np, uint32_t request_node_num,
 	struct job_record *job_ptr = NULL;
 	bool job_waiting = false;
 	uid_t uid = getuid();
+	struct step_record step;
 
 	slurm_init_job_desc_msg (&job_desc_msg);
 	rc = _setup_job_desc_msg(np, request_node_num, node_range_list, flag,
@@ -611,6 +650,35 @@ int allocate_node(uint32_t np, uint32_t request_node_num,
 			select_g_select_jobinfo_free(alloc_msg.select_jobinfo);
 			schedule_job_save();	/* has own locks */
 			schedule_node_save();	/* has own locks */
+
+			/**************************\
+			 * 		resv port 		  *
+			\**************************/
+			if (0 == resv_port_cnt)
+				resv_port_cnt = 1;
+			step.resv_port_cnt = resv_port_cnt;
+			step.job_ptr = job_ptr;
+			step.step_node_bitmap = job_ptr->node_bitmap;
+			rc = resv_port_alloc(&step);
+			if (SLURM_SUCCESS != rc) {
+				cancel_job(job_ptr->job_id, uid);
+				xfree(step.resv_ports);
+				xfree(step.resv_port_array);
+				return SLURM_FAILURE;
+			}
+			strcpy(resv_ports, step.resv_ports);
+			for (i = 0; i < step.resv_port_cnt; i++) {
+				info("reserved ports %s for job %u : resv_port_array[%d]=%u",
+						step.resv_ports, step.job_ptr->job_id,
+						i, step.resv_port_array[i]);
+			}
+
+			/* keep slurm_jobid and resv_port_array in a List */
+			append_job_ports_item(job_ptr->job_id, step.resv_port_cnt,
+					step.resv_ports, step.resv_port_array);
+
+			xfree(step.resv_ports);
+			xfree(step.resv_port_array);
 
 #if 0
 			/* only for test */

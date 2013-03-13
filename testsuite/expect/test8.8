@@ -47,10 +47,11 @@ proc allocate_and_quit { node_cnt node error_cnt check} {
 	global salloc number alpha_numeric_under bin_bash max_job_delay prompt
 	set job_id 0
 	set block ""
-	set line "-N$node_cnt-$node_cnt -t5 $bin_bash"
+	set line ""
 	if {[string compare $node ""]} {
-		set line "$line -w $node"
+		set line "$line -w $node "
 	}
+	set line "-N$node_cnt-$node_cnt -t5 $bin_bash"
 	set part_config_prob 0
 	set timeout $max_job_delay
 	set my_pid [eval spawn $salloc $line]
@@ -175,29 +176,45 @@ proc get_first_node { } {
 }
 
 proc is_block_in_state { block state } {
-	global scontrol
+	global scontrol alpha
 
 	set match 0
-	set my_pid [spawn $scontrol show block $block]
-	expect {
-		-nocase -re "State=$state" {
-			set match 1
-			exp_continue
+	set count 0
+	set curr_state ""
+	log_user 0
+	while 1 {
+		set my_pid [spawn $scontrol show block $block]
+		expect {
+			-nocase -re "State=$state" {
+				set match 1
+				exp_continue
+			}
+			-nocase -re "State=($alpha)" {
+				set curr_state $expect_out(1,string)
+				exp_continue
+			}
+			-re "Unable to contact" {
+				send_user "\nFAILURE: slurm appears to be down\n"
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: scontrol not responding\n"
+				slow_kill $my_pid
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
 		}
-		-re "Unable to contact" {
-			send_user "\nFAILURE: slurm appears to be down\n"
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
-			slow_kill $my_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
 
+		if {$match || ($count > 60)} {
+			break;
+		}
+		send_user "Block $block in state $curr_state looking for $state.\n"
+		incr count
+		sleep 1
+	}
+	log_user 1
 	if {!$match} {
 		send_user "\nFAILURE: Block did not go into $state state.\n"
 		return 1

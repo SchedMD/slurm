@@ -62,7 +62,7 @@ MPs=0000 type=small 32cnblocks=16
 system is different than this, adjust appropriately.  The idea is SLURM
 will create the smallest block possible on every possible hardware
 location.  The system will then check for missing hardware and remove
-blocks that are invaild.  This will get around the problem if you
+blocks that are invalid.  This will get around the problem if you
 have, for instance, the 4th nodeboard populated instead of the 1st.
 </p>
 
@@ -290,7 +290,7 @@ plugin_flags = 0x0109 # RTLD_LAZY | RTLD_GLOBAL | RTLD_DEEPBIND
 </pre>
 
 <p>You also need to set things up so the runjob_mux is ran by the
-  SlurmUser.  This can be done by editting 2 files.</p>
+  SlurmUser.  This can be done by editing 2 files.</p>
 <p>Back in your bg.properties file alter the [master.user] section.
 <pre>
 [master.user]
@@ -333,7 +333,7 @@ started runjob_mux
 </pre>
 </li>
 <li><b>WARNING! You need at least IBM driver V1R1M1 efix 008 or this
-method will not work.  Pervious versions would load the old
+method will not work.  Previous versions would load the old
 plugin (presumably still in memory) other than the new one.  As of SLURM
 2.4.2 when the plugin is loaded it will print the version of SLURM
 which should let you know if the new one is loaded or not.</b>
@@ -403,7 +403,7 @@ will delay execution until the job's block is ready for
 use by the user running the job. It is recommended that you construct a script
 that serves this function and calls the supplied program <i>sbin/slurm_prolog</i>.
 The value of <i>Epilog</i> should be set to the full pathname of a program that
-will wait until the job's block has relinquished the resources aquired
+will wait until the job's block has relinquished the resources acquired
 by the job and is no longer usable by this job. It is recommended that
 you construct a script that serves this function and calls the
 supplied program <i>sbin/slurm_epilog</i>.
@@ -439,7 +439,7 @@ system than typical clusters.</p>
 
 <p>Starting in 2.4.3 SchedType=sched/backfill works in all modes and
 for all job sizes.  Before this release there were issues backfilling
-jobs smaller than a midplane.  It is encourged to upgrade to at least
+jobs smaller than a midplane.  It is encouraged to upgrade to at least
 2.4.3 for better backfill behavior.</p>
 
 <p>SLURM does support different partitions with an assortment of

@@ -93,6 +93,7 @@
 #define	bit_not			slurm_bit_not
 #define	bit_or			slurm_bit_or
 #define	bit_set_count		slurm_bit_set_count
+#define	bit_set_count_range	slurm_bit_set_count_range
 #define	bit_clear_count		slurm_bit_clear_count
 #define	bit_nset_max_count	slurm_bit_nset_max_count
 #define	bit_and_set_count	slurm_bit_and_set_count

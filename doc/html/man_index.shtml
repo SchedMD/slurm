@@ -3,7 +3,7 @@
 <h1>Man Pages</h1>
 
 <p><b>NOTE: This documentation is for Slurm version @SLURM_VERSION@.<br>
-Documenation for other versions of Slurm is distributed with the code</b></p>
+Documentation for other versions of Slurm is distributed with the code</b></p>
 
 <table border="1">
 <tr><td><a href="sacct.html">sacct</a></td><td>displays accounting data for all jobs and job steps in the SLURM job accounting log or SLURM database</td></tr>

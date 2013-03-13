@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  deallocate.h  - complete job resource allocation
+ *  job_ports_list.c - keep the pair of (slurm_jobid, resv_ports) for future release
  *****************************************************************************
  *  Copyright (C) 2012-2013 Los Alamos National Security, LLC.
  *  Written by Jimmy Cao <Jimmy.Cao@emc.com>, Ralph Castain <rhc@open-mpi.org>
@@ -34,50 +34,79 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#ifndef DYNALLOC_DEALLOCATE_H_
-#define DYNALLOC_DEALLOCATE_H_
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif  /* HAVE_INTTYPES_H */
-#else   /* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif  /*  HAVE_CONFIG_H */
+#include "job_ports_list.h"
 
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
+List job_ports_list = NULL;
 
-#include "msg.h"
+extern void append_job_ports_item(uint32_t slurm_jobid, uint16_t port_cnt,
+								char *resv_ports, int *port_array)
+{
+	job_ports_t *item = NULL;
 
-/**
- * deallocate the resources for slurm jobs.
- *
- * the deallocate msg can be like "deallocate slurm_jobid=123
- * job_return_code=0:slurm_jobid=124 job_return_code=0"
- *
- * IN:
- *	msg: the deallocate msg
- *
- */
-extern void deallocate(const char *msg);
+	if(NULL == job_ports_list)
+		job_ports_list = list_create(free_job_ports_item_func);
 
-/**
- * deallocate the ports for a slurm job.
- *
- * deallocate the ports and remove the entry from List.
- *
- * IN:
- *	slurm_jobid: slurm jobid
- *
- */
-extern void deallocate_port(uint32_t slurm_jobid);
+	item = xmalloc(sizeof(job_ports_t));
+	item->slurm_jobid = slurm_jobid;
+	item->port_cnt = port_cnt;
+	item->resv_ports = xstrdup(resv_ports);
+	item->port_array = xmalloc(sizeof(int) * port_cnt);
+	memcpy(item->port_array, port_array, sizeof(int)*port_cnt);
+	list_append (job_ports_list, item);
+}
 
-#endif /* DYNALLOC_DEALLOCATE_H_ */
+extern void free_job_ports_item_func(void *voiditem)
+{
+	job_ports_t *item = (job_ports_t *) voiditem;
+	if (item) {
+		xfree(item->resv_ports);
+		xfree(item->port_array);
+		xfree(item);
+	}
+}
+
+extern int find_job_ports_item_func(void *voiditem, void *key)
+{
+	job_ports_t *item = NULL;
+	uint32_t *jobid = NULL;
+
+	item = (job_ports_t *)voiditem;
+	jobid = (uint32_t *)key;
+
+	if (item->slurm_jobid == *jobid)
+		return 1;
+	else
+		return 0;
+}
+
+
+extern void print_list()
+{
+	int i, j;
+	ListIterator it = NULL;
+	job_ports_t *item = NULL;
+
+	info("count = %d", list_count (job_ports_list));
+
+	/* create iterator! */
+	it = list_iterator_create (job_ports_list);
+	/* list_next until NULL */
+	j = 0;
+	while ( NULL != (item = (job_ports_t*)list_next(it)) ) {
+		info("j = %d", j++);
+		info("item->slurm_jobid = %lu", item->slurm_jobid);
+		info("item->port_cnt = %d", item->port_cnt);
+		info("item->resv_ports = %s", item->resv_ports);
+		for (i = 0; i < item->port_cnt; i++) {
+			info("item->port_array[i] = %d", item->port_array[i]);
+		}
+	}
+	list_iterator_destroy(it);
+}

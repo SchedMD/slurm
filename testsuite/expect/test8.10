@@ -38,7 +38,7 @@ set job_id     0
 
 print_header $test_id
 
-proc check_job { job_id nodes tasks task_per_cpu } {
+proc check_job { job_id nodes cpus } {
 	global exit_code scontrol number
 
 	#Checks a job allocation
@@ -59,25 +59,12 @@ proc check_job { job_id nodes tasks task_per_cpu } {
 			exp_continue
 		}
 		-re "NumCPUs=($number)(\[K\]*)" {
-			set task_cnt $expect_out(1,string)
+			set cpu_cnt $expect_out(1,string)
 			if {[string compare $expect_out(2,string) ""]} {
-				set task_cnt [expr $task_cnt * 1024]
+				set cpu_cnt [expr $cpu_cnt * 1024]
 			}
-			if {$task_cnt != $tasks} {
-				send_user "\nFAILURE: NumCPUs is not $tasks ($task_cnt)\n"
-				set exit_code 1
-			} else {
-				incr matches
-			}
-			exp_continue
-		}
-		-re "CPUs/Task=($number)(\[K\]*)" {
-			set tasks_per_cnt $expect_out(1,string)
-			if {[string compare $expect_out(2,string) ""]} {
-				set tasks_per_cnt [expr $tasks_per_cnt * 1024]
-			}
-			if {$tasks_per_cnt != 1} {
-				send_user "\nFAILURE: CPUs per Task is not $tasks_per_cpu ($tasks_per_cnt)\n"
+			if {$cpu_cnt != $cpus} {
+				send_user "\nFAILURE: NumCPUs is not $cpus ($cpu_cnt)\n"
 				set exit_code 1
 			} else {
 				incr matches
@@ -95,7 +82,7 @@ proc check_job { job_id nodes tasks task_per_cpu } {
 	if {$matches == 3} {
 		send_user "\nNumber of nodes and tasks are correct\n"
 	}
-	return 0
+	return $exit_code
 }
 
 proc check_step { job_id step_id nodes tasks } {
@@ -148,7 +135,7 @@ proc check_step { job_id step_id nodes tasks } {
 		send_user "\nNumber of nodes and tasks are correct\n"
 	}
 
-	return 0
+	return $exit_code
 }
 
 if {([test_bluegene] == 0) || [string compare [get_bluegene_type] "Q"]} {
@@ -178,7 +165,7 @@ expect {
 sleep 5
 
 # Checks the job
-if {[check_job $job_id 32 512 1]} {
+if {[check_job $job_id 32 512]} {
 	exit $exit_code
 }
 # Checks the job step
@@ -186,9 +173,6 @@ if {[check_step $job_id 0 32 512]} {
 	exit $exit_code
 }
 cancel_job $job_id
-
-# EXIT HERE, CONTINUE WORK ON TEST LATER
-exit $exit_code
 
 send_user "\n################## Test 2 Starts Here #######################\n"
 # Submit a step with 32 task
@@ -212,9 +196,14 @@ expect {
 sleep 5
 
 # Checks the job step
+if {[check_job $job_id 1 16]} {
+	exit $exit_code
+}
+# Checks the job step
 if {[check_step $job_id 0 1 32]} {
 	exit $exit_code
 }
+
 cancel_job $job_id
 
 send_user "\n################## Test 3 Starts Here #######################\n"
@@ -239,9 +228,14 @@ expect {
 sleep 5
 
 # Checks the job
-if {[check_job $job_id 2 32 1]} {
+if {[check_job $job_id 2 32]} {
 	exit $exit_code
 }
+
+if {[check_step $job_id 0 2 96]} {
+	exit $exit_code
+}
+
 cancel_job $job_id
 
 send_user "\n################## Test 4 Starts Here #######################\n"
@@ -266,25 +260,23 @@ expect {
 sleep 5
 
 # Checks the job step
+if {[check_job $job_id 4 64]} {
+	exit $exit_code
+}
+
 if {[check_step $job_id 0 4 128]} {
 	exit $exit_code
 }
+
 cancel_job $job_id
 
 send_user "\n################## Test 5 Starts Here #######################\n"
 set job_id 0
 spawn $srun -N1 -v $bin_sleep 10
 expect {
-	-re "error" {
-		send_user "\nThis error is expected do not worry\n"
-		exp_continue
-	}
 	-re "jobid ($number)" {
-		send_user "\nFAILURE: srun should have failed but did not\n"
 		set job_id $expect_out(1,string)
-		cancel_job $job_id
-		set exit_code 1
-		exp_continue
+		send_user "\nGot job id $job_id\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun is not responding\n"
@@ -294,6 +286,20 @@ expect {
 		wait
 	}
 }
+
+# Wait for job to start
+sleep 5
+
+# Checks the job step
+if {[check_job $job_id 1 16]} {
+	exit $exit_code
+}
+
+if {[check_step $job_id 0 1 1]} {
+	exit $exit_code
+}
+
+cancel_job $job_id
 
 send_user "\n################## Test 6 Starts Here #######################\n"
 # Submit allocation and runs job
@@ -320,7 +326,7 @@ if {$job_id == 0} {
 sleep 5
 
 # Checks job
-if {[check_job $job_id 32 512 1]} {
+if {[check_job $job_id 32 512]} {
 	exit $exit_code
 }
 # Checks the job step
@@ -353,6 +359,10 @@ if {$job_id == 0} {
 # Wait for jobs to start
 sleep 5
 
+# Checks job
+if {[check_job $job_id 1 16]} {
+	exit $exit_code
+}
 # Checks the job step
 if {[check_step $job_id 0 1 32]} {
 	exit $exit_code
@@ -384,9 +394,14 @@ if {$job_id == 0} {
 sleep 5
 
 # Checks the job
-if {[check_job $job_id 2 32 1]} {
+if {[check_job $job_id 2 32]} {
 	exit $exit_code
 }
+# Checks the job step
+if {[check_step $job_id 0 2 96]} {
+	exit $exit_code
+}
+
 cancel_job $job_id
 
 send_user "\n################## Test 9 Starts Here #######################\n"
@@ -413,6 +428,10 @@ if {$job_id == 0} {
 # Wait for jobs to start
 sleep 5
 
+# Checks the job
+if {[check_job $job_id 4 64]} {
+	exit $exit_code
+}
 # Checks the job step
 if {[check_step $job_id 0 4 128]} {
 	exit $exit_code
@@ -423,15 +442,8 @@ send_user "\n################## Test 10 Starts Here #######################\n"
 set job_id 0
 spawn $salloc -N1 $srun $bin_sleep 10
 expect {
-	-re "error" {
-		send_user "\nThis error is expected do not worry\n"
-		incr match
-	}
 	-re "Granted job allocation ($number)" {
-		send_user "\FAILURE: salloc should have failed but did not\n"
 		set job_id $expect_out(1,string)
-		cancel_job $job_id
-		set exit_code 1
 	}
 	timeout {
 		send_user "\nFAILURE: salloc is not responding\n"
@@ -441,6 +453,19 @@ expect {
 		wait
 	}
 }
+
+# Wait for job to start
+sleep 5
+
+# Checks the job step
+if {[check_job $job_id 1 16]} {
+	exit $exit_code
+}
+
+if {[check_step $job_id 0 1 1]} {
+	exit $exit_code
+}
+
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"

@@ -72,7 +72,8 @@ static void _init_log_config(void)
 	}
 }
 
-static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r)
+static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r,
+				    enum basil_version version)
 {
 	struct basil_rsvn_param *param;
 
@@ -84,10 +85,17 @@ static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r)
 	_write_xml(fp, ">\n");
 
 	for (param = r->params; param; param = param->next) {
-		_write_xml(fp, "  <ReserveParam architecture=\"%s\" "
-			   "width=\"%ld\" depth=\"%ld\" nppn=\"%ld\"",
-			   nam_arch[param->arch],
-			   param->width, param->depth, param->nppn);
+		if (version >= BV_5_1)
+			_write_xml(fp, "  <ReserveParam architecture=\"%s\" "
+				   "width=\"%ld\" depth=\"%ld\" nppn=\"%ld\""
+				   " nppcu=\"0\"",
+				   nam_arch[param->arch],
+				   param->width, param->depth, param->nppn);
+		else
+			_write_xml(fp, "  <ReserveParam architecture=\"%s\" "
+				   "width=\"%ld\" depth=\"%ld\" nppn=\"%ld\"",
+				   nam_arch[param->arch],
+				   param->width, param->depth, param->nppn);
 
 		if (param->memory || param->labels ||
 		    param->nodes  || param->accel) {
@@ -116,7 +124,8 @@ static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r)
 			_write_xml(fp, "   <LabelParamArray>\n");
 			for (label = param->labels; label; label = label->next)
 				_write_xml(fp, "    <LabelParam name=\"%s\""
-					   " type=\"%s\" disposition=\"%s\"/>\n",
+					   " type=\"%s\" "
+					   "disposition=\"%s\"/>\n",
 					   label->name,
 					   nam_labeltype[label->type],
 					   nam_ldisp[label->disp]);
@@ -210,7 +219,7 @@ int basil_request(struct basil_parse_data *bp)
 		break;
 	case BM_reserve:
 		_write_xml(apbasil, ">\n");
-		_rsvn_write_reserve_xml(apbasil, bp->mdata.res);
+		_rsvn_write_reserve_xml(apbasil, bp->mdata.res, bp->version);
 		break;
 	case BM_confirm:
 		if (bp->version == BV_1_0 && *bp->mdata.res->batch_id != '\0')

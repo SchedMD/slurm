@@ -40,7 +40,7 @@
 /*
  * Limits
  */
-#define TAG_DEPTH_MAX		12	/* maximum XML nesting level */
+#define TAG_DEPTH_MAX		16	/* maximum XML nesting level */
 #define BASIL_STRING_SHORT	16
 #define BASIL_STRING_MEDIUM	32
 #define BASIL_STRING_LONG	64
@@ -57,7 +57,7 @@ enum basil_version {
 	BV_4_0,		/* Basil 1.2 CLE 4.x unconfirmed simulator version  */
 	BV_4_1,		/* Basil 1.2 CLE 4.x unconfirmed simulator version  */
 	BV_5_0,		/* Basil 1.2 CLE 5.x unconfirmed simulator version  */
-	BV_5_1,		/* Basil 1.2 CLE 5.x unconfirmed simulator version  */
+	BV_5_1,		/* Basil 1.3 CLE 5.x unconfirmed simulator version  */
 	BV_MAX
 };
 
@@ -129,6 +129,11 @@ enum basil_element {
 #define BT_4_0_MAX              (BT_ACCELALLOC + 1)	/* End of Basil 4.0 */
 	/* FIXME: the Basil 4.1 interface is not yet fully released */
 #define BT_4_1_MAX              BT_4_0_MAX              /* End of Basil 4.1 */
+	BT_SOCKARRAY,           /* Basil 1.3/5.1 Inventory/SocketArray */
+	BT_SOCKET,              /* Basil 1.3/5.1 Inventory/Socket */
+	BT_COMUARRAY,           /* Basil 1.3/5.1 Inventory/ComputeUnitArray */
+	BT_COMPUNIT,            /* Basil 1.3/5.1 Inventory/ComputeUnit */
+#define	BT_5_1_MAX              (BT_COMPUNIT + 1)       /* End of Basil 5.1 */
 	BT_MAX			/* End of Basil tags */
 };
 
@@ -409,7 +414,8 @@ struct basil_inventory {
 	char		mpp_host[BASIL_STRING_SHORT];
 	time_t		timestamp;
 	bool		is_gemini;
-	uint64_t        change_count;
+	uint64_t        change_count,
+	                sched_change_count;
 	uint32_t	batch_avail,
 			batch_total,
 			nodes_total;

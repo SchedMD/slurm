@@ -53,7 +53,8 @@ static void _parse_job_params(const char *cmd, char *orte_jobid,
 static void _parse_app_params(const char *cmd, char *appid,
 					uint32_t *np, uint32_t *request_node_num,
 					char *node_range_list, char *flag,
-					char *cpu_bind, uint32_t *mem_per_cpu);
+					char *cpu_bind, uint32_t *mem_per_cpu,
+					uint32_t *resv_port_cnt);
 
 static void _allocate_app_op(const char *msg_app,
 							size_t app_timeout,
@@ -126,7 +127,8 @@ static void _parse_job_params(const char *cmd, char *orte_jobid,
 static void _parse_app_params(const char *cmd, char *appid,
 					uint32_t *np, uint32_t *request_node_num,
 					char *node_range_list, char *flag,
-					char *cpu_bind, uint32_t *mem_per_cpu)
+					char *cpu_bind, uint32_t *mem_per_cpu,
+					uint32_t *resv_port_cnt)
 {
 	char *tmp = NULL;
 	char *p_str = NULL;
@@ -142,11 +144,11 @@ static void _parse_app_params(const char *cmd, char *appid,
 		} else if (strstr(p_str, "np")) {
 			pos = strchr(p_str, '=');
 			pos++;  /* step over the = */
-			*np = atoi(pos);
+			*np = strtoul(pos, NULL, 10);
 		} else if (strstr(p_str, "N=")) {
 			pos =  strchr(p_str, '=');
 			pos++;  /* step over the = */
-			*request_node_num = atoi(pos);
+			*request_node_num = strtoul(pos, NULL, 10);
 		} else  if (strstr(p_str, "node_list")) {
 			pos = strchr(p_str, '=');
 			pos++;  /* step over the = */
@@ -162,7 +164,11 @@ static void _parse_app_params(const char *cmd, char *appid,
 		} else if (strstr(p_str, "mem_per_cpu")) {
 			pos = strchr(p_str, '=');
 			pos++;
-			*mem_per_cpu = atoi(pos);
+			*mem_per_cpu = strtoul(pos, NULL, 10);
+		} else if (strstr(p_str, "resv_port_cnt")) {
+			pos = strchr(p_str, '=');
+			pos++;
+			*resv_port_cnt = strtoul(pos, NULL, 10);
 		}
 		p_str = strtok(NULL, " ");
 	}
@@ -192,23 +198,25 @@ static void _allocate_app_op(const char *msg_app,
 
 	char cpu_bind[32] = "";
 	uint32_t mem_per_cpu = 0;
+	uint32_t resv_port_cnt = 1;
 	/* out params */
 	uint32_t slurm_jobid;
 	char resp_node_list[SIZE];
-	char tasks_per_node[SIZE]="";
+	char tasks_per_node[SIZE] = "";
+	char resv_ports[SIZE] = "";
 	int rc;
 
 	_parse_app_params(msg_app, appid, &np, &request_node_num,
-					node_range_list, flag, cpu_bind, &mem_per_cpu);
+					node_range_list, flag, cpu_bind, &mem_per_cpu, &resv_port_cnt);
 
 	rc = allocate_node(np, request_node_num, node_range_list, flag,
-						app_timeout, cpu_bind, mem_per_cpu,
-						&slurm_jobid, resp_node_list, tasks_per_node);
+						app_timeout, cpu_bind, mem_per_cpu, resv_port_cnt,
+						&slurm_jobid, resp_node_list, tasks_per_node, resv_ports);
 
 	if (SLURM_SUCCESS == rc) {
 		sprintf(app_resp_msg,
-				"app=%s slurm_jobid=%u allocated_node_list=%s tasks_per_node=%s",
-				appid, slurm_jobid, resp_node_list, tasks_per_node);
+				"app=%s slurm_jobid=%u allocated_node_list=%s tasks_per_node=%s resv_ports=%s",
+				appid, slurm_jobid, resp_node_list, tasks_per_node, resv_ports);
 	} else {
 		sprintf(app_resp_msg, "app=%s allocate_failure", appid);
 	}

@@ -49,6 +49,8 @@
 #include "deallocate.h"
 #include "argv.h"
 #include "constants.h"
+#include "job_ports_list.h"
+
 
 /**
  * deallocate the resources for slurm jobs.
@@ -71,6 +73,7 @@ extern void deallocate(const char *msg)
 	bool node_fail = false;
 	uint32_t job_return_code = NO_VAL;
 	int  rc = SLURM_SUCCESS;
+	char resv_ports[256] = "";
 
 	jobid_argv = argv_split(msg, ':');
 	/* jobid_argv will be freed */
@@ -107,9 +110,57 @@ extern void deallocate(const char *msg)
 			(void) schedule_node_save();	/* Has own locking */
 		}
 
+		/* deallocate port */
+		deallocate_port(slurm_jobid);
+
 		/*step to the next */
 		tmp_jobid_argv++;
 	}
 	/* free app_argv */
 	argv_free(jobid_argv);
+}
+
+/**
+ * deallocate the ports for a slurm job.
+ *
+ * deallocate the ports and remove the entry from List.
+ *
+ * IN:
+ *	slurm_jobid: slurm jobid
+ *
+ */
+extern void deallocate_port(uint32_t slurm_jobid)
+{
+	job_ports_t *item = NULL;
+	ListIterator it = NULL;
+	struct job_record *job_ptr = NULL;
+	struct step_record step;
+
+	if(NULL == job_ports_list)
+		return;
+
+	it = list_iterator_create(job_ports_list);
+	if (NULL == (item = (job_ports_t *) list_find(it,
+						find_job_ports_item_func, &slurm_jobid))) {
+		info ("slurm_jobid = %lu not found in List.", slurm_jobid);
+		return;
+	}
+
+	job_ptr = find_job_record(slurm_jobid);
+	step.job_ptr = job_ptr;
+	step.step_node_bitmap = job_ptr->node_bitmap;
+	step.step_id = 0;
+	step.resv_port_cnt = item->port_cnt;
+	step.resv_ports =item->resv_ports;
+	step.resv_port_array = xmalloc(sizeof(int) * step.resv_port_cnt);
+	memcpy(step.resv_port_array, item->port_array,
+					sizeof(int) * step.resv_port_cnt);
+	/* call resv_port_free in port_mgr.c */
+	resv_port_free(&step);
+
+	/* delete the item from list and automatically
+	 * call 'free_job_ports_item_func' */
+	list_delete_item (it);
+	/* destroy iterator */
+	list_iterator_destroy(it);
 }

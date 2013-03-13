@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  deallocate.h  - complete job resource allocation
+ *  job_ports_list.h - keep the pair of (slurm_jobid, resv_ports) for future release
  *****************************************************************************
  *  Copyright (C) 2012-2013 Los Alamos National Security, LLC.
  *  Written by Jimmy Cao <Jimmy.Cao@emc.com>, Ralph Castain <rhc@open-mpi.org>
@@ -35,8 +35,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef DYNALLOC_DEALLOCATE_H_
-#define DYNALLOC_DEALLOCATE_H_
+#ifndef JOB_PORTS_LIST_H_
+#define JOB_PORTS_LIST_H_
+
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -51,33 +52,28 @@
 #  include <inttypes.h>
 #endif  /*  HAVE_CONFIG_H */
 
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
+#include <string.h>
 
-#include "msg.h"
+#include "src/common/list.h"
+#include "src/common/xmalloc.h"
 
-/**
- * deallocate the resources for slurm jobs.
- *
- * the deallocate msg can be like "deallocate slurm_jobid=123
- * job_return_code=0:slurm_jobid=124 job_return_code=0"
- *
- * IN:
- *	msg: the deallocate msg
- *
- */
-extern void deallocate(const char *msg);
 
-/**
- * deallocate the ports for a slurm job.
- *
- * deallocate the ports and remove the entry from List.
- *
- * IN:
- *	slurm_jobid: slurm jobid
- *
- */
-extern void deallocate_port(uint32_t slurm_jobid);
+typedef struct {
+	uint32_t slurm_jobid;
+	uint16_t port_cnt;
+	char *resv_ports;
+	int *port_array;
+} job_ports_t;
 
-#endif /* DYNALLOC_DEALLOCATE_H_ */
+extern List job_ports_list;
+
+extern void append_job_ports_item(uint32_t slurm_jobid, uint16_t port_cnt,
+							char *resv_ports, int *port_array);
+
+extern void free_job_ports_item_func(void *voiditem);
+
+extern int find_job_ports_item_func(void *voiditem, void *key);
+
+extern void print_list();
+
+#endif /* JOB_PORTS_LIST_H_ */

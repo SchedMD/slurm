@@ -161,7 +161,7 @@ or an allocation is granted you can use the
 job.  This call will block until the allocation is granted, an error
 occurs, or the specified timeout limit is reached.  The \fIpending_callback\fP
 parameter will be called if the allocation is not available
-immediately and the immedite flag is not set in the request.  This can
+immediately and the immediate flag is not set in the request.  This can
 be used to get the jobid of the job while waiting for the allocation
 to become available.  On failure NULL is returned and errno is set.
 .LP
@@ -213,7 +213,7 @@ On success, zero is returned. On error, \-1 is returned, and Slurm error code is
 .LP
 \fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re\-link your code.
 .LP
-\fBESLURM_CAN_NOT_START_IMMEDIATELY\fR the job can not be started immeidately as requested.
+\fBESLURM_CAN_NOT_START_IMMEDIATELY\fR the job can not be started immediately as requested.
 .LP
 \fBESLURM_DEFAULT_PARTITION_NOT_SET\fR the system lacks a valid default partition.
 .LP

@@ -176,6 +176,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 					  MAX(command_len, 1))) {
 			arch_cond->purge_job |= SLURMDB_PURGE_ARCHIVE;
 			set = 1;
+		} else if (!end && !strncasecmp(argv[i], "reservations",
+					  MAX(command_len, 1))) {
+			arch_cond->purge_resv |= SLURMDB_PURGE_ARCHIVE;
+			set = 1;
 		} else if (!end && !strncasecmp(argv[i], "steps",
 					  MAX(command_len, 1))) {
 			arch_cond->purge_step |= SLURMDB_PURGE_ARCHIVE;
@@ -283,6 +287,15 @@ static int _set_cond(int *start, int argc, char *argv[],
 				arch_cond->purge_job |= tmp;
 				set = 1;
 			}
+		} else if (!strncasecmp (argv[i], "PurgeResvAfter",
+					 MAX(command_len, 10))) {
+			if ((tmp = slurmdb_parse_purge(argv[i]+end))
+			    == NO_VAL) {
+				exit_code = 1;
+			} else {
+				arch_cond->purge_resv |= tmp;
+				set = 1;
+			}
 		} else if (!strncasecmp (argv[i], "PurgeStepAfter",
 					 MAX(command_len, 10))) {
 			if ((tmp = slurmdb_parse_purge(argv[i]+end))
@@ -319,6 +332,16 @@ static int _set_cond(int *start, int argc, char *argv[],
 			} else {
 				arch_cond->purge_job |= tmp;
 				arch_cond->purge_job |= SLURMDB_PURGE_MONTHS;
+				set = 1;
+			}
+		} else if (!strncasecmp (argv[i], "PurgeResvMonths",
+					 MAX(command_len, 6))) {
+			if (get_uint(argv[i]+end, &tmp, "PurgeResvMonths")
+			    != SLURM_SUCCESS) {
+				exit_code = 1;
+			} else {
+				arch_cond->purge_resv |= tmp;
+				arch_cond->purge_resv |= SLURMDB_PURGE_MONTHS;
 				set = 1;
 			}
 		} else if (!strncasecmp (argv[i], "PurgeStepMonths",
@@ -390,6 +413,8 @@ extern int sacctmgr_archive_dump(int argc, char *argv[])
 		arch_cond->purge_event = NO_VAL;
 	if (!arch_cond->purge_job)
 		arch_cond->purge_job = NO_VAL;
+	if (!arch_cond->purge_resv)
+		arch_cond->purge_resv = NO_VAL;
 	if (!arch_cond->purge_step)
 		arch_cond->purge_step = NO_VAL;
 	if (!arch_cond->purge_suspend)

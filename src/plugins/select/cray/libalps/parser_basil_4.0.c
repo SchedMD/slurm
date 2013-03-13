@@ -7,7 +7,7 @@
 #include "parser_internal.h"
 
 /** Basil 4.0 'Released' element */
-static void eh_released_4_0(struct ud *ud, const XML_Char **attrs)
+void eh_released_4_0(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "claims" };
 	/*
@@ -24,7 +24,7 @@ static void eh_released_4_0(struct ud *ud, const XML_Char **attrs)
 }
 
 /** Basil 4.0 'NodeArray' element */
-static void eh_node_array_4_0(struct ud *ud, const XML_Char **attrs)
+void eh_node_array_4_0(struct ud *ud, const XML_Char **attrs)
 {
 	char *attribs[] = { "changecount" };
 	/*

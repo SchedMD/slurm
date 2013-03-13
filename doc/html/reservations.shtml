@@ -6,7 +6,7 @@
 being executed by select users and/or select bank accounts.
 A resource reservation identifies the resources in that reservation
 and a time period during which the reservation is available.
-The resouces which can be reserved include nodes and/or licenses.
+The resources which can be reserved include nodes and/or licenses.
 Note that resource reservations are not compatible with SLURM's
 gang scheduler plugin since the termination time of running jobs
 is not possible to accurately predict.</p>

@@ -63,7 +63,7 @@ main (int argc, char **argv)
 	gettimeofday(&tv1, NULL);
 
 	/* Get process count and our id from environment variables */
-	jobid_ptr  = getenv("SLURM_JOBID");
+	jobid_ptr  = getenv("SLURM_JOB_ID");
 	nprocs_ptr = getenv("SLURM_NPROCS");
 	procid_ptr = getenv("SLURM_PROCID");
 	if (jobid_ptr == NULL) {

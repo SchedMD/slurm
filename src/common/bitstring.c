@@ -70,6 +70,7 @@ strong_alias(bit_and,		slurm_bit_and);
 strong_alias(bit_not,		slurm_bit_not);
 strong_alias(bit_or,		slurm_bit_or);
 strong_alias(bit_set_count,	slurm_bit_set_count);
+strong_alias(bit_set_count_range, slurm_bit_set_count_range);
 strong_alias(bit_clear_count,	slurm_bit_clear_count);
 strong_alias(bit_nset_max_count,slurm_bit_nset_max_count);
 strong_alias(int_and_set_count,	slurm_int_and_set_count);
@@ -669,12 +670,43 @@ bit_set_count(bitstr_t *b)
 	_assert_bitstr_valid(b);
 
 	bit_cnt = _bitstr_bits(b);
-	for (bit = 0; bit < bit_cnt; bit += word_size) {
-		if ((bit + word_size - 1) >= bit_cnt)
-			break;
+	for (bit = 0; (bit + word_size) <= bit_cnt; bit += word_size) {
 		count += hweight(b[_bit_word(bit)]);
 	}
 	for ( ; bit < bit_cnt; bit++) {
+		if (bit_test(b, bit))
+			count++;
+	}
+	return count;
+}
+
+/*
+ * Count the number of bits set in a range of bitstring.
+ *   b (IN)		bitstring to check
+ *   start (IN) first bit to check
+ *   end (IN)	last bit to check+1
+ *   RETURN		count of set bits
+ */
+int
+bit_set_count_range(bitstr_t *b, int start, int end)
+{
+	int count = 0, eow;
+	bitoff_t bit;
+	const int word_size = sizeof(bitstr_t) * 8;
+
+	_assert_bitstr_valid(b);
+	_assert_bit_valid(b,start);
+
+	end = MIN(end, _bitstr_bits(b));
+	eow = ((start+word_size-1)/word_size) * word_size;  /* end of word */
+	for ( bit = start; bit < end && bit < eow; bit++) {
+		if (bit_test(b, bit))
+			count++;
+	}
+	for (; (bit + word_size) <= end ; bit += word_size) {
+		count += hweight(b[_bit_word(bit)]);
+	}
+	for ( ; bit < end; bit++) {
 		if (bit_test(b, bit))
 			count++;
 	}

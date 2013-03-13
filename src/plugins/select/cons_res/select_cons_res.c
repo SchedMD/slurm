@@ -2224,8 +2224,8 @@ extern int select_p_select_nodeinfo_set_all(void)
 {
 	struct part_res_record *p_ptr;
 	struct node_record *node_ptr = NULL;
-	int i=0, n=0, c, start, end;
-	uint16_t tmp, tmp_16 = 0;
+	int i=0, n=0, start, end;
+	uint16_t tmp, tmp_16 = 0, tmp_part;
 	static time_t last_set_all = 0;
 	uint32_t node_threads, node_cpus;
 
@@ -2267,18 +2267,16 @@ extern int select_p_select_nodeinfo_set_all(void)
 		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
 			if (!p_ptr->row)
 				continue;
+			tmp_part = 0;
 			for (i = 0; i < p_ptr->num_rows; i++) {
 				if (!p_ptr->row[i].row_bitmap)
 					continue;
-				tmp = 0;
-				for (c = start; c < end; c++) {
-					if (bit_test(p_ptr->row[i].row_bitmap,
-						     c))
-						tmp++;
-				}
+				tmp = bit_set_count_range(p_ptr->row[i].row_bitmap,
+							  start, end);
 				/* Report row with largest CPU count */
-				tmp_16 = MAX(tmp_16, tmp);
+				tmp_part = MAX(tmp, tmp_part);
 			}
+			tmp_16 += tmp_part;	/* Add CPU counts all parts */
 		}
 
 		/* The minimum allocatable unit may a core, so scale

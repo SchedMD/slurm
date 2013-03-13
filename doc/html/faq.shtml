@@ -944,8 +944,9 @@ First, enable SLURM's use of PAM by setting <i>UsePAM=1</i> in
 Second, establish a PAM configuration file for slurm in <i>/etc/pam.d/slurm</i>.
 A basic configuration you might use is:</p>
 <pre>
-auth     required  pam_localuser.so
 account  required  pam_unix.so
+account  required  pam_slurm.so
+auth     required  pam_localuser.so
 session  required  pam_limits.so
 </pre>
 <p>Third, set the desired limits in <i>/etc/security/limits.conf</i>.
@@ -962,11 +963,12 @@ limit from being propagated:<i>PropagateResourceLimitsExcept=MEMLOCK</i>.</p>
 
 <p>We also have a PAM module for SLURM that prevents users from
 logging into nodes that they have not been allocated (except for user
-root, which can always login. pam_slurm is available for download from
-<a href="https://sourceforge.net/projects/slurm/">
-https://sourceforge.net/projects/slurm/</a> or use the
-<a href="http://www.debian.org/">Debian</a> package
-named <i>libpam-slurm</i>.
+root, which can always login.
+This pam_slurm module is included with the Slurm distribution.
+The module is built by default, but can be disabled using the
+.rpmmacros option "%_without_pam 1" or by entering the command line
+option "--without pam" when the configure program is executed.
+It's source code is in the directory "contribs/pam".
 The use of pam_slurm does not require <i>UsePAM</i> being set. The
 two uses of PAM are independent.
 
@@ -1514,7 +1516,7 @@ dset TV::parallel_configs {
 <p><a name="git_patch"><b>44. How can a patch file be generated from a SLURM
 commit in github?</b></a></br>
 <p>Find and open the commit in github then append ".patch" to the URL and save
-the resutling file. For an example, see:
+the resulting file. For an example, see:
 <a href="https://github.com/SchedMD/slurm/commit/91e543d433bed11e0df13ce0499be641774c99a3.patch">
 https://github.com/SchedMD/slurm/commit/91e543d433bed11e0df13ce0499be641774c99a3.patch</a>
 </p>

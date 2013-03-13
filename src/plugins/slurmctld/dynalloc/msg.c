@@ -302,6 +302,7 @@ static char * 	_recv_msg(slurm_fd_t new_fd)
 		return NULL;
 	}
 
+	info("-------------------------");
 	info("dynalloc msg recv:%s", buf);
 
 	return buf;

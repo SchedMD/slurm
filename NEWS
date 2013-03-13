@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in Slurm 2.6.0pre3
+============================
+
 * Changes in Slurm 2.6.0pre2
 ============================
  -- Do not purge inactive interactive jobs that lack a port to ping (added
@@ -25,6 +28,7 @@ documents those changes that are of interest to users and admins.
     scheduled instead of newly arrived higher priority jobs, but will permit
     more queued jobs to be considered for backfill scheduling.
  -- Added support to purge reservation records from accounting.
+ -- Cray - Add support for Basil 1.3
 
 * Changes in SLURM 2.6.0pre1
 ============================
@@ -70,6 +74,13 @@ documents those changes that are of interest to users and admins.
     _mandir %{_prefix}/share/man
     _infodir %{_prefix}/share/info
  -- Add acct_gather_energy/ipmi which works off freeipmi for energy gathering
+
+* Changes in Slurm 2.5.5
+========================
+ -- Fix for sacctmgr add qos to handle the 'flags' option.
+ -- Export SLURM_ environment variables from sbatch, even if "--export"
+    option does not explicitly list them.
+ -- If node is in more than one partition, correct counting of allocated CPUs.
 
 * Changes in Slurm 2.5.4
 ========================
@@ -117,6 +128,13 @@ documents those changes that are of interest to users and admins.
  -- sdiag command - Correction to jobs started value reported.
  -- Prevent slurmctld assert when invalid change to reservation with running
     jobs is made.
+ -- BGQ - If signal is NODE_FAIL allow forward even if job is completing
+    and timeout in the runjob_mux trying to send in this situation.
+ -- BGQ - More robust checking for correct node, task, and ntasks-per-node
+    options in srun, and push that logic to salloc and sbatch.
+ -- GRES topology bug in core selection logic fixed.
+ -- Fix to handle init.d script for querying status and not return 1 on
+    success.
 
 * Changes in SLURM 2.5.3
 ========================

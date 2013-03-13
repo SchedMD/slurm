@@ -164,7 +164,7 @@ SLURM_NODE_ALIASES=ec0:123.45.67.8:foo,ec2,123.45.67.9:bar</p>
 
 <ul>
 <li>We need scripts to provision resources from EC2.</li>
-<li>The SLURM_NODE_ALIASES environment varilable needs to change if a job
+<li>The SLURM_NODE_ALIASES environment variable needs to change if a job
 expands (adds resources).</li>
 <li>Some MPI implementations will not work due to the node naming.</li>
 <li>Some tests in SLURM's test suite fail.</li>

@@ -15,6 +15,7 @@ libalps_la_SOURCES =		\
 	parser_basil_1.1.c	\
 	parser_basil_3.1.c	\
 	parser_basil_4.0.c	\
+	parser_basil_5.1.c	\
 	basil_request.c		\
 	do_query.c		\
 	do_reserve.c		\

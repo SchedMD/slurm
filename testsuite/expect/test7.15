@@ -53,7 +53,13 @@ if { $partition == "" } {
 		set partition [default_partition]
 	}
 }
-if {[test_serial]} {
+
+set have_runjob 0
+if {![string compare [test_launch_type] "runjob"]} {
+	set have_runjob 1
+}
+
+if {$have_runjob || [test_serial]} {
 	set nnodes 1
 } else {
 	set nnodes [available_nodes $partition]
@@ -66,9 +72,15 @@ if {[test_serial]} {
 set timeout $max_job_delay
 set srun_pid  [exp_spawn $srun -N$nnodes -p $partition ./$file_prog]
 expect {
-	-re "Signal (.*) is ignored!" {
-		send_user "FAILURE: At least one signal is ignored!\n"
-		set exit_code 1
+	-re "Signal ($number) is ignored!" {
+		set signal $expect_out(1,string)
+		if { $have_runjob && (($signal == 1) || ($signal == 5) || ($signal == 12) || ($signal == 13)) } {
+			send_user "Signal $signal is ignored by default when using runjob, this error is expected, turn that frown upside down!\n"
+			exp_continue
+		} else {
+			send_user "FAILURE: At least one signal is ignored!\n"
+			set exit_code 1
+		}
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding"
@@ -76,8 +88,12 @@ expect {
 		set exit_code 1
 	}
 	eof {
-		catch wait result
-		set exit_code [lindex $result 3]
+		# The above signals will result in a bad exit code,
+		# ignore on runjob systems
+		if { !$have_runjob } {
+			catch wait result
+			set exit_code [lindex $result 3]
+		}
 	}
 }
 

@@ -233,16 +233,16 @@ uint16_t slurm_get_batch_start_timeout(void)
  */
 uint16_t slurm_get_suspend_timeout(void)
 {
-        uint16_t suspend_timeout = 0;
-        slurm_ctl_conf_t *conf;
+	uint16_t suspend_timeout = 0;
+	slurm_ctl_conf_t *conf;
 
-        if (slurmdbd_conf) {
-        } else {
-                conf = slurm_conf_lock();
-                suspend_timeout = conf->suspend_timeout;
-                slurm_conf_unlock();
-        }
-        return suspend_timeout;
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		suspend_timeout = conf->suspend_timeout;
+		slurm_conf_unlock();
+	}
+	return suspend_timeout;
 }
 
 /* slurm_get_resume_timeout
@@ -250,16 +250,16 @@ uint16_t slurm_get_suspend_timeout(void)
  */
 uint16_t slurm_get_resume_timeout(void)
 {
-        uint16_t resume_timeout = 0;
-        slurm_ctl_conf_t *conf;
+	uint16_t resume_timeout = 0;
+	slurm_ctl_conf_t *conf;
 
-        if (slurmdbd_conf) {
-        } else {
-                conf = slurm_conf_lock();
-                resume_timeout = conf->resume_timeout;
-                slurm_conf_unlock();
-        }
-        return resume_timeout;
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		resume_timeout = conf->resume_timeout;
+		slurm_conf_unlock();
+	}
+	return resume_timeout;
 }
 
 /* slurm_get_suspend_time
@@ -1576,7 +1576,7 @@ uint16_t slurm_get_keep_alive_time(void)
 
 /* slurm_get_kill_wait
  * returns kill_wait from slurmctld_conf object
- * RET uint16_t        - kill_wait
+ * RET uint16_t	- kill_wait
  */
 uint16_t slurm_get_kill_wait(void)
 {
@@ -2006,7 +2006,7 @@ slurm_fd_t slurm_init_msg_engine_port(uint16_t port)
  */
 slurm_fd_t slurm_init_msg_engine_addrname_port(char *addr_name, uint16_t port)
 {
-        slurm_addr_t addr;
+	slurm_addr_t addr;
 
 #ifdef BIND_SPECIFIC_ADDR
 	if (addr_name != NULL)
@@ -2014,7 +2014,7 @@ slurm_fd_t slurm_init_msg_engine_addrname_port(char *addr_name, uint16_t port)
 	else
 		slurm_set_addr_any(&addr, port);
 #else
-        slurm_set_addr_any(&addr, port);
+	slurm_set_addr_any(&addr, port);
 #endif
 
 	return _slurm_init_msg_engine(&addr);
@@ -2299,7 +2299,6 @@ int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout)
 		header.ret_list = NULL;
 	}
 
-
 	/* Forward message to other nodes */
 	if (header.forward.cnt > 0) {
 		error("We need to forward this to other nodes use "
@@ -2356,6 +2355,7 @@ total_return:
 		msg->auth_cred = (void *) NULL;
 		error("slurm_receive_msg: %s", slurm_strerror(rc));
 		rc = -1;
+		usleep(10000);	/* Discourage brute force attack */
 	} else {
 		rc = 0;
 	}
@@ -2526,6 +2526,7 @@ total_return:
 			list_push(ret_list, ret_data_info);
 		}
 		error("slurm_receive_msgs: %s", slurm_strerror(rc));
+		usleep(10000);	/* Discourage brute force attack */
 	} else {
 		if (!ret_list)
 			ret_list = list_create(destroy_data_info);
@@ -2756,6 +2757,7 @@ total_return:
 		msg->data = NULL;
 		error("slurm_receive_msg_and_forward: %s",
 		      slurm_strerror(rc));
+		usleep(10000);	/* Discourage brute force attack */
 	} else {
 		rc = 0;
 	}

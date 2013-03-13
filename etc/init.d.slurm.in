@@ -5,10 +5,10 @@
 #              manages exclusive access to a set of compute \
 #              resources and distributes work to those resources.
 #
-# processname: /usr/sbin/slurmd
+# processname: @sbindir@/slurmd
 # pidfile: /var/run/slurmd.pid
 #
-# processname: /usr/sbin/slurmctld
+# processname: @sbindir@/slurmctld
 # pidfile: /var/run/slurmctld.pid
 #
 # config: /etc/sysconfig/slurm
@@ -254,7 +254,7 @@ case "$1" in
 	slurmstop
 	;;
     status)
-	anystop=1
+	anystop=0
 	for prog in `$BINDIR/scontrol show daemons`; do
 	   slurmstatus $prog
 	   rc=$?
@@ -288,7 +288,9 @@ case "$1" in
 	;;
     reconfig)
 	for prog in `$BINDIR/scontrol show daemons`; do
+	    echo -n $"Reloading $prog daemon configuration: "
 	    killproc $prog -HUP
+	    echo
 	done
 	;;
     test)

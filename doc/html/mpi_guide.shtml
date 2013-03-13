@@ -24,7 +24,7 @@ supported. Proper configuration is essential for SLURM to establish the
 proper environment for the MPI job, such as setting the appropriate
 environment variables. The <i>MpiDefault</i> configuration parameter
 in <i>slurm.conf</i> establishes the system default MPI to be supported.
-The <i>srun</i> option <i>--mpi=</i> (or the equivalent environment 
+The <i>srun</i> option <i>--mpi=</i> (or the equivalent environment
 variable <i>SLURM_MPI_TYPE</i> can be used to specify when a
 different MPI implementation is to be supported for an individual job.</p>
 
@@ -67,7 +67,7 @@ The ports reserved on every allocated node will be identified in an
 environment variable available to the tasks as shown here: <br>
 <i>SLURM_STEP_RESV_PORTS=12000-12015</i><br>
 <b>NOTE:</b> In SLURM version 2.5, the <i>--resv-ports</i> option is
-automatically set when the MPI type is set to OpenMPI, either explictly with
+automatically set when the MPI type is set to OpenMPI, either explicitly with
 the <i>--mpi</i> option or by the <i>MpiDefault</i> configuration parameter.</p>
 
 <pre>
@@ -203,7 +203,7 @@ etc.
 &gt; lamclean
 &gt; lamhalt
 &gt; exit            # exits shell spawned by
-                  # initial srun command
+                 # initial srun command
 </pre>
 
 <p>Note that any direct use of <span class="commandline">srun</span>
@@ -251,7 +251,7 @@ network performance: <b>PMI_FANOUT</b>, <b>PMI_FANOUT_OFF_HOST</b>, and
 <b>PMI_TIME</b>.
 See the srun man pages in the INPUT ENVIRONMENT VARIABLES section for a more
 information.</li>
-<li>Information about building MPICH2 for use with SLURM is described on the 
+<li>Information about building MPICH2 for use with SLURM is described on the
 <a href="http://wiki.mcs.anl.gov/mpich2/index.php/Frequently_Asked_Questions#Q:_How_do_I_use_MPICH2_with_slurm.3F">
 MPICH2 FAQ</a> web page</li>
 </ul></p>

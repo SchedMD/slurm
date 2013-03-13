@@ -543,6 +543,7 @@ env_vars_t env_vars[] = {
 {"SLURM_QOS",           OPT_STRING,     &opt.qos,           NULL             },
 {"SLURM_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL             },
 {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL             },
+{"SLURM_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL             },
 {"SLURM_RESTART_DIR",   OPT_STRING,     &opt.restart_dir ,  NULL             },
 {"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
 {"SLURM_SIGNAL",        OPT_SIGNAL,     NULL,               NULL             },
@@ -1530,135 +1531,6 @@ static void set_options(const int argc, char **argv)
 	spank_option_table_destroy (optz);
 }
 
-#if defined HAVE_BG && !defined HAVE_BG_L_P
-static bool _check_is_pow_of_2(int32_t n) {
-	/* Bitwise ANDing a power of 2 number like 16 with its
-	 * negative (-16) gives itself back.  Only integers which are power of
-	 * 2 behave like that.
-	 */
-	return ((n!=0) && (n&(-n))==n);
-}
-
-extern void bg_figure_nodes_tasks()
-{
-	/* A bit of setup for IBM's runjob.  runjob only has so many
-	   options, so it isn't that bad.
-	*/
-	int32_t node_cnt;
-	if (opt.max_nodes)
-		node_cnt = opt.max_nodes;
-	else
-		node_cnt = opt.min_nodes;
-
-	if (!opt.ntasks_set) {
-		if (opt.ntasks_per_node != NO_VAL)
-			opt.ntasks = node_cnt * opt.ntasks_per_node;
-		else {
-			opt.ntasks = node_cnt;
-			opt.ntasks_per_node = 1;
-		}
-		opt.ntasks_set = true;
-	} else {
-		int32_t ntpn;
-		bool figured = false;
-
-		if (opt.nodes_set) {
-			if (node_cnt > opt.ntasks) {
-				if (opt.nodes_set_opt)
-					info("You asked for %d nodes, "
-					     "but only %d tasks, resetting "
-					     "node count to %u.",
-					     node_cnt, opt.ntasks, opt.ntasks);
-				opt.max_nodes = opt.min_nodes = node_cnt
-					= opt.ntasks;
-			}
-		}
-		/* If nodes not set do not try to set min/max nodes
-		   yet since that would result in an incorrect
-		   allocation.  For a step allocation it is figured
-		   out later in srun_job.c _job_create_structure().
-		*/
-
-		if (!opt.ntasks_per_node || (opt.ntasks_per_node == NO_VAL)) {
-			/* We always want the next larger number if
-			   there is a fraction so we try to stay in
-			   the allocation requested.
-			*/
-			opt.ntasks_per_node =
-				(opt.ntasks + node_cnt - 1) / node_cnt;
-			figured = true;
-		}
-
-		/* On a Q we need ntasks_per_node to be a multiple of 2 */
-		ntpn = opt.ntasks_per_node;
-		while (!_check_is_pow_of_2(ntpn))
-			ntpn++;
-		if (!figured && (ntpn != opt.ntasks_per_node)) {
-			info("You requested --ntasks-per-node=%d, which is not "
-			     "a power of 2.  Setting --ntasks-per-node=%d "
-			     "for you.", opt.ntasks_per_node, ntpn);
-			figured = true;
-		}
-		opt.ntasks_per_node = ntpn;
-
-		ntpn = opt.ntasks / opt.ntasks_per_node;
-		/* Make sure we are requesting the correct number of nodes. */
-		if (node_cnt < ntpn) {
-			opt.max_nodes = opt.min_nodes = ntpn;
-			if (opt.nodes_set && !figured) {
-				fatal("You requested -N %d and -n %d "
-				      "with --ntasks-per-node=%d.  "
-				      "This isn't a valid request.",
-				      node_cnt, opt.ntasks,
-				      opt.ntasks_per_node);
-			}
-			node_cnt = opt.max_nodes;
-		}
-
-		/* Do this again to make sure we have a legitimate
-		   ratio. */
-		ntpn = opt.ntasks_per_node;
-		if ((node_cnt * ntpn) < opt.ntasks) {
-			ntpn++;
-			while (!_check_is_pow_of_2(ntpn))
-				ntpn++;
-			if (!figured && (ntpn != opt.ntasks_per_node))
-				info("You requested --ntasks-per-node=%d, "
-				     "which cannot spread across %d nodes "
-				     "correctly.  Setting --ntasks-per-node=%d "
-				     "for you.",
-				     opt.ntasks_per_node, node_cnt, ntpn);
-			opt.ntasks_per_node = ntpn;
-		}
-
-		if (opt.nodes_set) {
-			if ((opt.ntasks_per_node != 1)
-			    && (opt.ntasks_per_node != 2)
-			    && (opt.ntasks_per_node != 4)
-			    && (opt.ntasks_per_node != 8)
-			    && (opt.ntasks_per_node != 16)
-			    && (opt.ntasks_per_node != 32)
-			    && (opt.ntasks_per_node != 64))
-				fatal("You requested -N %d and -n %d "
-				      "which gives --ntasks-per-node=%d.  "
-				      "This isn't a valid request.",
-				      node_cnt, opt.ntasks,
-				      opt.ntasks_per_node);
-			else if (!opt.overcommit
-				 && ((opt.ntasks_per_node == 32)
-				     || (opt.ntasks_per_node == 64)))
-				fatal("You requested -N %d and -n %d "
-				      "which gives --ntasks-per-node=%d.  "
-				      "This isn't a valid request "
-				      "without --overcommit.",
-				      node_cnt, opt.ntasks,
-				      opt.ntasks_per_node);
-		}
-	}
-}
-
-#endif
-
 /*
  * _opt_args() : set options via commandline args and popt
  */
@@ -1738,7 +1610,10 @@ static void _opt_args(int argc, char **argv)
 	/* Since this is needed on an emulated system don't put this code in
 	 * the launch plugin.
 	 */
-	bg_figure_nodes_tasks();
+	bg_figure_nodes_tasks(&opt.min_nodes, &opt.max_nodes,
+			      &opt.ntasks_per_node, &opt.ntasks_set,
+			      &opt.ntasks, opt.nodes_set, opt.nodes_set_opt,
+			      opt.overcommit, 1);
 #endif
 
 	if (launch_init() != SLURM_SUCCESS) {

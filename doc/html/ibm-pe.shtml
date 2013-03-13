@@ -16,6 +16,11 @@ software. You should be familiar with the SLURM's mode of operation on Linux
 clusters before studying the relatively few differences in operation on systems
 with PE, which are described in this document.</p>
 
+<p>Note that Slurm is designed to be a replacement for IBM's LoadLeveler.
+They are not designed to concurrently schedule resources.
+Slurm provides manages network resources and provides the POE command with
+a library that emulates LoadLeveler functionality.</p>
+
 <h2><a name="user">User Tools</a></h2>
 
 <p>The normal set of SLURM user tools: srun, scancel, sinfo, squeue, scontrol,
@@ -83,7 +88,7 @@ SLURM_NETWORK environment variable. Supported network options include:</p>
   Default value is zero.
   Applies only to IBM Power7-IH processors.
   POE requires that if <b>cau</b> has a non-zero value then <b>us</b>,
-  <b>devtype=IB</b> or <b>devtype=HFI</b> must be explictly specified otherwise
+  <b>devtype=IB</b> or <b>devtype=HFI</b> must be explicitly specified otherwise
   the request may attempt to allocate CAU with IP communications and fail.
   <li><b>devname=<i>name</i></b>
   Specify the name of an individual network adapter to use.
@@ -474,7 +479,10 @@ on a cluster, however each scheduler must be configured to manage different
 compute nodes (e.g. LoadLeveler can manage compute nodes "tux[1-8]" and SLURM
 can manage compute nodes "tux[9-16]" on the same cluster). In addition, the
 /etc/poe.limits file on each node must identify the MP_PE_RMLIB appropriate
-for that node (e.g. IBM's or SLURM's libpermapi.so)</p>
+for that node (e.g. IBM's or SLURM's libpermapi.so).
+If Slurm and LoadLeveler are configured to simultaneously manage the same
+nodes, you should expect both resource managers to try assigning the same
+resources. This will result in job failures.</p>
 
 <p>The srun command uses the <b>launch/poe</b> plugin to launch the poe program.
 Then poe uses the <b>launch/slurm</b> plugin to launch the "pmd" process on the
@@ -506,6 +514,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 31 January 2013</p></td>
+<p style="text-align:center;">Last modified 11 March 2013</p></td>
 
 <!--#include virtual="footer.txt"-->

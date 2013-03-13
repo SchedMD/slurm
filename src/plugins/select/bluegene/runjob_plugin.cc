@@ -117,15 +117,19 @@ static void _destroy_runjob_job(void *object)
 static void _send_failed_cnodes(uint32_t job_id, uint32_t step_id, uint16_t sig)
 {
 	int rc;
+	int count = 0;
+	int max_tries = 30;
 
 	while ((rc = slurm_kill_job_step(job_id, step_id, sig))) {
 		rc = slurm_get_errno();
 
-		if (rc == ESLURM_ALREADY_DONE || rc == ESLURM_INVALID_JOB_ID)
+		if ((count > max_tries)
+		    || rc == ESLURM_ALREADY_DONE || rc == ESLURM_INVALID_JOB_ID)
 			break;
 		std::cerr << "Trying to fail cnodes, message from slurmctld: "
 			  << slurm_strerror(rc) << std::endl;
 		sleep (5);
+		count++;
 	}
 }
 
