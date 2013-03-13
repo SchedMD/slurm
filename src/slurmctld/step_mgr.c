@@ -561,7 +561,13 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 }
 
 /* Pick nodes to be allocated to a job step. If a CPU count is also specified,
- * then select nodes with a sufficient CPU count. */
+ * then select nodes with a sufficient CPU count.
+ * IN job_ptr - job to contain step allocation
+ * IN/OUT node_bitmap - nodes available (IN), selectect for use (OUT)
+ * IN node_cnt - step node count specification
+ * IN cpu_cnt - step CPU count specification
+ * IN usable_cpu_cnt - count of usable CPUs on each node in node_bitmap
+ */
 static bitstr_t *_pick_step_nodes_cpus(struct job_record *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
 				       int cpu_cnt, uint32_t *usable_cpu_cnt)
