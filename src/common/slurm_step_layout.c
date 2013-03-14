@@ -122,7 +122,8 @@ slurm_step_layout_t *slurm_step_layout_create(
 		 * Normally we would not permit execution of job steps,
 		 * but can fake it by just allocating all tasks to
 		 * one of the allocated nodes. */
-		if (cluster_flags & CLUSTER_FLAG_BG)
+		if ((cluster_flags & CLUSTER_FLAG_BG)
+		    || (cluster_flags & CLUSTER_FLAG_CRAYXT))
 			step_layout->node_cnt  = num_hosts;
 		else
 			step_layout->node_cnt  = 1;
