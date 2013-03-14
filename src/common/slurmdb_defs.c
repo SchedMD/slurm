@@ -2237,3 +2237,34 @@ extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 	//info("got rc of %d", rc);
 	return rc;
 }
+
+extern slurmdb_report_cluster_rec_t *slurmdb_cluster_rec_2_report(
+	slurmdb_cluster_rec_t *cluster)
+{
+	slurmdb_report_cluster_rec_t *slurmdb_report_cluster;
+	slurmdb_cluster_accounting_rec_t *accting = NULL;
+	ListIterator cluster_itr = NULL;
+	int count;
+
+	xassert(cluster);
+	slurmdb_report_cluster = xmalloc(sizeof(slurmdb_report_cluster_rec_t));
+	slurmdb_report_cluster->name = xstrdup(cluster->name);
+
+	if (!(count = list_count(cluster->accounting_list)))
+		return slurmdb_report_cluster;
+
+	/* get the amount of time and the average cpu count
+	   during the time we are looking at */
+	cluster_itr = list_iterator_create(cluster->accounting_list);
+	while((accting = list_next(cluster_itr))) {
+		slurmdb_report_cluster->cpu_secs += accting->alloc_secs
+			+ accting->down_secs + accting->idle_secs
+			+ accting->resv_secs + accting->pdown_secs;
+		slurmdb_report_cluster->cpu_count += accting->cpu_count;
+	}
+	list_iterator_destroy(cluster_itr);
+
+	slurmdb_report_cluster->cpu_count /= count;
+
+	return slurmdb_report_cluster;
+}

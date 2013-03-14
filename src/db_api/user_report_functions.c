@@ -135,36 +135,18 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 
 	itr = list_iterator_create(usage_cluster_list);
 	while((cluster = list_next(itr))) {
-		slurmdb_cluster_accounting_rec_t *accting = NULL;
-
 		/* check to see if this cluster is around during the
 		   time we are looking at */
 		if(!cluster->accounting_list
 		   || !list_count(cluster->accounting_list))
 			continue;
 
-		slurmdb_report_cluster =
-			xmalloc(sizeof(slurmdb_report_cluster_rec_t));
+		slurmdb_report_cluster = slurmdb_cluster_rec_2_report(cluster);
 
 		list_append(cluster_list, slurmdb_report_cluster);
 
-		slurmdb_report_cluster->name = xstrdup(cluster->name);
 		slurmdb_report_cluster->user_list =
 			list_create(slurmdb_destroy_report_user_rec);
-
-		/* get the amount of time and the average cpu count
-		   during the time we are looking at */
-		cluster_itr = list_iterator_create(cluster->accounting_list);
-		while((accting = list_next(cluster_itr))) {
-			slurmdb_report_cluster->cpu_secs += accting->alloc_secs
-				+ accting->down_secs + accting->idle_secs
-				+ accting->resv_secs;
-			slurmdb_report_cluster->cpu_count += accting->cpu_count;
-		}
-		list_iterator_destroy(cluster_itr);
-
-		slurmdb_report_cluster->cpu_count /=
-			list_count(cluster->accounting_list);
 	}
 	list_iterator_destroy(itr);
 	list_destroy(usage_cluster_list);

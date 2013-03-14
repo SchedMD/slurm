@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
     ESLURM_NODES_BUSY and retrying.
  -- CRAY - Fix SLURM_TASKS_PER_NODE to be set correctly.
  -- Accounting - more checks for strings with a possible `'` in it.
+ -- sreport - Fix by adding planned down time to utilization reports.
 
 * Changes in Slurm 2.5.4
 ========================
