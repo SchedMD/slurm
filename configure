@@ -943,7 +943,7 @@ with_cpusetdir
 enable_pam
 with_pam_dir
 enable_rfc5424time
-enable_rfc5424time_secs
+enable_log_time_msec
 enable_iso8601
 enable_load_env_no_login
 enable_sun_const
@@ -1630,9 +1630,8 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-pam            enable PAM (Pluggable Authentication Modules)
                           support
-  --disable-rfc5424time   disable RFC 5424 time format support
-  --enable-rfc5424time-secs
-                          record RFC 5424 time to second resolution
+  --enable-rfc5424time    enable RFC 5424 time format support
+  --disable-log-time-msec log timestamps to millisecond resolution
   --disable-iso8601       disable ISO 8601 time format support
   --enable-load-env-no-login
                           enable --get-user-env option to load user
@@ -18756,7 +18755,7 @@ $as_echo "doh!" >&6; }
       esac
 
 else
-  x_ac_rfc5424time=yes
+  x_ac_rfc5424time=no
 
 fi
 
@@ -18772,35 +18771,33 @@ $as_echo "#define USE_RFC5424_TIME /**/" >>confdefs.h
 $as_echo "no" >&6; }
   fi
 
-  if test "$x_ac_rfc5424time" = yes; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking resolution of RFC 5424 time to the second" >&5
-$as_echo_n "checking resolution of RFC 5424 time to the second... " >&6; }
-    # Check whether --enable-rfc5424time-secs was given.
-if test "${enable_rfc5424time_secs+set}" = set; then :
-  enableval=$enable_rfc5424time_secs;  case "$enableval" in
-          yes) x_ac_rfc5424time_secs=yes ;;
-           no) x_ac_rfc5424time_secs=no ;;
-            *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking log timestamps to millisecond resolution" >&5
+$as_echo_n "checking log timestamps to millisecond resolution... " >&6; }
+  # Check whether --enable-log-time-msec was given.
+if test "${enable_log_time_msec+set}" = set; then :
+  enableval=$enable_log_time_msec;  case "$enableval" in
+        yes) x_ac_log_time_msec=yes ;;
+         no) x_ac_log_time_msec=no ;;
+          *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
 $as_echo "doh!" >&6; }
-               as_fn_error $? "bad value \"$enableval\" for --enable-rfc5424time-secs" "$LINENO" 5 ;;
-        esac
+             as_fn_error $? "bad value \"$enableval\" for --disable-log-time-msec" "$LINENO" 5 ;;
+      esac
 
 else
-  x_ac_rfc5424time_secs=no
+  x_ac_log_time_msec=yes
 
 fi
 
 
-    if test "$x_ac_rfc5424time_secs" = yes; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+  if test "$x_ac_log_time_msec" = yes; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
-$as_echo "#define USE_RFC5424_TIME_SECS /**/" >>confdefs.h
+$as_echo "#define LOG_TIME_MSEC /**/" >>confdefs.h
 
-    else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-    fi
   fi
 
 

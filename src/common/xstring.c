@@ -218,8 +218,32 @@ void _xstrftimecat(char **buf, const char *fmt)
 }
 
 /*
- * Append a RFC 5424 formatted timestamp to buffer buf, expand as
- * needed
+ * Append a ISO 8601 formatted timestamp to buffer buf, expand as needed
+ */
+void _xiso8601timecat(char **buf)
+{
+	char p[64] = "";
+	struct timeval tv;
+	struct tm tm;
+
+	if (gettimeofday(&tv, NULL) == -1)
+		fprintf(stderr, "gettimeofday() failed\n");
+
+	if (!localtime_r(&tv.tv_sec, &tm))
+		fprintf(stderr, "localtime_r() failed\n");
+
+	if (strftime(p, sizeof(p), "%Y-%m-%dT%T", &tm) == 0)
+		fprintf(stderr, "strftime() returned 0\n");
+
+#if defined LOG_TIME_MSEC	/* Add millisecond data */
+	_xstrfmtcat(buf, "%s.%3.3d", p, (int)(tv.tv_usec / 1000));
+#else
+	_xstrfmtcat(buf, "%s", p);
+#endif
+}
+
+/*
+ * Append a RFC 5424 formatted timestamp to buffer buf, expand as needed
  *
  */
 void _xrfc5424timecat(char **buf)
@@ -248,10 +272,10 @@ void _xrfc5424timecat(char **buf)
 	z[4] = z[3];
 	z[3] = ':';
 
-#if defined USE_RFC5424_TIME_SECS
-	_xstrfmtcat(buf, "%s%s", p, z);
-#else	/* Add millisecond data */
+#if defined LOG_TIME_MSEC	/* Add millisecond data */
 	_xstrfmtcat(buf, "%s.%3.3d%s", p, (int)(tv.tv_usec / 1000), z);
+#else
+	_xstrfmtcat(buf, "%s%s", p, z);
 #endif
 }
 

@@ -363,6 +363,9 @@
 /* Define to 1 for --get-user-env to load user environment without .login */
 #undef LOAD_ENV_NO_LOGIN
 
+/* log timestamps to millisecond resolution */
+#undef LOG_TIME_MSEC
+
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
 #undef LT_OBJDIR
@@ -505,9 +508,6 @@
 
 /* define if using RFC 5424 time format */
 #undef USE_RFC5424_TIME
-
-/* RFC 5424 time format to second resolution */
-#undef USE_RFC5424_TIME_SECS
 
 /* Version number of package */
 #undef VERSION
