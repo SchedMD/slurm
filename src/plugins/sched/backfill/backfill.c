@@ -64,6 +64,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -875,7 +876,11 @@ static int _attempt_backfill(void)
 				job_ptr->start_time = 0;
 				break;
 			} else {
-				/* Started this job, move to next one */
+				/* Started this job. Update the database if job
+				 * time limit changed and move to next job */
+				if (orig_time_limit != job_ptr->time_limit)
+					jobacct_storage_g_job_start(acct_db_conn,
+								    job_ptr);
 				continue;
 			}
 		} else
