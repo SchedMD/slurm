@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
     allocation then return ESLURM_TOO_MANY_REQUESTED_CPUS rather than
     ESLURM_NODES_BUSY and retrying.
  -- CRAY - Fix SLURM_TASKS_PER_NODE to be set correctly.
+ -- Accounting - more checks for strings with a possible `'` in it.
 
 * Changes in Slurm 2.5.4
 ========================
