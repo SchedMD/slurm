@@ -1204,8 +1204,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 			} else if ((state_val == NODE_STATE_DRAIN) ||
 				   (state_val == NODE_STATE_FAIL)) {
 				bit_clear (avail_node_bitmap, node_inx);
-				state_val = node_ptr->node_state |=
-					NODE_STATE_DRAIN;
+				state_val = node_ptr->node_state |= state_val;
 				if ((node_ptr->run_job_cnt  == 0) &&
 				    (node_ptr->comp_job_cnt == 0)) {
 					trigger_node_drained(node_ptr);

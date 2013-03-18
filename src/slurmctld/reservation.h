@@ -57,6 +57,9 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr);
 /* Delete an existing resource reservation */
 extern int delete_resv(reservation_name_msg_t *resv_desc_ptr);
 
+/* Return pointer to the named reservation or NULL if not found */
+extern slurmctld_resv_t *find_resv_name(char *resv_name);
+
 /* Dump the reservation records to a buffer */
 extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
 		      uint16_t protocol_version);

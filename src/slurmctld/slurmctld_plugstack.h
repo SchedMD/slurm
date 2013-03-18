@@ -38,6 +38,17 @@
 #define _SLURMCTLD_PLUGSTACK_H
 
 #include "slurm/slurm.h"
+#include "src/slurmctld/slurmctld.h"
+
+/*****************************************************************************\
+ *  Plugin slurmctld/nonstop callback functions
+\*****************************************************************************/
+typedef struct slurm_nonstop_ops {
+	void		(*node_fail)	( struct job_record *job_ptr,
+					  struct node_record *node_ptr);
+	void		(*job_fini)	( struct job_record *job_ptr );
+} slurm_nonstop_ops_t;
+extern slurm_nonstop_ops_t nonstop_ops;
 
 /*
  * Initialize the slurmctld plugstack plugin.

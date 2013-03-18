@@ -72,6 +72,8 @@
 //#include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmctld_plugstack.h"
 
+slurm_nonstop_ops_t nonstop_ops = { NULL, NULL };
+
 typedef struct slurmctld_plugstack_ops {
 	/* NO FUNCTIONS */
 } slurmctld_plugstack_ops_t;

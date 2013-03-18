@@ -89,6 +89,7 @@
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/slurmctld_plugstack.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
@@ -2297,6 +2298,8 @@ extern int kill_running_job_by_node_name(char *node_name)
 		if ((job_ptr->node_bitmap == NULL) ||
 		    (!bit_test(job_ptr->node_bitmap, bit_position)))
 			continue;	/* job not on this node */
+		if (nonstop_ops.node_fail)
+			(nonstop_ops.node_fail)(job_ptr, node_ptr);
 		if (IS_JOB_SUSPENDED(job_ptr)) {
 			enum job_states suspend_job_state = job_ptr->job_state;
 			/* we can't have it as suspended when we call the
@@ -3473,6 +3476,8 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		} else {
 			job_ptr->job_state = JOB_COMPLETE | job_comp_flag;
 			job_ptr->exit_code = job_return_code;
+			if (nonstop_ops.job_fini)
+				(nonstop_ops.job_fini)(job_ptr);
 		}
 
 		if (suspended) {
