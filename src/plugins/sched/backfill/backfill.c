@@ -847,6 +847,7 @@ static int _attempt_backfill(void)
 			last_job_update = now;
 		}
 		if (job_ptr->start_time <= now) {
+			uint32_t save_time_limit = job_ptr->time_limit;
 			int rc = _start_job(job_ptr, resv_bitmap);
 			if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE)) {
 				if (orig_time_limit == NO_VAL)
@@ -878,7 +879,7 @@ static int _attempt_backfill(void)
 			} else {
 				/* Started this job. Update the database if job
 				 * time limit changed and move to next job */
-				if (orig_time_limit != job_ptr->time_limit)
+				if (save_time_limit != job_ptr->time_limit)
 					jobacct_storage_g_job_start(acct_db_conn,
 								    job_ptr);
 				continue;
