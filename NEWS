@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
     its execution, but log using debug type message.
  -- Select/cons_res - Permit node removed from job by going down to be returned
     to service and re-used by another job.
+ -- Select/cons_res - Tighter packing of job allocations on sockets.
 
 * Changes in Slurm 2.5.4
 ========================
