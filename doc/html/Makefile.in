@@ -446,6 +446,8 @@ html_DATA = \
 	configurator.easy.html \
 	entities.gif \
 	example_usage.gif \
+	ibm_pe_fig1.png \
+	ibm_pe_fig2.png \
 	linuxstyles.css \
 	lll.gif \
 	mc_support.gif \

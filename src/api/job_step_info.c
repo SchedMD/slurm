@@ -447,10 +447,17 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 		case RESPONSE_SLURM_RC:
 			rc = slurm_get_return_code(ret_data_info->type,
 						   ret_data_info->data);
-			error("slurm_job_step_stat: "
-			      "there was an error with the request to "
-			      "%s rc = %s",
-			      ret_data_info->node_name, slurm_strerror(rc));
+			if (rc == ESLURM_INVALID_JOB_ID) {
+				debug("slurm_job_step_stat: job step %u.%u "
+				      "has already completed",
+				      job_id, step_id);
+			} else {
+				error("slurm_job_step_stat: "
+				      "there was an error with the request to "
+				      "%s rc = %s",
+				      ret_data_info->node_name,
+				      slurm_strerror(rc));
+			}
 			break;
 		default:
 			rc = slurm_get_return_code(ret_data_info->type,

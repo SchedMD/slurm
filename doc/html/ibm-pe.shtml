@@ -493,6 +493,27 @@ switch resources can take multiple seconds per node and the process of launching
 applications on multiple nodes is not well parallelized.
 This is outside of SLURM's control.</p>
 
+<p>The two figures below show a high-level overview of the switch/nrt and
+launch/poe plugins. A typical Slurm installation with IBM PE would make
+use of both plugins, but the operation of each is shown independently for
+improved clarity. Note the the switch/nrt plugin is needed by not only the
+slurmd daemon, but also the slurmctld daemon (for managing switch allocation
+data structures) and the srun command (for packing and unpacking switch
+allocation information used at task launch time).
+In figure 2, note that the libpermapi library issues the job and job step
+creation requests. The srun command is an optional front-end for the poe
+command and the poe command can be invoked directly by the user if desired.</p>
+
+<img src="ibm_pe_fig1.png" width=600>
+<center>
+<p>Figure 1: Use of the switch/nrt plugin</p>
+</center>
+
+<img src="ibm_pe_fig2.png" width=600>
+<center>
+<p>Figure 2: Use of the launch/poe plugin</p>
+</center>
+
 <h3>Debugging Notes</h3>
 
 <p>It is possible to generate detailed logging of all switch/nrt actions and
@@ -514,6 +535,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 11 March 2013</p></td>
+<p style="text-align:center;">Last modified 14 March 2013</p></td>
 
 <!--#include virtual="footer.txt"-->
