@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- CRAY - Fix SLURM_TASKS_PER_NODE to be set correctly.
  -- Accounting - more checks for strings with a possible `'` in it.
  -- sreport - Fix by adding planned down time to utilization reports.
+ -- Do not report an error when sstat identifies job steps terminated during
+    its execution, but log using debug type message.
 
 * Changes in Slurm 2.5.4
 ========================
