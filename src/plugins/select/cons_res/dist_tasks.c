@@ -658,7 +658,8 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 	bool *sock_used, *sock_avoid;
 	bool alloc_cores = false, alloc_sockets = false;
 	uint16_t ntasks_per_core = 0xffff, ntasks_per_socket = 0xffff;
-	int error_code = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS, socket_best_fit;
+	uint32_t total_cpus, *cpus_cnt;
 
 	if ((job_res == NULL) || (job_res->core_bitmap == NULL))
 		return error_code;
@@ -729,33 +730,48 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		core_cnt = 0;
 		cpus  = job_res->cpus[i];
 
-		if (ntasks_per_socket != 0xffff) {
-			int x_cpus;
-			uint32_t total_cpus = 0;
-			uint32_t *cpus_cnt = xmalloc(sizeof(uint32_t)* sockets);
+		/* Pack job onto socket(s) with best fit */
+		socket_best_fit = -1;
+		total_cpus = 0;
+		cpus_cnt = xmalloc(sizeof(uint32_t)* sockets);
+		for (s = 0; s < sockets; s++) {
+			for (j = sock_start[s]; j < sock_end[s]; j++) {
+				if (bit_test(core_map, j))
+					cpus_cnt[s] += vpus;
+			}
+			total_cpus += cpus_cnt[s];
+		}
+		for (s = 0; s < sockets && total_cpus > cpus; s++) {
+			if ((ntasks_per_socket != 0xffff) &&
+			    (cpus_cnt[s] > ntasks_per_socket)) {
+				int x_cpus = cpus_cnt[s] - ntasks_per_socket;
+				x_cpus = MIN(x_cpus, (total_cpus - cpus));
+				cpus_cnt[s] -= x_cpus;
+				total_cpus  -= x_cpus;
+			}
+			if ((cpus_cnt[s] >= cpus) &&
+			    ((socket_best_fit == -1) ||
+			     (cpus_cnt[s] < cpus_cnt[socket_best_fit])))
+				socket_best_fit = s;
+		}
+		if (socket_best_fit != -1) {
+			/* Use one socket with best fit, avoid all others */
 			for (s = 0; s < sockets; s++) {
-				for (j = sock_start[s]; j < sock_end[s]; j++) {
-					if (bit_test(core_map, j))
-						cpus_cnt[s] += vpus;
-				}
-				total_cpus += cpus_cnt[s];
+				if (s != socket_best_fit)
+					sock_avoid[s] = true;
 			}
-			for (s = 0; s < sockets && total_cpus > cpus; s++) {
-				if (cpus_cnt[s] > ntasks_per_socket) {
-					x_cpus = cpus_cnt[s] -ntasks_per_socket;
-					cpus_cnt[s] = ntasks_per_socket;
-					total_cpus -= x_cpus;
-				}
-			}
+			total_cpus = cpus;
+		} else if (ntasks_per_socket != 0xffff) {
+			/* Avoid sockets that can't start ntasks */
 			for (s = 0; s < sockets && total_cpus > cpus; s++) {
 				if ((cpus_cnt[s] <= ntasks_per_socket) &&
-				    (total_cpus - cpus_cnt[s] >= cpus)) {
+				    ((total_cpus - cpus_cnt[s]) >= cpus)) {
 					sock_avoid[s] = true;
 					total_cpus -= cpus_cnt[s];
 				}
 			}
-			xfree(cpus_cnt);
 		}
+		xfree(cpus_cnt);
 
 		while (cpus > 0) {
 			uint16_t prev_cpus = cpus;

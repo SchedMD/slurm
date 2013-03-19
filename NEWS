@@ -94,6 +94,9 @@ documents those changes that are of interest to users and admins.
  -- sreport - Fix by adding planned down time to utilization reports.
  -- Do not report an error when sstat identifies job steps terminated during
     its execution, but log using debug type message.
+ -- Select/cons_res - Permit node removed from job by going down to be returned
+    to service and re-used by another job.
+ -- Select/cons_res - Tighter packing of job allocations on sockets.
 
 * Changes in Slurm 2.5.4
 ========================
