@@ -804,6 +804,8 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		if (!bit_test(job->node_bitmap, i))
 			continue;
 		n++;
+		if (job->cpus[n] == 0)
+			continue;  /* node lost by job resize */
 
 		node_ptr = select_node_record[i].node_ptr;
 		if (action != 2) {
@@ -872,10 +874,14 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			_add_job_to_row(job, &(p_ptr->row[p_ptr->num_rows-1]));
 		}
 		/* update the node state */
-		for (i = 0; i < select_node_cnt; i++) {
-			if (bit_test(job->node_bitmap, i))
+		for (i = 0, n = -1; i < select_node_cnt; i++) {
+			if (bit_test(job->node_bitmap, i)) {
+				n++;
+				if (job->cpus[n] == 0)
+					continue;  /* node lost by job resize */
 				select_node_usage[i].node_state +=
 					job->node_req;
+			}
 		}
 		if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
 			info("DEBUG: _add_job_to_res (after):");
@@ -1150,6 +1156,8 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		if (!bit_test(job->node_bitmap, i))
 			continue;
 		n++;
+		if (job->cpus[n] == 0)
+			continue;  /* node lost by job resize */
 
 		node_ptr = node_record_table_ptr + i;
 		if (action != 2) {
