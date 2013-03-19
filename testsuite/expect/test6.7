@@ -152,12 +152,15 @@ if {[wait_for_file $file_out] == 0} {
 #
 # Variation of above to test signal of batch script processes
 # Note that job termination sends SIGCONT/SIGTERM, hence the
-# duplicate sleep call
+# duplicate sleep call.
 #
 exec rm -f $file_in $file_out
 make_bash_script $file_in "
+ $bin_date
  $bin_sleep 10
+ $bin_date
  $bin_sleep 10
+ $bin_date
  echo FINI
 "
 
