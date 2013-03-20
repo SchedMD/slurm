@@ -171,6 +171,12 @@ fname_create(srun_job_t *job, char *format)
 				 q = ++p;
 				 break;
 
+			 case 'u':  /* '%u' => username       */
+				xmemcat(name, q, p - 1);
+				xstrfmtcat(name, "%s", opt.user);
+				q = ++p;
+				break;
+
 			 default:
 				 break;
 			}
