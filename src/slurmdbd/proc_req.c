@@ -2685,7 +2685,7 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 	slurmdb_cluster_rec_t cluster;
 	dbd_list_msg_t list_msg;
 
-	if (*uid != slurmdbd_conf->slurm_user_id) {
+	if ((*uid != slurmdbd_conf->slurm_user_id) && (*uid != 0)) {
 		comment = "DBD_REGISTER_CTLD message from invalid uid";
 		error("CONN:%u %s %u",
 		      slurmdbd_conn->newsockfd, comment, *uid);
