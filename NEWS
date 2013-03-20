@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
  -- Select/cons_res - Tighter packing of job allocations on sockets.
  -- SlurmDBD - fix to allow user root along with the slurm user to register a
     cluster.
+ -- Select/cons_res - Fix for support of consecutive node option.
 
 * Changes in Slurm 2.5.4
 ========================
