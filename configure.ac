@@ -550,7 +550,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/serial/Makefile
 		 src/plugins/slurmctld/Makefile
 		 src/plugins/slurmctld/dynalloc/Makefile
-		 src/plugins/slurmctld/sock_insec/Makefile
 		 src/plugins/switch/Makefile
 		 src/plugins/switch/none/Makefile
 		 src/plugins/switch/nrt/Makefile
