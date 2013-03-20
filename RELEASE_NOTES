@@ -86,6 +86,7 @@ COMMAND CHANGES (see man pages for details)
  - Added partition "SelectTypeParameters" field to scontrol output.
  - Added Allocated Memory to node information displayed by sview and scontrol
    commands.
+ - Added username (%u) to the filename pattern in the batch script.
 
 OTHER CHANGES
 =============

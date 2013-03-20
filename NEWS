@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
     parameter "--disable-log-time-msec". Default time format changes to
     ISO 8601 (without time zone information). Specify "--enable-rfc5424time"
     to restore the time zone information.
+ -- Add username (%u) to the filename pattern in the batch script.
 
 * Changes in Slurm 2.6.0pre2
 ============================
