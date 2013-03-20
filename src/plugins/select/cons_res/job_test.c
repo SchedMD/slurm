@@ -1108,7 +1108,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			if (details_ptr->contiguous &&
 			    details_ptr->req_node_bitmap &&
 			    (consec_req[i] == -1))
-				break;  /* not required nodes */
+				continue;  /* not required nodes */
 
 			sufficient = (consec_cpus[i] >= rem_cpus) &&
 				     _enough_nodes(consec_nodes[i], rem_nodes,
