@@ -1204,6 +1204,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				bit_clear (idle_node_bitmap, node_inx);
 			} else if ((state_val == NODE_STATE_DRAIN) ||
 				   (state_val == NODE_STATE_FAIL)) {
+				uint16_t new_state = state_val;
 				bit_clear (avail_node_bitmap, node_inx);
 				state_val = node_ptr->node_state |= state_val;
 				if ((node_ptr->run_job_cnt  == 0) &&
@@ -1214,7 +1215,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 						node_ptr, now, NULL,
 						node_ptr->reason_uid);
 				}
-				if ((state_val == NODE_STATE_FAIL) &&
+				if ((new_state == NODE_STATE_FAIL) &&
 				    (nonstop_ops.node_fail))
 					(nonstop_ops.node_fail)(NULL, node_ptr);
 			} else if (state_val == NODE_STATE_POWER_SAVE) {
