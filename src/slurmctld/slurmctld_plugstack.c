@@ -69,10 +69,9 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-//#include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmctld_plugstack.h"
 
-slurm_nonstop_ops_t nonstop_ops = { NULL, NULL };
+slurm_nonstop_ops_t nonstop_ops = { NULL, NULL, NULL };
 
 typedef struct slurmctld_plugstack_ops {
 	/* NO FUNCTIONS */
