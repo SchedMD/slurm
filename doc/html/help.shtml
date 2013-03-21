@@ -17,9 +17,14 @@ their support staff.</li>
 </ol>
 
 <h1>Commercial Support</h1>
-<p>Several companies provide commercial support for SLURM including
-<a href="http://www.schedmd.com">SchedMD</a>.</p>
+<p>Several companies provide commercial support for SLURM including:</p>
+<ul>
+<li><a href="http://www.bull.com">Bull</a> (with 3rd level support from SchedMD)</li>
+<li><a href="http://www.cray.com">Cray</a> (with 3rd level support from SchedMD)</li>
+<li><a href="http://www.schedmd.com">SchedMD</a> (direct 3rd level support for larger sites)</li>
+<li><a href="http://www.science-computing.de">Science + Computing</a> (with 3rd level support from SchedMD)</li>
+</ul>
 
-<p style="text-align:center;">Last modified 28 March 2012</p>
+<p style="text-align:center;">Last modified 21 March 2013</p>
 
 <!--#include virtual="footer.txt"-->
