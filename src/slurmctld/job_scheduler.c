@@ -423,10 +423,6 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 		unlock_slurmctld(job_write_lock);
 		goto send_reply;
 	}
-	if (!avail_front_end()) {
-		unlock_slurmctld(job_write_lock);
-		goto send_reply;
-	}
 	job_iterator = list_iterator_create(job_list);
 	while (1) {
 		if (job_ptr && part_iterator)
@@ -436,10 +432,9 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 		if (!job_ptr)
 			break;
 
-		if (job_ptr == fini_job_ptr)
-			continue;
-
-		if (job_ptr->priority == 0)
+		if ((job_ptr == fini_job_ptr) ||
+		    (job_ptr->priority == 0)  ||
+		    !avail_front_end(job_ptr))
 			continue;
 
 		if (!IS_JOB_PENDING(job_ptr)) {
@@ -694,7 +689,7 @@ extern int schedule(uint32_t job_limit)
 		job_limit = def_job_limit;
 
 	lock_slurmctld(job_write_lock);
-	if (!avail_front_end()) {
+	if (!avail_front_end(NULL)) {
 		ListIterator job_iterator = list_iterator_create(job_list);
 		while ((job_ptr = (struct job_record *)
 				list_next(job_iterator))) {
@@ -764,6 +759,10 @@ extern int schedule(uint32_t job_limit)
 			job_ptr = (struct job_record *) list_next(job_iterator);
 			if (!job_ptr)
 				break;
+			if (!avail_front_end(job_ptr)) {
+				job_ptr->state_reason = WAIT_FRONT_END;
+				continue;
+			}
 			if (!_job_runnable_test1(job_ptr, false))
 				continue;
 			if (job_ptr->part_ptr_list) {
@@ -793,6 +792,10 @@ next_part:			part_ptr = (struct part_record *)
 			job_ptr  = job_queue_rec->job_ptr;
 			part_ptr = job_queue_rec->part_ptr;
 			xfree(job_queue_rec);
+			if (!avail_front_end(job_ptr)) {
+				job_ptr->state_reason = WAIT_FRONT_END;
+				continue;
+			}
 			if (!IS_JOB_PENDING(job_ptr))
 				continue;  /* started in other partition */
 			job_ptr->part_ptr = part_ptr;

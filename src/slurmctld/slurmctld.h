@@ -254,9 +254,17 @@ extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
 #define FRONT_END_MAGIC 0xfe9b82fe
 
 typedef struct front_end_record {
+	gid_t *allow_gids;		/* zero terminated list of allowed groups */
+	char *allow_groups;		/* allowed group string */
+	uid_t *allow_uids;		/* zero terminated list of allowed users */
+	char *allow_users;		/* allowed user string */
 	time_t boot_time;		/* Time of node boot,
 					 * computed from up_time */
 	char *comm_name;		/* communications path name to node */
+	gid_t *deny_gids;		/* zero terminated list of denied groups */
+	char *deny_groups;		/* denied group string */
+	uid_t *deny_uids;		/* zero terminated list of denied users */
+	char *deny_users;		/* denied user string */
 	uint32_t job_cnt_comp;		/* count of completing jobs on node */
 	uint16_t job_cnt_run;		/* count of running jobs on node */
 	time_t last_response;		/* Time of last communication */

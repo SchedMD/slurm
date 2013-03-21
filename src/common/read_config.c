@@ -433,6 +433,10 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 	slurm_conf_frontend_t *n;
 	char *node_state = NULL;
 	static s_p_options_t _frontend_options[] = {
+		{"AllowGroups", S_P_STRING},
+		{"AllowUsers", S_P_STRING},
+		{"DenyGroups", S_P_STRING},
+		{"DenyUsers", S_P_STRING},
 		{"FrontendAddr", S_P_STRING},
 		{"Port", S_P_UINT16},
 		{"Reason", S_P_STRING},
@@ -471,6 +475,17 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 		dflt = default_frontend_tbl;
 
 		n->frontends = xstrdup(value);
+
+		(void) s_p_get_string(&n->allow_groups, "AllowGroups", tbl);
+		(void) s_p_get_string(&n->allow_users,  "AllowUsers", tbl);
+		(void) s_p_get_string(&n->deny_groups,  "DenyGroups", tbl);
+		(void) s_p_get_string(&n->deny_users,   "DenyUsers", tbl);
+		if (n->allow_groups && n->deny_groups)
+			fatal("FrontEnd options AllowGroups and DenyGroups "
+			      "are incompatible");
+		if (n->allow_users && n->deny_users)
+			fatal("FrontEnd options AllowUsers and DenyUsers "
+			      "are incompatible");
 
 		if (!s_p_get_string(&n->addresses, "FrontendAddr", tbl))
 			n->addresses = xstrdup(n->frontends);
@@ -777,6 +792,10 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 extern void destroy_frontend(void *ptr)
 {
 	slurm_conf_frontend_t *n = (slurm_conf_frontend_t *) ptr;
+	xfree(n->allow_groups);
+	xfree(n->allow_users);
+	xfree(n->deny_groups);
+	xfree(n->deny_users);
 	xfree(n->frontends);
 	xfree(n->addresses);
 	xfree(n->reason);

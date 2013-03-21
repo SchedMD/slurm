@@ -1503,8 +1503,12 @@ typedef struct node_info_msg {
 } node_info_msg_t;
 
 typedef struct front_end_info {
+	char *allow_groups;		/* allowed group string */
+	char *allow_users;		/* allowed user string */
 	time_t boot_time;		/* Time of node boot,
 					 * computed from up_time */
+	char *deny_groups;		/* denied group string */
+	char *deny_users;		/* denied user string */
 	char *name;			/* node name */
 	uint16_t node_state;		/* see enum node_states */
 	char *reason;			/* reason for node being DOWN or

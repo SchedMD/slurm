@@ -2340,14 +2340,14 @@ extern void build_node_details(struct job_record *job_ptr, bool new_alloc)
 	if (new_alloc) {
 		/* Find available front-end node and assign it to this job */
 		xfree(job_ptr->batch_host);
-		job_ptr->front_end_ptr = assign_front_end(NULL);
+		job_ptr->front_end_ptr = assign_front_end(job_ptr);
 		if (job_ptr->front_end_ptr) {
 			job_ptr->batch_host = xstrdup(job_ptr->
 						      front_end_ptr->name);
 		}
 	} else if (job_ptr->batch_host) {
 		/* Reset pointer to this job's front-end node */
-		job_ptr->front_end_ptr = assign_front_end(job_ptr->batch_host);
+		job_ptr->front_end_ptr = assign_front_end(job_ptr);
 		if (!job_ptr->front_end_ptr)
 			xfree(job_ptr->batch_host);
 	}

@@ -43,15 +43,17 @@
 
 /*
  * assign_front_end - assign a front end node for starting a job
- * IN batch_host - previously set batch_host name
+ * job_ptr IN - job to assign a front end node (tests access control lists)
  * RET pointer to the front end node to use or NULL if none found
  */
-extern front_end_record_t *assign_front_end(char *batch_host);
+extern front_end_record_t *assign_front_end(struct job_record *job_ptr);
 
 /*
  * avail_front_end - test if any front end nodes are available for starting job
+ * job_ptr IN - job to consider for starting (tests access control lists) or
+ *              NULL to test if any job can start (no test of ACL)
  */
-extern bool avail_front_end(void);
+extern bool avail_front_end(struct job_record *job_ptr);
 
 /* dump_all_front_end_state - save the state of all front_end nodes to file */
 extern int dump_all_front_end_state(void);
