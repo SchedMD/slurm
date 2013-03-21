@@ -57,7 +57,7 @@ proc inc3_11_9 {} {
 	set thread_res_num [ expr $core_res_num * $res_thread_cnt ]
 
 	# Submit a batch job using half the threads on the nodes
-	set sbatch_pid [spawn $sbatch --nodes=1-$num_nodes --time=30:00 --ntasks-per-node=$thread_res_num --output=/dev/null $file_in]
+	set sbatch_pid [spawn $sbatch --nodes=1-$num_nodes --time=10:00 --ntasks-per-node=$thread_res_num --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
