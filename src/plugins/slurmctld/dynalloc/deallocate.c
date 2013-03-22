@@ -43,8 +43,9 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/log.h"
-#include "src/slurmctld/state_save.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/port_mgr.h"
+#include "src/slurmctld/state_save.h"
 
 #include "deallocate.h"
 #include "argv.h"
@@ -73,7 +74,10 @@ extern void deallocate(const char *msg)
 	bool node_fail = false;
 	uint32_t job_return_code = NO_VAL;
 	int  rc = SLURM_SUCCESS;
-	char resv_ports[256] = "";
+	/* Locks: Write job, write node */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK
+	};
 
 	jobid_argv = argv_split(msg, ':');
 	/* jobid_argv will be freed */
@@ -86,15 +90,11 @@ extern void deallocate(const char *msg)
 			sscanf(pos, "%u", &slurm_jobid);
 		}
 
-		if (NULL != (pos = strstr(*tmp_jobid_argv, "job_return_code="))) {
+		if (NULL != (pos = strstr(*tmp_jobid_argv,"job_return_code="))){
 			pos = pos + strlen("job_return_code=");  /* step over*/
 			sscanf(pos, "%u", &job_return_code);
 		}
 
-		/* Locks: Write job, write node */
-		slurmctld_lock_t job_write_lock = {
-			NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK
-		};
 		lock_slurmctld(job_write_lock);
 		rc = job_complete(slurm_jobid, uid, job_requeue,
 				  node_fail, job_return_code);
@@ -106,7 +106,7 @@ extern void deallocate(const char *msg)
 			     slurm_jobid, slurm_strerror(rc));
 		} else {
 			debug2("deallocate JobId=%u ", slurm_jobid);
-			(void) schedule_job_save();		/* Has own locking */
+			(void) schedule_job_save();	/* Has own locking */
 			(void) schedule_node_save();	/* Has own locking */
 		}
 
@@ -136,13 +136,14 @@ extern void deallocate_port(uint32_t slurm_jobid)
 	struct job_record *job_ptr = NULL;
 	struct step_record step;
 
-	if(NULL == job_ports_list)
+	if (NULL == job_ports_list)
 		return;
 
 	it = list_iterator_create(job_ports_list);
-	if (NULL == (item = (job_ports_t *) list_find(it,
-						find_job_ports_item_func, &slurm_jobid))) {
-		info ("slurm_jobid = %lu not found in List.", slurm_jobid);
+	item = (job_ports_t *) list_find(it, find_job_ports_item_func,
+					 &slurm_jobid);
+	if (NULL == item) {
+		info ("slurm_jobid = %u not found in List.", slurm_jobid);
 		return;
 	}
 

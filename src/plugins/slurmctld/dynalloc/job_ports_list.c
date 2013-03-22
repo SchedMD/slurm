@@ -46,11 +46,11 @@
 List job_ports_list = NULL;
 
 extern void append_job_ports_item(uint32_t slurm_jobid, uint16_t port_cnt,
-								char *resv_ports, int *port_array)
+				  char *resv_ports, int *port_array)
 {
 	job_ports_t *item = NULL;
 
-	if(NULL == job_ports_list)
+	if (NULL == job_ports_list)
 		job_ports_list = list_create(free_job_ports_item_func);
 
 	item = xmalloc(sizeof(job_ports_t));
@@ -101,7 +101,7 @@ extern void print_list()
 	j = 0;
 	while ( NULL != (item = (job_ports_t*)list_next(it)) ) {
 		info("j = %d", j++);
-		info("item->slurm_jobid = %lu", item->slurm_jobid);
+		info("item->slurm_jobid = %u", item->slurm_jobid);
 		info("item->port_cnt = %d", item->port_cnt);
 		info("item->resv_ports = %s", item->resv_ports);
 		for (i = 0; i < item->port_cnt; i++) {
