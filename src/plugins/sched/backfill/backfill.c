@@ -475,7 +475,7 @@ extern void *backfill_agent(void *args)
 		wait_time = difftime(now, last_backfill_time);
 		if ((wait_time < backfill_interval) ||
 		    _job_is_completing() || _many_pending_rpcs() ||
-		    !avail_front_end() || !_more_work(last_backfill_time))
+		    !avail_front_end(NULL) || !_more_work(last_backfill_time))
 			continue;
 
 		lock_slurmctld(all_locks);
@@ -634,6 +634,8 @@ static int _attempt_backfill(void)
 		xfree(job_queue_rec);
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;	/* started in other partition */
+		if (!avail_front_end(job_ptr))
+			continue;	/* No available frontend for this job */
 		if (job_ptr->array_task_id != (uint16_t) NO_VAL) {
 			if (reject_array_job_id == job_ptr->array_job_id)
 				continue;  /* already rejected array element */
