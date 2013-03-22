@@ -928,11 +928,13 @@ force:
 $(libslurm_o_LDADD) $(convenience_libs) $(slurmapi_add) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
+# select/cray needs to load select/linear, thus plugin_context_ is required
 $(VERSION_SCRIPT) :
 	(echo "{ global:";   \
 	 echo "   islurm_*;"; \
 	 echo "   slurm_*;"; \
 	 echo "   slurmdb_*;"; \
+	 echo "   plugin_context_*;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
 

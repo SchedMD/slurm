@@ -103,6 +103,7 @@ documents those changes that are of interest to users and admins.
  -- SlurmDBD - fix to allow user root along with the slurm user to register a
     cluster.
  -- Select/cons_res - Fix for support of consecutive node option.
+ -- Select/cray - Modify build to enable direct use of libslurm library.
 
 * Changes in Slurm 2.5.4
 ========================
