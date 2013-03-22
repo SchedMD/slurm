@@ -64,6 +64,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -856,15 +857,16 @@ static int _attempt_backfill(void)
 			last_job_update = now;
 		}
 		if (job_ptr->start_time <= now) {
+			uint32_t save_time_limit = job_ptr->time_limit;
 			int rc = _start_job(job_ptr, resv_bitmap);
-			if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE)){
+			if (qos_ptr && (qos_ptr->flags & QOS_FLAG_NO_RESERVE)) {
 				if (orig_time_limit == NO_VAL)
-					orig_time_limit = comp_time_limit;
-				job_ptr->time_limit = orig_time_limit;
+					job_ptr->time_limit = comp_time_limit;
+				else
+					job_ptr->time_limit = orig_time_limit;
 				job_ptr->end_time = job_ptr->start_time +
-						    (orig_time_limit * 60);
-			}
-			else if ((rc == SLURM_SUCCESS) && job_ptr->time_min) {
+						    (job_ptr->time_limit * 60);
+			} else if ((rc == SLURM_SUCCESS) && job_ptr->time_min) {
 				/* Set time limit as high as possible */
 				job_ptr->time_limit = comp_time_limit;
 				job_ptr->end_time = job_ptr->start_time +
@@ -887,6 +889,12 @@ static int _attempt_backfill(void)
 			} else {
 				/* Started this job, move to next one */
 				reject_array_job_id = 0;
+
+				/* Update the database if job time limit
+				 * changed and move to next job */
+				if (save_time_limit != job_ptr->time_limit)
+					jobacct_storage_g_job_start(acct_db_conn,
+								    job_ptr);
 				continue;
 			}
 		} else

@@ -86,12 +86,19 @@ COMMAND CHANGES (see man pages for details)
  - Added partition "SelectTypeParameters" field to scontrol output.
  - Added Allocated Memory to node information displayed by sview and scontrol
    commands.
+ - Added username (%u) to the filename pattern in the batch script.
 
 OTHER CHANGES
 =============
  - Added SLURM_SUBMIT_HOST to salloc, sbatch and srun job environment.
  - Added SLURM_ARRAY_TASK_ID and SLURM_ARRAY_TASK_ID to environment of job
    array.
+ - Added milliseconds to default log message header (both RFC 5424 and ISO 8601
+   time formats). Disable milliseconds logging using the configure
+   parameter "--disable-log-time-msec". Default time format changes to
+   ISO 8601 (without time zone information). Specify "--enable-rfc5424time"
+   to restore the time zone information.
+
 
 API CHANGES
 ===========

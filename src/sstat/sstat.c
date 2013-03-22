@@ -96,8 +96,13 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 	debug("requesting info for job %u.%u", jobid, stepid);
 	if ((rc = slurm_job_step_stat(jobid, stepid, nodelist,
 				     &step_stat_response)) != SLURM_SUCCESS) {
-		error("problem getting step_layout for %u.%u: %s",
-		      jobid, stepid, slurm_strerror(rc));
+		if (rc == ESLURM_INVALID_JOB_ID) {
+			debug("job step %u.%u has already completed",
+			      jobid, stepid);
+		} else {
+			error("problem getting step_layout for %u.%u: %s",
+			      jobid, stepid, slurm_strerror(rc));
+		}
 		return rc;
 	}
 

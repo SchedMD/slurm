@@ -2315,6 +2315,15 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 	return rc;
 }
 
+/* Return pointer to the named reservation or NULL if not found */
+extern slurmctld_resv_t *find_resv_name(char *resv_name)
+{
+	slurmctld_resv_t *resv_ptr;
+	resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
+			_find_resv_name, resv_name);
+	return resv_ptr;
+}
+
 /* Dump the reservation records to a buffer */
 extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
 		      uint16_t protocol_version)

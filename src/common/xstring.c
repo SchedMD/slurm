@@ -57,6 +57,7 @@
 
 #include <stdarg.h>
 #include <ctype.h>
+#include <sys/time.h>
 #include <time.h>
 
 #include "slurm/slurm_errno.h"
@@ -217,36 +218,65 @@ void _xstrftimecat(char **buf, const char *fmt)
 }
 
 /*
- * Append a RFC 5424 formatted timestamp to buffer buf, expand as
- * needed
+ * Append a ISO 8601 formatted timestamp to buffer buf, expand as needed
+ */
+void _xiso8601timecat(char **buf)
+{
+	char p[64] = "";
+	struct timeval tv;
+	struct tm tm;
+
+	if (gettimeofday(&tv, NULL) == -1)
+		fprintf(stderr, "gettimeofday() failed\n");
+
+	if (!localtime_r(&tv.tv_sec, &tm))
+		fprintf(stderr, "localtime_r() failed\n");
+
+	if (strftime(p, sizeof(p), "%Y-%m-%dT%T", &tm) == 0)
+		fprintf(stderr, "strftime() returned 0\n");
+
+#if defined LOG_TIME_MSEC	/* Add millisecond data */
+	_xstrfmtcat(buf, "%s.%3.3d", p, (int)(tv.tv_usec / 1000));
+#else
+	_xstrfmtcat(buf, "%s", p);
+#endif
+}
+
+/*
+ * Append a RFC 5424 formatted timestamp to buffer buf, expand as needed
  *
  */
 void _xrfc5424timecat(char **buf)
 {
-	char p[26];
-	time_t t;
+	char p[64] = "";
+	char z[12] = "";
+	struct timeval tv;
 	struct tm tm;
 
-	const char fmt[] = "%Y-%m-%dT%T%z";
+	if (gettimeofday(&tv, NULL) == -1)
+		fprintf(stderr, "gettimeofday() failed\n");
 
-	if (time(&t) == (time_t) -1)
-		fprintf(stderr, "time() failed\n");
-
-	if (!localtime_r(&t, &tm))
+	if (!localtime_r(&tv.tv_sec, &tm))
 		fprintf(stderr, "localtime_r() failed\n");
 
-	if (strftime(p, sizeof(p), fmt, &tm) == 0)
+	if (strftime(p, sizeof(p), "%Y-%m-%dT%T", &tm) == 0)
 		fprintf(stderr, "strftime() returned 0\n");
 
 	/* The strftime %z format creates timezone offsets of the form
 	 * (+/-)hhmm, whereas the RFC 5424 format is (+/-)hh:mm. So
-	 * shift the minutes one step back and insert the semicolon. */
-	 p[25] = '\0';
-	 p[24] = p[23];
-	 p[23] = p[22];
-	 p[22] = ':';
+	 * shift the minutes one step back and insert the semicolon.
+	 */
+	if (strftime(z, sizeof(z), "%z", &tm) == 0)
+		fprintf(stderr, "strftime() returned 0\n");
+	z[5] = z[4];
+	z[4] = z[3];
+	z[3] = ':';
 
-	_xstrcat(buf, p);
+#if defined LOG_TIME_MSEC	/* Add millisecond data */
+	_xstrfmtcat(buf, "%s.%3.3d%s", p, (int)(tv.tv_usec / 1000), z);
+#else
+	_xstrfmtcat(buf, "%s%s", p, z);
+#endif
 }
 
 /*
@@ -542,7 +572,7 @@ static char *_xstrdup_vprintf(const char *fmt, va_list ap)
 
 	if ((p = xmalloc(size)) == NULL)
 		return NULL;
-	while(1) {
+	while (1) {
 		/* Try to print in the allocated space. */
 		va_copy(our_ap, ap);
 		n = vsnprintf(p, size, fmt, our_ap);

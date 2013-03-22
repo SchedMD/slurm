@@ -83,6 +83,7 @@
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/slurmctld_plugstack.h"
 
 #define MAX_FEATURES  32	/* max exclusive features "[fs1|fs2]"=2 */
 #define MAX_RETRIES   10
@@ -1626,6 +1627,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	configuring = IS_JOB_CONFIGURING(job_ptr);
 
 	job_ptr->job_state = JOB_RUNNING;
+	if (nonstop_ops.job_begin)
+		(nonstop_ops.job_begin)(job_ptr);
+
 	if (configuring
 	    || bit_overlap(job_ptr->node_bitmap, power_node_bitmap))
 		job_ptr->job_state |= JOB_CONFIGURING;

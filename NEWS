@@ -3,6 +3,12 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 2.6.0pre3
 ============================
+ -- Add milliseconds to default log message header (both RFC 5424 and ISO 8601
+    time formats). Disable milliseconds logging using the configure
+    parameter "--disable-log-time-msec". Default time format changes to
+    ISO 8601 (without time zone information). Specify "--enable-rfc5424time"
+    to restore the time zone information.
+ -- Add username (%u) to the filename pattern in the batch script.
 
 * Changes in Slurm 2.6.0pre2
 ============================
@@ -81,6 +87,20 @@ documents those changes that are of interest to users and admins.
  -- Export SLURM_ environment variables from sbatch, even if "--export"
     option does not explicitly list them.
  -- If node is in more than one partition, correct counting of allocated CPUs.
+ -- If step requests more CPUs than possible in specified node count of job
+    allocation then return ESLURM_TOO_MANY_REQUESTED_CPUS rather than
+    ESLURM_NODES_BUSY and retrying.
+ -- CRAY - Fix SLURM_TASKS_PER_NODE to be set correctly.
+ -- Accounting - more checks for strings with a possible `'` in it.
+ -- sreport - Fix by adding planned down time to utilization reports.
+ -- Do not report an error when sstat identifies job steps terminated during
+    its execution, but log using debug type message.
+ -- Select/cons_res - Permit node removed from job by going down to be returned
+    to service and re-used by another job.
+ -- Select/cons_res - Tighter packing of job allocations on sockets.
+ -- SlurmDBD - fix to allow user root along with the slurm user to register a
+    cluster.
+ -- Select/cons_res - Fix for support of consecutive node option.
 
 * Changes in Slurm 2.5.4
 ========================

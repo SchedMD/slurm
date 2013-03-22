@@ -148,6 +148,10 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		my_state &= (~NODE_STATE_DRAIN);
 		drain_str = "+DRAIN";
 	}
+	if (my_state & NODE_STATE_FAIL) {
+		my_state &= (~NODE_STATE_FAIL);
+		drain_str = "+FAIL";
+	}
 	if (my_state & NODE_STATE_POWER_SAVE) {
 		my_state &= (~NODE_STATE_POWER_SAVE);
 		power_str = "+POWER";

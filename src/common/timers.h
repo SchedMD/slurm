@@ -41,7 +41,7 @@
 
 #include <sys/time.h>
 
-#define DEF_TIMERS	struct timeval tv1, tv2; char tv_str[20]
+#define DEF_TIMERS	struct timeval tv1, tv2; char tv_str[20] = ""
 #define START_TIMER	gettimeofday(&tv1, NULL)
 #define END_TIMER	gettimeofday(&tv2, NULL); \
                 	slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, NULL, 0)

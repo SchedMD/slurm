@@ -218,7 +218,8 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
 	int rc=SLURM_SUCCESS;
 	char *nodes = NULL, *jname = NULL, *node_inx = NULL;
 	int track_steps = 0;
-	char *block_id = NULL;
+	char *block_id = NULL, *partition = NULL,
+		*gres_req = NULL, *gres_alloc = NULL;
 	char *query = NULL;
 	int reinit = 0;
 	time_t begin_time, check_time, start_time, submit_time;
@@ -407,6 +408,15 @@ no_rollup_change:
 				       mysql_conn->cluster_name,
 				       job_ptr->assoc_id);
 
+	if (job_ptr->partition)
+		partition = slurm_add_slash_to_quotes(job_ptr->partition);
+
+	if (job_ptr->gres_req)
+		gres_req = slurm_add_slash_to_quotes(job_ptr->gres_req);
+
+	if (job_ptr->gres_alloc)
+		gres_alloc = slurm_add_slash_to_quotes(job_ptr->gres_alloc);
+
 	if (!job_ptr->db_index) {
 		if (!begin_time)
 			begin_time = submit_time;
@@ -416,12 +426,12 @@ no_rollup_change:
 			"id_group, nodelist, id_resv, timelimit, "
 			"time_eligible, time_submit, time_start, "
 			"job_name, track_steps, state, priority, cpus_req, "
-			"cpus_alloc, nodes_alloc, gres_req, gres_alloc",
+			"cpus_alloc, nodes_alloc",
 			mysql_conn->cluster_name, job_table);
 
 		if (job_ptr->account)
 			xstrcat(query, ", account");
-		if (job_ptr->partition)
+		if (partition)
 			xstrcat(query, ", partition");
 		if (block_id)
 			xstrcat(query, ", id_block");
@@ -429,11 +439,14 @@ no_rollup_change:
 			xstrcat(query, ", wckey");
 		if (node_inx)
 			xstrcat(query, ", node_inx");
+		if (gres_req)
+			xstrcat(query, ", gres_req");
+		if (gres_alloc)
+			xstrcat(query, ", gres_alloc");
 
 		xstrfmtcat(query,
 			   ") values (%u, %u, %u, %u, %u, %u, '%s', %u, %u, "
-			   "%ld, %ld, %ld, '%s', %u, %u, %u, %u, %u, %u, "
-			   "'%s', '%s'",
+			   "%ld, %ld, %ld, '%s', %u, %u, %u, %u, %u, %u",
 			   job_ptr->job_id, job_ptr->assoc_id,
 			   job_ptr->qos_id, wckeyid,
 			   job_ptr->user_id, job_ptr->group_id, nodes,
@@ -441,19 +454,22 @@ no_rollup_change:
 			   begin_time, submit_time, start_time,
 			   jname, track_steps, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
-			   job_ptr->total_cpus, node_cnt, job_ptr->gres_req,
-			   job_ptr->gres_alloc);
+			   job_ptr->total_cpus, node_cnt);
 
 		if (job_ptr->account)
 			xstrfmtcat(query, ", '%s'", job_ptr->account);
-		if (job_ptr->partition)
-			xstrfmtcat(query, ", '%s'", job_ptr->partition);
+		if (partition)
+			xstrfmtcat(query, ", '%s'", partition);
 		if (block_id)
 			xstrfmtcat(query, ", '%s'", block_id);
 		if (job_ptr->wckey)
 			xstrfmtcat(query, ", '%s'", job_ptr->wckey);
 		if (node_inx)
 			xstrfmtcat(query, ", '%s'", node_inx);
+		if (gres_req)
+			xstrfmtcat(query, ", '%s'", gres_req);
+		if (gres_alloc)
+			xstrfmtcat(query, ", '%s'", gres_alloc);
 
 		xstrfmtcat(query,
 			   ") on duplicate key update "
@@ -463,27 +479,28 @@ no_rollup_change:
 			   "time_submit=%ld, time_start=%ld, "
 			   "job_name='%s', track_steps=%u, id_qos=%u, "
 			   "state=greatest(state, %u), priority=%u, "
-			   "cpus_req=%u, cpus_alloc=%u,  "
-			   "nodes_alloc=%u, gres_req='%s', gres_alloc='%s'",
+			   "cpus_req=%u, cpus_alloc=%u, nodes_alloc=%u",
 			   wckeyid, job_ptr->user_id, job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   submit_time, start_time,
 			   jname, track_steps, job_ptr->qos_id, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
-			   job_ptr->total_cpus, node_cnt, job_ptr->gres_req,
-			   job_ptr->gres_alloc);
+			   job_ptr->total_cpus, node_cnt);
 
 		if (job_ptr->account)
 			xstrfmtcat(query, ", account='%s'", job_ptr->account);
-		if (job_ptr->partition)
-			xstrfmtcat(query, ", partition='%s'",
-				   job_ptr->partition);
+		if (partition)
+			xstrfmtcat(query, ", partition='%s'", partition);
 		if (block_id)
 			xstrfmtcat(query, ", id_block='%s'", block_id);
 		if (job_ptr->wckey)
 			xstrfmtcat(query, ", wckey='%s'", job_ptr->wckey);
 		if (node_inx)
 			xstrfmtcat(query, ", node_inx='%s'", node_inx);
+		if (gres_req)
+			xstrfmtcat(query, ", gres_req='%s'", gres_req);
+		if (gres_alloc)
+			xstrfmtcat(query, ", gres_alloc='%s'", gres_alloc);
 
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -509,26 +526,28 @@ no_rollup_change:
 
 		if (job_ptr->account)
 			xstrfmtcat(query, "account='%s', ", job_ptr->account);
-		if (job_ptr->partition)
-			xstrfmtcat(query, "partition='%s', ",
-				   job_ptr->partition);
+		if (partition)
+			xstrfmtcat(query, "partition='%s', ", partition);
 		if (block_id)
 			xstrfmtcat(query, "id_block='%s', ", block_id);
 		if (job_ptr->wckey)
 			xstrfmtcat(query, "wckey='%s', ", job_ptr->wckey);
 		if (node_inx)
 			xstrfmtcat(query, "node_inx='%s', ", node_inx);
+		if (gres_req)
+			xstrfmtcat(query, ", gres_req='%s'", gres_req);
+		if (gres_alloc)
+			xstrfmtcat(query, ", gres_alloc='%s'", gres_alloc);
 
 		xstrfmtcat(query, "time_start=%ld, job_name='%s', state=%u, "
 			   "cpus_alloc=%u, nodes_alloc=%u, id_qos=%u, "
 			   "id_assoc=%u, id_wckey=%u, id_resv=%u, "
-			   "timelimit=%u, gres_req='%s', gres_alloc='%s', "
+			   "timelimit=%u, "
 			   "time_eligible=%ld where job_db_inx=%d",
 			   start_time, jname, job_state,
 			   job_ptr->total_cpus, node_cnt, job_ptr->qos_id,
 			   job_ptr->assoc_id, wckeyid,
 			   job_ptr->resv_id, job_ptr->time_limit,
-			   job_ptr->gres_req, job_ptr->gres_alloc,
 			   begin_time, job_ptr->db_index);
 
 		debug3("%d(%s:%d) query\n%s",
@@ -537,6 +556,9 @@ no_rollup_change:
 	}
 
 	xfree(block_id);
+	xfree(partition);
+	xfree(gres_req);
+	xfree(gres_alloc);
 	xfree(jname);
 	xfree(query);
 

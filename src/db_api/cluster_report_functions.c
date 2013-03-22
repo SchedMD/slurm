@@ -269,7 +269,6 @@ static void _process_wckey_type(
 static List _process_util_by_report(void *db_conn, char *calling_name,
 				    void *cond, cluster_report_t type)
 {	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
 	ListIterator type_itr = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
 	List type_list = NULL;
@@ -352,20 +351,16 @@ static List _process_util_by_report(void *db_conn, char *calling_name,
 	itr = list_iterator_create(cluster_list);
 	type_itr = list_iterator_create(type_list);
 	while((cluster = list_next(itr))) {
-		slurmdb_cluster_accounting_rec_t *accting = NULL;
-
 		/* check to see if this cluster is around during the
 		   time we are looking at */
 		if (!cluster->accounting_list
 		   || !list_count(cluster->accounting_list))
 			continue;
 
-		slurmdb_report_cluster =
-			xmalloc(sizeof(slurmdb_report_cluster_rec_t));
+		slurmdb_report_cluster = slurmdb_cluster_rec_2_report(cluster);
 
 		list_append(ret_list, slurmdb_report_cluster);
 
-		slurmdb_report_cluster->name = xstrdup(cluster->name);
 		if ((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_UW))
 			slurmdb_report_cluster->user_list =
 				list_create(slurmdb_destroy_report_user_rec);
@@ -374,19 +369,6 @@ static List _process_util_by_report(void *db_conn, char *calling_name,
 			slurmdb_report_cluster->assoc_list =
 				list_create(slurmdb_destroy_report_assoc_rec);
 
-		/* get the amount of time and the average cpu count
-		   during the time we are looking at */
-		itr2 = list_iterator_create(cluster->accounting_list);
-		while((accting = list_next(itr2))) {
-			slurmdb_report_cluster->cpu_secs += accting->alloc_secs
-				+ accting->down_secs + accting->idle_secs
-				+ accting->resv_secs;
-			slurmdb_report_cluster->cpu_count += accting->cpu_count;
-		}
-		list_iterator_destroy(itr2);
-
-		slurmdb_report_cluster->cpu_count /=
-			list_count(cluster->accounting_list);
 		if ((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU))
 			_process_assoc_type(type_itr, slurmdb_report_cluster,
 					    cluster->name, type);

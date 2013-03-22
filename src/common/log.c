@@ -651,12 +651,12 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				xstrcat(buf, tmp);
 				break;
 #elif defined USE_RFC5424_TIME
-			case 'M': /* "%M" => "yyyy-mm-ddThh:mm:ss(+/-)hh:mm" */
+			case 'M': /* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
 				xrfc5424timecat(buf);
 				break;
 #elif defined USE_ISO_8601
-			case 'M':       /* "%M" => "yyyy-mm-ddThh:mm:ss"     */
-				xstrftimecat(buf, "%Y-%m-%dT%T");
+			case 'M':       /* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
+				xiso8601timecat(buf);
 				break;
 #else
 			case 'M':       /* "%M" => "Mon DD hh:mm:ss"         */

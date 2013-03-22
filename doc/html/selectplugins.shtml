@@ -327,11 +327,6 @@ the plugin should return SLURM_ERROR.</p>
 <p style="margin-left:.2in"><b>Description</b>: Allocate a buffer for select
 plugin specific information about a job. Use select_p_select_jobinfo_free()
 to free the allocated memory.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:
-<span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
-to the job being initialized. Data in this job record may safely be read or written.
-The <i>nodes</i> and <i>node_bitmap</i> fields of this job record identify the
-nodes which have already been selected for this job to use.</p>
 <p style="margin-left:.2in"><b>Returns</b>: Pointer to a select plugin buffer
 for a job or NULL on failure. Use select_p_select_jobinfo_free() to free the
 allocated memory.</p>
@@ -371,7 +366,7 @@ the plugin should return SLURM_ERROR.</p>
 
 <p class="commandline">int select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo_pptr,
 Buf buffer, uint16_t protocol_version);</p>
-<p style="margin-left:.2in"><b>Description</b>: Pack from a buffer the contents
+<p style="margin-left:.2in"><b>Description</b>: Unpack from a buffer the contents
 of the select plugin specific information about a job.
 The returned value must be freed using select_p_select_jobinfo_free().</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -582,7 +577,7 @@ supported, otherwise false.</p>
 struct job_record *to_job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Transfer all resources
 currently allocated to one job to another job. One job is left with no
-allocate resources and the other job is left with the resources previously
+allocated resources and the other job is left with the resources previously
 allocated to both jobs.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> from_job_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
@@ -720,7 +715,7 @@ should be released  by calling select_p_ba_fini();</p>
 <span class="commandline"> node_info_ptr</span>&nbsp; &nbsp;&nbsp;(input)
 Information about the nodes on a system.<br>
 <span class="commandline"> sanity_check</span>&nbsp; &nbsp;&nbsp;(input) if set
-then validate that the node name suffix values represent coordinated which are
+then validate that the node name suffix values represent coordinates which are
 within the system's dimension size (see function select_p_ba_get_dims).</p>
 
 <p class="commandline">void select_p_ba_fini(void);</p>

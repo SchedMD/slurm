@@ -155,5 +155,7 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 					  char *host, uint16_t port,
 					  uint16_t rpc_version);
+extern slurmdb_report_cluster_rec_t *slurmdb_cluster_rec_2_report(
+	slurmdb_cluster_rec_t *cluster);
 
 #endif

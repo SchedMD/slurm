@@ -43,6 +43,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <unistd.h>
 
 #include "src/common/macros.h"
@@ -280,30 +281,30 @@ ssize_t fd_read_line(int fd, void *buf, size_t maxlen)
  * Return 0 when readable or -1 on error */
 extern int wait_fd_readable(int fd, int time_limit)
 {
-	fd_set except_fds, read_fds;
-	struct timeval timeout;
-	int rc;
+	struct pollfd ufd;
+	time_t start;
+	int rc, time_left;
 
-	FD_ZERO(&except_fds);
-	FD_SET(fd, &except_fds);
-	FD_ZERO(&read_fds);
-	FD_SET(fd, &read_fds);
-	timeout.tv_sec  = time_limit;
-	timeout.tv_usec = 0;
+	start = time(NULL);
+	time_left = time_limit;
+	ufd.fd = fd;
+	ufd.events = POLLIN;
+	ufd.revents = 0;
 	while (1) {
-		rc = select(fd+1, &read_fds, NULL, &except_fds, &timeout);
-
+		rc = poll(&ufd, 1, time_left * 1000);
 		if (rc > 0) {	/* activity on this fd */
-			if (FD_ISSET(fd, &read_fds))
+			if (ufd.revents & POLLIN)
 				return 0;
 			else	/* Exception */
 				return -1;
 		} else if (rc == 0) {
 			error("Timeout waiting for slurmstepd");
 			return -1;
-		} else if (errno == EINTR) {
-			error("select(): %m");
+		} else if (errno != EINTR) {
+			error("poll(): %m");
 			return -1;
+		} else {
+			time_left = time_limit - (time(NULL) - start);
 		}
 	}
 }

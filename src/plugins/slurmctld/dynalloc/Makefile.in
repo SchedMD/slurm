@@ -133,14 +133,16 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 slurmctld_dynalloc_la_LIBADD =
 am__slurmctld_dynalloc_la_SOURCES_DIST = allocate.c allocate.h \
 	allocator.c allocator.h argv.c argv.h deallocate.c \
-	deallocate.h info.c info.h msg.c msg.h slurmctld_dynalloc.c
+	deallocate.h info.c info.h job_ports_list.c job_ports_list.h \
+	msg.c msg.h slurmctld_dynalloc.c
 am__objects_1 = allocate.lo allocator.lo argv.lo deallocate.lo info.lo \
-	msg.lo slurmctld_dynalloc.lo
+	job_ports_list.lo msg.lo slurmctld_dynalloc.lo
 @SLURM_ENABLE_DYNAMIC_ALLOCATION_TRUE@am_slurmctld_dynalloc_la_OBJECTS =  \
 @SLURM_ENABLE_DYNAMIC_ALLOCATION_TRUE@	$(am__objects_1)
 am__EXTRA_slurmctld_dynalloc_la_SOURCES_DIST = allocate.c allocate.h \
 	allocator.c allocator.h argv.c argv.h deallocate.c \
-	deallocate.h info.c info.h msg.c msg.h slurmctld_dynalloc.c
+	deallocate.h info.c info.h job_ports_list.c job_ports_list.h \
+	msg.c msg.h slurmctld_dynalloc.c
 slurmctld_dynalloc_la_OBJECTS = $(am_slurmctld_dynalloc_la_OBJECTS)
 slurmctld_dynalloc_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -399,6 +401,8 @@ AS_DYNALLOC_SOURCES = \
 	deallocate.h \
 	info.c	\
 	info.h	\
+	job_ports_list.c \
+	job_ports_list.h \
 	msg.c	\
 	msg.h	\
 	slurmctld_dynalloc.c
@@ -487,6 +491,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/argv.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/deallocate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_ports_list.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmctld_dynalloc.Plo@am__quote@
 
