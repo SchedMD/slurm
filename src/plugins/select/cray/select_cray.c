@@ -86,6 +86,20 @@ int switch_record_cnt;
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 void *acct_db_conn = NULL;
 bitstr_t *avail_node_bitmap = NULL;
+
+int clusteracct_storage_g_node_down(void *db_conn, struct node_record *node_ptr,
+			time_t event_time, char *reason,
+			uint32_t reason_uid) { return 0; }
+int clusteracct_storage_g_node_up(void *db_conn, struct node_record *node_ptr,
+			time_t event_time) { return 0; }
+struct node_record *find_node_record (char *name) { return NULL; }
+uint32_t gres_plugin_get_job_value_by_type(List job_gres_list,
+			char *gres_name_type) { return 0; }
+void make_node_idle(struct node_record *node_ptr,
+			struct job_record *job_ptr) { ; }
+int select_char2coord(char coord) { return 0; }
+void set_node_down_ptr (struct node_record *node_ptr, char *reason) { ; }
+char *uid_to_string (uid_t uid) { return NULL; }
 #endif
 
 #if !defined (SIGRTMIN) && defined(__NetBSD__)

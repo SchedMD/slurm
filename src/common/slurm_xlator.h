@@ -155,7 +155,7 @@
 #define	hostlist_remove		slurm_hostlist_remove
 #define	hostlist_shift		slurm_hostlist_shift
 #define	hostlist_shift_range	slurm_hostlist_shift_range
-#define	hostlist_sort		slurm_hostlist_soft
+#define	hostlist_sort		slurm_hostlist_sort
 #define	hostlist_uniq		slurm_hostlist_uniq
 #define	hostset_copy		slurm_hostset_copy
 #define	hostset_count		slurm_hostset_count
