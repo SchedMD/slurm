@@ -1286,7 +1286,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			}
 			goto cleanup;
 		}
-	} else if (step_spec->cpu_count) {
+	} 
+	if (step_spec->cpu_count) {
 		/* make sure the selected nodes have enough cpus */
 		cpus_picked_cnt = _count_cpus(job_ptr, nodes_picked,
 					      usable_cpu_cnt);
