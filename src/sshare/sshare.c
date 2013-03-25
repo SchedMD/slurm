@@ -60,6 +60,8 @@ static char *   _convert_to_name(int id, bool gid);
 static void     _print_version( void );
 static void	_usage ();
 
+uint16_t part_max_priority = 0;
+
 int
 main (int argc, char *argv[])
 {
