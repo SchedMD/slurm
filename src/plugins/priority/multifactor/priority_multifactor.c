@@ -83,12 +83,14 @@
 void *acct_db_conn  __attribute__((weak_import)) = NULL;
 uint32_t cluster_cpus __attribute__((weak_import)) = NO_VAL;
 List job_list  __attribute__((weak_import)) = NULL;
-time_t last_job_update __attribute__((weak_import));
+time_t last_job_update __attribute__((weak_import)) = (time_t) 0;
+uint16_t part_max_priority __attribute__((weak_import)) = 0;
 #else
 void *acct_db_conn = NULL;
 uint32_t cluster_cpus = NO_VAL;
 List job_list = NULL;
-time_t last_job_update;
+time_t last_job_update = (time_t) 0;
+uint16_t part_max_priority = 0;
 #endif
 
 /*
