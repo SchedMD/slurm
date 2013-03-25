@@ -478,10 +478,9 @@ extern int launch_p_setup_srun_opt(char **rest)
 			"%u", opt.ntasks_per_node);
 		if (!opt.ntasks && opt.min_nodes)
 			opt.ntasks = opt.ntasks_per_node *  opt.min_nodes;
-	} else if (opt.min_nodes) {
+	} else if (opt.nodes_set && opt.min_nodes) {
 		uint32_t tasks_per_node;
-		if (!opt.ntasks)
-			opt.ntasks = opt.min_nodes;
+		opt.ntasks = MAX(opt.ntasks, opt.min_nodes);
 		tasks_per_node = (opt.ntasks + opt.min_nodes - 1) /
 			opt.min_nodes;
 		opt.argc += 2;
