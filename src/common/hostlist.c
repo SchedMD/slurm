@@ -125,7 +125,7 @@ strong_alias(hostlist_ranged_string_xmalloc,
 strong_alias(hostlist_remove,		slurm_hostlist_remove);
 strong_alias(hostlist_shift,		slurm_hostlist_shift);
 strong_alias(hostlist_shift_range,	slurm_hostlist_shift_range);
-strong_alias(hostlist_sort,		slurm_hostlist_soft);
+strong_alias(hostlist_sort,		slurm_hostlist_sort);
 strong_alias(hostlist_uniq,		slurm_hostlist_uniq);
 strong_alias(hostset_copy,		slurm_hostset_copy);
 strong_alias(hostset_count,		slurm_hostset_count);

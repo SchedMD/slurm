@@ -2803,6 +2803,30 @@ appropriate architecture by the configure script (BlueGene or Cray systems).
 The front end configuration specifies the following information:
 
 .TP
+\fBAllowGroups\fR
+Comma separated list of group names which may execute jobs on this front end
+node. By default, all groups may use this front end node.
+May not be used with the \fBDenyGroups\fR option.
+
+.TP
+\fBAllowUsers\fR
+Comma separated list of user names which may execute jobs on this front end
+node. By default, all users may use this front end node.
+May not be used with the \fBDenyUsers\fR option.
+
+.TP
+\fBDenyGroups\fR
+Comma separated list of group names which are prevented from executing jobs on
+this front end node.
+May not be used with the \fBAllowGroups\fR option.
+
+.TP
+\fBDenyUsers\fR
+Comma separated list of user names which are prevented from executing jobs on
+this front end node.
+May not be used with the \fBAllowUsers\fR option.
+
+.TP
 \fBFrontendName\fR
 Name that SLURM uses to refer to a frontend node.
 Typically this would be the string that "/bin/hostname \-s" returns.

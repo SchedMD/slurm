@@ -164,6 +164,32 @@ slurm_sprint_front_end_table (front_end_info_t * front_end_ptr,
 			    time_str, sizeof(time_str));
 	snprintf(tmp_line, sizeof(tmp_line), "SlurmdStartTime=%s", time_str);
 	xstrcat(out, tmp_line);
+
+	/****** Line 3 (optional) ******/
+	if (front_end_ptr->allow_groups || front_end_ptr->allow_users ||
+	    front_end_ptr->deny_groups  || front_end_ptr->deny_users) {
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+		if (front_end_ptr->allow_groups) {
+			xstrfmtcat(out, "AllowGroups=%s ",
+				   front_end_ptr->allow_groups);
+		}
+		if (front_end_ptr->allow_users) {
+			xstrfmtcat(out, "AllowUsers=%s ",
+				   front_end_ptr->allow_users);
+		}
+		if (front_end_ptr->deny_groups) {
+			xstrfmtcat(out, "DenyGroups=%s ",
+				   front_end_ptr->deny_groups);
+		}
+		if (front_end_ptr->deny_users) {
+			xstrfmtcat(out, "DenyUsers=%s ",
+				   front_end_ptr->deny_users);
+		}
+	}
+
 	if (one_liner)
 		xstrcat(out, "\n");
 	else

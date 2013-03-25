@@ -2148,6 +2148,10 @@ static void _free_all_front_end_info(front_end_info_msg_t *msg)
 extern void slurm_free_front_end_info_members(front_end_info_t * front_end)
 {
 	if (front_end) {
+		xfree(front_end->allow_groups);
+		xfree(front_end->allow_users);
+		xfree(front_end->deny_groups);
+		xfree(front_end->deny_users);
 		xfree(front_end->name);
 		xfree(front_end->reason);
 	}

@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.6
-11 February 2012
+21 March 2013
 
 
 IMPORTANT NOTE:
@@ -68,6 +68,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
    submitted. This can result in lower priority jobs from being backfill
    scheduled instead of newly arrived higher priority jobs, but will permit
    more queued jobs to be considered for backfill scheduling.
+ - Added options for front end nodes of "AllowGroups", "AllowUsers",
+   "DenyGroups", and "DenyUsers".
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
@@ -104,22 +106,28 @@ API CHANGES
 ===========
  - Added function "slurm_ckpt_copy_job" to checkpoint plugins.
 
+
 Changed members of the following structs
 ========================================
+ - Changed "core_cnt" from uint32_t to uint32_t* in resv_desc_msg_t.
+
+
+Added the following struct definitions
+======================================
+ - Added "allow_groups", "allow_users", "deny_groups" and "deny_users" fields
+   to front_end_info_t.
  - Added "state" field to job_step_info_t.
  - Added "resv_epilog" and "resv_prolog" to slurm_ctl_conf_t.
  - Added "array_inx" field to job_desc_msg_t.
  - Added "array_job_id" and "array_job_id" fields to slurm_job_info_t.
- - Changed "core_cnt" from uint32_t to uint32_t* in resv_desc_msg_t.
  - Added "cr_type" field to partition_info_t.
  - Added allocated memory to node information available (within the existing
-   select_nodeinfo field of the node_info_t data structure)
+   select_nodeinfo field of the node_info_t data structure).
 
-Added the following struct definitions
-======================================
 
 Changed the following enums and #defines
 ========================================
+
 
 Added the following API's
 =========================
@@ -129,6 +137,7 @@ Added the following API's
  - Added "slurm_load_node_single" function. This is a variation of
    "slurm_load_nodes", but accepts a node name argument, potentially resulting
    in substantial performance improvement for "sinfo --nodes=NAME".
+
 
 Changed the following API's
 ===========================

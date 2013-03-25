@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     ISO 8601 (without time zone information). Specify "--enable-rfc5424time"
     to restore the time zone information.
  -- Add username (%u) to the filename pattern in the batch script.
+ -- Added options for front end nodes of AllowGroups, AllowUsers, DenyGroups,
+    and DenyUsers.
 
 * Changes in Slurm 2.6.0pre2
 ============================
@@ -101,6 +103,7 @@ documents those changes that are of interest to users and admins.
  -- SlurmDBD - fix to allow user root along with the slurm user to register a
     cluster.
  -- Select/cons_res - Fix for support of consecutive node option.
+ -- Select/cray - Modify build to enable direct use of libslurm library.
 
 * Changes in Slurm 2.5.4
 ========================

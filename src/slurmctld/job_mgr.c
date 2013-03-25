@@ -3045,7 +3045,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 
 	no_alloc = test_only || too_fragmented ||
 		   (!top_prio) || (!independent);
-	if (!no_alloc && !avail_front_end()) {
+	if (!no_alloc && !avail_front_end(job_ptr)) {
 		debug("sched: job_allocate() returning, no front end nodes "
 		       "are available");
 		error_code = ESLURM_NODES_BUSY;

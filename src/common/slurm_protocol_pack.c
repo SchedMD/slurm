@@ -8854,7 +8854,7 @@ _unpack_front_end_info_msg(front_end_info_msg_t ** msg, Buf buffer,
 	*msg = xmalloc(sizeof(front_end_info_msg_t));
 
 	/* load buffer's header (data structure version and time) */
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
 		safe_unpack32(&((*msg)->record_count), buffer);
 		safe_unpack_time(&((*msg)->last_update), buffer);
 		front_end = xmalloc(sizeof(front_end_info_t) *
@@ -8889,7 +8889,25 @@ _unpack_front_end_info_members(front_end_info_t *front_end, Buf buffer,
 
 	xassert(front_end != NULL);
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&front_end->allow_groups, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&front_end->allow_users, &uint32_tmp,
+				       buffer);
+		safe_unpack_time(&front_end->boot_time, buffer);
+		safe_unpackstr_xmalloc(&front_end->deny_groups, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&front_end->deny_users, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&front_end->name, &uint32_tmp, buffer);
+		safe_unpack16(&front_end->node_state, buffer);
+
+		safe_unpackstr_xmalloc(&front_end->reason, &uint32_tmp, buffer);
+		safe_unpack_time(&front_end->reason_time, buffer);
+		safe_unpack32(&front_end->reason_uid, buffer);
+
+		safe_unpack_time(&front_end->slurmd_start_time, buffer);
+	} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
 		safe_unpack_time(&front_end->boot_time, buffer);
 		safe_unpackstr_xmalloc(&front_end->name, &uint32_tmp, buffer);
 		safe_unpack16(&front_end->node_state, buffer);

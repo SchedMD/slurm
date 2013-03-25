@@ -48,6 +48,7 @@
 #include "src/common/node_conf.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/locks.h"
@@ -126,7 +127,21 @@ static int _open_front_end_state_file(char **state_file)
 static void _pack_front_end(struct front_end_record *dump_front_end_ptr,
 			    Buf buffer, uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		packstr(dump_front_end_ptr->allow_groups, buffer);
+		packstr(dump_front_end_ptr->allow_users, buffer);
+		pack_time(dump_front_end_ptr->boot_time, buffer);
+		packstr(dump_front_end_ptr->deny_groups, buffer);
+		packstr(dump_front_end_ptr->deny_users, buffer);
+		packstr(dump_front_end_ptr->name, buffer);
+		pack16(dump_front_end_ptr->node_state, buffer);
+
+		packstr(dump_front_end_ptr->reason, buffer);
+		pack_time(dump_front_end_ptr->reason_time, buffer);
+		pack32(dump_front_end_ptr->reason_uid, buffer);
+
+		pack_time(dump_front_end_ptr->slurmd_start_time, buffer);
+	} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
 		pack_time(dump_front_end_ptr->boot_time, buffer);
 		packstr(dump_front_end_ptr->name, buffer);
 		pack16(dump_front_end_ptr->node_state, buffer);
@@ -143,12 +158,55 @@ static void _pack_front_end(struct front_end_record *dump_front_end_ptr,
 }
 #endif
 
+#ifdef HAVE_FRONT_END
+/* Validate job's access to a specific front-end node */
+static bool _front_end_access(front_end_record_t *front_end_ptr,
+			      struct job_record *job_ptr)
+{
+	int i;
+
+	if (!job_ptr)
+		return true;
+
+	if (front_end_ptr->deny_gids) {
+		for (i = 0; front_end_ptr->deny_gids[i]; i++) {
+			if (job_ptr->group_id == front_end_ptr->deny_gids[i])
+				return false;
+		}
+	}
+	if (front_end_ptr->deny_uids) {
+		for (i = 0; front_end_ptr->deny_uids[i]; i++) {
+			if (job_ptr->user_id == front_end_ptr->deny_uids[i])
+				return false;
+		}
+	}
+	if (front_end_ptr->allow_gids || front_end_ptr->allow_uids) {
+		if (front_end_ptr->allow_gids) {
+			for (i = 0; front_end_ptr->allow_gids[i]; i++) {
+				if (job_ptr->group_id ==
+				    front_end_ptr->allow_gids[i])
+					return true;
+			}
+		}
+		if (front_end_ptr->allow_uids) {
+			for (i = 0; front_end_ptr->allow_uids[i]; i++) {
+				if (job_ptr->user_id ==
+				    front_end_ptr->allow_uids[i])
+					return true;
+			}
+		}
+		return false;
+	}
+	return true;
+}
+#endif
+
 /*
  * assign_front_end - assign a front end node for starting a job
- * IN batch_host - previously set batch_host name
+ * job_ptr IN - job to assign a front end node (tests access control lists)
  * RET pointer to the front end node to use or NULL if none found
  */
-extern front_end_record_t *assign_front_end(char *batch_host)
+extern front_end_record_t *assign_front_end(struct job_record *job_ptr)
 {
 #ifdef HAVE_FRONT_END
 	static int last_assigned = -1;
@@ -159,13 +217,17 @@ extern front_end_record_t *assign_front_end(char *batch_host)
 	for (i = 0; i < front_end_node_cnt; i++) {
 		last_assigned = (last_assigned + 1) % front_end_node_cnt;
 		front_end_ptr = front_end_nodes + last_assigned;
-		if (batch_host) {	/* Find specific front-end node */
-			if (strcmp(batch_host, front_end_ptr->name))
+		if (job_ptr->batch_host) {   /* Find specific front-end node */
+			if (strcmp(job_ptr->batch_host, front_end_ptr->name))
 				continue;
+			if (!_front_end_access(front_end_ptr, job_ptr))
+				break;
 		} else {		/* Find some usable front-end node */
 			if (IS_NODE_DOWN(front_end_ptr) ||
 			    IS_NODE_DRAIN(front_end_ptr) ||
 			    IS_NODE_NO_RESPOND(front_end_ptr))
+				continue;
+			if (!_front_end_access(front_end_ptr, job_ptr))
 				continue;
 		}
 		state_flags = front_end_nodes[last_assigned].node_state &
@@ -175,9 +237,9 @@ extern front_end_record_t *assign_front_end(char *batch_host)
 		front_end_nodes[last_assigned].job_cnt_run++;
 		return front_end_ptr;
 	}
-	if (batch_host) {	/* Find specific front-end node */
+	if (job_ptr->batch_host) {	/* Find specific front-end node */
 		error("assign_front_end: front end node %s not found",
-		      batch_host);
+		      job_ptr->batch_host);
 	} else {		/* Find some usable front-end node */
 		error("assign_front_end: no available front end nodes found");
 	}
@@ -187,8 +249,10 @@ extern front_end_record_t *assign_front_end(char *batch_host)
 
 /*
  * avail_front_end - test if any front end nodes are available for starting job
+ * job_ptr IN - job to consider for starting (tests access control lists) or
+ *              NULL to test if any job can start (no test of ACL)
  */
-extern bool avail_front_end(void)
+extern bool avail_front_end(struct job_record *job_ptr)
 {
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
@@ -199,6 +263,8 @@ extern bool avail_front_end(void)
 		if (IS_NODE_DOWN(front_end_ptr)  ||
 		    IS_NODE_DRAIN(front_end_ptr) ||
 		    IS_NODE_NO_RESPOND(front_end_ptr))
+			continue;
+		if (!_front_end_access(front_end_ptr, job_ptr))
 			continue;
 		return true;
 	}
@@ -312,12 +378,16 @@ extern void log_front_end_state(void)
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		xassert(front_end_ptr->magic == FRONT_END_MAGIC);
 		info("FrontendName=%s FrontendAddr=%s Port=%u State=%s "
-		     "Reason=%s JobCntRun=%u JobCntComp=%u",
+		     "Reason=%s JobCntRun=%u JobCntComp=%u "
+		     "AllowGroups=%s AllowUsers=%s "
+		     "DenyGroups=%s DenyUsers=%s ",
 		     front_end_ptr->name, front_end_ptr->comm_name,
 		     front_end_ptr->port,
 		     node_state_string(front_end_ptr->node_state),
 		     front_end_ptr->reason, front_end_ptr->job_cnt_run,
-		     front_end_ptr->job_cnt_comp);
+		     front_end_ptr->job_cnt_comp,
+		     front_end_ptr->allow_groups, front_end_ptr->allow_users,
+		     front_end_ptr->deny_groups, front_end_ptr->deny_users);
 	}
 #endif
 }
@@ -334,13 +404,71 @@ extern void purge_front_end_state(void)
 	for (i = 0, front_end_ptr = front_end_nodes;
 	     i < front_end_node_cnt; i++, front_end_ptr++) {
 		xassert(front_end_ptr->magic == FRONT_END_MAGIC);
+		xfree(front_end_ptr->allow_groups);
+		xfree(front_end_ptr->allow_users);
 		xfree(front_end_ptr->comm_name);
+		xfree(front_end_ptr->deny_groups);
+		xfree(front_end_ptr->deny_users);
 		xfree(front_end_ptr->name);
 		xfree(front_end_ptr->reason);
 	}
 	xfree(front_end_nodes);
 	front_end_node_cnt = 0;
 #endif
+}
+
+/* Translate comma delimited string of GIDs/group names into a zero terminated
+ * array of GIDs */
+gid_t *_xlate_groups(char *group_str, char *key)
+{
+	char *tmp_str, *token, *save_ptr;
+	gid_t *gids_array = NULL;
+	int array_size = 0;
+	gid_t gid;
+
+	if (!group_str || !group_str[0])
+		return gids_array;
+
+	tmp_str = xstrdup(group_str);
+	token = strtok_r(tmp_str, ",", &save_ptr);
+	while (token) {
+		if (gid_from_string(token, &gid) || (gid == (gid_t) 0)) {
+			error("Invalid %s value (%s), ignored", key, token);
+		} else {
+			xrealloc(gids_array, sizeof(gid_t) * (array_size+2));
+			gids_array[array_size++] = gid;
+		}
+		token = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp_str);
+	return gids_array;
+}
+
+/* Translate comma delimited string of UIDs/user names into a zero terminated
+ * array of UIDs */
+uid_t *_xlate_users(char *user_str, char *key)
+{
+	char *tmp_str, *token, *save_ptr;
+	uid_t *uids_array = NULL;
+	int array_size = 0;
+	uid_t uid;
+
+	if (!user_str || !user_str[0])
+		return uids_array;
+
+	tmp_str = xstrdup(user_str);
+	token = strtok_r(tmp_str, ",", &save_ptr);
+	while (token) {
+		if (uid_from_string(token, &uid) || (uid == (uid_t) 0)) {
+			error("Invalid %s value (%s), ignored", key, token);
+		} else {
+			xrealloc(uids_array, sizeof(uid_t) * (array_size+2));
+			uids_array[array_size++] = uid;
+		}
+		token = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp_str);
+	return uids_array;
 }
 
 /*
@@ -386,6 +514,44 @@ extern void restore_front_end_state(int recover)
 				xstrdup(slurm_conf_fe_ptr->frontends);
 			front_end_nodes[i].magic = FRONT_END_MAGIC;
 		}
+
+		xfree(front_end_nodes[i].allow_gids);
+		xfree(front_end_nodes[i].allow_groups);
+		if (slurm_conf_fe_ptr->allow_groups) {
+			front_end_nodes[i].allow_groups =
+				xstrdup(slurm_conf_fe_ptr->allow_groups);
+			front_end_nodes[i].allow_gids =
+				_xlate_groups(slurm_conf_fe_ptr->allow_groups,
+					      "AllowGroups");
+		}
+		xfree(front_end_nodes[i].allow_uids);
+		xfree(front_end_nodes[i].allow_users);
+		if (slurm_conf_fe_ptr->allow_users) {
+			front_end_nodes[i].allow_users =
+				xstrdup(slurm_conf_fe_ptr->allow_users);
+			front_end_nodes[i].allow_uids =
+				_xlate_users(slurm_conf_fe_ptr->allow_users,
+					     "AllowUsers");
+		}
+		xfree(front_end_nodes[i].deny_gids);
+		xfree(front_end_nodes[i].deny_groups);
+		if (slurm_conf_fe_ptr->deny_groups) {
+			front_end_nodes[i].deny_groups =
+				xstrdup(slurm_conf_fe_ptr->deny_groups);
+			front_end_nodes[i].deny_gids =
+				_xlate_groups(slurm_conf_fe_ptr->deny_groups,
+					      "DenyGroups");
+		}
+		xfree(front_end_nodes[i].deny_uids);
+		xfree(front_end_nodes[i].deny_users);
+		if (slurm_conf_fe_ptr->deny_users) {
+			front_end_nodes[i].deny_users =
+				xstrdup(slurm_conf_fe_ptr->deny_users);
+			front_end_nodes[i].deny_uids =
+				_xlate_users(slurm_conf_fe_ptr->deny_users,
+					     "DenyUsers");
+		}
+
 		xfree(front_end_nodes[i].comm_name);
 		if (slurm_conf_fe_ptr->addresses) {
 			front_end_nodes[i].comm_name =

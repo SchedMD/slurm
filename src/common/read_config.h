@@ -171,6 +171,10 @@ extern char *default_plugstack;
 #define DEFAULT_MAX_TASKS_PER_NODE  128
 
 typedef struct slurm_conf_frontend {
+	char *allow_groups;		/* allowed group string */
+	char *allow_users;		/* allowed user string */
+	char *deny_groups;		/* denied group string */
+	char *deny_users;		/* denied user string */
 	char *frontends;		/* frontend node name */
 	char *addresses;		/* frontend node address */
 	uint16_t port;			/* frontend specific port */

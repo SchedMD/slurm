@@ -550,9 +550,13 @@ static int _list_find_feature (void *feature_entry, void *key)
 /* Log the contents of a frontend record */
 static void _dump_front_end(slurm_conf_frontend_t *fe_ptr)
 {
-	info("fe name:%s addr:%s port:%u state:%u reason:%s",
+	info("fe name:%s addr:%s port:%u state:%u reason:%s "
+	     "allow_groups:%s allow_users:%s "
+	     "deny_groups:%s deny_users:%s",
 	     fe_ptr->frontends, fe_ptr->addresses,
-	     fe_ptr->port, fe_ptr->node_state, fe_ptr->reason);
+	     fe_ptr->port, fe_ptr->node_state, fe_ptr->reason,
+	     fe_ptr->allow_groups, fe_ptr->allow_users,
+	     fe_ptr->deny_groups, fe_ptr->deny_users);
 }
 #endif
 
@@ -602,6 +606,22 @@ extern int build_all_frontend_info (bool is_slurmd_context)
 			fe_single->addresses = xstrdup(fe_addr);
 			free(fe_name);
 			free(fe_addr);
+			if (fe_line->allow_groups && fe_line->allow_groups[0]) {
+				fe_single->allow_groups =
+					xstrdup(fe_line->allow_groups);
+			}
+			if (fe_line->allow_users && fe_line->allow_users[0]) {
+				fe_single->allow_users =
+					xstrdup(fe_line->allow_users);
+			}
+			if (fe_line->deny_groups && fe_line->deny_groups[0]) {
+				fe_single->deny_groups =
+					xstrdup(fe_line->deny_groups);
+			}
+			if (fe_line->deny_users && fe_line->deny_users[0]) {
+				fe_single->deny_users =
+					xstrdup(fe_line->deny_users);
+			}
 			fe_single->port = fe_line->port;
 			if (fe_line->reason && fe_line->reason[0])
 				fe_single->reason = xstrdup(fe_line->reason);

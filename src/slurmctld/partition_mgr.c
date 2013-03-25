@@ -602,7 +602,8 @@ int load_all_part_state(void)
 			error("No more partition data will be processed from "
 			      "the checkpoint file");
 			xfree(allow_groups);
-			xfree(allow_groups);
+			xfree(allow_alloc_nodes);
+			xfree(alternate);
 			xfree(part_name);
 			xfree(nodes);
 			error_code = EINVAL;
