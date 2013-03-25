@@ -86,7 +86,6 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 {
 	int i;
 	List l;
-	node_info_msg_t *ni = NULL;
 
 	l = list_create(NULL);
 	if (!params.no_header)
@@ -101,9 +100,6 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 		list_append(l, (void *) &jobs[i]);
 	}
 	sort_jobs_by_start_time (l);
-	if (ni)
-		slurm_free_node_info_msg (ni);
-
 	sort_job_list (l);
 
 	/* Print the jobs of interest */
