@@ -581,8 +581,23 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 				size = bit_size(this_row->row_bitmap);
 				bit_nclear(this_row->row_bitmap, 0, size-1);
 			}
-			return;
+		} else {
+			if (job_ptr) { /* just remove the job */
+				xassert(job_ptr->job_resrcs);
+				remove_job_from_cores(job_ptr->job_resrcs,
+						      &(this_row->row_bitmap),
+						      cr_node_num_cores);
+			} else { /* totally rebuild the bitmap */
+				size = bit_size(this_row->row_bitmap);
+				bit_nclear(this_row->row_bitmap, 0, size-1);
+				for (j = 0; j < this_row->num_jobs; j++) {
+					add_job_to_cores(this_row->job_list[j],
+							 &(this_row->row_bitmap),
+							 cr_node_num_cores);
+				}
+			}
 		}
+		return;
 	}
 
 	/* gather data */
@@ -1371,8 +1386,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	}
 
 
-	/* job was found and removed from core-bitmap, so refresh CR bitmaps */
-	_build_row_bitmaps(p_ptr, job_ptr);
+	/* some node of job removed from core-bitmap, so refresh CR bitmaps */
+	_build_row_bitmaps(p_ptr, NULL);
 
 	/* Adjust the node_state of the node removed from this job.
 	 * If all cores are now available, set node_state = NODE_CR_AVAILABLE */
