@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
  -- Select/cons_res - Fix for support of consecutive node option.
  -- Select/cray - Modify build to enable direct use of libslurm library.
  -- Bug fixes related to job step allocation logic.
+ -- Cray - Disable enforcement of MaxTasksPerNode, which is not applicable
+    with launch/aprun.
 
 * Changes in Slurm 2.5.4
 ========================
