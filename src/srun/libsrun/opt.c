@@ -1653,8 +1653,10 @@ static void _opt_args(int argc, char **argv)
 			opt.argv[command_pos] = fullpath;
 		}
 	}
-	/* for (i=0; i<opt.argc; i++) */
-	/* 	info("%d is '%s'", i, opt.argv[i]); */
+#if 0
+	for (i=0; i<opt.argc; i++)
+		info("%d is '%s'", i, opt.argv[i]);
+#endif
 }
 
 /*
