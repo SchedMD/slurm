@@ -75,7 +75,6 @@ struct config_record {
 	uint32_t weight;	/* arbitrary priority of node for
 				 * scheduling work on */
 	char *feature;		/* arbitrary list of node's features */
-	char **feature_array;	/* array of feature names */
 	char *gres;		/* arbitrary list of node's generic resources */
 	char *nodes;		/* name of nodes with this configuration */
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this configuration */
