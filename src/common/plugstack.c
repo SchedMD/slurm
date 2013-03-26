@@ -1528,6 +1528,13 @@ spank_option_getopt (spank_t sp, struct spank_option *opt, char **argp)
 	                         (ListFindF) _opt_by_name,
 	                         opt->name);
 	if (spopt) {
+		/*
+		 *  Return failure if option is cached but hasn't been
+		 *   used on the command line or specified by user.
+		 */
+		if (!spopt->found)
+			return (ESPANK_ERROR);
+
 		if (opt->has_arg && argp)
 			*argp = spopt->optarg;
 		return (ESPANK_SUCCESS);
