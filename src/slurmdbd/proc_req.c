@@ -1793,7 +1793,7 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (*uid != slurmdbd_conf->slurm_user_id) {
+	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
 		comment = "DBD_JOB_COMPLETE message from invalid uid";
 		error("CONN:%u %s %u",
 		      slurmdbd_conn->newsockfd, comment, *uid);
@@ -1863,7 +1863,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_id_rc_msg_t id_rc_msg;
 	char *comment = NULL;
 
-	if (*uid != slurmdbd_conf->slurm_user_id) {
+	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
 		comment = "DBD_JOB_START message from invalid uid";
 		error("CONN:%u %s %u",
 		      slurmdbd_conn->newsockfd, comment, *uid);
@@ -1903,7 +1903,7 @@ static int  _job_suspend(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (*uid != slurmdbd_conf->slurm_user_id) {
+	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
 		comment = "DBD_JOB_SUSPEND message from invalid uid";
 		error("CONN:%u %s %u",
 		      slurmdbd_conn->newsockfd, comment, *uid);
@@ -2532,7 +2532,7 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 	char *comment = NULL;
 
 
-	if (*uid != slurmdbd_conf->slurm_user_id) {
+	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
 		comment = "DBD_NODE_STATE message from invalid uid";
 		error("CONN:%u %s %u",
 		      slurmdbd_conn->newsockfd, comment, *uid);
@@ -3349,7 +3349,7 @@ static int   _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_job_start_msg_t *job_start_msg;
 	dbd_id_rc_msg_t *id_rc_msg;
 
-	if (*uid != slurmdbd_conf->slurm_user_id) {
+	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
 		comment = "DBD_SEND_MULT_JOB_START message from invalid uid";
 		error("%s %u", comment, *uid);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
@@ -3403,7 +3403,7 @@ static int   _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn,
 	Buf req_buf = NULL, ret_buf = NULL;
 	int rc = SLURM_SUCCESS;
 
-	if (*uid != slurmdbd_conf->slurm_user_id) {
+	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
 		comment = "DBD_SEND_MULT_MSG message from invalid uid";
 		error("%s %u", comment, *uid);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version,
@@ -3459,7 +3459,7 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (*uid != slurmdbd_conf->slurm_user_id) {
+	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
 		comment = "DBD_STEP_COMPLETE message from invalid uid";
 		error("%s %u", comment, *uid);
 		rc = ESLURM_ACCESS_DENIED;
@@ -3532,7 +3532,7 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (*uid != slurmdbd_conf->slurm_user_id) {
+	if (*uid != slurmdbd_conf->slurm_user_id && *uid != 0) {
 		comment = "DBD_STEP_START message from invalid uid";
 		error("%s %u", comment, *uid);
 		rc = ESLURM_ACCESS_DENIED;

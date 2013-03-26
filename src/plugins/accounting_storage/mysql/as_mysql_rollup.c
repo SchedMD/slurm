@@ -582,11 +582,19 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					       cluster_down_list);
 
 		// now get the reservations during this time
+		/* If a reservation has the IGNORE_JOBS flag we don't
+		 * have an easy way to distinguish the cpus a job not
+		 * running in the reservation, but on it's cpus.
+		 * So we will just ignore these reservations for
+		 * accounting purposes.
+		 */
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "(time_start < %ld && time_end >= %ld) "
+				       "&& !(flags & %u)"
 				       "order by time_start",
 				       resv_str, cluster_name, resv_table,
-				       curr_end, curr_start);
+				       curr_end, curr_start,
+				       RESERVE_FLAG_IGN_JOBS);
 
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -706,6 +714,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			time_t row_end = slurm_atoul(row[JOB_REQ_END]);
 			uint32_t row_acpu = slurm_atoul(row[JOB_REQ_ACPU]);
 			uint32_t row_rcpu = slurm_atoul(row[JOB_REQ_RCPU]);
+			int loc_seconds = 0;
 			seconds = 0;
 
 			if (row_start && (row_start < curr_start))
@@ -818,8 +827,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					temp_start = loc_c_usage->start;
 				if (loc_c_usage->end < temp_end)
 					temp_end = loc_c_usage->end;
-				seconds = (temp_end - temp_start);
-				if (seconds > 0) {
+				loc_seconds = (temp_end - temp_start);
+				if (loc_seconds > 0) {
 					/* info(" Job %u was running for " */
 					/*      "%"PRIu64" seconds while " */
 					/*      "cluster %s's slurmctld " */
@@ -829,7 +838,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					/*      (seconds * row_acpu), */
 					/*      cluster_name); */
 					loc_c_usage->total_time -=
-						seconds * row_acpu;
+						loc_seconds * row_acpu;
 				}
 			}
 
@@ -911,8 +920,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					temp_start = c_usage->start;
 				if (c_usage->end < temp_end)
 					temp_end = c_usage->end;
-				seconds = (temp_end - temp_start);
-				if (seconds > 0) {
+				loc_seconds = (temp_end - temp_start);
+				if (loc_seconds > 0) {
 					/* info("%d assoc %d reserved " */
 					/*      "(%d)(%d-%d) * %d = %d " */
 					/*      "to %d", */
@@ -923,7 +932,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					/*      row_rcpu, */
 					/*      seconds * row_rcpu, */
 					/*      row_rcpu); */
-					c_usage->r_cpu += seconds * row_rcpu;
+					c_usage->r_cpu +=
+						loc_seconds * row_rcpu;
 				}
 			}
 		}
