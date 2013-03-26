@@ -25,6 +25,10 @@ documents those changes that are of interest to users and admins.
  -- Bug fixes related to job step allocation logic.
  -- Cray - Disable enforcement of MaxTasksPerNode, which is not applicable
     with launch/aprun.
+ -- Accounting - When rolling up data from past usage ignore "idle" time from
+    a reservation when it has the "Ignore_Jobs" flag set.  Since jobs could run
+    outside of the reservation in it's nodes without this you could have
+    double time.
 
 * Changes in Slurm 2.5.4
 ========================

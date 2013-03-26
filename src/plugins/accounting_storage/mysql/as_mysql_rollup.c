@@ -576,11 +576,19 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					       cluster_down_list);
 
 		// now get the reservations during this time
+		/* If a reservation has the IGNORE_JOBS flag we don't
+		 * have an easy way to distinguish the cpus a job not
+		 * running in the reservation, but on it's cpus.
+		 * So we will just ignore these reservations for
+		 * accounting purposes.
+		 */
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "(time_start < %ld && time_end >= %ld) "
+				       "&& !(flags & %u)"
 				       "order by time_start",
 				       resv_str, cluster_name, resv_table,
-				       curr_end, curr_start);
+				       curr_end, curr_start,
+				       RESERVE_FLAG_IGN_JOBS);
 
 		debug3("%d(%s:%d) query\n%s",
 		       mysql_conn->conn, THIS_FILE, __LINE__, query);
