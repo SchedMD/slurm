@@ -1688,11 +1688,17 @@ Same as \fB\-A, \-\-account\fR
 \fBSLURM_ACCTG_FREQ\fR
 Same as \fB\-\-acctg\-freq\fR
 .TP
+\fBSLURM_BLRTS_IMAGE\fR
+Same as \fB\-\-blrts\-image\fR
+.TP
 \fBSLURM_CHECKPOINT\fR
 Same as \fB\-\-checkpoint\fR
 .TP
 \fBSLURM_CHECKPOINT_DIR\fR
 Same as \fB\-\-checkpoint\-dir\fR
+.TP
+\fBSLURM_CNLOAD_IMAGE\fR
+Same as \fB\-\-cnload\-image\fR
 .TP
 \fBSLURM_CONN_TYPE\fR
 Same as \fB\-\-conn\-type\fR
@@ -1757,13 +1763,28 @@ Same as \fB\-g, \-\-geometry\fR
 \fBSLURM_GRES\fR
 Same as \fB\-\-gres\fR. Also see \fBSLURM_STEP_GRES\fR
 .TP
+\fBSLURM_IMMEDIATE\fR
+Same as \fB\-I, \-\-immediate\fR
+.TP
+\fBSLURM_IOLOAD_IMAGE\fR
+Same as \fB\-\-ioload\-image\fR
+.TP
+\fBSLURM_JOB_ID\fR (and \fBSLURM_JOBID\fR for backwards compatibility)
+Same as \fB\-\-jobid\fR
+.TP
 \fBSLURM_JOB_NAME\fR
 Same as \fB\-J, \-\-job\-name\fR except within an existing
 allocation, in which case it is ignored to avoid using the batch job's name
 as the name of each job step.
 .TP
+\fBSLURM_KILL_BAD_EXIT\fR
+Same as \fB\-K, \-\-kill\-on\-bad\-exit\fR
+.TP
 \fBSLURM_LABELIO\fR
 Same as \fB\-l, \-\-label\fR
+.TP
+\fBSLURM_LINUX_IMAGE\fR
+Same as \fB\-\-linux\-image\fR
 .TP
 \fBSLURM_MEM_BIND\fR
 Same as \fB\-\-mem_bind\fR
@@ -1774,6 +1795,9 @@ Same as \fB\-\-mem\-per\-cpu\fR
 \fBSLURM_MEM_PER_NODE\fR
 Same as \fB\-\-mem\fR
 .TP
+\fBSLURM_MLOADER_IMAGE\fR
+Same as \fB\-\-mloader\-image\fR
+.TP
 \fBSLURM_MPI_TYPE\fR
 Same as \fB\-\-mpi\fR
 .TP
@@ -1783,10 +1807,13 @@ Same as \fB\-\-network\fR
 \fBSLURM_NNODES\fR
 Same as \fB\-N, \-\-nodes\fR
 .TP
+\fBSLURM_NODELIST\fR
+Same as \fB\-w, \-\-nodelist\fR
+.TP
 \fBSLURM_NO_ROTATE\fR
 Same as \fB\-R, \-\-no\-rotate\fR
 .TP
-\fBSLURM_NTASKS\fR
+\fBSLURM_NTASKS\fR (and \fBSLURM_NPROCS\fR for backwards compatibility)
 Same as \fB\-n, \-\-ntasks\fR
 .TP
 \fBSLURM_NTASKS_PER_CORE\fR
@@ -1818,8 +1845,16 @@ Same as \fB\-\-prolog\fR
 \fBSLURM_QOS\fR
 Same as \fB\-\-qos\fR
 .TP
+\fBSLURM_RAMDISK_IMAGE\fR
+Same as \fB\-\-ramdisk\-image\fR
+.TP
 \fBSLURM_REMOTE_CWD\fR
 Same as \fB\-D, \-\-chdir=\fR
+.TP
+\fBSLURM_REQ_SWITCH\fR
+When a tree topology is used, this defines the maximum count of switches
+desired for the job allocation and optionally the maximum time to wait
+for that number of switches. See \fB\-\-switches\fR
 .TP
 \fBSLURM_RESERVATION\fR
 Same as \fB\-\-reservation\fR
@@ -1872,11 +1907,15 @@ Same as \fB\-u, \-\-unbuffered\fR
 \fBSLURM_WAIT\fR
 Same as \fB\-W, \-\-wait\fR
 .TP
+\fBSLURM_WAIT4SWITCH\fR
+Max time waiting for requested switches. See \fB\-\-switches\fR
+.TP
 \fBSLURM_WCKEY\fR
 Same as \fB\-W, \-\-wckey\fR
 .TP
 \fBSLURM_WORKING_DIR\fR
 \fB\-D, \-\-chdir\fR
+
 
 .SH "OUTPUT ENVIRONMENT VARIABLES"
 .PP
@@ -1916,11 +1955,17 @@ Note the select/linear plugin allocates entire nodes to
 jobs, so the value indicates the total count of CPUs on the node.
 For the select/cons_res plugin, this number indicates the number of cores
 on this node allocated to the job.
-
+.TP
+\fBSLURM_DISTRIBUTION\fR
+Distribution type for the allocated jobs. Set the distribution
+with \-m, \-\-distribution.
 .TP
 \fBSLURM_GTIDS\fR
 Global task IDs running on this node.
 Zero origin and comma separated.
+.TP
+\fBSLURM_JOB_CPUS_PER_NODE\fR
+Number of CPUS per node.
 .TP
 \fBSLURM_JOB_DEPENDENCY\fR
 Set to value of the \-\-dependency option.
@@ -1968,7 +2013,7 @@ The relative node ID of the current node
 \fBSLURM_NODELIST\fR
 List of nodes allocated to the job
 .TP
-\fBSLURM_NTASKS\fR
+\fBSLURM_NTASKS\fR (and \fBSLURM_NPROCS\fR for backwards compatibility)
 Total number of processes in the current job
 .TP
 \fBSLURM_PRIO_PROCESS\fR
@@ -1978,7 +2023,28 @@ This value is propagated to the spawned processes.
 \fBSLURM_PROCID\fR
 The MPI rank (or relative process ID) of the current process
 .TP
-\fBSLURM_STEPID\fR
+\fBSLURM_SRUN_COMM_HOST\fR
+IP adress of srun communication host.
+.TP
+\fBSLURM_SRUN_COMM_PORT\fR
+srun communication port.
+.TP
+\fBSLURM_STEP_LAUNCHER_PORT\fR
+Step launcher port.
+.TP
+\fBSLURM_STEP_NODELIST\fR
+List of nodes allocated to the step.
+.TP
+\fBSLURM_STEP_NUM_NODES\fR
+Number of nodes allocated to the step.
+.TP
+\fBSLURM_STEP_NUM_TASKS\fR
+Number of processes in the step.
+.TP
+\fBSLURM_STEP_TASKS_PER_NODE\fR
+Number of processes per node within the step.
+.TP
+\fBSLURM_STEPID\fR (and \fBSLURM_STEP_ID\fR for backwards compatibility)
 The step ID of the current job
 .TP
 \fBSLURM_SUBMIT_DIR\fR
@@ -2019,6 +2085,17 @@ Set to the logging level of the \fBsrun\fR command.
 Default value is 3 (info level).
 The value is incremented or decremented based upon the \-\-verbose and
 \-\-quiet options.
+
+.TP
+\fBMPIRUN_NOALLOCATE\fR
+Do not allocate a block on Blue Gene systems only.
+.TP
+\fBMPIRUN_NOFREE\fR
+Do not free a block on Blue Gene systems only.
+.TP
+\fBMPIRUN_PARTITION\fR
+The block name on Blue Gene systems only.
+
 
 .SH "SIGNALS AND ESCAPE SEQUENCES"
 Signals sent to the \fBsrun\fR command are automatically forwarded to
