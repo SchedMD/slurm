@@ -48,6 +48,15 @@
 #define XCGROUP_ERROR    1
 #define XCGROUP_SUCCESS  0
 
+// http://lists.debian.org/debian-boot/2012/04/msg00047.html
+#if defined(__FreeBSD__)
+#define	MS_NOSUID	MNT_NOSUID
+#define	MS_NOEXEC	MNT_NOEXEC
+#define	MS_NODEV	0
+
+#define	umount(d)	unmount(d, 0)
+#endif
+
 typedef struct xcgroup_ns {
 
 	char* mnt_point;  /* mount point to use for the associated cgroup */

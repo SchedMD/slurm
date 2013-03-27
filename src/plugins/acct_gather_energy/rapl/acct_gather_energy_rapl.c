@@ -67,6 +67,11 @@
 #include <math.h>
 #include "acct_gather_energy_rapl.h"
 
+/* From Linux sys/types.h */
+#if defined(__FreeBSD__)
+typedef unsigned long int	ulong;
+#endif
+
 union {
 	uint64_t val;
 	struct {
