@@ -47,6 +47,9 @@
  *  	 Morris Jette, et al.
 \*****************************************************************************/
 
+#if defined(__FreeBSD__)
+#include <signal.h>
+#endif
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>

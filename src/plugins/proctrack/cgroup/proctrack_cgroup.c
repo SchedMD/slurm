@@ -50,6 +50,10 @@
 #include <sys/signal.h> /* for SIGKILL */
 #endif
 
+#if defined(__FreeBSD__)
+#include <signal.h>
+#endif
+
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"

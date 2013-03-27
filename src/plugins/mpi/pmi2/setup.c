@@ -39,6 +39,10 @@
 #  include "config.h"
 #endif
 
+#if defined(__FreeBSD__)
+#include <sys/socket.h>	/* AF_INET */
+#endif
+
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/types.h>

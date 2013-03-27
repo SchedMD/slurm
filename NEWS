@@ -112,6 +112,11 @@ documents those changes that are of interest to users and admins.
     outside of the reservation in it's nodes without this you could have
     double time.
  -- Accounting - Minor fix to avoid reuse of variable erroneously.
+ -- Reject job at submit time if the node count is invalid. Previously such a
+    job submitted to a DOWN partition would be queued.
+ -- Purge vestigial job scripts when the slurmd cold starts or slurmstepd
+    terminates abnormally.
+ -- Add support for FreeBSD.
 
 * Changes in Slurm 2.5.4
 ========================

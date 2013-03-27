@@ -6,8 +6,10 @@
 <li><b>AIX</b>&#151;Slurm support for AIX has been thoroughly tested, but we
 know of no AIX installations using Slurm after 2008. See
 <a href="ibm.html">IBM AIX User and Administrator Guide</a> for more information.</li>
+<li><b>FreeBSD</b>&#151;Slurm support added in version 2.5.5.</li>
 <li><b>Linux</b>&#151;Slurm has been thoroughly tested on most popular Linux
 distributions using i386, ia64, and x86_64 architectures.</li>
+<li><b>NetBSD</b>&#151;Slurm support added in version 2.4.</li>
 <li><b>OS X</b>&#151;Slurm has run OS X in the past, but the current OS X linker
 does not support Slurm plugins. (OS X dynamically linked objects can be called by
 the main program. They may not call functions in the main program or other
@@ -40,6 +42,6 @@ for the three-dimensional torus interconnect.</li>
 <li><b>Other</b>&#151;Slurm ports to other systems will be gratefully accepted.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 18 December 2012</p>
+<p style="text-align:center;">Last modified 27 March 2013</p>
 
 <!--#include virtual="footer.txt"-->

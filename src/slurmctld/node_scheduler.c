@@ -51,6 +51,9 @@
 #include <sys/types.h> /* for pid_t */
 #include <sys/signal.h> /* for SIGKILL */
 #endif
+#if defined(__FreeBSD__)
+#include <signal.h>
+#endif
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -1440,14 +1443,12 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		return ESLURM_JOB_HELD;
 	}
 
-	/* Confirm that partition is up and has compatible nodes limits */
+	/* Confirm that partition is up and has compatible nodes limits.
+	 * If not, we still continue to determine if the job can ever run.
+	 * For example, the geometry might be incompatible with BlueGene. */
 	fail_reason = job_limits_check(&job_ptr);
-	if (fail_reason != WAIT_NO_REASON) {
-		last_job_update = now;
-		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = fail_reason;
-		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-	}
+	if (fail_reason != WAIT_NO_REASON)
+		test_only = true;
 
 	/* build sets of usable nodes based upon their configuration */
 	error_code = _build_node_list(job_ptr, &node_set_ptr, &node_set_size);
@@ -1536,7 +1537,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			}
 		}
 	}
-	if (error_code) {
+	if (error_code || fail_reason) {
+		/* Fatal errors for job here */
 		if (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
 			/* Too many nodes requested */
 			debug3("JobId=%u not runnable with present config",
@@ -1544,6 +1546,12 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			job_ptr->state_reason = WAIT_PART_NODE_LIMIT;
 			xfree(job_ptr->state_desc);
 			last_job_update = now;
+		} else if (fail_reason) {
+			job_ptr->state_reason = fail_reason;
+			xfree(job_ptr->state_desc);
+			last_job_update = now;
+
+		/* Non-fatal errors for job below */
 		} else if (error_code == ESLURM_NODE_NOT_AVAIL) {
 			/* Required nodes are down or drained */
 			debug3("JobId=%u required nodes not avail",

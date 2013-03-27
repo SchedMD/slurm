@@ -3928,7 +3928,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 {
 	static int launch_type_poe = -1;
 	int error_code = SLURM_SUCCESS, i, qos_error;
-	enum job_state_reason fail_reason;
 	struct part_record *part_ptr = NULL;
 	List part_ptr_list = NULL;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
@@ -4317,18 +4316,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			job_ptr->wait4switch = _max_switch_wait(INFINITE);
 	}
 	job_ptr->best_switch = true;
-
-	/* Insure that requested partition is valid right now,
-	 * otherwise leave job queued and provide warning code */
-	fail_reason = job_limits_check(&job_ptr);
-	if (fail_reason != WAIT_NO_REASON) {
-		if (fail_reason == WAIT_QOS_THRES)
-			error_code = ESLURM_QOS_THRES;
-		else
-			error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-		job_ptr->state_reason = fail_reason;
-		xfree(job_ptr->state_desc);
-	}
 
 	FREE_NULL_LIST(license_list);
 	FREE_NULL_BITMAP(req_bitmap);
