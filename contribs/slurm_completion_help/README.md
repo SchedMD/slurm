@@ -40,6 +40,44 @@ __Instalation__
 
 Simply source the script in your .bashrc or .profile
 
-__Knwon issues__
+__Examples__
 
-Keyword arguments are not auto-compelted beyond the first one.
+    root@frontend:~ # squeue --<tab><tab>
+    --account<account_list>  --iterate<seconds>       --qos<qos_list>          --usage
+    --clusters<string>       --jobs<job_id_list>      --sort<sort_list>        --user<user_list>
+    --format<fmtstring>      --nodes<hostlist>        --start                  --verbose
+    --help                   --noheader               --state<state_list>      --version
+    --hide                   --partition<part_list>   --steps                  
+    root@frontend:~ # squeue --us<tab><tab>
+    --usage  --user   
+    root@frontend:~ # squeue --user <tab><tab>
+    user1     user2     user3     user4 
+    
+    root@frontend:~ # scontrol <tab><tab>
+    abort        delete       pidinfo      requeue      shutdown     update       
+    checkpoint   hold         ping         resume       suspend      version      
+    completing   listpids     reconfigure  setdebug     takeover     
+    create       notify       release      show         uhold        
+    root@frontend:~ # scontrol update <tab><tab>
+    jobid=            nodename=         partitionname=    reservationname=  step=
+    root@frontend:~ # scontrol update nodename=<tab><tab>
+    root@frontend:~ # scontrol update nodename=node<tab><tab>
+    node01  node03  node05  node07  node09  node11  node13  node15  node17  node19  
+    node02  node04  node06  node08  node10  node12  node14  node16  node18  node20  
+    root@frontend:~ # scontrol update nodename=node12 
+    features=<features>  reason=<reason>      weight=<weight>      
+    gres=<gres>          state=<state>        
+    root@frontend:~ # scontrol update nodename=node12 state=<tab><tab>
+    alloc       down        fail        idle        mixed       power_up    
+    allocated   drain       failing     maint       power_down  resume      
+    root@frontend:~ # scontrol update nodename=node12 state=resume 
+    
+    root@frontend:~ # squeue --format "%<TAB><TAB>
+    %a(Account)        %E(dependency)     %i(id)             %M(time)           %s(selecplugin)
+    %A(NTasks)         %e(end)            %I(Ncores/socket)  %N(alloc_nodes)    %t(state)
+    %b(gres)           %f(features)       %j(name)           %n(reqnodes)       %T(state)
+    %c(mincpu)         %G(gID)            %k(comment)        %O(contiguous)     %U(uID)
+    %C(Ncpus)          %g(group)          %l(limit)          %p(priority)       %u(user)
+    %d(minTmp)         %H(Nsockets)       %L(timeleft)       %r(reason)         %v(reservation)
+    %D(NNodes)         %h(shared)         %m(mem)            %R(reason)         %x(excnodes)
+    
