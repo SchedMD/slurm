@@ -2,9 +2,9 @@
 
 <h1>Meetings</h1>
 
-<p><b>SLURM User Group Meeting 2013</b><br>
-Summer 2013<br>
-San Francisco, California, USA<br>
+<p><a href="slurm_ug_cfp.html"><b>SLURM User Group Meeting 2013</b></a><br>
+18-19 September 2013<br>
+Oakland, California, USA<br>
 Host: SchedMD</p>
 
 <br>
@@ -25,6 +25,6 @@ Host: Bull</p>
 Paris, France<br>
 Host: CEA</p>
 
-<p style="text-align:center;">Last modified 6 December 2012</p>
+<p style="text-align:center;">Last modified 28 March 2013</p>
 
 <!--#include virtual="footer.txt"-->

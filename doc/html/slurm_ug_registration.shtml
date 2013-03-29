@@ -1,111 +1,67 @@
 <!--#include virtual="header.txt"-->
 
-      <a href="http:///www.bull.com" target="_blank"><img src="bull.jpg" style="float: right;" border="0"></a></p>
+<a href="http:///www.schedmd.com" target="_blank"><img src="schedmd.png" style="float: right;" border="0" width=220></a></p>
+<h1>Slurm User Group Meeting 2013</h1>
+<h2>Oakland, California, USA</h2>
+<h2>September 18-19, 2013</h2>
+<h2>Hosted by <a href="http://www.schedmd.com">SchedMD</a></h2>
+<br><br>
+<h2>Registration</h2>
+<p>The conference cost is TBD per person.
+This includes presentations, tutorials, lunch and snacks on both days,
+plus dinner on Wednesday evening.
+You must register by TBD using TBD.</p>
 
-      <h1>Slurm User Group Meeting 2011</h1>
+<h2>Meeting Information</h2>
+<p>The meeting will be held at
+<a href="http://www.ce.csueastbay.edu/businessservices/conference_facilities/index.shtml">
+California State University's Conference Center</a>,
+1000 Broadway Avenue, Suite 109, Oakland, California
+(Phone 510-208-7001, access from 11th Street).
+This state of the art facility is located adjacent 12th Street
+<a href="http:/www.bart.gov">BART</a> (Metro) station, with easy access to
+the entire San Fransisco area.
+There is also frequent and free bus service to
+<a href="http://www.jacklondonsquare.com">Jack London Square</a> using the
+<a href="http://Bshuttle.com">Broadway Shuttle</a>.
 
-      <p>Hosted by  <a href="http:///www.bull.com">Bull</a>
+<h2>Hotel Information</h2>
+<p>Many hotel options are available in Oakland, San Fransisco, and elsewhere in
+the area. Consider the hotels listed below as suggestions:</p>
 
-      <h1>Registration</h1>
-      <p>The conference cost is $250 per person that can be paid on the morning
-	of the conference. This includes presentations, tutorials and lunch on
-	both days.</p>
+<p><a href="http://www.waterfronthoteloakland.com"><b>Waterfront Hotel</b></a><br>
+Like it says in the name, on the waterfront, with several nice restaurants nearby.
+About 1 mile (2 km) from the conference center via the
+<a href="http://Bshuttle.com">Broadway Shuttle</a>.
+Ferry service to San Fransisco adjacent to the hotel.</p>
 
-      <h2>Hotel Information</h2>
-	<p>The meeting will be held at
-	<a href="http://embassysuites1.hilton.com/en_US/es/hotel/PHXNOES-Embassy-Suites-Phoenix-North-Arizona/index.do">Embassy Suites Phoenix - North</a>
-	2577 West Greenway Road, Phoenix, Arizona, USA (Phone: 1-602-375-1777 Fax: 1-602-375-4012).
-	You may book your reservations on line at
-	<a href="http://embassysuites1.hilton.com/en_US/es/hotel/PHXNOES-Embassy-Suites-Phoenix-North-Arizona/index.do">Embassy Suites Phoenix - North</a><p></p>
+<p><a href="http://www.marriott.com/hotels/travel/oakdt-oakland-marriott-city-center/">
+<b>Oakland Marriott City Center</b></a><br>
+Across the street from the conference center
+and <a href="http://www.bart.gov">BART</a>.
+Government (GSA) rate rooms available.</p>
 
-	<p>Please reference Bull when making your reservations to recieve a $79/room rate.</p>
+<h2>Agenda</h2>
+<p><b>Tuesday 17 September</b><br>
+No-host dinner at
+<a href="http://www.lungomareoakland.com/">Lungomare Restaurant</a>, 
+at TBD for those interested. You must register for this event<p>
 
-      <h2>Directions and Transportation</h2>
-	<p>From Phoenix Sky Harbor Airport, take I-10 west to I-17 North.
-	Follow I-17 to the Greenway Road, exit 211 approximately 15 miles.
-	Exit and turn right, 1/8th of a mile on the right is the hotel entrance.</p>
-        <p><a href="http://embassysuites1.hilton.com/en_US/es/hotel/PHXNOES-Embassy-Suites-Phoenix-North-Arizona/directions.do;jsessionid=DDD31DD6EFFAF2D32299955C321976F3.etc83">
-	View all directions, map, and airport information</a></p>
+<p><b>Wednesday 18 September</b><br>
+Meeting from 9AM to 5PM.<br>
+Dinner at TBD.
+There is an additional fee of TBD for guests and they must register in advance
+at TBD.<p>
 
-      <h2>Contact</h2>
-	<p>If you need further informations about the event, or the
-	registration protocols, contact the
-        <a href="mailto:Nancy.Kritkausky@bull.com?subject=Informations">
-	<b>Slurm User Group 2011</b></a> organizers.<br>
+<p><b>Thursday 19 September</b><br>
+Meeting from 9AM to 3PM.<p>
 
-      <h2>Agenda</h2>
-	<p>A preliminary <a href="slurm_ug_agenda.html">agenda</a> is available online.
+<p>A complete agenda will be posted online when available.</p>
 
-      <h2>Attendee Information</h2>
-	<p>Please fill in the following form to register for the <b>Slurm User Group 2011</b>.
-	You should receive a confirmation of this initial stage within in a few days and
-	final confirmation by <b>August 26, 2011</b>.</p>
-
-      <FORM METHOD=POST ENCTYPE="text/plain" ACTION="mailto:slurm_user_group@schedmd.com?subject=SLURM User Group Registration">
-	<PRE>
-	  <table width="100%" border=0 cellspacing=0 cellpadding=0>
-	    <tr>
-	      <td width="10%">First Name</td>
-	      <td width="80%"><INPUT NAME=FirstName size=30></td>
-	    </tr>
-	    <tr>
-	      <td width="10%">Last Name</td>
-	      <td width="80%"><INPUT NAME=LastName size=30></td>
-	    </tr>
-	    <tr>
-	      <td width="10%">Title</td>
-	      <td width="80%"><INPUT NAME=Title size=30></td>
-	    </tr>
-	    <tr>
-	      <td width="10%">Email</td>
-	      <td width="80%"><INPUT NAME=Email size=30></td>
-	    </tr>
-	    <tr>
-	      <td width="10%">Company/Organization</td>
-	      <td width="80%"><INPUT NAME=Company size=30></td>
-	    </tr>
-	    <tr>
-	      <td width="10%">Street</td>
-	      <td width="80%"><INPUT NAME=Street size=30></td>
-	    </tr>
-	    <tr>
-	      <td width="10%">City</td>
-	      <td width="80%"><INPUT NAME=City size=30></td>
-	    </tr>
-	    <tr>
-	      <td width="10%">State/Province</td>
-	      <td width="80%"><INPUT NAME=State size=30></td>
-	    </tr>
-	    <tr>
-	      <td width="10%">Postal Code</td>
-	      <td width="80%"><INPUT NAME=ZipCode size=30></td>
-	    </tr>
-	    <tr>
-	      <td width="10%">Country</td>
-	      <td width="80%"><INPUT NAME=Country size=30></td>
-	    </tr>
-	    <tr>
-	      <td width="10%">Tutorial Attendance</td>
-	      <td width="10%"><INPUT TYPE="radio" NAME="Tutorial" VALUE="Administrator">Administrator</td>
-	    </tr>
-	    <tr>
-	      <td width="10%"> </td>
-	      <td width="10%"><INPUT TYPE="radio" NAME="Tutorial" VALUE="User">User</td>
-	    </tr>
-	    <tr>
-	      <td width="10%"> </td>
-	      <td width="10%"><INPUT TYPE="radio" NAME="Tutorial" VALUE="None">None</td>
-	    </tr>
-	    <tr>
-	      <td width="10%">Comments</td>
-	      <td width="80%"><TEXTAREA NAME=Comments rows=5 cols=40></TEXTAREA></td>
-	    </tr>
-	    <tr>
-	      <td width="30%"><INPUT TYPE=SUBMIT VALUE=Submit></td>
-	      <td width="30%"><INPUT TYPE=RESET VALUE=Clear></td>
-	    </tr>
-	  </table>
-	</PRE>
-      </FORM>
+<h2>Contact</h2>
+<p>If you need further informations about the event, or the
+registration protocols, contact the
+<a href="mailto:jette@schedmd.com?subject=SUG2013">
+<b>Slurm User Group 2013</b></a> organizers.<br>
 
 <!--#include virtual="footer.txt"-->
