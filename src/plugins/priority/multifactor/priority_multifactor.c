@@ -75,11 +75,13 @@ void *acct_db_conn  __attribute__((weak_import)) = NULL;
 uint32_t cluster_cpus __attribute__((weak_import)) = NO_VAL;
 List job_list  __attribute__((weak_import)) = NULL;
 time_t last_job_update __attribute__((weak_import));
+slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
 #else
 void *acct_db_conn = NULL;
 uint32_t cluster_cpus = NO_VAL;
 List job_list = NULL;
 time_t last_job_update;
+slurm_ctl_conf_t slurmctld_conf;
 #endif
 
 /*
