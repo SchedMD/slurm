@@ -35,12 +35,15 @@
 source ./globals
 
 set test_id     "17.5"
+set user_name   ""
 set file_in     "test$test_id.input"
 set file_script "test$test_id.bash"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
 set file_out_j  "test$test_id.j.%j.output"
 set file_err_j  "test$test_id.j.%j.error"
+set file_out_u  "test$test_id.%u.output"
+set file_err_u  "test$test_id.%u.error"
 set exit_code   0
 
 print_header $test_id
@@ -62,6 +65,19 @@ make_bash_script $file_script "
   $sbatch -N1 --workdir=$cwd --output=$file_out --error=$file_err -t1 $cwd/$file_in
   exit 0
 "
+
+#
+# Get the name of the current user
+#
+spawn $bin_id -un
+expect {
+	-re "($alpha_numeric_under)" {
+		set user_name $expect_out(1,string)
+	}
+	eof {
+		wait
+	}
+}
 
 #
 # Spawn a shell via sbatch that submits from a different directory and uses stdout/err
@@ -231,6 +247,56 @@ if {[wait_for_file $file_err_j_glob] == 0} {
         exec $bin_rm -f $file_err_j_glob
 } else {
         send_user "\nFAILURE: file format of %j in stderr failed\n"
+        set exit_code 1
+}
+
+#
+# Spawn a shell via sbatch that uses stdout/err with %u in their names
+#
+set job_id 0
+spawn $sbatch -N1 --output=$file_out_u --error=$file_err_u -t1 $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if { $job_id == 0 } {
+	send_user "\nFAILURE: failed to submit job\n"
+	exit 1
+}
+
+#
+# Wait for job to complete
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	set exit_code 1
+}
+
+#
+# Check for desired output
+#
+set file_out_u_glob  "test$test_id.$user_name.output"
+set file_err_u_glob  "test$test_id.$user_name.error"
+if {[wait_for_file $file_out_u_glob] == 0} {
+	exec $bin_rm -f $file_out_u_glob
+} else {
+	send_user "\nFAILURE: file format of %u in stdout failed\n"
+	set exit_code 1
+}
+if {[wait_for_file $file_err_u_glob] == 0} {
+        exec $bin_rm -f $file_err_u_glob
+} else {
+        send_user "\nFAILURE: file format of %u in stderr failed\n"
         set exit_code 1
 }
 
