@@ -1733,6 +1733,7 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 	debug("DBD_INIT: CLUSTER:%s VERSION:%u UID:%u IP:%s CONN:%u",
 	      init_msg->cluster_name, init_msg->version, init_msg->uid,
 	      slurmdbd_conn->ip, slurmdbd_conn->newsockfd);
+
 	slurmdbd_conn->cluster_name = xstrdup(init_msg->cluster_name);
 	slurmdbd_conn->db_conn = acct_storage_g_get_connection(
 		false, slurmdbd_conn->newsockfd, init_msg->rollback,
@@ -2703,6 +2704,17 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 	}
 	debug2("DBD_REGISTER_CTLD: called for %s(%u)",
 	       slurmdbd_conn->cluster_name, register_ctld_msg->port);
+
+	/* Just to make sure we don't allow a NULL cluster name to attempt
+	   to connect.  This should never happen, but here just for
+	   sanity check.
+	*/
+	if (!slurmdbd_conn->cluster_name) {
+		comment = "Must have a cluster name to register it";
+		error("CONN:%u %s", slurmdbd_conn->newsockfd, comment);
+		rc = ESLURM_BAD_NAME;
+		goto end_it;
+	}
 
 	debug2("slurmctld at ip:%s, port:%d",
 	       slurmdbd_conn->ip, register_ctld_msg->port);
