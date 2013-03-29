@@ -117,6 +117,7 @@ documents those changes that are of interest to users and admins.
  -- Purge vestigial job scripts when the slurmd cold starts or slurmstepd
     terminates abnormally.
  -- Add support for FreeBSD.
+ -- Add sanity check for NULL cluster names trying to register.
 
 * Changes in Slurm 2.5.4
 ========================
