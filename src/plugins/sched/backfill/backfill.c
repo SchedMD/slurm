@@ -523,7 +523,7 @@ static int _attempt_backfill(void)
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	uint32_t end_time, end_reserve;
-	uint32_t time_limit, comp_time_limit, orig_time_limit;
+	uint32_t time_limit, comp_time_limit, orig_time_limit, part_time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL;
@@ -720,17 +720,18 @@ static int _attempt_backfill(void)
 		}
 
 		/* Determine job's expected completion time */
+		if (part_ptr->max_time == INFINITE)
+			part_time_limit = 365 * 24 * 60; /* one year */
+		else
+			part_time_limit = part_ptr->max_time;
 		if (job_ptr->time_limit == NO_VAL) {
-			if (part_ptr->max_time == INFINITE)
-				time_limit = 365 * 24 * 60; /* one year */
-			else
-				time_limit = part_ptr->max_time;
+			time_limit = part_time_limit;
 		} else {
 			if (part_ptr->max_time == INFINITE)
 				time_limit = job_ptr->time_limit;
 			else
 				time_limit = MIN(job_ptr->time_limit,
-						 part_ptr->max_time);
+						 part_time_limit);
 		}
 		comp_time_limit = time_limit;
 		qos_ptr = job_ptr->qos_ptr;
