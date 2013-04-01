@@ -197,12 +197,11 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 static bool _job_runnable_test2(struct job_record *job_ptr)
 {
 	if (!part_policy_job_runnable_state(job_ptr)) {
-		if (job_limits_check(&job_ptr) == WAIT_NO_REASON) {
-			job_ptr->state_reason = WAIT_NO_REASON;
-			xfree(job_ptr->state_desc);
-		} else {
+		job_ptr->state_reason = job_limits_check(&job_ptr);
+		xfree(job_ptr->state_desc);
+
+		if (job_ptr->state_reason  != WAIT_NO_REASON)
 			return false;
-		}
 	}
 	return true;
 }
@@ -219,6 +218,7 @@ extern List build_job_queue(bool clear_start)
 	ListIterator job_iterator, part_iterator;
 	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr;
+	int reason;
 
 	job_queue = list_create(_job_queue_rec_del);
 	job_iterator = list_iterator_create(job_list);
@@ -232,8 +232,13 @@ extern List build_job_queue(bool clear_start)
 	      			while ((part_ptr = (struct part_record *)
 					list_next(part_iterator))) {
 				job_ptr->part_ptr = part_ptr;
-				if (job_limits_check(&job_ptr) !=
-				    WAIT_NO_REASON)
+				reason = job_limits_check(&job_ptr);
+				if ((reason != job_ptr->state_reason) &&
+				    (!part_policy_job_runnable_state(job_ptr))){
+					job_ptr->state_reason = reason;
+					xfree(job_ptr->state_desc);
+				}
+				if (reason != WAIT_NO_REASON)
 					continue;
 				_job_queue_append(job_queue, job_ptr, part_ptr);
 			}

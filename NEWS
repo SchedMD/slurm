@@ -119,6 +119,7 @@ documents those changes that are of interest to users and admins.
  -- Add support for FreeBSD.
  -- Add sanity check for NULL cluster names trying to register.
  -- BGQ - Push action 'D' info to scontrol for admins.
+ -- Reset a job's reason from PartitionDown when the partition is set up.
 
 * Changes in Slurm 2.5.4
 ========================
