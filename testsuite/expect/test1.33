@@ -133,7 +133,7 @@ if {$matches != 1} {
 # Post-processing
 #
 if {$exit_code == 0} {
-	#exec $bin_rm -f $exit_script $test_script
+	exec $bin_rm -f $exit_script $test_script
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

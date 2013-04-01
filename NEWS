@@ -118,6 +118,7 @@ documents those changes that are of interest to users and admins.
     terminates abnormally.
  -- Add support for FreeBSD.
  -- Add sanity check for NULL cluster names trying to register.
+ -- BGQ - Push action 'D' info to scontrol for admins.
 
 * Changes in Slurm 2.5.4
 ========================

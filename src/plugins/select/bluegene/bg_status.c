@@ -184,6 +184,10 @@ extern int bg_status_update_block_state(bg_record_t *bg_record,
 			bg_reset_block(bg_record, NULL);
 		remove_from_bg_list(bg_lists->booted, bg_record);
 		bg_record->action = BG_BLOCK_ACTION_NONE;
+		/* This means the reason could of been set by the
+		   action on the block, so clear it. */
+		if (!(bg_record->state & BG_BLOCK_ERROR_FLAG))
+			xfree(bg_record->reason);
 	} else if (real_state & BG_BLOCK_ERROR_FLAG) {
 		if (bg_record->boot_state)
 			error("Block %s in an error state while booting.",

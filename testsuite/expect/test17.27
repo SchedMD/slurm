@@ -159,6 +159,9 @@ if {[string compare $host_2 ""] == 0} {
 if {[test_front_end] != 0} {
 	send_user "\nWARNING: Additional testing is incompatible with front-end systems\n"
 #	On blue gene we could get extra tasks
+	if {$exit_code == 0} {
+		exec $bin_rm $file_in $file_out
+	}
 	exit $exit_code
 }
 if {[string compare $host_3 ""] != 0} {

@@ -199,6 +199,10 @@ char *slurm_sprint_block_info(
 		xstrfmtcat(out, "IoloadImage=%s", block_ptr->ramdiskimage);
 	}
 
+	if (block_ptr->reason)
+		xstrfmtcat(out, "Reason=%s%s",
+			   block_ptr->reason, line_end);
+
 	if (one_liner)
 		xstrcat(out, "\n");
 	else
