@@ -2906,7 +2906,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 			job_ptr->part_ptr = part_ptr;
 			debug2("Try job %u on next partition %s",
 			       job_ptr->job_id, part_ptr->name);
-			if (job_limits_check(&job_ptr) != WAIT_NO_REASON)
+			if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON)
 				continue;
 			rc = select_nodes(job_ptr, test_only,
 					  select_node_bitmap);
@@ -3812,9 +3812,11 @@ fini:	FREE_NULL_LIST(part_ptr_list);
 /*
  * job_limits_check - check the limits specified for the job.
  * IN job_ptr - pointer to job table entry.
+ * IN min_time_check - if true, validate the minimim time limit only,
+ *		       if false, validate the maximum time limit
  * RET WAIT_NO_REASON on success, fail status otherwise.
  */
-extern int job_limits_check(struct job_record **job_pptr)
+extern int job_limits_check(struct job_record **job_pptr, bool min_time_check)
 {
 	struct job_details *detail_ptr;
 	enum job_state_reason fail_reason;
@@ -3824,6 +3826,7 @@ extern int job_limits_check(struct job_record **job_pptr)
 	slurmdb_association_rec_t *assoc_ptr;
 	uint32_t job_min_nodes, job_max_nodes;
 	uint32_t part_min_nodes, part_max_nodes;
+	uint32_t time_check;
 #ifdef HAVE_BG
 	static uint16_t cpus_per_node = 0;
 	if (!cpus_per_node)
@@ -3850,6 +3853,10 @@ extern int job_limits_check(struct job_record **job_pptr)
 
 	fail_reason = WAIT_NO_REASON;
 
+	if (min_time_check && (job_ptr->time_min != NO_VAL))
+		time_check = job_ptr->time_min;
+	else
+		time_check = job_ptr->time_limit;
 	if ((job_min_nodes > part_max_nodes) &&
 	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
 				       & QOS_FLAG_PART_MAX_NODE)))) {
@@ -3875,13 +3882,12 @@ extern int job_limits_check(struct job_record **job_pptr)
 		debug2("Job %u requested inactive partition %s",
 		       job_ptr->job_id, part_ptr->name);
 		fail_reason = WAIT_PART_INACTIVE;
-	} else if ((((job_ptr->time_limit != NO_VAL) &&
-		     (job_ptr->time_limit > part_ptr->max_time)) ||
-		    ((job_ptr->time_min   != NO_VAL) &&
-		     (job_ptr->time_min   > part_ptr->max_time))) &&
-		     (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
-		 			       QOS_FLAG_PART_TIME_LIMIT)))) {
-		debug2("Job %u exceeds partition time limit", job_ptr->job_id);
+	} else if ((time_check != NO_VAL) &&
+		   (time_check > part_ptr->max_time) &&
+		   (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
+		 			      QOS_FLAG_PART_TIME_LIMIT)))) {
+		info("Job %u exceeds partition time limit (%u > %u)",
+		       job_ptr->job_id, time_check, part_ptr->max_time);
 		fail_reason = WAIT_PART_TIME_LIMIT;
 	} else if (qos_ptr && assoc_ptr &&
 		   (qos_ptr->flags & QOS_FLAG_ENFORCE_USAGE_THRES) &&
@@ -8020,7 +8026,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	fail_reason = job_limits_check(&job_ptr);
+	fail_reason = job_limits_check(&job_ptr, false);
 	if (fail_reason != WAIT_NO_REASON) {
 		if (fail_reason == WAIT_QOS_THRES)
 			error_code = ESLURM_QOS_THRES;

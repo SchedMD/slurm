@@ -775,9 +775,11 @@ extern struct part_record *create_part_record (void);
 /*
  * job_limits_check - check the limits specified for the job.
  * IN job_ptr - pointer to job table entry.
+ * IN min_time_check - if true, validate the minimim time limit only,
+ *		       if false, validate the maximum time limit
  * RET WAIT_NO_REASON on success, fail status otherwise.
  */
-extern int job_limits_check(struct job_record **job_pptr);
+extern int job_limits_check(struct job_record **job_pptr, bool min_time_check);
 
 /*
  * delete_job_details - delete a job's detail record and clear it's pointer
