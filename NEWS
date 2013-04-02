@@ -46,6 +46,9 @@ documents those changes that are of interest to users and admins.
     without it still existing there.  This is extremely rare.
  -- BGQ - Fix for when a step completes in Slurm before the runjob_mux notifies
     the slurmctld there were software errors on some nodes.
+ -- BGQ - Fix issue on state recover if block states are not around
+    and when reading in state from DB2 we find a block that can't be created.
+    You can now do a clean start to rid the bad block.
 
 * Changes in Slurm 2.5.4
 ========================
