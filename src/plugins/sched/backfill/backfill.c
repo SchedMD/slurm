@@ -566,7 +566,7 @@ static int _attempt_backfill(void)
 	if (slurm_get_root_filter())
 		filter_root = true;
 
-	job_queue = build_job_queue(true, true);
+	job_queue = build_job_queue(true);
 	if (list_count(job_queue) == 0) {
 		debug("backfill: no jobs to backfill");
 		list_destroy(job_queue);

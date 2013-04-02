@@ -11,8 +11,6 @@ documents those changes that are of interest to users and admins.
  -- Add username (%u) to the filename pattern in the batch script.
  -- Added options for front end nodes of AllowGroups, AllowUsers, DenyGroups,
     and DenyUsers.
- -- Fix sched/backfill logic to initiate jobs with maximum time limit over the
-    partition limit, but the minimum time limit permits it to start.
 
 * Changes in Slurm 2.6.0pre2
 ============================

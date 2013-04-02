@@ -1446,7 +1446,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	/* Confirm that partition is up and has compatible nodes limits.
 	 * If not, we still continue to determine if the job can ever run.
 	 * For example, the geometry might be incompatible with BlueGene. */
-	fail_reason = job_limits_check(&job_ptr, false);
+	fail_reason = job_limits_check(&job_ptr);
 	if (fail_reason != WAIT_NO_REASON)
 		test_only = true;
 
