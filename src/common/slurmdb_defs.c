@@ -2193,7 +2193,7 @@ extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 	accounting_update_msg_t msg;
 	slurm_msg_t req;
 	slurm_msg_t resp;
-	int rc;
+	int i, rc;
 
 	// Set highest version that we can use
 	if (rpc_version > SLURMDBD_VERSION) {
@@ -2214,7 +2214,12 @@ extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 	req.data = &msg;
 	slurm_msg_t_init(&resp);
 
-	rc = slurm_send_recv_node_msg(&req, &resp, 0);
+	for (i = 0; i < 4; i++) {
+		/* Retry if the slurmctld can connect, but is not responding */
+		rc = slurm_send_recv_node_msg(&req, &resp, 0);
+		if ((rc == 0) || (errno != SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))
+			break;
+	}
 	if ((rc != 0) || ! resp.auth_cred) {
 		error("update cluster: %m to %s at %s(%hu)",
 		      cluster, host, port);
