@@ -341,7 +341,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		    uint16_t signal, uid_t uid)
 {
 	struct job_record *job_ptr;
-	struct step_record *step_ptr;
+	struct step_record *step_ptr, step_rec;
 	int rc = SLURM_SUCCESS;
 	static bool notify_slurmd = true;
 #if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
@@ -386,9 +386,27 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 
 	step_ptr = find_step_record(job_ptr, step_id);
 	if (step_ptr == NULL) {
-		info("job_step_cancel step %u.%u not found",
-		     job_id, step_id);
-		return ESLURM_INVALID_JOB_ID;
+		if (signal != SIG_NODE_FAIL) {
+			rc = ESLURM_INVALID_JOB_ID;
+			info("job_step_cancel step %u.%u not found",
+			     job_id, step_id);
+			return rc;
+		}
+		/* If we get a node fail signal we need to process it
+		   since we will create a race condition otherwise
+		   where jobs could be started on these nodes and
+		   fail.
+		*/
+		debug("job_step_cancel step %u.%u not found, but got "
+		      "SIG_NODE_FAIL, so failing all nodes in allocation.",
+		      job_id, step_id);
+		memset(&step_rec, 0, sizeof(struct step_record));
+		step_rec.step_id = NO_VAL;
+		step_rec.job_ptr = job_ptr;
+		step_rec.select_jobinfo = job_ptr->select_jobinfo;
+		step_rec.step_node_bitmap = job_ptr->node_bitmap;
+		step_ptr = &step_rec;
+		rc = ESLURM_ALREADY_DONE;
 	}
 
 	/* If SIG_NODE_FAIL codes through it means we had nodes failed

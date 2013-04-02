@@ -44,6 +44,8 @@ documents those changes that are of interest to users and admins.
     a pending job on it we don't kill the job.
  -- BGQ - Fix race condition were a job could of been removed from a block
     without it still existing there.  This is extremely rare.
+ -- BGQ - Fix for when a step completes in Slurm before the runjob_mux notifies
+    the slurmctld there were software errors on some nodes.
 
 * Changes in Slurm 2.5.4
 ========================
