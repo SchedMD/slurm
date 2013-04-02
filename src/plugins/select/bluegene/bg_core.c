@@ -579,6 +579,19 @@ extern void free_block_list(uint32_t job_id, List track_list,
 		if (destroy && (bg_record->state & BG_BLOCK_ERROR_FLAG))
 			resume_block(bg_record);
 
+		/* This means we are wanting this block free so we can
+		   run this job on it, so it is ok to have the job
+		   remain here.  Only checking for jobs should go
+		   below this.
+		*/
+		if (bg_record->modifying) {
+			debug("free_block_list: Just FYI, we are "
+			      "freeing a block (%s) that "
+			      "has at least one pending job.",
+			      bg_record->bg_block_id);
+			continue;
+		}
+
 		if (bg_record->job_ptr
 		    && !IS_JOB_FINISHED(bg_record->job_ptr)) {
 			info("We are freeing a block (%s) that "
