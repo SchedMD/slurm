@@ -1933,6 +1933,19 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		}
 		list_iterator_destroy(itr);
 		list_iterator_destroy(job_itr);
+
+		/* This means we didn't get a chance to try it ever so
+		   make sure we do.
+		*/
+		if (job_ptr->details->min_cpus > avail_cpus) {
+			list_sort(block_list,
+				  (ListCmpF)bg_record_sort_aval_inc);
+			rc = _find_best_block_match(
+				block_list, &blocks_added,
+				job_ptr, slurm_block_bitmap,
+				min_nodes, max_nodes, req_nodes,
+				&bg_record, local_mode, avail_cpus);
+		}
 	}
 
 	if (rc == SLURM_SUCCESS) {

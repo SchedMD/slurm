@@ -50,6 +50,8 @@ documents those changes that are of interest to users and admins.
     and when reading in state from DB2 we find a block that can't be created.
     You can now do a clean start to rid the bad block.
  -- Modify slurmdbd to retransmit to slurmctld daemon if it is not responding.
+ -- BLUEGENE - Fix issue where when doing backfill preemptable jobs were
+    never looked at to determine eligibility of backfillable job.
 
 * Changes in Slurm 2.5.4
 ========================
