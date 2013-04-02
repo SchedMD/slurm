@@ -38,6 +38,8 @@ documents those changes that are of interest to users and admins.
  -- Add sanity check for NULL cluster names trying to register.
  -- BGQ - Push action 'D' info to scontrol for admins.
  -- Reset a job's reason from PartitionDown when the partition is set up.
+ -- BGQ - Handle issue where blocks would have a pending job on them and
+    while it was free cnodes would go into software error and kill the job.
 
 * Changes in Slurm 2.5.4
 ========================
