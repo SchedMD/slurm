@@ -550,35 +550,54 @@ extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 }
 
 /* Try to requeue job running on block and put block in an error state.
- * block_state_mutex must be unlocked before calling this.
+ * block_state_mutex and slurmctld must be unlocked before calling this.
  */
 extern void requeue_and_error(bg_record_t *bg_record, char *reason)
 {
 
 	int rc;
+	List kill_job_list = NULL;
+	kill_job_struct_t *freeit;
+
+	slurm_mutex_lock(&block_state_mutex);
 	if (bg_record->magic != BLOCK_MAGIC) {
 		error("requeue_and_error: magic was bad");
+		slurm_mutex_unlock(&block_state_mutex);
 		return;
 	}
 
-	if (bg_record->job_running > NO_JOB_RUNNING)
-		bg_requeue_job(bg_record->job_running, 0, 0);
-	else if (bg_record->job_list) {
+	if (bg_record->job_running > NO_JOB_RUNNING) {
+		kill_job_list = bg_status_create_kill_job_list();
+
+		freeit = xmalloc(sizeof(kill_job_struct_t));
+		freeit->jobid = bg_record->job_running;
+		list_push(kill_job_list, freeit);
+	} else if (bg_record->job_list) {
 		ListIterator itr = list_iterator_create(bg_record->job_list);
 		struct job_record *job_ptr;
-		while ((job_ptr = list_next(itr)))
-			bg_requeue_job(job_ptr->job_id, 0, 0);
+		while ((job_ptr = list_next(itr))) {
+			if (!kill_job_list)
+				kill_job_list =
+					bg_status_create_kill_job_list();
+			freeit = xmalloc(sizeof(kill_job_struct_t));
+			freeit->jobid = job_ptr->job_id;
+			list_push(kill_job_list, freeit);
+		}
 		list_iterator_destroy(itr);
 	}
-	slurm_mutex_lock(&block_state_mutex);
+
 	rc = block_ptr_exist_in_list(bg_lists->main, bg_record);
 	slurm_mutex_unlock(&block_state_mutex);
+
+	if (kill_job_list) {
+		bg_status_process_kill_job_list(kill_job_list, 0);
+		list_destroy(kill_job_list);
+	}
 
 	if (rc)
 		put_block_in_error_state(bg_record, reason);
 	else
 		error("requeue_and_error: block disappeared");
-
 	return;
 }
 

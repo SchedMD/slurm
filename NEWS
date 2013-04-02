@@ -42,6 +42,8 @@ documents those changes that are of interest to users and admins.
     while it was free cnodes would go into software error and kill the job.
  -- BGQ - Fix issue where if for some reason we are freeing a block with
     a pending job on it we don't kill the job.
+ -- BGQ - Fix race condition were a job could of been removed from a block
+    without it still existing there.  This is extremely rare.
 
 * Changes in Slurm 2.5.4
 ========================
