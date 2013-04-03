@@ -1,7 +1,7 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Mailing Lists</h1>
-<p>We maintain two SLURM mailing lists:</p>
+<p>We maintain two Slurm mailing lists:</p>
 <ul>
 <li><b>slurm-announce@schedmd.com</b> is designated for communications about SLURM releases
 [low traffic].</li>
@@ -10,10 +10,7 @@
 </ul>
 <p>To subscribe to either list, vist the link below, sign up and get involved!<p>
 <a href="http://lists.schedmd.com/cgi-bin/dada/mail.cgi/list">http://lists.schedmd.com/cgi-bin/dada/mail.cgi/list</a><p>
-You can likewise unsubscribe for either list at the same link.
-<p>
-NOTE: If you were on the old slurm-dev@lists.llnl.gov list you were
-automatically migrated into the new list.
+You can likewise unsubscribe from either list at the same link.
 </p>
 
 <p>The archive of the <b>slurm-dev</b> list is online:<br>
@@ -21,6 +18,6 @@ automatically migrated into the new list.
 and<br>
 <a href="http://groups.google.com/group/slurm-devel">http://groups.google.com/group/slurm-devel</a></p>
 
-<p style="text-align:center;">Last modified 28 March 2012</p>
+<p style="text-align:center;">Last modified 3 April 2013</p>
 
 <!--#include virtual="footer.txt"-->
