@@ -38,7 +38,7 @@ each <i>midplane</i>.</p>
 execute in each block (see AllowSubBlockAllocation option in 'man
 bluegene.conf').</p>
 
-To effectively utilize this environment, SLURM tools present the user with
+<p>To effectively utilize this environment, SLURM tools present the user with
 the view that each <i>c-node</i> is a separate node, so allocation requests
 and status information use <i>c-node</i> counts.
 Since the <i>c-node</i> count can be very large, the suffix "k" can be used
