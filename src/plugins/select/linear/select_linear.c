@@ -441,6 +441,83 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
 	return(avail_nodes >= needed_nodes);
 }
 
+
+/*
+ * slurm_get_avail_procs - Get the number of "available" cpus on a node.
+ * Note that the value of cpus is the lowest-level logical processor (LLLP).
+ * IN cpus_per_task  - Job requested cpus per task
+ * IN ntaskspernode  - number of tasks per node
+ * IN ntaskspercore  - number of tasks per core
+ * IN/OUT cpus       - Available cpu count
+ * IN/OUT boards     - Available baseboard count
+ * IN/OUT sockets    - Available socket count
+ * IN/OUT cores      - Available core count
+ * IN/OUT threads    - Available thread count
+ * IN alloc_cores    - Allocated cores (per socket) count to other jobs
+ * IN cr_type        - Consumable Resource type
+ * IN job_id         - job ID
+ * IN name           - Node name
+ *
+ * Note: currently only used in the select/linear plugin.
+ */
+static int _slurm_get_avail_procs(
+			uint16_t cpus_per_task,
+			const uint16_t ntaskspernode,
+			const uint16_t ntaskspercore,
+			uint16_t *cpus,
+			uint16_t *boards,
+			uint16_t *sockets,
+			uint16_t *cores,
+			uint16_t *threads,
+			const uint16_t cr_type,
+			uint32_t job_id,
+			char *name)
+{
+	uint16_t avail_cpus = 0;
+	uint32_t nppcu;
+
+        /* pick defaults for any unspecified items */
+	if (cpus_per_task <= 0)
+		cpus_per_task = 1;
+	if (*threads <= 0)
+	    	*threads = 1;
+	if (*cores <= 0)
+	    	*cores = 1;
+	if (*boards <= 0)
+	    	*boards = 1;
+	if (*sockets <= 0)
+	    	*sockets = *cpus / *boards / *cores / *threads;
+
+#if SELECT_DEBUG
+	info("get_avail_procs %u %s HW_ boards %u sockets %u cores %u threads %u",
+			job_id, name, *boards, *sockets, *cores, *threads);
+	info("get_avail_procs %u %s Ntask node   %u core   %u",
+			job_id, name, ntaskspernode, ntaskspercore);
+	info("get_avail_procs %u %s cr_type %d cpus %u",
+			job_id, name, cr_type, *cpus);
+#endif
+	nppcu = ntaskspercore;
+	if (nppcu == 0xffff) {
+		verbose("nppcu not explicitly set for job %u, use all threads",
+			job_id);
+		nppcu = *threads;
+	}
+
+	avail_cpus = *boards * *sockets * *cores * *threads;
+	avail_cpus = avail_cpus * nppcu / *threads;
+
+	if (ntaskspernode > 0)
+		avail_cpus = MIN(avail_cpus, ntaskspernode * cpus_per_task);
+
+#if SELECT_DEBUG
+	info("get_avail_procs %u %s return cpus:%u "
+	     "boards:%u sockets:%u cores:%u threads:%u avail_cpus:%u",
+	     job_id, name, *cpus, *boards, *sockets, *cores, *threads,
+	     avail_cpus);
+#endif
+	return avail_cpus;
+}
+
 /*
  * _get_avail_cpus - Get the number of "available" cpus on a node
  *	given this number given the number of cpus_per_task and
@@ -455,8 +532,7 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	uint16_t avail_cpus;
 	uint16_t cpus, boards, sockets, cores, threads;
 	uint16_t cpus_per_task = 1;
-	uint16_t ntasks_per_node = 0, ntasks_per_socket, ntasks_per_core;
-	uint16_t min_sockets, min_cores, min_threads;
+	uint16_t ntasks_per_node = 0, ntasks_per_core;
 	multi_core_data_t *mc_ptr = NULL;
 
 	if (job_ptr->details == NULL)
@@ -466,19 +542,10 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 		cpus_per_task = job_ptr->details->cpus_per_task;
 	if (job_ptr->details->ntasks_per_node)
 		ntasks_per_node = job_ptr->details->ntasks_per_node;
-	if ((mc_ptr = job_ptr->details->mc_ptr)) {
-		ntasks_per_socket = mc_ptr->ntasks_per_socket;
+	if ((mc_ptr = job_ptr->details->mc_ptr))
 		ntasks_per_core   = mc_ptr->ntasks_per_core;
-		min_sockets       = mc_ptr->sockets_per_node;
-		min_cores         = mc_ptr->cores_per_socket;
-		min_threads       = mc_ptr->threads_per_core;
-	} else {
-		ntasks_per_socket = 0;
+	else
 		ntasks_per_core   = 0;
-		min_sockets       = (uint16_t) NO_VAL;
-		min_cores         = (uint16_t) NO_VAL;
-		min_threads       = (uint16_t) NO_VAL;
-	}
 
 	node_ptr = select_node_ptr + index;
 	if (select_fast_schedule) { /* don't bother checking each node */
@@ -498,15 +565,10 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 #if SELECT_DEBUG
 	info("host %s HW_ cpus %u boards %u sockets %u cores %u threads %u ",
 	     node_ptr->name, cpus, boards, sockets, cores, threads);
-#else
-	/* Largely to avoid warning about unused variable "boards" */
-	debug2("host %s HW_ cpus %u boards %u sockets %u cores %u threads %u ",
-	       node_ptr->name, cpus, boards, sockets, cores, threads);
 #endif
-	avail_cpus = slurm_get_avail_procs(
-		min_sockets, min_cores, min_threads, cpus_per_task,
-		ntasks_per_node, ntasks_per_socket, ntasks_per_core,
-		&cpus, &sockets, &cores, &threads, NULL,
+	avail_cpus = _slurm_get_avail_procs(
+		cpus_per_task, ntasks_per_node, ntasks_per_core,
+		&cpus, &boards, &sockets, &cores, &threads,
 		CR_CORE, job_ptr->job_id, node_ptr->name);
 
 #if SELECT_DEBUG
