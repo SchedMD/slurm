@@ -25,14 +25,6 @@ their support staff.</li>
 <li><a href="http://www.science-computing.de">Science + Computing</a> (with 3rd level support from SchedMD)</li>
 </ul>
 
-<p><b>Bright Computing Customers:</b> Note that SchedMD does not now nor has
-it ever held a contract to provide Slurm support for Bright Computing or its
-customers.
-Not a single line of the canonical version of Slurm was written by Bright
-Computing.
-The only connection between Bright Computing and SchedMD is that both
-companies promote the use of Slurm.</p>
-
-<p style="text-align:center;">Last modified 21 March 2013</p>
+<p style="text-align:center;">Last modified 4 April 2013</p>
 
 <!--#include virtual="footer.txt"-->
