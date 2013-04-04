@@ -131,6 +131,22 @@ static bitstr_t *_valid_features(struct job_details *detail_ptr,
 static int _fill_in_gres_fields(struct job_record *job_ptr);
 
 /*
+ * _get_ntasks_per_core - Retrieve the value of ntasks_per_core from
+ *	the given job_details record.  If it wasn't set, return 0xffff.
+ *	Intended for use with the _adjust_cpus_nppcu function.
+ */
+static uint16_t _get_ntasks_per_core(struct job_details *details) {
+	uint16_t ntasks_per_core;
+
+	if ((details->mc_ptr))
+		ntasks_per_core = details->mc_ptr->ntasks_per_core;
+	else
+		ntasks_per_core = 0xffff;
+
+	return ntasks_per_core;
+}
+
+/*
  * _build_gres_alloc_string - Fill in the gres_alloc string field for a
  *      given job_record
  *	also claim required licenses and resources reserved by accounting
@@ -2073,7 +2089,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			list_next(config_iterator))) {
 
 		config_filter = 0;
-		if ((detail_ptr->pn_min_cpus     > config_ptr->cpus       ) ||
+		if ((detail_ptr->pn_min_cpus     >  _adjust_cpus_nppcu(_get_ntasks_per_core(detail_ptr), config_ptr->threads, config_ptr->cpus)) ||
 		    ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) >
 		      config_ptr->real_memory)                               ||
 		    (detail_ptr->pn_min_tmp_disk > config_ptr->tmp_disk))
@@ -2234,7 +2250,7 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				continue;
 
 			node_con = node_record_table_ptr[i].config_ptr;
-			if ((job_con->pn_min_cpus     <= node_con->cpus)    &&
+			if ((job_con->pn_min_cpus     <= _adjust_cpus_nppcu(_get_ntasks_per_core(job_con), node_con->threads, node_con->cpus))    &&
 			    ((job_con->pn_min_memory & (~MEM_PER_CPU)) <=
 			      node_con->real_memory)                         &&
 			    (job_con->pn_min_tmp_disk <= node_con->tmp_disk))
@@ -2263,7 +2279,7 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				continue;
 
 			node_ptr = &node_record_table_ptr[i];
-			if ((job_con->pn_min_cpus     <= node_ptr->cpus)    &&
+			if ((job_con->pn_min_cpus     <= _adjust_cpus_nppcu(_get_ntasks_per_core(job_con), node_ptr->threads, node_ptr->cpus))    &&
 			    ((job_con->pn_min_memory & (~MEM_PER_CPU)) <=
 			      node_ptr->real_memory)                         &&
 			    (job_con->pn_min_tmp_disk <= node_ptr->tmp_disk))

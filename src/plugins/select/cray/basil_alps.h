@@ -448,7 +448,8 @@ struct basil_rsvn_param {
 				depth,		/* depth > 0,         -d  */
 				nppn,		/* nppn > 0,          -N  */
 				npps,		/* PEs per segment,   -S  */
-				nspn;		/* segments per node, -sn */
+				nspn,		/* segments per node, -sn */
+				nppcu;		/* Processors Per Compute Unit. BASIL 1.3 */
 
 	char				*nodes;		/* NodeParamArray   */
 	struct basil_label		*labels;	/* LabelParamArray  */
@@ -622,7 +623,7 @@ extern void   free_inv(struct basil_inventory *inv);
 
 extern long basil_reserve(const char *user, const char *batch_id,
 			  uint32_t width, uint32_t depth, uint32_t nppn,
-			  uint32_t mem_mb, struct nodespec *ns_head,
+			  uint32_t mem_mb, uint32_t nppcu, struct nodespec *ns_head,
 			  struct basil_accel_param *accel_head);
 extern int basil_confirm(uint32_t rsvn_id, int job_id, uint64_t pagg_id);
 extern const struct basil_rsvn *basil_rsvn_by_id(const struct basil_inventory *inv,

@@ -88,9 +88,9 @@ static void _rsvn_write_reserve_xml(FILE *fp, struct basil_reservation *r,
 		if (version >= BV_5_1)
 			_write_xml(fp, "  <ReserveParam architecture=\"%s\" "
 				   "width=\"%ld\" depth=\"%ld\" nppn=\"%ld\""
-				   " nppcu=\"0\"",
+				   " nppcu=\"%d\"",
 				   nam_arch[param->arch],
-				   param->width, param->depth, param->nppn);
+				   param->width, param->depth, param->nppn, param->nppcu);
 		else
 			_write_xml(fp, "  <ReserveParam architecture=\"%s\" "
 				   "width=\"%ld\" depth=\"%ld\" nppn=\"%ld\"",

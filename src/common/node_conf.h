@@ -281,4 +281,9 @@ extern void cr_fini_global_core_data(void);
 /*return the coremap index to the first core of the given node */
 extern uint32_t cr_get_coremap_offset(uint32_t node_index);
 
+/* Given the number of tasks per core and the actual number of hw threads, compute
+ * how many CPUs are "visible" and, hence, usable on the node.
+ */
+extern int _adjust_cpus_nppcu(uint16_t ntasks_per_core, uint16_t threads, int cpus);
+
 #endif /* !_HAVE_NODE_CONF_H */

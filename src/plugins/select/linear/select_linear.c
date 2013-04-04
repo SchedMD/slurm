@@ -503,12 +503,11 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	debug2("host %s HW_ cpus %u boards %u sockets %u cores %u threads %u ",
 	       node_ptr->name, cpus, boards, sockets, cores, threads);
 #endif
-
 	avail_cpus = slurm_get_avail_procs(
 		min_sockets, min_cores, min_threads, cpus_per_task,
 		ntasks_per_node, ntasks_per_socket, ntasks_per_core,
 		&cpus, &sockets, &cores, &threads, NULL,
-		CR_CPU, job_ptr->job_id, node_ptr->name);
+		CR_CORE, job_ptr->job_id, node_ptr->name);
 
 #if SELECT_DEBUG
 	debug("avail_cpus index %d = %d (out of %d %d %d %d)",
@@ -532,6 +531,32 @@ static uint16_t _get_total_cpus(int index)
 		return node_ptr->cpus;
 }
 
+static uint16_t _get_total_threads(int index)
+{
+	struct node_record *node_ptr = &(select_node_ptr[index]);
+	if (select_fast_schedule)
+		return node_ptr->config_ptr->threads;
+	else
+		return node_ptr->threads;
+}
+
+/*
+ * _get_ntasks_per_core - Retrieve the value of ntasks_per_core from
+ *	the given job_details record.  If it wasn't set, return 0xffff.
+ *	Intended for use with the _adjust_cpus_nppcu function.
+ */
+
+static uint16_t _get_ntasks_per_core(struct job_details *details) {
+	uint16_t ntasks_per_core;
+
+	if ((details->mc_ptr))
+		ntasks_per_core = details->mc_ptr->ntasks_per_core;
+	else
+		ntasks_per_core = 0xffff;
+
+	return ntasks_per_core;
+}
+
 static job_resources_t *_create_job_resources(int node_cnt)
 {
 	job_resources_t *job_resrcs_ptr;
@@ -553,7 +578,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 {
 	int i, j, k;
 	int first_bit, last_bit;
-	uint32_t node_cpus, total_cpus = 0, node_cnt;
+	uint32_t node_cpus, total_cpus = 0, node_cnt, node_threads;
 	struct node_record *node_ptr;
 	uint32_t job_memory_cpu = 0, job_memory_node = 0;
 	job_resources_t *job_resrcs_ptr;
@@ -586,10 +611,15 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 		if (!bit_test(bitmap, i))
 			continue;
 		node_ptr = &(select_node_ptr[i]);
-		if (select_fast_schedule)
-			node_cpus = node_ptr->config_ptr->cpus;
-		else
-			node_cpus = node_ptr->cpus;
+		if (select_fast_schedule) {
+			node_cpus    = node_ptr->config_ptr->cpus;
+			node_threads = node_ptr->config_ptr->threads;
+		} else {
+			node_cpus    = node_ptr->cpus;
+			node_threads = node_ptr->threads;
+		}
+
+		node_cpus = _adjust_cpus_nppcu(_get_ntasks_per_core(job_ptr->details), node_threads, node_cpus);
 		job_resrcs_ptr->cpus[j] = node_cpus;
 		if ((k == -1) ||
 		    (job_resrcs_ptr->cpu_array_value[k] != node_cpus)) {
@@ -861,7 +891,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				rem_nodes--;
 				max_nodes--;
 				rem_cpus   -= avail_cpus;
-				total_cpus += _get_total_cpus(index);
+				total_cpus += _adjust_cpus_nppcu(_get_ntasks_per_core(job_ptr->details), _get_total_threads(index), _get_total_cpus(index));
 			} else {	 /* node not required (yet) */
 				bit_clear(bitmap, index);
 				consec_cpus[consec_index] += avail_cpus;
@@ -968,7 +998,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		if (best_fit_nodes == 0)
 			break;
 		if (job_ptr->details->contiguous &&
-		    ((best_fit_cpus < rem_cpus) ||
+		     ((best_fit_cpus < rem_cpus) ||
 		     (!_enough_nodes(best_fit_nodes, rem_nodes,
 				     min_nodes, req_nodes))))
 			break;	/* no hole large enough */
@@ -988,7 +1018,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				max_nodes--;
 				avail_cpus = _get_avail_cpus(job_ptr, i);
 				rem_cpus   -= avail_cpus;
-				total_cpus += _get_total_cpus(i);
+				total_cpus += _adjust_cpus_nppcu(_get_ntasks_per_core(job_ptr->details), _get_total_threads(i), _get_total_cpus(i));
 			}
 			for (i = (best_fit_req - 1);
 			     i >= consec_start[best_fit_location]; i--) {
@@ -1002,7 +1032,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				max_nodes--;
 				avail_cpus = _get_avail_cpus(job_ptr, i);
 				rem_cpus   -= avail_cpus;
-				total_cpus += _get_total_cpus(i);
+				total_cpus += _adjust_cpus_nppcu(_get_ntasks_per_core(job_ptr->details), _get_total_threads(i), _get_total_cpus(i));
 			}
 		} else {
 			for (i = consec_start[best_fit_location];
@@ -1017,7 +1047,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				max_nodes--;
 				avail_cpus = _get_avail_cpus(job_ptr, i);
 				rem_cpus   -= avail_cpus;
-				total_cpus += _get_total_cpus(i);
+				total_cpus += _adjust_cpus_nppcu(_get_ntasks_per_core(job_ptr->details), _get_total_threads(i), _get_total_cpus(i));
 			}
 		}
 		if (job_ptr->details->contiguous ||
@@ -1243,7 +1273,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				alloc_nodes++;
 				rem_cpus -= avail_cpus;
-				total_cpus += _get_total_cpus(i);
+				total_cpus += _adjust_cpus_nppcu(_get_ntasks_per_core(job_ptr->details), _get_total_threads(i), _get_total_cpus(i));
 			}
 		}
 		/* Accumulate additional resources from leafs that
@@ -1278,7 +1308,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				alloc_nodes++;
 				rem_cpus -= _get_avail_cpus(job_ptr, i);
-				total_cpus += _get_total_cpus(i);
+				total_cpus += _adjust_cpus_nppcu(_get_ntasks_per_core(job_ptr->details), _get_total_threads(i), _get_total_cpus(i));
 				if ((alloc_nodes > max_nodes) ||
 				    ((alloc_nodes >= want_nodes) &&
 				     (rem_cpus <= 0)))
@@ -1348,7 +1378,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			bit_set(bitmap, i);
 			alloc_nodes++;
 			rem_cpus -= _get_avail_cpus(job_ptr, i);
-			total_cpus += _get_total_cpus(i);
+			total_cpus += _adjust_cpus_nppcu(_get_ntasks_per_core(job_ptr->details), _get_total_threads(i), _get_total_cpus(i));
 			if ((alloc_nodes > max_nodes) ||
 			    ((alloc_nodes >= want_nodes) && (rem_cpus <= 0)))
 				break;

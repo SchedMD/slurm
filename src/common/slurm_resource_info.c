@@ -137,21 +137,9 @@ int slurm_get_avail_procs(const uint16_t socket_cnt,
 			  uint32_t job_id,
 			  char *name)
 {
-	uint16_t avail_cpus = 0, max_cpus = 0;
-	uint16_t allocated_cpus = 0, allocated_cores = 0, allocated_sockets = 0;
-	uint16_t max_avail_cpus = 0xffff;	/* for alloc_* accounting */
-	uint16_t min_sockets = 1, max_sockets = 0xffff;
-	uint16_t min_cores   = 1, max_cores   = 0xffff;
-	uint16_t                  max_threads = 0xffff;
-	int i;
+	uint16_t avail_cpus = 0;
 
         /* pick defaults for any unspecified items */
-	if (socket_cnt != (uint16_t) NO_VAL)
-		min_sockets = max_sockets = socket_cnt;
-	if (core_cnt != (uint16_t) NO_VAL)
-		min_cores = max_cores = core_cnt;	
-	if (thread_cnt != (uint16_t) NO_VAL)
-		max_threads = thread_cnt;
 	if (cpus_per_task <= 0)
 		cpus_per_task = 1;
 	if (*threads <= 0)
@@ -160,11 +148,7 @@ int slurm_get_avail_procs(const uint16_t socket_cnt,
 	    	*cores = 1;
 	if (*sockets <= 0)
 	    	*sockets = *cpus / *cores / *threads;
-	for (i = 0 ; alloc_cores && i < *sockets; i++) {
-		allocated_cores += alloc_cores[i];
-		if (alloc_cores[i])
-			allocated_sockets++;
-	}
+
 #if (DEBUG)
 	info("get_avail_procs %u %s User_ sockets %u cores %u threads %u",
 			job_id, name, socket_cnt, core_cnt, thread_cnt);
@@ -173,139 +157,31 @@ int slurm_get_avail_procs(const uint16_t socket_cnt,
 	info("get_avail_procs %u %s Ntask node   %u sockets %u core   %u",
 			job_id, name, ntaskspernode, ntaskspersocket,
 			ntaskspercore);
-	info("get_avail_procs %u %s cr_type %d cpus %u  alloc_ c %u s %u",
-			job_id, name, cr_type, *cpus, allocated_cores,
-			allocated_sockets);
+	info("get_avail_procs %u %s cr_type %d cpus %u",
+			job_id, name, cr_type, *cpus);
 	for (i = 0; alloc_cores && i < *sockets; i++)
 		info("get_avail_procs %u %s alloc_cores[%d] = %u",
 		     job_id, name, i, alloc_cores[i]);
 #endif
-	allocated_cpus = allocated_cores * (*threads);
+	uint32_t nppcu = ntaskspercore;
 
-	/* For the following CR types, nodes have no notion of socket, core,
-	   and thread.  Only one level of logical processors */
-	if (cr_type & CR_CORE) {
-		if (*cpus >= allocated_cpus)
-			*cpus -= allocated_cpus;
-		else {
-			*cpus = 0;
-			error("cons_res: *cpus underflow");
-		}
-		if (allocated_cores > 0) {
-			max_avail_cpus = 0;
-			int tmp_diff = 0;
-			for (i=0; i<*sockets; i++) {
-				tmp_diff = *cores - alloc_cores[i];
-				if (min_cores <= tmp_diff) {
-					tmp_diff *= (*threads);
-					max_avail_cpus += tmp_diff;
-				}
-			}
-		}
-
-		/*** honor socket/core/thread maximums ***/
-		*sockets = MIN(*sockets, max_sockets);
-		*cores   = MIN(*cores,   max_cores);
-		*threads = MIN(*threads, max_threads);
-
-		if (min_sockets > *sockets) {
-			*cpus = 0;
-		} else {
-			int max_cpus_socket = 0;
-			max_cpus = 0;
-			for (i=0; i<*sockets; i++) {
-				max_cpus_socket = 0;
-				if (min_cores <= *cores) {
-				        int num_threads = *threads;
-					if (ntaskspercore > 0) {
-						num_threads = MIN(num_threads,
-							       ntaskspercore);
-					}
-					max_cpus_socket = *cores * num_threads;
-				}
-				if (ntaskspersocket > 0) {
-					max_cpus_socket = MIN(max_cpus_socket,
-							      ntaskspersocket);
-				}
-				max_cpus += max_cpus_socket;
-			}
-			max_cpus = MIN(max_cpus, max_avail_cpus);
-		}
-
-		/*** honor any availability maximum ***/
-		max_cpus = MIN(max_cpus, max_avail_cpus);
-
-		if (ntaskspernode > 0) {
-			max_cpus = MIN(max_cpus, ntaskspernode);
-		}
-	} else if (cr_type & CR_SOCKET) {
-		if (*sockets >= allocated_sockets)
-			*sockets -= allocated_sockets; /* sockets count */
-		else {
-			*sockets = 0;
-			error("cons_res: *sockets underflow");
-		}
-		if (*cpus >= allocated_cpus)
-			*cpus -= allocated_cpus;
-		else {
-			*cpus = 0;
-			error("cons_res: *cpus underflow");
-		}
-
-		if (min_sockets > *sockets)
-			*cpus = 0;
-
-		/*** honor socket/core/thread maximums ***/
-		*sockets = MIN(*sockets, max_sockets);
-		*cores   = MIN(*cores,   max_cores);
-		*threads = MIN(*threads, max_threads);
-
-		/*** compute an overall maximum cpu count honoring ntasks* ***/
-		max_cpus  = *threads;
-		if (ntaskspercore > 0) {
-			max_cpus = MIN(max_cpus, ntaskspercore);
-		}
-		max_cpus *= *cores;
-		if (ntaskspersocket > 0) {
-			max_cpus = MIN(max_cpus, ntaskspersocket);
-		}
-		max_cpus *= *sockets;
-		if (ntaskspernode > 0) {
-			max_cpus = MIN(max_cpus, ntaskspernode);
-		}
-
-		/*** honor any availability maximum ***/
-		max_cpus = MIN(max_cpus, max_avail_cpus);
-	} else {	/* CR_CPU (default) */
-		if ((cr_type & CR_CPU) ||
-		    (!(cr_type & CR_MEMORY))) {
-			if (*cpus >= allocated_cpus)
-				*cpus -= allocated_cpus;
-			else {
-				*cpus = 0;
-				error("cons_res: *cpus underflow");
-			}
-		}
-
-		/*** compute an overall maximum cpu count honoring ntasks* ***/
-		max_cpus  = *cpus;
-		if (ntaskspernode > 0) {
-			max_cpus = MIN(max_cpus, ntaskspernode);
-		}
+	if (nppcu == 0xffff) { /* nppcu was not explicitly set, use all threads */
+		info( "***** nppcu was not explicitly set, use all threads *****");
+		nppcu = *threads;
 	}
 
-	/*** factor cpus_per_task into max_cpus ***/
-	max_cpus *= cpus_per_task;
-	/*** round down available based on cpus_per_task ***/
-	avail_cpus = (*cpus / cpus_per_task) * cpus_per_task;
-	avail_cpus = MIN(avail_cpus, max_cpus);
+	avail_cpus = *sockets * *cores * *threads;
+	avail_cpus = avail_cpus * nppcu / *threads;
+
+	if(ntaskspernode>0)
+		avail_cpus = MIN(avail_cpus, ntaskspernode * cpus_per_task);
 
 #if (DEBUG)
 	info("get_avail_procs %u %s return cpus %u sockets %u cores %u threads %u",
 			job_id, name, *cpus, *sockets, *cores, *threads);
 	info("get_avail_procs %d %s avail_cpus %u",  job_id, name, avail_cpus);
 #endif
-	return(avail_cpus);
+	return avail_cpus;
 }
 
 /*
