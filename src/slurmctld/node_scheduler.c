@@ -1426,7 +1426,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	struct node_set *node_set_ptr = NULL;
 	struct part_record *part_ptr = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes;
-	enum job_state_reason fail_reason;
 	time_t now = time(NULL);
 	bool configuring = false;
 	List preemptee_job_list = NULL;
@@ -1457,13 +1456,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		}
 		return ESLURM_JOB_HELD;
 	}
-
-	/* Confirm that partition is up and has compatible nodes limits.
-	 * If not, we still continue to determine if the job can ever run.
-	 * For example, the geometry might be incompatible with BlueGene. */
-	fail_reason = job_limits_check(&job_ptr);
-	if (fail_reason != WAIT_NO_REASON)
-		test_only = true;
 
 	/* build sets of usable nodes based upon their configuration */
 	error_code = _build_node_list(job_ptr, &node_set_ptr, &node_set_size);
@@ -1552,17 +1544,13 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			}
 		}
 	}
-	if (error_code || fail_reason) {
+	if (error_code) {
 		/* Fatal errors for job here */
 		if (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
 			/* Too many nodes requested */
 			debug3("JobId=%u not runnable with present config",
 			       job_ptr->job_id);
 			job_ptr->state_reason = WAIT_PART_NODE_LIMIT;
-			xfree(job_ptr->state_desc);
-			last_job_update = now;
-		} else if (fail_reason) {
-			job_ptr->state_reason = fail_reason;
 			xfree(job_ptr->state_desc);
 			last_job_update = now;
 

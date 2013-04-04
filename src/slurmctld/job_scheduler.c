@@ -200,13 +200,16 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 /* Job and partition tests for ability to run now */
 static bool _job_runnable_test2(struct job_record *job_ptr)
 {
-	if (!part_policy_job_runnable_state(job_ptr)) {
-		job_ptr->state_reason = job_limits_check(&job_ptr);
-		xfree(job_ptr->state_desc);
+	int reason;
 
-		if (job_ptr->state_reason  != WAIT_NO_REASON)
-			return false;
+	reason = job_limits_check(&job_ptr);
+	if ((reason != job_ptr->state_reason) &&
+	    (part_policy_job_runnable_state(job_ptr))) {
+		job_ptr->state_reason = reason;
+		xfree(job_ptr->state_desc);
 	}
+	if (reason != WAIT_NO_REASON)
+		return false;
 	return true;
 }
 
@@ -498,6 +501,8 @@ next_part:		part_ptr = (struct part_record *)
 				continue;
 			}
 		}
+		if (job_limits_check(&job_ptr) != WAIT_NO_REASON)
+			continue;
 
 		/* Test for valid account, QOS and required nodes on each pass */
 		if (job_ptr->state_reason == FAIL_ACCOUNT) {
