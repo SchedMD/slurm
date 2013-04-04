@@ -138,6 +138,7 @@ int slurm_get_avail_procs(const uint16_t socket_cnt,
 			  char *name)
 {
 	uint16_t avail_cpus = 0;
+	uint32_t nppcu;
 
         /* pick defaults for any unspecified items */
 	if (cpus_per_task <= 0)
@@ -163,17 +164,17 @@ int slurm_get_avail_procs(const uint16_t socket_cnt,
 		info("get_avail_procs %u %s alloc_cores[%d] = %u",
 		     job_id, name, i, alloc_cores[i]);
 #endif
-	uint32_t nppcu = ntaskspercore;
-
-	if (nppcu == 0xffff) { /* nppcu was not explicitly set, use all threads */
-		info( "***** nppcu was not explicitly set, use all threads *****");
+	nppcu = ntaskspercore;
+	if (nppcu == 0xffff) {
+		verbose("nppcu not explicitly set for job %u, use all threads",
+			job_id);
 		nppcu = *threads;
 	}
 
 	avail_cpus = *sockets * *cores * *threads;
 	avail_cpus = avail_cpus * nppcu / *threads;
 
-	if(ntaskspernode>0)
+	if (ntaskspernode > 0)
 		avail_cpus = MIN(avail_cpus, ntaskspernode * cpus_per_task);
 
 #if (DEBUG)

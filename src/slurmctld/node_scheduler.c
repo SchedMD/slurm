@@ -133,7 +133,7 @@ static int _fill_in_gres_fields(struct job_record *job_ptr);
 /*
  * _get_ntasks_per_core - Retrieve the value of ntasks_per_core from
  *	the given job_details record.  If it wasn't set, return 0xffff.
- *	Intended for use with the _adjust_cpus_nppcu function.
+ *	Intended for use with the adjust_cpus_nppcu function.
  */
 static uint16_t _get_ntasks_per_core(struct job_details *details) {
 	uint16_t ntasks_per_core;
@@ -2010,7 +2010,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			    struct node_set **node_set_pptr,
 			    int *node_set_size)
 {
-	int i, node_set_inx, power_cnt, rc;
+	int adj_cpus, i, node_set_inx, power_cnt, rc;
 	struct node_set *node_set_ptr;
 	struct config_record *config_ptr;
 	struct part_record *part_ptr = job_ptr->part_ptr;
@@ -2087,9 +2087,11 @@ static int _build_node_list(struct job_record *job_ptr,
 
 	while ((config_ptr = (struct config_record *)
 			list_next(config_iterator))) {
-
 		config_filter = 0;
-		if ((detail_ptr->pn_min_cpus     >  _adjust_cpus_nppcu(_get_ntasks_per_core(detail_ptr), config_ptr->threads, config_ptr->cpus)) ||
+		adj_cpus = adjust_cpus_nppcu(_get_ntasks_per_core(detail_ptr),
+					     config_ptr->threads,
+					     config_ptr->cpus);
+		if ((detail_ptr->pn_min_cpus     >  adj_cpus) ||
 		    ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) >
 		      config_ptr->real_memory)                               ||
 		    (detail_ptr->pn_min_tmp_disk > config_ptr->tmp_disk))
@@ -2239,7 +2241,7 @@ static int _build_node_list(struct job_record *job_ptr,
 static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *job_con)
 {
-	int i;
+	int adj_cpus, i;
 	multi_core_data_t *mc_ptr = job_con->mc_ptr;
 
 	if (slurmctld_conf.fast_schedule) {	/* test config records */
@@ -2248,9 +2250,11 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 			int job_ok = 0, job_mc_ptr_ok = 0;
 			if (bit_test(node_set_ptr->my_bitmap, i) == 0)
 				continue;
-
 			node_con = node_record_table_ptr[i].config_ptr;
-			if ((job_con->pn_min_cpus     <= _adjust_cpus_nppcu(_get_ntasks_per_core(job_con), node_con->threads, node_con->cpus))    &&
+			adj_cpus = adjust_cpus_nppcu(_get_ntasks_per_core(job_con),
+						     node_con->threads,
+						     node_con->cpus);
+			if ((job_con->pn_min_cpus     <= adj_cpus)           &&
 			    ((job_con->pn_min_memory & (~MEM_PER_CPU)) <=
 			      node_con->real_memory)                         &&
 			    (job_con->pn_min_tmp_disk <= node_con->tmp_disk))
@@ -2279,9 +2283,12 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				continue;
 
 			node_ptr = &node_record_table_ptr[i];
-			if ((job_con->pn_min_cpus     <= _adjust_cpus_nppcu(_get_ntasks_per_core(job_con), node_ptr->threads, node_ptr->cpus))    &&
+			adj_cpus = adjust_cpus_nppcu(_get_ntasks_per_core(job_con),
+						     node_ptr->threads,
+						     node_ptr->cpus);
+			if ((job_con->pn_min_cpus     <= adj_cpus)            &&
 			    ((job_con->pn_min_memory & (~MEM_PER_CPU)) <=
-			      node_ptr->real_memory)                         &&
+			      node_ptr->real_memory)                          &&
 			    (job_con->pn_min_tmp_disk <= node_ptr->tmp_disk))
 				job_ok = 1;
 			if (mc_ptr &&

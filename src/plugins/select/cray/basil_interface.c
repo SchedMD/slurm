@@ -776,13 +776,16 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 	}
 
 	if (slurmctld_conf.select_type_param & CR_ONE_TASK_PER_CORE) {
-		if ( job_ptr->details && job_ptr->details->mc_ptr && job_ptr->details->mc_ptr->ntasks_per_core == 0xffff ) {
+		if (job_ptr->details && job_ptr->details->mc_ptr &&
+		    (job_ptr->details->mc_ptr->ntasks_per_core == 0xffff)) {
 			nppcu = 1;
-			debug("No explicit ntasks-per-core has been set, using nppcu=1.");
+			debug("No explicit ntasks-per-core has been set, "
+			      "using nppcu=1.");
 		}
 	}
 
-	if ( job_ptr->details && job_ptr->details->mc_ptr && job_ptr->details->mc_ptr->ntasks_per_core != 0xffff ) {
+	if (job_ptr->details && job_ptr->details->mc_ptr &&
+	    (job_ptr->details->mc_ptr->ntasks_per_core != 0xffff)) {
 		nppcu = job_ptr->details->mc_ptr->ntasks_per_core;
 	}
 
@@ -849,9 +852,12 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 	for (i = 0; i < job_ptr->job_resrcs->nhosts; i++) {
 		uint32_t node_tasks = job_ptr->job_resrcs->cpus[i] / mppdepth;
 
-		if ( job_ptr->job_resrcs->sockets_per_node[i] > 0 && job_ptr->job_resrcs->cores_per_socket[i] > 0 )
-			hwthreads_per_core = job_ptr->job_resrcs->cpus[i] / job_ptr->job_resrcs->sockets_per_node[i] / job_ptr->job_resrcs->cores_per_socket[i];
-
+		if ((job_ptr->job_resrcs->sockets_per_node[i] > 0) &&
+		    (job_ptr->job_resrcs->cores_per_socket[i] > 0)) {
+			hwthreads_per_core = job_ptr->job_resrcs->cpus[i] /
+					     job_ptr->job_resrcs->sockets_per_node[i] /
+					     job_ptr->job_resrcs->cores_per_socket[i];
+		}
 		if (nppcu)
 			node_tasks = node_tasks * nppcu / hwthreads_per_core;
 

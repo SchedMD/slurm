@@ -543,7 +543,7 @@ static uint16_t _get_total_threads(int index)
 /*
  * _get_ntasks_per_core - Retrieve the value of ntasks_per_core from
  *	the given job_details record.  If it wasn't set, return 0xffff.
- *	Intended for use with the _adjust_cpus_nppcu function.
+ *	Intended for use with the adjust_cpus_nppcu function.
  */
 
 static uint16_t _get_ntasks_per_core(struct job_details *details) {
@@ -619,7 +619,9 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 			node_threads = node_ptr->threads;
 		}
 
-		node_cpus = _adjust_cpus_nppcu(_get_ntasks_per_core(job_ptr->details), node_threads, node_cpus);
+		node_cpus = adjust_cpus_nppcu(
+					_get_ntasks_per_core(job_ptr->details),
+					node_threads, node_cpus);
 		job_resrcs_ptr->cpus[j] = node_cpus;
 		if ((k == -1) ||
 		    (job_resrcs_ptr->cpu_array_value[k] != node_cpus)) {
@@ -891,7 +893,10 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				rem_nodes--;
 				max_nodes--;
 				rem_cpus   -= avail_cpus;
-				total_cpus += _adjust_cpus_nppcu(_get_ntasks_per_core(job_ptr->details), _get_total_threads(index), _get_total_cpus(index));
+				total_cpus += adjust_cpus_nppcu(
+						_get_ntasks_per_core(job_ptr->details),
+						_get_total_threads(index),
+						_get_total_cpus(index));
 			} else {	 /* node not required (yet) */
 				bit_clear(bitmap, index);
 				consec_cpus[consec_index] += avail_cpus;
@@ -1018,7 +1023,10 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				max_nodes--;
 				avail_cpus = _get_avail_cpus(job_ptr, i);
 				rem_cpus   -= avail_cpus;
-				total_cpus += _adjust_cpus_nppcu(_get_ntasks_per_core(job_ptr->details), _get_total_threads(i), _get_total_cpus(i));
+				total_cpus += adjust_cpus_nppcu(
+						_get_ntasks_per_core(job_ptr->details),
+						_get_total_threads(i),
+						_get_total_cpus(i));
 			}
 			for (i = (best_fit_req - 1);
 			     i >= consec_start[best_fit_location]; i--) {
@@ -1032,7 +1040,10 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				max_nodes--;
 				avail_cpus = _get_avail_cpus(job_ptr, i);
 				rem_cpus   -= avail_cpus;
-				total_cpus += _adjust_cpus_nppcu(_get_ntasks_per_core(job_ptr->details), _get_total_threads(i), _get_total_cpus(i));
+				total_cpus += adjust_cpus_nppcu(
+						_get_ntasks_per_core(job_ptr->details),
+						_get_total_threads(i),
+						_get_total_cpus(i));
 			}
 		} else {
 			for (i = consec_start[best_fit_location];
@@ -1047,7 +1058,10 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				max_nodes--;
 				avail_cpus = _get_avail_cpus(job_ptr, i);
 				rem_cpus   -= avail_cpus;
-				total_cpus += _adjust_cpus_nppcu(_get_ntasks_per_core(job_ptr->details), _get_total_threads(i), _get_total_cpus(i));
+				total_cpus += adjust_cpus_nppcu(
+						_get_ntasks_per_core(job_ptr->details),
+						_get_total_threads(i),
+						_get_total_cpus(i));
 			}
 		}
 		if (job_ptr->details->contiguous ||
@@ -1273,7 +1287,10 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				alloc_nodes++;
 				rem_cpus -= avail_cpus;
-				total_cpus += _adjust_cpus_nppcu(_get_ntasks_per_core(job_ptr->details), _get_total_threads(i), _get_total_cpus(i));
+				total_cpus += adjust_cpus_nppcu(
+						_get_ntasks_per_core(job_ptr->details),
+						_get_total_threads(i),
+						_get_total_cpus(i));
 			}
 		}
 		/* Accumulate additional resources from leafs that
@@ -1308,7 +1325,10 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				alloc_nodes++;
 				rem_cpus -= _get_avail_cpus(job_ptr, i);
-				total_cpus += _adjust_cpus_nppcu(_get_ntasks_per_core(job_ptr->details), _get_total_threads(i), _get_total_cpus(i));
+				total_cpus += adjust_cpus_nppcu(
+						_get_ntasks_per_core(job_ptr->details),
+						_get_total_threads(i),
+						_get_total_cpus(i));
 				if ((alloc_nodes > max_nodes) ||
 				    ((alloc_nodes >= want_nodes) &&
 				     (rem_cpus <= 0)))
@@ -1378,7 +1398,10 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			bit_set(bitmap, i);
 			alloc_nodes++;
 			rem_cpus -= _get_avail_cpus(job_ptr, i);
-			total_cpus += _adjust_cpus_nppcu(_get_ntasks_per_core(job_ptr->details), _get_total_threads(i), _get_total_cpus(i));
+			total_cpus += adjust_cpus_nppcu(
+					_get_ntasks_per_core(job_ptr->details),
+					_get_total_threads(i),
+					_get_total_cpus(i));
 			if ((alloc_nodes > max_nodes) ||
 			    ((alloc_nodes >= want_nodes) && (rem_cpus <= 0)))
 				break;

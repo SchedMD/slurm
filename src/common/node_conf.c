@@ -1095,15 +1095,18 @@ extern uint32_t cr_get_coremap_offset(uint32_t node_index)
 	return cr_node_cores_offset[node_index];
 }
 
-/* The value of threads should be from config_ptr->threads if slurm.conf has fast schedule turned on (config_record);
- * 		otherwise, it should be from node_ptr->threads (node_record).
+/* Given the number of tasks per core and the actual number of hw threads,
+ * compute how many CPUs are "visible" and, hence, usable on the node.
  */
-extern int _adjust_cpus_nppcu(uint16_t ntasks_per_core, uint16_t threads, int cpus ) {
+extern int adjust_cpus_nppcu(uint16_t ntasks_per_core, uint16_t threads,
+			     int cpus)
+{
 
 	if (ntasks_per_core == 0xffff)
 		ntasks_per_core = threads;
 
-	/* Adjust the number of CPUs according to the percentage of the hwthreads/core being used. */
+	/* Adjust the number of CPUs according to the percentage of the
+	 * hwthreads/core being used. */
 	cpus *= ntasks_per_core;
 	cpus /= threads;
 
