@@ -2859,8 +2859,18 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 				bit_alloc(bg_conf->mp_cnode_cnt);
 
 		if (jobinfo->units_avail) {
-			bit_or(ba_mp->cnode_err_bitmap,
-			       step_jobinfo->units_used);
+			/* If step_id == NO_VAL it means we got this
+			   after the step was already wiped from
+			   memory.  So the step_jobinfo is really the
+			   jobinfo where units_used is not set, so use
+			   the avail instead.
+			*/
+			if (step_ptr->step_id != NO_VAL)
+				bit_or(ba_mp->cnode_err_bitmap,
+				       step_jobinfo->units_used);
+			else
+				bit_or(ba_mp->cnode_err_bitmap,
+				       step_jobinfo->units_avail);
 		} else {
 			bit_nset(ba_mp->cnode_err_bitmap, 0,
 				 bit_size(ba_mp->cnode_err_bitmap)-1);

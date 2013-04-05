@@ -90,20 +90,55 @@ extern void launch_p_fwd_signal(int signal);
  */
 static char *_get_nids(char *nodelist)
 {
-	char *nids;
-	int i = 0, i2 = 0;
+	hostlist_t hl;
+	char *nids = NULL, *node_name, *sep = "";
+	int i, nid;
+	int nid_begin = -1, nid_end = -1;
 
 	if (!nodelist)
 		return NULL;
-//	info("got %s", nodelist);
-	nids = xmalloc(sizeof(char) * strlen(nodelist));
-	while (nodelist[i] && !isdigit(nodelist[i]))
-		i++;
+	hl = hostlist_create(nodelist);
+	if (!hl) {
+		error("Invalid hostlist: %s", nodelist);
+		return NULL;
+	}
+	//info("input hostlist: %s", nodelist);
+	hostlist_uniq(hl);
+	while ((node_name = hostlist_shift(hl))) {
+		for (i = 0; node_name[i]; i++) {
+			if (!isdigit(node_name[i]))
+				continue;
+			nid = atoi(&node_name[i]);
+			if (nid_begin == -1) {
+				nid_begin = nid;
+				nid_end   = nid;
+			} else if (nid == (nid_end + 1)) {
+				nid_end   = nid;
+			} else {
+				if (nid_begin == nid_end) {
+					xstrfmtcat(nids, "%s%d", sep,
+						   nid_begin);
+				} else {
+					xstrfmtcat(nids, "%s%d-%d", sep,
+						   nid_begin, nid_end);
+				}
+				nid_begin = nid;
+				nid_end   = nid;
+				sep = ",";
+			}
+			break;
+		}
+		free(node_name);
+	}
+	if (nid_begin == -1)
+		;	/* No data to record */
+	else if (nid_begin == nid_end)
+		xstrfmtcat(nids, "%s%d", sep, nid_begin);
+	else
+		xstrfmtcat(nids, "%s%d-%d", sep, nid_begin, nid_end);
+	hostlist_destroy(hl);
+	//info("output node IDs: %s", nids);
 
-	while (nodelist[i] && nodelist[i] != ']')
-		nids[i2++] = nodelist[i++];
-
-//	info("returning %s", nids);
 	return nids;
 }
 
@@ -457,11 +492,13 @@ extern int launch_p_setup_srun_opt(char **rest)
 
 	if (opt.nodelist) {
 		char *nids = _get_nids(opt.nodelist);
-		opt.argc += 2;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[command_pos++] = xstrdup("-L");
-		opt.argv[command_pos++] = xstrdup(nids);
-		xfree(nids);
+		if (nids) {
+			opt.argc += 2;
+			xrealloc(opt.argv, opt.argc * sizeof(char *));
+			opt.argv[command_pos++] = xstrdup("-L");
+			opt.argv[command_pos++] = xstrdup(nids);
+			xfree(nids);
+		}
 	}
 
 	if (opt.mem_per_cpu != NO_VAL) {

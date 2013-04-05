@@ -2916,6 +2916,8 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 		}
 		list_iterator_destroy(iter);
 	} else {
+		if (job_limits_check(&job_ptr) != WAIT_NO_REASON)
+			test_only = true;
 		rc = select_nodes(job_ptr, test_only, select_node_bitmap);
 	}
 
@@ -3044,14 +3046,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	test_only = will_run || (allocate == 0);
 
 	no_alloc = test_only || too_fragmented ||
-		   (!top_prio) || (!independent);
-	if (!no_alloc && !avail_front_end(job_ptr)) {
-		debug("sched: job_allocate() returning, no front end nodes "
-		       "are available");
-		error_code = ESLURM_NODES_BUSY;
-	} else {
-		error_code = _select_nodes_parts(job_ptr, no_alloc, NULL);
-	}
+		   (!top_prio) || (!independent) || !avail_front_end(job_ptr);
+	error_code = _select_nodes_parts(job_ptr, no_alloc, NULL);
 	if (!test_only) {
 		last_job_update = now;
 		slurm_sched_schedule();	/* work for external scheduler */

@@ -251,6 +251,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 	int rc = SLURM_SUCCESS;
 	int feat_cnt = _num_feature_count(job_ptr);
 	List preemptee_candidates = NULL;
+	List preemptee_job_list = NULL;
 
 	if (feat_cnt) {
 		/* Ideally schedule the job feature by feature,
@@ -288,8 +289,13 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 			rc = select_g_job_test(job_ptr, *avail_bitmap,
 					       high_cnt, max_nodes, req_nodes,
 					       SELECT_MODE_WILL_RUN,
-					       preemptee_candidates, NULL,
+					       preemptee_candidates,
+					       &preemptee_job_list,
 					       exc_core_bitmap);
+			if (preemptee_job_list) {
+				list_destroy(preemptee_job_list);
+				preemptee_job_list = NULL;
+			}
 		}
 
 		/* Restore the feature counts */
@@ -321,8 +327,13 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		rc = select_g_job_test(job_ptr, *avail_bitmap, min_nodes,
 				       max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN,
-				       preemptee_candidates, NULL,
+				       preemptee_candidates,
+				       &preemptee_job_list,
 				       exc_core_bitmap);
+		if (preemptee_job_list) {
+			list_destroy(preemptee_job_list);
+			preemptee_job_list = NULL;
+		}
 
 		job_ptr->details->shared = orig_shared;
 
@@ -333,8 +344,13 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 			rc = select_g_job_test(job_ptr, *avail_bitmap,
 					       min_nodes, max_nodes, req_nodes,
 					       SELECT_MODE_WILL_RUN,
-					       preemptee_candidates, NULL,
+					       preemptee_candidates,
+					       &preemptee_job_list,
 					       exc_core_bitmap);
+			if (preemptee_job_list) {
+				list_destroy(preemptee_job_list);
+				preemptee_job_list = NULL;
+			}
 		} else
 			FREE_NULL_BITMAP(tmp_bitmap);
 	}

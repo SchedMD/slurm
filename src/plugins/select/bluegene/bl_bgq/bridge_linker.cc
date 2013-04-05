@@ -217,9 +217,15 @@ static bg_record_t * _translate_object_to_block(const Block::Ptr &block_ptr)
 
 	process_nodes(bg_record, true);
 
+	/* we are just going to go and destroy this block so
+	   just get the name and continue. */
+	if (!bg_recover)
+		return bg_record;
+
 	reset_ba_system(false);
 	if (ba_set_removable_mps(bg_record->mp_bitmap, 1) != SLURM_SUCCESS)
-		fatal("It doesn't seem we have a bitmap for %s",
+		fatal("It doesn't seem we have a bitmap for %s.  "
+		      "YOU MUST COLDSTART",
 		      bg_record->bg_block_id);
 
 	if (bg_record->ba_mp_list)
@@ -235,7 +241,9 @@ static bg_record_t * _translate_object_to_block(const Block::Ptr &block_ptr)
 	memcpy(bg_record->start, ba_request.start, sizeof(bg_record->start));
 	ba_reset_all_removed_mps();
 	if (!node_char)
-		fatal("I was unable to make the requested block.");
+		fatal("I was unable to make the requested block %s.  "
+		      "YOU MUST COLDSTART",
+		      bg_record->bg_block_id);
 
 	snprintf(mp_str, sizeof(mp_str), "%s%s",
 		 bg_conf->slurm_node_prefix,
@@ -1172,8 +1180,9 @@ extern int bridge_blocks_load_curr(List curr_block_list)
 			      curr_block_list, bg_block_id))) {
 			info("%s not found in the state file, adding",
 			     bg_block_id);
-			bg_record = _translate_object_to_block(block_ptr);
-			slurm_list_append(curr_block_list, bg_record);
+
+			if ((bg_record = _translate_object_to_block(block_ptr)))
+				slurm_list_append(curr_block_list, bg_record);
 		}
 
 		/* modifying will be ceared later in the

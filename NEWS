@@ -120,6 +120,20 @@ documents those changes that are of interest to users and admins.
  -- Add sanity check for NULL cluster names trying to register.
  -- BGQ - Push action 'D' info to scontrol for admins.
  -- Reset a job's reason from PartitionDown when the partition is set up.
+ -- BGQ - Handle issue where blocks would have a pending job on them and
+    while it was free cnodes would go into software error and kill the job.
+ -- BGQ - Fix issue where if for some reason we are freeing a block with
+    a pending job on it we don't kill the job.
+ -- BGQ - Fix race condition were a job could of been removed from a block
+    without it still existing there.  This is extremely rare.
+ -- BGQ - Fix for when a step completes in Slurm before the runjob_mux notifies
+    the slurmctld there were software errors on some nodes.
+ -- BGQ - Fix issue on state recover if block states are not around
+    and when reading in state from DB2 we find a block that can't be created.
+    You can now do a clean start to rid the bad block.
+ -- Modify slurmdbd to retransmit to slurmctld daemon if it is not responding.
+ -- BLUEGENE - Fix issue where when doing backfill preemptable jobs were
+    never looked at to determine eligibility of backfillable job.
 
 * Changes in Slurm 2.5.4
 ========================
