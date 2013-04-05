@@ -91,7 +91,8 @@ static void	_job_queue_append(List job_queue, struct job_record *job_ptr,
 static void	_job_queue_rec_del(void *x);
 static bool	_job_runnable_test1(struct job_record *job_ptr,
 				    bool clear_start);
-static bool	_job_runnable_test2(struct job_record *job_ptr);
+static bool	_job_runnable_test2(struct job_record *job_ptr,
+				    bool check_min_time);
 static void *	_run_epilog(void *arg);
 static void *	_run_prolog(void *arg);
 static bool	_scan_depend(List dependency_list, uint32_t job_id);
@@ -193,12 +194,17 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool clear_start)
 	return true;
 }
 
-/* Job and partition tests for ability to run now */
-static bool _job_runnable_test2(struct job_record *job_ptr)
+/*
+ * Job and partition tests for ability to run now
+ * IN job_ptr - job to test
+ * IN check_min_time - If set, test job's minimum time limit
+ *		otherwise test maximum time limit
+ */
+static bool _job_runnable_test2(struct job_record *job_ptr, bool check_min_time)
 {
 	int reason;
 
-	reason = job_limits_check(&job_ptr);
+	reason = job_limits_check(&job_ptr, check_min_time);
 	if ((reason != job_ptr->state_reason) &&
 	    (part_policy_job_runnable_state(job_ptr))) {
 		job_ptr->state_reason = reason;
@@ -212,10 +218,11 @@ static bool _job_runnable_test2(struct job_record *job_ptr)
 /*
  * build_job_queue - build (non-priority ordered) list of pending jobs
  * IN clear_start - if set then clear the start_time for pending jobs
+ * IN backfill - true if running backfill scheduler, enforce min time limit
  * RET the job queue
  * NOTE: the caller must call list_destroy() on RET value to free memory
  */
-extern List build_job_queue(bool clear_start)
+extern List build_job_queue(bool clear_start, bool backfill)
 {
 	List job_queue;
 	ListIterator job_iterator, part_iterator;
@@ -235,7 +242,7 @@ extern List build_job_queue(bool clear_start)
 	      			while ((part_ptr = (struct part_record *)
 					list_next(part_iterator))) {
 				job_ptr->part_ptr = part_ptr;
-				reason = job_limits_check(&job_ptr);
+				reason = job_limits_check(&job_ptr, backfill);
 				if ((reason != job_ptr->state_reason) &&
 				    (!part_policy_job_runnable_state(job_ptr))){
 					job_ptr->state_reason = reason;
@@ -260,7 +267,7 @@ extern List build_job_queue(bool clear_start)
 				      "part %s", job_ptr->job_id,
 				      job_ptr->partition);
 			}
-			if (!_job_runnable_test2(job_ptr))
+			if (!_job_runnable_test2(job_ptr, backfill))
 				continue;
 			_job_queue_append(job_queue, job_ptr,
 					  job_ptr->part_ptr);
@@ -482,7 +489,7 @@ next_part:		part_ptr = (struct part_record *)
 				continue;
 			}
 		}
-		if (job_limits_check(&job_ptr) != WAIT_NO_REASON)
+		if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON)
 			continue;
 
 		/* Test for valid account, QOS and required nodes on each pass */
@@ -761,7 +768,7 @@ extern int schedule(uint32_t job_limit)
 		slurmctld_diag_stats.schedule_queue_len = list_count(job_list);
 		job_iterator = list_iterator_create(job_list);
 	} else {
-		job_queue = build_job_queue(false);
+		job_queue = build_job_queue(false, false);
 		slurmctld_diag_stats.schedule_queue_len = list_count(job_queue);
 	}
 	while (1) {
@@ -785,7 +792,7 @@ next_part:			part_ptr = (struct part_record *)
 					   list_next(part_iterator);
 				if (part_ptr) {
 					job_ptr->part_ptr = part_ptr;
-					if (job_limits_check(&job_ptr) !=
+					if (job_limits_check(&job_ptr, false) !=
 					    WAIT_NO_REASON)
 						continue;
 				} else {
@@ -794,7 +801,7 @@ next_part:			part_ptr = (struct part_record *)
 					continue;
 				}
 			} else {
-				if (!_job_runnable_test2(job_ptr))
+				if (!_job_runnable_test2(job_ptr, false))
 					continue;
 			}
 		} else {
