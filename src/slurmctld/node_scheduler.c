@@ -136,14 +136,11 @@ static int _fill_in_gres_fields(struct job_record *job_ptr);
  *	Intended for use with the adjust_cpus_nppcu function.
  */
 static uint16_t _get_ntasks_per_core(struct job_details *details) {
-	uint16_t ntasks_per_core;
 
-	if ((details->mc_ptr))
-		ntasks_per_core = details->mc_ptr->ntasks_per_core;
+	if (details->mc_ptr)
+		return details->mc_ptr->ntasks_per_core;
 	else
-		ntasks_per_core = 0xffff;
-
-	return ntasks_per_core;
+		return 0xffff;
 }
 
 /*

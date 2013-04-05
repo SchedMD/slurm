@@ -1101,14 +1101,11 @@ extern uint32_t cr_get_coremap_offset(uint32_t node_index)
 extern int adjust_cpus_nppcu(uint16_t ntasks_per_core, uint16_t threads,
 			     int cpus)
 {
-
-	if (ntasks_per_core == 0xffff)
-		ntasks_per_core = threads;
-
-	/* Adjust the number of CPUs according to the percentage of the
-	 * hwthreads/core being used. */
-	cpus *= ntasks_per_core;
-	cpus /= threads;
+	if (ntasks_per_core != 0xffff) {
+		/* Adjust the number of CPUs according to the percentage of the
+		 * hwthreads/core being used. */
+		cpus *= ntasks_per_core / threads;
+	}
 
 	return cpus;
 }
