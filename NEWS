@@ -52,6 +52,7 @@ documents those changes that are of interest to users and admins.
  -- Modify slurmdbd to retransmit to slurmctld daemon if it is not responding.
  -- BLUEGENE - Fix issue where when doing backfill preemptable jobs were
     never looked at to determine eligibility of backfillable job.
+ -- Cray/BlueGene - Disable srun --pty option unless LaunchType=launch/slurm.
 
 * Changes in Slurm 2.5.4
 ========================
