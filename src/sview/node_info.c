@@ -42,12 +42,15 @@ int g_node_scaling = 1;
 enum {
 	SORTID_POS = POS_LOC,
 	SORTID_ARCH,
+	SORTID_BASE_WATTS,
 	SORTID_BOARDS,
 	SORTID_BOOT_TIME,
 	SORTID_COLOR,
 	SORTID_CPUS,
 	SORTID_CPU_LOAD,
+	SORTID_CONSUMED_ENERGY,
 	SORTID_CORES,
+	SORTID_CURRENT_WATTS,
 	SORTID_ERR_CPUS,
 	SORTID_FEATURES,
 	SORTID_GRES,
@@ -141,6 +144,12 @@ static display_data_t display_data_node[] = {
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_BASE_WATTS, "Lowest Joules", FALSE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_CONSUMED_ENERGY,"Consumed Joules", FALSE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_CURRENT_WATTS, "Current Watts", FALSE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
@@ -183,6 +192,9 @@ static void _layout_node_record(GtkTreeView *treeview,
 				int update)
 {
 	char tmp_cnt[50];
+	char tmp_current_watts[50];
+	char tmp_base_watts[50];
+	char tmp_consumed_energy[50];
 	char *upper = NULL, *lower = NULL;
 	GtkTreeIter iter;
 	uint16_t err_cpus = 0, alloc_cpus = 0;
@@ -357,6 +369,36 @@ static void _layout_node_record(GtkTreeView *treeview,
 				   find_col_name(display_data_node,
 						 SORTID_REASON),
 				   sview_node_info_ptr->reason);
+
+	if (node_ptr->energy->current_watts == NO_VAL) {
+		snprintf(tmp_current_watts, sizeof(tmp_current_watts),
+			 "N/A");
+		snprintf(tmp_base_watts, sizeof(tmp_base_watts),
+			 "N/A");
+		snprintf(tmp_consumed_energy, sizeof(tmp_consumed_energy),
+			 "N/A");
+	} else {
+		snprintf(tmp_current_watts, sizeof(tmp_current_watts),
+			 "%u", node_ptr->energy->current_watts);
+		snprintf(tmp_base_watts, sizeof(tmp_base_watts),
+			 "%u", node_ptr->energy->base_watts);
+		snprintf(tmp_consumed_energy, sizeof(tmp_consumed_energy),
+			 "%u", node_ptr->energy->consumed_energy);
+	}
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_BASE_WATTS),
+				   tmp_base_watts);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_CONSUMED_ENERGY),
+				   tmp_consumed_energy);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_CURRENT_WATTS),
+				   tmp_current_watts);
 	return;
 }
 
@@ -369,7 +411,25 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	char tmp_disk[20], tmp_cpus[20], tmp_err_cpus[20];
 	char tmp_mem[20], tmp_used_memory[20];
 	char tmp_used_cpus[20], tmp_cpu_load[20];
+	char tmp_current_watts[50], tmp_base_watts[50], tmp_consumed_energy[50];
 	char *tmp_state_lower, *tmp_state_upper;
+
+
+	if (node_ptr->energy->current_watts == NO_VAL) {
+		snprintf(tmp_current_watts, sizeof(tmp_current_watts),
+			 "N/A");
+		snprintf(tmp_base_watts, sizeof(tmp_base_watts),
+			 "N/A");
+		snprintf(tmp_consumed_energy, sizeof(tmp_consumed_energy),
+			 "N/A");
+	} else {
+		snprintf(tmp_current_watts, sizeof(tmp_current_watts),
+			 "%u ", node_ptr->energy->current_watts);
+		snprintf(tmp_base_watts, sizeof(tmp_base_watts),
+			 "%u", node_ptr->energy->base_watts);
+		snprintf(tmp_consumed_energy, sizeof(tmp_consumed_energy),
+			 "%u", node_ptr->energy->consumed_energy);
+	}
 
 	if (node_ptr->cpu_load == NO_VAL) {
 		strcpy(tmp_cpu_load, "N/A");
@@ -437,13 +497,16 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, &sview_node_info_ptr->iter_ptr,
 			   SORTID_ARCH,      node_ptr->arch,
+			   SORTID_BASE_WATTS,tmp_base_watts,
 			   SORTID_BOARDS,    node_ptr->boards,
 			   SORTID_BOOT_TIME, sview_node_info_ptr->boot_time,
 			   SORTID_COLOR,
 				sview_colors[sview_node_info_ptr->pos
 				% sview_colors_cnt],
+			   SORTID_CONSUMED_ENERGY, tmp_consumed_energy,
 			   SORTID_CORES,     node_ptr->cores,
 			   SORTID_CPUS,      tmp_cpus,
+			   SORTID_CURRENT_WATTS, tmp_current_watts,
 			   SORTID_CPU_LOAD,  tmp_cpu_load,
 			   SORTID_DISK,      tmp_disk,
 			   SORTID_ERR_CPUS,  tmp_err_cpus,

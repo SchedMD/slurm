@@ -56,9 +56,13 @@ enum {
 /* These need to be in alpha order (except POS and CNT) */
 enum {
 	SORTID_POS = POS_LOC,
+	SORTID_ALLOW_GROUPS,
+	SORTID_ALLOW_USERS,
 	SORTID_BOOT_TIME,
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
+	SORTID_DENY_GROUPS,
+	SORTID_DENY_USERS,
 	SORTID_NAME,
 	SORTID_NODE_INX,
 	SORTID_REASON,
@@ -92,6 +96,14 @@ static display_data_t display_data_front_end[] = {
 	 FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE, EDIT_NONE,
+	 refresh_front_end, create_model_front_end, admin_edit_front_end},
+	{G_TYPE_STRING, SORTID_ALLOW_GROUPS, "Allow Groups", FALSE, EDIT_NONE,
+	 refresh_front_end, create_model_front_end, admin_edit_front_end},
+	{G_TYPE_STRING, SORTID_ALLOW_USERS, "Allow Users", FALSE, EDIT_NONE,
+	 refresh_front_end, create_model_front_end, admin_edit_front_end},
+	{G_TYPE_STRING, SORTID_DENY_GROUPS, "Deny Groups", FALSE, EDIT_NONE,
+	 refresh_front_end, create_model_front_end, admin_edit_front_end},
+	{G_TYPE_STRING, SORTID_DENY_USERS, "Deny Users", FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_INT, SORTID_COLOR_INX,  NULL, FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
@@ -139,6 +151,7 @@ static void _layout_front_end_record(GtkTreeView *treeview,
 				     sview_front_end_info,
 				     int update)
 {
+
 	GtkTreeIter iter;
 	front_end_info_t *front_end_ptr =
 		sview_front_end_info->front_end_ptr;
@@ -172,6 +185,27 @@ static void _layout_front_end_record(GtkTreeView *treeview,
 				   find_col_name(display_data_front_end,
 						 SORTID_REASON),
 				   sview_front_end_info->reason);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_front_end,
+						 SORTID_ALLOW_GROUPS),
+				   front_end_ptr->allow_groups);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_front_end,
+						 SORTID_ALLOW_USERS),
+				   front_end_ptr->allow_users);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_front_end,
+						 SORTID_DENY_GROUPS),
+				   front_end_ptr->deny_groups);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_front_end,
+						 SORTID_DENY_USERS),
+				   front_end_ptr->deny_users);
+
 }
 
 static void _update_front_end_record(
@@ -185,12 +219,16 @@ static void _update_front_end_record(
 
 	/* Combining these records provides a slight performance improvement */
 	gtk_tree_store_set(treestore, iter,
+			   SORTID_ALLOW_GROUPS, front_end_ptr->allow_groups,
+			   SORTID_ALLOW_USERS,  front_end_ptr->allow_users,
 			   SORTID_BOOT_TIME,
 				sview_front_end_info_ptr->boot_time,
 			   SORTID_COLOR, sview_colors[
 				   sview_front_end_info_ptr->color_inx],
 			   SORTID_COLOR_INX,
 				sview_front_end_info_ptr->color_inx,
+			   SORTID_DENY_GROUPS, front_end_ptr->deny_groups,
+			   SORTID_DENY_USERS, front_end_ptr->deny_users,
 			   SORTID_NODE_INX,
 				sview_front_end_info_ptr->node_inx,
 			   SORTID_NAME,    front_end_ptr->name,

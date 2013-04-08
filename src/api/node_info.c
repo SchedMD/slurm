@@ -311,7 +311,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 				"LowestJoules=%u ConsumedJoules=%u",
 				node_ptr->energy->current_watts,
 				node_ptr->energy->base_watts,
-		 node_ptr->energy->consumed_energy);
+			        node_ptr->energy->consumed_energy);
 	xstrcat(out, tmp_line);
 
 	if (one_liner)
