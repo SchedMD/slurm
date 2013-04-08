@@ -259,7 +259,7 @@ void eh_proc(struct ud *ud, const XML_Char **attrs)
 		*new = proc;
 		xassert(ud->ud_inventory->node_head);
 		xassert(ud->ud_inventory->node_head->seg_head);
-
+		ud->ud_inventory->node_head->cpu_count++;
 		if (ud->ud_inventory->node_head->seg_head->proc_head)
 			new->next = ud->ud_inventory->node_head->
 				seg_head->proc_head;

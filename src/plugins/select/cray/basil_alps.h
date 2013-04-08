@@ -334,10 +334,10 @@ struct basil_node_accelerator {		/* Basil 1.2, Alps 4.x */
 };
 
 struct basil_node {
+	uint32_t cpu_count;
 	uint32_t node_id;
 	uint32_t router_id;				/* Basil 3.1 */
 	char	 name[BASIL_STRING_SHORT];
-
 	enum basil_node_arch	arch;
 	enum basil_node_role	role;
 	enum basil_node_state	state;
@@ -596,7 +596,6 @@ enum query_columns {
 	COL_CAGE,	/* cage number (0..2)		*/
 	COL_SLOT,	/* slot number (0..7)		*/
 	COL_CPU,	/* node number (0..3)		*/
-	COL_CORES,	/* number of cores per node	*/
 	COL_MEMORY,	/* rounded-down memory in MB	*/
 	/* string data */
 	COL_TYPE,	/* {service, compute }		*/

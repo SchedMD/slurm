@@ -150,6 +150,12 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 			      node->node_id, nam_noderole[node->role],
 			      nam_nodestate[node->state]);
 			bad_node = 1;
+		} else if ((slurmctld_conf.fast_schedule != 2)
+			   && (node->cpu_count != node_ptr->config_ptr->cpus)) {
+			fatal("slurm.conf: node %s has %u cpus "
+			      "but configured as CPUs=%u in your slurm.conf",
+			      node_ptr->name, node->cpu_count,
+			      node_ptr->config_ptr->cpus);
 		} else
 			node_ptr->node_rank = inv->nodes_total - rank_count++;
 		sprintf(tmp, "nid%05u", node->node_id);
@@ -412,8 +418,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 	 */
 	const char query[] =	"SELECT x_coord, y_coord, z_coord,"
 				"       cab_position, cab_row, cage, slot, cpu,"
-				"	LOG2(coremask+1), availmem, "
-				"       processor_type  "
+				"	availmem, processor_type  "
 				"FROM  processor LEFT JOIN attributes "
 				"ON    processor_id = nodeid "
 				"WHERE processor_id = ? ";
@@ -422,7 +427,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 
 	int		x_coord, y_coord, z_coord;
 	int		cab, row, cage, slot, cpu;
-	unsigned int	node_cpus, node_mem;
+	unsigned int	node_mem;
 	char		proc_type[BASIL_STRING_SHORT];
 	MYSQL_BIND	bind_cols[COLUMN_COUNT];
 	my_bool		is_null[COLUMN_COUNT];
@@ -447,7 +452,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 			bind_cols[i].buffer	   = proc_type;
 		} else {
 			bind_cols[i].buffer_type   = MYSQL_TYPE_LONG;
-			bind_cols[i].is_unsigned   = (i >= COL_CORES);
+			bind_cols[i].is_unsigned   = (i >= COL_MEMORY);
 		}
 	}
 	bind_cols[COL_X].buffer	     = (char *)&x_coord;
@@ -458,7 +463,6 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 	bind_cols[COL_CAGE].buffer   = (char *)&cage;
 	bind_cols[COL_SLOT].buffer   = (char *)&slot;
 	bind_cols[COL_CPU].buffer    = (char *)&cpu;
-	bind_cols[COL_CORES].buffer  = (char *)&node_cpus;
 	bind_cols[COL_MEMORY].buffer = (char *)&node_mem;
 
 	inv = get_full_inventory(version);
@@ -477,7 +481,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 		fatal("can not determine Cray XT/XE system type");
 
 	stmt = prepare_stmt(handle, query, params, PARAM_COUNT,
-				    bind_cols, COLUMN_COUNT);
+			    bind_cols, COLUMN_COUNT);
 	if (stmt == NULL)
 		fatal("can not prepare statement to resolve Cray coordinates");
 
@@ -497,8 +501,8 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 
 		if (fetch_stmt(stmt) == 0) {
 #if _DEBUG
-			info("proc_type:%s cpus:%u memory:%u",
-			     proc_type, node_cpus, node_mem);
+			info("proc_type:%s memory:%u",
+			     proc_type, node_mem);
 			info("row:%u cage:%u slot:%u cpu:%u xyz:%u:%u:%u",
 			     row, cage, slot, cpu, x_coord, y_coord, z_coord);
 #endif
@@ -510,7 +514,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 				fatal("Node '%s' is a %s node. "
 				      "Only compute nodes can appear in slurm.conf.",
 					node_ptr->name, proc_type);
-			} else if (is_null[COL_CORES] || is_null[COL_MEMORY]) {
+			} else if (is_null[COL_MEMORY]) {
 				/*
 				 * This can happen if a node has been disabled
 				 * on the SMW (using 'xtcli disable <nid>'). The
@@ -520,7 +524,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 				 * be invisible to ALPS, which is why we need to
 				 * set it down here already.
 				 */
-				node_cpus = node_mem = 0;
+				node_mem = 0;
 				reason = "node data unknown - disabled on SMW?";
 			} else if (is_null[COL_X] || is_null[COL_Y]
 						  || is_null[COL_Z]) {
@@ -531,21 +535,6 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 				 */
 				x_coord = y_coord = z_coord = 0;
 				reason = "unknown coordinates - hardware failure?";
-			} else if (node_cpus < node_ptr->config_ptr->cpus) {
-				/*
-				 * FIXME: Might reconsider this policy.
-				 *
-				 * FastSchedule is ignored here, it requires the
-				 * slurm.conf to be consistent with hardware.
-				 *
-				 * Assumption is that CPU/Memory do not change
-				 * at runtime (Cray has no hot-swappable parts).
-				 *
-				 * Hence checking it in basil_inventory() would
-				 * mean a lot of runtime overhead.
-				 */
-				fatal("slurm.conf: node %s has only Procs=%d",
-					node_ptr->name, node_cpus);
 			} else if (node_mem < node_ptr->config_ptr->real_memory) {
 				fatal("slurm.conf: node %s has RealMemory=%d",
 					node_ptr->name, node_mem);
@@ -609,9 +598,9 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 		dim_size[1] = MAX(dim_size[1], (y_coord - 1));
 		dim_size[2] = MAX(dim_size[2], (z_coord - 1));
 #if _DEBUG
-		info("%s  %s  %s  cpus=%u, mem=%u reason=%s", node_ptr->name,
+		info("%s  %s  %s  mem=%u reason=%s", node_ptr->name,
 		     node_ptr->node_hostname, node_ptr->comm_name,
-		     node_cpus, node_mem, reason);
+		     node_mem, reason);
 #endif
 		/*
 		 * Check the current state reported by ALPS inventory, unless it

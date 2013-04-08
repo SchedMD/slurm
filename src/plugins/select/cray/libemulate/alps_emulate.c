@@ -336,8 +336,6 @@ extern int fetch_stmt(MYSQL_STMT *stmt)
 		return 1;
 
 	strncpy(my_bind_col[COL_TYPE].buffer, "compute", BASIL_STRING_SHORT);
-	*((unsigned int *)my_bind_col[COL_CORES].buffer)  =
-			my_node_ptr->config_ptr->cpus;
 	*((unsigned int *)my_bind_col[COL_MEMORY].buffer) =
 			my_node_ptr->config_ptr->real_memory;
 
@@ -352,7 +350,6 @@ extern int fetch_stmt(MYSQL_STMT *stmt)
 	*((int *)my_bind_col[COL_Z].buffer) = coord[2];
 
 	*((my_bool *)my_bind_col[COL_MEMORY].is_null)  = (my_bool) 0;
-	*((my_bool *)my_bind_col[COL_CORES].is_null)  = (my_bool) 0;
 
 	*((my_bool *)my_bind_col[COL_CAB].is_null)  = (my_bool) 0;
 	*((my_bool *)my_bind_col[COL_ROW].is_null)  = (my_bool) 0;
