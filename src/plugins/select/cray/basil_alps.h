@@ -335,6 +335,7 @@ struct basil_node_accelerator {		/* Basil 1.2, Alps 4.x */
 
 struct basil_node {
 	uint32_t cpu_count;
+	uint32_t mem_size;
 	uint32_t node_id;
 	uint32_t router_id;				/* Basil 3.1 */
 	char	 name[BASIL_STRING_SHORT];
@@ -532,6 +533,8 @@ extern const char *nam_gpc_mode[BGM_MAX];
 extern const char *nam_acceltype[BA_MAX];
 extern const char *nam_accelstate[BAS_MAX];
 
+extern bool first_inv;
+
 /**
  * struct nodespec  -  representation of node ranges
  * @start: start value of the range
@@ -591,12 +594,6 @@ enum query_columns {
 	COL_X,		/* X coordinate		*/
 	COL_Y,		/* Y coordinate		*/
 	COL_Z,		/* Z coordinate		*/
-	COL_CAB,	/* cabinet position		*/
-	COL_ROW,	/* row position			*/
-	COL_CAGE,	/* cage number (0..2)		*/
-	COL_SLOT,	/* slot number (0..7)		*/
-	COL_CPU,	/* node number (0..3)		*/
-	COL_MEMORY,	/* rounded-down memory in MB	*/
 	/* string data */
 	COL_TYPE,	/* {service, compute }		*/
 	COLUMN_COUNT	/* sentinel */

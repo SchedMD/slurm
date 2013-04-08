@@ -54,6 +54,8 @@ documents those changes that are of interest to users and admins.
     never looked at to determine eligibility of backfillable job.
  -- Cray/BlueGene - Disable srun --pty option unless LaunchType=launch/slurm.
  -- CRAY - Fix sanity check for systems with more than 32 cores per node.
+ -- CRAY - Remove other objects from MySQL query that are available from
+    the XML.
 
 * Changes in Slurm 2.5.4
 ========================
