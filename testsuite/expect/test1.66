@@ -78,20 +78,20 @@ if {[wait_for_file $file_out] == 0} {
 	set matches  0
 	spawn $bin_cat $file_out
 	expect {
-                -re "SUBMIT_NODE=($alpha_numeric_nodelist)" {
+		-re "SUBMIT_NODE=($alpha_numeric_nodelist)" {
 			set node_name $expect_out(1,string)
-                        exp_continue
-                }
+			exp_continue
+		}
 		-re "SLURM_STEP_NODELIST=($alpha_numeric_nodelist)" {
 			if {![string compare $expect_out(1,string) $node_name]} {
 				incr matches
 				exp_continue
 			}
 		}
-                eof {
+		eof {
 			wait
-                }
-        }
+		}
+	}
 	if {$matches != 1} {
 		send_user "\nFAILURE: unexpected output ($matches != 1)\n"
 		set exit_code 1
