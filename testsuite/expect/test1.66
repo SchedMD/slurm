@@ -1,0 +1,108 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          srun to make sure that the jobs are running on the correct
+#          nodes within the allocation.
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2011-2013 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.schedmd.com/slurmdocs/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "1.66"
+set exit_code   0
+set script      "test$test_id.bash"
+set file_out    "test$test_id.out"
+set job_id      0
+
+print_header $test_id
+
+set node_cnt [available_nodes [default_partition]]
+if {$node_cnt < 2} {
+	send_user "WARNING: Not enough nodes in default partition ($node_cnt < 2)\n"
+	exit 0
+}
+
+exec $bin_rm -f $script $file_out
+make_bash_script $script "
+  $scontrol show hostname \$SLURM_JOB_NODELIST
+  TEST_NODE=`$scontrol show hostname \$SLURM_JOB_NODELIST | tail -1`
+  echo SUBMIT_NODE=\$TEST_NODE
+  $srun -w \$TEST_NODE -N1 env | grep SLURM_STEP
+"
+
+spawn $sbatch -N2 --output=$file_out $script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch did not submit the job\n"
+	exit 1
+}
+
+if {[wait_for_file $file_out] == 0} {
+	set node_name "UNSET"
+	set matches  0
+	spawn $bin_cat $file_out
+	expect {
+                -re "SUBMIT_NODE=($alpha_numeric_nodelist)" {
+			set node_name $expect_out(1,string)
+                        exp_continue
+                }
+		-re "SLURM_STEP_NODELIST=($alpha_numeric_nodelist)" {
+			if {![string compare $expect_out(1,string) $node_name]} {
+				incr matches
+				exp_continue
+			}
+		}
+                eof {
+			wait
+                }
+        }
+	if {$matches != 1} {
+		send_user "\nFAILURE: unexpected output ($matches != 1)\n"
+		set exit_code 1
+	}
+} else {
+	send_user "\nFAILURE: Output file missing\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $script $file_out
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
