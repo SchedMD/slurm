@@ -59,6 +59,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Set the geometry of a job when a block is picked and the job
     isn't a sub-block job.
  -- Cray - avoid check of macro versions of CLE for version 5.0.
+ -- CRAY - Fix memory issue with reading in the cray.conf file.
 
 * Changes in Slurm 2.5.4
 ========================

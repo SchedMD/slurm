@@ -68,21 +68,11 @@ static char *_get_cray_conf(void)
 {
 	char *val = getenv("SLURM_CONF");
 	char *rc = NULL;
-	int i;
 
 	if (!val)
-		return xstrdup(CRAY_CONFIG_FILE);
-
-	/* Replace file name on end of path */
-	i = strlen(val) - strlen("slurm.conf") + strlen("cray.conf") + 1;
-	rc = xmalloc(i);
-	strcpy(rc, val);
-	val = strrchr(rc, (int)'/');
-	if (val)	/* absolute path */
-		val++;
-	else		/* not absolute path */
-		val = rc;
-	strcpy(val, "cray.conf");
+		val = default_slurm_config_file;
+	rc = xstrdup(val);
+	xstrsubstitute(rc, "slurm.conf", "cray.conf");
 	return rc;
 }
 
