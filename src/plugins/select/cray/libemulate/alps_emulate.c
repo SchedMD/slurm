@@ -74,6 +74,8 @@ const char *nam_gpc_mode[BGM_MAX];
 const char *nam_acceltype[BA_MAX];
 const char *nam_accelstate[BAS_MAX];
 
+bool node_rank_inv = 0;
+
 /* If _ADD_DELAYS is set, then include sleep calls to emulate delays
  * expected for ALPS/BASIL interactions */
 #define _ADD_DELAYS  0
