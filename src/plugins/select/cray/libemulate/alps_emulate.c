@@ -74,6 +74,8 @@ const char *nam_gpc_mode[BGM_MAX];
 const char *nam_acceltype[BA_MAX];
 const char *nam_accelstate[BAS_MAX];
 
+bool node_rank_inv = 0;
+
 /* If _ADD_DELAYS is set, then include sleep calls to emulate delays
  * expected for ALPS/BASIL interactions */
 #define _ADD_DELAYS  0
@@ -336,29 +338,10 @@ extern int fetch_stmt(MYSQL_STMT *stmt)
 		return 1;
 
 	strncpy(my_bind_col[COL_TYPE].buffer, "compute", BASIL_STRING_SHORT);
-	*((unsigned int *)my_bind_col[COL_CORES].buffer)  =
-			my_node_ptr->config_ptr->cpus;
-	*((unsigned int *)my_bind_col[COL_MEMORY].buffer) =
-			my_node_ptr->config_ptr->real_memory;
-
-	*((int *)my_bind_col[COL_CAB].buffer) = hw_cabinet;
-	*((int *)my_bind_col[COL_ROW].buffer) = hw_row;
-	*((int *)my_bind_col[COL_CAGE].buffer) = hw_cage;
-	*((int *)my_bind_col[COL_SLOT].buffer) = hw_slot;
-	*((int *)my_bind_col[COL_CPU].buffer) = hw_cpu;
 
 	*((int *)my_bind_col[COL_X].buffer) = coord[0];
 	*((int *)my_bind_col[COL_Y].buffer) = coord[1];
 	*((int *)my_bind_col[COL_Z].buffer) = coord[2];
-
-	*((my_bool *)my_bind_col[COL_MEMORY].is_null)  = (my_bool) 0;
-	*((my_bool *)my_bind_col[COL_CORES].is_null)  = (my_bool) 0;
-
-	*((my_bool *)my_bind_col[COL_CAB].is_null)  = (my_bool) 0;
-	*((my_bool *)my_bind_col[COL_ROW].is_null)  = (my_bool) 0;
-	*((my_bool *)my_bind_col[COL_CAGE].is_null)  = (my_bool) 0;
-	*((my_bool *)my_bind_col[COL_SLOT].is_null)  = (my_bool) 0;
-	*((my_bool *)my_bind_col[COL_CPU].is_null)  = (my_bool) 0;
 
 	*((my_bool *)my_bind_col[COL_X].is_null)  = (my_bool) 0;
 	*((my_bool *)my_bind_col[COL_Y].is_null)  = (my_bool) 0;

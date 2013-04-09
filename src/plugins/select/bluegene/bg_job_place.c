@@ -2066,6 +2066,14 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 								dim];
 				}
 
+				/* If it isn't 0 then it was setup
+				   previous (sub-block)
+				*/
+				if (jobinfo->geometry[dim] == 0)
+					memcpy(jobinfo->geometry,
+					       bg_record->geo,
+					       sizeof(bg_record->geo));
+
 				_build_job_resources_struct(job_ptr,
 							    slurm_block_bitmap,
 							    bg_record);

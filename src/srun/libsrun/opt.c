@@ -751,7 +751,7 @@ _get_int(const char *arg, const char *what, bool positive)
 	return (int) result;
 }
 
-static void set_options(const int argc, char **argv)
+static void _set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0, max_val = 0, tmp_int;
 	struct utsname name;
@@ -1441,7 +1441,7 @@ static void set_options(const int argc, char **argv)
 			}
 #else
 			error("--pty not currently supported on this system "
-			      "type");
+			      "type, ignoring option");
 #endif
 			break;
 		case LONG_OPT_CHECKPOINT:
@@ -1539,7 +1539,7 @@ static void _opt_args(int argc, char **argv)
 	int i, command_pos = 0, command_args = 0;
 	char **rest = NULL;
 
-	set_options(argc, argv);
+	_set_options(argc, argv);
 
 	if ((opt.pn_min_memory > -1) && (opt.mem_per_cpu > -1)) {
 		if (opt.pn_min_memory < opt.mem_per_cpu) {
@@ -1572,6 +1572,16 @@ static void _opt_args(int argc, char **argv)
 				exit(error_exit);
 			}
 		}
+	}
+
+	if (opt.pty) {
+		char *launch_type = slurm_get_launch_type();
+		if (strcmp(launch_type, "launch/slurm")) {
+			error("--pty not currently supported with %s "
+			      "configuration, ignoring option", launch_type);
+			opt.pty = false;
+		}
+		xfree(launch_type);
 	}
 
 #ifdef HAVE_AIX

@@ -94,6 +94,7 @@ static char *_get_nids(char *nodelist)
 	char *nids = NULL, *node_name, *sep = "";
 	int i, nid;
 	int nid_begin = -1, nid_end = -1;
+	int node_cnt;
 
 	if (!nodelist)
 		return NULL;
@@ -104,6 +105,19 @@ static char *_get_nids(char *nodelist)
 	}
 	//info("input hostlist: %s", nodelist);
 	hostlist_uniq(hl);
+
+	/* aprun needs the hostlist to be the exact size requested.
+	   So if it doesn't set it.
+	*/
+	node_cnt = hostlist_count(hl);
+	if (opt.nodes_set_opt && (node_cnt != opt.min_nodes)) {
+		error("You requested %d nodes and %d hosts.  These numbers "
+		      "must be the same, so setting number of nodes to %d",
+		      opt.min_nodes, node_cnt, node_cnt);
+	}
+	opt.min_nodes = node_cnt;
+	opt.nodes_set = 1;
+
 	while ((node_name = hostlist_shift(hl))) {
 		for (i = 0; node_name[i]; i++) {
 			if (!isdigit(node_name[i]))
