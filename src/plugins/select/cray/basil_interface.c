@@ -159,7 +159,7 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 		} else if ((slurmctld_conf.fast_schedule != 2)
 			   && (node->mem_size
 			       != node_ptr->config_ptr->real_memory)) {
-			fatal("slurm.conf: node %s has RealMemroy=%u "
+			fatal("slurm.conf: node %s has RealMemory=%u "
 			      "but configured as RealMemory=%u in your "
 			      "slurm.conf",
 			      node_ptr->name, node->mem_size,
