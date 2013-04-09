@@ -105,6 +105,7 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 	hostlist_t hl = hostlist_create(NULL);
 	bool bad_node = 0;
 
+	node_rank_inv = 1;
 	/*
 	 * When obtaining the initial configuration, we can not allow ALPS to
 	 * fail. If there is a problem at this stage it is better to restart
@@ -203,7 +204,7 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 		     "about\n%s", name);
 	}
 	hostlist_destroy(hl);
-	first_inv = 0;
+	node_rank_inv = 0;
 
 	return SLURM_SUCCESS;
 }

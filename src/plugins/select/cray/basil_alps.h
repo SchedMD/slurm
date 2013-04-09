@@ -533,7 +533,7 @@ extern const char *nam_gpc_mode[BGM_MAX];
 extern const char *nam_acceltype[BA_MAX];
 extern const char *nam_accelstate[BAS_MAX];
 
-extern bool first_inv;
+extern bool node_rank_inv;
 
 /**
  * struct nodespec  -  representation of node ranges

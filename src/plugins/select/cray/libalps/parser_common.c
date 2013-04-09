@@ -29,7 +29,7 @@ const char *nam_rsvn_mode[BRM_MAX];
 const char *nam_acceltype[BA_MAX];
 const char *nam_accelstate[BAS_MAX];
 
-bool first_inv = 1;
+bool node_rank_inv = 0;
 
 /*
  *	General-purpose routines
@@ -262,7 +262,7 @@ void eh_proc(struct ud *ud, const XML_Char **attrs)
 		xassert(ud->ud_inventory->node_head);
 		xassert(ud->ud_inventory->node_head->seg_head);
 
-		if (first_inv)
+		if (node_rank_inv)
 			ud->ud_inventory->node_head->cpu_count++;
 
 		if (ud->ud_inventory->node_head->seg_head->proc_head)
@@ -323,7 +323,7 @@ void eh_mem(struct ud *ud, const XML_Char **attrs)
 		xassert(ud->ud_inventory->node_head);
 		xassert(ud->ud_inventory->node_head->seg_head);
 
-		if (first_inv)
+		if (node_rank_inv)
 			ud->ud_inventory->node_head->mem_size +=
 				(memory.page_size_kb * memory.page_count)
 				/ 1024;
