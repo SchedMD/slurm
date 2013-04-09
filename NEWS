@@ -60,6 +60,8 @@ documents those changes that are of interest to users and admins.
     isn't a sub-block job.
  -- Cray - avoid check of macro versions of CLE for version 5.0.
  -- CRAY - Fix memory issue with reading in the cray.conf file.
+ -- CRAY - If hostlist is given with srun make sure the node count is the same
+    as the hosts given.
 
 * Changes in Slurm 2.5.4
 ========================
