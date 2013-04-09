@@ -56,6 +56,8 @@ documents those changes that are of interest to users and admins.
  -- CRAY - Fix sanity check for systems with more than 32 cores per node.
  -- CRAY - Remove other objects from MySQL query that are available from
     the XML.
+ -- BLUEGENE - Set the geometry of a job when a block is picked and the job
+    isn't a sub-block job.
 
 * Changes in Slurm 2.5.4
 ========================
