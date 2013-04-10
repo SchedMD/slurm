@@ -742,7 +742,16 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 		return SLURM_SUCCESS;		/* no nodes allocated */
 
 	mppdepth = MAX(1, job_ptr->details->cpus_per_task);
-	mppnppn  = job_ptr->details->ntasks_per_node;
+	if (job_ptr->details->ntasks_per_node) {
+		mppnppn  = job_ptr->details->ntasks_per_node;
+	} else {
+		if (job_ptr->details->num_tasks) {
+			mppnppn = (job_ptr->details->num_tasks +
+				   job_ptr->job_resrcs->nhosts - 1) /
+				  job_ptr->job_resrcs->nhosts;
+		} else
+			mppnppn = 1;
+	}
 
 	/* mppmem */
 	if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {

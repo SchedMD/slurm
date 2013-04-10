@@ -62,6 +62,8 @@ documents those changes that are of interest to users and admins.
  -- CRAY - Fix memory issue with reading in the cray.conf file.
  -- CRAY - If hostlist is given with srun make sure the node count is the same
     as the hosts given.
+ -- CRAY - If task count specified, but no tasks-per-node, then set the tasks
+    per node in the BASIL reservation request.
 
 * Changes in Slurm 2.5.4
 ========================
