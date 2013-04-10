@@ -519,7 +519,10 @@ int slurm_step_launch_wait_start(slurm_step_ctx_t *ctx)
 		}
 		if (pthread_cond_timedwait(&sls->cond, &sls->lock, &ts) ==
 		    ETIMEDOUT) {
-			error("timeout waiting for task launch");
+			error("timeout waiting for task launch, "
+			      "started %d of %d tasks",
+			      bit_set_count(sls->tasks_started),
+			      sls->tasks_requested);
 			sls->abort = true;
 			_step_abort(ctx);
 			pthread_cond_broadcast(&sls->cond);
