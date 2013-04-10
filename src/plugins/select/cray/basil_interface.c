@@ -744,13 +744,12 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 	mppdepth = MAX(1, job_ptr->details->cpus_per_task);
 	if (job_ptr->details->ntasks_per_node) {
 		mppnppn  = job_ptr->details->ntasks_per_node;
+	} else if (job_ptr->details->num_tasks) {
+		mppnppn = (job_ptr->details->num_tasks +
+			   job_ptr->job_resrcs->nhosts - 1) /
+			  job_ptr->job_resrcs->nhosts;
 	} else {
-		if (job_ptr->details->num_tasks) {
-			mppnppn = (job_ptr->details->num_tasks +
-				   job_ptr->job_resrcs->nhosts - 1) /
-				  job_ptr->job_resrcs->nhosts;
-		} else
-			mppnppn = 1;
+		mppnppn = 1;
 	}
 
 	/* mppmem */
@@ -806,11 +805,8 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 			 */
 			node_mem /= mppnppn ? mppnppn : node_cpus;
 			tmp_mppmem = node_min_mem = MIN(node_mem, node_min_mem);
-
-			/* If less than or equal to 0 make sure you
-			   have 1 at least since 0 means give all the
-			   memory to the job.
-			*/
+			/* Minimum memory per processing element should be 1,
+			 * since 0 means give all the memory to the job. */
 			if (tmp_mppmem <= 0)
 				tmp_mppmem = 1;
 
