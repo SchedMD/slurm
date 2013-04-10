@@ -740,7 +740,15 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 		return SLURM_SUCCESS;		/* no nodes allocated */
 
 	mppdepth = MAX(1, job_ptr->details->cpus_per_task);
-	mppnppn  = job_ptr->details->ntasks_per_node;
+	if (job_ptr->details->ntasks_per_node) {
+		mppnppn  = job_ptr->details->ntasks_per_node;
+	} else if (job_ptr->details->num_tasks) {
+		mppnppn = (job_ptr->details->num_tasks +
+			   job_ptr->job_resrcs->nhosts - 1) /
+			  job_ptr->job_resrcs->nhosts;
+	} else {
+		mppnppn = 1;
+	}
 
 	/* mppmem */
 	if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
@@ -809,11 +817,8 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 			 */
 			node_mem /= mppnppn ? mppnppn : node_cpus;
 			tmp_mppmem = node_min_mem = MIN(node_mem, node_min_mem);
-
-			/* If less than or equal to 0 make sure you
-			   have 1 at least since 0 means give all the
-			   memory to the job.
-			*/
+			/* Minimum memory per processing element should be 1,
+			 * since 0 means give all the memory to the job. */
 			if (tmp_mppmem <= 0)
 				tmp_mppmem = 1;
 

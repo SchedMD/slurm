@@ -1,14 +1,16 @@
 # Makefile for launch plugins
 
-if REAL_BGQ_LOADED
-SUBDIRS = runjob
-else
-if HAVE_CRAY
-SUBDIRS = aprun
-else
+# launch/slurm can be useful for testing on any system type
 SUBDIRS = slurm
+
+if REAL_BGQ_LOADED
+SUBDIRS += runjob
+endif
+
+if HAVE_CRAY
+SUBDIRS += aprun
+endif
+
 if HAVE_NRT
 SUBDIRS += poe
-endif
-endif
 endif

@@ -53,7 +53,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@HAVE_CRAY_FALSE@@HAVE_NRT_TRUE@@REAL_BGQ_LOADED_FALSE@am__append_1 = poe
+@REAL_BGQ_LOADED_TRUE@am__append_1 = runjob
+@HAVE_CRAY_TRUE@am__append_2 = aprun
+@HAVE_NRT_TRUE@am__append_3 = poe
 subdir = src/plugins/launch
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -122,7 +124,7 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = slurm poe aprun runjob
+DIST_SUBDIRS = slurm runjob aprun poe
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -361,10 +363,9 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@HAVE_CRAY_FALSE@@REAL_BGQ_LOADED_FALSE@SUBDIRS = slurm \
-@HAVE_CRAY_FALSE@@REAL_BGQ_LOADED_FALSE@	$(am__append_1)
-@HAVE_CRAY_TRUE@@REAL_BGQ_LOADED_FALSE@SUBDIRS = aprun $(am__append_1)
-@REAL_BGQ_LOADED_TRUE@SUBDIRS = runjob $(am__append_1)
+
+# launch/slurm can be useful for testing on any system type
+SUBDIRS = slurm $(am__append_1) $(am__append_2) $(am__append_3)
 all: all-recursive
 
 .SUFFIXES:
