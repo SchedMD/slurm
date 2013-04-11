@@ -1171,10 +1171,6 @@ proc test_front_end { } {
 			set front_end 1
 			exp_continue
 		}
-		"select/cray" {
-			set front_end 1
-			exp_continue
-		}
 		eof {
 			wait
 		}
