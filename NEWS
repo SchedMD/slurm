@@ -148,6 +148,8 @@ documents those changes that are of interest to users and admins.
     as the hosts given.
  -- CRAY - If task count specified, but no tasks-per-node, then set the tasks
     per node in the BASIL reservation request.
+ -- CRAY - fix issue with --mem option not giving correct amount of memory
+    per cpu.
 
 * Changes in Slurm 2.5.4
 ========================

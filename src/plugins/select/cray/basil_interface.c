@@ -805,6 +805,12 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 				node_cpus = node_ptr->cpus;
 				node_mem  = node_ptr->real_memory;
 			}
+
+			/* If the job has requested memory use it (if
+			   lesser) for calculations.
+			*/
+			tmp_mppmem = MIN(node_mem, node_min_mem);
+
 			/*
 			 * ALPS 'Processing Elements per Node' value (aprun -N),
 			 * which in slurm is --ntasks-per-node and 'mppnppn' in
@@ -815,8 +821,8 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 			 * mppmem and use it as the level for all
 			 * nodes (mppmem is 0 when coming in).
 			 */
-			node_mem /= mppnppn ? mppnppn : node_cpus;
-			tmp_mppmem = node_min_mem = MIN(node_mem, node_min_mem);
+			tmp_mppmem /= mppnppn ? mppnppn : node_cpus;
+
 			/* Minimum memory per processing element should be 1,
 			 * since 0 means give all the memory to the job. */
 			if (tmp_mppmem <= 0)
