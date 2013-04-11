@@ -84,7 +84,6 @@ extern uint64_t job_getjid(pid_t pid);
 pthread_mutex_t msg_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t msg_cond = PTHREAD_COND_INITIALIZER;
 allocation_msg_thread_t *msg_thr = NULL;
-resource_allocation_response_msg_t *global_resp = NULL;
 struct pollfd global_fds[1];
 
 extern char **environ;

@@ -150,6 +150,9 @@ documents those changes that are of interest to users and admins.
     per node in the BASIL reservation request.
  -- CRAY - fix issue with --mem option not giving correct amount of memory
     per cpu.
+ -- CRAY - Fix if srun --mem is given outside an allocation to set the
+    APRUN_DEFAULT_MEMORY env var for aprun.  This scenario will not display
+    the option when used with --launch-cmd.
 
 * Changes in Slurm 2.5.4
 ========================
