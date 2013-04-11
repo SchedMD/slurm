@@ -197,6 +197,7 @@ opt_t opt;
 int error_exit = 1;
 int immediate_exit = 1;
 char *mpi_type = NULL;
+resource_allocation_response_msg_t *global_resp = NULL;
 
 /*---- forward declarations of static functions  ----*/
 static bool mpi_initialized = false;

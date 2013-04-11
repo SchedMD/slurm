@@ -50,6 +50,18 @@
 #include "src/api/step_ctx.h"
 #include "src/api/step_launch.h"
 
+
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+resource_allocation_response_msg_t *global_resp __attribute__((weak_import)) =
+	NULL;
+#else
+resource_allocation_response_msg_t *global_resp = NULL;
+#endif
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -710,6 +722,20 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
 				    sig_atomic_t *destroy_job)
 {
+	char value[32];
+
+	/* If srun is call directly this wasn't figured out until
+	   later if the user used --mem.  The problem here is this
+	   will not work with --launch_cmd since that doesn't go get
+	   an actual allocation (which is where pn_min_memory is decided).
+	*/
+	if ((opt.mem_per_cpu == NO_VAL)
+	    && global_resp && (global_resp->pn_min_memory & MEM_PER_CPU)) {
+		snprintf(value, sizeof(value), "%u",
+			 global_resp->pn_min_memory & (~MEM_PER_CPU));
+		setenv("APRUN_DEFAULT_MEMORY", value, 1);
+	}
+
 	if (opt.launch_cmd) {
 		int i = 0;
 		char *cmd_line = NULL;
@@ -720,6 +746,7 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		xfree(cmd_line);
 		exit(0);
 	}
+
 	return launch_common_create_job_step(job, use_all_cpus,
 					     signal_function,
 					     destroy_job);

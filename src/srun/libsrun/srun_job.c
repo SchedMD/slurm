@@ -551,6 +551,7 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 
 		if ( !(resp = allocate_nodes(handle_signals)) )
 			exit(error_exit);
+		global_resp = resp;
 		*got_alloc = true;
 		_print_job_information(resp);
 		_set_env_vars(resp);
@@ -579,6 +580,7 @@ extern void create_srun_job(srun_job_t **p_job, bool *got_alloc,
 			exit(error_exit);
 		}
 
+		global_resp = NULL;
 		slurm_free_resource_allocation_response_msg(resp);
 	}
 
