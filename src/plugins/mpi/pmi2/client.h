@@ -100,4 +100,6 @@ extern void client_resp_free(client_resp_t *resp);
 	} while (0)
 
 
+extern int send_kvs_fence_resp_to_clients(int rc, char *errmsg);
+
 #endif	/* _CLIENT_H */

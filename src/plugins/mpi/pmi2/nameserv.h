@@ -1,7 +1,7 @@
 /*****************************************************************************\
- **  tree.h - PMI tree communication handling code
+ **  nameserv.h - name publish/unpublish/lookup functions
  *****************************************************************************
- *  Copyright (C) 2011-2012 National University of Defense Technology.
+ *  Copyright (C) 2013 National University of Defense Technology.
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.
  *  All rights reserved.
  *
@@ -35,31 +35,15 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _TREE_H
-#define _TREE_H
+#ifndef _NAME_SERV_H
+#define _NAME_SERV_H
 
-#if     HAVE_CONFIG_H
-#  include "config.h"
+extern int    name_publish_local (char *name, char *port);
+extern int    name_unpublish_local (char *name);
+extern char * name_lookup_local (char *name);
+
+extern int    name_publish_up (char *name, char *port);
+extern int    name_unpublish_up (char *name);
+extern char * name_lookup_up (char *name);
+
 #endif
-
-enum {
-	TREE_CMD_KVS_FENCE,
-	TREE_CMD_KVS_FENCE_RESP,
-	TREE_CMD_SPAWN,
-	TREE_CMD_SPAWN_RESP,
-	TREE_CMD_NAME_PUBLISH,
-	TREE_CMD_NAME_UNPUBLISH,
-	TREE_CMD_NAME_LOOKUP,
-	TREE_CMD_COUNT
-};
-
-
-extern int handle_tree_cmd(int fd);
-extern int tree_msg_to_srun(uint32_t len, char *msg);
-extern int tree_msg_to_srun_with_resp(uint32_t len, char *msg, Buf *resp_ptr);
-extern int tree_msg_to_stepds(char *nodelist, uint32_t len, char *msg);
-extern int tree_msg_to_spawned_sruns(uint32_t len, char *msg);
-
-
-
-#endif	/* _TREE_H */
