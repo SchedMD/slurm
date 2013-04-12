@@ -36,15 +36,20 @@
 \*****************************************************************************/
 
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "kvs.h"
 #include "setup.h"
 #include "tree.h"
 #include "pmi.h"
 
+#define MAX_RETRIES 5
+
 /* for fence */
 int tasks_to_wait = 0;
 int children_to_wait = 0;
+int kvs_seq = 1; /* starting from 1 */
+int waiting_kvs_resp = 0;
 
 
 /* bucket of key-value pairs */
@@ -114,6 +119,9 @@ temp_kvs_init(void)
 		pack32((uint32_t)nodeid, buf); /* from_nodeid */
 		packstr(tree_info.this_node, buf); /* from_node */
 		pack32((uint32_t)num_children, buf); /* num_children */
+		pack32(kvs_seq, buf);
+	} else {
+		pack32(kvs_seq, buf);
 	}
 	size = get_buf_offset(buf);
 	if (temp_kvs_cnt + size > temp_kvs_size) {
@@ -180,23 +188,37 @@ temp_kvs_merge(Buf buf)
 extern int
 temp_kvs_send(void)
 {
-	int rc;
+	int rc = SLURM_ERROR, retry = 0;
+	unsigned int delay = 1;
 
 	/* cmd included in temp_kvs_buf */
+	kvs_seq ++; /* expecting new kvs after now */
 
-	if (! in_stepd()) {	/* srun */
-		rc = tree_msg_to_stepds(job_info.step_nodelist,
-					temp_kvs_cnt,
-					temp_kvs_buf);
-	} else if (tree_info.parent_node != NULL) {
-		/* non-first-level stepds */
-		rc = tree_msg_to_stepds(tree_info.parent_node,
-					temp_kvs_cnt,
-					temp_kvs_buf);
-	} else {		/* first level stepds */
-		rc = tree_msg_to_srun(temp_kvs_cnt, temp_kvs_buf);
+	while (1) {
+		if (retry == 1) {
+			verbose("failed to send temp kvs, rc=%d, retrying", rc);
+		}
+		if (! in_stepd()) {	/* srun */
+			rc = tree_msg_to_stepds(job_info.step_nodelist,
+						temp_kvs_cnt,
+						temp_kvs_buf);
+		} else if (tree_info.parent_node != NULL) {
+			/* non-first-level stepds */
+			rc = tree_msg_to_stepds(tree_info.parent_node,
+						temp_kvs_cnt,
+						temp_kvs_buf);
+		} else {		/* first level stepds */
+			rc = tree_msg_to_srun(temp_kvs_cnt, temp_kvs_buf);
+		}
+		if (rc == SLURM_SUCCESS)
+			break;
+		retry ++;
+		if (retry >= MAX_RETRIES)
+			break;
+		/* wait, in case parent stepd / srun not ready */
+		sleep(delay);
+		delay *= 2;
 	}
-
 	temp_kvs_init();	/* clear old temp kvs */
 	return rc;
 }

@@ -59,7 +59,7 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-#include "src/srun/libsrun/srun_job.h"
+#include "src/srun/libsrun/debugger.h"
 #include "src/srun/libsrun/opt.h"
 
 #include "tree.h"
@@ -81,7 +81,7 @@ typedef struct pmi2_job_info {
 	char *spawner_jobid; /* spawner pmi job id */
 	char **job_env;	     /* environment of job. use in stepd */
 
-	srun_job_t *srun_job;	/* used only in srun */
+	MPIR_PROCDESC *MPIR_proctable;	/* used only in srun */
 	opt_t      *srun_opt;	/* used only in srun */
 } pmi2_job_info_t;
 
@@ -93,7 +93,8 @@ typedef struct pmi2_tree_info {
 	int   depth;		/* depth in tree */
 	int   max_depth;	/* max depth of the tree */
 	uint16_t pmi_port;	 /* PMI2 comm port of this srun */
-	slurm_addr_t *srun_addr;/* PMI2 comm address parent srun */
+	slurm_addr_t *srun_addr; /* PMI2 comm address parent srun */
+	uint32_t *children_kvs_seq; /* sequence number of children nodes */
 } pmi2_tree_info_t;
 
 

@@ -314,6 +314,7 @@ spawn_resp_pack(spawn_resp_t *resp, Buf buf)
 
 	pack32(resp->seq, buf);
 	pack32((uint32_t)resp->rc, buf);
+	pack16((uint16_t)resp->pmi_port, buf);
 	packstr(resp->jobid, buf);
 	pack32(resp->error_cnt, buf);
 	for (i = 0; i < resp->error_cnt; i ++) {
@@ -332,6 +333,7 @@ spawn_resp_unpack(spawn_resp_t **resp_ptr, Buf buf)
 
 	safe_unpack32(&resp->seq, buf);
 	safe_unpack32((uint32_t *)&resp->rc, buf);
+	safe_unpack16((uint16_t *)&resp->pmi_port, buf);
 	safe_unpackstr_xmalloc(&resp->jobid, &temp32, buf);
 	safe_unpack32(&resp->error_cnt, buf);
 	if (resp->error_cnt > 0) {
@@ -465,6 +467,12 @@ _exec_srun_single(spawn_req_t *req, char **env)
 	j = 0;
 	argv[j ++] = "srun";
 	argv[j ++] = "--mpi=pmi2";
+	if (job_info.srun_opt && job_info.srun_opt->no_alloc) {
+		argv[j ++] = "--no-alloc";
+		xstrfmtcat(argv[j ++], "--nodelist=%s",
+			   job_info.srun_opt->nodelist);
+	}
+
 	xstrfmtcat(argv[j ++], "--ntasks=%d", subcmd->max_procs);
 	/* TODO: inherit options from srun_opt. */
 	for (i = 0; i < subcmd->info_cnt; i ++) {
@@ -560,6 +568,11 @@ _exec_srun_multiple(spawn_req_t *req, char **env)
 	argv[j ++] = "srun";
 	argv[j ++] = "--mpi=pmi2";
 	xstrfmtcat(argv[j ++], "--ntasks=%d", ntasks);
+	if (job_info.srun_opt && job_info.srun_opt->no_alloc) {
+		argv[j ++] = "--no-alloc";
+		xstrfmtcat(argv[j ++], "--nodelist=%s",
+			   job_info.srun_opt->nodelist);
+	}
 	argv[j ++] = "--multi-prog";
 	argv[j ++] = multi_prog;
 	argv[j ++] = NULL;

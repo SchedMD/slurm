@@ -46,6 +46,7 @@
 #include "src/common/xstring.h"
 
 #include "client.h"
+#include "setup.h"
 #include "pmi.h"
 
 #define KEY_INDEX(i) (i * 2)
@@ -562,4 +563,60 @@ client_resp_free(client_resp_t *resp)
 		xfree(resp->buf);
 		xfree(resp);
 	}
+}
+
+/* caller must free the result */
+static char *
+_str_replace(char *str, char src, char dst)
+{
+	char *res, *ptr;
+
+	res = xstrdup(str);
+	ptr = res;
+	while (*ptr) {
+		if (*ptr == src)
+			*ptr = dst;
+		ptr ++;
+	}
+	return res;
+}
+/* send fence_resp/barrier_out to tasks */
+extern int
+send_kvs_fence_resp_to_clients(int rc, char *errmsg)
+{
+	int i = 0;
+	client_resp_t *resp;
+	char *msg;
+	
+	resp = client_resp_new();
+	if ( is_pmi11() ) {
+		if (rc != 0 && errmsg != NULL) {
+			// XXX: pmi1.1 does not check the rc
+			msg = _str_replace(errmsg, ' ', '_');
+			client_resp_append(resp, CMD_KEY"="BARRIEROUT_CMD" "
+					   RC_KEY"=%d "MSG_KEY"=%s\n",
+					   rc, msg);
+			xfree(msg);
+		} else {
+			client_resp_append(resp, CMD_KEY"="BARRIEROUT_CMD" "
+					   RC_KEY"=%d\n", rc);
+		}
+	} else if (is_pmi20()) {
+		if (rc != 0 && errmsg != NULL) {
+			// TODO: pmi2.0 accept escaped ';' (";;")
+			msg = _str_replace(errmsg, ';', '_');
+			client_resp_append(resp, CMD_KEY"="KVSFENCERESP_CMD";"
+					   RC_KEY"=%d;"ERRMSG_KEY"=%s;",
+					   rc, msg);
+			xfree(msg);
+		} else {
+			client_resp_append(resp, CMD_KEY"="KVSFENCERESP_CMD";"
+					   RC_KEY"=%d;", rc);
+		}
+	}
+	for (i = 0; i < job_info.ltasks; i ++) {
+		rc = client_resp_send(resp, STEPD_PMI_SOCK(i));
+	}
+	client_resp_free(resp);
+	return rc;
 }

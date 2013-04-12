@@ -78,6 +78,7 @@ typedef struct spawn_resp {
 	uint32_t seq;
 	int rc;
 	char *jobid;
+	uint16_t pmi_port;
 	uint32_t error_cnt;
 	int *error_codes;
 } spawn_resp_t;

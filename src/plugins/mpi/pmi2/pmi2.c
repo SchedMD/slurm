@@ -59,6 +59,7 @@
 #include "info.h"
 #include "setup.h"
 #include "agent.h"
+#include "nameserv.h"
 
 /* PMI2 command handlers */
 static int _handle_fullinit(int fd, int lrank, client_req_t *req);
@@ -261,6 +262,18 @@ _handle_kvs_fence(int fd, int lrank, client_req_t *req)
 	/* mutex protection is not required */
 	if (tasks_to_wait == 0 && children_to_wait == 0) {
 		rc = temp_kvs_send();
+		if (rc != SLURM_SUCCESS) {
+			error("mpi/pmi2: failed to send temp kvs to %s",
+			      tree_info.parent_node ?: "srun");
+			send_kvs_fence_resp_to_clients(
+				rc,
+				"mpi/pmi2: failed to send temp kvs");
+			/* cancel the step to avoid tasks hang */
+			slurm_kill_job_step(job_info.jobid, job_info.stepid,
+					    SIGKILL);
+		} else {
+			waiting_kvs_resp = 1;
+		}
 	}
 	debug3("mpi/pmi2: out _handle_kvs_fence, tasks_to_wait=%d, "
 	       "children_to_wait=%d", tasks_to_wait, children_to_wait);
@@ -390,20 +403,85 @@ _handle_info_getjobattr(int fd, int lrank, client_req_t *req)
 static int
 _handle_name_publish(int fd, int lrank, client_req_t *req)
 {
-	error("mpi/pmi2: name publish not implemented");
-	return SLURM_ERROR;
+	int rc;
+	client_resp_t *resp;
+	char *name = NULL, *port = NULL;
+
+	debug3("mpi/pmi2: in _handle_publish_name");
+
+	client_req_parse_body(req);
+	client_req_get_str(req, NAME_KEY, &name);
+	client_req_get_str(req, PORT_KEY, &port);
+	
+	rc = name_publish_up(name, port);
+	xfree(name);
+	xfree(port);
+
+	resp = client_resp_new();
+	client_resp_append(resp, CMD_KEY"="NAMEPUBLISHRESP_CMD";"
+			   RC_KEY"=%d;", rc);
+	rc = client_resp_send(resp, fd);
+	client_resp_free(resp);
+
+	debug3("mpi/pmi2: out _handle_publish_name");
+	return rc;
 }
 
 static int
 _handle_name_unpublish(int fd, int lrank, client_req_t *req)
 {
-	return SLURM_ERROR;
+	int rc;
+	client_resp_t *resp;
+	char *name = NULL;
+
+	debug3("mpi/pmi2: in _handle_unpublish_name");
+
+	client_req_parse_body(req);
+	client_req_get_str(req, NAME_KEY, &name);
+	
+	rc = name_unpublish_up(name);
+	xfree(name);
+
+	resp = client_resp_new();
+	client_resp_append(resp, CMD_KEY"="NAMEUNPUBLISHRESP_CMD";"
+			   RC_KEY"=%d;", rc);
+	rc = client_resp_send(resp, fd);
+	client_resp_free(resp);
+
+	debug3("mpi/pmi2: out _handle_unpublish_name");
+	return rc;
 }
 
 static int
 _handle_name_lookup(int fd, int lrank, client_req_t *req)
 {
-	return SLURM_ERROR;
+	int rc;
+	client_resp_t *resp;
+	char *name = NULL, *port = NULL;
+
+	debug3("mpi/pmi2: in _handle_lookup_name");
+
+	client_req_parse_body(req);
+	client_req_get_str(req, NAME_KEY, &name);
+
+	port = name_lookup_up(name);
+
+	resp = client_resp_new();
+	client_resp_append(resp, CMD_KEY"="NAMELOOKUPRESP_CMD";");
+	if (port == NULL) {
+		client_resp_append(resp, RC_KEY"=1;");
+	} else {
+		client_resp_append(resp, RC_KEY"=0;"VALUE_KEY"=%s;",
+				   port);
+	}
+	rc = client_resp_send(resp, fd);
+	client_resp_free(resp);
+
+	xfree(name);
+	xfree(port);
+
+	debug3("mpi/pmi2: out _handle_lookup_name");
+	return rc;
 }
 
 static int
