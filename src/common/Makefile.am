@@ -88,6 +88,7 @@ libcommon_la_SOURCES = 			\
 	uid.c uid.h			\
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
+	slurm_acct_gather.c slurm_acct_gather.h \
 	slurm_accounting_storage.c slurm_accounting_storage.h \
 	slurm_jobacct_gather.c slurm_jobacct_gather.h \
 	slurm_acct_gather_energy.c slurm_acct_gather_energy.h \

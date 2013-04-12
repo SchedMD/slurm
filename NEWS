@@ -15,6 +15,9 @@ documents those changes that are of interest to users and admins.
     partition limit, but the minimum time limit permits it to start.
  -- gres/gpu - Fix for gres.conf file with multiple files on a single line
     using a slurm expression (e.g. "File=/dev/nvidia[0-1]").
+ -- Replaced ipmi.conf with generic acct_gather.conf file for all acct_gather
+    plugins.  For those doing development to use this follow the model set
+    forth in the acct_gather_energy_ipmi plugin.
 
 * Changes in Slurm 2.6.0pre2
 ============================

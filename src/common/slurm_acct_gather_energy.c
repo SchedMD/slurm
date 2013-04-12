@@ -54,6 +54,9 @@ typedef struct slurm_acct_gather_energy_ops {
 				   acct_gather_energy_t *energy);
 	int (*set_data)           (enum acct_energy_type data_type,
 				   acct_gather_energy_t *energy);
+	void (*conf_options)      (s_p_options_t **full_options,
+				   int *full_options_cnt);
+	void (*conf_set)          (s_p_hashtbl_t *tbl);
 } slurm_acct_gather_energy_ops_t;
 /*
  * These strings must be kept in the same order as the fields
@@ -63,6 +66,8 @@ static const char *syms[] = {
 	"acct_gather_energy_p_update_node_energy",
 	"acct_gather_energy_p_get_data",
 	"acct_gather_energy_p_set_data",
+	"acct_gather_energy_p_conf_options",
+	"acct_gather_energy_p_conf_set"
 };
 
 static slurm_acct_gather_energy_ops_t ops;
@@ -99,6 +104,8 @@ extern int slurm_acct_gather_energy_init(void)
 done:
 	slurm_mutex_unlock(&g_context_lock);
 	xfree(type);
+	if (retval == SLURM_SUCCESS)
+		retval = acct_gather_conf_init();
 
 	return retval;
 }
@@ -201,4 +208,21 @@ extern int acct_gather_energy_g_set_data(enum acct_energy_type data_type,
 	retval = (*(ops.set_data))(data_type, energy);
 
 	return retval;
+}
+
+extern void acct_gather_energy_g_conf_options(s_p_options_t **full_options,
+					      int *full_options_cnt)
+{
+	if (slurm_acct_gather_energy_init() < 0)
+		return;
+
+	(*(ops.conf_options))(full_options, full_options_cnt);
+}
+
+extern void acct_gather_energy_g_conf_set(s_p_hashtbl_t *tbl)
+{
+	if (slurm_acct_gather_energy_init() < 0)
+		return;
+
+	(*(ops.conf_set))(tbl);
 }

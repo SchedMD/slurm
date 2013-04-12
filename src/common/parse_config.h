@@ -343,4 +343,16 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 		     const s_p_options_t options[]);
 
 
+/*
+ * copy options onto the end of full_options
+ * IN/OUT full_options
+ * IN options
+ * IN/OUT full_options_cnt
+ *
+ * Used if the full set of options are not available from one location.
+ */
+extern void transfer_s_p_options(s_p_options_t **full_options,
+				 s_p_options_t *options,
+				 int *full_options_cnt);
+
 #endif /* !_PARSE_CONFIG_H */
