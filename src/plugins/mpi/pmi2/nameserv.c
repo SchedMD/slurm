@@ -113,7 +113,7 @@ extern int
 name_publish_up(char *name, char *port)
 {
 	Buf buf = NULL, resp_buf = NULL;
-	uint32_t size;
+	uint32_t size, tmp_32;
 	int rc;
 
 	buf = init_buf(1024);
@@ -125,8 +125,10 @@ name_publish_up(char *name, char *port)
 	rc = tree_msg_to_srun_with_resp(size, get_buf_data(buf), &resp_buf);
 	free_buf(buf);
 
-	if (rc == SLURM_SUCCESS)
-		safe_unpack32(&rc, resp_buf);
+	if (rc == SLURM_SUCCESS) {
+		safe_unpack32(&tmp_32, resp_buf);
+		rc = (int) tmp_32;
+	}
 
 unpack_error:
 	if (resp_buf)
@@ -139,7 +141,7 @@ extern int
 name_unpublish_up(char *name)
 {
 	Buf buf = NULL, resp_buf = NULL;
-	uint32_t size;
+	uint32_t size, tmp_32;
 	int rc;
 
 	buf = init_buf(1024);
@@ -150,8 +152,10 @@ name_unpublish_up(char *name)
 	rc = tree_msg_to_srun_with_resp(size, get_buf_data(buf), &resp_buf);
 	free_buf(buf);
 
-	if (rc == SLURM_SUCCESS)
-		safe_unpack32(&rc, resp_buf);
+	if (rc == SLURM_SUCCESS) {
+		safe_unpack32(&tmp_32, resp_buf);
+		rc = (int) tmp_32;
+	}
 
 unpack_error:
 	if (resp_buf)

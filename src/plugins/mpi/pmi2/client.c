@@ -581,7 +581,7 @@ _str_replace(char *str, char src, char dst)
 	return res;
 }
 /* send fence_resp/barrier_out to tasks */
-int
+extern int
 send_kvs_fence_resp_to_clients(int rc, char *errmsg)
 {
 	int i = 0;

@@ -162,8 +162,7 @@ static int
 _handle_kvs_fence_resp(int fd, Buf buf)
 {
 	char *key, *val, *errmsg = NULL;
-	int rc = SLURM_SUCCESS, i = 0;
-	client_resp_t *resp;
+	int rc = SLURM_SUCCESS;
 	uint32_t temp32, seq;
 
 	debug3("mpi/pmi2: in _handle_kvs_fence_resp");
@@ -412,7 +411,7 @@ out:
 	xfree(name);
 	xfree(port);
 	resp_buf = init_buf(32);
-	pack32(rc, resp_buf);
+	pack32((uint32_t) rc, resp_buf);
 	rc = _slurm_msg_sendto(fd, get_buf_data(resp_buf),
 			       get_buf_offset(resp_buf),
 			       SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
@@ -445,7 +444,7 @@ _handle_name_unpublish(int fd, Buf buf)
 out:
 	xfree(name);
 	resp_buf = init_buf(32);
-	pack32(rc, resp_buf);
+	pack32((uint32_t) rc, resp_buf);
 	rc = _slurm_msg_sendto(fd, get_buf_data(resp_buf),
 			       get_buf_offset(resp_buf),
 			       SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
@@ -606,9 +605,11 @@ tree_msg_to_spawned_sruns(uint32_t len, char *msg)
 		fd = _slurm_open_stream(&srun_addr, true);
 		if (fd < 0)
 			return SLURM_ERROR;
-		sent = _slurm_msg_sendto(fd, msg, len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
+		sent = _slurm_msg_sendto(fd, msg, len,
+					 SLURM_PROTOCOL_NO_SEND_RECV_FLAGS);
 		if (sent != len) 
 			rc = SLURM_ERROR;
 		close(fd);
 	}
+	return rc;
 }
