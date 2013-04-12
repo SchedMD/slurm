@@ -1358,7 +1358,7 @@ extern void admin_edit_node(GtkCellRendererText *cell,
 	}
 no_input:
 	gtk_tree_path_free(path);
-	g_static_mutex_unlock(&sview_mutex);
+	g_mutex_unlock(sview_mutex);
 }
 
 extern void get_info_node(GtkTable *table, display_data_t *display_data)

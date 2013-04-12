@@ -583,7 +583,7 @@ FILE *log_fp(void)
 {
 	FILE *fp;
 	slurm_mutex_lock(&log_lock);
-	if (log->logfp)
+	if (log && log->logfp)
 		fp = log->logfp;
 	else
 		fp = stderr;

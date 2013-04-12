@@ -333,7 +333,7 @@ extern GtkWidget *main_notebook;
 extern GtkWidget *main_statusbar;
 extern GtkWidget *main_window;
 extern GtkTable *main_grid_table;
-extern GStaticMutex sview_mutex;
+extern GMutex *sview_mutex;
 extern int global_row_count;
 extern gint last_event_x;
 extern gint last_event_y;

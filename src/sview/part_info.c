@@ -2246,7 +2246,7 @@ no_input:
 	slurm_free_update_part_msg(part_msg);
 	gtk_tree_path_free (path);
 	g_free(old_text);
-	g_static_mutex_unlock(&sview_mutex);
+	g_mutex_unlock(sview_mutex);
 }
 
 extern void get_info_part(GtkTable *table, display_data_t *display_data)

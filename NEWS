@@ -158,6 +158,7 @@ documents those changes that are of interest to users and admins.
  -- CRAY - Fix if srun --mem is given outside an allocation to set the
     APRUN_DEFAULT_MEMORY env var for aprun.  This scenario will not display
     the option when used with --launch-cmd.
+ -- Change sview to use GMutex instead of GStaticMutex
 
 * Changes in Slurm 2.5.4
 ========================
