@@ -138,9 +138,8 @@ extern int node_config_load(List gres_conf_list)
 	list_iterator_destroy(iter);
 	gpu_devices = NULL;
 	nb_available_files = -1;
-
 	/* (Re-)Allocate memory if number of files changed */
-	if (nb_gpu != nb_available_files) {
+	if (nb_gpu > nb_available_files) {
 		xfree(gpu_devices);	/* No-op if NULL */
 		gpu_devices = (int *) xmalloc(sizeof(int) * nb_gpu);
 		nb_available_files = nb_gpu;
@@ -154,14 +153,38 @@ extern int node_config_load(List gres_conf_list)
 		    gres_slurmd_conf->file) {
 			/* Populate gpu_devices array with number
 			 * at end of the file name */
-			for (i = 0; gres_slurmd_conf->file[i]; i++) {
-				if (!isdigit(gres_slurmd_conf->file[i]))
-					continue;
-				gpu_devices[available_files_index] =
-					atoi(gres_slurmd_conf->file + i);
+			char *bracket, *fname, *tmp_name;
+			hostlist_t hl;
+			bracket = strrchr(gres_slurmd_conf->file, '[');
+			if (bracket)
+				tmp_name = xstrdup(bracket);
+			else
+				tmp_name = xstrdup(gres_slurmd_conf->file);
+			hl = hostlist_create(tmp_name);
+			xfree(tmp_name);
+			if (!hl) {
+				rc = EINVAL;
 				break;
 			}
-			available_files_index++;
+			while ((fname = hostlist_shift(hl))) {
+				if (available_files_index ==
+				    nb_available_files) {
+					nb_available_files++;
+					xrealloc(gpu_devices, sizeof(int) *
+						 nb_available_files);
+					gpu_devices[available_files_index] = -1;
+				}
+				for (i = 0; fname[i]; i++) {
+					if (!isdigit(fname[i]))
+						continue;
+					gpu_devices[available_files_index] =
+						atoi(fname + i);
+					break;
+				}
+				available_files_index++;
+				free(fname);
+			}
+			hostlist_destroy(hl);
 		}
 	}
 	list_iterator_destroy(iter);
