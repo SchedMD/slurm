@@ -1003,7 +1003,7 @@ extern void admin_edit_block(GtkCellRendererText *cell,
 	g_free(old_text);
 no_input:
 	gtk_tree_path_free(path);
-	g_static_mutex_unlock(&sview_mutex);
+	g_mutex_unlock(sview_mutex);
 }
 
 extern void get_info_block(GtkTable *table, display_data_t *display_data)
