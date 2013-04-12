@@ -122,3 +122,14 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 {
 	return SLURM_SUCCESS;
 }
+
+extern void acct_gather_energy_p_conf_options(s_p_options_t **full_options,
+					      int *full_options_cnt)
+{
+	return;
+}
+
+extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
+{
+	return;
+}
