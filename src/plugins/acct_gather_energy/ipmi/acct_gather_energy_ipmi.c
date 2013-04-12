@@ -742,8 +742,8 @@ static int _get_joules_task(void)
 		return SLURM_ERROR;
 	}
 
-	if ( _read_last_consumed_energy(&message) != SLURM_SUCCESS ) {
-		//local_energy->consumed_energy = NO_VAL;
+	if (_read_last_consumed_energy(&message) != SLURM_SUCCESS) {
+		local_energy->consumed_energy = NO_VAL;
 		return SLURM_ERROR;
 	}
 
@@ -775,7 +775,7 @@ static int _first_update_task_energy(void)
 	int nb_try=0, max_try=NBFIRSTREAD;
 
 	while (_read_last_consumed_energy(&message) != SLURM_SUCCESS) {
-		if (nb_try < max_try) {
+		if (nb_try > max_try) {
 			local_energy->consumed_energy = NO_VAL;
 			return SLURM_ERROR;
 		}
