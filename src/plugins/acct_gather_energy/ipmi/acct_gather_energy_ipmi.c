@@ -73,6 +73,7 @@
 #define _DEBUG 1
 #define _DEBUG_ENERGY 1
 #define TIMEOUT 10
+#define NBFIRSTREAD 3
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -736,10 +737,13 @@ static int _get_joules_task(void)
 	ipmi_message_t message;
 	time_t time_call = time(NULL);
 	if (local_energy->consumed_energy == NO_VAL ||
-		local_energy->base_consumed_energy == 0 ||
-		_read_last_consumed_energy(&message) !=
-		SLURM_SUCCESS) {
+		local_energy->base_consumed_energy == 0) {
 		local_energy->consumed_energy = NO_VAL;
+		return SLURM_ERROR;
+	}
+
+	if ( _read_last_consumed_energy(&message) != SLURM_SUCCESS ) {
+		//local_energy->consumed_energy = NO_VAL;
 		return SLURM_ERROR;
 	}
 
@@ -768,11 +772,17 @@ static int _first_update_task_energy(void)
 {
 	ipmi_message_t message;
 	time_t time_call = time(NULL);
-	if (_read_last_consumed_energy(&message)
-	    != SLURM_SUCCESS) {
-		local_energy->consumed_energy = NO_VAL;
-		return SLURM_ERROR;
+	int nb_try=0, max_try=NBFIRSTREAD;
+
+	while (_read_last_consumed_energy(&message) != SLURM_SUCCESS) {
+		if (nb_try < max_try) {
+			local_energy->consumed_energy = NO_VAL;
+			return SLURM_ERROR;
+		}
+		nb_try++;
+		_task_sleep(1);
 	}
+
 	if (slurm_ipmi_conf.adjustment) {
 		local_energy->base_consumed_energy =
 			message.energy +
