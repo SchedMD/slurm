@@ -218,6 +218,9 @@ void s_p_hashtbl_destroy(s_p_hashtbl_t *hashtbl) {
 	int i;
 	s_p_values_t *p, *next;
 
+	if (!hashtbl)
+		return;
+
 	for (i = 0; i < CONF_HASH_LEN; i++) {
 		for (p = hashtbl[i]; p != NULL; p = next) {
 			next = p->next;
