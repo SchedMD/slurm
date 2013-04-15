@@ -367,6 +367,9 @@ CPU binding details for jobs and steps
 \fBEnergy\fR
 AcctGatherEnergy debug info
 .TP
+\fBExtSensors\fR
+External Sensors debug info
+.TP
 \fBFrontEnd\fR
 Front end node details
 .TP
@@ -532,6 +535,34 @@ the discretion of the system administrator.
 Information about the job being initiated, it's allocated nodes, etc. are
 passed to the program using environment variables.
 See \fBProlog and Epilog Scripts\fR for more information.
+
+.TP
+\fBExtSensorsFreq\fR
+The external sensors plugin sampling interval.
+If \fBExtSensorsType=ext_sensors/none\fR, this parameter is ignored.
+For all other values of \fBExtSensorsType\fR, this parameter is the number 
+of seconds between external sensors samples for hardware components (nodes,
+switches, etc.) The default value is zero. This value disables external 
+sensors sampling. Note: This parameter does not affect external sensors
+data collection for jobs/steps.
+
+.TP
+\fBExtSensorsType\fR
+Identifies the plugin to be used for external sensors data collection.
+Slurmctld calls this plugin to collect external sensors data for jobs/steps 
+and hardware components. In case of node sharing between jobs the reported 
+values per job/step (through sstat or sacct) may not be accurate.  See also 
+"man ext_sensors.conf".
+
+Configurable values at present are:
+.RS
+.TP 20
+\fBext_sensors/none\fR
+No external sensors data is collected.
+.TP
+\fBext_sensors/rrd\fR
+External sensors data is collected from the RRD database.
+.RE
 
 .TP
 \fBFastSchedule\fR

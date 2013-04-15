@@ -66,6 +66,7 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_ext_sensors.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
@@ -257,6 +258,7 @@ static void _free_step_rec(struct step_record *step_ptr)
 	if (step_ptr->gres_list)
 		list_destroy(step_ptr->gres_list);
 	select_g_select_jobinfo_free(step_ptr->select_jobinfo);
+	xfree(step_ptr->ext_sensors);
 	xfree(step_ptr);
 }
 
@@ -2074,6 +2076,10 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->exclusive = step_specs->exclusive;
 	step_ptr->ckpt_dir  = xstrdup(step_specs->ckpt_dir);
 	step_ptr->no_kill   = step_specs->no_kill;
+	step_ptr->ext_sensors = (ext_sensors_data_t *)
+					xmalloc(sizeof(ext_sensors_data_t));
+	step_ptr->ext_sensors->consumed_energy = NO_VAL;
+	step_ptr->ext_sensors->temperature = NO_VAL;
 
 	/* step's name and network default to job's values if not
 	 * specified in the step specification */
@@ -2825,6 +2831,14 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		return EINVAL;
 	}
 
+	ext_sensors_g_get_stependdata(step_ptr);
+	if (step_ptr->jobacct != NULL) {
+		if ((step_ptr->jobacct->energy.consumed_energy == 0) ||
+		    (step_ptr->jobacct->energy.consumed_energy == NO_VAL)) {
+			step_ptr->jobacct->energy.consumed_energy =
+					step_ptr->ext_sensors->consumed_energy;
+		}
+	}
 	jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
 
 	/* we have been adding task average frequencies for

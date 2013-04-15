@@ -1325,6 +1325,29 @@ If the reported value is "n/s" (not supported), the node does not support the
 configured \fBAcctGatherEnergyType\fR plugin. If the reported value is zero, energy
 accounting for nodes is disabled.
 
+.TP
+The meaning of the external sensors information is as follows:
+
+.TP
+\fIExtSensorsJoules\fP
+The energy consumed by the node between the last time it was powered on 
+and the last external sensors plugin node sample, in joules.
+
+
+.TP
+\fIExtSensorsWatts\fP
+The instantaneous power consumption of the node at the time of the last
+external sensors plugin node sample, in watts.
+
+.TP
+\fIExtSensorsTemp\fP
+The temperature of the node at the time of the last external sensors plugin
+node sample, in celsius.
+
+.PP
+If the reported value is "n/s" (not supported), the node does not support the
+configured \fBExtSensorsType\fR plugin. 
+
 .SH "ENVIRONMENT VARIABLES"
 .PP
 Some \fBscontrol\fR options may

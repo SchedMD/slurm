@@ -564,6 +564,19 @@ char *slurm_get_acct_gather_energy_type(void);
  */
 extern uint16_t slurm_get_acct_gather_node_freq(void);
 
+/* slurm_get_ext_sensors_type
+ * get ExtSensorsType from slurmctld_conf object
+ * RET char *   - ext_sensors type, MUST be xfreed by caller
+ */
+char *slurm_get_ext_sensors_type(void);
+
+/* slurm_get_ext_sensors_freq
+ * returns the external sensors sampling frequency from the slurmctld_conf
+ * object for requesting info from a hardware component (node, switch, etc.)
+ * RET int    - external sensors sampling frequency
+ */
+extern uint16_t slurm_get_ext_sensors_freq(void);
+
 /* slurm_get_root_filter
  * RET uint16_t  - Value of SchedulerRootFilter */
 extern uint16_t slurm_get_root_filter(void);

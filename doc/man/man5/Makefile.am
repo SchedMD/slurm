@@ -5,6 +5,7 @@ man5_MANS = \
 	bluegene.conf.5 \
 	cgroup.conf.5 \
 	cray.conf.5 \
+	ext_sensors.conf.5 \
 	gres.conf.5 \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
@@ -20,6 +21,7 @@ html_DATA = \
 	bluegene.conf.html \
 	cgroup.conf.html \
 	cray.conf.html \
+	ext_sensors.conf.html \
 	gres.conf.html \
 	slurm.conf.html \
 	slurmdbd.conf.html \

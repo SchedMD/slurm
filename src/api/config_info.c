@@ -336,6 +336,18 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->epilog_slurmctld);
 	list_append(ret_list, key_pair);
 
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ExtSensorsType");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->ext_sensors_type);
+	list_append(ret_list, key_pair);
+
+	snprintf(tmp_str, sizeof(tmp_str), "%u sec",
+		 slurm_ctl_conf_ptr->ext_sensors_freq);
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ExtSensorsFreq");
+	key_pair->value = xstrdup(tmp_str);
+	list_append(ret_list, key_pair);
+
 	snprintf(tmp_str, sizeof(tmp_str), "%u",
 		 slurm_ctl_conf_ptr->fast_schedule);
 	key_pair = xmalloc(sizeof(config_key_pair_t));

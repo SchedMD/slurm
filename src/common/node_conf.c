@@ -71,6 +71,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_acct_gather_energy.h"
+#include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -803,6 +804,7 @@ extern struct node_record *create_node_record (
 	node_ptr->tmp_disk = config_ptr->tmp_disk;
 	node_ptr->select_nodeinfo = select_g_select_nodeinfo_alloc();
 	node_ptr->energy = acct_gather_energy_alloc();
+	node_ptr->ext_sensors = ext_sensors_alloc();
 	xassert (node_ptr->magic = NODE_MAGIC)  /* set value */;
 	return node_ptr;
 }
@@ -983,6 +985,7 @@ extern void purge_node_rec (struct node_record *node_ptr)
 	xfree(node_ptr->part_pptr);
 	xfree(node_ptr->reason);
 	acct_gather_energy_destroy(node_ptr->energy);
+	ext_sensors_destroy(node_ptr->ext_sensors);
 	select_g_select_nodeinfo_free(node_ptr->select_nodeinfo);
 }
 

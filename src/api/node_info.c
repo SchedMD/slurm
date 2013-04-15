@@ -58,8 +58,9 @@
 #include "slurm/slurm.h"
 
 #include "src/common/parse_time.h"
-#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_acct_gather_energy.h"
+#include "src/common/slurm_ext_sensors.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -312,6 +313,30 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 				node_ptr->energy->current_watts,
 				node_ptr->energy->base_watts,
 			        node_ptr->energy->consumed_energy);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** external sensors Line ******/
+	if (node_ptr->ext_sensors->consumed_energy == NO_VAL)
+		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsJoules=n/s ");
+	else 
+		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsJoules=%u ", 
+			 node_ptr->ext_sensors->consumed_energy);
+	xstrcat(out, tmp_line);
+	if (node_ptr->ext_sensors->current_watts == NO_VAL)
+		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsWatts=n/s ");
+	else
+		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsWatts=%u ",
+			 node_ptr->ext_sensors->current_watts);
+	xstrcat(out, tmp_line);
+	if (node_ptr->ext_sensors->temperature == NO_VAL)
+		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsTemp=n/s");
+	else
+		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsTemp=%u",
+			 node_ptr->ext_sensors->temperature);
 	xstrcat(out, tmp_line);
 
 	if (one_liner)

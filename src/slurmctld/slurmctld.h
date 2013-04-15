@@ -668,6 +668,7 @@ struct 	step_record {
 	uint16_t exclusive;		/* dedicated resources for the step */
 	uint32_t exit_code;		/* highest exit code from any task */
 	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
+	ext_sensors_data_t *ext_sensors; /* external sensors plugin data */
 	char *gres;			/* generic resources required */
 	List gres_list;			/* generic resource allocation detail */
 	char *host;			/* host for srun communications */

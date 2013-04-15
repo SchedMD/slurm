@@ -4,6 +4,7 @@ SUBDIRS = \
 	auth			\
 	checkpoint		\
 	crypto			\
+	ext_sensors		\
 	gres			\
 	jobacct_gather		\
 	jobcomp			\

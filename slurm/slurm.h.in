@@ -436,6 +436,16 @@ enum acct_energy_type {
 	ENERGY_DATA_RECONFIG,
 };
 
+enum ext_sensors_type {
+	EXT_SENSORS_NODE,
+	EXT_SENSORS_SWITCH,
+};
+
+enum ext_sensors_value_type {
+	EXT_SENSORS_VALUE_ENERGY,
+	EXT_SENSORS_VALUE_TEMPERATURE,
+};
+
 /* Possible task distributions across the nodes */
 typedef enum task_dist_states {
 	/* NOTE: start SLURM_DIST_CYCLIC at 1 for HP MPI */
@@ -929,6 +939,13 @@ typedef struct acct_gather_energy {
 	uint32_t consumed_energy; /* total energy consumed by node, in joules */
 	uint32_t current_watts;	  /* current power consump of node, in watts */
 } acct_gather_energy_t;
+
+typedef struct ext_sensors_data {
+	uint32_t consumed_energy;    /* total energy consumed, in joules */
+	uint32_t temperature;	     /* temperature, in celsius */
+	time_t   energy_update_time; /* last update time for consumed_energy */
+	uint32_t current_watts;      /* current power consumption, in watts */
+} ext_sensors_data_t;
 
 typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *account;		/* charge to specified account */
@@ -1464,6 +1481,8 @@ typedef struct node_info {
 	uint16_t cores;         /* number of cores per socket       */
 	uint16_t cpus;		/* configured count of cpus running on
 				 * the node */
+	acct_gather_energy_t *energy;	 /* energy data */
+	ext_sensors_data_t *ext_sensors; /* external sensor data */
 	char *features;		/* list of a node's features */
 	char *gres;		/* list of a node's generic resources */
 	uint32_t cpu_load;	/* CPU load * 100 */
@@ -1483,7 +1502,6 @@ typedef struct node_info {
 	uint16_t threads;       /* number of threads per core */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
 	uint32_t weight;	/* arbitrary priority of node for scheduling */
-	acct_gather_energy_t *energy;
 	dynamic_plugin_data_t *select_nodeinfo;  /* opaque data structure,
 						  * use
 						  * slurm_get_select_nodeinfo()
@@ -1501,6 +1519,16 @@ typedef struct node_info_msg {
 	uint32_t record_count;		/* number of records */
 	node_info_t *node_array;	/* the node records */
 } node_info_msg_t;
+
+typedef struct switch_info {
+	ext_sensors_data_t *sensors;	/* external sensor data */
+} switch_info_t;
+
+typedef struct switch_info_msg {
+	time_t last_update;		/* time of latest info */
+	uint32_t record_count;		/* number of records */
+	switch_info_t *switch_array;	/* the switch records */
+} switch_info_msg_t;
 
 typedef struct front_end_info {
 	char *allow_groups;		/* allowed group string */
@@ -1843,6 +1871,7 @@ typedef struct reservation_name_msg {
 						 * dies on a bluegene system */
 #define DEBUG_FLAG_SWITCH	0x00020000	/* SwitchType plugin */
 #define DEBUG_FLAG_ENERGY	0x00040000	/* AcctGatherEnergy plugin */
+#define DEBUG_FLAG_EXT_SENSORS	0x00080000	/* ExtSensorsType plugin */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
@@ -1908,6 +1937,8 @@ typedef struct slurm_ctl_conf {
 	uint32_t epilog_msg_time;  /* usecs for slurmctld to process an
 				    * epilog complete message */
 	char *epilog_slurmctld;	/* pathname of job epilog run by slurmctld */
+	char *ext_sensors_type; /* external sensors plugin type */
+	uint16_t ext_sensors_freq; /* secs between ext sensors sampling */
 	uint16_t fast_schedule;	/* 1 to *not* check configurations by node
 				 * (only check configuration file, faster) */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */

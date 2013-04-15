@@ -72,6 +72,7 @@
 #include "src/common/slurm_topology.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_ext_sensors.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/front_end.h"
@@ -509,6 +510,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->epilog              = xstrdup(conf->epilog);
 	conf_ptr->epilog_msg_time     = conf->epilog_msg_time;
 	conf_ptr->epilog_slurmctld    = xstrdup(conf->epilog_slurmctld);
+	conf_ptr->ext_sensors_type    = xstrdup(conf->ext_sensors_type);
+	conf_ptr->ext_sensors_freq    = conf->ext_sensors_freq;
 
 	conf_ptr->fast_schedule       = conf->fast_schedule;
 	conf_ptr->first_job_id        = conf->first_job_id;
@@ -1810,8 +1813,10 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		lock_slurmctld(job_write_lock);
 		error_code = step_create(req_step_msg, &step_rec, false);
 	}
-	if (error_code == SLURM_SUCCESS)
+	if (error_code == SLURM_SUCCESS) {
 		error_code = _make_step_cred(step_rec, &slurm_cred);
+		ext_sensors_g_get_stepstartdata(step_rec);
+	}
 	END_TIMER2("_slurm_rpc_job_step_create");
 
 	/* return result */

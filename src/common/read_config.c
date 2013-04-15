@@ -190,6 +190,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"Epilog", S_P_STRING},
 	{"EpilogMsgTime", S_P_UINT32},
 	{"EpilogSlurmctld", S_P_STRING},
+	{"ExtSensorsType", S_P_STRING},
+	{"ExtSensorsFreq", S_P_UINT16},
 	{"FastSchedule", S_P_UINT16},
 	{"FirstJobId", S_P_UINT32},
 	{"GetEnvTimeout", S_P_UINT16},
@@ -2057,6 +2059,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->acct_gather_energy_type);
 	xfree (ctl_conf_ptr->epilog);
 	xfree (ctl_conf_ptr->epilog_slurmctld);
+	xfree (ctl_conf_ptr->ext_sensors_type);
 	xfree (ctl_conf_ptr->gres_plugins);
 	xfree (ctl_conf_ptr->health_check_program);
 	xfree (ctl_conf_ptr->job_acct_gather_type);
@@ -2158,6 +2161,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->disable_root_jobs         = 0;
 	ctl_conf_ptr->acct_gather_node_freq	= 0;
 	xfree (ctl_conf_ptr->acct_gather_energy_type);
+	ctl_conf_ptr->ext_sensors_freq		= 0;
+	xfree (ctl_conf_ptr->ext_sensors_type);
 	ctl_conf_ptr->dynalloc_port		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->enforce_part_limits       = 0;
 	xfree (ctl_conf_ptr->epilog);
@@ -2730,6 +2735,15 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->epilog_msg_time = DEFAULT_EPILOG_MSG_TIME;
 
 	s_p_get_string(&conf->epilog_slurmctld, "EpilogSlurmctld", hashtbl);
+
+	if (!s_p_get_string(&conf->ext_sensors_type,
+			    "ExtSensorsType", hashtbl))
+		conf->ext_sensors_type =
+			xstrdup(DEFAULT_EXT_SENSORS_TYPE);
+
+	if (!s_p_get_uint16(&conf->ext_sensors_freq,
+			    "ExtSensorsFreq", hashtbl))
+		conf->ext_sensors_freq = 0;
 
 	if (!s_p_get_uint16(&conf->fast_schedule, "FastSchedule", hashtbl))
 		conf->fast_schedule = DEFAULT_FAST_SCHEDULE;
@@ -3713,6 +3727,11 @@ extern char * debug_flags2str(uint32_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Energy");
 	}
+	if (debug_flags & DEBUG_FLAG_EXT_SENSORS) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "ExtSensors");
+	}
 	if (debug_flags & DEBUG_FLAG_FRONT_END) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -3807,6 +3826,8 @@ extern uint32_t debug_str2flags(char *debug_flags)
 			rc |= DEBUG_FLAG_CPU_BIND;
 		else if (strcasecmp(tok, "Energy") == 0)
 			rc |= DEBUG_FLAG_ENERGY;
+		else if (strcasecmp(tok, "ExtSensors") == 0)
+			rc |= DEBUG_FLAG_EXT_SENSORS;
 		else if (strcasecmp(tok, "FrontEnd") == 0)
 			rc |= DEBUG_FLAG_FRONT_END;
 		else if (strcasecmp(tok, "Gang") == 0)
