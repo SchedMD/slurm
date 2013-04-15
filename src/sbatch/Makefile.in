@@ -90,6 +90,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rfc5424_time.m4 \
+	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
 	$(top_srcdir)/auxdir/x_ac_setpgrp.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
@@ -261,6 +262,9 @@ READLINE_LIBS = @READLINE_LIBS@
 REAL_BGQ_LOADED = @REAL_BGQ_LOADED@
 REAL_BG_L_P_LOADED = @REAL_BG_L_P_LOADED@
 RELEASE = @RELEASE@
+RRDTOOL_CPPFLAGS = @RRDTOOL_CPPFLAGS@
+RRDTOOL_LDFLAGS = @RRDTOOL_LDFLAGS@
+RRDTOOL_LIBS = @RRDTOOL_LIBS@
 RUNJOB_LDFLAGS = @RUNJOB_LDFLAGS@
 SED = @SED@
 SEMAPHORE_LIBS = @SEMAPHORE_LIBS@

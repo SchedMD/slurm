@@ -88,6 +88,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rfc5424_time.m4 \
+	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
 	$(top_srcdir)/auxdir/x_ac_setpgrp.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
@@ -264,6 +265,9 @@ READLINE_LIBS = @READLINE_LIBS@
 REAL_BGQ_LOADED = @REAL_BGQ_LOADED@
 REAL_BG_L_P_LOADED = @REAL_BG_L_P_LOADED@
 RELEASE = @RELEASE@
+RRDTOOL_CPPFLAGS = @RRDTOOL_CPPFLAGS@
+RRDTOOL_LDFLAGS = @RRDTOOL_LDFLAGS@
+RRDTOOL_LIBS = @RRDTOOL_LIBS@
 RUNJOB_LDFLAGS = @RUNJOB_LDFLAGS@
 SED = @SED@
 SEMAPHORE_LIBS = @SEMAPHORE_LIBS@
@@ -357,6 +361,7 @@ man5_MANS = \
 	bluegene.conf.5 \
 	cgroup.conf.5 \
 	cray.conf.5 \
+	ext_sensors.conf.5 \
 	gres.conf.5 \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
@@ -369,6 +374,7 @@ EXTRA_DIST = $(man5_MANS) $(am__append_1)
 @HAVE_MAN2HTML_TRUE@	bluegene.conf.html \
 @HAVE_MAN2HTML_TRUE@	cgroup.conf.html \
 @HAVE_MAN2HTML_TRUE@	cray.conf.html \
+@HAVE_MAN2HTML_TRUE@	ext_sensors.conf.html \
 @HAVE_MAN2HTML_TRUE@	gres.conf.html \
 @HAVE_MAN2HTML_TRUE@	slurm.conf.html \
 @HAVE_MAN2HTML_TRUE@	slurmdbd.conf.html \
