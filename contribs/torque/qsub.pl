@@ -384,7 +384,7 @@ qsub  [-a date_time]
 
 =head1 DESCRIPTION
 
-The B<qsub> command displays information about nodes. It is aimed to be feature-compatible with PBS' qsub.
+The B<qsub> submits batch jobs. It is aimed to be feature-compatible with PBS' qsub.
 
 =head1 OPTIONS
 
