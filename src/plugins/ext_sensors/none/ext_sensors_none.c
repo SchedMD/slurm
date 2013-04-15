@@ -47,9 +47,10 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+/* slurm_xlator.h must be first */
+#include "src/common/slurm_xlator.h"
 #include "src/common/slurm_ext_sensors.h"
 #include "src/common/fd.h"
-#include "src/common/slurm_xlator.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmd/common/proctrack.h"
