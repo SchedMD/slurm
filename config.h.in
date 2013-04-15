@@ -230,9 +230,6 @@
 /* Define to 1 for running on a real Cray XT/XE system */
 #undef HAVE_REAL_CRAY
 
-/* Define to 1 if rrdtool library found */
-#undef HAVE_RRDTOOL
-
 /* Define to 1 if you have the `sched_setaffinity' function. */
 #undef HAVE_SCHED_SETAFFINITY
 

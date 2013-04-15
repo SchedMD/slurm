@@ -57,9 +57,7 @@
 #include "src/common/slurm_ext_sensors.h"
 #include "src/slurmd/common/proctrack.h"
 
-#ifdef HAVE_RRDTOOL
 #include <rrd.h>
-#endif
 
 #define _WATT_MIN 10
 #define _WATT_MAX 500
@@ -102,9 +100,7 @@ static uint32_t debug_flags = 0;
 static ext_sensors_conf_t ext_sensors_conf;
 static ext_sensors_conf_t *ext_sensors_cnf = &ext_sensors_conf;
 static time_t last_valid_time;
-#ifdef HAVE_RRDTOOL
 static rrd_value_t last_valid_watt;
-#endif
 
 /* Local plugin functions */
 static int _update_node_data(void);
@@ -112,8 +108,6 @@ static int _update_switch_data(void);
 static int _update_door_data(void);
 extern int _ext_sensors_read_conf(void);
 static void _ext_sensors_clear_free_conf(void);
-
-#ifdef HAVE_RRDTOOL
 
 /* Local RRD functions */
 static rrd_value_t _get_additional_consumption(time_t time0, time_t time1,
@@ -408,13 +402,11 @@ static uint32_t _rrd_consolidate_one(time_t t0, time_t t1,
 
 	return (uint32_t)consumed_energy;
 }
-#endif
 
 extern uint32_t RRD_consolidate(time_t step_starttime, time_t step_endtime,
 				bitstr_t* bitmap_of_nodes)
 {
 	uint32_t consumed_energy = 0;
-#ifdef HAVE_RRDTOOL
 	uint32_t tmp;
 	char *node_name = NULL;
 	hostlist_t hl;
@@ -438,13 +430,12 @@ extern uint32_t RRD_consolidate(time_t step_starttime, time_t step_endtime,
 		consumed_energy += tmp;
 	}
 	hostlist_destroy(hl);
-#endif
+
 	return consumed_energy;
 }
 
 static int _update_node_data(void)
 {
-#ifdef HAVE_RRDTOOL
 	int i;
 	char* path;
 	uint32_t tmp;
@@ -511,7 +502,6 @@ static int _update_node_data(void)
 			}
 		}
 	}
-#endif
 	return SLURM_SUCCESS;
 }
 

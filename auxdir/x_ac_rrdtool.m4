@@ -51,7 +51,6 @@ AS_VAR_SET(x_ac_cv_rrdtool_dir, $d), [])
     RRDTOOL_CPPFLAGS="-I$x_ac_cv_rrdtool_dir/include"
     RRDTOOL_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_rrdtool_dir/$bit -L$x_ac_cv_rrdtool_dir/$bit"
     RRDTOOL_LIBS="-lrrd"
-    AC_DEFINE(HAVE_RRDTOOL, 1, [Define to 1 if rrdtool library found])
   fi
 
   AC_SUBST(RRDTOOL_LIBS)

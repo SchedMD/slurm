@@ -20112,9 +20112,6 @@ $as_echo "$as_me: WARNING: unable to locate rrdtool installation" >&2;}
     RRDTOOL_CPPFLAGS="-I$x_ac_cv_rrdtool_dir/include"
     RRDTOOL_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_rrdtool_dir/$bit -L$x_ac_cv_rrdtool_dir/$bit"
     RRDTOOL_LIBS="-lrrd"
-
-$as_echo "#define HAVE_RRDTOOL 1" >>confdefs.h
-
   fi
 
 
