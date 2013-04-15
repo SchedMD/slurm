@@ -434,6 +434,7 @@ extern uint32_t RRD_consolidate(time_t step_starttime, time_t step_endtime,
 			break;
 		consumed_energy+=tmp;
 	}
+	hostlist_destroy(hl);
 #endif
 	return consumed_energy;
 }
