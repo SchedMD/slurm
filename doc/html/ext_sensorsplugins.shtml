@@ -28,7 +28,7 @@ for the type of external sensors. We currently use
 RRD database.
 </ul>
 <p>The programmer is urged to study
-<span class="commandline">src/plugins/ext_sensors/rrd</span> and 
+<span class="commandline">src/plugins/ext_sensors/rrd</span> and
 <span class="commandline">src/common/slurm_ext_sensors.c</span>
 for a sample implementation of a SLURM external sensors plugin.
 <p class="footer"><a href="#top">top</a>
@@ -39,7 +39,7 @@ implemented must be stubbed.
 
 <p class="commandline">extern int ext_sensors_read_conf(void)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-Reads the external sensors plugin configuration file (ext_sensors.conf) 
+Reads the external sensors plugin configuration file (ext_sensors.conf)
 and populates the configuration structure.
 Called by the slurmctld daemon.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
@@ -60,7 +60,7 @@ Called by the slurmctld daemon.
 
 <p class="commandline">extern int ext_sensors_p_update_component_data(void)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-Updates external sensors data for data types and component types as configured 
+Updates external sensors data for data types and component types as configured
 in ext_sensors.conf.
 Called by the slurmctld daemon.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
@@ -100,9 +100,9 @@ plugin and the frequency at which to gather external sensors data.</p>
 </dl>
 
 <h2>Versioning</h2>
-<p>This document describes version 1 of the SLURM External Sensors Plugin API. 
-Future releases of SLURM may revise this API. A, energy accounting plugin 
-conveys its ability to implement a particular API version using the mechanism 
+<p>This document describes version 1 of the SLURM External Sensors Plugin API.
+Future releases of SLURM may revise this API. A, energy accounting plugin
+conveys its ability to implement a particular API version using the mechanism
 outlined for SLURM plugins.</p>
 
 <p class="footer"><a href="#top">top</a>

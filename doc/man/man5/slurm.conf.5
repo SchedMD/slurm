@@ -160,7 +160,7 @@ is "YES".
 \fBAcctGatherNodeFreq\fR
 The AcctGather plugins sampling interval for node accounting.
 For AcctGather plugin values of none, this parameter is ignored.
-For all other values this parameter is the number 
+For all other values this parameter is the number
 of seconds between node accounting samples. For the
 acct_gather_energy/rapl plugin, set a value less
 than 300 because the counters may overflow beyond this rate.
@@ -172,12 +172,12 @@ determined by the value of \fBJobAcctGatherFrequency\fR.
 \fBAcctGatherEnergyType\fR
 Identifies the plugin to be used for energy consumption accounting.
 The jobacct_gather plugin and slurmd daemon call this plugin to collect
-energy consumption data for jobs and nodes. The collection of energy 
-consumption data takes place on node level, hence only in case of exclusive 
-job allocation the energy consumption measurements will reflect the jobs 
-real consumption. In case of node sharing between jobs the reported consumed 
-energy per job (through sstat or sacct) will not reflect the real energy 
-consumed by the jobs. 
+energy consumption data for jobs and nodes. The collection of energy
+consumption data takes place on node level, hence only in case of exclusive
+job allocation the energy consumption measurements will reflect the jobs
+real consumption. In case of node sharing between jobs the reported consumed
+energy per job (through sstat or sacct) will not reflect the real energy
+consumed by the jobs.
 
 Configurable values at present are:
 .RS
@@ -540,18 +540,18 @@ See \fBProlog and Epilog Scripts\fR for more information.
 \fBExtSensorsFreq\fR
 The external sensors plugin sampling interval.
 If \fBExtSensorsType=ext_sensors/none\fR, this parameter is ignored.
-For all other values of \fBExtSensorsType\fR, this parameter is the number 
+For all other values of \fBExtSensorsType\fR, this parameter is the number
 of seconds between external sensors samples for hardware components (nodes,
-switches, etc.) The default value is zero. This value disables external 
+switches, etc.) The default value is zero. This value disables external
 sensors sampling. Note: This parameter does not affect external sensors
 data collection for jobs/steps.
 
 .TP
 \fBExtSensorsType\fR
 Identifies the plugin to be used for external sensors data collection.
-Slurmctld calls this plugin to collect external sensors data for jobs/steps 
-and hardware components. In case of node sharing between jobs the reported 
-values per job/step (through sstat or sacct) may not be accurate.  See also 
+Slurmctld calls this plugin to collect external sensors data for jobs/steps
+and hardware components. In case of node sharing between jobs the reported
+values per job/step (through sstat or sacct) may not be accurate.  See also
 "man ext_sensors.conf".
 
 Configurable values at present are:
@@ -714,7 +714,7 @@ system), "jobacct_gather/linux" (for Linux operating system),
 The default value is "jobacct_gather/none".
 "jobacct_gather/cgroup" is an experimental plugin for the Linux operating system
 that uses cgroups to collect accounting statistics. The plugin collects the
-following statistics: From the cgroup memory subsystem: memory.usage_in_bytes 
+following statistics: From the cgroup memory subsystem: memory.usage_in_bytes
 (reported as 'pages') and rss from memory.stat (reported as 'rss'). From the
 cgroup cpuacct subsystem: user cpu time and system cpu time. No value
 is provided by cgroups for virtual memory size ('vsize').
@@ -1086,8 +1086,8 @@ A suspended job will resume execution once the high priority job
 preempting it completes.
 The \fBSUSPEND\fR may only be used with the \fBGANG\fR option
 (the gang scheduler module performs the job resume operation)
-and with \fBPreemptType=preempt/partition_prio\fR (the logic to 
-suspend and resume jobs current only has the data structures to 
+and with \fBPreemptType=preempt/partition_prio\fR (the logic to
+suspend and resume jobs current only has the data structures to
 support partitions).
 .RE
 
@@ -1145,7 +1145,7 @@ Applicable only if PriorityType=priority/multifactor.
 .RS
 .TP 17
 \fBACCRUE_ALWAYS\fR
-If set, priority age factor will be increased despite job dependencies 
+If set, priority age factor will be increased despite job dependencies
 or holds.
 .TP
 \fBTICKET_BASED\fR
@@ -1203,7 +1203,7 @@ priority. Supported values are "priority/basic" (jobs are prioritized
 by order of arrival, also suitable for sched/wiki and sched/wiki2),
 "priority/multifactor" (jobs are prioritized based upon size, age,
 fair\-share of allocation, etc).
-Also see \fBPriorityFlags\fR for configuration options. 
+Also see \fBPriorityFlags\fR for configuration options.
 The default value is "priority/basic".
 
 .TP
@@ -1319,7 +1319,7 @@ which uses a site\-specific LUA script to track processes
 which uses Quadrics kernel patch and is the default if "SwitchType=switch/elan"
 .TP
 \fBproctrack/sgi_job\fR
-which uses SGI's Process Aggregates (PAGG) kernel module, 
+which uses SGI's Process Aggregates (PAGG) kernel module,
 see \fIhttp://oss.sgi.com/projects/pagg/\fR for more information
 .TP
 \fBproctrack/pgid\fR
@@ -1430,7 +1430,7 @@ The maximum size of a process's data segment
 .TP
 \fBFSIZE\fR
 The maximum size of files created. Note that if the user sets FSIZE to less
-than the current size of the slurmd.log, job launches will fail with 
+than the current size of the slurmd.log, job launches will fail with
 a 'File size limit exceeded' error.
 .TP
 \fBMEMLOCK\fR
@@ -1770,8 +1770,8 @@ For the Wiki interface to the Moab Cluster Suite
 \fBSelectType\fR
 Identifies the type of resource selection algorithm to be used.
 Changing this value can only be done by restarting the slurmctld daemon
-and will result in the loss of all job information (running and pending) 
-since the job state save format used by each plugin is different. 
+and will result in the loss of all job information (running and pending)
+since the job state save format used by each plugin is different.
 Acceptable values include
 .RS
 .TP
@@ -1809,7 +1809,7 @@ The permitted values of \fBSelectTypeParameters\fR depend upon the
 configured value of \fBSelectType\fR.
 \fBSelectType=select/bluegene\fR supports no \fBSelectTypeParameters\fR.
 The only supported option for \fBSelectType=select/linear\fR are
-\fBCR_ONE_TASK_PER_CORE\fR and 
+\fBCR_ONE_TASK_PER_CORE\fR and
 \fBCR_Memory\fR, which treats memory as a consumable resource and
 prevents memory over subscription with job preemption or gang scheduling.
 The following values are supported for \fBSelectType=select/cons_res\fR:
@@ -1856,15 +1856,15 @@ Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_ONE_TASK_PER_CORE\fR
 Allocate one task per core by default.
-Without this option, by default one task will be allocated per 
+Without this option, by default one task will be allocated per
 thread on nodes with more than one \fBThreadsPerCore\fR configured.
 .TP
 \fBCR_CORE_DEFAULT_DIST_BLOCK\fR
 Allocate cores within a node using block distribution by default.
 This is a pseudo\-best\-fit algorithm that minimizes the number of
 boards and minimizes the number of sockets (within minimum boards)
-used for the allocation. 
-This default behavior can be overridden specifying a particular 
+used for the allocation.
+This default behavior can be overridden specifying a particular
 "\-m" parameter with srun/salloc/sbatch.
 Without this option, cores will be allocated cyclicly across the sockets.
 .TP
@@ -2077,19 +2077,19 @@ The value may not exceed 65533 seconds.
 
 .TP
 \fBSlurmSchedLogFile\fR
-Fully qualified pathname of the scheduling event logging file. 
-The syntax of this parameter is the same as for \fBSlurmctldLogFile\fR. 
+Fully qualified pathname of the scheduling event logging file.
+The syntax of this parameter is the same as for \fBSlurmctldLogFile\fR.
 In order to configure scheduler logging, set both the \fBSlurmSchedLogFile\fR
 and \fBSlurmSchedLogLevel\fR parameters.
 
 .TP
 \fBSlurmSchedLogLevel\fR
-The initial level of scheduling event logging, similar to the 
-\fBSlurmctlDebug\fR parameter used to control the initial level of 
-\fBslurmctld\fR logging.  
-Valid values for \fBSlurmSchedLogLevel\fR are "0" (scheduler logging 
-disabled) and "1" (scheduler logging enabled).  
-If this parameter is omitted, the value defaults to "0" (disabled). 
+The initial level of scheduling event logging, similar to the
+\fBSlurmctlDebug\fR parameter used to control the initial level of
+\fBslurmctld\fR logging.
+Valid values for \fBSlurmSchedLogLevel\fR are "0" (scheduler logging
+disabled) and "1" (scheduler logging enabled).
+If this parameter is omitted, the value defaults to "0" (disabled).
 In order to configure scheduler logging, set both the \fBSlurmSchedLogFile\fR
 and \fBSlurmSchedLogLevel\fR parameters.
 The scheduler logging level can be changed dynamically using \fBscontrol\fR.
@@ -2308,7 +2308,7 @@ variables and output for the user program.
 .RS
 .TP 20
 \fBexport NAME=value\fR
-Will set environment variables for the task being spawned. 
+Will set environment variables for the task being spawned.
 Everything after the equal sign to the end of the
 line will be used as the value for the environment variable.
 Exporting of functions is not currently supported.
@@ -2318,7 +2318,7 @@ Will cause that line (without the leading "print ")
 to be printed to the job's standard output.
 .TP
 \fBunset NAME\fR
-Will clear environment variables for the task being spawned. 
+Will clear environment variables for the task being spawned.
 .TP
 The order of task prolog/epilog execution is as follows:
 .TP
@@ -2450,14 +2450,14 @@ lines (see above), where \fBslurm\fR is the service\-name, should be added.
 
 .TP
 \fBVSizeFactor\fR
-Memory specifications in job requests apply to real memory size (also known 
-as resident set size). It is possible to enforce virtual memory limits for 
+Memory specifications in job requests apply to real memory size (also known
+as resident set size). It is possible to enforce virtual memory limits for
 both jobs and job steps by limiting their virtual memory to some percentage
-of their real memory allocation. The \fBVSizeFactor\fR parameter specifies 
-the job's or job step's virtual memory limit as a percentage of its real 
-memory limit. For example, if a job's real memory limit is 500MB and 
+of their real memory allocation. The \fBVSizeFactor\fR parameter specifies
+the job's or job step's virtual memory limit as a percentage of its real
+memory limit. For example, if a job's real memory limit is 500MB and
 VSizeFactor is set to 101 then the job will be killed if its real memory
-exceeds 500MB or its virtual memory exceeds 505MB (101 percent of the 
+exceeds 500MB or its virtual memory exceeds 505MB (101 percent of the
 real memory limit).
 The default valus is 0, which disables enforcement of virtual memory limits.
 The value may not exceed 65533 percent.
@@ -2653,7 +2653,7 @@ Also see \fBFeature\fR.
 \fBPort\fR
 The port number that the SLURM compute node daemon, \fBslurmd\fR, listens
 to for work on this particular node. By default there is a single port number
-for all \fBslurmd\fR daemons on all compute nodes as defined by the 
+for all \fBslurmd\fR daemons on all compute nodes as defined by the
 \fBSlurmdPort\fR configuration parameter. Use of this option is not generally
 recommended except for development or testing purposes. If multiple
 \fBslurmd\fR daemons execute on a node this can specify a range of ports
@@ -3147,9 +3147,9 @@ The value may not exceed 65533.
 .TP
 \fBReqResv\fR
 Specifies users of this partition are required to designate a reservation
-when submitting a job. This option can be useful in restricting usage 
+when submitting a job. This option can be useful in restricting usage
 of a partition that may have higher priority or additional resources to be
-allowed only within a reservation. 
+allowed only within a reservation.
 Possible values are "YES" and "NO".
 The default value is "NO".
 
@@ -3656,7 +3656,7 @@ See the section \fBFILE AND DIRECTORY PERMISSIONS\fR for information
 about the various files and directories used by SLURM.
 .LP
 It is recommended that the logrotate utility be used to insure that
-various log files do not become too large. 
+various log files do not become too large.
 This also applies to text files used for accounting,
 process tracking, and the slurmdbd log if they are used.
 .LP
@@ -3664,43 +3664,43 @@ Here is a sample logrotate configuration. Make appropriate site modifications
 and save as /etc/logrotate.d/slurm on all nodes.
 See the \fBlogrotate\fR man page for more details.
 .LP
-## 
+##
 .br
-# SLURM Logrotate Configuration 
+# SLURM Logrotate Configuration
 .br
-## 
+##
 .br
 /var/log/slurm/*log {
 .br
-    compress 
+    compress
 .br
-    missingok 
+    missingok
 .br
-    nocopytruncate 
+    nocopytruncate
 .br
-    nocreate 
+    nocreate
 .br
-    nodelaycompress 
+    nodelaycompress
 .br
-    nomail 
+    nomail
 .br
-    notifempty 
+    notifempty
 .br
-    noolddir 
+    noolddir
 .br
-    rotate 5 
+    rotate 5
 .br
-    sharedscripts 
+    sharedscripts
 .br
-    size=5M 
+    size=5M
 .br
-    create 640 slurm root 
+    create 640 slurm root
 .br
-    postrotate 
+    postrotate
 .br
-        /etc/init.d/slurm reconfig 
+	/etc/init.d/slurm reconfig
 .br
-    endscript 
+    endscript
 .br
 }
 .br

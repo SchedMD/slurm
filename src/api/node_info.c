@@ -241,7 +241,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "NodeAddr=%s NodeHostName=%s",
 			 node_ptr->node_addr, node_ptr->node_hostname);
-		xstrcat(out, tmp_line);	
+		xstrcat(out, tmp_line);
 		if (one_liner)
 			xstrcat(out, " ");
 		else
@@ -312,7 +312,7 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 				"LowestJoules=%u ConsumedJoules=%u",
 				node_ptr->energy->current_watts,
 				node_ptr->energy->base_watts,
-			        node_ptr->energy->consumed_energy);
+				node_ptr->energy->consumed_energy);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
@@ -322,8 +322,8 @@ slurm_sprint_node_table (node_info_t * node_ptr,
 	/****** external sensors Line ******/
 	if (node_ptr->ext_sensors->consumed_energy == NO_VAL)
 		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsJoules=n/s ");
-	else 
-		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsJoules=%u ", 
+	else
+		snprintf(tmp_line, sizeof(tmp_line), "ExtSensorsJoules=%u ",
 			 node_ptr->ext_sensors->consumed_energy);
 	xstrcat(out, tmp_line);
 	if (node_ptr->ext_sensors->current_watts == NO_VAL)

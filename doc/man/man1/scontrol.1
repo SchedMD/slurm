@@ -190,7 +190,7 @@ be released by the job's owner.
 
 .TP
 \fBnotify\fP \fIjob_id\fP \fImessage\fP
-Send a message to standard error of the salloc or srun command or batch job 
+Send a message to standard error of the salloc or srun command or batch job
 associated with the specified \fIjob_id\fP.
 
 .TP
@@ -274,10 +274,10 @@ Resume a previously suspended job. Also see \fBsuspend\fR.
 .TP
 \fBschedloglevel\fP \fILEVEL\fP
 Enable or disable scheduler logging.
-\fILEVEL\fP may be "0", "1", "disable" or "enable". "0" has the same 
+\fILEVEL\fP may be "0", "1", "disable" or "enable". "0" has the same
 effect as "disable". "1" has the same effect as "enable".
-This value is temporary and will be overwritten when the slurmctld 
-daemon reads the slurm.conf configuration file (e.g. when the daemon 
+This value is temporary and will be overwritten when the slurmctld
+daemon reads the slurm.conf configuration file (e.g. when the daemon
 is restarted or \fBscontrol reconfigure\fR is executed) if the
 SlurmSchedLogLevel parameter is present.
 
@@ -393,7 +393,7 @@ system administrator (also see the \fBhold\fP command).
 
 .TP
 \fBupdate\fP \fISPECIFICATION\fP
-Update job, step, node, partition, or reservation configuration per the 
+Update job, step, node, partition, or reservation configuration per the
 supplied specification. \fISPECIFICATION\fP is in the same format as the Slurm
 configuration file and the output of the \fIshow\fP command described above. It
 may be desirable to execute the \fIshow\fP command (described above) on the
@@ -442,13 +442,13 @@ Set the job's requirement for contiguous (consecutive) nodes to be allocated.
 Possible values are "YES" and "NO".
 .TP
 \fIDependency\fP=<dependency_list>
-Defer job's initiation until specified job dependency specification 
+Defer job's initiation until specified job dependency specification
 is satisfied.
 Cancel dependency with an empty dependency_list (e.g. "Dependency=").
 <\fIdependency_list\fR> is of the form
 <\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR>.
 Many jobs can share the same dependency and these jobs may even belong to
-different  users. 
+different  users.
 .PD
 .RS
 .TP
@@ -761,7 +761,7 @@ Time the job was last suspended or resumed.
 \fIUserId\fP  \fIGroupId\fP
 The user and group under which the job was submitted.
 .TP
-NOTE on information displayed for various job states: 
+NOTE on information displayed for various job states:
 When you submit a request for the "show job" function the scontrol
 process makes an RPC request call to slurmctld with a REQUEST_JOB_INFO
 message type.  If the state of the job is PENDING, then it returns
@@ -776,8 +776,8 @@ started.
 \fBSPECIFICATIONS FOR UPDATE COMMAND, STEPS\fR
 .TP
 \fIStepId\fP=<job_id>[.<step_id>]
-Identify the step to be updated. 
-If the job_id is given, but no step_id is specified then all steps of 
+Identify the step to be updated.
+If the job_id is given, but no step_id is specified then all steps of
 the identified job will be modified.
 This specification is required.
 .TP
@@ -805,10 +805,10 @@ simple node range expressions (e.g. "lx[10\-20]"). This specification is require
 \fIFeatures\fP=<features>
 Identify feature(s) to be associated with the specified node.  Any
 previously defined feature(s) will be overwritten with the new value.
-Features assigned via \fBscontrol\fR will only persist across the restart 
-of the slurmctld daemon with the \fI\-R\fR option and state files 
-preserved or slurmctld's receipt of a SIGHUP. 
-Update slurm.conf with any changes meant to be persistent across normal 
+Features assigned via \fBscontrol\fR will only persist across the restart
+of the slurmctld daemon with the \fI\-R\fR option and state files
+preserved or slurmctld's receipt of a SIGHUP.
+Update slurm.conf with any changes meant to be persistent across normal
 restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
 .TP
@@ -868,10 +868,10 @@ systems. Use Cray tools such as \fIxtprocadmin\fR instead.
 Identify weight to be associated with specified nodes. This allows
 dynamic changes to weight associated with nodes, which will be used
 for the subsequent node allocation decisions.
-Weight assigned via \fBscontrol\fR will only persist across the restart 
-of the slurmctld daemon with the \fI\-R\fR option and state files 
-preserved or slurmctld's receipt of a SIGHUP. 
-Update slurm.conf with any changes meant to be persistent across normal 
+Weight assigned via \fBscontrol\fR will only persist across the restart
+of the slurmctld daemon with the \fI\-R\fR option and state files
+preserved or slurmctld's receipt of a SIGHUP.
+Update slurm.conf with any changes meant to be persistent across normal
 restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
 .TP
@@ -1050,7 +1050,7 @@ each resource.
 
 .TP
 \fIState\fP=<up|down|drain|inactive>
-Specify if jobs can be allocated nodes or queued in this partition. 
+Specify if jobs can be allocated nodes or queued in this partition.
 Possible values are "UP", "DOWN", "DRAIN" and "INACTIVE".
 .RS
 .TP 10
@@ -1330,7 +1330,7 @@ The meaning of the external sensors information is as follows:
 
 .TP
 \fIExtSensorsJoules\fP
-The energy consumed by the node between the last time it was powered on 
+The energy consumed by the node between the last time it was powered on
 and the last external sensors plugin node sample, in joules.
 
 
@@ -1346,7 +1346,7 @@ node sample, in celsius.
 
 .PP
 If the reported value is "n/s" (not supported), the node does not support the
-configured \fBExtSensorsType\fR plugin. 
+configured \fBExtSensorsType\fR plugin.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP
