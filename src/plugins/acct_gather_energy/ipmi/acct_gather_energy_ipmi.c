@@ -743,7 +743,15 @@ static int _get_joules_task(void)
 	}
 
 	if (_read_last_consumed_energy(&message) != SLURM_SUCCESS) {
-		local_energy->consumed_energy = NO_VAL;
+		/* Don't set consumed_energy = NO_VAL here.  If we
+		   fail here we still have a coherent value.  If it
+		   appears during a sstat call, it's not a big deal,
+		   the value will be updated later with another sstat
+		   or at the end of the step.  But if it was at the end
+		   of the step then the value on the accounting is
+		   not right.
+		*/
+		//local_energy->consumed_energy = NO_VAL;
 		return SLURM_ERROR;
 	}
 
