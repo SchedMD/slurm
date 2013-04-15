@@ -67,7 +67,7 @@ extern int acct_gather_conf_init(void)
 	/* Get the acct_gather.conf path and validate the file */
 	conf_path = get_extra_conf_path("acct_gather.conf");
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
-		info("No acct_gather.conf file (%s)", conf_path);
+		debug2("No acct_gather.conf file (%s)", conf_path);
 	} else {
 		debug("Reading acct_gather.conf file %s", conf_path);
 
@@ -84,10 +84,8 @@ extern int acct_gather_conf_init(void)
 	xfree(conf_path);
 
 	/* handle acct_gather.conf in each plugin */
-
 	acct_gather_energy_g_conf_set(tbl);
 	/* ADD MORE HERE */
-
 	/******************************************/
 
 	s_p_hashtbl_destroy(tbl);
