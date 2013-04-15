@@ -420,6 +420,7 @@ extern uint32_t RRD_consolidate(time_t step_starttime, time_t step_endtime,
 		if (!(path = _get_node_rrd_path(node_name,
 						EXT_SENSORS_VALUE_ENERGY)))
 			consumed_energy = NO_VAL;
+		free(node_name);
 		if ((tmp=_rrd_consolidate_one(step_starttime,
 					      step_endtime,
 					      path,
