@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
  -- Replaced ipmi.conf with generic acct_gather.conf file for all acct_gather
     plugins.  For those doing development to use this follow the model set
     forth in the acct_gather_energy_ipmi plugin.
+ -- Added more options to update a step's information
 
 * Changes in Slurm 2.6.0pre2
 ============================
