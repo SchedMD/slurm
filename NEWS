@@ -70,6 +70,7 @@ documents those changes that are of interest to users and admins.
     APRUN_DEFAULT_MEMORY env var for aprun.  This scenario will not display
     the option when used with --launch-cmd.
  -- Change sview to use GMutex instead of GStaticMutex
+ -- CRAY - set APRUN_DEFAULT_MEMROY instead of CRAY_AUTO_APRUN_OPTIONS
 
 * Changes in Slurm 2.5.4
 ========================
