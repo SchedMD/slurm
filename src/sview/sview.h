@@ -337,6 +337,7 @@ extern GMutex *sview_mutex;
 extern int global_row_count;
 extern gint last_event_x;
 extern gint last_event_y;
+extern int sview_max_cpus;
 extern GdkCursor* in_process_cursor;
 extern int cpus_per_node;
 extern int g_node_scaling;

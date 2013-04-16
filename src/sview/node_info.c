@@ -918,12 +918,12 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 		g_node_scaling = new_node_ptr->node_scaling;
 		cpus_per_node =
 			new_node_ptr->node_array[0].cpus / g_node_scaling;
-
+		sview_max_cpus = 0;
 		for (i=0; i<g_node_info_ptr->record_count; i++) {
 			node_ptr = &(g_node_info_ptr->node_array[i]);
 			if (!node_ptr->name || (node_ptr->name[0] == '\0'))
 				continue;	/* bad node */
-
+			sview_max_cpus = MAX(sview_max_cpus, node_ptr->cpus);
 			idle_cpus = node_ptr->cpus;
 
 			slurm_get_select_nodeinfo(

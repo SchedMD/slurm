@@ -70,6 +70,7 @@ int global_row_count = 0;
 bool global_multi_error = 0;
 gint last_event_x = 0;
 gint last_event_y = 0;
+int sview_max_cpus = 0;
 GdkCursor* in_process_cursor;
 gchar *global_edit_error_msg = NULL;
 GtkWidget *main_notebook = NULL;

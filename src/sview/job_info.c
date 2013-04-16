@@ -1227,6 +1227,20 @@ static int _get_node_cnt(job_info_t * job)
 	if (IS_JOB_PENDING(job)) {
 		node_cnt = _nodes_in_list(job->req_nodes);
 		node_cnt = MAX(node_cnt, job->num_nodes);
+		if ((node_cnt == 1) && (job->num_cpus > 1)
+		    && job->ntasks_per_node
+		    && (job->ntasks_per_node != (uint16_t) NO_VAL)) {
+			int num_tasks = job->num_cpus;
+			if (job->cpus_per_task != (uint16_t) NO_VAL)
+				num_tasks /= job->cpus_per_task;
+			node_cnt = (num_tasks + 1) / job->ntasks_per_node;
+			if (node_cnt > num_tasks)
+				node_cnt = num_tasks;
+		} else if (sview_max_cpus) {
+			int round  = job->num_cpus + sview_max_cpus - 1;
+			round /= sview_max_cpus;	/* round up */
+			node_cnt = MAX(node_cnt, round);
+		}
 	} else
 		node_cnt = _nodes_in_list(job->nodes);
 	return node_cnt;
