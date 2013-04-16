@@ -59,6 +59,11 @@
 
 #include <rrd.h>
 
+enum ext_sensors_value_type {
+	EXT_SENSORS_VALUE_ENERGY,
+	EXT_SENSORS_VALUE_TEMPERATURE,
+};
+
 #define _WATT_MIN 10
 #define _WATT_MAX 500
 #define _TEMP_MIN 1

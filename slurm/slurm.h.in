@@ -436,16 +436,6 @@ enum acct_energy_type {
 	ENERGY_DATA_RECONFIG,
 };
 
-enum ext_sensors_type {
-	EXT_SENSORS_NODE,
-	EXT_SENSORS_SWITCH,
-};
-
-enum ext_sensors_value_type {
-	EXT_SENSORS_VALUE_ENERGY,
-	EXT_SENSORS_VALUE_TEMPERATURE,
-};
-
 /* Possible task distributions across the nodes */
 typedef enum task_dist_states {
 	/* NOTE: start SLURM_DIST_CYCLIC at 1 for HP MPI */
@@ -1519,16 +1509,6 @@ typedef struct node_info_msg {
 	uint32_t record_count;		/* number of records */
 	node_info_t *node_array;	/* the node records */
 } node_info_msg_t;
-
-typedef struct switch_info {
-	ext_sensors_data_t *sensors;	/* external sensor data */
-} switch_info_t;
-
-typedef struct switch_info_msg {
-	time_t last_update;		/* time of latest info */
-	uint32_t record_count;		/* number of records */
-	switch_info_t *switch_array;	/* the switch records */
-} switch_info_msg_t;
 
 typedef struct front_end_info {
 	char *allow_groups;		/* allowed group string */
