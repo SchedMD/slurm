@@ -567,10 +567,10 @@ line6:
 		if (last == -1)
 			goto line15;
 
-		hl = hostlist_create(job_ptr->nodes);
+		hl = hostlist_create(job_resrcs->nodes);
 		if (!hl) {
 			error("slurm_sprint_job_info: hostlist_create: %s",
-			      job_ptr->nodes);
+			      job_resrcs->nodes);
 			return NULL;
 		}
 		hl_last = hostlist_create(NULL);
