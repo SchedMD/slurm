@@ -143,9 +143,10 @@ extern void print_fields_str(print_field_t *field, char *value, int last)
 		printf("%s|", print_this);
 	else {
 		if(value) {
-			memcpy(&temp_char, value, abs_len);
+			int len = strlen(value);
+			memcpy(&temp_char, value, MIN(len, abs_len) + 1);
 
-			if(strlen(value) > abs_len)
+			if (len > abs_len)
 				temp_char[abs_len-1] = '+';
 			print_this = temp_char;
 		}
