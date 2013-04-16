@@ -27,7 +27,7 @@ HIGHLIGHTS
 ==========
  - Added support for job arrays, which increases performance and ease of use
    for sets of similar jobs.
- - Added slurmctld/dynalloc plugin for MapReduce+ support. 
+ - Added slurmctld/dynalloc plugin for MapReduce+ support.
  - Added prolog and epilog support for advanced reservations.
  - Much faster throughput for job step execution with --exclusive option. The
    srun process is notified when resources become available rather than
@@ -41,6 +41,8 @@ HIGHLIGHTS
    reservations (e.g. specific different core count for each node).
  - Make sched/backfill the default scheduling plugin rather than sched/builtin
    (FIFO).
+ - Add ext_sensors plugin - read doc/html/ext_sensorsplugins.shtml and
+   doc/man/man5/ext_sensors.conf.5
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
