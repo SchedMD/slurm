@@ -8018,9 +8018,27 @@ static void
 _pack_update_job_step_msg(step_update_request_msg_t * msg, Buf buffer,
 			  uint16_t protocol_version)
 {
-	pack32(msg->job_id, buffer);
-	pack32(msg->step_id, buffer);
-	pack32(msg->time_limit, buffer);
+	uint8_t with_jobacct = 0;
+
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		pack_time(msg->end_time, buffer);
+		pack32(msg->exit_code, buffer);
+		pack32(msg->job_id, buffer);
+		if (msg->jobacct)
+			with_jobacct = 1;
+		pack8(with_jobacct, buffer);
+		if (with_jobacct)
+			jobacctinfo_pack(msg->jobacct, protocol_version,
+					 PROTOCOL_TYPE_SLURM, buffer);
+		packstr(msg->name, buffer);
+		pack_time(msg->start_time, buffer);
+		pack32(msg->step_id, buffer);
+		pack32(msg->time_limit, buffer);
+	} else {
+		pack32(msg->job_id, buffer);
+		pack32(msg->step_id, buffer);
+		pack32(msg->time_limit, buffer);
+	}
 }
 
 static int
@@ -8028,13 +8046,31 @@ _unpack_update_job_step_msg(step_update_request_msg_t ** msg_ptr, Buf buffer,
 			    uint16_t protocol_version)
 {
 	step_update_request_msg_t *msg;
+	uint8_t with_jobacct = 0;
+	uint32_t uint32_tmp;
 
 	msg = xmalloc(sizeof(step_update_request_msg_t));
 	*msg_ptr = msg;
 
-	safe_unpack32(&msg->job_id, buffer);
-	safe_unpack32(&msg->step_id, buffer);
-	safe_unpack32(&msg->time_limit, buffer);
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		unpack_time(&msg->end_time, buffer);
+		safe_unpack32(&msg->exit_code, buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack8(&with_jobacct, buffer);
+		if (with_jobacct)
+			if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
+					       PROTOCOL_TYPE_SLURM, buffer)
+			    != SLURM_SUCCESS)
+				goto unpack_error;
+		safe_unpackstr_xmalloc(&msg->name, &uint32_tmp, buffer);
+		unpack_time(&msg->start_time, buffer);
+		safe_unpack32(&msg->step_id, buffer);
+		safe_unpack32(&msg->time_limit, buffer);
+	} else {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id, buffer);
+		safe_unpack32(&msg->time_limit, buffer);
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:

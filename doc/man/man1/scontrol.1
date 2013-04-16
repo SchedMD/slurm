@@ -781,6 +781,49 @@ If the job_id is given, but no step_id is specified then all steps of
 the identified job will be modified.
 This specification is required.
 .TP
+\fICompFile\fP=<completion file>
+Update a step with information about a steps completion.  Can be
+useful if step statistics aren't directly available through a
+jobacct_gather plugin.  The file is a space\-delimited file with
+format for Version 1 is as follows
+.eo
+.br
+.sp
+1 34461 0 2 0 3 1361906011 1361906015 1 1 3368 13357 /bin/sleep
+.br
+A B     C D E F G          H          I J K    L     M
+.br
+.sp
+Field Descriptions:
+.br
+.sp
+A file version
+.br
+B ALPS apid
+.br
+C inblocks
+.br
+D outblocks
+.br
+E exit status
+.br
+F number of allocated CPUs
+.br
+G start time
+.br
+H end time
+.br
+I utime
+.br
+J stime
+.br
+K maxrss
+.br
+L uid
+.br
+M command name
+.ec
+.TP
 \fITimeLimit\fP=<time>
 The job's time limit.
 Output format is [days\-]hours:minutes:seconds or "UNLIMITED".

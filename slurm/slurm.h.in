@@ -1195,7 +1195,12 @@ typedef struct job_info_msg {
 } job_info_msg_t;
 
 typedef struct step_update_request_msg {
+	time_t end_time;	/* step end time */
+	uint32_t exit_code;	/* exit code for job (status from wait call) */
 	uint32_t job_id;
+	jobacctinfo_t *jobacct;
+	char *name;             /* step name */
+	time_t start_time;	/* step start time */
 	uint32_t step_id;
 	uint32_t time_limit;	/* In minutes */
 } step_update_request_msg_t;
