@@ -3176,6 +3176,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->priority_flags |= PRIORITY_FLAGS_ACCRUE_ALWAYS;
 		if (slurm_strcasestr(temp_str, "TICKET_BASED"))
 			conf->priority_flags |= PRIORITY_FLAGS_TICKET_BASED;
+		xfree(temp_str);
 	}
 	if (s_p_get_string(&temp_str, "PriorityMaxAge", hashtbl)) {
 		int max_time = time_str2mins(temp_str);
