@@ -966,8 +966,6 @@ extern void slurm_free_config_response_msg(config_response_msg_t *msg)
 extern void slurm_free_update_step_msg(step_update_request_msg_t * msg)
 {
 	if (msg) {
-		jobacctinfo_destroy(msg->jobacct);
-		xfree(msg->name);
 		xfree(msg);
 	}
 }

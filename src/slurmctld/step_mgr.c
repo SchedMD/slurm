@@ -4431,7 +4431,6 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	step_record_t *step2_ptr = NULL;
 	ListIterator step_iterator;
 	int mod_cnt = 0;
-	bool new_step = false;
 	slurm_step_id_t step_id;
 
 	job_ptr = find_job_record(req->job_id);
@@ -4444,52 +4443,9 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	step_id.step_id = req->step_id;
 	step_id.step_het_comp = NO_VAL;
 
-	if (req->jobacct) {
-		if (!validate_slurm_user(uid)) {
-			error("Security violation, STEP_UPDATE RPC from uid %d",
-			      uid);
-			return ESLURM_USER_ID_MISSING;
-		}
-		/*
-		 * Need to create a temporary step record (using some other
-		 * launch mechanism that didn't use srun to launch).  Don't use
-		 * _create_step_record though since we don't want to push it on
-		 * the job's step_list.
-		 */
-		if (req->step_id == NO_VAL) {
-			step_ptr = xmalloc(sizeof(*step_ptr));
-			step_ptr->job_ptr    = job_ptr;
-			step_ptr->exit_code  = NO_VAL;
-			step_ptr->time_limit = INFINITE;
-			step_ptr->jobacct    = jobacctinfo_create(NULL);
-			step_ptr->requid     = -1;
-			step_ptr->step_node_bitmap =
-				bit_copy(job_ptr->node_bitmap);
-			req->step_id = step_ptr->step_id.step_id =
-				job_ptr->next_step_id++;
-			new_step = 1;
-		} else {
-			if (req->step_id >= job_ptr->next_step_id)
-				return ESLURM_INVALID_JOB_ID;
-
-			if (!(step_ptr = find_step_record(job_ptr, &step_id))) {
-				/*
-				 * If updating this after the fact we need to
-				 * remake the step so we can send the updated
-				 * parts to accounting.
-				 */
-				step_ptr = xmalloc(sizeof(*step_ptr));
-				step_ptr->job_ptr    = job_ptr;
-				step_ptr->jobacct    = jobacctinfo_create(NULL);
-				step_ptr->requid     = -1;
-				memcpy(&step_ptr->step_id, &step_id,
-				       sizeof(step_ptr->step_id));
-				new_step = 1;
-			}
-		}
-	} else if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
-		   !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						 job_ptr->account)) {
+	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+					  job_ptr->account)) {
 		error("Security violation, STEP_UPDATE RPC from uid %d", uid);
 		return ESLURM_USER_ID_MISSING;
 	}
@@ -4510,36 +4466,11 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 		}
 		list_iterator_destroy (step_iterator);
 	} else {
-		if (!step_ptr)
-			step_ptr = find_step_record(job_ptr, &step_id);
+		step_ptr = find_step_record(job_ptr, &step_id);
 
 		if (!step_ptr)
 			return ESLURM_INVALID_JOB_ID;
-
-		if (req->jobacct) {
-			jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
-			if (new_step) {
-				step_ptr->start_time = req->start_time;
-				step_ptr->name = xstrdup(req->name);
-				jobacct_storage_g_step_start(
-					acct_db_conn, step_ptr);
-			} else if (!step_ptr->exit_node_bitmap) {
-				/*
-				 * If the exit_code is not NO_VAL then
-				 * we need to initialize the node bitmap for
-				 * exited nodes for packing.
-				 */
-				int nodes = bit_set_count(
-					step_ptr->step_node_bitmap);
-				step_ptr->exit_node_bitmap = bit_alloc(nodes);
-			}
-			step_ptr->exit_code = req->exit_code;
-
-			jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
-
-			mod_cnt++;
-			info("Updating %pS jobacct info", step_ptr);
-		} else {
+		if (req->time_limit) {
 			step_ptr->time_limit = req->time_limit;
 			mod_cnt++;
 			info("Updating %pS time limit to %u",
@@ -4548,13 +4479,6 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	}
 	if (mod_cnt)
 		last_job_update = time(NULL);
-	if (new_step) {
-		/*
-		 * This was a temporary step record, never linked to the job,
-		 * so there is no need to check SELECT_JOBDATA_CLEANING.
-		 */
-		free_step_record(step_ptr);
-	}
 
 	return SLURM_SUCCESS;
 }
