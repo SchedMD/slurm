@@ -3034,7 +3034,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (s_p_get_string(&temp_str, "PriorityFlags", hashtbl)) {
 		if (strstr(temp_str, "ACCRUE_ALWAYS"))
 			conf->priority_flags |= PRIORITY_FLAGS_ACCRUE_ALWAYS;
-	}		
+		xfree(temp_str);
+	}
 	if (s_p_get_string(&temp_str, "PriorityMaxAge", hashtbl)) {
 		int max_time = time_str2mins(temp_str);
 		if ((max_time < 0) && (max_time != INFINITE)) {
