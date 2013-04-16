@@ -1013,8 +1013,8 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_CPU", "%u",
 					tmp_mem);
 #ifdef HAVE_CRAY
-		env_array_overwrite_fmt(dest, "CRAY_AUTO_APRUN_OPTIONS",
-					"\"-m%u\"", tmp_mem);
+		env_array_overwrite_fmt(dest, "APRUN_DEFAULT_MEMORY", "%u",
+					tmp_mem);
 #endif
 	} else if (alloc->pn_min_memory) {
 		uint32_t tmp_mem = alloc->pn_min_memory;
@@ -1026,14 +1026,12 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 				max_cpus_per_node = alloc->cpus_per_node[i];
 			}
 		}
+		tmp_mem /= max_cpus_per_node;
+		env_array_overwrite_fmt(dest, "APRUN_DEFAULT_MEMORY", "%u",
+					tmp_mem);
 #endif
 		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_NODE", "%u",
 					tmp_mem);
-#ifdef HAVE_CRAY
-		tmp_mem /= max_cpus_per_node;
-		env_array_overwrite_fmt(dest, "CRAY_AUTO_APRUN_OPTIONS",
-					"\"-m%u\"", tmp_mem);
-#endif
 	}
 
 	/* OBSOLETE, but needed by MPI, do not remove */
