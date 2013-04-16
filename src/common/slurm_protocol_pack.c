@@ -4402,6 +4402,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 	char *node_inx_str;
 	multi_core_data_t *mc_ptr;
 
+	job->ntasks_per_node = (uint16_t)NO_VAL;
+
 	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack16(&job->array_task_id, buffer);
@@ -4479,6 +4481,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack32(&job->num_nodes,   buffer);
 		safe_unpack32(&job->max_nodes,   buffer);
 		safe_unpack16(&job->requeue,     buffer);
+		safe_unpack16(&job->ntasks_per_node, buffer);
 
 		/*** unpack pending job details ***/
 		safe_unpack16(&job->shared,        buffer);
