@@ -161,6 +161,8 @@ documents those changes that are of interest to users and admins.
     the option when used with --launch-cmd.
  -- Change sview to use GMutex instead of GStaticMutex
  -- CRAY - set APRUN_DEFAULT_MEMROY instead of CRAY_AUTO_APRUN_OPTIONS
+ -- sview - fix issue where if a partition was completely in one state the
+    cpu count would be reflected correctly.
 
 * Changes in Slurm 2.5.4
 ========================

@@ -1282,7 +1282,7 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 		}
 	} else {
 		tmp_cpus = xmalloc(20);
-		convert_num_unit((float)sview_part_sub->cpu_idle_cnt,
+		convert_num_unit((float)part_ptr->total_cpus,
 				 tmp_cpus, 20, UNIT_NONE);
 	}
 
