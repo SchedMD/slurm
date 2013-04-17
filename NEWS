@@ -75,6 +75,7 @@ documents those changes that are of interest to users and admins.
     cpu count would be reflected correctly.
  -- BGQ - fix for handling half rack system in STATIC of OVERLAP mode to
     implicitly create full system block.
+ -- CRAY - Dynamically create BASIL XML buffer to resize as needed.
 
 * Changes in Slurm 2.5.4
 ========================

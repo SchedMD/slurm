@@ -25,34 +25,42 @@ char  xml_log_file_name[256] = "";
  * Note: Any change in environmental variables requires re-start of slurmctld
  * to take effect.
  */
-static int _write_xml(FILE* fp, const char* format, ...) {
-	char buff[1024];
+static int _write_xml(FILE* fp, const char* format, ...)
+{
+	static int buff_len = 512 * 1024;
+	char *buff = NULL;
 	va_list ap;
 	int rc;
 	FILE* fplog = NULL;
 
 	/* Write to ALPS BASIL itself as we would have done without logging. */
+	buff = xmalloc(buff_len);
 	va_start(ap, format);
-	vsnprintf(buff, sizeof(buff), format, ap);
+	while ((rc = vsnprintf(buff, buff_len, format, ap)) >= buff_len) {
+		buff_len = rc + 1024;
+		xfree(buff);
+		buff = xmalloc(buff_len);
+	}
 	va_end(ap);
 	rc = fprintf(fp, "%s", buff);
-	if (log_sel < 1)
-		return rc;
 
-	/* Perform the appropriate logging. */
-	if (xml_log_file_name[0] != '\0') {
-		/* If we have a specific file name, try to open it. */
-		fplog = fopen(xml_log_file_name, "a+");
-		if (fplog == NULL) {
-			error("Problem with fdopen() of %s: %m",
-			      xml_log_file_name);
+	if (log_sel >= 1) {
+		/* Perform the appropriate logging. */
+		if (xml_log_file_name[0] != '\0') {
+			/* If we have a specific file name, try to open it. */
+			fplog = fopen(xml_log_file_name, "a+");
+			if (fplog == NULL) {
+				error("Problem with fdopen() of %s: %m",
+				      xml_log_file_name);
+			}
 		}
+		if (fplog) {
+			fprintf(fplog, "%s", buff);
+			fclose(fplog);
+		} else
+			info("%s", buff);
 	}
-	if (fplog) {
-		fprintf(fplog, "%s", buff);
-		fclose(fplog);
-	} else
-		info("%s", buff);
+	xfree(buff);
 
 	return rc;
 }
