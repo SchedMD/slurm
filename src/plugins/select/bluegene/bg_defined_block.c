@@ -364,6 +364,17 @@ extern int create_full_system_block(List bg_found_block_list)
 				continue;
 
 			if (!strcmp(name, bg_record->mp_str)) {
+				/* if the whole system block is just one MP
+				 * we need to match on more than just the
+				 * name - if this bg_record doesn't have a
+				 * MP worth of c-nodes, skip it.
+				 */
+				if (!larger && bg_conf->mp_cnode_cnt
+						> bg_record->cnode_cnt)
+					continue;
+				debug2("create_full_system_block: not "
+				       "implicitly adding full system block -"
+				       " block already defined");
 				xfree(name);
 				list_iterator_destroy(itr);
 				/* don't create total already there */
