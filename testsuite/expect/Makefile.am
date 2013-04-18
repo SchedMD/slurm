@@ -138,6 +138,14 @@ EXTRA_DIST = \
 	test3.9				\
 	test3.10			\
 	test3.11			\
+	inc3.11.1                      \
+	inc3.11.2                      \
+	inc3.11.3                      \
+	inc3.11.4                      \
+	inc3.11.5                      \
+	inc3.11.6                      \
+	inc3.11.7                      \
+	inc3.11.8                      \
 	test3.12			\
 	test4.1				\
 	test4.2				\
@@ -377,6 +385,10 @@ EXTRA_DIST = \
 	test21.19			\
 	test21.20			\
 	test21.21			\
+	inc21.21.1                      \
+	inc21.21.2                      \
+	inc21.21.3                      \
+	inc21.21.4                      \
 	test21.22			\
 	test21.23			\
 	test21.24			\
@@ -386,7 +398,19 @@ EXTRA_DIST = \
 	test21.28			\
 	test21.29			\
 	test21.30                       \
+	inc21.30.1                      \
+	inc21.30.2                      \
+	inc21.30.3                      \
+	inc21.30.4                      \
+	inc21.30.5                      \
+	inc21.30.6                      \
+	inc21.30.7                      \
+	inc21.30.8                      \
 	test22.1			\
+	inc22.1.1                       \
+	inc22.1.2                       \
+	inc22.1.3                       \
+	inc22.1.4                       \
 	test22.2			\
 	test23.1			\
 	test23.2			\
