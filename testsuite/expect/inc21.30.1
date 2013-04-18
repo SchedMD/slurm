@@ -32,6 +32,7 @@ proc inc21_30_1 {} {
 #test GrpNode limit
 
 	global srun salloc acct bin_sleep jobmatch job_id1 job_id2 number
+	global exit_code
 
 	set jobmatch 0
 	spawn $salloc -N1 --account=$acct $srun $bin_sleep 10
@@ -43,7 +44,7 @@ proc inc21_30_1 {} {
 		}
 		timeout {
 			send_user "\nFAILURE: salloc is not reponding\n"
-			exit 1
+			set exit_code 1
 		}
 		eof {
 			wait
@@ -59,7 +60,7 @@ proc inc21_30_1 {} {
 		}
 		timeout {
 			send_user "\nFAILURE: salloc is not reponding\n"
-			exit 1
+			set exit_code 1
 		}
 		eof {
 			wait
@@ -68,7 +69,7 @@ proc inc21_30_1 {} {
 
 	if {$jobmatch==0} {
 		send_user "\nFAILURE: jobs were not submitted\n"
-		exit 1
+		set exit_code 1
 	}
 
 	# checks the state of the job
@@ -77,5 +78,4 @@ proc inc21_30_1 {} {
 	#cancels remaining jobs
 	cancel_job $job_id1
 	cancel_job $job_id2
-
 }

@@ -120,6 +120,51 @@ proc mod_qos { node cpu job sub mcpu mnode mjobs mjobsub } {
 
 }
 
+proc endit { } {
+	global sacctmgr qostest acct test_id exit_code
+	# delete qos
+	spawn $sacctmgr -i delete qos $qostest
+	expect {
+		-re "Deleting QOS(s)" {
+			exp_continue
+		}
+		-re "Error" {
+			send_user "\nFAILURE: QOS was not deleted\n"
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+		}
+		eof {
+			wait
+		}
+	}
+
+	#delete account
+	spawn $sacctmgr -i  delete account $acct
+	expect {
+		-re "Deleting accounts" {
+			exp_continue
+		}
+		-re "Error" {
+			send_user "\nFAILURE: account was not deleted\n"
+			set exit_code 1
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+
+	exit $exit_code
+}
+
 #gets user
 spawn $bin_id -u -n
 expect {
@@ -193,7 +238,9 @@ mod_qos $grn_num -1 -1 -1 -1 -1 -1 -1
 sleep 5
 #test GrpNode limit
 inc21_30_1
-
+if {$exit_code != 0} {
+	endit
+}
 
 mod_qos -1 $grcpu_num -1 -1 -1 -1 -1 -1
 
@@ -239,45 +286,4 @@ sleep 5
 #test MaxJobsSubmits limit
 inc21_30_8
 
-# delete qos
-spawn $sacctmgr -i delete qos $qostest
-expect {
-	-re "Deleting QOS(s)" {
-		exp_continue
-	}
-	-re "Error" {
-		send_user "\nFAILURE: QOS was not deleted\n"
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
-	}
-	eof {
-		wait
-	}
-}
-
-#delete account
-spawn $sacctmgr -i  delete account $acct
-expect {
-	-re "Deleting accounts" {
-		exp_continue
-	}
-	-re "Error" {
-		send_user "\nFAILURE: account was not deleted\n"
-		set exit_code 1
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$exit_code==0} {
-	print_success $test_id
-}
-
-exit $exit_code
-
+endit
