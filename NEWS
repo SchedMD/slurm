@@ -168,6 +168,8 @@ documents those changes that are of interest to users and admins.
  -- CRAY - Dynamically create BASIL XML buffer to resize as needed.
  -- Fix checking if QOS limit MaxCPUMinsPJ is set along with DenyOnLimit to
     deny the job instead of holding it.
+ -- Make sure on systems that use a different launcher than launch/slurm not
+    to attempt to signal tasks on the frontend node.
 
 * Changes in Slurm 2.5.4
 ========================

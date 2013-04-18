@@ -370,6 +370,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	int rc = SLURM_SUCCESS;
 	static bool notify_slurmd = true;
 	static int notify_srun = -1;
+	static bool front_end = false;
 
 	if (notify_srun == -1) {
 		char *launch_type = slurm_get_launch_type();
@@ -449,7 +450,14 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		step_ptr->requid = uid;
 		srun_step_complete(step_ptr);
 	}
-	if ((signal == SIGKILL) || notify_slurmd)
+
+#ifdef HAVE_FRONT_END
+	front_end = true;
+#endif
+	/* Never signal tasks on a front_end system if we aren't
+	 * suppose to notify the slurmd (i.e. BGQ and Cray) */
+	if (front_end && !notify_slurmd) {
+	} else if ((signal == SIGKILL) || notify_slurmd)
 		signal_step_tasks(step_ptr, signal, REQUEST_SIGNAL_TASKS);
 
 	return SLURM_SUCCESS;
