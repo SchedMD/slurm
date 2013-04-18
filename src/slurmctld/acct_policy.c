@@ -650,23 +650,22 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		 * if you can end up in PENDING QOSJobLimit, you need
 		 * to validate it if DenyOnLimit is set
 		 */
-		if (qos_ptr->max_cpu_mins_pj != INFINITE) {
+		if (strict_checking && (qos_ptr->max_cpu_mins_pj != INFINITE)
+		    && (job_desc->time_limit != NO_VAL)
+		    && (job_desc->min_cpus != NO_VAL)) {
 			cpu_time_limit = qos_ptr->max_cpu_mins_pj;
 			job_cpu_time_limit = (uint64_t)job_desc->time_limit
-					* (uint64_t)job_desc->min_cpus;
-			if (strict_checking && (job_desc->time_limit != NO_VAL) &&
-					(job_cpu_time_limit > cpu_time_limit)) {
-					if (reason)
-						*reason = WAIT_QOS_JOB_LIMIT;
-					debug2("job submit for user %s(%u): "
-								"cpu time limit %"PRIu64" exceeds "
-								"qos max per-job %"PRIu64"",
-								user_name,
-								job_desc->user_id,
-								job_cpu_time_limit,
-								cpu_time_limit);
-					rc = false;
-					goto end_it;
+				* (uint64_t)job_desc->min_cpus;
+			if (job_cpu_time_limit > cpu_time_limit) {
+				if (reason)
+					*reason = WAIT_QOS_JOB_LIMIT;
+				debug2("job submit for user %s(%u): "
+				       "cpu time limit %"PRIu64" exceeds "
+				       "qos max per-job %"PRIu64"",
+				       user_name, job_desc->user_id,
+				       job_cpu_time_limit, cpu_time_limit);
+				rc = false;
+				goto end_it;
 			}
 		}
 
