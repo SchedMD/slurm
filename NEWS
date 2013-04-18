@@ -76,6 +76,8 @@ documents those changes that are of interest to users and admins.
  -- BGQ - fix for handling half rack system in STATIC of OVERLAP mode to
     implicitly create full system block.
  -- CRAY - Dynamically create BASIL XML buffer to resize as needed.
+ -- Fix checking if QOS limit MaxCPUMinsPJ is set along with DenyOnLimit to
+    deny the job instead of holding it.
 
 * Changes in Slurm 2.5.4
 ========================
