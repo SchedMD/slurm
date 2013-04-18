@@ -579,6 +579,7 @@ test21.26  sacctmgr +=, -= modify QoS test
 test21.27  sacctmgr problems test
 test21.28  sacctmgr abort delete
 test21.29  sacctmgr clear (modify) QoS values
+test21.30  sacctmgr test if the QoS values are enforced
 
 
 test22.#   Testing of sreport commands and options.
