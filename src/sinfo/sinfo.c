@@ -399,7 +399,45 @@ static int _build_sinfo_data(List sinfo_list,
 		if (params.filtering && params.partition &&
 		    _strcmp(part_ptr->name, params.partition))
 			continue;
+                if (node_msg->record_count == 1) { /* node_name_single */
+                        int pos = -1;
+                        uint16_t subgrp_size = 0;
+                        hostlist_t hl;
 
+                        node_ptr = &(node_msg->node_array[0]);
+                        if ((node_ptr->name == NULL) ||
+			    (part_ptr->nodes == NULL) ||
+                            (params.filtering &&
+                             _filter_out(node_ptr)))
+                                continue;
+                        hl = hostlist_create(part_ptr->nodes);
+                        pos = hostlist_find(hl, node_msg->node_array[0].name);
+                        hostlist_destroy(hl);
+                        if (pos < 0)
+                                continue;
+                        if (select_g_select_nodeinfo_get(
+                                   node_ptr->select_nodeinfo,
+                                   SELECT_NODEDATA_SUBGRP_SIZE,
+                                   0,
+                                   &subgrp_size) == SLURM_SUCCESS
+                            && subgrp_size) {
+                                _handle_subgrps(sinfo_list,
+                                                (uint16_t) j,
+                                                part_ptr,
+                                                node_ptr,
+                                                node_msg->
+                                                node_scaling);
+                        } else {
+                                _insert_node_ptr(sinfo_list,
+                                                 (uint16_t) j,
+                                                 part_ptr,
+                                                 node_ptr,
+                                                 node_msg->
+                                                 node_scaling);
+                        }
+                        continue;
+                }
+		
 		j2 = 0;
 		while (part_ptr->node_inx[j2] >= 0) {
 			int i2 = 0;
