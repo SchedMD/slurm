@@ -344,10 +344,8 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	struct step_record *step_ptr, step_rec;
 	int rc = SLURM_SUCCESS;
 	static bool notify_slurmd = true;
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
-	static int notify_srun = 1;
-#else
 	static int notify_srun = -1;
+
 	if (notify_srun == -1) {
 		char *launch_type = slurm_get_launch_type();
 		/* do this for all but slurm (poe, aprun, etc...) */
@@ -358,7 +356,6 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 			notify_srun = 0;
 		xfree(launch_type);
 	}
-#endif
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
