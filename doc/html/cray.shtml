@@ -332,13 +332,13 @@ Munged daemon must be started on the other-login-host as well):
 boot: # xtopview -c login
 login: # chkconfig job on
 login: # emacs -nw /etc/pam.d/common-session
-(uncomment the pam_job.so line)
+(uncomment/add the pam_job.so line)
 session optional /opt/cray/job/default/lib64/security/pam_job.so
 login: # exit
 boot: # xtopview -n 31
 node/31:# chkconfig job on
 node/31:# emacs -nw /etc/pam.d/common-session
-(uncomment the pam_job.so line as shown above)
+(uncomment/add the pam_job.so line as shown above)
 </pre>
 
 <h3>Install and Configure SLURM</h3>
