@@ -1519,6 +1519,19 @@ static void _pick_step_cores(struct step_record *step_ptr,
 	}
 }
 
+#ifdef HAVE_CRAY
+/* Return the total cpu count on a given node index */
+static int _get_node_cpus(int node_inx)
+{
+	struct node_record *node_ptr;
+
+	node_ptr = node_record_table_ptr + node_inx;
+	if (slurmctld_conf.fast_schedule)
+		return node_ptr->config_ptr->cpus;
+
+	return node_ptr->cpus;
+}
+#endif
 
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
 extern void step_alloc_lps(struct step_record *step_ptr)
@@ -1577,10 +1590,17 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		step_node_inx++;
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("step_alloc_lps: node index bad");
+#ifdef HAVE_CRAY
+		/* Since on a cray you can only run 1 job per node
+		   return all CPUs as being allocated.
+		*/
+		cpus_alloc = _get_node_cpus(step_node_inx);
+#else
 		/* NOTE: The --overcommit option can result in
 		 * cpus_used[] having a higher value than cpus[] */
 		cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
 			     step_ptr->cpus_per_task;
+#endif
 		job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
 		gres_plugin_step_alloc(step_ptr->gres_list, job_ptr->gres_list,
 				       job_node_inx, cpus_alloc,
@@ -1687,8 +1707,15 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		step_node_inx++;
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("_step_dealloc_lps: node index bad");
+#ifdef HAVE_CRAY
+		/* Since on a cray you can only run 1 job per node
+		   return all CPUs as being allocated.
+		*/
+		cpus_alloc = _get_node_cpus(step_node_inx);
+#else
 		cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
 			     step_ptr->cpus_per_task;
+#endif
 		if (job_resrcs_ptr->cpus_used[job_node_inx] >= cpus_alloc)
 			job_resrcs_ptr->cpus_used[job_node_inx] -= cpus_alloc;
 		else {
@@ -2756,7 +2783,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 	if (!step_ptr->exit_node_bitmap) {
 		/* initialize the node bitmap for exited nodes */
 		nodes = bit_set_count(step_ptr->step_node_bitmap);
-#ifdef HAVE_BGQ
+#if defined HAVE_BGQ || defined HAVE_CRAY
 		/* For BGQ we only have 1 real task, so if it exits,
 		   the whole step is ending as well.
 		*/
@@ -2768,7 +2795,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		step_ptr->exit_code = req->step_rc;
 	} else {
 		nodes = _bitstr_bits(step_ptr->exit_node_bitmap);
-#ifdef HAVE_BGQ
+#if defined HAVE_BGQ || defined HAVE_CRAY
 		/* For BGQ we only have 1 real task, so if it exits,
 		   the whole step is ending as well.
 		*/
