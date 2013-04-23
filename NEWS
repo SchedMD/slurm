@@ -170,6 +170,10 @@ documents those changes that are of interest to users and admins.
     deny the job instead of holding it.
  -- Make sure on systems that use a different launcher than launch/slurm not
     to attempt to signal tasks on the frontend node.
+ -- Cray - when a step is requested count other steps running on nodes in the
+    allocation as taking up the entire node instead of just part of the node
+    allocated.  And always enforce exclusive on a step request.
+ -- Cray - display correct nodelist, node/cpu count on steps.
 
 * Changes in Slurm 2.5.4
 ========================

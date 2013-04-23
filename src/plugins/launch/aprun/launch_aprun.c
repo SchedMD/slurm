@@ -748,6 +748,11 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		exit(0);
 	}
 
+	/* You can only run 1 job per node on a cray so make the
+	   request exclusive every time. */
+	opt.exclusive = true;
+	opt.shared = 0;
+
 	return launch_common_create_job_step(job, use_all_cpus,
 					     signal_function,
 					     destroy_job);
