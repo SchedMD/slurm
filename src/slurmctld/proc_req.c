@@ -4098,6 +4098,7 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 	slurmctld_conf.last_update = time(NULL);
 
 	/* Reset cached debug_flags values */
+	log_set_debug_flags();
 	gs_reconfig();
 	gres_plugin_reconfig(NULL);
 	priority_g_reconfig();
@@ -4107,7 +4108,7 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 
 	unlock_slurmctld (config_write_lock);
 	flag_string = debug_flags2str(debug_flags);
-	info("Set DebugFlags to %s", flag_string);
+	info("Set DebugFlags to %s", flag_string ? flag_string : "none");
 	xfree(flag_string);
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }

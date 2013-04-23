@@ -19,6 +19,8 @@ documents those changes that are of interest to users and admins.
     plugins.  For those doing development to use this follow the model set
     forth in the acct_gather_energy_ipmi plugin.
  -- Added more options to update a step's information
+ -- Add DebugFlags=ThreadID which will print the thread id of the calling
+    thread.
 
 * Changes in Slurm 2.6.0pre2
 ============================

@@ -1857,7 +1857,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_SWITCH	0x00020000	/* SwitchType plugin */
 #define DEBUG_FLAG_ENERGY	0x00040000	/* AcctGatherEnergy plugin */
 #define DEBUG_FLAG_EXT_SENSORS	0x00080000	/* ExtSensorsType plugin */
-
+#define DEBUG_FLAG_THREADID     0x00100000  /* Print out the thread id */
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
 					 * /etc/group file */

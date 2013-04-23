@@ -85,6 +85,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_protocol_api.h"
 
 #ifndef LINEBUFSIZE
 #  define LINEBUFSIZE 256
@@ -131,6 +132,7 @@ typedef struct {
 	log_facility_t facility;
 	log_options_t opt;
 	unsigned initialized:1;
+	uint32_t debug_flags;
 }	log_t;
 
 /* static variables */
@@ -538,7 +540,19 @@ int log_alter(log_options_t opt, log_facility_t fac, char *logfile)
 	slurm_mutex_lock(&log_lock);
 	rc = _log_init(NULL, opt, fac, logfile);
 	slurm_mutex_unlock(&log_lock);
+	log_set_debug_flags();
 	return rc;
+}
+
+/* log_set_debug_flags()
+ * Set or reset the debug flags based on the configuration
+ * file or the scontrol command.
+ */
+void log_set_debug_flags(void)
+{
+	slurm_mutex_lock(&log_lock);
+	log->debug_flags = slurm_get_debug_flags();
+	slurm_mutex_unlock(&log_lock);
 }
 
 /* reinitialize log data structures. Like log_init, but do not init
@@ -861,7 +875,7 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 	    (strncmp(fmt, "sched: ", 7) == 0)) {
 		buf = vxstrfmt(fmt, args);
 		xlogfmtcat(&msgbuf, "[%M] %s%s%s", sched_log->fpfx, pfx, buf);
-		_log_printf(sched_log, sched_log->fbuf, sched_log->logfp, 
+		_log_printf(sched_log, sched_log->fbuf, sched_log->logfp,
 			    "%s\n", msgbuf);
 		fflush(sched_log->logfp);
 		xfree(msgbuf);
@@ -933,13 +947,22 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 
 	if (level <= log->opt.stderr_level) {
 		fflush(stdout);
-		_log_printf(log, log->buf, stderr, "%s: %s%s\n", 
-			    log->argv0, pfx, buf);
+		if (log->debug_flags & DEBUG_FLAG_THREADID)
+			_log_printf(log, log->buf, stderr, "%s: %p %s%s\n",
+				    log->argv0, (void *)pthread_self(),
+				    pfx, buf);
+		else
+			_log_printf(log, log->buf, stderr, "%s: %s%s\n",
+				    log->argv0, pfx, buf);
 		fflush(stderr);
 	}
 
 	if ((level <= log->opt.logfile_level) && (log->logfp != NULL)) {
-		xlogfmtcat(&msgbuf, "[%M] %s%s%s", log->fpfx, pfx, buf);
+		if (log->debug_flags & DEBUG_FLAG_THREADID)
+			xlogfmtcat(&msgbuf, "[%M] %p %s%s%s", log->fpfx,
+				   (void *)pthread_self(), pfx, buf);
+		else
+			xlogfmtcat(&msgbuf, "[%M] %s%s%s", log->fpfx, pfx, buf);
 		_log_printf(log, log->fbuf, log->logfp, "%s\n", msgbuf);
 		fflush(log->logfp);
 
