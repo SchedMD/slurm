@@ -41,6 +41,9 @@ set file_out_J       "test$test_id.J.%J.output"
 set file_out_n       "test$test_id.n.%n.output"
 set file_out_s       "test$test_id.s.%s.output"
 set file_out_t       "test$test_id.t.%t.output"
+set file_out_u       "test$test_id.u.%u.output"
+set file_err_u       "test$test_id.u.%u.error"
+set user_name        ""
 set job_id           0
 
 print_header $test_id
@@ -65,6 +68,19 @@ if {[test_launch_poe]} {
 	set node_name_env MP_I_UPMD_HOSTNAME
 } else {
 	set node_name_env SLURMD_NODENAME
+}
+
+#
+# Gets current user
+#
+spawn $bin_id -un
+expect {
+	-re "($alpha_numeric_under)" {
+		set user_name $expect_out(1,string)
+	}
+	eof {
+		wait
+	}
 }
 
 #
@@ -184,6 +200,87 @@ if {[wait_for_file $file_out_J_glob] != 0} {
 	set exit_code 1
 } else {
 	exec $bin_rm -f $file_out_J_glob
+}
+
+#
+# Spawn a shell via srun with the %u in stdout file name and confirm
+# it is created
+#
+set job_id 0
+set srun_pid [spawn $srun --output=$file_out_u -v sleep 10]
+expect {
+	-re "jobid ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun is not responding\n"
+		slow_kill $srun_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: srun did not submit job\n"
+	exit 1
+}
+
+#
+# Check that the correct files were created
+#
+set file_out_u_glob  "test$test_id.u.$user_name.output"
+
+if {[wait_for_file $file_out_u_glob]==0} {
+	exec $bin_rm -f $file_out_u_glob
+} else {
+	send_user "\nFAILURE: file format is not created correctly\n"
+	set exit_code 1
+}
+
+#
+# Spawn shell via srun with %u in the stderr file name and confirm
+# it is created
+#
+set job_id 0
+set srun_pid [spawn $srun --error=$file_err_u --output=/dev/null -v sleep aaa]
+expect {
+	-re "jobid ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nDo not worry this error is expected\n"
+		set srun_exit 1
+		exp_continue;
+	}
+	timeout {
+		send_user "\nFAILURE: srun is not responding\n"
+		slow_kill $srun_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: srun did not submit job\n"
+	exit 1
+}
+
+#
+# Check that the correct files where created
+#
+set file_err_u_glob  "test$test_id.u.$user_name.error"
+
+if {[wait_for_file $file_err_u_glob]==0} {
+	exec $bin_rm -f $file_err_u_glob
+} else {
+	send_user "\nFAILURE: file format is not created correctly\n"
+	set exit_code 1
 }
 
 #

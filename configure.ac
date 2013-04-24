@@ -225,6 +225,7 @@ X_AC_HWLOC
 X_AC_FREEIPMI
 X_AC_XCPU
 X_AC_SLURM_SEMAPHORE
+X_AC_RRDTOOL
 
 X_AC_NCURSES
 AM_CONDITIONAL(HAVE_SOME_CURSES, test "x$ac_have_some_curses" = "xyes")
@@ -484,6 +485,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/crypto/Makefile
 		 src/plugins/crypto/munge/Makefile
 		 src/plugins/crypto/openssl/Makefile
+		 src/plugins/ext_sensors/Makefile
+		 src/plugins/ext_sensors/rrd/Makefile
+		 src/plugins/ext_sensors/none/Makefile
 		 src/plugins/gres/Makefile
 		 src/plugins/gres/gpu/Makefile
 		 src/plugins/gres/nic/Makefile

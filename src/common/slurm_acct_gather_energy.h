@@ -63,6 +63,7 @@
 #include "src/common/pack.h"
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
+#include "src/common/slurm_acct_gather.h"
 #include "src/common/slurm_jobacct_gather.h"
 
 extern int acct_gather_energy_init(void); /* load the plugin */
@@ -79,5 +80,8 @@ extern int acct_gather_energy_g_get_data(enum acct_energy_type data_type,
 					 acct_gather_energy_t *energy);
 extern int acct_gather_energy_g_set_data(enum acct_energy_type data_type,
 					 acct_gather_energy_t *energy);
+extern void acct_gather_energy_g_conf_options(s_p_options_t **full_options,
+					      int *full_options_cnt);
+extern void acct_gather_energy_g_conf_set(s_p_hashtbl_t *tbl);
 
 #endif /*__SLURM_ACCT_GATHER_ENERGY_H__*/

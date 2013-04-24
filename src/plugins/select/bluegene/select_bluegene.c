@@ -419,8 +419,14 @@ static bg_record_t *_translate_info_2_record(block_info_t *block_info)
 	bg_record->ramdiskimage = block_info->ramdiskimage;
 	block_info->ramdiskimage = NULL;
 
-	bg_record->reason = block_info->reason;
-	block_info->reason = NULL;
+	/* Only transfer the reason if the state is in and Error
+	 * state.  It will be set automatically otherwise.  This is to
+	 * prevent old state on an action.
+	 */
+	if ((bg_record->state & BG_BLOCK_ERROR_FLAG)) {
+		bg_record->reason = block_info->reason;
+		block_info->reason = NULL;
+	}
 
 	slurm_free_block_info_members(block_info);
 	return bg_record;
@@ -2853,8 +2859,18 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 				bit_alloc(bg_conf->mp_cnode_cnt);
 
 		if (jobinfo->units_avail) {
-			bit_or(ba_mp->cnode_err_bitmap,
-			       step_jobinfo->units_used);
+			/* If step_id == NO_VAL it means we got this
+			   after the step was already wiped from
+			   memory.  So the step_jobinfo is really the
+			   jobinfo where units_used is not set, so use
+			   the avail instead.
+			*/
+			if (step_ptr->step_id != NO_VAL)
+				bit_or(ba_mp->cnode_err_bitmap,
+				       step_jobinfo->units_used);
+			else
+				bit_or(ba_mp->cnode_err_bitmap,
+				       step_jobinfo->units_avail);
 		} else {
 			bit_nset(ba_mp->cnode_err_bitmap, 0,
 				 bit_size(ba_mp->cnode_err_bitmap)-1);

@@ -16,8 +16,8 @@ pending work. </p>
 In its simplest configuration, it can be installed and configured in a
 couple of minutes (see <a href="http://www.linux-mag.com/id/7239/1/">
 Caos NSA and Perceus: All-in-one Cluster Software Stack</a>
-by Jeffrey B. Layton) and is used by
-<a href="http://www.intel.com/">Intel</a> on their 48-core
+by Jeffrey B. Layton) and has been used by
+<a href="http://www.intel.com/">Intel</a> for their 48-core
 <a href="http://www.hpcwire.com/features/Intel-Unveils-48-Core-Research-Chip-78378487.html">
 "cluster on a chip"</a>.
 More complex configurations can satisfy the job scheduling needs of 
@@ -39,8 +39,8 @@ configuration).</li>
 <li><b>Free and Open Source</b>: Its source code is freely available under the
 <a href="http://www.gnu.org/licenses/gpl.html">GNU General Public License</a>.</li>
 <li><b>Portability</b>: Written in C with a GNU autoconf configuration engine.
-While initially written for Linux, other UNIX-like operating systems have
-proven easy porting targets.</li>
+While initially written for Linux, Slurm has been ported to a diverse assortment
+of systems.</li>
 <li><b>Power Management</b>: Job can specify their desired CPU frequency and
 power use by job is recorded. Idle resources can be powered down until needed.</li>
 <li><b>Fault Tolerant</b>: It is highly tolerant of system failures, including

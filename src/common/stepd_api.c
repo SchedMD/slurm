@@ -49,6 +49,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/param.h>	/* MAXPATHLEN */
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -115,7 +116,7 @@ _handle_stray_socket(const char *socket_name)
 	}
 
 	now = time(NULL);
-	if ((now-buf.st_mtime) > 300) {
+	if ((now - buf.st_mtime) > 300) {
 		/* remove the socket */
 		if (unlink(socket_name) == -1) {
 			if (errno != ENOENT) {
@@ -126,6 +127,17 @@ _handle_stray_socket(const char *socket_name)
 			debug("Cleaned up stray socket %s", socket_name);
 		}
 	}
+}
+
+static void _handle_stray_script(const char *directory, uint32_t job_id)
+{
+	char dir_path[MAXPATHLEN], file_path[MAXPATHLEN];
+
+	snprintf(dir_path, sizeof(dir_path), "%s/job%05u", directory, job_id);
+	snprintf(file_path, sizeof(file_path), "%s/slurm_script", dir_path);
+	info("Purging vestigal job script %s", file_path);
+	(void) unlink(file_path);
+	(void) rmdir(dir_path);
 }
 
 static int
@@ -151,6 +163,8 @@ _step_connect(const char *directory, const char *nodename,
 	if (connect(fd, (struct sockaddr *) &addr, len) < 0) {
 		if (errno == ECONNREFUSED) {
 			_handle_stray_socket(name);
+			if (stepid == NO_VAL)
+				_handle_stray_script(directory, jobid);
 		} else {
 			debug("_step_connect: connect: %m");
 		}

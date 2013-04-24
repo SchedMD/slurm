@@ -2906,7 +2906,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 			job_ptr->part_ptr = part_ptr;
 			debug2("Try job %u on next partition %s",
 			       job_ptr->job_id, part_ptr->name);
-			if (job_limits_check(&job_ptr) != WAIT_NO_REASON)
+			if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON)
 				continue;
 			rc = select_nodes(job_ptr, test_only,
 					  select_node_bitmap);
@@ -2916,6 +2916,8 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 		}
 		list_iterator_destroy(iter);
 	} else {
+		if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON)
+			test_only = true;
 		rc = select_nodes(job_ptr, test_only, select_node_bitmap);
 	}
 
@@ -3044,14 +3046,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	test_only = will_run || (allocate == 0);
 
 	no_alloc = test_only || too_fragmented ||
-		   (!top_prio) || (!independent);
-	if (!no_alloc && !avail_front_end(job_ptr)) {
-		debug("sched: job_allocate() returning, no front end nodes "
-		       "are available");
-		error_code = ESLURM_NODES_BUSY;
-	} else {
-		error_code = _select_nodes_parts(job_ptr, no_alloc, NULL);
-	}
+		   (!top_prio) || (!independent) || !avail_front_end(job_ptr);
+	error_code = _select_nodes_parts(job_ptr, no_alloc, NULL);
 	if (!test_only) {
 		last_job_update = now;
 		slurm_sched_schedule();	/* work for external scheduler */
@@ -3812,9 +3808,11 @@ fini:	FREE_NULL_LIST(part_ptr_list);
 /*
  * job_limits_check - check the limits specified for the job.
  * IN job_ptr - pointer to job table entry.
+ * IN check_min_time - if true test job's minimum time limit,
+ *		otherwise test maximum time limit
  * RET WAIT_NO_REASON on success, fail status otherwise.
  */
-extern int job_limits_check(struct job_record **job_pptr)
+extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 {
 	struct job_details *detail_ptr;
 	enum job_state_reason fail_reason;
@@ -3824,6 +3822,7 @@ extern int job_limits_check(struct job_record **job_pptr)
 	slurmdb_association_rec_t *assoc_ptr;
 	uint32_t job_min_nodes, job_max_nodes;
 	uint32_t part_min_nodes, part_max_nodes;
+	uint32_t time_check;
 #ifdef HAVE_BG
 	static uint16_t cpus_per_node = 0;
 	if (!cpus_per_node)
@@ -3850,6 +3849,10 @@ extern int job_limits_check(struct job_record **job_pptr)
 
 	fail_reason = WAIT_NO_REASON;
 
+	if (check_min_time && job_ptr->time_min)
+		time_check = job_ptr->time_min;
+	else
+		time_check = job_ptr->time_limit;
 	if ((job_min_nodes > part_max_nodes) &&
 	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
 				       & QOS_FLAG_PART_MAX_NODE)))) {
@@ -3875,13 +3878,12 @@ extern int job_limits_check(struct job_record **job_pptr)
 		debug2("Job %u requested inactive partition %s",
 		       job_ptr->job_id, part_ptr->name);
 		fail_reason = WAIT_PART_INACTIVE;
-	} else if ((((job_ptr->time_limit != NO_VAL) &&
-		     (job_ptr->time_limit > part_ptr->max_time)) ||
-		    ((job_ptr->time_min   != NO_VAL) &&
-		     (job_ptr->time_min   > part_ptr->max_time))) &&
-		     (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
-		 			       QOS_FLAG_PART_TIME_LIMIT)))) {
-		debug2("Job %u exceeds partition time limit", job_ptr->job_id);
+	} else if ((time_check != NO_VAL) &&
+		   (time_check > part_ptr->max_time) &&
+		   (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
+		 			     QOS_FLAG_PART_TIME_LIMIT)))) {
+		info("Job %u exceeds partition time limit (%u > %u)",
+		       job_ptr->job_id, time_check, part_ptr->max_time);
 		fail_reason = WAIT_PART_TIME_LIMIT;
 	} else if (qos_ptr && assoc_ptr &&
 		   (qos_ptr->flags & QOS_FLAG_ENFORCE_USAGE_THRES) &&
@@ -3928,7 +3930,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 {
 	static int launch_type_poe = -1;
 	int error_code = SLURM_SUCCESS, i, qos_error;
-	enum job_state_reason fail_reason;
 	struct part_record *part_ptr = NULL;
 	List part_ptr_list = NULL;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
@@ -4317,18 +4318,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			job_ptr->wait4switch = _max_switch_wait(INFINITE);
 	}
 	job_ptr->best_switch = true;
-
-	/* Insure that requested partition is valid right now,
-	 * otherwise leave job queued and provide warning code */
-	fail_reason = job_limits_check(&job_ptr);
-	if (fail_reason != WAIT_NO_REASON) {
-		if (fail_reason == WAIT_QOS_THRES)
-			error_code = ESLURM_QOS_THRES;
-		else
-			error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-		job_ptr->state_reason = fail_reason;
-		xfree(job_ptr->state_desc);
-	}
 
 	FREE_NULL_LIST(license_list);
 	FREE_NULL_BITMAP(req_bitmap);
@@ -6079,7 +6068,79 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 	char *tmp = NULL;
 	uint32_t len = 0;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		if (detail_ptr) {
+			packstr(detail_ptr->features,   buffer);
+			packstr(detail_ptr->work_dir,   buffer);
+			packstr(detail_ptr->dependency, buffer);
+
+			if (detail_ptr->argv) {
+				/* Determine size needed for a string
+				 * containing all arguments */
+				for (i=0; detail_ptr->argv[i]; i++) {
+					len += strlen(detail_ptr->argv[i]);
+				}
+				len += i;
+
+				cmd_line = xmalloc(len*sizeof(char));
+				tmp = cmd_line;
+				for (i=0; detail_ptr->argv[i]; i++) {
+					if (i != 0) {
+						*tmp = ' ';
+						tmp++;
+					}
+					strcpy(tmp,detail_ptr->argv[i]);
+					tmp += strlen(detail_ptr->argv[i]);
+				}
+				packstr(cmd_line, buffer);
+				xfree(cmd_line);
+			} else
+				packnull(buffer);
+
+			if (IS_JOB_COMPLETING(job_ptr) && job_ptr->cpu_cnt) {
+				pack32(job_ptr->cpu_cnt, buffer);
+				pack32((uint32_t) 0, buffer);
+			} else if (job_ptr->total_cpus) {
+				pack32(job_ptr->total_cpus, buffer);
+				pack32((uint32_t) 0, buffer);
+			} else {
+				pack32(detail_ptr->min_cpus, buffer);
+				if (detail_ptr->max_cpus != NO_VAL)
+					pack32(detail_ptr->max_cpus, buffer);
+				else
+					pack32((uint32_t) 0, buffer);
+
+			}
+			if (IS_JOB_COMPLETING(job_ptr) && job_ptr->node_cnt) {
+				pack32(job_ptr->node_cnt, buffer);
+				pack32((uint32_t) 0, buffer);
+			} else if (job_ptr->total_nodes) {
+				pack32(job_ptr->total_nodes, buffer);
+				pack32((uint32_t) 0, buffer);
+			} else {
+				pack32(detail_ptr->min_nodes, buffer);
+				pack32(detail_ptr->max_nodes, buffer);
+			}
+			pack16(detail_ptr->requeue,   buffer);
+			pack16(detail_ptr->ntasks_per_node, buffer);
+		} else {
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+
+			if (job_ptr->total_cpus)
+				pack32(job_ptr->total_cpus, buffer);
+			else
+				pack32(job_ptr->cpu_cnt, buffer);
+			pack32((uint32_t) 0, buffer);
+
+			pack32(job_ptr->node_cnt, buffer);
+			pack32((uint32_t) 0, buffer);
+			pack16((uint16_t) 0, buffer);
+			pack16((uint16_t) 0, buffer);
+		}
+	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		if (detail_ptr) {
 			packstr(detail_ptr->features,   buffer);
 			packstr(detail_ptr->work_dir,   buffer);
@@ -8033,7 +8094,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	fail_reason = job_limits_check(&job_ptr);
+	fail_reason = job_limits_check(&job_ptr, false);
 	if (fail_reason != WAIT_NO_REASON) {
 		if (fail_reason == WAIT_QOS_THRES)
 			error_code = ESLURM_QOS_THRES;
@@ -9247,9 +9308,6 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 #endif
 	agent_arg_t *agent_args = NULL;
 	signal_job_msg_t *signal_job_msg = NULL;
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
-	static int notify_srun = 1;
-#else
 	static int notify_srun_static = -1;
 	int notify_srun = 0;
 
@@ -9262,6 +9320,12 @@ static void _signal_job(struct job_record *job_ptr, int signal)
 			notify_srun_static = 0;
 		xfree(launch_type);
 	}
+
+#ifdef HAVE_FRONT_END
+	/* On a front end system always notify_srun instead of slurmd */
+	if (notify_srun_static)
+		notify_srun = 1;
+#else
 	/* For launch/poe all signals are forwarded by srun to poe to tasks
 	 * except SIGSTOP/SIGCONT, which are used for job preemption. In that
 	 * case the slurmd must directly suspend tasks and switch resources. */

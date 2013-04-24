@@ -86,7 +86,6 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 {
 	int i;
 	List l;
-	node_info_msg_t *ni = NULL;
 
 	l = list_create(NULL);
 	if (!params.no_header)
@@ -101,9 +100,6 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 		list_append(l, (void *) &jobs[i]);
 	}
 	sort_jobs_by_start_time (l);
-	if (ni)
-		slurm_free_node_info_msg (ni);
-
 	sort_job_list (l);
 
 	/* Print the jobs of interest */
@@ -846,7 +842,7 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 
 static int _get_node_cnt(job_info_t * job)
 {
-	int node_cnt = 0, round;
+	int node_cnt = 0;
 
 	/*  For PENDING jobs, return the maximum of the requested nodelist,
 	 *   requested maximum number of nodes, or requested CPUs rounded
@@ -861,9 +857,20 @@ static int _get_node_cnt(job_info_t * job)
 	if (IS_JOB_PENDING(job)) {
 		node_cnt = _nodes_in_list(job->req_nodes);
 		node_cnt = MAX(node_cnt, job->num_nodes);
-		round  = job->num_cpus + params.max_cpus - 1;
-		round /= params.max_cpus;	/* round up */
-		node_cnt = MAX(node_cnt, round);
+		if ((node_cnt == 1) && (job->num_cpus > 1)
+		    && job->ntasks_per_node
+		    && (job->ntasks_per_node != (uint16_t) NO_VAL)) {
+			int num_tasks = job->num_cpus;
+			if (job->cpus_per_task != (uint16_t) NO_VAL)
+				num_tasks /= job->cpus_per_task;
+			node_cnt = (num_tasks + 1) / job->ntasks_per_node;
+			if (node_cnt > num_tasks)
+				node_cnt = num_tasks;
+		} else {
+			int round = job->num_cpus + params.max_cpus - 1;
+			round /= params.max_cpus;	/* round up */
+			node_cnt = MAX(node_cnt, round);
+		}
 	} else
 		node_cnt = _nodes_in_list(job->nodes);
 	return node_cnt;

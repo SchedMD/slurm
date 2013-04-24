@@ -52,6 +52,10 @@
 #include <errno.h>
 #include <stdint.h>
 
+#if defined(__FreeBSD__)
+#define	SOL_TCP		IPPROTO_TCP
+#endif
+
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
@@ -204,12 +208,24 @@ extern int net_set_keep_alive(int sock)
 		error("Unable to set keep alive socket option: %m");
 		return -1;
 	}
+
+/*
+ * TCP_KEEPIDLE used to be defined in FreeBSD, then went away, then came
+ * back in 9.0.
+ *
+ * Removing this call might decrease the robustness of communications,
+ * but will probably have no noticable effect.
+ */
+#if ! defined(__FreeBSD__) || (__FreeBSD_version > 900000)
 	opt_int = keep_alive_time;
 	if (setsockopt(sock, SOL_TCP, TCP_KEEPIDLE, &opt_int, opt_len) < 0) {
 		error("Unable to set keep alive socket time: %m");
 		return -1;
 	}
+#endif
+
 #if 0
+	/* Used to validate above operations for testing purposes */
 	opt_linger.l_onoff = 0;
 	opt_linger.l_linger = 0;
 	opt_len = sizeof(struct linger);

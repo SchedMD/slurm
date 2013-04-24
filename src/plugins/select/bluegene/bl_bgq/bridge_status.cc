@@ -884,6 +884,26 @@ static void _do_block_action_poll(void)
 
 			bg_record->action = bridge_translate_action(
 				block_ptr->getAction().toValue());
+
+			if (!bg_record->reason
+			    && (bg_record->action == BG_BLOCK_ACTION_FREE)
+			    && (bg_record->state == BG_BLOCK_INITED)) {
+				/* Set the reason to something so
+				   admins know why things aren't working.
+				*/
+				bg_record->reason = xstrdup(
+					"Block can't be used, it has an "
+					"action item of 'D' on it.");
+				last_bg_update = time(NULL);
+			} else if (bg_record->reason
+				   && (bg_record->action
+				       != BG_BLOCK_ACTION_FREE)
+				   && !(bg_record->state
+					& BG_BLOCK_ERROR_FLAG)) {
+				xfree(bg_record->reason);
+				last_bg_update = time(NULL);
+			}
+
 			break;
 		}
 		if (slurmctld_config.shutdown_time)

@@ -340,6 +340,12 @@ extern int create_full_system_block(List bg_found_block_list)
 	if (bg_found_block_list) {
 		itr = list_iterator_create(bg_found_block_list);
 		while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
+			/* Skip all small blocks since they are not
+			   the full system block.
+			*/
+			if (bg_record->cnode_cnt < bg_conf->mp_cnode_cnt)
+				continue;
+
 			if (!strcmp(name, bg_record->mp_str)) {
 				xfree(name);
 				list_iterator_destroy(itr);
@@ -363,7 +369,16 @@ extern int create_full_system_block(List bg_found_block_list)
 			if (bg_record->free_cnt)
 				continue;
 
+			/* Skip all small blocks since they are not
+			   the full system block.
+			*/
+			if (bg_record->cnode_cnt < bg_conf->mp_cnode_cnt)
+				continue;
+
 			if (!strcmp(name, bg_record->mp_str)) {
+				debug2("create_full_system_block: not "
+				       "implicitly adding full system block -"
+				       " block already defined");
 				xfree(name);
 				list_iterator_destroy(itr);
 				/* don't create total already there */

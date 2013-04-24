@@ -25,10 +25,10 @@ When the job allocation is finally granted for the batch script, SLURM
 runs a single copy of the batch script on the first node in the set of
 allocated nodes.
 
-The following document describes the the influence of various options on the 
-allocation of cpus to jobs and tasks. 
+The following document describes the influence of various options on the
+allocation of cpus to jobs and tasks.
 .br
-http://www.schedmd.com/slurmdocs/cpu_management.html
+http://slurm.schedmd.com/cpu_management.html
 
 .SH "OPTIONS"
 .LP
@@ -162,7 +162,7 @@ Users can specify which of these \fBfeatures\fR are required by their job
 using the constraint option.
 Only nodes having features matching the job constraints will be used to
 satisfy the request.
-Multiple constraints may be specified with AND, OR, exclusive OR, 
+Multiple constraints may be specified with AND, OR, exclusive OR,
 resource counts, etc.
 Supported \fbconstraint\fR options include:
 .PD 1
@@ -201,7 +201,7 @@ Specific counts of multiple resources may be specified by using the AND
 operator and enclosing the options within square brackets.
 For example: "\fB\-\-constraint=[rack1*2&rack2*4]"\fR might
 be used to specify that two nodes must be allocated from nodes with the feature
-of "rack1" and four nodes must be allocated from nodes with the feature 
+of "rack1" and four nodes must be allocated from nodes with the feature
 "rack2".
 .RE
 
@@ -402,7 +402,7 @@ option takes precedence over the job's option.
 \fB\-\-export\fR=<\fIenvironment variables | ALL | NONE\fR>
 Identify which environment variables are propagated to the batch job.
 Multiple environment variable names should be comma separated.
-Environment variable names may be specified to propagate the current 
+Environment variable names may be specified to propagate the current
 value of those variables (e.g. "\-\-export=EDITOR") or specific values
 for the variables may be exported (e.g.. "\-\-export=EDITOR=/bin/vi").
 This option particularly important for jobs that are submitted on one cluster
@@ -603,7 +603,7 @@ nodes. The optional second distribution method (after the ":")
 controls the distribution of resources across sockets within a node.
 Note that with select/cons_res, the number of cpus allocated on each
 socket and node may be different. Refer to
-http://www.schedmd.com/slurmdocs/mc_support.html
+http://slurm.schedmd.com/mc_support.html
 for more information on resource allocation, assignment of tasks to
 nodes, and binding of tasks to CPUs.
 .RS
@@ -640,11 +640,11 @@ followed by an optional specification of the task distribution scheme
 within a block of tasks and between the blocks of tasks.  For more
 details (including examples and diagrams), please see
 .br
-http://www.schedmd.com/slurmdocs/mc_support.html
+http://slurm.schedmd.com/mc_support.html
 .br
 and
 .br
-http://www.schedmd.com/slurmdocs/dist_plane.html
+http://slurm.schedmd.com/dist_plane.html
 .TP
 .B arbitrary
 The arbitrary method of distribution will allocate processes in\-order
@@ -711,7 +711,7 @@ seen using the \fBscontrol show config\fR command.
 Note that if the job's \fB\-\-mem\-per\-cpu\fR value exceeds the configured
 \fBMaxMemPerCPU\fR, then the user's limit will be treated as a memory limit
 per task; \fB\-\-mem\-per\-cpu\fR will be reduced to a value no larger than
-\fBMaxMemPerCPU\fR; \fB\-\-cpus\-per\-task\fR will be set and value of 
+\fBMaxMemPerCPU\fR; \fB\-\-cpus\-per\-task\fR will be set and value of
 \fB\-\-cpus\-per\-task\fR multiplied by the new \fB\-\-mem\-per\-cpu\fR
 value will equal the original \fB\-\-mem\-per\-cpu\fR value specified by
 the user.
@@ -1048,7 +1048,7 @@ The maximum size of a process's data segment
 .TP
 \fBFSIZE\fR
 The maximum size of files created. Note that if the user sets FSIZE to less
-than the current size of the slurmd.log, job launches will fail with 
+than the current size of the slurmd.log, job launches will fail with
 a 'File size limit exceeded' error.
 .TP
 \fBMEMLOCK\fR
@@ -1126,7 +1126,7 @@ When a tree topology is used, this defines the maximum count of switches
 desired for the job allocation and optionally the maximum time to wait
 for that number of switches. If SLURM finds an allocation containing more
 switches than the count specified, the job remains pending until it either finds
-an allocation with desired switch count or the time limit expires. 
+an allocation with desired switch count or the time limit expires.
 It there is no switch count limit, there is no delay in starting the job.
 Acceptable time formats include "minutes", "minutes:seconds",
 "hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
@@ -1167,12 +1167,12 @@ plugin is enabled.
 Set a minimum time limit on the job allocation.
 If specified, the job may have it's \fB\-\-time\fR limit lowered to a value
 no lower than \fB\-\-time\-min\fR if doing so permits the job to begin
-execution earlier than otherwise possible. 
+execution earlier than otherwise possible.
 The job's time limit will not be changed after the job is allocated resources.
-This is performed by a backfill scheduling algorithm to allocate resources 
+This is performed by a backfill scheduling algorithm to allocate resources
 otherwise reserved for higher priority jobs.
-Acceptable time formats include "minutes", "minutes:seconds", 
-"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
+Acceptable time formats include "minutes", "minutes:seconds",
+"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
 "days\-hours:minutes:seconds".
 
 .TP
@@ -1324,6 +1324,12 @@ Same as \fB\-A, \-\-account\fR
 \fBSBATCH_ACCTG_FREQ\fR
 Same as \fB\-\-acctg\-freq\fR
 .TP
+\fBSBATCH_ARRAY_INX\fR
+Same as \fB\-a, \-\-array\fR
+.TP
+\fBSBATCH_BLRTS_IMAGE\fR
+Same as \fB\-\-blrts\-image\fR
+.TP
 \fBSLURM_CHECKPOINT\fR
 Same as \fB\-\-checkpoint\fR
 .TP
@@ -1332,6 +1338,9 @@ Same as \fB\-\-checkpoint\-dir\fR
 .TP
 \fBSBATCH_CLUSTERS\fR or \fBSLURM_CLUSTERS\fR
 Same as \fB\-\-clusters\fR
+.TP
+\fBSBATCH_CNLOAD_IMAGE\fR
+Same as \fB\-\-cnload\-image\fR
 .TP
 \fBSBATCH_CONN_TYPE\fR
 Same as \fB\-\-conn\-type\fR
@@ -1360,8 +1369,14 @@ Same as \fB\-\-export\fR
 \fBSBATCH_GEOMETRY\fR
 Same as \fB\-g, \-\-geometry\fR
 .TP
+\fBSBATCH_GET_USER_ENV\fR
+Same as \fB\-\-get\-user\-env\fR
+.TP
 \fBSBATCH_IMMEDIATE\fR
 Same as \fB\-I, \-\-immediate\fR
+.TP
+\fBSBATCH_IOLOAD_IMAGE\fR
+Same as \fB\-\-ioload\-image\fR
 .TP
 \fBSBATCH_JOBID\fR
 Same as \fB\-\-jobid\fR
@@ -1369,8 +1384,14 @@ Same as \fB\-\-jobid\fR
 \fBSBATCH_JOB_NAME\fR
 Same as \fB\-J, \-\-job\-name\fR
 .TP
+\fBSBATCH_LINUX_IMAGE\fR
+Same as \fB\-\-linux\-image\fR
+.TP
 \fBSBATCH_MEM_BIND\fR
 Same as \fB\-\-mem_bind\fR
+.TP
+\fBSBATCH_MLOADER_IMAGE\fR
+Same as \fB\-\-mloader\-image\fR
 .TP
 \fBSBATCH_NETWORK\fR
 Same as \fB\-\-network\fR
@@ -1393,8 +1414,19 @@ Same as \fB\-p, \-\-partition\fR
 \fBSBATCH_QOS\fR
 Same as \fB\-\-qos\fR
 .TP
+\fBSBATCH_RAMDISK_IMAGE\fR
+Same as \fB\-\-ramdisk\-image\fR
+.TP
 \fBSBATCH_RESERVATION\fR
 Same as \fB\-\-reservation\fR
+.TP
+\fBSBATCH_REQ_SWITCH\fR
+When a tree topology is used, this defines the maximum count of switches
+desired for the job allocation and optionally the maximum time to wait
+for that number of switches. See \fB\-\-switches\fR
+.TP
+\fBSBATCH_REQUEUE\fR
+Same as \fB\-\-requeue\fR
 .TP
 \fBSBATCH_SIGNAL\fR
 Same as \fB\-\-signal\fR
@@ -1404,6 +1436,12 @@ Same as \fB\-t, \-\-time\fR
 .TP
 \fBSBATCH_WAIT_ALL_NODES\fR
 Same as \fB\-\-wait\-all\-nodes\fR
+.TP
+\fBSBATCH_WAIT4SWITCH\fR
+Max time waiting for requested switches. See \fB\-\-switches\fR
+.TP
+\fBSBATCH_WCKEY\fR
+Same as \fB\-\-wckey\fR
 .TP
 \fBSLURM_STEP_KILLED_MSG_NODE_ID\fR=ID
 If set, only the specified node will log when the job or step are killed
@@ -1431,6 +1469,9 @@ Job array ID (index) number.
 .TP
 \fBSLURM_ARRAY_JOB_ID\fR
 Job array's master job ID number.
+\fBSLURM_CHECKPOINT_IMAGE_DIR\fR
+Directory into which checkpoint images should  be written if specified
+on the execute line.
 .TP
 \fBSLURM_CPU_BIND\fR
 Set to value of the \-\-cpu_bind\fR option.
@@ -1440,6 +1481,12 @@ Set to value of the \-\-cpu_bind\fR option.
 CPU_ID = Board_ID x threads_per_board +
 Socket_ID x threads_per_socket +
 Core_ID x threads_per_core + Thread_ID).
+.TP
+\fBSLURM_CPUS_ON_NODE\fR
+Number of CPUS on the allocated node.
+.TP
+\fBSLURM_GTIDS\fR
+Global task IDs running on this node.  Zero  origin and comma separated.
 .TP
 \fBSLURM_JOB_ID\fR (and \fBSLURM_JOBID\fR for backwards compatibility)
 The ID of the job allocation.
@@ -1464,6 +1511,9 @@ List of nodes allocated to the job.
 \fBSLURM_JOB_NUM_NODES\fR (and \fBSLURM_NNODES\fR for backwards compatibility)
 Total number of nodes in the job's resource allocation.
 .TP
+\fBSLURM_LOCALID\fR
+Node local task ID for the process within a job.
+.TP
 \fBSLURM_MEM_BIND\fR
 Set to value of the \-\-mem_bind\fR option.
 .TP
@@ -1472,6 +1522,12 @@ Sets of node name, communication address and hostname for nodes allocated to
 the job from the cloud. Each element in the set if colon separated and each
 set is comma separated. For example:
 SLURM_NODE_ALIASES=ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
+.TP
+\fBSLURM_NODEID\fR
+ID of the nodes allocated.
+.TP
+\fBSLURMD_NODENAME\fR
+Names of all the allocated nodes.
 .TP
 \fBSLURM_NTASKS\fR (and \fBSLURM_NPROCS\fR for backwards compatibility)
 Same as \fB\-n, \-\-ntasks\fR
@@ -1487,6 +1543,13 @@ Only set if the \fB\-\-ntasks\-per\-node\fR option is specified.
 \fBSLURM_NTASKS_PER_SOCKET\fR
 Number of tasks requested per socket.
 Only set if the \fB\-\-ntasks\-per\-socket\fR option is specified.
+.TP
+\fBSLURM_PRIO_PROCESS\fR
+The  scheduling priority (nice value) at the time of job submission.
+This value is  propagated  to the spawned processes.
+.TP
+\fBSLURM_PROCID\fR
+The MPI rank (or relative process ID) of the current process
 .TP
 \fBSLURM_RESTART_COUNT\fR
 If the job has been restarted due to system failure or has been
@@ -1507,6 +1570,23 @@ count, that count is followed by "(x#)" where "#" is the
 repetition count. For example, "SLURM_TASKS_PER_NODE=2(x3),1"
 indicates that the first three nodes will each execute three
 tasks and the fourth node will execute one task.
+.TP
+\fBSLURM_TASK_PID\fR
+The process ID of the task being started.
+.TP
+\fBSLURM_TOPOLOGY_ADDR\fR
+This is set only if the  system  has  the  topology/tree  plugin
+configured.   The value will be set to the names network switches
+which  may be  involved  in  the  job's  communications from the
+system's top level switch down to the leaf switch and  ending  with
+node name. A period is used to separate each hardware component name.
+.TP
+\fBSLURM_TOPOLOGY_ADDR_PATTERN\fR
+This is set only if the  system  has  the  topology/tree  plugin
+configured. The value will be set  component  types  listed   in
+SLURM_TOPOLOGY_ADDR.   Each  component will be identified as
+either "switch" or "node".  A period is  used  to separate each
+hardware component type.
 
 .SH "EXAMPLES"
 .LP
@@ -1571,7 +1651,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
 This file is part of SLURM, a resource management program.
-For details, see <http://www.schedmd.com/slurmdocs/>.
+For details, see <http://slurm.schedmd.com/>.
 .LP
 SLURM is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free

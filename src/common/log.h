@@ -224,6 +224,12 @@ bool log_has_data(void);
  */
 void log_flush(void);
 
+/* log_set_debug_flags()
+ * Set or reset the debug flags based on the configuration
+ * file or the scontrol command.
+ */
+extern void log_set_debug_flags(void);
+
 /*
  * the following log a message to the log facility at the appropriate level:
  *

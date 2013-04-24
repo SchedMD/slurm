@@ -163,7 +163,6 @@ typedef struct slurm_ipmi_conf {
 	bool entity_sensor_names;
 } slurm_ipmi_conf_t;
 
-extern int read_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf);
 extern void reset_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf);
 
 #endif

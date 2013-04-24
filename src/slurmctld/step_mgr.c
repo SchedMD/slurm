@@ -66,6 +66,7 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_ext_sensors.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
@@ -257,6 +258,7 @@ static void _free_step_rec(struct step_record *step_ptr)
 	if (step_ptr->gres_list)
 		list_destroy(step_ptr->gres_list);
 	select_g_select_jobinfo_free(step_ptr->select_jobinfo);
+	xfree(step_ptr->ext_sensors);
 	xfree(step_ptr);
 }
 
@@ -364,13 +366,12 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		    uint16_t signal, uid_t uid)
 {
 	struct job_record *job_ptr;
-	struct step_record *step_ptr;
+	struct step_record *step_ptr, step_rec;
 	int rc = SLURM_SUCCESS;
 	static bool notify_slurmd = true;
-#if defined HAVE_BG_FILES && !defined HAVE_BG_L_P
-	static int notify_srun = 1;
-#else
 	static int notify_srun = -1;
+	static bool front_end = false;
+
 	if (notify_srun == -1) {
 		char *launch_type = slurm_get_launch_type();
 		/* do this for all but slurm (poe, aprun, etc...) */
@@ -381,7 +382,6 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 			notify_srun = 0;
 		xfree(launch_type);
 	}
-#endif
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -409,9 +409,27 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 
 	step_ptr = find_step_record(job_ptr, step_id);
 	if (step_ptr == NULL) {
-		info("job_step_cancel step %u.%u not found",
-		     job_id, step_id);
-		return ESLURM_INVALID_JOB_ID;
+		if (signal != SIG_NODE_FAIL) {
+			rc = ESLURM_INVALID_JOB_ID;
+			info("job_step_cancel step %u.%u not found",
+			     job_id, step_id);
+			return rc;
+		}
+		/* If we get a node fail signal we need to process it
+		   since we will create a race condition otherwise
+		   where jobs could be started on these nodes and
+		   fail.
+		*/
+		debug("job_step_cancel step %u.%u not found, but got "
+		      "SIG_NODE_FAIL, so failing all nodes in allocation.",
+		      job_id, step_id);
+		memset(&step_rec, 0, sizeof(struct step_record));
+		step_rec.step_id = NO_VAL;
+		step_rec.job_ptr = job_ptr;
+		step_rec.select_jobinfo = job_ptr->select_jobinfo;
+		step_rec.step_node_bitmap = job_ptr->node_bitmap;
+		step_ptr = &step_rec;
+		rc = ESLURM_ALREADY_DONE;
 	}
 
 	/* If SIG_NODE_FAIL codes through it means we had nodes failed
@@ -432,7 +450,14 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		step_ptr->requid = uid;
 		srun_step_complete(step_ptr);
 	}
-	if ((signal == SIGKILL) || notify_slurmd)
+
+#ifdef HAVE_FRONT_END
+	front_end = true;
+#endif
+	/* Never signal tasks on a front_end system if we aren't
+	 * suppose to notify the slurmd (i.e. BGQ and Cray) */
+	if (front_end && !notify_slurmd) {
+	} else if ((signal == SIGKILL) || notify_slurmd)
 		signal_step_tasks(step_ptr, signal, REQUEST_SIGNAL_TASKS);
 
 	return SLURM_SUCCESS;
@@ -956,7 +981,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		}
 
 		if (selected_nodes) {
-			if (!bit_equal(selected_nodes, nodes_avail)) {
+			if (!bit_super_set(selected_nodes, nodes_avail)) {
 				/* some required nodes have no available
 				 * processors, defer request */
 				tasks_picked_cnt = 0;
@@ -1331,7 +1356,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			}
 			goto cleanup;
 		}
-	} else if (step_spec->cpu_count) {
+	} 
+	if (step_spec->cpu_count) {
 		/* make sure the selected nodes have enough cpus */
 		cpus_picked_cnt = _count_cpus(job_ptr, nodes_picked,
 					      usable_cpu_cnt);
@@ -1540,6 +1566,19 @@ static void _pick_step_cores(struct step_record *step_ptr,
 	}
 }
 
+#ifdef HAVE_CRAY
+/* Return the total cpu count on a given node index */
+static int _get_node_cpus(int node_inx)
+{
+	struct node_record *node_ptr;
+
+	node_ptr = node_record_table_ptr + node_inx;
+	if (slurmctld_conf.fast_schedule)
+		return node_ptr->config_ptr->cpus;
+
+	return node_ptr->cpus;
+}
+#endif
 
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
 extern void step_alloc_lps(struct step_record *step_ptr)
@@ -1598,10 +1637,17 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		step_node_inx++;
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("step_alloc_lps: node index bad");
+#ifdef HAVE_CRAY
+		/* Since on a cray you can only run 1 job per node
+		   return all CPUs as being allocated.
+		*/
+		cpus_alloc = _get_node_cpus(step_node_inx);
+#else
 		/* NOTE: The --overcommit option can result in
 		 * cpus_used[] having a higher value than cpus[] */
 		cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
 			     step_ptr->cpus_per_task;
+#endif
 		job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
 		gres_plugin_step_alloc(step_ptr->gres_list, job_ptr->gres_list,
 				       job_node_inx, cpus_alloc,
@@ -1708,8 +1754,15 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		step_node_inx++;
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("_step_dealloc_lps: node index bad");
+#ifdef HAVE_CRAY
+		/* Since on a cray you can only run 1 job per node
+		   return all CPUs as being allocated.
+		*/
+		cpus_alloc = _get_node_cpus(step_node_inx);
+#else
 		cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
 			     step_ptr->cpus_per_task;
+#endif
 		if (job_resrcs_ptr->cpus_used[job_node_inx] >= cpus_alloc)
 			job_resrcs_ptr->cpus_used[job_node_inx] -= cpus_alloc;
 		else {
@@ -1796,7 +1849,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 #endif
 #if defined HAVE_BG
 	static uint16_t cpus_per_mp = (uint16_t)NO_VAL;
-#else
+#elif (!defined HAVE_CRAY)
 	uint32_t max_tasks;
 #endif
 	*new_step_record = NULL;
@@ -1983,7 +2036,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 			step_specs->num_tasks = node_count;
 	}
 
-#ifndef HAVE_BG
+#if (!defined HAVE_BG && !defined HAVE_CRAY)
 	max_tasks = node_count * slurmctld_conf.max_tasks_per_node;
 	if (step_specs->num_tasks > max_tasks) {
 		error("step has invalid task count: %u max is %u",
@@ -2055,6 +2108,10 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->exclusive = step_specs->exclusive;
 	step_ptr->ckpt_dir  = xstrdup(step_specs->ckpt_dir);
 	step_ptr->no_kill   = step_specs->no_kill;
+	step_ptr->ext_sensors = (ext_sensors_data_t *)
+					xmalloc(sizeof(ext_sensors_data_t));
+	step_ptr->ext_sensors->consumed_energy = NO_VAL;
+	step_ptr->ext_sensors->temperature = NO_VAL;
 
 	/* step's name and network default to job's values if not
 	 * specified in the step specification */
@@ -2304,7 +2361,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 	bitstr_t *pack_bitstr;
 
 //#if defined HAVE_FRONT_END && (!defined HAVE_BGQ || !defined HAVE_BG_FILES)
-#if defined HAVE_FRONT_END && (!defined HAVE_BGQ)
+#if defined HAVE_FRONT_END && (!defined HAVE_BGQ) && (!defined HAVE_CRAY)
 	/* On front-end systems, the steps only execute on one node.
 	 * We need to make them appear like they are running on the job's
 	 * entire allocation (which they really are). */
@@ -2806,6 +2863,14 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		return EINVAL;
 	}
 
+	ext_sensors_g_get_stependdata(step_ptr);
+	if (step_ptr->jobacct != NULL) {
+		if ((step_ptr->jobacct->energy.consumed_energy == 0) ||
+		    (step_ptr->jobacct->energy.consumed_energy == NO_VAL)) {
+			step_ptr->jobacct->energy.consumed_energy =
+					step_ptr->ext_sensors->consumed_energy;
+		}
+	}
 	jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
 
 	/* we have been adding task average frequencies for
@@ -2817,7 +2882,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 	if (!step_ptr->exit_node_bitmap) {
 		/* initialize the node bitmap for exited nodes */
 		nodes = bit_set_count(step_ptr->step_node_bitmap);
-#ifdef HAVE_BGQ
+#if defined HAVE_BGQ || defined HAVE_CRAY
 		/* For BGQ we only have 1 real task, so if it exits,
 		   the whole step is ending as well.
 		*/
@@ -2827,7 +2892,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		step_ptr->exit_code = req->step_rc;
 	} else {
 		nodes = _bitstr_bits(step_ptr->exit_node_bitmap);
-#ifdef HAVE_BGQ
+#if defined HAVE_BGQ || defined HAVE_CRAY
 		/* For BGQ we only have 1 real task, so if it exits,
 		   the whole step is ending as well.
 		*/
@@ -3582,19 +3647,60 @@ static bool _is_mem_resv(void)
 extern int update_step(step_update_request_msg_t *req, uid_t uid)
 {
 	struct job_record *job_ptr;
-	struct step_record *step_ptr;
+	struct step_record *step_ptr = NULL;
 	ListIterator step_iterator;
 	int mod_cnt = 0;
+	bool new_step = 0;
 
 	job_ptr = find_job_record(req->job_id);
 	if (job_ptr == NULL) {
 		error("update_step: invalid job id %u", req->job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
-
-	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account)) {
+	if (req->jobacct) {
+		if (!validate_slurm_user(uid)) {
+			error("Security violation, STEP_UPDATE RPC "
+			      "from uid %d", uid);
+			return ESLURM_USER_ID_MISSING;
+		}
+		/* need to create step (using some other launch mech
+		   that didn't use srun to launch).  Don't use
+		   _create_step_record though since we don't want to
+		   push it on the job's step_list.
+		*/
+		if (req->step_id == NO_VAL) {
+			step_ptr = xmalloc(sizeof(struct step_record));
+			step_ptr->job_ptr    = job_ptr;
+			step_ptr->exit_code  = NO_VAL;
+			step_ptr->time_limit = INFINITE;
+			step_ptr->jobacct    = jobacctinfo_create(NULL);
+			step_ptr->requid     = -1;
+			step_ptr->step_node_bitmap =
+				bit_copy(job_ptr->node_bitmap);
+			req->step_id = step_ptr->step_id =
+				job_ptr->next_step_id++;
+			new_step = 1;
+		} else {
+			if (req->step_id >= job_ptr->next_step_id)
+				return ESLURM_INVALID_JOB_ID;
+			if (!(step_ptr
+			      = find_step_record(job_ptr, req->step_id))) {
+				/* If updating this after the fact we
+				   need to remake the step so we can
+				   send the updated parts to
+				   accounting.
+				*/
+				step_ptr = xmalloc(sizeof(struct step_record));
+				step_ptr->job_ptr    = job_ptr;
+				step_ptr->jobacct    = jobacctinfo_create(NULL);
+				step_ptr->requid     = -1;
+				step_ptr->step_id    = req->step_id;
+				new_step = 1;
+			}
+		}
+	} else if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
+		   !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+						 job_ptr->account)) {
 		error("Security violation, STEP_UPDATE RPC from uid %d", uid);
 		return ESLURM_USER_ID_MISSING;
 	}
@@ -3614,14 +3720,45 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 		}
 		list_iterator_destroy (step_iterator);
 	} else {
-		step_ptr = find_step_record(job_ptr, req->step_id);
-		if (step_ptr) {
+		if (!step_ptr)
+			step_ptr = find_step_record(job_ptr, req->step_id);
+
+		if (!step_ptr)
+			return ESLURM_INVALID_JOB_ID;
+
+		if (req->jobacct) {
+			jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
+			if (new_step) {
+				step_ptr->start_time = req->start_time;
+				step_ptr->name = xstrdup(req->name);
+				jobacct_storage_g_step_start(
+					acct_db_conn, step_ptr);
+			} else if (!step_ptr->exit_node_bitmap) {
+				/* If the exit_code is not NO_VAL then
+				 * we need to initialize the node bitmap for
+				 * exited nodes for packing. */
+				int nodes = bit_set_count(
+					step_ptr->step_node_bitmap);
+				step_ptr->exit_node_bitmap = bit_alloc(nodes);
+				if (!step_ptr->exit_node_bitmap)
+					fatal("bit_alloc: %m");
+			}
+			step_ptr->exit_code = req->exit_code;
+
+			jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
+
+			if (new_step)
+				_free_step_rec(step_ptr);
+
+			mod_cnt++;
+			info("Updating step %u.%u jobacct info",
+			     req->job_id, req->step_id);
+		} else {
 			step_ptr->time_limit = req->time_limit;
 			mod_cnt++;
 			info("Updating step %u.%u time limit to %u",
 			     req->job_id, req->step_id, req->time_limit);
-		} else
-			return ESLURM_INVALID_JOB_ID;
+		}
 	}
 	if (mod_cnt)
 		last_job_update = time(NULL);

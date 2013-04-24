@@ -11,6 +11,16 @@ documents those changes that are of interest to users and admins.
  -- Add username (%u) to the filename pattern in the batch script.
  -- Added options for front end nodes of AllowGroups, AllowUsers, DenyGroups,
     and DenyUsers.
+ -- Fix sched/backfill logic to initiate jobs with maximum time limit over the
+    partition limit, but the minimum time limit permits it to start.
+ -- gres/gpu - Fix for gres.conf file with multiple files on a single line
+    using a slurm expression (e.g. "File=/dev/nvidia[0-1]").
+ -- Replaced ipmi.conf with generic acct_gather.conf file for all acct_gather
+    plugins.  For those doing development to use this follow the model set
+    forth in the acct_gather_energy_ipmi plugin.
+ -- Added more options to update a step's information
+ -- Add DebugFlags=ThreadID which will print the thread id of the calling
+    thread.
 
 * Changes in Slurm 2.6.0pre2
 ============================
@@ -104,6 +114,68 @@ documents those changes that are of interest to users and admins.
     cluster.
  -- Select/cons_res - Fix for support of consecutive node option.
  -- Select/cray - Modify build to enable direct use of libslurm library.
+ -- Bug fixes related to job step allocation logic.
+ -- Cray - Disable enforcement of MaxTasksPerNode, which is not applicable
+    with launch/aprun.
+ -- Accounting - When rolling up data from past usage ignore "idle" time from
+    a reservation when it has the "Ignore_Jobs" flag set.  Since jobs could run
+    outside of the reservation in it's nodes without this you could have
+    double time.
+ -- Accounting - Minor fix to avoid reuse of variable erroneously.
+ -- Reject job at submit time if the node count is invalid. Previously such a
+    job submitted to a DOWN partition would be queued.
+ -- Purge vestigial job scripts when the slurmd cold starts or slurmstepd
+    terminates abnormally.
+ -- Add support for FreeBSD.
+ -- Add sanity check for NULL cluster names trying to register.
+ -- BGQ - Push action 'D' info to scontrol for admins.
+ -- Reset a job's reason from PartitionDown when the partition is set up.
+ -- BGQ - Handle issue where blocks would have a pending job on them and
+    while it was free cnodes would go into software error and kill the job.
+ -- BGQ - Fix issue where if for some reason we are freeing a block with
+    a pending job on it we don't kill the job.
+ -- BGQ - Fix race condition were a job could of been removed from a block
+    without it still existing there.  This is extremely rare.
+ -- BGQ - Fix for when a step completes in Slurm before the runjob_mux notifies
+    the slurmctld there were software errors on some nodes.
+ -- BGQ - Fix issue on state recover if block states are not around
+    and when reading in state from DB2 we find a block that can't be created.
+    You can now do a clean start to rid the bad block.
+ -- Modify slurmdbd to retransmit to slurmctld daemon if it is not responding.
+ -- BLUEGENE - Fix issue where when doing backfill preemptable jobs were
+    never looked at to determine eligibility of backfillable job.
+ -- Cray/BlueGene - Disable srun --pty option unless LaunchType=launch/slurm.
+ -- CRAY - Fix sanity check for systems with more than 32 cores per node.
+ -- CRAY - Remove other objects from MySQL query that are available from
+    the XML.
+ -- BLUEGENE - Set the geometry of a job when a block is picked and the job
+    isn't a sub-block job.
+ -- Cray - avoid check of macro versions of CLE for version 5.0.
+ -- CRAY - Fix memory issue with reading in the cray.conf file.
+ -- CRAY - If hostlist is given with srun make sure the node count is the same
+    as the hosts given.
+ -- CRAY - If task count specified, but no tasks-per-node, then set the tasks
+    per node in the BASIL reservation request.
+ -- CRAY - fix issue with --mem option not giving correct amount of memory
+    per cpu.
+ -- CRAY - Fix if srun --mem is given outside an allocation to set the
+    APRUN_DEFAULT_MEMORY env var for aprun.  This scenario will not display
+    the option when used with --launch-cmd.
+ -- Change sview to use GMutex instead of GStaticMutex
+ -- CRAY - set APRUN_DEFAULT_MEMROY instead of CRAY_AUTO_APRUN_OPTIONS
+ -- sview - fix issue where if a partition was completely in one state the
+    cpu count would be reflected correctly.
+ -- BGQ - fix for handling half rack system in STATIC of OVERLAP mode to
+    implicitly create full system block.
+ -- CRAY - Dynamically create BASIL XML buffer to resize as needed.
+ -- Fix checking if QOS limit MaxCPUMinsPJ is set along with DenyOnLimit to
+    deny the job instead of holding it.
+ -- Make sure on systems that use a different launcher than launch/slurm not
+    to attempt to signal tasks on the frontend node.
+ -- Cray - when a step is requested count other steps running on nodes in the
+    allocation as taking up the entire node instead of just part of the node
+    allocated.  And always enforce exclusive on a step request.
+ -- Cray - display correct nodelist, node/cpu count on steps.
 
 * Changes in Slurm 2.5.4
 ========================

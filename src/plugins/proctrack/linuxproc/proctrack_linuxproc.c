@@ -51,6 +51,9 @@
 #include <sys/types.h> /* for pid_t */
 #include <sys/signal.h> /* for SIGKILL */
 #endif
+#if defined(__FreeBSD__)
+#include <signal.h>	/* SIGKILL */
+#endif
 #include <sys/types.h>
 
 #include "slurm/slurm.h"

@@ -90,6 +90,7 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <ul>
 <li><a href="authplugins.html">Authentication Plugin Programmer Guide</a></li>
 <li><a href="crypto_plugins.html">Cryptographic Plugin Programmer Guide</a></li>
+<li><a href="ext_sensorsplugins.html">External Sensors Plugin Programmer Guide</a></li>
 <li><a href="jobacct_gatherplugins.html">Job Accounting Gather Plugin Programmer Guide</a></li>
 <li><a href="accounting_storageplugins.html">Accounting Storage Plugin Programmer Guide</a></li>
 <li><a href="gres_plugins.html">Generic Resources (GRES) Plugin Programmer Guide</a></li>

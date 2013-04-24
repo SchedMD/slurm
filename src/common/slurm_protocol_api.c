@@ -1424,6 +1424,39 @@ extern uint16_t slurm_get_acct_gather_node_freq(void)
 	return freq;
 }
 
+/* slurm_get_ext_sensors_type
+ * get ExtSensorsType from slurmctld_conf object
+ * RET char *   - ext_sensors type, MUST be xfreed by caller
+ */
+char *slurm_get_ext_sensors_type(void)
+{
+	char *ext_sensors_type = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		ext_sensors_type =
+			xstrdup(conf->ext_sensors_type);
+		slurm_conf_unlock();
+	}
+	return ext_sensors_type;
+}
+
+extern uint16_t slurm_get_ext_sensors_freq(void)
+{
+	uint16_t freq = 0;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		freq = conf->ext_sensors_freq;
+		slurm_conf_unlock();
+	}
+	return freq;
+}
+
 /* slurm_get_jobcomp_type
  * returns the job completion logger type from slurmctld_conf object
  * RET char *    - job completion type,  MUST be xfreed by caller

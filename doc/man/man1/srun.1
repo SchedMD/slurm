@@ -13,7 +13,7 @@ first create a resource allocation in which to run the parallel job.
 The following document describes the the influence of various options on the
 allocation of cpus to jobs and tasks.
 .br
-http://www.schedmd.com/slurmdocs/cpu_management.html
+http://slurm.schedmd.com/cpu_management.html
 
 .SH "OPTIONS"
 .LP
@@ -634,7 +634,7 @@ nodes. The optional second distribution method (after the ":")
 controls the distribution of resources across sockets within a node.
 Note that with select/cons_res, the number of cpus allocated on each
 socket and node may be different. Refer to
-http://www.schedmd.com/slurmdocs/mc_support.html
+http://slurm.schedmd.com/mc_support.html
 for more information on resource allocation, assignment of tasks to
 nodes, and binding of tasks to CPUs.
 .RS
@@ -670,11 +670,11 @@ followed by an optional specification of the task distribution scheme
 within a block of tasks and between the blocks of tasks.  For more
 details (including examples and diagrams), please see
 .br
-http://www.schedmd.com/slurmdocs/mc_support.html
+http://slurm.schedmd.com/mc_support.html
 .br
 and
 .br
-http://www.schedmd.com/slurmdocs/dist_plane.html
+http://slurm.schedmd.com/dist_plane.html
 .TP
 .B arbitrary
 The arbitrary method of distribution will allocate processes in\-order
@@ -1548,7 +1548,7 @@ a terminal is not possible.
 .PP
 For BGQ srun only supports stdin to 1 task running on the system.  By
 default it is taskid 0 but can be changed with the \-i<taskid> as
-described below, or \-\-runjob\-opt="\-\-stdinrank=<taskid>".  Outside
+described below, or \-\-launcher\-opts="\-\-stdinrank=<taskid>".  Outside
 of the taskid option none of the options below are available for a BGQ system.
 .PP
 This behavior may be changed with the
@@ -1618,6 +1618,9 @@ the running job) This will create a separate IO file per node.
 %t
 task identifier (rank) relative to current job. This will create a
 separate IO file per task.
+.TP
+%u
+User name.
 .PP
 A number placed between the percent character and format specifier may be
 used to zero\-pad the result in the IO filename. This number is ignored if
@@ -1688,11 +1691,17 @@ Same as \fB\-A, \-\-account\fR
 \fBSLURM_ACCTG_FREQ\fR
 Same as \fB\-\-acctg\-freq\fR
 .TP
+\fBSLURM_BLRTS_IMAGE\fR
+Same as \fB\-\-blrts\-image\fR
+.TP
 \fBSLURM_CHECKPOINT\fR
 Same as \fB\-\-checkpoint\fR
 .TP
 \fBSLURM_CHECKPOINT_DIR\fR
 Same as \fB\-\-checkpoint\-dir\fR
+.TP
+\fBSLURM_CNLOAD_IMAGE\fR
+Same as \fB\-\-cnload\-image\fR
 .TP
 \fBSLURM_CONN_TYPE\fR
 Same as \fB\-\-conn\-type\fR
@@ -1757,13 +1766,28 @@ Same as \fB\-g, \-\-geometry\fR
 \fBSLURM_GRES\fR
 Same as \fB\-\-gres\fR. Also see \fBSLURM_STEP_GRES\fR
 .TP
+\fBSLURM_IMMEDIATE\fR
+Same as \fB\-I, \-\-immediate\fR
+.TP
+\fBSLURM_IOLOAD_IMAGE\fR
+Same as \fB\-\-ioload\-image\fR
+.TP
+\fBSLURM_JOB_ID\fR (and \fBSLURM_JOBID\fR for backwards compatibility)
+Same as \fB\-\-jobid\fR
+.TP
 \fBSLURM_JOB_NAME\fR
 Same as \fB\-J, \-\-job\-name\fR except within an existing
 allocation, in which case it is ignored to avoid using the batch job's name
 as the name of each job step.
 .TP
+\fBSLURM_KILL_BAD_EXIT\fR
+Same as \fB\-K, \-\-kill\-on\-bad\-exit\fR
+.TP
 \fBSLURM_LABELIO\fR
 Same as \fB\-l, \-\-label\fR
+.TP
+\fBSLURM_LINUX_IMAGE\fR
+Same as \fB\-\-linux\-image\fR
 .TP
 \fBSLURM_MEM_BIND\fR
 Same as \fB\-\-mem_bind\fR
@@ -1774,6 +1798,9 @@ Same as \fB\-\-mem\-per\-cpu\fR
 \fBSLURM_MEM_PER_NODE\fR
 Same as \fB\-\-mem\fR
 .TP
+\fBSLURM_MLOADER_IMAGE\fR
+Same as \fB\-\-mloader\-image\fR
+.TP
 \fBSLURM_MPI_TYPE\fR
 Same as \fB\-\-mpi\fR
 .TP
@@ -1783,10 +1810,13 @@ Same as \fB\-\-network\fR
 \fBSLURM_NNODES\fR
 Same as \fB\-N, \-\-nodes\fR
 .TP
+\fBSLURM_NODELIST\fR
+Same as \fB\-w, \-\-nodelist\fR
+.TP
 \fBSLURM_NO_ROTATE\fR
 Same as \fB\-R, \-\-no\-rotate\fR
 .TP
-\fBSLURM_NTASKS\fR
+\fBSLURM_NTASKS\fR (and \fBSLURM_NPROCS\fR for backwards compatibility)
 Same as \fB\-n, \-\-ntasks\fR
 .TP
 \fBSLURM_NTASKS_PER_CORE\fR
@@ -1818,8 +1848,16 @@ Same as \fB\-\-prolog\fR
 \fBSLURM_QOS\fR
 Same as \fB\-\-qos\fR
 .TP
+\fBSLURM_RAMDISK_IMAGE\fR
+Same as \fB\-\-ramdisk\-image\fR
+.TP
 \fBSLURM_REMOTE_CWD\fR
 Same as \fB\-D, \-\-chdir=\fR
+.TP
+\fBSLURM_REQ_SWITCH\fR
+When a tree topology is used, this defines the maximum count of switches
+desired for the job allocation and optionally the maximum time to wait
+for that number of switches. See \fB\-\-switches\fR
 .TP
 \fBSLURM_RESERVATION\fR
 Same as \fB\-\-reservation\fR
@@ -1872,11 +1910,15 @@ Same as \fB\-u, \-\-unbuffered\fR
 \fBSLURM_WAIT\fR
 Same as \fB\-W, \-\-wait\fR
 .TP
+\fBSLURM_WAIT4SWITCH\fR
+Max time waiting for requested switches. See \fB\-\-switches\fR
+.TP
 \fBSLURM_WCKEY\fR
 Same as \fB\-W, \-\-wckey\fR
 .TP
 \fBSLURM_WORKING_DIR\fR
 \fB\-D, \-\-chdir\fR
+
 
 .SH "OUTPUT ENVIRONMENT VARIABLES"
 .PP
@@ -1916,11 +1958,17 @@ Note the select/linear plugin allocates entire nodes to
 jobs, so the value indicates the total count of CPUs on the node.
 For the select/cons_res plugin, this number indicates the number of cores
 on this node allocated to the job.
-
+.TP
+\fBSLURM_DISTRIBUTION\fR
+Distribution type for the allocated jobs. Set the distribution
+with \-m, \-\-distribution.
 .TP
 \fBSLURM_GTIDS\fR
 Global task IDs running on this node.
 Zero origin and comma separated.
+.TP
+\fBSLURM_JOB_CPUS_PER_NODE\fR
+Number of CPUS per node.
 .TP
 \fBSLURM_JOB_DEPENDENCY\fR
 Set to value of the \-\-dependency option.
@@ -1968,7 +2016,7 @@ The relative node ID of the current node
 \fBSLURM_NODELIST\fR
 List of nodes allocated to the job
 .TP
-\fBSLURM_NTASKS\fR
+\fBSLURM_NTASKS\fR (and \fBSLURM_NPROCS\fR for backwards compatibility)
 Total number of processes in the current job
 .TP
 \fBSLURM_PRIO_PROCESS\fR
@@ -1978,7 +2026,28 @@ This value is propagated to the spawned processes.
 \fBSLURM_PROCID\fR
 The MPI rank (or relative process ID) of the current process
 .TP
-\fBSLURM_STEPID\fR
+\fBSLURM_SRUN_COMM_HOST\fR
+IP adress of srun communication host.
+.TP
+\fBSLURM_SRUN_COMM_PORT\fR
+srun communication port.
+.TP
+\fBSLURM_STEP_LAUNCHER_PORT\fR
+Step launcher port.
+.TP
+\fBSLURM_STEP_NODELIST\fR
+List of nodes allocated to the step.
+.TP
+\fBSLURM_STEP_NUM_NODES\fR
+Number of nodes allocated to the step.
+.TP
+\fBSLURM_STEP_NUM_TASKS\fR
+Number of processes in the step.
+.TP
+\fBSLURM_STEP_TASKS_PER_NODE\fR
+Number of processes per node within the step.
+.TP
+\fBSLURM_STEPID\fR (and \fBSLURM_STEP_ID\fR for backwards compatibility)
 The step ID of the current job
 .TP
 \fBSLURM_SUBMIT_DIR\fR
@@ -2020,6 +2089,17 @@ Default value is 3 (info level).
 The value is incremented or decremented based upon the \-\-verbose and
 \-\-quiet options.
 
+.TP
+\fBMPIRUN_NOALLOCATE\fR
+Do not allocate a block on Blue Gene systems only.
+.TP
+\fBMPIRUN_NOFREE\fR
+Do not free a block on Blue Gene systems only.
+.TP
+\fBMPIRUN_PARTITION\fR
+The block name on Blue Gene systems only.
+
+
 .SH "SIGNALS AND ESCAPE SEQUENCES"
 Signals sent to the \fBsrun\fR command are automatically forwarded to
 the tasks it is controlling with a few exceptions. The escape sequence
@@ -2056,7 +2136,7 @@ These tasks initiated outside of SLURM's monitoring
 or control. SLURM's epilog should be configured to purge
 these tasks when the job's allocation is relinquished.
 
-See \fIhttp://www.schedmd.com/slurmdocs/mpi_guide.html\fR
+See \fIhttp://slurm.schedmd.com/mpi_guide.html\fR
 for more information on use of these various MPI implementation
 with SLURM.
 
@@ -2264,7 +2344,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
 This file is part of SLURM, a resource management program.
-For details, see <http://www.schedmd.com/slurmdocs/>.
+For details, see <http://slurm.schedmd.com/>.
 .LP
 SLURM is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free

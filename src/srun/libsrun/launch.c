@@ -36,6 +36,10 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
+#if defined(__FreeBSD__)
+#include <signal.h>
+#endif
+
 #include "launch.h"
 
 #include "src/common/env.h"

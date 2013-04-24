@@ -1,0 +1,289 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#         Test that checks if the QOS limits are enforced.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2012 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.schedmd.com/slurmdocs/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+source ./inc21.30.1
+source ./inc21.30.2
+source ./inc21.30.3
+source ./inc21.30.4
+source ./inc21.30.5
+source ./inc21.30.6
+source ./inc21.30.7
+source ./inc21.30.8
+
+set test_id	"21.30"
+set exit_code	0
+set acct        test_acct
+set job_id1     ""
+set job_id2     ""
+set job_id3     ""
+set user_name   ""
+set qosname     name
+set qostest     [format "%s %s" $test_id "qosTest"]
+set grn         GrpNodes
+set grn_num     2
+set grcpu       GrpCpus
+set grcpu_num   10
+set grjobs      GrpJobs
+set grjobs_num  2
+set grsub       GrpSubmit
+set grsub_num   2
+set maxcpu      MaxCpus
+set maxcpu_num  10
+set maxnodes    MaxNodes
+set maxnode_num 10
+set maxjobs     MaxJobs
+set maxjobs_num 2
+set maxjobsub   MaxSubmitJobs
+set maxjobsub_num 2
+
+print_header $test_id
+
+# Checks the state of the job
+proc check_state { job } {
+
+	global scontrol job_id exit_code
+
+	set state_match 0
+	spawn $scontrol show job $job
+	expect {
+		"JobState=PENDING" {
+			incr state_match
+		}
+		timeout {
+			send_user "\nFAILURE scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$state_match != 1} {
+		send_user "\nFAILURE job is running when it should be pending\n"
+		exit 1
+	}
+
+}
+
+# modifies the QoS
+proc mod_qos { node cpu job sub mcpu mnode mjobs mjobsub } {
+
+	global sacctmgr exit_code qosname qostest grn grcpu grjobs grsub maxcpu maxnodes maxjobs maxjobsub
+
+	set change_cnt 0
+	spawn $sacctmgr -i modify qos where $qosname=$qostest set $grn=$node $grcpu=$cpu $grjobs=$job $grsub=$sub $maxcpu=$mcpu $maxnodes=$mnode $maxjobs=$mjobs $maxjobsub=$mjobsub
+	expect {
+		-re "Modified qos" {
+			incr change_cnt
+		}
+		timeout {
+			send_user "\nFAILURE sacctmgr not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$change_cnt==0} {
+		send_user "\nFAILURE: sacctmgr did not change qos $qostest\n"
+		set exit_code 1
+	}
+
+}
+
+proc endit { } {
+	global sacctmgr qostest acct test_id exit_code
+	# delete qos
+	spawn $sacctmgr -i delete qos $qostest
+	expect {
+		-re "Deleting QOS(s)" {
+			exp_continue
+		}
+		-re "Error" {
+			send_user "\nFAILURE: QOS was not deleted\n"
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+		}
+		eof {
+			wait
+		}
+	}
+
+	#delete account
+	spawn $sacctmgr -i  delete account $acct
+	expect {
+		-re "Deleting accounts" {
+			exp_continue
+		}
+		-re "Error" {
+			send_user "\nFAILURE: account was not deleted\n"
+			set exit_code 1
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+
+	exit $exit_code
+}
+
+#gets user
+spawn $bin_id -u -n
+expect {
+	-re "($alpha_numeric_under)" {
+		set user_name $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
+# add qos
+set qosmatch 0
+spawn $sacctmgr -i add qos $qosname=$qostest
+expect {
+	-re "Adding QOS" {
+		incr qosmatch
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr did not add QOS\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#add account with qos
+set acctmatch 0
+spawn $sacctmgr -i add account $acct qos=$qostest
+expect {
+	-re "Adding Account" {
+		incr acctmatch
+		exp_continue
+	}
+	-re "Nothing new added" {
+		send_user "\nWARNING: vestigial account $acct found\n"
+		incr acctmatch
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+
+	}
+}
+if {$acctmatch != 1} {
+	send_user "\nFAILURE: sacctmgr had a problem adding the account\n"
+	exit 1
+}
+
+#add user to account
+spawn $sacctmgr -i create user name=$user_name account=$acct
+expect {
+	timeout {
+		send_user "\nFAILURE: sacctmgr not responding\n"
+	}
+	eof {
+		wait
+	}
+}
+
+
+mod_qos $grn_num -1 -1 -1 -1 -1 -1 -1
+
+sleep 5
+#test GrpNode limit
+inc21_30_1
+if {$exit_code != 0} {
+	endit
+}
+
+mod_qos -1 $grcpu_num -1 -1 -1 -1 -1 -1
+
+sleep 5
+#test GrpCpus
+inc21_30_2
+
+mod_qos -1 -1 $grjobs_num -1 -1 -1 -1 -1
+
+sleep 5
+# test GrpJob limits
+inc21_30_3
+
+
+mod_qos -1 -1 -1 $grsub_num -1 -1 -1 -1
+
+sleep 5
+# test GrpSubmit
+inc21_30_4
+
+
+mod_qos -1 -1 -1 -1 $maxcpu_num -1 -1 -1
+
+sleep 5
+#test MaxCpus limits
+inc21_30_5
+
+mod_qos -1 -1 -1 -1 -1 $maxnode_num -1 -1
+
+sleep 5
+#test MaxNode limit
+inc21_30_6
+
+mod_qos -1 -1 -1 -1 -1 -1 $maxjobs_num -1
+
+sleep 5
+#test MaxJobs limit
+inc21_30_7
+
+mod_qos -1 -1 -1 -1 -1 -1 -1 $maxjobsub_num
+
+sleep 5
+#test MaxJobsSubmits limit
+inc21_30_8
+
+endit

@@ -89,6 +89,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rfc5424_time.m4 \
+	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
 	$(top_srcdir)/auxdir/x_ac_setpgrp.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
@@ -132,7 +133,8 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 mpi_pmi2_la_LIBADD =
 am_mpi_pmi2_la_OBJECTS = mpi_pmi2.lo agent.lo client.lo kvs.lo info.lo \
-	pmi1.lo pmi2.lo setup.lo spawn.lo tree.lo reverse_tree_math.lo
+	pmi1.lo pmi2.lo setup.lo spawn.lo tree.lo nameserv.lo \
+	reverse_tree_math.lo
 mpi_pmi2_la_OBJECTS = $(am_mpi_pmi2_la_OBJECTS)
 mpi_pmi2_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -284,6 +286,9 @@ READLINE_LIBS = @READLINE_LIBS@
 REAL_BGQ_LOADED = @REAL_BGQ_LOADED@
 REAL_BG_L_P_LOADED = @REAL_BG_L_P_LOADED@
 RELEASE = @RELEASE@
+RRDTOOL_CPPFLAGS = @RRDTOOL_CPPFLAGS@
+RRDTOOL_LDFLAGS = @RRDTOOL_LDFLAGS@
+RRDTOOL_LIBS = @RRDTOOL_LIBS@
 RUNJOB_LDFLAGS = @RUNJOB_LDFLAGS@
 SED = @SED@
 SEMAPHORE_LIBS = @SEMAPHORE_LIBS@
@@ -385,6 +390,7 @@ mpi_pmi2_la_SOURCES = mpi_pmi2.c \
 	setup.c setup.h \
 	spawn.c spawn.h \
 	tree.c tree.h \
+	nameserv.c nameserv.h \
 	$(top_srcdir)/src/common/mpi.h \
 	$(top_srcdir)/src/slurmd/slurmd/reverse_tree_math.c \
 	$(top_srcdir)/src/slurmd/slurmd/reverse_tree_math.h
@@ -470,6 +476,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/kvs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmi2.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nameserv.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pmi1.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pmi2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reverse_tree_math.Plo@am__quote@

@@ -54,6 +54,7 @@
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_acct_gather_energy.h"
+#include "src/common/slurm_ext_sensors.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
@@ -3039,7 +3040,45 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 
 	xassert(node != NULL);
 
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->node_hostname, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&node->node_addr, &uint32_tmp, buffer);
+		safe_unpack16(&node->node_state, buffer);
+		safe_unpack16(&node->cpus, buffer);
+		safe_unpack16(&node->boards, buffer);
+		safe_unpack16(&node->sockets, buffer);
+		safe_unpack16(&node->cores, buffer);
+		safe_unpack16(&node->threads, buffer);
+
+		safe_unpack32(&node->real_memory, buffer);
+		safe_unpack32(&node->tmp_disk, buffer);
+		safe_unpack32(&node->cpu_load, buffer);
+		safe_unpack32(&node->weight, buffer);
+		safe_unpack32(&node->reason_uid, buffer);
+
+		safe_unpack_time(&node->boot_time, buffer);
+		safe_unpack_time(&node->reason_time, buffer);
+		safe_unpack_time(&node->slurmd_start_time, buffer);
+
+		select_g_select_nodeinfo_unpack(&node->select_nodeinfo, buffer,
+						protocol_version);
+
+		safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->gres, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
+		if (acct_gather_energy_unpack(&node->energy, buffer,
+					      protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+		if (ext_sensors_data_unpack(&node->ext_sensors, buffer,
+					      protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&node->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->node_hostname, &uint32_tmp,
 				       buffer);
@@ -4363,6 +4402,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 	char *node_inx_str;
 	multi_core_data_t *mc_ptr;
 
+	job->ntasks_per_node = (uint16_t)NO_VAL;
+
 	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack16(&job->array_task_id, buffer);
@@ -4440,6 +4481,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack32(&job->num_nodes,   buffer);
 		safe_unpack32(&job->max_nodes,   buffer);
 		safe_unpack16(&job->requeue,     buffer);
+		safe_unpack16(&job->ntasks_per_node, buffer);
 
 		/*** unpack pending job details ***/
 		safe_unpack16(&job->shared,        buffer);
@@ -4763,6 +4805,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->epilog, buffer);
 		pack32(build_ptr->epilog_msg_time, buffer);
 		packstr(build_ptr->epilog_slurmctld, buffer);
+		packstr(build_ptr->ext_sensors_type, buffer);
+		pack16(build_ptr->ext_sensors_freq, buffer);
 
 		pack16(build_ptr->fast_schedule, buffer);
 		pack32(build_ptr->first_job_id, buffer);
@@ -5417,6 +5461,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->epilog_msg_time, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->epilog_slurmctld,
 				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->ext_sensors_type,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&build_ptr->ext_sensors_freq, buffer);
 
 		safe_unpack16(&build_ptr->fast_schedule, buffer);
 		safe_unpack32(&build_ptr->first_job_id, buffer);
@@ -7971,9 +8018,27 @@ static void
 _pack_update_job_step_msg(step_update_request_msg_t * msg, Buf buffer,
 			  uint16_t protocol_version)
 {
-	pack32(msg->job_id, buffer);
-	pack32(msg->step_id, buffer);
-	pack32(msg->time_limit, buffer);
+	uint8_t with_jobacct = 0;
+
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		pack_time(msg->end_time, buffer);
+		pack32(msg->exit_code, buffer);
+		pack32(msg->job_id, buffer);
+		if (msg->jobacct)
+			with_jobacct = 1;
+		pack8(with_jobacct, buffer);
+		if (with_jobacct)
+			jobacctinfo_pack(msg->jobacct, protocol_version,
+					 PROTOCOL_TYPE_SLURM, buffer);
+		packstr(msg->name, buffer);
+		pack_time(msg->start_time, buffer);
+		pack32(msg->step_id, buffer);
+		pack32(msg->time_limit, buffer);
+	} else {
+		pack32(msg->job_id, buffer);
+		pack32(msg->step_id, buffer);
+		pack32(msg->time_limit, buffer);
+	}
 }
 
 static int
@@ -7981,13 +8046,31 @@ _unpack_update_job_step_msg(step_update_request_msg_t ** msg_ptr, Buf buffer,
 			    uint16_t protocol_version)
 {
 	step_update_request_msg_t *msg;
+	uint8_t with_jobacct = 0;
+	uint32_t uint32_tmp;
 
 	msg = xmalloc(sizeof(step_update_request_msg_t));
 	*msg_ptr = msg;
 
-	safe_unpack32(&msg->job_id, buffer);
-	safe_unpack32(&msg->step_id, buffer);
-	safe_unpack32(&msg->time_limit, buffer);
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		unpack_time(&msg->end_time, buffer);
+		safe_unpack32(&msg->exit_code, buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack8(&with_jobacct, buffer);
+		if (with_jobacct)
+			if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
+					       PROTOCOL_TYPE_SLURM, buffer)
+			    != SLURM_SUCCESS)
+				goto unpack_error;
+		safe_unpackstr_xmalloc(&msg->name, &uint32_tmp, buffer);
+		unpack_time(&msg->start_time, buffer);
+		safe_unpack32(&msg->step_id, buffer);
+		safe_unpack32(&msg->time_limit, buffer);
+	} else {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id, buffer);
+		safe_unpack32(&msg->time_limit, buffer);
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:

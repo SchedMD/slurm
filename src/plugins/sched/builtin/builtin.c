@@ -154,7 +154,7 @@ static void _compute_start_times(void)
 	sched_start = now;
 	last_job_alloc = now - 1;
 	alloc_bitmap = bit_alloc(node_record_count);
-	job_queue = build_job_queue(true);
+	job_queue = build_job_queue(true, false);
 	while ((job_queue_rec = (job_queue_rec_t *)
 				list_pop_bottom(job_queue, sort_job_queue2))) {
 		job_ptr  = job_queue_rec->job_ptr;

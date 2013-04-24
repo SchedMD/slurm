@@ -44,7 +44,7 @@ static int _rsvn_add_mem_param(struct basil_rsvn_param *rp, uint32_t mem_mb)
  */
 static int _rsvn_add_params(struct basil_reservation *resv,
 			    uint32_t width, uint32_t depth, uint32_t nppn,
-			    uint32_t mem_mb, char *mppnodes,
+			    uint32_t mem_mb, char *mppnodes, uint32_t nppcu,
 			    struct basil_accel_param *accel)
 {
 	struct basil_rsvn_param *rp = xmalloc(sizeof(*rp));
@@ -57,6 +57,7 @@ static int _rsvn_add_params(struct basil_reservation *resv,
 	rp->depth = depth;
 	rp->nppn  = nppn;
 	rp->nodes = mppnodes;
+	rp->nppcu = nppcu;
 	rp->accel = accel;
 
 	if (mem_mb && _rsvn_add_mem_param(rp, mem_mb) < 0) {
@@ -89,7 +90,7 @@ static struct basil_reservation *_rsvn_new(const char *user,
 					   const char *batch_id,
 					   uint32_t width, uint32_t depth,
 					   uint32_t nppn, uint32_t mem_mb,
-					   char *mppnodes,
+					   uint32_t nppcu, char *mppnodes,
 					   struct basil_accel_param *accel)
 {
 	struct basil_reservation *res;
@@ -105,7 +106,7 @@ static struct basil_reservation *_rsvn_new(const char *user,
 		strncpy(res->batch_id, batch_id, sizeof(res->batch_id));
 
 	if (_rsvn_add_params(res, width, depth, nppn,
-			     mem_mb, mppnodes, accel) < 0) {
+			     mem_mb, mppnodes, nppcu, accel) < 0) {
 		free_rsvn(res);
 		return NULL;
 	}
@@ -127,7 +128,7 @@ static struct basil_reservation *_rsvn_new(const char *user,
  */
 long basil_reserve(const char *user, const char *batch_id,
 		   uint32_t width, uint32_t depth, uint32_t nppn,
-		   uint32_t mem_mb, struct nodespec *ns_head,
+		   uint32_t mem_mb, uint32_t nppcu, struct nodespec *ns_head,
 		   struct basil_accel_param *accel_head)
 {
 	struct basil_reservation *rsvn;
@@ -138,7 +139,7 @@ long basil_reserve(const char *user, const char *batch_id,
 
 	free_nodespec(ns_head);
 	rsvn = _rsvn_new(user, batch_id, width, depth, nppn, mem_mb,
-			 mppnodes, accel_head);
+			 nppcu, mppnodes, accel_head);
 	if (rsvn == NULL)
 		return -BE_INTERNAL;
 

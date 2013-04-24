@@ -1,0 +1,101 @@
+############################################################################
+# Purpose: Test of SLURM functionality
+#          to be called from test21.30
+#          Tests if the MaxJobs limit is enforced
+#
+#
+############################################################################
+# Copyright (C) 2012 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.schedmd.com/slurmdocs/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+proc inc21_30_7 {} {
+
+#test MaxJobs limit
+
+	global salloc srun acct bin_sleep jobmatch job_id1 job_id2 job_id3 number exit_code
+
+	set jobmatch 0
+	spawn $salloc --account=$acct -n1 $srun $bin_sleep 100
+	expect {
+		-re "Granted job allocation ($number)" {
+			set job_id1 $expect_out(1,string)
+			send_user "\njob $job_id1 was submitted\n"
+			incr jobmatch
+		}
+		timeout {
+			send_user "\nFAILURE: salloc is not responding\n"
+			exit 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	spawn $salloc --account=$acct -n1 $srun $bin_sleep 100
+	expect {
+		-re "Granted job allocation ($number)" {
+			set job_id2 $expect_out(1,string)
+			send_user "\njob $job_id2 was submitted\n"
+			incr jobmatch
+		}
+		timeout {
+			send_user "\nFAILURE: salloc is not responding\n"
+			exit 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	spawn $salloc --account=$acct -n1 $srun $bin_sleep 100
+	expect {
+		-re "job ($number)" {
+			set job_id3 $expect_out(1,string)
+			send_user "\nThis error is expected do not worry\n"
+			incr jobmatch
+		}
+		-re "Granted job allocation" {
+			send_user "\nThis should have failed but did not\n"
+			exit 1
+		}
+		timeout {
+			send_user "\nFAILURE: salloc is not responding\n"
+			exit 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	check_state $job_id3
+
+	if {$jobmatch==0} {
+		send_user "\nFAILURE: jobs were not submitted\n"
+		exit 1
+	}
+
+	# cancels the remaining jobs
+	cancel_job $job_id1
+	cancel_job $job_id2
+	cancel_job $job_id3
+
+}

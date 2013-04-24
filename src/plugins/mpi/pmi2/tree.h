@@ -47,6 +47,9 @@ enum {
 	TREE_CMD_KVS_FENCE_RESP,
 	TREE_CMD_SPAWN,
 	TREE_CMD_SPAWN_RESP,
+	TREE_CMD_NAME_PUBLISH,
+	TREE_CMD_NAME_UNPUBLISH,
+	TREE_CMD_NAME_LOOKUP,
 	TREE_CMD_COUNT
 };
 
@@ -55,7 +58,7 @@ extern int handle_tree_cmd(int fd);
 extern int tree_msg_to_srun(uint32_t len, char *msg);
 extern int tree_msg_to_srun_with_resp(uint32_t len, char *msg, Buf *resp_ptr);
 extern int tree_msg_to_stepds(char *nodelist, uint32_t len, char *msg);
-
+extern int tree_msg_to_spawned_sruns(uint32_t len, char *msg);
 
 
 

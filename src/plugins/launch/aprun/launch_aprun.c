@@ -50,6 +50,18 @@
 #include "src/api/step_ctx.h"
 #include "src/api/step_launch.h"
 
+
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+resource_allocation_response_msg_t *global_resp __attribute__((weak_import)) =
+	NULL;
+#else
+resource_allocation_response_msg_t *global_resp = NULL;
+#endif
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -90,20 +102,69 @@ extern void launch_p_fwd_signal(int signal);
  */
 static char *_get_nids(char *nodelist)
 {
-	char *nids;
-	int i = 0, i2 = 0;
+	hostlist_t hl;
+	char *nids = NULL, *node_name, *sep = "";
+	int i, nid;
+	int nid_begin = -1, nid_end = -1;
+	int node_cnt;
 
 	if (!nodelist)
 		return NULL;
-//	info("got %s", nodelist);
-	nids = xmalloc(sizeof(char) * strlen(nodelist));
-	while (nodelist[i] && !isdigit(nodelist[i]))
-		i++;
+	hl = hostlist_create(nodelist);
+	if (!hl) {
+		error("Invalid hostlist: %s", nodelist);
+		return NULL;
+	}
+	//info("input hostlist: %s", nodelist);
+	hostlist_uniq(hl);
 
-	while (nodelist[i] && nodelist[i] != ']')
-		nids[i2++] = nodelist[i++];
+	/* aprun needs the hostlist to be the exact size requested.
+	   So if it doesn't set it.
+	*/
+	node_cnt = hostlist_count(hl);
+	if (opt.nodes_set_opt && (node_cnt != opt.min_nodes)) {
+		error("You requested %d nodes and %d hosts.  These numbers "
+		      "must be the same, so setting number of nodes to %d",
+		      opt.min_nodes, node_cnt, node_cnt);
+	}
+	opt.min_nodes = node_cnt;
+	opt.nodes_set = 1;
 
-//	info("returning %s", nids);
+	while ((node_name = hostlist_shift(hl))) {
+		for (i = 0; node_name[i]; i++) {
+			if (!isdigit(node_name[i]))
+				continue;
+			nid = atoi(&node_name[i]);
+			if (nid_begin == -1) {
+				nid_begin = nid;
+				nid_end   = nid;
+			} else if (nid == (nid_end + 1)) {
+				nid_end   = nid;
+			} else {
+				if (nid_begin == nid_end) {
+					xstrfmtcat(nids, "%s%d", sep,
+						   nid_begin);
+				} else {
+					xstrfmtcat(nids, "%s%d-%d", sep,
+						   nid_begin, nid_end);
+				}
+				nid_begin = nid;
+				nid_end   = nid;
+				sep = ",";
+			}
+			break;
+		}
+		free(node_name);
+	}
+	if (nid_begin == -1)
+		;	/* No data to record */
+	else if (nid_begin == nid_end)
+		xstrfmtcat(nids, "%s%d", sep, nid_begin);
+	else
+		xstrfmtcat(nids, "%s%d-%d", sep, nid_begin, nid_end);
+	hostlist_destroy(hl);
+	//info("output node IDs: %s", nids);
+
 	return nids;
 }
 
@@ -457,11 +518,13 @@ extern int launch_p_setup_srun_opt(char **rest)
 
 	if (opt.nodelist) {
 		char *nids = _get_nids(opt.nodelist);
-		opt.argc += 2;
-		xrealloc(opt.argv, opt.argc * sizeof(char *));
-		opt.argv[command_pos++] = xstrdup("-L");
-		opt.argv[command_pos++] = xstrdup(nids);
-		xfree(nids);
+		if (nids) {
+			opt.argc += 2;
+			xrealloc(opt.argv, opt.argc * sizeof(char *));
+			opt.argv[command_pos++] = xstrdup("-L");
+			opt.argv[command_pos++] = xstrdup(nids);
+			xfree(nids);
+		}
 	}
 
 	if (opt.mem_per_cpu != NO_VAL) {
@@ -479,10 +542,9 @@ extern int launch_p_setup_srun_opt(char **rest)
 			"%u", opt.ntasks_per_node);
 		if (!opt.ntasks && opt.min_nodes)
 			opt.ntasks = opt.ntasks_per_node *  opt.min_nodes;
-	} else if (opt.min_nodes) {
+	} else if (opt.nodes_set && opt.min_nodes) {
 		uint32_t tasks_per_node;
-		if (!opt.ntasks)
-			opt.ntasks = opt.min_nodes;
+		opt.ntasks = MAX(opt.ntasks, opt.min_nodes);
 		tasks_per_node = (opt.ntasks + opt.min_nodes - 1) /
 			opt.min_nodes;
 		opt.argc += 2;
@@ -661,6 +723,20 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 				    void (*signal_function)(int),
 				    sig_atomic_t *destroy_job)
 {
+	char value[32];
+
+	/* If srun is call directly this wasn't figured out until
+	   later if the user used --mem.  The problem here is this
+	   will not work with --launch_cmd since that doesn't go get
+	   an actual allocation (which is where pn_min_memory is decided).
+	*/
+	if ((opt.mem_per_cpu == NO_VAL)
+	    && global_resp && (global_resp->pn_min_memory & MEM_PER_CPU)) {
+		snprintf(value, sizeof(value), "%u",
+			 global_resp->pn_min_memory & (~MEM_PER_CPU));
+		setenv("APRUN_DEFAULT_MEMORY", value, 1);
+	}
+
 	if (opt.launch_cmd) {
 		int i = 0;
 		char *cmd_line = NULL;
@@ -671,6 +747,12 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 		xfree(cmd_line);
 		exit(0);
 	}
+
+	/* You can only run 1 job per node on a cray so make the
+	   request exclusive every time. */
+	opt.exclusive = true;
+	opt.shared = 0;
+
 	return launch_common_create_job_step(job, use_all_cpus,
 					     signal_function,
 					     destroy_job);

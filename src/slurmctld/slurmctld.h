@@ -668,6 +668,7 @@ struct 	step_record {
 	uint16_t exclusive;		/* dedicated resources for the step */
 	uint32_t exit_code;		/* highest exit code from any task */
 	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
+	ext_sensors_data_t *ext_sensors; /* external sensors plugin data */
 	char *gres;			/* generic resources required */
 	List gres_list;			/* generic resource allocation detail */
 	char *host;			/* host for srun communications */
@@ -775,9 +776,11 @@ extern struct part_record *create_part_record (void);
 /*
  * job_limits_check - check the limits specified for the job.
  * IN job_ptr - pointer to job table entry.
+ * IN check_min_time - if true test job's minimum time limit,
+ *		otherwise test maximum time limit
  * RET WAIT_NO_REASON on success, fail status otherwise.
  */
-extern int job_limits_check(struct job_record **job_pptr);
+extern int job_limits_check(struct job_record **job_pptr, bool check_min_time);
 
 /*
  * delete_job_details - delete a job's detail record and clear it's pointer

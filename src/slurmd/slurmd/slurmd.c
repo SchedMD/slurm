@@ -42,25 +42,26 @@
 #if HAVE_CONFIG_H
 #  include "config.h"
 #endif
+#if HAVE_HWLOC
+#  include <hwloc.h>
+#endif
 
+#include <dirent.h>
+#include <dlfcn.h>
 #include <fcntl.h>
 #include <grp.h>
+#include <pthread.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdlib.h>
-#include <pthread.h>
+#include <sys/mman.h>
+#include <sys/param.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/param.h>
-#include <sys/resource.h>
 #include <sys/utsname.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <sys/mman.h>
-#include <dlfcn.h>
-#if HAVE_HWLOC
-#include <hwloc.h>
-#endif
 
 #include "src/common/bitstring.h"
 #include "src/common/cpu_frequency.h"
@@ -1272,6 +1273,44 @@ _create_msg_socket(void)
 	return;
 }
 
+static void
+_stepd_cleanup_batch_dirs(const char *directory, const char *nodename)
+{
+	char dir_path[MAXPATHLEN], file_path[MAXPATHLEN];
+	DIR *dp;
+	struct dirent *ent;
+	struct stat stat_buf;
+
+	/*
+	 * Make sure that "directory" exists and is a directory.
+	 */
+	if (stat(directory, &stat_buf) < 0) {
+		error("SlurmdSpoolDir stat error %s: %m", directory);
+		return;
+	} else if (!S_ISDIR(stat_buf.st_mode)) {
+		error("SlurmdSpoolDir is not a directory %s", directory);
+		return;
+	}
+
+	if ((dp = opendir(directory)) == NULL) {
+		error("SlurmdSpoolDir open error %s: %m", directory);
+		return;
+	}
+
+	while ((ent = readdir(dp)) != NULL) {
+		if (!strncmp(ent->d_name, "job", 3) &&
+		    (ent->d_name[3] >= '0') && (ent->d_name[3] <= '9')) {
+			snprintf(dir_path, sizeof(dir_path),
+				 "%s/%s", directory, ent->d_name);
+			snprintf(file_path, sizeof(file_path),
+				 "%s/slurm_script", dir_path);
+			info("Purging vestigal job script %s", file_path);
+			(void) unlink(file_path);
+			(void) rmdir(dir_path);
+		}
+	}
+	closedir(dp);
+}
 
 static int
 _slurmd_init(void)
@@ -1387,6 +1426,7 @@ _slurmd_init(void)
 		_kill_old_slurmd();
 
 		stepd_cleanup_sockets(conf->spooldir, conf->node_name);
+		_stepd_cleanup_batch_dirs(conf->spooldir, conf->node_name);
 	}
 
 	if (conf->daemonize) {

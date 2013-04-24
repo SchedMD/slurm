@@ -51,6 +51,9 @@
 #include <sys/types.h> /* for pid_t */
 #include <sys/signal.h> /* for SIGKILL */
 #endif
+#if defined(__FreeBSD__)
+#include <signal.h>
+#endif
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -126,6 +129,19 @@ static bitstr_t *_valid_features(struct job_details *detail_ptr,
 				 struct config_record *config_ptr);
 
 static int _fill_in_gres_fields(struct job_record *job_ptr);
+
+/*
+ * _get_ntasks_per_core - Retrieve the value of ntasks_per_core from
+ *	the given job_details record.  If it wasn't set, return 0xffff.
+ *	Intended for use with the adjust_cpus_nppcu function.
+ */
+static uint16_t _get_ntasks_per_core(struct job_details *details) {
+
+	if (details->mc_ptr)
+		return details->mc_ptr->ntasks_per_core;
+	else
+		return 0xffff;
+}
 
 /*
  * _build_gres_alloc_string - Fill in the gres_alloc string field for a
@@ -1408,7 +1424,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	struct node_set *node_set_ptr = NULL;
 	struct part_record *part_ptr = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes;
-	enum job_state_reason fail_reason;
 	time_t now = time(NULL);
 	bool configuring = false;
 	List preemptee_job_list = NULL;
@@ -1438,15 +1453,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			job_ptr->state_reason = WAIT_HELD;
 		}
 		return ESLURM_JOB_HELD;
-	}
-
-	/* Confirm that partition is up and has compatible nodes limits */
-	fail_reason = job_limits_check(&job_ptr);
-	if (fail_reason != WAIT_NO_REASON) {
-		last_job_update = now;
-		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = fail_reason;
-		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	}
 
 	/* build sets of usable nodes based upon their configuration */
@@ -1537,6 +1543,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		}
 	}
 	if (error_code) {
+		/* Fatal errors for job here */
 		if (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
 			/* Too many nodes requested */
 			debug3("JobId=%u not runnable with present config",
@@ -1544,6 +1551,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			job_ptr->state_reason = WAIT_PART_NODE_LIMIT;
 			xfree(job_ptr->state_desc);
 			last_job_update = now;
+
+		/* Non-fatal errors for job below */
 		} else if (error_code == ESLURM_NODE_NOT_AVAIL) {
 			/* Required nodes are down or drained */
 			debug3("JobId=%u required nodes not avail",
@@ -1986,7 +1995,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			    struct node_set **node_set_pptr,
 			    int *node_set_size)
 {
-	int i, node_set_inx, power_cnt, rc;
+	int adj_cpus, i, node_set_inx, power_cnt, rc;
 	struct node_set *node_set_ptr;
 	struct config_record *config_ptr;
 	struct part_record *part_ptr = job_ptr->part_ptr;
@@ -2063,9 +2072,11 @@ static int _build_node_list(struct job_record *job_ptr,
 
 	while ((config_ptr = (struct config_record *)
 			list_next(config_iterator))) {
-
 		config_filter = 0;
-		if ((detail_ptr->pn_min_cpus     > config_ptr->cpus       ) ||
+		adj_cpus = adjust_cpus_nppcu(_get_ntasks_per_core(detail_ptr),
+					     config_ptr->threads,
+					     config_ptr->cpus);
+		if ((detail_ptr->pn_min_cpus     >  adj_cpus) ||
 		    ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) >
 		      config_ptr->real_memory)                               ||
 		    (detail_ptr->pn_min_tmp_disk > config_ptr->tmp_disk))
@@ -2215,7 +2226,7 @@ static int _build_node_list(struct job_record *job_ptr,
 static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *job_con)
 {
-	int i;
+	int adj_cpus, i;
 	multi_core_data_t *mc_ptr = job_con->mc_ptr;
 
 	if (slurmctld_conf.fast_schedule) {	/* test config records */
@@ -2224,9 +2235,11 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 			int job_ok = 0, job_mc_ptr_ok = 0;
 			if (bit_test(node_set_ptr->my_bitmap, i) == 0)
 				continue;
-
 			node_con = node_record_table_ptr[i].config_ptr;
-			if ((job_con->pn_min_cpus     <= node_con->cpus)    &&
+			adj_cpus = adjust_cpus_nppcu(_get_ntasks_per_core(job_con),
+						     node_con->threads,
+						     node_con->cpus);
+			if ((job_con->pn_min_cpus     <= adj_cpus)           &&
 			    ((job_con->pn_min_memory & (~MEM_PER_CPU)) <=
 			      node_con->real_memory)                         &&
 			    (job_con->pn_min_tmp_disk <= node_con->tmp_disk))
@@ -2255,9 +2268,12 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				continue;
 
 			node_ptr = &node_record_table_ptr[i];
-			if ((job_con->pn_min_cpus     <= node_ptr->cpus)    &&
+			adj_cpus = adjust_cpus_nppcu(_get_ntasks_per_core(job_con),
+						     node_ptr->threads,
+						     node_ptr->cpus);
+			if ((job_con->pn_min_cpus     <= adj_cpus)            &&
 			    ((job_con->pn_min_memory & (~MEM_PER_CPU)) <=
-			      node_ptr->real_memory)                         &&
+			      node_ptr->real_memory)                          &&
 			    (job_con->pn_min_tmp_disk <= node_ptr->tmp_disk))
 				job_ok = 1;
 			if (mc_ptr &&

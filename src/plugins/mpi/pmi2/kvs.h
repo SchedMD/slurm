@@ -50,6 +50,8 @@
 
 extern int tasks_to_wait;
 extern int children_to_wait;
+extern int kvs_seq;
+extern int waiting_kvs_resp;
 
 extern int   temp_kvs_init(void);
 extern int   temp_kvs_add(char *key, char *val);

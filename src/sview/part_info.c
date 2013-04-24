@@ -1282,7 +1282,7 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 		}
 	} else {
 		tmp_cpus = xmalloc(20);
-		convert_num_unit((float)sview_part_sub->cpu_idle_cnt,
+		convert_num_unit((float)part_ptr->total_cpus,
 				 tmp_cpus, 20, UNIT_NONE);
 	}
 
@@ -2246,7 +2246,7 @@ no_input:
 	slurm_free_update_part_msg(part_msg);
 	gtk_tree_path_free (path);
 	g_free(old_text);
-	g_static_mutex_unlock(&sview_mutex);
+	g_mutex_unlock(sview_mutex);
 }
 
 extern void get_info_part(GtkTable *table, display_data_t *display_data)

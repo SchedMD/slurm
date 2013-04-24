@@ -433,6 +433,11 @@ extern int read_slurmdbd_conf(void)
 
 	if (slurmdbd_conf->storage_type == NULL)
 		fatal("StorageType must be specified");
+	if (!strcmp(slurmdbd_conf->storage_type,
+		    "accounting_storage/slurmdbd")) {
+		fatal("StorageType=%s is invalid in slurmdbd.conf",
+		      slurmdbd_conf->storage_type);
+	}
 
 	if (!slurmdbd_conf->storage_host)
 		slurmdbd_conf->storage_host = xstrdup(DEFAULT_STORAGE_HOST);

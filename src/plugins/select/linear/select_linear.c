@@ -127,7 +127,7 @@ static int  _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 			   uint32_t min_nodes, uint32_t max_nodes,
 			   uint32_t req_nodes);
 static void _free_cr(struct cr_record *cr_ptr);
-static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index);
+static int _get_avail_cpus(struct job_record *job_ptr, int index);
 static uint16_t _get_total_cpus(int index);
 static void _init_node_cr(void);
 static int _job_count_bitmap(struct cr_record *cr_ptr,
@@ -449,14 +449,15 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
  * IN job_ptr - pointer to job being scheduled
  * IN index - index of node's configuration information in select_node_ptr
  */
-static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
+static int _get_avail_cpus(struct job_record *job_ptr, int index)
 {
 	struct node_record *node_ptr;
-	uint16_t avail_cpus;
-	uint16_t cpus, boards, sockets, cores, threads;
-	uint16_t cpus_per_task = 1;
-	uint16_t ntasks_per_node = 0, ntasks_per_socket, ntasks_per_core;
-	uint16_t min_sockets, min_cores, min_threads;
+	int avail_cpus;
+	uint16_t boards_per_node, sockets_per_board;
+	uint16_t cores_per_socket, thread_per_core;
+	uint16_t cpus_per_node, cpus_per_task = 1;
+	uint16_t ntasks_per_node = 0, ntasks_per_core;
+	uint32_t nppcu, total_threads;
 	multi_core_data_t *mc_ptr = NULL;
 
 	if (job_ptr->details == NULL)
@@ -466,53 +467,58 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 		cpus_per_task = job_ptr->details->cpus_per_task;
 	if (job_ptr->details->ntasks_per_node)
 		ntasks_per_node = job_ptr->details->ntasks_per_node;
-	if ((mc_ptr = job_ptr->details->mc_ptr)) {
-		ntasks_per_socket = mc_ptr->ntasks_per_socket;
+	if ((mc_ptr = job_ptr->details->mc_ptr))
 		ntasks_per_core   = mc_ptr->ntasks_per_core;
-		min_sockets       = mc_ptr->sockets_per_node;
-		min_cores         = mc_ptr->cores_per_socket;
-		min_threads       = mc_ptr->threads_per_core;
-	} else {
-		ntasks_per_socket = 0;
+	else
 		ntasks_per_core   = 0;
-		min_sockets       = (uint16_t) NO_VAL;
-		min_cores         = (uint16_t) NO_VAL;
-		min_threads       = (uint16_t) NO_VAL;
-	}
 
 	node_ptr = select_node_ptr + index;
 	if (select_fast_schedule) { /* don't bother checking each node */
-		cpus    = node_ptr->config_ptr->cpus;
-		boards  = node_ptr->config_ptr->boards;
-		sockets = node_ptr->config_ptr->sockets;
-		cores   = node_ptr->config_ptr->cores;
-		threads = node_ptr->config_ptr->threads;
+		cpus_per_node     = node_ptr->config_ptr->cpus;
+		boards_per_node   = node_ptr->config_ptr->boards;
+		sockets_per_board = node_ptr->config_ptr->sockets;
+		cores_per_socket  = node_ptr->config_ptr->cores;
+		thread_per_core   = node_ptr->config_ptr->threads;
 	} else {
-		cpus    = node_ptr->cpus;
-		boards  = node_ptr->boards;
-		sockets = node_ptr->sockets;
-		cores   = node_ptr->cores;
-		threads = node_ptr->threads;
+		cpus_per_node     = node_ptr->cpus;
+		boards_per_node   = node_ptr->boards;
+		sockets_per_board = node_ptr->sockets;
+		cores_per_socket  = node_ptr->cores;
+		thread_per_core   = node_ptr->threads;
 	}
 
 #if SELECT_DEBUG
-	info("host %s HW_ cpus %u boards %u sockets %u cores %u threads %u ",
-	     node_ptr->name, cpus, boards, sockets, cores, threads);
-#else
-	/* Largely to avoid warning about unused variable "boards" */
-	debug2("host %s HW_ cpus %u boards %u sockets %u cores %u threads %u ",
-	       node_ptr->name, cpus, boards, sockets, cores, threads);
+	info("host:%s HW_ cpus_per_node:%u boards_per_node:%u "
+	     "sockets_per_boards:%u cores_per_socket:%u thread_per_core:%u ",
+	     node_ptr->name, cpus_per_node, boards_per_node, sockets_per_board,
+	     cores_per_socket, thread_per_core);
 #endif
+	/* pick defaults for any unspecified items */
+	if (cpus_per_task <= 0)
+		cpus_per_task = 1;
+	if (thread_per_core <= 0)
+		thread_per_core = 1;
+	if (cores_per_socket <= 0)
+		cores_per_socket = 1;
+	if (boards_per_node <= 0)
+		boards_per_node = 1;
+	if (sockets_per_board <= 0) {
+		sockets_per_board = cpus_per_node / boards_per_node /
+				    cores_per_socket / thread_per_core;
+	}
 
-	avail_cpus = slurm_get_avail_procs(
-		min_sockets, min_cores, min_threads, cpus_per_task,
-		ntasks_per_node, ntasks_per_socket, ntasks_per_core,
-		&cpus, &sockets, &cores, &threads, NULL,
-		CR_CPU, job_ptr->job_id, node_ptr->name);
+	nppcu = ntasks_per_core;
+	total_threads = boards_per_node * sockets_per_board *
+			cores_per_socket * thread_per_core;
+	avail_cpus = adjust_cpus_nppcu(nppcu, thread_per_core, total_threads);
 
+	if (ntasks_per_node > 0)
+		avail_cpus = MIN(avail_cpus, ntasks_per_node * cpus_per_task);
 #if SELECT_DEBUG
-	debug("avail_cpus index %d = %d (out of %d %d %d %d)",
-	      index, avail_cpus, cpus, sockets, cores, threads);
+	debug("avail_cpus index %d = %u (out of boards_per_node:%u "
+	      "sockets_per_boards:%u cores_per_socket:%u thread_per_core:%u)",
+	      index, avail_cpus, boards_per_node, sockets_per_board,
+	      cores_per_socket, thread_per_core);
 #endif
 	return(avail_cpus);
 }
@@ -530,6 +536,28 @@ static uint16_t _get_total_cpus(int index)
 		return node_ptr->config_ptr->cpus;
 	else
 		return node_ptr->cpus;
+}
+
+static uint16_t _get_total_threads(int index)
+{
+	struct node_record *node_ptr = &(select_node_ptr[index]);
+	if (select_fast_schedule)
+		return node_ptr->config_ptr->threads;
+	else
+		return node_ptr->threads;
+}
+
+/*
+ * _get_ntasks_per_core - Retrieve the value of ntasks_per_core from
+ *	the given job_details record.  If it wasn't set, return 0xffff.
+ *	Intended for use with the adjust_cpus_nppcu function.
+ */
+
+static uint16_t _get_ntasks_per_core(struct job_details *details) {
+	if (details->mc_ptr)
+		return details->mc_ptr->ntasks_per_core;
+	else
+		return 0xffff;
 }
 
 static job_resources_t *_create_job_resources(int node_cnt)
@@ -553,7 +581,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 {
 	int i, j, k;
 	int first_bit, last_bit;
-	uint32_t node_cpus, total_cpus = 0, node_cnt;
+	uint32_t node_cpus, total_cpus = 0, node_cnt, node_threads;
 	struct node_record *node_ptr;
 	uint32_t job_memory_cpu = 0, job_memory_node = 0;
 	job_resources_t *job_resrcs_ptr;
@@ -586,10 +614,17 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 		if (!bit_test(bitmap, i))
 			continue;
 		node_ptr = &(select_node_ptr[i]);
-		if (select_fast_schedule)
-			node_cpus = node_ptr->config_ptr->cpus;
-		else
-			node_cpus = node_ptr->cpus;
+		if (select_fast_schedule) {
+			node_cpus    = node_ptr->config_ptr->cpus;
+			node_threads = node_ptr->config_ptr->threads;
+		} else {
+			node_cpus    = node_ptr->cpus;
+			node_threads = node_ptr->threads;
+		}
+
+		node_cpus = adjust_cpus_nppcu(
+					_get_ntasks_per_core(job_ptr->details),
+					node_threads, node_cpus);
 		job_resrcs_ptr->cpus[j] = node_cpus;
 		if ((k == -1) ||
 		    (job_resrcs_ptr->cpu_array_value[k] != node_cpus)) {
@@ -861,7 +896,10 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				rem_nodes--;
 				max_nodes--;
 				rem_cpus   -= avail_cpus;
-				total_cpus += _get_total_cpus(index);
+				total_cpus += adjust_cpus_nppcu(
+						_get_ntasks_per_core(job_ptr->details),
+						_get_total_threads(index),
+						_get_total_cpus(index));
 			} else {	 /* node not required (yet) */
 				bit_clear(bitmap, index);
 				consec_cpus[consec_index] += avail_cpus;
@@ -968,7 +1006,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		if (best_fit_nodes == 0)
 			break;
 		if (job_ptr->details->contiguous &&
-		    ((best_fit_cpus < rem_cpus) ||
+		     ((best_fit_cpus < rem_cpus) ||
 		     (!_enough_nodes(best_fit_nodes, rem_nodes,
 				     min_nodes, req_nodes))))
 			break;	/* no hole large enough */
@@ -988,7 +1026,10 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				max_nodes--;
 				avail_cpus = _get_avail_cpus(job_ptr, i);
 				rem_cpus   -= avail_cpus;
-				total_cpus += _get_total_cpus(i);
+				total_cpus += adjust_cpus_nppcu(
+						_get_ntasks_per_core(job_ptr->details),
+						_get_total_threads(i),
+						_get_total_cpus(i));
 			}
 			for (i = (best_fit_req - 1);
 			     i >= consec_start[best_fit_location]; i--) {
@@ -1002,7 +1043,10 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				max_nodes--;
 				avail_cpus = _get_avail_cpus(job_ptr, i);
 				rem_cpus   -= avail_cpus;
-				total_cpus += _get_total_cpus(i);
+				total_cpus += adjust_cpus_nppcu(
+						_get_ntasks_per_core(job_ptr->details),
+						_get_total_threads(i),
+						_get_total_cpus(i));
 			}
 		} else {
 			for (i = consec_start[best_fit_location];
@@ -1017,7 +1061,10 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				max_nodes--;
 				avail_cpus = _get_avail_cpus(job_ptr, i);
 				rem_cpus   -= avail_cpus;
-				total_cpus += _get_total_cpus(i);
+				total_cpus += adjust_cpus_nppcu(
+						_get_ntasks_per_core(job_ptr->details),
+						_get_total_threads(i),
+						_get_total_cpus(i));
 			}
 		}
 		if (job_ptr->details->contiguous ||
@@ -1243,7 +1290,10 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				alloc_nodes++;
 				rem_cpus -= avail_cpus;
-				total_cpus += _get_total_cpus(i);
+				total_cpus += adjust_cpus_nppcu(
+						_get_ntasks_per_core(job_ptr->details),
+						_get_total_threads(i),
+						_get_total_cpus(i));
 			}
 		}
 		/* Accumulate additional resources from leafs that
@@ -1278,7 +1328,10 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				alloc_nodes++;
 				rem_cpus -= _get_avail_cpus(job_ptr, i);
-				total_cpus += _get_total_cpus(i);
+				total_cpus += adjust_cpus_nppcu(
+						_get_ntasks_per_core(job_ptr->details),
+						_get_total_threads(i),
+						_get_total_cpus(i));
 				if ((alloc_nodes > max_nodes) ||
 				    ((alloc_nodes >= want_nodes) &&
 				     (rem_cpus <= 0)))
@@ -1348,7 +1401,10 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			bit_set(bitmap, i);
 			alloc_nodes++;
 			rem_cpus -= _get_avail_cpus(job_ptr, i);
-			total_cpus += _get_total_cpus(i);
+			total_cpus += adjust_cpus_nppcu(
+					_get_ntasks_per_core(job_ptr->details),
+					_get_total_threads(i),
+					_get_total_cpus(i));
 			if ((alloc_nodes > max_nodes) ||
 			    ((alloc_nodes >= want_nodes) && (rem_cpus <= 0)))
 				break;

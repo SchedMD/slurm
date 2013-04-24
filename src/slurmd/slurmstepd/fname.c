@@ -49,9 +49,10 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/fname.h"
 
+#include "src/common/uid.h"
+#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/xassert.h"
 
 /*
  * Max zero-padding width 
@@ -67,6 +68,7 @@ fname_create(slurmd_job_t *job, const char *format, int taskid)
 	unsigned int wid   = 0;
 	char *name = NULL;
 	char *orig = xstrdup(format);
+	char *uname;
 	char *p, *q;
 	int id;
 
@@ -128,6 +130,13 @@ fname_create(slurmd_job_t *job, const char *format, int taskid)
 			case 'N':  /* '%N' => node name      */
 				xmemcat(name, q, p - 1);
 				xstrfmtcat(name, "%s", conf->hostname);
+				q = ++p;
+				break;
+			case 'u':  /* '%u' => user name      */
+				uname = uid_to_string(job->uid);
+				xmemcat(name, q, p - 1);
+				xstrfmtcat(name, "%s", uname);
+				xfree(uname);
 				q = ++p;
 				break;
 			case 'J':

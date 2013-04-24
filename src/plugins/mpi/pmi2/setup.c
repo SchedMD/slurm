@@ -39,6 +39,10 @@
 #  include "config.h"
 #endif
 
+#if defined(__FreeBSD__)
+#include <sys/socket.h>	/* AF_INET */
+#endif
+
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -156,7 +160,7 @@ _setup_stepd_job_info(const slurmd_job_t *job, char ***env)
 
 	job_info.job_env = env_array_copy((const char **)*env);
 
-	job_info.srun_job = NULL;
+	job_info.MPIR_proctable = NULL;
 	job_info.srun_opt = NULL;
 
 	return SLURM_SUCCESS;
@@ -233,6 +237,10 @@ _setup_stepd_tree_info(const slurmd_job_t *job, char ***env)
 	tree_info.srun_addr = xmalloc(sizeof(slurm_addr_t));
 	slurm_set_addr(tree_info.srun_addr, port, srun_host);
 
+	/* init kvs seq to 0. TODO: reduce array size */
+	tree_info.children_kvs_seq = xmalloc(sizeof(uint32_t) *
+					     job_info.nnodes);
+	
 	return SLURM_SUCCESS;
 }
 
@@ -547,13 +555,13 @@ _setup_srun_job_info(const mpi_plugin_client_info_t *job)
 		error("mpi/pmi2: failed to dlopen()");
 		return SLURM_ERROR;
 	}
-	sym = dlsym(handle, "job");
+	sym = dlsym(handle, "MPIR_proctable");
 	if (sym == NULL) {
 		/* if called directly in API, there may be no symbol available */
-		verbose ("mpi/pmi2: failed to find symbol 'job'");
-		job_info.srun_job = NULL;
+		verbose ("mpi/pmi2: failed to find symbol 'MPIR_proctable'");
+		job_info.MPIR_proctable = NULL;
 	} else {
-		job_info.srun_job = *(srun_job_t **)sym;
+		job_info.MPIR_proctable = *(MPIR_PROCDESC **)sym;
 	}
 	sym = dlsym(handle, "opt");
 	if (sym == NULL) {
@@ -594,6 +602,10 @@ _setup_srun_tree_info(const mpi_plugin_client_info_t *job)
 	snprintf(tree_sock_addr, 128, PMI2_SOCK_ADDR_FMT,
 		 job->jobid, job->stepid);
 
+	/* init kvs seq to 0. TODO: reduce array size */
+	tree_info.children_kvs_seq = xmalloc(sizeof(uint32_t) *
+					     job_info.nnodes);
+	
 	return SLURM_SUCCESS;
 }
 
@@ -632,23 +644,40 @@ _setup_srun_environ(const mpi_plugin_client_info_t *job, char ***env)
 	return SLURM_SUCCESS;
 }
 
+inline static int
+_tasks_launched (void)
+{
+	int i, all_launched = 1;
+	if (job_info.MPIR_proctable == NULL)
+		return 1;
+
+	for (i = 0; i < job_info.ntasks; i ++) {
+		if (job_info.MPIR_proctable[i].pid == 0) {
+			all_launched = 0;
+			break;
+		}
+	}
+	return all_launched;
+}
+
 static void *
 _task_launch_detection(void *unused)
 {
 	spawn_resp_t *resp;
-	srun_job_state_t state;
+	time_t start;
+	int rc = 0;
 
-	if (job_info.srun_job) {
-		while (1) {
-			state = job_state(job_info.srun_job);
-			if (state >= SRUN_JOB_RUNNING) {
-				break;
-			}
-			usleep(1000*50);
+	/*
+	 * mpir_init() is called in plugins/launch/slurm/launch_slurm.c before
+	 * mpi_hook_client_prelaunch() is called in api/step_launch.c
+	 */
+	start = time(NULL);
+	while (_tasks_launched() == 0) {
+		usleep(1000*50);
+		if (time(NULL) - start > 600) {
+			rc = 1;
+			break;
 		}
-	} else {
-		/* take the tasks launched successfully */
-		state = SRUN_JOB_RUNNING;
 	}
 
 	/* send a resp to spawner srun */
@@ -656,11 +685,9 @@ _task_launch_detection(void *unused)
 	resp->seq = job_info.spawn_seq;
 	resp->jobid = xstrdup(job_info.pmi_jobid);
 	resp->error_cnt = 0;	/* TODO */
-	if (state == SRUN_JOB_RUNNING) {
-		resp->rc = 0;
-	} else {
-		resp->rc = 1;
-	}
+	resp->rc = rc;
+	resp->pmi_port = tree_info.pmi_port;
+
 	spawn_resp_send_to_srun(resp);
 	spawn_resp_free(resp);
 	return NULL;

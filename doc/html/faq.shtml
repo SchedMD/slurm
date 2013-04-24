@@ -48,6 +48,7 @@ running?</a></li>
 SLURM? Why does the DAKOTA program not run with SLURM?</a></li>
 <li><a href="#estimated_start_time">Why does squeue (and "scontrol show
 jobid") sometimes not display a job's estimated start time?</a></li>
+<li><a href="#ansys">How can I run an Ansys program with Slurm?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
@@ -146,6 +147,7 @@ priority/multifactor plugin?</a></li>
 <li><a href="#health_check_example">Does any one have an example node health check
 script for Slurm?</a></li>
 <li><a href="#add_nodes">What process should I follow to add nodes to Slurm?</a></li>
+<li><a href="#licenses">Can Slurm be configured to manage licenses?</a></li>
 </ol>
 
 
@@ -836,6 +838,26 @@ the estimate is better for jobs expected to start soon, as most running jobs
 end before their estimated time. There are other restrictions on backfill that
 may apply. See the <a href="#backfill">backfill</a> section for more details.
 </p>
+
+<p><a name="ansys"><b>27. How can I run an Ansys program with Slurm?</b></a><br>
+If you are talking about interactive run of Ansys app, then you can use this
+simple script (it is for Ansys Fluent):</p>
+<pre>
+$ cat ./fluent-srun.sh
+#!/usr/bin/env bash
+HOSTSFILE=.hostlist-job$SLURM_JOB_ID
+if [ "$SLURM_PROCID" == "0" ]; then
+   srun hostname -f > $HOSTSFILE
+   fluent -t $SLURM_NTASKS -cnf=$HOSTSFILE -ssh 3d
+   rm -f $HOSTSFILE
+fi
+exit 0
+</pre>
+
+<p>To run an interactive session, use srun like this:</p>
+<pre>
+$ srun -n <tasks> ./fluent-srun.sh
+</pre>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -1562,8 +1584,19 @@ following procedure is recommended:
 "scontrol reconfig", no need to restart the daemons)</li>
 </ol>
 
+<p><a name="licenses"><b>49. Can Slurm be configured to manage licenses?</b></a></br>
+Slurm is not currently integrated with FlexLM, but it does provide for the
+allocation of global resources called licenses. Use the Licenses configuration
+parameter in your slurm.conf file (e.g. "Licenses=foo:10,bar:20").
+Jobs can request licenses and be granted exclusive use of those resources
+(e.g. "sbatch --licenses=foo:2,bar:1 ...").
+It is not currently possible to change the total number of lincenses on a system
+without restarting the slurmctld daemon, but it is possible to dynamically
+reserve licenses and remove them from being available to jobs on the system
+(e.g. "scontrol update reservation=licenses_held licenses=foo:5,bar:2").</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 30 January 2013</p>
+<p style="text-align:center;">Last modified 4 April 2013</p>
 
 <!--#include virtual="footer.txt"-->

@@ -53,7 +53,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@HAVE_CRAY_FALSE@@HAVE_NRT_TRUE@@REAL_BGQ_LOADED_FALSE@am__append_1 = poe
+@HAVE_NRT_TRUE@@REAL_BGQ_LOADED_FALSE@am__append_1 = poe
+@HAVE_REAL_CRAY_TRUE@@REAL_BGQ_LOADED_FALSE@am__append_2 = aprun
+@HAVE_ALPS_EMULATION_TRUE@@REAL_BGQ_LOADED_FALSE@am__append_3 = aprun
 subdir = src/plugins/launch
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -89,6 +91,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rfc5424_time.m4 \
+	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
 	$(top_srcdir)/auxdir/x_ac_setpgrp.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_sgi_job.m4 \
@@ -273,6 +276,9 @@ READLINE_LIBS = @READLINE_LIBS@
 REAL_BGQ_LOADED = @REAL_BGQ_LOADED@
 REAL_BG_L_P_LOADED = @REAL_BG_L_P_LOADED@
 RELEASE = @RELEASE@
+RRDTOOL_CPPFLAGS = @RRDTOOL_CPPFLAGS@
+RRDTOOL_LDFLAGS = @RRDTOOL_LDFLAGS@
+RRDTOOL_LIBS = @RRDTOOL_LIBS@
 RUNJOB_LDFLAGS = @RUNJOB_LDFLAGS@
 SED = @SED@
 SEMAPHORE_LIBS = @SEMAPHORE_LIBS@
@@ -361,10 +367,11 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@HAVE_CRAY_FALSE@@REAL_BGQ_LOADED_FALSE@SUBDIRS = slurm \
-@HAVE_CRAY_FALSE@@REAL_BGQ_LOADED_FALSE@	$(am__append_1)
-@HAVE_CRAY_TRUE@@REAL_BGQ_LOADED_FALSE@SUBDIRS = aprun $(am__append_1)
-@REAL_BGQ_LOADED_TRUE@SUBDIRS = runjob $(am__append_1)
+# launch/slurm can be useful for testing on any system other type
+@REAL_BGQ_LOADED_FALSE@SUBDIRS = slurm $(am__append_1) $(am__append_2) \
+@REAL_BGQ_LOADED_FALSE@	$(am__append_3)
+@REAL_BGQ_LOADED_TRUE@SUBDIRS = runjob $(am__append_1) $(am__append_2) \
+@REAL_BGQ_LOADED_TRUE@	$(am__append_3)
 all: all-recursive
 
 .SUFFIXES:

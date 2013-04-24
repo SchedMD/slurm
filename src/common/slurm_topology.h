@@ -47,6 +47,7 @@
  *  defined here but is really tree plugin related
 \*****************************************************************************/
 struct switch_record {
+	uint32_t consumed_energy;	/* consumed energy, in joules */
 	int level;			/* level in hierarchy, leaf=0 */
 	uint32_t link_speed;		/* link speed, arbitrary units */
 	char *name;			/* switch name */
@@ -54,6 +55,7 @@ struct switch_record {
 					 * this switch */
 	char *nodes;			/* name if direct descendent nodes */
 	char *switches;			/* name if direct descendent switches */
+	uint32_t temp;			/* temperature, in celsius */
 };
 
 extern struct switch_record *switch_record_table;  /* ptr to switch records */

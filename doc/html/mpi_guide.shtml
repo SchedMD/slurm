@@ -228,7 +228,12 @@ $MPI_ROOT/bin/mpirun -TCP -srun -N8 ./a.out
 
 <h2><a name="mpich2" href="http://www.mcs.anl.gov/research/projects/mpich2/"><b>MPICH2</b></a></h2>
 
-<p>MPICH2 jobs are launched using the <b>srun</b> command. Just link your program with
+<p>MPICH2 jobs can be launched using the <b>srun</b> command or <b>mpiexec</b>.
+Both modes of operation are described below.</p>
+
+<h3>MPICH2 with srun</h3>
+
+<p>Link your program with
 SLURM's implementation of the PMI library so that tasks can communicate
 host and port information at startup. (The system administrator can add
 these option to the mpicc and mpif77 commands directly, so the user will not
@@ -255,6 +260,19 @@ information.</li>
 <a href="http://wiki.mcs.anl.gov/mpich2/index.php/Frequently_Asked_Questions#Q:_How_do_I_use_MPICH2_with_slurm.3F">
 MPICH2 FAQ</a> web page</li>
 </ul></p>
+
+<h3>MPICH2 with mpiexec</h3>
+
+<p>Do not add any flags to mpich and build the default
+(e.g. "<i>./configure -prefix ... </i>".
+Do NOT pass the --with-slurm, --with-pmi, --enable-pmiport options).<br>
+Do not add -lpmi to your application (it will force slurm's pmi 1
+interface which doesn't support PMI_Spawn_multiple).<br>
+Launch the application using salloc to create the job allocation and mpiexec
+to launch the tasks. A simple example is shown below.</p>
+<pre>salloc -N 2 mpiexec my_application</pre>
+<p>All MPI_comm_spawn work fine now going through hydra's PMI 1.1 interface.</p>
+
 <hr size=4 width="100%">
 
 
@@ -444,6 +462,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 18 September 2012</p>
+<p style="text-align:center;">Last modified 1 April 2013</p>
 
 <!--#include virtual="footer.txt"-->

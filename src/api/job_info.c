@@ -480,7 +480,18 @@ line6:
 			max_nodes = min_nodes;
 	} else {
 		min_nodes = job_ptr->num_nodes;
+		if ((min_nodes == 1) && (job_ptr->num_cpus > 1)
+		    && job_ptr->ntasks_per_node
+		    && (job_ptr->ntasks_per_node != (uint16_t) NO_VAL)) {
+			int num_tasks = job_ptr->num_cpus;
+			if (job_ptr->cpus_per_task != (uint16_t) NO_VAL)
+				num_tasks /= job_ptr->cpus_per_task;
+			min_nodes = (num_tasks + 1) / job_ptr->ntasks_per_node;
+			if (min_nodes > num_tasks)
+				min_nodes = num_tasks;
+		}
 		max_nodes = job_ptr->max_nodes;
+
 	}
 
 	_sprint_range(tmp1, sizeof(tmp1), job_ptr->num_cpus, job_ptr->max_cpus);
@@ -556,10 +567,10 @@ line6:
 		if (last == -1)
 			goto line15;
 
-		hl = hostlist_create(job_ptr->nodes);
+		hl = hostlist_create(job_resrcs->nodes);
 		if (!hl) {
 			error("slurm_sprint_job_info: hostlist_create: %s",
-			      job_ptr->nodes);
+			      job_resrcs->nodes);
 			return NULL;
 		}
 		hl_last = hostlist_create(NULL);

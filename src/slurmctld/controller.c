@@ -76,6 +76,7 @@
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/slurm_priority.h"
@@ -444,6 +445,8 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize jobacct_gather plugin");
 	if (job_submit_plugin_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize job_submit plugin");
+	if (ext_sensors_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize ext_sensors plugin");
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
@@ -1320,6 +1323,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_group_time;
 	static time_t last_health_check_time;
 	static time_t last_acct_gather_node_time;
+	static time_t last_ext_sensors_time;
 	static time_t last_no_resp_msg_time;
 	static time_t last_ping_node_time;
 	static time_t last_ping_srun_time;
@@ -1367,8 +1371,8 @@ static void *_slurmctld_background(void *no_data)
 	last_purge_job_time = last_trigger = last_health_check_time = now;
 	last_timelimit_time = last_assert_primary_time = now;
 	last_no_resp_msg_time = last_resv_time = last_ctld_bu_ping = now;
-	last_uid_update = last_reboot_msg_time = last_acct_gather_node_time
-		= now;
+	last_uid_update = last_reboot_msg_time = now;
+	last_acct_gather_node_time = last_ext_sensors_time = now;
 
 	if ((slurmctld_conf.min_job_age > 0) &&
 	    (slurmctld_conf.min_job_age < PURGE_JOB_INTERVAL)) {
@@ -1473,6 +1477,17 @@ static void *_slurmctld_background(void *no_data)
 			last_acct_gather_node_time = now;
 			lock_slurmctld(node_write_lock);
 			update_nodes_acct_gather_data();
+			unlock_slurmctld(node_write_lock);
+		}
+
+		if (slurmctld_conf.ext_sensors_freq &&
+		    (difftime(now, last_ext_sensors_time) >=
+		     slurmctld_conf.ext_sensors_freq) &&
+		    is_ping_done()) {
+			now = time(NULL);
+			last_ext_sensors_time = now;
+			lock_slurmctld(node_write_lock);
+			ext_sensors_g_update_component_data();
 			unlock_slurmctld(node_write_lock);
 		}
 

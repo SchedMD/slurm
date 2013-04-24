@@ -17,6 +17,7 @@ mpi_pmi2_la_SOURCES = mpi_pmi2.c \
 	setup.c setup.h \
 	spawn.c spawn.h \
 	tree.c tree.h \
+	nameserv.c nameserv.h \
 	$(top_srcdir)/src/common/mpi.h \
 	$(top_srcdir)/src/slurmd/slurmd/reverse_tree_math.c \
 	$(top_srcdir)/src/slurmd/slurmd/reverse_tree_math.h

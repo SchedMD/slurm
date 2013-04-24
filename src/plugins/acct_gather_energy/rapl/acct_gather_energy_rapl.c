@@ -67,6 +67,11 @@
 #include <math.h>
 #include "acct_gather_energy_rapl.h"
 
+/* From Linux sys/types.h */
+#if defined(__FreeBSD__)
+typedef unsigned long int	ulong;
+#endif
+
 union {
 	uint64_t val;
 	struct {
@@ -447,4 +452,15 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 		break;
 	}
 	return rc;
+}
+
+extern void acct_gather_energy_p_conf_options(s_p_options_t **full_options,
+					      int *full_options_cnt)
+{
+	return;
+}
+
+extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
+{
+	return;
 }

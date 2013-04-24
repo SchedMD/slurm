@@ -442,6 +442,8 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	uint32_t qos_max_cpus_limit = INFINITE;
 	uint32_t qos_max_nodes_limit = INFINITE;
 	uint32_t job_memory = 0;
+	uint64_t cpu_time_limit;
+	uint64_t job_cpu_time_limit;
 	bool admin_set_memory_limit = false;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
@@ -644,10 +646,28 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 		 */
 
 
-		/* for validation we don't need to look at
-		 * qos_ptr->max_cpu_mins_pj. It is checked while the
-		 * job is running.
+		/* we do need to check qos_ptr->max_cpu_mins_pj.
+		 * if you can end up in PENDING QOSJobLimit, you need
+		 * to validate it if DenyOnLimit is set
 		 */
+		if (strict_checking && (qos_ptr->max_cpu_mins_pj != INFINITE)
+		    && (job_desc->time_limit != NO_VAL)
+		    && (job_desc->min_cpus != NO_VAL)) {
+			cpu_time_limit = qos_ptr->max_cpu_mins_pj;
+			job_cpu_time_limit = (uint64_t)job_desc->time_limit
+				* (uint64_t)job_desc->min_cpus;
+			if (job_cpu_time_limit > cpu_time_limit) {
+				if (reason)
+					*reason = WAIT_QOS_JOB_LIMIT;
+				debug2("job submit for user %s(%u): "
+				       "cpu time limit %"PRIu64" exceeds "
+				       "qos max per-job %"PRIu64"",
+				       user_name, job_desc->user_id,
+				       job_cpu_time_limit, cpu_time_limit);
+				rc = false;
+				goto end_it;
+			}
+		}
 
 		if ((acct_policy_limit_set->max_cpus == ADMIN_SET_LIMIT)
 		    || (qos_ptr->max_cpus_pj == INFINITE)

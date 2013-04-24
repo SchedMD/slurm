@@ -70,6 +70,7 @@ int global_row_count = 0;
 bool global_multi_error = 0;
 gint last_event_x = 0;
 gint last_event_y = 0;
+int sview_max_cpus = 0;
 GdkCursor* in_process_cursor;
 gchar *global_edit_error_msg = NULL;
 GtkWidget *main_notebook = NULL;
@@ -77,7 +78,7 @@ GtkWidget *main_statusbar = NULL;
 GtkWidget *main_window = NULL;
 GtkWidget *grid_window = NULL;
 GtkTable *main_grid_table = NULL;
-GStaticMutex sview_mutex = G_STATIC_MUTEX_INIT;
+GMutex *sview_mutex = NULL;
 GMutex *grid_mutex = NULL;
 GCond *grid_cond = NULL;
 uint32_t cluster_flags;
@@ -191,39 +192,39 @@ void *_page_thr(void *arg)
 			return NULL;
 	}
 
-	g_static_mutex_lock(&sview_mutex);
+	g_mutex_lock(sview_mutex);
 	thread_count++;
-	g_static_mutex_unlock(&sview_mutex);
+	g_mutex_unlock(sview_mutex);
 	while (page_running == num) {
 #if _DEBUG
 		DEF_TIMERS;
 		START_TIMER;
 #endif
-//		g_static_mutex_lock(&sview_mutex);
+//		g_mutex_lock(sview_mutex);
 		gdk_threads_enter();
 		sview_init_grid(reset_highlight);
 		reset_highlight=false;
 		(display_data->get_info)(table, display_data);
 		//gdk_flush();
 		gdk_threads_leave();
-//		g_static_mutex_unlock(&sview_mutex);
+//		g_mutex_unlock(sview_mutex);
 #if _DEBUG
 		END_TIMER;
 		g_print("got for iteration: %s\n", TIME_STR);
 #endif
 		sleep(working_sview_config.refresh_delay);
-		g_static_mutex_lock(&sview_mutex);
+		g_mutex_lock(sview_mutex);
 		if (thread_count > 1) {
-			g_static_mutex_unlock(&sview_mutex);
+			g_mutex_unlock(sview_mutex);
 			break;
 		}
-		g_static_mutex_unlock(&sview_mutex);
+		g_mutex_unlock(sview_mutex);
 	}
-	g_static_mutex_lock(&sview_mutex);
+	g_mutex_lock(sview_mutex);
 	//g_print("now here\n");
 	thread_count--;
 	//g_print("done decrementing\n");
-	g_static_mutex_unlock(&sview_mutex);
+	g_mutex_unlock(sview_mutex);
 	//g_print("done\n");
 	return NULL;
 }
@@ -1692,6 +1693,7 @@ int main(int argc, char *argv[])
 	gdk_threads_enter();
 	/* Initialize GTK */
 	gtk_init (&argc, &argv);
+	sview_mutex_new(&sview_mutex);
 	sview_mutex_new(&grid_mutex);
 	sview_cond_new(&grid_cond);
 	/* make sure the system is up */

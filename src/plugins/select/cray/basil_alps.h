@@ -339,10 +339,11 @@ struct basil_node_accelerator {		/* Basil 1.2, Alps 4.x */
 };
 
 struct basil_node {
+	uint32_t cpu_count;
+	uint32_t mem_size;
 	uint32_t node_id;
 	uint32_t router_id;				/* Basil 3.1 */
 	char	 name[BASIL_STRING_SHORT];
-
 	enum basil_node_arch	arch;
 	enum basil_node_role	role;
 	enum basil_node_state	state;
@@ -448,7 +449,8 @@ struct basil_rsvn_param {
 				depth,		/* depth > 0,         -d  */
 				nppn,		/* nppn > 0,          -N  */
 				npps,		/* PEs per segment,   -S  */
-				nspn;		/* segments per node, -sn */
+				nspn,		/* segments per node, -sn */
+				nppcu;		/* Processors Per Compute Unit. BASIL 1.3 */
 
 	char				*nodes;		/* NodeParamArray   */
 	struct basil_label		*labels;	/* LabelParamArray  */
@@ -538,6 +540,8 @@ extern const char *nam_gpc_mode[BGM_MAX];
 extern const char *nam_acceltype[BA_MAX];
 extern const char *nam_accelstate[BAS_MAX];
 
+extern bool node_rank_inv;
+
 /**
  * struct nodespec  -  representation of node ranges
  * @start: start value of the range
@@ -597,13 +601,6 @@ enum query_columns {
 	COL_X,		/* X coordinate		*/
 	COL_Y,		/* Y coordinate		*/
 	COL_Z,		/* Z coordinate		*/
-	COL_CAB,	/* cabinet position		*/
-	COL_ROW,	/* row position			*/
-	COL_CAGE,	/* cage number (0..2)		*/
-	COL_SLOT,	/* slot number (0..7)		*/
-	COL_CPU,	/* node number (0..3)		*/
-	COL_CORES,	/* number of cores per node	*/
-	COL_MEMORY,	/* rounded-down memory in MB	*/
 	/* string data */
 	COL_TYPE,	/* {service, compute }		*/
 	COLUMN_COUNT	/* sentinel */
@@ -622,7 +619,8 @@ extern void   free_inv(struct basil_inventory *inv);
 
 extern long basil_reserve(const char *user, const char *batch_id,
 			  uint32_t width, uint32_t depth, uint32_t nppn,
-			  uint32_t mem_mb, struct nodespec *ns_head,
+			  uint32_t mem_mb, uint32_t nppcu,
+			  struct nodespec *ns_head,
 			  struct basil_accel_param *accel_head);
 extern int basil_confirm(uint32_t rsvn_id, int job_id, uint64_t pagg_id);
 extern const struct basil_rsvn *basil_rsvn_by_id(const struct basil_inventory *inv,

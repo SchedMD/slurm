@@ -421,7 +421,7 @@ extern void purge_front_end_state(void)
  * array of GIDs */
 gid_t *_xlate_groups(char *group_str, char *key)
 {
-	char *tmp_str, *token, *save_ptr;
+	char *tmp_str, *token, *save_ptr = NULL;
 	gid_t *gids_array = NULL;
 	int array_size = 0;
 	gid_t gid;
@@ -448,7 +448,7 @@ gid_t *_xlate_groups(char *group_str, char *key)
  * array of UIDs */
 uid_t *_xlate_users(char *user_str, char *key)
 {
-	char *tmp_str, *token, *save_ptr;
+	char *tmp_str, *token, *save_ptr = NULL;
 	uid_t *uids_array = NULL;
 	int array_size = 0;
 	uid_t uid;

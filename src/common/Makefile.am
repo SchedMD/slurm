@@ -65,6 +65,7 @@ libcommon_la_SOURCES = 			\
 	slurm_cred.h       		\
 	slurm_cred.c			\
 	slurm_errno.c			\
+	slurm_ext_sensors.c slurm_ext_sensors.h \
 	slurm_priority.c		\
 	slurm_priority.h		\
 	slurm_protocol_api.c		\
@@ -88,6 +89,7 @@ libcommon_la_SOURCES = 			\
 	uid.c uid.h			\
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
+	slurm_acct_gather.c slurm_acct_gather.h \
 	slurm_accounting_storage.c slurm_accounting_storage.h \
 	slurm_jobacct_gather.c slurm_jobacct_gather.h \
 	slurm_acct_gather_energy.c slurm_acct_gather_energy.h \

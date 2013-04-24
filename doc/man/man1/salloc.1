@@ -24,7 +24,7 @@ user's default shell.
 The following document describes the the influence of various options on the
 allocation of cpus to jobs and tasks.
 .br
-http://www.schedmd.com/slurmdocs/cpu_management.html
+http://slurm.schedmd.com/cpu_management.html
 
 NOTE: The salloc logic includes support to save and restore the terminal line
 settings and is designed to be executed in the foreground. If you need to
@@ -522,7 +522,7 @@ nodes. The optional second distribution method (after the ":")
 controls the distribution of resources across sockets within a node.
 Note that with select/cons_res, the number of cpus allocated on each
 socket and node may be different. Refer to
-http://www.schedmd.com/slurmdocs/mc_support.html
+http://slurm.schedmd.com/mc_support.html
 for more information on resource allocation, assignment of tasks to
 nodes, and binding of tasks to CPUs.
 .RS
@@ -559,11 +559,11 @@ followed by an optional specification of the task distribution scheme
 within a block of tasks and between the blocks of tasks.  For more
 details (including examples and diagrams), please see
 .br
-http://www.schedmd.com/slurmdocs/mc_support.html
+http://slurm.schedmd.com/mc_support.html
 .br
 and
 .br
-http://www.schedmd.com/slurmdocs/dist_plane.html
+http://slurm.schedmd.com/dist_plane.html
 .TP
 .B arbitrary
 The arbitrary method of distribution will allocate processes in\-order
@@ -1234,6 +1234,11 @@ Same as \fB\-p, \-\-partition\fR
 \fBSALLOC_QOS\fR
 Same as \fB\-\-qos\fR
 .TP
+\fBSALLOC_REQ_SWITCH\fR
+When a tree topology is used, this defines the maximum count of switches
+desired for the job allocation and optionally the maximum time to wait
+for that number of switches. See \fB\-\-switches\fR.
+.TP
 \fBSALLOC_RESERVATION\fR
 Same as \fB\-\-reservation\fR
 .TP
@@ -1248,6 +1253,12 @@ Same as \fB\-W, \-\-wait\fR
 .TP
 \fBSALLOC_WAIT_ALL_NODES\fR
 Same as \fB\-\-wait\-all\-nodes\fR
+.TP
+\fBSALLOC_WCKEY\fR
+Same as \fB\-\-wckey\fR
+.TP
+\fBSALLOC_WAIT4SWITCH\fR
+Max time waiting for requested switches. See \fB\-\-switches\fR
 
 .SH "OUTPUT ENVIRONMENT VARIABLES"
 .PP
@@ -1256,15 +1267,6 @@ the executed program:
 .TP
 \fBBASIL_RESERVATION_ID\fR
 The reservation ID on Cray systems running ALPS/BASIL only.
-.TP
-\fBMPIRUN_NOALLOCATE\fR
-Do not allocate a block on Blue Gene L/P systems only.
-.TP
-\fBMPIRUN_NOFREE\fR
-Do not free a block on Blue Gene L/P systems only.
-.TP
-\fBMPIRUN_PARTITION\fR
-The block name on Blue Gene systems only.
 .TP
 \fBSLURM_CPU_BIND\fR
 Set to value of the \-\-cpu_bind\fR option.
@@ -1321,6 +1323,15 @@ count, that count is followed by "(x#)" where "#" is the
 repetition count. For example, "SLURM_TASKS_PER_NODE=2(x3),1"
 indicates that the first three nodes will each execute three
 tasks and the fourth node will execute one task.
+.TP
+\fBMPIRUN_NOALLOCATE\fR
+Do not allocate a block on Blue Gene L/P systems only.
+.TP
+\fBMPIRUN_NOFREE\fR
+Do not free a block on Blue Gene L/P systems only.
+.TP
+\fBMPIRUN_PARTITION\fR
+The block name on Blue Gene systems only.
 
 .SH "SIGNALS"
 .LP
@@ -1359,7 +1370,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
 This file is part of SLURM, a resource management program.
-For details, see <http://www.schedmd.com/slurmdocs/>.
+For details, see <http://slurm.schedmd.com/>.
 .LP
 SLURM is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free

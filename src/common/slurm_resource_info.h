@@ -50,21 +50,6 @@
 #  endif			/* HAVE_INTTYPES_H */
 #endif
 
-int slurm_get_avail_procs(const uint16_t socket_cnt,
-			  const uint16_t core_cnt,
-			  const uint16_t thread_cnt,
-			  const uint16_t cpuspertask,
-			  const uint16_t ntaskspernode,
-			  const uint16_t ntaskspersocket,
-			  const uint16_t ntaskspercore,
-			  uint16_t *cpus,
-			  uint16_t *sockets,
-			  uint16_t *cores,
-			  uint16_t *threads,
-			  const uint16_t *alloc_cores,
-			  const uint16_t cr_type,
-			  uint32_t job_id, char *name);
-
 void slurm_print_cpu_bind_help(void);
 void slurm_print_mem_bind_help(void);
 

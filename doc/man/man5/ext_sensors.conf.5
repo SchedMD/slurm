@@ -1,0 +1,114 @@
+.TH "ext_sensors.conf" "5" "February 2013" "ext_sensors.conf 2.2" \
+"Slurm external sensors plugin configuration file"
+
+.SH "NAME"
+ext_sensors.conf \- Slurm configuration file for the external sensors plugin
+
+.SH "DESCRIPTION"
+
+\fBext_sensors.conf\fP is an ASCII file which defines parameters used by
+Slurm's external sensors plugins.
+The file location can be modified at system build time using the
+DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
+environment variable. The file will always be located in the
+same directory as the \fBslurm.conf\fP file.
+.LP
+Parameter names are case insensitive.
+Any text following a "#" in the configuration file is treated
+as a comment through the end of that line.
+The size of each line in the file is limited to 1024 characters.
+Changes to the configuration file take effect upon restart of
+SLURM daemons, daemon receipt of the SIGHUP signal, or execution
+of the command "scontrol reconfigure" unless otherwise noted.
+
+.LP
+The following ext_sensors.conf parameters are defined to control data
+collection by the ext_sensors plugins. All of these parameters are optional.
+If a parameter is omitted, data collection of the omitted type is disabled.
+
+.TP
+\fBJobData\fR=\fBenergy\fR
+Specify the data types to be collected by the plugin for jobs/steps.
+
+.TP
+\fBNodeData\fR=\fB[energy|temp][,temp|energy]\fR
+Specify the data types to be collected by the plugin for nodes.
+
+.TP
+\fBSwitchData\fR=\fBenergy\fR
+Specify the data types to be collected by the plugin for switches.
+
+.TP
+\fBColdDoorData\fR=\fBtemp\fR
+Specify the data types to be collected by the plugin for cold doors.
+
+.TP
+\fBMinWatt\fR=\fB<number>\fR
+Minimum recorded power consumption, in watts.
+
+.TP
+\fBMaxWatt\fR=\fB<number>\fR
+Maximum recorded power consumption, in watts.
+
+.TP
+\fBMinTemp\fR=\fB<number>\fR
+Minimum recorded temperature, in celsius.
+
+.TP
+\fBMaxTemp\fR=\fB<number>\fR
+Maximum recorded temperature, in celsius.
+
+.TP
+\fBEnergyRRA\fR=\fB<name>\fR
+Energy RRA name.
+
+.TP
+\fBTempRRA\fR=\fB<name>\fR
+Temperature RRA name.
+
+.TP
+\fBEnergyPathRRD\fR=\fB<path>\fR
+Pathname of energy RRD file.
+
+.TP
+\fBTempPathRRD\fR=\fB<patch>\fR
+Pathname of temperature RRD file.
+
+.SH "EXAMPLE"
+.LP
+.br
+###
+.br
+# Slurm external sensors plugin configuration file
+.br
+###
+.br
+JobData=energy
+.br
+NodeData=energy,temp
+.br
+SwitchData=energy
+.br
+ColdDoorData=temp
+.br
+#
+
+.SH "COPYING"
+Copyright (C) 2013 Bull
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <http://www.schedmd.com/slurmdocs/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5)

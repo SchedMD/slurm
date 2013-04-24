@@ -105,6 +105,7 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 	hostlist_t hl = hostlist_create(NULL);
 	bool bad_node = 0;
 
+	node_rank_inv = 1;
 	/*
 	 * When obtaining the initial configuration, we can not allow ALPS to
 	 * fail. If there is a problem at this stage it is better to restart
@@ -150,8 +151,47 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 			      node->node_id, nam_noderole[node->role],
 			      nam_nodestate[node->state]);
 			bad_node = 1;
-		} else
+		} else if ((slurmctld_conf.fast_schedule != 2)
+			   && (node->cpu_count != node_ptr->config_ptr->cpus)) {
+			fatal("slurm.conf: node %s has %u cpus "
+			      "but configured as CPUs=%u in your slurm.conf",
+			      node_ptr->name, node->cpu_count,
+			      node_ptr->config_ptr->cpus);
+		} else if ((slurmctld_conf.fast_schedule != 2)
+			   && (node->mem_size
+			       != node_ptr->config_ptr->real_memory)) {
+			fatal("slurm.conf: node %s has RealMemory=%u "
+			      "but configured as RealMemory=%u in your "
+			      "slurm.conf",
+			      node_ptr->name, node->mem_size,
+			      node_ptr->config_ptr->real_memory);
+		} else {
 			node_ptr->node_rank = inv->nodes_total - rank_count++;
+			/*
+			 * Convention: since we are using SLURM in
+			 *             frontend-mode, we use
+			 *             NodeHostName as follows.
+			 *
+			 * NodeHostName:  c#-#c#s#n# using the  NID convention
+			 *                <cabinet>-<row><chassis><slot><node>
+			 * - each cabinet can accommodate 3 chassis (c1..c3)
+			 * - each chassis has 8 slots               (s0..s7)
+			 * - each slot contains 2 or 4 nodes        (n0..n3)
+			 *   o either 2 service nodes (n0/n3)
+			 *   o or 4 compute nodes     (n0..n3)
+			 *   o or 2 gemini chips      (g0/g1 serving n0..n3)
+			 *
+			 * Example: c0-0c1s0n1
+			 *          - c0- = cabinet 0
+			 *          - 0   = row     0
+			 *          - c1  = chassis 1
+			 *          - s0  = slot    0
+			 *          - n1  = node    1
+			 */
+			xfree(node_ptr->node_hostname);
+			node_ptr->node_hostname = xstrdup(node->name);
+		}
+
 		sprintf(tmp, "nid%05u", node->node_id);
 		hostlist_push(hl, tmp);
 	}
@@ -164,6 +204,7 @@ extern int basil_node_ranking(struct node_record *node_array, int node_cnt)
 		     "about\n%s", name);
 	}
 	hostlist_destroy(hl);
+	node_rank_inv = 0;
 
 	return SLURM_SUCCESS;
 }
@@ -406,19 +447,12 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 	 * The processor table has more authoritative information, if a nodeid
 	 * is not listed there, it does not exist.
 	 */
-	const char query[] =	"SELECT x_coord, y_coord, z_coord,"
-				"       cab_position, cab_row, cage, slot, cpu,"
-				"	LOG2(coremask+1), availmem, "
-				"       processor_type  "
-				"FROM  processor LEFT JOIN attributes "
-				"ON    processor_id = nodeid "
-				"WHERE processor_id = ? ";
+	const char query[] =	"SELECT x_coord, y_coord, z_coord, "
+		"processor_type FROM processor WHERE processor_id = ? ";
 	const int	PARAM_COUNT = 1;	/* node id */
 	MYSQL_BIND	params[PARAM_COUNT];
 
 	int		x_coord, y_coord, z_coord;
-	int		cab, row, cage, slot, cpu;
-	unsigned int	node_cpus, node_mem;
 	char		proc_type[BASIL_STRING_SHORT];
 	MYSQL_BIND	bind_cols[COLUMN_COUNT];
 	my_bool		is_null[COLUMN_COUNT];
@@ -443,19 +477,12 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 			bind_cols[i].buffer	   = proc_type;
 		} else {
 			bind_cols[i].buffer_type   = MYSQL_TYPE_LONG;
-			bind_cols[i].is_unsigned   = (i >= COL_CORES);
+			bind_cols[i].is_unsigned   = (i >= COL_TYPE);
 		}
 	}
 	bind_cols[COL_X].buffer	     = (char *)&x_coord;
 	bind_cols[COL_Y].buffer	     = (char *)&y_coord;
 	bind_cols[COL_Z].buffer	     = (char *)&z_coord;
-	bind_cols[COL_CAB].buffer    = (char *)&cab;
-	bind_cols[COL_ROW].buffer    = (char *)&row;
-	bind_cols[COL_CAGE].buffer   = (char *)&cage;
-	bind_cols[COL_SLOT].buffer   = (char *)&slot;
-	bind_cols[COL_CPU].buffer    = (char *)&cpu;
-	bind_cols[COL_CORES].buffer  = (char *)&node_cpus;
-	bind_cols[COL_MEMORY].buffer = (char *)&node_mem;
 
 	inv = get_full_inventory(version);
 	if (inv == NULL)
@@ -473,7 +500,7 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 		fatal("can not determine Cray XT/XE system type");
 
 	stmt = prepare_stmt(handle, query, params, PARAM_COUNT,
-				    bind_cols, COLUMN_COUNT);
+			    bind_cols, COLUMN_COUNT);
 	if (stmt == NULL)
 		fatal("can not prepare statement to resolve Cray coordinates");
 
@@ -493,10 +520,8 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 
 		if (fetch_stmt(stmt) == 0) {
 #if _DEBUG
-			info("proc_type:%s cpus:%u memory:%u",
-			     proc_type, node_cpus, node_mem);
-			info("row:%u cage:%u slot:%u cpu:%u xyz:%u:%u:%u",
-			     row, cage, slot, cpu, x_coord, y_coord, z_coord);
+			info("proc_type:%s xyz:%u:%u:%u",
+			     proc_type, x_coord, y_coord, z_coord
 #endif
 			if (strcmp(proc_type, "compute") != 0) {
 				/*
@@ -506,20 +531,8 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 				fatal("Node '%s' is a %s node. "
 				      "Only compute nodes can appear in slurm.conf.",
 					node_ptr->name, proc_type);
-			} else if (is_null[COL_CORES] || is_null[COL_MEMORY]) {
-				/*
-				 * This can happen if a node has been disabled
-				 * on the SMW (using 'xtcli disable <nid>'). The
-				 * node will still be listed in the 'processor'
-				 * table, but have no 'attributes' entry (NULL
-				 * values for CPUs/memory). Also, the node will
-				 * be invisible to ALPS, which is why we need to
-				 * set it down here already.
-				 */
-				node_cpus = node_mem = 0;
-				reason = "node data unknown - disabled on SMW?";
 			} else if (is_null[COL_X] || is_null[COL_Y]
-						  || is_null[COL_Z]) {
+				   || is_null[COL_Z]) {
 				/*
 				 * Similar case to the one above, observed when
 				 * a blade has been removed. Node will not
@@ -527,24 +540,6 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 				 */
 				x_coord = y_coord = z_coord = 0;
 				reason = "unknown coordinates - hardware failure?";
-			} else if (node_cpus < node_ptr->config_ptr->cpus) {
-				/*
-				 * FIXME: Might reconsider this policy.
-				 *
-				 * FastSchedule is ignored here, it requires the
-				 * slurm.conf to be consistent with hardware.
-				 *
-				 * Assumption is that CPU/Memory do not change
-				 * at runtime (Cray has no hot-swappable parts).
-				 *
-				 * Hence checking it in basil_inventory() would
-				 * mean a lot of runtime overhead.
-				 */
-				fatal("slurm.conf: node %s has only Procs=%d",
-					node_ptr->name, node_cpus);
-			} else if (node_mem < node_ptr->config_ptr->real_memory) {
-				fatal("slurm.conf: node %s has RealMemory=%d",
-					node_ptr->name, node_mem);
 			}
 
 		} else if (is_gemini) {
@@ -571,32 +566,13 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 				node_ptr->arch = xstrdup("XE");
 		}
 
-		xfree(node_ptr->node_hostname);
-		xfree(node_ptr->comm_name);
 		/*
 		 * Convention: since we are using SLURM in frontend-mode,
-		 *             we use Node{Addr,HostName} as follows.
+		 *             we use NodeAddr as follows.
 		 *
 		 * NodeAddr:      <X><Y><Z> coordinates in base-36 encoding
-		 *
-		 * NodeHostName:  c#-#c#s#n# using the  NID convention
-		 *                <cabinet>-<row><chassis><slot><node>
-		 * - each cabinet can accommodate 3 chassis (c1..c3)
-		 * - each chassis has 8 slots               (s0..s7)
-		 * - each slot contains 2 or 4 nodes        (n0..n3)
-		 *   o either 2 service nodes (n0/n3)
-		 *   o or 4 compute nodes     (n0..n3)
-		 *   o or 2 gemini chips      (g0/g1 serving n0..n3)
-		 *
-		 * Example: c0-0c1s0n1
-		 *          - c0- = cabinet 0
-		 *          - 0   = row     0
-		 *          - c1  = chassis 1
-		 *          - s0  = slot    0
-		 *          - n1  = node    1
 		 */
-		node_ptr->node_hostname = xstrdup_printf("c%u-%uc%us%un%u", cab,
-							 row, cage, slot, cpu);
+		xfree(node_ptr->comm_name);
 		node_ptr->comm_name = xstrdup_printf("%c%c%c",
 						     _enc_coord(x_coord),
 						     _enc_coord(y_coord),
@@ -605,9 +581,9 @@ extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt)
 		dim_size[1] = MAX(dim_size[1], (y_coord - 1));
 		dim_size[2] = MAX(dim_size[2], (z_coord - 1));
 #if _DEBUG
-		info("%s  %s  %s  cpus=%u, mem=%u reason=%s", node_ptr->name,
+		info("%s  %s  %s reason=%s", node_ptr->name,
 		     node_ptr->node_hostname, node_ptr->comm_name,
-		     node_cpus, node_mem, reason);
+		     reason);
 #endif
 		/*
 		 * Check the current state reported by ALPS inventory, unless it
@@ -741,6 +717,8 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 	long rc;
 	char *user, batch_id[16];
 	struct basil_accel_param* bap;
+	uint16_t nppcu = 0;
+	uint16_t hwthreads_per_core = 1;
 
 	if (!job_ptr->job_resrcs || job_ptr->job_resrcs->nhosts == 0)
 		return SLURM_SUCCESS;
@@ -762,7 +740,15 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 		return SLURM_SUCCESS;		/* no nodes allocated */
 
 	mppdepth = MAX(1, job_ptr->details->cpus_per_task);
-	mppnppn  = job_ptr->details->ntasks_per_node;
+	if (job_ptr->details->ntasks_per_node) {
+		mppnppn  = job_ptr->details->ntasks_per_node;
+	} else if (job_ptr->details->num_tasks) {
+		mppnppn = (job_ptr->details->num_tasks +
+			   job_ptr->job_resrcs->nhosts - 1) /
+			  job_ptr->job_resrcs->nhosts;
+	} else {
+		mppnppn = 1;
+	}
 
 	/* mppmem */
 	if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
@@ -771,6 +757,20 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 			mppmem = job_ptr->details->pn_min_memory & ~MEM_PER_CPU;
 	} else if (job_ptr->details->pn_min_memory) {
 		node_min_mem = job_ptr->details->pn_min_memory;
+	}
+
+	if (slurmctld_conf.select_type_param & CR_ONE_TASK_PER_CORE) {
+		if (job_ptr->details && job_ptr->details->mc_ptr &&
+		    (job_ptr->details->mc_ptr->ntasks_per_core == 0xffff)) {
+			nppcu = 1;
+			debug("No explicit ntasks-per-core has been set, "
+			      "using nppcu=1.");
+		}
+	}
+
+	if (job_ptr->details && job_ptr->details->mc_ptr &&
+	    (job_ptr->details->mc_ptr->ntasks_per_core != 0xffff)) {
+		nppcu = job_ptr->details->mc_ptr->ntasks_per_core;
 	}
 
 	for (i = first_bit; i <= last_bit; i++) {
@@ -805,6 +805,12 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 				node_cpus = node_ptr->cpus;
 				node_mem  = node_ptr->real_memory;
 			}
+
+			/* If the job has requested memory use it (if
+			   lesser) for calculations.
+			*/
+			tmp_mppmem = MIN(node_mem, node_min_mem);
+
 			/*
 			 * ALPS 'Processing Elements per Node' value (aprun -N),
 			 * which in slurm is --ntasks-per-node and 'mppnppn' in
@@ -815,13 +821,10 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 			 * mppmem and use it as the level for all
 			 * nodes (mppmem is 0 when coming in).
 			 */
-			node_mem /= mppnppn ? mppnppn : node_cpus;
-			tmp_mppmem = node_min_mem = MIN(node_mem, node_min_mem);
+			tmp_mppmem /= mppnppn ? mppnppn : node_cpus;
 
-			/* If less than or equal to 0 make sure you
-			   have 1 at least since 0 means give all the
-			   memory to the job.
-			*/
+			/* Minimum memory per processing element should be 1,
+			 * since 0 means give all the memory to the job. */
 			if (tmp_mppmem <= 0)
 				tmp_mppmem = 1;
 
@@ -835,6 +838,15 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 	/* mppwidth */
 	for (i = 0; i < job_ptr->job_resrcs->nhosts; i++) {
 		uint32_t node_tasks = job_ptr->job_resrcs->cpus[i] / mppdepth;
+
+		if ((job_ptr->job_resrcs->sockets_per_node[i] > 0) &&
+		    (job_ptr->job_resrcs->cores_per_socket[i] > 0)) {
+			hwthreads_per_core = job_ptr->job_resrcs->cpus[i] /
+					     job_ptr->job_resrcs->sockets_per_node[i] /
+					     job_ptr->job_resrcs->cores_per_socket[i];
+		}
+		if (nppcu)
+			node_tasks = node_tasks * nppcu / hwthreads_per_core;
 
 		if (mppnppn && mppnppn < node_tasks)
 			node_tasks = mppnppn;
@@ -850,7 +862,7 @@ extern int do_basil_reserve(struct job_record *job_ptr)
 		bap = NULL;
 
 	rc   = basil_reserve(user, batch_id, mppwidth, mppdepth, mppnppn,
-			     mppmem, ns_head, bap);
+			     mppmem, (uint32_t)nppcu, ns_head, bap);
 	xfree(user);
 	if (rc <= 0) {
 		/* errno value will be resolved by select_g_job_begin() */

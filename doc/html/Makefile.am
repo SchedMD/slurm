@@ -24,6 +24,7 @@ generated_html = \
 	download.html \
 	dynalloc.html \
 	elastic_computing.html \
+	ext_sensorsplugins.html \
 	faq.html \
 	gang_scheduling.html \
 	gres.html \

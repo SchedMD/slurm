@@ -1,12 +1,12 @@
-.TH "ipmi.conf" "5" "November 2012" "ipmi.conf 1.0" "Slurm ipmi configuration file"
+.TH "acct_gather.conf" "5" "April 2013" "acct_gather.conf 1.0" "Slurm acct_gather.configuration file"
 
 .SH "NAME"
-ipmi.conf \- Slurm configuration file for the ipmi plugin
+acct_gather.conf \- Slurm configuration file for the acct_gather plugins
 
 .SH "DESCRIPTION"
 
-\fBipmi.conf\fP is an ASCII file which defines parameters used by
-Slurm's ipmi related plugins.
+\fBacct_gather.conf\fP is an ASCII file which defines parameters used by
+Slurm's acct_gather related plugins.
 The file location can be modified at system build time using the
 DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
 environment variable. The file will always be located in the
@@ -21,15 +21,18 @@ SLURM daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
 
 .LP
-The following ipmi.conf parameters are defined to control the general behavior
-of Slurm ipmi plugins.
+The following acct_gather.conf parameters are defined to control the general behavior of various plugins in SLURM.
 
 .TP
-\fBFrequency\fR=<number>
+\fBEnergyIPMI\fR options used for acct_gather_energy/ipmi are as follows.
+
+.RS
+.TP 20
+\fBEnergyIPMIFrequency\fR=<number>
 This parameter is the number of seconds between BMC access samples.
 
 .TP
-\fBCalcAdjustment\fR=<yes|no>
+\fBEnergyIPMICalcAdjustment\fR=<yes|no>
 If set to "yes", the consumption between the last BMC access sample and
 a step consumption update is approximated to get more accurate task consumption.
 The adjustment is made at the step start and each time the consumption
@@ -38,34 +41,35 @@ the first and last adjustments are used to calculated the consumption.
 The default is "no".
 
 .TP
-\fBPowerSensor\fR=<number>
+\fBEnergyIPMIPowerSensor\fR=<number>
 This parameter is optional. The plugin will not search all available sensors to
 find the power sensor, but will just check the sensor is in Watt.
 
 .LP
-The following ipmi.conf parameters are defined to control the
+The following acct_gather.conf parameters are defined to control the
 IPMI config default values for libipmiconsole.
 
 .TP
-\fBUsername\fR=\fIUSERNAME\fR
+\fBEnergyIPMIUsername\fR=\fIUSERNAME\fR
 Specify BMC Username.
 
 .TP
-\fBPassword\fR=\fIPASSWORD\fR
+\fBEnergyIPMIPassword\fR=\fIPASSWORD\fR
 Specify BMC Password.
+.RE
 
 .SH "EXAMPLE"
 .LP
 .br
 ###
 .br
-# Slurm ipmi configuration file
+# Slurm acct_gather configuration file
 .br
 ###
 .br
-Frequency=10
+EnergyIPMIFrequency=10
 .br
-CalcAdjustment=yes
+EnergyIPMICalcAdjustment=yes
 .br
 #
 
