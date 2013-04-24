@@ -47,6 +47,7 @@
 typedef struct job_queue_rec {
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
+	uint32_t priority;
 } job_queue_rec_t;
 
 /*

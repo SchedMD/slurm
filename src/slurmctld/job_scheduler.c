@@ -87,7 +87,7 @@ static char **	_build_env(struct job_record *job_ptr);
 static void	_depend_list_del(void *dep_ptr);
 static void	_feature_list_delete(void *x);
 static void	_job_queue_append(List job_queue, struct job_record *job_ptr,
-				  struct part_record *part_ptr);
+				  struct part_record *part_ptr, uint32_t priority);
 static void	_job_queue_rec_del(void *x);
 static bool	_job_runnable_test1(struct job_record *job_ptr,
 				    bool clear_start);
@@ -134,13 +134,14 @@ static List _build_user_job_list(uint32_t user_id, char* job_name)
 }
 
 static void _job_queue_append(List job_queue, struct job_record *job_ptr,
-			      struct part_record *part_ptr)
+			      struct part_record *part_ptr, uint32_t prio)
 {
 	job_queue_rec_t *job_queue_rec;
 
 	job_queue_rec = xmalloc(sizeof(job_queue_rec_t));
 	job_queue_rec->job_ptr  = job_ptr;
 	job_queue_rec->part_ptr = part_ptr;
+	job_queue_rec->priority = prio;
 	list_append(job_queue, job_queue_rec);
 }
 
@@ -229,6 +230,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr;
 	int reason;
+	int inx;
 
 	job_queue = list_create(_job_queue_rec_del);
 	job_iterator = list_iterator_create(job_list);
@@ -239,6 +241,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 		if (job_ptr->part_ptr_list) {
 			part_iterator = list_iterator_create(job_ptr->
 							     part_ptr_list);
+				inx = 0;
 	      			while ((part_ptr = (struct part_record *)
 					list_next(part_iterator))) {
 				job_ptr->part_ptr = part_ptr;
@@ -250,7 +253,9 @@ extern List build_job_queue(bool clear_start, bool backfill)
 				}
 				if (reason != WAIT_NO_REASON)
 					continue;
-				_job_queue_append(job_queue, job_ptr, part_ptr);
+				_job_queue_append(job_queue, job_ptr, part_ptr, 
+						  job_ptr->priority_array[inx]);
+				inx++;
 			}
 			list_iterator_destroy(part_iterator);
 		} else {
@@ -270,7 +275,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 			if (!_job_runnable_test2(job_ptr, backfill))
 				continue;
 			_job_queue_append(job_queue, job_ptr,
-					  job_ptr->part_ptr);
+					  job_ptr->part_ptr, job_ptr->priority);
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -1113,35 +1118,13 @@ extern int sort_job_queue2(void *x, void *y)
 	p1 = job_rec1->job_ptr->priority;
 	if (job_rec1->job_ptr->part_ptr_list &&
 	    job_rec1->job_ptr->priority_array) {
-		int i = 0;
-		part_iterator = list_iterator_create(job_rec1->job_ptr
-				->part_ptr_list);
-		while ((part_ptr = (struct part_record *)
-				   list_next(part_iterator))) {
-			if (job_rec1->part_ptr == part_ptr) {
-				p1 = job_rec1->job_ptr->priority_array[i];
-				break;
-			}
-			i++;
-		}
-		list_iterator_destroy(part_iterator);
+		p1 = job_rec1->priority;
 	}
 
 	p2 = job_rec2->job_ptr->priority;
 	if (job_rec2->job_ptr->part_ptr_list &&
 	    job_rec2->job_ptr->priority_array) {
-		int i = 0;
-		part_iterator = list_iterator_create(job_rec2->job_ptr
-				->part_ptr_list);
-		while ((part_ptr = (struct part_record *)
-				   list_next(part_iterator))) {
-			if (job_rec2->part_ptr == part_ptr) {
-				p2 = job_rec2->job_ptr->priority_array[i];
-				break;
-			}
-			i++;
-		}
-		list_iterator_destroy(part_iterator);
+		p2 = job_rec2->priority;
 	}
 
 	if (p1 < p2)
