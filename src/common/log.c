@@ -550,8 +550,10 @@ int log_alter(log_options_t opt, log_facility_t fac, char *logfile)
  */
 void log_set_debug_flags(void)
 {
+	uint32_t debug_flags = slurm_get_debug_flags();
+
 	slurm_mutex_lock(&log_lock);
-	log->debug_flags = slurm_get_debug_flags();
+	log->debug_flags = debug_flags;
 	slurm_mutex_unlock(&log_lock);
 }
 
