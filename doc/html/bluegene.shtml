@@ -110,6 +110,13 @@ SLURM job step information, including accounting, functions as
 expected.  Totalview and other debuggers will also work with srun.
 If SLURM is installed and configured correctly IBM's runjob will not
 work.</p>
+<p>The <i>srun --launcher-opts</i> option is designed to convey
+options to <i>runjob</i> that are not available using <i>srun</i>
+alone.  Node selection options are conveyed automatically
+by <i>srun</i> and cannot be overridden using this option.  Two
+leading dashes are required when listing the <i>runjob</i>
+options, e.g., <i>srun --launcher-opts='--mapping TEDCBA'</i>.  See
+the <i>runjob</i> man page for the list of available options.</p>
 
 <h3>Task Launch on BlueGene/L and BlueGene/P only</h3>
 
