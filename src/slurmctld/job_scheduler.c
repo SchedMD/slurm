@@ -1093,8 +1093,6 @@ extern int sort_job_queue2(void *x, void *y)
 	bool has_resv1, has_resv2;
 	static time_t config_update = 0;
 	static bool preemption_enabled = true;
-	ListIterator part_iterator;
-	struct part_record *part_ptr;
 	uint32_t p1, p2;
 
 	/* The following block of code is designed to minimize run time in
