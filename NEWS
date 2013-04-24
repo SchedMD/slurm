@@ -21,6 +21,9 @@ documents those changes that are of interest to users and admins.
  -- Added more options to update a step's information
  -- Add DebugFlags=ThreadID which will print the thread id of the calling
     thread.
+ -- CRAY - Allocate whole node (CPUs) in reservation despite what the
+    user requests.  We have found any srun/aprun afterwards will work on a
+    subset of resources.
 
 * Changes in Slurm 2.6.0pre2
 ============================
