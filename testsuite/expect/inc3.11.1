@@ -65,6 +65,7 @@ proc inc3_11_1 {} {
 	#{StartTime=now   Duration=5   Nodes=$def_node   Account=badaccountname}
 	if {$cons_res_actived == 1} {
 		set more_badtests "StartTime=now   Duration=5   NodeCnt=1 CoreCnt=$core_res_num  User=$user_name"
+		set more_badtests "StartTime=now   Duration=5   Nodes=$def_node_name\[1\-2\] CoreCnt=1 User=$user_name"
 		lappend badtests $more_badtests
 	}
 
