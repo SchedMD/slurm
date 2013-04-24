@@ -66,12 +66,12 @@ COMPILING AND INSTALLING THE DISTRIBUTION
 -----------------------------------------
 
 Please see the instructions at 
-  http://www.schedmd.com/slurmdocs/quickstart_admin.html
+  http://slurm.schedmd.com/quickstart_admin.html
 Extensive documentation is available from our home page at 
-  http://www.schedmd.com/slurmdocs/slurm.html
+  http://slurm.schedmd.com/slurm.html
 
 PROBLEMS
 --------
 
 If you experience problems compiling, installing, or running SLURM, see
-   http://www.schedmd.com/slurmdocs/help.html
+   http://slurm.schedmd.com/help.html

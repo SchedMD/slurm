@@ -104,7 +104,7 @@ License: GPL
 Group: System Environment/Base
 Source: %{name}-%{version}-%{release}.tgz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
-URL: http://www.schedmd.com/slurmdocs/
+URL: http://slurm.schedmd.com/
 
 Requires: slurm-plugins
 
