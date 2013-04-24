@@ -230,7 +230,6 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	struct job_record *job_ptr = NULL;
 	struct part_record *part_ptr;
 	int reason;
-	int inx;
 
 	job_queue = list_create(_job_queue_rec_del);
 	job_iterator = list_iterator_create(job_list);
@@ -239,11 +238,11 @@ extern List build_job_queue(bool clear_start, bool backfill)
 			continue;
 
 		if (job_ptr->part_ptr_list) {
-			part_iterator = list_iterator_create(job_ptr->
-							     part_ptr_list);
-				inx = 0;
-	      			while ((part_ptr = (struct part_record *)
-					list_next(part_iterator))) {
+			int inx = 0;
+			part_iterator = list_iterator_create(
+				job_ptr->part_ptr_list);
+			while ((part_ptr = (struct part_record *)
+				list_next(part_iterator))) {
 				job_ptr->part_ptr = part_ptr;
 				reason = job_limits_check(&job_ptr, backfill);
 				if ((reason != job_ptr->state_reason) &&
@@ -257,7 +256,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 				inx++;
 				if (reason != WAIT_NO_REASON)
 					continue;
-				_job_queue_append(job_queue, job_ptr, part_ptr, 
+				_job_queue_append(job_queue, job_ptr, part_ptr,
 						  job_ptr->priority_array[inx]);
 			}
 			list_iterator_destroy(part_iterator);
@@ -1118,17 +1117,19 @@ extern int sort_job_queue2(void *x, void *y)
 	if (!has_resv1 && has_resv2)
 		return 1;
 
-	p1 = job_rec1->job_ptr->priority;
 	if (job_rec1->job_ptr->part_ptr_list &&
-	    job_rec1->job_ptr->priority_array) {
+	    job_rec1->job_ptr->priority_array)
 		p1 = job_rec1->priority;
-	}
+	else
+		p1 = job_rec1->job_ptr->priority;
 
-	p2 = job_rec2->job_ptr->priority;
+
 	if (job_rec2->job_ptr->part_ptr_list &&
-	    job_rec2->job_ptr->priority_array) {
+	    job_rec2->job_ptr->priority_array)
 		p2 = job_rec2->priority;
-	}
+	else
+		p2 = job_rec2->job_ptr->priority;
+
 
 	if (p1 < p2)
 		return 1;
