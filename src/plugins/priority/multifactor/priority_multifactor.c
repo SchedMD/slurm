@@ -1076,214 +1076,7 @@ static int _apply_new_usage(struct job_record *job_ptr, double decay_factor,
 	return 1;
 }
 
-static void *_decay_ticket_thread(void *no_data)
-{
-	struct job_record *job_ptr = NULL;
-	ListIterator itr;
-	time_t start_time = time(NULL);
-	time_t last_ran = 0;
-	time_t last_reset = 0, next_reset = 0;
-	uint32_t calc_period = slurm_get_priority_calc_period();
-	double decay_hl = (double)slurm_get_priority_decay_hl();
-	double decay_factor = 1;
-	uint16_t reset_period = slurm_get_priority_reset_period();
-
-	/* Write lock on jobs, read lock on nodes and partitions */
-	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	slurmctld_lock_t job_read_lock =
-		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
-	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
-
-	/* See "DECAY_FACTOR DESCRIPTION" below for details. */
-	if (decay_hl > 0)
-		decay_factor = 1 - (0.693 / decay_hl);
-
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
-	_read_last_decay_ran(&last_ran, &last_reset);
-	if (last_reset == 0)
-		last_reset = start_time;
-
-	_init_grp_used_cpu_run_secs(last_ran);
-
-	while (1) {
-		time_t now = start_time;
-		double run_delta = 0.0, real_decay = 0.0;
-
-		slurm_mutex_lock(&decay_lock);
-		running_decay = 1;
-
-		/* If reconfig is called handle all that happens
-		 * outside of the loop here */
-		if (reconfig) {
-			/* if decay_hl is 0 or less that means no
-			 * decay is to be had.  This also means we
-			 * flush the used time at a certain time set
-			 * by PriorityUsageResetPeriod in the slurm.conf */
-			calc_period = slurm_get_priority_calc_period();
-			reset_period = slurm_get_priority_reset_period();
-			next_reset = 0;
-			decay_hl = (double)slurm_get_priority_decay_hl();
-			if (decay_hl > 0)
-				decay_factor = 1 - (0.693 / decay_hl);
-			else
-				decay_factor = 1;
-
-			reconfig = 0;
-		}
-
-		/* this needs to be done right away so as to
-		 * incorporate it into the decay loop.
-		 */
-		switch(reset_period) {
-		case PRIORITY_RESET_NONE:
-			break;
-		case PRIORITY_RESET_NOW:	/* do once */
-			_reset_usage();
-			reset_period = PRIORITY_RESET_NONE;
-			last_reset = now;
-			break;
-		case PRIORITY_RESET_DAILY:
-		case PRIORITY_RESET_WEEKLY:
-		case PRIORITY_RESET_MONTHLY:
-		case PRIORITY_RESET_QUARTERLY:
-		case PRIORITY_RESET_YEARLY:
-			if (next_reset == 0) {
-				next_reset = _next_reset(reset_period,
-							 last_reset);
-			}
-			if (now >= next_reset) {
-				_reset_usage();
-				last_reset = next_reset;
-				next_reset = _next_reset(reset_period,
-							 last_reset);
-			}
-		}
-
-		/* now calculate all the normalized usage here */
-		assoc_mgr_lock(&locks);
-		_set_children_usage_efctv(
-			assoc_mgr_root_assoc->usage->childern_list);
-		assoc_mgr_unlock(&locks);
-
-		if (!last_ran)
-			goto calc_tickets;
-		else
-			run_delta = difftime(start_time, last_ran);
-
-		if (run_delta <= 0)
-			goto calc_tickets;
-
-		real_decay = pow(decay_factor, run_delta);
-
-		if (priority_debug)
-			info("Decay factor over %g seconds goes "
-			     "from %.15f -> %.15f",
-			     run_delta, decay_factor, real_decay);
-
-		/* first apply decay to used time */
-		if (_apply_decay(real_decay) != SLURM_SUCCESS) {
-			error("problem applying decay");
-			running_decay = 0;
-			slurm_mutex_unlock(&decay_lock);
-			break;
-		}
-
-
-		/* Multifactor2 core algo 1/3. Iterate through all
-		 * jobs, mark parent associations with the current
-		 * sequence id, so that we know which
-		 * associations/users are active. At the same time as
-		 * we're looping through all the jobs anyway, apply
-		 * the new usage of running jobs too.
-		 */
-
-	calc_tickets:
-		lock_slurmctld(job_read_lock);
-		assoc_mgr_lock(&locks);
-		/* seqno 0 is a special invalid value. */
-		assoc_mgr_root_assoc->usage->active_seqno++;
-		if (!assoc_mgr_root_assoc->usage->active_seqno)
-			assoc_mgr_root_assoc->usage->active_seqno++;
-		assoc_mgr_unlock(&locks);
-		itr = list_iterator_create(job_list);
-		while ((job_ptr = list_next(itr))) {
-			/* apply new usage */
-			if (!IS_JOB_PENDING(job_ptr) &&
-			    job_ptr->start_time && job_ptr->assoc_ptr
-				&& last_ran)
-				_apply_new_usage(job_ptr, decay_factor,
-						 last_ran, start_time);
-
-			if (IS_JOB_PENDING(job_ptr) && job_ptr->assoc_ptr) {
-				assoc_mgr_lock(&locks);
-				_mark_assoc_active(job_ptr);
-				assoc_mgr_unlock(&locks);
-			}
-		}
-		list_iterator_destroy(itr);
-		unlock_slurmctld(job_read_lock);
-
-		/* Multifactor2 core algo 2/3. Start from the root,
-		 * distribute tickets to active child associations
-		 * proportional to the fair share (s*F). We start with
-		 * UINT32_MAX tickets at the root.
-		 */
-		assoc_mgr_lock(&locks);
-		max_tickets = 0;
-		assoc_mgr_root_assoc->usage->tickets = (uint32_t) -1;
-		_distribute_tickets (assoc_mgr_root_assoc->usage->childern_list,
-				     (uint32_t) -1);
-		assoc_mgr_unlock(&locks);
-
-		/* Multifactor2 core algo 3/3. Iterate through the job
-		 * list again, give priorities proportional to the
-		 * maximum number of tickets given to any user.
-		 */
-		lock_slurmctld(job_write_lock);
-		itr = list_iterator_create(job_list);
-		while ((job_ptr = list_next(itr))) {
-			/*
-			 * Priority 0 is reserved for held jobs. Also skip
-			 * priority calculation for non-pending jobs.
-			 */
-			if ((job_ptr->priority == 0)
-			    || !IS_JOB_PENDING(job_ptr))
-				continue;
-
-			job_ptr->priority =
-				_get_priority_internal(start_time, job_ptr);
-			last_job_update = time(NULL);
-			debug2("priority for job %u is now %u",
-			       job_ptr->job_id, job_ptr->priority);
-		}
-		list_iterator_destroy(itr);
-		unlock_slurmctld(job_write_lock);
-
-		last_ran = start_time;
-
-		_write_last_decay_ran(last_ran, last_reset);
-
-		running_decay = 0;
-		slurm_mutex_unlock(&decay_lock);
-
-		/* Sleep until the next time.  */
-		now = time(NULL);
-		double elapsed = difftime(now, start_time);
-		if (elapsed < calc_period) {
-			sleep(calc_period - elapsed);
-			start_time = time(NULL);
-		} else
-			start_time = now;
-		/* repeat ;) */
-	}
-	return NULL;
-}
-
-static void *_decay_usage_thread(void *no_data)
+static void *_decay_thread(void *no_data)
 {
 	struct job_record *job_ptr = NULL;
 	ListIterator itr;
@@ -1429,35 +1222,122 @@ static void *_decay_usage_thread(void *no_data)
 			slurm_mutex_unlock(&decay_lock);
 			break;
 		}
-		lock_slurmctld(job_write_lock);
-		itr = list_iterator_create(job_list);
-		while ((job_ptr = list_next(itr))) {
-			/* apply new usage */
-			if (!IS_JOB_PENDING(job_ptr) &&
-			    job_ptr->start_time && job_ptr->assoc_ptr) {
-				if (!_apply_new_usage(job_ptr, decay_factor,
-						      last_ran, start_time))
+
+		if (!(flags & PRIORITY_FLAGS_TICKET_BASED)) {
+			lock_slurmctld(job_write_lock);
+			itr = list_iterator_create(job_list);
+			while ((job_ptr = list_next(itr))) {
+				/* apply new usage */
+				if (!IS_JOB_PENDING(job_ptr) &&
+				    job_ptr->start_time && job_ptr->assoc_ptr) {
+					if (!_apply_new_usage(
+						    job_ptr, decay_factor,
+						    last_ran, start_time))
+						continue;
+				}
+
+				/*
+				 * Priority 0 is reserved for held
+				 * jobs. Also skip priority
+				 * calculation for non-pending jobs.
+				 */
+				if ((job_ptr->priority == 0)
+				    || !IS_JOB_PENDING(job_ptr))
 					continue;
+
+				job_ptr->priority = _get_priority_internal(
+					start_time, job_ptr);
+				last_job_update = time(NULL);
+				debug2("priority for job %u is now %u",
+				       job_ptr->job_id, job_ptr->priority);
 			}
-
-			/*
-			 * Priority 0 is reserved for held jobs. Also skip
-			 * priority calculation for non-pending jobs.
-			 */
-			if ((job_ptr->priority == 0)
-			    || !IS_JOB_PENDING(job_ptr))
-				continue;
-
-			job_ptr->priority =
-				_get_priority_internal(start_time, job_ptr);
-			last_job_update = time(NULL);
-			debug2("priority for job %u is now %u",
-			       job_ptr->job_id, job_ptr->priority);
+			list_iterator_destroy(itr);
+			unlock_slurmctld(job_write_lock);
 		}
-		list_iterator_destroy(itr);
-		unlock_slurmctld(job_write_lock);
 
 	get_usage:
+		if (flags & PRIORITY_FLAGS_TICKET_BASED) {
+			/* Read lock on jobs, nodes, and partitions */
+			slurmctld_lock_t job_read_lock =
+				{ NO_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
+
+			/* Multifactor Ticket Based core algo
+			 * 1/3. Iterate through all jobs, mark parent
+			 * associations with the current
+			 * sequence id, so that we know which
+			 * associations/users are active. At the same time as
+			 * we're looping through all the jobs anyway, apply
+			 * the new usage of running jobs too.
+			 */
+
+			lock_slurmctld(job_read_lock);
+			assoc_mgr_lock(&locks);
+			/* seqno 0 is a special invalid value. */
+			assoc_mgr_root_assoc->usage->active_seqno++;
+			if (!assoc_mgr_root_assoc->usage->active_seqno)
+				assoc_mgr_root_assoc->usage->active_seqno++;
+			assoc_mgr_unlock(&locks);
+			itr = list_iterator_create(job_list);
+			while ((job_ptr = list_next(itr))) {
+				/* apply new usage */
+				if (!IS_JOB_PENDING(job_ptr) &&
+				    job_ptr->start_time && job_ptr->assoc_ptr
+				    && last_ran)
+					_apply_new_usage(job_ptr, decay_factor,
+							 last_ran, start_time);
+
+				if (IS_JOB_PENDING(job_ptr)
+				    && job_ptr->assoc_ptr) {
+					assoc_mgr_lock(&locks);
+					_mark_assoc_active(job_ptr);
+					assoc_mgr_unlock(&locks);
+				}
+			}
+			list_iterator_destroy(itr);
+			unlock_slurmctld(job_read_lock);
+
+			/* Multifactor Ticket Based core algo
+			 * 2/3. Start from the root,
+			 * distribute tickets to active child associations
+			 * proportional to the fair share (s*F). We start with
+			 * UINT32_MAX tickets at the root.
+			 */
+			assoc_mgr_lock(&locks);
+			max_tickets = 0;
+			assoc_mgr_root_assoc->usage->tickets = (uint32_t) -1;
+			_distribute_tickets(
+				assoc_mgr_root_assoc->usage->childern_list,
+				(uint32_t) -1);
+			assoc_mgr_unlock(&locks);
+
+			/* Multifactor Ticket Based core algo
+			 * 3/3. Iterate through the job
+			 * list again, give priorities proportional to the
+			 * maximum number of tickets given to any user.
+			 */
+			lock_slurmctld(job_write_lock);
+			itr = list_iterator_create(job_list);
+			while ((job_ptr = list_next(itr))) {
+				/*
+				 * Priority 0 is reserved for held
+				 * jobs. Also skip priority
+				 * calculation for non-pending jobs.
+				 */
+				if ((job_ptr->priority == 0)
+				    || !IS_JOB_PENDING(job_ptr))
+					continue;
+
+				job_ptr->priority = _get_priority_internal(
+					start_time, job_ptr);
+				last_job_update = time(NULL);
+				debug2("priority for job %u is now %u",
+				       job_ptr->job_id, job_ptr->priority);
+			}
+			list_iterator_destroy(itr);
+			unlock_slurmctld(job_write_lock);
+
+		}
+
 		last_ran = start_time;
 
 		_write_last_decay_ran(last_ran, last_reset);
@@ -1475,16 +1355,6 @@ static void *_decay_usage_thread(void *no_data)
 			start_time = now;
 		/* repeat ;) */
 	}
-	return NULL;
-}
-
-static void *_decay_thread(void *no_data)
-{
-	if (flags & PRIORITY_FLAGS_TICKET_BASED)
-		_decay_ticket_thread(no_data);
-	else
-		_decay_usage_thread(no_data);
-
 	return NULL;
 }
 
