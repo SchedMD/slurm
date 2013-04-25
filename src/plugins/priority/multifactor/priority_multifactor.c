@@ -1658,9 +1658,9 @@ extern List priority_p_get_priority_factors_list(
 	slurmctld_lock_t job_read_lock =
 		{ NO_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
 
+	lock_slurmctld(job_read_lock);
 	if (job_list && list_count(job_list)) {
 		ret_list = list_create(slurm_destroy_priority_factors_object);
-		lock_slurmctld(job_read_lock);
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
 			/*
@@ -1707,12 +1707,12 @@ extern List priority_p_get_priority_factors_list(
 			list_append(ret_list, obj);
 		}
 		list_iterator_destroy(itr);
-		unlock_slurmctld(job_read_lock);
 		if (!list_count(ret_list)) {
 			list_destroy(ret_list);
 			ret_list = NULL;
 		}
 	}
+	unlock_slurmctld(job_read_lock);
 
 	return ret_list;
 }
