@@ -3019,6 +3019,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 		}
 	}
 
+	xfree(job_gres_ptr->gres_cnt_step_alloc);
 	return SLURM_SUCCESS;
 }
 
