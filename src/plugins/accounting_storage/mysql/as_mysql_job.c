@@ -535,9 +535,9 @@ no_rollup_change:
 		if (node_inx)
 			xstrfmtcat(query, "node_inx='%s', ", node_inx);
 		if (gres_req)
-			xstrfmtcat(query, ", gres_req='%s'", gres_req);
+			xstrfmtcat(query, "gres_req='%s', ", gres_req);
 		if (gres_alloc)
-			xstrfmtcat(query, ", gres_alloc='%s'", gres_alloc);
+			xstrfmtcat(query, "gres_alloc='%s', ", gres_alloc);
 
 		xstrfmtcat(query, "time_start=%ld, job_name='%s', state=%u, "
 			   "cpus_alloc=%u, nodes_alloc=%u, id_qos=%u, "
