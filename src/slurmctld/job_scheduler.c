@@ -238,7 +238,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 			continue;
 
 		if (job_ptr->part_ptr_list) {
-			int inx = 0;
+			int inx = -1;
 			part_iterator = list_iterator_create(
 				job_ptr->part_ptr_list);
 			while ((part_ptr = (struct part_record *)
