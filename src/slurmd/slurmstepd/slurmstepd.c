@@ -279,8 +279,7 @@ static int handle_spank_mode (int argc, char *argv[])
 		log_alter (conf->log_opts, 0, conf->logfile);
 	close (STDIN_FILENO);
 
-	if (slurm_conf_init(NULL) != SLURM_SUCCESS)
-		return error ("Failed to read slurm config");
+	slurm_conf_init(NULL);
 
 	if (get_jobid_uid_from_env (&jobid, &uid) < 0)
 		return error ("spank environment invalid");
