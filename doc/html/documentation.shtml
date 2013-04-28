@@ -79,6 +79,7 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="contributor.html">Contributor Agreement</a></li>
 <li><a href="programmer_guide.html">Programmer Guide</a></li>
 <li><a href="api.html">Application Programmer Interface (API) Guide</a></li>
+<li><a href="add.html">Adding Files or Plugins to Slurm</a></li>
 <li>Design Information</li>
 <ul>
 <li><a href="gres_design.html">Generic Resource (GRES) Design Guide</a></li>
@@ -112,6 +113,6 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 19 February 2013</p>
+<p style="text-align:center;">Last modified 28 April 2013</p>
 
 <!--#include virtual="footer.txt"-->
