@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fix for linking to the select/cray plugin to not give warning about
     undefined variable.
+ -- Add missing symbols to the xlator.h
 
 * Changes in Slurm 2.5.6
 ========================
