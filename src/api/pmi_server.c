@@ -150,7 +150,7 @@ static void *_msg_thread(void *x)
 
 	slurm_msg_t_init(&msg_send);
 
-	debug2("KVS_Barrier msg to %s:%u",
+	debug2("KVS_Barrier msg to %s:%hu",
 		msg_arg_ptr->bar_ptr->hostname,
 		msg_arg_ptr->bar_ptr->port);
 	msg_send.msg_type = PMI_KVS_GET_RESP;
@@ -161,7 +161,9 @@ static void *_msg_thread(void *x)
 
 	timeout = slurm_get_msg_timeout() * 10000;
 	if (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
-		error("slurm_send_recv_rc_msg_only_one: %m");
+		error("slurm_send_recv_rc_msg_only_one to %s:%hu : %m",
+		      msg_arg_ptr->bar_ptr->hostname,
+		      msg_arg_ptr->bar_ptr->port);
 	} else if (rc != SLURM_SUCCESS) {
 		error("KVS_Barrier confirm from %s, rc=%d",
 			msg_arg_ptr->bar_ptr->hostname, rc);
@@ -463,7 +465,7 @@ extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr)
 #endif
 
 #if _DEBUG
-	info("pmi_kvs_get: rank:%u size:%u port:%u, host:%s",
+	info("pmi_kvs_get: rank:%u size:%u port:%hu, host:%s",
 		kvs_get_ptr->task_id, kvs_get_ptr->size,
 		kvs_get_ptr->port, kvs_get_ptr->hostname);
 #endif
