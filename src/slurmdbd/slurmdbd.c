@@ -365,8 +365,6 @@ static void _usage(char *prog_name)
 /* Reset slurmctld logging based upon configuration parameters */
 static void _update_logging(bool startup)
 {
-	char *log_fname = NULL;
-
 	/* Preserve execute line arguments (if any) */
 	if (debug_level) {
 		slurmdbd_conf->debug_level = MIN(
@@ -382,13 +380,11 @@ static void _update_logging(bool startup)
 		log_opts.syslog_level = LOG_LEVEL_QUIET;
 	else {
 		log_opts.stderr_level = LOG_LEVEL_QUIET;
-		if (slurmdbd_conf->log_file) {
+		if (slurmdbd_conf->log_file)
 			log_opts.syslog_level = LOG_LEVEL_QUIET;
-			log_fname = slurmdbd_conf->log_file;
-		}
 	}
 
-	log_alter(log_opts, SYSLOG_FACILITY_DAEMON, log_fname);
+	log_alter(log_opts, SYSLOG_FACILITY_DAEMON, slurmdbd_conf->log_file);
 	if (startup && slurmdbd_conf->log_file) {
 		int rc;
 		gid_t slurm_user_gid;
