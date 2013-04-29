@@ -20,6 +20,10 @@ Under Linux or MacOS, simply copy the file in the directory
 
 or whatever shell other than ``sh`` you prefer.
 
+For system wide use with bash put the file in
+
+    /etc/bash_completion.d/
+
 The syntax file is then read and applied on a Shell script after the usual syntax file has been processed.
 
 __Known issues__

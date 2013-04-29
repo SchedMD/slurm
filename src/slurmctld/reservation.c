@@ -3644,7 +3644,11 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		if (*when > resv_ptr->end_time) {
 			/* reservation ended earlier */
 			*when = resv_ptr->end_time;
-			job_ptr->priority = 0;	/* administrative hold */
+			if ((now > resv_ptr->end_time) ||
+			    ((job_ptr->details) &&
+			     (job_ptr->details->begin_time >
+			      resv_ptr->end_time)))
+				job_ptr->priority = 0;	/* admin hold */
 			return ESLURM_RESERVATION_INVALID;
 		}
 		if (job_ptr->details->req_node_bitmap &&

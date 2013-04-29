@@ -300,6 +300,7 @@
 
 /* xstring.[ch] functions */
 #define	_xstrcat		slurm_xstrcat
+#define	_xstrncat		slurm_xstrncat
 #define	_xstrcatchar		slurm_xstrcatchar
 #define	_xslurm_strerrorcat	slurm_xslurm_strerrorcat
 #define	_xstrftimecat		slurm_xstrftimecat
@@ -307,6 +308,7 @@
 #define	_xrfc5424timecat	slurm_xrfc5424timecat
 #define	_xstrfmtcat		slurm_xstrfmtcat
 #define	_xmemcat		slurm_xmemcat
+#define	_xstrsubstitute		slurm_xstrsubstitute
 #define	xstrdup			slurm_xstrdup
 #define	xstrdup_printf		slurm_xstrdup_printf
 #define	xbasename		slurm_xbasename
