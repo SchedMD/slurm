@@ -13,10 +13,14 @@
 
 use strict;
 use File::Temp qw( tempfile );
+use FindBin;
+use lib "${FindBin::Bin}/../lib/perl";
 
 my ($fh, $filename) = tempfile(UNLINK => 0);
-
+die "No SLURM_NODELIST given, run generate_pbs_nodefile inside "
+	. "Slurm allocation or batch script.\n" if (!$ENV{'SLURM_NODELIST'});
 open(NODES, "scontrol show hostnames $ENV{SLURM_NODELIST} |") or die $!;
+
 my @nodes;
 while(<NODES>) {
 	my $node = $_;
