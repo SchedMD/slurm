@@ -952,7 +952,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 {
 	time_t now;
 	int comp_status;
-	int cpus = 0;
+	int tasks = 0;
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
 	struct jobacctinfo dummy_jobacct;
 	double ave_vsize = NO_VAL, ave_rss = NO_VAL, ave_pages = NO_VAL;
@@ -988,20 +988,20 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 
 	if (slurmdbd_conf) {
 		now = step_ptr->job_ptr->end_time;
-		cpus = step_ptr->cpu_count;
+		tasks = step_ptr->job_ptr->details->num_tasks;
 	} else if (step_ptr->step_id == SLURM_BATCH_SCRIPT) {
 		now = time(NULL);
-		cpus = 1;
+		tasks = 1;
 	} else {
 		now = time(NULL);
 #ifdef HAVE_BG_L_P
 		/* Only L and P use this code */
-		cpus = step_ptr->job_ptr->details->min_cpus;
+		tasks = step_ptr->job_ptr->details->min_cpus;
 #else
 		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
-			cpus = step_ptr->job_ptr->total_cpus;
+			tasks = step_ptr->job_ptr->total_cpus;
 		else
-			cpus = step_ptr->cpu_count;
+			tasks = step_ptr->step_layout->task_cnt;
 #endif
 	}
 
@@ -1016,15 +1016,15 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	}
 
 	/* figure out the ave of the totals sent */
-	if ((jobacct->min_cpu != NO_VAL) && cpus > 0) {
+	if ((jobacct->min_cpu != NO_VAL) && tasks > 0) {
 		ave_vsize = (double)jobacct->tot_vsize;
-		ave_vsize /= (double)cpus;
+		ave_vsize /= (double)tasks;
 		ave_rss = (double)jobacct->tot_rss;
-		ave_rss /= (double)cpus;
+		ave_rss /= (double)tasks;
 		ave_pages = (double)jobacct->tot_pages;
-		ave_pages /= (double)cpus;
+		ave_pages /= (double)tasks;
 		ave_cpu = (double)jobacct->tot_cpu;
-		ave_cpu /= (double)cpus;
+		ave_cpu /= (double)tasks;
 	}
 
 	if (!step_ptr->job_ptr->db_index) {
