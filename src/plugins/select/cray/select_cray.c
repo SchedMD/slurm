@@ -74,6 +74,7 @@ int switch_record_cnt __attribute__((weak_import));
 slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import)) = NULL;
 void *acct_db_conn __attribute__((weak_import)) = NULL;
 bitstr_t *avail_node_bitmap __attribute__((weak_import)) = NULL;
+char *default_slurm_config_file __attribute__((weak_import)) = NULL;
 #else
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr;
@@ -86,6 +87,7 @@ int switch_record_cnt;
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 void *acct_db_conn = NULL;
 bitstr_t *avail_node_bitmap = NULL;
+char *default_slurm_config_file = NULL;
 
 int clusteracct_storage_g_node_down(void *db_conn, struct node_record *node_ptr,
 			time_t event_time, char *reason,

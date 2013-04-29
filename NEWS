@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 2.5.7
 ========================
+ -- Fix for linking to the select/cray plugin to not give warning about
+    undefined variable.
 
 * Changes in Slurm 2.5.6
 ========================
