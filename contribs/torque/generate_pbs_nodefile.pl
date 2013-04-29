@@ -15,20 +15,13 @@ use strict;
 use File::Temp qw( tempfile );
 use FindBin;
 use lib "${FindBin::Bin}/../lib/perl";
+use Slurm ':all';
 
 my ($fh, $filename) = tempfile(UNLINK => 0);
-die "No SLURM_NODELIST given, run generate_pbs_nodefile inside "
+die "No SLURM_NODELIST given, run generate_pbs_nodefile inside a "
 	. "Slurm allocation or batch script.\n" if (!$ENV{'SLURM_NODELIST'});
-open(NODES, "scontrol show hostnames $ENV{SLURM_NODELIST} |") or die $!;
 
-my @nodes;
-while(<NODES>) {
-	my $node = $_;
-	chomp $node;
-	push(@nodes, $node);
-}
-close(NODES);
-
+my $hl = Slurm::Hostlist::create($ENV{'SLURM_NODELIST'});
 my $tasks = $ENV{SLURM_TASKS_PER_NODE};
 my @counts = split(",", $tasks);
 
@@ -37,14 +30,14 @@ foreach my $count(@counts) {
 	my $nodes;
 	$count =~ /^(\d+)(\(x(\d+)\))?$/;
 	$ppn = $1;
-	if($3) {
+	if ($3) {
 		$nodes = $3;
 	} else {
 		$nodes = 1;
 	}
-	for(my $j = 0; $j < $nodes; $j++) {
-		my $node = shift @nodes;
-		foreach(my $i = 0; $i < $ppn; $i++) {
+	for (my $j = 0; $j < $nodes; $j++) {
+		my $node = Slurm::Hostlist::shift($hl);
+		foreach (my $i = 0; $i < $ppn; $i++) {
 			print $fh "$node\n";
 		}
 	}
