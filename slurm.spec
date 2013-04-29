@@ -777,6 +777,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/qstat
 %{_bindir}/qsub
 %{_bindir}/mpiexec
+%{_bindir}/generate_pbs_nodefile
 #############################################################################
 
 %files sjobexit
