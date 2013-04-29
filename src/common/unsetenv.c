@@ -53,8 +53,7 @@ extern int unsetenv (const char *name)
 	len = strlen(name);
 	tmp = malloc(len + 3);
 	if (!tmp) {
-		fprintf(log_fp(), "unsetenvc: %s\n",
-			strerror(errno));
+		log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
 		abort();
 	}
 	strcpy(tmp, name);

@@ -149,9 +149,7 @@ extern void lsd_fatal_error(char *file, int line, char *mesg);
 #  ifndef lsd_fatal_error
 	static void lsd_fatal_error(char *file, int line, char *mesg)
 	{
-		fprintf(log_fp(), "ERROR: [%s:%d] %s: %s\n",
-			file, line, mesg, strerror(errno));
-		fflush(log_fp());
+		log_fatal(file, line, mesg, strerror(errno));
 	}
 #  endif /* !lsd_fatal_error */
 #endif /* !WITH_LSD_FATAL_ERROR_FUNC */
@@ -166,9 +164,7 @@ extern void * lsd_nomem_error(char *file, int line, char *mesg);
 #  ifndef lsd_nomem_error
 	static void * lsd_nomem_error(char *file, int line, char *mesg)
 	{
-		fprintf(log_fp(), "ERROR: [%s:%d] %s: %s\n",
-			file, line, mesg, strerror(errno));
-		fflush(log_fp());
+		log_oom(file, line, mesg);
 		abort();
 		return NULL;
 	}

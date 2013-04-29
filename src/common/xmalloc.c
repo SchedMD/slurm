@@ -94,11 +94,9 @@ void *slurm_xmalloc(size_t size, const char *file, int line, const char *func)
 	p = (int *)malloc(size + 2*sizeof(int));
 	MALLOC_UNLOCK();
 	if (!p) {
-		/* don't call log functions here, we're probably OOM
-		 */
-		fprintf(log_fp(), "%s:%d: %s: xmalloc(%d) failed\n",
-				file, line, func, (int)size);
-		exit(1);
+		/* out of memory */
+		log_oom(file, line, func);
+		abort();
 	}
 	p[0] = XMALLOC_MAGIC;	/* add "secret" magic cookie */
 	p[1] = (int)size;	/* store size in buffer */
@@ -185,8 +183,7 @@ void * slurm_xrealloc(void **item, size_t newsize,
 	return *item;
 
   error:
-	fprintf(log_fp(), "%s:%d: %s: xrealloc(%d) failed\n",
-		file, line, func, (int)newsize);
+	log_oom(file, line, func);
 	abort();
 }
 

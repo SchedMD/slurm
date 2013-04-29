@@ -322,7 +322,7 @@ exchange (argv)
       char *new_str = malloc (top + 1);
       if (new_str == NULL) {
 	nonoption_flags_len = nonoption_flags_max_len = 0;
-	fprintf(log_fp(), "exchange: malloc failure\n");
+	log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
 	abort();
       } else {
 	  memset (__mempcpy (new_str, __getopt_nonoption_flags,
@@ -434,7 +434,7 @@ _getopt_initialize (argc, argv, optstring)
 	      __getopt_nonoption_flags =
 		(char *) malloc (nonoption_flags_max_len);
 	      if (__getopt_nonoption_flags == NULL) {
-		fprintf(log_fp(), "exchange: malloc failure\n");
+		log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
 		abort();
 		nonoption_flags_max_len = -1;
 	      } else {

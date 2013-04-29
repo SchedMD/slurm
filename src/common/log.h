@@ -205,10 +205,15 @@ void log_set_fpfx(char *pfx);
  */
 void log_set_argv0(char *pfx);
 
-/* grab the FILE * of the current logfile (or stderr if not logging to
- * a file)
- */
+/* Return the FILE * of the current logfile (or stderr if not logging to
+ * a file, but NOT both). Also see log_fatal() and log_oom() below. */
 FILE *log_fp(void);
+
+/* Log fatal error without message buffering */
+void log_fatal(const char *file, int line, const char *msg, const char *err_str);
+
+/* Log out of memory without message buffering */
+void log_oom(const char *file, int line, const char *func);
 
 /*
  * Buffered log functions:

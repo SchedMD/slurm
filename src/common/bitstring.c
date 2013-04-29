@@ -109,7 +109,7 @@ bit_alloc(bitoff_t nbits)
 
 	new = (bitstr_t *)calloc(_bitstr_words(nbits), sizeof(bitstr_t));
 	if (!new) {
-		fprintf(log_fp(), "bit_alloc: calloc failed\n");
+		log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
 		abort();
 	}
 
@@ -134,7 +134,7 @@ bit_realloc(bitstr_t *b, bitoff_t nbits)
 	obits = _bitstr_bits(b);
 	new = realloc(b, _bitstr_words(nbits) * sizeof(bitstr_t));
 	if (!new) {
-		fprintf(log_fp(), "bit_realloc: realloc failed\n");
+		log_oom(__FILE__, __LINE__, __CURRENT_FUNC__);
 		abort();
 	}
 
