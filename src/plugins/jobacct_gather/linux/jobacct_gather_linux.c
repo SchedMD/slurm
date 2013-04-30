@@ -418,6 +418,43 @@ static void _destroy_prec(void *object)
 	return;
 }
 
+static void _handle_stats(
+	List prec_list, char *proc_stat_file, char *proc_io_file)
+{
+	FILE *stat_fp = NULL;
+	FILE *io_fp = NULL;
+	int fd, fd2;
+	prec_t *prec = NULL;
+
+	if (!(stat_fp = fopen(proc_stat_file, "r")))
+		return;  /* Assume the process went away */
+	/*
+	 * Close the file on exec() of user tasks.
+	 *
+	 * NOTE: If we fork() slurmstepd after the
+	 * fopen() above and before the fcntl() below,
+	 * then the user task may have this extra file
+	 * open, which can cause problems for
+	 * checkpoint/restart, but this should be a very rare
+	 * problem in practice.
+	 */
+	fd = fileno(stat_fp);
+	fcntl(fd, F_SETFD, FD_CLOEXEC);
+
+	prec = xmalloc(sizeof(prec_t));
+	if (_get_process_data_line(fd, prec)) {
+		list_append(prec_list, prec);
+		if ((io_fp = fopen(proc_io_file, "r"))) {
+			fd2 = fileno(io_fp);
+			fcntl(fd2, F_SETFD, FD_CLOEXEC);
+			_get_process_io_data_line(fd2, prec);
+			fclose(io_fp);
+		}
+	} else
+		xfree(prec);
+	fclose(stat_fp);
+
+}
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -463,15 +500,13 @@ extern void jobacct_gather_p_poll_data(
 
 	struct	dirent *slash_proc_entry;
 	char		*iptr = NULL, *optr = NULL, *optr2 = NULL;
-	FILE		*stat_fp = NULL;
-	FILE		*io_fp = NULL;
 	char		proc_stat_file[256];	/* Allow ~20x extra length */
 	char		proc_io_file[256];	/* Allow ~20x extra length */
 	List prec_list = NULL;
 	pid_t *pids = NULL;
 	int npids = 0;
 	uint32_t total_job_mem = 0, total_job_vsize = 0;
-	int		i, fd, fd2;
+	int		i;
 	ListIterator itr;
 	ListIterator itr2;
 	prec_t *prec = NULL;
@@ -518,40 +553,9 @@ extern void jobacct_gather_p_poll_data(
 			goto finished;
 		}
 		for (i = 0; i < npids; i++) {
-			snprintf(proc_stat_file, 256,
-				 "/proc/%d/stat", pids[i]);
-			if ((stat_fp = fopen(proc_stat_file, "r"))==NULL)
-				continue;  /* Assume the process went away */
-			/*
-			 * Close the file on exec() of user tasks.
-			 *
-			 * NOTE: If we fork() slurmstepd after the
-			 * fopen() above and before the fcntl() below,
-			 * then the user task may have this extra file
-			 * open, which can cause problems for
-			 * checkpoint/restart, but this should be a very rare
-			 * problem in practice.
-			 */
-			fd = fileno(stat_fp);
-			fcntl(fd, F_SETFD, FD_CLOEXEC);
-
-			prec = xmalloc(sizeof(prec_t));
-			if (_get_process_data_line(fd, prec)) {
-				snprintf(proc_io_file, 256,
-					"/proc/%d/io", pids[i]);
-				if ((io_fp = fopen(proc_io_file, "r")) == NULL)
-						continue;  /* Assume the
-							    process went away */
-				fd2 = fileno(io_fp);
-				fcntl(fd2, F_SETFD, FD_CLOEXEC);
-				if (_get_process_io_data_line(fd2, prec))
-				list_append(prec_list, prec);
-			else
-				xfree(prec);
-				fclose(io_fp);
-			} else
-				xfree(prec);
-			fclose(stat_fp);
+			snprintf(proc_stat_file, 256, "/proc/%d/stat", pids[i]);
+			snprintf(proc_io_file, 256, "/proc/%d/io", pids[i]);
+			_handle_stats(prec_list, proc_stat_file, proc_io_file);
 		}
 	} else {
 		slurm_mutex_lock(&reading_mutex);
@@ -617,36 +621,7 @@ extern void jobacct_gather_p_poll_data(
 			} while (*iptr);
 			*optr2 = 0;
 
-			if ((stat_fp = fopen(proc_stat_file,"r"))==NULL)
-				continue;  /* Assume the process went away */
-			/*
-			 * Close the file on exec() of user tasks.
-			 *
-			 * NOTE: If we fork() slurmstepd after the
-			 * fopen() above and before the fcntl() below,
-			 * then the user task may have this extra file
-			 * open, which can cause problems for
-			 * checkpoint/restart, but this should be a very rare
-			 * problem in practice.
-			 */
-			fd = fileno(stat_fp);
-			fcntl(fd, F_SETFD, FD_CLOEXEC);
-
-			prec = xmalloc(sizeof(prec_t));
-			if (_get_process_data_line(fd, prec)) {
-				if ((io_fp = fopen(proc_io_file,"r"))==NULL)
-						continue;  /* Assume the process
-							      went away */
-				fd2 = fileno(io_fp);
-				fcntl(fd2, F_SETFD, FD_CLOEXEC);
-				if (_get_process_io_data_line(fd2, prec))
-				list_append(prec_list, prec);
-			else
-				xfree(prec);
-				fclose(io_fp);
-			} else
-				xfree(prec);
-			fclose(stat_fp);
+			_handle_stats(prec_list, proc_stat_file, proc_io_file);
 		}
 		slurm_mutex_unlock(&reading_mutex);
 
