@@ -319,7 +319,7 @@ static char *step_req_inx[] = {
 	"min_cpu_node",
 	"ave_cpu",
 	"act_cpufreq",
-	"consumed_energy,"
+	"consumed_energy",
 	"max_disk_read",
 	"max_disk_read_task",
 	"max_disk_read_node",
