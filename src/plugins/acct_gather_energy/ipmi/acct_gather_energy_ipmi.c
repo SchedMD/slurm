@@ -923,35 +923,35 @@ extern void acct_gather_energy_p_conf_options(s_p_options_t **full_options,
 {
 //	s_p_options_t *full_options_ptr;
 	s_p_options_t options[] = {
-		{"EnergyIMPIDriverType", S_P_UINT32},
-		{"EnergyIMPIDisableAutoProbe", S_P_UINT32},
-		{"EnergyIMPIDriverAddress", S_P_UINT32},
-		{"EnergyIMPIRegisterSpacing", S_P_UINT32},
-		{"EnergyIMPIDriverDevice", S_P_STRING},
-		{"EnergyIMPIProtocolVersion", S_P_UINT32},
-		{"EnergyIMPIUsername", S_P_STRING},
-		{"EnergyIMPIPassword", S_P_STRING},
+		{"EnergyIPMIDriverType", S_P_UINT32},
+		{"EnergyIPMIDisableAutoProbe", S_P_UINT32},
+		{"EnergyIPMIDriverAddress", S_P_UINT32},
+		{"EnergyIPMIRegisterSpacing", S_P_UINT32},
+		{"EnergyIPMIDriverDevice", S_P_STRING},
+		{"EnergyIPMIProtocolVersion", S_P_UINT32},
+		{"EnergyIPMIUsername", S_P_STRING},
+		{"EnergyIPMIPassword", S_P_STRING},
 /* FIXME: remove these from the structure? */
-//		{"EnergyIMPIk_g", S_P_STRING},
-//		{"EnergyIMPIk_g_len", S_P_UINT32},
-		{"EnergyIMPIPrivilegeLevel", S_P_UINT32},
-		{"EnergyIMPIAuthenticationType", S_P_UINT32},
-		{"EnergyIMPICipherSuiteId", S_P_UINT32},
-		{"EnergyIMPISessionTimeout", S_P_UINT32},
-		{"EnergyIMPIRetransmissionTimeout", S_P_UINT32},
-		{"EnergyIMPIWorkaroundFlags", S_P_UINT32},
-		{"EnergyIMPIRereadSdrCache", S_P_BOOLEAN},
-		{"EnergyIMPIIgnoreNonInterpretableSensors", S_P_BOOLEAN},
-		{"EnergyIMPIBridgeSensors", S_P_BOOLEAN},
-		{"EnergyIMPIInterpretOemData", S_P_BOOLEAN},
-		{"EnergyIMPISharedSensors", S_P_BOOLEAN},
-		{"EnergyIMPIDiscreteReading", S_P_BOOLEAN},
-		{"EnergyIMPIIgnoreScanningDisabled", S_P_BOOLEAN},
-		{"EnergyIMPIAssumeBmcOwner", S_P_BOOLEAN},
-		{"EnergyIMPIEntitySensorNames", S_P_BOOLEAN},
-		{"EnergyIMPIFrequency", S_P_UINT32},
-		{"EnergyIMPICalcAdjustment", S_P_BOOLEAN},
-		{"EnergyIMPIPowerSensor", S_P_UINT32},
+//		{"EnergyIPMIk_g", S_P_STRING},
+//		{"EnergyIPMIk_g_len", S_P_UINT32},
+		{"EnergyIPMIPrivilegeLevel", S_P_UINT32},
+		{"EnergyIPMIAuthenticationType", S_P_UINT32},
+		{"EnergyIPMICipherSuiteId", S_P_UINT32},
+		{"EnergyIPMISessionTimeout", S_P_UINT32},
+		{"EnergyIPMIRetransmissionTimeout", S_P_UINT32},
+		{"EnergyIPMIWorkaroundFlags", S_P_UINT32},
+		{"EnergyIPMIRereadSdrCache", S_P_BOOLEAN},
+		{"EnergyIPMIIgnoreNonInterpretableSensors", S_P_BOOLEAN},
+		{"EnergyIPMIBridgeSensors", S_P_BOOLEAN},
+		{"EnergyIPMIInterpretOemData", S_P_BOOLEAN},
+		{"EnergyIPMISharedSensors", S_P_BOOLEAN},
+		{"EnergyIPMIDiscreteReading", S_P_BOOLEAN},
+		{"EnergyIPMIIgnoreScanningDisabled", S_P_BOOLEAN},
+		{"EnergyIPMIAssumeBmcOwner", S_P_BOOLEAN},
+		{"EnergyIPMIEntitySensorNames", S_P_BOOLEAN},
+		{"EnergyIPMIFrequency", S_P_UINT32},
+		{"EnergyIPMICalcAdjustment", S_P_BOOLEAN},
+		{"EnergyIPMIPowerSensor", S_P_UINT32},
 		{NULL} };
 
 	transfer_s_p_options(full_options, options, full_options_cnt);
@@ -964,89 +964,90 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 	slurm_ipmi_conf.freq = DEFAULT_IPMI_FREQ;
 
 	if (!tbl) {
-		/* ipmi initialisation parameters */
-		s_p_get_uint32(&slurm_ipmi_conf.driver_type,
-			       "EnergyIMPIDriverType", tbl);
-		s_p_get_uint32(&slurm_ipmi_conf.disable_auto_probe,
-			       "EnergyIMPIDisableAutoProbe", tbl);
-		s_p_get_uint32(&slurm_ipmi_conf.driver_address,
-			       "EnergyIMPIDriverAddress", tbl);
-		s_p_get_uint32(&slurm_ipmi_conf.register_spacing,
-			       "EnergyIMPIRegisterSpacing", tbl);
-
-		s_p_get_string(&slurm_ipmi_conf.driver_device,
-			       "EnergyIMPIDriverDevice", tbl);
-
-		s_p_get_uint32(&slurm_ipmi_conf.protocol_version,
-			       "EnergyIMPIProtocolVersion", tbl);
-
-		if (!s_p_get_string(&slurm_ipmi_conf.username,
-				    "EnergyIMPIUsername", tbl))
-			slurm_ipmi_conf.username = xstrdup(DEFAULT_IPMI_USER);
-
-		s_p_get_string(&slurm_ipmi_conf.password,
-			       "EnergyIMPIPassword", tbl);
-		if (!slurm_ipmi_conf.password)
-			slurm_ipmi_conf.password = xstrdup("foopassword");
-
-		s_p_get_uint32(&slurm_ipmi_conf.privilege_level,
-			       "EnergyIMPIPrivilegeLevel", tbl);
-		s_p_get_uint32(&slurm_ipmi_conf.authentication_type,
-			       "EnergyIMPIAuthenticationType", tbl);
-		s_p_get_uint32(&slurm_ipmi_conf.cipher_suite_id,
-			       "EnergyIMPICipherSuiteId", tbl);
-		s_p_get_uint32(&slurm_ipmi_conf.session_timeout,
-			       "EnergyIMPISessionTimeout", tbl);
-		s_p_get_uint32(&slurm_ipmi_conf.retransmission_timeout,
-			       "EnergyIMPIRetransmissionTimeout", tbl);
-		s_p_get_uint32(&slurm_ipmi_conf. workaround_flags,
-			       "EnergyIMPIWorkaroundFlags", tbl);
-
-		if (!s_p_get_boolean(&slurm_ipmi_conf.reread_sdr_cache,
-				     "EnergyIMPIRereadSdrCache", tbl))
-			slurm_ipmi_conf.reread_sdr_cache = false;
-		if (!s_p_get_boolean(&slurm_ipmi_conf.
-				     ignore_non_interpretable_sensors,
-				     "EnergyIMPIIgnoreNonInterpretableSensors",
-				     tbl))
-			slurm_ipmi_conf.ignore_non_interpretable_sensors =
-				false;
-		if (!s_p_get_boolean(&slurm_ipmi_conf.bridge_sensors,
-				     "EnergyIMPIBridgeSensors", tbl))
-			slurm_ipmi_conf.bridge_sensors = false;
-		if (!s_p_get_boolean(&slurm_ipmi_conf.interpret_oem_data,
-				     "EnergyIMPIInterpretOemData", tbl))
-			slurm_ipmi_conf.interpret_oem_data = false;
-		if (!s_p_get_boolean(&slurm_ipmi_conf.shared_sensors,
-				     "EnergyIMPISharedSensors", tbl))
-			slurm_ipmi_conf.shared_sensors = false;
-		if (!s_p_get_boolean(&slurm_ipmi_conf.discrete_reading,
-				     "EnergyIMPIDiscreteReading", tbl))
-			slurm_ipmi_conf.discrete_reading = false;
-		if (!s_p_get_boolean(&slurm_ipmi_conf.ignore_scanning_disabled,
-				     "EnergyIMPIIgnoreScanningDisabled", tbl))
-			slurm_ipmi_conf.ignore_scanning_disabled = false;
-		if (!s_p_get_boolean(&slurm_ipmi_conf.assume_bmc_owner,
-				     "EnergyIMPIAssumeBmcOwner", tbl))
-			slurm_ipmi_conf.assume_bmc_owner = false;
-		if (!s_p_get_boolean(&slurm_ipmi_conf.entity_sensor_names,
-				     "EnergyIMPIEntitySensorNames", tbl))
-			slurm_ipmi_conf.entity_sensor_names = false;
-
-		s_p_get_uint32(&slurm_ipmi_conf.freq,
-			       "EnergyIMPIFrequency", tbl);
-
-		if ((int)slurm_ipmi_conf.freq <= 0)
-			fatal("EnergyIMPIFrequency must be a positive integer "
-			      "in acct_gather.conf.");
-
-		if (!s_p_get_boolean(&(slurm_ipmi_conf.adjustment),
-				     "EnergyIMPICalcAdjustment", tbl))
-			slurm_ipmi_conf.adjustment = false;
-
-		s_p_get_uint32(&slurm_ipmi_conf.power_sensor_num,
-			       "EnergyIMPIPowerSensor", tbl);
+		return;
 	}
+	/* ipmi initialisation parameters */
+	s_p_get_uint32(&slurm_ipmi_conf.driver_type,
+		       "EnergyIPMIDriverType", tbl);
+	s_p_get_uint32(&slurm_ipmi_conf.disable_auto_probe,
+		       "EnergyIPMIDisableAutoProbe", tbl);
+	s_p_get_uint32(&slurm_ipmi_conf.driver_address,
+		       "EnergyIPMIDriverAddress", tbl);
+	s_p_get_uint32(&slurm_ipmi_conf.register_spacing,
+		       "EnergyIPMIRegisterSpacing", tbl);
+
+	s_p_get_string(&slurm_ipmi_conf.driver_device,
+		       "EnergyIPMIDriverDevice", tbl);
+
+	s_p_get_uint32(&slurm_ipmi_conf.protocol_version,
+		       "EnergyIPMIProtocolVersion", tbl);
+
+	if (!s_p_get_string(&slurm_ipmi_conf.username,
+			    "EnergyIPMIUsername", tbl))
+		slurm_ipmi_conf.username = xstrdup(DEFAULT_IPMI_USER);
+
+	s_p_get_string(&slurm_ipmi_conf.password,
+		       "EnergyIPMIPassword", tbl);
+	if (!slurm_ipmi_conf.password)
+		slurm_ipmi_conf.password = xstrdup("foopassword");
+
+	s_p_get_uint32(&slurm_ipmi_conf.privilege_level,
+		       "EnergyIPMIPrivilegeLevel", tbl);
+	s_p_get_uint32(&slurm_ipmi_conf.authentication_type,
+		       "EnergyIPMIAuthenticationType", tbl);
+	s_p_get_uint32(&slurm_ipmi_conf.cipher_suite_id,
+		       "EnergyIPMICipherSuiteId", tbl);
+	s_p_get_uint32(&slurm_ipmi_conf.session_timeout,
+		       "EnergyIPMISessionTimeout", tbl);
+	s_p_get_uint32(&slurm_ipmi_conf.retransmission_timeout,
+		       "EnergyIPMIRetransmissionTimeout", tbl);
+	s_p_get_uint32(&slurm_ipmi_conf. workaround_flags,
+		       "EnergyIPMIWorkaroundFlags", tbl);
+
+	if (!s_p_get_boolean(&slurm_ipmi_conf.reread_sdr_cache,
+			     "EnergyIPMIRereadSdrCache", tbl))
+		slurm_ipmi_conf.reread_sdr_cache = false;
+	if (!s_p_get_boolean(&slurm_ipmi_conf.
+			     ignore_non_interpretable_sensors,
+			     "EnergyIPMIIgnoreNonInterpretableSensors",
+			     tbl))
+		slurm_ipmi_conf.ignore_non_interpretable_sensors =
+			false;
+	if (!s_p_get_boolean(&slurm_ipmi_conf.bridge_sensors,
+			     "EnergyIPMIBridgeSensors", tbl))
+		slurm_ipmi_conf.bridge_sensors = false;
+	if (!s_p_get_boolean(&slurm_ipmi_conf.interpret_oem_data,
+			     "EnergyIPMIInterpretOemData", tbl))
+		slurm_ipmi_conf.interpret_oem_data = false;
+	if (!s_p_get_boolean(&slurm_ipmi_conf.shared_sensors,
+			     "EnergyIPMISharedSensors", tbl))
+		slurm_ipmi_conf.shared_sensors = false;
+	if (!s_p_get_boolean(&slurm_ipmi_conf.discrete_reading,
+			     "EnergyIPMIDiscreteReading", tbl))
+		slurm_ipmi_conf.discrete_reading = false;
+	if (!s_p_get_boolean(&slurm_ipmi_conf.ignore_scanning_disabled,
+			     "EnergyIPMIIgnoreScanningDisabled", tbl))
+		slurm_ipmi_conf.ignore_scanning_disabled = false;
+	if (!s_p_get_boolean(&slurm_ipmi_conf.assume_bmc_owner,
+			     "EnergyIPMIAssumeBmcOwner", tbl))
+		slurm_ipmi_conf.assume_bmc_owner = false;
+	if (!s_p_get_boolean(&slurm_ipmi_conf.entity_sensor_names,
+			     "EnergyIPMIEntitySensorNames", tbl))
+		slurm_ipmi_conf.entity_sensor_names = false;
+
+	s_p_get_uint32(&slurm_ipmi_conf.freq,
+		       "EnergyIPMIFrequency", tbl);
+
+	if ((int)slurm_ipmi_conf.freq <= 0)
+		fatal("EnergyIPMIFrequency must be a positive integer "
+		      "in acct_gather.conf.");
+
+	if (!s_p_get_boolean(&(slurm_ipmi_conf.adjustment),
+			     "EnergyIPMICalcAdjustment", tbl))
+		slurm_ipmi_conf.adjustment = false;
+
+	s_p_get_uint32(&slurm_ipmi_conf.power_sensor_num,
+		       "EnergyIPMIPowerSensor", tbl);
 
 	flag_slurmd_process = _is_thread_launcher();
 	if (flag_slurmd_process) {
