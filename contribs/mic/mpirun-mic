@@ -1,0 +1,125 @@
+#!/bin/bash
+#
+# mpirun-mic
+# Helper script for launching symmetric and MIC-only MPI tasks within SLURM
+#
+# (C)  Olli-Pekka Lehto - CSC IT Center for Science Ltd.
+# 4-2013
+#
+
+USAGE="
+	mpirun-mic: MPI execution helper script for using Xeon Phi with SLURM
+
+	Usage:
+        MIC binary to be run:  -m [mic_binary]
+        Host binary to be run: -c [host_binary]
+        Run using TotalView:   --tv
+        Run using TotalView cli: --tvcli
+        MIC task count set using MIC_PPN environment variable
+        Pass additional flags to mpiexec using MPIEXEC_FLAGS_HOST and MPIEXEC_FLAGS_MIC
+"
+
+
+# Maximum number of MIC threads
+MIC_MAX_THREADS=240
+
+#MPIEXEC=$I_MPI_ROOT/intel64/bin/mpiexec.hydra
+#MIC_MPIEXEC=$I_MPI_ROOT/mic/bin/mpiexec.hydra
+RUNCMD=mpiexec.hydra
+
+# If not under SLURM just run on the local system
+if [[ -z "$SLURM_PROCID" ]] ; then
+    SLURM_PROCID=0
+fi
+if [[ -z "$SLURM_NODELIST" ]] ; then
+    SLURM_NODELIST=`hostname`
+fi
+if [[ -z "$SLURM_TASKS_PER_NODE" ]] ; then
+    SLURM_TASKS_PER_NODE=1
+fi
+
+
+# If task count is not specified, use 1 task per MIC
+if [[ -z "$MIC_PPN" ]] ; then
+    MIC_PPN=1
+fi
+
+# If threads are not set, divide the thread number by PPN 
+if [[ -z "$MIC_OMP_NUM_THREADS" ]] ; then
+    MIC_OMP_NUM_THREADS=$((MIC_MAX_THREADS/$MIC_PPN))
+fi
+
+if [ $# -lt 1 ] ; then
+   echo "$USAGE" >&2
+   exit 1
+fi
+
+while getopts "vhm:c:-:" OPTION
+do
+     case $OPTION in
+	 h)  
+	     echo $USAGE
+	     exit 0
+	     ;;
+         m)
+             MIC_BINARY=$OPTARG
+             ;;
+         c)
+             CPU_BINARY=$OPTARG
+	     ;;
+	 v)  
+	     MPIRUN_MIC_VERBOSE=1
+	     ;;
+	 -)
+	     case $OPTARG in
+		 tv)
+		     USE_TOTALVIEW=1
+		     ;;
+		 tvcli)
+		     USE_TOTALVIEWCLI=1
+		     ;;
+                  \?) echo $USAGE >&2
+                     exit 1
+                     ;;
+	     esac
+	     ;;
+	\?) echo $USAGE >&2
+	    exit 1
+            ;;
+     esac
+done
+unset I_MPI_PMI_LIBRARY
+if [ $SLURM_PROCID -eq 0 ] ; then
+    for i in `scontrol show hostname $SLURM_NODELIST` ; do
+	if [[ -n "$CPU_BINARY" ]] ; then
+	    RUNCMD="$RUNCMD : $MPIEXEC_FLAGS_HOST -host $i -n $SLURM_TASKS_PER_NODE $CPU_BINARY "
+	fi
+	if [[ -n "$MIC_BINARY" ]] ; then
+	    RUNCMD="$RUNCMD : -env OMP_NUM_THREADS $MIC_OMP_NUM_THREADS -env LD_LIBRARY_PATH $MIC_LD_LIBRARY_PATH:$LD_LIBRARY_PATH $MPIEXEC_FLAGS_MIC -host $i-mic0 -n $MIC_PPN $MIC_BINARY "
+	fi
+    done
+
+    if [[ -n "$USE_TOTALVIEW" ]] ; then 
+	RUNCMD="totalview -args $RUNCMD" 
+    elif [[ -n "$USE_TOTALVIEWCLI" ]] ; then
+	RUNCMD="totalviewcli -args $RUNCMD"
+    fi
+    
+    if [[ -n "$MPIRUN_MIC_VERBOSE" ]] ; then
+	echo
+	echo "########################################################################"
+	echo "MPI Tasks per host:          $SLURM_TASKS_PER_NODE"
+	echo "Threads per host MPI task:   $OMP_NUM_THREADS"
+	echo "MPI Tasks per MIC:           $MIC_PPN"
+	echo "Threads per MIC MPI task:    $MIC_OMP_NUM_THREADS"
+	echo 
+	echo "Run command: "
+	echo "$RUNCMD"
+	echo "########################################################################"
+	echo 
+    fi
+
+    $RUNCMD
+
+fi
+

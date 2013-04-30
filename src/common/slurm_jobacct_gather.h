@@ -114,6 +114,12 @@ struct jobacctinfo {
 	uint32_t this_sampled_cputime;
 	uint32_t current_weighted_freq;
 	uint32_t current_weighted_power;
+	double max_disk_read; /* max disk read data */
+	jobacct_id_t max_disk_read_id; /* max disk read data task id */
+	double tot_disk_read; /* total local disk read in megabytes */
+	double max_disk_write; /* max disk write data */
+	jobacct_id_t max_disk_write_id; /* max disk write data task id */
+	double tot_disk_write; /* total local disk writes in megabytes */
 };
 
 /* Define jobacctinfo_t below to avoid including extraneous slurm headers */

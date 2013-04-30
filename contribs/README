@@ -67,6 +67,8 @@ of the SLURM contribs distribution follows:
      existing SLURM allocation. Outside of a SLURM allocation, make's behavior
      will be unchanged. Designed for GNU make-3.81.
 
+  mic                [Tools for use on Intel MIC processors]
+
   mpich1.slurm.patch [ Patch to mpich1/p4 library for SLURM job task launch ]
      For SLURM based job initiations (from srun command), get the parameters
      from environment variables as needed. This allows for a truly parallel

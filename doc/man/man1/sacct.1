@@ -121,11 +121,13 @@ Print a list of fields that can be specified with the \f3\-\-format\fP option.
 Fields available:
 
 AllocCPUS       Account       AssocID       AveCPU
-AveCPUFreq      AvePages      AveRSS        AveVMSize
-BlockID         Cluster       Comment       ConsumedEnergy
-CPUTime         CPUTimeRAW    DerivedExitCode Elapsed
-Eligible        End           ExitCode      GID
-Group           JobID         JobName       Layout
+AveCPUFreq      AveDiskRead    AveDiskWrite     AvePages
+AveRSS          AveVMSize      BlockID          Cluster
+Comment         ConsumedEnergy CPUTime          CPUTimeRAW
+DerivedExitCode Elapsed        Eligible         End
+ExitCode        GID            Group            JobID
+JobName         Layout         MaxDiskRead      MaxDiskReadNode
+MaxDiskReadTask MaxDiskWrite   MaxDiskWriteNode MaxDiskWriteTask
 MaxPages        MaxPagesNode  MaxPagesTask  MaxRSS
 MaxRSSNode      MaxRSSTask    MaxVMSize     MaxVMSizeNode
 MaxVMSizeTask   MinCPU        MinCPUNode    MinCPUTask
@@ -207,7 +209,7 @@ maximum timelimit of the range.  Default is no restriction.
 Equivalent to specifying:
 .IP
 .na
-\-\-format=jobid,jobname,partition,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,alloccpus,elapsed,state,exitcode
+\-\-format=jobid,jobname,partition,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,alloccpus,elapsed,state,exitcode,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite
 .ad
 
 .TP
@@ -417,6 +419,14 @@ Average (system + user) CPU time of all tasks in job.
 Average weighted CPU frequency of all tasks in job, in kHz.
 
 .TP
+\f3AveDiskRead\fP
+Average number of megabytes read by all tasks in job.
+
+.TP
+\f3AveDiskWrite\fP
+Average number of megabytes written by all tasks in job.
+
+.TP
 \f3AvePages\fP
 Average number of page faults of all tasks in job.
 
@@ -561,6 +571,30 @@ in place of the space.
 \f3layout\fP
 What the layout of a step was when it was running.  This can be used
 to give you an idea of which node ran which rank in your job.
+
+.TP
+\f3MaxDiskRead\fP
+Maximum number of megabytes read by all tasks in job.
+
+.TP
+\f3MaxDiskReadNode\fP
+The node on which the maxdiskread occurred.
+
+.TP
+\f3MaxDiskReadTask\fP
+The task ID where the maxdiskread occurred.
+
+.TP
+\f3MaxDiskWrite\fP
+Maximum number of megabytes written by all tasks in job.
+
+.TP
+\f3MaxDiskWriteNode\fP
+The node on which the maxdiskwrite occurred.
+
+.TP
+\f3MaxDiskReadTask\fP
+The task ID where the maxdiskwrite occurred.
 
 .TP
 \f3MaxPages\fP

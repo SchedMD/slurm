@@ -3,6 +3,12 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 2.6.0pre4
 ============================
+ -- Added helper script for launching symmetric and MIC-only MPI tasks within
+    SLURM (in contribs/mic/mpirun-mic).
+ -- Change maximum delay for state save from 2 secs to 5 secs. Make timeout
+    configurable at build time by defining SAVE_MAX_WAIT.
+ -- Modify slurmctld data structure locking to interleave read and write
+    locks rather than always favor write locks over read locks.
 
 * Changes in Slurm 2.6.0pre3
 ============================
@@ -106,6 +112,7 @@ documents those changes that are of interest to users and admins.
  -- Add missing symbols to the xlator.h
  -- Avoid placing pending jobs in AdminHold state due to backfill scheduler
     interactions with advanced reservation.
+ -- Accounting - make average by task not cpu.
 
 * Changes in Slurm 2.5.6
 ========================

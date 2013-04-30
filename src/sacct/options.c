@@ -453,7 +453,10 @@ sacct [<OPTION>]                                                            \n\
                              maxrsstask,averss,maxpages,maxpagesnode,       \n\
                              maxpagestask,avepages,mincpu,mincpunode,       \n\
                              mincputask,avecpu,ntasks,alloccpus,elapsed,    \n\
-	                     state,exitcode,avecpufreq,consumedenergy'       \n\
+                             state,exitcode,avecpufreq,consumedenergy,      \n\
+                             maxdiskread,maxdiskreadnode,maxdiskreadtask,   \n\
+                             avediskread, maxdiskwrite,maxdiskwritenode,    \n\
+                             maxdiskwritetask, avediskread'                 \n\
      -L, --allclusters:                                                     \n\
 	           Display jobs ran on all clusters. By default, only jobs  \n\
                    ran on the cluster from where sacct is called are        \n\
@@ -1241,6 +1244,8 @@ void do_list(void)
 			job->stats.rss_ave /= (double)cnt;
 			job->stats.vsize_ave /= (double)cnt;
 			job->stats.pages_ave /= (double)cnt;
+			job->stats.disk_read_ave /= (double)cnt;
+			job->stats.disk_write_ave /= (double)cnt;
 		}
 
 		if (job->show_full)

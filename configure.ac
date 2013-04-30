@@ -408,6 +408,7 @@ AC_CONFIG_FILES([Makefile
 		 contribs/cray/Makefile
 		 contribs/cray/opt_modulefiles_slurm
 		 contribs/lua/Makefile
+		 contribs/mic/Makefile
 		 contribs/pam/Makefile
 		 contribs/perlapi/Makefile
 		 contribs/perlapi/libslurm/Makefile

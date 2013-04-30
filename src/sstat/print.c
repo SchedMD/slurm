@@ -80,6 +80,20 @@ char *_elapsed_time(long secs, long usecs)
 	return str;
 }
 
+static void _print_small_double(
+	char *outbuf, int buf_size, double dub, int units)
+{
+	if (fuzzy_equal(dub, NO_VAL))
+		return;
+
+	if (dub > 1)
+		convert_num_unit((float)dub, outbuf, buf_size, units);
+	else if (dub > 0)
+		snprintf(outbuf, buf_size, "%.2fM", dub);
+	else
+		snprintf(outbuf, buf_size, "0");
+}
+
 void print_fields(slurmdb_step_rec_t *step)
 {
 	print_field_t *field = NULL;
@@ -122,6 +136,24 @@ void print_fields(slurmdb_step_rec_t *step)
 					     outbuf,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_AVEDISKREAD:
+			_print_small_double(outbuf, sizeof(outbuf),
+					    step->stats.disk_read_ave,
+					    UNIT_MEGA);
+
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_AVEDISKWRITE:
+			_print_small_double(outbuf, sizeof(outbuf),
+					    step->stats.disk_write_ave,
+					    UNIT_MEGA);
+
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_AVEPAGES:
 			convert_num_unit((float)step->stats.pages_ave,
 					 outbuf, sizeof(outbuf),
@@ -160,6 +192,52 @@ void print_fields(slurmdb_step_rec_t *step)
 
 			field->print_routine(field,
 					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXDISKREAD:
+			_print_small_double(outbuf, sizeof(outbuf),
+					    step->stats.disk_read_max,
+					    UNIT_MEGA);
+
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXDISKREADNODE:
+			tmp_char = find_hostname(
+					step->stats.disk_read_max_nodeid,
+					step->nodes);
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_MAXDISKREADTASK:
+			field->print_routine(field,
+					     step->stats.disk_read_max_taskid,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXDISKWRITE:
+			_print_small_double(outbuf, sizeof(outbuf),
+					    step->stats.disk_write_max,
+					    UNIT_MEGA);
+
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXDISKWRITENODE:
+			tmp_char = find_hostname(
+					step->stats.disk_write_max_nodeid,
+					step->nodes);
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_MAXDISKWRITETASK:
+			field->print_routine(field,
+					     step->stats.disk_write_max_taskid,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXPAGES:

@@ -288,19 +288,27 @@ typedef struct {
 	double consumed_energy; /* contains energy consumption in joules */
 	uint32_t cpu_min;
 	uint32_t cpu_min_nodeid; /* contains which node number it was on */
-	uint16_t cpu_min_taskid; /* contains which task number it was on */
+	uint32_t cpu_min_taskid; /* contains which task number it was on */
+	double disk_read_ave; /* average amount of disk read data, in mb */
+	double disk_read_max; /* maximum amount of disk read data, in mb */
+	uint32_t disk_read_max_nodeid; /* contains  node number max was on */
+	uint32_t disk_read_max_taskid;/* contains task number max was on */
+	double disk_write_ave; /* average amount of disk write data, in mb */
+	double disk_write_max; /* maximum amount of disk write data, in mb */
+	uint32_t disk_write_max_nodeid; /* contains  node number max was on */
+	uint32_t disk_write_max_taskid;/* contains task number max was on */
 	double pages_ave;
 	uint32_t pages_max;
 	uint32_t pages_max_nodeid; /* contains which node number it was on */
-	uint16_t pages_max_taskid; /* contains which task number it was on */
+	uint32_t pages_max_taskid; /* contains which task number it was on */
 	double rss_ave;
 	uint32_t rss_max;
 	uint32_t rss_max_nodeid; /* contains which node number it was on */
-	uint16_t rss_max_taskid; /* contains which task number it was on */
+	uint32_t rss_max_taskid; /* contains which task number it was on */
 	double vsize_ave;
 	uint32_t vsize_max;
 	uint32_t vsize_max_nodeid; /* contains which node number it was on */
-	uint16_t vsize_max_taskid; /* contains which task number it was on */
+	uint32_t vsize_max_taskid; /* contains which task number it was on */
 } slurmdb_stats_t;
 
 

@@ -952,10 +952,12 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 {
 	time_t now;
 	int comp_status;
-	int cpus = 0;
+	int tasks = 0;
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
 	struct jobacctinfo dummy_jobacct;
 	double ave_vsize = NO_VAL, ave_rss = NO_VAL, ave_pages = NO_VAL;
+	double ave_disk_read =  (double)NO_VAL;
+	double ave_disk_write = (double)NO_VAL;
 	double ave_cpu = (double)NO_VAL;
 	char *query = NULL;
 	int rc =SLURM_SUCCESS;
@@ -988,20 +990,20 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 
 	if (slurmdbd_conf) {
 		now = step_ptr->job_ptr->end_time;
-		cpus = step_ptr->cpu_count;
+		tasks = step_ptr->job_ptr->details->num_tasks;
 	} else if (step_ptr->step_id == SLURM_BATCH_SCRIPT) {
 		now = time(NULL);
-		cpus = 1;
+		tasks = 1;
 	} else {
 		now = time(NULL);
 #ifdef HAVE_BG_L_P
 		/* Only L and P use this code */
-		cpus = step_ptr->job_ptr->details->min_cpus;
+		tasks = step_ptr->job_ptr->details->min_cpus;
 #else
 		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
-			cpus = step_ptr->job_ptr->total_cpus;
+			tasks = step_ptr->job_ptr->total_cpus;
 		else
-			cpus = step_ptr->cpu_count;
+			tasks = step_ptr->step_layout->task_cnt;
 #endif
 	}
 
@@ -1016,15 +1018,19 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	}
 
 	/* figure out the ave of the totals sent */
-	if ((jobacct->min_cpu != NO_VAL) && cpus > 0) {
+	if ((jobacct->min_cpu != NO_VAL) && tasks > 0) {
 		ave_vsize = (double)jobacct->tot_vsize;
-		ave_vsize /= (double)cpus;
+		ave_vsize /= (double)tasks;
 		ave_rss = (double)jobacct->tot_rss;
-		ave_rss /= (double)cpus;
+		ave_rss /= (double)tasks;
 		ave_pages = (double)jobacct->tot_pages;
-		ave_pages /= (double)cpus;
+		ave_pages /= (double)tasks;
 		ave_cpu = (double)jobacct->tot_cpu;
-		ave_cpu /= (double)cpus;
+		ave_cpu /= (double)tasks;
+		ave_disk_read = (double)jobacct->tot_disk_read;
+		ave_disk_read /= (double)tasks;
+		ave_disk_write = (double)jobacct->tot_disk_write;
+		ave_disk_write /= (double)tasks;
 	}
 
 	if (!step_ptr->job_ptr->db_index) {
@@ -1052,6 +1058,10 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		"kill_requid=%d, exit_code=%d, "
 		"user_sec=%u, user_usec=%u, "
 		"sys_sec=%u, sys_usec=%u, "
+		"max_disk_read=%f, max_disk_read_task=%u, "
+		"max_disk_read_node=%u, ave_disk_read=%f, "
+		"max_disk_write=%f, max_disk_write_task=%u, "
+		"max_disk_write_node=%u, ave_disk_write=%f, "
 		"max_vsize=%u, max_vsize_task=%u, "
 		"max_vsize_node=%u, ave_vsize=%f, "
 		"max_rss=%u, max_rss_task=%u, "
@@ -1074,6 +1084,22 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		jobacct->sys_cpu_sec,
 		/* system microsecs */
 		jobacct->sys_cpu_usec,
+		/* max disk_read */
+		jobacct->max_disk_read,
+		/* max disk_read task */
+		jobacct->max_disk_read_id.taskid,
+		/* max disk_read node */
+		jobacct->max_disk_read_id.nodeid,
+		/* ave disk_read */
+		ave_disk_read,
+		/* max disk_write */
+		jobacct->max_disk_write,
+		/* max disk_write task */
+		jobacct->max_disk_write_id.taskid,
+		/* max disk_write node */
+		jobacct->max_disk_write_id.nodeid,
+		/* ave disk_write */
+		ave_disk_write,
 		jobacct->max_vsize,	/* max vsize */
 		jobacct->max_vsize_id.taskid,	/* max vsize task */
 		jobacct->max_vsize_id.nodeid,	/* max vsize node */
