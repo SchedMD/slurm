@@ -769,14 +769,14 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			step->tot_cpu_usec +=
 				step->user_cpu_usec + step->sys_cpu_usec;
 			step->stats.disk_read_max =
-				slurm_atoul(step_row[STEP_REQ_MAX_DISK_READ]);
+				atof(step_row[STEP_REQ_MAX_DISK_READ]);
 			step->stats.disk_read_max_taskid =
 				slurm_atoul(step_row[
 					STEP_REQ_MAX_DISK_READ_TASK]);
 			step->stats.disk_read_ave =
 				atof(step_row[STEP_REQ_AVE_DISK_READ]);
 			step->stats.disk_write_max =
-				slurm_atoul(step_row[STEP_REQ_MAX_DISK_WRITE]);
+				atof(step_row[STEP_REQ_MAX_DISK_WRITE]);
 			step->stats.disk_write_max_taskid =
 				slurm_atoul(step_row[
 					STEP_REQ_MAX_DISK_WRITE_TASK]);

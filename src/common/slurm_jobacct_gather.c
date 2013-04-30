@@ -653,7 +653,7 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 	int *fd = (int *)data;
 	struct rusage *rusage = (struct rusage *)data;
 	uint32_t *uint32 = (uint32_t *) data;
-	uint64_t *uint64 = (uint64_t *) data;
+	double *dub = (double *) data;
 	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
 
@@ -716,22 +716,22 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 		jobacct->energy.consumed_energy = *uint32;
 		break;
 	case JOBACCT_DATA_MAX_DISK_READ:
-		jobacct->max_disk_read = *uint64;
+		jobacct->max_disk_read = *dub;
 		break;
 	case JOBACCT_DATA_MAX_DISK_READ_ID:
 		jobacct->max_disk_read_id = *jobacct_id;
 		break;
 	case JOBACCT_DATA_TOT_DISK_READ:
-		jobacct->tot_disk_read = *uint64;
+		jobacct->tot_disk_read = *dub;
 		break;
 	case JOBACCT_DATA_MAX_DISK_WRITE:
-		jobacct->max_disk_write = *uint64;
+		jobacct->max_disk_write = *dub;
 		break;
 	case JOBACCT_DATA_MAX_DISK_WRITE_ID:
 		jobacct->max_disk_write_id = *jobacct_id;
 		break;
 	case JOBACCT_DATA_TOT_DISK_WRITE:
-		jobacct->tot_disk_write = *uint64;
+		jobacct->tot_disk_write = *dub;
 		break;
 	default:
 		debug("jobacct_g_set_setinfo data_type %d invalid", type);
@@ -748,7 +748,7 @@ extern int jobacctinfo_getinfo(
 	int rc = SLURM_SUCCESS;
 	int *fd = (int *)data;
 	uint32_t *uint32 = (uint32_t *) data;
-	uint64_t *uint64 = (uint64_t *) data;
+	double *dub = (double *) data;
 	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
 	struct rusage *rusage = (struct rusage *)data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
@@ -813,22 +813,22 @@ extern int jobacctinfo_getinfo(
 		*uint32 = jobacct->energy.consumed_energy;
 		break;
 	case JOBACCT_DATA_MAX_DISK_READ:
-		*uint64 = jobacct->max_disk_read;
+		*dub = jobacct->max_disk_read;
 		break;
 	case JOBACCT_DATA_MAX_DISK_READ_ID:
 		*jobacct_id = jobacct->max_disk_read_id;
 		break;
 	case JOBACCT_DATA_TOT_DISK_READ:
-		*uint64 = jobacct->tot_disk_read;
+		*dub = jobacct->tot_disk_read;
 		break;
 	case JOBACCT_DATA_MAX_DISK_WRITE:
-		*uint64 = jobacct->max_disk_write;
+		*dub = jobacct->max_disk_write;
 		break;
 	case JOBACCT_DATA_MAX_DISK_WRITE_ID:
 		*jobacct_id = jobacct->max_disk_write_id;
 		break;
 	case JOBACCT_DATA_TOT_DISK_WRITE:
-		*uint64 = jobacct->tot_disk_write;
+		*dub = jobacct->tot_disk_write;
 		break;
 	default:
 		debug("jobacct_g_set_getinfo data_type %d invalid", type);
