@@ -1079,7 +1079,16 @@ slurm.conf (<i>SlurmdLogFile</i> and <i>SlurmdPidFile</i>). </li>
 <li>When starting the <i>slurmd</i> daemon, include the <i>NodeName</i>
 of the node that it is supposed to serve on the execute line (e.g.
 "slurmd -N hostname").</li>
+<li> This is an example of the <i>slurm.conf</i> file with the  emulated nodes
+and ports configuration. Any valid value for the CPUs, memory or other
+valid node resources can be specified.</li>
 </ol>
+
+<pre>
+NodeName=dummy26[1-100] NodeHostName=achille Port=[6001-6100] NodeAddr=127.0.0.1 CPUs=4 RealMemory=6000
+PartitionName=mira Default=yes Nodes=dummy26[1-100]
+</pre>
+
 <p>It is strongly recommended that SLURM version 1.2 or higher be used
 for this due to its improved support for multiple slurmd daemons.
 See the
