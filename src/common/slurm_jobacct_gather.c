@@ -630,6 +630,12 @@ extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 	jobacct->tot_cpu = 0;
 	jobacct->act_cpufreq = 0;
 	memset(&jobacct->energy, 0, sizeof(acct_gather_energy_t));
+	jobacct-> max_disk_read = 0;
+	memcpy(&jobacct->max_disk_read_id, jobacct_id, sizeof(jobacct_id_t));
+	jobacct->tot_disk_read = 0;
+	jobacct->max_disk_write = 0;
+	memcpy(&jobacct->max_disk_write_id, jobacct_id, sizeof(jobacct_id_t));
+	jobacct->tot_disk_write = 0;
 
 	return jobacct;
 }
@@ -647,6 +653,7 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 	int *fd = (int *)data;
 	struct rusage *rusage = (struct rusage *)data;
 	uint32_t *uint32 = (uint32_t *) data;
+	uint64_t *uint64 = (uint64_t *) data;
 	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
 
@@ -708,6 +715,24 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 	case JOBACCT_DATA_CONSUMED_ENERGY:
 		jobacct->energy.consumed_energy = *uint32;
 		break;
+	case JOBACCT_DATA_MAX_DISK_READ:
+		jobacct->max_disk_read = *uint64;
+		break;
+	case JOBACCT_DATA_MAX_DISK_READ_ID:
+		jobacct->max_disk_read_id = *jobacct_id;
+		break;
+	case JOBACCT_DATA_TOT_DISK_READ:
+		jobacct->tot_disk_read = *uint64;
+		break;
+	case JOBACCT_DATA_MAX_DISK_WRITE:
+		jobacct->max_disk_write = *uint64;
+		break;
+	case JOBACCT_DATA_MAX_DISK_WRITE_ID:
+		jobacct->max_disk_write_id = *jobacct_id;
+		break;
+	case JOBACCT_DATA_TOT_DISK_WRITE:
+		jobacct->tot_disk_write = *uint64;
+		break;
 	default:
 		debug("jobacct_g_set_setinfo data_type %d invalid", type);
 	}
@@ -723,6 +748,7 @@ extern int jobacctinfo_getinfo(
 	int rc = SLURM_SUCCESS;
 	int *fd = (int *)data;
 	uint32_t *uint32 = (uint32_t *) data;
+	uint64_t *uint64 = (uint64_t *) data;
 	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
 	struct rusage *rusage = (struct rusage *)data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
@@ -786,6 +812,24 @@ extern int jobacctinfo_getinfo(
 	case JOBACCT_DATA_CONSUMED_ENERGY:
 		*uint32 = jobacct->energy.consumed_energy;
 		break;
+	case JOBACCT_DATA_MAX_DISK_READ:
+		*uint64 = jobacct->max_disk_read;
+		break;
+	case JOBACCT_DATA_MAX_DISK_READ_ID:
+		*jobacct_id = jobacct->max_disk_read_id;
+		break;
+	case JOBACCT_DATA_TOT_DISK_READ:
+		*uint64 = jobacct->tot_disk_read;
+		break;
+	case JOBACCT_DATA_MAX_DISK_WRITE:
+		*uint64 = jobacct->max_disk_write;
+		break;
+	case JOBACCT_DATA_MAX_DISK_WRITE_ID:
+		*jobacct_id = jobacct->max_disk_write_id;
+		break;
+	case JOBACCT_DATA_TOT_DISK_WRITE:
+		*uint64 = jobacct->tot_disk_write;
+		break;
 	default:
 		debug("jobacct_g_set_getinfo data_type %d invalid", type);
 	}
@@ -816,7 +860,46 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 	if (protocol_type == PROTOCOL_TYPE_DBD)
 		rpc_version = slurmdbd_translate_rpc(rpc_version);
 
-	if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		if (!jobacct) {
+			for (i = 0; i < 14; i++)
+				pack32((uint32_t) 0, buffer);
+			for (i = 0; i < 4; i++)
+				packdouble((double) 0, buffer);
+			for (i = 0; i < 6; i++)
+				_pack_jobacct_id(NULL, rpc_version, buffer);
+			return;
+		}
+
+		pack32((uint32_t)jobacct->user_cpu_sec, buffer);
+		pack32((uint32_t)jobacct->user_cpu_usec, buffer);
+		pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
+		pack32((uint32_t)jobacct->sys_cpu_usec, buffer);
+		pack32((uint32_t)jobacct->max_vsize, buffer);
+		pack32((uint32_t)jobacct->tot_vsize, buffer);
+		pack32((uint32_t)jobacct->max_rss, buffer);
+		pack32((uint32_t)jobacct->tot_rss, buffer);
+		pack32((uint32_t)jobacct->max_pages, buffer);
+		pack32((uint32_t)jobacct->tot_pages, buffer);
+		pack32((uint32_t)jobacct->min_cpu, buffer);
+		pack32((uint32_t)jobacct->tot_cpu, buffer);
+		pack32((uint32_t)jobacct->act_cpufreq, buffer);
+		pack32((uint32_t)jobacct->energy.consumed_energy, buffer);
+
+		packdouble((double)jobacct->max_disk_read, buffer);
+		packdouble((double)jobacct->tot_disk_read, buffer);
+		packdouble((double)jobacct->max_disk_write, buffer);
+		packdouble((double)jobacct->tot_disk_write, buffer);
+
+		_pack_jobacct_id(&jobacct->max_vsize_id, rpc_version, buffer);
+		_pack_jobacct_id(&jobacct->max_rss_id, rpc_version, buffer);
+		_pack_jobacct_id(&jobacct->max_pages_id, rpc_version, buffer);
+		_pack_jobacct_id(&jobacct->min_cpu_id, rpc_version, buffer);
+		_pack_jobacct_id(&jobacct->max_disk_read_id, rpc_version,
+			buffer);
+		_pack_jobacct_id(&jobacct->max_disk_write_id, rpc_version,
+			buffer);
+	} else if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		if (!jobacct) {
 			for (i = 0; i < 14; i++)
 				pack32((uint32_t) 0, buffer);
@@ -896,7 +979,51 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 	if (protocol_type == PROTOCOL_TYPE_DBD)
 		rpc_version = slurmdbd_translate_rpc(rpc_version);
 
-	if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		*jobacct = xmalloc(sizeof(struct jobacctinfo));
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->user_cpu_sec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->user_cpu_usec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->sys_cpu_sec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->sys_cpu_usec = uint32_tmp;
+		safe_unpack32(&(*jobacct)->max_vsize, buffer);
+		safe_unpack32(&(*jobacct)->tot_vsize, buffer);
+		safe_unpack32(&(*jobacct)->max_rss, buffer);
+		safe_unpack32(&(*jobacct)->tot_rss, buffer);
+		safe_unpack32(&(*jobacct)->max_pages, buffer);
+		safe_unpack32(&(*jobacct)->tot_pages, buffer);
+		safe_unpack32(&(*jobacct)->min_cpu, buffer);
+		safe_unpack32(&(*jobacct)->tot_cpu, buffer);
+		safe_unpack32(&(*jobacct)->act_cpufreq, buffer);
+		safe_unpack32(&(*jobacct)->energy.consumed_energy, buffer);
+
+		safe_unpackdouble(&(*jobacct)->max_disk_read, buffer);
+		safe_unpackdouble(&(*jobacct)->tot_disk_read, buffer);
+		safe_unpackdouble(&(*jobacct)->max_disk_write, buffer);
+		safe_unpackdouble(&(*jobacct)->tot_disk_write, buffer);
+
+		if (_unpack_jobacct_id(&(*jobacct)->max_vsize_id, rpc_version,
+			buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->max_rss_id, rpc_version,
+			buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->max_pages_id, rpc_version,
+			buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->min_cpu_id, rpc_version,
+			buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->max_disk_read_id,
+			rpc_version, buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->max_disk_write_id,
+			rpc_version, buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+	} else if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		*jobacct = xmalloc(sizeof(struct jobacctinfo));
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->user_cpu_sec = uint32_tmp;
@@ -1038,6 +1165,18 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 		dest->energy.consumed_energy = NO_VAL;
 	else
 		dest->energy.consumed_energy += from->energy.consumed_energy;
+		
+	if (dest->max_disk_read < from->max_disk_read) {
+		dest->max_disk_read = from->max_disk_read;
+		dest->max_disk_read_id = from->max_disk_read_id;
+	}
+	dest->tot_disk_read += from->tot_disk_read;
+
+	if (dest->max_disk_write < from->max_disk_write) {
+		dest->max_disk_write = from->max_disk_write;
+		dest->max_disk_write_id = from->max_disk_write_id;
+	}
+	dest->tot_disk_write += from->tot_disk_write;
 }
 
 extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
@@ -1066,4 +1205,12 @@ extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
 		stats->consumed_energy = NO_VAL;
 	else
 		stats->consumed_energy = (double)jobacct->energy.consumed_energy;
+	stats->disk_read_max = jobacct->max_disk_read;
+	stats->disk_read_max_nodeid = jobacct->max_disk_read_id.nodeid;
+	stats->disk_read_max_taskid = jobacct->max_disk_read_id.taskid;
+	stats->disk_read_ave = jobacct->tot_disk_read;
+	stats->disk_write_max = jobacct->max_disk_write;
+	stats->disk_write_max_nodeid = jobacct->max_disk_write_id.nodeid;
+	stats->disk_write_max_taskid = jobacct->max_disk_write_id.taskid;
+	stats->disk_write_ave = jobacct->tot_disk_write;
 }

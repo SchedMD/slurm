@@ -53,11 +53,19 @@ sstat_parameters_t params;
 print_field_t fields[] = {
 	{10, "AveCPU", print_fields_str, PRINT_AVECPU},
 	{10, "AveCPUFreq", print_fields_str, PRINT_ACT_CPUFREQ},
+	{12, "AveDiskRead", print_fields_str, PRINT_AVEDISKREAD},
+	{12, "AveDiskWrite", print_fields_str, PRINT_AVEDISKWRITE},
 	{10, "AvePages", print_fields_str, PRINT_AVEPAGES},
 	{10, "AveRSS", print_fields_str, PRINT_AVERSS},
 	{10, "AveVMSize", print_fields_str, PRINT_AVEVSIZE},
 	{14, "ConsumedEnergy", print_fields_str, PRINT_CONSUMED_ENERGY},
 	{-12, "JobID", print_fields_str, PRINT_JOBID},
+	{12, "MaxDiskRead", print_fields_str, PRINT_MAXDISKREAD},
+	{15, "MaxDiskReadNode", print_fields_str, PRINT_MAXDISKREADNODE},
+	{15, "MaxDiskReadTask", print_fields_uint, PRINT_MAXDISKREADTASK},
+	{12, "MaxDiskWrite", print_fields_str, PRINT_MAXDISKWRITE},
+	{16, "MaxDiskWriteNode", print_fields_str, PRINT_MAXDISKWRITENODE},
+	{16, "MaxDiskWriteTask", print_fields_uint, PRINT_MAXDISKWRITETASK},
 	{8, "MaxPages", print_fields_str, PRINT_MAXPAGES},
 	{12, "MaxPagesNode", print_fields_str, PRINT_MAXPAGESNODE},
 	{14, "MaxPagesTask", print_fields_uint, PRINT_MAXPAGESTASK},
@@ -164,6 +172,8 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 		step.stats.rss_ave /= (double)tot_tasks;
 		step.stats.vsize_ave /= (double)tot_tasks;
 		step.stats.pages_ave /= (double)tot_tasks;
+		step.stats.disk_read_ave /= (double)tot_tasks;
+		step.stats.disk_write_ave /= (double)tot_tasks;
 		step.stats.act_cpufreq /= (double)tot_tasks;
 		step.ntasks = tot_tasks;
 	}

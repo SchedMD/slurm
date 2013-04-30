@@ -139,6 +139,7 @@ void print_fields(type_t type, void *object)
 		char *tmp_char = NULL;
 		int tmp_int = NO_VAL, tmp_int2 = NO_VAL;
 		double tmp_dub = (double)NO_VAL;
+		uint32_t tmp_uint32 = (uint32_t)NO_VAL;
 		uint64_t tmp_uint64 = (uint64_t)NO_VAL;
 
 		memset(&outbuf, 0, sizeof(outbuf));
@@ -238,6 +239,50 @@ void print_fields(type_t type, void *object)
 					     tmp_char,
 					     (curr_inx == field_count));
 			xfree(tmp_char);
+			break;
+		case PRINT_AVEDISKREAD:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_dub = job->stats.disk_read_ave;
+				break;
+			case JOBSTEP:
+				tmp_dub = step->stats.disk_read_ave;
+				break;
+			case JOBCOMP:
+			default:
+				break;
+			}
+			if (!fuzzy_equal(tmp_dub, NO_VAL))
+				convert_num_unit((float)tmp_dub,
+						 outbuf, sizeof(outbuf),
+						 UNIT_MEGA);
+
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_AVEDISKWRITE:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_dub = job->stats.disk_write_ave;
+				break;
+			case JOBSTEP:
+				tmp_dub = step->stats.disk_write_ave;
+				break;
+			case JOBCOMP:
+			default:
+				break;
+			}
+			if (!fuzzy_equal(tmp_dub, NO_VAL))
+				convert_num_unit((float)tmp_dub,
+						 outbuf, sizeof(outbuf),
+						 UNIT_MEGA);
+
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
 			break;
 		case PRINT_AVEPAGES:
 			switch(type) {
@@ -629,6 +674,138 @@ void print_fields(type_t type, void *object)
 					     tmp_char,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_MAXDISKREAD:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_int = job->stats.disk_read_max;
+				break;
+			case JOBSTEP:
+				tmp_int = step->stats.disk_read_max;
+				break;
+			case JOBCOMP:
+			default:
+				break;
+			}
+			if (tmp_int != NO_VAL)
+				convert_num_unit((float)tmp_int,
+						 outbuf, sizeof(outbuf),
+						 UNIT_MEGA);
+
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXDISKREADNODE:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char = find_hostname(
+						job->stats.disk_read_max_nodeid,
+						job->nodes);
+				break;
+			case JOBSTEP:
+				tmp_char = find_hostname(
+					step->stats.disk_read_max_nodeid,
+					step->nodes);
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_MAXDISKREADTASK:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_uint32 =
+						job->stats.disk_read_max_taskid;
+				break;
+			case JOBSTEP:
+				tmp_uint32 = step->stats.disk_read_max_taskid;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_uint32 = NO_VAL;
+				break;
+			}
+			if (tmp_uint32 == (uint32_t)NO_VAL)
+				tmp_uint32 = NO_VAL;
+			field->print_routine(field,
+					     tmp_uint32,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXDISKWRITE:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_int = job->stats.disk_write_max;
+				break;
+			case JOBSTEP:
+				tmp_int = step->stats.disk_write_max;
+				break;
+			case JOBCOMP:
+			default:
+				break;
+			}
+			if (tmp_int != NO_VAL)
+				convert_num_unit((float)tmp_int,
+						 outbuf, sizeof(outbuf),
+						 UNIT_MEGA);
+
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXDISKWRITENODE:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_char = find_hostname(
+					   job->stats.disk_write_max_nodeid,
+					   job->nodes);
+				break;
+			case JOBSTEP:
+				tmp_char = find_hostname(
+					step->stats.disk_write_max_nodeid,
+					step->nodes);
+				break;
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_MAXDISKWRITETASK:
+			switch(type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_uint32 =
+					   job->stats.disk_write_max_taskid;
+				break;
+			case JOBSTEP:
+				tmp_uint32 = step->stats.disk_write_max_taskid;
+				break;
+			case JOBCOMP:
+			default:
+				tmp_uint32 = NO_VAL;
+				break;
+			}
+			if (tmp_uint32 == (uint32_t)NO_VAL)
+				tmp_uint32 = NO_VAL;
+			field->print_routine(field,
+					     tmp_uint32,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_MAXPAGES:
 			switch(type) {
 			case JOB:
@@ -678,21 +855,21 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if (!job->track_steps)
-					tmp_int =
+					tmp_uint32 =
 						job->stats.pages_max_taskid;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.pages_max_taskid;
+				tmp_uint32 = step->stats.pages_max_taskid;
 				break;
 			case JOBCOMP:
 			default:
-				tmp_int = NO_VAL;
+				tmp_uint32 = NO_VAL;
 				break;
 			}
-			if (tmp_int == (uint16_t)NO_VAL)
-				tmp_int = NO_VAL;
+			if (tmp_uint32 == (uint32_t)NO_VAL)
+				tmp_uint32 = NO_VAL;
 			field->print_routine(field,
-					     tmp_int,
+					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXRSS:
@@ -744,20 +921,20 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if (!job->track_steps)
-					tmp_int = job->stats.rss_max_taskid;
+					tmp_uint32 = job->stats.rss_max_taskid;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.rss_max_taskid;
+				tmp_uint32 = step->stats.rss_max_taskid;
 				break;
 			case JOBCOMP:
 			default:
-				tmp_int = NO_VAL;
+				tmp_uint32 = NO_VAL;
 				break;
 			}
-			if (tmp_int == (uint16_t)NO_VAL)
-				tmp_int = NO_VAL;
+			if (tmp_uint32 == (uint32_t)NO_VAL)
+				tmp_uint32 = NO_VAL;
 			field->print_routine(field,
-					     tmp_int,
+					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXVSIZE:
@@ -810,21 +987,21 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if (!job->track_steps)
-					tmp_int =
+					tmp_uint32 =
 						job->stats.vsize_max_taskid;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.vsize_max_taskid;
+				tmp_uint32 = step->stats.vsize_max_taskid;
 				break;
 			case JOBCOMP:
 			default:
-				tmp_int = NO_VAL;
+				tmp_uint32 = NO_VAL;
 				break;
 			}
-			if (tmp_int == (uint16_t)NO_VAL)
-				tmp_int = NO_VAL;
+			if (tmp_uint32 == (uint32_t)NO_VAL)
+				tmp_uint32 = NO_VAL;
 			field->print_routine(field,
-					     tmp_int,
+					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MINCPU:
@@ -874,20 +1051,20 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if (!job->track_steps)
-					tmp_int = job->stats.cpu_min_taskid;
+					tmp_uint32 = job->stats.cpu_min_taskid;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.cpu_min_taskid;
+				tmp_uint32 = step->stats.cpu_min_taskid;
 				break;
 			case JOBCOMP:
 			default:
-				tmp_int = NO_VAL;
+				tmp_uint32 = NO_VAL;
 				break;
 			}
-			if (tmp_int == (uint16_t)NO_VAL)
-				tmp_int = NO_VAL;
+			if (tmp_uint32 == (uint32_t)NO_VAL)
+				tmp_uint32 = NO_VAL;
 			field->print_routine(field,
-					     tmp_int,
+					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_NODELIST:

@@ -956,6 +956,8 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
 	struct jobacctinfo dummy_jobacct;
 	double ave_vsize = NO_VAL, ave_rss = NO_VAL, ave_pages = NO_VAL;
+	double ave_disk_read =  (double)NO_VAL;
+	double ave_disk_write = (double)NO_VAL;
 	double ave_cpu = (double)NO_VAL;
 	char *query = NULL;
 	int rc =SLURM_SUCCESS;
@@ -1025,6 +1027,10 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		ave_pages /= (double)tasks;
 		ave_cpu = (double)jobacct->tot_cpu;
 		ave_cpu /= (double)tasks;
+		ave_disk_read = (double)jobacct->tot_disk_read;
+		ave_disk_read /= (double)tasks;
+		ave_disk_write = (double)jobacct->tot_disk_write;
+		ave_disk_write /= (double)tasks;
 	}
 
 	if (!step_ptr->job_ptr->db_index) {
@@ -1052,6 +1058,10 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		"kill_requid=%d, exit_code=%d, "
 		"user_sec=%u, user_usec=%u, "
 		"sys_sec=%u, sys_usec=%u, "
+		"max_disk_read=%f, max_disk_read_task=%u, "
+		"max_disk_read_node=%u, ave_disk_read=%f, "
+		"max_disk_write=%f, max_disk_write_task=%u, "
+		"max_disk_write_node=%u, ave_disk_write=%f, "
 		"max_vsize=%u, max_vsize_task=%u, "
 		"max_vsize_node=%u, ave_vsize=%f, "
 		"max_rss=%u, max_rss_task=%u, "
@@ -1074,6 +1084,22 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		jobacct->sys_cpu_sec,
 		/* system microsecs */
 		jobacct->sys_cpu_usec,
+		/* max disk_read */
+		jobacct->max_disk_read,
+		/* max disk_read task */
+		jobacct->max_disk_read_id.taskid,
+		/* max disk_read node */
+		jobacct->max_disk_read_id.nodeid,
+		/* ave disk_read */
+		ave_disk_read,
+		/* max disk_write */
+		jobacct->max_disk_write,
+		/* max disk_write task */
+		jobacct->max_disk_write_id.taskid,
+		/* max disk_write node */
+		jobacct->max_disk_write_id.nodeid,
+		/* ave disk_write */
+		ave_disk_write,
 		jobacct->max_vsize,	/* max vsize */
 		jobacct->max_vsize_id.taskid,	/* max vsize task */
 		jobacct->max_vsize_id.nodeid,	/* max vsize node */

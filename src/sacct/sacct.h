@@ -69,7 +69,7 @@
 #define BRIEF_COMP_FIELDS "jobid,uid,state"
 #define DEFAULT_FIELDS "jobid,jobname,partition,account,alloccpus,state,exitcode"
 #define DEFAULT_COMP_FIELDS "jobid,uid,jobname,partition,nnodes,nodelist,state,end"
-#define LONG_FIELDS "jobid,jobname,partition,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,alloccpus,elapsed,state,exitcode,avecpufreq,consumedenergy"
+#define LONG_FIELDS "jobid,jobname,partition,maxvmsize,maxvmsizenode,maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,alloccpus,elapsed,state,exitcode,avecpufreq,consumedenergy,maxdiskread,maxdiskreadnode,maxdiskreadtask,avediskread,maxdiskwrite,maxdiskwritenode,maxdiskwritetask,avediskwrite"
 
 #define LONG_COMP_FIELDS "jobid,uid,jobname,partition,nnodes,nodelist,state,start,end,timelimit"
 
@@ -98,6 +98,8 @@ typedef enum {
 		PRINT_AVECPU,
 		PRINT_ACT_CPUFREQ,
 		PRINT_CONSUMED_ENERGY,
+		PRINT_AVEDISKREAD,
+		PRINT_AVEDISKWRITE,
 		PRINT_AVEPAGES,
 		PRINT_AVERSS,
 		PRINT_AVEVSIZE,
@@ -116,6 +118,12 @@ typedef enum {
 		PRINT_JOBID,
 		PRINT_JOBNAME,
 		PRINT_LAYOUT,
+		PRINT_MAXDISKREAD,
+		PRINT_MAXDISKREADNODE,
+		PRINT_MAXDISKREADTASK,
+		PRINT_MAXDISKWRITE,
+		PRINT_MAXDISKWRITENODE,
+		PRINT_MAXDISKWRITETASK,
 		PRINT_MAXPAGES,
 		PRINT_MAXPAGESNODE,
 		PRINT_MAXPAGESTASK,

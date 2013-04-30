@@ -145,7 +145,9 @@ static int    _tot_wait (struct timeval *start_time);
  */
 extern uint16_t slurmdbd_translate_rpc(uint16_t rpc_version)
 {
-	if (rpc_version >= SLURMDBD_2_5_VERSION)
+	if (rpc_version >= SLURMDBD_2_6_VERSION)
+		return SLURM_2_6_PROTOCOL_VERSION;
+	else if (rpc_version >= SLURMDBD_2_5_VERSION)
 		return SLURM_2_5_PROTOCOL_VERSION;
 	else if (rpc_version >= SLURMDBD_2_4_VERSION)
 		return SLURM_2_4_PROTOCOL_VERSION;

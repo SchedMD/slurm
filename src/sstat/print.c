@@ -122,6 +122,24 @@ void print_fields(slurmdb_step_rec_t *step)
 					     outbuf,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_AVEDISKREAD:
+			convert_num_unit((float)step->stats.disk_read_ave,
+					 outbuf, sizeof(outbuf),
+					 UNIT_MEGA);
+
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_AVEDISKWRITE:
+			convert_num_unit((float)step->stats.disk_write_ave,
+					 outbuf, sizeof(outbuf),
+					 UNIT_MEGA);
+
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_AVEPAGES:
 			convert_num_unit((float)step->stats.pages_ave,
 					 outbuf, sizeof(outbuf),
@@ -160,6 +178,52 @@ void print_fields(slurmdb_step_rec_t *step)
 
 			field->print_routine(field,
 					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXDISKREAD:
+			convert_num_unit((float)step->stats.disk_read_max,
+					 outbuf, sizeof(outbuf),
+					 UNIT_MEGA);
+
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXDISKREADNODE:
+			tmp_char = find_hostname(
+					step->stats.disk_read_max_nodeid,
+					step->nodes);
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_MAXDISKREADTASK:
+			field->print_routine(field,
+					     step->stats.disk_read_max_taskid,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXDISKWRITE:
+			convert_num_unit((float)step->stats.disk_write_max,
+					 outbuf, sizeof(outbuf),
+					 UNIT_MEGA);
+
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXDISKWRITENODE:
+			tmp_char = find_hostname(
+					step->stats.disk_write_max_nodeid,
+					step->nodes);
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_MAXDISKWRITETASK:
+			field->print_routine(field,
+					     step->stats.disk_write_max_taskid,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_MAXPAGES:

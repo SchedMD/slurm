@@ -96,6 +96,8 @@ typedef struct prec {	/* process record */
 	int	vsize;	/* virtual size */
 	int	act_cpufreq;	/* actual average cpu frequency */
 	int	last_cpu;	/* last cpu */
+	double	disk_read;	/* local disk read */
+	double	disk_write;	/* local disk write */
 } prec_t;
 
 static int pagesize = 0;
@@ -154,6 +156,8 @@ _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid)
 			ancestor->pages += prec->pages;
 			ancestor->rss += prec->rss;
 			ancestor->vsize += prec->vsize;
+			ancestor->disk_read += prec->disk_read;
+			ancestor->disk_write += prec->disk_write;
 		}
 	}
 	list_iterator_destroy(itr);
@@ -368,6 +372,44 @@ static int _get_process_data_line(int in, prec_t *prec) {
 	return 1;
 }
 
+/* _get_process_io_data_line() - get line of data from /proc/<pid>/io
+ *
+ * IN:	in - input file descriptor
+ * OUT:	prec - the destination for the data
+ *
+ * RETVAL:	==0 - no valid data
+ * 		!=0 - data are valid
+ *
+ * /proc/<pid>/io content format is:
+ * rchar: <# of characters read>
+ * wrchar: <# of characters written>
+ *   . . .
+ */
+static int _get_process_io_data_line(int in, prec_t *prec) {
+	char sbuf[256];
+	char f1[7], f3[7];
+	int num_read, nvals;
+	uint64_t rchar, wchar;
+
+	num_read = read(in, sbuf, (sizeof(sbuf) - 1));
+	if (num_read <= 0)
+		return 0;
+	sbuf[num_read] = '\0';
+
+	nvals = sscanf(sbuf, "%s %"PRIu64" %s %"PRIu64"",
+		       f1, &rchar, f3, &wchar);
+	if (nvals < 4)
+		return 0;
+
+	if (_is_a_lwp(prec->pid) > 0)
+		return 0;
+
+	/* Copy the values that slurm records into our data structure */
+	prec->disk_read = (double) rchar/(double)(1024 * 1024);
+	prec->disk_write = (double) wchar/(double)(1024 * 1024);
+	return 1;
+}
+
 static void _destroy_prec(void *object)
 {
 	prec_t *prec = (prec_t *)object;
@@ -419,14 +461,16 @@ extern void jobacct_gather_p_poll_data(
 	static	int	slash_proc_open = 0;
 
 	struct	dirent *slash_proc_entry;
-	char		*iptr = NULL, *optr = NULL;
+	char		*iptr = NULL, *optr = NULL, *optr2 = NULL;
 	FILE		*stat_fp = NULL;
+	FILE		*io_fp = NULL;
 	char		proc_stat_file[256];	/* Allow ~20x extra length */
+	char		proc_io_file[256];	/* Allow ~20x extra length */
 	List prec_list = NULL;
 	pid_t *pids = NULL;
 	int npids = 0;
 	uint32_t total_job_mem = 0, total_job_vsize = 0;
-	int		i, fd;
+	int		i, fd, fd2;
 	ListIterator itr;
 	ListIterator itr2;
 	prec_t *prec = NULL;
@@ -491,9 +535,20 @@ extern void jobacct_gather_p_poll_data(
 			fcntl(fd, F_SETFD, FD_CLOEXEC);
 
 			prec = xmalloc(sizeof(prec_t));
-			if (_get_process_data_line(fd, prec))
+			if (_get_process_data_line(fd, prec)) {
+				snprintf(proc_io_file, 256,
+					"/proc/%d/io", pids[i]);
+				if ((io_fp = fopen(proc_io_file, "r")) == NULL)
+						continue;  /* Assume the
+							    process went away */
+				fd2 = fileno(io_fp);
+				fcntl(fd2, F_SETFD, FD_CLOEXEC);
+				if (_get_process_io_data_line(fd2, prec))
 				list_append(prec_list, prec);
 			else
+				xfree(prec);
+				fclose(io_fp);
+			} else
 				xfree(prec);
 			fclose(stat_fp);
 		}
@@ -512,6 +567,7 @@ extern void jobacct_gather_p_poll_data(
 			slash_proc_open=1;
 		}
 		strcpy(proc_stat_file, "/proc/");
+		strcpy(proc_io_file, "/proc/");
 
 		while ((slash_proc_entry = readdir(slash_proc))) {
 
@@ -519,7 +575,8 @@ extern void jobacct_gather_p_poll_data(
 			 * strcat(statFileName, slash_proc_entry->d_name);
 			 * strcat(statFileName, "/stat");
 			 * while checking for a numeric filename (which really
-			 * should be a pid).
+			 * should be a pid). Then do the same for the
+			 * /proc/<pid>/io file name.
 			 */
 			optr = proc_stat_file + sizeof("/proc");
 			iptr = slash_proc_entry->d_name;
@@ -540,6 +597,24 @@ extern void jobacct_gather_p_poll_data(
 				*optr++ = *iptr++;
 			} while (*iptr);
 			*optr = 0;
+			optr2 = proc_io_file + sizeof("/proc");
+			iptr = slash_proc_entry->d_name;
+			i = 0;
+			do {
+				if ((*iptr < '0') ||
+				    ((*optr2++ = *iptr++) > '9')) {
+					i = -1;
+					break;
+				}
+			} while (*iptr);
+			if (i == -1)
+				continue;
+			iptr = (char*)"/io";
+
+			do {
+				*optr2++ = *iptr++;
+			} while (*iptr);
+			*optr2 = 0;
 
 			if ((stat_fp = fopen(proc_stat_file,"r"))==NULL)
 				continue;  /* Assume the process went away */
@@ -557,9 +632,18 @@ extern void jobacct_gather_p_poll_data(
 			fcntl(fd, F_SETFD, FD_CLOEXEC);
 
 			prec = xmalloc(sizeof(prec_t));
-			if (_get_process_data_line(fd, prec))
+			if (_get_process_data_line(fd, prec)) {
+				if ((io_fp = fopen(proc_io_file,"r"))==NULL)
+						continue;  /* Assume the process
+							      went away */
+				fd2 = fileno(io_fp);
+				fcntl(fd2, F_SETFD, FD_CLOEXEC);
+				if (_get_process_io_data_line(fd2, prec))
 				list_append(prec_list, prec);
 			else
+				xfree(prec);
+				fclose(io_fp);
+			} else
 				xfree(prec);
 			fclose(stat_fp);
 		}
@@ -629,6 +713,14 @@ extern void jobacct_gather_p_poll_data(
 					debug2("getjoules_task energy = %u",
 					       jobacct->energy.consumed_energy);
 					energy_counted = 1;
+				jobacct->max_disk_read = MAX(
+					jobacct->max_disk_read,
+					prec->disk_read);
+				jobacct->tot_disk_read = prec->disk_read;
+				jobacct->max_disk_write = MAX(
+					jobacct->max_disk_write,
+					prec->disk_write);
+				jobacct->tot_disk_write = prec->disk_write;
 				}
 				break;
 			}

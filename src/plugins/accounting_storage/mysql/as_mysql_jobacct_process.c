@@ -149,6 +149,14 @@ char *step_req_inx[] = {
 	"t1.user_usec",
 	"t1.sys_sec",
 	"t1.sys_usec",
+	"t1.max_disk_read",
+	"t1.max_disk_read_task",
+	"t1.max_disk_read_node",
+	"t1.ave_disk_read",
+	"t1.max_disk_write",
+	"t1.max_disk_write_task",
+	"t1.max_disk_write_node",
+	"t1.ave_disk_write",
 	"t1.max_vsize",
 	"t1.max_vsize_task",
 	"t1.max_vsize_node",
@@ -188,6 +196,14 @@ enum {
 	STEP_REQ_USER_USEC,
 	STEP_REQ_SYS_SEC,
 	STEP_REQ_SYS_USEC,
+	STEP_REQ_MAX_DISK_READ,
+	STEP_REQ_MAX_DISK_READ_TASK,
+	STEP_REQ_MAX_DISK_READ_NODE,
+	STEP_REQ_AVE_DISK_READ,
+	STEP_REQ_MAX_DISK_WRITE,
+	STEP_REQ_MAX_DISK_WRITE_TASK,
+	STEP_REQ_MAX_DISK_WRITE_NODE,
+	STEP_REQ_AVE_DISK_WRITE,
 	STEP_REQ_MAX_VSIZE,
 	STEP_REQ_MAX_VSIZE_TASK,
 	STEP_REQ_MAX_VSIZE_NODE,
@@ -752,6 +768,20 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				step->user_cpu_sec + step->sys_cpu_sec;
 			step->tot_cpu_usec +=
 				step->user_cpu_usec + step->sys_cpu_usec;
+			step->stats.disk_read_max =
+				slurm_atoul(step_row[STEP_REQ_MAX_DISK_READ]);
+			step->stats.disk_read_max_taskid =
+				slurm_atoul(step_row[
+					STEP_REQ_MAX_DISK_READ_TASK]);
+			step->stats.disk_read_ave =
+				atof(step_row[STEP_REQ_AVE_DISK_READ]);
+			step->stats.disk_write_max =
+				slurm_atoul(step_row[STEP_REQ_MAX_DISK_WRITE]);
+			step->stats.disk_write_max_taskid =
+				slurm_atoul(step_row[
+					STEP_REQ_MAX_DISK_WRITE_TASK]);
+			step->stats.disk_write_ave =
+				atof(step_row[STEP_REQ_AVE_DISK_WRITE]);
 			step->stats.vsize_max =
 				slurm_atoul(step_row[STEP_REQ_MAX_VSIZE]);
 			step->stats.vsize_max_taskid =
