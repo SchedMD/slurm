@@ -104,7 +104,19 @@ static char *_find_qos_name_from_list(
 		return "Unknown";
 }
 
+static void _print_small_double(
+	char *outbuf, int buf_size, double dub, int units)
+{
+	if (fuzzy_equal(dub, NO_VAL))
+		return;
 
+	if (dub > 1)
+		convert_num_unit((float)dub, outbuf, buf_size, units);
+	else if (dub > 0)
+		snprintf(outbuf, buf_size, "%.2fM", dub);
+	else
+		snprintf(outbuf, buf_size, "0");
+}
 
 void print_fields(type_t type, void *object)
 {
@@ -253,10 +265,8 @@ void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
-			if (!fuzzy_equal(tmp_dub, NO_VAL))
-				convert_num_unit((float)tmp_dub,
-						 outbuf, sizeof(outbuf),
-						 UNIT_MEGA);
+			_print_small_double(outbuf, sizeof(outbuf),
+					    tmp_dub, UNIT_MEGA);
 
 			field->print_routine(field,
 					     outbuf,
@@ -275,10 +285,8 @@ void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
-			if (!fuzzy_equal(tmp_dub, NO_VAL))
-				convert_num_unit((float)tmp_dub,
-						 outbuf, sizeof(outbuf),
-						 UNIT_MEGA);
+			_print_small_double(outbuf, sizeof(outbuf),
+					    tmp_dub, UNIT_MEGA);
 
 			field->print_routine(field,
 					     outbuf,
@@ -678,19 +686,17 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if (!job->track_steps)
-					tmp_int = job->stats.disk_read_max;
+					tmp_dub = job->stats.disk_read_max;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.disk_read_max;
+				tmp_dub = step->stats.disk_read_max;
 				break;
 			case JOBCOMP:
 			default:
 				break;
 			}
-			if (tmp_int != NO_VAL)
-				convert_num_unit((float)tmp_int,
-						 outbuf, sizeof(outbuf),
-						 UNIT_MEGA);
+			_print_small_double(outbuf, sizeof(outbuf),
+					    tmp_dub, UNIT_MEGA);
 
 			field->print_routine(field,
 					     outbuf,
@@ -744,19 +750,17 @@ void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				if (!job->track_steps)
-					tmp_int = job->stats.disk_write_max;
+					tmp_dub = job->stats.disk_write_max;
 				break;
 			case JOBSTEP:
-				tmp_int = step->stats.disk_write_max;
+				tmp_dub = step->stats.disk_write_max;
 				break;
 			case JOBCOMP:
 			default:
 				break;
 			}
-			if (tmp_int != NO_VAL)
-				convert_num_unit((float)tmp_int,
-						 outbuf, sizeof(outbuf),
-						 UNIT_MEGA);
+			_print_small_double(outbuf, sizeof(outbuf),
+					    tmp_dub, UNIT_MEGA);
 
 			field->print_routine(field,
 					     outbuf,
