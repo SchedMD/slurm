@@ -135,6 +135,7 @@ static bool flag_thread_run_running = false;
 static bool flag_thread_write_running = false;
 static bool flag_thread_started = false;
 static bool flag_slurmd_process = false;
+static bool flag_init = false;
 static pthread_mutex_t ipmi_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_t thread_ipmi_id_launcher = 0;
 pthread_t thread_ipmi_id_run = 0;
@@ -1049,17 +1050,20 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 
 	flag_slurmd_process = _is_thread_launcher();
 	if (flag_slurmd_process) {
-		pthread_attr_t attr;
-		slurm_attr_init(&attr);
-		if (pthread_create(&thread_ipmi_id_launcher, &attr,
-				   &_thread_launcher, NULL)) {
-			//if (pthread_create(... (void *)arg)) {
-			debug("energy accounting failed to create "
-			      "_thread_launcher thread: %m");
+		if (!flag_init) {
+			flag_init = true;
+			pthread_attr_t attr;
+			slurm_attr_init(&attr);
+			if (pthread_create(&thread_ipmi_id_launcher, &attr,
+					   &_thread_launcher, NULL)) {
+				//if (pthread_create(... (void *)arg)) {
+				debug("energy accounting failed to create "
+				      "_thread_launcher thread: %m");
+			}
+			slurm_attr_destroy(&attr);
+			if (debug_flags & DEBUG_FLAG_ENERGY)
+				info("%s thread launched", plugin_name);
 		}
-		slurm_attr_destroy(&attr);
-		if (debug_flags & DEBUG_FLAG_ENERGY)
-			info("%s thread launched", plugin_name);
 	} else
 		_first_update_task_energy();
 }
