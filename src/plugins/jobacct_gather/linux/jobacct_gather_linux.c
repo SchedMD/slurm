@@ -405,8 +405,9 @@ static int _get_process_io_data_line(int in, prec_t *prec) {
 		return 0;
 
 	/* Copy the values that slurm records into our data structure */
-	prec->disk_read = (double) rchar/(double)(1024 * 1024);
-	prec->disk_write = (double) wchar/(double)(1024 * 1024);
+	prec->disk_read = (double)rchar / (double)1048576;
+	prec->disk_write = (double)wchar / (double)1048576;
+
 	return 1;
 }
 
