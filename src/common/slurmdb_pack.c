@@ -118,13 +118,13 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 		packdouble(stats->consumed_energy, buffer);
 
 		pack32(stats->vsize_max_nodeid, buffer);
-		pack16(stats->vsize_max_taskid, buffer);
+		pack16((uint16_t)stats->vsize_max_taskid, buffer);
 		pack32(stats->rss_max_nodeid, buffer);
-		pack16(stats->rss_max_taskid, buffer);
+		pack16((uint16_t)stats->rss_max_taskid, buffer);
 		pack32(stats->pages_max_nodeid, buffer);
-		pack16(stats->pages_max_taskid, buffer);
+		pack16((uint16_t)stats->pages_max_taskid, buffer);
 		pack32(stats->cpu_min_nodeid, buffer);
-		pack16(stats->cpu_min_taskid, buffer);
+		pack16((uint16_t)stats->cpu_min_taskid, buffer);
 	} else if (rpc_version >= SLURMDBD_VERSION_MIN) {
 		if (!stats) {
 			for(i=0; i<4; i++)
@@ -151,19 +151,21 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 		packdouble(stats->cpu_ave, buffer);
 
 		pack32(stats->vsize_max_nodeid, buffer);
-		pack16(stats->vsize_max_taskid, buffer);
+		pack16((uint16_t)stats->vsize_max_taskid, buffer);
 		pack32(stats->rss_max_nodeid, buffer);
-		pack16(stats->rss_max_taskid, buffer);
+		pack16((uint16_t)stats->rss_max_taskid, buffer);
 		pack32(stats->pages_max_nodeid, buffer);
-		pack16(stats->pages_max_taskid, buffer);
+		pack16((uint16_t)stats->pages_max_taskid, buffer);
 		pack32(stats->cpu_min_nodeid, buffer);
-		pack16(stats->cpu_min_taskid, buffer);
+		pack16((uint16_t)stats->cpu_min_taskid, buffer);
 	}
 }
 
 static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 				 uint16_t rpc_version, Buf buffer)
 {
+	uint16_t tmp_uint16;
+
 	if (rpc_version >= SLURMDBD_2_6_VERSION) {
 		safe_unpack32(&stats->vsize_max, buffer);
 		safe_unpack32(&stats->rss_max, buffer);
@@ -207,13 +209,17 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		safe_unpackdouble(&stats->consumed_energy, buffer);
 
 		safe_unpack32(&stats->vsize_max_nodeid, buffer);
-		safe_unpack16(&stats->vsize_max_taskid, buffer);
+		safe_unpack16(&tmp_uint16, buffer);
+		stats->vsize_max_taskid = tmp_uint16;
 		safe_unpack32(&stats->rss_max_nodeid, buffer);
-		safe_unpack16(&stats->rss_max_taskid, buffer);
+		safe_unpack16(&tmp_uint16, buffer);
+		stats->rss_max_taskid = tmp_uint16;
 		safe_unpack32(&stats->pages_max_nodeid, buffer);
-		safe_unpack16(&stats->pages_max_taskid, buffer);
+		safe_unpack16(&tmp_uint16, buffer);
+		stats->pages_max_taskid = tmp_uint16;
 		safe_unpack32(&stats->cpu_min_nodeid, buffer);
-		safe_unpack16(&stats->cpu_min_taskid, buffer);
+		safe_unpack16(&tmp_uint16, buffer);
+		stats->cpu_min_taskid = tmp_uint16;
 	} else if (rpc_version >= SLURMDBD_VERSION_MIN) {
 		safe_unpack32(&stats->vsize_max, buffer);
 		safe_unpack32(&stats->rss_max, buffer);
@@ -226,13 +232,17 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		safe_unpackdouble(&stats->cpu_ave, buffer);
 
 		safe_unpack32(&stats->vsize_max_nodeid, buffer);
-		safe_unpack16(&stats->vsize_max_taskid, buffer);
+		safe_unpack16(&tmp_uint16, buffer);
+		stats->vsize_max_taskid = tmp_uint16;
 		safe_unpack32(&stats->rss_max_nodeid, buffer);
-		safe_unpack16(&stats->rss_max_taskid, buffer);
+		safe_unpack16(&tmp_uint16, buffer);
+		stats->rss_max_taskid = tmp_uint16;
 		safe_unpack32(&stats->pages_max_nodeid, buffer);
-		safe_unpack16(&stats->pages_max_taskid, buffer);
+		safe_unpack16(&tmp_uint16, buffer);
+		stats->pages_max_taskid = tmp_uint16;
 		safe_unpack32(&stats->cpu_min_nodeid, buffer);
-		safe_unpack16(&stats->cpu_min_taskid, buffer);
+		safe_unpack16(&tmp_uint16, buffer);
+		stats->cpu_min_taskid = tmp_uint16;
 	}
 
 	return SLURM_SUCCESS;
