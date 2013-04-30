@@ -51,7 +51,10 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
 
-#define SAVE_MAX_WAIT	2	/* Maximum time in seconds to wait for save */
+/* Maximum delay for pending state save to be processed, in seconds */
+#ifndef SAVE_MAX_WAIT
+#define SAVE_MAX_WAIT	5
+#endif
 
 static pthread_mutex_t state_save_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  state_save_cond = PTHREAD_COND_INITIALIZER;

@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ============================
  -- Added helper script for launching symmetric and MIC-only MPI tasks within
     SLURM (in contribs/mic/mpirun-mic).
+ -- Change maximum delay for state save from 2 secs to 5 secs. Make timeout
+    configurable at build time by defining SAVE_MAX_WAIT.
 
 * Changes in Slurm 2.6.0pre3
 ============================
