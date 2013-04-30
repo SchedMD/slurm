@@ -656,6 +656,14 @@ extern void jobacct_gather_p_poll_data(
 				jobacct->max_pages =
 					MAX(jobacct->max_pages, prec->pages);
 				jobacct->tot_pages = prec->pages;
+				jobacct->max_disk_read = MAX(
+					jobacct->max_disk_read,
+					prec->disk_read);
+				jobacct->tot_disk_read = prec->disk_read;
+				jobacct->max_disk_write = MAX(
+					jobacct->max_disk_write,
+					prec->disk_write);
+				jobacct->tot_disk_write = prec->disk_write;
 				jobacct->min_cpu =
 					MAX(jobacct->min_cpu, cpu_calc);
 				jobacct->last_total_cputime = jobacct->tot_cpu;
@@ -689,14 +697,6 @@ extern void jobacct_gather_p_poll_data(
 					debug2("getjoules_task energy = %u",
 					       jobacct->energy.consumed_energy);
 					energy_counted = 1;
-				jobacct->max_disk_read = MAX(
-					jobacct->max_disk_read,
-					prec->disk_read);
-				jobacct->tot_disk_read = prec->disk_read;
-				jobacct->max_disk_write = MAX(
-					jobacct->max_disk_write,
-					prec->disk_write);
-				jobacct->tot_disk_write = prec->disk_write;
 				}
 				break;
 			}
