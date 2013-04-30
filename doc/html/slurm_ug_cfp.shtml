@@ -23,18 +23,20 @@ Slurm</a>, a highly scalable Resource Manager and Job Scheduler</li>
 or tutorial about Slurm is invited to send an abstract to
 <a href="mailto:sugc@schedmd.com">sugc@schedmd.com</a>.</p>
 
-<p>IMPORTANT DATES:<br>
+<p><b>Important Dates:</b><br>
 May 24, 2013: Abstracts due<br>
 June 21, 2013: Notification of acceptance<br>
 September 18-19, 2013: Slurm User Group Meeting 2013<br>
 </p>
 
-<p>Program Committee:<br>
+<p><b>Program Committee:</b><br>
 Yiannis Georgiou (Bull)<br>
 Matthieu Hautreux (CEA)<br>
 Morris Jette (SchedMD)<br>
 Donald Lipari (LLNL, Lawrence Livermore National Laboratory)<br>
 Colin McMurtrie (CSCS, Swiss National Supercomputing Centre)<br>
 Stephen Trofinoff (CSCS, Swiss National Supercomputing Centre)</p>
+
+<p><a href="slurm_ug_registration.html">Registration information</a></p>
 
 <!--#include virtual="footer.txt"-->
