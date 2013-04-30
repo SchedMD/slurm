@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     SLURM (in contribs/mic/mpirun-mic).
  -- Change maximum delay for state save from 2 secs to 5 secs. Make timeout
     configurable at build time by defining SAVE_MAX_WAIT.
+ -- Modify slurmctld data structure locking to interleave read and write
+    locks rather than always favor write locks over read locks.
 
 * Changes in Slurm 2.6.0pre3
 ============================
