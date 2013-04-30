@@ -680,9 +680,9 @@ extern void jobacct_gather_p_poll_data(
 					"cpuinfo_cur_freq", sbuf);
 				jobacct->act_cpufreq =
 					_update_weighted_freq(jobacct, sbuf);
-				debug2("Task average frequency = %u",
-				       jobacct->act_cpufreq);
-				debug2(" pid %d mem size %u %u time %u(%u+%u)",
+				debug2("Task average frequency = %u "
+				       "pid %d mem size %u %u time %u(%u+%u)",
+				       jobacct->act_cpufreq,
 				       jobacct->pid, jobacct->max_rss,
 				       jobacct->max_vsize, jobacct->tot_cpu,
 				       prec->usec, prec->ssec);
