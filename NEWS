@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 2.6.0pre4
 ============================
+ -- Added helper script for launching symmetric and MIC-only MPI tasks within
+    SLURM (in contribs/mic/mpirun-mic).
 
 * Changes in Slurm 2.6.0pre3
 ============================
