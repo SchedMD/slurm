@@ -134,7 +134,6 @@ static bool flag_energy_accounting_shutdown = false;
 static bool flag_thread_run_running = false;
 static bool flag_thread_write_running = false;
 static bool flag_thread_started = false;
-static bool flag_slurmd_process = false;
 static bool flag_init = false;
 static pthread_mutex_t ipmi_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_t thread_ipmi_id_launcher = 0;
@@ -672,8 +671,6 @@ static void *_thread_launcher(void *no_data)
 	time_t begin_time;
 	int rc = SLURM_SUCCESS;
 
-	flag_slurmd_process = true;
-
 	slurm_attr_init(&attr_run);
 	if (pthread_create(&thread_ipmi_id_run, &attr_run,
 			   &_thread_ipmi_run, NULL)) {
@@ -1048,8 +1045,7 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 			       "EnergyIPMIPowerSensor", tbl);
 	}
 
-	flag_slurmd_process = _is_thread_launcher();
-	if (flag_slurmd_process) {
+	if (_is_thread_launcher()) {
 		if (!flag_init) {
 			flag_init = true;
 			pthread_attr_t attr;
