@@ -122,7 +122,8 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = $(SUBDIRS)
+DIST_SUBDIRS = mpich1_p4 mpich1_shmem mpichgm mpichmx mvapich none lam \
+	openmpi pmi2
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -364,7 +365,10 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = mpich1_p4 mpich1_shmem mpichgm mpichmx mvapich none lam openmpi pmi2
+@REAL_BGQ_LOADED_FALSE@SUBDIRS = mpich1_p4 mpich1_shmem mpichgm mpichmx mvapich none lam openmpi pmi2
+
+#on a real BGQ do not compile any mpi plugins
+@REAL_BGQ_LOADED_TRUE@SUBDIRS = none
 all: all-recursive
 
 .SUFFIXES:
