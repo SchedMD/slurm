@@ -165,6 +165,14 @@ proc endit { } {
 	exit $exit_code
 }
 
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+
 #gets user
 spawn $bin_id -u -n
 expect {
