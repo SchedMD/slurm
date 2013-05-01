@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
  -- CRAY - Change logging of transient ALPS errors from error() to debug().
  -- POE - Correct logic to support poe option "-euidevice sn_all" and
     "-euidevice sn_single".
+ -- Accounting - Fix minor initialization error.
 
 * Changes in Slurm 2.5.6
 ========================
