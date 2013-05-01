@@ -932,12 +932,13 @@ extern int do_basil_confirm(struct job_record *job_ptr)
 			error("JobId %u has invalid ALPS resId %u - job "
 			      "already canceled?", job_ptr->job_id, resv_id);
 			return SLURM_SUCCESS;
+		} else if (is_transient_error(rc)) {
+			debug("confirming ALPS resId %u of JobId %u FAILED: %s",
+			      resv_id, job_ptr->job_id, basil_strerror(rc));
+			return READY_JOB_ERROR;
 		} else {
 			error("confirming ALPS resId %u of JobId %u FAILED: %s",
-				resv_id, job_ptr->job_id, basil_strerror(rc));
-
-			if (is_transient_error(rc))
-				return READY_JOB_ERROR;
+			      resv_id, job_ptr->job_id, basil_strerror(rc));
 		}
 	}
 	return READY_JOB_FATAL;

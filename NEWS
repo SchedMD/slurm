@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
  -- Avoid placing pending jobs in AdminHold state due to backfill scheduler
     interactions with advanced reservation.
  -- Accounting - make average by task not cpu.
+ -- CRAY - Change logging of transient ALPS errors from error() to debug().
 
 * Changes in Slurm 2.5.6
 ========================
