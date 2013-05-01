@@ -103,11 +103,13 @@ typedef struct {
 }	slurmctld_lock_t;
 
 /* Interval lock structure
- * we actually use three count for each data type, see macros below
+ * we actually use the count for each data type, see macros below
  *	(lock_datatype_t * 4 + 0) = read_lock		read locks in use
  *	(lock_datatype_t * 4 + 1) = write_lock		write locks in use
  *	(lock_datatype_t * 4 + 2) = write_wait_lock	write locks pending
  *	(lock_datatype_t * 4 + 3) = write_cnt_lock	write lock count
+ * NOTE: If changing the number of functions (array size), then also change
+ * the size of "entity" in src/common/assoc_mgr.h
  */
 typedef enum {
 	CONFIG_LOCK,

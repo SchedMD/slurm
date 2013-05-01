@@ -68,10 +68,11 @@ typedef struct {
 } assoc_mgr_lock_t;
 
 /* Interval lock structure
- * we actually use three semaphores for each data type, see macros below
- *	(assoc_mgr_lock_datatype_t * 3 + 0) = read_lock
- *	(assoc_mgr_lock_datatype_t * 3 + 1) = write_lock
- *	(assoc_mgr_lock_datatype_t * 3 + 2) = write_wait_lock
+ * we actually use the count for each data type, see macros below
+ *   (assoc_mgr_lock_datatype_t * 4 + 0) = read_lock        read locks in use
+ *   (assoc_mgr_lock_datatype_t * 4 + 1) = write_lock       write locks in use
+ *   (assoc_mgr_lock_datatype_t * 4 + 2) = write_wait_lock  write locks pending
+ *   (assoc_mgr_lock_datatype_t * 4 + 3) = write_cnt_lock   write lock count
  */
 typedef enum {
 	ASSOC_LOCK,
@@ -83,7 +84,7 @@ typedef enum {
 } assoc_mgr_lock_datatype_t;
 
 typedef struct {
-	int entity[ASSOC_MGR_ENTITY_COUNT * 3];
+	int entity[ASSOC_MGR_ENTITY_COUNT * 4];
 } assoc_mgr_lock_flags_t;
 
 typedef struct {
