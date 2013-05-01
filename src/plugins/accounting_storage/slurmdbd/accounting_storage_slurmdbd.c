@@ -2246,26 +2246,25 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 extern int jobacct_storage_p_step_complete(void *db_conn,
 					   struct step_record *step_ptr)
 {
-	uint32_t cpus = 0, tasks = 0;
+	uint32_t tasks = 0;
 	slurmdbd_msg_t msg;
 	dbd_step_comp_msg_t req;
 
-#ifdef HAVE_BG_L_P
-	if (step_ptr->job_ptr->details)
-		tasks = cpus = step_ptr->job_ptr->details->min_cpus;
-	else
-		tasks = cpus = step_ptr->job_ptr->cpu_cnt;
-#else
-	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-		cpus = tasks = step_ptr->job_ptr->total_cpus;
-	} else {
-		cpus = step_ptr->cpu_count;
-		tasks = step_ptr->step_layout->task_cnt;
-	}
-#endif
-
 	if (step_ptr->step_id == SLURM_BATCH_SCRIPT)
-		cpus = tasks = 1;
+		tasks = 1;
+	else {
+#ifdef HAVE_BG_L_P
+		if (step_ptr->job_ptr->details)
+			tasks = step_ptr->job_ptr->details->min_cpus;
+		else
+			tasks = step_ptr->job_ptr->cpu_cnt;
+#else
+		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
+			tasks = step_ptr->job_ptr->total_cpus;
+		else
+			tasks = step_ptr->step_layout->task_cnt;
+#endif
+	}
 
 	if (!step_ptr->job_ptr->db_index
 	    && ((!step_ptr->job_ptr->details
@@ -2295,7 +2294,6 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	else if (step_ptr->job_ptr->details)
 		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
 	req.step_id     = step_ptr->step_id;
-	req.total_cpus = cpus;
 	req.total_tasks = tasks;
 
 	msg.msg_type    = DBD_STEP_COMPLETE;

@@ -3814,7 +3814,7 @@ slurmdbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg,
 	pack_time(msg->start_time, buffer);
 	pack_time(msg->job_submit_time, buffer);
 	pack32(msg->step_id, buffer);
-	pack32(msg->total_cpus, buffer);
+	pack32(msg->total_tasks, buffer);
 }
 
 extern int
@@ -3834,7 +3834,7 @@ slurmdbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
 	safe_unpack_time(&msg_ptr->start_time, buffer);
 	safe_unpack_time(&msg_ptr->job_submit_time, buffer);
 	safe_unpack32(&msg_ptr->step_id, buffer);
-	safe_unpack32(&msg_ptr->total_cpus, buffer);
+	safe_unpack32(&msg_ptr->total_tasks, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
