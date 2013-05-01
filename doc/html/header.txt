@@ -17,7 +17,7 @@ Linux clusters, high-performance computing">
   google.load('search', '1', {language : 'en', style : google.loader.themes.V2_DEFAULT});
   google.setOnLoadCallback(function() {
     var customSearchOptions = {};  var customSearchControl = new google.search.CustomSearchControl(
-      '011612593158067573887:bmckasj55jw', customSearchOptions);
+      '011890816164765777536:jvrtxrd3f0w', customSearchOptions);
     customSearchControl.setResultSetSize(google.search.Search.SMALL_RESULTSET);
     customSearchControl.draw('cse');
   }, true);
@@ -75,4 +75,4 @@ window.onresize = window_check;
 
 <div id="content">
 
-<div id="cse">Loading...</div>
+<div id="cse"></div>
