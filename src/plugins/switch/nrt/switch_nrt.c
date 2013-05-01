@@ -544,6 +544,10 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 				dev_type = NRT_HPCE;
 			} else if (!strcasecmp(type_ptr, "kmux")) {
 				dev_type = NRT_KMUX;
+			} else if (!strcasecmp(type_ptr, "sn_all")) {
+				sn_all = true;
+			} else if (!strcasecmp(type_ptr, "sn_single")) {
+				sn_all = false;
 			} else {
 				info("switch/nrt: invalid option: %s", token);
 				err = SLURM_ERROR;

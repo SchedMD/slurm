@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
     interactions with advanced reservation.
  -- Accounting - make average by task not cpu.
  -- CRAY - Change logging of transient ALPS errors from error() to debug().
+ -- POE - Correct logic to support poe option "-euidevice sn_all" and
+    "-euidevice sn_single".
 
 * Changes in Slurm 2.5.6
 ========================
