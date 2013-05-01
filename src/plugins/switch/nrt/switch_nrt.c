@@ -525,6 +525,10 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 				      "network string", token);
 				adapter_name = xstrdup(name_ptr);
 				sn_all = false;
+			} else if (!strcasecmp(name_ptr, "sn_all")) {
+				sn_all = true;
+			} else if (!strcasecmp(name_ptr, "sn_single")) {
+				sn_all = false;
 			} else {
 				info("switch/nrt: invalid devname: %s",
 				     name_ptr);

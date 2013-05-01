@@ -498,7 +498,13 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 			/* instances options */
 			} else if (!strncasecmp(token, "instances=", 10)) {
-				/* Ignored */
+				type_ptr = token + 10;
+				setenv("MP_INSTANCES", type_ptr, 1);
+				if (opt.launch_cmd) {
+					xstrfmtcat(poe_cmd_line,
+						   " -instances %s",
+						   type_ptr);
+				}
 
 			/* network options */
 			} else if (!strcasecmp(token, "ip")   ||

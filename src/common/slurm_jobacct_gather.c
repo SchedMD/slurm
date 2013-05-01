@@ -598,6 +598,7 @@ extern void jobacct_gather_handle_mem_limit(
 extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 {
 	struct jobacctinfo *jobacct;
+	jobacct_id_t temp_id;
 
 	if (!plugin_polling)
 		return NULL;
@@ -605,7 +606,6 @@ extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 	jobacct = xmalloc(sizeof(struct jobacctinfo));
 
 	if (!jobacct_id) {
-		jobacct_id_t temp_id;
 		temp_id.taskid = (uint16_t)NO_VAL;
 		temp_id.nodeid = (uint32_t)NO_VAL;
 		jobacct_id = &temp_id;
