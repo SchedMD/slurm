@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
     configurable at build time by defining SAVE_MAX_WAIT.
  -- Modify slurmctld data structure locking to interleave read and write
     locks rather than always favor write locks over read locks.
+ -- Added sacct format option of "ALL" to print all fields.
 
 * Changes in Slurm 2.6.0pre3
 ============================

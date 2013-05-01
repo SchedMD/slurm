@@ -91,6 +91,7 @@ COMMAND CHANGES (see man pages for details)
  - Added Allocated Memory to node information displayed by sview and scontrol
    commands.
  - Added username (%u) to the filename pattern for srun and sbatch commands.
+ - Added sacct format option of "ALL" to print all fields.
 
 OTHER CHANGES
 =============

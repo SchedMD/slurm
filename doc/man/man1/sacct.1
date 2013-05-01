@@ -396,10 +396,16 @@ allowed in the \f2assoc_list\fP. Default is all associations\&.
 Only show cumulative statistics for each job, not the intermediate steps.
 
 .SS "Job Accounting Fields"
-The following describes each job accounting field:
+Each job accounting field is described below. Preceed the name with a "%"
+and field size to override the default size. Specify a size value of zero
+to print the field without truncation.
 .RS
 .TP "10"
-\f3alloccpus\fP
+\f3ALL\fP
+Print all fields listed below.
+
+.TP
+\f3AllocCPUs\fP
 Count of allocated processors.
 
 .TP

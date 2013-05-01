@@ -1162,6 +1162,7 @@ void parse_command_line(int argc, char **argv)
 		char *tmp_char = NULL;
 		int command_len = 0;
 		int newlen = 0;
+		bool newlen_set = false;
 
 		*end = 0;
 		while (isspace(*start))
@@ -1170,11 +1171,23 @@ void parse_command_line(int argc, char **argv)
 			continue;
 
 		if ((tmp_char = strstr(start, "\%"))) {
+			newlen_set = true;
 			newlen = atoi(tmp_char+1);
 			tmp_char[0] = '\0';
 		}
 
 		command_len = strlen(start);
+
+		if (!strncasecmp("ALL", start, command_len)) {
+			for (i = 0; fields[i].name; i++) {
+				if (newlen_set)
+					fields[i].len = newlen;
+				list_append(print_fields_list, &fields[i]);
+				start = end + 1;
+			}
+			start = end + 1;
+			continue;
+		}
 
 		for (i = 0; fields[i].name; i++) {
 			if (!strncasecmp(fields[i].name, start, command_len))
@@ -1183,7 +1196,7 @@ void parse_command_line(int argc, char **argv)
 		error("Invalid field requested: \"%s\"", start);
 		exit(1);
 	foundfield:
-		if (newlen)
+		if (newlen_set)
 			fields[i].len = newlen;
 		list_append(print_fields_list, &fields[i]);
 		start = end + 1;
