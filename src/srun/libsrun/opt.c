@@ -203,6 +203,7 @@ resource_allocation_response_msg_t *global_resp = NULL;
 static bool mpi_initialized = false;
 typedef struct env_vars env_vars_t;
 
+static int _get_task_count(void);
 
 /* Get a decimal integer from arg */
 static int  _get_int(const char *arg, const char *what, bool positive);
@@ -257,12 +258,52 @@ int initialize_and_process_args(int argc, char *argv[])
 			exit(1);
 		}
 		xfree(launch_type);
+		/* Massage ntasks value earlier than normal */
+		if (!opt.ntasks_set)
+			opt.ntasks = _get_task_count();
 		launch_g_create_job_step(NULL, 0, NULL, NULL);
 		exit(0);
 	}
 
 	return 1;
 
+}
+static int _get_task_count(void)
+{
+	char *cpus_per_node = NULL, *end_ptr = NULL;
+	int cpu_count, node_count, task_count, total_tasks = 0;
+
+	if (opt.ntasks_per_node != NO_VAL)
+		return (opt.min_nodes * opt.ntasks_per_node);
+	if (opt.cpus_set)
+		cpus_per_node = getenv("SLURM_JOB_CPUS_PER_NODE");
+	if (cpus_per_node) {
+		cpu_count = strtol(cpus_per_node, &end_ptr, 10);
+		task_count = cpu_count / opt.cpus_per_task;
+		while (1) {
+			if ((end_ptr[0] == '(') && (end_ptr[1] == 'x')) {
+				end_ptr += 2;
+				node_count = strtol(end_ptr, &end_ptr, 10);
+				task_count *= node_count;
+				total_tasks += task_count;
+				if (end_ptr[0] == ')')
+					end_ptr++;
+			} else if ((end_ptr[0] == ',') || (end_ptr[0] == 0))
+				total_tasks += task_count;
+			else {
+				error("Invalid value for environment variable "
+				      "SLURM_JOB_CPUS_PER_NODE (%s)",
+				      cpus_per_node);
+				break;
+			}
+			if (end_ptr[0] == ',')
+				end_ptr++;
+			if (end_ptr[0] == 0)
+				break;
+		}
+		return total_tasks;
+	}
+	return opt.min_nodes;
 }
 
 /*
