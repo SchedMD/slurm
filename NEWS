@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
  -- Modify slurmctld data structure locking to interleave read and write
     locks rather than always favor write locks over read locks.
  -- Added sacct format option of "ALL" to print all fields.
+ -- Deprecate the SchedulerParameters value of "interval" use "bf_interval"
+    instead as documented.
 
 * Changes in Slurm 2.6.0pre3
 ============================

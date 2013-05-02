@@ -388,10 +388,10 @@ static void _load_config(void)
 	sched_params = slurm_get_sched_params();
 	debug_flags  = slurm_get_debug_flags();
 
-	if (sched_params && (tmp_ptr=strstr(sched_params, "interval=")))
-		backfill_interval = atoi(tmp_ptr + 9);
+	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_interval=")))
+		backfill_interval = atoi(tmp_ptr + 12);
 	if (backfill_interval < 1) {
-		fatal("Invalid backfill scheduler interval: %d",
+		fatal("Invalid backfill scheduler bf_interval: %d",
 		      backfill_interval);
 	}
 
