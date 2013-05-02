@@ -40,6 +40,7 @@ set exit_code   0
 set file_prog   "test$test_id.prog"
 set matches     0
 set fini_cnt    0
+set poe_flag    0
 set usr1cnt     0
 set usr2cnt     0
 
@@ -51,6 +52,17 @@ if { [test_cray] } {
 } elseif { [test_xcpu] } {
 	send_user "\nWARNING: This test is incompatible with XCPU systems\n"
 	exit $exit_code:
+}
+
+if {[test_launch_poe]} {
+#	SIGUSR2 used by POE to generate checkpoint
+#	SIGUSR2 causes POE to core dump in base configuration
+#	The test program exits after receiving 2 signals of any type
+	set usr1target 2
+	set usr2target 0
+} else {
+	set usr1target 1
+	set usr2target 1
 }
 
 #
@@ -88,10 +100,16 @@ expect {
 	-re "WAITING" {
 		incr matches
 		# sleep to make sure the process is actually running
-		exec $bin_sleep 1
-		exec $bin_kill -USR1 $srun_pid
-		exec $bin_kill -USR2 $srun_pid
-		send_user "\nSent signals USR1 and USR2\n"
+		for {set inx 0} {$inx < $usr1target} {incr inx} {
+			sleep 1
+			exec $bin_kill -USR1 $srun_pid
+		}
+		send_user "\nSent signal USR1 $usr1target times\n"
+		for {set inx 0} {$inx < $usr2target} {incr inx} {
+			sleep 1
+			exec $bin_kill -USR2 $srun_pid
+		}
+		send_user "\nSent signal USR1 $usr2target times\n"
 		exp_continue
 	}
 	-re "SIGUSR($number)" {
@@ -124,19 +142,18 @@ if {$matches != 1} {
 	send_user "\nFAILURE: srun failed to initialize properly\n"
 	set exit_code 1
 }
-if {$usr1cnt != 1} {
-	send_user "\nFAILURE: $file_prog received $usr1cnt SIGUSR1 (not 1)\n"
+if {$usr1cnt != $usr1target} {
+	send_user "\nFAILURE: $file_prog received $usr1cnt SIGUSR1 (not $usr1target)\n"
 	set exit_code 1
 }
-if {$usr2cnt != 1} {
-	send_user "\nFAILURE: $file_prog received $usr2cnt SIGUSR2 (not 1)\n"
+if {$usr2cnt != $usr2target} {
+	send_user "\nFAILURE: $file_prog received $usr2cnt SIGUSR2 (not $usr2target)\n"
 	set exit_code 1
 }
 if {$fini_cnt != 1} {
 	send_user "\nFAILURE: srun failed to terminate properly\n"
 	set exit_code 1
 }
-
 
 #
 # Post-processing
