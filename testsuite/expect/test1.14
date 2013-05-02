@@ -70,7 +70,7 @@ make_bash_script $file_in "
     inx=\$((inx+1))
   done
   $bin_sleep 2
-  $srun -v --exclusive -n1 $file_in2 &
+  $srun -v --exclusive -n1 ./$file_in2 &
   wait
 "
 make_bash_script $file_in2 "
