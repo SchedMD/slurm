@@ -74,7 +74,7 @@ main (int argc, char **argv)
 	printf("WAITING\n");
 	fflush(stdout);
 
-	while (!sigusr1_cnt || !sigusr2_cnt) {
+	while ((sigusr1_cnt + sigusr2_cnt) < 2) {
 		sleep(1);
 	}
 	printf("FINI: sig1:%d sig2:%d\n", sigusr1_cnt, sigusr2_cnt);
