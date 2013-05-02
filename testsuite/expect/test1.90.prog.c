@@ -81,7 +81,9 @@ main (int argc, char **argv)
 		exit(0);
 	}
 
-	if ((task_str = getenv("SLURM_PROCID")) == NULL) {
+	/* On POE systems, MP_CHILD is equivalent to SLURM_PROCID */
+	if (((task_str = getenv("SLURM_PROCID")) == NULL) &&
+	    ((task_str = getenv("MP_CHILD")) == NULL)) {
 		fprintf(stderr, "ERROR: getenv(SLURM_PROCID) failed\n");
 		exit(1);
 	}
