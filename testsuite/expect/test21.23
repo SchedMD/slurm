@@ -168,7 +168,7 @@ if {$using_slurmdbd} {
 	sleep 5
 }
 
-spawn $sacct -p -j $job_id --fields=wckey
+spawn $sacct -p -j $job_id --format=wckey
 	expect {
 		-re "$wk" {
 			incr matches
@@ -232,7 +232,7 @@ if {$job_id == 0} {
 		sleep 5
 	}
 
-	spawn $sacct -p -j $job_id --fields=wckey
+	spawn $sacct -p -j $job_id --format=wckey
 	expect {
 		-re "$wk" {
 			incr matches
@@ -294,7 +294,7 @@ if {$job_id == 0} {
 		sleep 5
 	}
 
-	spawn $sacct -p -j $job_id --fields=wckey
+	spawn $sacct -p -j $job_id --format=wckey
 	expect {
 		-re "$wk" {
 			incr matches
