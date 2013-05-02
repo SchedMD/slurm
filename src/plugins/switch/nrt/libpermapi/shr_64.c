@@ -978,6 +978,9 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	opt.argc = my_argc;
 	opt.argv = my_argv;
 	opt.user_managed_io = true;
+	/* Disable binding of the pvmd12 task so it has access to all resources
+	 * allocated to the job step and can use them for spawned tasks. */
+	opt.cpu_bind_type = CPU_BIND_NONE;
 	orig_task_num = task_num;
 	if (slurm_step_ctx_daemon_per_node_hack(job->step_ctx,
 						total_node_list,

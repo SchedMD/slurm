@@ -16,6 +16,7 @@ documents those changes that are of interest to users and admins.
  -- POE - Correct logic to support srun network instances count with POE.
  -- POE - With the srun --launch-cmd option, report proper task count when
     the --cpus-per-task option is used without the --ntasks option.
+ -- POE - Fix logic binding tasks to CPUs.
 
 * Changes in Slurm 2.5.6
 ========================

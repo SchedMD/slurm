@@ -195,6 +195,7 @@ if { $launch_poe != 0 } {
 	}
 	if {$exit_code == 0} {
 		file delete $file_prog
+		send_user "\nSUCCESS\n"
 	} else {
 		send_user "\nFAILURE: See note about reading second prompt in the script (line 123)\n"
 	}
