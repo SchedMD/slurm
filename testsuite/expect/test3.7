@@ -177,7 +177,6 @@ if {[string compare $host_name ""] == 0} {
 	exit 1
 }
 # Submit another job to that same node
-wait_for_job $job_id2 RUNNING
 set srun_pid [spawn $sbatch -N1 -t2 --output=$file_out2 $file_prog_sh2]
 expect {
 	-re "Submitted batch job ($number)" {

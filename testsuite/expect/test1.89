@@ -186,7 +186,7 @@ expect {
 	}
 }
 if {$task_mask != $expected_mask} {
-	send_user "\nFAILURE: affinity mask inconsistency ($task_mask,$expected_mask)\n"
+	send_user "\nFAILURE: affinity mask inconsistency ($task_mask != $expected_mask)\n"
 	set exit_code 1
 }
 
@@ -202,7 +202,7 @@ if { $launch_poe != 0 } {
 		file delete $file_prog
 		send_user "\nSUCCESS\n"
 	} else {
-		send_user "\nFAILURE: See note about reading second prompt in the script (line 123)\n"
+		send_user "\nFAILURE: See note about reading second prompt in the script (line 128)\n"
 	}
 	exit $exit_code
 }
@@ -230,7 +230,7 @@ expect {
 	-re $prompt
 }
 if {$task_mask != $task_cnt} {
-	send_user "\nFAILURE: affinity mask inconsistent ($task_mask,$task_cnt)\n"
+	send_user "\nFAILURE: affinity mask inconsistent ($task_mask != $task_cnt)\n"
 	set exit_code 1
 }
 set verbose_cnt 0
