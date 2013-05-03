@@ -2471,3 +2471,53 @@ proc get_array_config { } {
 	   log_user 1
 	   return $array_size
 }
+
+#################################################
+#
+# Proc: scale_to_megs
+#
+# Purpose: scale the value by the factor T|G|M
+#          to megabytes
+# Returns: the scaled variable
+#
+#################################################
+
+proc scale_to_megs { value factor } {
+
+	if {[string compare $factor "T"] == 0} {
+		set value [expr $value * 1024 * 1024]
+	} elseif {[string compare $factor "G"] == 0} {
+		set value [expr $value * 1024]
+	} elseif {[string compare $factor "M"] == 0} {
+		set value [expr $value * 1]
+	} else {
+		set value [expr $value / (1024 * 1024)]
+	}
+
+	return $value
+}
+
+#################################################
+#
+# Proc: scale_to_ks
+#
+# Purpose: scale the value by the factor G|M|K
+#          to kilobytes
+# Returns: the scaled variable
+#
+#################################################
+
+proc scale_to_ks { value factor } {
+
+	if {[string compare $factor "G"] == 0} {
+		set value [expr $value * 1024 * 1024]
+	} elseif {[string compare $factor "M"] == 0} {
+		set value [expr $value * 1024]
+	} elseif {[string compare $factor "K"] == 0} {
+		set value [expr $value * 1]
+	} else {
+		set value [expr $value / 1024]
+	}
+
+	return $value
+}
