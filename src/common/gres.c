@@ -2468,6 +2468,7 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 	uint32_t *cpus_avail = NULL, cpu_cnt = 0;
 	bitstr_t *alloc_cpu_bitmap = NULL;
+	bool test_cpu_map = true;
 
 	if (job_gres_ptr->gres_cnt_alloc && node_gres_ptr->topo_cnt &&
 	    *topo_set) {
@@ -2562,11 +2563,20 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		while (gres_avail < job_gres_ptr->gres_cnt_alloc) {
 			top_inx = -1;
 			for (j=0; j<node_gres_ptr->topo_cnt; j++) {
+				if (gres_avail && test_cpu_map &&
+				    !bit_overlap(alloc_cpu_bitmap,
+						 node_gres_ptr->
+						 topo_cpus_bitmap[j]))
+					continue;
 				if (top_inx == -1) {
 					if (cpus_avail[j])
 						top_inx = j;
 				} else if (cpus_avail[j] > cpus_avail[top_inx])
 					top_inx = j;
+			}
+			if ((top_inx < 0) && gres_avail && test_cpu_map) {
+				test_cpu_map = false;
+				continue;
 			}
 			if ((top_inx < 0) || (cpus_avail[top_inx] == 0)) {
 				cpu_cnt = 0;
@@ -2584,9 +2594,16 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 				continue;
 			}
 			/* update counts of allocated CPUs and GRES */
+			if (gres_avail) {
+				bit_or(alloc_cpu_bitmap,
+				       node_gres_ptr->
+				       topo_cpus_bitmap[top_inx]);
+			} else {
+				bit_and(alloc_cpu_bitmap,
+					node_gres_ptr->
+					topo_cpus_bitmap[top_inx]);
+			}
 			gres_avail += i;
-			bit_and(alloc_cpu_bitmap,
-			        node_gres_ptr->topo_cpus_bitmap[top_inx]);
 			cpu_cnt = bit_set_count(alloc_cpu_bitmap);
 		}
 		if (cpu_bitmap && (cpu_cnt > 0)) {
