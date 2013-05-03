@@ -397,9 +397,10 @@ This option was originally created for use by Moab.
 
 .TP
 \fB\-\-gid\fR=<\fIgroup\fR>
-If \fBsalloc\fR is run as root, and the \fB\-\-gid\fR option is used,
-submit the job with \fIgroup\fR's group access permissions.  \fIgroup\fR
-may be the group name or the numerical group ID.
+Submit the job with the specified \fIgroup\fR's group access permissions.
+\fIgroup\fR may be the group name or the numerical group ID.
+In the default Slurm configuration, this option is only valid when used
+by the user root.
 
 .TP
 \fB\-\-gres\fR=<\fIlist\fR>
@@ -1039,7 +1040,8 @@ Display brief help message and exit.
 \fB\-\-uid\fR=<\fIuser\fR>
 Attempt to submit and/or run a job as \fIuser\fR instead of the
 invoking user id. The invoking user's credentials will be used
-to check access permissions for the target partition. User root
+to check access permissions for the target partition. This option
+is only valid for user root. This option may be used by user root
 may use this option to run jobs as a normal user in a RootOnly
 partition for example. If run as root, \fBsalloc\fR will drop
 its permissions to the uid specified after node allocation is
