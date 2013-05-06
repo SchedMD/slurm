@@ -2108,10 +2108,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->exclusive = step_specs->exclusive;
 	step_ptr->ckpt_dir  = xstrdup(step_specs->ckpt_dir);
 	step_ptr->no_kill   = step_specs->no_kill;
-	step_ptr->ext_sensors = (ext_sensors_data_t *)
-					xmalloc(sizeof(ext_sensors_data_t));
-	step_ptr->ext_sensors->consumed_energy = NO_VAL;
-	step_ptr->ext_sensors->temperature = NO_VAL;
+	step_ptr->ext_sensors = ext_sensors_alloc();
 
 	/* step's name and network default to job's values if not
 	 * specified in the step specification */
@@ -3373,6 +3370,9 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 	step_ptr->check_job    = check_tmp;
 	step_ptr->cpu_freq     = cpu_freq;
 	step_ptr->state        = state;
+
+	if (!step_ptr->ext_sensors)
+			step_ptr->ext_sensors = ext_sensors_alloc();
 
 	step_ptr->exit_code    = exit_code;
 	if (bit_fmt) {
