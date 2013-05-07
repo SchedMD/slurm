@@ -1894,8 +1894,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		      pre_err, node_ptr->name);
 	}
 
-	if (cr_ptr->nodes[i].gres_list)
-		gres_list = cr_ptr->nodes[i].gres_list;
+	if (cr_ptr->nodes[node_inx].gres_list)
+		gres_list = cr_ptr->nodes[node_inx].gres_list;
 	else
 		gres_list = node_ptr->gres_list;
 	gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, node_offset,
