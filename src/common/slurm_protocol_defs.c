@@ -585,6 +585,7 @@ extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->accounts);
+		xfree(msg->core_cnt);
 		xfree(msg->features);
 		xfree(msg->licenses);
 		xfree(msg->name);
