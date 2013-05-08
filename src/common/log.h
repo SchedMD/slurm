@@ -109,6 +109,8 @@ typedef struct {
 	unsigned    buffered:1;     /* Use internal buffer to never block */
 } 	log_options_t;
 
+extern char *slurm_prog_name;
+
 /* some useful initializers for log_options_t
  */
 #define LOG_OPTS_INITIALIZER	\

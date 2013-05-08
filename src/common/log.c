@@ -137,6 +137,8 @@ typedef struct {
 	uint32_t debug_flags;
 }	log_t;
 
+char *slurm_prog_name = NULL;
+
 /* static variables */
 #ifdef WITH_PTHREADS
   static pthread_mutex_t  log_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -299,6 +301,10 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 			short_name = default_name;
 		log->argv0 = xstrdup(short_name);
 	}
+
+	/* Only take the first one here.  In some situations it can change. */
+	if (!slurm_prog_name)
+		slurm_prog_name = xstrdup(log->argv0);
 
 	if (!log->fpfx)
 		log->fpfx = xstrdup("");
@@ -481,6 +487,7 @@ void log_fini(void)
 	if (log->logfp)
 		fclose(log->logfp);
 	xfree(log);
+	xfree(slurm_prog_name);
 	slurm_mutex_unlock(&log_lock);
 }
 

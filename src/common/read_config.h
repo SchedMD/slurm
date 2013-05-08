@@ -505,5 +505,11 @@ extern int sort_key_pairs(config_key_pair_t *key_a, config_key_pair_t *key_b);
  */
 extern char *get_extra_conf_path(char *conf_name);
 
+/* Determine slurm_prog_name (calling process) is in list of daemons
+ *
+ * in - daemons (comma separated list of daemons i.e. slurmd,slurmstepd
+ * returns true if slurm_prog_name (set in log.c) is in list, false otherwise.
+ */
+extern bool run_in_daemon(char *daemons);
 
 #endif /* !_READ_CONFIG_H */

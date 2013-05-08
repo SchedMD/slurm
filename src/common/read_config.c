@@ -4006,3 +4006,22 @@ extern char *get_extra_conf_path(char *conf_name)
 
 	return rc;
 }
+
+extern bool run_in_daemon(char *daemons)
+{
+	char *start_char = daemons, *end_char = NULL;
+
+	xassert(slurm_prog_name);
+
+	if (!strcmp(daemons, slurm_prog_name))
+		return true;
+
+	while (start_char && (end_char = strstr(start_char, ","))) {
+		*end_char = 0;
+		if (!strcmp(start_char, slurm_prog_name))
+			return true;
+		start_char = end_char + 1;
+	}
+
+	return false;
+}
