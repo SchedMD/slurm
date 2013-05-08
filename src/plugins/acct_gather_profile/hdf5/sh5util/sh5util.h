@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  sprfmrgh5.h - slurm profile accounting plugin for io and energy using hdf5.
+ *  sh5util.h - slurm profile accounting plugin for io and energy using hdf5.
  *****************************************************************************
  *  Copyright (C) 2013 Bull S. A. S.
  *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _GATHER_PROFILE_SPRFMRGH5_H_
-#define _GATHER_PROFILE_SPRFMRGH5_H_
+#ifndef _GATHER_PROFILE_SH5UTIL_H_
+#define _GATHER_PROFILE_SH5UTIL_H_
 
 /* ============================================================================
  * ============================================================================

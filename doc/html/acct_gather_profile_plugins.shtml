@@ -29,15 +29,15 @@ parallel file system, disk I/O counts, cpu and memory utilization
 for each task, and a record of energy use.
 
 <p>The reference implementation stores this data in a HDF5 file for each step
-on each node for the jobs. A separate program 
-(<a href="sprfmrgh5.html">sprfmrgh5</a>) is provided to 
+on each node for the jobs. A separate program
+(<a href="sh5util5.html">sh5util</a>) is provided to
 consolidate all the node-step files in one container for the job.
 HDF5 is a well known structured data set that allows different types of
 related data to be stored in one file. Its internal structure resembles a
 file system with <i>groups</i> being similar to <i>directories</i> and
 <i>data sets</i> being similar to <i>files</i>. There are commodity programs, 
 notably <b>HDF5View</b> for viewing and manipulating these files.
-<b>sprfmrgh5</b> also provides some capability for extracting subsets of date
+<b>sh5util</b> also provides some capability for extracting subsets of date
 for import into other analysis tools like spreadsheets.
 
 <p>This plugin is incompatible with --enable-front-end. It you need to 

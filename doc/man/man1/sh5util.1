@@ -1,25 +1,25 @@
-.TH "sprfmrgh5" "1" "SLURM 2.6" "March 2013" "SLURM Commands"
+.TH "sh5util" "1" "SLURM 2.6" "March 2013" "SLURM Commands"
 .SH "NAME"
 .LP
-sprfmrgh5 \- Tool for merging HDF5 files from the acct_gather_profile 
+sh5util \- Tool for merging HDF5 files from the acct_gather_profile 
 plugin that gathers detailed data for jobs running under SLURM
 
 .SH "SYNOPSIS"
 .LP
-sprfmrgh5
+sh5util
 
 .SH "DESCRIPTION"
 .LP
-sprfmrgh5 merges HDF5 files produced on each node for each step of a job into
+sh5util merges HDF5 files produced on each node for each step of a job into
 one HDF5 file for the job. The resulting file can be viewed and manipulated
 by common HDF5 tools such as HDF5View, h5dump, h5edit, or h5ls.
 .LP
-sprfmrgh5 has two execution modes. The first mode merges all the node-step 
+sh5util has two execution modes. The first mode merges all the node-step 
 files for a job into one job file. The second mode extracts a limited set of
 data for specific nodes, steps, and data series.
 The extract mode is set with the \fB\-\-extract\fR command line option.
 .LP
-The merge mode of sprfmrgh5 is expected to be launched during the controller 
+The merge mode of sh5util is expected to be launched during the controller 
 epilog script using the SLURM_JOB_ID environment variable. 
 However, it can be launched on any system with access to the shared file 
 system.

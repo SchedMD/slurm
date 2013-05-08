@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  sprfmrgh5.c - slurm profile accounting plugin for io and energy using hdf5.
- *              - Utility to merge node-step files into a job file
- *              - or extract data from an job file
+ *  sh5util.c - slurm profile accounting plugin for io and energy using hdf5.
+ *            - Utility to merge node-step files into a job file
+ *            - or extract data from an job file
  *****************************************************************************
  *  Copyright (C) 2013 Bull S. A. S.
  *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
