@@ -85,7 +85,6 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_acct_gather_energy.h"
-#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_topology.h"
@@ -1563,7 +1562,6 @@ _slurmd_fini(void)
 	slurm_select_fini();
 	jobacct_gather_fini();
 	acct_gather_energy_fini();
-	acct_gather_profile_fini();
 	spank_slurmd_exit();
 	cpu_freq_fini();
 

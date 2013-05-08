@@ -448,10 +448,6 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize job_submit plugin");
 	if (ext_sensors_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize ext_sensors plugin");
-	if (slurm_acct_gather_profile_init() != SLURM_SUCCESS ) {
-		fatal( "failed to initialize profile plugin");
-		acct_gather_profile_g_controller_start();
-	}
 
 	while (1) {
 		/* initialization for each primary<->backup switch */

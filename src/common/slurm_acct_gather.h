@@ -55,13 +55,6 @@
 #include "slurm_acct_gather_energy.h"
 #include "slurm_acct_gather_profile.h"
 
-typedef struct {
-	void *energy_ipmi;
-	// Options for acct_gather_profile plugin
-	char *profile_dir;
-	char *profile_DefaultProfile;
-} slurm_acct_gather_conf_t;
-
 extern int acct_gather_conf_init(void);
 extern int acct_gather_conf_destroy(void);
 
