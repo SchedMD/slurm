@@ -49,8 +49,10 @@ extern int acct_gather_conf_init(void)
 	s_p_options_t *full_options = NULL;
 	int full_options_cnt = 0;
 	struct stat buf;
+
 	if (inited)
 		return SLURM_SUCCESS;
+	inited = 1;
 
 	/* get options from plugins using acct_gather.conf */
 
@@ -90,8 +92,6 @@ extern int acct_gather_conf_init(void)
 	/******************************************/
 
 	s_p_hashtbl_destroy(tbl);
-
-	inited = 1;
 
 	return SLURM_SUCCESS;
 }
