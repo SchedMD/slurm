@@ -504,9 +504,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/acct_gather_energy/ipmi/Makefile
 		 src/plugins/acct_gather_energy/none/Makefile
 		 src/plugins/acct_gather_profile/Makefile
-		 src/plugins/acct_gather_profile/io_energy/Makefile
+		 src/plugins/acct_gather_profile/hdf5/Makefile
+		 src/plugins/acct_gather_profile/hdf5/sh5util/Makefile
 		 src/plugins/acct_gather_profile/none/Makefile
-		 src/plugins/acct_gather_profile/sprfmrgh5/Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
 		 src/plugins/jobcomp/none/Makefile

@@ -1,16 +1,36 @@
-# Makefile for acct_gather_profile/io_energy plugin
+# Makefile for acct_gather_profile/hdf5 plugin
 
 AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common -I$(top_srcdir)/src/plugins/acct_gather_profile/common
-
-pkglib_LTLIBRARIES = acct_gather_profile_io_energy.la
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 # cpu/core energy accounting plugin.
-acct_gather_profile_io_energy_la_SOURCES = io_energy.c io_energy.h \
-		   ../common/profile_hdf5.c    ../common/profile_hdf5.h
+HDF5_SOURCES = acct_gather_profile_hdf5.c acct_gather_profile_hdf5.h
+HDF5_API_SOURCES = hdf5_api.c hdf5_api.h
 
-acct_gather_profile_io_energy_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
-					   $(HDF5_LDFLAGS) $(HDF5_LIBS) 
+if BUILD_HDF5
+
+SUBDIRS = sh5util
+
+pkglib_LTLIBRARIES = acct_gather_profile_hdf5.la
+noinst_LTLIBRARIES = libhdf5_api.la
+
+libhdf5_api_la_SOURCES = $(HDF5_API_SOURCES)
+libhdf5_api_la_LDFLAGS = $(HDF5_LDFLAGS)
+libhdf5_api_la_CPPFLAGS = $(HDF5_CPPFLAGS)
+libhdf5_api_la_LIBADD = $(HDF5_LIBS)
+
+acct_gather_profile_hdf5_la_SOURCES = $(HDF5_SOURCES)
+acct_gather_profile_hdf5_la_LDFLAGS = \
+	$(SO_LDFLAGS) $(PLUGIN_FLAGS) $(HDF5_LDFLAGS)
+acct_gather_profile_hdf5_la_CPPFLAGS = $(HDF5_CPPFLAGS)
+acct_gather_profile_hdf5_la_LIBADD = $(HDF5_LIBS) libhdf5_api.la
+
+else
+
+EXTRA_acct_gather_profile_hdf5_la_SOURCES = $(HDF5_SOURCES)
+EXTRA_libhdf5_api_la_SOURCES = $(HDF5_API_SOURCES)
+
+endif
