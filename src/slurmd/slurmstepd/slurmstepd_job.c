@@ -281,7 +281,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->buffered_stdio = msg->buffered_stdio;
 	job->labelio = msg->labelio;
 
-	job->profile     = xstrdup(msg->profile);
+	job->profile     = msg->profile;
 	job->task_prolog = xstrdup(msg->task_prolog);
 	job->task_epilog = xstrdup(msg->task_epilog);
 

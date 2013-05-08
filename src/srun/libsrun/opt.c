@@ -82,6 +82,7 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -119,6 +120,7 @@
 #define OPT_SIGNAL      0x17
 #define OPT_TIME_VAL    0x18
 #define OPT_CPU_FREQ    0x19
+#define OPT_PROFILE     0x20
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -488,7 +490,7 @@ static void _opt_default()
 	opt.egid	    = (gid_t) -1;
 
 	opt.propagate	    = NULL;  /* propagate specific rlimits */
-	opt.profile	    = NULL;  /* acct_gather_profile selection */
+	opt.profile	    = ACCT_GATHER_PROFILE_NOT_SET;
 
 	opt.prolog = slurm_get_srun_prolog();
 	opt.epilog = slurm_get_srun_epilog();
@@ -583,7 +585,7 @@ env_vars_t env_vars[] = {
 {"SLURM_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL             },
 {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL             },
 {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL             },
-{"SLURM_PROFILE",       OPT_STRING,     &opt.profile,       NULL             },
+{"SLURM_PROFILE",       OPT_PROFILE,    NULL,               NULL             },
 {"SLURM_PROLOG",        OPT_STRING,     &opt.prolog,        NULL             },
 {"SLURM_QOS",           OPT_STRING,     &opt.qos,           NULL             },
 {"SLURM_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL             },
@@ -764,7 +766,9 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
-
+	case OPT_PROFILE:
+		opt.profile = acct_gather_profile_from_string((char *)val);
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -888,7 +892,7 @@ static void _set_options(const int argc, char **argv)
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
-		{"profile",          optional_argument, 0, LONG_OPT_PROFILE},
+		{"profile",          required_argument, 0, LONG_OPT_PROFILE},
 		{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
 		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 		{"pty",              no_argument,       0, LONG_OPT_PTY},
@@ -1518,8 +1522,7 @@ static void _set_options(const int argc, char **argv)
 			opt.wckey = xstrdup(optarg);
 			break;
 		case LONG_OPT_PROFILE:
-			xfree(opt.profile);
-			opt.profile = xstrdup(optarg);
+			opt.profile = acct_gather_profile_from_string(optarg);
 			break;
 		case LONG_OPT_RESERVATION:
 			xfree(opt.reservation);
@@ -2276,7 +2279,8 @@ static void _opt_list(void)
 	     opt.jobid_set ? "(set)" : "(default)");
 	info("partition      : %s",
 	     opt.partition == NULL ? "default" : opt.partition);
-	info("profile        : `%s'", opt.profile);
+	info("profile        : `%s'",
+	     acct_gather_profile_to_string(opt.profile));
 	info("job name       : `%s'", opt.job_name);
 	info("reservation    : `%s'", opt.reservation);
 	info("wckey          : `%s'", opt.wckey);

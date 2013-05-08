@@ -147,7 +147,7 @@ typedef struct slurmd_job {
 	bool           run_prolog; /* true if need to run prolog            */
 	bool           user_managed_io;
 	time_t         timelimit;  /* time at which job must stop           */
-	char          *profile;	   /* Level of acct_gather_profile          */
+	uint32_t       profile;	   /* Level of acct_gather_profile          */
 	char          *task_prolog; /* per-task prolog                      */
 	char          *task_epilog; /* per-task epilog                      */
 	struct passwd *pwd;   /* saved passwd struct for user job           */

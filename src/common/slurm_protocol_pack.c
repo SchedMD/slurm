@@ -4435,7 +4435,6 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 
 	job->ntasks_per_node = (uint16_t)NO_VAL;
 
-//<<<<<<< slurm_protocol_pack.c nlk temp remove 
 	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack16(&job->array_task_id, buffer);
@@ -4443,6 +4442,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack32(&job->job_id, buffer);
 		safe_unpack32(&job->user_id, buffer);
 		safe_unpack32(&job->group_id, buffer);
+		safe_unpack32(&job->profile, buffer);
 
 		safe_unpack16(&job->job_state,    buffer);
 		safe_unpack16(&job->batch_flag,   buffer);
@@ -4473,7 +4473,6 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->batch_host, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->batch_script, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job->profile, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->qos, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->licenses, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->state_desc, &uint32_tmp, buffer);
@@ -6312,8 +6311,6 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 {
 	/* load the data values */
 	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
-//SMD	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
-//RBS: other half of job_desc_msg. I don't think we have to replicate, but we do have to use 2_4
 		pack16(job_desc_ptr->contiguous, buffer);
 		pack16(job_desc_ptr->task_dist, buffer);
 		pack16(job_desc_ptr->kill_on_node_fail, buffer);
@@ -6335,7 +6332,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		packstr(job_desc_ptr->account, buffer);
 		packstr(job_desc_ptr->comment, buffer);
 		pack16(job_desc_ptr->nice, buffer);
-		packstr(job_desc_ptr->profile, buffer);
+		pack32(job_desc_ptr->profile, buffer);
 		packstr(job_desc_ptr->qos, buffer);
 
 		pack8(job_desc_ptr->open_mode,   buffer);
@@ -6806,8 +6803,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&job_desc_ptr->comment,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&job_desc_ptr->nice, buffer);
-		safe_unpackstr_xmalloc(&job_desc_ptr->profile, &uint32_tmp,
-				       buffer);
+		safe_unpack32(&job_desc_ptr->profile, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->qos, &uint32_tmp,
 				       buffer);
 
@@ -7525,7 +7521,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 			for (i = 0; i < msg->num_io_port; i++)
 				pack16(msg->io_port[i], buffer);
 		}
-		packstr(msg->profile, buffer);
+		pack32(msg->profile, buffer);
 		packstr(msg->task_prolog, buffer);
 		packstr(msg->task_epilog, buffer);
 		pack16(msg->slurmd_debug, buffer);
@@ -7782,7 +7778,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 						      buffer);
 			}
 		}
-		safe_unpackstr_xmalloc(&msg->profile, &uint32_tmp, buffer);
+		safe_unpack32(&msg->profile, buffer);
 		safe_unpackstr_xmalloc(&msg->task_prolog, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->task_epilog, &uint32_tmp, buffer);
 		safe_unpack16(&msg->slurmd_debug, buffer);

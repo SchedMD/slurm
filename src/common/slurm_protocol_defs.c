@@ -415,7 +415,6 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->network);
 		xfree(msg->std_out);
 		xfree(msg->partition);
-		xfree(msg->profile);
 		xfree(msg->ramdiskimage);
 		xfree(msg->req_nodes);
 		xfree(msg->reservation);
@@ -501,7 +500,6 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->node_inx);
 		xfree(job->nodes);
 		xfree(job->partition);
-		xfree(job->profile);
 		xfree(job->qos);
 		xfree(job->req_node_inx);
 		xfree(job->req_nodes);
@@ -730,7 +728,6 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	xfree(msg->ofname);
 	xfree(msg->efname);
 
-	xfree(msg->profile);
 	xfree(msg->task_prolog);
 	xfree(msg->task_epilog);
 	xfree(msg->complete_nodelist);

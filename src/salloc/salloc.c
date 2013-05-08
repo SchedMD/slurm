@@ -614,7 +614,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->immediate = 1;
 	desc->name = xstrdup(opt.job_name);
 	desc->reservation = xstrdup(opt.reservation);
-	desc->profile  = xstrdup(opt.profile);
+	desc->profile  = opt.profile;
 	desc->wckey  = xstrdup(opt.wckey);
 	if (opt.req_switch >= 0)
 		desc->req_switch = opt.req_switch;

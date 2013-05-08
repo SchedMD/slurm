@@ -83,6 +83,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -114,6 +115,7 @@
 #define OPT_SIGNAL      0x15
 #define OPT_KILL_CMD    0x16
 #define OPT_TIME_VAL	0x17
+#define OPT_PROFILE     0x18
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_CPU_BIND    0x101
@@ -305,7 +307,7 @@ static void _opt_default()
 	opt.time_min = NO_VAL;
 	opt.time_min_str = NULL;
 	opt.partition = NULL;
-	opt.profile   = NULL;
+	opt.profile   = ACCT_GATHER_PROFILE_NOT_SET;
 
 	opt.job_name = NULL;
 	opt.jobid = NO_VAL;
@@ -401,7 +403,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL          },
   {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
-  {"SALLOC_PROFILE",       OPT_STRING,     &opt.profile,       NULL          },
+  {"SALLOC_PROFILE",       OPT_PROFILE,    NULL,               NULL          },
   {"SALLOC_QOS",           OPT_STRING,     &opt.qos,           NULL          },
   {"SALLOC_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
   {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
@@ -567,7 +569,9 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
-
+	case OPT_PROFILE:
+		opt.profile = acct_gather_profile_from_string((char *)val);
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -670,7 +674,7 @@ void set_options(const int argc, char **argv)
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"qos",		  required_argument, 0, LONG_OPT_QOS},
-		{"profile",       optional_argument, 0, LONG_OPT_PROFILE},
+		{"profile",       required_argument, 0, LONG_OPT_PROFILE},
 		{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"reboot",	  no_argument,       0, LONG_OPT_REBOOT},
 		{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
@@ -1013,8 +1017,7 @@ void set_options(const int argc, char **argv)
 			opt.jobid = _get_int(optarg, "jobid");
 			break;
 		case LONG_OPT_PROFILE:
-			xfree(opt.profile);
-			opt.profile = xstrdup(optarg);
+			opt.profile = acct_gather_profile_from_string(optarg);
 			break;
 		case LONG_OPT_COMMENT:
 			xfree(opt.comment);
@@ -1579,7 +1582,8 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.profile)
-		setenvfs("SLURM_PROFILE=%s", opt.profile);
+		setenvfs("SLURM_PROFILE=%s",
+			 acct_gather_profile_to_string(opt.profile));
 
 	return verified;
 }
@@ -1764,7 +1768,8 @@ static void _opt_list(void)
 	if (opt.gres != NULL)
 		info("gres           : %s", opt.gres);
 	info("network        : %s", opt.network);
-	info("profile        : `%s'", opt.profile);
+	info("profile        : `%s'",
+	     acct_gather_profile_to_string(opt.profile));
 	info("qos            : %s", opt.qos);
 	str = print_constraints();
 	info("constraints    : %s", str);

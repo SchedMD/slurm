@@ -144,6 +144,90 @@ extern int acct_gather_profile_fini(void)
 	return rc;
 }
 
+extern char *acct_gather_profile_to_string(uint32_t profile)
+{
+	static char profile_str[128];
+
+	profile_str[0] = '\0';
+	if (profile == ACCT_GATHER_PROFILE_NOT_SET)
+		strcat(profile_str, "NotSet");
+	else if (profile == ACCT_GATHER_PROFILE_NONE)
+		strcat(profile_str, "None");
+	else {
+		if (profile & ACCT_GATHER_PROFILE_ENERGY)
+			strcat(profile_str, "Energy");
+		if (profile & ACCT_GATHER_PROFILE_LUSTRE) {
+			if (profile_str[0])
+				strcat(profile_str, ",");
+			strcat(profile_str, "Lustre");
+		}
+		if (profile & ACCT_GATHER_PROFILE_NETWORK) {
+			if (profile_str[0])
+				strcat(profile_str, ",");
+			strcat(profile_str, "Network");
+		}
+		if (profile & ACCT_GATHER_PROFILE_TASK) {
+			if (profile_str[0])
+				strcat(profile_str, ",");
+			strcat(profile_str, "Task");
+		}
+	}
+	return profile_str;
+}
+
+extern uint32_t acct_gather_profile_from_string(char *profile_str)
+{
+	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET;
+
+        if (!profile_str) {
+	} else if (slurm_strcasestr(profile_str, "none"))
+		profile = ACCT_GATHER_PROFILE_NONE;
+	else if (slurm_strcasestr(profile_str, "all"))
+		profile = ACCT_GATHER_PROFILE_ALL;
+	else {
+		if (slurm_strcasestr(profile_str, "energy"))
+			profile |= ACCT_GATHER_PROFILE_ENERGY;
+		if (slurm_strcasestr(profile_str, "task"))
+			profile |= ACCT_GATHER_PROFILE_TASK;
+
+		if (slurm_strcasestr(profile_str, "lustre"))
+			profile |= ACCT_GATHER_PROFILE_LUSTRE;
+
+		if (slurm_strcasestr(profile_str, "network"))
+			profile |= ACCT_GATHER_PROFILE_NETWORK;
+	}
+
+	return profile;
+}
+
+extern char *acct_gather_profile_series_to_string(uint32_t series)
+{
+	if (series == ACCT_GATHER_PROFILE_ENERGY)
+		return "Energy";
+	else if (series == ACCT_GATHER_PROFILE_TASK)
+		return "Task";
+	else if (series == ACCT_GATHER_PROFILE_LUSTRE)
+		return "Lustre";
+	else if (series == ACCT_GATHER_PROFILE_NETWORK)
+		return "Network";
+
+	return "Unknown";
+}
+
+extern uint32_t acct_gather_profile_series_from_string(char *series_str)
+{
+	if (strcasecmp(series_str, "energy"))
+		return ACCT_GATHER_PROFILE_ENERGY;
+	else if (strcasecmp(series_str, "task"))
+		return ACCT_GATHER_PROFILE_TASK;
+	else if (strcasecmp(series_str, "lustre"))
+		return ACCT_GATHER_PROFILE_LUSTRE;
+	else if (strcasecmp(series_str, "network"))
+		return ACCT_GATHER_PROFILE_NETWORK;
+
+	return ACCT_GATHER_PROFILE_NOT_SET;
+}
+
 extern void acct_gather_profile_g_conf_options(s_p_options_t **full_options,
 					      int *full_options_cnt)
 {

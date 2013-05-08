@@ -82,6 +82,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -116,6 +117,7 @@
 #define OPT_CLUSTERS      0x18
 #define OPT_TIME_VAL      0x19
 #define OPT_ARRAY_INX     0x20
+#define OPT_PROFILE       0x21
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
@@ -362,7 +364,7 @@ static void _opt_default()
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
 
-	opt.profile	    = NULL;  /* acct_gather_profile selection */
+	opt.profile	    = ACCT_GATHER_PROFILE_NOT_SET;
 	opt.propagate	    = NULL;  /* propagate specific rlimits */
 
 	opt.ifname = xstrdup("/dev/null");
@@ -474,7 +476,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL          },
   {"SBATCH_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
   {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
-  {"SBATCH_PROFILE",       OPT_STRING,     &opt.profile,       NULL          },
+  {"SBATCH_PROFILE",       OPT_PROFILE,    NULL,               NULL          },
   {"SBATCH_QOS",           OPT_STRING,     &opt.qos,           NULL          },
   {"SBATCH_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL          },
   {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL          },
@@ -658,6 +660,9 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
+	case OPT_PROFILE:
+		opt.profile = acct_gather_profile_from_string((char *)val);
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -746,7 +751,7 @@ static struct option long_options[] = {
 	{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
-	{"profile",       optional_argument, 0, LONG_OPT_PROFILE},
+	{"profile",       required_argument, 0, LONG_OPT_PROFILE},
 	{"qos",		  required_argument, 0, LONG_OPT_QOS},
 	{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 	{"reboot",        no_argument,       0, LONG_OPT_REBOOT},
@@ -1487,8 +1492,7 @@ static void _set_options(int argc, char **argv)
 			opt.requeue = 1;
 			break;
 		case LONG_OPT_PROFILE:
-			xfree(opt.profile);
-			opt.profile = xstrdup(optarg);
+			opt.profile = acct_gather_profile_from_string(optarg);
 			break;
 		case LONG_OPT_COMMENT:
 			xfree(opt.comment);
@@ -2445,7 +2449,8 @@ static bool _opt_verify(void)
 		setenvfs("SLURM_JOB_DEPENDENCY=%s", opt.dependency);
 
 	if (opt.profile)
-		setenvfs("SLURM_PROFILE=%s", opt.profile);
+		setenvfs("SLURM_PROFILE=%s",
+			 acct_gather_profile_to_string(opt.profile));
 
 
 	if (opt.acctg_freq >= 0)
@@ -2722,7 +2727,8 @@ static void _opt_list(void)
 		opt.jobid_set ? "(set)" : "(default)");
 	info("partition         : %s",
 		opt.partition == NULL ? "default" : opt.partition);
-	info("profile           : `%s'", opt.profile);
+	info("profile           : `%s'",
+	     acct_gather_profile_to_string(opt.profile));
 	info("job name          : `%s'", opt.job_name);
 	info("reservation       : `%s'", opt.reservation);
 	info("wckey             : `%s'", opt.wckey);

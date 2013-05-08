@@ -789,6 +789,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->qos_id, buffer);
 	pack32(dump_job_ptr->req_switch, buffer);
 	pack32(dump_job_ptr->wait4switch, buffer);
+	pack32(dump_job_ptr->profile, buffer);
 
 	pack_time(dump_job_ptr->preempt_time, buffer);
 	pack_time(dump_job_ptr->start_time, buffer);
@@ -844,7 +845,6 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->licenses, buffer);
 	packstr(dump_job_ptr->mail_user, buffer);
-	packstr(dump_job_ptr->profile, buffer);
 	packstr(dump_job_ptr->resv_name, buffer);
 	packstr(dump_job_ptr->batch_host, buffer);
 
@@ -893,6 +893,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t next_step_id, total_cpus, total_nodes = 0, cpu_cnt;
 	uint32_t resv_id, spank_job_env_size = 0, qos_id, derived_ec = 0;
 	uint32_t array_job_id = 0, req_switch = 0, wait4switch = 0;
+	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t preempt_time = 0;
 	time_t resize_time = 0, now = time(NULL);
@@ -908,7 +909,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint16_t limit_set_time = 0, limit_set_qos = 0;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
-	char *profile = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
 	char *resv_name = NULL, *gres = NULL, *batch_host = NULL;
@@ -966,6 +966,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack32(&qos_id, buffer);
 		safe_unpack32(&req_switch, buffer);
 		safe_unpack32(&wait4switch, buffer);
+		safe_unpack32(&profile, buffer);
 
 		safe_unpack_time(&preempt_time, buffer);
 		safe_unpack_time(&start_time, buffer);
@@ -1036,7 +1037,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 		safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
 		safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
-		safe_unpackstr_xmalloc(&profile, &name_len, buffer);
 		safe_unpackstr_xmalloc(&resv_name, &name_len, buffer);
 		safe_unpackstr_xmalloc(&batch_host, &name_len, buffer);
 
@@ -1466,9 +1466,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	xfree(job_ptr->mail_user);
 	job_ptr->mail_user    = mail_user;
 	mail_user             = NULL;	/* reused, nothing left to free */
-	xfree(job_ptr->profile);
-	job_ptr->profile      = profile;
-	profile               = NULL;  /* reused, nothing left to free */
 	xfree(job_ptr->name);		/* in case duplicate record */
 	job_ptr->name         = name;
 	name                  = NULL;	/* reused, nothing left to free */
@@ -1540,6 +1537,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->limit_set_qos       = limit_set_qos;
 	job_ptr->req_switch      = req_switch;
 	job_ptr->wait4switch     = wait4switch;
+	job_ptr->profile         = profile;
 	/* This needs to always to initialized to "true".  The select
 	   plugin will deal with it every time it goes through the
 	   logic if req_switch or wait4switch are set.
@@ -2773,7 +2771,7 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 		job_ptr_new->node_bitmap_cg = bit_copy(job_ptr->node_bitmap_cg);
 	job_ptr_new->nodes_completing = xstrdup(job_ptr->nodes_completing);
 	job_ptr_new->partition = xstrdup(job_ptr->partition);
-	job_ptr_new->profile = xstrdup(job_ptr->profile);
+	job_ptr_new->profile = job_ptr->profile;
 	job_ptr_new->part_ptr_list = part_list_copy(job_ptr->part_ptr_list);
 	if (job_ptr->prio_factors) {
 		i = sizeof(priority_factors_object_t);
@@ -4989,8 +4987,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		return error_code;
 
 	job_ptr->partition = xstrdup(job_desc->partition);
-	if (job_desc->profile)
-		job_ptr->profile = xstrdup(job_desc->profile);
+	if (job_desc->profile != ACCT_GATHER_PROFILE_NOT_SET)
+		job_ptr->profile = job_desc->profile;
 
 	if (job_desc->job_id != NO_VAL) {	/* already confirmed unique */
 		job_ptr->job_id = job_desc->job_id;
@@ -5563,7 +5561,6 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->partition);
-	xfree(job_ptr->profile);
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
 	xfree(job_ptr->priority_array);
 	slurm_destroy_priority_factors_object(job_ptr->prio_factors);
@@ -5817,6 +5814,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		pack32(dump_job_ptr->job_id, buffer);
 		pack32(dump_job_ptr->user_id, buffer);
 		pack32(dump_job_ptr->group_id, buffer);
+		pack32(dump_job_ptr->profile, buffer);
 
 		pack16(dump_job_ptr->job_state,    buffer);
 		pack16(dump_job_ptr->batch_flag,   buffer);
@@ -5886,7 +5884,6 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		} else {
 			packnull(buffer);
 		}
-		packstr(dump_job_ptr->profile, buffer);
 
 		assoc_mgr_lock(&locks);
 		if (assoc_mgr_qos_list) {

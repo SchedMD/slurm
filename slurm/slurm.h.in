@@ -408,6 +408,19 @@ enum select_node_cnt {
 				       * base partition count */
 };
 
+enum acct_gather_profile_info {
+	ACCT_GATHER_PROFILE_DIR,     /* Give directory profiling is stored */
+	ACCT_GATHER_PROFILE_DEFAULT  /* What is being collected for profiling */
+};
+
+#define ACCT_GATHER_PROFILE_NOT_SET 0x00000000
+#define ACCT_GATHER_PROFILE_NONE    0x00000001
+#define ACCT_GATHER_PROFILE_ENERGY  0x00000002
+#define ACCT_GATHER_PROFILE_TASK    0x00000004
+#define ACCT_GATHER_PROFILE_LUSTRE  0x00000008
+#define ACCT_GATHER_PROFILE_NETWORK 0x00000010
+#define ACCT_GATHER_PROFILE_ALL     0xffffffff
+
 /* jobacct data types */
 enum jobacct_data_type {
 	JOBACCT_DATA_TOTAL,	/* data-> jobacctinfo_t * */
@@ -1008,7 +1021,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t priority;	/* relative priority of the job,
 				 * explicitly set only for user root,
 				 * 0 == held (don't initiate) */
-	char *profile;		/* Level of acct_gather_profile {all | none} */
+	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *qos;		/* Quality of Service */
 	char *resp_host;	/* NOTE: Set by slurmctld */
 	char *req_nodes;	/* comma separated list of required nodes
@@ -1151,7 +1164,7 @@ typedef struct job_info {
 	time_t pre_sus_time;	/* time job ran prior to last suspend */
 	uint32_t priority;	/* relative priority of the job,
 				 * 0=held, 1=required nodes DOWN/DRAINED */
-	char *profile;		/* Level of acct_gather_profile {all | none} */
+	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *qos;		/* Quality of Service */
 	char *req_nodes;	/* comma separated list of required nodes */
 	int *req_node_inx;	/* required list index pairs into node_table:
@@ -1319,7 +1332,7 @@ typedef struct {
 	char *gres;		/* generic resources needed */
 	char *name;		/* name of the job step */
 	char *network;		/* network use spec */
-	char *profile;		/* Level of acct_gather_profile {all | none} */
+	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	uint8_t no_kill;	/* 1 if no kill on node failure */
 	uint32_t min_nodes;	/* minimum number of nodes required by job,
 				 * default=0 */
@@ -1366,7 +1379,7 @@ typedef struct {
 	bool multi_prog;
 	uint32_t slurmd_debug;  /* remote slurmd debug level */
 	bool parallel_debug;
-	char *profile;		/* Level of acct_gather_profile {all | none} */
+	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *task_prolog;
 	char *task_epilog;
 	uint16_t cpu_bind_type;	/* use cpu_bind_type_t */
@@ -1435,7 +1448,7 @@ typedef struct {
 	uint32_t cpu_freq;	/* requested cpu frequency */
 	uint32_t num_tasks;	/* number of tasks */
 	char *partition;	/* name of assigned partition */
-	char *profile;		/* Level of acct_gather_profile {all | none} */
+	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *resv_ports;	/* ports allocated for MPI */
 	time_t run_time;	/* net run time (factor out time suspended) */
 	dynamic_plugin_data_t *select_jobinfo; /* opaque data type,
