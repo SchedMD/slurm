@@ -6479,7 +6479,6 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		packstr(job_desc_ptr->account, buffer);
 		packstr(job_desc_ptr->comment, buffer);
 		pack16(job_desc_ptr->nice, buffer);
-		packstr(job_desc_ptr->profile, buffer);
 		packstr(job_desc_ptr->qos, buffer);
 
 		pack8(job_desc_ptr->open_mode,   buffer);
@@ -6939,8 +6938,6 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&job_desc_ptr->comment,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&job_desc_ptr->nice, buffer);
-		safe_unpackstr_xmalloc(&job_desc_ptr->profile, &uint32_tmp,
-				       buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->qos, &uint32_tmp,
 				       buffer);
 
