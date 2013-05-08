@@ -96,6 +96,7 @@ typedef struct sbatch_options {
 	int  time_min;		/* --min-time 	(int minutes)	*/
 	char *time_min_str;	/* --min-time (string)		*/
 	char *partition;	/* --partition=n,   -p n   	*/
+	char *profile;		/* --profile=[all | none}       */
 	enum task_dist_states
 	        distribution;	/* --distribution=, -m dist	*/
         uint32_t plane_size;    /* lllp distribution -> plane_size for

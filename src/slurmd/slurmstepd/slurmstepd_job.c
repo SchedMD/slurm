@@ -281,6 +281,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->buffered_stdio = msg->buffered_stdio;
 	job->labelio = msg->labelio;
 
+	job->profile     = xstrdup(msg->profile);
 	job->task_prolog = xstrdup(msg->task_prolog);
 	job->task_epilog = xstrdup(msg->task_epilog);
 
@@ -578,6 +579,7 @@ job_destroy(slurmd_job_t *job)
 	list_destroy(job->sruns);
 	xfree(job->envtp);
 	xfree(job->node_name);
+	xfree(job->profile);
 	xfree(job->task_prolog);
 	xfree(job->task_epilog);
 	xfree(job->job_alloc_cores);

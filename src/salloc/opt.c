@@ -163,6 +163,7 @@
 #define LONG_OPT_GRES            0x141
 #define LONG_OPT_WAIT_ALL_NODES  0x142
 #define LONG_OPT_REQ_SWITCH      0x143
+#define LONG_OPT_PROFILE         0x144
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -304,6 +305,7 @@ static void _opt_default()
 	opt.time_min = NO_VAL;
 	opt.time_min_str = NULL;
 	opt.partition = NULL;
+	opt.profile   = NULL;
 
 	opt.job_name = NULL;
 	opt.jobid = NO_VAL;
@@ -399,6 +401,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL          },
   {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
+  {"SALLOC_PROFILE",       OPT_STRING,     &opt.profile,       NULL          },
   {"SALLOC_QOS",           OPT_STRING,     &opt.qos,           NULL          },
   {"SALLOC_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
   {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
@@ -667,6 +670,7 @@ void set_options(const int argc, char **argv)
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"qos",		  required_argument, 0, LONG_OPT_QOS},
+		{"profile",       optional_argument, 0, LONG_OPT_PROFILE},
 		{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"reboot",	  no_argument,       0, LONG_OPT_REBOOT},
 		{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
@@ -1007,6 +1011,10 @@ void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_JOBID:
 			opt.jobid = _get_int(optarg, "jobid");
+			break;
+		case LONG_OPT_PROFILE:
+			xfree(opt.profile);
+			opt.profile = xstrdup(optarg);
 			break;
 		case LONG_OPT_COMMENT:
 			xfree(opt.comment);
@@ -1570,6 +1578,9 @@ static bool _opt_verify(void)
 			opt.ntasks_per_node);
 	}
 
+	if (opt.profile)
+		setenvfs("SLURM_PROFILE=%s", opt.profile);
+
 	return verified;
 }
 
@@ -1753,6 +1764,7 @@ static void _opt_list(void)
 	if (opt.gres != NULL)
 		info("gres           : %s", opt.gres);
 	info("network        : %s", opt.network);
+	info("profile        : `%s'", opt.profile);
 	info("qos            : %s", opt.qos);
 	str = print_constraints();
 	info("constraints    : %s", str);
@@ -1842,7 +1854,7 @@ static void _usage(void)
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
-"              [--time-min=minutes] [--gres=list]\n"
+"              [--time-min=minutes] [--gres=list] [--profile=all]\n"
 "              [--switches=max-switches[@max-time-to-wait]]\n"
 "              [executable [args...]]\n");
 }
@@ -1883,6 +1895,7 @@ static void _help(void)
 "      --ntasks-per-node=n     number of tasks to invoke on each node\n"
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
 "  -O, --overcommit            overcommit resources\n"
+"      --profile=value         enable acct_gather_profile for detailed data\n"
 "  -p, --partition=partition   partition requested\n"
 "      --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"

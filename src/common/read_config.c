@@ -164,6 +164,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"AccountingStoreJobComment", S_P_BOOLEAN},
 	{"AcctGatherEnergyType", S_P_STRING},
 	{"AcctGatherNodeFreq", S_P_UINT16},
+	{"AcctGatherProfileType", S_P_STRING},
 	{"AuthType", S_P_STRING},
 	{"BackupAddr", S_P_STRING},
 	{"BackupController", S_P_STRING},
@@ -2057,6 +2058,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->crypto_type);
 	xfree (ctl_conf_ptr->acct_gather_energy_type);
+	xfree (ctl_conf_ptr->acct_gather_profile_type);
 	xfree (ctl_conf_ptr->epilog);
 	xfree (ctl_conf_ptr->epilog_slurmctld);
 	xfree (ctl_conf_ptr->ext_sensors_type);
@@ -2161,6 +2163,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->disable_root_jobs         = 0;
 	ctl_conf_ptr->acct_gather_node_freq	= 0;
 	xfree (ctl_conf_ptr->acct_gather_energy_type);
+	xfree (ctl_conf_ptr->acct_gather_profile_type);
 	ctl_conf_ptr->ext_sensors_freq		= 0;
 	xfree (ctl_conf_ptr->ext_sensors_type);
 	ctl_conf_ptr->dynalloc_port		= (uint16_t) NO_VAL;
@@ -2653,6 +2656,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    "AcctGatherEnergyType", hashtbl))
 		conf->acct_gather_energy_type =
 			xstrdup(DEFAULT_ACCT_GATHER_ENERGY_TYPE);
+
+	if (!s_p_get_string(&conf->acct_gather_profile_type,
+			    "AcctGatherProfileType", hashtbl))
+		conf->acct_gather_profile_type =
+			xstrdup(DEFAULT_ACCT_GATHER_PROFILE_TYPE);
 
 	if (!s_p_get_uint16(&conf->acct_gather_node_freq,
 			    "AcctGatherNodeFreq", hashtbl))
@@ -3763,6 +3771,11 @@ extern char * debug_flags2str(uint32_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Priority");
 	}
+	if (debug_flags & DEBUG_FLAG_PROFILE) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Profile");
+	}
 	if (debug_flags & DEBUG_FLAG_RESERVATION) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -3845,6 +3858,8 @@ extern uint32_t debug_str2flags(char *debug_flags)
 			rc |= DEBUG_FLAG_NO_REALTIME;
 		else if (strcasecmp(tok, "Priority") == 0)
 			rc |= DEBUG_FLAG_PRIO;
+		else if (strcasecmp(tok, "Profile") == 0)
+			rc |= DEBUG_FLAG_PROFILE;
 		else if (strcasecmp(tok, "Reservation") == 0)
 			rc |= DEBUG_FLAG_RESERVATION;
 		else if (strcasecmp(tok, "SelectType") == 0)

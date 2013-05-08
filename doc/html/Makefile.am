@@ -5,6 +5,7 @@ generated_html = \
 	accounting.html \
 	accounting_storageplugins.html \
 	acct_gather_energy_plugins.html \
+	acct_gather_profile_plugins.html \
 	add.html \
 	api.html \
 	authplugins.html \

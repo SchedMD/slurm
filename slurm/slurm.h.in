@@ -1008,6 +1008,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t priority;	/* relative priority of the job,
 				 * explicitly set only for user root,
 				 * 0 == held (don't initiate) */
+	char *profile;		/* Level of acct_gather_profile {all | none} */
 	char *qos;		/* Quality of Service */
 	char *resp_host;	/* NOTE: Set by slurmctld */
 	char *req_nodes;	/* comma separated list of required nodes
@@ -1150,6 +1151,7 @@ typedef struct job_info {
 	time_t pre_sus_time;	/* time job ran prior to last suspend */
 	uint32_t priority;	/* relative priority of the job,
 				 * 0=held, 1=required nodes DOWN/DRAINED */
+	char *profile;		/* Level of acct_gather_profile {all | none} */
 	char *qos;		/* Quality of Service */
 	char *req_nodes;	/* comma separated list of required nodes */
 	int *req_node_inx;	/* required list index pairs into node_table:
@@ -1317,6 +1319,7 @@ typedef struct {
 	char *gres;		/* generic resources needed */
 	char *name;		/* name of the job step */
 	char *network;		/* network use spec */
+	char *profile;		/* Level of acct_gather_profile {all | none} */
 	uint8_t no_kill;	/* 1 if no kill on node failure */
 	uint32_t min_nodes;	/* minimum number of nodes required by job,
 				 * default=0 */
@@ -1363,6 +1366,7 @@ typedef struct {
 	bool multi_prog;
 	uint32_t slurmd_debug;  /* remote slurmd debug level */
 	bool parallel_debug;
+	char *profile;		/* Level of acct_gather_profile {all | none} */
 	char *task_prolog;
 	char *task_epilog;
 	uint16_t cpu_bind_type;	/* use cpu_bind_type_t */
@@ -1431,6 +1435,7 @@ typedef struct {
 	uint32_t cpu_freq;	/* requested cpu frequency */
 	uint32_t num_tasks;	/* number of tasks */
 	char *partition;	/* name of assigned partition */
+	char *profile;		/* Level of acct_gather_profile {all | none} */
 	char *resv_ports;	/* ports allocated for MPI */
 	time_t run_time;	/* net run time (factor out time suspended) */
 	dynamic_plugin_data_t *select_jobinfo; /* opaque data type,
@@ -1863,7 +1868,9 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_SWITCH	0x00020000	/* SwitchType plugin */
 #define DEBUG_FLAG_ENERGY	0x00040000	/* AcctGatherEnergy plugin */
 #define DEBUG_FLAG_EXT_SENSORS	0x00080000	/* ExtSensorsType plugin */
-#define DEBUG_FLAG_THREADID     0x00100000  /* Print out the thread id */
+#define DEBUG_FLAG_THREADID     0x00100000      /* Print out the thread id */
+#define DEBUG_FLAG_PROFILE	0x00200000	/* AcctGatherProfile plugin */
+
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
 					 * /etc/group file */
@@ -1905,6 +1912,7 @@ typedef struct slurm_ctl_conf {
 	char *accounting_storage_user; /* accounting storage user */
 	uint16_t acctng_store_job_comment; /* send job comment to accounting */
 	char *acct_gather_energy_type; /* energy accounting type */
+	char *acct_gather_profile_type; /* profile accounting type */
 	uint16_t acct_gather_node_freq; /* secs between node acct request */
 	char *authtype;		/* authentication type */
 	char *backup_addr;	/* comm path of slurmctld secondary server */

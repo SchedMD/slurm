@@ -583,6 +583,7 @@ struct job_record {
 	uint32_t *priority_array;	/* partition based priority */
 	priority_factors_object_t *prio_factors; /* cached value used
 						  * by sprio command */
+	char *profile;			/* Acct_gather_profile option */
 	uint32_t qos_id;		/* quality of service id */
 	void *qos_ptr;	                /* pointer to the quality of
 					 * service record used for

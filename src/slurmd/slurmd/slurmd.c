@@ -85,6 +85,7 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_acct_gather_energy.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_topology.h"
@@ -891,6 +892,8 @@ _read_config(void)
 
 	_free_and_set(&conf->acct_gather_energy_type,
 		      xstrdup(cf->acct_gather_energy_type));
+	_free_and_set(&conf->acct_gather_profile_type,
+		      xstrdup(cf->acct_gather_profile_type));
 	_free_and_set(&conf->job_acct_gather_type,
 		      xstrdup(cf->job_acct_gather_type));
 
@@ -1106,6 +1109,7 @@ _destroy_conf(void)
 {
 	if (conf) {
 		xfree(conf->acct_gather_energy_type);
+		xfree(conf->acct_gather_profile_type);
 		xfree(conf->block_map);
 		xfree(conf->block_map_inv);
 		xfree(conf->conffile);
@@ -1553,11 +1557,13 @@ _slurmd_fini(void)
 	node_fini2();
 	gres_plugin_fini();
 	slurm_topo_fini();
+	acct_gather_energy_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	fini_setproctitle();
 	slurm_select_fini();
 	jobacct_gather_fini();
 	acct_gather_energy_fini();
+	acct_gather_profile_fini();
 	spank_slurmd_exit();
 	cpu_freq_fini();
 

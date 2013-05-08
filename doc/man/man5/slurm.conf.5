@@ -196,6 +196,30 @@ execution of the command "sudo modprobe msr".
 .RE
 
 .TP
+\fBAcctGatherProfileType\fR
+Identifies the plugin to be used for detailed job profiling.
+The jobacct_gather plugin and slurmd daemon call this plugin to collect
+detailed data such as I/O counts, memory usage, or energy consumption for jobs 
+and nodes. There are interfaces in this plugin to collect data as step start
+and completion, task start and completion, and at the account gather
+frequency. The data collected at the node level is related to jobs only in 
+case of exclusive job allocation.
+
+Configurable values at present are:
+.RS
+.TP 20
+\fBacct_gather_profile/none\fR
+No profile data is collected.
+.TP
+\fBacct_gather_profile/io_energy\fR
+Lustre I/O counts and I/O counts from infiniband network adaptors are 
+collected at the node level. Local disk I/O counts and memory usage are sampled
+for tasks at jobacct_gather frequency. Energy consumption at the node level
+is gathered at jobacct_gather_frequency. Data from all the steps on all
+nodes use for the job are consolidated into and HDF5 structured file.
+.RE
+
+.TP
 \fBAuthType\fR
 The authentication method for communications between SLURM
 components.

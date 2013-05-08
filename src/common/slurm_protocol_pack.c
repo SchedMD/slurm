@@ -4134,6 +4134,7 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer,
 	char *node_inx_str = NULL;
 	uint32_t uint32_tmp;
 
+//RBS: this is another SchedMD change and should be good.
 	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv->accounts,	&uint32_tmp, buffer);
 		safe_unpack32(&resv->core_cnt,		buffer);
@@ -4266,6 +4267,36 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 						   buffer, protocol_version))
 			goto unpack_error;
 	} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+		safe_unpack32(&step->job_id, buffer);
+		safe_unpack32(&step->step_id, buffer);
+		safe_unpack16(&step->ckpt_interval, buffer);
+		safe_unpack32(&step->user_id, buffer);
+		safe_unpack32(&step->num_cpus, buffer);
+		safe_unpack32(&step->cpu_freq, buffer);             //NLK Don Power okay
+		safe_unpack32(&step->num_tasks, buffer);
+		safe_unpack32(&step->time_limit, buffer);
+
+		safe_unpack_time(&step->start_time, buffer);
+		safe_unpack_time(&step->run_time, buffer);
+
+		safe_unpackstr_xmalloc(&step->partition, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->resv_ports, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->network, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node_inx_str, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->ckpt_dir, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->gres, &uint32_tmp, buffer);
+		if (node_inx_str == NULL)
+			step->node_inx = bitfmt2int("");
+		else {
+			step->node_inx = bitfmt2int(node_inx_str);
+			xfree(node_inx_str);
+		}
+		if (select_g_select_jobinfo_unpack(&step->select_jobinfo,
+						   buffer, protocol_version))
+			goto unpack_error;
+	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		safe_unpack32(&step->job_id, buffer);
 		safe_unpack32(&step->step_id, buffer);
 		safe_unpack16(&step->ckpt_interval, buffer);
@@ -4404,6 +4435,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 
 	job->ntasks_per_node = (uint16_t)NO_VAL;
 
+//<<<<<<< slurm_protocol_pack.c nlk temp remove 
 	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack16(&job->array_task_id, buffer);
@@ -4441,7 +4473,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->batch_host, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->batch_script, &uint32_tmp, buffer);
-
+		safe_unpackstr_xmalloc(&job->profile, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->qos, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->licenses, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->state_desc, &uint32_tmp, buffer);
@@ -6280,6 +6312,8 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 {
 	/* load the data values */
 	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+//SMD	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+//RBS: other half of job_desc_msg. I don't think we have to replicate, but we do have to use 2_4
 		pack16(job_desc_ptr->contiguous, buffer);
 		pack16(job_desc_ptr->task_dist, buffer);
 		pack16(job_desc_ptr->kill_on_node_fail, buffer);
@@ -6301,6 +6335,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		packstr(job_desc_ptr->account, buffer);
 		packstr(job_desc_ptr->comment, buffer);
 		pack16(job_desc_ptr->nice, buffer);
+		packstr(job_desc_ptr->profile, buffer);
 		packstr(job_desc_ptr->qos, buffer);
 
 		pack8(job_desc_ptr->open_mode,   buffer);
@@ -6447,6 +6482,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		packstr(job_desc_ptr->account, buffer);
 		packstr(job_desc_ptr->comment, buffer);
 		pack16(job_desc_ptr->nice, buffer);
+		packstr(job_desc_ptr->profile, buffer);
 		packstr(job_desc_ptr->qos, buffer);
 
 		pack8(job_desc_ptr->open_mode,   buffer);
@@ -6595,6 +6631,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack16(job_desc_ptr->nice, buffer);
 		packstr(job_desc_ptr->qos, buffer);
 
+///<<<<<<< slurm_protocol_pack.c  nlk temp.... why is this here
 		pack8(job_desc_ptr->open_mode,   buffer);
 		pack8(job_desc_ptr->overcommit,  buffer);
 		pack16(job_desc_ptr->acctg_freq, buffer);
@@ -6769,6 +6806,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&job_desc_ptr->comment,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&job_desc_ptr->nice, buffer);
+		safe_unpackstr_xmalloc(&job_desc_ptr->profile, &uint32_tmp,
+				       buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->qos, &uint32_tmp,
 				       buffer);
 
@@ -6904,6 +6943,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&job_desc_ptr->comment,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&job_desc_ptr->nice, buffer);
+		safe_unpackstr_xmalloc(&job_desc_ptr->profile, &uint32_tmp,
+				       buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->qos, &uint32_tmp,
 				       buffer);
 
@@ -7437,7 +7478,82 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 	int i = 0;
 	xassert(msg != NULL);
 
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack32(msg->job_step_id, buffer);
+		pack32(msg->ntasks, buffer);
+		pack32(msg->uid, buffer);
+		pack32(msg->gid, buffer);
+		pack32(msg->job_mem_lim, buffer);
+		pack32(msg->step_mem_lim, buffer);
+
+		pack32(msg->nnodes, buffer);
+		pack16(msg->cpus_per_task, buffer);
+		pack16(msg->task_dist, buffer);
+
+		slurm_cred_pack(msg->cred, buffer);
+		for (i = 0; i < msg->nnodes; i++) {
+			pack16(msg->tasks_to_launch[i], buffer);
+			pack16(msg->cpus_allocated[i], buffer);
+			pack32_array(msg->global_task_ids[i],
+				     (uint32_t) msg->tasks_to_launch[i],
+				     buffer);
+		}
+		pack16(msg->num_resp_port, buffer);
+		for (i = 0; i < msg->num_resp_port; i++)
+			pack16(msg->resp_port[i], buffer);
+		slurm_pack_slurm_addr(&msg->orig_addr, buffer);
+		packstr_array(msg->env, msg->envc, buffer);
+		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
+			      buffer);
+		packstr(msg->cwd, buffer);
+		pack16(msg->cpu_bind_type, buffer);
+		packstr(msg->cpu_bind, buffer);
+		pack16(msg->mem_bind_type, buffer);
+		packstr(msg->mem_bind, buffer);
+		packstr_array(msg->argv, msg->argc, buffer);
+		pack16(msg->task_flags, buffer);
+		pack16(msg->multi_prog, buffer);
+		pack16(msg->user_managed_io, buffer);
+		if (msg->user_managed_io == 0) {
+			packstr(msg->ofname, buffer);
+			packstr(msg->efname, buffer);
+			packstr(msg->ifname, buffer);
+			pack8(msg->buffered_stdio, buffer);
+			pack8(msg->labelio, buffer);
+			pack16(msg->num_io_port, buffer);
+			for (i = 0; i < msg->num_io_port; i++)
+				pack16(msg->io_port[i], buffer);
+		}
+		packstr(msg->profile, buffer);
+		packstr(msg->task_prolog, buffer);
+		packstr(msg->task_epilog, buffer);
+		pack16(msg->slurmd_debug, buffer);
+		switch_pack_jobinfo(msg->switch_job, buffer);
+		job_options_pack(msg->options, buffer);
+		packstr(msg->alias_list, buffer);
+		packstr(msg->complete_nodelist, buffer);
+
+		pack8(msg->open_mode, buffer);
+		pack8(msg->pty, buffer);
+		pack16(msg->acctg_freq, buffer);
+		pack32(msg->cpu_freq, buffer);
+		packstr(msg->ckpt_dir, buffer);
+		packstr(msg->restart_dir, buffer);
+		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
+			/* If on a Blue Gene cluster do not send this to the
+			 * slurmstepd, it will overwrite the environment that
+			 * ia already set up correctly for both the job and the
+			 * step. The slurmstep treats this select_jobinfo as if
+			 * were for the job  instead of for the step.
+			 */
+			select_g_select_jobinfo_pack(msg->select_jobinfo,
+						     buffer,
+						     protocol_version);
+		}
+	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+		//SMD	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+		//RBS: I replicated as Don's stuff is in our 2_4, but we will be addint to 2_5
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
 		pack32(msg->ntasks, buffer);
@@ -7600,7 +7716,106 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	msg = xmalloc(sizeof(launch_tasks_request_msg_t));
 	*msg_ptr = msg;
 
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->job_step_id, buffer);
+		safe_unpack32(&msg->ntasks, buffer);
+		safe_unpack32(&msg->uid, buffer);
+		safe_unpack32(&msg->gid, buffer);
+		safe_unpack32(&msg->job_mem_lim, buffer);
+		safe_unpack32(&msg->step_mem_lim, buffer);
+
+		safe_unpack32(&msg->nnodes, buffer);
+		safe_unpack16(&msg->cpus_per_task, buffer);
+		safe_unpack16(&msg->task_dist, buffer);
+
+		if (!(msg->cred = slurm_cred_unpack(buffer, protocol_version)))
+			goto unpack_error;
+		msg->tasks_to_launch = xmalloc(sizeof(uint16_t) * msg->nnodes);
+		msg->cpus_allocated = xmalloc(sizeof(uint16_t) * msg->nnodes);
+		msg->global_task_ids = xmalloc(sizeof(uint32_t *) *
+					       msg->nnodes);
+		for (i = 0; i < msg->nnodes; i++) {
+			safe_unpack16(&msg->tasks_to_launch[i], buffer);
+			safe_unpack16(&msg->cpus_allocated[i], buffer);
+			safe_unpack32_array(&msg->global_task_ids[i],
+					    &uint32_tmp,
+					    buffer);
+			if (msg->tasks_to_launch[i] != (uint16_t) uint32_tmp)
+				goto unpack_error;
+		}
+		safe_unpack16(&msg->num_resp_port, buffer);
+		if (msg->num_resp_port > 0) {
+			msg->resp_port = xmalloc(sizeof(uint16_t) *
+						 msg->num_resp_port);
+			for (i = 0; i < msg->num_resp_port; i++)
+				safe_unpack16(&msg->resp_port[i], buffer);
+		}
+		slurm_unpack_slurm_addr_no_alloc(&msg->orig_addr, buffer);
+		safe_unpackstr_array(&msg->env, &msg->envc, buffer);
+		safe_unpackstr_array(&msg->spank_job_env,
+				     &msg->spank_job_env_size, buffer);
+		safe_unpackstr_xmalloc(&msg->cwd, &uint32_tmp, buffer);
+		safe_unpack16(&msg->cpu_bind_type, buffer);
+		safe_unpackstr_xmalloc(&msg->cpu_bind, &uint32_tmp, buffer);
+		safe_unpack16(&msg->mem_bind_type, buffer);
+		safe_unpackstr_xmalloc(&msg->mem_bind, &uint32_tmp, buffer);
+		safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
+		safe_unpack16(&msg->task_flags, buffer);
+		safe_unpack16(&msg->multi_prog, buffer);
+		safe_unpack16(&msg->user_managed_io, buffer);
+		if (msg->user_managed_io == 0) {
+			safe_unpackstr_xmalloc(&msg->ofname, &uint32_tmp,
+					       buffer);
+			safe_unpackstr_xmalloc(&msg->efname, &uint32_tmp,
+					       buffer);
+			safe_unpackstr_xmalloc(&msg->ifname, &uint32_tmp,
+					       buffer);
+			safe_unpack8(&msg->buffered_stdio, buffer);
+			safe_unpack8(&msg->labelio, buffer);
+			safe_unpack16(&msg->num_io_port, buffer);
+			if (msg->num_io_port > 0) {
+				msg->io_port = xmalloc(sizeof(uint16_t) *
+						       msg->num_io_port);
+				for (i = 0; i < msg->num_io_port; i++)
+					safe_unpack16(&msg->io_port[i],
+						      buffer);
+			}
+		}
+		safe_unpackstr_xmalloc(&msg->profile, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->task_prolog, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->task_epilog, &uint32_tmp, buffer);
+		safe_unpack16(&msg->slurmd_debug, buffer);
+
+		switch_alloc_jobinfo(&msg->switch_job);
+		if (switch_unpack_jobinfo(msg->switch_job, buffer) < 0) {
+			error("switch_unpack_jobinfo: %m");
+			switch_free_jobinfo(msg->switch_job);
+			goto unpack_error;
+		}
+		msg->options = job_options_create();
+		if (job_options_unpack(msg->options, buffer) < 0) {
+			error("Unable to unpack extra job options: %m");
+			goto unpack_error;
+		}
+		safe_unpackstr_xmalloc(&msg->alias_list, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->complete_nodelist, &uint32_tmp,
+				       buffer);
+
+		safe_unpack8(&msg->open_mode, buffer);
+		safe_unpack8(&msg->pty, buffer);
+		safe_unpack16(&msg->acctg_freq, buffer);
+		safe_unpack32(&msg->cpu_freq, buffer);
+		safe_unpackstr_xmalloc(&msg->ckpt_dir, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->restart_dir, &uint32_tmp, buffer);
+		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
+			select_g_select_jobinfo_unpack(&msg->select_jobinfo,
+						       buffer,
+						       protocol_version);
+		}
+//SMD	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+//RBS: another replication with Don's stuff
+	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
 		safe_unpack32(&msg->ntasks, buffer);
@@ -7784,6 +7999,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpack8(&msg->open_mode, buffer);
 		safe_unpack8(&msg->pty, buffer);
 		safe_unpack16(&msg->acctg_freq, buffer);
+		safe_unpack32(&msg->cpu_freq, buffer);
 		safe_unpackstr_xmalloc(&msg->ckpt_dir, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->restart_dir, &uint32_tmp, buffer);
 		if (!(cluster_flags & CLUSTER_FLAG_BG)) {

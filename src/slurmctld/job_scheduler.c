@@ -62,6 +62,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_acct_gather.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
@@ -1960,6 +1961,7 @@ extern int epilog_slurmctld(struct job_record *job_ptr)
 static char **_build_env(struct job_record *job_ptr)
 {
 	char **my_env, *name;
+	slurm_acct_gather_conf_t* acct_gathter_conf;
 
 	my_env = xmalloc(sizeof(char *));
 	my_env[0] = NULL;
@@ -2016,6 +2018,15 @@ static char **_build_env(struct job_record *job_ptr)
 	name = uid_to_string((uid_t) job_ptr->user_id);
 	setenvf(&my_env, "SLURM_JOB_USER", "%s", name);
 	xfree(name);
+	if (job_ptr->profile) {
+		// Profile plugin is used.
+		acct_gathter_conf =
+				(slurm_acct_gather_conf_t*) acct_gather_profile_g_conf_get();
+		if (acct_gathter_conf && acct_gathter_conf->profile_dir) {
+			setenvf(&my_env, "SLURM_PROFILE_DIR", "%s",
+					acct_gathter_conf->profile_dir);
+		}
+	}
 
 	return my_env;
 }

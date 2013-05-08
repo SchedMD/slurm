@@ -1022,6 +1022,39 @@ than one partition, specify their names in a comma separate list and the one
 offering earliest initiation will be used.
 
 .TP
+\fB\-\-profile\fR=<all|none|[energy[,|task[,|lustre[,|network]]]]>
+enables detailed data collection by the acct_gather_profile plugin.
+Detailed data are typically time-series that are stored in an HDF5 file for
+the job.
+
+.RS
+.TP 10
+\fBAll\fR 
+All data types are collected. (Cannot be combined with other values.)
+
+.TP
+\fBNone\fR 
+No data types are collected. This is the default.
+ (Cannot be combined with other values.)
+ 
+.TP
+\fBEnergy\fR 
+Energy data is collected.
+
+.TP
+\fBTask\fR 
+Task (I/O, Memory, ...) data is collected.
+
+.TP
+\fBLustre\fR 
+Lustre data is collected.
+
+.TP
+\fBNetwork\fR 
+Network (InfiniBand) data is collected.
+.RE
+
+.TP
 \fB\-\-propagate\fR[=\fIrlimitfR]
 Allows users to specify which of the modifiable (soft) resource limits
 to propagate to the compute nodes and apply to their jobs.  If
@@ -1411,6 +1444,9 @@ Same as \fB\-O, \-\-overcommit\fR
 \fBSBATCH_PARTITION\fR
 Same as \fB\-p, \-\-partition\fR
 .TP
+\fBSBATCH_PROFILE\fR
+Same as \fB\-\-profile\fR
+.TP
 \fBSBATCH_QOS\fR
 Same as \fB\-\-qos\fR
 .TP
@@ -1550,6 +1586,9 @@ This value is  propagated  to the spawned processes.
 .TP
 \fBSLURM_PROCID\fR
 The MPI rank (or relative process ID) of the current process
+.TP
+\fBSLURM_PROFILE\fR
+Same as \fB\-\-profile\fR
 .TP
 \fBSLURM_RESTART_COUNT\fR
 If the job has been restarted due to system failure or has been

@@ -844,6 +844,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->licenses, buffer);
 	packstr(dump_job_ptr->mail_user, buffer);
+	packstr(dump_job_ptr->profile, buffer);
 	packstr(dump_job_ptr->resv_name, buffer);
 	packstr(dump_job_ptr->batch_host, buffer);
 
@@ -907,6 +908,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint16_t limit_set_time = 0, limit_set_qos = 0;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
+	char *profile = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
 	char *resv_name = NULL, *gres = NULL, *batch_host = NULL;
@@ -1034,6 +1036,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 		safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
 		safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
+		safe_unpackstr_xmalloc(&profile, &name_len, buffer);
 		safe_unpackstr_xmalloc(&resv_name, &name_len, buffer);
 		safe_unpackstr_xmalloc(&batch_host, &name_len, buffer);
 
@@ -1463,6 +1466,9 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	xfree(job_ptr->mail_user);
 	job_ptr->mail_user    = mail_user;
 	mail_user             = NULL;	/* reused, nothing left to free */
+	xfree(job_ptr->profile);
+	job_ptr->profile      = profile;
+	profile               = NULL;  /* reused, nothing left to free */
 	xfree(job_ptr->name);		/* in case duplicate record */
 	job_ptr->name         = name;
 	name                  = NULL;	/* reused, nothing left to free */
@@ -2767,6 +2773,7 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 		job_ptr_new->node_bitmap_cg = bit_copy(job_ptr->node_bitmap_cg);
 	job_ptr_new->nodes_completing = xstrdup(job_ptr->nodes_completing);
 	job_ptr_new->partition = xstrdup(job_ptr->partition);
+	job_ptr_new->profile = xstrdup(job_ptr->profile);
 	job_ptr_new->part_ptr_list = part_list_copy(job_ptr->part_ptr_list);
 	if (job_ptr->prio_factors) {
 		i = sizeof(priority_factors_object_t);
@@ -4982,6 +4989,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		return error_code;
 
 	job_ptr->partition = xstrdup(job_desc->partition);
+	if (job_desc->profile)
+		job_ptr->profile = xstrdup(job_desc->profile);
 
 	if (job_desc->job_id != NO_VAL) {	/* already confirmed unique */
 		job_ptr->job_id = job_desc->job_id;
@@ -5554,6 +5563,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->partition);
+	xfree(job_ptr->profile);
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
 	xfree(job_ptr->priority_array);
 	slurm_destroy_priority_factors_object(job_ptr->prio_factors);
@@ -5876,6 +5886,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		} else {
 			packnull(buffer);
 		}
+		packstr(dump_job_ptr->profile, buffer);
 
 		assoc_mgr_lock(&locks);
 		if (assoc_mgr_qos_list) {

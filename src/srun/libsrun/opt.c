@@ -188,6 +188,7 @@
 #define LONG_OPT_LAUNCHER_OPTS   0x154
 #define LONG_OPT_CPU_FREQ        0x155
 #define LONG_OPT_LAUNCH_CMD      0x156
+#define LONG_OPT_PROFILE         0x157
 
 extern char **environ;
 
@@ -487,6 +488,7 @@ static void _opt_default()
 	opt.egid	    = (gid_t) -1;
 
 	opt.propagate	    = NULL;  /* propagate specific rlimits */
+	opt.profile	    = NULL;  /* acct_gather_profile selection */
 
 	opt.prolog = slurm_get_srun_prolog();
 	opt.epilog = slurm_get_srun_epilog();
@@ -581,6 +583,7 @@ env_vars_t env_vars[] = {
 {"SLURM_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL             },
 {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL             },
 {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL             },
+{"SLURM_PROFILE",       OPT_STRING,     &opt.profile,       NULL             },
 {"SLURM_PROLOG",        OPT_STRING,     &opt.prolog,        NULL             },
 {"SLURM_QOS",           OPT_STRING,     &opt.qos,           NULL             },
 {"SLURM_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL             },
@@ -885,6 +888,7 @@ static void _set_options(const int argc, char **argv)
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
+		{"profile",          optional_argument, 0, LONG_OPT_PROFILE},
 		{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
 		{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 		{"pty",              no_argument,       0, LONG_OPT_PTY},
@@ -1512,6 +1516,10 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_WCKEY:
 			xfree(opt.wckey);
 			opt.wckey = xstrdup(optarg);
+			break;
+		case LONG_OPT_PROFILE:
+			xfree(opt.profile);
+			opt.profile = xstrdup(optarg);
 			break;
 		case LONG_OPT_RESERVATION:
 			xfree(opt.reservation);
@@ -2268,6 +2276,7 @@ static void _opt_list(void)
 	     opt.jobid_set ? "(set)" : "(default)");
 	info("partition      : %s",
 	     opt.partition == NULL ? "default" : opt.partition);
+	info("profile        : `%s'", opt.profile);
 	info("job name       : `%s'", opt.job_name);
 	info("reservation    : `%s'", opt.reservation);
 	info("wckey          : `%s'", opt.wckey);
@@ -2410,6 +2419,7 @@ static void _usage(void)
 "            [--cpu_bind=...] [--mem_bind=...] [--network=type]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n] [reservation=name]\n"
 "            [--ntasks-per-core=n] [--mem-per-cpu=MB] [--preserve-env]\n"
+"            [--profile=all]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 #ifdef HAVE_BG_L_P
 "            [--geometry=XxYxZ] "
@@ -2484,6 +2494,7 @@ static void _help(void)
 "  -O, --overcommit            overcommit resources\n"
 "  -p, --partition=partition   partition requested\n"
 "      --prolog=program        run \"program\" before launching job step\n"
+"      --profile=value         enable acct_gather_profile for detailed data\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 #ifdef HAVE_PTY_H
 "      --pty                   run task zero in pseudo terminal\n"

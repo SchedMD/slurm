@@ -1,6 +1,7 @@
 SUBDIRS = \
 	accounting_storage	\
 	acct_gather_energy	\
+	acct_gather_profile	\
 	auth			\
 	checkpoint		\
 	crypto			\

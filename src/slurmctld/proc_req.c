@@ -485,6 +485,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	conf_ptr->acct_gather_energy_type =
 		xstrdup(conf->acct_gather_energy_type);
+	conf_ptr->acct_gather_profile_type =
+		xstrdup(conf->acct_gather_profile_type);
 	conf_ptr->acct_gather_node_freq = conf->acct_gather_node_freq;
 
 	conf_ptr->authtype            = xstrdup(conf->authtype);
@@ -1963,6 +1965,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	uint16_t port;	/* dummy value */
 	slurm_addr_t resp_addr;
 	will_run_response_msg_t *resp = NULL;
+	char* account = "";
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_JOB_WILL_RUN from uid=%d", uid);

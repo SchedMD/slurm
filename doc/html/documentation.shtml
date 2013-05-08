@@ -104,6 +104,7 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="preemption_plugins.html">Preemption Plugin Programmer Guide</a></li>
 <li><a href="priority_plugins.html">Priority Plugin Programmer Guide</a></li>
 <li><a href="proctrack_plugins.html">Process Tracking Plugin Programmer Guide</a></li>
+<li><a href="acct_gather_profile_plugins.html">Profile Accounting Plugin Programmer Guide</a></li>
 <li><a href="schedplugins.html">Scheduler Plugin Programmer Guide</a></li>
 <li><a href="selectplugins.html">Resource Selection Plugin Programmer Guide</a></li>
 <li><a href="slurmctld_plugstack.html">Slurmctld Generic Plugin Programmer Guide</a></li>

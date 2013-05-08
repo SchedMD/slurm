@@ -1,0 +1,101 @@
+.TH "sprfmrgh5" "1" "SLURM 2.6" "March 2013" "SLURM Commands"
+.SH "NAME"
+.LP
+sprfmrgh5 \- Tool for merging HDF5 files from the acct_gather_profile 
+plugin that gathers detailed data for jobs running under SLURM
+
+.SH "SYNOPSIS"
+.LP
+sprfmrgh5
+
+.SH "DESCRIPTION"
+.LP
+sprfmrgh5 merges HDF5 files produced on each node for each step of a job into
+one HDF5 file for the job. The resulting file can be viewed and manipulated
+by common HDF5 tools such as HDF5View, h5dump, h5edit, or h5ls.
+.LP
+sprfmrgh5 has two execution modes. The first mode merges all the node-step 
+files for a job into one job file. The second mode extracts a limited set of
+data for specific nodes, steps, and data series.
+The extract mode is set with the \fB\-\-extract\fR command line option.
+.LP
+The merge mode of sprfmrgh5 is expected to be launched during the controller 
+epilog script using the SLURM_JOB_ID environment variable. 
+However, it can be launched on any system with access to the shared file 
+system.
+
+.SH "OPTIONS"
+.LP
+
+.TP
+\fB\-\-jobid=<number>\fR
+supplies the slurm jobid of the node-step files to be merged.
+
+.TP
+\fB\-\-profiledir=<path>\fR
+supplies the path containing the node-step files to be merged. 
+This is a required argument. 
+
+.TP
+\fB\-\-savefiles\fR
+retains the merge-step files after the merge. Normally, they are deleted.
+
+
+.TP
+\fB\-\-extract\fR
+sets extract mode to extract limited subsets of data from the 
+HDF5 file into a comma, separated, value file suitable for import
+into a spreadsheet or other analysis tool.
+The following options apply to extract mode.
+
+.TP
+\fB\-\-stepid=<n | *>\fR
+specifies the step for which data is to be extracted. It is either 
+a step number, or \fB*\fR which specifies all steps. 
+\fB*\fR is the default.
+
+.TP
+\fB\-\-node=<name | *>\fR
+specifies the name fo the node for which data is to be extracted. 
+It is either nodename, or \fB*\fR which specifies all nodes. 
+\fB*\fR is the default.
+
+.TP
+\fB\-\-level=[Node:Totals|Node:TimeSeries|Task:Totals]\fR
+specifies the level in the job structure from which data
+is to be extracted.
+
+.RS
+.TP
+\fBNode:Totals\fR means the extracted data will come from the Totals
+group of a node.
+
+.TP
+\fBNode:TimeSeries\fR means the extracted data will come from the Time Series
+group of a node.
+
+.TP
+\fB\-\-series=<name | *>\fR
+specifies the name of the data series which is to be extracted. 
+It is either series name, or \fBTasks\fR which is all tasks, 
+or \fB*\fR which specifies all series. 
+\fB*\fR is the default.
+
+.TP
+\fB\-\-output=<path>\fR
+specifies the path of the csv file containing the extracted data.
+By default it is 'profile_data.csv' in the current directory/
+
+.SH "COPYING"
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP

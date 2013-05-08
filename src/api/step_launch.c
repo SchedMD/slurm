@@ -247,6 +247,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.ntasks		= ctx->step_resp->step_layout->task_cnt;
 	launch.slurmd_debug	= params->slurmd_debug;
 	launch.switch_job	= ctx->step_resp->switch_job;
+	launch.profile		= params->profile;
 	launch.task_prolog	= params->task_prolog;
 	launch.task_epilog	= params->task_epilog;
 	launch.cpu_bind_type	= params->cpu_bind_type;
@@ -420,6 +421,7 @@ int slurm_step_launch_add (slurm_step_ctx_t *ctx,
 	launch.ntasks		= ctx->step_resp->step_layout->task_cnt;
 	launch.slurmd_debug	= params->slurmd_debug;
 	launch.switch_job	= ctx->step_resp->switch_job;
+	launch.profile		= params->profile;
 	launch.task_prolog	= params->task_prolog;
 	launch.task_epilog	= params->task_epilog;
 	launch.cpu_bind_type	= params->cpu_bind_type;

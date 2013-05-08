@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_acct_gather.h - generic interface needed for some
+ *  slurm_acct_gather.c - generic interface needed for some
  *                        acct_gather plugins.
  *****************************************************************************
  *  Copyright (C) 2013 SchedMD LLC.
@@ -49,13 +49,13 @@ extern int acct_gather_conf_init(void)
 	s_p_options_t *full_options = NULL;
 	int full_options_cnt = 0;
 	struct stat buf;
-
 	if (inited)
 		return SLURM_SUCCESS;
 
 	/* get options from plugins using acct_gather.conf */
 
-	acct_gather_energy_g_conf_options(&full_options, &full_options_cnt);
+//	acct_gather_energy_g_conf_options(&full_options, &full_options_cnt);
+	acct_gather_profile_g_conf_options(&full_options, &full_options_cnt);
 	/* ADD MORE HERE */
 
 	/* for the NULL at the end */
@@ -84,7 +84,8 @@ extern int acct_gather_conf_init(void)
 	xfree(conf_path);
 
 	/* handle acct_gather.conf in each plugin */
-	acct_gather_energy_g_conf_set(tbl);
+//	acct_gather_energy_g_conf_set(tbl);
+	acct_gather_profile_g_conf_set(tbl);
 	/* ADD MORE HERE */
 	/******************************************/
 

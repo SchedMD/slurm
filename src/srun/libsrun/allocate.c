@@ -663,6 +663,8 @@ job_desc_msg_create_from_opts (void)
 		j->licenses = opt.licenses;
 	if (opt.network)
 		j->network = opt.network;
+	if (opt.profile)
+		j->profile = opt.profile;
 	if (opt.account)
 		j->account = opt.account;
 	if (opt.comment)

@@ -1410,6 +1410,25 @@ char *slurm_get_acct_gather_energy_type(void)
 	return acct_gather_energy_type;
 }
 
+/* slurm_get_profile_accounting_type
+ * get ProfileAccountingType from slurmctld_conf object
+ * RET char *   - profile_accounting type, MUST be xfreed by caller
+ */
+char *slurm_get_acct_gather_profile_type(void)
+{
+	char *acct_gather_profile_type = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		acct_gather_profile_type =
+			xstrdup(conf->acct_gather_profile_type);
+		slurm_conf_unlock();
+	}
+	return acct_gather_profile_type;
+}
+
 extern uint16_t slurm_get_acct_gather_node_freq(void)
 {
 	uint16_t freq = 0;

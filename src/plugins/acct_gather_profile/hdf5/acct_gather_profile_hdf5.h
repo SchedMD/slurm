@@ -1,12 +1,13 @@
 /*****************************************************************************\
- *  slurm_acct_gather.h - generic interface needed for some
- *                        acct_gather plugins.
+ *  io_energy.h - slurm energy accounting plugin for io and energy using hdf5.
  *****************************************************************************
- *  Copyright (C) 2013 SchedMD LLC.
- *  Written by Danny Auble <da@schedmd.com>
+ *  Copyright (C) 2013 Bull S. A. S.
+ *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
+ *
+ *  Written by Rod Schultz <rod.schultz@bull.com>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <http://www.schedmd.com/slurmdocs/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -35,34 +36,32 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef __SLURM_ACCT_GATHER_H__
-#define __SLURM_ACCT_GATHER_H__
+#ifndef _GATHER_PROFILE_IO_ENERGY_H_
+#define _GATHER_PROFILE_IO_ENERGY_H_
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
-#else				/* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif				/*  HAVE_CONFIG_H */
+#include "src/common/slurm_acct_gather_profile.h"
 
-#include "read_config.h"
-#include "slurm_acct_gather_energy.h"
-#include "slurm_acct_gather_profile.h"
+#define PROFILE_DEFAULT_PROFILE "none"
 
-typedef struct {
-	void *energy_ipmi;
-	// Options for acct_gather_profile plugin
-	char *profile_dir;
-	char *profile_DefaultProfile;
-} slurm_acct_gather_conf_t;
+// See /common/slurm_acct_gather.h for details on function signatures
+extern int acct_gather_profile_p_controller_start();
+extern int acct_gather_profile_p_node_step_start(slurmd_job_t* job);
+extern int acct_gather_profile_p_node_step_end(slurmd_job_t* job);
+extern int acct_gather_profile_p_task_start(slurmd_job_t* job,uint32_t taskno);
+extern int acct_gather_profile_p_task_end(slurmd_job_t* job, pid_t taskpid);
+extern int acct_gather_profile_p_job_sample();
+extern int acct_gather_profile_p_add_node_data(slurmd_job_t* job, char* group,
+		char* type, void* data);
+extern int acct_gather_profile_p_add_sample_data(char* group, char* type,
+		void* data);
+extern int acct_gather_profile_p_add_task_data(slurmd_job_t* job,
+		uint32_t taskid, char* group, char* type, void* data);
 
-extern int acct_gather_conf_init(void);
-extern int acct_gather_conf_destroy(void);
+extern int init ( void );
+extern int fini ( void );
+extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
+					      int *full_options_cnt);
+extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl);
+extern void* acct_gather_profile_p_conf_get();
 
 #endif

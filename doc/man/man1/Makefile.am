@@ -14,6 +14,7 @@ man1_MANS = \
 	slurm.1 \
 	smap.1 \
 	sprio.1 \
+	sprfmrgh5.1 \
 	squeue.1 \
 	sreport.1 \
 	srun.1 \
@@ -40,6 +41,7 @@ html_DATA = \
 	sinfo.html \
 	smap.html \
 	sprio.html \
+	sprfmrgh5.html \
 	squeue.html \
 	sreport.html \
 	srun.html \

@@ -58,6 +58,7 @@
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
@@ -175,6 +176,7 @@ static void _poll_data(void)
 	/* Update the data */
 	slurm_mutex_lock(&task_list_lock);
 	(*(ops.poll_data))(task_list, pgid_plugin, cont_id);
+	acct_gather_profile_g_job_sample();
 	slurm_mutex_unlock(&task_list_lock);
 }
 
@@ -417,6 +419,7 @@ extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 
 	(*(ops.add_task))(pid, jobacct_id);
 
+	
 	if (poll == 1)
 		_poll_data();
 
@@ -927,6 +930,34 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 		_pack_jobacct_id(&jobacct->max_rss_id, rpc_version, buffer);
 		_pack_jobacct_id(&jobacct->max_pages_id, rpc_version, buffer);
 		_pack_jobacct_id(&jobacct->min_cpu_id, rpc_version, buffer);
+	} else if(rpc_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	// RBS: replicate 2_3
+		if (!jobacct) {
+			for (i = 0; i < 13; i++)
+				pack32((uint32_t) 0, buffer);
+			for (i = 0; i < 4; i++)
+				_pack_jobacct_id(NULL, rpc_version, buffer);
+			return;
+		}
+
+		pack32((uint32_t)jobacct->user_cpu_sec, buffer);
+		pack32((uint32_t)jobacct->user_cpu_usec, buffer);
+		pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
+		pack32((uint32_t)jobacct->sys_cpu_usec, buffer);
+		pack32((uint32_t)jobacct->max_vsize, buffer);
+		pack32((uint32_t)jobacct->tot_vsize, buffer);
+		pack32((uint32_t)jobacct->max_rss, buffer);
+		pack32((uint32_t)jobacct->tot_rss, buffer);
+		pack32((uint32_t)jobacct->max_pages, buffer);
+		pack32((uint32_t)jobacct->tot_pages, buffer);
+		pack32((uint32_t)jobacct->min_cpu, buffer);
+		pack32((uint32_t)jobacct->tot_cpu, buffer);
+		pack32((uint32_t)jobacct->act_cpufreq, buffer);
+
+		_pack_jobacct_id(&jobacct->max_vsize_id, rpc_version, buffer);
+		_pack_jobacct_id(&jobacct->max_rss_id, rpc_version, buffer);
+		_pack_jobacct_id(&jobacct->max_pages_id, rpc_version, buffer);
+		_pack_jobacct_id(&jobacct->min_cpu_id, rpc_version, buffer);
 	} else {
 		if (!jobacct) {
 			for (i = 0; i < 12; i++)
@@ -1055,6 +1086,40 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 			goto unpack_error;
 		if (_unpack_jobacct_id(&(*jobacct)->min_cpu_id, rpc_version,
 			buffer) != SLURM_SUCCESS)
+			goto unpack_error;
+	} else if(rpc_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	// RBS replicate 1_3
+		*jobacct = xmalloc(sizeof(struct jobacctinfo));
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->user_cpu_sec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->user_cpu_usec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->sys_cpu_sec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		(*jobacct)->sys_cpu_usec = uint32_tmp;
+		safe_unpack32(&(*jobacct)->max_vsize, buffer);
+		safe_unpack32(&(*jobacct)->tot_vsize, buffer);
+		safe_unpack32(&(*jobacct)->max_rss, buffer);
+		safe_unpack32(&(*jobacct)->tot_rss, buffer);
+		safe_unpack32(&(*jobacct)->max_pages, buffer);
+		safe_unpack32(&(*jobacct)->tot_pages, buffer);
+		safe_unpack32(&(*jobacct)->min_cpu, buffer);
+		safe_unpack32(&(*jobacct)->tot_cpu, buffer);
+		safe_unpack32(&(*jobacct)->act_cpufreq, buffer);
+
+		if (_unpack_jobacct_id(&(*jobacct)->max_vsize_id, rpc_version, buffer)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->max_rss_id, rpc_version, buffer)
+
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->max_pages_id, rpc_version, buffer)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_jobacct_id(&(*jobacct)->min_cpu_id, rpc_version, buffer)
+		    != SLURM_SUCCESS)
 			goto unpack_error;
 	} else {
 		*jobacct = xmalloc(sizeof(struct jobacctinfo));

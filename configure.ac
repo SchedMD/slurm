@@ -221,6 +221,7 @@ X_AC_SUN_CONST
 X_AC_DIMENSIONS
 
 X_AC_CFLAGS
+X_AC_HDF5
 X_AC_HWLOC
 X_AC_FREEIPMI
 X_AC_XCPU
@@ -502,6 +503,10 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/acct_gather_energy/rapl/Makefile
 		 src/plugins/acct_gather_energy/ipmi/Makefile
 		 src/plugins/acct_gather_energy/none/Makefile
+		 src/plugins/acct_gather_profile/Makefile
+		 src/plugins/acct_gather_profile/io_energy/Makefile
+		 src/plugins/acct_gather_profile/none/Makefile
+		 src/plugins/acct_gather_profile/sprfmrgh5/Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
 		 src/plugins/jobcomp/none/Makefile

@@ -171,6 +171,7 @@
 #define LONG_OPT_EXPORT          0x151
 #define LONG_OPT_REQ_SWITCH      0x152
 #define LONG_OPT_EXPORT_FILE     0x153
+#define LONG_OPT_PROFILE         0x154
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -361,6 +362,7 @@ static void _opt_default()
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
 
+	opt.profile	    = NULL;  /* acct_gather_profile selection */
 	opt.propagate	    = NULL;  /* propagate specific rlimits */
 
 	opt.ifname = xstrdup("/dev/null");
@@ -472,6 +474,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL          },
   {"SBATCH_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
   {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
+  {"SBATCH_PROFILE",       OPT_STRING,     &opt.profile,       NULL          },
   {"SBATCH_QOS",           OPT_STRING,     &opt.qos,           NULL          },
   {"SBATCH_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL          },
   {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL          },
@@ -743,6 +746,7 @@ static struct option long_options[] = {
 	{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
+	{"profile",       optional_argument, 0, LONG_OPT_PROFILE},
 	{"qos",		  required_argument, 0, LONG_OPT_QOS},
 	{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 	{"reboot",        no_argument,       0, LONG_OPT_REBOOT},
@@ -1481,6 +1485,10 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_REQUEUE:
 			opt.requeue = 1;
+			break;
+		case LONG_OPT_PROFILE:
+			xfree(opt.profile);
+			opt.profile = xstrdup(optarg);
 			break;
 		case LONG_OPT_COMMENT:
 			xfree(opt.comment);
@@ -2436,6 +2444,10 @@ static bool _opt_verify(void)
 	if (opt.dependency)
 		setenvfs("SLURM_JOB_DEPENDENCY=%s", opt.dependency);
 
+	if (opt.profile)
+		setenvfs("SLURM_PROFILE=%s", opt.profile);
+
+
 	if (opt.acctg_freq >= 0)
 		setenvf(NULL, "SLURM_ACCTG_FREQ", "%d", opt.acctg_freq);
 
@@ -2710,6 +2722,7 @@ static void _opt_list(void)
 		opt.jobid_set ? "(set)" : "(default)");
 	info("partition         : %s",
 		opt.partition == NULL ? "default" : opt.partition);
+	info("profile           : `%s'", opt.profile);
 	info("job name          : `%s'", opt.job_name);
 	info("reservation       : `%s'", opt.reservation);
 	info("wckey             : `%s'", opt.wckey);
@@ -2832,7 +2845,7 @@ static void _usage(void)
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
 "              [--switches=max-switches{@max-time-to-wait}]\n"
-"              [--array=index_values]\n"
+"              [--array=index_values] [--profile=all]\n"
 "              [--export[=names]] [--export-file=file|fd] executable [args...]\n");
 }
 
@@ -2880,6 +2893,7 @@ static void _help(void)
 "  -o, --output=out            file for batch script's standard output\n"
 "  -O, --overcommit            overcommit resources\n"
 "  -p, --partition=partition   partition requested\n"
+"      --profile=value         enable acct_gather_profile for detailed data\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 "      --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"

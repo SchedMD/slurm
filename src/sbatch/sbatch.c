@@ -287,6 +287,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->req_nodes = opt.nodelist;
 	desc->exc_nodes = opt.exc_nodes;
 	desc->partition = opt.partition;
+	desc->profile = opt.profile;
 	if (opt.licenses)
 		desc->licenses = xstrdup(opt.licenses);
 	if (opt.nodes_set) {

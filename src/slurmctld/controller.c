@@ -73,6 +73,7 @@
 #include "src/common/pack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
@@ -447,6 +448,10 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize job_submit plugin");
 	if (ext_sensors_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize ext_sensors plugin");
+	if (slurm_acct_gather_profile_init() != SLURM_SUCCESS ) {
+		fatal( "failed to initialize profile plugin");
+		acct_gather_profile_g_controller_start();
+	}
 
 	while (1) {
 		/* initialization for each primary<->backup switch */

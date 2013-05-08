@@ -58,6 +58,44 @@ Specify BMC Username.
 Specify BMC Password.
 .RE
 
+.TP
+\fBProfileIO_Energy\fR options used for acct_gather_profile/io_energy are as follows.
+
+.RS
+.TP 20
+\fBProfileDir\fR=<path>
+This parameter is the path to the shared folder into which the
+acct_gather_profile plugin will write detailed data (usually as an HDF5 file).
+The directory is assumed to be on a file system shared by the controller and
+all compute nodes. This is a required parameter.
+
+.TP
+\fBProfileDefaultProfile\fR=opt{,opt{,opt}}
+Default --Profile value for data types collected for each job submission. 
+It ia a comma separated list of data streams. Allowed values are;
+
+.RS
+.TP
+\fBAll\fR All data types are collected. (Cannot be combined with other values.)
+
+.TP
+\fBNone\fR No data types are collected. This is the default.
+ (Cannot be combined with other values.)
+ 
+.TP
+\fBEnergy\fR Energy data is collected.
+
+.TP
+\fBTask\fR Task (I/O, Memory, ...) data is collected.
+
+.TP
+\fBLustre\fR Lustre data is collected.
+
+.TP
+\fBNetwork\fR Network (InfiniBand) data is collected.  
+.RE
+.RE
+
 .SH "EXAMPLE"
 .LP
 .br
@@ -72,6 +110,11 @@ EnergyIPMIFrequency=10
 EnergyIPMICalcAdjustment=yes
 .br
 #
+.br
+# Parameters for AcctGatherProfile
+.br
+ProfileDir=/app/slurm/profile_data
+.br
 
 .SH "COPYING"
 Copyright (C) 2012-2013 Bull.
