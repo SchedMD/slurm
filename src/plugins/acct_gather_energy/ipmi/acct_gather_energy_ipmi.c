@@ -139,8 +139,6 @@ static pthread_mutex_t ipmi_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_t thread_ipmi_id_launcher = 0;
 pthread_t thread_ipmi_id_run = 0;
 pthread_t thread_ipmi_id_write = 0;
-//__progname may need security for portability
-extern char *__progname;
 
 typedef struct ipmi_message {
 	uint32_t energy;
@@ -148,14 +146,18 @@ typedef struct ipmi_message {
 	time_t time;
 } ipmi_message_t;
 
+
 static bool _is_thread_launcher(void)
 {
-	if (__progname == NULL)
-		return false;
-	if (strcmp(__progname,"slurmd")==0) {
-		return true;
+	static bool set = false;
+	static bool run = false;
+
+	if (!set) {
+		set = 1;
+		run = run_in_daemon("slurmd");
 	}
-	return false;
+
+	return run;
 }
 
 static void _task_sleep(int rem)

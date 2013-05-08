@@ -72,6 +72,9 @@
 typedef unsigned long int	ulong;
 #endif
 
+//__progname may need security for portability
+extern char *__progname;
+
 union {
 	uint64_t val;
 	struct {
@@ -205,7 +208,7 @@ static int _open_msr(int core)
 		} else if ( errno == EIO ) {
 			error("CPU %d doesn't support MSRs", core);
 		} else
-			error("MSR register problem: %m");
+			error("MSR register problem (%s): %m", msr_filename);
 	} else {
 		/* If this is loaded in the slurmd we need to make sure it
 		   gets closed when a slurmstepd launches.
@@ -251,6 +254,19 @@ static void _hardware(void)
 		info("RAPL Found: %d packages", nb_pkg);
 }
 
+static bool _run_in_daemon(void)
+{
+	static bool set = false;
+	static bool run = false;
+
+	if (!set) {
+		set = 1;
+		run = run_in_daemon("slurmd");
+	}
+
+	return run;
+}
+
 extern int acct_gather_energy_p_update_node_energy(void)
 {
 	int rc = SLURM_SUCCESS;
@@ -258,6 +274,8 @@ extern int acct_gather_energy_p_update_node_energy(void)
 	double energy_units;
 	uint64_t result;
 	double ret;
+
+	xassert(_run_in_daemon());
 
 	if (local_energy->current_watts == NO_VAL)
 		return rc;
@@ -322,6 +340,8 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	ulong max_power;
 	double ret;
 
+	xassert(_run_in_daemon());
+
 	xassert(pkg_fd[0] != -1);
 
 	/* MSR_RAPL_POWER_UNIT
@@ -382,6 +402,9 @@ extern int init(void)
 	int i;
 	uint64_t result;
 
+	if (!_run_in_daemon())
+		return SLURM_SUCCESS;
+
 	_hardware();
 	for (i = 0; i < nb_pkg; i++)
 		pkg_fd[i] = _open_msr(pkg2cpu[i]);
@@ -394,12 +417,16 @@ extern int init(void)
 
 	debug_flags = slurm_get_debug_flags();
 	verbose("%s loaded", plugin_name);
+
 	return SLURM_SUCCESS;
 }
 
 extern int fini(void)
 {
 	int i;
+
+	if (!_run_in_daemon())
+		return SLURM_SUCCESS;
 
 	for (i = 0; i < nb_pkg; i++) {
 		if (pkg_fd[i] != -1) {
@@ -417,6 +444,9 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 					 acct_gather_energy_t *energy)
 {
 	int rc = SLURM_SUCCESS;
+
+	xassert(_run_in_daemon());
+
 	switch (data_type) {
 	case ENERGY_DATA_JOULES_TASK:
 		if (local_energy->current_watts == NO_VAL)
@@ -440,6 +470,8 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 					 acct_gather_energy_t *energy)
 {
 	int rc = SLURM_SUCCESS;
+
+	xassert(_run_in_daemon());
 
 	switch (data_type) {
 	case ENERGY_DATA_RECONFIG:
