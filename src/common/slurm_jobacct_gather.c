@@ -419,7 +419,6 @@ extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 
 	(*(ops.add_task))(pid, jobacct_id);
 
-	
 	if (poll == 1)
 		_poll_data();
 

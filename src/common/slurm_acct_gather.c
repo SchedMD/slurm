@@ -60,7 +60,7 @@ extern int acct_gather_conf_init(void)
 
 	/* for the NULL at the end */
 	xrealloc(full_options,
-	((full_options_cnt + 1) * sizeof(s_p_options_t)));
+		 ((full_options_cnt + 1) * sizeof(s_p_options_t)));
 
 	/**************************************************/
 

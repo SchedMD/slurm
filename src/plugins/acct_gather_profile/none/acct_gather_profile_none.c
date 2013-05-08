@@ -102,26 +102,21 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
-					      int *full_options_cnt)
-{
-	return;
-}
-
 extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 {
 	return;
 }
 
-extern void* acct_gather_profile_p_conf_get()
+extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
+					       int *full_options_cnt)
 {
-	return NULL;
+	return;
 }
 
-
-extern int acct_gather_profile_p_controller_start()
+extern void acct_gather_profile_p_get(enum acct_gather_profile_info info_type,
+				      void *data)
 {
-	return SLURM_SUCCESS;
+	return;
 }
 
 extern int acct_gather_profile_p_node_step_start(slurmd_job_t* job)
@@ -150,19 +145,19 @@ extern int acct_gather_profile_p_job_sample()
 }
 
 extern int acct_gather_profile_p_add_node_data(slurmd_job_t* job, char* group,
-		char* type, void* data)
+					       char* type, void* data)
 {
 	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_profile_p_add_sample_data(char* group, char* type,
-		void* data)
+						 void* data)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_profile_p_add_task_data(slurmd_job_t* job,
-		uint32_t taskid, char* group, char* type, void* data)
+extern int acct_gather_profile_p_add_task_data(
+	slurmd_job_t* job, uint32_t taskid, char* group, char* type, void* data)
 {
 	return SLURM_SUCCESS;
 }
