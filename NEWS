@@ -124,6 +124,8 @@ documents those changes that are of interest to users and admins.
  -- POE - With the srun --launch-cmd option, report proper task count when
     the --cpus-per-task option is used without the --ntasks option.
  -- POE - Fix logic binding tasks to CPUs.
+ -- sview - Fix race condition where new information could of slipped past
+    the node tab and we didn't notice.
 
 * Changes in Slurm 2.5.6
 ========================
