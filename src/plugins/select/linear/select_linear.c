@@ -2222,6 +2222,8 @@ static void _init_node_cr(void)
 			if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 				continue;
 			node_offset++;
+			if (!bit_test(job_ptr->node_bitmap, i)) 
+				continue; /* node already released */
 			node_ptr = node_record_table_ptr + i;
 			if (exclusive)
 				cr_ptr->nodes[i].exclusive_cnt++;
