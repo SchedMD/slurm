@@ -1,10 +1,13 @@
 /****************************************************************************\
- *  profile_hdf5.h
+ *  hdf5_api.h
  *****************************************************************************
  *  Copyright (C) 2013 Bull S. A. S.
  *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
  *
  *  Written by Rod Schultz <rod.schultz@bull.com>
+ *
+ *  Portions Copyright (C) 2013 SchedMD LLC.
+ *  Written by Danny Auble <da@schedmd.com>
  *
  *  Provide support for acct_gather_profile plugins based on HDF5 files.
  *
@@ -37,8 +40,8 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \****************************************************************************/
-#ifndef __ACCT_GATHER_PROFILE_HDF5_H__
-#define __ACCT_GATHER_PROFILE_HDF5_H__
+#ifndef __ACCT_GATHER_HDF5_API_H__
+#define __ACCT_GATHER_HDF5_API_H__
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -55,12 +58,7 @@
 
 #include <stdlib.h>
 
-#ifdef HAVE_HDF5
 #include <hdf5.h>
-#else
-// Needed in some function signatures
-typedef int hid_t;
-#endif
 #include "src/common/slurm_acct_gather_profile.h"
 
 #define MAX_PROFILE_PATH 1024
@@ -92,6 +90,7 @@ typedef int hid_t;
 #define GRP_SAMPLES "Time Series"
 #define GRP_SAMPLE "Sample"
 #define GRP_TASKS "Tasks"
+#define GRP_TASK "Task"
 #define GRP_TOTALS "Totals"
 
 // Data types supported by all HDF5 plugins of this type
@@ -208,21 +207,6 @@ typedef struct profile_task_s {
 	prof_dbl_sum_t 	write_size;	// currently in megabytes
 } profile_task_s_t;
 
-// EnergyData structure
-#define GRP_ENERGY "Energy"
-
-// Luster structure
-#define GRP_LUSTRE "Lustre"
-
-// NetIO structure
-#define GRP_NETWORK "Network"
-
-// Disk I/O and Memory per task
-#define GRP_TASK "Task"
-
-extern int numAvailSeries;
-extern char* availSeries[];
-
 /*
  * Structure of function pointers of common operations on a profile data type.
  *	dataset_size -- size of one dataset (structure size)
@@ -251,7 +235,7 @@ extern char* availSeries[];
  *		imported into another analysis tool.
  *		(format as comma,separated value, for example.)
  */
-typedef struct profile_hdf5_ops {
+typedef struct hdf5_api_ops {
 	int   (*dataset_size) ();
 	hid_t (*create_memory_datatype) ();
 	hid_t (*create_file_datatype) ();
@@ -264,7 +248,7 @@ typedef struct profile_hdf5_ops {
 			int);
 	void  (*extract_total) (FILE*, bool, int, int, char*, char*, void*,
 			int);
-} profile_hdf5_ops_t;
+} hdf5_api_ops_t;
 
 /* ============================================================================
  * Common support functions
@@ -273,57 +257,17 @@ typedef struct profile_hdf5_ops {
 /*
  * Create a opts group from type
  */
-profile_hdf5_ops_t* profile_factory(char* type);
+hdf5_api_ops_t* profile_factory(char* type);
 
 /*
  * Initialize profile (initialize static memory)
  */
-void ProfileInit();
+void profile_init();
 
 /*
- * Finish profile (free objects in static memory)
+ * Finialize profile (initialize static memory)
  */
-void ProfileFinish();
-
-
-/*
- * Checks if series should be collected
- *
- * Parameters
- *	series     - name of series to validate
- *	seriesList - lists of series to be collected (all & none also checked)
- *	numSeries  - number of items in seriesList
- */
-bool DoSeries(char* series, char** seriesList, int numSeries);
-
-/*
- * Validate list contains items in availSeries (or 'all' or 'none')
- *
- * Parameters
- *	listStr	- list in string from
- */
-void ValidSeriesList(char* listStr);
-
-/*
- * Parse a list of strings.
- *
- * Parameter
- *	list    - comma separated list of data series
- *	listLen - (out) length of list
- *
- * Returns
- *	Validated Array of series. Caller must free with delete_string_list
- */
-char** GetStringList(char* list, int* listLen);
-
-/*
- * delete list of strings
- *
- * Parameters
- *	list	- xmalloc'd list of pointers of xmalloc'd strings.
- *	listlen - number of strings in the list
- */
-void delete_string_list(char** list, int listLen);
+void profile_fini();
 
 /*
  * Make a dataset name
@@ -334,37 +278,7 @@ void delete_string_list(char** list, int listLen);
  * Returns
  *	common data set name based on type in static memory
  */
-char* DataSetName(char* type);
-
-/*
- * Make path to a job profile hdf5 file.
- *
- * Parameters
- *	rootDir	- path to directory on shared file system into which profile
- *               data is written. Typically a parameter specified in slurm.conf
- *	jobid	- id of the job
- *
- * Returns - fully qualified path name
- *           (in static memory as the merge is a standalone program)
- */
-char* make_job_profile_path(char* rootDir, int jobid);
-
-/*
- * Make path to a node-step profile hdf5 file.
- *
- * Parameters
- *	rootDir	-  path to directory on shared file system into which profile
- *                 data is written. Typically a parameter specified in
- *                 slurm.conf
- *	nodename - name of the node
- *	jobid	 - id of the job
- *	stepid   - id of the step
- *
- * Returns - fully qualified path name
- *           (in static memory as each step on each node has its own stepd)
- */
-char* make_node_step_profile_path(char* rootDir, char* nodename,
-				  int jobid, int stepid);
+char* get_data_set_name(char* type);
 
 /*
  * print info on an object for debugging
@@ -590,7 +504,7 @@ void energy_extract_totals(FILE* fOt, bool putHeader, int job, int step,
 /*
  * Create array of function pointers for common HDF5 operations
  */
-profile_hdf5_ops_t* energy_profile_factory();
+hdf5_api_ops_t* energy_profile_factory();
 
 // ============================================================================
 // Routines supporting I/O Data type
@@ -704,7 +618,7 @@ void io_extract_total(FILE* fOt, bool putHeader, int job, int step,
 /*
  * Create array of function pointers for common HDF5 operations
  */
-profile_hdf5_ops_t* io_profile_factory();
+hdf5_api_ops_t* io_profile_factory();
 
 // ============================================================================
 // Routines supporting Network Data type
@@ -819,7 +733,7 @@ void network_extract_total(FILE* fOt, bool putHeader, int job, int step,
 /*
  * Create array of function pointers for common HDF5 operations
  */
-profile_hdf5_ops_t* network_profile_factory();
+hdf5_api_ops_t* network_profile_factory();
 
 
 // ============================================================================
@@ -933,6 +847,6 @@ void task_extract_total(FILE* fOt, bool putHeader, int job, int step,
 /*
  * Create array of function pointers for common HDF5 operations
  */
-profile_hdf5_ops_t* task_profile_factory();
+hdf5_api_ops_t* task_profile_factory();
 
-#endif /*__ACCT_GATHER_PROFILE_H__*/
+#endif /*__ACCT_GATHER_HDF5_API_H__*/

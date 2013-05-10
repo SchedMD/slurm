@@ -104,20 +104,11 @@ extern void acct_gather_profile_g_conf_options(s_p_options_t **full_options,
 extern void acct_gather_profile_g_conf_set(s_p_hashtbl_t *tbl);
 
 /*
- * get acct_gather.conf parameters
+ * get info from the profile plugin
  *
- * returns - pointer to static slurm_acct_gather_conf_t
  */
-extern void* acct_gather_profile_g_conf_get(void);
-
-/*
- * Called from slurmctld, when it starts.
- * Provide an opportunity to make necessary directories and other global
- * initialization.
- *
- * Returns -- SLURM_SUCCESS or SLURM_ERROR
- */
-extern int acct_gather_profile_g_controller_start();
+extern void acct_gather_profile_g_get(enum acct_gather_profile_info info_type,
+				      void *data);
 
 /*
  * Called once per step on each node from slurmstepd, before launching tasks.
@@ -200,14 +191,16 @@ extern int acct_gather_profile_g_add_node_data(slurmd_job_t* job, char* group,
  * dataset
  *
  * Parameters
+ *	job   -- structure defining a slurm job
  *	group -- identifies the data stream (source of data).
  *	type  -- identifies the type of data.
  *	data  -- data structure to be put to the file.
  *
  * Returns -- SLURM_SUCCESS or SLURM_ERROR
  */
-extern int acct_gather_profile_g_add_sample_data(char* group, char* type,
-		void* data);
+extern int acct_gather_profile_g_add_sample_data(slurmd_job_t* job,
+						 char* group, char* type,
+						 void* data);
 
 /*
  * Put data at the Task Totals level. Typically called at task end.
@@ -223,19 +216,5 @@ extern int acct_gather_profile_g_add_sample_data(char* group, char* type,
  */
 extern int acct_gather_profile_g_add_task_data(slurmd_job_t* job,
 		uint32_t taskid, char* group, char* type, void* data);
-
-/*
- * get the slurm taskid from a pid.
- *
- * Parameters
- * 	pid    - a linux process id
- * 	gtid   - (out) pointer to variable to receive slurm taskid
- *
- * Returns
- *      corresponding slurm taskid (or -1)
- * Returns -- SLURM_SUCCESS or SLURM_ERROR
- *
- */
-extern int get_taskid_from_pid(pid_t pid, uint32_t *gtid);
 
 #endif /*__SLURM_ACCT_GATHER_PROFILE_H__*/

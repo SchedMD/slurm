@@ -5,7 +5,7 @@ AUTOMAKE_OPTIONS = foreign
 
 INCLUDES = -I$(top_srcdir) -I../
 
-SHDF5_SOURCES = sh5util.c sh5util.h
+SHDF5_SOURCES = sh5util.c
 
 if BUILD_HDF5
 

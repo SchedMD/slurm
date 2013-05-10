@@ -8,6 +8,10 @@
  *
  *  Written by Rod Schultz <rod.schultz@bull.com>
  *
+ *  Copyright (C) 2013 SchedMD LLC
+ *
+ *  Written by Danny Auble <da@schedmd.com>
+ *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.schedmd.com/slurmdocs/>.
  *  Please also read the included file: DISCLAIMER.
@@ -43,6 +47,20 @@
  *
 \*****************************************************************************/
 
+#ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#if HAVE_GETOPT_H
+#  include <getopt.h>
+#else
+#  include "src/common/getopt.h"
+#endif
+
 #include <dirent.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -51,135 +69,266 @@
 #include <string.h>
 #include <sys/time.h>
 
+#include "src/common/uid.h"
+#include "src/common/read_config.h"
+#include "src/common/proc_args.h"
 #include "src/common/xstring.h"
-#include "src/plugins/acct_gather_profile/common/profile_hdf5.h"
+#include "../hdf5_api.h"
 
+typedef enum {
+	SH5UTIL_MODE_MERGE,
+	SH5UTIL_MODE_EXTRACT,
+} sh5util_mode_t;
+
+typedef struct {
+	char *dir;
+	int help;
+	char *input;
+	int job_id;
+	bool keepfiles;
+	char *level;
+	sh5util_mode_t mode;
+	char *node;
+	char *output;
+	char *series;
+	int step_id;
+	char *user;
+	int verbose;
+} sh5util_opts_t;
 // ============================================================================
 
 // Options
-static int   	jobid = -1;   // SLURM jobid
-static int   	xstepid = -1; // SLURM step id to be extracted
-static bool  	mergeMode = true;
-static bool	header = true;
-static bool     keepfiles = false;
-static char     levelName[MAX_GROUP_NAME+1];
-static char     seriesName[MAX_GROUP_NAME+1];
-static char     outputFile[MAX_PROFILE_PATH+1];
-static char**   seriesNames = NULL;
-static int      numSeries = 0;
-static char*    xnode;
-static char*    slurmDataRoot = NULL;
+static sh5util_opts_t params;
+static char**   series_names = NULL;
+static int      num_series = 0;
 
-void usage() {
-	printf("\n\n\nsprfmrgh5 --jobid=n ...\n");
+static void _usage()
+{
+	/* FIXME: THIS DOES NOT MATCH CURRENT OPTIONS */
+	printf("\n\n\nsh5util --jobid=n ...\n");
 	printf("  Merges node-step HDF5 files for a SLURM job.\n");
 	printf("  Required command line arguments are:\n");
 	printf("     --jobid=n     jobid of SLURM job\n");
 	printf("  Optional command line arguments are:\n");
 	printf("     --profiledir=path  path to directory holding"
-		" profile files\n");
+	       " profile files\n");
 	printf("     --savefiles   save node/step files\n");
 	printf("     --extract     extract data series from job file\n");
 	printf("                   default mode is merge node-step files\n");
 	printf("     Extract mode options (all imply --extract)\n");
 	printf("     --stepid={n|*) id step to extract (*=all,default)\n");
 	printf("     --node={name|*} Node name to extract (*=all,default)\n");
-	printf("     --level=[Node:Totals|Node:TimeSeries\n");
+	printf("     --level=[Node:Totals|Node:TimeSeries]\n");
 	printf("             Level to which series is attached\n");
 	printf("     --series=[name|Tasks|*] Name of series\n");
 	printf("              name=Specific name, Tasks=all tasks, (*=all)\n");
 	printf("     --output=path "
-		"path to a file into which to write the extract\n");
+	       "path to a file into which to write the extract\n");
 	printf("     --help           prints this message\n");
 	printf("     Note all option values are case sensitive\n\n\n");
 }
 
-void opts(int argc, char **argv) {
-	int errors = 0;
-	int iax;
-	char *posValue,*posDash;
-	// Establish some defaults
-	strcpy(outputFile,"profile_data.csv");
-	xnode = xstrdup("*");
-	for (iax=1; iax<argc; iax++) {
-		if (strncasecmp(argv[iax],"--help=",6)==0) {
-			usage();
+static void _help_msg(void)
+{
+	printf("\
+sh5util [<OPTION>] -j <job[.stepid]>                                         \n\
+    Valid <OPTION> values are:                                               \n\
+      -E, --extract:                                                         \n\
+                    Instead of merge node-step files (default) Extract data  \n\
+                    series from job file.                                    \n\
+                    Extract mode options (all imply --extract)               \n\
+                    -i, --input:  merged file to extract from                \n\
+                                  (default --profiledir/$user/extract_$jobid.h5)\n\
+	            -N --node:    Node name to extract (default is all)      \n\
+	            -l, --level:  Level to which series is attached          \n\
+                                  [Node:Totals|Node:TimeSeries]              \n\
+                                  (default Node:Totals)                      \n\
+	            -s, --series: Name of series [Name|Tasks]                \n\
+	                          Name=Specific Name, Tasks=all tasks,       \n\
+                                  (default is everything)                    \n\
+      -j, --jobs:   Format is <job(.step)>. Merge this job/step.             \n\
+                    or comma-separated list of job steps. This option is     \n\
+                    required.  Not specifying a step will result in all      \n\
+                    steps found to be processed.                             \n\
+      -h, --help:   Print this description of use.                           \n\
+      -o, --output: Path to a file into which to write.  This is required for\n\
+                    --extract, default for merge is                          \n\
+                    --profiledir/$user/job_$jobid.h5)                        \n\
+      -p, --profiledir:                                                      \n\
+                    Profile directory location where node-step files exist   \n\
+                    default is what is set in acct_gather.conf               \n\
+      -S, --savefiles:                                                       \n\
+                    Instead of remove node-step files after merge keep them  \n\
+                    around.                                                  \n\
+      --user:       User who profiled job. (Handy for root user, defaults to \n\
+                    user running this command.)                              \n\
+      --usage:      Display brief usage message.                             \n\
+\n");
+}
+
+/*
+ * delete list of strings
+ *
+ * Parameters
+ *	list	- xmalloc'd list of pointers of xmalloc'd strings.
+ *	listlen - number of strings in the list
+ */
+static void _delete_string_list(char** list, int listLen)
+{
+	int ix;
+	if (list == NULL)
+		return;
+	for (ix=0; ix<listLen; ix++) {
+		xfree(list[ix]);
+	}
+	xfree(list);
+	return;
+}
+
+static void _init_opts()
+{
+	memset(&params, 0, sizeof(sh5util_opts_t));
+	params.job_id = -1;
+	params.mode = SH5UTIL_MODE_MERGE;
+	params.step_id = -1;
+}
+
+static void _set_options(const int argc, char **argv)
+{
+	int option_index = 0, c;
+	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
+	char *next_str = NULL;
+	uid_t uid = -1;
+
+	static struct option long_options[] = {
+		{"extract", no_argument, 0, 'E'},
+		{"help", no_argument, 0, 'h'},
+		{"job", required_argument, 0, 'j'},
+		{"input", required_argument, 0, 'i'},
+		{"level", required_argument, 0, 'l'},
+		{"node", required_argument, 0, 'N'},
+		{"output", required_argument, 0, 'o'},
+		{"profiledir", required_argument, 0, 'p'},
+		{"series", required_argument, 0, 's'},
+		{"savefiles", no_argument, 0, 'S'},
+		{"usage", 0, &params.help, 3},
+		{"user", required_argument, 0, 'u'},
+		{"verbose", no_argument, 0, 'v'},
+		{"version", no_argument, 0, 'V'},
+		{0, 0, 0, 0}};
+
+	log_init(xbasename(argv[0]), logopt, 0, NULL);
+
+	_init_opts();
+
+	while (1) {		/* now cycle through the command line */
+		c = getopt_long(argc, argv, "Ehi:j:l:N:o:p:s:Su:vV",
+				long_options, &option_index);
+		if (c == -1)
+			break;
+		switch (c) {
+		case 'E':
+			params.mode = SH5UTIL_MODE_EXTRACT;
+			break;
+		case 'h':
+			params.help = 1;
+			break;
+		case 'i':
+			params.input = xstrdup(optarg);
+			break;
+		case 'j':
+			params.job_id = strtol(optarg, &next_str, 10);
+			if (next_str[0] == '.')
+				params.step_id =
+					strtol(next_str+1, NULL, 10);
+			break;
+		case 'l':
+			params.level = xstrdup(optarg);
+			break;
+		case 'N':
+			params.node = xstrdup(optarg);
+			break;
+		case 'o':
+			params.output = xstrdup(optarg);
+			break;
+		case 'p':
+			params.dir = xstrdup(optarg);
+			break;
+		case 's':
+			params.series = xstrdup(optarg);
+			break;
+		case 'S':
+			params.keepfiles = 1;
+			break;
+		case 'u':
+			if (uid_from_string (optarg, &uid) < 0) {
+				error("--uid=\"%s\" invalid", optarg);
+				exit(1);
+			}
+		case (int)'v':
+			params.verbose++;
+			break;
+		case (int)'V':
+			print_slurm_version();
 			exit(0);
-		} else if (strncasecmp(argv[iax],"--jobid=",8)==0) {
-			posValue = &argv[iax][8];
-			jobid = (int) strtol(posValue,NULL,10);
-			if (jobid < 1) {
-				printf("Jobid (%d) must be positive\n",jobid);
-				errors++;
-			}
-		} else if (strncasecmp(argv[iax],"--profiledir=",13)==0) {
-			xfree(slurmDataRoot);
-			posValue = &argv[iax][13];
-			slurmDataRoot = xstrdup(posValue);
-		} else if (strncasecmp(argv[iax],"--savefiles",11)==0) {
-			keepfiles = true;
-		} else if (strncasecmp(argv[iax],"--stepid=",9)==0) {
-			posValue = &argv[iax][9];
-			if (strcmp(posValue,"*") != 0) {
-				xstepid = (int) strtol(posValue, NULL, 10);
-				if (xstepid < 0) {
-					printf("stepid (%d) must be > 0\n",
-							xstepid);
-					errors++;
-				}
-			}
-			mergeMode = false;
-		} else if (strncasecmp(argv[iax],"--extract",9)==0) {
-			mergeMode = false;
-		} else if (strncasecmp(argv[iax],"--level=",8)==0) {
-			posValue = &argv[iax][8];
-			if (strlen(posValue) > MAX_GROUP_NAME) {
-				printf("--level is too long\n");
-				errors++;
-			} else {
-				strcpy(levelName,posValue);
-				mergeMode = false;
-			}
-		} else if (strncasecmp(argv[iax],"--node=",7)==0) {
-			xfree(xnode);
-			posValue = &argv[iax][7];
-			xnode = xstrdup(posValue);
-			mergeMode = false;
-		} else if (strncasecmp(argv[iax],"--output=",9)==0) {
-			posValue = &argv[iax][9];
-			if (strlen(posValue) > MAX_PROFILE_PATH) {
-				printf("--output is too long\n");
-				errors++;
-			} else {
-				strcpy(outputFile,posValue);
-				mergeMode = false;
-			}
-		} else if (strncasecmp(argv[iax],"--series=",9)==0) {
-			posValue = &argv[iax][9];
-			if (strlen(posValue) > MAX_GROUP_NAME) {
-				printf("--series is too long\n");
-				errors++;
-			} else {
-				strcpy(seriesName,posValue);
-				if (strstr(seriesName,GRP_TASK)) {
-					posDash = strchr(seriesName,'-');
-					// Task name have '~' not '-',
-					// user may not  recognize this
-					if (posDash > 0) {
-						posDash[0] = '~';
-					}
-				}
-			}
-			mergeMode = false;
-		} else {
-			printf("%s is an unknown option",argv[iax]);
-			errors++;
+			break;
+		case ':':
+		case '?': /* getopt() has explained it */
+			exit(1);
 		}
 	}
-	if (errors) {
-		printf("Too many errors\n\n");
-		usage();
-		exit(1);
+
+	if (params.help) {
+		switch (params.help) {
+		case 1:
+			_help_msg();
+			break;
+		case 3:
+			_usage();
+			break;
+		default:
+			fprintf(stderr, "bug: --help=%d\n",
+				params.help);
+		}
+		exit(0);
+	}
+
+	if (uid == -1)
+		uid = getuid();
+
+	params.user = uid_to_string(uid);
+
+	if (!params.dir)
+		acct_gather_profile_g_get(ACCT_GATHER_PROFILE_DIR, &params.dir);
+
+	if (!params.dir)
+		fatal("You need to supply a --profiledir or be on a "
+		      "node with a valid acct_gather.conf");
+
+	if (params.verbose) {
+		logopt.stderr_level += params.verbose;
+		log_alter(logopt, SYSLOG_FACILITY_USER, NULL);
+	}
+
+	/* FIXME : For now all these only work for extract.  Seems
+	 * like it would be easy to add the logic to "merge" as well.
+	 */
+	if (params.input || params.level || params.node
+	    || (params.step_id != -1) || params.series)
+		params.mode = SH5UTIL_MODE_EXTRACT;
+
+	if (!params.output)
+		params.output = xstrdup_printf(
+			"%s/%s/job_%d.h5",
+			params.dir, params.user, params.job_id);
+
+	if (params.mode == SH5UTIL_MODE_EXTRACT) {
+		if (!params.level)
+			params.level = xstrdup("Node:Totals");
+		if (!params.input)
+			params.input = xstrdup_printf(
+				"%s/%s/extract_%d.h5",
+				params.dir, params.user, params.job_id);
 	}
 }
 
@@ -189,557 +338,544 @@ void opts(int argc, char **argv) {
  * ============================================================================
  * ========================================================================= */
 
-void* get_all_samples(hid_t gidSeries, char* namSeries, char* type,
-		int nSamples) {
+static void* _get_all_samples(hid_t gid_series, char* nam_series, char* type,
+			      int nsamples)
+{
 	void*   data = NULL;
-#ifdef HAVE_HDF5
-	hid_t   idDataSet, dtypMemory, gSample, szDset;
+
+	hid_t   id_data_set, dtyp_memory, g_sample, sz_dest;
 	herr_t  ec;
 	int     smpx ,len;
-	void    *dataPrior = NULL, *dataCur = NULL;
-	char 	namSample[MAX_GROUP_NAME+1];
-	profile_hdf5_ops_t* ops;
+	void    *data_prior = NULL, *data_cur = NULL;
+	char 	name_sample[MAX_GROUP_NAME+1];
+	hdf5_api_ops_t* ops;
 
 	ops = profile_factory(type);
 	if (ops == NULL) {
 		info("Failed to create operations for %s", type);
 		return NULL;
 	}
-	data = (*(ops->init_job_series))(nSamples);
+	data = (*(ops->init_job_series))(nsamples);
 	if (data == NULL) {
 		xfree(ops);
 		info("Failed to get memory for combined data");
 		return NULL;
 	}
-	dtypMemory = (*(ops->create_memory_datatype))();
-	if (dtypMemory < 0) {
+	dtyp_memory = (*(ops->create_memory_datatype))();
+	if (dtyp_memory < 0) {
 		xfree(ops);
 		xfree(data);
 		info("Failed to create %s memory datatype", type);
 		return NULL;
 	}
-	for (smpx=0; smpx<nSamples; smpx++) {
-		len = H5Gget_objname_by_idx(gidSeries, smpx, namSample,
-				MAX_GROUP_NAME);
+	for (smpx=0; smpx<nsamples; smpx++) {
+		len = H5Gget_objname_by_idx(gid_series, smpx, name_sample,
+					    MAX_GROUP_NAME);
 		if (len<1 || len>MAX_GROUP_NAME) {
-			info("Invalid group name %s", namSample);
+			info("Invalid group name %s", name_sample);
 			continue;
 		}
-		gSample = H5Gopen(gidSeries, namSample, H5P_DEFAULT);
-		if (gSample < 0) {
-			info("Failed to open %s", namSample);
+		g_sample = H5Gopen(gid_series, name_sample, H5P_DEFAULT);
+		if (g_sample < 0) {
+			info("Failed to open %s", name_sample);
 		}
-		idDataSet = H5Dopen(gSample, DataSetName(namSample),
-				H5P_DEFAULT);
-		if (idDataSet < 0) {
-			H5Gclose(gSample);
+		id_data_set = H5Dopen(g_sample, get_data_set_name(name_sample),
+				      H5P_DEFAULT);
+		if (id_data_set < 0) {
+			H5Gclose(g_sample);
 			info("Failed to open %s dataset", type);
 			continue;
 		}
-		szDset = (*(ops->dataset_size))();
-		dataCur = xmalloc(szDset);
-		if (dataCur == NULL) {
-			H5Dclose(idDataSet);
-			H5Gclose(gSample);
+		sz_dest = (*(ops->dataset_size))();
+		data_cur = xmalloc(sz_dest);
+		if (data_cur == NULL) {
+			H5Dclose(id_data_set);
+			H5Gclose(g_sample);
 			info("Failed to get memory for prior data");
 			continue;
 		}
-		ec = H5Dread(idDataSet, dtypMemory, H5S_ALL, H5S_ALL,
-				H5P_DEFAULT, dataCur);
+		ec = H5Dread(id_data_set, dtyp_memory, H5S_ALL, H5S_ALL,
+			     H5P_DEFAULT, data_cur);
 		if (ec < 0) {
-			xfree(dataCur);
-			H5Dclose(idDataSet);
-			H5Gclose(gSample);
+			xfree(data_cur);
+			H5Dclose(id_data_set);
+			H5Gclose(g_sample);
 			info("Failed to read %s data", type);
 			continue;
 		}
-		(*(ops->merge_step_series))(gSample, dataPrior, dataCur,
-				       data+(smpx)*szDset);
+		(*(ops->merge_step_series))(g_sample, data_prior, data_cur,
+					    data+(smpx)*sz_dest);
 
-		xfree(dataPrior);
-		dataPrior = dataCur;
-		H5Dclose(idDataSet);
-		H5Gclose(gSample);
+		xfree(data_prior);
+		data_prior = data_cur;
+		H5Dclose(id_data_set);
+		H5Gclose(g_sample);
 	}
-	xfree(dataCur);
-	H5Tclose(dtypMemory);
+	xfree(data_cur);
+	H5Tclose(dtyp_memory);
 	xfree(ops);
-#endif
+
 	return data;
 }
 
-void merge_series_data(hid_t jgidTasks,
-		       hid_t jgNode, hid_t nsgNode)
+static void _merge_series_data(hid_t jgid_tasks, hid_t jg_node, hid_t nsg_node)
 {
-#ifdef HAVE_HDF5
-
-	hid_t   jgSamples, nsgSamples;
-	hid_t   gSeries, objType, gSeriesTotal = -1;
-	hsize_t numSamples, nSeries;
+ 	hid_t   jg_samples, nsg_samples;
+	hid_t   g_series, obj_type, g_series_total = -1;
+ 	hsize_t num_samples, n_series;
 	int     idsx, len;
-	void    *data = NULL, *seriesTotal = NULL;
-	char    *dataType = NULL;
-	char    namSeries[MAX_GROUP_NAME+1];
-	char    namSample1[MAX_GROUP_NAME+1];
-	profile_hdf5_ops_t* ops = NULL;
+	void    *data = NULL, *series_total = NULL;
+	char    *data_type = NULL;
+	char    nam_series[MAX_GROUP_NAME+1];
+	hdf5_api_ops_t* ops = NULL;
 
-	if (jgNode < 0) {
+	if (jg_node < 0) {
 		info("Job Node is not HDF5 object");
 		return;
 	}
-	if (nsgNode < 0) {
+	if (nsg_node < 0) {
 		info("Node-Step is not HDF5 object");
 		return;
 	}
 
-	jgSamples = H5Gcreate(jgNode, GRP_SAMPLES,
-			H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	if (jgSamples < 0) {
+	jg_samples = H5Gcreate(jg_node, GRP_SAMPLES,
+			       H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if (jg_samples < 0) {
 		info("Failed to create job node Samples");
 		return;
 	}
-	nsgSamples = get_group(nsgNode, GRP_SAMPLES);
-	if (nsgSamples < 0) {
-		H5Gclose(jgSamples);
-#ifdef PROFILE_HDF5_DEBUG
-		info("Failed to get node-step Samples");
-#endif
+	nsg_samples = get_group(nsg_node, GRP_SAMPLES);
+	if (nsg_samples < 0) {
+		H5Gclose(jg_samples);
+		debug("Failed to get node-step Samples");
 		return;
 	}
-	H5Gget_num_objs(nsgSamples, &nSeries);
-	if (nSeries < 1) {
+	H5Gget_num_objs(nsg_samples, &n_series);
+	if (n_series < 1) {
 		// No series?
-		H5Gclose(jgSamples);
-		H5Gclose(nsgSamples);
+		H5Gclose(jg_samples);
+		H5Gclose(nsg_samples);
 		info("No Samples");
 		return;
 	}
-	for (idsx = 0; idsx < nSeries; idsx++) {
-		objType = H5Gget_objtype_by_idx(nsgSamples, idsx);
-		if (objType != H5G_GROUP)
+	for (idsx = 0; idsx < n_series; idsx++) {
+		obj_type = H5Gget_objtype_by_idx(nsg_samples, idsx);
+		if (obj_type != H5G_GROUP)
 			continue;
-		len = H5Gget_objname_by_idx(nsgSamples, idsx, namSeries,
-				MAX_GROUP_NAME);
+		len = H5Gget_objname_by_idx(nsg_samples, idsx, nam_series,
+					    MAX_GROUP_NAME);
 		if (len<1 || len>MAX_GROUP_NAME) {
-			info("Invalid group name %s", namSeries);
+			info("Invalid group name %s", nam_series);
 			continue;
 		}
-		gSeries = H5Gopen(nsgSamples, namSeries, H5P_DEFAULT);
-		if (gSeries < 0) {
-			info("Failed to open %s", namSeries);
+		g_series = H5Gopen(nsg_samples, nam_series, H5P_DEFAULT);
+		if (g_series < 0) {
+			info("Failed to open %s", nam_series);
 			continue;
 		}
-		H5Gget_num_objs(gSeries, &numSamples);
-		if (numSamples <= 0) {
-			H5Gclose(gSeries);
-			info("Series %s has no samples", namSeries);
+		H5Gget_num_objs(g_series, &num_samples);
+		if (num_samples <= 0) {
+			H5Gclose(g_series);
+			info("_series %s has no samples", nam_series);
 			continue;
 		}
 		// Get first sample in series to find out how big the data is.
-		dataType = get_string_attribute(gSeries, ATTR_DATATYPE);
-		if (dataType == NULL) {
-			H5Gclose(gSeries);
+		data_type = get_string_attribute(g_series, ATTR_DATATYPE);
+		if (data_type == NULL) {
+			H5Gclose(g_series);
 			info("Failed to get datatype for Time Series Dataset");
 			continue;
 		}
-		data = get_all_samples(gSeries, namSeries, dataType,
-				numSamples);
+		data = _get_all_samples(g_series, nam_series, data_type,
+					num_samples);
 		if (data == NULL) {
-			xfree(dataType);
-			H5Gclose(gSeries);
+			xfree(data_type);
+			H5Gclose(g_series);
 			info("Failed to get memory for Time Series Dataset");
 			continue;
 		}
-		put_hdf5_data(jgSamples, dataType, SUBDATA_SERIES, namSeries,
-				data, numSamples);
-		ops = profile_factory(dataType);
+		put_hdf5_data(jg_samples, data_type, SUBDATA_SERIES, nam_series,
+			      data, num_samples);
+		ops = profile_factory(data_type);
 		if (ops == NULL) {
 			xfree(data);
-			xfree(dataType);
-			H5Gclose(gSeries);
-			info("Failed to create operations for %s", dataType);
+			xfree(data_type);
+			H5Gclose(g_series);
+			info("Failed to create operations for %s", data_type);
 			continue;
 		}
-		seriesTotal = (*(ops->series_total))(numSamples, data);
-		if (seriesTotal != NULL) {
+		series_total = (*(ops->series_total))(num_samples, data);
+		if (series_total != NULL) {
 			// Totals for series attaches to node
-			gSeriesTotal = make_group(jgNode, GRP_TOTALS);
-			if (gSeriesTotal < 0) {
-				H5Gclose(gSeries);
-				xfree(seriesTotal);
+			g_series_total = make_group(jg_node, GRP_TOTALS);
+			if (g_series_total < 0) {
+				H5Gclose(g_series);
+				xfree(series_total);
 				xfree(data);
-				xfree(dataType);
+				xfree(data_type);
 				xfree(ops);
 				info("Failed to make Totals for Node");
 				continue;
 			}
-			put_hdf5_data(gSeriesTotal, dataType, SUBDATA_SUMMARY,
-					namSeries, seriesTotal, 1);
-			H5Gclose(gSeriesTotal);
+			put_hdf5_data(g_series_total, data_type,
+				      SUBDATA_SUMMARY,
+				      nam_series, series_total, 1);
+			H5Gclose(g_series_total);
 		}
-		xfree(seriesTotal);
+		xfree(series_total);
 		xfree(ops);
 		xfree(data);
-		xfree(dataType);
-		H5Gclose(gSeries);
+		xfree(data_type);
+		H5Gclose(g_series);
 	}
-#endif
+
 	return;
 }
 
 /* ============================================================================
  * Functions for merging tasks data into a job file
-   ==========================================================================*/
+ ==========================================================================*/
 
-void merge_task_totals(hid_t jgTasks, hid_t nsgNode, char* nodeName) {
-#ifdef HAVE_HDF5
-
-	hid_t   jgTask, jgTotals, nsgTotals, gTotal, nsgTasks, nsgTask = -1;
+static void _merge_task_totals(hid_t jg_tasks, hid_t nsg_node, char* node_name)
+{
+	hid_t   jg_task, jg_totals, nsg_totals,
+		g_total, nsg_tasks, nsg_task = -1;
 	hsize_t nobj, ntasks = -1;
-	int	i, len, taskx, taskid, taskcpus, sizeData;
+	int	i, len, taskx, taskid, taskcpus, size_data;
 	void    *data;
 	char    *type;
 	char    buf[MAX_GROUP_NAME+1];
-	char    groupName[MAX_GROUP_NAME+1];
+	char    group_name[MAX_GROUP_NAME+1];
 
-	if (jgTasks < 0) {
+	if (jg_tasks < 0) {
 		info("Job Tasks is not HDF5 object");
 		return;
 	}
-	if (nsgNode < 0) {
+	if (nsg_node < 0) {
 		info("Node-Step is not HDF5 object");
 		return;
 	}
 
-	nsgTasks = get_group(nsgNode, GRP_TASKS);
-	if (nsgTasks < 0) {
-#ifdef PROFILE_HDF5_DEBUG
-		info("No Tasks group in node-step file");
-#endif
+	nsg_tasks = get_group(nsg_node, GRP_TASKS);
+	if (nsg_tasks < 0) {
+		debug("No Tasks group in node-step file");
 		return;
 	}
-	H5Gget_num_objs(nsgTasks, &ntasks);
+	H5Gget_num_objs(nsg_tasks, &ntasks);
 	for (taskx = 0; ((int)ntasks>0) && (taskx<((int)ntasks)); taskx++) {
 		// Get the name of the group.
-		len = H5Gget_objname_by_idx(nsgTasks, taskx, buf,
-				MAX_GROUP_NAME);
+		len = H5Gget_objname_by_idx(nsg_tasks, taskx, buf,
+					    MAX_GROUP_NAME);
 		if (len<1 || len>MAX_GROUP_NAME) {
 			info("Invalid group name %s", buf);
 			continue;
 		}
-		nsgTask = H5Gopen(nsgTasks, buf, H5P_DEFAULT);
-		if (nsgTask < 0) {
-#ifdef PROFILE_HDF5_DEBUG
-			info("Failed to open %s", buf);
-#endif
+		nsg_task = H5Gopen(nsg_tasks, buf, H5P_DEFAULT);
+		if (nsg_task < 0) {
+			debug("Failed to open %s", buf);
 			continue;
 		}
-		taskid = get_int_attribute(nsgTask, ATTR_TASKID);
-		sprintf(groupName,"%s~%d", GRP_TASK, taskid);
-		jgTask = H5Gcreate(jgTasks, groupName,
-				H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-		if (jgTask < 0) {
-			H5Gclose(nsgTask);
+		taskid = get_int_attribute(nsg_task, ATTR_TASKID);
+		sprintf(group_name, "%s_%d", GRP_TASK, taskid);
+		jg_task = H5Gcreate(jg_tasks, group_name,
+				    H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		if (jg_task < 0) {
+			H5Gclose(nsg_task);
 			info("Failed to create job task group");
 			continue;
 		}
-		put_string_attribute(jgTask, ATTR_NODENAME, nodeName);
-		put_int_attribute(jgTask, ATTR_TASKID, taskid);
-		taskcpus = get_int_attribute(nsgTask, ATTR_CPUPERTASK);
-		put_int_attribute(jgTask, ATTR_CPUPERTASK, taskcpus);
-		nsgTotals = get_group(nsgTask, GRP_TOTALS);
-		if (nsgTotals < 0) {
-			H5Gclose(jgTask);
-			H5Gclose(nsgTask);
+		put_string_attribute(jg_task, ATTR_NODENAME, node_name);
+		put_int_attribute(jg_task, ATTR_TASKID, taskid);
+		taskcpus = get_int_attribute(nsg_task, ATTR_CPUPERTASK);
+		put_int_attribute(jg_task, ATTR_CPUPERTASK, taskcpus);
+		nsg_totals = get_group(nsg_task, GRP_TOTALS);
+		if (nsg_totals < 0) {
+			H5Gclose(jg_task);
+			H5Gclose(nsg_task);
 			continue;
 		}
-		jgTotals = H5Gcreate(jgTask, GRP_TOTALS,
-				H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-		if (jgTotals < 0) {
-			H5Gclose(jgTask);
-			H5Gclose(nsgTask);
+		jg_totals = H5Gcreate(jg_task, GRP_TOTALS,
+				      H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		if (jg_totals < 0) {
+			H5Gclose(jg_task);
+			H5Gclose(nsg_task);
 			info("Failed to create job task totals");
 			continue;
 		}
-		H5Gget_num_objs(nsgTotals, &nobj);
+		H5Gget_num_objs(nsg_totals, &nobj);
 		for (i = 0; (nobj>0) && (i<nobj); i++) {
 			// Get the name of the group.
-			len = H5Gget_objname_by_idx(nsgTotals, i, buf,
-					MAX_GROUP_NAME);
+			len = H5Gget_objname_by_idx(nsg_totals, i, buf,
+						    MAX_GROUP_NAME);
 
 			if (len<1 || len>MAX_GROUP_NAME) {
 				info("Invalid group name %s", buf);
 				continue;
 			}
-			gTotal = H5Gopen(nsgTotals, buf, H5P_DEFAULT);
-			if (gTotal < 0) {
+			g_total = H5Gopen(nsg_totals, buf, H5P_DEFAULT);
+			if (g_total < 0) {
 				info("Failed to open %s", buf);
 				continue;
 			}
-			type = get_string_attribute(gTotal, ATTR_DATATYPE);
+			type = get_string_attribute(g_total, ATTR_DATATYPE);
 			if (type == NULL) {
-				H5Gclose(gTotal);
+				H5Gclose(g_total);
 				info("No %s attribute", ATTR_DATATYPE);
 				continue;
 			}
-			data = get_hdf5_data(gTotal, type, buf, &sizeData);
+			data = get_hdf5_data(g_total, type, buf, &size_data);
 			if (data == NULL) {
+				H5Gclose(g_total);
+				info("Failed to get group %s type %s data", buf,
+				     type);
 				xfree(type);
-				H5Gclose(gTotal);
-				info("Failed to get group %d type %d data", buf,
-						type);
 				continue;
 			}
-			put_hdf5_data(jgTotals,type,SUBDATA_DATA,buf,data,1);
+			put_hdf5_data(jg_totals, type, SUBDATA_DATA,
+				      buf, data, 1);
 			xfree(data);
 			xfree(type);
-			H5Gclose(gTotal);
+			H5Gclose(g_total);
 		}
-		H5Gclose(nsgTotals);
-		H5Gclose(nsgTask);
-		H5Gclose(jgTotals);
-		H5Gclose(jgTask);
+		H5Gclose(nsg_totals);
+		H5Gclose(nsg_task);
+		H5Gclose(jg_totals);
+		H5Gclose(jg_task);
 	}
-	H5Gclose(nsgTasks);
-#endif
+	H5Gclose(nsg_tasks);
 }
 
 /* ============================================================================
  * Functions for merging node totals into a job file
-   ==========================================================================*/
+ ==========================================================================*/
 
-void merge_node_totals(hid_t jgNode, hid_t nsgNode) {
-#ifdef HAVE_HDF5
-
-	hid_t	jgTotals, nsgTotals, gTotal;
+static void _merge_node_totals(hid_t jg_node, hid_t nsg_node)
+{
+	hid_t	jg_totals, nsg_totals, g_total;
 	hsize_t nobj;
-	int 	i, len, sizeData;
+	int 	i, len, size_data;
 	void  	*data;
 	char 	*type;
 	char 	buf[MAX_GROUP_NAME+1];
 
-	if (jgNode < 0) {
+	if (jg_node < 0) {
 		info("Job Node is not HDF5 object");
 		return;
 	}
-	if (nsgNode < 0) {
+	if (nsg_node < 0) {
 		info("Node-Step is not HDF5 object");
 		return;
 	}
-	jgTotals = H5Gcreate(jgNode, GRP_TOTALS,
-			H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	if (jgTotals < 0) {
+	jg_totals = H5Gcreate(jg_node, GRP_TOTALS,
+			      H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if (jg_totals < 0) {
 		info("Failed to create job node totals");
 		return;
 	}
-	nsgTotals = get_group(nsgNode, GRP_TOTALS);
-	if (nsgTotals < 0) {
-		H5Gclose(jgTotals);
+	nsg_totals = get_group(nsg_node, GRP_TOTALS);
+	if (nsg_totals < 0) {
+		H5Gclose(jg_totals);
 		return;
 	}
-	H5Gget_num_objs(nsgTotals, &nobj);
+	H5Gget_num_objs(nsg_totals, &nobj);
 	for (i = 0; (nobj>0) && (i<nobj); i++) {
 		// Get the name of the group.
-		len = H5Gget_objname_by_idx(nsgTotals, i, buf,
-				MAX_GROUP_NAME);
+		len = H5Gget_objname_by_idx(nsg_totals, i, buf,
+					    MAX_GROUP_NAME);
 
 		if (len<1 || len>MAX_GROUP_NAME) {
 			info("invalid group name %s", buf);
 			continue;
 		}
-		gTotal = H5Gopen(nsgTotals, buf, H5P_DEFAULT);
-		if (gTotal < 0) {
+		g_total = H5Gopen(nsg_totals, buf, H5P_DEFAULT);
+		if (g_total < 0) {
 			info("Failed to open %s", buf);
 			continue;
 		}
-		type = get_string_attribute(gTotal, ATTR_DATATYPE);
+		type = get_string_attribute(g_total, ATTR_DATATYPE);
 		if (type == NULL) {
-			H5Gclose(gTotal);
+			H5Gclose(g_total);
 			info("No %s attribute", ATTR_DATATYPE);
 			continue;
 		}
-		data = get_hdf5_data(gTotal, type, buf, &sizeData);
+		data = get_hdf5_data(g_total, type, buf, &size_data);
 		if (data == NULL) {
+			H5Gclose(g_total);
+			info("Failed to get group %s type %s data", buf, type);
 			xfree(type);
-			H5Gclose(gTotal);
-			info("Failed to get group %d type %d data", buf, type);
 			continue;
-
 		}
-		put_hdf5_data(jgTotals, type, SUBDATA_DATA, buf, data, 1);
+		put_hdf5_data(jg_totals, type, SUBDATA_DATA, buf, data, 1);
 		xfree(data);
 		xfree(type);
-		H5Gclose(gTotal);
+		H5Gclose(g_total);
 	}
-	H5Gclose(nsgTotals);
-	H5Gclose(jgTotals);
-#endif
+	H5Gclose(nsg_totals);
+	H5Gclose(jg_totals);
 	return;
 }
 
 /* ============================================================================
  * Functions for merging step data into a job file
-   ==========================================================================*/
+ ==========================================================================*/
 
-void merge_node_step_data(hid_t fid_job, char* fileName, int nodeIndex,
-		char* nodeName, hid_t jgidNodes, hid_t jgidTasks) {
-#ifdef HAVE_HDF5
+static void _merge_node_step_data(hid_t fid_job, char* file_name, int nodeIndex,
+				  char* node_name, hid_t jgid_nodes,
+				  hid_t jgid_tasks)
+{
+	hid_t	fid_nodestep, jgid_node, nsgid_root, nsgid_node;
+	char	*start_time;
+	char	group_name[MAX_GROUP_NAME+1];
 
-	hid_t	fid_nodestep, jgidNode, nsgidRoot, nsgidNode;
-	char	*startTime;
-	char	groupName[MAX_GROUP_NAME+1];
-
-	jgidNode = H5Gcreate(jgidNodes, nodeName,
-			H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	if (jgidNode < 0) {
-		error("Failed to create group %s",nodeName);
+	jgid_node = H5Gcreate(jgid_nodes, node_name,
+			      H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if (jgid_node < 0) {
+		error("Failed to create group %s",node_name);
 		return;
 	}
-	put_string_attribute(jgidNode, ATTR_NODENAME, nodeName);
+	put_string_attribute(jgid_node, ATTR_NODENAME, node_name);
 	// Process node step file
 	// Open the file and the node group.
-	fid_nodestep = H5Fopen(fileName, H5F_ACC_RDONLY, H5P_DEFAULT);
+	fid_nodestep = H5Fopen(file_name, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if (fid_nodestep < 0) {
-		H5Gclose(jgidNode);
-		error("Failed to open %s",fileName);
+		H5Gclose(jgid_node);
+		error("Failed to open %s",file_name);
 		return;
 	}
-	nsgidRoot = H5Gopen(fid_nodestep,"/", H5P_DEFAULT);
-	sprintf(groupName,"/%s~%s", GRP_NODE, nodeName);
-	nsgidNode = H5Gopen(nsgidRoot, groupName, H5P_DEFAULT);
-	if (nsgidNode < 0) {
+	nsgid_root = H5Gopen(fid_nodestep,"/", H5P_DEFAULT);
+	sprintf(group_name, "/%s_%s", GRP_NODE, node_name);
+	nsgid_node = H5Gopen(nsgid_root, group_name, H5P_DEFAULT);
+	if (nsgid_node < 0) {
 		H5Gclose(fid_nodestep);
-		H5Gclose(jgidNode);
+		H5Gclose(jgid_node);
 		error("Failed to open node group");
 		return;;
 	}
-	startTime = get_string_attribute(nsgidNode,ATTR_STARTTIME);
-	if (startTime == NULL) {
+	start_time = get_string_attribute(nsgid_node,ATTR_STARTTIME);
+	if (start_time == NULL) {
 		info("No %s attribute", ATTR_STARTTIME);
 	} else {
-		put_string_attribute(jgidNode,ATTR_STARTTIME,startTime);
-		xfree(startTime);
+		put_string_attribute(jgid_node, ATTR_STARTTIME, start_time);
+		xfree(start_time);
 	}
-	merge_node_totals(jgidNode, nsgidNode);
-	merge_task_totals(jgidTasks, nsgidNode, nodeName);
-	merge_series_data(jgidTasks, jgidNode, nsgidNode);
-	H5Gclose(nsgidNode);
+	_merge_node_totals(jgid_node, nsgid_node);
+	_merge_task_totals(jgid_tasks, nsgid_node, node_name);
+	_merge_series_data(jgid_tasks, jgid_node, nsgid_node);
+	H5Gclose(nsgid_node);
 	H5Fclose(fid_nodestep);
-	H5Gclose(jgidNode);
-	if (!keepfiles)
-		remove(fileName);
+	H5Gclose(jgid_node);
+
+	if (!params.keepfiles)
+		remove(file_name);
+
 	return;
-#endif
 }
 
-void merge_step_files() {
-#ifdef HAVE_HDF5
-
-	hid_t 	fid_job = -1, jgidStep = -1, jgidNodes = -1, jgidTasks = -1;
+static void _merge_step_files()
+{
+	hid_t 	fid_job = -1, jgid_step = -1, jgid_nodes = -1, jgid_tasks = -1;
 	DIR    *dir;
 	struct  dirent *de;
 	char	jobprefix[MAX_PROFILE_PATH+1];
-	char	stepnode[MAX_PROFILE_PATH+1];
-	char	profileStepDir[MAX_PROFILE_PATH+1];
-	char	profileStepPath[MAX_PROFILE_PATH+1];
-	char	jgrpStepName[MAX_GROUP_NAME+1];
-	char	jgrpNodesName[MAX_GROUP_NAME+1];
-	char	jgrpTasksName[MAX_GROUP_NAME+1];
-	char 	*possquiggle, *posdot,*profileJobFileName;
-	int	stepx = 0, numSteps = 0, nodex = -1;
+	char	step_node[MAX_PROFILE_PATH+1];
+	char	step_dir[MAX_PROFILE_PATH+1];
+	char	step_path[MAX_PROFILE_PATH+1];
+	char	jgrp_step_name[MAX_GROUP_NAME+1];
+	char	jgrp_nodes_name[MAX_GROUP_NAME+1];
+	char	jgrp_tasks_name[MAX_GROUP_NAME+1];
+	char 	*step_node_loc, *posdot;
+	int	stepx = 0, num_steps = 0, nodex = -1;
 	bool	foundFiles = false;
 
-	sprintf(profileStepDir,"%s/tmp",slurmDataRoot);
-	profileJobFileName = make_job_profile_path(slurmDataRoot, jobid);
+	sprintf(step_dir, "%s/%s", params.dir, params.user);
 	while (nodex != 0) {
-		if ((dir = opendir(profileStepDir)) == NULL) {
+		if (!(dir = opendir(step_dir))) {
 			error("opendir for job profile directory): %m");
 			exit(1);
 		}
-		sprintf(jobprefix,"job~%d~%d~",jobid,stepx);
+		sprintf(jobprefix, "%d_%d_", params.job_id, stepx);
 		nodex = 0;
-		while ((de = readdir(dir)) != NULL) {
-			if (strncmp(jobprefix,de->d_name,strlen(jobprefix))
-					== 0) {
-				// Found a node step file for this job
-				if (!foundFiles) {
-					// Need to create the job file
-					fid_job = H5Fcreate(profileJobFileName,
-							H5F_ACC_TRUNC,
-							H5P_DEFAULT,
-							H5P_DEFAULT);
-					if (fid_job < 0) {
-						fatal("Failed to %s %s",
-							"create HDF5 file:",
-							profileJobFileName);
-					}
-					foundFiles = true;
-				}
-				possquiggle = de->d_name+strlen(jobprefix);
-				strcpy(stepnode,possquiggle);
-				posdot = strchr(stepnode,'.');
-				posdot[0] = '\0'; // remove extension
-				if (nodex == 0) {
-					numSteps++;
-					sprintf(jgrpStepName,"/%s~%d",GRP_STEP,
-							stepx);
-					jgidStep = make_group(fid_job,
-							jgrpStepName);
-					if (jgidStep < 0) {
-						error("Failed to create %s",
-								jgrpStepName);
-						continue;
-					}
-					sprintf(jgrpNodesName,"%s/%s",
-							jgrpStepName,
-							GRP_NODES);
-					jgidNodes = make_group(jgidStep,
-							jgrpNodesName);
-					if (jgidNodes < 0) {
-						error("Failed to create %s",
-								jgrpNodesName);
-						continue;
-					}
-					sprintf(jgrpTasksName,"%s/%s",
-							jgrpStepName,
-							GRP_TASKS);
-					jgidTasks = make_group(jgidStep,
-							jgrpTasksName);
-					if (jgidTasks < 0) {
-						error("Failed to create %s",
-								jgrpTasksName);
-						continue;
-					}
-				}
-				sprintf(profileStepPath,"%s/%s",profileStepDir,
-						de->d_name);
-#ifdef PROFILE_HDF5_DEBUG
-				printf("Adding %s to the job file\n",
-						profileStepPath);
-#endif
+		while ((de = readdir(dir))) {
+			if (strncmp(jobprefix, de->d_name, strlen(jobprefix)))
+				continue;
 
-				merge_node_step_data(fid_job, profileStepPath,
-						nodex, stepnode,
-						jgidNodes, jgidTasks);
-
-				nodex++;
+			// Found a node step file for this job
+			if (!foundFiles) {
+				// Need to create the job file
+				fid_job = H5Fcreate(params.output,
+						    H5F_ACC_TRUNC,
+						    H5P_DEFAULT,
+						    H5P_DEFAULT);
+				if (fid_job < 0) {
+					fatal("Failed to %s %s",
+					      "create HDF5 file:",
+					      params.output);
+				}
+				foundFiles = true;
 			}
+			step_node_loc = de->d_name + strlen(jobprefix);
+			strcpy(step_node, step_node_loc);
+			posdot = strchr(step_node, '.');
+
+			if (!posdot) {
+				error("error processing this file, %s, "
+				      "no suffix", de->d_name);
+				continue;
+			}
+			posdot[0] = '\0'; // remove extension
+			if (nodex == 0) {
+				num_steps++;
+				sprintf(jgrp_step_name, "/%s_%d", GRP_STEP,
+					stepx);
+				jgid_step = make_group(fid_job, jgrp_step_name);
+				if (jgid_step < 0) {
+					error("Failed to create %s",
+					      jgrp_step_name);
+					continue;
+				}
+				sprintf(jgrp_nodes_name,"%s/%s",
+					jgrp_step_name,
+					GRP_NODES);
+				jgid_nodes = make_group(jgid_step,
+							jgrp_nodes_name);
+				if (jgid_nodes < 0) {
+					error("Failed to create %s",
+					      jgrp_nodes_name);
+					continue;
+				}
+				sprintf(jgrp_tasks_name,"%s/%s",
+					jgrp_step_name,
+					GRP_TASKS);
+				jgid_tasks = make_group(jgid_step,
+							jgrp_tasks_name);
+				if (jgid_tasks < 0) {
+					error("Failed to create %s",
+					      jgrp_tasks_name);
+					continue;
+				}
+			}
+			sprintf(step_path, "%s/%s", step_dir, de->d_name);
+			debug("Adding %s to the job file", step_path);
+			_merge_node_step_data(fid_job, step_path,
+					      nodex, step_node,
+					      jgid_nodes, jgid_tasks);
+			nodex++;
 		}
 		closedir(dir);
 		if (nodex > 0) {
-			put_int_attribute(jgidStep, ATTR_NNODES, nodex);
-			H5Gclose(jgidTasks);
-			H5Gclose(jgidNodes);
-			H5Gclose(jgidStep);
+			put_int_attribute(jgid_step, ATTR_NNODES, nodex);
+			H5Gclose(jgid_tasks);
+			H5Gclose(jgid_nodes);
+			H5Gclose(jgid_step);
 		}
 		stepx++;
 	}
-	put_int_attribute(fid_job, ATTR_NSTEPS, numSteps);
+	put_int_attribute(fid_job, ATTR_NSTEPS, num_steps);
 	if (!foundFiles)
-		info("No node step files found for jobid=%d",jobid);
+		info("No node-step files found for jobid=%d",
+		     params.job_id);
 	if (fid_job != -1)
 		H5Fclose(fid_job);
-#endif
 }
 
 /* ============================================================================
@@ -748,282 +884,292 @@ void merge_step_files() {
  * ============================================================================
  * ========================================================================= */
 
-hid_t get_series_parent(hid_t group) {
-	hid_t gidLevel = -1;
-#ifdef HAVE_HDF5
-	if (strcasecmp(levelName,"Node:Totals") == 0) {
-		gidLevel = get_group(group, GRP_TOTALS);
-		if (gidLevel < 0) {
+static hid_t _get_series_parent(hid_t group)
+{
+	hid_t gid_level = -1;
+
+	if (strcasecmp(params.level, "Node:Totals") == 0) {
+		gid_level = get_group(group, GRP_TOTALS);
+		if (gid_level < 0) {
 			info("Failed to open  group %s", GRP_TOTALS);
 		}
-	} else if (strcasecmp(levelName,"Node:TimeSeries") == 0) {
-		gidLevel = get_group(group, GRP_SAMPLES);
-		if (gidLevel < 0) {
-			info("Failed to open  group %s", GRP_SAMPLES);
+	} else if (strcasecmp(params.level, "Node:TimeSeries") == 0) {
+		gid_level = get_group(group, GRP_SAMPLES);
+		if (gid_level < 0) {
+			info("Failed to open group %s", GRP_SAMPLES);
 		}
 	} else {
-		info("%s is an illegal level", levelName);
+		info("%s is an illegal level", params.level);
 		return -1;
 
 	}
-#endif
-	return gidLevel;
+
+	return gid_level;
 }
 
 
-void get_series_names(hid_t group) {
-#ifdef HAVE_HDF5
+static void _get_series_names(hid_t group)
+{
 	int i, len;
 	hsize_t nobj;
 	char buf[MAX_GROUP_NAME+1];
+
 	H5Gget_num_objs(group, &nobj);
-	numSeries = (int) nobj;
-	if (numSeries < 0) {
-#ifdef PROFILE_HDF5_DEBUG
-		info("No Data Series in group");
-		hdf5_obj_info(group, "???");
-#endif
+	num_series = (int) nobj;
+	if (num_series < 0) {
+		debug("No Data Series in group");
 		return;
 	}
-	seriesNames = xmalloc(sizeof(char*)*numSeries);
-	for (i = 0; (numSeries>0) && (i<numSeries); i++) {
+	series_names = xmalloc(sizeof(char*)*num_series);
+	for (i = 0; (num_series>0) && (i<num_series); i++) {
 		len = H5Gget_objname_by_idx(group, i, buf, MAX_GROUP_NAME);
 		if ((len < 0) || (len > MAX_GROUP_NAME)) {
 			info("Invalid series name=%s", buf);
 			// put into list anyway so list doesn't have a null.
 		}
-		seriesNames[i] = xstrdup(buf);
+		series_names[i] = xstrdup(buf);
 	}
-#endif
+
 }
 
 
-void extract_node_level(FILE* fOt, int stepx, hid_t jgidNodes, int nnodes,
-		bool header, char* dataSetName) {
-#ifdef HAVE_HDF5
-	hid_t	jgidNode, gidLevel, gidSeries;
-	int 	nodex, len, sizeData;
-	void	*data;
-	char	*dataType, *subtype;
-	char    jgrpNodeName[MAX_GROUP_NAME+1];
-	profile_hdf5_ops_t* ops;
+static void _extract_node_level(FILE* fp, int stepx, hid_t jgid_nodes,
+				int nnodes, bool header, char* data_set_name)
+{
 
-	for (nodex=0;nodex<nnodes;nodex++) {
-		len = H5Gget_objname_by_idx(jgidNodes, nodex,
-				jgrpNodeName, MAX_GROUP_NAME);
+	hid_t	jgid_node, gid_level, gid_series;
+	int 	nodex, len, size_data;
+	void	*data;
+	char	*data_type, *subtype;
+	char    jgrp_node_name[MAX_GROUP_NAME+1];
+	hdf5_api_ops_t* ops;
+
+	for (nodex=0; nodex<nnodes; nodex++) {
+		len = H5Gget_objname_by_idx(jgid_nodes, nodex,
+					    jgrp_node_name, MAX_GROUP_NAME);
 		if ((len < 0) || (len > MAX_GROUP_NAME)) {
-			info("Invalid node name=%s", jgrpNodeName);
+			info("Invalid node name=%s", jgrp_node_name);
 			continue;
 		}
-		jgidNode = get_group(jgidNodes, jgrpNodeName);
-		if (jgidNode < 0) {
-			info("Failed to open group %s", jgrpNodeName);
+		jgid_node = get_group(jgid_nodes, jgrp_node_name);
+		if (jgid_node < 0) {
+			info("Failed to open group %s", jgrp_node_name);
 			continue;
 		}
-		if (strcmp(xnode,"*")!=0 && strcmp(xnode,jgrpNodeName)!=0)
+		if (params.node
+		    && strcmp(params.node, "*")
+		    && strcmp(params.node, jgrp_node_name))
 			continue;
-		gidLevel = get_series_parent(jgidNode);
-		if (gidLevel == -1) {
-			H5Gclose(jgidNode);
+		gid_level = _get_series_parent(jgid_node);
+		if (gid_level == -1) {
+			H5Gclose(jgid_node);
 			continue;
 		}
-		gidSeries = get_group(gidLevel, dataSetName);
-		if (gidSeries < 0) {
+		gid_series = get_group(gid_level, data_set_name);
+		if (gid_series < 0) {
 			// This is okay, may not have ran long enough for
 			// a sample (hostname????)
-			H5Gclose(gidLevel);
-			H5Gclose(jgidNode);
+			H5Gclose(gid_level);
+			H5Gclose(jgid_node);
 			continue;
 		}
-		dataType = get_string_attribute(gidSeries, ATTR_DATATYPE);
-		if (dataType == NULL) {
-			H5Gclose(gidSeries);
-			H5Gclose(gidLevel);
-			H5Gclose(jgidNode);
-			info("No datatype in %s", dataSetName);
+		data_type = get_string_attribute(gid_series, ATTR_DATATYPE);
+		if (data_type == NULL) {
+			H5Gclose(gid_series);
+			H5Gclose(gid_level);
+			H5Gclose(jgid_node);
+			info("No datatype in %s", data_set_name);
 			continue;
 		}
-		subtype = get_string_attribute(gidSeries, ATTR_SUBDATATYPE);
+		subtype = get_string_attribute(gid_series, ATTR_SUBDATATYPE);
 		if (subtype == NULL) {
-			xfree(dataType);
-			H5Gclose(gidSeries);
-			H5Gclose(gidLevel);
-			H5Gclose(jgidNode);
+			xfree(data_type);
+			H5Gclose(gid_series);
+			H5Gclose(gid_level);
+			H5Gclose(jgid_node);
 			info("No %s attribute", ATTR_SUBDATATYPE);
 			continue;
 		}
-		ops = profile_factory(dataType);
+		ops = profile_factory(data_type);
 		if (ops == NULL) {
 			xfree(subtype);
-			xfree(dataType);
-			H5Gclose(gidSeries);
-			H5Gclose(gidLevel);
-			H5Gclose(jgidNode);
-			info("Failed to create operations for %s", dataType);
+			xfree(data_type);
+			H5Gclose(gid_series);
+			H5Gclose(gid_level);
+			H5Gclose(jgid_node);
+			info("Failed to create operations for %s", data_type);
 			continue;
 		}
-		data = get_hdf5_data(gidSeries,dataType,dataSetName,&sizeData);
-		if (data != NULL) {
+		data = get_hdf5_data(
+			gid_series, data_type, data_set_name, &size_data);
+		if (data) {
 			if (strcmp(subtype,SUBDATA_SUMMARY) != 0)
 				(*(ops->extract_series))
-					(fOt, header, jobid, stepx,
-					jgrpNodeName,dataSetName,
-					data,sizeData);
+					(fp, header, params.job_id,
+					 stepx, jgrp_node_name, data_set_name,
+					 data, size_data);
 			else
 				(*(ops->extract_total))
-					(fOt, header, jobid, stepx,
-					jgrpNodeName,dataSetName,
-					data,sizeData);
+					(fp, header, params.job_id,
+					 stepx, jgrp_node_name, data_set_name,
+					 data, size_data);
 
 			header = false;
 			xfree(data);
 		} else {
-			fprintf(fOt,"%d,%d,%s,No %s Data\n",
-					jobid,stepx,jgrpNodeName,dataSetName);
+			fprintf(fp, "%d,%d,%s,No %s Data\n",
+				params.job_id, stepx, jgrp_node_name,
+				data_set_name);
 		}
 		xfree(ops);
-		xfree(dataType);
-		H5Gclose(gidSeries);
-		H5Gclose(gidLevel);
-		H5Gclose(jgidNode);
+		xfree(data_type);
+		H5Gclose(gid_series);
+		H5Gclose(gid_level);
+		H5Gclose(jgid_node);
 	}
-#endif
+
 }
 
 
-void extract_data() {
-#ifdef HAVE_HDF5
-	hid_t	fid_job, jgidRoot, jgidStep, jgidNodes, jgidNode, jgidLevel;
+static void _extract_data()
+{
+
+	hid_t	fid_job, jgid_root, jgid_step, jgid_nodes,
+		jgid_node, jgid_level;
 	int	nsteps, nnodes, stepx, isx, len;
-	char	jgrpStepName[MAX_GROUP_NAME+1];
-	char	jgrpNodeName[MAX_GROUP_NAME+1];
-	char	fileName[MAX_PROFILE_PATH+1];
+	char	jgrp_step_name[MAX_GROUP_NAME+1];
+	char	jgrp_node_name[MAX_GROUP_NAME+1];
 	bool    header;
 
-	FILE* fOt = fopen(outputFile,"w");
-	if (fOt == NULL) {
-		error("Failed to create output file %s -- %m",outputFile);
+	FILE* fp = fopen(params.output, "w");
+
+	if (fp == NULL) {
+		error("Failed to create output file %s -- %m",
+		      params.output);
 	}
-	len = snprintf(fileName,MAX_PROFILE_PATH,"%s/job~%d.h5",
-				slurmDataRoot, jobid);
-	if (len >= MAX_PROFILE_PATH) {
-		error("path is too big");
-		exit(1);
-	}
-	fid_job = H5Fopen(fileName, H5F_ACC_RDONLY, H5P_DEFAULT);
+	fid_job = H5Fopen(params.input, H5F_ACC_RDONLY, H5P_DEFAULT);
 	if (fid_job < 0) {
-		error("Failed to open %s", fileName);
+		error("Failed to open %s", params.input);
 		return;
 	}
-	jgidRoot = H5Gopen(fid_job,"/", H5P_DEFAULT);
-	if (jgidRoot < 0) {
+	jgid_root = H5Gopen(fid_job, "/", H5P_DEFAULT);
+	if (jgid_root < 0) {
 		H5Fclose(fid_job);
 		error("Failed to open  root");
 		return;
 	}
-	nsteps = get_int_attribute(jgidRoot,ATTR_NSTEPS);
-	for (stepx=0;stepx<nsteps;stepx++) {
-		if ((xstepid!=-1) && (stepx!=xstepid))
+	nsteps = get_int_attribute(jgid_root, ATTR_NSTEPS);
+	for (stepx=0; stepx<nsteps; stepx++) {
+		if ((params.step_id != -1) && (stepx != params.step_id))
 			continue;
-		sprintf(jgrpStepName,"%s~%d",GRP_STEP,stepx);
-		jgidStep = get_group(jgidRoot, jgrpStepName);
-		if (jgidStep < 0) {
-			error("Failed to open  group %s", jgrpStepName);
+		sprintf(jgrp_step_name, "%s_%d", GRP_STEP, stepx);
+		jgid_step = get_group(jgid_root, jgrp_step_name);
+		if (jgid_step < 0) {
+			error("Failed to open  group %s", jgrp_step_name);
 			continue;
 		}
-		if (strncasecmp(levelName,"Node:",5)== 0) {
-			nnodes = get_int_attribute(jgidStep,ATTR_NNODES);
-			jgidNodes = get_group(jgidStep, GRP_NODES);
-			if (jgidNodes < 0) {
-				H5Gclose(jgidStep);
-				error("Failed to open  group %s",GRP_NODES);
+		if (params.level && !strncasecmp(params.level, "Node:", 5)) {
+			nnodes = get_int_attribute(jgid_step, ATTR_NNODES);
+			jgid_nodes = get_group(jgid_step, GRP_NODES);
+			if (jgid_nodes < 0) {
+				H5Gclose(jgid_step);
+				error("Failed to open  group %s", GRP_NODES);
 				continue;
 			}
-			len = H5Gget_objname_by_idx(jgidNodes, 0, jgrpNodeName,
-					MAX_GROUP_NAME);
+			len = H5Gget_objname_by_idx(jgid_nodes,
+						    0, jgrp_node_name,
+						    MAX_GROUP_NAME);
 			if ((len < 0) || (len > MAX_GROUP_NAME)) {
-				H5Gclose(jgidNodes);
-				H5Gclose(jgidStep);
-				error("Invalid node name %s",jgrpNodeName);
+				H5Gclose(jgid_nodes);
+				H5Gclose(jgid_step);
+				error("Invalid node name %s", jgrp_node_name);
 				continue;
 			}
-			jgidNode = get_group(jgidNodes, jgrpNodeName);
-			if (jgidNode < 0) {
-				H5Gclose(jgidNodes);
-				H5Gclose(jgidStep);
-				info("Failed to open  group %s", jgrpNodeName);
+			jgid_node = get_group(jgid_nodes, jgrp_node_name);
+			if (jgid_node < 0) {
+				H5Gclose(jgid_nodes);
+				H5Gclose(jgid_step);
+				info("Failed to open group %s", jgrp_node_name);
 				continue;
 			}
-			jgidLevel = get_series_parent(jgidNode);
-			if (jgidLevel == -1) {
-				H5Gclose(jgidNode);
-				H5Gclose(jgidNodes);
-				H5Gclose(jgidStep);
+			jgid_level = _get_series_parent(jgid_node);
+			if (jgid_level == -1) {
+				H5Gclose(jgid_node);
+				H5Gclose(jgid_nodes);
+				H5Gclose(jgid_step);
 				continue;
 			}
-			get_series_names(jgidLevel);
-			H5Gclose(jgidLevel);
-			H5Gclose(jgidNode);
-			if (strcmp(seriesName,"*") == 0) {
-				for (isx=0; isx<numSeries; isx++) {
-					extract_node_level(fOt,stepx,jgidNodes,
-						nnodes,true,seriesNames[isx]);
+			_get_series_names(jgid_level);
+			H5Gclose(jgid_level);
+			H5Gclose(jgid_node);
+			if (!params.series || !strcmp(params.series, "*")) {
+				for (isx=0; isx<num_series; isx++) {
+					_extract_node_level(
+						fp, stepx, jgid_nodes,
+						nnodes, true,
+						series_names[isx]);
 				}
-			} else if (strcmp(seriesName,GRP_TASKS) == 0) {
+			} else if (!strcmp(params.series, GRP_TASKS)) {
 				header = true;
-				for (isx=0; isx<numSeries; isx++) {
-					if (strstr(seriesNames[isx],GRP_TASK))
-					{
-						extract_node_level(fOt,stepx,
-							jgidNodes, nnodes,
-							header,
-							seriesNames[isx]);
+				for (isx=0; isx<num_series; isx++) {
+					if (strstr(series_names[isx],
+						   GRP_TASK)) {
+						_extract_node_level(
+							fp, stepx, jgid_nodes,
+							nnodes, header,
+							series_names[isx]);
 						header = false;
 					}
 				}
 			} else {
-				extract_node_level(fOt, stepx, jgidNodes,
-					nnodes, true, seriesName);
+				_extract_node_level(fp, stepx, jgid_nodes,
+						    nnodes, true,
+						    params.series);
 			}
-			delete_string_list(seriesNames, numSeries);
-			seriesNames = NULL;
-			numSeries = 0;
-			H5Gclose(jgidNodes);
-//		} else if (strncasecmp(levelName,"Task:",5)== 0) {
+			_delete_string_list(series_names, num_series);
+			series_names = NULL;
+			num_series = 0;
+			H5Gclose(jgid_nodes);
+//		} else if (!strncasecmp(params.level, "Task:", 5)) {
 			// TODO: do task (currently no task data
 		} else {
-			info("%s is an illegal level", levelName);
+			error("%s is an illegal level", params.level);
 		}
-		H5Gclose(jgidStep);
+		H5Gclose(jgid_step);
 	}
-	H5Gclose(jgidRoot);
+	H5Gclose(jgid_root);
 	H5Fclose(fid_job);
-	fclose(fOt);
-#endif
+	fclose(fp);
+
 }
 
 
 int main (int argc, char **argv)
 {
 	if (argc <= 1) {
-		usage();
+		_usage();
 		exit(0);
 	}
-	opts(argc, argv);
+	_set_options(argc, argv);
 
-	ProfileInit();
-	if (mergeMode) {
-		printf("Merging node-step files into %s\n",
-			make_job_profile_path(slurmDataRoot, jobid));
-		merge_step_files();
-	} else {
-		printf("Extracting job data from %s into %s\n",
-			make_job_profile_path(slurmDataRoot, jobid),
-			outputFile);
-		extract_data();
+	profile_init();
+	switch (params.mode) {
+	case SH5UTIL_MODE_MERGE:
+		info("Merging node-step files into %s",
+		     params.output);
+		_merge_step_files();
+		break;
+	case SH5UTIL_MODE_EXTRACT:
+		info("Extracting job data from %s into %s\n",
+		     params.input, params.output);
+		_extract_data();
+		break;
+	default:
+		error("Unknown type %d", params.mode);
+		break;
 	}
-	ProfileFinish();
-	xfree(slurmDataRoot);
-	xfree(xnode);
+	profile_fini();
+	xfree(params.dir);
+	xfree(params.node);
 	return 0;
 }

@@ -1360,6 +1360,9 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 		*io_initialized = true;
 	}
 
+	/* run now so we don't drop permissions on any of the gather plugins */
+	acct_gather_conf_init();
+
 	/*
 	 * Temporarily drop effective privileges
 	 */

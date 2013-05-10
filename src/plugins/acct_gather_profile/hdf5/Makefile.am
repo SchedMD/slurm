@@ -7,7 +7,7 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 # cpu/core energy accounting plugin.
-HDF5_SOURCES = acct_gather_profile_hdf5.c acct_gather_profile_hdf5.h
+HDF5_SOURCES = acct_gather_profile_hdf5.c
 HDF5_API_SOURCES = hdf5_api.c hdf5_api.h
 
 if BUILD_HDF5

@@ -1,10 +1,13 @@
 /*****************************************************************************\
- *  io_energy.c - slurm energy accounting plugin for io and energy using hdf5.
+ *  acct_gather_profile_hdf5.c - slurm energy accounting plugin for
+ *                               hdf5 profiling.
  *****************************************************************************
  *  Copyright (C) 2013 Bull S. A. S.
  *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
- *
  *  Written by Rod Schultz <rod.schultz@bull.com>
+ *
+ *  Portions Copyright (C) 2013 SchedMD LLC.
+ *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.schedmd.com/slurmdocs/>.
@@ -50,15 +53,13 @@
 #include <unistd.h>
 #include <math.h>
 
-#include "src/common/fd.h"
 #include "src/common/slurm_xlator.h"
+#include "src/common/fd.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/plugins/acct_gather_profile/common/profile_hdf5.h"
 #include "src/slurmd/common/proctrack.h"
-
-#include "io_energy.h"
+#include "hdf5_api.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -89,12 +90,16 @@
  * minimum version for their plugins as the job accounting API
  * matures.
  */
-const char plugin_name[] = "AcctGatherProfile io_energy plugin";
-const char plugin_type[] = "acct_gather_profile/io_energy";
+const char plugin_name[] = "AcctGatherProfile hdf5 plugin";
+const char plugin_type[] = "acct_gather_profile/hdf5";
 const uint32_t plugin_version = 100;
 
-static uint32_t debug_flags = 0;
+hid_t typTOD;
 
+typedef struct {
+	char *dir;
+	uint32_t def;
+} slurm_hdf5_conf_t;
 
 // Global HDF5 Variables
 //	The HDF5 file and base objects will remain open for the duration of the
@@ -103,91 +108,55 @@ static uint32_t debug_flags = 0;
 // Static variables ok as add function are inside a lock.
 static uint32_t  jobid;
 static uint32_t  stepid;
-static uint32_t  nodetasks;
-static uint32_t  sampleNo = 0;
-static char*     stepd_nodename = NULL;
-static char*     profileFileName;
 static hid_t 	 file_id = -1; // File
-static hid_t     gidNode = -1;
-static hid_t     gidTasks = -1;
-static hid_t     gidSamples = -1;
-static hid_t     gidTotals = -1;
-static char      groupNode[MAX_GROUP_NAME+1];
-static int       nOpts = 0;
-static char**    profileOpts = NULL;
-static slurm_acct_gather_conf_t acct_gather_conf;
+static hid_t     gid_node = -1;
+static hid_t     gid_tasks = -1;
+static hid_t     gid_samples = -1;
+static hid_t     gid_totals = -1;
+static char      group_node[MAX_GROUP_NAME+1];
+static slurm_hdf5_conf_t hdf5_conf;
+static uint32_t debug_flags = 0;
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-extern int init(void)
+static void _reset_slurm_profile_conf()
 {
-	debug_flags = slurm_get_debug_flags();
-	verbose("%s loaded", plugin_name);
-	return SLURM_SUCCESS;
+	xfree(hdf5_conf.dir);
+	hdf5_conf.def = ACCT_GATHER_PROFILE_NOT_SET;
 }
 
-extern int fini(void)
+static uint32_t _determine_profile(slurmd_job_t *job)
 {
-	xfree(profileFileName);
-	return SLURM_SUCCESS;
+	uint32_t profile;
+
+	if (job->profile > ACCT_GATHER_PROFILE_NONE)
+		profile = job->profile;
+	else
+		profile = hdf5_conf.def;
+
+	return profile;
 }
 
-extern void reset_slurm_profile_conf()
+static int _get_taskid_from_pid(slurmd_job_t *job, pid_t pid, uint32_t *gtid)
 {
-	xfree(acct_gather_conf.profile_dir);
-	xfree(acct_gather_conf.profile_DefaultProfile);
-}
+	int tx;
 
-extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
-{
-	reset_slurm_profile_conf();
-	if (!tbl)
-		return;
-
-	if (!s_p_get_string(&acct_gather_conf.profile_dir,
-			    "ProfileDir", tbl)) {
-		acct_gather_conf.profile_dir = NULL;
-	}
-	if (!s_p_get_string(&acct_gather_conf.profile_DefaultProfile,
-			    "ProfileDefaultProfile", tbl)) {
-		acct_gather_conf.profile_DefaultProfile =
-				xstrdup(PROFILE_DEFAULT_PROFILE);
+	for (tx=0; tx<job->node_tasks; tx++) {
+		if (job->task[tx]->pid == pid) {
+			*gtid = job->task[tx]->gtid;
+			return SLURM_SUCCESS;
+		}
 	}
 
-	ValidSeriesList(acct_gather_conf.profile_DefaultProfile);
+	return SLURM_ERROR;
 }
 
-extern void* acct_gather_profile_p_conf_get()
+static int _create_directories(slurmd_job_t *job)
 {
-	return &acct_gather_conf;
-}
-
-extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
-					      int *full_options_cnt)
-{
-	s_p_options_t options[] = {
-		{"ProfileDir", S_P_STRING},
-		{"ProfileDefaultProfile", S_P_STRING},
-		{NULL} };
-
-	transfer_s_p_options(full_options, options, full_options_cnt);
-	return;
-}
-
-extern int acct_gather_profile_p_controller_start()
-{
-#ifdef HAVE_HDF5
 	int rc;
 	struct stat st;
-	const char*  profdir;
-	char   tmpdir[MAX_PROFILE_PATH+1];
-	if (acct_gather_conf.profile_dir == NULL) {
-		fatal("PROFILE: ProfileDir is required in acct_gather.conf"
-		      "with AcctGatherPluginType=io_energy");
-	}
-	profdir = xstrdup(acct_gather_conf.profile_dir);
+	char   *user_dir = NULL;
+
+	xassert(job);
+	xassert(hdf5_conf.dir);
 	/*
 	 * If profile director does not exist, try to create it.
 	 *  Otherwise, ensure path is a directory as expected, and that
@@ -195,134 +164,249 @@ extern int acct_gather_profile_p_controller_start()
 	 *  also make sure the subdirectory tmp exists.
 	 */
 
-	if (((rc = stat(profdir, &st)) < 0) && (errno == ENOENT)) {
-		if (mkdir(profdir, 0777) < 0)
-			fatal("mkdir(%s): %m", profdir);
-	}
-	else if (rc < 0)
+	if (((rc = stat(hdf5_conf.dir, &st)) < 0) && (errno == ENOENT)) {
+		if (mkdir(hdf5_conf.dir, 0755) < 0)
+			fatal("mkdir(%s): %m", hdf5_conf.dir);
+	} else if (rc < 0)
 		fatal("Unable to stat acct_gather_profile_dir: %s: %m",
-				profdir);
+		      hdf5_conf.dir);
 	else if (!S_ISDIR(st.st_mode))
-		fatal("acct_gather_profile_dir: %s: Not a directory!",profdir);
-	else if (access(profdir, R_OK|W_OK|X_OK) < 0)
+		fatal("acct_gather_profile_dir: %s: Not a directory!",
+		      hdf5_conf.dir);
+	else if (access(hdf5_conf.dir, R_OK|W_OK|X_OK) < 0)
 		fatal("Incorrect permissions on acct_gather_profile_dir: %s",
-				profdir);
-	chmod(profdir,0777);
-	if ((strlen(profdir)+4) > MAX_PROFILE_PATH)
-		fatal("Length of profile director is too long");
-	sprintf(tmpdir,"%s/tmp",profdir);
-	if (((rc = stat(tmpdir, &st)) < 0) && (errno == ENOENT)) {
-		if (mkdir(tmpdir, 0777) < 0)
-			fatal("mkdir(%s): %m", tmpdir);
-		chmod(tmpdir,0777);
+		      hdf5_conf.dir);
+	chmod(hdf5_conf.dir, 0755);
+
+	user_dir = xstrdup_printf("%s/%s", hdf5_conf.dir, job->pwd->pw_name);
+	if (((rc = stat(user_dir, &st)) < 0) && (errno == ENOENT)) {
+		if (mkdir(user_dir, 0700) < 0)
+			fatal("mkdir(%s): %m", user_dir);
 	}
-	xfree(profdir);
-#endif
+	chmod(user_dir, 0700);
+	if (chown(user_dir, (uid_t)job->pwd->pw_uid,
+		  (gid_t)job->pwd->pw_gid) < 0)
+		error("chown(%s): %m", user_dir);
+
+	xfree(user_dir);
+
 	return SLURM_SUCCESS;
+}
+
+static bool _do_profile(uint32_t profile, uint32_t req_profiles)
+{
+	if (req_profiles <= ACCT_GATHER_PROFILE_NONE)
+		return false;
+	if ((profile == ACCT_GATHER_PROFILE_NOT_SET)
+	    || (req_profiles & profile))
+		return true;
+
+	return false;
+}
+
+static bool _run_in_daemon(void)
+{
+	static bool set = false;
+	static bool run = false;
+
+	if (!set) {
+		set = 1;
+		run = run_in_daemon("slurmstepd");
+	}
+
+	return run;
+}
+
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
+extern int init(void)
+{
+	if (!_run_in_daemon())
+		return SLURM_SUCCESS;
+
+	debug_flags = slurm_get_debug_flags();
+
+	return SLURM_SUCCESS;
+}
+
+extern int fini(void)
+{
+	return SLURM_SUCCESS;
+}
+
+extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
+					       int *full_options_cnt)
+{
+	s_p_options_t options[] = {
+		{"ProfileHDF5Dir", S_P_STRING},
+		{"ProfileHDF5CollectDefault", S_P_STRING},
+		{NULL} };
+
+	transfer_s_p_options(full_options, options, full_options_cnt);
+	return;
+}
+
+extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
+{
+	char *tmp = NULL;
+	_reset_slurm_profile_conf();
+	if (tbl) {
+		s_p_get_string(&hdf5_conf.dir, "ProfileHDF5Dir", tbl);
+
+		if (s_p_get_string(&tmp, "ProfileHDF5CollectDefault", tbl)) {
+			hdf5_conf.def = acct_gather_profile_from_string(tmp);
+			xfree(tmp);
+		}
+	}
+
+	if (!hdf5_conf.dir)
+		fatal("No ProfileHDF5Dir in your acct_gather.conf file.  "
+		      "This is required to use the %s plugin", plugin_type);
+
+	verbose("%s loaded", plugin_name);
+}
+
+extern void acct_gather_profile_p_get(enum acct_gather_profile_info info_type,
+				      void *data)
+{
+	uint32_t *uint32 = (uint32_t *) data;
+	char **tmp_char = (char **) data;
+
+	switch (info_type) {
+	case ACCT_GATHER_PROFILE_DIR:
+		*tmp_char = xstrdup(hdf5_conf.dir);
+		break;
+	case ACCT_GATHER_PROFILE_DEFAULT:
+		*uint32 = hdf5_conf.def;
+		break;
+	default:
+		debug2("acct_gather_profile_p_get info_type %d invalid",
+		       info_type);
+	}
 }
 
 extern int acct_gather_profile_p_node_step_start(slurmd_job_t* job)
 {
 	int rc = SLURM_SUCCESS;
-#ifdef HAVE_HDF5
-	time_t startTime;
-	char*  slurmDataRoot;
-	char*  optString;
-	jobid = job->jobid;
-	stepid = job->stepid;
+
+	time_t start_time;
+	uint32_t profile;
+	char    *profile_file_name;
+	char *profile_str;
+
+	xassert(_run_in_daemon());
+
 	if (stepid == NO_VAL)
 		return rc;
 
-	if (job->profile)
-		optString = job->profile;
-	else
-		optString = acct_gather_conf.profile_DefaultProfile;
+	xassert(hdf5_conf.dir);
 
-	profileOpts = GetStringList(optString, &nOpts);
+	if (debug_flags & DEBUG_FLAG_PROFILE) {
+		profile_str = acct_gather_profile_to_string(job->profile);
+		info("PROFILE: option --profile=%s", profile_str);
+	}
 
-	if (strcasecmp(profileOpts[0],"none")  == 0)
+	profile = _determine_profile(job);
+
+	if (profile <= ACCT_GATHER_PROFILE_NONE)
 		return rc;
 
-	if (acct_gather_conf.profile_dir == NULL) {
-		fatal("PROFILE: ProfileDir is required in acct_gather.conf"
-				"with AcctGatherPluginType=io_energy");
-	}
-	slurmDataRoot = xstrdup(acct_gather_conf.profile_dir);
+	_create_directories(job);
+	jobid = job->jobid;
+	stepid = job->stepid;
 
-	stepd_nodename = xstrdup(job->node_name);
-	nodetasks = job->node_tasks;
+	profile_file_name = xstrdup_printf(
+		"%s/%s/%u_%u_%s.h5",
+		hdf5_conf.dir, job->pwd->pw_name,
+		job->jobid, job->stepid, job->node_name);
 
-	profileFileName = make_node_step_profile_path(slurmDataRoot,
-						job->node_name, jobid, stepid);
-	xfree(slurmDataRoot);
-	if (profileFileName == NULL) {
-		info("PROFILE: failed create profileFileName job=%d step=%d",
-				jobid,stepid);
-	}
-	if (debug_flags & DEBUG_FLAG_PROFILE)
+	if (debug_flags & DEBUG_FLAG_PROFILE) {
+		profile_str = acct_gather_profile_to_string(profile);
 		info("PROFILE: node_step_start, opt=%s file=%s",
-				optString, profileFileName);
+		     profile_str, profile_file_name);
+	}
 
 	// Create a new file using the default properties.
-	ProfileInit();
-	file_id = H5Fcreate(profileFileName, H5F_ACC_TRUNC, H5P_DEFAULT,
+	profile_init();
+	file_id = H5Fcreate(profile_file_name, H5F_ACC_TRUNC, H5P_DEFAULT,
 			    H5P_DEFAULT);
+
+	if (chown(profile_file_name, (uid_t)job->pwd->pw_uid,
+		  (gid_t)job->pwd->pw_gid) < 0)
+		error("chown(%s): %m", profile_file_name);
+	chmod(profile_file_name,  0600);
+	xfree(profile_file_name);
+
 	if (file_id < 1) {
 		info("PROFILE: Failed to create Node group");
 		return SLURM_FAILURE;
 	}
 
-	sprintf(groupNode,"/%s~%s",GRP_NODE,stepd_nodename);
-	gidNode = H5Gcreate(file_id, groupNode, H5P_DEFAULT,
-				H5P_DEFAULT, H5P_DEFAULT);
-	if (gidNode < 1) {
+	sprintf(group_node, "/%s_%s", GRP_NODE, job->node_name);
+	gid_node = H5Gcreate(file_id, group_node, H5P_DEFAULT,
+			     H5P_DEFAULT, H5P_DEFAULT);
+	if (gid_node < 1) {
 		H5Fclose(file_id);
 		file_id = -1;
 		info("PROFILE: Failed to create Node group");
 		return SLURM_FAILURE;
 	}
-	put_string_attribute(gidNode, ATTR_NODENAME, stepd_nodename);
-	put_int_attribute(gidNode, ATTR_NTASKS, nodetasks);
-	startTime = time(NULL);
-	put_string_attribute(gidNode,ATTR_STARTTIME,ctime(&startTime));
+	put_string_attribute(gid_node, ATTR_NODENAME, job->node_name);
+	put_int_attribute(gid_node, ATTR_NTASKS, job->node_tasks);
+	start_time = time(NULL);
+	put_string_attribute(gid_node, ATTR_STARTTIME, ctime(&start_time));
 
-#endif
 	return rc;
 }
 
 extern int acct_gather_profile_p_node_step_end(slurmd_job_t* job)
 {
 	int rc = SLURM_SUCCESS;
+
+	xassert(_run_in_daemon());
+
 	// No check for --profile as we always want to close the HDF5 file
 	// if it has been opened.
-#ifdef HAVE_HDF5
-	if (job->stepid == NO_VAL) {
+
+	if (job->stepid == NO_VAL)
 		return rc;
-	}
+
+	if (_determine_profile(job) <= ACCT_GATHER_PROFILE_NONE)
+		return rc;
 
 	if (debug_flags & DEBUG_FLAG_PROFILE)
 		info("PROFILE: node_step_end (shutdown)");
 
-	xfree(stepd_nodename);
-	if (gidTotals > 0)
-		H5Gclose(gidTotals);
-	if (gidSamples > 0)
-		H5Gclose(gidSamples);
-	if (gidTasks > 0)
-		H5Gclose(gidTasks);
-	if (gidNode > 0)
-		H5Gclose(gidNode);
+	if (gid_totals > 0)
+		H5Gclose(gid_totals);
+	if (gid_samples > 0)
+		H5Gclose(gid_samples);
+	if (gid_tasks > 0)
+		H5Gclose(gid_tasks);
+	if (gid_node > 0)
+		H5Gclose(gid_node);
 	if (file_id > 0)
 		H5Fclose(file_id);
-	ProfileFinish();
+	profile_fini();
 	file_id = -1;
-#endif
+
 	return rc;
 }
 
 extern int acct_gather_profile_p_task_start(slurmd_job_t* job, uint32_t taskid)
 {
 	int rc = SLURM_SUCCESS;
+	uint32_t profile;
+
+	xassert(_run_in_daemon());
+
+	profile = _determine_profile(job);
+
+	if (profile <= ACCT_GATHER_PROFILE_NONE)
+		return rc;
+
 	if (debug_flags & DEBUG_FLAG_PROFILE)
 		info("PROFILE: task_start");
 
@@ -331,37 +415,40 @@ extern int acct_gather_profile_p_task_start(slurmd_job_t* job, uint32_t taskid)
 
 extern int acct_gather_profile_p_task_end(slurmd_job_t* job, pid_t taskpid)
 {
-	hid_t   gidTask;
-	char 	groupTask[MAX_GROUP_NAME+1];
-	uint64_t taskId;
+	hid_t   gid_task;
+	char 	group_task[MAX_GROUP_NAME+1];
+	uint32_t taskId;
 	int rc = SLURM_SUCCESS;
-	if (!DoSeries(NULL, profileOpts, nOpts))
+
+	xassert(_run_in_daemon());
+
+	if (!_do_profile(ACCT_GATHER_PROFILE_NOT_SET, _determine_profile(job)))
 		return rc;
 
-	if (get_taskid_from_pid(taskpid, &taskId) != SLURM_SUCCESS)
+	if (_get_taskid_from_pid(job, taskpid, &taskId) != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 	if (file_id == -1) {
 		info("PROFILE: add_task_data, HDF5 file is not open");
 		return SLURM_FAILURE;
 	}
-	if (gidTasks < 0) {
-		gidTasks = make_group(gidNode, GRP_TASKS);
-		if (gidTasks < 1) {
+	if (gid_tasks < 0) {
+		gid_tasks = make_group(gid_node, GRP_TASKS);
+		if (gid_tasks < 1) {
 			info("PROFILE: Failed to create Tasks group");
 			return SLURM_FAILURE;
 		}
 	}
-	sprintf(groupTask,"%s~%d", GRP_TASK,taskId);
-	gidTask = get_group(gidTasks, groupTask);
-	if (gidTask == -1) {
-		gidTask = make_group(gidTasks, groupTask);
-		if (gidTask < 0) {
-			info("Failed to open tasks %s",groupTask);
+	sprintf(group_task, "%s_%d", GRP_TASK, taskId);
+	gid_task = get_group(gid_tasks, group_task);
+	if (gid_task == -1) {
+		gid_task = make_group(gid_tasks, group_task);
+		if (gid_task < 0) {
+			info("Failed to open tasks %s", group_task);
 			return SLURM_FAILURE;
 		}
-		put_int_attribute(gidTask,ATTR_TASKID,taskId);
+		put_int_attribute(gid_task, ATTR_TASKID, taskId);
 	}
-	put_int_attribute(gidTask,ATTR_CPUPERTASK,job->cpus_per_task);
+	put_int_attribute(gid_task, ATTR_CPUPERTASK, job->cpus_per_task);
 
 	if (debug_flags & DEBUG_FLAG_PROFILE)
 		info("PROFILE: task_end");
@@ -371,51 +458,59 @@ extern int acct_gather_profile_p_task_end(slurmd_job_t* job, pid_t taskpid)
 extern int acct_gather_profile_p_job_sample(void)
 {
 	int rc = SLURM_SUCCESS;
-	if (!DoSeries(NULL, profileOpts, nOpts))
-		return rc;
-#ifdef HAVE_HDF5
-#endif
+
+	xassert(_run_in_daemon());
+
 	return rc;
 }
 
 extern int acct_gather_profile_p_add_node_data(slurmd_job_t* job, char* group,
-		char* type, void* data)
+					       char* type, void* data)
 {
-	if (!DoSeries(group, profileOpts, nOpts))
+	uint32_t group_id = acct_gather_profile_series_from_string(group);
+
+	xassert(_run_in_daemon());
+
+	if (!_do_profile(group_id, _determine_profile(job)))
 		return SLURM_SUCCESS;
 	if (debug_flags & DEBUG_FLAG_PROFILE)
 		info("PROFILE: add_node_data Group-%s Type=%s", group, type);
 
-#ifdef HAVE_HDF5
+
 	if (file_id == -1) {
 		info("PROFILE: add_node_data, HDF5 file is not open");
 		return SLURM_FAILURE;
 	}
-	if (gidTotals < 0) {
-		gidTotals = make_group(gidNode, GRP_TOTALS);
-		if (gidTotals < 1) {
+	if (gid_totals < 0) {
+		gid_totals = make_group(gid_node, GRP_TOTALS);
+		if (gid_totals < 1) {
 			info("PROFILE: failed to create Totals group");
 			return SLURM_FAILURE;
 		}
 	}
-	put_hdf5_data(gidTotals, type, SUBDATA_NODE, group, data, 1);
-#endif
+	put_hdf5_data(gid_totals, type, SUBDATA_NODE, group, data, 1);
+
 
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_profile_p_add_sample_data(char* group, char* type,
-		void* data)
+extern int acct_gather_profile_p_add_sample_data(
+	slurmd_job_t* job, char* group, char* type, void* data)
 {
 	hid_t   gSampleGrp;
-	char 	groupSample[MAX_GROUP_NAME+1];
+	char 	group_sample[MAX_GROUP_NAME+1];
+	static uint32_t sample_no = 0;
 
-	if (!DoSeries(group, profileOpts, nOpts))
+	uint32_t group_id = acct_gather_profile_series_from_string(group);
+
+	xassert(_run_in_daemon());
+
+	if (!_do_profile(group_id, _determine_profile(job)))
 		return SLURM_SUCCESS;
+
 	if (debug_flags & DEBUG_FLAG_PROFILE)
 		info("PROFILE: add_sample_data Group-%s Type=%s", group, type);
-	sampleNo++;
-#ifdef HAVE_HDF5
+
 	if (file_id == -1) {
 		if (debug_flags & DEBUG_FLAG_PROFILE) {
 			// This can happen from samples from the gather threads
@@ -424,73 +519,77 @@ extern int acct_gather_profile_p_add_sample_data(char* group, char* type,
 		}
 		return SLURM_FAILURE;
 	}
-	if (gidSamples < 0) {
-		gidSamples = make_group(gidNode, GRP_SAMPLES);
-		if (gidSamples < 1) {
+	if (gid_samples < 0) {
+		gid_samples = make_group(gid_node, GRP_SAMPLES);
+		if (gid_samples < 1) {
 			info("PROFILE: failed to create TimeSeries group");
 			return SLURM_FAILURE;
 		}
 	}
-	gSampleGrp = get_group(gidSamples, group);
+	gSampleGrp = get_group(gid_samples, group);
 	if (gSampleGrp < 0) {
-		gSampleGrp = make_group(gidSamples, group);
+		gSampleGrp = make_group(gid_samples, group);
 		if (gSampleGrp < 0) {
 			info("PROFILE: failed to open TimeSeries %s", group);
 			return SLURM_FAILURE;
 		}
 		put_string_attribute(gSampleGrp, ATTR_DATATYPE, type);
 	}
-	sprintf(groupSample,"%s~%10.10d",group,sampleNo);
-	put_hdf5_data(gSampleGrp, type, SUBDATA_SAMPLE, groupSample, data, 1);
+	sprintf(group_sample,"%s_%10.10d", group, ++sample_no);
+	put_hdf5_data(gSampleGrp, type, SUBDATA_SAMPLE, group_sample, data, 1);
 	H5Gclose(gSampleGrp);
-#endif
+
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_profile_p_add_task_data(slurmd_job_t* job,
-		uint32_t taskid, char* group, char* type, void* data)
+extern int acct_gather_profile_p_add_task_data(
+	slurmd_job_t* job, uint32_t taskid, char* group, char* type, void* data)
 {
-	hid_t   gidTask, gidTotals;
-	char 	groupTask[MAX_GROUP_NAME+1];
+	hid_t   gid_task, gid_totals = 0;
+	char 	group_task[MAX_GROUP_NAME+1];
+	uint32_t group_id = acct_gather_profile_from_string(group);
 
-	if (!DoSeries(group, profileOpts, nOpts))
+	xassert(_run_in_daemon());
+
+	if (!_do_profile(group_id, _determine_profile(job)))
 		return SLURM_SUCCESS;
+
 	if (debug_flags & DEBUG_FLAG_PROFILE)
 		info("PROFILE: add_task_data Group-%s Type=%s", group, type);
-#ifdef HAVE_HDF5
+
 	if (file_id == -1) {
 		info("PROFILE: add_task_data, HDF5 file is not open");
 		return SLURM_FAILURE;
 	}
-	if (gidTasks < 0) {
-		gidTasks = make_group(gidNode, GRP_TASKS);
-		if (gidTasks < 1) {
+	if (gid_tasks < 0) {
+		gid_tasks = make_group(gid_node, GRP_TASKS);
+		if (gid_tasks < 1) {
 			info("PROFILE: Failed to create Tasks group");
 			return SLURM_FAILURE;
 		}
 	}
 
-	sprintf(groupTask,"%s~%d", GRP_TASK,taskid);
-	gidTask = get_group(gidTasks, groupTask);
-	if (gidTask == -1) {
-		gidTask = make_group(gidTasks, groupTask);
-		if (gidTask < 0) {
-			info("Failed to open tasks %s",groupTask);
+	sprintf(group_task, "%s_%d", GRP_TASK, taskid);
+	gid_task = get_group(gid_tasks, group_task);
+	if (gid_task == -1) {
+		gid_task = make_group(gid_tasks, group_task);
+		if (gid_task < 0) {
+			info("Failed to open tasks %s",group_task);
 			return SLURM_FAILURE;
 		}
-		put_int_attribute(gidTask,ATTR_TASKID,taskid);
-		put_int_attribute(gidTask,ATTR_CPUPERTASK,taskid);
-		gidTotals = make_group(gidTask, GRP_TOTALS);
-		if (gidTotals < 0) {
-			info("Failed to open %s/%s",groupTask,GRP_TOTALS);
+		put_int_attribute(gid_task, ATTR_TASKID, taskid);
+		put_int_attribute(gid_task, ATTR_CPUPERTASK, taskid);
+		gid_totals = make_group(gid_task, GRP_TOTALS);
+		if (gid_totals < 0) {
+			info("Failed to open %s/%s", group_task, GRP_TOTALS);
 			return SLURM_FAILURE;
 		}
 	}
 
-	put_hdf5_data(gidTotals, SUBDATA_TOTAL, type, group, data, 1);
+	put_hdf5_data(gid_totals, SUBDATA_TOTAL, type, group, data, 1);
 
-	H5Gclose(gidTask);
-#endif
+	H5Gclose(gid_task);
+
 	return SLURM_SUCCESS;
 }
 

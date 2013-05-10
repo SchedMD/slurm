@@ -49,29 +49,22 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_acct_gather_profile.h"
-
-typedef struct profile_task_info {
-	uint32_t        gtid;	    /* global task id	*/
-	pid_t           pid;	    /* slurm taskid	*/
-} profile_task_pid_t;
-
-static int nodetasks = 0;
-static profile_task_pid_t* pid2task = NULL;
+#include "src/common/slurm_strcasestr.h"
 
 typedef struct slurm_acct_gather_profile_ops {
-	int (*controller_start) ();
+	void (*conf_options)    (s_p_options_t **full_options,
+				 int *full_options_cnt);
+	void (*conf_set)        (s_p_hashtbl_t *tbl);
+	void* (*get)            (enum acct_gather_profile_info info_type,
+				 void *data);
 	int (*node_step_start)  (slurmd_job_t*);
 	int (*node_step_end)    (slurmd_job_t*);
 	int (*task_start)       (slurmd_job_t*, uint32_t);
 	int (*task_end)         (slurmd_job_t*, pid_t);
 	int (*job_sample)       ();
 	int (*add_node_data)    (slurmd_job_t*, char*, char*, void*);
-	int (*add_sample_data)  (char*, char*, void*);
+	int (*add_sample_data)  (slurmd_job_t*, char*, char*, void*);
 	int (*add_task_data)    (slurmd_job_t*, uint32_t, char*, char*, void*);
-	void (*conf_options)    (s_p_options_t **full_options,
-				            int *full_options_cnt);
-	void (*conf_set)        (s_p_hashtbl_t *tbl);
-	void* (*conf_get)        ();
 } slurm_acct_gather_profile_ops_t;
 
 /*
@@ -79,7 +72,9 @@ typedef struct slurm_acct_gather_profile_ops {
  * declared for slurm_acct_gather_profile_ops_t.
  */
 static const char *syms[] = {
-	"acct_gather_profile_p_controller_start",
+	"acct_gather_profile_p_conf_options",
+	"acct_gather_profile_p_conf_set",
+	"acct_gather_profile_p_get",
 	"acct_gather_profile_p_node_step_start",
 	"acct_gather_profile_p_node_step_end",
 	"acct_gather_profile_p_task_start",
@@ -88,9 +83,6 @@ static const char *syms[] = {
 	"acct_gather_profile_p_add_node_data",
 	"acct_gather_profile_p_add_sample_data",
 	"acct_gather_profile_p_add_task_data",
-	"acct_gather_profile_p_conf_options",
-	"acct_gather_profile_p_conf_set",
-	"acct_gather_profile_p_conf_get"
 };
 
 static slurm_acct_gather_profile_ops_t ops;
@@ -99,11 +91,12 @@ static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t profile_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
-extern int slurm_acct_gather_profile_init(void)
+extern int acct_gather_profile_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "acct_gather_profile";
 	char *type = NULL;
+
 	if (init_run && g_context)
 		return retval;
 
@@ -129,6 +122,7 @@ done:
 	xfree(type);
 	if (retval == SLURM_SUCCESS)
 		retval = acct_gather_conf_init();
+
 	return retval;
 }
 
@@ -229,9 +223,9 @@ extern uint32_t acct_gather_profile_series_from_string(char *series_str)
 }
 
 extern void acct_gather_profile_g_conf_options(s_p_options_t **full_options,
-					      int *full_options_cnt)
+					       int *full_options_cnt)
 {
-	if (slurm_acct_gather_profile_init() < 0)
+	if (acct_gather_profile_init() < 0)
 		return;
 	(*(ops.conf_options))(full_options, full_options_cnt);
 	return;
@@ -239,59 +233,32 @@ extern void acct_gather_profile_g_conf_options(s_p_options_t **full_options,
 
 extern void acct_gather_profile_g_conf_set(s_p_hashtbl_t *tbl)
 {
-	if (slurm_acct_gather_profile_init() < 0)
+	if (acct_gather_profile_init() < 0)
 		return;
 
 	(*(ops.conf_set))(tbl);
 	return;
 }
 
-extern void* acct_gather_profile_g_conf_get() {
-
-	if (!g_context)
-		return NULL;
-
-	return (*(ops.conf_get))();
-}
-
-
-extern int acct_gather_profile_g_controller_start()
+extern void acct_gather_profile_g_get(enum acct_gather_profile_info info_type,
+				      void *data)
 {
-	int retval = SLURM_ERROR;
+	if (acct_gather_profile_init() < 0)
+		return;
 
-	if (slurm_acct_gather_profile_init() < 0)
-		return retval;
-
-	retval = (*(ops.controller_start))();
-	return retval;
+	(*(ops.get))(info_type, data);
+	return;
 }
 
 extern int acct_gather_profile_g_node_step_start(slurmd_job_t* job)
 {
-	int tx;
-	int retval = SLURM_ERROR;
+	if (acct_gather_profile_init() < 0)
+		return SLURM_ERROR;
 
-	if (job->stepid == NO_VAL) {
-		return retval;
-	}
-	if (job->profile) {
-		debug3("PROFILE: option --profile=%s",job->profile);
-	}
-	nodetasks = job->node_tasks;
-	pid2task = xmalloc(sizeof(profile_task_pid_t)*nodetasks);
-	if (!pid2task) {
-		nodetasks = 0;
-		return retval;
-	}
-	for (tx=0;tx<nodetasks;tx++) {
-		pid2task[tx].gtid = job->task[tx]->gtid;
-		pid2task[tx].pid = job->task[tx]->pid;
-	}
-	if (slurm_acct_gather_profile_init() < 0)
-		return retval;
+	if (job->stepid == NO_VAL)
+		return SLURM_SUCCESS;
 
-	retval = (*(ops.node_step_start))(job);
-	return retval;
+	return (*(ops.node_step_start))(job);
 }
 
 extern int acct_gather_profile_g_node_step_end(slurmd_job_t* job)
@@ -301,13 +268,10 @@ extern int acct_gather_profile_g_node_step_end(slurmd_job_t* job)
 		return retval;
 	}
 	if (!g_context) {
-		xfree(pid2task);
 		return retval;
 	}
 
 	retval = (*(ops.node_step_end))(job);
-	xfree(pid2task);
-	nodetasks = 0;
 	return retval;
 }
 
@@ -318,7 +282,7 @@ extern int acct_gather_profile_g_task_start(slurmd_job_t* job, uint32_t taskid)
 		return retval;
 	}
 	// task start occurs before node_step_start.
-	if (slurm_acct_gather_profile_init() < 0)
+	if (acct_gather_profile_init() < 0)
 		return retval;
 	slurm_mutex_lock(&profile_mutex);
 	retval = (*(ops.task_start))(job, taskid);
@@ -351,53 +315,41 @@ extern int acct_gather_profile_g_job_sample()
 }
 
 extern int acct_gather_profile_g_add_node_data(slurmd_job_t* job, char* group,
-		char* type, void* data)
+					       char* type, void* data)
 {
 	int retval = SLURM_ERROR;
 	if (!g_context) {
 		return retval;
 	}
 	slurm_mutex_lock(&profile_mutex);
-	retval = (*(ops.add_node_data))(job,group,type,data);
+	retval = (*(ops.add_node_data))(job, group, type, data);
 	slurm_mutex_unlock(&profile_mutex);
 	return retval;
 }
 
-extern int acct_gather_profile_g_add_sample_data(char* group, char* type,
-		void* data)
+extern int acct_gather_profile_g_add_sample_data(slurmd_job_t* job,
+						 char* group, char* type,
+						 void* data)
 {
 	int retval = SLURM_ERROR;
 	if (!g_context) {
 		return retval;
 	}
 	slurm_mutex_lock(&profile_mutex);
-	retval = (*(ops.add_sample_data))(group,type,data);
+	retval = (*(ops.add_sample_data))(job, group, type, data);
 	slurm_mutex_unlock(&profile_mutex);
 	return retval;
 }
 
-extern int acct_gather_profile_g_add_task_data(slurmd_job_t* job,
-		uint32_t taskid, char* group, char* type, void* data)
+extern int acct_gather_profile_g_add_task_data(
+	slurmd_job_t* job, uint32_t taskid, char* group, char* type, void* data)
 {
 	int retval = SLURM_ERROR;
 	if (!g_context) {
 		return retval;
 	}
 	slurm_mutex_lock(&profile_mutex);
-	retval = (*(ops.add_task_data))(job,taskid,group,type,data);
+	retval = (*(ops.add_task_data))(job, taskid, group, type, data);
 	slurm_mutex_unlock(&profile_mutex);
 	return retval;
-}
-
-extern int get_taskid_from_pid(pid_t pid, uint32_t *gtid) {
-	int tx;
-	if (pid2task == NULL)
-		return SLURM_ERROR;
-	for (tx=0;tx<nodetasks;tx++) {
-		if (pid2task[tx].pid == pid) {
-			*gtid = pid2task[tx].gtid;
-			return SLURM_SUCCESS;
-		}
-	}
-	return SLURM_ERROR;
 }

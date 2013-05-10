@@ -1,3 +1,6 @@
 # Makefile for accounting gather profile plugins
 
-SUBDIRS = io_energy sprfmrgh5 none
+SUBDIRS = none
+if BUILD_HDF5
+SUBDIRS += hdf5
+endif
