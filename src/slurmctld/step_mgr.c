@@ -2861,13 +2861,6 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 	}
 
 	ext_sensors_g_get_stependdata(step_ptr);
-	if (step_ptr->jobacct != NULL) {
-		if ((step_ptr->jobacct->energy.consumed_energy == 0) ||
-		    (step_ptr->jobacct->energy.consumed_energy == NO_VAL)) {
-			step_ptr->jobacct->energy.consumed_energy =
-					step_ptr->ext_sensors->consumed_energy;
-		}
-	}
 	jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
 
 	/* we have been adding task average frequencies for
