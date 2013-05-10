@@ -134,34 +134,34 @@ static void _help_msg(void)
 sh5util [<OPTION>] -j <job[.stepid]>                                         \n\
     Valid <OPTION> values are:                                               \n\
       -E, --extract:                                                         \n\
-                    Instead of merge node-step files (default) Extract data  \n\
-                    series from job file.                                    \n\
-                    Extract mode options (all imply --extract)               \n\
-                    -i, --input:  merged file to extract from                \n\
-                                  (default --profiledir/$user/extract_$jobid.h5)\n\
-	            -N --node:    Node name to extract (default is all)      \n\
-	            -l, --level:  Level to which series is attached          \n\
-                                  [Node:Totals|Node:TimeSeries]              \n\
-                                  (default Node:Totals)                      \n\
-	            -s, --series: Name of series [Name|Tasks]                \n\
-	                          Name=Specific Name, Tasks=all tasks,       \n\
-                                  (default is everything)                    \n\
+		    Instead of merge node-step files (default) Extract data  \n\
+		    series from job file.                                    \n\
+		    Extract mode options (all imply --extract)               \n\
+		    -i, --input:  merged file to extract from                \n\
+				  (default --profiledir/$user/extract_$jobid.h5)\n\
+		    -N --node:    Node name to extract (default is all)      \n\
+		    -l, --level:  Level to which series is attached          \n\
+				  [Node:Totals|Node:TimeSeries]              \n\
+				  (default Node:Totals)                      \n\
+		    -s, --series: Name of series [Name|Tasks]                \n\
+				  Name=Specific Name, Tasks=all tasks,       \n\
+				  (default is everything)                    \n\
       -j, --jobs:   Format is <job(.step)>. Merge this job/step.             \n\
-                    or comma-separated list of job steps. This option is     \n\
-                    required.  Not specifying a step will result in all      \n\
-                    steps found to be processed.                             \n\
+		    or comma-separated list of job steps. This option is     \n\
+		    required.  Not specifying a step will result in all      \n\
+		    steps found to be processed.                             \n\
       -h, --help:   Print this description of use.                           \n\
       -o, --output: Path to a file into which to write.  This is required for\n\
-                    --extract, default for merge is                          \n\
-                    --profiledir/$user/job_$jobid.h5)                        \n\
+		    --extract, default for merge is                          \n\
+		    --profiledir/$user/job_$jobid.h5)                        \n\
       -p, --profiledir:                                                      \n\
-                    Profile directory location where node-step files exist   \n\
-                    default is what is set in acct_gather.conf               \n\
+		    Profile directory location where node-step files exist   \n\
+		    default is what is set in acct_gather.conf               \n\
       -S, --savefiles:                                                       \n\
-                    Instead of remove node-step files after merge keep them  \n\
-                    around.                                                  \n\
+		    Instead of remove node-step files after merge keep them  \n\
+		    around.                                                  \n\
       --user:       User who profiled job. (Handy for root user, defaults to \n\
-                    user running this command.)                              \n\
+		    user running this command.)                              \n\
       --usage:      Display brief usage message.                             \n\
 \n");
 }

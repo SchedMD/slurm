@@ -592,4 +592,3 @@ extern int acct_gather_profile_p_add_task_data(
 
 	return SLURM_SUCCESS;
 }
-
