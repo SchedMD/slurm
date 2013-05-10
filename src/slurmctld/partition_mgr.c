@@ -392,6 +392,7 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 	pack32(part_ptr->grace_time,	 buffer);
 	pack32(part_ptr->max_time,       buffer);
 	pack32(part_ptr->default_time,   buffer);
+	pack32(part_ptr->max_cpus_per_node, buffer);
 	pack32(part_ptr->max_nodes_orig, buffer);
 	pack32(part_ptr->min_nodes_orig, buffer);
 
@@ -451,7 +452,7 @@ int load_all_part_state(void)
 	char *part_name = NULL, *allow_groups = NULL, *nodes = NULL;
 	char *state_file, *data = NULL;
 	uint32_t max_time, default_time, max_nodes, min_nodes;
-	uint32_t grace_time = 0;
+	uint32_t max_cpus_per_node = INFINITE, grace_time = 0;
 	time_t time;
 	uint16_t flags;
 	uint16_t max_share, preempt_mode, priority, state_up, cr_type;
@@ -526,6 +527,7 @@ int load_all_part_state(void)
 			safe_unpack32(&grace_time, buffer);
 			safe_unpack32(&max_time, buffer);
 			safe_unpack32(&default_time, buffer);
+			safe_unpack32(&max_cpus_per_node, buffer);
 			safe_unpack32(&max_nodes, buffer);
 			safe_unpack32(&min_nodes, buffer);
 
@@ -630,6 +632,7 @@ int load_all_part_state(void)
 		}
 		part_ptr->max_time       = max_time;
 		part_ptr->default_time   = default_time;
+		part_ptr->max_cpus_per_node = max_cpus_per_node;
 		part_ptr->max_nodes      = max_nodes;
 		part_ptr->max_nodes_orig = max_nodes;
 		part_ptr->min_nodes      = min_nodes;
@@ -751,6 +754,7 @@ int init_part_conf(void)
 		default_part.flags |= PART_FLAG_NO_ROOT;
 	default_part.max_time       = INFINITE;
 	default_part.default_time   = NO_VAL;
+	default_part.max_cpus_per_node = INFINITE;
 	default_part.max_nodes      = INFINITE;
 	default_part.max_nodes_orig = INFINITE;
 	default_part.min_nodes      = 1;
@@ -965,6 +969,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		pack32(altered,              buffer);
 		pack32(part_ptr->total_cpus, buffer);
 		pack32(part_ptr->def_mem_per_cpu, buffer);
+		pack32(part_ptr->max_cpus_per_node, buffer);
 		pack32(part_ptr->max_mem_per_cpu, buffer);
 
 		pack16(part_ptr->flags,      buffer);
@@ -1057,6 +1062,12 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	last_part_update = time(NULL);
+
+	if (part_desc->max_cpus_per_node != NO_VAL) {
+		info("update_part: setting MaxCPUsPerNode to %u for partition %s",
+		     part_desc->max_cpus_per_node, part_desc->name);
+		part_ptr->max_cpus_per_node = part_desc->max_cpus_per_node;
+	}
 
 	if (part_desc->max_time != NO_VAL) {
 		info("update_part: setting max_time to %u for partition %s",

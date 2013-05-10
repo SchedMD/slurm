@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- Deprecate the SchedulerParameters value of "interval" use "bf_interval"
     instead as documented.
  -- Add acct_gather_profile/hdf5 to profile jobs with hdf5
+ -- Added MaxCPUsPerNode partition configuration parameter. This can be
+    especially useful to schedule systems with GPUs.
 
 * Changes in Slurm 2.6.0pre3
 ============================

@@ -3159,7 +3159,27 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 {
 	xassert(msg != NULL);
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		packstr(msg->allow_groups, buffer);
+		packstr(msg->alternate,    buffer);
+		pack32(msg-> grace_time,   buffer);
+		pack32(msg-> max_time,     buffer);
+		pack32(msg-> default_time, buffer);
+		pack32(msg-> max_nodes,    buffer);
+		pack32(msg-> min_nodes,    buffer);
+		pack32(msg-> max_cpus_per_node, buffer);
+		pack32(msg-> def_mem_per_cpu, buffer);
+		pack32(msg-> max_mem_per_cpu, buffer);
+		packstr(msg->name,         buffer);
+		packstr(msg->nodes,        buffer);
+		pack16(msg-> flags,        buffer);
+		pack16(msg-> max_share,    buffer);
+		pack16(msg-> preempt_mode, buffer);
+		pack16(msg-> priority,     buffer);
+		pack16(msg-> state_up,     buffer);
+
+		packstr(msg->allow_alloc_nodes, buffer);
+	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		packstr(msg->allow_groups, buffer);
 		packstr(msg->alternate,    buffer);
 		pack32(msg-> grace_time,   buffer);
@@ -3197,7 +3217,30 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer,
 	tmp_ptr = xmalloc(sizeof(update_part_msg_t));
 	*msg = tmp_ptr;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&tmp_ptr->allow_groups,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->alternate, &uint32_tmp, buffer);
+		safe_unpack32(&tmp_ptr->grace_time, buffer);
+		safe_unpack32(&tmp_ptr->max_time, buffer);
+		safe_unpack32(&tmp_ptr->default_time, buffer);
+		safe_unpack32(&tmp_ptr->max_nodes, buffer);
+		safe_unpack32(&tmp_ptr->min_nodes, buffer);
+		safe_unpack32(&tmp_ptr->max_cpus_per_node, buffer);
+		safe_unpack32(&tmp_ptr->def_mem_per_cpu, buffer);
+		safe_unpack32(&tmp_ptr->max_mem_per_cpu, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->nodes, &uint32_tmp, buffer);
+
+		safe_unpack16(&tmp_ptr->flags,     buffer);
+		safe_unpack16(&tmp_ptr->max_share, buffer);
+		safe_unpack16(&tmp_ptr->preempt_mode, buffer);
+		safe_unpack16(&tmp_ptr->priority,  buffer);
+		safe_unpack16(&tmp_ptr->state_up,  buffer);
+
+		safe_unpackstr_xmalloc(&tmp_ptr->allow_alloc_nodes,
+				       &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&tmp_ptr->allow_groups,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->alternate, &uint32_tmp, buffer);
@@ -4020,8 +4063,8 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 		safe_unpack32(&part->total_nodes,  buffer);
 		safe_unpack32(&part->total_cpus,   buffer);
 		safe_unpack32(&part->def_mem_per_cpu, buffer);
+		safe_unpack32(&part->max_cpus_per_node, buffer);
 		safe_unpack32(&part->max_mem_per_cpu, buffer);
-
 		safe_unpack16(&part->flags,        buffer);
 		safe_unpack16(&part->max_share,    buffer);
 		safe_unpack16(&part->preempt_mode, buffer);

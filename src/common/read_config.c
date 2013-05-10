@@ -923,6 +923,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"DisableRootJobs", S_P_BOOLEAN}, /* YES or NO */
 		{"GraceTime", S_P_UINT32},
 		{"Hidden", S_P_BOOLEAN}, /* YES or NO */
+		{"MaxCPUsPerNode", S_P_UINT32},
 		{"MaxMemPerCPU", S_P_UINT32},
 		{"MaxMemPerNode", S_P_UINT32},
 		{"MaxTime", S_P_STRING},
@@ -982,6 +983,12 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		    && !s_p_get_boolean(&p->default_flag, "Default", dflt))
 			p->default_flag = false;
 
+		if (!s_p_get_uint32(&p->max_cpus_per_node, "MaxCPUsPerNode",
+				    tbl) &&
+		    !s_p_get_uint32(&p->max_cpus_per_node, "MaxCPUsPerNode",
+				    dflt))
+			p->max_cpus_per_node = INFINITE;
+
 		if (!s_p_get_uint32(&p->def_mem_per_cpu, "DefMemPerNode",
 				    tbl) &&
 		    !s_p_get_uint32(&p->def_mem_per_cpu, "DefMemPerNode",
@@ -1014,8 +1021,8 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				     "DisableRootJobs", tbl))
 			p->disable_root_jobs = (uint16_t)NO_VAL;
 
-		if (!s_p_get_boolean(&p->hidden_flag, "Hidden", tbl)
-		    && !s_p_get_boolean(&p->hidden_flag, "Hidden", dflt))
+		if (!s_p_get_boolean(&p->hidden_flag, "Hidden", tbl) &&
+		    !s_p_get_boolean(&p->hidden_flag, "Hidden", dflt))
 			p->hidden_flag = false;
 
 		if (!s_p_get_string(&tmp, "MaxTime", tbl) &&

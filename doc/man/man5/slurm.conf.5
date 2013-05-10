@@ -3079,6 +3079,15 @@ Note that partitions that a user lacks access to by virtue of the
 \fBAllowGroups\fR parameter will also be hidden by default.
 
 .TP
+\fBMaxCPUsPerNode\fR
+Maximum number of CPUs on any node available to all jobs from this partition.
+This can be especially useful to schedule GPUs. For example a node can be
+associated with two Slurm partitions (e.g. "cpu" and "gpu") and the
+partition/queue "cpu" could be limited to only a subset of the node's CPUs,
+insuring that one or more CPUs would be available to jobs in the "gpu"
+partition/queue.
+
+.TP
 \fBMaxMemPerCPU\fR
 Maximum real memory size available per allocated CPU in MegaBytes.
 Used to avoid over\-subscribing memory and causing paging.

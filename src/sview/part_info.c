@@ -84,6 +84,7 @@ enum {
 	SORTID_GROUPS,
 	SORTID_HIDDEN,
 	SORTID_JOB_SIZE,
+	SORTID_MAX_CPUS_PER_NODE,
 	SORTID_MEM,
 #ifdef HAVE_BG
 	SORTID_NODELIST,
@@ -153,6 +154,8 @@ static display_data_t display_data_part[] = {
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_MAX, "Nodes Max", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_MAX_CPUS_PER_NODE, "Max CPUs Per Node", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE, EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE, EDIT_MODEL, refresh_part,
@@ -212,6 +215,8 @@ static display_data_t create_data_part[] = {
 	{G_TYPE_STRING, SORTID_NODES_MIN, "Nodes Min", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_MAX, "Nodes Max", FALSE,
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_MAX_CPUS_PER_NODE, "Max CPUs Per Node", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
@@ -525,6 +530,14 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 	case SORTID_NAME:
 		type = "name";
 		part_msg->name = xstrdup(new_text);
+		break;
+	case SORTID_MAX_CPUS_PER_NODE:
+		temp_int = strtol(new_text, (char **)NULL, 10);
+		type = "max_cpus_per_node";
+
+		if (temp_int <= 0)
+			goto return_error;
+		part_msg->max_cpus_per_node = temp_int;
 		break;
 	case SORTID_NODES_MIN:
 		temp_int = strtol(new_text, (char **)NULL, 10);
@@ -955,6 +968,9 @@ static void _layout_part_record(GtkTreeView *treeview,
 		case SORTID_NODES_MIN:
 			limit_set = part_ptr->min_nodes;
 			break;
+		case SORTID_MAX_CPUS_PER_NODE:
+			limit_set = part_ptr->max_cpus_per_node;
+			break;
 		case SORTID_NODE_INX:
 			break;
 		case SORTID_ONLY_LINE:
@@ -1018,7 +1034,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 			else
 				temp_char = "down";
 			up_down = -1;
-		} if (yes_no != -1) {
+		} else if (yes_no != -1) {
 			if (yes_no)
 				temp_char = "yes";
 			else
@@ -1058,7 +1074,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 {
 	char tmp_prio[40], tmp_size[40], tmp_share_buf[40], tmp_time[40];
 	char tmp_max_nodes[40], tmp_min_nodes[40], tmp_grace[40];
-	char tmp_cpu_cnt[40], tmp_node_cnt[40];
+	char tmp_cpu_cnt[40], tmp_node_cnt[40], tmp_max_cpus_per_node[40];
 	char *tmp_alt, *tmp_default, *tmp_groups, *tmp_hidden;
 	char *tmp_root, *tmp_share, *tmp_state;
 	uint16_t tmp_preempt;
@@ -1111,6 +1127,13 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	else {
 		convert_num_unit((float)part_ptr->min_nodes,
 				 tmp_min_nodes, sizeof(tmp_min_nodes), UNIT_NONE);
+	}
+
+	if (part_ptr->max_cpus_per_node == INFINITE) {
+		sprintf(tmp_max_cpus_per_node, "UNLIMITED");
+	} else {
+		sprintf(tmp_max_cpus_per_node, "%u",
+			part_ptr->max_cpus_per_node);
 	}
 
 	if (cluster_flags & CLUSTER_FLAG_BG)
@@ -1181,6 +1204,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			   SORTID_GROUPS,     tmp_groups,
 			   SORTID_HIDDEN,     tmp_hidden,
 			   SORTID_JOB_SIZE,   tmp_size,
+			   SORTID_MAX_CPUS_PER_NODE, tmp_max_cpus_per_node,
 			   SORTID_MEM,        "",
 			   SORTID_NAME,       part_ptr->name,
 			   SORTID_NODE_INX,   part_ptr->node_inx,
@@ -2112,6 +2136,7 @@ extern GtkListStore *create_model_part(int type)
 	case SORTID_TIMELIMIT:
 	case SORTID_NODES_MIN:
 	case SORTID_NODES_MAX:
+	case SORTID_MAX_CPUS_PER_NODE:
 		break;
 	case SORTID_SHARE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);

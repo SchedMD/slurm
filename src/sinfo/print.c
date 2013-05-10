@@ -1135,7 +1135,7 @@ int _print_default_time(sinfo_data_t * sinfo_data, int width,
 			_print_str("infinite", width, right_justify, true);
 		else
 			_print_secs((sinfo_data->part_info->default_time * 60L),
-					width, right_justify, true);
+				    width, right_justify, true);
 	} else
 		_print_str("DEFAULTTIME", width, right_justify, true);
 
@@ -1145,14 +1145,14 @@ int _print_default_time(sinfo_data_t * sinfo_data, int width,
 }
 
 int _print_weight(sinfo_data_t * sinfo_data, int width,
-			bool right_justify, char *suffix)
+		  bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
 	if (sinfo_data) {
 		_build_min_max_32_string(id, FORMAT_STRING_SIZE,
-				      sinfo_data->min_weight,
-				      sinfo_data->max_weight,
-				      false, false);
+					 sinfo_data->min_weight,
+					 sinfo_data->max_weight,
+					 false, false);
 		_print_str(id, width, right_justify, true);
 	} else
 		_print_str("WEIGHT", width, right_justify, true);
@@ -1188,5 +1188,22 @@ int _print_cpu_load(sinfo_data_t * sinfo_data, int width,
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
+}
 
+int _print_max_cpus_per_node(sinfo_data_t * sinfo_data, int width,
+			     bool right_justify, char *suffix)
+{
+	char tmp_line[32];
+	if (sinfo_data) {
+		if (sinfo_data->part_info->max_cpus_per_node == INFINITE)
+			sprintf(tmp_line, "UNLIMITED");
+		else
+			sprintf(tmp_line, "%u", sinfo_data->max_cpus_per_node);
+		_print_str(tmp_line, width, right_justify, true);
+
+	} else {
+		_print_str("MAX_CPUS_PER_NODE", width, right_justify, true);
+	}
+
+	return SLURM_SUCCESS;
 }

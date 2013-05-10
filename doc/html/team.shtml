@@ -20,6 +20,7 @@ Lead Slurm developers are:
 <li><a href="http://www.llnl.gov">Lawrence Livermore National Laboratory</a></li>
 <li><a href="http://www.lanl.gov">Los Alamos National Laboratory</a></li>
 <li><a href="http://english.nudt.edu.cn">National University of Defense Technology (NUDT, China)</a></li>
+<li><a href="http://www.nvidia.com">NVIDIA</a></li>
 <li><a href="http://www.ornl.gov">Oak Ridge National Laboratory</a></li>
 <li><a href="http://www.schedmd.com">SchedMD</a></li>
 <li><a href="http://www.cscs.ch">Swiss National Supercomputing Centre</a></li>
@@ -160,6 +161,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 27 March 2013</p>
+<p style="text-align:center;">Last modified 7 May 2013</p>
 
 <!--#include virtual="footer.txt"-->
