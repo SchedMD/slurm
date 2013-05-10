@@ -251,14 +251,21 @@ extern List build_job_queue(bool clear_start, bool backfill)
 					job_ptr->state_reason = reason;
 					xfree(job_ptr->state_desc);
 				}
-				/* Always increment since that is the
-				   way the priority_array was made.
-				*/
+				/* priority_array index matches part_ptr_list
+				 * position: increment inx*/
 				inx++;
 				if (reason != WAIT_NO_REASON)
 					continue;
-				_job_queue_append(job_queue, job_ptr, part_ptr,
-						  job_ptr->priority_array[inx]);
+				if (job_ptr->priority_array) {
+					_job_queue_append(job_queue, job_ptr,
+							  part_ptr,
+							  job_ptr->
+							  priority_array[inx]);
+				} else {
+					_job_queue_append(job_queue, job_ptr,
+							  part_ptr,
+							  job_ptr->priority);
+				}
 			}
 			list_iterator_destroy(part_iterator);
 		} else {
