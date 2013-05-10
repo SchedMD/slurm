@@ -310,7 +310,7 @@ main (int argc, char *argv[])
 		fd_set_close_on_exec(pidfd);
 
 	rfc2822_timestamp(time_stamp, sizeof(time_stamp));
-	info("%s started on %s", xbasename(argv[0]), time_stamp);
+	info("%s started on %s", slurm_prog_name, time_stamp);
 
 	_install_fork_handlers();
 	list_install_fork_handlers();

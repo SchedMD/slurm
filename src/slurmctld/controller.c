@@ -408,8 +408,8 @@ int main(int argc, char *argv[])
 		slurm_attr_destroy(&thread_attr);
 	}
 
-	info("slurmctld version %s started on cluster %s",
-	     SLURM_VERSION_STRING, slurmctld_cluster_name);
+	info("%s version %s started on cluster %s",
+	     slurm_prog_name, SLURM_VERSION_STRING, slurmctld_cluster_name);
 
 	if ((error_code = gethostname_short(node_name, MAX_SLURM_NAME)))
 		fatal("getnodename error %s", slurm_strerror(error_code));
