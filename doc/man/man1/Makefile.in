@@ -76,6 +76,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_gpl_licensed.m4 \
+	$(top_srcdir)/auxdir/x_ac_hdf5.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_iso.m4 \
 	$(top_srcdir)/auxdir/x_ac_lua.m4 \
@@ -204,6 +205,9 @@ HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_NRT = @HAVE_NRT@
 HAVE_OPENSSL = @HAVE_OPENSSL@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
+HDF5_CPPFLAGS = @HDF5_CPPFLAGS@
+HDF5_LDFLAGS = @HDF5_LDFLAGS@
+HDF5_LIBS = @HDF5_LIBS@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -370,6 +374,7 @@ man1_MANS = \
 	slurm.1 \
 	smap.1 \
 	sprio.1 \
+	sh5util.1 \
 	squeue.1 \
 	sreport.1 \
 	srun.1 \
@@ -393,6 +398,7 @@ EXTRA_DIST = $(man1_MANS) $(am__append_1)
 @HAVE_MAN2HTML_TRUE@	sinfo.html \
 @HAVE_MAN2HTML_TRUE@	smap.html \
 @HAVE_MAN2HTML_TRUE@	sprio.html \
+@HAVE_MAN2HTML_TRUE@	sh5util.html \
 @HAVE_MAN2HTML_TRUE@	squeue.html \
 @HAVE_MAN2HTML_TRUE@	sreport.html \
 @HAVE_MAN2HTML_TRUE@	srun.html \
