@@ -47,7 +47,7 @@ extern int acct_gather_conf_init(void)
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL;
 	s_p_options_t *full_options = NULL;
-	int full_options_cnt = 0;
+	int full_options_cnt = 0, i;
 	struct stat buf;
 
 	if (inited)
@@ -71,7 +71,7 @@ extern int acct_gather_conf_init(void)
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
 		debug2("No acct_gather.conf file (%s)", conf_path);
 	} else {
-		debug("Reading acct_gather.conf file %s", conf_path);
+		debug2("Reading acct_gather.conf file %s", conf_path);
 
 		tbl = s_p_hashtbl_create(full_options);
 		if (s_p_parse_file(tbl, NULL, conf_path, false) ==
@@ -82,6 +82,8 @@ extern int acct_gather_conf_init(void)
 		}
 	}
 
+	for (i=0; i<full_options_cnt; i++)
+		xfree(full_options[i].key);
 	xfree(full_options);
 	xfree(conf_path);
 
