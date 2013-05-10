@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
  -- Added sacct format option of "ALL" to print all fields.
  -- Deprecate the SchedulerParameters value of "interval" use "bf_interval"
     instead as documented.
+ -- Add acct_gather_profile/hdf5 to profile jobs with hdf5
 
 * Changes in Slurm 2.6.0pre3
 ============================
