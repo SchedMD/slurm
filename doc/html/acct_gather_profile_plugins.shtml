@@ -6,26 +6,26 @@
 <h2> Overview</h2>
 <p> This document describes SLURM profile accounting plugins and the API that
 defines them. It is intended as a resource to programmers wishing to write
-their own SLURM profile accounting plugins. 
+their own SLURM profile accounting plugins.
 
 <p>A profiling plugin allows more detailed information on the execution of jobs
 than can reasonably be kept in the accounting database. (All jobs may also not
 be profiled.)
 
-<p>The plugin provides an API for making calls to store data at various 
-points in a step's lifecycle. It collects data for <b>nodes</b>, 
-<b>tasks</b> and periodic <b>samples</b>. The periodic samples are eventually 
-consolidated into one <i>time series</i> dataset for each node of a job. 
+<p>The plugin provides an API for making calls to store data at various
+points in a step's lifecycle. It collects data for <b>nodes</b>,
+<b>tasks</b> and periodic <b>samples</b>. The periodic samples are eventually
+consolidated into one <i>time series</i> dataset for each node of a job.
 
 <p>The plugin's primary work is done within slurmstepd on the compute nodes.
 It assumes a shared file system, presumably on the management network. This
-avoids having to transfer files back to the controller at step end. Data is 
+avoids having to transfer files back to the controller at step end. Data is
 typically gathered at job_acct_gather interval or acct_gather_energy interval
 and the volume is not expected to be burdensome.
 
-<p>The reference implementation <i>(io_energy)</i> records I/O counts from the 
-network interface (Infiniband), I/O counts from the node from the Lustre 
-parallel file system, disk I/O counts, cpu and memory utilization 
+<p>The reference implementation <i>(hdf5)</i> records I/O counts from the
+network interface (Infiniband), I/O counts from the node from the Lustre
+parallel file system, disk I/O counts, cpu and memory utilization
 for each task, and a record of energy use.
 
 <p>The reference implementation stores this data in a HDF5 file for each step
@@ -35,14 +35,14 @@ consolidate all the node-step files in one container for the job.
 HDF5 is a well known structured data set that allows different types of
 related data to be stored in one file. Its internal structure resembles a
 file system with <i>groups</i> being similar to <i>directories</i> and
-<i>data sets</i> being similar to <i>files</i>. There are commodity programs, 
+<i>data sets</i> being similar to <i>files</i>. There are commodity programs,
 notably <b>HDF5View</b> for viewing and manipulating these files.
 <b>sh5util</b> also provides some capability for extracting subsets of date
 for import into other analysis tools like spreadsheets.
 
-<p>This plugin is incompatible with --enable-front-end. It you need to 
+<p>This plugin is incompatible with --enable-front-end. It you need to
 simulate a large configuration, please use --enable-multiple-slurmd.
-<p>SLURM profile accounting plugins must conform to the SLURM Plugin API with 
+<p>SLURM profile accounting plugins must conform to the SLURM Plugin API with
 the following specifications:
 <p><span class="commandline">const char
 plugin_name[]="<i>full&nbsp;text&nbsp;name</i>"</span>
@@ -57,12 +57,12 @@ The minor type can be any suitable name
 for the type of profile accounting. We currently use
 <ul>
 <li><b>none</b>&#151; No profile data is gathered.
-<li><b>io_energy</b>&#151;Gets profile data about energy use and various i/o
+<li><b>hdf5</b>&#151;Gets profile data about energy use and various i/o
 sources (local disk, Lustre, network). CPU and memory usage is also gathered.
 </ul>
 <p>The programmer is urged to study
-<span class="commandline">src/plugins/acct_gather_profile/io_energy.c</span> 
-and 
+<span class="commandline">src/plugins/acct_gather_profile/acct_gather_profile_hdf5.c</span>
+and
 <span class="commandline">src/common/slurm_acct_gather_profile.c</span>
 for a sample implementation of a SLURM profile accounting plugin.
 <p class="footer"><a href="#top">top</a>
@@ -192,10 +192,10 @@ Put data at the Node Totals level. Typically called when the step ends.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">job -- slumd_job_t structure containing information
 about the step. </span>
-<br /><span class="commandline">group -- identifies the data stream 
+<br /><span class="commandline">group -- identifies the data stream
 (source of data). </span>
 <br /><span class="commandline">type -- identifies the type of data. </span>
-<br /><span class="commandline">data -- data structure to be put to the file. 
+<br /><span class="commandline">data -- data structure to be put to the file.
 </span>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
@@ -212,10 +212,10 @@ at either job_acct_gather interval or acct_gather_energy interval.
 All samples in the same group will eventually be consolidated in one
 time series.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
-<br /><span class="commandline">group -- identifies the data stream 
+<br /><span class="commandline">group -- identifies the data stream
 (source of data). </span>
 <br /><span class="commandline">type -- identifies the type of data. </span>
-<br /><span class="commandline">data -- data structure to be put to the file. 
+<br /><span class="commandline">data -- data structure to be put to the file.
 </span>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
@@ -231,18 +231,18 @@ Put data at the Task Totals level. Typically called at task end.
 <span class="commandline">job -- slumd_job_t structure containing information
 about the step. </span>
 <br /><span class="commandline">taskid -- slurm taskid </span>
-<br /><span class="commandline">group -- identifies the data stream 
+<br /><span class="commandline">group -- identifies the data stream
 (source of data). </span>
 <br /><span class="commandline">type -- identifies the type of data. </span>
-<br /><span class="commandline">data -- data structure to be put to the file. 
+<br /><span class="commandline">data -- data structure to be put to the file.
 </span>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
-<p>Note that the io_energy plugin only uses 
+<p>Note that the hdf5 plugin only uses
 <i>acct_gather_profile_p_add_sample_data</i>. The job merge program has
-capability for summarizing a time series and inserting grand totals for the 
+capability for summarizing a time series and inserting grand totals for the
 node. The <i>add_node_data</i> and <i>add_task_data</i> functions were defined
 in the intial design and may become depracated.
 
@@ -265,8 +265,8 @@ It this parameter is not specified, no profiling will occur.
 <dt><span class="commandline">ProfileDefaultProfile</span>
 <dd>Default setting for --profile command line option for srun, salloc, sbatch.
 </dl>
-The default profile value is <b>none</b> which means no profiling will be done 
-for jobs. The io_energy plugin also includes;
+The default profile value is <b>none</b> which means no profiling will be done
+for jobs. The hdf5 plugin also includes;
 <ul>
 <li>
 <b>energy</b> sample energy use for the node.
@@ -284,29 +284,29 @@ for the node.
 <li>
 <b>all</b> all of the above.
 </li>
-</ul> 
-Use caution when setting the default to values other than none as a file for 
+</ul>
+Use caution when setting the default to values other than none as a file for
 each job will be created. This option is provided for test systems.
-<p>Most of the sources of profile data are associated with various 
+<p>Most of the sources of profile data are associated with various
 acct_gather plugins. The acct_gather.conf file has setting for various
 sampling mechanisms that can be used to change the frequency at which
 samples occur.
 
 <h2>Data Types</h2>
-A plugin-like structure is implemented to generalize HDF5 data operations from 
+A plugin-like structure is implemented to generalize HDF5 data operations from
 various sources. A <i>C</i> <b>typedef</b> is defined for each datatype. These
 declarations are in /common/slurm_acct_gather_profile.h so the datatype are
 common to all profile plugins.
 <p>
-The operations are defined via structures of function pointers, and they are 
+The operations are defined via structures of function pointers, and they are
 defined in /plugins/acct_gather_profile/common/profile_hdf5.h and should work
-on any HDF5 implementation, not only io_energy.
+on any HDF5 implementation, not only hdf5.
 <p>
-Functions must be implemented to perform various operations for the datatype. 
-The api for the plugin includes an argument for the datatype so that the 
+Functions must be implemented to perform various operations for the datatype.
+The api for the plugin includes an argument for the datatype so that the
 implementation of that api can call the specific operation for that datatype.
-<p>Groups in the HDF5 file containing a dataset will include an attribute for 
-the datatype so that the program that merges step files into the job can 
+<p>Groups in the HDF5 file containing a dataset will include an attribute for
+the datatype so that the program that merges step files into the job can
 discover the type of the group and do the right thing.
 <p>
 For example, the typedef for the energy sample datatype;
@@ -319,39 +319,39 @@ typedef struct profile_energy {
 } profile_energy_t;
 </pre>
 <p>
-A <i>factory</i> method is implemented for each type to construct a structure 
+A <i>factory</i> method is implemented for each type to construct a structure
 with functions implementing various operations for the type.
 The following structure of functions is required for each type.
 <pre>
 /*
- * Structure of function pointers of common operations on a 
+ * Structure of function pointers of common operations on a
  * profile data type. (Some may be stubs, particularly if the data type
  * does not represent a time series.
  *	dataset_size -- size of one dataset (structure size).
- *      create_memory_datatype -- creates hdf5 memory datatype 
+ *      create_memory_datatype -- creates hdf5 memory datatype
  *          corresponding to the datatype structure.
- *      create_file_datatype -- creates hdf5 file datatype  
+ *      create_file_datatype -- creates hdf5 file datatype
  *          corresponding to the datatype structure.
- *      create_s_memory_datatype -- creates hdf5 memory datatype 
+ *      create_s_memory_datatype -- creates hdf5 memory datatype
  *          corresponding to the summary datatype structure.
- *      create_s_file_datatype -- creates hdf5 file datatype  
+ *      create_s_file_datatype -- creates hdf5 file datatype
  *          corresponding to the summary datatype structure.
- *      init_job_series -- allocates a buffer for a complete time  
+ *      init_job_series -- allocates a buffer for a complete time
  *          series (in job merge) and initializes each member
- *      merge_step_series -- merges all the individual time samples  
+ *      merge_step_series -- merges all the individual time samples
  *          into a single data set with one item per sample.
  *          Data items can be scaled (e.g. subtracting beginning time)
  *          differenced (to show counts in interval) or other things
  *          appropriate for the series.
- *      series_total -- accumulate or average members in the entire 
- *          series to be added to the file as totals for the node or 
+ *      series_total -- accumulate or average members in the entire
+ *          series to be added to the file as totals for the node or
  *          task.
- *      extract_series -- format members of a structure for putting 
- *          to a file data extracted from a time series to be imported into 
- *          another analysis tool. (e.g. format as comma separated value.) 
- *      extract_totals -- format members of a structure for putting 
- *          to a file data extracted from a time series total to be imported 
- *          into another analysis tool. (e.g. format as comma,separated value.) 
+ *      extract_series -- format members of a structure for putting
+ *          to a file data extracted from a time series to be imported into
+ *          another analysis tool. (e.g. format as comma separated value.)
+ *      extract_totals -- format members of a structure for putting
+ *          to a file data extracted from a time series total to be imported
+ *          into another analysis tool. (e.g. format as comma,separated value.)
  */
 typedef struct profile_hdf5_ops {
     int   (*dataset_size) ();
@@ -362,10 +362,10 @@ typedef struct profile_hdf5_ops {
     void* (*init_job_series) (int, int);
     void  (*merge_step_series) (hid_t, void*, void*, void*);
     void* (*series_total) (int, void*);
-    void  (*extract_series) (FILE*, bool, int, int, char*, 
-                                       char*, void*);
-    void  (*extract_totals) (FILE*, bool, int, int, char*, 
-                                       char*, void*);
+    void  (*extract_series) (FILE*, bool, int, int, char*,
+				       char*, void*);
+    void  (*extract_totals) (FILE*, bool, int, int, char*,
+				       char*, void*);
 } profile_hdf5_ops_t;
 </pre>
 
@@ -373,35 +373,35 @@ Note there are two different data types for supporting time series.<br>
 1) A primary type is defined for gathering data in the node step file.
 It is typically named profile_{series_name}_t.<br>
 2) Another type is defined for summarizing series totals.
-It is typically named profile_{series_name}_s_t. It does not have a 'factory'. 
+It is typically named profile_{series_name}_s_t. It does not have a 'factory'.
 It is only used in the functions of the primary data type and the
-primaries structure has operations to create appropriate hdf5 objects. 
+primaries structure has operations to create appropriate hdf5 objects.
 
-<p>When adding a new type, the <b>profile_factory</b> function has to be 
+<p>When adding a new type, the <b>profile_factory</b> function has to be
 modified to return an <i>ops</i> for the type.
 
 <p>Interaction between type and hdf5.
 <ul>
 <li>
-The profile_{type}_t structure is used by callers of the <b>add_*_data</b> 
+The profile_{type}_t structure is used by callers of the <b>add_*_data</b>
 functions.
 </li>
 <li>
 HDF5 needs a <b>memory</b>_datatype to transform this structure into its
-dataset object in memory. The <i>create_memory_datatype</i> function creates 
+dataset object in memory. The <i>create_memory_datatype</i> function creates
 the appropriate object.
 </li>
 <li>
 HDF5 needs a <b>file</b>_datatype to transform the dataset into how it will be
 written to the HDF5 file (or to transform what it reads from a file into a
-dataset.) The <i>create_file_datatype</i> function creates 
+dataset.) The <i>create_file_datatype</i> function creates
 the appropriate object.
 </li>
 </ul>
 <h2>Versioning</h2>
-<p>This document describes version 1 of the SLURM Profile Accounting API. 
-Future releases of SLURM may revise this API. A profile accounting plugin 
-conveys its ability to implement a particular API version using the mechanism 
+<p>This document describes version 1 of the SLURM Profile Accounting API.
+Future releases of SLURM may revise this API. A profile accounting plugin
+conveys its ability to implement a particular API version using the mechanism
 outlined for SLURM plugins.</p>
 
 <p class="footer"><a href="#top">top</a>
@@ -409,4 +409,3 @@ outlined for SLURM plugins.</p>
 <p style="text-align:center;">Last modified 1 April 2013</p>
 
 <!--#include virtual="footer.txt"-->
-
