@@ -225,6 +225,7 @@ struct part_record *create_part_record(void)
 	part_ptr->flags             = default_part.flags;
 	part_ptr->max_time          = default_part.max_time;
 	part_ptr->default_time      = default_part.default_time;
+	part_ptr->max_cpus_per_node = default_part.max_cpus_per_node;
 	part_ptr->max_nodes         = default_part.max_nodes;
 	part_ptr->max_nodes_orig    = default_part.max_nodes;
 	part_ptr->min_nodes         = default_part.min_nodes;
