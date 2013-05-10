@@ -4009,19 +4009,32 @@ extern char *get_extra_conf_path(char *conf_name)
 
 extern bool run_in_daemon(char *daemons)
 {
-	char *start_char = daemons, *end_char = NULL;
+	char *full, *start_char, *end_char;
 
 	xassert(slurm_prog_name);
 
 	if (!strcmp(daemons, slurm_prog_name))
 		return true;
 
+	full = xstrdup(daemons);
+	start_char = full;
+
 	while (start_char && (end_char = strstr(start_char, ","))) {
 		*end_char = 0;
-		if (!strcmp(start_char, slurm_prog_name))
+		if (!strcmp(start_char, slurm_prog_name)) {
+			xfree(full);
 			return true;
+		}
+
 		start_char = end_char + 1;
 	}
+
+	if (start_char && !strcmp(start_char, slurm_prog_name)) {
+		xfree(full);
+		return true;
+	}
+
+	xfree(full);
 
 	return false;
 }

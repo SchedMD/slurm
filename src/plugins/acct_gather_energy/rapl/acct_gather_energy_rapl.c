@@ -261,7 +261,7 @@ static bool _run_in_daemon(void)
 
 	if (!set) {
 		set = 1;
-		run = run_in_daemon("slurmd");
+		run = run_in_daemon("slurmd,slurmstepd");
 	}
 
 	return run;
@@ -399,24 +399,11 @@ static void _get_joules_task(acct_gather_energy_t *energy)
  */
 extern int init(void)
 {
-	int i;
-	uint64_t result;
-
-	if (!_run_in_daemon())
-		return SLURM_SUCCESS;
-
-	_hardware();
-	for (i = 0; i < nb_pkg; i++)
-		pkg_fd[i] = _open_msr(pkg2cpu[i]);
-
-	local_energy = acct_gather_energy_alloc();
-
-	result = _read_msr(pkg_fd[0], MSR_RAPL_POWER_UNIT);
-	if (result == 0)
-		local_energy->current_watts = NO_VAL;
-
 	debug_flags = slurm_get_debug_flags();
-	verbose("%s loaded", plugin_name);
+
+	/* put anything that requires the .conf being read in
+	   acct_gather_energy_p_conf_parse
+	*/
 
 	return SLURM_SUCCESS;
 }
@@ -494,5 +481,23 @@ extern void acct_gather_energy_p_conf_options(s_p_options_t **full_options,
 
 extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 {
+	int i;
+	uint64_t result;
+
+	if (!_run_in_daemon())
+		return;
+
+	_hardware();
+	for (i = 0; i < nb_pkg; i++)
+		pkg_fd[i] = _open_msr(pkg2cpu[i]);
+
+	local_energy = acct_gather_energy_alloc();
+
+	result = _read_msr(pkg_fd[0], MSR_RAPL_POWER_UNIT);
+	if (result == 0)
+		local_energy->current_watts = NO_VAL;
+
+	verbose("%s loaded", plugin_name);
+
 	return;
 }

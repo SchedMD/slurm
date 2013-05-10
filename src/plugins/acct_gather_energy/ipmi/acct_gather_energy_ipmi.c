@@ -160,6 +160,19 @@ static bool _is_thread_launcher(void)
 	return run;
 }
 
+static bool _run_in_daemon(void)
+{
+	static bool set = false;
+	static bool run = false;
+
+	if (!set) {
+		set = 1;
+		run = run_in_daemon("slurmd,slurmstepd");
+	}
+
+	return run;
+}
+
 static void _task_sleep(int rem)
 {
 	while (rem)
@@ -816,29 +829,23 @@ static int _first_update_task_energy(void)
  */
 extern int init(void)
 {
-	int rc = SLURM_SUCCESS;
 	debug_flags = slurm_get_debug_flags();
-	local_energy = acct_gather_energy_alloc();
-	local_energy->consumed_energy=0;
-	local_energy->base_consumed_energy=0;
-	local_energy->base_watts=0;
-
 	/* put anything that requires the .conf being read in
 	   acct_gather_energy_p_conf_parse
 	*/
 
-	if (rc == SLURM_SUCCESS)
-		verbose("%s loaded", plugin_name);
-	else
-		flag_energy_accounting_shutdown = true;
-
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 extern int fini(void)
 {
+	time_t begin_fini;
+
+	if (!_run_in_daemon())
+		return SLURM_SUCCESS;
+
 	flag_energy_accounting_shutdown = true;
-	time_t begin_fini = time(NULL);
+	begin_fini = time(NULL);
 
 	while (flag_thread_run_running || flag_thread_write_running) {
 		if ((time(NULL) - begin_fini) > (slurm_ipmi_conf.freq + 1)) {
@@ -865,6 +872,7 @@ extern int fini(void)
 extern int acct_gather_energy_p_update_node_energy(void)
 {
 	int rc = SLURM_SUCCESS;
+	xassert(_run_in_daemon());
 
 	return rc;
 }
@@ -873,6 +881,8 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 					 acct_gather_energy_t *energy)
 {
 	int rc = SLURM_SUCCESS;
+
+	xassert(_run_in_daemon());
 
 	switch (data_type) {
 	case ENERGY_DATA_JOULES_TASK:
@@ -903,6 +913,8 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 					 acct_gather_energy_t *energy)
 {
 	int rc = SLURM_SUCCESS;
+
+	xassert(_run_in_daemon());
 
 	switch (data_type) {
 	case ENERGY_DATA_RECONFIG:
@@ -1047,6 +1059,14 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 			       "EnergyIPMIPowerSensor", tbl);
 	}
 
+	if (!_run_in_daemon())
+		return;
+
+	local_energy = acct_gather_energy_alloc();
+	local_energy->consumed_energy=0;
+	local_energy->base_consumed_energy=0;
+	local_energy->base_watts=0;
+
 	if (_is_thread_launcher()) {
 		if (!flag_init) {
 			flag_init = true;
@@ -1064,4 +1084,6 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 		}
 	} else
 		_first_update_task_energy();
+
+	verbose("%s loaded", plugin_name);
 }
