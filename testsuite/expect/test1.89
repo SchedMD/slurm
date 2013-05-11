@@ -104,7 +104,7 @@ exec $bin_chmod 700 $file_prog
 # Create an allocation
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1 --exclusive --verbose -t2 $bin_bash]
+set salloc_pid [spawn $salloc -N1 --exclusive -v -t2 $bin_bash]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
