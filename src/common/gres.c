@@ -2729,7 +2729,7 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 		      char *gres_name, uint32_t job_id, char *node_name,
 		      bitstr_t *core_bitmap)
 {
-	int i;
+	int i, sz1, sz2;
 	uint32_t gres_cnt;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
@@ -2843,6 +2843,14 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 			    !bit_overlap(core_bitmap,
 					 node_gres_ptr->topo_cpus_bitmap[i]))
 				continue;
+			sz1 = bit_size(job_gres_ptr->gres_bit_alloc[node_offset]);
+			sz2 = bit_size(node_gres_ptr->topo_gres_bitmap[i]);
+			if (sz1 != sz2) {
+				/* Avoid abort on bit_overlap below */
+				error("Gres count mismatch for node %s "
+				      "(%d != %d)", node_name, sz1, sz2);
+				continue;
+			}
 			gres_cnt = bit_overlap(job_gres_ptr->
 					       gres_bit_alloc[node_offset],
 					       node_gres_ptr->
@@ -2951,7 +2959,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			int node_offset, char *gres_name, uint32_t job_id,
 			char *node_name)
 {
-	int i, len, gres_cnt;
+	int i, len, gres_cnt, sz1, sz2;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 
@@ -3011,6 +3019,10 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 	    node_gres_ptr->topo_gres_bitmap &&
 	    node_gres_ptr->topo_gres_cnt_alloc) {
 		for (i=0; i<node_gres_ptr->topo_cnt; i++) {
+			sz1 = bit_size(job_gres_ptr->gres_bit_alloc[node_offset]);
+			sz2 = bit_size(node_gres_ptr->topo_gres_bitmap[i]);
+			if (sz1 != sz2)
+				continue;
 			gres_cnt = bit_overlap(job_gres_ptr->
 					       gres_bit_alloc[node_offset],
 					       node_gres_ptr->
