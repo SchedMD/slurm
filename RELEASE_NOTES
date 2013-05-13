@@ -26,7 +26,9 @@ SLURM will result in loss of state information.
 HIGHLIGHTS
 ==========
  - Added support for job arrays, which increases performance and ease of use
-   for sets of similar jobs.
+   for sets of similar jobs. This man necessitate changes in prolog and/or
+   epilog scripts due to change in the job ID format, which is now of the form
+   "<job_id>_<index>" for job arrays.
  - Added slurmctld/dynalloc plugin for MapReduce+ support.
  - Added prolog and epilog support for advanced reservations.
  - Much faster throughput for job step execution with --exclusive option. The
@@ -91,6 +93,11 @@ COMMAND CHANGES (see man pages for details)
    support job arrays. For job arrays, the job ID is no longer a single number
    but has the format "JOBID_TASKID" while a step ID format is now
    "JOBID_TASKID.STEPID".
+ - Modified squeue output field options for job arrays:
+   %i is now of the form <base_job_id>_<array_index>
+   %F is the <base_job_id>
+   %K is the <array_index>
+   %A is the <job_id>, which is unique for each element of a job array
  - Fully removed deprecated sacct --dump --fdump options.
  - Added partition "SelectTypeParameters" field to scontrol output.
  - Added Allocated Memory to node information displayed by sview and scontrol

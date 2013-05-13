@@ -88,6 +88,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_batch_host)
 #define job_format_add_job_id(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_job_id)
+#define job_format_add_job_id2(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_job_id2)
 #define job_format_add_partition(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_partition)
 #define job_format_add_prefix(list,wid,right,prefix) \
@@ -194,6 +196,8 @@ int _print_job_array_task_id(job_info_t * job, int width, bool right_justify,
 int _print_job_batch_host(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_job_id(job_info_t * job, int width, bool right_justify,
+			char* suffix);
+int _print_job_job_id2(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_prefix(job_info_t * job, int width, bool right_justify,
 			char* suffix);

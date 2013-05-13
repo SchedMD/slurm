@@ -589,6 +589,11 @@ extern int parse_format( char* format )
 							field_size,
 							right_justify,
 							suffix  );
+			else if (field[0] == 'A')
+				job_format_add_job_id2(params.format_list,
+						       field_size,
+						       right_justify,
+						       suffix);
 			else if (field[0] == 'b')
 				job_format_add_gres( params.format_list,
 						     field_size, right_justify,

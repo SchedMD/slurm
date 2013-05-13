@@ -126,6 +126,11 @@ Number of tasks created by a job step.
 This reports the value of the \fBsrun \-\-ntasks\fR option.
 (Valid for job steps only)
 .TP
+\fB%A\fR
+Job id.
+This will have a unique value for each element  of job arrays.
+(Valid for jobs only)
+.TP
 \fB%b\fR
 Generic resources (gres) required by the job or step.
 (Valid for jobs and job steps)
@@ -179,7 +184,7 @@ Features required by the job.
 (Valid for jobs only)
 .TP
 \fB%F\fR
-Job array's job ID.
+Job array's job ID. This is the base job ID.
 (Valid for jobs only)
 .TP
 \fB%g\fR
@@ -202,6 +207,8 @@ When \-\-sockets\-per\-node has not been set, "*" is displayed.
 .TP
 \fB%i\fR
 Job or job step id.
+In the case of job arrays, the job ID format will be of the form
+"<base_job_id>_<index>".
 (Valid for jobs and job steps)
 .TP
 \fB%I\fR
