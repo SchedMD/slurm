@@ -113,6 +113,19 @@ static char	gres_name[]		= "gpu";
 static int *gpu_devices = NULL;
 static int nb_available_files;
 
+extern int init(void)
+{
+	info("%s: %s loaded", __func__, plugin_name);
+
+	return SLURM_SUCCESS;
+}
+extern int fini(void)
+{
+	info("%s: unloading %s", __func__, plugin_name);
+	xfree(gpu_devices);
+
+	return SLURM_SUCCESS;
+}
 /*
  * We could load gres state or validate it using various mechanisms here.
  * This only validates that the configuration was specified in gres.conf.
