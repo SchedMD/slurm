@@ -9051,28 +9051,30 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 				continue;
 			node_ptr = &node_record_table_ptr[i];
 #ifndef HAVE_BG
-			/* If this is a bluegene system we do not want
-			   to mark the entire midplane down if we have
-			   an epilog error.  This would most likely
-			   kill other jobs sharing that midplane and
-			   that is not what we want.
-			*/
-			if (return_code)
-				set_node_down_ptr(node_ptr, "Epilog error");
-			else
+			/* If this is a bluegene system we do not want to mark
+			 * the entire midplane down if we have an epilog error.
+			 * This would most likely kill other jobs sharing that
+			 * midplane and that is not what we want. */
+			if (return_code) {
+				static uint32_t slurm_user_id = NO_VAL;
+				if (slurm_user_id == NO_VAL)
+					slurm_user_id=slurm_get_slurm_user_id();
+				drain_nodes(node_ptr->name, "Epilog error",
+					    slurm_user_id);
+			}
 #endif
-				make_node_idle(node_ptr, job_ptr);
+			make_node_idle(node_ptr, job_ptr);
 		}
 	}
 #else
 	if (return_code) {
-		error("Epilog error on %s, setting DOWN", node_name);
-		set_node_down(node_name, "Epilog error");
-	} else {
-		node_ptr = find_node_record(node_name);
-		if (node_ptr)
-			make_node_idle(node_ptr, job_ptr);
+		error("Epilog error on %s, draining the node", node_name);
+		drain_nodes(node_name, "Epilog error",
+			    slurm_get_slurm_user_id());
 	}
+	node_ptr = find_node_record(node_name);
+	if (node_ptr)
+		make_node_idle(node_ptr, job_ptr);
 #endif
 
 	step_epilog_complete(job_ptr, node_name);

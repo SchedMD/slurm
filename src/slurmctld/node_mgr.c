@@ -1990,9 +1990,10 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		last_node_update = time (NULL);
 	} else if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
 		if (!IS_NODE_DRAIN(node_ptr) && !IS_NODE_FAIL(node_ptr)) {
-			error("Prolog failure on node %s, setting state DOWN",
+			error("Prolog failure on node %s, draining the node",
 			      reg_msg->node_name);
-			set_node_down(reg_msg->node_name, "Prolog failed");
+			drain_nodes(reg_msg->node_name, "Prolog error",
+				    slurm_get_slurm_user_id());
 			last_node_update = time (NULL);
 		}
 	} else {
