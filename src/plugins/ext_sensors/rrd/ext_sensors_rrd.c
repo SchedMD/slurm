@@ -652,17 +652,18 @@ extern int ext_sensors_p_get_stependdata(struct step_record *step_rec)
 	time_t step_endtime = time(NULL);
 	int rc = SLURM_SUCCESS;
 
-	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_JOB_ENERGY)
+	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_JOB_ENERGY) {
 		step_rec->ext_sensors->consumed_energy =
 			RRD_consolidate(step_rec->start_time, step_endtime,
 					step_rec->step_node_bitmap);
-	if (step_rec->jobacct != NULL) {
-		if ((step_rec->jobacct->energy.consumed_energy == 0) ||
-		    (step_rec->jobacct->energy.consumed_energy == NO_VAL)) {
+		if (step_rec->jobacct &&
+		    (!step_rec->jobacct->energy.consumed_energy
+		     || (step_rec->jobacct->energy.consumed_energy == NO_VAL)) {
 			step_rec->jobacct->energy.consumed_energy =
 				step_rec->ext_sensors->consumed_energy;
 		}
 	}
+
 	return rc;
 }
 
