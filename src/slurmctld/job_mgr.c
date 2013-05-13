@@ -8471,6 +8471,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 					    slurm_user_id);
 			}
 #endif
+			/* Change job from completing to completed */
 			make_node_idle(node_ptr, job_ptr);
 		}
 	}
@@ -8480,6 +8481,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		drain_nodes(node_name, "Epilog error",
 			    slurm_get_slurm_user_id());
 	}
+	/* Change job from completing to completed */
 	node_ptr = find_node_record(node_name);
 	if (node_ptr)
 		make_node_idle(node_ptr, job_ptr);
