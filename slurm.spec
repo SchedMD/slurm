@@ -605,6 +605,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
 %{_mandir}/man1/*
+%{_mandir}/man5/acct_gather.*
+%{_mandir}/man5/ext_sensors.*
 %{_mandir}/man5/cgroup.*
 %{_mandir}/man5/cray.*
 %{_mandir}/man5/gres.*
@@ -719,11 +721,14 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/accounting_storage_none.so
 %{_libdir}/slurm/accounting_storage_slurmdbd.so
 %{_libdir}/slurm/acct_gather_energy_none.so
+%{_libdir}/slurm/acct_gather_profile_none.so
 %{_libdir}/slurm/checkpoint_none.so
 %{_libdir}/slurm/checkpoint_ompi.so
+%{_libdir}/slurm/ext_sensors_none.so
 %{_libdir}/slurm/gres_gpu.so
 %{_libdir}/slurm/gres_mic.so
 %{_libdir}/slurm/gres_nic.so
+%{_libdir}/slurm/job_submit_all_partitions.so
 %{_libdir}/slurm/job_submit_defaults.so
 %{_libdir}/slurm/job_submit_logging.so
 %{_libdir}/slurm/job_submit_partition.so
