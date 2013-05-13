@@ -8379,9 +8379,11 @@ static void _send_job_kill(struct job_record *job_ptr)
 		agent_args->node_count++;
 	}
 #else
+	if (!job_ptr->node_bitmap_cg)
+		build_cg_bitmap(job_ptr);
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
-		if (!bit_test(job_ptr->node_bitmap, i))
+		if (!bit_test(job_ptr->node_bitmap_cg, i))
 			continue;
 		hostlist_push(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
@@ -9873,8 +9875,13 @@ extern void update_job_nodes_completing(void)
 		    (job_ptr->node_bitmap == NULL))
 			continue;
 		xfree(job_ptr->nodes_completing);
-		job_ptr->nodes_completing =
-			bitmap2node_name(job_ptr->node_bitmap);
+		if (job_ptr->node_bitmap_cg) {
+			job_ptr->nodes_completing =
+				bitmap2node_name(job_ptr->node_bitmap_cg);
+		} else {
+			job_ptr->nodes_completing =
+				bitmap2node_name(job_ptr->node_bitmap);
+		}
 	}
 	list_iterator_destroy(job_iterator);
 }
