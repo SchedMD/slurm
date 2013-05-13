@@ -479,7 +479,13 @@ rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/.packlist
 # remove these if they exist
 rm -f ${RPM_BUILD_ROOT}%{_mandir}/man1/srun_cr*
 rm -f ${RPM_BUILD_ROOT}%{_bindir}/srun_cr
+rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/checkpoint_blcr.so
 rm -f ${RPM_BUILD_ROOT}%{_libexecdir}/slurm/cr_*
+%endif
+
+%if ! %{slurm_with lua}
+rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/job_submit_lua.so
+rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_lua.so
 %endif
 
 %if ! %{slurm_with sgijob}
@@ -570,6 +576,10 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_aprun.so             &&
    echo %{_libdir}/slurm/launch_aprun.so             >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/slurmctld_dynalloc.so       &&
    echo %{_libdir}/slurm/slurmctld_dynalloc.so       >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/ext_sensors_rdd.so          &&
+   echo %{_libdir}/slurm/ext_sensors_rdd.so          >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_profile_hdf5.so &&
+   echo %{_libdir}/slurm/acct_gather_profile_hdf5.so >> $LIST
 
 LIST=./pam.files
 touch $LIST
