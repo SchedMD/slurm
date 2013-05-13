@@ -1719,13 +1719,13 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 			      "was requested",
 			      THIS_FILE, __LINE__, job_ptr->job_id);
 
-		xfree(job_ptr->gres_req);
-		xstrcat(job_ptr->gres_req, "");
-	} else if ( job_ptr->node_cnt > 0 ) {
+		if (job_ptr->gres_req == NULL)
+			xstrcat(job_ptr->gres_req, "");
+
+	} else if (job_ptr->node_cnt > 0
+	           && job_ptr->gres_req == NULL) {
 		/* job_ptr->gres_req is rebuilt/replaced here */
 		tmp_str = xstrdup(req_config);
-		xfree(job_ptr->gres_req);
-		job_ptr->gres_req = xstrdup("");
 
 		tok = strtok_r(tmp_str, ",", &last);
 		while (tok) {
