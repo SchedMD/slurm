@@ -46,6 +46,9 @@
 #  include "config.h"
 #endif
 
+#if HAVE_FLOAT_H
+#  include <float.h>
+#endif
 #if HAVE_STDINT_H
 #  include <stdint.h>
 #endif
@@ -55,6 +58,9 @@
 #ifdef WITH_PTHREADS
 #  include <pthread.h>
 #endif				/* WITH_PTHREADS */
+#if HAVE_VALUES_H
+#  include <values.h>
+#endif
 
 #include <sys/stat.h>
 #include <stdio.h>
@@ -1207,9 +1213,11 @@ static void *_decay_thread(void *no_data)
 
 		if (run_delta <= 0)
 			goto get_usage;
-
-		real_decay = pow(decay_factor, run_delta);
-
+		real_decay = pow(decay_factor, (double)run_delta);
+#ifdef DBL_MIN
+		if (real_decay < DBL_MIN)
+			real_decay = DBL_MIN;
+#endif
 		if (priority_debug)
 			info("Decay factor over %g seconds goes "
 			     "from %.15f -> %.15f",
@@ -1217,7 +1225,7 @@ static void *_decay_thread(void *no_data)
 
 		/* first apply decay to used time */
 		if (_apply_decay(real_decay) != SLURM_SUCCESS) {
-			error("problem applying decay");
+			error("priority/multifactor: problem applying decay");
 			running_decay = 0;
 			slurm_mutex_unlock(&decay_lock);
 			break;
