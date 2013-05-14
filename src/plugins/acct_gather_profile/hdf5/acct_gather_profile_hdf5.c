@@ -116,6 +116,7 @@ static hid_t     gid_totals = -1;
 static char      group_node[MAX_GROUP_NAME+1];
 static slurm_hdf5_conf_t hdf5_conf;
 static uint32_t debug_flags = 0;
+static uint32_t g_profile_running = ACCT_GATHER_PROFILE_NOT_SET;
 
 static void _reset_slurm_profile_conf()
 {
@@ -127,7 +128,9 @@ static uint32_t _determine_profile(slurmd_job_t *job)
 {
 	uint32_t profile;
 
-	if (job->profile > ACCT_GATHER_PROFILE_NONE)
+	if (g_profile_running != ACCT_GATHER_PROFILE_NOT_SET)
+		profile = g_profile_running;
+	else if (job && (job->profile > ACCT_GATHER_PROFILE_NONE))
 		profile = job->profile;
 	else
 		profile = hdf5_conf.def;
@@ -281,6 +284,9 @@ extern void acct_gather_profile_p_get(enum acct_gather_profile_info info_type,
 	case ACCT_GATHER_PROFILE_DEFAULT:
 		*uint32 = hdf5_conf.def;
 		break;
+	case ACCT_GATHER_PROFILE_RUNNING:
+		*uint32 = g_profile_running;
+		break;
 	default:
 		debug2("acct_gather_profile_p_get info_type %d invalid",
 		       info_type);
@@ -292,7 +298,6 @@ extern int acct_gather_profile_p_node_step_start(slurmd_job_t* job)
 	int rc = SLURM_SUCCESS;
 
 	time_t start_time;
-	uint32_t profile;
 	char    *profile_file_name;
 	char *profile_str;
 
@@ -308,9 +313,10 @@ extern int acct_gather_profile_p_node_step_start(slurmd_job_t* job)
 		info("PROFILE: option --profile=%s", profile_str);
 	}
 
-	profile = _determine_profile(job);
+	if (g_profile_running == ACCT_GATHER_PROFILE_NOT_SET)
+		g_profile_running = _determine_profile(job);
 
-	if (profile <= ACCT_GATHER_PROFILE_NONE)
+	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return rc;
 
 	_create_directories(job);
@@ -323,7 +329,7 @@ extern int acct_gather_profile_p_node_step_start(slurmd_job_t* job)
 		job->jobid, job->stepid, job->node_name);
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
-		profile_str = acct_gather_profile_to_string(profile);
+		profile_str = acct_gather_profile_to_string(g_profile_running);
 		info("PROFILE: node_step_start, opt=%s file=%s",
 		     profile_str, profile_file_name);
 	}
@@ -366,6 +372,7 @@ extern int acct_gather_profile_p_node_step_end(slurmd_job_t* job)
 	int rc = SLURM_SUCCESS;
 
 	xassert(_run_in_daemon());
+	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
 	// No check for --profile as we always want to close the HDF5 file
 	// if it has been opened.
@@ -373,7 +380,7 @@ extern int acct_gather_profile_p_node_step_end(slurmd_job_t* job)
 	if (job->stepid == NO_VAL)
 		return rc;
 
-	if (_determine_profile(job) <= ACCT_GATHER_PROFILE_NONE)
+	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return rc;
 
 	if (debug_flags & DEBUG_FLAG_PROFILE)
@@ -398,13 +405,11 @@ extern int acct_gather_profile_p_node_step_end(slurmd_job_t* job)
 extern int acct_gather_profile_p_task_start(slurmd_job_t* job, uint32_t taskid)
 {
 	int rc = SLURM_SUCCESS;
-	uint32_t profile;
 
 	xassert(_run_in_daemon());
+	xassert(g_profile_running);
 
-	profile = _determine_profile(job);
-
-	if (profile <= ACCT_GATHER_PROFILE_NONE)
+	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return rc;
 
 	if (debug_flags & DEBUG_FLAG_PROFILE)
@@ -421,8 +426,9 @@ extern int acct_gather_profile_p_task_end(slurmd_job_t* job, pid_t taskpid)
 	int rc = SLURM_SUCCESS;
 
 	xassert(_run_in_daemon());
+	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
-	if (!_do_profile(ACCT_GATHER_PROFILE_NOT_SET, _determine_profile(job)))
+	if (!_do_profile(ACCT_GATHER_PROFILE_NOT_SET, g_profile_running))
 		return rc;
 
 	if (_get_taskid_from_pid(job, taskpid, &taskId) != SLURM_SUCCESS)
@@ -470,8 +476,9 @@ extern int acct_gather_profile_p_add_node_data(slurmd_job_t* job, char* group,
 	uint32_t group_id = acct_gather_profile_series_from_string(group);
 
 	xassert(_run_in_daemon());
+	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
-	if (!_do_profile(group_id, _determine_profile(job)))
+	if (!_do_profile(group_id, g_profile_running))
 		return SLURM_SUCCESS;
 	if (debug_flags & DEBUG_FLAG_PROFILE)
 		info("PROFILE: add_node_data Group-%s Type=%s", group, type);
@@ -550,8 +557,9 @@ extern int acct_gather_profile_p_add_task_data(
 	uint32_t group_id = acct_gather_profile_from_string(group);
 
 	xassert(_run_in_daemon());
+	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
-	if (!_do_profile(group_id, _determine_profile(job)))
+	if (!_do_profile(group_id, g_profile_running))
 		return SLURM_SUCCESS;
 
 	if (debug_flags & DEBUG_FLAG_PROFILE)

@@ -410,7 +410,12 @@ enum select_node_cnt {
 
 enum acct_gather_profile_info {
 	ACCT_GATHER_PROFILE_DIR,     /* Give directory profiling is stored */
-	ACCT_GATHER_PROFILE_DEFAULT  /* What is being collected for profiling */
+	ACCT_GATHER_PROFILE_DEFAULT, /* What is being collected for
+				      * profiling by default */
+	ACCT_GATHER_PROFILE_RUNNING  /* What is actually be collected
+				      * wither it be user or
+				      * default. (Only works in the slurmstepd)
+				      */
 };
 
 #define ACCT_GATHER_PROFILE_NOT_SET 0x00000000
