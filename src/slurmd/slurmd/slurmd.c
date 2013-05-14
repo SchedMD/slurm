@@ -1561,7 +1561,7 @@ _slurmd_fini(void)
 	fini_setproctitle();
 	slurm_select_fini();
 	jobacct_gather_fini();
-	acct_gather_energy_fini();
+	acct_gather_profile_fini();
 	spank_slurmd_exit();
 	cpu_freq_fini();
 

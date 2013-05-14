@@ -2002,6 +2002,8 @@ _cred_state_unpack(slurm_cred_ctx_t ctx, Buf buffer)
 
 		if (now < s->expiration)
 			list_append(ctx->state_list, s);
+		else
+			_cred_state_destroy(s);
 	}
 
 	return;
@@ -2046,7 +2048,8 @@ _job_state_unpack(slurm_cred_ctx_t ctx, Buf buffer)
 			list_append(ctx->job_list, j);
 		else {
 			debug3 ("not appending expired job %u state",
-				j->jobid);
+			        j->jobid);
+			_job_state_destroy(j);
 		}
 	}
 
