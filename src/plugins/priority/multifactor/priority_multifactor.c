@@ -1023,7 +1023,7 @@ static void *_decay_thread(void *no_data)
 			goto get_usage;
 		real_decay = pow(decay_factor, (double)run_delta);
 #ifdef DBL_MIN
-		if (real_decay <= DBL_MIN)
+		if (real_decay < DBL_MIN)
 			real_decay = DBL_MIN;
 #endif
 		if (priority_debug)
