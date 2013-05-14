@@ -432,7 +432,8 @@ extern int acct_gather_profile_p_task_end(pid_t taskpid)
 	xassert(g_job);
 	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
-	if (!_do_profile(ACCT_GATHER_PROFILE_NOT_SET, g_profile_running))
+	if ((g_job->stepid == NO_VAL)
+	    || !_do_profile(ACCT_GATHER_PROFILE_NOT_SET, g_profile_running))
 		return rc;
 
 	if (_get_taskid_from_pid(taskpid, &task_id) != SLURM_SUCCESS)
@@ -482,7 +483,8 @@ extern int acct_gather_profile_p_add_node_data(char* group,
 	xassert(_run_in_daemon());
 	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
-	if (!_do_profile(group_id, g_profile_running))
+	if ((g_job->stepid == NO_VAL)
+	    || !_do_profile(group_id, g_profile_running))
 		return SLURM_SUCCESS;
 	if (debug_flags & DEBUG_FLAG_PROFILE)
 		info("PROFILE: add_node_data Group-%s Type=%s", group, type);
@@ -523,7 +525,7 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 	xassert(g_job);
 	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
-	if (!_do_profile(group_id, g_profile_running))
+	if ((g_job->stepid == NO_VAL) || !_do_profile(type, g_profile_running))
 		return SLURM_SUCCESS;
 
 	switch (type) {
@@ -607,7 +609,8 @@ extern int acct_gather_profile_p_add_task_data(
 	xassert(g_job);
 	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
-	if (!_do_profile(group_id, g_profile_running))
+	if ((g_job->stepid == NO_VAL)
+	    || !_do_profile(group_id, g_profile_running))
 		return SLURM_SUCCESS;
 
 	if (debug_flags & DEBUG_FLAG_PROFILE)
