@@ -23,6 +23,7 @@ documents those changes that are of interest to users and admins.
     start job to slurmdbd.
  -- If a prolog or epilog failure occurs, drain the node rather than setting it
     down and killing all of its jobs.
+ -- Priority/multifactor - Avoid underflow in half-life calculation.
 
 * Changes in Slurm 2.5.6
 ========================
