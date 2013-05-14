@@ -190,23 +190,23 @@ static int moffset; // General variable used by insert macros
 /* Macro to put an int min,ave,max,total for a variable to extract file
  *
  * Parameters
- * 	fOt	file descriptor
+ * 	fp	file descriptor
  * 	var	variable name
  * 	prf	prefix for series (usually ','
  */
-#define PUT_UINT_SUM(fOt, var, prfx)			\
-	fprintf(fOt,"%s%ld,%ld,%ld,%ld",prfx,		\
-		var.min,var.ave,var.max,var.total);
+#define PUT_UINT_SUM(fp, var, prfx)			\
+	fprintf(fp,"%s%ld,%ld,%ld,%ld", prfx,		\
+		var.min, var.ave, var.max, var.total);
 /* Macro to put an int min,ave,max,total for a variable to extract file
  *
  * Parameters
- * 	fOt	file descriptor
+ * 	fp	file descriptor
  * 	var	variable name
  * 	prf	prefix for series (usually ','
  */
-#define PUT_DBL_SUM(fOt, var, prfx)			\
-	fprintf(fOt,"%s%.3f,%.3f,%.3f,%.3f",prfx,	\
-		var.min,var.ave,var.max,var.total);
+#define PUT_DBL_SUM(fp, var, prfx)			\
+	fprintf(fp, "%s%.3f,%.3f,%.3f,%.3f", prfx,	\
+		var.min, var.ave, var.max, var.total);
 
 
 /* ============================================================================
@@ -255,10 +255,10 @@ char* get_data_set_name(char* type)
 }
 
 
-void hdf5_obj_info(hid_t group, char* namGroup)
+void hdf5_obj_info(hid_t group, char* nam_group)
 {
 
-	char* hdf5TypNam[] = {"H5G_LINK   ",
+	char* hdf5_typ_nam[] = {"H5G_LINK   ",
 			      "H5G_GROUP  ",
 			      "H5G_DATASET",
 			      "H5G_TYPE   "};
@@ -275,16 +275,16 @@ void hdf5_obj_info(hid_t group, char* namGroup)
 	H5Gget_num_objs(group, &nobj);
 	nattr = H5Aget_num_attrs(group);
 	info("PROFILE group: %s NumObject=%d NumAttributes=%d",
-	     namGroup, (int) nobj, (int) nattr);
+	     nam_group, (int) nobj, (int) nattr);
 	for (i = 0; (nobj>0) && (i<nobj); i++) {
 		typ = H5Gget_objtype_by_idx(group, i);
 		len = H5Gget_objname_by_idx(group, i, buf, MAX_GROUP_NAME);
 		if ((len > 0) && (len < MAX_GROUP_NAME)) {
 			info("PROFILE: Obj=%d Type=%s Name=%s",
-			     i,hdf5TypNam[typ], buf);
+			     i,hdf5_typ_nam[typ], buf);
 		} else {
 			info("PROFILE: Obj=%d Type=%s Name=%s (is truncated)",
-			     i,hdf5TypNam[typ], buf);
+			     i,hdf5_typ_nam[typ], buf);
 		}
 	}
 	for (i = 0; (nattr>0) && (i<nattr); i++) {
@@ -382,37 +382,37 @@ hid_t make_group(hid_t parent, char* name)
 
 void put_string_attribute(hid_t parent, char* name, char* value)
 {
-	hid_t   attr, spaceAttr, typAttr;
-	hsize_t dimAttr[1] = {1}; // Single dimension array of values
+	hid_t   attr, space_attr, typ_attr;
+	hsize_t dim_attr[1] = {1}; // Single dimension array of values
 
-	typAttr = H5Tcopy(H5T_C_S1);
-	if (typAttr < 0) {
+	typ_attr = H5Tcopy(H5T_C_S1);
+	if (typ_attr < 0) {
 		debug3("PROFILE: failed to copy type for attribute %s", name);
 		return;
 	}
-	H5Tset_size(typAttr,strlen(value));
-	H5Tset_strpad(typAttr,H5T_STR_NULLTERM);
-	spaceAttr = H5Screate_simple(1, dimAttr, NULL);
-	if (spaceAttr < 0) {
-		H5Tclose(typAttr);
+	H5Tset_size(typ_attr,strlen(value));
+	H5Tset_strpad(typ_attr,H5T_STR_NULLTERM);
+	space_attr = H5Screate_simple(1, dim_attr, NULL);
+	if (space_attr < 0) {
+		H5Tclose(typ_attr);
 		debug3("PROFILE: failed to create space for attribute %s",
 		       name);
 		return;
 	}
-	attr = H5Acreate(parent, name, typAttr, spaceAttr,
+	attr = H5Acreate(parent, name, typ_attr, space_attr,
 			 H5P_DEFAULT, H5P_DEFAULT);
 	if (attr < 0) {
-		H5Tclose(typAttr);
-		H5Sclose(spaceAttr);
+		H5Tclose(typ_attr);
+		H5Sclose(space_attr);
 		debug3("PROFILE: failed to create attribute %s", name);
 		return;
 	}
-	if (H5Awrite(attr, typAttr, value) < 0) {
+	if (H5Awrite(attr, typ_attr, value) < 0) {
 		debug3("PROFILE: failed to write attribute %s", name);
 		// Fall through to release resources
 	}
-	H5Sclose(spaceAttr);
-	H5Tclose(typAttr);
+	H5Sclose(space_attr);
+	H5Tclose(typ_attr);
 	H5Aclose(attr);
 
 	return;
@@ -461,18 +461,18 @@ char* get_string_attribute(hid_t parent, char* name)
 
 void put_int_attribute(hid_t parent, char* name, int value)
 {
-	hid_t   attr, spaceAttr;
-	hsize_t dimAttr[1] = {1}; // Single dimension array of values
-	spaceAttr  = H5Screate_simple(1, dimAttr, NULL);
-	if (spaceAttr < 0) {
+	hid_t   attr, space_attr;
+	hsize_t dim_attr[1] = {1}; // Single dimension array of values
+	space_attr  = H5Screate_simple(1, dim_attr, NULL);
+	if (space_attr < 0) {
 		debug3("PROFILE: failed to create space for attribute %s",
 		       name);
 		return;
 	}
-	attr = H5Acreate(parent, name, H5T_NATIVE_INT, spaceAttr,
+	attr = H5Acreate(parent, name, H5T_NATIVE_INT, space_attr,
 			 H5P_DEFAULT, H5P_DEFAULT);
 	if (attr < 0) {
-		H5Sclose(spaceAttr);
+		H5Sclose(space_attr);
 		debug3("PROFILE: failed to create attribute %s", name);
 		return;
 	}
@@ -480,7 +480,7 @@ void put_int_attribute(hid_t parent, char* name, int value)
 		debug3("PROFILE: failed to write attribute %s", name);
 		// Fall through to release resources
 	}
-	H5Sclose(spaceAttr);
+	H5Sclose(space_attr);
 	H5Aclose(attr);
 
 	return;
@@ -504,11 +504,11 @@ int get_int_attribute(hid_t parent, char* name)
 	return value;
 }
 
-void* get_hdf5_data(hid_t parent, char* type, char* namGroup, int* sizeData)
+void* get_hdf5_data(hid_t parent, char* type, char* nam_group, int* size_data)
 {
 	void*   data = NULL;
 
-	hid_t   idDataSet, dtypMemory;
+	hid_t   id_data_set, dtyp_memory;
 	hsize_t szDset;
 	herr_t  ec;
 	char* subtype = NULL;
@@ -526,62 +526,62 @@ void* get_hdf5_data(hid_t parent, char* type, char* namGroup, int* sizeData)
 		       ATTR_SUBDATATYPE);
 		return NULL;
 	}
-	idDataSet = H5Dopen(parent, get_data_set_name(namGroup), H5P_DEFAULT);
-	if (idDataSet < 0) {
+	id_data_set = H5Dopen(parent, get_data_set_name(nam_group), H5P_DEFAULT);
+	if (id_data_set < 0) {
 		xfree(subtype);
 		xfree(ops);
 		debug3("PROFILE: failed to open %s Data Set", type);
 		return NULL;
 	}
 	if (strcmp(subtype, SUBDATA_SUMMARY))
-		dtypMemory = (*(ops->create_memory_datatype))();
+		dtyp_memory = (*(ops->create_memory_datatype))();
 	else
-		dtypMemory = (*(ops->create_s_memory_datatype))();
+		dtyp_memory = (*(ops->create_s_memory_datatype))();
 	xfree(subtype);
-	if (dtypMemory < 0) {
-		H5Dclose(idDataSet);
+	if (dtyp_memory < 0) {
+		H5Dclose(id_data_set);
 		xfree(ops);
 		debug3("PROFILE: failed to create %s memory datatype", type);
 		return NULL;
 	}
-	szDset = H5Dget_storage_size(idDataSet);
-	*sizeData = (int) szDset;
+	szDset = H5Dget_storage_size(id_data_set);
+	*size_data = (int) szDset;
 	if (szDset == 0) {
-		H5Tclose(dtypMemory);
-		H5Dclose(idDataSet);
+		H5Tclose(dtyp_memory);
+		H5Dclose(id_data_set);
 		xfree(ops);
 		debug3("PROFILE: %s data set is empty", type);
 		return NULL;
 	}
 	data = xmalloc(szDset);
 	if (data == NULL) {
-		H5Tclose(dtypMemory);
-		H5Dclose(idDataSet);
+		H5Tclose(dtyp_memory);
+		H5Dclose(id_data_set);
 		xfree(ops);
 		debug3("PROFILE: failed to get memory for %s data set", type);
 		return NULL;
 	}
-	ec = H5Dread(idDataSet, dtypMemory, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+	ec = H5Dread(id_data_set, dtyp_memory, H5S_ALL, H5S_ALL, H5P_DEFAULT,
 		     data);
 	if (ec < 0) {
-		H5Tclose(dtypMemory);
-		H5Dclose(idDataSet);
+		H5Tclose(dtyp_memory);
+		H5Dclose(id_data_set);
 		xfree(data);
 		xfree(ops);
 		debug3("PROFILE: failed to read %s data", type);
 		return NULL;
 	}
-	H5Tclose(dtypMemory);
-	H5Dclose(idDataSet);
+	H5Tclose(dtyp_memory);
+	H5Dclose(id_data_set);
 	xfree(ops);
 
 	return data;
 }
 
 void put_hdf5_data(hid_t parent, char* type, char* subtype,
-		   char* group, void* data, int nItem)
+		   char* group, void* data, int n_item)
 {
-	hid_t   idGroup, dtypMemory, dtypFile, idDataSpace, idDataSet;
+	hid_t   id_group, dtyp_memory, dtyp_file, id_data_space, id_data_set;
 	hsize_t dims[1];
 	herr_t  ec;
 	hdf5_api_ops_t* ops = profile_factory(type);
@@ -591,73 +591,74 @@ void put_hdf5_data(hid_t parent, char* type, char* subtype,
 		return;
 	}
 	// Create the datatypes.
-	if (strcmp(subtype,SUBDATA_SUMMARY) != 0)
-		dtypMemory = (*(ops->create_memory_datatype))();
+	if (strcmp(subtype, SUBDATA_SUMMARY) != 0)
+		dtyp_memory = (*(ops->create_memory_datatype))();
 	else
-		dtypMemory = (*(ops->create_s_memory_datatype))();
-	if (dtypMemory < 0) {
+		dtyp_memory = (*(ops->create_s_memory_datatype))();
+	if (dtyp_memory < 0) {
 		xfree(ops);
 		debug3("PROFILE: failed to create %s memory datatype", type);
 		return;
 	}
 	if (strcmp(subtype,SUBDATA_SUMMARY) != 0)
-		dtypFile = (*(ops->create_file_datatype))();
+		dtyp_file = (*(ops->create_file_datatype))();
 	else
-		dtypFile = (*(ops->create_s_file_datatype))();
-	if (dtypFile < 0) {
-		H5Tclose(dtypMemory);
+		dtyp_file = (*(ops->create_s_file_datatype))();
+	if (dtyp_file < 0) {
+		H5Tclose(dtyp_memory);
 		xfree(ops);
 		debug3("PROFILE: failed to create %s file datatype", type);
 		return;
 	}
 
-	dims[0] = nItem;
-	idDataSpace = H5Screate_simple(1, dims, NULL);
-	if (idDataSpace < 0) {
-		H5Tclose(dtypFile);
-		H5Tclose(dtypMemory);
+	dims[0] = n_item;
+	id_data_space = H5Screate_simple(1, dims, NULL);
+	if (id_data_space < 0) {
+		H5Tclose(dtyp_file);
+		H5Tclose(dtyp_memory);
 		xfree(ops);
 		debug3("PROFILE: failed to create %s space descriptor", type);
 		return;
 	}
 
-	idGroup = H5Gcreate(parent, group, H5P_DEFAULT,
+	id_group = H5Gcreate(parent, group, H5P_DEFAULT,
 			    H5P_DEFAULT, H5P_DEFAULT);
-	if (idGroup < 0) {
-		H5Sclose(idDataSpace);
-		H5Tclose(dtypFile);
-		H5Tclose(dtypMemory);
+	if (id_group < 0) {
+		H5Sclose(id_data_space);
+		H5Tclose(dtyp_file);
+		H5Tclose(dtyp_memory);
 		xfree(ops);
 		debug3("PROFILE: failed to create %s group", group);
 		return;
 	}
 
-	put_string_attribute(idGroup, ATTR_DATATYPE, type);
-	put_string_attribute(idGroup, ATTR_SUBDATATYPE, subtype);
+	put_string_attribute(id_group, ATTR_DATATYPE, type);
+	put_string_attribute(id_group, ATTR_SUBDATATYPE, subtype);
 
-	idDataSet = H5Dcreate(idGroup, get_data_set_name(group), dtypFile,
-			      idDataSpace, H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
-	if (idDataSet < 0) {
-		H5Gclose(idGroup);
-		H5Sclose(idDataSpace);
-		H5Tclose(dtypFile);
-		H5Tclose(dtypMemory);
+	id_data_set = H5Dcreate(id_group, get_data_set_name(group), dtyp_file,
+			       id_data_space, H5P_DEFAULT, H5P_DEFAULT,
+				H5P_DEFAULT);
+	if (id_data_set < 0) {
+		H5Gclose(id_group);
+		H5Sclose(id_data_space);
+		H5Tclose(dtyp_file);
+		H5Tclose(dtyp_memory);
 		xfree(ops);
 		debug3("PROFILE: failed to create %s dataset", group);
 		return;
 	}
 
-	ec = H5Dwrite(idDataSet, dtypMemory, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+	ec = H5Dwrite(id_data_set, dtyp_memory, H5S_ALL, H5S_ALL, H5P_DEFAULT,
 		      data);
 	if (ec < 0) {
 		debug3("PROFILE: failed to create write task data");
 		// Fall through to release resources
 	}
-	H5Dclose(idDataSet);
-	H5Gclose(idGroup);
-	H5Sclose(idDataSpace);
-	H5Tclose(dtypFile);
-	H5Tclose(dtypMemory);
+	H5Dclose(id_data_set);
+	H5Gclose(id_group);
+	H5Sclose(id_data_space);
+	H5Tclose(dtyp_file);
+	H5Tclose(dtyp_memory);
 	xfree(ops);
 
 
@@ -676,172 +677,173 @@ int energy_dataset_size()
 
 hid_t energy_create_memory_datatype()
 {
-	hid_t   mtypEnergy = H5Tcreate(H5T_COMPOUND, sizeof(profile_energy_t));
-	if (mtypEnergy < 0) {
+	hid_t   mtyp_energy = H5Tcreate(H5T_COMPOUND, sizeof(profile_energy_t));
+	if (mtyp_energy < 0) {
 		debug3("PROFILE: failed to create Energy memory datatype");
 		return -1;
 	}
-	MEM_ADD_DATE_TIME(mtypEnergy,"Date Time", profile_energy_t,tod);
-	MEM_ADD_UINT64(mtypEnergy, "Time", profile_energy_t, time);
-	MEM_ADD_UINT64(mtypEnergy, "Power", profile_energy_t, power);
-	MEM_ADD_UINT64(mtypEnergy, "CPU Frequency", profile_energy_t, cpu_freq);
+	MEM_ADD_DATE_TIME(mtyp_energy,"Date Time", profile_energy_t,tod);
+	MEM_ADD_UINT64(mtyp_energy, "Time", profile_energy_t, time);
+	MEM_ADD_UINT64(mtyp_energy, "Power", profile_energy_t, power);
+	MEM_ADD_UINT64(mtyp_energy, "CPU Frequency",
+		       profile_energy_t, cpu_freq);
 
-	return mtypEnergy;
+	return mtyp_energy;
 }
 
 hid_t energy_create_file_datatype()
 {
-	hid_t   ftypEnergy = H5Tcreate(H5T_COMPOUND,(TOD_LEN+3*8));
-	if (ftypEnergy < 0) {
+	hid_t   ftyp_energy = H5Tcreate(H5T_COMPOUND,(TOD_LEN+3*8));
+	if (ftyp_energy < 0) {
 		debug3("PROFILE: failed to create Energy file datatype");
 		return -1;
 	}
 	moffset = TOD_LEN;
-	FILE_ADD_DATE_TIME(ftypEnergy, "Date Time", 0);
-	FILE_ADD_UINT64(ftypEnergy, "Time");
-	FILE_ADD_UINT64(ftypEnergy, "Power");
-	FILE_ADD_UINT64(ftypEnergy, "CPU Frequency");
+	FILE_ADD_DATE_TIME(ftyp_energy, "Date Time", 0);
+	FILE_ADD_UINT64(ftyp_energy, "Time");
+	FILE_ADD_UINT64(ftyp_energy, "Power");
+	FILE_ADD_UINT64(ftyp_energy, "CPU Frequency");
 
-	return ftypEnergy;
+	return ftyp_energy;
 }
 
 hid_t energy_s_create_memory_datatype()
 {
-	hid_t   mtypEnergy = H5Tcreate(H5T_COMPOUND,
+	hid_t   mtyp_energy = H5Tcreate(H5T_COMPOUND,
 				       sizeof(profile_energy_s_t));
-	if (mtypEnergy < 0) {
+	if (mtyp_energy < 0) {
 		debug3("PROFILE: failed to create Energy_s memory datatype");
 		return -1;
 	}
-	MEM_ADD_DATE_TIME(mtypEnergy,"Start Time",
+	MEM_ADD_DATE_TIME(mtyp_energy,"Start Time",
 			  profile_energy_s_t, start_time);
-	MEM_ADD_UINT64(mtypEnergy, "Elapsed Time",
+	MEM_ADD_UINT64(mtyp_energy, "Elapsed Time",
 		       profile_energy_s_t, elapsed_time);
-	MEM_ADD_UINT64(mtypEnergy,"Min Power", profile_energy_s_t, power.min);
-	MEM_ADD_UINT64(mtypEnergy,"Ave Power", profile_energy_s_t, power.ave);
-	MEM_ADD_UINT64(mtypEnergy,"Max Power", profile_energy_s_t, power.max);
-	MEM_ADD_UINT64(mtypEnergy,"Total Power",
+	MEM_ADD_UINT64(mtyp_energy, "Min Power", profile_energy_s_t, power.min);
+	MEM_ADD_UINT64(mtyp_energy, "Ave Power", profile_energy_s_t, power.ave);
+	MEM_ADD_UINT64(mtyp_energy, "Max Power", profile_energy_s_t, power.max);
+	MEM_ADD_UINT64(mtyp_energy, "Total Power",
 		       profile_energy_s_t, power.total);
-	MEM_ADD_UINT64(mtypEnergy,"Min CPU Frequency", profile_energy_s_t,
+	MEM_ADD_UINT64(mtyp_energy, "Min CPU Frequency", profile_energy_s_t,
 		       cpu_freq.min);
-	MEM_ADD_UINT64(mtypEnergy,"Ave CPU Frequency", profile_energy_s_t,
+	MEM_ADD_UINT64(mtyp_energy, "Ave CPU Frequency", profile_energy_s_t,
 		       cpu_freq.ave);
-	MEM_ADD_UINT64(mtypEnergy,"Max CPU Frequency", profile_energy_s_t,
+	MEM_ADD_UINT64(mtyp_energy, "Max CPU Frequency", profile_energy_s_t,
 		       cpu_freq.max);
-	MEM_ADD_UINT64(mtypEnergy,"Total CPU Frequency", profile_energy_s_t,
+	MEM_ADD_UINT64(mtyp_energy, "Total CPU Frequency", profile_energy_s_t,
 		       cpu_freq.total);
 
-	return mtypEnergy;
+	return mtyp_energy;
 }
 
 hid_t energy_s_create_file_datatype()
 {
-	hid_t   ftypEnergy = H5Tcreate(H5T_COMPOUND, (TOD_LEN+9*8));
-	if (ftypEnergy < 0) {
+	hid_t   ftyp_energy = H5Tcreate(H5T_COMPOUND, (TOD_LEN+9*8));
+	if (ftyp_energy < 0) {
 		debug3("PROFILE: failed to create Energy_s file datatype");
 		return -1;
 	}
 	moffset = TOD_LEN;
-	FILE_ADD_DATE_TIME(ftypEnergy, "Start Time", 0);
-	FILE_ADD_UINT64(ftypEnergy, "Elapsed Time");
-	FILE_ADD_UINT64(ftypEnergy, "Min Power");
-	FILE_ADD_UINT64(ftypEnergy, "Ave Power");
-	FILE_ADD_UINT64(ftypEnergy, "Max Power");
-	FILE_ADD_UINT64(ftypEnergy, "Total Power");
-	FILE_ADD_UINT64(ftypEnergy, "Min CPU Frequency");
-	FILE_ADD_UINT64(ftypEnergy, "Ave CPU Frequency");
-	FILE_ADD_UINT64(ftypEnergy, "Max CPU Frequency");
-	FILE_ADD_UINT64(ftypEnergy, "Total CPU Frequency");
+	FILE_ADD_DATE_TIME(ftyp_energy, "Start Time", 0);
+	FILE_ADD_UINT64(ftyp_energy, "Elapsed Time");
+	FILE_ADD_UINT64(ftyp_energy, "Min Power");
+	FILE_ADD_UINT64(ftyp_energy, "Ave Power");
+	FILE_ADD_UINT64(ftyp_energy, "Max Power");
+	FILE_ADD_UINT64(ftyp_energy, "Total Power");
+	FILE_ADD_UINT64(ftyp_energy, "Min CPU Frequency");
+	FILE_ADD_UINT64(ftyp_energy, "Ave CPU Frequency");
+	FILE_ADD_UINT64(ftyp_energy, "Max CPU Frequency");
+	FILE_ADD_UINT64(ftyp_energy, "Total CPU Frequency");
 
-	return ftypEnergy;
+	return ftyp_energy;
 }
 
-void* energy_init_job_series(int nSamples)
+void* energy_init_job_series(int n_samples)
 {
-	profile_energy_t*  energyData;
+	profile_energy_t*  energy_data;
 
-	energyData = xmalloc(nSamples * sizeof(profile_energy_t));
-	if (energyData == NULL) {
+	energy_data = xmalloc(n_samples * sizeof(profile_energy_t));
+	if (energy_data == NULL) {
 		debug3("PROFILE: failed to get memory for energy data");
 		return NULL;
 	}
-	return (void*) energyData;
+	return (void*) energy_data;
 }
 
 void energy_merge_step_series(hid_t group, void* prior, void* cur, void* buf)
 {
 //	This is a difference series
-	profile_energy_t* prfCur = (profile_energy_t*) cur;
-	profile_energy_t* prfBuf = (profile_energy_t*) buf;
-	struct tm *ts = localtime(&prfCur->time);
-	strftime(prfBuf->tod, TOD_LEN, TOD_FMT, ts);
+	profile_energy_t* prf_cur = (profile_energy_t*) cur;
+	profile_energy_t* prf_buf = (profile_energy_t*) buf;
+	struct tm *ts = localtime(&prf_cur->time);
+	strftime(prf_buf->tod, TOD_LEN, TOD_FMT, ts);
 	if (prior == NULL) {
 		// First sample.
-		seriesStart = prfCur->time;
-		prfBuf->time = 0;
+		seriesStart = prf_cur->time;
+		prf_buf->time = 0;
 
 	} else {
-		prfBuf->time = prfCur->time - seriesStart;
+		prf_buf->time = prf_cur->time - seriesStart;
 	}
-	prfBuf->power = prfCur->power;
-	prfBuf->cpu_freq = prfCur->cpu_freq;
+	prf_buf->power = prf_cur->power;
+	prf_buf->cpu_freq = prf_cur->cpu_freq;
 	return;
 }
 
-void* energy_series_total(int nSamples, void* data)
+void* energy_series_total(int n_samples, void* data)
 {
-	profile_energy_t* energyData;
+	profile_energy_t* energy_data;
 	profile_energy_s_t* total;
-	if (nSamples < 1)
+	if (n_samples < 1)
 		return NULL;
-	energyData = (profile_energy_t*) data;
+	energy_data = (profile_energy_t*) data;
 	total = xmalloc(sizeof(profile_energy_s_t));
 	if (total == NULL) {
 		error("PROFILE: Out of memory getting energy total");
 		return NULL;
 	}
 	// Assuming energy series are a difference series
-	strcpy(total->start_time, energyData[0].tod);
-	total->elapsed_time = energyData[nSamples-1].time;
-	INCR_DIF_SAMPLE(total, energyData, power, nSamples);
-	INCR_DIF_SAMPLE(total, energyData, cpu_freq, nSamples);
+	strcpy(total->start_time, energy_data[0].tod);
+	total->elapsed_time = energy_data[n_samples-1].time;
+	INCR_DIF_SAMPLE(total, energy_data, power, n_samples);
+	INCR_DIF_SAMPLE(total, energy_data, cpu_freq, n_samples);
 	return total;
 }
 
-void energy_extract_series(FILE* fOt, bool putHeader, int job, int step,
-			   char* node, char* series, void* data, int sizeData)
+void energy_extract_series(FILE* fp, bool put_header, int job, int step,
+			   char* node, char* series, void* data, int size_data)
 {
 
-	int nItems, ix;
-	profile_energy_t* energyData = (profile_energy_t*) data;
-	if (putHeader) {
-		fprintf(fOt, "Job,Step,Node,Series,Date_Time,Elapsed_Time,"
+	int n_items, ix;
+	profile_energy_t* energy_data = (profile_energy_t*) data;
+	if (put_header) {
+		fprintf(fp, "Job,Step,Node,Series,Date_Time,Elapsed_Time,"
 			"Power,CPU_Frequency\n");
 	}
-	nItems = sizeData / sizeof(profile_energy_t);
-	for (ix=0; ix < nItems; ix++) {
-		fprintf(fOt, "%d,%d,%s,%s,%s,%ld,%ld,%ld\n", job, step, node,
-			series, energyData[ix].tod, energyData[ix].time,
-			energyData[ix].power, energyData[ix].cpu_freq);
+	n_items = size_data / sizeof(profile_energy_t);
+	for (ix=0; ix < n_items; ix++) {
+		fprintf(fp, "%d,%d,%s,%s,%s,%ld,%ld,%ld\n", job, step, node,
+			series, energy_data[ix].tod, energy_data[ix].time,
+			energy_data[ix].power, energy_data[ix].cpu_freq);
 	}
 	return;
 }
 
-void energy_extract_total(FILE* fOt, bool putHeader, int job, int step,
-			  char* node, char* series, void* data, int sizeData)
+void energy_extract_total(FILE* fp, bool put_header, int job, int step,
+			  char* node, char* series, void* data, int size_data)
 {
-	profile_energy_s_t* energyData = (profile_energy_s_t*) data;
-	if (putHeader) {
-		fprintf(fOt, "Job,Step,Node,Series,Start_Time,Elapsed_Time,"
+	profile_energy_s_t* energy_data = (profile_energy_s_t*) data;
+	if (put_header) {
+		fprintf(fp, "Job,Step,Node,Series,Start_Time,Elapsed_Time,"
 			"Min_Power,Ave_Power,Max_Power,Total_Power,"
 			"Min_CPU Frequency,Ave_CPU Frequency,"
 			"Max_CPU Frequency,Total_CPU Frequency\n");
 	}
-	fprintf(fOt, "%d,%d,%s,%s,%s,%ld", job, step, node, series,
-		energyData->start_time, energyData->elapsed_time);
-	PUT_UINT_SUM(fOt, energyData->power, ",");
-	PUT_UINT_SUM(fOt, energyData->cpu_freq, ",");
-	fprintf(fOt, "\n");
+	fprintf(fp, "%d,%d,%s,%s,%s,%ld", job, step, node, series,
+		energy_data->start_time, energy_data->elapsed_time);
+	PUT_UINT_SUM(fp, energy_data->power, ",");
+	PUT_UINT_SUM(fp, energy_data->cpu_freq, ",");
+	fprintf(fp, "\n");
 	return;
 }
 
@@ -873,152 +875,152 @@ int io_dataset_size()
 
 hid_t io_create_memory_datatype(void)
 {
-	hid_t   mtypIO = -1;
+	hid_t   mtyp_io = -1;
 
-	mtypIO = H5Tcreate(H5T_COMPOUND, sizeof(profile_io_t));
-	if (mtypIO < 0) {
+	mtyp_io = H5Tcreate(H5T_COMPOUND, sizeof(profile_io_t));
+	if (mtyp_io < 0) {
 		debug3("PROFILE: failed to create IO memory datatype");
 		return -1;
 	}
-	MEM_ADD_DATE_TIME(mtypIO,"Date Time", profile_io_t,tod);
-	MEM_ADD_UINT64(mtypIO, "Time", profile_io_t, time);
-	MEM_ADD_UINT64(mtypIO, "Reads", profile_io_t, reads);
-	MEM_ADD_DBL(mtypIO, "Megabytes Read", profile_io_t, read_size);
-	MEM_ADD_UINT64(mtypIO, "Writes", profile_io_t, writes);
-	MEM_ADD_DBL(mtypIO, "Megabytes Write", profile_io_t,write_size);
-	return mtypIO;
+	MEM_ADD_DATE_TIME(mtyp_io,"Date Time", profile_io_t,tod);
+	MEM_ADD_UINT64(mtyp_io, "Time", profile_io_t, time);
+	MEM_ADD_UINT64(mtyp_io, "Reads", profile_io_t, reads);
+	MEM_ADD_DBL(mtyp_io, "Megabytes Read", profile_io_t, read_size);
+	MEM_ADD_UINT64(mtyp_io, "Writes", profile_io_t, writes);
+	MEM_ADD_DBL(mtyp_io, "Megabytes Write", profile_io_t,write_size);
+	return mtyp_io;
 }
 
 hid_t io_create_file_datatype(void)
 {
-	hid_t   ftypIO = -1;
+	hid_t   ftyp_io = -1;
 
-	ftypIO = H5Tcreate(H5T_COMPOUND,TOD_LEN+5*8);
-	if (ftypIO < 0) {
+	ftyp_io = H5Tcreate(H5T_COMPOUND,TOD_LEN+5*8);
+	if (ftyp_io < 0) {
 		debug3("PROFILE: failed to create IO file datatype");
 		return -1;
 	}
 	moffset = TOD_LEN;
-	FILE_ADD_DATE_TIME(ftypIO, "Date Time", 0);
-	FILE_ADD_UINT64(ftypIO, "Time");
-	FILE_ADD_UINT64(ftypIO, "Reads");
-	FILE_ADD_DBL(ftypIO, "Megabytes Read");
-	FILE_ADD_UINT64(ftypIO, "Writes");
-	FILE_ADD_DBL(ftypIO, "Megabytes Write");
+	FILE_ADD_DATE_TIME(ftyp_io, "Date Time", 0);
+	FILE_ADD_UINT64(ftyp_io, "Time");
+	FILE_ADD_UINT64(ftyp_io, "Reads");
+	FILE_ADD_DBL(ftyp_io, "Megabytes Read");
+	FILE_ADD_UINT64(ftyp_io, "Writes");
+	FILE_ADD_DBL(ftyp_io, "Megabytes Write");
 
-	return ftypIO;
+	return ftyp_io;
 }
 
 hid_t io_s_create_memory_datatype(void)
 {
-	hid_t   mtypIO = -1;
+	hid_t   mtyp_io = -1;
 
-	mtypIO = H5Tcreate(H5T_COMPOUND, sizeof(profile_io_s_t));
-	if (mtypIO < 0) {
+	mtyp_io = H5Tcreate(H5T_COMPOUND, sizeof(profile_io_s_t));
+	if (mtyp_io < 0) {
 		debug3("PROFILE: failed to create IO memory datatype");
 		return -1;
 	}
-	MEM_ADD_DATE_TIME(mtypIO,"Start Time", profile_io_s_t, start_time);
-	MEM_ADD_UINT64(mtypIO, "Elapsed Time", profile_io_s_t, elapsed_time);
-	MEM_ADD_UINT64(mtypIO, "Min Reads", profile_io_s_t, reads.min);
-	MEM_ADD_UINT64(mtypIO, "Ave Reads", profile_io_s_t, reads.ave);
-	MEM_ADD_UINT64(mtypIO, "Max Reads", profile_io_s_t, reads.max);
-	MEM_ADD_UINT64(mtypIO, "Total Reads", profile_io_s_t, reads.total);
-	MEM_ADD_DBL(mtypIO, "Min Read Megabytes",
+	MEM_ADD_DATE_TIME(mtyp_io,"Start Time", profile_io_s_t, start_time);
+	MEM_ADD_UINT64(mtyp_io, "Elapsed Time", profile_io_s_t, elapsed_time);
+	MEM_ADD_UINT64(mtyp_io, "Min Reads", profile_io_s_t, reads.min);
+	MEM_ADD_UINT64(mtyp_io, "Ave Reads", profile_io_s_t, reads.ave);
+	MEM_ADD_UINT64(mtyp_io, "Max Reads", profile_io_s_t, reads.max);
+	MEM_ADD_UINT64(mtyp_io, "Total Reads", profile_io_s_t, reads.total);
+	MEM_ADD_DBL(mtyp_io, "Min Read Megabytes",
 		    profile_io_s_t, read_size.min);
-	MEM_ADD_DBL(mtypIO, "Ave Read Megabytes",
+	MEM_ADD_DBL(mtyp_io, "Ave Read Megabytes",
 		    profile_io_s_t, read_size.ave);
-	MEM_ADD_DBL(mtypIO, "Max Read Megabytes",
+	MEM_ADD_DBL(mtyp_io, "Max Read Megabytes",
 		    profile_io_s_t, read_size.max);
-	MEM_ADD_DBL(mtypIO, "Total Read Megabytes", profile_io_s_t,
+	MEM_ADD_DBL(mtyp_io, "Total Read Megabytes", profile_io_s_t,
 		    read_size.total);
-	MEM_ADD_UINT64(mtypIO, "Min Writes", profile_io_s_t, writes.min);
-	MEM_ADD_UINT64(mtypIO, "Ave Writes", profile_io_s_t, writes.ave);
-	MEM_ADD_UINT64(mtypIO, "Max Writes", profile_io_s_t, writes.max);
-	MEM_ADD_UINT64(mtypIO, "Total Writes", profile_io_s_t, writes.total);
-	MEM_ADD_DBL(mtypIO, "Min Write Megabytes", profile_io_s_t,
+	MEM_ADD_UINT64(mtyp_io, "Min Writes", profile_io_s_t, writes.min);
+	MEM_ADD_UINT64(mtyp_io, "Ave Writes", profile_io_s_t, writes.ave);
+	MEM_ADD_UINT64(mtyp_io, "Max Writes", profile_io_s_t, writes.max);
+	MEM_ADD_UINT64(mtyp_io, "Total Writes", profile_io_s_t, writes.total);
+	MEM_ADD_DBL(mtyp_io, "Min Write Megabytes", profile_io_s_t,
 		    write_size.min);
-	MEM_ADD_DBL(mtypIO, "Ave Write Megabytes", profile_io_s_t,
+	MEM_ADD_DBL(mtyp_io, "Ave Write Megabytes", profile_io_s_t,
 		    write_size.ave);
-	MEM_ADD_DBL(mtypIO, "Max Write Megabytes", profile_io_s_t,
+	MEM_ADD_DBL(mtyp_io, "Max Write Megabytes", profile_io_s_t,
 		    write_size.max);
-	MEM_ADD_DBL(mtypIO, "Total Write Megabytes", profile_io_s_t,
+	MEM_ADD_DBL(mtyp_io, "Total Write Megabytes", profile_io_s_t,
 		    write_size.total);
 
-	return mtypIO;
+	return mtyp_io;
 }
 
 hid_t io_s_create_file_datatype(void)
 {
-	hid_t   ftypIO = -1;
+	hid_t   ftyp_io = -1;
 
-	ftypIO = H5Tcreate(H5T_COMPOUND,TOD_LEN+17*8);
-	if (ftypIO < 0) {
+	ftyp_io = H5Tcreate(H5T_COMPOUND,TOD_LEN+17*8);
+	if (ftyp_io < 0) {
 		debug3("PROFILE: failed to create IO file datatype");
 		return -1;
 	}
 	moffset = TOD_LEN;
-	FILE_ADD_DATE_TIME(ftypIO,"Start Time", 0);
-	FILE_ADD_UINT64(ftypIO, "Elapsed Time");
-	FILE_ADD_UINT64(ftypIO, "Min Reads");
-	FILE_ADD_UINT64(ftypIO, "Ave Reads");
-	FILE_ADD_UINT64(ftypIO, "Max Reads");
-	FILE_ADD_UINT64(ftypIO, "Total Reads");
-	FILE_ADD_DBL(ftypIO, "Min Read Megabytes");
-	FILE_ADD_DBL(ftypIO, "Ave Read Megabytes");
-	FILE_ADD_DBL(ftypIO, "Max Read Megabytes");
-	FILE_ADD_DBL(ftypIO, "Total Read Megabytes");
-	FILE_ADD_UINT64(ftypIO, "Min Writes");
-	FILE_ADD_UINT64(ftypIO, "Ave Writes");
-	FILE_ADD_UINT64(ftypIO, "Max Writes");
-	FILE_ADD_UINT64(ftypIO, "Total Writes");
-	FILE_ADD_DBL(ftypIO, "Min Write Megabytes");
-	FILE_ADD_DBL(ftypIO, "Ave Write Megabytes");
-	FILE_ADD_DBL(ftypIO, "Max Write Megabytes");
-	FILE_ADD_DBL(ftypIO, "Total Write Megabytes");
+	FILE_ADD_DATE_TIME(ftyp_io,"Start Time", 0);
+	FILE_ADD_UINT64(ftyp_io, "Elapsed Time");
+	FILE_ADD_UINT64(ftyp_io, "Min Reads");
+	FILE_ADD_UINT64(ftyp_io, "Ave Reads");
+	FILE_ADD_UINT64(ftyp_io, "Max Reads");
+	FILE_ADD_UINT64(ftyp_io, "Total Reads");
+	FILE_ADD_DBL(ftyp_io, "Min Read Megabytes");
+	FILE_ADD_DBL(ftyp_io, "Ave Read Megabytes");
+	FILE_ADD_DBL(ftyp_io, "Max Read Megabytes");
+	FILE_ADD_DBL(ftyp_io, "Total Read Megabytes");
+	FILE_ADD_UINT64(ftyp_io, "Min Writes");
+	FILE_ADD_UINT64(ftyp_io, "Ave Writes");
+	FILE_ADD_UINT64(ftyp_io, "Max Writes");
+	FILE_ADD_UINT64(ftyp_io, "Total Writes");
+	FILE_ADD_DBL(ftyp_io, "Min Write Megabytes");
+	FILE_ADD_DBL(ftyp_io, "Ave Write Megabytes");
+	FILE_ADD_DBL(ftyp_io, "Max Write Megabytes");
+	FILE_ADD_DBL(ftyp_io, "Total Write Megabytes");
 
-	return ftypIO;
+	return ftyp_io;
 }
 
-void* io_init_job_series(int nSamples)
+void* io_init_job_series(int n_samples)
 {
-	profile_io_t*  ioData;
-	ioData = xmalloc(nSamples * sizeof(profile_io_t));
-	if (ioData == NULL) {
+	profile_io_t*  io_data;
+	io_data = xmalloc(n_samples * sizeof(profile_io_t));
+	if (io_data == NULL) {
 		debug3("PROFILE: failed to get memory for combined io data");
 		return NULL;
 	}
-	return (void*) ioData;
+	return (void*) io_data;
 }
 
 void io_merge_step_series(hid_t group, void* prior, void* cur, void* buf)
 {
 	// This is a difference series
-	profile_io_t* prfCur = (profile_io_t*) cur;
-	profile_io_t* prfBuf = (profile_io_t*) buf;
-	struct tm *ts = localtime(&prfCur->time);
-	strftime(prfBuf->tod, TOD_LEN, TOD_FMT, ts);
+	profile_io_t* prf_cur = (profile_io_t*) cur;
+	profile_io_t* prf_buf = (profile_io_t*) buf;
+	struct tm *ts = localtime(&prf_cur->time);
+	strftime(prf_buf->tod, TOD_LEN, TOD_FMT, ts);
 	if (prior == NULL) {
 		// First sample.
-		seriesStart = prfCur->time;
-		prfBuf->time = 0;
+		seriesStart = prf_cur->time;
+		prf_buf->time = 0;
 	} else {
-		prfBuf->time = prfCur->time - seriesStart;
+		prf_buf->time = prf_cur->time - seriesStart;
 	}
-	prfBuf->reads = prfCur->reads;
-	prfBuf->writes = prfCur->writes;
-	prfBuf->read_size = prfCur->read_size;
-	prfBuf->write_size = prfCur->write_size;
+	prf_buf->reads = prf_cur->reads;
+	prf_buf->writes = prf_cur->writes;
+	prf_buf->read_size = prf_cur->read_size;
+	prf_buf->write_size = prf_cur->write_size;
 	return;
 }
 
-void* io_series_total(int nSamples, void* data)
+void* io_series_total(int n_samples, void* data)
 {
-	profile_io_t* ioData;
+	profile_io_t* io_data;
 	profile_io_s_t* total;
-	if (nSamples < 1)
+	if (n_samples < 1)
 		return NULL;
-	ioData = (profile_io_t*) data;
+	io_data = (profile_io_t*) data;
 	total = xmalloc(sizeof(profile_io_s_t));
 	if (total == NULL) {
 		error("PROFILE: Out of memory getting I/O total");
@@ -1026,41 +1028,41 @@ void* io_series_total(int nSamples, void* data)
 	}
 	// Assuming io series are a running total, and the first
 	// sample just sets the initial conditions
-	strcpy(total->start_time, ioData[0].tod);
-	total->elapsed_time = ioData[nSamples-1].time;
-	INCR_DIF_SAMPLE(total, ioData, reads, nSamples);
-	INCR_DIF_SAMPLE(total, ioData, read_size, nSamples);
-	INCR_DIF_SAMPLE(total, ioData, writes, nSamples);
-	INCR_DIF_SAMPLE(total, ioData, write_size, nSamples);
+	strcpy(total->start_time, io_data[0].tod);
+	total->elapsed_time = io_data[n_samples-1].time;
+	INCR_DIF_SAMPLE(total, io_data, reads, n_samples);
+	INCR_DIF_SAMPLE(total, io_data, read_size, n_samples);
+	INCR_DIF_SAMPLE(total, io_data, writes, n_samples);
+	INCR_DIF_SAMPLE(total, io_data, write_size, n_samples);
 	return total;
 }
 
-void io_extract_series(FILE* fOt, bool putHeader, int job, int step,
-		       char* node, char* series, void* data, int sizeData)
+void io_extract_series(FILE* fp, bool put_header, int job, int step,
+		       char* node, char* series, void* data, int size_data)
 {
-	int nItems, ix;
-	profile_io_t* ioData = (profile_io_t*) data;
-	if (putHeader) {
-		fprintf(fOt,"Job,Step,Node,Series,Date_Time,Elapsed_time,"
+	int n_items, ix;
+	profile_io_t* io_data = (profile_io_t*) data;
+	if (put_header) {
+		fprintf(fp,"Job,Step,Node,Series,Date_Time,Elapsed_time,"
 			"Reads,Read Megabytes,Writes,Write Megabytes\n");
 	}
-	nItems = sizeData / sizeof(profile_io_t);
-	for (ix=0; ix < nItems; ix++) {
-		fprintf(fOt,"%d,%d,%s,%s,%s,%ld,%ld,%.3f,%ld,%.3f\n",
+	n_items = size_data / sizeof(profile_io_t);
+	for (ix=0; ix < n_items; ix++) {
+		fprintf(fp,"%d,%d,%s,%s,%s,%ld,%ld,%.3f,%ld,%.3f\n",
 			job,step,node,series,
-			ioData[ix].tod, ioData[ix].time,
-			ioData[ix].reads, ioData[ix].read_size,
-			ioData[ix].writes, ioData[ix].write_size);
+			io_data[ix].tod, io_data[ix].time,
+			io_data[ix].reads, io_data[ix].read_size,
+			io_data[ix].writes, io_data[ix].write_size);
 	}
 	return;
 }
 
-void io_extract_total(FILE* fOt, bool putHeader, int job, int step,
-		      char* node, char* series, void* data, int sizeData)
+void io_extract_total(FILE* fp, bool put_header, int job, int step,
+		      char* node, char* series, void* data, int size_data)
 {
-	profile_io_s_t* ioData = (profile_io_s_t*) data;
-	if (putHeader) {
-		fprintf(fOt,"Job,Step,Node,Series,Start_Time,Elapsed_time,"
+	profile_io_s_t* io_data = (profile_io_s_t*) data;
+	if (put_header) {
+		fprintf(fp,"Job,Step,Node,Series,Start_Time,Elapsed_time,"
 			"Min_Reads,Ave_Reads,Max_Reads,Total_Reads,"
 			"Min_Read_Megabytes,Ave_Read_Megabytes,"
 			"Max_Read_Megabytes,Total_Read_Megabytes,"
@@ -1068,13 +1070,13 @@ void io_extract_total(FILE* fOt, bool putHeader, int job, int step,
 			"Min_Write_Megabytes,Ave_Write_Megabytes,"
 			"Max_Write_Megabytes,Total_Write_Megabytes\n");
 	}
-	fprintf(fOt,"%d,%d,%s,%s,%s,%ld", job,step,node,series,
-		ioData->start_time, ioData->elapsed_time);
-	PUT_UINT_SUM(fOt, ioData->reads,",");
-	PUT_DBL_SUM(fOt, ioData->read_size,",");
-	PUT_UINT_SUM(fOt, ioData->writes,",");
-	PUT_DBL_SUM(fOt, ioData->write_size,",");
-	fprintf(fOt,"\n");
+	fprintf(fp,"%d,%d,%s,%s,%s,%ld", job,step,node,series,
+		io_data->start_time, io_data->elapsed_time);
+	PUT_UINT_SUM(fp, io_data->reads,",");
+	PUT_DBL_SUM(fp, io_data->read_size,",");
+	PUT_UINT_SUM(fp, io_data->writes,",");
+	PUT_DBL_SUM(fp, io_data->write_size,",");
+	fprintf(fp,"\n");
 	return;
 }
 
@@ -1106,161 +1108,161 @@ int network_dataset_size()
 
 hid_t network_create_memory_datatype(void)
 {
-	hid_t   mtypNetwork = H5Tcreate(H5T_COMPOUND,
+	hid_t   mtyp_network = H5Tcreate(H5T_COMPOUND,
 					sizeof(profile_network_t));
-	if (mtypNetwork < 0) {
+	if (mtyp_network < 0) {
 		debug3("PROFILE: failed to create Network memory datatype");
 		return -1;
 	}
-	MEM_ADD_DATE_TIME(mtypNetwork,"Date Time", profile_network_t,tod);
-	MEM_ADD_UINT64(mtypNetwork, "Time", profile_network_t, time);
-	MEM_ADD_UINT64(mtypNetwork, "Packets In",
+	MEM_ADD_DATE_TIME(mtyp_network,"Date Time", profile_network_t,tod);
+	MEM_ADD_UINT64(mtyp_network, "Time", profile_network_t, time);
+	MEM_ADD_UINT64(mtyp_network, "Packets In",
 		       profile_network_t, packets_in);
-	MEM_ADD_DBL(mtypNetwork, "Megabytes In", profile_network_t, size_in);
-	MEM_ADD_UINT64(mtypNetwork, "Packets Out",
+	MEM_ADD_DBL(mtyp_network, "Megabytes In", profile_network_t, size_in);
+	MEM_ADD_UINT64(mtyp_network, "Packets Out",
 		       profile_network_t, packets_out);
-	MEM_ADD_DBL(mtypNetwork, "Megabytes Out", profile_network_t,size_out);
+	MEM_ADD_DBL(mtyp_network, "Megabytes Out", profile_network_t,size_out);
 
-	return mtypNetwork;
+	return mtyp_network;
 }
 
 hid_t network_create_file_datatype(void)
 {
-	hid_t   ftypNetwork = H5Tcreate(H5T_COMPOUND, TOD_LEN+5*8);
-	if (ftypNetwork < 0) {
+	hid_t   ftyp_network = H5Tcreate(H5T_COMPOUND, TOD_LEN+5*8);
+	if (ftyp_network < 0) {
 		debug3("PROFILE: failed to create Network file datatype");
 		return -1;
 	}
 	moffset = TOD_LEN;
-	FILE_ADD_DATE_TIME(ftypNetwork, "Date Time", 0);
-	FILE_ADD_UINT64(ftypNetwork, "Time");
-	FILE_ADD_UINT64(ftypNetwork, "Packets In");
-	FILE_ADD_DBL(ftypNetwork, "Megabytes In");
-	FILE_ADD_UINT64(ftypNetwork, "Packets Out");
-	FILE_ADD_DBL(ftypNetwork, "Megabytes Out");
+	FILE_ADD_DATE_TIME(ftyp_network, "Date Time", 0);
+	FILE_ADD_UINT64(ftyp_network, "Time");
+	FILE_ADD_UINT64(ftyp_network, "Packets In");
+	FILE_ADD_DBL(ftyp_network, "Megabytes In");
+	FILE_ADD_UINT64(ftyp_network, "Packets Out");
+	FILE_ADD_DBL(ftyp_network, "Megabytes Out");
 
-	return ftypNetwork;
+	return ftyp_network;
 }
 
 hid_t network_s_create_memory_datatype(void)
 {
-	hid_t   mtypNetwork = -1;
+	hid_t   mtyp_network = -1;
 
-	mtypNetwork = H5Tcreate(H5T_COMPOUND, sizeof(profile_network_s_t));
-	if (mtypNetwork < 0) {
+	mtyp_network = H5Tcreate(H5T_COMPOUND, sizeof(profile_network_s_t));
+	if (mtyp_network < 0) {
 		debug3("PROFILE: failed to create Network memory datatype");
 		return -1;
 	}
-	MEM_ADD_DATE_TIME(mtypNetwork,"Start Time", profile_network_s_t,
+	MEM_ADD_DATE_TIME(mtyp_network,"Start Time", profile_network_s_t,
 			  start_time);
-	MEM_ADD_UINT64(mtypNetwork, "Elapsed Time", profile_network_s_t,
+	MEM_ADD_UINT64(mtyp_network, "Elapsed Time", profile_network_s_t,
 		       elapsed_time);
-	MEM_ADD_UINT64(mtypNetwork, "Min Packets In", profile_network_s_t,
+	MEM_ADD_UINT64(mtyp_network, "Min Packets In", profile_network_s_t,
 		       packets_in.min);
-	MEM_ADD_UINT64(mtypNetwork, "Ave Packets In", profile_network_s_t,
+	MEM_ADD_UINT64(mtyp_network, "Ave Packets In", profile_network_s_t,
 		       packets_in.ave);
-	MEM_ADD_UINT64(mtypNetwork, "Max Packets In", profile_network_s_t,
+	MEM_ADD_UINT64(mtyp_network, "Max Packets In", profile_network_s_t,
 		       packets_in.max);
-	MEM_ADD_UINT64(mtypNetwork, "Total Packets In", profile_network_s_t,
+	MEM_ADD_UINT64(mtyp_network, "Total Packets In", profile_network_s_t,
 		       packets_in.total);
-	MEM_ADD_DBL(mtypNetwork, "Min Megabytes In", profile_network_s_t,
+	MEM_ADD_DBL(mtyp_network, "Min Megabytes In", profile_network_s_t,
 		    size_in.min);
-	MEM_ADD_DBL(mtypNetwork, "Ave Megabytes In", profile_network_s_t,
+	MEM_ADD_DBL(mtyp_network, "Ave Megabytes In", profile_network_s_t,
 		    size_in.ave);
-	MEM_ADD_DBL(mtypNetwork, "Max Megabytes In", profile_network_s_t,
+	MEM_ADD_DBL(mtyp_network, "Max Megabytes In", profile_network_s_t,
 		    size_in.max);
-	MEM_ADD_DBL(mtypNetwork, "Total Megabytes In", profile_network_s_t,
+	MEM_ADD_DBL(mtyp_network, "Total Megabytes In", profile_network_s_t,
 		    size_in.total);
-	MEM_ADD_UINT64(mtypNetwork, "Min Packets Out", profile_network_s_t,
+	MEM_ADD_UINT64(mtyp_network, "Min Packets Out", profile_network_s_t,
 		       packets_out.min);
-	MEM_ADD_UINT64(mtypNetwork, "Ave Packets Out", profile_network_s_t,
+	MEM_ADD_UINT64(mtyp_network, "Ave Packets Out", profile_network_s_t,
 		       packets_out.ave);
-	MEM_ADD_UINT64(mtypNetwork, "Max Packets Out", profile_network_s_t,
+	MEM_ADD_UINT64(mtyp_network, "Max Packets Out", profile_network_s_t,
 		       packets_out.max);
-	MEM_ADD_UINT64(mtypNetwork, "Total Packets Out", profile_network_s_t,
+	MEM_ADD_UINT64(mtyp_network, "Total Packets Out", profile_network_s_t,
 		       packets_out.total);
-	MEM_ADD_DBL(mtypNetwork, "Min Megabytes Out", profile_network_s_t,
+	MEM_ADD_DBL(mtyp_network, "Min Megabytes Out", profile_network_s_t,
 		    size_out.min);
-	MEM_ADD_DBL(mtypNetwork, "Ave Megabytes Out", profile_network_s_t,
+	MEM_ADD_DBL(mtyp_network, "Ave Megabytes Out", profile_network_s_t,
 		    size_out.ave);
-	MEM_ADD_DBL(mtypNetwork, "Max Megabytes Out", profile_network_s_t,
+	MEM_ADD_DBL(mtyp_network, "Max Megabytes Out", profile_network_s_t,
 		    size_out.max);
-	MEM_ADD_DBL(mtypNetwork, "Total Megabytes Out",profile_network_s_t,
+	MEM_ADD_DBL(mtyp_network, "Total Megabytes Out",profile_network_s_t,
 		    size_out.total);
 
-	return mtypNetwork;
+	return mtyp_network;
 }
 
 hid_t network_s_create_file_datatype(void)
 {
-	hid_t   ftypNetwork = H5Tcreate(H5T_COMPOUND, TOD_LEN+17*8);
-	if (ftypNetwork < 0) {
+	hid_t   ftyp_network = H5Tcreate(H5T_COMPOUND, TOD_LEN+17*8);
+	if (ftyp_network < 0) {
 		debug3("PROFILE: failed to create Network file datatype");
 		return -1;
 	}
 	moffset = TOD_LEN;
-	FILE_ADD_DATE_TIME(ftypNetwork, "Start Time", 0);
-	FILE_ADD_UINT64(ftypNetwork, "Elapsed Time");
-	FILE_ADD_UINT64(ftypNetwork, "Min Packets In");
-	FILE_ADD_UINT64(ftypNetwork, "Ave Packets In");
-	FILE_ADD_UINT64(ftypNetwork, "Max Packets In");
-	FILE_ADD_UINT64(ftypNetwork, "Total Packets In");
-	FILE_ADD_DBL(ftypNetwork, "Min Megabytes In");
-	FILE_ADD_DBL(ftypNetwork, "Ave Megabytes In");
-	FILE_ADD_DBL(ftypNetwork, "Max Megabytes In");
-	FILE_ADD_DBL(ftypNetwork, "Total Megabytes In");
-	FILE_ADD_UINT64(ftypNetwork, "Min Packets Out");
-	FILE_ADD_UINT64(ftypNetwork, "Ave Packets Out");
-	FILE_ADD_UINT64(ftypNetwork, "Max Packets Out");
-	FILE_ADD_UINT64(ftypNetwork, "Total Packets Out");
-	FILE_ADD_DBL(ftypNetwork, "Min Megabytes Out");
-	FILE_ADD_DBL(ftypNetwork, "Ave Megabytes Out");
-	FILE_ADD_DBL(ftypNetwork, "Max Megabytes Out");
-	FILE_ADD_DBL(ftypNetwork, "Total Megabytes Out");
+	FILE_ADD_DATE_TIME(ftyp_network, "Start Time", 0);
+	FILE_ADD_UINT64(ftyp_network, "Elapsed Time");
+	FILE_ADD_UINT64(ftyp_network, "Min Packets In");
+	FILE_ADD_UINT64(ftyp_network, "Ave Packets In");
+	FILE_ADD_UINT64(ftyp_network, "Max Packets In");
+	FILE_ADD_UINT64(ftyp_network, "Total Packets In");
+	FILE_ADD_DBL(ftyp_network, "Min Megabytes In");
+	FILE_ADD_DBL(ftyp_network, "Ave Megabytes In");
+	FILE_ADD_DBL(ftyp_network, "Max Megabytes In");
+	FILE_ADD_DBL(ftyp_network, "Total Megabytes In");
+	FILE_ADD_UINT64(ftyp_network, "Min Packets Out");
+	FILE_ADD_UINT64(ftyp_network, "Ave Packets Out");
+	FILE_ADD_UINT64(ftyp_network, "Max Packets Out");
+	FILE_ADD_UINT64(ftyp_network, "Total Packets Out");
+	FILE_ADD_DBL(ftyp_network, "Min Megabytes Out");
+	FILE_ADD_DBL(ftyp_network, "Ave Megabytes Out");
+	FILE_ADD_DBL(ftyp_network, "Max Megabytes Out");
+	FILE_ADD_DBL(ftyp_network, "Total Megabytes Out");
 
-	return ftypNetwork;
+	return ftyp_network;
 }
 
-void* network_init_job_series(int nSamples)
+void* network_init_job_series(int n_samples)
 {
-	profile_network_t*  networkData;
+	profile_network_t*  network_data;
 
-	networkData = xmalloc(nSamples * sizeof(profile_network_t));
-	if (networkData == NULL) {
+	network_data = xmalloc(n_samples * sizeof(profile_network_t));
+	if (network_data == NULL) {
 		debug3("PROFILE: failed to get memory for network data");
 		return NULL;
 	}
-	return (void*) networkData;
+	return (void*) network_data;
 }
 
 void network_merge_step_series(hid_t group, void* prior,void* cur,void* buf)
 {
 // This is a difference series
-	profile_network_t* prfCur = (profile_network_t*) cur;
-	profile_network_t* prfBuf = (profile_network_t*) buf;
-	struct tm *ts = localtime(&prfCur->time);
-	strftime(prfBuf->tod, TOD_LEN, TOD_FMT, ts);
+	profile_network_t* prf_cur = (profile_network_t*) cur;
+	profile_network_t* prf_buf = (profile_network_t*) buf;
+	struct tm *ts = localtime(&prf_cur->time);
+	strftime(prf_buf->tod, TOD_LEN, TOD_FMT, ts);
 	if (prior == NULL) {
 		// First sample.
-		seriesStart = prfCur->time;
-		prfBuf->time = 0;
+		seriesStart = prf_cur->time;
+		prf_buf->time = 0;
 	} else {
-		prfBuf->time = prfCur->time - seriesStart;
+		prf_buf->time = prf_cur->time - seriesStart;
 	}
-	prfBuf->packets_in = prfCur->packets_in;
-	prfBuf->packets_out = prfCur->packets_out;
-	prfBuf->size_in = prfCur->size_in;
-	prfBuf->size_out = prfCur->size_out;
+	prf_buf->packets_in = prf_cur->packets_in;
+	prf_buf->packets_out = prf_cur->packets_out;
+	prf_buf->size_in = prf_cur->size_in;
+	prf_buf->size_out = prf_cur->size_out;
 	return;
 }
 
-void* network_series_total(int nSamples, void* data)
+void* network_series_total(int n_samples, void* data)
 {
-	profile_network_t* networkData;
+	profile_network_t* network_data;
 	profile_network_s_t* total;
-	if (nSamples < 1)
+	if (n_samples < 1)
 		return NULL;
-	networkData = (profile_network_t*) data;
+	network_data = (profile_network_t*) data;
 	total = xmalloc(sizeof(profile_network_s_t));
 	if (total == NULL) {
 		error("PROFILE: Out of memory getting energy total");
@@ -1268,42 +1270,43 @@ void* network_series_total(int nSamples, void* data)
 	}
 	// Assuming network series are a running total, and the first
 	// sample just sets the initial conditions
-	strcpy(total->start_time, networkData[0].tod);
-	total->elapsed_time = networkData[nSamples-1].time;
-	INCR_DIF_SAMPLE(total, networkData, packets_in, nSamples);
-	INCR_DIF_SAMPLE(total, networkData, size_in, nSamples);
-	INCR_DIF_SAMPLE(total, networkData, packets_out, nSamples);
-	INCR_DIF_SAMPLE(total, networkData, size_out, nSamples);
+	strcpy(total->start_time, network_data[0].tod);
+	total->elapsed_time = network_data[n_samples-1].time;
+	INCR_DIF_SAMPLE(total, network_data, packets_in, n_samples);
+	INCR_DIF_SAMPLE(total, network_data, size_in, n_samples);
+	INCR_DIF_SAMPLE(total, network_data, packets_out, n_samples);
+	INCR_DIF_SAMPLE(total, network_data, size_out, n_samples);
 	return total;
 }
 
-void network_extract_series(FILE* fOt, bool putHeader, int job, int step,
-			    char* node, char* series, void* data, int sizeData)
+void network_extract_series(FILE* fp, bool put_header, int job, int step,
+			    char* node, char* series, void* data, int size_data)
 {
-	int nItems, ix;
-	profile_network_t* networkData = (profile_network_t*) data;
+	int n_items, ix;
+	profile_network_t* network_data = (profile_network_t*) data;
 
-	if (putHeader) {
-		fprintf(fOt,"Job,Step,Node,Series,Date_Time,Elapsed_time,"
+	if (put_header) {
+		fprintf(fp,"Job,Step,Node,Series,Date_Time,Elapsed_time,"
 			"Packets_In,MegaBytes_In,Packets_Out,MegaBytes_Out\n");
 	}
-	nItems = sizeData / sizeof(profile_network_t);
-	for (ix=0; ix < nItems; ix++) {
-		fprintf(fOt,"%d,%d,%s,%s,%s,%ld,%ld,%.3f,%ld,%.3f\n",
+	n_items = size_data / sizeof(profile_network_t);
+	for (ix=0; ix < n_items; ix++) {
+		fprintf(fp,"%d,%d,%s,%s,%s,%ld,%ld,%.3f,%ld,%.3f\n",
 			job, step, node,series,
-			networkData[ix].tod, networkData[ix].time,
-			networkData[ix].packets_in, networkData[ix].size_in,
-			networkData[ix].packets_out, networkData[ix].size_out);
+			network_data[ix].tod, network_data[ix].time,
+			network_data[ix].packets_in, network_data[ix].size_in,
+			network_data[ix].packets_out,
+			network_data[ix].size_out);
 	}
 	return;
 }
 
-void network_extract_total(FILE* fOt, bool putHeader, int job, int step,
-			   char* node, char* series, void* data, int sizeData)
+void network_extract_total(FILE* fp, bool put_header, int job, int step,
+			   char* node, char* series, void* data, int size_data)
 {
-	profile_network_s_t* networkData = (profile_network_s_t*) data;
-	if (putHeader) {
-		fprintf(fOt,"Job,Step,Node,Series,Start_Time,Elapsed_time,"
+	profile_network_s_t* network_data = (profile_network_s_t*) data;
+	if (put_header) {
+		fprintf(fp,"Job,Step,Node,Series,Start_Time,Elapsed_time,"
 			"Min_Packets_In,Ave_Packets_In,"
 			"Max_Packets_In,Total_Packets_In,"
 			"Min_Megabytes_In,Ave_Megabytes_In,"
@@ -1313,13 +1316,13 @@ void network_extract_total(FILE* fOt, bool putHeader, int job, int step,
 			"Min_Megabytes_Out,Ave_Megabytes_Out,"
 			"Max_Megabytes_Out,Total_Megabytes_Out\n");
 	}
-	fprintf(fOt,"%d,%d,%s,%s,%s,%ld", job,step,node,series,
-		networkData->start_time, networkData->elapsed_time);
-	PUT_UINT_SUM(fOt, networkData->packets_in,",");
-	PUT_DBL_SUM(fOt, networkData->size_in,",");
-	PUT_UINT_SUM(fOt, networkData->packets_out,",");
-	PUT_DBL_SUM(fOt, networkData->size_out,",");
-	fprintf(fOt,"\n");
+	fprintf(fp,"%d,%d,%s,%s,%s,%ld", job,step,node,series,
+		network_data->start_time, network_data->elapsed_time);
+	PUT_UINT_SUM(fp, network_data->packets_in,",");
+	PUT_DBL_SUM(fp, network_data->size_in,",");
+	PUT_UINT_SUM(fp, network_data->packets_out,",");
+	PUT_DBL_SUM(fp, network_data->size_out,",");
+	fprintf(fp,"\n");
 	return;
 }
 
@@ -1350,258 +1353,262 @@ int task_dataset_size()
 
 hid_t task_create_memory_datatype()
 {
-	hid_t   mtypTask = -1;
+	hid_t   mtyp_task = -1;
 
-	mtypTask = H5Tcreate(H5T_COMPOUND, sizeof(profile_task_t));
-	if (mtypTask < 0) {
+	mtyp_task = H5Tcreate(H5T_COMPOUND, sizeof(profile_task_t));
+	if (mtyp_task < 0) {
 		debug3("PROFILE: failed to create Task memory datatype");
 		return -1;
 	}
-	MEM_ADD_DATE_TIME(mtypTask,"Date Time", profile_task_t,tod);
-	MEM_ADD_UINT64(mtypTask,"Time", profile_task_t, time);
-	MEM_ADD_UINT64(mtypTask,"CPU Frequency", profile_task_t, cpu_freq);
-	MEM_ADD_UINT64(mtypTask,"CPU Time", profile_task_t, cpu_time);
-	MEM_ADD_DBL(mtypTask,"CPU Utilization",
+	MEM_ADD_DATE_TIME(mtyp_task,"Date Time", profile_task_t,tod);
+	MEM_ADD_UINT64(mtyp_task,"Time", profile_task_t, time);
+	MEM_ADD_UINT64(mtyp_task,"CPU Frequency", profile_task_t, cpu_freq);
+	MEM_ADD_UINT64(mtyp_task,"CPU Time", profile_task_t, cpu_time);
+	MEM_ADD_DBL(mtyp_task,"CPU Utilization",
 		    profile_task_t, cpu_utilization);
-	MEM_ADD_UINT64(mtypTask,"RSS", profile_task_t, rss);
-	MEM_ADD_UINT64(mtypTask,"VM Size", profile_task_t, vm_size);
-	MEM_ADD_UINT64(mtypTask,"Pages", profile_task_t, pages);
-	MEM_ADD_DBL(mtypTask,"Read Megabytes", profile_task_t, read_size);
-	MEM_ADD_DBL(mtypTask,"Write Megabytes", profile_task_t, write_size);
+	MEM_ADD_UINT64(mtyp_task,"RSS", profile_task_t, rss);
+	MEM_ADD_UINT64(mtyp_task,"VM Size", profile_task_t, vm_size);
+	MEM_ADD_UINT64(mtyp_task,"Pages", profile_task_t, pages);
+	MEM_ADD_DBL(mtyp_task,"Read Megabytes", profile_task_t, read_size);
+	MEM_ADD_DBL(mtyp_task,"Write Megabytes", profile_task_t, write_size);
 
-	return mtypTask;
+	return mtyp_task;
 }
 
 hid_t task_create_file_datatype()
 {
-	hid_t   ftypTask = H5Tcreate(H5T_COMPOUND, TOD_LEN+9*8);
-	if (ftypTask < 0) {
+	hid_t   ftyp_task = H5Tcreate(H5T_COMPOUND, TOD_LEN+9*8);
+	if (ftyp_task < 0) {
 		debug3("PROFILE: failed to create Task file datatype");
 		return -1;
 	}
 	moffset = TOD_LEN;
-	FILE_ADD_DATE_TIME(ftypTask, "Date Time", 0);
-	FILE_ADD_UINT64(ftypTask, "Time");
-	FILE_ADD_UINT64(ftypTask, "CPU Frequency");
-	FILE_ADD_UINT64(ftypTask, "CPU Time");
-	FILE_ADD_DBL(ftypTask, "CPU Utilization");
-	FILE_ADD_UINT64(ftypTask, "RSS");
-	FILE_ADD_UINT64(ftypTask, "VM Size");
-	FILE_ADD_UINT64(ftypTask, "Pages");
-	FILE_ADD_DBL(ftypTask, "Read Megabytes");
-	FILE_ADD_DBL(ftypTask, "Write Megabytes");
+	FILE_ADD_DATE_TIME(ftyp_task, "Date Time", 0);
+	FILE_ADD_UINT64(ftyp_task, "Time");
+	FILE_ADD_UINT64(ftyp_task, "CPU Frequency");
+	FILE_ADD_UINT64(ftyp_task, "CPU Time");
+	FILE_ADD_DBL(ftyp_task, "CPU Utilization");
+	FILE_ADD_UINT64(ftyp_task, "RSS");
+	FILE_ADD_UINT64(ftyp_task, "VM Size");
+	FILE_ADD_UINT64(ftyp_task, "Pages");
+	FILE_ADD_DBL(ftyp_task, "Read Megabytes");
+	FILE_ADD_DBL(ftyp_task, "Write Megabytes");
 
-	return ftypTask;
+	return ftyp_task;
 }
 
 hid_t task_s_create_memory_datatype()
 {
-	hid_t   mtypTask = H5Tcreate(H5T_COMPOUND, sizeof(profile_task_s_t));
-	if (mtypTask < 0) {
+	hid_t   mtyp_task = H5Tcreate(H5T_COMPOUND, sizeof(profile_task_s_t));
+	if (mtyp_task < 0) {
 		debug3("PROFILE: failed to create Task memory datatype");
 		return -1;
 	}
-	MEM_ADD_DATE_TIME(mtypTask,"Start Time", profile_task_s_t,start_time);
-	MEM_ADD_UINT64(mtypTask,"Elapsed Time", profile_task_s_t, elapsed_time);
-	MEM_ADD_UINT64(mtypTask,"Min CPU Frequency", profile_task_s_t,
+	MEM_ADD_DATE_TIME(mtyp_task,"Start Time", profile_task_s_t, start_time);
+	MEM_ADD_UINT64(mtyp_task,"Elapsed Time", profile_task_s_t,
+		       elapsed_time);
+	MEM_ADD_UINT64(mtyp_task,"Min CPU Frequency", profile_task_s_t,
 		       cpu_freq.min);
-	MEM_ADD_UINT64(mtypTask,"Ave CPU Frequency", profile_task_s_t,
+	MEM_ADD_UINT64(mtyp_task,"Ave CPU Frequency", profile_task_s_t,
 		       cpu_freq.ave);
-	MEM_ADD_UINT64(mtypTask,"Max CPU Frequency", profile_task_s_t,
+	MEM_ADD_UINT64(mtyp_task,"Max CPU Frequency", profile_task_s_t,
 		       cpu_freq.max);
-	MEM_ADD_UINT64(mtypTask,"Total CPU Frequency", profile_task_s_t,
+	MEM_ADD_UINT64(mtyp_task,"Total CPU Frequency", profile_task_s_t,
 		       cpu_freq.total);
-	MEM_ADD_UINT64(mtypTask,"Min CPU Time", profile_task_s_t, cpu_time.min);
-	MEM_ADD_UINT64(mtypTask,"Ave CPU Time", profile_task_s_t, cpu_time.ave);
-	MEM_ADD_UINT64(mtypTask,"Max CPU Time", profile_task_s_t, cpu_time.max);
-	MEM_ADD_UINT64(mtypTask,"Total CPU Time", profile_task_s_t,
+	MEM_ADD_UINT64(mtyp_task,"Min CPU Time", profile_task_s_t,
+		       cpu_time.min);
+	MEM_ADD_UINT64(mtyp_task,"Ave CPU Time", profile_task_s_t,
+		       cpu_time.ave);
+	MEM_ADD_UINT64(mtyp_task,"Max CPU Time", profile_task_s_t,
+		       cpu_time.max);
+	MEM_ADD_UINT64(mtyp_task,"Total CPU Time", profile_task_s_t,
 		       cpu_time.total);
-	MEM_ADD_DBL(mtypTask,"Min CPU Utilization", profile_task_s_t,
+	MEM_ADD_DBL(mtyp_task,"Min CPU Utilization", profile_task_s_t,
 		    cpu_utilization.min);
-	MEM_ADD_DBL(mtypTask,"Ave CPU Utilization", profile_task_s_t,
+	MEM_ADD_DBL(mtyp_task,"Ave CPU Utilization", profile_task_s_t,
 		    cpu_utilization.ave);
-	MEM_ADD_DBL(mtypTask,"Max CPU Utilization", profile_task_s_t,
+	MEM_ADD_DBL(mtyp_task,"Max CPU Utilization", profile_task_s_t,
 		    cpu_utilization.max);
-	MEM_ADD_DBL(mtypTask,"Total CPU Utilization", profile_task_s_t,
+	MEM_ADD_DBL(mtyp_task,"Total CPU Utilization", profile_task_s_t,
 		    cpu_utilization.total);
-	MEM_ADD_UINT64(mtypTask,"Min RSS", profile_task_s_t, rss.min);
-	MEM_ADD_UINT64(mtypTask,"Ave RSS", profile_task_s_t, rss.ave);
-	MEM_ADD_UINT64(mtypTask,"Max RSS", profile_task_s_t, rss.max);
-	MEM_ADD_UINT64(mtypTask,"Total RSS", profile_task_s_t, rss.total);
-	MEM_ADD_UINT64(mtypTask,"Min VM Size", profile_task_s_t, vm_size.min);
-	MEM_ADD_UINT64(mtypTask,"Ave VM Size", profile_task_s_t, vm_size.ave);
-	MEM_ADD_UINT64(mtypTask,"Max VM Size", profile_task_s_t, vm_size.max);
-	MEM_ADD_UINT64(mtypTask,"Total VM Size",
+	MEM_ADD_UINT64(mtyp_task,"Min RSS", profile_task_s_t, rss.min);
+	MEM_ADD_UINT64(mtyp_task,"Ave RSS", profile_task_s_t, rss.ave);
+	MEM_ADD_UINT64(mtyp_task,"Max RSS", profile_task_s_t, rss.max);
+	MEM_ADD_UINT64(mtyp_task,"Total RSS", profile_task_s_t, rss.total);
+	MEM_ADD_UINT64(mtyp_task,"Min VM Size", profile_task_s_t, vm_size.min);
+	MEM_ADD_UINT64(mtyp_task,"Ave VM Size", profile_task_s_t, vm_size.ave);
+	MEM_ADD_UINT64(mtyp_task,"Max VM Size", profile_task_s_t, vm_size.max);
+	MEM_ADD_UINT64(mtyp_task,"Total VM Size",
 		       profile_task_s_t, vm_size.total);
-	MEM_ADD_UINT64(mtypTask,"Min Pages", profile_task_s_t, pages.min);
-	MEM_ADD_UINT64(mtypTask,"Ave Pages", profile_task_s_t, pages.ave);
-	MEM_ADD_UINT64(mtypTask, "Max Pages", profile_task_s_t, pages.max);
-	MEM_ADD_UINT64(mtypTask, "Total Pages", profile_task_s_t, pages.total);
-	MEM_ADD_DBL(mtypTask, "Min Read Megabytes", profile_task_s_t,
+	MEM_ADD_UINT64(mtyp_task,"Min Pages", profile_task_s_t, pages.min);
+	MEM_ADD_UINT64(mtyp_task,"Ave Pages", profile_task_s_t, pages.ave);
+	MEM_ADD_UINT64(mtyp_task, "Max Pages", profile_task_s_t, pages.max);
+	MEM_ADD_UINT64(mtyp_task, "Total Pages", profile_task_s_t, pages.total);
+	MEM_ADD_DBL(mtyp_task, "Min Read Megabytes", profile_task_s_t,
 		    read_size.min);
-	MEM_ADD_DBL(mtypTask, "Ave Read Megabytes", profile_task_s_t,
+	MEM_ADD_DBL(mtyp_task, "Ave Read Megabytes", profile_task_s_t,
 		    read_size.ave);
-	MEM_ADD_DBL(mtypTask, "Max Read Megabytes", profile_task_s_t,
+	MEM_ADD_DBL(mtyp_task, "Max Read Megabytes", profile_task_s_t,
 		    read_size.max);
-	MEM_ADD_DBL(mtypTask, "Total Read Megabytes", profile_task_s_t,
+	MEM_ADD_DBL(mtyp_task, "Total Read Megabytes", profile_task_s_t,
 		    read_size.total);
-	MEM_ADD_DBL(mtypTask, "Min Write Megabytes", profile_task_s_t,
+	MEM_ADD_DBL(mtyp_task, "Min Write Megabytes", profile_task_s_t,
 		    write_size.min);
-	MEM_ADD_DBL(mtypTask, "Ave Write Megabytes", profile_task_s_t,
+	MEM_ADD_DBL(mtyp_task, "Ave Write Megabytes", profile_task_s_t,
 		    write_size.ave);
-	MEM_ADD_DBL(mtypTask, "Max Write Megabytes", profile_task_s_t,
+	MEM_ADD_DBL(mtyp_task, "Max Write Megabytes", profile_task_s_t,
 		    write_size.max);
-	MEM_ADD_DBL(mtypTask, "Total Write Megabytes", profile_task_s_t,
+	MEM_ADD_DBL(mtyp_task, "Total Write Megabytes", profile_task_s_t,
 		    write_size.total);
 
-	return mtypTask;
+	return mtyp_task;
 }
 
 hid_t task_s_create_file_datatype()
 {
-	hid_t   ftypTask = H5Tcreate(H5T_COMPOUND, TOD_LEN+33*8);
-	if (ftypTask < 0) {
+	hid_t   ftyp_task = H5Tcreate(H5T_COMPOUND, TOD_LEN+33*8);
+	if (ftyp_task < 0) {
 		debug3("PROFILE: failed to create Task file datatype");
 		return -1;
 	}
 	moffset = TOD_LEN;
-	FILE_ADD_DATE_TIME(ftypTask, "Start Time", 0);
-	FILE_ADD_UINT64(ftypTask, "Elapsed Time");
-	FILE_ADD_UINT64(ftypTask, "Min CPU Frequency");
-	FILE_ADD_UINT64(ftypTask, "Ave CPU Frequency");
-	FILE_ADD_UINT64(ftypTask, "Max CPU Frequency");
-	FILE_ADD_UINT64(ftypTask, "Total CPU Frequency");
-	FILE_ADD_UINT64(ftypTask, "Min CPU Time");
-	FILE_ADD_UINT64(ftypTask, "Ave CPU Time");
-	FILE_ADD_UINT64(ftypTask, "Max CPU Time");
-	FILE_ADD_UINT64(ftypTask, "Total CPU Time");
-	FILE_ADD_DBL(ftypTask, "Min CPU Utilization");
-	FILE_ADD_DBL(ftypTask, "Ave CPU Utilization");
-	FILE_ADD_DBL(ftypTask, "Max CPU Utilization");
-	FILE_ADD_DBL(ftypTask, "Total CPU Utilization");
-	FILE_ADD_UINT64(ftypTask, "Min RSS");
-	FILE_ADD_UINT64(ftypTask, "Ave RSS");
-	FILE_ADD_UINT64(ftypTask, "Max RSS");
-	FILE_ADD_UINT64(ftypTask, "Total RSS");
-	FILE_ADD_UINT64(ftypTask, "Min VM Size");
-	FILE_ADD_UINT64(ftypTask, "Ave VM Size");
-	FILE_ADD_UINT64(ftypTask, "Max VM Size");
-	FILE_ADD_UINT64(ftypTask, "Total VM Size");
-	FILE_ADD_UINT64(ftypTask, "Min Pages");
-	FILE_ADD_UINT64(ftypTask, "Ave Pages");
-	FILE_ADD_UINT64(ftypTask, "Max Pages");
-	FILE_ADD_UINT64(ftypTask, "Total Pages");
-	FILE_ADD_DBL(ftypTask, "Min Read Megabytes");
-	FILE_ADD_DBL(ftypTask, "Ave Read Megabytes");
-	FILE_ADD_DBL(ftypTask, "Max Read Megabytes");
-	FILE_ADD_DBL(ftypTask, "Total Read Megabytes");
-	FILE_ADD_DBL(ftypTask, "Min Write Megabytes");
-	FILE_ADD_DBL(ftypTask, "Ave Write Megabytes");
-	FILE_ADD_DBL(ftypTask, "Max Write Megabytes");
-	FILE_ADD_DBL(ftypTask, "Total Write Megabytes");
+	FILE_ADD_DATE_TIME(ftyp_task, "Start Time", 0);
+	FILE_ADD_UINT64(ftyp_task, "Elapsed Time");
+	FILE_ADD_UINT64(ftyp_task, "Min CPU Frequency");
+	FILE_ADD_UINT64(ftyp_task, "Ave CPU Frequency");
+	FILE_ADD_UINT64(ftyp_task, "Max CPU Frequency");
+	FILE_ADD_UINT64(ftyp_task, "Total CPU Frequency");
+	FILE_ADD_UINT64(ftyp_task, "Min CPU Time");
+	FILE_ADD_UINT64(ftyp_task, "Ave CPU Time");
+	FILE_ADD_UINT64(ftyp_task, "Max CPU Time");
+	FILE_ADD_UINT64(ftyp_task, "Total CPU Time");
+	FILE_ADD_DBL(ftyp_task, "Min CPU Utilization");
+	FILE_ADD_DBL(ftyp_task, "Ave CPU Utilization");
+	FILE_ADD_DBL(ftyp_task, "Max CPU Utilization");
+	FILE_ADD_DBL(ftyp_task, "Total CPU Utilization");
+	FILE_ADD_UINT64(ftyp_task, "Min RSS");
+	FILE_ADD_UINT64(ftyp_task, "Ave RSS");
+	FILE_ADD_UINT64(ftyp_task, "Max RSS");
+	FILE_ADD_UINT64(ftyp_task, "Total RSS");
+	FILE_ADD_UINT64(ftyp_task, "Min VM Size");
+	FILE_ADD_UINT64(ftyp_task, "Ave VM Size");
+	FILE_ADD_UINT64(ftyp_task, "Max VM Size");
+	FILE_ADD_UINT64(ftyp_task, "Total VM Size");
+	FILE_ADD_UINT64(ftyp_task, "Min Pages");
+	FILE_ADD_UINT64(ftyp_task, "Ave Pages");
+	FILE_ADD_UINT64(ftyp_task, "Max Pages");
+	FILE_ADD_UINT64(ftyp_task, "Total Pages");
+	FILE_ADD_DBL(ftyp_task, "Min Read Megabytes");
+	FILE_ADD_DBL(ftyp_task, "Ave Read Megabytes");
+	FILE_ADD_DBL(ftyp_task, "Max Read Megabytes");
+	FILE_ADD_DBL(ftyp_task, "Total Read Megabytes");
+	FILE_ADD_DBL(ftyp_task, "Min Write Megabytes");
+	FILE_ADD_DBL(ftyp_task, "Ave Write Megabytes");
+	FILE_ADD_DBL(ftyp_task, "Max Write Megabytes");
+	FILE_ADD_DBL(ftyp_task, "Total Write Megabytes");
 
-	return ftypTask;
+	return ftyp_task;
 }
 
-void* task_init_job_series(int nSamples)
+void* task_init_job_series(int n_samples)
 {
-	profile_task_t*  taskData;
-	taskData = xmalloc(nSamples * sizeof(profile_task_t));
-	if (taskData == NULL) {
+	profile_task_t*  task_data;
+	task_data = xmalloc(n_samples * sizeof(profile_task_t));
+	if (task_data == NULL) {
 		debug3("PROFILE: failed to get memory for combined task data");
 		return NULL;
 	}
-	return (void*) taskData;
+	return (void*) task_data;
 }
 
 void task_merge_step_series(hid_t group, void* prior, void* cur, void* buf)
 {
 // This is a running total series
-	profile_task_t* prfPrior = (profile_task_t*) prior;
-	profile_task_t* prfCur = (profile_task_t*) cur;
-	profile_task_t* prfBuf = (profile_task_t*) buf;
+	profile_task_t* prf_prior = (profile_task_t*) prior;
+	profile_task_t* prf_cur = (profile_task_t*) cur;
+	profile_task_t* prf_buf = (profile_task_t*) buf;
 
 	struct tm *ts;
-	ts = localtime(&prfCur->time);
-	strftime(prfBuf->tod, TOD_LEN, TOD_FMT, ts);
-	if (prfPrior == NULL) {
+	ts = localtime(&prf_cur->time);
+	strftime(prf_buf->tod, TOD_LEN, TOD_FMT, ts);
+	if (prf_prior == NULL) {
 		// First sample.
-		seriesStart = prfCur->time;
-		prfBuf->time = 0;
-		prfBuf->cpu_time = 0;
-		prfBuf->read_size = 0.0;
-		prfBuf->write_size = 0.0;
+		seriesStart = prf_cur->time;
+		prf_buf->time = 0;
+		prf_buf->cpu_time = 0;
+		prf_buf->read_size = 0.0;
+		prf_buf->write_size = 0.0;
 	} else {
-		prfBuf->time = prfCur->time - seriesStart;
-		prfBuf->cpu_time = prfCur->cpu_time - prfPrior->cpu_time;
-		prfBuf->read_size =
-			prfCur->read_size - prfPrior->read_size;
-		prfBuf->write_size =
-			prfCur->write_size - prfPrior->write_size;
+		prf_buf->time = prf_cur->time - seriesStart;
+		prf_buf->cpu_time = prf_cur->cpu_time - prf_prior->cpu_time;
+		prf_buf->read_size =
+			prf_cur->read_size - prf_prior->read_size;
+		prf_buf->write_size =
+			prf_cur->write_size - prf_prior->write_size;
 	}
-	prfBuf->cpu_freq = prfCur->cpu_freq;
-	prfBuf->cpu_utilization = prfCur->cpu_utilization;
-	prfBuf->rss = prfCur->rss;
-	prfBuf->vm_size = prfCur->vm_size;
-	prfBuf->pages = prfCur->pages;
+	prf_buf->cpu_freq = prf_cur->cpu_freq;
+	prf_buf->cpu_utilization = prf_cur->cpu_utilization;
+	prf_buf->rss = prf_cur->rss;
+	prf_buf->vm_size = prf_cur->vm_size;
+	prf_buf->pages = prf_cur->pages;
 	return;
 }
 
-void* task_series_total(int nSamples, void* data)
+void* task_series_total(int n_samples, void* data)
 {
-	profile_task_t* taskData;
+	profile_task_t* task_data;
 	profile_task_s_t* total;
-	taskData = (profile_task_t*) data;
+	task_data = (profile_task_t*) data;
 	total = xmalloc(sizeof(profile_task_s_t));
 	if (total == NULL) {
 		error("PROFILE: Out of memory getting task total");
 		return NULL;
 	}
-	strcpy(total->start_time, taskData[0].tod);
-	total->elapsed_time = taskData[nSamples-1].time;
-	INCR_DIF_SAMPLE(total, taskData, cpu_freq, nSamples);
-	INCR_RT_SAMPLE(total, taskData, cpu_time, nSamples);
-	INCR_DIF_SAMPLE(total, taskData, cpu_utilization, nSamples);
-	INCR_DIF_SAMPLE(total, taskData, rss, nSamples);
-	INCR_DIF_SAMPLE(total, taskData, vm_size , nSamples);
-	INCR_DIF_SAMPLE(total, taskData, pages, nSamples);
-	INCR_RT_SAMPLE(total, taskData, read_size, nSamples);
-	INCR_RT_SAMPLE(total, taskData, write_size, nSamples);
+	strcpy(total->start_time, task_data[0].tod);
+	total->elapsed_time = task_data[n_samples-1].time;
+	INCR_DIF_SAMPLE(total, task_data, cpu_freq, n_samples);
+	INCR_RT_SAMPLE(total, task_data, cpu_time, n_samples);
+	INCR_DIF_SAMPLE(total, task_data, cpu_utilization, n_samples);
+	INCR_DIF_SAMPLE(total, task_data, rss, n_samples);
+	INCR_DIF_SAMPLE(total, task_data, vm_size , n_samples);
+	INCR_DIF_SAMPLE(total, task_data, pages, n_samples);
+	INCR_RT_SAMPLE(total, task_data, read_size, n_samples);
+	INCR_RT_SAMPLE(total, task_data, write_size, n_samples);
 	return total;
 }
 
-void task_extract_series(FILE* fOt, bool putHeader, int job, int step,
-			 char* node, char* series, void* data, int sizeData)
+void task_extract_series(FILE* fp, bool put_header, int job, int step,
+			 char* node, char* series, void* data, int size_data)
 {
-	int nItems, ix;
-	profile_task_t* taskData = (profile_task_t*) data;
-	if (putHeader) {
-		fprintf(fOt,"Job,Step,Node,Series,Date Time,ElapsedTime,"
+	int n_items, ix;
+	profile_task_t* task_data = (profile_task_t*) data;
+	if (put_header) {
+		fprintf(fp,"Job,Step,Node,Series,Date Time,ElapsedTime,"
 			"CPU Frequency,CPU Time,"
 			"CPU Utilization,rss,VM Size,Pages,"
 			"Read_bytes,Write_bytes\n");
 	}
-	nItems = sizeData / sizeof(profile_task_t);
-	for (ix=0; ix < nItems; ix++) {
-		fprintf(fOt,"%d,%d,%s,%s,%s,%ld,%ld,%ld,%.3f",
+	n_items = size_data / sizeof(profile_task_t);
+	for (ix=0; ix < n_items; ix++) {
+		fprintf(fp,"%d,%d,%s,%s,%s,%ld,%ld,%ld,%.3f",
 			job, step, node, series,
-			taskData[ix].tod, taskData[ix].time,
-			taskData[ix].cpu_freq,
-			taskData[ix].cpu_time, taskData[ix].cpu_utilization);
-		fprintf(fOt,",%ld,%ld,%ld,%.3f,%.3f\n",	taskData[ix].rss,
-			taskData[ix].vm_size, taskData[ix].pages,
-			taskData[ix].read_size, taskData[ix].write_size);
+			task_data[ix].tod, task_data[ix].time,
+			task_data[ix].cpu_freq,
+			task_data[ix].cpu_time, task_data[ix].cpu_utilization);
+		fprintf(fp,",%ld,%ld,%ld,%.3f,%.3f\n",	task_data[ix].rss,
+			task_data[ix].vm_size, task_data[ix].pages,
+			task_data[ix].read_size, task_data[ix].write_size);
 	}
 	return;
 }
 
-void task_extract_total(FILE* fOt, bool putHeader, int job, int step,
-			char* node, char* series, void* data, int sizeData)
+void task_extract_total(FILE* fp, bool put_header, int job, int step,
+			char* node, char* series, void* data, int size_data)
 {
 
-	profile_task_s_t* taskData = (profile_task_s_t*) data;
-	if (putHeader) {
-		fprintf(fOt,"Job,Step,Node,Series,Start_Time,Elapsed_time,"
+	profile_task_s_t* task_data = (profile_task_s_t*) data;
+	if (put_header) {
+		fprintf(fp,"Job,Step,Node,Series,Start_Time,Elapsed_time,"
 			"Min CPU Frequency,Ave CPU Frequency,"
 			"Ave CPU Frequency,Total CPU Frequency,"
 			"Min_CPU_Time,Ave_CPU_Time,"
@@ -1616,17 +1623,17 @@ void task_extract_total(FILE* fOt, bool putHeader, int job, int step,
 			"Min_Write_Megabytes,Ave_Write_Megabytes,"
 			"Max_Write_Megabytes,Total_Write_Megabytes\n");
 	}
-	fprintf(fOt,"%d,%d,%s,%s,%s,%ld",job,step,node,series,
-		taskData->start_time, taskData->elapsed_time);
-	PUT_UINT_SUM(fOt, taskData->cpu_freq,",");
-	PUT_UINT_SUM(fOt, taskData->cpu_time,",");
-	PUT_DBL_SUM(fOt, taskData->cpu_utilization,",");
-	PUT_UINT_SUM(fOt, taskData->rss,",");
-	PUT_UINT_SUM(fOt, taskData->vm_size,",");
-	PUT_UINT_SUM(fOt, taskData->pages,",");
-	PUT_DBL_SUM(fOt, taskData->read_size,",");
-	PUT_DBL_SUM(fOt, taskData->write_size,",");
-	fprintf(fOt,"\n");
+	fprintf(fp,"%d,%d,%s,%s,%s,%ld",job,step,node,series,
+		task_data->start_time, task_data->elapsed_time);
+	PUT_UINT_SUM(fp, task_data->cpu_freq,",");
+	PUT_UINT_SUM(fp, task_data->cpu_time,",");
+	PUT_DBL_SUM(fp, task_data->cpu_utilization,",");
+	PUT_UINT_SUM(fp, task_data->rss,",");
+	PUT_UINT_SUM(fp, task_data->vm_size,",");
+	PUT_UINT_SUM(fp, task_data->pages,",");
+	PUT_DBL_SUM(fp, task_data->read_size,",");
+	PUT_DBL_SUM(fp, task_data->write_size,",");
+	fprintf(fp,"\n");
 	return;
 }
 
