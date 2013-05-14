@@ -124,17 +124,17 @@ extern int acct_gather_profile_p_node_step_start(slurmd_job_t* job)
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_profile_p_node_step_end(slurmd_job_t* job)
+extern int acct_gather_profile_p_node_step_end()
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_profile_p_task_start(slurmd_job_t* job, uint32_t taskid)
+extern int acct_gather_profile_p_task_start(uint32_t taskid)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_profile_p_task_end(slurmd_job_t* job, pid_t taskpid)
+extern int acct_gather_profile_p_task_end(pid_t taskpid)
 {
 	return SLURM_SUCCESS;
 }
@@ -144,7 +144,7 @@ extern int acct_gather_profile_p_job_sample()
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_profile_p_add_node_data(slurmd_job_t* job, char* group,
+extern int acct_gather_profile_p_add_node_data(char* group,
 					       char* type, void* data)
 {
 	return SLURM_SUCCESS;
@@ -157,7 +157,7 @@ extern int acct_gather_profile_p_add_sample_data(char* group, char* type,
 }
 
 extern int acct_gather_profile_p_add_task_data(
-	slurmd_job_t* job, uint32_t taskid, char* group, char* type, void* data)
+	uint32_t taskid, char* group, char* type, void* data)
 {
 	return SLURM_SUCCESS;
 }

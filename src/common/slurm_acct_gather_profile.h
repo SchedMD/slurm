@@ -94,7 +94,7 @@ extern uint32_t acct_gather_profile_series_from_string(char *series_str);
  *	full_options_cnt -- count of plugin local definitions
  */
 extern void acct_gather_profile_g_conf_options(s_p_options_t **full_options,
-					      int *full_options_cnt);
+					       int *full_options_cnt);
 /*
  * set plugin local conf from acct_gather.conf into its structure
  *
@@ -126,12 +126,10 @@ extern int acct_gather_profile_g_node_step_start(slurmd_job_t* job);
  * Called once per step on each node from slurmstepd, after all tasks end.
  * Provides an opportunity to close files, etc.
  *
- * Parameters
- *	job -- structure defining a slurm job
  *
  * Returns -- SLURM_SUCCESS or SLURM_ERROR
  */
-extern int acct_gather_profile_g_node_step_end(slurmd_job_t* job);
+extern int acct_gather_profile_g_node_step_end(void);
 
 /*
  * Called once per task from slurmstepd, BEFORE node step start is called.
@@ -142,25 +140,22 @@ extern int acct_gather_profile_g_node_step_end(slurmd_job_t* job);
  * functions cannot be made.
  *
  * Parameters
- *	job -- structure defining a slurm job
  *	taskid -- slurm taskid
  *
  * Returns -- SLURM_SUCCESS or SLURM_ERROR
  */
-extern int acct_gather_profile_g_task_start(slurmd_job_t* job,
-		uint32_t taskid);
+extern int acct_gather_profile_g_task_start(uint32_t taskid);
 
 /*
  * Called once per task from slurmstepd.
  * Provides an opportunity to put final data for a task.
  *
  * Parameters
- *	job     -- structure defining a slurm job
  *	taskpid -- linux process id of task
  *
  * Returns -- SLURM_SUCCESS or SLURM_ERROR
  */
-extern int acct_gather_profile_g_task_end(slurmd_job_t* job, pid_t taskpid);
+extern int acct_gather_profile_g_task_end(pid_t taskpid);
 
 /*
  * Called from the job_acct_gather poll_data routine.
@@ -168,21 +163,20 @@ extern int acct_gather_profile_g_task_end(slurmd_job_t* job, pid_t taskpid);
  *
  * Returns -- SLURM_SUCCESS or SLURM_ERROR
  */
-extern int acct_gather_profile_g_job_sample();
+extern int acct_gather_profile_g_job_sample(void);
 
 /*
  * Put data at the Node Totals level. Typically called when the step ends.
  *
  * Parameters
- *	job   -- structure defining a slurm job
  *	group -- identifies the data stream (source of data).
  *	type  -- identifies the type of data.
  *	data  -- data structure to be put to the file.
  *
  * Returns -- SLURM_SUCCESS or SLURM_ERROR
  */
-extern int acct_gather_profile_g_add_node_data(slurmd_job_t* job, char* group,
-		char* type, void* data);
+extern int acct_gather_profile_g_add_node_data(char* group,
+					       char* type, void* data);
 
 /*
  * Put data at the Node Samples level. Typically called from something called
@@ -191,22 +185,19 @@ extern int acct_gather_profile_g_add_node_data(slurmd_job_t* job, char* group,
  * dataset
  *
  * Parameters
- *	job   -- structure defining a slurm job
  *	group -- identifies the data stream (source of data).
  *	type  -- identifies the type of data.
  *	data  -- data structure to be put to the file.
  *
  * Returns -- SLURM_SUCCESS or SLURM_ERROR
  */
-extern int acct_gather_profile_g_add_sample_data(slurmd_job_t* job,
-						 char* group, char* type,
+extern int acct_gather_profile_g_add_sample_data(char* group, char* type,
 						 void* data);
 
 /*
  * Put data at the Task Totals level. Typically called at task end.
  *
  * Parameters
- *	job    -- structure defining a slurm job
  *	taskid -- slurm taskid
  *	group  -- identifies the data stream (source of data).
  *	type   -- identifies the type of data.
@@ -214,7 +205,7 @@ extern int acct_gather_profile_g_add_sample_data(slurmd_job_t* job,
  *
  * Returns -- SLURM_SUCCESS or SLURM_ERROR
  */
-extern int acct_gather_profile_g_add_task_data(slurmd_job_t* job,
-		uint32_t taskid, char* group, char* type, void* data);
+extern int acct_gather_profile_g_add_task_data(
+	uint32_t taskid, char* group, char* type, void* data);
 
 #endif /*__SLURM_ACCT_GATHER_PROFILE_H__*/

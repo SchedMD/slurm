@@ -901,6 +901,9 @@ job_manager(slurmd_job_t *job)
 		debug ("Unable to set dumpable to 1");
 #endif /* PR_SET_DUMPABLE */
 
+	/* run now so we don't drop permissions on any of the gather plugins */
+	acct_gather_conf_init();
+
 	/*
 	 * Preload plugins.
 	 */
@@ -993,7 +996,8 @@ job_manager(slurmd_job_t *job)
 		rc = SLURM_FAILURE;
 		goto fail2;
 	}
-	
+
+	acct_gather_profile_g_node_step_start(job);
 	/* calls pam_setup() and requires pam_finish() if successful */
 	if ((rc = _fork_all_tasks(job, &io_initialized)) < 0) {
 		debug("_fork_all_tasks failed");
@@ -1020,13 +1024,13 @@ job_manager(slurmd_job_t *job)
 	 */
 	if (!conf->job_acct_gather_freq)
 		jobacct_gather_stat_task(0);
-	acct_gather_profile_g_node_step_start(job);
 
 	/* Send job launch response with list of pids */
 	_send_launch_resp(job, 0);
 
 	_wait_for_all_tasks(job);
 	jobacct_gather_endpoll();
+	acct_gather_profile_g_node_step_end();
 
 	job->state = SLURMSTEPD_STEP_ENDING;
 
@@ -1360,9 +1364,6 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 		*io_initialized = true;
 	}
 
-	/* run now so we don't drop permissions on any of the gather plugins */
-	acct_gather_conf_init();
-
 	/*
 	 * Temporarily drop effective privileges
 	 */
@@ -1403,7 +1404,7 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 		pid_t pid;
 		struct exec_wait_info *ei;
 
-		acct_gather_profile_g_task_start(job, i);
+		acct_gather_profile_g_task_start(i);
 		if ((ei = fork_child_with_wait_info (i)) == NULL) {
 			error("child fork: %m");
 			exec_wait_kill_children (exec_wait_list);
@@ -1697,7 +1698,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			jobacctinfo_aggregate(job->jobacct, jobacct);
 			jobacctinfo_destroy(jobacct);
 		}
-		acct_gather_profile_g_task_end(job, pid);
+		acct_gather_profile_g_task_end(pid);
 		/*********************************************/
 
 		if ((t = job_task_info_by_pid(job, pid))) {
@@ -1778,7 +1779,6 @@ _wait_for_all_tasks(slurmd_job_t *job)
 
 		while (_send_pending_exit_msgs(job)) {;}
 	}
-	acct_gather_profile_g_node_step_end(job);
 }
 
 static void *_kill_thr(void *args)

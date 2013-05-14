@@ -106,8 +106,6 @@ typedef struct {
 //	step. This avoids reconstruction on every acct_gather_sample and
 //	flushing the buffers on every put.
 // Static variables ok as add function are inside a lock.
-static uint32_t  jobid;
-static uint32_t  stepid;
 static hid_t 	 file_id = -1; // File
 static hid_t     gid_node = -1;
 static hid_t     gid_tasks = -1;
@@ -117,6 +115,7 @@ static char      group_node[MAX_GROUP_NAME+1];
 static slurm_hdf5_conf_t hdf5_conf;
 static uint32_t debug_flags = 0;
 static uint32_t g_profile_running = ACCT_GATHER_PROFILE_NOT_SET;
+static slurmd_job_t *g_job = NULL;
 
 static void _reset_slurm_profile_conf()
 {
@@ -124,27 +123,31 @@ static void _reset_slurm_profile_conf()
 	hdf5_conf.def = ACCT_GATHER_PROFILE_NOT_SET;
 }
 
-static uint32_t _determine_profile(slurmd_job_t *job)
+static uint32_t _determine_profile()
 {
 	uint32_t profile;
 
+	xassert(g_job);
+
 	if (g_profile_running != ACCT_GATHER_PROFILE_NOT_SET)
 		profile = g_profile_running;
-	else if (job && (job->profile > ACCT_GATHER_PROFILE_NONE))
-		profile = job->profile;
+	else if (g_job->profile > ACCT_GATHER_PROFILE_NONE)
+		profile = g_job->profile;
 	else
 		profile = hdf5_conf.def;
 
 	return profile;
 }
 
-static int _get_taskid_from_pid(slurmd_job_t *job, pid_t pid, uint32_t *gtid)
+static int _get_taskid_from_pid(pid_t pid, uint32_t *gtid)
 {
 	int tx;
 
-	for (tx=0; tx<job->node_tasks; tx++) {
-		if (job->task[tx]->pid == pid) {
-			*gtid = job->task[tx]->gtid;
+	xassert(g_job);
+
+	for (tx=0; tx<g_job->node_tasks; tx++) {
+		if (g_job->task[tx]->pid == pid) {
+			*gtid = g_job->task[tx]->gtid;
 			return SLURM_SUCCESS;
 		}
 	}
@@ -152,13 +155,13 @@ static int _get_taskid_from_pid(slurmd_job_t *job, pid_t pid, uint32_t *gtid)
 	return SLURM_ERROR;
 }
 
-static int _create_directories(slurmd_job_t *job)
+static int _create_directories()
 {
 	int rc;
 	struct stat st;
 	char   *user_dir = NULL;
 
-	xassert(job);
+	xassert(g_job);
 	xassert(hdf5_conf.dir);
 	/*
 	 * If profile director does not exist, try to create it.
@@ -181,14 +184,14 @@ static int _create_directories(slurmd_job_t *job)
 		      hdf5_conf.dir);
 	chmod(hdf5_conf.dir, 0755);
 
-	user_dir = xstrdup_printf("%s/%s", hdf5_conf.dir, job->pwd->pw_name);
+	user_dir = xstrdup_printf("%s/%s", hdf5_conf.dir, g_job->pwd->pw_name);
 	if (((rc = stat(user_dir, &st)) < 0) && (errno == ENOENT)) {
 		if (mkdir(user_dir, 0700) < 0)
 			fatal("mkdir(%s): %m", user_dir);
 	}
 	chmod(user_dir, 0700);
-	if (chown(user_dir, (uid_t)job->pwd->pw_uid,
-		  (gid_t)job->pwd->pw_gid) < 0)
+	if (chown(user_dir, (uid_t)g_job->pwd->pw_uid,
+		  (gid_t)g_job->pwd->pw_gid) < 0)
 		error("chown(%s): %m", user_dir);
 
 	xfree(user_dir);
@@ -303,30 +306,30 @@ extern int acct_gather_profile_p_node_step_start(slurmd_job_t* job)
 
 	xassert(_run_in_daemon());
 
-	if (stepid == NO_VAL)
+	g_job = job;
+
+	if (g_job->stepid == NO_VAL)
 		return rc;
 
 	xassert(hdf5_conf.dir);
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
-		profile_str = acct_gather_profile_to_string(job->profile);
+		profile_str = acct_gather_profile_to_string(g_job->profile);
 		info("PROFILE: option --profile=%s", profile_str);
 	}
 
 	if (g_profile_running == ACCT_GATHER_PROFILE_NOT_SET)
-		g_profile_running = _determine_profile(job);
+		g_profile_running = _determine_profile();
 
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return rc;
 
-	_create_directories(job);
-	jobid = job->jobid;
-	stepid = job->stepid;
+	_create_directories();
 
 	profile_file_name = xstrdup_printf(
 		"%s/%s/%u_%u_%s.h5",
-		hdf5_conf.dir, job->pwd->pw_name,
-		job->jobid, job->stepid, job->node_name);
+		hdf5_conf.dir, g_job->pwd->pw_name,
+		g_job->jobid, g_job->stepid, g_job->node_name);
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
 		profile_str = acct_gather_profile_to_string(g_profile_running);
@@ -339,8 +342,8 @@ extern int acct_gather_profile_p_node_step_start(slurmd_job_t* job)
 	file_id = H5Fcreate(profile_file_name, H5F_ACC_TRUNC, H5P_DEFAULT,
 			    H5P_DEFAULT);
 
-	if (chown(profile_file_name, (uid_t)job->pwd->pw_uid,
-		  (gid_t)job->pwd->pw_gid) < 0)
+	if (chown(profile_file_name, (uid_t)g_job->pwd->pw_uid,
+		  (gid_t)g_job->pwd->pw_gid) < 0)
 		error("chown(%s): %m", profile_file_name);
 	chmod(profile_file_name,  0600);
 	xfree(profile_file_name);
@@ -350,7 +353,7 @@ extern int acct_gather_profile_p_node_step_start(slurmd_job_t* job)
 		return SLURM_FAILURE;
 	}
 
-	sprintf(group_node, "/%s_%s", GRP_NODE, job->node_name);
+	sprintf(group_node, "/%s_%s", GRP_NODE, g_job->node_name);
 	gid_node = H5Gcreate(file_id, group_node, H5P_DEFAULT,
 			     H5P_DEFAULT, H5P_DEFAULT);
 	if (gid_node < 1) {
@@ -359,15 +362,15 @@ extern int acct_gather_profile_p_node_step_start(slurmd_job_t* job)
 		info("PROFILE: Failed to create Node group");
 		return SLURM_FAILURE;
 	}
-	put_string_attribute(gid_node, ATTR_NODENAME, job->node_name);
-	put_int_attribute(gid_node, ATTR_NTASKS, job->node_tasks);
+	put_string_attribute(gid_node, ATTR_NODENAME, g_job->node_name);
+	put_int_attribute(gid_node, ATTR_NTASKS, g_job->node_tasks);
 	start_time = time(NULL);
 	put_string_attribute(gid_node, ATTR_STARTTIME, ctime(&start_time));
 
 	return rc;
 }
 
-extern int acct_gather_profile_p_node_step_end(slurmd_job_t* job)
+extern int acct_gather_profile_p_node_step_end()
 {
 	int rc = SLURM_SUCCESS;
 
@@ -377,7 +380,7 @@ extern int acct_gather_profile_p_node_step_end(slurmd_job_t* job)
 	// No check for --profile as we always want to close the HDF5 file
 	// if it has been opened.
 
-	if (job->stepid == NO_VAL)
+	if (g_job->stepid == NO_VAL)
 		return rc;
 
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
@@ -402,7 +405,7 @@ extern int acct_gather_profile_p_node_step_end(slurmd_job_t* job)
 	return rc;
 }
 
-extern int acct_gather_profile_p_task_start(slurmd_job_t* job, uint32_t taskid)
+extern int acct_gather_profile_p_task_start(uint32_t taskid)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -418,20 +421,21 @@ extern int acct_gather_profile_p_task_start(slurmd_job_t* job, uint32_t taskid)
 	return rc;
 }
 
-extern int acct_gather_profile_p_task_end(slurmd_job_t* job, pid_t taskpid)
+extern int acct_gather_profile_p_task_end(pid_t taskpid)
 {
 	hid_t   gid_task;
 	char 	group_task[MAX_GROUP_NAME+1];
-	uint32_t taskId;
+	uint32_t task_id;
 	int rc = SLURM_SUCCESS;
 
 	xassert(_run_in_daemon());
+	xassert(g_job);
 	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
 	if (!_do_profile(ACCT_GATHER_PROFILE_NOT_SET, g_profile_running))
 		return rc;
 
-	if (_get_taskid_from_pid(job, taskpid, &taskId) != SLURM_SUCCESS)
+	if (_get_taskid_from_pid(taskpid, &task_id) != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 	if (file_id == -1) {
 		info("PROFILE: add_task_data, HDF5 file is not open");
@@ -444,7 +448,7 @@ extern int acct_gather_profile_p_task_end(slurmd_job_t* job, pid_t taskpid)
 			return SLURM_FAILURE;
 		}
 	}
-	sprintf(group_task, "%s_%d", GRP_TASK, taskId);
+	sprintf(group_task, "%s_%d", GRP_TASK, task_id);
 	gid_task = get_group(gid_tasks, group_task);
 	if (gid_task == -1) {
 		gid_task = make_group(gid_tasks, group_task);
@@ -452,9 +456,9 @@ extern int acct_gather_profile_p_task_end(slurmd_job_t* job, pid_t taskpid)
 			info("Failed to open tasks %s", group_task);
 			return SLURM_FAILURE;
 		}
-		put_int_attribute(gid_task, ATTR_TASKID, taskId);
+		put_int_attribute(gid_task, ATTR_TASKID, task_id);
 	}
-	put_int_attribute(gid_task, ATTR_CPUPERTASK, job->cpus_per_task);
+	put_int_attribute(gid_task, ATTR_CPUPERTASK, g_job->cpus_per_task);
 
 	if (debug_flags & DEBUG_FLAG_PROFILE)
 		info("PROFILE: task_end");
@@ -470,7 +474,7 @@ extern int acct_gather_profile_p_job_sample(void)
 	return rc;
 }
 
-extern int acct_gather_profile_p_add_node_data(slurmd_job_t* job, char* group,
+extern int acct_gather_profile_p_add_node_data(char* group,
 					       char* type, void* data)
 {
 	uint32_t group_id = acct_gather_profile_series_from_string(group);
@@ -502,17 +506,19 @@ extern int acct_gather_profile_p_add_node_data(slurmd_job_t* job, char* group,
 }
 
 extern int acct_gather_profile_p_add_sample_data(
-	slurmd_job_t* job, char* group, char* type, void* data)
+	char *group, char *type, void *data)
 {
-	hid_t   gSampleGrp;
+	hid_t   g_sample_grp;
 	char 	group_sample[MAX_GROUP_NAME+1];
 	static uint32_t sample_no = 0;
 
 	uint32_t group_id = acct_gather_profile_series_from_string(group);
 
 	xassert(_run_in_daemon());
+	xassert(g_job);
+	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
-	if (!_do_profile(group_id, _determine_profile(job)))
+	if (!_do_profile(group_id, g_profile_running))
 		return SLURM_SUCCESS;
 
 	if (debug_flags & DEBUG_FLAG_PROFILE)
@@ -533,30 +539,32 @@ extern int acct_gather_profile_p_add_sample_data(
 			return SLURM_FAILURE;
 		}
 	}
-	gSampleGrp = get_group(gid_samples, group);
-	if (gSampleGrp < 0) {
-		gSampleGrp = make_group(gid_samples, group);
-		if (gSampleGrp < 0) {
+	g_sample_grp = get_group(gid_samples, group);
+	if (g_sample_grp < 0) {
+		g_sample_grp = make_group(gid_samples, group);
+		if (g_sample_grp < 0) {
 			info("PROFILE: failed to open TimeSeries %s", group);
 			return SLURM_FAILURE;
 		}
-		put_string_attribute(gSampleGrp, ATTR_DATATYPE, type);
+		put_string_attribute(g_sample_grp, ATTR_DATATYPE, type);
 	}
-	sprintf(group_sample,"%s_%10.10d", group, ++sample_no);
-	put_hdf5_data(gSampleGrp, type, SUBDATA_SAMPLE, group_sample, data, 1);
-	H5Gclose(gSampleGrp);
+	sprintf(group_sample, "%s_%10.10d", group, ++sample_no);
+	put_hdf5_data(g_sample_grp, type, SUBDATA_SAMPLE,
+		      group_sample, data, 1);
+	H5Gclose(g_sample_grp);
 
 	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_profile_p_add_task_data(
-	slurmd_job_t* job, uint32_t taskid, char* group, char* type, void* data)
+	uint32_t taskid, char* group, char* type, void* data)
 {
 	hid_t   gid_task, gid_totals = 0;
 	char 	group_task[MAX_GROUP_NAME+1];
 	uint32_t group_id = acct_gather_profile_from_string(group);
 
 	xassert(_run_in_daemon());
+	xassert(g_job);
 	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
 	if (!_do_profile(group_id, g_profile_running))
