@@ -698,6 +698,8 @@ extern void jobacct_gather_p_poll_data(
 					       jobacct->energy.consumed_energy);
 					energy_counted = 1;
 				}
+				acct_gather_profile_g_add_sample_data(
+					ACCT_GATHER_PROFILE_TASK, jobacct);
 				break;
 			}
 		}

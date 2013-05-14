@@ -505,14 +505,19 @@ extern int acct_gather_profile_p_add_node_data(char* group,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_profile_p_add_sample_data(
-	char *group, char *type, void *data)
+extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 {
 	hid_t   g_sample_grp;
+	char    group[MAX_GROUP_NAME+1];
 	char 	group_sample[MAX_GROUP_NAME+1];
 	static uint32_t sample_no = 0;
+	uint32_t task_id = 0;
+	void *send_profile = NULL;
+	char *send_type = NULL;
 
-	uint32_t group_id = acct_gather_profile_series_from_string(group);
+	profile_task_t  profile_task;
+
+	struct jobacctinfo *jobacct = (struct jobacctinfo *)data;
 
 	xassert(_run_in_daemon());
 	xassert(g_job);
@@ -521,8 +526,43 @@ extern int acct_gather_profile_p_add_sample_data(
 	if (!_do_profile(group_id, g_profile_running))
 		return SLURM_SUCCESS;
 
+	switch (type) {
+	case ACCT_GATHER_PROFILE_ENERGY:
+		break;
+	case ACCT_GATHER_PROFILE_TASK:
+		if (_get_taskid_from_pid(jobacct->pid, &task_id)
+		    != SLURM_SUCCESS)
+			return SLURM_ERROR;
+
+		snprintf(group, sizeof(group), "%s_%u", GRP_TASK, task_id);
+
+		memset(&profile_task, 0, sizeof(profile_task_t));
+		profile_task.time = time(NULL);
+		profile_task.cpu_freq = jobacct->act_cpufreq;
+		profile_task.cpu_utilization = jobacct->tot_cpu;
+		profile_task.cpu_time = jobacct->tot_cpu;
+		profile_task.rss = jobacct->tot_rss;
+		profile_task.vm_size = jobacct->tot_vsize;
+		profile_task.pages = jobacct->tot_pages;
+		profile_task.read_size = jobacct->tot_disk_read;
+		profile_task.write_size = jobacct->tot_disk_write;
+
+		send_profile = &profile_task;
+		send_type = PROFILE_TASK_DATA;
+		break;
+	case ACCT_GATHER_PROFILE_LUSTRE:
+		break;
+	case ACCT_GATHER_PROFILE_NETWORK:
+		break;
+	default:
+		error("acct_gather_profile_p_add_sample_data: "
+		      "Unknown type %d sent", type);
+		return SLURM_ERROR;
+	}
+
 	if (debug_flags & DEBUG_FLAG_PROFILE)
-		info("PROFILE: add_sample_data Group-%s Type=%s", group, type);
+		info("PROFILE: add_sample_data Group-%s Type=%s",
+		     group, send_type);
 
 	if (file_id == -1) {
 		if (debug_flags & DEBUG_FLAG_PROFILE) {
@@ -546,11 +586,11 @@ extern int acct_gather_profile_p_add_sample_data(
 			info("PROFILE: failed to open TimeSeries %s", group);
 			return SLURM_FAILURE;
 		}
-		put_string_attribute(g_sample_grp, ATTR_DATATYPE, type);
+		put_string_attribute(g_sample_grp, ATTR_DATATYPE, send_type);
 	}
 	sprintf(group_sample, "%s_%10.10d", group, ++sample_no);
-	put_hdf5_data(g_sample_grp, type, SUBDATA_SAMPLE,
-		      group_sample, data, 1);
+	put_hdf5_data(g_sample_grp, send_type, SUBDATA_SAMPLE,
+		      group_sample, send_profile, 1);
 	H5Gclose(g_sample_grp);
 
 	return SLURM_SUCCESS;

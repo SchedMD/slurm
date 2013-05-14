@@ -185,14 +185,12 @@ extern int acct_gather_profile_g_add_node_data(char* group,
  * dataset
  *
  * Parameters
- *	group -- identifies the data stream (source of data).
  *	type  -- identifies the type of data.
  *	data  -- data structure to be put to the file.
  *
  * Returns -- SLURM_SUCCESS or SLURM_ERROR
  */
-extern int acct_gather_profile_g_add_sample_data(char* group, char* type,
-						 void* data);
+extern int acct_gather_profile_g_add_sample_data(uint32_t type, void *data);
 
 /*
  * Put data at the Task Totals level. Typically called at task end.
