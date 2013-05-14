@@ -633,7 +633,7 @@ slurm_cred_copy(slurm_cred_t *cred)
 slurm_cred_t *
 slurm_cred_faker(slurm_cred_arg_t *arg)
 {
-	int fd;
+	int fd, i;
 	slurm_cred_t *cred = NULL;
 
 	xassert(arg != NULL);
@@ -649,7 +649,7 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->step_hostlist  = xstrdup(arg->step_hostlist);
 #ifndef HAVE_BG
 	{
-		int i, sock_recs = 0;
+		int sock_recs = 0;
 		for (i=0; i<arg->job_nhosts; i++) {
 			sock_recs += arg->sock_core_rep_count[i];
 			if (sock_recs >= arg->job_nhosts)
@@ -678,18 +678,19 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->signature = xmalloc(cred->siglen * sizeof(char));
 
 	if ((fd = open("/dev/urandom", O_RDONLY)) >= 0) {
-		if (read(fd, cred->signature, cred->siglen) == -1)
+		if (read(fd, cred->signature, cred->siglen-1) == -1)
 			error("reading fake signature from /dev/urandom: %m");
 		if (close(fd) < 0)
 			error("close(/dev/urandom): %m");
+		for (i=0; i<cred->siglen-1; i++)
+			cred->signature[i] = 'a' + (cred->signature[i] & 0xf);
 	} else {	/* Note: some systems lack this file */
-		unsigned int i;
 		struct timeval tv;
 		gettimeofday(&tv, NULL);
 		i = (unsigned int) (tv.tv_sec + tv.tv_usec);
 		srand((unsigned int) i);
-		for (i=0; i<cred->siglen; i++)
-			cred->signature[i] = (rand() & 0xff);
+		for (i=0; i<cred->siglen-1; i++)
+			cred->signature[i] = 'a' + (rand() & 0xf);
 	}
 
 	slurm_mutex_unlock(&cred->mutex);
