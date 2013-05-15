@@ -209,473 +209,16 @@ static int moffset; // General variable used by insert macros
 		var.min, var.ave, var.max, var.total);
 
 
-/* ============================================================================
- * Common support functions
- ===========================================================================*/
-
-hdf5_api_ops_t* profile_factory(char* type)
-{
-	if (strcmp(type, PROFILE_ENERGY_DATA) == 0) {
-		return energy_profile_factory();
-	} else if (strcmp(type, PROFILE_IO_DATA) == 0) {
-		return io_profile_factory();
-	} else if (strcmp(type, PROFILE_NETWORK_DATA) == 0) {
-		return network_profile_factory();
-	} else if (strcmp(type, PROFILE_TASK_DATA) == 0) {
-		return task_profile_factory();
-	} else {
-		error("PROFILE: PROFILE: %s is an invalid data type", type);
-		return NULL;
-	}
-}
-
-void profile_init()
-{
-	typTOD = H5Tcopy (H5T_C_S1);
-	H5Tset_size (typTOD, TOD_LEN); /* create string of length TOD_LEN */
-
-	return;
-}
-
-void profile_fini()
-{
-	H5Tclose(typTOD);
-	H5close(); // make sure all H5 Objects are closed
-
-	return;
-}
-
-char* get_data_set_name(char* type)
-{
-	static char  dset_name[MAX_DATASET_NAME+1];
-	dset_name[0] = '\0';
-	sprintf(dset_name, "%s Data", type);
-
-	return dset_name;
-}
-
-
-void hdf5_obj_info(hid_t group, char* nam_group)
-{
-
-	char* hdf5_typ_nam[] = {"H5G_LINK   ",
-			      "H5G_GROUP  ",
-			      "H5G_DATASET",
-			      "H5G_TYPE   "};
-
-	char buf[MAX_GROUP_NAME+1];
-	hsize_t nobj, nattr;
-	hid_t aid;
-	int i, len, typ;
-
-	if (group < 0) {
-		info("PROFILE: Group is not HDF5 object");
-		return;
-	}
-	H5Gget_num_objs(group, &nobj);
-	nattr = H5Aget_num_attrs(group);
-	info("PROFILE group: %s NumObject=%d NumAttributes=%d",
-	     nam_group, (int) nobj, (int) nattr);
-	for (i = 0; (nobj>0) && (i<nobj); i++) {
-		typ = H5Gget_objtype_by_idx(group, i);
-		len = H5Gget_objname_by_idx(group, i, buf, MAX_GROUP_NAME);
-		if ((len > 0) && (len < MAX_GROUP_NAME)) {
-			info("PROFILE: Obj=%d Type=%s Name=%s",
-			     i, hdf5_typ_nam[typ], buf);
-		} else {
-			info("PROFILE: Obj=%d Type=%s Name=%s (is truncated)",
-			     i, hdf5_typ_nam[typ], buf);
-		}
-	}
-	for (i = 0; (nattr>0) && (i<nattr); i++) {
-		aid = H5Aopen_idx(group, (unsigned int)i );
-		// Get the name of the attribute.
-		len = H5Aget_name(aid, MAX_ATTR_NAME, buf);
-		if (len < MAX_ATTR_NAME) {
-			info("PROFILE: Attr=%d Name=%s", i, buf);
-		} else {
-			info("PROFILE: Attr=%d Name=%s (is truncated)", i, buf);
-		}
-		H5Aclose(aid);
-	}
-
-	return;
-}
-
-hid_t get_attribute_handle(hid_t parent, char* name)
-{
-
-	char buf[MAX_ATTR_NAME+1];
-	int nattr, i, len;
-	hid_t aid;
-
-	if (parent < 0) {
-		debug3("PROFILE: parent is not HDF5 object");
-		return -1;
-	}
-	nattr = H5Aget_num_attrs(parent);
-	for (i = 0; (nattr>0) && (i<nattr); i++) {
-		aid = H5Aopen_idx(parent, (unsigned int)i );
-
-		// Get the name of the attribute.
-		len = H5Aget_name(aid, MAX_ATTR_NAME, buf);
-		if (len < MAX_ATTR_NAME) {
-			if (strcmp(buf, name) == 0) {
-				return aid;
-			}
-		}
-		H5Aclose(aid);
-	}
-	debug3("PROFILE: failed to find HDF5 attribute=%s\n", name);
-
-	return -1;
-}
-
-hid_t get_group(hid_t parent, char* name)
-{
-	char buf[MAX_GROUP_NAME];
-	hsize_t nobj;
-	hid_t gid;
-	int i, len;
-
-	if (parent < 0) {
-		debug3("PROFILE: parent is not HDF5 object");
-		return -1;
-	}
-	H5Gget_num_objs(parent, &nobj);
-	for (i = 0; (nobj>0) && (i<nobj); i++) {
-		// Get the name of the group.
-		len = H5Gget_objname_by_idx(parent, i, buf, MAX_GROUP_NAME);
-		if ((len > 0) && (len < MAX_GROUP_NAME)) {
-			if (strcmp(buf, name) == 0) {
-				gid = H5Gopen(parent, name, H5P_DEFAULT);
-				if (gid < 0)
-					error("PROFILE: Failed to open %s",
-					      name);
-				return gid;
-			}
-		}
-	}
-
-	return -1;
-}
-
-hid_t make_group(hid_t parent, char* name)
-{
-	hid_t gid = -1;
-
-	if (parent < 0) {
-		debug3("PROFILE: parent is not HDF5 object");
-		return -1;
-	}
-	gid = get_group(parent, name);
-	if (gid > 0)
-		return gid;
-	gid = H5Gcreate(parent, name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	if (gid < 0) {
-		debug3("PROFILE: failed to create HDF5 group=%s", name);
-		return -1;
-	}
-
-	return gid;
-}
-
-void put_string_attribute(hid_t parent, char* name, char* value)
-{
-	hid_t   attr, space_attr, typ_attr;
-	hsize_t dim_attr[1] = {1}; // Single dimension array of values
-
-	typ_attr = H5Tcopy(H5T_C_S1);
-	if (typ_attr < 0) {
-		debug3("PROFILE: failed to copy type for attribute %s", name);
-		return;
-	}
-	H5Tset_size(typ_attr, strlen(value));
-	H5Tset_strpad(typ_attr, H5T_STR_NULLTERM);
-	space_attr = H5Screate_simple(1, dim_attr, NULL);
-	if (space_attr < 0) {
-		H5Tclose(typ_attr);
-		debug3("PROFILE: failed to create space for attribute %s",
-		       name);
-		return;
-	}
-	attr = H5Acreate(parent, name, typ_attr, space_attr,
-			 H5P_DEFAULT, H5P_DEFAULT);
-	if (attr < 0) {
-		H5Tclose(typ_attr);
-		H5Sclose(space_attr);
-		debug3("PROFILE: failed to create attribute %s", name);
-		return;
-	}
-	if (H5Awrite(attr, typ_attr, value) < 0) {
-		debug3("PROFILE: failed to write attribute %s", name);
-		// Fall through to release resources
-	}
-	H5Sclose(space_attr);
-	H5Tclose(typ_attr);
-	H5Aclose(attr);
-
-	return;
-}
-
-char* get_string_attribute(hid_t parent, char* name)
-{
-	char* value = NULL;
-
-	hid_t   attr, type;
-	size_t  size;
-
-	attr = get_attribute_handle(parent, name);
-	if (attr < 0) {
-		debug3("PROFILE: Attribute=%s does not exist", name);
-		return NULL;
-	}
-	type  = H5Aget_type(attr);
-	if (H5Tget_class(type) != H5T_STRING) {
-		H5Aclose(attr);
-		debug3("PROFILE: Attribute=%s is not a string", name);
-		return NULL;
-	}
-	size = H5Tget_size(type);
-	value = xmalloc(size+1);
-	if (value == NULL) {
-		H5Tclose(type);
-		H5Aclose(attr);
-		debug3("PROFILE: failed to malloc %d bytes for attribute=%s",
-		       (int) size,
-		       name);
-		return NULL;
-	}
-	if (H5Aread(attr, type, value) < 0) {
-		xfree(value);
-		H5Tclose(type);
-		H5Aclose(attr);
-		debug3("PROFILE: failed to read attribute=%s", name);
-		return NULL;
-	}
-	H5Tclose(type);
-	H5Aclose(attr);
-
-	return value;
-}
-
-void put_int_attribute(hid_t parent, char* name, int value)
-{
-	hid_t   attr, space_attr;
-	hsize_t dim_attr[1] = {1}; // Single dimension array of values
-	space_attr  = H5Screate_simple(1, dim_attr, NULL);
-	if (space_attr < 0) {
-		debug3("PROFILE: failed to create space for attribute %s",
-		       name);
-		return;
-	}
-	attr = H5Acreate(parent, name, H5T_NATIVE_INT, space_attr,
-			 H5P_DEFAULT, H5P_DEFAULT);
-	if (attr < 0) {
-		H5Sclose(space_attr);
-		debug3("PROFILE: failed to create attribute %s", name);
-		return;
-	}
-	if (H5Awrite(attr, H5T_NATIVE_INT, &value) < 0) {
-		debug3("PROFILE: failed to write attribute %s", name);
-		// Fall through to release resources
-	}
-	H5Sclose(space_attr);
-	H5Aclose(attr);
-
-	return;
-}
-
-int get_int_attribute(hid_t parent, char* name)
-{
-	int value = 0;
-
-	hid_t   attr;
-	attr = get_attribute_handle(parent, name);
-	if (attr < 0) {
-		debug3("PROFILE: Attribute=%s does not exist, returning", name);
-		return value;
-	}
-	if (H5Aread(attr, H5T_NATIVE_INT, &value) < 0) {
-		debug3("PROFILE: failed to read attribute=%s, returning", name);
-	}
-	H5Aclose(attr);
-
-	return value;
-}
-
-void* get_hdf5_data(hid_t parent, char* type, char* nam_group, int* size_data)
-{
-	void*   data = NULL;
-
-	hid_t   id_data_set, dtyp_memory;
-	hsize_t szDset;
-	herr_t  ec;
-	char* subtype = NULL;
-
-	hdf5_api_ops_t* ops = profile_factory(type);
-
-	if (ops == NULL) {
-		debug3("PROFILE: failed to create %s operations", type);
-		return NULL;
-	}
-	subtype = get_string_attribute(parent, ATTR_SUBDATATYPE);
-	if (subtype < 0) {
-		xfree(ops);
-		debug3("PROFILE: failed to get %s attribute",
-		       ATTR_SUBDATATYPE);
-		return NULL;
-	}
-	id_data_set = H5Dopen(parent, get_data_set_name(nam_group), H5P_DEFAULT);
-	if (id_data_set < 0) {
-		xfree(subtype);
-		xfree(ops);
-		debug3("PROFILE: failed to open %s Data Set", type);
-		return NULL;
-	}
-	if (strcmp(subtype, SUBDATA_SUMMARY))
-		dtyp_memory = (*(ops->create_memory_datatype))();
-	else
-		dtyp_memory = (*(ops->create_s_memory_datatype))();
-	xfree(subtype);
-	if (dtyp_memory < 0) {
-		H5Dclose(id_data_set);
-		xfree(ops);
-		debug3("PROFILE: failed to create %s memory datatype", type);
-		return NULL;
-	}
-	szDset = H5Dget_storage_size(id_data_set);
-	*size_data = (int) szDset;
-	if (szDset == 0) {
-		H5Tclose(dtyp_memory);
-		H5Dclose(id_data_set);
-		xfree(ops);
-		debug3("PROFILE: %s data set is empty", type);
-		return NULL;
-	}
-	data = xmalloc(szDset);
-	if (data == NULL) {
-		H5Tclose(dtyp_memory);
-		H5Dclose(id_data_set);
-		xfree(ops);
-		debug3("PROFILE: failed to get memory for %s data set", type);
-		return NULL;
-	}
-	ec = H5Dread(id_data_set, dtyp_memory, H5S_ALL, H5S_ALL, H5P_DEFAULT,
-		     data);
-	if (ec < 0) {
-		H5Tclose(dtyp_memory);
-		H5Dclose(id_data_set);
-		xfree(data);
-		xfree(ops);
-		debug3("PROFILE: failed to read %s data", type);
-		return NULL;
-	}
-	H5Tclose(dtyp_memory);
-	H5Dclose(id_data_set);
-	xfree(ops);
-
-	return data;
-}
-
-void put_hdf5_data(hid_t parent, char* type, char* subtype,
-		   char* group, void* data, int n_item)
-{
-	hid_t   id_group, dtyp_memory, dtyp_file, id_data_space, id_data_set;
-	hsize_t dims[1];
-	herr_t  ec;
-	hdf5_api_ops_t* ops = profile_factory(type);
-
-	if (ops == NULL) {
-		debug3("PROFILE: failed to create %s operations", type);
-		return;
-	}
-	// Create the datatypes.
-	if (strcmp(subtype, SUBDATA_SUMMARY) != 0)
-		dtyp_memory = (*(ops->create_memory_datatype))();
-	else
-		dtyp_memory = (*(ops->create_s_memory_datatype))();
-	if (dtyp_memory < 0) {
-		xfree(ops);
-		debug3("PROFILE: failed to create %s memory datatype", type);
-		return;
-	}
-	if (strcmp(subtype, SUBDATA_SUMMARY) != 0)
-		dtyp_file = (*(ops->create_file_datatype))();
-	else
-		dtyp_file = (*(ops->create_s_file_datatype))();
-	if (dtyp_file < 0) {
-		H5Tclose(dtyp_memory);
-		xfree(ops);
-		debug3("PROFILE: failed to create %s file datatype", type);
-		return;
-	}
-
-	dims[0] = n_item;
-	id_data_space = H5Screate_simple(1, dims, NULL);
-	if (id_data_space < 0) {
-		H5Tclose(dtyp_file);
-		H5Tclose(dtyp_memory);
-		xfree(ops);
-		debug3("PROFILE: failed to create %s space descriptor", type);
-		return;
-	}
-
-	id_group = H5Gcreate(parent, group, H5P_DEFAULT,
-			    H5P_DEFAULT, H5P_DEFAULT);
-	if (id_group < 0) {
-		H5Sclose(id_data_space);
-		H5Tclose(dtyp_file);
-		H5Tclose(dtyp_memory);
-		xfree(ops);
-		debug3("PROFILE: failed to create %s group", group);
-		return;
-	}
-
-	put_string_attribute(id_group, ATTR_DATATYPE, type);
-	put_string_attribute(id_group, ATTR_SUBDATATYPE, subtype);
-
-	id_data_set = H5Dcreate(id_group, get_data_set_name(group), dtyp_file,
-			       id_data_space, H5P_DEFAULT, H5P_DEFAULT,
-				H5P_DEFAULT);
-	if (id_data_set < 0) {
-		H5Gclose(id_group);
-		H5Sclose(id_data_space);
-		H5Tclose(dtyp_file);
-		H5Tclose(dtyp_memory);
-		xfree(ops);
-		debug3("PROFILE: failed to create %s dataset", group);
-		return;
-	}
-
-	ec = H5Dwrite(id_data_set, dtyp_memory, H5S_ALL, H5S_ALL, H5P_DEFAULT,
-		      data);
-	if (ec < 0) {
-		debug3("PROFILE: failed to create write task data");
-		// Fall through to release resources
-	}
-	H5Dclose(id_data_set);
-	H5Gclose(id_group);
-	H5Sclose(id_data_space);
-	H5Tclose(dtyp_file);
-	H5Tclose(dtyp_memory);
-	xfree(ops);
-
-
-	return;
-}
-
-
 // ============================================================================
 // Routines supporting Energy Data type
 // ============================================================================
 
-int energy_dataset_size()
+static int _energy_dataset_size(void)
 {
 	return sizeof(profile_energy_t);
 }
 
-hid_t energy_create_memory_datatype()
+static hid_t _energy_create_memory_datatype(void)
 {
 	hid_t   mtyp_energy = H5Tcreate(H5T_COMPOUND, sizeof(profile_energy_t));
 	if (mtyp_energy < 0) {
@@ -691,7 +234,7 @@ hid_t energy_create_memory_datatype()
 	return mtyp_energy;
 }
 
-hid_t energy_create_file_datatype()
+static hid_t _energy_create_file_datatype(void)
 {
 	hid_t   ftyp_energy = H5Tcreate(H5T_COMPOUND, (TOD_LEN+3*8));
 	if (ftyp_energy < 0) {
@@ -707,10 +250,10 @@ hid_t energy_create_file_datatype()
 	return ftyp_energy;
 }
 
-hid_t energy_s_create_memory_datatype()
+static hid_t _energy_s_create_memory_datatype(void)
 {
 	hid_t   mtyp_energy = H5Tcreate(H5T_COMPOUND,
-				       sizeof(profile_energy_s_t));
+					sizeof(profile_energy_s_t));
 	if (mtyp_energy < 0) {
 		debug3("PROFILE: failed to create Energy_s memory datatype");
 		return -1;
@@ -736,7 +279,7 @@ hid_t energy_s_create_memory_datatype()
 	return mtyp_energy;
 }
 
-hid_t energy_s_create_file_datatype()
+static hid_t _energy_s_create_file_datatype(void)
 {
 	hid_t   ftyp_energy = H5Tcreate(H5T_COMPOUND, (TOD_LEN+9*8));
 	if (ftyp_energy < 0) {
@@ -758,7 +301,7 @@ hid_t energy_s_create_file_datatype()
 	return ftyp_energy;
 }
 
-void* energy_init_job_series(int n_samples)
+static void *_energy_init_job_series(int n_samples)
 {
 	profile_energy_t*  energy_data;
 
@@ -770,7 +313,8 @@ void* energy_init_job_series(int n_samples)
 	return (void*) energy_data;
 }
 
-void energy_merge_step_series(hid_t group, void* prior, void* cur, void* buf)
+static void _energy_merge_step_series(
+	hid_t group, void *prior, void *cur, void *buf)
 {
 //	This is a difference series
 	profile_energy_t* prf_cur = (profile_energy_t*) cur;
@@ -790,7 +334,7 @@ void energy_merge_step_series(hid_t group, void* prior, void* cur, void* buf)
 	return;
 }
 
-void* energy_series_total(int n_samples, void* data)
+static void *_energy_series_total(int n_samples, void *data)
 {
 	profile_energy_t* energy_data;
 	profile_energy_s_t* total;
@@ -810,8 +354,9 @@ void* energy_series_total(int n_samples, void* data)
 	return total;
 }
 
-void energy_extract_series(FILE* fp, bool put_header, int job, int step,
-			   char* node, char* series, void* data, int size_data)
+static void _energy_extract_series(
+	FILE* fp, bool put_header, int job, int step,
+	char *node, char *series, void *data, int size_data)
 {
 
 	int n_items, ix;
@@ -829,8 +374,9 @@ void energy_extract_series(FILE* fp, bool put_header, int job, int step,
 	return;
 }
 
-void energy_extract_total(FILE* fp, bool put_header, int job, int step,
-			  char* node, char* series, void* data, int size_data)
+static void _energy_extract_total(
+	FILE* fp, bool put_header, int job, int step,
+	char *node, char *series, void *data, int size_data)
 {
 	profile_energy_s_t* energy_data = (profile_energy_s_t*) data;
 	if (put_header) {
@@ -847,19 +393,19 @@ void energy_extract_total(FILE* fp, bool put_header, int job, int step,
 	return;
 }
 
-hdf5_api_ops_t* energy_profile_factory()
+static hdf5_api_ops_t* _energy_profile_factory(void)
 {
 	hdf5_api_ops_t* ops = xmalloc(sizeof(hdf5_api_ops_t));
-	ops->dataset_size = &energy_dataset_size;
-	ops->create_memory_datatype = &energy_create_memory_datatype;
-	ops->create_file_datatype = &energy_create_file_datatype;
-	ops->create_s_memory_datatype = &energy_s_create_memory_datatype;
-	ops->create_s_file_datatype = &energy_s_create_file_datatype;
-	ops->init_job_series = &energy_init_job_series;
-	ops->merge_step_series = &energy_merge_step_series;
-	ops->series_total = &energy_series_total;
-	ops->extract_series = &energy_extract_series;
-	ops->extract_total = &energy_extract_total;
+	ops->dataset_size = &_energy_dataset_size;
+	ops->create_memory_datatype = &_energy_create_memory_datatype;
+	ops->create_file_datatype = &_energy_create_file_datatype;
+	ops->create_s_memory_datatype = &_energy_s_create_memory_datatype;
+	ops->create_s_file_datatype = &_energy_s_create_file_datatype;
+	ops->init_job_series = &_energy_init_job_series;
+	ops->merge_step_series = &_energy_merge_step_series;
+	ops->series_total = &_energy_series_total;
+	ops->extract_series = &_energy_extract_series;
+	ops->extract_total = &_energy_extract_total;
 	return ops;
 }
 
@@ -868,12 +414,12 @@ hdf5_api_ops_t* energy_profile_factory()
 // Routines supporting I/O Data type
 // ============================================================================
 
-int io_dataset_size()
+static int _io_dataset_size(void)
 {
 	return sizeof(profile_io_t);
 }
 
-hid_t io_create_memory_datatype(void)
+static hid_t _io_create_memory_datatype(void)
 {
 	hid_t   mtyp_io = -1;
 
@@ -891,7 +437,7 @@ hid_t io_create_memory_datatype(void)
 	return mtyp_io;
 }
 
-hid_t io_create_file_datatype(void)
+static hid_t _io_create_file_datatype(void)
 {
 	hid_t   ftyp_io = -1;
 
@@ -911,7 +457,7 @@ hid_t io_create_file_datatype(void)
 	return ftyp_io;
 }
 
-hid_t io_s_create_memory_datatype(void)
+static hid_t _io_s_create_memory_datatype(void)
 {
 	hid_t   mtyp_io = -1;
 
@@ -950,7 +496,7 @@ hid_t io_s_create_memory_datatype(void)
 	return mtyp_io;
 }
 
-hid_t io_s_create_file_datatype(void)
+static hid_t _io_s_create_file_datatype(void)
 {
 	hid_t   ftyp_io = -1;
 
@@ -982,7 +528,7 @@ hid_t io_s_create_file_datatype(void)
 	return ftyp_io;
 }
 
-void* io_init_job_series(int n_samples)
+static void *_io_init_job_series(int n_samples)
 {
 	profile_io_t*  io_data;
 	io_data = xmalloc(n_samples * sizeof(profile_io_t));
@@ -993,7 +539,8 @@ void* io_init_job_series(int n_samples)
 	return (void*) io_data;
 }
 
-void io_merge_step_series(hid_t group, void* prior, void* cur, void* buf)
+static void _io_merge_step_series(
+	hid_t group, void *prior, void *cur, void *buf)
 {
 	// This is a difference series
 	profile_io_t* prf_cur = (profile_io_t*) cur;
@@ -1014,7 +561,7 @@ void io_merge_step_series(hid_t group, void* prior, void* cur, void* buf)
 	return;
 }
 
-void* io_series_total(int n_samples, void* data)
+static void *_io_series_total(int n_samples, void *data)
 {
 	profile_io_t* io_data;
 	profile_io_s_t* total;
@@ -1037,8 +584,9 @@ void* io_series_total(int n_samples, void* data)
 	return total;
 }
 
-void io_extract_series(FILE* fp, bool put_header, int job, int step,
-		       char* node, char* series, void* data, int size_data)
+static void _io_extract_series(
+	FILE* fp, bool put_header, int job, int step,
+	char *node, char *series, void *data, int size_data)
 {
 	int n_items, ix;
 	profile_io_t* io_data = (profile_io_t*) data;
@@ -1049,7 +597,7 @@ void io_extract_series(FILE* fp, bool put_header, int job, int step,
 	n_items = size_data / sizeof(profile_io_t);
 	for (ix=0; ix < n_items; ix++) {
 		fprintf(fp,"%d,%d,%s,%s,%s,%ld,%ld,%.3f,%ld,%.3f\n",
-			job,step,node,series,
+			job, step, node, series,
 			io_data[ix].tod, io_data[ix].time,
 			io_data[ix].reads, io_data[ix].read_size,
 			io_data[ix].writes, io_data[ix].write_size);
@@ -1057,8 +605,9 @@ void io_extract_series(FILE* fp, bool put_header, int job, int step,
 	return;
 }
 
-void io_extract_total(FILE* fp, bool put_header, int job, int step,
-		      char* node, char* series, void* data, int size_data)
+static void _io_extract_total(
+	FILE* fp, bool put_header, int job, int step,
+	char *node, char *series, void *data, int size_data)
 {
 	profile_io_s_t* io_data = (profile_io_s_t*) data;
 	if (put_header) {
@@ -1080,19 +629,19 @@ void io_extract_total(FILE* fp, bool put_header, int job, int step,
 	return;
 }
 
-hdf5_api_ops_t* io_profile_factory()
+static hdf5_api_ops_t* _io_profile_factory(void)
 {
 	hdf5_api_ops_t* ops = xmalloc(sizeof(hdf5_api_ops_t));
-	ops->dataset_size = &io_dataset_size;
-	ops->create_memory_datatype = &io_create_memory_datatype;
-	ops->create_file_datatype = &io_create_file_datatype;
-	ops->create_s_memory_datatype = &io_s_create_memory_datatype;
-	ops->create_s_file_datatype = &io_s_create_file_datatype;
-	ops->init_job_series = &io_init_job_series;
-	ops->merge_step_series = &io_merge_step_series;
-	ops->series_total = &io_series_total;
-	ops->extract_series = &io_extract_series;
-	ops->extract_total = &io_extract_total;
+	ops->dataset_size = &_io_dataset_size;
+	ops->create_memory_datatype = &_io_create_memory_datatype;
+	ops->create_file_datatype = &_io_create_file_datatype;
+	ops->create_s_memory_datatype = &_io_s_create_memory_datatype;
+	ops->create_s_file_datatype = &_io_s_create_file_datatype;
+	ops->init_job_series = &_io_init_job_series;
+	ops->merge_step_series = &_io_merge_step_series;
+	ops->series_total = &_io_series_total;
+	ops->extract_series = &_io_extract_series;
+	ops->extract_total = &_io_extract_total;
 	return ops;
 }
 
@@ -1101,15 +650,15 @@ hdf5_api_ops_t* io_profile_factory()
 // Routines supporting Network Data type
 // ============================================================================
 
-int network_dataset_size()
+static int _network_dataset_size(void)
 {
 	return sizeof(profile_network_t);
 }
 
-hid_t network_create_memory_datatype(void)
+static hid_t _network_create_memory_datatype(void)
 {
 	hid_t   mtyp_network = H5Tcreate(H5T_COMPOUND,
-					sizeof(profile_network_t));
+					 sizeof(profile_network_t));
 	if (mtyp_network < 0) {
 		debug3("PROFILE: failed to create Network memory datatype");
 		return -1;
@@ -1126,7 +675,7 @@ hid_t network_create_memory_datatype(void)
 	return mtyp_network;
 }
 
-hid_t network_create_file_datatype(void)
+static hid_t _network_create_file_datatype(void)
 {
 	hid_t   ftyp_network = H5Tcreate(H5T_COMPOUND, TOD_LEN+5*8);
 	if (ftyp_network < 0) {
@@ -1144,7 +693,7 @@ hid_t network_create_file_datatype(void)
 	return ftyp_network;
 }
 
-hid_t network_s_create_memory_datatype(void)
+static hid_t _network_s_create_memory_datatype(void)
 {
 	hid_t   mtyp_network = -1;
 
@@ -1193,7 +742,7 @@ hid_t network_s_create_memory_datatype(void)
 	return mtyp_network;
 }
 
-hid_t network_s_create_file_datatype(void)
+static hid_t _network_s_create_file_datatype(void)
 {
 	hid_t   ftyp_network = H5Tcreate(H5T_COMPOUND, TOD_LEN+17*8);
 	if (ftyp_network < 0) {
@@ -1223,7 +772,7 @@ hid_t network_s_create_file_datatype(void)
 	return ftyp_network;
 }
 
-void* network_init_job_series(int n_samples)
+static void *_network_init_job_series(int n_samples)
 {
 	profile_network_t*  network_data;
 
@@ -1235,7 +784,8 @@ void* network_init_job_series(int n_samples)
 	return (void*) network_data;
 }
 
-void network_merge_step_series(hid_t group, void* prior, void* cur, void* buf)
+static void _network_merge_step_series(
+	hid_t group, void *prior, void *cur, void *buf)
 {
 // This is a difference series
 	profile_network_t* prf_cur = (profile_network_t*) cur;
@@ -1256,7 +806,7 @@ void network_merge_step_series(hid_t group, void* prior, void* cur, void* buf)
 	return;
 }
 
-void* network_series_total(int n_samples, void* data)
+static void *_network_series_total(int n_samples, void *data)
 {
 	profile_network_t* network_data;
 	profile_network_s_t* total;
@@ -1279,8 +829,9 @@ void* network_series_total(int n_samples, void* data)
 	return total;
 }
 
-void network_extract_series(FILE* fp, bool put_header, int job, int step,
-			    char* node, char* series, void* data, int size_data)
+static void _network_extract_series(
+	FILE* fp, bool put_header, int job, int step,
+	char *node, char *series, void *data, int size_data)
 {
 	int n_items, ix;
 	profile_network_t* network_data = (profile_network_t*) data;
@@ -1301,8 +852,9 @@ void network_extract_series(FILE* fp, bool put_header, int job, int step,
 	return;
 }
 
-void network_extract_total(FILE* fp, bool put_header, int job, int step,
-			   char* node, char* series, void* data, int size_data)
+static void _network_extract_total(
+	FILE* fp, bool put_header, int job, int step,
+	char *node, char *series, void *data, int size_data)
 {
 	profile_network_s_t* network_data = (profile_network_s_t*) data;
 	if (put_header) {
@@ -1326,19 +878,19 @@ void network_extract_total(FILE* fp, bool put_header, int job, int step,
 	return;
 }
 
-hdf5_api_ops_t* network_profile_factory()
+static hdf5_api_ops_t *_network_profile_factory(void)
 {
 	hdf5_api_ops_t* ops = xmalloc(sizeof(hdf5_api_ops_t));
-	ops->dataset_size = &network_dataset_size;
-	ops->create_memory_datatype = &network_create_memory_datatype;
-	ops->create_file_datatype = &network_create_file_datatype;
-	ops->create_s_memory_datatype = &network_s_create_memory_datatype;
-	ops->create_s_file_datatype = &network_s_create_file_datatype;
-	ops->init_job_series = &network_init_job_series;
-	ops->merge_step_series = &network_merge_step_series;
-	ops->series_total = &network_series_total;
-	ops->extract_series = &network_extract_series;
-	ops->extract_total = &network_extract_total;
+	ops->dataset_size = &_network_dataset_size;
+	ops->create_memory_datatype = &_network_create_memory_datatype;
+	ops->create_file_datatype = &_network_create_file_datatype;
+	ops->create_s_memory_datatype = &_network_s_create_memory_datatype;
+	ops->create_s_file_datatype = &_network_s_create_file_datatype;
+	ops->init_job_series = &_network_init_job_series;
+	ops->merge_step_series = &_network_merge_step_series;
+	ops->series_total = &_network_series_total;
+	ops->extract_series = &_network_extract_series;
+	ops->extract_total = &_network_extract_total;
 	return ops;
 }
 
@@ -1346,12 +898,12 @@ hdf5_api_ops_t* network_profile_factory()
 // Routines supporting Task Data type
 // ============================================================================
 
-int task_dataset_size()
+static int _task_dataset_size(void)
 {
 	return sizeof(profile_task_t);
 }
 
-hid_t task_create_memory_datatype()
+static hid_t _task_create_memory_datatype(void)
 {
 	hid_t   mtyp_task = -1;
 
@@ -1375,7 +927,7 @@ hid_t task_create_memory_datatype()
 	return mtyp_task;
 }
 
-hid_t task_create_file_datatype()
+static hid_t _task_create_file_datatype(void)
 {
 	hid_t   ftyp_task = H5Tcreate(H5T_COMPOUND, TOD_LEN+9*8);
 	if (ftyp_task < 0) {
@@ -1397,14 +949,15 @@ hid_t task_create_file_datatype()
 	return ftyp_task;
 }
 
-hid_t task_s_create_memory_datatype()
+static hid_t _task_s_create_memory_datatype(void)
 {
 	hid_t   mtyp_task = H5Tcreate(H5T_COMPOUND, sizeof(profile_task_s_t));
 	if (mtyp_task < 0) {
 		debug3("PROFILE: failed to create Task memory datatype");
 		return -1;
 	}
-	MEM_ADD_DATE_TIME(mtyp_task, "Start Time", profile_task_s_t, start_time);
+	MEM_ADD_DATE_TIME(mtyp_task, "Start Time", profile_task_s_t,
+			  start_time);
 	MEM_ADD_UINT64(mtyp_task, "Elapsed Time", profile_task_s_t,
 		       elapsed_time);
 	MEM_ADD_UINT64(mtyp_task, "Min CPU Frequency", profile_task_s_t,
@@ -1464,7 +1017,7 @@ hid_t task_s_create_memory_datatype()
 	return mtyp_task;
 }
 
-hid_t task_s_create_file_datatype()
+static hid_t _task_s_create_file_datatype(void)
 {
 	hid_t   ftyp_task = H5Tcreate(H5T_COMPOUND, TOD_LEN+33*8);
 	if (ftyp_task < 0) {
@@ -1510,7 +1063,7 @@ hid_t task_s_create_file_datatype()
 	return ftyp_task;
 }
 
-void* task_init_job_series(int n_samples)
+static void *_task_init_job_series(int n_samples)
 {
 	profile_task_t*  task_data;
 	task_data = xmalloc(n_samples * sizeof(profile_task_t));
@@ -1521,7 +1074,8 @@ void* task_init_job_series(int n_samples)
 	return (void*) task_data;
 }
 
-void task_merge_step_series(hid_t group, void* prior, void* cur, void* buf)
+static void _task_merge_step_series(
+	hid_t group, void *prior, void *cur, void *buf)
 {
 // This is a running total series
 	profile_task_t* prf_prior = (profile_task_t*) prior;
@@ -1554,7 +1108,7 @@ void task_merge_step_series(hid_t group, void* prior, void* cur, void* buf)
 	return;
 }
 
-void* task_series_total(int n_samples, void* data)
+static void *_task_series_total(int n_samples, void *data)
 {
 	profile_task_t* task_data;
 	profile_task_s_t* total;
@@ -1577,8 +1131,9 @@ void* task_series_total(int n_samples, void* data)
 	return total;
 }
 
-void task_extract_series(FILE* fp, bool put_header, int job, int step,
-			 char* node, char* series, void* data, int size_data)
+static void _task_extract_series(
+	FILE* fp, bool put_header, int job, int step,
+	char *node, char *series, void *data, int size_data)
 {
 	int n_items, ix;
 	profile_task_t* task_data = (profile_task_t*) data;
@@ -1602,8 +1157,9 @@ void task_extract_series(FILE* fp, bool put_header, int job, int step,
 	return;
 }
 
-void task_extract_total(FILE* fp, bool put_header, int job, int step,
-			char* node, char* series, void* data, int size_data)
+static void _task_extract_total(
+	FILE* fp, bool put_header, int job, int step,
+	char *node, char *series, void *data, int size_data)
 {
 
 	profile_task_s_t* task_data = (profile_task_s_t*) data;
@@ -1637,18 +1193,540 @@ void task_extract_total(FILE* fp, bool put_header, int job, int step,
 	return;
 }
 
-hdf5_api_ops_t* task_profile_factory()
+static hdf5_api_ops_t *_task_profile_factory(void)
 {
 	hdf5_api_ops_t* ops = xmalloc(sizeof(hdf5_api_ops_t));
-	ops->dataset_size = &task_dataset_size;
-	ops->create_memory_datatype = &task_create_memory_datatype;
-	ops->create_file_datatype = &task_create_file_datatype;
-	ops->create_s_memory_datatype = &task_s_create_memory_datatype;
-	ops->create_s_file_datatype = &task_s_create_file_datatype;
-	ops->init_job_series = &task_init_job_series;
-	ops->merge_step_series = &task_merge_step_series;
-	ops->series_total = &task_series_total;
-	ops->extract_series = &task_extract_series;
-	ops->extract_total = &task_extract_total;
+	ops->dataset_size = &_task_dataset_size;
+	ops->create_memory_datatype = &_task_create_memory_datatype;
+	ops->create_file_datatype = &_task_create_file_datatype;
+	ops->create_s_memory_datatype = &_task_s_create_memory_datatype;
+	ops->create_s_file_datatype = &_task_s_create_file_datatype;
+	ops->init_job_series = &_task_init_job_series;
+	ops->merge_step_series = &_task_merge_step_series;
+	ops->series_total = &_task_series_total;
+	ops->extract_series = &_task_extract_series;
+	ops->extract_total = &_task_extract_total;
 	return ops;
 }
+
+/* ============================================================================
+ * Common support functions
+ ===========================================================================*/
+
+extern hdf5_api_ops_t* profile_factory(uint32_t type)
+{
+	switch (type) {
+	case ACCT_GATHER_PROFILE_ENERGY:
+		return _energy_profile_factory();
+		break;
+	case ACCT_GATHER_PROFILE_TASK:
+		return _task_profile_factory();
+		break;
+	case ACCT_GATHER_PROFILE_LUSTRE:
+		return _io_profile_factory();
+		break;
+	case ACCT_GATHER_PROFILE_NETWORK:
+		return _network_profile_factory();
+		break;
+	default:
+		error("profile_factory: Unknown type %d sent", type);
+		return NULL;
+	}
+}
+
+
+extern void profile_init(void)
+{
+	typTOD = H5Tcopy (H5T_C_S1);
+	H5Tset_size (typTOD, TOD_LEN); /* create string of length TOD_LEN */
+
+	return;
+}
+
+extern void profile_fini(void)
+{
+	H5Tclose(typTOD);
+	H5close(); // make sure all H5 Objects are closed
+
+	return;
+}
+
+extern char *get_data_set_name(char *type)
+{
+	static char  dset_name[MAX_DATASET_NAME+1];
+	dset_name[0] = '\0';
+	sprintf(dset_name, "%s Data", type);
+
+	return dset_name;
+}
+
+
+extern void hdf5_obj_info(hid_t group, char *nam_group)
+{
+
+	char *hdf5_typ_nam[] = {"H5G_LINK   ",
+				"H5G_GROUP  ",
+				"H5G_DATASET",
+				"H5G_TYPE   "};
+
+	char buf[MAX_GROUP_NAME+1];
+	hsize_t nobj, nattr;
+	hid_t aid;
+	int i, len, typ;
+
+	if (group < 0) {
+		info("PROFILE: Group is not HDF5 object");
+		return;
+	}
+	H5Gget_num_objs(group, &nobj);
+	nattr = H5Aget_num_attrs(group);
+	info("PROFILE group: %s NumObject=%d NumAttributes=%d",
+	     nam_group, (int) nobj, (int) nattr);
+	for (i = 0; (nobj>0) && (i<nobj); i++) {
+		typ = H5Gget_objtype_by_idx(group, i);
+		len = H5Gget_objname_by_idx(group, i, buf, MAX_GROUP_NAME);
+		if ((len > 0) && (len < MAX_GROUP_NAME)) {
+			info("PROFILE: Obj=%d Type=%s Name=%s",
+			     i, hdf5_typ_nam[typ], buf);
+		} else {
+			info("PROFILE: Obj=%d Type=%s Name=%s (is truncated)",
+			     i, hdf5_typ_nam[typ], buf);
+		}
+	}
+	for (i = 0; (nattr>0) && (i<nattr); i++) {
+		aid = H5Aopen_idx(group, (unsigned int)i );
+		// Get the name of the attribute.
+		len = H5Aget_name(aid, MAX_ATTR_NAME, buf);
+		if (len < MAX_ATTR_NAME) {
+			info("PROFILE: Attr=%d Name=%s", i, buf);
+		} else {
+			info("PROFILE: Attr=%d Name=%s (is truncated)", i, buf);
+		}
+		H5Aclose(aid);
+	}
+
+	return;
+}
+
+extern hid_t get_attribute_handle(hid_t parent, char *name)
+{
+
+	char buf[MAX_ATTR_NAME+1];
+	int nattr, i, len;
+	hid_t aid;
+
+	if (parent < 0) {
+		debug3("PROFILE: parent is not HDF5 object");
+		return -1;
+	}
+	nattr = H5Aget_num_attrs(parent);
+	for (i = 0; (nattr>0) && (i<nattr); i++) {
+		aid = H5Aopen_idx(parent, (unsigned int)i );
+
+		// Get the name of the attribute.
+		len = H5Aget_name(aid, MAX_ATTR_NAME, buf);
+		if (len < MAX_ATTR_NAME) {
+			if (strcmp(buf, name) == 0) {
+				return aid;
+			}
+		}
+		H5Aclose(aid);
+	}
+	debug3("PROFILE: failed to find HDF5 attribute=%s\n", name);
+
+	return -1;
+}
+
+extern hid_t get_group(hid_t parent, char *name)
+{
+	char buf[MAX_GROUP_NAME];
+	hsize_t nobj;
+	hid_t gid;
+	int i, len;
+
+	if (parent < 0) {
+		debug3("PROFILE: parent is not HDF5 object");
+		return -1;
+	}
+	H5Gget_num_objs(parent, &nobj);
+	for (i = 0; (nobj>0) && (i<nobj); i++) {
+		// Get the name of the group.
+		len = H5Gget_objname_by_idx(parent, i, buf, MAX_GROUP_NAME);
+		if ((len > 0) && (len < MAX_GROUP_NAME)) {
+			if (strcmp(buf, name) == 0) {
+				gid = H5Gopen(parent, name, H5P_DEFAULT);
+				if (gid < 0)
+					error("PROFILE: Failed to open %s",
+					      name);
+				return gid;
+			}
+		}
+	}
+
+	return -1;
+}
+
+extern hid_t make_group(hid_t parent, char *name)
+{
+	hid_t gid = -1;
+
+	if (parent < 0) {
+		debug3("PROFILE: parent is not HDF5 object");
+		return -1;
+	}
+	gid = get_group(parent, name);
+	if (gid > 0)
+		return gid;
+	gid = H5Gcreate(parent, name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if (gid < 0) {
+		debug3("PROFILE: failed to create HDF5 group=%s", name);
+		return -1;
+	}
+
+	return gid;
+}
+
+extern void put_string_attribute(hid_t parent, char *name, char *value)
+{
+	hid_t   attr, space_attr, typ_attr;
+	hsize_t dim_attr[1] = {1}; // Single dimension array of values
+
+	typ_attr = H5Tcopy(H5T_C_S1);
+	if (typ_attr < 0) {
+		debug3("PROFILE: failed to copy type for attribute %s", name);
+		return;
+	}
+	H5Tset_size(typ_attr, strlen(value));
+	H5Tset_strpad(typ_attr, H5T_STR_NULLTERM);
+	space_attr = H5Screate_simple(1, dim_attr, NULL);
+	if (space_attr < 0) {
+		H5Tclose(typ_attr);
+		debug3("PROFILE: failed to create space for attribute %s",
+		       name);
+		return;
+	}
+	attr = H5Acreate(parent, name, typ_attr, space_attr,
+			 H5P_DEFAULT, H5P_DEFAULT);
+	if (attr < 0) {
+		H5Tclose(typ_attr);
+		H5Sclose(space_attr);
+		debug3("PROFILE: failed to create attribute %s", name);
+		return;
+	}
+	if (H5Awrite(attr, typ_attr, value) < 0) {
+		debug3("PROFILE: failed to write attribute %s", name);
+		// Fall through to release resources
+	}
+	H5Sclose(space_attr);
+	H5Tclose(typ_attr);
+	H5Aclose(attr);
+
+	return;
+}
+
+extern char *get_string_attribute(hid_t parent, char *name)
+{
+	char *value = NULL;
+
+	hid_t   attr, type;
+	size_t  size;
+
+	attr = get_attribute_handle(parent, name);
+	if (attr < 0) {
+		debug3("PROFILE: Attribute=%s does not exist", name);
+		return NULL;
+	}
+	type  = H5Aget_type(attr);
+	if (H5Tget_class(type) != H5T_STRING) {
+		H5Aclose(attr);
+		debug3("PROFILE: Attribute=%s is not a string", name);
+		return NULL;
+	}
+	size = H5Tget_size(type);
+	value = xmalloc(size+1);
+	if (value == NULL) {
+		H5Tclose(type);
+		H5Aclose(attr);
+		debug3("PROFILE: failed to malloc %d bytes for attribute=%s",
+		       (int) size,
+		       name);
+		return NULL;
+	}
+	if (H5Aread(attr, type, value) < 0) {
+		xfree(value);
+		H5Tclose(type);
+		H5Aclose(attr);
+		debug3("PROFILE: failed to read attribute=%s", name);
+		return NULL;
+	}
+	H5Tclose(type);
+	H5Aclose(attr);
+
+	return value;
+}
+
+extern void put_int_attribute(hid_t parent, char *name, int value)
+{
+	hid_t   attr, space_attr;
+	hsize_t dim_attr[1] = {1}; // Single dimension array of values
+	space_attr  = H5Screate_simple(1, dim_attr, NULL);
+	if (space_attr < 0) {
+		debug3("PROFILE: failed to create space for attribute %s",
+		       name);
+		return;
+	}
+	attr = H5Acreate(parent, name, H5T_NATIVE_INT, space_attr,
+			 H5P_DEFAULT, H5P_DEFAULT);
+	if (attr < 0) {
+		H5Sclose(space_attr);
+		debug3("PROFILE: failed to create attribute %s", name);
+		return;
+	}
+	if (H5Awrite(attr, H5T_NATIVE_INT, &value) < 0) {
+		debug3("PROFILE: failed to write attribute %s", name);
+		// Fall through to release resources
+	}
+	H5Sclose(space_attr);
+	H5Aclose(attr);
+
+	return;
+}
+
+extern int get_int_attribute(hid_t parent, char *name)
+{
+	int value = 0;
+
+	hid_t   attr;
+	attr = get_attribute_handle(parent, name);
+	if (attr < 0) {
+		debug3("PROFILE: Attribute=%s does not exist, returning", name);
+		return value;
+	}
+	if (H5Aread(attr, H5T_NATIVE_INT, &value) < 0) {
+		debug3("PROFILE: failed to read attribute=%s, returning", name);
+	}
+	H5Aclose(attr);
+
+	return value;
+}
+
+
+extern void put_uint32_attribute(hid_t parent, char *name, uint32_t value)
+{
+	hid_t   attr, space_attr;
+	hsize_t dim_attr[1] = {1}; // Single dimension array of values
+
+	space_attr  = H5Screate_simple(1, dim_attr, NULL);
+	if (space_attr < 0) {
+		debug3("PROFILE: failed to create space for attribute %s",
+		       name);
+		return;
+	}
+	attr = H5Acreate(parent, name, H5T_NATIVE_UINT32, space_attr,
+			 H5P_DEFAULT, H5P_DEFAULT);
+	if (attr < 0) {
+		H5Sclose(space_attr);
+		debug3("PROFILE: failed to create attribute %s", name);
+		return;
+	}
+	if (H5Awrite(attr, H5T_NATIVE_UINT32, &value) < 0) {
+		debug3("PROFILE: failed to write attribute %s", name);
+		// Fall through to release resources
+	}
+	H5Sclose(space_attr);
+	H5Aclose(attr);
+
+	return;
+}
+
+extern uint32_t get_uint32_attribute(hid_t parent, char *name)
+{
+	int value = 0;
+	hid_t   attr;
+
+	attr = get_attribute_handle(parent, name);
+	if (attr < 0) {
+		debug3("PROFILE: Attribute=%s does not exist, returning", name);
+		return value;
+	}
+	if (H5Aread(attr, H5T_NATIVE_UINT32, &value) < 0) {
+		debug3("PROFILE: failed to read attribute=%s, returning", name);
+	}
+	H5Aclose(attr);
+
+	return value;
+}
+
+extern void *get_hdf5_data(hid_t parent, uint32_t type,
+			   char *nam_group, int *size_data)
+{
+	void *  data = NULL;
+
+	hid_t   id_data_set, dtyp_memory;
+	hsize_t szDset;
+	herr_t  ec;
+	char *subtype = NULL;
+
+	hdf5_api_ops_t* ops = profile_factory(type);
+
+	if (ops == NULL) {
+		debug3("PROFILE: failed to create %s operations",
+		       acct_gather_profile_to_string(type));
+		return NULL;
+	}
+	subtype = get_string_attribute(parent, ATTR_SUBDATATYPE);
+	if (subtype < 0) {
+		xfree(ops);
+		debug3("PROFILE: failed to get %s attribute",
+		       ATTR_SUBDATATYPE);
+		return NULL;
+	}
+	id_data_set = H5Dopen(parent, get_data_set_name(nam_group),
+			      H5P_DEFAULT);
+	if (id_data_set < 0) {
+		xfree(subtype);
+		xfree(ops);
+		debug3("PROFILE: failed to open %s Data Set",
+		       acct_gather_profile_to_string(type));
+		return NULL;
+	}
+	if (strcmp(subtype, SUBDATA_SUMMARY))
+		dtyp_memory = (*(ops->create_memory_datatype))();
+	else
+		dtyp_memory = (*(ops->create_s_memory_datatype))();
+	xfree(subtype);
+	if (dtyp_memory < 0) {
+		H5Dclose(id_data_set);
+		xfree(ops);
+		debug3("PROFILE: failed to create %s memory datatype",
+		       acct_gather_profile_to_string(type));
+		return NULL;
+	}
+	szDset = H5Dget_storage_size(id_data_set);
+	*size_data = (int) szDset;
+	if (szDset == 0) {
+		H5Tclose(dtyp_memory);
+		H5Dclose(id_data_set);
+		xfree(ops);
+		debug3("PROFILE: %s data set is empty",
+		       acct_gather_profile_to_string(type));
+		return NULL;
+	}
+	data = xmalloc(szDset);
+	if (data == NULL) {
+		H5Tclose(dtyp_memory);
+		H5Dclose(id_data_set);
+		xfree(ops);
+		debug3("PROFILE: failed to get memory for %s data set",
+		       acct_gather_profile_to_string(type));
+		return NULL;
+	}
+	ec = H5Dread(id_data_set, dtyp_memory, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+		     data);
+	if (ec < 0) {
+		H5Tclose(dtyp_memory);
+		H5Dclose(id_data_set);
+		xfree(data);
+		xfree(ops);
+		debug3("PROFILE: failed to read %s data",
+		       acct_gather_profile_to_string(type));
+		return NULL;
+	}
+	H5Tclose(dtyp_memory);
+	H5Dclose(id_data_set);
+	xfree(ops);
+
+	return data;
+}
+
+extern void put_hdf5_data(hid_t parent, uint32_t type, char *subtype,
+			  char *group, void *data, int n_item)
+{
+	hid_t   id_group, dtyp_memory, dtyp_file, id_data_space, id_data_set;
+	hsize_t dims[1];
+	herr_t  ec;
+	hdf5_api_ops_t* ops = profile_factory(type);
+
+	if (ops == NULL) {
+		debug3("PROFILE: failed to create %s operations",
+		       acct_gather_profile_to_string(type));
+		return;
+	}
+	// Create the datatypes.
+	if (strcmp(subtype, SUBDATA_SUMMARY) != 0)
+		dtyp_memory = (*(ops->create_memory_datatype))();
+	else
+		dtyp_memory = (*(ops->create_s_memory_datatype))();
+	if (dtyp_memory < 0) {
+		xfree(ops);
+		debug3("PROFILE: failed to create %s memory datatype",
+		       acct_gather_profile_to_string(type));
+		return;
+	}
+	if (strcmp(subtype, SUBDATA_SUMMARY) != 0)
+		dtyp_file = (*(ops->create_file_datatype))();
+	else
+		dtyp_file = (*(ops->create_s_file_datatype))();
+	if (dtyp_file < 0) {
+		H5Tclose(dtyp_memory);
+		xfree(ops);
+		debug3("PROFILE: failed to create %s file datatype",
+		       acct_gather_profile_to_string(type));
+		return;
+	}
+
+	dims[0] = n_item;
+	id_data_space = H5Screate_simple(1, dims, NULL);
+	if (id_data_space < 0) {
+		H5Tclose(dtyp_file);
+		H5Tclose(dtyp_memory);
+		xfree(ops);
+		debug3("PROFILE: failed to create %s space descriptor",
+		       acct_gather_profile_to_string(type));
+		return;
+	}
+
+	id_group = H5Gcreate(parent, group, H5P_DEFAULT,
+			     H5P_DEFAULT, H5P_DEFAULT);
+	if (id_group < 0) {
+		H5Sclose(id_data_space);
+		H5Tclose(dtyp_file);
+		H5Tclose(dtyp_memory);
+		xfree(ops);
+		debug3("PROFILE: failed to create %s group", group);
+		return;
+	}
+
+	put_uint32_attribute(id_group, ATTR_DATATYPE, type);
+	put_string_attribute(id_group, ATTR_SUBDATATYPE, subtype);
+
+	id_data_set = H5Dcreate(id_group, get_data_set_name(group), dtyp_file,
+				id_data_space, H5P_DEFAULT, H5P_DEFAULT,
+				H5P_DEFAULT);
+	if (id_data_set < 0) {
+		H5Gclose(id_group);
+		H5Sclose(id_data_space);
+		H5Tclose(dtyp_file);
+		H5Tclose(dtyp_memory);
+		xfree(ops);
+		debug3("PROFILE: failed to create %s dataset", group);
+		return;
+	}
+
+	ec = H5Dwrite(id_data_set, dtyp_memory, H5S_ALL, H5S_ALL, H5P_DEFAULT,
+		      data);
+	if (ec < 0) {
+		debug3("PROFILE: failed to create write task data");
+		// Fall through to release resources
+	}
+	H5Dclose(id_data_set);
+	H5Gclose(id_group);
+	H5Sclose(id_data_space);
+	H5Tclose(dtyp_file);
+	H5Tclose(dtyp_memory);
+	xfree(ops);
+
+
+	return;
+}
+

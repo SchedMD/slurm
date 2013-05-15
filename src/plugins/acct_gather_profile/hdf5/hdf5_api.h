@@ -236,23 +236,23 @@ typedef struct profile_task_s {
  *		(format as comma,separated value, for example.)
  */
 typedef struct hdf5_api_ops {
-	int   (*dataset_size) ();
-	hid_t (*create_memory_datatype) ();
-	hid_t (*create_file_datatype) ();
-	hid_t (*create_s_memory_datatype) ();
-	hid_t (*create_s_file_datatype) ();
+	int   (*dataset_size) (void);
+	hid_t (*create_memory_datatype) (void);
+	hid_t (*create_file_datatype) (void);
+	hid_t (*create_s_memory_datatype) (void);
+	hid_t (*create_s_file_datatype) (void);
 	void* (*init_job_series) (int);
 	void  (*merge_step_series) (hid_t, void*, void*, void*);
 	void* (*series_total) (int, void*);
 	void  (*extract_series) (FILE*, bool, int, int, char*, char*, void*,
-			int);
+				 int);
 	void  (*extract_total) (FILE*, bool, int, int, char*, char*, void*,
-			int);
+				int);
 } hdf5_api_ops_t;
 
 /* ============================================================================
  * Common support functions
-   ==========================================================================*/
+ ==========================================================================*/
 
 /*
  * Create a opts group from type
@@ -262,12 +262,12 @@ hdf5_api_ops_t* profile_factory(uint32_t type);
 /*
  * Initialize profile (initialize static memory)
  */
-void profile_init();
+void profile_init(void);
 
 /*
  * Finialize profile (initialize static memory)
  */
-void profile_fini();
+void profile_fini(void);
 
 /*
  * Make a dataset name
@@ -365,488 +365,51 @@ void put_int_attribute(hid_t parent, char* name, int value);
 int get_int_attribute(hid_t parent, char* name);
 
 /*
+ * Put uint32_t attribute
+ *
+ * Parameters
+ *	parent	- handle to parent group.
+ *	name	- name of the attribute
+ *	value	- value of the attribute
+ */
+void put_uint32_t_attribute(hid_t parent, char* name, uint32_t value);
+
+/*
+ * get uint32_t attribute
+ *
+ * Parameters
+ *	parent	- handle to parent group.
+ *	name	- name of the attribute
+ *
+ * Return: value
+ */
+uint32_t get_uint32_attribute(hid_t parent, char* name);
+
+/*
  * Get data from a group of a HDF5 file
  *
  * Parameters
  *	parent   - handle to parent.
- *	type     - type of data (PROFILE_*_DATA in slurm_acct_gather_profile.h)
+ *	type     - type of data (ACCT_GATHER_PROFILE_* in slurm.h)
  *	namGroup - name of group
  *	sizeData - pointer to variable into which to put size of dataset
  *
  * Returns -- data set of type (or null), caller must free.
  */
-void* get_hdf5_data(hid_t parent, char* type, char* namGroup, int* sizeData);
+void* get_hdf5_data(hid_t parent, uint32_t type, char* namGroup, int* sizeData);
 
 /*
  * Put one data sample into a new group in an HDF5 file
  *
  * Parameters
  *	parent  - handle to parent group.
- *	type    - type of data (PROFILE_*_DATA from slurm_acct_gather_profile.h)
+ *	type    - type of data (ACCT_GATHER_PROFILE_* in slurm.h)
  *	subtype - generally source (node, series, ...) or summary
  *	group   - name of new group
  *	data    - data for the sample
  *      nItems  - number of items of type in the data
  */
-void put_hdf5_data(hid_t parent, char* type, char* subtype, char* group,
-		void* data, int nItems);
-
-// ============================================================================
-// Routines supporting Energy Data type
-// ============================================================================
-
-/*
- * returns size of one dataset
- */
-int energy_dataset_size();
-
-/*
- * Create the energy memory datatype.
- *
- * Returns - memory datatype for energy (caller must close)
- *
- */
-hid_t energy_create_memory_datatype();
-
-/*
- * Create the summary energy memory datatype.
- *
- * Returns - memory datatype for energy summary (caller must close)
- *
- */
-hid_t energy_s_create_memory_datatype();
-
-/*
- * Create the energy file datatype.
- *
- * Returns - file datatype for energy (caller must close)
- *
- */
-hid_t energy_create_file_datatype();
-
-/*
- * Create the summary energy file datatype.
- *
- * Returns - file datatype for energy summary (caller must close)
- *
- */
-hid_t energy_s_create_file_datatype();
-
-/*
- * Initialize data array for all energy samples
- *
- * Parameters
- * 	nSamples - number of samples in data series
- *
- * Returns
- * 	initialized data set; Caller must free
- */
-void* energy_init_job_series(int nSamples);
-
-/*
- * Add current sample to collection of all samples.
- *     Opportunity to do difference calculations
- *
- * Parameters
- *	group  - group containing dataset
- *	prior  - previous sample
- *	cur    - current sample
- *	buf    - loc in collection for current sample
- *
- */
-void energy_merge_step_series(hid_t group, void* prior, void* cur, void* buf);
-
-/*
- * create total for series
- *
- * Parameters
- * 	nSamples - number of samples in the series
- * 	data	 - data for series
- *
- * Returns
- * 	series total. caller must free
- *
- */
-void* energy_series_total(int nSamples, void* data);
-
-/*
- * Write energy time series data to a csv file
- *
- * Parameters
- *	fOt	  - file descriptor for output file
- *	putHeader - first data item, put the header line
- *	job	  - jobid
- *	step	  - stepid
- *	node	  - node name
- *	series    - series name
- *	data	  - data of type
- *	sizeData  - size of data set
- */
-void energy_extract_series(FILE* fOt, bool putHeader, int job, int step,
-		char* node, char* series, void* data, int sizeData);
-
-/*
- * Write energy totals data to a csv file
- *
- * Parameters
- *	fOt	  - file descriptor for output file
- *	putHeader - first data item, put the header line
- *	job	  - jobid
- *	step	  - stepid
- *	node	  - node name
- *	series    - series name
- *	data	  - data of type
- *	sizeData  - size of data set
- */
-void energy_extract_totals(FILE* fOt, bool putHeader, int job, int step,
-		char* node, char* series, void* data, int sizeData);
-
-/*
- * Create array of function pointers for common HDF5 operations
- */
-hdf5_api_ops_t* energy_profile_factory();
-
-// ============================================================================
-// Routines supporting I/O Data type
-// ============================================================================
-
-/*
- * returns size of one dataset
- */
-int io_dataset_size();
-
-/*
- * Create the IO memory datatype.
- *
- * Returns - memory datatype for IO (caller must close)
- *
- */
-hid_t io_create_memory_datatype(void);
-
-/*
- * Create the IO Summary memory datatype.
- *
- * Returns - memory datatype for IO summary (caller must close)
- *
- */
-hid_t io_s_create_memory_datatype(void);
-
-/*
- * Create the IO file datatype.
- *
- * Returns - file datatype for IO (caller must close)
- *
- */
-hid_t io_create_file_datatype(void);
-
-/*
- * Create the IO Summary file datatype.
- *
- * Returns - file datatype for IO Summary (caller must close)
- *
- */
-hid_t io_s_create_file_datatype(void);
-
-/*
- * Initialize data array for all io samples
- *
- * Parameters
- *	nSamples - number of samples in data series
- *
- * Returns
- *	initialized data set; Caller must free
- */
-void* io_init_job_series(int nSamples);
-
-/*
- * Add current sample to collection of all samples.
- *     Opportunity to do difference calculations
- *
- * Parameters
- *	group  - group containing dataset
- *	prior  - previous sample
- *	cur    - current sample
- *	buf    - loc in collection for current sample
- */
-void io_merge_step_series(hid_t group, void* prior, void* cur, void* buf);
-
-/*
- * create total for series
- *
- * Parameters
- *	nSamples - number of samples in the series
- *	data	 - data for series
- *
- * Returns
- *	series total. caller must free
- *
- */
-void* io_series_total(int nSamples, void* data);
-
-/*
- * Write IO series data to a csv file
- *
- * Parameters
- *	fOt	  - file descriptor for output file
- *	putHeader - first data item, put the header line
- *	job	  - jobid
- *	step	  - stepid
- *	node	  - node name
- *	series    - series name
- *	data	  - data of type
- *	sizeData  - size of data set
- */
-void io_extract_series(FILE* fOt, bool putHeader, int job, int step,
-		char* node, char* series, void* data, int sizeData);
-
-/*
- * Write IO Totals data to a csv file
- *
- * Parameters
- *	fOt	  - file descriptor for output file
- *	putHeader - first data item, put the header line
- *	job	  - jobid
- *	step	  - stepid
- *	node	  - node name
- *	series    - series name
- *	data	  - data of type
- *	sizeData  - size of data set
- */
-void io_extract_total(FILE* fOt, bool putHeader, int job, int step,
-		char* node, char* series, void* data, int sizeData);
-
-/*
- * Create array of function pointers for common HDF5 operations
- */
-hdf5_api_ops_t* io_profile_factory();
-
-// ============================================================================
-// Routines supporting Network Data type
-// ============================================================================
-
-/*
- * returns size of one dataset
- */
-int network_dataset_size();
-
-/*
- * Create the Network memory datatype.
- *
- * Returns - memory datatype for Network (caller must close)
- *
- */
-hid_t network_create_memory_datatype(void);
-
-/*
- * Create the Network Summary memory datatype.
- *
- * Returns - memory datatype for Network summary (caller must close)
- *
- */
-hid_t network_s_create_memory_datatype(void);
-
-/*
- * Create the Network file datatype.
- *
- * Returns - file datatype for Network (caller must close)
- *
- */
-hid_t network_create_file_datatype(void);
-
-/*
- * Create the Network summary file datatype.
- *
- * Returns - file datatype for Network summary (caller must close)
- *
- */
-hid_t network_s_create_file_datatype(void);
-
-/*
- * Initialize data array for all Network samples
- *
- * Parameters
- * 	nSamples - number of samples in data series
- *
- * Returns
- *	initialized data set; Caller must free
- */
-void* network_init_job_series(int nSamples);
-
-/*
- * Add current sample to collection of all samples.
- *     Opportunity to do difference calculations
- *
- * Parameters
- *	group  - group containing dataset
- *	prior  - previous sample
- *	cur    - current sample
- *	buf    - loc in collection for current sample
- *
- */
-void network_merge_step_series(hid_t group, void* prior, void* cur, void* buf);
-
-/*
- * create total for series
- *
- * Parameters
- *	nSamples - number of samples in the series
- *	data	 - data for series
- *
- * Returns
- *	series total. caller must free
- *
- */
-void* network_series_totals(int nSamples, void* data);
-
-/*
- * Write Network series data to a csv file
- *
- * Parameters
- *	fOt	  - file descriptor for output file
- *	putHeader - first data item, put the header line
- *	job	  - jobid
- *	step	  - stepid
- *	node	  - node name
- *	series    - series name
- *	data	  - data of type
- *	sizeData  - size of data set
- */
-void network_extract_series(FILE* fOt, bool putHeader, int job, int step,
-		char* node, char* series, void* data, int sizeData);
-
-/*
- * Write Network totals data to a csv file
- *
- * Parameters
- *	fOt	  - file descriptor for output file
- *	putHeader - first data item, put the header line
- *	job	  - jobid
- *	step	  - stepid
- *	node	  - node name
- *	series    - series name
- *	data	  - data of type
- *	sizeData  - size of data set
- */
-void network_extract_total(FILE* fOt, bool putHeader, int job, int step,
-		char* node, char* series, void* data, int sizeData);
-
-/*
- * Create array of function pointers for common HDF5 operations
- */
-hdf5_api_ops_t* network_profile_factory();
-
-
-// ============================================================================
-// Routines supporting Task Data type
-// ============================================================================
-
-/*
- * returns size of one dataset
- */
-int task_dataset_size();
-
-/*
- * Create the task memory datatype.
- *
- * Returns - memory datatype for task (caller must close)
- *
- */
-hid_t task_create_memory_datatype();
-
-/*
- * Create the task summary memory datatype.
- *
- * Returns - memory datatype for task summary (caller must close)
- *
- */
-hid_t task_s_create_memory_datatype();
-
-/*
- * Create the task file datatype.
- *
- * Returns - file datatype for task (caller must close)
- *
- */
-hid_t task_create_file_datatype();
-
-/*
- * Create the task summary file datatype.
- *
- * Returns - file datatype for task summary (caller must close)
- *
- */
-hid_t task_s_create_file_datatype();
-
-/*
- * Initialize data array for all task samples
- *
- * Parameters
- *	nSamples - number of samples in data series
- *
- * Returns
- *	initialized data set; Caller must free
- */
-void* task_init_job_series(int nSamples);
-
-/*
- * Add current sample to collection of all samples.
- *     Opportunity to do difference calculations
- *
- * Parameters
- *	group  - group containing dataset
- *	prior  - previous sample
- *	cur    - current sample
- *	buf    - loc in collection for current sample
- */
-void task_merge_step_series(hid_t group, void* prior, void* cur, void* buf);
-
-/*
- * create total for series
- *
- * Parameters
- *	nSamples - number of samples in the series
- *	data	 - data for series
- *
- * Returns
- *	series total. caller must free
- */
-void* task_series_total(int nSamples, void* data);
-
-/*
- * Write task series data to a csv file
- *
- * Parameters
- *	fOt	  - file descriptor for output file
- *	putHeader - first data item, put the header line
- *	job	  - jobid
- *	step	  - stepid
- *	node	  - node name
- *	series    - series name
- * 	data	  - data of type
- *	sizeData  - size of data set
- */
-void task_extract_series(FILE* fOt, bool putHeader, int job, int step,
-		char* node, char* series, void* data, int sizeData);
-
-/*
- * Write task totals data to a csv file
- *
- * Parameters
- *	fOt	  - file descriptor for output file
- *	putHeader - first data item, put the header line
- *	job	  - jobid
- *	step	  - stepid
- *	node	  - node name
- *	series    - series name
- * 	data	  - data of type
- *	sizeData  - size of data set
- */
-void task_extract_total(FILE* fOt, bool putHeader, int job, int step,
-		char* node, char* series, void* data, int sizeData);
-
-/*
- * Create array of function pointers for common HDF5 operations
- */
-hdf5_api_ops_t* task_profile_factory();
+void put_hdf5_data(hid_t parent, uint32_t type, char* subtype, char* group,
+		   void* data, int nItems);
 
 #endif /*__ACCT_GATHER_HDF5_API_H__*/
