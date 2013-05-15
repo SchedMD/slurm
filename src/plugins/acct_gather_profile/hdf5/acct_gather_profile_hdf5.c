@@ -247,7 +247,7 @@ extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
 {
 	s_p_options_t options[] = {
 		{"ProfileHDF5Dir", S_P_STRING},
-		{"ProfileHDF5CollectDefault", S_P_STRING},
+		{"ProfileHDF5Default", S_P_STRING},
 		{NULL} };
 
 	transfer_s_p_options(full_options, options, full_options_cnt);
@@ -261,11 +261,11 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 	if (tbl) {
 		s_p_get_string(&hdf5_conf.dir, "ProfileHDF5Dir", tbl);
 
-		if (s_p_get_string(&tmp, "ProfileHDF5CollectDefault", tbl)) {
+		if (s_p_get_string(&tmp, "ProfileHDF5Default", tbl)) {
 			hdf5_conf.def = acct_gather_profile_from_string(tmp);
 			xfree(tmp);
 			if (hdf5_conf.def == ACCT_GATHER_PROFILE_NOT_SET)
-				fatal("ProfileHDF5CollectDefault can not be "
+				fatal("ProfileHDF5Default can not be "
 				      "set to NotSet, please specify a valid "
 				      "option");
 		}
