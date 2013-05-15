@@ -410,7 +410,7 @@ extern int acct_gather_profile_p_task_start(uint32_t taskid)
 	int rc = SLURM_SUCCESS;
 
 	xassert(_run_in_daemon());
-	xassert(g_profile_running);
+	xassert(g_profile_running != ACCT_GATHER_PROFILE_NOT_SET);
 
 	if (g_profile_running <= ACCT_GATHER_PROFILE_NONE)
 		return rc;
