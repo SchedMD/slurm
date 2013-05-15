@@ -560,7 +560,7 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 			info("PROFILE: failed to open TimeSeries %s", group);
 			return SLURM_FAILURE;
 		}
-		put_string_attribute(g_sample_grp, ATTR_DATATYPE, send_type);
+		put_uint32_attribute(g_sample_grp, ATTR_DATATYPE, type);
 	}
 	sprintf(group_sample, "%s_%10.10d", group, ++sample_no);
 	put_hdf5_data(g_sample_grp, type, SUBDATA_SAMPLE,

@@ -372,7 +372,7 @@ int get_int_attribute(hid_t parent, char* name);
  *	name	- name of the attribute
  *	value	- value of the attribute
  */
-void put_uint32_t_attribute(hid_t parent, char* name, uint32_t value);
+void put_uint32_attribute(hid_t parent, char* name, uint32_t value);
 
 /*
  * get uint32_t attribute
