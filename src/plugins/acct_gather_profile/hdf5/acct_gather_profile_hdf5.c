@@ -120,7 +120,7 @@ static slurmd_job_t *g_job = NULL;
 static void _reset_slurm_profile_conf()
 {
 	xfree(hdf5_conf.dir);
-	hdf5_conf.def = ACCT_GATHER_PROFILE_NOT_SET;
+	hdf5_conf.def = ACCT_GATHER_PROFILE_NONE;
 }
 
 static uint32_t _determine_profile()
