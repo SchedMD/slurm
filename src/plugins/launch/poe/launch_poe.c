@@ -32,6 +32,12 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+ *****************************************************************************
+ * POE DEBUGING NOTES:
+ *
+ * MP_INFOLEVEL=4	Verbose POE logging
+ * MP_PMDLOG=yes	Write log files to /tmp/mplog.*
+ * SCI_DEBUG_FANOUT=#   Fanout of pmdv12 in launching tasks
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
