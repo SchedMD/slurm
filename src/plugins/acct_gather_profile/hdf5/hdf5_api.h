@@ -257,7 +257,7 @@ typedef struct hdf5_api_ops {
 /*
  * Create a opts group from type
  */
-hdf5_api_ops_t* profile_factory(char* type);
+hdf5_api_ops_t* profile_factory(uint32_t type);
 
 /*
  * Initialize profile (initialize static memory)

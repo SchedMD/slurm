@@ -338,7 +338,7 @@ static void _set_options(const int argc, char **argv)
  * ============================================================================
  * ========================================================================= */
 
-static void* _get_all_samples(hid_t gid_series, char* nam_series, char* type,
+static void* _get_all_samples(hid_t gid_series, char* nam_series, uint32_t type,
 			      int nsamples)
 {
 	void*   data = NULL;
@@ -352,27 +352,29 @@ static void* _get_all_samples(hid_t gid_series, char* nam_series, char* type,
 
 	ops = profile_factory(type);
 	if (ops == NULL) {
-		info("Failed to create operations for %s", type);
+		error("Failed to create operations for %s",
+		      acct_gather_profile_to_string(type));
 		return NULL;
 	}
 	data = (*(ops->init_job_series))(nsamples);
 	if (data == NULL) {
 		xfree(ops);
-		info("Failed to get memory for combined data");
+		error("Failed to get memory for combined data");
 		return NULL;
 	}
 	dtyp_memory = (*(ops->create_memory_datatype))();
 	if (dtyp_memory < 0) {
 		xfree(ops);
 		xfree(data);
-		info("Failed to create %s memory datatype", type);
+		error("Failed to create %s memory datatype",
+		     acct_gather_profile_to_string(type));
 		return NULL;
 	}
 	for (smpx=0; smpx<nsamples; smpx++) {
 		len = H5Gget_objname_by_idx(gid_series, smpx, name_sample,
 					    MAX_GROUP_NAME);
 		if (len<1 || len>MAX_GROUP_NAME) {
-			info("Invalid group name %s", name_sample);
+			error("Invalid group name %s", name_sample);
 			continue;
 		}
 		g_sample = H5Gopen(gid_series, name_sample, H5P_DEFAULT);
@@ -383,7 +385,8 @@ static void* _get_all_samples(hid_t gid_series, char* nam_series, char* type,
 				      H5P_DEFAULT);
 		if (id_data_set < 0) {
 			H5Gclose(g_sample);
-			info("Failed to open %s dataset", type);
+			error("Failed to open %s dataset",
+			     acct_gather_profile_to_string(type));
 			continue;
 		}
 		sz_dest = (*(ops->dataset_size))();
@@ -391,7 +394,7 @@ static void* _get_all_samples(hid_t gid_series, char* nam_series, char* type,
 		if (data_cur == NULL) {
 			H5Dclose(id_data_set);
 			H5Gclose(g_sample);
-			info("Failed to get memory for prior data");
+			error("Failed to get memory for prior data");
 			continue;
 		}
 		ec = H5Dread(id_data_set, dtyp_memory, H5S_ALL, H5S_ALL,
@@ -400,7 +403,8 @@ static void* _get_all_samples(hid_t gid_series, char* nam_series, char* type,
 			xfree(data_cur);
 			H5Dclose(id_data_set);
 			H5Gclose(g_sample);
-			info("Failed to read %s data", type);
+			error("Failed to read %s data",
+			      acct_gather_profile_to_string(type));
 			continue;
 		}
 		(*(ops->merge_step_series))(g_sample, data_prior, data_cur,
@@ -425,7 +429,7 @@ static void _merge_series_data(hid_t jgid_tasks, hid_t jg_node, hid_t nsg_node)
  	hsize_t num_samples, n_series;
 	int     idsx, len;
 	void    *data = NULL, *series_total = NULL;
-	char    *data_type = NULL;
+	uint32_t data_type;
 	char    nam_series[MAX_GROUP_NAME+1];
 	hdf5_api_ops_t* ops = NULL;
 
@@ -480,8 +484,8 @@ static void _merge_series_data(hid_t jgid_tasks, hid_t jg_node, hid_t nsg_node)
 			continue;
 		}
 		// Get first sample in series to find out how big the data is.
-		data_type = get_string_attribute(g_series, ATTR_DATATYPE);
-		if (data_type == NULL) {
+		data_type = get_uint32_attribute(g_series, ATTR_DATATYPE);
+		if (!data_type) {
 			H5Gclose(g_series);
 			info("Failed to get datatype for Time Series Dataset");
 			continue;
@@ -489,7 +493,6 @@ static void _merge_series_data(hid_t jgid_tasks, hid_t jg_node, hid_t nsg_node)
 		data = _get_all_samples(g_series, nam_series, data_type,
 					num_samples);
 		if (data == NULL) {
-			xfree(data_type);
 			H5Gclose(g_series);
 			info("Failed to get memory for Time Series Dataset");
 			continue;
@@ -499,9 +502,9 @@ static void _merge_series_data(hid_t jgid_tasks, hid_t jg_node, hid_t nsg_node)
 		ops = profile_factory(data_type);
 		if (ops == NULL) {
 			xfree(data);
-			xfree(data_type);
 			H5Gclose(g_series);
-			info("Failed to create operations for %s", data_type);
+			info("Failed to create operations for %s",
+			     acct_gather_profile_to_string(data_type));
 			continue;
 		}
 		series_total = (*(ops->series_total))(num_samples, data);
@@ -512,7 +515,6 @@ static void _merge_series_data(hid_t jgid_tasks, hid_t jg_node, hid_t nsg_node)
 				H5Gclose(g_series);
 				xfree(series_total);
 				xfree(data);
-				xfree(data_type);
 				xfree(ops);
 				info("Failed to make Totals for Node");
 				continue;
@@ -525,7 +527,6 @@ static void _merge_series_data(hid_t jgid_tasks, hid_t jg_node, hid_t nsg_node)
 		xfree(series_total);
 		xfree(ops);
 		xfree(data);
-		xfree(data_type);
 		H5Gclose(g_series);
 	}
 
@@ -543,7 +544,7 @@ static void _merge_task_totals(hid_t jg_tasks, hid_t nsg_node, char* node_name)
 	hsize_t nobj, ntasks = -1;
 	int	i, len, taskx, taskid, taskcpus, size_data;
 	void    *data;
-	char    *type;
+	uint32_t type;
 	char    buf[MAX_GROUP_NAME+1];
 	char    group_name[MAX_GROUP_NAME+1];
 
@@ -617,8 +618,8 @@ static void _merge_task_totals(hid_t jg_tasks, hid_t nsg_node, char* node_name)
 				info("Failed to open %s", buf);
 				continue;
 			}
-			type = get_string_attribute(g_total, ATTR_DATATYPE);
-			if (type == NULL) {
+			type = get_uint32_attribute(g_total, ATTR_DATATYPE);
+			if (!type) {
 				H5Gclose(g_total);
 				info("No %s attribute", ATTR_DATATYPE);
 				continue;
@@ -627,14 +628,12 @@ static void _merge_task_totals(hid_t jg_tasks, hid_t nsg_node, char* node_name)
 			if (data == NULL) {
 				H5Gclose(g_total);
 				info("Failed to get group %s type %s data", buf,
-				     type);
-				xfree(type);
+				     acct_gather_profile_to_string(type));
 				continue;
 			}
 			put_hdf5_data(jg_totals, type, SUBDATA_DATA,
 				      buf, data, 1);
 			xfree(data);
-			xfree(type);
 			H5Gclose(g_total);
 		}
 		H5Gclose(nsg_totals);
@@ -655,7 +654,7 @@ static void _merge_node_totals(hid_t jg_node, hid_t nsg_node)
 	hsize_t nobj;
 	int 	i, len, size_data;
 	void  	*data;
-	char 	*type;
+	uint32_t type;
 	char 	buf[MAX_GROUP_NAME+1];
 
 	if (jg_node < 0) {
@@ -692,8 +691,8 @@ static void _merge_node_totals(hid_t jg_node, hid_t nsg_node)
 			info("Failed to open %s", buf);
 			continue;
 		}
-		type = get_string_attribute(g_total, ATTR_DATATYPE);
-		if (type == NULL) {
+		type = get_uint32_attribute(g_total, ATTR_DATATYPE);
+		if (!type) {
 			H5Gclose(g_total);
 			info("No %s attribute", ATTR_DATATYPE);
 			continue;
@@ -701,13 +700,12 @@ static void _merge_node_totals(hid_t jg_node, hid_t nsg_node)
 		data = get_hdf5_data(g_total, type, buf, &size_data);
 		if (data == NULL) {
 			H5Gclose(g_total);
-			info("Failed to get group %s type %s data", buf, type);
-			xfree(type);
+			info("Failed to get group %s type %s data",
+			     buf, acct_gather_profile_to_string(type));
 			continue;
 		}
 		put_hdf5_data(jg_totals, type, SUBDATA_DATA, buf, data, 1);
 		xfree(data);
-		xfree(type);
 		H5Gclose(g_total);
 	}
 	H5Gclose(nsg_totals);
@@ -940,7 +938,8 @@ static void _extract_node_level(FILE* fp, int stepx, hid_t jgid_nodes,
 	hid_t	jgid_node, gid_level, gid_series;
 	int 	nodex, len, size_data;
 	void	*data;
-	char	*data_type, *subtype;
+	uint32_t data_type;
+	char	*subtype;
 	char    jgrp_node_name[MAX_GROUP_NAME+1];
 	hdf5_api_ops_t* ops;
 
@@ -973,8 +972,8 @@ static void _extract_node_level(FILE* fp, int stepx, hid_t jgid_nodes,
 			H5Gclose(jgid_node);
 			continue;
 		}
-		data_type = get_string_attribute(gid_series, ATTR_DATATYPE);
-		if (data_type == NULL) {
+		data_type = get_uint32_attribute(gid_series, ATTR_DATATYPE);
+		if (!data_type) {
 			H5Gclose(gid_series);
 			H5Gclose(gid_level);
 			H5Gclose(jgid_node);
@@ -983,7 +982,6 @@ static void _extract_node_level(FILE* fp, int stepx, hid_t jgid_nodes,
 		}
 		subtype = get_string_attribute(gid_series, ATTR_SUBDATATYPE);
 		if (subtype == NULL) {
-			xfree(data_type);
 			H5Gclose(gid_series);
 			H5Gclose(gid_level);
 			H5Gclose(jgid_node);
@@ -993,11 +991,11 @@ static void _extract_node_level(FILE* fp, int stepx, hid_t jgid_nodes,
 		ops = profile_factory(data_type);
 		if (ops == NULL) {
 			xfree(subtype);
-			xfree(data_type);
 			H5Gclose(gid_series);
 			H5Gclose(gid_level);
 			H5Gclose(jgid_node);
-			info("Failed to create operations for %s", data_type);
+			info("Failed to create operations for %s",
+			     acct_gather_profile_to_string(data_type));
 			continue;
 		}
 		data = get_hdf5_data(
@@ -1022,7 +1020,6 @@ static void _extract_node_level(FILE* fp, int stepx, hid_t jgid_nodes,
 				data_set_name);
 		}
 		xfree(ops);
-		xfree(data_type);
 		H5Gclose(gid_series);
 		H5Gclose(gid_level);
 		H5Gclose(jgid_node);

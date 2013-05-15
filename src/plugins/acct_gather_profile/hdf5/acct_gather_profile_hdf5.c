@@ -475,7 +475,6 @@ extern int acct_gather_profile_p_task_end(pid_t taskpid)
 	return rc;
 }
 
-
 extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 {
 	hid_t   g_sample_grp;
@@ -564,10 +563,9 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 		put_string_attribute(g_sample_grp, ATTR_DATATYPE, send_type);
 	}
 	sprintf(group_sample, "%s_%10.10d", group, ++sample_no);
-	put_hdf5_data(g_sample_grp, send_type, SUBDATA_SAMPLE,
+	put_hdf5_data(g_sample_grp, type, SUBDATA_SAMPLE,
 		      group_sample, send_profile, 1);
 	H5Gclose(g_sample_grp);
 
 	return SLURM_SUCCESS;
 }
-
