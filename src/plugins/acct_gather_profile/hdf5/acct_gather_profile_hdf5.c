@@ -513,12 +513,12 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 		memset(&profile_task, 0, sizeof(profile_task_t));
 		profile_task.time = time(NULL);
 		profile_task.cpu_freq = jobacct->act_cpufreq;
-		profile_task.cpu_utilization = jobacct->tot_cpu;
 		profile_task.cpu_time = jobacct->tot_cpu;
-		profile_task.rss = jobacct->tot_rss;
-		profile_task.vm_size = jobacct->tot_vsize;
+		profile_task.cpu_utilization = jobacct->tot_cpu;
 		profile_task.pages = jobacct->tot_pages;
 		profile_task.read_size = jobacct->tot_disk_read;
+		profile_task.rss = jobacct->tot_rss;
+		profile_task.vm_size = jobacct->tot_vsize;
 		profile_task.write_size = jobacct->tot_disk_write;
 
 		send_profile = &profile_task;
