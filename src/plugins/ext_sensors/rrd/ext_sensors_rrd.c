@@ -658,7 +658,7 @@ extern int ext_sensors_p_get_stependdata(struct step_record *step_rec)
 					step_rec->step_node_bitmap);
 		if (step_rec->jobacct &&
 		    (!step_rec->jobacct->energy.consumed_energy
-		     || (step_rec->jobacct->energy.consumed_energy == NO_VAL)) {
+		     || (step_rec->jobacct->energy.consumed_energy == NO_VAL))) {
 			step_rec->jobacct->energy.consumed_energy =
 				step_rec->ext_sensors->consumed_energy;
 		}
