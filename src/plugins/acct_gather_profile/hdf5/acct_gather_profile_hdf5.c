@@ -483,7 +483,7 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 	static uint32_t sample_no = 0;
 	uint32_t task_id = 0;
 	void *send_profile = NULL;
-	char *send_type = NULL;
+	char *type_name = NULL;
 
 	profile_task_t  profile_task;
 
@@ -522,7 +522,6 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 		profile_task.write_size = jobacct->tot_disk_write;
 
 		send_profile = &profile_task;
-		send_type = PROFILE_TASK_DATA;
 		break;
 	case ACCT_GATHER_PROFILE_LUSTRE:
 		break;
@@ -534,9 +533,11 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 		return SLURM_ERROR;
 	}
 
+	type_name = acct_gather_profile_type_to_string(type);
+
 	if (debug_flags & DEBUG_FLAG_PROFILE)
 		info("PROFILE: add_sample_data Group-%s Type=%s",
-		     group, send_type);
+		     group, type_name);
 
 	if (file_id == -1) {
 		if (debug_flags & DEBUG_FLAG_PROFILE) {
@@ -560,7 +561,7 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 			info("PROFILE: failed to open TimeSeries %s", group);
 			return SLURM_FAILURE;
 		}
-		put_uint32_attribute(g_sample_grp, ATTR_DATATYPE, type);
+		put_string_attribute(g_sample_grp, ATTR_DATATYPE, type_name);
 	}
 	sprintf(group_sample, "%s_%10.10d", group, ++sample_no);
 	put_hdf5_data(g_sample_grp, type, SUBDATA_SAMPLE,

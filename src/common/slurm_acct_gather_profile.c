@@ -188,7 +188,7 @@ extern uint32_t acct_gather_profile_from_string(char *profile_str)
 	return profile;
 }
 
-extern char *acct_gather_profile_series_to_string(uint32_t series)
+extern char *acct_gather_profile_type_to_string(uint32_t series)
 {
 	if (series == ACCT_GATHER_PROFILE_ENERGY)
 		return "Energy";
@@ -202,15 +202,15 @@ extern char *acct_gather_profile_series_to_string(uint32_t series)
 	return "Unknown";
 }
 
-extern uint32_t acct_gather_profile_series_from_string(char *series_str)
+extern uint32_t acct_gather_profile_type_from_string(char *series_str)
 {
-	if (strcasecmp(series_str, "energy"))
+	if (!strcasecmp(series_str, "energy"))
 		return ACCT_GATHER_PROFILE_ENERGY;
-	else if (strcasecmp(series_str, "task"))
+	else if (!strcasecmp(series_str, "task"))
 		return ACCT_GATHER_PROFILE_TASK;
-	else if (strcasecmp(series_str, "lustre"))
+	else if (!strcasecmp(series_str, "lustre"))
 		return ACCT_GATHER_PROFILE_LUSTRE;
-	else if (strcasecmp(series_str, "network"))
+	else if (!strcasecmp(series_str, "network"))
 		return ACCT_GATHER_PROFILE_NETWORK;
 
 	return ACCT_GATHER_PROFILE_NOT_SET;

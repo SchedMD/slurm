@@ -353,7 +353,7 @@ static void* _get_all_samples(hid_t gid_series, char* nam_series, uint32_t type,
 	ops = profile_factory(type);
 	if (ops == NULL) {
 		error("Failed to create operations for %s",
-		      acct_gather_profile_to_string(type));
+		      acct_gather_profile_type_to_string(type));
 		return NULL;
 	}
 	data = (*(ops->init_job_series))(nsamples);
@@ -367,7 +367,7 @@ static void* _get_all_samples(hid_t gid_series, char* nam_series, uint32_t type,
 		xfree(ops);
 		xfree(data);
 		error("Failed to create %s memory datatype",
-		     acct_gather_profile_to_string(type));
+		     acct_gather_profile_type_to_string(type));
 		return NULL;
 	}
 	for (smpx=0; smpx<nsamples; smpx++) {
@@ -386,7 +386,7 @@ static void* _get_all_samples(hid_t gid_series, char* nam_series, uint32_t type,
 		if (id_data_set < 0) {
 			H5Gclose(g_sample);
 			error("Failed to open %s dataset",
-			     acct_gather_profile_to_string(type));
+			     acct_gather_profile_type_to_string(type));
 			continue;
 		}
 		sz_dest = (*(ops->dataset_size))();
@@ -404,7 +404,7 @@ static void* _get_all_samples(hid_t gid_series, char* nam_series, uint32_t type,
 			H5Dclose(id_data_set);
 			H5Gclose(g_sample);
 			error("Failed to read %s data",
-			      acct_gather_profile_to_string(type));
+			      acct_gather_profile_type_to_string(type));
 			continue;
 		}
 		(*(ops->merge_step_series))(g_sample, data_prior, data_cur,
@@ -429,7 +429,8 @@ static void _merge_series_data(hid_t jgid_tasks, hid_t jg_node, hid_t nsg_node)
  	hsize_t num_samples, n_series;
 	int     idsx, len;
 	void    *data = NULL, *series_total = NULL;
-	uint32_t data_type;
+	uint32_t type;
+	char *data_type;
 	char    nam_series[MAX_GROUP_NAME+1];
 	hdf5_api_ops_t* ops = NULL;
 
@@ -484,27 +485,29 @@ static void _merge_series_data(hid_t jgid_tasks, hid_t jg_node, hid_t nsg_node)
 			continue;
 		}
 		// Get first sample in series to find out how big the data is.
-		data_type = get_uint32_attribute(g_series, ATTR_DATATYPE);
+		data_type = get_string_attribute(g_series, ATTR_DATATYPE);
 		if (!data_type) {
 			H5Gclose(g_series);
 			info("Failed to get datatype for Time Series Dataset");
 			continue;
 		}
-		data = _get_all_samples(g_series, nam_series, data_type,
+		type = acct_gather_profile_type_from_string(data_type);
+		xfree(data_type);
+		data = _get_all_samples(g_series, nam_series, type,
 					num_samples);
 		if (data == NULL) {
 			H5Gclose(g_series);
 			info("Failed to get memory for Time Series Dataset");
 			continue;
 		}
-		put_hdf5_data(jg_samples, data_type, SUBDATA_SERIES, nam_series,
+		put_hdf5_data(jg_samples, type, SUBDATA_SERIES, nam_series,
 			      data, num_samples);
-		ops = profile_factory(data_type);
+		ops = profile_factory(type);
 		if (ops == NULL) {
 			xfree(data);
 			H5Gclose(g_series);
 			info("Failed to create operations for %s",
-			     acct_gather_profile_to_string(data_type));
+			     acct_gather_profile_type_to_string(type));
 			continue;
 		}
 		series_total = (*(ops->series_total))(num_samples, data);
@@ -519,7 +522,7 @@ static void _merge_series_data(hid_t jgid_tasks, hid_t jg_node, hid_t nsg_node)
 				info("Failed to make Totals for Node");
 				continue;
 			}
-			put_hdf5_data(g_series_total, data_type,
+			put_hdf5_data(g_series_total, type,
 				      SUBDATA_SUMMARY,
 				      nam_series, series_total, 1);
 			H5Gclose(g_series_total);
@@ -628,7 +631,7 @@ static void _merge_task_totals(hid_t jg_tasks, hid_t nsg_node, char* node_name)
 			if (data == NULL) {
 				H5Gclose(g_total);
 				info("Failed to get group %s type %s data", buf,
-				     acct_gather_profile_to_string(type));
+				     acct_gather_profile_type_to_string(type));
 				continue;
 			}
 			put_hdf5_data(jg_totals, type, SUBDATA_DATA,
@@ -701,7 +704,7 @@ static void _merge_node_totals(hid_t jg_node, hid_t nsg_node)
 		if (data == NULL) {
 			H5Gclose(g_total);
 			info("Failed to get group %s type %s data",
-			     buf, acct_gather_profile_to_string(type));
+			     buf, acct_gather_profile_type_to_string(type));
 			continue;
 		}
 		put_hdf5_data(jg_totals, type, SUBDATA_DATA, buf, data, 1);
@@ -938,8 +941,8 @@ static void _extract_node_level(FILE* fp, int stepx, hid_t jgid_nodes,
 	hid_t	jgid_node, gid_level, gid_series;
 	int 	nodex, len, size_data;
 	void	*data;
-	uint32_t data_type;
-	char	*subtype;
+	uint32_t type;
+	char	*data_type, *subtype;
 	char    jgrp_node_name[MAX_GROUP_NAME+1];
 	hdf5_api_ops_t* ops;
 
@@ -972,7 +975,7 @@ static void _extract_node_level(FILE* fp, int stepx, hid_t jgid_nodes,
 			H5Gclose(jgid_node);
 			continue;
 		}
-		data_type = get_uint32_attribute(gid_series, ATTR_DATATYPE);
+		data_type = get_string_attribute(gid_series, ATTR_DATATYPE);
 		if (!data_type) {
 			H5Gclose(gid_series);
 			H5Gclose(gid_level);
@@ -980,6 +983,8 @@ static void _extract_node_level(FILE* fp, int stepx, hid_t jgid_nodes,
 			info("No datatype in %s", data_set_name);
 			continue;
 		}
+		type = acct_gather_profile_type_from_string(data_type);
+		xfree(data_type);
 		subtype = get_string_attribute(gid_series, ATTR_SUBDATATYPE);
 		if (subtype == NULL) {
 			H5Gclose(gid_series);
@@ -988,18 +993,18 @@ static void _extract_node_level(FILE* fp, int stepx, hid_t jgid_nodes,
 			info("No %s attribute", ATTR_SUBDATATYPE);
 			continue;
 		}
-		ops = profile_factory(data_type);
+		ops = profile_factory(type);
 		if (ops == NULL) {
 			xfree(subtype);
 			H5Gclose(gid_series);
 			H5Gclose(gid_level);
 			H5Gclose(jgid_node);
 			info("Failed to create operations for %s",
-			     acct_gather_profile_to_string(data_type));
+			     acct_gather_profile_type_to_string(type));
 			continue;
 		}
 		data = get_hdf5_data(
-			gid_series, data_type, data_set_name, &size_data);
+			gid_series, type, data_set_name, &size_data);
 		if (data) {
 			if (strcmp(subtype,SUBDATA_SUMMARY) != 0)
 				(*(ops->extract_series))

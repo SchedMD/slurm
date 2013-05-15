@@ -82,8 +82,8 @@ extern char *acct_gather_profile_to_string(uint32_t profile);
 /* translate string of words to uint32_t filled in with bits set to profile */
 extern uint32_t acct_gather_profile_from_string(char *profile_str);
 
-extern char *acct_gather_profile_series_to_string(uint32_t series);
-extern uint32_t acct_gather_profile_series_from_string(char *series_str);
+extern char *acct_gather_profile_type_to_string(uint32_t series);
+extern uint32_t acct_gather_profile_type_from_string(char *series_str);
 
 /*
  * Define plugin local conf for acct_gather.conf

@@ -1566,12 +1566,12 @@ extern void *get_hdf5_data(hid_t parent, uint32_t type,
 	hsize_t szDset;
 	herr_t  ec;
 	char *subtype = NULL;
-
 	hdf5_api_ops_t* ops = profile_factory(type);
+	char *type_name = acct_gather_profile_type_to_string(type);
 
 	if (ops == NULL) {
 		debug3("PROFILE: failed to create %s operations",
-		       acct_gather_profile_to_string(type));
+		       type_name);
 		return NULL;
 	}
 	subtype = get_string_attribute(parent, ATTR_SUBDATATYPE);
@@ -1587,7 +1587,7 @@ extern void *get_hdf5_data(hid_t parent, uint32_t type,
 		xfree(subtype);
 		xfree(ops);
 		debug3("PROFILE: failed to open %s Data Set",
-		       acct_gather_profile_to_string(type));
+		       type_name);
 		return NULL;
 	}
 	if (strcmp(subtype, SUBDATA_SUMMARY))
@@ -1599,7 +1599,7 @@ extern void *get_hdf5_data(hid_t parent, uint32_t type,
 		H5Dclose(id_data_set);
 		xfree(ops);
 		debug3("PROFILE: failed to create %s memory datatype",
-		       acct_gather_profile_to_string(type));
+		       type_name);
 		return NULL;
 	}
 	szDset = H5Dget_storage_size(id_data_set);
@@ -1609,7 +1609,7 @@ extern void *get_hdf5_data(hid_t parent, uint32_t type,
 		H5Dclose(id_data_set);
 		xfree(ops);
 		debug3("PROFILE: %s data set is empty",
-		       acct_gather_profile_to_string(type));
+		       type_name);
 		return NULL;
 	}
 	data = xmalloc(szDset);
@@ -1618,7 +1618,7 @@ extern void *get_hdf5_data(hid_t parent, uint32_t type,
 		H5Dclose(id_data_set);
 		xfree(ops);
 		debug3("PROFILE: failed to get memory for %s data set",
-		       acct_gather_profile_to_string(type));
+		       type_name);
 		return NULL;
 	}
 	ec = H5Dread(id_data_set, dtyp_memory, H5S_ALL, H5S_ALL, H5P_DEFAULT,
@@ -1629,7 +1629,7 @@ extern void *get_hdf5_data(hid_t parent, uint32_t type,
 		xfree(data);
 		xfree(ops);
 		debug3("PROFILE: failed to read %s data",
-		       acct_gather_profile_to_string(type));
+		       type_name);
 		return NULL;
 	}
 	H5Tclose(dtyp_memory);
@@ -1646,10 +1646,11 @@ extern void put_hdf5_data(hid_t parent, uint32_t type, char *subtype,
 	hsize_t dims[1];
 	herr_t  ec;
 	hdf5_api_ops_t* ops = profile_factory(type);
+	char *type_name = acct_gather_profile_type_to_string(type);
 
 	if (ops == NULL) {
 		debug3("PROFILE: failed to create %s operations",
-		       acct_gather_profile_to_string(type));
+		       type_name);
 		return;
 	}
 	// Create the datatypes.
@@ -1660,7 +1661,7 @@ extern void put_hdf5_data(hid_t parent, uint32_t type, char *subtype,
 	if (dtyp_memory < 0) {
 		xfree(ops);
 		debug3("PROFILE: failed to create %s memory datatype",
-		       acct_gather_profile_to_string(type));
+		       type_name);
 		return;
 	}
 	if (strcmp(subtype, SUBDATA_SUMMARY) != 0)
@@ -1671,7 +1672,7 @@ extern void put_hdf5_data(hid_t parent, uint32_t type, char *subtype,
 		H5Tclose(dtyp_memory);
 		xfree(ops);
 		debug3("PROFILE: failed to create %s file datatype",
-		       acct_gather_profile_to_string(type));
+		       type_name);
 		return;
 	}
 
@@ -1682,7 +1683,7 @@ extern void put_hdf5_data(hid_t parent, uint32_t type, char *subtype,
 		H5Tclose(dtyp_memory);
 		xfree(ops);
 		debug3("PROFILE: failed to create %s space descriptor",
-		       acct_gather_profile_to_string(type));
+		       type_name);
 		return;
 	}
 
@@ -1697,7 +1698,7 @@ extern void put_hdf5_data(hid_t parent, uint32_t type, char *subtype,
 		return;
 	}
 
-	put_uint32_attribute(id_group, ATTR_DATATYPE, type);
+	put_string_attribute(id_group, ATTR_DATATYPE, type_name);
 	put_string_attribute(id_group, ATTR_SUBDATATYPE, subtype);
 
 	id_data_set = H5Dcreate(id_group, get_data_set_name(group), dtyp_file,
