@@ -621,10 +621,10 @@ static void _io_extract_total(
 	}
 	fprintf(fp, "%d,%d,%s,%s,%s,%ld", job, step, node, series,
 		io_data->start_time, io_data->elapsed_time);
-	PUT_UINT_SUM(fp, io_data->reads,",");
-	PUT_DBL_SUM(fp, io_data->read_size,",");
-	PUT_UINT_SUM(fp, io_data->writes,",");
-	PUT_DBL_SUM(fp, io_data->write_size,",");
+	PUT_UINT_SUM(fp, io_data->reads, ",");
+	PUT_DBL_SUM(fp, io_data->read_size, ",");
+	PUT_UINT_SUM(fp, io_data->writes, ",");
+	PUT_DBL_SUM(fp, io_data->write_size, ",");
 	fprintf(fp, "\n");
 	return;
 }
@@ -870,10 +870,10 @@ static void _network_extract_total(
 	}
 	fprintf(fp, "%d,%d,%s,%s,%s,%ld", job, step, node, series,
 		network_data->start_time, network_data->elapsed_time);
-	PUT_UINT_SUM(fp, network_data->packets_in,",");
-	PUT_DBL_SUM(fp, network_data->size_in,",");
-	PUT_UINT_SUM(fp, network_data->packets_out,",");
-	PUT_DBL_SUM(fp, network_data->size_out,",");
+	PUT_UINT_SUM(fp, network_data->packets_in, ",");
+	PUT_DBL_SUM(fp, network_data->size_in, ",");
+	PUT_UINT_SUM(fp, network_data->packets_out, ",");
+	PUT_DBL_SUM(fp, network_data->size_out, ",");
 	fprintf(fp, "\n");
 	return;
 }
@@ -1179,14 +1179,14 @@ static void _task_extract_total(
 	}
 	fprintf(fp, "%d,%d,%s,%s,%s,%ld", job, step, node, series,
 		task_data->start_time, task_data->elapsed_time);
-	PUT_UINT_SUM(fp, task_data->cpu_freq,",");
-	PUT_UINT_SUM(fp, task_data->cpu_time,",");
-	PUT_DBL_SUM(fp, task_data->cpu_utilization,",");
-	PUT_UINT_SUM(fp, task_data->rss,",");
-	PUT_UINT_SUM(fp, task_data->vm_size,",");
-	PUT_UINT_SUM(fp, task_data->pages,",");
-	PUT_DBL_SUM(fp, task_data->read_size,",");
-	PUT_DBL_SUM(fp, task_data->write_size,",");
+	PUT_UINT_SUM(fp, task_data->cpu_freq, ",");
+	PUT_UINT_SUM(fp, task_data->cpu_time, ",");
+	PUT_DBL_SUM(fp, task_data->cpu_utilization, ",");
+	PUT_UINT_SUM(fp, task_data->rss, ",");
+	PUT_UINT_SUM(fp, task_data->vm_size, ",");
+	PUT_UINT_SUM(fp, task_data->pages, ",");
+	PUT_DBL_SUM(fp, task_data->read_size, ",");
+	PUT_DBL_SUM(fp, task_data->write_size, ",");
 	fprintf(fp, "\n");
 	return;
 }
