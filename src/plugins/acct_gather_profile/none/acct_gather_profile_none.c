@@ -139,25 +139,7 @@ extern int acct_gather_profile_p_task_end(pid_t taskpid)
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_profile_p_job_sample()
-{
-	return SLURM_SUCCESS;
-}
-
-extern int acct_gather_profile_p_add_node_data(char* group,
-					       char* type, void* data)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int acct_gather_profile_p_add_sample_data(uint32_t type, void* data)
 {
 	return SLURM_SUCCESS;
 }
-
-extern int acct_gather_profile_p_add_task_data(
-	uint32_t taskid, char* group, char* type, void* data)
-{
-	return SLURM_SUCCESS;
-}
-

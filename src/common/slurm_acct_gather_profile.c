@@ -61,10 +61,7 @@ typedef struct slurm_acct_gather_profile_ops {
 	int (*node_step_end)    (void);
 	int (*task_start)       (uint32_t);
 	int (*task_end)         (pid_t);
-	int (*job_sample)       (void);
-	int (*add_node_data)    (char*, char*, void*);
 	int (*add_sample_data)  (uint32_t, void*);
-	int (*add_task_data)    (uint32_t, char*, char*, void*);
 } slurm_acct_gather_profile_ops_t;
 
 /*
@@ -79,10 +76,7 @@ static const char *syms[] = {
 	"acct_gather_profile_p_node_step_end",
 	"acct_gather_profile_p_task_start",
 	"acct_gather_profile_p_task_end",
-	"acct_gather_profile_p_job_sample",
-	"acct_gather_profile_p_add_node_data",
 	"acct_gather_profile_p_add_sample_data",
-	"acct_gather_profile_p_add_task_data",
 };
 
 static slurm_acct_gather_profile_ops_t ops;
@@ -293,33 +287,6 @@ extern int acct_gather_profile_g_task_end(pid_t taskpid)
 	return retval;
 }
 
-extern int acct_gather_profile_g_job_sample()
-{
-	int retval = SLURM_ERROR;
-
-	if (acct_gather_profile_init() < 0)
-		return retval;
-
-	slurm_mutex_lock(&profile_mutex);
-	retval = (*(ops.job_sample))();
-	slurm_mutex_unlock(&profile_mutex);
-	return retval;
-}
-
-extern int acct_gather_profile_g_add_node_data(char* group,
-					       char* type, void* data)
-{
-	int retval = SLURM_ERROR;
-
-	if (acct_gather_profile_init() < 0)
-		return retval;
-
-	slurm_mutex_lock(&profile_mutex);
-	retval = (*(ops.add_node_data))(group, type, data);
-	slurm_mutex_unlock(&profile_mutex);
-	return retval;
-}
-
 extern int acct_gather_profile_g_add_sample_data(uint32_t type, void* data)
 {
 	int retval = SLURM_ERROR;
@@ -329,20 +296,6 @@ extern int acct_gather_profile_g_add_sample_data(uint32_t type, void* data)
 
 	slurm_mutex_lock(&profile_mutex);
 	retval = (*(ops.add_sample_data))(type, data);
-	slurm_mutex_unlock(&profile_mutex);
-	return retval;
-}
-
-extern int acct_gather_profile_g_add_task_data(
-	uint32_t taskid, char* group, char* type, void* data)
-{
-	int retval = SLURM_ERROR;
-
-	if (acct_gather_profile_init() < 0)
-		return retval;
-
-	slurm_mutex_lock(&profile_mutex);
-	retval = (*(ops.add_task_data))(taskid, group, type, data);
 	slurm_mutex_unlock(&profile_mutex);
 	return retval;
 }
