@@ -905,9 +905,7 @@ static int _task_dataset_size(void)
 
 static hid_t _task_create_memory_datatype(void)
 {
-	hid_t   mtyp_task = -1;
-
-	mtyp_task = H5Tcreate(H5T_COMPOUND, sizeof(profile_task_t));
+	hid_t   mtyp_task = H5Tcreate(H5T_COMPOUND, sizeof(profile_task_t));
 	if (mtyp_task < 0) {
 		debug3("PROFILE: failed to create Task memory datatype");
 		return -1;
