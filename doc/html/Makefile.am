@@ -33,6 +33,7 @@ generated_html = \
 	gres_design.html \
 	gres_plugins.html \
 	help.html \
+	hdf5_profile_user_guide.html \
 	high_throughput.html \
 	ibm.html \
 	ibm-pe.html \
@@ -100,6 +101,8 @@ html_DATA = \
 	configurator.easy.html \
 	entities.gif \
 	example_usage.gif \
+	hdf5_task_attr.png \
+	hdf5_job_outline.png \
 	ibm_pe_fig1.png \
 	ibm_pe_fig2.png \
 	linuxstyles.css \

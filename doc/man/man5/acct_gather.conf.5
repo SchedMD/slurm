@@ -1,4 +1,4 @@
-.TH "acct_gather.conf" "5" "April 2013" "acct_gather.conf 1.0" "Slurm acct_gather.configuration file"
+.TH "acct_gather.conf" "3" "May 2013" "acct_gather.conf 1.0" "Slurm acct_gather.configuration file"
 
 .SH "NAME"
 acct_gather.conf \- Slurm configuration file for the acct_gather plugins
@@ -21,10 +21,11 @@ SLURM daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
 
 .LP
-The following acct_gather.conf parameters are defined to control the general behavior of various plugins in SLURM.
+The following acct_gather.conf parameters are defined to control the general
+behavior of various plugins in SLURM.
 
 .TP
-\fBEnergyIPMI\fR options used for acct_gather_energy/ipmi are as follows.
+\fBEnergyIPMI\fR options used for AcctGatherEnergyType/ipmi are as follows.
 
 .RS
 .TP 20
@@ -35,15 +36,18 @@ This parameter is the number of seconds between BMC access samples.
 \fBEnergyIPMICalcAdjustment\fR=<yes|no>
 If set to "yes", the consumption between the last BMC access sample and
 a step consumption update is approximated to get more accurate task consumption.
-The adjustment is made at the step start and each time the consumption
-is updated, including the step end. The approximations are not cumulated, only
-the first and last adjustments are used to calculated the consumption.
-The default is "no".
+The adjustment is made at the step start and each time the
+consumption is updated, including the step end. The approximations are not
+accumulated, only the first and last adjustments are used to calculated the
+consumption. The default is "no".
 
 .TP
 \fBEnergyIPMIPowerSensor\fR=<number>
-This parameter is optional. The plugin will not search all available sensors to
-find the power sensor, but will just check the sensor is in Watt.
+This parameter is optional.  If the parameter is included, the plugin searches
+the node for a "watt" sensor with the number specified by <number>. If a
+matching sensor is found, that sensor is used for power data. If no matching
+sensor is found, a value of zero is returned for power data. If the parameter
+is omitted, the plugin will use the first "watt" sensor it finds.
 
 .LP
 The following acct_gather.conf parameters are defined to control the
@@ -59,7 +63,7 @@ Specify BMC Password.
 .RE
 
 .TP
-\fBProfileIO_Energy\fR options used for acct_gather_profile/io_energy are as follows.
+\fBProfileHDF5\fR options used for AcctGatherProfileType/hdf5 are as follows.
 
 .RS
 .TP 20
@@ -71,7 +75,7 @@ all compute nodes. This is a required parameter.
 
 .TP
 \fBProfileDefaultProfile\fR=opt{,opt{,opt}}
-Default --Profile value for data types collected for each job submission. 
+Default --Profile value for data types collected for each job submission.
 It ia a comma separated list of data streams. Allowed values are;
 
 .RS
@@ -81,7 +85,7 @@ It ia a comma separated list of data streams. Allowed values are;
 .TP
 \fBNone\fR No data types are collected. This is the default.
  (Cannot be combined with other values.)
- 
+
 .TP
 \fBEnergy\fR Energy data is collected.
 
@@ -92,10 +96,24 @@ It ia a comma separated list of data streams. Allowed values are;
 \fBLustre\fR Lustre data is collected.
 
 .TP
-\fBNetwork\fR Network (InfiniBand) data is collected.  
+\fBNetwork\fR Network (InfiniBand) data is collected.
 .RE
 .RE
 
+.TP
+\fBInfinibandOFED\fR options used for AcctGatherInfinbandType/ofed are as follows.
+
+.RS
+.TP 20
+\fBInfinibandOFEDFrequency\fR=<number>
+This parameter is the number of seconds between the calls to infiniband counters.
+
+.TP
+\fBInfinibandOFEDPort\fR=<number>
+This parameter represents the port number of the local Infiniband card that we are willing to monitor.
+The default port is 1.
+.RE
+.RE
 .SH "EXAMPLE"
 .LP
 .br
@@ -105,15 +123,17 @@ It ia a comma separated list of data streams. Allowed values are;
 .br
 ###
 .br
+# Parameters for AcctGatherEnergy/impi plugin
+.br
 EnergyIPMIFrequency=10
 .br
 EnergyIPMICalcAdjustment=yes
 .br
 #
 .br
-# Parameters for AcctGatherProfile
+# Parameters for AcctGatherProfileType/hdf5 plugin
 .br
-ProfileDir=/app/slurm/profile_data
+ProfileHDF5Dir=/app/slurm/profile_data
 .br
 
 .SH "COPYING"

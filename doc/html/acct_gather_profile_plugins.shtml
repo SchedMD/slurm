@@ -1,4 +1,6 @@
 <!--#include virtual="header.txt"-->
+<!--  Copyright (C) 2013 Bull S. A. S.
+      Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois. -->
 
 <h1><a name="top">SLURM Profile Accounting Plugin API (AcctGatherProfileType)
 </a></h1>
@@ -12,9 +14,13 @@ their own SLURM profile accounting plugins.
 than can reasonably be kept in the accounting database. (All jobs may also not
 be profiled.)
 
+A seperate
+<a href="hdf5_profile_user_guide.html">User Guide</a> documents how to use
+the hdf5 version of the plugin.
+
 <p>The plugin provides an API for making calls to store data at various
-points in a step's lifecycle. It collects data for <b>nodes</b>,
-<b>tasks</b> and periodic <b>samples</b>. The periodic samples are eventually
+points in a step's lifecycle. It collects data periodically from potentially
+several sources. The periodic samples are eventually
 consolidated into one <i>time series</i> dataset for each node of a job.
 
 <p>The plugin's primary work is done within slurmstepd on the compute nodes.
@@ -23,14 +29,14 @@ avoids having to transfer files back to the controller at step end. Data is
 typically gathered at job_acct_gather interval or acct_gather_energy interval
 and the volume is not expected to be burdensome.
 
-<p>The reference implementation <i>(hdf5)</i> records I/O counts from the
+<p>The <i>hdf5</i> implementation records I/O counts from the
 network interface (Infiniband), I/O counts from the node from the Lustre
 parallel file system, disk I/O counts, cpu and memory utilization
 for each task, and a record of energy use.
 
-<p>The reference implementation stores this data in a HDF5 file for each step
+<p>This implementation stores this data in a HDF5 file for each step
 on each node for the jobs. A separate program
-(<a href="sh5util5.html">sh5util</a>) is provided to
+(<a href="sh5util.html">sh5util</a>) is provided to
 consolidate all the node-step files in one container for the job.
 HDF5 is a well known structured data set that allows different types of
 related data to be stored in one file. Its internal structure resembles a
@@ -57,12 +63,12 @@ The minor type can be any suitable name
 for the type of profile accounting. We currently use
 <ul>
 <li><b>none</b>&#151; No profile data is gathered.
-<li><b>hdf5</b>&#151;Gets profile data about energy use and various i/o
-sources (local disk, Lustre, network). CPU and memory usage is also gathered.
+<li><b>hdf5</b>&#151;Gets profile data about energy use, i/o sources
+(Lustre, network) and task data such as local disk i/o,  CPU and memory usage.
 </ul>
 <p>The programmer is urged to study
-<span class="commandline">src/plugins/acct_gather_profile/acct_gather_profile_hdf5.c</span>
-and
+<span class="commandline">
+src/plugins/acct_gather_profile/acct_gather_profile_hdf5.c</span> and
 <span class="commandline">src/common/slurm_acct_gather_profile.c</span>
 for a sample implementation of a SLURM profile accounting plugin.
 <p class="footer"><a href="#top">top</a>
@@ -70,17 +76,6 @@ for a sample implementation of a SLURM profile accounting plugin.
 <h2>API Functions</h2>
 <p>All of the following functions are required. Functions which are not
 implemented must be stubbed.
-
-<p class="commandline">int acct_gather_profile_controller_start()
-<p style="margin-left:.2in"><b>Description</b>:<br>
-Called during slurmctld's initialization.
-<br />
-Provides an opportunity to create files and do other system wide
-initialization.
-<p style="margin-left:.2in"><b>Returns</b>: <br>
-<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
-<span class="commandline">SLURM_ERROR</span> on failure.
-
 
 <p class="commandline">
 void acct_gather_profile_g_conf_options(s_p_options_t **full_options,
@@ -109,8 +104,8 @@ void acct_gather_profile_g_conf_get(s_p_hashtbl_t *tbl)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Gets configuration options from acct_gather.conf<br />
 <p style="margin-left:.2in"><b>Returns</b>: <br>
-<span class="commandline">void* pointer to slurm_acct_gather_conf_t</span> on success, or<br>
-<span class="commandline">NULL</span> on failure.
+<span class="commandline">void* pointer to slurm_acct_gather_conf_t</span>
+ on success, or<br> <span class="commandline">NULL</span> on failure.
 
 <p class="commandline">
 int acct_gather_profile_p_node_step_start(slurmd_job_t* job)
@@ -147,9 +142,6 @@ Called once per task from slurmstepd, BEFORE node step start is called.
 Provides an opportunity to gather beginning values from node counters
 (bytes_read ...)
 <br />
-At this point in the life cycle, the value of the --profile option isn't
-known and files are not open so calls to any of the 'add_*_data'
-functions cannot be made.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">job -- slumd_job_t structure containing information
 about the step. </span>
@@ -172,39 +164,8 @@ about the step. </span>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
-<p class="commandline">int acct_gather_profile_p_job_sample()
-<p style="margin-left:.2in"><b>Description</b>:<br>
-Called from the job_acct_gather poll_data routine.
-<br />
-Provides an opportunity to put data at job_accnt_gather frequency,
-from the job step info structure.
-<p style="margin-left:.2in"><b>Arguments</b>: <br>
-<span class="commandline"> None</span>
-<p style="margin-left:.2in"><b>Returns</b>: <br>
-<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
-<span class="commandline">SLURM_ERROR</span> on failure.
-
 <p class="commandline">
-int acct_gather_profile_p_add_node_data(slurmd_job_t* job, char* group,
-char* type, void* data);
-<p style="margin-left:.2in"><b>Description</b>:<br>
-Put data at the Node Totals level. Typically called when the step ends.
-<p style="margin-left:.2in"><b>Arguments</b>: <br>
-<span class="commandline">job -- slumd_job_t structure containing information
-about the step. </span>
-<br /><span class="commandline">group -- identifies the data stream
-(source of data). </span>
-<br /><span class="commandline">type -- identifies the type of data. </span>
-<br /><span class="commandline">data -- data structure to be put to the file.
-</span>
-<p style="margin-left:.2in"><b>Returns</b>: <br>
-<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
-<span class="commandline">SLURM_ERROR</span> on failure.
-
-
-<p class="commandline">
-int acct_gather_profile_p_add_sample_data(char* group,
-char* type, void* data);
+int acct_gather_profile_p_add_sample_data(uint32_t type, void* data);
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Put data at the Node Samples level. Typically called from something called
 at either job_acct_gather interval or acct_gather_energy interval.
@@ -212,39 +173,12 @@ at either job_acct_gather interval or acct_gather_energy interval.
 All samples in the same group will eventually be consolidated in one
 time series.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
-<br /><span class="commandline">group -- identifies the data stream
-(source of data). </span>
 <br /><span class="commandline">type -- identifies the type of data. </span>
 <br /><span class="commandline">data -- data structure to be put to the file.
 </span>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
-
-
-<p class="commandline">
-int acct_gather_profile_p_add_task_data(slurmd_job_t* job, uint32_t taskid,
-char* group, char* type, void* data);
-<p style="margin-left:.2in"><b>Description</b>:<br>
-Put data at the Task Totals level. Typically called at task end.
-<p style="margin-left:.2in"><b>Arguments</b>: <br>
-<span class="commandline">job -- slumd_job_t structure containing information
-about the step. </span>
-<br /><span class="commandline">taskid -- slurm taskid </span>
-<br /><span class="commandline">group -- identifies the data stream
-(source of data). </span>
-<br /><span class="commandline">type -- identifies the type of data. </span>
-<br /><span class="commandline">data -- data structure to be put to the file.
-</span>
-<p style="margin-left:.2in"><b>Returns</b>: <br>
-<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
-<span class="commandline">SLURM_ERROR</span> on failure.
-
-<p>Note that the hdf5 plugin only uses
-<i>acct_gather_profile_p_add_sample_data</i>. The job merge program has
-capability for summarizing a time series and inserting grand totals for the
-node. The <i>add_node_data</i> and <i>add_task_data</i> functions were defined
-in the intial design and may become depracated.
 
 <h2>Parameters</h2>
 
@@ -383,7 +317,7 @@ modified to return an <i>ops</i> for the type.
 <p>Interaction between type and hdf5.
 <ul>
 <li>
-The profile_{type}_t structure is used by callers of the <b>add_*_data</b>
+The profile_{type}_t structure is used by callers of the <b>add_sample_data</b>
 functions.
 </li>
 <li>

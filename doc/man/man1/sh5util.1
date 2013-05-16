@@ -1,7 +1,7 @@
 .TH "sh5util" "1" "SLURM 2.6" "March 2013" "SLURM Commands"
 .SH "NAME"
 .LP
-sh5util \- Tool for merging HDF5 files from the acct_gather_profile 
+sh5util \- Tool for merging HDF5 files from the acct_gather_profile
 plugin that gathers detailed data for jobs running under SLURM
 
 .SH "SYNOPSIS"
@@ -14,77 +14,72 @@ sh5util merges HDF5 files produced on each node for each step of a job into
 one HDF5 file for the job. The resulting file can be viewed and manipulated
 by common HDF5 tools such as HDF5View, h5dump, h5edit, or h5ls.
 .LP
-sh5util has two execution modes. The first mode merges all the node-step 
-files for a job into one job file. The second mode extracts a limited set of
-data for specific nodes, steps, and data series.
-The extract mode is set with the \fB\-\-extract\fR command line option.
-.LP
-The merge mode of sh5util is expected to be launched during the controller 
-epilog script using the SLURM_JOB_ID environment variable. 
-However, it can be launched on any system with access to the shared file 
-system.
+sh5util also has an extract mode that writes a limited set of
+data for specific nodes, steps, and data series in
+"comma separated value" form to a file which can be imported into other
+analysis tools such as spreadsheets.
 
 .SH "OPTIONS"
 .LP
 
 .TP
-\fB\-\-jobid=<number>\fR
-supplies the slurm jobid of the node-step files to be merged.
+\fB\-E\fR, \fB\-\-extract\fR
 
-.TP
-\fB\-\-profiledir=<path>\fR
-supplies the path containing the node-step files to be merged. 
-This is a required argument. 
-
-.TP
-\fB\-\-savefiles\fR
-retains the merge-step files after the merge. Normally, they are deleted.
-
-
-.TP
-\fB\-\-extract\fR
-sets extract mode to extract limited subsets of data from the 
-HDF5 file into a comma, separated, value file suitable for import
-into a spreadsheet or other analysis tool.
-The following options apply to extract mode.
-
-.TP
-\fB\-\-stepid=<n | *>\fR
-specifies the step for which data is to be extracted. It is either 
-a step number, or \fB*\fR which specifies all steps. 
-\fB*\fR is the default.
-
-.TP
-\fB\-\-node=<name | *>\fR
-specifies the name fo the node for which data is to be extracted. 
-It is either nodename, or \fB*\fR which specifies all nodes. 
-\fB*\fR is the default.
-
-.TP
-\fB\-\-level=[Node:Totals|Node:TimeSeries|Task:Totals]\fR
-specifies the level in the job structure from which data
-is to be extracted.
+Instead of merging node-step files into a job file (default operation)
+extract data series from a job file.
 
 .RS
-.TP
-\fBNode:Totals\fR means the extracted data will come from the Totals
-group of a node.
+.TP 10
+Extract mode options (all imply --extract)
 
 .TP
-\fBNode:TimeSeries\fR means the extracted data will come from the Time Series
-group of a node.
+\fB\-i\fR, \fB\-\-input\fR=\fIpath\fR
+merged file to extract from (default --profiledir/$user/extract_$jobid.h5)
 
 .TP
-\fB\-\-series=<name | *>\fR
-specifies the name of the data series which is to be extracted. 
-It is either series name, or \fBTasks\fR which is all tasks, 
-or \fB*\fR which specifies all series. 
-\fB*\fR is the default.
+\fB\-N\fR, \fB\-\-node\fR=\fInodename\fR
+Node name to extract (default is all)
 
 .TP
-\fB\-\-output=<path>\fR
-specifies the path of the csv file containing the extracted data.
-By default it is 'profile_data.csv' in the current directory/
+\fB\-l\fR, \fB\-\-level\fR=\fI[Node:Totals|Node:TimeSeries]\fR
+Level to which series is attached. (default Node:Totals)
+
+.TP
+\fB\-s\fR, \fB\-\-series\fR=\fI[Name|Tasks]\fR
+Name=Specific Name, Tasks=all tasks, (default is everything)
+.RE
+
+.TP
+\fB\-j\fR, \fB\-\-jobs\fR=\fI<job(.step)>\fR
+Format is <job(.step)>. Merge this job/step.
+(or a comma-separated list of job steps.) This option is required.
+Not specifying a step will result in all steps found to be processed.
+
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print this description of use.
+.TP
+\fB\-o\fR, \fB\-\-output\fR=\fIpath\fR
+Path to a file into which to write.  This is required for --extract,
+default for merge is --profiledir/$user/job_$jobid.h5)
+.TP
+\fB\-p\fR, \fB\-\-profiledir\fR=\fIdir\fR
+Directory location where node-step files exist default is set in
+acct_gather.conf.
+
+.TP
+\fB\-S\fR, \fB\-\-savefiles\fR
+Instead of removing node-step files after merging them into the job file,
+keep them around.
+
+.TP
+\fB\-\-user\fR=\fIuser\fR
+User who profiled job.
+(Handy for root user, defaults to user running this command.)
+
+.TP
+\fB\-\-usage\fR
+Display brief usage message.
 
 .SH "COPYING"
 SLURM is free software; you can redistribute it and/or modify it under
