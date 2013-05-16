@@ -203,7 +203,8 @@ static bool _job_runnable_test2(struct job_record *job_ptr)
 	int reason;
 
 	reason = job_limits_check(&job_ptr);
-	if ((reason != job_ptr->state_reason) &&
+	if ((reason != WAIT_NO_REASON) &&
+	    (reason != job_ptr->state_reason) &&
 	    (part_policy_job_runnable_state(job_ptr))) {
 		job_ptr->state_reason = reason;
 		xfree(job_ptr->state_desc);
@@ -246,7 +247,8 @@ extern List build_job_queue(bool clear_start)
 					list_next(part_iterator))) {
 				job_ptr->part_ptr = part_ptr;
 				reason = job_limits_check(&job_ptr);
-				if ((reason != job_ptr->state_reason) &&
+				if ((reason != WAIT_NO_REASON) &&
+				    (reason != job_ptr->state_reason) &&
 				    (!part_policy_job_runnable_state(job_ptr))){
 					job_ptr->state_reason = reason;
 					xfree(job_ptr->state_desc);
