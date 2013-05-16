@@ -555,9 +555,9 @@ extern int _ext_sensors_read_conf(void)
 	/* Get the ext_sensors.conf path and validate the file */
 	conf_path = get_extra_conf_path("ext_sensors.conf");
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
-		info("ext_sensors: No ext_sensors file (%s)", conf_path);
+		fatal("ext_sensors: No ext_sensors file (%s)", conf_path);
 	} else {
-		debug("ext_sensors: Reading ext_sensors file %s", conf_path);
+		debug2("ext_sensors: Reading ext_sensors file %s", conf_path);
 		tbl = s_p_hashtbl_create(options);
 		if (s_p_parse_file(tbl, NULL, conf_path, false) ==
 		    SLURM_ERROR) {
