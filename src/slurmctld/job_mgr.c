@@ -103,7 +103,7 @@
 
 /* Change JOB_STATE_VERSION value when changing the state save format */
 #define JOB_STATE_VERSION      "VER014"
-#define JOB_2_6_STATE_VERSION  "VER014"		/* SLURM version 2.5 */
+#define JOB_2_6_STATE_VERSION  "VER014"		/* SLURM version 2.6 */
 #define JOB_2_5_STATE_VERSION  "VER013"		/* SLURM version 2.5 */
 #define JOB_2_4_STATE_VERSION  "VER012"		/* SLURM version 2.4 */
 #define JOB_2_3_STATE_VERSION  "VER011"		/* SLURM version 2.3 */
