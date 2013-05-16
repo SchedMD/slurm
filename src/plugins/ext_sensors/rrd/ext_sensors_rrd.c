@@ -684,7 +684,7 @@ extern int init(void)
 
 extern int fini(void)
 {
-	ext_sensors_clear_free_conf();
+	_ext_sensors_clear_free_conf();
 	return SLURM_SUCCESS;
 }
 
