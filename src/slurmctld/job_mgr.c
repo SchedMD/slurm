@@ -690,6 +690,7 @@ extern int load_last_job_id( void )
 	time_t buf_time;
 	char *ver_str = NULL;
 	uint32_t ver_str_len;
+	uint16_t protocol_version = (uint16_t)NO_VAL;
 
 	/* read the file */
 	state_file = slurm_get_state_save_location();
@@ -730,15 +731,24 @@ extern int load_last_job_id( void )
 	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
-	if ((!ver_str) || (strcmp(ver_str, JOB_STATE_VERSION) != 0)) {
+	if (ver_str) {
+		if (!strcmp(ver_str, JOB_STATE_VERSION)) {
+			protocol_version = SLURM_PROTOCOL_VERSION;
+		} else if (!strcmp(ver_str, JOB_2_5_STATE_VERSION)) {
+			protocol_version = SLURM_2_5_PROTOCOL_VERSION;
+		} else if (!strcmp(ver_str, JOB_2_4_STATE_VERSION)) {
+			protocol_version = SLURM_2_4_PROTOCOL_VERSION;
+		}
+	}
+	xfree(ver_str);
+
+	if (protocol_version == (uint16_t)NO_VAL) {
 		debug("*************************************************");
 		debug("Can not recover last job ID, incompatible version");
 		debug("*************************************************");
-		xfree(ver_str);
 		free_buf(buffer);
 		return EFAULT;
 	}
-	xfree(ver_str);
 
 	safe_unpack_time(&buf_time, buffer);
 	safe_unpack32( &job_id_sequence, buffer);
