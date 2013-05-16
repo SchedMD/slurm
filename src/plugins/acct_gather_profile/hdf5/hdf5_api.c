@@ -1088,18 +1088,20 @@ static void _task_merge_step_series(
 		seriesStart = prf_cur->time;
 		prf_buf->time = 0;
 		prf_buf->cpu_time = 0;
+		prf_buf->cpu_utilization = 0;
 		prf_buf->read_size = 0.0;
 		prf_buf->write_size = 0.0;
 	} else {
 		prf_buf->time = prf_cur->time - seriesStart;
 		prf_buf->cpu_time = prf_cur->cpu_time - prf_prior->cpu_time;
+		prf_buf->cpu_utilization = 100.0*((double) prf_cur->cpu_time /
+				(double) (prf_buf->time - prf_prior->time));
 		prf_buf->read_size =
 			prf_cur->read_size - prf_prior->read_size;
 		prf_buf->write_size =
 			prf_cur->write_size - prf_prior->write_size;
 	}
 	prf_buf->cpu_freq = prf_cur->cpu_freq;
-	prf_buf->cpu_utilization = prf_cur->cpu_utilization;
 	prf_buf->rss = prf_cur->rss;
 	prf_buf->vm_size = prf_cur->vm_size;
 	prf_buf->pages = prf_cur->pages;
