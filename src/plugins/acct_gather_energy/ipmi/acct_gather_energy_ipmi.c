@@ -70,6 +70,16 @@
 #include <ipmi_monitoring.h>
 #include <ipmi_monitoring_bitmasks.h>
 
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+slurmd_conf_t *conf __attribute__((weak_import)) = NULL;
+#else
+slurmd_conf_t *conf = NULL;
+#endif
+
 #define _DEBUG 1
 #define _DEBUG_ENERGY 1
 #define TIMEOUT 10
