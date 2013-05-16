@@ -139,6 +139,7 @@ static void _pack_srun_ctx(slurm_step_ctx_t *ctx, Buf buffer)
 					 SLURM_PROTOCOL_VERSION);
 	pack_job_step_create_response_msg(ctx->step_resp, buffer,
 					  SLURM_PROTOCOL_VERSION);
+	pack32((uint32_t)ctx->launch_state->slurmctld_socket_fd, buffer);
 }
 
 static int _unpack_srun_ctx(slurm_step_ctx_t **step_ctx, Buf buffer)
@@ -146,6 +147,7 @@ static int _unpack_srun_ctx(slurm_step_ctx_t **step_ctx, Buf buffer)
 	slurm_step_ctx_t *ctx = NULL;
 	uint8_t tmp_8;
 	int rc;
+	uint32_t tmp_32;
 
 	*step_ctx = NULL;
 	safe_unpack8(&tmp_8, buffer);
@@ -165,6 +167,10 @@ static int _unpack_srun_ctx(slurm_step_ctx_t **step_ctx, Buf buffer)
 						 SLURM_PROTOCOL_VERSION);
 	if (rc != SLURM_SUCCESS)
 		goto unpack_error;
+
+	safe_unpack32(&tmp_32, buffer);
+	ctx->launch_state = step_launch_state_create(ctx);
+	ctx->launch_state->slurmctld_socket_fd = tmp_32;
 
 	*step_ctx = ctx;
 	return SLURM_SUCCESS;
