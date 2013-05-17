@@ -35,7 +35,7 @@ AC_DEFUN([X_AC_OFED],
           LIBS="-L$d/$bit -libmad -libumad $LIBS"
 
     AC_LINK_IFELSE(
-            [AC_LANG_CALL([], mad_dump_mlnx_ext_port_info)],
+            [AC_LANG_CALL([], mad_rpc_open_port)],
 AS_VAR_SET(x_ac_cv_ofed_dir, $d), [])
           CPPFLAGS="$_x_ac_ofed_cppflags_save"
           LIBS="$_x_ac_ofed_libs_save"
