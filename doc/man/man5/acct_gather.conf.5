@@ -25,7 +25,8 @@ The following acct_gather.conf parameters are defined to control the general
 behavior of various plugins in SLURM.
 
 .TP
-\fBEnergyIPMI\fR options used for AcctGatherEnergyType/ipmi are as follows.
+\fBEnergyIPMI\fR
+Options used for AcctGatherEnergyType/ipmi are as follows:
 
 .RS
 .TP 20
@@ -63,7 +64,8 @@ Specify BMC Password.
 .RE
 
 .TP
-\fBProfileHDF5\fR options used for AcctGatherProfileType/hdf5 are as follows.
+\fBProfileHDF5\fR
+Options used for AcctGatherProfileType/hdf5 are as follows:
 
 .RS
 .TP 20
@@ -74,9 +76,9 @@ The directory is assumed to be on a file system shared by the controller and
 all compute nodes. This is a required parameter.
 
 .TP
-\fBProfileDefaultProfile\fR=opt{,opt{,opt}}
-Default --Profile value for data types collected for each job submission.
-It ia a comma separated list of data streams. Allowed values are;
+\fBProfileDefaultProfile\fR
+A comma delimited list of data types to be collected for each job submission.
+Allowed values are:
 
 .RS
 .TP
@@ -101,7 +103,8 @@ It ia a comma separated list of data streams. Allowed values are;
 .RE
 
 .TP
-\fBInfinibandOFED\fR options used for AcctGatherInfinbandType/ofed are as follows.
+\fBInfinibandOFED\fR
+Options used for AcctGatherInfinbandType/ofed are as follows:
 
 .RS
 .TP 20

@@ -194,7 +194,7 @@ configuration options.
 <dl>
 <dt><span class="commandline">ProfileDir</span>
 <dd>Path to location in a shared file system in which to write profile data.
-There is no default as there is standard location for a shared file system.
+There is no default as there is no standard location for a shared file system.
 It this parameter is not specified, no profiling will occur.
 <dt><span class="commandline">ProfileDefaultProfile</span>
 <dd>Default setting for --profile command line option for srun, salloc, sbatch.
