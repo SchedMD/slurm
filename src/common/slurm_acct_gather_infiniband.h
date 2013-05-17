@@ -65,11 +65,12 @@
 #include "src/common/xmalloc.h"
 #include "src/common/slurm_acct_gather.h"
 
-struct network_data {
+typedef struct acct_network_data {
 	uint64_t	packets_in;
 	uint64_t	packets_out;
 	double		size_in;        // currently in megabytes
 	double		size_out;       // currently in megabytes
+} acct_network_data_t;
 
 extern int acct_gather_infiniband_init(void); /* load the plugin */
 extern int acct_gather_infiniband_fini(void); /* unload the plugin */

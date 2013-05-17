@@ -494,7 +494,7 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 	profile_network_t  profile_network;
 
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)data;
-	struct network_data *net = (struct network_data *)data;
+	acct_network_data_t *net = (acct_network_data_t *)data;
 
 	xassert(_run_in_daemon());
 	xassert(g_job);

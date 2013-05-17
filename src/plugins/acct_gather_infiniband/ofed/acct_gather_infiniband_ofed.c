@@ -227,13 +227,12 @@ static int _read_ofed_values(void)
  */
 static int _update_node_infiniband(void)
 {
-	struct network_data *net;
+	acct_network_data_t *net;
 	int rc = SLURM_SUCCESS;
 
 	rc = _read_ofed_values();
-	
-	net = xmalloc(sizeof(struct network_data));
-	memset(net, 0, sizeof(struct network_data));
+
+	net = xmalloc(sizeof(acct_network_data_t));
 
 	net->packets_in = ofed_sens.rcvpkts;
 	net->packets_out = ofed_sens.xmtpkts;
