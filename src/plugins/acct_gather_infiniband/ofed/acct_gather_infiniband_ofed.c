@@ -67,6 +67,19 @@
 #include <infiniband/umad.h>
 #include <infiniband/mad.h>
 
+/* On older versions of libmad these functions are there but not
+ * exported. */
+#ifndef MAD_EXPORT
+uint8_t *pma_query_via(void *rcvbuf, ib_portid_t * dest, int port,
+		       unsigned timeout, unsigned id,
+		       void *srcport);
+uint8_t *performance_reset_via(void *rcvbuf, ib_portid_t * dest,
+			       int port, unsigned mask,
+			       unsigned timeout, unsigned id,
+			       void *srcport);
+#endif
+/***************************************************************/
+
 #define ALL_PORTS 0xFF
 
 
