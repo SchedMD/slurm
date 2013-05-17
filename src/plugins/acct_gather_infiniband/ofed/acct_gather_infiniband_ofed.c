@@ -490,9 +490,8 @@ extern int fini(void)
  * for fields < 32 bits in length.
  */
 
-extern int acct_gather_infiniband_p_update_node(void)
+extern int acct_gather_infiniband_p_node_init(void)
 {
-	uint32_t profile;
 	int rc = SLURM_SUCCESS;
 
 	acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING, &profile);

@@ -103,7 +103,7 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int acct_gather_infiniband_p_update_node(void)
+extern int acct_gather_infiniband_p_node_init(void)
 {
 	return SLURM_SUCCESS;
 }

@@ -998,7 +998,7 @@ job_manager(slurmd_job_t *job)
 	}
 
 	acct_gather_profile_g_node_step_start(job);
-	acct_gather_infiniband_g_update_node();
+	acct_gather_infiniband_g_node_init();
 
 	/* calls pam_setup() and requires pam_finish() if successful */
 	if ((rc = _fork_all_tasks(job, &io_initialized)) < 0) {
