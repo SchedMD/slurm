@@ -51,7 +51,7 @@
 typedef struct slurm_acct_gather_infiniband_ops {
 	int (*node_init)	(void);
 	void (*conf_options)	(s_p_options_t **full_options,
-					   int *full_options_cnt);
+				 int *full_options_cnt);
 	void (*conf_set)	(s_p_hashtbl_t *tbl);
 } slurm_acct_gather_infiniband_ops_t;
 /*
@@ -133,7 +133,7 @@ extern int acct_gather_infiniband_g_node_init(void)
 
 
 extern void acct_gather_infiniband_g_conf_options(s_p_options_t **full_options,
-                                              int *full_options_cnt)
+						  int *full_options_cnt)
 {
         if (slurm_acct_gather_infiniband_init() < 0)
                 return;

@@ -67,10 +67,9 @@
 
 struct network_data {
 	uint64_t	packets_in;
-	double		size_in;        // currently in megabytes
 	uint64_t	packets_out;
+	double		size_in;        // currently in megabytes
 	double		size_out;       // currently in megabytes
-};
 
 extern int acct_gather_infiniband_init(void); /* load the plugin */
 extern int acct_gather_infiniband_fini(void); /* unload the plugin */
@@ -84,7 +83,7 @@ extern int acct_gather_infiniband_g_node_init(void);
  *      full_options_cnt -- count of plugin local definitions
  */
 extern void acct_gather_infiniband_g_conf_options(s_p_options_t **full_options,
-							int *full_options_cnt);
+						  int *full_options_cnt);
 /*
  * set plugin local conf from acct_gather.conf into its structure
  *

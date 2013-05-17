@@ -147,13 +147,11 @@ static uint32_t debug_flags = 0;
 static time_t previous_update_time = 0;
 static bool flag_infiniband_accounting_shutdown = false;
 static bool flag_thread_run_running = false;
-static bool flag_thread_write_running = false;
 static bool flag_thread_started = false;
 static bool flag_update_started = false;
 static bool flag_slurmd_process = false;
 pthread_t thread_ofed_id_launcher = 0;
 pthread_t thread_ofed_id_run = 0;
-pthread_t thread_ofed_id_write = 0;
 
 static void _task_sleep(int rem)
 {
@@ -173,47 +171,49 @@ static int _read_ofed_values(void)
 	uint64_t reset_limit = mask * 0.7;
 	uint16_t cap_mask;
 	uint64_t send_val,recv_val,send_pkts,recv_pkts;
-	
+
 	memset(pc, 0, sizeof(pc));
-	memcpy(&cap_mask, pc + 2, sizeof(cap_mask)); 
+	memcpy(&cap_mask, pc + 2, sizeof(cap_mask));
 	debug3("INFINIBAND: memcpy");
-	if ( !pma_query_via( pc, &portid, port, ibd_timeout, 
-		IB_GSI_PORT_COUNTERS_EXT, srcport ) ) {
-		error("ofed\n" );
-		exit( 1 );
+	if (!pma_query_via(pc, &portid, port, ibd_timeout,
+			   IB_GSI_PORT_COUNTERS_EXT, srcport)) {
+		error("ofed\n");
+		exit(1);
 	}
 
-	mad_decode_field( pc, IB_PC_EXT_XMT_BYTES_F, &send_val );
+	mad_decode_field(pc, IB_PC_EXT_XMT_BYTES_F, &send_val);
 	ofed_sens.xmtdata = (send_val - last_update_xmtdata)*4;
 	ofed_sens.total_xmtdata += ofed_sens.xmtdata;
-	mad_decode_field( pc, IB_PC_EXT_RCV_BYTES_F, &recv_val );
+	mad_decode_field(pc, IB_PC_EXT_RCV_BYTES_F, &recv_val);
 	ofed_sens.rcvdata = (recv_val - last_update_rcvdata)*4;
 	ofed_sens.total_rcvdata += ofed_sens.rcvdata;
-	mad_decode_field( pc, IB_PC_EXT_XMT_PKTS_F, &send_pkts );
+	mad_decode_field(pc, IB_PC_EXT_XMT_PKTS_F, &send_pkts);
 	ofed_sens.xmtpkts += send_pkts - last_update_xmtpkts;
 	ofed_sens.total_xmtpkts += ofed_sens.xmtpkts;
-	mad_decode_field( pc, IB_PC_EXT_RCV_PKTS_F, &recv_pkts );
+	mad_decode_field(pc, IB_PC_EXT_RCV_PKTS_F, &recv_pkts);
 	ofed_sens.rcvpkts += recv_pkts - last_update_rcvpkts;
 	ofed_sens.total_rcvpkts += ofed_sens.rcvpkts;
 
-	if ( send_val > reset_limit || recv_val > reset_limit ) {
+	if (send_val > reset_limit || recv_val > reset_limit) {
 		/* reset cost ~70 mirco secs */
-		if ( !performance_reset_via( pc, &portid, port, mask, 
-		   ibd_timeout, IB_GSI_PORT_COUNTERS_EXT, srcport ) ) {
-			error("perf reset\n" );
-			exit( 1 );
+		if (!performance_reset_via(pc, &portid, port, mask,
+					   ibd_timeout,
+					   IB_GSI_PORT_COUNTERS_EXT,
+					   srcport)) {
+			error("perf reset\n");
+			exit(1);
 		}
-		mad_decode_field( pc, IB_PC_EXT_XMT_BYTES_F, &send_val );
-		mad_decode_field( pc, IB_PC_EXT_RCV_BYTES_F, &recv_val );
-		mad_decode_field( pc, IB_PC_EXT_XMT_PKTS_F, &send_pkts );
-		mad_decode_field( pc, IB_PC_EXT_RCV_PKTS_F, &recv_pkts );
-		
+		mad_decode_field(pc, IB_PC_EXT_XMT_BYTES_F, &send_val);
+		mad_decode_field(pc, IB_PC_EXT_RCV_BYTES_F, &recv_val);
+		mad_decode_field(pc, IB_PC_EXT_XMT_PKTS_F, &send_pkts);
+		mad_decode_field(pc, IB_PC_EXT_RCV_PKTS_F, &recv_pkts);
+
 	}
 	last_update_xmtdata = send_val;
 	last_update_rcvdata = recv_val;
 	last_update_xmtpkts = send_pkts;
 	last_update_rcvpkts = recv_pkts;
-                
+
 	previous_update_time = last_update_time;
 	last_update_time = time(NULL);
 
@@ -239,15 +239,14 @@ static int _update_node_infiniband(void)
 	net->packets_out = ofed_sens.xmtpkts;
 	net->size_in = ofed_sens.rcvdata;
 	net->size_out = ofed_sens.xmtdata;
-	acct_gather_profile_g_add_sample_data(
-                      ACCT_GATHER_PROFILE_NETWORK, net);
+	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_NETWORK, net);
 
 	if (debug_flags & DEBUG_FLAG_INFINIBAND) {
 		info("ofed-thread = %d sec, transmitted %ld bytes, "
-                   "received %ld bytes",
-                   (int) (last_update_time - previous_update_time),
-                   ofed_sens.xmtdata,ofed_sens.rcvdata);
-        }
+		     "received %ld bytes",
+		     (int) (last_update_time - previous_update_time),
+		     ofed_sens.xmtdata,ofed_sens.rcvdata);
+	}
 	xfree(net);
 
         return rc;
@@ -259,17 +258,17 @@ static int _update_node_infiniband(void)
  */
 static int _thread_init(void)
 {
-	int rc = SLURM_SUCCESS;	
-	int mgmt_classes[4] = { IB_SMI_CLASS, IB_SMI_DIRECT_CLASS, IB_SA_CLASS,
-	    IB_PERFORMANCE_CLASS};
+	int rc = SLURM_SUCCESS;
+	int mgmt_classes[4] = {IB_SMI_CLASS, IB_SMI_DIRECT_CLASS, IB_SA_CLASS,
+			       IB_PERFORMANCE_CLASS};
 	uint64_t mask = 0xffffffffffffffff;
 	uint16_t cap_mask;
 
 	srcport = mad_rpc_open_port(ibd_ca, ofed_conf.port,
-	  mgmt_classes, 4);
+				    mgmt_classes, 4);
 	if (!srcport){
-		error("Failed to open '%s' port '%d'", ibd_ca, 
-		   ofed_conf.port);
+		error("Failed to open '%s' port '%d'", ibd_ca,
+		      ofed_conf.port);
 		debug("INFINIBAND: failed");
 	}
 
@@ -277,29 +276,29 @@ static int _thread_init(void)
 		error("can't resolve self port %d", port);
 	memset(pc, 0, sizeof(pc));
 	if (!pma_query_via(pc, &portid, port, ibd_timeout, CLASS_PORT_INFO,
-	   srcport))
+			   srcport))
 		error("classportinfo query\n");
 
 	memcpy(&cap_mask, pc + 2, sizeof(cap_mask));
 
-	if ( !pma_query_via( pc, &portid, port, ibd_timeout, 
-	  IB_GSI_PORT_COUNTERS_EXT, srcport ) ) {
-		error("ofed\n" );
-		exit( 1 );
+	if (!pma_query_via(pc, &portid, port, ibd_timeout,
+			   IB_GSI_PORT_COUNTERS_EXT, srcport)) {
+		error("ofed\n");
+		exit(1);
 	}
 
 	/* reset cost ~70 mirco secs */
-	if ( !performance_reset_via( pc, &portid, port, mask, ibd_timeout, 
-	    IB_GSI_PORT_COUNTERS_EXT, srcport ) ) {
-		error("perf reset\n" );
-		exit( 1 );
+	if (!performance_reset_via(pc, &portid, port, mask, ibd_timeout,
+				   IB_GSI_PORT_COUNTERS_EXT, srcport)) {
+		error("perf reset\n");
+		exit(1);
 	}
 
-	mad_decode_field( pc, IB_PC_EXT_XMT_BYTES_F, &ofed_sens.xmtdata );
-	mad_decode_field( pc, IB_PC_EXT_RCV_BYTES_F, &ofed_sens.rcvdata );
-	mad_decode_field( pc, IB_PC_EXT_XMT_PKTS_F, &ofed_sens.xmtpkts );
-	mad_decode_field( pc, IB_PC_EXT_RCV_PKTS_F, &ofed_sens.rcvpkts );
-	
+	mad_decode_field(pc, IB_PC_EXT_XMT_BYTES_F, &ofed_sens.xmtdata);
+	mad_decode_field(pc, IB_PC_EXT_RCV_BYTES_F, &ofed_sens.rcvdata);
+	mad_decode_field(pc, IB_PC_EXT_XMT_PKTS_F, &ofed_sens.xmtpkts);
+	mad_decode_field(pc, IB_PC_EXT_RCV_PKTS_F, &ofed_sens.rcvpkts);
+
 	if (debug_flags & DEBUG_FLAG_INFINIBAND)
 		info("%s thread init", plugin_name);
 
@@ -367,7 +366,7 @@ static void *_thread_launcher(void *no_data)
 
 	slurm_attr_init(&attr_run);
 	if (pthread_create(&thread_ofed_id_run, &attr_run,
-		   &_thread_ofed_run, NULL)) {
+			   &_thread_ofed_run, NULL)) {
 		debug("infiniband accounting failed to create _thread_ofed_run "
 		      "thread: %m");
 	}
@@ -404,7 +403,7 @@ static void *_thread_launcher(void *no_data)
 
 	if (rc != SLURM_SUCCESS) {
 		error("%s threads failed to start in a timely manner",
-		     plugin_name);
+		      plugin_name);
 		if (thread_ofed_id_write) {
 			pthread_cancel(thread_ofed_id_write);
 			pthread_join(thread_ofed_id_write, NULL);
@@ -519,13 +518,12 @@ extern int acct_gather_infiniband_p_node_init(void)
 
 extern void acct_gather_infiniband_p_conf_set(s_p_hashtbl_t *tbl)
 {
-	if (tbl){
+	if (tbl) {
 		s_p_get_uint32(&ofed_conf.freq,
-			    "InfinibandOFEDFrequency", tbl);
+			       "InfinibandOFEDFrequency", tbl);
 		if (!s_p_get_uint32(&ofed_conf.port,
-			    "InfinibandOFEDPort", tbl)){
+				    "InfinibandOFEDPort", tbl))
 			ofed_conf.port = INFINIBAND_DEFAULT_PORT;
-		}
 	}
 
 	if (!_run_in_daemon())
@@ -536,7 +534,7 @@ extern void acct_gather_infiniband_p_conf_set(s_p_hashtbl_t *tbl)
 }
 
 extern void acct_gather_infiniband_p_conf_options(s_p_options_t **full_options,
-                                              int *full_options_cnt)
+						  int *full_options_cnt)
 {
 	s_p_options_t options[] = {
 		{"InfinibandOFEDFrequency", S_P_UINT32},
