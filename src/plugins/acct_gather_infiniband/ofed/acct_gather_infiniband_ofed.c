@@ -493,10 +493,19 @@ extern int acct_gather_infiniband_p_node_init(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING, &profile);
-	if ((!flag_update_started) && (profile & ACCT_GATHER_PROFILE_NETWORK)){
-		debug("INFINIBAND: entered_ thread_launcher");
+	if (!flag_update_started) {
 		pthread_attr_t attr;
+		uint32_t profile;
+
+		flag_update_started = true;
+
+		acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
+					  &profile);
+
+		if (!(profile & ACCT_GATHER_PROFILE_NETWORK))
+			return rc;
+
+		debug("INFINIBAND: entered thread_launcher");
 		slurm_attr_init(&attr);
 		if (pthread_create(&thread_ofed_id_launcher, &attr,
 				   &_thread_launcher, NULL)) {
@@ -508,8 +517,6 @@ extern int acct_gather_infiniband_p_node_init(void)
 
 		if (debug_flags & DEBUG_FLAG_INFINIBAND)
 			info("%s thread launched", plugin_name);
-
-		flag_update_started = true;
 	}
 
 	return rc;
