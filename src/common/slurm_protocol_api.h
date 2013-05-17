@@ -563,6 +563,12 @@ char *slurm_get_acct_gather_energy_type(void);
  */
 char *slurm_get_acct_gather_profile_type(void);
 
+/* slurm_get_acct_infiniband_profile_type
+ * get InfinibandAccountingType from slurmctld_conf object
+ * RET char *   - acct_gather_infiniband_type, MUST be xfreed by caller
+ */
+char *slurm_get_acct_gather_infiniband_type(void);
+
 /* slurm_get_acct_gather_node_freq
  * returns the accounting poll frequency for requesting info from a
  * node from the slurmctld_conf object

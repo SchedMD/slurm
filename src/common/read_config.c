@@ -165,6 +165,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"AcctGatherEnergyType", S_P_STRING},
 	{"AcctGatherNodeFreq", S_P_UINT16},
 	{"AcctGatherProfileType", S_P_STRING},
+	{"AcctGatherInfinibandType", S_P_STRING},
 	{"AuthType", S_P_STRING},
 	{"BackupAddr", S_P_STRING},
 	{"BackupController", S_P_STRING},
@@ -2066,6 +2067,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->crypto_type);
 	xfree (ctl_conf_ptr->acct_gather_energy_type);
 	xfree (ctl_conf_ptr->acct_gather_profile_type);
+	xfree (ctl_conf_ptr->acct_gather_infiniband_type);
 	xfree (ctl_conf_ptr->epilog);
 	xfree (ctl_conf_ptr->epilog_slurmctld);
 	xfree (ctl_conf_ptr->ext_sensors_type);
@@ -2171,6 +2173,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->acct_gather_node_freq	= 0;
 	xfree (ctl_conf_ptr->acct_gather_energy_type);
 	xfree (ctl_conf_ptr->acct_gather_profile_type);
+	xfree (ctl_conf_ptr->acct_gather_infiniband_type);
 	ctl_conf_ptr->ext_sensors_freq		= 0;
 	xfree (ctl_conf_ptr->ext_sensors_type);
 	ctl_conf_ptr->dynalloc_port		= (uint16_t) NO_VAL;
@@ -2668,6 +2671,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    "AcctGatherProfileType", hashtbl))
 		conf->acct_gather_profile_type =
 			xstrdup(DEFAULT_ACCT_GATHER_PROFILE_TYPE);
+
+	if (!s_p_get_string(&conf->acct_gather_infiniband_type,
+			    "AcctGatherInfinibandType", hashtbl))
+		conf->acct_gather_infiniband_type =
+			xstrdup(DEFAULT_ACCT_GATHER_INFINIBAND_TYPE);
 
 	if (!s_p_get_uint16(&conf->acct_gather_node_freq,
 			    "AcctGatherNodeFreq", hashtbl))
@@ -3763,6 +3771,11 @@ extern char * debug_flags2str(uint32_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Gres");
 	}
+	if (debug_flags & DEBUG_FLAG_INFINIBAND) {
+                if (rc)
+                        xstrcat(rc, ",");
+                xstrcat(rc, "Infiniband");
+        }
 	if (debug_flags & DEBUG_FLAG_NO_CONF_HASH) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -3859,6 +3872,8 @@ extern uint32_t debug_str2flags(char *debug_flags)
 			rc |= DEBUG_FLAG_GANG;
 		else if (strcasecmp(tok, "Gres") == 0)
 			rc |= DEBUG_FLAG_GRES;
+		else if (strcasecmp(tok, "Infiniband") == 0)
+                        rc |= DEBUG_FLAG_INFINIBAND;
 		else if (strcasecmp(tok, "NO_CONF_HASH") == 0)
 			rc |= DEBUG_FLAG_NO_CONF_HASH;
 		else if (strcasecmp(tok, "NoRealTime") == 0)

@@ -1,12 +1,11 @@
 /*****************************************************************************\
- *  slurm_acct_gather.h - generic interface needed for some
- *                        acct_gather plugins.
+ *  acct_gather_infiniband_ofed.h -slurm infiniband accounting plugin.for ofed
  *****************************************************************************
- *  Copyright (C) 2013 SchedMD LLC.
- *  Written by Danny Auble <da@schedmd.com>
+ *  Copyright (C) 2013
+ *  Written by Bull- Yiannis Georgiou
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <http://www.schedmd.com/slurmdocs/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -33,30 +32,23 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+ *
+ *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
+ *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifndef __SLURM_ACCT_GATHER_H__
-#define __SLURM_ACCT_GATHER_H__
+#ifndef _GATHER_INFINIBAND_H_
+#define _GATHER_INFINIBAND_H_
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
-#else				/* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif				/*  HAVE_CONFIG_H */
+#define INFINIBAND_DEFAULT_PORT 1
 
-#include "read_config.h"
-#include "slurm_acct_gather_energy.h"
-#include "slurm_acct_gather_profile.h"
-#include "slurm_acct_gather_infiniband.h"
+extern int init ( void );
+extern int fini ( void );
+extern int acct_gather_infiniband_p_update_node(void);
+extern void acct_gather_infiniband_p_conf_options(s_p_options_t **full_options,
+                                              int *full_options_cnt);
+extern void acct_gather_infiniband_p_conf_set(s_p_hashtbl_t *tbl);
 
-extern int acct_gather_conf_init(void);
-extern int acct_gather_conf_destroy(void);
 
 #endif
+

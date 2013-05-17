@@ -87,6 +87,7 @@
 #define GRP_STEP "Step"
 #define GRP_NODES "Nodes"
 #define GRP_NODE "Node"
+#define GRP_NETWORK "Network"
 #define GRP_SAMPLES "Time Series"
 #define GRP_SAMPLE "Sample"
 #define GRP_TASKS "Tasks"

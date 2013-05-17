@@ -1,12 +1,12 @@
 /*****************************************************************************\
- *  slurm_acct_gather.h - generic interface needed for some
- *                        acct_gather plugins.
+ *  slurm_acct_gather_infiniband.h - implementation-independent job infiniband
+ *  accounting plugin definitions
  *****************************************************************************
- *  Copyright (C) 2013 SchedMD LLC.
- *  Written by Danny Auble <da@schedmd.com>
+ *  Copyright (C) 2013 Bull
+ *  Written by Yiannis Georgiou <yiannis.georgiou@bull.net>
  *
  *  This file is part of SLURM, a resource management program.
- *  For details, see <http://slurm.schedmd.com/>.
+ *  For details, see <http://www.schedmd.com/slurmdocs/>.
  *  Please also read the included file: DISCLAIMER.
  *
  *  SLURM is free software; you can redistribute it and/or modify it under
@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef __SLURM_ACCT_GATHER_H__
-#define __SLURM_ACCT_GATHER_H__
+#ifndef __SLURM_ACCT_GATHER_INFINIBAND_H__
+#define __SLURM_ACCT_GATHER_INFINIBAND_H__
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -51,12 +51,47 @@
 #  include <inttypes.h>
 #endif				/*  HAVE_CONFIG_H */
 
-#include "read_config.h"
-#include "slurm_acct_gather_energy.h"
-#include "slurm_acct_gather_profile.h"
-#include "slurm_acct_gather_infiniband.h"
+#include <sys/resource.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
 
-extern int acct_gather_conf_init(void);
-extern int acct_gather_conf_destroy(void);
+#include "slurm/slurm.h"
+#include "slurm/slurmdb.h"
 
-#endif
+#include "src/common/macros.h"
+#include "src/common/pack.h"
+#include "src/common/list.h"
+#include "src/common/xmalloc.h"
+#include "src/common/slurm_acct_gather.h"
+
+struct network_data {
+	uint64_t	packets_in;
+	double		size_in;        // currently in megabytes
+	uint64_t	packets_out;
+	double		size_out;       // currently in megabytes
+};
+
+extern int acct_gather_infiniband_init(void); /* load the plugin */
+extern int acct_gather_infiniband_fini(void); /* unload the plugin */
+extern int acct_gather_infiniband_g_update_node(void);
+/*
+ * Define plugin local conf for acct_gather.conf
+ *
+ * Parameters
+ *      full_options -- pointer that will receive list of plugin local
+ *                      definitions
+ *      full_options_cnt -- count of plugin local definitions
+ */
+extern void acct_gather_infiniband_g_conf_options(s_p_options_t **full_options,
+							int *full_options_cnt);
+/*
+ * set plugin local conf from acct_gather.conf into its structure
+ *
+ * Parameters
+ *      tbl - hash table of acct_gather.conf key-values.
+ */
+extern void acct_gather_infiniband_g_conf_set(s_p_hashtbl_t *tbl);
+
+#endif /*__SLURM_ACCT_GATHER_INFINIBAND_H__*/
+

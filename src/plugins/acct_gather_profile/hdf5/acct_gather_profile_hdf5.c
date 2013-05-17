@@ -491,8 +491,10 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 	char *type_name = NULL;
 
 	profile_task_t  profile_task;
+	profile_network_t  profile_network;
 
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)data;
+	struct network_data *net = (struct network_data *)data;
 
 	xassert(_run_in_daemon());
 	xassert(g_job);
@@ -531,6 +533,18 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 	case ACCT_GATHER_PROFILE_LUSTRE:
 		break;
 	case ACCT_GATHER_PROFILE_NETWORK:
+
+		snprintf(group, sizeof(group), "%s", GRP_NETWORK);
+
+		memset(&profile_network, 0, sizeof(profile_network_t));
+		profile_network.time = time(NULL);
+		profile_network.packets_in = net->packets_in;
+		profile_network.size_in = net->size_in;
+		profile_network.packets_out = net->packets_out;
+		profile_network.size_out = net->size_out;
+
+		send_profile = &profile_network;
+
 		break;
 	default:
 		error("acct_gather_profile_p_add_sample_data: "
