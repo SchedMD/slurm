@@ -102,32 +102,6 @@ static sh5util_opts_t params;
 static char**   series_names = NULL;
 static int      num_series = 0;
 
-static void _usage()
-{
-	/* FIXME: THIS DOES NOT MATCH CURRENT OPTIONS */
-	printf("\n\n\nsh5util --jobid=n ...\n");
-	printf("  Merges node-step HDF5 files for a SLURM job.\n");
-	printf("  Required command line arguments are:\n");
-	printf("     --jobid=n     jobid of SLURM job\n");
-	printf("  Optional command line arguments are:\n");
-	printf("     --profiledir=path  path to directory holding"
-	       " profile files\n");
-	printf("     --savefiles   save node/step files\n");
-	printf("     --extract     extract data series from job file\n");
-	printf("                   default mode is merge node-step files\n");
-	printf("     Extract mode options (all imply --extract)\n");
-	printf("     --stepid={n|*) id step to extract (*=all,default)\n");
-	printf("     --node={name|*} Node name to extract (*=all,default)\n");
-	printf("     --level=[Node:Totals|Node:TimeSeries]\n");
-	printf("             Level to which series is attached\n");
-	printf("     --series=[name|Tasks|*] Name of series\n");
-	printf("              name=Specific name, Tasks=all tasks, (*=all)\n");
-	printf("     --output=path "
-	       "path to a file into which to write the extract\n");
-	printf("     --help           prints this message\n");
-	printf("     Note all option values are case sensitive\n\n\n");
-}
-
 static void _help_msg(void)
 {
 	printf("\
@@ -281,10 +255,8 @@ static void _set_options(const int argc, char **argv)
 	if (params.help) {
 		switch (params.help) {
 		case 1:
-			_help_msg();
-			break;
 		case 3:
-			_usage();
+			_help_msg();
 			break;
 		default:
 			fprintf(stderr, "bug: --help=%d\n",
@@ -1149,7 +1121,7 @@ static void _extract_data()
 int main (int argc, char **argv)
 {
 	if (argc <= 1) {
-		_usage();
+		_help_msg();
 		exit(0);
 	}
 	_set_options(argc, argv);
