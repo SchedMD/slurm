@@ -143,9 +143,9 @@ with this process or zero if none is found.</p>
 Given a process container ID, fill in all the process IDs in the container.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
 <span class="commandline"> cont_id</span>&nbsp; &nbsp;&nbsp;(input)
-A container ID.</p>
+A container ID.<br>
 <span class="commandline"> pids</span>&nbsp; &nbsp;&nbsp;(output)
-Array of process IDs in the container.</p>
+Array of process IDs in the container.<br>
 <span class="commandline"> npids</span>&nbsp; &nbsp;&nbsp;(output)
 Count of process IDs in the container.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if
