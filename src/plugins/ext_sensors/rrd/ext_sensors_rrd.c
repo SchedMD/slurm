@@ -595,18 +595,36 @@ extern int _ext_sensors_read_conf(void)
 					|= EXT_SENSORS_OPT_COLDDOOR_TEMP;
 		}
 		xfree(temp_str);
+
+
 		s_p_get_uint32(&ext_sensors_cnf->min_watt,"MinWatt", tbl);
 		s_p_get_uint32(&ext_sensors_cnf->max_watt,"MaxWatt", tbl);
 		s_p_get_uint32(&ext_sensors_cnf->min_temp,"MinTemp", tbl);
 		s_p_get_uint32(&ext_sensors_cnf->max_temp,"MaxTemp", tbl);
-		s_p_get_string(&ext_sensors_cnf->energy_rra_name,
-			       "EnergyRRA", tbl);
-		s_p_get_string(&ext_sensors_cnf->temp_rra_name,
-			       "TempRRA", tbl);
+		if (!s_p_get_string(&ext_sensors_cnf->energy_rra_name,
+				    "EnergyRRA", tbl)) {
+			if (ext_sensors_cnf->dataopts
+			    & EXT_SENSORS_OPT_JOB_ENERGY)
+				fatal("ext_sensors/rrd: EnergyRRA "
+				      "must be set to gather JobData=energy.  "
+				      "Please set this value in your "
+				      "ext_sensors.conf file.");
+		}
+
+		if (!s_p_get_string(&ext_sensors_cnf->temp_rra_name,
+				    "TempRRA", tbl)) {
+			if (ext_sensors_cnf->dataopts
+			    & EXT_SENSORS_OPT_NODE_TEMP)
+				fatal("ext_sensors/rrd: TempRRA "
+				      "must be set to gather NodeData=temp.  "
+				      "Please set this value in your "
+				      "ext_sensors.conf file.");
+		}
 		s_p_get_string(&ext_sensors_cnf->energy_rrd_file,
 			       "EnergyPathRRD", tbl);
 		s_p_get_string(&ext_sensors_cnf->temp_rrd_file,
 			       "TempPathRRD", tbl);
+
 		s_p_hashtbl_destroy(tbl);
 	}
 	xfree(conf_path);
