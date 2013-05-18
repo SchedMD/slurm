@@ -2085,9 +2085,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						/* Mark the ba_mp
 						 * cnodes as used now.
 						 */
-						select_jobinfo_t *jobinfo =
-							job_ptr->
-							select_jobinfo->data;
 						ba_mp_t *ba_mp = list_peek(
 							bg_record->ba_mp_list);
 						xassert(ba_mp);
