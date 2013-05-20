@@ -330,6 +330,10 @@ static void *_thread_ofed_run(void *no_data)
 	}
 
 	debug("INFINIBAND: thread_ofed_run");
+	// init values
+	slurm_mutex_lock(&ofed_lock);
+	_read_ofed_values();
+	slurm_mutex_unlock(&ofed_lock);
 
 	//loop until end of job
 	while (flag_thread_started) {
