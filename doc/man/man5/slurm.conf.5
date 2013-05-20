@@ -196,13 +196,35 @@ execution of the command "sudo modprobe msr".
 .RE
 
 .TP
+\fBAcctGatherInfinibandType\fR
+Identifies the plugin to be used for infiniband network traffic accounting.
+The plugin is activated only when profiling on hdf5 files is activated and
+the user asks for network data collection for jobs through --profile=Network
+(or =All). The collection of network traffic data takes place on node level,
+hence only in case of exclusive job allocation the collected values will
+reflect the jobs real traffic. All network traffic data are logged on hdf5 files
+per job on each node. No storage on the Slurm database takes place.
+
+Configurable values at present are:
+.RS
+.TP 20
+\fBacct_gather_infiniband/none\fR
+No infiniband network data are collected.
+.TP
+\fBacct_gather_infiniband/ofed\fR
+Infiniband network traffic data are collected from the hardware monitoring
+counters of Infiniband devices through the OFED library.
+.RE
+
+
+.TP
 \fBAcctGatherProfileType\fR
 Identifies the plugin to be used for detailed job profiling.
 The jobacct_gather plugin and slurmd daemon call this plugin to collect
-detailed data such as I/O counts, memory usage, or energy consumption for jobs 
+detailed data such as I/O counts, memory usage, or energy consumption for jobs
 and nodes. There are interfaces in this plugin to collect data as step start
 and completion, task start and completion, and at the account gather
-frequency. The data collected at the node level is related to jobs only in 
+frequency. The data collected at the node level is related to jobs only in
 case of exclusive job allocation.
 
 Configurable values at present are:
@@ -212,7 +234,7 @@ Configurable values at present are:
 No profile data is collected.
 .TP
 \fBacct_gather_profile/io_energy\fR
-Lustre I/O counts and I/O counts from infiniband network adaptors are 
+Lustre I/O counts and I/O counts from infiniband network adaptors are
 collected at the node level. Local disk I/O counts and memory usage are sampled
 for tasks at jobacct_gather frequency. Energy consumption at the node level
 is gathered at jobacct_gather_frequency. Data from all the steps on all
