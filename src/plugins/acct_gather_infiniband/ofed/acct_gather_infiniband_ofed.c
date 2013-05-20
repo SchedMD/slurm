@@ -142,13 +142,11 @@ static uint8_t pc[1024];
 
 static slurm_ofed_conf_t ofed_conf;
 static uint32_t debug_flags = 0;
-static bool flag_infiniband_accounting_shutdown = false;
 static bool flag_thread_run_running = false;
 static bool flag_thread_started = false;
-static bool flag_update_started = false;
-static bool flag_slurmd_process = false;
-pthread_t thread_ofed_id_launcher = 0;
-pthread_t thread_ofed_id_run = 0;
+static pthread_t thread_ofed_id_run = 0;
+static pthread_t cleanup_handler_thread = 0;
+static pthread_mutex_t ofed_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void _task_sleep(int rem)
 {
@@ -228,6 +226,7 @@ static int _update_node_infiniband(void)
 	acct_network_data_t *net;
 	int rc = SLURM_SUCCESS;
 
+	slurm_mutex_lock(&ofed_lock);
 	rc = _read_ofed_values();
 
 	net = xmalloc(sizeof(acct_network_data_t));
@@ -245,6 +244,7 @@ static int _update_node_infiniband(void)
 		     ofed_sens.xmtdata, ofed_sens.rcvdata);
 	}
 	xfree(net);
+	slurm_mutex_unlock(&ofed_lock);
 
 	return rc;
 }
@@ -271,6 +271,7 @@ static int _thread_init(void)
 
 	if (ib_resolve_self_via(&portid, &port, 0, srcport) < 0)
 		error("can't resolve self port %d", port);
+
 	memset(pc, 0, sizeof(pc));
 	if (!perf_classportinfo_query_via(pc, &portid, port, ibd_timeout,
 					  srcport))
@@ -301,13 +302,10 @@ static int _thread_init(void)
 	return rc;
 }
 
-/*
- * _thread_fini finalizes values for the infiniband thread
- */
-static int _thread_fini(void)
+static void *_cleanup_thread(void *no_data)
 {
-	mad_rpc_close_port(srcport);
-	return SLURM_SUCCESS;
+	pthread_join(thread_ofed_id_run, NULL);
+	return NULL;
 }
 
 /*
@@ -319,7 +317,6 @@ static void *_thread_ofed_run(void *no_data)
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	flag_thread_run_running = true;
-	flag_infiniband_accounting_shutdown = false;
 	if (debug_flags & DEBUG_FLAG_INFINIBAND)
 		info("ofed-thread: launched");
 
@@ -332,100 +329,17 @@ static void *_thread_ofed_run(void *no_data)
 		return NULL;
 	}
 
-	flag_thread_started = true;
-
 	debug("INFINIBAND: thread_ofed_run");
 
 	//loop until end of job
-	while (!flag_infiniband_accounting_shutdown) {
+	while (flag_thread_started) {
 		_task_sleep(ofed_conf.freq);
 		_update_node_infiniband();
 	}
 
 	flag_thread_run_running = false;
-	_thread_fini();
-	if (debug_flags & DEBUG_FLAG_INFINIBAND)
-		info("ofed-thread: ended");
 
 	return NULL;
-}
-
-static void *_thread_launcher(void *no_data)
-{
-	pthread_attr_t attr_run;
-	time_t begin_time;
-	int rc = SLURM_SUCCESS;
-
-	flag_slurmd_process = true;
-
-	info("INFINIBAND: thread_launcher");
-
-	slurm_attr_init(&attr_run);
-	if (pthread_create(&thread_ofed_id_run, &attr_run,
-			   &_thread_ofed_run, NULL)) {
-		debug("infiniband accounting failed to create _thread_ofed_run "
-		      "thread: %m");
-	}
-	slurm_attr_destroy(&attr_run);
-
-	begin_time = time(NULL);
-	while (rc == SLURM_SUCCESS) {
-		if (time(NULL) - begin_time > TIMEOUT) {
-			error("ofed thread launch timeout");
-			rc = SLURM_ERROR;
-			break;
-		}
-		if (flag_thread_run_running)
-			break;
-		_task_sleep(1);
-	}
-
-	begin_time = time(NULL);
-	while (rc == SLURM_SUCCESS) {
-		if (time(NULL) - begin_time > TIMEOUT) {
-			error("ofed thread init timeout");
-			rc = SLURM_ERROR;
-			break;
-		}
-		if (!flag_thread_run_running) {
-			error("ofed thread lost");
-			rc = SLURM_ERROR;
-			break;
-		}
-		if (flag_thread_started)
-			break;
-		_task_sleep(1);
-	}
-
-	if (rc != SLURM_SUCCESS) {
-		error("%s threads failed to start in a timely manner",
-		      plugin_name);
-		if (thread_ofed_id_write) {
-			pthread_cancel(thread_ofed_id_write);
-			pthread_join(thread_ofed_id_write, NULL);
-		}
-		flag_thread_write_running = false;
-
-		if (thread_ofed_id_run) {
-			pthread_cancel(thread_ofed_id_run);
-			pthread_join(thread_ofed_id_run, NULL);
-		}
-		flag_thread_run_running = false;
-
-		flag_infiniband_accounting_shutdown = true;
-	}
-
-	return NULL;
-}
-
-static int _get_task_infiniband(void)
-{
-	/* if we want to store data on slurm DB 
-	    read values from pipe here following the 
-	   method used for acct_gather_energy/ipmi plugin
-	*/
-	
-	return SLURM_SUCCESS;
 }
 
 static bool _run_in_daemon(void)
@@ -455,26 +369,31 @@ extern int init(void)
 
 extern int fini(void)
 {
-	flag_infiniband_accounting_shutdown = true;
-	time_t begin_fini = time(NULL);
+	if (!_run_in_daemon())
+		return SLURM_SUCCESS;
 
-	while (flag_thread_run_running || flag_thread_write_running) {
-		if ((time(NULL) - begin_fini) > (IB_FREQ + 1)) {
-			error("Infiniband threads not finilized in time"
-			    "Exit plugin without finalizing threads.");
-			if (thread_ofed_id_write) {
-				pthread_cancel(thread_ofed_id_write);
-				pthread_join(thread_ofed_id_write, NULL);
-			}
-			if (thread_ofed_id_run) {
-				pthread_cancel(thread_ofed_id_run);
-				pthread_join(thread_ofed_id_run, NULL);
-			}
-			break;
-		}
-		_task_sleep(1);
-		//wait for thread stop
+	flag_thread_started = false;
+
+	/* Daemon termination handled here */
+	if (flag_thread_run_running && (debug_flags & DEBUG_FLAG_INFINIBAND))
+		info("Waiting for ofed thread to finish.");
+
+	slurm_mutex_lock(&ofed_lock);
+	if (thread_ofed_id_run)
+		pthread_cancel(thread_ofed_id_run);
+	if (cleanup_handler_thread)
+		pthread_join(cleanup_handler_thread, NULL);
+
+	slurm_mutex_unlock(&ofed_lock);
+
+	if (srcport) {
+		_update_node_infiniband();
+		mad_rpc_close_port(srcport);
 	}
+
+	if (debug_flags & DEBUG_FLAG_INFINIBAND)
+		info("ofed-thread: ended");
+
 	return SLURM_SUCCESS;
 }
 
@@ -489,11 +408,11 @@ extern int acct_gather_infiniband_p_node_init(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (!flag_update_started) {
+	if (!flag_thread_started) {
 		pthread_attr_t attr;
 		uint32_t profile;
 
-		flag_update_started = true;
+		flag_thread_started = true;
 
 		acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
 					  &profile);
@@ -503,14 +422,23 @@ extern int acct_gather_infiniband_p_node_init(void)
 
 		debug("INFINIBAND: entered thread_launcher");
 		slurm_attr_init(&attr);
-		if (pthread_create(&thread_ofed_id_launcher, &attr,
-				   &_thread_launcher, NULL)) {
+		if (pthread_create(&thread_ofed_id_run, &attr,
+				   &_thread_ofed_run, NULL)) {
 			debug("infiniband accounting failed to create "
 			      "_thread_launcher thread: %m");
 			rc = SLURM_ERROR;
 		}
 		slurm_attr_destroy(&attr);
 
+		/* This is here to join the decay thread so we don't core
+		 * dump if in the sleep, since there is no other place to join
+		 * we have to create another thread to do it. */
+		slurm_attr_init(&attr);
+		if (pthread_create(&cleanup_handler_thread, &attr,
+				   _cleanup_thread, NULL))
+			fatal("pthread_create error %m");
+
+		slurm_attr_destroy(&attr);
 		if (debug_flags & DEBUG_FLAG_INFINIBAND)
 			info("%s thread launched", plugin_name);
 	}
