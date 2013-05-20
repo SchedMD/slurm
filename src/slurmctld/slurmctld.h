@@ -1122,17 +1122,6 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 		      uid_t uid, bool preempt);
 
 /*
- * job_step_cancel - cancel the specified job step
- * IN job_id - id of the job to be cancelled
- * IN step_id - id of the job step to be cancelled
- * IN uid - user id of user issuing the RPC
- * RET 0 on success, otherwise ESLURM error code
- * global: job_list - pointer global job list
- *	last_job_update - time of last job table update
- */
-extern int job_step_cancel (uint32_t job_id, uint32_t job_step_id, uid_t uid );
-
-/*
  * job_step_checkpoint - perform some checkpoint operation
  * IN ckpt_ptr - checkpoint request message
  * IN uid - user id of the user issuing the RPC

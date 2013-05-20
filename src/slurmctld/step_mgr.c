@@ -385,7 +385,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
-		error("job_step_cancel: invalid job id %u", job_id);
+		error("job_step_signal: invalid job id %u", job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
@@ -411,7 +411,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	if (step_ptr == NULL) {
 		if (signal != SIG_NODE_FAIL) {
 			rc = ESLURM_INVALID_JOB_ID;
-			info("job_step_cancel step %u.%u not found",
+			info("job_step_signal step %u.%u not found",
 			     job_id, step_id);
 			return rc;
 		}
@@ -420,7 +420,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		   where jobs could be started on these nodes and
 		   fail.
 		*/
-		debug("job_step_cancel step %u.%u not found, but got "
+		debug("job_step_signal step %u.%u not found, but got "
 		      "SIG_NODE_FAIL, so failing all nodes in allocation.",
 		      job_id, step_id);
 		memset(&step_rec, 0, sizeof(struct step_record));
