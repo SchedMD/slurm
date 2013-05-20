@@ -1032,6 +1032,7 @@ job_manager(slurmd_job_t *job)
 
 	_wait_for_all_tasks(job);
 	jobacct_gather_endpoll();
+	acct_gather_infiniband_fini();
 	acct_gather_profile_g_node_step_end();
 
 	job->state = SLURMSTEPD_STEP_ENDING;
