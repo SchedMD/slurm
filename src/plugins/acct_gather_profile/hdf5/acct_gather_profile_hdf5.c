@@ -492,9 +492,11 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 
 	profile_task_t  profile_task;
 	profile_network_t  profile_network;
+	profile_energy_t  profile_energy;
 
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)data;
 	acct_network_data_t *net = (acct_network_data_t *)data;
+	struct energy_data *ener = (struct energy_data *)data;
 
 	xassert(_run_in_daemon());
 	xassert(g_job);
@@ -509,6 +511,14 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 
 	switch (type) {
 	case ACCT_GATHER_PROFILE_ENERGY:
+		snprintf(group, sizeof(group), "%s", GRP_ENERGY);
+
+		memset(&profile_energy, 0, sizeof(profile_energy_t));
+		profile_energy.time = time(NULL);
+		profile_energy.cpu_freq = ener->cpu_freq;
+		profile_energy.power = ener->power;
+
+		send_profile = &profile_energy;
 		break;
 	case ACCT_GATHER_PROFILE_TASK:
 		if (_get_taskid_from_pid(jobacct->pid, &task_id)

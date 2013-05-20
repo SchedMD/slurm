@@ -84,6 +84,7 @@
 #define SUBDATA_TOTAL "Total"
 #define SUBDATA_SUMMARY "Summary"
 
+#define GRP_ENERGY "Energy"
 #define GRP_STEP "Step"
 #define GRP_NODES "Nodes"
 #define GRP_NODE "Node"

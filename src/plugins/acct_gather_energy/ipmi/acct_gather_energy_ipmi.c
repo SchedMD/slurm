@@ -59,6 +59,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmd/common/proctrack.h"
+#include "src/plugins/acct_gather_profile/hdf5/hdf5_api.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "acct_gather_energy_ipmi_config.h"
@@ -145,6 +146,7 @@ static bool flag_thread_run_running = false;
 static bool flag_thread_write_running = false;
 static bool flag_thread_started = false;
 static bool flag_init = false;
+static bool flag_use_profile = false;
 static pthread_mutex_t ipmi_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_t thread_ipmi_id_launcher = 0;
 pthread_t thread_ipmi_id_run = 0;
@@ -154,8 +156,16 @@ typedef struct ipmi_message {
 	uint32_t energy;
 	uint32_t watts;
 	time_t time;
+	int nb_values;
 } ipmi_message_t;
 
+static int profile_message_size;
+static int profile_message_memory;
+typedef struct ipmi_message_profile {
+	uint32_t watts;
+	time_t time;
+} ipmi_message_profile_t;
+static ipmi_message_profile_t *profile_message;
 
 static bool _is_thread_launcher(void)
 {
@@ -183,10 +193,27 @@ static bool _run_in_daemon(void)
 	return run;
 }
 
+static void _clean_profile_message(ipmi_message_profile_t * m)
+{
+	profile_message_size = 0;
+	profile_message_memory = 0;
+	if (m != NULL) {
+		xfree(m);
+	}
+	m = NULL;
+}
+
 static void _task_sleep(int rem)
 {
 	while (rem)
 		rem = sleep(rem);	// subject to interupt
+}
+
+static int _use_profile(void)
+{
+	uint32_t profile_opt;
+	acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING, &profile_opt);
+	return (profile_opt & ACCT_GATHER_PROFILE_ENERGY);
 }
 
 /*
@@ -482,10 +509,42 @@ static int _read_last_consumed_energy(ipmi_message_t* message)
 	safe_read(pipe, message, sizeof(ipmi_message_t));
 	close(pipe);
 	remove(name);
+	xfree(name);
 	return rc;
 rwfail:
 	error("Unable to recv consumption information.");
 	return SLURM_ERROR;
+}
+
+static int _update_profile_message()
+{
+	ipmi_message_profile_t *tmp;
+	int new_size;
+	slurm_ctl_conf_t *conf_ptr;
+
+	if (profile_message_memory==0) {
+		conf_ptr = slurm_conf_lock();
+		new_size = 4 *
+			   (2+ conf_ptr->job_acct_gather_freq /slurm_ipmi_conf.freq);
+		slurm_conf_unlock();
+		tmp = (ipmi_message_profile_t *)
+			xmalloc(sizeof(ipmi_message_profile_t)* new_size);
+		if (tmp == NULL)
+			return SLURM_FAILURE;
+		profile_message_memory = new_size;
+		profile_message = tmp;
+	}
+
+	if (profile_message_size >= profile_message_memory) {
+		//lost values because no job is running
+		profile_message_size = 0;
+	}
+
+	profile_message[profile_message_size].watts =
+		local_energy->current_watts;
+	profile_message[profile_message_size].time = last_update_time;
+	profile_message_size++;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -524,6 +583,7 @@ static int _thread_update_node_energy(void)
 			local_energy->base_watts = 0;
 			local_energy->current_watts = last_update_watt;
 		}
+		_update_profile_message();
 	}
 	if (debug_flags & DEBUG_FLAG_ENERGY) {
 		info("ipmi-thread = %d sec, current %d Watts, "
@@ -553,14 +613,15 @@ static int _thread_init(void)
 		    || _check_power_sensor() != SLURM_SUCCESS) {
 			local_energy->current_watts = NO_VAL;
 		} else {
-			local_energy->current_watts = 0;
+			local_energy->current_watts = last_update_watt;
 		}
 	}
 	slurm_mutex_lock(&ipmi_mutex);
 	local_energy->consumed_energy = 0;
 	local_energy->base_watts = 0;
-	local_energy->current_watts = last_update_watt;
 	slurm_mutex_unlock(&ipmi_mutex);
+
+	_clean_profile_message(profile_message);
 
 	if (rc != SLURM_SUCCESS)
 		if (ipmi_ctx)
@@ -582,6 +643,98 @@ static int _thread_fini(void)
 		ipmi_monitoring_ctx_destroy(ipmi_ctx);
 	reset_slurm_ipmi_conf(&slurm_ipmi_conf);
 	return SLURM_SUCCESS;
+}
+
+static int _ipmi_write_profile(void)
+{
+	int pipe;
+	char *name = NULL;
+
+	if (profile_message_size == 0)
+		return SLURM_SUCCESS;
+
+	xstrfmtcat(name, "%s/%s_ipmi_pipe_profile",
+		   conf->spooldir, conf->node_name);
+	pipe = open(name, O_WRONLY);
+	xfree(name);
+
+	if (pipe < 0) {
+		if (debug_flags & DEBUG_FLAG_ENERGY)
+			info("ipmi-thread-write: no profile pipe");
+		return SLURM_FAILURE;
+	}
+
+	if (debug_flags & DEBUG_FLAG_ENERGY)
+		info("ipmi-thread-write: write profile message on pipe");
+	safe_write(pipe, profile_message,
+		(int)(profile_message_size*sizeof(ipmi_message_profile_t)));
+	close(pipe);
+
+	_clean_profile_message(profile_message);
+
+	return SLURM_SUCCESS;
+rwfail:
+	error("Unable to send consumption information.");
+	return SLURM_FAILURE;
+}
+
+static int _ipmi_read_profile(bool all_value)
+{
+	int pipe, i;
+	char *name = NULL;
+	struct energy_data *ener;
+	ipmi_message_profile_t *recv_energy;
+
+	xstrfmtcat(name, "%s/%s_ipmi_pipe_profile",
+		   conf->spooldir, conf->node_name);
+
+	if (profile_message_size == 0) {
+		remove(name);
+		return SLURM_SUCCESS;
+	}
+
+	recv_energy = (ipmi_message_profile_t *)
+				xmalloc(sizeof(ipmi_message_profile_t)
+				* profile_message_size);
+
+	pipe = open(name, O_RDONLY);
+	if (pipe < 0) {
+		error("ipmi: failed to read profile pipe: %m");
+		xfree(recv_energy);
+		return SLURM_ERROR;
+	}
+	safe_read(pipe, recv_energy,
+		(int)(profile_message_size*sizeof(ipmi_message_profile_t)));
+	close(pipe);
+	remove(name);
+	xfree(name);
+
+	if (debug_flags & DEBUG_FLAG_ENERGY)
+		info("ipmi: read profile pipe, %d values",
+		     profile_message_size);
+
+	if (all_value) {
+		ener = xmalloc(sizeof(struct energy_data));
+                memset(ener, 0, sizeof(struct energy_data));
+		ener->cpu_freq = 1;
+		for (i = 0; i < profile_message_size; i++) {
+			/*TODO function to calculate Average CPUs Frequency*/
+			/*ener->cpu_freq = // read /proc/...*/
+			ener->power = recv_energy[i].watts;
+			acct_gather_profile_g_add_sample_data(
+				  ACCT_GATHER_PROFILE_ENERGY, ener);
+		}
+		if (debug_flags & DEBUG_FLAG_ENERGY)
+			info("ipmi: save profile data, %d values",
+			     profile_message_size);
+	}
+	xfree(ener);
+	_clean_profile_message(recv_energy);
+
+	return SLURM_SUCCESS;
+rwfail:
+	error("Unable to recv consumption information.");
+	return SLURM_ERROR;
 }
 
 /*
@@ -613,17 +766,20 @@ static void *_thread_ipmi_write(void *no_data)
 		message.energy = local_energy->consumed_energy;
 		message.watts = local_energy->current_watts;
 		message.time = last_update_time;
-		slurm_mutex_unlock(&ipmi_mutex);
+		message.nb_values = profile_message_size;
 		if (debug_flags & DEBUG_FLAG_ENERGY)
 			info("ipmi-thread-write: write message on pipe");
 
 		safe_write(pipe, &(message), sizeof(ipmi_message_t));
 		close(pipe);
+		_ipmi_write_profile();
+		slurm_mutex_unlock(&ipmi_mutex);
 		//wait for free pipe
 		while (access(name, F_OK) != -1) {//do nothing
 		}
 	}
 	remove(name);
+	xfree(name);
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("ipmi-thread-write: ended");
@@ -653,7 +809,6 @@ static void *_thread_ipmi_run(void *no_data)
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("ipmi-thread: launched");
 
-
 	if (_thread_init() != SLURM_SUCCESS) {
 		if (debug_flags & DEBUG_FLAG_ENERGY)
 			info("ipmi-thread: aborted");
@@ -681,6 +836,7 @@ static void *_thread_ipmi_run(void *no_data)
 	}
 
 	flag_thread_run_running = false;
+	_clean_profile_message(profile_message);
 	_read_last_consumed_energy(&message_trash);
 	_thread_fini();
 	if (debug_flags & DEBUG_FLAG_ENERGY)
@@ -758,12 +914,25 @@ static void *_thread_launcher(void *no_data)
 static int _get_joules_task(void)
 {
 	ipmi_message_t message;
+	char *name_profile = NULL;
 	time_t time_call = time(NULL);
+	bool flag_use_profile_old = flag_use_profile;
+
 	if (local_energy->consumed_energy == NO_VAL ||
 		local_energy->base_consumed_energy == 0) {
 		local_energy->consumed_energy = NO_VAL;
 		return SLURM_ERROR;
 	}
+
+	if(!(flag_use_profile) && _use_profile())
+		flag_use_profile = true;
+
+	xstrfmtcat(name_profile, "%s/%s_ipmi_pipe_profile",
+		   conf->spooldir, conf->node_name);
+	remove(name_profile);
+	if (flag_use_profile)
+		mkfifo(name_profile, 0777);
+	xfree(name_profile);
 
 	if (_read_last_consumed_energy(&message) != SLURM_SUCCESS) {
 		/* Don't set consumed_energy = NO_VAL here.  If we
@@ -791,6 +960,14 @@ static int _get_joules_task(void)
 			local_energy->base_consumed_energy;
 	}
 
+	if (flag_use_profile) {
+		profile_message_size = message.nb_values;
+		if (flag_use_profile_old)
+			_ipmi_read_profile(true);
+		else
+			_ipmi_read_profile(false);
+	}
+
 	if (debug_flags & DEBUG_FLAG_ENERGY) {
 		info("_get_joules_task_ipmi = consumed %d Joules"
 		     "(received %d from ipmi thread)",
@@ -802,9 +979,19 @@ static int _get_joules_task(void)
 static int _first_update_task_energy(void)
 {
 	ipmi_message_t message;
+	char *name_profile=NULL;
 	time_t time_call = time(NULL);
 	int nb_try=0, max_try=NBFIRSTREAD;
 
+	flag_use_profile = _use_profile();
+
+	xstrfmtcat(name_profile, "%s/%s_ipmi_pipe_profile",
+		   conf->spooldir, conf->node_name);
+	remove(name_profile);
+
+	if (flag_use_profile)
+		mkfifo(name_profile, 0777);
+	xfree(name_profile);
 	while (_read_last_consumed_energy(&message) != SLURM_SUCCESS) {
 		if (nb_try > max_try) {
 			local_energy->consumed_energy = NO_VAL;
@@ -812,6 +999,11 @@ static int _first_update_task_energy(void)
 		}
 		nb_try++;
 		_task_sleep(1);
+	}
+
+	if (flag_use_profile) {
+		profile_message_size = message.nb_values;
+		_ipmi_read_profile(false);
 	}
 
 	if (slurm_ipmi_conf.adjustment) {
@@ -1072,14 +1264,13 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 	if (!_run_in_daemon())
 		return;
 
-	local_energy = acct_gather_energy_alloc();
-	local_energy->consumed_energy=0;
-	local_energy->base_consumed_energy=0;
-	local_energy->base_watts=0;
-
-	if (_is_thread_launcher()) {
-		if (!flag_init) {
-			flag_init = true;
+	if (!flag_init) {
+		local_energy = acct_gather_energy_alloc();
+		local_energy->consumed_energy=0;
+		local_energy->base_consumed_energy=0;
+		local_energy->base_watts=0;
+		flag_init = true;
+		if (_is_thread_launcher()) {
 			pthread_attr_t attr;
 			slurm_attr_init(&attr);
 			if (pthread_create(&thread_ipmi_id_launcher, &attr,
@@ -1091,9 +1282,9 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 			slurm_attr_destroy(&attr);
 			if (debug_flags & DEBUG_FLAG_ENERGY)
 				info("%s thread launched", plugin_name);
-		}
-	} else
+		} else
 		_first_update_task_energy();
+	}
 
 	verbose("%s loaded", plugin_name);
 }
