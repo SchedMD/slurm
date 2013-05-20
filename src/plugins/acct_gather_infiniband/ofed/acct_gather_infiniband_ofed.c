@@ -124,6 +124,8 @@ char *ibd_ca = NULL;
 static int port = 0;
 
 typedef struct {
+	time_t last_update_time;
+	time_t update_time;
 	uint64_t xmtdata;
 	uint64_t rcvdata;
 	uint64_t xmtpkts;
@@ -140,13 +142,7 @@ static uint8_t pc[1024];
 
 
 static slurm_ofed_conf_t ofed_conf;
-static uint32_t last_update_xmtdata = 0;
-static uint32_t last_update_rcvdata = 0;
-static uint32_t last_update_xmtpkts = 0;
-static uint32_t last_update_rcvpkts = 0;
-static time_t last_update_time = 0;
 static uint32_t debug_flags = 0;
-static time_t previous_update_time = 0;
 static bool flag_infiniband_accounting_shutdown = false;
 static bool flag_thread_run_running = false;
 static bool flag_thread_started = false;
@@ -166,7 +162,11 @@ static void _task_sleep(int rem)
  */
 static int _read_ofed_values(void)
 {
-
+	static uint64_t last_update_xmtdata = 0;
+	static uint64_t last_update_rcvdata = 0;
+	static uint64_t last_update_xmtpkts = 0;
+	static uint64_t last_update_rcvpkts = 0;
+	static bool first = true;
 	int rc = SLURM_SUCCESS;
 
 	uint64_t mask = 0xffffffffffffffff;
@@ -214,8 +214,8 @@ static int _read_ofed_values(void)
 	last_update_xmtpkts = send_pkts;
 	last_update_rcvpkts = recv_pkts;
 
-	previous_update_time = last_update_time;
-	last_update_time = time(NULL);
+	ofed_sens.last_update_time = ofed_sens.update_time;
+	ofed_sens.update_time = time(NULL);
 
 	return rc;
 }
@@ -243,8 +243,8 @@ static int _update_node_infiniband(void)
 	if (debug_flags & DEBUG_FLAG_INFINIBAND) {
 		info("ofed-thread = %d sec, transmitted %ld bytes, "
 		     "received %ld bytes",
-		     (int) (last_update_time - previous_update_time),
-		     ofed_sens.xmtdata,ofed_sens.rcvdata);
+		     (int) (ofed_sens.update_time - ofed_sens.last_update_time),
+		     ofed_sens.xmtdata, ofed_sens.rcvdata);
 	}
 	xfree(net);
 
