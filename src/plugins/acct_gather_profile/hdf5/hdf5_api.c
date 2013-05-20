@@ -1654,7 +1654,7 @@ extern void put_hdf5_data(hid_t parent, uint32_t type, char *subtype,
 		return;
 	}
 	// Create the datatypes.
-	if (!strcmp(subtype, SUBDATA_SUMMARY)) {
+	if (strcmp(subtype, SUBDATA_SUMMARY)) {
 		dtyp_memory = (*(ops->create_memory_datatype))();
 		dtyp_file = (*(ops->create_file_datatype))();
 	} else {
@@ -1667,7 +1667,9 @@ extern void put_hdf5_data(hid_t parent, uint32_t type, char *subtype,
 		debug3("PROFILE: failed to create %s memory datatype",
 		       type_name);
 		return;
-	} else if (dtyp_file < 0) {
+	}
+
+	if (dtyp_file < 0) {
 		H5Tclose(dtyp_memory);
 		xfree(ops);
 		debug3("PROFILE: failed to create %s file datatype",
