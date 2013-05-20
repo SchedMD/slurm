@@ -180,17 +180,26 @@ static int _read_ofed_values(void)
 	}
 
 	mad_decode_field(pc, IB_PC_EXT_XMT_BYTES_F, &send_val);
-	ofed_sens.xmtdata = (send_val - last_update_xmtdata)*4;
-	ofed_sens.total_xmtdata += ofed_sens.xmtdata;
 	mad_decode_field(pc, IB_PC_EXT_RCV_BYTES_F, &recv_val);
-	ofed_sens.rcvdata = (recv_val - last_update_rcvdata)*4;
-	ofed_sens.total_rcvdata += ofed_sens.rcvdata;
 	mad_decode_field(pc, IB_PC_EXT_XMT_PKTS_F, &send_pkts);
-	ofed_sens.xmtpkts += send_pkts - last_update_xmtpkts;
-	ofed_sens.total_xmtpkts += ofed_sens.xmtpkts;
 	mad_decode_field(pc, IB_PC_EXT_RCV_PKTS_F, &recv_pkts);
-	ofed_sens.rcvpkts += recv_pkts - last_update_rcvpkts;
-	ofed_sens.total_rcvpkts += ofed_sens.rcvpkts;
+
+	if (!first) {
+		ofed_sens.xmtdata = (send_val - last_update_xmtdata) * 4;
+		ofed_sens.total_xmtdata += ofed_sens.xmtdata;
+		ofed_sens.rcvdata = (recv_val - last_update_rcvdata) * 4;
+		ofed_sens.total_rcvdata += ofed_sens.rcvdata;
+		ofed_sens.xmtpkts += send_pkts - last_update_xmtpkts;
+		ofed_sens.total_xmtpkts += ofed_sens.xmtpkts;
+		ofed_sens.rcvpkts += recv_pkts - last_update_rcvpkts;
+		ofed_sens.total_rcvpkts += ofed_sens.rcvpkts;
+	} else {
+		first = false;
+		last_update_xmtdata = send_val;
+		last_update_rcvdata = recv_val;
+		last_update_xmtpkts = send_pkts;
+		last_update_rcvpkts = recv_pkts;
+	}
 
 	if (send_val > reset_limit || recv_val > reset_limit) {
 		/* reset cost ~70 mirco secs */
