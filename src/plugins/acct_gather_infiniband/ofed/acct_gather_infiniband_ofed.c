@@ -117,7 +117,7 @@ typedef struct {
 } slurm_ofed_conf_t;
 
 
-struct ibmad_port *srcport;
+struct ibmad_port *srcport = NULL;
 static ib_portid_t portid;
 static int ibd_timeout = 0;
 char *ibd_ca = NULL;
@@ -136,10 +136,9 @@ typedef struct {
 	uint64_t total_rcvpkts;
 } ofed_sens_t;
 
-ofed_sens_t ofed_sens = {0,0,0,0,0,0,0,0};
+static ofed_sens_t ofed_sens = {0,0,0,0,0,0,0,0};
 
 static uint8_t pc[1024];
-
 
 static slurm_ofed_conf_t ofed_conf;
 static uint32_t debug_flags = 0;
@@ -172,14 +171,13 @@ static int _read_ofed_values(void)
 	uint64_t mask = 0xffffffffffffffff;
 	uint64_t reset_limit = mask * 0.7;
 	uint16_t cap_mask;
-	uint64_t send_val,recv_val,send_pkts,recv_pkts;
+	uint64_t send_val, recv_val, send_pkts, recv_pkts;
 
 	memset(pc, 0, sizeof(pc));
 	memcpy(&cap_mask, pc + 2, sizeof(cap_mask));
-	debug3("INFINIBAND: memcpy");
 	if (!port_performance_ext_query_via(pc, &portid, port, ibd_timeout,
 					    srcport)) {
-		error("ofed\n");
+		error("ofed: %m");
 		exit(1);
 	}
 
@@ -241,14 +239,14 @@ static int _update_node_infiniband(void)
 	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_NETWORK, net);
 
 	if (debug_flags & DEBUG_FLAG_INFINIBAND) {
-		info("ofed-thread = %d sec, transmitted %ld bytes, "
-		     "received %ld bytes",
+		info("ofed-thread = %d sec, transmitted %"PRIu64" bytes, "
+		     "received %"PRIu64" bytes",
 		     (int) (ofed_sens.update_time - ofed_sens.last_update_time),
 		     ofed_sens.xmtdata, ofed_sens.rcvdata);
 	}
 	xfree(net);
 
-        return rc;
+	return rc;
 }
 
 
@@ -313,7 +311,7 @@ static int _thread_fini(void)
 }
 
 /*
- * _thread_ipmi_run is the thread calling ipmi and launching _thread_ipmi_write
+ * _thread_ofed_run is the thread calling ipmi
  */
 static void *_thread_ofed_run(void *no_data)
 {
@@ -326,7 +324,7 @@ static void *_thread_ofed_run(void *no_data)
 		info("ofed-thread: launched");
 
 	memset(&portid, 0, sizeof(ib_portid_t));
-	
+
 	if (_thread_init() != SLURM_SUCCESS) {
 		if (debug_flags & DEBUG_FLAG_INFINIBAND)
 			info("ofed-thread: aborted");
@@ -451,7 +449,7 @@ static bool _run_in_daemon(void)
 extern int init(void)
 {
 	debug_flags = slurm_get_debug_flags();
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -549,5 +547,3 @@ extern void acct_gather_infiniband_p_conf_options(s_p_options_t **full_options,
 	transfer_s_p_options(full_options, options, full_options_cnt);
 	return;
 }
-
-
