@@ -85,6 +85,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
 	$(top_srcdir)/auxdir/x_ac_nrt.m4 \
+	$(top_srcdir)/auxdir/x_ac_ofed.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
 	$(top_srcdir)/auxdir/x_ac_printf_null.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
@@ -240,6 +241,9 @@ NRT_CPPFLAGS = @NRT_CPPFLAGS@
 NUMA_LIBS = @NUMA_LIBS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OFED_CPPFLAGS = @OFED_CPPFLAGS@
+OFED_LDFLAGS = @OFED_LDFLAGS@
+OFED_LIBS = @OFED_LIBS@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -390,6 +394,7 @@ generated_html = \
 	gres_design.html \
 	gres_plugins.html \
 	help.html \
+	hdf5_profile_user_guide.html \
 	high_throughput.html \
 	ibm.html \
 	ibm-pe.html \
@@ -457,6 +462,8 @@ html_DATA = \
 	configurator.easy.html \
 	entities.gif \
 	example_usage.gif \
+	hdf5_task_attr.png \
+	hdf5_job_outline.png \
 	ibm_pe_fig1.png \
 	ibm_pe_fig2.png \
 	linuxstyles.css \

@@ -96,6 +96,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
 	$(top_srcdir)/auxdir/x_ac_nrt.m4 \
+	$(top_srcdir)/auxdir/x_ac_ofed.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
 	$(top_srcdir)/auxdir/x_ac_printf_null.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
@@ -147,7 +148,8 @@ am__libcommon_la_SOURCES_DIST = xcgroup_read_config.c \
 	slurm_accounting_storage.h slurm_jobacct_gather.c \
 	slurm_jobacct_gather.h slurm_acct_gather_energy.c \
 	slurm_acct_gather_energy.h slurm_acct_gather_profile.c \
-	slurm_acct_gather_profile.h slurm_jobcomp.c slurm_jobcomp.h \
+	slurm_acct_gather_profile.h slurm_acct_gather_infiniband.c \
+	slurm_acct_gather_infiniband.h slurm_jobcomp.c slurm_jobcomp.h \
 	slurm_topology.c slurm_topology.h switch.c switch.h arg_desc.c \
 	arg_desc.h macros.h malloc.c malloc.h getopt.h getopt.c \
 	getopt1.c unsetenv.c unsetenv.h slurm_selecttype_info.c \
@@ -176,13 +178,14 @@ am_libcommon_la_OBJECTS = xcgroup_read_config.lo xcgroup.lo \
 	util-net.lo slurm_auth.lo slurm_acct_gather.lo \
 	slurm_accounting_storage.lo slurm_jobacct_gather.lo \
 	slurm_acct_gather_energy.lo slurm_acct_gather_profile.lo \
-	slurm_jobcomp.lo slurm_topology.lo switch.lo arg_desc.lo \
-	malloc.lo getopt.lo getopt1.lo $(am__objects_1) \
-	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
-	slurm_step_layout.lo checkpoint.lo job_resources.lo \
-	parse_time.lo job_options.lo global_defaults.lo timers.lo \
-	stepd_api.lo write_labelled_message.lo proc_args.lo \
-	slurm_strcasestr.lo node_conf.lo gres.lo
+	slurm_acct_gather_infiniband.lo slurm_jobcomp.lo \
+	slurm_topology.lo switch.lo arg_desc.lo malloc.lo getopt.lo \
+	getopt1.lo $(am__objects_1) slurm_selecttype_info.lo \
+	slurm_resource_info.lo hostlist.lo slurm_step_layout.lo \
+	checkpoint.lo job_resources.lo parse_time.lo job_options.lo \
+	global_defaults.lo timers.lo stepd_api.lo \
+	write_labelled_message.lo proc_args.lo slurm_strcasestr.lo \
+	node_conf.lo gres.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h \
 	uthash/LICENSE uthash/README uthash/uthash.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
@@ -339,6 +342,9 @@ NRT_CPPFLAGS = @NRT_CPPFLAGS@
 NUMA_LIBS = @NUMA_LIBS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OFED_CPPFLAGS = @OFED_CPPFLAGS@
+OFED_LDFLAGS = @OFED_LDFLAGS@
+OFED_LIBS = @OFED_LIBS@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -533,6 +539,7 @@ libcommon_la_SOURCES = \
 	slurm_jobacct_gather.c slurm_jobacct_gather.h \
 	slurm_acct_gather_energy.c slurm_acct_gather_energy.h \
 	slurm_acct_gather_profile.c slurm_acct_gather_profile.h \
+	slurm_acct_gather_infiniband.c slurm_acct_gather_infiniband.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
 	slurm_topology.c slurm_topology.h \
 	switch.c switch.h		\
@@ -702,6 +709,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_accounting_storage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_acct_gather.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_acct_gather_energy.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_acct_gather_infiniband.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_acct_gather_profile.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_auth.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_cred.Plo@am__quote@
