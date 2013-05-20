@@ -675,7 +675,8 @@ static bg_record_t *_find_matching_block(List block_list,
 			if (need_free)
 				FREE_NULL_BITMAP(total_bitmap);
 			/* Clear up what we just found if not running now. */
-			if (SELECT_IS_MODE_RUN_NOW(query_mode)) {
+			if (SELECT_IS_MODE_RUN_NOW(query_mode)
+			    || SELECT_IS_PREEMPT_SET(query_mode)) {
 				jobinfo->cnode_cnt = tmp_jobinfo.cnode_cnt;
 				jobinfo->dim_cnt = tmp_jobinfo.dim_cnt;
 
@@ -2082,9 +2083,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						/* Mark the ba_mp
 						 * cnodes as used now.
 						 */
-						select_jobinfo_t *jobinfo =
-							job_ptr->
-							select_jobinfo->data;
 						ba_mp_t *ba_mp = list_peek(
 							bg_record->ba_mp_list);
 						xassert(ba_mp);
