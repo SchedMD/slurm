@@ -67,17 +67,6 @@
 #include <infiniband/umad.h>
 #include <infiniband/mad.h>
 
-/* On older versions of libmad these functions are there but not
- * exported. */
-#ifndef MAD_EXPORT
-uint8_t *pma_query_via(void *rcvbuf, ib_portid_t * dest, int port,
-		       unsigned timeout, unsigned id,
-		       void *srcport);
-uint8_t *performance_reset_via(void *rcvbuf, ib_portid_t * dest,
-			       int port, unsigned mask,
-			       unsigned timeout, unsigned id,
-			       void *srcport);
-#endif
 /***************************************************************/
 
 #define ALL_PORTS 0xFF
@@ -188,8 +177,8 @@ static int _read_ofed_values(void)
 	memset(pc, 0, sizeof(pc));
 	memcpy(&cap_mask, pc + 2, sizeof(cap_mask));
 	debug3("INFINIBAND: memcpy");
-	if (!pma_query_via(pc, &portid, port, ibd_timeout,
-			   IB_GSI_PORT_COUNTERS_EXT, srcport)) {
+	if (!port_performance_ext_query_via(pc, &portid, port, ibd_timeout,
+					    srcport)) {
 		error("ofed\n");
 		exit(1);
 	}
@@ -209,10 +198,8 @@ static int _read_ofed_values(void)
 
 	if (send_val > reset_limit || recv_val > reset_limit) {
 		/* reset cost ~70 mirco secs */
-		if (!performance_reset_via(pc, &portid, port, mask,
-					   ibd_timeout,
-					   IB_GSI_PORT_COUNTERS_EXT,
-					   srcport)) {
+		if (!port_performance_ext_reset_via(pc, &portid, port, mask,
+						    ibd_timeout, srcport)) {
 			error("perf reset\n");
 			exit(1);
 		}
@@ -287,21 +274,20 @@ static int _thread_init(void)
 	if (ib_resolve_self_via(&portid, &port, 0, srcport) < 0)
 		error("can't resolve self port %d", port);
 	memset(pc, 0, sizeof(pc));
-	if (!pma_query_via(pc, &portid, port, ibd_timeout, CLASS_PORT_INFO,
-			   srcport))
+	if (!perf_classportinfo_query_via(pc, &portid, port, ibd_timeout,
+					  srcport))
 		error("classportinfo query\n");
 
 	memcpy(&cap_mask, pc + 2, sizeof(cap_mask));
-
-	if (!pma_query_via(pc, &portid, port, ibd_timeout,
-			   IB_GSI_PORT_COUNTERS_EXT, srcport)) {
+	if (!port_performance_ext_query_via(pc, &portid, port, ibd_timeout,
+					    srcport)) {
 		error("ofed\n");
 		exit(1);
 	}
 
 	/* reset cost ~70 mirco secs */
-	if (!performance_reset_via(pc, &portid, port, mask, ibd_timeout,
-				   IB_GSI_PORT_COUNTERS_EXT, srcport)) {
+	if (!port_performance_ext_reset_via(pc, &portid, port, mask,
+					    ibd_timeout, srcport)) {
 		error("perf reset\n");
 		exit(1);
 	}
