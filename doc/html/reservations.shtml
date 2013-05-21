@@ -9,7 +9,7 @@ and a time period during which the reservation is available.
 The resources which can be reserved include nodes and/or licenses.
 Note that resource reservations are not compatible with SLURM's
 gang scheduler plugin since the termination time of running jobs
-is not possible to accurately predict.</p>
+cannot be accurately predicted.</p>
 
 <p>Note that reserved licenses are treated somewhat differently than reserved
 nodes. When nodes are reserved, then jobs using that reservation can use only
@@ -62,7 +62,7 @@ ReservationName=root_3 StartTime=2009-02-06T16:00:00
 
 <p>A variation of this would be to configure license to represent system
 resources, such as a global file system.
-The system resource may not may not require an actual license for use, but
+The system resource may not require an actual license for use, but
 SLURM licenses can be used to prevent jobs needed the resource from being
 started when that resource is unavailable.
 One could create a reservation for all of those licenses in order to perform
@@ -207,7 +207,7 @@ reservation name. The job must be contained completely within the
 named reservation. The job will be canceled after the reservation
 reaches its EndTime. If letting the job continue execution after
 the reservation EndTime, a configuration option <i>ResvOverRun</i>
-can be set to control how long the job can continue execution.</p>
+in slurm.conf can be set to control how long the job can continue execution.</p>
 <pre>
 $ sbatch --reservation=alan_6 -N4 my.script
 sbatch: Submitted batch job 65540
