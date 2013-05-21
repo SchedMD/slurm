@@ -288,8 +288,8 @@ static int _update_node_infiniband(void)
 
 	net->packets_in = ofed_sens.rcvpkts;
 	net->packets_out = ofed_sens.xmtpkts;
-	net->size_in = ofed_sens.rcvdata;
-	net->size_out = ofed_sens.xmtdata;
+	net->size_in = (double) ofed_sens.rcvdata / 1048576;
+	net->size_out = (double) ofed_sens.xmtdata / 1048576;
 	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_NETWORK, net);
 
 	if (debug_flags & DEBUG_FLAG_INFINIBAND) {

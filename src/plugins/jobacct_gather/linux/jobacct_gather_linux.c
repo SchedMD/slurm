@@ -630,8 +630,8 @@ static int _read_lustre_counters(void )
 
 	lus->reads = all_lustre_nb_reads;
 	lus->writes = all_lustre_nb_writes;
-	lus->read_size = (double) all_lustre_read_bytes;
-	lus->write_size = (double) all_lustre_write_bytes;
+	lus->read_size = (double) all_lustre_read_bytes / 1048576;
+	lus->write_size = (double) all_lustre_write_bytes / 1048576;
 	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_LUSTRE, lus);
 
 	debug3("Collection of Lustre counters Finished");
