@@ -543,21 +543,33 @@ static void _io_merge_step_series(
 	hid_t group, void *prior, void *cur, void *buf)
 {
 	// This is a difference series
-	profile_io_t* prf_cur = (profile_io_t*) cur;
-	profile_io_t* prf_buf = (profile_io_t*) buf;
-	struct tm *ts = localtime(&prf_cur->time);
-	strftime(prf_buf->tod, TOD_LEN, TOD_FMT, ts);
+	uint64_t start_reads;
+	uint64_t start_writes;
+	double start_read_size;
+	double start_write_size;
+	profile_io_t* prfCur = (profile_io_t*) cur;
+	profile_io_t* prfBuf = (profile_io_t*) buf;
+	struct tm *ts = localtime(&prfCur->time);
+	strftime(prfBuf->tod, TOD_LEN, TOD_FMT, ts);
 	if (prior == NULL) {
 		// First sample.
-		seriesStart = prf_cur->time;
-		prf_buf->time = 0;
+		seriesStart = prfCur->time;
+		prfBuf->time = 0;
+		start_reads = prfCur->reads;
+		prfBuf->reads = 0;
+		start_writes = prfCur->writes;
+		prfBuf->writes = 0;
+		start_read_size = prfCur->read_size;
+		prfBuf->read_size = 0;
+		start_write_size = prfCur->write_size;
+		prfBuf->write_size = 0;
 	} else {
-		prf_buf->time = prf_cur->time - seriesStart;
+		prfBuf->time = prfCur->time - seriesStart;
+		prfBuf->reads = prfCur->reads - start_reads;
+		prfBuf->writes = prfCur->writes - start_writes;
+		prfBuf->read_size = prfCur->read_size - start_read_size;
+		prfBuf->write_size = prfCur->write_size - start_write_size;
 	}
-	prf_buf->reads = prf_cur->reads;
-	prf_buf->writes = prf_cur->writes;
-	prf_buf->read_size = prf_cur->read_size;
-	prf_buf->write_size = prf_cur->write_size;
 	return;
 }
 

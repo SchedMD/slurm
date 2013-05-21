@@ -493,10 +493,12 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 	profile_task_t  profile_task;
 	profile_network_t  profile_network;
 	profile_energy_t  profile_energy;
+	profile_io_t  profile_io;
 
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)data;
 	acct_network_data_t *net = (acct_network_data_t *)data;
 	acct_energy_data_t *ener = (acct_energy_data_t *)data;
+	struct lustre_data *lus = (struct lustre_data *)data;
 
 	xassert(_run_in_daemon());
 	xassert(g_job);
@@ -541,6 +543,17 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 		send_profile = &profile_task;
 		break;
 	case ACCT_GATHER_PROFILE_LUSTRE:
+		snprintf(group, sizeof(group), "%s", GRP_LUSTRE);
+
+		memset(&profile_io, 0, sizeof(profile_io_t));
+		profile_io.time = time(NULL);
+		profile_io.reads = lus->reads;
+		profile_io.read_size = lus->read_size;
+		profile_io.writes = lus->writes;
+		profile_io.write_size = lus->write_size;
+
+		send_profile = &profile_io;
+
 		break;
 	case ACCT_GATHER_PROFILE_NETWORK:
 

@@ -81,6 +81,14 @@
 
 #define PROTOCOL_TYPE_SLURM 0
 #define PROTOCOL_TYPE_DBD 1
+
+struct lustre_data {
+	uint64_t	reads;
+	double		read_size;      // currently in megabytes
+	uint64_t	writes;
+	double		write_size;     // currently in megabytes
+};
+
 typedef struct {
 	uint16_t taskid; /* contains which task number it was on */
 	uint32_t nodeid; /* contains which node number it was on */

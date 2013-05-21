@@ -116,6 +116,10 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
 				      char * sbuf);
 
+/* Default path to lustre stats */
+const char proc_base_path[] = "/proc/fs/lustre/";
+
+
 /*
  * _get_offspring_data() -- collect memory usage data for the offspring
  *
@@ -311,7 +315,7 @@ static int _is_a_lwp(uint32_t pid) {
  * 		!=0 - data are valid
  *
  * Based upon stat2proc() from the ps command. It can handle arbitrary
- * executable file basenames for `cmd', i.e. those with embedded whitespace or 
+ * executable file basenames for `cmd', i.e. those with embedded whitespace or
  * embedded ')'s. Such names confuse %s (see scanf(3)), so the string is split
  * and %39c is used instead. (except for embedded ')' "(%[^)]c)" would work.
  */
@@ -475,6 +479,151 @@ extern int fini ( void )
 	acct_gather_energy_fini();
 	return SLURM_SUCCESS;
 }
+
+/**
+ *  is lustre fs supported
+ **/
+static int _check_lustre_fs()
+{
+	char lustre_directory[BUFSIZ];
+	DIR *proc_dir;
+
+	sprintf(lustre_directory,"%s/llite",proc_base_path);
+
+	proc_dir = opendir( proc_base_path );
+	if ( proc_dir == NULL ) {
+		error("not able to read %s\n",lustre_directory);
+		return SLURM_FAILURE;
+	}
+
+	closedir(proc_dir);
+
+	return SLURM_SUCCESS;
+}
+
+/**
+ * read counters from all mounted lustre fs
+ */
+static int _read_lustre_counters( void  )
+{
+	char lustre_dir[PATH_MAX];
+	char path[PATH_MAX];
+	char path_readahead[PATH_MAX],path_stats[PATH_MAX];
+	char *ptr;
+	char fs_name[100];
+	int idx = 0;
+	int tmp_fd;
+	DIR *proc_dir;
+	struct dirent *entry;
+	FILE *fff;
+	char buffer[BUFSIZ];
+	uint64_t lustre_nb_writes = 0;
+	uint64_t lustre_nb_reads = 0;
+	uint64_t all_lustre_nb_writes = 0;
+	uint64_t all_lustre_nb_reads = 0;
+	uint64_t lustre_write_bytes = 0;
+	uint64_t lustre_read_bytes = 0;
+	uint64_t all_lustre_write_bytes = 0;
+	uint64_t all_lustre_read_bytes = 0;
+	struct lustre_data *lus;
+
+
+	sprintf(lustre_dir,"%s/llite",proc_base_path);
+
+	proc_dir = opendir( lustre_dir );
+	if ( proc_dir == NULL ) {
+		error("Cannot open %s\n",lustre_dir);
+		return SLURM_FAILURE;
+	}
+
+	entry = readdir( proc_dir );
+
+	while ( entry != NULL ) {
+		memset( path, 0, PATH_MAX );
+		snprintf( path, PATH_MAX - 1, "%s/%s/stats", lustre_dir,
+			  entry->d_name );
+		debug("LUSTRE checking for file %s\n", path);
+
+		if ( ( tmp_fd = open( path, O_RDONLY ) ) != -1 ) {
+			close( tmp_fd );
+			/* erase \r and \n at the end of path */
+			idx = strlen( path );
+			idx--;
+
+			while ( path[idx] == '\r' || path[idx] == '\n' )
+				path[idx--] = 0;
+
+			/* Lustre paths are of type server-UUID */
+			idx = 0;
+			ptr = strstr(path,"llite/") + 6;
+
+			while ( *ptr && *ptr != '-' && idx < 100 ) {
+				fs_name[idx] = *ptr;
+				ptr++;
+				idx++;
+			}
+
+			snprintf( path_stats, PATH_MAX - 1,
+				  "%s/%s/stats",
+				  lustre_dir,
+				  entry->d_name );
+			debug("Found file %s\n", path_stats);
+
+			fff=fopen(path_stats,"r" );
+			if (fff != NULL) {
+				while(1) {
+					if (fgets(buffer,BUFSIZ,fff)==NULL)
+						break;
+
+					if (strstr( buffer, "write_bytes" )) {
+						sscanf(buffer,
+						  "%*s %u %*s %*s %*d %*d %u",
+						  &lustre_nb_writes,
+						  &lustre_write_bytes);
+						debug3("Lustre Counter %u "
+						  "write_bytes %u writes\n",
+						  lustre_write_bytes,
+						  lustre_nb_writes);
+					}
+
+					if (strstr( buffer, "read_bytes" )) {
+						sscanf(buffer,
+						  "%*s %u %*s %*s %*d %*d %u",
+						  &lustre_nb_reads,
+						  &lustre_read_bytes);
+						debug3("Lustre Counter %u "
+						  "read_bytes %u reads\n",
+						  lustre_read_bytes,
+						  lustre_nb_reads);
+					}
+				}
+				fclose(fff);
+			}
+		}
+		entry = readdir( proc_dir );
+		all_lustre_write_bytes += lustre_write_bytes;
+		all_lustre_read_bytes += lustre_read_bytes;
+		all_lustre_nb_writes += lustre_nb_writes;
+		all_lustre_nb_reads += lustre_nb_reads;
+	}
+	closedir( proc_dir );
+
+	lus = xmalloc(sizeof(struct lustre_data));
+	memset(lus, 0, sizeof(struct lustre_data));
+
+	lus->reads = all_lustre_nb_reads;
+	lus->writes = all_lustre_nb_writes;
+	lus->read_size = (double) all_lustre_read_bytes;
+	lus->write_size = (double) all_lustre_write_bytes;
+	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_LUSTRE, lus);
+
+	debug3("Collection of Lustre counters Finished");
+	xfree(lus);
+
+	return SLURM_SUCCESS;
+}
+
+
 
 /*
  * jobacct_gather_p_poll_data() - Build a table of all current processes
@@ -706,6 +855,10 @@ extern void jobacct_gather_p_poll_data(
 		list_iterator_destroy(itr2);
 	}
 	list_iterator_destroy(itr);
+
+	acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING, &profile);
+	if((_check_lustre_fs() == SLURM_SUCCESS) && (profile & ACCT_GATHER_PROFILE_LUSTRE))
+		_read_lustre_counters();
 
 	jobacct_gather_handle_mem_limit(total_job_mem, total_job_vsize);
 
