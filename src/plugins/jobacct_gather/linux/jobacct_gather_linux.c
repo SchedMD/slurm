@@ -485,20 +485,31 @@ extern int fini (void)
  **/
 static int _check_lustre_fs()
 {
-	char lustre_directory[BUFSIZ];
-	DIR *proc_dir;
+	static bool set = false;
+	static int rc = SLURM_SUCCESS;
 
-	sprintf(lustre_directory,"%s/llite",proc_base_path);
+	if (!set) {
+		uint32_t profile = 0;
+		char lustre_directory[BUFSIZ];
+		DIR *proc_dir;
 
-	proc_dir = opendir( proc_base_path );
-	if ( proc_dir == NULL ) {
-		error("not able to read %s\n",lustre_directory);
-		return SLURM_FAILURE;
+		set = true;
+		acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
+					  &profile);
+		if ((profile & ACCT_GATHER_PROFILE_LUSTRE)) {
+			sprintf(lustre_directory, "%s/llite", proc_base_path);
+			proc_dir = opendir(proc_base_path);
+			if (!proc_dir) {
+				debug2("not able to read %s",
+				       lustre_directory);
+				rc = SLURM_FAILURE;
+			}
+			closedir(proc_dir);
+		} else
+			rc = SLURM_ERROR;
 	}
 
-	closedir(proc_dir);
-
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /**
@@ -862,8 +873,7 @@ extern void jobacct_gather_p_poll_data(
 	}
 	list_iterator_destroy(itr);
 
-	acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING, &profile);
-	if((_check_lustre_fs() == SLURM_SUCCESS) && (profile & ACCT_GATHER_PROFILE_LUSTRE))
+	if (_check_lustre_fs() == SLURM_SUCCESS)
 		_read_lustre_counters();
 
 	jobacct_gather_handle_mem_limit(total_job_mem, total_job_vsize);
