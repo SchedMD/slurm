@@ -220,7 +220,7 @@ static int _read_ofed_values(void)
 	if (!_slurm_pma_query_via(pc, &portid, port, ibd_timeout,
 				  IB_GSI_PORT_COUNTERS_EXT, srcport)) {
 		error("ofed: %m");
-		exit(1);
+		return SLURM_ERROR;
 	}
 
 	mad_decode_field(pc, IB_PC_EXT_XMT_BYTES_F, &send_val);
@@ -251,8 +251,8 @@ static int _read_ofed_values(void)
 						  ibd_timeout,
 						  IB_GSI_PORT_COUNTERS_EXT,
 						  srcport)) {
-			error("perf reset\n");
-			exit(1);
+			error("perf reset %m");
+			return SLURM_ERROR;
 		}
 		mad_decode_field(pc, IB_PC_EXT_XMT_BYTES_F, &send_val);
 		mad_decode_field(pc, IB_PC_EXT_RCV_BYTES_F, &recv_val);
@@ -322,6 +322,7 @@ static int _thread_init(void)
 		error("Failed to open '%s' port '%d'", ibd_ca,
 		      ofed_conf.port);
 		debug("INFINIBAND: failed");
+		return SLURM_ERROR;
 	}
 
 	if (ib_resolve_self_via(&portid, &port, 0, srcport) < 0)
@@ -330,13 +331,13 @@ static int _thread_init(void)
 	memset(pc, 0, sizeof(pc));
 	if (!_slurm_pma_query_via(pc, &portid, port, ibd_timeout,
 				  CLASS_PORT_INFO, srcport))
-		error("classportinfo query\n");
+		error("classportinfo query: %m");
 
 	memcpy(&cap_mask, pc + 2, sizeof(cap_mask));
 	if (!_slurm_pma_query_via(pc, &portid, port, ibd_timeout,
 				  IB_GSI_PORT_COUNTERS_EXT, srcport)) {
-		error("ofed\n");
-		exit(1);
+		error("ofed: %m");
+		return SLURM_ERROR;
 	}
 
 	/* reset cost ~70 mirco secs */
@@ -344,8 +345,8 @@ static int _thread_init(void)
 					  ibd_timeout,
 					  IB_GSI_PORT_COUNTERS_EXT,
 					  srcport)) {
-		error("perf reset\n");
-		exit(1);
+		error("perf reset %m");
+		return SLURM_ERROR;
 	}
 
 	mad_decode_field(pc, IB_PC_EXT_XMT_BYTES_F, &ofed_sens.xmtdata);
