@@ -521,7 +521,6 @@ static int _read_lustre_counters(void )
 	char path[PATH_MAX];
 	char path_stats[PATH_MAX];
 	char *ptr;
-	char fs_name[100];
 	int idx = 0;
 	int tmp_fd;
 	DIR *proc_dir;
@@ -567,12 +566,6 @@ static int _read_lustre_counters(void )
 			/* Lustre paths are of type server-UUID */
 			idx = 0;
 			ptr = strstr(path,"llite/") + 6;
-
-			while (*ptr && *ptr != '-' && idx < 100) {
-				fs_name[idx] = *ptr;
-				ptr++;
-				idx++;
-			}
 
 			snprintf(path_stats, PATH_MAX - 1,
 				 "%s/%s/stats",
