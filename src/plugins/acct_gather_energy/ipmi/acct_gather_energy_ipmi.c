@@ -682,7 +682,7 @@ static int _ipmi_read_profile(bool all_value)
 {
 	int pipe, i;
 	char *name = NULL;
-	struct energy_data *ener;
+	acct_energy_data_t *ener;
 	ipmi_message_profile_t *recv_energy;
 
 	xstrfmtcat(name, "%s/%s_ipmi_pipe_profile",
@@ -714,8 +714,8 @@ static int _ipmi_read_profile(bool all_value)
 		     profile_message_size);
 
 	if (all_value) {
-		ener = xmalloc(sizeof(struct energy_data));
-                memset(ener, 0, sizeof(struct energy_data));
+		ener = xmalloc(sizeof(acct_energy_data_t));
+                memset(ener, 0, sizeof(acct_energy_data_t));
 		ener->cpu_freq = 1;
 		for (i = 0; i < profile_message_size; i++) {
 			/*TODO function to calculate Average CPUs Frequency*/

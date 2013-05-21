@@ -496,7 +496,7 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)data;
 	acct_network_data_t *net = (acct_network_data_t *)data;
-	struct energy_data *ener = (struct energy_data *)data;
+	acct_energy_data_t *ener = (acct_energy_data_t *)data;
 
 	xassert(_run_in_daemon());
 	xassert(g_job);
