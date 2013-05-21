@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
  -- Add acct_gather_profile/hdf5 to profile jobs with hdf5
  -- Added MaxCPUsPerNode partition configuration parameter. This can be
     especially useful to schedule systems with GPUs.
+ -- Permit "scontrol reboot_node" for nodes in MAINT reservation.
 
 * Changes in Slurm 2.6.0pre3
 ============================

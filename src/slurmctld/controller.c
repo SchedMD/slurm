@@ -1273,8 +1273,7 @@ static void _queue_reboot_msg(void)
 	want_nodes_reboot = false;
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
-		if (!IS_NODE_MAINT(node_ptr) || /* do it only if node */
-		    is_node_in_maint_reservation(i)) /*isn't in reservation */
+		if (!IS_NODE_MAINT(node_ptr))
 			continue;
 		want_nodes_reboot = true; /* mark it for the next cycle */
 		if (IS_NODE_IDLE(node_ptr) && !IS_NODE_NO_RESPOND(node_ptr) &&
