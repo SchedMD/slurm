@@ -45,7 +45,7 @@ int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 		 uint32_t step_id);
 int _process_results();
 int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
-		uint32_t req_cpufreq);
+	     uint32_t req_cpufreq);
 
 /*
  * Globals
@@ -93,7 +93,7 @@ ListIterator print_fields_itr = NULL;
 int field_count = 0;
 
 int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
-		uint32_t req_cpufreq)
+	     uint32_t req_cpufreq)
 {
 	job_step_stat_response_msg_t *step_stat_response = NULL;
 	int rc = SLURM_SUCCESS;
@@ -106,7 +106,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 
 	debug("requesting info for job %u.%u", jobid, stepid);
 	if ((rc = slurm_job_step_stat(jobid, stepid, nodelist,
-				     &step_stat_response)) != SLURM_SUCCESS) {
+				      &step_stat_response)) != SLURM_SUCCESS) {
 		if (rc == ESLURM_INVALID_JOB_ID) {
 			debug("job step %u.%u has already completed",
 			      jobid, stepid);
@@ -223,7 +223,7 @@ int main(int argc, char **argv)
 			hostlist_t hl;
 
 			if (slurm_load_job(
-				   &job_ptr, selected_step->jobid, SHOW_ALL)) {
+				    &job_ptr, selected_step->jobid, SHOW_ALL)) {
 				error("couldn't get info for job %u",
 				      selected_step->jobid);
 				continue;
@@ -241,8 +241,8 @@ int main(int argc, char **argv)
 			job_step_info_response_msg_t *step_ptr = NULL;
 			int i = 0;
 			if (slurm_get_job_steps(
-				   0, selected_step->jobid, NO_VAL,
-				   &step_ptr, SHOW_ALL)) {
+				    0, selected_step->jobid, NO_VAL,
+				    &step_ptr, SHOW_ALL)) {
 				error("couldn't get steps for job %u",
 				      selected_step->jobid);
 				continue;
@@ -260,8 +260,8 @@ int main(int argc, char **argv)
 			/* get the first running step to query against. */
 			job_step_info_response_msg_t *step_ptr = NULL;
 			if (slurm_get_job_steps(
-				   0, selected_step->jobid, NO_VAL,
-				   &step_ptr, SHOW_ALL)) {
+				    0, selected_step->jobid, NO_VAL,
+				    &step_ptr, SHOW_ALL)) {
 				error("couldn't get steps for job %u",
 				      selected_step->jobid);
 				continue;

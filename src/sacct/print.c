@@ -1238,15 +1238,15 @@ void print_fields(type_t type, void *object)
 				break;
 			}
 			if (tmp_dub == CPU_FREQ_LOW)
-				snprintf(outbuf,sizeof(outbuf),"Low");
+				snprintf(outbuf, sizeof(outbuf), "Low");
 			else if (tmp_dub == CPU_FREQ_MEDIUM)
-				snprintf(outbuf,sizeof(outbuf),"Medium");
+				snprintf(outbuf, sizeof(outbuf), "Medium");
 			else if (tmp_dub == CPU_FREQ_HIGH)
-				snprintf(outbuf,sizeof(outbuf),"High");
+				snprintf(outbuf, sizeof(outbuf), "High");
 			else if (!fuzzy_equal(tmp_dub, NO_VAL))
 				convert_num_unit((float)tmp_dub,
-						outbuf, sizeof(outbuf),
-						UNIT_NONE);
+						 outbuf, sizeof(outbuf),
+						 UNIT_NONE);
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
