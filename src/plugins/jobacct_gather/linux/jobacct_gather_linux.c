@@ -519,7 +519,7 @@ static int _read_lustre_counters(void )
 {
 	char lustre_dir[PATH_MAX];
 	char path[PATH_MAX];
-	char path_readahead[PATH_MAX],path_stats[PATH_MAX];
+	char path_stats[PATH_MAX];
 	char *ptr;
 	char fs_name[100];
 	int idx = 0;
