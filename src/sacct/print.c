@@ -1228,9 +1228,11 @@ void print_fields(type_t type, void *object)
 		case PRINT_REQ_CPUFREQ:
 			switch (type) {
 			case JOB:
-				if (!job->track_steps)
+				if (!job->track_steps && !step)
 					tmp_dub = NO_VAL;
-				break;
+				// we want to use the step info
+				if (!step)
+					break;
 			case JOBSTEP:
 				tmp_dub = step->req_cpufreq;
 				break;

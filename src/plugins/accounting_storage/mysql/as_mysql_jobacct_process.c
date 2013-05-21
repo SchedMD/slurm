@@ -808,9 +808,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				slurm_atoul(step_row[STEP_REQ_MIN_CPU_TASK]);
 			step->stats.cpu_ave = atof(step_row[STEP_REQ_AVE_CPU]);
 			step->stats.act_cpufreq =
-					atof(step_row[STEP_REQ_ACT_CPUFREQ]);
+				atof(step_row[STEP_REQ_ACT_CPUFREQ]);
 			step->stats.consumed_energy =
-					atof(step_row[STEP_REQ_CONSUMED_ENERGY]);
+				atof(step_row[STEP_REQ_CONSUMED_ENERGY]);
 			step->req_cpufreq =
 				slurm_atoul(step_row[STEP_REQ_REQ_CPUFREQ]);
 			step->stepname = xstrdup(step_row[STEP_REQ_NAME]);

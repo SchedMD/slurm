@@ -358,7 +358,6 @@ typedef struct dbd_step_comp_msg {
 	uint32_t exit_code;	/* job exit code or signal */
 	jobacctinfo_t *jobacct; /* status info */
 	uint32_t job_id;	/* job ID */
-	uint32_t req_cpufreq;   /* requested CPU frequency */
 	uint32_t req_uid;	/* requester user ID */
 	time_t   start_time;	/* step start time */
 	time_t   job_submit_time;/* job submit time needed to find job record
@@ -379,6 +378,7 @@ typedef struct dbd_step_start_msg {
 	time_t   start_time;	/* step start time */
 	time_t   job_submit_time;/* job submit time needed to find job record
 				  * in db */
+	uint32_t req_cpufreq;   /* requested CPU frequency */
 	uint32_t step_id;	/* step ID */
 	uint16_t task_dist;     /* layout method of step */
 	uint32_t total_cpus;	/* count of allocated processors */
