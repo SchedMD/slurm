@@ -2218,7 +2218,6 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 				       step_ptr->step_node_bitmap);
 	}
 	req.node_cnt    = nodes;
-
 	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
 		req.start_time = step_ptr->start_time;
 	else
@@ -2287,6 +2286,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	req.exit_code   = step_ptr->exit_code;
 	req.jobacct     = step_ptr->jobacct;
 	req.job_id      = step_ptr->job_ptr->job_id;
+	req.req_cpufreq = step_ptr->cpu_freq;
 	req.req_uid     = step_ptr->requid;
 	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
 		req.start_time = step_ptr->start_time;

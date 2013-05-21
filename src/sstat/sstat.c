@@ -44,7 +44,8 @@ void *_stat_thread(void *args);
 int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 		 uint32_t step_id);
 int _process_results();
-int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist);
+int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
+		uint32_t req_cpufreq);
 
 /*
  * Globals
@@ -81,6 +82,7 @@ print_field_t fields[] = {
 	{20, "Nodelist", print_fields_str, PRINT_NODELIST},
 	{8, "NTasks", print_fields_uint, PRINT_NTASKS},
 	{20, "Pids", print_fields_str, PRINT_PIDS},
+	{10, "ReqCPUFreq", print_fields_str, PRINT_REQ_CPUFREQ},
 	{0, NULL, NULL, 0}};
 
 List jobs = NULL;
@@ -90,7 +92,8 @@ List print_fields_list = NULL;
 ListIterator print_fields_itr = NULL;
 int field_count = 0;
 
-int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
+int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
+		uint32_t req_cpufreq)
 {
 	job_step_stat_response_msg_t *step_stat_response = NULL;
 	int rc = SLURM_SUCCESS;
@@ -127,6 +130,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 	step.job_ptr = &job;
 	step.stepid = stepid;
 	step.nodes = xmalloc(BUF_SIZE);
+	step.req_cpufreq = req_cpufreq;
 	step.stepname = NULL;
 	step.state = JOB_RUNNING;
 
@@ -186,6 +190,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist)
 int main(int argc, char **argv)
 {
 	ListIterator itr = NULL;
+	uint32_t req_cpufreq;
 	uint32_t stepid = 0;
 	slurmdb_selected_step_t *selected_step = NULL;
 
@@ -246,7 +251,8 @@ int main(int argc, char **argv)
 			for (i = 0; i < step_ptr->job_step_count; i++) {
 				_do_stat(selected_step->jobid,
 					 step_ptr->job_steps[i].step_id,
-					 step_ptr->job_steps[i].nodes);
+					 step_ptr->job_steps[i].nodes,
+					 step_ptr->job_steps[i].cpu_freq);
 			}
 			slurm_free_job_step_info_response_msg(step_ptr);
 			continue;
@@ -267,8 +273,9 @@ int main(int argc, char **argv)
 			}
 			stepid = step_ptr->job_steps[0].step_id;
 			nodelist = step_ptr->job_steps[0].nodes;
+			req_cpufreq = step_ptr->job_steps[0].cpu_freq;
 		}
-		_do_stat(selected_step->jobid, stepid, nodelist);
+		_do_stat(selected_step->jobid, stepid, nodelist, req_cpufreq);
 		if (free_nodelist && nodelist)
 			free(nodelist);
 	}

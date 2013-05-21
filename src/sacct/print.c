@@ -1225,6 +1225,32 @@ void print_fields(type_t type, void *object)
 					     tmp_int,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_REQ_CPUFREQ:
+			switch (type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_dub = NO_VAL;
+				break;
+			case JOBSTEP:
+				tmp_dub = step->req_cpufreq;
+				break;
+			default:
+				break;
+			}
+			if (tmp_dub == CPU_FREQ_LOW)
+				snprintf(outbuf,sizeof(outbuf),"Low");
+			else if (tmp_dub == CPU_FREQ_MEDIUM)
+				snprintf(outbuf,sizeof(outbuf),"Medium");
+			else if (tmp_dub == CPU_FREQ_HIGH)
+				snprintf(outbuf,sizeof(outbuf),"High");
+			else if (!fuzzy_equal(tmp_dub, NO_VAL))
+				convert_num_unit((float)tmp_dub,
+						outbuf, sizeof(outbuf),
+						UNIT_NONE);
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_REQ_CPUS:
 			switch(type) {
 			case JOB:

@@ -730,6 +730,7 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 		{ "ave_cpu", "double unsigned default 0.0 not null" },
 		{ "act_cpufreq", "double unsigned default 0.0 not null" },
 		{ "consumed_energy", "double unsigned default 99.0 not null" },
+		{ "req_cpufreq", "int unsigned default 0 not null" },
 		{ "max_disk_read", "double unsigned default 0 not null" },
 		{ "max_disk_read_task", "int unsigned default 0 not null" },
 		{ "max_disk_read_node", "int unsigned default 0 not null" },

@@ -104,6 +104,7 @@ typedef struct {
 } local_resv_t;
 
 typedef struct {
+	char *act_cpufreq;
 	char *ave_cpu;
 	char *ave_disk_read;
 	char *ave_disk_write;
@@ -111,6 +112,7 @@ typedef struct {
 	char *ave_rss;
 	char *ave_vsize;
 	char *exit_code;
+	char *consumed_energy;
 	char *cpus;
 	char *id;
 	char *kill_requid;
@@ -139,6 +141,7 @@ typedef struct {
 	char *period_end;
 	char *period_start;
 	char *period_suspended;
+	char *req_cpufreq;
 	char *state;
 	char *stepid;
 	char *sys_sec;
@@ -147,8 +150,6 @@ typedef struct {
 	char *task_dist;
 	char *user_sec;
 	char *user_usec;
-	char *act_cpufreq;
-	char *consumed_energy;
 } local_step_t;
 
 typedef struct {
@@ -320,6 +321,7 @@ static char *step_req_inx[] = {
 	"ave_cpu",
 	"act_cpufreq",
 	"consumed_energy",
+	"req_cpufreq",
 	"max_disk_read",
 	"max_disk_read_task",
 	"max_disk_read_node",
@@ -369,6 +371,7 @@ enum {
 	STEP_REQ_AVE_CPU,
 	STEP_REQ_ACT_CPUFREQ,
 	STEP_REQ_CONSUMED_ENERGY,
+	STEP_REQ_REQ_CPUFREQ,
 	STEP_REQ_MAX_DISK_READ,
 	STEP_REQ_MAX_DISK_READ_TASK,
 	STEP_REQ_MAX_DISK_READ_NODE,
@@ -584,6 +587,7 @@ static void _pack_local_step(local_step_t *object,
 		packstr(object->period_end, buffer);
 		packstr(object->period_start, buffer);
 		packstr(object->period_suspended, buffer);
+		packstr(object->req_cpufreq, buffer);
 		packstr(object->state, buffer);
 		packstr(object->stepid, buffer);
 		packstr(object->sys_sec, buffer);
@@ -714,6 +718,7 @@ static int _unpack_local_step(local_step_t *object,
 		unpackstr_ptr(&object->period_end, &tmp32, buffer);
 		unpackstr_ptr(&object->period_start, &tmp32, buffer);
 		unpackstr_ptr(&object->period_suspended, &tmp32, buffer);
+		unpackstr_ptr(&object->req_cpufreq, &tmp32, buffer);
 		unpackstr_ptr(&object->state, &tmp32, buffer);
 		unpackstr_ptr(&object->stepid, &tmp32, buffer);
 		unpackstr_ptr(&object->sys_sec, &tmp32, buffer);
@@ -1859,6 +1864,7 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 		step.period_end = row[STEP_REQ_END];
 		step.period_start = row[STEP_REQ_START];
 		step.period_suspended = row[STEP_REQ_SUSPENDED];
+		step.req_cpufreq = row[STEP_REQ_REQ_CPUFREQ];
 		step.state = row[STEP_REQ_STATE];
 		step.stepid = row[STEP_REQ_STEPID];
 		step.sys_sec = row[STEP_REQ_SYS_SEC];
@@ -1953,6 +1959,7 @@ static char *_load_steps(uint16_t rpc_version, Buf buffer,
 			   object.period_end,
 			   object.period_start,
 			   object.period_suspended,
+			   object.req_cpufreq,
 			   object.state,
 			   object.stepid,
 			   object.sys_sec,

@@ -346,6 +346,21 @@ void print_fields(slurmdb_step_rec_t *step)
                                              step->pid_str,
                                              (curr_inx == field_count));
                         break;
+		case PRINT_REQ_CPUFREQ:
+			if (step->req_cpufreq == CPU_FREQ_LOW)
+				snprintf(outbuf,sizeof(outbuf),"Low");
+			else if (step->req_cpufreq == CPU_FREQ_MEDIUM)
+				snprintf(outbuf,sizeof(outbuf),"Medium");
+			else if (step->req_cpufreq == CPU_FREQ_HIGH)
+				snprintf(outbuf,sizeof(outbuf),"High");
+			else if (!fuzzy_equal(step->req_cpufreq, NO_VAL))
+				convert_num_unit((float)step->req_cpufreq,
+						outbuf, sizeof(outbuf),
+						UNIT_NONE);
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
 		default:
 			break;
 		}

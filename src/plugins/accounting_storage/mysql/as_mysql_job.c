@@ -1070,7 +1070,8 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		"max_pages_node=%u, ave_pages=%f, "
 		"min_cpu=%u, min_cpu_task=%u, "
 		"min_cpu_node=%u, ave_cpu=%f, "
-		"act_cpufreq=%u, consumed_energy=%u "
+		"act_cpufreq=%u, consumed_energy=%u, "
+		"req_cpufreq=%u "
 		"where job_db_inx=%d and id_step=%d",
 		mysql_conn->cluster_name, step_table, (int)now,
 		comp_status,
@@ -1118,6 +1119,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 		ave_cpu,	/* ave cpu */
 		jobacct->act_cpufreq,
 		jobacct->energy.consumed_energy,
+		step_ptr->cpu_freq,
 		step_ptr->job_ptr->db_index, step_ptr->step_id);
 	debug3("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);

@@ -3505,6 +3505,7 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 	step.requid = step_comp_msg->req_uid;
 	job.start_time = step_comp_msg->start_time;
 	details.submit_time = step_comp_msg->job_submit_time;
+	step.cpu_freq = step_comp_msg->req_cpufreq;
 	step.step_id = step_comp_msg->step_id;
 	details.num_tasks = step_comp_msg->total_tasks;
 

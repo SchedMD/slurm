@@ -3799,18 +3799,34 @@ extern void
 slurmdbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg,
 				uint16_t rpc_version, Buf buffer)
 {
-	pack32(msg->assoc_id, buffer);
-	pack32(msg->db_index, buffer);
-	pack_time(msg->end_time, buffer);
-	pack32(msg->exit_code, buffer);
-	jobacctinfo_pack((struct jobacctinfo *)msg->jobacct,
-			 rpc_version, PROTOCOL_TYPE_DBD, buffer);
-	pack32(msg->job_id, buffer);
-	pack32(msg->req_uid, buffer);
-	pack_time(msg->start_time, buffer);
-	pack_time(msg->job_submit_time, buffer);
-	pack32(msg->step_id, buffer);
-	pack32(msg->total_tasks, buffer);
+	if (rpc_version >= SLURMDBD_2_6_VERSION) {
+		pack32(msg->assoc_id, buffer);
+		pack32(msg->db_index, buffer);
+		pack_time(msg->end_time, buffer);
+		pack32(msg->exit_code, buffer);
+		jobacctinfo_pack((struct jobacctinfo *)msg->jobacct,
+				 rpc_version, PROTOCOL_TYPE_DBD, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->req_cpufreq, buffer);
+		pack32(msg->req_uid, buffer);
+		pack_time(msg->start_time, buffer);
+		pack_time(msg->job_submit_time, buffer);
+		pack32(msg->step_id, buffer);
+		pack32(msg->total_tasks, buffer);
+	} else {
+		pack32(msg->assoc_id, buffer);
+		pack32(msg->db_index, buffer);
+		pack_time(msg->end_time, buffer);
+		pack32(msg->exit_code, buffer);
+		jobacctinfo_pack((struct jobacctinfo *)msg->jobacct,
+				 rpc_version, PROTOCOL_TYPE_DBD, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->req_uid, buffer);
+		pack_time(msg->start_time, buffer);
+		pack_time(msg->job_submit_time, buffer);
+		pack32(msg->step_id, buffer);
+		pack32(msg->total_tasks, buffer);
+	}
 }
 
 extern int
@@ -3819,18 +3835,36 @@ slurmdbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
 {
 	dbd_step_comp_msg_t *msg_ptr = xmalloc(sizeof(dbd_step_comp_msg_t));
 	*msg = msg_ptr;
-	safe_unpack32(&msg_ptr->assoc_id, buffer);
-	safe_unpack32(&msg_ptr->db_index, buffer);
-	safe_unpack_time(&msg_ptr->end_time, buffer);
-	safe_unpack32(&msg_ptr->exit_code, buffer);
-	jobacctinfo_unpack((struct jobacctinfo **)&msg_ptr->jobacct,
-			   rpc_version, PROTOCOL_TYPE_DBD, buffer);
-	safe_unpack32(&msg_ptr->job_id, buffer);
-	safe_unpack32(&msg_ptr->req_uid, buffer);
-	safe_unpack_time(&msg_ptr->start_time, buffer);
-	safe_unpack_time(&msg_ptr->job_submit_time, buffer);
-	safe_unpack32(&msg_ptr->step_id, buffer);
-	safe_unpack32(&msg_ptr->total_tasks, buffer);
+
+	if (rpc_version >= SLURMDBD_2_6_VERSION) {
+		safe_unpack32(&msg_ptr->assoc_id, buffer);
+		safe_unpack32(&msg_ptr->db_index, buffer);
+		safe_unpack_time(&msg_ptr->end_time, buffer);
+		safe_unpack32(&msg_ptr->exit_code, buffer);
+		jobacctinfo_unpack((struct jobacctinfo **)&msg_ptr->jobacct,
+				   rpc_version, PROTOCOL_TYPE_DBD, buffer);
+		safe_unpack32(&msg_ptr->job_id, buffer);
+		safe_unpack32(&msg_ptr->req_cpufreq, buffer);
+		safe_unpack32(&msg_ptr->req_uid, buffer);
+		safe_unpack_time(&msg_ptr->start_time, buffer);
+		safe_unpack_time(&msg_ptr->job_submit_time, buffer);
+		safe_unpack32(&msg_ptr->step_id, buffer);
+		safe_unpack32(&msg_ptr->total_tasks, buffer);
+	} else {
+		safe_unpack32(&msg_ptr->assoc_id, buffer);
+		safe_unpack32(&msg_ptr->db_index, buffer);
+		safe_unpack_time(&msg_ptr->end_time, buffer);
+		safe_unpack32(&msg_ptr->exit_code, buffer);
+		jobacctinfo_unpack((struct jobacctinfo **)&msg_ptr->jobacct,
+				   rpc_version, PROTOCOL_TYPE_DBD, buffer);
+		safe_unpack32(&msg_ptr->job_id, buffer);
+		safe_unpack32(&msg_ptr->req_uid, buffer);
+		safe_unpack_time(&msg_ptr->start_time, buffer);
+		safe_unpack_time(&msg_ptr->job_submit_time, buffer);
+		safe_unpack32(&msg_ptr->step_id, buffer);
+		safe_unpack32(&msg_ptr->total_tasks, buffer);
+	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
