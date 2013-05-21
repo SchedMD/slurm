@@ -719,6 +719,7 @@ static int _ipmi_read_profile(bool all_value)
 		for (i = 0; i < profile_message_size; i++) {
 			/*TODO function to calculate Average CPUs Frequency*/
 			/*ener->cpu_freq = // read /proc/...*/
+			ener.time = recv_energy[i].time;
 			ener.power = recv_energy[i].watts;
 			acct_gather_profile_g_add_sample_data(
 				ACCT_GATHER_PROFILE_ENERGY, &ener);

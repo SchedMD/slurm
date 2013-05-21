@@ -516,7 +516,7 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 		snprintf(group, sizeof(group), "%s", GRP_ENERGY);
 
 		memset(&profile_energy, 0, sizeof(profile_energy_t));
-		profile_energy.time = time(NULL);
+		profile_energy.time = ener->time;
 		profile_energy.cpu_freq = ener->cpu_freq;
 		profile_energy.power = ener->power;
 

@@ -67,6 +67,7 @@
 #include "src/common/slurm_jobacct_gather.h"
 
 typedef struct acct_energy_data {
+	time_t		time;
 	uint64_t	power;
 	uint64_t	cpu_freq;
 } acct_energy_data_t;
