@@ -543,10 +543,10 @@ static void _io_merge_step_series(
 	hid_t group, void *prior, void *cur, void *buf)
 {
 	// This is a difference series
-	uint64_t start_reads;
-	uint64_t start_writes;
-	double start_read_size;
-	double start_write_size;
+	static uint64_t start_reads = 0;
+	static uint64_t start_writes = 0;
+	static double start_read_size = 0;
+	static double start_write_size = 0;
 	profile_io_t* prfCur = (profile_io_t*) cur;
 	profile_io_t* prfBuf = (profile_io_t*) buf;
 	struct tm *ts = localtime(&prfCur->time);
