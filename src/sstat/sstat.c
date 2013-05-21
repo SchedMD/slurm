@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 {
 	ListIterator itr = NULL;
 	uint32_t req_cpufreq;
-	uint32_t stepid = 0;
+	uint32_t stepid = NO_VAL;
 	slurmdb_selected_step_t *selected_step = NULL;
 
 #ifdef HAVE_CRAY
