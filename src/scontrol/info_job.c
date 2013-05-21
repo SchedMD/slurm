@@ -536,20 +536,32 @@ _list_pids_one_step(const char *node_name, uint32_t jobid, uint32_t stepid)
 	stepd_task_info(fd, &task_info, &tcount);
 	for (i = 0; i < (int)tcount; i++) {
 		if (!task_info[i].exited) {
-			printf("%-8d %-8u %-6u %-7d %-8d\n",
-			       task_info[i].pid,
-			       jobid,
-			       stepid,
-			       task_info[i].id,
-			       task_info[i].gtid);
+			if (stepid == NO_VAL)
+				printf("%-8d %-8u %-6s %-7d %-8d\n",
+				       task_info[i].pid,
+				       jobid,
+				       "batch",
+				       task_info[i].id,
+				       task_info[i].gtid);
+			else
+				printf("%-8d %-8u %-6u %-7d %-8d\n",
+				       task_info[i].pid,
+				       jobid,
+				       stepid,
+				       task_info[i].id,
+				       task_info[i].gtid);
 		}
 	}
 
 	stepd_list_pids(fd, &pids, &count);
 	for (i = 0; i < count; i++) {
 		if (!_in_task_array((pid_t)pids[i], task_info, tcount)) {
-			printf("%-8d %-8u %-6u %-7s %-8s\n",
-			       pids[i], jobid, stepid, "-", "-");
+			if (stepid == NO_VAL)
+				printf("%-8d %-8u %-6s %-7s %-8s\n",
+				       pids[i], jobid, "batch", "-", "-");
+			else
+				printf("%-8d %-8u %-6u %-7s %-8s\n",
+				       pids[i], jobid, stepid, "-", "-");
 		}
 	}
 
