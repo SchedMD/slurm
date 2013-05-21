@@ -112,7 +112,7 @@ static int  _is_a_lwp(uint32_t pid);
 static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
 static int  _get_process_data_line(int in, prec_t *prec);
 static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
-					char *sbuf );
+					char *sbuf);
 static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
 				      char * sbuf);
 
@@ -181,8 +181,8 @@ static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
 		sscanf(sbuf, "%d", &thisfreq);
 
 	jobacct->current_weighted_freq =
-			jobacct->current_weighted_freq +
-			jobacct->this_sampled_cputime * thisfreq;
+		jobacct->current_weighted_freq +
+		jobacct->this_sampled_cputime * thisfreq;
 	if (jobacct->last_total_cputime) {
 		return (jobacct->current_weighted_freq /
 			jobacct->last_total_cputime);
@@ -205,7 +205,7 @@ static char * skipdot (char *str)
 }
 
 static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
-					char * sbuf )
+					char * sbuf)
 {
 	int num_read, fd;
 	FILE *sys_fp = NULL;
@@ -221,8 +221,8 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 		 "/sys/devices/system/cpu/cpu%d/cpufreq/%s",
 		 cpu, filename);
 	debug2("_get_sys_interface_freq_line: "
-			"filename = %s ",
-			freq_file);
+	       "filename = %s ",
+	       freq_file);
 	if ((sys_fp = fopen(freq_file, "r"))!= NULL) {
 		/* frequency scaling enabled */
 		fd = fileno(sys_fp);
@@ -237,13 +237,13 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 		/* frequency scaling not enabled */
 		if (!cpunfo_frequency){
 			snprintf(freq_file, 14,
-					"/proc/cpuinfo");
+				 "/proc/cpuinfo");
 			debug2("_get_sys_interface_freq_line: "
-				"filename = %s ",
-				freq_file);
+			       "filename = %s ",
+			       freq_file);
 			if ((sys_fp = fopen(freq_file, "r")) != NULL) {
 				while (fgets(cpunfo_line, sizeof cpunfo_line,
-					sys_fp ) != NULL) {
+					     sys_fp) != NULL) {
 					if (strstr(cpunfo_line, "cpu MHz") ||
 					    strstr(cpunfo_line, "cpu GHz")) {
 						break;
@@ -269,8 +269,8 @@ static int _is_a_lwp(uint32_t pid) {
 	uint32_t        tgid;
 	int             rc;
 
-	if ( snprintf(proc_status_file, 256,
-		      "/proc/%d/status",pid) > 256 ) {
+	if (snprintf(proc_status_file, 256,
+		     "/proc/%d/status",pid) > 256) {
 		debug("jobacct_gather_linux: unable to build proc_status "
 		      "fpath");
 		return -1;
@@ -286,18 +286,18 @@ static int _is_a_lwp(uint32_t pid) {
 		rc = fscanf(status_fp,
 			    "Name:\t%*s\n%*[ \ta-zA-Z0-9:()]\nTgid:\t%d\n",
 			    &tgid);
-	} while ( rc < 0 && errno == EINTR );
+	} while (rc < 0 && errno == EINTR);
 	fclose(status_fp);
 
 	/* unable to read /proc/[pid]/status content */
-	if ( rc != 1 ) {
+	if (rc != 1) {
 		debug3("jobacct_gather_linux: unable to read requested "
 		       "pattern in %s",proc_status_file);
 		return -1;
 	}
 
 	/* if tgid differs from pid, this is a LWP (Thread POSIX) */
-	if ( (uint32_t) tgid != (uint32_t) pid ) {
+	if ((uint32_t) tgid != (uint32_t) pid) {
 		debug3("jobacct_gather_linux: pid=%d is a lightweight process",
 		       tgid);
 		return 1;
@@ -463,7 +463,7 @@ static void _handle_stats(
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-extern int init ( void )
+extern int init (void)
 {
 	pagesize = getpagesize()/1024;
 
@@ -472,7 +472,7 @@ extern int init ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int fini ( void )
+extern int fini (void)
 {
 	/* just to make sure it closes things up since we call it
 	 * from here */
@@ -504,7 +504,7 @@ static int _check_lustre_fs()
 /**
  * read counters from all mounted lustre fs
  */
-static int _read_lustre_counters( void  )
+static int _read_lustre_counters(void )
 {
 	char lustre_dir[PATH_MAX];
 	char path[PATH_MAX];
@@ -528,85 +528,91 @@ static int _read_lustre_counters( void  )
 	struct lustre_data *lus;
 
 
-	sprintf(lustre_dir,"%s/llite",proc_base_path);
+	sprintf(lustre_dir, "%s/llite", proc_base_path);
 
-	proc_dir = opendir( lustre_dir );
-	if ( proc_dir == NULL ) {
-		error("Cannot open %s\n",lustre_dir);
+	proc_dir = opendir(lustre_dir);
+	if (proc_dir == NULL) {
+		error("Cannot open %s\n", lustre_dir);
 		return SLURM_FAILURE;
 	}
 
-	entry = readdir( proc_dir );
+	entry = readdir(proc_dir);
 
-	while ( entry != NULL ) {
-		memset( path, 0, PATH_MAX );
-		snprintf( path, PATH_MAX - 1, "%s/%s/stats", lustre_dir,
-			  entry->d_name );
+	while (entry != NULL) {
+		memset(path, 0, PATH_MAX);
+		snprintf(path, PATH_MAX - 1, "%s/%s/stats", lustre_dir,
+			 entry->d_name);
 		debug("LUSTRE checking for file %s\n", path);
 
-		if ( ( tmp_fd = open( path, O_RDONLY ) ) != -1 ) {
-			close( tmp_fd );
+		if ((tmp_fd = open(path, O_RDONLY)) != -1) {
+			close(tmp_fd);
 			/* erase \r and \n at the end of path */
-			idx = strlen( path );
+			idx = strlen(path);
 			idx--;
 
-			while ( path[idx] == '\r' || path[idx] == '\n' )
+			while (path[idx] == '\r' || path[idx] == '\n')
 				path[idx--] = 0;
 
 			/* Lustre paths are of type server-UUID */
 			idx = 0;
 			ptr = strstr(path,"llite/") + 6;
 
-			while ( *ptr && *ptr != '-' && idx < 100 ) {
+			while (*ptr && *ptr != '-' && idx < 100) {
 				fs_name[idx] = *ptr;
 				ptr++;
 				idx++;
 			}
 
-			snprintf( path_stats, PATH_MAX - 1,
-				  "%s/%s/stats",
-				  lustre_dir,
-				  entry->d_name );
+			snprintf(path_stats, PATH_MAX - 1,
+				 "%s/%s/stats",
+				 lustre_dir,
+				 entry->d_name);
 			debug("Found file %s\n", path_stats);
 
-			fff=fopen(path_stats,"r" );
-			if (fff != NULL) {
+			fff = fopen(path_stats,"r");
+			if (fff) {
 				while(1) {
-					if (fgets(buffer,BUFSIZ,fff)==NULL)
+					if (!fgets(buffer,BUFSIZ,fff))
 						break;
 
-					if (strstr( buffer, "write_bytes" )) {
+					if (strstr(buffer, "write_bytes")) {
 						sscanf(buffer,
-						  "%*s %u %*s %*s %*d %*d %u",
-						  &lustre_nb_writes,
-						  &lustre_write_bytes);
-						debug3("Lustre Counter %u "
-						  "write_bytes %u writes\n",
-						  lustre_write_bytes,
-						  lustre_nb_writes);
+						       "%*s %"PRIu64" %*s %*s "
+						       "%*d %*d %"PRIu64"",
+						       &lustre_nb_writes,
+						       &lustre_write_bytes);
+						debug3("Lustre Counter "
+						       "%"PRIu64" "
+						       "write_bytes %"PRIu64" "
+						       "writes\n",
+						       lustre_write_bytes,
+						       lustre_nb_writes);
 					}
 
-					if (strstr( buffer, "read_bytes" )) {
+					if (strstr(buffer, "read_bytes")) {
 						sscanf(buffer,
-						  "%*s %u %*s %*s %*d %*d %u",
-						  &lustre_nb_reads,
-						  &lustre_read_bytes);
-						debug3("Lustre Counter %u "
-						  "read_bytes %u reads\n",
-						  lustre_read_bytes,
-						  lustre_nb_reads);
+						       "%*s %"PRIu64" %*s %*s "
+						       "%*d %*d %"PRIu64"",
+						       &lustre_nb_reads,
+						       &lustre_read_bytes);
+						debug3("Lustre Counter "
+						       "%"PRIu64" "
+						       "read_bytes %"PRIu64" "
+						       "reads\n",
+						       lustre_read_bytes,
+						       lustre_nb_reads);
 					}
 				}
 				fclose(fff);
 			}
 		}
-		entry = readdir( proc_dir );
+		entry = readdir(proc_dir);
 		all_lustre_write_bytes += lustre_write_bytes;
 		all_lustre_read_bytes += lustre_read_bytes;
 		all_lustre_nb_writes += lustre_nb_writes;
 		all_lustre_nb_reads += lustre_nb_reads;
 	}
-	closedir( proc_dir );
+	closedir(proc_dir);
 
 	lus = xmalloc(sizeof(struct lustre_data));
 	memset(lus, 0, sizeof(struct lustre_data));
