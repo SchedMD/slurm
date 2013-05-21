@@ -682,7 +682,6 @@ static int _ipmi_read_profile(bool all_value)
 {
 	int pipe, i;
 	char *name = NULL;
-	acct_energy_data_t *ener;
 	ipmi_message_profile_t *recv_energy;
 
 	xstrfmtcat(name, "%s/%s_ipmi_pipe_profile",
@@ -714,21 +713,20 @@ static int _ipmi_read_profile(bool all_value)
 		     profile_message_size);
 
 	if (all_value) {
-		ener = xmalloc(sizeof(acct_energy_data_t));
-                memset(ener, 0, sizeof(acct_energy_data_t));
-		ener->cpu_freq = 1;
+		acct_energy_data_t ener;
+		memset(&ener, 0, sizeof(acct_energy_data_t));
+		ener.cpu_freq = 1;
 		for (i = 0; i < profile_message_size; i++) {
 			/*TODO function to calculate Average CPUs Frequency*/
 			/*ener->cpu_freq = // read /proc/...*/
-			ener->power = recv_energy[i].watts;
+			ener.power = recv_energy[i].watts;
 			acct_gather_profile_g_add_sample_data(
-				  ACCT_GATHER_PROFILE_ENERGY, ener);
+				ACCT_GATHER_PROFILE_ENERGY, &ener);
 		}
 		if (debug_flags & DEBUG_FLAG_ENERGY)
 			info("ipmi: save profile data, %d values",
 			     profile_message_size);
 	}
-	xfree(ener);
 	_clean_profile_message(recv_energy);
 
 	return SLURM_SUCCESS;
