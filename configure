@@ -19801,8 +19801,7 @@ else
           CPPFLAGS="-I$d/include $CPPFLAGS"
           _x_ac_ofed_libs_save="$LIBS"
           LIBS="-L$d/$bit -libmad -libumad $LIBS"
-
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 /* Override any GCC internal prototype to avoid an error.
@@ -19822,6 +19821,32 @@ return mad_rpc_open_port ();
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
   x_ac_cv_ofed_dir=$d
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+	  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char pma_query_via ();
+int
+main ()
+{
+return pma_query_via ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  have_pma_query_via=yes
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: Using old libmad" >&5
+$as_echo "Using old libmad" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
@@ -19846,6 +19871,11 @@ $as_echo "$as_me: WARNING: unable to locate ofed installation" >&2;}
 
 $as_echo "#define HAVE_OFED 1" >>confdefs.h
 
+    if test ! -z "$have_pma_query_via" ; then
+
+$as_echo "#define HAVE_OFED_PMA_QUERY_VIA 1" >>confdefs.h
+
+    fi
   fi
 
 

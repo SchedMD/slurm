@@ -191,6 +191,9 @@
 /* Define to 1 if ofed library found */
 #undef HAVE_OFED
 
+/* Define to 1 if using code with pma_query_via */
+#undef HAVE_OFED_PMA_QUERY_VIA
+
 /* define if you have openssl. */
 #undef HAVE_OPENSSL
 

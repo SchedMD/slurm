@@ -33,10 +33,13 @@ AC_DEFUN([X_AC_OFED],
           CPPFLAGS="-I$d/include $CPPFLAGS"
           _x_ac_ofed_libs_save="$LIBS"
           LIBS="-L$d/$bit -libmad -libumad $LIBS"
-
-    AC_LINK_IFELSE(
-            [AC_LANG_CALL([], mad_rpc_open_port)],
-AS_VAR_SET(x_ac_cv_ofed_dir, $d), [])
+	  AC_LINK_IFELSE(
+		  [AC_LANG_CALL([], mad_rpc_open_port)],
+		  AS_VAR_SET(x_ac_cv_ofed_dir, $d), [])
+	  AC_LINK_IFELSE(
+		  [AC_LANG_CALL([], pma_query_via)],
+		  [have_pma_query_via=yes],
+		  [AC_MSG_RESULT(Using old libmad)])
           CPPFLAGS="$_x_ac_ofed_cppflags_save"
           LIBS="$_x_ac_ofed_libs_save"
           test -n "$x_ac_cv_ofed_dir" && break
@@ -52,6 +55,9 @@ AS_VAR_SET(x_ac_cv_ofed_dir, $d), [])
     OFED_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_ofed_dir/$bit -L$x_ac_cv_ofed_dir/$bit"
     OFED_LIBS="-libmad -libumad"
     AC_DEFINE(HAVE_OFED, 1, [Define to 1 if ofed library found])
+    if test ! -z "$have_pma_query_via" ; then
+	    AC_DEFINE(HAVE_OFED_PMA_QUERY_VIA, 1, [Define to 1 if using code with pma_query_via])
+    fi
   fi
 
   AC_SUBST(OFED_LIBS)

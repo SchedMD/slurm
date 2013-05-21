@@ -148,6 +148,50 @@ static pthread_t thread_ofed_id_run = 0;
 static pthread_t cleanup_handler_thread = 0;
 static pthread_mutex_t ofed_lock = PTHREAD_MUTEX_INITIALIZER;
 
+static uint8_t *_slurm_pma_query_via(void *rcvbuf, ib_portid_t * dest, int port,
+				     unsigned timeout, unsigned id,
+				     const struct ibmad_port *srcport)
+{
+#ifdef HAVE_OFED_PMA_QUERY_VIA
+	return pma_query_via(rcvbuf, dest, port, timeout, id, srcport);
+#else
+	switch (id) {
+	case CLASS_PORT_INFO:
+		return perf_classportinfo_query_via(
+			pc, &portid, port, ibd_timeout, srcport);
+		break;
+	case IB_GSI_PORT_COUNTERS_EXT:
+		return port_performance_ext_query_via(
+			pc, &portid, port, ibd_timeout, srcport);
+		break;
+	default:
+		error("_slurm_pma_query_via: unhandled id");
+	}
+	return NULL;
+#endif
+}
+
+static uint8_t *_slurm_performance_reset_via(void *rcvbuf, ib_portid_t * dest,
+					     int port, unsigned mask,
+					     unsigned timeout, unsigned id,
+					     const struct ibmad_port *srcport)
+{
+#ifdef HAVE_OFED_PMA_QUERY_VIA
+	return performance_reset_via(
+		pc, &portid, port, mask, ibd_timeout, id, srcport);
+#else
+	switch (id) {
+	case IB_GSI_PORT_COUNTERS_EXT:
+		return port_performance_ext_reset_via(
+			pc, &portid, port, mask, ibd_timeout, srcport);
+		break;
+	default:
+		error("_slurm_performance_reset_via: unhandled id");
+	}
+	return NULL;
+#endif
+}
+
 static void _task_sleep(int rem)
 {
 	while (rem)
@@ -173,8 +217,8 @@ static int _read_ofed_values(void)
 
 	memset(pc, 0, sizeof(pc));
 	memcpy(&cap_mask, pc + 2, sizeof(cap_mask));
-	if (!port_performance_ext_query_via(pc, &portid, port, ibd_timeout,
-					    srcport)) {
+	if (!_slurm_pma_query_via(pc, &portid, port, ibd_timeout,
+				  IB_GSI_PORT_COUNTERS_EXT, srcport)) {
 		error("ofed: %m");
 		exit(1);
 	}
@@ -203,8 +247,10 @@ static int _read_ofed_values(void)
 
 	if (send_val > reset_limit || recv_val > reset_limit) {
 		/* reset cost ~70 mirco secs */
-		if (!port_performance_ext_reset_via(pc, &portid, port, mask,
-						    ibd_timeout, srcport)) {
+		if (!_slurm_performance_reset_via(pc, &portid, port, mask,
+						  ibd_timeout,
+						  IB_GSI_PORT_COUNTERS_EXT,
+						  srcport)) {
 			error("perf reset\n");
 			exit(1);
 		}
@@ -282,20 +328,22 @@ static int _thread_init(void)
 		error("can't resolve self port %d", port);
 
 	memset(pc, 0, sizeof(pc));
-	if (!perf_classportinfo_query_via(pc, &portid, port, ibd_timeout,
-					  srcport))
+	if (!_slurm_pma_query_via(pc, &portid, port, ibd_timeout,
+				  CLASS_PORT_INFO, srcport))
 		error("classportinfo query\n");
 
 	memcpy(&cap_mask, pc + 2, sizeof(cap_mask));
-	if (!port_performance_ext_query_via(pc, &portid, port, ibd_timeout,
-					    srcport)) {
+	if (!_slurm_pma_query_via(pc, &portid, port, ibd_timeout,
+				  IB_GSI_PORT_COUNTERS_EXT, srcport)) {
 		error("ofed\n");
 		exit(1);
 	}
 
 	/* reset cost ~70 mirco secs */
-	if (!port_performance_ext_reset_via(pc, &portid, port, mask,
-					    ibd_timeout, srcport)) {
+	if (!_slurm_performance_reset_via(pc, &portid, port, mask,
+					  ibd_timeout,
+					  IB_GSI_PORT_COUNTERS_EXT,
+					  srcport)) {
 		error("perf reset\n");
 		exit(1);
 	}
