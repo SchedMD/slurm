@@ -246,6 +246,8 @@ typedef struct slurm_nrt_suspend_info {
 
 static int lid_cache_size = 0;
 static nrt_cache_entry_t lid_cache[NRT_MAX_ADAPTERS];
+static int  dynamic_window_cnt = 32;
+static bool dynamic_window_err = false;	/* print error only once */
 
 /* Keep track of local ID so slurmd can determine which switch tables
  * are for that particular node */
@@ -294,6 +296,7 @@ static void	_init_adapter_cache(void);
 static preemption_state_t _job_preempt_state(nrt_job_key_t job_key);
 static int	_job_step_window_state(slurm_nrt_jobinfo_t *jp,
 				       hostlist_t hl, win_state_t state);
+static void	_load_dynamic_window_cnt(void);
 static void	_lock(void);
 static nrt_job_key_t _next_key(void);
 static int	_pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
@@ -1667,10 +1670,9 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 				hostset_insert(hs, window_str);
 				continue;
 			}
-			info("      window:  %hu", w[j].window_id);
-			info("      state:   %s", _win_state_str(w[j].state));
-			info("      job_key: %u", w[j].job_key);
-			info("      -------- ");
+			info("      window:%hu state:%s job_key:%u",
+			     w[j].window_id, _win_state_str(w[j].state),
+			     w[j].job_key);
 		}
 		if (hostset_count(hs) > 0) {
 			hostset_ranged_string(hs, sizeof(window_str),
@@ -2063,6 +2065,25 @@ static int _get_my_id(void)
 	return rc;
 }
 
+static void _load_dynamic_window_cnt(void)
+{
+	FILE *fp;
+	char buf[128];
+	size_t sz;
+
+	fp = fopen("/sys/devices/virtual/hfi/hfi0/num_dynamic_win", "r");
+	if (fp) {
+		memset(buf, 0, sizeof(buf));
+		sz = fread(buf, 1, sizeof(buf), fp);
+		if (sz) {
+			buf[sz] = '\0';
+			dynamic_window_cnt = strtol(buf, NULL, 0);
+		}
+		(void) fclose(fp);
+	}
+	return;
+}
+
 static int
 _get_adapters(slurm_nrt_nodeinfo_t *n)
 {
@@ -2077,6 +2098,7 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 	nrt_adapter_info_t adapter_info;
 	nrt_status_t *status_array = NULL;
 	nrt_window_id_t window_count;
+	int min_window_id = 0;
 
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("_get_adapters: begin");
@@ -2128,6 +2150,16 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 				      max_windows);
 			}
 		}
+
+		/* Bill LePera, IBM: Out of 256 windows on each HFI device, the
+		 * first 4 are reserved for the HFI device driver's use. Next
+		 * are the dynamic windows (default 32), followed by the windows
+		 * available to be scheduled by PNSD and the job schedulers.
+		 * This is why the output of nrt_status shows the first window
+		 * number reported as 36. */
+		/* FIXME: Add tests for each adapter type/name. */
+		min_window_id = dynamic_window_cnt + 4;
+
 		for (j = 0; j < num_adapter_names; j++) {
 			slurm_nrt_adapter_t *adapter_ptr;
 			if (status_array) {
@@ -2194,6 +2226,16 @@ _get_adapters(slurm_nrt_nodeinfo_t *n)
 							window_id;
 				window_ptr->state = status_array[k].state;
 				/* window_ptr->job_key = Not_Available */
+				if ((adapter_ptr->adapter_type == NRT_HFI) &&
+				    (!dynamic_window_err) &&
+				    (window_ptr->window_id < min_window_id)) {
+					error("switch/nrt: Dynamic window "
+					      "configuration error, "
+					      "num_dynamic_win=%d window_id=%u",
+					      dynamic_window_cnt,
+					      window_ptr->window_id);
+					dynamic_window_err = true;
+				}
 			}
 
 			/* Now get adapter info (port_id, network_id, etc.) */
@@ -2291,6 +2333,7 @@ nrt_build_nodeinfo(slurm_nrt_nodeinfo_t *n, char *name)
 
 	strncpy(n->name, name, NRT_HOSTLEN);
 	_lock();
+	_load_dynamic_window_cnt();
 	err = _get_adapters(n);
 	_unlock();
 
