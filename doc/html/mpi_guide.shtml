@@ -258,7 +258,7 @@ See the srun man pages in the INPUT ENVIRONMENT VARIABLES section for a more
 information.</li>
 <li>Information about building MPICH2 for use with SLURM is described on the
 <a href="http://wiki.mcs.anl.gov/mpich2/index.php/Frequently_Asked_Questions#Q:_How_do_I_use_MPICH2_with_slurm.3F">
-MPICH2 FAQ</a> web page</li>
+MPICH2 FAQ</a> web page and below.</li>
 </ul></p>
 
 <h3>MPICH2 with mpiexec</h3>
@@ -272,6 +272,20 @@ Launch the application using salloc to create the job allocation and mpiexec
 to launch the tasks. A simple example is shown below.</p>
 <pre>salloc -N 2 mpiexec my_application</pre>
 <p>All MPI_comm_spawn work fine now going through hydra's PMI 1.1 interface.</p>
+
+<h3>MPICH2 build and configuration</h3>
+
+<p>MPICH2 must be built specifically for use with SLURM using a configure
+line similar to that shown below.</p>
+<pre>
+./configure --with-slurm=&lt;PATH&gt; --with-pm=none
+</pre>
+<p>In addition, if SLURM is not configured with <i>MpiDefault=pmi2</i>, then
+the srun command must be invoked with the option <i>--mpi=pmi2</i> as shown
+in the example below below.</p>
+<pre>
+srun -n4 --mpi=pmi2 ./a.out
+</pre>
 
 <hr size=4 width="100%">
 
