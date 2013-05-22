@@ -1671,10 +1671,9 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 				hostset_insert(hs, window_str);
 				continue;
 			}
-			info("      window:  %hu", w[j].window_id);
-			info("      state:   %s", _win_state_str(w[j].state));
-			info("      job_key: %u", w[j].job_key);
-			info("      -------- ");
+			info("      window:%hu state:%s job_key:%u",
+			     w[j].window_id, _win_state_str(w[j].state),
+			     w[j].job_key);
 		}
 		if (hostset_count(hs) > 0) {
 			hostset_ranged_string(hs, sizeof(window_str),
