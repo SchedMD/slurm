@@ -146,10 +146,6 @@ static uint8_t pc[1024];
 
 static slurm_ofed_conf_t ofed_conf;
 static uint32_t debug_flags = 0;
-static bool flag_init_done = false;
-static bool flag_thread_run_running = false;
-static pthread_t thread_ofed_id_run = 0;
-static pthread_t cleanup_handler_thread = 0;
 static pthread_mutex_t ofed_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static uint8_t *_slurm_pma_query_via(void *rcvbuf, ib_portid_t * dest, int port,
@@ -175,12 +171,6 @@ static uint8_t *_slurm_pma_query_via(void *rcvbuf, ib_portid_t * dest, int port,
 #endif
 }
 
-static void _task_sleep(int rem)
-{
-	while (rem)
-		rem = sleep(rem);	// subject to interupt
-}
-
 /*
  * _read_ofed_values read the IB sensor and update last_update values and times
  */
@@ -188,8 +178,6 @@ static int _read_ofed_values(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	uint64_t mask = 0xffffffffffffffff;
-	uint64_t reset_limit = mask * 0.7;
 	uint16_t cap_mask;
 	uint64_t send_val, recv_val, send_pkts, recv_pkts;
 
