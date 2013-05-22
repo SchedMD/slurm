@@ -426,7 +426,7 @@ no_rollup_change:
 			"id_group, nodelist, id_resv, timelimit, "
 			"time_eligible, time_submit, time_start, "
 			"job_name, track_steps, state, priority, cpus_req, "
-			"cpus_alloc, nodes_alloc",
+			"cpus_alloc, nodes_alloc, mem_req",
 			mysql_conn->cluster_name, job_table);
 
 		if (job_ptr->account)
@@ -446,7 +446,7 @@ no_rollup_change:
 
 		xstrfmtcat(query,
 			   ") values (%u, %u, %u, %u, %u, %u, '%s', %u, %u, "
-			   "%ld, %ld, %ld, '%s', %u, %u, %u, %u, %u, %u",
+			   "%ld, %ld, %ld, '%s', %u, %u, %u, %u, %u, %u, %u",
 			   job_ptr->job_id, job_ptr->assoc_id,
 			   job_ptr->qos_id, wckeyid,
 			   job_ptr->user_id, job_ptr->group_id, nodes,
@@ -454,7 +454,8 @@ no_rollup_change:
 			   begin_time, submit_time, start_time,
 			   jname, track_steps, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
-			   job_ptr->total_cpus, node_cnt);
+			   job_ptr->total_cpus, node_cnt,
+			   job_ptr->details->pn_min_memory);
 
 		if (job_ptr->account)
 			xstrfmtcat(query, ", '%s'", job_ptr->account);
@@ -479,13 +480,15 @@ no_rollup_change:
 			   "time_submit=%ld, time_start=%ld, "
 			   "job_name='%s', track_steps=%u, id_qos=%u, "
 			   "state=greatest(state, %u), priority=%u, "
-			   "cpus_req=%u, cpus_alloc=%u, nodes_alloc=%u",
+			   "cpus_req=%u, cpus_alloc=%u, nodes_alloc=%u, "
+			   "mem_req=%u",
 			   wckeyid, job_ptr->user_id, job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   submit_time, start_time,
 			   jname, track_steps, job_ptr->qos_id, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
-			   job_ptr->total_cpus, node_cnt);
+			   job_ptr->total_cpus, node_cnt,
+			   job_ptr->details->pn_min_memory);
 
 		if (job_ptr->account)
 			xstrfmtcat(query, ", account='%s'", job_ptr->account);
@@ -542,12 +545,13 @@ no_rollup_change:
 		xstrfmtcat(query, "time_start=%ld, job_name='%s', state=%u, "
 			   "cpus_alloc=%u, nodes_alloc=%u, id_qos=%u, "
 			   "id_assoc=%u, id_wckey=%u, id_resv=%u, "
-			   "timelimit=%u, "
+			   "timelimit=%u, mem_req=%u, "
 			   "time_eligible=%ld where job_db_inx=%d",
 			   start_time, jname, job_state,
 			   job_ptr->total_cpus, node_cnt, job_ptr->qos_id,
 			   job_ptr->assoc_id, wckeyid,
 			   job_ptr->resv_id, job_ptr->time_limit,
+			   job_ptr->details->pn_min_memory,
 			   begin_time, job_ptr->db_index);
 
 		debug3("%d(%s:%d) query\n%s",

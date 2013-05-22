@@ -133,10 +133,11 @@ MaxRSSNode      MaxRSSTask     MaxVMSize        MaxVMSizeNode
 MaxVMSizeTask   MinCPU         MinCPUNode       MinCPUTask
 NCPUS           NNodes         NodeList         NTasks
 Priority        Partition      QOSRAW           ReqCPUFreq
-ReqCPUs         Reserved       ResvCPU          ResvCPURAW
-Start           State          Submit           Suspended
-SystemCPU       Timelimit      TotalCPU         UID
-User            UserCPU        WCKey            WCKeyID
+ReqCPUs         ReqMem         Reserved         ResvCPU
+ResvCPURAW      Start          State            Submit
+Suspended       SystemCPU      Timelimit        TotalCPU
+UID             User           UserCPU          WCKey
+WCKeyID
 
 .ft 1
 .fi
@@ -690,6 +691,12 @@ Note: This value applies only to a job step. No value is reported for the job.
 .TP
 \f3reqcpus\fP
 Required CPUs.
+
+.TP
+\f3ReqMem\fP
+Minimum required memory for the job, in MB. A 'c' at the end of
+number represents Memory Per CPU, a 'n' represents Memory Per Node.
+Note: This value is only from the job allocation, not the step.
 
 .TP
 \f3reserved\fP

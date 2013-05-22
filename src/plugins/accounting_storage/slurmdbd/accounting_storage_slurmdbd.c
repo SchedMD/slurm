@@ -194,8 +194,10 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	}
 	req->alloc_cpus    = job_ptr->total_cpus;
 	req->partition     = xstrdup(job_ptr->partition);
-	if (job_ptr->details)
+	if (job_ptr->details) {
 		req->req_cpus = job_ptr->details->min_cpus;
+		req->req_mem = job_ptr->details->pn_min_memory;
+	}
 	req->resv_id       = job_ptr->resv_id;
 	req->priority      = job_ptr->priority;
 	req->timelimit     = job_ptr->time_limit;

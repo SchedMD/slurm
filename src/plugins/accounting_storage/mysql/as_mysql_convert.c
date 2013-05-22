@@ -659,6 +659,7 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 		{ "comp_code", "int default 0 not null" },
 		{ "priority", "int not null" },
 		{ "req_cpus", "int unsigned not null" },
+		{ "req_mem", "int unsigned default 0 not null" },
 		{ "alloc_cpus", "int unsigned not null" },
 		{ "alloc_nodes", "int unsigned not null" },
 		{ "nodelist", "text" },

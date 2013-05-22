@@ -98,6 +98,7 @@ print_field_t fields[] = {
 	{6,  "QOSRAW", print_fields_uint, PRINT_QOSRAW},
 	{10, "ReqCPUFreq", print_fields_str, PRINT_REQ_CPUFREQ},
 	{8,  "ReqCPUS", print_fields_uint, PRINT_REQ_CPUS},
+	{10, "ReqMem", print_fields_str, PRINT_REQ_MEM},
 	{10, "Reserved", print_fields_time_from_secs, PRINT_RESV},
 	{10, "ResvCPU", print_fields_time_from_secs, PRINT_RESV_CPU},
 	{10, "ResvCPURAW", print_fields_uint, PRINT_RESV_CPU},

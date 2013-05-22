@@ -79,6 +79,7 @@ typedef struct {
 	char *priority;
 	char *qos;
 	char *req_cpus;
+	char *req_mem;
 	char *resvid;
 	char *start;
 	char *state;
@@ -209,6 +210,7 @@ static char *job_req_inx[] = {
 	"priority",
 	"id_qos",
 	"cpus_req",
+	"mem_req",
 	"id_resv",
 	"time_start",
 	"state",
@@ -244,6 +246,7 @@ enum {
 	JOB_REQ_PRIORITY,
 	JOB_REQ_QOS,
 	JOB_REQ_REQ_CPUS,
+	JOB_REQ_REQ_MEM,
 	JOB_REQ_START,
 	JOB_REQ_STATE,
 	JOB_REQ_SUBMIT,
@@ -459,6 +462,7 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->priority, buffer);
 	packstr(object->qos, buffer);
 	packstr(object->req_cpus, buffer);
+	packstr(object->req_mem, buffer);
 	packstr(object->resvid, buffer);
 	packstr(object->start, buffer);
 	packstr(object->state, buffer);
@@ -477,38 +481,72 @@ static int _unpack_local_job(local_job_t *object,
 {
 	uint32_t tmp32;
 
-	unpackstr_ptr(&object->account, &tmp32, buffer);
-	unpackstr_ptr(&object->alloc_cpus, &tmp32, buffer);
-	unpackstr_ptr(&object->alloc_nodes, &tmp32, buffer);
-	unpackstr_ptr(&object->associd, &tmp32, buffer);
-	unpackstr_ptr(&object->blockid, &tmp32, buffer);
-	unpackstr_ptr(&object->derived_ec, &tmp32, buffer);
-	unpackstr_ptr(&object->derived_es, &tmp32, buffer);
-	unpackstr_ptr(&object->exit_code, &tmp32, buffer);
-	unpackstr_ptr(&object->timelimit, &tmp32, buffer);
-	unpackstr_ptr(&object->eligible, &tmp32, buffer);
-	unpackstr_ptr(&object->end, &tmp32, buffer);
-	unpackstr_ptr(&object->gid, &tmp32, buffer);
-	unpackstr_ptr(&object->id, &tmp32, buffer);
-	unpackstr_ptr(&object->jobid, &tmp32, buffer);
-	unpackstr_ptr(&object->kill_requid, &tmp32, buffer);
-	unpackstr_ptr(&object->name, &tmp32, buffer);
-	unpackstr_ptr(&object->nodelist, &tmp32, buffer);
-	unpackstr_ptr(&object->node_inx, &tmp32, buffer);
-	unpackstr_ptr(&object->partition, &tmp32, buffer);
-	unpackstr_ptr(&object->priority, &tmp32, buffer);
-	unpackstr_ptr(&object->qos, &tmp32, buffer);
-	unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
-	unpackstr_ptr(&object->resvid, &tmp32, buffer);
-	unpackstr_ptr(&object->start, &tmp32, buffer);
-	unpackstr_ptr(&object->state, &tmp32, buffer);
-	unpackstr_ptr(&object->submit, &tmp32, buffer);
-	unpackstr_ptr(&object->suspended, &tmp32, buffer);
-	unpackstr_ptr(&object->track_steps, &tmp32, buffer);
-	unpackstr_ptr(&object->uid, &tmp32, buffer);
-	unpackstr_ptr(&object->wckey, &tmp32, buffer);
-	unpackstr_ptr(&object->wckey_id, &tmp32, buffer);
-
+	if (rpc_version >= SLURMDBD_2_6_VERSION) {
+		unpackstr_ptr(&object->account, &tmp32, buffer);
+		unpackstr_ptr(&object->alloc_cpus, &tmp32, buffer);
+		unpackstr_ptr(&object->alloc_nodes, &tmp32, buffer);
+		unpackstr_ptr(&object->associd, &tmp32, buffer);
+		unpackstr_ptr(&object->blockid, &tmp32, buffer);
+		unpackstr_ptr(&object->derived_ec, &tmp32, buffer);
+		unpackstr_ptr(&object->derived_es, &tmp32, buffer);
+		unpackstr_ptr(&object->exit_code, &tmp32, buffer);
+		unpackstr_ptr(&object->timelimit, &tmp32, buffer);
+		unpackstr_ptr(&object->eligible, &tmp32, buffer);
+		unpackstr_ptr(&object->end, &tmp32, buffer);
+		unpackstr_ptr(&object->gid, &tmp32, buffer);
+		unpackstr_ptr(&object->id, &tmp32, buffer);
+		unpackstr_ptr(&object->jobid, &tmp32, buffer);
+		unpackstr_ptr(&object->kill_requid, &tmp32, buffer);
+		unpackstr_ptr(&object->name, &tmp32, buffer);
+		unpackstr_ptr(&object->nodelist, &tmp32, buffer);
+		unpackstr_ptr(&object->node_inx, &tmp32, buffer);
+		unpackstr_ptr(&object->partition, &tmp32, buffer);
+		unpackstr_ptr(&object->priority, &tmp32, buffer);
+		unpackstr_ptr(&object->qos, &tmp32, buffer);
+		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
+		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
+		unpackstr_ptr(&object->resvid, &tmp32, buffer);
+		unpackstr_ptr(&object->start, &tmp32, buffer);
+		unpackstr_ptr(&object->state, &tmp32, buffer);
+		unpackstr_ptr(&object->submit, &tmp32, buffer);
+		unpackstr_ptr(&object->suspended, &tmp32, buffer);
+		unpackstr_ptr(&object->track_steps, &tmp32, buffer);
+		unpackstr_ptr(&object->uid, &tmp32, buffer);
+		unpackstr_ptr(&object->wckey, &tmp32, buffer);
+		unpackstr_ptr(&object->wckey_id, &tmp32, buffer);
+	} else {
+		unpackstr_ptr(&object->account, &tmp32, buffer);
+		unpackstr_ptr(&object->alloc_cpus, &tmp32, buffer);
+		unpackstr_ptr(&object->alloc_nodes, &tmp32, buffer);
+		unpackstr_ptr(&object->associd, &tmp32, buffer);
+		unpackstr_ptr(&object->blockid, &tmp32, buffer);
+		unpackstr_ptr(&object->derived_ec, &tmp32, buffer);
+		unpackstr_ptr(&object->derived_es, &tmp32, buffer);
+		unpackstr_ptr(&object->exit_code, &tmp32, buffer);
+		unpackstr_ptr(&object->timelimit, &tmp32, buffer);
+		unpackstr_ptr(&object->eligible, &tmp32, buffer);
+		unpackstr_ptr(&object->end, &tmp32, buffer);
+		unpackstr_ptr(&object->gid, &tmp32, buffer);
+		unpackstr_ptr(&object->id, &tmp32, buffer);
+		unpackstr_ptr(&object->jobid, &tmp32, buffer);
+		unpackstr_ptr(&object->kill_requid, &tmp32, buffer);
+		unpackstr_ptr(&object->name, &tmp32, buffer);
+		unpackstr_ptr(&object->nodelist, &tmp32, buffer);
+		unpackstr_ptr(&object->node_inx, &tmp32, buffer);
+		unpackstr_ptr(&object->partition, &tmp32, buffer);
+		unpackstr_ptr(&object->priority, &tmp32, buffer);
+		unpackstr_ptr(&object->qos, &tmp32, buffer);
+		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
+		unpackstr_ptr(&object->resvid, &tmp32, buffer);
+		unpackstr_ptr(&object->start, &tmp32, buffer);
+		unpackstr_ptr(&object->state, &tmp32, buffer);
+		unpackstr_ptr(&object->submit, &tmp32, buffer);
+		unpackstr_ptr(&object->suspended, &tmp32, buffer);
+		unpackstr_ptr(&object->track_steps, &tmp32, buffer);
+		unpackstr_ptr(&object->uid, &tmp32, buffer);
+		unpackstr_ptr(&object->wckey, &tmp32, buffer);
+		unpackstr_ptr(&object->wckey_id, &tmp32, buffer);
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -1546,6 +1584,7 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 		job.priority = row[JOB_REQ_PRIORITY];
 		job.qos = row[JOB_REQ_QOS];
 		job.req_cpus = row[JOB_REQ_REQ_CPUS];
+		job.req_mem = row[JOB_REQ_REQ_MEM];
 		job.resvid = row[JOB_REQ_RESVID];
 		job.start = row[JOB_REQ_START];
 		job.state = row[JOB_REQ_STATE];
@@ -1626,6 +1665,7 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.priority,
 			   object.qos,
 			   object.req_cpus,
+			   object.req_mem,
 			   object.resvid,
 			   object.start,
 			   object.state,

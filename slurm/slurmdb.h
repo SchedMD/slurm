@@ -565,6 +565,7 @@ typedef struct {
 	uint32_t priority;
 	uint32_t qosid;
 	uint32_t req_cpus;
+	uint32_t req_mem;
 	uint32_t requid;
 	uint32_t resvid;
 	uint32_t show_full;
