@@ -723,7 +723,10 @@ int parse_basil(struct basil_parse_data *bp, int fd)
 	case BE_NONE:		/* no error: bp->msg is empty */
 		break;
 	default:
-		error("%s", bp->msg);
+		if (is_transient_error(ud.error))
+			debug("%s", bp->msg);
+		else
+			error("%s", bp->msg);
 	}
 	return -ud.error;
 }
