@@ -59,7 +59,6 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmd/common/proctrack.h"
-#include "src/plugins/acct_gather_profile/hdf5/hdf5_api.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "acct_gather_energy_ipmi_config.h"
