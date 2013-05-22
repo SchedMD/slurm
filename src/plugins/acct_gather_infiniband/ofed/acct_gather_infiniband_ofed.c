@@ -371,7 +371,6 @@ extern void acct_gather_infiniband_p_conf_set(s_p_hashtbl_t *tbl)
 		return;
 
 	verbose("%s loaded", plugin_name);
-
 }
 
 extern void acct_gather_infiniband_p_conf_options(s_p_options_t **full_options,
@@ -383,5 +382,6 @@ extern void acct_gather_infiniband_p_conf_options(s_p_options_t **full_options,
 		{NULL} };
 
 	transfer_s_p_options(full_options, options, full_options_cnt);
+
 	return;
 }
