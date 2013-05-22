@@ -1275,7 +1275,11 @@ static void _queue_reboot_msg(void)
 	     i < node_record_count; i++, node_ptr++) {
 		if (!IS_NODE_MAINT(node_ptr))
 			continue;
-		want_nodes_reboot = true; /* mark it for the next cycle */
+		if (is_node_in_maint_reservation(i)) {
+			/* defer if node isn't in reservation */
+			want_nodes_reboot = true;
+			continue;
+		}
 		if (IS_NODE_IDLE(node_ptr) && !IS_NODE_NO_RESPOND(node_ptr) &&
 		    !IS_NODE_POWER_UP(node_ptr)) /* only active idle nodes */
 			want_reboot = true;
@@ -1284,8 +1288,10 @@ static void _queue_reboot_msg(void)
 			want_reboot = true; /* system just restarted */
 		else
 			want_reboot = false;
-		if (!want_reboot)
+		if (!want_reboot) {
+			want_nodes_reboot = true;	/* defer reboot */
 			continue;
+		}
 		if (reboot_agent_args == NULL) {
 			reboot_agent_args = xmalloc(sizeof(agent_arg_t));
 			reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;

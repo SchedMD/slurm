@@ -143,6 +143,8 @@ documents those changes that are of interest to users and admins.
  -- switch/nrt - Validate dynamic window allocation size.
  -- BGQ - When --geo is requested do not impose the default conn_types.
  -- CRAY - Support CLE 4.2.0
+ -- RebootNode logic - Defers (rather than forgets) reboot request with job
+    running on the node within a reservation.
 
 * Changes in Slurm 2.5.6
 ========================
