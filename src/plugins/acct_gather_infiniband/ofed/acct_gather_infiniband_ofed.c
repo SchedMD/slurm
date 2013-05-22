@@ -136,11 +136,6 @@ typedef struct {
 } ofed_sens_t;
 
 static ofed_sens_t ofed_sens = {0,0,0,0,0,0,0,0};
-static uint64_t last_update_xmtdata = 0;
-static uint64_t last_update_rcvdata = 0;
-static uint64_t last_update_xmtpkts = 0;
-static uint64_t last_update_rcvpkts = 0;
-
 
 static uint8_t pc[1024];
 
@@ -176,10 +171,59 @@ static uint8_t *_slurm_pma_query_via(void *rcvbuf, ib_portid_t * dest, int port,
  */
 static int _read_ofed_values(void)
 {
+	static uint64_t last_update_xmtdata = 0;
+	static uint64_t last_update_rcvdata = 0;
+	static uint64_t last_update_xmtpkts = 0;
+	static uint64_t last_update_rcvpkts = 0;
+	static bool first = true;
+
 	int rc = SLURM_SUCCESS;
 
 	uint16_t cap_mask;
 	uint64_t send_val, recv_val, send_pkts, recv_pkts;
+
+	if (first) {
+		int mgmt_classes[4] = {IB_SMI_CLASS, IB_SMI_DIRECT_CLASS,
+				       IB_SA_CLASS, IB_PERFORMANCE_CLASS};
+		first = 0;
+		srcport = mad_rpc_open_port(ibd_ca, ofed_conf.port,
+					    mgmt_classes, 4);
+		if (!srcport){
+			error("Failed to open '%s' port '%d'", ibd_ca,
+			      ofed_conf.port);
+			debug("INFINIBAND: failed");
+			return SLURM_ERROR;
+		}
+
+		if (ib_resolve_self_via(&portid, &port, 0, srcport) < 0)
+			error("can't resolve self port %d", port);
+
+		memset(pc, 0, sizeof(pc));
+		if (!_slurm_pma_query_via(pc, &portid, port, ibd_timeout,
+					  CLASS_PORT_INFO, srcport))
+			error("classportinfo query: %m");
+
+		memcpy(&cap_mask, pc + 2, sizeof(cap_mask));
+		if (!_slurm_pma_query_via(pc, &portid, port, ibd_timeout,
+					  IB_GSI_PORT_COUNTERS_EXT, srcport)) {
+			error("ofed: %m");
+			return SLURM_ERROR;
+		}
+
+		mad_decode_field(pc, IB_PC_EXT_XMT_BYTES_F,
+				 &last_update_xmtdata);
+		mad_decode_field(pc, IB_PC_EXT_RCV_BYTES_F,
+				 &last_update_rcvdata);
+		mad_decode_field(pc, IB_PC_EXT_XMT_PKTS_F,
+				 &last_update_xmtpkts);
+		mad_decode_field(pc, IB_PC_EXT_RCV_PKTS_F,
+				 &last_update_rcvpkts);
+
+		if (debug_flags & DEBUG_FLAG_INFINIBAND)
+			info("%s ofed init", plugin_name);
+
+		return SLURM_SUCCESS;
+	}
 
 	memset(pc, 0, sizeof(pc));
 	memcpy(&cap_mask, pc + 2, sizeof(cap_mask));
@@ -189,6 +233,7 @@ static int _read_ofed_values(void)
 		return SLURM_ERROR;
 	}
 
+	slurm_mutex_lock(&ofed_lock);
 	mad_decode_field(pc, IB_PC_EXT_XMT_BYTES_F, &send_val);
 	mad_decode_field(pc, IB_PC_EXT_RCV_BYTES_F, &recv_val);
 	mad_decode_field(pc, IB_PC_EXT_XMT_PKTS_F, &send_pkts);
@@ -210,6 +255,7 @@ static int _read_ofed_values(void)
 
 	ofed_sens.last_update_time = ofed_sens.update_time;
 	ofed_sens.update_time = time(NULL);
+	slurm_mutex_unlock(&ofed_lock);
 
 	return rc;
 }
@@ -243,53 +289,6 @@ static int _update_node_infiniband(void)
 	}
 	xfree(net);
 	slurm_mutex_unlock(&ofed_lock);
-
-	return rc;
-}
-
-
-/*
- * _thread_init initializes values and conf for the ipmi thread
- */
-static int _ofed_init(void)
-{
-	int rc = SLURM_SUCCESS;
-	int mgmt_classes[4] = {IB_SMI_CLASS, IB_SMI_DIRECT_CLASS, IB_SA_CLASS,
-			       IB_PERFORMANCE_CLASS};
-	uint64_t mask = 0xffffffffffffffff;
-	uint16_t cap_mask;
-
-	srcport = mad_rpc_open_port(ibd_ca, ofed_conf.port,
-				    mgmt_classes, 4);
-	if (!srcport){
-		error("Failed to open '%s' port '%d'", ibd_ca,
-		      ofed_conf.port);
-		debug("INFINIBAND: failed");
-		return SLURM_ERROR;
-	}
-
-	if (ib_resolve_self_via(&portid, &port, 0, srcport) < 0)
-		error("can't resolve self port %d", port);
-
-	memset(pc, 0, sizeof(pc));
-	if (!_slurm_pma_query_via(pc, &portid, port, ibd_timeout,
-				  CLASS_PORT_INFO, srcport))
-		error("classportinfo query: %m");
-
-	memcpy(&cap_mask, pc + 2, sizeof(cap_mask));
-	if (!_slurm_pma_query_via(pc, &portid, port, ibd_timeout,
-				  IB_GSI_PORT_COUNTERS_EXT, srcport)) {
-		error("ofed: %m");
-		return SLURM_ERROR;
-	}
-
-	mad_decode_field(pc, IB_PC_EXT_XMT_BYTES_F, &last_update_xmtdata);
-	mad_decode_field(pc, IB_PC_EXT_RCV_BYTES_F, &last_update_rcvdata);
-	mad_decode_field(pc, IB_PC_EXT_XMT_PKTS_F, &last_update_xmtpkts);
-	mad_decode_field(pc, IB_PC_EXT_RCV_PKTS_F, &last_update_rcvpkts);
-
-	if (debug_flags & DEBUG_FLAG_INFINIBAND)
-		info("%s ofed init", plugin_name);
 
 	return rc;
 }
@@ -339,18 +338,19 @@ extern int acct_gather_infiniband_p_node_update(void)
 {
 	uint32_t profile;
 	int rc = SLURM_SUCCESS;
+	static bool set = false;
+	static bool run = true;
 
-	acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
-		&profile);
+	if (!set) {
+		set = true;
+		acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
+					  &profile);
 
-	if (!(profile & ACCT_GATHER_PROFILE_NETWORK))
-		return rc;
+		if (!(profile & ACCT_GATHER_PROFILE_NETWORK))
+			run = false;
+	}
 
-	if (!flag_init_done) {
-
-		flag_init_done = true;
-		_ofed_init();
-	}else
+	if (run)
 		_update_node_infiniband();
 
 	return rc;
