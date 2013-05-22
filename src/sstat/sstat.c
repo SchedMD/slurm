@@ -190,7 +190,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid, char *nodelist,
 int main(int argc, char **argv)
 {
 	ListIterator itr = NULL;
-	uint32_t req_cpufreq;
+	uint32_t req_cpufreq = NO_VAL;
 	uint32_t stepid = NO_VAL;
 	slurmdb_selected_step_t *selected_step = NULL;
 
