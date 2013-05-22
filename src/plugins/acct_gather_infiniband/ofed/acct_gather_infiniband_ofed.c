@@ -136,13 +136,18 @@ typedef struct {
 } ofed_sens_t;
 
 static ofed_sens_t ofed_sens = {0,0,0,0,0,0,0,0};
+static uint64_t last_update_xmtdata = 0;
+static uint64_t last_update_rcvdata = 0;
+static uint64_t last_update_xmtpkts = 0;
+static uint64_t last_update_rcvpkts = 0;
+
 
 static uint8_t pc[1024];
 
 static slurm_ofed_conf_t ofed_conf;
 static uint32_t debug_flags = 0;
+static bool flag_init_done = false;
 static bool flag_thread_run_running = false;
-static bool flag_thread_started = false;
 static pthread_t thread_ofed_id_run = 0;
 static pthread_t cleanup_handler_thread = 0;
 static pthread_mutex_t ofed_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -170,27 +175,6 @@ static uint8_t *_slurm_pma_query_via(void *rcvbuf, ib_portid_t * dest, int port,
 #endif
 }
 
-static uint8_t *_slurm_performance_reset_via(void *rcvbuf, ib_portid_t * dest,
-					     int port, unsigned mask,
-					     unsigned timeout, unsigned id,
-					     const struct ibmad_port *srcport)
-{
-#ifdef HAVE_OFED_PMA_QUERY_VIA
-	return performance_reset_via(
-		pc, &portid, port, mask, ibd_timeout, id, srcport);
-#else
-	switch (id) {
-	case IB_GSI_PORT_COUNTERS_EXT:
-		return port_performance_ext_reset_via(
-			pc, &portid, port, mask, ibd_timeout, srcport);
-		break;
-	default:
-		error("_slurm_performance_reset_via: unhandled id");
-	}
-	return NULL;
-#endif
-}
-
 static void _task_sleep(int rem)
 {
 	while (rem)
@@ -202,11 +186,6 @@ static void _task_sleep(int rem)
  */
 static int _read_ofed_values(void)
 {
-	static uint64_t last_update_xmtdata = 0;
-	static uint64_t last_update_rcvdata = 0;
-	static uint64_t last_update_xmtpkts = 0;
-	static uint64_t last_update_rcvpkts = 0;
-	static bool first = true;
 	int rc = SLURM_SUCCESS;
 
 	uint64_t mask = 0xffffffffffffffff;
@@ -227,38 +206,15 @@ static int _read_ofed_values(void)
 	mad_decode_field(pc, IB_PC_EXT_XMT_PKTS_F, &send_pkts);
 	mad_decode_field(pc, IB_PC_EXT_RCV_PKTS_F, &recv_pkts);
 
-	if (!first) {
-		ofed_sens.xmtdata = (send_val - last_update_xmtdata) * 4;
-		ofed_sens.total_xmtdata += ofed_sens.xmtdata;
-		ofed_sens.rcvdata = (recv_val - last_update_rcvdata) * 4;
-		ofed_sens.total_rcvdata += ofed_sens.rcvdata;
-		ofed_sens.xmtpkts += send_pkts - last_update_xmtpkts;
-		ofed_sens.total_xmtpkts += ofed_sens.xmtpkts;
-		ofed_sens.rcvpkts += recv_pkts - last_update_rcvpkts;
-		ofed_sens.total_rcvpkts += ofed_sens.rcvpkts;
-	} else {
-		first = false;
-		last_update_xmtdata = send_val;
-		last_update_rcvdata = recv_val;
-		last_update_xmtpkts = send_pkts;
-		last_update_rcvpkts = recv_pkts;
-	}
+	ofed_sens.xmtdata = (send_val - last_update_xmtdata) * 4;
+	ofed_sens.total_xmtdata += ofed_sens.xmtdata;
+	ofed_sens.rcvdata = (recv_val - last_update_rcvdata) * 4;
+	ofed_sens.total_rcvdata += ofed_sens.rcvdata;
+	ofed_sens.xmtpkts += send_pkts - last_update_xmtpkts;
+	ofed_sens.total_xmtpkts += ofed_sens.xmtpkts;
+	ofed_sens.rcvpkts += recv_pkts - last_update_rcvpkts;
+	ofed_sens.total_rcvpkts += ofed_sens.rcvpkts;
 
-	if (send_val > reset_limit || recv_val > reset_limit) {
-		/* reset cost ~70 mirco secs */
-		if (!_slurm_performance_reset_via(pc, &portid, port, mask,
-						  ibd_timeout,
-						  IB_GSI_PORT_COUNTERS_EXT,
-						  srcport)) {
-			error("perf reset %m");
-			return SLURM_ERROR;
-		}
-		mad_decode_field(pc, IB_PC_EXT_XMT_BYTES_F, &send_val);
-		mad_decode_field(pc, IB_PC_EXT_RCV_BYTES_F, &recv_val);
-		mad_decode_field(pc, IB_PC_EXT_XMT_PKTS_F, &send_pkts);
-		mad_decode_field(pc, IB_PC_EXT_RCV_PKTS_F, &recv_pkts);
-
-	}
 	last_update_xmtdata = send_val;
 	last_update_rcvdata = recv_val;
 	last_update_xmtpkts = send_pkts;
@@ -307,7 +263,7 @@ static int _update_node_infiniband(void)
 /*
  * _thread_init initializes values and conf for the ipmi thread
  */
-static int _thread_init(void)
+static int _ofed_init(void)
 {
 	int rc = SLURM_SUCCESS;
 	int mgmt_classes[4] = {IB_SMI_CLASS, IB_SMI_DIRECT_CLASS, IB_SA_CLASS,
@@ -339,68 +295,15 @@ static int _thread_init(void)
 		return SLURM_ERROR;
 	}
 
-	/* reset cost ~70 mirco secs */
-	if (!_slurm_performance_reset_via(pc, &portid, port, mask,
-					  ibd_timeout,
-					  IB_GSI_PORT_COUNTERS_EXT,
-					  srcport)) {
-		error("perf reset %m");
-		return SLURM_ERROR;
-	}
-
-	mad_decode_field(pc, IB_PC_EXT_XMT_BYTES_F, &ofed_sens.xmtdata);
-	mad_decode_field(pc, IB_PC_EXT_RCV_BYTES_F, &ofed_sens.rcvdata);
-	mad_decode_field(pc, IB_PC_EXT_XMT_PKTS_F, &ofed_sens.xmtpkts);
-	mad_decode_field(pc, IB_PC_EXT_RCV_PKTS_F, &ofed_sens.rcvpkts);
+	mad_decode_field(pc, IB_PC_EXT_XMT_BYTES_F, &last_update_xmtdata);
+	mad_decode_field(pc, IB_PC_EXT_RCV_BYTES_F, &last_update_rcvdata);
+	mad_decode_field(pc, IB_PC_EXT_XMT_PKTS_F, &last_update_xmtpkts);
+	mad_decode_field(pc, IB_PC_EXT_RCV_PKTS_F, &last_update_rcvpkts);
 
 	if (debug_flags & DEBUG_FLAG_INFINIBAND)
-		info("%s thread init", plugin_name);
+		info("%s ofed init", plugin_name);
 
 	return rc;
-}
-
-static void *_cleanup_thread(void *no_data)
-{
-	pthread_join(thread_ofed_id_run, NULL);
-	return NULL;
-}
-
-/*
- * _thread_ofed_run is the thread calling ipmi
- */
-static void *_thread_ofed_run(void *no_data)
-{
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
-	flag_thread_run_running = true;
-	if (debug_flags & DEBUG_FLAG_INFINIBAND)
-		info("ofed-thread: launched");
-
-	memset(&portid, 0, sizeof(ib_portid_t));
-
-	if (_thread_init() != SLURM_SUCCESS) {
-		if (debug_flags & DEBUG_FLAG_INFINIBAND)
-			info("ofed-thread: aborted");
-		flag_thread_run_running = false;
-		return NULL;
-	}
-
-	debug("INFINIBAND: thread_ofed_run");
-	// init values
-	slurm_mutex_lock(&ofed_lock);
-	_read_ofed_values();
-	slurm_mutex_unlock(&ofed_lock);
-
-	//loop until end of job
-	while (flag_thread_started) {
-		_task_sleep(ofed_conf.freq);
-		_update_node_infiniband();
-	}
-
-	flag_thread_run_running = false;
-
-	return NULL;
 }
 
 static bool _run_in_daemon(void)
@@ -433,76 +336,34 @@ extern int fini(void)
 	if (!_run_in_daemon())
 		return SLURM_SUCCESS;
 
-	flag_thread_started = false;
-
-	/* Daemon termination handled here */
-	if (flag_thread_run_running && (debug_flags & DEBUG_FLAG_INFINIBAND))
-		info("Waiting for ofed thread to finish.");
-
-	slurm_mutex_lock(&ofed_lock);
-	if (thread_ofed_id_run)
-		pthread_cancel(thread_ofed_id_run);
-	if (cleanup_handler_thread)
-		pthread_join(cleanup_handler_thread, NULL);
-
-	slurm_mutex_unlock(&ofed_lock);
-
 	if (srcport) {
 		_update_node_infiniband();
 		mad_rpc_close_port(srcport);
 	}
 
 	if (debug_flags & DEBUG_FLAG_INFINIBAND)
-		info("ofed-thread: ended");
+		info("ofed: ended");
 
 	return SLURM_SUCCESS;
 }
 
-/* Notes: IB semantics is to cap counters if count has exceeded limits.
- * Therefore we must check for overflows and cap the counters if necessary.
- *
- * mad_decode_field and mad_encode_field assume 32 bit integers passed in
- * for fields < 32 bits in length.
- */
-
-extern int acct_gather_infiniband_p_node_init(void)
+extern int acct_gather_infiniband_p_node_update(void)
 {
+	uint32_t profile;
 	int rc = SLURM_SUCCESS;
 
-	if (!flag_thread_started) {
-		pthread_attr_t attr;
-		uint32_t profile;
+	acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
+		&profile);
 
-		flag_thread_started = true;
+	if (!(profile & ACCT_GATHER_PROFILE_NETWORK))
+		return rc;
 
-		acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
-					  &profile);
+	if (!flag_init_done) {
 
-		if (!(profile & ACCT_GATHER_PROFILE_NETWORK))
-			return rc;
-
-		debug("INFINIBAND: entered thread_launcher");
-		slurm_attr_init(&attr);
-		if (pthread_create(&thread_ofed_id_run, &attr,
-				   &_thread_ofed_run, NULL)) {
-			debug("infiniband accounting failed to create "
-			      "_thread_launcher thread: %m");
-			rc = SLURM_ERROR;
-		}
-		slurm_attr_destroy(&attr);
-
-		/* This is here to join the decay thread so we don't core
-		 * dump if in the sleep, since there is no other place to join
-		 * we have to create another thread to do it. */
-		slurm_attr_init(&attr);
-		if (pthread_create(&cleanup_handler_thread, &attr,
-				   _cleanup_thread, NULL))
-			fatal("pthread_create error %m");
-
-		slurm_attr_destroy(&attr);
-		if (debug_flags & DEBUG_FLAG_INFINIBAND)
-			info("%s thread launched", plugin_name);
-	}
+		flag_init_done = true;
+		_ofed_init();
+	}else
+		_update_node_infiniband();
 
 	return rc;
 }

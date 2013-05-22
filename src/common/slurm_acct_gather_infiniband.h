@@ -74,7 +74,7 @@ typedef struct acct_network_data {
 
 extern int acct_gather_infiniband_init(void); /* load the plugin */
 extern int acct_gather_infiniband_fini(void); /* unload the plugin */
-extern int acct_gather_infiniband_g_node_init(void);
+extern int acct_gather_infiniband_p_node_update(void);
 /*
  * Define plugin local conf for acct_gather.conf
  *

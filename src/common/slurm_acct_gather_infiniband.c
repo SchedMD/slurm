@@ -49,7 +49,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 typedef struct slurm_acct_gather_infiniband_ops {
-	int (*node_init)	(void);
+	int (*node_update)	(void);
 	void (*conf_options)	(s_p_options_t **full_options,
 				 int *full_options_cnt);
 	void (*conf_set)	(s_p_hashtbl_t *tbl);
@@ -59,7 +59,7 @@ typedef struct slurm_acct_gather_infiniband_ops {
  * declared for slurm_acct_gather_infiniband_ops_t.
  */
 static const char *syms[] = {
-	"acct_gather_infiniband_p_node_init",
+	"acct_gather_infiniband_p_node_update",
 	"acct_gather_infiniband_p_conf_options",
 	"acct_gather_infiniband_p_conf_set",
 };
@@ -119,14 +119,14 @@ extern int acct_gather_infiniband_fini(void)
 	return rc;
 }
 
-extern int acct_gather_infiniband_g_node_init(void)
+extern int acct_gather_infiniband_g_node_update(void)
 {
 	int retval = SLURM_ERROR;
 
 	if (slurm_acct_gather_infiniband_init() < 0)
 		return retval;
 
-	retval = (*(ops.node_init))();
+	retval = (*(ops.node_update))();
 
 	return retval;
 }

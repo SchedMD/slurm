@@ -844,6 +844,8 @@ extern void jobacct_gather_p_poll_data(
 	if (_check_lustre_fs() == SLURM_SUCCESS)
 		_read_lustre_counters();
 
+	acct_gather_infiniband_g_node_update();
+
 	jobacct_gather_handle_mem_limit(total_job_mem, total_job_vsize);
 
 finished:
