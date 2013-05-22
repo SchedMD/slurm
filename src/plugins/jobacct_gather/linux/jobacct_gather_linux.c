@@ -518,11 +518,7 @@ static int _check_lustre_fs()
 static int _read_lustre_counters(void )
 {
 	char lustre_dir[PATH_MAX];
-	char path[PATH_MAX];
 	char path_stats[PATH_MAX];
-	char *ptr;
-	int idx = 0;
-	int tmp_fd;
 	DIR *proc_dir;
 	struct dirent *entry;
 	FILE *fff;
@@ -549,66 +545,45 @@ static int _read_lustre_counters(void )
 	entry = readdir(proc_dir);
 
 	while (entry != NULL) {
-		memset(path, 0, PATH_MAX);
-		snprintf(path, PATH_MAX - 1, "%s/%s/stats", lustre_dir,
+		snprintf(path_stats, PATH_MAX - 1, "%s/%s/stats", lustre_dir,
 			 entry->d_name);
-		debug("LUSTRE checking for file %s\n", path);
+		debug3("Found file %s\n", path_stats);
 
-		if ((tmp_fd = open(path, O_RDONLY)) != -1) {
-			close(tmp_fd);
-			/* erase \r and \n at the end of path */
-			idx = strlen(path);
-			idx--;
+		fff = fopen(path_stats, "r");
+		if (fff) {
+			while(1) {
+				if (!fgets(buffer,BUFSIZ,fff))
+					break;
 
-			while (path[idx] == '\r' || path[idx] == '\n')
-				path[idx--] = 0;
-
-			/* Lustre paths are of type server-UUID */
-			idx = 0;
-			ptr = strstr(path,"llite/") + 6;
-
-			snprintf(path_stats, PATH_MAX - 1,
-				 "%s/%s/stats",
-				 lustre_dir,
-				 entry->d_name);
-			debug("Found file %s\n", path_stats);
-
-			fff = fopen(path_stats,"r");
-			if (fff) {
-				while(1) {
-					if (!fgets(buffer,BUFSIZ,fff))
-						break;
-
-					if (strstr(buffer, "write_bytes")) {
-						sscanf(buffer,
-						       "%*s %"PRIu64" %*s %*s "
-						       "%*d %*d %"PRIu64"",
-						       &lustre_nb_writes,
-						       &lustre_write_bytes);
-						debug3("Lustre Counter "
-						       "%"PRIu64" "
-						       "write_bytes %"PRIu64" "
-						       "writes\n",
-						       lustre_write_bytes,
-						       lustre_nb_writes);
-					}
-
-					if (strstr(buffer, "read_bytes")) {
-						sscanf(buffer,
-						       "%*s %"PRIu64" %*s %*s "
-						       "%*d %*d %"PRIu64"",
-						       &lustre_nb_reads,
-						       &lustre_read_bytes);
-						debug3("Lustre Counter "
-						       "%"PRIu64" "
-						       "read_bytes %"PRIu64" "
-						       "reads\n",
-						       lustre_read_bytes,
-						       lustre_nb_reads);
-					}
+				if (strstr(buffer, "write_bytes")) {
+					sscanf(buffer,
+					       "%*s %"PRIu64" %*s %*s "
+					       "%*d %*d %"PRIu64"",
+					       &lustre_nb_writes,
+					       &lustre_write_bytes);
+					debug3("Lustre Counter "
+					       "%"PRIu64" "
+					       "write_bytes %"PRIu64" "
+					       "writes\n",
+					       lustre_write_bytes,
+					       lustre_nb_writes);
 				}
-				fclose(fff);
+
+				if (strstr(buffer, "read_bytes")) {
+					sscanf(buffer,
+					       "%*s %"PRIu64" %*s %*s "
+					       "%*d %*d %"PRIu64"",
+					       &lustre_nb_reads,
+					       &lustre_read_bytes);
+					debug3("Lustre Counter "
+					       "%"PRIu64" "
+					       "read_bytes %"PRIu64" "
+					       "reads\n",
+					       lustre_read_bytes,
+					       lustre_nb_reads);
+				}
 			}
+			fclose(fff);
 		}
 		entry = readdir(proc_dir);
 		all_lustre_write_bytes += lustre_write_bytes;
