@@ -148,14 +148,9 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 			jobinfo->geometry[i] = uint16[i];
 			new_size *= uint16[i];
 			/* Make sure the conn type is correct with the
-			 * new count */
-			if (new_size > 1) {
-				if (first_conn_type == (uint16_t)NO_VAL)
-					jobinfo->conn_type[i] = SELECT_NAV;
-				else if (first_conn_type >= SELECT_SMALL)
-					jobinfo->conn_type[i] =
-						bg_conf->default_conn_type[i];
-			}
+			 * new count (if Geometry is requested it
+			 * can't be small) */
+			jobinfo->conn_type[i] =	SELECT_NAV;
 		}
 
 		break;
@@ -217,13 +212,8 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 			if (jobinfo->conn_type[0] < SELECT_SMALL)
 				jobinfo->conn_type[0] = SELECT_SMALL;
 		} else if (jobinfo->conn_type[0] >= SELECT_SMALL) {
-			for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-				if (jobinfo->conn_type[i] == (uint16_t)NO_VAL)
-					jobinfo->conn_type[i] = SELECT_NAV;
-				else
-					jobinfo->conn_type[i] =
-						bg_conf->default_conn_type[i];
-			}
+			for (i=0; i<SYSTEM_DIMENSIONS; i++)
+				jobinfo->conn_type[i] = SELECT_NAV;
 		}
 		break;
 	case SELECT_JOBDATA_ALTERED:
