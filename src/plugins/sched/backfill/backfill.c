@@ -495,7 +495,7 @@ extern void *backfill_agent(void *args)
 			continue;
 
 		lock_slurmctld(all_locks);
-		while (_attempt_backfill()) ;
+		(void) _attempt_backfill();
 		last_backfill_time = time(NULL);
 		unlock_slurmctld(all_locks);
 	}
