@@ -36,6 +36,7 @@ documents those changes that are of interest to users and admins.
     running on the node within a reservation.
  -- switch/nrt - Correct network_id use logic. Correct support for user sn_all
     and sn_single options.
+ -- sched/backfill - Modify logic to reduce overhead under heavy load.
 
 * Changes in Slurm 2.5.6
 ========================
