@@ -66,6 +66,22 @@
 #include "src/common/slurm_acct_gather.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+typedef enum {
+	PROFILE_ENERGY,
+	PROFILE_TASK,
+	PROFILE_FILESYSTEM,
+	PROFILE_NETWORK,
+	PROFILE_CNT
+} acct_gather_profile_type_t;
+
+typedef struct {
+	int freq;
+	pthread_cond_t notify;
+} acct_gather_profile_timer_t;
+
+extern acct_gather_profile_timer_t acct_gather_profile_timer[PROFILE_CNT];
+extern pthread_mutex_t acct_gather_profile_timer_mutex;
+
 /*
  * Load the plugin
  */

@@ -79,11 +79,42 @@ static const char *syms[] = {
 	"acct_gather_profile_p_add_sample_data",
 };
 
+acct_gather_profile_timer_t acct_gather_profile_timer[PROFILE_CNT];
+pthread_mutex_t acct_gather_profile_timer_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static slurm_acct_gather_profile_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t profile_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
+static bool poll_started = 0;
+static pthread_t timer_thread_id = 0;
+
+static void *_timer_thread(void *args)
+{
+	time_t last_time = time(NULL);
+	int i, now, diff;
+
+	while (init_run) {
+		now = time(NULL);
+		diff = now - last_time;
+		last_time = now;
+
+		slurm_mutex_lock(&acct_gather_profile_timer_mutex);
+		for (i=0; i<PROFILE_CNT; i++) {
+			if (!acct_gather_profile_timer[i].freq
+			    || (diff < acct_gather_profile_timer[i].freq))
+				continue;
+			/* signal poller to start */
+			pthread_cond_signal(
+				&acct_gather_profile_timer[i].notify);
+		}
+		slurm_mutex_unlock(&acct_gather_profile_timer_mutex);
+		sleep(1);
+	}
+
+	return NULL;
+}
 
 extern int acct_gather_profile_init(void)
 {
@@ -122,11 +153,22 @@ done:
 
 extern int acct_gather_profile_fini(void)
 {
-	int rc;
+	int rc, i;
+
 	if (!g_context)
 		return SLURM_SUCCESS;
 
 	init_run = false;
+
+	slurm_mutex_lock(&acct_gather_profile_timer_mutex);
+	for (i=0; i < PROFILE_CNT; i++) {
+		if (acct_gather_profile_timer[i].freq)
+			pthread_cond_destroy(
+				&acct_gather_profile_timer[i].notify);
+		acct_gather_profile_timer[i].freq = 0;
+	}
+	slurm_mutex_unlock(&acct_gather_profile_timer_mutex);
+
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 	return rc;
@@ -214,6 +256,112 @@ extern uint32_t acct_gather_profile_type_from_string(char *series_str)
 		return ACCT_GATHER_PROFILE_NETWORK;
 
 	return ACCT_GATHER_PROFILE_NOT_SET;
+}
+
+extern int acct_gather_profile_startpoll(slurmd_job_t *job, char *freq,
+					 char *freq_def)
+{
+	int retval = SLURM_SUCCESS;
+	pthread_attr_t attr;
+	int i;
+	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET;
+
+	if (acct_gather_profile_init() < 0)
+		return SLURM_ERROR;
+
+	if (poll_started) {
+		error("acct_gather_profile_startpoll: poll already started!");
+		return retval;
+	}
+	poll_started = true;
+
+	(*(ops.get))(ACCT_GATHER_PROFILE_RUNNING, &profile);
+	xassert(profile != ACCT_GATHER_PROFILE_NOT_SET);
+
+	for (i=0; i < PROFILE_CNT; i++) {
+		char *type = NULL;
+
+		memset(&acct_gather_profile_timer[i], 0,
+		       sizeof(acct_gather_profile_timer_t));
+		switch (i) {
+		case PROFILE_ENERGY:
+			if (!(profile & ACCT_GATHER_PROFILE_ENERGY))
+				break;
+			if ((type = slurm_strcasestr(freq, "energy=")))
+				acct_gather_profile_timer[i].freq =
+					atol(type+7);
+			else if ((type = slurm_strcasestr(
+					  freq_def, "energy=")))
+				acct_gather_profile_timer[i].freq =
+					atol(type+7);
+
+			break;
+		case PROFILE_TASK:
+			/* Always set up the task (always first) to be
+			   done since it is used to control memory
+			   consumption and such.  It will check
+			   profile inside it's plugin.
+			*/
+			acct_gather_profile_timer[i].freq = atol(freq);
+			if (acct_gather_profile_timer[i].freq == -1) {
+				if ((type = slurm_strcasestr(freq, "task=")))
+					acct_gather_profile_timer[i].freq =
+						atol(type+5);
+				else if ((type = slurm_strcasestr(
+						  freq_def, "task=")))
+					acct_gather_profile_timer[i].freq =
+						atol(type+5);
+			}
+
+			break;
+		case PROFILE_FILESYSTEM:
+			if (!(profile & ACCT_GATHER_PROFILE_LUSTRE))
+				break;
+			if ((type = slurm_strcasestr(freq, "filesystem=")))
+				acct_gather_profile_timer[i].freq =
+					atol(type+11);
+			else if ((type = slurm_strcasestr(
+					  freq_def, "filesystem=")))
+				acct_gather_profile_timer[i].freq =
+					atol(type+11);
+
+			break;
+		case PROFILE_NETWORK:
+			if (!(profile & ACCT_GATHER_PROFILE_NETWORK))
+				break;
+			if ((type = slurm_strcasestr(freq, "network=")))
+				acct_gather_profile_timer[i].freq =
+					atol(type+8);
+			else if ((type = slurm_strcasestr(
+					  freq_def, "network=")))
+				acct_gather_profile_timer[i].freq =
+					atol(type+8);
+
+			break;
+		default:
+			fatal("Unhandled profile option %d please update "
+			      "slurm_acct_gather_profile.c "
+			      "(acct_gather_profile_startpoll)", i);
+		}
+		if (acct_gather_profile_timer[i].freq)
+			pthread_cond_init(&acct_gather_profile_timer[i].notify,
+					  NULL);
+	}
+
+	/* create polling thread */
+	slurm_attr_init(&attr);
+	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+
+	if  (pthread_create(&timer_thread_id, &attr,
+			    &_timer_thread, NULL)) {
+		debug("acct_gather_profile_startpoll failed to create "
+		      "_timer_thread: %m");
+	} else
+		debug3("acct_gather_profile_startpoll dynamic logging enabled");
+	slurm_attr_destroy(&attr);
+
+	return retval;
 }
 
 extern void acct_gather_profile_g_conf_options(s_p_options_t **full_options,
