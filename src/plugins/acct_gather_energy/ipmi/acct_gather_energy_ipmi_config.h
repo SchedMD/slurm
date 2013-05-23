@@ -49,6 +49,8 @@ typedef struct slurm_ipmi_conf {
 	/* Adjust/approach the consumption
 	 * in function of time between ipmi update and read call */
 	bool adjustment;
+	/*Timeout for the ipmi thread*/
+	uint32_t timeout;
 	/* Options for IPMI configuration*/
 	/* Use a specific in-band driver.
 	 *   IPMI_MONITORING_DRIVER_TYPE_KCS      = 0x00,

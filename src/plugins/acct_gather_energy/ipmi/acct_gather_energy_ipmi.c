@@ -82,7 +82,6 @@ slurmd_conf_t *conf = NULL;
 
 #define _DEBUG 1
 #define _DEBUG_ENERGY 1
-#define TIMEOUT 10
 #define NBFIRSTREAD 3
 
 /*
@@ -640,6 +639,11 @@ static int _thread_init(void)
 		} else {
 			local_energy->current_watts = last_update_watt;
 		}
+		if (slurm_ipmi_conf.reread_sdr_cache)
+			//IPMI cache is reread only on initialisation
+			//This option need a big EnergyIPMITimeout
+			sensor_reading_flags ^=
+				IPMI_MONITORING_SENSOR_READING_FLAGS_REREAD_SDR_CACHE;
 	}
 	slurm_mutex_lock(&ipmi_mutex);
 	local_energy->consumed_energy = 0;
@@ -909,7 +913,7 @@ static void *_thread_launcher(void *no_data)
 
 	begin_time = time(NULL);
 	while (rc == SLURM_SUCCESS) {
-		if (time(NULL) - begin_time > TIMEOUT) {
+		if (time(NULL) - begin_time > slurm_ipmi_conf.timeout) {
 			error("ipmi thread launch timeout");
 			rc = SLURM_ERROR;
 			break;
@@ -921,7 +925,7 @@ static void *_thread_launcher(void *no_data)
 
 	begin_time = time(NULL);
 	while (rc == SLURM_SUCCESS) {
-		if (time(NULL) - begin_time > TIMEOUT) {
+		if (time(NULL) - begin_time > slurm_ipmi_conf.timeout) {
 			error("ipmi thread init timeout");
 			rc = SLURM_ERROR;
 			break;
@@ -1211,6 +1215,7 @@ extern void acct_gather_energy_p_conf_options(s_p_options_t **full_options,
 		{"EnergyIPMIFrequency", S_P_UINT32},
 		{"EnergyIPMICalcAdjustment", S_P_BOOLEAN},
 		{"EnergyIPMIPowerSensor", S_P_UINT32},
+		{"EnergyIPMITimeout", S_P_UINT32},
 		{NULL} };
 
 	transfer_s_p_options(full_options, options, full_options_cnt);
@@ -1305,6 +1310,9 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 
 		s_p_get_uint32(&slurm_ipmi_conf.power_sensor_num,
 			       "EnergyIPMIPowerSensor", tbl);
+
+		s_p_get_uint32(&slurm_ipmi_conf.timeout,
+			       "EnergyIPMITimeout", tbl);
 	}
 
 	if (!_run_in_daemon())

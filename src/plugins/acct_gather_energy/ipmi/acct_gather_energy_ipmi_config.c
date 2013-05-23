@@ -54,6 +54,8 @@
 
 #include "acct_gather_energy_ipmi_config.h"
 
+#define TIMEOUT 10
+
 /* Local functions */
 extern void reset_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 {
@@ -61,6 +63,7 @@ extern void reset_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 		slurm_ipmi_conf->power_sensor_num = -1;
 		slurm_ipmi_conf->freq = -1;
 		slurm_ipmi_conf->adjustment = false;
+		slurm_ipmi_conf->timeout = TIMEOUT;
 		slurm_ipmi_conf->driver_type = -1;
 		slurm_ipmi_conf->disable_auto_probe = 0;
 		slurm_ipmi_conf->driver_address = 0;
