@@ -497,21 +497,47 @@ static int _read_last_consumed_energy(ipmi_message_t* message)
 {
 	int rc = SLURM_SUCCESS;
 	int pipe;
-	char *name = NULL;
+	struct timeval t0,t1;
+	int time_left, timeout_pipe = 200;
+	char *name = NULL, *mutex_name = NULL;
 
 	xstrfmtcat(name, "%s/%s_ipmi_pipe", conf->spooldir, conf->node_name);
+	xstrfmtcat(mutex_name, "%s/%s_ipmi_pipe_mutex",
+		   conf->spooldir, conf->node_name);
+	gettimeofday(&t0, NULL);
+	while (access(mutex_name, F_OK) != -1) {
+		gettimeofday(&t1, NULL);
+		time_left =   (t1.tv_sec  - t0.tv_sec ) * 1000;
+		time_left += ((t1.tv_usec - t0.tv_usec + 500) / 1000);
+		if (time_left > timeout_pipe) {
+			info("error: ipmi_read: timeout on mutex"
+			     "(wait more than %d millisec",timeout_pipe);
+			xfree(name);
+			xfree(mutex_name);
+			return SLURM_ERROR;
+		}
+	}
+	mkfifo(mutex_name, 0777);
 	pipe = open(name, O_RDONLY);
 	if (pipe < 0) {
-		error("ipmi: failed to read ipmi pipe: %m");
+		info("error: ipmi_read: failed to open ipmi pipe: %m");
+		remove(mutex_name);
+		xfree(name);
+		xfree(mutex_name);
 		return SLURM_ERROR;
 	}
 	safe_read(pipe, message, sizeof(ipmi_message_t));
 	close(pipe);
 	remove(name);
 	xfree(name);
+	xfree(mutex_name);
 	return rc;
 rwfail:
-	error("Unable to recv consumption information.");
+	info("error: ipmi_read: Unable to read on ipmi pipe.");
+	close(pipe);
+	remove(mutex_name);
+	xfree(name);
+	xfree(mutex_name);
 	return SLURM_ERROR;
 }
 
@@ -673,7 +699,9 @@ static int _ipmi_write_profile(void)
 
 	return SLURM_SUCCESS;
 rwfail:
-	error("Unable to send consumption information.");
+	info("error: ipmi-thread-write: Unable to write on ipmi profile pipe.");
+	close(pipe);
+	_clean_profile_message(profile_message);
 	return SLURM_FAILURE;
 }
 
@@ -697,7 +725,7 @@ static int _ipmi_read_profile(bool all_value)
 
 	pipe = open(name, O_RDONLY);
 	if (pipe < 0) {
-		error("ipmi: failed to read profile pipe: %m");
+		info("error: ipmi_read: failed to open profile pipe: %m");
 		xfree(recv_energy);
 		return SLURM_ERROR;
 	}
@@ -731,7 +759,11 @@ static int _ipmi_read_profile(bool all_value)
 
 	return SLURM_SUCCESS;
 rwfail:
-	error("Unable to recv consumption information.");
+	info("error: ipmi-read: Unable to read on ipmi profile pipe.");
+	xfree(name);
+	close(pipe);
+	//remove(name);
+	_clean_profile_message(recv_energy);
 	return SLURM_ERROR;
 }
 
@@ -741,7 +773,7 @@ rwfail:
 static void *_thread_ipmi_write(void *no_data)
 {
 	int pipe;
-	char *name = NULL;
+	char *name = NULL, *mutex_name = NULL;
 	ipmi_message_t message;
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -756,10 +788,19 @@ static void *_thread_ipmi_write(void *no_data)
 	xstrfmtcat(name, "%s/%s_ipmi_pipe", conf->spooldir, conf->node_name);
 	remove(name);
 
+	xstrfmtcat(mutex_name, "%s/%s_ipmi_pipe_mutex",
+		   conf->spooldir, conf->node_name);
+	remove(mutex_name);
+	mkfifo(name, 0777);
+
 	while (!flag_energy_accounting_shutdown && flag_thread_run_running) {
-		mkfifo(name, 0777);
 		//wait until pipe is read
 		pipe = open(name, O_WRONLY);
+		if (pipe < 0) {
+			info("error: ipmi-thread-write:"
+			     "Unable to open on ipmi pipe: %m");
+			continue;
+		}
 		slurm_mutex_lock(&ipmi_mutex);
 		message.energy = local_energy->consumed_energy;
 		message.watts = local_energy->current_watts;
@@ -775,9 +816,12 @@ static void *_thread_ipmi_write(void *no_data)
 		//wait for free pipe
 		while (access(name, F_OK) != -1) {//do nothing
 		}
+		mkfifo(name, 0777);
+		remove(mutex_name);
 	}
 	remove(name);
 	xfree(name);
+	xfree(mutex_name);
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("ipmi-thread-write: ended");
@@ -785,7 +829,11 @@ static void *_thread_ipmi_write(void *no_data)
 	flag_thread_write_running = false;
 	return NULL;
 rwfail:
-	error("Unable to send consumption information.");
+	info("error: ipmi-thread-write: Unable to write on ipmi pipe.");
+	remove(name);
+	remove(mutex_name);
+	xfree(name);
+	xfree(mutex_name);
 	return NULL;
 }
 
