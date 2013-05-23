@@ -682,7 +682,6 @@ extern int schedule(uint32_t job_limit)
 
 	DEF_TIMERS;
 
-	START_TIMER;
 	sched_start = now;
 	if (sched_update != slurmctld_conf.last_update) {
 		char *sched_params, *tmp_ptr;
@@ -726,6 +725,7 @@ extern int schedule(uint32_t job_limit)
 		job_limit = def_job_limit;
 
 	lock_slurmctld(job_write_lock);
+	START_TIMER;
 	if (!avail_front_end(NULL)) {
 		ListIterator job_iterator = list_iterator_create(job_list);
 		while ((job_ptr = (struct job_record *)
