@@ -1150,9 +1150,9 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 			if ((adapter_type != NRT_MAX_ADAPTER_TYPES) &&
 			    (adapter->adapter_type != adapter_type))
 				continue;
-			if ((network_id >= 0) &&
-			    (adapter->network_id != network_id))
-				continue;
+//			if ((network_id >= 0) &&
+//			    (adapter->network_id != network_id))
+//				continue;
 			if (user_space &&
 			    (adapter->adapter_type == NRT_IPONLY))
 				continue;
@@ -1332,8 +1332,8 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 			}
 			continue;
 		}
-		if ((network_id >= 0) && (adapter->network_id != network_id))
-			continue;
+//		if ((network_id >= 0) && (adapter->network_id != network_id))
+//			continue;
 		if ((adapter_type != NRT_MAX_ADAPTER_TYPES) &&
 		    (adapter->adapter_type == adapter_type)) {
 			adapter = &node->adapter_list[i];
