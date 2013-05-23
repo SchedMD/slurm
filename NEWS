@@ -145,6 +145,8 @@ documents those changes that are of interest to users and admins.
  -- CRAY - Support CLE 4.2.0
  -- RebootNode logic - Defers (rather than forgets) reboot request with job
     running on the node within a reservation.
+ -- switch/nrt - Correct network_id use logic. Correct support for user sn_all
+    and sn_single options.
 
 * Changes in Slurm 2.5.6
 ========================
