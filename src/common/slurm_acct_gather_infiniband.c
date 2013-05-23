@@ -68,6 +68,31 @@ static slurm_acct_gather_infiniband_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
+static bool acct_shutdown = true;
+static int freq = 0;
+static bool plugin_polling = true;
+
+
+static void _poll_data(void)
+{
+	/* Update the data */
+	(*(ops.node_update))();
+}
+
+static void _task_sleep(int rem)
+{
+	while (rem)
+		rem = sleep(rem);       /* subject to interupt */
+}
+
+static void *_watch_node(void *arg)
+{
+	while (!acct_shutdown) {  /* Do this until shutdown is requested */
+		_poll_data();
+		_task_sleep(freq);
+	}
+	return NULL;
+}
 
 extern int slurm_acct_gather_infiniband_init(void)
 {
@@ -99,7 +124,7 @@ done:
 	slurm_mutex_unlock(&g_context_lock);
 	xfree(type);
 	if (retval == SLURM_SUCCESS)
-                retval = acct_gather_conf_init();
+		retval = acct_gather_conf_init();
 
 
 	return retval;
@@ -119,14 +144,45 @@ extern int acct_gather_infiniband_fini(void)
 	return rc;
 }
 
-extern int acct_gather_infiniband_g_node_update(void)
+extern int acct_gather_infiniband_startpoll(uint32_t frequency)
 {
-	int retval = SLURM_ERROR;
+	int retval = SLURM_SUCCESS;
+	pthread_attr_t attr;
+	pthread_t _watch_node_thread_id;
 
-	if (slurm_acct_gather_infiniband_init() < 0)
+	if (!plugin_polling)
+		return SLURM_SUCCESS;
+
+	if (acct_gather_infiniband_init() < 0)
+		return SLURM_ERROR;
+
+	if (!acct_shutdown) {
+		error("acct_gather_infiniband_startpoll: poll already started!");
 		return retval;
+	}
 
-	retval = (*(ops.node_update))();
+	acct_shutdown = false;
+
+	freq = frequency;
+
+	if (frequency == 0) {   /* don't want dynamic monitoring? */
+		debug2("acct_gather_infiniband dynamic logging disabled");
+		return retval;
+	}
+
+	/* create polling thread */
+	slurm_attr_init(&attr);
+	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+
+	if  (pthread_create(&_watch_node_thread_id, &attr,
+			    &_watch_node, NULL)) {
+		debug("acct_gather_infiniband failed to create _watch_node "
+		      "thread: %m");
+		frequency = 0;
+	} else
+		debug3("acct_gather_infiniband dynamic logging enabled");
+	slurm_attr_destroy(&attr);
 
 	return retval;
 }
@@ -135,15 +191,18 @@ extern int acct_gather_infiniband_g_node_update(void)
 extern void acct_gather_infiniband_g_conf_options(s_p_options_t **full_options,
 						  int *full_options_cnt)
 {
-        if (slurm_acct_gather_infiniband_init() < 0)
-                return;
-        (*(ops.conf_options))(full_options, full_options_cnt);
+	if (slurm_acct_gather_infiniband_init() < 0)
+		return;
+	(*(ops.conf_options))(full_options, full_options_cnt);
 }
 
 extern void acct_gather_infiniband_g_conf_set(s_p_hashtbl_t *tbl)
 {
-        if (slurm_acct_gather_infiniband_init() < 0)
-                return;
+	if (slurm_acct_gather_infiniband_init() < 0)
+		return;
+
+	(*(ops.conf_set))(tbl);
+}
 
         (*(ops.conf_set))(tbl);
 }
