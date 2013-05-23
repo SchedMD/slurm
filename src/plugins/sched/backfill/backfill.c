@@ -550,6 +550,7 @@ static int _attempt_backfill(void)
 	uint16_t *njobs = NULL;
 	bool already_counted;
 
+	bf_last_yields = 0;
 #ifdef HAVE_CRAY
 	/*
 	 * Run a Basil Inventory immediately before setting up the schedule
@@ -593,7 +594,6 @@ static int _attempt_backfill(void)
 	slurmctld_diag_stats.bf_last_depth = 0;
 	slurmctld_diag_stats.bf_last_depth_try = 0;
 	slurmctld_diag_stats.bf_when_last_cycle = now;
-	bf_last_yields = 0;
 	slurmctld_diag_stats.bf_active = 1;
 
 	node_space = xmalloc(sizeof(node_space_map_t) *

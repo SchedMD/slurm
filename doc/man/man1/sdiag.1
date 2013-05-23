@@ -125,12 +125,19 @@ Time when last execution cycle happened in format
 
 .TP
 \fBLast cycle\fR
-Time in microseconds of last backfilling cycle. It counts only execution time
-removing sleep time inside a scheduling cycle when it takes too much.
+Time in microseconds of last backfilling cycle.
+It counts only execution time removing sleep time inside a scheduling cycle
+when it takes too much time.
+Note that locks are released during the sleep time so that other work can
+proceed.
 
 .TP
 \fBMax cycle\fR
-Time in microseconds of maximum backfilling cycle execution since last reset
+Time in microseconds of maximum backfilling cycle execution since last reset.
+It counts only execution time removing sleep time inside a scheduling cycle
+when it takes too much time.
+Note that locks are released during the sleep time so that other work can
+proceed.
 
 .TP
 \fBMean cycle\fR
