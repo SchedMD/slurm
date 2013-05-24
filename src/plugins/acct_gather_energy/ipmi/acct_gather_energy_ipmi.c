@@ -1232,7 +1232,6 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 
 	/* Set initial values */
 	reset_slurm_ipmi_conf(&slurm_ipmi_conf);
-	slurm_ipmi_conf.freq = DEFAULT_IPMI_FREQ;
 
 	if (tbl) {
 		/* ipmi initialisation parameters */

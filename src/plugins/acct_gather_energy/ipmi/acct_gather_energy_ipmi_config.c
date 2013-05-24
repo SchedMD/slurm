@@ -61,7 +61,7 @@ extern void reset_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 {
 	if (slurm_ipmi_conf) {
 		slurm_ipmi_conf->power_sensor_num = -1;
-		slurm_ipmi_conf->freq = -1;
+		slurm_ipmi_conf->freq = DEFAULT_IPMI_FREQ;
 		slurm_ipmi_conf->adjustment = false;
 		slurm_ipmi_conf->timeout = TIMEOUT;
 		slurm_ipmi_conf->driver_type = -1;
