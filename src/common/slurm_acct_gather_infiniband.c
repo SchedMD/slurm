@@ -75,13 +75,16 @@ static bool plugin_polling = true;
 
 static void *_watch_node(void *arg)
 {
+	int type = PROFILE_NETWORK;
 	while (init_run && acct_gather_profile_running) {
 		/* Do this until shutdown is requested */
 		(*(ops.node_update))();
+		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
 		pthread_cond_wait(
-			&acct_gather_profile_timer[PROFILE_NETWORK].notify,
-			&acct_gather_profile_timer[PROFILE_NETWORK].
-			notify_mutex);
+			&acct_gather_profile_timer[type].notify,
+			&acct_gather_profile_timer[type].notify_mutex);
+		slurm_mutex_unlock(&acct_gather_profile_timer[type].
+				   notify_mutex);
 	}
 
 	return NULL;
@@ -169,8 +172,7 @@ extern int acct_gather_infiniband_startpoll(uint32_t frequency)
 	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
 		error("pthread_attr_setdetachstate error %m");
 
-	if  (pthread_create(&_watch_node_thread_id, &attr,
-			    &_watch_node, NULL)) {
+	if (pthread_create(&_watch_node_thread_id, &attr, &_watch_node, NULL)) {
 		debug("acct_gather_infiniband failed to create _watch_node "
 		      "thread: %m");
 		frequency = 0;

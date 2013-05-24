@@ -193,6 +193,7 @@ static void _task_sleep(int rem)
 
 static void *_watch_tasks(void *arg)
 {
+	int type = PROFILE_TASK;
 	/* Give chance for processes to spawn before starting
 	 * the polling. This should largely eliminate the
 	 * the chance of having /proc open when the tasks are
@@ -202,10 +203,12 @@ static void *_watch_tasks(void *arg)
 	while (!jobacct_shutdown && acct_gather_profile_running) {
 		/* Do this until shutdown is requested */
 		_poll_data();
+		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
 		pthread_cond_wait(
-			&acct_gather_profile_timer[PROFILE_TASK].notify,
-			&acct_gather_profile_timer[PROFILE_NETWORK].
-			notify_mutex);
+			&acct_gather_profile_timer[type].notify,
+			&acct_gather_profile_timer[type].notify_mutex);
+		slurm_mutex_unlock(&acct_gather_profile_timer[type].
+				   notify_mutex);
 	}
 	return NULL;
 }
