@@ -248,7 +248,7 @@ scontrol_hold(char *op, char *job_id_str)
 			array_id = (uint16_t) strtol(next_str+1, &next_str, 10);
 		else
 			array_id = (uint16_t) NO_VAL;
-		if ((job_msg.job_id == 0) || (next_str[0] != '\0')) {
+		if ((job_id == 0) || (next_str[0] != '\0')) {
 			fprintf(stderr, "Invalid job id specified\n");
 			return 1;
 		}
@@ -261,9 +261,10 @@ scontrol_hold(char *op, char *job_id_str)
 		if (quiet_flag == -1)
 			slurm_perror ("slurm_load_job error");
 		return 1;
-	}	
+	}
 
 	slurm_init_job_desc_msg (&job_msg);
+	job_msg.job_id = job_id;
 	/* set current user, needed e.g., for AllowGroups checks */
 	job_msg.user_id = getuid();
 	if ((strncasecmp(op, "holdu", 5) == 0) ||
@@ -291,7 +292,7 @@ scontrol_hold(char *op, char *job_id_str)
 
 		job_msg.job_id = job_ptr->job_id;
 		if (slurm_update_job(&job_msg))
-			rc = slurm_get_errno();	
+			rc = slurm_get_errno();
 	}
 
 	return rc;
