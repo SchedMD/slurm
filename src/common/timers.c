@@ -49,21 +49,20 @@
  * IN len_tv_str - size of tv_str in bytes
  * IN from - where the function was called form
  */
-extern void slurm_diff_tv_str(struct timeval *tv1,struct timeval *tv2,
+extern void slurm_diff_tv_str(struct timeval *tv1, struct timeval *tv2,
 			      char *tv_str, int len_tv_str, char *from,
-			      long limit)
+			      long limit, long *delta_t)
 {
 	char p[64] = "";
 	struct tm tm;
-	long delta_t;
 
-	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
-	delta_t +=  tv2->tv_usec - tv1->tv_usec;
+	(*delta_t)  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
+	(*delta_t) +=  tv2->tv_usec - tv1->tv_usec;
+	snprintf(tv_str, len_tv_str, "usec=%ld", *delta_t);
 	if (from) {
 		if (!limit)
 			limit = 1000000;
-		if (delta_t > limit) {
-			snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
+		if (*delta_t > limit) {
 			if (!localtime_r(&tv2->tv_sec, &tm))
 				fprintf(stderr, "localtime_r() failed\n");
 			if (strftime(p, sizeof(p), "%T", &tm) == 0)
@@ -73,18 +72,4 @@ extern void slurm_diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 				from, tv_str, p, (int)(tv2->tv_usec / 1000));
 		}
 	}
-}
-
-/*
- * slurm_diff_tv - return the difference between two times
- * IN tv1 - start of event
- * IN tv2 - end of event
- * RET time in micro-seconds
- */
-extern long slurm_diff_tv(struct timeval *tv1, struct timeval *tv2)
-{
-	long delta_t;
-	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
-	delta_t +=  tv2->tv_usec - tv1->tv_usec;
-	return delta_t;
 }

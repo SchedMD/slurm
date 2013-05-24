@@ -401,14 +401,13 @@ static bool _failed_partition(struct part_record *part_ptr,
 	return false;
 }
 
-static void do_diag_stats(struct timeval tv1, struct timeval tv2)
+static void _do_diag_stats(long delta_t)
 {
-	if (slurm_diff_tv(&tv1,&tv2) > slurmctld_diag_stats.schedule_cycle_max)
-		slurmctld_diag_stats.schedule_cycle_max = slurm_diff_tv(&tv1,
-									&tv2);
+	if (delta_t > slurmctld_diag_stats.schedule_cycle_max)
+		slurmctld_diag_stats.schedule_cycle_max = delta_t;
 
-	slurmctld_diag_stats.schedule_cycle_sum += slurm_diff_tv(&tv1, &tv2);
-	slurmctld_diag_stats.schedule_cycle_last = slurm_diff_tv(&tv1, &tv2);
+	slurmctld_diag_stats.schedule_cycle_sum += delta_t;
+	slurmctld_diag_stats.schedule_cycle_last = delta_t;
 	slurmctld_diag_stats.schedule_cycle_counter++;
 }
 
@@ -1080,7 +1079,7 @@ next_part:			part_ptr = (struct part_record *)
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("schedule");
 
-	do_diag_stats(tv1, tv2);
+	_do_diag_stats(DELTA_TIMER);
 
 	return job_cnt;
 }
