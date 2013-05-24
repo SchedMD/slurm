@@ -73,9 +73,9 @@ dnl aliases for plugins.
 dnl
 case "$host" in
 	*-*-aix*) AC_DEFINE(USE_ALIAS, 0,
-                 	[Define slurm_ prefix function aliases for plugins]) ;;
+			[Define slurm_ prefix function aliases for plugins]) ;;
 	*darwin*) AC_DEFINE(USE_ALIAS, 0,
-                  	[Define slurm_ prefix function aliases for plugins]) ;;
+			[Define slurm_ prefix function aliases for plugins]) ;;
 	*)        AC_DEFINE(USE_ALIAS, 1,
 			[Define slurm_ prefix function aliases for plugins]) ;;
 esac
@@ -119,12 +119,12 @@ AC_SEARCH_LIBS([kstat_open],    [kstat])
 dnl Checks for header files.
 dnl
 AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
-                 stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
-                 stdlib.h dirent.h pthread.h sys/prctl.h \
-                 sysint.h inttypes.h termcap.h netdb.h sys/socket.h  \
-                 sys/systemcfg.h ncurses.h curses.h sys/dr.h sys/vfs.h \
-                 pam/pam_appl.h security/pam_appl.h sys/sysctl.h \
-                 pty.h utmp.h \
+		 stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
+		 stdlib.h dirent.h pthread.h sys/prctl.h \
+		 sysint.h inttypes.h termcap.h netdb.h sys/socket.h  \
+		 sys/systemcfg.h ncurses.h curses.h sys/dr.h sys/vfs.h \
+		 pam/pam_appl.h security/pam_appl.h sys/sysctl.h \
+		 pty.h utmp.h \
 		 sys/syslog.h linux/sched.h \
 		 kstat.h paths.h limits.h sys/statfs.h sys/ptrace.h \
 		 sys/termios.h float.h
@@ -507,6 +507,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/acct_gather_infiniband/Makefile
 		 src/plugins/acct_gather_infiniband/ofed/Makefile
 		 src/plugins/acct_gather_infiniband/none/Makefile
+		 src/plugins/acct_gather_filesystem/Makefile
+		 src/plugins/acct_gather_filesystem/lustre/Makefile
+		 src/plugins/acct_gather_filesystem/none/Makefile
 		 src/plugins/acct_gather_profile/Makefile
 		 src/plugins/acct_gather_profile/hdf5/Makefile
 		 src/plugins/acct_gather_profile/hdf5/sh5util/Makefile

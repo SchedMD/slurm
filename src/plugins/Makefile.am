@@ -3,6 +3,7 @@ SUBDIRS = \
 	acct_gather_energy	\
 	acct_gather_profile	\
 	acct_gather_infiniband  \
+	acct_gather_filesystem  \
 	auth			\
 	checkpoint		\
 	crypto			\

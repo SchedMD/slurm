@@ -117,9 +117,6 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 static uint32_t _update_weighted_freq(struct jobacctinfo *jobacct,
 				      char * sbuf);
 
-/* Default path to lustre stats */
-const char proc_base_path[] = "/proc/fs/lustre/";
-
 
 /*
  * _get_offspring_data() -- collect memory usage data for the offspring
@@ -481,136 +478,6 @@ extern int fini (void)
 	return SLURM_SUCCESS;
 }
 
-/**
- *  is lustre fs supported
- **/
-static int _check_lustre_fs()
-{
-	static bool set = false;
-	static int rc = SLURM_SUCCESS;
-
-	if (!set) {
-		uint32_t profile = 0;
-		char lustre_directory[BUFSIZ];
-		DIR *proc_dir;
-
-		set = true;
-		acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
-					  &profile);
-		if ((profile & ACCT_GATHER_PROFILE_LUSTRE)) {
-			sprintf(lustre_directory, "%s/llite", proc_base_path);
-			proc_dir = opendir(proc_base_path);
-			if (!proc_dir) {
-				debug2("not able to read %s",
-				       lustre_directory);
-				rc = SLURM_FAILURE;
-			}
-			closedir(proc_dir);
-		} else
-			rc = SLURM_ERROR;
-	}
-
-	return rc;
-}
-
-/**
- * read counters from all mounted lustre fs
- */
-static int _read_lustre_counters(void )
-{
-	char lustre_dir[PATH_MAX];
-	char path_stats[PATH_MAX];
-	DIR *proc_dir;
-	struct dirent *entry;
-	FILE *fff;
-	char buffer[BUFSIZ];
-	uint64_t lustre_nb_writes = 0;
-	uint64_t lustre_nb_reads = 0;
-	uint64_t all_lustre_nb_writes = 0;
-	uint64_t all_lustre_nb_reads = 0;
-	uint64_t lustre_write_bytes = 0;
-	uint64_t lustre_read_bytes = 0;
-	uint64_t all_lustre_write_bytes = 0;
-	uint64_t all_lustre_read_bytes = 0;
-	struct lustre_data *lus;
-
-
-	sprintf(lustre_dir, "%s/llite", proc_base_path);
-
-	proc_dir = opendir(lustre_dir);
-	if (proc_dir == NULL) {
-		error("Cannot open %s\n", lustre_dir);
-		return SLURM_FAILURE;
-	}
-
-	entry = readdir(proc_dir);
-
-	while (entry != NULL) {
-		snprintf(path_stats, PATH_MAX - 1, "%s/%s/stats", lustre_dir,
-			 entry->d_name);
-		debug3("Found file %s\n", path_stats);
-
-		fff = fopen(path_stats, "r");
-		if (fff) {
-			while(1) {
-				if (!fgets(buffer,BUFSIZ,fff))
-					break;
-
-				if (strstr(buffer, "write_bytes")) {
-					sscanf(buffer,
-					       "%*s %"PRIu64" %*s %*s "
-					       "%*d %*d %"PRIu64"",
-					       &lustre_nb_writes,
-					       &lustre_write_bytes);
-					debug3("Lustre Counter "
-					       "%"PRIu64" "
-					       "write_bytes %"PRIu64" "
-					       "writes\n",
-					       lustre_write_bytes,
-					       lustre_nb_writes);
-				}
-
-				if (strstr(buffer, "read_bytes")) {
-					sscanf(buffer,
-					       "%*s %"PRIu64" %*s %*s "
-					       "%*d %*d %"PRIu64"",
-					       &lustre_nb_reads,
-					       &lustre_read_bytes);
-					debug3("Lustre Counter "
-					       "%"PRIu64" "
-					       "read_bytes %"PRIu64" "
-					       "reads\n",
-					       lustre_read_bytes,
-					       lustre_nb_reads);
-				}
-			}
-			fclose(fff);
-		}
-		entry = readdir(proc_dir);
-		all_lustre_write_bytes += lustre_write_bytes;
-		all_lustre_read_bytes += lustre_read_bytes;
-		all_lustre_nb_writes += lustre_nb_writes;
-		all_lustre_nb_reads += lustre_nb_reads;
-	}
-	closedir(proc_dir);
-
-	lus = xmalloc(sizeof(struct lustre_data));
-	memset(lus, 0, sizeof(struct lustre_data));
-
-	lus->reads = all_lustre_nb_reads;
-	lus->writes = all_lustre_nb_writes;
-	lus->read_size = (double) all_lustre_read_bytes / 1048576;
-	lus->write_size = (double) all_lustre_write_bytes / 1048576;
-	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_LUSTRE, lus);
-
-	debug3("Collection of Lustre counters Finished");
-	xfree(lus);
-
-	return SLURM_SUCCESS;
-}
-
-
-
 /*
  * jobacct_gather_p_poll_data() - Build a table of all current processes
  *
@@ -841,9 +708,6 @@ extern void jobacct_gather_p_poll_data(
 		list_iterator_destroy(itr2);
 	}
 	list_iterator_destroy(itr);
-
-	if (_check_lustre_fs() == SLURM_SUCCESS)
-		_read_lustre_counters();
 
 	jobacct_gather_handle_mem_limit(total_job_mem, total_job_vsize);
 

@@ -1891,6 +1891,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_THREADID     0x00100000      /* Print out the thread id */
 #define DEBUG_FLAG_PROFILE	0x00200000	/* AcctGatherProfile plugin */
 #define DEBUG_FLAG_INFINIBAND	0x00400000	/* AcctGatherInfiniband plugin */
+#define DEBUG_FLAG_FILESYSTEM 	0x00800000      /* AcctGatherFilesystem plugin */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to
@@ -1935,6 +1936,7 @@ typedef struct slurm_ctl_conf {
 	char *acct_gather_energy_type; /* energy accounting type */
 	char *acct_gather_profile_type; /* profile accounting type */
 	char *acct_gather_infiniband_type; /* infiniband accounting type */
+	char *acct_gather_filesystem_type; /* filesystem accounting type */
 	uint16_t acct_gather_node_freq; /* secs between node acct request */
 	char *authtype;		/* authentication type */
 	char *backup_addr;	/* comm path of slurmctld secondary server */
