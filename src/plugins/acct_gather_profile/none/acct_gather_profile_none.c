@@ -117,10 +117,10 @@ extern void acct_gather_profile_p_get(enum acct_gather_profile_info info_type,
 				      void *data)
 {
 	uint32_t *uint32 = (uint32_t *) data;
-	char **tmp_char = (char **) data;
 
 	switch (info_type) {
 	case ACCT_GATHER_PROFILE_DEFAULT:
+	case ACCT_GATHER_PROFILE_RUNNING:
 		*uint32 = ACCT_GATHER_PROFILE_NONE;
 		break;
 	default:
