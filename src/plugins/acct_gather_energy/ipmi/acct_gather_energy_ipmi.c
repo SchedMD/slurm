@@ -146,6 +146,7 @@ static bool flag_thread_started = false;
 static bool flag_init = false;
 static bool flag_use_profile = false;
 static pthread_mutex_t ipmi_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t cleanup_handler_thread = 0;
 pthread_t thread_ipmi_id_launcher = 0;
 pthread_t thread_ipmi_id_run = 0;
 pthread_t thread_ipmi_id_write = 0;
@@ -898,6 +899,16 @@ static void *_thread_ipmi_run(void *no_data)
 	return NULL;
 }
 
+static void *_cleanup_thread(void *no_data)
+{
+	if (thread_ipmi_id_write)
+		pthread_join(thread_ipmi_id_write, NULL);
+	if (thread_ipmi_id_run)
+		pthread_join(thread_ipmi_id_run, NULL);
+
+	return NULL;
+}
+
 static void *_thread_launcher(void *no_data)
 {
 	//what arg would countain? frequency, socket?
@@ -959,6 +970,16 @@ static void *_thread_launcher(void *no_data)
 		flag_thread_run_running = false;
 
 		flag_energy_accounting_shutdown = true;
+	} else {
+		/* This is here to join the decay thread so we don't core
+		 * dump if in the sleep, since there is no other place to join
+		 * we have to create another thread to do it. */
+		slurm_attr_init(&attr_run);
+		if (pthread_create(&cleanup_handler_thread, &attr_run,
+				   _cleanup_thread, NULL))
+			fatal("pthread_create error %m");
+
+		slurm_attr_destroy(&attr_run);
 	}
 
 	return NULL;
@@ -1094,31 +1115,20 @@ extern int init(void)
 
 extern int fini(void)
 {
-	time_t begin_fini;
-
 	if (!_run_in_daemon())
 		return SLURM_SUCCESS;
 
 	flag_energy_accounting_shutdown = true;
-	begin_fini = time(NULL);
 
-	while (flag_thread_run_running || flag_thread_write_running) {
-		if ((time(NULL) - begin_fini) > (slurm_ipmi_conf.freq + 1)) {
-			error("Ipmi threads not finalized in appropriate time. "
-			      "Exit plugin without finalizing threads.");
-			if (thread_ipmi_id_write) {
-				pthread_cancel(thread_ipmi_id_write);
-				pthread_join(thread_ipmi_id_write, NULL);
-			}
-			if (thread_ipmi_id_run) {
-				pthread_cancel(thread_ipmi_id_run);
-				pthread_join(thread_ipmi_id_run, NULL);
-			}
-			break;
-		}
-		_task_sleep(1);
-		//wait for thread stop
-	}
+	slurm_mutex_lock(&ipmi_mutex);
+	if (thread_ipmi_id_write)
+		pthread_cancel(thread_ipmi_id_write);
+	if (thread_ipmi_id_run)
+		pthread_cancel(thread_ipmi_id_run);
+	if (cleanup_handler_thread)
+		pthread_join(cleanup_handler_thread, NULL);
+	slurm_mutex_unlock(&ipmi_mutex);
+
 	acct_gather_energy_destroy(local_energy);
 	local_energy = NULL;
 	return SLURM_SUCCESS;
