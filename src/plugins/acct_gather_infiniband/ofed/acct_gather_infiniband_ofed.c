@@ -185,7 +185,6 @@ static int _read_ofed_values(void)
 	if (first) {
 		int mgmt_classes[4] = {IB_SMI_CLASS, IB_SMI_DIRECT_CLASS,
 				       IB_SA_CLASS, IB_PERFORMANCE_CLASS};
-		first = 0;
 		srcport = mad_rpc_open_port(ibd_ca, ofed_conf.port,
 					    mgmt_classes, 4);
 		if (!srcport){
@@ -222,6 +221,7 @@ static int _read_ofed_values(void)
 		if (debug_flags & DEBUG_FLAG_INFINIBAND)
 			info("%s ofed init", plugin_name);
 
+		first = 0;
 		return SLURM_SUCCESS;
 	}
 

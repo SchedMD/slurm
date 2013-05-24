@@ -199,10 +199,13 @@ static void *_watch_tasks(void *arg)
 	 * spawned, which would prevent a valid checkpoint/restart
 	 * with some systems */
 	_task_sleep(1);
-
-	while (!jobacct_shutdown) {  /* Do this until shutdown is requested */
+	while (!jobacct_shutdown && acct_gather_profile_running) {
+		/* Do this until shutdown is requested */
 		_poll_data();
-		_task_sleep(freq);
+		pthread_cond_wait(
+			&acct_gather_profile_timer[PROFILE_TASK].notify,
+			&acct_gather_profile_timer[PROFILE_NETWORK].
+			notify_mutex);
 	}
 	return NULL;
 }

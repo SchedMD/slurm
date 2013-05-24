@@ -997,8 +997,6 @@ job_manager(slurmd_job_t *job)
 		goto fail2;
 	}
 
-	acct_gather_profile_g_node_step_start(job);
-
 	/* calls pam_setup() and requires pam_finish() if successful */
 	if ((rc = _fork_all_tasks(job, &io_initialized)) < 0) {
 		debug("_fork_all_tasks failed");

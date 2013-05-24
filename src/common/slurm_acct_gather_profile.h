@@ -76,11 +76,13 @@ typedef enum {
 
 typedef struct {
 	int freq;
+	time_t last_notify;
 	pthread_cond_t notify;
+	pthread_mutex_t notify_mutex;
 } acct_gather_profile_timer_t;
 
 extern acct_gather_profile_timer_t acct_gather_profile_timer[PROFILE_CNT];
-extern pthread_mutex_t acct_gather_profile_timer_mutex;
+extern bool acct_gather_profile_running;
 
 /*
  * Load the plugin
@@ -100,6 +102,8 @@ extern uint32_t acct_gather_profile_from_string(char *profile_str);
 
 extern char *acct_gather_profile_type_to_string(uint32_t series);
 extern uint32_t acct_gather_profile_type_from_string(char *series_str);
+
+extern int acct_gather_profile_startpoll(char *freq, char *freq_def);
 
 /*
  * Define plugin local conf for acct_gather.conf

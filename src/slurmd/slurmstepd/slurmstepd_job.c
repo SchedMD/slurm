@@ -57,6 +57,7 @@
 #include "src/common/log.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -294,6 +295,16 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->cpus    = msg->cpus_allocated[nodeid];
 	if (msg->acctg_freq != (uint16_t) NO_VAL)
 		jobacct_gather_change_poll(msg->acctg_freq);
+
+	/* This needs to happen before acct_gather_profile_startpoll
+	   and only really looks at the profile in the job.
+	*/
+	acct_gather_profile_g_node_step_start(job);
+
+	/* FIXME: uncomment this when we get acctg-freq working like a
+	   string */
+	//acct_gather_profile_startpoll("Network=10","5");
+
 	job->multi_prog  = msg->multi_prog;
 	job->timelimit   = (time_t) -1;
 	job->task_flags  = msg->task_flags;

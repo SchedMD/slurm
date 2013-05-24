@@ -46,6 +46,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_acct_gather_infiniband.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 typedef struct slurm_acct_gather_infiniband_ops {
@@ -72,29 +73,21 @@ static bool acct_shutdown = true;
 static int freq = 0;
 static bool plugin_polling = true;
 
-
-static void _poll_data(void)
-{
-	/* Update the data */
-	(*(ops.node_update))();
-}
-
-static void _task_sleep(int rem)
-{
-	while (rem)
-		rem = sleep(rem);       /* subject to interupt */
-}
-
 static void *_watch_node(void *arg)
 {
-	while (!acct_shutdown) {  /* Do this until shutdown is requested */
-		_poll_data();
-		_task_sleep(freq);
+	while (init_run && acct_gather_profile_running) {
+		/* Do this until shutdown is requested */
+		(*(ops.node_update))();
+		pthread_cond_wait(
+			&acct_gather_profile_timer[PROFILE_NETWORK].notify,
+			&acct_gather_profile_timer[PROFILE_NETWORK].
+			notify_mutex);
 	}
+
 	return NULL;
 }
 
-extern int slurm_acct_gather_infiniband_init(void)
+extern int acct_gather_infiniband_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "acct_gather_infiniband";
@@ -157,7 +150,8 @@ extern int acct_gather_infiniband_startpoll(uint32_t frequency)
 		return SLURM_ERROR;
 
 	if (!acct_shutdown) {
-		error("acct_gather_infiniband_startpoll: poll already started!");
+		error("acct_gather_infiniband_startpoll: "
+		      "poll already started!");
 		return retval;
 	}
 
@@ -191,18 +185,15 @@ extern int acct_gather_infiniband_startpoll(uint32_t frequency)
 extern void acct_gather_infiniband_g_conf_options(s_p_options_t **full_options,
 						  int *full_options_cnt)
 {
-	if (slurm_acct_gather_infiniband_init() < 0)
+	if (acct_gather_infiniband_init() < 0)
 		return;
 	(*(ops.conf_options))(full_options, full_options_cnt);
 }
 
 extern void acct_gather_infiniband_g_conf_set(s_p_hashtbl_t *tbl)
 {
-	if (slurm_acct_gather_infiniband_init() < 0)
+	if (acct_gather_infiniband_init() < 0)
 		return;
 
 	(*(ops.conf_set))(tbl);
-}
-
-        (*(ops.conf_set))(tbl);
 }
