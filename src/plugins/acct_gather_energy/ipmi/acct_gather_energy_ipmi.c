@@ -1341,7 +1341,7 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 			if (debug_flags & DEBUG_FLAG_ENERGY)
 				info("%s thread launched", plugin_name);
 		} else
-		_first_update_task_energy();
+			_first_update_task_energy();
 	}
 
 	verbose("%s loaded", plugin_name);
