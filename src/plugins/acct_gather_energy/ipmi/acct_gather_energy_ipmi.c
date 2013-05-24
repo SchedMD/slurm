@@ -1105,7 +1105,7 @@ extern int fini(void)
 
 	while (flag_thread_run_running || flag_thread_write_running) {
 		if ((time(NULL) - begin_fini) > (slurm_ipmi_conf.freq + 1)) {
-			error("Ipmi threads not finilized in appropriate time. "
+			error("Ipmi threads not finalized in appropriate time. "
 			      "Exit plugin without finalizing threads.");
 			if (thread_ipmi_id_write) {
 				pthread_cancel(thread_ipmi_id_write);
