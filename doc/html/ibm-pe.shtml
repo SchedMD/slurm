@@ -375,7 +375,7 @@ must be terminated before the switch resources can be released for use by anothe
 program. This means that reliable tracking of all spawned processes is critical
 for switch use. Use of <b>ProctrackType=proctrack/cgroup</b> is strongly
 recommended. Use of any other process tracking plugin significantly increases
-the likelyhood of orphan processes that must be manually identified and killed
+the likelihood of orphan processes that must be manually identified and killed
 in order to release switch resources.
 While it is possible to to configure distinct <b>NodeName</b> and
 <b>NodeHostName</b> parameters for the compute nodes, this is discouraged
@@ -436,6 +436,17 @@ the file /usr/lib64/libpermapi.so to contain SLURM's library or a link to it.</p
 #
 MP_PE_RMLIB=/usr/local/lib/slurm/libpermapi.so
 </pre>
+
+<p>Changes to the count of dynmamic switch windows necessitate cold-starting
+Slurm (without jobs). The procedure is as follows:</p>
+<ol>
+<li>Prevent new jobs from being started (e.g. Drain the compute nodes).</li>
+<li>Cancel all jobs.</li>
+<li>Change the dynamic window count on the compute nodes.</li>
+<li>Restart Slurm daemons without preserving state
+(e.g. "/etc/init.d/slurm/startclean" or initiate the daemons using the
+"-c" option).</li>
+</ol>
 
 <h3>Job Scheduling</h3>
 
@@ -504,15 +515,17 @@ In figure 2, note that the libpermapi library issues the job and job step
 creation requests. The srun command is an optional front-end for the poe
 command and the poe command can be invoked directly by the user if desired.</p>
 
+<hr width=80%>
 <img src="ibm_pe_fig1.png" width=600>
 <center>
 <p>Figure 1: Use of the switch/nrt plugin</p>
 </center>
-
+<hr width=80%>
 <img src="ibm_pe_fig2.png" width=600>
 <center>
 <p>Figure 2: Use of the launch/poe plugin</p>
 </center>
+<hr width=80%>
 
 <h3>Debugging Notes</h3>
 
@@ -535,6 +548,6 @@ startsrc -s pnsd -a -D
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 14 March 2013</p></td>
+<p style="text-align:center;">Last modified 24 May 2013</p></td>
 
 <!--#include virtual="footer.txt"-->
