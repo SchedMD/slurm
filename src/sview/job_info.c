@@ -4193,7 +4193,7 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter,
 					      GTK_STOCK_YES, GTK_RESPONSE_OK);
 		gtk_window_set_default(GTK_WINDOW(popup), label);
 		gtk_dialog_add_button(GTK_DIALOG(popup),
-				      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
+				      GTK_STOCK_NO, GTK_RESPONSE_CANCEL);
 
 		if (stepid != NO_VAL)
 			snprintf(tmp_char, sizeof(tmp_char),
