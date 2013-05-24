@@ -82,6 +82,7 @@ slurmd_conf_t *conf = NULL;
 
 #define _DEBUG 1
 #define _DEBUG_ENERGY 1
+#define IPMI_VERSION 1		/* Data structure version number */
 #define NBFIRSTREAD 3
 
 /*
@@ -501,6 +502,7 @@ static int _read_last_consumed_energy(ipmi_message_t* message)
 	struct timeval t0,t1;
 	int time_left, timeout_pipe = 200;
 	char *name = NULL, *mutex_name = NULL;
+	uint16_t format_version = 0;
 
 	xstrfmtcat(name, "%s/%s_ipmi_pipe", conf->spooldir, conf->node_name);
 	xstrfmtcat(mutex_name, "%s/%s_ipmi_pipe_mutex",
@@ -527,6 +529,12 @@ static int _read_last_consumed_energy(ipmi_message_t* message)
 		xfree(mutex_name);
 		return SLURM_ERROR;
 	}
+	safe_read(pipe, &format_version, sizeof(uint16_t));
+	if (format_version != IPMI_VERSION) {
+		error("error: ipmi_read: unsupported version number: %u"
+		      format_version);
+		goto rwfail;
+	}
 	safe_read(pipe, message, sizeof(ipmi_message_t));
 	close(pipe);
 	remove(name);
@@ -542,7 +550,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int _update_profile_message()
+static int _update_profile_message(void)
 {
 	ipmi_message_profile_t *tmp;
 	int new_size;
@@ -682,6 +690,7 @@ static int _ipmi_write_profile(void)
 {
 	int pipe;
 	char *name = NULL;
+	uint16_t format_version = IPMI_VERSION;
 
 	if (profile_message_size == 0)
 		return SLURM_SUCCESS;
@@ -699,6 +708,7 @@ static int _ipmi_write_profile(void)
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("ipmi-thread-write: write profile message on pipe");
+	safe_write(pipe, &format_version, sizeof(format_version));
 	safe_write(pipe, profile_message,
 		(int)(profile_message_size*sizeof(ipmi_message_profile_t)));
 	close(pipe);
@@ -718,6 +728,7 @@ static int _ipmi_read_profile(bool all_value)
 	int pipe, i;
 	char *name = NULL;
 	ipmi_message_profile_t *recv_energy;
+	uint16_t format_version = 0;
 
 	xstrfmtcat(name, "%s/%s_ipmi_pipe_profile",
 		   conf->spooldir, conf->node_name);
@@ -736,6 +747,12 @@ static int _ipmi_read_profile(bool all_value)
 		info("error: ipmi_read: failed to open profile pipe: %m");
 		xfree(recv_energy);
 		return SLURM_ERROR;
+	}
+	safe_read(pipe, &format_version, sizeof(format_version));
+	if (format_version != IPMI_VERSION) {
+		error("error: ipmi_read: unsupported version number: %u"
+		      format_version);
+		goto rwfail;
 	}
 	safe_read(pipe, recv_energy,
 		(int)(profile_message_size*sizeof(ipmi_message_profile_t)));
@@ -783,6 +800,7 @@ static void *_thread_ipmi_write(void *no_data)
 	int pipe;
 	char *name = NULL, *mutex_name = NULL;
 	ipmi_message_t message;
+	uint16_t format_version = IPMI_VERSION;
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -817,6 +835,7 @@ static void *_thread_ipmi_write(void *no_data)
 		if (debug_flags & DEBUG_FLAG_ENERGY)
 			info("ipmi-thread-write: write message on pipe");
 
+		safe_write(pipe, &format_version, sizeof(format_version));
 		safe_write(pipe, &(message), sizeof(ipmi_message_t));
 		close(pipe);
 		_ipmi_write_profile();
