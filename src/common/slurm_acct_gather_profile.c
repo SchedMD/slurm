@@ -53,6 +53,9 @@
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_acct_gather_infiniband.h"
 #include "src/common/slurm_strcasestr.h"
+#include "src/common/timers.h"
+
+#define USLEEP_TIME 1000000
 
 typedef struct slurm_acct_gather_profile_ops {
 	void (*conf_options)    (s_p_options_t **full_options,
@@ -111,8 +114,9 @@ static int _get_int(const char *my_str)
 static void *_timer_thread(void *args)
 {
 	int i, now, diff;
-
+	DEF_TIMERS;
 	while (acct_gather_profile_running) {
+		START_TIMER;
 		now = time(NULL);
 
 		for (i=0; i<PROFILE_CNT; i++) {
@@ -123,7 +127,7 @@ static void *_timer_thread(void *args)
 			if (!acct_gather_profile_timer[i].freq
 			    || (diff < acct_gather_profile_timer[i].freq))
 				continue;
-			/* info("signal %d", i); */
+			debug2("profile signalling type %d", i);
 
 			/* signal poller to start */
 			slurm_mutex_lock(&acct_gather_profile_timer[i].
@@ -134,7 +138,8 @@ static void *_timer_thread(void *args)
 					   notify_mutex);
 			acct_gather_profile_timer[i].last_notify = now;
 		}
-		sleep(1);
+		END_TIMER;
+		usleep(USLEEP_TIME - DELTA_TIMER);
 	}
 
 	return NULL;
