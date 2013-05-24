@@ -95,7 +95,11 @@ static bool init_run = false;
 static int _get_int(const char *my_str)
 {
 	char *end = NULL;
-	int value = strtol(my_str, &end, 10);
+	int value;
+
+	if (!my_str)
+		return -1;
+	value = strtol(my_str, &end, 10);
 	//info("from %s I get %d and %s: %m", my_str, value, end);
 	/* means no numbers */
 	if (my_str == end)

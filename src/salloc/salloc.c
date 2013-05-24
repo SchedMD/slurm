@@ -407,8 +407,8 @@ int main(int argc, char *argv[])
 		env_array_append_fmt(&env, "SLURM_OVERCOMMIT", "%d",
 			opt.overcommit);
 	}
-	if (opt.acctg_freq >= 0) {
-		env_array_append_fmt(&env, "SLURM_ACCTG_FREQ", "%d",
+	if (opt.acctg_freq) {
+		env_array_append_fmt(&env, "SLURM_ACCTG_FREQ", "%s",
 			opt.acctg_freq);
 	}
 	if (opt.network)

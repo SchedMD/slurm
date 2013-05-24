@@ -544,12 +544,16 @@ static int _update_profile_message()
 {
 	ipmi_message_profile_t *tmp;
 	int new_size;
-	slurm_ctl_conf_t *conf_ptr;
 
 	if (profile_message_memory==0) {
-		conf_ptr = slurm_conf_lock();
+		/* FIXME: now that job_acct_gather_freq is a string
+		   this needs to be changed.  This math looks wrong anyway.
+		*/
+		/* new_size = 4 * */
+		/* 	(2+ conf_ptr->job_acct_gather_freq /slurm_ipmi_conf.freq); */
 		new_size = 4 *
-			   (2+ conf_ptr->job_acct_gather_freq /slurm_ipmi_conf.freq);
+			(2 + acct_gather_profile_timer[PROFILE_TASK].freq
+			 / acct_gather_profile_timer[PROFILE_ENERGY].freq);
 		slurm_conf_unlock();
 		tmp = (ipmi_message_profile_t *)
 			xmalloc(sizeof(ipmi_message_profile_t)* new_size);

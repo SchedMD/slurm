@@ -450,7 +450,7 @@ struct env_vars {
 env_vars_t env_vars[] = {
   {"SBATCH_ACCOUNT",       OPT_STRING,     &opt.account,       NULL          },
   {"SBATCH_ARRAY_INX",     OPT_STRING,     &opt.array_inx,     NULL          },
-  {"SBATCH_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL          },
+  {"SBATCH_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL          },
   {"SBATCH_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL          },
   {"SBATCH_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL      },
   {"SBATCH_CHECKPOINT_DIR",OPT_STRING,     &opt.ckpt_dir,      NULL          },
@@ -2454,8 +2454,8 @@ static bool _opt_verify(void)
 			 acct_gather_profile_to_string(opt.profile));
 
 
-	if (opt.acctg_freq >= 0)
-		setenvf(NULL, "SLURM_ACCTG_FREQ", "%d", opt.acctg_freq);
+	if (opt.acctg_freq)
+		setenvf(NULL, "SLURM_ACCTG_FREQ", "%s", opt.acctg_freq);
 
 #ifdef HAVE_AIX
 	if (opt.network == NULL)

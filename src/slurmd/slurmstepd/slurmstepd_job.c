@@ -180,16 +180,17 @@ job_create(launch_tasks_request_msg_t *msg)
 		return NULL;
 	}
 
-	if (msg->job_mem_lim && (msg->acctg_freq != (uint16_t) NO_VAL)
-	   && (msg->acctg_freq > conf->job_acct_gather_freq)) {
-		error("Can't set frequency to %u, it is higher than %u.  "
-		      "We need it to be at least at this level to "
-		      "monitor memory usage.",
-		      msg->acctg_freq, conf->job_acct_gather_freq);
-		slurm_seterrno (ESLURMD_INVALID_ACCT_FREQ);
-		_pwd_destroy(pwd);
-		return NULL;
-	}
+	/* FIXME: handle this now that acctg_freq is a string */
+	/* if (msg->job_mem_lim && (msg->acctg_freq != (uint16_t) NO_VAL) */
+	/*     && (msg->acctg_freq > conf->job_acct_gather_freq)) { */
+	/* 	error("Can't set frequency to %u, it is higher than %u.  " */
+	/* 	      "We need it to be at least at this level to " */
+	/* 	      "monitor memory usage.", */
+	/* 	      msg->acctg_freq, conf->job_acct_gather_freq); */
+	/* 	slurm_seterrno (ESLURMD_INVALID_ACCT_FREQ); */
+	/* 	_pwd_destroy(pwd); */
+	/* 	return NULL; */
+	/* } */
 
 	job = xmalloc(sizeof(slurmd_job_t));
 #ifndef HAVE_FRONT_END
@@ -293,17 +294,14 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->nodeid  = nodeid;
 	job->debug   = msg->slurmd_debug;
 	job->cpus    = msg->cpus_allocated[nodeid];
-	if (msg->acctg_freq != (uint16_t) NO_VAL)
-		jobacct_gather_change_poll(msg->acctg_freq);
 
 	/* This needs to happen before acct_gather_profile_startpoll
 	   and only really looks at the profile in the job.
 	*/
 	acct_gather_profile_g_node_step_start(job);
 
-	/* FIXME: uncomment this when we get acctg-freq working like a
-	   string */
-	//acct_gather_profile_startpoll("Network=10","5");
+	acct_gather_profile_startpoll(msg->acctg_freq,
+				      conf->job_acct_gather_freq);
 
 	job->multi_prog  = msg->multi_prog;
 	job->timelimit   = (time_t) -1;
@@ -382,16 +380,18 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		_pwd_destroy(pwd);
 		return NULL;
 	}
-	if (msg->job_mem && (msg->acctg_freq != (uint16_t) NO_VAL) &&
-	    (msg->acctg_freq > conf->job_acct_gather_freq)) {
-		error("Can't set frequency to %u, it is higher than %u.  "
-		      "We need it to be at least at this level to "
-		      "monitor memory usage.",
-		      msg->acctg_freq, conf->job_acct_gather_freq);
-		slurm_seterrno (ESLURMD_INVALID_ACCT_FREQ);
-		_pwd_destroy(pwd);
-		return NULL;
-	}
+
+	/* FIXME: handle this now that acctg_freq is a string */
+	/* if (msg->job_mem_lim && (msg->acctg_freq != (uint16_t) NO_VAL) */
+	/*     && (msg->acctg_freq > conf->job_acct_gather_freq)) { */
+	/* 	error("Can't set frequency to %u, it is higher than %u.  " */
+	/* 	      "We need it to be at least at this level to " */
+	/* 	      "monitor memory usage.", */
+	/* 	      msg->acctg_freq, conf->job_acct_gather_freq); */
+	/* 	slurm_seterrno (ESLURMD_INVALID_ACCT_FREQ); */
+	/* 	_pwd_destroy(pwd); */
+	/* 	return NULL; */
+	/* } */
 
 	job = xmalloc(sizeof(slurmd_job_t));
 
@@ -407,8 +407,14 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->array_task_id = msg->array_task_id;
 
 	job->batch   = true;
-	if (msg->acctg_freq != (uint16_t) NO_VAL)
-		jobacct_gather_change_poll(msg->acctg_freq);
+	/* This needs to happen before acct_gather_profile_startpoll
+	   and only really looks at the profile in the job.
+	*/
+	acct_gather_profile_g_node_step_start(job);
+	/* needed for the jobacct_gather plugin to start */
+	acct_gather_profile_startpoll(msg->acctg_freq,
+				      conf->job_acct_gather_freq);
+
 	job->multi_prog = 0;
 	job->open_mode  = msg->open_mode;
 	job->overcommit = (bool) msg->overcommit;

@@ -390,11 +390,6 @@ _init_from_slurmd(int sock, char **argv,
 	log_alter(conf->log_opts, 0, conf->logfile);
 
 	debug2("debug level is %d.", conf->debug_level);
-	/* FIXME: comment this out when we get this to work like a
-	 * string.  It will be handled in
-	 * acct_gather_profile_startpoll when that happens
-	 */
-	jobacct_gather_startpoll(conf->job_acct_gather_freq);
 
 	switch_g_slurmd_step_init();
 

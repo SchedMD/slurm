@@ -366,7 +366,7 @@ static int _get_job_req_field (lua_State *L)
 	} else if (!strcmp(name, "account")) {
 		lua_pushstring (L, job_desc->account);
 	} else if (!strcmp(name, "acctg_freq")) {
-		lua_pushnumber (L, job_desc->acctg_freq);
+		lua_pushstring (L, job_desc->acctg_freq);
 	} else if (!strcmp(name, "begin_time")) {
 		lua_pushnumber (L, job_desc->begin_time);
 	} else if (!strcmp(name, "comment")) {
@@ -473,7 +473,10 @@ static int _set_job_req_field (lua_State *L)
 		if (strlen(value_str))
 			job_desc->account = xstrdup(value_str);
 	} else if (!strcmp(name, "acctg_freq")) {
-		job_desc->acctg_freq = luaL_checknumber(L, 3);
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->acctg_freq);
+		if (strlen(value_str))
+			job_desc->acctg_freq = xstrdup(value_str);
 	} else if (!strcmp(name, "begin_time")) {
 		job_desc->begin_time = luaL_checknumber(L, 3);
 	} else if (!strcmp(name, "comment")) {

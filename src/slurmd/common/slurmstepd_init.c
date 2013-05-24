@@ -112,6 +112,8 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 
 unpack_error:
 	error("unpack_error in unpack_slurmd_conf_lite_no_alloc: %m");
+	xfree(conf->job_acct_gather_freq);
+	xfree(conf->job_acct_gather_type);
 	xfree(conf->hostname);
 	xfree(conf->spooldir);
 	xfree(conf->node_name);
