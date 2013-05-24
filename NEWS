@@ -19,6 +19,8 @@ documents those changes that are of interest to users and admins.
  -- Added "PriorityFlags" value of "SMALL_RELATIVE_TO_TIME". If set, the job's
     size component will be based upon not the job size alone, but the job's
     size divided by it's time limit.
+ -- Added sbatch option "--ignore-pbs" to ignore "#PBS" options in the batch
+    script.
 
 * Changes in Slurm 2.6.0pre3
 ============================

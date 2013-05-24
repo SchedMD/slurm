@@ -513,6 +513,10 @@ will not be submitted.
 NOTE: There is limited support for this option with batch jobs.
 
 .TP
+\fB\-\-ignore\-pbs\fR
+Ignore any "#PBS" options specified in the batch script.
+
+.TP
 \fB\-i\fR, \fB\-\-input\fR=<\fIfilename pattern\fR>
 Instruct SLURM to connect the batch script's standard input
 directly to the file name specified in the "\fIfilename pattern\fR".
@@ -1404,6 +1408,9 @@ Same as \fB\-g, \-\-geometry\fR
 .TP
 \fBSBATCH_GET_USER_ENV\fR
 Same as \fB\-\-get\-user\-env\fR
+.TP
+\fBSBATCH_IGNORE_PBS\fR
+Same as \fB\-\-ignore\-pbs\fR
 .TP
 \fBSBATCH_IMMEDIATE\fR
 Same as \fB\-I, \-\-immediate\fR

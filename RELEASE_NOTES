@@ -118,7 +118,8 @@ OTHER CHANGES
    parameter "--disable-log-time-msec". Default time format changes to
    ISO 8601 (without time zone information). Specify "--enable-rfc5424time"
    to restore the time zone information.
-
+ - Added sbatch option "--ignore-pbs" to ignore "#PBS" options in the batch
+   script.
 
 API CHANGES
 ===========

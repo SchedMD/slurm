@@ -174,6 +174,7 @@
 #define LONG_OPT_REQ_SWITCH      0x152
 #define LONG_OPT_EXPORT_FILE     0x153
 #define LONG_OPT_PROFILE         0x154
+#define LONG_OPT_IGNORE_PBS      0x155
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -196,7 +197,8 @@ static void _opt_default(void);
 static void _opt_batch_script(const char *file, const void *body, int size);
 
 /* set options from pbs batch script */
-static void _opt_pbs_batch_script(const char *file, const void *body, int size);
+static void _opt_pbs_batch_script(const char *file, const void *body, int size,
+				  int argc, char **argv);
 
 /* set options based upon env vars  */
 static void _opt_env(void);
@@ -768,6 +770,7 @@ static struct option long_options[] = {
 	{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
+	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
 	{NULL,            0,                 0, 0}
 };
 
@@ -891,7 +894,7 @@ int process_options_second_pass(int argc, char *argv[], const char *file,
 	_opt_batch_script(file, script_body, script_size);
 
 	/* set options from pbs batch script */
-	_opt_pbs_batch_script(file, script_body, script_size);
+	_opt_pbs_batch_script(file, script_body, script_size, argc, argv);
 
 	/* set options from env vars */
 	_opt_env();
@@ -1088,7 +1091,8 @@ static void _opt_batch_script(const char * file, const void *body, int size)
  * Build an argv-style array of options from the script "body",
  * then pass the array to _set_options for() further parsing.
  */
-static void _opt_pbs_batch_script(const char *file, const void *body, int size)
+static void _opt_pbs_batch_script(const char *file, const void *body, int size,
+				  int cmd_argc, char **cmd_argv)
 {
 	char *magic_word = "#PBS";
 	int magic_word_len;
@@ -1102,13 +1106,20 @@ static void _opt_pbs_batch_script(const char *file, const void *body, int size)
 	int lineno = 0;
 	int i;
 
+	if (getenv("SBATCH_IGNORE_PBS"))
+		return;
+	for (i = 0; i < cmd_argc; i++) {
+		if (!strcmp(cmd_argv[i], "--ignore-pbs"))
+			return;
+	}
+
 	magic_word_len = strlen(magic_word);
 	/* getopt_long skips over the first argument, so fill it in */
 	argc = 1;
 	argv = xmalloc(sizeof(char *));
 	argv[0] = "sbatch";
 
-	while((line = _next_line(body, size, &state)) != NULL) {
+	while ((line = _next_line(body, size, &state)) != NULL) {
 		lineno++;
 		if (strncmp(line, magic_word, magic_word_len) != 0) {
 			xfree(line);
@@ -1675,6 +1686,10 @@ static void _set_options(int argc, char **argv)
 			}
 			opt.req_switch = _get_int(optarg, "switches");
 			break;
+                case LONG_OPT_IGNORE_PBS:
+			/* Ignore here, needed to process earlier,
+			 * when the batch script was read. */
+                        break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
 				error("Unrecognized command line parameter %c",
@@ -2852,7 +2867,7 @@ static void _usage(void)
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
 "              [--switches=max-switches{@max-time-to-wait}]\n"
-"              [--array=index_values] [--profile=all]\n"
+"              [--array=index_values] [--profile=all] [--ignore-pbs]\n"
 "              [--export[=names]] [--export-file=file|fd] executable [args...]\n");
 }
 
@@ -2913,6 +2928,7 @@ static void _help(void)
 "      --wrap[=command string] wrap commmand string in a sh script and submit\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"
+"      --ignore-pbs            Ignore #PBS options in the batch script\n"
 "\n"
 "Constraint options:\n"
 "      --contiguous            demand a contiguous range of nodes\n"
