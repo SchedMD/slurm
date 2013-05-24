@@ -233,7 +233,6 @@ static int _read_ofed_values(void)
 		return SLURM_ERROR;
 	}
 
-	slurm_mutex_lock(&ofed_lock);
 	mad_decode_field(pc, IB_PC_EXT_XMT_BYTES_F, &send_val);
 	mad_decode_field(pc, IB_PC_EXT_RCV_BYTES_F, &recv_val);
 	mad_decode_field(pc, IB_PC_EXT_XMT_PKTS_F, &send_pkts);
@@ -255,7 +254,6 @@ static int _read_ofed_values(void)
 
 	ofed_sens.last_update_time = ofed_sens.update_time;
 	ofed_sens.update_time = time(NULL);
-	slurm_mutex_unlock(&ofed_lock);
 
 	return rc;
 }
