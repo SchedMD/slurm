@@ -434,6 +434,7 @@ static int _find_power_sensor(void)
 		} else {
 			error("ipmi read an empty value for power consumption");
 			rc = SLURM_FAILURE;
+			continue;
 		}
 		rc = SLURM_SUCCESS;
 		break;
