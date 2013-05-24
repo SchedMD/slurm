@@ -58,7 +58,6 @@
 #include "src/common/slurm_acct_gather_profile.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
-#include "acct_gather_filesystem_lustre.h"
 
 
 /***************************************************************/
@@ -67,6 +66,7 @@
 
 #define _DEBUG 1
 #define _DEBUG_FILESYSTEM 1
+#define FILESYSTEM_DEFAULT_PORT 1
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -118,7 +118,6 @@ typedef struct {
 
 static lustre_sens_t lustre_se = {0,0,0,0,0,0,0,0};
 
-static slurm_fs_conf_t lustre_conf;
 static uint32_t debug_flags = 0;
 static pthread_mutex_t lustre_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -222,14 +221,15 @@ static int _read_lustre_counters(void )
 			fclose(fff);
 		}
 		entry = readdir(proc_dir);
-		lustre_se.all_lustre_write_bytes += lustre_se.lustre_write_bytes;
+		lustre_se.all_lustre_write_bytes +=
+			lustre_se.lustre_write_bytes;
 		lustre_se.all_lustre_read_bytes += lustre_se.lustre_read_bytes;
 		lustre_se.all_lustre_nb_writes += lustre_se.lustre_nb_writes;
 		lustre_se.all_lustre_nb_reads += lustre_se.lustre_nb_reads;
 	}
 	closedir(proc_dir);
 
-        lustre_se.last_update_time = lustre_se.update_time;
+	lustre_se.last_update_time = lustre_se.update_time;
 	lustre_se.update_time = time(NULL);
 
 
@@ -251,23 +251,23 @@ static int _update_node_filesystem(void)
 	slurm_mutex_lock(&lustre_lock);
 	rc = _read_lustre_counters();
 
-        fls = xmalloc(sizeof(acct_filesystem_data_t));
+	fls = xmalloc(sizeof(acct_filesystem_data_t));
 
-        fls->reads = lustre_se.all_lustre_nb_reads;
-        fls->writes = lustre_se.all_lustre_nb_writes;
-        fls->read_size = (double) lustre_se.all_lustre_read_bytes / 1048576;
-        fls->write_size = (double) lustre_se.all_lustre_write_bytes / 1048576;
-        acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_LUSTRE, fls);
+	fls->reads = lustre_se.all_lustre_nb_reads;
+	fls->writes = lustre_se.all_lustre_nb_writes;
+	fls->read_size = (double) lustre_se.all_lustre_read_bytes / 1048576;
+	fls->write_size = (double) lustre_se.all_lustre_write_bytes / 1048576;
+	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_LUSTRE, fls);
 
-        debug3("Collection of Lustre counters Finished");
-        xfree(fls);
+	debug3("Collection of Lustre counters Finished");
+	xfree(fls);
 
-	
+
 	if (debug_flags & DEBUG_FLAG_FILESYSTEM) {
 		info("lustre-thread = %d sec, transmitted %"PRIu64" bytes, "
 		    "received %"PRIu64" bytes",
 		    (int) (lustre_se.update_time - lustre_se.last_update_time),
-		    lustre_se.xmtdataall_lustre_read_bytes, 
+		    lustre_se.all_lustre_read_bytes,
 		    lustre_se.all_lustre_write_bytes);
 	}
 	slurm_mutex_unlock(&lustre_lock);
@@ -313,30 +313,15 @@ extern int fini(void)
 
 extern int acct_gather_filesystem_p_node_update(void)
 {
-	uint32_t profile;
-	int rc = SLURM_SUCCESS;
-	static bool set = false;
-
-	acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
-				  &profile);
-
-	if (!(profile & ACCT_GATHER_PROFILE_LUSTRE))
-		set = true;
-
-	if ((set == true) && (_check_lustre_fs() == SLURM_SUCCESS))
+	if (_run_in_daemon() && (_check_lustre_fs() == SLURM_SUCCESS))
 		_update_node_filesystem();
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 
 extern void acct_gather_filesystem_p_conf_set(s_p_hashtbl_t *tbl)
 {
-	if (tbl) {
-		s_p_get_uint32(&lustre_conf.freq,
-			       "FilesystemLUSTREFrequency", tbl);
-	}
-
 	if (!_run_in_daemon())
 		return;
 
@@ -346,17 +331,6 @@ extern void acct_gather_filesystem_p_conf_set(s_p_hashtbl_t *tbl)
 extern void acct_gather_filesystem_p_conf_options(s_p_options_t **full_options,
 						  int *full_options_cnt)
 {
-	s_p_options_t options[] = {
-		{"FilesystemLUSTREFrequency", S_P_UINT32},
-		{NULL} };
-
-	transfer_s_p_options(full_options, options, full_options_cnt);
 
 	return;
 }
-
-extern void* acct_gather_filesystem_p_conf_get()
-{
-	return &lustre_conf;
-}
-

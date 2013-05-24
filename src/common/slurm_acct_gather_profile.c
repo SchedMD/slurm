@@ -366,7 +366,8 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 						      freq_def, "filesystem=")))
 				acct_gather_profile_timer[i].freq =
 					_get_int(type+11);
-
+			acct_gather_filesystem_startpoll(
+				acct_gather_profile_timer[i].freq);
 			break;
 		case PROFILE_NETWORK:
 			if (!(profile & ACCT_GATHER_PROFILE_NETWORK))
