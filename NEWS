@@ -16,6 +16,9 @@ documents those changes that are of interest to users and admins.
  -- Added MaxCPUsPerNode partition configuration parameter. This can be
     especially useful to schedule systems with GPUs.
  -- Permit "scontrol reboot_node" for nodes in MAINT reservation.
+ -- Added "PriorityFlags" value of "SMALL_RELATIVE_TO_TIME". If set, the job's
+    size component will be based upon not the job size alone, but the job's
+    size divided by it's time limit.
 
 * Changes in Slurm 2.6.0pre3
 ============================

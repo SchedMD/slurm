@@ -79,6 +79,9 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
    with two Slurm partitions (e.g. "cpu" and "gpu") and the partition/queue
    "cpu" could be limited to only a subset of the node's CPUs, insuring that
    one or more CPUs would be available to jobs in the "gpu" partition/queue.
+ - Added "PriorityFlags" value of "SMALL_RELATIVE_TO_TIME". If set, the job's
+   size component will be based upon not the job size alone, but the job's
+   size divided by it's time limit.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

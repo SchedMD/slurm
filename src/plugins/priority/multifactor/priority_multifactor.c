@@ -624,7 +624,31 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr)
 		else if (job_ptr->details && job_ptr->details->min_cpus)
 			cpu_cnt = job_ptr->details->min_cpus;
 
-		if (favor_small) {
+		if (flags & PRIORITY_FLAGS_SIZE_RELATIVE) {
+			uint32_t time_limit = 1;
+			/* Job size in CPUs (based upon average CPUs/Node */
+			job_ptr->prio_factors->priority_js =
+				(double)job_ptr->details->min_nodes *
+				(double)cluster_cpus /
+				(double)node_record_count;
+			if (cpu_cnt > job_ptr->prio_factors->priority_js) {
+				job_ptr->prio_factors->priority_js =
+					(double)cpu_cnt;
+			}
+			/* Divide by job time limit */
+			if (job_ptr->time_limit != NO_VAL)
+				time_limit = job_ptr->time_limit;
+			else if (job_ptr->part_ptr)
+				time_limit = job_ptr->part_ptr->max_time;
+			job_ptr->prio_factors->priority_js /= time_limit;
+			/* Normalize to max value of 1.0 */
+			job_ptr->prio_factors->priority_js /= cluster_cpus;
+			if (favor_small) {
+				job_ptr->prio_factors->priority_js =
+					(double) 1.0 -
+					job_ptr->prio_factors->priority_js;
+			}
+		} else if (favor_small) {
 			job_ptr->prio_factors->priority_js =
 				(double)(node_record_count
 					 - job_ptr->details->min_nodes)
@@ -635,7 +659,7 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr)
 					/ (double)cluster_cpus;
 				job_ptr->prio_factors->priority_js /= 2;
 			}
-		} else {
+		} else {	/* favor large */
 			job_ptr->prio_factors->priority_js =
 				(double)job_ptr->details->min_nodes
 				/ (double)node_record_count;

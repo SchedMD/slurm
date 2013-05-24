@@ -644,7 +644,8 @@ enum ctx_keys {
 						* plugin. The default is usage based
 						* multifactor plugin.
 						*/
-
+#define PRIORITY_FLAGS_SIZE_RELATIVE	0x0004	/* Enable job size measurement
+						 * relative to its time limit */
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
 \*****************************************************************************/
