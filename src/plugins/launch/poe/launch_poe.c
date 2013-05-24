@@ -184,8 +184,8 @@ static void _propagate_srun_opts(uint32_t nnodes, uint32_t ntasks)
 
 	if (opt.account)
 		setenv("SLURM_ACCOUNT", opt.account, 1);
-	if (opt.acctg_freq >= 0) {
-		snprintf(value, sizeof(value), "%d", opt.acctg_freq);
+	if (opt.acctg_freq) {
+		snprintf(value, sizeof(value), "%s", opt.acctg_freq);
 		setenv("SLURM_ACCTG_FREQ", value, 1);
 	}
 	if (opt.ckpt_dir)
