@@ -137,7 +137,6 @@ void slurm_step_launch_params_t_init (slurm_step_launch_params_t *ptr)
 	ptr->buffered_stdio = true;
 	memcpy(&ptr->local_fds, &fds, sizeof(fds));
 	ptr->gid = getgid();
-	ptr->acctg_freq  = (uint16_t) NO_VAL;
 	ptr->cpu_freq = NO_VAL;
 }
 

@@ -528,7 +528,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->health_check_node_state = conf->health_check_node_state;
 	conf_ptr->health_check_program = xstrdup(conf->health_check_program);
 
-	conf_ptr->job_acct_gather_freq  = conf->job_acct_gather_freq;
+	conf_ptr->job_acct_gather_freq  = xstrdup(conf->job_acct_gather_freq);
 	conf_ptr->job_acct_gather_type  = xstrdup(conf->job_acct_gather_type);
 
 	conf_ptr->job_ckpt_dir        = xstrdup(conf->job_ckpt_dir);
@@ -3851,7 +3851,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->std_err = xstrdup(job_desc_msg->std_err);
 	launch_msg_ptr->std_in = xstrdup(job_desc_msg->std_in);
 	launch_msg_ptr->std_out = xstrdup(job_desc_msg->std_out);
-	launch_msg_ptr->acctg_freq = job_desc_msg->acctg_freq;
+	launch_msg_ptr->acctg_freq = xstrdup(job_desc_msg->acctg_freq);
 	launch_msg_ptr->open_mode = job_desc_msg->open_mode;
 	launch_msg_ptr->work_dir = xstrdup(job_desc_msg->work_dir);
 	launch_msg_ptr->argc = job_desc_msg->argc;

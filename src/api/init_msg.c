@@ -58,7 +58,6 @@
 void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
 	memset(job_desc_msg, 0, sizeof(job_desc_msg_t));
-	job_desc_msg->acctg_freq	= (uint16_t) NO_VAL;
 	job_desc_msg->alloc_sid		= NO_VAL;
 	job_desc_msg->conn_type[0]	= (uint16_t) NO_VAL;
 	job_desc_msg->contiguous	= (uint16_t) NO_VAL;

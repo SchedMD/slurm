@@ -511,7 +511,7 @@ static void _opt_default()
 
 	opt.pty = false;
 	opt.open_mode = 0;
-	opt.acctg_freq = -1;
+	opt.acctg_freq = NULL;
 	opt.cpu_freq = NO_VAL;
 	opt.reservation = NULL;
 	opt.wckey = NULL;
@@ -1509,8 +1509,8 @@ static void _set_options(const int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_ACCTG_FREQ:
-			opt.acctg_freq = _get_int(optarg, "acctg-freq",
-                                false);
+			xfree(opt.acctg_freq);
+			opt.acctg_freq = xstrdup(optarg);
 			break;
 		case LONG_OPT_CPU_FREQ:
 		        if (cpu_freq_verify_param(optarg, &opt.cpu_freq))

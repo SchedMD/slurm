@@ -4840,6 +4840,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 			 uint16_t protocol_version)
 {
 	uint32_t count = NO_VAL;
+	uint16_t uint16 = 0;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
@@ -4897,7 +4898,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		pack16(build_ptr->inactive_limit, buffer);
 
-		pack16(build_ptr->job_acct_gather_freq, buffer);
+		packstr(build_ptr->job_acct_gather_freq, buffer);
 		packstr(build_ptr->job_acct_gather_type, buffer);
 
 		packstr(build_ptr->job_ckpt_dir, buffer);
@@ -5104,8 +5105,9 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->health_check_program, buffer);
 
 		pack16(build_ptr->inactive_limit, buffer);
-
-		pack16(build_ptr->job_acct_gather_freq, buffer);
+		if (build_ptr->job_acct_gather_freq)
+			uint16 = atoi(build_ptr->job_acct_gather_freq);
+		pack16(uint16, buffer);
 		packstr(build_ptr->job_acct_gather_type, buffer);
 
 		packstr(build_ptr->job_ckpt_dir, buffer);
@@ -5306,7 +5308,9 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 
 		pack16(build_ptr->inactive_limit, buffer);
 
-		pack16(build_ptr->job_acct_gather_freq, buffer);
+		if (build_ptr->job_acct_gather_freq)
+			uint16 = atoi(build_ptr->job_acct_gather_freq);
+		pack16(uint16, buffer);
 		packstr(build_ptr->job_acct_gather_type, buffer);
 
 		packstr(build_ptr->job_ckpt_dir, buffer);
@@ -5469,6 +5473,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 {
 	uint32_t count = NO_VAL;
 	uint32_t uint32_tmp;
+	uint16_t uint16 = 0;
 	slurm_ctl_conf_info_msg_t *build_ptr;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
@@ -5556,7 +5561,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpack16(&build_ptr->inactive_limit, buffer);
 
-		safe_unpack16(&build_ptr->job_acct_gather_freq, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->job_acct_gather_freq,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->job_acct_gather_type,
 				       &uint32_tmp, buffer);
 
@@ -5845,7 +5851,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpack16(&build_ptr->inactive_limit, buffer);
 
-		safe_unpack16(&build_ptr->job_acct_gather_freq, buffer);
+		safe_unpack16(&uint16, buffer);
+		if (uint16)
+			build_ptr->job_acct_gather_freq =
+				xstrdup_printf("%u", uint16);
 		safe_unpackstr_xmalloc(&build_ptr->job_acct_gather_type,
 				       &uint32_tmp, buffer);
 
@@ -6123,7 +6132,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpack16(&build_ptr->inactive_limit, buffer);
 
-		safe_unpack16(&build_ptr->job_acct_gather_freq, buffer);
+		safe_unpack16(&uint16, buffer);
+		if (uint16)
+			build_ptr->job_acct_gather_freq =
+				xstrdup_printf("%u", uint16);
 		safe_unpackstr_xmalloc(&build_ptr->job_acct_gather_type,
 				       &uint32_tmp, buffer);
 
@@ -6352,6 +6364,8 @@ static void
 _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		   uint16_t protocol_version)
 {
+	uint16_t uint16 = 0;
+
 	/* load the data values */
 	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		pack16(job_desc_ptr->contiguous, buffer);
@@ -6380,7 +6394,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 
 		pack8(job_desc_ptr->open_mode,   buffer);
 		pack8(job_desc_ptr->overcommit,  buffer);
-		pack16(job_desc_ptr->acctg_freq, buffer);
+		packstr(job_desc_ptr->acctg_freq, buffer);
 		pack32(job_desc_ptr->num_tasks,  buffer);
 		pack16(job_desc_ptr->ckpt_interval, buffer);
 
@@ -6526,7 +6540,9 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 
 		pack8(job_desc_ptr->open_mode,   buffer);
 		pack8(job_desc_ptr->overcommit,  buffer);
-		pack16(job_desc_ptr->acctg_freq, buffer);
+		if (job_desc_ptr->acctg_freq)
+			uint16 = atoi(job_desc_ptr->acctg_freq);
+		pack16(uint16, buffer);
 		pack32(job_desc_ptr->num_tasks,  buffer);
 		pack16(job_desc_ptr->ckpt_interval, buffer);
 
@@ -6673,7 +6689,9 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 ///<<<<<<< slurm_protocol_pack.c  nlk temp.... why is this here
 		pack8(job_desc_ptr->open_mode,   buffer);
 		pack8(job_desc_ptr->overcommit,  buffer);
-		pack16(job_desc_ptr->acctg_freq, buffer);
+		if (job_desc_ptr->acctg_freq)
+			uint16 = atoi(job_desc_ptr->acctg_freq);
+		pack16(uint16, buffer);
 		pack32(job_desc_ptr->num_tasks,  buffer);
 		pack16(job_desc_ptr->ckpt_interval, buffer);
 
@@ -6808,6 +6826,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		     uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
+	uint16_t uint16 = 0;
 	job_desc_msg_t *job_desc_ptr = NULL;
 
 	/* alloc memory for structure */
@@ -6851,7 +6870,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 
 		safe_unpack8(&job_desc_ptr->open_mode,   buffer);
 		safe_unpack8(&job_desc_ptr->overcommit,  buffer);
-		safe_unpack16(&job_desc_ptr->acctg_freq, buffer);
+		safe_unpackstr_xmalloc(&job_desc_ptr->acctg_freq,
+				       &uint32_tmp, buffer);
 		safe_unpack32(&job_desc_ptr->num_tasks,  buffer);
 		safe_unpack16(&job_desc_ptr->ckpt_interval, buffer);
 
@@ -6986,7 +7006,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 
 		safe_unpack8(&job_desc_ptr->open_mode,   buffer);
 		safe_unpack8(&job_desc_ptr->overcommit,  buffer);
-		safe_unpack16(&job_desc_ptr->acctg_freq, buffer);
+		safe_unpack16(&uint16, buffer);
+		if (uint16)
+			job_desc_ptr->acctg_freq = xstrdup_printf("%u", uint16);
 		safe_unpack32(&job_desc_ptr->num_tasks,  buffer);
 		safe_unpack16(&job_desc_ptr->ckpt_interval, buffer);
 
@@ -7121,7 +7143,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 
 		safe_unpack8(&job_desc_ptr->open_mode,   buffer);
 		safe_unpack8(&job_desc_ptr->overcommit,  buffer);
-		safe_unpack16(&job_desc_ptr->acctg_freq, buffer);
+		safe_unpack16(&uint16, buffer);
+		if (uint16)
+			job_desc_ptr->acctg_freq = xstrdup_printf("%u", uint16);
 		safe_unpack32(&job_desc_ptr->num_tasks,  buffer);
 		safe_unpack16(&job_desc_ptr->ckpt_interval, buffer);
 
@@ -7512,6 +7536,8 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 {
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	int i = 0;
+	uint16_t uint16 = 0;
+
 	xassert(msg != NULL);
 
 	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
@@ -7572,7 +7598,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 
 		pack8(msg->open_mode, buffer);
 		pack8(msg->pty, buffer);
-		pack16(msg->acctg_freq, buffer);
+		packstr(msg->acctg_freq, buffer);
 		pack32(msg->cpu_freq, buffer);
 		packstr(msg->ckpt_dir, buffer);
 		packstr(msg->restart_dir, buffer);
@@ -7646,7 +7672,9 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 
 		pack8(msg->open_mode, buffer);
 		pack8(msg->pty, buffer);
-		pack16(msg->acctg_freq, buffer);
+		if (msg->acctg_freq)
+			uint16 = atoi(msg->acctg_freq);
+		pack16(uint16, buffer);
 		pack32(msg->cpu_freq, buffer);
 		packstr(msg->ckpt_dir, buffer);
 		packstr(msg->restart_dir, buffer);
@@ -7718,7 +7746,9 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 
 		pack8(msg->open_mode, buffer);
 		pack8(msg->pty, buffer);
-		pack16(msg->acctg_freq, buffer);
+		if (msg->acctg_freq)
+			uint16 = atoi(msg->acctg_freq);
+		pack16(uint16, buffer);
 		packstr(msg->ckpt_dir, buffer);
 		packstr(msg->restart_dir, buffer);
 		if (!(cluster_flags & CLUSTER_FLAG_BG)) {
@@ -7745,6 +7775,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 {
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	uint32_t uint32_tmp;
+	uint16_t uint16 = 0;
 	launch_tasks_request_msg_t *msg;
 	int i = 0;
 
@@ -7840,7 +7871,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 
 		safe_unpack8(&msg->open_mode, buffer);
 		safe_unpack8(&msg->pty, buffer);
-		safe_unpack16(&msg->acctg_freq, buffer);
+		safe_unpackstr_xmalloc(&msg->acctg_freq, &uint32_tmp, buffer);
 		safe_unpack32(&msg->cpu_freq, buffer);
 		safe_unpackstr_xmalloc(&msg->ckpt_dir, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->restart_dir, &uint32_tmp, buffer);
@@ -7938,7 +7969,9 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 
 		safe_unpack8(&msg->open_mode, buffer);
 		safe_unpack8(&msg->pty, buffer);
-		safe_unpack16(&msg->acctg_freq, buffer);
+		safe_unpack16(&uint16, buffer);
+		if (uint16)
+			msg->acctg_freq = xstrdup_printf("%u", uint16);
 		safe_unpack32(&msg->cpu_freq, buffer);
 		safe_unpackstr_xmalloc(&msg->ckpt_dir, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->restart_dir, &uint32_tmp, buffer);
@@ -8034,7 +8067,9 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 
 		safe_unpack8(&msg->open_mode, buffer);
 		safe_unpack8(&msg->pty, buffer);
-		safe_unpack16(&msg->acctg_freq, buffer);
+		safe_unpack16(&uint16, buffer);
+		if (uint16)
+			msg->acctg_freq = xstrdup_printf("%u", uint16);
 		safe_unpack32(&msg->cpu_freq, buffer);
 		safe_unpackstr_xmalloc(&msg->ckpt_dir, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->restart_dir, &uint32_tmp, buffer);
@@ -9402,6 +9437,8 @@ static void
 _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 			   uint16_t protocol_version)
 {
+	uint16_t uint16 = 0;
+
 	xassert(msg != NULL);
 
 	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
@@ -9418,7 +9455,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 		pack32(msg->array_job_id,   buffer);
 		pack16(msg->array_task_id,  buffer);
 
-		pack16(msg->acctg_freq,     buffer);
+		packstr(msg->acctg_freq,     buffer);
 		pack16(msg->cpu_bind_type,  buffer);
 		pack16(msg->cpus_per_task,  buffer);
 		pack16(msg->restart_cnt,    buffer);
@@ -9468,7 +9505,9 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 		pack8(msg->open_mode, buffer);
 		pack8(msg->overcommit, buffer);
 
-		pack16(msg->acctg_freq,     buffer);
+		if (msg->acctg_freq)
+			uint16 = atoi(msg->acctg_freq);
+		pack16(uint16, buffer);
 		pack16(msg->cpu_bind_type,  buffer);
 		pack16(msg->cpus_per_task,  buffer);
 		pack16(msg->restart_cnt,    buffer);
@@ -9518,6 +9557,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 			     uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
+	uint16_t uint16 = 0;
 	batch_job_launch_msg_t *launch_msg_ptr;
 
 	xassert(msg != NULL);
@@ -9538,7 +9578,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 		safe_unpack32(&launch_msg_ptr->array_job_id,   buffer);
 		safe_unpack16(&launch_msg_ptr->array_task_id,  buffer);
 
-		safe_unpack16(&launch_msg_ptr->acctg_freq,     buffer);
+		safe_unpackstr_xmalloc(&launch_msg_ptr->acctg_freq,
+				       &uint32_tmp, buffer);
 		safe_unpack16(&launch_msg_ptr->cpu_bind_type,  buffer);
 		safe_unpack16(&launch_msg_ptr->cpus_per_task,  buffer);
 		safe_unpack16(&launch_msg_ptr->restart_cnt,    buffer);
@@ -9610,7 +9651,11 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 		safe_unpack8(&launch_msg_ptr->open_mode, buffer);
 		safe_unpack8(&launch_msg_ptr->overcommit, buffer);
 
-		safe_unpack16(&launch_msg_ptr->acctg_freq,     buffer);
+		safe_unpack16(&uint16, buffer);
+		if (uint16)
+			launch_msg_ptr->acctg_freq =
+				xstrdup_printf("%u", uint16);
+
 		safe_unpack16(&launch_msg_ptr->cpu_bind_type,  buffer);
 		safe_unpack16(&launch_msg_ptr->cpus_per_task,  buffer);
 		safe_unpack16(&launch_msg_ptr->restart_cnt,    buffer);

@@ -1667,7 +1667,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack32(detail_ptr->max_nodes, buffer);
 	pack32(detail_ptr->num_tasks, buffer);
 
-	pack16(detail_ptr->acctg_freq, buffer);
+	packstr(detail_ptr->acctg_freq, buffer);
 	pack16(detail_ptr->contiguous, buffer);
 	pack16(detail_ptr->cpus_per_task, buffer);
 	pack16(detail_ptr->nice, buffer);
@@ -1715,8 +1715,9 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 			     uint16_t protocol_version)
 {
-	char *req_nodes = NULL, *exc_nodes = NULL, *features = NULL;
-	char *cpu_bind, *dependency = NULL, *orig_dependency = NULL, *mem_bind;
+	char *acctg_freq = NULL, *req_nodes = NULL, *exc_nodes = NULL;
+	char *features = NULL, *cpu_bind, *dependency = NULL;
+	char *orig_dependency = NULL, *mem_bind;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char *ckpt_dir = NULL, *restart_dir = NULL;
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
@@ -1725,7 +1726,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	uint32_t pn_min_cpus, pn_min_memory, pn_min_tmp_disk;
 	uint32_t num_tasks, name_len, argc = 0, env_cnt = 0;
 	uint16_t shared, contiguous, nice, ntasks_per_node;
-	uint16_t acctg_freq, cpus_per_task, requeue, task_dist;
+	uint16_t cpus_per_task, requeue, task_dist, tmp_uint16 = 0;
 	uint16_t cpu_bind_type, mem_bind_type, plane_size;
 	uint8_t open_mode, overcommit, prolog_running;
 	time_t begin_time, submit_time;
@@ -1740,7 +1741,58 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpack32(&max_nodes, buffer);
 		safe_unpack32(&num_tasks, buffer);
 
-		safe_unpack16(&acctg_freq, buffer);
+		safe_unpackstr_xmalloc(&acctg_freq, &name_len, buffer);
+		safe_unpack16(&contiguous, buffer);
+		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpack16(&nice, buffer);
+		safe_unpack16(&ntasks_per_node, buffer);
+		safe_unpack16(&requeue, buffer);
+		safe_unpack16(&shared, buffer);
+		safe_unpack16(&task_dist, buffer);
+
+		safe_unpackstr_xmalloc(&cpu_bind, &name_len, buffer);
+		safe_unpack16(&cpu_bind_type, buffer);
+		safe_unpackstr_xmalloc(&mem_bind, &name_len, buffer);
+		safe_unpack16(&mem_bind_type, buffer);
+		safe_unpack16(&plane_size, buffer);
+
+		safe_unpack8(&open_mode, buffer);
+		safe_unpack8(&overcommit, buffer);
+		safe_unpack8(&prolog_running, buffer);
+
+		safe_unpack32(&pn_min_cpus, buffer);
+		safe_unpack32(&pn_min_memory, buffer);
+		safe_unpack32(&pn_min_tmp_disk, buffer);
+		safe_unpack_time(&begin_time, buffer);
+		safe_unpack_time(&submit_time, buffer);
+
+		safe_unpackstr_xmalloc(&req_nodes,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&exc_nodes,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&features,   &name_len, buffer);
+		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
+		safe_unpackstr_xmalloc(&orig_dependency, &name_len, buffer);
+
+		safe_unpackstr_xmalloc(&err, &name_len, buffer);
+		safe_unpackstr_xmalloc(&in,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&out, &name_len, buffer);
+		safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
+		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
+		safe_unpackstr_xmalloc(&restart_dir, &name_len, buffer);
+
+		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
+			goto unpack_error;
+		safe_unpackstr_array(&argv, &argc, buffer);
+		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
+	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		safe_unpack32(&min_cpus, buffer);
+		safe_unpack32(&max_cpus, buffer);
+		safe_unpack32(&min_nodes, buffer);
+		safe_unpack32(&max_nodes, buffer);
+		safe_unpack32(&num_tasks, buffer);
+
+		safe_unpack16(&tmp_uint16, buffer);
+		if (tmp_uint16)
+			acctg_freq = xstrdup_printf("%u", tmp_uint16);
 		safe_unpack16(&contiguous, buffer);
 		safe_unpack16(&cpus_per_task, buffer);
 		safe_unpack16(&nice, buffer);
@@ -1806,6 +1858,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	}
 
 	/* free any left-over detail data */
+	xfree(job_ptr->details->acctg_freq);
 	for (i=0; i<job_ptr->details->argc; i++)
 		xfree(job_ptr->details->argv[i]);
 	xfree(job_ptr->details->argv);
@@ -1876,6 +1929,7 @@ unpack_error:
 
 /*	for (i=0; i<argc; i++)
 	xfree(argv[i]);  Don't trust this on unpack error */
+	xfree(acctg_freq);
 	xfree(argv);
 	xfree(cpu_bind);
 	xfree(dependency);
@@ -2496,7 +2550,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 {
 	long job_id, time_min;
 	long pn_min_cpus, pn_min_memory, pn_min_tmp_disk, min_cpus;
-	long time_limit, priority, contiguous, acctg_freq;
+	long time_limit, priority, contiguous;
 	long kill_on_node_fail, shared, immediate, wait_all_nodes;
 	long cpus_per_task, requeue, num_tasks, overcommit;
 	long ntasks_per_node, ntasks_per_socket, ntasks_per_core;
@@ -2625,13 +2679,11 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		(long) job_specs->num_tasks : -1L;
 	overcommit = (job_specs->overcommit != (uint8_t) NO_VAL) ?
 		(long) job_specs->overcommit : -1L;
-	acctg_freq = (job_specs->acctg_freq  != (uint16_t) NO_VAL) ?
-		(long) job_specs->acctg_freq : -1L;
 	debug3("   mail_type=%u mail_user=%s nice=%d num_tasks=%ld "
-	       "open_mode=%u overcommit=%ld acctg_freq=%ld",
+	       "open_mode=%u overcommit=%ld acctg_freq=%s",
 	       job_specs->mail_type, job_specs->mail_user,
 	       (int)job_specs->nice - NICE_OFFSET, num_tasks,
-	       job_specs->open_mode, overcommit, acctg_freq);
+	       job_specs->open_mode, overcommit, job_specs->acctg_freq);
 
 	slurm_make_time_str(&job_specs->begin_time, buf, sizeof(buf));
 	cpus_per_task = (job_specs->cpus_per_task != (uint16_t) NO_VAL) ?
@@ -5072,7 +5124,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	detail_ptr->argv = job_desc->argv;
 	job_desc->argv   = (char **) NULL; /* nothing left to free */
 	job_desc->argc   = 0;		   /* nothing left to free */
-	detail_ptr->acctg_freq = job_desc->acctg_freq;
+	detail_ptr->acctg_freq = xstrdup(job_desc->acctg_freq);
 	detail_ptr->nice       = job_desc->nice;
 	detail_ptr->open_mode  = job_desc->open_mode;
 	detail_ptr->min_cpus   = job_desc->min_cpus;
@@ -10450,7 +10502,7 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc = xmalloc(sizeof(job_desc_msg_t));
 
 	job_desc->account           = xstrdup(job_ptr->account);
-	job_desc->acctg_freq        = details->acctg_freq;
+	job_desc->acctg_freq        = xstrdup(details->acctg_freq);
 	job_desc->alloc_node        = xstrdup(job_ptr->alloc_node);
 	/* Since the allocating salloc or srun is not expected to exist
 	 * when this checkpointed job is restarted, do not save these:

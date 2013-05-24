@@ -120,7 +120,8 @@ typedef struct sbatch_options {
 	bool no_kill;		/* --no-kill, -k		*/
 	int requeue;		/* --requeue and --no-requeue	*/
 	uint8_t open_mode;	/* --open-mode			*/
-	int acctg_freq;		/* --acctg-freq=secs		*/
+	char *acctg_freq;	/* --acctg-freq=<type1>=<freq1>,*/
+				/* 	<type2>=<freq2>,...	*/
 	bool overcommit;	/* --overcommit -O		*/
 	uint16_t shared;	/* --share,   -s		*/
 	char *licenses;		/* --licenses, -L		*/

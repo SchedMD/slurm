@@ -205,7 +205,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"HealthCheckProgram", S_P_STRING},
 	{"InactiveLimit", S_P_UINT16},
 	{"JobAcctGatherType", S_P_STRING},
-	{"JobAcctGatherFrequency", S_P_UINT16},
+	{"JobAcctGatherFrequency", S_P_STRING},
 	{"JobCheckpointDir", S_P_STRING},
 	{"JobCompHost", S_P_STRING},
 	{"JobCompLoc", S_P_STRING},
@@ -2190,7 +2190,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree(ctl_conf_ptr->health_check_program);
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->job_acct_gather_type);
-	ctl_conf_ptr->job_acct_gather_freq             = 0;
+	xfree (ctl_conf_ptr->job_acct_gather_freq);
 	xfree (ctl_conf_ptr->job_ckpt_dir);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_pass);
@@ -2792,9 +2792,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->inactive_limit = DEFAULT_INACTIVE_LIMIT;
 	}
 
-	if (!s_p_get_uint16(&conf->job_acct_gather_freq,
+	if (!s_p_get_string(&conf->job_acct_gather_freq,
 			    "JobAcctGatherFrequency", hashtbl))
-		conf->job_acct_gather_freq = DEFAULT_JOB_ACCT_GATHER_FREQ;
+		conf->job_acct_gather_freq =
+			xstrdup(DEFAULT_JOB_ACCT_GATHER_FREQ);
 
 	if (!s_p_get_string(&conf->job_acct_gather_type,
 			   "JobAcctGatherType", hashtbl))

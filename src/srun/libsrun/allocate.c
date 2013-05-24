@@ -593,8 +593,8 @@ job_desc_msg_create_from_opts (void)
 		j->argv    = (char **) xmalloc(sizeof(char *) * 2);
 		j->argv[0] = xstrdup(opt.argv[0]);
 	}
-	if (opt.acctg_freq >= 0)
-		j->acctg_freq     = opt.acctg_freq;
+	if (opt.acctg_freq)
+		j->acctg_freq     = xstrdup(opt.acctg_freq);
 	j->reservation    = opt.reservation;
 	j->wckey          = opt.wckey;
 

@@ -692,7 +692,7 @@ typedef struct launch_tasks_request_msg {
 				     1 for "user manged" IO */
 	uint8_t open_mode;	/* stdout/err append or truncate */
 	uint8_t pty;		/* use pseudo tty */
-	uint16_t acctg_freq;	/* accounting polling interval */
+	char *acctg_freq;	/* accounting polling intervals */
 	uint32_t cpu_freq;	/* requested cpu frequency */
 
 	/********** START "normal" IO only options **********/
@@ -828,7 +828,7 @@ typedef struct batch_job_launch_msg {
 	uint32_t pn_min_memory;  /* minimum real memory per node OR
 				  * real memory per CPU | MEM_PER_CPU,
 				  * default=0 (no limit) */
-	uint16_t acctg_freq;	/* accounting polling interval	*/
+	char *acctg_freq;	/* accounting polling intervals	*/
 	uint32_t cpu_freq;	/* requested cpu frequency */
 	uint32_t job_mem;	/* memory limit for job		*/
 	uint16_t restart_cnt;	/* batch job restart count	*/

@@ -887,8 +887,9 @@ _read_config(void)
 
 	conf->debug_flags = cf->debug_flags;
 	conf->propagate_prio = cf->propagate_prio_process;
-	conf->job_acct_gather_freq = cf->job_acct_gather_freq;
 
+	_free_and_set(&conf->job_acct_gather_freq,
+		      xstrdup(cf->job_acct_gather_freq));
 	_free_and_set(&conf->acct_gather_energy_type,
 		      xstrdup(cf->acct_gather_energy_type));
 	_free_and_set(&conf->acct_gather_profile_type,

@@ -1377,15 +1377,15 @@ char *slurm_get_jobacct_gather_type(void)
  * returns the job accounting poll frequency from the slurmctld_conf object
  * RET int    - job accounting frequency
  */
-uint16_t slurm_get_jobacct_gather_freq(void)
+char *slurm_get_jobacct_gather_freq(void)
 {
-	uint16_t freq = 0;
+	char *freq = NULL;
 	slurm_ctl_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
-		freq = conf->job_acct_gather_freq;
+		freq = xstrdup(conf->job_acct_gather_freq);
 		slurm_conf_unlock();
 	}
 	return freq;

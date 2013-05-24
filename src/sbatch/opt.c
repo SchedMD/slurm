@@ -375,7 +375,7 @@ static void _opt_default()
 	opt.export_file       = NULL;
 	opt.get_user_env_time = -1;
 	opt.get_user_env_mode = -1;
-	opt.acctg_freq        = -1;
+	opt.acctg_freq        = NULL;
 	opt.reservation       = NULL;
 	opt.wckey             = NULL;
 	opt.req_switch        = -1;
@@ -1604,7 +1604,8 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_ACCTG_FREQ:
-			opt.acctg_freq = _get_int(optarg, "acctg-freq");
+			xfree(opt.acctg_freq);
+			opt.acctg_freq = xstrdup(optarg);
 			break;
 		case LONG_OPT_PROPAGATE:
 			xfree(opt.propagate);

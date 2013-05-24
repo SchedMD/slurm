@@ -478,7 +478,7 @@ char *slurm_get_jobacct_gather_type(void);
  * returns the job accounting poll frequency from the slurmctld_conf object
  * RET int    - job accounting frequency
  */
-uint16_t slurm_get_jobacct_gather_freq(void);
+char *slurm_get_jobacct_gather_freq(void);
 
 /* slurm_get_jobcomp_type
  * returns the job completion logger type from slurmctld_conf object

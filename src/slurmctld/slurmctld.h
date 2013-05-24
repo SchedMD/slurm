@@ -404,7 +404,7 @@ struct feature_record {
 /* job_details - specification of a job's constraints,
  * can be purged after initiation */
 struct job_details {
-	uint16_t acctg_freq;		/* accounting polling interval */
+	char *acctg_freq;		/* accounting polling interval */
 	uint32_t argc;			/* count of argv elements */
 	char **argv;			/* arguments for a batch job script */
 	time_t begin_time;		/* start at this time (srun --begin),
