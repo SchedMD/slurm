@@ -37,8 +37,11 @@
 #ifndef _IPMI_READ_CONFIG_H
 #define _IPMI_READ_CONFIG_H
 
+#include <ipmi_monitoring.h>
+
 #define DEFAULT_IPMI_FREQ 30
 #define DEFAULT_IPMI_USER "foousername"
+#define DEFAULT_IPMI_VARIABLE IPMI_MONITORING_SENSOR_UNITS_WATTS
 
 typedef struct slurm_ipmi_conf {
 	/* Options for SLURM IPMI plugin*/
@@ -163,6 +166,7 @@ typedef struct slurm_ipmi_conf {
 	/* Return sensor names with appropriate entity
 	 * id and instance prefixed when appropriate.*/
 	bool entity_sensor_names;
+	uint32_t variable;
 } slurm_ipmi_conf_t;
 
 extern void reset_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf);

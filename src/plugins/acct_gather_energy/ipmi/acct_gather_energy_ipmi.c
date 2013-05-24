@@ -352,7 +352,7 @@ static int _check_power_sensor(void)
 		return SLURM_FAILURE;
 	}
 
-	if (sensor_units != IPMI_MONITORING_SENSOR_UNITS_WATTS) {
+	if (sensor_units != slurm_ipmi_conf.variable) {
 		error("Configured sensor is not in Watt, "
 		      "please check ipmi.conf");
 		return SLURM_FAILURE;
@@ -414,7 +414,7 @@ static int _find_power_sensor(void)
 			return SLURM_FAILURE;
 		}
 
-		if (sensor_units != IPMI_MONITORING_SENSOR_UNITS_WATTS)
+		if (sensor_units != slurm_ipmi_conf.variable)
 			continue;
 
 		if ((record_id =
@@ -1220,6 +1220,7 @@ extern void acct_gather_energy_p_conf_options(s_p_options_t **full_options,
 		{"EnergyIPMICalcAdjustment", S_P_BOOLEAN},
 		{"EnergyIPMIPowerSensor", S_P_UINT32},
 		{"EnergyIPMITimeout", S_P_UINT32},
+		{"EnergyIPMIVariable", S_P_STRING},
 		{NULL} };
 
 	transfer_s_p_options(full_options, options, full_options_cnt);
@@ -1227,6 +1228,8 @@ extern void acct_gather_energy_p_conf_options(s_p_options_t **full_options,
 
 extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 {
+	char *tmp_char;
+
 	/* Set initial values */
 	reset_slurm_ipmi_conf(&slurm_ipmi_conf);
 	slurm_ipmi_conf.freq = DEFAULT_IPMI_FREQ;
@@ -1317,6 +1320,13 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 
 		s_p_get_uint32(&slurm_ipmi_conf.timeout,
 			       "EnergyIPMITimeout", tbl);
+
+		if (s_p_get_string(&tmp_char, "EnergyIPMIVariable", tbl)) {
+			if (!strcmp(tmp_char, "Temp"))
+				slurm_ipmi_conf.variable =
+					IPMI_MONITORING_SENSOR_TYPE_TEMPERATURE;
+			xfree(tmp_char);
+		}
 	}
 
 	if (!_run_in_daemon())

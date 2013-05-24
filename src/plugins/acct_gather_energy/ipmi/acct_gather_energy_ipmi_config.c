@@ -89,5 +89,7 @@ extern void reset_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 		slurm_ipmi_conf->ignore_scanning_disabled = false;
 		slurm_ipmi_conf->assume_bmc_owner = false;
 		slurm_ipmi_conf->entity_sensor_names = false;
+		slurm_ipmi_conf->variable = IPMI_MONITORING_SENSOR_UNITS_WATTS;
+
 	}
 }
