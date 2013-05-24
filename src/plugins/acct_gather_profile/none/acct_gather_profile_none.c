@@ -116,6 +116,17 @@ extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
 extern void acct_gather_profile_p_get(enum acct_gather_profile_info info_type,
 				      void *data)
 {
+	uint32_t *uint32 = (uint32_t *) data;
+	char **tmp_char = (char **) data;
+
+	switch (info_type) {
+	case ACCT_GATHER_PROFILE_DEFAULT:
+		*uint32 = ACCT_GATHER_PROFILE_NONE;
+		break;
+	default:
+		break;
+	}
+
 	return;
 }
 
