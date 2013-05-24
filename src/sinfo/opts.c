@@ -198,9 +198,11 @@ extern void parse_command_line(int argc, char *argv[])
 				      optarg);
 				exit(1);
 			}
-			if (hostlist_count(host_list) == 1)
+			if (hostlist_count(host_list) == 1) {
 				params.node_name_single = true;
-			else
+				xfree(params.nodes);
+				params.nodes = hostlist_deranged_string_xmalloc(host_list);
+			} else
 				params.node_name_single = false;
 			hostlist_destroy(host_list);
 			break;
