@@ -111,7 +111,6 @@ const char plugin_type[] = "acct_gather_infiniband/ofed";
 const uint32_t plugin_version = 100;
 
 typedef struct {
-	uint32_t freq;
 	uint32_t port;
 } slurm_ofed_conf_t;
 
@@ -119,7 +118,6 @@ typedef struct {
 struct ibmad_port *srcport = NULL;
 static ib_portid_t portid;
 static int ibd_timeout = 0;
-char *ibd_ca = NULL;
 static int port = 0;
 
 typedef struct {
@@ -182,7 +180,11 @@ static int _read_ofed_values(void)
 	uint16_t cap_mask;
 	uint64_t send_val, recv_val, send_pkts, recv_pkts;
 
+	ofed_sens.last_update_time = ofed_sens.update_time;
+	ofed_sens.update_time = time(NULL);
+
 	if (first) {
+		char *ibd_ca = NULL;
 		int mgmt_classes[4] = {IB_SMI_CLASS, IB_SMI_DIRECT_CLASS,
 				       IB_SA_CLASS, IB_PERFORMANCE_CLASS};
 		srcport = mad_rpc_open_port(ibd_ca, ofed_conf.port,
@@ -252,9 +254,6 @@ static int _read_ofed_values(void)
 	last_update_xmtpkts = send_pkts;
 	last_update_rcvpkts = recv_pkts;
 
-	ofed_sens.last_update_time = ofed_sens.update_time;
-	ofed_sens.update_time = time(NULL);
-
 	return rc;
 }
 
@@ -265,19 +264,20 @@ static int _read_ofed_values(void)
  */
 static int _update_node_infiniband(void)
 {
-	acct_network_data_t *net;
+	acct_network_data_t net;
 	int rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&ofed_lock);
 	rc = _read_ofed_values();
 
-	net = xmalloc(sizeof(acct_network_data_t));
+	memset(&net, 0, sizeof(acct_network_data_t));
 
-	net->packets_in = ofed_sens.rcvpkts;
-	net->packets_out = ofed_sens.xmtpkts;
-	net->size_in = (double) ofed_sens.rcvdata / 1048576;
-	net->size_out = (double) ofed_sens.xmtdata / 1048576;
-	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_NETWORK, net);
+	net.packets_in = ofed_sens.rcvpkts;
+	net.packets_out = ofed_sens.xmtpkts;
+	net.size_in = (double) ofed_sens.rcvdata / 1048576;
+	net.size_out = (double) ofed_sens.xmtdata / 1048576;
+	acct_gather_profile_g_add_sample_data(ACCT_GATHER_PROFILE_NETWORK,
+					      &net);
 
 	if (debug_flags & DEBUG_FLAG_INFINIBAND) {
 		info("ofed-thread = %d sec, transmitted %"PRIu64" bytes, "
@@ -285,7 +285,6 @@ static int _update_node_infiniband(void)
 		     (int) (ofed_sens.update_time - ofed_sens.last_update_time),
 		     ofed_sens.xmtdata, ofed_sens.rcvdata);
 	}
-	xfree(net);
 	slurm_mutex_unlock(&ofed_lock);
 
 	return rc;
@@ -358,8 +357,6 @@ extern int acct_gather_infiniband_p_node_update(void)
 extern void acct_gather_infiniband_p_conf_set(s_p_hashtbl_t *tbl)
 {
 	if (tbl) {
-		s_p_get_uint32(&ofed_conf.freq,
-			       "InfinibandOFEDFrequency", tbl);
 		if (!s_p_get_uint32(&ofed_conf.port,
 				    "InfinibandOFEDPort", tbl))
 			ofed_conf.port = INFINIBAND_DEFAULT_PORT;
@@ -369,13 +366,13 @@ extern void acct_gather_infiniband_p_conf_set(s_p_hashtbl_t *tbl)
 		return;
 
 	verbose("%s loaded", plugin_name);
+	ofed_sens.update_time = time(NULL);
 }
 
 extern void acct_gather_infiniband_p_conf_options(s_p_options_t **full_options,
 						  int *full_options_cnt)
 {
 	s_p_options_t options[] = {
-		{"InfinibandOFEDFrequency", S_P_UINT32},
 		{"InfinibandOFEDPort", S_P_UINT32},
 		{NULL} };
 
