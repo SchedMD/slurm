@@ -4177,7 +4177,6 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer,
 	char *node_inx_str = NULL;
 	uint32_t uint32_tmp;
 
-//RBS: this is another SchedMD change and should be good.
 	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv->accounts,	&uint32_tmp, buffer);
 		safe_unpack32(&resv->core_cnt,		buffer);
@@ -7614,8 +7613,6 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 						     protocol_version);
 		}
 	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
-		//SMD	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
-		//RBS: I replicated as Don's stuff is in our 2_4, but we will be addint to 2_5
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
 		pack32(msg->ntasks, buffer);
@@ -7880,8 +7877,6 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 						       buffer,
 						       protocol_version);
 		}
-//SMD	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
-//RBS: another replication with Don's stuff
 	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
