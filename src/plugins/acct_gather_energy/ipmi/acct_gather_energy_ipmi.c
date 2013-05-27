@@ -531,7 +531,7 @@ static int _read_last_consumed_energy(ipmi_message_t* message)
 	}
 	safe_read(pipe, &format_version, sizeof(uint16_t));
 	if (format_version != IPMI_VERSION) {
-		error("error: ipmi_read: unsupported version number: %u"
+		error("error: ipmi_read: unsupported version number: %u",
 		      format_version);
 		goto rwfail;
 	}
@@ -750,7 +750,7 @@ static int _ipmi_read_profile(bool all_value)
 	}
 	safe_read(pipe, &format_version, sizeof(format_version));
 	if (format_version != IPMI_VERSION) {
-		error("error: ipmi_read: unsupported version number: %u"
+		error("error: ipmi_read: unsupported version number: %u",
 		      format_version);
 		goto rwfail;
 	}
