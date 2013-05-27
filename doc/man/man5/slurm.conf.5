@@ -216,6 +216,26 @@ Infiniband network traffic data are collected from the hardware monitoring
 counters of Infiniband devices through the OFED library.
 .RE
 
+.TP
+\fBAcctGatherFilesystemType\fR
+Identifies the plugin to be used for filesystem traffic accounting.
+The plugin is activated only when profiling on hdf5 files is activated and
+the user asks for filesystem data collection for jobs through \-\-profile=Network
+(or =All). The collection of filesystem traffic data takes place on node level,
+hence only in case of exclusive job allocation the collected values will
+reflect the jobs real traffic. All filesystem traffic data are logged on hdf5 files
+per job on each node. No storage on the Slurm database takes place.
+
+Configurable values at present are:
+.RS
+.TP 20
+\fBacct_gather_filesystem/none\fR
+No filesystem data are collected.
+.TP
+\fBacct_gather_filesystem/lustre\fR
+Lustre filesystem traffic data are collected from the counters found in 
+/proc/fs/lustre/.
+.RE
 
 .TP
 \fBAcctGatherProfileType\fR
