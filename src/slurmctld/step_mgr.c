@@ -865,7 +865,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		uint32_t avail_mem, total_mem, gres_cnt;
 		uint32_t nodes_picked_cnt = 0;
 		uint32_t tasks_picked_cnt = 0, total_task_cnt = 0;
-		bitstr_t *selected_nodes = NULL;
+		bitstr_t *selected_nodes = NULL, *non_selected_nodes = NULL;
+		int *non_selected_tasks = NULL;
 
 		if (step_spec->node_list) {
 			error_code = node_name2bitmap(step_spec->node_list,
@@ -893,6 +894,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				FREE_NULL_BITMAP(selected_nodes);
 				goto cleanup;
 			}
+			non_selected_nodes = bit_alloc(node_record_count);
+			non_selected_tasks = xmalloc(sizeof(int) *
+						     node_record_count);
 		}
 
 		node_inx = -1;
@@ -973,6 +977,12 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				  (tasks_picked_cnt >= step_spec->num_tasks))) {
 				bit_clear(nodes_avail, i);
 				total_task_cnt += total_tasks;
+			} else if (selected_nodes &&
+				   !bit_test(selected_nodes, i)) {
+				/* Usable, but not selected node */
+				bit_clear(nodes_avail, i);
+				bit_set(non_selected_nodes, i);
+				non_selected_tasks[i] = avail_tasks;
 			} else {
 				nodes_picked_cnt++;
 				tasks_picked_cnt += avail_tasks;
@@ -987,6 +997,17 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				tasks_picked_cnt = 0;
 			}
 			FREE_NULL_BITMAP(selected_nodes);
+			/* Add resources for non-selected nodes as needed */
+			for (i = i_first; i <= i_last; i++) {
+				if (tasks_picked_cnt >= step_spec->num_tasks)
+					break;
+				if (!bit_test(non_selected_nodes, i))
+					continue;
+				bit_set(nodes_avail, i);
+				tasks_picked_cnt += non_selected_tasks[i];
+			}
+			FREE_NULL_BITMAP(non_selected_nodes);
+			xfree(non_selected_tasks);
 		}
 
 		if (tasks_picked_cnt >= step_spec->num_tasks)
@@ -995,7 +1016,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		if (total_task_cnt >= step_spec->num_tasks)
 			*return_code = ESLURM_NODES_BUSY;
 		else
-			*return_code =ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+			*return_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		return NULL;
 	}
 
