@@ -99,6 +99,7 @@ static int	_delete_config_record (void);
 static void	_dump_hash (void);
 #endif
 static struct node_record *_find_alias_node_record (char *name);
+static struct node_record *_find_node_record (char *name, bool test_alias);
 static int	_hash_index (char *name);
 static void	_list_delete_config (void *config_entry);
 static void	_list_delete_feature (void *feature_entry);
@@ -809,13 +810,23 @@ extern struct node_record *create_node_record (
 	return node_ptr;
 }
 
-
 /*
  * find_node_record - find a record for node with specified name
- * input: name - name of the desired node
- * output: return pointer to node record or NULL if not found
+ * IN: name - name of the desired node
+ * RET: pointer to node record or NULL if not found
  */
 extern struct node_record *find_node_record (char *name)
+{
+	return _find_node_record(name, true);
+}
+
+/*
+ * _find_node_record - find a record for node with specified name
+ * IN: name - name of the desired node
+ * IN: test_alias - if set, also test NodeHostName value
+ * RET: pointer to node record or NULL if not found
+ */
+static struct node_record *_find_node_record (char *name, bool test_alias)
 {
 	int i;
 
@@ -854,9 +865,12 @@ extern struct node_record *find_node_record (char *name)
 		}
 	}
 
-	/* look for the alias node record if the user put this in
-	   instead of what slurm sees the node name as */
-	return _find_alias_node_record (name);
+	if (test_alias) {
+		/* look for the alias node record if the user put this in
+		 * instead of what slurm sees the node name as */
+		return _find_alias_node_record (name);
+	}
+	return NULL;
 }
 
 
@@ -952,7 +966,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		struct node_record *node_ptr;
-		node_ptr = find_node_record (this_node_name);
+		node_ptr = _find_node_record(this_node_name, best_effort);
 		if (node_ptr) {
 			bit_set (my_bitmap, (bitoff_t) (node_ptr -
 							node_record_table_ptr));
