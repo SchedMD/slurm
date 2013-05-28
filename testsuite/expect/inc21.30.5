@@ -41,11 +41,11 @@ proc inc21_30_5 {} {
 		}
 		-re "Granted job allocation ($number)" {
 			send_user "\nFAILURE: This should have failed but did not\n"
-			exit 1
+			set exit_code 1
 		}
 		timeout {
 			send_user "\nFAILURE: salloc not responding\n"
-			exit 1
+			set exit_code 1
 		}
 		eof {
 			wait

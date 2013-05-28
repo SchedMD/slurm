@@ -43,7 +43,7 @@ proc inc21_30_4 {} {
 		}
 		timeout {
 			send_user "\nFAILURE: salloc is not responding\n"
-			exit 1
+			set exit_code 1
 		}
 		eof {
 			wait
@@ -59,7 +59,7 @@ proc inc21_30_4 {} {
 		}
 		timeout {
 			send_user "\nFAILURE: salloc is not responding\n"
-			exit 1
+			set exit_code 1
 		}
 		eof {
 			wait
@@ -75,11 +75,11 @@ proc inc21_30_4 {} {
 		}
 		-re "Granted job allocation" {
 			send_user "\nThis should have failed but did not\n"
-			exit 1
+			set exit_code 1
 		}
 		timeout {
 			send_user "\nFAILURE: salloc is not responding\n"
-			exit 1
+			set exit_code 1
 		}
 		eof {
 			wait
@@ -88,7 +88,7 @@ proc inc21_30_4 {} {
 
 	if {$jobmatch==0} {
 		send_user "\nFAILURE: jobs were not submitted\n"
-		exit 1
+		set exit_code 1
 	}
 
 	# cancels the remaining jobs

@@ -43,7 +43,7 @@ proc inc21_30_3 {} {
 		}
 		timeout {
 			send_user "\nFAILURE: salloc is not responding\n"
-			exit 1
+			set exit_code 1
 		}
 		eof {
 			wait
@@ -59,7 +59,7 @@ proc inc21_30_3 {} {
 		}
 		timeout {
 			send_user "\nFAILURE: salloc is not responding\n"
-			exit 1
+			set exit_code 1
 
 		}
 		eof {
@@ -76,7 +76,7 @@ proc inc21_30_3 {} {
 		}
 		timeout {
 			send_user "\nFAILURE: salloc is not responding\n"
-			exit 1
+			set exit_code 1
 		}
 		eof {
 			wait
@@ -85,7 +85,7 @@ proc inc21_30_3 {} {
 
 	if {$jobmatch==0} {
 		send_user "\nFAILURE: jobs were not submitted\n"
-		exit 1
+		set exit_code 1
 	}
 
 	#checks the job state
