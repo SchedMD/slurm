@@ -2076,8 +2076,12 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 	time_t now;
 
-	/* now see if we are enforcing limits */
-	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
+	/* Now see if we are enforcing limits.  If Safe is set then
+	 * return false as well since we are being safe if the limit
+	 * was changed after the job was already deemed safe to start.
+	 */
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
+	    || (accounting_enforce & ACCOUNTING_ENFORCE_SAFE))
 		return false;
 
 	assoc_mgr_lock(&locks);
