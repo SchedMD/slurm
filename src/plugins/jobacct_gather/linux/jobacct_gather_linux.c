@@ -517,6 +517,7 @@ extern void jobacct_gather_p_poll_data(
 	long		hertz;
 	char		sbuf[72];
 	int energy_counted = 0;
+	static int first = 1;
 
 	if (!pgid_plugin && (cont_id == (uint64_t)NO_VAL)) {
 		debug("cont_id hasn't been set yet not running poll");
@@ -700,8 +701,12 @@ extern void jobacct_gather_p_poll_data(
 					       jobacct->energy.consumed_energy);
 					energy_counted = 1;
 				}
-				acct_gather_profile_g_add_sample_data(
-					ACCT_GATHER_PROFILE_TASK, jobacct);
+				/* We only profile on after the first poll. */
+				info("got first here of %d", first);
+				if (!first)
+					acct_gather_profile_g_add_sample_data(
+						ACCT_GATHER_PROFILE_TASK,
+						jobacct);
 				break;
 			}
 		}
@@ -714,6 +719,7 @@ extern void jobacct_gather_p_poll_data(
 finished:
 	list_destroy(prec_list);
 	processing = 0;
+	first = 0;
 	return;
 }
 
