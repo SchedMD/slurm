@@ -1090,33 +1090,35 @@ static void _task_merge_step_series(
 // This is a running total series
 	profile_task_t* prf_prior = (profile_task_t*) prior;
 	profile_task_t* prf_cur = (profile_task_t*) cur;
-	profile_task_t* prf_buf = (profile_task_t*) buf;
+	profile_task_t* buf_prv = NULL;
+	profile_task_t* buf_cur = (profile_task_t*) buf;
 
 	struct tm *ts;
 	ts = localtime(&prf_cur->time);
-	strftime(prf_buf->tod, TOD_LEN, TOD_FMT, ts);
+	strftime(buf_cur->tod, TOD_LEN, TOD_FMT, ts);
 	if (prf_prior == NULL) {
 		// First sample.
 		seriesStart = prf_cur->time;
-		prf_buf->time = 0;
-		prf_buf->cpu_time = 0;
-		prf_buf->cpu_utilization = 0;
-		prf_buf->read_size = 0.0;
-		prf_buf->write_size = 0.0;
+		buf_cur->time = 0;
+		buf_cur->cpu_time = 0;
+		buf_cur->cpu_utilization = 0;
+		buf_cur->read_size = 0.0;
+		buf_cur->write_size = 0.0;
 	} else {
-		prf_buf->time = prf_cur->time - seriesStart;
-		prf_buf->cpu_time = prf_cur->cpu_time - prf_prior->cpu_time;
-		prf_buf->cpu_utilization = 100.0*((double) prf_cur->cpu_time /
-				(double) (prf_buf->time - prf_prior->time));
-		prf_buf->read_size =
+		buf_prv = buf_cur - 1;
+		buf_cur->time = prf_cur->time - seriesStart;
+		buf_cur->cpu_time = prf_cur->cpu_time - prf_prior->cpu_time;
+		buf_cur->cpu_utilization = 100.0*((double) buf_cur->cpu_time /
+				(double) (buf_cur->time - buf_prv->time));
+		buf_cur->read_size =
 			prf_cur->read_size - prf_prior->read_size;
-		prf_buf->write_size =
+		buf_cur->write_size =
 			prf_cur->write_size - prf_prior->write_size;
 	}
-	prf_buf->cpu_freq = prf_cur->cpu_freq;
-	prf_buf->rss = prf_cur->rss;
-	prf_buf->vm_size = prf_cur->vm_size;
-	prf_buf->pages = prf_cur->pages;
+	buf_cur->cpu_freq = prf_cur->cpu_freq;
+	buf_cur->rss = prf_cur->rss;
+	buf_cur->vm_size = prf_cur->vm_size;
+	buf_cur->pages = prf_cur->pages;
 	return;
 }
 
