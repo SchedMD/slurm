@@ -221,6 +221,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 				if ((rc = bridge_block_create(bg_record))
 				    != SLURM_SUCCESS)
 					break;
+				setup_subblock_structs(bg_record);
 				print_bg_record(bg_record);
 			}
 		}
@@ -457,6 +458,7 @@ extern int create_full_system_block(List bg_found_block_list)
 		goto no_total;
 	}
 
+	setup_subblock_structs(bg_record);
 	print_bg_record(bg_record);
 	list_append(bg_lists->main, bg_record);
 

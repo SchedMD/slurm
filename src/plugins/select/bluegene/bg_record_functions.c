@@ -549,6 +549,42 @@ extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	return bg_record_cmpf_inc(rec_a, rec_b);
 }
 
+/* set up structures needed for sub block jobs. */
+extern void setup_subblock_structs(bg_record_t *bg_record)
+{
+	ba_mp_t *ba_mp;
+
+	xassert(bg_record);
+
+	if (!bg_conf->sub_blocks || bg_record->mp_count != 1)
+		return;
+
+	xassert(bg_record->ba_mp_list);
+
+	ba_mp = list_peek(bg_record->ba_mp_list);
+	xassert(ba_mp);
+
+	/* This will be a list containing jobs running on this
+	   block */
+	if (!bg_record->job_list)
+		bg_record->job_list = list_create(NULL);
+
+	/* Create these now so we can deal with error
+	   cnodes if/when they happen.  Since this is
+	   the easiest place to figure it out for
+	   blocks that don't use the entire block */
+	FREE_NULL_BITMAP(ba_mp->cnode_bitmap);
+	if ((ba_mp->cnode_bitmap =
+	     ba_create_ba_mp_cnode_bitmap(bg_record))) {
+		FREE_NULL_BITMAP(ba_mp->cnode_err_bitmap);
+		FREE_NULL_BITMAP(ba_mp->cnode_usable_bitmap);
+		ba_mp->cnode_err_bitmap =
+			bit_alloc(bg_conf->mp_cnode_cnt);
+		ba_mp->cnode_usable_bitmap =
+			bit_copy(ba_mp->cnode_bitmap);
+	}
+}
+
 /* Try to requeue job running on block and put block in an error state.
  * block_state_mutex and slurmctld must be unlocked before calling this.
  */
@@ -737,25 +773,8 @@ extern int add_bg_record(List records, List *used_nodes,
 			       "destroying this mp list");
 			list_destroy(bg_record->ba_mp_list);
 			bg_record->ba_mp_list = NULL;
-		} else if (bg_conf->sub_blocks && bg_record->mp_count == 1) {
-			ba_mp_t *ba_mp = list_peek(bg_record->ba_mp_list);
-			xassert(ba_mp);
-			/* This will be a list containing jobs running on this
-			   block */
-			bg_record->job_list = list_create(NULL);
-
-			/* Create these now so we can deal with error
-			   cnodes if/when they happen.  Since this is
-			   the easiest place to figure it out for
-			   blocks that don't use the entire block */
-			if ((ba_mp->cnode_bitmap =
-			     ba_create_ba_mp_cnode_bitmap(bg_record))) {
-		       		ba_mp->cnode_err_bitmap =
-					bit_alloc(bg_conf->mp_cnode_cnt);
-				ba_mp->cnode_usable_bitmap =
-					bit_copy(ba_mp->cnode_bitmap);
-			}
-		}
+		} else
+			setup_subblock_structs(bg_record);
 	} else {
 		List ba_mp_list = NULL;
 
