@@ -312,8 +312,10 @@ extern int acct_gather_profile_p_node_step_start(slurmd_job_t* job)
 
 	g_job = job;
 
-	if (g_job->stepid == NO_VAL)
+	if (g_job->stepid == NO_VAL) {
+		g_profile_running = ACCT_GATHER_PROFILE_NONE;
 		return rc;
+	}
 
 	xassert(hdf5_conf.dir);
 
