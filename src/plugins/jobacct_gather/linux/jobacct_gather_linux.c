@@ -702,7 +702,6 @@ extern void jobacct_gather_p_poll_data(
 					energy_counted = 1;
 				}
 				/* We only profile on after the first poll. */
-				info("got first here of %d", first);
 				if (!first)
 					acct_gather_profile_g_add_sample_data(
 						ACCT_GATHER_PROFILE_TASK,
