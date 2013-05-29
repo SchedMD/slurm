@@ -518,6 +518,7 @@ extern void jobacct_gather_p_poll_data(
 	char		sbuf[72];
 	int energy_counted = 0;
 	static int first = 1;
+	static int energy_profile = ENERGY_DATA_JOULES_TASK;
 
 	if (!pgid_plugin && (cont_id == (uint64_t)NO_VAL)) {
 		debug("cont_id hasn't been set yet not running poll");
@@ -530,6 +531,16 @@ extern void jobacct_gather_p_poll_data(
 	}
 	processing = 1;
 	prec_list = list_create(_destroy_prec);
+	if (first) {
+		uint32_t profile_opt;
+		acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
+					  &profile_opt);
+		/* If we are profiling energy it will be checked at a
+		   different rate, so just grab the last one.
+		*/
+		if (profile_opt & ACCT_GATHER_PROFILE_ENERGY)
+			energy_profile = ENERGY_DATA_STRUCT;
+	}
 
 	hertz = sysconf(_SC_CLK_TCK);
 	if (hertz < 1) {
@@ -545,7 +556,7 @@ extern void jobacct_gather_p_poll_data(
 			itr = list_iterator_create(task_list);
 			if ((jobacct = list_next(itr))) {
 				acct_gather_energy_g_get_data(
-					ENERGY_DATA_JOULES_TASK,
+					energy_profile,
 					&jobacct->energy);
 				debug2("getjoules_task energy = %u",
 				       jobacct->energy.consumed_energy);
@@ -695,7 +706,7 @@ extern void jobacct_gather_p_poll_data(
 				debug2("energycounted= %d", energy_counted);
 				if (energy_counted == 0) {
 					acct_gather_energy_g_get_data(
-						ENERGY_DATA_JOULES_TASK,
+						energy_profile,
 						&jobacct->energy);
 					debug2("getjoules_task energy = %u",
 					       jobacct->energy.consumed_energy);

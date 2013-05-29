@@ -326,7 +326,8 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 						      freq_def, "energy=")))
 				acct_gather_profile_timer[i].freq =
 					_get_int(type+7);
-
+			acct_gather_energy_startpoll(
+				acct_gather_profile_timer[i].freq);
 			break;
 		case PROFILE_TASK:
 			/* Always set up the task (always first) to be

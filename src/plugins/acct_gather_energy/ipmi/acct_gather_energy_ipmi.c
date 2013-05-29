@@ -745,7 +745,7 @@ static int _get_joules_task(void)
 		     local_energy->consumed_energy - start_current_energy,
 		     local_energy->base_consumed_energy);
 
-	_ipmi_send_profile();
+	//_ipmi_send_profile();
 
 	return SLURM_SUCCESS;
 }
@@ -837,6 +837,12 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 	switch (data_type) {
 	case ENERGY_DATA_RECONFIG:
 		debug_flags = slurm_get_debug_flags();
+		break;
+	case ENERGY_DATA_PROFILE:
+		slurm_mutex_lock(&ipmi_mutex);
+		_get_joules_task();
+		_ipmi_send_profile();
+		slurm_mutex_unlock(&ipmi_mutex);
 		break;
 	default:
 		error("acct_gather_energy_p_set_data: unknown enum %d",

@@ -458,6 +458,7 @@ enum acct_energy_type {
 	ENERGY_DATA_JOULES_TASK,
 	ENERGY_DATA_STRUCT,
 	ENERGY_DATA_RECONFIG,
+	ENERGY_DATA_PROFILE,
 };
 
 /* Possible task distributions across the nodes */

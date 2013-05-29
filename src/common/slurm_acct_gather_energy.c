@@ -80,6 +80,27 @@ static slurm_acct_gather_energy_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
+static bool acct_shutdown = true;
+static int freq = 0;
+
+
+static void *_watch_node(void *arg)
+{
+	int type = PROFILE_NETWORK;
+	while (init_run && acct_gather_profile_running) {
+		/* Do this until shutdown is requested */
+		(*(ops.set_data))(ENERGY_DATA_PROFILE, NULL);
+		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
+		pthread_cond_wait(
+			&acct_gather_profile_timer[type].notify,
+			&acct_gather_profile_timer[type].notify_mutex);
+		slurm_mutex_unlock(&acct_gather_profile_timer[type].
+				   notify_mutex);
+	}
+
+	return NULL;
+}
+
 
 extern int slurm_acct_gather_energy_init(void)
 {
@@ -217,6 +238,46 @@ extern int acct_gather_energy_g_set_data(enum acct_energy_type data_type,
 		return retval;
 
 	retval = (*(ops.set_data))(data_type, energy);
+
+	return retval;
+}
+
+extern int acct_gather_energy_startpoll(uint32_t frequency)
+{
+	int retval = SLURM_SUCCESS;
+	pthread_attr_t attr;
+	pthread_t _watch_node_thread_id;
+
+	if (slurm_acct_gather_energy_init() < 0)
+		return SLURM_ERROR;
+
+	if (!acct_shutdown) {
+		error("acct_gather_energy_startpoll: "
+		      "poll already started!");
+		return retval;
+	}
+
+	acct_shutdown = false;
+
+	freq = frequency;
+
+	if (frequency == 0) {   /* don't want dynamic monitoring? */
+		debug2("acct_gather_energy dynamic logging disabled");
+		return retval;
+	}
+
+	/* create polling thread */
+	slurm_attr_init(&attr);
+	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+
+	if (pthread_create(&_watch_node_thread_id, &attr, &_watch_node, NULL)) {
+		debug("acct_gather_energy failed to create _watch_node "
+		      "thread: %m");
+		frequency = 0;
+	} else
+		debug3("acct_gather_energy dynamic logging enabled");
+	slurm_attr_destroy(&attr);
 
 	return retval;
 }
