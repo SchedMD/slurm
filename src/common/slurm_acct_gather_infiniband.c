@@ -71,7 +71,6 @@ static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 static bool acct_shutdown = true;
 static int freq = 0;
-static bool plugin_polling = true;
 
 static void *_watch_node(void *arg)
 {
@@ -145,9 +144,6 @@ extern int acct_gather_infiniband_startpoll(uint32_t frequency)
 	int retval = SLURM_SUCCESS;
 	pthread_attr_t attr;
 	pthread_t _watch_node_thread_id;
-
-	if (!plugin_polling)
-		return SLURM_SUCCESS;
 
 	if (acct_gather_infiniband_init() < 0)
 		return SLURM_ERROR;
