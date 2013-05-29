@@ -171,6 +171,12 @@ test1.64   Test interuption of srun while waiting for resource allocation.
 test1.65   Test of srun --mpi=list option.
 test1.66   Test srun to make sure that the jobs are running on the correct node
 	    within a allocation.
+test1.67   Test that an srun program can move from the background to the
+           foreground.
+test1.68   Test that an srun program can move from the foreground to the
+           background.
+test1.69   Test that multiple srun programs execute simultaneously in the
+           background.
 
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
 	   The test will print "WARNING" and terminate with an exit code of

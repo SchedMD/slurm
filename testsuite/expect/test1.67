@@ -1,0 +1,127 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test that an srun program can move from the background to the
+#          foreground.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2011-2013 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "1.67"
+set file_in     "test$test_id.bash"
+set test_timer  "test$test_id.test_timer"
+set test_srun   "test$test_id.test_srun"
+set job_id      0
+set exit_code   0
+
+print_header $test_id
+
+if {[test_bluegene]} {
+	send_user "\nWARNING: This test is incompatible with Bluegene systems\n"
+	exit $exit_code
+} elseif {[test_cray]} {
+	send_user "\nWARNING: This test is incompatible with Cray systems\n"
+	exit $exit_code
+} elseif {[test_launch_poe]} {
+	send_user "\nWARNING: This test is incompatible with POE systems\n"
+	exit $exit_code
+}
+
+# remove any remainging files
+exec $bin_rm -f $test_timer $test_srun $file_in
+
+make_bash_script $test_timer "
+for i in \{1..10\}
+do
+	echo \"time \$i\"
+	sleep 5
+done
+echo \"Test finished\"
+"
+
+make_bash_script $test_srun "
+set -m
+$srun -t1 -v ./$test_timer &
+$bin_sleep 15
+echo \"sending job to foreground\"
+fg
+"
+
+make_bash_script $file_in "
+bash -i ./$test_srun
+"
+
+set timeout $max_job_delay
+set send_match 0
+set time_match 0
+set fini_match 0
+spawn bash -i $file_in
+expect {
+	-re "sending job to foreground" {
+		set send_match 1
+		if {$time_match == 0} {
+			send_user "\nFAILURE: srun is not generating output\n"
+			set exit_code 1
+		}
+		exp_continue
+	}
+	-re "time ($number)" {
+		incr time_match
+		exp_continue
+	}
+	-re "Test finished" {
+		set fini_match 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$send_match != 1} {
+	send_user "\nFAILURE: srun was not sent to the foreground\n"
+	set exit_code 1
+}
+if {$time_match != 10} {
+	send_user "\nFAILURE: srun is not generating output ($time_match != 10)\n"
+	set exit_code 1
+}
+if {$fini_match != 1} {
+	send_user "\nFAILURE: srun did not finish the program submitted\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+	exec $bin_rm $test_timer $test_srun $file_in
+}
+exit $exit_code
+
