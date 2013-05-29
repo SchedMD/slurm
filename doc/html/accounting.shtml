@@ -700,7 +700,7 @@ in the <a href="resource_limits.html">Resource Limits</a> document.</p>
 
 <li><b>MaxCPUMinsPerJob=</b> A limit of cpu minutes to be used by jobs
   running from this association.  If this limit is
-  reached the job will be killed will be allowed to run.
+  reached the job will be killed.
 </li>
 
 <li><b>MaxCPUsPerJob=</b> The maximum size in cpus any given job can
