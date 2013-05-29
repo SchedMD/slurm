@@ -48,6 +48,12 @@
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+/*
+** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
+** for details.
+ */
+strong_alias(acct_gather_energy_destroy, slurm_acct_gather_energy_destroy);
+
 typedef struct slurm_acct_gather_energy_ops {
 	int (*update_node_energy) (void);
 	int (*get_data)           (enum acct_energy_type data_type,
@@ -142,8 +148,9 @@ extern void acct_gather_energy_pack(acct_gather_energy_t *energy, Buf buffer,
 {
 	if (!energy) {
 		int i;
-		for (i=0; i<4; i++)
+		for (i=0; i<5; i++)
 			pack32(0, buffer);
+		pack_time(0, buffer);
 		return;
 	}
 
@@ -151,6 +158,8 @@ extern void acct_gather_energy_pack(acct_gather_energy_t *energy, Buf buffer,
 	pack32(energy->base_watts, buffer);
 	pack32(energy->consumed_energy, buffer);
 	pack32(energy->current_watts, buffer);
+	pack32(energy->previous_consumed_energy, buffer);
+	pack_time(energy->poll_time, buffer);
 }
 
 extern int acct_gather_energy_unpack(acct_gather_energy_t **energy, Buf buffer,
@@ -163,6 +172,8 @@ extern int acct_gather_energy_unpack(acct_gather_energy_t **energy, Buf buffer,
 	safe_unpack32(&energy_ptr->base_watts, buffer);
 	safe_unpack32(&energy_ptr->consumed_energy, buffer);
 	safe_unpack32(&energy_ptr->current_watts, buffer);
+	safe_unpack32(&energy_ptr->previous_consumed_energy, buffer);
+	safe_unpack_time(&energy_ptr->poll_time, buffer);
 
 	return SLURM_SUCCESS;
 

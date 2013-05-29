@@ -165,6 +165,7 @@ static int  _rpc_file_bcast(slurm_msg_t *msg);
 static int  _rpc_ping(slurm_msg_t *);
 static int  _rpc_health_check(slurm_msg_t *);
 static int  _rpc_acct_gather_update(slurm_msg_t *);
+static int  _rpc_acct_gather_energy(slurm_msg_t *);
 static int  _rpc_step_complete(slurm_msg_t *msg);
 static int  _rpc_stat_jobacct(slurm_msg_t *msg);
 static int  _rpc_list_pids(slurm_msg_t *msg);
@@ -385,6 +386,11 @@ slurmd_req(slurm_msg_t *msg)
 		_rpc_acct_gather_update(msg);
 		last_slurmctld_msg = time(NULL);
 		/* No body to free */
+		break;
+	case REQUEST_ACCT_GATHER_ENERGY:
+		debug2("Processing RPC: REQUEST_ACCT_GATHER_ENERGY");
+		_rpc_acct_gather_energy(msg);
+		slurm_free_acct_gather_energy_req_msg(msg->data);
 		break;
 	case REQUEST_JOB_ID:
 		_rpc_pid2jid(msg);
@@ -2043,6 +2049,51 @@ _rpc_acct_gather_update(slurm_msg_t *msg)
 	return rc;
 }
 
+static int
+_rpc_acct_gather_energy(slurm_msg_t *msg)
+{
+	int        rc = SLURM_SUCCESS;
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	static bool first_msg = true;
+
+	if (!_slurm_authorized_user(req_uid)) {
+		error("Security violation, acct_gather_update RPC from uid %d",
+		      req_uid);
+		if (first_msg) {
+			error("Do you have SlurmUser configured as uid %d?",
+			      req_uid);
+		}
+		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
+	}
+	first_msg = false;
+
+	if (rc != SLURM_SUCCESS) {
+		/* Return result. If the reply can't be sent this indicates
+		 * 1. The network is broken OR
+		 */
+		if (slurm_send_rc_msg(msg, rc) < 0) {
+			error("Error responding to energy request: %m");
+		}
+	} else {
+		slurm_msg_t resp_msg;
+		acct_gather_node_resp_msg_t acct_msg;
+
+		memset(&acct_msg, 0, sizeof(acct_gather_node_resp_msg_t));
+		//acct_msg.node_name = conf->node_name;
+		acct_msg.energy = acct_gather_energy_alloc();
+		acct_gather_energy_g_get_data(
+			ENERGY_DATA_STRUCT, acct_msg.energy);
+
+		slurm_msg_t_copy(&resp_msg, msg);
+		resp_msg.msg_type = RESPONSE_ACCT_GATHER_ENERGY;
+		resp_msg.data     = &acct_msg;
+
+		slurm_send_node_msg(msg->conn_fd, &resp_msg);
+
+		acct_gather_energy_destroy(acct_msg.energy);
+	}
+	return rc;
+}
 
 static int
 _signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,

@@ -230,6 +230,12 @@ static int _unpack_acct_gather_node_resp_msg(acct_gather_node_resp_msg_t ** msg,
 					     Buf buffer,
 					     uint16_t protocol_version);
 
+static void _pack_acct_gather_energy_req(acct_gather_energy_req_msg_t *msg,
+					 Buf buffer, uint16_t protocol_version);
+static int _unpack_acct_gather_energy_req(acct_gather_energy_req_msg_t **msg,
+					  Buf buffer,
+					  uint16_t protocol_version);
+
 static void _pack_part_info_request_msg(part_info_request_msg_t * msg,
 					Buf buffer, uint16_t protocol_version);
 static int _unpack_part_info_request_msg(part_info_request_msg_t ** msg,
@@ -766,6 +772,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			msg->protocol_version);
 		break;
 	case RESPONSE_ACCT_GATHER_UPDATE:
+	case RESPONSE_ACCT_GATHER_ENERGY:
 		_pack_acct_gather_node_resp_msg(
 			(acct_gather_node_resp_msg_t *) msg->data,
 			buffer, msg->protocol_version);
@@ -803,6 +810,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
 		/* Message contains no body/information */
+		break;
+	case REQUEST_ACCT_GATHER_ENERGY:
+		_pack_acct_gather_energy_req(
+			(acct_gather_energy_req_msg_t *)msg->data,
+			buffer, msg->protocol_version);
 		break;
 	case REQUEST_REBOOT_NODES:
 		_pack_reboot_msg((reboot_msg_t *)msg->data, buffer,
@@ -1329,6 +1341,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			msg->protocol_version);
 		break;
 	case RESPONSE_ACCT_GATHER_UPDATE:
+	case RESPONSE_ACCT_GATHER_ENERGY:
 		rc = _unpack_acct_gather_node_resp_msg(
 			(acct_gather_node_resp_msg_t **)&(msg->data),
 			buffer, msg->protocol_version);
@@ -1367,6 +1380,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_TOPO_INFO:
 		/* Message contains no body/information */
+		break;
+	case REQUEST_ACCT_GATHER_ENERGY:
+		rc = _unpack_acct_gather_energy_req(
+			(acct_gather_energy_req_msg_t **) & (msg->data),
+			buffer, msg->protocol_version);
 		break;
 	case REQUEST_REBOOT_NODES:
 		rc = _unpack_reboot_msg((reboot_msg_t **) & (msg->data),
@@ -2491,6 +2509,36 @@ unpack_error:
 	slurm_free_acct_gather_node_resp_msg(node_data_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
+}
+
+static void
+_pack_acct_gather_energy_req(acct_gather_energy_req_msg_t *msg,
+			     Buf buffer, uint16_t protocol_version)
+{
+	xassert(msg != NULL);
+	pack16(msg->delta, buffer);
+}
+
+static int
+_unpack_acct_gather_energy_req(acct_gather_energy_req_msg_t **msg,
+			       Buf buffer, uint16_t protocol_version)
+{
+	acct_gather_energy_req_msg_t *msg_ptr;
+
+	xassert(msg != NULL);
+
+	msg_ptr = xmalloc(sizeof(acct_gather_energy_req_msg_t));
+	*msg = msg_ptr;
+
+	safe_unpack16(&msg_ptr->delta, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_acct_gather_energy_req_msg(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+
 }
 
 static void

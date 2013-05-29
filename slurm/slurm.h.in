@@ -948,11 +948,12 @@ typedef struct dynamic_plugin_data {
 } dynamic_plugin_data_t;
 
 typedef struct acct_gather_energy {
-	uint32_t previous_consumed_energy;
 	uint32_t base_consumed_energy;
 	uint32_t base_watts;	  /* lowest power consump of node, in watts */
 	uint32_t consumed_energy; /* total energy consumed by node, in joules */
 	uint32_t current_watts;	  /* current power consump of node, in watts */
+	uint32_t previous_consumed_energy;
+	time_t poll_time;         /* When information was last retrieved */
 } acct_gather_energy_t;
 
 typedef struct ext_sensors_data {
@@ -1590,6 +1591,10 @@ typedef struct acct_gather_node_resp_msg {
 	char *node_name;	  /* node name */
 	acct_gather_energy_t *energy;
 } acct_gather_node_resp_msg_t;
+
+typedef struct acct_gather_energy_req_msg {
+	uint16_t delta;
+} acct_gather_energy_req_msg_t;
 
 /* Current partition state information and used to set partition options
  * using slurm_update_partition(). */
@@ -3091,6 +3096,18 @@ extern int slurm_load_node PARAMS((time_t update_time, node_info_msg_t **resp,
  */
 extern int slurm_load_node_single PARAMS((node_info_msg_t **resp,
 					 char *node_name, uint16_t show_flags));
+
+/*
+ * slurm_node_energy - issue RPC to get the energy data on this machine
+ * IN  host  - name of node to query, NULL if localhost
+ * IN  delta - Use cache if data is newer than this in seconds
+ * OUT acct_gather_energy_t structure on success or NULL other wise
+ * RET 0 or a slurm error code
+ * NOTE: free the response using slurm_acct_gather_energy_destroy
+ */
+extern int slurm_get_node_energy PARAMS(
+	(char *host, uint16_t delta,
+	 acct_gather_energy_t **acct_gather_energy));
 
 /*
  * slurm_free_node_info_msg - free the node information response message

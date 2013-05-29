@@ -525,6 +525,14 @@ extern void slurm_free_acct_gather_node_resp_msg(
 	}
 }
 
+extern void slurm_free_acct_gather_energy_req_msg(
+	acct_gather_energy_req_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg);
+	}
+}
+
 extern void slurm_free_node_registration_status_msg(
 	slurm_node_registration_status_msg_t * msg)
 {

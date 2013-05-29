@@ -58,6 +58,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/parse_time.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_protocol_api.h"
@@ -476,6 +477,88 @@ extern int slurm_load_node_single (node_info_msg_t **resp,
 		if (rc)
 			slurm_seterrno_ret(rc);
 		*resp = NULL;
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
+
+	return SLURM_PROTOCOL_SUCCESS;
+}
+
+/*
+ * slurm_node_energy - issue RPC to get the energy data on this machine
+ * IN  host  - name of node to query, NULL if localhost
+ * IN  delta - Use cache if data is newer than this in seconds
+ * OUT acct_gather_energy_t structure on success or NULL other wise
+ * RET 0 or a slurm error code
+ * NOTE: free the response using slurm_acct_gather_energy_destroy
+ */
+extern int slurm_get_node_energy(char *host, uint16_t delta,
+				 acct_gather_energy_t **acct_gather_energy)
+{
+	int rc;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+	acct_gather_energy_req_msg_t req;
+	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
+	char *this_addr;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	if (host)
+		slurm_conf_get_addr(host, &req_msg.address);
+	else if (cluster_flags & CLUSTER_FLAG_MULTSD) {
+		if ((this_addr = getenv("SLURMD_NODENAME"))) {
+			slurm_conf_get_addr(this_addr, &req_msg.address);
+		} else {
+			this_addr = "localhost";
+			slurm_set_addr(&req_msg.address,
+				       (uint16_t)slurm_get_slurmd_port(),
+				       this_addr);
+		}
+	} else {
+		char this_host[256];
+		/*
+		 *  Set request message address to slurmd on localhost
+		 */
+		gethostname_short(this_host, sizeof(this_host));
+		this_addr = slurm_conf_get_nodeaddr(this_host);
+		if (this_addr == NULL)
+			this_addr = xstrdup("localhost");
+		slurm_set_addr(&req_msg.address,
+			       (uint16_t)slurm_get_slurmd_port(),
+			       this_addr);
+		xfree(this_addr);
+	}
+
+	req.delta        = delta;
+	req_msg.msg_type = REQUEST_ACCT_GATHER_ENERGY;
+	req_msg.data     = &req;
+
+	rc = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
+
+	if (rc != 0 || !resp_msg.auth_cred) {
+		error("slurm_get_node_energy: %m");
+		if (resp_msg.auth_cred)
+			g_slurm_auth_destroy(resp_msg.auth_cred);
+		return SLURM_ERROR;
+	}
+	if (resp_msg.auth_cred)
+		g_slurm_auth_destroy(resp_msg.auth_cred);
+	switch (resp_msg.msg_type) {
+	case RESPONSE_ACCT_GATHER_ENERGY:
+		*acct_gather_energy = ((acct_gather_node_resp_msg_t *)
+				       resp_msg.data)->energy;
+		((acct_gather_node_resp_msg_t *) resp_msg.data)->energy = NULL;
+		slurm_free_acct_gather_node_resp_msg(resp_msg.data);
+		break;
+	case RESPONSE_SLURM_RC:
+	        rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		if (rc)
+			slurm_seterrno_ret(rc);
 		break;
 	default:
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
