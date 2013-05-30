@@ -131,9 +131,7 @@ const char plugin_name[] = "AcctGatherEnergy RAPL plugin";
 const char plugin_type[] = "acct_gather_energy/rapl";
 const uint32_t plugin_version = 100;
 
-static int freq = 0;
 static acct_gather_energy_t *local_energy = NULL;
-static bool acct_gather_energy_shutdown = true;
 static uint32_t debug_flags = 0;
 
 /* one cpu in the package */
@@ -279,81 +277,12 @@ static bool _run_in_daemon(void)
 	return run;
 }
 
-extern int acct_gather_energy_p_update_node_energy(void)
+static void _get_joules_task(acct_gather_energy_t *energy)
 {
-	int rc = SLURM_SUCCESS;
 	int i;
 	double energy_units;
 	uint64_t result;
 	double ret;
-
-	xassert(_run_in_daemon());
-
-	if (local_energy->current_watts == NO_VAL)
-		return rc;
-	acct_gather_energy_shutdown = false;
-	if (!acct_gather_energy_shutdown) {
-		uint32_t node_current_energy;
-		uint16_t node_freq;
-
-		xassert(pkg_fd[0] != -1);
-
-		/* MSR_RAPL_POWER_UNIT
-		 * Power Units - bits 3:0
-		 * Energy Status Units - bits 12:8
-		 * Time Units - bits 19:16
-		 * See: Intel 64 and IA-32 Architectures Software Developer's
-		 * Manual, Volume 3 for details */
-		result = _read_msr(pkg_fd[0], MSR_RAPL_POWER_UNIT);
-		energy_units = pow(0.5,(double)((result>>8)&0x1f));
-		result = 0;
-		for (i = 0; i < nb_pkg; i++)
-			result += _get_package_energy(i) + _get_dram_energy(i);
-		ret = (double)result * energy_units;
-
-		/* current_watts = the average power consumption between two
-		 *		   measurements
-		 * base_watts = base energy consumed
-		 */
-		node_current_energy = (int)ret;
-		if (local_energy->consumed_energy != 0) {
-			local_energy->consumed_energy =
-				node_current_energy - local_energy->base_watts;
-			local_energy->current_watts =
-				node_current_energy -
-				local_energy->previous_consumed_energy;
-			node_freq = slurm_get_acct_gather_node_freq();
-			if (node_freq)	/* Prevent divide by zero */
-				local_energy->current_watts /= (float)node_freq;
-		}
-		if (local_energy->consumed_energy == 0) {
-			local_energy->consumed_energy = 1;
-			local_energy->base_watts = node_current_energy;
-		}
-		local_energy->previous_consumed_energy = node_current_energy;
-		local_energy->poll_time = time(NULL);
-
-		if (debug_flags & DEBUG_FLAG_ENERGY) {
-			info("_getjoules_rapl = %d sec, current %.6f Joules, "
-			     "consumed %d",
-			     freq, ret, local_energy->consumed_energy);
-		}
-	}
-
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("_getjoules_rapl shutdown");
-	return rc;
-}
-
-static void _get_joules_task(acct_gather_energy_t *energy)
-{
-	int i;
-	double energy_units, power_units;
-	uint64_t result;
-	ulong max_power;
-	double ret;
-
-	xassert(_run_in_daemon());
 
 	xassert(pkg_fd[0] != -1);
 
@@ -364,23 +293,25 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	 * See: Intel 64 and IA-32 Architectures Software Developer's
 	 * Manual, Volume 3 for details */
 	result = _read_msr(pkg_fd[0], MSR_RAPL_POWER_UNIT);
-	power_units = pow(0.5, (double)(result&0xf));
 	energy_units = pow(0.5, (double)((result>>8)&0x1f));
-	if (debug_flags & DEBUG_FLAG_ENERGY)
+
+	if (debug_flags & DEBUG_FLAG_ENERGY) {
+		double power_units = pow(0.5, (double)(result&0xf));
+		ulong max_power;
+
 		info("RAPL powercapture_debug Energy units = %.6f, "
 		     "Power Units = %.6f", energy_units, power_units);
-
-	/* MSR_PKG_POWER_INFO
-	 * Thermal Spec Power - bits 14:0
-	 * Minimum Power - bits 30:16
-	 * Maximum Power - bits 46:32
-	 * Maximum Time Window - bits 53:48
-	 * See: Intel 64 and IA-32 Architectures Software Developer's
-	 * Manual, Volume 3 for details */
-	result = _read_msr(pkg_fd[0], MSR_PKG_POWER_INFO);
-	max_power = power_units * ((result >> 32) & 0x7fff);
-	if (debug_flags & DEBUG_FLAG_ENERGY)
+		/* MSR_PKG_POWER_INFO
+		 * Thermal Spec Power - bits 14:0
+		 * Minimum Power - bits 30:16
+		 * Maximum Power - bits 46:32
+		 * Maximum Time Window - bits 53:48
+		 * See: Intel 64 and IA-32 Architectures Software Developer's
+		 * Manual, Volume 3 for details */
+		result = _read_msr(pkg_fd[0], MSR_PKG_POWER_INFO);
+		max_power = power_units * ((result >> 32) & 0x7fff);
 		info("RAPL Max power = %ld w", max_power);
+	}
 
 	result = 0;
 	for (i = 0; i < nb_pkg; i++)
@@ -388,22 +319,81 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("RAPL Result = %"PRIu64"", result);
 	ret = (double)result * energy_units;
+
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("RAPL Result float %.6f Joules", ret);
 
 	if (energy->consumed_energy != 0) {
-		energy->consumed_energy =  ret - energy->base_consumed_energy;
+		uint16_t node_freq;
+		energy->consumed_energy = (uint32_t)ret - energy->base_watts;
+		energy->current_watts =
+			(uint32_t)ret - energy->previous_consumed_energy;
+		node_freq = slurm_get_acct_gather_node_freq();
+		if (node_freq)	/* Prevent divide by zero */
+			local_energy->current_watts /= (float)node_freq;
 	}
 	if (energy->consumed_energy == 0) {
 		energy->consumed_energy = 1;
-		energy->base_consumed_energy = ret;
+		energy->base_watts = (uint32_t)ret;
+	}
+	energy->previous_consumed_energy = (uint32_t)ret;
+	energy->poll_time = time(NULL);
+
+	if (debug_flags & DEBUG_FLAG_ENERGY)
+		info("_get_joules_task: current %.6f Joules, consumed %u",
+		     ret, energy->consumed_energy);
+}
+
+static int _running_profile(void)
+{
+	static bool run = false;
+	static uint32_t profile_opt = ACCT_GATHER_PROFILE_NOT_SET;
+
+	if (profile_opt == ACCT_GATHER_PROFILE_NOT_SET) {
+		acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
+					  &profile_opt);
+		if (profile_opt & ACCT_GATHER_PROFILE_ENERGY)
+			run = true;
 	}
 
-	if (debug_flags & DEBUG_FLAG_ENERGY) {
-		info("_get_joules_task energy = %.6f, base %u , current %u",
-		     ret, energy->base_consumed_energy,
-		     energy->consumed_energy);
-	}
+	return run;
+}
+
+static int _send_profile(void)
+{
+	acct_energy_data_t ener;
+
+	if (!_running_profile())
+		return SLURM_SUCCESS;
+
+	if (debug_flags & DEBUG_FLAG_ENERGY)
+		info("_send_profile: consumed %d watts",
+		     local_energy->current_watts);
+
+	memset(&ener, 0, sizeof(acct_energy_data_t));
+	/*TODO function to calculate Average CPUs Frequency*/
+	/*ener->cpu_freq = // read /proc/...*/
+	ener.cpu_freq = 1;
+	ener.time = time(NULL);
+	ener.power = local_energy->current_watts;
+	acct_gather_profile_g_add_sample_data(
+		ACCT_GATHER_PROFILE_ENERGY, &ener);
+
+	return SLURM_ERROR;
+}
+
+extern int acct_gather_energy_p_update_node_energy(void)
+{
+	int rc = SLURM_SUCCESS;
+
+	xassert(_run_in_daemon());
+
+	if (local_energy->current_watts == NO_VAL)
+		return rc;
+
+	_get_joules_task(local_energy);
+
+	return rc;
 }
 
 /*
@@ -481,6 +471,10 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 	switch (data_type) {
 	case ENERGY_DATA_RECONFIG:
 		debug_flags = slurm_get_debug_flags();
+		break;
+	case ENERGY_DATA_PROFILE:
+		_get_joules_task(local_energy);
+		_send_profile();
 		break;
 	default:
 		error("acct_gather_energy_p_set_data: unknown enum %d",
