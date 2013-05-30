@@ -573,15 +573,15 @@ static int _ipmi_send_profile(void)
 		return SLURM_SUCCESS;
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("_ipmi_send_profile: consumed %d joules",
-		     local_energy->base_consumed_energy);
+		info("_ipmi_send_profile: consumed %d watts",
+		     local_energy->current_watts);
 
 	memset(&ener, 0, sizeof(acct_energy_data_t));
 	/*TODO function to calculate Average CPUs Frequency*/
 	/*ener->cpu_freq = // read /proc/...*/
 	ener.cpu_freq = 1;
 	ener.time = time(NULL);
-	ener.power = local_energy->base_consumed_energy;
+	ener.power = local_energy->current_watts;
 	acct_gather_profile_g_add_sample_data(
 		ACCT_GATHER_PROFILE_ENERGY, &ener);
 

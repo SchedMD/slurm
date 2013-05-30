@@ -86,7 +86,7 @@ static int freq = 0;
 
 static void *_watch_node(void *arg)
 {
-	int type = PROFILE_NETWORK;
+	int type = PROFILE_ENERGY;
 	while (init_run && acct_gather_profile_running) {
 		/* Do this until shutdown is requested */
 		(*(ops.set_data))(ENERGY_DATA_PROFILE, NULL);
