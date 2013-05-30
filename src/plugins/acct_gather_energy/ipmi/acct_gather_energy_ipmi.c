@@ -63,7 +63,6 @@
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "acct_gather_energy_ipmi_config.h"
-#include "acct_gather_energy_ipmi.h"
 
 /*
  * freeipmi includes for the lib

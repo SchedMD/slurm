@@ -140,15 +140,13 @@ am__DEPENDENCIES_1 =
 @BUILD_IPMI_TRUE@acct_gather_energy_ipmi_la_DEPENDENCIES =  \
 @BUILD_IPMI_TRUE@	$(am__DEPENDENCIES_1)
 am__acct_gather_energy_ipmi_la_SOURCES_DIST =  \
-	acct_gather_energy_ipmi.c acct_gather_energy_ipmi.h \
-	acct_gather_energy_ipmi_config.c \
+	acct_gather_energy_ipmi.c acct_gather_energy_ipmi_config.c \
 	acct_gather_energy_ipmi_config.h
 @BUILD_IPMI_TRUE@am_acct_gather_energy_ipmi_la_OBJECTS =  \
 @BUILD_IPMI_TRUE@	acct_gather_energy_ipmi.lo \
 @BUILD_IPMI_TRUE@	acct_gather_energy_ipmi_config.lo
 am__EXTRA_acct_gather_energy_ipmi_la_SOURCES_DIST =  \
-	acct_gather_energy_ipmi.c acct_gather_energy_ipmi.h \
-	acct_gather_energy_ipmi_config.c \
+	acct_gather_energy_ipmi.c acct_gather_energy_ipmi_config.c \
 	acct_gather_energy_ipmi_config.h
 acct_gather_energy_ipmi_la_OBJECTS =  \
 	$(am_acct_gather_energy_ipmi_la_OBJECTS)
@@ -411,7 +409,6 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(FREEIPMI_CPPFLAGS)
 
 # Energy accounting ipmi plugin.
 @BUILD_IPMI_TRUE@acct_gather_energy_ipmi_la_SOURCES = acct_gather_energy_ipmi.c \
-@BUILD_IPMI_TRUE@                                     acct_gather_energy_ipmi.h \
 @BUILD_IPMI_TRUE@                                     acct_gather_energy_ipmi_config.c \
 @BUILD_IPMI_TRUE@                                     acct_gather_energy_ipmi_config.h
 
@@ -420,7 +417,6 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(FREEIPMI_CPPFLAGS)
 @BUILD_IPMI_TRUE@acct_gather_energy_ipmi_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(FREEIPMI_LDFLAGS)
 @BUILD_IPMI_TRUE@acct_gather_energy_ipmi_la_LIBADD = $(FREEIPMI_LIBS)
 @BUILD_IPMI_FALSE@EXTRA_acct_gather_energy_ipmi_la_SOURCES = acct_gather_energy_ipmi.c \
-@BUILD_IPMI_FALSE@                                     acct_gather_energy_ipmi.h \
 @BUILD_IPMI_FALSE@                                     acct_gather_energy_ipmi_config.c \
 @BUILD_IPMI_FALSE@                                     acct_gather_energy_ipmi_config.h
 

@@ -15,7 +15,6 @@ pkglib_LTLIBRARIES = acct_gather_energy_ipmi.la
 
 # Energy accounting ipmi plugin.
 acct_gather_energy_ipmi_la_SOURCES = acct_gather_energy_ipmi.c \
-                                     acct_gather_energy_ipmi.h \
                                      acct_gather_energy_ipmi_config.c \
                                      acct_gather_energy_ipmi_config.h
 
@@ -27,7 +26,6 @@ acct_gather_energy_ipmi_la_LIBADD = $(FREEIPMI_LIBS)
 else
 
 EXTRA_acct_gather_energy_ipmi_la_SOURCES = acct_gather_energy_ipmi.c \
-                                     acct_gather_energy_ipmi.h \
                                      acct_gather_energy_ipmi_config.c \
                                      acct_gather_energy_ipmi_config.h
 endif

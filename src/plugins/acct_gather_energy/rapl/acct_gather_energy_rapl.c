@@ -65,15 +65,27 @@
 #include <inttypes.h>
 #include <unistd.h>
 #include <math.h>
-#include "acct_gather_energy_rapl.h"
 
 /* From Linux sys/types.h */
 #if defined(__FreeBSD__)
 typedef unsigned long int	ulong;
 #endif
 
-//__progname may need security for portability
-extern char *__progname;
+#define MAX_PKGS        256
+
+#define MSR_RAPL_POWER_UNIT             0x606
+
+/* Package RAPL Domain */
+#define MSR_PKG_RAPL_POWER_LIMIT        0x610
+#define MSR_PKG_ENERGY_STATUS           0x611
+#define MSR_PKG_PERF_STATUS             0x613
+#define MSR_PKG_POWER_INFO              0x614
+
+/* DRAM RAPL Domain */
+#define MSR_DRAM_POWER_LIMIT            0x618
+#define MSR_DRAM_ENERGY_STATUS          0x619
+#define MSR_DRAM_PERF_STATUS            0x61B
+#define MSR_DRAM_POWER_INFO             0x61C
 
 union {
 	uint64_t val;
