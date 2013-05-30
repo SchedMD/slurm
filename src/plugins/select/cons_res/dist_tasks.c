@@ -726,6 +726,8 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		for (s = 0; s < sockets; s++) {
 			sock_start[s] = c + (s * cps);
 			sock_end[s]   = sock_start[s] + cps;
+			sock_avoid[s] = false;
+			sock_used[s]  = false;
 		}
 		core_cnt = 0;
 		cpus  = job_res->cpus[i];
