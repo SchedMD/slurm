@@ -319,12 +319,11 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	result = 0;
 	for (i = 0; i < nb_pkg; i++)
 		result += _get_package_energy(i) + _get_dram_energy(i);
-	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("RAPL Result = %"PRIu64"", result);
+
 	ret = (double)result * energy_units;
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("RAPL Result float %.6f Joules", ret);
+		info("RAPL Result %"PRIu64" = %.6f Joules", result, ret);
 
 	if (energy->consumed_energy != 0) {
 		uint16_t node_freq;
