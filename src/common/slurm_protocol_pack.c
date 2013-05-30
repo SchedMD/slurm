@@ -3647,7 +3647,7 @@ pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
 		pack32(msg->cpu_count, buffer);
 		pack32(msg->cpu_freq, buffer);
 		pack32(msg->num_tasks, buffer);
-		pack32(msg->mem_per_cpu, buffer);
+		pack32(msg->pn_min_memory, buffer);
 		pack32(msg->time_limit, buffer);
 
 		pack16(msg->relative, buffer);
@@ -3676,7 +3676,7 @@ pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
 		pack32(msg->max_nodes, buffer);
 		pack32(msg->cpu_count, buffer);
 		pack32(msg->num_tasks, buffer);
-		pack32(msg->mem_per_cpu, buffer);
+		pack32(msg->pn_min_memory, buffer);
 		pack32(msg->time_limit, buffer);
 
 		pack16(msg->relative, buffer);
@@ -3725,7 +3725,7 @@ unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 		safe_unpack32(&(tmp_ptr->cpu_count), buffer);
 		safe_unpack32(&(tmp_ptr->cpu_freq), buffer);
 		safe_unpack32(&(tmp_ptr->num_tasks), buffer);
-		safe_unpack32(&(tmp_ptr->mem_per_cpu), buffer);
+		safe_unpack32(&(tmp_ptr->pn_min_memory), buffer);
 		safe_unpack32(&(tmp_ptr->time_limit), buffer);
 
 		safe_unpack16(&(tmp_ptr->relative), buffer);
@@ -3758,7 +3758,7 @@ unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 		safe_unpack32(&(tmp_ptr->max_nodes), buffer);
 		safe_unpack32(&(tmp_ptr->cpu_count), buffer);
 		safe_unpack32(&(tmp_ptr->num_tasks), buffer);
-		safe_unpack32(&(tmp_ptr->mem_per_cpu), buffer);
+		safe_unpack32(&(tmp_ptr->pn_min_memory), buffer);
 		safe_unpack32(&(tmp_ptr->time_limit), buffer);
 
 		safe_unpack16(&(tmp_ptr->relative), buffer);

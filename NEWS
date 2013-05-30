@@ -21,6 +21,9 @@ documents those changes that are of interest to users and admins.
     size divided by it's time limit.
  -- Added sbatch option "--ignore-pbs" to ignore "#PBS" options in the batch
     script.
+ -- Rename slurm_step_ctx_params_t field from "mem_per_cpu" to "pn_min_memory".
+    Job step now accepts memory specification in either per-cpu or per-node
+    basis.
 
 * Changes in Slurm 2.6.0pre3
 ============================

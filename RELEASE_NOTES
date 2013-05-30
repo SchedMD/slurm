@@ -142,7 +142,7 @@ Added the following struct definitions
  - Added "cr_type" field to partition_info_t.
  - Added allocated memory to node information available (within the existing
    select_nodeinfo field of the node_info_t data structure).
-
+ - Rename slurm_step_ctx_params_t field from "mem_per_cpu" to "pn_min_memory".
 
 Changed the following enums and #defines
 ========================================

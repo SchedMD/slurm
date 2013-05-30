@@ -127,7 +127,7 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->name = xstrdup(step_params->name);
 	step_req->no_kill = step_params->no_kill;
 	step_req->overcommit = step_params->overcommit ? 1 : 0;
-	step_req->mem_per_cpu = step_params->mem_per_cpu;
+	step_req->pn_min_memory = step_params->pn_min_memory;
 	step_req->time_limit = step_params->time_limit;
 
 	return step_req;

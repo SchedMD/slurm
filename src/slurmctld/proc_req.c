@@ -774,8 +774,8 @@ static int _make_step_cred(struct step_record *step_ptr,
 #else
 	cred_arg.step_hostlist   = step_ptr->step_layout->node_list;
 #endif
-	if (step_ptr->mem_per_cpu)
-		cred_arg.step_mem_limit  = step_ptr->mem_per_cpu | MEM_PER_CPU;
+	if (step_ptr->pn_min_memory)
+		cred_arg.step_mem_limit  = step_ptr->pn_min_memory;
 
 	cred_arg.cores_per_socket    = job_resrcs_ptr->cores_per_socket;
 	cred_arg.sockets_per_node    = job_resrcs_ptr->sockets_per_node;

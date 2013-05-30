@@ -1335,8 +1335,9 @@ typedef struct {
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
 	uint32_t job_id;	/* job ID */
-	uint32_t mem_per_cpu;	/* memory required per CPU (MB),
-				 * use job limit if 0 */
+	uint32_t pn_min_memory; /* minimum real memory per node OR
+				 * real memory per CPU | MEM_PER_CPU,
+				 * default=0 (use job limit) */
 	char *ckpt_dir;		/* directory to store checkpoint image files */
 	char *gres;		/* generic resources needed */
 	char *name;		/* name of the job step */

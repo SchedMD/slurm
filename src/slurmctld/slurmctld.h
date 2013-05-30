@@ -677,7 +677,9 @@ struct 	step_record {
 	struct job_record* job_ptr; 	/* ptr to the job that owns the step */
 	jobacctinfo_t *jobacct;         /* keep track of process info in the
 					 * step */
-	uint32_t mem_per_cpu;		/* MB memory per CPU, 0=no limit */
+	uint32_t pn_min_memory;		/* minimum real memory per node OR
+					 * real memory per CPU | MEM_PER_CPU,
+					 * default=0 (use job limit) */
 	char *name;			/* name of job step */
 	char *network;			/* step's network specification */
 	uint8_t no_kill;		/* 1 if no kill on node failure */
