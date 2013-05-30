@@ -84,9 +84,9 @@ extern int acct_gather_energy_unpack(acct_gather_energy_t **energy, Buf buffer,
 
 extern int acct_gather_energy_g_update_node_energy(void);
 extern int acct_gather_energy_g_get_data(enum acct_energy_type data_type,
-					 acct_gather_energy_t *energy);
+					 void *data);
 extern int acct_gather_energy_g_set_data(enum acct_energy_type data_type,
-					 acct_gather_energy_t *energy);
+					 void *data);
 extern int acct_gather_energy_startpoll(uint32_t frequency);
 extern void acct_gather_energy_g_conf_options(s_p_options_t **full_options,
 					      int *full_options_cnt);

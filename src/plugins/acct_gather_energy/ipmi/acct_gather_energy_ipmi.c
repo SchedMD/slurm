@@ -509,6 +509,7 @@ static int _thread_update_node_energy(void)
 			local_energy->base_watts = 0;
 			local_energy->current_watts = last_update_watt;
 		}
+		local_energy->poll_time = time(NULL);
 	}
 	if (debug_flags & DEBUG_FLAG_ENERGY) {
 		info("ipmi-thread = %d sec, current %d Watts, "
@@ -694,7 +695,7 @@ static void *_thread_launcher(void *no_data)
 	return NULL;
 }
 
-static int _get_joules_task(void)
+static int _get_joules_task(uint16_t delta)
 {
 	acct_gather_energy_t *last_energy = NULL;
 	time_t time_call = time(NULL);
@@ -705,7 +706,7 @@ static int _get_joules_task(void)
 	last_energy = local_energy;
 	local_energy = NULL;
 
-	if (slurm_get_node_energy(NULL, 0, &local_energy)) {
+	if (slurm_get_node_energy(NULL, delta, &local_energy)) {
 		error("_get_joules_task: can't get info from slurmd");
 		local_energy = last_energy;
 		return SLURM_ERROR;
@@ -792,9 +793,11 @@ extern int acct_gather_energy_p_update_node_energy(void)
 }
 
 extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
-					 acct_gather_energy_t *energy)
+					 void *data)
 {
 	int rc = SLURM_SUCCESS;
+	acct_gather_energy_t *energy = (acct_gather_energy_t *)data;
+	time_t *last_poll = (time_t *)data;
 
 	xassert(_run_in_daemon());
 
@@ -805,7 +808,11 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 			_thread_init();
 			_thread_update_node_energy();
 		} else
-			_get_joules_task();
+			_get_joules_task(10); /* Since we don't have
+						 access to the
+						 frequency here just
+						 send in something.
+					      */
 		memcpy(energy, local_energy, sizeof(acct_gather_energy_t));
 		slurm_mutex_unlock(&ipmi_mutex);
 		break;
@@ -818,6 +825,11 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 			     energy->consumed_energy);
 		}
 		break;
+	case ENERGY_DATA_LAST_POLL:
+		slurm_mutex_lock(&ipmi_mutex);
+		*last_poll = local_energy->poll_time;
+		slurm_mutex_unlock(&ipmi_mutex);
+		break;
 	default:
 		error("acct_gather_energy_p_get_data: unknown enum %d",
 		      data_type);
@@ -828,9 +840,10 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 }
 
 extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
-					 acct_gather_energy_t *energy)
+					 void *data)
 {
 	int rc = SLURM_SUCCESS;
+	int *delta = (int *)data;
 
 	xassert(_run_in_daemon());
 
@@ -840,7 +853,7 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 		break;
 	case ENERGY_DATA_PROFILE:
 		slurm_mutex_lock(&ipmi_mutex);
-		_get_joules_task();
+		_get_joules_task(*delta);
 		_ipmi_send_profile();
 		slurm_mutex_unlock(&ipmi_mutex);
 		break;
@@ -1018,7 +1031,7 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 			if (debug_flags & DEBUG_FLAG_ENERGY)
 				info("%s thread launched", plugin_name);
 		} else
-			_get_joules_task();
+			_get_joules_task(0);
 	}
 
 	verbose("%s loaded", plugin_name);

@@ -459,6 +459,7 @@ enum acct_energy_type {
 	ENERGY_DATA_STRUCT,
 	ENERGY_DATA_RECONFIG,
 	ENERGY_DATA_PROFILE,
+	ENERGY_DATA_LAST_POLL,
 };
 
 /* Possible task distributions across the nodes */

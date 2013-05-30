@@ -2068,21 +2068,27 @@ _rpc_acct_gather_energy(slurm_msg_t *msg)
 	first_msg = false;
 
 	if (rc != SLURM_SUCCESS) {
-		/* Return result. If the reply can't be sent this indicates
-		 * 1. The network is broken OR
-		 */
-		if (slurm_send_rc_msg(msg, rc) < 0) {
+		if (slurm_send_rc_msg(msg, rc) < 0)
 			error("Error responding to energy request: %m");
-		}
 	} else {
 		slurm_msg_t resp_msg;
 		acct_gather_node_resp_msg_t acct_msg;
+		time_t now = time(NULL), last_poll = 0;
+		int data_type = ENERGY_DATA_STRUCT;
+		acct_gather_energy_req_msg_t *req = msg->data;
+
+		acct_gather_energy_g_get_data(ENERGY_DATA_LAST_POLL,
+					      &last_poll);
+
+		/* If we polled later than delta seconds then force a
+		   new poll.
+		*/
+		if ((now - last_poll) > req->delta)
+			data_type = ENERGY_DATA_JOULES_TASK;
 
 		memset(&acct_msg, 0, sizeof(acct_gather_node_resp_msg_t));
-		//acct_msg.node_name = conf->node_name;
 		acct_msg.energy = acct_gather_energy_alloc();
-		acct_gather_energy_g_get_data(
-			ENERGY_DATA_STRUCT, acct_msg.energy);
+		acct_gather_energy_g_get_data(data_type, acct_msg.energy);
 
 		slurm_msg_t_copy(&resp_msg, msg);
 		resp_msg.msg_type = RESPONSE_ACCT_GATHER_ENERGY;

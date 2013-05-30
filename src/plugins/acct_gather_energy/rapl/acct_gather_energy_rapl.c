@@ -331,6 +331,7 @@ extern int acct_gather_energy_p_update_node_energy(void)
 			local_energy->base_watts = node_current_energy;
 		}
 		local_energy->previous_consumed_energy = node_current_energy;
+		local_energy->poll_time = time(NULL);
 
 		if (debug_flags & DEBUG_FLAG_ENERGY) {
 			info("_getjoules_rapl = %d sec, current %.6f Joules, "
@@ -440,9 +441,11 @@ extern int fini(void)
 }
 
 extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
-					 acct_gather_energy_t *energy)
+					 void *data)
 {
 	int rc = SLURM_SUCCESS;
+	acct_gather_energy_t *energy = (acct_gather_energy_t *)data;
+	time_t *last_poll = (time_t *)data;
 
 	xassert(_run_in_daemon());
 
@@ -456,6 +459,9 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	case ENERGY_DATA_STRUCT:
 		memcpy(energy, local_energy, sizeof(acct_gather_energy_t));
 		break;
+	case ENERGY_DATA_LAST_POLL:
+		*last_poll = local_energy->poll_time;
+		break;
 	default:
 		error("acct_gather_energy_p_get_data: unknown enum %d",
 		      data_type);
@@ -466,7 +472,7 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 }
 
 extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
-					 acct_gather_energy_t *energy)
+					 void *data)
 {
 	int rc = SLURM_SUCCESS;
 

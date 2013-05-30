@@ -56,10 +56,8 @@ strong_alias(acct_gather_energy_destroy, slurm_acct_gather_energy_destroy);
 
 typedef struct slurm_acct_gather_energy_ops {
 	int (*update_node_energy) (void);
-	int (*get_data)           (enum acct_energy_type data_type,
-				   acct_gather_energy_t *energy);
-	int (*set_data)           (enum acct_energy_type data_type,
-				   acct_gather_energy_t *energy);
+	int (*get_data)           (enum acct_energy_type data_type, void *data);
+	int (*set_data)           (enum acct_energy_type data_type, void *data);
 	void (*conf_options)      (s_p_options_t **full_options,
 				   int *full_options_cnt);
 	void (*conf_set)          (s_p_hashtbl_t *tbl);
@@ -87,9 +85,10 @@ static int freq = 0;
 static void *_watch_node(void *arg)
 {
 	int type = PROFILE_ENERGY;
+	int delta = acct_gather_profile_timer[type].freq - 1;
 	while (init_run && acct_gather_profile_running) {
 		/* Do this until shutdown is requested */
-		(*(ops.set_data))(ENERGY_DATA_PROFILE, NULL);
+		(*(ops.set_data))(ENERGY_DATA_PROFILE, &delta);
 		slurm_mutex_lock(&acct_gather_profile_timer[type].notify_mutex);
 		pthread_cond_wait(
 			&acct_gather_profile_timer[type].notify,
@@ -217,27 +216,27 @@ extern int acct_gather_energy_g_update_node_energy(void)
 }
 
 extern int acct_gather_energy_g_get_data(enum acct_energy_type data_type,
-					 acct_gather_energy_t *energy)
+					 void *data)
 {
 	int retval = SLURM_ERROR;
 
 	if (slurm_acct_gather_energy_init() < 0)
 		return retval;
 
-	retval = (*(ops.get_data))(data_type, energy);
+	retval = (*(ops.get_data))(data_type, data);
 
 	return retval;
 }
 
 extern int acct_gather_energy_g_set_data(enum acct_energy_type data_type,
-					 acct_gather_energy_t *energy)
+					 void *data)
 {
 	int retval = SLURM_ERROR;
 
 	if (slurm_acct_gather_energy_init() < 0)
 		return retval;
 
-	retval = (*(ops.set_data))(data_type, energy);
+	retval = (*(ops.set_data))(data_type, data);
 
 	return retval;
 }
