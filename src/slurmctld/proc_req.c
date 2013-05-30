@@ -485,6 +485,10 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	conf_ptr->acct_gather_energy_type =
 		xstrdup(conf->acct_gather_energy_type);
+	conf_ptr->acct_gather_filesystem_type =
+		xstrdup(conf->acct_gather_filesystem_type);
+	conf_ptr->acct_gather_infiniband_type =
+		xstrdup(conf->acct_gather_infiniband_type);
 	conf_ptr->acct_gather_profile_type =
 		xstrdup(conf->acct_gather_profile_type);
 	conf_ptr->acct_gather_node_freq = conf->acct_gather_node_freq;
