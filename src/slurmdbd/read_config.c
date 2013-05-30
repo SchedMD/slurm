@@ -566,7 +566,7 @@ extern void log_config(void)
 				     tmp_str, sizeof(tmp_str), 1);
 	else
 		sprintf(tmp_str, "NONE");
-	debug2("PurgeSuspendAfter     = %s", tmp_str);
+	debug2("PurgeSuspendAfter = %s", tmp_str);
 
 	debug2("SlurmUser         = %s(%u)",
 	       slurmdbd_conf->slurm_user_name, slurmdbd_conf->slurm_user_id);
