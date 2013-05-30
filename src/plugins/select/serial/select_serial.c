@@ -514,11 +514,20 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 				bit_nclear(this_row->row_bitmap, 0, size-1);
 			}
 		} else {
-			xassert(job_ptr);
-			xassert(job_ptr->job_resrcs);
-			remove_job_from_cores(job_ptr->job_resrcs,
-					      &this_row->row_bitmap,
-					      cr_node_num_cores);
+			if (job_ptr) { /* just remove the job */
+				xassert(job_ptr->job_resrcs);
+				remove_job_from_cores(job_ptr->job_resrcs,
+						      &(this_row->row_bitmap),
+						      cr_node_num_cores);
+			} else { /* totally rebuild the bitmap */
+				size = bit_size(this_row->row_bitmap);
+				bit_nclear(this_row->row_bitmap, 0, size-1);
+				for (j = 0; j < this_row->num_jobs; j++) {
+					add_job_to_cores(this_row->job_list[j],
+							 &(this_row->row_bitmap),
+							 cr_node_num_cores);
+				}
+			}
 		}
 		return;
 	}
