@@ -562,24 +562,26 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_ipmi.so  &&
    echo %{_libdir}/slurm/acct_gather_energy_ipmi.so  >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_rapl.so  &&
    echo %{_libdir}/slurm/acct_gather_energy_rapl.so  >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_infiniband_ofed.so &&
+   echo %{_libdir}/slurm/acct_gather_infiniband_ofed.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_profile_hdf5.so &&
+   echo %{_libdir}/slurm/acct_gather_profile_hdf5.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so           &&
    echo %{_libdir}/slurm/crypto_openssl.so           >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/select_bluegene.so          &&
-   echo %{_libdir}/slurm/select_bluegene.so          >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
-   echo %{_libdir}/slurm/task_affinity.so            >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cgroup.so              &&
-   echo %{_libdir}/slurm/task_cgroup.so              >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/ext_sensors_rrd.so          &&
+   echo %{_libdir}/slurm/ext_sensors_rrd.so          >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_slurm.so             &&
    echo %{_libdir}/slurm/launch_slurm.so             >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_aprun.so             &&
    echo %{_libdir}/slurm/launch_aprun.so             >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/select_bluegene.so          &&
+   echo %{_libdir}/slurm/select_bluegene.so          >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/slurmctld_dynalloc.so       &&
    echo %{_libdir}/slurm/slurmctld_dynalloc.so       >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/ext_sensors_rdd.so          &&
-   echo %{_libdir}/slurm/ext_sensors_rdd.so          >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_profile_hdf5.so &&
-   echo %{_libdir}/slurm/acct_gather_profile_hdf5.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
+   echo %{_libdir}/slurm/task_affinity.so            >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cgroup.so              &&
+   echo %{_libdir}/slurm/task_cgroup.so              >> $LIST
 
 LIST=./pam.files
 touch $LIST
@@ -730,6 +732,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/accounting_storage_filetxt.so
 %{_libdir}/slurm/accounting_storage_none.so
 %{_libdir}/slurm/accounting_storage_slurmdbd.so
+%{_libdir}/slurm/acct_gather_filesystem_lustre.so
+%{_libdir}/slurm/acct_gather_filesystem_none.so
+%{_libdir}/slurm/acct_gather_infiniband_none.so
 %{_libdir}/slurm/acct_gather_energy_none.so
 %{_libdir}/slurm/acct_gather_profile_none.so
 %{_libdir}/slurm/checkpoint_none.so
