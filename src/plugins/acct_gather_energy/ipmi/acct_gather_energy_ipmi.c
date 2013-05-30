@@ -742,7 +742,7 @@ static int _get_joules_task(void)
 	acct_gather_energy_destroy(last_energy);
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("_get_joules_task: consumed %u Joules (%u watts) "
+		info("_get_joules_task: consumed %u Joules "
 		     "(received %u(%u watts) from slurmd)",
 		     local_energy->consumed_energy,
 		     local_energy->base_consumed_energy,
