@@ -715,6 +715,8 @@ static int _get_joules_task(void)
 
 	local_energy->previous_consumed_energy = last_energy->consumed_energy;
 	if (!first) {
+		local_energy->consumed_energy -= start_current_energy;
+
 		local_energy->base_consumed_energy =
 			local_energy->consumed_energy
 			- last_energy->consumed_energy;
@@ -740,12 +742,11 @@ static int _get_joules_task(void)
 	acct_gather_energy_destroy(last_energy);
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
-		info("_get_joules_task: consumed %d Joules "
-		     "(received %d from slurmd)",
-		     local_energy->consumed_energy - start_current_energy,
-		     local_energy->base_consumed_energy);
-
-	//_ipmi_send_profile();
+		info("_get_joules_task: consumed %u Joules (%u watts) "
+		     "(received %u(%u watts) from slurmd)",
+		     local_energy->consumed_energy,
+		     local_energy->base_consumed_energy,
+		     local_energy->current_watts);
 
 	return SLURM_SUCCESS;
 }
