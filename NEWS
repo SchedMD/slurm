@@ -38,6 +38,8 @@ documents those changes that are of interest to users and admins.
     and sn_single options.
  -- sched/backfill - Modify logic to reduce overhead under heavy load.
  -- Fix job step allocation with --exclusive and --hostlist option.
+ -- Select/cons_res - Fix bug resulting in error of "cons_res: sync loop not
+    progressing, holding job #"
 
 * Changes in Slurm 2.5.6
 ========================
