@@ -71,14 +71,20 @@ main (int argc, char **argv)
 	n = file_size/sizeof(int);
 
 	for (i = 0; i < n; i++) {
-		write(fd, &i, sizeof(int));
+		if (write(fd, &i, sizeof(int)) != sizeof(int)) {
+			fprintf(stderr, "FAILURE: write error\n");
+			exit(1);
+		}
 	}
 	fsync(fd);
 	close(fd);
 
 	fd = open(file_name, O_RDONLY, S_IRUSR|S_IWUSR);
 	for (i = 0; i < n; i++) {
-		read(fd, &i, sizeof(int));
+		if (read(fd, &i, sizeof(int)) != sizeof(int)) {
+			fprintf(stderr, "FAILURE: read error\n");
+			exit(1);
+		}
 	}
 	close(fd);
 

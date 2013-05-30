@@ -88,7 +88,7 @@ proc check_state { job } {
 	}
 
 	if {$state_match != 1} {
-		send_user "\nFAILURE job is running when it should be pending\n"
+		send_user "\nFAILURE job should be pending, but is not\n"
 		exit 1
 	}
 

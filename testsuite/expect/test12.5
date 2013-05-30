@@ -70,7 +70,7 @@ proc sacct_job { soption } {
 			incr matches
 			exp_continue
 		}
-		-re "AveCPUFreq *AvePages *AveRSS *AveVMSize" {
+		-re "AveCPUFreq  *AveDiskRead  *AveDiskWrite *AvePages" {
 			if {$debug} {send_user "\nmatch2\n"}
 			incr matches
 			exp_continue
