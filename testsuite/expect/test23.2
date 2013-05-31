@@ -192,23 +192,10 @@ if {$real_memory < 100} {
 # Build input script file1
 #
 make_bash_script $file_in1 "
-  $srun $step_mem_opt $file_in2
+  $srun $step_mem_opt sleep 60 &
+  $srun $step_mem_opt sleep 60 &
+  $srun $step_mem_opt sleep 60
 "
-
-#
-# Build input script file2
-#
-make_bash_script $file_in2 "
-  $srun $step_mem_opt $file_in3
-"
-
-#
-# Build input script file3
-#
-make_bash_script $file_in3 "
-  $srun $step_mem_opt sleep 30
-"
-
 #
 # Spawn a job via srun using this account
 # NOTE: --mem option here and in scripts above to permit running more than one
@@ -262,7 +249,7 @@ if {[wait_for_job $job_id3 "RUNNING"] != 0} {
 	send_user "\nFAILURE: waiting for job to start running\n"
 	exit 1
 }
-sleep 10
+sleep 5
 ################################################################
 #
 # Proc: sstat_job
@@ -275,8 +262,8 @@ sleep 10
 #
 ################################################################
 
-proc sstat_job { soption job_id} {
-	global sstat
+proc sstat_job { soption job_id } {
+	global sstat number
 	set debug       0
 	set exit_code   0
 	set matches     0
@@ -290,18 +277,8 @@ proc sstat_job { soption job_id} {
 				set not_support 1
 				exp_continue
 			}
-			-re "$job_id.0" {
-				if {$debug} {send_user "\nmatch1\n"}
-				incr matches
-				exp_continue
-			}
-			-re "$job_id.1" {
-				if {$debug} {send_user "\nmatch2\n"}
-				incr matches
-				exp_continue
-			}
-			-re "$job_id.2" {
-				if {$debug} {send_user "\nmatch3\n"}
+			-re "$job_id.($number)" {
+				if {$debug} {send_user "\nmatch $expect_out(1,string)\n"}
 				incr matches
 				exp_continue
 			}
