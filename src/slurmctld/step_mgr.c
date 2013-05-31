@@ -832,7 +832,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		error("_pick_step_nodes: job lacks memory allocation details "
 		      "to enforce memory limits for job %u", job_ptr->job_id);
 		step_spec->pn_min_memory = 0;
-	}
+	} else if (step_spec->pn_min_memory == MEM_PER_CPU)
+		step_spec->pn_min_memory = 0;	/* clear MEM_PER_CPU flag */
 
 	if (job_ptr->next_step_id == 0) {
 		if (job_ptr->details && job_ptr->details->prolog_running) {
@@ -2316,7 +2317,9 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 		error("step_layout_create: lack memory allocation details "
 		      "to enforce memory limits for job %u", job_ptr->job_id);
 		step_ptr->pn_min_memory = 0;
-	}
+	} else if (step_ptr->pn_min_memory == MEM_PER_CPU)
+		step_ptr->pn_min_memory = 0;	/* clear MEM_PER_CPU flag */
+
 #ifdef HAVE_BGQ
 	/* Since we have to deal with a conversion between cnodes and
 	   midplanes here the math is really easy, and already has
