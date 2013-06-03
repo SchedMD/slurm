@@ -159,6 +159,7 @@ documents those changes that are of interest to users and admins.
  -- Fix job step allocation with --exclusive and --hostlist option.
  -- Select/cons_res - Fix bug resulting in error of "cons_res: sync loop not
     progressing, holding job #"
+ -- checkpoint/blcr - Reset max_nodes from zero to NO_VAL on job restart.
 
 * Changes in Slurm 2.5.6
 ========================

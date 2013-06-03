@@ -10582,6 +10582,8 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->max_cpus          = details->max_cpus;
 	job_desc->min_nodes         = details->min_nodes;
 	job_desc->max_nodes         = details->max_nodes;
+	if (job_desc->max_nodes == 0) /* set 0 in _job_create() */
+		job_desc->max_nodes = NO_VAL;
 	job_desc->sockets_per_node  = mc_ptr->sockets_per_node;
 	job_desc->cores_per_socket  = mc_ptr->cores_per_socket;
 	job_desc->threads_per_core  = mc_ptr->threads_per_core;
