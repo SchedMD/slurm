@@ -1020,6 +1020,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			if (!bit_super_set(selected_nodes, nodes_avail)) {
 				/* some required nodes have no available
 				 * processors, defer request */
+				i_last = -1;
 				tasks_picked_cnt = 0;
 			}
 			FREE_NULL_BITMAP(selected_nodes);
