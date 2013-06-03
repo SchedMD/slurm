@@ -1,4 +1,4 @@
-.TH "sh5util" "1" "SLURM 2.6" "March 2013" "SLURM Commands"
+.TH "sh5util" "1" "SLURM 2.6" "June 2013" "SLURM Commands"
 .SH "NAME"
 .LP
 sh5util \- Tool for merging HDF5 files from the acct_gather_profile
@@ -34,7 +34,7 @@ Extract mode options (all imply --extract)
 
 .TP
 \fB\-i\fR, \fB\-\-input\fR=\fIpath\fR
-merged file to extract from (default --profiledir/$user/extract_$jobid.h5)
+merged file to extract from (default ./job_$jobid.h5)
 
 .TP
 \fB\-N\fR, \fB\-\-node\fR=\fInodename\fR
@@ -51,17 +51,22 @@ Name=Specific Name, Tasks=all tasks, (default is everything)
 
 .TP
 \fB\-j\fR, \fB\-\-jobs\fR=\fI<job(.step)>\fR
-Format is <job(.step)>. Merge this job/step.
-(or a comma-separated list of job steps.) This option is required.
+Format is <job(.step)>. Merge this job/step
+(or a comma-separated list of job steps). This option is required.
 Not specifying a step will result in all steps found to be processed.
 
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print this description of use.
+
 .TP
 \fB\-o\fR, \fB\-\-output\fR=\fIpath\fR
-Path to a file into which to write.  This is required for --extract,
-default for merge is --profiledir/$user/job_$jobid.h5)
+.nf
+Path to a file into which to write.
+Default for merge is ./job_$jobid.h5
+Default for extract is ./extract_$jobid.cvs
+.fi
+
 .TP
 \fB\-p\fR, \fB\-\-profiledir\fR=\fIdir\fR
 Directory location where node-step files exist default is set in

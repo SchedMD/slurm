@@ -112,7 +112,7 @@ sh5util [<OPTION>] -j <job[.stepid]>                                         \n\
 		    series from job file.                                    \n\
 		    Extract mode options (all imply --extract)               \n\
 		    -i, --input:  merged file to extract from                \n\
-				  (default --profiledir/$user/extract_$jobid.h5)\n\
+				  (default ./job_$jobid.h5)\n\
 		    -N --node:    Node name to extract (default is all)      \n\
 		    -l, --level:  Level to which series is attached          \n\
 				  [Node:Totals|Node:TimeSeries]              \n\
@@ -125,9 +125,9 @@ sh5util [<OPTION>] -j <job[.stepid]>                                         \n\
 		    required.  Not specifying a step will result in all      \n\
 		    steps found to be processed.                             \n\
       -h, --help:   Print this description of use.                           \n\
-      -o, --output: Path to a file into which to write.  This is required for\n\
-		    --extract, default for merge is                          \n\
-		    --profiledir/$user/job_$jobid.h5)                        \n\
+      -o, --output: Path to a file into which to write.                      \n\
+                    Default for merge is ./job_$jobid.h5                     \n\
+                    Default for extract is ./extract_$jobid.cvs              \n\
       -p, --profiledir:                                                      \n\
 		    Profile directory location where node-step files exist   \n\
 		    default is what is set in acct_gather.conf               \n\
@@ -289,19 +289,21 @@ static void _set_options(const int argc, char **argv)
 	    || (params.step_id != -1) || params.series)
 		params.mode = SH5UTIL_MODE_EXTRACT;
 
-	if (!params.output)
-		params.output = xstrdup_printf(
-			"%s/%s/job_%d.h5",
-			params.dir, params.user, params.job_id);
-
 	if (params.mode == SH5UTIL_MODE_EXTRACT) {
 		if (!params.level)
 			params.level = xstrdup("Node:Totals");
 		if (!params.input)
 			params.input = xstrdup_printf(
-				"%s/%s/extract_%d.h5",
-				params.dir, params.user, params.job_id);
+				"./job_%d.h5", params.job_id);
+		if (!params.output)
+			params.output = xstrdup_printf(
+				"./extract_%d.cvs", params.job_id);
+
 	}
+
+	if (!params.output)
+		params.output = xstrdup_printf("./job_%d.h5", params.job_id);
+
 }
 
 /* ============================================================================
