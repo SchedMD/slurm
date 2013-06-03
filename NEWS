@@ -120,6 +120,9 @@ documents those changes that are of interest to users and admins.
     _infodir %{_prefix}/share/info
  -- Add acct_gather_energy/ipmi which works off freeipmi for energy gathering
 
+* Changes in Slurm 2.5.8
+========================
+
 * Changes in Slurm 2.5.7
 ========================
  -- Fix for linking to the select/cray plugin to not give warning about
