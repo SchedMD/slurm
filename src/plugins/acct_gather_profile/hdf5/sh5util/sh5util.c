@@ -127,7 +127,7 @@ sh5util [<OPTION>] -j <job[.stepid]>                                         \n\
       -h, --help:   Print this description of use.                           \n\
       -o, --output: Path to a file into which to write.                      \n\
                     Default for merge is ./job_$jobid.h5                     \n\
-                    Default for extract is ./extract_$jobid.cvs              \n\
+                    Default for extract is ./extract_$jobid.csv              \n\
       -p, --profiledir:                                                      \n\
 		    Profile directory location where node-step files exist   \n\
 		    default is what is set in acct_gather.conf               \n\
@@ -297,7 +297,7 @@ static void _set_options(const int argc, char **argv)
 				"./job_%d.h5", params.job_id);
 		if (!params.output)
 			params.output = xstrdup_printf(
-				"./extract_%d.cvs", params.job_id);
+				"./extract_%d.csv", params.job_id);
 
 	}
 
