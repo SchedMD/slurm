@@ -1,0 +1,128 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          validates that srun exit code matches that of a
+#          test program
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2013 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id      "1.71"
+set file_out     "test$test_id.testfile"
+set file_c       "segv.c"
+set script       "test$test_id.script"
+set err_num_c    0
+set err_num_srun 0
+set exit_code    0
+
+print_header $test_id
+
+# Remove any remaining files
+exec $bin_rm -f $file_out $script $file_c
+
+exec $bin_echo "
+int main(char **argv, int argc)
+{
+	char *tmp;
+	tmp\[1000000\] = 3;
+}" > $file_c
+
+exec $bin_cc -std=c99 -o $file_out $file_c
+exec $bin_chmod 700 $file_out
+
+make_bash_script $script "
+./$file_out
+echo exit_code = $?
+"
+
+# Run script alone
+set error_match 0
+spawn ./$script
+expect {
+
+	-re "Segmentation fault" {
+		send_user "\nThis error is expected do not worry\n"
+		incr error_match
+		exp_continue
+	}
+	-re "exit_code = ($number)" {
+		set err_num_c $expect_out(1,string)
+		incr error_match
+	 }
+	timeout {
+		send_user "\nFAILURE: program is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$error_match != 2} {
+	send_user "\nFAILURE: program did not return a segmentation fault ($error_match != 2)\n"
+	set exit_code 1
+}
+
+# Run script with srun
+set error_match 0
+spawn $srun -n1 $script
+expect {
+	-re "Segmentation fault" {
+		send_user "\nThis error is expected\n"
+		incr error_match
+		exp_continue
+	}
+	-re "exit_code = ($number)" {
+		set err_num_srun $expect_out(1,string)
+		incr error_match
+	}
+	timeout {
+		send_user "\nFAILURE: is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$error_match != 2} {
+	send_user "\nFAILURE: srun did not have a segmentation error when runnning the program ($error_match != 2)\n"
+	set exit_code 1
+}
+
+# Match exit codes from both programs
+if {$err_num_c != $err_num_srun} {
+	send_user "\nFAILURE: exit codes do not match ($err_num_c != $err_num_srun)\n"
+	set exit_code
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+	exec $bin_rm -f $file_out $script $file_c
+}
+exit $exit_code
