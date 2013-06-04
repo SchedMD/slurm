@@ -1844,6 +1844,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	    && pe_job_req->host_names && *pe_job_req->host_names) {
 		/* This means there was a hostfile used for this job.
 		 * So we need to set up the arbitrary distribution of it. */
+		int hostfile_count = 0;
 		char **names = pe_job_req->host_names;
 		opt.distribution = SLURM_DIST_ARBITRARY;
 		while (names && *names) {
@@ -1853,7 +1854,10 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 			else
 				opt.nodelist = xstrdup(strtok(*names, "."));
 			names++;
+			hostfile_count++;
 		}
+		if (pe_job_req->total_tasks == -1)
+			pe_job_req->total_tasks = hostfile_count;
 	}
 
 	if (pe_job_req->num_nodes != -1)
