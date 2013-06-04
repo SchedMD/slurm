@@ -32,7 +32,7 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 	slurm_init_job_desc_msg(job_desc);
 
 	FETCH_FIELD(hv, job_desc, account, charp, FALSE);
-	FETCH_FIELD(hv, job_desc, acctg_freq, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc, acctg_freq, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, alloc_node, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, alloc_resp_port, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, alloc_sid, uint32_t, FALSE);
