@@ -17,6 +17,12 @@ int
 slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 {
 	STORE_FIELD(hv, conf, last_update, time_t);
+	if(conf->acct_gather_profile_type)
+		STORE_FIELD(hv, conf, acct_gather_profile_type, charp);
+	if(conf->acct_gather_infiniband_type)
+		STORE_FIELD(hv, conf, acct_gather_infiniband_type, charp);
+	if(conf->acct_gather_filesystem_type)
+		STORE_FIELD(hv, conf, acct_gather_filesystem_type, charp);
 	STORE_FIELD(hv, conf, accounting_storage_enforce, uint16_t);
 	if(conf->accounting_storage_backup_host)
 		STORE_FIELD(hv, conf, accounting_storage_backup_host, charp);
@@ -54,12 +60,16 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	STORE_FIELD(hv, conf, debug_flags, uint32_t);
 	STORE_FIELD(hv, conf, def_mem_per_cpu, uint32_t);
 	STORE_FIELD(hv, conf, disable_root_jobs, uint16_t);
+	STORE_FIELD(hv, conf, dynalloc_port, uint16_t);
 	STORE_FIELD(hv, conf, enforce_part_limits, uint16_t);
 	if(conf->epilog)
 		STORE_FIELD(hv, conf, epilog, charp);
 	STORE_FIELD(hv, conf, epilog_msg_time, uint32_t);
 	if(conf->epilog_slurmctld)
 		STORE_FIELD(hv, conf, epilog_slurmctld, charp);
+	if(conf->ext_sensors_type)
+		STORE_FIELD(hv, conf, ext_sensors_type, charp);
+	STORE_FIELD(hv, conf, ext_sensors_freq, uint16_t);
 
 	STORE_FIELD(hv, conf, fast_schedule, uint16_t);
 	STORE_FIELD(hv, conf, first_job_id, uint32_t);
@@ -69,10 +79,12 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	STORE_FIELD(hv, conf, group_info, uint16_t);
 	STORE_FIELD(hv, conf, hash_val, uint32_t);
 	STORE_FIELD(hv, conf, health_check_interval, uint16_t);
+	STORE_FIELD(hv, conf, health_check_node_state, uint16_t);
 	if(conf->health_check_program)
 		STORE_FIELD(hv, conf, health_check_program, charp);
 	STORE_FIELD(hv, conf, inactive_limit, uint16_t);
-	STORE_FIELD(hv, conf, job_acct_gather_freq, uint16_t);
+	if (conf->job_acct_gather_type)
+		STORE_FIELD(hv, conf, job_acct_gather_freq, charp);
 	if(conf->job_acct_gather_type)
 		STORE_FIELD(hv, conf, job_acct_gather_type, charp);
 
@@ -97,12 +109,14 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	if(conf->job_submit_plugins)
 		STORE_FIELD(hv, conf, job_submit_plugins, charp);
 
+	STORE_FIELD(hv, conf, keep_alive_time, uint16_t);
 	STORE_FIELD(hv, conf, kill_on_bad_exit, uint16_t);
 	STORE_FIELD(hv, conf, kill_wait, uint16_t);
 	if(conf->licenses)
 		STORE_FIELD(hv, conf, licenses, charp);
 	if(conf->mail_prog)
 		STORE_FIELD(hv, conf, mail_prog, charp);
+	STORE_FIELD(hv, conf, max_array_sz, uint16_t);
 	STORE_FIELD(hv, conf, max_job_cnt, uint16_t);
 	STORE_FIELD(hv, conf, max_mem_per_cpu, uint32_t);
 	STORE_FIELD(hv, conf, max_tasks_per_node, uint16_t);
@@ -154,7 +168,11 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 		STORE_FIELD(hv, conf, resume_program, charp);
 	STORE_FIELD(hv, conf, resume_rate, uint16_t);
 	STORE_FIELD(hv, conf, resume_timeout, uint16_t);
+	if(conf->resv_epilog)
+		STORE_FIELD(hv, conf, resv_epilog, charp);
 	STORE_FIELD(hv, conf, resv_over_run, uint16_t);
+	if(conf->resv_prolog)
+		STORE_FIELD(hv, conf, resv_prolog, charp);
 	STORE_FIELD(hv, conf, ret2service, uint16_t);
 	if(conf->salloc_default_command)
 		STORE_FIELD(hv, conf, salloc_default_command, charp);
@@ -187,6 +205,8 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 		STORE_FIELD(hv, conf, slurmctld_logfile, charp);
 	if(conf->slurmctld_pidfile)
 		STORE_FIELD(hv, conf, slurmctld_pidfile, charp);
+	if(conf->slurmctld_plugstack)
+		STORE_FIELD(hv, conf, slurmctld_plugstack, charp);
 	STORE_FIELD(hv, conf, slurmctld_port, uint32_t);
 	STORE_FIELD(hv, conf, slurmctld_port_count, uint16_t);
 	STORE_FIELD(hv, conf, slurmctld_timeout, uint16_t);
@@ -251,6 +271,9 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	memset(conf, 0, sizeof(slurm_ctl_conf_t));
 
 	FETCH_FIELD(hv, conf, last_update, time_t, TRUE);
+	FETCH_FIELD(hv, conf, acct_gather_profile_type, charp, FALSE);
+	FETCH_FIELD(hv, conf, acct_gather_infiniband_type, charp, FALSE);
+	FETCH_FIELD(hv, conf, acct_gather_filesystem_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, accounting_storage_enforce, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, accounting_storage_backup_host, charp, FALSE);
 	FETCH_FIELD(hv, conf, accounting_storage_host, charp, FALSE);
@@ -274,10 +297,12 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, debug_flags, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, def_mem_per_cpu, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, disable_root_jobs, uint16_t, TRUE);
+	FETCH_FIELD(hv, conf, dynalloc_port, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, enforce_part_limits, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, epilog, charp, FALSE);
 	FETCH_FIELD(hv, conf, epilog_msg_time, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, epilog_slurmctld, charp, FALSE);
+	FETCH_FIELD(hv, conf, ext_sensors_freq, uint16_t, TRUE);
 
 	FETCH_FIELD(hv, conf, fast_schedule, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, first_job_id, uint32_t, TRUE);
@@ -286,9 +311,10 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, group_info, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, hash_val, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, health_check_interval, uint16_t, TRUE);
+	FETCH_FIELD(hv, conf, health_check_node_state, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, health_check_program, charp, FALSE);
 	FETCH_FIELD(hv, conf, inactive_limit, uint16_t, TRUE);
-	FETCH_FIELD(hv, conf, job_acct_gather_freq, uint16_t, TRUE);
+	FETCH_FIELD(hv, conf, job_acct_gather_freq, charp, TRUE);
 	FETCH_FIELD(hv, conf, job_acct_gather_type, charp, FALSE);
 
 	FETCH_FIELD(hv, conf, job_ckpt_dir, charp, FALSE);
@@ -303,10 +329,12 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, job_requeue, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, job_submit_plugins, charp, FALSE);
 
+	FETCH_FIELD(hv, conf, keep_alive_time, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, kill_on_bad_exit, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, kill_wait, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, licenses, charp, FALSE);
 	FETCH_FIELD(hv, conf, mail_prog, charp, FALSE);
+	FETCH_FIELD(hv, conf, max_array_sz, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, max_job_cnt, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, max_mem_per_cpu, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, max_tasks_per_node, uint16_t, TRUE);
@@ -345,7 +373,9 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, resume_program, charp, FALSE);
 	FETCH_FIELD(hv, conf, resume_rate, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, resume_timeout, uint16_t, TRUE);
+	FETCH_FIELD(hv, conf, resv_epilog, charp, FALSE);
 	FETCH_FIELD(hv, conf, resv_over_run, uint16_t, TRUE);
+	FETCH_FIELD(hv, conf, resv_prolog, charp, FALSE);
 	FETCH_FIELD(hv, conf, ret2service, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, salloc_default_command, charp, FALSE);
 
@@ -368,6 +398,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, slurmctld_debug, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, slurmctld_logfile, charp, FALSE);
 	FETCH_FIELD(hv, conf, slurmctld_pidfile, charp, FALSE);
+	FETCH_FIELD(hv, conf, slurmctld_plugstack, charp, FALSE);
 	FETCH_FIELD(hv, conf, slurmctld_port, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, slurmctld_port_count, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, slurmctld_timeout, uint16_t, TRUE);
@@ -468,7 +499,11 @@ hv_to_step_update_request_msg(HV *hv, step_update_request_msg_t *update_msg)
 {
 	slurm_init_update_step_msg(update_msg);
 
+	FETCH_FIELD(hv, update_msg, end_time, time_t, TRUE);
+	FETCH_FIELD(hv, update_msg, exit_code, uint32_t, TRUE);
 	FETCH_FIELD(hv, update_msg, job_id, uint32_t, TRUE);
+	FETCH_FIELD(hv, update_msg, name, charp, FALSE);
+	FETCH_FIELD(hv, update_msg, start_time, time_t, TRUE);
 	FETCH_FIELD(hv, update_msg, step_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, update_msg, time_limit, uint32_t, TRUE);
 

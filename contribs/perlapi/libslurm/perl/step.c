@@ -20,6 +20,8 @@ job_step_info_to_hv(job_step_info_t *step_info, HV *hv)
 	int j;
 	AV *av;
 
+	STORE_FIELD(hv, step_info, array_job_id, uint32_t);
+	STORE_FIELD(hv, step_info, array_task_id, uint32_t);
 	if(step_info->ckpt_dir)
 		STORE_FIELD(hv, step_info, ckpt_dir, charp);
 	STORE_FIELD(hv, step_info, ckpt_interval, uint16_t);
@@ -44,6 +46,7 @@ job_step_info_to_hv(job_step_info_t *step_info, HV *hv)
 	STORE_FIELD(hv, step_info, num_tasks, uint32_t);
 	if(step_info->partition)
 		STORE_FIELD(hv, step_info, partition, charp);
+	STORE_FIELD(hv, step_info, profile, uint32_t);
 	if(step_info->resv_ports)
 		STORE_FIELD(hv, step_info, resv_ports, charp);
 	STORE_FIELD(hv, step_info, run_time, time_t);
@@ -51,6 +54,7 @@ job_step_info_to_hv(job_step_info_t *step_info, HV *hv)
 	STORE_FIELD(hv, step_info, step_id, uint32_t);
 	STORE_FIELD(hv, step_info, time_limit, uint32_t);
 	STORE_FIELD(hv, step_info, user_id, uint32_t);
+	STORE_FIELD(hv, step_info, state, uint16_t);
 
 	return 0;
 }
@@ -65,6 +69,8 @@ hv_to_job_step_info(HV *hv, job_step_info_t *step_info)
 	AV *av;
 	int i, n;
 
+	FETCH_FIELD(hv, step_info, array_job_id, uint32_t, TRUE);
+	FETCH_FIELD(hv, step_info, array_task_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, ckpt_dir, charp, FALSE);
 	FETCH_FIELD(hv, step_info, ckpt_interval, uint16_t, TRUE);
 	FETCH_FIELD(hv, step_info, gres, charp, FALSE);
@@ -90,12 +96,14 @@ hv_to_job_step_info(HV *hv, job_step_info_t *step_info)
 	FETCH_FIELD(hv, step_info, num_cpus, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, num_tasks, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, partition, charp, FALSE);
+	FETCH_FIELD(hv, step_info, profile, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, resv_ports, charp, FALSE);
 	FETCH_FIELD(hv, step_info, run_time, time_t, TRUE);
 	FETCH_FIELD(hv, step_info, start_time, time_t, TRUE);
 	FETCH_FIELD(hv, step_info, step_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, time_limit, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, user_id, uint32_t, TRUE);
+	FETCH_FIELD(hv, step_info, state, uint16_t, TRUE);
 
 	return 0;
 }

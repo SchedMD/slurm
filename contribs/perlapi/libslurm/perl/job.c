@@ -24,6 +24,8 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 	if(job_info->alloc_node)
 		STORE_FIELD(hv, job_info, alloc_node, charp);
 	STORE_FIELD(hv, job_info, alloc_sid, uint32_t);
+	STORE_FIELD(hv, job_info, array_job_id, uint32_t);
+	STORE_FIELD(hv, job_info, array_task_id, uint32_t);
 	STORE_FIELD(hv, job_info, assoc_id, uint32_t);
 	STORE_FIELD(hv, job_info, batch_flag, uint16_t);
 	if(job_info->command)
@@ -60,6 +62,7 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 		STORE_FIELD(hv, job_info, licenses, charp);
 	STORE_FIELD(hv, job_info, max_cpus, uint32_t);
 	STORE_FIELD(hv, job_info, max_nodes, uint32_t);
+	STORE_FIELD(hv, job_info, profile, uint32_t);
 	STORE_FIELD(hv, job_info, sockets_per_node, uint16_t);
 	STORE_FIELD(hv, job_info, cores_per_socket, uint16_t);
 	STORE_FIELD(hv, job_info, threads_per_core, uint16_t);
@@ -152,6 +155,8 @@ hv_to_job_info(HV *hv, job_info_t *job_info)
 	FETCH_FIELD(hv, job_info, account, charp, FALSE);
 	FETCH_FIELD(hv, job_info, alloc_node, charp, FALSE);
 	FETCH_FIELD(hv, job_info, alloc_sid, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, array_job_id, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, array_task_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, batch_flag, uint16_t, TRUE);
 	FETCH_FIELD(hv, job_info, command, charp, FALSE);
 	FETCH_FIELD(hv, job_info, comment, charp, FALSE);
@@ -184,6 +189,7 @@ hv_to_job_info(HV *hv, job_info_t *job_info)
 	FETCH_FIELD(hv, job_info, licenses, charp, FALSE);
 	FETCH_FIELD(hv, job_info, max_cpus, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, max_nodes, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, profile, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, sockets_per_node, uint16_t, TRUE);
 	FETCH_FIELD(hv, job_info, cores_per_socket, uint16_t, TRUE);
 	FETCH_FIELD(hv, job_info, threads_per_core, uint16_t, TRUE);
@@ -213,6 +219,8 @@ hv_to_job_info(HV *hv, job_info_t *job_info)
 	FETCH_FIELD(hv, job_info, pn_min_cpus, uint16_t, TRUE);
 	FETCH_FIELD(hv, job_info, pn_min_tmp_disk, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, partition, charp, FALSE);
+	FETCH_FIELD(hv, job_info, pre_sus_time, time_t, TRUE);
+	FETCH_FIELD(hv, job_info, priority, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, qos, charp, FALSE);
 	FETCH_FIELD(hv, job_info, req_nodes, charp, FALSE);
 	svp = hv_fetch(hv, "req_node_inx", 12, FALSE);
@@ -244,6 +252,7 @@ hv_to_job_info(HV *hv, job_info_t *job_info)
 	FETCH_FIELD(hv, job_info, suspend_time, time_t, TRUE);
 	FETCH_FIELD(hv, job_info, time_limit, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, time_min, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, user_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, wait4switch, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_info, wckey, charp, FALSE);
 	FETCH_FIELD(hv, job_info, work_dir, charp, FALSE);

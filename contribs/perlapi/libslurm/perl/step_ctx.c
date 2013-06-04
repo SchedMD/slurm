@@ -34,6 +34,7 @@ hv_to_slurm_step_ctx_params(HV *hv, slurm_step_ctx_params_t *params)
 	FETCH_FIELD(hv, params, node_list, charp, FALSE);
 	FETCH_FIELD(hv, params, overcommit, bool, FALSE);
 	FETCH_FIELD(hv, params, plane_size, uint16_t, FALSE);
+	FETCH_FIELD(hv, params, profile, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, relative, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, resv_port_cnt, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, task_count, uint32_t, FALSE);
@@ -136,6 +137,7 @@ hv_to_slurm_step_launch_params(HV *hv, slurm_step_launch_params_t *params)
 	FETCH_FIELD(hv, params, msg_timeout, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, buffered_stdio, bool, FALSE);
 	FETCH_FIELD(hv, params, labelio, bool, FALSE);
+	FETCH_FIELD(hv, params, profile, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, remote_output_filename, charp, FALSE);
 	FETCH_FIELD(hv, params, remote_error_filename, charp, FALSE);
 	FETCH_FIELD(hv, params, remote_input_filename, charp, FALSE);
