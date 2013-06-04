@@ -1,8 +1,8 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in Slurm 2.6.0pre4
-============================
+* Changes in Slurm 2.6.0rc1
+===========================
  -- Added helper script for launching symmetric and MIC-only MPI tasks within
     SLURM (in contribs/mic/mpirun-mic).
  -- Change maximum delay for state save from 2 secs to 5 secs. Make timeout
