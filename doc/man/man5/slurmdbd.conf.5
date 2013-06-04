@@ -346,23 +346,17 @@ with the database.
 \fBStorageType\fR
 Define the accounting storage mechanism type.
 Acceptable values at present include
-"accounting_storage/gold", "accounting_storage/mysql", and
+"accounting_storage/mysql", and
 "accounting_storage/pgsql".
-The value "accounting_storage/gold" indicates that account records
-will be written to Gold
-.na
-(http://www.clusterresources.com/pages/products/gold-allocation-manager.php),
-.ad
-which maintains its own database.
 The value "accounting_storage/mysql" indicates that accounting records
 should be written to a MySQL database specified by the
 \fBStorageLoc\fR parameter.
 The value "accounting_storage/pgsql" indicates that accounting records
 should be written to a PostgreSQL database specified by the
-\fBStorageLoc\fR parameter.  This plugin is not complete and
-should not be used if wanting to use associations.  It will however work with
-basic accounting of jobs and job steps.  If interested in
-completing please email slurm-dev@lists.llnl.gov.
+\fBStorageLoc\fR parameter.  This plugin is not complete and has been
+depricated.  In future versions of Slurm this plugin may be removed.
+It should not be used if wanting to use associations.  It will however work
+with basic accounting of jobs and job steps.
 This value must be specified.
 
 .TP
