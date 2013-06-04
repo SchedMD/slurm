@@ -123,41 +123,119 @@ OTHER CHANGES
 
 API CHANGES
 ===========
- - Added function "slurm_ckpt_copy_job" to checkpoint plugins.
-
 
 Changed members of the following structs
 ========================================
+ - Added "time_t poll_time" to acct_gather_energy_t.
+ - Changed "acctg_freq" from uint16_t to char * in job_desc_msg_t.
+ - Added "char *array_inx" field to job_desc_msg_t.
+ - Added "void *array_bitmap" field to job_desc_msg_t.
+ - Added "uint32_t profile" field to job_desc_msg_t.
+ - Added "uint32_t array_job_id" field to slurm_job_info_t.
+ - Added "uint32_t array_task_id" field to slurm_job_info_t.
+ - Added "uint32_t profile" field to slurm_job_info_t.
+ - Added "time_t end_time" field to step_update_request_msg_t.
+ - Added "uint32_t exit_code" field to step_update_request_msg_t.
+ - Added "jobacctinfo_t *jobacct" field to step_update_request_msg_t.
+ - Added "char *name" field to step_update_request_msg_t.
+ - Added "time_t start_time" field to step_update_request_msg_t.
+ - Rename "mem_per_cpu" to "pn_min_memory" in slurm_step_ctx_params_t.
+ - Added "uint32_t profile" field to slurm_step_ctx_params_t.
+ - Added "uint32_t profile" field to slurm_step_launch_params_t.
+ - Changed "acctg_freq" from uint16_t to char * in slurm_step_launch_params_t.
+ - Added "uint32_t array_job_id" field to job_step_info_t.
+ - Added "uint32_t array_task_id" field to job_step_info_t.
+ - Added "state" field to job_step_info_t.
+ - Added "ext_sensors_data_t *ext_sensors" field to node_info_t.
+ - Added "char *allow_groups" field to front_end_info_t.
+ - Added "char *allow_users" field to front_end_info_t.
+ - Added "char *deny_groups"  field to front_end_info_t.
+ - Added "char *deny_users" field to front_end_info_t.
+ - Added "uint16_t cr_type" field to partition_info_t.
+ - Added "uint32_t max_cpus_per_node" field to partition_info_t.
  - Changed "core_cnt" from uint32_t to uint32_t* in resv_desc_msg_t.
-
+ - Added "char *acct_gather_profile_type" field to slurm_ctl_conf_t.
+ - Added "char *acct_gather_infiniband_type" field to slurm_ctl_conf_t.
+ - Added "char *acct_gather_filesystem_type" field to slurm_ctl_conf_t.
+ - Added "uint16_t dynalloc_port" field to slurm_ctl_conf_t.
+ - Added "char *ext_sensors_type" field to slurm_ctl_conf_t.
+ - Added "uint16_t ext_sensors_freq" field to slurm_ctl_conf_t.
+ - Added "uint16_t health_check_node_state" field to slurm_ctl_conf_t.
+ - Changed "job_acct_gather_freq" from uint16_t to char * in slurm_ctl_conf_t.
+ - Added "uint16_t keep_alive_time" field to slurm_ctl_conf_t.
+ - Added "uint16_t max_array_sz" field to slurm_ctl_conf_t.
+ - Added "char *resv_epilog" field to slurm_ctl_conf_t
+ - Added "char *resv_prolog" field to slurm_ctl_conf_t.
+ - Added "char *slurmctld_plugstack" field to slurm_ctl_conf_t.
 
 Added the following struct definitions
 ======================================
- - Added "allow_groups", "allow_users", "deny_groups" and "deny_users" fields
-   to front_end_info_t.
- - Added "state" field to job_step_info_t.
- - Added "resv_epilog" and "resv_prolog" to slurm_ctl_conf_t.
- - Added "array_inx" field to job_desc_msg_t.
- - Added "array_job_id" and "array_job_id" fields to slurm_job_info_t.
- - Added "cr_type" field to partition_info_t.
- - Added allocated memory to node information available (within the existing
-   select_nodeinfo field of the node_info_t data structure).
- - Rename slurm_step_ctx_params_t field from "mem_per_cpu" to "pn_min_memory".
+ - ext_sensors_data_t
+ - acct_gather_energy_req_msg_t
 
 Changed the following enums and #defines
 ========================================
-
+ - Added SELECT_NODEDATA_MEM_ALLOC to select_nodedata_type enum
+ - Added #define ACCT_GATHER_PROFILE_NOT_SET
+ - Added #define ACCT_GATHER_PROFILE_NONE
+ - Added #define ACCT_GATHER_PROFILE_ENERGY
+ - Added #define ACCT_GATHER_PROFILE_TASK
+ - Added #define ACCT_GATHER_PROFILE_LUSTRE
+ - Added #define ACCT_GATHER_PROFILE_NETWORK
+ - Added #define ACCT_GATHER_PROFILE_ALL
+ - Added JOBACCT_DATA_CONSUMED_ENERGY to jobacct_data_type enum
+ - Added JOBACCT_DATA_MAX_DISK_READ to jobacct_data_type enum
+ - Added JOBACCT_DATA_MAX_DISK_READ_ID to jobacct_data_type enum
+ - Added JOBACCT_DATA_TOT_DISK_READ to jobacct_data_type enum
+ - Added JOBACCT_DATA_MAX_DISK_WRITE to jobacct_data_type enum
+ - Added JOBACCT_DATA_MAX_DISK_WRITE_ID to jobacct_data_type enum
+ - Added JOBACCT_DATA_TOT_DISK_WRITE to jobacct_data_type enum
+ - Added ENERGY_DATA_PROFILE to acct_energy_type
+ - Added ENERGY_DATA_LAST_POLL to acct_energy_type
+ - Added #define CR_ALLOCATE_FULL_SOCKET
+ - Added #define PRIORITY_FLAGS_TICKET_BASED
+ - Added #define PRIORITY_FLAGS_SIZE_RELATIVE
+ - Added #define DEBUG_FLAG_EXT_SENSORS
+ - Added #define DEBUG_FLAG_THREADID
+ - Added #define DEBUG_FLAG_PROFILE
+ - Added #define DEBUG_FLAG_INFINIBAND
+ - Added #define DEBUG_FLAG_FILESYSTEM
+ - Added #define HEALTH_CHECK_NODE_IDLE
+ - Added #define HEALTH_CHECK_NODE_ALLOC
+ - Added #define HEALTH_CHECK_NODE_MIXED
+ - Added #define HEALTH_CHECK_NODE_ANY
+ - Added #define KILL_JOB_BATCH
+ - Added #define KILL_JOB_ARRAY
 
 Added the following API's
 =========================
+ - Added "slurm_step_ctx_create_timeout" function.
  - Added "slurm_load_job_user" function. This is a variation of
    "slurm_load_jobs", but accepts a user ID argument, potentially resulting
    in substantial performance improvement for "squeue --user=ID"
+ - Added "slurm_xlate_job_id" function.
+ - Added "slurm_load_node" function.
  - Added "slurm_load_node_single" function. This is a variation of
    "slurm_load_nodes", but accepts a node name argument, potentially resulting
    in substantial performance improvement for "sinfo --nodes=NAME".
-
+ - Added "slurm_get_node_energy" function.
 
 Changed the following API's
 ===========================
 
+DBD API Changes
+===============
+ - Changed "cpu_min_taskid" from a uint16_t to a uint32_t in slurmdb_stats_t.
+ - Added "double disk_read_ave" field to slurmdb_stats_t.
+ - Added "double disk_read_max" field to slurmdb_stats_t.
+ - Added "uint32_t disk_read_max_nodeid" field to slurmdb_stats_t.
+ - Added "uint32_t disk_read_max_taskid" field to slurmdb_stats_t.
+ - Added "double disk_write_ave" field to slurmdb_stats_t.
+ - Added "double disk_write_max" field to slurmdb_stats_t.
+ - Added "uint32_t disk_write_max_nodeid" field to slurmdb_stats_t.
+ - Added "uint32_t disk_write_max_taskid" field to slurmdb_stats_t.
+ - Changed "pages_max_taskid" from a uint16_t to a uint32_t in slurmdb_stats_t.
+ - Changed "rss_max_taskid" from a uint16_t to a uint32_t in slurmdb_stats_t.
+ - Changed "vsize_max_taskid" from a uint16_t to a uint32_t in slurmdb_stats_t.
+ - Added "uint32_t purge_resv" field to slurmdb_archive_cond_t.
+ - Added "uint32_t req_mem" field to slurmdb_job_rec_t.
