@@ -145,7 +145,7 @@ Changed members of the following structs
  - Changed "acctg_freq" from uint16_t to char * in slurm_step_launch_params_t.
  - Added "uint32_t array_job_id" field to job_step_info_t.
  - Added "uint32_t array_task_id" field to job_step_info_t.
- - Added "state" field to job_step_info_t.
+ - Added "uint16_t state" field to job_step_info_t.
  - Added "ext_sensors_data_t *ext_sensors" field to node_info_t.
  - Added "char *allow_groups" field to front_end_info_t.
  - Added "char *allow_users" field to front_end_info_t.
