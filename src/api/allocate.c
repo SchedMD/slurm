@@ -562,6 +562,7 @@ char *slurm_read_hostfile(char *filename, int n)
 	int line_num = 0;
 	hostlist_t hostlist = NULL;
 	char *nodelist = NULL;
+	char *asterisk, *tmp_text, *save_ptr = NULL, *host_name;
 
 	if (filename == NULL || strlen(filename) == 0)
 		return NULL;
@@ -609,8 +610,22 @@ char *slurm_read_hostfile(char *filename, int n)
 			break;
 		}
 
-		hostlist_push(hostlist, in_line);
-		if (n != (int)NO_VAL && hostlist_count(hostlist) == n)
+		tmp_text = xstrdup(in_line);
+		host_name = strtok_r(tmp_text, ",", &save_ptr);
+		while (host_name) {
+			if ((asterisk = strchr(host_name, '*')) &&
+			    (i = atoi(asterisk + 1))) {
+				asterisk[0] = '\0';
+				for (j = 0; j < i; j++)
+					hostlist_push(hostlist, host_name);
+			} else {
+				hostlist_push(hostlist, host_name);
+			}
+			host_name = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(tmp_text);
+
+		if ((n != (int)NO_VAL) && (hostlist_count(hostlist) == n))
 			break;
 	}
 	fclose(fp);

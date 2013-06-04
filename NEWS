@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
  -- Rename slurm_step_ctx_params_t field from "mem_per_cpu" to "pn_min_memory".
     Job step now accepts memory specification in either per-cpu or per-node
     basis.
+ -- Add ability to specify host repitition count in the srun hostfile (e.g.
+    "host1*2" is equivalent to "host1,host1").
 
 * Changes in Slurm 2.6.0pre3
 ============================
