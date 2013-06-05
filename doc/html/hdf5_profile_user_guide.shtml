@@ -23,11 +23,12 @@ component software. The plugin will record the data from each source
 as a <b>Time Series</b> and also accumulate totals for each statistic for
 the job.
 
-<p>Time Series are energy data collected by an AcctGatherEnergy plugin,
-I/O data from a network interface collected by an AcctGatherInfiniband plugin,
-I/O data from parallel file systems such as Lustre,
-and task performance data such as local disk I/O, cpu consumption,
-and memory us, as well as potential data from other sources.
+<p>Time Series are energy data collected by an acct_gather_energy plugin,
+I/O data from a network interface collected by an acct_gather_infiniband plugin,
+I/O data from parallel file systems such as Lustre collected by an
+acct_gather_filesystem plugin, and task performance data such as local disk I/O, 
+cpu consumption, and memory use from a jobacct_gather plugin.
+Data from other sources may be added in the future.
 
 <p>The data is collected into a file on a shared file system for each step on
 each allocated node of a job and then merged into a HDF5 file.
@@ -72,6 +73,8 @@ configured in the
 <div style="margin-left: 20px;">
 This line the slum.conf enables the HDF5 Profile Plugin.
 <br><b>AcctGatherProfileType=acct_gather_profile/hdf5</b>
+<br>The <b>JobAcctGatherFrequency</b> sets default sample frequencies for 
+data types.
 </div>
 </div>
 <div style="margin-left: 20px;">
@@ -85,7 +88,7 @@ acct_gather_profile plugin will write detailed data as an HDF5 file.
 The directory is assumed to be on a file system shared by the controller and
 all compute nodes. This is a required parameter.
 <dt><B>ProfileHDF5CollectDefault</B>=opt{,opt{,opt}}</dt>
-<dd>Default <b>--Profile</b value> for data types collected for each job
+<dd>Default <b>--profile</b value> for data types collected for each job
 submission. It ia a comma separated list of data streams.
 Use this option with caution. A node-step file will be created for on every
 node of every step for every job. They will not automatically be merged
@@ -102,18 +105,26 @@ add the --profile option to the launch scripts.</dd>
 <h4>Time Series Control Paramters</h4>
 <div style="margin-left: 20px;">
 Other plugins add time series data to the HDF5 collection. They typically
-have a polling frequency specified in one of the above configuration files.
+have a default polling frequency specified in slurm.conf in the
+JobAcctGatherFrequency parameter. The polling frequency can be overridden
+using the --acctg-freq 
+<a href="srun.html">srun</a> parameter.
+They are both of the form task=sec,energy=sec,luster=sec,network=sec.
 <p>
-The following table summarized parameters that control sample frequency.
+The IPMI energy plugin also needs the EnergyIPMIFrequency value set 
+in the acct_gather.conf file. This sets the rate at which the plugin samples
+the external sensors. This value should be that same as the energy=sec in
+either JobAcctGatherFrequency or --acctg-freq.
 <p>
-<table border="1" style="margin-left: 20; padding: 5
-px;" >
-<tr><th>Conf file</th><th>Parameter</th><th>Time Series</th></tr>
-<tr><td>slurm.conf</td><td>JobAcctGatherFrequency</td><td>Task, Lustre</td></tr>
-<tr><td>acct_gather.conf</td><td>EnergyIPMIFrequency</td><td>Energy</td></tr>
-<tr><td>acct_gather.conf</td><td>InfinibandOFEDFrequency</td>
-<td>Network</td></tr>
-</table>
+Note that the IPMI and profile sampling is not synchronous. 
+The profile sample simply takes the last available IPMI sample value. 
+If the profile energy sample is more frequent than the IPMI sample rate, 
+the IPMI value will be repeated. It the profile energy sample is greater 
+than the IPMI rate, IPMI values will be lost.
+<p>
+Also note that smallest effective IPMI (EnergyIPMIFrequency) sample rate 
+for 2013 era Intel processors is 3 seconds.
+<p>
 </div>
 </div>
 <a id="Profiling"></a>
@@ -165,10 +176,8 @@ The node-step files are merged into one HDF5 file for the job using the
 <p>The command line may added to the normal launch script, if the job is
 started with sbatch. For example;
 <pre>
-sbatch -n1 -d$last_job_id --wrap="sh5util --profile=none -j $last_job_id"
+sbatch -n1 -d$SLURM_JOB_ID --wrap="sh5util -j $SLURM_JOB_ID"
 </pre>
-Note that --profile=none is required if the enclosing sbatch command included
-a --profile parameter.
 
 <h3>Data Extraction</h3>
 The <a href="sh5util.html">sh5util</a> program can also be used to extract
@@ -331,6 +340,6 @@ correlate activity with other sources such as logs.</DD></DT>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 17 May 2013</p>
+<p style="text-align:center;">Last modified 6 June 2013</p>
 
 <!--#include virtual="footer.txt"-->
