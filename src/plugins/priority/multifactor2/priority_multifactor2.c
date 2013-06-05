@@ -381,6 +381,8 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 /* Set the effective usage of a node. */
 static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
 {
+	long double min_shares_norm;
+
         if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
             && assoc->usage->parent_assoc_ptr) {
 		assoc->usage->shares_norm =
@@ -389,13 +391,15 @@ static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
                         assoc->usage->parent_assoc_ptr->usage->usage_norm;
         }
 
-	if (assoc->usage->usage_norm > MIN_USAGE_FACTOR 
-		    * (assoc->shares_raw / assoc->usage->level_shares)) {
+	if (assoc->usage->level_shares) {
+		min_shares_norm = (long double) MIN_USAGE_FACTOR
+			* assoc->shares_raw / assoc->usage->level_shares;
+		if (assoc->usage->usage_norm > min_shares_norm)
+			assoc->usage->usage_efctv = assoc->usage->usage_norm;
+		else
+			assoc->usage->usage_efctv = min_shares_norm;
+	} else
 		assoc->usage->usage_efctv = assoc->usage->usage_norm;
-	} else {
-		assoc->usage->usage_efctv =  MIN_USAGE_FACTOR 
-		  * (assoc->shares_raw / assoc->usage->level_shares);
-	}
 }
 
 
@@ -1470,7 +1474,8 @@ extern double priority_p_calc_fs_factor(long double usage_efctv,
 {
 	double priority_fs;
 
-	xassert(!fuzzy_equal(usage_efctv, NO_VAL));
+	if (fuzzy_equal(usage_efctv, NO_VAL))
+		return 0.0;
 
 	if (shares_norm > 0.0) {
 		if (usage_efctv < MIN_USAGE_FACTOR * shares_norm)
