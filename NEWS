@@ -46,6 +46,7 @@ documents those changes that are of interest to users and admins.
  -- checkpoint/blcr - Reset max_nodes from zero to NO_VAL on job restart.
  -- launch/poe - Fix for hostlist file support with repeated host names.
  -- priority/multifactor2 - Prevent possible divide by zero.
+ -- srun - Don't check for executable if --test-only flag is used.
 
 * Changes in Slurm 2.5.6
 ========================

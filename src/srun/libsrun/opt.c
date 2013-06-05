@@ -1655,7 +1655,7 @@ static void _opt_args(int argc, char **argv)
 
 	command_args = opt.argc;
 
-	if (!rest)
+	if (!rest && !opt.test_only)
 		fatal("No command given to execute.");
 
 #if defined HAVE_BG && !defined HAVE_BG_L_P
