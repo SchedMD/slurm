@@ -1688,6 +1688,13 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 		if (jobacct) {
 			jobacctinfo_setinfo(jobacct,
 					    JOBACCT_DATA_RUSAGE, &rusage);
+			/* Since we currently don't track energy
+			   usage per task (only per step).  We take
+			   into account only the last poll of the last task.
+			   If this ever changes in the future this
+			   will need to change.
+			*/
+			job->jobacct->energy.consumed_energy = 0;
 			jobacctinfo_aggregate(job->jobacct, jobacct);
 			jobacctinfo_destroy(jobacct);
 		}

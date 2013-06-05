@@ -47,6 +47,9 @@ documents those changes that are of interest to users and admins.
  -- launch/poe - Fix for hostlist file support with repeated host names.
  -- priority/multifactor2 - Prevent possible divide by zero.
  -- srun - Don't check for executable if --test-only flag is used.
+ -- energy - On a single node only use the last task for gathering energy.
+    Since we don't currently track energy usage per task (only per step).
+    Otherwise we get double the energy.
 
 * Changes in Slurm 2.5.6
 ========================
