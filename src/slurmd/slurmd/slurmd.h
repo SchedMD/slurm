@@ -133,6 +133,7 @@ typedef struct slurmd_config {
 	uint16_t	slurmd_timeout;	/* SlurmdTimeout                   */
 	uid_t           slurm_user_id;	/* UID that slurmctld runs as      */
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
+	uint16_t        acct_freq_task;
 	char           *job_acct_gather_freq;
 	char           *job_acct_gather_type; /* job accounting gather type */
 	char           *acct_gather_energy_type; /*  */

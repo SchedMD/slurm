@@ -50,6 +50,7 @@
 #include "src/common/cpu_frequency.h"
 #include "src/common/gres.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/stepd_api.h"
 #include "src/common/switch.h"
@@ -187,6 +188,7 @@ static slurmd_conf_t * read_slurmd_conf_lite (int fd)
 	int len;
 	Buf buffer;
 	slurmd_conf_t *confl;
+	int tmp_int = 0;
 
 	/*  First check to see if we've already initialized the
 	 *   global slurmd_conf_t in 'conf'. Allocate memory if not.
@@ -220,6 +222,13 @@ static slurmd_conf_t * read_slurmd_conf_lite (int fd)
 			confl->log_opts.syslog_level = LOG_LEVEL_QUIET;
 	} else
 		confl->log_opts.syslog_level  = LOG_LEVEL_QUIET;
+
+	confl->acct_freq_task = (uint16_t)NO_VAL;
+	tmp_int = acct_gather_parse_freq(PROFILE_TASK,
+				       confl->job_acct_gather_freq);
+	if (tmp_int != -1)
+		confl->acct_freq_task = tmp_int;
+
 
 	return (confl);
 rwfail:

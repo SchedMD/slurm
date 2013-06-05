@@ -76,6 +76,30 @@ static void _job_init_task_info(slurmd_job_t *job, uint32_t *gtid,
 				char *ifname, char *ofname, char *efname);
 static void _task_info_destroy(slurmd_task_info_t *t, uint16_t multi_prog);
 
+static int _check_acct_freq_task(uint32_t job_mem_lim, char *acctg_freq)
+{
+	int task_freq;
+
+	if (!job_mem_lim || !conf->acct_freq_task)
+		return 0;
+
+	task_freq = acct_gather_parse_freq(PROFILE_TASK, acctg_freq);
+
+	if (task_freq == -1)
+		return 0;
+
+	if ((task_freq == 0) || (task_freq > conf->acct_freq_task)) {
+		error("Can't set frequency to %u, it is higher than %u.  "
+		      "We need it to be at least at this level to "
+		      "monitor memory usage.",
+		      task_freq, conf->acct_freq_task);
+		slurm_seterrno (ESLURMD_INVALID_ACCT_FREQ);
+		return 1;
+	}
+
+	return 0;
+}
+
 static struct passwd *
 _pwd_create(uid_t uid)
 {
@@ -180,17 +204,10 @@ job_create(launch_tasks_request_msg_t *msg)
 		return NULL;
 	}
 
-	/* FIXME: handle this now that acctg_freq is a string */
-	/* if (msg->job_mem_lim && (msg->acctg_freq != (uint16_t) NO_VAL) */
-	/*     && (msg->acctg_freq > conf->job_acct_gather_freq)) { */
-	/* 	error("Can't set frequency to %u, it is higher than %u.  " */
-	/* 	      "We need it to be at least at this level to " */
-	/* 	      "monitor memory usage.", */
-	/* 	      msg->acctg_freq, conf->job_acct_gather_freq); */
-	/* 	slurm_seterrno (ESLURMD_INVALID_ACCT_FREQ); */
-	/* 	_pwd_destroy(pwd); */
-	/* 	return NULL; */
-	/* } */
+	if (_check_acct_freq_task(msg->job_mem_lim, msg->acctg_freq)) {
+		_pwd_destroy(pwd);
+		return NULL;
+	}
 
 	job = xmalloc(sizeof(slurmd_job_t));
 #ifndef HAVE_FRONT_END
@@ -381,17 +398,10 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		return NULL;
 	}
 
-	/* FIXME: handle this now that acctg_freq is a string */
-	/* if (msg->job_mem_lim && (msg->acctg_freq != (uint16_t) NO_VAL) */
-	/*     && (msg->acctg_freq > conf->job_acct_gather_freq)) { */
-	/* 	error("Can't set frequency to %u, it is higher than %u.  " */
-	/* 	      "We need it to be at least at this level to " */
-	/* 	      "monitor memory usage.", */
-	/* 	      msg->acctg_freq, conf->job_acct_gather_freq); */
-	/* 	slurm_seterrno (ESLURMD_INVALID_ACCT_FREQ); */
-	/* 	_pwd_destroy(pwd); */
-	/* 	return NULL; */
-	/* } */
+	if (_check_acct_freq_task(msg->job_mem, msg->acctg_freq)) {
+		_pwd_destroy(pwd);
+		return NULL;
+	}
 
 	job = xmalloc(sizeof(slurmd_job_t));
 
