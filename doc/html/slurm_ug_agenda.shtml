@@ -21,7 +21,7 @@ California State University's Conference Center</a>,
 (Phone 510-208-7001, access from 11th Street).
 This state of the art facility is located adjacent to the 12th Street
 <a href="http:/www.bart.gov">BART</a> (Metro) station, with easy access to
-the entire San Fransisco area.
+the entire San Francisco area.
 There is also frequent and free bus service to
 <a href="http://www.jacklondonsquare.com">Jack London Square</a> using the
 <a href="http://Bshuttle.com">Broadway Shuttle</a>.
@@ -54,7 +54,7 @@ plus dinner on Wednesday evening.<br><br>
 <h2>September 18, 2013</h2>
 
 <table width="100%" border=1 cellspacing=0 cellpadding=0>
-	
+
 <tr>
   <th width="15%">Time</th>
   <th width="15%">Theme</th>
@@ -127,7 +127,7 @@ plus dinner on Wednesday evening.<br><br>
   <td width="15%" bgcolor="#F0F1C9">14:30 - 15:00</td>
   <td width="85%" colspan="3" bgcolor="#F0F1C9">&nbsp;Coffee break</td>
 </tr>
-	
+
 <tr>
   <td width="15%">15:00 - 15:30</td>
   <td width="15%">&nbsp;Technical</td>
@@ -151,7 +151,7 @@ plus dinner on Wednesday evening.<br><br>
 <h2>September 19, 2013</h2>
 
 <table width="100%" border=1 cellspacing=0 cellpadding=0>
-	
+
 <tr>
   <th width="15%">Time</th>
   <th width="15%">Theme</th>
@@ -227,7 +227,7 @@ plus dinner on Wednesday evening.<br><br>
   <td width="15%">13:40 - 14:00</td>
   <td width="15%">&nbsp;Site Report</td>
   <td width="25%">&nbsp;Ryan Cox (BYU)</td>
-  <td width="45%">&nbsp;Bringham Young University Site Report</td>
+  <td width="45%">&nbsp;Brigham Young University Site Report</td>
 </tr>
 <tr>
   <td width="15%">14:00 - 14:20</td>
@@ -240,7 +240,7 @@ plus dinner on Wednesday evening.<br><br>
   <td width="15%" bgcolor="#F0F1C9">14:20 - 14:45</td>
   <td width="85%" colspan="3" bgcolor="#F0F1C9">&nbsp;Coffee break</td>
 </tr>
-	
+
 <tr>
   <td width="15%">14:45 - 15:15</td>
   <td width="15%">&nbsp;Technical</td>
@@ -297,5 +297,277 @@ management features in Slurm and will make a detailed review of the new plugins
 introduced in 2.6, with configuration and usage details along with examples of
 actual deployment.</p>
 
-<!--#include virtual="footer.txt"-->
+<h3>Evaluation of Monitoring and Control Features for Power Management</h3>
+<p>Yiannis Georgiou , Thomas Cadeau(Bull), Danny Auble, Moe Jette(SchedMD),
+Matthieu Hautreux (CEA)</p>
+<p>High Performance Computing platforms are characterized by their
+ increasing needs in power consumption. The Resource and Job
+ Management System (RJMS) is the HPC middleware responsible for
+ distributing computing resources to user applications. Appearance of
+ hardware  sensors along with their support on the kernel/software side can be
+ taken into account by the RJMS in order to enhance the monitoring
+ and control of the executions with energy  considerations. This
+ essentially enables the applications' execution statistics for
+ online energy profiling and gives the possibility to users to
+ control the tradeoffs between energy consumption and performance. In
+ this work we present the design and evaluation of a  new framework,
+ developed upon SLURM Resource and Job Management System,
+ which allows energy consumption recording and accounting per node
+ and job along with parameters for job energy control features based on static
+ frequency scaling of the CPUs. We evaluate the overhead of the design choices
+ and the precision of the energy consumption results with different
+ HPC benchmarks (IMB,stream,HPL) on real-scale platforms and
+ integrated wattmeters. Having as goal the deployment of the
+ framework on large petaflopic clusters such as Curie, scalability is
+ an important aspect.</p>
 
+<h3>Debugging Large Machines</h3>
+<p>Matthieu Hautreux (CEA)</p>
+<p>This talk  will present some cases of particularly interesting bugs
+ that were  studied/worked-around/corrected over the past  few years
+ on the petaflopic  machines installed  and used at  CEA.  The goal
+ is to share with the administrator  community some methods and tools
+ helping to  identify  and in  some  cases  work-around  or correct
+ unexpected performance issues or bugs.</p>
+
+<h3>Creating easy to use HPC portals with NICE EnginFrame and Slurm</h3>
+<p>Alberto Falzone, Paolo Maggi (Nice)</p>
+<p>NICE EnginFrame is a popular framework to easily create HPC portals
+that provide user-friendly application-oriented computing and data
+services, hiding all the complexity of the underlying IT infrastructure.
+Designed for technical computing users in a broad range of markets
+(Oil&Gas, Automotive, Aerospace, Medical, Finance, Research, and
+more), EnginFrame simplifies engineers' and scientists' work
+through its intuitive, self-documenting interfaces, increasing
+productivity and streamlining data and resource
+management. Leveraging all the major HPC job schedulers and remote
+visualization technologies, EnginFrame translates user clicks into the
+appropriate actions to submit HPC jobs, create remote visualization
+sessions, monitor workloads on distributed resources, manage data
+and much more. In this work we describe the integration between the
+SLURM Workload Manager and EnginFrame. We will then illustrate how
+this integration can be leveraged to create easy to use HPC portals
+for SLURM-based HPC infrastructures.</p>
+
+<h3>Slurm evaluation using emulation and replay of real workload traces</h3>
+<p>David Glesser, Yiannis Georgiou, Joseph Emeras, Olivier Richard (Bull)</p>
+<p>The experimentation and evaluation of Resource and Job Management
+ Systems in HPC supercomputers are characterized by important
+ complexities due to the inter-dependency of multiple parameters that
+ have to be taken into control. In our study we have developed a
+ methodology based upon emulated controlled experimentation, under
+ real conditions, with submission of workload traces extracted from a
+ production system. The methodology is used to perform comparisons of
+ different Slurm configurations in order to deduce the best
+ configuration for the typical workload that takes place on the
+ supercomputer, without disturbing the production. We will present
+ observations and evaluations results using real workload traces
+ extracted from  Curie supercomputer,Top500 system with 80640,
+ replayed upon only 128 cores of a machine with similar
+ architecture. Various interesting results are extracted and important
+ side effects are discussed along with proposed configurations for
+ each type of workloads. Ideas for improvements on Slurm are also
+ proposed.</p>
+
+<h3>Usage of new profiling functionalities</h3>
+<p>Rod Schultz, Yiannis Georgiou (Bull), Danny Auble (SchedMD)</p>
+<p>SLURM Version 2.6 includes the ability to gather detailed
+performance data on jobs. It has a plugin that stores the detailed
+data in an HDF5 file. Other plugin gather data on task performance
+such as cpu usage, memory usage, and local disk I/O; I/O to the
+Lustre file system; traffic through and Infiniband network
+interface; and energy information collected from IPMI.
+This tutorial will describe the new capability, show how to configure
+the various data sources, show examples of different data streams,
+and report on actual usage.</p>
+
+<h2>September 19, 2013</h2>
+
+<h3>Fault Tolerant Workload Management</h3>
+<p>Morris Jette, David Bigagli, Danny Auble (SchedMD)</p>
+<p>One of the major issues facing exascale computing is fault
+tolerance; how can a computer be effectively used if the typical job
+execution time exceeds its mean time between failure. Part of the
+solution is providing users with means to address failures in a
+coordinated fashion with a highly adaptable workload manager. Such a
+solution would support coordinated recognition of failures,
+notification of failing and failed components, replacement
+resources, and extended job time limits using negotiated interactive
+communications. This paper describes fault tolerance issues from the
+perspective of a workload manager and the implementation of solution
+designed to optimize job fault tolerance based upon the popular open
+source workload manager, Slurm.</p>
+
+<h3>Slurm Layouts Framework</h3>
+<p>Yiannis Georgiou (Bull), Matthieu Hautreux (CEA)</p>
+<p>This talk will describe the origins and goals of the study
+concerning the Layouts Framework as well as first targets, current
+developments and results. The layouts framework aims at providing a
+uniform and generalized way to describe the hierarchical
+relations between resources managed by a RM in order to use that
+information in related RM  internal logic. Examples of
+instantiated layouts could be the description of the network
+connectivity of nodes for the Slurm internal communication, the
+description of the power supply network and capacities per branch
+powering up the nodes, the description of the racking of the nodes, ...<p>
+
+<h3>License Management</h3>
+<p>Bill Brophy (Bull)</p>
+<p>License management becomes an increasingly critical issue as the
+size of systems increase. These valuable resources deserve the same
+careful management as all other resources configured in a
+cluster. When licenses are being utilized in both interactive and
+batch execution environments with multiple resource managers
+involved the complexity of this task increases
+significantly. Current license management within SLURM is not
+integrated with any external license managers. This approach is
+adequate if all jobs requiring licenses are submitted through SLURM
+or if SLURM is given a subset of the licenses available on the
+system to sub manage. However, the case of sub management can result
+in underutilization of valuable license resources. Documentation for
+other resource managers describes their interaction with external
+license managers. For SLURM to become an active participant in
+license management an evolution to its management approach must
+occur. This article proposes a two-phased approach for accomplishing
+that transformation. In the first phase, enhancements are proposed for
+now SLURM internally deals with licenses: restriction of license to
+specific accounts or users, provides recommendations for keeping
+track of license information and suggestions for how this
+information can be displayed for a SLURM users or
+administrators. The second phase of this effort, which is
+considerably more ambitious, is to define an evolution of SLURM's
+approach to license management. This phase introduces an interaction
+between SLURM and external license managers. The goal of this effort
+is to increase SLURM's effectiveness in another area of resource
+management, namely management of software licenses.</p>
+
+<h3>Multi-Cluster Management</h3>
+<p>Juan Pancorbo Armada (IRZ)</p>
+<p>As a service provider for scientific high performance computing,
+Leibniz Rechen Zentrum (LRZ) operates compute systems for use by
+educational institutions in Munich, Bavaria, as well as on the
+national level. LRZ provides own computing resources as well as
+housing and managing computing resources from other institutions
+such as Max Planck Institute, or Ludwig Maximilians University.
+The tier 2 Linux cluster operated at LRZ is a heterogeneous system
+with different types of compute nodes, divided into 13 different
+partitions, each of which is managed by SLURM. The various
+partitions are configured for the different needs and services
+requested, ranging from single node multiple core NUMAlink shared
+memory clusters, to a 16-way infiniband- connected cluster for
+parallel job execution, or an 8-way Gbit Ethernet cluster for serial
+job execution. The management of all partitions is centralized on a
+single VM. In this VM one SLURM cluster for each of these Linux
+cluster partitions is configured. The required SLURM control daemons
+run concurrently on this VM. With the use of a wrapper script called
+MSLURM, the SLURM administrator can send SLURM commands to any
+cluster in an easy-to use and flexible manner, including starting or
+stopping the complete SLURM subsystem. Although such a setup may not
+be desirable for large homogeneous supercomputing clusters, on small
+heterogeneous clusters it has its own advantages. No separate control
+node is required for each cluster for the slurmctld to run, so the
+control of small clusters can be grouped in a single control
+node. This feature also help to solve the restriction for some
+parameters that cannot be set to different values for different
+partitions in the same slurm.conf file; in that case it is possible
+to move such parameters to partition-specific slurm.conf files.</p>
+
+<h3>Preparing Slurm for use on the Cray XC30</h3>
+<p>Stephen Trofinoff, Colin McMurtrie (CSCS)</p>
+<p>In this paper we describe the technical details associated with the
+preparation of Slurm for use on a XC30 system installed at the Swiss
+National Supercomputing Centre (CSCS). The system comprises external
+login nodes, internal login nodes and a new ALPS/BASIL version so a
+number of technical details needed to be overcome in order to have
+Slurm working, as desired, on the system. Due to the backward
+compatibility of ALPS/BASIL and the well-written code of Slurm,
+Slurm was able to run, as it had in the past on previous Cray
+systems, with little effort. However some problems were encountered
+and their identification and resolution is described in
+detail. Moreover, we describe the work involved in enhancing Slurm
+to utilize the new BASIL protocol. Finally, we provide detail on the
+work done to improve the Slurm task affinity bindings on a
+general-purpose Linux cluster so that they, as closely as possible,
+match the Cray bindings, thereby providing our users with some
+degree of consistency in application behavior between these systems.</p>
+
+<h3>Refactoring ALPS</h3>
+<p>Dave Wallace (Cray)</p>
+<p>One of the hallmarks of the Cray Linux Environment is the Cray
+Application Level Placement Scheduler (ALPS). ALPS is a resource
+placement infrastructure used on all Cray systems. Developed by
+Cray, ALPS addresses the size, complexity, and unique resource
+management challenges presented by Cray systems. It works in
+conjunction with workload management tools such as SLURM to
+schedule, allocate, and launch applications. ALPS separates policy
+from placement, so it launches applications but does not conflict
+with batch system policies. The batch system interacts with ALPS via
+an XML interface. Over time, the requirement to support more and
+varied platform and processor capabilities, dynamic resource
+management and new workload manager features has led Cray to
+investigate alternatives to provide more flexible methods for
+supporting expanding workload manager capabilities on Cray
+systems. This presentation will highlight Cray's plans to expose low
+level hardware interfaces by refactoring ALPS to allow 'native'
+workload manager implementations that don't rely on the current ALPS
+interface mechanism.</p>
+
+<h3>CEA Site Report</h3>
+<p>Francois Daikhate, Francis Belot, Matthieu Hautreux (CEA)</p>
+<p>The site report will detail the evolution of Slurm usage at CEA
+as well as recent developments used on production systems. A
+modification of the fairshare logic to better handle fair sharing of
+resources between unbalanced groups hierarchies will be detailed.</p>
+
+<h3>George Washington University Site Report</h3>
+<p>Tim Wickberg (George Washington University)<p>
+<p>The site report will detail the evaluation of Slurm usage at
+George Washington University, and the new Colonial One System.</p>
+
+<h3>Brigham Young University Site Report</h3>
+<p>Ryan Cox (BYU)<p>
+<p>Site Report will detail the evaluation of Slurm at Brigham Young
+University.</p>
+
+<h3>D.E. Shaw Research Site Report</h3>
+<p>Doug Hughes, Chris Harwell, Eric Radman, Goran Pocina, Michael Fenn
+(D.E. Shaw Research)</p>
+<p>DESRES uses SLURM to schedule Anton. Anton is a specialized
+supercomputer which executes molecular dynamics (MD) simulations of
+proteins and other biological macromolecules orders of magnitude
+faster than was previously possible. In this report, we present the
+current SLURM configuration for scheduling Anton and launching our
+MD application. We take advantage of the ability to run multiple
+slurmd programs on a single node and use them as place-holders for
+the Anton machines. We combine that with a pool of commodity Linux
+nodes which act as frontends to any of the Anton machines where the
+application is launched. We run a partition-specific prolog to insure
+machine health prior to starting a job and to reset ASICs if
+necessary. We also periodically run health checks and set nodes to
+drain or resume via scontrol. Recently we have also used the prolog
+to set a specific QOS for jobs which run on an early (and slower)
+version of the ASIC in order to adjust the fair-share UsageFactor.</p>
+<p>DESRES also uses SLURM to schedule a cluster of commodity nodes for
+running regressions, our DESMOND MD program and various other
+computational chemistry software. The jobs are an interesting mix of
+those with MPI required and those without, short (minutes) and long (weeks).</p>
+<p>DESRES is also investigating using SLURM to schedule a small
+cluster of 8-GPU nodes for a port of the DESMOND MD program to
+GPUs. This workload includes both full node 8-GPU jobs and multi-node
+full 8-GPU per node jobs, but also jobs with lower GPU requirements
+such that multiple jobs would be on a single node. We've made use of
+CPU affinity and binding.  GRES was not quite flexible enough and we
+ended up taking advantage of the 8 CPU to 8 GPU  opting to assign
+GPUs to specific CPUs.</p>
+
+<h3>Slurm Roadmap</h3>
+<p>Morris Jette (SchedMD), Yiannis Georgiou (Bull)</p>
+<p>Slurm continues to evolve rapidly, with two major releases per
+year. This presentation will outline Slurm development plans in the
+coming years. Particular attention will be given to describing
+anticipated workload management requirements for Exascale
+computing. These requirements include not only scalability issues,
+but a new focus on power management, fault tolerance, topology
+optimized scheduling, and heterogeneous computing.</p>
+
+<!--#include virtual="footer.txt"-->
