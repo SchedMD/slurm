@@ -146,11 +146,6 @@ extern int jobacct_gather_p_endpoll(void)
 	return SLURM_SUCCESS;
 }
 
-extern void jobacct_gather_p_change_poll(uint16_t frequency)
-{
-	return;
-}
-
 extern void jobacct_gather_p_suspend_poll(void)
 {
 	return;

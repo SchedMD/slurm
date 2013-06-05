@@ -141,7 +141,6 @@ extern int jobacct_gather_fini(void); /* unload the plugin */
 
 extern int  jobacct_gather_startpoll(uint16_t frequency);
 extern int  jobacct_gather_endpoll(void);
-extern void jobacct_gather_change_poll(uint16_t frequency);
 extern void jobacct_gather_suspend_poll(void);
 extern void jobacct_gather_resume_poll(void);
 

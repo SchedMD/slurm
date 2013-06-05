@@ -347,39 +347,6 @@ extern int jobacct_gather_endpoll(void)
 	return retval;
 }
 
-extern void jobacct_gather_change_poll(uint16_t frequency)
-{
-	if (jobacct_gather_init() < 0)
-		return;
-
-	if (plugin_polling && freq == 0 && frequency != 0) {
-		pthread_attr_t attr;
-		pthread_t _watch_tasks_thread_id;
-		/* create polling thread */
-		slurm_attr_init(&attr);
-		if (pthread_attr_setdetachstate(&attr,
-						PTHREAD_CREATE_DETACHED))
-			error("pthread_attr_setdetachstate error %m");
-
-		if  (pthread_create(&_watch_tasks_thread_id, &attr,
-				    &_watch_tasks, NULL)) {
-			debug("jobacct-gather failed to create _watch_tasks "
-			      "thread: %m");
-			frequency = 0;
-		}
-		else
-			debug3("jobacct-gather LINUX dynamic logging enabled");
-		slurm_attr_destroy(&attr);
-		jobacct_shutdown = false;
-	}
-
-	freq = frequency;
-	debug("jobacct-gather: frequency changed = %d", frequency);
-	if (freq == 0)
-		jobacct_shutdown = true;
-	return;
-}
-
 extern void jobacct_gather_suspend_poll(void)
 {
 	jobacct_suspended = true;
