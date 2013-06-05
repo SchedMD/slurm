@@ -37,7 +37,12 @@ Linux cluster (See BlueGene and AIX specific notes below for some differences).
      files, but not to code.
    - this is a prerelease (Release = 0.preX)
 2. Tag the repository with the appropriate name for the new version.
-   > git tag -a slurm-2-3-0-0-pre5 -m "create tag v2.3.0-pre5"
+   Note the first three digits are the version number. For a proper release,
+   the last digit is "1" (except for a rebuild without code changes which
+   could be "2"). For pre-releases, the last digit should be "0" followed by
+   "pre#" or "rc#".
+   > git tag -a slurm-2-6-7-1 -m "create tag v2.6.7"  OR
+   > git tag -a slurm-2-7-0-0pre5 -m "create tag v2.7.0-pre5"
    > git push --tags
 3. Use the rpm make target to create the new RPMs. This requires a .rpmmacros 
    (.rpmrc for newer versions of rpmbuild) file containing:
