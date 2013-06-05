@@ -36,7 +36,7 @@
 
 source ./globals
 
-set test_id     "1.84"
+set test_id     "1.85"
 
 print_header $test_id
 
