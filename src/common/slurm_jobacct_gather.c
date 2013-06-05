@@ -1139,7 +1139,7 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 		dest->energy.consumed_energy = NO_VAL;
 	else
 		dest->energy.consumed_energy += from->energy.consumed_energy;
-		
+
 	if (dest->max_disk_read < from->max_disk_read) {
 		dest->max_disk_read = from->max_disk_read;
 		dest->max_disk_read_id = from->max_disk_read_id;
