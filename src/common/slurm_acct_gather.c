@@ -36,11 +36,29 @@
 \*****************************************************************************/
 
 #include <sys/stat.h>
+#include <stdlib.h>
 
-#include "slurm_acct_gather.h"
-#include "xstring.h"
+#include "src/common/slurm_acct_gather.h"
+#include "src/common/slurm_strcasestr.h"
+#include "src/common/xstring.h"
 
 static bool inited = 0;
+
+static int _get_int(const char *my_str)
+{
+	char *end = NULL;
+	int value;
+
+	if (!my_str)
+		return -1;
+	value = strtol(my_str, &end, 10);
+	//info("from %s I get %d and %s: %m", my_str, value, end);
+	/* means no numbers */
+	if (my_str == end)
+		return -1;
+
+	return value;
+}
 
 extern int acct_gather_conf_init(void)
 {
@@ -108,4 +126,43 @@ extern int acct_gather_conf_destroy(void)
 		return SLURM_SUCCESS;
 
 	return SLURM_SUCCESS;
+}
+
+extern int acct_gather_parse_freq(int type, char *freq)
+{
+	int freq_int = -1;
+	char *sub_str = NULL;
+
+	if (!freq)
+		return freq_int;
+
+	switch (type) {
+	case PROFILE_ENERGY:
+		if ((sub_str = slurm_strcasestr(freq, "energy=")))
+			freq_int = _get_int(sub_str + 7);
+		break;
+	case PROFILE_TASK:
+		/* backwards compatibility for when the freq was only
+		   for task.
+		*/
+		freq_int = _get_int(freq);
+		if ((freq_int == -1)
+		    && (sub_str = slurm_strcasestr(freq, "task=")))
+			freq_int = _get_int(sub_str + 5);
+		break;
+	case PROFILE_FILESYSTEM:
+		if ((sub_str = slurm_strcasestr(freq, "filesystem=")))
+			freq_int = _get_int(sub_str + 11);
+		break;
+	case PROFILE_NETWORK:
+		if ((sub_str = slurm_strcasestr(freq, "network=")))
+			freq_int = _get_int(sub_str + 8);
+		break;
+	default:
+		fatal("Unhandled profile option %d please update "
+		      "slurm_acct_gather.c "
+		      "(acct_gather_parse_freq)", type);
+	}
+
+	return freq_int;
 }

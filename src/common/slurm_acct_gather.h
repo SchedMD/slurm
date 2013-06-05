@@ -59,5 +59,6 @@
 
 extern int acct_gather_conf_init(void);
 extern int acct_gather_conf_destroy(void);
+extern int acct_gather_parse_freq(int type, char *freq);
 
 #endif

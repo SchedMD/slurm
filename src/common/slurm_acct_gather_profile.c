@@ -95,20 +95,13 @@ static pthread_mutex_t profile_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t timer_thread_id = 0;
 static bool init_run = false;
 
-static int _get_int(const char *my_str)
+static void _set_freq(int type, char *freq, char *freq_def)
 {
-	char *end = NULL;
-	int value;
-
-	if (!my_str)
-		return -1;
-	value = strtol(my_str, &end, 10);
-	//info("from %s I get %d and %s: %m", my_str, value, end);
-	/* means no numbers */
-	if (my_str == end)
-		return -1;
-
-	return value;
+	if ((acct_gather_profile_timer[type].freq =
+	     acct_gather_parse_freq(type, freq)) == -1)
+		if ((acct_gather_profile_timer[type].freq =
+		     acct_gather_parse_freq(type, freq_def)) == -1)
+			acct_gather_profile_timer[type].freq = 0;
 }
 
 static void *_timer_thread(void *args)
@@ -308,8 +301,6 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 	xassert(profile != ACCT_GATHER_PROFILE_NOT_SET);
 
 	for (i=0; i < PROFILE_CNT; i++) {
-		char *type = NULL;
-
 		memset(&acct_gather_profile_timer[i], 0,
 		       sizeof(acct_gather_profile_timer_t));
 		pthread_cond_init(&acct_gather_profile_timer[i].notify, NULL);
@@ -319,13 +310,8 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 		case PROFILE_ENERGY:
 			if (!(profile & ACCT_GATHER_PROFILE_ENERGY))
 				break;
-			if (freq && (type = slurm_strcasestr(freq, "energy=")))
-				acct_gather_profile_timer[i].freq =
-					_get_int(type+7);
-			else if (freq_def && (type = slurm_strcasestr(
-						      freq_def, "energy=")))
-				acct_gather_profile_timer[i].freq =
-					_get_int(type+7);
+			_set_freq(i, freq, freq_def);
+
 			acct_gather_energy_startpoll(
 				acct_gather_profile_timer[i].freq);
 			break;
@@ -335,23 +321,8 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 			   consumption and such.  It will check
 			   profile inside it's plugin.
 			*/
-			acct_gather_profile_timer[i].freq = _get_int(freq);
-			if (acct_gather_profile_timer[i].freq == -1) {
-				if (freq && (type = slurm_strcasestr(
-						     freq, "task=")))
-					acct_gather_profile_timer[i].freq =
-						_get_int(type+5);
-				else if (freq_def) {
-					acct_gather_profile_timer[i].freq =
-						_get_int(freq_def);
-					if ((acct_gather_profile_timer[i].freq
-					     == -1)
-					    && (type = slurm_strcasestr(
-							freq_def, "task=")))
-						acct_gather_profile_timer[i].
-							freq = _get_int(type+5);
-				}
-			}
+			_set_freq(i, freq, freq_def);
+
 			jobacct_gather_startpoll(
 				acct_gather_profile_timer[i].freq);
 
@@ -359,27 +330,16 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 		case PROFILE_FILESYSTEM:
 			if (!(profile & ACCT_GATHER_PROFILE_LUSTRE))
 				break;
-			if (freq && (type = slurm_strcasestr(
-					     freq, "filesystem=")))
-				acct_gather_profile_timer[i].freq =
-					_get_int(type+11);
-			else if (freq_def && (type = slurm_strcasestr(
-						      freq_def, "filesystem=")))
-				acct_gather_profile_timer[i].freq =
-					_get_int(type+11);
+			_set_freq(i, freq, freq_def);
+
 			acct_gather_filesystem_startpoll(
 				acct_gather_profile_timer[i].freq);
 			break;
 		case PROFILE_NETWORK:
 			if (!(profile & ACCT_GATHER_PROFILE_NETWORK))
 				break;
-			if (freq && (type = slurm_strcasestr(freq, "network=")))
-				acct_gather_profile_timer[i].freq =
-					_get_int(type+8);
-			else if (freq_def && (type = slurm_strcasestr(
-						      freq_def, "network=")))
-				acct_gather_profile_timer[i].freq =
-					_get_int(type+8);
+			_set_freq(i, freq, freq_def);
+
 			acct_gather_infiniband_startpoll(
 				acct_gather_profile_timer[i].freq);
 			break;
