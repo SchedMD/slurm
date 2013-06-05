@@ -392,13 +392,13 @@ static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
 {
 	long double min_shares_norm;
 
-        if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
-            && assoc->usage->parent_assoc_ptr) {
+	if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
+	   && assoc->usage->parent_assoc_ptr) {
 		assoc->usage->shares_norm =
-                        assoc->usage->parent_assoc_ptr->usage->shares_norm;
-                assoc->usage->usage_norm =
-                        assoc->usage->parent_assoc_ptr->usage->usage_norm;
-        }
+			assoc->usage->parent_assoc_ptr->usage->shares_norm;
+		assoc->usage->usage_norm =
+			assoc->usage->parent_assoc_ptr->usage->usage_norm;
+	}
 
 	if (assoc->usage->level_shares) {
 		min_shares_norm = (long double) MIN_USAGE_FACTOR
