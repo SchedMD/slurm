@@ -2142,7 +2142,7 @@ static front_end_record_t * _front_end_reg(
 	front_end_ptr->slurmd_start_time = reg_msg->slurmd_start_time;
 	state_base  = front_end_ptr->node_state & JOB_STATE_BASE;
 	state_flags = front_end_ptr->node_state & JOB_STATE_FLAGS;
-	if ((state_base == NODE_STATE_DOWN) &&
+	if ((state_base == NODE_STATE_DOWN) && (front_end_ptr->reason) &&
 	    (!strncmp(front_end_ptr->reason, "Not responding", 14))) {
 		error("front end node %s returned to service",
 		      reg_msg->node_name);

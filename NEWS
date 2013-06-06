@@ -124,6 +124,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 2.5.8
 ========================
+ -- Fix for slurmctld segfault on NULL front-end reason field.
 
 * Changes in Slurm 2.5.7
 ========================
