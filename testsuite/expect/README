@@ -416,7 +416,7 @@ test12.2   Test validity/accuracy of accounting data for exit code,
 test12.3   Test sacct filtering of records by account and job name.
 test12.4   Test sacct --b, g, j, l, n, p, u, v options.
 test12.5   Test sacct --helpformat option.
-
+test12.6   Test hdf5 acct_gather_profile (--profile=task)
 
 test13.#   Testing of switch plugins
 ====================================
