@@ -179,6 +179,8 @@ test1.69   Test that multiple srun programs execute simultaneously in the
            background.
 test1.70   Validates that srun standard input and output work with binary files.
 test1.71   Validates that srun exit code matches that of a test program.
+test1.72   Validate that the JobAcctGatherFrequency value is enforced when
+	   used in srun.
 
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
 	   The test will print "WARNING" and terminate with an exit code of

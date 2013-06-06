@@ -92,6 +92,7 @@ EXTRA_DIST = \
 	test1.69			\
 	test1.70			\
 	test1.71			\
+	test1.72			\
 	test1.80			\
 	test1.81			\
 	test1.82			\
