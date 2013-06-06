@@ -49,6 +49,7 @@ SLURM? Why does the DAKOTA program not run with SLURM?</a></li>
 <li><a href="#estimated_start_time">Why does squeue (and "scontrol show
 jobid") sometimes not display a job's estimated start time?</a></li>
 <li><a href="#ansys">How can I run an Ansys program with Slurm?</a></li>
+<li><a href="#mic">How can I run programs with on an Intel Phi (MIC) processor?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
@@ -859,6 +860,54 @@ exit 0
 $ srun -n <tasks> ./fluent-srun.sh
 </pre>
 
+<p><a name="mic"><b>28. How can I run programs with on an Intel Phi (MIC)
+processor?</b></a><br>
+Two programming models are suported, offloading and native mode.
+For a good description of how to build and run applications, please see
+<a href="https://confluence.csc.fi/display/HPCproto/HPC+Prototypes#HPCPrototypes-Nativeprogrammingmodel">CSC MIC documentation</a>.
+Note that some of the information presented in this document is configuration
+dependent. The <i>mpirun-mic</i> is included in the Slurm distribution in the
+<i>contribs/mic</i> directory. Excerpts of the CSC documentation follows.</p>
+
+<p><b>Executable Auto-Offloading</b><br>
+The Phi nodes have Executable Auto-Offloading (EAO) enabled by default.
+This feature is developed at CSC and is not currently in the standard Xeon Phi
+distribution.
+With this feature, any executable in the K1OM (MIC) binary format that the user
+tries to run on the host, will transparently be executed on the Xeon Phi
+coprocessor card instead. The execution is performed using the /usr/bin/micrun
+script.</p>
+<p>By default all environment variables with the MIC_ prefix will be passed to
+the binary, with the prefix stripped away. For example
+(MIC_LD_LIBRARY_PATH -> LD_LIBRARY_PATH).</p>
+<p>EAO can be disabled by setting the environment variable MICRUN_DISABLE
+(i.e. export MICRUN_DISABLE=1).</p>
+
+<p><b>Offload programming model</b><br>
+The Intel compilers support offload compilation automatically. This means
+either offloading a code section using offload pragmas or calling an
+offload-enabled library. (e.g. MKL).</p>
+<p>In order to run offload jobs, one needs to set the GRES (Generic Resource
+Scheduling) parameter '--gres=mic:1'. For example:</p>
+<pre>
+$ srun --gres=mic:1 ./hello
+</pre>
+<p>If this is not set, the user will the following warning:</p>
+<pre>
+offload warning: OFFLOAD_DEVICES device number -1 does not correspond to a physical device
+</pre>
+
+<p><b>Native OpenMP code</b><br>
+To compile OpenMP code natively, you can use the -mmicflag.</p>
+<pre>
+$ module load intel
+$ icc -mmic -openmp hello.c -o hello.mic
+</pre>
+<p>To run, use the srun command. You may need to explicity specify a Slurm partitiion containing MIC processors, for example:</p>
+<pre>
+$ srun -p mic ./hello.mic
+</pre>
+
 <p class="footer"><a href="#top">top</a></p>
 
 
@@ -1606,6 +1655,6 @@ reserve licenses and remove them from being available to jobs on the system
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 4 April 2013</p>
+<p style="text-align:center;">Last modified 6 June 2013</p>
 
 <!--#include virtual="footer.txt"-->
