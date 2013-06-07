@@ -1121,7 +1121,7 @@ extern int adjust_cpus_nppcu(uint16_t ntasks_per_core, uint16_t threads,
 	if (ntasks_per_core != 0xffff) {
 		/* Adjust the number of CPUs according to the percentage of the
 		 * hwthreads/core being used. */
-		cpus *= ntasks_per_core / threads;
+		cpus = cpus * ntasks_per_core / threads;
 	}
 
 	return cpus;
