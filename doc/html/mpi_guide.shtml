@@ -231,7 +231,7 @@ $MPI_ROOT/bin/mpirun -TCP -srun -N8 ./a.out
 <p>MPICH2 jobs can be launched using the <b>srun</b> command or <b>mpiexec</b>.
 Both modes of operation are described below.</p>
 
-<h3>MPICH2 with srun</h3>
+<h3>MPICH2 with srun and PMI version 1</h3>
 
 <p>Link your program with
 SLURM's implementation of the PMI library so that tasks can communicate
@@ -273,14 +273,17 @@ to launch the tasks. A simple example is shown below.</p>
 <pre>salloc -N 2 mpiexec my_application</pre>
 <p>All MPI_comm_spawn work fine now going through hydra's PMI 1.1 interface.</p>
 
-<h3>MPICH2 build and configuration</h3>
+<h3>MPICH2 with srun and PMI version 2</h3>
 
-<p>MPICH2 must be built specifically for use with SLURM using a configure
+<p>MPICH2 must be built specifically for use with SLURM and PMI2 using a configure
 line similar to that shown below.</p>
 <pre>
-./configure --with-slurm=&lt;PATH&gt; --with-pm=none
+./configure --with-slurm=&lt;PATH&gt; --with-pmi=pmi2
 </pre>
-<p>In addition, if SLURM is not configured with <i>MpiDefault=pmi2</i>, then
+<p>
+The PATH must point to the SLURM installation directory, in other words the parent
+directory of bin and lib.
+In addition, if SLURM is not configured with <i>MpiDefault=pmi2</i>, then
 the srun command must be invoked with the option <i>--mpi=pmi2</i> as shown
 in the example below below.</p>
 <pre>
