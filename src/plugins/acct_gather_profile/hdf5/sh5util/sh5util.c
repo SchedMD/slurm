@@ -118,7 +118,7 @@ sh5util [<OPTION>] -j <job[.stepid]>                                         \n\
 				  [Node:Totals|Node:TimeSeries]              \n\
 				  (default Node:Totals)                      \n\
 		    -s, --series: Name of series [Name|Tasks]                \n\
-				  Name=Specific Name, Tasks=all tasks,       \n\
+				  Name=Specific Name, 'Tasks' is all tasks   \n\
 				  (default is everything)                    \n\
       -j, --jobs:   Format is <job(.step)>. Merge this job/step.             \n\
 		    or comma-separated list of job steps. This option is     \n\
@@ -239,6 +239,7 @@ static void _set_options(const int argc, char **argv)
 				error("--uid=\"%s\" invalid", optarg);
 				exit(1);
 			}
+			break;
 		case (int)'v':
 			params.verbose++;
 			break;
@@ -1106,8 +1107,6 @@ static void _extract_data()
 			series_names = NULL;
 			num_series = 0;
 			H5Gclose(jgid_nodes);
-//		} else if (!strncasecmp(params.level, "Task:", 5)) {
-			// TODO: do task (currently no task data
 		} else {
 			error("%s is an illegal level", params.level);
 		}
