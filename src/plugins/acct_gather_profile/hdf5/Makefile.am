@@ -4,7 +4,9 @@ AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+# Do not put a link to common here.  src/common contains an mpi.h which
+# hdf5 could of been installed with a link to the generic mpi.h.
+INCLUDES = -I$(top_srcdir)
 
 # cpu/core energy accounting plugin.
 HDF5_SOURCES = acct_gather_profile_hdf5.c

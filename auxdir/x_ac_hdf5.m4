@@ -48,7 +48,15 @@ AC_DEFUN([X_AC_HDF5],
   if test -z "$x_ac_cv_hdf5_dir"; then
     AC_MSG_WARN([unable to locate hdf5 installation])
   else
-    HDF5_CPPFLAGS="-I$x_ac_cv_hdf5_dir/include"
+    # This include of mpi is here just so we get a location of mpi.h
+    # There is currently (what we consider) a bug in the way ubuntu
+    # packages the libhdf5-dev libs.  If you install one version it conflicts
+    # and thus over writes the other version (openmpi vs. mpich2 etc)
+    # This breaks the compile of our lib since we don't typically have the
+    # mpi in our path.  Ubuntu is the only version of linux we have seen this
+    # problem, others install the libhdf5-dev headers in the mpi's include
+    # dir, if it ever gets resolved in some way remove this include.
+    HDF5_CPPFLAGS="-I$x_ac_cv_hdf5_dir/include -I/usr/include/mpi"
     HDF5_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_hdf5_dir/$bit -L$x_ac_cv_hdf5_dir/$bit"
     HDF5_LIBS="-lhdf5"
   fi
