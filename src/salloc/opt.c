@@ -1860,7 +1860,7 @@ static void _usage(void)
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
-"              [--time-min=minutes] [--gres=list] [--profile=all]\n"
+"              [--time-min=minutes] [--gres=list] [--profile=...]\n"
 "              [--switches=max-switches[@max-time-to-wait]]\n"
 "              [executable [args...]]\n");
 }
@@ -1902,6 +1902,8 @@ static void _help(void)
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
 "  -O, --overcommit            overcommit resources\n"
 "      --profile=value         enable acct_gather_profile for detailed data\n"
+"                              value is all or none or any combination of\n"
+"                              energy, lustre, network or task\n"
 "  -p, --partition=partition   partition requested\n"
 "      --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
