@@ -169,7 +169,7 @@ BuildRequires: perl(ExtUtils::MakeMaker)
 SLURM is an open source, fault-tolerant, and highly
 scalable cluster management and job scheduling system for Linux clusters
 containing up to 65,536 nodes. Components include machine status,
-partition management, job management, scheduling and accounting modules.
+partition management, job management, scheduling and accounting modules
 
 #  Allow override of sysconfdir via _slurm_sysconfdir.
 #  Note 'global' instead of 'define' needed here to work around apparent
@@ -216,7 +216,7 @@ Group: Development/System
 Requires: slurm
 %description perlapi
 Perl API package for SLURM.  This package includes the perl API to provide a
-helpful interface to SLURM through Perl.
+helpful interface to SLURM through Perl
 
 %package devel
 Summary: Development package for SLURM.
@@ -224,7 +224,7 @@ Group: Development/System
 Requires: slurm
 %description devel
 Development package for SLURM.  This package includes the header files
-and static libraries for the SLURM API.
+and static libraries for the SLURM API
 
 %if %{slurm_with auth_none}
 %package auth-none
@@ -241,7 +241,8 @@ Summary: SLURM auth implementation using Brent Chun's authd
 Group: System Environment/Base
 Requires: slurm authd
 %description auth-authd
-SLURM authentication module for Brent Chun's authd
+SLURM authentication module for Brent Chun's authd. Used to
+authenticate user originating an RPC
 %endif
 
 # This is named munge instead of auth-munge since there are 2 plugins in the
@@ -254,7 +255,8 @@ Requires: slurm munge
 BuildRequires: munge-devel munge-libs
 Obsoletes: slurm-auth-munge
 %description munge
-SLURM authentication module for Chris Dunlap's Munge
+SLURM authentication and crypto implementation using Munge. Used to
+authenticate user originating an RPC, digitally sign and/or encrypt messages
 %endif
 
 %if %{slurm_with bluegene}
@@ -271,40 +273,45 @@ Summary: SLURM database daemon
 Group: System Environment/Base
 Requires: slurm-plugins slurm-sql
 %description slurmdbd
-SLURM database daemon
+SLURM database daemon. Used to accept and process database RPCs and upload
+database changes to slurmctld daemons on each cluster
 
 %package sql
 Summary: SLURM SQL support
 Group: System Environment/Base
 %description sql
-SLURM sql support
+SLURM SQL support. Contains interfaces to MySQL and PostGreSQL
 
 %package plugins
 Summary: SLURM plugins (loadable shared objects)
 Group: System Environment/Base
 %description plugins
-SLURM plugins (loadable shared objects)
+SLURM plugins (loadable shared objects) supporting a wide variety of
+architectures and behaviors. These basically provide the building blocks
+with which Slurm can be configured. Note that some system specific plugins
+are in other packages
 
 %package torque
 Summary: Torque/PBS wrappers for transitition from Torque/PBS to SLURM.
 Group: Development/System
 Requires: slurm-perlapi
 %description torque
-Torque wrapper scripts used for helping migrate from Torque/PBS to SLURM.
+Torque wrapper scripts used for helping migrate from Torque/PBS to SLURM
 
 %package sjobexit
 Summary: SLURM job exit code management tools.
 Group: Development/System
 Requires: slurm-perlapi
 %description sjobexit
-SLURM job exit code management tools.
+SLURM job exit code management tools. Enables users to alter job exit code
+information for completed jobs
 
 %package slurmdb-direct
 Summary: Wrappers to write directly to the slurmdb.
 Group: Development/System
 Requires: slurm-perlapi
 %description slurmdb-direct
-Wrappers to write directly to the slurmdb.
+Wrappers to write directly to the slurmdb
 
 %if %{slurm_with aix}
 %package aix
@@ -314,7 +321,7 @@ Requires: slurm
 BuildRequires: proctrack >= 3
 Obsoletes: slurm-aix-federation
 %description aix
-SLURM plugins for IBM AIX.
+SLURM interfaces for IBM AIX systems
 %endif
 
 %if %{slurm_with percs}
@@ -324,7 +331,7 @@ Group: System Environment/Base
 Requires: slurm nrt
 BuildRequires: nrt
 %description percs
-SLURM plugins to run on an IBM PERCS system, POE interface and NRT switch plugin.
+SLURM plugins to run on an IBM PERCS system, POE interface and NRT switch plugin
 %endif
 
 
@@ -335,8 +342,8 @@ Group: System Environment/Base
 Requires: slurm
 BuildRequires: job
 %description proctrack-sgi-job
-SLURM process tracking plugin for SGI job containers.
-(See http://oss.sgi.com/projects/pagg).
+SLURM process tracking plugin for SGI job containers
+(See http://oss.sgi.com/projects/pagg)
 %endif
 
 %if %{slurm_with lua}
@@ -355,7 +362,11 @@ Summary: Perl tool to print SLURM job state information.
 Group: Development/System
 Requires: slurm
 %description sjstat
-Perl tool to print SLURM job state information.
+Perl tool to print SLURM job state information. The output is designed to give
+information on the resource usage and availablilty, as well as information
+about jobs that are currently active on the machine. This output is built
+using the SLURM utilities, sinfo, squeue and scontrol, the man pages for these
+utilites will provide more information and greater depth of understanding
 
 %if %{slurm_with pam}
 %package pam_slurm
@@ -651,7 +662,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %files devel
 %defattr(-,root,root)
-%dir %attr(0755,root,root) %{_prefix}/include/slurm
+%dir %attr(0755,root,root)
+%{_prefix}/include/slurm
 %{_prefix}/include/slurm/*
 %{_libdir}/libpmi.la
 %{_libdir}/libslurm.la
