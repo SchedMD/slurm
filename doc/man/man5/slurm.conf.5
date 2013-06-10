@@ -3298,13 +3298,9 @@ small blocks or for systems running
 with gang scheduling (\fBSchedulerType=sched/gang\fR).
 .TP
 \fBYES\fR
-Makes all resources in the partition available for sharing,
-but honors a user's request for dedicated resources.
-If \fBSelectType=select/cons_res\fR, then resources will be
-over\-subscribed unless explicitly disabled in the job submit
-request using the "\-\-exclusive" option.
-With \fBSelectType=select/bluegene\fR or \fBSelectType=select/linear\fR,
-resources will only be over\-subscribed when explicitly requested
+Makes all resources in the partition available for sharing upon request by
+the job.
+Resources will only be over\-subscribed when explicitly requested
 by the user using the "\-\-share" option on job submission.
 May be followed with a colon and maximum number of jobs in
 running or suspended state.
