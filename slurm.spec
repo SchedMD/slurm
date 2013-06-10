@@ -211,7 +211,7 @@ partition management, job management, scheduling and accounting modules
 %define _php_extdir %(php-config --extension-dir 2>/dev/null || echo %{_libdir}/php5)
 
 %package perlapi
-Summary: Perl API to SLURM.
+Summary: Perl API to SLURM
 Group: Development/System
 Requires: slurm
 %description perlapi
@@ -219,7 +219,7 @@ Perl API package for SLURM.  This package includes the perl API to provide a
 helpful interface to SLURM through Perl
 
 %package devel
-Summary: Development package for SLURM.
+Summary: Development package for SLURM
 Group: Development/System
 Requires: slurm
 %description devel
@@ -292,14 +292,14 @@ with which Slurm can be configured. Note that some system specific plugins
 are in other packages
 
 %package torque
-Summary: Torque/PBS wrappers for transitition from Torque/PBS to SLURM.
+Summary: Torque/PBS wrappers for transitition from Torque/PBS to SLURM
 Group: Development/System
 Requires: slurm-perlapi
 %description torque
 Torque wrapper scripts used for helping migrate from Torque/PBS to SLURM
 
 %package sjobexit
-Summary: SLURM job exit code management tools.
+Summary: SLURM job exit code management tools
 Group: Development/System
 Requires: slurm-perlapi
 %description sjobexit
@@ -315,7 +315,7 @@ Wrappers to write directly to the slurmdb
 
 %if %{slurm_with aix}
 %package aix
-Summary: SLURM interfaces to IBM AIX.
+Summary: SLURM interfaces to IBM AIX
 Group: System Environment/Base
 Requires: slurm
 BuildRequires: proctrack >= 3
@@ -326,7 +326,7 @@ SLURM interfaces for IBM AIX systems
 
 %if %{slurm_with percs}
 %package percs
-Summary: SLURM plugins to run on an IBM PERCS system.
+Summary: SLURM plugins to run on an IBM PERCS system
 Group: System Environment/Base
 Requires: slurm nrt
 BuildRequires: nrt
@@ -337,7 +337,7 @@ SLURM plugins to run on an IBM PERCS system, POE interface and NRT switch plugin
 
 %if %{slurm_with sgijob}
 %package proctrack-sgi-job
-Summary: SLURM process tracking plugin for SGI job containers.
+Summary: SLURM process tracking plugin for SGI job containers
 Group: System Environment/Base
 Requires: slurm
 BuildRequires: job
@@ -358,7 +358,7 @@ Includes the SLURM proctrack/lua and job_submit/lua plugin
 %endif
 
 %package sjstat
-Summary: Perl tool to print SLURM job state information.
+Summary: Perl tool to print SLURM job state information
 Group: Development/System
 Requires: slurm
 %description sjstat
@@ -370,7 +370,7 @@ utilites will provide more information and greater depth of understanding
 
 %if %{slurm_with pam}
 %package pam_slurm
-Summary: PAM module for restricting access to compute nodes via SLURM.
+Summary: PAM module for restricting access to compute nodes via SLURM
 Group: System Environment/Base
 Requires: slurm slurm-devel
 BuildRequires: pam-devel
