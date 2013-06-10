@@ -2845,6 +2845,8 @@ extern int _job_alloc(void *job_gres_data, void *node_gres_data,
 		/* proceed with request, give job what's available */
 	}
 
+	if (node_offset == 0)	/* Avoids memory leak on requeue */
+		xfree(job_gres_ptr->gres_cnt_step_alloc);
 	if (job_gres_ptr->gres_cnt_step_alloc == NULL) {
 		job_gres_ptr->gres_cnt_step_alloc =
 			xmalloc(sizeof(uint32_t) * node_cnt);
@@ -3112,7 +3114,6 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 		}
 	}
 
-	xfree(job_gres_ptr->gres_cnt_step_alloc);
 	return SLURM_SUCCESS;
 }
 
@@ -3646,7 +3647,7 @@ static uint32_t _step_test(void *step_gres_data, void *job_gres_data,
 		     job_gres_ptr->gres_cnt_step_alloc[node_offset]))
 			return 0;
 	} else {
-		error("gres/%s: step_test %u.%u gres_bit_alloc is NULL",
+		error("gres/%s: step_test %u.%u gres_cnt_step_alloc is NULL",
 		      gres_name, job_id, step_id);
 		return 0;
 	}
