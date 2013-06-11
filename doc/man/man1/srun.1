@@ -925,7 +925,7 @@ order of preferences is IPONLY (which is not considered in User Space mode),
 HFI, IB, HPCE, and KMUX.
 .TP
 \fBCAU\fR=<\fIcount\fR>
-Number of Collecitve Accelleration Units (CAU) required.
+Number of Collecitve Acceleration Units (CAU) required.
 Applies only to IBM Power7-IH processors.
 Default value is zero.
 Independent CAU will be allocated for each programming interface (MPI, LAPI, etc.)
@@ -2048,7 +2048,9 @@ Total number of nodes in the job's resource allocation
 Sets of node name, communication address and hostname for nodes allocated to
 the job from the cloud. Each element in the set if colon separated and each
 set is comma separated. For example:
-SLURM_NODE_ALIASES=ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
+.na
+SLURM_NODE_ALIASES\:=\:ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
+.ad
 .TP
 \fBSLURM_NODEID\fR
 The relative node ID of the current node
@@ -2067,7 +2069,7 @@ This value is propagated to the spawned processes.
 The MPI rank (or relative process ID) of the current process
 .TP
 \fBSLURM_SRUN_COMM_HOST\fR
-IP adress of srun communication host.
+IP address of srun communication host.
 .TP
 \fBSLURM_SRUN_COMM_PORT\fR
 srun communication port.
