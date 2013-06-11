@@ -134,6 +134,8 @@ documents those changes that are of interest to users and admins.
  -- Avoid gres step allocation errors when a job shrinks in size due to either
     down nodes or explicit resizing. Generated slurmctld errors of this type:
     "step_test ... gres_bit_alloc is NULL"
+ -- Fix bug that would leak memory and over-write the AllowGroups field if on
+    "scontrol reconfig" when AllowNodes is manually changed using scontrol.
 
 * Changes in Slurm 2.5.7
 ========================
