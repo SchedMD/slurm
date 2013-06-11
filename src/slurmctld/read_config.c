@@ -1204,8 +1204,9 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				error("Partition %s AllowNodes differs from "
 				      "slurm.conf", part_ptr->name);
 				xfree(part_ptr->allow_alloc_nodes);
-				part_ptr->allow_groups = xstrdup(old_part_ptr->
-							 allow_alloc_nodes);
+				part_ptr->allow_alloc_nodes =
+					xstrdup(old_part_ptr->
+						allow_alloc_nodes);
 			}
 			if (part_ptr->default_time !=
 			    old_part_ptr->default_time) {
