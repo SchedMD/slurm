@@ -734,9 +734,17 @@ HWLOC_CPPFLAGS
 HWLOC_LIBS
 BUILD_HDF5_FALSE
 BUILD_HDF5_TRUE
+HDF5_FLIBS
+HDF5_FFLAGS
+HDF5_FC
+HDF5_LIBS
 HDF5_LDFLAGS
 HDF5_CPPFLAGS
-HDF5_LIBS
+HDF5_CFLAGS
+HDF5_CC
+HDF5_VERSION
+H5FC
+H5CC
 BUILD_OFED_FALSE
 BUILD_OFED_TRUE
 OFED_LDFLAGS
@@ -1693,7 +1701,7 @@ Optional Packages:
   --with-dimensions=N     set system dimension count for generic computer
                           system
   --with-ofed=PATH        Specify path to ofed installation
-  --with-hdf5=PATH        Specify path to hdf5 installation
+  --with-hdf5=yes/no/PATH location of h5cc or h5pcc for HDF5 configuration
   --with-hwloc=PATH       Specify path to hwloc installation
   --with-freeipmi=PATH    Specify path to freeipmi installation
   --with-xcpu=PATH        specify path to XCPU directory
@@ -19892,33 +19900,183 @@ fi
 
 
 
-  _x_ac_hdf5_dirs="/usr /usr/local"
-  _x_ac_hdf5_libs="lib64 lib"
+
+
+
+
+
+
+if   test "" = ""        ; then
+    : # Recognized value
+elif test "" = "serial"  ; then
+    : # Recognized value
+elif test "" = "parallel"; then
+    : # Recognized value
+else
+    as_fn_error $? "
+Unrecognized value for AX_LIB_HDF5 within configure.ac.
+If supplied, argument 1 must be either 'serial' or 'parallel'.
+" "$LINENO" 5
+fi
 
 
 # Check whether --with-hdf5 was given.
 if test "${with_hdf5+set}" = set; then :
-  withval=$with_hdf5; _x_ac_hdf5_dirs="$withval $_x_ac_hdf5_dirs"
+  withval=$with_hdf5; if test "$withval" = "no"; then
+     with_hdf5="no"
+   elif test "$withval" = "yes"; then
+     with_hdf5="yes"
+   else
+     with_hdf5="yes"
+     H5CC="$withval"
+   fi
+else
+  with_hdf5="yes"
+
 fi
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for hdf5 installation" >&5
-$as_echo_n "checking for hdf5 installation... " >&6; }
-if ${x_ac_cv_hdf5_dir+:} false; then :
+HDF5_CC=""
+HDF5_VERSION=""
+HDF5_CFLAGS=""
+HDF5_CPPFLAGS=""
+HDF5_LDFLAGS=""
+HDF5_LIBS=""
+HDF5_FC=""
+HDF5_FFLAGS=""
+HDF5_FLIBS=""
+
+if test "$with_hdf5" = "yes"; then
+    if test -z "$H5CC"; then
+                for ac_prog in h5cc h5pcc
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_H5CC+:} false; then :
   $as_echo_n "(cached) " >&6
 else
+  case $H5CC in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_H5CC="$H5CC" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_H5CC="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
 
-      for d in $_x_ac_hdf5_dirs; do
-        test -d "$d" || continue
-        test -d "$d/include" || continue
-        test -f "$d/include/hdf5.h" || continue
-	for bit in $_x_ac_hdf5_libs; do
-          test -d "$d/$bit" || continue
-          _x_ac_hdf5_cppflags_save="$CPPFLAGS"
-          CPPFLAGS="-I$d/include $CPPFLAGS"
-	  _x_ac_hdf5_libs_save="$LIBS"
-          LIBS="-L$d/$bit -lhdf5 $LIBS"
-          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+  ;;
+esac
+fi
+H5CC=$ac_cv_path_H5CC
+if test -n "$H5CC"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $H5CC" >&5
+$as_echo "$H5CC" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  test -n "$H5CC" && break
+done
+
+    else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking Using provided HDF5 C wrapper" >&5
+$as_echo_n "checking Using provided HDF5 C wrapper... " >&6; }
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $H5CC" >&5
+$as_echo "$H5CC" >&6; }
+    fi
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for HDF5 libraries" >&5
+$as_echo_n "checking for HDF5 libraries... " >&6; }
+    if test ! -f "$H5CC" || test ! -x "$H5CC"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:
+Unable to locate HDF5 compilation helper scripts 'h5cc' or 'h5pcc'.
+Please specify --with-hdf5=<LOCATION> as the full path to h5cc or h5pcc.
+HDF5 support is being disabled (equivalent to --with-hdf5=no).
+" >&5
+$as_echo "$as_me: WARNING:
+Unable to locate HDF5 compilation helper scripts 'h5cc' or 'h5pcc'.
+Please specify --with-hdf5=<LOCATION> as the full path to h5cc or h5pcc.
+HDF5 support is being disabled (equivalent to --with-hdf5=no).
+" >&2;}
+        with_hdf5="no"
+        with_hdf5_fortran="no"
+    else
+                HDF5_SHOW=$(eval $H5CC -show)
+
+                HDF5_CC=$(eval $H5CC -show | $AWK '{print $1}')
+
+
+                HDF5_VERSION=$(eval $H5CC -showconfig | $GREP 'HDF5 Version:' \
+            | $AWK '{print $3}')
+
+                                                                                HDF5_tmp_flags=$(eval $H5CC -showconfig \
+            | $GREP 'FLAGS\|Extra libraries:' \
+            | $AWK -F: '{printf("%s "), $2}' )
+
+                HDF5_tmp_inst=$(eval $H5CC -showconfig \
+            | $GREP 'Installation point:' \
+            | $AWK -F: '{print $2}' )
+
+                HDF5_CPPFLAGS="-I${HDF5_tmp_inst}/include"
+
+                for arg in $HDF5_SHOW $HDF5_tmp_flags ; do
+          case "$arg" in
+            -I*) echo $HDF5_CPPFLAGS | $GREP -e "$arg" 2>&1 >/dev/null \
+                  || HDF5_CPPFLAGS="$arg $HDF5_CPPFLAGS"
+              ;;
+            -L*) echo $HDF5_LDFLAGS | $GREP -e "$arg" 2>&1 >/dev/null \
+                  || HDF5_LDFLAGS="$arg $HDF5_LDFLAGS"
+              ;;
+            -l*) echo $HDF5_LIBS | $GREP -e "$arg" 2>&1 >/dev/null \
+                  || HDF5_LIBS="$arg $HDF5_LIBS"
+              ;;
+          esac
+        done
+
+        HDF5_LIBS="$HDF5_LIBS -lhdf5"
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes (version $HDF5_VERSION)" >&5
+$as_echo "yes (version $HDF5_VERSION)" >&6; }
+
+                ax_lib_hdf5_save_CC=$CC
+        ax_lib_hdf5_save_CPPFLAGS=$CPPFLAGS
+        ax_lib_hdf5_save_LIBS=$LIBS
+        ax_lib_hdf5_save_LDFLAGS=$LDFLAGS
+        CC=$HDF5_CC
+        CPPFLAGS=$HDF5_CPPFLAGS
+        LIBS=$HDF5_LIBS
+        LDFLAGS=$HDF5_LDFLAGS
+        ac_fn_c_check_header_mongrel "$LINENO" "hdf5.h" "ac_cv_header_hdf5_h" "$ac_includes_default"
+if test "x$ac_cv_header_hdf5_h" = xyes; then :
+  ac_cv_hadf5_h=yes
+else
+  ac_cv_hadf5_h=no
+fi
+
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for H5Fcreate in -lhdf5" >&5
+$as_echo_n "checking for H5Fcreate in -lhdf5... " >&6; }
+if ${ac_cv_lib_hdf5_H5Fcreate+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lhdf5  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 /* Override any GCC internal prototype to avoid an error.
@@ -19927,51 +20085,132 @@ else
 #ifdef __cplusplus
 extern "C"
 #endif
-char H5close ();
+char H5Fcreate ();
 int
 main ()
 {
-return H5close ();
+return H5Fcreate ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  x_ac_cv_hdf5_dir=$d
+  ac_cv_lib_hdf5_H5Fcreate=yes
+else
+  ac_cv_lib_hdf5_H5Fcreate=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-          CPPFLAGS="$_x_ac_hdf5_cppflags_save"
-          LIBS="$_x_ac_hdf5_libs_save"
-          test -n "$x_ac_cv_hdf5_dir" && break
-	done
-        test -n "$x_ac_cv_hdf5_dir" && break
-      done
-
+LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_hdf5_dir" >&5
-$as_echo "$x_ac_cv_hdf5_dir" >&6; }
-  if test -z "$x_ac_cv_hdf5_dir"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate hdf5 installation" >&5
-$as_echo "$as_me: WARNING: unable to locate hdf5 installation" >&2;}
-  else
-    # This include of mpi is here just so we get a location of mpi.h
-    # There is currently (what we consider) a bug in the way ubuntu
-    # packages the libhdf5-dev libs.  If you install one version it conflicts
-    # and thus over writes the other version (openmpi vs. mpich2 etc)
-    # This breaks the compile of our lib since we don't typically have the
-    # mpi in our path.  Ubuntu is the only version of linux we have seen this
-    # problem, others install the libhdf5-dev headers in the mpi's include
-    # dir, if it ever gets resolved in some way remove this include.
-    HDF5_CPPFLAGS="-I$x_ac_cv_hdf5_dir/include -I/usr/include/mpi"
-    HDF5_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_hdf5_dir/$bit -L$x_ac_cv_hdf5_dir/$bit"
-    HDF5_LIBS="-lhdf5"
-  fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_hdf5_H5Fcreate" >&5
+$as_echo "$ac_cv_lib_hdf5_H5Fcreate" >&6; }
+if test "x$ac_cv_lib_hdf5_H5Fcreate" = xyes; then :
+  ac_cv_libhdf5=yes
+else
+  ac_cv_libhdf5=no
+fi
+
+        if test "$ac_cv_hadf5_h" = "no" && test "$ac_cv_libhdf5" = "no" ; then
+          { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unable to compile HDF5 test program" >&5
+$as_echo "$as_me: WARNING: Unable to compile HDF5 test program" >&2;}
+        fi
+                { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lhdf5_hl" >&5
+$as_echo_n "checking for main in -lhdf5_hl... " >&6; }
+if ${ac_cv_lib_hdf5_hl_main+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lhdf5_hl  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+return main ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_hdf5_hl_main=yes
+else
+  ac_cv_lib_hdf5_hl_main=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_hdf5_hl_main" >&5
+$as_echo "$ac_cv_lib_hdf5_hl_main" >&6; }
+if test "x$ac_cv_lib_hdf5_hl_main" = xyes; then :
+  HDF5_LIBS="$HDF5_LIBS -lhdf5_hl"
+fi
+ac_cv_lib_hdf5_hl=ac_cv_lib_hdf5_hl_main
+
+
+        CC=$ax_lib_hdf5_save_CC
+        LIBS=$ax_lib_hdf5_save_LIBS
+        LDFLAGS=$ax_lib_hdf5_save_LDFLAGS
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for matching HDF5 Fortran wrapper" >&5
+$as_echo_n "checking for matching HDF5 Fortran wrapper... " >&6; }
+                H5FC=$(eval echo -n $H5CC | $SED -n 's/cc$/fc/p')
+        if test -x "$H5FC"; then
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: $H5FC" >&5
+$as_echo "$H5FC" >&6; }
+            with_hdf5_fortran="yes"
+
+
+                        for arg in `$H5FC -show`
+            do
+              case "$arg" in #(
+                -I*) echo $HDF5_FFLAGS | $GREP -e "$arg" >/dev/null \
+                      || HDF5_FFLAGS="$arg $HDF5_FFLAGS"
+                  ;;#(
+                -L*) echo $HDF5_FFLAGS | $GREP -e "$arg" >/dev/null \
+                      || HDF5_FFLAGS="$arg $HDF5_FFLAGS"
+                                                               echo $HDF5_FFLAGS | $GREP -e "-I${arg#-L}" >/dev/null \
+                      || HDF5_FFLAGS="-I${arg#-L} $HDF5_FFLAGS"
+                  ;;
+              esac
+            done
+
+                        for arg in $HDF5_LIBS
+            do
+              case "$arg" in #(
+                -lhdf5_hl) HDF5_FLIBS="$HDF5_FLIBS -lhdf5hl_fortran $arg"
+                  ;; #(
+                -lhdf5)    HDF5_FLIBS="$HDF5_FLIBS -lhdf5_fortran $arg"
+                  ;; #(
+                *) HDF5_FLIBS="$HDF5_FLIBS $arg"
+                  ;;
+              esac
+            done
+        else
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+            with_hdf5_fortran="no"
+        fi
 
 
 
 
-   if test -n "$x_ac_cv_hdf5_dir"; then
+
+
+
+
+
+
+
+$as_echo "#define HAVE_HDF5 1" >>confdefs.h
+
+    fi
+fi
+
+ if test "$with_hdf5" = "yes"; then
   BUILD_HDF5_TRUE=
   BUILD_HDF5_FALSE='#'
 else
@@ -19979,6 +20218,12 @@ else
   BUILD_HDF5_FALSE=
 fi
 
+# Some systems (Debian/Ubuntu/...) configure HDF5 with
+# --with-default-api-version=v16 which creates problems for slurm
+# because slurm uses the 1.8 API. By defining this CPP macro we get
+# the 1.8 API.
+
+$as_echo "#define H5_NO_DEPRECATED_SYMBOLS 1" >>confdefs.h
 
 
 
