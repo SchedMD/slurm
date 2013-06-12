@@ -346,8 +346,9 @@ static void* _get_all_samples(hid_t gid_series, char* nam_series, uint32_t type,
 		return NULL;
 	}
 	for (smpx=0; smpx<nsamples; smpx++) {
-		len = H5Gget_objname_by_idx(gid_series, smpx, name_sample,
-					    MAX_GROUP_NAME);
+		len = H5Lget_name_by_idx(gid_series, ".", H5_INDEX_NAME,
+					 H5_ITER_INC, smpx, name_sample,
+					 MAX_GROUP_NAME, H5P_DEFAULT);
 		if (len<1 || len>MAX_GROUP_NAME) {
 			error("Invalid group name %s", name_sample);
 			continue;
@@ -400,7 +401,7 @@ static void* _get_all_samples(hid_t gid_series, char* nam_series, uint32_t type,
 static void _merge_series_data(hid_t jgid_tasks, hid_t jg_node, hid_t nsg_node)
 {
  	hid_t   jg_samples, nsg_samples;
-	hid_t   g_series, obj_type, g_series_total = -1;
+	hid_t   g_series, g_series_total = -1;
  	hsize_t num_samples, n_series;
 	int     idsx, len;
 	void    *data = NULL, *series_total = NULL;
@@ -408,6 +409,8 @@ static void _merge_series_data(hid_t jgid_tasks, hid_t jg_node, hid_t nsg_node)
 	char *data_type;
 	char    nam_series[MAX_GROUP_NAME+1];
 	hdf5_api_ops_t* ops = NULL;
+	H5G_info_t group_info;
+	H5O_info_t object_info;
 
 	if (jg_node < 0) {
 		info("Job Node is not HDF5 object");
@@ -430,7 +433,8 @@ static void _merge_series_data(hid_t jgid_tasks, hid_t jg_node, hid_t nsg_node)
 		debug("Failed to get node-step Samples");
 		return;
 	}
-	H5Gget_num_objs(nsg_samples, &n_series);
+	H5Gget_info(nsg_samples, &group_info);
+	n_series = group_info.nlinks;
 	if (n_series < 1) {
 		// No series?
 		H5Gclose(jg_samples);
@@ -439,8 +443,9 @@ static void _merge_series_data(hid_t jgid_tasks, hid_t jg_node, hid_t nsg_node)
 		return;
 	}
 	for (idsx = 0; idsx < n_series; idsx++) {
-		obj_type = H5Gget_objtype_by_idx(nsg_samples, idsx);
-		if (obj_type != H5G_GROUP)
+		H5Oget_info_by_idx(nsg_samples, ".", H5_INDEX_NAME, H5_ITER_INC,
+				   idsx, &object_info, NULL);
+		if (object_info.type != H5O_TYPE_GROUP)
 			continue;
 		len = H5Gget_objname_by_idx(nsg_samples, idsx, nam_series,
 					    MAX_GROUP_NAME);

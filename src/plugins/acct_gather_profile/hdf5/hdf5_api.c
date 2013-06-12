@@ -1275,40 +1275,62 @@ extern char *get_data_set_name(char *type)
 }
 
 
+static char* _H5O_type_t2str(H5O_type_t type)
+{
+	switch (type)
+	{
+	case H5O_TYPE_UNKNOWN:
+		return "H5O_TYPE_UNKNOWN";
+	case H5O_TYPE_GROUP:
+		return "H5O_TYPE_GROUP";
+	case H5O_TYPE_DATASET:
+		return "H5O_TYPE_DATASET";
+	case H5O_TYPE_NAMED_DATATYPE:
+		return "H5O_TYPE_NAMED_DATATYPE";
+	case H5O_TYPE_NTYPES:
+		return "H5O_TYPE_NTYPES";
+	default:
+		return "Invalid H5O_TYPE";
+	}
+}
+
+
 extern void hdf5_obj_info(hid_t group, char *nam_group)
 {
-
-	char *hdf5_typ_nam[] = {"H5G_LINK   ",
-				"H5G_GROUP  ",
-				"H5G_DATASET",
-				"H5G_TYPE   "};
-
 	char buf[MAX_GROUP_NAME+1];
 	hsize_t nobj, nattr;
 	hid_t aid;
 	int i, len, typ;
+	H5G_info_t group_info;
+	H5O_info_t object_info;
 
 	if (group < 0) {
 		info("PROFILE: Group is not HDF5 object");
 		return;
 	}
-	H5Gget_num_objs(group, &nobj);
-	nattr = H5Aget_num_attrs(group);
+	H5Gget_info(group, &group_info);
+	nobj = group_info.nlinks;
+	H5Oget_info(group, &object_info);
+	nattr = object_info.num_attrs;
 	info("PROFILE group: %s NumObject=%d NumAttributes=%d",
 	     nam_group, (int) nobj, (int) nattr);
 	for (i = 0; (nobj>0) && (i<nobj); i++) {
-		typ = H5Gget_objtype_by_idx(group, i);
-		len = H5Gget_objname_by_idx(group, i, buf, MAX_GROUP_NAME);
+		H5Oget_info_by_idx(group, ".", H5_INDEX_NAME, H5_ITER_INC, i,
+				   &object_info, H5P_DEFAULT);
+		len = H5Lget_name_by_idx(group, ".", H5_INDEX_NAME,
+					 H5_ITER_INC, i, buf, MAX_GROUP_NAME,
+					 H5P_DEFAULT);
 		if ((len > 0) && (len < MAX_GROUP_NAME)) {
 			info("PROFILE: Obj=%d Type=%s Name=%s",
-			     i, hdf5_typ_nam[typ], buf);
+			     i, _H5O_type_t2str(object_info.type), buf);
 		} else {
 			info("PROFILE: Obj=%d Type=%s Name=%s (is truncated)",
-			     i, hdf5_typ_nam[typ], buf);
+			     i, _H5O_type_t2str(object_info.type), buf);
 		}
 	}
 	for (i = 0; (nattr>0) && (i<nattr); i++) {
-		aid = H5Aopen_idx(group, (unsigned int)i );
+		aid = H5Aopen_by_idx(group, ".", H5_INDEX_NAME, H5_ITER_INC,
+				     i, H5P_DEFAULT, H5P_DEFAULT);
 		// Get the name of the attribute.
 		len = H5Aget_name(aid, MAX_ATTR_NAME, buf);
 		if (len < MAX_ATTR_NAME) {
