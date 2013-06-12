@@ -225,7 +225,7 @@ X_AC_OFED
 
 AX_LIB_HDF5()
 AM_CONDITIONAL(BUILD_HDF5, test "$with_hdf5" = "yes")
-# Some systems (Debian/Ubuntu/...) configure HDF5 with
+# Some older systems (Debian/Ubuntu/...) configure HDF5 with
 # --with-default-api-version=v16 which creates problems for slurm
 # because slurm uses the 1.8 API. By defining this CPP macro we get
 # the 1.8 API.
