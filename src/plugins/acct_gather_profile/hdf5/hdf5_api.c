@@ -1300,7 +1300,7 @@ extern void hdf5_obj_info(hid_t group, char *nam_group)
 	char buf[MAX_GROUP_NAME+1];
 	hsize_t nobj, nattr;
 	hid_t aid;
-	int i, len, typ;
+	int i, len;
 	H5G_info_t group_info;
 	H5O_info_t object_info;
 
@@ -1346,19 +1346,21 @@ extern void hdf5_obj_info(hid_t group, char *nam_group)
 
 extern hid_t get_attribute_handle(hid_t parent, char *name)
 {
-
 	char buf[MAX_ATTR_NAME+1];
 	int nattr, i, len;
 	hid_t aid;
+	H5O_info_t object_info;
 
 	if (parent < 0) {
 		debug3("PROFILE: parent is not HDF5 object");
 		return -1;
 	}
-	nattr = H5Aget_num_attrs(parent);
-	for (i = 0; (nattr>0) && (i<nattr); i++) {
-		aid = H5Aopen_idx(parent, (unsigned int)i );
 
+	H5Oget_info(parent, &object_info);
+	nattr = object_info.num_attrs;
+	for (i = 0; (nattr>0) && (i<nattr); i++) {
+		aid = H5Aopen_by_idx(parent, ".", H5_INDEX_NAME, H5_ITER_INC,
+				     i, H5P_DEFAULT, H5P_DEFAULT);
 		// Get the name of the attribute.
 		len = H5Aget_name(aid, MAX_ATTR_NAME, buf);
 		if (len < MAX_ATTR_NAME) {
@@ -1379,15 +1381,19 @@ extern hid_t get_group(hid_t parent, char *name)
 	hsize_t nobj;
 	hid_t gid;
 	int i, len;
+	H5G_info_t group_info;
 
 	if (parent < 0) {
 		debug3("PROFILE: parent is not HDF5 object");
 		return -1;
 	}
-	H5Gget_num_objs(parent, &nobj);
+	H5Gget_info(parent, &group_info);
+	nobj = group_info.nlinks;
 	for (i = 0; (nobj>0) && (i<nobj); i++) {
 		// Get the name of the group.
-		len = H5Gget_objname_by_idx(parent, i, buf, MAX_GROUP_NAME);
+		len = H5Lget_name_by_idx(parent, ".", H5_INDEX_NAME,
+					 H5_ITER_INC, i, buf, MAX_GROUP_NAME,
+					 H5P_DEFAULT);
 		if ((len > 0) && (len < MAX_GROUP_NAME)) {
 			if (strcmp(buf, name) == 0) {
 				gid = H5Gopen(parent, name, H5P_DEFAULT);
