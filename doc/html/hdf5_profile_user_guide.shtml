@@ -73,7 +73,7 @@ configured in the
 <div style="margin-left: 20px;">
 <br><b>AcctGatherProfileType=acct_gather_profile/hdf5</b> enables the HDF5
 plugin.
-<br><b>JobAcctGatherFrequency=[energy=freq[,lustre=freq[,network=freq[task=freq]]]]</b> 
+<br><b>JobAcctGatherFrequency=[energy=freq[,lustre=freq[,network=freq[task=freq]]]]</b>
 sets default sample frequencies for data types.
 </div>
 </div>
@@ -131,7 +131,7 @@ for 2013 era Intel processors is 3 seconds.
 <h2>Profiling Jobs</h2>
 <h3>Data Collection</h3>
 The --profile option on salloc|sbatch|srun  controls whether data is
-collected and what type of data is collected. If --profile is not specified 
+collected and what type of data is collected. If --profile is not specified
 no data collected unless the <B>ProfileHDF5CollectDefault</B>
 option is used in acct_gather.conf. --profile on the command line overrides
 any value specified in the configuration file.<p>
@@ -150,7 +150,7 @@ the job.</DD>
 </DD></DT>
 <P>
 <DT><B>None</B>
-<DD>No data types are collected. This is the default. (Cannot be combined with 
+<DD>No data types are collected. This is the default. (Cannot be combined with
 other values.)
 </DD></DT>
 
@@ -173,7 +173,7 @@ other values.)
 The node-step files are merged into one HDF5 file for the job using the
 <a href="sh5util.html">sh5util</a>.
 
-<p>If the job is started with sbatch, the command line may added to the normal 
+<p>If the job is started with sbatch, the command line may added to the normal
 launch script,  For example;
 <pre>
 sbatch -n1 -d$SLURM_JOB_ID --wrap="sh5util -j $SLURM_JOB_ID"
@@ -242,7 +242,7 @@ executed. This set of groups is essentially a cross reference table.
 <h3>Energy Data</h3>
 <b>AcctGatherEnergyType=acct_gather_energy/ipmi</b>
 is required in slurm.conf to collect energy data.
-Appropriately set energy=freq in either JobAcctGatherFrequency in slurm.conf 
+Appropriately set energy=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.
 Also appropriately set EnergyIPMIFrequency in acct_gather.conf.
 <p>Each data sample in the Energe Time Series contains the following data items.
@@ -261,7 +261,7 @@ correlate activity with other sources such as logs.</DD></DT>
 <h3>Luster Data</h3>
 <b>AcctGatherFilesystemType=acct_gather_filesystem/lustre</b>
 is required in slurm.conf to collect task data.
-Appropriately set luster=freq in either JobAcctGatherFrequency in slurm.conf 
+Appropriately set luster=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.
 <p>
 Each data sample in the Lustre Time Series contains the following data items.
@@ -284,7 +284,7 @@ correlate activity with other sources such as logs.</DD></DT>
 <h3>Network (Infiniband Data)</h3>
 <b>JobAcctInfinibandType=acct_gather_infiniband/ofed</b>
 is required in slurm.conf to collect task data.
-Appropriately set network=freq in either JobAcctGatherFrequency in slurm.conf 
+Appropriately set network=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.
 <p>Each data sample in the Network Time Series contains the following data items.
 <DL>
@@ -306,7 +306,7 @@ correlate activity with other sources such as logs.</DD></DT>
 <h3>Task Data</h3>
 <b>JobAcctGatherType=jobacct_gather/linux</b>
 is required in slurm.conf to collect task data.
-Appropriately set task=freq in either JobAcctGatherFrequency in slurm.conf 
+Appropriately set task=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.
 <p>Each data sample in the Task Time Series contains the following data items.
 <DL>
