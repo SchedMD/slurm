@@ -557,7 +557,9 @@ of tasks is no larger than the number of allocated nodes.
 The tasks are distributed in blocks of a specified size.  The options
 include a number representing the size of the task block.  This is
 followed by an optional specification of the task distribution scheme
-within a block of tasks and between the blocks of tasks.  For more
+within a block of tasks and between the blocks of tasks.  The number of tasks
+distributed to each node is the same as for cyclic distribution, but the
+taskids assigned to each node depend on the plane size. For more
 details (including examples and diagrams), please see
 .br
 http://slurm.schedmd.com/mc_support.html
