@@ -176,25 +176,44 @@ done:
 
 extern int acct_gather_profile_fini(void)
 {
-	int rc, i;
+	int rc = SLURM_SUCCESS, i;
 
 	if (!g_context)
 		return SLURM_SUCCESS;
 
+	slurm_mutex_lock(&g_context_lock);
+
+	if (g_context)
+		goto done;
+
 	init_run = false;
-	acct_gather_profile_running = false;
 
 	for (i=0; i < PROFILE_CNT; i++) {
-		/* end remote threads */
-		slurm_mutex_lock(&acct_gather_profile_timer[i].notify_mutex);
-		pthread_cond_signal(&acct_gather_profile_timer[i].notify);
-		slurm_mutex_unlock(&acct_gather_profile_timer[i].notify_mutex);
-		pthread_cond_destroy(&acct_gather_profile_timer[i].notify);
-		acct_gather_profile_timer[i].freq = 0;
+		switch (i) {
+		case PROFILE_ENERGY:
+			acct_gather_energy_fini();
+			break;
+		case PROFILE_TASK:
+			jobacct_gather_fini();
+			break;
+		case PROFILE_FILESYSTEM:
+			acct_gather_filesystem_fini();
+			break;
+		case PROFILE_NETWORK:
+			acct_gather_infiniband_fini();
+			break;
+		default:
+			fatal("Unhandled profile option %d please update "
+			      "slurm_acct_gather_profile.c "
+			      "(acct_gather_profile_fini)", i);
+		}
 	}
 
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
+done:
+	slurm_mutex_unlock(&g_context_lock);
+
 	return rc;
 }
 
@@ -392,6 +411,42 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 	slurm_attr_destroy(&attr);
 
 	return retval;
+}
+
+extern void acct_gather_profile_endpoll(void)
+{
+	int i;
+
+	if (!acct_gather_profile_running) {
+		debug2("acct_gather_profile_startpoll: poll already ended!");
+		return;
+	}
+
+	acct_gather_profile_running = false;
+
+	for (i=0; i < PROFILE_CNT; i++) {
+		/* end remote threads */
+		slurm_mutex_lock(&acct_gather_profile_timer[i].notify_mutex);
+		pthread_cond_signal(&acct_gather_profile_timer[i].notify);
+		slurm_mutex_unlock(&acct_gather_profile_timer[i].notify_mutex);
+		pthread_cond_destroy(&acct_gather_profile_timer[i].notify);
+		acct_gather_profile_timer[i].freq = 0;
+		switch (i) {
+		case PROFILE_ENERGY:
+			break;
+		case PROFILE_TASK:
+			jobacct_gather_endpoll();
+			break;
+		case PROFILE_FILESYSTEM:
+			break;
+		case PROFILE_NETWORK:
+			break;
+		default:
+			fatal("Unhandled profile option %d please update "
+			      "slurm_acct_gather_profile.c "
+			      "(acct_gather_profile_endpoll)", i);
+		}
+	}
 }
 
 extern void acct_gather_profile_g_conf_options(s_p_options_t **full_options,
