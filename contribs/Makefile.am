@@ -1,4 +1,4 @@
-SUBDIRS = cray lua pam perlapi torque sjobexit slurmdb-direct
+SUBDIRS = cray lua pam perlapi torque sjobexit slurmdb-direct pmi2
 
 EXTRA_DIST = \
 	env_cache_builder.c	\
