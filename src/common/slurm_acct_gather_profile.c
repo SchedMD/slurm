@@ -120,7 +120,8 @@ static void *_timer_thread(void *args)
 			if (!acct_gather_profile_timer[i].freq
 			    || (diff < acct_gather_profile_timer[i].freq))
 				continue;
-			debug2("profile signalling type %d", i);
+			debug2("profile signalling type %s",
+			       acct_gather_profile_type_t_name(i));
 
 			/* signal poller to start */
 			slurm_mutex_lock(&acct_gather_profile_timer[i].
@@ -279,6 +280,33 @@ extern uint32_t acct_gather_profile_type_from_string(char *series_str)
 		return ACCT_GATHER_PROFILE_NETWORK;
 
 	return ACCT_GATHER_PROFILE_NOT_SET;
+}
+
+extern char *acct_gather_profile_type_t_name(acct_gather_profile_type_t type)
+{
+	switch (type) {
+	case PROFILE_ENERGY:
+		return "Energy";
+		break;
+	case PROFILE_TASK:
+		return "Task";
+		break;
+	case PROFILE_FILESYSTEM:
+		return "Lustre";
+		break;
+	case PROFILE_NETWORK:
+		return "Network";
+		break;
+	case PROFILE_CNT:
+		return "CNT?";
+		break;
+	default:
+		fatal("Unhandled profile option %d please update "
+		      "slurm_acct_gather_profile.c "
+		      "(acct_gather_profile_type_t_name)", type);
+	}
+
+	return "Unknown";
 }
 
 extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
