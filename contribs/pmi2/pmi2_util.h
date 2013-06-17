@@ -114,5 +114,6 @@ int  PMI2U_parse_keyvals( char *st );
 void PMI2U_dump_keyvals( void );
 char *PMI2U_getval( const char *keystr, char *valstr, int vallen );
 void PMI2U_chgval( const char *keystr, char *valstr );
+int MPIU_Strncpy(char *, const char *, size_t);
 
 #endif /* PMI2UTIL_H_INCLUDED */

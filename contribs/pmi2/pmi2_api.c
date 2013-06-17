@@ -95,6 +95,7 @@ static int PMIi_ReadCommand( int fd, PMI2_Command *cmd );
 static int PMIi_WriteSimpleCommand( int fd, PMI2_Command *resp, const char cmd[], PMI2_Keyvalpair *pairs[], int npairs);
 static int PMIi_WriteSimpleCommandStr( int fd, PMI2_Command *resp, const char cmd[], ...);
 static int PMIi_InitIfSingleton(void);
+static int PMII_singinit(void);
 
 static void freepairs(PMI2_Keyvalpair** pairs, int npairs);
 static int getval(PMI2_Keyvalpair *const pairs[], int npairs, const char *key,  const char **value, int *vallen);
@@ -107,7 +108,7 @@ static int GetResponse(const char request[], const char expectedCmd[], int check
 
 static void dump_PMI2_Command(PMI2_Command *cmd);
 static void dump_PMI2_Keyvalpair(PMI2_Keyvalpair *kv);
-
+static void phony(void);
 
 typedef struct pending_item
 {
@@ -117,6 +118,21 @@ typedef struct pending_item
 
 pending_item_t *pendingq_head = NULL;
 pending_item_t *pendingq_tail = NULL;
+
+/* phony()
+ * Collect unused functions which make the
+ * gcc complain ;defined but not used'
+ */
+static void
+phony(void)
+{
+	if (0) {
+		accept_one_connection(0);
+		GetResponse(NULL, NULL, 0);
+		dump_PMI2_Command(NULL);
+		PMII_singinit();
+	}
+}
 
 static inline void ENQUEUE(PMI2_Command *cmd)
 {
@@ -185,7 +201,7 @@ int PMI2_Init(int *spawned, int *size, int *rank, int *appnum)
     if (pmi2_errno) PMI2U_ERR_POP(pmi2_errno);
 
     if (PMI2_fd == -1) {
-		/* Singleton init: Process not started with mpiexec,
+	    /* Singleton init: Process not started with mpiexec,
      		   so set size to 1, rank to 0 */
 		PMI2_size = 1;
 		PMI2_rank = 0;
@@ -310,6 +326,9 @@ int PMI2_Init(int *spawned, int *size, int *rank, int *appnum)
         PMI2_initialized = NORMAL_INIT_WITH_PM;
         pmi2_errno = PMI2_SUCCESS;
     }
+
+
+    phony();
 
 fn_exit:
     PMI2U_printf("[END]");
@@ -483,7 +502,7 @@ cmd=spawn;thrid=string;ncmds=count;preputcount=n;ppkey0=name;ppval0=string;...;\
     if (jobId && jobIdSize) {
         found = getval(resp_cmd.pairs, resp_cmd.nPairs, JOBID_KEY, &jid, &jidlen);
         PMI2U_ERR_CHKANDJUMP(found != 1, pmi2_errno, PMI2_ERR_OTHER, "**intern");
-        strncpy(jobId, jid, jobIdSize);
+        MPIU_Strncpy(jobId, jid, jobIdSize);
     }
 
     if (PMI2U_getval("errcodes", tempbuf, PMI2_MAXLINE)) {
@@ -536,7 +555,7 @@ int PMI2_Job_GetId(char jobid[], int jobid_size)
     found = getval(cmd.pairs, cmd.nPairs, JOBID_KEY, &jid, &jidlen);
     PMI2U_ERR_CHKANDJUMP(found != 1, pmi2_errno, PMI2_ERR_OTHER, "**intern");
 
-    strncpy(jobid, jid, jobid_size);
+    MPIU_Strncpy(jobid, jid, jobid_size);
 
 fn_exit:
     free(cmd.command);
@@ -673,9 +692,9 @@ int PMI2_KVS_Get(const char *jobid, int src_pmi_id, const char key[], char value
     int found, keyfound;
     const char *kvsvalue;
     int kvsvallen;
-    int ret;
     PMI2_Command cmd = {0};
     int rc;
+    int ret;
     char src_pmi_id_str[256];
     const char *errmsg;
 
@@ -699,7 +718,7 @@ int PMI2_KVS_Get(const char *jobid, int src_pmi_id, const char key[], char value
     found = getval(cmd.pairs, cmd.nPairs, VALUE_KEY, &kvsvalue, &kvsvallen);
     PMI2U_ERR_CHKANDJUMP(found != 1, pmi2_errno, PMI2_ERR_OTHER, "**intern");
 
-    ret = strncpy(value, kvsvalue, maxValue);
+    ret = MPIU_Strncpy(value, kvsvalue, maxValue);
     *valLen = ret ? -kvsvallen : kvsvallen;
 
  fn_exit:
@@ -738,7 +757,7 @@ int PMI2_Info_GetNodeAttr(const char name[], char value[], int valuelen, int *fl
         found = getval(cmd.pairs, cmd.nPairs, VALUE_KEY, &kvsvalue, &kvsvallen);
         PMI2U_ERR_CHKANDJUMP(found != 1, pmi2_errno, PMI2_ERR_OTHER, "**intern");
 
-        strncpy(value, kvsvalue, valuelen);
+        MPIU_Strncpy(value, kvsvalue, valuelen);
     }
 
 fn_exit:
@@ -855,7 +874,7 @@ int PMI2_Info_GetJobAttr(const char name[], char value[], int valuelen, int *fla
         found = getval(cmd.pairs, cmd.nPairs, VALUE_KEY, &kvsvalue, &kvsvallen);
         PMI2U_ERR_CHKANDJUMP(found != 1, pmi2_errno, PMI2_ERR_OTHER, "**intern");
 
-        strncpy(value, kvsvalue, valuelen);
+        MPIU_Strncpy(value, kvsvalue, valuelen);
     }
 
 fn_exit:
@@ -972,7 +991,7 @@ int PMI2_Nameserv_lookup(const char service_name[], const PMI2U_Info *info_ptr,
 
     found = getval(cmd.pairs, cmd.nPairs, VALUE_KEY, &found_port, &plen);
     PMI2U_ERR_CHKANDJUMP(!found, pmi2_errno, PMI2_ERR_OTHER, "**pmi2_nameservlookup %s", "not found");
-    strncpy(port, found_port, portLen);
+    MPIU_Strncpy(port, found_port, portLen);
 
 fn_exit:
     free(cmd.command);
@@ -987,12 +1006,9 @@ int PMI2_Nameserv_unpublish(const char service_name[],
                             const PMI2U_Info *info_ptr)
 {
     int pmi2_errno = PMI2_SUCCESS;
-    int found;
     int rc;
     PMI2_Command cmd = {0};
-    int plen;
     const char *errmsg;
-    const char *found_port;
 
     PMI2U_printf("[BEGIN]");
 
@@ -1219,7 +1235,7 @@ static int create_keyval(PMI2_Keyvalpair **kv, const char *key, const char *val,
     PMI2U_CHKMEM_MALLOC(*kv, PMI2_Keyvalpair *, sizeof(PMI2_Keyvalpair), pmi2_errno, "pair");
 
     PMI2U_CHKMEM_MALLOC(key_p, char *, strlen(key)+1, pmi2_errno, "key");
-    strncpy(key_p, key, strlen(key));
+    MPIU_Strncpy(key_p, key, strlen(key));
     key_p[strlen(key)] = '\0';
 
     PMI2U_CHKMEM_MALLOC(value_p, char *, vallen+1, pmi2_errno, "value");
@@ -1255,7 +1271,7 @@ int PMIi_ReadCommand( int fd, PMI2_Command *cmd )
     int num_pairs;
     int pair_index;
     char *command = NULL;
-    int nPairs, i;
+    int nPairs;
     int found;
     PMI2_Keyvalpair **pairs = NULL;
     PMI2_Command *target_cmd;
@@ -1423,7 +1439,7 @@ fn_fail:
 int PMIi_ReadCommandExp( int fd, PMI2_Command *cmd, const char *exp, int* rc, const char **errmsg )
 {
     int pmi2_errno = PMI2_SUCCESS;
-    int found, i;
+    int found;
     int msglen;
 
     PMI2U_printf("[BEGIN]");
@@ -1899,5 +1915,3 @@ static void dump_PMI2_Command(PMI2_Command *cmd)
     for (i = 0; i < cmd->nPairs; ++i)
         dump_PMI2_Keyvalpair(cmd->pairs[i]);
 }
-
-

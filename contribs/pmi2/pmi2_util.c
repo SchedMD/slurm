@@ -202,7 +202,7 @@ char *PMI2U_getval(const char *keystr, char *valstr, int vallen) {
 
     for (i = 0; i < PMI2U_keyval_tab_idx; i++) {
         if (strcmp(keystr, PMI2U_keyval_tab[i].key) == 0) {
-            rc = strncpy(valstr, PMI2U_keyval_tab[i].value, vallen);
+            rc = MPIU_Strncpy(valstr, PMI2U_keyval_tab[i].value, vallen);
             PMI2U_keyval_tab[i].value[vallen-1] = '\0';
             return valstr;
         }
@@ -219,5 +219,64 @@ void PMI2U_chgval(const char *keystr, char *valstr) {
             strncpy(PMI2U_keyval_tab[i].value, valstr, MAXVALLEN);
             PMI2U_keyval_tab[i].value[MAXVALLEN - 1] = '\0';
         }
+    }
+}
+
+/* This code is borrowed from mpich2-1.5/src/pm/util/safestr2.c.
+   The reason is to keep the save code logic around strncpy() as
+   as in the original PMI2 implementation.
+
+  @ MPIU_Strncpy - Copy a string with a maximum length
+    Input Parameters:
++   instr - String to copy
+-   maxlen - Maximum total length of 'outstr'
+
+    Output Parameter:
+.   outstr - String to copy into
+
+    Notes:
+    This routine is the routine that you wish 'strncpy' was.  In copying
+    'instr' to 'outstr', it stops when either the end of 'outstr' (the
+    null character) is seen or the maximum length 'maxlen' is reached.
+    Unlike 'strncpy', it does not add enough nulls to 'outstr' after
+    copying 'instr' in order to move precisely 'maxlen' characters.
+    Thus, this routine may be used anywhere 'strcpy' is used, without any
+    performance cost related to large values of 'maxlen'.
+
+    If there is insufficient space in the destination, the destination is
+    still null-terminated, to avoid potential failures in routines that neglect
+    to check the error code return from this routine.
+
+  Module:
+  Utility
+  @*/
+int
+MPIU_Strncpy(char *dest, const char *src, size_t n)
+{
+	char *d_ptr = dest;
+    const char *s_ptr = src;
+    register int i;
+
+    if (n == 0) return 0;
+
+    i = (int)n;
+    while (*s_ptr && i-- > 0) {
+	*d_ptr++ = *s_ptr++;
+    }
+
+    if (i > 0) {
+	    *d_ptr = 0;
+	    return 0;
+    }
+    else {
+	    /* Force a null at the end of the string (gives better safety
+	       in case the user fails to check the error code)
+	    */
+	    dest[n-1] = 0;
+	    /* We may want to force an error message here, at least in the
+	       debugging version
+	    */
+	    /* printf( "failure in copying %s with length %d\n", src, n ); */
+	    return 1;
     }
 }

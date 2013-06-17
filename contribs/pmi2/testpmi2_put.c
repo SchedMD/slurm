@@ -3,13 +3,18 @@
 #include <pmi2_api.h>
 
 
-int main() {
+int main(int argc, char **argv)
+{
   int spawned, size, rank, appnum;
   int ret;
-  ret = PMI2_Init(&spawned, &size, &rank, &appnum);
-  if (ret != PMI2_SUCCESS) {perror("PMI2_Init failed"); return 1;}
-
   char jobid[50];
+
+  ret = PMI2_Init(&spawned, &size, &rank, &appnum);
+  if (ret != PMI2_SUCCESS) {
+	  perror("PMI2_Init failed");
+	  return 1;
+  }
+
   PMI2_Job_GetId(jobid, sizeof(jobid));
   printf("spawned=%d, size=%d, rank=%d, appnum=%d, jobid=%s\n",
          spawned, size, rank, appnum, jobid);
@@ -21,19 +26,19 @@ int main() {
   int msg = 0;
   char val[20] = "0\n";
   if (rank == 0) {
-    msg = 42;
-    snprintf(val, sizeof(val), "%d\n", msg);
-    PMI2_KVS_Put("msg", val);
-    printf("%d> send %d\n", rank, msg);
-    fflush(stdout);
-  };
+	  msg = 42;
+	  snprintf(val, sizeof(val), "%d\n", msg);
+	  PMI2_KVS_Put("msg", val);
+	  printf("%d> send %d\n", rank, msg);
+	  fflush(stdout);
+  }
+
   PMI2_KVS_Fence();
   int len = 0;
   PMI2_KVS_Get(jobid, PMI2_ID_NULL, "msg", val, sizeof(val), &len);
   msg = atoi(val);
   printf("%d> got %d\n", rank, msg);
   fflush(stdout);
-
 
   PMI2_Finalize();
   return 0;
