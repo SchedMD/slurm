@@ -55,6 +55,8 @@
 #include "src/common/slurm_strcasestr.h"
 #include "src/common/timers.h"
 
+/* These 2 should remain the same. */
+#define SLEEP_TIME 1
 #define USLEEP_TIME 1000000
 
 typedef struct slurm_acct_gather_profile_ops {
@@ -113,6 +115,20 @@ static void *_timer_thread(void *args)
 		now = time(NULL);
 
 		for (i=0; i<PROFILE_CNT; i++) {
+			if (acct_gather_suspended) {
+				/* Handle suspended time as if it
+				 * didn't happen */
+				if (!acct_gather_profile_timer[i].freq)
+					continue;
+				if (acct_gather_profile_timer[i].last_notify)
+					acct_gather_profile_timer[i].
+						last_notify += SLEEP_TIME;
+				else
+					acct_gather_profile_timer[i].
+						last_notify = now;
+				continue;
+			}
+
 			diff = now - acct_gather_profile_timer[i].last_notify;
 			/* info ("%d is %d and %d", i, */
 			/*       acct_gather_profile_timer[i].freq, */
