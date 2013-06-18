@@ -677,7 +677,9 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 		return SLURM_FAILURE;
 	} else if (pid > 0) {
 		int rc = 0;
+#ifndef SLURMSTEPD_MEMCHECK
 		time_t start_time = time(NULL);
+#endif
 		/*
 		 * Parent sends initialization data to the slurmstepd
 		 * over the to_stepd pipe, and waits for the return code
@@ -694,6 +696,11 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 			error("Unable to init slurmstepd");
 			goto done;
 		}
+
+		/* If running under memcheck stdout doesn't work correctly so
+		 * just skip it.
+		 */
+#ifndef SLURMSTEPD_MEMCHECK
 		if (read(to_slurmd[0], &rc, sizeof(int)) != sizeof(int)) {
 			error("Error reading return code message "
 			      "from slurmstepd: %m");
@@ -706,7 +713,7 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 				     "memory", delta_time);
 			}
 		}
-
+#endif
 	done:
 		if (_remove_starting_step(type, req))
 			error("Error cleaning up starting_step list");
@@ -720,7 +727,12 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 			error("close read to_slurmd in parent: %m");
 		return rc;
 	} else {
+#ifndef SLURMSTEPD_MEMCHECK
 		char *const argv[2] = { (char *)conf->stepd_loc, NULL};
+#else
+		char *const argv[3] = {"memcheck",
+				       (char *)conf->stepd_loc, NULL};
+#endif
 		int failed = 0;
 		/* inform slurmstepd about our config */
 		setenv("SLURM_CONF", conf->conffile, 1);

@@ -332,11 +332,16 @@ static int process_cmdline (int argc, char *argv[])
 static void
 _send_ok_to_slurmd(int sock)
 {
+	/* If running under memcheck stdout doesn't work correctly so
+	 * just skip it.
+	 */
+#ifndef SLURMSTEPD_MEMCHECK
 	int ok = SLURM_SUCCESS;
 	safe_write(sock, &ok, sizeof(int));
 	return;
 rwfail:
 	error("Unable to send \"ok\" to slurmd");
+#endif
 }
 
 static void
