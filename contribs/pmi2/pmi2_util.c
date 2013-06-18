@@ -55,8 +55,6 @@ int PMI2U_readline(int fd, char *buf, int maxlen) {
     static char readbuf[MAX_READLINE];
     static char *nextChar = 0, *lastChar = 0; /* lastChar is really one past
      last char */
-    static int lastErrno = 0;
-    static int lastfd = -1;
     int curlen, n;
     char *p, ch;
 
@@ -70,7 +68,6 @@ int PMI2U_readline(int fd, char *buf, int maxlen) {
     curlen = 1; /* Make room for the null */
     while (curlen < maxlen) {
         if (nextChar == lastChar) {
-            lastfd = fd;
             do {
                 n = read(fd, readbuf, sizeof(readbuf) - 1);
             } while (n == -1 && errno == EINTR);
@@ -78,10 +75,6 @@ int PMI2U_readline(int fd, char *buf, int maxlen) {
                 /* EOF */
                 break;
             } else if (n < 0) {
-                /* Error.  Return a negative value if there is no
-                 data.  Save the errno in case we need to return it
-                 later. */
-                lastErrno = errno;
                 if (curlen == 1) {
                     curlen = 0;
                 }
@@ -198,11 +191,11 @@ void PMI2U_dump_keyvals(void) {
 }
 
 char *PMI2U_getval(const char *keystr, char *valstr, int vallen) {
-    int i, rc;
+	int i;
 
     for (i = 0; i < PMI2U_keyval_tab_idx; i++) {
         if (strcmp(keystr, PMI2U_keyval_tab[i].key) == 0) {
-            rc = MPIU_Strncpy(valstr, PMI2U_keyval_tab[i].value, vallen);
+	        MPIU_Strncpy(valstr, PMI2U_keyval_tab[i].value, vallen);
             PMI2U_keyval_tab[i].value[vallen-1] = '\0';
             return valstr;
         }

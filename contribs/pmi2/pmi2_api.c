@@ -5,7 +5,7 @@
  */
 
 #include "pmi2_util.h"
-#include "pmi2_api.h"
+#include "slurm/pmi2.h"
 
 #include <stdarg.h>
 #include <stdlib.h>

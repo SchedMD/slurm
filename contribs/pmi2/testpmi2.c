@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <pmi2_api.h>
+#include <slurm/pmi2.h>
 
 
 int main(int argc, char **argv)
