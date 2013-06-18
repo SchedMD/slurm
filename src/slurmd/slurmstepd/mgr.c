@@ -2162,27 +2162,25 @@ _drop_privileges(slurmd_job_t *job, bool do_setuid, struct priv_state *ps)
 static int
 _reclaim_privileges(struct priv_state *ps)
 {
+	int rc = SLURM_SUCCESS;
+
 	/*
 	 * No need to reclaim privileges if our uid == pwd->pw_uid
 	 */
 	if (geteuid() == ps->saved_uid)
-		return SLURM_SUCCESS;
-
-	if (seteuid(ps->saved_uid) < 0) {
+		goto done;
+	else if (seteuid(ps->saved_uid) < 0) {
 		error("seteuid: %m");
-		return -1;
-	}
-
-	if (setegid(ps->saved_gid) < 0) {
+		rc = -1;
+	} else if (setegid(ps->saved_gid) < 0) {
 		error("setegid: %m");
-		return -1;
-	}
-
-	setgroups(ps->ngids, ps->gid_list);
-
+		rc = -1;
+	} else
+		setgroups(ps->ngids, ps->gid_list);
+done:
 	xfree(ps->gid_list);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 
