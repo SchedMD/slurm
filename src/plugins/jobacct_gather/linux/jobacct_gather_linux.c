@@ -571,6 +571,7 @@ extern void jobacct_gather_p_poll_data(
 			snprintf(proc_io_file, 256, "/proc/%d/io", pids[i]);
 			_handle_stats(prec_list, proc_stat_file, proc_io_file);
 		}
+		xfree(pids);
 	} else {
 		slurm_mutex_lock(&reading_mutex);
 
