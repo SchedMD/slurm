@@ -180,7 +180,7 @@ static void  _set_prio_process (slurmd_job_t *job);
 static void _set_job_log_prefix(slurmd_job_t *job);
 static int  _setup_normal_io(slurmd_job_t *job);
 static int  _drop_privileges(slurmd_job_t *job, bool do_setuid,
-			     struct priv_state *state);
+			     struct priv_state *state, bool get_list);
 static int  _reclaim_privileges(struct priv_state *state);
 static void _send_launch_resp(slurmd_job_t *job, int rc);
 static int  _slurmd_job_log_init(slurmd_job_t *job);
@@ -441,7 +441,7 @@ _setup_normal_io(slurmd_job_t *job)
 	 * descriptors (which may be connected to files), then
 	 * reclaim privileges.
 	 */
-	if (_drop_privileges(job, true, &sprivs) < 0)
+	if (_drop_privileges(job, true, &sprivs, true) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
 	if (io_init_tasks_stdio(job) != SLURM_SUCCESS) {
@@ -1129,7 +1129,7 @@ _pre_task_privileged(slurmd_job_t *job, int taskid, struct priv_state *sp)
 	if (pre_launch_priv(job) < 0)
 		return error("pre_launch_priv failed");
 
-	return(_drop_privileges (job, true, sp));
+	return(_drop_privileges (job, true, sp, false));
 }
 
 struct exec_wait_info {
@@ -1328,7 +1328,7 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 	/* Temporarily drop effective privileges, except for the euid.
 	 * We need to wait until after pam_setup() to drop euid.
 	 */
-	if (_drop_privileges (job, false, &sprivs) < 0)
+	if (_drop_privileges (job, false, &sprivs, true) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
 	if (pam_setup(job->pwd->pw_name, conf->hostname)
@@ -1368,7 +1368,7 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 	/*
 	 * Temporarily drop effective privileges
 	 */
-	if (_drop_privileges (job, true, &sprivs) < 0) {
+	if (_drop_privileges (job, true, &sprivs, true) < 0) {
 		error ("_drop_privileges: %m");
 		rc = SLURM_ERROR;
 		goto fail2;
@@ -2115,7 +2115,8 @@ _send_complete_batch_script_msg(slurmd_job_t *job, int err, int status)
 
 
 static int
-_drop_privileges(slurmd_job_t *job, bool do_setuid, struct priv_state *ps)
+_drop_privileges(slurmd_job_t *job, bool do_setuid,
+		 struct priv_state *ps, bool get_list)
 {
 	ps->saved_uid = getuid();
 	ps->saved_gid = getgid();
@@ -2126,14 +2127,15 @@ _drop_privileges(slurmd_job_t *job, bool do_setuid, struct priv_state *ps)
 	}
 
 	ps->ngids = getgroups(0, NULL);
+	if (get_list) {
+		ps->gid_list = (gid_t *) xmalloc(ps->ngids * sizeof(gid_t));
 
-	ps->gid_list = (gid_t *) xmalloc(ps->ngids * sizeof(gid_t));
-
-	if (getgroups(ps->ngids, ps->gid_list) == -1) {
-		error("_drop_privileges: couldn't get %d groups: %m",
-		      ps->ngids);
-		xfree(ps->gid_list);
-		return -1;
+		if (getgroups(ps->ngids, ps->gid_list) == -1) {
+			error("_drop_privileges: couldn't get %d groups: %m",
+			      ps->ngids);
+			xfree(ps->gid_list);
+			return -1;
+		}
 	}
 
 	/*
@@ -2425,7 +2427,7 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 		argv[0] = (char *)xstrdup(path);
 		argv[1] = NULL;
 
-		if (_drop_privileges(job, true, &sprivs) < 0) {
+		if (_drop_privileges(job, true, &sprivs, false) < 0) {
 			error("run_script_as_user _drop_privileges: %m");
 			/* child process, should not return */
 			exit(127);
