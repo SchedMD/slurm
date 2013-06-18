@@ -1752,6 +1752,10 @@ _send_eof_msg(struct task_read_info *out)
 	msg->length = io_hdr_packed_size() + header.length;
 	msg->ref_count = 0; /* make certain it is initialized */
 
+	/* free the Buf packbuf, but not the memory to which it points */
+	packbuf->head = NULL;
+	free_buf(packbuf);
+
 	/* Add eof message to the msg_queue of all clients */
 	clients = list_iterator_create(out->job->clients);
 	while((eio = list_next(clients))) {
