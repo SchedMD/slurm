@@ -1684,7 +1684,7 @@ extern char * timestr (const time_t *tp, char *buf, size_t n)
 #endif
 	if (!localtime_r (tp, &tmval))
 		error ("localtime_r: %m");
-	strftime (buf, n, fmt, &tmval);
+	slurm_strftime (buf, n, fmt, &tmval);
 	return (buf);
 }
 
