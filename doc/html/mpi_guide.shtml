@@ -290,7 +290,6 @@ in the example below below.</p>
 srun -n4 --mpi=pmi2 ./a.out
 </pre>
 
-<b>Note:</b>
 <p>
 The PMI2 support in SLURM works only if the MPI implementation supports it, in other words if the MPI has
 the PMI2 interface implemented. The <i>--mpi=pmi2</i> will load the  library <i>lib/slurm/mpi_pmi2.so</i>
@@ -302,6 +301,14 @@ You can refere yourself to <i>mpich2-1.5</i> implementation and configure MPICH 
 
 <p>
 To check if the MPI version you are using supports PMI2 check for PMI2_* symbols in the MPI library.
+<p>
+SLURM provides a version of the PMI2 client library in the contribs directory. This library gets
+installed in the SLURM lib directory. If your MPI implementation supports PMI2 and you wish to use
+the SLURM provided library you have to link the SLURM provided library explicitly:
+<pre>
+$ mpicc -L&lt;path_to_pim2_lib&gt; -lpmi2 ...
+$ srun -n20 a.out
+</pre>
 
 <hr size=4 width="100%">
 
