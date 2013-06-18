@@ -606,7 +606,6 @@ job_destroy(slurmd_job_t *job)
 	list_destroy(job->sruns);
 	xfree(job->envtp);
 	xfree(job->node_name);
-	xfree(job->profile);
 	xfree(job->task_prolog);
 	xfree(job->task_epilog);
 	xfree(job->job_alloc_cores);
