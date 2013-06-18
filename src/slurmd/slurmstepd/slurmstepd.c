@@ -165,6 +165,8 @@ ending:
 #ifdef MEMORY_LEAK_DEBUG
 	_step_cleanup(job, msg, rc);
 
+	fini_setproctitle();
+
 	xfree(cli);
 	xfree(self);
 	xfree(conf->hostname);
