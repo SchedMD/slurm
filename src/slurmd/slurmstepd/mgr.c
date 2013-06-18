@@ -1172,6 +1172,7 @@ static void exec_wait_info_destroy (struct exec_wait_info *e)
 		close (e->childfd);
 	e->id = -1;
 	e->pid = -1;
+	xfree(e);
 }
 
 static pid_t exec_wait_get_pid (struct exec_wait_info *e)
