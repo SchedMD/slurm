@@ -1131,6 +1131,7 @@ _destroy_conf(void)
 		xfree(conf->epilog);
 		xfree(conf->health_check_program);
 		xfree(conf->hostname);
+		xfree(conf->job_acct_gather_freq);
 		xfree(conf->job_acct_gather_type);
 		xfree(conf->logfile);
 		xfree(conf->node_name);
