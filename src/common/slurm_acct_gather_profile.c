@@ -55,6 +55,8 @@
 #include "src/common/slurm_strcasestr.h"
 #include "src/common/timers.h"
 
+/* These 2 should remain the same. */
+#define SLEEP_TIME 1
 #define USLEEP_TIME 1000000
 
 typedef struct slurm_acct_gather_profile_ops {
@@ -113,6 +115,20 @@ static void *_timer_thread(void *args)
 		now = time(NULL);
 
 		for (i=0; i<PROFILE_CNT; i++) {
+			if (acct_gather_suspended) {
+				/* Handle suspended time as if it
+				 * didn't happen */
+				if (!acct_gather_profile_timer[i].freq)
+					continue;
+				if (acct_gather_profile_timer[i].last_notify)
+					acct_gather_profile_timer[i].
+						last_notify += SLEEP_TIME;
+				else
+					acct_gather_profile_timer[i].
+						last_notify = now;
+				continue;
+			}
+
 			diff = now - acct_gather_profile_timer[i].last_notify;
 			/* info ("%d is %d and %d", i, */
 			/*       acct_gather_profile_timer[i].freq, */
@@ -120,7 +136,8 @@ static void *_timer_thread(void *args)
 			if (!acct_gather_profile_timer[i].freq
 			    || (diff < acct_gather_profile_timer[i].freq))
 				continue;
-			debug2("profile signalling type %d", i);
+			debug2("profile signalling type %s",
+			       acct_gather_profile_type_t_name(i));
 
 			/* signal poller to start */
 			slurm_mutex_lock(&acct_gather_profile_timer[i].
@@ -175,25 +192,44 @@ done:
 
 extern int acct_gather_profile_fini(void)
 {
-	int rc, i;
+	int rc = SLURM_SUCCESS, i;
 
 	if (!g_context)
 		return SLURM_SUCCESS;
 
+	slurm_mutex_lock(&g_context_lock);
+
+	if (g_context)
+		goto done;
+
 	init_run = false;
-	acct_gather_profile_running = false;
 
 	for (i=0; i < PROFILE_CNT; i++) {
-		/* end remote threads */
-		slurm_mutex_lock(&acct_gather_profile_timer[i].notify_mutex);
-		pthread_cond_signal(&acct_gather_profile_timer[i].notify);
-		slurm_mutex_unlock(&acct_gather_profile_timer[i].notify_mutex);
-		pthread_cond_destroy(&acct_gather_profile_timer[i].notify);
-		acct_gather_profile_timer[i].freq = 0;
+		switch (i) {
+		case PROFILE_ENERGY:
+			acct_gather_energy_fini();
+			break;
+		case PROFILE_TASK:
+			jobacct_gather_fini();
+			break;
+		case PROFILE_FILESYSTEM:
+			acct_gather_filesystem_fini();
+			break;
+		case PROFILE_NETWORK:
+			acct_gather_infiniband_fini();
+			break;
+		default:
+			fatal("Unhandled profile option %d please update "
+			      "slurm_acct_gather_profile.c "
+			      "(acct_gather_profile_fini)", i);
+		}
 	}
 
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
+done:
+	slurm_mutex_unlock(&g_context_lock);
+
 	return rc;
 }
 
@@ -281,6 +317,33 @@ extern uint32_t acct_gather_profile_type_from_string(char *series_str)
 	return ACCT_GATHER_PROFILE_NOT_SET;
 }
 
+extern char *acct_gather_profile_type_t_name(acct_gather_profile_type_t type)
+{
+	switch (type) {
+	case PROFILE_ENERGY:
+		return "Energy";
+		break;
+	case PROFILE_TASK:
+		return "Task";
+		break;
+	case PROFILE_FILESYSTEM:
+		return "Lustre";
+		break;
+	case PROFILE_NETWORK:
+		return "Network";
+		break;
+	case PROFILE_CNT:
+		return "CNT?";
+		break;
+	default:
+		fatal("Unhandled profile option %d please update "
+		      "slurm_acct_gather_profile.c "
+		      "(acct_gather_profile_type_t_name)", type);
+	}
+
+	return "Unknown";
+}
+
 extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 {
 	int retval = SLURM_SUCCESS;
@@ -364,6 +427,42 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 	slurm_attr_destroy(&attr);
 
 	return retval;
+}
+
+extern void acct_gather_profile_endpoll(void)
+{
+	int i;
+
+	if (!acct_gather_profile_running) {
+		debug2("acct_gather_profile_startpoll: poll already ended!");
+		return;
+	}
+
+	acct_gather_profile_running = false;
+
+	for (i=0; i < PROFILE_CNT; i++) {
+		/* end remote threads */
+		slurm_mutex_lock(&acct_gather_profile_timer[i].notify_mutex);
+		pthread_cond_signal(&acct_gather_profile_timer[i].notify);
+		slurm_mutex_unlock(&acct_gather_profile_timer[i].notify_mutex);
+		pthread_cond_destroy(&acct_gather_profile_timer[i].notify);
+		acct_gather_profile_timer[i].freq = 0;
+		switch (i) {
+		case PROFILE_ENERGY:
+			break;
+		case PROFILE_TASK:
+			jobacct_gather_endpoll();
+			break;
+		case PROFILE_FILESYSTEM:
+			break;
+		case PROFILE_NETWORK:
+			break;
+		default:
+			fatal("Unhandled profile option %d please update "
+			      "slurm_acct_gather_profile.c "
+			      "(acct_gather_profile_endpoll)", i);
+		}
+	}
 }
 
 extern void acct_gather_profile_g_conf_options(s_p_options_t **full_options,

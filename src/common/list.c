@@ -529,50 +529,89 @@ list_flush (List l)
     return(n);
 }
 
-
 void
 list_sort (List l, ListCmpF f)
 {
-/*  Note: Time complexity O(n^2).
- */
-    ListNode *pp, *ppPrev, *ppPos, pTmp;
-    ListIterator i;
+    ListIterator it;
+
+    ListNode p, q, e, tail, head;
+    int insize, nmerges, psize, qsize, i;
 
     assert(l != NULL);
     assert(f != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
+    head = l->head;
     if (l->count > 1) {
-	ppPrev = &l->head;
-	pp = &(*ppPrev)->next;
-	while (*pp) {
-	    if (f((*pp)->data, (*ppPrev)->data) < 0) {
-		ppPos = &l->head;
-		while (f((*pp)->data, (*ppPos)->data) >= 0)
-		    ppPos = &(*ppPos)->next;
-		pTmp = (*pp)->next;
-		(*pp)->next = *ppPos;
-		*ppPos = *pp;
-		*pp = pTmp;
-		if (ppPrev == ppPos)
-		    ppPrev = &(*ppPrev)->next;
-	    }
-	    else {
-		ppPrev = pp;
-		pp = &(*pp)->next;
-	    }
-	}
-	l->tail = pp;
+        insize=1;
+        while(1) {
+           p = head;
+           head = NULL;
+           tail = NULL;
 
-	for (i=l->iNext; i; i=i->iNext) {
-	    assert(i->magic == LIST_MAGIC);
-	    i->pos = i->list->head;
-	    i->prev = &i->list->head;
-	}
+
+           nmerges = 0;
+           while(p) {
+              nmerges++;
+              q = p;
+
+              psize=0;
+              for (i = 0; i < insize; i++) {
+                psize++;
+                q = q->next;
+
+                if (!q) break;
+              }
+              qsize = insize;
+              while (psize > 0 || (qsize > 0 && q)) {
+                 if (psize == 0) {
+                    e = q;
+                    q = q->next;
+                    qsize--;
+                 } else if (qsize == 0 || !q ) {
+                    e = p;
+                    p = p->next;
+                    psize--;
+                 } else if (f(p->data,q->data) < 0) {
+                    e = p;
+                    p = p->next;
+                    psize--;
+                 } else {
+                    e = q;
+                    q = q->next;
+                    qsize--;
+                 }
+                 if (tail) {
+                    tail->next = e;
+                 } else {
+                    head = e;
+                 }
+                 tail = e;
+              }
+              p = q;
+
+           }
+           tail->next = NULL;
+           if(nmerges <= 1) {
+              l->head = head;
+              l->tail = &tail;
+              for (it=l->iNext; it; it=it->iNext) {
+                  assert(it->magic == LIST_MAGIC);
+                  it->pos = it->list->head;
+                  it->prev = &it->list->head;
+              }
+
+              list_mutex_unlock(&l->mutex);
+              return;
+           }
+           insize *=2;
+        }
     }
+
     list_mutex_unlock(&l->mutex);
     return;
 }
+
 
 void *
 list_push (List l, void *x)

@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- HDF5 - Fix issue with Ubuntu where HDF5 development headers are
     overwritten by the parallel versions thus making it so we need handle
     both cases.
+ -- ACCT_GATHER - handle suspending correctly for polling threads.
 
 * Changes in Slurm 2.6.0rc1
 ===========================
