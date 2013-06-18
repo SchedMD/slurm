@@ -321,6 +321,8 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 		else
 			rc = 1;
 	} else {
+		/* XXX Space is allocated on the heap and will never
+		 * be reclaimed. */
 		xstrfmtcat(str, "%s=%s", name, value);
 		rc = putenv(str);
 	}
