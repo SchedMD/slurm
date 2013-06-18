@@ -4,39 +4,19 @@
 
 <h2>Index</h2>
 <ul>
-<li><a href="#25">SLURM Version 2.5, November 2012</a></li>
-<li><a href="#26">SLURM Version 2.6, scheduled for April 2013</a></li>
+<li><a href="#26">SLURM Version 2.6, June 2013</a></li>
 <li><a href="#27">SLURM Version 2.7 and beyond</a></li>
 <li><a href="#security">Security Patches</a></li>
 </ul>
 
-
-<h2><a name="25">Major Updates in SLURM Version 2.5</a></h2>
-<p>SLURM Version 2.5 was release in November 2012.
-Major enhancements include:
-<ul>
-<li>Support added for Intel&reg; Many Integrated Core (MIC) processors.</li> 
-<li>User control over CPU frequency of each job step.</li>
-<li>Recording power usage information for each job.</li>
-<li>Advanced reservation of cores rather than whole nodes.</li>
-<li>Integration with IBM's
-<a href="http://www-03.ibm.com/systems/software/parallel/">Parallel Environment</a>
-including POE (Parallel Operating Environment) and NRT (Network Resource Table) API.</li>
-<li>Highly optimized throughput for serial jobs in a new "select/serial"
-plugin.</li>
-<li>CPU load is information available</li>
-<li>Configurable number of CPUs available to jobs in each SLURM partition,
-which provides a mechanism to reserve CPUs for use with GPUs.</li>
-</ul>
-
 <h2><a name="26">Major Updates in SLURM Version 2.6</a></h2>
-<p>SLURM Version 2.6 is scheduled for release in April 2013.
+<p>SLURM Version 2.6 was released in June 2013.
 Major enhancements planned include:
 <ul>
 <li>Support for job arrays, which increases performance and ease of use
    for sets of similar jobs.</li>
-<li><a href="http://en.wikipedia.org/wiki/MapReduce">MapReduce</a> support
-(launches ~1000x faster, runs ~10x faster).</li>
+<li>Support for MPICH2 using PMI2 communications interface with much greater
+   scalability.</li>
 <li>Prolog and epilog support for advanced reservations.</li>
 <li>Much faster throughput for job step execution with --exclusive option. The
     srun process is notified when resources become available rather than
@@ -46,6 +26,8 @@ Major enhancements planned include:
 reservations (e.g. specific different core count for each node).</li>
 <li>Finer-grained BlueGene resouce management (partitions/queues and advanced
 reservations containing less than a whole midplane).</li>
+<li><a href="http://en.wikipedia.org/wiki/MapReduce">MapReduce+</a> support
+(launches ~1000x faster, runs ~10x faster).</li>
 </ul>
 
 <h2><a name="27">Major Updates in SLURM Version 2.7 and beyond</a></h2>
@@ -92,6 +74,6 @@ trojan library, then that library will be used by the SLURM daemon with
 unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 6 March 2013</p>
+<p style="text-align:center;">Last modified 18 June 2013</p>
 
 <!--#include virtual="footer.txt"-->

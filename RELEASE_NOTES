@@ -29,6 +29,8 @@ HIGHLIGHTS
    for sets of similar jobs. This man necessitate changes in prolog and/or
    epilog scripts due to change in the job ID format, which is now of the form
    "<job_id>_<index>" for job arrays.
+ - Added mpi/pmi2 plugin with much better more scalable performance for MPI
+   implementations using PMI communications interface.
  - Added slurmctld/dynalloc plugin for MapReduce+ support.
  - Added prolog and epilog support for advanced reservations.
  - Much faster throughput for job step execution with --exclusive option. The
