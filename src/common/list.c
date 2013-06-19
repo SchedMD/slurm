@@ -530,7 +530,7 @@ list_flush (List l)
 }
 
 void
-list_sort (List l, ListCmpF f)
+list_sort2 (List l, ListCmpF f)
 {
     ListIterator it;
 
@@ -612,6 +612,48 @@ list_sort (List l, ListCmpF f)
     return;
 }
 
+void
+list_sort (List l, ListCmpF f)
+{
+/*  Note: Time complexity O(n^2).
+ */
+    ListNode *pp, *ppPrev, *ppPos, pTmp;
+    ListIterator i;
+
+    assert(l != NULL);
+    assert(f != NULL);
+    list_mutex_lock(&l->mutex);
+    assert(l->magic == LIST_MAGIC);
+    if (l->count > 1) {
+	ppPrev = &l->head;
+	pp = &(*ppPrev)->next;
+	while (*pp) {
+	    if (f((*pp)->data, (*ppPrev)->data) < 0) {
+		ppPos = &l->head;
+		while (f((*pp)->data, (*ppPos)->data) >= 0)
+		    ppPos = &(*ppPos)->next;
+		pTmp = (*pp)->next;
+		(*pp)->next = *ppPos;
+		*ppPos = *pp;
+		*pp = pTmp;
+		if (ppPrev == ppPos)
+		    ppPrev = &(*ppPrev)->next;
+	    }
+	    else {
+		ppPrev = pp;
+		pp = &(*pp)->next;
+	    }
+	}
+	l->tail = pp;
+	for (i=l->iNext; i; i=i->iNext) {
+	    assert(i->magic == LIST_MAGIC);
+	    i->pos = i->list->head;
+	    i->prev = &i->list->head;
+	}
+    }
+    list_mutex_unlock(&l->mutex);
+    return;
+}
 
 void *
 list_push (List l, void *x)
