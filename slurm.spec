@@ -717,6 +717,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/gres_mic.so
 %{_libdir}/slurm/gres_nic.so
 %{_libdir}/slurm/job_submit_defaults.so
+%{_libdir}/slurm/job_submit_all_partitions.so
 %{_libdir}/slurm/job_submit_logging.so
 %{_libdir}/slurm/job_submit_partition.so
 %{_libdir}/slurm/jobacct_gather_aix.so
