@@ -6742,7 +6742,6 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack16(job_desc_ptr->nice, buffer);
 		packstr(job_desc_ptr->qos, buffer);
 
-///<<<<<<< slurm_protocol_pack.c  nlk temp.... why is this here
 		pack8(job_desc_ptr->open_mode,   buffer);
 		pack8(job_desc_ptr->overcommit,  buffer);
 		if (job_desc_ptr->acctg_freq)
