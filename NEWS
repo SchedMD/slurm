@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- ACCT_GATHER - handle suspending correctly for polling threads.
  -- Make the list_sort use a merge sort with is n log n instead of the n^2
     algo we have previously used.
+ -- Make SLURM_DISTRIBUTION env var hold both types of distribution if
+    specified.
 
 * Changes in Slurm 2.6.0rc1
 ===========================

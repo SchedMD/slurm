@@ -62,6 +62,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/node_select.h"
+#include "src/common/proc_args.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/slurmdb_defs.h"
@@ -223,48 +224,6 @@ static bool _discard_env(char *name, char *value)
 		return true;
 
 	return false;
-}
-
-static void _set_distribution(task_dist_states_t distribution,
-			      char **dist, char **lllp_dist)
-{
-	if (((int)distribution >= 0)
-	    &&  (distribution != SLURM_DIST_UNKNOWN)) {
-		switch(distribution) {
-		case SLURM_DIST_CYCLIC:
-			*dist      = "cyclic";
-			break;
-		case SLURM_DIST_BLOCK:
-			*dist      = "block";
-			break;
-		case SLURM_DIST_PLANE:
-			*dist      = "plane";
-			*lllp_dist = "plane";
-			break;
-		case SLURM_DIST_ARBITRARY:
-			*dist      = "arbitrary";
-			break;
-		case SLURM_DIST_CYCLIC_CYCLIC:
-			*dist      = "cyclic";
-			*lllp_dist = "cyclic";
-			break;
-		case SLURM_DIST_CYCLIC_BLOCK:
-			*dist      = "cyclic";
-			*lllp_dist = "block";
-			break;
-		case SLURM_DIST_BLOCK_CYCLIC:
-			*dist      = "block";
-			*lllp_dist = "cyclic";
-			break;
-		case SLURM_DIST_BLOCK_BLOCK:
-			*dist      = "block";
-			*lllp_dist = "block";
-			break;
-		default:
-			error("unknown dist, type %d", distribution);
-			break;
-		}
-	}
 }
 
 /*
@@ -438,7 +397,7 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_FAILURE;
 	}
 
-	_set_distribution(env->distribution, &dist, &lllp_dist);
+	set_distribution(env->distribution, &dist, &lllp_dist);
 	if (dist)
 		if (setenvf(&env->env, "SLURM_DISTRIBUTION", "%s", dist)) {
 			error("Can't set SLURM_DISTRIBUTION env variable");
@@ -991,7 +950,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	env_array_overwrite_fmt(dest, "SLURM_NODE_ALIASES", "%s",
 				alloc->alias_list);
 
-	_set_distribution(desc->task_dist, &dist, &lllp_dist);
+	set_distribution(desc->task_dist, &dist, &lllp_dist);
 	if (dist)
 		env_array_overwrite_fmt(dest, "SLURM_DISTRIBUTION", "%s",
 					dist);
