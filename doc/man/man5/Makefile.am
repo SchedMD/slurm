@@ -1,4 +1,4 @@
-htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
+htmldir = ${datadir}/doc/@PACKAGE@-@VERSION@/html
 
 man5_MANS = bluegene.conf.5 \
 	cgroup.conf.5 \

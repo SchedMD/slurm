@@ -173,6 +173,16 @@ partition management, job management, scheduling and accounting modules.
 %{!?_slurm_sysconfdir: %global _slurm_sysconfdir /etc/slurm}
 %define _sysconfdir %_slurm_sysconfdir
 
+#  Allow override of mandir via _slurm_mandir.
+%{!?_slurm_mandir: %global _slurm_mandir %{_datadir}/man}
+%define _mandir %{_slurm_mandir}
+
+#  Allow override of infodir via _slurm_infodir.
+#  (Not currently used for anything)
+%{!?_slurm_infodir: %global _slurm_infodir %{_datadir}/info}
+%define _infodir %{_slurm_infodir}
+
+
 #
 # Never allow rpm to strip binaries as this will break
 #  parallel debugging capability
@@ -582,7 +592,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -f slurm.files
 %defattr(-,root,root,0755)
-%{_mandir}/../doc
+%{_datadir}/doc
 %{_bindir}/s*
 %exclude %{_bindir}/sjobexitmod
 %exclude %{_bindir}/sjstat

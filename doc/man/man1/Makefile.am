@@ -1,4 +1,4 @@
-htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
+htmldir = ${datadir}/doc/@PACKAGE@-@VERSION@/html
 
 man1_MANS = \
 	sacct.1 \

@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
     "step_test ... gres_bit_alloc is NULL"
  -- Fix bug that would leak memory and over-write the AllowGroups field if on
     "scontrol reconfig" when AllowNodes is manually changed using scontrol.
+ -- Get html/man files to install in correct places with rpms.
 
 * Changes in Slurm 2.5.7
 ========================
