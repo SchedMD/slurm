@@ -1,5 +1,5 @@
 
-htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
+htmldir = ${datadir}/doc/@PACKAGE@-@VERSION@/html
 
 generated_html = \
 	accounting.html \

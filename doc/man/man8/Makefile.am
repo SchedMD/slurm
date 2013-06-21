@@ -1,4 +1,4 @@
-htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
+htmldir = ${datadir}/doc/@PACKAGE@-@VERSION@/html
 
 man8_MANS = slurmctld.8 \
 	slurmd.8 \

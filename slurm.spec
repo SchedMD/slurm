@@ -177,6 +177,20 @@ partition management, job management, scheduling and accounting modules
 %{!?_slurm_sysconfdir: %global _slurm_sysconfdir %{_prefix}/etc/slurm}
 %define _sysconfdir %_slurm_sysconfdir
 
+#  Allow override of datadir via _slurm_datadir.
+%{!?_slurm_datadir: %global _slurm_datadir %{_prefix}/share}
+%define _datadir %{_slurm_datadir}
+
+#  Allow override of mandir via _slurm_mandir.
+%{!?_slurm_mandir: %global _slurm_mandir %{_datadir}/man}
+%define _mandir %{_slurm_mandir}
+
+#  Allow override of infodir via _slurm_infodir.
+#  (Not currently used for anything)
+%{!?_slurm_infodir: %global _slurm_infodir %{_datadir}/info}
+%define _infodir %{_slurm_infodir}
+
+
 #
 # Never allow rpm to strip binaries as this will break
 #  parallel debugging capability
@@ -397,7 +411,7 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 %setup -n %{name}-%{version}-%{release}
 
 %build
-%configure --program-prefix=%{?_program_prefix:%{_program_prefix}} \
+%configure \
 	%{?slurm_with_debug:--enable-debug} \
 	%{?slurm_with_partial_attach:--enable-partial-attach} \
 	%{?slurm_with_sun_const:--enable-sun-const} \
@@ -616,7 +630,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -f slurm.files
 %defattr(-,root,root,0755)
-%{_mandir}/../doc
+%{_datadir}/doc
 %{_bindir}/s*
 %exclude %{_bindir}/sjobexitmod
 %exclude %{_bindir}/sjstat
@@ -759,6 +773,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/gres_nic.so
 %{_libdir}/slurm/job_submit_all_partitions.so
 %{_libdir}/slurm/job_submit_defaults.so
+%{_libdir}/slurm/job_submit_all_partitions.so
 %{_libdir}/slurm/job_submit_logging.so
 %{_libdir}/slurm/job_submit_partition.so
 %{_libdir}/slurm/jobacct_gather_aix.so
