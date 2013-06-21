@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug that would leak memory and over-write the AllowGroups field if on
     "scontrol reconfig" when AllowNodes is manually changed using scontrol.
  -- Get html/man files to install in correct places with rpms.
+ -- Remove --program-prefix from spec file since it appears to be added by
+    default and appeared to break other things.
 
 * Changes in Slurm 2.5.7
 ========================
