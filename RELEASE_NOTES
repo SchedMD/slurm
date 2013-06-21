@@ -36,11 +36,10 @@ HIGHLIGHTS
  - Much faster throughput for job step execution with --exclusive option. The
    srun process is notified when resources become available rather than
    periodic polling.
- - Modify default installation locations for RPMs to match "make install":
-   _prefix /usr/local
-   _slurm_sysconfdir %{_prefix}/etc/slurm
-   _mandir %{_prefix}/share/man
-   _infodir %{_prefix}/share/info
+ - Added options to build RPMs:
+   _slurm_datadir
+   _slurm_mandir
+   _slurm_infodir
  - Advanced reservations with hostname and core counts now supports asymetric
    reservations (e.g. specific different core count for each node).
  - Make sched/backfill the default scheduling plugin rather than sched/builtin
