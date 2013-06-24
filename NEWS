@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
  -- Get html/man files to install in correct places with rpms.
  -- Remove --program-prefix from spec file since it appears to be added by
     default and appeared to break other things.
+ -- Updated the automake min version in autogen.sh to be correct.
 
 * Changes in Slurm 2.5.7
 ========================
