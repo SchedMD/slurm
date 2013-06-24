@@ -162,7 +162,8 @@ expect {
 		send_user "or failure to recognize prompt\n"
 		set exit_code 1
 	}
-	-re $prompt
+	-re $prompt {
+	}
 }
 
 #
