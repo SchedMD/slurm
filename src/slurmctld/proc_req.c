@@ -91,12 +91,17 @@
 
 #include "src/plugins/select/bluegene/bg_enums.h"
 
+static pthread_mutex_t throttle_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t throttle_cond = PTHREAD_COND_INITIALIZER;
+
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
 static int 	    _launch_batch_step(job_desc_msg_t *job_desc_msg,
 				       uid_t uid, uint32_t *step_id);
 static int          _make_step_cred(struct step_record *step_rec,
 				    slurm_cred_t **slurm_cred);
+static void         _throttle_fini(int *active_rpc_cnt);
+static void         _throttle_start(int *active_rpc_cnt);
 
 inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg);
 inline static void  _slurm_rpc_accounting_register_ctld(slurm_msg_t *msg);
@@ -455,6 +460,31 @@ void slurmctld_req (slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, EINVAL);
 		break;
 	}
+}
+
+/* These functions prevent certain RPCs from keeping the slurmctld write locks
+ * constantly set, which can prevent other RPCs and system functions from being
+ * processed. For example, a steady stream of batch submissions can prevent
+ * squeue from responding or jobs from being scheduled. */
+static void _throttle_start(int *active_rpc_cnt)
+{
+	slurm_mutex_lock(&throttle_mutex);
+	while (1) {
+		if (*active_rpc_cnt == 0) {
+			(*active_rpc_cnt)++;
+			break;
+		}
+		pthread_cond_wait(&throttle_cond, &throttle_mutex);
+	}
+	slurm_mutex_unlock(&throttle_mutex);
+	usleep(1);
+}
+static void _throttle_fini(int *active_rpc_cnt)
+{
+	slurm_mutex_lock(&throttle_mutex);
+	(*active_rpc_cnt)--;
+	pthread_cond_broadcast(&throttle_cond);
+	slurm_mutex_unlock(&throttle_mutex);
 }
 
 /*
@@ -1456,7 +1486,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
  * an individual job step */
 static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 {
-	/* init */
+	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	job_step_kill_msg_t *job_step_kill_msg =
@@ -1468,6 +1498,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_CANCEL_JOB_STEP uid=%d", uid);
+	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
 
 	/* do RPC call */
@@ -1478,6 +1509,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 					job_step_kill_msg->flags, uid,
 					false);
 		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
 		END_TIMER2("_slurm_rpc_job_step_kill");
 
 		/* return result */
@@ -1508,6 +1540,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 					     job_step_kill_msg->signal,
 					     uid);
 		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
 		END_TIMER2("_slurm_rpc_job_step_kill");
 
 		/* return result */
@@ -2690,6 +2723,7 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 /* _slurm_rpc_submit_batch_job - process RPC to submit a batch job */
 static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 {
+	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	uint32_t step_id = 0;
@@ -2728,6 +2762,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	}
 	dump_job_desc(job_desc_msg);
 	if (error_code == SLURM_SUCCESS) {
+		_throttle_start(&active_rpc_cnt);
 		lock_slurmctld(job_write_lock);
 		if (job_desc_msg->job_id != SLURM_BATCH_SCRIPT) {
 			job_ptr = find_job_record(job_desc_msg->job_id);
@@ -2739,6 +2774,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 						msg,
 						ESLURM_DUPLICATE_JOB_ID);
 					unlock_slurmctld(job_write_lock);
+					_throttle_fini(&active_rpc_cnt);
 					return;
 				}
 				job_ptr = NULL;	/* OK to re-use job id */
@@ -2757,6 +2793,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 				     "uid=%d", uid);
 				slurm_send_rc_msg(msg, ESLURM_NO_STEPS);
 				unlock_slurmctld(job_write_lock);
+				_throttle_fini(&active_rpc_cnt);
 				return;
 			}
 #endif
@@ -2769,18 +2806,21 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 				      job_ptr->user_id);
 				slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 				unlock_slurmctld(job_write_lock);
+				_throttle_fini(&active_rpc_cnt);
 				return;
 			}
 			if (job_ptr->details &&
 			    job_ptr->details->prolog_running) {
 				slurm_send_rc_msg(msg, EAGAIN);
 				unlock_slurmctld(job_write_lock);
+				_throttle_fini(&active_rpc_cnt);
 				return;
 			}
 
 			error_code = _launch_batch_step(job_desc_msg, uid,
 							&step_id);
 			unlock_slurmctld(job_write_lock);
+			_throttle_fini(&active_rpc_cnt);
 			END_TIMER2("_slurm_rpc_submit_batch_job");
 
 			if (error_code != SLURM_SUCCESS) {
@@ -2810,6 +2850,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 					  job_desc_msg->immediate,
 					  false, NULL, 0, uid, &job_ptr);
 		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
 		END_TIMER2("_slurm_rpc_submit_batch_job");
 		if (job_desc_msg->immediate && (error_code != SLURM_SUCCESS))
 			error_code = ESLURM_CAN_NOT_START_IMMEDIATELY;

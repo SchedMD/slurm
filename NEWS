@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
  -- Make SLURM_DISTRIBUTION env var hold both types of distribution if
     specified.
  -- Remove hardcoded /usr/local from slurm.spec.
+ -- Modify slurmctld locking to improve performance under heavy load with
+    very large numbers of batch job submissions or job cancellations.
 
 * Changes in Slurm 2.6.0rc1
 ===========================
