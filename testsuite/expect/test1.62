@@ -75,6 +75,10 @@ proc run_gpu_test { gres_cnt } {
 			send_user "\nWARNING: This could indicate that gres.conf lacks device files for the GPUs\n"
 			exp_continue
 		}
+		-re "CUDA_VISIBLE_DEVICES=" {
+			send_user "\nWARNING: This could indicate that gres.conf lacks device files for the GPUs\n"
+			exp_continue
+		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
 			slow_kill $srun_pid
