@@ -594,6 +594,7 @@ list_sort2 (List l, ListCmpF f)
            tail->next = NULL;
            if(nmerges <= 1) {
               l->head = head;
+	      l->tail = &tail->next;
               for (it=l->iNext; it; it=it->iNext) {
                   assert(it->magic == LIST_MAGIC);
                   it->pos = it->list->head;
