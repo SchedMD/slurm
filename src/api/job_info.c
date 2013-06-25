@@ -489,9 +489,10 @@ line6:
 			min_nodes = (num_tasks + 1) / job_ptr->ntasks_per_node;
 			if (min_nodes > num_tasks)
 				min_nodes = num_tasks;
+			else if (!min_nodes)
+				min_nodes = 1;
 		}
 		max_nodes = job_ptr->max_nodes;
-
 	}
 
 	_sprint_range(tmp1, sizeof(tmp1), job_ptr->num_cpus, job_ptr->max_cpus);

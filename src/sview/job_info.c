@@ -1236,6 +1236,8 @@ static int _get_node_cnt(job_info_t * job)
 			node_cnt = (num_tasks + 1) / job->ntasks_per_node;
 			if (node_cnt > num_tasks)
 				node_cnt = num_tasks;
+			else if (!node_cnt)
+				node_cnt = 1;
 		} else if (sview_max_cpus) {
 			int round  = job->num_cpus + sview_max_cpus - 1;
 			round /= sview_max_cpus;	/* round up */
