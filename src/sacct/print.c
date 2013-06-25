@@ -205,9 +205,9 @@ void print_fields(type_t type, void *object)
 				break;
 			}
 			if (!fuzzy_equal(tmp_dub, NO_VAL))
-				convert_num_unit((float)tmp_dub,
-						outbuf, sizeof(outbuf),
-						UNIT_NONE);
+				convert_num_unit2((float)tmp_dub,
+						  outbuf, sizeof(outbuf),
+						  UNIT_NONE, 1000, false);
 
 			field->print_routine(field,
 					     outbuf,
@@ -419,9 +419,9 @@ void print_fields(type_t type, void *object)
 				break;
 			}
 			if (!fuzzy_equal(tmp_dub, NO_VAL))
-				convert_num_unit((float)tmp_dub,
-						 outbuf, sizeof(outbuf),
-						 UNIT_NONE);
+				convert_num_unit2((float)tmp_dub,
+						  outbuf, sizeof(outbuf),
+						  UNIT_NONE, 1000, false);
 
 			field->print_routine(field,
 					     outbuf,
@@ -1246,9 +1246,9 @@ void print_fields(type_t type, void *object)
 			else if (tmp_dub == CPU_FREQ_HIGH)
 				snprintf(outbuf, sizeof(outbuf), "High");
 			else if (!fuzzy_equal(tmp_dub, NO_VAL))
-				convert_num_unit((float)tmp_dub,
-						 outbuf, sizeof(outbuf),
-						 UNIT_NONE);
+				convert_num_unit2((float)tmp_dub,
+						  outbuf, sizeof(outbuf),
+						  UNIT_NONE, 1000, false);
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
