@@ -824,7 +824,7 @@ static int _make_step_cred(struct step_record *step_ptr,
  *	a job */
 static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 {
-	/* init */
+	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
 	DEF_TIMERS;
@@ -877,6 +877,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	dump_job_desc(job_desc_msg);
 	if (error_code == SLURM_SUCCESS) {
 		do_unlock = true;
+		_throttle_start(&active_rpc_cnt);
 		lock_slurmctld(job_write_lock);
 
 		error_code = job_allocate(job_desc_msg, immediate,
@@ -938,6 +939,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 			alloc_msg.pn_min_memory = 0;
 		}
 		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
 
 		slurm_msg_t_init(&response_msg);
 		response_msg.flags = msg->flags;
@@ -953,8 +955,10 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
 	} else {	/* allocate error */
-		if (do_unlock)
+		if (do_unlock) {
 			unlock_slurmctld(job_write_lock);
+			_throttle_fini(&active_rpc_cnt);
+		}
 		info("_slurm_rpc_allocate_resources: %s ",
 		     slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
@@ -1811,7 +1815,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
  *	with the step_mgr */
 static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 {
-	/* init */
+	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	slurm_msg_t resp;
@@ -1848,7 +1852,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	}
 #endif
 	if (error_code == SLURM_SUCCESS) {
-		/* issue the RPC */
+		_throttle_start(&active_rpc_cnt);
 		lock_slurmctld(job_write_lock);
 		error_code = step_create(req_step_msg, &step_rec, false);
 	}
@@ -1861,6 +1865,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	/* return result */
 	if (error_code) {
 		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
 		if (error_code == ESLURM_PROLOG_RUNNING) {
 			debug("_slurm_rpc_job_step_create for job %u: %s",
 			      req_step_msg->job_id, slurm_strerror(error_code));
@@ -1890,6 +1895,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		job_step_resp.switch_job     = step_rec->switch_job;
 
 		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
 		slurm_msg_t_init(&resp);
 		resp.flags = msg->flags;
 		resp.protocol_version = msg->protocol_version;
