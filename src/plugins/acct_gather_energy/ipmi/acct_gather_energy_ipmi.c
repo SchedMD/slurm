@@ -698,7 +698,6 @@ static void *_thread_launcher(void *no_data)
 static int _get_joules_task(uint16_t delta)
 {
 	acct_gather_energy_t *last_energy = NULL;
-	time_t time_call = time(NULL);
 	time_t now;
 	static bool first = true;
 	static uint32_t start_current_energy = 0;
@@ -724,14 +723,20 @@ static int _get_joules_task(uint16_t delta)
 		if (slurm_ipmi_conf.adjustment)
 			local_energy->base_consumed_energy +=
 				_get_additional_consumption(
-					now, time_call,
+					local_energy->poll_time, now,
 					local_energy->current_watts,
 					local_energy->current_watts);
 	} else {
 		/* This is just for the step, so take all the pervious
 		   consumption out of the mix.
 		*/
-		start_current_energy = local_energy->consumed_energy;
+		if (slurm_ipmi_conf.adjustment)
+			local_energy->previous_consumed_energy +=
+				_get_additional_consumption(
+					local_energy->poll_time, now,
+					local_energy->current_watts,
+					local_energy->current_watts);
+		start_current_energy = local_energy->previous_consumed_energy;
 		local_energy->base_consumed_energy = 0;
 		first = false;
 	}

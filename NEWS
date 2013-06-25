@@ -16,6 +16,7 @@ documents those changes that are of interest to users and admins.
     very large numbers of batch job submissions or job cancellations.
  -- sstat - Fix issue where if -j wasn't given allow last argument to be checked
     for as the job/step id.
+ -- IPMI - fix adjustment on poll when using EnergyIPMICalcAdjustment.
 
 * Changes in Slurm 2.6.0rc1
 ===========================
