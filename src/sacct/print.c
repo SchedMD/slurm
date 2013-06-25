@@ -207,7 +207,7 @@ void print_fields(type_t type, void *object)
 			if (!fuzzy_equal(tmp_dub, NO_VAL))
 				convert_num_unit2((float)tmp_dub,
 						  outbuf, sizeof(outbuf),
-						  UNIT_NONE, 1000, false);
+						  UNIT_KILO, 1000, false);
 
 			field->print_routine(field,
 					     outbuf,
@@ -1248,7 +1248,7 @@ void print_fields(type_t type, void *object)
 			else if (!fuzzy_equal(tmp_dub, NO_VAL))
 				convert_num_unit2((float)tmp_dub,
 						  outbuf, sizeof(outbuf),
-						  UNIT_NONE, 1000, false);
+						  UNIT_KILO, 1000, false);
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
