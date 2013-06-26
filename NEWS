@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in Slurm 2.6.0
+========================
+
 * Changes in Slurm 2.6.0rc2
 ===========================
  -- HDF5 - Fix issue with Ubuntu where HDF5 development headers are
