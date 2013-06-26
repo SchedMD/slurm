@@ -317,7 +317,7 @@ SLURM job exit code management tools. Enables users to alter job exit code
 information for completed jobs
 
 %package slurmdb-direct
-Summary: Wrappers to write directly to the slurmdb.
+Summary: Wrappers to write directly to the slurmdb
 Group: Development/System
 Requires: slurm-perlapi
 %description slurmdb-direct
@@ -440,12 +440,14 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
    if [ -d /etc/init.d ]; then
       install -D -m755 etc/init.d.slurm    $RPM_BUILD_ROOT/etc/init.d/slurm
       install -D -m755 etc/init.d.slurmdbd $RPM_BUILD_ROOT/etc/init.d/slurmdbd
+      ln -s ../../etc/init.d/slurm    $RPM_BUILD_ROOT/usr/sbin/rcslurm
+      ln -s ../../etc/init.d/slurmdbd $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd
    fi
 %endif
 
 %if %{slurm_with cray}
    if [ -d /opt/modulefiles ]; then
-      install -D -m755 contribs/cray/opt_modulefiles_slurm $RPM_BUILD_ROOT/opt/modulefiles/slurm/opt_modulefiles_slurm
+      install -D -m644 contribs/cray/opt_modulefiles_slurm $RPM_BUILD_ROOT/opt/modulefiles/slurm/opt_modulefiles_slurm
    fi
 %else
    rm -f contribs/cray/opt_modulefiles_slurm
@@ -453,7 +455,7 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
 
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
 install -D -m644 etc/cgroup.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.conf.example
-install -D -m755 etc/cgroup_allowed_devices_file.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup_allowed_devices_file.conf.example
+install -D -m644 etc/cgroup_allowed_devices_file.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup_allowed_devices_file.conf.example
 install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup.release_common.example
 install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup/release_freezer
 install -D -m755 etc/cgroup.release_common.example ${RPM_BUILD_ROOT}%{_sysconfdir}/cgroup/release_cpuset
@@ -462,7 +464,22 @@ install -D -m644 etc/slurmdbd.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm
 install -D -m755 etc/slurm.epilog.clean ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.epilog.clean
 install -D -m755 contribs/sjstat ${RPM_BUILD_ROOT}%{_bindir}/sjstat
 
+# Correct some file permissions
+test -f $RPM_BUILD_ROOT/%{_libdir}/libpmi.la	&&
+	chmod 644 $RPM_BUILD_ROOT/%{_libdir}/libpmi.la
+test -f $RPM_BUILD_ROOT/%{_libdir}/libslurm.la	&&
+	chmod 644 $RPM_BUILD_ROOT/%{_libdir}/libslurm.la
+test -f $RPM_BUILD_ROOT/%{_libdir}/libslurmdb.la
+	chmod 644 $RPM_BUILD_ROOT/%{_libdir}/libslurmdb.la
+
 # Delete unpackaged files:
+test -f %{_perldir}/auto/Slurm/Slurm.bs         &&
+test -z %{_perldir}/auto/Slurm/Slurm.bs         &&
+rm   -f %{_perldir}/auto/Slurm/Slurm.bs
+test -f %{_perldir}/auto/Slurmdb/Slurmdb.bs     &&
+test -z %{_perldir}/auto/Slurmdb/Slurmdb.bs     &&
+rm   -f %{_perldir}/auto/Slurmdb/Slurmdb.bs
+
 rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi.a
 rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi2.a
 rm -f $RPM_BUILD_ROOT/%{_libdir}/libslurm.a
@@ -523,6 +540,8 @@ LIST=./slurm.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/etc/init.d/slurm			&&
   echo /etc/init.d/slurm				>> $LIST
+test -f $RPM_BUILD_ROOT/usr/sbin/rcslurm			&&
+  echo /usr/sbin/rcslurm				>> $LIST
 
 test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/opt_modulefiles_slurm &&
   echo /opt/modulefiles/slurm/opt_modulefiles_slurm	>> $LIST
@@ -565,8 +584,10 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_poe.so          &&
 
 LIST=./slurmdbd.files
 touch $LIST
-test -f $RPM_BUILD_ROOT/etc/init.d/slurm                       &&
-  echo /etc/init.d/slurmdbd                            >> $LIST
+test -f $RPM_BUILD_ROOT/etc/init.d/slurmdbd			&&
+  echo /etc/init.d/slurmdbd				>> $LIST
+test -f $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd			&&
+  echo /usr/sbin/rcslurmdbd				>> $LIST
 
 LIST=./sql.files
 touch $LIST
@@ -579,7 +600,15 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_mysql.so            &&
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_pgsql.so            &&
    echo %{_libdir}/slurm/jobcomp_pgsql.so            >> $LIST
 
+LIST=./perlapi.files
+touch $LIST
+test -f  %{_perldir}/auto/Slurm/Slurm.bs       &&
+   echo %{_perldir}/auto/Slurm/Slurm.bs        >> $LIST
+test -f  %{_perldir}/auto/Slurmdb/Slurmdb.bs   &&
+   echo %{_perldir}/auto/Slurmdb/Slurmdb.bs    >> $LIST
+
 LIST=./plugins.files
+touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_ipmi.so  &&
    echo %{_libdir}/slurm/acct_gather_energy_ipmi.so  >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_rapl.so  &&
@@ -720,7 +749,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 #############################################################################
 
-%files perlapi
+%files -f perlapi.files perlapi
 %defattr(-,root,root)
 %{_perldir}/Slurm.pm
 %{_perldir}/Slurm/Bitstr.pm
@@ -728,10 +757,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_perldir}/Slurm/Hostlist.pm
 %{_perldir}/Slurm/Stepctx.pm
 %{_perldir}/auto/Slurm/Slurm.so
-%{_perldir}/auto/Slurm/Slurm.bs
 %{_perldir}/Slurmdb.pm
 %{_perldir}/auto/Slurmdb/Slurmdb.so
-%{_perldir}/auto/Slurmdb/Slurmdb.bs
 %{_perldir}/auto/Slurmdb/autosplit.ix
 %{_perlman3dir}/Slurm*
 
@@ -942,9 +969,10 @@ if [ "$1" = 0 ]; then
 	/sbin/ldconfig %{_libdir}
     fi
 fi
+%insserv_cleanup
 #############################################################################
 
 
 %changelog
-* Tue Feb 14 2006 Morris Jette <jette1@llnl.gov>
-- See the NEWS file for update details
+* Wed Jun 26 2013 Morris Jette <jette@schedmd.com> 13.12.0-0pre1
+Various cosmetic fixes for rpmlint errors

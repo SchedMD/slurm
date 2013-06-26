@@ -286,7 +286,7 @@ case "$1" in
 	    done
 	fi
 	;;
-    reconfig)
+    reconfig|reload)
 	for prog in `$BINDIR/scontrol show daemons`; do
 	    echo -n $"Reloading $prog daemon configuration: "
 	    killproc $prog -HUP

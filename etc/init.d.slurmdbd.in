@@ -178,7 +178,7 @@ case "$1" in
 		 start slurmdbd
 	fi
 	;;
-    reconfig)
+    reconfig|reload)
 	echo -n $"Reloading slurmdbd daemon configuration: "
 	killproc slurmdbd -HUP
 	echo
