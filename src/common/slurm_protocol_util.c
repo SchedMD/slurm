@@ -51,16 +51,12 @@
 
 uint16_t _get_slurm_version(uint32_t rpc_version)
 {
-	uint16_t version;
-
 	if (rpc_version >= SLURMDBD_VERSION)
-		version = SLURM_PROTOCOL_VERSION;
+		return SLURM_PROTOCOL_VERSION;
 	else if (rpc_version >= SLURMDBD_2_6_VERSION)
-		version = SLURM_2_6_PROTOCOL_VERSION;
-	else if (rpc_version >= SLURMDBD_2_5_VERSION)
-		version = SLURM_2_5_PROTOCOL_VERSION;
-
-	return version;
+		return SLURM_2_6_PROTOCOL_VERSION;
+	else
+		return SLURM_2_5_PROTOCOL_VERSION;
 }
 
 /*
