@@ -228,8 +228,46 @@ $MPI_ROOT/bin/mpirun -TCP -srun -N8 ./a.out
 
 <h2><a name="mpich2" href="http://www.mcs.anl.gov/research/projects/mpich2/"><b>MPICH2</b></a></h2>
 
-<p>MPICH2 jobs can be launched using the <b>srun</b> command or <b>mpiexec</b>.
-Both modes of operation are described below.</p>
+<p>MPICH2 jobs can be launched using the <b>srun</b> command using
+  pmi 1 or 2, or <b>mpiexec</b>.
+All modes of operation are described below.</p>
+
+<h3>MPICH2 with srun and PMI version 2</h3>
+
+<p>MPICH2 must be built specifically for use with SLURM and PMI2 using a configure
+line similar to that shown below.</p>
+<pre>
+./configure --with-slurm=&lt;PATH&gt; --with-pmi=pmi2
+</pre>
+<p>
+The PATH must point to the SLURM installation directory, in other words the parent
+directory of bin and lib.
+In addition, if SLURM is not configured with <i>MpiDefault=pmi2</i>, then
+the srun command must be invoked with the option <i>--mpi=pmi2</i> as shown
+in the example below below.</p>
+<pre>
+srun -n4 --mpi=pmi2 ./a.out
+</pre>
+
+<p>
+The PMI2 support in SLURM works only if the MPI implementation supports it, in other words if the MPI has
+the PMI2 interface implemented. The <i>--mpi=pmi2</i> will load the  library <i>lib/slurm/mpi_pmi2.so</i>
+which provides the server side functionality but the client side must implement <i>PMI2_Init()</i>
+and the other interface calls.<br>
+
+<p>
+You can refere yourself to <i>mpich2-1.5</i> implementation and configure MPICH to use PMI2 with the <i>--with-pmi=pmi2</i> configure option.<br>
+
+<p>
+To check if the MPI version you are using supports PMI2 check for PMI2_* symbols in the MPI library.
+<p>
+SLURM provides a version of the PMI2 client library in the contribs directory. This library gets
+installed in the SLURM lib directory. If your MPI implementation supports PMI2 and you wish to use
+the SLURM provided library you have to link the SLURM provided library explicitly:
+<pre>
+$ mpicc -L&lt;path_to_pim2_lib&gt; -lpmi2 ...
+$ srun -n20 a.out
+</pre>
 
 <h3>MPICH2 with srun and PMI version 1</h3>
 
@@ -272,43 +310,6 @@ Launch the application using salloc to create the job allocation and mpiexec
 to launch the tasks. A simple example is shown below.</p>
 <pre>salloc -N 2 mpiexec my_application</pre>
 <p>All MPI_comm_spawn work fine now going through hydra's PMI 1.1 interface.</p>
-
-<h3>MPICH2 with srun and PMI version 2</h3>
-
-<p>MPICH2 must be built specifically for use with SLURM and PMI2 using a configure
-line similar to that shown below.</p>
-<pre>
-./configure --with-slurm=&lt;PATH&gt; --with-pmi=pmi2
-</pre>
-<p>
-The PATH must point to the SLURM installation directory, in other words the parent
-directory of bin and lib.
-In addition, if SLURM is not configured with <i>MpiDefault=pmi2</i>, then
-the srun command must be invoked with the option <i>--mpi=pmi2</i> as shown
-in the example below below.</p>
-<pre>
-srun -n4 --mpi=pmi2 ./a.out
-</pre>
-
-<p>
-The PMI2 support in SLURM works only if the MPI implementation supports it, in other words if the MPI has
-the PMI2 interface implemented. The <i>--mpi=pmi2</i> will load the  library <i>lib/slurm/mpi_pmi2.so</i>
-which provides the server side functionality but the client side must implement <i>PMI2_Init()</i>
-and the other interface calls.<br>
-
-<p>
-You can refere yourself to <i>mpich2-1.5</i> implementation and configure MPICH to use PMI2 with the <i>--with-pmi=pmi2</i> configure option.<br>
-
-<p>
-To check if the MPI version you are using supports PMI2 check for PMI2_* symbols in the MPI library.
-<p>
-SLURM provides a version of the PMI2 client library in the contribs directory. This library gets
-installed in the SLURM lib directory. If your MPI implementation supports PMI2 and you wish to use
-the SLURM provided library you have to link the SLURM provided library explicitly:
-<pre>
-$ mpicc -L&lt;path_to_pim2_lib&gt; -lpmi2 ...
-$ srun -n20 a.out
-</pre>
 
 <hr size=4 width="100%">
 
