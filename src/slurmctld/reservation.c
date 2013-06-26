@@ -87,8 +87,9 @@
  * Add logic to permit reading of the previous version's state in order
  * to avoid losing reservations between releases major SLURM updates. */
 #define RESV_STATE_VERSION          "VER004"
-#define RESV_2_5_STATE_VERSION      "VER004"
-#define RESV_2_4_STATE_VERSION      "VER003"
+#define RESV_13_12_STATE_VERSION    "VER004"	/* SLURM version 13.12 */
+#define RESV_2_6_STATE_VERSION      "VER004"	/* SLURM version 2.6 */
+#define RESV_2_5_STATE_VERSION      "VER004"	/* SLURM version 2.5 */
 
 typedef struct resv_thread_args {
 	char *script;
@@ -2770,8 +2771,10 @@ extern int load_all_resv_state(int recover)
 	if (ver_str) {
 		if (!strcmp(ver_str, RESV_STATE_VERSION))
 			protocol_version = SLURM_PROTOCOL_VERSION;
-		else if (!strcmp(ver_str, RESV_2_4_STATE_VERSION))
-			protocol_version = SLURM_2_4_PROTOCOL_VERSION;
+		else if (!strcmp(ver_str, RESV_2_6_STATE_VERSION))
+			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
+		else if (!strcmp(ver_str, RESV_2_5_STATE_VERSION))
+			protocol_version = SLURM_2_5_PROTOCOL_VERSION;
 	}
 	if (protocol_version == (uint16_t) NO_VAL) {
 		error("************************************************************");

@@ -102,13 +102,10 @@
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 
 /* Change JOB_STATE_VERSION value when changing the state save format */
-#define JOB_STATE_VERSION      "VER014"
-#define JOB_2_6_STATE_VERSION  "VER014"		/* SLURM version 2.6 */
-#define JOB_2_5_STATE_VERSION  "VER013"		/* SLURM version 2.5 */
-#define JOB_2_4_STATE_VERSION  "VER012"		/* SLURM version 2.4 */
-#define JOB_2_3_STATE_VERSION  "VER011"		/* SLURM version 2.3 */
-#define JOB_2_2_STATE_VERSION  "VER010"		/* SLURM version 2.2 */
-#define JOB_2_1_STATE_VERSION  "VER009"		/* SLURM version 2.1 */
+#define JOB_STATE_VERSION       "VER014"
+#define JOB_13_12_STATE_VERSION "VER014"	/* SLURM version 13.12 */
+#define JOB_2_6_STATE_VERSION   "VER014"	/* SLURM version 2.6 */
+#define JOB_2_5_STATE_VERSION   "VER013"	/* SLURM version 2.5 */
 
 #define JOB_CKPT_VERSION      "JOB_CKPT_002"
 #define JOB_2_2_CKPT_VERSION  "JOB_CKPT_002"	/* SLURM version 2.2 */
@@ -625,13 +622,12 @@ extern int load_all_job_state(void)
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
 	if (ver_str) {
-		if (!strcmp(ver_str, JOB_STATE_VERSION)) {
+		if (!strcmp(ver_str, JOB_STATE_VERSION))
 			protocol_version = SLURM_PROTOCOL_VERSION;
-		} else if (!strcmp(ver_str, JOB_2_5_STATE_VERSION)) {
+		else if (!strcmp(ver_str, JOB_2_6_STATE_VERSION))
+			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
+		else if (!strcmp(ver_str, JOB_2_5_STATE_VERSION))
 			protocol_version = SLURM_2_5_PROTOCOL_VERSION;
-		} else if (!strcmp(ver_str, JOB_2_4_STATE_VERSION)) {
-			protocol_version = SLURM_2_4_PROTOCOL_VERSION;
-		}
 	}
 
 	if (protocol_version == (uint16_t)NO_VAL) {
@@ -643,13 +639,6 @@ extern int load_all_job_state(void)
 		return EFAULT;
 	}
 	xfree(ver_str);
-
-	/* There was a bug in 2.4.0 where the job state version wasn't
-	 * incremented correctly.  Luckly the node state was.  We will
-	 * use it to set the version correctly in the job.
-	 */
-	if (load_2_4_state && protocol_version == SLURM_2_3_PROTOCOL_VERSION)
-		protocol_version = SLURM_2_4_PROTOCOL_VERSION;
 
 	safe_unpack_time(&buf_time, buffer);
 	safe_unpack32( &saved_job_id, buffer);
@@ -732,13 +721,12 @@ extern int load_last_job_id( void )
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
 	if (ver_str) {
-		if (!strcmp(ver_str, JOB_STATE_VERSION)) {
+		if (!strcmp(ver_str, JOB_STATE_VERSION))
 			protocol_version = SLURM_PROTOCOL_VERSION;
-		} else if (!strcmp(ver_str, JOB_2_5_STATE_VERSION)) {
+		else if (!strcmp(ver_str, JOB_2_6_STATE_VERSION))
+			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
+		else if (!strcmp(ver_str, JOB_2_5_STATE_VERSION))
 			protocol_version = SLURM_2_5_PROTOCOL_VERSION;
-		} else if (!strcmp(ver_str, JOB_2_4_STATE_VERSION)) {
-			protocol_version = SLURM_2_4_PROTOCOL_VERSION;
-		}
 	}
 	xfree(ver_str);
 
@@ -1251,158 +1239,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				goto unpack_error;
 			safe_unpack16(&step_flag, buffer);
 		}
-	} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
-		safe_unpack32(&assoc_id, buffer);
-		safe_unpack32(&job_id, buffer);
-
-		/* validity test as possible */
-		if (job_id == 0) {
-			verbose("Invalid job_id %u", job_id);
-			goto unpack_error;
-		}
-
-		job_ptr = find_job_record(job_id);
-		if (job_ptr == NULL) {
-			job_ptr = create_job_record(&error_code);
-			if (error_code) {
-				error("Create job entry failed for job_id %u",
-				      job_id);
-				goto unpack_error;
-			}
-			job_ptr->job_id = job_id;
-			_add_job_hash(job_ptr);
-		}
-
-		safe_unpack32(&user_id, buffer);
-		safe_unpack32(&group_id, buffer);
-		safe_unpack32(&time_limit, buffer);
-		safe_unpack32(&time_min, buffer);
-		safe_unpack32(&priority, buffer);
-		safe_unpack32(&alloc_sid, buffer);
-		safe_unpack32(&total_cpus, buffer);
-		safe_unpack32(&total_nodes, buffer);
-		safe_unpack32(&cpu_cnt, buffer);
-		safe_unpack32(&exit_code, buffer);
-		safe_unpack32(&derived_ec, buffer);
-		safe_unpack32(&db_index, buffer);
-		safe_unpack32(&resv_id, buffer);
-		safe_unpack32(&next_step_id, buffer);
-		safe_unpack32(&qos_id, buffer);
-		safe_unpack32(&req_switch, buffer);
-		safe_unpack32(&wait4switch, buffer);
-
-		safe_unpack_time(&preempt_time, buffer);
-		safe_unpack_time(&start_time, buffer);
-		safe_unpack_time(&end_time, buffer);
-		safe_unpack_time(&suspend_time, buffer);
-		safe_unpack_time(&pre_sus_time, buffer);
-		safe_unpack_time(&resize_time, buffer);
-		safe_unpack_time(&tot_sus_time, buffer);
-
-		safe_unpack16(&direct_set_prio, buffer);
-		safe_unpack16(&job_state, buffer);
-		safe_unpack16(&kill_on_node_fail, buffer);
-		safe_unpack16(&batch_flag, buffer);
-		safe_unpack16(&mail_type, buffer);
-		safe_unpack16(&state_reason, buffer);
-		safe_unpack16(&restart_cnt, buffer);
-		safe_unpack16(&resv_flags, buffer);
-		safe_unpack16(&wait_all_nodes, buffer);
-		safe_unpack16(&warn_signal, buffer);
-		safe_unpack16(&warn_time, buffer);
-		safe_unpack16(&limit_set_max_cpus, buffer);
-		safe_unpack16(&limit_set_max_nodes, buffer);
-		safe_unpack16(&limit_set_min_cpus, buffer);
-		safe_unpack16(&limit_set_min_nodes, buffer);
-		safe_unpack16(&limit_set_pn_min_memory, buffer);
-		safe_unpack16(&limit_set_time, buffer);
-		safe_unpack16(&limit_set_qos, buffer);
-
-		safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
-		safe_unpackstr_xmalloc(&resp_host, &name_len, buffer);
-
-		safe_unpack16(&alloc_resp_port, buffer);
-		safe_unpack16(&other_port, buffer);
-
-		if (job_state & JOB_COMPLETING) {
-			safe_unpackstr_xmalloc(&nodes_completing,
-					       &name_len, buffer);
-		}
-		safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
-		safe_unpackstr_xmalloc(&partition, &name_len, buffer);
-		if (partition == NULL) {
-			error("No partition for job %u", job_id);
-			goto unpack_error;
-		}
-		part_ptr = find_part_record (partition);
-		if (part_ptr == NULL) {
-			part_ptr_list = get_part_list(partition);
-			if (part_ptr_list)
-				part_ptr = list_peek(part_ptr_list);
-		}
-		if (part_ptr == NULL) {
-			verbose("Invalid partition (%s) for job_id %u",
-				partition, job_id);
-			/* not fatal error, partition could have been removed,
-			 * reset_job_bitmaps() will clean-up this job */
-		}
-
-		safe_unpackstr_xmalloc(&name, &name_len, buffer);
-		safe_unpackstr_xmalloc(&wckey, &name_len, buffer);
-		safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
-		safe_unpackstr_xmalloc(&account, &name_len, buffer);
-		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
-		safe_unpackstr_xmalloc(&gres, &name_len, buffer);
-		safe_unpackstr_xmalloc(&network, &name_len, buffer);
-		safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
-		safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
-		safe_unpackstr_xmalloc(&resv_name, &name_len, buffer);
-		safe_unpackstr_xmalloc(&batch_host, &name_len, buffer);
-
-		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
-						   protocol_version))
-			goto unpack_error;
-		if (unpack_job_resources(&job_resources, buffer,
-					 protocol_version))
-			goto unpack_error;
-
-		safe_unpack16(&ckpt_interval, buffer);
-		if (checkpoint_alloc_jobinfo(&check_job) ||
-		    checkpoint_unpack_jobinfo(check_job, buffer,
-					      protocol_version))
-			goto unpack_error;
-
-		safe_unpackstr_array(&spank_job_env, &spank_job_env_size,
-				     buffer);
-
-		if (gres_plugin_job_state_unpack(&gres_list, buffer, job_id,
-						 protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-		gres_plugin_job_state_log(gres_list, job_id);
-
-		safe_unpack16(&details, buffer);
-		if ((details == DETAILS_FLAG) &&
-		    (_load_job_details(job_ptr, buffer, protocol_version))) {
-			job_ptr->job_state = JOB_FAILED;
-			job_ptr->exit_code = 1;
-			job_ptr->state_reason = FAIL_SYSTEM;
-			xfree(job_ptr->state_desc);
-			job_ptr->end_time = now;
-			goto unpack_error;
-		}
-		safe_unpack16(&step_flag, buffer);
-
-		while (step_flag == STEP_FLAG) {
-			/* No need to put these into accounting if they
-			 * haven't been since all information will be
-			 * put in when the job is finished.
-			 */
-			if ((error_code = load_step_state(job_ptr, buffer,
-							  protocol_version)))
-				goto unpack_error;
-			safe_unpack16(&step_flag, buffer);
-		}
 	} else {
 		error("_load_job_state: protocol_version "
 		      "%hu not supported", protocol_version);
@@ -1726,7 +1562,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	uint32_t pn_min_cpus, pn_min_memory, pn_min_tmp_disk;
 	uint32_t num_tasks, name_len, argc = 0, env_cnt = 0;
 	uint16_t shared, contiguous, nice, ntasks_per_node;
-	uint16_t cpus_per_task, requeue, task_dist, tmp_uint16 = 0;
+	uint16_t cpus_per_task, requeue, task_dist;
 	uint16_t cpu_bind_type, mem_bind_type, plane_size;
 	uint8_t open_mode, overcommit, prolog_running;
 	time_t begin_time, submit_time;
@@ -1734,7 +1570,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	multi_core_data_t *mc_ptr;
 
 	/* unpack the job's details from the buffer */
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
@@ -1742,57 +1578,6 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 		safe_unpack32(&num_tasks, buffer);
 
 		safe_unpackstr_xmalloc(&acctg_freq, &name_len, buffer);
-		safe_unpack16(&contiguous, buffer);
-		safe_unpack16(&cpus_per_task, buffer);
-		safe_unpack16(&nice, buffer);
-		safe_unpack16(&ntasks_per_node, buffer);
-		safe_unpack16(&requeue, buffer);
-		safe_unpack16(&shared, buffer);
-		safe_unpack16(&task_dist, buffer);
-
-		safe_unpackstr_xmalloc(&cpu_bind, &name_len, buffer);
-		safe_unpack16(&cpu_bind_type, buffer);
-		safe_unpackstr_xmalloc(&mem_bind, &name_len, buffer);
-		safe_unpack16(&mem_bind_type, buffer);
-		safe_unpack16(&plane_size, buffer);
-
-		safe_unpack8(&open_mode, buffer);
-		safe_unpack8(&overcommit, buffer);
-		safe_unpack8(&prolog_running, buffer);
-
-		safe_unpack32(&pn_min_cpus, buffer);
-		safe_unpack32(&pn_min_memory, buffer);
-		safe_unpack32(&pn_min_tmp_disk, buffer);
-		safe_unpack_time(&begin_time, buffer);
-		safe_unpack_time(&submit_time, buffer);
-
-		safe_unpackstr_xmalloc(&req_nodes,  &name_len, buffer);
-		safe_unpackstr_xmalloc(&exc_nodes,  &name_len, buffer);
-		safe_unpackstr_xmalloc(&features,   &name_len, buffer);
-		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
-		safe_unpackstr_xmalloc(&orig_dependency, &name_len, buffer);
-
-		safe_unpackstr_xmalloc(&err, &name_len, buffer);
-		safe_unpackstr_xmalloc(&in,  &name_len, buffer);
-		safe_unpackstr_xmalloc(&out, &name_len, buffer);
-		safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
-		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
-		safe_unpackstr_xmalloc(&restart_dir, &name_len, buffer);
-
-		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
-			goto unpack_error;
-		safe_unpackstr_array(&argv, &argc, buffer);
-		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
-	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
-		safe_unpack32(&min_cpus, buffer);
-		safe_unpack32(&max_cpus, buffer);
-		safe_unpack32(&min_nodes, buffer);
-		safe_unpack32(&max_nodes, buffer);
-		safe_unpack32(&num_tasks, buffer);
-
-		safe_unpack16(&tmp_uint16, buffer);
-		if (tmp_uint16)
-			acctg_freq = xstrdup_printf("%u", tmp_uint16);
 		safe_unpack16(&contiguous, buffer);
 		safe_unpack16(&cpus_per_task, buffer);
 		safe_unpack16(&nice, buffer);
@@ -5997,7 +5782,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		else
 			_pack_pending_job_details(NULL, buffer,
 						  protocol_version);
-	} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		pack32(dump_job_ptr->assoc_id, buffer);
 		pack32(dump_job_ptr->job_id, buffer);
 		pack32(dump_job_ptr->user_id, buffer);
@@ -6210,7 +5995,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 			pack16((uint16_t) 0, buffer);
 			pack16((uint16_t) 0, buffer);
 		}
-	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		if (detail_ptr) {
 			packstr(detail_ptr->features,   buffer);
 			packstr(detail_ptr->work_dir,   buffer);
@@ -6290,7 +6075,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 static void _pack_pending_job_details(struct job_details *detail_ptr,
 				      Buf buffer, uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		if (detail_ptr) {
 			pack16(detail_ptr->shared, buffer);
 			pack16(detail_ptr->contiguous, buffer);

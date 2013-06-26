@@ -2534,36 +2534,6 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		packstr(step_ptr->gres, buffer);
 		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
 					     protocol_version);
-	} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
-		pack32(step_ptr->job_ptr->job_id, buffer);
-		pack32(step_ptr->step_id, buffer);
-		pack16(step_ptr->ckpt_interval, buffer);
-		pack32(step_ptr->job_ptr->user_id, buffer);
-		pack32(cpu_cnt, buffer);
-		pack32(task_cnt, buffer);
-		pack32(step_ptr->time_limit, buffer);
-
-		pack_time(step_ptr->start_time, buffer);
-		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
-			run_time = step_ptr->pre_sus_time;
-		} else {
-			begin_time = MAX(step_ptr->start_time,
-					 step_ptr->job_ptr->suspend_time);
-			run_time = step_ptr->pre_sus_time +
-				difftime(time(NULL), begin_time);
-		}
-		pack_time(run_time, buffer);
-
-		packstr(step_ptr->job_ptr->partition, buffer);
-		packstr(step_ptr->resv_ports, buffer);
-		packstr(node_list, buffer);
-		packstr(step_ptr->name, buffer);
-		packstr(step_ptr->network, buffer);
-		pack_bit_fmt(pack_bitstr, buffer);
-		packstr(step_ptr->ckpt_dir, buffer);
-		packstr(step_ptr->gres, buffer);
-		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
-					     protocol_version);
 	} else {
 		error("_pack_ctld_job_step_info: protocol_version "
 		      "%hu not supported", protocol_version);
@@ -3324,7 +3294,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
 						   protocol_version))
 			goto unpack_error;
-	} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id, buffer);
 		safe_unpack16(&cyclic_alloc, buffer);
 		safe_unpack16(&port, buffer);

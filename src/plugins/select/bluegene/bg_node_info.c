@@ -87,7 +87,7 @@ static node_subgrp_t *_find_subgrp(List subgrp_list, enum node_states state,
 static int _pack_node_subgrp(node_subgrp_t *subgrp, Buf buffer,
 			     uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		pack_bit_fmt(subgrp->bitmap, buffer);
 		pack16(subgrp->cnode_cnt, buffer);
 		pack16(subgrp->state, buffer);
@@ -106,7 +106,7 @@ static int _unpack_node_subgrp(node_subgrp_t **subgrp_pptr, Buf buffer,
 
 	*subgrp_pptr = subgrp;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&subgrp->str, &uint32_tmp, buffer);
 		if (!subgrp->str)
 			subgrp->inx = bitfmt2int("");
@@ -141,7 +141,7 @@ extern int select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, Buf buffer,
 	node_subgrp_t *subgrp = NULL;
 	uint16_t count = 0;
 
-	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		pack16(nodeinfo->bitmap_size, buffer);
 
 		packstr(nodeinfo->extra_info, buffer);
@@ -165,22 +165,9 @@ extern int select_nodeinfo_pack(select_nodeinfo_t *nodeinfo, Buf buffer,
 			}
 			list_iterator_destroy(itr);
 		}
-	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
-		pack16(nodeinfo->bitmap_size, buffer);
-
-		if (nodeinfo->subgrp_list)
-			count = list_count(nodeinfo->subgrp_list);
-
-		pack16(count, buffer);
-
-		if (count > 0) {
-			itr = list_iterator_create(nodeinfo->subgrp_list);
-			while ((subgrp = list_next(itr))) {
-				_pack_node_subgrp(subgrp, buffer,
-						  protocol_version);
-			}
-			list_iterator_destroy(itr);
-		}
+	} else {
+ 		error("select_nodeinfo_pack: protocol_version "
+ 		      "%hu not supported", protocol_version);
 	}
 
 	return SLURM_SUCCESS;
@@ -194,7 +181,7 @@ extern int select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, Buf buffer,
 	uint32_t j = 0;
 	uint32_t uint32_tmp;
 
-	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpack16(&size, buffer);
 
 		nodeinfo_ptr = select_nodeinfo_alloc((uint32_t)size);
@@ -220,23 +207,9 @@ extern int select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo, Buf buffer,
 				goto unpack_error;
 			list_append(nodeinfo_ptr->subgrp_list, subgrp);
 		}
-	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
-		safe_unpack16(&size, buffer);
-
-		nodeinfo_ptr = select_nodeinfo_alloc((uint32_t)size);
-		*nodeinfo = nodeinfo_ptr;
-
-		safe_unpack16(&size, buffer);
-		nodeinfo_ptr->subgrp_list = list_create(_free_node_subgrp);
-		for (j=0; j<size; j++) {
-			node_subgrp_t *subgrp = NULL;
-			if (_unpack_node_subgrp(&subgrp, buffer,
-						nodeinfo_ptr->bitmap_size,
-						protocol_version)
-			    != SLURM_SUCCESS)
-				goto unpack_error;
-			list_append(nodeinfo_ptr->subgrp_list, subgrp);
-		}
+	} else {
+ 		error("select_nodeinfo_unpack: protocol_version "
+ 		      "%hu not supported", protocol_version);
 	}
 	return SLURM_SUCCESS;
 

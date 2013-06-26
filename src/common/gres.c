@@ -1689,7 +1689,7 @@ extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
-		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
@@ -2232,7 +2232,7 @@ extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		gres_job_ptr = (gres_job_state_t *) gres_ptr->gres_data;
-		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 			pack32(magic, buffer);
 			pack32(gres_ptr->plugin_id, buffer);
 			pack32(gres_job_ptr->gres_cnt_alloc, buffer);
@@ -2318,7 +2318,7 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			break;
 		rec_cnt--;
 
-		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
@@ -3930,7 +3930,7 @@ extern int gres_plugin_step_state_pack(List gres_list, Buf buffer,
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		gres_step_ptr = (gres_step_state_t *) gres_ptr->gres_data;
-		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 			pack32(magic, buffer);
 			pack32(gres_ptr->plugin_id, buffer);
 			pack32(gres_step_ptr->gres_cnt_alloc, buffer);
@@ -3996,7 +3996,7 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 			break;
 		rec_cnt--;
 
-		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;

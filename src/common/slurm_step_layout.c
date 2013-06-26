@@ -257,7 +257,7 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 {
 	uint32_t i = 0;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		if (step_layout)
 			i=1;
 
@@ -289,7 +289,7 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer,
 	slurm_step_layout_t *step_layout = NULL;
 	int i;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpack16(&uint16_tmp, buffer);
 		if (!uint16_tmp)
 			return SLURM_SUCCESS;

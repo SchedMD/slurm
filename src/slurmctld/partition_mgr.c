@@ -71,9 +71,10 @@
 
 
 /* Change PART_STATE_VERSION value when changing the state save format */
-#define PART_STATE_VERSION      "VER004"
-#define PART_2_6_STATE_VERSION  "VER004"	/* SLURM version 2.6 */
-#define PART_2_5_STATE_VERSION  "VER003"	/* SLURM version 2.5 to 2.2 */
+#define PART_STATE_VERSION        "VER004"
+#define PART_13_12_STATE_VERSION  "VER004"	/* SLURM version 13.12 */
+#define PART_2_6_STATE_VERSION    "VER004"	/* SLURM version 2.6 */
+#define PART_2_5_STATE_VERSION    "VER003"	/* SLURM version 2.5 */
 
 /* Global variables */
 struct part_record default_part;	/* default configuration values */
@@ -558,7 +559,7 @@ int load_all_part_state(void)
 				      part_name, flags);
 				error_code = EINVAL;
 			}
-		} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+		} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
 			safe_unpack32(&grace_time, buffer);
 			safe_unpack32(&max_time, buffer);
@@ -985,7 +986,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 		packstr(part_ptr->alternate, buffer);
 		packstr(part_ptr->nodes, buffer);
 		pack_bit_fmt(part_ptr->node_bitmap, buffer);
-	} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;
 		else
