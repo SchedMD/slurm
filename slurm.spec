@@ -190,6 +190,8 @@ partition management, job management, scheduling and accounting modules
 #
 # Never allow rpm to strip binaries as this will break
 #  parallel debugging capability
+# Note that brp-compress does not compress man pages installed
+#  into non-standard locations (e.g. /usr/local)
 #
 %define __os_install_post /usr/lib/rpm/brp-compress
 %define debug_package %{nil}
@@ -430,7 +432,6 @@ make %{?_smp_mflags}
 
 %install
 rm -rf "$RPM_BUILD_ROOT"
-mkdir -p "$RPM_BUILD_ROOT"
 DESTDIR="$RPM_BUILD_ROOT" make install
 DESTDIR="$RPM_BUILD_ROOT" make install-contrib
 
@@ -934,8 +935,6 @@ if [ -x /sbin/ldconfig ]; then
 	[ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
     fi
 fi
-
-%post slurmdbd
 
 %if %{slurm_with bluegene}
 %post bluegene
