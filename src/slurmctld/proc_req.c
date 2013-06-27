@@ -1443,6 +1443,8 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
  * the epilog denoting the completion of a job it its entirety */
 static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 {
+	static time_t config_update = 0;
+	static bool defer_sched = false;
 	DEF_TIMERS;
 	/* Locks: Read configuration, write job, write node */
 	slurmctld_lock_t job_write_lock = {
@@ -1458,6 +1460,12 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 		error("Security violation, EPILOG_COMPLETE RPC from uid=%d",
 		      uid);
 		return;
+	}
+
+	if (config_update != slurmctld_conf.last_update) {
+		char *sched_params = slurm_get_sched_params();
+		defer_sched = (sched_params && strstr(sched_params,"defer"));
+		xfree(sched_params);
 	}
 
 	lock_slurmctld(job_write_lock);
@@ -1478,7 +1486,16 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 
 	/* Functions below provide their own locking */
 	if (run_scheduler) {
-		(void) schedule(0);
+		/*
+		 * In defer mode, avoid triggering the scheduler logic
+		 * for every epilog complete message.
+		 * As one epilog message is sent from every node of each
+		 * job at termination, the number of simultaneous schedule
+		 * calls can be very high for large machine or large number
+		 * of managed jobs.
+		 */
+		if (!defer_sched)
+			(void) schedule(0);
 		schedule_node_save();
 		schedule_job_save();
 	}
@@ -2739,6 +2756,8 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 /* _slurm_rpc_submit_batch_job - process RPC to submit a batch job */
 static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 {
+	static time_t config_update = 0;
+	static bool defer_sched = false;
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
@@ -2755,6 +2774,12 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_JOB from uid=%d", uid);
+
+	if (config_update != slurmctld_conf.last_update) {
+		char *sched_params = slurm_get_sched_params();
+		defer_sched = (sched_params && strstr(sched_params,"defer"));
+		xfree(sched_params);
+	}
 
 	slurm_msg_t_init(&response_msg);
 	response_msg.flags = msg->flags;
@@ -2898,8 +2923,13 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		 * to run the various prologs, boot the node, etc.
 		 * We also run schedule() even if this job could not start,
 		 * say due to a higher priority job, since the locks are
-		 * released above and we might start some other job here. */
-		schedule(schedule_cnt);	/* has own locks */
+		 * released above and we might start some other job here.
+		 *
+		 * In defer mode, avoid triggering the scheduler logic
+		 * for every submit batch job request.
+		 */
+		if (!defer_sched)
+			(void) schedule(schedule_cnt); /* has own locks */
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
 	}
