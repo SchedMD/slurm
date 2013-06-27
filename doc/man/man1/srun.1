@@ -447,8 +447,10 @@ from commandline parameters.
 \fBsrun\fR will run \fIexecutable\fR just after the job step completes.
 The command line arguments for \fIexecutable\fR will be the command
 and arguments of the job step.  If \fIexecutable\fR is "none", then
-no epilog will be run.  This parameter overrides the SrunEpilog
-parameter in slurm.conf.
+no srun epilog will be run. This parameter overrides the SrunEpilog
+parameter in slurm.conf. This parameter is completely independent from
+the Epilog parameter in slurm.conf.
+
 
 .TP
 \fB\-\-exclusive\fR
@@ -1136,8 +1138,9 @@ Network (InfiniBand) data is collected.
 \fBsrun\fR will run \fIexecutable\fR just before launching the job step.
 The command line arguments for \fIexecutable\fR will be the command
 and arguments of the job step.  If \fIexecutable\fR is "none", then
-no prolog will be run.  This parameter overrides the SrunProlog
-parameter in slurm.conf.
+no srun prolog will be run. This parameter overrides the SrunProlog
+parameter in slurm.conf. This parameter is completely independent from
+the Prolog parameter in slurm.conf.
 
 .TP
 \fB\-\-propagate\fR[=\fIrlimits\fR]
