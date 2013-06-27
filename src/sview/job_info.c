@@ -55,6 +55,7 @@ typedef struct {
 	int color_inx;
 	GtkTreeIter iter_ptr;
 	bool iter_set;
+	uint32_t job_id;
 	job_info_t *job_ptr;
 	int node_cnt;
 	char *nodes;
@@ -507,14 +508,23 @@ static char *_read_file(const char *f_name)
 	return buf;
 }
 
+static void _job_info_free(sview_job_info_t *sview_job_info)
+{
+	if (sview_job_info) {
+		xfree(sview_job_info->nodes);
+		if (sview_job_info->step_list) {
+			list_destroy(sview_job_info->step_list);
+			sview_job_info->step_list = NULL;
+		}
+	}
+}
+
 static void _job_info_list_del(void *object)
 {
 	sview_job_info_t *sview_job_info = (sview_job_info_t *)object;
 
 	if (sview_job_info) {
-		xfree(sview_job_info->nodes);
-		if (sview_job_info->step_list)
-			list_destroy(sview_job_info->step_list);
+		_job_info_free(sview_job_info);
 		xfree(sview_job_info);
 	}
 }
@@ -2587,41 +2597,9 @@ static void _update_info_job(List info_list,
 			_update_job_record(sview_job_info,
 					   GTK_TREE_STORE(model));
 		else {
-			GtkTreePath *path = gtk_tree_path_new_first();
-
-			/* get the iter, or find out the list is empty
-			 * goto add */
-			if (gtk_tree_model_get_iter(
-				    model, &sview_job_info->iter_ptr, path)) {
-				do {
-					/* search for the jobid and
-					   check to see if it is in
-					   the list */
-					gtk_tree_model_get(
-						model,
-						&sview_job_info->iter_ptr,
-						SORTID_JOBID,
-						&jobid, -1);
-					if (jobid == job_ptr->job_id) {
-						/* update with new info */
-						_update_job_record(
-							sview_job_info,
-							GTK_TREE_STORE(model));
-						sview_job_info->iter_set = 1;
-						break;
-					}
-				} while (gtk_tree_model_iter_next(
-						 model,
-						 &sview_job_info->iter_ptr));
-			}
-
-			if (!sview_job_info->iter_set) {
-				_append_job_record(sview_job_info,
-						   GTK_TREE_STORE(model));
-				sview_job_info->iter_set = true;
-			}
-
-			gtk_tree_path_free(path);
+			_append_job_record(sview_job_info,
+					   GTK_TREE_STORE(model));
+			sview_job_info->iter_set = true;
 		}
 	}
 	list_iterator_destroy(itr);
@@ -2659,6 +2637,8 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 {
 	static List info_list = NULL;
 	static List odd_info_list = NULL;
+	List last_list = NULL;
+	ListIterator last_list_itr = NULL;
 	static job_info_msg_t *last_job_info_ptr = NULL;
 	static job_step_info_response_msg_t *last_step_info_ptr = NULL;
 	int i = 0, j = 0;
@@ -2677,7 +2657,8 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 
 	if (info_list) {
 		list_flush(info_list);
-		list_flush(odd_info_list);
+		last_list = odd_info_list;
+		odd_info_list = list_create(_job_info_list_del);
 	} else {
 		info_list = list_create(NULL);
 		odd_info_list = list_create(_job_info_list_del);
@@ -2686,12 +2667,30 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		g_print("malloc error\n");
 		return NULL;
 	}
-
+	if (last_list)
+		last_list_itr = list_iterator_create(last_list);
 	for (i=0; i<job_info_ptr->record_count; i++) {
 		job_ptr = &(job_info_ptr->job_array[i]);
 
-		sview_job_info_ptr = xmalloc(sizeof(sview_job_info_t));
+		sview_job_info_ptr = NULL;
+
+		if (last_list_itr) {
+			while ((sview_job_info_ptr =
+				list_next(last_list_itr))) {
+				if (sview_job_info_ptr->job_id ==
+				    job_ptr->job_id) {
+					list_remove(last_list_itr);
+					_job_info_free(sview_job_info_ptr);
+					break;
+				}
+			}
+			list_iterator_reset(last_list_itr);
+		}
+
+		if (!sview_job_info_ptr)
+			sview_job_info_ptr = xmalloc(sizeof(sview_job_info_t));
 		sview_job_info_ptr->job_ptr = job_ptr;
+		sview_job_info_ptr->job_id = job_ptr->job_id;
 		sview_job_info_ptr->step_list = list_create(NULL);
 		sview_job_info_ptr->pos = i;
 		sview_job_info_ptr->node_cnt = 0;
@@ -2746,6 +2745,11 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 	list_sort(info_list, (ListCmpF)_sview_job_sort_aval_dec);
 
 	list_sort(odd_info_list, (ListCmpF)_sview_job_sort_aval_dec);
+
+	if (last_list) {
+		list_iterator_destroy(last_list_itr);
+		list_destroy(last_list);
+	}
 
 update_color:
 
