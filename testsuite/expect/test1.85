@@ -39,8 +39,13 @@ source ./globals
 set test_id     "1.85"
 set prompt      "PROMPT: "
 
-
 print_header $test_id
+
+if {[test_launch_poe]} {
+        set node_name_env MP_I_UPMD_HOSTNAME
+} else {
+        set node_name_env SLURMD_NODENAME
+}
 
 # spawn an allocation to run on 2
 # hosts with 4 tasks.
@@ -123,7 +128,7 @@ send_user "Got exec hosts $host1 $host2\n"
 # then srun a first task.
 set hostname ""
 set spawn_id $salloc_id
-send "$srun -l -n 1 -N 1 $bin_printenv SLURMD_NODENAME\r"
+send "$srun -l -n 1 -N 1 $bin_printenv $node_name_env\r"
 expect {
 	-re "($number): *($alpha_numeric_under)" {
 		set hostname $expect_out(2,string)
@@ -144,7 +149,7 @@ expect {
 # force the second task on the second node, at the end
 # make sure the task ran on the specified node.
 set hostname ""
-send "$srun -l -n 1 -N 1 -w $host2 $bin_printenv SLURMD_NODENAME\r"
+send "$srun -l -n 1 -N 1 -w $host2 $bin_printenv $node_name_env\r"
 expect {
 	-re "($number): *($alpha_numeric_under)" {
 		set hostname $expect_out(2,string)

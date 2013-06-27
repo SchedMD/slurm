@@ -90,7 +90,7 @@ if {$error_match != 2} {
 
 # Run script with srun
 set error_match 0
-spawn $srun -n1 $script
+spawn $srun -n1 ./$script
 expect {
 	-re "Segmentation fault" {
 		send_user "\nThis error is expected\n"
