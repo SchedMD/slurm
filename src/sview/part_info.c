@@ -57,6 +57,7 @@ typedef struct {
 	int color_inx;
 	GtkTreeIter iter_ptr;
 	bool iter_set;
+	char *part_name;
 	/* part_info contains partition, avail, max_time, job_size,
 	 * root, share, groups */
 	partition_info_t* part_ptr;
@@ -1371,7 +1372,6 @@ static void _update_info_part(List info_list,
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	static GtkTreeModel *last_model = NULL;
-	partition_info_t *part_ptr = NULL;
 	char *name = NULL;
 	ListIterator itr = NULL;
 	sview_part_info_t *sview_part_info = NULL;
@@ -1380,7 +1380,6 @@ static void _update_info_part(List info_list,
 
 	itr = list_iterator_create(info_list);
 	while ((sview_part_info = (sview_part_info_t*) list_next(itr))) {
-		part_ptr = sview_part_info->part_ptr;
 		/* This means the tree_store changed (added new column
 		   or something). */
 		if (last_model != model)
@@ -1389,7 +1388,8 @@ static void _update_info_part(List info_list,
 		if (sview_part_info->iter_set) {
 			gtk_tree_model_get(model, &sview_part_info->iter_ptr,
 					   SORTID_NAME, &name, -1);
-			if (strcmp(name, part_ptr->name)) /* Bad pointer */
+			if (strcmp(name, sview_part_info->part_name))
+				/* Bad pointer */
 				sview_part_info->iter_set = false;
 			g_free(name);
 		}
@@ -1397,42 +1397,9 @@ static void _update_info_part(List info_list,
 			_update_part_record(sview_part_info,
 					    GTK_TREE_STORE(model));
 		else {
-			GtkTreePath *path = gtk_tree_path_new_first();
-
-			/* get the iter, or find out the list is empty
-			 * goto add */
-			if (gtk_tree_model_get_iter(
-				    model, &sview_part_info->iter_ptr, path)) {
-				do {
-					/* search for the jobid and
-					   check to see if it is in
-					   the list */
-					gtk_tree_model_get(
-						model,
-						&sview_part_info->iter_ptr,
-						SORTID_NAME,
-						&name, -1);
-					if (!strcmp(name, part_ptr->name)) {
-						/* update with new info */
-						g_free(name);
-						_update_part_record(
-							sview_part_info,
-							GTK_TREE_STORE(model));
-						sview_part_info->iter_set = 1;
-						break;
-					}
-					g_free(name);
-				} while (gtk_tree_model_iter_next(
-						 model,
-						 &sview_part_info->iter_ptr));
-			}
-
-			if (!sview_part_info->iter_set) {
-				_append_part_record(sview_part_info,
-						    GTK_TREE_STORE(model));
-				sview_part_info->iter_set = true;
-			}
-			gtk_tree_path_free(path);
+			_append_part_record(sview_part_info,
+					    GTK_TREE_STORE(model));
+			sview_part_info->iter_set = true;
 		}
 	}
 	list_iterator_destroy(itr);
@@ -1442,13 +1409,21 @@ static void _update_info_part(List info_list,
 	return;
 }
 
+static void _part_info_free(sview_part_info_t *sview_part_info)
+{
+	if (sview_part_info) {
+		xfree(sview_part_info->part_name);
+		if (sview_part_info->sub_list)
+			list_destroy(sview_part_info->sub_list);
+	}
+}
+
 static void _part_info_list_del(void *object)
 {
 	sview_part_info_t *sview_part_info = (sview_part_info_t *)object;
 
 	if (sview_part_info) {
-		if (sview_part_info->sub_list)
-			list_destroy(sview_part_info->sub_list);
+		_part_info_free(sview_part_info);
 		xfree(sview_part_info);
 	}
 }
@@ -1595,23 +1570,6 @@ static int _insert_sview_part_sub(sview_part_info_t *sview_part_info,
 	return SLURM_SUCCESS;
 }
 
-/*
- * _create_sview_part_info - create an sview_part_info record for
- *                           the given partition
- * part_ptr IN             - pointer to partition record to add
- * sview_part_info OUT     - ptr to an inited sview_part_info_t
- */
-static sview_part_info_t *_create_sview_part_info(partition_info_t* part_ptr)
-{
-	sview_part_info_t *sview_part_info =
-		xmalloc(sizeof(sview_part_info_t));
-
-
-	sview_part_info->part_ptr = part_ptr;
-	sview_part_info->sub_list = list_create(_destroy_part_sub);
-	return sview_part_info;
-}
-
 static int _sview_part_sort_aval_dec(sview_part_info_t* rec_a,
 				     sview_part_info_t* rec_b)
 {
@@ -1653,6 +1611,8 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 	partition_info_t *part_ptr = NULL;
 	static node_info_msg_t *last_node_info_ptr = NULL;
 	static partition_info_msg_t *last_part_info_ptr = NULL;
+	List last_list = NULL;
+	ListIterator last_list_itr = NULL;
 	node_info_t *node_ptr = NULL;
 	static List info_list = NULL;
 	int i, j2;
@@ -1667,14 +1627,16 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 	last_part_info_ptr = part_info_ptr;
 
 	if (info_list)
-		list_flush(info_list);
-	else
-		info_list = list_create(_part_info_list_del);
+		last_list = info_list;
+
+	info_list = list_create(_part_info_list_del);
 	if (!info_list) {
 		g_print("malloc error\n");
 		return NULL;
 	}
 
+	if (last_list)
+		last_list_itr = list_iterator_create(last_list);
 	for (i=0; i<part_info_ptr->record_count; i++) {
 		part_ptr = &(part_info_ptr->partition_array[i]);
 
@@ -1682,7 +1644,27 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		if (!working_sview_config.show_hidden &&
 		    part_ptr->flags & PART_FLAG_HIDDEN)
 			continue;
-		sview_part_info = _create_sview_part_info(part_ptr);
+
+		sview_part_info = NULL;
+
+		if (last_list_itr) {
+			while ((sview_part_info =
+				list_next(last_list_itr))) {
+				if (!strcmp(sview_part_info->part_name,
+					    part_ptr->name)) {
+					list_remove(last_list_itr);
+					_part_info_free(sview_part_info);
+					break;
+				}
+			}
+			list_iterator_reset(last_list_itr);
+		}
+
+		if (!sview_part_info)
+			sview_part_info = xmalloc(sizeof(sview_part_info_t));
+		sview_part_info->part_name = xstrdup(part_ptr->name);
+		sview_part_info->part_ptr = part_ptr;
+		sview_part_info->sub_list = list_create(_destroy_part_sub);
 		sview_part_info->pos = i;
 		list_append(info_list, sview_part_info);
 		sview_part_info->color_inx = i % sview_colors_cnt;
@@ -1735,6 +1717,11 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 		list_iterator_destroy(itr);
 	}
 	list_sort(info_list, (ListCmpF)_sview_part_sort_aval_dec);
+
+	if (last_list) {
+		list_iterator_destroy(last_list_itr);
+		list_destroy(last_list);
+	}
 
 	return info_list;
 }
