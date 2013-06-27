@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 13.12.0pre1
 ==============================
+ -- sview - improve scalability
 
 * Changes in Slurm 2.6.0
 ========================
