@@ -440,6 +440,7 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
    if [ -d /etc/init.d ]; then
       install -D -m755 etc/init.d.slurm    $RPM_BUILD_ROOT/etc/init.d/slurm
       install -D -m755 etc/init.d.slurmdbd $RPM_BUILD_ROOT/etc/init.d/slurmdbd
+      mkdir -p "$RPM_BUILD_ROOT/usr/sbin"
       ln -s ../../etc/init.d/slurm    $RPM_BUILD_ROOT/usr/sbin/rcslurm
       ln -s ../../etc/init.d/slurmdbd $RPM_BUILD_ROOT/usr/sbin/rcslurmdbd
    fi
