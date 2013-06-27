@@ -1582,6 +1582,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
  *	completion of a job allocation */
 static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 {
+	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	complete_job_allocation_msg_t *comp_msg =
@@ -1599,6 +1600,7 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	       "uid=%u, JobId=%u rc=%d",
 	       uid, comp_msg->job_id, comp_msg->job_rc);
 
+	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
 
 	/* do RPC call */
@@ -1606,6 +1608,7 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	error_code = job_complete(comp_msg->job_id, uid,
 				  job_requeue, false, comp_msg->job_rc);
 	unlock_slurmctld(job_write_lock);
+	_throttle_fini(&active_rpc_cnt);
 	END_TIMER2("_slurm_rpc_complete_job_allocation");
 
 	/* return result */
@@ -1626,6 +1629,7 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
  *	completion of a batch script */
 static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 {
+	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS, i;
 	DEF_TIMERS;
 	complete_batch_script_msg_t *comp_msg =
@@ -1658,7 +1662,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 		return;
 	}
 
-
+	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(comp_msg->job_id);
 
@@ -1773,6 +1777,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 			 comp_msg->job_rc);
 	error_code = MAX(error_code, i);
 	unlock_slurmctld(job_write_lock);
+	_throttle_fini(&active_rpc_cnt);
 
 #ifdef HAVE_BG
 	if (block_desc.bg_block_id) {
@@ -2564,6 +2569,7 @@ static void _slurm_rpc_shutdown_controller_immediate(slurm_msg_t * msg)
  *	represent the termination of an entire job */
 static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 {
+	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS, rc, rem;
 	uint32_t step_rc;
 	DEF_TIMERS;
@@ -2583,12 +2589,14 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 	      req->range_first, req->range_last,
 	      req->step_rc, uid);
 
+	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
 	rc = step_partial_comp(req, uid, &rem, &step_rc);
 
 	if (rc || rem) {	/* some error or not totally done */
 		/* Note: Error printed within step_partial_comp */
 		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
 		slurm_send_rc_msg(msg, rc);
 		if (!rc)	/* partition completion */
 			schedule_job_save();	/* Has own locking */
@@ -2600,6 +2608,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 		error_code = job_complete(req->job_id, uid, job_requeue,
 					  false, step_rc);
 		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
 		END_TIMER2("_slurm_rpc_step_complete");
 
 		/* return result */
@@ -2617,6 +2626,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 		error_code = job_step_complete(req->job_id, req->job_step_id,
 					       uid, job_requeue, step_rc);
 		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
 		END_TIMER2("_slurm_rpc_step_complete");
 
 		/* return result */
