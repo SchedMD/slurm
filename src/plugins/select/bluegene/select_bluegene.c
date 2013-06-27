@@ -464,11 +464,11 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 #ifdef HAVE_BGQ
 	int dim;
 #endif
-	uint32_t count = NO_VAL, running_job = 0;
+	uint32_t count = NO_VAL;
 	struct job_record *job_ptr;
 	ListIterator itr;
 
-	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		packstr(bg_record->bg_block_id, buffer);
 		packstr(bg_record->blrtsimage, buffer);
 		pack_bit_fmt(bg_record->mp_bitmap, buffer);
@@ -524,57 +524,6 @@ static void _pack_block(bg_record_t *bg_record, Buf buffer,
 		packstr(bg_record->ramdiskimage, buffer);
 		packstr(bg_record->reason, buffer);
 		pack16((uint16_t)bg_record->state, buffer);
-	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
-		packstr(bg_record->bg_block_id, buffer);
-		packstr(bg_record->blrtsimage, buffer);
-		pack_bit_fmt(bg_record->mp_bitmap, buffer);
-#ifdef HAVE_BGQ
-		pack32(SYSTEM_DIMENSIONS, buffer);
-		for (dim=0; dim<SYSTEM_DIMENSIONS; dim++)
-			pack16(bg_record->conn_type[dim], buffer);
-#else
-		pack32(1, buffer); /* for dimensions of conn_type */
-		pack16(bg_record->conn_type[0], buffer);
-#endif
-		packstr(bg_record->ionode_str, buffer);
-		pack_bit_fmt(bg_record->ionode_bitmap, buffer);
-
-		if (bg_record->job_list)
-			count = list_count(bg_record->job_list);
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(bg_record->job_list);
-			while ((job_ptr = list_next(itr))) {
-				if (job_ptr->magic != JOB_MAGIC) {
-					error("_pack_block 2.3: "
-					      "bad magic found when "
-					      "packing block %s",
-					      bg_record->bg_block_id);
-					list_delete_item(itr);
-					continue;
-				}
-				_local_pack_block_job_info(
-					job_ptr, buffer, protocol_version);
-			}
-			list_iterator_destroy(itr);
-		}
-		if ((count == 1) && running_job)
-			pack32((uint32_t)running_job, buffer);
-		else
-			pack32((uint32_t)bg_record->job_running, buffer);
-		count = NO_VAL;
-
-		packstr(bg_record->linuximage, buffer);
-		packstr(bg_record->mloaderimage, buffer);
-		packstr(bg_record->mp_str, buffer);
-		packnull(buffer); /* for mp_used_str */
-		pack32((uint32_t)bg_record->cnode_cnt, buffer);
-		pack16((uint16_t)bg_record->node_use, buffer);
-		packnull(buffer); /* for user_name */
-		packstr(bg_record->ramdiskimage, buffer);
-		packstr(bg_record->reason, buffer);
-		pack16((uint16_t)bg_record->state, buffer);
-		packnull(buffer); /* for mp_used_inx */
 	}
 }
 
@@ -589,7 +538,7 @@ static void _pack_block_ext(bg_record_t *bg_record, Buf buffer,
 
 	xassert(bg_record);
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		if (bg_record->ba_mp_list)
 			count = list_count(bg_record->ba_mp_list);
 		pack32(count, buffer);
@@ -624,7 +573,7 @@ static int _unpack_block_ext(bg_record_t *bg_record, Buf buffer,
 
 	xassert(bg_record);
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count == NO_VAL) {
 			error("_unpack_block_ext: bg_record record has no "
@@ -646,17 +595,6 @@ static int _unpack_block_ext(bg_record_t *bg_record, Buf buffer,
 		safe_unpack16(&temp16, buffer);
 		bg_record->full_block = temp16;
 		safe_pack32(bg_record->switch_count, buffer);
-	} else {
-		/* packing didn't exist before 2.3, so set things up
-		 * to go forward */
-		if (bg_conf->mp_cnode_cnt > bg_record->cnode_cnt) {
-			bg_record->cpu_cnt = bg_conf->cpus_per_mp /
-				(bg_conf->mp_cnode_cnt / bg_record->cnode_cnt);
-		} else {
-			bg_record->cpu_cnt = bg_conf->cpus_per_mp
-				* bg_record->mp_count;
-		}
-		process_nodes(bg_record, true);
 	}
 
 	return SLURM_SUCCESS;
@@ -2154,7 +2092,7 @@ extern int select_p_pack_select_info(time_t last_query_time,
 		pack32(blocks_packed, buffer);
 		pack_time(last_bg_update, buffer);
 
-		if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 			if (bg_lists->main) {
 				/* Lock job read before block to avoid
 				 * deadlock job lock is needed because
