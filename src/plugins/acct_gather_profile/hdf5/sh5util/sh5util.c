@@ -266,6 +266,9 @@ static void _set_options(const int argc, char **argv)
 		exit(0);
 	}
 
+	if (params.job_id == -1)
+		fatal("You need to supply a --jobs value.");
+
 	if (uid == -1)
 		uid = getuid();
 
