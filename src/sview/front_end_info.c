@@ -36,9 +36,13 @@
 /* Collection of data for printing reports. Like data is combined here */
 typedef struct {
 	int color_inx;
+	char *front_end_name;
 	front_end_info_t *front_end_ptr;
+	GtkTreeIter iter_ptr;
+	bool iter_set;
 	char *boot_time;
 	int node_inx[3];
+	int pos;
 	char *reason;
 	char *slurmd_start_time;
 	char *state;
@@ -68,6 +72,7 @@ enum {
 	SORTID_REASON,
 	SORTID_SLURMD_START_TIME,
 	SORTID_STATE,
+	SORTID_UPDATED,
 	SORTID_CNT
 };
 
@@ -109,6 +114,8 @@ static display_data_t display_data_front_end[] = {
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
 	{G_TYPE_POINTER, SORTID_NODE_INX,  NULL, FALSE, EDIT_NONE,
 	 refresh_front_end, create_model_front_end, admin_edit_front_end},
+	{G_TYPE_INT,    SORTID_UPDATED,    NULL, FALSE, EDIT_NONE,
+	 refresh_resv, create_model_resv, admin_edit_resv},
 	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
@@ -132,16 +139,23 @@ static void _admin_front_end(GtkTreeModel *model, GtkTreeIter *iter, char *type,
 static void _process_each_front_end(GtkTreeModel *model, GtkTreePath *path,
 				    GtkTreeIter*iter, gpointer userdata);
 
+static void _front_end_info_free(sview_front_end_info_t *sview_front_end_info)
+{
+	if (sview_front_end_info) {
+		xfree(sview_front_end_info->boot_time);
+		xfree(sview_front_end_info->reason);
+		xfree(sview_front_end_info->slurmd_start_time);
+		xfree(sview_front_end_info->state);
+	}
+}
+
 static void _front_end_info_list_del(void *object)
 {
 	sview_front_end_info_t *sview_front_end_info;
 
 	sview_front_end_info = (sview_front_end_info_t *)object;
 	if (sview_front_end_info) {
-		xfree(sview_front_end_info->boot_time);
-		xfree(sview_front_end_info->reason);
-		xfree(sview_front_end_info->slurmd_start_time);
-		xfree(sview_front_end_info->state);
+		_front_end_info_free(sview_front_end_info);
 		xfree(sview_front_end_info);
 	}
 }
@@ -210,15 +224,14 @@ static void _layout_front_end_record(GtkTreeView *treeview,
 
 static void _update_front_end_record(
 			sview_front_end_info_t *sview_front_end_info_ptr,
-			GtkTreeStore *treestore,
-			GtkTreeIter *iter)
+			GtkTreeStore *treestore)
 {
 	front_end_info_t *front_end_ptr;
 
 	front_end_ptr = sview_front_end_info_ptr->front_end_ptr;
 
 	/* Combining these records provides a slight performance improvement */
-	gtk_tree_store_set(treestore, iter,
+	gtk_tree_store_set(treestore, &sview_front_end_info_ptr->iter_ptr,
 			   SORTID_ALLOW_GROUPS, front_end_ptr->allow_groups,
 			   SORTID_ALLOW_USERS,  front_end_ptr->allow_users,
 			   SORTID_BOOT_TIME,
@@ -236,6 +249,7 @@ static void _update_front_end_record(
 			   SORTID_SLURMD_START_TIME,
 				sview_front_end_info_ptr->slurmd_start_time,
 			   SORTID_STATE,   sview_front_end_info_ptr->state,
+			   SORTID_UPDATED,    1,
 			   -1);
 
 	return;
@@ -243,77 +257,58 @@ static void _update_front_end_record(
 
 static void _append_front_end_record(
 			sview_front_end_info_t *sview_front_end_info_ptr,
-			GtkTreeStore *treestore, GtkTreeIter *iter,
-			int line)
+			GtkTreeStore *treestore)
 {
-	gtk_tree_store_append(treestore, iter, NULL);
-	gtk_tree_store_set(treestore, iter, SORTID_POS, line, -1);
-	_update_front_end_record(sview_front_end_info_ptr, treestore, iter);
+	gtk_tree_store_append(treestore, &sview_front_end_info_ptr->iter_ptr,
+			      NULL);
+	gtk_tree_store_set(treestore, &sview_front_end_info_ptr->iter_ptr,
+			   SORTID_POS, sview_front_end_info_ptr->pos, -1);
+	_update_front_end_record(sview_front_end_info_ptr, treestore);
 }
 
 static void _update_info_front_end(List info_list, GtkTreeView *tree_view)
 {
-	GtkTreePath *path = gtk_tree_path_new_first();
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
-	GtkTreeIter iter;
-	front_end_info_t *front_end_ptr = NULL;
-	int line = 0;
-	char *host = NULL, *front_end_name = NULL;
+	static GtkTreeModel *last_model = NULL;
+	char *name;
 	ListIterator itr = NULL;
 	sview_front_end_info_t *sview_front_end_info = NULL;
 
-	/* get the iter, or find out the list is empty goto add */
-	if (gtk_tree_model_get_iter(model, &iter, path)) {
-		/* make sure all the reserves are still here */
-		while (1) {
-			if (!gtk_tree_model_iter_next(model, &iter)) {
-				break;
-			}
-		}
-	}
+	set_for_update(model, SORTID_UPDATED);
 
 	itr = list_iterator_create(info_list);
 	while ((sview_front_end_info = list_next(itr))) {
-		front_end_ptr = sview_front_end_info->front_end_ptr;
-		/* get the iter, or find out the list is empty goto add */
-		if (!gtk_tree_model_get_iter(model, &iter, path)) {
-			goto adding;
-		}
-		line = 0;
-		while (1) {
-			/* search for the jobid and check to see if
-			   it is in the list */
-			gtk_tree_model_get(model, &iter, SORTID_NAME,
-					   &front_end_name, -1);
-			if (!strcmp(front_end_name, front_end_ptr->name)) {
-				/* update with new info */
-				g_free(front_end_name);
-				_update_front_end_record(sview_front_end_info,
-						    GTK_TREE_STORE(model),
-						    &iter);
-				goto found;
-			}
-			g_free(front_end_name);
+		/* This means the tree_store changed (added new column
+		   or something). */
+		if (last_model != model)
+			sview_front_end_info->iter_set = false;
 
-			line++;
-			if (!gtk_tree_model_iter_next(model, &iter)) {
-				break;
+		if (sview_front_end_info->iter_set) {
+			gtk_tree_model_get(model,
+					   &sview_front_end_info->iter_ptr,
+					   SORTID_NAME, &name, -1);
+			if (strcmp(name,
+				   sview_front_end_info->front_end_name)) {
+				/* Bad pointer */
+				sview_front_end_info->iter_set = false;
+				//g_print("bad front_end iter pointer\n");
 			}
+			g_free(name);
 		}
-	adding:
-		_append_front_end_record(sview_front_end_info,
-					 GTK_TREE_STORE(model),
-					 &iter, line);
-	found:
-		;
+		if (sview_front_end_info->iter_set)
+			_update_front_end_record(sview_front_end_info,
+						 GTK_TREE_STORE(model));
+		else {
+			_append_front_end_record(sview_front_end_info,
+						 GTK_TREE_STORE(model));
+			sview_front_end_info->iter_set = true;
+		}
 	}
 	list_iterator_destroy(itr);
-	if (host)
-		free(host);
 
-	gtk_tree_path_free(path);
-
-	return;
+	/* remove all old front_ends */
+	remove_old(model, SORTID_UPDATED);
+	last_model = model;
 }
 
 static List _create_front_end_info_list(
@@ -322,6 +317,8 @@ static List _create_front_end_info_list(
 	char *upper = NULL;
 	char user[32], time_str[32];
 	static List info_list = NULL;
+	List last_list = NULL;
+	ListIterator last_list_itr = NULL;
 	int i = 0;
 	sview_front_end_info_t *sview_front_end_info_ptr = NULL;
 	front_end_info_t *front_end_ptr = NULL;
@@ -330,19 +327,40 @@ static List _create_front_end_info_list(
 		goto update_color;
 
 	if (info_list)
-		list_flush(info_list);
-	else
-		info_list = list_create(_front_end_info_list_del);
+		last_list = info_list;
 
+	info_list = list_create(_front_end_info_list_del);
 	if (!info_list) {
 		g_print("malloc error\n");
 		return NULL;
 	}
 
+	if (last_list)
+		last_list_itr = list_iterator_create(last_list);
 	for (i = 0; i < front_end_info_ptr->record_count; i++) {
 		front_end_ptr = &(front_end_info_ptr->front_end_array[i]);
-		sview_front_end_info_ptr =
-			xmalloc(sizeof(sview_front_end_info_t));
+
+		sview_front_end_info_ptr = NULL;
+
+		if (last_list_itr) {
+			while ((sview_front_end_info_ptr =
+				list_next(last_list_itr))) {
+				if (!strcmp(sview_front_end_info_ptr->
+					    front_end_name,
+					    front_end_ptr->name)) {
+					list_remove(last_list_itr);
+					_front_end_info_free(
+						sview_front_end_info_ptr);
+					break;
+				}
+			}
+			list_iterator_reset(last_list_itr);
+		}
+		if (!sview_front_end_info_ptr)
+			sview_front_end_info_ptr =
+				xmalloc(sizeof(sview_front_end_info_t));
+		sview_front_end_info_ptr->pos = i;
+		sview_front_end_info_ptr->front_end_name = front_end_ptr->name;
 		sview_front_end_info_ptr->front_end_ptr = front_end_ptr;
 		sview_front_end_info_ptr->color_inx = i % sview_colors_cnt;
 		if (g_node_info_ptr) {
@@ -388,6 +406,11 @@ static List _create_front_end_info_list(
 		}
 
 		list_append(info_list, sview_front_end_info_ptr);
+	}
+
+	if (last_list) {
+		list_iterator_destroy(last_list_itr);
+		list_destroy(last_list);
 	}
 
 update_color:
