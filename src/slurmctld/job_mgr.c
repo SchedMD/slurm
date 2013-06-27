@@ -5237,7 +5237,7 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 {
 	uint32_t job_mem_limit = job_desc_msg->pn_min_memory;
 	uint32_t sys_mem_limit;
-	uint16_t cpus_per_node, ratio;
+	uint16_t cpus_per_node;
 
 	if (part_ptr && part_ptr->max_mem_per_cpu)
 		sys_mem_limit = part_ptr->max_mem_per_cpu;
@@ -5252,14 +5252,6 @@ static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 		sys_mem_limit &= (~MEM_PER_CPU);
 		if (job_mem_limit <= sys_mem_limit)
 			return true;
-		ratio = (job_mem_limit + sys_mem_limit - 1) / sys_mem_limit;
-		if (job_desc_msg->cpus_per_task == (uint16_t) NO_VAL) {
-			job_desc_msg->cpus_per_task = ratio;
-			job_desc_msg->pn_min_memory  = job_mem_limit + ratio-1;
-			job_desc_msg->pn_min_memory /= ratio;
-			job_desc_msg->pn_min_memory |= MEM_PER_CPU;
-			return true;
-		}
 		return false;
 	}
 
