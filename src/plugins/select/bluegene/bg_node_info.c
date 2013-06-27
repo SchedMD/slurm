@@ -461,6 +461,7 @@ extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
+	uint32_t *uint32 = (uint32_t *) data;
 	bitstr_t **bitmap = (bitstr_t **) data;
 	char **tmp_char = (char **) data;
 	ListIterator itr = NULL;
@@ -537,6 +538,9 @@ extern int select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		if (nodeinfo->failed_cnodes)
 			xstrfmtcat(*tmp_char, "Failed cnodes=%s",
 				   nodeinfo->failed_cnodes);
+		break;
+	case SELECT_NODEDATA_MEM_ALLOC:
+		*uint32 = 0;
 		break;
 	default:
 		error("Unsupported option %d for get_nodeinfo.", dinfo);
