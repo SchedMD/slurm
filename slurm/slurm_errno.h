@@ -259,7 +259,10 @@ enum {
 	ESLURM_JOBS_RUNNING_ON_ASSOC,
 	ESLURM_CLUSTER_DELETED,
 	ESLURM_ONE_CHANGE,
-	ESLURM_BAD_NAME
+	ESLURM_BAD_NAME,
+
+	/* require_timelimit custom errors */
+	ESLURM_MISSING_TIME_LIMIT       = 8000
 };
 
 /* look up an errno value */

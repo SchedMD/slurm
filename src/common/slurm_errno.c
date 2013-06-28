@@ -393,7 +393,11 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_ONE_CHANGE,
 	  "Can only change one at a time"                       },
 	{ ESLURM_BAD_NAME,
-	  "Unacceptable name given. (No '.' in name allowed)"   }
+	  "Unacceptable name given. (No '.' in name allowed)"   },
+
+	/* require_timelimit custom errors */
+	{ ESLURM_MISSING_TIME_LIMIT,
+	  "Missing time limit"                                  }
 };
 
 /*
