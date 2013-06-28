@@ -1106,10 +1106,11 @@ fail1:
 		_send_launch_resp(job, rc);
 	}
 
-	if (job->aborted)
-		info("job_manager exiting with aborted job");
-	else if (!job->batch && (step_complete.rank > -1)) {
-		_wait_for_children_slurmstepd(job);
+	if (!job->batch && (step_complete.rank > -1)) {
+		if (job->aborted)
+			info("job_manager exiting with aborted job");
+		else
+			_wait_for_children_slurmstepd(job);
 		_send_step_complete_msgs(job);
 	}
 
