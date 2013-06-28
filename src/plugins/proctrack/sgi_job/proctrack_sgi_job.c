@@ -209,6 +209,11 @@ int slurm_container_plugin_create (slurmd_job_t *job)
 	return SLURM_SUCCESS;
 }
 
+/* NOTE: This function is called after slurmstepd spawns all user tasks.
+ * Since the slurmstepd was placed in the job container when the container
+ * was created and all of it's spawned tasks are placed into the container
+ * when forked, all we need to do is remove the slurmstepd from the container
+ * (once) at this time. */
 int slurm_container_plugin_add (slurmd_job_t *job, pid_t pid)
 {
 	if (job->cont_id == (uint64_t) -1) {
