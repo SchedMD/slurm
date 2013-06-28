@@ -207,6 +207,16 @@ static bool _retry(void)
 		      slurm_strerror(ESLURM_NODES_BUSY));
 		error_exit = immediate_exit;
 		return false;
+	} else if ((errno == SLURM_PROTOCOL_AUTHENTICATION_ERROR) ||
+		   (errno == SLURM_UNEXPECTED_MSG_ERROR) ||
+		   (errno == SLURM_PROTOCOL_INSANE_MSG_LENGTH)) {
+		static int external_msg_count = 0;
+		error("Srun communication socket apparently being written to "
+		      "by something other than Slurm");
+		if (external_msg_count++ < 4)
+			return true;
+		error("Unable to allocate resources: %m");
+		return false;
 	} else {
 		error("Unable to allocate resources: %m");
 		return false;
