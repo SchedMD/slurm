@@ -383,7 +383,7 @@ fini:
 uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 			 const uint32_t node_i, bool cpu_type)
 {
-	uint16_t avail_cpus = 0, num_tasks = 0;
+	uint16_t avail_cpus = 0, num_tasks = 0, total_cpus = 0;
 	uint32_t core_begin    = cr_get_coremap_offset(node_i);
 	uint32_t core_end      = cr_get_coremap_offset(node_i+1);
 	uint32_t c;
@@ -510,6 +510,7 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 
 	/* convert from PER_CORE to TOTAL_FOR_NODE */
 	avail_cpus *= free_core_count;
+	total_cpus = avail_cpus;
 	num_tasks  *= free_core_count;
 
 	/* If job requested exclusive rights to the node don't do the min here
@@ -555,10 +556,11 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 		bit_nclear(core_map, c, core_end-1);
 
 fini:
-	if (!num_tasks) {
+	if (!num_tasks)
 		bit_nclear(core_map, core_begin, core_end-1);
-	}
 	xfree(free_cores);
+	if ((job_ptr->details->shared == 0) && num_tasks)
+		return total_cpus;
 	return num_tasks * cpus_per_task;
 }
 
