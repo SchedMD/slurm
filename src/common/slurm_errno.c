@@ -231,7 +231,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job violates accounting/QOS policy (job submit limit, user's "
 	  "size and/or time limits)"},
 	{ ESLURM_INVALID_TIME_LIMIT,
-	  "Requested time limit is invalid (exceeds some limit)"},
+	  "Requested time limit is invalid (missing or exceeds some limit)"},
 	{ ESLURM_RESERVATION_ACCESS,
 	  "Access denied to requested reservation"		},
 	{ ESLURM_RESERVATION_INVALID,
@@ -395,7 +395,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_BAD_NAME,
 	  "Unacceptable name given. (No '.' in name allowed)"   },
 
-	/* require_timelimit custom errors */
+	/* plugin and custom errors */
 	{ ESLURM_MISSING_TIME_LIMIT,
 	  "Missing time limit"                                  }
 };

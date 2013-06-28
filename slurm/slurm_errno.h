@@ -261,7 +261,7 @@ enum {
 	ESLURM_ONE_CHANGE,
 	ESLURM_BAD_NAME,
 
-	/* require_timelimit custom errors */
+	/* plugin and custom errors */
 	ESLURM_MISSING_TIME_LIMIT       = 8000
 };
 

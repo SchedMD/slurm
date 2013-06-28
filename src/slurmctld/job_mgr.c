@@ -3619,6 +3619,13 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 #endif
 
 	if ((job_desc->time_limit   == NO_VAL) &&
+	    (part_ptr->default_time == 0)) {
+		info("_valid_job_part: job's default time is 0");
+		rc = ESLURM_INVALID_TIME_LIMIT;
+		goto fini;
+	}
+
+	if ((job_desc->time_limit   == NO_VAL) &&
 	    (part_ptr->default_time != NO_VAL))
 		job_desc->time_limit = part_ptr->default_time;
 
