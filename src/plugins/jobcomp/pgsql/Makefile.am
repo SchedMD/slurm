@@ -1,11 +1,10 @@
 # Makefile for jobcomp/pgsql plugin
 
-AM_CPPFLAGS = $(PGSQL_CFLAGS)
+AM_CPPFLAGS = $(PGSQL_CFLAGS) \
+	-I$(top_srcdir) -I$(top_srcdir)/src/common
 AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 if WITH_PGSQL
 pkglib_LTLIBRARIES = jobcomp_pgsql.la

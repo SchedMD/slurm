@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 if WITH_MYSQL
 MYSQL_LIB = libslurm_mysql.la

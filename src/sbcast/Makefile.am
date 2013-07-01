@@ -3,7 +3,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 bin_PROGRAMS = sbcast
 
 sbcast_LDADD = 	$(top_builddir)/src/api/libslurm.o $(DL_LIBS) -lm

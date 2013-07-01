@@ -5,7 +5,7 @@ CLEANFILES = core.*
 
 if WITH_BLCR
 
-INCLUDES = -I$(top_srcdir) $(BLCR_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) $(BLCR_CPPFLAGS)
 
 bin_PROGRAMS = srun_cr
 

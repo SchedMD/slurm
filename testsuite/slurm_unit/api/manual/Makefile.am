@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES =        -I$(top_srcdir) 
+AM_CPPFLAGS =        -I$(top_srcdir)
 LDADD    =        $(top_builddir)/src/api/libslurm.la
 check_PROGRAMS = \
 	cancel-tst \

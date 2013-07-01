@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common  $(RRDTOOL_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common  $(RRDTOOL_CPPFLAGS)
 
 if BUILD_RRD
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
