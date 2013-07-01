@@ -60,8 +60,8 @@
 
 /*
  * Must be synchronized with slurm_select_ops_t in node_select.h.
- * Also must be synchronized with the other_plugin.c in
- * the select/cray plugin. (We tried to make it so we only had to
+ * Also must be synchronized with the other_select.c in
+ * the select/other lib. (We tried to make it so we only had to
  * define it once, but it didn't seem to work.)
  */
 const char *node_select_syms[] = {

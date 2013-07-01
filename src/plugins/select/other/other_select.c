@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  other_select.c - node selection plugin wrapper for Cray.
+ *  other_select.c - node selection plugin wrapper for other select plugins.
  *
  *  NOTE: The node selection plugin itself is intimately tied to slurmctld
  *  functions and data structures. Some related functions (e.g. data structure
