@@ -635,6 +635,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
    echo %{_libdir}/slurm/task_affinity.so            >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cgroup.so              &&
    echo %{_libdir}/slurm/task_cgroup.so              >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cray.so                &&
+   echo %{_libdir}/slurm/task_cray.so                >> $LIST
 
 LIST=./pam.files
 touch $LIST
