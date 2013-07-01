@@ -372,7 +372,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
-AM_CFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir)
 slurmdbd_LDADD = \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/api/libslurm.o $(DL_LIBS)

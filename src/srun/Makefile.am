@@ -5,7 +5,7 @@ SUBDIRS = libsrun
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 
-AM_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/srun/libsrun
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/srun/libsrun
 
 bin_PROGRAMS = srun
 

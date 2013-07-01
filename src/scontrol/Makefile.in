@@ -373,7 +373,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 scontrol_SOURCES = \
 	create_res.c	\
 	info_block.c	\

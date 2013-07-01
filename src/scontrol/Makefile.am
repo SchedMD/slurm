@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 
 bin_PROGRAMS = scontrol
 

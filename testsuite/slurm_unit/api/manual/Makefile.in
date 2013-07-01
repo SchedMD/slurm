@@ -394,7 +394,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir)
 LDADD = $(top_builddir)/src/api/libslurm.la
 all: all-am
 

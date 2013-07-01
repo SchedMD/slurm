@@ -5,7 +5,7 @@ AUTOMAKE_OPTIONS = foreign
 
 sbin_PROGRAMS = slurmstepd
 
-AM_CFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir)
 
 slurmstepd_LDADD = 				   \
 	$(top_builddir)/src/common/libdaemonize.la \

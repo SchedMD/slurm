@@ -138,8 +138,7 @@ am__DEPENDENCIES_1 =
 @BUILD_HDF5_TRUE@	$(am__DEPENDENCIES_1) libhdf5_api.la
 am__acct_gather_profile_hdf5_la_SOURCES_DIST =  \
 	acct_gather_profile_hdf5.c
-am__objects_1 =  \
-	acct_gather_profile_hdf5_la-acct_gather_profile_hdf5.lo
+am__objects_1 = acct_gather_profile_hdf5.lo
 @BUILD_HDF5_TRUE@am_acct_gather_profile_hdf5_la_OBJECTS =  \
 @BUILD_HDF5_TRUE@	$(am__objects_1)
 am__EXTRA_acct_gather_profile_hdf5_la_SOURCES_DIST =  \
@@ -154,7 +153,7 @@ acct_gather_profile_hdf5_la_LINK = $(LIBTOOL) --tag=CC \
 @BUILD_HDF5_TRUE@	$(pkglibdir)
 @BUILD_HDF5_TRUE@libhdf5_api_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__libhdf5_api_la_SOURCES_DIST = hdf5_api.c hdf5_api.h
-am__objects_2 = libhdf5_api_la-hdf5_api.lo
+am__objects_2 = hdf5_api.lo
 @BUILD_HDF5_TRUE@am_libhdf5_api_la_OBJECTS = $(am__objects_2)
 am__EXTRA_libhdf5_api_la_SOURCES_DIST = hdf5_api.c hdf5_api.h
 libhdf5_api_la_OBJECTS = $(am_libhdf5_api_la_OBJECTS)
@@ -462,7 +461,7 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 # Do not put a link to common here.  src/common contains an mpi.h which
 # hdf5 could of been installed with a link to the generic mpi.h.
-AM_CFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir) $(HDF5_CPPFLAGS)
 
 # cpu/core energy accounting plugin.
 HDF5_SOURCES = acct_gather_profile_hdf5.c
@@ -472,13 +471,11 @@ HDF5_API_SOURCES = hdf5_api.c hdf5_api.h
 @BUILD_HDF5_TRUE@noinst_LTLIBRARIES = libhdf5_api.la
 @BUILD_HDF5_TRUE@libhdf5_api_la_SOURCES = $(HDF5_API_SOURCES)
 @BUILD_HDF5_TRUE@libhdf5_api_la_LDFLAGS = $(HDF5_LDFLAGS)
-@BUILD_HDF5_TRUE@libhdf5_api_la_CPPFLAGS = $(HDF5_CPPFLAGS)
 @BUILD_HDF5_TRUE@libhdf5_api_la_LIBADD = $(HDF5_LIBS)
 @BUILD_HDF5_TRUE@acct_gather_profile_hdf5_la_SOURCES = $(HDF5_SOURCES)
 @BUILD_HDF5_TRUE@acct_gather_profile_hdf5_la_LDFLAGS = \
 @BUILD_HDF5_TRUE@	$(SO_LDFLAGS) $(PLUGIN_FLAGS) $(HDF5_LDFLAGS)
 
-@BUILD_HDF5_TRUE@acct_gather_profile_hdf5_la_CPPFLAGS = $(HDF5_CPPFLAGS)
 @BUILD_HDF5_TRUE@acct_gather_profile_hdf5_la_LIBADD = $(HDF5_LIBS) libhdf5_api.la
 @BUILD_HDF5_FALSE@EXTRA_acct_gather_profile_hdf5_la_SOURCES = $(HDF5_SOURCES)
 @BUILD_HDF5_FALSE@EXTRA_libhdf5_api_la_SOURCES = $(HDF5_API_SOURCES)
@@ -568,8 +565,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_gather_profile_hdf5_la-acct_gather_profile_hdf5.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhdf5_api_la-hdf5_api.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_gather_profile_hdf5.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hdf5_api.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -591,20 +588,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
-
-acct_gather_profile_hdf5_la-acct_gather_profile_hdf5.lo: acct_gather_profile_hdf5.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(acct_gather_profile_hdf5_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT acct_gather_profile_hdf5_la-acct_gather_profile_hdf5.lo -MD -MP -MF $(DEPDIR)/acct_gather_profile_hdf5_la-acct_gather_profile_hdf5.Tpo -c -o acct_gather_profile_hdf5_la-acct_gather_profile_hdf5.lo `test -f 'acct_gather_profile_hdf5.c' || echo '$(srcdir)/'`acct_gather_profile_hdf5.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/acct_gather_profile_hdf5_la-acct_gather_profile_hdf5.Tpo $(DEPDIR)/acct_gather_profile_hdf5_la-acct_gather_profile_hdf5.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='acct_gather_profile_hdf5.c' object='acct_gather_profile_hdf5_la-acct_gather_profile_hdf5.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(acct_gather_profile_hdf5_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o acct_gather_profile_hdf5_la-acct_gather_profile_hdf5.lo `test -f 'acct_gather_profile_hdf5.c' || echo '$(srcdir)/'`acct_gather_profile_hdf5.c
-
-libhdf5_api_la-hdf5_api.lo: hdf5_api.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhdf5_api_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libhdf5_api_la-hdf5_api.lo -MD -MP -MF $(DEPDIR)/libhdf5_api_la-hdf5_api.Tpo -c -o libhdf5_api_la-hdf5_api.lo `test -f 'hdf5_api.c' || echo '$(srcdir)/'`hdf5_api.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhdf5_api_la-hdf5_api.Tpo $(DEPDIR)/libhdf5_api_la-hdf5_api.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hdf5_api.c' object='libhdf5_api_la-hdf5_api.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhdf5_api_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libhdf5_api_la-hdf5_api.lo `test -f 'hdf5_api.c' || echo '$(srcdir)/'`hdf5_api.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

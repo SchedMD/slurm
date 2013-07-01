@@ -371,7 +371,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
-AM_CFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir)
 sreport_SOURCES = \
 	sreport.c sreport.h \
 	cluster_reports.c cluster_reports.h \

@@ -7,7 +7,7 @@ check_PROGRAMS = $(TESTS)
 TESTS = \
 	api-test 
 
-AM_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 LDADD   = $(top_builddir)/src/common/libcommon.la \
 	  $(top_builddir)/src/api/libslurm.la

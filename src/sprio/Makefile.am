@@ -3,7 +3,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir)
 
 bin_PROGRAMS = sprio
 

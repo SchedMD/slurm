@@ -391,7 +391,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 @BUILD_SMAP_TRUE@noinst_HEADERS = smap.h
 @BUILD_SMAP_TRUE@smap_SOURCES = smap.c job_functions.c \
 @BUILD_SMAP_TRUE@	partition_functions.c grid_functions.c \

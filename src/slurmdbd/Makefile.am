@@ -4,7 +4,7 @@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 
-AM_CFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir)
 
 sbin_PROGRAMS = slurmdbd
 

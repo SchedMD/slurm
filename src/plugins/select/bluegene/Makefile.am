@@ -5,7 +5,7 @@ CLEANFILES = core.*
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic -lm
 
-AM_CFLAGS = -I$(top_srcdir)  -I$(top_srcdir)/src/common $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir)  -I$(top_srcdir)/src/common $(BG_INCLUDES)
 
 pkglib_LTLIBRARIES = select_bluegene.la
 

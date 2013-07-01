@@ -5,7 +5,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(FREEIPMI_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(FREEIPMI_CPPFLAGS)
 
 if BUILD_IPMI
 

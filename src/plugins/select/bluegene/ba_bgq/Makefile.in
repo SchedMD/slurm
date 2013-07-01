@@ -387,7 +387,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
-AM_CFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 
 # making a .la
 noinst_LTLIBRARIES = libblock_allocator.la
