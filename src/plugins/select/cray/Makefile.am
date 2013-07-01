@@ -4,7 +4,8 @@ AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-AM_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common -I.
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common -I. \
+	-I$(top_srcdir)/src/plugins/select/other
 
 pkglib_LTLIBRARIES = select_cray.la
 
@@ -13,8 +14,6 @@ select_cray_la_SOURCES = 	\
 	select_cray.c		\
 	basil_interface.h	\
 	nodespec.c		\
-	other_select.c 		\
-	other_select.h		\
 	parser_common.h		\
 	cray_config.c		\
 	cray_config.h
@@ -23,13 +22,14 @@ select_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 if HAVE_CRAY
 select_cray_la_SOURCES += basil_interface.c
 select_cray_la_CFLAGS   = $(MYSQL_CFLAGS)
+select_cray_la_LIBADD   = ../other/libother_select.la
 
 if HAVE_CRAY_EMULATION
 SUBDIRS = libemulate
-select_cray_la_LIBADD   = libemulate/libalps.la
+select_cray_la_LIBADD  += libemulate/libalps.la
 else
 SUBDIRS = libalps
-select_cray_la_LIBADD   = libalps/libalps.la
+select_cray_la_LIBADD  += libalps/libalps.la
 endif
 
 force:

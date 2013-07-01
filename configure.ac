@@ -574,6 +574,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/cray/libalps/Makefile
 		 src/plugins/select/cray/libemulate/Makefile
 		 src/plugins/select/linear/Makefile
+		 src/plugins/select/other/Makefile
 		 src/plugins/select/serial/Makefile
 		 src/plugins/slurmctld/Makefile
 		 src/plugins/slurmctld/dynalloc/Makefile
