@@ -446,7 +446,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
 		as_mysql_acct.c as_mysql_acct.h \
 		as_mysql_archive.c as_mysql_archive.h \
