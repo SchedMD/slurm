@@ -53,7 +53,10 @@ help identify load imbalances and other anomalies.</li>
 </ul></p>
 
 <p>Slurm provides workload management on many of the most powerful computers in
-the world including:
+the world. On the June 2013 <a href="http://www.top500.org">Top500</a> list,
+five of the ten top systems use Slurm including the number one system.
+These five systems alone contain over 5.7 million cores.
+A few of the systems using Slurm are listed below:
 <ul>
 <li><a href="http://www.top500.org/blog/lists/2013/06/press-release/">
 Tianhe-2</a> designed by 
@@ -74,7 +77,7 @@ is a <a herf="http://www.dell.com">Dell</a> with over
 80,000 <a href="http://www.intel.com">Intel</a> Xeon cores,
 Intel Phi co-processors, plus
 128 <a href="http://www.nvidia.com">NVIDIA</a> GPUs
-delivering 2.66 Petaflops.</li>
+delivering 5.17 Petaflops.</li>
 
 <li><a href="http://www-hpc.cea.fr/en/complexe/tgcc-curie.htm">TGCC Curie</a>,
 owned by <a href="http://www.genci.fr">GENCI</a> and operated in the TGCC by
@@ -110,6 +113,6 @@ named after Monte Rosa in the Swiss-Italian Alps, elevation 4,634m.
 
 </ul>
 
-<p style="text-align:center;">Last modified 24 June 2013</p>
+<p style="text-align:center;">Last modified 1 July 2013</p>
 
 <!--#include virtual="footer.txt"-->
