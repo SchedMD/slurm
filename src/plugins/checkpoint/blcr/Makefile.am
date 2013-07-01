@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS = -DPKGLIBEXECDIR=\"$(pkglibexecdir)\" \
+AM_CFLAGS = -DPKGLIBEXECDIR=\"$(pkglibexecdir)\" \
 	-I$(top_srcdir) -I$(top_srcdir)/src/common
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic

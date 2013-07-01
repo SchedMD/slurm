@@ -1,6 +1,6 @@
 # Makefile for jobcomp/pgsql plugin
 
-AM_CPPFLAGS = $(PGSQL_CFLAGS) \
+AM_CFLAGS = $(PGSQL_CFLAGS) \
 	-I$(top_srcdir) -I$(top_srcdir)/src/common
 AUTOMAKE_OPTIONS = foreign
 

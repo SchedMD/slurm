@@ -371,7 +371,7 @@ perl_sources = \
 test_sources = \
 	$(perl_dir)/t/00-use.t
 
-AM_CPPFLAGS = \
+AM_CFLAGS = \
 	-DVERSION=\"$(VERSION)\" \
 	-I$(top_srcdir) \
 	-I$(top_builddir) \

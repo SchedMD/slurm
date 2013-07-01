@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common -I. -I../
+AM_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common -I. -I../
 
 noinst_LTLIBRARIES = libalps.la
 

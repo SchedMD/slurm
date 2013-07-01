@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 AS_PG_SOURCES= accounting_storage_pgsql.c accounting_storage_pgsql.h \
 	       as_pg_common.c as_pg_common.h \

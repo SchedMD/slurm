@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 if HAVE_SCHED_SETAFFINITY
 pkglib_LTLIBRARIES = task_affinity.la

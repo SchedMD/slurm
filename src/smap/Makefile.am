@@ -7,7 +7,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 LIBS=$(NCURSES)
-AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 
 if BUILD_SMAP
 

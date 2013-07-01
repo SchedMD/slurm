@@ -3,7 +3,7 @@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 
-AM_CPPFLAGS = -I$(top_srcdir)
+AM_CFLAGS = -I$(top_srcdir)
 
 bin_PROGRAMS = sbatch
 

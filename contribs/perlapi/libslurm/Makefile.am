@@ -149,7 +149,7 @@ distclean-generic:
 		done; \
 	fi
 
-AM_CPPFLAGS = \
+AM_CFLAGS = \
 	-DVERSION=\"$(VERSION)\" \
 	-I$(top_srcdir) \
 	-I$(top_builddir) \
