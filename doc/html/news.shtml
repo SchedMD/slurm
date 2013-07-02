@@ -14,18 +14,25 @@
 Major enhancements include:
 <ul>
 <li>Support for job arrays, which increases performance and ease of use
-   for sets of similar jobs.</li>
+    for sets of similar jobs.</li>
+<li><a href="hdf5_profile_user_guide.html">Job profiling</a> capability added
+    to record a wide variety of job characteristics for each task on a user
+    configurable periodic basis. Data available inclues CPU use, memory use,
+    energy use, Infiniband network use, Lustre file system use, etc.</li>
 <li>Support for MPICH2 using PMI2 communications interface with much greater
-   scalability.</li>
+    scalability.</li>
 <li>Prolog and epilog support for advanced reservations.</li>
 <li>Much faster throughput for job step execution with --exclusive option. The
     srun process is notified when resources become available rather than
     periodic polling.</li>
 <li>Support improved for Intel MIC (Many Integrated Core) processor.</li>
 <li>Advanced reservations with hostname and core counts now supports asymmetric
-reservations (e.g. specific different core count for each node).</li>
+    reservations (e.g. specific different core count for each node).</li>
+<li><a href="ext_sensorsplugins.html">External sensor plugin infrastructure</a>
+    added to record power consumption, temperature, etc.</li>
+<li>Improved performance for high-throughput computing.</li>
 <li><a href="http://en.wikipedia.org/wiki/MapReduce">MapReduce+</a> support
-(launches ~1000x faster, runs ~10x faster).</li>
+    (launches ~1000x faster, runs ~10x faster).</li>
 </ul>
 
 <h2><a name="1312">Major Updates in Slurm Version 13.12 and beyond</a></h2>
