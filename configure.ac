@@ -563,6 +563,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/wiki/Makefile
 		 src/plugins/sched/wiki2/Makefile
 		 src/plugins/select/Makefile
+		 src/plugins/select/alps/Makefile
+		 src/plugins/select/alps/libalps/Makefile
+		 src/plugins/select/alps/libemulate/Makefile
 		 src/plugins/select/bluegene/Makefile
 		 src/plugins/select/bluegene/ba/Makefile
 		 src/plugins/select/bluegene/ba_bgq/Makefile
