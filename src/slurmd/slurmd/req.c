@@ -188,7 +188,7 @@ static int  _waiter_complete (uint32_t jobid);
 
 static bool _steps_completed_now(uint32_t jobid);
 static int  _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid,
-			       uint16_t block_no);
+			       uint16_t block_no, uint32_t *job_id);
 static void _wait_state_completed(uint32_t jobid, int max_delay);
 static long _get_job_uid(uint32_t jobid);
 
@@ -2692,15 +2692,16 @@ _get_grouplist(uid_t my_uid, gid_t my_gid, int *ngroups, gid_t **groups)
  * Munge without generating a credential replay error
  * RET SLURM_SUCCESS or an error code */
 static int
-_valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no)
+_valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no,
+		   uint32_t *job_id)
 {
 	int rc = SLURM_SUCCESS;
-	uint32_t job_id;
 	char *nodes = NULL;
 	hostset_t hset = NULL;
 
+	*job_id = NO_VAL;
 	rc = extract_sbcast_cred(conf->vctx, req->cred, block_no,
-				 &job_id, &nodes);
+				 job_id, &nodes);
 	if (rc != 0) {
 		error("Security violation: Invalid sbcast_cred from uid %d",
 		      req_uid);
@@ -2734,6 +2735,7 @@ _rpc_file_bcast(slurm_msg_t *msg)
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	gid_t req_gid = g_slurm_auth_get_gid(msg->auth_cred, NULL);
 	pid_t child;
+	uint32_t job_id;
 
 #if 0
 	info("last_block=%u force=%u modes=%o",
@@ -2748,14 +2750,17 @@ _rpc_file_bcast(slurm_msg_t *msg)
 #endif
 #endif
 
-	if (!_slurm_authorized_user(req_uid)) {
-		rc = _valid_sbcast_cred(req, req_uid, req->block_no);
-		if (rc != SLURM_SUCCESS)
-			return rc;
-	}
+	rc = _valid_sbcast_cred(req, req_uid, req->block_no, &job_id);
+	if ((rc != SLURM_SUCCESS) && !_slurm_authorized_user(req_uid))
+		return rc;
 
-	info("sbcast req_uid=%u fname=%s block_no=%u",
-	     req_uid, req->fname, req->block_no);
+	if (req->block_no == 1) {
+		info("sbcast req_uid=%u job_id=%u fname=%s block_no=%u",
+		     req_uid, job_id, req->fname, req->block_no);
+	} else {
+		debug("sbcast req_uid=%u job_id=%u fname=%s block_no=%u",
+		      req_uid, job_id, req->fname, req->block_no);
+	}
 
 	if ((rc = _get_grouplist(req_uid, req_gid, &ngroups, &groups)) < 0) {
 		error("sbcast: getgrouplist(%u): %m", req_uid);
