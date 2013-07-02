@@ -4,33 +4,40 @@
 
 <h2>Index</h2>
 <ul>
-<li><a href="#26">SLURM Version 2.6, June 2013</a></li>
-<li><a href="#27">SLURM Version 2.7 and beyond</a></li>
+<li><a href="#26">Slurm Version 2.6, June 2013</a></li>
+<li><a href="#1312">Slurm Version 13.12 and beyond</a></li>
 <li><a href="#security">Security Patches</a></li>
 </ul>
 
-<h2><a name="26">Major Updates in SLURM Version 2.6</a></h2>
-<p>SLURM Version 2.6 was released in June 2013.
-Major enhancements planned include:
+<h2><a name="26">Major Updates in Slurm Version 2.6</a></h2>
+<p>SLURM Version 2.6 was released in July 2013.
+Major enhancements include:
 <ul>
 <li>Support for job arrays, which increases performance and ease of use
-   for sets of similar jobs.</li>
+    for sets of similar jobs.</li>
+<li><a href="hdf5_profile_user_guide.html">Job profiling</a> capability added
+    to record a wide variety of job characteristics for each task on a user
+    configurable periodic basis. Data available inclues CPU use, memory use,
+    energy use, Infiniband network use, Lustre file system use, etc.</li>
 <li>Support for MPICH2 using PMI2 communications interface with much greater
-   scalability.</li>
+    scalability.</li>
 <li>Prolog and epilog support for advanced reservations.</li>
 <li>Much faster throughput for job step execution with --exclusive option. The
     srun process is notified when resources become available rather than
     periodic polling.</li>
 <li>Support improved for Intel MIC (Many Integrated Core) processor.</li>
 <li>Advanced reservations with hostname and core counts now supports asymmetric
-reservations (e.g. specific different core count for each node).</li>
-<li>Finer-grained BlueGene resouce management (partitions/queues and advanced
-reservations containing less than a whole midplane).</li>
+    reservations (e.g. specific different core count for each node).</li>
+<li><a href="ext_sensorsplugins.html">External sensor plugin infrastructure</a>
+    added to record power consumption, temperature, etc.</li>
+<li>Improved performance for high-throughput computing.</li>
 <li><a href="http://en.wikipedia.org/wiki/MapReduce">MapReduce+</a> support
-(launches ~1000x faster, runs ~10x faster).</li>
+    (launches ~1000x faster, runs ~10x faster).</li>
 </ul>
 
-<h2><a name="27">Major Updates in SLURM Version 2.7 and beyond</a></h2>
+<h2><a name="1312">Major Updates in Slurm Version 13.12 and beyond</a></h2>
+<p><b>NOTICE: Starting with 13.12 we will be numbering Slurm versions
+ with YEAR.MONTH nomenclature.</b>
 <p> Detailed plans for release dates and contents of additional SLURM releases
 have not been finalized. Anyone desiring to perform SLURM development should
 notify <a href="mailto:slurm-dev@schedmd.com">slurm-dev@schedmd.com</a>
@@ -48,6 +55,8 @@ and refresh.</li>
 <li>Integration with
 <a href="http://en.wikipedia.org/wiki/FlexNet_Publisher">FLEXlm (Flexnet Publisher)</a>
 license management.</li>
+<li>Finer-grained BlueGene resouce management (partitions/queues and advanced
+reservations containing less than a whole midplane).</li>
 </ul>
 
 <h2><a name="security">Security Patches</a></h2>
@@ -74,6 +83,6 @@ trojan library, then that library will be used by the SLURM daemon with
 unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 18 June 2013</p>
+<p style="text-align:center;">Last modified 2 July 2013</p>
 
 <!--#include virtual="footer.txt"-->
