@@ -1881,10 +1881,14 @@ The default value is "select/cray" for all Cray systems.
 The permitted values of \fBSelectTypeParameters\fR depend upon the
 configured value of \fBSelectType\fR.
 \fBSelectType=select/bluegene\fR supports no \fBSelectTypeParameters\fR.
-The only supported option for \fBSelectType=select/linear\fR are
+The only supported options for \fBSelectType=select/linear\fR are
 \fBCR_ONE_TASK_PER_CORE\fR and
 \fBCR_Memory\fR, which treats memory as a consumable resource and
 prevents memory over subscription with job preemption or gang scheduling.
+\fBOTHER_CONS_RES\fR (meaning laying the select/cons_res plugin under the
+select/cray plugin, the default is to layer on select/linear) is supported by
+SelectType=select/cray along with all the options for select/cons_res when
+using \fBOTHER_CONS_RES\fR.
 The following values are supported for \fBSelectType=select/cons_res\fR:
 .RS
 .TP
