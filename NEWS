@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in Slurm 13.12.0pre1
 ==============================
  -- sview - improve scalability
+ -- Add task pointer to the task_post_term() function in task plugins. The
+    terminating task's PID is available in task->pid.
 
 * Changes in Slurm 2.6.0
 ========================

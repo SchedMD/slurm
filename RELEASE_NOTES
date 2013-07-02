@@ -64,6 +64,8 @@ Added the following API's
 
 Changed the following API's
 ===========================
+ -- Add task pointer to the task_post_term() function in task plugins. The
+    terminating task's PID is available in task->pid.
 
 DBD API Changes
 ===============

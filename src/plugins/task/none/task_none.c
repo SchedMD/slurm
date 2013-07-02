@@ -197,10 +197,10 @@ extern int task_pre_launch_priv (slurmd_job_t *job)
  *	It is preceded by --task-epilog (from srun command line)
  *	followed by TaskEpilog program (from slurm.conf).
  */
-extern int task_post_term (slurmd_job_t *job)
+extern int task_post_term (slurmd_job_t *job, slurmd_task_info_t *task)
 {
 	debug("task_post_term: %u.%u, task %d",
-		job->jobid, job->stepid, job->envtp->procid);
+		job->jobid, job->stepid, task->id);
 	return SLURM_SUCCESS;
 }
 

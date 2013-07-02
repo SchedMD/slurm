@@ -1750,7 +1750,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 				error ("Unable to spank task %d at exit",
 				       t->id);
 			}
-			post_term(job);
+			post_term(job, t);
 		}
 
 	} while ((pid > 0) && !waitflag);

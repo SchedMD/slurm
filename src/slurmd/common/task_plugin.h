@@ -135,7 +135,7 @@ extern int pre_launch(slurmd_job_t *job);
  *
  * RET - slurm error code
  */
-extern int post_term(slurmd_job_t *job);
+extern int post_term(slurmd_job_t *job, slurmd_task_info_t *task);
 
 /*
  * Note that a step has terminated.

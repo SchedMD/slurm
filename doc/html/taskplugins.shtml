@@ -175,16 +175,21 @@ data structure definition.</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<a name="get_errno"><p class="commandline">int task_post_term (slurmd_job_t *job);</p></a>
+<a name="get_errno"><p class="commandline">int task_post_term
+(slurmd_job_t *job, slurmd_task_info_t *task);</p></a>
 <p style="margin-left:.2in"><b>Description</b>: task_term() is called
 after termination of job step.
 Executed by the <b>slurmstepd</b> program as the job's owner.
 It is preceded by <b>--task-epilog</b> (from <b>srun</b> command line)
 followed by <b>TaskEpilog</b> program (as configured in <b>slurm.conf</b>).</p>
-<p style="margin-left:.2in"><b>Arguments</b>:
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline">job</span>&nbsp;&nbsp;&nbsp;(input)
 pointer to the job which has terminated.
-See <b>src/slurmd/slurmstepd/slurmstepd_job.h</b> for the
+See src/slurmd/slurmstepd/slurmstepd_job.h for the
+data structure definition.<br>
+<span class="commandline">task</span>&nbsp;&nbsp;&nbsp;(input)
+pointer to the task which has terminated.
+See src/slurmd/slurmstepd/slurmstepd_job.h for the
 data structure definition.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful.
 On failure, the plugin should return SLURM_ERROR and set the errno to an
@@ -208,6 +213,6 @@ appropriate value to indicate the reason for failure.</p>
 Future releases of SLURM may revise this API.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 29 April 2011</p>
+<p style="text-align:center;">Last modified 2 July 2013</p>
 
 <!--#include virtual="footer.txt"-->
