@@ -752,7 +752,7 @@ extern int schedule(uint32_t job_limit)
 		return SLURM_SUCCESS;
 	}
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	/*
 	 * Run a Basil Inventory immediately before scheduling, to avoid
 	 * race conditions caused by ALPS node state change (caused e.g.
@@ -1998,7 +1998,7 @@ static char **_build_env(struct job_record *job_ptr)
 	}
 # endif
 	xfree(name);
-#elif defined HAVE_CRAY
+#elif defined HAVE_ALPS_CRAY
 	name = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
 						SELECT_PRINT_RESV_ID);
 	setenvf(&my_env, "BASIL_RESERVATION_ID", "%s", name);

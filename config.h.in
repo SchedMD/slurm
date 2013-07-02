@@ -48,6 +48,12 @@
 /* Define to 1 for AIX operating system */
 #undef HAVE_AIX
 
+/* Define to 1 for Cray XT/XE systems */
+#undef HAVE_ALPS_CRAY
+
+/* Define to 1 for emulating a Cray XT/XE system using Alps */
+#undef HAVE_ALPS_CRAY_EMULATION
+
 /* Define to 1 if running against an Alps emulation */
 #undef HAVE_ALPS_EMULATION
 
@@ -77,12 +83,6 @@
 
 /* Define to 1 if you have the `cfmakeraw' function. */
 #undef HAVE_CFMAKERAW
-
-/* Define to 1 for Cray XT/XE systems */
-#undef HAVE_CRAY
-
-/* Define to 1 for emulating a Cray XT/XE system */
-#undef HAVE_CRAY_EMULATION
 
 /* Define to 1 if you have the <curses.h> header file. */
 #undef HAVE_CURSES_H
@@ -242,7 +242,7 @@
 /* Define if you are compiling with readline. */
 #undef HAVE_READLINE
 
-/* Define to 1 for running on a real Cray XT/XE system */
+/* Define to 1 for running on a real Cray XT/XE system using Alps */
 #undef HAVE_REAL_CRAY
 
 /* Define to 1 if you have the `sched_setaffinity' function. */

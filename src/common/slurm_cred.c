@@ -531,7 +531,7 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg)
 #ifndef HAVE_BG
 	{
 		int i, sock_recs = 0;
-#ifndef HAVE_CRAY
+#ifndef HAVE_ALPS_CRAY
 		/* Zero compute node allocations allowed on a Cray for use
 		 * of front-end nodes */
 		xassert(arg->job_nhosts);

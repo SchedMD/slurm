@@ -268,7 +268,7 @@ static uint32_t _get_exit_code(slurmd_job_t *job)
 	return step_rc;
 }
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 /*
  * Kludge to better inter-operate with ALPS layer:
  * - CONFIRM method requires the SID of the shell executing the job script,
@@ -331,7 +331,7 @@ batch_finish(slurmd_job_t *job, int rc)
 		error("rmdir(%s): %m",  job->batchdir);
 	xfree(job->batchdir);
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	_call_select_plugin_from_stepd(job, 0, select_g_job_fini);
 #endif
 
@@ -933,7 +933,7 @@ job_manager(slurmd_job_t *job)
 		goto fail1;
 	}
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	/*
 	 * Note that the previously called slurm_container_create function is   
 	 * mandatory since the select/cray plugin needs the job container

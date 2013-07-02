@@ -973,13 +973,13 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 		uint32_t tmp_mem = alloc->pn_min_memory & (~MEM_PER_CPU);
 		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_CPU", "%u",
 					tmp_mem);
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		env_array_overwrite_fmt(dest, "APRUN_DEFAULT_MEMORY", "%u",
 					tmp_mem);
 #endif
 	} else if (alloc->pn_min_memory) {
 		uint32_t tmp_mem = alloc->pn_min_memory;
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		uint32_t i, max_cpus_per_node = 1;
 		for (i = 0; i < alloc->num_cpu_groups; i++) {
 			if ((i == 0) ||
@@ -1168,13 +1168,13 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 		uint32_t tmp_mem = batch->pn_min_memory & (~MEM_PER_CPU);
 		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_CPU", "%u",
 					tmp_mem);
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		env_array_overwrite_fmt(dest, "CRAY_AUTO_APRUN_OPTIONS",
 					"\"-m%u\"", tmp_mem);
 #endif
 	} else if (batch->pn_min_memory) {
 		uint32_t tmp_mem = batch->pn_min_memory;
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		uint32_t i, max_cpus_per_node = 1;
 		for (i = 0; i < batch->num_cpu_groups; i++) {
 			if ((i == 0) ||
@@ -1185,7 +1185,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 #endif
 		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_NODE", "%u",
 					tmp_mem);
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		tmp_mem /= max_cpus_per_node;
 		env_array_overwrite_fmt(dest, "CRAY_AUTO_APRUN_OPTIONS",
 					"\"-m%u\"", tmp_mem);

@@ -1399,7 +1399,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 #if defined(HAVE_BG)
 		select_g_select_jobinfo_get(req->select_jobinfo,
 					    SELECT_JOBDATA_BLOCK_ID, &resv_id);
-#elif defined(HAVE_CRAY)
+#elif defined(HAVE_ALPS_CRAY)
 		resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
 							  SELECT_PRINT_RESV_ID);
 #endif
@@ -3602,7 +3602,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	select_g_select_jobinfo_get(req->select_jobinfo,
 				    SELECT_JOBDATA_BLOCK_ID,
 				    &resv_id);
-#elif defined(HAVE_CRAY)
+#elif defined(HAVE_ALPS_CRAY)
 	resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
 						  SELECT_PRINT_RESV_ID);
 #endif
@@ -3957,7 +3957,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	select_g_select_jobinfo_get(req->select_jobinfo,
 				    SELECT_JOBDATA_BLOCK_ID,
 				    &resv_id);
-#elif defined(HAVE_CRAY)
+#elif defined(HAVE_ALPS_CRAY)
 	resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
 						  SELECT_PRINT_RESV_ID);
 #endif
@@ -4220,7 +4220,7 @@ _build_env(uint32_t jobid, uid_t uid, char *resv_id,
 		/* Needed for HTC jobs */
 		setenvf(&env, "SUBMIT_POOL", "%s", resv_id);
 # endif
-#elif defined(HAVE_CRAY)
+#elif defined(HAVE_ALPS_CRAY)
 		setenvf(&env, "BASIL_RESERVATION_ID", "%s", resv_id);
 #endif
 	}

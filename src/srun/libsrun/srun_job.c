@@ -817,7 +817,7 @@ _job_create_structure(allocation_info_t *ainfo)
 #endif
 	}
 
-#elif defined HAVE_FRONT_END && !defined HAVE_CRAY
+#elif defined HAVE_FRONT_END && !defined HAVE_ALPS_CRAY
 	/* Limited job step support */
 	opt.overcommit = true;
 	job->nhosts = 1;

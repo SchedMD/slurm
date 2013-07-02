@@ -2229,7 +2229,7 @@ extern int validate_nodes_via_front_end(
 
 		if (IS_NODE_NO_RESPOND(node_ptr)) {
 			update_node_state = true;
-#ifndef HAVE_CRAY
+#ifndef HAVE_ALPS_CRAY
 			/* This is handled by the select/cray plugin */
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 #endif
@@ -2367,7 +2367,7 @@ static void _node_did_resp(front_end_record_t *fe_ptr)
 	time_t now = time(NULL);
 
 	fe_ptr->last_response = now;
-#ifndef HAVE_CRAY
+#ifndef HAVE_ALPS_CRAY
 	/* This is handled by the select/cray plugin */
 	if (IS_NODE_NO_RESPOND(fe_ptr)) {
 		info("Node %s now responding", fe_ptr->name);

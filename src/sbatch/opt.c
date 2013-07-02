@@ -2004,7 +2004,7 @@ static void _parse_pbs_resource_list(char *rl)
 			}
 
 			xfree(temp);
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		/*
 		 * NB: no "mppmem" here since it specifies per-PE memory units,
 		 *     whereas SLURM uses per-node and per-CPU memory units.
@@ -2044,7 +2044,7 @@ static void _parse_pbs_resource_list(char *rl)
 				opt.ntasks_set = true;
 			}
 			xfree(temp);
-#endif	/* HAVE_CRAY */
+#endif	/* HAVE_ALPS_CRAY */
 		} else if (!strncmp(rl+i, "nice=", 5)) {
 			i+=5;
 			temp = _get_pbs_option_value(rl, &i);

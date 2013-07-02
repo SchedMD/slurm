@@ -406,7 +406,7 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 			return false;
 		}
 		xfree(min_str);
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		if (*min_nodes < 0) {
 #else
 		if (*min_nodes == 0) {
@@ -428,7 +428,7 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 			error("\"%s\" is not a valid node count", arg);
 			return false;
 		}
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		if (*min_nodes < 0) {
 #else
 		if (*min_nodes == 0) {

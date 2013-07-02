@@ -338,7 +338,7 @@ job_create(launch_tasks_request_msg_t *msg)
 					     job->job_mem);
 	}
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	/* This is only used for Cray emulation mode where slurmd is used to
 	 * launch job steps. On a real Cray system, ALPS is used to launch
 	 * the tasks instead of SLURM. SLURM's task launch RPC does NOT
@@ -499,7 +499,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->task[0]->argc = job->argc;
 	job->task[0]->argv = job->argv;
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	select_g_select_jobinfo_get(msg->select_jobinfo, SELECT_JOBDATA_RESV_ID,
 				    &job->resv_id);
 #endif
