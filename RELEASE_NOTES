@@ -1,10 +1,10 @@
-RELEASE NOTES FOR SLURM VERSION 2.6
-21 March 2013
+RELEASE NOTES FOR SLURM VERSION 13.12
+2 July 2013
 
 
 IMPORTANT NOTE:
 If using the slurmdbd (SLURM DataBase Daemon) you must update this first.
-The 2.6 slurmdbd will work with SLURM daemons of version 2.4 and above.
+The 13.12 slurmdbd will work with SLURM daemons of version 2.5 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.  No real harm will come from updating
@@ -18,227 +18,52 @@ innodb_buffer_pool_size=64M
 under the [mysqld] reference in the my.cnf file and restarting the mysqld.
 This is needed when converting large tables over to the new database schema.
 
-SLURM can be upgraded from version 2.4 or 2.5 to version 2.6 without loss of
+SLURM can be upgraded from version 2.5 or 2.6 to version 13.12 without loss of
 jobs or other state information. Upgrading directly from an earlier version of
 SLURM will result in loss of state information.
 
 
 HIGHLIGHTS
 ==========
- - Added support for job arrays, which increases performance and ease of use
-   for sets of similar jobs. This man necessitate changes in prolog and/or
-   epilog scripts due to change in the job ID format, which is now of the form
-   "<job_id>_<index>" for job arrays.
- - Added mpi/pmi2 plugin with much better more scalable performance for MPI
-   implementations using PMI communications interface.
- - Added slurmctld/dynalloc plugin for MapReduce+ support.
- - Added prolog and epilog support for advanced reservations.
- - Much faster throughput for job step execution with --exclusive option. The
-   srun process is notified when resources become available rather than
-   periodic polling.
- - Added options to build RPMs:
-   _slurm_datadir
-   _slurm_mandir
-   _slurm_infodir
- - Advanced reservations with hostname and core counts now supports asymetric
-   reservations (e.g. specific different core count for each node).
- - Make sched/backfill the default scheduling plugin rather than sched/builtin
-   (FIFO).
- - Add ext_sensors plugin - read doc/html/ext_sensorsplugins.shtml and
-   doc/man/man5/ext_sensors.conf.5
+
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
- - Added "HealthCheckNodeState" configuration parameter identifing node states
-   on which HealthCheckProgram should be executed.
- - Added "MaxArraySize" configuration parameter specifying maximum job array
-   size.
- - Added "ResvEpilog" and "ResvProlog" configuration parameters to execute a
-   program at the beginning and end of a reservation.
- - Added new cray.conf parameter of "AlpsEngine" to specify the communication
-   protocol to be used for ALPS/BASIL.
- - Added new SelectTypeParameter value of "CR_ALLOCATE_FULL_SOCKET".
- - Added PriorityFlags value of "TICKET_BASED" and merged priority/multifactor2
-   plugin into priority/multifactor plugin.
- - Added "KeepAliveTime" controlling how long sockets used for srun/slurmstepd
-   communications are kept alive after disconnect.
- - Added "SlurmctldPlugstack" configuration parameter for generic stack of
-   slurmctld daemon plugins. Only the plugin's init and fini functions are
-   called.
- - Added "DynAllocPort" configuration parameter for use by slurmctld/dynalloc
-   plugin.
- - Added new "SchedulerParameters" configuration parameter of "bf_continue"
-   which permits the backfill scheduler to continue considering jobs for
-   backfill scheduling after yielding locks even if new jobs have been
-   submitted. This can result in lower priority jobs from being backfill
-   scheduled instead of newly arrived higher priority jobs, but will permit
-   more queued jobs to be considered for backfill scheduling.
- - Added options for front end nodes of "AllowGroups", "AllowUsers",
-   "DenyGroups", and "DenyUsers".
- - Added "MaxCPUsPerNode" partition configuration parameter. This can be
-   especially useful to schedule GPUs. For example a node can be associated
-   with two Slurm partitions (e.g. "cpu" and "gpu") and the partition/queue
-   "cpu" could be limited to only a subset of the node's CPUs, insuring that
-   one or more CPUs would be available to jobs in the "gpu" partition/queue.
- - Added "PriorityFlags" value of "SMALL_RELATIVE_TO_TIME". If set, the job's
-   size component will be based upon not the job size alone, but the job's
-   size divided by it's time limit.
+
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
- - Added "ArchiveResvs" and "PurgeResvAfter" options to be able to handle old
-   reservations in the database.
+
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
- - Added step "State" field to scontrol output.
- - Added "--array" option to sbatch for job array support.
- - Enlarged default JOBID and STEPID field sizes in squeue output to better
-   support job arrays. For job arrays, the job ID is no longer a single number
-   but has the format "JOBID_TASKID" while a step ID format is now
-   "JOBID_TASKID.STEPID".
- - Modified squeue output field options for job arrays:
-   %i is now of the form <base_job_id>_<array_index>
-   %F is the <base_job_id>
-   %K is the <array_index>
-   %A is the <job_id>, which is unique for each element of a job array
- - Fully removed deprecated sacct --dump --fdump options.
- - Added partition "SelectTypeParameters" field to scontrol output.
- - Added Allocated Memory to node information displayed by sview and scontrol
-   commands.
- - Added username (%u) to the filename pattern for srun and sbatch commands.
- - Added sacct format option of "ALL" to print all fields.
+
 
 OTHER CHANGES
 =============
- - Added PMI2 client library. Refere to the documentation here:
-   http://slurm.schedmd.com/mpi_guide.html#mpich2
- - Added SLURM_SUBMIT_HOST to salloc, sbatch and srun job environment.
- - Added SLURM_ARRAY_TASK_ID and SLURM_ARRAY_TASK_ID to environment of job
-   array.
- - Added milliseconds to default log message header (both RFC 5424 and ISO 8601
-   time formats). Disable milliseconds logging using the configure
-   parameter "--disable-log-time-msec". Default time format changes to
-   ISO 8601 (without time zone information). Specify "--enable-rfc5424time"
-   to restore the time zone information.
- - Added sbatch option "--ignore-pbs" to ignore "#PBS" options in the batch
-   script.
+
 
 API CHANGES
 ===========
 
 Changed members of the following structs
 ========================================
- - Added "time_t poll_time" to acct_gather_energy_t.
- - Changed "acctg_freq" from uint16_t to char * in job_desc_msg_t.
- - Added "char *array_inx" field to job_desc_msg_t.
- - Added "void *array_bitmap" field to job_desc_msg_t.
- - Added "uint32_t profile" field to job_desc_msg_t.
- - Added "uint32_t array_job_id" field to slurm_job_info_t.
- - Added "uint32_t array_task_id" field to slurm_job_info_t.
- - Added "uint32_t profile" field to slurm_job_info_t.
- - Added "time_t end_time" field to step_update_request_msg_t.
- - Added "uint32_t exit_code" field to step_update_request_msg_t.
- - Added "jobacctinfo_t *jobacct" field to step_update_request_msg_t.
- - Added "char *name" field to step_update_request_msg_t.
- - Added "time_t start_time" field to step_update_request_msg_t.
- - Rename "mem_per_cpu" to "pn_min_memory" in slurm_step_ctx_params_t.
- - Added "uint32_t profile" field to slurm_step_ctx_params_t.
- - Added "uint32_t profile" field to slurm_step_launch_params_t.
- - Changed "acctg_freq" from uint16_t to char * in slurm_step_launch_params_t.
- - Added "uint32_t array_job_id" field to job_step_info_t.
- - Added "uint32_t array_task_id" field to job_step_info_t.
- - Added "uint16_t state" field to job_step_info_t.
- - Added "ext_sensors_data_t *ext_sensors" field to node_info_t.
- - Added "char *allow_groups" field to front_end_info_t.
- - Added "char *allow_users" field to front_end_info_t.
- - Added "char *deny_groups"  field to front_end_info_t.
- - Added "char *deny_users" field to front_end_info_t.
- - Added "uint16_t cr_type" field to partition_info_t.
- - Added "uint32_t max_cpus_per_node" field to partition_info_t.
- - Changed "core_cnt" from uint32_t to uint32_t* in resv_desc_msg_t.
- - Added "char *acct_gather_profile_type" field to slurm_ctl_conf_t.
- - Added "char *acct_gather_infiniband_type" field to slurm_ctl_conf_t.
- - Added "char *acct_gather_filesystem_type" field to slurm_ctl_conf_t.
- - Added "uint16_t dynalloc_port" field to slurm_ctl_conf_t.
- - Added "char *ext_sensors_type" field to slurm_ctl_conf_t.
- - Added "uint16_t ext_sensors_freq" field to slurm_ctl_conf_t.
- - Added "uint16_t health_check_node_state" field to slurm_ctl_conf_t.
- - Changed "job_acct_gather_freq" from uint16_t to char * in slurm_ctl_conf_t.
- - Added "uint16_t keep_alive_time" field to slurm_ctl_conf_t.
- - Added "uint16_t max_array_sz" field to slurm_ctl_conf_t.
- - Added "char *resv_epilog" field to slurm_ctl_conf_t
- - Added "char *resv_prolog" field to slurm_ctl_conf_t.
- - Added "char *slurmctld_plugstack" field to slurm_ctl_conf_t.
+
 
 Added the following struct definitions
 ======================================
- - ext_sensors_data_t
- - acct_gather_energy_req_msg_t
+
 
 Changed the following enums and #defines
 ========================================
- - Added SELECT_NODEDATA_MEM_ALLOC to select_nodedata_type enum
- - Added #define ACCT_GATHER_PROFILE_NOT_SET
- - Added #define ACCT_GATHER_PROFILE_NONE
- - Added #define ACCT_GATHER_PROFILE_ENERGY
- - Added #define ACCT_GATHER_PROFILE_TASK
- - Added #define ACCT_GATHER_PROFILE_LUSTRE
- - Added #define ACCT_GATHER_PROFILE_NETWORK
- - Added #define ACCT_GATHER_PROFILE_ALL
- - Added JOBACCT_DATA_CONSUMED_ENERGY to jobacct_data_type enum
- - Added JOBACCT_DATA_MAX_DISK_READ to jobacct_data_type enum
- - Added JOBACCT_DATA_MAX_DISK_READ_ID to jobacct_data_type enum
- - Added JOBACCT_DATA_TOT_DISK_READ to jobacct_data_type enum
- - Added JOBACCT_DATA_MAX_DISK_WRITE to jobacct_data_type enum
- - Added JOBACCT_DATA_MAX_DISK_WRITE_ID to jobacct_data_type enum
- - Added JOBACCT_DATA_TOT_DISK_WRITE to jobacct_data_type enum
- - Added ENERGY_DATA_PROFILE to acct_energy_type
- - Added ENERGY_DATA_LAST_POLL to acct_energy_type
- - Added #define CR_ALLOCATE_FULL_SOCKET
- - Added #define PRIORITY_FLAGS_TICKET_BASED
- - Added #define PRIORITY_FLAGS_SIZE_RELATIVE
- - Added #define DEBUG_FLAG_EXT_SENSORS
- - Added #define DEBUG_FLAG_THREADID
- - Added #define DEBUG_FLAG_PROFILE
- - Added #define DEBUG_FLAG_INFINIBAND
- - Added #define DEBUG_FLAG_FILESYSTEM
- - Added #define HEALTH_CHECK_NODE_IDLE
- - Added #define HEALTH_CHECK_NODE_ALLOC
- - Added #define HEALTH_CHECK_NODE_MIXED
- - Added #define HEALTH_CHECK_NODE_ANY
- - Added #define KILL_JOB_BATCH
- - Added #define KILL_JOB_ARRAY
+
 
 Added the following API's
 =========================
- - Added "slurm_step_ctx_create_timeout" function.
- - Added "slurm_load_job_user" function. This is a variation of
-   "slurm_load_jobs", but accepts a user ID argument, potentially resulting
-   in substantial performance improvement for "squeue --user=ID"
- - Added "slurm_xlate_job_id" function.
- - Added "slurm_load_node" function.
- - Added "slurm_load_node_single" function. This is a variation of
-   "slurm_load_nodes", but accepts a node name argument, potentially resulting
-   in substantial performance improvement for "sinfo --nodes=NAME".
- - Added "slurm_get_node_energy" function.
+
 
 Changed the following API's
 ===========================
 
 DBD API Changes
 ===============
- - Changed "cpu_min_taskid" from a uint16_t to a uint32_t in slurmdb_stats_t.
- - Added "double disk_read_ave" field to slurmdb_stats_t.
- - Added "double disk_read_max" field to slurmdb_stats_t.
- - Added "uint32_t disk_read_max_nodeid" field to slurmdb_stats_t.
- - Added "uint32_t disk_read_max_taskid" field to slurmdb_stats_t.
- - Added "double disk_write_ave" field to slurmdb_stats_t.
- - Added "double disk_write_max" field to slurmdb_stats_t.
- - Added "uint32_t disk_write_max_nodeid" field to slurmdb_stats_t.
- - Added "uint32_t disk_write_max_taskid" field to slurmdb_stats_t.
- - Changed "pages_max_taskid" from a uint16_t to a uint32_t in slurmdb_stats_t.
- - Changed "rss_max_taskid" from a uint16_t to a uint32_t in slurmdb_stats_t.
- - Changed "vsize_max_taskid" from a uint16_t to a uint32_t in slurmdb_stats_t.
- - Added "uint32_t purge_resv" field to slurmdb_archive_cond_t.
- - Added "uint32_t req_mem" field to slurmdb_job_rec_t.
