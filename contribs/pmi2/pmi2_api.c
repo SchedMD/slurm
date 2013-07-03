@@ -1225,6 +1225,7 @@ static int parse_keyval(char **cmdptr, int *len, char **key, char **val, int *va
 static int create_keyval(PMI2_Keyvalpair **kv, const char *key, const char *val, int vallen)
 {
     int pmi2_errno = PMI2_SUCCESS;
+    int key_len = strlen(key);
     char *key_p;
     char *value_p;
     PMI2U_CHKMEM_DECL(3);
@@ -1234,9 +1235,9 @@ static int create_keyval(PMI2_Keyvalpair **kv, const char *key, const char *val,
 
     PMI2U_CHKMEM_MALLOC(*kv, PMI2_Keyvalpair *, sizeof(PMI2_Keyvalpair), pmi2_errno, "pair");
 
-    PMI2U_CHKMEM_MALLOC(key_p, char *, strlen(key)+1, pmi2_errno, "key");
-    MPIU_Strncpy(key_p, key, strlen(key));
-    key_p[strlen(key)] = '\0';
+    PMI2U_CHKMEM_MALLOC(key_p, char *, key_len+1, pmi2_errno, "key");
+    MPIU_Strncpy(key_p, key, key_len+1);
+    key_p[key_len] = '\0';
 
     PMI2U_CHKMEM_MALLOC(value_p, char *, vallen+1, pmi2_errno, "value");
     memcpy(value_p, val, vallen);
@@ -1484,6 +1485,7 @@ int PMIi_WriteSimpleCommand( int fd, PMI2_Command *resp, const char cmd[], PMI2_
     /* leave space for length field */
     memset(c, ' ', PMII_COMMANDLEN_SIZE);
     c += PMII_COMMANDLEN_SIZE;
+    remaining_len -= PMII_COMMANDLEN_SIZE;
 
     PMI2U_ERR_CHKANDJUMP(strlen(cmd) > PMI2_MAX_VALLEN, pmi2_errno, PMI2_ERR_OTHER, "**cmd_too_long");
 
