@@ -164,6 +164,7 @@ documents those changes that are of interest to users and admins.
  -- Updated the automake min version in autogen.sh to be correct.
  -- Select/cons_res - Correct total CPU count allocated to a job with
     --exclusive and --cpus-per-task options
+ -- switch/nrt - Don't allocate network resources unless job step has 2+ nodes.
 
 * Changes in Slurm 2.5.7
 ========================
