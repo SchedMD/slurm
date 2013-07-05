@@ -314,7 +314,7 @@ int slurm_cred_get_signature(slurm_cred_t *cred, char **datap,
  *
  * NOTE: caller must xfree the returned strings.
  */
-void format_core_allocs(slurm_cred_t *cred, char *node_name,
+void format_core_allocs(slurm_cred_t *cred, char *node_name, uint16_t cpus,
 			 char **job_alloc_cores, char **step_alloc_cores,
 			 uint32_t *job_mem_limit, uint32_t *step_mem_limit);
 
