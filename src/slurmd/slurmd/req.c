@@ -806,7 +806,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	uint32_t         jobid = req->job_id;
 	uint32_t         stepid = req->job_step_id;
 	int              tasks_to_launch = req->tasks_to_launch[node_id];
-	uint32_t         job_cores=0, step_cores=0;
+	uint32_t         job_cpus = 0, step_cpus = 0;
 
 	/*
 	 * First call slurm_cred_verify() so that all valid
@@ -927,11 +927,11 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		for (i=i_first_bit, j=0; i<i_last_bit; i++, j++) {
 			char *who_has = NULL;
 			if (bit_test(arg.job_core_bitmap, i)) {
-				job_cores++;
+				job_cpus++;
 				who_has = "Job";
 			}
 			if (bit_test(arg.step_core_bitmap, i)) {
-				step_cores++;
+				step_cpus++;
 				who_has = "Step";
 			}
 			if (cpu_log && who_has) {
@@ -941,11 +941,11 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		}
 		if (cpu_log)
 			info("====================");
-		if (step_cores == 0) {
+		if (step_cpus == 0) {
 			error("cons_res: zero processors allocated to step");
-			step_cores = 1;
+			step_cpus = 1;
 		}
-		/* NOTE: step_cores is the count of allocated resources
+		/* NOTE: step_cpus is the count of allocated resources
 		 * (typically cores). Convert to CPU count as needed */
 		if (i_last_bit <= i_first_bit)
 			error("step credential has no CPUs selected");
@@ -953,20 +953,21 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			i = conf->cpus / (i_last_bit - i_first_bit);
 			if (i > 1) {
 				info("scaling CPU count by factor of %d", i);
-				step_cores *= i;
+				step_cpus *= i;
+				job_cpus *= i;
 			}
 		}
-		if (tasks_to_launch > step_cores) {
+		if (tasks_to_launch > step_cpus) {
 			/* This is expected with the --overcommit option
 			 * or hyperthreads */
 			debug("cons_res: More than one tasks per logical "
 			      "processor (%d > %u) on host [%u.%u %ld %s] ",
-			      tasks_to_launch, step_cores, arg.jobid,
+			      tasks_to_launch, step_cpus, arg.jobid,
 			      arg.stepid, (long) arg.uid, arg.step_hostlist);
 		}
 	} else {
-		step_cores = 1;
-		job_cores  = 1;
+		step_cpus = 1;
+		job_cpus  = 1;
 	}
 
 	/* Overwrite any memory limits in the RPC with contents of the
@@ -976,27 +977,27 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		if (arg.step_mem_limit & MEM_PER_CPU) {
 			req->step_mem_lim  = arg.step_mem_limit &
 					     (~MEM_PER_CPU);
-			req->step_mem_lim *= step_cores;
+			req->step_mem_lim *= step_cpus;
 		} else
 			req->step_mem_lim  = arg.step_mem_limit;
 	} else {
 		if (arg.job_mem_limit & MEM_PER_CPU) {
 			req->step_mem_lim  = arg.job_mem_limit &
 					     (~MEM_PER_CPU);
-			req->step_mem_lim *= job_cores;
+			req->step_mem_lim *= job_cpus;
 		} else
 			req->step_mem_lim  = arg.job_mem_limit;
 	}
 	if (arg.job_mem_limit & MEM_PER_CPU) {
 		req->job_mem_lim  = arg.job_mem_limit & (~MEM_PER_CPU);
-		req->job_mem_lim *= job_cores;
+		req->job_mem_lim *= job_cpus;
 	} else
 		req->job_mem_lim  = arg.job_mem_limit;
-	req->cpus_allocated[node_id] = step_cores;
+	req->cpus_allocated[node_id] = step_cpus;
 #if 0
 	info("%u.%u node_id:%d mem orig:%u cpus:%u limit:%u",
 	     jobid, stepid, node_id, arg.job_mem_limit,
-	     step_cores, req->job_mem_lim);
+	     step_cpus, req->job_mem_lim);
 #endif
 
 	*step_hset = s_hset;

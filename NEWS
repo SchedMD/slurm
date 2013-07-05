@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Fix it so bluegene and serial systems don't get warnings over new NODEDATA
     enum.
  -- When a job is aborted send a message for any tasks that have completed.
+ -- Correction to memory per CPU calculation on system with threads and
+    allocating cores or sockets.
 
 * Changes in Slurm 2.6.0rc2
 ===========================
