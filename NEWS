@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
  -- Correction to memory per CPU calculation on system with threads and
     allocating cores or sockets.
  -- Requeue batch job if it's node reboots (used to abort the job).
+ -- Enlarge maximum size of srun's hostlist file.
 
 * Changes in Slurm 2.6.0rc2
 ===========================
