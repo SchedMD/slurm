@@ -8473,9 +8473,12 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 		    (job_ptr->time_last_active < startup_time)	&&
 		    (job_ptr->start_time       < startup_time)	&&
 		    (node_inx == bit_ffs(job_ptr->node_bitmap))) {
-			info("Batch JobId=%u missing from node 0, killing it",
+			bool requeue = false;
+			if (job_ptr->start_time < node_ptr->boot_time)
+				requeue = true;
+			info("Batch JobId=%u missing from node 0",
 			     job_ptr->job_id);
-			job_complete(job_ptr->job_id, 0, false, true, NO_VAL);
+			job_complete(job_ptr->job_id, 0, requeue, true, NO_VAL);
 		} else {
 			_notify_srun_missing_step(job_ptr, node_inx,
 						  now, node_boot_time);
