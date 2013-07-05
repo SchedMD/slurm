@@ -2460,7 +2460,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       job_specs->dependency, job_specs->account,
 	       job_specs->qos, job_specs->comment);
 
-	num_tasks = (job_specs->num_tasks != (uint16_t) NO_VAL) ?
+	num_tasks = (job_specs->num_tasks != NO_VAL) ?
 		(long) job_specs->num_tasks : -1L;
 	overcommit = (job_specs->overcommit != (uint8_t) NO_VAL) ?
 		(long) job_specs->overcommit : -1L;
