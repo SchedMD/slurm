@@ -681,6 +681,8 @@ SLURMD_PORT
 SLURMCTLD_PORT
 DEBUG_MODULES_FALSE
 DEBUG_MODULES_TRUE
+CRAY_LDFLAGS
+CRAY_CPPFLAGS
 HAVE_ALPS_CRAY_EMULATION_FALSE
 HAVE_ALPS_CRAY_EMULATION_TRUE
 HAVE_ALPS_EMULATION_FALSE
@@ -1670,7 +1672,7 @@ Optional Features:
   --disable-gtktest       do not try to compile and run a test GTK+ program
   --enable-alps-cray-emulation
                           Run SLURM in an emulated Cray mode
-  --enable-native-cray    Run SLURM natively on a Cray
+  --enable-native-cray    Run SLURM natively on a Cray without ALPS
   --enable-debug          enable debugging code for development
   --enable-memory-leak-debug
                           enable memory leak debugging code for development
@@ -21900,15 +21902,71 @@ $as_echo "$as_me: Running in Cray emulation mode" >&6;}
 $as_echo "#define HAVE_ALPS_CRAY_EMULATION 1" >>confdefs.h
 
   elif test "$ac_have_native_cray" = "yes"; then
+    _x_ac_cray_dirs="/opt/cray/job/default"
+
+    for d in $_x_ac_cray_dirs; do
+      test -d "$d" || continue
+      test -d "$d/include" || continue
+      test -f "$d/include/job.h" || continue
+      test -d "$d/lib64" || continue
+      test -f "$d/lib64/libjob.so" || continue
+
+      saved_CPPFLAGS="$CPPFLAGS"
+      CRAY_CPPFLAGS="-I$d/include"
+      CPPFLAGS="$cray_CPPFLAGS $saved_CPPFLAGS"
+
+      saved_LIBS="$LIBS"
+      CRAY_LDFLAGS="-L$d/lib64 -ljob"
+      LIBS="$cray_LDFLAGS $saved_LIBS"
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <job.h>
+int
+main ()
+{
+ job_getjidcnt();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  have_cray_files="yes"
+else
+  as_fn_error $? "There is a problem linking to the Cray api." "$LINENO" 5
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      LIBS="$saved_LIBS"
+      CPPFLAGS="$saved_CPPFLAGS"
+
+      break
+    done
+
+    if test -z "$have_cray_files"; then
+      as_fn_error $? "Unable to locate Cray API dir install. (usually in /opt/cray/job/default)" "$LINENO" 5)
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: Running on a Cray system in native mode without ALPS" >&5
+$as_echo "$as_me: Running on a Cray system in native mode without ALPS" >&6;}
+    fi
+
+    ac_have_real_cray="yes"
     ac_have_native_cray="yes"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: Running on a Cray in native mode without ALPS" >&5
-$as_echo "$as_me: Running on a Cray in native mode without ALPS" >&6;}
 
 $as_echo "#define HAVE_NATIVE_CRAY 1" >>confdefs.h
 
-    if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
-      ac_have_real_cray="yes"
-    fi
+
+$as_echo "#define HAVE_3D 1" >>confdefs.h
+
+
+$as_echo "#define SYSTEM_DIMENSIONS 3" >>confdefs.h
+
+
+$as_echo "#define HAVE_NATIVE_CRAY 1" >>confdefs.h
+
+
+$as_echo "#define HAVE_REAL_CRAY 1" >>confdefs.h
+
   else
     # Check for a Cray-specific file:
     #  * older XT systems use an /etc/xtrelease file
@@ -21923,59 +21981,6 @@ $as_echo_n "checking whether this is a native ALPS Cray XT or XE system or have 
     fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_have_alps_cray" >&5
 $as_echo "$ac_have_alps_cray" >&6; }
-  fi
-
-  if test "$ac_have_real_cray" = "yes"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for job_getjid in -ljob" >&5
-$as_echo_n "checking for job_getjid in -ljob... " >&6; }
-if ${ac_cv_lib_job_job_getjid+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ljob  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char job_getjid ();
-int
-main ()
-{
-return job_getjid ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_job_job_getjid=yes
-else
-  ac_cv_lib_job_job_getjid=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_job_job_getjid" >&5
-$as_echo "$ac_cv_lib_job_job_getjid" >&6; }
-if test "x$ac_cv_lib_job_job_getjid" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBJOB 1
-_ACEOF
-
-  LIBS="-ljob $LIBS"
-
-else
-  as_fn_error $? "Need cray-job (usually in /opt/cray/job/default)" "$LINENO" 5
-fi
-
-
-$as_echo "#define HAVE_REAL_CRAY 1" >>confdefs.h
-
   fi
 
   if test "$ac_have_alps_cray" = "yes"; then
@@ -22036,6 +22041,59 @@ else
 fi
 
 
+    if test "$ac_have_real_cray" = "yes"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for job_getjid in -ljob" >&5
+$as_echo_n "checking for job_getjid in -ljob... " >&6; }
+if ${ac_cv_lib_job_job_getjid+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ljob  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char job_getjid ();
+int
+main ()
+{
+return job_getjid ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_job_job_getjid=yes
+else
+  ac_cv_lib_job_job_getjid=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_job_job_getjid" >&5
+$as_echo "$ac_cv_lib_job_job_getjid" >&6; }
+if test "x$ac_cv_lib_job_job_getjid" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBJOB 1
+_ACEOF
+
+  LIBS="-ljob $LIBS"
+
+else
+  as_fn_error $? "Need cray-job (usually in /opt/cray/job/default)" "$LINENO" 5
+fi
+
+
+$as_echo "#define HAVE_REAL_CRAY 1" >>confdefs.h
+
+    fi
+
     if test -z "$MYSQL_CFLAGS" || test -z "$MYSQL_LIBS"; then
       as_fn_error $? "Cray BASIL requires the cray-MySQL-devel-enterprise rpm" "$LINENO" 5
     fi
@@ -22058,25 +22116,8 @@ $as_echo "#define HAVE_ALPS_CRAY 1" >>confdefs.h
 
 $as_echo "#define SALLOC_KILL_CMD 1" >>confdefs.h
 
-  elif test "$ac_have_native_cray" = "yes"; then
-    ac_fn_c_check_header_mongrel "$LINENO" "job.h" "ac_cv_header_job_h" "$ac_includes_default"
-if test "x$ac_cv_header_job_h" = xyes; then :
-
-else
-  as_fn_error $? "Cray job.h is needed to run in natvie mode" "$LINENO" 5
-fi
-
-
-
-$as_echo "#define HAVE_3D 1" >>confdefs.h
-
-
-$as_echo "#define SYSTEM_DIMENSIONS 3" >>confdefs.h
-
-
-$as_echo "#define HAVE_NATIVE_CRAY 1" >>confdefs.h
-
   fi
+
    if test "$ac_have_native_cray" = "yes"; then
   HAVE_NATIVE_CRAY_TRUE=
   HAVE_NATIVE_CRAY_FALSE='#'
@@ -22116,6 +22157,10 @@ else
   HAVE_ALPS_CRAY_EMULATION_TRUE='#'
   HAVE_ALPS_CRAY_EMULATION_FALSE=
 fi
+
+
+
+
 
 
 
