@@ -67,7 +67,7 @@
 #include "src/plugins/select/bluegene/bg_enums.h"
 #endif
 
-#ifdef HAVE_REAL_CRAY
+#if defined HAVE_ALPS_CRAY && defined HAVE_REAL_CRAY
 /*
  * On Cray installations, the libjob headers are not automatically installed
  * by default, while libjob.so always is, and kernels are > 2.6. Hence it is
@@ -569,7 +569,7 @@ job_desc_msg_create_from_opts (void)
 	hostlist_t hl = NULL;
 
 	slurm_init_job_desc_msg(j);
-#ifdef HAVE_REAL_CRAY
+#if defined HAVE_ALPS_CRAY && defined HAVE_REAL_CRAY
 	uint64_t pagg_id = job_getjid(getpid());
 	/*
 	 * Interactive sessions require pam_job.so in /etc/pam.d/common-session

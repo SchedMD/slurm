@@ -7,7 +7,9 @@
 #
 #  DESCRIPTION:
 #    Test for Cray XT and XE systems with 2-D/3-D interconnects.
-#    Tests for required libraries (native Cray systems only):
+#    Tests for required libraries (Native Cray systems only):
+#    * libjob
+#    Tests for required libraries (Alps Cray systems only):
 #    * mySQL (relies on testing for mySQL presence earlier);
 #    * libexpat, needed for XML-RPC calls to Cray's BASIL
 #      (Batch Application  Scheduler Interface Layer) interface.

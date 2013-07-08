@@ -588,7 +588,7 @@ static void _set_submit_dir_env(void)
 /* Returns 0 on success, -1 on failure */
 static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
-#ifdef HAVE_REAL_CRAY
+#if defined HAVE_ALPS_CRAY && defined HAVE_REAL_CRAY
 	uint64_t pagg_id = job_getjid(getpid());
 	/*
 	 * Interactive sessions require pam_job.so in /etc/pam.d/common-session

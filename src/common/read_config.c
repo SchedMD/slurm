@@ -3294,8 +3294,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 #ifdef HAVE_REAL_CRAY
 	if (strcmp(conf->proctrack_type, "proctrack/sgi_job"))
-		fatal("On Cray ProctrackType=proctrack/sgi_job is required to "
-		      "ensure collision-free tracking of ALPS reservations");
+		fatal("On Cray ProctrackType=proctrack/sgi_job is required");
 #endif
 	if ((!strcmp(conf->switch_type, "switch/elan"))
 	    && (!strcmp(conf->proctrack_type,"proctrack/linuxproc")))
@@ -3460,6 +3459,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	 * - ALPS reservations can only be created by the job owner or root
 	 *   (confirmation may be done by other non-privileged users);
 	 * - freeing a reservation always requires root privileges.
+	 * Even when running on Native Cray the SlurmUser must be root
+	 * to access the needed libraries.
 	 */
 	if (conf->slurm_user_id != 0)
 		fatal("Cray requires SlurmUser=root (default), but have '%s'.",
