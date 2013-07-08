@@ -985,7 +985,7 @@ with_mysql_config
 with_pg_config
 with_alps_emulation
 enable_cray_emulation
-enable_cray_native
+enable_native_cray
 enable_debug
 enable_memory_leak_debug
 enable_front_end
@@ -1670,7 +1670,7 @@ Optional Features:
   --disable-gtktest       do not try to compile and run a test GTK+ program
   --enable-alps-cray-emulation
                           Run SLURM in an emulated Cray mode
-  --enable-cray-native    Run SLURM natively on a Cray
+  --enable-native-cray    Run SLURM natively on a Cray
   --enable-debug          enable debugging code for development
   --enable-memory-leak-debug
                           enable memory leak debugging code for development
@@ -21874,12 +21874,12 @@ if test "${enable_cray_emulation+set}" = set; then :
 fi
 
 
-  # Check whether --enable-cray-native was given.
-if test "${enable_cray_native+set}" = set; then :
-  enableval=$enable_cray_native;  case "$enableval" in
+  # Check whether --enable-native-cray was given.
+if test "${enable_native_cray+set}" = set; then :
+  enableval=$enable_native_cray;  case "$enableval" in
         yes) ac_have_native_cray="yes" ;;
          no) ac_have_native_cray="no"  ;;
-          *) as_fn_error $? "bad value \"$enableval\" for --enable-cray-native" "$LINENO" 5  ;;
+          *) as_fn_error $? "bad value \"$enableval\" for --enable-native-cray" "$LINENO" 5  ;;
       esac
 
 fi

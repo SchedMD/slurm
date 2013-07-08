@@ -40,12 +40,12 @@ AC_DEFUN([X_AC_CRAY],
   )
 
   AC_ARG_ENABLE(
-    [cray-native],
-    AS_HELP_STRING(--enable-cray-native,Run SLURM natively on a Cray),
+    [native-cray],
+    AS_HELP_STRING(--enable-native-cray,Run SLURM natively on a Cray),
       [ case "$enableval" in
         yes) ac_have_native_cray="yes" ;;
          no) ac_have_native_cray="no"  ;;
-          *) AC_MSG_ERROR([bad value "$enableval" for --enable-cray-native])  ;;
+          *) AC_MSG_ERROR([bad value "$enableval" for --enable-native-cray])  ;;
       esac ]
   )
 
