@@ -24,7 +24,7 @@ AC_DEFUN([X_AC_CRAY],
 
   AC_ARG_WITH(
     [alps-emulation],
-    AS_HELP_STRING(--with-alps-emulation,Run SLURM against an emulated Alps system - requires option cray.conf @<:@default=no@:>@),
+    AS_HELP_STRING(--with-alps-emulation,Run SLURM against an emulated ALPS system - requires option cray.conf @<:@default=no@:>@),
     [test "$withval" = no || ac_have_alps_emulation=yes],
     [ac_have_alps_emulation=no])
 
@@ -40,18 +40,18 @@ AC_DEFUN([X_AC_CRAY],
 
   if test "$ac_have_alps_emulation" = "yes"; then
     ac_have_alps_cray="yes"
-    AC_MSG_NOTICE([Running A Alps Cray system against an Alps emulation])
-    AC_DEFINE(HAVE_ALPS_EMULATION, 1, [Define to 1 if running against an Alps emulation])
+    AC_MSG_NOTICE([Running A ALPS Cray system against an ALPS emulation])
+    AC_DEFINE(HAVE_ALPS_EMULATION, 1, [Define to 1 if running against an ALPS emulation])
   elif test "$ac_have_alps_cray_emulation" = "yes"; then
     ac_have_alps_cray="yes"
     AC_MSG_NOTICE([Running in Cray emulation mode])
-    AC_DEFINE(HAVE_ALPS_CRAY_EMULATION, 1, [Define to 1 for emulating a Cray XT/XE system using Alps])
+    AC_DEFINE(HAVE_ALPS_CRAY_EMULATION, 1, [Define to 1 for emulating a Cray XT/XE system using ALPS])
   else
     # Check for a Cray-specific file:
     #  * older XT systems use an /etc/xtrelease file
     #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
     #  * both have an /etc/xthostname
-    AC_MSG_CHECKING([whether this is a native Alps Cray XT or XE system or have ALPS simulator])
+    AC_MSG_CHECKING([whether this is a native ALPS Cray XT or XE system or have ALPS simulator])
 
     if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
       ac_have_alps_cray="yes"
@@ -83,7 +83,7 @@ AC_DEFUN([X_AC_CRAY],
     AC_DEFINE(HAVE_3D,           1, [Define to 1 if 3-dimensional architecture])
     AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
     AC_DEFINE(HAVE_FRONT_END,    1, [Define to 1 if running slurmd on front-end only])
-    AC_DEFINE(HAVE_ALPS_CRAY,         1, [Define to 1 for Cray XT/XE systems])
+    AC_DEFINE(HAVE_ALPS_CRAY,         1, [Define to 1 for Cray XT/XE systems using ALPS])
     AC_DEFINE(SALLOC_KILL_CMD,   1, [Define to 1 for salloc to kill child processes at job termination])
   fi
   AM_CONDITIONAL(HAVE_ALPS_CRAY, test "$ac_have_alps_cray" = "yes")
