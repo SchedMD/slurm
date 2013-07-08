@@ -105,7 +105,7 @@ AC_DEFUN([X_AC_CRAY],
     AC_DEFINE(SALLOC_KILL_CMD,   1, [Define to 1 for salloc to kill child processes at job termination])
   elif test "$ac_have_native_cray" = "yes"; then
     AC_CHECK_HEADER(job.h, [],
-                    AC_MSG_ERROR([Cray job.h is needed to run in natvie mode]))
+                    AC_MSG_ERROR([Cray job.h is needed to run in native mode]))
     AC_DEFINE(HAVE_3D,           1, [Define to 1 if 3-dimensional architecture])
     AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
     AC_DEFINE(HAVE_NATIVE_CRAY,  1, [Define to 1 for Native Cray systems])
