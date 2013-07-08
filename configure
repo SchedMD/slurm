@@ -689,6 +689,8 @@ HAVE_REAL_CRAY_FALSE
 HAVE_REAL_CRAY_TRUE
 HAVE_ALPS_CRAY_FALSE
 HAVE_ALPS_CRAY_TRUE
+HAVE_NATIVE_CRAY_FALSE
+HAVE_NATIVE_CRAY_TRUE
 WITH_PGSQL_FALSE
 WITH_PGSQL_TRUE
 PGSQL_CFLAGS
@@ -983,6 +985,7 @@ with_mysql_config
 with_pg_config
 with_alps_emulation
 enable_cray_emulation
+enable_cray_native
 enable_debug
 enable_memory_leak_debug
 enable_front_end
@@ -1667,6 +1670,7 @@ Optional Features:
   --disable-gtktest       do not try to compile and run a test GTK+ program
   --enable-alps-cray-emulation
                           Run SLURM in an emulated Cray mode
+  --enable-cray-native    Run SLURM natively on a Cray
   --enable-debug          enable debugging code for development
   --enable-memory-leak-debug
                           enable memory leak debugging code for development
@@ -1710,7 +1714,7 @@ Optional Packages:
   --with-mysql_config=PATH
                           Specify path to mysql_config binary
   --with-pg_config=PATH   Specify path to pg_config binary
-  --with-alps-emulation   Run SLURM against an emulated Alps system - requires
+  --with-alps-emulation   Run SLURM against an emulated ALPS system - requires
                           option cray.conf [default=no]
   --with-slurmctld-port=N set slurmctld default port [6817]
   --with-slurmd-port=N    set slurmd default port [6818]
@@ -21844,6 +21848,7 @@ fi
 
 
 
+  ac_have_native_cray="no"
   ac_have_alps_cray="no"
   ac_have_real_cray="no"
   ac_have_alps_emulation="no"
@@ -21869,10 +21874,21 @@ if test "${enable_cray_emulation+set}" = set; then :
 fi
 
 
+  # Check whether --enable-cray-native was given.
+if test "${enable_cray_native+set}" = set; then :
+  enableval=$enable_cray_native;  case "$enableval" in
+        yes) ac_have_native_cray="yes" ;;
+         no) ac_have_native_cray="no"  ;;
+          *) as_fn_error $? "bad value \"$enableval\" for --enable-cray-native" "$LINENO" 5  ;;
+      esac
+
+fi
+
+
   if test "$ac_have_alps_emulation" = "yes"; then
     ac_have_alps_cray="yes"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: Running A Alps Cray system against an Alps emulation" >&5
-$as_echo "$as_me: Running A Alps Cray system against an Alps emulation" >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Running A ALPS Cray system against an ALPS emulation" >&5
+$as_echo "$as_me: Running A ALPS Cray system against an ALPS emulation" >&6;}
 
 $as_echo "#define HAVE_ALPS_EMULATION 1" >>confdefs.h
 
@@ -21883,23 +21899,83 @@ $as_echo "$as_me: Running in Cray emulation mode" >&6;}
 
 $as_echo "#define HAVE_ALPS_CRAY_EMULATION 1" >>confdefs.h
 
+  elif test "$ac_have_native_cray" = "yes"; then
+    ac_have_native_cray="yes"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Running on a Cray in native mode without ALPS" >&5
+$as_echo "$as_me: Running on a Cray in native mode without ALPS" >&6;}
+
+$as_echo "#define HAVE_NATIVE_CRAY 1" >>confdefs.h
+
+    if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
+      ac_have_real_cray="yes"
+    fi
   else
     # Check for a Cray-specific file:
     #  * older XT systems use an /etc/xtrelease file
     #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
     #  * both have an /etc/xthostname
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a native Alps Cray XT or XE system or have ALPS simulator" >&5
-$as_echo_n "checking whether this is a native Alps Cray XT or XE system or have ALPS simulator... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a native ALPS Cray XT or XE system or have ALPS simulator" >&5
+$as_echo_n "checking whether this is a native ALPS Cray XT or XE system or have ALPS simulator... " >&6; }
 
     if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
       ac_have_alps_cray="yes"
       ac_have_real_cray="yes"
-
-$as_echo "#define HAVE_REAL_CRAY 1" >>confdefs.h
-
     fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_have_alps_cray" >&5
 $as_echo "$ac_have_alps_cray" >&6; }
+  fi
+
+  if test "$ac_have_real_cray" = "yes"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for job_getjid in -ljob" >&5
+$as_echo_n "checking for job_getjid in -ljob... " >&6; }
+if ${ac_cv_lib_job_job_getjid+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ljob  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char job_getjid ();
+int
+main ()
+{
+return job_getjid ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_job_job_getjid=yes
+else
+  ac_cv_lib_job_job_getjid=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_job_job_getjid" >&5
+$as_echo "$ac_cv_lib_job_job_getjid" >&6; }
+if test "x$ac_cv_lib_job_job_getjid" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBJOB 1
+_ACEOF
+
+  LIBS="-ljob $LIBS"
+
+else
+  as_fn_error $? "Need cray-job (usually in /opt/cray/job/default)" "$LINENO" 5
+fi
+
+
+$as_echo "#define HAVE_REAL_CRAY 1" >>confdefs.h
+
   fi
 
   if test "$ac_have_alps_cray" = "yes"; then
@@ -21960,56 +22036,6 @@ else
 fi
 
 
-    if test "$ac_have_real_cray" = "yes"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for job_getjid in -ljob" >&5
-$as_echo_n "checking for job_getjid in -ljob... " >&6; }
-if ${ac_cv_lib_job_job_getjid+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ljob  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char job_getjid ();
-int
-main ()
-{
-return job_getjid ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_job_job_getjid=yes
-else
-  ac_cv_lib_job_job_getjid=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_job_job_getjid" >&5
-$as_echo "$ac_cv_lib_job_job_getjid" >&6; }
-if test "x$ac_cv_lib_job_job_getjid" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBJOB 1
-_ACEOF
-
-  LIBS="-ljob $LIBS"
-
-else
-  as_fn_error $? "Need cray-job (usually in /opt/cray/job/default)" "$LINENO" 5
-fi
-
-    fi
-
     if test -z "$MYSQL_CFLAGS" || test -z "$MYSQL_LIBS"; then
       as_fn_error $? "Cray BASIL requires the cray-MySQL-devel-enterprise rpm" "$LINENO" 5
     fi
@@ -22032,7 +22058,33 @@ $as_echo "#define HAVE_ALPS_CRAY 1" >>confdefs.h
 
 $as_echo "#define SALLOC_KILL_CMD 1" >>confdefs.h
 
+  elif test "$ac_have_native_cray" = "yes"; then
+    ac_fn_c_check_header_mongrel "$LINENO" "job.h" "ac_cv_header_job_h" "$ac_includes_default"
+if test "x$ac_cv_header_job_h" = xyes; then :
+
+else
+  as_fn_error $? "Cray job.h is needed to run in natvie mode" "$LINENO" 5
+fi
+
+
+
+$as_echo "#define HAVE_3D 1" >>confdefs.h
+
+
+$as_echo "#define SYSTEM_DIMENSIONS 3" >>confdefs.h
+
+
+$as_echo "#define HAVE_NATIVE_CRAY 1" >>confdefs.h
+
   fi
+   if test "$ac_have_native_cray" = "yes"; then
+  HAVE_NATIVE_CRAY_TRUE=
+  HAVE_NATIVE_CRAY_FALSE='#'
+else
+  HAVE_NATIVE_CRAY_TRUE='#'
+  HAVE_NATIVE_CRAY_FALSE=
+fi
+
    if test "$ac_have_alps_cray" = "yes"; then
   HAVE_ALPS_CRAY_TRUE=
   HAVE_ALPS_CRAY_FALSE='#'
@@ -23615,6 +23667,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_PGSQL_TRUE}" && test -z "${WITH_PGSQL_FALSE}"; then
   as_fn_error $? "conditional \"WITH_PGSQL\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_NATIVE_CRAY_TRUE}" && test -z "${HAVE_NATIVE_CRAY_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_NATIVE_CRAY\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_ALPS_CRAY_TRUE}" && test -z "${HAVE_ALPS_CRAY_FALSE}"; then

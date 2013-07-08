@@ -48,13 +48,13 @@
 /* Define to 1 for AIX operating system */
 #undef HAVE_AIX
 
-/* Define to 1 for Cray XT/XE systems */
+/* Define to 1 for Cray XT/XE systems using ALPS */
 #undef HAVE_ALPS_CRAY
 
-/* Define to 1 for emulating a Cray XT/XE system using Alps */
+/* Define to 1 for emulating a Cray XT/XE system using ALPS */
 #undef HAVE_ALPS_CRAY_EMULATION
 
-/* Define to 1 if running against an Alps emulation */
+/* Define to 1 if running against an ALPS emulation */
 #undef HAVE_ALPS_EMULATION
 
 /* Define to 1 if emulating or running on Blue Gene system */
@@ -182,6 +182,9 @@
 /* Define to 1 if using MySQL libaries */
 #undef HAVE_MYSQL
 
+/* Define to 1 for Native Cray systems */
+#undef HAVE_NATIVE_CRAY
+
 /* Define to 1 if you have the <ncurses.h> header file. */
 #undef HAVE_NCURSES_H
 
@@ -242,7 +245,7 @@
 /* Define if you are compiling with readline. */
 #undef HAVE_READLINE
 
-/* Define to 1 for running on a real Cray XT/XE system using Alps */
+/* Define to 1 for running on a real Cray system */
 #undef HAVE_REAL_CRAY
 
 /* Define to 1 if you have the `sched_setaffinity' function. */
