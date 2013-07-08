@@ -52,7 +52,7 @@ struct select_nodeinfo {
 };
 #define NODEINFO_MAGIC		0x82a3
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 extern int basil_node_ranking(struct node_record *node_array, int node_cnt);
 extern int basil_inventory(void);
 extern int basil_geometry(struct node_record *node_ptr_array, int node_cnt);
@@ -63,7 +63,7 @@ extern int do_basil_release(struct job_record *job_ptr);
 extern int do_basil_switch(struct job_record *job_ptr, bool suspend);
 extern void queue_basil_signal(struct job_record *job_ptr, int signal,
 			       uint16_t delay);
-#else	/* !HAVE_CRAY */
+#else	/* !HAVE_ALPS_CRAY */
 static inline int basil_node_ranking(struct node_record *ig, int nore)
 {
 	return SLURM_SUCCESS;
@@ -110,5 +110,5 @@ static inline int do_basil_switch(struct job_record *job_ptr, bool suspend)
 	return SLURM_SUCCESS;
 }
 
-#endif	/* HAVE_CRAY */
+#endif	/* HAVE_ALPS_CRAY */
 #endif	/* __CRAY_BASIL_INTERFACE_H */

@@ -26,7 +26,7 @@
 #include <fcntl.h>
 #include <assert.h>
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 #  include <expat.h>
 #  include <mysql.h>
 #endif
@@ -559,7 +559,7 @@ extern int ns_add_node(struct nodespec **head, uint32_t node_id, bool sorted);
 extern char *ns_to_string(const struct nodespec *head);
 extern void free_nodespec(struct nodespec *head);
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 /*
  *	Routines to interact with SDB database (uses prepared statements)
  */
@@ -605,7 +605,7 @@ enum query_columns {
 	COL_TYPE,	/* {service, compute }		*/
 	COLUMN_COUNT	/* sentinel */
 };
-#endif  /* HAVE_CRAY */
+#endif  /* HAVE_ALPS_CRAY */
 
 
 /*
