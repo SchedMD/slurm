@@ -69,11 +69,11 @@ AC_DEFUN([X_AC_CRAY],
 
       saved_CPPFLAGS="$CPPFLAGS"
       CRAY_CPPFLAGS="-I$d/include"
-      CPPFLAGS="$cray_CPPFLAGS $saved_CPPFLAGS"
+      CPPFLAGS="$CRAY_CPPFLAGS $saved_CPPFLAGS"
 
       saved_LIBS="$LIBS"
       CRAY_LDFLAGS="-L$d/lib64 -ljob"
-      LIBS="$cray_LDFLAGS $saved_LIBS"
+      LIBS="$CRAY_LDFLAGS $saved_LIBS"
 
       AC_LINK_IFELSE(
         [AC_LANG_PROGRAM(
@@ -88,7 +88,7 @@ AC_DEFUN([X_AC_CRAY],
     done
 
     if test -z "$have_cray_files"; then
-      AC_MSG_ERROR([Unable to locate Cray API dir install. (usually in /opt/cray/job/default)]))
+      AC_MSG_ERROR([Unable to locate Cray API dir install. (usually in /opt/cray/job/default)])
     else
       AC_MSG_NOTICE([Running on a Cray system in native mode without ALPS])
     fi

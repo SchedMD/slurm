@@ -21913,11 +21913,11 @@ $as_echo "#define HAVE_ALPS_CRAY_EMULATION 1" >>confdefs.h
 
       saved_CPPFLAGS="$CPPFLAGS"
       CRAY_CPPFLAGS="-I$d/include"
-      CPPFLAGS="$cray_CPPFLAGS $saved_CPPFLAGS"
+      CPPFLAGS="$CRAY_CPPFLAGS $saved_CPPFLAGS"
 
       saved_LIBS="$LIBS"
       CRAY_LDFLAGS="-L$d/lib64 -ljob"
-      LIBS="$cray_LDFLAGS $saved_LIBS"
+      LIBS="$CRAY_LDFLAGS $saved_LIBS"
 
       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -21944,7 +21944,7 @@ rm -f core conftest.err conftest.$ac_objext \
     done
 
     if test -z "$have_cray_files"; then
-      as_fn_error $? "Unable to locate Cray API dir install. (usually in /opt/cray/job/default)" "$LINENO" 5)
+      as_fn_error $? "Unable to locate Cray API dir install. (usually in /opt/cray/job/default)" "$LINENO" 5
     else
       { $as_echo "$as_me:${as_lineno-$LINENO}: Running on a Cray system in native mode without ALPS" >&5
 $as_echo "$as_me: Running on a Cray system in native mode without ALPS" >&6;}
