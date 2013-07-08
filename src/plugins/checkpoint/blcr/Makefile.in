@@ -403,10 +403,10 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -DPKGLIBEXECDIR=\"$(pkglibexecdir)\" \
-	-I$(top_srcdir) -I$(top_srcdir)/src/common
-
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
+@WITH_BLCR_TRUE@AM_CPPFLAGS = -DPKGLIBEXECDIR=\"$(pkglibexecdir)\" \
+@WITH_BLCR_TRUE@	-I$(top_srcdir) -I$(top_srcdir)/src/common
+
 @WITH_BLCR_TRUE@pkglib_LTLIBRARIES = checkpoint_blcr.la
 @WITH_BLCR_TRUE@checkpoint_blcr_la_SOURCES = checkpoint_blcr.c
 @WITH_BLCR_TRUE@checkpoint_blcr_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
