@@ -11,3 +11,7 @@ pkglib_LTLIBRARIES = task_cray.la
 # Null task plugin.
 task_cray_la_SOURCES = task_cray.c
 task_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+
+if HAVE_REAL_CRAY
+  task_cray_la_LIBADD = -ljob
+endif
