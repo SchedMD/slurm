@@ -99,7 +99,7 @@ extern char *default_plugstack;
 #  define DEFAULT_LAUNCH_TYPE         "launch/runjob"
 #elif defined HAVE_LIBNRT
 #  define DEFAULT_LAUNCH_TYPE         "launch/poe"
-#elif defined HAVE_REAL_CRAY
+#elif defined HAVE_ALPS_CRAY && defined HAVE_REAL_CRAY
 #  define DEFAULT_LAUNCH_TYPE         "launch/aprun"
 #else
 #  define DEFAULT_LAUNCH_TYPE         "launch/slurm"
