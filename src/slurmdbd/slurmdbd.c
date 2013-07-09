@@ -98,7 +98,7 @@ static void  _kill_old_slurmdbd(void);
 static void  _parse_commandline(int argc, char *argv[]);
 static void  _request_registrations(void *db_conn);
 static void  _rollup_handler_cancel();
-static void *_rollup_handler(void *no_data);
+static void *_rollup_handler();
 static int   _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec);
 static void  _set_work_dir(void);
 static void *_signal_handler(void *no_data);
@@ -216,8 +216,8 @@ int main(int argc, char *argv[])
 			/* Create attached thread to do usage rollup */
 			slurm_attr_init(&thread_attr);
 			if (pthread_create(&rollup_handler_thread,
-					   &thread_attr,
-					   _rollup_handler, db_conn))
+					   &thread_attr, 
+					   _rollup_handler, NULL))
 				fatal("pthread_create error %m");
 			slurm_attr_destroy(&thread_attr);
 		}
@@ -527,12 +527,13 @@ static void _rollup_handler_cancel()
 }
 
 /* _rollup_handler - Process rollup duties */
-static void *_rollup_handler(void *db_conn)
+static void *_rollup_handler()
 {
 	time_t start_time = time(NULL);
 	time_t next_time;
 /* 	int sigarray[] = {SIGUSR1, 0}; */
 	struct tm tm;
+	void *db_conn = NULL;
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -544,6 +545,7 @@ static void *_rollup_handler(void *db_conn)
 	}
 
 	while (1) {
+		db_conn = acct_storage_g_get_connection(NULL, 0, false, NULL);
 		if (!db_conn)
 			break;
 		/* run the roll up */
@@ -553,6 +555,7 @@ static void *_rollup_handler(void *db_conn)
 		acct_storage_g_roll_usage(db_conn, 0, 0, 1);
 		running_rollup = 0;
 		slurm_mutex_unlock(&rollup_lock);
+		acct_storage_g_close_connection(&db_conn);
 
 		/* sleep for an hour */
 		tm.tm_sec = 0;
