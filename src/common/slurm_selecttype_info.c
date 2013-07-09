@@ -81,6 +81,8 @@ int parse_select_type_param(char *select_type_parameters, uint16_t *param)
 			*param |= CR_CPU;
 			*param |= CR_MEMORY;
 			param_cnt++;
+		} else if (!strcasecmp(str_parameters, "other_cons_res")) {
+			*param |= CR_OTHER_CONS_RES;
 		} else if (!strcasecmp(str_parameters,
 				       "CR_ALLOCATE_FULL_SOCKET")) {
 			*param |= CR_ALLOCATE_FULL_SOCKET;

@@ -563,6 +563,7 @@ char *slurm_read_hostfile(char *filename, int n)
 	hostlist_t hostlist = NULL;
 	char *nodelist = NULL;
 	char *asterisk, *tmp_text, *save_ptr = NULL, *host_name;
+	int total_file_len = 0;
 
 	if (filename == NULL || strlen(filename) == 0)
 		return NULL;
@@ -582,6 +583,7 @@ char *slurm_read_hostfile(char *filename, int n)
 	while (fgets(in_line, BUFFER_SIZE, fp) != NULL) {
 		line_num++;
 		line_size = strlen(in_line);
+		total_file_len += line_size;
 		if (line_size == (BUFFER_SIZE - 1)) {
 			error ("Line %d, of hostfile %s too long",
 			       line_num, filename);
@@ -639,13 +641,14 @@ char *slurm_read_hostfile(char *filename, int n)
 		goto cleanup_hostfile;
 	}
 
-	nodelist = (char *)malloc(0xffff);
+	total_file_len += 1024;
+	nodelist = (char *)malloc(total_file_len);
 	if (!nodelist) {
 		error("Nodelist xmalloc failed");
 		goto cleanup_hostfile;
 	}
 
-	if (hostlist_ranged_string(hostlist, 0xffff, nodelist) == -1) {
+	if (hostlist_ranged_string(hostlist, total_file_len, nodelist) == -1) {
 		error("Hostlist is too long for the allocate RPC!");
 		free(nodelist);
 		nodelist = NULL;

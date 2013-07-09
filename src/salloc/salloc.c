@@ -73,7 +73,7 @@
 #ifdef HAVE_BG
 #include "src/common/node_select.h"
 #include "src/plugins/select/bluegene/bg_enums.h"
-#elif defined(HAVE_CRAY)
+#elif defined(HAVE_ALPS_CRAY)
 #include "src/common/node_select.h"
 
 #ifdef HAVE_REAL_CRAY
@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
 		 * after first making sure stdin is not redirected.
 		 */
 	} else if ((tpgid = tcgetpgrp(STDIN_FILENO)) < 0) {
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		verbose("no controlling terminal");
 #else
 		if (!opt.no_shell) {

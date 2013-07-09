@@ -100,6 +100,48 @@ void print_gres_help(void)
 		printf("No gres help is available\n");
 }
 
+void set_distribution(task_dist_states_t distribution,
+		      char **dist, char **lllp_dist)
+{
+	if (((int)distribution >= 0)
+	    && (distribution != SLURM_DIST_UNKNOWN)) {
+		switch (distribution) {
+		case SLURM_DIST_CYCLIC:
+			*dist      = "cyclic";
+			break;
+		case SLURM_DIST_BLOCK:
+			*dist      = "block";
+			break;
+		case SLURM_DIST_PLANE:
+			*dist      = "plane";
+			*lllp_dist = "plane";
+			break;
+		case SLURM_DIST_ARBITRARY:
+			*dist      = "arbitrary";
+			break;
+		case SLURM_DIST_CYCLIC_CYCLIC:
+			*dist      = "cyclic:cyclic";
+			*lllp_dist = "cyclic";
+			break;
+		case SLURM_DIST_CYCLIC_BLOCK:
+			*dist      = "cyclic:block";
+			*lllp_dist = "block";
+			break;
+		case SLURM_DIST_BLOCK_CYCLIC:
+			*dist      = "block:cyclic";
+			*lllp_dist = "cyclic";
+			break;
+		case SLURM_DIST_BLOCK_BLOCK:
+			*dist      = "block:block";
+			*lllp_dist = "block";
+			break;
+		default:
+			error("unknown dist, type %d", distribution);
+			break;
+		}
+	}
+}
+
 /*
  * verify that a distribution type in arg is of a known form
  * returns the task_dist_states, or -1 if state is unknown
@@ -364,7 +406,7 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 			return false;
 		}
 		xfree(min_str);
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		if (*min_nodes < 0) {
 #else
 		if (*min_nodes == 0) {
@@ -386,7 +428,7 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 			error("\"%s\" is not a valid node count", arg);
 			return false;
 		}
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		if (*min_nodes < 0) {
 #else
 		if (*min_nodes == 0) {

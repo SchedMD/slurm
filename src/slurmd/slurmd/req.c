@@ -188,7 +188,7 @@ static int  _waiter_complete (uint32_t jobid);
 
 static bool _steps_completed_now(uint32_t jobid);
 static int  _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid,
-			       uint16_t block_no);
+			       uint16_t block_no, uint32_t *job_id);
 static void _wait_state_completed(uint32_t jobid, int max_delay);
 static long _get_job_uid(uint32_t jobid);
 
@@ -677,7 +677,9 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 		return SLURM_FAILURE;
 	} else if (pid > 0) {
 		int rc = 0;
+#ifndef SLURMSTEPD_MEMCHECK
 		time_t start_time = time(NULL);
+#endif
 		/*
 		 * Parent sends initialization data to the slurmstepd
 		 * over the to_stepd pipe, and waits for the return code
@@ -694,6 +696,11 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 			error("Unable to init slurmstepd");
 			goto done;
 		}
+
+		/* If running under memcheck stdout doesn't work correctly so
+		 * just skip it.
+		 */
+#ifndef SLURMSTEPD_MEMCHECK
 		if (read(to_slurmd[0], &rc, sizeof(int)) != sizeof(int)) {
 			error("Error reading return code message "
 			      "from slurmstepd: %m");
@@ -706,7 +713,7 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 				     "memory", delta_time);
 			}
 		}
-
+#endif
 	done:
 		if (_remove_starting_step(type, req))
 			error("Error cleaning up starting_step list");
@@ -720,7 +727,12 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 			error("close read to_slurmd in parent: %m");
 		return rc;
 	} else {
+#ifndef SLURMSTEPD_MEMCHECK
 		char *const argv[2] = { (char *)conf->stepd_loc, NULL};
+#else
+		char *const argv[3] = {"memcheck",
+				       (char *)conf->stepd_loc, NULL};
+#endif
 		int failed = 0;
 		/* inform slurmstepd about our config */
 		setenv("SLURM_CONF", conf->conffile, 1);
@@ -794,7 +806,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	uint32_t         jobid = req->job_id;
 	uint32_t         stepid = req->job_step_id;
 	int              tasks_to_launch = req->tasks_to_launch[node_id];
-	uint32_t         job_cores=0, step_cores=0;
+	uint32_t         job_cpus = 0, step_cpus = 0;
 
 	/*
 	 * First call slurm_cred_verify() so that all valid
@@ -915,11 +927,11 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		for (i=i_first_bit, j=0; i<i_last_bit; i++, j++) {
 			char *who_has = NULL;
 			if (bit_test(arg.job_core_bitmap, i)) {
-				job_cores++;
+				job_cpus++;
 				who_has = "Job";
 			}
 			if (bit_test(arg.step_core_bitmap, i)) {
-				step_cores++;
+				step_cpus++;
 				who_has = "Step";
 			}
 			if (cpu_log && who_has) {
@@ -929,11 +941,11 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		}
 		if (cpu_log)
 			info("====================");
-		if (step_cores == 0) {
+		if (step_cpus == 0) {
 			error("cons_res: zero processors allocated to step");
-			step_cores = 1;
+			step_cpus = 1;
 		}
-		/* NOTE: step_cores is the count of allocated resources
+		/* NOTE: step_cpus is the count of allocated resources
 		 * (typically cores). Convert to CPU count as needed */
 		if (i_last_bit <= i_first_bit)
 			error("step credential has no CPUs selected");
@@ -941,20 +953,21 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			i = conf->cpus / (i_last_bit - i_first_bit);
 			if (i > 1) {
 				info("scaling CPU count by factor of %d", i);
-				step_cores *= i;
+				step_cpus *= i;
+				job_cpus *= i;
 			}
 		}
-		if (tasks_to_launch > step_cores) {
+		if (tasks_to_launch > step_cpus) {
 			/* This is expected with the --overcommit option
 			 * or hyperthreads */
 			debug("cons_res: More than one tasks per logical "
 			      "processor (%d > %u) on host [%u.%u %ld %s] ",
-			      tasks_to_launch, step_cores, arg.jobid,
+			      tasks_to_launch, step_cpus, arg.jobid,
 			      arg.stepid, (long) arg.uid, arg.step_hostlist);
 		}
 	} else {
-		step_cores = 1;
-		job_cores  = 1;
+		step_cpus = 1;
+		job_cpus  = 1;
 	}
 
 	/* Overwrite any memory limits in the RPC with contents of the
@@ -964,27 +977,27 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		if (arg.step_mem_limit & MEM_PER_CPU) {
 			req->step_mem_lim  = arg.step_mem_limit &
 					     (~MEM_PER_CPU);
-			req->step_mem_lim *= step_cores;
+			req->step_mem_lim *= step_cpus;
 		} else
 			req->step_mem_lim  = arg.step_mem_limit;
 	} else {
 		if (arg.job_mem_limit & MEM_PER_CPU) {
 			req->step_mem_lim  = arg.job_mem_limit &
 					     (~MEM_PER_CPU);
-			req->step_mem_lim *= job_cores;
+			req->step_mem_lim *= job_cpus;
 		} else
 			req->step_mem_lim  = arg.job_mem_limit;
 	}
 	if (arg.job_mem_limit & MEM_PER_CPU) {
 		req->job_mem_lim  = arg.job_mem_limit & (~MEM_PER_CPU);
-		req->job_mem_lim *= job_cores;
+		req->job_mem_lim *= job_cpus;
 	} else
 		req->job_mem_lim  = arg.job_mem_limit;
-	req->cpus_allocated[node_id] = step_cores;
+	req->cpus_allocated[node_id] = step_cpus;
 #if 0
 	info("%u.%u node_id:%d mem orig:%u cpus:%u limit:%u",
 	     jobid, stepid, node_id, arg.job_mem_limit,
-	     step_cores, req->job_mem_lim);
+	     step_cpus, req->job_mem_lim);
 #endif
 
 	*step_hset = s_hset;
@@ -1387,7 +1400,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 #if defined(HAVE_BG)
 		select_g_select_jobinfo_get(req->select_jobinfo,
 					    SELECT_JOBDATA_BLOCK_ID, &resv_id);
-#elif defined(HAVE_CRAY)
+#elif defined(HAVE_ALPS_CRAY)
 		resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
 							  SELECT_PRINT_RESV_ID);
 #endif
@@ -2680,15 +2693,16 @@ _get_grouplist(uid_t my_uid, gid_t my_gid, int *ngroups, gid_t **groups)
  * Munge without generating a credential replay error
  * RET SLURM_SUCCESS or an error code */
 static int
-_valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no)
+_valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no,
+		   uint32_t *job_id)
 {
 	int rc = SLURM_SUCCESS;
-	uint32_t job_id;
 	char *nodes = NULL;
 	hostset_t hset = NULL;
 
+	*job_id = NO_VAL;
 	rc = extract_sbcast_cred(conf->vctx, req->cred, block_no,
-				 &job_id, &nodes);
+				 job_id, &nodes);
 	if (rc != 0) {
 		error("Security violation: Invalid sbcast_cred from uid %d",
 		      req_uid);
@@ -2722,6 +2736,7 @@ _rpc_file_bcast(slurm_msg_t *msg)
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	gid_t req_gid = g_slurm_auth_get_gid(msg->auth_cred, NULL);
 	pid_t child;
+	uint32_t job_id;
 
 #if 0
 	info("last_block=%u force=%u modes=%o",
@@ -2736,14 +2751,17 @@ _rpc_file_bcast(slurm_msg_t *msg)
 #endif
 #endif
 
-	if (!_slurm_authorized_user(req_uid)) {
-		rc = _valid_sbcast_cred(req, req_uid, req->block_no);
-		if (rc != SLURM_SUCCESS)
-			return rc;
-	}
+	rc = _valid_sbcast_cred(req, req_uid, req->block_no, &job_id);
+	if ((rc != SLURM_SUCCESS) && !_slurm_authorized_user(req_uid))
+		return rc;
 
-	info("sbcast req_uid=%u fname=%s block_no=%u",
-	     req_uid, req->fname, req->block_no);
+	if (req->block_no == 1) {
+		info("sbcast req_uid=%u job_id=%u fname=%s block_no=%u",
+		     req_uid, job_id, req->fname, req->block_no);
+	} else {
+		debug("sbcast req_uid=%u job_id=%u fname=%s block_no=%u",
+		      req_uid, job_id, req->fname, req->block_no);
+	}
 
 	if ((rc = _get_grouplist(req_uid, req_gid, &ngroups, &groups)) < 0) {
 		error("sbcast: getgrouplist(%u): %m", req_uid);
@@ -3585,7 +3603,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	select_g_select_jobinfo_get(req->select_jobinfo,
 				    SELECT_JOBDATA_BLOCK_ID,
 				    &resv_id);
-#elif defined(HAVE_CRAY)
+#elif defined(HAVE_ALPS_CRAY)
 	resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
 						  SELECT_PRINT_RESV_ID);
 #endif
@@ -3940,7 +3958,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	select_g_select_jobinfo_get(req->select_jobinfo,
 				    SELECT_JOBDATA_BLOCK_ID,
 				    &resv_id);
-#elif defined(HAVE_CRAY)
+#elif defined(HAVE_ALPS_CRAY)
 	resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
 						  SELECT_PRINT_RESV_ID);
 #endif
@@ -4203,7 +4221,7 @@ _build_env(uint32_t jobid, uid_t uid, char *resv_id,
 		/* Needed for HTC jobs */
 		setenvf(&env, "SUBMIT_POOL", "%s", resv_id);
 # endif
-#elif defined(HAVE_CRAY)
+#elif defined(HAVE_ALPS_CRAY)
 		setenvf(&env, "BASIL_RESERVATION_ID", "%s", resv_id);
 #endif
 	}

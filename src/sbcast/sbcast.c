@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	log_init("sbcast", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	error("The sbcast command is not supported on Cray systems");
 	return 1;
 #endif

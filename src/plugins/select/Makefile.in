@@ -57,6 +57,7 @@ subdir = src/plugins/select
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
+	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
 	$(top_srcdir)/auxdir/ltoptions.m4 \
 	$(top_srcdir)/auxdir/ltsugar.m4 \
@@ -76,7 +77,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_gpl_licensed.m4 \
-	$(top_srcdir)/auxdir/x_ac_hdf5.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_iso.m4 \
 	$(top_srcdir)/auxdir/x_ac_lua.m4 \
@@ -124,7 +124,7 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = bluegene cons_res cray linear serial
+DIST_SUBDIRS = other alps bluegene cons_res cray linear serial
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -207,6 +207,8 @@ GOBJECT_QUERY = @GOBJECT_QUERY@
 GREP = @GREP@
 GTK_CFLAGS = @GTK_CFLAGS@
 GTK_LIBS = @GTK_LIBS@
+H5CC = @H5CC@
+H5FC = @H5FC@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
@@ -214,9 +216,15 @@ HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_NRT = @HAVE_NRT@
 HAVE_OPENSSL = @HAVE_OPENSSL@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
+HDF5_CC = @HDF5_CC@
+HDF5_CFLAGS = @HDF5_CFLAGS@
 HDF5_CPPFLAGS = @HDF5_CPPFLAGS@
+HDF5_FC = @HDF5_FC@
+HDF5_FFLAGS = @HDF5_FFLAGS@
+HDF5_FLIBS = @HDF5_FLIBS@
 HDF5_LDFLAGS = @HDF5_LDFLAGS@
 HDF5_LIBS = @HDF5_LIBS@
+HDF5_VERSION = @HDF5_VERSION@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -373,7 +381,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 @WITH_CXX_TRUE@BLUEGENE = bluegene
-SUBDIRS = $(BLUEGENE) cons_res cray linear serial
+SUBDIRS = other alps $(BLUEGENE) cons_res cray linear serial
 all: all-recursive
 
 .SUFFIXES:
@@ -730,9 +738,11 @@ uninstall-am:
 # cons_res	  = 101
 # linear	  = 102
 # bgq		  = 103
-# cray + linear   = 104
-# cray + cons_res = 105 ==> Not current possible on Cray with ALPS/BASIL.
+# alps + linear   = 104
+# alps + cons_res = 105 ==> Not current possible on Cray with ALPS/BASIL.
 # serial          = 106
+# cray + linear   = 107
+# cray + cons_res = 108
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

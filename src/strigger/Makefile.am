@@ -3,7 +3,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 bin_PROGRAMS = strigger
 
 strigger_LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)

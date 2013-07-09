@@ -45,6 +45,7 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
 {
 	xassert(conf != NULL);
 	packstr(conf->hostname, buffer);
+	pack16(conf->cpus, buffer);
 	pack16(conf->boards, buffer);
 	pack16(conf->sockets, buffer);
 	pack16(conf->cores, buffer);
@@ -77,6 +78,7 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 	uint32_t uint32_tmp;
 
 	safe_unpackstr_xmalloc(&conf->hostname, &uint32_tmp, buffer);
+	safe_unpack16(&conf->cpus, buffer);
 	safe_unpack16(&conf->boards, buffer);
 	safe_unpack16(&conf->sockets, buffer);
 	safe_unpack16(&conf->cores, buffer);

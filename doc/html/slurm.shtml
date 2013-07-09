@@ -16,10 +16,7 @@ pending work. </p>
 In its simplest configuration, it can be installed and configured in a
 couple of minutes (see <a href="http://www.linux-mag.com/id/7239/1/">
 Caos NSA and Perceus: All-in-one Cluster Software Stack</a>
-by Jeffrey B. Layton) and has been used by
-<a href="http://www.intel.com/">Intel</a> for their 48-core
-<a href="http://www.hpcwire.com/features/Intel-Unveils-48-Core-Research-Chip-78378487.html">
-"cluster on a chip"</a>.
+by Jeffrey B. Layton).
 More complex configurations can satisfy the job scheduling needs of 
 world-class computer centers and rely upon a
 <a href="http://www.mysql.com/">MySQL</a> database for archiving
@@ -56,13 +53,23 @@ help identify load imbalances and other anomalies.</li>
 </ul></p>
 
 <p>Slurm provides workload management on many of the most powerful computers in
-the world including:
+the world. On the June 2013 <a href="http://www.top500.org">Top500</a> list,
+five of the ten top systems use Slurm including the number one system.
+These five systems alone contain over 5.7 million cores.
+A few of the systems using Slurm are listed below:
 <ul>
+<li><a href="http://www.top500.org/blog/lists/2013/06/press-release/">
+Tianhe-2</a> designed by 
+<a href="http://english.nudt.edu.cn">The National University of Defense Technology (NUDT)</a>
+in China has 16,000 nodes, each with two Intel Xeon IvyBridge processors and
+three Xeon Phi processors for a total of 3.1 million cores and a peak
+performance of 33.86 Petaflops.</li>
+
 <li><a href="https://asc.llnl.gov/computing_resources/sequoia/">Sequoia</a>,
 an <a href="http://www.ibm.com">IBM</a> BlueGene/Q system at
 <a href="https://www.llnl.gov">Lawrence Livermore National Laboratory</a>
 with 1.6 petabytes of memory, 96 racks, 98,304 compute nodes, and 1.6
-million cores, with a peak performance of over 20 Petaflops.</li>
+million cores, with a peak performance of over 17.17 Petaflops.</li>
 
 <li><a href="http://www.tacc.utexas.edu/stampede">Stampede</a> at the
 <a href="http://www.tacc.utexas.edu">Texas Advanced Computing Center/University of Texas</a>
@@ -70,13 +77,7 @@ is a <a herf="http://www.dell.com">Dell</a> with over
 80,000 <a href="http://www.intel.com">Intel</a> Xeon cores,
 Intel Phi co-processors, plus
 128 <a href="http://www.nvidia.com">NVIDIA</a> GPUs
-delivering 2.66 Petaflops.</li>
-
-<li><a href="http://www.nytimes.com/2010/10/28/technology/28compute.html?_r=1&partner=rss&emc=rss">
-Tianhe-1A</a> designed by 
-<a href="http://english.nudt.edu.cn">The National University of Defense Technology (NUDT)</a>
-in China with 14,336 Intel CPUs and 7,168 NVDIA Tesla M2050 GPUs,
-with a peak performance of 2.507 Petaflops.</li>
+delivering 5.17 Petaflops.</li>
 
 <li><a href="http://www-hpc.cea.fr/en/complexe/tgcc-curie.htm">TGCC Curie</a>,
 owned by <a href="http://www.genci.fr">GENCI</a> and operated in the TGCC by
@@ -112,6 +113,6 @@ named after Monte Rosa in the Swiss-Italian Alps, elevation 4,634m.
 
 </ul>
 
-<p style="text-align:center;">Last modified 7 December 2012</p>
+<p style="text-align:center;">Last modified 1 July 2013</p>
 
 <!--#include virtual="footer.txt"-->

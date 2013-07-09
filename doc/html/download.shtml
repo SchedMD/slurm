@@ -223,8 +223,16 @@ there is
 <a href="http://warewulf.lbl.gov/trac/wiki/Node%20Health%20Check">Node Health Check</a>.  
 It has integration with Slurm as well as Torque resource managers.</li><br>
 
+<li><b>Accounting Tools</b><br>
+UBMoD is a web based tool for displaying accounting data from various resource
+managers. It aggregates the accounting data from sacct into a MySQL data
+warehouse and provide a front end web interface for browsing the data.
+For more information, see
+<a href="http://ubmod.sourceforge.net/resource-manager-slurm.html">UDMod home page</a> and
+<a href="https://github.com/ubccr/ubmod">source code</a>.</li><br>
+
 </ul>
 
-<p style="text-align:center;">Last modified 16 January 2013</p>
+<p style="text-align:center;">Last modified 13 June 2013</p>
 
 <!--#include virtual="footer.txt"-->

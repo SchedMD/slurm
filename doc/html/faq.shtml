@@ -149,6 +149,8 @@ priority/multifactor plugin?</a></li>
 script for Slurm?</a></li>
 <li><a href="#add_nodes">What process should I follow to add nodes to Slurm?</a></li>
 <li><a href="#licenses">Can Slurm be configured to manage licenses?</a></li>
+<li><a href="#salloc_default_command">Can the salloc command be configured to
+launch a shell on a node in the job's allocation?</a></li>
 </ol>
 
 
@@ -1652,6 +1654,14 @@ It is not currently possible to change the total number of lincenses on a system
 without restarting the slurmctld daemon, but it is possible to dynamically
 reserve licenses and remove them from being available to jobs on the system
 (e.g. "scontrol update reservation=licenses_held licenses=foo:5,bar:2").</p>
+
+<p><a name="salloc_default_command"><b>50. Can the salloc command be configured to
+launch a shell on a node in the job's allocation?</b></a></br>
+Yes, just use the SallocDefaultCommand configuration parameter in your
+slurm.conf file as shown below.</p>
+<pre>
+SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --mpi=none $SHELL
+</pre>
 
 <p class="footer"><a href="#top">top</a></p>
 

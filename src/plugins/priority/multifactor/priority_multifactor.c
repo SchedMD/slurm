@@ -734,7 +734,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 
 		if (!job_ptr->priority_array) {
 			job_ptr->priority_array = xmalloc(sizeof(uint32_t) *
-					list_count(job_ptr->part_ptr_list));
+			                                  (list_count(job_ptr->part_ptr_list) + 1));
 		}
 		part_iterator = list_iterator_create(job_ptr->part_ptr_list);
 		while ((part_ptr = (struct part_record *)
@@ -752,7 +752,8 @@ static uint32_t _get_priority_internal(time_t start_time,
 					- NICE_OFFSET));
 			debug("Job %u has more than one partition (%s)(%u)",
 			      job_ptr->job_id, part_ptr->name,
-			      job_ptr->priority_array[i++]);
+			      job_ptr->priority_array[i]);
+			i++;
 		}
 	}
 	/* Priority 0 is reserved for held jobs */

@@ -1131,6 +1131,7 @@ _destroy_conf(void)
 		xfree(conf->epilog);
 		xfree(conf->health_check_program);
 		xfree(conf->hostname);
+		xfree(conf->job_acct_gather_freq);
 		xfree(conf->job_acct_gather_type);
 		xfree(conf->logfile);
 		xfree(conf->node_name);
@@ -1388,8 +1389,7 @@ _slurmd_init(void)
 	cpu_freq_init(conf);
 
 	_print_conf();
-	if (jobacct_gather_init() != SLURM_SUCCESS)
-		return SLURM_FAILURE;
+
 	if (slurm_proctrack_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 	if (slurmd_task_init() != SLURM_SUCCESS)
@@ -1576,8 +1576,6 @@ _slurmd_fini(void)
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	fini_setproctitle();
 	slurm_select_fini();
-	jobacct_gather_fini();
-	acct_gather_profile_fini();
 	spank_slurmd_exit();
 	cpu_freq_fini();
 

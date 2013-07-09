@@ -447,8 +447,10 @@ from commandline parameters.
 \fBsrun\fR will run \fIexecutable\fR just after the job step completes.
 The command line arguments for \fIexecutable\fR will be the command
 and arguments of the job step.  If \fIexecutable\fR is "none", then
-no epilog will be run.  This parameter overrides the SrunEpilog
-parameter in slurm.conf.
+no srun epilog will be run. This parameter overrides the SrunEpilog
+parameter in slurm.conf. This parameter is completely independent from
+the Epilog parameter in slurm.conf.
+
 
 .TP
 \fB\-\-exclusive\fR
@@ -668,7 +670,9 @@ of tasks is no larger than the number of allocated nodes.
 The tasks are distributed in blocks of a specified size.  The options
 include a number representing the size of the task block.  This is
 followed by an optional specification of the task distribution scheme
-within a block of tasks and between the blocks of tasks.  For more
+within a block of tasks and between the blocks of tasks.  The number of tasks
+distributed to each node is the same as for cyclic distribution, but the
+taskids assigned to each node depend on the plane size. For more
 details (including examples and diagrams), please see
 .br
 http://slurm.schedmd.com/mc_support.html
@@ -1134,8 +1138,9 @@ Network (InfiniBand) data is collected.
 \fBsrun\fR will run \fIexecutable\fR just before launching the job step.
 The command line arguments for \fIexecutable\fR will be the command
 and arguments of the job step.  If \fIexecutable\fR is "none", then
-no prolog will be run.  This parameter overrides the SrunProlog
-parameter in slurm.conf.
+no srun prolog will be run. This parameter overrides the SrunProlog
+parameter in slurm.conf. This parameter is completely independent from
+the Prolog parameter in slurm.conf.
 
 .TP
 \fB\-\-propagate\fR[=\fIrlimits\fR]
@@ -2381,9 +2386,11 @@ wait
 
 .SH "COPYING"
 Copyright (C) 2006\-2007 The Regents of the University of California.
-Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-CODE\-OCEC\-09\-009. All rights reserved.
+.br
+Copyright (C) 2008\-2010 Lawrence Livermore National Security.
+.br
+Copyright (C) 2010\-2013 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

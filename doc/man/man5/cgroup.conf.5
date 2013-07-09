@@ -1,4 +1,4 @@
-.TH "cgroup.conf" "5" "June 2012" "cgroup.conf 2.2" \
+.TH "cgroup.conf" "5" "July 2013" "cgroup.conf 2.6" \
 "Slurm cgroup configuration file"
 
 .SH "NAME"
@@ -86,8 +86,10 @@ Also see \fBConstrainSwapSpace\fR.
 .TP
 \fBConstrainRAMSpace\fR=<yes|no>
 If configured to "yes" then constrain the job's RAM usage.
-The default value is "no".
-Also see \fBAllowedRAMSpace\fR.
+The default value is "no",
+in which case the job's RAM limit will be set to its swap space limit.
+Also see \fBAllowedSwapSpace\fR, \fBAllowedRAMSpace\fR and
+\fBConstrainSwapSpace\fR.
 
 .TP
 \fBConstrainSwapSpace\fR=<yes|no>
@@ -105,7 +107,8 @@ Also see \fBAllowedSwapSpace\fR.
 \fBMaxRAMPercent\fR=\fIPERCENT\fR
 Set an upper bound in percent of total RAM on the RAM constraint for a job.
 This will be the memory constraint applied to jobs that are not explicitly
-allocated memory by SLURM. The \fIPERCENT\fR may be an arbitrary floating
+allocated memory by Slurm (i.e. Slurm's select plugin is not configured to manage
+memory allocations). The \fIPERCENT\fR may be an arbitrary floating
 point number. The default value is 100.
 
 .TP
@@ -161,7 +164,8 @@ ConstrainCores=yes
 .SH "COPYING"
 Copyright (C) 2010-2012 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-CODE\-OCEC\-09\-009. All rights reserved.
+.br
+Copyright (C) 2010\-2013 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

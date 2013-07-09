@@ -65,7 +65,8 @@ typedef struct slurmd_task_ops {
 	int	(*pre_setuid)		    (slurmd_job_t *job);
 	int	(*pre_launch_priv)	    (slurmd_job_t *job);
 	int	(*pre_launch)		    (slurmd_job_t *job);
-	int	(*post_term)		    (slurmd_job_t *job);
+	int	(*post_term)		    (slurmd_job_t *job,
+					     slurmd_task_info_t *task);
 	int	(*post_step)		    (slurmd_job_t *job);
 } slurmd_task_ops_t;
 
@@ -382,7 +383,7 @@ extern int pre_launch(slurmd_job_t *job)
  *
  * RET - slurm error code
  */
-extern int post_term(slurmd_job_t *job)
+extern int post_term(slurmd_job_t *job, slurmd_task_info_t *task)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -391,7 +392,7 @@ extern int post_term(slurmd_job_t *job)
 
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; ((i < g_task_context_num) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].post_term))(job);
+		rc = (*(ops[i].post_term))(job, task);
 	slurm_mutex_unlock( &g_task_context_lock );
 
 	return (rc);

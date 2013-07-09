@@ -48,6 +48,10 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
+/* If you want to run memcheck on slurmstepd switch this comment */
+//#define SLURMSTEPD_MEMCHECK 1
+#undef SLURMSTEPD_MEMCHECK
+
 typedef enum slurmd_step_tupe {
 	LAUNCH_BATCH_JOB = 0,
 	LAUNCH_TASKS,

@@ -71,6 +71,8 @@ uint32_t comb_counts[MAX_BOARDS][MAX_BOARDS] =
    {7,21,35,35,21,7,1,0},
    {8,28,56,70,56,28,8,1}};
 
+static int *sockets_cpu_cnt = NULL;
+
 /* Generate all combinations of k integers from the
  * set of integers 0 to n-1.
  * Return combinations in comb_list.
@@ -256,6 +258,26 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
+/* qsort compare function for ascending int list */
+static int _cmp_int_ascend(const void *a, const void *b)
+{
+	return (*(int*)a - *(int*)b);
+}
+
+/* qsort compare function for descending int list */
+static int _cmp_int_descend(const void *a, const void *b)
+{
+	return (*(int*)b - *(int*)a);
+}
+
+
+/* qsort compare function for board combination socket list
+ * NOTE: sockets_cpu_cnt is a global symbol in this module */
+static int _cmp_sock(const void *a, const void *b)
+{
+	return (sockets_cpu_cnt[*(int*)b] -  sockets_cpu_cnt[*(int*)a]);
+}
+
 /* sync up core bitmap with new CPU count using a best-fit approach
  * on the available resources on each node
  *
@@ -283,7 +305,6 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	int elig_idx, comb_brd_idx, sock_list_idx, comb_min, board_num;
 	int* boards_cpu_cnt;
 	int* sort_brds_cpu_cnt;
-	int* sockets_cpu_cnt;
 	int* board_combs;
 	int* socket_list;
 	int* elig_brd_combs;
@@ -299,27 +320,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	uint16_t req_cpus,best_fit_cpus = 0;
 	uint32_t best_fit_location = 0;
 	uint64_t ncomb_brd;
-	bool sufficient,best_fit_sufficient;
-
-	/* qsort compare function for ascending int list */
-	int _cmp_int_ascend (const void *a, const void *b)
-	{
-		return (*(int*)a - *(int*)b);
-	}
-
-	/* qsort compare function for descending int list */
-	int _cmp_int_descend (const void *a, const void *b)
-	{
-		return (*(int*)b - *(int*)a);
-	}
-
-	/* qsort compare function for board combination socket
-	 * list */
-	int _cmp_sock (const void *a, const void *b)
-	{
-		 return (sockets_cpu_cnt[*(int*)b] -
-				 sockets_cpu_cnt[*(int*)a]);
-	}
+	bool sufficient, best_fit_sufficient;
 
 	if (!job_res)
 		return;

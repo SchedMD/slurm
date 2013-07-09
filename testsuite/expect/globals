@@ -160,6 +160,7 @@ cset bin_hostname "hostname"
 
 cset bin_kill	"kill"
 cset bin_make	"make"
+cset bin_mv     "mv"
 cset bin_od     "od"
 cset bin_pkill	"pkill"
 cset bin_ps	"ps"
@@ -1597,7 +1598,7 @@ proc test_super_user { } {
 	spawn $scontrol show config
 	set slurm_user ""
 	expect {
-		-re "SlurmUser *= ($alpha_numeric_under)" {
+		-re "SlurmUser *= ($alpha_numeric_under).($number)" {
 			set slurm_user $expect_out(1,string)
 			exp_continue
 		}

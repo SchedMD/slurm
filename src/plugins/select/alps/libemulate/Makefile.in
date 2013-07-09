@@ -54,10 +54,11 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/select/cray/libalps
+subdir = src/plugins/select/alps/libemulate
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
+	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
 	$(top_srcdir)/auxdir/ltoptions.m4 \
 	$(top_srcdir)/auxdir/ltsugar.m4 \
@@ -77,7 +78,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_gpl_licensed.m4 \
-	$(top_srcdir)/auxdir/x_ac_hdf5.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_iso.m4 \
 	$(top_srcdir)/auxdir/x_ac_lua.m4 \
@@ -107,15 +107,8 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libalps_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_libalps_la_OBJECTS = libalps_la-basil_mysql_routines.lo \
-	libalps_la-parser_common.lo libalps_la-parser_basil_1.0.lo \
-	libalps_la-parser_basil_1.1.lo libalps_la-parser_basil_3.1.lo \
-	libalps_la-parser_basil_4.0.lo libalps_la-parser_basil_5.1.lo \
-	libalps_la-basil_request.lo libalps_la-do_query.lo \
-	libalps_la-do_reserve.lo libalps_la-do_release.lo \
-	libalps_la-do_confirm.lo libalps_la-do_switch.lo \
-	libalps_la-memory_handling.lo libalps_la-popen2.lo \
-	libalps_la-atoul.lo
+am_libalps_la_OBJECTS = libalps_la-alps_emulate.lo \
+	libalps_la-hilbert.lo
 libalps_la_OBJECTS = $(am_libalps_la_OBJECTS)
 libalps_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libalps_la_CFLAGS) \
@@ -199,6 +192,8 @@ GOBJECT_QUERY = @GOBJECT_QUERY@
 GREP = @GREP@
 GTK_CFLAGS = @GTK_CFLAGS@
 GTK_LIBS = @GTK_LIBS@
+H5CC = @H5CC@
+H5FC = @H5FC@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
@@ -206,9 +201,15 @@ HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_NRT = @HAVE_NRT@
 HAVE_OPENSSL = @HAVE_OPENSSL@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
+HDF5_CC = @HDF5_CC@
+HDF5_CFLAGS = @HDF5_CFLAGS@
 HDF5_CPPFLAGS = @HDF5_CPPFLAGS@
+HDF5_FC = @HDF5_FC@
+HDF5_FFLAGS = @HDF5_FFLAGS@
+HDF5_FLIBS = @HDF5_FLIBS@
 HDF5_LDFLAGS = @HDF5_LDFLAGS@
 HDF5_LIBS = @HDF5_LIBS@
+HDF5_VERSION = @HDF5_VERSION@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -365,28 +366,13 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common -I. -I../
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common -I. -I../
 noinst_LTLIBRARIES = libalps.la
 libalps_la_SOURCES = \
 	../basil_alps.h		\
-	parser_internal.h	\
-	basil_mysql_routines.c	\
-	parser_common.c		\
-	parser_basil_1.0.c	\
-	parser_basil_1.1.c	\
-	parser_basil_3.1.c	\
-	parser_basil_4.0.c	\
-	parser_basil_5.1.c	\
-	basil_request.c		\
-	do_query.c		\
-	do_reserve.c		\
-	do_release.c		\
-	do_confirm.c		\
-	do_switch.c		\
-	memory_handling.c	\
-	memory_handling.h	\
-	popen2.c		\
-	atoul.c
+	alps_emulate.c		\
+	hilbert.c		\
+	hilbert.h
 
 libalps_la_CFLAGS = $(MYSQL_CFLAGS)
 libalps_la_LIBADD = $(MYSQL_LIBS) -lexpat
@@ -404,9 +390,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/select/cray/libalps/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/select/alps/libemulate/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/plugins/select/cray/libalps/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/select/alps/libemulate/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -443,22 +429,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-atoul.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-basil_mysql_routines.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-basil_request.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-do_confirm.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-do_query.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-do_release.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-do_reserve.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-do_switch.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-memory_handling.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-parser_basil_1.0.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-parser_basil_1.1.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-parser_basil_3.1.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-parser_basil_4.0.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-parser_basil_5.1.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-parser_common.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-popen2.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-alps_emulate.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libalps_la-hilbert.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -481,117 +453,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
 
-libalps_la-basil_mysql_routines.lo: basil_mysql_routines.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-basil_mysql_routines.lo -MD -MP -MF $(DEPDIR)/libalps_la-basil_mysql_routines.Tpo -c -o libalps_la-basil_mysql_routines.lo `test -f 'basil_mysql_routines.c' || echo '$(srcdir)/'`basil_mysql_routines.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-basil_mysql_routines.Tpo $(DEPDIR)/libalps_la-basil_mysql_routines.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='basil_mysql_routines.c' object='libalps_la-basil_mysql_routines.lo' libtool=yes @AMDEPBACKSLASH@
+libalps_la-alps_emulate.lo: alps_emulate.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-alps_emulate.lo -MD -MP -MF $(DEPDIR)/libalps_la-alps_emulate.Tpo -c -o libalps_la-alps_emulate.lo `test -f 'alps_emulate.c' || echo '$(srcdir)/'`alps_emulate.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-alps_emulate.Tpo $(DEPDIR)/libalps_la-alps_emulate.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='alps_emulate.c' object='libalps_la-alps_emulate.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-basil_mysql_routines.lo `test -f 'basil_mysql_routines.c' || echo '$(srcdir)/'`basil_mysql_routines.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-alps_emulate.lo `test -f 'alps_emulate.c' || echo '$(srcdir)/'`alps_emulate.c
 
-libalps_la-parser_common.lo: parser_common.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-parser_common.lo -MD -MP -MF $(DEPDIR)/libalps_la-parser_common.Tpo -c -o libalps_la-parser_common.lo `test -f 'parser_common.c' || echo '$(srcdir)/'`parser_common.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-parser_common.Tpo $(DEPDIR)/libalps_la-parser_common.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='parser_common.c' object='libalps_la-parser_common.lo' libtool=yes @AMDEPBACKSLASH@
+libalps_la-hilbert.lo: hilbert.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-hilbert.lo -MD -MP -MF $(DEPDIR)/libalps_la-hilbert.Tpo -c -o libalps_la-hilbert.lo `test -f 'hilbert.c' || echo '$(srcdir)/'`hilbert.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-hilbert.Tpo $(DEPDIR)/libalps_la-hilbert.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hilbert.c' object='libalps_la-hilbert.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-parser_common.lo `test -f 'parser_common.c' || echo '$(srcdir)/'`parser_common.c
-
-libalps_la-parser_basil_1.0.lo: parser_basil_1.0.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-parser_basil_1.0.lo -MD -MP -MF $(DEPDIR)/libalps_la-parser_basil_1.0.Tpo -c -o libalps_la-parser_basil_1.0.lo `test -f 'parser_basil_1.0.c' || echo '$(srcdir)/'`parser_basil_1.0.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-parser_basil_1.0.Tpo $(DEPDIR)/libalps_la-parser_basil_1.0.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='parser_basil_1.0.c' object='libalps_la-parser_basil_1.0.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-parser_basil_1.0.lo `test -f 'parser_basil_1.0.c' || echo '$(srcdir)/'`parser_basil_1.0.c
-
-libalps_la-parser_basil_1.1.lo: parser_basil_1.1.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-parser_basil_1.1.lo -MD -MP -MF $(DEPDIR)/libalps_la-parser_basil_1.1.Tpo -c -o libalps_la-parser_basil_1.1.lo `test -f 'parser_basil_1.1.c' || echo '$(srcdir)/'`parser_basil_1.1.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-parser_basil_1.1.Tpo $(DEPDIR)/libalps_la-parser_basil_1.1.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='parser_basil_1.1.c' object='libalps_la-parser_basil_1.1.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-parser_basil_1.1.lo `test -f 'parser_basil_1.1.c' || echo '$(srcdir)/'`parser_basil_1.1.c
-
-libalps_la-parser_basil_3.1.lo: parser_basil_3.1.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-parser_basil_3.1.lo -MD -MP -MF $(DEPDIR)/libalps_la-parser_basil_3.1.Tpo -c -o libalps_la-parser_basil_3.1.lo `test -f 'parser_basil_3.1.c' || echo '$(srcdir)/'`parser_basil_3.1.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-parser_basil_3.1.Tpo $(DEPDIR)/libalps_la-parser_basil_3.1.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='parser_basil_3.1.c' object='libalps_la-parser_basil_3.1.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-parser_basil_3.1.lo `test -f 'parser_basil_3.1.c' || echo '$(srcdir)/'`parser_basil_3.1.c
-
-libalps_la-parser_basil_4.0.lo: parser_basil_4.0.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-parser_basil_4.0.lo -MD -MP -MF $(DEPDIR)/libalps_la-parser_basil_4.0.Tpo -c -o libalps_la-parser_basil_4.0.lo `test -f 'parser_basil_4.0.c' || echo '$(srcdir)/'`parser_basil_4.0.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-parser_basil_4.0.Tpo $(DEPDIR)/libalps_la-parser_basil_4.0.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='parser_basil_4.0.c' object='libalps_la-parser_basil_4.0.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-parser_basil_4.0.lo `test -f 'parser_basil_4.0.c' || echo '$(srcdir)/'`parser_basil_4.0.c
-
-libalps_la-parser_basil_5.1.lo: parser_basil_5.1.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-parser_basil_5.1.lo -MD -MP -MF $(DEPDIR)/libalps_la-parser_basil_5.1.Tpo -c -o libalps_la-parser_basil_5.1.lo `test -f 'parser_basil_5.1.c' || echo '$(srcdir)/'`parser_basil_5.1.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-parser_basil_5.1.Tpo $(DEPDIR)/libalps_la-parser_basil_5.1.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='parser_basil_5.1.c' object='libalps_la-parser_basil_5.1.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-parser_basil_5.1.lo `test -f 'parser_basil_5.1.c' || echo '$(srcdir)/'`parser_basil_5.1.c
-
-libalps_la-basil_request.lo: basil_request.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-basil_request.lo -MD -MP -MF $(DEPDIR)/libalps_la-basil_request.Tpo -c -o libalps_la-basil_request.lo `test -f 'basil_request.c' || echo '$(srcdir)/'`basil_request.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-basil_request.Tpo $(DEPDIR)/libalps_la-basil_request.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='basil_request.c' object='libalps_la-basil_request.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-basil_request.lo `test -f 'basil_request.c' || echo '$(srcdir)/'`basil_request.c
-
-libalps_la-do_query.lo: do_query.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-do_query.lo -MD -MP -MF $(DEPDIR)/libalps_la-do_query.Tpo -c -o libalps_la-do_query.lo `test -f 'do_query.c' || echo '$(srcdir)/'`do_query.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-do_query.Tpo $(DEPDIR)/libalps_la-do_query.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='do_query.c' object='libalps_la-do_query.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-do_query.lo `test -f 'do_query.c' || echo '$(srcdir)/'`do_query.c
-
-libalps_la-do_reserve.lo: do_reserve.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-do_reserve.lo -MD -MP -MF $(DEPDIR)/libalps_la-do_reserve.Tpo -c -o libalps_la-do_reserve.lo `test -f 'do_reserve.c' || echo '$(srcdir)/'`do_reserve.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-do_reserve.Tpo $(DEPDIR)/libalps_la-do_reserve.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='do_reserve.c' object='libalps_la-do_reserve.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-do_reserve.lo `test -f 'do_reserve.c' || echo '$(srcdir)/'`do_reserve.c
-
-libalps_la-do_release.lo: do_release.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-do_release.lo -MD -MP -MF $(DEPDIR)/libalps_la-do_release.Tpo -c -o libalps_la-do_release.lo `test -f 'do_release.c' || echo '$(srcdir)/'`do_release.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-do_release.Tpo $(DEPDIR)/libalps_la-do_release.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='do_release.c' object='libalps_la-do_release.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-do_release.lo `test -f 'do_release.c' || echo '$(srcdir)/'`do_release.c
-
-libalps_la-do_confirm.lo: do_confirm.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-do_confirm.lo -MD -MP -MF $(DEPDIR)/libalps_la-do_confirm.Tpo -c -o libalps_la-do_confirm.lo `test -f 'do_confirm.c' || echo '$(srcdir)/'`do_confirm.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-do_confirm.Tpo $(DEPDIR)/libalps_la-do_confirm.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='do_confirm.c' object='libalps_la-do_confirm.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-do_confirm.lo `test -f 'do_confirm.c' || echo '$(srcdir)/'`do_confirm.c
-
-libalps_la-do_switch.lo: do_switch.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-do_switch.lo -MD -MP -MF $(DEPDIR)/libalps_la-do_switch.Tpo -c -o libalps_la-do_switch.lo `test -f 'do_switch.c' || echo '$(srcdir)/'`do_switch.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-do_switch.Tpo $(DEPDIR)/libalps_la-do_switch.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='do_switch.c' object='libalps_la-do_switch.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-do_switch.lo `test -f 'do_switch.c' || echo '$(srcdir)/'`do_switch.c
-
-libalps_la-memory_handling.lo: memory_handling.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-memory_handling.lo -MD -MP -MF $(DEPDIR)/libalps_la-memory_handling.Tpo -c -o libalps_la-memory_handling.lo `test -f 'memory_handling.c' || echo '$(srcdir)/'`memory_handling.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-memory_handling.Tpo $(DEPDIR)/libalps_la-memory_handling.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='memory_handling.c' object='libalps_la-memory_handling.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-memory_handling.lo `test -f 'memory_handling.c' || echo '$(srcdir)/'`memory_handling.c
-
-libalps_la-popen2.lo: popen2.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-popen2.lo -MD -MP -MF $(DEPDIR)/libalps_la-popen2.Tpo -c -o libalps_la-popen2.lo `test -f 'popen2.c' || echo '$(srcdir)/'`popen2.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-popen2.Tpo $(DEPDIR)/libalps_la-popen2.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='popen2.c' object='libalps_la-popen2.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-popen2.lo `test -f 'popen2.c' || echo '$(srcdir)/'`popen2.c
-
-libalps_la-atoul.lo: atoul.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -MT libalps_la-atoul.lo -MD -MP -MF $(DEPDIR)/libalps_la-atoul.Tpo -c -o libalps_la-atoul.lo `test -f 'atoul.c' || echo '$(srcdir)/'`atoul.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libalps_la-atoul.Tpo $(DEPDIR)/libalps_la-atoul.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='atoul.c' object='libalps_la-atoul.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-atoul.lo `test -f 'atoul.c' || echo '$(srcdir)/'`atoul.c
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libalps_la_CFLAGS) $(CFLAGS) -c -o libalps_la-hilbert.lo `test -f 'hilbert.c' || echo '$(srcdir)/'`hilbert.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

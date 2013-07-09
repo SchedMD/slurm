@@ -327,7 +327,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->pty         = msg->pty;
 	job->open_mode   = msg->open_mode;
 	job->options     = msg->options;
-	format_core_allocs(msg->cred, conf->node_name,
+	format_core_allocs(msg->cred, conf->node_name, conf->cpus,
 			   &job->job_alloc_cores, &job->step_alloc_cores,
 			   &job->job_mem, &job->step_mem);
 	if (job->step_mem) {
@@ -338,7 +338,7 @@ job_create(launch_tasks_request_msg_t *msg)
 					     job->job_mem);
 	}
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	/* This is only used for Cray emulation mode where slurmd is used to
 	 * launch job steps. On a real Cray system, ALPS is used to launch
 	 * the tasks instead of SLURM. SLURM's task launch RPC does NOT
@@ -457,7 +457,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 
 	if (msg->cpus_per_node)
 		job->cpus    = msg->cpus_per_node[0];
-	format_core_allocs(msg->cred, conf->node_name,
+	format_core_allocs(msg->cred, conf->node_name, conf->cpus,
 			   &job->job_alloc_cores, &job->step_alloc_cores,
 			   &job->job_mem, &job->step_mem);
 	if (job->step_mem)
@@ -499,7 +499,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->task[0]->argc = job->argc;
 	job->task[0]->argv = job->argv;
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	select_g_select_jobinfo_get(msg->select_jobinfo, SELECT_JOBDATA_RESV_ID,
 				    &job->resv_id);
 #endif
@@ -606,7 +606,6 @@ job_destroy(slurmd_job_t *job)
 	list_destroy(job->sruns);
 	xfree(job->envtp);
 	xfree(job->node_name);
-	xfree(job->profile);
 	xfree(job->task_prolog);
 	xfree(job->task_epilog);
 	xfree(job->job_alloc_cores);

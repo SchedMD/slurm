@@ -388,48 +388,6 @@ static void _opt_default()
 	opt.ckpt_dir = xstrdup(opt.cwd);
 }
 
-static void _set_distribution(task_dist_states_t distribution,
-			      char **dist, char **lllp_dist)
-{
-	if (((int)distribution >= 0)
-	&&  (distribution != SLURM_DIST_UNKNOWN)) {
-		switch(distribution) {
-		case SLURM_DIST_CYCLIC:
-			*dist      = "cyclic";
-			break;
-		case SLURM_DIST_BLOCK:
-			*dist      = "block";
-			break;
-		case SLURM_DIST_PLANE:
-			*dist      = "plane";
-			*lllp_dist = "plane";
-			break;
-		case SLURM_DIST_ARBITRARY:
-			*dist      = "arbitrary";
-			break;
-		case SLURM_DIST_CYCLIC_CYCLIC:
-			*dist      = "cyclic";
-			*lllp_dist = "cyclic";
-			break;
-		case SLURM_DIST_CYCLIC_BLOCK:
-			*dist      = "cyclic";
-			*lllp_dist = "block";
-			break;
-		case SLURM_DIST_BLOCK_CYCLIC:
-			*dist      = "block";
-			*lllp_dist = "cyclic";
-			break;
-		case SLURM_DIST_BLOCK_BLOCK:
-			*dist      = "block";
-			*lllp_dist = "block";
-			break;
-		default:
-			error("unknown dist, type %d", distribution);
-			break;
-		}
-	}
-}
-
 /*---[ env var processing ]-----------------------------------------------*/
 
 /*
@@ -2046,7 +2004,7 @@ static void _parse_pbs_resource_list(char *rl)
 			}
 
 			xfree(temp);
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		/*
 		 * NB: no "mppmem" here since it specifies per-PE memory units,
 		 *     whereas SLURM uses per-node and per-CPU memory units.
@@ -2086,7 +2044,7 @@ static void _parse_pbs_resource_list(char *rl)
 				opt.ntasks_set = true;
 			}
 			xfree(temp);
-#endif	/* HAVE_CRAY */
+#endif	/* HAVE_ALPS_CRAY */
 		} else if (!strncmp(rl+i, "nice=", 5)) {
 			i+=5;
 			temp = _get_pbs_option_value(rl, &i);
@@ -2288,7 +2246,7 @@ static bool _opt_verify(void)
 		error("Can't set SLURM_CPUS_PER_TASK env variable");
 	}
 
-	_set_distribution(opt.distribution, &dist, &lllp_dist);
+	set_distribution(opt.distribution, &dist, &lllp_dist);
 	if (dist &&
 	    setenvf(NULL, "SLURM_DISTRIBUTION", "%s", dist)) {
 		error("Can't set SLURM_DISTRIBUTION env variable");

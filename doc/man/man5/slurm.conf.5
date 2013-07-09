@@ -1881,10 +1881,14 @@ The default value is "select/cray" for all Cray systems.
 The permitted values of \fBSelectTypeParameters\fR depend upon the
 configured value of \fBSelectType\fR.
 \fBSelectType=select/bluegene\fR supports no \fBSelectTypeParameters\fR.
-The only supported option for \fBSelectType=select/linear\fR are
+The only supported options for \fBSelectType=select/linear\fR are
 \fBCR_ONE_TASK_PER_CORE\fR and
 \fBCR_Memory\fR, which treats memory as a consumable resource and
 prevents memory over subscription with job preemption or gang scheduling.
+\fBOTHER_CONS_RES\fR (meaning laying the select/cons_res plugin under the
+select/cray plugin, the default is to layer on select/linear) is supported by
+SelectType=select/cray along with all the options for select/cons_res when
+using \fBOTHER_CONS_RES\fR.
 The following values are supported for \fBSelectType=select/cons_res\fR:
 .RS
 .TP
@@ -3785,10 +3789,11 @@ See the \fBlogrotate\fR man page for more details.
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
-Copyright (C) 2008\-2010 Lawrence Livermore National Security.
-Portions Copyright (C) 2010-2013 SchedMD <http://www.sched\-md.com>.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-CODE\-OCEC\-09\-009. All rights reserved.
+.br
+Copyright (C) 2008\-2010 Lawrence Livermore National Security.
+.br
+Copyright (C) 2010-2013 SchedMD LLC.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://slurm.schedmd.com/>.

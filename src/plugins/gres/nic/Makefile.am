@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(HWLOC_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(HWLOC_CPPFLAGS)
 
 pkglib_LTLIBRARIES = gres_nic.la
 

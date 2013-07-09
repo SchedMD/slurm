@@ -64,9 +64,23 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_cred.h"
 #include "src/api/step_ctx.h"
+
+int step_signals[] = {
+	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGHUP,
+	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0 };
+static int destroy_step = 0;
+
+static void _signal_while_allocating(int signo)
+{
+	debug("Got signal %d", signo);
+	if (signo == SIGCONT)
+		return;
+
+	destroy_step = 1;
+}
 
 static void
 _job_fake_cred(struct slurm_step_ctx_struct *ctx)
@@ -203,7 +217,7 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 	struct slurm_step_ctx_struct *ctx = NULL;
 	job_step_create_request_msg_t *step_req = NULL;
 	job_step_create_response_msg_t *step_resp = NULL;
-	int rc, time_left = timeout;
+	int i, rc, time_left = timeout;
 	int sock = -1;
 	short port = 0;
 	int errnum = 0;
@@ -232,12 +246,22 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 		struct pollfd fds;
 		fds.fd = sock;
 		fds.events = POLLIN;
+		xsignal_unblock(step_signals);
+		for (i = 0; step_signals[i]; i++)
+			xsignal(step_signals[i], _signal_while_allocating);
 		while ((rc = poll(&fds, 1, time_left)) <= 0) {
+			if (destroy_step)
+				break;
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
 			break;
 		}
-		rc = slurm_job_step_create(step_req, &step_resp);
+		xsignal_block(step_signals);
+		if (destroy_step) {
+			info("Cancelled pending job step");
+			errno = ESLURM_ALREADY_DONE;
+		} else
+			rc = slurm_job_step_create(step_req, &step_resp);
 	}
 
 	if ((rc < 0) || (step_resp == NULL)) {

@@ -222,7 +222,15 @@ X_AC_DIMENSIONS
 
 X_AC_CFLAGS
 X_AC_OFED
-X_AC_HDF5
+
+AX_LIB_HDF5()
+AM_CONDITIONAL(BUILD_HDF5, test "$with_hdf5" = "yes")
+# Some older systems (Debian/Ubuntu/...) configure HDF5 with
+# --with-default-api-version=v16 which creates problems for slurm
+# because slurm uses the 1.8 API. By defining this CPP macro we get
+# the 1.8 API.
+AC_DEFINE([H5_NO_DEPRECATED_SYMBOLS], [1], [Make sure we get the 1.8 HDF5 API])
+
 X_AC_HWLOC
 X_AC_FREEIPMI
 X_AC_XCPU
@@ -422,6 +430,7 @@ AC_CONFIG_FILES([Makefile
 		 contribs/phpext/slurm_php/config.m4
 		 contribs/sjobexit/Makefile
 		 contribs/slurmdb-direct/Makefile
+		 contribs/pmi2/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 doc/man/man1/Makefile
@@ -527,6 +536,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/job_submit/logging/Makefile
 		 src/plugins/job_submit/lua/Makefile
 		 src/plugins/job_submit/partition/Makefile
+		 src/plugins/job_submit/require_timelimit/Makefile
 		 src/plugins/launch/Makefile
 		 src/plugins/launch/aprun/Makefile
 		 src/plugins/launch/poe/Makefile
@@ -553,6 +563,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/wiki/Makefile
 		 src/plugins/sched/wiki2/Makefile
 		 src/plugins/select/Makefile
+		 src/plugins/select/alps/Makefile
+		 src/plugins/select/alps/libalps/Makefile
+		 src/plugins/select/alps/libemulate/Makefile
 		 src/plugins/select/bluegene/Makefile
 		 src/plugins/select/bluegene/ba/Makefile
 		 src/plugins/select/bluegene/ba_bgq/Makefile
@@ -561,13 +574,13 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/bluegene/sfree/Makefile
 		 src/plugins/select/cons_res/Makefile
 		 src/plugins/select/cray/Makefile
-		 src/plugins/select/cray/libalps/Makefile
-		 src/plugins/select/cray/libemulate/Makefile
 		 src/plugins/select/linear/Makefile
+		 src/plugins/select/other/Makefile
 		 src/plugins/select/serial/Makefile
 		 src/plugins/slurmctld/Makefile
 		 src/plugins/slurmctld/dynalloc/Makefile
 		 src/plugins/switch/Makefile
+		 src/plugins/switch/cray/Makefile
 		 src/plugins/switch/none/Makefile
 		 src/plugins/switch/nrt/Makefile
 		 src/plugins/switch/nrt/libpermapi/Makefile
@@ -584,6 +597,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/task/Makefile
 		 src/plugins/task/affinity/Makefile
 		 src/plugins/task/cgroup/Makefile
+		 src/plugins/task/cray/Makefile
 		 src/plugins/task/none/Makefile
 		 src/plugins/topology/Makefile
 		 src/plugins/topology/3d_torus/Makefile

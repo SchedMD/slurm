@@ -62,6 +62,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/node_select.h"
+#include "src/common/proc_args.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/slurmdb_defs.h"
@@ -225,48 +226,6 @@ static bool _discard_env(char *name, char *value)
 	return false;
 }
 
-static void _set_distribution(task_dist_states_t distribution,
-			      char **dist, char **lllp_dist)
-{
-	if (((int)distribution >= 0)
-	    &&  (distribution != SLURM_DIST_UNKNOWN)) {
-		switch(distribution) {
-		case SLURM_DIST_CYCLIC:
-			*dist      = "cyclic";
-			break;
-		case SLURM_DIST_BLOCK:
-			*dist      = "block";
-			break;
-		case SLURM_DIST_PLANE:
-			*dist      = "plane";
-			*lllp_dist = "plane";
-			break;
-		case SLURM_DIST_ARBITRARY:
-			*dist      = "arbitrary";
-			break;
-		case SLURM_DIST_CYCLIC_CYCLIC:
-			*dist      = "cyclic";
-			*lllp_dist = "cyclic";
-			break;
-		case SLURM_DIST_CYCLIC_BLOCK:
-			*dist      = "cyclic";
-			*lllp_dist = "block";
-			break;
-		case SLURM_DIST_BLOCK_CYCLIC:
-			*dist      = "block";
-			*lllp_dist = "cyclic";
-			break;
-		case SLURM_DIST_BLOCK_BLOCK:
-			*dist      = "block";
-			*lllp_dist = "block";
-			break;
-		default:
-			error("unknown dist, type %d", distribution);
-			break;
-		}
-	}
-}
-
 /*
  * Return the number of elements in the environment `env'
  */
@@ -321,6 +280,8 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 		else
 			rc = 1;
 	} else {
+		/* XXX Space is allocated on the heap and will never
+		 * be reclaimed. */
 		xstrfmtcat(str, "%s=%s", name, value);
 		rc = putenv(str);
 	}
@@ -436,7 +397,7 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_FAILURE;
 	}
 
-	_set_distribution(env->distribution, &dist, &lllp_dist);
+	set_distribution(env->distribution, &dist, &lllp_dist);
 	if (dist)
 		if (setenvf(&env->env, "SLURM_DISTRIBUTION", "%s", dist)) {
 			error("Can't set SLURM_DISTRIBUTION env variable");
@@ -989,7 +950,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	env_array_overwrite_fmt(dest, "SLURM_NODE_ALIASES", "%s",
 				alloc->alias_list);
 
-	_set_distribution(desc->task_dist, &dist, &lllp_dist);
+	set_distribution(desc->task_dist, &dist, &lllp_dist);
 	if (dist)
 		env_array_overwrite_fmt(dest, "SLURM_DISTRIBUTION", "%s",
 					dist);
@@ -1012,13 +973,13 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 		uint32_t tmp_mem = alloc->pn_min_memory & (~MEM_PER_CPU);
 		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_CPU", "%u",
 					tmp_mem);
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		env_array_overwrite_fmt(dest, "APRUN_DEFAULT_MEMORY", "%u",
 					tmp_mem);
 #endif
 	} else if (alloc->pn_min_memory) {
 		uint32_t tmp_mem = alloc->pn_min_memory;
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		uint32_t i, max_cpus_per_node = 1;
 		for (i = 0; i < alloc->num_cpu_groups; i++) {
 			if ((i == 0) ||
@@ -1207,13 +1168,13 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 		uint32_t tmp_mem = batch->pn_min_memory & (~MEM_PER_CPU);
 		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_CPU", "%u",
 					tmp_mem);
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		env_array_overwrite_fmt(dest, "CRAY_AUTO_APRUN_OPTIONS",
 					"\"-m%u\"", tmp_mem);
 #endif
 	} else if (batch->pn_min_memory) {
 		uint32_t tmp_mem = batch->pn_min_memory;
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		uint32_t i, max_cpus_per_node = 1;
 		for (i = 0; i < batch->num_cpu_groups; i++) {
 			if ((i == 0) ||
@@ -1224,7 +1185,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 #endif
 		env_array_overwrite_fmt(dest, "SLURM_MEM_PER_NODE", "%u",
 					tmp_mem);
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		tmp_mem /= max_cpus_per_node;
 		env_array_overwrite_fmt(dest, "CRAY_AUTO_APRUN_OPTIONS",
 					"\"-m%u\"", tmp_mem);

@@ -42,6 +42,8 @@
 #include "src/common/slurm_strcasestr.h"
 #include "src/common/xstring.h"
 
+bool acct_gather_suspended = false;
+
 static bool inited = 0;
 
 static int _get_int(const char *my_str)
@@ -165,4 +167,14 @@ extern int acct_gather_parse_freq(int type, char *freq)
 	}
 
 	return freq_int;
+}
+
+extern void acct_gather_suspend_poll(void)
+{
+	acct_gather_suspended = true;
+}
+
+extern void acct_gather_resume_poll(void)
+{
+	acct_gather_suspended = false;
 }

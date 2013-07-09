@@ -3,7 +3,7 @@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 
-INCLUDES = -I$(top_srcdir)  -I$(top_srcdir)/src/common $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir)  -I$(top_srcdir)/src/common $(BG_INCLUDES)
 
 sbin_PROGRAMS = sfree
 

@@ -180,7 +180,7 @@ static void  _set_prio_process (slurmd_job_t *job);
 static void _set_job_log_prefix(slurmd_job_t *job);
 static int  _setup_normal_io(slurmd_job_t *job);
 static int  _drop_privileges(slurmd_job_t *job, bool do_setuid,
-			     struct priv_state *state);
+			     struct priv_state *state, bool get_list);
 static int  _reclaim_privileges(struct priv_state *state);
 static void _send_launch_resp(slurmd_job_t *job, int rc);
 static int  _slurmd_job_log_init(slurmd_job_t *job);
@@ -268,7 +268,7 @@ static uint32_t _get_exit_code(slurmd_job_t *job)
 	return step_rc;
 }
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 /*
  * Kludge to better inter-operate with ALPS layer:
  * - CONFIRM method requires the SID of the shell executing the job script,
@@ -331,7 +331,7 @@ batch_finish(slurmd_job_t *job, int rc)
 		error("rmdir(%s): %m",  job->batchdir);
 	xfree(job->batchdir);
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	_call_select_plugin_from_stepd(job, 0, select_g_job_fini);
 #endif
 
@@ -441,7 +441,7 @@ _setup_normal_io(slurmd_job_t *job)
 	 * descriptors (which may be connected to files), then
 	 * reclaim privileges.
 	 */
-	if (_drop_privileges(job, true, &sprivs) < 0)
+	if (_drop_privileges(job, true, &sprivs, true) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
 	if (io_init_tasks_stdio(job) != SLURM_SUCCESS) {
@@ -933,7 +933,7 @@ job_manager(slurmd_job_t *job)
 		goto fail1;
 	}
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	/*
 	 * Note that the previously called slurm_container_create function is   
 	 * mandatory since the select/cray plugin needs the job container
@@ -1028,9 +1028,9 @@ job_manager(slurmd_job_t *job)
 	_send_launch_resp(job, 0);
 
 	_wait_for_all_tasks(job);
-	jobacct_gather_endpoll();
-	acct_gather_infiniband_fini();
+	acct_gather_profile_endpoll();
 	acct_gather_profile_g_node_step_end();
+	acct_gather_profile_fini();
 
 	job->state = SLURMSTEPD_STEP_ENDING;
 
@@ -1106,10 +1106,11 @@ fail1:
 		_send_launch_resp(job, rc);
 	}
 
-	if (job->aborted)
-		info("job_manager exiting with aborted job");
-	else if (!job->batch && (step_complete.rank > -1)) {
-		_wait_for_children_slurmstepd(job);
+	if (!job->batch && (step_complete.rank > -1)) {
+		if (job->aborted)
+			info("job_manager exiting with aborted job");
+		else
+			_wait_for_children_slurmstepd(job);
 		_send_step_complete_msgs(job);
 	}
 
@@ -1129,7 +1130,7 @@ _pre_task_privileged(slurmd_job_t *job, int taskid, struct priv_state *sp)
 	if (pre_launch_priv(job) < 0)
 		return error("pre_launch_priv failed");
 
-	return(_drop_privileges (job, true, sp));
+	return(_drop_privileges (job, true, sp, false));
 }
 
 struct exec_wait_info {
@@ -1172,6 +1173,7 @@ static void exec_wait_info_destroy (struct exec_wait_info *e)
 		close (e->childfd);
 	e->id = -1;
 	e->pid = -1;
+	xfree(e);
 }
 
 static pid_t exec_wait_get_pid (struct exec_wait_info *e)
@@ -1327,7 +1329,7 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 	/* Temporarily drop effective privileges, except for the euid.
 	 * We need to wait until after pam_setup() to drop euid.
 	 */
-	if (_drop_privileges (job, false, &sprivs) < 0)
+	if (_drop_privileges (job, false, &sprivs, true) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
 	if (pam_setup(job->pwd->pw_name, conf->hostname)
@@ -1367,7 +1369,7 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 	/*
 	 * Temporarily drop effective privileges
 	 */
-	if (_drop_privileges (job, true, &sprivs) < 0) {
+	if (_drop_privileges (job, true, &sprivs, true) < 0) {
 		error ("_drop_privileges: %m");
 		rc = SLURM_ERROR;
 		goto fail2;
@@ -1748,7 +1750,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 				error ("Unable to spank task %d at exit",
 				       t->id);
 			}
-			post_term(job);
+			post_term(job, t);
 		}
 
 	} while ((pid > 0) && !waitflag);
@@ -2114,7 +2116,8 @@ _send_complete_batch_script_msg(slurmd_job_t *job, int err, int status)
 
 
 static int
-_drop_privileges(slurmd_job_t *job, bool do_setuid, struct priv_state *ps)
+_drop_privileges(slurmd_job_t *job, bool do_setuid,
+		 struct priv_state *ps, bool get_list)
 {
 	ps->saved_uid = getuid();
 	ps->saved_gid = getgid();
@@ -2125,14 +2128,15 @@ _drop_privileges(slurmd_job_t *job, bool do_setuid, struct priv_state *ps)
 	}
 
 	ps->ngids = getgroups(0, NULL);
+	if (get_list) {
+		ps->gid_list = (gid_t *) xmalloc(ps->ngids * sizeof(gid_t));
 
-	ps->gid_list = (gid_t *) xmalloc(ps->ngids * sizeof(gid_t));
-
-	if (getgroups(ps->ngids, ps->gid_list) == -1) {
-		error("_drop_privileges: couldn't get %d groups: %m",
-		      ps->ngids);
-		xfree(ps->gid_list);
-		return -1;
+		if (getgroups(ps->ngids, ps->gid_list) == -1) {
+			error("_drop_privileges: couldn't get %d groups: %m",
+			      ps->ngids);
+			xfree(ps->gid_list);
+			return -1;
+		}
 	}
 
 	/*
@@ -2161,27 +2165,25 @@ _drop_privileges(slurmd_job_t *job, bool do_setuid, struct priv_state *ps)
 static int
 _reclaim_privileges(struct priv_state *ps)
 {
+	int rc = SLURM_SUCCESS;
+
 	/*
 	 * No need to reclaim privileges if our uid == pwd->pw_uid
 	 */
 	if (geteuid() == ps->saved_uid)
-		return SLURM_SUCCESS;
-
-	if (seteuid(ps->saved_uid) < 0) {
+		goto done;
+	else if (seteuid(ps->saved_uid) < 0) {
 		error("seteuid: %m");
-		return -1;
-	}
-
-	if (setegid(ps->saved_gid) < 0) {
+		rc = -1;
+	} else if (setegid(ps->saved_gid) < 0) {
 		error("setegid: %m");
-		return -1;
-	}
-
-	setgroups(ps->ngids, ps->gid_list);
-
+		rc = -1;
+	} else
+		setgroups(ps->ngids, ps->gid_list);
+done:
 	xfree(ps->gid_list);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 
@@ -2426,7 +2428,7 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 		argv[0] = (char *)xstrdup(path);
 		argv[1] = NULL;
 
-		if (_drop_privileges(job, true, &sprivs) < 0) {
+		if (_drop_privileges(job, true, &sprivs, false) < 0) {
 			error("run_script_as_user _drop_privileges: %m");
 			/* child process, should not return */
 			exit(127);

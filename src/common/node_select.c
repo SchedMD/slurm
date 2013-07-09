@@ -60,8 +60,8 @@
 
 /*
  * Must be synchronized with slurm_select_ops_t in node_select.h.
- * Also must be synchronized with the other_plugin.c in
- * the select/cray plugin. (We tried to make it so we only had to
+ * Also must be synchronized with the other_select.c in
+ * the select/other lib. (We tried to make it so we only had to
  * define it once, but it didn't seem to work.)
  */
 const char *node_select_syms[] = {
@@ -237,17 +237,18 @@ extern int slurm_select_init(bool only_default)
 		}
 #endif
 
-#ifdef HAVE_CRAY
-		if (strcasecmp(type, "select/cray")) {
-			error("%s is incompatible with Cray", type);
-			fatal("Use SelectType=select/cray");
+#ifdef HAVE_ALPS_CRAY
+		if (strcasecmp(type, "select/alps")) {
+			error("%s is incompatible with Cray system "
+			      "running alps", type);
+			fatal("Use SelectType=select/alps");
 		}
 #else
-		if (!strcasecmp(type, "select/cray")) {
-			fatal("Requested SelectType=select/cray "
-			      "in slurm.conf, but not running on a Cray "
-			      "system.  If looking to emulate a Cray "
-			      "system use --enable-cray-emulation.");
+		if (!strcasecmp(type, "select/alps")) {
+			fatal("Requested SelectType=select/alps "
+			      "in slurm.conf, but not running on a ALPS Cray "
+			      "system.  If looking to emulate a Alps Cray "
+			      "system use --enable-alps-cray-emulation.");
 		}
 #endif
 	}
@@ -749,7 +750,7 @@ extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,
 	} else
 		plugin_id = select_context_default;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		pack32(*(ops[plugin_id].plugin_id),
 		       buffer);
 	} else {
@@ -773,7 +774,7 @@ extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
 	nodeinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*nodeinfo = nodeinfo_ptr;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
@@ -1006,7 +1007,7 @@ extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
 	} else
 		plugin_id = select_context_default;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		pack32(*(ops[plugin_id].plugin_id), buffer);
 	} else {
 		error("select_g_select_jobinfo_pack: protocol_version "
@@ -1034,7 +1035,7 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*jobinfo = jobinfo_ptr;
 
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);

@@ -1631,7 +1631,7 @@ static void _pick_step_cores(struct step_record *step_ptr,
 	}
 }
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 /* Return the total cpu count on a given node index */
 static int _get_node_cpus(int node_inx)
 {
@@ -1702,7 +1702,7 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		step_node_inx++;
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("step_alloc_lps: node index bad");
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		/* Since on a cray you can only run 1 job per node
 		   return all CPUs as being allocated.
 		*/
@@ -1826,7 +1826,7 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		step_node_inx++;
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("_step_dealloc_lps: node index bad");
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 		/* Since on a cray you can only run 1 job per node
 		   return all CPUs as being allocated.
 		*/
@@ -1921,12 +1921,12 @@ step_create(job_step_create_request_msg_t *step_specs,
 	uint32_t orig_cpu_count;
 	List step_gres_list = (List) NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	uint32_t resv_id = 0;
 #endif
 #if defined HAVE_BG
 	static uint16_t cpus_per_mp = (uint16_t)NO_VAL;
-#elif (!defined HAVE_CRAY)
+#elif (!defined HAVE_ALPS_CRAY)
 	uint32_t max_tasks;
 #endif
 	*new_step_record = NULL;
@@ -1988,7 +1988,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (job_ptr->next_step_id >= slurmctld_conf.max_step_cnt)
 		return ESLURM_STEP_LIMIT;
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_RESV_ID, &resv_id);
 #endif
@@ -2091,7 +2091,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 			_build_pending_step(job_ptr, step_specs);
 		return ret_code;
 	}
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	select_g_select_jobinfo_set(select_jobinfo,
 				    SELECT_JOBDATA_RESV_ID, &resv_id);
 #endif
@@ -2113,7 +2113,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 			step_specs->num_tasks = node_count;
 	}
 
-#if (!defined HAVE_BG && !defined HAVE_CRAY)
+#if (!defined HAVE_BG && !defined HAVE_ALPS_CRAY)
 	max_tasks = node_count * slurmctld_conf.max_tasks_per_node;
 	if (step_specs->num_tasks > max_tasks) {
 		error("step has invalid task count: %u max is %u",
@@ -2440,7 +2440,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 	bitstr_t *pack_bitstr;
 
 //#if defined HAVE_FRONT_END && (!defined HAVE_BGQ || !defined HAVE_BG_FILES)
-#if defined HAVE_FRONT_END && (!defined HAVE_BGQ) && (!defined HAVE_CRAY)
+#if defined HAVE_FRONT_END && (!defined HAVE_BGQ) && (!defined HAVE_ALPS_CRAY)
 	/* On front-end systems, the steps only execute on one node.
 	 * We need to make them appear like they are running on the job's
 	 * entire allocation (which they really are). */
@@ -2510,36 +2510,6 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 		pack32(step_ptr->job_ptr->user_id, buffer);
 		pack32(cpu_cnt, buffer);
 		pack32(step_ptr->cpu_freq, buffer);
-		pack32(task_cnt, buffer);
-		pack32(step_ptr->time_limit, buffer);
-
-		pack_time(step_ptr->start_time, buffer);
-		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
-			run_time = step_ptr->pre_sus_time;
-		} else {
-			begin_time = MAX(step_ptr->start_time,
-					 step_ptr->job_ptr->suspend_time);
-			run_time = step_ptr->pre_sus_time +
-				difftime(time(NULL), begin_time);
-		}
-		pack_time(run_time, buffer);
-
-		packstr(step_ptr->job_ptr->partition, buffer);
-		packstr(step_ptr->resv_ports, buffer);
-		packstr(node_list, buffer);
-		packstr(step_ptr->name, buffer);
-		packstr(step_ptr->network, buffer);
-		pack_bit_fmt(pack_bitstr, buffer);
-		packstr(step_ptr->ckpt_dir, buffer);
-		packstr(step_ptr->gres, buffer);
-		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
-					     protocol_version);
-	} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
-		pack32(step_ptr->job_ptr->job_id, buffer);
-		pack32(step_ptr->step_id, buffer);
-		pack16(step_ptr->ckpt_interval, buffer);
-		pack32(step_ptr->job_ptr->user_id, buffer);
-		pack32(cpu_cnt, buffer);
 		pack32(task_cnt, buffer);
 		pack32(step_ptr->time_limit, buffer);
 
@@ -2954,7 +2924,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 	if (!step_ptr->exit_node_bitmap) {
 		/* initialize the node bitmap for exited nodes */
 		nodes = bit_set_count(step_ptr->step_node_bitmap);
-#if defined HAVE_BGQ || defined HAVE_CRAY
+#if defined HAVE_BGQ || defined HAVE_ALPS_CRAY
 		/* For BGQ we only have 1 real task, so if it exits,
 		   the whole step is ending as well.
 		*/
@@ -2964,7 +2934,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		step_ptr->exit_code = req->step_rc;
 	} else {
 		nodes = _bitstr_bits(step_ptr->exit_node_bitmap);
-#if defined HAVE_BGQ || defined HAVE_CRAY
+#if defined HAVE_BGQ || defined HAVE_ALPS_CRAY
 		/* For BGQ we only have 1 real task, so if it exits,
 		   the whole step is ending as well.
 		*/
@@ -3324,7 +3294,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
 						   protocol_version))
 			goto unpack_error;
-	} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id, buffer);
 		safe_unpack16(&cyclic_alloc, buffer);
 		safe_unpack16(&port, buffer);

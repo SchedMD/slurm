@@ -103,7 +103,10 @@ extern uint32_t acct_gather_profile_from_string(char *profile_str);
 extern char *acct_gather_profile_type_to_string(uint32_t series);
 extern uint32_t acct_gather_profile_type_from_string(char *series_str);
 
+extern char *acct_gather_profile_type_t_name(acct_gather_profile_type_t type);
+
 extern int acct_gather_profile_startpoll(char *freq, char *freq_def);
+extern void acct_gather_profile_endpoll(void);
 
 /*
  * Define plugin local conf for acct_gather.conf

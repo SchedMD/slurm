@@ -61,6 +61,7 @@ subdir = src/api
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
+	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
 	$(top_srcdir)/auxdir/ltoptions.m4 \
 	$(top_srcdir)/auxdir/ltsugar.m4 \
@@ -80,7 +81,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_gpl_licensed.m4 \
-	$(top_srcdir)/auxdir/x_ac_hdf5.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_iso.m4 \
 	$(top_srcdir)/auxdir/x_ac_lua.m4 \
@@ -249,6 +249,8 @@ GOBJECT_QUERY = @GOBJECT_QUERY@
 GREP = @GREP@
 GTK_CFLAGS = @GTK_CFLAGS@
 GTK_LIBS = @GTK_LIBS@
+H5CC = @H5CC@
+H5FC = @H5FC@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVE_AIX = @HAVE_AIX@
@@ -256,9 +258,15 @@ HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_NRT = @HAVE_NRT@
 HAVE_OPENSSL = @HAVE_OPENSSL@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
+HDF5_CC = @HDF5_CC@
+HDF5_CFLAGS = @HDF5_CFLAGS@
 HDF5_CPPFLAGS = @HDF5_CPPFLAGS@
+HDF5_FC = @HDF5_FC@
+HDF5_FFLAGS = @HDF5_FFLAGS@
+HDF5_FLIBS = @HDF5_FLIBS@
 HDF5_LDFLAGS = @HDF5_LDFLAGS@
 HDF5_LIBS = @HDF5_LIBS@
+HDF5_VERSION = @HDF5_VERSION@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -415,7 +423,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 @WITH_GNU_LD_TRUE@VERSION_SCRIPT = \
 @WITH_GNU_LD_TRUE@	version.map
 

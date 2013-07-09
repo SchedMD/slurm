@@ -194,7 +194,7 @@ int main(int argc, char **argv)
 	uint32_t stepid = NO_VAL;
 	slurmdb_selected_step_t *selected_step = NULL;
 
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	error("The sstat command is not supported on Cray systems");
 	return 1;
 #endif

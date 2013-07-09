@@ -239,7 +239,7 @@ static void _hardware(void)
 	int cpu, pkg;
 
 	if ((fd = fopen("/proc/cpuinfo", "r")) == 0)
-		error("fopen");
+		fatal("RAPL: error on attempt to open /proc/cpuinfo");
 	while (fgets(buf, 1024, fd)) {
 		if (strncmp(buf, "processor", sizeof("processor") - 1) == 0) {
 			sscanf(buf, "processor\t: %d", &cpu);

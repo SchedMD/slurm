@@ -531,7 +531,7 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg)
 #ifndef HAVE_BG
 	{
 		int i, sock_recs = 0;
-#ifndef HAVE_CRAY
+#ifndef HAVE_ALPS_CRAY
 		/* Zero compute node allocations allowed on a Cray for use
 		 * of front-end nodes */
 		xassert(arg->job_nhosts);
@@ -1074,7 +1074,7 @@ static char *_core_format(bitstr_t *core_bitmap)
  *
  * NOTE: caller must xfree the returned strings.
  */
-void format_core_allocs(slurm_cred_t *cred, char *node_name,
+void format_core_allocs(slurm_cred_t *cred, char *node_name, uint16_t cpus,
 			char **job_alloc_cores, char **step_alloc_cores,
 			uint32_t *job_mem_limit, uint32_t *step_mem_limit)
 {
@@ -1094,7 +1094,7 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name,
 	hostset_t	hset = NULL;
 	int		host_index = -1;
 	uint32_t	i, j, i_first_bit=0, i_last_bit=0;
-	uint32_t	job_core_cnt=0, step_core_cnt=0;
+	uint32_t	job_cpu_cnt = 0, step_cpu_cnt = 0;
 
 	xassert(cred);
 	xassert(job_alloc_cores);
@@ -1140,22 +1140,34 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name,
 	for (i = i_first_bit, j = 0; i < i_last_bit; i++, j++) {
 		if (bit_test(cred->job_core_bitmap, i)) {
 			bit_set(job_core_bitmap, j);
-			job_core_cnt++;
+			job_cpu_cnt++;
 		}
 		if (bit_test(cred->step_core_bitmap, i)) {
 			bit_set(step_core_bitmap, j);
-			step_core_cnt++;
+			step_cpu_cnt++;
+		}
+	}
+
+	/* Scale CPU count, same as slurmd/req.c:_check_job_credential() */
+	if (i_last_bit <= i_first_bit)
+		error("step credential has no CPUs selected");
+	else {
+		uint32_t i = cpus / (i_last_bit - i_first_bit);
+		if (i > 1) {
+			info("scaling CPU count by factor of %d", i);
+			step_cpu_cnt *= i;
+			job_cpu_cnt *= i;
 		}
 	}
 
 	if (cred->job_mem_limit & MEM_PER_CPU) {
 		*job_mem_limit = (cred->job_mem_limit & (~MEM_PER_CPU)) *
-			job_core_cnt;
+				 job_cpu_cnt;
 	} else
 		*job_mem_limit = cred->job_mem_limit;
 	if (cred->step_mem_limit & MEM_PER_CPU) {
 		*step_mem_limit = (cred->step_mem_limit & (~MEM_PER_CPU)) *
-			step_core_cnt;
+				  step_cpu_cnt;
 	} else if (cred->step_mem_limit)
 		*step_mem_limit = cred->step_mem_limit;
 	else
@@ -1246,7 +1258,7 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 
 	cred = _slurm_cred_alloc();
 	slurm_mutex_lock(&cred->mutex);
-	if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		safe_unpack32(&cred->jobid, buffer);
 		safe_unpack32(&cred->stepid, buffer);
 		safe_unpack32(&cred_uid, buffer);
@@ -1684,7 +1696,7 @@ extern char * timestr (const time_t *tp, char *buf, size_t n)
 #endif
 	if (!localtime_r (tp, &tmval))
 		error ("localtime_r: %m");
-	strftime (buf, n, fmt, &tmval);
+	slurm_strftime (buf, n, fmt, &tmval);
 	return (buf);
 }
 

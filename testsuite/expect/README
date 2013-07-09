@@ -645,3 +645,11 @@ test28.4   Validates scontrol update command for a job array with
 	   a job array index and the whole job array.
 test28.5   Validates that scontrol can hold and release a whole job
 	   array or an individual jobid index.
+
+test29.#   Reserved.
+====================
+
+
+test30.#   Test of RPM builds.
+==============================
+test30.1   Validates that rpms are built with the correct prefix.

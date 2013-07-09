@@ -234,8 +234,8 @@ typedef struct slurm_select_ops {
 
 /*
  * Defined in node_select.c Must be synchronized with slurm_select_ops_t above.
- * Also must be synchronized with the other_plugin.c in
- * the select/cray plugin.
+ * Also must be synchronized with the other_select.c in
+ * the select/other lib.
  */
 extern const char *node_select_syms[];
 

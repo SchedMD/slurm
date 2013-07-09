@@ -15,10 +15,10 @@
 
 AC_DEFUN([X_AC_CRAY],
 [
-  ac_have_cray="no"
+  ac_have_alps_cray="no"
   ac_have_real_cray="no"
   ac_have_alps_emulation="no"
-  ac_have_cray_emulation="no"
+  ac_have_alps_cray_emulation="no"
 
   AC_ARG_WITH(
     [alps-emulation],
@@ -28,38 +28,38 @@ AC_DEFUN([X_AC_CRAY],
 
   AC_ARG_ENABLE(
     [cray-emulation],
-    AS_HELP_STRING(--enable-cray-emulation,Run SLURM in an emulated Cray mode),
+    AS_HELP_STRING(--enable-alps-cray-emulation,Run SLURM in an emulated Cray mode),
       [ case "$enableval" in
-        yes) ac_have_cray_emulation="yes" ;;
-         no) ac_have_cray_emulation="no"  ;;
-          *) AC_MSG_ERROR([bad value "$enableval" for --enable-cray-emulation])  ;;
+        yes) ac_have_alps_cray_emulation="yes" ;;
+         no) ac_have_alps_cray_emulation="no"  ;;
+          *) AC_MSG_ERROR([bad value "$enableval" for --enable-alps-cray-emulation])  ;;
       esac ]
   )
 
   if test "$ac_have_alps_emulation" = "yes"; then
-    ac_have_cray="yes"
-    AC_MSG_NOTICE([Running A Cray system against an Alps emulation])
+    ac_have_alps_cray="yes"
+    AC_MSG_NOTICE([Running A Alps Cray system against an Alps emulation])
     AC_DEFINE(HAVE_ALPS_EMULATION, 1, [Define to 1 if running against an Alps emulation])
-  elif test "$ac_have_cray_emulation" = "yes"; then
-    ac_have_cray="yes"
+  elif test "$ac_have_alps_cray_emulation" = "yes"; then
+    ac_have_alps_cray="yes"
     AC_MSG_NOTICE([Running in Cray emulation mode])
-    AC_DEFINE(HAVE_CRAY_EMULATION, 1, [Define to 1 for emulating a Cray XT/XE system])
+    AC_DEFINE(HAVE_ALPS_CRAY_EMULATION, 1, [Define to 1 for emulating a Cray XT/XE system using Alps])
   else
     # Check for a Cray-specific file:
     #  * older XT systems use an /etc/xtrelease file
     #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
     #  * both have an /etc/xthostname
-    AC_MSG_CHECKING([whether this is a native Cray XT or XE system or have ALPS simulator])
+    AC_MSG_CHECKING([whether this is a native Alps Cray XT or XE system or have ALPS simulator])
 
     if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
-      ac_have_cray="yes"
+      ac_have_alps_cray="yes"
       ac_have_real_cray="yes"
-      AC_DEFINE(HAVE_REAL_CRAY, 1, [Define to 1 for running on a real Cray XT/XE system])
+      AC_DEFINE(HAVE_REAL_CRAY, 1, [Define to 1 for running on a real Cray XT/XE system using Alps])
     fi
-    AC_MSG_RESULT([$ac_have_cray])
+    AC_MSG_RESULT([$ac_have_alps_cray])
   fi
 
-  if test "$ac_have_cray" = "yes"; then
+  if test "$ac_have_alps_cray" = "yes"; then
     # libexpat is always required for the XML-RPC interface
     AC_CHECK_HEADER(expat.h, [],
                     AC_MSG_ERROR([Cray BASIL requires expat headers/rpm]))
@@ -81,11 +81,11 @@ AC_DEFUN([X_AC_CRAY],
     AC_DEFINE(HAVE_3D,           1, [Define to 1 if 3-dimensional architecture])
     AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
     AC_DEFINE(HAVE_FRONT_END,    1, [Define to 1 if running slurmd on front-end only])
-    AC_DEFINE(HAVE_CRAY,         1, [Define to 1 for Cray XT/XE systems])
+    AC_DEFINE(HAVE_ALPS_CRAY,         1, [Define to 1 for Cray XT/XE systems])
     AC_DEFINE(SALLOC_KILL_CMD,   1, [Define to 1 for salloc to kill child processes at job termination])
   fi
-  AM_CONDITIONAL(HAVE_CRAY, test "$ac_have_cray" = "yes")
+  AM_CONDITIONAL(HAVE_ALPS_CRAY, test "$ac_have_alps_cray" = "yes")
   AM_CONDITIONAL(HAVE_REAL_CRAY, test "$ac_have_real_cray" = "yes")
   AM_CONDITIONAL(HAVE_ALPS_EMULATION, test "$ac_have_alps_emulation" = "yes")
-  AM_CONDITIONAL(HAVE_CRAY_EMULATION, test "$ac_have_cray_emulation" = "yes")
+  AM_CONDITIONAL(HAVE_ALPS_CRAY_EMULATION, test "$ac_have_alps_cray_emulation" = "yes")
 ])

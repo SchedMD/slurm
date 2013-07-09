@@ -1,11 +1,37 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in Slurm 13.12.0pre1
+==============================
+ -- sview - improve scalability
+ -- Add task pointer to the task_post_term() function in task plugins. The
+    terminating task's PID is available in task->pid.
+ -- Move select/cray to select/alps
+
+* Changes in Slurm 2.6.0
+========================
+ -- Fix it so bluegene and serial systems don't get warnings over new NODEDATA
+    enum.
+ -- When a job is aborted send a message for any tasks that have completed.
+ -- Correction to memory per CPU calculation on system with threads and
+    allocating cores or sockets.
+ -- Requeue batch job if it's node reboots (used to abort the job).
+ -- Enlarge maximum size of srun's hostlist file.
+
 * Changes in Slurm 2.6.0rc2
 ===========================
  -- HDF5 - Fix issue with Ubuntu where HDF5 development headers are
     overwritten by the parallel versions thus making it so we need handle
     both cases.
+ -- ACCT_GATHER - handle suspending correctly for polling threads.
+ -- Make SLURM_DISTRIBUTION env var hold both types of distribution if
+    specified.
+ -- Remove hardcoded /usr/local from slurm.spec.
+ -- Modify slurmctld locking to improve performance under heavy load with
+    very large numbers of batch job submissions or job cancellations.
+ -- sstat - Fix issue where if -j wasn't given allow last argument to be checked
+    for as the job/step id.
+ -- IPMI - fix adjustment on poll when using EnergyIPMICalcAdjustment.
 
 * Changes in Slurm 2.6.0rc1
 ===========================
@@ -134,6 +160,15 @@ documents those changes that are of interest to users and admins.
  -- Avoid gres step allocation errors when a job shrinks in size due to either
     down nodes or explicit resizing. Generated slurmctld errors of this type:
     "step_test ... gres_bit_alloc is NULL"
+ -- Fix bug that would leak memory and over-write the AllowGroups field if on
+    "scontrol reconfig" when AllowNodes is manually changed using scontrol.
+ -- Get html/man files to install in correct places with rpms.
+ -- Remove --program-prefix from spec file since it appears to be added by
+    default and appeared to break other things.
+ -- Updated the automake min version in autogen.sh to be correct.
+ -- Select/cons_res - Correct total CPU count allocated to a job with
+    --exclusive and --cpus-per-task options
+ -- switch/nrt - Don't allocate network resources unless job step has 2+ nodes.
 
 * Changes in Slurm 2.5.7
 ========================

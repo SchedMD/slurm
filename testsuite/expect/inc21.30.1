@@ -34,7 +34,8 @@ proc inc21_30_1 {} {
 
 	set job_id1  0
 	set job_id2  0
-	spawn $salloc -N1 --account=$acct $srun $bin_sleep 10
+	set job_id3  0
+	spawn $salloc -N1 -t1 --account=$acct --exclusive $srun $bin_sleep 10
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
@@ -53,7 +54,7 @@ proc inc21_30_1 {} {
 		exit 1
 	}
 
-	spawn $salloc -N2 --account=$acct $srun $bin_sleep 10
+	spawn $salloc -N1 -t1 --account=$acct $srun $bin_sleep 10
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
@@ -77,10 +78,36 @@ proc inc21_30_1 {} {
 		exit 1
 	}
 
+	spawn $salloc -N1 -t1 --account=$acct $srun $bin_sleep 10
+	expect {
+		-re "Granted job allocation ($number)" {
+			set job_id3 $expect_out(1,string)
+			send_user "\njob $job_id3 has been submitted\n"
+		}
+		-re "job ($number)" {
+			set job_id3 $expect_out(1,string)
+			send_user "\nJob $job_id3 is waiting for resources. This is expected.\n"
+		}
+		timeout {
+			send_user "\nFAILURE: salloc is not reponding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id3 == 0} {
+		send_user "\nFAILURE: jobs were not submitted\n"
+		cancel_job $job_id1
+		cancel_job $job_id2
+		exit 1
+	}
+
 	# checks the state of the job
-	check_state $job_id2
+	check_state $job_id3
 
 	# cancels remaining jobs
 	cancel_job $job_id1
 	cancel_job $job_id2
+	cancel_job $job_id3
 }

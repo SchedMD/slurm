@@ -3,7 +3,7 @@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 
-INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir) $(BG_INCLUDES)
 
 # making a .la
 

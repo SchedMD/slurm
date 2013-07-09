@@ -1070,7 +1070,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_uint32(&p->min_nodes, "MinNodes", tbl)
 		    && !s_p_get_uint32(&p->min_nodes, "MinNodes", dflt))
 			p->min_nodes = 1;
-#ifndef HAVE_CRAY
+#ifndef HAVE_ALPS_CRAY
 		if (!p->min_nodes)
 			fatal("Partition '%s' has invalid MinNodes=0, this is "
 			      "currently valid only on a Cray system.",
@@ -3359,7 +3359,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->ret2service, "ReturnToService", hashtbl))
 		conf->ret2service = DEFAULT_RETURN_TO_SERVICE;
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	if (conf->ret2service > 1)
 		fatal("ReturnToService > 1 is not supported on Cray");
 #endif

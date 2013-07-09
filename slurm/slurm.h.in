@@ -604,7 +604,9 @@ enum ctx_keys {
 				 * within a board. */
 #define CR_MEMORY	0x0010	/* Memory as consumable resources. Memory is
 				 * not over-commited when selected as a CR. */
-
+#define CR_OTHER_CONS_RES    0x0020 /* if layering select plugins use
+				     * cons_res instead of linear (default)
+				     */
 #define CR_ONE_TASK_PER_CORE 0x0100
 /* By default, schedule only one task per core.
  * Without this option, tasks would be

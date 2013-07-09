@@ -548,7 +548,6 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	static GtkTreeModel *last_model = NULL;
-	node_info_t *node_ptr = NULL;
 	char *name;
 	ListIterator itr = NULL;
 	sview_node_info_t *sview_node_info = NULL;
@@ -557,7 +556,6 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 
 	itr = list_iterator_create(info_list);
 	while ((sview_node_info = (sview_node_info_t*) list_next(itr))) {
-		node_ptr = sview_node_info->node_ptr;
 
 		/* This means the tree_store changed (added new column
 		   or something). */
@@ -567,52 +565,20 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 		if (sview_node_info->iter_set) {
 			gtk_tree_model_get(model, &sview_node_info->iter_ptr,
 					   SORTID_NAME, &name, -1);
-			if (strcmp(name, node_ptr->name)) { /* Bad pointer */
+			if (strcmp(name, sview_node_info->node_name)) {
+				/* Bad pointer */
 				sview_node_info->iter_set = false;
 				//g_print("bad node iter pointer\n");
 			}
 			g_free(name);
 		}
-		if (sview_node_info->iter_set) {
+		if (sview_node_info->iter_set)
 			_update_node_record(sview_node_info,
 					    GTK_TREE_STORE(model));
-		} else {
-			GtkTreePath *path = gtk_tree_path_new_first();
-
-			/* get the iter, or find out the list is empty
-			 * goto add */
-			if (gtk_tree_model_get_iter(
-				    model, &sview_node_info->iter_ptr, path)) {
-				do {
-					/* search for the node name and check
-					 * to see if it is in the list */
-					gtk_tree_model_get(
-						model,
-						&sview_node_info->iter_ptr,
-						SORTID_NAME,
-						&name, -1);
-					if (name && node_ptr->name &&
-					    !strcmp(name, node_ptr->name)) {
-						/* update with new info */
-						g_free(name);
-						_update_node_record(
-							sview_node_info,
-							GTK_TREE_STORE(model));
-						sview_node_info->iter_set = 1;
-						break;
-					}
-					g_free(name);
-				} while (gtk_tree_model_iter_next(
-						 model,
-						 &sview_node_info->iter_ptr));
-			}
-
-			if (!sview_node_info->iter_set) {
-				_append_node_record(sview_node_info,
-						    GTK_TREE_STORE(model));
-				sview_node_info->iter_set = true;
-			}
-			gtk_tree_path_free(path);
+		else {
+			_append_node_record(sview_node_info,
+					    GTK_TREE_STORE(model));
+			sview_node_info->iter_set = true;
 		}
 	}
 	list_iterator_destroy(itr);
@@ -622,15 +588,23 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 	last_model = model;
 }
 
+static void _node_info_free(sview_node_info_t *sview_node_info)
+{
+	if (sview_node_info) {
+		xfree(sview_node_info->slurmd_start_time);
+		xfree(sview_node_info->boot_time);
+		xfree(sview_node_info->node_name);
+		xfree(sview_node_info->rack_mp);
+		xfree(sview_node_info->reason);
+	}
+}
+
 static void _node_info_list_del(void *object)
 {
 	sview_node_info_t *sview_node_info = (sview_node_info_t *)object;
 
 	if (sview_node_info) {
-		xfree(sview_node_info->slurmd_start_time);
-		xfree(sview_node_info->boot_time);
-		xfree(sview_node_info->rack_mp);
-		xfree(sview_node_info->reason);
+		_node_info_free(sview_node_info);
 		xfree(sview_node_info);
 	}
 }
@@ -757,6 +731,8 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 {
 	static List info_list = NULL;
 	static node_info_msg_t *last_node_info_ptr = NULL;
+	List last_list = NULL;
+	ListIterator last_list_itr = NULL;
 	int i = 0;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	node_info_t *node_ptr = NULL;
@@ -771,20 +747,37 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 	last_node_info_ptr = node_info_ptr;
 
 	if (info_list)
-		list_flush(info_list);
-	else
-		info_list = list_create(_node_info_list_del);
+		last_list = info_list;
+
+	info_list = list_create(_node_info_list_del);
 	if (!info_list) {
 		g_print("malloc error\n");
 		return NULL;
 	}
 
+	if (last_list)
+		last_list_itr = list_iterator_create(last_list);
 	for (i=0; i<node_info_ptr->record_count; i++) {
 		char *select_reason_str = NULL;
 		node_ptr = &(node_info_ptr->node_array[i]);
 
 		if (!node_ptr->name || (node_ptr->name[0] == '\0'))
 			continue;
+
+		sview_node_info_ptr = NULL;
+
+		if (last_list_itr) {
+			while ((sview_node_info_ptr =
+				list_next(last_list_itr))) {
+				if (!strcmp(sview_node_info_ptr->node_name,
+					    node_ptr->name)) {
+					list_remove(last_list_itr);
+					_node_info_free(sview_node_info_ptr);
+					break;
+				}
+			}
+			list_iterator_reset(last_list_itr);
+		}
 
 		/* constrain list to included partitions' nodes */
 		/* and there are excluded values to process */
@@ -794,8 +787,11 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 		/*     && !check_part_includes_node(i)) */
 		/* 	continue; */
 
-		sview_node_info_ptr = xmalloc(sizeof(sview_node_info_t));
+		if (!sview_node_info_ptr)
+			sview_node_info_ptr =
+				xmalloc(sizeof(sview_node_info_t));
 		list_append(info_list, sview_node_info_ptr);
+		sview_node_info_ptr->node_name = xstrdup(node_ptr->name);
 		sview_node_info_ptr->node_ptr = node_ptr;
 		sview_node_info_ptr->pos = i;
 
@@ -846,6 +842,12 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 				xstrdup(time_str);
 		}
 	}
+
+	if (last_list) {
+		list_iterator_destroy(last_list_itr);
+		list_destroy(last_list);
+	}
+
 update_color:
 
 	return info_list;

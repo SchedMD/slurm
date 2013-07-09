@@ -117,9 +117,9 @@ void print_fields(slurmdb_step_rec_t *step)
 			break;
 		case PRINT_ACT_CPUFREQ:
 
-			convert_num_unit((float)step->stats.act_cpufreq,
-					 outbuf, sizeof(outbuf),
-					 UNIT_NONE);
+			convert_num_unit2((float)step->stats.act_cpufreq,
+					  outbuf, sizeof(outbuf),
+					  UNIT_KILO, 1000, false);
 
 			field->print_routine(field,
 					     outbuf,
@@ -127,10 +127,10 @@ void print_fields(slurmdb_step_rec_t *step)
 			break;
 		case PRINT_CONSUMED_ENERGY:
 			if (!fuzzy_equal(step->stats.consumed_energy, NO_VAL)) {
-				convert_num_unit((float)
-						 step->stats.consumed_energy,
-						 outbuf, sizeof(outbuf),
-						 UNIT_NONE);
+				convert_num_unit2((float)
+						  step->stats.consumed_energy,
+						  outbuf, sizeof(outbuf),
+						  UNIT_NONE, 1000, false);
 			}
 			field->print_routine(field,
 					     outbuf,
@@ -354,9 +354,9 @@ void print_fields(slurmdb_step_rec_t *step)
 			else if (step->req_cpufreq == CPU_FREQ_HIGH)
 				snprintf(outbuf, sizeof(outbuf), "High");
 			else if (!fuzzy_equal(step->req_cpufreq, NO_VAL))
-				convert_num_unit((float)step->req_cpufreq,
-						 outbuf, sizeof(outbuf),
-						 UNIT_NONE);
+				convert_num_unit2((float)step->req_cpufreq,
+						  outbuf, sizeof(outbuf),
+						  UNIT_KILO, 1000, false);
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));

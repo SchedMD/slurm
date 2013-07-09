@@ -182,7 +182,7 @@ static void _log_flush(log_t *log);
 
 /* Write the current local time into the provided buffer. Returns the
  * number of characters written into the buffer. */
-static size_t _make_timestamp(char *timestamp_buf, size_t max, 
+static size_t _make_timestamp(char *timestamp_buf, size_t max,
 			      const char *timestamp_fmt)
 {
 	time_t timestamp_t = time(NULL);
@@ -371,7 +371,7 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
  * logfile = logfile name if logfile level > LOG_QUIET
  */
 static int
-_sched_log_init(char *prog, log_options_t opt, log_facility_t fac, 
+_sched_log_init(char *prog, log_options_t opt, log_facility_t fac,
 		char *logfile)
 {
 	int rc = 0;
@@ -387,7 +387,7 @@ _sched_log_init(char *prog, log_options_t opt, log_facility_t fac,
 	} else if (!sched_log->argv0) {
 		const char *short_name;
 		short_name = strrchr((const char *) default_name, '/');
-		if (short_name) 
+		if (short_name)
 			short_name++;
 		else
 			short_name = default_name;
@@ -892,6 +892,25 @@ _log_printf(log_t *log, cbuf_t cb, FILE *stream, const char *fmt, ...)
 
 }
 
+#if defined(EXT_DEBUG)
+/* set_idbuf()
+ * Write in the input buffer the current time and milliseconds
+ * the process id and the current thread id.
+ */
+static void
+set_idbuf(char *idbuf)
+{
+	struct timeval now;
+
+	gettimeofday(&now, NULL);
+
+	sprintf(idbuf, "\
+%.15s.%-6d %5d %p", ctime(&now.tv_sec) + 4,
+	        (int)now.tv_usec, (int)getpid(), (void *)pthread_self());
+
+}
+#endif
+
 /*
  * log a message at the specified level to facilities that have been
  * configured to receive messages at that level
@@ -902,8 +921,16 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 	char *buf = NULL;
 	char *msgbuf = NULL;
 	int priority = LOG_INFO;
+#if defined(EXT_DEBUG)
+	char idbuf[128];
+#endif
 
 	slurm_mutex_lock(&log_lock);
+
+#if defined(EXT_DEBUG)
+	set_idbuf(idbuf);
+#endif
+
 	if (!LOG_INITIALIZED) {
 		log_options_t opts = LOG_OPTS_STDERR_ONLY;
 		_log_init(NULL, opts, 0, NULL);
@@ -986,6 +1013,9 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 
 	if (level <= log->opt.stderr_level) {
 		fflush(stdout);
+#if defined(EXT_DEBUG)
+		_log_printf(log, log->buf, stderr, "%s ", idbuf);
+#endif
 		if (log->debug_flags & DEBUG_FLAG_THREADID)
 			_log_printf(log, log->buf, stderr, "%s: %p %s%s\n",
 				    log->argv0, (void *)pthread_self(),
@@ -997,6 +1027,10 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 	}
 
 	if ((level <= log->opt.logfile_level) && (log->logfp != NULL)) {
+
+#if defined(EXT_DEBUG)
+		_log_printf(log, log->buf, log->logfp, "%s ", idbuf);
+#endif
 		if (log->debug_flags & DEBUG_FLAG_THREADID)
 			xlogfmtcat(&msgbuf, "[%M] %p %s%s%s", log->fpfx,
 				   (void *)pthread_self(), pfx, buf);

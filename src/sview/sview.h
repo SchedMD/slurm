@@ -299,6 +299,7 @@ typedef struct {
 	char *color;
 	GtkTreeIter iter_ptr;
 	bool iter_set;
+	char *node_name;
 	node_info_t *node_ptr;
 	int pos;
 	char *reason;

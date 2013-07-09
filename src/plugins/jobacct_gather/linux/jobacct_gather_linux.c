@@ -571,6 +571,7 @@ extern void jobacct_gather_p_poll_data(
 			snprintf(proc_io_file, 256, "/proc/%d/io", pids[i]);
 			_handle_stats(prec_list, proc_stat_file, proc_io_file);
 		}
+		xfree(pids);
 	} else {
 		slurm_mutex_lock(&reading_mutex);
 
@@ -703,7 +704,7 @@ extern void jobacct_gather_p_poll_data(
 				/* get energy consumption
   				 * only once is enough since we
  				 * report per node energy consumption */
-				debug2("energycounted= %d", energy_counted);
+				debug2("energycounted = %d", energy_counted);
 				if (energy_counted == 0) {
 					acct_gather_energy_g_get_data(
 						energy_profile,

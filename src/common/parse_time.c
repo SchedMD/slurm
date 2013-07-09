@@ -626,7 +626,7 @@ slurm_make_time_str (time_t *time, char *string, int size)
 		if (use_relative_format)
 			display_fmt = _relative_date_fmt(&time_tm);
 
-		strftime(string, size, display_fmt, &time_tm);
+		slurm_strftime(string, size, display_fmt, &time_tm);
 	}
 }
 

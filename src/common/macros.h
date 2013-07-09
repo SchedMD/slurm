@@ -275,6 +275,19 @@ typedef enum {false, true} bool;
 #  define strndup(src,size) strdup(src)
 #endif
 
+/* Results strftime() are undefined if buffer too small
+ * This variant returns a string of "####"... instead */
+#define slurm_strftime(s, max, format, tm)				\
+_STMT_START {								\
+	if (max > 0) {							\
+		char tmp_string[(max<256?256:max+1)];			\
+		if (strftime(tmp_string, sizeof(tmp_string), format, tm) == 0) \
+			memset(tmp_string, '#', max);			\
+		tmp_string[max-1] = 0;					\
+		strncpy(s, tmp_string, max);				\
+	}								\
+} _STMT_END
+
 /* There are places where we put NO_VAL or INFINITE into a float or double
  * Use fuzzy_equal below to test for those values rather than an comparision
  * which could fail due to rounding errors. */

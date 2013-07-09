@@ -1327,7 +1327,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-#if defined(HAVE_CRAY)
+#if defined(HAVE_ALPS_CRAY)
 	if (getenv("BASIL_RESERVATION_ID") != NULL) {
 		error("BASIL_RESERVATION_ID already set - running salloc "
 		      "within salloc?");

@@ -555,7 +555,7 @@ static int _attempt_backfill(void)
 	uint32_t reject_array_job_id = 0;
 
 	bf_last_yields = 0;
-#ifdef HAVE_CRAY
+#ifdef HAVE_ALPS_CRAY
 	/*
 	 * Run a Basil Inventory immediately before setting up the schedule
 	 * plan, to avoid race conditions caused by ALPS node state change.

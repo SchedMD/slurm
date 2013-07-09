@@ -109,7 +109,6 @@ static uint64_t cont_id = (uint64_t)NO_VAL;
 static pthread_mutex_t task_list_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static bool jobacct_shutdown = true;
-static bool jobacct_suspended = 0;
 static bool plugin_polling = true;
 
 static uint32_t jobacct_job_id     = 0;
@@ -170,9 +169,6 @@ unpack_error:
 
 static void _poll_data(void)
 {
-	if (jobacct_suspended)
-		return;
-
 	/* Update the data */
 	slurm_mutex_lock(&task_list_lock);
 	(*(ops.poll_data))(task_list, pgid_plugin, cont_id);
@@ -345,16 +341,6 @@ extern int jobacct_gather_endpoll(void)
 	retval = (*(ops.endpoll))();
 
 	return retval;
-}
-
-extern void jobacct_gather_suspend_poll(void)
-{
-	jobacct_suspended = true;
-}
-
-extern void jobacct_gather_resume_poll(void)
-{
-	jobacct_suspended = false;
 }
 
 extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,

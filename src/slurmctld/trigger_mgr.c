@@ -75,9 +75,10 @@
 #define MAX_PROG_TIME 300	/* maximum run time for program */
 
 /* Change TRIGGER_STATE_VERSION value when changing the state save format */
-#define TRIGGER_STATE_VERSION      "VER004"
-#define TRIGGER_2_4_STATE_VERSION  "VER004"	/* SLURM version 2.4 */
-#define TRIGGER_2_3_STATE_VERSION  "VER003"	/* SLURM version 2.3 */
+#define TRIGGER_STATE_VERSION        "VER004"
+#define TRIGGER_13_12_STATE_VERSION  "VER004"	/* SLURM version 13.12 */
+#define TRIGGER_2_6_STATE_VERSION    "VER004"	/* SLURM version 2.6 */
+#define TRIGGER_2_5_STATE_VERSION    "VER004"	/* SLURM version 2.5 */
 
 List trigger_list;
 uint32_t next_trigger_id = 1;
@@ -678,7 +679,7 @@ static int _load_trigger_state(Buf buffer, uint16_t protocol_version)
 
 	trig_ptr = xmalloc(sizeof(trig_mgr_info_t));
 
-	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		/* restore trigger pull state flags */
 		safe_unpack8(&ctld_failure, buffer);
 		safe_unpack8(&bu_ctld_failure, buffer);
@@ -686,25 +687,6 @@ static int _load_trigger_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack8(&db_failure, buffer);
 
 		safe_unpack16   (&trig_ptr->flags,     buffer);
-		safe_unpack32   (&trig_ptr->trig_id,   buffer);
-		safe_unpack16   (&trig_ptr->res_type,  buffer);
-		safe_unpackstr_xmalloc(&trig_ptr->res_id, &str_len, buffer);
-		/* rebuild nodes_bitmap as needed from res_id */
-		/* rebuild job_id as needed from res_id */
-		/* rebuild job_ptr as needed from res_id */
-		safe_unpack32   (&trig_ptr->trig_type, buffer);
-		safe_unpack_time(&trig_ptr->trig_time, buffer);
-		safe_unpack32   (&trig_ptr->user_id,   buffer);
-		safe_unpack32   (&trig_ptr->group_id,  buffer);
-		safe_unpackstr_xmalloc(&trig_ptr->program, &str_len, buffer);
-		safe_unpack8    (&trig_ptr->state,     buffer);
-	} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
-		/* restore trigger pull state flags */
-		safe_unpack8(&ctld_failure, buffer);
-		safe_unpack8(&bu_ctld_failure, buffer);
-		safe_unpack8(&dbd_failure, buffer);
-		safe_unpack8(&db_failure, buffer);
-
 		safe_unpack32   (&trig_ptr->trig_id,   buffer);
 		safe_unpack16   (&trig_ptr->res_type,  buffer);
 		safe_unpackstr_xmalloc(&trig_ptr->res_id, &str_len, buffer);
@@ -929,10 +911,12 @@ extern int trigger_state_restore(void)
 	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	if (ver_str) {
-		if (!strcmp(ver_str, TRIGGER_STATE_VERSION)) {
+		if (!strcmp(ver_str, TRIGGER_STATE_VERSION))
 			protocol_version = SLURM_PROTOCOL_VERSION;
-		} else if (!strcmp(ver_str, TRIGGER_2_3_STATE_VERSION))
-			protocol_version = SLURM_2_3_PROTOCOL_VERSION;
+		else if (!strcmp(ver_str, TRIGGER_2_6_STATE_VERSION))
+			protocol_version = SLURM_2_6_PROTOCOL_VERSION;
+		else if (!strcmp(ver_str, TRIGGER_2_5_STATE_VERSION))
+			protocol_version = SLURM_2_5_PROTOCOL_VERSION;
 	}
 
 	if (protocol_version == (uint16_t) NO_VAL) {

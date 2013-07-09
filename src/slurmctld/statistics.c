@@ -66,7 +66,7 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 
 	buffer = init_buf(BUF_SIZE);
 
-	if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		parts_packed = resp;
 		pack32(parts_packed, buffer);
 
