@@ -99,17 +99,6 @@ The <b>topology.conf</b> file for an Infiniband switch can be automatically
 generated using the <b>ib2slurm</b> tool found here:
 <a href="https://github.com/fintler/ib2slurm">https://github.com/fintler/ib2slurm</a>.
 
-<li><b>QsNet</b><br>
-In order to build the "switch/elan" plugin for SLURM, you will need
-the <b>qsnetlibs</b> development libraries from
-<a href="http://www.quadrics.com">Quadrics</a>. The Elan
-plugin also requires the <b>libelanhosts</b> library and
-a corresponding /etc/elanhosts configuration file, used to map
-hostnames to Elan IDs. The libelanhosts source is available from
-<a href="http://www.schedmd.com/download/extras/libelanhosts-0.9-1.tgz">
-http://www.schedmd.com/download/extras/libelanhosts-0.9-1.tgz</a>.
-</ul><br>
-
 <li><b>I/O Watchdog</b><br>
 A facility for monitoring user applications, most notably parallel jobs,
 for <i>hangs</i> which typically have a side-effect of ceasing all write

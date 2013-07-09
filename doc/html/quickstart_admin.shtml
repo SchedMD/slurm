@@ -79,29 +79,6 @@ and commands are denoted below.
 <li> <b>Authd</b> The auth/authd plugin will be built and installed if
 		  the libauth library and its dependency libe are installed.
 		  </li>
-<li> <b>Federation</b> The switch/federation plugin will be built and installed
-		  if the IBM Federation switch library is installed.
-<li> <b>QsNet</b> support in the form of the switch/elan plugin requires
-		  that the qsnetlibs package (from Quadrics) be installed along
-		  with its development counterpart (i.e. the qsnetheaders
-		  package.) The switch/elan plugin also requires the
-		  presence of the libelanosts library and /etc/elanhosts
-		  configuration file. (See elanhosts(5) man page in that
-		  package for more details). Define the nodes in the SLURM
-		  configuration file <i>slurm.conf</i> in the same order as
-		  defined in the <i>elanhosts</i> configuration file so that
-		  node allocation for jobs can be performed so as to optimize
-		  their performance. We highly recommend assigning the nodes
-		  a numeric suffix equal to its Elan address for ease of
-		  administration and because the Elan driver does not seem
-		  to function otherwise
-		  (e.g. /etc/elanhosts to contain two lines of this sort:<br>
-		  eip  [0-15]  linux[0-15]<br>
-		  eth  [0-15]  linux[0-15]<br>
-		  for fifteen nodes with a prefix of &quot;linux&quot; and
-		  numeric suffix between zero and 15).  Finally, the
-		  &quot;ptrack&quot; kernel patch is required for process
-		  tracking.
 <li> <b>sview</b> The sview command will be built only if and <i>gtk+-2.0</i>
 		  is installed</li>
 </ul>
