@@ -2008,9 +2008,19 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 					   row[0]);
 			}
 		}
-		if (set)
-			xstrcat(extra,")");
+
 		mysql_free_result(result);
+
+		if (set)
+			xstrcat(extra, ")");
+		else {
+			xfree(extra);
+			debug("User %s has no assocations, and is not admin, "
+			      "so not returning any.", user->name);
+			/* This user has no valid associations, so
+			 * end. */
+			return SLURM_SUCCESS;
+		}
 	}
 
 	qos_extra = _setup_association_cond_qos(assoc_cond, cluster_name);
@@ -3329,6 +3339,11 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 			*/
 			assoc_mgr_fill_in_user(
 				mysql_conn, &user, 1, NULL);
+		}
+		if (!is_admin && !user.name) {
+			debug("User %u has no assocations, and is not admin, "
+			      "so not returning any.", user.uid);
+			return NULL;
 		}
 	}
 
