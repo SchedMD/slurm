@@ -402,6 +402,8 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 %incremental_setup -n %{name}-%{version}
 
 %build
+# Skip configure if possible
+if [ ! -f "config.status" -o "%{reconfigure}" = "1" ]; then
 %configure --program-prefix=%{?_program_prefix:%{_program_prefix}} \
 	%{?slurm_with_debug:--enable-debug} \
 	%{?slurm_with_partial_attach:--enable-partial-attach} \
@@ -420,6 +422,7 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 	%{?slurm_with_salloc_background:--enable-salloc-background} \
 	%{!?slurm_with_readline:--without-readline} \
 	%{?with_cflags}
+fi
 
 # Only 4 threads so we don't hog the build server
 make -j 4 
