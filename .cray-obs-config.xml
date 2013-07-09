@@ -1,0 +1,61 @@
+<?xml version="1.0" ?>
+<configuration xmlns="http://svndownstream.us.cray.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <stream type="obs" xsi:type="obsStreamType">
+        <project>
+            native-slurm:trunk
+        </project>
+        <sources>
+            <environment>
+                <variable>
+                    RELEASE_EXTRA
+                </variable>
+                <name>
+                    _release_extra
+                </name>
+            </environment>
+            <gitcmd>
+                <command>
+                    rev-parse HEAD
+                </command>
+                <name>
+                    _last_changed_rev
+                </name>
+            </gitcmd>
+            <gitcmd>
+                <command>
+                    config --get remote.origin.url
+                </command>
+                <name>
+                    _url
+                </name>
+                <extract group="2" name="version-path" pattern=".*/([RP]B-)?([^/]*)$"/>
+            </gitcmd>
+            <file>
+                <name>
+                    native-slurm.spec
+                </name>
+                <extract group="1" name="version" pattern="^Version:\s*(\S+)"/>
+            </file>
+            <tarfile compression="bz2">
+                <name>
+                    slurm-
+                    <extracted refer="version"/>
+                </name>
+                <exclusion pattern=".*\.spec$"/>
+                <tarinfo recursive="true">
+                    <name>
+                        .
+                    </name>
+                    <arcname>
+                        slurm-
+                        <extracted refer="version"/>
+                    </arcname>
+                </tarinfo>
+            </tarfile>
+        </sources>
+        <package>
+            native-slurm
+        </package>
+    </stream>
+</configuration>
+
