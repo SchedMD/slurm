@@ -208,7 +208,9 @@ static void _build_pending_step(struct job_record *job_ptr,
 }
 
 /*
- * delete_step_records - delete step record for specified job_ptr
+ * delete_step_records - Delete step record for specified job_ptr.
+ * This function is called when a job terminates abnormally, say when it's
+ * allocated nodes go DOWN and active steps can not be properly terminated.
  * IN job_ptr - pointer to job table entry to have step records removed
  */
 extern void delete_step_records (struct job_record *job_ptr)
@@ -221,6 +223,17 @@ extern void delete_step_records (struct job_record *job_ptr)
 
 	last_job_update = time(NULL);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
+		job_ptr->derived_ec = MAX(job_ptr->derived_ec,
+					  step_ptr->exit_code);
+#if 0
+		/* These operations are not needed for terminated jobs */
+		select_g_step_finish(step_ptr);
+		_step_dealloc_lps(step_ptr);
+		gres_plugin_step_dealloc(step_ptr->gres_list,
+					 job_ptr->gres_list, job_ptr->job_id,
+					 step_ptr->step_id);
+#endif
 		list_remove (step_iterator);
 		_free_step_rec(step_ptr);
 	}

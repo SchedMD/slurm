@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
  -- Enlarge maximum size of srun's hostlist file.
  -- IPMI - Fix first poll to get correct consumed_energy for a step.
  -- Correction to job state recovery logic that could result in assert failure.
+ -- Record partial step accounting record if allocated nodes fail abnormally.
 
 * Changes in Slurm 2.6.0rc2
 ===========================
