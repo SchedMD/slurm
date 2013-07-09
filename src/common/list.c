@@ -530,7 +530,7 @@ list_flush (List l)
 }
 
 void
-list_sort2 (List l, ListCmpF f)
+list_sort (List l, ListCmpF f)
 {
     ListIterator it;
 
@@ -613,7 +613,7 @@ list_sort2 (List l, ListCmpF f)
 }
 
 void
-list_sort (List l, ListCmpF f)
+list_sort2 (List l, ListCmpF f)
 {
 /*  Note: Time complexity O(n^2).
  */
