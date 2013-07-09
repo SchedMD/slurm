@@ -35,6 +35,10 @@
 %define _infodir %{_prefix}/share/info
 %define slurm_with_opt() %{expand:%%{!?_without_%{1}:%%global slurm_with_%{1} 1}}
 %define slurm_without_opt() %{expand:%%{?_with_%{1}:%%global slurm_with_%{1} 1}}
+
+# This needs to be defined for incremental builds
+%define intranamespace_name slurm
+
 #
 #  with helper macro to test for slurm_with_*
 #
@@ -395,7 +399,7 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 #############################################################################
 
 %prep
-%setup -n %{name}-%{version}
+%incremental_setup -n %{name}-%{version}
 
 %build
 %configure --program-prefix=%{?_program_prefix:%{_program_prefix}} \
