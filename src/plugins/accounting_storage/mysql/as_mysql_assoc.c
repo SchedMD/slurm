@@ -1975,8 +1975,8 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	 */
 	if (!is_admin && (private_data & PRIVATE_DATA_USERS)) {
 		int set = 0;
-		query = xstrdup_printf("select lft from %s where user='%s'",
-				       assoc_table, user->name);
+		query = xstrdup_printf("select lft from %s_%s where user='%s'",
+				       cluster_name, assoc_table, user->name);
 		if (user->coord_accts) {
 			slurmdb_coord_rec_t *coord = NULL;
 			itr = list_iterator_create(user->coord_accts);
