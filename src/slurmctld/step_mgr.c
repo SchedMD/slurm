@@ -583,7 +583,7 @@ void signal_step_tasks_on_node(char* node_name, struct step_record *step_ptr,
 }
 
 /* A step just completed, signal srun processes with pending steps to retry */
-static void _wake_pending_steps(struct job_record *job_ptr, int cpu_count)
+static void _wake_pending_steps(struct job_record *job_ptr)
 {
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
@@ -626,7 +626,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 {
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
-	int cpu_count, error_code;
+	int error_code;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -644,8 +644,6 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	if (step_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 
-	cpu_count = step_ptr->cpu_count;
-
 	_internal_step_complete(job_ptr, step_ptr, false);
 
 	last_job_update = time(NULL);
@@ -655,7 +653,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		     step_id);
 		return ESLURM_ALREADY_DONE;
 	}
-	_wake_pending_steps(job_ptr, cpu_count);
+	_wake_pending_steps(job_ptr);
 	return SLURM_SUCCESS;
 }
 
