@@ -59,6 +59,7 @@
 #include "src/common/xstring.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/slurmdbd/read_config.h"
+#include "src/common/slurm_strcasestr.h"
 
 /* Global variables */
 pthread_mutex_t conf_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -247,28 +248,28 @@ extern int read_slurmdbd_conf(void)
 
 		slurmdbd_conf->private_data = 0; /* default visible to all */
 		if (s_p_get_string(&temp_str, "PrivateData", tbl)) {
-			if (strstr(temp_str, "account"))
+			if (slurm_strcasestr(temp_str, "account"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_ACCOUNTS;
-			if (strstr(temp_str, "job"))
+			if (slurm_strcasestr(temp_str, "job"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_JOBS;
-			if (strstr(temp_str, "node"))
+			if (slurm_strcasestr(temp_str, "node"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_NODES;
-			if (strstr(temp_str, "partition"))
+			if (slurm_strcasestr(temp_str, "partition"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_PARTITIONS;
-			if (strstr(temp_str, "reservation"))
+			if (slurm_strcasestr(temp_str, "reservation"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_RESERVATIONS;
-			if (strstr(temp_str, "usage"))
+			if (slurm_strcasestr(temp_str, "usage"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_USAGE;
-			if (strstr(temp_str, "user"))
+			if (slurm_strcasestr(temp_str, "user"))
 				slurmdbd_conf->private_data
 					|= PRIVATE_DATA_USERS;
-			if (strstr(temp_str, "all"))
+			if (slurm_strcasestr(temp_str, "all"))
 				slurmdbd_conf->private_data = 0xffff;
 			xfree(temp_str);
 		}

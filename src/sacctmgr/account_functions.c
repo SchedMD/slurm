@@ -636,6 +636,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 
 	if (!list_count(acct_list) && !list_count(assoc_list)) {
 		printf(" Nothing new added.\n");
+		rc = SLURM_ERROR;
 		goto end_it;
 	} else if (!assoc_str) {
 		exit_code=1;
@@ -1060,6 +1061,7 @@ assoc_start:
 			}
 		} else if (ret_list) {
 			printf(" Nothing modified\n");
+			rc = SLURM_ERROR;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Error with request: %s\n",
@@ -1212,6 +1214,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		}
 	} else if (ret_list) {
 		printf(" Nothing deleted\n");
+		rc = SLURM_ERROR;
 	} else {
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",

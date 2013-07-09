@@ -1552,7 +1552,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 			     uint16_t protocol_version)
 {
 	char *acctg_freq = NULL, *req_nodes = NULL, *exc_nodes = NULL;
-	char *features = NULL, *cpu_bind, *dependency = NULL;
+	char *features = NULL, *cpu_bind = NULL, *dependency = NULL;
 	char *orig_dependency = NULL, *mem_bind;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char *ckpt_dir = NULL, *restart_dir = NULL;
@@ -1570,7 +1570,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer,
 	multi_core_data_t *mc_ptr;
 
 	/* unpack the job's details from the buffer */
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);

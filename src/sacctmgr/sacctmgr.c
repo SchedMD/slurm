@@ -549,7 +549,7 @@ static void _add_it (int argc, char *argv[])
 		fprintf(stderr, "\"QOS\", or \"User\"\n");
 	}
 
-	if (error_code != SLURM_ERROR) {
+	if (error_code != SLURM_SUCCESS) {
 		exit_code = 1;
 	}
 }
@@ -590,7 +590,7 @@ static void _archive_it (int argc, char *argv[])
 		fprintf(stderr, "\"Dump\", or \"load\"\n");
 	}
 
-	if (error_code != SLURM_ERROR) {
+	if (error_code != SLURM_SUCCESS) {
 		exit_code = 1;
 	}
 }
@@ -653,7 +653,7 @@ static void _show_it (int argc, char *argv[])
 			"\"QOS\", \"Transaction\", \"User\", or \"WCKey\"\n");
 	}
 
-	if (error_code != SLURM_ERROR) {
+	if (error_code != SLURM_SUCCESS) {
 		exit_code = 1;
 	}
 }
@@ -704,7 +704,7 @@ static void _modify_it (int argc, char *argv[])
 			"or \"User\"\n");
 	}
 
-	if (error_code != SLURM_ERROR) {
+	if (error_code != SLURM_SUCCESS) {
 		exit_code = 1;
 	}
 }
@@ -755,7 +755,7 @@ static void _delete_it (int argc, char *argv[])
 		fprintf(stderr, "\"QOS\", or \"User\"\n");
 	}
 
-	if (error_code != SLURM_ERROR) {
+	if (error_code != SLURM_SUCCESS) {
 		exit_code = 1;
 	}
 }

@@ -350,6 +350,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 
 	if (!list_count(cluster_list)) {
 		printf(" Nothing new added.\n");
+		rc = SLURM_ERROR;
 		goto end_it;
 	}
 
@@ -761,6 +762,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		set = 1;
 	} else if (ret_list) {
 		printf(" Nothing modified\n");
+		rc = SLURM_ERROR;
 	} else {
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",
@@ -793,6 +795,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 			set = 1;
 		} else if (ret_list) {
 			printf(" Nothing modified\n");
+			rc = SLURM_ERROR;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Error with request: %s\n",
@@ -899,6 +902,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		}
 	} else if (ret_list) {
 		printf(" Nothing deleted\n");
+		rc = SLURM_ERROR;
 	} else {
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",

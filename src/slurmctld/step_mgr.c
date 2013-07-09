@@ -207,8 +207,28 @@ static void _build_pending_step(struct job_record *job_ptr,
 	step_ptr->step_id = NO_VAL;
 }
 
+static void _internal_step_complete(
+	struct job_record *job_ptr,
+	struct step_record *step_ptr, bool terminated)
+{
+	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
+	job_ptr->derived_ec = MAX(job_ptr->derived_ec,
+				  step_ptr->exit_code);
+	if (!terminated) {
+		/* These operations are not needed for
+		 * terminated jobs */
+		select_g_step_finish(step_ptr);
+		_step_dealloc_lps(step_ptr);
+		gres_plugin_step_dealloc(step_ptr->gres_list,
+					 job_ptr->gres_list, job_ptr->job_id,
+					 step_ptr->step_id);
+	}
+}
+
 /*
- * delete_step_records - delete step record for specified job_ptr
+ * delete_step_records - Delete step record for specified job_ptr.
+ * This function is called when a job terminates abnormally, say when it's
+ * allocated nodes go DOWN and active steps can not be properly terminated.
  * IN job_ptr - pointer to job table entry to have step records removed
  */
 extern void delete_step_records (struct job_record *job_ptr)
@@ -221,6 +241,7 @@ extern void delete_step_records (struct job_record *job_ptr)
 
 	last_job_update = time(NULL);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		_internal_step_complete(job_ptr, step_ptr, true);
 		list_remove (step_iterator);
 		_free_step_rec(step_ptr);
 	}
@@ -562,7 +583,7 @@ void signal_step_tasks_on_node(char* node_name, struct step_record *step_ptr,
 }
 
 /* A step just completed, signal srun processes with pending steps to retry */
-static void _wake_pending_steps(struct job_record *job_ptr, int cpu_count)
+static void _wake_pending_steps(struct job_record *job_ptr)
 {
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
@@ -605,7 +626,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 {
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
-	int cpu_count, error_code;
+	int error_code;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -623,15 +644,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	if (step_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 
-	select_g_step_finish(step_ptr);
-	cpu_count = step_ptr->cpu_count;
-
-	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
-	job_ptr->derived_ec = MAX(job_ptr->derived_ec, step_ptr->exit_code);
-
-	_step_dealloc_lps(step_ptr);
-	gres_plugin_step_dealloc(step_ptr->gres_list, job_ptr->gres_list,
-				 job_id, step_id);
+	_internal_step_complete(job_ptr, step_ptr, false);
 
 	last_job_update = time(NULL);
 	error_code = delete_step_record(job_ptr, step_id);
@@ -640,7 +653,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		     step_id);
 		return ESLURM_ALREADY_DONE;
 	}
-	_wake_pending_steps(job_ptr, cpu_count);
+	_wake_pending_steps(job_ptr);
 	return SLURM_SUCCESS;
 }
 
