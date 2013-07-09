@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- IPMI - Fix first poll to get correct consumed_energy for a step.
  -- Correction to job state recovery logic that could result in assert failure.
  -- Record partial step accounting record if allocated nodes fail abnormally.
+ -- Accounting - fix issue where PrivateData=jobs or users could potentially
+    show information to users that had no associations on the system.
 
 * Changes in Slurm 2.6.0rc2
 ===========================

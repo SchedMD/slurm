@@ -403,9 +403,17 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 						   prefix);
 			}
 		}
-		if (set)
-			xstrcat(extra,")");
+
 		mysql_free_result(result);
+
+		if (set)
+			xstrcat(extra, ")");
+		else {
+			xfree(extra);
+			/* This user has no valid associations, so
+			 * they will not have any jobs. */
+			goto end_it;
+		}
 	}
 
 	setup_job_cluster_cond_limits(mysql_conn, job_cond,
