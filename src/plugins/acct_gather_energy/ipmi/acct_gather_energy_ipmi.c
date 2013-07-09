@@ -732,8 +732,8 @@ static int _get_joules_task(uint16_t delta)
 		/* This is just for the step, so take all the pervious
 		   consumption out of the mix.
 		*/
-		local_energy->previous_consumed_energy += adjustment;
-		start_current_energy = local_energy->previous_consumed_energy;
+		start_current_energy =
+			local_energy->consumed_energy + adjustment;
 		local_energy->base_consumed_energy = 0;
 		first = false;
 	}
