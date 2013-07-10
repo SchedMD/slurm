@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in Slurm 2.6.1
+========================
+
 * Changes in Slurm 2.6.0
 ========================
  -- Fix it so bluegene and serial systems don't get warnings over new NODEDATA
