@@ -482,14 +482,14 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		START_TIMER;
 		info("switch_p_build_jobinfo(): nodelist:%s network:%s",
-		     step_layout->nodelist, network);
+		     step_layout->node_list, network);
 	} else {
 		debug3("network = \"%s\"", network);
 	}
 
-	list = hostlist_create(step_layout->nodelist);
+	list = hostlist_create(step_layout->node_list);
 	if (!list)
-		fatal("hostlist_create(%s): %m", step_layout->nodelist);
+		fatal("hostlist_create(%s): %m", step_layout->node_list);
 
 	if (network) {
 		network_str = xstrdup(network);
