@@ -82,9 +82,11 @@ struct select_nodeinfo {
 #if defined (__APPLE__)
 slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
 int bg_recover __attribute__((weak_import)) = NOT_FROM_CONTROLLER;
+slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import)) = NULL;
 #else
 slurm_ctl_conf_t slurmctld_conf;
 int bg_recover = NOT_FROM_CONTROLLER;
+slurmdb_cluster_rec_t *working_cluster_rec = NULL;
 #endif
 
 
