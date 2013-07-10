@@ -75,13 +75,13 @@ struct sess_record *session_ptr;
 #define BUF_SIZE 1024
 #define DEBUG_MODULE 0 
 
-int dump_proc(int uid, int sid);
-void init_proc(void);
-int parse_proc_stat(char* proc_stat, int *session, 
-		    unsigned long *time, long *resident_set_size);
-int read_proc();
+static void _init_proc(void);
+static int _parse_proc_stat(char* proc_stat, int *session, 
+			    unsigned long *time, long *resident_set_size);
+extern int read_proc(void);
 
 #if DEBUG_MODULE
+static int _dump_proc(int uid, int sid);
 /* main is used here for testing purposes only */
 int 
 main(int argc, char * argv[]) 
@@ -96,7 +96,7 @@ main(int argc, char * argv[])
 	else
 		uid = -1;
 	iterations = atoi (argv[1]);
-	init_proc ();
+	_init_proc ();
 
 	for (i=0; i<iterations; i++) {
 		if (i > 0) {
@@ -108,21 +108,19 @@ main(int argc, char * argv[])
 			printf ("Error %d from read_proc\n", error_code);
 			exit (1);
 		} 
-		dump_proc (uid, -1);
+		_dump_proc (uid, -1);
 	}
 	exit (0);
 }
-#endif
-
 
 /*
- * dump_proc - Print the contents of the process table
+ * _dump_proc - Print the contents of the process table
  * IN uid - optional UID filter, enter -1 if no uid filter
  * IN sid - optional session ID filter, enter -1 if no SID filter
  * RET - count of records printed
  */
-int 
-dump_proc(int uid, int sid) 
+static int 
+_dump_proc(int uid, int sid) 
 {
 	struct sess_record *s_ptr;
 	int count = 0;
@@ -143,14 +141,14 @@ dump_proc(int uid, int sid)
 	}
 	return count;
 }
-
+#endif
 
 /*
- * init_proc - Initialize the sess_record data structure or increase size 
+ * _init_proc - Initialize the sess_record data structure or increase size 
  *	as needed
  */
-void 
-init_proc (void) 
+static void 
+_init_proc (void) 
 {
 	struct sess_record *s_ptr;
 
@@ -170,7 +168,7 @@ init_proc (void)
 
 
 /*
- * parse_proc_stat - Break out all of a process' information from the stat file
+ * _parse_proc_stat - Break out all of a process' information from the stat file
  * IN proc_stat - Process status info read from /proc/<pid>/stat
  * OUT session - Location into which the session ID is written
  * OUT time - Location into which total user and system time (in seconds) 
@@ -178,9 +176,10 @@ init_proc (void)
  * OUT resident_set_size - Location into which the Resident Set Size is written
  * RET - zero or errno code
  */
-int 
-parse_proc_stat(char* proc_stat, int *session, unsigned long *time, 
-		long *resident_set_size) {
+static int 
+_parse_proc_stat(char* proc_stat, int *session, unsigned long *time, 
+		 long *resident_set_size)
+{
 	int pid, ppid, pgrp, tty, tpgid;
 	char cmd[16], state[1];
 	long unsigned flags, min_flt, cmin_flt, maj_flt, cmaj_flt;
@@ -232,8 +231,8 @@ parse_proc_stat(char* proc_stat, int *session, unsigned long *time,
  *	the system
  * RET - zero or errno code
  */
-int 
-read_proc() 
+extern int 
+read_proc(void) 
 {
 	DIR *proc_fs;
 	struct dirent *proc_ent;
@@ -278,7 +277,8 @@ read_proc()
 		if (proc_fd == -1) 
 			continue;  /* process is now gone */
 		while ((n = read(proc_fd, proc_stat, proc_stat_size)) > 0) {
-			if (n < (proc_stat_size-1)) break;
+			if (n < (proc_stat_size-1))
+				break;
 			proc_stat_size += BUF_SIZE;
 			xrealloc(proc_stat, proc_stat_size);
 			if (lseek(proc_fd, (off_t) 0, SEEK_SET) != 0) 
@@ -289,7 +289,7 @@ read_proc()
 		if (n <= 0) 
 			continue;
 		uid = buffer.st_uid;
-		parse_proc_stat (proc_stat, &session, &time, 
+		_parse_proc_stat(proc_stat, &session, &time, 
 				 &resident_set_size);
 		found = 0;
 		sess_free = NULL;
@@ -316,7 +316,7 @@ read_proc()
 		} 
 		if (found == 0) {
 			if (sess_free == NULL) {
-				init_proc();
+				_init_proc();
 				for (s_ptr=session_ptr; 
 				     s_ptr<(session_ptr+sess_rec_cnt); 
 				     s_ptr++) {
