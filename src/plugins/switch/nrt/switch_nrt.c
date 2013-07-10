@@ -463,8 +463,8 @@ extern int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job)
 	return nrt_alloc_jobinfo((slurm_nrt_jobinfo_t **)switch_job);
 }
 
-extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
-				  uint16_t *tasks_per_node, uint32_t **tids,
+extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
+				  slurm_step_layout_t *step_layout,
 				  char *network)
 {
 	hostlist_t list = NULL;
@@ -482,14 +482,14 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		START_TIMER;
 		info("switch_p_build_jobinfo(): nodelist:%s network:%s",
-		     nodelist, network);
+		     step_layout->nodelist, network);
 	} else {
 		debug3("network = \"%s\"", network);
 	}
 
-	list = hostlist_create(nodelist);
+	list = hostlist_create(step_layout->nodelist);
 	if (!list)
-		fatal("hostlist_create(%s): %m", nodelist);
+		fatal("hostlist_create(%s): %m", step_layout->nodelist);
 
 	if (network) {
 		network_str = xstrdup(network);
@@ -643,7 +643,8 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
 
 	if (err == SLURM_SUCCESS) {
 		err = nrt_build_jobinfo((slurm_nrt_jobinfo_t *)switch_job,
-					list, tasks_per_node, tids, sn_all,
+					list, step_layout->tasks,
+					step_layout->tids, sn_all,
 					adapter_name, dev_type,
 					bulk_xfer, bulk_xfer_resources,
 					ip_v4, user_space, protocol,

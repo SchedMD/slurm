@@ -335,9 +335,7 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 	if (switch_alloc_jobinfo(&step_resp->switch_job) < 0)
 		fatal("switch_alloc_jobinfo: %m");
 	if (switch_build_jobinfo(step_resp->switch_job,
-				 step_resp->step_layout->node_list,
-				 step_resp->step_layout->tasks,
-				 step_resp->step_layout->tids,
+				 step_resp->step_layout,
 				 step_req->network) < 0)
 		fatal("switch_build_jobinfo: %m");
 

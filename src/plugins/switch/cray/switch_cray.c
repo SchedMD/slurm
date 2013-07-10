@@ -122,8 +122,8 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job)
 	return SLURM_SUCCESS;
 }
 
-int switch_p_build_jobinfo(switch_jobinfo_t *switch_job, char *nodelist,
-			   uint16_t *tasks_per_node, uint32_t **tids,
+int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
+			   slurm_step_layout_t *step_layout,
 			   char *network)
 {
 	return SLURM_SUCCESS;

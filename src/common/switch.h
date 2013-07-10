@@ -119,15 +119,14 @@ extern int  switch_alloc_jobinfo (switch_jobinfo_t **jobinfo);
 
 /* fill a job's switch credential
  * OUT jobinfo  - storage for a switch job credential
- * IN  nodelist - list of nodes to be used by the job
- * IN  tasks_per_node   - count of tasks per node in the job
- * IN  cyclic_alloc - task distribution pattern, 1=cyclic, 0=block
+ * IN  step_layout - the layout of the step with at least the nodes,
+ *                   tasks_per_node and tids set
  * IN  network  - plugin-specific network info (e.g. protocol)
  * NOTE: storage must be freed using g_switch_free_jobinfo
  */
-extern int  switch_build_jobinfo (switch_jobinfo_t *jobinfo,
-		char *nodelist, uint16_t *tasks_per_node, uint32_t **tids,
-		char *network);
+extern int  switch_build_jobinfo(switch_jobinfo_t *jobinfo,
+				 slurm_step_layout_t *step_layout,
+				 char *network);
 
 /* copy a switch job credential
  * IN jobinfo - the switch job credential to be copied
