@@ -71,7 +71,7 @@ void _help_fields_msg(void)
 			printf(" ");
 		else if (i)
 			printf("\n");
-		printf("%-13s", fields[i].name);
+		printf("%-17s", fields[i].name);
 	}
 	printf("\n");
 	return;

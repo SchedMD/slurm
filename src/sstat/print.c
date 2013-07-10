@@ -136,6 +136,11 @@ void print_fields(slurmdb_step_rec_t *step)
 					     outbuf,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_CONSUMED_ENERGY_RAW:
+			field->print_routine(field,
+					     step->stats.consumed_energy,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_AVEDISKREAD:
 			_print_small_double(outbuf, sizeof(outbuf),
 					    step->stats.disk_read_ave,

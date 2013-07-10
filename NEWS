@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
  -- Accounting - fix issue where PrivateData=jobs or users could potentially
     show information to users that had no associations on the system.
  -- Make PrivateData in slurmdbd.conf case insensitive.
+ -- sacct/sstat - Add format option ConsumedEnergyRaw to print full energy
+    values.
 
 * Changes in Slurm 2.6.0rc2
 ===========================
