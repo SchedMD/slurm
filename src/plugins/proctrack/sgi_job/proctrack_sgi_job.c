@@ -194,17 +194,15 @@ int _job_getpidcnt (jid_t jid)
 
 int slurm_container_plugin_create (slurmd_job_t *job)
 {
-	jid_t jid;
-	job->cont_id = (uint64_t) -1;
-
 	if (!libjob_handle)
 		init();
 
-	if ((jid = _job_create (0, job->uid, 0)) == (jid_t) -1) {
+	if ((job->cont_id = _job_create (0, job->uid, 0)) == (jid_t) -1) {
 		error ("Failed to create job container: %m");
 		return SLURM_ERROR;
 	}
-	debug ("created jid 0x%08lx", jid);
+
+	debug ("created jid 0x%08lx", job->cont_id);
 
 	return SLURM_SUCCESS;
 }
@@ -216,17 +214,22 @@ int slurm_container_plugin_create (slurmd_job_t *job)
  * (once) at this time. */
 int slurm_container_plugin_add (slurmd_job_t *job, pid_t pid)
 {
-	if (job->cont_id == (uint64_t) -1) {
-		job->cont_id = (uint64_t) _job_getjid (getpid());
-		/*
-		 *  Detach ourselves from the job container now that there
-		 *   is at least one other process in it.
-		 */
-		if (_job_detachpid (getpid()) == (jid_t) -1) {
-			error ("Failed to detach from job container: %m");
-			return SLURM_ERROR;
-		}
+	static bool first = 1;
+
+	if (!first)
+		return SLURM_SUCCESS;
+
+	first = 0;
+
+	/*
+	 *  Detach ourselves from the job container now that there
+	 *   is at least one other process in it.
+	 */
+	if (_job_detachpid(getpid()) == (jid_t) -1) {
+		error("Failed to detach from job container: %m");
+		return SLURM_ERROR;
 	}
+
 	return SLURM_SUCCESS;
 }
 
