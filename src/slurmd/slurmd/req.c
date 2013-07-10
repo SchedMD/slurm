@@ -2155,14 +2155,9 @@ _signal_jobstep(uint32_t jobid, uint32_t stepid, uid_t req_uid,
 #  endif
 #endif
 
-	if ((signal == SIG_PREEMPTED) || (signal == SIG_TIME_LIMIT) ||
-	    (signal == SIG_DEBUG_WAKE)) {
-		rc = stepd_signal_container(fd, signal);
-	} else {
-		rc = stepd_signal(fd, signal);
-		if (rc == -1)
-			rc = ESLURMD_JOB_NOTRUNNING;
-	}
+	rc = stepd_signal_container(fd, signal);
+	if (rc == -1)
+		rc = ESLURMD_JOB_NOTRUNNING;
 
 done2:
 	xfree(step);
@@ -3316,7 +3311,7 @@ _rpc_signal_job(slurm_msg_t *msg)
 
 		debug2("  signal %d to job %u.%u",
 		       req->signal, stepd->jobid, stepd->stepid);
-		if (stepd_signal(fd, req->signal) < 0)
+		if (stepd_signal_container(fd, req->signal) < 0)
 			debug("signal jobid=%u failed: %m", stepd->jobid);
 		close(fd);
 	}

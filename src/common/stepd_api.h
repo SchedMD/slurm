@@ -57,7 +57,7 @@ typedef struct step_location {
 
 typedef enum {
 	REQUEST_CONNECT = 0,
-	REQUEST_SIGNAL_PROCESS_GROUP,
+	REQUEST_SIGNAL_PROCESS_GROUP, /* Defunct, See REQUEST_SIGNAL_CONTAINER */
 	REQUEST_SIGNAL_TASK_LOCAL,
 	REQUEST_SIGNAL_TASK_GLOBAL,
 	REQUEST_SIGNAL_CONTAINER,
@@ -138,11 +138,6 @@ slurmstepd_info_t *stepd_get_info(int fd);
  * Send job notification message to a batch job
  */
 int stepd_notify_job(int fd, char *message);
-
-/*
- * Send a signal to the process group of a job step.
- */
-int stepd_signal(int fd, int signal);
 
 /*
  * Send a checkpoint request to all tasks of a job step.

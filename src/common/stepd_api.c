@@ -331,25 +331,6 @@ rwfail:
 }
 
 /*
- * Send a signal to the process group of a job step.
- */
-int
-stepd_signal(int fd, int signal)
-{
-	int req = REQUEST_SIGNAL_PROCESS_GROUP;
-	int rc;
-
-	safe_write(fd, &req, sizeof(int));
-	safe_write(fd, &signal, sizeof(int));
-
-	/* Receive the return code */
-	safe_read(fd, &rc, sizeof(int));
-	return rc;
-rwfail:
-	return -1;
-}
-
-/*
  * Send job notification message to a batch job
  */
 int
