@@ -26,26 +26,31 @@ SLURM will result in loss of state information.
 HIGHLIGHTS
 ==========
  - Added support for job arrays, which increases performance and ease of use
-   for sets of similar jobs. This man necessitate changes in prolog and/or
+   for sets of similar jobs. This may necessitate changes in prolog and/or
    epilog scripts due to change in the job ID format, which is now of the form
    "<job_id>_<index>" for job arrays.
- - Added mpi/pmi2 plugin with much better more scalable performance for MPI
+   http://slurm.schedmd.com/job_array.html
+ - Added support for job profiling to periodically capture each task's CPU use,
+   memory use, power consumption, Lustre use and Infiniband network use.
+   http://slurm.schedmd.com/hdf5_profile_user_guide.html
+ - Added support for generic external sensor plugins which can be used to
+   capture temperature and power consumption data.
+   http://slurm.schedmd.com/ext_sensorsplugins.html
+   http://slurm.schedmd.com/ext_sensors.conf.html
+ - Added mpi/pmi2 plugin with much more scalable performance for MPI
    implementations using PMI communications interface.
- - Added slurmctld/dynalloc plugin for MapReduce+ support.
+   http://slurm.schedmd.com/mpi_guide.html#mpich2
  - Added prolog and epilog support for advanced reservations.
  - Much faster throughput for job step execution with --exclusive option. The
    srun process is notified when resources become available rather than
    periodic polling.
- - Added options to build RPMs:
-   _slurm_datadir
-   _slurm_mandir
-   _slurm_infodir
  - Advanced reservations with hostname and core counts now supports asymetric
    reservations (e.g. specific different core count for each node).
+ - Added slurmctld/dynalloc plugin for MapReduce+ support. New versions of
+   OpenMPI and MapReduce are required to enable this functionality.
+   http://slurm.schedmd.com/dynalloc.html
  - Make sched/backfill the default scheduling plugin rather than sched/builtin
    (FIFO).
- - Add ext_sensors plugin - read doc/html/ext_sensorsplugins.shtml and
-   doc/man/man5/ext_sensors.conf.5
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
