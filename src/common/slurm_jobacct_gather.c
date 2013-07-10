@@ -1162,9 +1162,10 @@ extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
 	stats->cpu_ave = (double)jobacct->tot_cpu;
 	stats->act_cpufreq = (double)jobacct->act_cpufreq;
 	if (jobacct->energy.consumed_energy == NO_VAL)
-		stats->consumed_energy = NO_VAL;
+		stats->consumed_energy = (double)NO_VAL;
 	else
-		stats->consumed_energy = (double)jobacct->energy.consumed_energy;
+		stats->consumed_energy =
+			(double)jobacct->energy.consumed_energy;
 	stats->disk_read_max = jobacct->max_disk_read;
 	stats->disk_read_max_nodeid = jobacct->max_disk_read_id.nodeid;
 	stats->disk_read_max_taskid = jobacct->max_disk_read_id.taskid;

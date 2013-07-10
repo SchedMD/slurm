@@ -427,6 +427,23 @@ void print_fields(type_t type, void *object)
 					     outbuf,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_CONSUMED_ENERGY_RAW:
+			switch (type) {
+			case JOB:
+				if (!job->track_steps)
+					tmp_dub = step->stats.consumed_energy;
+				break;
+			case JOBSTEP:
+				tmp_dub = step->stats.consumed_energy;
+				break;
+			default:
+				break;
+			}
+
+			field->print_routine(field,
+					     tmp_dub,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_CPU_TIME:
 			switch(type) {
 			case JOB:

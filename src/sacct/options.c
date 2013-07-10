@@ -71,7 +71,7 @@ void _help_fields_msg(void)
 			printf(" ");
 		else if (i)
 			printf("\n");
-		printf("%-13s", fields[i].name);
+		printf("%-17s", fields[i].name);
 	}
 	printf("\n");
 	return;
@@ -451,8 +451,8 @@ sacct [<OPTION>]                                                            \n\
                              mincputask,avecpu,ntasks,alloccpus,elapsed,    \n\
                              state,exitcode,avecpufreq,consumedenergy,      \n\
                              maxdiskread,maxdiskreadnode,maxdiskreadtask,   \n\
-                             avediskread, maxdiskwrite,maxdiskwritenode,    \n\
-                             maxdiskwritetask, avediskread'                 \n\
+                             avediskread,maxdiskwrite,maxdiskwritenode,     \n\
+                             maxdiskwritetask,avediskread'                  \n\
      -L, --allclusters:                                                     \n\
 	           Display jobs ran on all clusters. By default, only jobs  \n\
                    ran on the cluster from where sacct is called are        \n\
@@ -619,7 +619,6 @@ void parse_command_line(int argc, char **argv)
                 {"gid",            required_argument, 0,    'g'},
                 {"group",          required_argument, 0,    'g'},
                 {"help",           no_argument,       0,    'h'},
-                {"helpformat",     no_argument,       0,    'e'},
                 {"name",           required_argument, 0,    OPT_LONG_NAME},
                 {"nnodes",         required_argument, 0,    'i'},
                 {"ncpus",          required_argument, 0,    'I'},
