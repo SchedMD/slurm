@@ -619,7 +619,6 @@ void parse_command_line(int argc, char **argv)
                 {"gid",            required_argument, 0,    'g'},
                 {"group",          required_argument, 0,    'g'},
                 {"help",           no_argument,       0,    'h'},
-                {"helpformat",     no_argument,       0,    'e'},
                 {"name",           required_argument, 0,    OPT_LONG_NAME},
                 {"nnodes",         required_argument, 0,    'i'},
                 {"ncpus",          required_argument, 0,    'I'},
