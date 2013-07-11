@@ -83,7 +83,7 @@ done
 "
 
 #
-# Spawn a sbatch job with arguments
+# Spawn a sbatch job
 #
 set timeout $max_job_delay
 set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 $file_in]
@@ -101,7 +101,6 @@ expect {
 		wait
 	}
 }
-
 if {$job_id == 0} {
 	send_user "\nFAILURE: batch submit failure\n"
 	exit 1
@@ -183,7 +182,6 @@ expect {
 		wait
 	}
 }
-
 if {$job_id == 0} {
 	send_user "\nFAILURE: batch submit failure\n"
 	exit 1
@@ -213,7 +211,7 @@ expect {
 exec $bin_sleep 5
 set found_job 0
 set purged_job 0
-spawn $squeue --jobs=$job_id --states=cg,cd
+spawn $squeue --jobs=$job_id --states=cg,cd,f
 expect {
 	-re "Invalid job id specified" {
 		set purged_job 1
@@ -246,7 +244,6 @@ if {$found_job == 0} {
 		set exit_code 1
 	}
 }
-
 
 if {$exit_code != 0} {
 	exit $exit_code
