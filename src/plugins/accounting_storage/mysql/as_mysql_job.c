@@ -633,7 +633,8 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	/* Here we want to get the last job submitted here */
-	query = xstrdup_printf("select job_db_inx, id_job, time_submit, id_user "
+	query = xstrdup_printf("select job_db_inx, id_job, time_submit, "
+			       "id_user "
 			       "from \"%s_%s\" where deleted=0 "
 			       "&& id_job=%u "
 			       "order by time_submit desc limit 1;",
@@ -652,9 +653,9 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 		char tmp_char[25];
 		time_t time_submit = atol(row[2]);
 
-		if(uid != atoi(row[3]) &&
-		   !is_user_min_admin_level(mysql_conn, uid,
-					    SLURMDB_ADMIN_OPERATOR)){
+		if ((uid != atoi(row[3])) &&
+		    !is_user_min_admin_level(mysql_conn, uid,
+					     SLURMDB_ADMIN_OPERATOR)) {
 			errno = ESLURM_ACCESS_DENIED;
 			xfree(vals);
 			xfree(query);
