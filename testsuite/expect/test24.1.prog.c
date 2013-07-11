@@ -84,14 +84,12 @@ int _setup_assoc_list(void)
 		list_create(slurmdb_destroy_qos_rec);
 
 	/* we just want make it so we setup_childern so just pretend
-	   we are running off cache */
+	 * we are running off cache */
 	running_cache = 1;
 	assoc_mgr_init(NULL, NULL, SLURM_SUCCESS);
 
-	/* Here we make the associations we want to add to the
-	   system.  We do this as an update to avoid having to do
-	   setup.
-	*/
+	/* Here we make the associations we want to add to the system.
+	 * We do this as an update to avoid having to do setup. */
 	memset(&update, 0, sizeof(slurmdb_update_object_t));
 	update.type = SLURMDB_ADD_ASSOC;
 	update.objects = list_create(slurmdb_destroy_association_rec);
@@ -269,7 +267,8 @@ int _setup_assoc_list(void)
 	assoc->user = xstrdup("User6");
 	list_push(update.objects, assoc);
 
-	assoc_mgr_update_assocs(&update);
+	if (assoc_mgr_update_assocs(&update))
+		error("assoc_mgr_update_assocs: %m");
 	list_destroy(update.objects);
 
 	return SLURM_SUCCESS;
