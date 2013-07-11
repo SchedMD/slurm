@@ -226,6 +226,27 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 /* Job step ID of batch scripts */
 #define SLURM_BATCH_SCRIPT (0xfffffffe)
 
+/*
+ * SLURM_ID_HASH
+ * Description:
+ *  Creates a hash of a Slurm JOBID and STEPID
+ *  The JOB STEP ID is multiplied by 10,000,000,000
+ *  to move it out of the range of the JOB ID.
+ *  This allows viewers to easily read the JOB ID and JOB STEP ID
+ *  merely by looking at the numbers.  The JOB STEP ID should be
+ *  separated from the JOB ID by some number of zeros in most cases.
+ *  Example:
+ *   JOB ID = 123
+ *   JOB STEP ID = 456
+ *   APID = 4560000000123
+ *
+ * IN  _jobid -- SLURM's JOB ID (uint32_t)
+ * IN  _stepid -- SLURM's JOB STEP ID (uint32_t)
+ * RET id_hash -- (uint64_t)
+ */
+#define SLURM_ID_HASH(_jobid, _stepid) \
+	(uint64_t)((uint64_t)_stepid * 10000000000 + _jobid);
+
 /* last entry must be JOB_END, keep in sync with job_state_string and
  *	job_state_string_compact. values may be ORed with JOB_STATE_FLAGS
  *	below.  */
