@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- slurmdbd - Allow job derived ec and comments to be modified by non-root
     users.
+ -- Fix issue with job name being truncated to 24 chars when sending a mail
+    message.
 
 * Changes in Slurm 2.6.0
 ========================

@@ -1530,11 +1530,10 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 	else
 		mi->user_name = xstrdup(job_ptr->mail_user);
 
-	mi->message = xmalloc(256);
 	_set_job_time(job_ptr, mail_type, job_time, sizeof(job_time));
-	sprintf(mi->message, "SLURM Job_id=%u Name=%.24s %s%s",
-		job_ptr->job_id, job_ptr->name,
-		_mail_type_str(mail_type), job_time);
+	mi->message = xstrdup_printf("SLURM Job_id=%u Name=%s %s%s",
+				     job_ptr->job_id, job_ptr->name,
+				     _mail_type_str(mail_type), job_time);
 
 	debug("email msg to %s: %s", mi->user_name, mi->message);
 
