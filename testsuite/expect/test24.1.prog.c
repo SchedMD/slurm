@@ -293,6 +293,7 @@ int main (int argc, char **argv)
 	/* force priority type to be multifactor */
 	xfree(conf->priority_type);
 	conf->priority_type = xstrdup("priority/multifactor");
+	conf->priority_flags = 0;
 	/* force accounting type to be slurmdbd (It doesn't really talk
 	 * to any database, but needs this to work with fairshare
 	 * calculation). */
