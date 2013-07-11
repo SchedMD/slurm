@@ -55,7 +55,7 @@ if {[test_launch_poe]} {
 }
 
 #
-# Build input script file
+# Build input batch file
 #
 exec $bin_rm -f $file_in1 $file_in2 $file_out
 make_bash_script $file_in1 "
@@ -63,9 +63,15 @@ make_bash_script $file_in1 "
   $srun -t5 ./$file_in2
   $bin_echo JOB_FINISH
 "
+#
+# Build step file
+# The second sleep is because with some proctrack plugins, the bash shell may
+# be terminiated slighly later than the first sleep process
+#
 make_bash_script $file_in2 "
   $bin_echo STEP_BEGIN
   $bin_sleep 120
+  $bin_sleep 1
   $bin_echo STEP_FINISH
 "
 
