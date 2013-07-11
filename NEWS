@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 2.6.1
 ========================
+ -- slurmdbd - Allow job derived ec and comments to be modified by non-root
+    users.
 
 * Changes in Slurm 2.6.0
 ========================
