@@ -264,7 +264,6 @@ static void *_sig_agent(void *args)
 		int i, npids = 0, hung_pids = 0;
 		char *stat_fname = NULL;
 
-		sleep(5);
 		if (slurm_container_get_pids(agent_arg_ptr->cont_id, &pids,
 					     &npids) == SLURM_SUCCESS) {
 			hung_pids = 0;
@@ -277,14 +276,15 @@ static void *_sig_agent(void *args)
 					      (int) pids[i]);
 					hung_pids++;
 				} else {
+					/* Kill processes that we can now */
 					kill(pids[i], agent_arg_ptr->signal);
-					pids[i] = 0;
 				}
 				xfree(stat_fname);
 			}
 		}
 		if (hung_pids == 0)
 			break;
+		sleep(5);
 	}
 
 	(void) (*(ops.signal)) (agent_arg_ptr->cont_id, agent_arg_ptr->signal);
@@ -347,7 +347,7 @@ extern int slurm_container_signal(uint64_t cont_id, int signal)
 						      (int) pids[i]);
 						hung_pids++;
 					} else {
-						kill(pids[i], signal);
+						/* Don't test this PID again */
 						pids[i] = 0;
 					}
 					xfree(stat_fname);
@@ -357,8 +357,8 @@ extern int slurm_container_signal(uint64_t cont_id, int signal)
 			}
 			xfree(pids);
 			if (hung_pids) {
-				info("Defering sending signal to processes "
-				     "currently core dumping");
+				info("Defering sending signal, processes in "
+				     "job are currently core dumping");
 				_spawn_signal_thread(cont_id, signal);
 				return SLURM_SUCCESS;
 			}
