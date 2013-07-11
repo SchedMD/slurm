@@ -238,7 +238,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
  *  Example:
  *   JOB ID = 123
  *   JOB STEP ID = 456
- *   APID = 4560000000123
+ *   ID_HASH = 4560000000123
  *
  * IN  _jobid -- SLURM's JOB ID (uint32_t)
  * IN  _stepid -- SLURM's JOB STEP ID (uint32_t)
