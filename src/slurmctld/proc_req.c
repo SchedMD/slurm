@@ -571,6 +571,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->job_comp_port       = conf->job_comp_port;
 	conf_ptr->job_comp_type       = xstrdup(conf->job_comp_type);
 	conf_ptr->job_comp_user       = xstrdup(conf->job_comp_user);
+	conf_ptr->job_container_plugin = xstrdup(conf->job_container_plugin);
 
 	conf_ptr->job_credential_private_key =
 		xstrdup(conf->job_credential_private_key);

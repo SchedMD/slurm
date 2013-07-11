@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
     terminating task's PID is available in task->pid.
  -- Move select/cray to select/alps
  -- Defer sending SIGKILL signal to processes while core dump in progress.
+ -- Added JobContainerPlugin configuration parameter and plugin infrastructure.
 
 * Changes in Slurm 2.6.1
 ========================

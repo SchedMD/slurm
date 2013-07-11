@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "March 2013" "slurm.conf 2.6" "Slurm configuration file"
+.TH "slurm.conf" "5" "July 2013" "slurm.conf 13.12" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -868,6 +868,23 @@ Only used for database type storage plugins, ignored otherwise.
 Also see \fBDefaultStorageUser\fR.
 
 .TP
+\fBJobContainerPlugin\fR
+Identifies the plugin to be used for job tracking.
+The slurmd daemon must be restarted for a change in JobContainerPlugin
+to take effect.
+NOTE: The \fBJobContainerPlugin\fR applies to a job allocation, while
+\fBProctrackType\fR applies to job steps.
+Acceptable values at present include:
+.RS
+.TP 20
+\job_container/cray\fR
+used only for Cray systems
+.TP 
+\job_container/none\fR
+used for all other system types
+.RE
+
+.TP
 \fBJobCredentialPrivateKey\fR
 Fully qualified pathname of a file containing a private key used for
 authentication by SLURM daemons.
@@ -1356,9 +1373,9 @@ but can only see themselves when listing users.
 
 .TP
 \fBProctrackType\fR
-Identifies the plugin to be used for process tracking.
+Identifies the plugin to be used for process tracking on a job step basis.
 The slurmd daemon uses this mechanism to identify all processes
-which are children of processes it spawns for a user job.
+which are children of processes it spawns for a user job step.
 The slurmd daemon must be restarted for a change in ProctrackType
 to take effect.
 NOTE: "proctrack/linuxproc" and "proctrack/pgid" can fail to
@@ -1368,6 +1385,8 @@ terminates) or change their process group.
 To reliably track all processes, one of the other mechanisms
 utilizing kernel modifications is preferable.
 NOTE: "proctrack/linuxproc" is not compatible with "switch/elan."
+NOTE: The \fBJobContainerPlugin\fR applies to a job allocation, while
+\fBProctrackType\fR applies to job steps.
 Acceptable values at present include:
 .RS
 .TP 20

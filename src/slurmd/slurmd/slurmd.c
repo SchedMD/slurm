@@ -5,6 +5,7 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
+ *  Portions Copyright (C) 2010-2013 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -100,6 +101,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/req.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
+#include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/proctrack.h"
 
 #define GETOPT_ARGS	"cCd:Df:hL:Mn:N:vV"
@@ -293,6 +295,10 @@ main (int argc, char *argv[])
 	if (!conf->cleanstart && (_restore_cred_state(conf->vctx) < 0))
 		return SLURM_FAILURE;
 
+	if (job_container_init() < 0)
+		fatal("Unable to initialize job_container plugin.");
+	if (container_g_restore(conf->spooldir, !conf->cleanstart))
+		error("Unable to restore job_container state.");
 	if (interconnect_node_init() < 0)
 		fatal("Unable to initialize interconnect.");
 	if (conf->cleanstart && switch_g_clear_node_state())
@@ -1578,6 +1584,7 @@ _slurmd_fini(void)
 	slurm_select_fini();
 	spank_slurmd_exit();
 	cpu_freq_fini();
+	job_container_fini();
 
 	return SLURM_SUCCESS;
 }

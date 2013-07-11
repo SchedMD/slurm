@@ -106,8 +106,9 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libslurmd_common_la_LIBADD =
-am_libslurmd_common_la_OBJECTS = proctrack.lo setproctitle.lo \
-	slurmstepd_init.lo run_script.lo task_plugin.lo set_oomadj.lo
+am_libslurmd_common_la_OBJECTS = job_container_plugin.lo proctrack.lo \
+	setproctitle.lo slurmstepd_init.lo run_script.lo \
+	task_plugin.lo set_oomadj.lo
 libslurmd_common_la_OBJECTS = $(am_libslurmd_common_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -370,6 +371,7 @@ AM_CPPFLAGS = -I$(top_srcdir)
 # making a .la
 noinst_LTLIBRARIES = libslurmd_common.la
 libslurmd_common_la_SOURCES = \
+	job_container_plugin.c job_container_plugin.h \
 	proctrack.c proctrack.h \
 	setproctitle.c setproctitle.h \
 	slurmstepd_init.c slurmstepd_init.h \
@@ -430,6 +432,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_container_plugin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proctrack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_script.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/set_oomadj.Plo@am__quote@

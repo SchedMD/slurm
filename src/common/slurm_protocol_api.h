@@ -686,6 +686,10 @@ char *slurm_get_task_plugin(void);
 /* slurm_get_task_plugin_param */
 uint16_t slurm_get_task_plugin_param(void);
 
+/* slurm_get_job_container_plugin
+ * RET job_container plugin name, must be xfreed by caller */
+char *slurm_get_job_container_plugin(void);
+
 /**********************************************************************\
  * general message management functions used by slurmctld, slurmd
 \**********************************************************************/

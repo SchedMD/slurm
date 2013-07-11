@@ -11,6 +11,7 @@ SUBDIRS = \
 	gres			\
 	jobacct_gather		\
 	jobcomp			\
+	job_container		\
 	job_submit		\
 	launch			\
 	mpi			\

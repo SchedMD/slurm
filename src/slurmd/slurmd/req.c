@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2010-2013 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -87,6 +88,7 @@
 #include "src/slurmd/slurmd/reverse_tree_math.h"
 #include "src/slurmd/slurmd/xcpu.h"
 
+#include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/run_script.h"
 #include "src/slurmd/common/slurmstepd_init.h"
@@ -1074,6 +1076,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		rc =  _run_prolog(req->job_id, req->uid, NULL,
 				  req->spank_job_env, req->spank_job_env_size,
 				  req->complete_nodelist);
+		if (container_g_create(req->job_id))
+			error("container_g_create(%u): %m", req->job_id);
 		if (rc) {
 			int term_sig, exit_status;
 			if (WIFSIGNALED(rc)) {
@@ -1407,6 +1411,8 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		rc = _run_prolog(req->job_id, req->uid, resv_id,
 				 req->spank_job_env, req->spank_job_env_size,
 				 req->nodes);
+		if (container_g_create(req->job_id))
+			error("container_g_create(%u): %m", req->job_id);
 		xfree(resv_id);
 		if (rc) {
 			int term_sig, exit_status;
@@ -2724,6 +2730,9 @@ _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no,
 static int
 _rpc_file_bcast(slurm_msg_t *msg)
 {
+#ifdef HAVE_REAL_CRAY
+	slurmd_job_t job;
+#endif
 	file_bcast_msg_t *req = msg->data;
 	int fd, flags, offset, inx, rc;
 	int ngroups = 16;
@@ -2763,6 +2772,11 @@ _rpc_file_bcast(slurm_msg_t *msg)
 		return rc;
 	}
 
+	if ((req->block_no == 1) && (rc = container_g_create(job_id))) {
+		error("sbcast: container_g_create(%u): %m", job_id);
+		return rc;
+	}
+
 	child = fork();
 	if (child == -1) {
 		error("sbcast: fork failure");
@@ -2772,6 +2786,21 @@ _rpc_file_bcast(slurm_msg_t *msg)
 		xfree(groups);
 		return WEXITSTATUS(rc);
 	}
+
+#ifdef HAVE_REAL_CRAY
+	/* Cray systems require files be created within the job's container */
+	setpgrp();
+	job.cont_id = 0;
+	job.jmgr_pid = getpid();
+	job.pgid = getpgid(job.jmgr_pid);
+	job.uid = req_uid;
+	if ((rc = slurm_container_create(&job))) {
+		error("sbcast: slurm_container_create(%u): %m", job_id);
+		return rc;
+	}
+	slurm_container_add(&job, job.jmgr_pid);
+	container_g_add(job_id, job.cont_id);
+#endif
 
 	/* The child actually performs the I/O and exits with
 	 * a return code, do not return! */
@@ -3604,6 +3633,10 @@ _rpc_abort_job(slurm_msg_t *msg)
 #endif
 	_run_epilog(req->job_id, req->job_uid, resv_id,
 		    req->spank_job_env, req->spank_job_env_size, req->nodes);
+
+	if (container_g_delete(req->job_id))
+		error("container_g_delete(%u): %m", req->job_id);
+
 	xfree(resv_id);
 }
 
@@ -3654,6 +3687,8 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id, char *node_name)
 		slurm_cred_begin_expiration(conf->vctx, job_id);
 		save_cred_state(conf->vctx);
 		_waiter_complete(job_id);
+		if (container_g_delete(job_id))
+			error("container_g_delete(%u): %m", job_id);
 		return;
 	}
 #endif
@@ -3701,6 +3736,8 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id, char *node_name)
 		rc = ESLURMD_EPILOG_FAILED;
 	} else
 		debug("completed epilog for jobid %u", job_id);
+	if (container_g_delete(job_id))
+		error("container_g_delete(%u): %m", job_id);
 
     done:
 	_wait_state_completed(job_id, 5);
@@ -3908,6 +3945,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			 * ESLURMD_KILL_JOB_ALREADY_COMPLETE reply above */
 			_epilog_complete(req->job_id, rc);
 		}
+		if (container_g_delete(req->job_id))
+			error("container_g_delete(%u): %m", req->job_id);
 		return;
 	}
 #endif
@@ -3976,6 +4015,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		rc = ESLURMD_EPILOG_FAILED;
 	} else
 		debug("completed epilog for jobid %u", req->job_id);
+	if (container_g_delete(req->job_id))
+		error("container_g_delete(%u): %m", req->job_id);
 
     done:
 	_wait_state_completed(req->job_id, 5);

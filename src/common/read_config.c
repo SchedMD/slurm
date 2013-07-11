@@ -213,6 +213,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobCompPass", S_P_STRING},
 	{"JobCompPort", S_P_UINT32},
 	{"JobCompType", S_P_STRING},
+	{"JobContainerType", S_P_STRING},
 	{"JobCompUser", S_P_STRING},
 	{"JobCredentialPrivateKey", S_P_STRING},
 	{"JobCredentialPublicCertificate", S_P_STRING},
@@ -2082,6 +2083,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_comp_pass);
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_comp_user);
+	xfree (ctl_conf_ptr->job_container_plugin);
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	xfree (ctl_conf_ptr->job_submit_plugins);
@@ -2200,6 +2202,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->job_comp_port             = 0;
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_comp_user);
+	xfree (ctl_conf_ptr->job_container_plugin);
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	ctl_conf_ptr->job_file_append		= (uint16_t) NO_VAL;
@@ -2870,6 +2873,13 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->job_comp_port = DEFAULT_PGSQL_PORT;
 		else
 			conf->job_comp_port = DEFAULT_STORAGE_PORT;
+	}
+
+
+	if (!s_p_get_string(&conf->job_container_plugin, "JobContainerType",
+	    hashtbl)) {
+		conf->job_container_plugin =
+			xstrdup(DEFAULT_JOB_CONTAINER_PLUGIN);
 	}
 
 	if (!s_p_get_uint16(&conf->job_file_append, "JobFileAppend", hashtbl))

@@ -29,6 +29,7 @@ HIGHLIGHTS
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
+ -- Added JobContainerPlugin configuration parameter and plugin infrastructure.
 
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
