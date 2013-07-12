@@ -933,6 +933,8 @@ job_manager(slurmd_job_t *job)
 		rc = ESLURMD_SETUP_ENVIRONMENT_ERROR;
 		goto fail1;
 	}
+	if (container_g_add(job->jobid, job->cont_id) != SLURM_SUCCESS)
+		error("container_g_add: %m");
 
 #ifdef HAVE_ALPS_CRAY
 	/*
@@ -1549,8 +1551,6 @@ _fork_all_tasks(slurmd_job_t *job, bool *io_initialized)
 		}
 	}
 //	jobacct_gather_set_proctrack_container_id(job->cont_id);
-	if (container_g_add(job->jobid, job->cont_id) != SLURM_SUCCESS)
-		error("container_g_add: %m");
 
 	/*
 	 * Now it's ok to unblock the tasks, so they may call exec.
@@ -2419,6 +2419,8 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 	if ((job->cont_id == 0) &&
 	    (slurm_container_create(job) != SLURM_SUCCESS))
 		error("slurm_container_create: %m");
+	if (container_g_add(job->jobid, job->cont_id) != SLURM_SUCCESS)
+		error("container_g_add: %m");
 
 	if ((ei = fork_child_with_wait_info(0)) == NULL) {
 		error ("executing %s: fork: %m", name);
@@ -2463,8 +2465,6 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 
 	if (slurm_container_add(job, cpid) != SLURM_SUCCESS)
 		error("slurm_container_add: %m");
-	if (container_g_add(job->jobid, job->cont_id) != SLURM_SUCCESS)
-		error("container_g_add: %m");
 
 	if (exec_wait_signal_child (ei) < 0)
 		error ("run_script_as_user: Failed to wakeup %s", name);
