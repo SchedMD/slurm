@@ -772,31 +772,56 @@ static void _merge_step_files()
 	hid_t 	fid_job = -1, jgid_step = -1, jgid_nodes = -1, jgid_tasks = -1;
 	DIR    *dir;
 	struct  dirent *de;
-	char	jobprefix[MAX_PROFILE_PATH+1];
-	char	step_node[MAX_PROFILE_PATH+1];
+	char	file_name[MAX_PROFILE_PATH+1];
 	char	step_dir[MAX_PROFILE_PATH+1];
 	char	step_path[MAX_PROFILE_PATH+1];
 	char	jgrp_step_name[MAX_GROUP_NAME+1];
 	char	jgrp_nodes_name[MAX_GROUP_NAME+1];
 	char	jgrp_tasks_name[MAX_GROUP_NAME+1];
-	char 	*step_node_loc, *posdot;
-	int	stepx = 0, num_steps = 0, nodex = -1;
-	bool	foundFiles = false;
+	char 	*step_node, *pos_char, *stepno;
+	int	stepx = 0, num_steps = 0, nodex = -1, max_step = -1;
+	int	jobid, stepid;
+	bool	found_files = false;
 
 	sprintf(step_dir, "%s/%s", params.dir, params.user);
-	while (nodex != 0) {
+	while (nodex != 0 && (max_step==-1 || stepx<=max_step)) {
 		if (!(dir = opendir(step_dir))) {
 			error("opendir for job profile directory): %m");
 			exit(1);
 		}
-		sprintf(jobprefix, "%d_%d_", params.job_id, stepx);
 		nodex = 0;
 		while ((de = readdir(dir))) {
-			if (strncmp(jobprefix, de->d_name, strlen(jobprefix)))
-				continue;
-
+			strcpy(file_name,de->d_name);
+			if (file_name[0] == '.')
+				continue; // Not HDF5 file
+			pos_char = strstr(file_name,".h5");
+			if (!pos_char) {
+				error("error processing this file, %s, "
+				      "(not .h5", de->d_name);
+				continue; // Not HDF5 file
+			}
+			*pos_char = 0; // truncate .hf
+			pos_char = strchr(file_name,'_');
+			if (!pos_char)
+				continue; // not right format
+			*pos_char = 0; // make jobid string
+			jobid = strtol(file_name,NULL,10);
+			if (jobid != params.job_id)
+				continue; // not desired job
+			stepno = pos_char+1;
+			pos_char = strchr(stepno,'_');
+			if (!pos_char) {
+				continue; // not right format
+			}
+			*pos_char = 0; // make stepid string
+			stepid = strtol(pos_char,NULL,10);
+			if (stepid > max_step)
+				max_step = stepid;
+			if (stepid != stepx)
+				continue; // Not step we are merging
+			step_node = pos_char+1;
 			// Found a node step file for this job
-			if (!foundFiles) {
+			if (!found_files) {
 				// Need to create the job file
 				fid_job = H5Fcreate(params.output,
 						    H5F_ACC_TRUNC,
@@ -807,18 +832,8 @@ static void _merge_step_files()
 					      "create HDF5 file:",
 					      params.output);
 				}
-				foundFiles = true;
+				found_files = true;
 			}
-			step_node_loc = de->d_name + strlen(jobprefix);
-			strcpy(step_node, step_node_loc);
-			posdot = strchr(step_node, '.');
-
-			if (!posdot) {
-				error("error processing this file, %s, "
-				      "no suffix", de->d_name);
-				continue;
-			}
-			posdot[0] = '\0'; // remove extension
 			if (nodex == 0) {
 				num_steps++;
 				sprintf(jgrp_step_name, "/%s_%d", GRP_STEP,
@@ -866,10 +881,10 @@ static void _merge_step_files()
 		}
 		stepx++;
 	}
-	put_int_attribute(fid_job, ATTR_NSTEPS, num_steps);
-	if (!foundFiles)
-		info("No node-step files found for jobid=%d",
-		     params.job_id);
+	if (!found_files)
+		info("No node-step files found for jobid=%d", params.job_id);
+	else
+		put_int_attribute(fid_job, ATTR_NSTEPS, num_steps);
 	if (fid_job != -1)
 		H5Fclose(fid_job);
 }
