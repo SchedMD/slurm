@@ -241,10 +241,35 @@ struct part_record *create_part_record(void)
 			/ (double)part_max_priority;
 	part_ptr->node_bitmap       = NULL;
 
+	if (default_part.allow_accounts)
+		part_ptr->allow_accounts = xstrdup(default_part.allow_accounts);
+	else
+		part_ptr->allow_accounts = NULL;
+
 	if (default_part.allow_groups)
 		part_ptr->allow_groups = xstrdup(default_part.allow_groups);
 	else
 		part_ptr->allow_groups = NULL;
+
+	if (default_part.allow_qos)
+		part_ptr->allow_qos = xstrdup(default_part.allow_qos);
+	else
+		part_ptr->allow_qos = NULL;
+
+	if (default_part.deny_accounts)
+		part_ptr->deny_accounts = xstrdup(default_part.deny_accounts);
+	else
+		part_ptr->deny_accounts = NULL;
+
+	if (default_part.deny_groups)
+		part_ptr->deny_groups = xstrdup(default_part.deny_groups);
+	else
+		part_ptr->deny_groups = NULL;
+
+	if (default_part.deny_qos)
+		part_ptr->deny_qos = xstrdup(default_part.deny_qos);
+	else
+		part_ptr->deny_qos = NULL;
 
 	if (default_part.allow_alloc_nodes)
 		part_ptr->allow_alloc_nodes = xstrdup(default_part.
@@ -406,9 +431,14 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 	pack16(part_ptr->state_up,       buffer);
 	pack16(part_ptr->cr_type,        buffer);
 
+	packstr(part_ptr->allow_accounts, buffer);
 	packstr(part_ptr->allow_groups,  buffer);
+	packstr(part_ptr->allow_qos,     buffer);
 	packstr(part_ptr->allow_alloc_nodes, buffer);
 	packstr(part_ptr->alternate,     buffer);
+	packstr(part_ptr->deny_accounts, buffer);
+	packstr(part_ptr->deny_groups,   buffer);
+	packstr(part_ptr->deny_qos,      buffer);
 	packstr(part_ptr->nodes,         buffer);
 }
 
@@ -451,7 +481,9 @@ static int _open_part_state_file(char **state_file)
  */
 int load_all_part_state(void)
 {
-	char *part_name = NULL, *allow_groups = NULL, *nodes = NULL;
+	char *part_name = NULL, *nodes = NULL;
+	char *allow_accounts = NULL, *allow_groups = NULL, *allow_qos = NULL;
+	char *deny_accounts = NULL, *deny_groups = NULL, *deny_qos = NULL;
 	char *state_file, *data = NULL;
 	uint32_t max_time, default_time, max_nodes, min_nodes;
 	uint32_t max_cpus_per_node = INFINITE, grace_time = 0;
@@ -524,7 +556,52 @@ int load_all_part_state(void)
 	safe_unpack_time(&time, buffer);
 
 	while (remaining_buf(buffer) > 0) {
-		if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
+			safe_unpack32(&grace_time, buffer);
+			safe_unpack32(&max_time, buffer);
+			safe_unpack32(&default_time, buffer);
+			safe_unpack32(&max_cpus_per_node, buffer);
+			safe_unpack32(&max_nodes, buffer);
+			safe_unpack32(&min_nodes, buffer);
+
+			safe_unpack16(&flags,        buffer);
+			safe_unpack16(&max_share,    buffer);
+			safe_unpack16(&preempt_mode, buffer);
+			safe_unpack16(&priority,     buffer);
+
+			if (priority > part_max_priority)
+				part_max_priority = priority;
+
+			safe_unpack16(&state_up, buffer);
+			safe_unpack16(&cr_type, buffer);
+
+			safe_unpackstr_xmalloc(&allow_accounts,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_groups,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_qos,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&deny_accounts,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&deny_groups,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&deny_qos,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_alloc_nodes,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
+			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
+			if ((flags & PART_FLAG_DEFAULT_CLR) ||
+			    (flags & PART_FLAG_HIDDEN_CLR)  ||
+			    (flags & PART_FLAG_NO_ROOT_CLR) ||
+			    (flags & PART_FLAG_ROOT_ONLY_CLR) ||
+			    (flags & PART_FLAG_REQ_RESV_CLR)) {
+				error("Invalid data for partition %s: flags=%u",
+				      part_name, flags);
+				error_code = EINVAL;
+			}
+		} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
 			safe_unpack32(&grace_time, buffer);
 			safe_unpack32(&max_time, buffer);
@@ -605,9 +682,14 @@ int load_all_part_state(void)
 		if (error_code) {
 			error("No more partition data will be processed from "
 			      "the checkpoint file");
+			xfree(allow_accounts);
 			xfree(allow_groups);
+			xfree(allow_qos);
 			xfree(allow_alloc_nodes);
 			xfree(alternate);
+			xfree(deny_accounts);
+			xfree(deny_groups);
+			xfree(deny_qos);
 			xfree(part_name);
 			xfree(nodes);
 			error_code = EINVAL;
@@ -646,12 +728,22 @@ int load_all_part_state(void)
 		part_ptr->priority       = priority;
 		part_ptr->state_up       = state_up;
 		part_ptr->cr_type	 = cr_type;
+		xfree(part_ptr->allow_accounts);
+		part_ptr->allow_accounts = allow_accounts;
 		xfree(part_ptr->allow_groups);
 		part_ptr->allow_groups   = allow_groups;
+		xfree(part_ptr->allow_qos);
+		part_ptr->allow_qos      = allow_qos;
 		xfree(part_ptr->allow_alloc_nodes);
 		part_ptr->allow_alloc_nodes   = allow_alloc_nodes;
 		xfree(part_ptr->alternate);
 		part_ptr->alternate      = alternate;
+		xfree(part_ptr->deny_accounts);
+		part_ptr->deny_accounts  = deny_accounts;
+		xfree(part_ptr->deny_groups);
+		part_ptr->deny_groups    = deny_groups;
+		xfree(part_ptr->deny_qos);
+		part_ptr->deny_qos       = deny_qos;
 		xfree(part_ptr->nodes);
 		part_ptr->nodes = nodes;
 
@@ -771,10 +863,15 @@ int init_part_conf(void)
 	default_part.grace_time     = 0;
 	default_part.cr_type	    = 0;
 	xfree(default_part.nodes);
+	xfree(default_part.allow_accounts);
 	xfree(default_part.allow_groups);
+	xfree(default_part.allow_qos);
 	xfree(default_part.allow_uids);
 	xfree(default_part.allow_alloc_nodes);
 	xfree(default_part.alternate);
+	xfree(default_part.deny_accounts);
+	xfree(default_part.deny_groups);
+	xfree(default_part.deny_qos);
 	FREE_NULL_BITMAP(default_part.node_bitmap);
 
 	if (part_list)		/* delete defunct partitions */
@@ -815,10 +912,15 @@ static void _list_delete_part(void *part_entry)
 		}
 	}
 
+	xfree(part_ptr->allow_accounts);
 	xfree(part_ptr->allow_alloc_nodes);
 	xfree(part_ptr->allow_groups);
 	xfree(part_ptr->allow_uids);
+	xfree(part_ptr->allow_qos);
 	xfree(part_ptr->alternate);
+	xfree(part_ptr->deny_accounts);
+	xfree(part_ptr->deny_groups);
+	xfree(part_ptr->deny_qos);
 	xfree(part_ptr->name);
 	xfree(part_ptr->nodes);
 	FREE_NULL_BITMAP(part_ptr->node_bitmap);
@@ -954,7 +1056,44 @@ void pack_part(struct part_record *part_ptr, Buf buffer,
 {
 	uint32_t altered;
 
-	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+		if (default_part_loc == part_ptr)
+			part_ptr->flags |= PART_FLAG_DEFAULT;
+		else
+			part_ptr->flags &= (~PART_FLAG_DEFAULT);
+
+		packstr(part_ptr->name, buffer);
+		pack32(part_ptr->grace_time, buffer);
+		pack32(part_ptr->max_time, buffer);
+		pack32(part_ptr->default_time, buffer);
+		pack32(part_ptr->max_nodes_orig, buffer);
+		pack32(part_ptr->min_nodes_orig, buffer);
+		altered = part_ptr->total_nodes;
+		select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, &altered);
+		pack32(altered,              buffer);
+		pack32(part_ptr->total_cpus, buffer);
+		pack32(part_ptr->def_mem_per_cpu, buffer);
+		pack32(part_ptr->max_cpus_per_node, buffer);
+		pack32(part_ptr->max_mem_per_cpu, buffer);
+
+		pack16(part_ptr->flags,      buffer);
+		pack16(part_ptr->max_share,  buffer);
+		pack16(part_ptr->preempt_mode, buffer);
+		pack16(part_ptr->priority,   buffer);
+		pack16(part_ptr->state_up, buffer);
+		pack16(part_ptr->cr_type, buffer);
+
+		packstr(part_ptr->allow_accounts, buffer);
+		packstr(part_ptr->allow_groups, buffer);
+		packstr(part_ptr->allow_alloc_nodes, buffer);
+		packstr(part_ptr->allow_qos, buffer);
+		packstr(part_ptr->alternate, buffer);
+		packstr(part_ptr->deny_accounts, buffer);
+		packstr(part_ptr->deny_groups, buffer);
+		packstr(part_ptr->deny_qos, buffer);
+		packstr(part_ptr->nodes, buffer);
+		pack_bit_fmt(part_ptr->node_bitmap, buffer);
+	} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;
 		else
@@ -1236,6 +1375,22 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		}
 	}
 
+	if (part_desc->allow_accounts != NULL) {
+		xfree(part_ptr->allow_accounts);
+		if ((strcasecmp(part_desc->allow_accounts, "ALL") == 0) ||
+		    (part_desc->allow_accounts[0] == '\0')) {
+			info ("update_part: setting allow_accounts to ALL for "
+			      "partition %s",
+			      part_desc->name);
+		} else {
+			part_ptr->allow_accounts = part_desc->allow_accounts;
+			part_desc->allow_accounts = NULL;
+			info("update_part: setting allow_accounts to %s for "
+			     "partition %s",
+			     part_ptr->allow_accounts, part_desc->name);
+		}
+	}
+
 	if (part_desc->allow_groups != NULL) {
 		xfree(part_ptr->allow_groups);
 		xfree(part_ptr->allow_uids);
@@ -1253,6 +1408,22 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 			part_ptr->allow_uids =
 				_get_groups_members(part_ptr->allow_groups);
 			clear_group_cache();
+		}
+	}
+
+	if (part_desc->allow_qos != NULL) {
+		xfree(part_ptr->allow_qos);
+		if ((strcasecmp(part_desc->allow_qos, "ALL") == 0) ||
+		    (part_desc->allow_qos[0] == '\0')) {
+			info("update_partition: setting allow_qos to ALL for "
+			     "partition %s",
+			     part_desc->name);
+		} else {
+			part_ptr->allow_qos = part_desc->allow_qos;
+			part_desc->allow_qos = NULL;
+			info("update_part: setting allow_qos to %s for "
+			     "partition %s",
+			     part_ptr->allow_qos, part_desc->name);
 		}
 	}
 
@@ -1299,6 +1470,31 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		info("update_part: setting %s to %u for partition %s",
 		     key, value, part_desc->name);
 		part_ptr->def_mem_per_cpu = part_desc->def_mem_per_cpu;
+	}
+
+	if (part_desc->deny_accounts != NULL) {
+		xfree(part_ptr->deny_accounts);
+		part_ptr->deny_accounts = part_desc->deny_accounts;
+		part_desc->deny_accounts = NULL;
+		info("update_part: setting deny_accounts to %s for "
+		     "partition %s",
+		     part_ptr->deny_accounts, part_desc->name);
+	}
+
+	if (part_desc->deny_groups != NULL) {
+		xfree(part_ptr->deny_groups);
+		part_ptr->deny_groups = part_desc->deny_groups;
+		part_desc->deny_groups = NULL;
+		info("update_part: setting deny_groups to %s for partition %s",
+		     part_ptr->deny_groups, part_desc->name);
+	}
+
+	if (part_desc->deny_qos != NULL) {
+		xfree(part_ptr->deny_qos);
+		part_ptr->deny_qos = part_desc->deny_qos;
+		part_desc->deny_qos = NULL;
+		info("update_part: setting deny_qos to %s for partition %s",
+		     part_ptr->deny_qos, part_desc->name);
 	}
 
 	if (part_desc->max_mem_per_cpu != NO_VAL) {

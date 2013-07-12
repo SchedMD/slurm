@@ -215,7 +215,17 @@ typedef struct slurm_conf_partition {
 	char *allow_alloc_nodes;/* comma delimited list of allowed
 				 * allocating nodes
 				 * NULL indicates all */
+	char *allow_accounts;   /* comma delimited list of accounts,
+				 * NULL indicates all */
 	char *allow_groups;	/* comma delimited list of groups,
+				 * NULL indicates all */
+	char *allow_qos;        /* comma delimited list of qos,
+			         * NULL indicates all */
+	char *deny_accounts;    /* comma delimited list of denied accounts,
+				 * NULL indicates all */
+	char *deny_groups;      /* comma delimited list of denied groups,
+				 * NULL indicates all */
+	char *deny_qos;		/* comma delimited list of denied qos,
 				 * NULL indicates all */
 	char *alternate;	/* name of alternate partition */
 	uint16_t cr_type;	/* Custom CR values for partition (supported

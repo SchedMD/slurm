@@ -124,20 +124,81 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	/****** Line 2 ******/
 
+	if ((part_ptr->allow_groups == NULL) ||
+	    (part_ptr->allow_groups[0] == '\0'))
+		sprintf(tmp_line, "AllowGroups=ALL");
+	else {
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "AllowGroups=%s", part_ptr->allow_groups);
+	}
+	xstrcat(out, tmp_line);
+
+	if ((part_ptr->allow_accounts == NULL) ||
+	    (part_ptr->allow_accounts[0] == '\0'))
+		sprintf(tmp_line, " AllowAccounts=ALL");
+	else {
+		snprintf(tmp_line, sizeof(tmp_line),
+			 " AllowAccounts=%s", part_ptr->allow_accounts);
+	}
+	xstrcat(out, tmp_line);
+
+	if ((part_ptr->allow_qos == NULL) ||
+	    (part_ptr->allow_qos[0] == '\0'))
+		sprintf(tmp_line, " AllowQos=ALL");
+	else {
+		snprintf(tmp_line, sizeof(tmp_line),
+			 " AllowQos=%s", part_ptr->allow_qos);
+	}
+	xstrcat(out, tmp_line);
+
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 3 ******/
+
+	if ((part_ptr->deny_groups == NULL) ||
+	    (part_ptr->deny_groups[0] == '\0'))
+		sprintf(tmp_line, "DenyGroups=NONE");
+	else {
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "DenyGroups=%s", part_ptr->deny_groups);
+	}
+	xstrcat(out, tmp_line);
+
+	if ((part_ptr->deny_accounts == NULL) ||
+	    (part_ptr->deny_accounts[0] == '\0'))
+		sprintf(tmp_line, " DenyAccounts=NONE");
+	else {
+		snprintf(tmp_line, sizeof(tmp_line),
+			 " DenyAccounts=%s", part_ptr->deny_accounts);
+	}
+	xstrcat(out, tmp_line);
+
+	if ((part_ptr->deny_qos == NULL) ||
+	    (part_ptr->deny_qos[0] == '\0'))
+		sprintf(tmp_line, " DenyQos=NONE");
+	else {
+		snprintf(tmp_line, sizeof(tmp_line),
+			 " DenyQos=%s", part_ptr->deny_qos);
+	}
+	xstrcat(out, tmp_line);
+
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 4 ******/
+
 	if (part_ptr->allow_alloc_nodes == NULL)
 		snprintf(tmp_line, sizeof(tmp_line), "AllocNodes=%s","ALL");
 	else
 		snprintf(tmp_line, sizeof(tmp_line), "AllocNodes=%s",
 			 part_ptr->allow_alloc_nodes);
 	xstrcat(out, tmp_line);
-	if ((part_ptr->allow_groups == NULL) ||
-	    (part_ptr->allow_groups[0] == '\0'))
-		sprintf(tmp_line, " AllowGroups=ALL");
-	else {
-		snprintf(tmp_line, sizeof(tmp_line),
-			" AllowGroups=%s", part_ptr->allow_groups);
-	}
-	xstrcat(out, tmp_line);
+
 	if (part_ptr->alternate != NULL) {
 		snprintf(tmp_line, sizeof(tmp_line), " Alternate=%s",
 			 part_ptr->alternate);
@@ -167,7 +228,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 			xstrcat(out, "\n   ");
 	}
 
-	/****** Line 3 ******/
+	/****** Line 5 ******/
 
 	if (part_ptr->default_time == INFINITE)
 		sprintf(tmp_line, "DefaultTime=UNLIMITED");
@@ -197,7 +258,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 4 ******/
+	/****** Line 6 ******/
 
 	if (part_ptr->max_nodes == INFINITE)
 		sprintf(tmp_line, "MaxNodes=UNLIMITED");
@@ -253,7 +314,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 			xstrcat(out, "\n   ");
 	}
 
-	/****** Line 6 ******/
+	/****** Line 7 ******/
 
 	sprintf(tmp_line, "Priority=%u", part_ptr->priority);
 	xstrcat(out, tmp_line);
@@ -292,7 +353,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 7 ******/
+	/****** Line 8 ******/
 
 	if (part_ptr->state_up == PARTITION_UP)
 		sprintf(tmp_line, "State=UP");
@@ -337,7 +398,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 8 ******/
+	/****** Line 9 ******/
 	if (part_ptr->def_mem_per_cpu & MEM_PER_CPU) {
 		snprintf(tmp_line, sizeof(tmp_line), "DefMemPerCPU=%u",
 			 part_ptr->def_mem_per_cpu & (~MEM_PER_CPU));

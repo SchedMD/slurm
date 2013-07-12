@@ -276,31 +276,50 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "Nodes", MAX(taglen, 1)) == 0) {
+		else if (!strncasecmp(tag, "Nodes", MAX(taglen, 1))) {
 			part_msg_ptr->nodes = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "AllowGroups", MAX(taglen, 5)) == 0){
+		else if (!strncasecmp(tag, "AllowGroups", MAX(taglen, 6))) {
 			part_msg_ptr->allow_groups = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "AllocNodes", MAX(taglen, 5)) == 0) {
+		else if (!strncasecmp(tag, "AllowAccounts", MAX(taglen, 6))) {
+			part_msg_ptr->allow_accounts = val;
+			(*update_cnt_ptr)++;
+		}
+		else if (!strncasecmp(tag, "AllowQos", MAX(taglen, 6))) {
+			part_msg_ptr->allow_qos = val;
+			(*update_cnt_ptr)++;
+		}
+		else if (!strncasecmp(tag, "DenyGroups", MAX(taglen, 5))) {
+			part_msg_ptr->deny_groups = val;
+			(*update_cnt_ptr)++;
+		}
+		else if (!strncasecmp(tag, "DenyAccounts", MAX(taglen, 5))) {
+			part_msg_ptr->deny_accounts = val;
+			(*update_cnt_ptr)++;
+		}
+		else if (!strncasecmp(tag, "DenyQos", MAX(taglen, 5))) {
+			part_msg_ptr->deny_qos = val;
+			(*update_cnt_ptr)++;
+		}
+		else if (!strncasecmp(tag, "AllocNodes", MAX(taglen, 6))) {
 			part_msg_ptr->allow_alloc_nodes = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "Alternate", MAX(taglen, 3)) == 0) {
+		else if (!strncasecmp(tag, "Alternate", MAX(taglen, 3))) {
 			part_msg_ptr->alternate = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "GraceTime", MAX(taglen, 5)) == 0) {
+		else if (!strncasecmp(tag, "GraceTime", MAX(taglen, 5))) {
 			if (parse_uint32(val, &part_msg_ptr->grace_time)) {
 				error ("Invalid GraceTime value: %s", val);
 				return -1;
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "DefMemPerCPU",
-				     MAX(taglen, 10)) == 0) {
+		else if (!strncasecmp(tag, "DefMemPerCPU", MAX(taglen, 10))) {
 			if (parse_uint32(val, &part_msg_ptr->def_mem_per_cpu)) {
 				error ("Invalid DefMemPerCPU value: %s", val);
 				return -1;
@@ -308,16 +327,14 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			part_msg_ptr->def_mem_per_cpu |= MEM_PER_CPU;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "DefMemPerNode",
-				     MAX(taglen, 10)) == 0) {
+		else if (!strncasecmp(tag, "DefMemPerNode", MAX(taglen, 10))) {
 			if (parse_uint32(val, &part_msg_ptr->def_mem_per_cpu)) {
 				error ("Invalid DefMemPerNode value: %s", val);
 				return -1;
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "MaxMemPerCPU",
-				     MAX(taglen, 10)) == 0) {
+		else if (!strncasecmp(tag, "MaxMemPerCPU", MAX(taglen, 10))) {
 			if (parse_uint32(val, &part_msg_ptr->max_mem_per_cpu)) {
 				error ("Invalid MaxMemPerCPU value: %s", val);
 				return -1;
@@ -325,8 +342,7 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			part_msg_ptr->max_mem_per_cpu |= MEM_PER_CPU;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(tag, "MaxMemPerNode",
-				     MAX(taglen, 10)) == 0) {
+		else if (!strncasecmp(tag, "MaxMemPerNode", MAX(taglen, 10))) {
 			if (parse_uint32(val, &part_msg_ptr->max_mem_per_cpu)) {
 				error ("Invalid MaxMemPerNode value: %s", val);
 				return -1;

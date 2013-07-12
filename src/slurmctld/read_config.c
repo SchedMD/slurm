@@ -578,10 +578,36 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->grace_time     = part->grace_time;
 	part_ptr->cr_type        = part->cr_type;
 
+	if (part->allow_accounts) {
+		xfree(part_ptr->allow_accounts);
+		part_ptr->allow_accounts = xstrdup(part->allow_accounts);
+	}
+
 	if (part->allow_groups) {
 		xfree(part_ptr->allow_groups);
 		part_ptr->allow_groups = xstrdup(part->allow_groups);
 	}
+
+	if (part->allow_qos) {
+		xfree(part_ptr->allow_qos);
+		part_ptr->allow_qos = xstrdup(part->allow_qos);
+	}
+
+	if (part->deny_accounts) {
+		xfree(part_ptr->deny_accounts);
+		part_ptr->deny_accounts = xstrdup(part->deny_accounts);
+	}
+
+	if (part->deny_groups) {
+		xfree(part_ptr->deny_groups);
+		part_ptr->deny_groups = xstrdup(part->deny_groups);
+	}
+
+	if (part->deny_qos) {
+		xfree(part_ptr->deny_qos);
+		part_ptr->deny_qos = xstrdup(part->deny_qos);
+	}
+
  	if (part->allow_alloc_nodes) {
  		if (part_ptr->allow_alloc_nodes) {
  			int cnt_tot, cnt_uniq;
@@ -1169,6 +1195,14 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 			}
 			/* Current partition found in slurm.conf,
 			 * report differences from slurm.conf configuration */
+			if (_strcmp(part_ptr->allow_accounts,
+				    old_part_ptr->allow_accounts)) {
+				error("Partition %s AllowAccounts differs from "
+				      "slurm.conf", part_ptr->name);
+				xfree(part_ptr->allow_accounts);
+				part_ptr->allow_accounts =
+					xstrdup(old_part_ptr->allow_accounts);
+			}
 			if (_strcmp(part_ptr->allow_groups,
 				    old_part_ptr->allow_groups)) {
 				error("Partition %s AllowGroups differs from "
@@ -1176,6 +1210,38 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				xfree(part_ptr->allow_groups);
 				part_ptr->allow_groups = xstrdup(old_part_ptr->
 								 allow_groups);
+			}
+			if (_strcmp(part_ptr->allow_qos,
+				    old_part_ptr->allow_qos)) {
+				error("Partition %s AllowQos differs from "
+				      "slurm.conf", part_ptr->name);
+				xfree(part_ptr->allow_qos);
+				part_ptr->allow_qos = xstrdup(old_part_ptr->
+								 allow_qos);
+			}
+			if (_strcmp(part_ptr->deny_accounts,
+				    old_part_ptr->deny_accounts)) {
+				error("Partition %s DenyAccounts differs from "
+				      "slurm.conf", part_ptr->name);
+				xfree(part_ptr->deny_accounts);
+				part_ptr->deny_accounts =
+					xstrdup(old_part_ptr->deny_accounts);
+			}
+			if (_strcmp(part_ptr->deny_groups,
+				    old_part_ptr->deny_groups)) {
+				error("Partition %s DenyGroups differs from "
+				      "slurm.conf", part_ptr->name);
+				xfree(part_ptr->deny_groups);
+				part_ptr->deny_groups = xstrdup(old_part_ptr->
+								deny_groups);
+			}
+			if (_strcmp(part_ptr->deny_qos,
+				    old_part_ptr->deny_qos)) {
+				error("Partition %s DenyQos differs from "
+				      "slurm.conf", part_ptr->name);
+				xfree(part_ptr->deny_qos);
+				part_ptr->deny_qos = xstrdup(old_part_ptr->
+							     deny_qos);
 			}
 			if (_strcmp(part_ptr->allow_alloc_nodes,
 				    old_part_ptr->allow_alloc_nodes)) {
@@ -1302,9 +1368,19 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 			part_ptr->name = xstrdup(old_part_ptr->name);
 			part_ptr->allow_alloc_nodes = xstrdup(old_part_ptr->
 							    allow_alloc_nodes);
+			part_ptr->allow_accounts = xstrdup(old_part_ptr->
+							   allow_accounts);
 			part_ptr->allow_groups = xstrdup(old_part_ptr->
 							 allow_groups);
+			part_ptr->allow_qos = xstrdup(old_part_ptr->
+						      allow_qos);
 			part_ptr->default_time = old_part_ptr->default_time;
+			part_ptr->deny_accounts = xstrdup(old_part_ptr->
+							  deny_accounts);
+			part_ptr->deny_groups = xstrdup(old_part_ptr->
+							deny_groups);
+			part_ptr->deny_qos = xstrdup(old_part_ptr->
+						     deny_qos);
 			part_ptr->flags = old_part_ptr->flags;
 			part_ptr->max_nodes = old_part_ptr->max_nodes;
 			part_ptr->max_nodes_orig = old_part_ptr->

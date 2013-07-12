@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 13.12
-2 July 2013
+12 July 2013
 
 
 IMPORTANT NOTE:
@@ -30,7 +30,9 @@ HIGHLIGHTS
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
  -- Added JobContainerPlugin configuration parameter and plugin infrastructure.
-
+ -- Added partition configuration parameters AllowAccounts, AllowQOS,
+    DenyAccounts, DenyGroups and DenyQOS.
+ -- SelectType: select/cray has been renamed select/alps.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
@@ -49,6 +51,8 @@ API CHANGES
 
 Changed members of the following structs
 ========================================
+ -- partition_info, added: allow_accounts, allow_qos, deny_accounts,
+    deny_groups and deny_qos.
 
 
 Added the following struct definitions

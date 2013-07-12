@@ -316,9 +316,9 @@ enum job_state_reason {
 	FAIL_EXIT_CODE,		/* exit code was non-zero */
 	FAIL_TIMEOUT,		/* reached end of time limit */
 	FAIL_INACTIVE_LIMIT,	/* reached slurm InactiveLimit */
-	FAIL_ACCOUNT,   	/* invalid account */
-	FAIL_QOS,        	/* invalid QOS */
-	WAIT_QOS_THRES,        	/* required QOS threshold has been breached */
+	FAIL_ACCOUNT,		/* invalid account */
+	FAIL_QOS,	 	/* invalid QOS */
+	WAIT_QOS_THRES,	       	/* required QOS threshold has been breached */
 	WAIT_QOS_JOB_LIMIT,	/* QOS job limit reached */
 	WAIT_QOS_RESOURCE_LIMIT,/* QOS resource limit reached */
 	WAIT_QOS_TIME_LIMIT	/* QOS time limit reached */
@@ -1506,7 +1506,7 @@ typedef struct job_step_info_response_msg {
 
 typedef struct {
    	char *node_name;
-        uint32_t *pid;
+	uint32_t *pid;
 	uint32_t pid_cnt;
 } job_step_pids_t;
 
@@ -1643,13 +1643,21 @@ typedef struct acct_gather_energy_req_msg {
 #define PART_FLAG_REQ_RESV_CLR	0x1000	/* Clear RES_REQ partition flag */
 
 typedef struct partition_info {
-	char *allow_alloc_nodes;/* list names of allowed allocating nodes */
+	char *allow_alloc_nodes;/* list names of allowed allocating
+				 * nodes */
+	char *allow_accounts;   /* comma delimited list of accounts,
+				 * null indicates all */
 	char *allow_groups;	/* comma delimited list of groups,
+				 * null indicates all */
+	char *allow_qos;	/* comma delimited list of qos,
 				 * null indicates all */
 	char *alternate; 	/* name of alternate partition */
 	uint16_t cr_type;	/* see CR_* values */
 	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
+	char *deny_accounts;    /* comma delimited list of denied accounts */
+	char *deny_groups;      /* comma delimited list of denied groups */
+	char *deny_qos;		/* comma delimited list of denied qos */
 	uint16_t flags;		/* see PART_FLAG_* above */
 	uint32_t grace_time; 	/* preemption grace time in seconds */
 	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
@@ -2168,7 +2176,7 @@ typedef struct slurmd_status_msg {
 	time_t last_slurmctld_msg;	/* time of last slurmctld message */
 	uint16_t slurmd_debug;		/* logging level */
 	uint16_t actual_cpus;		/* actual logical processor count */
-	uint16_t actual_boards;  	/* actual total boards count      */
+	uint16_t actual_boards;	 	/* actual total boards count      */
 	uint16_t actual_sockets;	/* actual total sockets count     */
 	uint16_t actual_cores;		/* actual core per socket count   */
 	uint16_t actual_threads;	/* actual thread per core count */

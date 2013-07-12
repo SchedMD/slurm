@@ -75,14 +75,19 @@ enum {
 /* These need to be in alpha order (except POS and CNT) */
 enum {
 	SORTID_POS = POS_LOC,
+	SORTID_ALLOW_ACCOUNTS,
+	SORTID_ALLOW_GROUPS,
+	SORTID_ALLOW_QOS,
 	SORTID_ALTERNATE,
 	SORTID_COLOR,
 	SORTID_COLOR_INX,
 	SORTID_CPUS,
 	SORTID_DEFAULT,
+	SORTID_DENY_ACCOUNTS,
+	SORTID_DENY_GROUPS,
+	SORTID_DENY_QOS,
 	SORTID_FEATURES,
 	SORTID_GRACE_TIME,
-	SORTID_GROUPS,
 	SORTID_HIDDEN,
 	SORTID_JOB_SIZE,
 	SORTID_MAX_CPUS_PER_NODE,
@@ -161,7 +166,17 @@ static display_data_t display_data_part[] = {
 	 create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE, EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_GROUPS, "Groups Allowed", FALSE,
+	{G_TYPE_STRING, SORTID_ALLOW_ACCOUNTS, "Accounts Allowed", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_ALLOW_GROUPS, "Groups Allowed", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_ALLOW_QOS, "Qos Allowed", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_DENY_ACCOUNTS, "Accounts Denied", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_DENY_GROUPS, "Groups Denied", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_DENY_QOS, "Qos Denied", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_ALLOWED, "Nodes Allowed Allocating", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
@@ -223,7 +238,17 @@ static display_data_t create_data_part[] = {
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_GROUPS, "Groups Allowed", FALSE,
+	{G_TYPE_STRING, SORTID_ALLOW_ACCOUNTS, "Accounts Allowed", FALSE,
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_ALLOW_GROUPS, "Groups Allowed", FALSE,
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_ALLOW_QOS, "Qos Allowed", FALSE,
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_DENY_ACCOUNTS, "Accounts Denied", FALSE,
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_DENY_GROUPS, "Groups Denied", FALSE,
+	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_DENY_QOS, "Qos Denied", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_NODES_ALLOWED, "Nodes Allowed Allocating", FALSE,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
@@ -589,9 +614,29 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 			goto return_error;
 		type = "share";
 		break;
-	case SORTID_GROUPS:
+	case SORTID_ALLOW_ACCOUNTS:
+		type = "accounts";
+		part_msg->allow_accounts = xstrdup(new_text);
+		break;
+	case SORTID_ALLOW_GROUPS:
 		type = "groups";
 		part_msg->allow_groups = xstrdup(new_text);
+		break;
+	case SORTID_ALLOW_QOS:
+		type = "qos";
+		part_msg->allow_qos = xstrdup(new_text);
+		break;
+	case SORTID_DENY_ACCOUNTS:
+		type = "deny account";
+		part_msg->deny_accounts = xstrdup(new_text);
+		break;
+	case SORTID_DENY_GROUPS:
+		type = "deny groups";
+		part_msg->deny_groups = xstrdup(new_text);
+		break;
+	case SORTID_DENY_QOS:
+		type = "deny qos";
+		part_msg->deny_qos = xstrdup(new_text);
 		break;
 	case SORTID_NODES_ALLOWED:
 		type = "allowed alloc nodes";
@@ -923,11 +968,41 @@ static void _layout_part_record(GtkTreeView *treeview,
 		case SORTID_GRACE_TIME:
 			limit_set = part_ptr->grace_time;
 			break;
-		case SORTID_GROUPS:
+		case SORTID_ALLOW_ACCOUNTS:
+			if (part_ptr->allow_accounts)
+				temp_char = part_ptr->allow_accounts;
+			else
+				temp_char = "all";
+			break;
+		case SORTID_ALLOW_GROUPS:
 			if (part_ptr->allow_groups)
 				temp_char = part_ptr->allow_groups;
 			else
 				temp_char = "all";
+			break;
+		case SORTID_ALLOW_QOS:
+			if (part_ptr->allow_qos)
+				temp_char = part_ptr->allow_qos;
+			else
+				temp_char = "all";
+			break;
+		case SORTID_DENY_ACCOUNTS:
+			if (part_ptr->deny_accounts)
+				temp_char = part_ptr->deny_accounts;
+			else
+				temp_char = "none";
+			break;
+		case SORTID_DENY_GROUPS:
+			if (part_ptr->deny_groups)
+				temp_char = part_ptr->deny_groups;
+			else
+				temp_char = "none";
+			break;
+		case SORTID_DENY_QOS:
+			if (part_ptr->deny_qos)
+				temp_char = part_ptr->deny_qos;
+			else
+				temp_char = "none";
 			break;
 		case SORTID_HIDDEN:
 			if (part_ptr->flags & PART_FLAG_HIDDEN)
@@ -1076,7 +1151,9 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	char tmp_prio[40], tmp_size[40], tmp_share_buf[40], tmp_time[40];
 	char tmp_max_nodes[40], tmp_min_nodes[40], tmp_grace[40];
 	char tmp_cpu_cnt[40], tmp_node_cnt[40], tmp_max_cpus_per_node[40];
-	char *tmp_alt, *tmp_default, *tmp_groups, *tmp_hidden;
+	char *tmp_alt, *tmp_default, *tmp_accounts, *tmp_groups, *tmp_hidden;
+	char *tmp_deny_accounts, *tmp_deny_groups;
+	char *tmp_qos, *tmp_deny_qos;
 	char *tmp_root, *tmp_share, *tmp_state;
 	uint16_t tmp_preempt;
 	partition_info_t *part_ptr = sview_part_info->part_ptr;
@@ -1098,10 +1175,35 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	else
 		tmp_default = "no";
 
+	if (part_ptr->allow_accounts)
+		tmp_accounts = part_ptr->allow_accounts;
+	else
+		tmp_accounts = "all";
+
 	if (part_ptr->allow_groups)
 		tmp_groups = part_ptr->allow_groups;
 	else
 		tmp_groups = "all";
+
+	if (part_ptr->allow_qos)
+		tmp_qos = part_ptr->allow_qos;
+	else
+		tmp_qos = "all";
+
+	if (part_ptr->deny_accounts)
+		tmp_deny_accounts = part_ptr->deny_accounts;
+	else
+		tmp_deny_accounts = "none";
+
+	if (part_ptr->deny_groups)
+		tmp_deny_groups = part_ptr->deny_groups;
+	else
+		tmp_deny_groups = "none";
+
+	if (part_ptr->deny_qos)
+		tmp_deny_qos = part_ptr->deny_qos;
+	else
+		tmp_deny_qos = "none";
 
 	if (part_ptr->flags & PART_FLAG_HIDDEN)
 		tmp_hidden = "yes";
@@ -1202,7 +1304,12 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			   SORTID_DEFAULT,    tmp_default,
 			   SORTID_FEATURES,   "",
 			   SORTID_GRACE_TIME, tmp_grace,
-			   SORTID_GROUPS,     tmp_groups,
+			   SORTID_ALLOW_ACCOUNTS, tmp_accounts,
+			   SORTID_ALLOW_GROUPS, tmp_groups,
+			   SORTID_ALLOW_QOS,  tmp_qos,
+			   SORTID_DENY_ACCOUNTS, tmp_deny_accounts,
+			   SORTID_DENY_GROUPS, tmp_deny_groups,
+			   SORTID_DENY_QOS,   tmp_deny_qos,
 			   SORTID_HIDDEN,     tmp_hidden,
 			   SORTID_JOB_SIZE,   tmp_size,
 			   SORTID_MAX_CPUS_PER_NODE, tmp_max_cpus_per_node,
@@ -2140,7 +2247,17 @@ extern GtkListStore *create_model_part(int type)
 		gtk_list_store_set(model, &iter,
 				   0, "exclusive", 1, SORTID_SHARE, -1);
 		break;
-	case SORTID_GROUPS:
+	case SORTID_ALLOW_ACCOUNTS:
+		break;
+	case SORTID_ALLOW_GROUPS:
+		break;
+	case SORTID_ALLOW_QOS:
+		break;
+	case SORTID_DENY_ACCOUNTS:
+		break;
+	case SORTID_DENY_GROUPS:
+		break;
+	case SORTID_DENY_QOS:
 		break;
 	case SORTID_NODELIST:
 		break;
