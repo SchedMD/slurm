@@ -63,8 +63,8 @@ plus dinner on Wednesday evening.<br><br>
  </tr>
 
 <tr>
-  <td width="15%" bgcolor="#F0F1C9">08:30 - 09:00</td>
-  <td width="85%" colspan="3" bgcolor="#F0F1C9">&nbsp;Registration / Refreshments</td>
+  <td width="15%" bgcolor="#F0F1C9">08:00 - 09:00</td>
+  <td width="85%" colspan="3" bgcolor="#F0F1C9">&nbsp;Registration / Breakfast</td>
  </tr>
 
 <tr>
@@ -160,6 +160,11 @@ plus dinner on Wednesday evening.<br><br>
 </tr>
 
 <tr>
+  <td width="15%" bgcolor="#F0F1C9">08:00 - 08:30</td>
+  <td width="85%" colspan="3" bgcolor="#F0F1C9">&nbsp;Registration / Breakfast</td>
+ </tr>
+
+<tr>
   <td width="15%">08:30 - 09:00</td>
   <td width="15%">&nbsp;Technical</td>
   <td width="25%">&nbsp;Morris Jette, David Bigagli, Danny Auble (SchedMD)</td>
@@ -238,7 +243,7 @@ plus dinner on Wednesday evening.<br><br>
 <tr>
   <td width="15%">14:20 - 14:40</td>
   <td width="15%">&nbsp;Site Report</td>
-  <td width="25%">&nbsp;Dr. Ulf Markwardtn (Technische Universitat Dresden)</td>
+  <td width="25%">&nbsp;Dr. Ulf Markwardt (Technische Universitat Dresden)</td>
   <td width="45%">&nbsp;Technische Universitat Dresden Site Report</td>
 </tr>
 
