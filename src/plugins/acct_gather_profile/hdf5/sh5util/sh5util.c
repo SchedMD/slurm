@@ -767,7 +767,7 @@ static void _merge_node_step_data(hid_t fid_job, char* file_name, int nodeIndex,
 	return;
 }
 
-static void _merge_step_files()
+static void _merge_step_files(void)
 {
 	hid_t 	fid_job = -1, jgid_step = -1, jgid_nodes = -1, jgid_tasks = -1;
 	DIR    *dir;
@@ -784,20 +784,20 @@ static void _merge_step_files()
 	bool	found_files = false;
 
 	sprintf(step_dir, "%s/%s", params.dir, params.user);
-	while (nodex != 0 && (max_step==-1 || stepx<=max_step)) {
+	while (nodex != 0 && (max_step == -1 || stepx <= max_step)) {
 		if (!(dir = opendir(step_dir))) {
-			error("opendir for job profile directory): %m");
+			error("opendir for job profile directory: %m");
 			exit(1);
 		}
 		nodex = 0;
 		while ((de = readdir(dir))) {
-			strcpy(file_name,de->d_name);
+			strcpy(file_name, de->d_name);
 			if (file_name[0] == '.')
 				continue; // Not HDF5 file
 			pos_char = strstr(file_name,".h5");
 			if (!pos_char) {
 				error("error processing this file, %s, "
-				      "(not .h5", de->d_name);
+				      "(not .h5)", de->d_name);
 				continue; // Not HDF5 file
 			}
 			*pos_char = 0; // truncate .hf
@@ -805,21 +805,21 @@ static void _merge_step_files()
 			if (!pos_char)
 				continue; // not right format
 			*pos_char = 0; // make jobid string
-			jobid = strtol(file_name,NULL,10);
+			jobid = strtol(file_name, NULL, 10);
 			if (jobid != params.job_id)
 				continue; // not desired job
-			stepno = pos_char+1;
+			stepno = pos_char + 1;
 			pos_char = strchr(stepno,'_');
 			if (!pos_char) {
 				continue; // not right format
 			}
 			*pos_char = 0; // make stepid string
-			stepid = strtol(pos_char,NULL,10);
+			stepid = strtol(pos_char, NULL, 10);
 			if (stepid > max_step)
 				max_step = stepid;
 			if (stepid != stepx)
 				continue; // Not step we are merging
-			step_node = pos_char+1;
+			step_node = pos_char + 1;
 			// Found a node step file for this job
 			if (!found_files) {
 				// Need to create the job file
