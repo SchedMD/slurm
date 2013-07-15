@@ -572,7 +572,7 @@ list_sort (List l, ListCmpF f)
                     e = p;
                     p = p->next;
                     psize--;
-                 } else if (f(p->data,q->data) < 0) {
+                 } else if (f(p->data,q->data) <= 0) {
                     e = p;
                     p = p->next;
                     psize--;
