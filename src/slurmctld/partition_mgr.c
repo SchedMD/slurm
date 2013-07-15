@@ -871,6 +871,7 @@ int init_part_conf(void)
 	xfree(default_part.alternate);
 	xfree(default_part.deny_accounts);
 	xfree(default_part.deny_groups);
+	xfree(default_part.deny_uids);
 	xfree(default_part.deny_qos);
 	FREE_NULL_BITMAP(default_part.node_bitmap);
 
@@ -920,6 +921,7 @@ static void _list_delete_part(void *part_entry)
 	xfree(part_ptr->alternate);
 	xfree(part_ptr->deny_accounts);
 	xfree(part_ptr->deny_groups);
+	xfree(part_ptr->deny_uids);
 	xfree(part_ptr->deny_qos);
 	xfree(part_ptr->name);
 	xfree(part_ptr->nodes);
@@ -1483,10 +1485,22 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 
 	if (part_desc->deny_groups != NULL) {
 		xfree(part_ptr->deny_groups);
-		part_ptr->deny_groups = part_desc->deny_groups;
-		part_desc->deny_groups = NULL;
-		info("update_part: setting deny_groups to %s for partition %s",
-		     part_ptr->deny_groups, part_desc->name);
+		xfree(part_ptr->deny_uids);
+		if ((strcasecmp(part_desc->deny_groups, "NONE") == 0) ||
+		    (part_desc->deny_groups[0] == '\0')) {
+			info("update_part: setting deny_groups to NONE for "
+				"partition %s",
+				part_desc->name);
+		} else {
+			part_ptr->deny_groups = part_desc->deny_groups;
+			part_desc->deny_groups = NULL;
+			info("update_part: setting deny_groups to %s for "
+				"partition %s",
+				part_ptr->deny_groups, part_desc->name);
+			part_ptr->deny_uids =
+				_get_groups_members(part_ptr->deny_groups);
+			clear_group_cache();
+		}
 	}
 
 	if (part_desc->deny_qos != NULL) {
@@ -1562,18 +1576,25 @@ extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
 {
 	int i = 0;
 
-	if (part_ptr->allow_groups == NULL)
-		return 1;	/* all users allowed */
 	if ((run_uid == 0) || (run_uid == getuid()))
 		return 1;	/* super-user can run anywhere */
-	if (part_ptr->allow_uids == NULL)
-		return 0;	/* no non-super-users in the list */
-
-	for (i = 0; part_ptr->allow_uids[i]; i++) {
-		if (part_ptr->allow_uids[i] == run_uid)
-			return 1;
+	
+	if (part_ptr->allow_uids) {
+		for (i = 0; part_ptr->allow_uids[i]; i++) {
+			if (part_ptr->allow_uids[i] == run_uid)
+				return 1;
+		}
+		return 0;		/* not explicitly allowed */
 	}
-	return 0;		/* not in this group's list */
+	if (part_ptr->deny_uids) {
+		for (i = 0; part_ptr->deny_uids[i]; i++) {
+			if (part_ptr->deny_uids[i] == run_uid)
+				return 0;
+		}
+		return 1;		/* not explicitly denied */
+	}
+
+	return 1;		/* no group filtering */
 
 }
 
@@ -1607,8 +1628,8 @@ extern int validate_alloc_node(struct part_record *part_ptr, char* alloc_node)
 }
 
 /*
- * load_part_uid_allow_list - reload the allow_uid list of partitions
- *	if required (updated group file or force set)
+ * load_part_uid_allow_list - reload the allow_uids and deny_uids lists of
+ *	partitions if required (updated group file or force set)
  * IN force - if set then always reload the allow_uid list
  */
 void load_part_uid_allow_list(int force)
@@ -1632,6 +1653,9 @@ void load_part_uid_allow_list(int force)
 		xfree(part_ptr->allow_uids);
 		part_ptr->allow_uids =
 			_get_groups_members(part_ptr->allow_groups);
+		xfree(part_ptr->deny_uids);
+		part_ptr->deny_uids =
+			_get_groups_members(part_ptr->deny_groups);
 	}
 	clear_group_cache();
 	list_iterator_destroy(part_iterator);

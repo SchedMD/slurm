@@ -302,8 +302,7 @@ struct part_record {
 				 * NULL indicates all */
 	char *allow_groups;	/* comma delimited list of groups,
 				 * NULL indicates all */
-	uid_t *allow_uids;	/* zero terminated list of allowed
-				 * users */
+	uid_t *allow_uids;	/* zero terminated list of allowed users */
 	char *allow_qos;	/* comma delimited list of qos,
 				 * NULL indicates all */
 	bitstr_t *allow_qos_bitstr; /* (DON'T PACK) assocaited with
@@ -313,6 +312,7 @@ struct part_record {
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	char *deny_accounts;	/* comma delimited list of denied accounts */
 	char *deny_groups;	/* comma delimited list of denied groups */
+	uid_t *deny_uids;	/* zero terminated list of deny users */
 	char *deny_qos;		/* comma delimited list of denied qos */
 	bitstr_t *deny_qos_bitstr; /* (DON'T PACK) associated with
 				 * char *deny_groups but used internallly */
