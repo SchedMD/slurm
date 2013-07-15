@@ -2075,6 +2075,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->ext_sensors_type);
 	xfree (ctl_conf_ptr->gres_plugins);
 	xfree (ctl_conf_ptr->health_check_program);
+	xfree (ctl_conf_ptr->job_acct_gather_freq);
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_ckpt_dir);
 	xfree (ctl_conf_ptr->job_comp_host);
@@ -2192,8 +2193,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->health_check_interval	= 0;
 	xfree(ctl_conf_ptr->health_check_program);
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
-	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_acct_gather_freq);
+	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_ckpt_dir);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_pass);
