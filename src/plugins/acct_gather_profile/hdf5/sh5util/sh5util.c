@@ -784,7 +784,7 @@ static void _merge_step_files(void)
 	bool	found_files = false;
 
 	sprintf(step_dir, "%s/%s", params.dir, params.user);
-	while (nodex != 0 && (max_step == -1 || stepx <= max_step)) {
+	while (max_step == -1 || stepx <= max_step) {
 		if (!(dir = opendir(step_dir))) {
 			error("opendir for job profile directory: %m");
 			exit(1);
@@ -814,7 +814,7 @@ static void _merge_step_files(void)
 				continue; // not right format
 			}
 			*pos_char = 0; // make stepid string
-			stepid = strtol(pos_char, NULL, 10);
+			stepid = strtol(stepno, NULL, 10);
 			if (stepid > max_step)
 				max_step = stepid;
 			if (stepid != stepx)
