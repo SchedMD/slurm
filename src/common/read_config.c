@@ -982,11 +982,20 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			s_p_get_string(&p->allow_qos, "AllowQos", dflt);
 		if (p->allow_qos && (strcasecmp(p->allow_qos, "ALL") == 0))
 			xfree(p->allow_qos);
+
 		if (!s_p_get_string(&p->deny_accounts, "DenyAccounts", tbl))
 			s_p_get_string(&p->deny_accounts, "DenyAccounts", dflt);
+		if (p->allow_accounts && p->deny_accounts) {
+			error("Both AllowAccounts and DenyAccounts are "
+			      "defined, DenyAccounts will be ignored");
+		}
 
 		if (!s_p_get_string(&p->deny_qos, "DenyQos", tbl))
 			s_p_get_string(&p->deny_qos, "DenyQos", dflt);
+		if (p->allow_qos && p->deny_qos) {
+			error("Both AllowQos and DenyQos are defined, "
+			      "DenyQos will be ignored");
+		}
 
 		if (!s_p_get_string(&p->allow_alloc_nodes, "AllocNodes", tbl)) {
 			s_p_get_string(&p->allow_alloc_nodes, "AllocNodes",

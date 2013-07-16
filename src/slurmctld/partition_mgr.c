@@ -1386,13 +1386,13 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		xfree(part_ptr->allow_accounts);
 		if ((strcasecmp(part_desc->allow_accounts, "ALL") == 0) ||
 		    (part_desc->allow_accounts[0] == '\0')) {
-			info ("update_part: setting allow_accounts to ALL for "
+			info ("update_part: setting AllowAccounts to ALL for "
 			      "partition %s",
 			      part_desc->name);
 		} else {
 			part_ptr->allow_accounts = part_desc->allow_accounts;
 			part_desc->allow_accounts = NULL;
-			info("update_part: setting allow_accounts to %s for "
+			info("update_part: setting AllowAccounts to %s for "
 			     "partition %s",
 			     part_ptr->allow_accounts, part_desc->name);
 		}
@@ -1424,13 +1424,13 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		xfree(part_ptr->allow_qos);
 		if ((strcasecmp(part_desc->allow_qos, "ALL") == 0) ||
 		    (part_desc->allow_qos[0] == '\0')) {
-			info("update_partition: setting allow_qos to ALL for "
+			info("update_partition: setting AllowQOS to ALL for "
 			     "partition %s",
 			     part_desc->name);
 		} else {
 			part_ptr->allow_qos = part_desc->allow_qos;
 			part_desc->allow_qos = NULL;
-			info("update_part: setting allow_qos to %s for "
+			info("update_part: setting AllowQOS to %s for "
 			     "partition %s",
 			     part_ptr->allow_qos, part_desc->name);
 		}
@@ -1488,11 +1488,15 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 			xfree(part_desc->deny_accounts);
 		part_ptr->deny_accounts = part_desc->deny_accounts;
 		part_desc->deny_accounts = NULL;
-		info("update_part: setting deny_accounts to %s for "
+		info("update_part: setting DenyAccounts to %s for "
 		     "partition %s",
 		     part_ptr->deny_accounts, part_desc->name);
 		accounts_list_build(part_ptr->deny_accounts,
 				    &part_ptr->deny_account_array);
+	}
+	if (part_desc->allow_accounts && part_desc->deny_accounts) {
+		error("Both AllowAccounts and DenyAccounts are "
+		      "defined, DenyAccounts will be ignored");
 	}
 
 	if (part_desc->deny_qos != NULL) {
@@ -1501,9 +1505,13 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 			xfree(part_ptr->deny_qos);
 		part_ptr->deny_qos = part_desc->deny_qos;
 		part_desc->deny_qos = NULL;
-		info("update_part: setting deny_qos to %s for partition %s",
+		info("update_part: setting DenyQOS to %s for partition %s",
 		     part_ptr->deny_qos, part_desc->name);
 		qos_list_build(part_ptr->deny_qos, &part_ptr->deny_qos_bitstr);
+	}
+	if (part_desc->allow_qos && part_desc->deny_qos) {
+		error("Both AllowQOS and DenyQOS are defined, "
+		      "DenyQOS will be ignored");
 	}
 
 	if (part_desc->max_mem_per_cpu != NO_VAL) {
