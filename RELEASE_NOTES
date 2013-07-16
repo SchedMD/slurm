@@ -44,6 +44,11 @@ HIGHLIGHTS
  - Much faster throughput for job step execution with --exclusive option. The
    srun process is notified when resources become available rather than
    periodic polling.
+ - Added "MaxCPUsPerNode" partition configuration parameter. This can be
+   especially useful to schedule GPUs. For example a node can be associated
+   with two Slurm partitions (e.g. "cpu" and "gpu") and the partition/queue
+   "cpu" could be limited to only a subset of the node's CPUs, insuring that
+   one or more CPUs would be available to jobs in the "gpu" partition/queue.
  - Advanced reservations with hostname and core counts now supports asymetric
    reservations (e.g. specific different core count for each node).
  - Added slurmctld/dynalloc plugin for MapReduce+ support. New versions of
@@ -80,11 +85,6 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
    more queued jobs to be considered for backfill scheduling.
  - Added options for front end nodes of "AllowGroups", "AllowUsers",
    "DenyGroups", and "DenyUsers".
- - Added "MaxCPUsPerNode" partition configuration parameter. This can be
-   especially useful to schedule GPUs. For example a node can be associated
-   with two Slurm partitions (e.g. "cpu" and "gpu") and the partition/queue
-   "cpu" could be limited to only a subset of the node's CPUs, insuring that
-   one or more CPUs would be available to jobs in the "gpu" partition/queue.
  - Added "PriorityFlags" value of "SMALL_RELATIVE_TO_TIME". If set, the job's
    size component will be based upon not the job size alone, but the job's
    size divided by it's time limit.
