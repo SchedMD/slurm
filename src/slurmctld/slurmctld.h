@@ -302,8 +302,7 @@ struct part_record {
 				 * NULL indicates all */
 	char *allow_groups;	/* comma delimited list of groups,
 				 * NULL indicates all */
-	uid_t *allow_uids;	/* zero terminated list of allowed
-				 * users */
+	uid_t *allow_uids;	/* zero terminated list of allowed user IDs */
 	char *allow_qos;	/* comma delimited list of qos,
 				 * NULL indicates all */
 	bitstr_t *allow_qos_bitstr; /* (DON'T PACK) assocaited with
@@ -1485,8 +1484,8 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 
 /*
  * pack_ctld_job_step_info_response_msg - packs job step info
- * IN job_id - specific id or zero for all
- * IN step_id - specific id or zero for all
+ * IN job_id - specific id or NO_VAL for all
+ * IN step_id - specific id or NO_VAL for all
  * IN uid - user issuing request
  * IN show_flags - job step filtering options
  * OUT buffer - location to store data, pointers automatically advanced
