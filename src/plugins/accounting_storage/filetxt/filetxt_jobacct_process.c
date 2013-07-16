@@ -996,7 +996,7 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		}
 	foundgid:
 
-		if (job_cond->jobname_list
+		if ((rec_type == JOB_START) && job_cond->jobname_list
 		    && list_count(job_cond->jobname_list)) {
 			itr = list_iterator_create(job_cond->jobname_list);
 			while((object = list_next(itr))) {
@@ -1035,7 +1035,7 @@ extern List filetxt_jobacct_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		}
 	foundjob:
 
-		if (job_cond->partition_list
+		if ((rec_type == JOB_START) && job_cond->partition_list
 		    && list_count(job_cond->partition_list)) {
 			itr = list_iterator_create(job_cond->partition_list);
 			while((object = list_next(itr)))
@@ -1241,7 +1241,7 @@ extern int filetxt_jobacct_process_archive(slurmdb_archive_cond_t *arch_cond)
 				list_append(keep_list, exp_rec);
 				continue;
 			}
-			if (job_cond->partition_list
+			if ((rec_type == JOB_START) && job_cond->partition_list
 			    && list_count(job_cond->partition_list)) {
 				itr = list_iterator_create(
 					job_cond->partition_list);

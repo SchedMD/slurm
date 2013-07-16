@@ -18,6 +18,10 @@ documents those changes that are of interest to users and admins.
     users.
  -- Fix issue with job name being truncated to 24 chars when sending a mail
     message.
+ -- Fix minor issues with spec file, missing files and including files
+    erroneously on a bluegene system.
+ -- sacct - fix --name and --partition options when using
+    accounting_storage/filetxt.
 
 * Changes in Slurm 2.6.0
 ========================

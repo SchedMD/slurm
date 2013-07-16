@@ -34,6 +34,7 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
     DenyAccounts and DenyQOS.
  -- SelectType: select/cray has been renamed select/alps.
 
+
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================
 
