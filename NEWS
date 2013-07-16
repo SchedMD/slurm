@@ -10,7 +10,7 @@ documents those changes that are of interest to users and admins.
  -- Defer sending SIGKILL signal to processes while core dump in progress.
  -- Added JobContainerPlugin configuration parameter and plugin infrastructure.
  -- Added partition configuration parameters AllowAccounts, AllowQOS,
-    DenyAccounts, DenyGroups and DenyQOS. (Implementation incomplete)
+    DenyAccounts and DenyQOS.
 
 * Changes in Slurm 2.6.1
 ========================

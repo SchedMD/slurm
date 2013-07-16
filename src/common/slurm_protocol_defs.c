@@ -2255,7 +2255,6 @@ extern void slurm_free_partition_info_members(partition_info_t * part)
 		xfree(part->allow_qos);
 		xfree(part->alternate);
 		xfree(part->deny_accounts);
-		xfree(part->deny_groups);
 		xfree(part->deny_qos);
 		xfree(part->name);
 		xfree(part->nodes);

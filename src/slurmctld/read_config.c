@@ -664,11 +664,6 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 				    &part_ptr->deny_account_array);
 	}
 
-	if (part->deny_groups) {
-		xfree(part_ptr->deny_groups);
-		part_ptr->deny_groups = xstrdup(part->deny_groups);
-	}
-
 	if (part->deny_qos) {
 		xfree(part_ptr->deny_qos);
 		part_ptr->deny_qos = xstrdup(part->deny_qos);
@@ -1300,14 +1295,6 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				accounts_list_build(part_ptr->deny_accounts,
 						&part_ptr->deny_account_array);
 			}
-			if (_strcmp(part_ptr->deny_groups,
-				    old_part_ptr->deny_groups)) {
-				error("Partition %s DenyGroups differs from "
-				      "slurm.conf", part_ptr->name);
-				xfree(part_ptr->deny_groups);
-				part_ptr->deny_groups = xstrdup(old_part_ptr->
-								deny_groups);
-			}
 			if (_strcmp(part_ptr->deny_qos,
 				    old_part_ptr->deny_qos)) {
 				error("Partition %s DenyQos differs from "
@@ -1458,8 +1445,6 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 							  deny_accounts);
 			accounts_list_build(part_ptr->deny_accounts,
 					 &part_ptr->deny_account_array);
-			part_ptr->deny_groups = xstrdup(old_part_ptr->
-							deny_groups);
 			part_ptr->deny_qos = xstrdup(old_part_ptr->
 						     deny_qos);
 			qos_list_build(part_ptr->deny_qos,

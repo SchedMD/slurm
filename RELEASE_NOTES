@@ -31,7 +31,7 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
  -- Added JobContainerPlugin configuration parameter and plugin infrastructure.
  -- Added partition configuration parameters AllowAccounts, AllowQOS,
-    DenyAccounts, DenyGroups and DenyQOS.
+    DenyAccounts and DenyQOS.
  -- SelectType: select/cray has been renamed select/alps.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)

@@ -926,7 +926,6 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"Default", S_P_BOOLEAN}, /* YES or NO */
 		{"DefaultTime", S_P_STRING},
 		{"DenyAccounts", S_P_STRING},
-		{"DenyGroups", S_P_STRING},
 		{"DenyQos", S_P_STRING},
 		{"DisableRootJobs", S_P_BOOLEAN}, /* YES or NO */
 		{"GraceTime", S_P_UINT32},
@@ -985,9 +984,6 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			xfree(p->allow_qos);
 		if (!s_p_get_string(&p->deny_accounts, "DenyAccounts", tbl))
 			s_p_get_string(&p->deny_accounts, "DenyAccounts", dflt);
-
-		if (!s_p_get_string(&p->deny_groups, "DenyGroups", tbl))
-			s_p_get_string(&p->deny_groups, "DenyGroups", dflt);
 
 		if (!s_p_get_string(&p->deny_qos, "DenyQos", tbl))
 			s_p_get_string(&p->deny_qos, "DenyQos", dflt);
@@ -1230,7 +1226,6 @@ static void _destroy_partitionname(void *ptr)
 	xfree(p->allow_groups);
 	xfree(p->allow_qos);
 	xfree(p->deny_accounts);
-	xfree(p->deny_groups);
 	xfree(p->deny_qos);
 	xfree(p->alternate);
 	xfree(p->name);

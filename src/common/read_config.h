@@ -223,8 +223,6 @@ typedef struct slurm_conf_partition {
 			         * NULL indicates all */
 	char *deny_accounts;    /* comma delimited list of denied accounts,
 				 * NULL indicates all */
-	char *deny_groups;      /* comma delimited list of denied groups,
-				 * NULL indicates all */
 	char *deny_qos;		/* comma delimited list of denied qos,
 				 * NULL indicates all */
 	char *alternate;	/* name of alternate partition */

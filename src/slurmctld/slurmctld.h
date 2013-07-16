@@ -314,10 +314,9 @@ struct part_record {
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	char *deny_accounts;	/* comma delimited list of denied accounts */
 	char **deny_account_array; /* NULL terminated list of denied accounts */
-	char *deny_groups;	/* comma delimited list of denied groups */
 	char *deny_qos;		/* comma delimited list of denied qos */
 	bitstr_t *deny_qos_bitstr; /* (DON'T PACK) associated with
-				 * char *deny_groups but used internallly */
+				 * char *deny_qos but used internallly */
 	uint16_t flags;		/* see PART_FLAG_* in slurm.h */
 	uint32_t grace_time;	/* default preempt grace time in seconds */
 	uint32_t magic;		/* magic cookie to test data integrity */

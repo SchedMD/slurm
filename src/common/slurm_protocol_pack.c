@@ -2996,11 +2996,10 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 		packstr(msg->allow_accounts, buffer);
 		packstr(msg->allow_alloc_nodes, buffer);
 		packstr(msg->allow_groups, buffer);
-		packstr(msg->allow_qos, buffer);
+		packstr(msg->allow_qos,    buffer);
 		packstr(msg->alternate,    buffer);
 		packstr(msg->deny_accounts, buffer);
-		packstr(msg->deny_groups, buffer);
-		packstr(msg->deny_qos, buffer);
+		packstr(msg->deny_qos,     buffer);
 		packstr(msg->name,         buffer);
 		packstr(msg->nodes,        buffer);
 
@@ -3091,8 +3090,6 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer,
 		safe_unpackstr_xmalloc(&tmp_ptr->alternate, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->deny_accounts,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->deny_groups,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->deny_qos,
 				       &uint32_tmp, buffer);
@@ -3857,8 +3854,6 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer,
 				       buffer);
 		safe_unpackstr_xmalloc(&part->alternate, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&part->deny_accounts, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&part->deny_groups, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&part->deny_qos, &uint32_tmp,
 				       buffer);
