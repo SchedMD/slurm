@@ -1281,7 +1281,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_p = (struct step_record *)
 			list_next(step_iterator))) {
-			if (step_p->state != JOB_RUNNING)
+			if (step_p->state < JOB_RUNNING)
 				continue;
 			bit_or(nodes_idle, step_p->step_node_bitmap);
 			if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
@@ -3860,7 +3860,7 @@ extern void rebuild_step_bitmaps(struct job_record *job_ptr,
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = (struct step_record *)
 			   list_next (step_iterator))) {
-		if (step_ptr->state != JOB_RUNNING)
+		if (step_ptr->state < JOB_RUNNING)
 			continue;
 		gres_plugin_step_state_rebase(step_ptr->gres_list,
 					orig_job_node_bitmap,
