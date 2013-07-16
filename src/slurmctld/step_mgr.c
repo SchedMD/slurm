@@ -2556,13 +2556,14 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
  * IN job_id - specific id or NO_VAL for all
  * IN step_id - specific id or NO_VAL for all
  * IN uid - user issuing request
+ * IN gid - user issuing request
  * IN show_flags - job step filtering options
  * OUT buffer - location to store data, pointers automatically advanced
  * RET - 0 or error code
  * NOTE: MUST free_buf buffer
  */
 extern int pack_ctld_job_step_info_response_msg(
-	uint32_t job_id, uint32_t step_id, uid_t uid,
+	uint32_t job_id, uint32_t step_id, uid_t uid, gid_t gid,
 	uint16_t show_flags, Buf buffer, uint16_t protocol_version)
 {
 	ListIterator job_iterator;
@@ -2577,7 +2578,7 @@ extern int pack_ctld_job_step_info_response_msg(
 	pack_time(now, buffer);
 	pack32(steps_packed, buffer);	/* steps_packed placeholder */
 
-	part_filter_set(uid);
+	part_filter_set(uid, gid);
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {

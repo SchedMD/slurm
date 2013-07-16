@@ -711,31 +711,7 @@ static int _check_lua_script_functions()
 	return (rc);
 }
 
-static bool _user_can_use_part(uint32_t user_id, uint32_t submit_uid,
-			       struct part_record *part_ptr)
-{
-	int i;
-
-	if (user_id == 0) {
-		if (part_ptr->flags & PART_FLAG_NO_ROOT)
-			return false;
-		return true;
-	}
-
-	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && (submit_uid != 0))
-		return false;
-
-	if (part_ptr->allow_uids == NULL)
-		return true;	/* No user ID filters */
-
-	for (i=0; part_ptr->allow_uids[i]; i++) {
-		if (user_id == part_ptr->allow_uids[i])
-			return true;
-	}
-	return false;
-}
-
-static void _push_partition_list(uint32_t user_id, uint32_t submit_uid)
+static void _push_partition_list(uint32_t submit_uid, uint32_t group_id)
 {
 	int i = 1;
 	ListIterator part_iterator;
@@ -744,7 +720,7 @@ static void _push_partition_list(uint32_t user_id, uint32_t submit_uid)
 	lua_newtable(L);
 	part_iterator = list_iterator_create(part_list);
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
-		if (!_user_can_use_part(user_id, submit_uid, part_ptr))
+		if (!validate_group(part_ptr, submit_uid, group_id))
 			continue;
 		lua_pushlightuserdata (L, part_ptr);
 		lua_rawseti(L, -2, i++);
@@ -848,7 +824,7 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 		goto out;
 
 	_push_job_desc(job_desc);
-	_push_partition_list(job_desc->user_id, submit_uid);
+	_push_partition_list(submit_uid, job_desc->group_id);
 	lua_pushnumber (L, submit_uid);
 	_stack_dump("job_submit, before lua_pcall", L);
 	if (lua_pcall (L, 3, 1, 0) != 0) {
@@ -887,7 +863,7 @@ extern int job_modify(struct job_descriptor *job_desc,
 
 	_push_job_desc(job_desc);
 	_push_job_rec(job_ptr);
-	_push_partition_list(job_ptr->user_id, submit_uid);
+	_push_partition_list(submit_uid, job_ptr->group_id);
 	lua_pushnumber (L, submit_uid);
 	_stack_dump("job_modify, before lua_pcall", L);
 	if (lua_pcall (L, 4, 1, 0) != 0) {

@@ -88,11 +88,10 @@ static int    _build_part_bitmap(struct part_record *part_ptr);
 static int    _delete_part_record(char *name);
 static void   _dump_part_state(struct part_record *part_ptr,
 			       Buf buffer);
-static uid_t *_get_groups_members(char *group_names);
+static gid_t  *_get_group_ids(char *group_names);
 static time_t _get_group_tlm(void);
 static void   _list_delete_part(void *part_entry);
 static int    _open_part_state_file(char **state_file);
-static int    _uid_list_size(uid_t * uid_list_ptr);
 static void   _unlink_free_nodes(bitstr_t *old_bitmap,
 			struct part_record *part_ptr);
 
@@ -864,14 +863,14 @@ int init_part_conf(void)
 	default_part.cr_type	    = 0;
 	xfree(default_part.nodes);
 	xfree(default_part.allow_accounts);
+	xfree(default_part.allow_gids);
 	xfree(default_part.allow_groups);
 	xfree(default_part.allow_qos);
-	xfree(default_part.allow_uids);
 	xfree(default_part.allow_alloc_nodes);
 	xfree(default_part.alternate);
 	xfree(default_part.deny_accounts);
+	xfree(default_part.deny_gids);
 	xfree(default_part.deny_groups);
-	xfree(default_part.deny_uids);
 	xfree(default_part.deny_qos);
 	FREE_NULL_BITMAP(default_part.node_bitmap);
 
@@ -915,13 +914,13 @@ static void _list_delete_part(void *part_entry)
 
 	xfree(part_ptr->allow_accounts);
 	xfree(part_ptr->allow_alloc_nodes);
+	xfree(part_ptr->allow_gids);
 	xfree(part_ptr->allow_groups);
-	xfree(part_ptr->allow_uids);
 	xfree(part_ptr->allow_qos);
 	xfree(part_ptr->alternate);
 	xfree(part_ptr->deny_accounts);
+	xfree(part_ptr->deny_gids);
 	xfree(part_ptr->deny_groups);
-	xfree(part_ptr->deny_uids);
 	xfree(part_ptr->deny_qos);
 	xfree(part_ptr->name);
 	xfree(part_ptr->nodes);
@@ -953,7 +952,7 @@ int list_find_part(void *part_entry, void *key)
 
 /* part_filter_set - Set the partition's hidden flag based upon a user's
  * group access. This must be followed by a call to part_filter_clear() */
-extern void part_filter_set(uid_t uid)
+extern void part_filter_set(uid_t uid, gid_t gid)
 {
 	struct part_record *part_ptr;
 	ListIterator part_iterator;
@@ -962,7 +961,7 @@ extern void part_filter_set(uid_t uid)
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		if (part_ptr->flags & PART_FLAG_HIDDEN)
 			continue;
-		if (validate_group (part_ptr, uid) == 0) {
+		if (validate_group (part_ptr, uid, gid) == 0) {
 			part_ptr->flags |= PART_FLAG_HIDDEN;
 			part_ptr->flags |= PART_FLAG_HIDDEN_CLR;
 		}
@@ -994,12 +993,13 @@ extern void part_filter_clear(void)
  * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - partition filtering options
  * IN uid - uid of user making request (for partition filtering)
+ * IN gid - uid of user making request (for partition filtering)
  * global: part_list - global list of partition records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change slurm_load_part() in api/part_info.c if data format changes
  */
 extern void pack_all_part(char **buffer_ptr, int *buffer_size,
-			  uint16_t show_flags, uid_t uid,
+			  uint16_t show_flags, uid_t uid, gid_t gid,
 			  uint16_t protocol_version)
 {
 	ListIterator part_iterator;
@@ -1024,8 +1024,8 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		xassert (part_ptr->magic == PART_MAGIC);
 		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
-		    ((part_ptr->flags & PART_FLAG_HIDDEN)
-		     || (validate_group (part_ptr, uid) == 0)))
+		    ((part_ptr->flags & PART_FLAG_HIDDEN) ||
+		     (validate_group (part_ptr, uid, gid) == 0)))
 			continue;
 		pack_part(part_ptr, buffer, protocol_version);
 		parts_packed++;
@@ -1395,7 +1395,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 
 	if (part_desc->allow_groups != NULL) {
 		xfree(part_ptr->allow_groups);
-		xfree(part_ptr->allow_uids);
+		xfree(part_ptr->allow_gids);
 		if ((strcasecmp(part_desc->allow_groups, "ALL") == 0) ||
 		    (part_desc->allow_groups[0] == '\0')) {
 			info("update_part: setting allow_groups to ALL for "
@@ -1407,8 +1407,8 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 			info("update_part: setting allow_groups to %s for "
 				"partition %s",
 				part_ptr->allow_groups, part_desc->name);
-			part_ptr->allow_uids =
-				_get_groups_members(part_ptr->allow_groups);
+			part_ptr->allow_gids =
+				_get_group_ids(part_ptr->allow_groups);
 			clear_group_cache();
 		}
 	}
@@ -1485,7 +1485,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 
 	if (part_desc->deny_groups != NULL) {
 		xfree(part_ptr->deny_groups);
-		xfree(part_ptr->deny_uids);
+		xfree(part_ptr->deny_gids);
 		if ((strcasecmp(part_desc->deny_groups, "NONE") == 0) ||
 		    (part_desc->deny_groups[0] == '\0')) {
 			info("update_part: setting deny_groups to NONE for "
@@ -1497,8 +1497,8 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 			info("update_part: setting deny_groups to %s for "
 				"partition %s",
 				part_ptr->deny_groups, part_desc->name);
-			part_ptr->deny_uids =
-				_get_groups_members(part_ptr->deny_groups);
+			part_ptr->deny_gids =
+				_get_group_ids(part_ptr->deny_groups);
 			clear_group_cache();
 		}
 	}
@@ -1566,29 +1566,31 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 
 
 /*
- * validate_group - validate that the submit uid is authorized to run in
+ * validate_group - validate that the submit gid is authorized to run in
  *	this partition
  * IN part_ptr - pointer to a partition
  * IN run_uid - user to run the job as
+ * IN run_gid - group to run the job as
  * RET 1 if permitted to run, 0 otherwise
  */
-extern int validate_group(struct part_record *part_ptr, uid_t run_uid)
+extern int validate_group(struct part_record *part_ptr, uid_t run_uid,
+			  gid_t run_gid)
 {
 	int i = 0;
 
 	if ((run_uid == 0) || (run_uid == getuid()))
 		return 1;	/* super-user can run anywhere */
 	
-	if (part_ptr->allow_uids) {
-		for (i = 0; part_ptr->allow_uids[i]; i++) {
-			if (part_ptr->allow_uids[i] == run_uid)
+	if (part_ptr->allow_gids) {
+		for (i = 0; part_ptr->allow_gids[i]; i++) {
+			if (part_ptr->allow_gids[i] == run_gid)
 				return 1;
 		}
 		return 0;		/* not explicitly allowed */
 	}
-	if (part_ptr->deny_uids) {
-		for (i = 0; part_ptr->deny_uids[i]; i++) {
-			if (part_ptr->deny_uids[i] == run_uid)
+	if (part_ptr->deny_gids) {
+		for (i = 0; part_ptr->deny_gids[i]; i++) {
+			if (part_ptr->deny_gids[i] == run_uid)
 				return 0;
 		}
 		return 1;		/* not explicitly denied */
@@ -1650,12 +1652,12 @@ void load_part_uid_allow_list(int force)
 
 	part_iterator = list_iterator_create(part_list);
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
-		xfree(part_ptr->allow_uids);
-		part_ptr->allow_uids =
-			_get_groups_members(part_ptr->allow_groups);
-		xfree(part_ptr->deny_uids);
-		part_ptr->deny_uids =
-			_get_groups_members(part_ptr->deny_groups);
+		xfree(part_ptr->allow_gids);
+		part_ptr->allow_gids =
+			_get_group_ids(part_ptr->allow_groups);
+		xfree(part_ptr->deny_gids);
+		part_ptr->deny_gids =
+			_get_group_ids(part_ptr->deny_groups);
 	}
 	clear_group_cache();
 	list_iterator_destroy(part_iterator);
@@ -1664,18 +1666,18 @@ void load_part_uid_allow_list(int force)
 
 
 /*
- * _get_groups_members - identify the users in a list of group names
+ * _get_group_ids - translate a comma delimited list of group names into
+ *	a zero terminated group ID list
  * IN group_names - a comma delimited list of group names
  * RET a zero terminated list of its UIDs or NULL on error
  * NOTE: User root has implicitly access to every group
  * NOTE: The caller must xfree non-NULL return values
  */
-uid_t *_get_groups_members(char *group_names)
+gid_t *_get_group_ids(char *group_names)
 {
-	uid_t *group_uids = NULL;
-	uid_t *temp_uids  = NULL;
-	int i, j, k;
 	char *tmp_names = NULL, *name_ptr = NULL, *one_group_name = NULL;
+	int gid_count = 0;
+	gid_t gid, *gid_list = NULL;
 
 	if (group_names == NULL)
 		return NULL;
@@ -1683,25 +1685,17 @@ uid_t *_get_groups_members(char *group_names)
 	tmp_names = xstrdup(group_names);
 	one_group_name = strtok_r(tmp_names, ",", &name_ptr);
 	while (one_group_name) {
-		temp_uids = get_group_members(one_group_name);
-		if (temp_uids == NULL)
-			;
-		else if (group_uids == NULL) {
-			group_uids = temp_uids;
+		if (gid_from_string(one_group_name, &gid) < 0) {
+			error("Invalid group name ignored(%s)", one_group_name);
 		} else {
-			/* concatenate the uid_lists and free the new one */
-			i = _uid_list_size(group_uids);
-			j = _uid_list_size(temp_uids);
-			xrealloc(group_uids, sizeof(uid_t) * (i + j + 1));
-			for (k = 0; k <= j; k++)
-				group_uids[i + k] = temp_uids[k];
-			xfree(temp_uids);
+			xrealloc(gid_list, sizeof(gid_t) * (gid_count + 2));
+			gid_list[gid_count++] = gid;
 		}
 		one_group_name = strtok_r(NULL, ",", &name_ptr);
 	}
 	xfree(tmp_names);
 
-	return group_uids;
+	return gid_list;
 }
 
 /* _get_group_tlm - return the time of last modification for the GROUP_FILE */
@@ -1714,22 +1708,6 @@ time_t _get_group_tlm(void)
 		return (time_t) 0;
 	}
 	return stat_buf.st_mtime;
-}
-
-/* _uid_list_size - return the count of uid's in a zero terminated list */
-static int _uid_list_size(uid_t * uid_list_ptr)
-{
-	int i;
-
-	if (uid_list_ptr == NULL)
-		return 0;
-
-	for (i = 0;; i++) {
-		if (uid_list_ptr[i] == 0)
-			break;
-	}
-
-	return i;
 }
 
 /* part_fini - free all memory associated with partition records */
