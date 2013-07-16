@@ -189,6 +189,12 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 			 bool indf_susp);
 static int  _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp);
 static bool _top_priority(struct job_record *job_ptr);
+static int  _valid_job_part(job_desc_msg_t * job_desc,
+			    uid_t submit_uid, bitstr_t *req_bitmap,
+			    struct part_record **part_pptr,
+			    List *part_pptr_list);
+static int  _valid_job_part_acct(job_desc_msg_t *job_desc,
+				 struct part_record *part_ptr);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			       uid_t submit_uid, struct part_record *part_ptr);
 static void _validate_job_files(List batch_dirs);
@@ -3716,6 +3722,52 @@ fini:	FREE_NULL_LIST(part_ptr_list);
 	return rc;
 }
 
+/* Validate a job's account against the partition's AllowAccounts or
+ * DenyAccounts parameters. */
+static int
+_valid_job_part_acct(job_desc_msg_t *job_desc, struct part_record *part_ptr)
+{
+	int i;
+
+	if (part_ptr->allow_account_array) {
+		int match = 0;
+		for (i = 0; part_ptr->allow_account_array[i]; i++) {
+			if (strcmp(part_ptr->allow_account_array[i],
+				   job_desc->account))
+				continue;
+			match = 1;
+			break;
+		}
+		if (match == 0) {
+			info("_valid_job_part: job's account not permitted to "
+			     "use this partition (%s allows %s not %s)",
+			     part_ptr->name, part_ptr->allow_accounts,
+			     job_desc->account);
+			return ESLURM_INVALID_ACCOUNT;
+		}
+	}
+
+	if (part_ptr->deny_account_array) {
+		int match = 0;
+		for (i = 0; part_ptr->deny_account_array[i]; i++) {
+			if (strcmp(part_ptr->deny_account_array[i],
+				   job_desc->account))
+				continue;
+			match = 1;
+			break;
+		}
+		if (match == 1) {
+			info("_valid_job_part: job's account not permitted to "
+			     "use this partition (%s denies %s including %s)",
+			     part_ptr->name, part_ptr->deny_accounts,
+			     job_desc->account);
+			return ESLURM_INVALID_ACCOUNT;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * job_limits_check - check the limits specified for the job.
  * IN job_ptr - pointer to job table entry.
@@ -3889,7 +3941,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
-	/* insure that selected nodes are in this partition */
 	if (job_desc->req_nodes) {
 		error_code = node_name2bitmap(job_desc->req_nodes, false,
 					      &req_bitmap);
@@ -3934,7 +3985,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid,
 					     part_ptr))) {
-		error_code = error_code;
 		goto cleanup_fail;
 	}
 
@@ -3969,6 +4019,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 	if (job_desc->account == NULL)
 		job_desc->account = xstrdup(assoc_rec.acct);
+	error_code = _valid_job_part_acct(job_desc, part_ptr);
+	if (error_code != SLURM_SUCCESS)
+		goto cleanup_fail;
 
 	/* This must be done after we have the assoc_ptr set */
 	memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));

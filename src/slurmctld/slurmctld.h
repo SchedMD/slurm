@@ -297,6 +297,8 @@ extern time_t last_front_end_update;	/* time of last front_end update */
 struct part_record {
 	char *allow_accounts;	/* comma delimited list of accounts,
 				 * NULL indicates all */
+	char **allow_account_array; /* NULL terminated list of allowed
+				 * accounts */
 	char *allow_alloc_nodes;/* comma delimited list of allowed
 				 * allocating nodes
 				 * NULL indicates all */
@@ -311,6 +313,7 @@ struct part_record {
 	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	char *deny_accounts;	/* comma delimited list of denied accounts */
+	char **deny_account_array; /* NULL terminated list of denied accounts */
 	char *deny_groups;	/* comma delimited list of denied groups */
 	char *deny_qos;		/* comma delimited list of denied qos */
 	bitstr_t *deny_qos_bitstr; /* (DON'T PACK) associated with

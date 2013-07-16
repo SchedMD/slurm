@@ -64,6 +64,7 @@
 #include "src/slurmctld/groups.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
@@ -241,9 +242,11 @@ struct part_record *create_part_record(void)
 			/ (double)part_max_priority;
 	part_ptr->node_bitmap       = NULL;
 
-	if (default_part.allow_accounts)
+	if (default_part.allow_accounts) {
 		part_ptr->allow_accounts = xstrdup(default_part.allow_accounts);
-	else
+		accounts_list_build(part_ptr->allow_accounts,
+				    &part_ptr->allow_account_array);
+	} else
 		part_ptr->allow_accounts = NULL;
 
 	if (default_part.allow_groups)
@@ -256,9 +259,11 @@ struct part_record *create_part_record(void)
 	else
 		part_ptr->allow_qos = NULL;
 
-	if (default_part.deny_accounts)
+	if (default_part.deny_accounts) {
 		part_ptr->deny_accounts = xstrdup(default_part.deny_accounts);
-	else
+		accounts_list_build(part_ptr->deny_accounts,
+				    &part_ptr->deny_account_array);
+	} else
 		part_ptr->deny_accounts = NULL;
 
 	if (default_part.deny_groups)
@@ -731,6 +736,8 @@ int load_all_part_state(void)
 		xfree(part_ptr->allow_accounts);
 		part_ptr->allow_accounts = allow_accounts;
 		xfree(part_ptr->allow_groups);
+		accounts_list_build(part_ptr->allow_accounts,
+				    &part_ptr->allow_account_array);
 		part_ptr->allow_groups   = allow_groups;
 		xfree(part_ptr->allow_qos);
 		part_ptr->allow_qos      = allow_qos;
@@ -740,6 +747,8 @@ int load_all_part_state(void)
 		part_ptr->alternate      = alternate;
 		xfree(part_ptr->deny_accounts);
 		part_ptr->deny_accounts  = deny_accounts;
+		accounts_list_build(part_ptr->deny_accounts,
+				    &part_ptr->deny_account_array);
 		xfree(part_ptr->deny_groups);
 		part_ptr->deny_groups    = deny_groups;
 		xfree(part_ptr->deny_qos);
@@ -864,12 +873,14 @@ int init_part_conf(void)
 	default_part.cr_type	    = 0;
 	xfree(default_part.nodes);
 	xfree(default_part.allow_accounts);
+	accounts_list_free(&default_part.allow_account_array);
 	xfree(default_part.allow_groups);
 	xfree(default_part.allow_qos);
 	xfree(default_part.allow_uids);
 	xfree(default_part.allow_alloc_nodes);
 	xfree(default_part.alternate);
 	xfree(default_part.deny_accounts);
+	accounts_list_free(&default_part.deny_account_array);
 	xfree(default_part.deny_groups);
 	xfree(default_part.deny_qos);
 	FREE_NULL_BITMAP(default_part.node_bitmap);
@@ -913,12 +924,14 @@ static void _list_delete_part(void *part_entry)
 	}
 
 	xfree(part_ptr->allow_accounts);
+	accounts_list_free(&part_ptr->allow_account_array);
 	xfree(part_ptr->allow_alloc_nodes);
 	xfree(part_ptr->allow_groups);
 	xfree(part_ptr->allow_uids);
 	xfree(part_ptr->allow_qos);
 	xfree(part_ptr->alternate);
 	xfree(part_ptr->deny_accounts);
+	accounts_list_free(&part_ptr->deny_account_array);
 	xfree(part_ptr->deny_groups);
 	xfree(part_ptr->deny_qos);
 	xfree(part_ptr->name);
@@ -1389,6 +1402,8 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 			     "partition %s",
 			     part_ptr->allow_accounts, part_desc->name);
 		}
+		accounts_list_build(part_ptr->allow_accounts,
+				    &part_ptr->allow_account_array);
 	}
 
 	if (part_desc->allow_groups != NULL) {
@@ -1474,11 +1489,15 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 
 	if (part_desc->deny_accounts != NULL) {
 		xfree(part_ptr->deny_accounts);
+		if (part_desc->deny_accounts == '\0')
+			xfree(part_desc->deny_accounts);
 		part_ptr->deny_accounts = part_desc->deny_accounts;
 		part_desc->deny_accounts = NULL;
 		info("update_part: setting deny_accounts to %s for "
 		     "partition %s",
 		     part_ptr->deny_accounts, part_desc->name);
+		accounts_list_build(part_ptr->deny_accounts,
+				    &part_ptr->deny_account_array);
 	}
 
 	if (part_desc->deny_groups != NULL) {
