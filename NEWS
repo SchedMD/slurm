@@ -10,10 +10,7 @@ documents those changes that are of interest to users and admins.
  -- Defer sending SIGKILL signal to processes while core dump in progress.
  -- Added JobContainerPlugin configuration parameter and plugin infrastructure.
  -- Added partition configuration parameters AllowAccounts, AllowQOS,
-    DenyAccounts, DenyGroups and DenyQOS. The AllowGroups and DenyGroups
-    configuration parameters only apply to the effective group ID of the job.
-    Previously any user with access to any allowed group was permitted to use
-    the partition.
+    DenyAccounts, DenyGroups and DenyQOS. (Implementation incomplete)
 
 * Changes in Slurm 2.6.1
 ========================

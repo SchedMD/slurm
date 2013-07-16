@@ -3481,11 +3481,10 @@ static int _part_access_check(struct part_record *part_ptr,
 		return ESLURM_USER_ID_MISSING;
 	}
 
-	if (validate_group(part_ptr, job_desc->user_id, job_desc->group_id)
-	    == 0) {
-		info("_part_access_check: uid:%u gid:%u access to partition %s "
+	if (validate_group(part_ptr, job_desc->user_id) == 0) {
+		info("_part_access_check: uid %u access to partition %s "
 		     "denied, bad group",
-		     job_desc->user_id, job_desc->group_id, part_ptr->name);
+		     (unsigned int) job_desc->user_id, part_ptr->name);
 		return ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
 	}
 
@@ -5551,7 +5550,6 @@ static int _list_find_job_old(void *job_entry, void *key)
  * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - job filtering options
  * IN uid - uid of user making request (for partition filtering)
- * IN gid - gid of user making request (for partition filtering)
  * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
@@ -5559,8 +5557,8 @@ static int _list_find_job_old(void *job_entry, void *key)
  *	whenever the data format changes
  */
 extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
-			  uint16_t show_flags, uid_t uid, gid_t gid,
-			  uint32_t filter_uid, uint16_t protocol_version)
+			  uint16_t show_flags, uid_t uid, uint32_t filter_uid,
+			  uint16_t protocol_version)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
@@ -5582,7 +5580,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 		min_age = now  - slurmctld_conf.min_job_age;
 
 	/* write individual job records */
-	part_filter_set(uid, gid);
+	part_filter_set(uid);
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);

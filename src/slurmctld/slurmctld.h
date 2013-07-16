@@ -302,7 +302,8 @@ struct part_record {
 				 * NULL indicates all */
 	char *allow_groups;	/* comma delimited list of groups,
 				 * NULL indicates all */
-	gid_t *allow_gids;	/* zero terminated list of allowed group IDs */
+	uid_t *allow_uids;	/* zero terminated list of allowed
+				 * users */
 	char *allow_qos;	/* comma delimited list of qos,
 				 * NULL indicates all */
 	bitstr_t *allow_qos_bitstr; /* (DON'T PACK) assocaited with
@@ -312,7 +313,6 @@ struct part_record {
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	char *deny_accounts;	/* comma delimited list of denied accounts */
 	char *deny_groups;	/* comma delimited list of denied groups */
-	gid_t *deny_gids;	/* zero terminated list of denied group IDs */
 	char *deny_qos;		/* comma delimited list of denied qos */
 	bitstr_t *deny_qos_bitstr; /* (DON'T PACK) associated with
 				 * char *deny_groups but used internallly */
@@ -1451,16 +1451,16 @@ extern void node_no_resp_msg(void);
  * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - job filtering options
  * IN uid - uid of user making request (for partition filtering)
- * IN gid - gid of user making request (for partition filtering)
  * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
+ * IN protocol_version - slurm protocol version of client
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
  *	whenever the data format changes
  */
 extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
-			  uint16_t show_flags, uid_t uid, gid_t gid,
-			  uint32_t filter_uid, uint16_t protocol_version);
+			  uint16_t show_flags, uid_t uid, uint32_t filter_uid,
+			  uint16_t protocol_version);
 
 /*
  * pack_all_node - dump all configuration and node information for all nodes
@@ -1469,7 +1469,6 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
  * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - node filtering options
  * IN uid - uid of user making request (for partition filtering)
- * IN gid - gid of user making request (for partition filtering)
  * IN protocol_version - slurm protocol version of client
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must xfree the buffer at *buffer_ptr
@@ -1477,7 +1476,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
  * NOTE: READ lock_slurmctld config before entry
  */
 extern void pack_all_node (char **buffer_ptr, int *buffer_size,
-			   uint16_t show_flags, uid_t uid, gid_t gid,
+			   uint16_t show_flags, uid_t uid,
 			   uint16_t protocol_version);
 
 /* Pack all scheduling statistics */
@@ -1486,17 +1485,17 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 
 /*
  * pack_ctld_job_step_info_response_msg - packs job step info
- * IN job_id - specific id or NO_VAL for all
- * IN step_id - specific id or NO_VAL for all
+ * IN job_id - specific id or zero for all
+ * IN step_id - specific id or zero for all
  * IN uid - user issuing request
- * IN gid - user issuing request
  * IN show_flags - job step filtering options
  * OUT buffer - location to store data, pointers automatically advanced
+ * IN protocol_version - slurm protocol version of client
  * RET - 0 or error code
  * NOTE: MUST free_buf buffer
  */
 extern int pack_ctld_job_step_info_response_msg(
-	uint32_t job_id, uint32_t step_id, uid_t uid, gid_t gid,
+	uint32_t job_id, uint32_t step_id, uid_t uid,
 	uint16_t show_flags, Buf buffer, uint16_t protocol_version);
 
 /*
@@ -1506,13 +1505,13 @@ extern int pack_ctld_job_step_info_response_msg(
  * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - partition filtering options
  * IN uid - uid of user making request (for partition filtering)
- * IN gid - uid of user making request (for partition filtering)
+ * IN protocol_version - slurm protocol version of client
  * global: part_list - global list of partition records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change slurm_load_part() in api/part_info.c if data format changes
  */
 extern void pack_all_part(char **buffer_ptr, int *buffer_size,
-			  uint16_t show_flags, uid_t uid, gid_t gid,
+			  uint16_t show_flags, uid_t uid,
 			  uint16_t protocol_version);
 
 /*
@@ -1565,7 +1564,6 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
  * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - node filtering options
  * IN uid - uid of user making request (for partition filtering)
- * IN gid - gid of user making request (for partition filtering)
  * IN node_name - name of node for which information is desired,
  *		  use first node if name is NULL
  * IN protocol_version - slurm protocol version of client
@@ -1575,8 +1573,8 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
  * NOTE: READ lock_slurmctld config before entry
  */
 extern void pack_one_node (char **buffer_ptr, int *buffer_size,
-			   uint16_t show_flags, uid_t uid, gid_t gid,
-			   char *node_name, uint16_t protocol_version);
+			   uint16_t show_flags, uid_t uid, char *node_name,
+			   uint16_t protocol_version);
 
 /* part_filter_clear - Clear the partition's hidden flag based upon a user's
  * group access. This must follow a call to part_filter_set() */
@@ -1584,7 +1582,7 @@ extern void part_filter_clear(void);
 
 /* part_filter_set - Set the partition's hidden flag based upon a user's
  * group access. This must be followed by a call to part_filter_clear() */
-extern void part_filter_set(uid_t uid, gid_t gid);
+extern void part_filter_set(uid_t uid);
 
 /* part_fini - free all memory associated with partition records */
 extern void part_fini (void);
@@ -1911,15 +1909,13 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid);
 extern int validate_alloc_node(struct part_record *part_ptr, char* alloc_node);
 
 /*
- * validate_group - validate that the submit gid is authorized to run in
+ * validate_group - validate that the submit uid is authorized to run in
  *	this partition
  * IN part_ptr - pointer to a partition
  * IN run_uid - user to run the job as
- * IN run_gid - group to run the job as
  * RET 1 if permitted to run, 0 otherwise
  */
-extern int validate_group(struct part_record *part_ptr, uid_t run_uid,
-			  gid_t run_gid);
+extern int validate_group (struct part_record *part_ptr, uid_t run_uid);
 
 /* Perform some size checks on strings we store to prevent
  * malicious user filling slurmctld's memory
