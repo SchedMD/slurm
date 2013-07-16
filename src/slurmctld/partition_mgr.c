@@ -254,9 +254,10 @@ struct part_record *create_part_record(void)
 	else
 		part_ptr->allow_groups = NULL;
 
-	if (default_part.allow_qos)
+	if (default_part.allow_qos) {
 		part_ptr->allow_qos = xstrdup(default_part.allow_qos);
-	else
+		qos_list_build(part_ptr->allow_qos, &part_ptr->allow_qos_bitstr);
+	} else
 		part_ptr->allow_qos = NULL;
 
 	if (default_part.deny_accounts) {
@@ -271,9 +272,10 @@ struct part_record *create_part_record(void)
 	else
 		part_ptr->deny_groups = NULL;
 
-	if (default_part.deny_qos)
+	if (default_part.deny_qos) {
 		part_ptr->deny_qos = xstrdup(default_part.deny_qos);
-	else
+		qos_list_build(part_ptr->deny_qos, &part_ptr->deny_qos_bitstr);
+	} else
 		part_ptr->deny_qos = NULL;
 
 	if (default_part.allow_alloc_nodes)
@@ -741,6 +743,7 @@ int load_all_part_state(void)
 		part_ptr->allow_groups   = allow_groups;
 		xfree(part_ptr->allow_qos);
 		part_ptr->allow_qos      = allow_qos;
+		qos_list_build(part_ptr->allow_qos,&part_ptr->allow_qos_bitstr);
 		xfree(part_ptr->allow_alloc_nodes);
 		part_ptr->allow_alloc_nodes   = allow_alloc_nodes;
 		xfree(part_ptr->alternate);
@@ -753,6 +756,7 @@ int load_all_part_state(void)
 		part_ptr->deny_groups    = deny_groups;
 		xfree(part_ptr->deny_qos);
 		part_ptr->deny_qos       = deny_qos;
+		qos_list_build(part_ptr->deny_qos, &part_ptr->deny_qos_bitstr);
 		xfree(part_ptr->nodes);
 		part_ptr->nodes = nodes;
 
@@ -876,6 +880,7 @@ int init_part_conf(void)
 	accounts_list_free(&default_part.allow_account_array);
 	xfree(default_part.allow_groups);
 	xfree(default_part.allow_qos);
+	FREE_NULL_BITMAP(default_part.allow_qos_bitstr);
 	xfree(default_part.allow_uids);
 	xfree(default_part.allow_alloc_nodes);
 	xfree(default_part.alternate);
@@ -883,6 +888,7 @@ int init_part_conf(void)
 	accounts_list_free(&default_part.deny_account_array);
 	xfree(default_part.deny_groups);
 	xfree(default_part.deny_qos);
+	FREE_NULL_BITMAP(default_part.deny_qos_bitstr);
 	FREE_NULL_BITMAP(default_part.node_bitmap);
 
 	if (part_list)		/* delete defunct partitions */
@@ -929,11 +935,13 @@ static void _list_delete_part(void *part_entry)
 	xfree(part_ptr->allow_groups);
 	xfree(part_ptr->allow_uids);
 	xfree(part_ptr->allow_qos);
+	FREE_NULL_BITMAP(part_ptr->allow_qos_bitstr);
 	xfree(part_ptr->alternate);
 	xfree(part_ptr->deny_accounts);
 	accounts_list_free(&part_ptr->deny_account_array);
 	xfree(part_ptr->deny_groups);
 	xfree(part_ptr->deny_qos);
+	FREE_NULL_BITMAP(part_ptr->deny_qos_bitstr);
 	xfree(part_ptr->name);
 	xfree(part_ptr->nodes);
 	FREE_NULL_BITMAP(part_ptr->node_bitmap);
@@ -1440,6 +1448,7 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 			     "partition %s",
 			     part_ptr->allow_qos, part_desc->name);
 		}
+		qos_list_build(part_ptr->allow_qos,&part_ptr->allow_qos_bitstr);
 	}
 
 	if (part_desc->allow_alloc_nodes != NULL) {
@@ -1510,10 +1519,13 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 
 	if (part_desc->deny_qos != NULL) {
 		xfree(part_ptr->deny_qos);
+		if (part_desc->deny_qos[0] == '\0')
+			xfree(part_ptr->deny_qos);
 		part_ptr->deny_qos = part_desc->deny_qos;
 		part_desc->deny_qos = NULL;
 		info("update_part: setting deny_qos to %s for partition %s",
 		     part_ptr->deny_qos, part_desc->name);
+		qos_list_build(part_ptr->deny_qos, &part_ptr->deny_qos_bitstr);
 	}
 
 	if (part_desc->max_mem_per_cpu != NO_VAL) {

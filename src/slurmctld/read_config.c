@@ -530,6 +530,34 @@ extern void accounts_list_free(char ***accounts_array)
 	xfree(*accounts_array);
 }
 
+/* Convert a comma delimited list of QOS names into a bitmap */
+extern void qos_list_build(char *qos, bitstr_t **qos_bits)
+{
+	char *tmp_qos, *one_qos_name, *name_ptr = NULL;
+	slurmdb_qos_rec_t qos_rec, *qos_ptr = NULL;
+	bitstr_t *tmp_qos_bitstr;
+
+	tmp_qos_bitstr = bit_alloc(g_qos_count);
+	tmp_qos = xstrdup(qos);
+	one_qos_name = strtok_r(tmp_qos, ",", &name_ptr);
+	while (one_qos_name) {
+		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
+		qos_rec.name = one_qos_name;
+		if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+					  accounting_enforce,
+					  &qos_ptr) == SLURM_SUCCESS) {
+			bit_set(tmp_qos_bitstr, qos_rec.id);
+		} else {
+			error("Ignoring invalid Allow/DenyQOS value %s",
+			      one_qos_name);
+		}
+		one_qos_name = strtok_r(NULL, ",", &name_ptr);
+	}
+	xfree(tmp_qos);
+	FREE_NULL_BITMAP(*qos_bits);
+	*qos_bits = tmp_qos_bitstr;
+}
+
 /*
  * _build_single_partitionline_info - get a array of slurm_conf_partition_t
  *	structures from the slurm.conf reader, build table, and set values
@@ -626,6 +654,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	if (part->allow_qos) {
 		xfree(part_ptr->allow_qos);
 		part_ptr->allow_qos = xstrdup(part->allow_qos);
+		qos_list_build(part_ptr->allow_qos,&part_ptr->allow_qos_bitstr);
 	}
 
 	if (part->deny_accounts) {
@@ -643,6 +672,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	if (part->deny_qos) {
 		xfree(part_ptr->deny_qos);
 		part_ptr->deny_qos = xstrdup(part->deny_qos);
+		qos_list_build(part_ptr->deny_qos, &part_ptr->deny_qos_bitstr);
 	}
 
  	if (part->allow_alloc_nodes) {
@@ -1257,6 +1287,8 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				xfree(part_ptr->allow_qos);
 				part_ptr->allow_qos = xstrdup(old_part_ptr->
 								 allow_qos);
+				qos_list_build(part_ptr->allow_qos,
+					       &part_ptr->allow_qos_bitstr);
 			}
 			if (_strcmp(part_ptr->deny_accounts,
 				    old_part_ptr->deny_accounts)) {
@@ -1283,6 +1315,8 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				xfree(part_ptr->deny_qos);
 				part_ptr->deny_qos = xstrdup(old_part_ptr->
 							     deny_qos);
+				qos_list_build(part_ptr->deny_qos,
+					       &part_ptr->deny_qos_bitstr);
 			}
 			if (_strcmp(part_ptr->allow_alloc_nodes,
 				    old_part_ptr->allow_alloc_nodes)) {
@@ -1417,6 +1451,8 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 							 allow_groups);
 			part_ptr->allow_qos = xstrdup(old_part_ptr->
 						      allow_qos);
+			qos_list_build(part_ptr->allow_qos,
+				       &part_ptr->allow_qos_bitstr);
 			part_ptr->default_time = old_part_ptr->default_time;
 			part_ptr->deny_accounts = xstrdup(old_part_ptr->
 							  deny_accounts);
@@ -1426,6 +1462,8 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 							deny_groups);
 			part_ptr->deny_qos = xstrdup(old_part_ptr->
 						     deny_qos);
+			qos_list_build(part_ptr->deny_qos,
+				       &part_ptr->deny_qos_bitstr);
 			part_ptr->flags = old_part_ptr->flags;
 			part_ptr->max_nodes = old_part_ptr->max_nodes;
 			part_ptr->max_nodes_orig = old_part_ptr->

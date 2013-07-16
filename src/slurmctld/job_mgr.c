@@ -195,6 +195,8 @@ static int  _valid_job_part(job_desc_msg_t * job_desc,
 			    List *part_pptr_list);
 static int  _valid_job_part_acct(job_desc_msg_t *job_desc,
 				 struct part_record *part_ptr);
+static int  _valid_job_part_qos(struct part_record *part_ptr,
+				slurmdb_qos_rec_t *pos_ptr);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			       uid_t submit_uid, struct part_record *part_ptr);
 static void _validate_job_files(List batch_dirs);
@@ -3739,8 +3741,8 @@ _valid_job_part_acct(job_desc_msg_t *job_desc, struct part_record *part_ptr)
 			break;
 		}
 		if (match == 0) {
-			info("_valid_job_part: job's account not permitted to "
-			     "use this partition (%s allows %s not %s)",
+			info("_valid_job_part_acct: job's account not permitted"
+			     " to use this partition (%s allows %s not %s)",
 			     part_ptr->name, part_ptr->allow_accounts,
 			     job_desc->account);
 			return ESLURM_INVALID_ACCOUNT;
@@ -3757,11 +3759,49 @@ _valid_job_part_acct(job_desc_msg_t *job_desc, struct part_record *part_ptr)
 			break;
 		}
 		if (match == 1) {
-			info("_valid_job_part: job's account not permitted to "
-			     "use this partition (%s denies %s including %s)",
+			info("_valid_job_part_acct: job's account not permitted"
+			     " to use this partition (%s denies %s with %s)",
 			     part_ptr->name, part_ptr->deny_accounts,
 			     job_desc->account);
 			return ESLURM_INVALID_ACCOUNT;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/* Validate a job's QOS against the partition's AllowQOS or
+ * DenyQOS parameters. */
+static int
+_valid_job_part_qos(struct part_record *part_ptr, slurmdb_qos_rec_t *qos_ptr)
+{
+	int i;
+
+	if (part_ptr->allow_qos_bitstr) {
+		int match = 0;
+		if ((qos_ptr->id < bit_size(part_ptr->allow_qos_bitstr)) &&
+		    bit_test(part_ptr->allow_qos_bitstr, qos_ptr->id))
+			match = 1;
+		if (match == 0) {
+			info("_valid_job_par_qost: job's QOS not permitted to "
+			     "use this partition (%s allows %s not %s)",
+			     part_ptr->name, part_ptr->allow_qos,
+			     qos_ptr->name);
+			return ESLURM_INVALID_QOS;
+		}
+	}
+
+	if (part_ptr->deny_qos_bitstr) {
+		int match = 0;
+		if ((qos_ptr->id < bit_size(part_ptr->deny_qos_bitstr)) &&
+		    bit_test(part_ptr->deny_qos_bitstr, qos_ptr->id))
+			match = 1;
+		if (match == 1) {
+			info("_valid_job_part_qos: job's QOS not permitted to "
+			     "use this partition (%s denies %s including %s)",
+			     part_ptr->name, part_ptr->allow_qos,
+			     qos_ptr->name);
+			return ESLURM_INVALID_QOS;
 		}
 	}
 
@@ -4036,11 +4076,13 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	qos_ptr = _determine_and_validate_qos(
 		job_desc->reservation, assoc_ptr, false, &qos_rec, &qos_error);
-
 	if (qos_error != SLURM_SUCCESS) {
 		error_code = qos_error;
 		goto cleanup_fail;
 	}
+	error_code = _valid_job_part_qos(part_ptr, qos_ptr);
+	if (error_code != SLURM_SUCCESS)
+		goto cleanup_fail;
 
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    (!acct_policy_validate(job_desc, part_ptr,
