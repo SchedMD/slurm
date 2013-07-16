@@ -3747,9 +3747,7 @@ _valid_job_part_acct(job_desc_msg_t *job_desc, struct part_record *part_ptr)
 			     job_desc->account);
 			return ESLURM_INVALID_ACCOUNT;
 		}
-	}
-
-	if (part_ptr->deny_account_array) {
+	} else if (part_ptr->deny_account_array) {
 		int match = 0;
 		for (i = 0; part_ptr->deny_account_array[i]; i++) {
 			if (strcmp(part_ptr->deny_account_array[i],
@@ -3789,9 +3787,7 @@ _valid_job_part_qos(struct part_record *part_ptr, slurmdb_qos_rec_t *qos_ptr)
 			     qos_ptr->name);
 			return ESLURM_INVALID_QOS;
 		}
-	}
-
-	if (part_ptr->deny_qos_bitstr) {
+	} else if (part_ptr->deny_qos_bitstr) {
 		int match = 0;
 		if ((qos_ptr->id < bit_size(part_ptr->deny_qos_bitstr)) &&
 		    bit_test(part_ptr->deny_qos_bitstr, qos_ptr->id))
