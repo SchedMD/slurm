@@ -83,7 +83,8 @@ exec $bin_sed -i "s/Source: %{name}-%{version}-%{release}.tgz/Source: Slurm-0-0.
 exec $bin_sed -i "s/%setup -n %{name}-%{version}-%{release}/%setup -n $file_name/g" $src_dir/slurm.spec
 
 set timeout 1000
-spawn $bin_cp -r -v $src_dir /tmp/slurm
+exec $bin_rm -fr /tmp/slurm
+spawn $bin_cp -L -r -v $src_dir /tmp/slurm
 expect {
 	timeout {
 		send_user "\nFAILURE: $src_dir was not copied\n"
