@@ -112,7 +112,8 @@ if { $got_output != 1 } {
 set got_output   0
 spawn $poe printenv MP_EUIDEVICE -labelio yes -rmpool $partition -euilib ip -euidevice eth0
 expect {
-	-re "($number): *eth0" {
+	# Might return "ethernet" or "eth0" on various systems
+	-re "($number): *eth" {
 		set got_output 1
 		exp_continue
 	}

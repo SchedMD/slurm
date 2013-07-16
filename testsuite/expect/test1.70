@@ -37,13 +37,14 @@ set file_out    "test$test_id.out"
 set file_in     "$srun"
 set exit_code   0
 
+print_header $test_id
 
 if {[test_cray]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit 1
+	exit 0
 } elseif {[test_launch_poe]} {
 	send_user "\nWARNING: This test is incompatible with poe\n"
-	exit 1
+	exit 0
 }
 
 # Remove any remaining files
