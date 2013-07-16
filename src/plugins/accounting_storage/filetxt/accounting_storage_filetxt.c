@@ -224,7 +224,7 @@ extern int init ( void )
 			fclose(LOGFILE);
 
 		if (*log_file != '/')
-			fatal("JobAcctLogfile must specify an "
+			fatal("AccountingStorageLoc must specify an "
 			      "absolute pathname");
 		if (stat(log_file, &statbuf)==0)/* preserve current file mode */
 			prot = statbuf.st_mode;
