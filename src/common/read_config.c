@@ -968,7 +968,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		p->name = xstrdup(value);
 
 		if (!s_p_get_string(&p->allow_accounts, "AllowAccounts",tbl))
-			s_p_get_string(&p->allow_accounts, "AllowAccount", dflt);
+			s_p_get_string(&p->allow_accounts, "AllowAccounts", dflt);
 		if (p->allow_accounts &&
 		    (strcasecmp(p->allow_accounts, "ALL") == 0))
 			xfree(p->allow_accounts);

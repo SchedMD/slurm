@@ -3773,8 +3773,6 @@ _valid_job_part_acct(job_desc_msg_t *job_desc, struct part_record *part_ptr)
 static int
 _valid_job_part_qos(struct part_record *part_ptr, slurmdb_qos_rec_t *qos_ptr)
 {
-	int i;
-
 	if (part_ptr->allow_qos_bitstr) {
 		int match = 0;
 		if ((qos_ptr->id < bit_size(part_ptr->allow_qos_bitstr)) &&
