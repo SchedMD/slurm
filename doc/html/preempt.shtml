@@ -15,29 +15,10 @@ Alternately, the low priority job(s) can be requeued and started using other
 resources if so configured in newer versions of SLURM.
 </P>
 <P>
-In SLURM version 2.0 and earlier, high priority work is identified by the
-priority of the job's partition and low priority jobs are always suspended.
-The job preemption logic is within the <I>sched/gang</I> plugin.
-In SLURM version 2.1 and higher, the job's partition priority or its
-Quality Of Service (QOS) can be used to identify the which jobs can preempt
-or be preempted by other jobs.
-</P>
-<P>
-SLURM version 2.1 offers several options for the job preemption mechanism
-including checkpoint, requeue, or cancel.
-the option of requeuing low priority jobs
-Checkpointed jobs are not automatically requeued or restarted.
-Requeued jobs may restart faster by using different resources.
-All of these new job preemption mechanisms release a job's memory space for
-use by other jobs.
-In SLURM version 2.1, some job preemption logic was moved into the
-<I>select</I> plugin and main code base to permit use of both job preemption
-plus the backfill scheduler plugin, <i>sched/backfill</I>.
-</P>
-
-<P>
-SLURM version 2.2 offers the ability to configure the preemption mechanism
-used on a per partition or per QOS basis.
+The job's partition priority or its Quality Of Service (QOS) can be used to
+identify the which jobs can preempt or be preempted by other jobs.
+SLURM offers the ability to configure the preemption mechanism used on a per
+partition or per QOS basis.
 For example, jobs in a low priority queue may get requeued,
 while jobs in a medium priority queue may get suspended.
 </P>
@@ -392,6 +373,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 10 December 2012</p>
+<p style="text-align:center;">Last modified 17 July 2013</p>
 
 <!--#include virtual="footer.txt"-->
