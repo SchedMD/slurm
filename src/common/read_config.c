@@ -3333,9 +3333,15 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->proctrack_type =
 				xstrdup(DEFAULT_PROCTRACK_TYPE);
 	}
+#ifdef HAVE_NATIVE_CRAY
+	if (strcmp(conf->proctrack_type, "proctrack/cray"))
+		fatal("On a native Cray ProctrackType=proctrack/cray "
+		      "is required");
+#else
 #ifdef HAVE_REAL_CRAY
 	if (strcmp(conf->proctrack_type, "proctrack/sgi_job"))
 		fatal("On Cray ProctrackType=proctrack/sgi_job is required");
+#endif
 #endif
 	if ((!strcmp(conf->switch_type, "switch/elan"))
 	    && (!strcmp(conf->proctrack_type,"proctrack/linuxproc")))

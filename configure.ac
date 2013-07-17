@@ -554,6 +554,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/priority/multifactor/Makefile
 		 src/plugins/proctrack/Makefile
 		 src/plugins/proctrack/aix/Makefile
+		 src/plugins/proctrack/cray/Makefile
 		 src/plugins/proctrack/cgroup/Makefile
 		 src/plugins/proctrack/pgid/Makefile
 		 src/plugins/proctrack/linuxproc/Makefile
