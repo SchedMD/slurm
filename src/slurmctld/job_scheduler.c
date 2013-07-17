@@ -822,7 +822,7 @@ next_part:			part_ptr = (struct part_record *)
 			}
 		} else {
 			job_queue_rec = list_pop_bottom(job_queue,
-							sort_job_queue2);
+			                                sort_job_queue2);
 			if (!job_queue_rec)
 				break;
 			job_ptr  = job_queue_rec->job_ptr;
@@ -1085,7 +1085,7 @@ next_part:			part_ptr = (struct part_record *)
 }
 
 /*
- * sort_job_queue - sort job_queue in decending priority order
+ * sort_job_queue - sort job_queue in descending priority order
  * IN/OUT job_queue - sorted job queue
  */
 extern void sort_job_queue(List job_queue)
@@ -1097,8 +1097,8 @@ extern void sort_job_queue(List job_queue)
  *	in order of decreasing priority */
 extern int sort_job_queue2(void *x, void *y)
 {
-	job_queue_rec_t *job_rec1 = (job_queue_rec_t *) x;
-	job_queue_rec_t *job_rec2 = (job_queue_rec_t *) y;
+	job_queue_rec_t *job_rec1 = *(job_queue_rec_t **) x;
+	job_queue_rec_t *job_rec2 = *(job_queue_rec_t **) y;
 	bool has_resv1, has_resv2;
 	static time_t config_update = 0;
 	static bool preemption_enabled = true;

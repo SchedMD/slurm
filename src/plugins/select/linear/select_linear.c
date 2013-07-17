@@ -154,8 +154,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		    int max_share, uint32_t req_nodes,
 		    List preemptee_candidates,
 		    List *preemptee_job_list);
-static int _sort_usable_nodes_dec(struct job_record *job_a,
-				  struct job_record *job_b);
+static int _sort_usable_nodes_dec(void *, void *);
 static bool _test_run_job(struct cr_record *cr_ptr, uint32_t job_id);
 static bool _test_tot_job(struct cr_record *cr_ptr, uint32_t job_id);
 static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
@@ -2271,7 +2270,7 @@ static void _init_node_cr(void)
 			if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 				continue;
 			node_offset++;
-			if (!bit_test(job_ptr->node_bitmap, i)) 
+			if (!bit_test(job_ptr->node_bitmap, i))
 				continue; /* node already released */
 			node_ptr = node_record_table_ptr + i;
 			if (exclusive)
@@ -2380,9 +2379,11 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
  * Sort the usable_node element to put jobs in the correct
  * preemption order.
  */
-static int _sort_usable_nodes_dec(struct job_record *job_a,
-				  struct job_record *job_b)
+static int _sort_usable_nodes_dec(void *j1, void *j2)
 {
+	struct job_record *job_a = *(struct job_record **)j1;
+	struct job_record *job_b = *(struct job_record **)j2;
+
 	if (job_a->details->usable_nodes > job_b->details->usable_nodes)
 		return -1;
 	else if (job_a->details->usable_nodes < job_b->details->usable_nodes)
@@ -2674,8 +2675,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 static int  _cr_job_list_sort(void *x, void *y)
 {
-	struct job_record *job1_ptr = (struct job_record *) x;
-	struct job_record *job2_ptr = (struct job_record *) y;
+	struct job_record *job1_ptr = *(struct job_record **) x;
+	struct job_record *job2_ptr = *(struct job_record **) y;
 	return (int) SLURM_DIFFTIME(job1_ptr->end_time, job2_ptr->end_time);
 }
 

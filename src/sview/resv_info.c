@@ -713,11 +713,15 @@ static void _update_info_resv(List info_list,
 	last_model = model;
 }
 
-static int _sview_resv_sort_aval_dec(sview_resv_info_t* rec_a,
-				     sview_resv_info_t* rec_b)
+static int _sview_resv_sort_aval_dec(void *s1, void *s2)
 {
-	int size_a = rec_a->resv_ptr->node_cnt;
-	int size_b = rec_b->resv_ptr->node_cnt;
+	sview_resv_info_t *rec_a = *(sview_resv_info_t **)s1;
+	sview_resv_info_t *rec_b = *(sview_resv_info_t **)s2;
+	int size_a;
+	int size_b;
+
+	size_a = rec_a->resv_ptr->node_cnt;
+	size_b = rec_b->resv_ptr->node_cnt;
 
 	if (size_a < size_b)
 		return -1;

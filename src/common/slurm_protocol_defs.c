@@ -254,9 +254,15 @@ endit:
 	return count;
 }
 
-extern int slurm_sort_char_list_asc(char *name_a, char *name_b)
+extern int slurm_sort_char_list_asc(void *v1, void *v2)
 {
-	int diff = strcmp(name_a, name_b);
+	int diff;
+	char *name_a;
+	char *name_b;
+
+	name_a = *(char **)v1;
+	name_b = *(char **)v2;
+	diff = strcmp(name_a, name_b);
 
 	if (diff < 0)
 		return -1;

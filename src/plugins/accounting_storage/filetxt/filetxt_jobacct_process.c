@@ -470,8 +470,8 @@ static FILE *_open_log_file(char *logfile)
 }
 
 static int _cmp_jrec(const void *a1, const void *a2) {
-	expired_rec_t *j1 = (expired_rec_t *) a1;
-	expired_rec_t *j2 = (expired_rec_t *) a2;
+	expired_rec_t *j1 = *(expired_rec_t **) a1;
+	expired_rec_t *j2 = *(expired_rec_t **) a2;
 
 	if (j1->job <  j2->job)
 		return -1;

@@ -232,10 +232,15 @@ extern void addto_char_list(List char_list, char *names)
  * returns: 1: user_a > user_b   0: user_a == user_b   -1: user_a < user_b
  *
  */
-extern int sort_user_dec(slurmdb_report_user_rec_t *user_a,
-			 slurmdb_report_user_rec_t *user_b)
+extern int sort_user_dec(void *v1, void *v2)
 {
-	int diff = 0;
+	slurmdb_report_user_rec_t *user_a;
+	slurmdb_report_user_rec_t *user_b;
+	int diff;
+
+	diff = 0;
+	user_a = *(slurmdb_report_user_rec_t **)v1;
+	user_b = *(slurmdb_report_user_rec_t **)v2;
 
 	if (sort_flag == SLURMDB_REPORT_SORT_TIME) {
 		if (user_a->cpu_secs > user_b->cpu_secs)
@@ -255,6 +260,7 @@ extern int sort_user_dec(slurmdb_report_user_rec_t *user_a,
 		return -1;
 
 	return 0;
+
 }
 
 /*
@@ -265,10 +271,14 @@ extern int sort_user_dec(slurmdb_report_user_rec_t *user_a,
  *           -1: cluster_a < cluster_b
  *
  */
-extern int sort_cluster_dec(slurmdb_report_cluster_rec_t *cluster_a,
-			    slurmdb_report_cluster_rec_t *cluster_b)
+extern int sort_cluster_dec(void *v1, void *v2)
 {
 	int diff = 0;
+	slurmdb_report_cluster_rec_t *cluster_a;
+	slurmdb_report_cluster_rec_t *cluster_b;
+
+	cluster_a = *(slurmdb_report_cluster_rec_t **)v1;
+	cluster_b = *(slurmdb_report_cluster_rec_t **)v2;
 
 	if (!cluster_a->name || !cluster_b->name)
 		return 0;
@@ -293,10 +303,14 @@ extern int sort_cluster_dec(slurmdb_report_cluster_rec_t *cluster_a,
  *           1: assoc_a < assoc_b
  *
  */
-extern int sort_assoc_dec(slurmdb_report_assoc_rec_t *assoc_a,
-			  slurmdb_report_assoc_rec_t *assoc_b)
+extern int sort_assoc_dec(void *v1, void *v2)
 {
 	int diff = 0;
+	slurmdb_report_assoc_rec_t *assoc_a;
+	slurmdb_report_assoc_rec_t *assoc_b;
+
+	assoc_a = *(slurmdb_report_assoc_rec_t **)v1;
+	assoc_b = *(slurmdb_report_assoc_rec_t **)v2;
 
 	if (!assoc_a->acct || !assoc_b->acct)
 		return 0;
@@ -330,10 +344,14 @@ extern int sort_assoc_dec(slurmdb_report_assoc_rec_t *assoc_a,
  * returns: 1: resv_a > resv_b   0: resv_a == resv_b   -1: resv_a < resv_b
  *
  */
-extern int sort_reservations_dec(slurmdb_reservation_rec_t *resv_a,
-				 slurmdb_reservation_rec_t *resv_b)
+extern int sort_reservations_dec(void *v1, void *v2)
 {
 	int diff = 0;
+	slurmdb_reservation_rec_t *resv_a;
+	slurmdb_reservation_rec_t *resv_b;
+
+	resv_a = *(slurmdb_reservation_rec_t **)v1;
+	resv_b = *(slurmdb_reservation_rec_t **)v2;
 
 	if (!resv_a->cluster || !resv_b->cluster)
 		return 0;

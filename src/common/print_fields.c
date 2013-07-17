@@ -42,9 +42,16 @@
 int print_fields_parsable_print = 0;
 int print_fields_have_header = 1;
 
-static int _sort_char_list(char *name_a, char *name_b)
+static int _sort_char_list(void *v1, void *v2)
 {
-	int diff = strcmp(name_a, name_b);
+	int diff;
+	char *name_a;
+	char *name_b;
+
+	name_a = *(char **)v1;
+	name_b = *(char **)v2;
+
+	diff = strcmp(name_a, name_b);
 
 	if (diff < 0)
 		return -1;

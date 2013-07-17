@@ -198,10 +198,15 @@ static void _add_button_signals(grid_button_t *grid_button)
  *           1: rec_a < rec_b
  *
  */
-static int _sort_button_inx(grid_button_t *button_a, grid_button_t *button_b)
+static int _sort_button_inx(void *b1, void *b2)
 {
-	int inx_a = button_a->inx;
-	int inx_b = button_b->inx;
+	grid_button_t *button_a = *(grid_button_t **)b1;
+	grid_button_t *button_b = *(grid_button_t **)b2;
+	int inx_a;
+	int inx_b;
+
+	inx_a = button_a->inx;
+	inx_b = button_b->inx;
 
 	if (inx_a < inx_b)
 		return -1;

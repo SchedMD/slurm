@@ -119,10 +119,14 @@ static void _free_cluster_cond_members(slurmdb_cluster_cond_t *cluster_cond)
  *
  */
 
-static int _sort_childern_list(slurmdb_hierarchical_rec_t *assoc_a,
-			       slurmdb_hierarchical_rec_t *assoc_b)
+static int _sort_children_list(void *v1, void *v2)
 {
 	int diff = 0;
+	slurmdb_hierarchical_rec_t *assoc_a;
+	slurmdb_hierarchical_rec_t *assoc_b;
+
+	assoc_a = *(slurmdb_hierarchical_rec_t **)v1;
+	assoc_b = *(slurmdb_hierarchical_rec_t    **)v2;
 
 	/* Since all these assocations are on the same level we don't
 	 * have to check the lfts
@@ -155,9 +159,14 @@ static int _sort_childern_list(slurmdb_hierarchical_rec_t *assoc_a,
  *
  */
 
-static int _sort_assoc_by_lft_dec(slurmdb_association_rec_t *assoc_a,
-				  slurmdb_association_rec_t *assoc_b)
+static int _sort_assoc_by_lft_dec(void *v1, void *v2)
 {
+	slurmdb_association_rec_t *assoc_a;
+	slurmdb_association_rec_t *assoc_b;
+
+	assoc_a = *(slurmdb_association_rec_t **)v1;
+	assoc_b = *(slurmdb_association_rec_t **)v2;
+
 	if (assoc_a->lft == assoc_b->lft)
 		return 0;
 	if (assoc_a->lft > assoc_b->lft)
@@ -174,7 +183,7 @@ static int _sort_slurmdb_hierarchical_rec_list(
 	if (!list_count(slurmdb_hierarchical_rec_list))
 		return SLURM_SUCCESS;
 
-	list_sort(slurmdb_hierarchical_rec_list, (ListCmpF)_sort_childern_list);
+	list_sort(slurmdb_hierarchical_rec_list, (ListCmpF)_sort_children_list);
 
 	itr = list_iterator_create(slurmdb_hierarchical_rec_list);
 	while((slurmdb_hierarchical_rec = list_next(itr))) {

@@ -1656,11 +1656,15 @@ static int _insert_sview_part_sub(sview_part_info_t *sview_part_info,
 	return SLURM_SUCCESS;
 }
 
-static int _sview_part_sort_aval_dec(sview_part_info_t* rec_a,
-				     sview_part_info_t* rec_b)
+static int _sview_part_sort_aval_dec(void *a, void *b)
 {
-	int size_a = rec_a->part_ptr->total_nodes;
-	int size_b = rec_b->part_ptr->total_nodes;
+	sview_part_info_t *rec_a = *(sview_part_info_t **)a;
+	sview_part_info_t *rec_b = *(sview_part_info_t **)b;
+	int size_a;
+	int size_b;
+
+	size_a = rec_a->part_ptr->total_nodes;
+	size_b = rec_b->part_ptr->total_nodes;
 
 	if (size_a < size_b)
 		return -1;
@@ -1677,11 +1681,15 @@ static int _sview_part_sort_aval_dec(sview_part_info_t* rec_a,
 	return 0;
 }
 
-static int _sview_sub_part_sort(sview_part_sub_t* rec_a,
-				sview_part_sub_t* rec_b)
+static int _sview_sub_part_sort(void *a, void *b)
 {
-	int size_a = rec_a->node_state & NODE_STATE_BASE;
-	int size_b = rec_b->node_state & NODE_STATE_BASE;
+	sview_part_sub_t *rec_a = *(sview_part_sub_t **)a;
+	sview_part_sub_t *rec_b = *(sview_part_sub_t **)b;
+	int size_a;
+	int size_b;
+
+	size_a = rec_a->node_state & NODE_STATE_BASE;
+	size_b = rec_b->node_state & NODE_STATE_BASE;
 
 	if (size_a < size_b)
 		return -1;

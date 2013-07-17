@@ -583,8 +583,15 @@ unpack_error:
 int list_compare_config (void *config_entry1, void *config_entry2)
 {
 	int weight1, weight2;
-	weight1 = ((struct config_record *) config_entry1)->weight;
-	weight2 = ((struct config_record *) config_entry2)->weight;
+	struct config_record *c1;
+	struct config_record *c2;
+
+	c1 = *(struct config_record **)config_entry1;
+	c2 = *(struct config_record **)config_entry2;
+
+	weight1 = c1->weight;
+	weight2 = c2->weight;
+
 	return (weight1 - weight2);
 }
 

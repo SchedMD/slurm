@@ -51,6 +51,8 @@
 
 static bool reverse_order;
 
+static void _get_job_info_from_void(job_info_t **j1, job_info_t **j2, void *v1, void *v2);
+static void _get_step_info_from_void(job_step_info_t **j1, job_step_info_t **j2, void *v1, void *v2);
 static int _sort_job_by_batch_host(void *void1, void *void2);
 static int _sort_job_by_gres(void *void1, void *void2);
 static int _sort_job_by_group_id(void *void1, void *void2);
@@ -111,7 +113,7 @@ void sort_job_list(List job_list)
 		if ((i > 0) && (params.sort[i-1] == '-'))
 			reverse_order = true;
 
-		if      (params.sort[i] == 'B')
+		if (params.sort[i] == 'B')
 			list_sort(job_list, _sort_job_by_batch_host);
 		else if (params.sort[i] == 'b')
 			list_sort(job_list, _sort_job_by_gres);
@@ -229,12 +231,24 @@ void sort_step_list(List step_list)
 /*****************************************************************************
  * Local Job Sort Functions
  *****************************************************************************/
+static void _get_job_info_from_void(job_info_t **j1, job_info_t **j2, void *v1, void *v2)
+{
+	*j1 = *(job_info_t **)v1;
+	*j2 = *(job_info_t **)v2;
+}
+static void _get_step_info_from_void(job_step_info_t **s1, job_step_info_t **s2, void *v1, void *v2)
+{
+	*s1 = *(job_step_info_t **)v1;
+	*s2 = *(job_step_info_t **)v2;
+}
 static int _sort_job_by_batch_host(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
 	char *val1 = "", *val2 = "";
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	if (job1->batch_host)
 		val1 = job1->batch_host;
@@ -250,9 +264,11 @@ static int _sort_job_by_batch_host(void *void1, void *void2)
 static int _sort_job_by_gres(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
 	char *val1 = "", *val2 = "";
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	if (job1->gres)
 		val1 = job1->gres;
@@ -268,8 +284,10 @@ static int _sort_job_by_gres(void *void1, void *void2)
 static int _sort_job_by_group_id(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	diff = job1->group_id - job2->group_id;
 
@@ -281,10 +299,12 @@ static int _sort_job_by_group_id(void *void1, void *void2)
 static int _sort_job_by_group_name(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
 	struct group *group_info = NULL;
 	char *name1 = "", *name2 = "";
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	if ((group_info = getgrgid((gid_t) job1->group_id)))
 		name1 = group_info->gr_name;
@@ -300,8 +320,10 @@ static int _sort_job_by_group_name(void *void1, void *void2)
 static int _sort_job_by_id(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	diff = job1->job_id - job2->job_id;
 
@@ -313,9 +335,11 @@ static int _sort_job_by_id(void *void1, void *void2)
 static int _sort_job_by_name(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
 	char *val1 = "", *val2 = "";
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	if (job1->name)
 		val1 = job1->name;
@@ -331,13 +355,15 @@ static int _sort_job_by_name(void *void1, void *void2)
 static int _sort_job_by_node_list(void *void1, void *void2)
 {
 	int diff = 0;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
 	hostlist_t hostlist1, hostlist2;
 	char *val1, *val2;
 #if	PURE_ALPHA_SORT == 0
 	int inx;
 #endif
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	hostlist1 = hostlist_create(job1->nodes);
 	hostlist_sort(hostlist1);
@@ -386,8 +412,10 @@ static int _sort_job_by_node_list(void *void1, void *void2)
 static int _sort_job_by_num_nodes(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	diff = job1->num_nodes - job2->num_nodes;
 
@@ -399,8 +427,10 @@ static int _sort_job_by_num_nodes(void *void1, void *void2)
 static int _sort_job_by_num_cpus(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	diff = job1->num_cpus - job2->num_cpus;
 
@@ -412,8 +442,10 @@ static int _sort_job_by_num_cpus(void *void1, void *void2)
 static int _sort_job_by_num_sct(void *void1, void *void2)
 {
 	int diffs, diffc, difft;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	diffs = job1->sockets_per_node - job2->sockets_per_node;
 	diffc = job1->cores_per_socket - job2->cores_per_socket;
@@ -435,8 +467,10 @@ static int _sort_job_by_num_sct(void *void1, void *void2)
 static int _sort_job_by_sockets(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	diff = job1->sockets_per_node - job2->sockets_per_node;
 
@@ -448,8 +482,10 @@ static int _sort_job_by_sockets(void *void1, void *void2)
 static int _sort_job_by_cores(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	diff = job1->cores_per_socket - job2->cores_per_socket;
 
@@ -461,8 +497,10 @@ static int _sort_job_by_cores(void *void1, void *void2)
 static int _sort_job_by_threads(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	diff = job1->threads_per_core - job2->threads_per_core;
 
@@ -474,8 +512,10 @@ static int _sort_job_by_threads(void *void1, void *void2)
 static int _sort_job_by_min_memory(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	job1->pn_min_memory &= (~MEM_PER_CPU);
 	job2->pn_min_memory &= (~MEM_PER_CPU);
@@ -489,8 +529,10 @@ static int _sort_job_by_min_memory(void *void1, void *void2)
 static int _sort_job_by_min_tmp_disk(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	diff = job1->pn_min_tmp_disk - job2->pn_min_tmp_disk;
 
@@ -502,8 +544,10 @@ static int _sort_job_by_min_tmp_disk(void *void1, void *void2)
 static int _sort_job_by_state(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	diff = strcmp(job_state_string(job1->job_state),
 			 job_state_string(job2->job_state));
@@ -516,11 +560,13 @@ static int _sort_job_by_state(void *void1, void *void2)
 static int _sort_job_by_state_compact(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	diff = strcmp(job_state_string_compact(job1->job_state),
-			 job_state_string_compact(job2->job_state));
+	              job_state_string_compact(job2->job_state));
 
 	if (reverse_order)
 		diff = -diff;
@@ -530,8 +576,10 @@ static int _sort_job_by_state_compact(void *void1, void *void2)
 static int _sort_job_by_time_end(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	diff = job1->end_time - job2->end_time;
 
@@ -543,9 +591,11 @@ static int _sort_job_by_time_end(void *void1, void *void2)
 static int _sort_job_by_time_left(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
 	time_t time1, time2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	if ((job1->time_limit == INFINITE) || (job1->time_limit == NO_VAL))
 		time1 = INFINITE;
@@ -570,8 +620,10 @@ static int _sort_job_by_time_left(void *void1, void *void2)
 static int _sort_job_by_time_limit(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	if (job1->time_limit > job2->time_limit)
 		diff = 1;
@@ -597,9 +649,11 @@ static uint32_t _get_start_time(job_info_t *job)
 static int _sort_job_by_time_start(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
 	uint32_t start_time1, start_time2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	start_time1 = _get_start_time(job1);
 	start_time2 = _get_start_time(job2);
@@ -619,9 +673,11 @@ static int _sort_job_by_time_start(void *void1, void *void2)
 static int _sort_job_by_time_used(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
 	long time1, time2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	time1 = job_time_used(job1);
 	time2 = job_time_used(job2);
@@ -635,9 +691,11 @@ static int _sort_job_by_time_used(void *void1, void *void2)
 static int _sort_job_by_partition(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
 	char *val1 = "", *val2 = "";
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	if (job1->partition)
 		val1 = job1->partition;
@@ -653,8 +711,10 @@ static int _sort_job_by_partition(void *void1, void *void2)
 static int _sort_job_by_priority(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	diff = job1->priority - job2->priority;
 
@@ -666,8 +726,10 @@ static int _sort_job_by_priority(void *void1, void *void2)
 static int _sort_job_by_user_id(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	diff = job1->user_id - job2->user_id;
 
@@ -679,9 +741,11 @@ static int _sort_job_by_user_id(void *void1, void *void2)
 static int _sort_job_by_user_name(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
 	char *name1, *name2;
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	name1 = uid_to_string((uid_t) job1->user_id);
 	name2 = uid_to_string((uid_t) job2->user_id);
@@ -697,9 +761,11 @@ static int _sort_job_by_user_name(void *void1, void *void2)
 static int _sort_job_by_reservation(void *void1, void *void2)
 {
 	int diff;
-	job_info_t *job1 = (job_info_t *) void1;
-	job_info_t *job2 = (job_info_t *) void2;
+	job_info_t *job1;
+	job_info_t *job2;
 	char *val1 = "", *val2 = "";
+
+	_get_job_info_from_void(&job1, &job2, void1, void2);
 
 	if (job1->resv_name)
 		val1 = job1->resv_name;
@@ -718,9 +784,11 @@ static int _sort_job_by_reservation(void *void1, void *void2)
 static int _sort_step_by_gres(void *void1, void *void2)
 {
 	int diff;
-	job_step_info_t *step1 = (job_step_info_t *) void1;
-	job_step_info_t *step2 = (job_step_info_t *) void2;
+	job_step_info_t *step1;
+	job_step_info_t *step2;
 	char *val1 = "", *val2 = "";
+
+	_get_step_info_from_void(&step1, &step2, void1, void2);
 
 	if (step1->gres)
 		val1 = step1->gres;
@@ -736,8 +804,10 @@ static int _sort_step_by_gres(void *void1, void *void2)
 static int _sort_step_by_id(void *void1, void *void2)
 {
 	int diff;
-	job_step_info_t *step1 = (job_step_info_t *) void1;
-	job_step_info_t *step2 = (job_step_info_t *) void2;
+	job_step_info_t *step1;
+	job_step_info_t *step2;
+
+	_get_step_info_from_void(&step1, &step2, void1, void2);
 
 	diff = step1->job_id - step2->job_id;
 	if (diff == 0)
@@ -751,14 +821,16 @@ static int _sort_step_by_id(void *void1, void *void2)
 static int _sort_step_by_node_list(void *void1, void *void2)
 {
 	int diff = 0;
-	job_step_info_t *step1 = (job_step_info_t *) void1;
-	job_step_info_t *step2 = (job_step_info_t *) void2;
+	job_step_info_t *step1;
+	job_step_info_t *step2;
 
 	hostlist_t hostlist1, hostlist2;
 	char *val1, *val2;
 #if	PURE_ALPHA_SORT == 0
 	int inx;
 #endif
+
+	_get_step_info_from_void(&step1, &step2, void1, void2);
 
 	hostlist1 = hostlist_create(step1->nodes);
 	hostlist_sort(hostlist1);
@@ -807,9 +879,11 @@ static int _sort_step_by_node_list(void *void1, void *void2)
 static int _sort_step_by_partition(void *void1, void *void2)
 {
 	int diff;
-	job_step_info_t *step1 = (job_step_info_t *) void1;
-	job_step_info_t *step2 = (job_step_info_t *) void2;
+	job_step_info_t *step1;
+	job_step_info_t *step2;
 	char *val1 = "", *val2 = "";
+
+	_get_step_info_from_void(&step1, &step2, void1, void2);
 
 	if (step1->partition)
 		val1 = step1->partition;
@@ -825,8 +899,10 @@ static int _sort_step_by_partition(void *void1, void *void2)
 static int _sort_step_by_time_limit(void *void1, void *void2)
 {
 	int diff;
-	job_step_info_t *step1 = (job_step_info_t *) void1;
-	job_step_info_t *step2 = (job_step_info_t *) void2;
+	job_step_info_t *step1;
+	job_step_info_t *step2;
+
+	_get_step_info_from_void(&step1, &step2, void1, void2);
 
 	diff = step1->time_limit - step2->time_limit;
 
@@ -838,8 +914,10 @@ static int _sort_step_by_time_limit(void *void1, void *void2)
 static int _sort_step_by_time_start(void *void1, void *void2)
 {
 	int diff;
-	job_step_info_t *step1 = (job_step_info_t *) void1;
-	job_step_info_t *step2 = (job_step_info_t *) void2;
+	job_step_info_t *step1;
+	job_step_info_t *step2;
+
+	_get_step_info_from_void(&step1, &step2, void1, void2);
 
 	diff = step1->start_time - step2->start_time;
 
@@ -851,9 +929,11 @@ static int _sort_step_by_time_start(void *void1, void *void2)
 static int _sort_step_by_time_used(void *void1, void *void2)
 {
 	int diff;
-	job_step_info_t *step1 = (job_step_info_t *) void1;
-	job_step_info_t *step2 = (job_step_info_t *) void2;
+	job_step_info_t *step1;
+	job_step_info_t *step2;
 	time_t used1, used2;
+
+	_get_step_info_from_void(&step1, &step2, void1, void2);
 
 	used1 = difftime(now, step1->start_time);
 	used2 = difftime(now, step2->start_time);
@@ -867,8 +947,10 @@ static int _sort_step_by_time_used(void *void1, void *void2)
 static int _sort_step_by_user_id(void *void1, void *void2)
 {
 	int diff;
-	job_step_info_t *step1 = (job_step_info_t *) void1;
-	job_step_info_t *step2 = (job_step_info_t *) void2;
+	job_step_info_t *step1;
+	job_step_info_t *step2;
+
+	_get_step_info_from_void(&step1, &step2, void1, void2);
 
 	diff = step1->user_id - step2->user_id;
 
@@ -880,9 +962,11 @@ static int _sort_step_by_user_id(void *void1, void *void2)
 static int _sort_step_by_user_name(void *void1, void *void2)
 {
 	int diff;
-	job_step_info_t *step1 = (job_step_info_t *) void1;
-	job_step_info_t *step2 = (job_step_info_t *) void2;
+	job_step_info_t *step1;
+	job_step_info_t *step2;
 	char *name1, *name2;
+
+	_get_step_info_from_void(&step1, &step2, void1, void2);
 
 	name1 = uid_to_string((uid_t) step1->user_id);
 	name2 = uid_to_string((uid_t) step2->user_id);

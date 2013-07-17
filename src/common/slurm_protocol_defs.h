@@ -748,7 +748,7 @@ typedef struct return_code_msg {
  * the job epilog. */
 
 #define SIG_PREEMPTED	994	/* Dummy signal value for job preemption */
-#define SIG_DEBUG_WAKE	995	/* Dummy signal value to wake procs stopped 
+#define SIG_DEBUG_WAKE	995	/* Dummy signal value to wake procs stopped
 				 * for debugger */
 #define SIG_TIME_LIMIT	996	/* Dummy signal value for time limit reached */
 #define SIG_ABORT	997	/* Dummy signal value to abort a job */
@@ -1030,7 +1030,7 @@ extern void slurm_destroy_uint32_ptr(void *object);
 /* here to add \\ to all \" in a string this needs to be xfreed later */
 extern char *slurm_add_slash_to_quotes(char *str);
 extern int slurm_addto_char_list(List char_list, char *names);
-extern int slurm_sort_char_list_asc(char *name_a, char *name_b);
+extern int slurm_sort_char_list_asc(void *, void *);
 extern int slurm_sort_char_list_desc(char *name_a, char *name_b);
 
 /* free message functions */

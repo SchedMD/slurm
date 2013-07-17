@@ -504,11 +504,15 @@ static void _update_info_block(List block_list,
 	last_model = model;
 }
 
-static int _sview_block_sort_aval_dec(sview_block_info_t* rec_a,
-				      sview_block_info_t* rec_b)
+static int _sview_block_sort_aval_dec(void *s1, void *s2)
 {
-	int size_a = rec_a->cnode_cnt;
-	int size_b = rec_b->cnode_cnt;
+	sview_block_info_t *rec_a = *(sview_block_info_t **)s1;
+	sview_block_info_t *rec_b = *(sview_block_info_t **)s2;
+	int size_a;
+	int size_b;
+
+	size_a = rec_a->cnode_cnt;
+	size_b = rec_b->cnode_cnt;
 
 	if (list_count(rec_a->job_list) < list_count(rec_b->job_list))
 		return 1;

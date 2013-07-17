@@ -115,7 +115,7 @@ strong_alias(list_install_fork_handlers, slurm_list_install_fork_handlers);
 #  ifndef lsd_nomem_error
 	static void * lsd_nomem_error(char *file, int line, char *mesg)
 	{
-		
+
 		log_oom(file, line, mesg);
 		abort();
 		return NULL;
@@ -201,7 +201,8 @@ static ListIterator list_iterator_alloc (void);
 static void list_iterator_free (ListIterator i);
 static void * list_alloc_aux (int size, void *pfreelist);
 static void list_free_aux (void *x, void *pfreelist);
-
+static void *_list_pop_locked(List l);
+static void *_list_append_locked(List l, void *x);
 
 /***************
  *  Variables  *
@@ -369,7 +370,7 @@ list_append (List l, void *x)
     assert(x != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
-    v = list_node_create(l, l->tail, x);
+    v = _list_append_locked(l, x);
     list_mutex_unlock(&l->mutex);
     return(v);
 }
@@ -530,7 +531,7 @@ list_flush (List l)
 }
 
 void
-list_sort (List l, ListCmpF f)
+list_sort2 (List l, ListCmpF f)
 {
     ListIterator it;
 
@@ -613,7 +614,7 @@ list_sort (List l, ListCmpF f)
 }
 
 void
-list_sort2 (List l, ListCmpF f)
+list_sort3 (List l, ListCmpF f)
 {
 /*  Note: Time complexity O(n^2).
  */
@@ -669,6 +670,58 @@ list_push (List l, void *x)
     return(v);
 }
 
+void
+list_sort(List l, ListCmpF f)
+{
+	char **v;
+	int n;
+	int lsize;
+	void *e;
+	ListIterator i;
+
+	assert(l != NULL);
+	assert(f != NULL);
+	assert(l->magic == LIST_MAGIC);
+	list_mutex_lock(&l->mutex);
+
+	if (l->count <= 1) {
+		list_mutex_unlock(&l->mutex);
+		return;
+	}
+
+	lsize = l->count;
+	v = xmalloc(lsize * sizeof(char *));
+	if (v == NULL) {
+		list_mutex_unlock(&l->mutex);
+		lsd_nomem_error(__FILE__, __LINE__, "list_sort");
+		return;
+	}
+
+	n = 0;
+	while ((e = _list_pop_locked(l))) {
+		v[n] = e;
+		++n;
+	}
+
+	qsort(v, n, sizeof(char *), (__compar_fn_t)f);
+
+	for (n = 0; n < lsize; n++) {
+		_list_append_locked(l, v[n]);
+	}
+
+	xfree(v);
+
+	/* Reset all iterators on the list to point
+	 * to the head of the list.
+	 */
+	for (i = l->iNext; i; i = i->iNext) {
+		assert(i->magic == LIST_MAGIC);
+		i->pos = i->list->head;
+		i->prev = &i->list->head;
+	}
+
+	list_mutex_unlock(&l->mutex);
+}
 
 void *
 list_pop (List l)
@@ -678,7 +731,7 @@ list_pop (List l)
     assert(l != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
-    v = list_node_destroy(l, &l->head);
+    v = _list_pop_locked(l);
     list_mutex_unlock(&l->mutex);
     return(v);
 }
@@ -1121,3 +1174,33 @@ list_mutex_is_locked (pthread_mutex_t *mutex)
 }
 #endif /* WITH_PTHREADS */
 #endif /* !NDEBUG */
+
+/* _list_pop_locked
+ *
+ * Pop an item from the list assuming the
+ * the list is already locked.
+ */
+static void *
+_list_pop_locked(List l)
+{
+	void *v;
+
+	v = list_node_destroy(l, &l->head);
+
+	return v;
+}
+
+/* _list_append_locked()
+ *
+ * Append an item to the list. The function assumes
+ * the list is already locked.
+ */
+static void *
+_list_append_locked(List l, void *x)
+{
+	void *v;
+
+	v = list_node_create(l, l->tail, x);
+
+	return v;
+}

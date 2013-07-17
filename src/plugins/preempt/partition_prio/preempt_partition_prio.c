@@ -153,9 +153,14 @@ static int _sort_by_prio (void *x, void *y)
 {
 	int rc;
 	uint32_t job_prio1, job_prio2;
+	struct job_record *j1;
+	struct job_record *j2;
 
-	job_prio1 = _gen_job_prio((struct job_record *) x);
-	job_prio2 = _gen_job_prio((struct job_record *) y);
+	j1 = *(struct job_record **)x;
+	j2 = *(struct job_record **)y;
+
+	job_prio1 = _gen_job_prio(j1);
+	job_prio2 = _gen_job_prio(j2);
 
 	if (job_prio1 > job_prio2)
 		rc = 1;

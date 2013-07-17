@@ -104,14 +104,10 @@ extern void slurmdb_report_print_time(print_field_t *field,
 			       uint64_t value, uint64_t total_time, int last);
 extern int parse_option_end(char *option);
 extern char *strip_quotes(char *option, int *increased);
-extern int sort_user_dec(slurmdb_report_user_rec_t *user_a,
-			 slurmdb_report_user_rec_t *user_b);
-extern int sort_cluster_dec(slurmdb_report_cluster_rec_t *cluster_a,
-			    slurmdb_report_cluster_rec_t *cluster_b);
-extern int sort_assoc_dec(slurmdb_report_assoc_rec_t *assoc_a,
-			  slurmdb_report_assoc_rec_t *assoc_b);
-extern int sort_reservations_dec(slurmdb_reservation_rec_t *resv_a,
-				 slurmdb_reservation_rec_t *resv_b);
+extern int sort_user_dec(void *, void *);
+extern int sort_cluster_dec(void *, void *);
+extern int sort_assoc_dec(void *, void *);
+extern int sort_reservations_dec(void *, void *);
 
 extern int get_uint(char *in_value, uint32_t *out_value, char *type);
 
