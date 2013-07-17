@@ -226,7 +226,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 /* Job step ID of batch scripts */
 #define SLURM_BATCH_SCRIPT (0xfffffffe)
 
-#define SLURM_ID_HASH_NUM 10000000
+#define SLURM_ID_HASH_NUM 10000000000
 /*
  * SLURM_ID_HASH
  * Description:
