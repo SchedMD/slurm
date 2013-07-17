@@ -121,6 +121,24 @@ expect {
 		set build_match 1
 		exp_continue
 	}
+	-re "\nerror: db5 error" {
+		send_user "\nWARNING: No installed RPM database on this system.\n"
+		exp_continue
+	}
+	-re "\nerror: cannot open Packages" {
+		send_user "\nWARNING: No installed RPM database on this system.\n"
+		exp_continue
+	}
+	-re "\nerror: " {
+		send_user "\nFAILURE: There was an error during the RPM build.\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "\nwarning: " {
+		send_user "\nFAILURE: There was a warning during the RPM build.\n"
+		set exit_code 1
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: rpmbuild is not responding\n"
 		set exit_code 1
@@ -147,10 +165,28 @@ exec $bin_rm -fr /tmp/built_rpm
 
 set build_match 0
 spawn rpmbuild -ta -v $tar_name --define=$prefix_loc --define=$lib_dir \
---define=$topdir --define=$man_dir --define=$data_dir --define=$bin_dir --nodeps
+    --define=$topdir --define=$man_dir --define=$data_dir --define=$bin_dir --nodeps
 expect {
 	-re "Wrote" {
 		set build_match 1
+		exp_continue
+	}
+	-re "\nerror: db5 error" {
+		send_user "\nWARNING: No installed RPM database on this system.\n"
+		exp_continue
+	}
+	-re "\nerror: cannot open Packages" {
+		send_user "\nWARNING: No installed RPM database on this system.\n"
+		exp_continue
+	}
+	-re "\nerror: " {
+		send_user "\nFAILURE: There was an error during the RPM build.\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "\nwarning: " {
+		send_user "\nFAILURE: There was a warning during the RPM build.\n"
+		set exit_code 1
 		exp_continue
 	}
 	timeout {
