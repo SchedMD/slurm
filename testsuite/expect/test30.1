@@ -134,6 +134,14 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
+	-re "\nwarning: File listed twice: /etc/slurm/slurm.conf.example" {
+		send_user "\nWARNING: This seems to be an rpmbuild problem.\n"
+		exp_continue
+	}
+	-re "\nwarning: File listed twice: /etc/slurm/slurm.epilog.clean" {
+		send_user "\nWARNING: This seems to be an rpmbuild problem.\n"
+		exp_continue
+	}
 	-re "\nwarning: " {
 		send_user "\nFAILURE: There was a warning during the RPM build.\n"
 		set exit_code 1
@@ -182,6 +190,14 @@ expect {
 	-re "\nerror: " {
 		send_user "\nFAILURE: There was an error during the RPM build.\n"
 		set exit_code 1
+		exp_continue
+	}
+	-re "\nwarning: File listed twice: /etc/slurm/slurm.conf.example" {
+		send_user "\nWARNING: This seems to be an rpmbuild problem.\n"
+		exp_continue
+	}
+	-re "\nwarning: File listed twice: /etc/slurm/slurm.epilog.clean" {
+		send_user "\nWARNING: This seems to be an rpmbuild problem.\n"
 		exp_continue
 	}
 	-re "\nwarning: " {
