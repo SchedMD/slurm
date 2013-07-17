@@ -475,12 +475,11 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/libslurmdb.la
 	chmod 644 $RPM_BUILD_ROOT/%{_libdir}/libslurmdb.la
 
 # Delete unpackaged files:
-test -f %{_perldir}/auto/Slurm/Slurm.bs         &&
-test -z %{_perldir}/auto/Slurm/Slurm.bs         &&
-rm   -f %{_perldir}/auto/Slurm/Slurm.bs
-test -f %{_perldir}/auto/Slurmdb/Slurmdb.bs     &&
-test -z %{_perldir}/auto/Slurmdb/Slurmdb.bs     &&
-rm   -f %{_perldir}/auto/Slurmdb/Slurmdb.bs
+test -s $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs         ||
+rm   -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs
+
+test -s $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/Slurmdb.bs     ||
+rm   -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/Slurmdb.bs
 
 rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi.a
 rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi2.a
@@ -616,10 +615,10 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_pgsql.so            &&
 
 LIST=./perlapi.files
 touch $LIST
-test -f  %{_perldir}/auto/Slurm/Slurm.bs       &&
-   echo %{_perldir}/auto/Slurm/Slurm.bs        >> $LIST
-test -f  %{_perldir}/auto/Slurmdb/Slurmdb.bs   &&
-   echo %{_perldir}/auto/Slurmdb/Slurmdb.bs    >> $LIST
+test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs        &&
+   echo $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs        >> $LIST
+test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/Slurmdb.bs    &&
+   echo $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/Slurmdb.bs    >> $LIST
 
 LIST=./plugins.files
 touch $LIST
