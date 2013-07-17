@@ -750,7 +750,7 @@ list_pop_top (List l, ListCmpF f)
     if (*pTop) {
         pp = &(*pTop)->next;
         while (*pp) {
-            if (f((*pp)->data, (*pTop)->data) > 0)
+            if (f(&(*pp)->data, &(*pTop)->data) > 0)
                 pTop = pp;
             pp = &(*pp)->next;
         }
@@ -774,7 +774,7 @@ list_pop_bottom (List l, ListCmpF f)
     if (*pBottom) {
         pp = &(*pBottom)->next;
         while (*pp) {
-            if (f((*pp)->data, (*pBottom)->data) < 0)
+            if (f(&(*pp)->data, &(*pBottom)->data) < 0)
                 pBottom = pp;
             pp = &(*pp)->next;
         }
