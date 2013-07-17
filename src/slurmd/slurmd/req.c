@@ -156,7 +156,7 @@ static void _rpc_terminate_tasks(slurm_msg_t *);
 static void _rpc_timelimit(slurm_msg_t *);
 static void _rpc_reattach_tasks(slurm_msg_t *);
 static void _rpc_signal_job(slurm_msg_t *);
-static void _rpc_suspend_job(slurm_msg_t *msg, int version);
+static void _rpc_suspend_job(slurm_msg_t *msg);
 static void _rpc_terminate_job(slurm_msg_t *);
 static void _rpc_update_time(slurm_msg_t *);
 static void _rpc_shutdown(slurm_msg_t *msg);
@@ -309,17 +309,9 @@ slurmd_req(slurm_msg_t *msg)
 		_rpc_signal_job(msg);
 		slurm_free_signal_job_msg(msg->data);
 		break;
-	case REQUEST_SUSPEND:
-/* FIXME: This logic supports a version 2.4 slurmctld talking with a
- * version 2.5 slurmd. Remove in version 2.6 */
-		debug2("Processing RPC: REQUEST_SUSPEND");
-		_rpc_suspend_job(msg, 1);
-		last_slurmctld_msg = time(NULL);
-		slurm_free_suspend_msg(msg->data);
-		break;
 	case REQUEST_SUSPEND_INT:
 		debug2("Processing RPC: REQUEST_SUSPEND_INT");
-		_rpc_suspend_job(msg, 2);
+		_rpc_suspend_job(msg);
 		last_slurmctld_msg = time(NULL);
 		slurm_free_suspend_int_msg(msg->data);
 		break;
@@ -427,6 +419,7 @@ slurmd_req(slurm_msg_t *msg)
 		_rpc_forward_data(msg);
 		slurm_free_forward_data_msg(msg->data);
 		break;
+	case REQUEST_SUSPEND:	/* Defunct, see REQUEST_SUSPEND_INT */
 	default:
 		error("slurmd_req: invalid request msg type %d",
 		      msg->msg_type);
@@ -3415,7 +3408,7 @@ _unlock_suspend_job(uint32_t jobid)
  * each job step belonging to a given job allocation.
  */
 static void
-_rpc_suspend_job(slurm_msg_t *msg, int version)
+_rpc_suspend_job(slurm_msg_t *msg)
 {
 	suspend_int_msg_t *req = msg->data;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
@@ -3426,7 +3419,7 @@ _rpc_suspend_job(slurm_msg_t *msg, int version)
 	int first_time, rc = SLURM_SUCCESS;
 
 	if ((req->op != SUSPEND_JOB) && (req->op != RESUME_JOB)) {
-		error("REQUEST_SUSPEND: bad op code %u", req->op);
+		error("REQUEST_SUSPEND_INT: bad op code %u", req->op);
 		rc = ESLURM_NOT_SUPPORTED;
 	}
 
@@ -3475,7 +3468,7 @@ _rpc_suspend_job(slurm_msg_t *msg, int version)
 		sleep(1);
 	}
 
-	if ((version > 0) && (req->op == SUSPEND_JOB) && (req->indf_susp))
+	if ((req->op == SUSPEND_JOB) && (req->indf_susp))
 		interconnect_suspend(req->switch_info, 5);
 
 	/* Release or reclaim resources bound to these tasks (task affinity) */
@@ -3548,7 +3541,7 @@ _rpc_suspend_job(slurm_msg_t *msg, int version)
 	list_iterator_destroy(i);
 	list_destroy(steps);
 
-	if ((version > 0) && (req->op == RESUME_JOB) && (req->indf_susp))
+	if ((req->op == RESUME_JOB) && (req->indf_susp))
 		interconnect_resume(req->switch_info, 5);
 
 	_unlock_suspend_job(req->job_id);
