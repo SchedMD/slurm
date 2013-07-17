@@ -1075,7 +1075,7 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 	int errnum = 0;
 
 	debug("_handle_suspend for step=%u.%u uid=%d",
-	      job->jobid, job->stepi, (int) uid);
+	      job->jobid, job->stepid, (int) uid);
 	if (!_slurm_authorized_user(uid)) {
 		debug("job step suspend request from uid %ld for job %u.%u ",
 		      (long)uid, job->jobid, job->stepid);
