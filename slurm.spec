@@ -486,14 +486,20 @@ rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi.a
 rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi2.a
 rm -f $RPM_BUILD_ROOT/%{_libdir}/libslurm.a
 rm -f $RPM_BUILD_ROOT/%{_libdir}/libslurmdb.a
-rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
-rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.{a,la}
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.a
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.la
+rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.a
+rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.la
 %if %{?with_pam_dir}0
-rm -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.{a,la}
+rm -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.la
+rm -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.la
 %endif
-rm -f $RPM_BUILD_ROOT/lib/security/pam_slurm.{a,la}
-rm -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.{a,la}
-rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.{a,la}
+rm -f $RPM_BUILD_ROOT/lib/security/pam_slurm.a
+rm -f $RPM_BUILD_ROOT/lib/security/pam_slurm.la
+rm -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.a
+rm -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.la
+rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.a
+rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.la
 %if ! %{slurm_with auth_none}
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_none.so
 %endif
@@ -531,6 +537,12 @@ rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_lua.so
 
 %if ! %{slurm_with sgijob}
 rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_sgi_job.so
+%endif
+
+%if ! %{slurm_with percs}
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_poe.so
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libpermapi.so
+rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/switch_nrt.so
 %endif
 
 # Build man pages that are generated directly by the tools
@@ -637,6 +649,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cgroup.so              &&
    echo %{_libdir}/slurm/task_cgroup.so              >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_container_cray.so       &&
    echo %{_libdir}/slurm/job_container_cray.so       >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_container_none.so       &&
+   echo %{_libdir}/slurm/job_container_none.so       >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cray.so                &&
    echo %{_libdir}/slurm/task_cray.so                >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_cray.so              &&
