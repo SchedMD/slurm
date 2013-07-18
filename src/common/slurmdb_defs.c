@@ -158,6 +158,8 @@ static int _sort_childern_list(slurmdb_hierarchical_rec_t *assoc_a,
 static int _sort_assoc_by_lft_dec(slurmdb_association_rec_t *assoc_a,
 				  slurmdb_association_rec_t *assoc_b)
 {
+	if (assoc_a->lft == assoc_b->lft)
+		return 0;
 	if (assoc_a->lft > assoc_b->lft)
 		return 1;
 	return -1;
