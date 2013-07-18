@@ -96,6 +96,8 @@ slurmdb_cluster_rec_t *working_cluster_rec = NULL;
  * are 3 so we set it to that.  Do not use SYSTEM_DIMENSIONS since
  * that could easily be wrong if built on a non Cray system. */
 static int select_cray_dim_size[3] = {-1};
+static uint32_t debug_flags = 0;
+
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -138,7 +140,7 @@ extern int init ( void )
 {
 	if (slurmctld_conf.select_type_param & CR_OTHER_CONS_RES)
 		plugin_id = 108;
-
+	debug_flags = slurm_get_debug_flags();
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -629,6 +631,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 
 extern int select_p_reconfigure(void)
 {
+	debug_flags = slurm_get_debug_flags();
 	return other_reconfigure();
 }
 
