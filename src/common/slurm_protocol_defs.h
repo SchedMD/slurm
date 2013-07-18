@@ -1206,6 +1206,13 @@ extern char *node_use_string(enum node_use_type node_use);
 /* Translate a state enum to a readable string */
 extern char *bg_block_state_string(uint16_t state);
 
+/* Translate a Slurm nodelist to a char * of numbers
+ * nid000[36-37] -> 36-37
+ * IN - hl_in - if NULL will be made from nodelist
+ * IN - nodelist - generate hl from list if hl is NULL
+ * RET - nid list, needs to be xfreed.
+ */
+extern char *cray_nodelist2nids(hostlist_t hl_in, char *nodelist);
 
 /* Validate SPANK specified job environment does not contain any invalid
  * names. Log failures using info() */

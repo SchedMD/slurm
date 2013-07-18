@@ -49,6 +49,7 @@
 #endif
 
 #include <stdio.h>
+#include <ctype.h>
 
 #include "src/common/log.h"
 #include "src/common/node_select.h"
@@ -82,6 +83,7 @@ strong_alias(conn_type_string,	slurm_conn_type_string);
 strong_alias(conn_type_string_full, slurm_conn_type_string_full);
 strong_alias(node_use_string, slurm_node_use_string);
 strong_alias(bg_block_state_string, slurm_bg_block_state_string);
+strong_alias(cray_nodelist2nids, slurm_cray_nodelist2nids);
 strong_alias(reservation_flags_string, slurm_reservation_flags_string);
 
 
@@ -1943,6 +1945,68 @@ extern char *bg_block_state_string(uint16_t state)
 		return state_str;
 	return tmp;
 }
+
+extern char *cray_nodelist2nids(hostlist_t hl_in, char *nodelist)
+{
+	hostlist_t hl = hl_in;
+	char *nids = NULL, *node_name, *sep = "";
+	int i, nid;
+	int nid_begin = -1, nid_end = -1;
+
+	if (!nodelist && !hl_in)
+		return NULL;
+
+	/* Make hl off nodelist */
+	if (!hl_in) {
+		hl = hostlist_create(nodelist);
+		if (!hl) {
+			error("Invalid hostlist: %s", nodelist);
+			return NULL;
+		}
+		//info("input hostlist: %s", nodelist);
+		hostlist_uniq(hl);
+	}
+
+	while ((node_name = hostlist_shift(hl))) {
+		for (i = 0; node_name[i]; i++) {
+			if (!isdigit(node_name[i]))
+				continue;
+			nid = atoi(&node_name[i]);
+			if (nid_begin == -1) {
+				nid_begin = nid;
+				nid_end   = nid;
+			} else if (nid == (nid_end + 1)) {
+				nid_end   = nid;
+			} else {
+				if (nid_begin == nid_end) {
+					xstrfmtcat(nids, "%s%d", sep,
+						   nid_begin);
+				} else {
+					xstrfmtcat(nids, "%s%d-%d", sep,
+						   nid_begin, nid_end);
+				}
+				nid_begin = nid;
+				nid_end   = nid;
+				sep = ",";
+			}
+			break;
+		}
+		free(node_name);
+	}
+	if (nid_begin == -1)
+		;	/* No data to record */
+	else if (nid_begin == nid_end)
+		xstrfmtcat(nids, "%s%d", sep, nid_begin);
+	else
+		xstrfmtcat(nids, "%s%d-%d", sep, nid_begin, nid_end);
+
+	if (!hl_in)
+		hostlist_destroy(hl);
+	//info("output node IDs: %s", nids);
+
+	return nids;
+}
+
 
 /*
  * slurm_free_resource_allocation_response_msg - free slurm resource
