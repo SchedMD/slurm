@@ -97,11 +97,11 @@ int _setup_assoc_list(void)
 	update.objects = list_create(slurmdb_destroy_association_rec);
 
 	/* Just so we don't have to worry about lft's and rgt's we
-	 * will just push these on in order.
+	 * will just append these on in order.
 	 * Note: the commented out lfts and rgts as of 10-29-10 are
-	 * correct.  We do a push instead of append so they go on
+	 * correct.  By doing an append they go on
 	 * sorted in hierarchy order.  The sort that happens inside
-	 * the internal slurm code will sort alpha automatically, (We
+	 * the internal slurm code will sort alpha automatically, (You can
 	 * test this by putting AccountF before AccountE.
 	 */
 
@@ -113,7 +113,7 @@ int _setup_assoc_list(void)
 	/* assoc->lft = 1; */
 	/* assoc->rgt = 28; */
 	assoc->acct = xstrdup("root");
-	list_push(update.objects, assoc);
+	list_append(update.objects, assoc);
 
 	/* sub of root id 1 */
 	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
@@ -124,7 +124,7 @@ int _setup_assoc_list(void)
 	/* assoc->lft = 2; */
 	/* assoc->rgt = 13; */
 	assoc->acct = xstrdup("AccountA");
-	list_push(update.objects, assoc);
+	list_append(update.objects, assoc);
 
 	/* sub of AccountA id 2 */
 	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
@@ -135,7 +135,7 @@ int _setup_assoc_list(void)
 	assoc->parent_id = 2;
 	assoc->shares_raw = 30;
 	assoc->acct = xstrdup("AccountB");
-	list_push(update.objects, assoc);
+	list_append(update.objects, assoc);
 
 	/* sub of AccountB id 21 */
 	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
@@ -148,7 +148,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 20;
 	assoc->acct = xstrdup("AccountB");
 	assoc->user = xstrdup("User1");
-	list_push(update.objects, assoc);
+	list_append(update.objects, assoc);
 
 	/* sub of AccountA id 2 */
 	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
@@ -159,7 +159,7 @@ int _setup_assoc_list(void)
 	assoc->parent_id = 2;
 	assoc->shares_raw = 10;
 	assoc->acct = xstrdup("AccountC");
-	list_push(update.objects, assoc);
+	list_append(update.objects, assoc);
 
 	/* sub of AccountC id 22 */
 	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
@@ -172,7 +172,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 25;
 	assoc->acct = xstrdup("AccountC");
 	assoc->user = xstrdup("User2");
-	list_push(update.objects, assoc);
+	list_append(update.objects, assoc);
 
 	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
 	assoc->usage = create_assoc_mgr_association_usage();
@@ -184,7 +184,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 0;
 	assoc->acct = xstrdup("AccountC");
 	assoc->user = xstrdup("User3");
-	list_push(update.objects, assoc);
+	list_append(update.objects, assoc);
 
 	/* sub of root id 1 */
 	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
@@ -195,7 +195,7 @@ int _setup_assoc_list(void)
 	assoc->parent_id = 1;
 	assoc->shares_raw = 60;
 	assoc->acct = xstrdup("AccountD");
-	list_push(update.objects, assoc);
+	list_append(update.objects, assoc);
 
 	/* sub of AccountD id 3 */
 	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
@@ -206,7 +206,7 @@ int _setup_assoc_list(void)
 	assoc->parent_id = 3;
 	assoc->shares_raw = 25;
 	assoc->acct = xstrdup("AccountE");
-	list_push(update.objects, assoc);
+	list_append(update.objects, assoc);
 
 	/* sub of AccountE id 31 */
 	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
@@ -219,7 +219,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 25;
 	assoc->acct = xstrdup("AccountE");
 	assoc->user = xstrdup("User4");
-	list_push(update.objects, assoc);
+	list_append(update.objects, assoc);
 
 	/* sub of AccountD id 3 */
 	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
@@ -230,7 +230,7 @@ int _setup_assoc_list(void)
 	assoc->parent_id = 3;
 	assoc->shares_raw = 35;
 	assoc->acct = xstrdup("AccountF");
-	list_push(update.objects, assoc);
+	list_append(update.objects, assoc);
 
 	/* sub of AccountF id 32 */
 	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
@@ -243,7 +243,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 0;
 	assoc->acct = xstrdup("AccountF");
 	assoc->user = xstrdup("User5");
-	list_push(update.objects, assoc);
+	list_append(update.objects, assoc);
 
 	/* sub of root id 1 */
 	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
@@ -254,7 +254,7 @@ int _setup_assoc_list(void)
 	assoc->parent_id = 1;
 	assoc->shares_raw = 0;
 	assoc->acct = xstrdup("AccountG");
-	list_push(update.objects, assoc);
+	list_append(update.objects, assoc);
 
 	/* sub of AccountG id 4 */
 	assoc = xmalloc(sizeof(slurmdb_association_rec_t));
@@ -267,7 +267,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 30;
 	assoc->acct = xstrdup("AccountG");
 	assoc->user = xstrdup("User6");
-	list_push(update.objects, assoc);
+	list_append(update.objects, assoc);
 
 	assoc_mgr_update_assocs(&update);
 	list_destroy(update.objects);
