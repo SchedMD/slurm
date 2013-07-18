@@ -451,6 +451,17 @@ static int _get_job_req_field (lua_State *L)
 		lua_pushstring (L, job_desc->work_dir);
 	} else if (!strcmp(name, "wckey")) {
 		lua_pushstring (L, job_desc->wckey);
+	} else if (!strcmp(name, "ntasks_per_core")) {
+		lua_pushnumber (L, job_desc->ntasks_per_core);
+	} else if (!strcmp(name, "boards_per_node")) {
+		lua_pushnumber (L, job_desc->boards_per_node);
+	} else if (!strcmp(name, "ntasks_per_board")) {
+		lua_pushnumber (L, job_desc->ntasks_per_board);
+	} else if (!strcmp(name, "ntasks_per_socket")) {
+		lua_pushnumber (L, job_desc->ntasks_per_socket);
+	} else if (!strcmp(name, "sockets_per_board")) {
+		lua_pushnumber (L, job_desc->sockets_per_board);
+
 	} else {
 		lua_pushnil (L);
 	}
