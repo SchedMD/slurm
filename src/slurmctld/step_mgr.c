@@ -217,11 +217,10 @@ static void _internal_step_complete(
 	if (!terminated) {
 		/* These operations are not needed for
 		 * terminated jobs */
+		step_ptr->state = JOB_COMPLETING;
+
 		select_g_step_finish(step_ptr);
-		_step_dealloc_lps(step_ptr);
-		gres_plugin_step_dealloc(step_ptr->gres_list,
-					 job_ptr->gres_list, job_ptr->job_id,
-					 step_ptr->step_id);
+		post_job_step(step_ptr);
 	}
 }
 
@@ -635,7 +634,6 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 {
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
-	int error_code;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -656,13 +654,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	_internal_step_complete(job_ptr, step_ptr, false);
 
 	last_job_update = time(NULL);
-	error_code = delete_step_record(job_ptr, step_id);
-	if (error_code == ENOENT) {
-		info("job_step_complete step %u.%u not found", job_id,
-		     step_id);
-		return ESLURM_ALREADY_DONE;
-	}
-	_wake_pending_steps(job_ptr);
+
 	return SLURM_SUCCESS;
 }
 
@@ -3912,4 +3904,28 @@ extern void rebuild_step_bitmaps(struct job_record *job_ptr,
 		bit_free(orig_step_core_bitmap);
 	}
 	list_iterator_destroy (step_iterator);
+}
+
+extern int post_job_step(struct step_record *step_ptr)
+{
+	struct job_record *job_ptr = step_ptr->job_ptr;
+	int error_code;
+
+	_step_dealloc_lps(step_ptr);
+	gres_plugin_step_dealloc(step_ptr->gres_list,
+				 job_ptr->gres_list, job_ptr->job_id,
+				 step_ptr->step_id);
+
+	last_job_update = time(NULL);
+	step_ptr->state = JOB_COMPLETE;
+
+	error_code = delete_step_record(job_ptr, step_ptr->step_id);
+	if (error_code == ENOENT) {
+		info("remove_job_step step %u.%u not found", job_ptr->job_id,
+		     step_ptr->step_id);
+		return ESLURM_ALREADY_DONE;
+	}
+	_wake_pending_steps(job_ptr);
+
+	return SLURM_SUCCESS;
 }

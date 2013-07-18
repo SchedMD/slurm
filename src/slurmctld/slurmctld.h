@@ -1636,6 +1636,12 @@ extern void rehash_jobs(void);
 extern void rebuild_step_bitmaps(struct job_record *job_ptr,
 				 bitstr_t *orig_job_node_bitmap);
 
+/*
+ * After a job has fully completed run this to release the resouces
+ * and remove it from the system.
+ */
+extern int post_job_step(struct step_record *step_ptr);
+
 /* update first assigned job id as needed on reconfigure */
 extern void reset_first_job_id(void);
 
