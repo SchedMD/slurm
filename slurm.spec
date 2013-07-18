@@ -471,7 +471,7 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/libpmi.la	&&
 	chmod 644 $RPM_BUILD_ROOT/%{_libdir}/libpmi.la
 test -f $RPM_BUILD_ROOT/%{_libdir}/libslurm.la	&&
 	chmod 644 $RPM_BUILD_ROOT/%{_libdir}/libslurm.la
-test -f $RPM_BUILD_ROOT/%{_libdir}/libslurmdb.la
+test -f $RPM_BUILD_ROOT/%{_libdir}/libslurmdb.la &&
 	chmod 644 $RPM_BUILD_ROOT/%{_libdir}/libslurmdb.la
 
 # Delete unpackaged files:
