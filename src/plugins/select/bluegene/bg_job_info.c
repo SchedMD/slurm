@@ -370,6 +370,13 @@ extern int get_select_jobinfo(select_jobinfo_t *jobinfo,
 		else
 			*tmp_char = xstrdup(jobinfo->user_name);
 		break;
+	case SELECT_JOBDATA_CLEANING:
+		/* In the case of Cleaning it means we have a block_ptr. */
+		if (jobinfo->bg_record)
+			*uint16 = 1;
+		else
+			*uint16 = 0;
+		break;
 	default:
 		debug2("get_jobinfo data_type %d invalid",
 		       data_type);
