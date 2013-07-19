@@ -381,7 +381,7 @@ parse_command_line( int argc, char* argv[] )
 	if ( params.start_flag && !params.step_flag ) {
 		/* Set more defaults */
 		if (params.format == NULL)
-			params.format = xstrdup("%.7i %.9P %.8j %.8u  %.2t  %.19S %.6D %R");
+			params.format = xstrdup("%.7i %.9P %.8j %.8u %.2t %.19S %.6D %R");
 		if (params.sort == NULL)
 			params.sort = xstrdup("S");
 		if (params.states == NULL) {

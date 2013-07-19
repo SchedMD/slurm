@@ -115,7 +115,7 @@ static void _free_cluster_cond_members(slurmdb_cluster_cond_t *cluster_cond)
 /*
  * Comparator used for sorting immediate childern of acct_hierarchical_recs
  *
- * returns: -1: assoc_a > assoc_b   0: assoc_a == assoc_b   1: assoc_a < assoc_b
+ * returns: -1 assoc_a < assoc_b   0: assoc_a == assoc_b   1: assoc_a > assoc_b
  *
  */
 
@@ -155,7 +155,7 @@ static int _sort_children_list(void *v1, void *v2)
 /*
  * Comparator used for sorting immediate childern of acct_hierarchical_recs
  *
- * returns: -1: assoc_a > assoc_b   0: assoc_a == assoc_b   1: assoc_a < assoc_b
+ * returns: -1 assoc_a < assoc_b   0: assoc_a == assoc_b   1: assoc_a > assoc_b
  *
  */
 

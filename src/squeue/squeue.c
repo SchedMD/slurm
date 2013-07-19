@@ -230,7 +230,7 @@ _print_job ( bool clear_old )
 				"%.18i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R");
 		} else {
 			xstrcat(params.format,
-				"%.18i %.9P %.8j %.8u  %.2t %.10M %.6D %R");
+				"%.18i %.9P %.8j %.8u %.2t %.10M %.6D %R");
 		}
 	}
 	if (params.format_list == NULL)

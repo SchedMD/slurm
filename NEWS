@@ -22,6 +22,7 @@ documents those changes that are of interest to users and admins.
     erroneously on a bluegene system.
  -- sacct - fix --name and --partition options when using
     accounting_storage/filetxt.
+ -- squeue - Remove extra whitespace of default printout.
 
 * Changes in Slurm 2.6.0
 ========================
