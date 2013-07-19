@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  job_container_cray.c - Define job container management functions for
+ *  job_container_cncu.c - Define job container management functions for
  *                         Cray systems
  *****************************************************************************
  *  Copyright (C) 2013 SchedMD LLC
@@ -77,8 +77,8 @@
  * as 100 or 1000.  Various SLURM versions will likely require a certain
  * minimum version for their plugins as this API matures.
  */
-const char plugin_name[]        = "job_container cray plugin";
-const char plugin_type[]        = "job_container/cray";
+const char plugin_name[]        = "job_container cncu plugin";
+const char plugin_type[]        = "job_container/cncu";
 const uint32_t plugin_version   = 101;
 
 #if _DEBUG
