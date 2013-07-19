@@ -44,6 +44,7 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
+#include "src/slurmd/common/proctrack.h"
 
 #define _DEBUG	0
 
@@ -264,12 +265,32 @@ extern int container_p_create(uint32_t job_id)
 	return SLURM_SUCCESS;
 }
 
-extern int container_p_add(uint32_t job_id, uint64_t cont_id)
+/* Add proctrack container (PAGG) to a job container */
+extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 {
 #if _DEBUG
 	/* This is called from slurmstepd, so the job_id_array is NULL here.
 	 * The array is only set by slurmstepd */
-	info("%s: adding(%u.%"PRIu64")", plugin_type, job_id, cont_id);
+	info("%s: adding cont(%u.%"PRIu64")", plugin_type, job_id, cont_id);
+#endif
+	return SLURM_SUCCESS;
+}
+
+/* Add a process to a job container, create the proctrack container to add */
+extern int container_p_add_pid(uint32_t job_id, pid_t pid)
+{
+#if _DEBUG
+	slurmd_job_t job;
+
+	info("%s: adding pid(%u.%u)", plugin_type, job_id, (uint32_t) pid);
+
+	memset(&job, 0, sizeof(slurmd_job_t));
+	job.jmgr_pid = pid;
+	if (slurm_container_create(&job) != SLURM_SUCCESS) {
+		error("%s: slurm_container_create job(%u)", plugin_type,job_id);
+		return SLURM_ERROR;
+	}
+	return container_p_add_cont(job_id, job.cont_id);
 #endif
 	return SLURM_SUCCESS;
 }

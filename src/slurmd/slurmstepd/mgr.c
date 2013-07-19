@@ -933,8 +933,8 @@ job_manager(stepd_step_rec_t *job)
 		rc = ESLURMD_SETUP_ENVIRONMENT_ERROR;
 		goto fail1;
 	}
-	if (container_g_add(job->jobid, job->cont_id) != SLURM_SUCCESS)
-		error("container_g_add: %m");
+	if (container_g_add_cont(job->jobid, job->cont_id) != SLURM_SUCCESS)
+		error("container_g_add_cont: %m");
 
 #ifdef HAVE_ALPS_CRAY
 	/*
@@ -2419,8 +2419,8 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 	if ((job->cont_id == 0) &&
 	    (slurm_container_create(job) != SLURM_SUCCESS))
 		error("slurm_container_create: %m");
-	if (container_g_add(job->jobid, job->cont_id) != SLURM_SUCCESS)
-		error("container_g_add: %m");
+	if (container_g_add_cont(job->jobid, job->cont_id) != SLURM_SUCCESS)
+		error("container_g_add_cont: %m");
 
 	if ((ei = fork_child_with_wait_info(0)) == NULL) {
 		error ("executing %s: fork: %m", name);

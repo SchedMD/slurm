@@ -34,7 +34,7 @@ by the Slurm Plugin API require no specialization for process tracking.
 Note carefully, however, the versioning discussion below.</p>
 
 <p>The programmer is urged to study
-<span class="commandline">src/plugins/proctrack/job_container/job_container_cray.c</span>
+<span class="commandline">src/plugins/proctrack/job_container/job_container_cncu.c</span>
 for an example implementation of a Slurm proctrack plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
@@ -70,14 +70,27 @@ Job ID.</p>
 the plugin should return Slurm_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int container_p_add (uint32_t job_id, uint64_t cont_id);</p>
-<p style="margin-left:.2in"><b>Description</b>: Add a specific job container
-to a given job's container.</p>
+<p class="commandline">int container_p_add_cont (uint32_t job_id, uint64_t cont_id);</p>
+<p style="margin-left:.2in"><b>Description</b>: Add a specific process tracking
+container (PAGG) to a given job's container.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> job_id</span>&nbsp; &nbsp;&nbsp;(input)
 Job ID.<br>
 <span class="commandline"> cont_id</span>&nbsp; &nbsp;&nbsp;(input)
-Job container value as set by the proctrack plugin.</p>
+Process tracking container value as set by the proctrack plugin.</p>
+<p style="margin-left:.2in"><b>Returns</b>: Slurm_SUCCESS if successful. On failure,
+the plugin should return Slurm_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int container_p_add_pid (uint32_t job_id, pid_t pid);</p>
+<p style="margin-left:.2in"><b>Description</b>: Add a specific process ID
+to a given job's container. The process is first placed into a process tracking
+container (PAGG).</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> job_id</span>&nbsp; &nbsp;&nbsp;(input)
+Job ID.<br>
+<span class="commandline"> pid</span>&nbsp; &nbsp;&nbsp;(input)
+Process ID.</p>
 <p style="margin-left:.2in"><b>Returns</b>: Slurm_SUCCESS if successful. On failure,
 the plugin should return Slurm_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
