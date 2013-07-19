@@ -233,7 +233,8 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr)
 				dev_list = xmalloc(128);
 			else
 				xstrcat(dev_list, ",");
-			if (gpu_devices && (gpu_devices[i] >= 0))
+			if (gpu_devices && (i < nb_available_files) &&
+			    (gpu_devices[i] >= 0))
 				xstrfmtcat(dev_list, "%d", gpu_devices[i]);
 			else
 				xstrfmtcat(dev_list, "%d", i);
@@ -276,7 +277,8 @@ extern void step_set_env(char ***job_env_ptr, void *gres_ptr)
 				dev_list = xmalloc(128);
 			else
 				xstrcat(dev_list, ",");
-			if (gpu_devices && (gpu_devices[i] >= 0))
+			if (gpu_devices && (i < nb_available_files) &&
+			    (gpu_devices[i] >= 0))
 				xstrfmtcat(dev_list, "%d", gpu_devices[i]);
 			else
 				xstrfmtcat(dev_list, "%d", i);
