@@ -38,14 +38,17 @@
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+
+#include <job.h>	/* Cray's job module component */
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 
 #define _DEBUG	0
+
+#define ADD_FLAGS	0
+#define CREATE_FLAGS	0
+#define DELETE_FLAGS	0
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -77,8 +80,6 @@
 const char plugin_name[]        = "job_container cray plugin";
 const char plugin_type[]        = "job_container/cray";
 const uint32_t plugin_version   = 101;
-
-char *state_dir = NULL;		/* state save directory */
 
 #if _DEBUG
 #define JOB_BUF_SIZE 128
@@ -177,6 +178,20 @@ static int _restore_state(char *dir_name)
 
 	return error_code;
 }
+
+static void _stat_reservation(char *type, rid_t resv_id)
+{
+	struct job_resv_stat buf;
+
+	if (job_stat_reservation(resv_id, &buf)) {
+		error("%s: stat(%"PRIu64"): %m", plugin_type, resv_id);
+	} else {
+		info("%s: %s/stat(%"PRIu64"): flags=%d "
+		     "num_jobs=%d num_files=%d num_ipc_objs=%d",
+		     plugin_type, type, resv_id, buf.flags, buf.num_jobs,
+		     buf.num_files, buf.num_ipc_objs);
+	}
+}
 #endif
 
 /*
@@ -231,6 +246,9 @@ extern int container_p_restore(char *dir_name, bool recover)
 
 extern int container_p_create(uint32_t job_id)
 {
+	rid_t resv_id = job_id;
+	int rc;
+
 #if _DEBUG
 	int i, empty = -1, found = -1;
 	bool job_id_change = false;
@@ -261,21 +279,52 @@ extern int container_p_create(uint32_t job_id)
 		_save_state(state_dir);
 	slurm_mutex_unlock(&context_lock);
 #endif
-	return SLURM_SUCCESS;
+	rc = job_create_reservation(resv_id, CREATE_FLAGS);
+	if ((rc == 0) || (errno == EEXIST)) {
+		if ((rc != 0) && (errno == EEXIST)) {
+			error("%s: create(%u): Reservation already exists",
+			      plugin_type, job_id);
+		}
+#if _DEBUG
+		_stat_reservation("create", resv_id);
+#endif
+		return SLURM_SUCCESS;
+	}
+	error("%s: create(%u): %m", plugin_type, job_id);
+	return SLURM_ERROR;
 }
 
 extern int container_p_add(uint32_t job_id, uint64_t cont_id)
 {
+	jid_t cjob_id = cont_id
+	rid_t resv_id = job_id;
+	int rc;
+
 #if _DEBUG
-	/* This is called from slurmstepd, so the job_id_array is NULL here.
-	 * The array is only set by slurmstepd */
 	info("%s: adding(%u.%"PRIu64")", plugin_type, job_id, cont_id);
 #endif
-	return SLURM_SUCCESS;
+	rc = job_attach_reservation(cjob_id, resv_id, ADD_FLAGS);
+	if ((rc != 0) && (errno == ENOENT)) {	/* Log and retry */
+		error("%s: add(%u.%"PRIu64"): No reservation found",
+		      plugin_type, job_id, cont_id);
+		rc = job_create_reservation(resv_id, CREATE_FLAGS);
+		rc = job_attach_reservation(cjob_id, resv_id, ADD_FLAGS);
+	}
+	if (rc == 0) {
+#if _DEBUG
+		_stat_reservation("add", resv_id);
+#endif
+		return SLURM_SUCCESS;
+	}
+	error("%s: add(%u.%"PRIu64"): %m", plugin_type, job_id, cont_id);
+	return SLURM_ERROR;
 }
 
 extern int container_p_delete(uint32_t job_id)
 {
+	rid_t resv_id = job_id;
+	int rc;
+
 #if _DEBUG
 	int i, found = -1;
 	bool job_id_change = false;
@@ -295,5 +344,12 @@ extern int container_p_delete(uint32_t job_id)
 		_save_state(state_dir);
 	slurm_mutex_unlock(&context_lock);
 #endif
-	return SLURM_SUCCESS;
+	rc = job_end_reservation(resv_id, DELETE_FLAGS);
+	if (rc == 0)
+		return SLURM_SUCCESS;
+
+	error("%s: end(%u): %m", plugin_type, job_id);
+	if ((errno == ENOENT) || (errno == EINPROGRESS) || (errno == EALREADY))
+		return SLURM_SUCCESS;	/* Not fatal error */
+	return SLURM_ERROR;
 }
