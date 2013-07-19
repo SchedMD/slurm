@@ -83,7 +83,8 @@ exec $bin_sed -i "s/Source: %{name}-%{version}-%{release}.tgz/Source: Slurm-0-0.
 exec $bin_sed -i "s/%setup -n %{name}-%{version}-%{release}/%setup -n $file_name/g" $src_dir/slurm.spec
 
 set timeout 1000
-spawn $bin_cp -r -v $src_dir /tmp/slurm
+exec $bin_rm -fr /tmp/slurm
+spawn $bin_cp -L -r -v $src_dir /tmp/slurm
 expect {
 	timeout {
 		send_user "\nFAILURE: $src_dir was not copied\n"
@@ -120,6 +121,32 @@ expect {
 		set build_match 1
 		exp_continue
 	}
+	-re "\nerror: db5 error" {
+		send_user "\nWARNING: No installed RPM database on this system.\n"
+		exp_continue
+	}
+	-re "\nerror: cannot open Packages" {
+		send_user "\nWARNING: No installed RPM database on this system.\n"
+		exp_continue
+	}
+	-re "\nerror: " {
+		send_user "\nFAILURE: There was an error during the RPM build.\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "\nwarning: File listed twice: /etc/slurm/slurm.conf.example" {
+		send_user "\nWARNING: This seems to be an rpmbuild problem.\n"
+		exp_continue
+	}
+	-re "\nwarning: File listed twice: /etc/slurm/slurm.epilog.clean" {
+		send_user "\nWARNING: This seems to be an rpmbuild problem.\n"
+		exp_continue
+	}
+	-re "\nwarning: " {
+		send_user "\nFAILURE: There was a warning during the RPM build.\n"
+		set exit_code 1
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: rpmbuild is not responding\n"
 		set exit_code 1
@@ -146,10 +173,36 @@ exec $bin_rm -fr /tmp/built_rpm
 
 set build_match 0
 spawn rpmbuild -ta -v $tar_name --define=$prefix_loc --define=$lib_dir \
---define=$topdir --define=$man_dir --define=$data_dir --define=$bin_dir --nodeps
+    --define=$topdir --define=$man_dir --define=$data_dir --define=$bin_dir --nodeps
 expect {
 	-re "Wrote" {
 		set build_match 1
+		exp_continue
+	}
+	-re "\nerror: db5 error" {
+		send_user "\nWARNING: No installed RPM database on this system.\n"
+		exp_continue
+	}
+	-re "\nerror: cannot open Packages" {
+		send_user "\nWARNING: No installed RPM database on this system.\n"
+		exp_continue
+	}
+	-re "\nerror: " {
+		send_user "\nFAILURE: There was an error during the RPM build.\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "\nwarning: File listed twice: /etc/slurm/slurm.conf.example" {
+		send_user "\nWARNING: This seems to be an rpmbuild problem.\n"
+		exp_continue
+	}
+	-re "\nwarning: File listed twice: /etc/slurm/slurm.epilog.clean" {
+		send_user "\nWARNING: This seems to be an rpmbuild problem.\n"
+		exp_continue
+	}
+	-re "\nwarning: " {
+		send_user "\nFAILURE: There was a warning during the RPM build.\n"
+		set exit_code 1
 		exp_continue
 	}
 	timeout {

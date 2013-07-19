@@ -641,6 +641,30 @@ send_reply:
 	return pending_jobs;
 }
 
+/* Return true of all partitions have the same priority, otherwise false. */
+static bool _all_partition_priorities_same(void)
+{
+	struct part_record *part_ptr;
+	ListIterator iter;
+	bool part_priority_set = false;
+	uint32_t part_priority = 0;
+	bool result = true;
+
+	iter = list_iterator_create(part_list);
+	while ((part_ptr = (struct part_record *) list_next(iter))) {
+		if (!part_priority_set) {
+			part_priority = part_ptr->priority;
+			part_priority_set = true;
+		} else if (part_priority != part_ptr->priority) {
+			result = false;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return result;
+}
+
 /*
  * schedule - attempt to schedule all pending jobs
  *	pending jobs for each partition will be scheduled in priority
@@ -692,8 +716,11 @@ extern int schedule(uint32_t job_limit)
 			backfill_sched = true;
 #endif
 		if ((strcmp(sched_type, "sched/builtin") == 0) &&
-		    (strcmp(prio_type, "priority/basic") == 0))
+		    (strcmp(prio_type, "priority/basic") == 0) &&
+		    _all_partition_priorities_same())
 			fifo_sched = true;
+		else
+			fifo_sched = false;
 		/* Disable avoiding of fragmentation with sched/wiki */
 		if ((strcmp(sched_type, "sched/wiki") == 0) ||
 		    (strcmp(sched_type, "sched/wiki2") == 0))
@@ -822,7 +849,7 @@ next_part:			part_ptr = (struct part_record *)
 			}
 		} else {
 			job_queue_rec = list_pop_bottom(job_queue,
-							sort_job_queue2);
+			                                sort_job_queue2);
 			if (!job_queue_rec)
 				break;
 			job_ptr  = job_queue_rec->job_ptr;
@@ -1085,7 +1112,7 @@ next_part:			part_ptr = (struct part_record *)
 }
 
 /*
- * sort_job_queue - sort job_queue in decending priority order
+ * sort_job_queue - sort job_queue in descending priority order
  * IN/OUT job_queue - sorted job queue
  */
 extern void sort_job_queue(List job_queue)
@@ -1097,8 +1124,8 @@ extern void sort_job_queue(List job_queue)
  *	in order of decreasing priority */
 extern int sort_job_queue2(void *x, void *y)
 {
-	job_queue_rec_t *job_rec1 = (job_queue_rec_t *) x;
-	job_queue_rec_t *job_rec2 = (job_queue_rec_t *) y;
+	job_queue_rec_t *job_rec1 = *(job_queue_rec_t **) x;
+	job_queue_rec_t *job_rec2 = *(job_queue_rec_t **) y;
 	bool has_resv1, has_resv2;
 	static time_t config_update = 0;
 	static bool preemption_enabled = true;

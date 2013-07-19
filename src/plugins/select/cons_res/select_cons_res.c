@@ -212,8 +212,8 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		    uint32_t req_nodes, uint16_t job_node_req,
 		    List preemptee_candidates, List *preemptee_job_list,
 		    bitstr_t *exc_core_bitmap);
-static int _sort_usable_nodes_dec(struct job_record *job_a,
-				  struct job_record *job_b);
+static int _sort_usable_nodes_dec(void *, void *);
+
 static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
  		      uint32_t req_nodes, uint16_t job_node_req);
@@ -1492,9 +1492,11 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
  * Sort the usable_node element to put jobs in the correct
  * preemption order.
  */
-static int _sort_usable_nodes_dec(struct job_record *job_a,
-				  struct job_record *job_b)
+static int _sort_usable_nodes_dec(void *j1, void *j2)
 {
+	struct job_record *job_a = *(struct job_record **)j1;
+	struct job_record *job_b = *(struct job_record **)j2;
+
 	if (job_a->details->usable_nodes > job_b->details->usable_nodes)
 		return -1;
 	else if (job_a->details->usable_nodes < job_b->details->usable_nodes)
@@ -2663,7 +2665,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 			cores_in_node = 0;
 
-			/* First let's see in there are enough cores in 
+			/* First let's see in there are enough cores in
 			 * this node */
 			for (i = 0; i < local_cores; i++) {
 				if (bit_test(tmpcore, coff + i))
@@ -2672,7 +2674,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			if (cores_in_node < cores_per_node)
 				continue;
 
-			debug2("Using node %d (avail: %d, needed: %d)", 
+			debug2("Using node %d (avail: %d, needed: %d)",
 				inx, cores_in_node, cores_per_node);
 
 			cores_in_node = 0;
@@ -2805,7 +2807,7 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 	if (core_cnt && (*core_bitmap == NULL))
 		*core_bitmap = _make_core_bitmap_filtered(avail_bitmap, 0);
-	
+
 	rem_nodes = node_cnt;
 	rem_cores = core_cnt[0];
 
@@ -2919,7 +2921,7 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			if (switches_node_cnt[j] == 0)
 				continue;
 			if (core_cnt) {
-				sufficient = 
+				sufficient =
 					(switches_node_cnt[j] >= rem_nodes) &&
 					(switches_cpu_cnt[j] >= core_cnt[0]);
 			} else
@@ -2970,7 +2972,7 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 				}
 				if (avail_cores_in_node < cores_per_node)
 					continue;
-				
+
 				debug2("Using node %d with %d cores available",
 				       i, avail_cores_in_node);
 			}
@@ -2997,7 +2999,7 @@ fini:	for (i=0; i<switch_record_cnt; i++) {
 	xfree(switches_node_cnt);
 	xfree(switches_required);
 
-	if (avail_nodes_bitmap && core_cnt) { 
+	if (avail_nodes_bitmap && core_cnt) {
 		/* Reservation is using partial nodes */
 		//char str[100];
 		bitstr_t *exc_core_bitmap = NULL;

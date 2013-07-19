@@ -108,6 +108,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	char tmp1[16], tmp2[16];
 	char tmp_line[MAXHOSTRANGELEN];
 	char *out = NULL;
+	char *allow_deny, *value;
 	uint16_t force, preempt_mode, val;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
@@ -133,22 +134,34 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	}
 	xstrcat(out, tmp_line);
 
-	if ((part_ptr->allow_accounts == NULL) ||
-	    (part_ptr->allow_accounts[0] == '\0'))
-		sprintf(tmp_line, " AllowAccounts=ALL");
-	else {
-		snprintf(tmp_line, sizeof(tmp_line),
-			 " AllowAccounts=%s", part_ptr->allow_accounts);
+	if (part_ptr->allow_accounts || !part_ptr->deny_accounts) {
+		allow_deny = "Allow";
+		if ((part_ptr->allow_accounts == NULL) ||
+		    (part_ptr->allow_accounts[0] == '\0'))
+			value = "ALL";
+		else
+			value = part_ptr->allow_accounts;
+	} else {
+		allow_deny = "Deny";
+		value = part_ptr->deny_accounts;
 	}
+	snprintf(tmp_line, sizeof(tmp_line),
+		 " %sAccounts=%s", allow_deny, value);
 	xstrcat(out, tmp_line);
 
-	if ((part_ptr->allow_qos == NULL) ||
-	    (part_ptr->allow_qos[0] == '\0'))
-		sprintf(tmp_line, " AllowQos=ALL");
-	else {
-		snprintf(tmp_line, sizeof(tmp_line),
-			 " AllowQos=%s", part_ptr->allow_qos);
+	if (part_ptr->allow_qos || !part_ptr->deny_qos) {
+		allow_deny = "Allow";
+		if ((part_ptr->allow_qos == NULL) ||
+		    (part_ptr->allow_qos[0] == '\0'))
+			value = "ALL";
+		else
+			value = part_ptr->allow_qos;
+	} else {
+		allow_deny = "Deny";
+		value = part_ptr->deny_qos;
 	}
+	snprintf(tmp_line, sizeof(tmp_line),
+		 " %sQos=%s", allow_deny, value);
 	xstrcat(out, tmp_line);
 
 	if (one_liner)
@@ -157,41 +170,6 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		xstrcat(out, "\n   ");
 
 	/****** Line 3 ******/
-
-	if ((part_ptr->deny_groups == NULL) ||
-	    (part_ptr->deny_groups[0] == '\0'))
-		sprintf(tmp_line, "DenyGroups=NONE");
-	else {
-		snprintf(tmp_line, sizeof(tmp_line),
-			 "DenyGroups=%s", part_ptr->deny_groups);
-	}
-	xstrcat(out, tmp_line);
-
-	if ((part_ptr->deny_accounts == NULL) ||
-	    (part_ptr->deny_accounts[0] == '\0'))
-		sprintf(tmp_line, " DenyAccounts=NONE");
-	else {
-		snprintf(tmp_line, sizeof(tmp_line),
-			 " DenyAccounts=%s", part_ptr->deny_accounts);
-	}
-	xstrcat(out, tmp_line);
-
-	if ((part_ptr->deny_qos == NULL) ||
-	    (part_ptr->deny_qos[0] == '\0'))
-		sprintf(tmp_line, " DenyQos=NONE");
-	else {
-		snprintf(tmp_line, sizeof(tmp_line),
-			 " DenyQos=%s", part_ptr->deny_qos);
-	}
-	xstrcat(out, tmp_line);
-
-	if (one_liner)
-		xstrcat(out, " ");
-	else
-		xstrcat(out, "\n   ");
-
-	/****** Line 4 ******/
-
 	if (part_ptr->allow_alloc_nodes == NULL)
 		snprintf(tmp_line, sizeof(tmp_line), "AllocNodes=%s","ALL");
 	else
@@ -215,8 +193,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line added here for BG partitions
-	 to keep with alphabetized output******/
+	/****** Line 4 added here for BG partitions only
+	 ****** to maintain alphabetized output ******/
 
 	if (cluster_flags & CLUSTER_FLAG_BG) {
 		snprintf(tmp_line, sizeof(tmp_line), "BasePartitions=%s",

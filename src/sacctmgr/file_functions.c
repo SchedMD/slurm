@@ -1598,7 +1598,7 @@ static slurmdb_association_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 	return assoc;
 }
 
-static int _print_file_slurmdb_hierarchical_rec_childern(
+static int _print_file_slurmdb_hierarchical_rec_children(
 	FILE *fd, List slurmdb_hierarchical_rec_list,
 	List user_list, List acct_list)
 {
@@ -1817,10 +1817,10 @@ extern int print_file_slurmdb_hierarchical_rec_list(
 	itr = list_iterator_create(slurmdb_hierarchical_rec_list);
 	while ((slurmdb_hierarchical_rec = list_next(itr))) {
 /* 		info("got here %d with %d from %s %s",  */
-/* 		     depth, list_count(slurmdb_hierarchical_rec->childern), */
+/* 		     depth, list_count(slurmdb_hierarchical_rec->children), */
 /* 		     slurmdb_hierarchical_rec->assoc->acct,
 		     slurmdb_hierarchical_rec->assoc->user); */
-		if (!list_count(slurmdb_hierarchical_rec->childern))
+		if (!list_count(slurmdb_hierarchical_rec->children))
 			continue;
 		if (fprintf(fd, "Parent - %s\n",
 			    slurmdb_hierarchical_rec->assoc->acct) < 0) {
@@ -1830,10 +1830,10 @@ extern int print_file_slurmdb_hierarchical_rec_list(
 		info("%s - %s", "Parent",
 		     slurmdb_hierarchical_rec->assoc->acct);
 /* 		info("sending %d from %s", */
-/* 		     list_count(slurmdb_hierarchical_rec->childern), */
+/* 		     list_count(slurmdb_hierarchical_rec->children), */
 /* 		     slurmdb_hierarchical_rec->assoc->acct); */
-		_print_file_slurmdb_hierarchical_rec_childern(
-			fd, slurmdb_hierarchical_rec->childern,
+		_print_file_slurmdb_hierarchical_rec_children(
+			fd, slurmdb_hierarchical_rec->children,
 			user_list, acct_list);
 	}
 	list_iterator_destroy(itr);
@@ -2223,7 +2223,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				exit_code=1;
 				fprintf(stderr, " line(%d) You need to add "
 					"this parent (%s) as a child before "
-					"you can add childern to it.\n",
+					"you can add children to it.\n",
 					lc, parent);
 				break;
 			}
@@ -2232,7 +2232,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			parent = xstrdup("root");
 			printf(" No parent given creating off root, "
 			       "If incorrect specify 'Parent - name' "
-			       "before any childern in your file\n");
+			       "before any children in your file\n");
 		}
 
 		if (!strcasecmp("Project", object)

@@ -226,7 +226,7 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 /* Job step ID of batch scripts */
 #define SLURM_BATCH_SCRIPT (0xfffffffe)
 
-#define SLURM_ID_HASH_NUM 10000000
+#define SLURM_ID_HASH_NUM 10000000000
 /*
  * SLURM_ID_HASH
  * Description:
@@ -382,6 +382,8 @@ enum select_jobdata_type {
 				   * start_loc[SYSTEM_DIMENSIONS] */
 	SELECT_JOBDATA_USER_NAME, /* data-> char * user_name */
 	SELECT_JOBDATA_CONFIRMED, /* data-> uint8_t ALPS reservation confirmed */
+	SELECT_JOBDATA_CLEANING, /* data-> uint16_t if the job is in
+				  * cleaning state or not. */
 };
 
 enum select_nodedata_type {
@@ -1656,7 +1658,6 @@ typedef struct partition_info {
 	uint32_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	char *deny_accounts;    /* comma delimited list of denied accounts */
-	char *deny_groups;      /* comma delimited list of denied groups */
 	char *deny_qos;		/* comma delimited list of denied qos */
 	uint16_t flags;		/* see PART_FLAG_* above */
 	uint32_t grace_time; 	/* preemption grace time in seconds */

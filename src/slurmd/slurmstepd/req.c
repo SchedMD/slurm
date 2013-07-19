@@ -591,13 +591,11 @@ _handle_signal_task_local(int fd, slurmd_job_t *job, uid_t uid)
 	int signal;
 	int ltaskid; /* local task index */
 
-	debug("_handle_signal_task_local for job %u.%u",
-	      job->jobid, job->stepid);
-
 	safe_read(fd, &signal, sizeof(int));
 	safe_read(fd, &ltaskid, sizeof(int));
+	debug("_handle_signal_task_local for step=%u.%u uid=%d signal=%d",
+	      job->jobid, job->stepid, (int) uid, signal);
 
-	debug3("  uid = %d", uid);
 	if (uid != job->uid && !_slurm_authorized_user(uid)) {
 		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
@@ -669,14 +667,11 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 	char *ptr = NULL;
 	int target_node_id = 0;
 
-	debug("_handle_signal_container for job %u.%u",
-	      job->jobid, job->stepid);
-
 	safe_read(fd, &sig, sizeof(int));
-
-	debug3("  uid = %d", uid);
+	debug("_handle_signal_container for step=%u.%u uid=%d signal=%d",
+	      job->jobid, job->stepid, (int) uid, sig);
 	if ((uid != job->uid) && !_slurm_authorized_user(uid)) {
-		debug("signal container req from uid %ld for job %u.%u "
+		error("signal container req from uid %ld for step=%u.%u "
 		      "owned by uid %ld",
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
 		rc = -1;
@@ -906,11 +901,10 @@ _handle_terminate(int fd, slurmd_job_t *job, uid_t uid)
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
 
-	debug("_handle_terminate for job %u.%u",
-	      job->jobid, job->stepid);
+	debug("_handle_terminate for step=%u.%u uid=%d",
+	      job->jobid, job->stepid, uid);
 	step_terminate_monitor_start(job->jobid, job->stepid);
 
-	debug3("  uid = %d", uid);
 	if (uid != job->uid && !_slurm_authorized_user(uid)) {
 		debug("terminate req from uid %ld for job %u.%u "
 		      "owned by uid %ld",
@@ -1080,8 +1074,8 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
 
-	debug("_handle_suspend for job %u.%u", job->jobid, job->stepid);
-	debug3("  uid = %d", uid);
+	debug("_handle_suspend for step=%u.%u uid=%d",
+	      job->jobid, job->stepid, (int) uid);
 	if (!_slurm_authorized_user(uid)) {
 		debug("job step suspend request from uid %ld for job %u.%u ",
 		      (long)uid, job->jobid, job->stepid);

@@ -471,29 +471,34 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/libpmi.la	&&
 	chmod 644 $RPM_BUILD_ROOT/%{_libdir}/libpmi.la
 test -f $RPM_BUILD_ROOT/%{_libdir}/libslurm.la	&&
 	chmod 644 $RPM_BUILD_ROOT/%{_libdir}/libslurm.la
-test -f $RPM_BUILD_ROOT/%{_libdir}/libslurmdb.la
+test -f $RPM_BUILD_ROOT/%{_libdir}/libslurmdb.la &&
 	chmod 644 $RPM_BUILD_ROOT/%{_libdir}/libslurmdb.la
 
 # Delete unpackaged files:
-test -f %{_perldir}/auto/Slurm/Slurm.bs         &&
-test -z %{_perldir}/auto/Slurm/Slurm.bs         &&
-rm   -f %{_perldir}/auto/Slurm/Slurm.bs
-test -f %{_perldir}/auto/Slurmdb/Slurmdb.bs     &&
-test -z %{_perldir}/auto/Slurmdb/Slurmdb.bs     &&
-rm   -f %{_perldir}/auto/Slurmdb/Slurmdb.bs
+test -s $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs         ||
+rm   -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs
+
+test -s $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/Slurmdb.bs     ||
+rm   -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/Slurmdb.bs
 
 rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi.a
 rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi2.a
 rm -f $RPM_BUILD_ROOT/%{_libdir}/libslurm.a
 rm -f $RPM_BUILD_ROOT/%{_libdir}/libslurmdb.a
-rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
-rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.{a,la}
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.a
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.la
+rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.a
+rm -f $RPM_BUILD_ROOT/%{_libdir}/security/*.la
 %if %{?with_pam_dir}0
-rm -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.{a,la}
+rm -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.la
+rm -f $RPM_BUILD_ROOT/%{with_pam_dir}/pam_slurm.la
 %endif
-rm -f $RPM_BUILD_ROOT/lib/security/pam_slurm.{a,la}
-rm -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.{a,la}
-rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.{a,la}
+rm -f $RPM_BUILD_ROOT/lib/security/pam_slurm.a
+rm -f $RPM_BUILD_ROOT/lib/security/pam_slurm.la
+rm -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.a
+rm -f $RPM_BUILD_ROOT/lib32/security/pam_slurm.la
+rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.a
+rm -f $RPM_BUILD_ROOT/lib64/security/pam_slurm.la
 %if ! %{slurm_with auth_none}
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_none.so
 %endif
@@ -531,6 +536,12 @@ rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_lua.so
 
 %if ! %{slurm_with sgijob}
 rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_sgi_job.so
+%endif
+
+%if ! %{slurm_with percs}
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/launch_poe.so
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libpermapi.so
+rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/switch_nrt.so
 %endif
 
 # Build man pages that are generated directly by the tools
@@ -604,10 +615,10 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_pgsql.so            &&
 
 LIST=./perlapi.files
 touch $LIST
-test -f  %{_perldir}/auto/Slurm/Slurm.bs       &&
-   echo %{_perldir}/auto/Slurm/Slurm.bs        >> $LIST
-test -f  %{_perldir}/auto/Slurmdb/Slurmdb.bs   &&
-   echo %{_perldir}/auto/Slurmdb/Slurmdb.bs    >> $LIST
+test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs        &&
+   echo $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs        >> $LIST
+test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/Slurmdb.bs    &&
+   echo $RPM_BUILD_ROOT/%{_perldir}/auto/Slurmdb/Slurmdb.bs    >> $LIST
 
 LIST=./plugins.files
 touch $LIST
@@ -637,6 +648,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cgroup.so              &&
    echo %{_libdir}/slurm/task_cgroup.so              >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_container_cray.so       &&
    echo %{_libdir}/slurm/job_container_cray.so       >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_container_none.so       &&
+   echo %{_libdir}/slurm/job_container_none.so       >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cray.so                &&
    echo %{_libdir}/slurm/task_cray.so                >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_cray.so              &&
@@ -711,7 +724,7 @@ rm -rf $RPM_BUILD_ROOT
 %files devel
 %defattr(-,root,root)
 %dir %attr(0755,root,root)
-%{_prefix}/include/slurm
+%dir %{_prefix}/include/slurm
 %{_prefix}/include/slurm/*
 %{_libdir}/libpmi.la
 %{_libdir}/libpmi2.la
@@ -804,9 +817,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/gres_nic.so
 %{_libdir}/slurm/job_submit_all_partitions.so
 %{_libdir}/slurm/job_submit_defaults.so
-%{_libdir}/slurm/job_submit_all_partitions.so
 %{_libdir}/slurm/job_submit_logging.so
 %{_libdir}/slurm/job_submit_partition.so
+%{_libdir}/slurm/job_submit_require_timelimit.so
 %{_libdir}/slurm/jobacct_gather_aix.so
 %{_libdir}/slurm/jobacct_gather_cgroup.so
 %{_libdir}/slurm/jobacct_gather_linux.so
@@ -814,15 +827,17 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/jobcomp_filetxt.so
 %{_libdir}/slurm/jobcomp_none.so
 %{_libdir}/slurm/jobcomp_script.so
+%if ! %{slurm_with bluegene}
 %{_libdir}/slurm/mpi_lam.so
 %{_libdir}/slurm/mpi_mpich1_p4.so
 %{_libdir}/slurm/mpi_mpich1_shmem.so
 %{_libdir}/slurm/mpi_mpichgm.so
 %{_libdir}/slurm/mpi_mpichmx.so
 %{_libdir}/slurm/mpi_mvapich.so
-%{_libdir}/slurm/mpi_none.so
 %{_libdir}/slurm/mpi_openmpi.so
 %{_libdir}/slurm/mpi_pmi2.so
+%endif
+%{_libdir}/slurm/mpi_none.so
 %{_libdir}/slurm/preempt_none.so
 %{_libdir}/slurm/preempt_partition_prio.so
 %{_libdir}/slurm/preempt_qos.so

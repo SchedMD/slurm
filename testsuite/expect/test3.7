@@ -126,7 +126,8 @@ exec $bin_cc -o $file_prog ${file_prog}.c
 exec $bin_chmod 700 $file_prog
 
 #
-# Submit two jobs to the same node
+# Submit two jobs to the same node,.
+# The first job includes srun, second only the application
 #
 set srun_pid [spawn $sbatch -N1 -t2 --output=$file_out1 $file_prog_sh1]
 expect {
@@ -249,6 +250,7 @@ if {$exit_code == 0} {
 	exec $bin_rm -f $file_out1 $file_out2 $file_prog $file_prog_sh1 $file_prog_sh2
 	send_user "\nSUCCESS\n"
 } else {
-	send_user "\nFAILURE: May be due to use of gang scheduler, a race conditions, or the ProcTrack plugin not identifying the application as part of the job\n"
+	send_user "\nFAILURE: May be due to use of gang scheduler, a race conditions, or the ProcTrack plugin not identifying the application as part of the job.\n"
+	send_user "\nFAILURE: launch/poe and proctrack/pgid are incompatible.\n"
 }
 exit $exit_code

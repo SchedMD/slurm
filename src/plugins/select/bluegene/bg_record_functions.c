@@ -456,10 +456,15 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
  * returns: -1: rec_a > rec_b   0: rec_a == rec_b   1: rec_a < rec_b
  *
  */
-extern int bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
+extern int bg_record_cmpf_inc(void *r1, void *r2)
 {
-	int size_a = rec_a->cnode_cnt;
-	int size_b = rec_b->cnode_cnt;
+	bg_record_t *rec_a = *(bg_record_t **)r1;
+	bg_record_t *rec_b = *(bg_record_t **)r2;
+	int size_a;
+	int size_b;
+
+	size_a = rec_a->cnode_cnt;
+	size_b = rec_b->cnode_cnt;
 
 	/* We only look at this if we are ordering blocks larger than
 	 * a midplane, order of ionodes is how we order otherwise. */
@@ -496,8 +501,11 @@ extern int bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
  * returns: -1: rec_a < rec_b   0: rec_a == rec_b   1: rec_a > rec_b
  *
  */
-extern int bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
+extern int bg_record_sort_aval_inc(void *r1, void *r2)
 {
+	bg_record_t* rec_a = *(bg_record_t **)r1;
+	bg_record_t* rec_b = *(bg_record_t **)r2;
+
 	if ((rec_a->job_running == BLOCK_ERROR_STATE)
 	    && (rec_b->job_running != BLOCK_ERROR_STATE))
 		return 1;

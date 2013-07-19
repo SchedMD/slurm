@@ -2473,7 +2473,7 @@ total_return:
  * IN open_fd	- file descriptor to receive msg on
  * IN steps	- how many steps down the tree we have to wait for
  * IN timeout	- how long to wait in milliseconds
- * RET List	- List containing the responses of the childern (if any) we
+ * RET List	- List containing the responses of the children (if any) we
  *		  forwarded the message to. List containing type
  *		  (ret_data_info_t).
  */
@@ -2778,7 +2778,7 @@ int slurm_receive_msg_and_forward(slurm_fd_t fd, slurm_addr_t *orig_addr,
 
 	/* Forward message to other nodes */
 	if (header.forward.cnt > 0) {
-		debug("forwarding to %u", header.forward.cnt);
+		debug2("forwarding to %u", header.forward.cnt);
 		msg->forward_struct = xmalloc(sizeof(forward_struct_t));
 		slurm_mutex_init(&msg->forward_struct->forward_mutex);
 		pthread_cond_init(&msg->forward_struct->notify, NULL);
@@ -3368,7 +3368,7 @@ _send_and_recv_msg(slurm_fd_t fd, slurm_msg_t *req,
  * IN fd	- file descriptor to receive msg on
  * IN req	- a slurm_msg struct to be sent by the function
  * IN timeout	- how long to wait in milliseconds
- * RET List	- List containing the responses of the childern (if any) we
+ * RET List	- List containing the responses of the children (if any) we
  *		  forwarded the message to. List containing type
  *		  (ret_data_info_t).
  */
@@ -3387,7 +3387,7 @@ _send_and_recv_msgs(slurm_fd_t fd, slurm_msg_t *req, int timeout)
 	if (slurm_send_node_msg(fd, req) >= 0) {
 		if (req->forward.cnt > 0) {
 			/* figure out where we are in the tree and set
-			 * the timeout for to wait for our childern
+			 * the timeout for to wait for our children
 			 * correctly
 			 * (timeout+message_timeout sec per step)
 			 * to let the child timeout */
@@ -3602,7 +3602,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
  * IN msg	  - a slurm_msg struct to be sent by the function
  * IN timeout	  - how long to wait in milliseconds
  * IN quiet       - if set, reduce logging details
- * RET List	  - List containing the responses of the childern
+ * RET List	  - List containing the responses of the children
  *		    (if any) we forwarded the message to. List
  *		    containing type (ret_data_info_t).
  */
@@ -3634,7 +3634,7 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
  *    Then return List containing type (ret_data_info_t).
  * IN msg	  - a slurm_msg struct to be sent by the function
  * IN timeout	  - how long to wait in milliseconds
- * RET List	  - List containing the responses of the childern
+ * RET List	  - List containing the responses of the children
  *		    (if any) we forwarded the message to. List
  *		    containing type (ret_types_t).
  */

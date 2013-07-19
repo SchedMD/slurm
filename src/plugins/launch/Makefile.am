@@ -8,10 +8,7 @@ SUBDIRS = slurm
 if HAVE_NRT
 SUBDIRS += poe
 endif
-if HAVE_REAL_CRAY
-SUBDIRS += aprun
-endif
-if HAVE_ALPS_EMULATION
+if HAVE_ALPS_CRAY
 SUBDIRS += aprun
 endif
 endif

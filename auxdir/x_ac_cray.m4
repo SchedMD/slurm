@@ -137,7 +137,7 @@ AC_DEFUN([X_AC_CRAY],
     AC_DEFINE(HAVE_3D,           1, [Define to 1 if 3-dimensional architecture])
     AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
     AC_DEFINE(HAVE_FRONT_END,    1, [Define to 1 if running slurmd on front-end only])
-    AC_DEFINE(HAVE_ALPS_CRAY,         1, [Define to 1 for Cray XT/XE systems using ALPS])
+    AC_DEFINE(HAVE_ALPS_CRAY,    1, [Define to 1 for Cray XT/XE systems using ALPS])
     AC_DEFINE(SALLOC_KILL_CMD,   1, [Define to 1 for salloc to kill child processes at job termination])
   fi
 

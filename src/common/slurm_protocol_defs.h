@@ -322,7 +322,8 @@ typedef enum {
 	SRUN_EXEC,
 	SRUN_STEP_MISSING,
 	SRUN_REQUEST_SUSPEND,
-	SRUN_STEP_SIGNAL,	/* BluegeneQ: srun forwards signal to runjob */
+	SRUN_STEP_SIGNAL,	/* for launch plugins aprun, poe and runjob,
+				 * srun forwards signal to the launch command */
 
 	PMI_KVS_PUT_REQ = 7201,
 	PMI_KVS_PUT_RESP,
@@ -747,7 +748,7 @@ typedef struct return_code_msg {
  * the job epilog. */
 
 #define SIG_PREEMPTED	994	/* Dummy signal value for job preemption */
-#define SIG_DEBUG_WAKE	995	/* Dummy signal value to wake procs stopped 
+#define SIG_DEBUG_WAKE	995	/* Dummy signal value to wake procs stopped
 				 * for debugger */
 #define SIG_TIME_LIMIT	996	/* Dummy signal value for time limit reached */
 #define SIG_ABORT	997	/* Dummy signal value to abort a job */
@@ -1029,7 +1030,7 @@ extern void slurm_destroy_uint32_ptr(void *object);
 /* here to add \\ to all \" in a string this needs to be xfreed later */
 extern char *slurm_add_slash_to_quotes(char *str);
 extern int slurm_addto_char_list(List char_list, char *names);
-extern int slurm_sort_char_list_asc(char *name_a, char *name_b);
+extern int slurm_sort_char_list_asc(void *, void *);
 extern int slurm_sort_char_list_desc(char *name_a, char *name_b);
 
 /* free message functions */
@@ -1205,6 +1206,13 @@ extern char *node_use_string(enum node_use_type node_use);
 /* Translate a state enum to a readable string */
 extern char *bg_block_state_string(uint16_t state);
 
+/* Translate a Slurm nodelist to a char * of numbers
+ * nid000[36-37] -> 36-37
+ * IN - hl_in - if NULL will be made from nodelist
+ * IN - nodelist - generate hl from list if hl is NULL
+ * RET - nid list, needs to be xfreed.
+ */
+extern char *cray_nodelist2nids(hostlist_t hl_in, char *nodelist);
 
 /* Validate SPANK specified job environment does not contain any invalid
  * names. Log failures using info() */

@@ -583,8 +583,15 @@ unpack_error:
 int list_compare_config (void *config_entry1, void *config_entry2)
 {
 	int weight1, weight2;
-	weight1 = ((struct config_record *) config_entry1)->weight;
-	weight2 = ((struct config_record *) config_entry2)->weight;
+	struct config_record *c1;
+	struct config_record *c2;
+
+	c1 = *(struct config_record **)config_entry1;
+	c2 = *(struct config_record **)config_entry2;
+
+	weight1 = c1->weight;
+	weight2 = c2->weight;
+
 	return (weight1 - weight2);
 }
 
@@ -613,7 +620,6 @@ static bool _node_is_hidden(struct node_record *node_ptr)
  * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - node filtering options
  * IN uid - uid of user making request (for partition filtering)
- * IN gid - gid of user making request (for partition filtering)
  * IN protocol_version - slurm protocol version of client
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must xfree the buffer at *buffer_ptr
@@ -621,7 +627,7 @@ static bool _node_is_hidden(struct node_record *node_ptr)
  * NOTE: READ lock_slurmctld config before entry
  */
 extern void pack_all_node (char **buffer_ptr, int *buffer_size,
-			   uint16_t show_flags, uid_t uid, gid_t gid,
+			   uint16_t show_flags, uid_t uid,
 			   uint16_t protocol_version)
 {
 	int inx;
@@ -647,7 +653,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 		pack_time(now, buffer);
 
 		/* write node records */
-		part_filter_set(uid, gid);
+		part_filter_set(uid);
 		for (inx = 0; inx < node_record_count; inx++, node_ptr++) {
 			xassert (node_ptr->magic == NODE_MAGIC);
 			xassert (node_ptr->config_ptr->magic ==
@@ -702,7 +708,6 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
  * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - node filtering options
  * IN uid - uid of user making request (for partition filtering)
- * IN gid - gid of user making request (for partition filtering)
  * IN node_name - name of node for which information is desired,
  *		  use first node if name is NULL
  * IN protocol_version - slurm protocol version of client
@@ -712,8 +717,8 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
  * NOTE: READ lock_slurmctld config before entry
  */
 extern void pack_one_node (char **buffer_ptr, int *buffer_size,
-			   uint16_t show_flags, uid_t uid, gid_t gid,
-			   char *node_name, uint16_t protocol_version)
+			   uint16_t show_flags, uid_t uid, char *node_name,
+			   uint16_t protocol_version)
 {
 	uint32_t nodes_packed, tmp_offset, node_scaling;
 	Buf buffer;
@@ -737,7 +742,7 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 		pack_time(now, buffer);
 
 		/* write node records */
-		part_filter_set(uid, gid);
+		part_filter_set(uid);
 		if (node_name)
 			node_ptr = find_node_record(node_name);
 		else

@@ -217,11 +217,15 @@ static void _internal_step_complete(
 	if (!terminated) {
 		/* These operations are not needed for
 		 * terminated jobs */
+		step_ptr->state = JOB_COMPLETING;
+
 		select_g_step_finish(step_ptr);
-		_step_dealloc_lps(step_ptr);
-		gres_plugin_step_dealloc(step_ptr->gres_list,
-					 job_ptr->gres_list, job_ptr->job_id,
-					 step_ptr->step_id);
+#ifndef HAVE_NATIVE_CRAY
+		/* On a native cray this is ran after the NHC is
+		   called which could take up to 3 minutes.
+		*/
+		post_job_step(step_ptr);
+#endif
 	}
 }
 
@@ -241,6 +245,15 @@ extern void delete_step_records (struct job_record *job_ptr)
 
 	last_job_update = time(NULL);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		uint16_t cleaning = 0;
+		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+					    SELECT_JOBDATA_CLEANING,
+					    &cleaning);
+		if (cleaning)
+			continue;      /* Step hasn't finished yet it
+					* will be removed when it
+					* does complete. */
+
 		_internal_step_complete(job_ptr, step_ptr, true);
 		list_remove (step_iterator);
 		_free_step_rec(step_ptr);
@@ -626,7 +639,6 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 {
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
-	int error_code;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -647,13 +659,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	_internal_step_complete(job_ptr, step_ptr, false);
 
 	last_job_update = time(NULL);
-	error_code = delete_step_record(job_ptr, step_id);
-	if (error_code == ENOENT) {
-		info("job_step_complete step %u.%u not found", job_id,
-		     step_id);
-		return ESLURM_ALREADY_DONE;
-	}
-	_wake_pending_steps(job_ptr);
+
 	return SLURM_SUCCESS;
 }
 
@@ -1281,7 +1287,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_p = (struct step_record *)
 			list_next(step_iterator))) {
-			if (step_p->state != JOB_RUNNING)
+			if (step_p->state < JOB_RUNNING)
 				continue;
 			bit_or(nodes_idle, step_p->step_node_bitmap);
 			if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
@@ -2556,14 +2562,13 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
  * IN job_id - specific id or NO_VAL for all
  * IN step_id - specific id or NO_VAL for all
  * IN uid - user issuing request
- * IN gid - user issuing request
  * IN show_flags - job step filtering options
  * OUT buffer - location to store data, pointers automatically advanced
  * RET - 0 or error code
  * NOTE: MUST free_buf buffer
  */
 extern int pack_ctld_job_step_info_response_msg(
-	uint32_t job_id, uint32_t step_id, uid_t uid, gid_t gid,
+	uint32_t job_id, uint32_t step_id, uid_t uid,
 	uint16_t show_flags, Buf buffer, uint16_t protocol_version)
 {
 	ListIterator job_iterator;
@@ -2578,7 +2583,7 @@ extern int pack_ctld_job_step_info_response_msg(
 	pack_time(now, buffer);
 	pack32(steps_packed, buffer);	/* steps_packed placeholder */
 
-	part_filter_set(uid, gid);
+	part_filter_set(uid);
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
@@ -3861,7 +3866,7 @@ extern void rebuild_step_bitmaps(struct job_record *job_ptr,
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = (struct step_record *)
 			   list_next (step_iterator))) {
-		if (step_ptr->state != JOB_RUNNING)
+		if (step_ptr->state < JOB_RUNNING)
 			continue;
 		gres_plugin_step_state_rebase(step_ptr->gres_list,
 					orig_job_node_bitmap,
@@ -3904,4 +3909,28 @@ extern void rebuild_step_bitmaps(struct job_record *job_ptr,
 		bit_free(orig_step_core_bitmap);
 	}
 	list_iterator_destroy (step_iterator);
+}
+
+extern int post_job_step(struct step_record *step_ptr)
+{
+	struct job_record *job_ptr = step_ptr->job_ptr;
+	int error_code;
+
+	_step_dealloc_lps(step_ptr);
+	gres_plugin_step_dealloc(step_ptr->gres_list,
+				 job_ptr->gres_list, job_ptr->job_id,
+				 step_ptr->step_id);
+
+	last_job_update = time(NULL);
+	step_ptr->state = JOB_COMPLETE;
+
+	error_code = delete_step_record(job_ptr, step_ptr->step_id);
+	if (error_code == ENOENT) {
+		info("remove_job_step step %u.%u not found", job_ptr->job_id,
+		     step_ptr->step_id);
+		return ESLURM_ALREADY_DONE;
+	}
+	_wake_pending_steps(job_ptr);
+
+	return SLURM_SUCCESS;
 }

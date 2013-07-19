@@ -10,10 +10,7 @@ documents those changes that are of interest to users and admins.
  -- Defer sending SIGKILL signal to processes while core dump in progress.
  -- Added JobContainerPlugin configuration parameter and plugin infrastructure.
  -- Added partition configuration parameters AllowAccounts, AllowQOS,
-    DenyAccounts, DenyGroups and DenyQOS. The AllowGroups and DenyGroups
-    configuration parameters only apply to the effective group ID of the job.
-    Previously any user with access to any allowed group was permitted to use
-    the partition.
+    DenyAccounts and DenyQOS.
 
 * Changes in Slurm 2.6.1
 ========================
@@ -21,6 +18,11 @@ documents those changes that are of interest to users and admins.
     users.
  -- Fix issue with job name being truncated to 24 chars when sending a mail
     message.
+ -- Fix minor issues with spec file, missing files and including files
+    erroneously on a bluegene system.
+ -- sacct - fix --name and --partition options when using
+    accounting_storage/filetxt.
+ -- squeue - Remove extra whitespace of default printout.
 
 * Changes in Slurm 2.6.0
 ========================

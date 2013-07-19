@@ -667,7 +667,7 @@ static void _preempt_job_dequeue(void)
 				      "requeued: %s",
 				      job_ptr->job_id, slurm_strerror(rc));
 		}
-		
+
 		if (rc != SLURM_SUCCESS) {
 			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0, true);
 			if (rc == SLURM_SUCCESS)
@@ -687,8 +687,17 @@ static void _preempt_job_dequeue(void)
  *	descending order rather than ascending order */
 static int _sort_partitions(void *part1, void *part2)
 {
-	int prio1 = ((struct gs_part *) part1)->priority;
-	int prio2 = ((struct gs_part *) part2)->priority;
+	struct gs_part *g1;
+	struct gs_part *g2;
+	int prio1;
+	int prio2;
+
+	g1 = *(struct gs_part **)part1;
+	g2 = *(struct gs_part **)part2;
+
+	prio1 = g1->priority;
+	prio2 = g2->priority;
+
 	return prio2 - prio1;
 }
 

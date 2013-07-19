@@ -3057,6 +3057,13 @@ described above.
 The default value is "ALL".
 
 .TP
+\fBAllowAccounts\fR
+Comma separated list of accounts which may execute jobs in the partition.
+The default value is "ALL".
+\fBNOTE:\fR If AllowAccounts is used then DenyAccounts will not be enforced.
+Also refer to DenyAccounts.
+
+.TP
 \fBAllowGroups\fR
 Comma separated list of group names which may execute jobs in the partition.
 If at least one group associated with the user attempting to execute the
@@ -3076,6 +3083,15 @@ value is reset, even if is value is unchanged
 For a user's access to a partition to change, both his group membership must
 change and SLURM's internal user ID list must change using one of the methods
 described above.
+
+.TP
+\fBAllowQos\fR
+Comma seperated list of Qos which may execute jobs in the partition.
+Jobs executed as user root can use any partition without regard to
+the value of AllowQos.
+The default value is "ALL".
+\fBNOTE:\fR If AllowQos is used then DenyQos will not be enforced.
+Also refer to DenyQos.
 
 .TP
 \fBAlternate\fR
@@ -3115,6 +3131,20 @@ Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
 NOTE: Enforcement of memory limits currently requires enabling of
 accounting, which samples memory use on a periodic basis (data need
 not be stored, just collected).
+
+.TP
+\fBDenyAccount\fR
+Comma seperated list of accounts which may not execute jobs in the partition.
+By default, no accounts are denied access
+\fBNOTE:\fR If AllowAccounts is used then DenyAccounts will not be enforced.
+Also refer to AllowAccount.
+
+.TP
+\fBDenyQos\fR
+Comma seperated list of Qos which may not execute jobs in the partition.
+By default, no QOS are denied access
+\fBNOTE:\fR If AllowQos is used then DenyQos will not be enforced.
+Also refer AllowQos.
 
 .TP
 \fBDefaultTime\fR

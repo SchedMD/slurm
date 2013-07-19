@@ -65,9 +65,11 @@ extern char *wckey_month_table;
 /*
  * We want SLURMDB_MODIFY_ASSOC always to be the last
  */
-static int _sort_update_object_dec(slurmdb_update_object_t *object_a,
-				   slurmdb_update_object_t *object_b)
+static int _sort_update_object_dec(void *a, void *b)
 {
+	slurmdb_update_object_t *object_a = *(slurmdb_update_object_t **)a;
+	slurmdb_update_object_t *object_b = *(slurmdb_update_object_t **)b;
+
 	if ((object_a->type == SLURMDB_MODIFY_ASSOC)
 	    && (object_b->type != SLURMDB_MODIFY_ASSOC))
 		return 1;

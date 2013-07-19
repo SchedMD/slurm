@@ -926,7 +926,6 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"Default", S_P_BOOLEAN}, /* YES or NO */
 		{"DefaultTime", S_P_STRING},
 		{"DenyAccounts", S_P_STRING},
-		{"DenyGroups", S_P_STRING},
 		{"DenyQos", S_P_STRING},
 		{"DisableRootJobs", S_P_BOOLEAN}, /* YES or NO */
 		{"GraceTime", S_P_UINT32},
@@ -968,7 +967,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		p->name = xstrdup(value);
 
 		if (!s_p_get_string(&p->allow_accounts, "AllowAccounts",tbl))
-			s_p_get_string(&p->allow_accounts, "AllowAccount", dflt);
+			s_p_get_string(&p->allow_accounts, "AllowAccounts", dflt);
 		if (p->allow_accounts &&
 		    (strcasecmp(p->allow_accounts, "ALL") == 0))
 			xfree(p->allow_accounts);
@@ -983,14 +982,20 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			s_p_get_string(&p->allow_qos, "AllowQos", dflt);
 		if (p->allow_qos && (strcasecmp(p->allow_qos, "ALL") == 0))
 			xfree(p->allow_qos);
+
 		if (!s_p_get_string(&p->deny_accounts, "DenyAccounts", tbl))
 			s_p_get_string(&p->deny_accounts, "DenyAccounts", dflt);
-
-		if (!s_p_get_string(&p->deny_groups, "DenyGroups", tbl))
-			s_p_get_string(&p->deny_groups, "DenyGroups", dflt);
+		if (p->allow_accounts && p->deny_accounts) {
+			error("Both AllowAccounts and DenyAccounts are "
+			      "defined, DenyAccounts will be ignored");
+		}
 
 		if (!s_p_get_string(&p->deny_qos, "DenyQos", tbl))
 			s_p_get_string(&p->deny_qos, "DenyQos", dflt);
+		if (p->allow_qos && p->deny_qos) {
+			error("Both AllowQos and DenyQos are defined, "
+			      "DenyQos will be ignored");
+		}
 
 		if (!s_p_get_string(&p->allow_alloc_nodes, "AllocNodes", tbl)) {
 			s_p_get_string(&p->allow_alloc_nodes, "AllocNodes",
@@ -1230,7 +1235,6 @@ static void _destroy_partitionname(void *ptr)
 	xfree(p->allow_groups);
 	xfree(p->allow_qos);
 	xfree(p->deny_accounts);
-	xfree(p->deny_groups);
 	xfree(p->deny_qos);
 	xfree(p->alternate);
 	xfree(p->name);
@@ -2102,6 +2106,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->ext_sensors_type);
 	xfree (ctl_conf_ptr->gres_plugins);
 	xfree (ctl_conf_ptr->health_check_program);
+	xfree (ctl_conf_ptr->job_acct_gather_freq);
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_ckpt_dir);
 	xfree (ctl_conf_ptr->job_comp_host);
@@ -2220,8 +2225,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->health_check_interval	= 0;
 	xfree(ctl_conf_ptr->health_check_program);
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
-	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_acct_gather_freq);
+	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_ckpt_dir);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_pass);
@@ -3328,9 +3333,15 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->proctrack_type =
 				xstrdup(DEFAULT_PROCTRACK_TYPE);
 	}
+#ifdef HAVE_NATIVE_CRAY
+	if (strcmp(conf->proctrack_type, "proctrack/cray"))
+		fatal("On a native Cray ProctrackType=proctrack/cray "
+		      "is required");
+#else
 #ifdef HAVE_REAL_CRAY
 	if (strcmp(conf->proctrack_type, "proctrack/sgi_job"))
 		fatal("On Cray ProctrackType=proctrack/sgi_job is required");
+#endif
 #endif
 	if ((!strcmp(conf->switch_type, "switch/elan"))
 	    && (!strcmp(conf->proctrack_type,"proctrack/linuxproc")))

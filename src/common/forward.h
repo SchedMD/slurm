@@ -60,7 +60,7 @@ extern void forward_init(forward_t *forward, forward_t *from);
  *
  * IN: forward_struct - forward_struct_t *   - holds information about message
  *                                             that needs to be forwarded to
- *      				       childern processes
+ *      				       children processes
  * IN: header         - header_t             - header from message that came in
  *                                             needing to be forwarded.
  * RET: SLURM_SUCCESS - int
@@ -97,7 +97,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
  * IN: hl          - hostlist_t   - list of every node to send message to
  * IN: msg         - slurm_msg_t  - message to send.
  * IN: timeout     - int          - how long to wait in milliseconds.
- * RET List 	   - List containing the responses of the childern
+ * RET List 	   - List containing the responses of the children
  *		     (if any) we forwarded the message to. List
  *		     containing type (ret_data_info_t).
  */

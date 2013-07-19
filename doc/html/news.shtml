@@ -34,6 +34,11 @@ Major enhancements include:
 <li>Improved performance for high-throughput computing.</li>
 <li><a href="http://en.wikipedia.org/wiki/MapReduce">MapReduce+</a> support
     (launches ~1000x faster, runs ~10x faster).</li>
+<li>Added "MaxCPUsPerNode" partition configuration parameter. This can be
+    especially useful to schedule GPUs. For example a node can be associated
+    with two Slurm partitions (e.g. "cpu" and "gpu") and the partition/queue
+    "cpu" could be limited to only a subset of the node's CPUs, insuring that
+    one or more CPUs would be available to jobs in the "gpu" partition/queue.</li>
 </ul>
 
 <h2><a name="1312">Major Updates in Slurm Version 13.12 and beyond</a></h2>
@@ -84,6 +89,6 @@ trojan library, then that library will be used by the SLURM daemon with
 unpredictable results. This was fixed in SLURM version 2.1.14.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 2 July 2013</p>
+<p style="text-align:center;">Last modified 16 July 2013</p>
 
 <!--#include virtual="footer.txt"-->

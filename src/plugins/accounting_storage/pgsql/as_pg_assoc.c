@@ -1423,11 +1423,13 @@ check_assoc_tables(PGconn *db_conn, char *cluster)
 }
 
 static int
-_assoc_sort_cluster(slurmdb_association_rec_t *rec_a,
-		    slurmdb_association_rec_t *rec_b)
+_assoc_sort_cluster(void *r1, void *r2)
 {
-	int diff = strcmp(rec_a->cluster, rec_b->cluster);
+	slurmdb_association_rec_t *rec_a = *(slurmdb_association_rec_t **)r1;
+	slurmdb_association_rec_t *rec_b = *(slurmdb_association_rec_t **)r2;
+	int diff;
 
+	diff = strcmp(rec_a->cluster, rec_b->cluster);
 	if (diff < 0)
 		return -1;
 	else if (diff > 0)

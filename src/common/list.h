@@ -217,7 +217,7 @@ void list_sort (List l, ListCmpF f);
 /*
  *  Sorts list [l] into ascending order according to the function [f].
  *  Note: Sorting a list resets all iterators associated with the list.
- *  Note: The sort algorithm is stable.
+ *  This function uses the libC qsort() algorithm.
  */
 
 /****************************

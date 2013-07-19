@@ -840,7 +840,7 @@ typedef struct {
 typedef struct {
 	slurmdb_association_rec_t *assoc;
 	char *sort_name;
-	List childern;
+	List children;
 } slurmdb_hierarchical_rec_t;
 
 /************** report specific structures **************/

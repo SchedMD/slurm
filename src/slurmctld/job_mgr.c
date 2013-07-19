@@ -189,6 +189,14 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 			 bool indf_susp);
 static int  _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp);
 static bool _top_priority(struct job_record *job_ptr);
+static int  _valid_job_part(job_desc_msg_t * job_desc,
+			    uid_t submit_uid, bitstr_t *req_bitmap,
+			    struct part_record **part_pptr,
+			    List *part_pptr_list);
+static int  _valid_job_part_acct(job_desc_msg_t *job_desc,
+				 struct part_record *part_ptr);
+static int  _valid_job_part_qos(struct part_record *part_ptr,
+				slurmdb_qos_rec_t *pos_ptr);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			       uid_t submit_uid, struct part_record *part_ptr);
 static void _validate_job_files(List batch_dirs);
@@ -874,7 +882,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	step_iterator = list_iterator_create(dump_job_ptr->step_list);
 	while ((step_ptr = (struct step_record *)
 		list_next(step_iterator))) {
-		if (step_ptr->state != JOB_RUNNING)
+		if (step_ptr->state < JOB_RUNNING)
 			continue;
 		pack16((uint16_t) STEP_FLAG, buffer);
 		dump_job_step_state(dump_job_ptr, step_ptr, buffer);
@@ -3481,11 +3489,10 @@ static int _part_access_check(struct part_record *part_ptr,
 		return ESLURM_USER_ID_MISSING;
 	}
 
-	if (validate_group(part_ptr, job_desc->user_id, job_desc->group_id)
-	    == 0) {
-		info("_part_access_check: uid:%u gid:%u access to partition %s "
+	if (validate_group(part_ptr, job_desc->user_id) == 0) {
+		info("_part_access_check: uid %u access to partition %s "
 		     "denied, bad group",
-		     job_desc->user_id, job_desc->group_id, part_ptr->name);
+		     (unsigned int) job_desc->user_id, part_ptr->name);
 		return ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
 	}
 
@@ -3717,6 +3724,84 @@ fini:	FREE_NULL_LIST(part_ptr_list);
 	return rc;
 }
 
+/* Validate a job's account against the partition's AllowAccounts or
+ * DenyAccounts parameters. */
+static int
+_valid_job_part_acct(job_desc_msg_t *job_desc, struct part_record *part_ptr)
+{
+	int i;
+
+	if (part_ptr->allow_account_array) {
+		int match = 0;
+		for (i = 0; part_ptr->allow_account_array[i]; i++) {
+			if (strcmp(part_ptr->allow_account_array[i],
+				   job_desc->account))
+				continue;
+			match = 1;
+			break;
+		}
+		if (match == 0) {
+			info("_valid_job_part_acct: job's account not permitted"
+			     " to use this partition (%s allows %s not %s)",
+			     part_ptr->name, part_ptr->allow_accounts,
+			     job_desc->account);
+			return ESLURM_INVALID_ACCOUNT;
+		}
+	} else if (part_ptr->deny_account_array) {
+		int match = 0;
+		for (i = 0; part_ptr->deny_account_array[i]; i++) {
+			if (strcmp(part_ptr->deny_account_array[i],
+				   job_desc->account))
+				continue;
+			match = 1;
+			break;
+		}
+		if (match == 1) {
+			info("_valid_job_part_acct: job's account not permitted"
+			     " to use this partition (%s denies %s with %s)",
+			     part_ptr->name, part_ptr->deny_accounts,
+			     job_desc->account);
+			return ESLURM_INVALID_ACCOUNT;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/* Validate a job's QOS against the partition's AllowQOS or
+ * DenyQOS parameters. */
+static int
+_valid_job_part_qos(struct part_record *part_ptr, slurmdb_qos_rec_t *qos_ptr)
+{
+	if (part_ptr->allow_qos_bitstr) {
+		int match = 0;
+		if ((qos_ptr->id < bit_size(part_ptr->allow_qos_bitstr)) &&
+		    bit_test(part_ptr->allow_qos_bitstr, qos_ptr->id))
+			match = 1;
+		if (match == 0) {
+			info("_valid_job_par_qost: job's QOS not permitted to "
+			     "use this partition (%s allows %s not %s)",
+			     part_ptr->name, part_ptr->allow_qos,
+			     qos_ptr->name);
+			return ESLURM_INVALID_QOS;
+		}
+	} else if (part_ptr->deny_qos_bitstr) {
+		int match = 0;
+		if ((qos_ptr->id < bit_size(part_ptr->deny_qos_bitstr)) &&
+		    bit_test(part_ptr->deny_qos_bitstr, qos_ptr->id))
+			match = 1;
+		if (match == 1) {
+			info("_valid_job_part_qos: job's QOS not permitted to "
+			     "use this partition (%s denies %s including %s)",
+			     part_ptr->name, part_ptr->allow_qos,
+			     qos_ptr->name);
+			return ESLURM_INVALID_QOS;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * job_limits_check - check the limits specified for the job.
  * IN job_ptr - pointer to job table entry.
@@ -3890,7 +3975,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
-	/* insure that selected nodes are in this partition */
 	if (job_desc->req_nodes) {
 		error_code = node_name2bitmap(job_desc->req_nodes, false,
 					      &req_bitmap);
@@ -3935,7 +4019,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid,
 					     part_ptr))) {
-		error_code = error_code;
 		goto cleanup_fail;
 	}
 
@@ -3970,6 +4053,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 	if (job_desc->account == NULL)
 		job_desc->account = xstrdup(assoc_rec.acct);
+	error_code = _valid_job_part_acct(job_desc, part_ptr);
+	if (error_code != SLURM_SUCCESS)
+		goto cleanup_fail;
 
 	/* This must be done after we have the assoc_ptr set */
 	memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
@@ -3984,11 +4070,13 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	qos_ptr = _determine_and_validate_qos(
 		job_desc->reservation, assoc_ptr, false, &qos_rec, &qos_error);
-
 	if (qos_error != SLURM_SUCCESS) {
 		error_code = qos_error;
 		goto cleanup_fail;
 	}
+	error_code = _valid_job_part_qos(part_ptr, qos_ptr);
+	if (error_code != SLURM_SUCCESS)
+		goto cleanup_fail;
 
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    (!acct_policy_validate(job_desc, part_ptr,
@@ -5506,7 +5594,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 {
 	time_t kill_age, min_age, now = time(NULL);;
 	struct job_record *job_ptr = (struct job_record *)job_entry;
-	void *block_in_use = NULL;
+	uint16_t cleaning = 0;
 
 	if (IS_JOB_COMPLETING(job_ptr)) {
 		kill_age = now - (slurmctld_conf.kill_wait +
@@ -5529,10 +5617,10 @@ static int _list_find_job_old(void *job_entry, void *key)
 		return 0;	/* Job still active */
 
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_BLOCK_PTR,
-				    &block_in_use);
-	if (block_in_use)
-		return 0;      /* Job hasn't finished on block yet */
+				    SELECT_JOBDATA_CLEANING,
+				    &cleaning);
+	if (cleaning)
+		return 0;      /* Job hasn't finished yet */
 
 	/* If we don't have a db_index by now and we are running with
 	   the slurmdbd lets put it on the list to be handled later
@@ -5551,7 +5639,6 @@ static int _list_find_job_old(void *job_entry, void *key)
  * OUT buffer_size - set to size of the buffer in bytes
  * IN show_flags - job filtering options
  * IN uid - uid of user making request (for partition filtering)
- * IN gid - gid of user making request (for partition filtering)
  * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
@@ -5559,8 +5646,8 @@ static int _list_find_job_old(void *job_entry, void *key)
  *	whenever the data format changes
  */
 extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
-			  uint16_t show_flags, uid_t uid, gid_t gid,
-			  uint32_t filter_uid, uint16_t protocol_version)
+			  uint16_t show_flags, uid_t uid, uint32_t filter_uid,
+			  uint16_t protocol_version)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
@@ -5582,7 +5669,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 		min_age = now  - slurmctld_conf.min_job_age;
 
 	/* write individual job records */
-	part_filter_set(uid, gid);
+	part_filter_set(uid);
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
@@ -6394,7 +6481,7 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
-		if (step_ptr->state != JOB_RUNNING)
+		if (step_ptr->state < JOB_RUNNING)
 			continue;
 		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 		if (step_ptr->step_layout &&

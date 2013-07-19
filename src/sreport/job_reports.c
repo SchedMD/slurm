@@ -67,11 +67,14 @@ static bool individual_grouping = 0;
  *           -1: cluster_a < cluster_b
  *
  */
-static int _sort_cluster_grouping_dec(
-	slurmdb_report_cluster_grouping_t *cluster_a,
-	slurmdb_report_cluster_grouping_t *cluster_b)
+static int _sort_cluster_grouping_dec(void *v1, void *v2)
 {
 	int diff = 0;
+	slurmdb_report_cluster_grouping_t *cluster_a;
+	slurmdb_report_cluster_grouping_t *cluster_b;
+
+	cluster_a = *(slurmdb_report_cluster_grouping_t **)v1;
+	cluster_b = *(slurmdb_report_cluster_grouping_t **)v2;
 
 	if (!cluster_a->cluster || !cluster_b->cluster)
 		return 0;
@@ -94,14 +97,17 @@ static int _sort_cluster_grouping_dec(
  *           -1: acct_a < acct_b
  *
  */
-static int _sort_acct_grouping_dec(slurmdb_report_acct_grouping_t *acct_a,
-				   slurmdb_report_acct_grouping_t *acct_b)
+static int _sort_acct_grouping_dec(void *v1, void *v2)
 {
 	int diff = 0;
-
 	char tmp_acct_a[200];
 	char tmp_acct_b[200];
 	char *wckey_a = NULL, *wckey_b = NULL;
+	slurmdb_report_acct_grouping_t *acct_a;
+	slurmdb_report_acct_grouping_t *acct_b;
+
+	acct_a = *(slurmdb_report_acct_grouping_t **)v1;
+	acct_b = *(slurmdb_report_acct_grouping_t **)v2;
 
 	if (!acct_a->acct || !acct_b->acct)
 		return 0;
@@ -679,12 +685,12 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	itr = list_iterator_create(print_fields_list);
 	itr2 = list_iterator_create(grouping_print_fields_list);
 	list_sort(slurmdb_report_cluster_grouping_list,
-		  (ListCmpF)_sort_cluster_grouping_dec);
+	          (ListCmpF)_sort_cluster_grouping_dec);
 	cluster_itr =
 		list_iterator_create(slurmdb_report_cluster_grouping_list);
 	while((cluster_group = list_next(cluster_itr))) {
 		list_sort(cluster_group->acct_list,
-			  (ListCmpF)_sort_acct_grouping_dec);
+		          (ListCmpF)_sort_acct_grouping_dec);
 		acct_itr = list_iterator_create(cluster_group->acct_list);
 		while((acct_group = list_next(acct_itr))) {
 
@@ -887,12 +893,12 @@ extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
 	itr = list_iterator_create(print_fields_list);
 	itr2 = list_iterator_create(grouping_print_fields_list);
 	list_sort(slurmdb_report_cluster_grouping_list,
-		  (ListCmpF)_sort_cluster_grouping_dec);
+	          (ListCmpF)_sort_cluster_grouping_dec);
 	cluster_itr = list_iterator_create(
 		slurmdb_report_cluster_grouping_list);
 	while((cluster_group = list_next(cluster_itr))) {
 		list_sort(cluster_group->acct_list,
-			  (ListCmpF)_sort_acct_grouping_dec);
+		          (ListCmpF)_sort_acct_grouping_dec);
 		acct_itr = list_iterator_create(cluster_group->acct_list);
 		while((acct_group = list_next(acct_itr))) {
 

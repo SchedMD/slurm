@@ -292,10 +292,6 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			part_msg_ptr->allow_qos = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (!strncasecmp(tag, "DenyGroups", MAX(taglen, 5))) {
-			part_msg_ptr->deny_groups = val;
-			(*update_cnt_ptr)++;
-		}
 		else if (!strncasecmp(tag, "DenyAccounts", MAX(taglen, 5))) {
 			part_msg_ptr->deny_accounts = val;
 			(*update_cnt_ptr)++;
