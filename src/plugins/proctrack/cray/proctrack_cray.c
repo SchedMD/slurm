@@ -146,7 +146,7 @@ static int _job_getpidcnt(jid_t jid)
 
 static void *_create_container_thread(void *args)
 {
-	slurmd_job_t *job = (slurmd_job_t *)args;
+	stepd_step_rec_t *job = (stepd_step_rec_t *)args;
 
 	if ((job->cont_id = (uint64_t)_job_create(0, job->uid, 0))
 	    == (jid_t)-1) {
@@ -221,7 +221,7 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_plugin_create(slurmd_job_t *job)
+extern int slurm_container_plugin_create(stepd_step_rec_t *job)
 {
 	pthread_attr_t attr;
 
@@ -261,7 +261,7 @@ extern int slurm_container_plugin_create(slurmd_job_t *job)
  * was created and all of it's spawned tasks are placed into the container
  * when forked, all we need to do is remove the slurmstepd from the container
  * (once) at this time. */
-int slurm_container_plugin_add(slurmd_job_t *job, pid_t pid)
+int slurm_container_plugin_add(stepd_step_rec_t *job, pid_t pid)
 {
 	static bool first = 1;
 

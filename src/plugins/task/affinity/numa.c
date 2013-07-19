@@ -100,7 +100,7 @@ static int _str_to_memset(nodemask_t *mask, const char* str)
 	return 0;
 }
 
-void slurm_chk_memset(nodemask_t *mask, slurmd_job_t *job)
+void slurm_chk_memset(nodemask_t *mask, stepd_step_rec_t *job)
 {
 	char bind_type[42];
 	char action[42];
@@ -149,7 +149,7 @@ void slurm_chk_memset(nodemask_t *mask, slurmd_job_t *job)
 			status);
 }
 
-int get_memset(nodemask_t *mask, slurmd_job_t *job)
+int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 {
 	int nummasks, maskid, i, threads;
 	char *curstr, *selstr;

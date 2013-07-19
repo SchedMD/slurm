@@ -108,7 +108,7 @@ Gets configuration options from acct_gather.conf<br />
  on success, or<br> <span class="commandline">NULL</span> on failure.
 
 <p class="commandline">
-int acct_gather_profile_p_node_step_start(slurmd_job_t* job)
+int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Called once per step on each node from slurmstepd, before launching tasks.
 <br />
@@ -122,7 +122,7 @@ about the step. </span>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int acct_gather_profile_p_node_step_end(slurmd_job_t* job)
+int acct_gather_profile_p_node_step_end(stepd_step_rec_t* job)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Called once per step on each node from slurmstepd, after all tasks end.
 <br />
@@ -135,7 +135,7 @@ about the step. </span>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int acct_gather_profile_p_task_start(slurmd_job_t* job, uint32_t taskid)
+int acct_gather_profile_p_task_start(stepd_step_rec_t* job, uint32_t taskid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Called once per task from slurmstepd, BEFORE node step start is called.
 <br />
@@ -151,7 +151,7 @@ about the step. </span>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int acct_gather_profile_p_task_end(slurmd_job_t* job, pid_t taskpid)
+int acct_gather_profile_p_task_end(stepd_step_rec_t* job, pid_t taskpid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Called once per task from slurmstepd.
 <br />

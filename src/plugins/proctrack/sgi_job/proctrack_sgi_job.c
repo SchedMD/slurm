@@ -192,7 +192,7 @@ int _job_getpidcnt (jid_t jid)
 	return ((*job_ops.getpidcnt) (jid));
 }
 
-int slurm_container_plugin_create (slurmd_job_t *job)
+int slurm_container_plugin_create (stepd_step_rec_t *job)
 {
 	if (!libjob_handle)
 		init();
@@ -212,7 +212,7 @@ int slurm_container_plugin_create (slurmd_job_t *job)
  * was created and all of it's spawned tasks are placed into the container
  * when forked, all we need to do is remove the slurmstepd from the container
  * (once) at this time. */
-int slurm_container_plugin_add (slurmd_job_t *job, pid_t pid)
+int slurm_container_plugin_add (stepd_step_rec_t *job, pid_t pid)
 {
 	static bool first = 1;
 

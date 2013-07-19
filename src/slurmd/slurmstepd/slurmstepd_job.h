@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/slurmd/slurmstepd/slurmstepd_job.h  slurmd_job_t definition
+ *  src/slurmd/slurmstepd/slurmstepd_job.h  stepd_step_rec_t definition
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.

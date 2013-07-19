@@ -133,7 +133,7 @@ ID of the job which has completed.</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int task_pre_setuid (slurmd_job_t *job);</p>
+<p class="commandline">int task_pre_setuid (stepd_step_rec_t *job);</p>
 <p style="margin-left:.2in"><b>Description</b>: task_pre_setuid() is called
 before setting the UID for the user to launch his jobs.
 Executed by the <b>slurmstepd</b> program as user root.</p>
@@ -146,7 +146,7 @@ data structure definition.</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int task_pre_launch_priv (slurmd_job_t *job);</p>
+<p class="commandline">int task_pre_launch_priv (stepd_step_rec_t *job);</p>
 <p style="margin-left:.2in"><b>Description</b>: task_pre_launch_priv() is called
 by each forked task just after the fork. Note that no particular task related
 information is available in the job structure at that time.
@@ -160,7 +160,7 @@ data structure definition.</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int task_pre_launch (slurmd_job_t *job);</p>
+<p class="commandline">int task_pre_launch (stepd_step_rec_t *job);</p>
 <p style="margin-left:.2in"><b>Description</b>: task_pre_launch() is called
 prior to exec of application task.
 Executed by the <b>slurmstepd</b> program as the job's owner.
@@ -176,7 +176,7 @@ On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
 <a name="get_errno"><p class="commandline">int task_post_term
-(slurmd_job_t *job, slurmd_task_info_t *task);</p></a>
+(stepd_step_rec_t *job, slurmd_task_info_t *task);</p></a>
 <p style="margin-left:.2in"><b>Description</b>: task_term() is called
 after termination of job step.
 Executed by the <b>slurmstepd</b> program as the job's owner.
@@ -195,7 +195,7 @@ data structure definition.</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int task_post_step (slurmd_job_t *job);</p>
+<p class="commandline">int task_post_step (stepd_step_rec_t *job);</p>
 <p style="margin-left:.2in"><b>Description</b>: task_post_step() is called
 after termination of all the tasks of the job step.
 Executed by the <b>slurmstepd</b> program as user root.</p>

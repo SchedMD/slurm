@@ -2728,7 +2728,7 @@ static int
 _rpc_file_bcast(slurm_msg_t *msg)
 {
 #ifdef HAVE_REAL_CRAY
-	slurmd_job_t job;
+	stepd_step_rec_t job;
 #endif
 	file_bcast_msg_t *req = msg->data;
 	int fd, flags, offset, inx, rc;
@@ -3160,7 +3160,7 @@ _job_still_running(uint32_t job_id)
 }
 
 /*
- * Wait until all job steps are in SLURMD_JOB_COMPLETE state.
+ * Wait until all job steps are in SLURMSTEPD_NOT_RUNNING state.
  * This indicates that interconnect_postfini has completed and
  * freed the switch windows (as needed only for Federation switch).
  */

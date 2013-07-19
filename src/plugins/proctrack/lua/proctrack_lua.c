@@ -281,7 +281,7 @@ int fini (void)
 /*
  *  Create lua 'job' table and leave it on the (lua) stack.
  */
-static int lua_job_table_create (slurmd_job_t *job)
+static int lua_job_table_create (stepd_step_rec_t *job)
 {
 	lua_newtable (L);
 
@@ -320,7 +320,7 @@ static int lua_job_table_create (slurmd_job_t *job)
 	return (0);
 }
 
-int slurm_container_plugin_create (slurmd_job_t *job)
+int slurm_container_plugin_create (stepd_step_rec_t *job)
 {
 	int rc = SLURM_ERROR;
 	double id;
@@ -363,7 +363,7 @@ out:
 	return rc;
 }
 
-int slurm_container_plugin_add (slurmd_job_t *job, pid_t pid)
+int slurm_container_plugin_add (stepd_step_rec_t *job, pid_t pid)
 {
 	int rc = SLURM_ERROR;
 

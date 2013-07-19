@@ -43,13 +43,13 @@ which will set up the correct environment for the specified mpi.
 <br>
 slurmd daemon runs
 <br>
-<i>mpi_p_init((slurmd_job_t *)job, (int)rank);</i>
+<i>mpi_p_init((stepd_step_rec_t *)job, (int)rank);</i>
 <br>
 which will set configure the slurmd to use the correct mpi as well to interact with the srun.
 <br>
 slurmstepd process runs
 <br>
-<i>p_mpi_hook_slurmstepd_prefork(const slurmd_job_t *job, char ***env);</i>
+<i>p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env);</i>
 <br>
 which executes immediately before fork/exec of tasks.
 <br>
@@ -68,7 +68,7 @@ permitted on various data structures is identified for each function.</p>
 <p>The following functions must appear. Functions which are not implemented should
 be stubbed.</p>
 
-<p class="commandline">int mpi_p_init (slurmd_job_t *job, int rank);</p>
+<p class="commandline">int mpi_p_init (stepd_step_rec_t *job, int rank);</p>
 <p style="margin-left:.2in"><b>Description</b>: Used by slurmd to configure the slurmd's environment
 to that of the correct mpi.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br><span class="commandline"> job</span>&nbsp;
@@ -95,7 +95,7 @@ can run at the same time </p>
 <p style="margin-left:.2in"><b>Returns</b>: false if multiple tasks can run and true if only
 a single task can run at one time.</p>
 
-<p class="commandline">int p_mpi_hook_slurmstepd_prefork(const slurmd_job_t *job, char ***env);</p>
+<p class="commandline">int p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env);</p>
 <p style="margin-left:.2in"><b>Description</b>: Used by slurmstepd process immediately prior
 to fork and exec of user tasks.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
