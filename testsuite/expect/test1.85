@@ -44,7 +44,7 @@ print_header $test_id
 if {[test_launch_poe]} {
         set node_name_env MP_I_UPMD_HOSTNAME
 } else {
-        set node_name_env SLURMD_NODENAME
+        set node_name_env SLURM_STEP_NODELIST
 }
 
 # spawn an allocation to run on 2
@@ -168,9 +168,8 @@ expect {
 }
 
 if {[ string compare $host2 $hostname] != 0} {
-	send_user "FAILURE\n"
-	send_user "The execution hostname $hostname != $host2 requested hostname.\n"
+	send_user "\nFAILURE: The execution hostname $hostname != $host2 requested hostname.\n"
 	exit 1
 }
 
-send_user "SUCCESS\n"
+send_user "\nSUCCESS\n"
