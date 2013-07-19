@@ -1,3 +1,3 @@
 # Makefile for job_container plugins
 
-SUBDIRS = cray none
+SUBDIRS = cncu none
