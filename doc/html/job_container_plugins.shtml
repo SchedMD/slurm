@@ -82,7 +82,7 @@ Process tracking container value as set by the proctrack plugin.</p>
 the plugin should return Slurm_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int container_p_add_pid (uint32_t job_id, pid_t pid);</p>
+<p class="commandline">int container_p_add_pid (uint32_t job_id, pid_t pid, uid_t uid);</p>
 <p style="margin-left:.2in"><b>Description</b>: Add a specific process ID
 to a given job's container. The process is first placed into a process tracking
 container (PAGG).</p>
@@ -90,7 +90,9 @@ container (PAGG).</p>
 <span class="commandline"> job_id</span>&nbsp; &nbsp;&nbsp;(input)
 Job ID.<br>
 <span class="commandline"> pid</span>&nbsp; &nbsp;&nbsp;(input)
-Process ID.</p>
+Process ID.<br>
+<span class="commandline"> uid</span>&nbsp; &nbsp;&nbsp;(input)
+Owning user ID.</p>
 <p style="margin-left:.2in"><b>Returns</b>: Slurm_SUCCESS if successful. On failure,
 the plugin should return Slurm_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>

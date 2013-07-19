@@ -62,9 +62,10 @@ int waitpid_timeout (const char *name, pid_t pid, int *pstatus, int timeout);
  * max_wait IN: maximum time to wait in seconds, -1 for no limit
  * env IN: environment variables to use on exec, sets minimal environment 
  *	if NULL
+ * uid IN: user ID of job owner
  * RET 0 on success, -1 on failure.
  */
 int run_script(const char *name, const char *path, uint32_t jobid, 
-	       int max_wait, char **env);
+	       int max_wait, char **env, uid_t uid);
 
 #endif /* _RUN_SCRIPT_H */

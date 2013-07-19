@@ -323,7 +323,7 @@ extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 }
 
 /* Add a process to a job container, create the proctrack container to add */
-extern int container_p_add_pid(uint32_t job_id, pid_t pid)
+extern int container_p_add_pid(uint32_t job_id, pid_t pid, uid_t uid)
 {
 	slurmd_job_t job;
 
@@ -332,6 +332,7 @@ extern int container_p_add_pid(uint32_t job_id, pid_t pid)
 #endif
 	memset(&job, 0, sizeof(slurmd_job_t));
 	job.jmgr_pid = pid;
+	job.uid = uid;
 	if (slurm_container_create(&job) != SLURM_SUCCESS) {
 		error("%s: slurm_container_create job(%u)", plugin_type,job_id);
 		return SLURM_ERROR;

@@ -49,7 +49,7 @@
 typedef struct job_container_ops {
 	int	(*container_p_create)	(uint32_t job_id);
 	int	(*container_p_add_cont)	(uint32_t job_id, uint64_t cont_id);
-	int	(*container_p_add_pid)	(uint32_t job_id, pid_t pid);
+	int	(*container_p_add_pid)	(uint32_t job_id, pid_t pid, uid_t uid);
 	int	(*container_p_delete)	(uint32_t job_id);
 	int	(*container_p_restore)	(char *dir_name, bool recover);
 
@@ -193,7 +193,7 @@ extern int container_g_create(uint32_t job_id)
 /* Add a process to the specified job's container.
  * A proctrack containter will be generated containing the process
  * before container_g_add_cont() is called (see below). */
-extern int container_g_add_pid(uint32_t job_id, pid_t pid)
+extern int container_g_add_pid(uint32_t job_id, pid_t pid, uid_t uid)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -203,7 +203,7 @@ extern int container_g_add_pid(uint32_t job_id, pid_t pid)
 	slurm_mutex_lock(&g_container_context_lock);
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
-		rc = (*(ops[i].container_p_add_pid))(job_id, pid);
+		rc = (*(ops[i].container_p_add_pid))(job_id, pid, uid);
 	}
 	slurm_mutex_unlock(&g_container_context_lock);
 

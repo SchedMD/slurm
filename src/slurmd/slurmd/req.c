@@ -1070,11 +1070,11 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #ifndef HAVE_FRONT_END
 	if (first_job_run) {
 		int rc;
+		if (container_g_create(req->job_id))
+			error("container_g_create(%u): %m", req->job_id);
 		rc =  _run_prolog(req->job_id, req->uid, NULL,
 				  req->spank_job_env, req->spank_job_env_size,
 				  req->complete_nodelist);
-		if (container_g_create(req->job_id))
-			error("container_g_create(%u): %m", req->job_id);
 		if (rc) {
 			int term_sig, exit_status;
 			if (WIFSIGNALED(rc)) {
@@ -1405,11 +1405,11 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
 							  SELECT_PRINT_RESV_ID);
 #endif
+		if (container_g_create(req->job_id))
+			error("container_g_create(%u): %m", req->job_id);
 		rc = _run_prolog(req->job_id, req->uid, resv_id,
 				 req->spank_job_env, req->spank_job_env_size,
 				 req->nodes);
-		if (container_g_create(req->job_id))
-			error("container_g_create(%u): %m", req->job_id);
 		xfree(resv_id);
 		if (rc) {
 			int term_sig, exit_status;
@@ -2001,7 +2001,7 @@ _rpc_health_check(slurm_msg_t *msg)
 	if ((rc == SLURM_SUCCESS) && (conf->health_check_program)) {
 		char *env[1] = { NULL };
 		rc = run_script("health_check", conf->health_check_program,
-				0, 60, env);
+				0, 60, env, 0);
 	}
 
 	/* Take this opportunity to enforce any job memory limits */
@@ -2779,25 +2779,13 @@ _rpc_file_bcast(slurm_msg_t *msg)
 		error("sbcast: fork failure");
 		return errno;
 	} else if (child > 0) {
+		if (container_g_add_pid(job_id, child, req_uid) !=
+		    SLURM_SUCCESS)
+			error("container_g_add_pid(%u): %m", job_id);
 		waitpid(child, &rc, 0);
 		xfree(groups);
 		return WEXITSTATUS(rc);
 	}
-
-#ifdef HAVE_REAL_CRAY
-	/* Cray systems require files be created within the job's container */
-	setpgrp();
-	job.cont_id = 0;
-	job.jmgr_pid = getpid();
-	job.pgid = getpgid(job.jmgr_pid);
-	job.uid = req_uid;
-	if ((rc = slurm_container_create(&job))) {
-		error("sbcast: slurm_container_create(%u): %m", job_id);
-		return rc;
-	}
-	slurm_container_add(&job, job.jmgr_pid);
-	container_g_add(job_id, job.cont_id);
-#endif
 
 	/* The child actually performs the I/O and exits with
 	 * a return code, do not return! */
@@ -4277,14 +4265,14 @@ _destroy_env(char **env)
 }
 
 static int
-run_spank_job_script (const char *mode, char **env)
+_run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
 {
 	pid_t cpid;
 	int status = 0;
 	int pfds[2];
 
 	if (pipe (pfds) < 0) {
-		error ("run_spank_job_script: pipe: %m");
+		error ("_run_spank_job_script: pipe: %m");
 		return (-1);
 	}
 
@@ -4315,6 +4303,8 @@ run_spank_job_script (const char *mode, char **env)
 		exit (127);
 	}
 
+	if (container_g_add_pid(job_id, cpid, uid) != SLURM_SUCCESS)
+		error("container_g_add_pid(%u): %m", job_id);
 	close (pfds[0]);
 
 	if (_send_slurmd_conf_lite (pfds[1], conf) < 0)
@@ -4341,7 +4331,7 @@ run_spank_job_script (const char *mode, char **env)
 }
 
 static int _run_job_script(const char *name, const char *path,
-		uint32_t jobid, int timeout, char **env)
+			   uint32_t jobid, int timeout, char **env, uid_t uid)
 {
 	int status, rc;
 	/*
@@ -4350,8 +4340,8 @@ static int _run_job_script(const char *name, const char *path,
 	 *   If both "script" mechanisms fail, prefer to return the "real"
 	 *   prolog/epilog status.
 	 */
-	status = run_spank_job_script(name, env);
-	if ((rc = run_script(name, path, jobid, timeout, env)))
+	status = _run_spank_job_script(name, env, jobid, uid);
+	if ((rc = run_script(name, path, jobid, timeout, env, uid)))
 		status = rc;
 	return (status);
 }
@@ -4373,7 +4363,7 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	slurm_mutex_unlock(&conf->config_mutex);
 	_add_job_running_prolog(jobid);
 
-	rc = _run_job_script("prolog", my_prolog, jobid, -1, my_env);
+	rc = _run_job_script("prolog", my_prolog, jobid, -1, my_env, uid);
 	_remove_job_running_prolog(jobid);
 	xfree(my_prolog);
 	_destroy_env(my_env);
@@ -4449,7 +4439,7 @@ _run_prolog(uint32_t jobid, uid_t uid, char *resv_id,
 	timer_struct.timer_cond  = &timer_cond;
 	timer_struct.timer_mutex = &timer_mutex;
 	pthread_create(&timer_id, &timer_attr, &_prolog_timer, &timer_struct);
-	rc = _run_job_script("prolog", my_prolog, jobid, -1, my_env);
+	rc = _run_job_script("prolog", my_prolog, jobid, -1, my_env, uid);
 	slurm_mutex_lock(&timer_mutex);
 	prolog_fini = true;
 	pthread_cond_broadcast(&timer_cond);
@@ -4488,7 +4478,8 @@ _run_epilog(uint32_t jobid, uid_t uid, char *resv_id,
 	slurm_mutex_unlock(&conf->config_mutex);
 
 	_wait_for_job_running_prolog(jobid);
-	error_code = _run_job_script("epilog", my_epilog, jobid, -1, my_env);
+	error_code = _run_job_script("epilog", my_epilog, jobid, -1, my_env,
+				     uid);
 	xfree(my_epilog);
 	_destroy_env(my_env);
 
