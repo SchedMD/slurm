@@ -98,7 +98,7 @@ typedef struct {
 } assoc_init_args_t;
 
 struct assoc_mgr_association_usage {
-	List childern_list;     /* list of childern associations
+	List children_list;     /* list of children associations
 				 * (DON'T PACK) */
 
 	uint32_t grp_used_cpus; /* count of active jobs in the group

@@ -770,7 +770,7 @@ int slurm_receive_msg(slurm_fd_t fd, slurm_msg_t *msg, int timeout);
  * IN open_fd	- file descriptor to receive msg on
  * IN steps	- how many steps down the tree we have to wait for
  * IN timeout	- how long to wait in milliseconds
- * RET List	- List containing the responses of the childern (if any) we
+ * RET List	- List containing the responses of the children (if any) we
  *                forwarded the message to. List containing type
  *                (ret_data_info_t). NULL is returned on failure. and
  *                errno set.
@@ -783,8 +783,8 @@ List slurm_receive_msgs(slurm_fd_t fd, int steps, int timeout);
  *    forward the message to the nodes contained in the forward_t
  *    structure inside the header of the message.  If timeout is
  *    zero, a default timeout is used. The 'resp' is the actual message
- *    received and contains the ret_list of it's childern and the
- *    forward_structure_t containing information about it's childern
+ *    received and contains the ret_list of it's children and the
+ *    forward_structure_t containing information about it's children
  *    also. Memory is allocated for the returned msg and the returned
  *    list both must be freed at some point using the
  *    slurm_free_functions and list_destroy function.
@@ -1085,7 +1085,7 @@ int slurm_send_recv_node_msg(slurm_msg_t * request_msg,
  * IN msg           - a slurm_msg struct to be sent by the function
  * IN timeout	    - how long to wait in milliseconds
  * IN quiet         - if set, reduce logging details
- * RET List	    - List containing the responses of the childern
+ * RET List	    - List containing the responses of the children
  *                    (if any) we forwarded the message to. List
  *                    containing type (ret_types_t).
  */
@@ -1098,7 +1098,7 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout,
  * IN msg           - a slurm_msg struct to be sent by the function
  * IN name          - the name of the node the message is being sent to
  * IN timeout	    - how long to wait in milliseconds
- * RET List	    - List containing the responses of the childern
+ * RET List	    - List containing the responses of the children
  *                    (if any) we forwarded the message to. List
  *                    containing type (ret_types_t).
  */
@@ -1175,7 +1175,7 @@ extern int slurm_job_step_create (
  * IN data: real data
  * RET: error code
  */
-extern int slurm_forward_data(char *nodelist, char *address, uint32_t len, 
+extern int slurm_forward_data(char *nodelist, char *address, uint32_t len,
 	char *data);
 
 #endif

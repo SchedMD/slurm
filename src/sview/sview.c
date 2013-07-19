@@ -1466,26 +1466,26 @@ extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	node_tab = gtk_container_get_focus_child(GTK_CONTAINER(node_tab));
 #else
 	/* See above comment.  Since gtk_container_get_focus_child
-	 * doesn't exist yet we will just traverse the childern until
+	 * doesn't exist yet we will just traverse the children until
 	 * we find the label widget and then break.
 	 */
 	{
 		int i = 0;
-		GList *childern = gtk_container_get_children(
+		GList *children = gtk_container_get_children(
 			GTK_CONTAINER(node_tab));
-		while ((node_tab = g_list_nth_data(childern, i++))) {
+		while ((node_tab = g_list_nth_data(children, i++))) {
 			int j = 0;
-			GList *childern2 = gtk_container_get_children(
+			GList *children2 = gtk_container_get_children(
 				GTK_CONTAINER(node_tab));
-			while ((node_tab = g_list_nth_data(childern2, j++))) {
+			while ((node_tab = g_list_nth_data(children2, j++))) {
 				if (GTK_IS_LABEL(node_tab))
 					break;
 			}
-			g_list_free(childern2);
+			g_list_free(children2);
 			if (node_tab)
 				break;
 		}
-		g_list_free(childern);
+		g_list_free(children);
 	}
 #endif
 	if (node_tab)

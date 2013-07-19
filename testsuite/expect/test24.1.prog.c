@@ -83,7 +83,7 @@ int _setup_assoc_list(void)
 	assoc_mgr_qos_list =
 		list_create(slurmdb_destroy_qos_rec);
 
-	/* we just want make it so we setup_childern so just pretend
+	/* we just want make it so we setup_children so just pretend
 	 * we are running off cache */
 	running_cache = 1;
 	assoc_mgr_init(NULL, NULL, SLURM_SUCCESS);

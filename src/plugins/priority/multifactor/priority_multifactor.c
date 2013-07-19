@@ -412,7 +412,7 @@ static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
 }
 
 
-/* This should initially get the childern list from
+/* This should initially get the children list from
  * assoc_mgr_root_assoc.  Since our algorythm goes from top down we
  * calculate all the non-user associations now.  When a user submits a
  * job, that norm_fairshare is calculated.  Here we will set the
@@ -421,22 +421,22 @@ static void _set_usage_efctv(slurmdb_association_rec_t *assoc)
  *
  * NOTE: acct_mgr_association_lock must be locked before this is called.
  */
-static int _set_children_usage_efctv(List childern_list)
+static int _set_children_usage_efctv(List children_list)
 {
 	slurmdb_association_rec_t *assoc = NULL;
 	ListIterator itr = NULL;
 
-	if (!childern_list || !list_count(childern_list))
+	if (!children_list || !list_count(children_list))
 		return SLURM_SUCCESS;
 
-	itr = list_iterator_create(childern_list);
+	itr = list_iterator_create(children_list);
 	while ((assoc = list_next(itr))) {
 		if (assoc->user) {
 			assoc->usage->usage_efctv = (long double)NO_VAL;
 			continue;
 		}
 		priority_p_set_assoc_usage(assoc);
-		_set_children_usage_efctv(assoc->usage->childern_list);
+		_set_children_usage_efctv(assoc->usage->children_list);
 	}
 	list_iterator_destroy(itr);
 	return SLURM_SUCCESS;
@@ -447,16 +447,16 @@ static int _set_children_usage_efctv(List childern_list)
  *
  * NOTE: acct_mgr_association_lock must be locked before this is called.
  */
-static int _distribute_tickets(List childern_list, uint32_t tickets)
+static int _distribute_tickets(List children_list, uint32_t tickets)
 {
 	ListIterator itr;
 	slurmdb_association_rec_t *assoc;
 	double sfsum = 0, fs;
 
-	if (!childern_list || !list_count(childern_list))
+	if (!children_list || !list_count(children_list))
 		return SLURM_SUCCESS;
 
-	itr = list_iterator_create(childern_list);
+	itr = list_iterator_create(children_list);
 	while ((assoc = list_next(itr))) {
 		if (assoc->usage->active_seqno
 		    != assoc_mgr_root_assoc->usage->active_seqno)
@@ -469,7 +469,7 @@ static int _distribute_tickets(List childern_list, uint32_t tickets)
 	}
 	list_iterator_destroy(itr);
 
-	itr = list_iterator_create(childern_list);
+	itr = list_iterator_create(children_list);
 	while ((assoc = list_next(itr))) {
 		if (assoc->usage->active_seqno
 		    != assoc_mgr_root_assoc->usage->active_seqno)
@@ -489,7 +489,7 @@ static int _distribute_tickets(List childern_list, uint32_t tickets)
 		}
 		if (assoc->user && assoc->usage->tickets > max_tickets)
 			max_tickets = assoc->usage->tickets;
-		_distribute_tickets(assoc->usage->childern_list,
+		_distribute_tickets(assoc->usage->children_list,
 				    assoc->usage->tickets);
 	}
 	list_iterator_destroy(itr);
@@ -1232,7 +1232,7 @@ static void *_decay_thread(void *no_data)
 		/* now calculate all the normalized usage here */
 		assoc_mgr_lock(&locks);
 		_set_children_usage_efctv(
-			assoc_mgr_root_assoc->usage->childern_list);
+			assoc_mgr_root_assoc->usage->children_list);
 		assoc_mgr_unlock(&locks);
 
 		if (!last_ran)
@@ -1343,7 +1343,7 @@ static void *_decay_thread(void *no_data)
 			max_tickets = 0;
 			assoc_mgr_root_assoc->usage->tickets = (uint32_t) -1;
 			_distribute_tickets(
-				assoc_mgr_root_assoc->usage->childern_list,
+				assoc_mgr_root_assoc->usage->children_list,
 				(uint32_t) -1);
 			assoc_mgr_unlock(&locks);
 

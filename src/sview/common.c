@@ -1762,7 +1762,7 @@ extern void destroy_popup_info(void *arg)
 	if (popup_win) {
 		*popup_win->running = 0;
 		g_mutex_lock(sview_mutex);
-		/* these are all childern of each other so must
+		/* these are all children of each other so must
 		   be freed in this order */
 		if (popup_win->grid_button_list) {
 			list_destroy(popup_win->grid_button_list);
