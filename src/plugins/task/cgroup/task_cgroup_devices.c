@@ -138,7 +138,7 @@ extern int task_cgroup_devices_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	return SLURM_SUCCESS;
 }
 
-extern int task_cgroup_devices_create(slurmd_job_t *job)
+extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 {
 	int f, k, rc, gres_conf_lines, allow_lines;
 	int fstatus = SLURM_ERROR;
@@ -407,7 +407,7 @@ error:
 	return fstatus;
 }
 
-extern int task_cgroup_devices_attach_task(slurmd_job_t *job)
+extern int task_cgroup_devices_attach_task(stepd_step_rec_t *job)
 {
 	int fstatus = SLURM_ERROR;
 

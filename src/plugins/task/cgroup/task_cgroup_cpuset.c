@@ -289,7 +289,7 @@ static void _add_cpuset(
  */
 static int _task_cgroup_cpuset_dist_cyclic(
 	hwloc_topology_t topology, hwloc_obj_type_t hwtype,
-	hwloc_obj_type_t req_hwtype, slurmd_job_t *job, int bind_verbose,
+	hwloc_obj_type_t req_hwtype, stepd_step_rec_t *job, int bind_verbose,
 	hwloc_bitmap_t cpuset)
 {
 	hwloc_obj_t obj;
@@ -359,7 +359,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 static int _task_cgroup_cpuset_dist_block(
 	hwloc_topology_t topology, hwloc_obj_type_t hwtype,
 	hwloc_obj_type_t req_hwtype, uint32_t nobj,
-	slurmd_job_t *job, int bind_verbose, hwloc_bitmap_t cpuset)
+	stepd_step_rec_t *job, int bind_verbose, hwloc_bitmap_t cpuset)
 {
 	hwloc_obj_t obj;
 	uint32_t i, pfirst,plast;
@@ -425,7 +425,7 @@ extern int task_cgroup_cpuset_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	return SLURM_SUCCESS;
 }
 
-extern int task_cgroup_cpuset_create(slurmd_job_t *job)
+extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 {
 	int rc;
 	int fstatus = SLURM_ERROR;
@@ -671,7 +671,7 @@ error:
 	return fstatus;
 }
 
-extern int task_cgroup_cpuset_attach_task(slurmd_job_t *job)
+extern int task_cgroup_cpuset_attach_task(stepd_step_rec_t *job)
 {
 	int fstatus = SLURM_ERROR;
 
@@ -683,7 +683,7 @@ extern int task_cgroup_cpuset_attach_task(slurmd_job_t *job)
 
 /* affinity should be set using sched_setaffinity to not force */
 /* user to have to play with the cgroup hierarchy to modify it */
-extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job)
+extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 {
 	int fstatus = SLURM_ERROR;
 

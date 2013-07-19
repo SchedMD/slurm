@@ -75,15 +75,15 @@ typedef struct srun_info {
 } srun_info_t;
 
 typedef enum task_state {
-	SLURMD_TASK_INIT,
-	SLURMD_TASK_STARTING,
-	SLURMD_TASK_RUNNING,
-	SLURMD_TASK_COMPLETE
-} slurmd_task_state_t;
+	STEPD_STEP_TASK_INIT,
+	STEPD_STEP_TASK_STARTING,
+	STEPD_STEP_TASK_RUNNING,
+	STEPD_STEP_TASK_COMPLETE
+} stepd_step_task_state_t;
 
 typedef struct task_info {
 	pthread_mutex_t mutex;	    /* mutex to protect task state          */
-	slurmd_task_state_t state;  /* task state                           */
+	stepd_step_task_state_t state;  /* task state                       */
 
 	int             id;	    /* local task id                        */
 	uint32_t        gtid;	    /* global task id                       */
@@ -108,9 +108,9 @@ typedef struct task_info {
 
 	uint32_t	argc;
 	char	      **argv;
-} slurmd_task_info_t;
+} stepd_step_task_info_t;
 
-typedef struct slurmd_job {
+typedef struct {
 	slurmstepd_state_t state;
 	uint32_t       jobid;  /* Current SLURM job id                      */
 	uint32_t       stepid; /* Current step id (or NO_VAL)               */
@@ -151,7 +151,7 @@ typedef struct slurmd_job {
 	char          *task_prolog; /* per-task prolog                      */
 	char          *task_epilog; /* per-task epilog                      */
 	struct passwd *pwd;   /* saved passwd struct for user job           */
-	slurmd_task_info_t  **task;  /* array of task information pointers  */
+	stepd_step_task_info_t  **task;  /* array of task information pointers*/
 	eio_handle_t  *eio;
 	List 	       sruns; /* List of srun_info_t pointers               */
 	List           clients; /* List of struct client_io_info pointers   */
@@ -210,22 +210,22 @@ typedef struct slurmd_job {
 	char	      *step_alloc_cores;/* needed by the SPANK cpuset plugin */
 	List           job_gres_list;	/* Needed by GRES plugin */
 	List           step_gres_list;	/* Needed by GRES plugin */
-} slurmd_job_t;
+} stepd_step_rec_t;
 
 
-slurmd_job_t * job_create(launch_tasks_request_msg_t *msg);
-slurmd_job_t * job_batch_job_create(batch_job_launch_msg_t *msg);
+stepd_step_rec_t * job_create(launch_tasks_request_msg_t *msg);
+stepd_step_rec_t * job_batch_job_create(batch_job_launch_msg_t *msg);
 
-void job_kill(slurmd_job_t *job, int signal);
+void job_kill(stepd_step_rec_t *job, int signal);
 
-void job_destroy(slurmd_job_t *job);
+void job_destroy(stepd_step_rec_t *job);
 
 struct srun_info * srun_info_create(slurm_cred_t *cred, slurm_addr_t *respaddr,
 				    slurm_addr_t *ioaddr);
 
 void  srun_info_destroy(struct srun_info *srun);
 
-slurmd_task_info_t * task_info_create(int taskid, int gtaskid,
+stepd_step_task_info_t * task_info_create(int taskid, int gtaskid,
 				      char *ifname, char *ofname, char *efname);
 
 /*
@@ -233,8 +233,8 @@ slurmd_task_info_t * task_info_create(int taskid, int gtaskid,
  *   We inline it here so that it can be included from src/common/plugstack.c
  *   without undefined symbol warnings.
  */
-static inline slurmd_task_info_t *
-job_task_info_by_pid (slurmd_job_t *job, pid_t pid)
+static inline stepd_step_task_info_t *
+job_task_info_by_pid (stepd_step_rec_t *job, pid_t pid)
 {
 	uint32_t i;
 	for (i = 0; i < job->node_tasks; i++) {

@@ -94,9 +94,9 @@
 /*
  * Static prototype definitions.
  */
-static void  _make_tmpdir(slurmd_job_t *job);
+static void  _make_tmpdir(stepd_step_rec_t *job);
 static int   _run_script_and_set_env(const char *name, const char *path,
-				     slurmd_job_t *job);
+				     stepd_step_rec_t *job);
 static void  _proc_stdout(char *buf, char ***env);
 static char *_uint32_array_to_str(int array_len, const uint32_t *array);
 
@@ -184,7 +184,7 @@ rwfail:		 /* process rest of script output */
  * RET 0 on success, -1 on failure.
  */
 static int
-_run_script_and_set_env(const char *name, const char *path, slurmd_job_t *job)
+_run_script_and_set_env(const char *name, const char *path, stepd_step_rec_t *job)
 {
 	int status, rc, nread;
 	pid_t cpid;
@@ -309,7 +309,7 @@ _build_path(char* fname, char **prog_env)
 }
 
 static int
-_setup_mpi(slurmd_job_t *job, int ltaskid)
+_setup_mpi(stepd_step_rec_t *job, int ltaskid)
 {
 	mpi_plugin_task_info_t info[1];
 
@@ -332,11 +332,11 @@ _setup_mpi(slurmd_job_t *job, int ltaskid)
  *  Current process is running as the user when this is called.
  */
 void
-exec_task(slurmd_job_t *job, int i)
+exec_task(stepd_step_rec_t *job, int i)
 {
 	uint32_t *gtids;		/* pointer to arrary of ranks */
 	int fd, j;
-	slurmd_task_info_t *task = job->task[i];
+	stepd_step_task_info_t *task = job->task[i];
 
 	if (i == 0)
 		_make_tmpdir(job);
@@ -478,7 +478,7 @@ exec_task(slurmd_job_t *job, int i)
 }
 
 static void
-_make_tmpdir(slurmd_job_t *job)
+_make_tmpdir(stepd_step_rec_t *job)
 {
 	char *tmpdir;
 

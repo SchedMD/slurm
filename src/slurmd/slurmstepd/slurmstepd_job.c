@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/slurmd/slurmstepd/slurmstepd_job.c - slurmd_job_t routines
+ *  src/slurmd/slurmstepd/slurmstepd_job.c - stepd_step_rec_t routines
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
@@ -72,9 +72,9 @@
 static char ** _array_copy(int n, char **src);
 static void _array_free(char ***array);
 static void _srun_info_destructor(void *arg);
-static void _job_init_task_info(slurmd_job_t *job, uint32_t *gtid,
+static void _job_init_task_info(stepd_step_rec_t *job, uint32_t *gtid,
 				char *ifname, char *ofname, char *efname);
-static void _task_info_destroy(slurmd_task_info_t *t, uint16_t multi_prog);
+static void _task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog);
 
 static int _check_acct_freq_task(uint32_t job_mem_lim, char *acctg_freq)
 {
@@ -180,11 +180,11 @@ _valid_gid(struct passwd *pwd, gid_t *gid)
 }
 
 /* create a slurmd job structure from a launch tasks message */
-slurmd_job_t *
+stepd_step_rec_t *
 job_create(launch_tasks_request_msg_t *msg)
 {
 	struct passwd *pwd = NULL;
-	slurmd_job_t  *job = NULL;
+	stepd_step_rec_t  *job = NULL;
 	srun_info_t   *srun = NULL;
 	slurm_addr_t     resp_addr;
 	slurm_addr_t     io_addr;
@@ -209,7 +209,7 @@ job_create(launch_tasks_request_msg_t *msg)
 		return NULL;
 	}
 
-	job = xmalloc(sizeof(slurmd_job_t));
+	job = xmalloc(sizeof(stepd_step_rec_t));
 #ifndef HAVE_FRONT_END
 	nodeid = nodelist_find(msg->complete_nodelist, conf->node_name);
 	job->node_name = xstrdup(conf->node_name);
@@ -364,7 +364,7 @@ job_create(launch_tasks_request_msg_t *msg)
  * return the default output filename for a batch job
  */
 static char *
-_batchfilename(slurmd_job_t *job, const char *name)
+_batchfilename(stepd_step_rec_t *job, const char *name)
 {
 	if (name == NULL) {
 		if (job->array_task_id == (uint16_t) NO_VAL)
@@ -375,11 +375,11 @@ _batchfilename(slurmd_job_t *job, const char *name)
 		return fname_create(job, name, 0);
 }
 
-slurmd_job_t *
+stepd_step_rec_t *
 job_batch_job_create(batch_job_launch_msg_t *msg)
 {
 	struct passwd *pwd;
-	slurmd_job_t *job;
+	stepd_step_rec_t *job;
 	srun_info_t  *srun = NULL;
 	char *in_name;
 
@@ -403,7 +403,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		return NULL;
 	}
 
-	job = xmalloc(sizeof(slurmd_job_t));
+	job = xmalloc(sizeof(stepd_step_rec_t));
 
 	job->state   = SLURMSTEPD_STEP_STARTING;
 	job->pwd     = pwd;
@@ -483,7 +483,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		job->argv    = (char **) xmalloc(2 * sizeof(char *));
 	}
 
-	job->task = xmalloc(sizeof(slurmd_task_info_t *));
+	job->task = xmalloc(sizeof(stepd_step_task_info_t *));
 	if (msg->std_err == NULL)
 		msg->std_err = xstrdup(msg->std_out);
 
@@ -519,7 +519,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
  * "taskid", then the file descriptor will be connected to /dev/null.
  */
 static char *
-_expand_stdio_filename(char *filename, int gtaskid, slurmd_job_t *job)
+_expand_stdio_filename(char *filename, int gtaskid, stepd_step_rec_t *job)
 {
 	int id;
 
@@ -542,7 +542,7 @@ _expand_stdio_filename(char *filename, int gtaskid, slurmd_job_t *job)
 }
 
 static void
-_job_init_task_info(slurmd_job_t *job, uint32_t *gtid,
+_job_init_task_info(stepd_step_rec_t *job, uint32_t *gtid,
 		    char *ifname, char *ofname, char *efname)
 {
 	int          i;
@@ -554,8 +554,8 @@ _job_init_task_info(slurmd_job_t *job, uint32_t *gtid,
 		return;
 	}
 
-	job->task = (slurmd_task_info_t **)
-		xmalloc(job->node_tasks * sizeof(slurmd_task_info_t *));
+	job->task = (stepd_step_task_info_t **)
+		xmalloc(job->node_tasks * sizeof(stepd_step_task_info_t *));
 
 	for (i = 0; i < job->node_tasks; i++){
 		in = _expand_stdio_filename(ifname, gtid[i], job);
@@ -577,7 +577,7 @@ _job_init_task_info(slurmd_job_t *job, uint32_t *gtid,
 }
 
 void
-job_signal_tasks(slurmd_job_t *job, int signal)
+job_signal_tasks(stepd_step_rec_t *job, int signal)
 {
 	int n = job->node_tasks;
 	while (--n >= 0) {
@@ -592,7 +592,7 @@ job_signal_tasks(slurmd_job_t *job, int signal)
 }
 
 void
-job_destroy(slurmd_job_t *job)
+job_destroy(stepd_step_rec_t *job)
 {
 	int i;
 
@@ -689,18 +689,18 @@ srun_info_destroy(struct srun_info *srun)
 	xfree(srun);
 }
 
-slurmd_task_info_t *
+stepd_step_task_info_t *
 task_info_create(int taskid, int gtaskid,
 		 char *ifname, char *ofname, char *efname)
 {
-	slurmd_task_info_t *t = xmalloc(sizeof(slurmd_task_info_t));
+	stepd_step_task_info_t *t = xmalloc(sizeof(stepd_step_task_info_t));
 
 	xassert(taskid >= 0);
 	xassert(gtaskid >= 0);
 
 	slurm_mutex_init(&t->mutex);
 	slurm_mutex_lock(&t->mutex);
-	t->state       = SLURMD_TASK_INIT;
+	t->state       = STEPD_STEP_TASK_INIT;
 	t->id          = taskid;
 	t->gtid	       = gtaskid;
 	t->pid         = (pid_t) -1;
@@ -725,7 +725,7 @@ task_info_create(int taskid, int gtaskid,
 
 
 static void
-_task_info_destroy(slurmd_task_info_t *t, uint16_t multi_prog)
+_task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog)
 {
 	slurm_mutex_lock(&t->mutex);
 	slurm_mutex_unlock(&t->mutex);

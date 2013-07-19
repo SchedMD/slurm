@@ -112,7 +112,7 @@ struct client_io_info {
 #define CLIENT_IO_MAGIC  0x10102
 	int                   magic;
 #endif
-	slurmd_job_t    *job;		 /* pointer back to job data   */
+	stepd_step_rec_t    *job;		 /* pointer back to job data   */
 
 	/* incoming variables */
 	struct slurm_io_header header;
@@ -164,7 +164,7 @@ struct task_write_info {
 #define TASK_IN_MAGIC  0x10103
 	int              magic;
 #endif
-	slurmd_job_t    *job;		 /* pointer back to job data   */
+	stepd_step_rec_t    *job;		 /* pointer back to job data   */
 
 	List msg_queue;
 	struct io_buf *msg;
@@ -190,7 +190,7 @@ struct task_read_info {
 	uint16_t         type;           /* type of IO object          */
 	uint16_t         gtaskid;
 	uint16_t         ltaskid;
-	slurmd_job_t    *job;		 /* pointer back to job data   */
+	stepd_step_rec_t    *job;		 /* pointer back to job data   */
 	cbuf_t           buf;
 	bool		 eof;
 	bool		 eof_msg_sent;
@@ -200,12 +200,12 @@ struct task_read_info {
  * Pseudo terminal declarations
  **********************************************************************/
 struct window_info {
-	slurmd_task_info_t *task;
-	slurmd_job_t *job;
+	stepd_step_task_info_t *task;
+	stepd_step_rec_t *job;
 	slurm_fd_t pty_fd;
 };
 #ifdef HAVE_PTY_H
-static void  _spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job);
+static void  _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *job);
 static void *_window_manager(void *arg);
 #endif
 
@@ -213,19 +213,19 @@ static void *_window_manager(void *arg);
  * General declarations
  **********************************************************************/
 static void *_io_thr(void *);
-static int _send_io_init_msg(int sock, srun_key_t *key, slurmd_job_t *job);
+static int _send_io_init_msg(int sock, srun_key_t *key, stepd_step_rec_t *job);
 static void _send_eof_msg(struct task_read_info *out);
 static struct io_buf *_task_build_message(struct task_read_info *out,
-					  slurmd_job_t *job, cbuf_t cbuf);
+					  stepd_step_rec_t *job, cbuf_t cbuf);
 static void *_io_thr(void *arg);
 static void _route_msg_task_to_client(eio_obj_t *obj);
-static void _free_outgoing_msg(struct io_buf *msg, slurmd_job_t *job);
-static void _free_incoming_msg(struct io_buf *msg, slurmd_job_t *job);
-static void _free_all_outgoing_msgs(List msg_queue, slurmd_job_t *job);
-static bool _incoming_buf_free(slurmd_job_t *job);
-static bool _outgoing_buf_free(slurmd_job_t *job);
-static int  _send_connection_okay_response(slurmd_job_t *job);
-static struct io_buf *_build_connection_okay_message(slurmd_job_t *job);
+static void _free_outgoing_msg(struct io_buf *msg, stepd_step_rec_t *job);
+static void _free_incoming_msg(struct io_buf *msg, stepd_step_rec_t *job);
+static void _free_all_outgoing_msgs(List msg_queue, stepd_step_rec_t *job);
+static bool _incoming_buf_free(stepd_step_rec_t *job);
+static bool _outgoing_buf_free(stepd_step_rec_t *job);
+static int  _send_connection_okay_response(stepd_step_rec_t *job);
+static struct io_buf *_build_connection_okay_message(stepd_step_rec_t *job);
 
 /**********************************************************************
  * IO client socket functions
@@ -409,7 +409,7 @@ _client_read(eio_obj_t *obj, List objs)
 		return SLURM_ERROR;
 	} else {
 		int i;
-		slurmd_task_info_t *task;
+		stepd_step_task_info_t *task;
 		struct task_write_info *io;
 
 		client->in_msg->ref_count = 0;
@@ -597,7 +597,7 @@ _local_file_write(eio_obj_t *obj, List objs)
  * Create an eio_obj_t for handling a task's stdin traffic
  */
 static eio_obj_t *
-_create_task_in_eio(int fd, slurmd_job_t *job)
+_create_task_in_eio(int fd, stepd_step_rec_t *job)
 {
 	struct task_write_info *t = NULL;
 	eio_obj_t *eio = NULL;
@@ -714,7 +714,7 @@ again:
  */
 static eio_obj_t *
 _create_task_out_eio(int fd, uint16_t type,
-		     slurmd_job_t *job, slurmd_task_info_t *task)
+		     stepd_step_rec_t *job, stepd_step_task_info_t *task)
 {
 	struct task_read_info *out = NULL;
 	eio_obj_t *eio = NULL;
@@ -865,7 +865,7 @@ static void *_window_manager(void *arg)
 }
 
 static void
-_spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job)
+_spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 {
 	char *host, *port, *rows, *cols;
 	slurm_fd_t pty_fd;
@@ -934,7 +934,7 @@ _spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job)
  * file descriptors.
  */
 static int
-_init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
+_init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 {
 	int file_flags = io_get_file_flags(job);
 
@@ -1150,7 +1150,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 }
 
 int
-io_init_tasks_stdio(slurmd_job_t *job)
+io_init_tasks_stdio(stepd_step_rec_t *job)
 {
 	int i, rc = SLURM_SUCCESS, tmprc;
 
@@ -1164,7 +1164,7 @@ io_init_tasks_stdio(slurmd_job_t *job)
 }
 
 int
-io_thread_start(slurmd_job_t *job)
+io_thread_start(stepd_step_rec_t *job)
 {
 	pthread_attr_t attr;
 	int rc = 0, retries = 0;
@@ -1190,7 +1190,7 @@ io_thread_start(slurmd_job_t *job)
 
 
 void
-_shrink_msg_cache(List cache, slurmd_job_t *job)
+_shrink_msg_cache(List cache, stepd_step_rec_t *job)
 {
 	struct io_buf *msg;
 	int over = 0;
@@ -1211,7 +1211,7 @@ _shrink_msg_cache(List cache, slurmd_job_t *job)
 
 
 static int
-_send_connection_okay_response(slurmd_job_t *job)
+_send_connection_okay_response(stepd_step_rec_t *job)
 {
 	eio_obj_t *eio;
 	ListIterator clients;
@@ -1244,7 +1244,7 @@ _send_connection_okay_response(slurmd_job_t *job)
 
 
 static struct io_buf *
-_build_connection_okay_message(slurmd_job_t *job)
+_build_connection_okay_message(stepd_step_rec_t *job)
 {
 	struct io_buf *msg;
 	Buf packbuf;
@@ -1329,7 +1329,7 @@ _route_msg_task_to_client(eio_obj_t *obj)
 }
 
 static void
-_free_incoming_msg(struct io_buf *msg, slurmd_job_t *job)
+_free_incoming_msg(struct io_buf *msg, stepd_step_rec_t *job)
 {
 	msg->ref_count--;
 	if (msg->ref_count == 0) {
@@ -1342,7 +1342,7 @@ _free_incoming_msg(struct io_buf *msg, slurmd_job_t *job)
 }
 
 static void
-_free_outgoing_msg(struct io_buf *msg, slurmd_job_t *job)
+_free_outgoing_msg(struct io_buf *msg, stepd_step_rec_t *job)
 {
 	int i;
 
@@ -1372,7 +1372,7 @@ _free_outgoing_msg(struct io_buf *msg, slurmd_job_t *job)
 }
 
 static void
-_free_all_outgoing_msgs(List msg_queue, slurmd_job_t *job)
+_free_all_outgoing_msgs(List msg_queue, stepd_step_rec_t *job)
 {
 	ListIterator msgs;
 	struct io_buf *msg;
@@ -1387,7 +1387,7 @@ _free_all_outgoing_msgs(List msg_queue, slurmd_job_t *job)
 /* Close I/O file descriptors created by slurmstepd. The connections have
  * all been moved to the spawned tasks stdin/out/err file descriptors. */
 extern void
-io_close_task_fds(slurmd_job_t *job)
+io_close_task_fds(stepd_step_rec_t *job)
 {
 	int i;
 
@@ -1399,7 +1399,7 @@ io_close_task_fds(slurmd_job_t *job)
 }
 
 void
-io_close_all(slurmd_job_t *job)
+io_close_all(stepd_step_rec_t *job)
 {
 	int devnull;
 #if 0
@@ -1430,7 +1430,7 @@ io_close_all(slurmd_job_t *job)
 }
 
 void
-io_close_local_fds(slurmd_job_t *job)
+io_close_local_fds(stepd_step_rec_t *job)
 {
 	ListIterator clients;
 	eio_obj_t *eio;
@@ -1460,7 +1460,7 @@ io_close_local_fds(slurmd_job_t *job)
 static void *
 _io_thr(void *arg)
 {
-	slurmd_job_t *job = (slurmd_job_t *) arg;
+	stepd_step_rec_t *job = (stepd_step_rec_t *) arg;
 	sigset_t set;
 	int rc;
 
@@ -1487,7 +1487,7 @@ _io_thr(void *arg)
  */
 int
 io_create_local_client(const char *filename, int file_flags,
-		       slurmd_job_t *job, bool labelio,
+		       stepd_step_rec_t *job, bool labelio,
 		       int stdout_tasks, int stderr_tasks)
 {
 	int fd = -1;
@@ -1539,7 +1539,7 @@ io_create_local_client(const char *filename, int file_flags,
  * an IO stream.
  */
 int
-io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job,
+io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *job,
 			  int stdout_tasks, int stderr_tasks)
 {
 	int sock = -1;
@@ -1604,7 +1604,7 @@ io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job,
  * it can see the new object.
  */
 int
-io_client_connect(srun_info_t *srun, slurmd_job_t *job)
+io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
 {
 	int sock = -1;
 	struct client_io_info *client;
@@ -1660,7 +1660,7 @@ io_client_connect(srun_info_t *srun, slurmd_job_t *job)
 }
 
 static int
-_send_io_init_msg(int sock, srun_key_t *key, slurmd_job_t *job)
+_send_io_init_msg(int sock, srun_key_t *key, stepd_step_rec_t *job)
 {
 	struct slurm_io_init_msg msg;
 
@@ -1691,7 +1691,7 @@ _send_io_init_msg(int sock, srun_key_t *key, slurmd_job_t *job)
  * Close the server's end of the stdio pipes.
  */
 int
-io_dup_stdio(slurmd_task_info_t *t)
+io_dup_stdio(stepd_step_task_info_t *t)
 {
 	if (dup2(t->stdin_fd, STDIN_FILENO  ) < 0) {
 		error("dup2(stdin): %m");
@@ -1786,7 +1786,7 @@ _send_eof_msg(struct task_read_info *out)
 
 
 static struct io_buf *
-_task_build_message(struct task_read_info *out, slurmd_job_t *job, cbuf_t cbuf)
+_task_build_message(struct task_read_info *out, stepd_step_rec_t *job, cbuf_t cbuf)
 {
 	struct io_buf *msg;
 	char *ptr;
@@ -1886,7 +1886,7 @@ free_io_buf(struct io_buf *buf)
 
 /* This just determines if there's space to hold more of the stdin stream */
 static bool
-_incoming_buf_free(slurmd_job_t *job)
+_incoming_buf_free(stepd_step_rec_t *job)
 {
 	struct io_buf *buf;
 
@@ -1905,7 +1905,7 @@ _incoming_buf_free(slurmd_job_t *job)
 }
 
 static bool
-_outgoing_buf_free(slurmd_job_t *job)
+_outgoing_buf_free(stepd_step_rec_t *job)
 {
 	struct io_buf *buf;
 
@@ -1957,7 +1957,7 @@ _user_managed_io_connect(srun_info_t *srun, uint32_t gtid)
  */
 int
 user_managed_io_client_connect(int node_tasks, srun_info_t *srun,
-			       slurmd_task_info_t **tasks)
+			       stepd_step_task_info_t **tasks)
 {
 	int fd;
 	int i;
@@ -1980,7 +1980,7 @@ user_managed_io_client_connect(int node_tasks, srun_info_t *srun,
 
 
 void
-io_find_filename_pattern( slurmd_job_t *job,
+io_find_filename_pattern( stepd_step_rec_t *job,
 			  slurmd_filename_pattern_t *outpattern,
 			  slurmd_filename_pattern_t *errpattern,
 			  bool *same_out_err_files )
@@ -2093,7 +2093,7 @@ io_find_filename_pattern( slurmd_job_t *job,
 
 
 int
-io_get_file_flags(slurmd_job_t *job)
+io_get_file_flags(stepd_step_rec_t *job)
 {
 	slurm_ctl_conf_t *conf;
 	int file_flags;

@@ -38,7 +38,7 @@
 
 static int is_power = -1;
 
-void slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval)
+void slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job, int statval)
 {
 	char *bind_type, *action, *status, *units;
 	char mstr[1 + CPU_SETSIZE / 4];
@@ -132,7 +132,7 @@ static int _bind_ldom(uint32_t ldom, cpu_set_t *mask)
 #endif
 }
 
-int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
+int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job)
 {
 	int nummasks, maskid, i, threads;
 	char *curstr, *selstr;

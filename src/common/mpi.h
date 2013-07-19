@@ -106,7 +106,7 @@ int mpi_hook_slurmstepd_init (char ***env);
 int mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job, char ***env);
 
 
-int mpi_hook_slurmstepd_prefork (const slurmd_job_t *job, char ***env);
+int mpi_hook_slurmstepd_prefork (const stepd_step_rec_t *job, char ***env);
 
 /**********************************************************************
  * Hooks called by client applications.

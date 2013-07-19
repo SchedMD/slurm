@@ -50,9 +50,9 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf);
 extern int task_cgroup_devices_fini(slurm_cgroup_conf_t *slurm_cgroup_conf);
 
 /* create user/job/jobstep devices cgroups */
-extern int task_cgroup_devices_create(slurmd_job_t *job);
+extern int task_cgroup_devices_create(stepd_step_rec_t *job);
 
 /* create a task cgroup and attach the task to it */
-extern int task_cgroup_devices_attach_task(slurmd_job_t *job);
+extern int task_cgroup_devices_attach_task(stepd_step_rec_t *job);
 
 #endif

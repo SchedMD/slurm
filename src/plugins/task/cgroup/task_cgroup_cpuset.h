@@ -50,12 +50,12 @@ extern int task_cgroup_cpuset_init(slurm_cgroup_conf_t *slurm_cgroup_conf);
 extern int task_cgroup_cpuset_fini(slurm_cgroup_conf_t *slurm_cgroup_conf);
 
 /* create user/job/jobstep cpuset cgroups */
-extern int task_cgroup_cpuset_create(slurmd_job_t *job);
+extern int task_cgroup_cpuset_create(stepd_step_rec_t *job);
 
 /* create a task cgroup and attach the task to it */
-extern int task_cgroup_cpuset_attach_task(slurmd_job_t *job);
+extern int task_cgroup_cpuset_attach_task(stepd_step_rec_t *job);
 
 /* set a task affinity based on its local id and job information */
-extern int task_cgroup_cpuset_set_task_affinity(slurmd_job_t *job);
+extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job);
 
 #endif

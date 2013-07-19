@@ -50,24 +50,24 @@
 /*
  * Send batch exit code to slurmctld. Non-zero rc will DRAIN the node.
  */
-void batch_finish(slurmd_job_t *job, int rc);
+void batch_finish(stepd_step_rec_t *job, int rc);
 
 /*
- * Initialize a slurmd_job_t structure for a launch tasks
+ * Initialize a stepd_step_rec_t structure for a launch tasks
  */
-slurmd_job_t *mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg,
+stepd_step_rec_t *mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg,
 				     slurm_addr_t *client, slurm_addr_t *self);
 
 /*
- * Initialize a slurmd_job_t structure for a batch job
+ * Initialize a stepd_step_rec_t structure for a batch job
  */
-slurmd_job_t *mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
+stepd_step_rec_t *mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
 					 slurm_addr_t *client);
 
 /*
  * Finalize a batch job.
  */
-void mgr_launch_batch_job_cleanup(slurmd_job_t *job, int rc);
+void mgr_launch_batch_job_cleanup(stepd_step_rec_t *job, int rc);
 
 /*
  * Executes the functions of the slurmd job manager process,
@@ -77,7 +77,7 @@ void mgr_launch_batch_job_cleanup(slurmd_job_t *job, int rc);
  * Returns 0 if job ran and completed successfully.
  * Returns errno if job startup failed. NOTE: This will DRAIN the node.
  */
-int job_manager(slurmd_job_t *job);
+int job_manager(stepd_step_rec_t *job);
 
 /*
  * Register passwd entries so that we do not need to call initgroups(2)

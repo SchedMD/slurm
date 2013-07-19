@@ -219,7 +219,7 @@ extern int task_slurmd_release_resources (uint32_t job_id)
  * user to launch his jobs. Use this to create the CPUSET directory
  * and set the owner appropriately.
  */
-extern int task_pre_setuid (slurmd_job_t *job)
+extern int task_pre_setuid (stepd_step_rec_t *job)
 {
 
 	if (use_cpuset) {
@@ -244,7 +244,7 @@ extern int task_pre_setuid (slurmd_job_t *job)
  * task_pre_launch_priv() is called prior to exec of application task.
  * in privileged mode, just after slurm_spank_task_init_privileged
  */
-extern int task_pre_launch_priv (slurmd_job_t *job)
+extern int task_pre_launch_priv (stepd_step_rec_t *job)
 {
 
 	if (use_cpuset) {
@@ -270,7 +270,7 @@ extern int task_pre_launch_priv (slurmd_job_t *job)
  *	It is followed by TaskProlog program (from slurm.conf) and
  *	--task-prolog (from srun command line).
  */
-extern int task_pre_launch (slurmd_job_t *job)
+extern int task_pre_launch (stepd_step_rec_t *job)
 {
 
 	if (use_cpuset) {
@@ -287,7 +287,7 @@ extern int task_pre_launch (slurmd_job_t *job)
  *	It is preceded by --task-epilog (from srun command line)
  *	followed by TaskEpilog program (from slurm.conf).
  */
-extern int task_post_term (slurmd_job_t *job, slurmd_task_info_t *task)
+extern int task_post_term (stepd_step_rec_t *job, stepd_step_task_info_t *task)
 {
 	return SLURM_SUCCESS;
 }
@@ -296,7 +296,7 @@ extern int task_post_term (slurmd_job_t *job, slurmd_task_info_t *task)
  * task_post_step() is called after termination of the step
  * (all the task)
  */
-extern int task_post_step (slurmd_job_t *job)
+extern int task_post_step (stepd_step_rec_t *job)
 {
 	fini();
 	return SLURM_SUCCESS;

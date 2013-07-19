@@ -115,7 +115,7 @@ static char      group_node[MAX_GROUP_NAME+1];
 static slurm_hdf5_conf_t hdf5_conf;
 static uint32_t debug_flags = 0;
 static uint32_t g_profile_running = ACCT_GATHER_PROFILE_NOT_SET;
-static slurmd_job_t *g_job = NULL;
+static stepd_step_rec_t *g_job = NULL;
 
 static void _reset_slurm_profile_conf()
 {
@@ -300,7 +300,7 @@ extern void acct_gather_profile_p_get(enum acct_gather_profile_info info_type,
 	}
 }
 
-extern int acct_gather_profile_p_node_step_start(slurmd_job_t* job)
+extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 {
 	int rc = SLURM_SUCCESS;
 

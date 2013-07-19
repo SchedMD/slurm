@@ -62,12 +62,12 @@ typedef struct slurmd_task_ops {
 	int	(*slurmd_resume_job)	    (uint32_t job_id);
 	int	(*slurmd_release_resources) (uint32_t job_id);
 
-	int	(*pre_setuid)		    (slurmd_job_t *job);
-	int	(*pre_launch_priv)	    (slurmd_job_t *job);
-	int	(*pre_launch)		    (slurmd_job_t *job);
-	int	(*post_term)		    (slurmd_job_t *job,
-					     slurmd_task_info_t *task);
-	int	(*post_step)		    (slurmd_job_t *job);
+	int	(*pre_setuid)		    (stepd_step_rec_t *job);
+	int	(*pre_launch_priv)	    (stepd_step_rec_t *job);
+	int	(*pre_launch)		    (stepd_step_rec_t *job);
+	int	(*post_term)		    (stepd_step_rec_t *job,
+					     stepd_step_task_info_t *task);
+	int	(*post_step)		    (stepd_step_rec_t *job);
 } slurmd_task_ops_t;
 
 /*
@@ -323,7 +323,7 @@ extern int slurmd_release_resources(uint32_t job_id)
  *
  * RET - slurm error code
  */
-extern int pre_setuid(slurmd_job_t *job)
+extern int pre_setuid(stepd_step_rec_t *job)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -343,7 +343,7 @@ extern int pre_setuid(slurmd_job_t *job)
  *
  * RET - slurm error code
  */
-extern int pre_launch_priv(slurmd_job_t *job)
+extern int pre_launch_priv(stepd_step_rec_t *job)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -363,7 +363,7 @@ extern int pre_launch_priv(slurmd_job_t *job)
  *
  * RET - slurm error code
  */
-extern int pre_launch(slurmd_job_t *job)
+extern int pre_launch(stepd_step_rec_t *job)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -383,7 +383,8 @@ extern int pre_launch(slurmd_job_t *job)
  *
  * RET - slurm error code
  */
-extern int post_term(slurmd_job_t *job, slurmd_task_info_t *task)
+extern int post_term(stepd_step_rec_t *job,
+		     stepd_step_task_info_t *task)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -403,7 +404,7 @@ extern int post_term(slurmd_job_t *job, slurmd_task_info_t *task)
  *
  * RET - slurm error code
  */
-extern int post_step(slurmd_job_t *job)
+extern int post_step(stepd_step_rec_t *job)
 {
 	int i, rc = SLURM_SUCCESS;
 

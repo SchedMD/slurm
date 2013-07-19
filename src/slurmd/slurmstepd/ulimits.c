@@ -83,7 +83,7 @@ static int _set_limit(char **env, slurm_rlimits_info_t *rli);
  * GETTING CORES WITH FILE SYSTEM LIMIT ERRORS THIS IS THE REASON.
  */
 
-int set_user_limits(slurmd_job_t *job)
+int set_user_limits(stepd_step_rec_t *job)
 {
 	slurm_rlimits_info_t *rli;
 	struct rlimit r;
@@ -136,7 +136,7 @@ static char * rlim_to_string (unsigned long rlim, char *buf, size_t n)
 
 /* Set umask using value of env var SLURM_UMASK */
 extern int
-set_umask(slurmd_job_t *job)
+set_umask(stepd_step_rec_t *job)
 {
 	mode_t mask;
 	char *val;

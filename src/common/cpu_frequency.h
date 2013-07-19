@@ -40,46 +40,46 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-/* 
+/*
  * check if cpu frequency setting is allowed on this node
  * if so, create and initialize the cpu frequency table entry for each cpu
  */
-void 
+void
 cpu_freq_init(slurmd_conf_t *conf);
 
-/* 
+/*
  * free memory from cpu frequency table
  */
 extern void
 cpu_freq_fini(void);
 
-/* 
+/*
  * Send the cpu_frequency table info to slurmstepd
  */
 void
 cpu_freq_send_info(int fd);
 
-/* 
+/*
  * Receive the cpu_frequency table info from slurmd
  */
 void
 cpu_freq_recv_info(int fd);
 
-/* 
+/*
  * Validate the cpus and select the frequency to set
  * Called from task cpuset code with job record containing
  *  a pointer to a hex map of the cpus to be used by this step
  */
 void
-cpu_freq_cpuset_validate(slurmd_job_t *job);
+cpu_freq_cpuset_validate(stepd_step_rec_t *job);
 
-/* 
+/*
  * Validate the cpus and select the frequency to set
  * Called from task cgroup cpuset code with string containing
  *  the list of cpus to be used by this step
  */
 void
-cpu_freq_cgroup_validate(slurmd_job_t *job, char *step_alloc_cores);
+cpu_freq_cgroup_validate(stepd_step_rec_t *job, char *step_alloc_cores);
 
 /*
  * verify cpu_freq parameter
@@ -89,19 +89,19 @@ cpu_freq_cgroup_validate(slurmd_job_t *job, char *step_alloc_cores);
  *
  * returns -1 on error, 0 otherwise
  */
-int 
+int
 cpu_freq_verify_param(const char *arg, uint32_t *cpu_freq);
 
-/* 
+/*
  * set the userspace governor and the new frequency value
  */
 void
-cpu_freq_set(slurmd_job_t *job);
+cpu_freq_set(stepd_step_rec_t *job);
 
-/* 
+/*
  * reset the governor and cpu frequency to the configured values
  */
 void
-cpu_freq_reset(slurmd_job_t *job);
+cpu_freq_reset(stepd_step_rec_t *job);
 
 #endif /* _CPU_FREQUENCY_H_ */

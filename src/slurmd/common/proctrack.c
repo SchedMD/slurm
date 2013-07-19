@@ -61,8 +61,8 @@
 /*  TAG(                        slurm_proctrack_ops_t                    )  */
 /* ************************************************************************ */
 typedef struct slurm_proctrack_ops {
-	int              (*create)    (slurmd_job_t * job);
-	int              (*add)       (slurmd_job_t * job, pid_t pid);
+	int              (*create)    (stepd_step_rec_t * job);
+	int              (*add)       (stepd_step_rec_t * job, pid_t pid);
 	int              (*signal)    (uint64_t id, int signal);
 	int              (*destroy)   (uint64_t id);
 	uint64_t         (*find_cont) (pid_t pid);
@@ -145,13 +145,13 @@ extern int slurm_proctrack_fini(void)
 
 /*
  * Create a container
- * job IN - slurmd_job_t structure
+ * job IN - stepd_step_rec_t structure
  * job->cont_id OUT - Plugin must fill in job->cont_id either here
  *                    or in slurm_container_add()
  *
  * Returns a SLURM errno.
  */
-extern int slurm_container_create(slurmd_job_t * job)
+extern int slurm_container_create(stepd_step_rec_t * job)
 {
 	if (slurm_proctrack_init() < 0)
 		return 0;
@@ -161,14 +161,14 @@ extern int slurm_container_create(slurmd_job_t * job)
 
 /*
  * Add a process to the specified container
- * job IN - slurmd_job_t structure
+ * job IN - stepd_step_rec_t structure
  * pid IN      - process ID to be added to the container
  * job->cont_id OUT - Plugin must fill in job->cont_id either here
  *                    or in slurm_container_create()
  *
  * Returns a SLURM errno.
  */
-extern int slurm_container_add(slurmd_job_t * job, pid_t pid)
+extern int slurm_container_add(stepd_step_rec_t * job, pid_t pid)
 {
 	if (slurm_proctrack_init() < 0)
 		return SLURM_ERROR;
@@ -198,23 +198,23 @@ static bool _test_core_dumping(char* stat_fname)
 	char *str_ptr, *proc_stat;
 	int proc_fd, proc_stat_size = BUF_SIZE;
 	bool dumping_results = false;
-	
+
 	proc_stat = (char *) xmalloc(proc_stat_size);
 	proc_fd = open(stat_fname, O_RDONLY, 0);
-	if (proc_fd == -1) 
+	if (proc_fd == -1)
 		return false;  /* process is now gone */
 	while ((num = read(proc_fd, proc_stat, proc_stat_size)) > 0) {
 		if (num < (proc_stat_size-1))
 			break;
 		proc_stat_size += BUF_SIZE;
 		xrealloc(proc_stat, proc_stat_size);
-		if (lseek(proc_fd, (off_t) 0, SEEK_SET) != 0) 
+		if (lseek(proc_fd, (off_t) 0, SEEK_SET) != 0)
 			break;
 	}
 	close(proc_fd);
 
 	/* split into "PID (cmd" and "<rest>" */
-	str_ptr = (char *)strrchr(proc_stat, ')'); 
+	str_ptr = (char *)strrchr(proc_stat, ')');
 	*str_ptr = '\0';		/* replace trailing ')' with NULL */
 	/* parse these two strings separately, skipping the leading "(". */
 	memset (cmd, 0, sizeof(cmd));
@@ -232,11 +232,11 @@ static bool _test_core_dumping(char* stat_fname)
 		"%lu %lu %lu %*d %d",
 		state,
 		&ppid, &pgrp, &session, &tty, &tpgid,
-		&flags, &min_flt, &cmin_flt, &maj_flt, &cmaj_flt, &utime, &stime, 
+		&flags, &min_flt, &cmin_flt, &maj_flt, &cmaj_flt, &utime, &stime,
 		&cutime, &cstime, &priority, &nice, &timeout, &it_real_value,
 		&start_time, &vsize,
 		&resident_set_size,
-		&resident_set_size_rlim, &start_code, &end_code, 
+		&resident_set_size_rlim, &start_code, &end_code,
 		&start_stack, &kstk_esp, &kstk_eip,
 /*		&signal, &blocked, &sig_ignore, &sig_catch, */ /* can't use */
 		&w_chan, &n_swap, &sn_swap /* , &Exit_signal  */, &l_proc);

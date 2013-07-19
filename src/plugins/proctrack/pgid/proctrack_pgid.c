@@ -108,7 +108,7 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_container_plugin_create ( slurmd_job_t *job )
+extern int slurm_container_plugin_create ( stepd_step_rec_t *job )
 {
 	return SLURM_SUCCESS;
 }
@@ -116,7 +116,7 @@ extern int slurm_container_plugin_create ( slurmd_job_t *job )
 /*
  * Uses job step process group id.
  */
-extern int slurm_container_plugin_add ( slurmd_job_t *job, pid_t pid )
+extern int slurm_container_plugin_add ( stepd_step_rec_t *job, pid_t pid )
 {
 	job->cont_id = (uint64_t)job->pgid;
 	return SLURM_SUCCESS;

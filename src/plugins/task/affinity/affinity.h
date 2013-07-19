@@ -99,8 +99,8 @@
 #endif
 
 /*** from affinity.c ***/
-void	slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval);
-int	get_cpuset(cpu_set_t *mask, slurmd_job_t *job);
+void	slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job, int statval);
+int	get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job);
 void	reset_cpuset(cpu_set_t *new_mask, cpu_set_t *cur_mask);
 int	slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask);
 int	slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask);
@@ -117,8 +117,8 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 
 /*** from numa.c ***/
 #ifdef HAVE_NUMA
-int	 get_memset(nodemask_t *mask, slurmd_job_t *job);
-void	 slurm_chk_memset(nodemask_t *mask, slurmd_job_t *job);
+int	 get_memset(nodemask_t *mask, stepd_step_rec_t *job);
+void	 slurm_chk_memset(nodemask_t *mask, stepd_step_rec_t *job);
 uint16_t slurm_get_numa_node(uint16_t cpuid);
 #endif
 

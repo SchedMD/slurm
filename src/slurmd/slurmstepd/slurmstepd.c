@@ -75,10 +75,10 @@ static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 static void _dump_user_env(void);
 static void _send_ok_to_slurmd(int sock);
 static void _send_fail_to_slurmd(int sock);
-static slurmd_job_t *_step_setup(slurm_addr_t *cli, slurm_addr_t *self,
+static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_addr_t *self,
 				 slurm_msg_t *msg);
 #ifdef MEMORY_LEAK_DEBUG
-static void _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc);
+static void _step_cleanup(stepd_step_rec_t *job, slurm_msg_t *msg, int rc);
 #endif
 static int process_cmdline (int argc, char *argv[]);
 
@@ -96,7 +96,7 @@ main (int argc, char *argv[])
 	slurm_addr_t *cli;
 	slurm_addr_t *self;
 	slurm_msg_t *msg;
-	slurmd_job_t *job;
+	stepd_step_rec_t *job;
 	int ngids;
 	gid_t *gids;
 	int rc = 0;
@@ -121,7 +121,7 @@ main (int argc, char *argv[])
 	 * on STDERR_FILENO for us. */
 	dup2(STDERR_FILENO, STDIN_FILENO);
 
-	/* Create the slurmd_job_t, mostly from info in a
+	/* Create the stepd_step_rec_t, mostly from info in a
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */
 	if (!(job = _step_setup(cli, self, msg))) {
 		_send_fail_to_slurmd(STDOUT_FILENO);
@@ -497,10 +497,10 @@ rwfail:
 	exit(1);
 }
 
-static slurmd_job_t *
+static stepd_step_rec_t *
 _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 {
-	slurmd_job_t *job = NULL;
+	stepd_step_rec_t *job = NULL;
 
 	switch(msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
@@ -548,7 +548,7 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 
 #ifdef MEMORY_LEAK_DEBUG
 static void
-_step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
+_step_cleanup(stepd_step_rec_t *job, slurm_msg_t *msg, int rc)
 {
 	if (job) {
 		jobacctinfo_destroy(job->jobacct);

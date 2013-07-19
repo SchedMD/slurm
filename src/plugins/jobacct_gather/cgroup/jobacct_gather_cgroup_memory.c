@@ -130,7 +130,7 @@ extern int jobacct_gather_cgroup_memory_attach_task(
 	pid_t pid, jobacct_id_t *jobacct_id)
 {
 	xcgroup_t memory_cg;
-	slurmd_job_t *job;
+	stepd_step_rec_t *job;
 	uid_t uid;
 	gid_t gid;
 	uint32_t jobid;

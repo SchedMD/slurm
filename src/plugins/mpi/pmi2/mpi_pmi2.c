@@ -86,7 +86,7 @@ const uint32_t plugin_version   = 100;
  * The following is executed in slurmstepd.
  */
 
-int p_mpi_hook_slurmstepd_prefork(const slurmd_job_t *job,
+int p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job,
 				  char ***env)
 {
 	int rc;

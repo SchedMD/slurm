@@ -81,7 +81,7 @@ const char plugin_name[]        = "mpich1_shmem plugin";
 const char plugin_type[]        = "mpi/mpich1_shmem";
 const uint32_t plugin_version   = 100;
 
-int p_mpi_hook_slurmstepd_prefork(const slurmd_job_t *job, char ***env)
+int p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 {
 	debug("mpi/mpich1_shmem: slurmstepd prefork");
 	return SLURM_SUCCESS;

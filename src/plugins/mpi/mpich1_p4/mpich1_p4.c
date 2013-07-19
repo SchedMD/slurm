@@ -104,7 +104,7 @@ static pthread_mutex_t shutdown_lock;
 static pthread_cond_t  shutdown_cond;
 
 
-int p_mpi_hook_slurmstepd_prefork(const slurmd_job_t *job, char ***env)
+int p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 {
 	debug("mpi/mpich1_p4: slurmstepd prefork");
 	return SLURM_SUCCESS;

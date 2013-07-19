@@ -65,7 +65,7 @@ typedef struct slurm_acct_gather_profile_ops {
 	void (*conf_set)        (s_p_hashtbl_t *tbl);
 	void* (*get)            (enum acct_gather_profile_info info_type,
 				 void *data);
-	int (*node_step_start)  (slurmd_job_t*);
+	int (*node_step_start)  (stepd_step_rec_t*);
 	int (*node_step_end)    (void);
 	int (*task_start)       (uint32_t);
 	int (*task_end)         (pid_t);
@@ -493,7 +493,7 @@ extern void acct_gather_profile_g_get(enum acct_gather_profile_info info_type,
 	return;
 }
 
-extern int acct_gather_profile_g_node_step_start(slurmd_job_t* job)
+extern int acct_gather_profile_g_node_step_start(stepd_step_rec_t* job)
 {
 	if (acct_gather_profile_init() < 0)
 		return SLURM_ERROR;
