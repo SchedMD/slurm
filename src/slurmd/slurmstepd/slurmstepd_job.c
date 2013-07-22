@@ -179,6 +179,132 @@ _valid_gid(struct passwd *pwd, gid_t *gid)
 	return 0;
 }
 
+/*
+ * return the default output filename for a batch job
+ */
+static char *
+_batchfilename(stepd_step_rec_t *job, const char *name)
+{
+	if (name == NULL) {
+		if (job->array_task_id == (uint16_t) NO_VAL)
+			return fname_create(job, "slurm-%J.out", 0);
+		else
+			return fname_create(job, "slurm-%A_%a.out", 0);
+	} else
+		return fname_create(job, name, 0);
+}
+
+/*
+ * Expand a stdio file name.
+ *
+ * If "filename" is NULL it means that an eio object should be created
+ * for that stdio file rather than a directly connecting it to a file.
+ *
+ * If the "filename" is a valid task number in string form and the
+ * number matches "taskid", then NULL is returned so that an eio
+ * object will be used.  If is a valid number, but it does not match
+ * "taskid", then the file descriptor will be connected to /dev/null.
+ */
+static char *
+_expand_stdio_filename(char *filename, int gtaskid, stepd_step_rec_t *job)
+{
+	int id;
+
+	if (filename == NULL)
+		return NULL;
+
+	id = fname_single_task_io(filename);
+
+	if (id < 0)
+		return fname_create(job, filename, gtaskid);
+	if (id >= job->ntasks) {
+		error("Task ID in filename is invalid");
+		return NULL;
+	}
+
+	if (id == gtaskid)
+		return NULL;
+	else
+		return xstrdup("/dev/null");
+}
+
+static void
+_job_init_task_info(stepd_step_rec_t *job, uint32_t *gtid,
+		    char *ifname, char *ofname, char *efname)
+{
+	int          i;
+	char        *in, *out, *err;
+
+	if (job->node_tasks == 0) {
+		error("User requested launch of zero tasks!");
+		job->task = NULL;
+		return;
+	}
+
+	job->task = (stepd_step_task_info_t **)
+		xmalloc(job->node_tasks * sizeof(stepd_step_task_info_t *));
+
+	for (i = 0; i < job->node_tasks; i++){
+		in = _expand_stdio_filename(ifname, gtid[i], job);
+		out = _expand_stdio_filename(ofname, gtid[i], job);
+		err = _expand_stdio_filename(efname, gtid[i], job);
+
+		job->task[i] = task_info_create(i, gtid[i], in, out, err);
+
+		if (job->multi_prog) {
+			multi_prog_get_argv(job->argv[1], job->env, gtid[i],
+					    &job->task[i]->argc,
+					    &job->task[i]->argv,
+					    job->argc, job->argv);
+		} else {
+			job->task[i]->argc = job->argc;
+			job->task[i]->argv = job->argv;
+		}
+	}
+}
+
+static char **
+_array_copy(int n, char **src)
+{
+	char **dst = xmalloc((n+1) * sizeof(char *));
+	int i;
+
+	for (i = 0; i < n; i++) {
+		dst[i] = xstrdup(src[i]);
+	}
+	dst[n] = NULL;
+
+	return dst;
+}
+
+static void
+_array_free(char ***array)
+{
+	int i = 0;
+	while ((*array)[i] != NULL)
+		xfree((*array)[i++]);
+	xfree(*array);
+	*array = NULL;
+}
+
+/* destructor for list routines */
+static void
+_srun_info_destructor(void *arg)
+{
+	struct srun_info *srun = (struct srun_info *)arg;
+	srun_info_destroy(srun);
+}
+
+static void
+_task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog)
+{
+	slurm_mutex_lock(&t->mutex);
+	slurm_mutex_unlock(&t->mutex);
+	slurm_mutex_destroy(&t->mutex);
+	if (multi_prog) {
+		xfree(t->argv);
+	} /* otherwise, t->argv is a pointer to job->argv */
+	xfree(t);
 }
 
 /* create a slurmd job structure from a launch tasks message */
@@ -362,20 +488,6 @@ stepd_step_rec_create(launch_tasks_request_msg_t *msg)
 	return job;
 }
 
-/*
- * return the default output filename for a batch job
- */
-static char *
-_batchfilename(stepd_step_rec_t *job, const char *name)
-{
-	if (name == NULL) {
-		if (job->array_task_id == (uint16_t) NO_VAL)
-			return fname_create(job, "slurm-%J.out", 0);
-		else
-			return fname_create(job, "slurm-%A_%a.out", 0);
-	} else
-		return fname_create(job, name, 0);
-}
 extern stepd_step_rec_t *
 batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 {
@@ -508,90 +620,6 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	return job;
 }
 
-/*
- * Expand a stdio file name.
- *
- * If "filename" is NULL it means that an eio object should be created
- * for that stdio file rather than a directly connecting it to a file.
- *
- * If the "filename" is a valid task number in string form and the
- * number matches "taskid", then NULL is returned so that an eio
- * object will be used.  If is a valid number, but it does not match
- * "taskid", then the file descriptor will be connected to /dev/null.
- */
-static char *
-_expand_stdio_filename(char *filename, int gtaskid, stepd_step_rec_t *job)
-{
-	int id;
-
-	if (filename == NULL)
-		return NULL;
-
-	id = fname_single_task_io(filename);
-
-	if (id < 0)
-		return fname_create(job, filename, gtaskid);
-	if (id >= job->ntasks) {
-		error("Task ID in filename is invalid");
-		return NULL;
-	}
-
-	if (id == gtaskid)
-		return NULL;
-	else
-		return xstrdup("/dev/null");
-}
-
-static void
-_job_init_task_info(stepd_step_rec_t *job, uint32_t *gtid,
-		    char *ifname, char *ofname, char *efname)
-{
-	int          i;
-	char        *in, *out, *err;
-
-	if (job->node_tasks == 0) {
-		error("User requested launch of zero tasks!");
-		job->task = NULL;
-		return;
-	}
-
-	job->task = (stepd_step_task_info_t **)
-		xmalloc(job->node_tasks * sizeof(stepd_step_task_info_t *));
-
-	for (i = 0; i < job->node_tasks; i++){
-		in = _expand_stdio_filename(ifname, gtid[i], job);
-		out = _expand_stdio_filename(ofname, gtid[i], job);
-		err = _expand_stdio_filename(efname, gtid[i], job);
-
-		job->task[i] = task_info_create(i, gtid[i], in, out, err);
-
-		if (job->multi_prog) {
-			multi_prog_get_argv(job->argv[1], job->env, gtid[i],
-					    &job->task[i]->argc,
-					    &job->task[i]->argv,
-					    job->argc, job->argv);
-		} else {
-			job->task[i]->argc = job->argc;
-			job->task[i]->argv = job->argv;
-		}
-	}
-}
-
-void
-job_signal_tasks(stepd_step_rec_t *job, int signal)
-{
-	int n = job->node_tasks;
-	while (--n >= 0) {
-		if ((job->task[n]->pid > (pid_t) 0)
-		&&  (kill(job->task[n]->pid, signal) < 0)) {
-			if (errno != ESRCH) {
-				error("job %d.%d: kill task %d: %m",
-				      job->jobid, job->stepid, n);
-			}
-		}
-	}
-}
-
 extern void
 stepd_step_rec_destroy(stepd_step_rec_t *job)
 {
@@ -614,32 +642,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	xfree(job);
 }
 
-static char **
-_array_copy(int n, char **src)
-{
-	char **dst = xmalloc((n+1) * sizeof(char *));
-	int i;
-
-	for (i = 0; i < n; i++) {
-		dst[i] = xstrdup(src[i]);
-	}
-	dst[n] = NULL;
-
-	return dst;
-}
-
-static void
-_array_free(char ***array)
-{
-	int i = 0;
-	while ((*array)[i] != NULL)
-		xfree((*array)[i++]);
-	xfree(*array);
-	*array = NULL;
-}
-
-
-struct srun_info *
+extern struct srun_info *
 srun_info_create(slurm_cred_t *cred, slurm_addr_t *resp_addr, slurm_addr_t *ioaddr)
 {
 	char             *data = NULL;
@@ -675,22 +678,14 @@ srun_info_create(slurm_cred_t *cred, slurm_addr_t *resp_addr, slurm_addr_t *ioad
 	return srun;
 }
 
-/* destructor for list routines */
-static void
-_srun_info_destructor(void *arg)
-{
-	struct srun_info *srun = (struct srun_info *)arg;
-	srun_info_destroy(srun);
-}
-
-void
+extern void
 srun_info_destroy(struct srun_info *srun)
 {
 	xfree(srun->key);
 	xfree(srun);
 }
 
-stepd_step_task_info_t *
+extern stepd_step_task_info_t *
 task_info_create(int taskid, int gtaskid,
 		 char *ifname, char *ofname, char *efname)
 {
@@ -722,17 +717,4 @@ task_info_create(int taskid, int gtaskid,
 	t->argv	       = NULL;
 	slurm_mutex_unlock(&t->mutex);
 	return t;
-}
-
-
-static void
-_task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog)
-{
-	slurm_mutex_lock(&t->mutex);
-	slurm_mutex_unlock(&t->mutex);
-	slurm_mutex_destroy(&t->mutex);
-	if (multi_prog) {
-		xfree(t->argv);
-	} /* otherwise, t->argv is a pointer to job->argv */
-	xfree(t);
 }
