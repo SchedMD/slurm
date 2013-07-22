@@ -300,7 +300,7 @@ extern int container_p_create(uint32_t job_id)
 /* Add proctrack container (PAGG) to a job container */
 extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 {
-	jid_t cjob_id = cont_id
+	jid_t cjob_id = cont_id;
 	rid_t resv_id = job_id;
 	int rc;
 
