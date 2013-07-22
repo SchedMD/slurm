@@ -903,7 +903,7 @@ _handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid)
 
 	debug("_handle_terminate for step=%u.%u uid=%d",
 	      job->jobid, job->stepid, uid);
-	step_terminate_monitor_start(job->jobid, job->stepid, job->uid);
+	step_terminate_monitor_start(job->jobid, job->stepid);
 
 	if (uid != job->uid && !_slurm_authorized_user(uid)) {
 		debug("terminate req from uid %ld for job %u.%u "

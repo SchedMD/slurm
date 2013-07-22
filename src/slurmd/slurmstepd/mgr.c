@@ -1052,7 +1052,7 @@ fail2:
 	 * terminated before the switch window can be released by
 	 * interconnect_postfini().
 	 */
-	step_terminate_monitor_start(job->jobid, job->stepid, job->uid);
+	step_terminate_monitor_start(job->jobid, job->stepid);
 	if (job->cont_id != 0) {
 		slurm_container_signal(job->cont_id, SIGKILL);
 		slurm_container_wait(job->cont_id);

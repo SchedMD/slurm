@@ -157,7 +157,7 @@ _run_one_script(const char *name, const char *path, uint32_t job_id,
 		exit(127);
 	}
 
-	if (container_g_add_pid(job_id, cpid, uid) != SLURM_SUCCESS)
+	if (container_g_add_pid(job_id, cpid, getuid()) != SLURM_SUCCESS)
 		error("container_g_add_pid(%u): %m", job_id);
 
 	if (waitpid_timeout(name, cpid, &status, max_wait) < 0)
