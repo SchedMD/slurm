@@ -1321,18 +1321,22 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	return error_code;
 }
 
-static void _preempt_jobs(List preemptee_job_list, int *error_code)
+static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
+			  int *error_code)
 {
 	ListIterator iter;
 	struct job_record *job_ptr;
 	uint16_t mode;
 	int job_cnt = 0, rc = SLURM_SUCCESS;
+	checkpoint_msg_t ckpt_msg;
 
 	iter = list_iterator_create(preemptee_job_list);
 	while ((job_ptr = (struct job_record *) list_next(iter))) {
 		mode = slurm_job_preempt_mode(job_ptr);
 		if (mode == PREEMPT_MODE_CANCEL) {
 			job_cnt++;
+			if (!kill_pending)
+				continue;
 			if (slurm_job_check_grace(job_ptr) == SLURM_SUCCESS)
 				continue;
 			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0, true);
@@ -1341,7 +1345,9 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
 				     job_ptr->job_id);
 			}
 		} else if (mode == PREEMPT_MODE_CHECKPOINT) {
-			checkpoint_msg_t ckpt_msg;
+			job_cnt++;
+			if (!kill_pending)
+				continue;
 			memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
 			ckpt_msg.op	   = CHECK_REQUEUE;
 			ckpt_msg.job_id    = job_ptr->job_id;
@@ -1358,15 +1364,16 @@ static void _preempt_jobs(List preemptee_job_list, int *error_code)
 				info("preempted job %u has been checkpointed",
 				     job_ptr->job_id);
 			}
-			job_cnt++;
 		} else if (mode == PREEMPT_MODE_REQUEUE) {
+			job_cnt++;
+			if (!kill_pending)
+				continue;
 			rc = job_requeue(0, job_ptr->job_id, -1,
 					 (uint16_t)NO_VAL, true);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been requeued",
 				     job_ptr->job_id);
 			}
-			job_cnt++;
 		} else if ((mode == PREEMPT_MODE_SUSPEND) &&
 			   (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)) {
 			debug("preempted job %u suspended by gang scheduler",
@@ -1529,19 +1536,19 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	if (!test_only && preemptee_job_list && (error_code == SLURM_SUCCESS)){
 		struct job_details *detail_ptr = job_ptr->details;
 		time_t now = time(NULL);
+		bool kill_pending = true;
 		if ((detail_ptr->preempt_start_time != 0) &&
 		    (detail_ptr->preempt_start_time >
 		     (now - slurmctld_conf.kill_wait -
 		      slurmctld_conf.msg_timeout))) {
 			/* Job preemption may still be in progress,
-			 * do not preempt any more jobs yet */
-			error_code = ESLURM_NODES_BUSY;
-		} else {
-			_preempt_jobs(preemptee_job_list, &error_code);
-			if ((error_code == ESLURM_NODES_BUSY) &&
-			    (detail_ptr->preempt_start_time == 0)) {
-  				detail_ptr->preempt_start_time = now;
-			}
+			 * do not cancel or requeue any more jobs yet */
+			kill_pending = false;
+		}
+		_preempt_jobs(preemptee_job_list, kill_pending, &error_code);
+		if ((error_code == ESLURM_NODES_BUSY) &&
+		    (detail_ptr->preempt_start_time == 0)) {
+  			detail_ptr->preempt_start_time = now;
 		}
 	}
 	if (error_code) {

@@ -274,7 +274,7 @@ AC_DEFUN([X_AC_BGQ],
 		# Search for headers in the directory
       		if test -z "$have_bg_hdr" -a -f "$bg_dir/hlcs/include/bgsched/bgsched.h" ; then
 			have_bgq_hdr=yes
-			bg_includes="-I$bg_dir/hlcs/include"
+			bg_includes="-I$bg_dir -I$bg_dir/hlcs/include"
       		fi
      		if test -z "$have_bg_hdr" -a -f "$bg_dir/extlib/include/log4cxx/logger.h" ; then
 			have_bgq_hdr=yes
