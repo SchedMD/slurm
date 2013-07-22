@@ -88,6 +88,7 @@ const uint32_t plugin_version   = 101;
 static uint32_t *job_id_array = NULL;
 static uint32_t  job_id_count = 0;
 static pthread_mutex_t context_lock = PTHREAD_MUTEX_INITIALIZER;
+static char *state_dir = NULL;
 
 static int _save_state(char *dir_name)
 {
