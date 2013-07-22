@@ -143,8 +143,8 @@ static void _send_failed_cnodes(uint32_t job_id, uint32_t step_id, uint16_t sig)
 		if ((count > max_tries)
 		    || rc == ESLURM_ALREADY_DONE || rc == ESLURM_INVALID_JOB_ID)
 			break;
-		std::cerr << "Trying to fail cnodes, message from slurmctld: "
-			  << slurm_strerror(rc) << std::endl;
+		LOG_WARN_MSG("Trying to fail cnodes, message from slurmctld: "
+			     << slurm_strerror(rc));
 		sleep (5);
 		count++;
 	}
