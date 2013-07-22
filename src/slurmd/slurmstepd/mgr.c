@@ -2459,7 +2459,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 
 	if ((job->jobid != 0) &&	/* Ignore system processes */
 	    (container_g_add_pid(job->jobid, cpid, job->uid) != SLURM_SUCCESS))
-		error("container_g_add_cont: %m");
+		error("container_g_add_pid: %m");
 
 	if (exec_wait_signal_child (ei) < 0)
 		error ("run_script_as_user: Failed to wakeup %s", name);
