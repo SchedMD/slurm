@@ -213,12 +213,10 @@ typedef struct {
 } stepd_step_rec_t;
 
 
-stepd_step_rec_t * job_create(launch_tasks_request_msg_t *msg);
-stepd_step_rec_t * job_batch_job_create(batch_job_launch_msg_t *msg);
+stepd_step_rec_t * stepd_step_rec_create(launch_tasks_request_msg_t *msg);
+stepd_step_rec_t * batch_stepd_step_rec_create(batch_job_launch_msg_t *msg);
 
-void job_kill(stepd_step_rec_t *job, int signal);
-
-void job_destroy(stepd_step_rec_t *job);
+void stepd_step_rec_destroy(stepd_step_rec_t *job);
 
 struct srun_info * srun_info_create(slurm_cred_t *cred, slurm_addr_t *respaddr,
 				    slurm_addr_t *ioaddr);

@@ -553,7 +553,7 @@ _step_cleanup(stepd_step_rec_t *job, slurm_msg_t *msg, int rc)
 	if (job) {
 		jobacctinfo_destroy(job->jobacct);
 		if (!job->batch)
-			job_destroy(job);
+			stepd_step_rec_destroy(job);
 	}
 	/*
 	 * The message cannot be freed until the jobstep is complete

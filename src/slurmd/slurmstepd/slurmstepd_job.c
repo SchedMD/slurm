@@ -179,9 +179,11 @@ _valid_gid(struct passwd *pwd, gid_t *gid)
 	return 0;
 }
 
+}
+
 /* create a slurmd job structure from a launch tasks message */
-stepd_step_rec_t *
-job_create(launch_tasks_request_msg_t *msg)
+extern stepd_step_rec_t *
+stepd_step_rec_create(launch_tasks_request_msg_t *msg)
 {
 	struct passwd *pwd = NULL;
 	stepd_step_rec_t  *job = NULL;
@@ -192,7 +194,7 @@ job_create(launch_tasks_request_msg_t *msg)
 
 	xassert(msg != NULL);
 	xassert(msg->complete_nodelist != NULL);
-	debug3("entering job_create");
+	debug3("entering stepd_step_rec_create");
 	if ((pwd = _pwd_create((uid_t)msg->uid)) == NULL) {
 		error("uid %ld not found on system", (long) msg->uid);
 		slurm_seterrno (ESLURMD_UID_NOT_FOUND);
@@ -220,7 +222,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	if (nodeid < 0) {
 		error("couldn't find node %s in %s",
 		      job->node_name, msg->complete_nodelist);
-		job_destroy(job);
+		stepd_step_rec_destroy(job);
 		return NULL;
 	}
 
@@ -374,9 +376,8 @@ _batchfilename(stepd_step_rec_t *job, const char *name)
 	} else
 		return fname_create(job, name, 0);
 }
-
-stepd_step_rec_t *
-job_batch_job_create(batch_job_launch_msg_t *msg)
+extern stepd_step_rec_t *
+batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 {
 	struct passwd *pwd;
 	stepd_step_rec_t *job;
@@ -385,7 +386,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 
 	xassert(msg != NULL);
 
-	debug3("entering batch_job_create");
+	debug3("entering batch_stepd_step_rec_create");
 
 	if ((pwd = _pwd_create((uid_t)msg->uid)) == NULL) {
 		error("uid %ld not found on system", (long) msg->uid);
@@ -591,8 +592,8 @@ job_signal_tasks(stepd_step_rec_t *job, int signal)
 	}
 }
 
-void
-job_destroy(stepd_step_rec_t *job)
+extern void
+stepd_step_rec_destroy(stepd_step_rec_t *job)
 {
 	int i;
 

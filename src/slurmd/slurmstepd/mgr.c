@@ -227,7 +227,7 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
 {
 	stepd_step_rec_t *job = NULL;
 
-	if (!(job = job_create(msg))) {
+	if (!(job = stepd_step_rec_create(msg))) {
 		/* We want to send back to the slurmd the reason we
 		   failed so keep track of it since errno could be
 		   reset in _send_launch_failure.
@@ -364,8 +364,8 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 {
 	stepd_step_rec_t *job = NULL;
 
-	if (!(job = job_batch_job_create(msg))) {
-		error("job_batch_job_create() failed: %m");
+	if (!(job = batch_stepd_step_rec_create(msg))) {
+		error("batch_stepd_step_rec_create() failed: %m");
 		return NULL;
 	}
 
