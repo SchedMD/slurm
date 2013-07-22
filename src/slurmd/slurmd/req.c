@@ -2727,9 +2727,6 @@ _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid, uint16_t block_no,
 static int
 _rpc_file_bcast(slurm_msg_t *msg)
 {
-#ifdef HAVE_REAL_CRAY
-	stepd_step_rec_t job;
-#endif
 	file_bcast_msg_t *req = msg->data;
 	int fd, flags, offset, inx, rc;
 	int ngroups = 16;
