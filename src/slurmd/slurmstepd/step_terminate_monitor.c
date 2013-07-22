@@ -58,11 +58,12 @@ static uint16_t timeout;
 static char *program_name;
 static uint32_t recorded_jobid = NO_VAL;
 static uint32_t recorded_stepid = NO_VAL;
+static uid_t    recorded_uid = 0;
 
 static void *_monitor(void *);
 static int _call_external_program(void);
 
-void step_terminate_monitor_start(uint32_t jobid, uint32_t stepid)
+void step_terminate_monitor_start(uint32_t jobid, uint32_t stepid, uid_t uid)
 {
 	slurm_ctl_conf_t *conf;
 	pthread_attr_t attr;
@@ -91,6 +92,7 @@ void step_terminate_monitor_start(uint32_t jobid, uint32_t stepid)
 	running_flag = 1;
 	recorded_jobid = jobid;
 	recorded_stepid = stepid;
+	recorded_uid = uid;
 
 	pthread_mutex_unlock(&lock);
 
@@ -201,7 +203,7 @@ static int _call_external_program(void)
 		exit(127);
 	}
 
-	if (container_g_add_pid(recorded_jobid, cpid, getuid()) !=
+	if (container_g_add_pid(recorded_jobid, cpid, recorded_uid) !=
 	    SLURM_SUCCESS)
 		error("container_g_add_pid(%u): %m", recorded_jobid);
 
