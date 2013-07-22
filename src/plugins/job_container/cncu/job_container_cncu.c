@@ -82,7 +82,6 @@ const char plugin_name[]        = "job_container cncu plugin";
 const char plugin_type[]        = "job_container/cncu";
 const uint32_t plugin_version   = 101;
 
-#if _DEBUG
 #define JOB_BUF_SIZE 128
 
 static uint32_t *job_id_array = NULL;
@@ -181,6 +180,7 @@ static int _restore_state(char *dir_name)
 	return error_code;
 }
 
+#if _DEBUG
 static void _stat_reservation(char *type, rid_t resv_id)
 {
 	struct job_resv_stat buf;
@@ -222,7 +222,6 @@ extern int fini(void)
 
 extern int container_p_restore(char *dir_name, bool recover)
 {
-#if _DEBUG
 	int i;
 
 	slurm_mutex_lock(&context_lock);
@@ -240,7 +239,7 @@ extern int container_p_restore(char *dir_name, bool recover)
 			job_id_array[i] = 0;
 		}
 	}
-#endif
+
 	xfree(state_dir);
 	state_dir = xstrdup(dir_name);
 	return SLURM_SUCCESS;
@@ -250,8 +249,6 @@ extern int container_p_create(uint32_t job_id)
 {
 	rid_t resv_id = job_id;
 	int rc;
-
-#if _DEBUG
 	int i, empty = -1, found = -1;
 	bool job_id_change = false;
 	info("%s: creating(%u)", plugin_type, job_id);
@@ -280,7 +277,7 @@ extern int container_p_create(uint32_t job_id)
 	if (job_id_change)
 		_save_state(state_dir);
 	slurm_mutex_unlock(&context_lock);
-#endif
+
 	rc = job_create_reservation(resv_id, CREATE_FLAGS);
 	if ((rc == 0) || (errno == EEXIST)) {
 		if ((rc != 0) && (errno == EEXIST)) {
@@ -345,8 +342,6 @@ extern int container_p_delete(uint32_t job_id)
 {
 	rid_t resv_id = job_id;
 	int rc;
-
-#if _DEBUG
 	int i, found = -1;
 	bool job_id_change = false;
 
@@ -364,13 +359,13 @@ extern int container_p_delete(uint32_t job_id)
 	if (job_id_change)
 		_save_state(state_dir);
 	slurm_mutex_unlock(&context_lock);
-#endif
+
 	rc = job_end_reservation(resv_id, DELETE_FLAGS);
 	if (rc == 0)
 		return SLURM_SUCCESS;
 
-	error("%s: end(%u): %m", plugin_type, job_id);
 	if ((errno == ENOENT) || (errno == EINPROGRESS) || (errno == EALREADY))
 		return SLURM_SUCCESS;	/* Not fatal error */
+	error("%s: delete(%u): %m", plugin_type, job_id);
 	return SLURM_ERROR;
 }
