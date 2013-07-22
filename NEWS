@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
  -- sacct - fix --name and --partition options when using
     accounting_storage/filetxt.
  -- squeue - Remove extra whitespace of default printout.
+ -- BGQ - added head ppcfloor as an include dir when building.
 
 * Changes in Slurm 2.6.0
 ========================
