@@ -114,7 +114,7 @@ if {$exit_code != 0} {
 }
 
 # Since we can't over commit the test ends here.
-if {[test_cray]} {
+if {[test_alps]} {
 	if {$exit_code == 0} {
 		file delete $file_in $file_out
 		send_user "\nSUCCESS\n"

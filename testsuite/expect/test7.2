@@ -71,7 +71,7 @@ expect {
 	}
 }
 
-if {[test_cray]} {
+if {[test_alps]} {
 	send_user "\nWARNING: Additional portions of this test are incompatible with Cray systems\n"
 	exit $exit_code
 } elseif {[test_bluegene]} {

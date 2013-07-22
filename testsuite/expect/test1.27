@@ -42,7 +42,7 @@ print_header $test_id
 # These are the variables for which we are checking existence.
 # If the number following a variable name is 1, then we check to make
 # certain that the value of the env variable is greater than 0
-if {[test_cray]} {
+if {[test_alps]} {
 	array set good_vars {
 	    SLURM_CPUS_PER_TASK 1
 	    SLURM_JOB_ID 1

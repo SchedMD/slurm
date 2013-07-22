@@ -43,7 +43,7 @@ print_header $test_id
 if {[test_bluegene]} {
 	send_user "\nWARNING: This test is incompatible with Bluegene systems\n"
 	exit $exit_code
-} elseif {[test_cray]} {
+} elseif {[test_alps]} {
 	send_user "\nWARNING: This test is incompatible with Cray systems\n"
 	exit $exit_code
 } elseif {[test_launch_poe]} {

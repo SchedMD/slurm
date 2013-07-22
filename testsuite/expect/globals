@@ -1310,7 +1310,7 @@ proc test_bluegene { } {
 
 ################################################################
 #
-# Proc: test_cray
+# Proc: test_alps
 #
 # Purpose: Determine if the system is a cray system
 #
@@ -1318,14 +1318,14 @@ proc test_bluegene { } {
 #
 ################################################################
 
-proc test_cray { } {
+proc test_alps { } {
 	global scontrol bin_bash bin_grep
 
 	log_user 0
 	set cray 0
 	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectType"
 	expect {
-		"select/cray" {
+		"select/alps" {
 			set cray 1
 			exp_continue
 		}
