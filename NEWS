@@ -24,6 +24,7 @@ documents those changes that are of interest to users and admins.
     accounting_storage/filetxt.
  -- squeue - Remove extra whitespace of default printout.
  -- BGQ - added head ppcfloor as an include dir when building.
+ -- BGQ - Better debug messages in runjob_mux plugin.
 
 * Changes in Slurm 2.6.0
 ========================
