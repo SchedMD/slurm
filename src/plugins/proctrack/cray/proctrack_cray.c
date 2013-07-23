@@ -73,6 +73,7 @@ static void *libjob_handle = NULL;
 static pthread_t threadid = 0;
 static pthread_cond_t notify = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t notify_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void *_create_container_thread(void *args)
 {
@@ -103,12 +104,14 @@ static void _end_container_thread(void)
 {
 	if (threadid) {
 		/* This will end the thread and remove it from the container */
+		slurm_mutex_lock(&thread_mutex);
 		slurm_mutex_lock(&notify_mutex);
 		pthread_cond_signal(&notify);
 		slurm_mutex_unlock(&notify_mutex);
 
 		pthread_join(threadid, NULL);
 		threadid = 0;
+		slurm_mutex_unlock(&thread_mutex);
 	}
 }
 
@@ -129,6 +132,7 @@ extern int fini(void)
 	/* free up some memory */
 	slurm_mutex_destroy(&notify_mutex);
 	pthread_cond_destroy(&notify);
+	slurm_mutex_destroy(&thread_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -154,6 +158,7 @@ extern int slurm_container_plugin_create(stepd_step_rec_t *job)
 		   container automatically.  Empty containers are not
 		   valid.
 		*/
+		slurm_mutex_lock(&thread_mutex);
 		if (threadid) {
 			debug("Had a thread already 0x%08lx", threadid);
 			slurm_mutex_lock(&notify_mutex);
@@ -166,6 +171,7 @@ extern int slurm_container_plugin_create(stepd_step_rec_t *job)
 		slurm_mutex_lock(&notify_mutex);
 		pthread_cond_wait(&notify, &notify_mutex);
 		slurm_mutex_unlock(&notify_mutex);
+		slurm_mutex_unlock(&thread_mutex);
 
 		debug("slurm_container_plugin_create: created jid "
 		      "0x%08lx thread 0x%08lx",
