@@ -27,6 +27,7 @@ documents those changes that are of interest to users and admins.
  -- BGQ - Better debug messages in runjob_mux plugin.
  -- PMI2 Updated the Makefile.am to build a versioned library.
  -- CRAY - Fix srun --mem_bind=local option with launch/aprun.
+ -- PMI2 Corrected buffer size computation in the pmi2_api.c module.
 
 * Changes in Slurm 2.6.0
 ========================
