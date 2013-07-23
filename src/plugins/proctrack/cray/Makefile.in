@@ -139,6 +139,7 @@ proctrack_cray_la_OBJECTS = $(am_proctrack_cray_la_OBJECTS)
 proctrack_cray_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(proctrack_cray_la_LDFLAGS) $(LDFLAGS) -o $@
+@HAVE_REAL_CRAY_TRUE@am_proctrack_cray_la_rpath = -rpath $(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -395,10 +396,11 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = - -module -avoid-version --export-dynamic
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = proctrack_cray.la
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(CRAY_CPPFLAGS)
+@HAVE_REAL_CRAY_TRUE@PROC_PLUG = proctrack_cray.la
+pkglib_LTLIBRARIES = $(PROC_PLUG)
 proctrack_cray_la_SOURCES = proctrack_cray.c
-proctrack_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(OTHER_FLAGS)
+proctrack_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(CRAY_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -466,7 +468,7 @@ clean-pkglibLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 proctrack_cray.la: $(proctrack_cray_la_OBJECTS) $(proctrack_cray_la_DEPENDENCIES) $(EXTRA_proctrack_cray_la_DEPENDENCIES) 
-	$(proctrack_cray_la_LINK) -rpath $(pkglibdir) $(proctrack_cray_la_OBJECTS) $(proctrack_cray_la_LIBADD) $(LIBS)
+	$(proctrack_cray_la_LINK) $(am_proctrack_cray_la_rpath) $(proctrack_cray_la_OBJECTS) $(proctrack_cray_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -709,8 +711,6 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-pkglibLTLIBRARIES
 
-# Don't need to add -ljob because we dlopen the .so to avoid
-#  symbol collisions with slurm functions
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

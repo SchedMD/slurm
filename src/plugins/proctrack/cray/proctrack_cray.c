@@ -53,6 +53,8 @@
 #include <unistd.h>
 #include <dlfcn.h>
 
+#include <job.h>	/* Cray's job module component */
+
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
@@ -65,22 +67,6 @@ const char plugin_type[]      = "proctrack/cray";
 const uint32_t plugin_version = 91;
 
 /*
- * We can't include <job.h> since its prototypes conflict with some
- *  of SLURM's. Instead, put important function protypes and
- *  the jid_t typedef here:
- */
-typedef uint64_t jid_t;
-
-typedef jid_t (*create_f)    (jid_t jid_requested, uid_t uid, int options);
-typedef jid_t (*getjid_f)    (pid_t pid);
-typedef jid_t (*waitjid_f)   (jid_t jid, int *status, int options);
-typedef int   (*killjid_f)   (jid_t jid, int sig);
-typedef jid_t (*detachpid_f) (pid_t pid);
-typedef jid_t (*attachpid_f) (pid_t pid, jid_t jid_requested);
-typedef int   (*getpidlist_f)(jid_t jid, pid_t *pid, int bufsize);
-typedef int   (*getpidcnt_f) (jid_t jid);
-
-/*
  *  Handle to libjob.so
  */
 static void *libjob_handle = NULL;
@@ -88,67 +74,11 @@ static pthread_t threadid = 0;
 static pthread_cond_t notify = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t notify_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/*
- *  libjob operations we'll need in this plugin
- */
-static struct job_operations {
-	create_f     create;
-	getjid_f     getjid;
-	waitjid_f    waitjid;
-	killjid_f    killjid;
-	detachpid_f  detachpid;
-	attachpid_f  attachpid;
-	getpidlist_f getpidlist;
-	getpidcnt_f  getpidcnt;
-} job_ops;
-
-
-static jid_t _job_create(jid_t jid, uid_t uid, int options)
-{
-	return ((*job_ops.create)(jid, uid, options));
-}
-
-static jid_t _job_getjid(pid_t pid)
-{
-	return ((*job_ops.getjid)(pid));
-}
-
-static jid_t _job_waitjid(jid_t jid, int *status, int options)
-{
-	return ((*job_ops.waitjid)(jid, status, options));
-}
-
-static int _job_killjid(jid_t jid, int sig)
-{
-	return ((*job_ops.killjid)(jid, sig));
-}
-
-/* not used */
-/* static int _job_detachpid(pid_t pid) */
-/* { */
-/* 	return ((*job_ops.detachpid)(pid)); */
-/* } */
-
-static int _job_attachpid(pid_t pid, jid_t jid)
-{
-	return ((*job_ops.attachpid)(pid, jid));
-}
-
-static int _job_getpidlist(jid_t jid, pid_t *pid, int bufsize)
-{
-	return ((*job_ops.getpidlist)(jid, pid, bufsize));
-}
-
-static int _job_getpidcnt(jid_t jid)
-{
-	return ((*job_ops.getpidcnt)(jid));
-}
-
 static void *_create_container_thread(void *args)
 {
 	stepd_step_rec_t *job = (stepd_step_rec_t *)args;
 
-	if ((job->cont_id = (uint64_t)_job_create(0, job->uid, 0))
+	if ((job->cont_id = (uint64_t)job_create(0, job->uid, 0))
 	    == (jid_t)-1) {
 		error ("Failed to create job container: %m");
 		return NULL;
@@ -188,43 +118,7 @@ static void _end_container_thread(void)
  */
 extern int init(void)
 {
-	/*  We dlopen() libjob.so instead of directly linking to it
-	 *   because of symbols like "job_create" in libjob which
-	 *   conflict with symbols in slurmd. dlopening the library
-	 *   prevents these symbols from going into the global namespace.
-	 */
-	if ((libjob_handle = dlopen("libjob.so", RTLD_LAZY)) == NULL) {
-		error ("Unable to open libjob.so: %m");
-		return SLURM_ERROR;
-	}
-
-	job_ops.create    = dlsym(libjob_handle, "job_create");
-	job_ops.getjid    = dlsym(libjob_handle, "job_getjid");
-	job_ops.waitjid   = dlsym(libjob_handle, "job_waitjid");
-	job_ops.killjid   = dlsym(libjob_handle, "job_killjid");
-	job_ops.detachpid = dlsym(libjob_handle, "job_detachpid");
-	job_ops.attachpid = dlsym(libjob_handle, "job_attachpid");
-	job_ops.getpidlist= dlsym(libjob_handle, "job_getpidlist");
-	job_ops.getpidcnt = dlsym(libjob_handle, "job_getpidcnt");
-
-	if (!job_ops.create)
-		error("Unable to resolve job_create in libjob.so");
-	if (!job_ops.getjid)
-		error("Unable to resolve job_getjid in libjob.so");
-	if (!job_ops.waitjid)
-		error("Unable to resolve job_waitjid in libjob.so");
-	if (!job_ops.killjid)
-		error("Unable to resolve job_killjid in libjob.so");
-	if (!job_ops.detachpid)
-		error("Unable to resolve job_detachpid in libjob.so");
-	if (!job_ops.attachpid)
-		error("Unable to resolve job_attachpid in libjob.so");
-	if (!job_ops.getpidlist)
-		error("Unable to resolve job_getpidlist in libjob.so");
-	if (!job_ops.getpidcnt)
-		error("Unable to resolve job_getpidcnt in libjob.so");
-
-	debug ("successfully loaded libjob.so");
+	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 
@@ -236,7 +130,6 @@ extern int fini(void)
 	slurm_mutex_destroy(&notify_mutex);
 	pthread_cond_destroy(&notify);
 
-	dlclose(libjob_handle);
 	return SLURM_SUCCESS;
 }
 
@@ -290,11 +183,8 @@ extern int slurm_container_plugin_create(stepd_step_rec_t *job)
  * (once) at this time. */
 int slurm_container_plugin_add(stepd_step_rec_t *job, pid_t pid)
 {
-	if (_job_attachpid(pid, job->cont_id) == (jid_t) -1) {
+	if (job_attachpid(pid, job->cont_id) == (jid_t) -1)
 		error("Failed to attach pid %d to job container: %m", pid);
-		return SLURM_ERROR;
-	}
-
 
 	_end_container_thread();
 
@@ -303,7 +193,7 @@ int slurm_container_plugin_add(stepd_step_rec_t *job, pid_t pid)
 
 int slurm_container_plugin_signal(uint64_t id, int sig)
 {
-	if ((_job_killjid((jid_t) id, sig) < 0)
+	if ((job_killjid((jid_t) id, sig) < 0)
 	   && (errno != ENODATA) && (errno != EBADF) )
 		return (SLURM_ERROR);
 	return (SLURM_SUCCESS);
@@ -326,7 +216,7 @@ uint64_t slurm_container_plugin_find(pid_t pid)
 {
 	jid_t jid;
 
-	if ((jid = _job_getjid(pid)) == (jid_t) -1)
+	if ((jid = job_getjid(pid)) == (jid_t) -1)
 		return ((uint64_t) 0);
 
 	return ((uint64_t) jid);
@@ -336,7 +226,7 @@ bool slurm_container_plugin_has_pid (uint64_t cont_id, pid_t pid)
 {
 	jid_t jid;
 
-	if ((jid = _job_getjid(pid)) == (jid_t) -1)
+	if ((jid = job_getjid(pid)) == (jid_t) -1)
 		return false;
 	if ((uint64_t)jid != cont_id)
 		return false;
@@ -347,7 +237,7 @@ bool slurm_container_plugin_has_pid (uint64_t cont_id, pid_t pid)
 int slurm_container_plugin_wait(uint64_t id)
 {
 	int status;
-	if (_job_waitjid((jid_t) id, &status, 0) == (jid_t)-1)
+	if (job_waitjid((jid_t) id, &status, 0) == (jid_t)-1)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -358,7 +248,7 @@ int slurm_container_plugin_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 	int pidcnt, bufsize;
 	pid_t *p;
 
-	pidcnt = _job_getpidcnt((jid_t)cont_id);
+	pidcnt = job_getpidcnt((jid_t)cont_id);
 	if (pidcnt > 0) {
 		/*
 		 * FIXME - The "+ 128" is a rough attempt to allow for
@@ -367,7 +257,7 @@ int slurm_container_plugin_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 		 */
 		bufsize = sizeof(pid_t) * (pidcnt + 128);
 		p = (pid_t *)xmalloc(bufsize);
-		pidcnt = _job_getpidlist((jid_t)cont_id, p, bufsize);
+		pidcnt = job_getpidlist((jid_t)cont_id, p, bufsize);
 		if (pidcnt == -1) {
 			error("job_getpidlist() failed: %m");
 			*pids = NULL;
