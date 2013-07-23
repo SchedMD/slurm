@@ -155,11 +155,11 @@ extern int slurm_container_plugin_create(stepd_step_rec_t *job)
 		   valid.
 		*/
 		if (threadid) {
-			debug("Had a thread already %d", threadid);
+			debug("Had a thread already 0x%08lx", threadid);
 			slurm_mutex_lock(&notify_mutex);
-			pthread_cond_wait(&notify);
+			pthread_cond_wait(&notify, &notify_mutex);
 			slurm_mutex_unlock(&notify_mutex);
-			debug("Last thread done %d", threadid);
+			debug("Last thread done 0x%08lx", threadid);
 		}
 		pthread_attr_init(&attr);
 		pthread_create(&threadid, &attr, _create_container_thread, job);
@@ -168,7 +168,7 @@ extern int slurm_container_plugin_create(stepd_step_rec_t *job)
 		slurm_mutex_unlock(&notify_mutex);
 
 		debug("slurm_container_plugin_create: created jid "
-		      "0x%08lx thread %d",
+		      "0x%08lx thread 0x%08lx",
 		      job->cont_id, threadid);
 	} else
 		error("slurm_container_plugin_create: already have a cont_id");
@@ -203,9 +203,9 @@ int slurm_container_plugin_destroy(uint64_t id)
 {
 	int status;
 
-	debug("destroying 0x%08lx %d", id, threadid);
+	debug("destroying 0x%08lx 0x%08lx", id, threadid);
 
-	_job_waitjid((jid_t) id, &status, 0);
+	job_waitjid((jid_t) id, &status, 0);
 	/*  Assume any error means job doesn't exist. Therefore,
 	 *   return SUCCESS to slurmd so it doesn't retry continuously
 	 */
