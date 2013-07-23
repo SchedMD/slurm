@@ -466,7 +466,7 @@ int main(int argc, char *argv[])
 			trigger_primary_ctld_res_ctrl();
 			/* Now recover the remaining state information */
 			lock_slurmctld(config_write_lock);
-			if (switch_restore(slurmctld_conf.state_save_location,
+			if (switch_g_restore(slurmctld_conf.state_save_location,
 					   recover ? true : false))
 				fatal(" failed to initialize switch plugin" );
 			if ((error_code = read_slurm_conf(recover, false))) {
@@ -577,7 +577,7 @@ int main(int argc, char *argv[])
 
 		/* termination of controller */
 		dir_name = slurm_get_state_save_location();
-		switch_save(dir_name);
+		switch_g_save(dir_name);
 		xfree(dir_name);
 		slurm_priority_fini();
 		slurmctld_plugstack_fini();

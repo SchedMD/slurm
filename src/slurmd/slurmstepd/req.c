@@ -756,7 +756,7 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 	/*
 	 * Signal the container
 	 */
-	if (slurm_container_signal(job->cont_id, sig) < 0) {
+	if (proctrack_g_signal(job->cont_id, sig) < 0) {
 		rc = -1;
 		errnum = errno;
 		verbose("Error sending signal %d to %u.%u: %m",
@@ -934,7 +934,7 @@ _handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid)
 		      job->jobid, job->stepid);
 	}
 
-	if (slurm_container_signal(job->cont_id, SIGKILL) < 0) {
+	if (proctrack_g_signal(job->cont_id, SIGKILL) < 0) {
 		rc = -1;
 		errnum = errno;
 		verbose("Error sending SIGKILL signal to %u.%u: %m",
@@ -1046,7 +1046,7 @@ _handle_pid_in_container(int fd, stepd_step_rec_t *job)
 
 	safe_read(fd, &pid, sizeof(pid_t));
 
-	rc = slurm_container_has_pid(job->cont_id, pid);
+	rc = proctrack_g_has_pid(job->cont_id, pid);
 
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(bool));
@@ -1124,14 +1124,14 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 		if (launch_poe == 0) {
 			/* IBM MPI seens to periodically hang upon receipt
 			 * of SIGTSTP. */
-			if (slurm_container_signal(job->cont_id, SIGTSTP) < 0) {
+			if (proctrack_g_signal(job->cont_id, SIGTSTP) < 0) {
 				verbose("Error suspending %u.%u (SIGTSTP): %m",
 					job->jobid, job->stepid);
 			} else
 				sleep(2);
 		}
 
-		if (slurm_container_signal(job->cont_id, SIGSTOP) < 0) {
+		if (proctrack_g_signal(job->cont_id, SIGSTOP) < 0) {
 			verbose("Error suspending %u.%u (SIGSTOP): %m",
 				job->jobid, job->stepid);
 		} else {
@@ -1191,7 +1191,7 @@ _handle_resume(int fd, stepd_step_rec_t *job, uid_t uid)
 		pthread_mutex_unlock(&suspend_mutex);
 		goto done;
 	} else {
-		if (slurm_container_signal(job->cont_id, SIGCONT) < 0) {
+		if (proctrack_g_signal(job->cont_id, SIGCONT) < 0) {
 			verbose("Error resuming %u.%u: %m",
 				job->jobid, job->stepid);
 		} else {
@@ -1396,7 +1396,7 @@ _handle_list_pids(int fd, stepd_step_rec_t *job)
 	uint32_t pid;
 
 	debug("_handle_list_pids for job %u.%u", job->jobid, job->stepid);
-	slurm_container_get_pids(job->cont_id, &pids, &npids);
+	proctrack_g_get_pids(job->cont_id, &pids, &npids);
 	safe_write(fd, &npids, sizeof(uint32_t));
 	for (i = 0; i < npids; i++) {
 		pid = (uint32_t)pids[i];

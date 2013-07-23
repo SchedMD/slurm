@@ -550,7 +550,7 @@ extern void jobacct_gather_p_poll_data(
 
 	if (!pgid_plugin) {
 		/* get only the processes in the proctrack container */
-		slurm_container_get_pids(cont_id, &pids, &npids);
+		proctrack_g_get_pids(cont_id, &pids, &npids);
 		if (!npids) {
 			/* update consumed energy even if pids do not exist */
 			itr = list_iterator_create(task_list);

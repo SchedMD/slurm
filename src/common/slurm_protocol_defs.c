@@ -754,7 +754,7 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	xfree(msg->restart_dir);
 
 	if (msg->switch_job)
-		switch_free_jobinfo(msg->switch_job);
+		switch_g_free_jobinfo(msg->switch_job);
 
 	if (msg->options)
 		job_options_destroy(msg->options);
@@ -912,7 +912,7 @@ extern void slurm_free_suspend_msg(suspend_msg_t *msg)
 extern void slurm_free_suspend_int_msg(suspend_int_msg_t *msg)
 {
 	if (msg) {
-		interconnect_suspend_info_free(msg->switch_info);
+		switch_g_suspend_info_free(msg->switch_info);
 		xfree(msg);
 	}
 }
@@ -2081,7 +2081,7 @@ extern void slurm_free_job_step_create_response_msg(
 		if (msg->select_jobinfo)
 			select_g_select_jobinfo_free(msg->select_jobinfo);
 		if (msg->switch_job)
-			switch_free_jobinfo(msg->switch_job);
+			switch_g_free_jobinfo(msg->switch_job);
 
 		xfree(msg);
 	}

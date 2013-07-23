@@ -381,7 +381,7 @@ exec_task(stepd_step_rec_t *job, int i)
 	}
 
 	if (!job->batch) {
-		if (interconnect_attach(job->switch_job, &job->env,
+		if (switch_g_attach(job->switch_job, &job->env,
 				job->nodeid, (uint32_t) i, job->nnodes,
 				job->ntasks, task->gtid) < 0) {
 			error("Unable to attach to interconnect: %m");
@@ -404,7 +404,7 @@ exec_task(stepd_step_rec_t *job, int i)
 	}
 
 	/* task plugin hook */
-	if (pre_launch(job)) {
+	if (task_g_pre_launch(job)) {
 		error ("Failed task affinity setup");
 		exit (1);
 	}

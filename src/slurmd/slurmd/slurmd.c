@@ -299,7 +299,7 @@ main (int argc, char *argv[])
 		fatal("Unable to initialize job_container plugin.");
 	if (container_g_restore(conf->spooldir, !conf->cleanstart))
 		error("Unable to restore job_container state.");
-	if (interconnect_node_init() < 0)
+	if (switch_g_node_init() < 0)
 		fatal("Unable to initialize interconnect.");
 	if (conf->cleanstart && switch_g_clear_node_state())
 		fatal("Unable to clear interconnect state.");
@@ -336,7 +336,7 @@ main (int argc, char *argv[])
 
 	_wait_for_all_threads();
 
-	interconnect_node_fini();
+	switch_g_node_fini();
 
 	_slurmd_fini();
 	_destroy_conf();

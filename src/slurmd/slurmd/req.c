@@ -1037,7 +1037,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr_t));
 
-	slurmd_launch_request(req->job_id, req, nodeid);
+	task_g_slurmd_launch_request(req->job_id, req, nodeid);
 
 	super_user = _slurm_authorized_user(req_uid);
 
@@ -1146,7 +1146,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 	} else if (errnum == SLURM_SUCCESS) {
 		save_cred_state(conf->vctx);
-		slurmd_reserve_resources(req->job_id, req, nodeid);
+		task_g_slurmd_reserve_resources(req->job_id, req, nodeid);
 	}
 
 	/*
@@ -1366,7 +1366,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		goto done;
 	}
 
-	slurmd_batch_request(req->job_id, req);	/* determine task affinity */
+	task_g_slurmd_batch_request(req->job_id, req);	/* determine task affinity */
 
 	if ((req->step_id != SLURM_BATCH_SCRIPT) && (req->step_id != 0))
 		first_job_run = false;
@@ -3146,7 +3146,7 @@ _job_still_running(uint32_t job_id)
 
 /*
  * Wait until all job steps are in SLURMSTEPD_NOT_RUNNING state.
- * This indicates that interconnect_postfini has completed and
+ * This indicates that switch_g_postfini has completed and
  * freed the switch windows (as needed only for Federation switch).
  */
 static void
@@ -3458,13 +3458,13 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	}
 
 	if ((req->op == SUSPEND_JOB) && (req->indf_susp))
-		interconnect_suspend(req->switch_info, 5);
+		switch_g_suspend(req->switch_info, 5);
 
 	/* Release or reclaim resources bound to these tasks (task affinity) */
 	if (req->op == SUSPEND_JOB)
-		(void) slurmd_suspend_job(req->job_id);
+		(void) task_g_slurmd_suspend_job(req->job_id);
 	else
-		(void) slurmd_resume_job(req->job_id);
+		(void) task_g_slurmd_resume_job(req->job_id);
 
 	/*
 	 * Loop through all job steps and call stepd_suspend or stepd_resume
@@ -3531,7 +3531,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	list_destroy(steps);
 
 	if ((req->op == RESUME_JOB) && (req->indf_susp))
-		interconnect_resume(req->switch_info, 5);
+		switch_g_resume(req->switch_info, 5);
 
 	_unlock_suspend_job(req->job_id);
 
@@ -3561,7 +3561,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 		return;
 	}
 
-	slurmd_release_resources(req->job_id);
+	task_g_slurmd_release_resources(req->job_id);
 
 	/*
 	 * "revoke" all future credentials for this jobid
@@ -3632,7 +3632,7 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id, char *node_name)
 	time_t		now = time(NULL);
 	slurm_ctl_conf_t *cf;
 
-	slurmd_release_resources(job_id);
+	task_g_slurmd_release_resources(job_id);
 
 	if (_waiter_init(job_id) == SLURM_ERROR)
 		return;
@@ -3812,7 +3812,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		return;
 	}
 
-	slurmd_release_resources(req->job_id);
+	task_g_slurmd_release_resources(req->job_id);
 
 	/*
 	 *  Initialize a "waiter" thread for this jobid. If another

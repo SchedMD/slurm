@@ -67,14 +67,15 @@ extern int slurmd_task_fini(void);
  *
  * RET - slurm error code
  */
-extern int slurmd_batch_request(uint32_t job_id, batch_job_launch_msg_t *req);
+extern int task_g_slurmd_batch_request(uint32_t job_id,
+				       batch_job_launch_msg_t *req);
 
 /*
  * Slurmd has received a launch request.
  *
  * RET - slurm error code
  */
-extern int slurmd_launch_request(uint32_t job_id,
+extern int task_g_slurmd_launch_request(uint32_t job_id,
 				 launch_tasks_request_msg_t *req,
 				 uint32_t node_id );
 
@@ -83,7 +84,7 @@ extern int slurmd_launch_request(uint32_t job_id,
  *
  * RET - slurm error code
  */
-extern int slurmd_reserve_resources(uint32_t job_id,
+extern int task_g_slurmd_reserve_resources(uint32_t job_id,
 				    launch_tasks_request_msg_t *req,
 				    uint32_t node_id );
 
@@ -92,21 +93,21 @@ extern int slurmd_reserve_resources(uint32_t job_id,
  *
  * RET - slurm error code
  */
-extern int slurmd_suspend_job(uint32_t job_id);
+extern int task_g_slurmd_suspend_job(uint32_t job_id);
 
 /*
  * Slurmd is resuming a previously suspended job.
  *
  * RET - slurm error code
  */
-extern int slurmd_resume_job(uint32_t job_id);
+extern int task_g_slurmd_resume_job(uint32_t job_id);
 
 /*
  * Slurmd is releasing resources for the task.
  *
  * RET - slurm error code
  */
-extern int slurmd_release_resources(uint32_t job_id);
+extern int task_g_slurmd_release_resources(uint32_t job_id);
 
 /*
  * Note that a task launch is about to occur.
@@ -114,34 +115,35 @@ extern int slurmd_release_resources(uint32_t job_id);
  *
  * RET - slurm error code
  */
-extern int pre_setuid(stepd_step_rec_t *job);
+extern int task_g_pre_setuid(stepd_step_rec_t *job);
 
 /*
  * Note in privileged mode that a task launch is about to occur.
  *
  * RET - slurm error code
  */
-extern int pre_launch_priv(stepd_step_rec_t *job);
+extern int task_g_pre_launch_priv(stepd_step_rec_t *job);
 
 /*
  * Note that a task launch is about to occur.
  *
  * RET - slurm error code
  */
-extern int pre_launch(stepd_step_rec_t *job);
+extern int task_g_pre_launch(stepd_step_rec_t *job);
 
 /*
  * Note that a task has terminated.
  *
  * RET - slurm error code
  */
-extern int post_term(stepd_step_rec_t *job, stepd_step_task_info_t *task);
+extern int task_g_post_term(stepd_step_rec_t *job,
+			    stepd_step_task_info_t *task);
 
 /*
  * Note that a step has terminated.
  *
  * RET - slurm error code
  */
-extern int post_step(stepd_step_rec_t *job);
+extern int task_g_post_step(stepd_step_rec_t *job);
 
 #endif /* _SLURMD_TASK_PLUGIN_H_ */

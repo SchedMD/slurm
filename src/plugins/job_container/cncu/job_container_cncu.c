@@ -352,12 +352,12 @@ extern int container_p_add_pid(uint32_t job_id, pid_t pid, uid_t uid)
 	memset(&job, 0, sizeof(stepd_step_rec_t));
 	job.jmgr_pid = pid;
 	job.uid = uid;
-	if (slurm_container_create(&job) != SLURM_SUCCESS) {
-		error("%s: slurm_container_create job(%u)", plugin_type,job_id);
+	if (proctrack_g_create(&job) != SLURM_SUCCESS) {
+		error("%s: proctrack_g_create job(%u)", plugin_type,job_id);
 		return SLURM_ERROR;
 	}
 
-	slurm_container_add(&job, pid);
+	proctrack_g_add(&job, pid);
 
 	return container_p_add_cont(job_id, job.cont_id);
 }

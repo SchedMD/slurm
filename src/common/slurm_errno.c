@@ -432,7 +432,7 @@ static char *_lookup_slurm_api_errtab(int errnum)
 	if ((res == NULL) &&
 	    (errnum >= ESLURM_SWITCH_MIN) &&
 	    (errnum <= ESLURM_SWITCH_MAX))
-		res = switch_strerror(errnum);
+		res = switch_g_strerror(errnum);
 
 	return res;
 }

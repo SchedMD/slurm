@@ -272,7 +272,7 @@ static void _free_step_rec(struct step_record *step_ptr)
 	if (step_ptr->switch_job) {
 		switch_g_job_step_complete(step_ptr->switch_job,
 					   step_ptr->step_layout->node_list);
-		switch_free_jobinfo (step_ptr->switch_job);
+		switch_g_free_jobinfo (step_ptr->switch_job);
 	}
 	resv_port_free(step_ptr);
 	checkpoint_free_jobinfo (step_ptr->check_job);
@@ -2277,10 +2277,10 @@ step_create(job_step_create_request_msg_t *step_specs,
 			}
 		}
 
-		if (switch_alloc_jobinfo (&step_ptr->switch_job) < 0)
-			fatal ("step_create: switch_alloc_jobinfo error");
+		if (switch_g_alloc_jobinfo (&step_ptr->switch_job) < 0)
+			fatal ("step_create: switch_g_alloc_jobinfo error");
 
-		if (switch_build_jobinfo(step_ptr->switch_job,
+		if (switch_g_build_jobinfo(step_ptr->switch_job,
 					 step_ptr->step_layout,
 					 step_ptr->network) < 0) {
 			delete_step_record (job_ptr, step_ptr->step_id);
@@ -2983,7 +2983,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 			switch_g_job_step_complete(
 				step_ptr->switch_job,
 				step_ptr->step_layout->node_list);
-			switch_free_jobinfo (step_ptr->switch_job);
+			switch_g_free_jobinfo (step_ptr->switch_job);
 			step_ptr->switch_job = NULL;
 		}
 	} else if (switch_g_part_comp() && step_ptr->switch_job) {
@@ -3218,7 +3218,7 @@ extern void dump_job_step_state(struct job_record *job_ptr,
 	if (!step_ptr->batch_step) {
 		pack_slurm_step_layout(step_ptr->step_layout, buffer,
 				       SLURM_PROTOCOL_VERSION);
-		switch_pack_jobinfo(step_ptr->switch_job, buffer);
+		switch_g_pack_jobinfo(step_ptr->switch_job, buffer);
 	}
 	checkpoint_pack_jobinfo(step_ptr->check_job, buffer,
 				SLURM_PROTOCOL_VERSION);
@@ -3299,8 +3299,8 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 			if (unpack_slurm_step_layout(&step_layout, buffer,
 						     protocol_version))
 				goto unpack_error;
-			switch_alloc_jobinfo(&switch_tmp);
-			if (switch_unpack_jobinfo(switch_tmp, buffer))
+			switch_g_alloc_jobinfo(&switch_tmp);
+			if (switch_g_unpack_jobinfo(switch_tmp, buffer))
 				goto unpack_error;
 		}
 		checkpoint_alloc_jobinfo(&check_tmp);
@@ -3356,8 +3356,8 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 			if (unpack_slurm_step_layout(&step_layout, buffer,
 						     protocol_version))
 				goto unpack_error;
-			switch_alloc_jobinfo(&switch_tmp);
-			if (switch_unpack_jobinfo(switch_tmp, buffer))
+			switch_g_alloc_jobinfo(&switch_tmp);
+			if (switch_g_unpack_jobinfo(switch_tmp, buffer))
 				goto unpack_error;
 		}
 		checkpoint_alloc_jobinfo(&check_tmp);
@@ -3478,7 +3478,7 @@ unpack_error:
 	xfree(bit_fmt);
 	xfree(core_job);
 	if (switch_tmp)
-		switch_free_jobinfo(switch_tmp);
+		switch_g_free_jobinfo(switch_tmp);
 	slurm_step_layout_destroy(step_layout);
 	select_g_select_jobinfo_free(select_jobinfo);
 	return SLURM_FAILURE;

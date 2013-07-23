@@ -193,14 +193,14 @@ static int check_lua_script_functions (void)
 	int rc = 0;
 	int i;
 	const char *fns[] = {
-		"slurm_container_create",
-		"slurm_container_add",
-		"slurm_container_signal",
-		"slurm_container_destroy",
-		"slurm_container_find",
-		"slurm_container_has_pid",
-		"slurm_container_wait",
-		"slurm_container_get_pids",
+		"proctrack_g_create",
+		"proctrack_g_add",
+		"proctrack_g_signal",
+		"proctrack_g_destroy",
+		"proctrack_g_find",
+		"proctrack_g_has_pid",
+		"proctrack_g_wait",
+		"proctrack_g_get_pids",
 		NULL
 	};
 
@@ -320,7 +320,7 @@ static int lua_job_table_create (stepd_step_rec_t *job)
 	return (0);
 }
 
-int slurm_container_plugin_create (stepd_step_rec_t *job)
+int proctrack_p_plugin_create (stepd_step_rec_t *job)
 {
 	int rc = SLURM_ERROR;
 	double id;
@@ -331,13 +331,13 @@ int slurm_container_plugin_create (stepd_step_rec_t *job)
 	 *  All lua script functions should have been verified during
 	 *   initialization:
 	 */
-	lua_getglobal (L, "slurm_container_create");
+	lua_getglobal (L, "proctrack_g_create");
 	if (lua_isnil (L, -1))
 		goto out;
 
 	lua_job_table_create (job);
 	if (lua_pcall (L, 1, 1, 0) != 0) {
-		error ("proctrack/lua: %s: slurm_container_plugin_create: %s",
+		error ("proctrack/lua: %s: proctrack_p_plugin_create: %s",
 		       lua_script_path, lua_tostring (L, -1));
 		goto out;
 	}
@@ -347,7 +347,7 @@ int slurm_container_plugin_create (stepd_step_rec_t *job)
 	 */
 	if (lua_isnil (L, -1)) {
 		error ("proctrack/lua: "
-		       "slurm_container_plugin_create did not return id");
+		       "proctrack_p_plugin_create did not return id");
 		lua_pop (L, -1);
 		goto out;
 	}
@@ -363,13 +363,13 @@ out:
 	return rc;
 }
 
-int slurm_container_plugin_add (stepd_step_rec_t *job, pid_t pid)
+int proctrack_p_plugin_add (stepd_step_rec_t *job, pid_t pid)
 {
 	int rc = SLURM_ERROR;
 
 	slurm_mutex_lock (&lua_lock);
 
-	lua_getglobal (L, "slurm_container_add");
+	lua_getglobal (L, "proctrack_g_add");
 	if (lua_isnil (L, -1))
 		goto out;
 
@@ -379,7 +379,7 @@ int slurm_container_plugin_add (stepd_step_rec_t *job, pid_t pid)
 
 	if (lua_pcall (L, 3, 1, 0) != 0) {
 		error ("running lua function "
-		       "'slurm_container_plugin_add': %s",
+		       "'proctrack_p_plugin_add': %s",
 		       lua_tostring (L, -1));
 		goto out;
 	}
@@ -391,13 +391,13 @@ out:
 	return (rc);
 }
 
-int slurm_container_plugin_signal (uint64_t id, int sig)
+int proctrack_p_plugin_signal (uint64_t id, int sig)
 {
 	int rc = SLURM_ERROR;
 
 	slurm_mutex_lock (&lua_lock);
 
-	lua_getglobal (L, "slurm_container_signal");
+	lua_getglobal (L, "proctrack_g_signal");
 	if (lua_isnil (L, -1))
 		goto out;
 
@@ -406,7 +406,7 @@ int slurm_container_plugin_signal (uint64_t id, int sig)
 
 	if (lua_pcall (L, 2, 1, 0) != 0) {
 		error ("running lua function "
-		       "'slurm_container_plugin_signal': %s",
+		       "'proctrack_p_plugin_signal': %s",
 		       lua_tostring (L, -1));
 		goto out;
 	}
@@ -418,13 +418,13 @@ out:
 	return (rc);
 }
 
-int slurm_container_plugin_destroy (uint64_t id)
+int proctrack_p_plugin_destroy (uint64_t id)
 {
 	int rc = SLURM_ERROR;
 
 	slurm_mutex_lock (&lua_lock);
 
-	lua_getglobal (L, "slurm_container_destroy");
+	lua_getglobal (L, "proctrack_g_destroy");
 	if (lua_isnil (L, -1))
 		goto out;
 
@@ -432,7 +432,7 @@ int slurm_container_plugin_destroy (uint64_t id)
 
 	if (lua_pcall (L, 1, 1, 0) != 0) {
 		error ("running lua function "
-		       "'slurm_container_plugin_destroy': %s",
+		       "'proctrack_p_plugin_destroy': %s",
 		       lua_tostring (L, -1));
 		goto out;
 	}
@@ -445,20 +445,20 @@ out:
 	return (rc);
 }
 
-uint64_t slurm_container_plugin_find (pid_t pid)
+uint64_t proctrack_p_plugin_find (pid_t pid)
 {
 	uint64_t id = (uint64_t) SLURM_ERROR;
 
 	slurm_mutex_lock (&lua_lock);
 
-	lua_getglobal (L, "slurm_container_find");
+	lua_getglobal (L, "proctrack_g_find");
 	if (lua_isnil (L, -1))
 		goto out;
 
 	lua_pushnumber (L, pid);
 
 	if (lua_pcall (L, 1, 1, 0) != 0) {
-		error ("running lua function 'slurm_container_plugin_find': %s",
+		error ("running lua function 'proctrack_p_plugin_find': %s",
 		       lua_tostring (L, -1));
 		goto out;
 	}
@@ -471,13 +471,13 @@ out:
 	return (id);
 }
 
-bool slurm_container_plugin_has_pid (uint64_t id, pid_t pid)
+bool proctrack_p_plugin_has_pid (uint64_t id, pid_t pid)
 {
 	int rc = 0;
 
 	slurm_mutex_lock (&lua_lock);
 
-	lua_getglobal (L, "slurm_container_has_pid");
+	lua_getglobal (L, "proctrack_g_has_pid");
 	if (lua_isnil (L, -1))
 		goto out;
 
@@ -486,7 +486,7 @@ bool slurm_container_plugin_has_pid (uint64_t id, pid_t pid)
 
 	if (lua_pcall (L, 2, 1, 0) != 0) {
 		error ("running lua function "
-		       "'slurm_container_plugin_has_pid': %s",
+		       "'proctrack_p_plugin_has_pid': %s",
 		       lua_tostring (L, -1));
 		goto out;
 	}
@@ -499,20 +499,20 @@ out:
 	return (rc == 1);
 }
 
-int slurm_container_plugin_wait (uint64_t id)
+int proctrack_p_plugin_wait (uint64_t id)
 {
 	int rc = SLURM_ERROR;
 
 	slurm_mutex_lock (&lua_lock);
 
-	lua_getglobal (L, "slurm_container_wait");
+	lua_getglobal (L, "proctrack_g_wait");
 	if (lua_isnil (L, -1))
 		goto out;
 
 	lua_pushnumber (L, id);
 
 	if (lua_pcall (L, 1, 1, 0) != 0) {
-		error ("running lua function 'slurm_container_plugin_wait': %s",
+		error ("running lua function 'proctrack_p_plugin_wait': %s",
 		       lua_tostring (L, -1));
 		goto out;
 	}
@@ -524,7 +524,7 @@ out:
 	return (rc);
 }
 
-int slurm_container_plugin_get_pids (uint64_t cont_id, pid_t **pids, int *npids)
+int proctrack_p_plugin_get_pids (uint64_t cont_id, pid_t **pids, int *npids)
 {
 	int rc = SLURM_ERROR;
 	int i = 0;
@@ -535,7 +535,7 @@ int slurm_container_plugin_get_pids (uint64_t cont_id, pid_t **pids, int *npids)
 
 	slurm_mutex_lock (&lua_lock);
 
-	lua_getglobal (L, "slurm_container_get_pids");
+	lua_getglobal (L, "proctrack_g_get_pids");
 	if (lua_isnil (L, -1))
 		goto out;
 

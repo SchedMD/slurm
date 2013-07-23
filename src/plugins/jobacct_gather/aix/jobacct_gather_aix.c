@@ -206,7 +206,7 @@ extern void jobacct_gather_p_poll_data(
 
 	if (!pgid_plugin) {
 		/* get only the processes in the proctrack container */
-		slurm_container_get_pids(cont_id, &pids, &npids);
+		porctrack_g_get_pids(cont_id, &pids, &npids);
 		if (!npids) {
 			debug4("no pids in this container %"PRIu64"", cont_id);
 			goto finished;

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/common/switch.c - Generic switch (interconnect) for slurm
+ *  src/common/switch.c - Generic switch (switch_g) for slurm
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -234,7 +234,7 @@ extern int  switch_g_reconfig(void)
 	return (*(ops.reconfig))( );
 }
 
-extern int  switch_save(char *dir_name)
+extern int  switch_g_save(char *dir_name)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -242,7 +242,7 @@ extern int  switch_save(char *dir_name)
 	return (*(ops.state_save))( dir_name );
 }
 
-extern int  switch_restore(char *dir_name, bool recover)
+extern int  switch_g_restore(char *dir_name, bool recover)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -250,7 +250,7 @@ extern int  switch_restore(char *dir_name, bool recover)
 	return (*(ops.state_restore))( dir_name, recover );
 }
 
-extern int  switch_clear(void)
+extern int  switch_g_clear(void)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -258,7 +258,7 @@ extern int  switch_clear(void)
 	return (*(ops.state_clear))( );
 }
 
-extern int  switch_alloc_jobinfo(switch_jobinfo_t **jobinfo)
+extern int  switch_g_alloc_jobinfo(switch_jobinfo_t **jobinfo)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -266,7 +266,7 @@ extern int  switch_alloc_jobinfo(switch_jobinfo_t **jobinfo)
 	return (*(ops.alloc_jobinfo))( jobinfo );
 }
 
-extern int  switch_build_jobinfo(switch_jobinfo_t *jobinfo,
+extern int  switch_g_build_jobinfo(switch_jobinfo_t *jobinfo,
 				 slurm_step_layout_t *step_layout,
 				 char *network)
 {
@@ -276,7 +276,7 @@ extern int  switch_build_jobinfo(switch_jobinfo_t *jobinfo,
 	return (*(ops.build_jobinfo))( jobinfo, step_layout, network );
 }
 
-extern switch_jobinfo_t *switch_copy_jobinfo(switch_jobinfo_t *jobinfo)
+extern switch_jobinfo_t *switch_g_copy_jobinfo(switch_jobinfo_t *jobinfo)
 {
 	if ( switch_init() < 0 )
 		return NULL;
@@ -284,7 +284,7 @@ extern switch_jobinfo_t *switch_copy_jobinfo(switch_jobinfo_t *jobinfo)
 	return (*(ops.copy_jobinfo))( jobinfo );
 }
 
-extern void switch_free_jobinfo(switch_jobinfo_t *jobinfo)
+extern void switch_g_free_jobinfo(switch_jobinfo_t *jobinfo)
 {
 	if ( switch_init() < 0 )
 		return;
@@ -292,7 +292,7 @@ extern void switch_free_jobinfo(switch_jobinfo_t *jobinfo)
 	(*(ops.free_jobinfo))( jobinfo );
 }
 
-extern int switch_pack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer)
+extern int switch_g_pack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -300,7 +300,7 @@ extern int switch_pack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer)
 	return (*(ops.pack_jobinfo))( jobinfo, buffer );
 }
 
-extern int switch_unpack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer)
+extern int switch_g_unpack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -317,7 +317,7 @@ extern int  switch_g_get_jobinfo(switch_jobinfo_t *jobinfo,
 	return (*(ops.get_jobinfo))( jobinfo, data_type, data);
 }
 
-extern void switch_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
+extern void switch_g_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
 {
 	if ( switch_init() < 0 )
 		return;
@@ -325,7 +325,7 @@ extern void switch_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
 	(*(ops.print_jobinfo)) (fp, jobinfo);
 }
 
-extern char *switch_sprint_jobinfo( switch_jobinfo_t *jobinfo,
+extern char *switch_g_sprint_jobinfo( switch_jobinfo_t *jobinfo,
 				    char *buf, size_t size)
 {
 	if ( switch_init() < 0 )
@@ -334,7 +334,7 @@ extern char *switch_sprint_jobinfo( switch_jobinfo_t *jobinfo,
 	return (*(ops.string_jobinfo)) (jobinfo, buf, size);
 }
 
-extern int interconnect_node_init(void)
+extern int switch_g_node_init(void)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -342,7 +342,7 @@ extern int interconnect_node_init(void)
 	return (*(ops.node_init)) ();
 }
 
-extern int interconnect_node_fini(void)
+extern int switch_g_node_fini(void)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -350,7 +350,7 @@ extern int interconnect_node_fini(void)
 	return (*(ops.node_fini)) ();
 }
 
-extern int interconnect_preinit(switch_jobinfo_t *jobinfo)
+extern int switch_g_preinit(switch_jobinfo_t *jobinfo)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -358,7 +358,7 @@ extern int interconnect_preinit(switch_jobinfo_t *jobinfo)
 	return (*(ops.job_preinit)) (jobinfo);
 }
 
-extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid,
+extern int switch_g_init(switch_jobinfo_t *jobinfo, uid_t uid,
 			     char *job_name)
 {
 	if ( switch_init() < 0 )
@@ -367,7 +367,7 @@ extern int interconnect_init(switch_jobinfo_t *jobinfo, uid_t uid,
 	return (*(ops.job_init)) (jobinfo, uid, job_name);
 }
 
-extern int interconnect_suspend_test(switch_jobinfo_t *jobinfo)
+extern int switch_g_suspend_test(switch_jobinfo_t *jobinfo)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -375,7 +375,7 @@ extern int interconnect_suspend_test(switch_jobinfo_t *jobinfo)
 	return (*(ops.job_suspend_test)) (jobinfo);
 }
 
-extern void interconnect_suspend_info_get(switch_jobinfo_t *jobinfo,
+extern void switch_g_suspend_info_get(switch_jobinfo_t *jobinfo,
 					  void **suspend_info)
 {
 	if ( switch_init() < 0 )
@@ -384,7 +384,7 @@ extern void interconnect_suspend_info_get(switch_jobinfo_t *jobinfo,
 	(*(ops.job_suspend_info_get)) (jobinfo, suspend_info);
 }
 
-extern void interconnect_suspend_info_pack(void *suspend_info, Buf buffer)
+extern void switch_g_suspend_info_pack(void *suspend_info, Buf buffer)
 {
 	if ( switch_init() < 0 )
 		return;
@@ -392,7 +392,7 @@ extern void interconnect_suspend_info_pack(void *suspend_info, Buf buffer)
 	(*(ops.job_suspend_info_pack)) (suspend_info, buffer);
 }
 
-extern int interconnect_suspend_info_unpack(void **suspend_info, Buf buffer)
+extern int switch_g_suspend_info_unpack(void **suspend_info, Buf buffer)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -400,7 +400,7 @@ extern int interconnect_suspend_info_unpack(void **suspend_info, Buf buffer)
 	return (*(ops.job_suspend_info_unpack)) (suspend_info, buffer);
 }
 
-extern void interconnect_suspend_info_free(void *suspend_info)
+extern void switch_g_suspend_info_free(void *suspend_info)
 {
 	if ( switch_init() < 0 )
 		return;
@@ -408,7 +408,7 @@ extern void interconnect_suspend_info_free(void *suspend_info)
 	(*(ops.job_suspend_info_free)) (suspend_info);
 }
 
-extern int interconnect_suspend(void *suspend_info, int max_wait)
+extern int switch_g_suspend(void *suspend_info, int max_wait)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -416,7 +416,7 @@ extern int interconnect_suspend(void *suspend_info, int max_wait)
 	return (*(ops.job_suspend)) (suspend_info, max_wait);
 }
 
-extern int interconnect_resume(void *suspend_info, int max_wait)
+extern int switch_g_resume(void *suspend_info, int max_wait)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -424,7 +424,7 @@ extern int interconnect_resume(void *suspend_info, int max_wait)
 	return (*(ops.job_resume)) (suspend_info, max_wait);
 }
 
-extern int interconnect_fini(switch_jobinfo_t *jobinfo)
+extern int switch_g_fini(switch_jobinfo_t *jobinfo)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -432,7 +432,7 @@ extern int interconnect_fini(switch_jobinfo_t *jobinfo)
 	return (*(ops.job_fini)) (jobinfo);
 }
 
-extern int interconnect_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
+extern int switch_g_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 				 uint32_t job_id, uint32_t step_id )
 {
 	if ( switch_init() < 0 )
@@ -442,7 +442,7 @@ extern int interconnect_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 				      job_id, step_id);
 }
 
-extern int interconnect_attach(switch_jobinfo_t *jobinfo, char ***env,
+extern int switch_g_attach(switch_jobinfo_t *jobinfo, char ***env,
 			       uint32_t nodeid, uint32_t procid,
 			       uint32_t nnodes, uint32_t nprocs, uint32_t gid)
 {
@@ -453,7 +453,7 @@ extern int interconnect_attach(switch_jobinfo_t *jobinfo, char ***env,
 				    nodeid, procid, nnodes, nprocs, gid);
 }
 
-extern int switch_get_errno(void)
+extern int switch_g_get_errno(void)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -461,7 +461,7 @@ extern int switch_get_errno(void)
 	return (*(ops.switch_errno))( );
 }
 
-extern char *switch_strerror(int errnum)
+extern char *switch_g_strerror(int errnum)
 {
 	if ( switch_init() < 0 )
 		return NULL;

@@ -74,17 +74,17 @@ typedef struct slurmd_task_ops {
  * Must be synchronized with slurmd_task_ops_t above.
  */
 static const char *syms[] = {
-	"task_slurmd_batch_request",
-	"task_slurmd_launch_request",
-	"task_slurmd_reserve_resources",
-	"task_slurmd_suspend_job",
-	"task_slurmd_resume_job",
-	"task_slurmd_release_resources",
-	"task_pre_setuid",
-	"task_pre_launch_priv",
-	"task_pre_launch",
-	"task_post_term",
-	"task_post_step",
+	"task_p_slurmd_batch_request",
+	"task_p_slurmd_launch_request",
+	"task_p_slurmd_reserve_resources",
+	"task_p_slurmd_suspend_job",
+	"task_p_slurmd_resume_job",
+	"task_p_slurmd_release_resources",
+	"task_p_pre_setuid",
+	"task_p_pre_launch_priv",
+	"task_p_pre_launch",
+	"task_p_post_term",
+	"task_p_post_step",
 };
 
 static slurmd_task_ops_t *ops = NULL;
@@ -191,7 +191,8 @@ done:
  *
  * RET - slurm error code
  */
-extern int slurmd_batch_request(uint32_t job_id, batch_job_launch_msg_t *req)
+extern int task_g_slurmd_batch_request(uint32_t job_id,
+				       batch_job_launch_msg_t *req)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -212,7 +213,7 @@ extern int slurmd_batch_request(uint32_t job_id, batch_job_launch_msg_t *req)
  *
  * RET - slurm error code
  */
-extern int slurmd_launch_request(uint32_t job_id,
+extern int task_g_slurmd_launch_request(uint32_t job_id,
 				 launch_tasks_request_msg_t *req,
 				 uint32_t node_id)
 {
@@ -236,7 +237,7 @@ extern int slurmd_launch_request(uint32_t job_id,
  *
  * RET - slurm error code
  */
-extern int slurmd_reserve_resources(uint32_t job_id,
+extern int task_g_slurmd_reserve_resources(uint32_t job_id,
 				    launch_tasks_request_msg_t *req,
 				    uint32_t node_id )
 {
@@ -260,7 +261,7 @@ extern int slurmd_reserve_resources(uint32_t job_id,
  *
  * RET - slurm error code
  */
-extern int slurmd_suspend_job(uint32_t job_id)
+extern int task_g_slurmd_suspend_job(uint32_t job_id)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -280,7 +281,7 @@ extern int slurmd_suspend_job(uint32_t job_id)
  *
  * RET - slurm error code
  */
-extern int slurmd_resume_job(uint32_t job_id)
+extern int task_g_slurmd_resume_job(uint32_t job_id)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -300,7 +301,7 @@ extern int slurmd_resume_job(uint32_t job_id)
  *
  * RET - slurm error code
  */
-extern int slurmd_release_resources(uint32_t job_id)
+extern int task_g_slurmd_release_resources(uint32_t job_id)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -323,7 +324,7 @@ extern int slurmd_release_resources(uint32_t job_id)
  *
  * RET - slurm error code
  */
-extern int pre_setuid(stepd_step_rec_t *job)
+extern int task_g_pre_setuid(stepd_step_rec_t *job)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -343,7 +344,7 @@ extern int pre_setuid(stepd_step_rec_t *job)
  *
  * RET - slurm error code
  */
-extern int pre_launch_priv(stepd_step_rec_t *job)
+extern int task_g_pre_launch_priv(stepd_step_rec_t *job)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -363,7 +364,7 @@ extern int pre_launch_priv(stepd_step_rec_t *job)
  *
  * RET - slurm error code
  */
-extern int pre_launch(stepd_step_rec_t *job)
+extern int task_g_pre_launch(stepd_step_rec_t *job)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -383,7 +384,7 @@ extern int pre_launch(stepd_step_rec_t *job)
  *
  * RET - slurm error code
  */
-extern int post_term(stepd_step_rec_t *job,
+extern int task_g_post_term(stepd_step_rec_t *job,
 		     stepd_step_task_info_t *task)
 {
 	int i, rc = SLURM_SUCCESS;
@@ -404,7 +405,7 @@ extern int post_term(stepd_step_rec_t *job,
  *
  * RET - slurm error code
  */
-extern int post_step(stepd_step_rec_t *job)
+extern int task_g_post_step(stepd_step_rec_t *job)
 {
 	int i, rc = SLURM_SUCCESS;
 

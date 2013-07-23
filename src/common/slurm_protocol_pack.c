@@ -3723,7 +3723,7 @@ pack_job_step_create_response_msg(job_step_create_response_msg_t * msg,
 		slurm_cred_pack(msg->cred, buffer);
 		select_g_select_jobinfo_pack(
 			msg->select_jobinfo, buffer, protocol_version);
-		switch_pack_jobinfo(msg->switch_job, buffer);
+		switch_g_pack_jobinfo(msg->switch_job, buffer);
 	} else {
 		error("pack_job_step_create_response_msg: protocol_version "
 		      "%hu not supported", protocol_version);
@@ -3757,10 +3757,10 @@ unpack_job_step_create_response_msg(job_step_create_response_msg_t ** msg,
 		if (select_g_select_jobinfo_unpack(
 			    &tmp_ptr->select_jobinfo, buffer, protocol_version))
 			goto unpack_error;
-		switch_alloc_jobinfo(&tmp_ptr->switch_job);
-		if (switch_unpack_jobinfo(tmp_ptr->switch_job, buffer)) {
-			error("switch_unpack_jobinfo: %m");
-			switch_free_jobinfo(tmp_ptr->switch_job);
+		switch_g_alloc_jobinfo(&tmp_ptr->switch_job);
+		if (switch_g_unpack_jobinfo(tmp_ptr->switch_job, buffer)) {
+			error("switch_g_unpack_jobinfo: %m");
+			switch_g_free_jobinfo(tmp_ptr->switch_job);
 			goto unpack_error;
 		}
 	} else {
@@ -6983,7 +6983,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		packstr(msg->task_prolog, buffer);
 		packstr(msg->task_epilog, buffer);
 		pack16(msg->slurmd_debug, buffer);
-		switch_pack_jobinfo(msg->switch_job, buffer);
+		switch_g_pack_jobinfo(msg->switch_job, buffer);
 		job_options_pack(msg->options, buffer);
 		packstr(msg->alias_list, buffer);
 		packstr(msg->complete_nodelist, buffer);
@@ -7055,7 +7055,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		packstr(msg->task_prolog, buffer);
 		packstr(msg->task_epilog, buffer);
 		pack16(msg->slurmd_debug, buffer);
-		switch_pack_jobinfo(msg->switch_job, buffer);
+		switch_g_pack_jobinfo(msg->switch_job, buffer);
 		job_options_pack(msg->options, buffer);
 		packstr(msg->alias_list, buffer);
 		packstr(msg->complete_nodelist, buffer);
@@ -7171,10 +7171,10 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpackstr_xmalloc(&msg->task_epilog, &uint32_tmp, buffer);
 		safe_unpack16(&msg->slurmd_debug, buffer);
 
-		switch_alloc_jobinfo(&msg->switch_job);
-		if (switch_unpack_jobinfo(msg->switch_job, buffer) < 0) {
-			error("switch_unpack_jobinfo: %m");
-			switch_free_jobinfo(msg->switch_job);
+		switch_g_alloc_jobinfo(&msg->switch_job);
+		if (switch_g_unpack_jobinfo(msg->switch_job, buffer) < 0) {
+			error("switch_g_unpack_jobinfo: %m");
+			switch_g_free_jobinfo(msg->switch_job);
 			goto unpack_error;
 		}
 		msg->options = job_options_create();
@@ -7267,10 +7267,10 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpackstr_xmalloc(&msg->task_epilog, &uint32_tmp, buffer);
 		safe_unpack16(&msg->slurmd_debug, buffer);
 
-		switch_alloc_jobinfo(&msg->switch_job);
-		if (switch_unpack_jobinfo(msg->switch_job, buffer) < 0) {
-			error("switch_unpack_jobinfo: %m");
-			switch_free_jobinfo(msg->switch_job);
+		switch_g_alloc_jobinfo(&msg->switch_job);
+		if (switch_g_unpack_jobinfo(msg->switch_job, buffer) < 0) {
+			error("switch_g_unpack_jobinfo: %m");
+			switch_g_free_jobinfo(msg->switch_job);
 			goto unpack_error;
 		}
 		msg->options = job_options_create();
@@ -9129,7 +9129,7 @@ static void _pack_suspend_int_msg(suspend_int_msg_t *msg, Buf buffer,
 	pack16(msg->op, buffer);
 	pack32(msg->job_id,  buffer);
 	pack8(msg->indf_susp, buffer);
-	interconnect_suspend_info_pack(msg->switch_info, buffer);
+	switch_g_suspend_info_pack(msg->switch_info, buffer);
 }
 
 static int  _unpack_suspend_int_msg(suspend_int_msg_t **msg_ptr, Buf buffer,
@@ -9144,7 +9144,7 @@ static int  _unpack_suspend_int_msg(suspend_int_msg_t **msg_ptr, Buf buffer,
 	safe_unpack16(&msg->op,     buffer);
 	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack8(&msg->indf_susp, buffer);
-	if (interconnect_suspend_info_unpack(&msg->switch_info, buffer))
+	if (switch_g_suspend_info_unpack(&msg->switch_info, buffer))
 		goto unpack_error;
 	return SLURM_SUCCESS;
 

@@ -2847,7 +2847,7 @@ nrt_job_step_complete(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
  * Used by the slurmctld at startup time to restore the allocation
  * status of any job steps that were running at the time the previous
  * slurmctld was shutdown.  Also used to restore the allocation
- * status after a call to switch_clear().
+ * status after a call to switch_g_clear().
  */
 extern int
 nrt_job_step_allocated(slurm_nrt_jobinfo_t *jp, hostlist_t hl)
