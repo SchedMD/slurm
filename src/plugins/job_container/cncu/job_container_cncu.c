@@ -356,6 +356,9 @@ extern int container_p_add_pid(uint32_t job_id, pid_t pid, uid_t uid)
 		error("%s: slurm_container_create job(%u)", plugin_type,job_id);
 		return SLURM_ERROR;
 	}
+
+	slurm_container_add(&job, pid);
+
 	return container_p_add_cont(job_id, job.cont_id);
 }
 
