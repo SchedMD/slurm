@@ -43,7 +43,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#ifdef HAVE_REAL_CRAY
 #include <job.h>	/* Cray's job module component */
+#endif
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
@@ -183,6 +185,7 @@ static int _restore_state(char *dir_name)
 	return error_code;
 }
 
+#ifdef HAVE_REAL_CRAY
 static void _stat_reservation(char *type, rid_t resv_id)
 {
 	struct job_resv_stat buf;
@@ -196,6 +199,7 @@ static void _stat_reservation(char *type, rid_t resv_id)
 		     buf.num_files, buf.num_ipc_objs);
 	}
 }
+#endif
 
 static bool _get_debug_flag(void)
 {
@@ -266,8 +270,10 @@ extern int container_p_restore(char *dir_name, bool recover)
 
 extern int container_p_create(uint32_t job_id)
 {
+#ifdef HAVE_REAL_CRAY
 	rid_t resv_id = job_id;
 	int rc;
+#endif
 	int i, empty = -1, found = -1;
 	bool job_id_change = false;
 
@@ -298,6 +304,7 @@ extern int container_p_create(uint32_t job_id)
 		_save_state(state_dir);
 	slurm_mutex_unlock(&context_lock);
 
+#ifdef HAVE_REAL_CRAY
 	rc = job_create_reservation(resv_id, CREATE_FLAGS);
 	if ((rc == 0) || (errno == EEXIST)) {
 		if ((rc != 0) && (errno == EEXIST)) {
@@ -308,6 +315,9 @@ extern int container_p_create(uint32_t job_id)
 			_stat_reservation("create", resv_id);
 		return SLURM_SUCCESS;
 	}
+#else
+	return SLURM_SUCCESS;
+#endif
 	error("%s: create(%u): %m", plugin_type, job_id);
 	return SLURM_ERROR;
 }
@@ -315,15 +325,18 @@ extern int container_p_create(uint32_t job_id)
 /* Add proctrack container (PAGG) to a job container */
 extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 {
+#ifdef HAVE_REAL_CRAY
 	jid_t cjob_id = cont_id;
 	rid_t resv_id = job_id;
 	int rc;
+#endif
 
 	if (enable_debug) {
 		info("%s: adding cont(%u.%"PRIu64")",
 		     plugin_type, job_id, cont_id);
 	}
 
+#ifdef HAVE_REAL_CRAY
 	rc = job_attach_reservation(cjob_id, resv_id, ADD_FLAGS);
 	if ((rc != 0) && (errno == ENOENT)) {	/* Log and retry */
 		error("%s: add(%u.%"PRIu64"): No reservation found",
@@ -331,11 +344,15 @@ extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 		rc = job_create_reservation(resv_id, CREATE_FLAGS);
 		rc = job_attach_reservation(cjob_id, resv_id, ADD_FLAGS);
 	}
+
 	if (rc == 0) {
 		if (enable_debug)
 			_stat_reservation("add", resv_id);
 		return SLURM_SUCCESS;
 	}
+#else
+	return SLURM_SUCCESS;
+#endif
 	error("%s: add(%u.%"PRIu64"): %m", plugin_type, job_id, cont_id);
 	return SLURM_ERROR;
 }
@@ -364,8 +381,10 @@ extern int container_p_add_pid(uint32_t job_id, pid_t pid, uid_t uid)
 
 extern int container_p_delete(uint32_t job_id)
 {
+#ifdef HAVE_REAL_CRAY
 	rid_t resv_id = job_id;
-	int rc;
+#endif
+	int rc = 0;
 	int i, found = -1;
 	bool job_id_change = false;
 
@@ -384,8 +403,9 @@ extern int container_p_delete(uint32_t job_id)
 	if (job_id_change)
 		_save_state(state_dir);
 	slurm_mutex_unlock(&context_lock);
-
+#ifdef HAVE_REAL_CRAY
 	rc = job_end_reservation(resv_id, DELETE_FLAGS);
+#endif
 	if (rc == 0)
 		return SLURM_SUCCESS;
 

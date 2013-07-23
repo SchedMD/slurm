@@ -139,8 +139,6 @@ job_container_cncu_la_OBJECTS = $(am_job_container_cncu_la_OBJECTS)
 job_container_cncu_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(job_container_cncu_la_LDFLAGS) $(LDFLAGS) -o $@
-@HAVE_REAL_CRAY_TRUE@am_job_container_cncu_la_rpath = -rpath \
-@HAVE_REAL_CRAY_TRUE@	$(pkglibdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -398,8 +396,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(CRAY_CPPFLAGS)
-@HAVE_REAL_CRAY_TRUE@CNCU_PLUGIN = job_container_cncu.la
-pkglib_LTLIBRARIES = $(CNCU_PLUGIN)
+pkglib_LTLIBRARIES = job_container_cncu.la
 
 # job_container/cncu plugin.
 job_container_cncu_la_SOURCES = job_container_cncu.c
@@ -471,7 +468,7 @@ clean-pkglibLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 job_container_cncu.la: $(job_container_cncu_la_OBJECTS) $(job_container_cncu_la_DEPENDENCIES) $(EXTRA_job_container_cncu_la_DEPENDENCIES) 
-	$(job_container_cncu_la_LINK) $(am_job_container_cncu_la_rpath) $(job_container_cncu_la_OBJECTS) $(job_container_cncu_la_LIBADD) $(LIBS)
+	$(job_container_cncu_la_LINK) -rpath $(pkglibdir) $(job_container_cncu_la_OBJECTS) $(job_container_cncu_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

@@ -23,15 +23,15 @@ am__make_dryrun = \
     am__dry=no; \
     case $$MAKEFLAGS in \
       *\\[\ \	]*) \
-	echo 'am--echo: ; @echo "AM"  OK' | $(MAKE) -f - 2>/dev/null \
-	  | grep '^AM OK$$' >/dev/null || am__dry=yes;; \
+        echo 'am--echo: ; @echo "AM"  OK' | $(MAKE) -f - 2>/dev/null \
+          | grep '^AM OK$$' >/dev/null || am__dry=yes;; \
       *) \
-	for am__flg in $$MAKEFLAGS; do \
-	  case $$am__flg in \
-	    *=*|--*) ;; \
-	    *n*) am__dry=yes; break;; \
-	  esac; \
-	done;; \
+        for am__flg in $$MAKEFLAGS; do \
+          case $$am__flg in \
+            *=*|--*) ;; \
+            *n*) am__dry=yes; break;; \
+          esac; \
+        done;; \
     esac; \
     test $$am__dry = yes; \
   }
@@ -129,7 +129,7 @@ am__uninstall_files_from_dir = { \
   test -z "$$files" \
     || { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
-	 $(am__cd) "$$dir" && rm -f $$files; }; \
+         $(am__cd) "$$dir" && rm -f $$files; }; \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
@@ -410,7 +410,7 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
 	      ( cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh ) \
-		&& { if test -f $@; then exit 0; else break; fi; }; \
+	        && { if test -f $@; then exit 0; else break; fi; }; \
 	      exit 1;; \
 	  esac; \
 	done; \
@@ -467,7 +467,7 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-proctrack_pgid.la: $(proctrack_pgid_la_OBJECTS) $(proctrack_pgid_la_DEPENDENCIES) $(EXTRA_proctrack_pgid_la_DEPENDENCIES)
+proctrack_pgid.la: $(proctrack_pgid_la_OBJECTS) $(proctrack_pgid_la_DEPENDENCIES) $(EXTRA_proctrack_pgid_la_DEPENDENCIES) 
 	$(proctrack_pgid_la_LINK) -rpath $(pkglibdir) $(proctrack_pgid_la_OBJECTS) $(proctrack_pgid_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
