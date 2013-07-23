@@ -43,7 +43,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-//#include <job.h>	/* Cray's job module component */
+#include <job.h>	/* Cray's job module component */
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
