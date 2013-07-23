@@ -261,6 +261,13 @@ extern int slurm_container_plugin_create(stepd_step_rec_t *job)
 		   container automatically.  Empty containers are not
 		   valid.
 		*/
+		if (threadid) {
+			debug("Had a thread already %d", threadid);
+			slurm_mutex_lock(&notify_mutex);
+			pthread_cond_wait(&notify);
+			slurm_mutex_unlock(&notify_mutex);
+			debug("Last thread done %d", threadid);
+		}
 		pthread_attr_init(&attr);
 		pthread_create(&threadid, &attr, _create_container_thread, job);
 		slurm_mutex_lock(&notify_mutex);
