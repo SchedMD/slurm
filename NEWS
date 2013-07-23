@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
  -- squeue - Remove extra whitespace of default printout.
  -- BGQ - added head ppcfloor as an include dir when building.
  -- BGQ - Better debug messages in runjob_mux plugin.
+ -- PMI2 Updated the Makefile.am to build a versioned library.
 
 * Changes in Slurm 2.6.0
 ========================
