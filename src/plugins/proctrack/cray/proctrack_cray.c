@@ -169,6 +169,19 @@ static void *_create_container_thread(void *args)
 	return NULL;
 }
 
+static void _end_container_thread(void)
+{
+	if (threadid) {
+		/* This will end the thread and remove it from the container */
+		slurm_mutex_lock(&notify_mutex);
+		pthread_cond_signal(&notify);
+		slurm_mutex_unlock(&notify_mutex);
+
+		pthread_join(threadid, NULL);
+		threadid = 0;
+	}
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -217,6 +230,12 @@ extern int init(void)
 
 extern int fini(void)
 {
+	_end_container_thread();
+
+	/* free up some memory */
+	slurm_mutex_destroy(&notify_mutex);
+	pthread_cond_destroy(&notify);
+
 	dlclose(libjob_handle);
 	return SLURM_SUCCESS;
 }
@@ -248,8 +267,9 @@ extern int slurm_container_plugin_create(stepd_step_rec_t *job)
 		pthread_cond_wait(&notify, &notify_mutex);
 		slurm_mutex_unlock(&notify_mutex);
 
-		debug("slurm_container_plugin_create: created jid 0x%08lx",
-		      job->cont_id);
+		debug("slurm_container_plugin_create: created jid "
+		      "0x%08lx thread %d",
+		      job->cont_id, threadid);
 	} else
 		error("slurm_container_plugin_create: already have a cont_id");
 
@@ -263,28 +283,13 @@ extern int slurm_container_plugin_create(stepd_step_rec_t *job)
  * (once) at this time. */
 int slurm_container_plugin_add(stepd_step_rec_t *job, pid_t pid)
 {
-	static bool first = 1;
-
 	if (_job_attachpid(pid, job->cont_id) == (jid_t) -1) {
 		error("Failed to attach pid %d to job container: %m", pid);
 		return SLURM_ERROR;
 	}
 
-	if (!first)
-		return SLURM_SUCCESS;
 
-	first = 0;
-
-	/* This will end the thread and remove it from the container */
-	slurm_mutex_lock(&notify_mutex);
-	pthread_cond_signal(&notify);
-	slurm_mutex_unlock(&notify_mutex);
-
-	pthread_join(threadid, NULL);
-
-	/* free up some memory */
-	slurm_mutex_destroy(&notify_mutex);
-	pthread_cond_destroy(&notify);
+	_end_container_thread();
 
 	return SLURM_SUCCESS;
 }
@@ -300,6 +305,9 @@ int slurm_container_plugin_signal(uint64_t id, int sig)
 int slurm_container_plugin_destroy(uint64_t id)
 {
 	int status;
+
+	debug("destroying 0x%08lx %d", id, threadid);
+
 	_job_waitjid((jid_t) id, &status, 0);
 	/*  Assume any error means job doesn't exist. Therefore,
 	 *   return SUCCESS to slurmd so it doesn't retry continuously
