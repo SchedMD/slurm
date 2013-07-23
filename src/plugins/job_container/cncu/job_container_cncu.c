@@ -250,14 +250,13 @@ extern int container_p_restore(char *dir_name, bool recover)
 	for (i = 0; i < job_id_count; i++) {
 		if (job_id_array[i] == 0)
 			continue;
-		if (recover) {
-			info("%s: recovered job(%u)",
-			     plugin_type, job_id_array[i]);
-		} else {
-			info("%s: purging job(%u)",
-			     plugin_type, job_id_array[i]);
+		if (enable_debug)
+			info("%s: %s job(%u)",
+			     plugin_type,
+			     recover ? "recovered" : "purging",
+			     job_id_array[i]);
+		if (!recover)
 			job_id_array[i] = 0;
-		}
 	}
 
 	xfree(state_dir);
@@ -272,7 +271,8 @@ extern int container_p_create(uint32_t job_id)
 	int i, empty = -1, found = -1;
 	bool job_id_change = false;
 
-	info("%s: creating(%u)", plugin_type, job_id);
+	if (enable_debug)
+		info("%s: creating(%u)", plugin_type, job_id);
 	slurm_mutex_lock(&context_lock);
 	for (i = 0; i < job_id_count; i++) {
 		if (job_id_array[i] == 0) {
@@ -369,7 +369,8 @@ extern int container_p_delete(uint32_t job_id)
 	int i, found = -1;
 	bool job_id_change = false;
 
-	info("%s: deleting(%u)", plugin_type, job_id);
+	if (enable_debug)
+		info("%s: deleting(%u)", plugin_type, job_id);
 	slurm_mutex_lock(&context_lock);
 	for (i = 0; i < job_id_count; i++) {
 		if (job_id_array[i] == job_id) {
