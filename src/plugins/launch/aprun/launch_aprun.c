@@ -582,7 +582,7 @@ extern int launch_p_setup_srun_opt(char **rest)
 			"%u", opt.sockets_per_node);
 	}
 
-	if (opt.mem_bind && strstr(opt.mem_bind, "local")) {
+	if (opt.mem_bind_type & MEM_BIND_LOCAL) {
 		opt.argc += 1;
 		xrealloc(opt.argv, opt.argc * sizeof(char *));
 		opt.argv[command_pos++] = xstrdup("-ss");
