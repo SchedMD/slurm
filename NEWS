@@ -26,6 +26,7 @@ documents those changes that are of interest to users and admins.
  -- BGQ - added head ppcfloor as an include dir when building.
  -- BGQ - Better debug messages in runjob_mux plugin.
  -- PMI2 Updated the Makefile.am to build a versioned library.
+ -- CRAY - Fix srun --mem_bind=local option with launch/aprun.
 
 * Changes in Slurm 2.6.0
 ========================
