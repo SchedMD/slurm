@@ -52,6 +52,7 @@ typedef struct job_container_ops {
 	int	(*container_p_add_pid)	(uint32_t job_id, pid_t pid, uid_t uid);
 	int	(*container_p_delete)	(uint32_t job_id);
 	int	(*container_p_restore)	(char *dir_name, bool recover);
+	void	(*container_p_reconfig)	(void);
 
 } job_container_ops_t;
 
@@ -64,6 +65,7 @@ static const char *syms[] = {
 	"container_p_add_pid",
 	"container_p_delete",
 	"container_p_restore",
+	"container_p_reconfig",
 };
 
 static job_container_ops_t	*ops = NULL;
@@ -264,3 +266,20 @@ extern int container_g_restore(char * dir_name, bool recover)
 
 	return rc;
 }
+
+/* Note change in configuration (e.g. "DebugFlag=JobContainer" set) */
+extern void container_g_reconfig(void)
+{
+	int i;
+
+	(void) job_container_init();
+
+	slurm_mutex_lock(&g_container_context_lock);
+	for (i = 0; i < g_container_context_num;i++) {
+		(*(ops[i].container_p_reconfig))();
+	}
+	slurm_mutex_unlock(&g_container_context_lock);
+
+	return;
+}
+

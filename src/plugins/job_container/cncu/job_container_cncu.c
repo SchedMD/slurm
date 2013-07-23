@@ -43,17 +43,17 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include <job.h>	/* Cray's job module component */
+//#include <job.h>	/* Cray's job module component */
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 #include "src/slurmd/common/proctrack.h"
 
-#define _DEBUG	0
-
 #define ADD_FLAGS	0
 #define CREATE_FLAGS	0
 #define DELETE_FLAGS	0
+
+#define JOB_BUF_SIZE 128
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -86,12 +86,11 @@ const char plugin_name[]        = "job_container cncu plugin";
 const char plugin_type[]        = "job_container/cncu";
 const uint32_t plugin_version   = 101;
 
-#define JOB_BUF_SIZE 128
-
 static uint32_t *job_id_array = NULL;
 static uint32_t  job_id_count = 0;
 static pthread_mutex_t context_lock = PTHREAD_MUTEX_INITIALIZER;
 static char *state_dir = NULL;
+static bool enable_debug = false;
 
 static int _save_state(char *dir_name)
 {
@@ -184,7 +183,6 @@ static int _restore_state(char *dir_name)
 	return error_code;
 }
 
-#if _DEBUG
 static void _stat_reservation(char *type, rid_t resv_id)
 {
 	struct job_resv_stat buf;
@@ -198,7 +196,24 @@ static void _stat_reservation(char *type, rid_t resv_id)
 		     buf.num_files, buf.num_ipc_objs);
 	}
 }
-#endif
+
+static bool _get_debug_flag(void)
+{
+	if (slurm_get_debug_flags() & DEBUG_FLAG_JOB_CONT)
+		return true;
+	return false;
+}
+
+extern void container_p_reconfig(void)
+{
+	bool new_debug_flag = _get_debug_flag();
+
+	if (enable_debug != new_debug_flag) {
+		debug("%s: JobContainer DebugFlag changed to %d",
+		      plugin_name, (int) new_debug_flag);
+	}
+	enable_debug = new_debug_flag;
+}
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -206,11 +221,12 @@ static void _stat_reservation(char *type, rid_t resv_id)
  */
 extern int init(void)
 {
-#if _DEBUG
-	info("%s loaded", plugin_name);
-#else
-	debug("%s loaded", plugin_name);
-#endif
+	enable_debug = _get_debug_flag();
+	if (enable_debug)
+		info("%s loaded", plugin_name);
+	else
+		debug("%s loaded", plugin_name);
+
 	return SLURM_SUCCESS;
 }
 
@@ -255,8 +271,8 @@ extern int container_p_create(uint32_t job_id)
 	int rc;
 	int i, empty = -1, found = -1;
 	bool job_id_change = false;
-	info("%s: creating(%u)", plugin_type, job_id);
 
+	info("%s: creating(%u)", plugin_type, job_id);
 	slurm_mutex_lock(&context_lock);
 	for (i = 0; i < job_id_count; i++) {
 		if (job_id_array[i] == 0) {
@@ -288,9 +304,8 @@ extern int container_p_create(uint32_t job_id)
 			error("%s: create(%u): Reservation already exists",
 			      plugin_type, job_id);
 		}
-#if _DEBUG
-		_stat_reservation("create", resv_id);
-#endif
+		if (enable_debug)
+			_stat_reservation("create", resv_id);
 		return SLURM_SUCCESS;
 	}
 	error("%s: create(%u): %m", plugin_type, job_id);
@@ -304,9 +319,11 @@ extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 	rid_t resv_id = job_id;
 	int rc;
 
-#if _DEBUG
-	info("%s: adding cont(%u.%"PRIu64")", plugin_type, job_id, cont_id);
-#endif
+	if (enable_debug) {
+		info("%s: adding cont(%u.%"PRIu64")",
+		     plugin_type, job_id, cont_id);
+	}
+
 	rc = job_attach_reservation(cjob_id, resv_id, ADD_FLAGS);
 	if ((rc != 0) && (errno == ENOENT)) {	/* Log and retry */
 		error("%s: add(%u.%"PRIu64"): No reservation found",
@@ -315,9 +332,8 @@ extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 		rc = job_attach_reservation(cjob_id, resv_id, ADD_FLAGS);
 	}
 	if (rc == 0) {
-#if _DEBUG
-		_stat_reservation("add", resv_id);
-#endif
+		if (enable_debug)
+			_stat_reservation("add", resv_id);
 		return SLURM_SUCCESS;
 	}
 	error("%s: add(%u.%"PRIu64"): %m", plugin_type, job_id, cont_id);
@@ -329,9 +345,10 @@ extern int container_p_add_pid(uint32_t job_id, pid_t pid, uid_t uid)
 {
 	stepd_step_rec_t job;
 
-#if _DEBUG
-	info("%s: adding pid(%u.%u)", plugin_type, job_id, (uint32_t) pid);
-#endif
+	if (enable_debug) {
+		info("%s: adding pid(%u.%u)",
+		     plugin_type, job_id, (uint32_t) pid);
+	}
 	memset(&job, 0, sizeof(stepd_step_rec_t));
 	job.jmgr_pid = pid;
 	job.uid = uid;

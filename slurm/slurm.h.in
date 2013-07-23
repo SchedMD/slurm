@@ -1935,6 +1935,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_PROFILE	0x00200000	/* AcctGatherProfile plugin */
 #define DEBUG_FLAG_INFINIBAND	0x00400000	/* AcctGatherInfiniband plugin */
 #define DEBUG_FLAG_FILESYSTEM 	0x00800000      /* AcctGatherFilesystem plugin */
+#define DEBUG_FLAG_JOB_CONT 	0x01000000      /* JobContainer plugin */
 
 #define GROUP_FORCE		0x8000	/* if set, update group membership
 					 * info even if no updates to

@@ -377,6 +377,7 @@
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
+#include "src/common/read_config.h"
 #include "src/common/env.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/strlcpy.h"

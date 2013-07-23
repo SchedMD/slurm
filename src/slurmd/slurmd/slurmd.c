@@ -996,6 +996,7 @@ _reconfigure(void)
 
 	gres_plugin_reconfig(&did_change);
 	(void) switch_g_reconfig();
+	container_g_reconfig();
 	if (did_change) {
 		uint32_t cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 		(void) gres_plugin_node_config_load(cpu_cnt);

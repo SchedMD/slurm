@@ -109,6 +109,10 @@ Job ID.</p>
 the plugin should return Slurm_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
+<p class="commandline">void container_p_reconfig (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: Note change in configuration,
+especially the value of the DebugFlags with respect to JobContainer.</p>
+
 <h2>Versioning</h2>
 <p> This document describes version 101 of the Slurm job container API.
 Future releases of Slurm may revise this API. A job container plugin
