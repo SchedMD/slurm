@@ -61,11 +61,11 @@
 #define MAXHOSTNAMELEN	64
 #endif
 
-typedef struct srun_key {
+typedef struct {
 	unsigned char data[SLURM_IO_KEY_SIZE];
 } srun_key_t;
 
-typedef struct srun_info {
+typedef struct {
 	srun_key_t *key;	   /* srun key for IO verification         */
 	slurm_addr_t resp_addr;	   /* response addr for task exit msg      */
 	slurm_addr_t ioaddr;       /* Address to connect on for normal I/O.
@@ -73,14 +73,14 @@ typedef struct srun_info {
 				      resp_addr. */
 } srun_info_t;
 
-typedef enum task_state {
+typedef enum {
 	STEPD_STEP_TASK_INIT,
 	STEPD_STEP_TASK_STARTING,
 	STEPD_STEP_TASK_RUNNING,
 	STEPD_STEP_TASK_COMPLETE
 } stepd_step_task_state_t;
 
-typedef struct task_info {
+typedef struct {
 	pthread_mutex_t mutex;	    /* mutex to protect task state          */
 	stepd_step_task_state_t state;  /* task state                       */
 
@@ -217,13 +217,14 @@ stepd_step_rec_t * batch_stepd_step_rec_create(batch_job_launch_msg_t *msg);
 
 void stepd_step_rec_destroy(stepd_step_rec_t *job);
 
-struct srun_info * srun_info_create(slurm_cred_t *cred, slurm_addr_t *respaddr,
+srun_info_t * srun_info_create(slurm_cred_t *cred, slurm_addr_t *respaddr,
 				    slurm_addr_t *ioaddr);
 
-void  srun_info_destroy(struct srun_info *srun);
+void  srun_info_destroy(srun_info_t *srun);
 
 stepd_step_task_info_t * task_info_create(int taskid, int gtaskid,
-				      char *ifname, char *ofname, char *efname);
+					  char *ifname, char *ofname,
+					  char *efname);
 
 /*
  *  Return a task info structure corresponding to pid.

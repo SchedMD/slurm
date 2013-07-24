@@ -291,7 +291,7 @@ _array_free(char ***array)
 static void
 _srun_info_destructor(void *arg)
 {
-	struct srun_info *srun = (struct srun_info *)arg;
+	srun_info_t *srun = (srun_info_t *)arg;
 	srun_info_destroy(srun);
 }
 
@@ -642,12 +642,12 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	xfree(job);
 }
 
-extern struct srun_info *
+extern srun_info_t *
 srun_info_create(slurm_cred_t *cred, slurm_addr_t *resp_addr, slurm_addr_t *ioaddr)
 {
 	char             *data = NULL;
 	uint32_t          len  = 0;
-	struct srun_info *srun = xmalloc(sizeof(struct srun_info));
+	srun_info_t *srun = xmalloc(sizeof(srun_info_t));
 	srun_key_t       *key  = xmalloc(sizeof(srun_key_t));
 
 	srun->key    = key;
@@ -679,7 +679,7 @@ srun_info_create(slurm_cred_t *cred, slurm_addr_t *resp_addr, slurm_addr_t *ioad
 }
 
 extern void
-srun_info_destroy(struct srun_info *srun)
+srun_info_destroy(srun_info_t *srun)
 {
 	xfree(srun->key);
 	xfree(srun);
