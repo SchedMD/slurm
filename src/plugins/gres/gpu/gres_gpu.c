@@ -115,13 +115,13 @@ static int nb_available_files;
 
 extern int init(void)
 {
-	info("%s: %s loaded", __func__, plugin_name);
+	debug("%s: %s loaded", __func__, plugin_name);
 
 	return SLURM_SUCCESS;
 }
 extern int fini(void)
 {
-	info("%s: unloading %s", __func__, plugin_name);
+	debug("%s: unloading %s", __func__, plugin_name);
 	xfree(gpu_devices);
 
 	return SLURM_SUCCESS;
