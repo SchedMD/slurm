@@ -129,8 +129,8 @@ extern int  switch_g_alloc_jobinfo (switch_jobinfo_t **jobinfo,
  * NOTE: storage must be freed using g_switch_g_free_jobinfo
  */
 extern int  switch_g_build_jobinfo(switch_jobinfo_t *jobinfo,
-				 slurm_step_layout_t *step_layout,
-				 char *network);
+				   slurm_step_layout_t *step_layout,
+				   char *network);
 
 /* copy a switch job credential
  * IN jobinfo - the switch job credential to be copied
@@ -247,16 +247,16 @@ extern int switch_g_node_fini(void);
  *
  *  Process 1 (root)        Process 2 (root, user)  |  Process 3 (user task)
  *                                                  |
- *  switch_g_preinit                            |
- *  fork ------------------ switch_g_init       |
+ *  switch_g_job_preinit                            |
+ *  fork ------------------ switch_g_job_init       |
  *  waitpid                 setuid, chdir, etc.     |
- *                          fork N procs -----------+--- switch_g_attach
+ *                          fork N procs -----------+--- switch_g_job_attach
  *                          wait all                |    exec mpi process
- *                          switch_g_fini*      |
- *  switch_g_postfini                           |
+ *                          switch_g_job_fini*      |
+ *  switch_g_job_postfini                           |
  *                                                  |
  *
- * [ *Note: switch_g_fini() is run as the uid of the job owner, not root ]
+ * [ *Note: switch_g_job_fini() is run as the uid of the job owner, not root ]
  */
 
 /*
@@ -264,16 +264,16 @@ extern int switch_g_node_fini(void);
  *
  * pre is run as root in the first slurmd process, the so called job
  * manager. This function can be used to perform any initialization
- * that needs to be performed in the same process as switch_g_fini()
+ * that needs to be performed in the same process as switch_g_job_fini()
  *
  */
-extern int switch_g_preinit(switch_jobinfo_t *jobinfo);
+extern int switch_g_job_preinit(switch_jobinfo_t *jobinfo);
 
 /*
  * initialize switch_g on node for job. This function is run from the
  * slurmstepd process (some switch_g implementations may require
  * switch_g init functions to be executed from a separate process
- * than the process executing switch_g_fini() [e.g. QsNet])
+ * than the process executing switch_g_job_fini() [e.g. QsNet])
  *
  */
 extern int switch_g_job_init(stepd_step_rec_t *job);
@@ -284,7 +284,7 @@ extern int switch_g_job_init(stepd_step_rec_t *job);
  * IN jobinfo - switch information for a job step
  * RET SLURM_SUCCESS or error code
  */
-extern int switch_g_suspend_test(switch_jobinfo_t *jobinfo);
+extern int switch_g_job_suspend_test(switch_jobinfo_t *jobinfo);
 
 /*
  * Build data structure containing information needed to suspend or resume
@@ -293,7 +293,7 @@ extern int switch_g_suspend_test(switch_jobinfo_t *jobinfo);
  * IN jobinfo - switch information for a job step
  * RET data to be sent with job suspend/resume RPC
  */
-extern void switch_g_suspend_info_get(switch_jobinfo_t *jobinfo,
+extern void switch_g_job_suspend_info_get(switch_jobinfo_t *jobinfo,
 					  void **suspend_info);
 /*
  * Pack data structure containing information needed to suspend or resume
@@ -302,7 +302,7 @@ extern void switch_g_suspend_info_get(switch_jobinfo_t *jobinfo,
  * IN suspend_info - data to be sent with job suspend/resume RPC
  * IN/OUT buffer to hold the data
  */
-extern void switch_g_suspend_info_pack(void *suspend_info, Buf buffer);
+extern void switch_g_job_suspend_info_pack(void *suspend_info, Buf buffer);
 /*
  * Unpack data structure containing information needed to suspend or resume
  * a job
@@ -311,59 +311,59 @@ extern void switch_g_suspend_info_pack(void *suspend_info, Buf buffer);
  * IN/OUT buffer that holds the data
  * RET SLURM_SUCCESS or error code
  */
-extern int switch_g_suspend_info_unpack(void **suspend_info, Buf buffer);
+extern int switch_g_job_suspend_info_unpack(void **suspend_info, Buf buffer);
 /*
  * Free data structure containing information needed to suspend or resume
  * a job
  *
  * IN suspend_info - data sent with job suspend/resume RPC
  */
-extern void switch_g_suspend_info_free(void *suspend_info);
+extern void switch_g_job_suspend_info_free(void *suspend_info);
 
 /*
  * Suspend a job's use of switch resources. This may reset MPI timeout values
- * and/or release switch resources. See also switch_g_resume().
+ * and/or release switch resources. See also switch_g_job_resume().
  *
  * IN max_wait - maximum number of seconds to wait for operation to complete
  * RET SLURM_SUCCESS or error code
  */
-extern int switch_g_suspend(void *suspend_info, int max_wait);
+extern int switch_g_job_suspend(void *suspend_info, int max_wait);
 
 /*
- * Resume a job's use of switch resources. See also switch_g_suspend().
+ * Resume a job's use of switch resources. See also switch_g_job_suspend().
  *
  * IN max_wait - maximum number of seconds to wait for operation to complete
  * RET SLURM_SUCCESS or error code
  */
-extern int switch_g_resume(void *suspend_infoo, int max_wait);
+extern int switch_g_job_resume(void *suspend_infoo, int max_wait);
 
 /*
- * This function is run from the same process as switch_g_init()
+ * This function is run from the same process as switch_g_job_init()
  * after all job tasks have exited. It is *not* run as root, because
  * the process in question has already setuid to the job owner.
  *
  */
-extern int switch_g_fini(switch_jobinfo_t *jobinfo);
+extern int switch_g_job_fini(switch_jobinfo_t *jobinfo);
 
 /*
  * Finalize switch_g on node.
  *
  * This function is run from the initial slurmd process (same process
- * as switch_g_preinit()), and is run as root. Any cleanup routines
+ * as switch_g_job_preinit()), and is run as root. Any cleanup routines
  * that need to be run with root privileges should be run from this
  * function.
  */
-extern int switch_g_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
+extern int switch_g_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 				uint32_t job_id, uint32_t step_id );
 
 /*
- * attach process to switch_g
+ * attach process to switch_g_job
  * (Called from within the process, so it is appropriate to set
  * switch_g specific environment variables here)
  */
-extern int switch_g_attach(switch_jobinfo_t *jobinfo, char ***env,
-		uint32_t nodeid, uint32_t procid, uint32_t nnodes,
-		uint32_t nprocs, uint32_t rank);
+extern int switch_g_job_attach(switch_jobinfo_t *jobinfo, char ***env,
+			       uint32_t nodeid, uint32_t procid,
+			       uint32_t nnodes, uint32_t nprocs, uint32_t rank);
 
 /*
  * Clear switch state on this node

@@ -381,9 +381,9 @@ exec_task(stepd_step_rec_t *job, int i)
 	}
 
 	if (!job->batch) {
-		if (switch_g_attach(job->switch_job, &job->env,
-				job->nodeid, (uint32_t) i, job->nnodes,
-				job->ntasks, task->gtid) < 0) {
+		if (switch_g_job_attach(job->switch_job, &job->env,
+					job->nodeid, (uint32_t) i, job->nnodes,
+					job->ntasks, task->gtid) < 0) {
 			error("Unable to attach to interconnect: %m");
 			log_fini();
 			exit(1);

@@ -351,7 +351,7 @@ extern int switch_g_node_fini(void)
 	return (*(ops.node_fini)) ();
 }
 
-extern int switch_g_preinit(switch_jobinfo_t *jobinfo)
+extern int switch_g_job_preinit(switch_jobinfo_t *jobinfo)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -367,7 +367,7 @@ extern int switch_g_job_init(stepd_step_rec_t *job)
 	return (*(ops.job_init)) (job);
 }
 
-extern int switch_g_suspend_test(switch_jobinfo_t *jobinfo)
+extern int switch_g_job_suspend_test(switch_jobinfo_t *jobinfo)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -375,7 +375,7 @@ extern int switch_g_suspend_test(switch_jobinfo_t *jobinfo)
 	return (*(ops.job_suspend_test)) (jobinfo);
 }
 
-extern void switch_g_suspend_info_get(switch_jobinfo_t *jobinfo,
+extern void switch_g_job_suspend_info_get(switch_jobinfo_t *jobinfo,
 					  void **suspend_info)
 {
 	if ( switch_init() < 0 )
@@ -384,7 +384,7 @@ extern void switch_g_suspend_info_get(switch_jobinfo_t *jobinfo,
 	(*(ops.job_suspend_info_get)) (jobinfo, suspend_info);
 }
 
-extern void switch_g_suspend_info_pack(void *suspend_info, Buf buffer)
+extern void switch_g_job_suspend_info_pack(void *suspend_info, Buf buffer)
 {
 	if ( switch_init() < 0 )
 		return;
@@ -392,7 +392,7 @@ extern void switch_g_suspend_info_pack(void *suspend_info, Buf buffer)
 	(*(ops.job_suspend_info_pack)) (suspend_info, buffer);
 }
 
-extern int switch_g_suspend_info_unpack(void **suspend_info, Buf buffer)
+extern int switch_g_job_suspend_info_unpack(void **suspend_info, Buf buffer)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -400,7 +400,7 @@ extern int switch_g_suspend_info_unpack(void **suspend_info, Buf buffer)
 	return (*(ops.job_suspend_info_unpack)) (suspend_info, buffer);
 }
 
-extern void switch_g_suspend_info_free(void *suspend_info)
+extern void switch_g_job_suspend_info_free(void *suspend_info)
 {
 	if ( switch_init() < 0 )
 		return;
@@ -408,7 +408,7 @@ extern void switch_g_suspend_info_free(void *suspend_info)
 	(*(ops.job_suspend_info_free)) (suspend_info);
 }
 
-extern int switch_g_suspend(void *suspend_info, int max_wait)
+extern int switch_g_job_suspend(void *suspend_info, int max_wait)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -416,7 +416,7 @@ extern int switch_g_suspend(void *suspend_info, int max_wait)
 	return (*(ops.job_suspend)) (suspend_info, max_wait);
 }
 
-extern int switch_g_resume(void *suspend_info, int max_wait)
+extern int switch_g_job_resume(void *suspend_info, int max_wait)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -424,7 +424,7 @@ extern int switch_g_resume(void *suspend_info, int max_wait)
 	return (*(ops.job_resume)) (suspend_info, max_wait);
 }
 
-extern int switch_g_fini(switch_jobinfo_t *jobinfo)
+extern int switch_g_job_fini(switch_jobinfo_t *jobinfo)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
@@ -432,7 +432,7 @@ extern int switch_g_fini(switch_jobinfo_t *jobinfo)
 	return (*(ops.job_fini)) (jobinfo);
 }
 
-extern int switch_g_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
+extern int switch_g_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 				 uint32_t job_id, uint32_t step_id )
 {
 	if ( switch_init() < 0 )
@@ -442,7 +442,7 @@ extern int switch_g_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 				      job_id, step_id);
 }
 
-extern int switch_g_attach(switch_jobinfo_t *jobinfo, char ***env,
+extern int switch_g_job_attach(switch_jobinfo_t *jobinfo, char ***env,
 			       uint32_t nodeid, uint32_t procid,
 			       uint32_t nnodes, uint32_t nprocs, uint32_t gid)
 {

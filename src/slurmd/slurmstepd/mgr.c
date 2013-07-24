@@ -198,7 +198,8 @@ static void _setargs(stepd_step_rec_t *job);
 
 static void _random_sleep(stepd_step_rec_t *job);
 static int  _run_script_as_user(const char *name, const char *path,
-				stepd_step_rec_t *job, int max_wait, char **env);
+				stepd_step_rec_t *job,
+				int max_wait, char **env);
 static void _unblock_signals(void);
 
 /*
@@ -281,7 +282,8 @@ static uint32_t _get_exit_code(stepd_step_rec_t *job)
  * - batch_flag is 0 (corresponding call in slurmctld uses batch_flag = 1),
  * - job_state set to the unlikely value of 'NO_VAL'.
  */
-static int _call_select_plugin_from_stepd(stepd_step_rec_t *job, uint64_t pagg_id,
+static int _call_select_plugin_from_stepd(stepd_step_rec_t *job,
+					  uint64_t pagg_id,
 					  int (*select_fn)(struct job_record *))
 {
 	struct job_record fake_job_record = {0};
@@ -521,7 +523,8 @@ _setup_normal_io(stepd_step_rec_t *job)
 			if (!same) {
 				if (errpattern == SLURMD_ALL_UNIQUE) {
 					/* Open a separate file per task */
-					for (ii = 0; ii < job->node_tasks; ii++) {
+					for (ii = 0;
+					     ii < job->node_tasks; ii++) {
 						rc = io_create_local_client(
 							job->task[ii]->efname,
 							file_flags, job,
@@ -671,7 +674,8 @@ _wait_for_children_slurmstepd(stepd_step_rec_t *job)
 
 		while((left = bit_clear_count(step_complete.bits)) > 0) {
 			debug3("Rank %d waiting for %d (of %d) children",
-			       step_complete.rank, left, step_complete.children);
+			       step_complete.rank, left,
+			       step_complete.children);
 			rc = pthread_cond_timedwait(&step_complete.cond,
 						    &step_complete.lock, &ts);
 			if (rc == ETIMEDOUT) {
@@ -922,7 +926,7 @@ job_manager(stepd_step_rec_t *job)
 	}
 
 	if (!job->batch &&
-	    (switch_g_preinit(job->switch_job) < 0)) {
+	    (switch_g_job_preinit(job->switch_job) < 0)) {
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto fail1;
 	}
@@ -1035,13 +1039,13 @@ job_manager(stepd_step_rec_t *job)
 	job->state = SLURMSTEPD_STEP_ENDING;
 
 	if (!job->batch &&
-	    (switch_g_fini(job->switch_job) < 0)) {
-		error("switch_g_fini: %m");
+	    (switch_g_job_fini(job->switch_job) < 0)) {
+		error("switch_g_job_fini: %m");
 	}
 
 fail2:
 	/*
-	 * First call switch_g_postfini() - In at least one case,
+	 * First call switch_g_job_postfini() - In at least one case,
 	 * this will clean up any straggling processes. If this call
 	 * is moved behind wait_for_io(), we may block waiting for IO
 	 * on a hung process.
@@ -1049,7 +1053,7 @@ fail2:
 	 * Make sure all processes in session are dead. On systems
 	 * with an IBM Federation switch, all processes must be
 	 * terminated before the switch window can be released by
-	 * switch_g_postfini().
+	 * switch_g_job_postfini().
 	 */
 	step_terminate_monitor_start(job->jobid, job->stepid);
 	if (job->cont_id != 0) {
@@ -1058,9 +1062,9 @@ fail2:
 	}
 	step_terminate_monitor_stop();
 	if (!job->batch) {
-		if (switch_g_postfini(job->switch_job, job->jmgr_pid,
+		if (switch_g_job_postfini(job->switch_job, job->jmgr_pid,
 					  job->jobid, job->stepid) < 0)
-			error("switch_g_postfini: %m");
+			error("switch_g_job_postfini: %m");
 	}
 
 	/*

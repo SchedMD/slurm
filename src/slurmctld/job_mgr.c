@@ -9395,7 +9395,7 @@ static void *_switch_suspend_info(struct job_record *job_ptr)
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		if (step_ptr->state != JOB_RUNNING)
 			continue;
-		switch_g_suspend_info_get(step_ptr->switch_job,
+		switch_g_job_suspend_info_get(step_ptr->switch_job,
 					      &switch_suspend_info);
 	}
 	list_iterator_destroy (step_iterator);
@@ -9571,7 +9571,7 @@ static int _job_suspend_switch_test(struct job_record *job_ptr)
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		if (step_ptr->state != JOB_RUNNING)
 			continue;
-		rc = switch_g_suspend_test(step_ptr->switch_job);
+		rc = switch_g_job_suspend_test(step_ptr->switch_job);
 		if (rc != SLURM_SUCCESS)
 			break;
 	}

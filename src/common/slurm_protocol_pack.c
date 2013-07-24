@@ -9132,7 +9132,7 @@ static void _pack_suspend_int_msg(suspend_int_msg_t *msg, Buf buffer,
 	pack16(msg->op, buffer);
 	pack32(msg->job_id,  buffer);
 	pack8(msg->indf_susp, buffer);
-	switch_g_suspend_info_pack(msg->switch_info, buffer);
+	switch_g_job_suspend_info_pack(msg->switch_info, buffer);
 }
 
 static int  _unpack_suspend_int_msg(suspend_int_msg_t **msg_ptr, Buf buffer,
@@ -9147,7 +9147,7 @@ static int  _unpack_suspend_int_msg(suspend_int_msg_t **msg_ptr, Buf buffer,
 	safe_unpack16(&msg->op,     buffer);
 	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack8(&msg->indf_susp, buffer);
-	if (switch_g_suspend_info_unpack(&msg->switch_info, buffer))
+	if (switch_g_job_suspend_info_unpack(&msg->switch_info, buffer))
 		goto unpack_error;
 	return SLURM_SUCCESS;
 

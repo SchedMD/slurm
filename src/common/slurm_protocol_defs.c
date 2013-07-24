@@ -912,7 +912,7 @@ extern void slurm_free_suspend_msg(suspend_msg_t *msg)
 extern void slurm_free_suspend_int_msg(suspend_int_msg_t *msg)
 {
 	if (msg) {
-		switch_g_suspend_info_free(msg->switch_info);
+		switch_g_job_suspend_info_free(msg->switch_info);
 		xfree(msg);
 	}
 }

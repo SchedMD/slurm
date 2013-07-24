@@ -3146,7 +3146,7 @@ _job_still_running(uint32_t job_id)
 
 /*
  * Wait until all job steps are in SLURMSTEPD_NOT_RUNNING state.
- * This indicates that switch_g_postfini has completed and
+ * This indicates that switch_g_job_postfini has completed and
  * freed the switch windows (as needed only for Federation switch).
  */
 static void
@@ -3458,7 +3458,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	}
 
 	if ((req->op == SUSPEND_JOB) && (req->indf_susp))
-		switch_g_suspend(req->switch_info, 5);
+		switch_g_job_suspend(req->switch_info, 5);
 
 	/* Release or reclaim resources bound to these tasks (task affinity) */
 	if (req->op == SUSPEND_JOB)
@@ -3531,7 +3531,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	list_destroy(steps);
 
 	if ((req->op == RESUME_JOB) && (req->indf_susp))
-		switch_g_resume(req->switch_info, 5);
+		switch_g_job_resume(req->switch_info, 5);
 
 	_unlock_suspend_job(req->job_id);
 
