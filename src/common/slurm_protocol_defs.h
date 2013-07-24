@@ -65,7 +65,6 @@
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_step_layout.h"
-#include "src/common/switch.h"
 #include "src/common/xassert.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/common/working_cluster.h"
@@ -147,6 +146,18 @@
 	(_X->node_state & NODE_STATE_MAINT)
 
 #define THIS_FILE ((strrchr(__FILE__, '/') ?: __FILE__ - 1) + 1)
+
+/* These defines have to be here to avoid circular dependancy with
+ * switch.h
+ */
+#ifndef __switch_jobinfo_t_defined
+#  define __switch_jobinfo_t_defined
+   typedef struct switch_jobinfo   switch_jobinfo_t;
+#endif
+#ifndef __switch_node_info_t_defined
+#  define __switch_node_info_t_defined
+   typedef struct switch_node_info switch_node_info_t;
+#endif
 
 /* used to define flags of the launch_tasks_request_msg_t and
  * spawn task_request_msg_t task_flags

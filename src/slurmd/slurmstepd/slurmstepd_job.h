@@ -52,7 +52,6 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/list.h"
 #include "src/common/eio.h"
-#include "src/common/switch.h"
 #include "src/common/env.h"
 #include "src/common/io_hdr.h"
 #include "src/common/job_options.h"
