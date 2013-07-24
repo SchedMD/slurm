@@ -2277,12 +2277,14 @@ step_create(job_step_create_request_msg_t *step_specs,
 			}
 		}
 
-		if (switch_g_alloc_jobinfo (&step_ptr->switch_job) < 0)
+		if (switch_g_alloc_jobinfo(&step_ptr->switch_job,
+					   step_ptr->job_ptr->job_id,
+					   step_ptr->step_id) < 0)
 			fatal ("step_create: switch_g_alloc_jobinfo error");
 
 		if (switch_g_build_jobinfo(step_ptr->switch_job,
-					 step_ptr->step_layout,
-					 step_ptr->network) < 0) {
+					   step_ptr->step_layout,
+					   step_ptr->network) < 0) {
 			delete_step_record (job_ptr, step_ptr->step_id);
 			if (errno == ESLURM_INTERCONNECT_BUSY)
 				return errno;
@@ -3299,7 +3301,8 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 			if (unpack_slurm_step_layout(&step_layout, buffer,
 						     protocol_version))
 				goto unpack_error;
-			switch_g_alloc_jobinfo(&switch_tmp);
+			switch_g_alloc_jobinfo(&switch_tmp,
+					       job_ptr->job_id, step_id);
 			if (switch_g_unpack_jobinfo(switch_tmp, buffer))
 				goto unpack_error;
 		}
@@ -3356,7 +3359,8 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 			if (unpack_slurm_step_layout(&step_layout, buffer,
 						     protocol_version))
 				goto unpack_error;
-			switch_g_alloc_jobinfo(&switch_tmp);
+			switch_g_alloc_jobinfo(&switch_tmp,
+					       job_ptr->job_id, step_id);
 			if (switch_g_unpack_jobinfo(switch_tmp, buffer))
 				goto unpack_error;
 		}

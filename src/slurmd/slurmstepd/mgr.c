@@ -975,10 +975,9 @@ job_manager(stepd_step_rec_t *job)
 	}
 	debug2("After call to spank_init()");
 
-	/* Call switch_g_init() before becoming user */
-	if (!job->batch && job->argv &&
-	    (switch_g_init(job->switch_job, job->uid, job->argv[0]) < 0)) {
-		/* error("switch_g_init: %m"); already logged */
+	/* Call switch_g_job_init() before becoming user */
+	if (!job->batch && job->argv && (switch_g_job_init(job) < 0)) {
+		/* error("switch_g_job_init: %m"); already logged */
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto fail2;
 	}

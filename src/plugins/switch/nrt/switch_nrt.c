@@ -455,7 +455,8 @@ extern char * switch_p_sprintf_node_info(switch_node_info_t *switch_node,
 /*
  * switch functions for job step specific credential
  */
-extern int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job)
+extern int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job,
+				  uint32_t job_id, uint32_t step_id)
 {
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_alloc_jobinfo()");
@@ -818,8 +819,7 @@ extern int switch_p_job_preinit(switch_jobinfo_t *jobinfo)
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid,
-			      char *job_name)
+extern int switch_p_job_init (stepd_step_rec_t *job)
 {
 	pid_t pid;
 	DEF_TIMERS;
@@ -830,8 +830,8 @@ extern int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid,
 		info("switch_p_job_init() starting");
 	}
 	pid = getpid();
-	rc = nrt_load_table((slurm_nrt_jobinfo_t *)jobinfo, uid, pid,
-			    job_name);
+	rc = nrt_load_table((slurm_nrt_jobinfo_t *)job->switch_job,
+			    job->uid, pid, job->argv[0]);
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		END_TIMER;
 		info("switch_p_job_init() ending %s", TIME_STR);

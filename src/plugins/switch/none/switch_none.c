@@ -119,7 +119,8 @@ int switch_p_libstate_clear ( void )
 /*
  * switch functions for job step specific credential
  */
-int switch_p_alloc_jobinfo ( switch_jobinfo_t **switch_job )
+int switch_p_alloc_jobinfo ( switch_jobinfo_t **switch_job,
+			     uint32_t job_id, uint32_t step_id )
 {
 	return SLURM_SUCCESS;
 }
@@ -185,8 +186,7 @@ int switch_p_job_preinit ( switch_jobinfo_t *jobinfo )
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_init (switch_jobinfo_t *jobinfo, uid_t uid,
-			      char *job_name)
+extern int switch_p_job_init (stepd_step_rec_t *job)
 {
 	return SLURM_SUCCESS;
 }

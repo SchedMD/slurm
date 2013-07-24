@@ -333,7 +333,9 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 		step_req->min_nodes,
 		step_req->num_tasks);
 
-	if (switch_g_alloc_jobinfo(&step_resp->switch_job) < 0)
+	if (switch_g_alloc_jobinfo(&step_resp->switch_job,
+				   step_req->job_id,
+				   step_resp->job_step_id) < 0)
 		fatal("switch_g_alloc_jobinfo: %m");
 	if (switch_g_build_jobinfo(step_resp->switch_job,
 				 step_resp->step_layout,

@@ -50,6 +50,7 @@
 
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /* opaque data structures - no peeking! */
 #ifndef __switch_jobinfo_t_defined
@@ -112,10 +113,13 @@ extern char *switch_g_strerror(int errnum);
 
 /* allocate storage for a switch job credential
  * OUT jobinfo - storage for a switch job credential
+ * IN job_id   - job id of the job this is for.
+ * IN step_id  - step id of the job this is for.
  * RET         - slurm error code
  * NOTE: storage must be freed using g_switch_g_free_jobinfo
  */
-extern int  switch_g_alloc_jobinfo (switch_jobinfo_t **jobinfo);
+extern int  switch_g_alloc_jobinfo (switch_jobinfo_t **jobinfo,
+				    uint32_t job_id, uint32_t step_id);
 
 /* fill a job's switch credential
  * OUT jobinfo  - storage for a switch job credential
@@ -272,8 +276,7 @@ extern int switch_g_preinit(switch_jobinfo_t *jobinfo);
  * than the process executing switch_g_fini() [e.g. QsNet])
  *
  */
-extern int switch_g_init(switch_jobinfo_t *jobinfo, uid_t uid,
-			     char *job_name);
+extern int switch_g_job_init(stepd_step_rec_t *job);
 
 /*
  * Determine if a job can be suspended

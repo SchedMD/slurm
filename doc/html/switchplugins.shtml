@@ -191,11 +191,18 @@ of buf in bytes.</p>
 <p style="margin-left:.2in"><b>Returns</b>: Location of buffer, same as <i>buf</i>.</p>
 
 <h3>Job's Switch Credential Management Functions</h3>
-<p class="commandline">int switch_p_alloc_jobinfo(switch_jobinfo_t *switch_job);</p>
+<p class="commandline">int switch_p_alloc_jobinfo(switch_jobinfo_t
+  *switch_job, uint32_t job_id, uint32_t step_id);</p>
 <p style="margin-left:.2in"><b>Description</b>: Allocate storage for a job step's switch credential.
 It is recommended that the credential contain a magic number for validation purposes.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> switch_job</span>&nbsp;
-&nbsp;&nbsp;(output) location for writing location of job step's switch credential.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_job</span>&nbsp;
+&nbsp;&nbsp;(output) location for writing location of job step's
+switch credential.
+<span class="commandline"> job_id</span>&nbsp; &nbsp;&nbsp;(input) the
+job id for this job step NO_VAL for not set.<br>
+<span class="commandline"> step_id</span>&nbsp; &nbsp;&nbsp;(input) the
+step id for this job step NO_VAL for not set.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
@@ -389,16 +396,14 @@ switch credential.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int switch_p_job_init (switch_jobinfo_t jobinfo switch_job, uid_t uid);</p>
+<p class="commandline">int switch_p_job_init (stepd_step_rec_t *job, uid_t uid);</p>
 <p style="margin-left:.2in"><b>Description</b>: Initialize interconnect on node for a job.
 This function is run from the second slurmd process (some interconnect implementations
 may require the switch_p_job_init functions to be executed from a separate process
 than the process executing switch_p_job_fini() [e.g. Quadrics Elan]).</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job
-step's switch credential.<br>
-<span class="commandline"> uid</span>&nbsp; &nbsp;&nbsp;(input) the user id
-to execute a job step.</p>
+<span class="commandline"> job</span>&nbsp; &nbsp;&nbsp;(input)
+structure representing the slurmstepd's view of the job step.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>

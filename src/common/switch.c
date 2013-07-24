@@ -60,7 +60,8 @@ typedef struct slurm_switch_ops {
 	int          (*state_save)        ( char *dir_name );
 	int          (*state_restore)     ( char *dir_name, bool recover );
 
-	int          (*alloc_jobinfo)     ( switch_jobinfo_t **jobinfo );
+	int          (*alloc_jobinfo)     ( switch_jobinfo_t **jobinfo,
+					    uint32_t job_id, uint32_t step_id );
 	int          (*build_jobinfo)     ( switch_jobinfo_t *jobinfo,
 					    slurm_step_layout_t *step_layout,
 					    char *network);
@@ -79,8 +80,7 @@ typedef struct slurm_switch_ops {
 	int          (*node_init)         ( void );
 	int          (*node_fini)         ( void );
 	int          (*job_preinit)       ( switch_jobinfo_t *jobinfo );
-	int          (*job_init)          ( switch_jobinfo_t *jobinfo,
-					    uid_t uid, char *job_name );
+	int          (*job_init)          ( stepd_step_rec_t *job );
 	int          (*job_suspend_test)  ( switch_jobinfo_t *jobinfo );
 	void         (*job_suspend_info_get)( switch_jobinfo_t *jobinfo,
 					      void *suspend_info );
@@ -258,12 +258,13 @@ extern int  switch_g_clear(void)
 	return (*(ops.state_clear))( );
 }
 
-extern int  switch_g_alloc_jobinfo(switch_jobinfo_t **jobinfo)
+extern int  switch_g_alloc_jobinfo(switch_jobinfo_t **jobinfo,
+				   uint32_t job_id, uint32_t step_id)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(ops.alloc_jobinfo))( jobinfo );
+	return (*(ops.alloc_jobinfo))( jobinfo, job_id, step_id );
 }
 
 extern int  switch_g_build_jobinfo(switch_jobinfo_t *jobinfo,
@@ -358,13 +359,12 @@ extern int switch_g_preinit(switch_jobinfo_t *jobinfo)
 	return (*(ops.job_preinit)) (jobinfo);
 }
 
-extern int switch_g_init(switch_jobinfo_t *jobinfo, uid_t uid,
-			     char *job_name)
+extern int switch_g_job_init(stepd_step_rec_t *job)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(ops.job_init)) (jobinfo, uid, job_name);
+	return (*(ops.job_init)) (job);
 }
 
 extern int switch_g_suspend_test(switch_jobinfo_t *jobinfo)
