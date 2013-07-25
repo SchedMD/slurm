@@ -12,7 +12,8 @@
 # --with auth_none   %_with_auth_none   1    build auth-none RPM
 # --with blcr        %_with_blcr        1    require blcr support
 # --with bluegene    %_with_bluegene    1    build bluegene RPM
-# --with cray        %_with_cray        1    build for a Cray system
+# --with cray        %_with_cray        1    build for a Cray system without ALPS
+# --with cray_alps   %_with_cray_alps   1    build for a Cray system with ALPS
 # --with debug       %_with_debug       1    enable extra debugging within SLURM
 # --with lua         %_with_lua         1    build SLURM lua bindings (proctrack only for now)
 # --without munge    %_without_munge    1    don't build auth-munge RPM
@@ -41,6 +42,7 @@
 %slurm_without_opt authd
 %slurm_without_opt bluegene
 %slurm_without_opt cray
+%slurm_without_opt cray_alps
 %slurm_without_opt debug
 %slurm_without_opt sun_const
 %slurm_without_opt salloc_background
@@ -86,7 +88,7 @@
 %slurm_with_opt sgijob
 %endif
 
-%if %{slurm_with cray}
+%if %{slurm_with cray_alps}
 %slurm_with_opt sgijob
 %endif
 
@@ -149,7 +151,7 @@ BuildRequires: mysql-devel >= 5.0.0
 BuildRequires: postgresql-devel >= 8.0.0
 %endif
 
-%if %{slurm_with cray}
+%if %{slurm_with cray_alps}
 BuildRequires: cray-MySQL-devel-enterprise
 Requires: cray-MySQL-devel-enterprise
 %endif
@@ -424,6 +426,7 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 	%{?with_ssl}		\
 	%{?with_munge}      \
 	%{?with_blcr}      \
+	%{?with_cray:--enable-native-cray}      \
 	%{?slurm_with_salloc_background:--enable-salloc-background} \
 	%{!?slurm_with_readline:--without-readline} \
 	%{?with_cflags}
@@ -447,7 +450,7 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
    fi
 %endif
 
-%if %{slurm_with cray}
+%if %{slurm_with cray} || %{slurm_with cray_alps}
    if [ -d /opt/modulefiles ]; then
       install -D -m644 contribs/cray/opt_modulefiles_slurm $RPM_BUILD_ROOT/opt/modulefiles/slurm/opt_modulefiles_slurm
    fi
@@ -646,14 +649,16 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
    echo %{_libdir}/slurm/task_affinity.so            >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cgroup.so              &&
    echo %{_libdir}/slurm/task_cgroup.so              >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_container_cray.so       &&
-   echo %{_libdir}/slurm/job_container_cray.so       >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_container_cncu.so       &&
+   echo %{_libdir}/slurm/job_container_cncu.so       >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_container_none.so       &&
    echo %{_libdir}/slurm/job_container_none.so       >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cray.so                &&
    echo %{_libdir}/slurm/task_cray.so                >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_cray.so              &&
    echo %{_libdir}/slurm/switch_cray.so              >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_cray.so           &&
+   echo %{_libdir}/slurm/proctrack_cray.so           >> $LIST
 
 LIST=./pam.files
 touch $LIST
@@ -703,7 +708,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/spank*
 %dir %{_sysconfdir}
 %dir %{_libdir}/slurm/src
-%if %{slurm_with cray}
+%if %{slurm_with cray} || %{slurm_with cray_alps}
 %dir /opt/modulefiles/slurm
 %endif
 %config %{_sysconfdir}/slurm.conf.example

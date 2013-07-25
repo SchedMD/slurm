@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
  -- Added JobContainerPlugin configuration parameter and plugin infrastructure.
  -- Added partition configuration parameters AllowAccounts, AllowQOS,
     DenyAccounts and DenyQOS.
+ -- The rpmbuild option for a cray system with ALPS has changed from
+    %_with_cray to %_with_cray_alps.
 
 * Changes in Slurm 2.6.1
 ========================

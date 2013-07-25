@@ -26,6 +26,11 @@ SLURM will result in loss of state information.
 HIGHLIGHTS
 ==========
 
+RPMBUILD OPTION CHANGES
+=======================
+ -- The rpmbuild option for a Cray system with ALPS has changed from
+    %_with_cray to %_with_cray_alps.
+
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
