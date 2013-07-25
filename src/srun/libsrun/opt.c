@@ -1960,7 +1960,8 @@ static bool _opt_verify(void)
 			opt.ntasks *= opt.cores_per_socket;
 			opt.ntasks *= opt.threads_per_core;
 			opt.ntasks_set = true;
-		}
+		} else if (opt.ntasks_per_node > 0)
+			opt.ntasks *= opt.ntasks_per_node;
 
 		/* massage the numbers */
 		if (opt.nodelist) {
