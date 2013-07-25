@@ -58,27 +58,68 @@ AC_DEFUN([X_AC_CRAY],
     AC_MSG_NOTICE([Running in Cray emulation mode])
     AC_DEFINE(HAVE_ALPS_CRAY_EMULATION, 1, [Define to 1 for emulating a Cray XT/XE system using ALPS])
   elif test "$ac_have_native_cray" = "yes"; then
-    _x_ac_cray_dirs="/opt/cray/job/default"
+    _x_ac_cray_job_dir="job/default"
+    _x_ac_cray_alps_dir="alps/default"
+    _x_ac_cray_alpscomm_dir="alpscomm/default"
+
+    _x_ac_cray_dirs="/opt/cray"
 
     for d in $_x_ac_cray_dirs; do
       test -d "$d" || continue
-      test -d "$d/include" || continue
-      test -f "$d/include/job.h" || continue
-      test -d "$d/lib64" || continue
-      test -f "$d/lib64/libjob.so" || continue
+
+      _test_dir="$d/$_x_ac_cray_job_dir"
+      test -d "$_test_dir" || continue
+      test -d "$_test_dir/include" || continue
+      test -f "$_test_dir/include/job.h" || continue
+      test -d "$_test_dir/lib64" || continue
+      test -f "$_test_dir/lib64/libjob.so" || continue
 
       saved_CPPFLAGS="$CPPFLAGS"
-      CRAY_CPPFLAGS="-I$d/include"
-      CPPFLAGS="$CRAY_CPPFLAGS $saved_CPPFLAGS"
-
       saved_LIBS="$LIBS"
-      CRAY_LDFLAGS="-L$d/lib64 -ljob"
-      LIBS="$CRAY_LDFLAGS $saved_LIBS"
+      CRAY_CPPFLAGS="-I$_test_dir/include"
+      CRAY_LDFLAGS="-L$_test_dir/lib64 -ljob"
+
+      _test_dir="$d/$_x_ac_cray_alps_dir"
+      test -d "$_test_dir" || continue
+      test -d "$_test_dir/include" || continue
+      test -f "$_test_dir/include/alps/libalpslli.h" || continue
+      test -d "$_test_dir/lib64" || continue
+      test -f "$_test_dir/lib64/libalpslli.so" || continue
+
+      CRAY_SWITCH_CPPFLAGS="-I$_test_dir/include"
+      CRAY_SWITCH_LDFLAGS="-L$_test_dir/lib64 -lalpslli"
+
+      _test_dir="$d/$_x_ac_cray_alpscomm_dir"
+      test -d "$_test_dir" || continue
+      test -d "$_test_dir/include" || continue
+      test -f "$_test_dir/include/alpscomm_cn.h" || continue
+      test -f "$_test_dir/include/alpscomm_sn.h" || continue
+      test -d "$_test_dir/lib64" || continue
+      test -f "$_test_dir/lib64/libalpscomm_cn.so" || continue
+      test -f "$_test_dir/lib64/libalpscomm_sn.so" || continue
+
+      CRAY_SWITCH_CPPFLAGS="$CRAY_SWITCH_CPPFLAGS -I$_test_dir/include"
+      CRAY_SWITCH_LDFLAGS="$CRAY_SWITCH_LDFLAGS -L$_test_dir/lib64 -lalpscomm_cn -lalpscomm_sn"
+
+      CPPFLAGS="$CRAY_CPPFLAGS $CRAY_SWITCH_CPPFLAGS $saved_CPPFLAGS"
+      LIBS="$CRAY_LDFLAGS $CRAY_SWITCH_LDFLAGS $saved_LIBS"
+
+# FIXME: alpscomm_cn.h appeared to not work correctly here.  Needs further
+# looking into
+# #include <alpscomm_cn.h>
+# alpsc_flush_lustre("");
 
       AC_LINK_IFELSE(
         [AC_LANG_PROGRAM(
-	   [[#include <job.h>]],
-	   [[ job_getjidcnt();]])],
+	   [[#include <job.h>
+             #include <alps/libalpslli.h>
+             #include <alpscomm_sn.h>
+	   ]],
+	   [[ job_getjidcnt();
+	      alps_app_lli_init();
+	      alpsc_release_cookies("", 0, 0);
+	   ]]
+	)],
         [have_cray_files="yes"],
 	[AC_MSG_ERROR(There is a problem linking to the Cray api.)])
       LIBS="$saved_LIBS"
@@ -88,7 +129,7 @@ AC_DEFUN([X_AC_CRAY],
     done
 
     if test -z "$have_cray_files"; then
-      AC_MSG_ERROR([Unable to locate Cray API dir install. (usually in /opt/cray/job/default)])
+      AC_MSG_ERROR([Unable to locate Cray API dir install. (usually in /opt/cray)])
     else
       AC_MSG_NOTICE([Running on a Cray system in native mode without ALPS])
     fi
@@ -149,5 +190,7 @@ AC_DEFUN([X_AC_CRAY],
 
   AC_SUBST(CRAY_CPPFLAGS)
   AC_SUBST(CRAY_LDFLAGS)
+  AC_SUBST(CRAY_SWITCH_CPPFLAGS)
+  AC_SUBST(CRAY_SWITCH_LDFLAGS)
 
 ])
