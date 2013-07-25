@@ -28,6 +28,8 @@ documents those changes that are of interest to users and admins.
  -- PMI2 Updated the Makefile.am to build a versioned library.
  -- CRAY - Fix srun --mem_bind=local option with launch/aprun.
  -- PMI2 Corrected buffer size computation in the pmi2_api.c module.
+ -- GRES accounting data wrong in database: gres_alloc, gres_req, and gres_used
+    fields were empty if the job was not started immediately.
 
 * Changes in Slurm 2.6.0
 ========================
