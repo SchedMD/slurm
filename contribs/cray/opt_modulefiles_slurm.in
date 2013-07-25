@@ -5,7 +5,7 @@
 
 # SUBROUTINES
 proc ModulesHelp { } {
-	puts stderr "\tThis is slurm $::version.\n"
+	puts stderr "\tThis is Slurm $::version.\n"
 	puts stderr "\tPlease consult http://slurm.schedmd.com/cray.html"
 }
 
@@ -19,7 +19,7 @@ set version "UNKNOWN"
 if {![catch {exec $slurmdir/bin/sbatch --version} out]} {
 	set version [lindex  $out 1]
 }
-set helptext	"Support for the SLURM $version resource allocation system"
+set helptext	"Support for the Slurm Workload Manager $version"
 
 # SCRIPT PROPER
 module-whatis	$helptext
