@@ -201,6 +201,18 @@ See the section \fBLOGGING\fR in the slurm.conf man page
 if a pathname is specified.
 
 .TP
+\fBLogTimeFormat\fR
+Format of the timestamp in slurmdbd log files. Accepted values are
+"iso8601", "iso8601_ms", "rfc5424", "rfc5424_ms", "clock", and
+"short". The values ending in "_ms" differ from the ones without in
+that fractional seconds with millisecond precision are printed. The
+default value is "iso8601_ms". The "rfc5424" formats are the same as
+the "iso8601" formats except that the timezone value is also
+shown. The "clock" format shows a timestamp in microseconds retrieved
+with the C standard clock() function. The "short" format is a short
+date and time format.
+
+.TP
 \fBMessageTimeout\fR
 Time permitted for a round\-trip communication to complete
 in seconds. Default value is 10 seconds.

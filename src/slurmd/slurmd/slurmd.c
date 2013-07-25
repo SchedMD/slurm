@@ -1774,6 +1774,7 @@ static void _update_logging(void)
 	if ( (conf->debug_level == LOG_LEVEL_INFO)
 	     && (cf->slurmd_debug != (uint16_t) NO_VAL) )
 		conf->debug_level = cf->slurmd_debug;
+	conf->log_fmt = cf->log_fmt;
 	slurm_conf_unlock();
 
 	o->stderr_level  = conf->debug_level;
@@ -1795,6 +1796,7 @@ static void _update_logging(void)
 		o->syslog_level  = LOG_LEVEL_QUIET;
 
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
+	log_set_timefmt(conf->log_fmt);
 }
 
 /* Reset slurmd nice value */

@@ -988,6 +988,18 @@ SLURM does not prevent jobs from using licenses that are
 not explicitly listed in the job submission specification.
 
 .TP
+\fBLogTimeFormat\fR
+Format of the timestamp in slurmctld and slurmd log files. Accepted
+values are "iso8601", "iso8601_ms", "rfc5424", "rfc5424_ms", "clock",
+and "short". The values ending in "_ms" differ from the ones without
+in that fractional seconds with millisecond precision are printed. The
+default value is "iso8601_ms". The "rfc5424" formats are the same as
+the "iso8601" formats except that the timezone value is also
+shown. The "clock" format shows a timestamp in microseconds retrieved
+with the C standard clock() function. The "short" format is a short
+date and time format.
+
+.TP
 \fBMailProg\fR
 Fully qualified pathname to the program used to send email per user request.
 The default value is "/bin/mail".

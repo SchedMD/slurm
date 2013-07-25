@@ -225,6 +225,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"KillWait", S_P_UINT16},
 	{"LaunchType", S_P_STRING},
 	{"Licenses", S_P_STRING},
+	{"LogTimeFormat", S_P_STRING},
 	{"MailProg", S_P_STRING},
 	{"MaxArraySize", S_P_UINT16},
 	{"MaxJobCount", S_P_UINT32},
@@ -2951,6 +2952,23 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->launch_type = xstrdup(DEFAULT_LAUNCH_TYPE);
 
 	s_p_get_string(&conf->licenses, "Licenses", hashtbl);
+
+	if (s_p_get_string(&temp_str, "LogTimeFormat", hashtbl)) {
+		if (slurm_strcasestr(temp_str, "iso8601_ms"))
+			conf->log_fmt = LOG_FMT_ISO8601_MS;
+		else if (slurm_strcasestr(temp_str, "iso8601"))
+			conf->log_fmt = LOG_FMT_ISO8601;
+		else if (slurm_strcasestr(temp_str, "rfc5424_ms"))
+			conf->log_fmt = LOG_FMT_RFC5424_MS;
+		else if (slurm_strcasestr(temp_str, "rfc5424"))
+			conf->log_fmt = LOG_FMT_RFC5424;
+		else if (slurm_strcasestr(temp_str, "clock"))
+			conf->log_fmt = LOG_FMT_CLOCK;
+		else if (slurm_strcasestr(temp_str, "short"))
+			conf->log_fmt = LOG_FMT_SHORT;
+		xfree(temp_str);
+	} else
+		conf->log_fmt = LOG_FMT_ISO8601_MS;
 
 	if (!s_p_get_string(&conf->mail_prog, "MailProg", hashtbl))
 		conf->mail_prog = xstrdup(DEFAULT_MAIL_PROG);

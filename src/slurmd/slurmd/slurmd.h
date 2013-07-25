@@ -122,6 +122,7 @@ typedef struct slurmd_config {
 	slurm_fd_t      lfd;		/* slurmd listen file descriptor   */
 	pid_t         pid;		/* server pid                      */
 	log_options_t log_opts;         /* current logging options         */
+	uint16_t      log_fmt;          /* Log file timestamp format flag  */
 	int           debug_level;	/* logging detail level            */
 	uint32_t      debug_flags;	/* DebugFlags configured           */
 	int           daemonize:1;	/* daemonize flag		   */

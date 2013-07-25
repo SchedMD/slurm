@@ -217,6 +217,9 @@ void log_fatal(const char *file, int line, const char *msg, const char *err_str)
 /* Log out of memory without message buffering */
 void log_oom(const char *file, int line, const char *func);
 
+/* Set the log timestamp format */
+void log_set_timefmt(unsigned);
+
 /*
  * Buffered log functions:
  *

@@ -134,6 +134,7 @@ typedef struct {
 	log_facility_t facility;
 	log_options_t opt;
 	unsigned initialized:1;
+	uint16_t fmt;            /* Flag for specifying timestamp format */
 	uint32_t debug_flags;
 }	log_t;
 
@@ -201,25 +202,33 @@ size_t rfc2822_timestamp(char *s, size_t max)
 
 size_t log_timestamp(char *s, size_t max)
 {
-#ifdef USE_RFC5424_TIME
-	size_t written = _make_timestamp(s, max, "%Y-%m-%dT%T%z");
-	if (max >= 26 && written == 24) {
-		/* The strftime %z format creates timezone offsets of
-		 * the form (+/-)hhmm, whereas the RFC 5424 format is
-		 * (+/-)hh:mm. So shift the minutes one step back and
-		 * insert the semicolon. */
-		s[25] = '\0';
-		s[24] = s[23];
-		s[23] = s[22];
-		s[22] = ':';
-		return written + 1;
+	if (!log)
+		return _make_timestamp(s, max, "%Y-%m-%dT%T");
+	switch (log->fmt) {
+	case LOG_FMT_RFC5424_MS:
+	case LOG_FMT_RFC5424:
+	{
+		size_t written = _make_timestamp(s, max, "%Y-%m-%dT%T%z");
+		if (max >= 26 && written == 24) {
+			/* The strftime %z format creates timezone offsets of
+			 * the form (+/-)hhmm, whereas the RFC 5424 format is
+			 * (+/-)hh:mm. So shift the minutes one step back and
+			 * insert the semicolon. */
+			s[25] = '\0';
+			s[24] = s[23];
+			s[23] = s[22];
+			s[22] = ':';
+			return written + 1;
+		}
+		return written;
 	}
-	return written;
-#elif defined USE_ISO_8601
-	return _make_timestamp(s, max, "%Y-%m-%dT%T");
-#else
-	return _make_timestamp(s, max, "%b %d %T");
-#endif
+	case LOG_FMT_SHORT:
+		return _make_timestamp(s, max, "%b %d %T");
+		break;
+	default:
+		return _make_timestamp(s, max, "%Y-%m-%dT%T");
+		break;
+	}
 }
 
 /* check to see if a file is writeable,
@@ -644,6 +653,19 @@ void log_oom(const char *file, int line, const char *func)
 	}
 }
 
+
+/* Set the timestamp format flag */
+void log_set_timefmt(unsigned fmtflag)
+{
+	if (log) {
+		slurm_mutex_lock(&log_lock);
+		log->fmt = fmtflag;
+		slurm_mutex_unlock(&log_lock);
+	} else
+		fprintf(stderr, "Slurm log not initialized\n");
+}
+		
+
 /* return a heap allocated string formed from fmt and ap arglist
  * returned string is allocated with xmalloc, so must free with xfree.
  *
@@ -698,24 +720,34 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 			case 'T': 	/* "%T" => "dd, Mon yyyy hh:mm:ss off" */
 				xstrftimecat(buf, "%a, %d %b %Y %H:%M:%S %z");
 				break;
-#if defined USE_USEC_CLOCK
-			case 'M':       /* "%M" => "usec"                    */
-				snprintf(tmp, sizeof(tmp), "%ld", clock());
-				xstrcat(buf, tmp);
+			case 'M':
+				if (!log)
+					xiso8601timecat(buf, true);
+				else {
+					switch (log->fmt) {
+					case LOG_FMT_ISO8601_MS: /* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
+						xiso8601timecat(buf, true);
+						break;
+					case LOG_FMT_ISO8601: /* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
+						xiso8601timecat(buf, false);
+						break;
+					case LOG_FMT_RFC5424_MS: /* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
+						xrfc5424timecat(buf, true);
+						break;
+					case LOG_FMT_RFC5424:  /* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
+						xrfc5424timecat(buf, false);
+						break;
+					case LOG_FMT_CLOCK:
+						/* "%M" => "usec"                    */
+						snprintf(tmp, sizeof(tmp), "%ld", clock());
+						xstrcat(buf, tmp);
+						break;
+					case LOG_FMT_SHORT: /* "%M" => "Mon DD hh:mm:ss"         */
+						xstrftimecat(buf, "%b %d %T");
+						break;
+					}
+				}
 				break;
-#elif defined USE_RFC5424_TIME
-			case 'M': /* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
-				xrfc5424timecat(buf);
-				break;
-#elif defined USE_ISO_8601
-			case 'M':       /* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
-				xiso8601timecat(buf);
-				break;
-#else
-			case 'M':       /* "%M" => "Mon DD hh:mm:ss"         */
-				xstrftimecat(buf, "%b %d %T");
-				break;
-#endif
 			case 's':	/* "%s" => append string */
 				/* we deal with this case for efficiency */
 				if (unprocessed == 0)

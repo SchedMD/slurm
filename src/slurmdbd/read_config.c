@@ -144,6 +144,7 @@ extern int read_slurmdbd_conf(void)
 		{"DefaultQOS", S_P_STRING},
 		{"JobPurge", S_P_UINT32},
 		{"LogFile", S_P_STRING},
+		{"LogTimeFormat", S_P_STRING},
 		{"MessageTimeout", S_P_UINT16},
 		{"PidFile", S_P_STRING},
 		{"PluginDir", S_P_STRING},
@@ -236,6 +237,24 @@ extern int read_slurmdbd_conf(void)
 		}
 
 		s_p_get_string(&slurmdbd_conf->log_file, "LogFile", tbl);
+
+		if (s_p_get_string(&temp_str, "LogTimeFormat", tbl)) {
+			if (slurm_strcasestr(temp_str, "iso8601_ms"))
+				slurmdbd_conf->log_fmt = LOG_FMT_ISO8601_MS;
+			else if (slurm_strcasestr(temp_str, "iso8601"))
+				slurmdbd_conf->log_fmt = LOG_FMT_ISO8601;
+			else if (slurm_strcasestr(temp_str, "rfc5424_ms"))
+				slurmdbd_conf->log_fmt = LOG_FMT_RFC5424_MS;
+			else if (slurm_strcasestr(temp_str, "rfc5424"))
+				slurmdbd_conf->log_fmt = LOG_FMT_RFC5424;
+			else if (slurm_strcasestr(temp_str, "clock"))
+				slurmdbd_conf->log_fmt = LOG_FMT_CLOCK;
+			else if (slurm_strcasestr(temp_str, "short"))
+				slurmdbd_conf->log_fmt = LOG_FMT_SHORT;
+			xfree(temp_str);
+		} else
+			slurmdbd_conf->log_fmt = LOG_FMT_ISO8601_MS;
+
 		if (!s_p_get_uint16(&slurmdbd_conf->msg_timeout,
 				    "MessageTimeout", tbl))
 			slurmdbd_conf->msg_timeout = DEFAULT_MSG_TIMEOUT;

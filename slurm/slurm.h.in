@@ -1961,6 +1961,12 @@ typedef struct reservation_name_msg {
 #define HEALTH_CHECK_NODE_MIXED	0x0004	/* execute on partially allocated nodes */
 #define HEALTH_CHECK_NODE_ANY	0xffff	/* execute on all node states */
 
+#define LOG_FMT_ISO8601_MS      0
+#define LOG_FMT_ISO8601         1
+#define LOG_FMT_RFC5424_MS      2
+#define LOG_FMT_RFC5424         3
+#define LOG_FMT_CLOCK           4
+#define LOG_FMT_SHORT           5
 
 typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */
@@ -2045,6 +2051,7 @@ typedef struct slurm_ctl_conf {
 	char *launch_type;	/* type of step launcher to use */
 	char *licenses;		/* licenses available on this cluster */
 	char *licenses_used;	/* licenses used on this cluster */
+	uint16_t log_fmt;       /* Log file timestamp format */
 	char *mail_prog;	/* pathname of mail program */
 	uint16_t max_array_sz;	/* Maximum job array size */
 	uint32_t max_job_cnt;	/* maximum number of active jobs */

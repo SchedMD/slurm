@@ -262,6 +262,7 @@ int main(int argc, char *argv[])
 		slurmctld_config.daemonize = 1;
 		if (daemon(1, 1))
 			error("daemon(): %m");
+		log_set_timefmt(slurmctld_conf.log_fmt);
 		log_alter(log_opts, LOG_DAEMON,
 			  slurmctld_conf.slurmctld_logfile);
 		sched_log_alter(sched_log_opts, LOG_DAEMON,
@@ -1973,6 +1974,8 @@ void update_logging(void)
 
 	log_alter(log_opts, SYSLOG_FACILITY_DAEMON,
 		  slurmctld_conf.slurmctld_logfile);
+
+	log_set_timefmt(slurmctld_conf.log_fmt);
 
 	/*
 	 * SchedLogLevel restore
