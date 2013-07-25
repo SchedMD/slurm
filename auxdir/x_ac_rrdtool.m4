@@ -19,9 +19,9 @@ AC_DEFUN([X_AC_RRDTOOL],
       Specify path to rrdtool-devel installation),
     [_x_ac_rrdtool_dirs="$withval $_x_ac_rrdtool_dirs"],
     [with_rrdtool=check])
-  
-  echo with rrdtool $with_rrdtool
-  echo without rrdtool $without_rrdtool
+
+#  echo with rrdtool $with_rrdtool
+#  echo without rrdtool $without_rrdtool
   AS_IF([test "x$with_rrdtool" != "xno"],
     [AC_CACHE_CHECK(
       [for rrdtool installation],
@@ -50,7 +50,7 @@ AC_DEFUN([X_AC_RRDTOOL],
       ])
   ])
 
-  echo x_ac_cv_rrdtool_dir $x_ac_cv_rrdtool_dir
+#  echo x_ac_cv_rrdtool_dir $x_ac_cv_rrdtool_dir
   if test -z "$x_ac_cv_rrdtool_dir"; then
     AC_MSG_WARN([unable to locate rrdtool installation])
   else
