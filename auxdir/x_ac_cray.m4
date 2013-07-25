@@ -146,7 +146,7 @@ AC_DEFUN([X_AC_CRAY],
     #  * older XT systems use an /etc/xtrelease file
     #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
     #  * both have an /etc/xthostname
-    AC_MSG_CHECKING([whether this is a native ALPS Cray XT or XE system or have ALPS simulator])
+    AC_MSG_CHECKING([whether this is a Cray XT or XE system running on ALPS or ALPS simulator])
 
     if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
       ac_have_alps_cray="yes"

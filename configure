@@ -20517,8 +20517,8 @@ else
 fi
 
 
-  echo with rrdtool $with_rrdtool
-  echo without rrdtool $without_rrdtool
+#  echo with rrdtool $with_rrdtool
+#  echo without rrdtool $without_rrdtool
   if test "x$with_rrdtool" != "xno"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for rrdtool installation" >&5
 $as_echo_n "checking for rrdtool installation... " >&6; }
@@ -20565,7 +20565,7 @@ $as_echo "$x_ac_cv_rrdtool_dir" >&6; }
 
 fi
 
-  echo x_ac_cv_rrdtool_dir $x_ac_cv_rrdtool_dir
+#  echo x_ac_cv_rrdtool_dir $x_ac_cv_rrdtool_dir
   if test -z "$x_ac_cv_rrdtool_dir"; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate rrdtool installation" >&5
 $as_echo "$as_me: WARNING: unable to locate rrdtool installation" >&2;}
@@ -22021,8 +22021,8 @@ $as_echo "#define HAVE_REAL_CRAY 1" >>confdefs.h
     #  * older XT systems use an /etc/xtrelease file
     #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
     #  * both have an /etc/xthostname
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a native ALPS Cray XT or XE system or have ALPS simulator" >&5
-$as_echo_n "checking whether this is a native ALPS Cray XT or XE system or have ALPS simulator... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a Cray XT or XE system running on ALPS or ALPS simulator" >&5
+$as_echo_n "checking whether this is a Cray XT or XE system running on ALPS or ALPS simulator... " >&6; }
 
     if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
       ac_have_alps_cray="yes"
