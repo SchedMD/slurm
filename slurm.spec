@@ -562,11 +562,27 @@ test -f $RPM_BUILD_ROOT/usr/sbin/rcslurm			&&
 test -f $RPM_BUILD_ROOT/opt/modulefiles/slurm/opt_modulefiles_slurm &&
   echo /opt/modulefiles/slurm/opt_modulefiles_slurm	>> $LIST
 
+# Make ld.so.conf.d file
+mkdir -p $RPM_BUILD_ROOT/etc/ld.so.conf.d
+echo '%{_libdir}
+%{_libdir}/slurm' > $RPM_BUILD_ROOT/etc/ld.so.conf.d/slurm.conf
+chmod 644 $RPM_BUILD_ROOT/etc/ld.so.conf.d/slurm.conf
+
+# Make pkg-config file
+mkdir -p $RPM_BUILD_ROOT/%{_libdir}/pkgconfig
+cat >$RPM_BUILD_ROOT/%{_libdir}/pkgconfig/slurm.pc <<EOF
+includedir=%{_prefix}/include
+libdir=%{_libdir}
+
+Cflags: -I\${includedir}
+Libs: -L\${libdir} -lslurm
+Description: Slurm API
+Name: %{name}
+Version: %{version}
+EOF
+
 %if %{slurm_with bluegene}
 install -D -m644 etc/bluegene.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/bluegene.conf.example
-mkdir -p ${RPM_BUILD_ROOT}/etc/ld.so.conf.d
-echo "%{_libdir}/slurm" > ${RPM_BUILD_ROOT}/etc/ld.so.conf.d/slurm.conf
-chmod 644 ${RPM_BUILD_ROOT}/etc/ld.so.conf.d/slurm.conf
 
 LIST=./bluegene.files
 touch $LIST
@@ -708,6 +724,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/spank*
 %dir %{_sysconfdir}
 %dir %{_libdir}/slurm/src
+%dir /etc/ld.so.conf.d
+/etc/ld.so.conf.d/slurm.conf
 %if %{slurm_with cray} || %{slurm_with cray_alps}
 %dir /opt/modulefiles/slurm
 %endif
@@ -736,6 +754,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libslurm.la
 %{_libdir}/libslurmdb.la
 %{_mandir}/man3/slurm_*
+%dir %{_libdir}/pkgconfig
+%{_libdir}/pkgconfig/slurm.pc
 #%{_mandir}/man3/slurmdb_*
 #############################################################################
 
@@ -764,8 +784,6 @@ rm -rf $RPM_BUILD_ROOT
 %if %{slurm_with bluegene}
 %files -f bluegene.files bluegene
 %defattr(-,root,root)
-%dir /etc/ld.so.conf.d
-/etc/ld.so.conf.d/slurm.conf
 %{_mandir}/man5/bluegene.*
 %{_sbindir}/slurm_epilog
 %{_sbindir}/slurm_prolog
