@@ -49,6 +49,14 @@
 #  include <linux/sched.h>
 #endif
 
+/* This is suppose to be defined in linux/sched.h but we have found it
+ * is a very rare occation this is the case, so we define it here.
+ */
+#ifndef PF_DUMPCORE
+#define PF_DUMPCORE     0x00000200      /* dumped core */
+#endif
+
+
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
 #include "src/common/slurm_protocol_api.h"
@@ -176,7 +184,6 @@ extern int proctrack_g_add(stepd_step_rec_t * job, pid_t pid)
 	return (*(ops.add)) (job, pid);
 }
 
-#ifdef PF_DUMPCORE
 /* Determine if core dump in progress
  * stat_fname - Pathname of the form /proc/<PID>/stat
  * RET - True if core dump in progress, otherwise false
@@ -367,15 +374,6 @@ extern int proctrack_g_signal(uint64_t cont_id, int signal)
 
 	return (*(ops.signal)) (cont_id, signal);
 }
-#else
-extern int proctrack_g_signal(uint64_t cont_id, int signal)
-{
-	if (slurm_proctrack_init() < 0)
-		return SLURM_ERROR;
-
-	return (*(ops.signal)) (cont_id, signal);
-}
-#endif
 
 /*
  * Destroy a container, any processes within the container are not effected
