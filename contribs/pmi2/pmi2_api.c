@@ -1485,7 +1485,6 @@ int PMIi_WriteSimpleCommand( int fd, PMI2_Command *resp, const char cmd[], PMI2_
     /* leave space for length field */
     memset(c, ' ', PMII_COMMANDLEN_SIZE);
     c += PMII_COMMANDLEN_SIZE;
-    remaining_len -= PMII_COMMANDLEN_SIZE;
 
     PMI2U_ERR_CHKANDJUMP(strlen(cmd) > PMI2_MAX_VALLEN, pmi2_errno, PMI2_ERR_OTHER, "**cmd_too_long");
 
