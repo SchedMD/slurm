@@ -13,6 +13,9 @@ documents those changes that are of interest to users and admins.
     DenyAccounts and DenyQOS.
  -- The rpmbuild option for a cray system with ALPS has changed from
     %_with_cray to %_with_cray_alps.
+ -- The log file timestamp format can now be selected at runtime via the
+    LogTimeFormat configuration option. See the slurm.conf and slurmdbd.conf 
+    man pages for details.
 
 * Changes in Slurm 2.6.1
 ========================
