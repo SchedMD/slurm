@@ -133,7 +133,8 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-job_container_cncu_la_LIBADD =
+am__DEPENDENCIES_1 =
+job_container_cncu_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_job_container_cncu_la_OBJECTS = job_container_cncu.lo
 job_container_cncu_la_OBJECTS = $(am_job_container_cncu_la_OBJECTS)
 job_container_cncu_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -402,7 +403,8 @@ pkglib_LTLIBRARIES = job_container_cncu.la
 
 # job_container/cncu plugin.
 job_container_cncu_la_SOURCES = job_container_cncu.c
-job_container_cncu_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(CRAY_LDFLAGS)
+job_container_cncu_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+job_container_cncu_la_LIBADD = $(CRAY_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
