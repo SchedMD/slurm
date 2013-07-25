@@ -11,5 +11,5 @@ pkglib_LTLIBRARIES = switch_cray.la
 
 # Null switch plugin.
 switch_cray_la_SOURCES = switch_cray.c
-switch_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
-	$(CRAY_LDFLAGS) $(CRAY_SWITCH_LDFLAGS)
+switch_cray_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+switch_cray_la_LIBADD = $(CRAY_LDFLAGS) $(CRAY_SWITCH_LDFLAGS)
