@@ -663,7 +663,7 @@ void log_set_timefmt(unsigned fmtflag)
 		slurm_mutex_unlock(&log_lock);
 	} else {
 		fprintf(stderr, "\
-%s:%d: %s Slurm log not initialized\n", file, line, func);
+%s:%d: %s Slurm log not initialized\n", __FILE__, __LINE__, __func__);
 	}
 }
 
