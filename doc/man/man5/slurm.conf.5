@@ -1882,11 +1882,9 @@ since the job state save format used by each plugin is different.
 Acceptable values include
 .RS
 .TP
-\fBselect/linear\fR
-for allocation of entire nodes assuming a
-one\-dimensional array of nodes in which sequentially ordered
-nodes are preferable.
-This is the default value for non\-BlueGene systems.
+\fBselect/bluegene\fR
+for a three\-dimensional BlueGene system.
+The default value is "select/bluegene" for BlueGene systems.
 .TP
 \fBselect/cons_res\fR
 The resources within a node are individually allocated as
@@ -1895,19 +1893,21 @@ Note that whole nodes can be allocated to jobs for selected
 partitions by using the \fIShared=Exclusive\fR option.
 See the partition \fBShared\fR parameter for more information.
 .TP
+\fBselect/cray\fR
+for a Cray system.
+The default value is "select/cray" for all Cray systems.
+.TP
+\fBselect/linear\fR
+for allocation of entire nodes assuming a
+one\-dimensional array of nodes in which sequentially ordered
+nodes are preferable.
+This is the default value for non\-BlueGene systems.
+.TP
 \fBselect/serial\fR
 for allocating resources to single CPU jobs only.
 Highly optimized for maximum throughput.
 NOTE: SPANK environment variables are NOT propagated to the job's \fBEpilog\fR
 program.
-.TP
-\fBselect/bluegene\fR
-for a three\-dimensional BlueGene system.
-The default value is "select/bluegene" for BlueGene systems.
-.TP
-\fBselect/cray\fR
-for a Cray system.
-The default value is "select/cray" for all Cray systems.
 .RE
 
 .TP
