@@ -645,11 +645,11 @@ void log_oom(const char *file, int line, const char *func)
 {
 	if (log && log->logfp) {
 		fprintf(log->logfp, "%s:%d: %s: malloc failed\n",
-			file, line, func);
+		        file, line, func);
 	}
 	if (!log || log->opt.stderr_level) {
 		fprintf(stderr, "%s:%d: %s: malloc failed\n",
-			file, line, func);
+		        file, line, func);
 	}
 }
 
@@ -661,10 +661,12 @@ void log_set_timefmt(unsigned fmtflag)
 		slurm_mutex_lock(&log_lock);
 		log->fmt = fmtflag;
 		slurm_mutex_unlock(&log_lock);
-	} else
-		fprintf(stderr, "Slurm log not initialized\n");
+	} else {
+		fprintf(stderr, "\
+%s:%d: %s Slurm log not initialized\n", file, line, func);
+	}
 }
-		
+
 
 /* return a heap allocated string formed from fmt and ap arglist
  * returned string is allocated with xmalloc, so must free with xfree.
