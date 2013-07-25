@@ -30,6 +30,8 @@ prepend-path	PATH		"$mungedir/bin"
 prepend-path	MANPATH		"$slurmdir/share/man"
 prepend-path	MANPATH		"$mungedir/share/man"
 
+prepend-path    PKG_CONFIG_PATH "@libdir@/pkgconfig"
+
 prepend-path	PERL5LIB	"$slurmdir/$perldir"
 
 # other useful environment variables
