@@ -36,12 +36,20 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if     HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <netinet/in.h>
+#include <net/if.h>
 #include <signal.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
@@ -77,6 +85,8 @@ const char plugin_name[]        = "switch generic plugin";
 const char plugin_type[]        = "switch/generic";
 const uint32_t plugin_version   = 110;
 
+uint32_t debug_flags = 0;
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -84,6 +94,7 @@ const uint32_t plugin_version   = 110;
 int init(void)
 {
 	verbose("%s loaded", plugin_name);
+	debug_flags = slurm_get_debug_flags();
 	return SLURM_SUCCESS;
 }
 
@@ -94,6 +105,7 @@ int fini(void)
 
 extern int switch_p_reconfig(void)
 {
+	debug_flags = slurm_get_debug_flags();
 	return SLURM_SUCCESS;
 }
 
@@ -291,6 +303,39 @@ extern int switch_p_alloc_node_info(switch_node_info_t **switch_node)
 
 extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 {
+	struct ifaddrs *if_array = NULL, *if_rec;
+	void *addr_ptr = NULL;
+	char addr_str[INET6_ADDRSTRLEN], *ip_vers;
+
+	if (getifaddrs(&if_array) == 0) {
+		for (if_rec = if_array; if_rec; if_rec = if_rec->ifa_next) {
+			if (!if_rec->ifa_addr->sa_data)
+				continue;
+	   		if (if_rec->ifa_flags & IFF_LOOPBACK)
+				continue;
+			if (if_rec->ifa_addr->sa_family == AF_INET) {
+				addr_ptr = &((struct sockaddr_in *)
+						if_rec->ifa_addr)->sin_addr;
+				ip_vers = "IP_V4";
+			} else if (if_rec->ifa_addr->sa_family == AF_INET6) {
+				addr_ptr = &((struct sockaddr_in6 *)
+						if_rec->ifa_addr)->sin6_addr;
+				ip_vers = "IP_V6";
+			} else {
+				/* AF_PACKET (statistics) and others ignored */
+				continue;
+			}
+			(void) inet_ntop(if_rec->ifa_addr->sa_family,
+					 addr_ptr, addr_str, sizeof(addr_str));
+			if (debug_flags & DEBUG_FLAG_SWITCH) {
+				info("%s name=%s ip_version=%s address=%s",
+				       plugin_type, if_rec->ifa_name, ip_vers,
+				       addr_str);
+			}
+		}
+	}
+	freeifaddrs(if_array);
+
 	return SLURM_SUCCESS;
 }
 
@@ -301,7 +346,7 @@ extern int switch_p_pack_node_info(switch_node_info_t *switch_node,
 }
 
 extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
-	Buf buffer)
+				     Buf buffer)
 {
 	return SLURM_SUCCESS;
 }
@@ -323,7 +368,7 @@ extern char*switch_p_sprintf_node_info(switch_node_info_t *switch_node,
 }
 
 extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
-	char *nodelist)
+				      char *nodelist)
 {
 	return SLURM_SUCCESS;
 }
