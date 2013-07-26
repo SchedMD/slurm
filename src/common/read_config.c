@@ -2966,6 +2966,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->log_fmt = LOG_FMT_CLOCK;
 		else if (slurm_strcasestr(temp_str, "short"))
 			conf->log_fmt = LOG_FMT_SHORT;
+		else if (slurm_strcasestr(temp_str, "thread_id"))
+			conf->log_fmt = LOG_FMT_THREAD_ID;
 		xfree(temp_str);
 	} else
 		conf->log_fmt = LOG_FMT_ISO8601_MS;
@@ -3913,11 +3915,6 @@ extern char * debug_flags2str(uint32_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Wiki");
 	}
-	if (debug_flags & DEBUG_FLAG_THREADID) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "ThreadID");
-	}
 	return rc;
 }
 
@@ -3987,8 +3984,6 @@ extern uint32_t debug_str2flags(char *debug_flags)
 			rc |= DEBUG_FLAG_TRIGGERS;
 		else if (strcasecmp(tok, "Wiki") == 0)
 			rc |= DEBUG_FLAG_WIKI;
-		else if (strcasecmp(tok, "ThreadID") == 0)
-			rc |= DEBUG_FLAG_THREADID;
 		else {
 			error("Invalid DebugFlag: %s", tok);
 			rc = NO_VAL;

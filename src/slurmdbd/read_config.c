@@ -251,6 +251,8 @@ extern int read_slurmdbd_conf(void)
 				slurmdbd_conf->log_fmt = LOG_FMT_CLOCK;
 			else if (slurm_strcasestr(temp_str, "short"))
 				slurmdbd_conf->log_fmt = LOG_FMT_SHORT;
+			else if (slurm_strcasestr(temp_str, "thread_id"))
+				slurmdbd_conf->log_fmt = LOG_FMT_THREAD_ID;
 			xfree(temp_str);
 		} else
 			slurmdbd_conf->log_fmt = LOG_FMT_ISO8601_MS;

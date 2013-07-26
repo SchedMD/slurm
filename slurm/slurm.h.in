@@ -1967,6 +1967,7 @@ typedef struct reservation_name_msg {
 #define LOG_FMT_RFC5424         3
 #define LOG_FMT_CLOCK           4
 #define LOG_FMT_SHORT           5
+#define LOG_FMT_THREAD_ID       6
 
 typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */
