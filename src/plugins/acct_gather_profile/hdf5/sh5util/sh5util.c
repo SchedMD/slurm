@@ -177,7 +177,7 @@ static void _set_options(const int argc, char **argv)
 	static struct option long_options[] = {
 		{"extract", no_argument, 0, 'E'},
 		{"help", no_argument, 0, 'h'},
-		{"job", required_argument, 0, 'j'},
+		{"jobs", required_argument, 0, 'j'},
 		{"input", required_argument, 0, 'i'},
 		{"level", required_argument, 0, 'l'},
 		{"node", required_argument, 0, 'N'},
