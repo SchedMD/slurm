@@ -15,7 +15,7 @@
 
 @SET_MAKE@
 
-# Makefile for mpich1/p4 model plugin
+# Makefile for switch/generic plugin
 
 VPATH = @srcdir@
 am__make_dryrun = \
@@ -54,7 +54,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/mpi/mpich1_p4
+subdir = src/plugins/switch/generic
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -132,12 +132,12 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-mpi_mpich1_p4_la_LIBADD =
-am_mpi_mpich1_p4_la_OBJECTS = mpich1_p4.lo
-mpi_mpich1_p4_la_OBJECTS = $(am_mpi_mpich1_p4_la_OBJECTS)
-mpi_mpich1_p4_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+switch_generic_la_LIBADD =
+am_switch_generic_la_OBJECTS = switch_generic.lo
+switch_generic_la_OBJECTS = $(am_switch_generic_la_OBJECTS)
+switch_generic_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(mpi_mpich1_p4_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(switch_generic_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -151,8 +151,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(mpi_mpich1_p4_la_SOURCES)
-DIST_SOURCES = $(mpi_mpich1_p4_la_SOURCES)
+SOURCES = $(switch_generic_la_SOURCES)
+DIST_SOURCES = $(switch_generic_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -397,11 +397,11 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = mpi_mpich1_p4.la
+pkglib_LTLIBRARIES = switch_generic.la
 
-# Null MPI plugin.
-mpi_mpich1_p4_la_SOURCES = mpich1_p4.c
-mpi_mpich1_p4_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+# Null switch plugin.
+switch_generic_la_SOURCES = switch_generic.c
+switch_generic_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -415,9 +415,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/mpi/mpich1_p4/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/switch/generic/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/plugins/mpi/mpich1_p4/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/switch/generic/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -468,8 +468,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-mpi_mpich1_p4.la: $(mpi_mpich1_p4_la_OBJECTS) $(mpi_mpich1_p4_la_DEPENDENCIES) $(EXTRA_mpi_mpich1_p4_la_DEPENDENCIES) 
-	$(mpi_mpich1_p4_la_LINK) -rpath $(pkglibdir) $(mpi_mpich1_p4_la_OBJECTS) $(mpi_mpich1_p4_la_LIBADD) $(LIBS)
+switch_generic.la: $(switch_generic_la_OBJECTS) $(switch_generic_la_DEPENDENCIES) $(EXTRA_switch_generic_la_DEPENDENCIES) 
+	$(switch_generic_la_LINK) -rpath $(pkglibdir) $(switch_generic_la_OBJECTS) $(switch_generic_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -477,7 +477,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpich1_p4.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch_generic.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

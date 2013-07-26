@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
  -- The log file timestamp format can now be selected at runtime via the
     LogTimeFormat configuration option. See the slurm.conf and slurmdbd.conf 
     man pages for details.
+ -- Added switch/generic plugin to a job's convey network topology (just a
+    set of empty functions now).
 
 * Changes in Slurm 2.6.1
 ========================
