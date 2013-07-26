@@ -233,7 +233,7 @@ Configurable values at present are:
 No filesystem data are collected.
 .TP
 \fBacct_gather_filesystem/lustre\fR
-Lustre filesystem traffic data are collected from the counters found in 
+Lustre filesystem traffic data are collected from the counters found in
 /proc/fs/lustre/.
 .RE
 
@@ -882,7 +882,7 @@ Acceptable values at present include:
 .TP 20
 \job_container/cncu\fR
 used only for Cray systems (CNCU = Compute Node Clean Up)
-.TP 
+.TP
 \job_container/none\fR
 used for all other system types
 .RE
@@ -991,13 +991,15 @@ not explicitly listed in the job submission specification.
 \fBLogTimeFormat\fR
 Format of the timestamp in slurmctld and slurmd log files. Accepted
 values are "iso8601", "iso8601_ms", "rfc5424", "rfc5424_ms", "clock",
-and "short". The values ending in "_ms" differ from the ones without
+"short" and "thread_id". The values ending in "_ms" differ from the ones without
 in that fractional seconds with millisecond precision are printed. The
 default value is "iso8601_ms". The "rfc5424" formats are the same as
 the "iso8601" formats except that the timezone value is also
 shown. The "clock" format shows a timestamp in microseconds retrieved
 with the C standard clock() function. The "short" format is a short
-date and time format.
+date and time format. The "thread_id" format shows the timestamp
+in the C standard ctime() function form without the year but
+including the microseconds, the daemon's process ID and the current thread ID.
 
 .TP
 \fBMailProg\fR
