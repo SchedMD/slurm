@@ -602,6 +602,7 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 		{ "id", "int not null" },
 		{ "period_start", "int unsigned not null" },
 		{ "alloc_cpu_secs", "bigint default 0" },
+		{ "consumed_energy", "bigint default 0 not null" },
 		{ NULL, NULL}
 	};
 
@@ -618,6 +619,7 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 		{ "idle_cpu_secs", "bigint default 0" },
 		{ "resv_cpu_secs", "bigint default 0" },
 		{ "over_cpu_secs", "bigint default 0" },
+		{ "consumed_energy", "bigint default 0 not null" },
 		{ NULL, NULL}
 	};
 
@@ -771,6 +773,7 @@ extern int as_mysql_convert_tables(mysql_conn_t *mysql_conn)
 		{ "alloc_cpu_secs", "bigint default 0" },
 		{ "resv_cpu_secs", "bigint default 0" },
 		{ "over_cpu_secs", "bigint default 0" },
+		{ "consumed_energy", "bigint default 0 not null" },
 		{ NULL, NULL}
 	};
 

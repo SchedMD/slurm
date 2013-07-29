@@ -2275,6 +2275,7 @@ extern slurmdb_report_cluster_rec_t *slurmdb_cluster_rec_2_report(
 			+ accting->down_secs + accting->idle_secs
 			+ accting->resv_secs + accting->pdown_secs;
 		slurmdb_report_cluster->cpu_count += accting->cpu_count;
+		slurmdb_report_cluster->consumed_energy += accting->consumed_energy;
 	}
 	list_iterator_destroy(cluster_itr);
 

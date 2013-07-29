@@ -256,6 +256,8 @@ extern List slurmdb_report_user_top_usage(void *db_conn,
 			while((assoc_acct = list_next(itr3))) {
 				slurmdb_report_user->cpu_secs +=
 					(uint64_t)assoc_acct->alloc_secs;
+				slurmdb_report_user->consumed_energy +=
+					(uint64_t)assoc_acct->consumed_energy;
 /* 				slurmdb_report_cluster->cpu_secs +=  */
 /* 					(uint64_t)assoc_acct->alloc_secs; */
 			}

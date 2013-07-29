@@ -46,6 +46,7 @@ enum {
 	PRINT_USER_LOGIN,
 	PRINT_USER_PROPER,
 	PRINT_USER_USED,
+	PRINT_USER_ENERGY,
 };
 
 static List print_fields_list = NULL; /* types are of print_field_t */
@@ -221,6 +222,11 @@ static int _setup_print_fields_list(List format_list)
 			else
 				field->len = 10;
 			field->print_routine = slurmdb_report_print_time;
+		}else if (!strncasecmp("Energy", object, MAX(command_len, 1))) {
+			field->type = PRINT_USER_ENERGY;
+			field->name = xstrdup("Energy");
+			field->len = 10;
+			field->print_routine = print_fields_int;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown field '%s'\n", object);
@@ -261,7 +267,7 @@ extern int user_top(int argc, char *argv[])
 	_set_cond(&i, argc, argv, user_cond, format_list);
 
 	if (!list_count(format_list))
-		slurm_addto_char_list(format_list, "Cl,L,P,A,U");
+		slurm_addto_char_list(format_list, "Cl,L,P,A,U,Energy");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
@@ -368,6 +374,12 @@ extern int user_top(int argc, char *argv[])
 						slurmdb_report_user->cpu_secs,
 						slurmdb_report_cluster->cpu_secs,
 						(curr_inx == field_count));
+					break;
+				case PRINT_USER_ENERGY:
+					field->print_routine(
+						field,
+						slurmdb_report_user->consumed_energy,
+						(curr_inx ==field_count));
 					break;
 				default:
 					field->print_routine(

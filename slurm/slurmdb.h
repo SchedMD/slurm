@@ -334,6 +334,7 @@ typedef struct {
 
 typedef struct {
 	uint64_t alloc_secs; /* number of cpu seconds allocated */
+	uint64_t consumed_energy; /* energy allocated in Joules */
 	uint32_t id;	/* association/wckey ID		*/
 	time_t period_start; /* when this record was started */
 } slurmdb_accounting_rec_t;
@@ -490,6 +491,7 @@ typedef struct {
 
 typedef struct {
 	uint64_t alloc_secs; /* number of cpu seconds allocated */
+	uint64_t consumed_energy; /* energy allocated in Joules */
 	uint32_t cpu_count; /* number of cpus during time period */
 	uint64_t down_secs; /* number of cpu seconds down */
 	uint64_t idle_secs; /* number of cpu seconds idle */
@@ -848,6 +850,7 @@ typedef struct {
 typedef struct {
 	char *acct;
 	char *cluster;
+	uint64_t consumed_energy;
 	uint64_t cpu_secs;
 	char *parent_acct;
 	char *user;
@@ -857,6 +860,7 @@ typedef struct {
 	char *acct;
 	List acct_list; /* list of char *'s */
 	List assoc_list; /* list of slurmdb_report_assoc_rec_t's */
+	uint64_t consumed_energy;
 	uint64_t cpu_secs;
 	char *name;
 	uid_t uid;
@@ -864,6 +868,7 @@ typedef struct {
 
 typedef struct {
 	List assoc_list; /* list of slurmdb_report_assoc_rec_t *'s */
+	uint64_t consumed_energy;
 	uint32_t cpu_count;
 	uint64_t cpu_secs;
 	char *name;

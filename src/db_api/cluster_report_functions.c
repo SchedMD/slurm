@@ -99,6 +99,8 @@ static void _process_ua(List user_list, slurmdb_association_rec_t *assoc)
 	while((accting = list_next(itr))) {
 		slurmdb_report_user->cpu_secs +=
 			(uint64_t)accting->alloc_secs;
+		slurmdb_report_user->consumed_energy +=
+			(uint64_t)accting->consumed_energy;
 	}
 	list_iterator_destroy(itr);
 }
@@ -123,6 +125,8 @@ static void _process_au(List assoc_list, slurmdb_association_rec_t *assoc)
 	while((accting = list_next(itr))) {
 		slurmdb_report_assoc->cpu_secs +=
 			(uint64_t)accting->alloc_secs;
+		slurmdb_report_assoc->consumed_energy +=
+			(uint64_t)accting->consumed_energy;
 	}
 	list_iterator_destroy(itr);
 
@@ -158,6 +162,8 @@ static void _process_uw(List user_list, slurmdb_wckey_rec_t *wckey)
 	while((accting = list_next(itr))) {
 		slurmdb_report_user->cpu_secs +=
 			(uint64_t)accting->alloc_secs;
+		slurmdb_report_user->consumed_energy +=
+			(uint64_t)accting->consumed_energy;
 	}
 	list_iterator_destroy(itr);
 }
@@ -200,6 +206,10 @@ static void _process_wu(List assoc_list, slurmdb_wckey_rec_t *wckey)
 			(uint64_t)accting->alloc_secs;
 		parent_assoc->cpu_secs +=
 			(uint64_t)accting->alloc_secs;
+		slurmdb_report_assoc->consumed_energy +=
+			(uint64_t)accting->consumed_energy;
+		parent_assoc->consumed_energy +=
+			(uint64_t)accting->consumed_energy;
 	}
 	list_iterator_destroy(itr);
 }

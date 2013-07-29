@@ -885,6 +885,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "id_assoc", "int not null" },
 		{ "time_start", "int unsigned not null" },
 		{ "alloc_cpu_secs", "bigint default 0 not null" },
+		{ "consumed_energy", "bigint default 0 not null" },
 		{ NULL, NULL}
 	};
 
@@ -900,6 +901,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "idle_cpu_secs", "bigint default 0 not null" },
 		{ "resv_cpu_secs", "bigint default 0 not null" },
 		{ "over_cpu_secs", "bigint default 0 not null" },
+		{ "consumed_energy", "bigint default 0 not null" },
 		{ NULL, NULL}
 	};
 
@@ -1056,6 +1058,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "alloc_cpu_secs", "bigint default 0" },
 		{ "resv_cpu_secs", "bigint default 0" },
 		{ "over_cpu_secs", "bigint default 0" },
+		{ "consumed_energy", "bigint default 0 not null" },
 		{ NULL, NULL}
 	};
 

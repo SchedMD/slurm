@@ -56,6 +56,7 @@ enum {
 	PRINT_CLUSTER_USER_PROPER,
 	PRINT_CLUSTER_AMOUNT_USED,
 	PRINT_CLUSTER_WCKEY,
+	PRINT_CLUSTER_ENERGY,
 };
 
 typedef enum {
@@ -507,6 +508,11 @@ static int _setup_print_fields_list(List format_list)
 			else
 				field->len = 15;
 			field->print_routine = print_fields_str;
+		} else if (!strncasecmp("Energy", object, MAX(command_len, 1))) {
+			field->type = PRINT_CLUSTER_ENERGY;
+			field->name = xstrdup("Energy");
+			field->len = 10;
+			field->print_routine = print_fields_int;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown field '%s'\n", object);
@@ -608,7 +614,7 @@ extern int cluster_account_by_user(int argc, char *argv[])
 
 	if (!list_count(format_list))
 		slurm_addto_char_list(format_list,
-				      "Cluster,Ac,Login,Proper,Used");
+				      "Cluster,Ac,Login,Proper,Used,Energy");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
@@ -739,6 +745,13 @@ extern int cluster_account_by_user(int argc, char *argv[])
 						slurmdb_report_cluster->cpu_secs,
 						(curr_inx == field_count));
 					break;
+                                case PRINT_CLUSTER_ENERGY:
+                                        field->print_routine(
+                                                field,
+                                                slurmdb_report_assoc->consumed_energy,
+                                                slurmdb_report_cluster->consumed_energy,
+                                                (curr_inx == field_count));
+                                        break;
 				default:
 					field->print_routine(
 						field, NULL,
@@ -794,7 +807,7 @@ extern int cluster_user_by_account(int argc, char *argv[])
 
 	if (!list_count(format_list))
 		slurm_addto_char_list(format_list,
-				      "Cluster,Login,Proper,Ac,Used");
+				      "Cluster,Login,Proper,Ac,Used,Energy");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
@@ -893,6 +906,13 @@ extern int cluster_user_by_account(int argc, char *argv[])
 						slurmdb_report_cluster->cpu_secs,
 						(curr_inx == field_count));
 					break;
+                                case PRINT_CLUSTER_ENERGY:
+                                        field->print_routine(
+                                                field,
+                                                slurmdb_report_user->consumed_energy,
+                                                slurmdb_report_cluster->consumed_energy,
+                                                (curr_inx == field_count));
+                                        break;
 				default:
 					field->print_routine(
 						field, NULL,
@@ -1047,6 +1067,14 @@ extern int cluster_user_by_wckey(int argc, char *argv[])
 						slurmdb_report_cluster->cpu_secs,
 						(curr_inx == field_count));
 					break;
+                                case PRINT_CLUSTER_ENERGY:
+                                        field->print_routine(
+                                                field,
+                                                slurmdb_report_user->consumed_energy,
+                                                slurmdb_report_cluster->consumed_energy,
+                                                (curr_inx == field_count));
+                                        break;
+
 				default:
 					field->print_routine(
 						field, NULL,
@@ -1137,6 +1165,7 @@ extern int cluster_utilization(int argc, char *argv[])
 			total_acct.resv_secs += accting->resv_secs;
 			total_acct.over_secs += accting->over_secs;
 			total_acct.cpu_count += accting->cpu_count;
+			total_acct.consumed_energy += accting->consumed_energy;
 		}
 		list_iterator_destroy(itr3);
 
@@ -1203,6 +1232,12 @@ extern int cluster_utilization(int argc, char *argv[])
 						     total_reported,
 						     (curr_inx ==
 						      field_count));
+				break;
+			case PRINT_CLUSTER_ENERGY:
+				field->print_routine(field,
+				                     total_acct.consumed_energy,
+				                     (curr_inx ==
+				                      field_count));
 				break;
 			case PRINT_CLUSTER_TOTAL:
 				field->print_routine(field,

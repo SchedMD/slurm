@@ -743,6 +743,7 @@ extern void slurmdb_pack_cluster_accounting_rec(void *in, uint16_t rpc_version,
 		}
 
 		pack64(object->alloc_secs, buffer);
+		pack64(object->consumed_energy, buffer);
 		pack32(object->cpu_count, buffer);
 		pack64(object->down_secs, buffer);
 		pack64(object->idle_secs, buffer);
@@ -764,6 +765,7 @@ extern int slurmdb_unpack_cluster_accounting_rec(void **object,
 
 	if (rpc_version >= 5) {
 		safe_unpack64(&object_ptr->alloc_secs, buffer);
+		safe_unpack64(&object_ptr->consumed_energy, buffer);
 		safe_unpack32(&object_ptr->cpu_count, buffer);
 		safe_unpack64(&object_ptr->down_secs, buffer);
 		safe_unpack64(&object_ptr->idle_secs, buffer);
@@ -989,6 +991,7 @@ extern void slurmdb_pack_accounting_rec(void *in, uint16_t rpc_version,
 	}
 
 	pack64(object->alloc_secs, buffer);
+	pack64(object->consumed_energy, buffer);
 	pack32(object->id, buffer);
 	pack_time(object->period_start, buffer);
 }
@@ -1002,6 +1005,7 @@ extern int slurmdb_unpack_accounting_rec(void **object, uint16_t rpc_version,
 	*object = object_ptr;
 
 	safe_unpack64(&object_ptr->alloc_secs, buffer);
+	safe_unpack64(&object_ptr->consumed_energy, buffer);
 	safe_unpack32(&object_ptr->id, buffer);
 	safe_unpack_time(&object_ptr->period_start, buffer);
 
