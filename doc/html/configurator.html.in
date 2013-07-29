@@ -672,9 +672,8 @@ Allocated resources constraints enforcement using Linux Control Groups
 <DT><input type="radio" name="task_plugin_param" value="Cpusets">
     <B>Cpusets</B>: Use <I>cpusets</I> to control task binding.
 <DT><input type="radio" name="task_plugin_param" value="Sched" checked>
-    <B>Sched</B>: Use <I>sched_setaffinity</I> or <I>plpa_sched_setaffinity</I>
-    (if available) to bind tasks to processors. This is the default mode of
-    operation.
+    <B>Sched</B>: Use <I>sched_setaffinity</I> (if available) to bind
+    tasks to processors. This is the default mode of operation.
 </DL></DL>
 <P>
 

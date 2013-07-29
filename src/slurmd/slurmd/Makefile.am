@@ -11,7 +11,7 @@ AM_CPPFLAGS = -DLIBSLURM_SO=\"$(libdir)/libslurm.so\" \
 slurmd_LDADD = 					   \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/api/libslurm.o $(DL_LIBS)	   \
-	$(PLPA_LIBS) $(HWLOC_LDFLAGS) $(HWLOC_LIBS) \
+	$(HWLOC_LDFLAGS) $(HWLOC_LIBS) \
 	../common/libslurmd_common.la
 
 SLURMD_SOURCES = \

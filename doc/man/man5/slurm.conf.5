@@ -2350,9 +2350,6 @@ This enables the \-\-cpu_bind and/or \-\-mem_bind srun options.
 If you use "task/affinity" and encounter problems, it may be due to
 the variety of system calls used to implement task affinity on
 different operating systems.
-If that is the case, you may want to install Portable Linux
-Process Affinity (PLPA, see http://www.open-mpi.org/software/plpa),
-which is supported by SLURM.
 .TP
 \fBtask/cgroup\fR
 enables resource containment using Linux control cgroups.
@@ -2398,8 +2395,8 @@ Perform no task binding.
 Overrides user options or automatic binding.
 .TP
 \fBSched\fR
-Use \fIsched_setaffinity\fR or \fIplpa_sched_setaffinity\fR
-(if available) to bind tasks to processors.
+Use \fIsched_setaffinity\fR (if available) to bind tasks to
+processors.
 .TP
 \fBSockets\fR
 Always bind to sockets.
