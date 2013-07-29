@@ -114,16 +114,22 @@ extern int switch_p_reconfig(void)
  */
 int switch_p_libstate_save(char * dir_name)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_libstate_save() starting");
 	return SLURM_SUCCESS;
 }
 
 int switch_p_libstate_restore(char * dir_name, bool recover )
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_libstate_restore() starting");
 	return SLURM_SUCCESS;
 }
 
 int switch_p_libstate_clear(void)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_libstate_clear() starting");
 	return SLURM_SUCCESS;
 }
 
@@ -131,46 +137,61 @@ int switch_p_libstate_clear(void)
  * switch functions for job step specific credential
  */
 int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job,
-			     uint32_t job_id, uint32_t step_id )
+			   uint32_t job_id, uint32_t step_id )
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_alloc_jobinfo() starting");
 	return SLURM_SUCCESS;
 }
 
 int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
-			     slurm_step_layout_t *step_layout,
-			     char *network)
+			   slurm_step_layout_t *step_layout, char *network)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_build_jobinfo() starting");
 	return SLURM_SUCCESS;
 }
 
 switch_jobinfo_t *switch_p_copy_jobinfo(switch_jobinfo_t *switch_job)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_copy_jobinfo() starting");
 	return NULL;
 }
 
 void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_free_jobinfo() starting");
 	return;
 }
 
 int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_pack_jobinfo() starting");
 	return 0;
 }
 
 int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_unpack_jobinfo() starting");
 	return SLURM_SUCCESS;
 }
 
 void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_print_jobinfo() starting");
 	return;
 }
 
 char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo, char *buf,
 			      size_t size)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_sprint_jobinfo() starting");
 	if ((buf != NULL) && size) {
 		buf[0] = '\0';
 		return buf;
@@ -184,68 +205,94 @@ char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo, char *buf,
  */
 int switch_p_node_init(void)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_node_init() starting");
 	return SLURM_SUCCESS;
 }
 
 int switch_p_node_fini(void)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_node_fini() starting");
 	return SLURM_SUCCESS;
 }
 
 int switch_p_job_preinit(switch_jobinfo_t *jobinfo)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_preinit() starting");
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_init (stepd_step_rec_t *job)
+extern int switch_p_job_init(stepd_step_rec_t *job)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_init() starting");
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_job_suspend_test(switch_jobinfo_t *jobinfo)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_suspend_test() starting");
 	return SLURM_SUCCESS;
 }
 
 extern void switch_p_job_suspend_info_get(switch_jobinfo_t *jobinfo,
 					  void **suspend_info)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_suspend_info_get() starting");
 	return;
 }
 
 extern void switch_p_job_suspend_info_pack(void *suspend_info, Buf buffer)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_suspend_info_pack() starting");
 	return;
 }
 
 extern int switch_p_job_suspend_info_unpack(void **suspend_info, Buf buffer)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_suspend_info_unpack() starting");
 	return SLURM_SUCCESS;
 }
 
 extern void switch_p_job_suspend_info_free(void *suspend_info)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_suspend_info_free() starting");
 	return;
 }
 
 extern int switch_p_job_suspend(void *suspend_info, int max_wait)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_suspend() starting");
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_job_resume(void *suspend_info, int max_wait)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_resume() starting");
 	return SLURM_SUCCESS;
 }
 
 int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_fini() starting");
 	return SLURM_SUCCESS;
 }
 
 int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 			  uint32_t job_id, uint32_t step_id)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_postfini() starting");
 	/*
 	 *  Kill all processes in the job's session
 	 */
@@ -264,12 +311,16 @@ int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
 			uint32_t nodeid, uint32_t procid, uint32_t nnodes,
 			uint32_t nprocs, uint32_t rank)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_attach() starting");
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job,
 				int key, void *resulting_data)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_get_jobinfoe() starting");
 	slurm_seterrno(EINVAL);
 	return SLURM_ERROR;
 }
@@ -279,11 +330,15 @@ extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job,
  */
 extern int switch_p_get_errno(void)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_get_errno() starting");
 	return SLURM_SUCCESS;
 }
 
 extern char *switch_p_strerror(int errnum)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_strerror() starting");
 	return NULL;
 }
 
@@ -293,11 +348,15 @@ extern char *switch_p_strerror(int errnum)
  */
 extern int switch_p_clear_node_state(void)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_clear_node_state() starting");
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_alloc_node_info(switch_node_info_t **switch_node)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_alloc_node_inf0() starting");
 	return SLURM_SUCCESS;
 }
 
@@ -307,6 +366,8 @@ extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 	void *addr_ptr = NULL;
 	char addr_str[INET6_ADDRSTRLEN], *ip_vers;
 
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_build_node_info() starting");
 	if (getifaddrs(&if_array) == 0) {
 		for (if_rec = if_array; if_rec; if_rec = if_rec->ifa_next) {
 			if (!if_rec->ifa_addr->sa_data)
@@ -342,23 +403,31 @@ extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 extern int switch_p_pack_node_info(switch_node_info_t *switch_node,
 				   Buf buffer)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_pack_node_info() starting");
 	return 0;
 }
 
 extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
 				     Buf buffer)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_unpack_node_info() starting");
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_free_node_info(switch_node_info_t **switch_node)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_free_node_info() starting");
 	return SLURM_SUCCESS;
 }
 
-extern char*switch_p_sprintf_node_info(switch_node_info_t *switch_node,
-				       char *buf, size_t size)
+extern char *switch_p_sprintf_node_info(switch_node_info_t *switch_node,
+				        char *buf, size_t size)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_sprintf_node_info() starting");
 	if ((buf != NULL) && size) {
 		buf[0] = '\0';
 		return buf;
@@ -370,37 +439,51 @@ extern char*switch_p_sprintf_node_info(switch_node_info_t *switch_node,
 extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 				      char *nodelist)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_step_complete() starting");
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_job_step_part_comp(switch_jobinfo_t *jobinfo,
 				       char *nodelist)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_step_part_comp() starting");
 	return SLURM_SUCCESS;
 }
 
 extern bool switch_p_part_comp(void)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_part_comp() starting");
 	return false;
 }
 
 extern int switch_p_job_step_allocated(switch_jobinfo_t *jobinfo,
 				       char *nodelist)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_job_step_allocated() starting");
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_slurmctld_init(void)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_slurmctld_init() starting");
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_slurmd_init(void)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_slurmd_init() starting");
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_slurmd_step_init(void)
 {
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_slurmd_step_init() starting");
 	return SLURM_SUCCESS;
 }
