@@ -91,7 +91,8 @@ extern int nrt_slurmd_init(void);
 extern int nrt_slurmd_step_init(void);
 extern int nrt_alloc_nodeinfo(slurm_nrt_nodeinfo_t **nh);
 extern int nrt_build_nodeinfo(slurm_nrt_nodeinfo_t *np, char *hostname);
-extern char *nrt_print_nodeinfo(slurm_nrt_nodeinfo_t *np, char *buf, size_t size);
+/* extern char *nrt_print_nodeinfo(slurm_nrt_nodeinfo_t *np, char *buf,
+				size_t size);	* Incomplete */
 extern int nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *np, Buf buf);
 extern int nrt_unpack_nodeinfo(slurm_nrt_nodeinfo_t *np, Buf buf);
 extern void nrt_free_nodeinfo(slurm_nrt_nodeinfo_t *np, bool ptr_into_array);

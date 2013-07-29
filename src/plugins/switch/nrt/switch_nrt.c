@@ -448,8 +448,9 @@ extern void switch_p_free_node_info(switch_node_info_t **switch_node)
 extern char * switch_p_sprintf_node_info(switch_node_info_t *switch_node,
 					 char *buf, size_t size)
 {
-	return nrt_print_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node, buf,
-				  size);
+	return NULL;
+/*	return nrt_print_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node, buf,
+				  size);	* Incomplete */
 }
 
 /*
