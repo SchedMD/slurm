@@ -44,6 +44,7 @@ Lead Slurm developers are:
 <li>Bill Brophy (Bull)</li>
 <br>
 <li>Luis Cabellos (Instituto de Fisica de Cantabria, Spain)</li>
+<li>Thomas Cadeau (Bull)</li>
 <li>Hongjia Cao (National University of Defense Technology, China)</li>
 <li>Jimmy Cao (Greenplum/EMC)</li>
 <li>Ralph Castain (Los Alamos National Laboratory, Greenplum/EMC)</li>
@@ -163,6 +164,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 3 July 2013</p>
+<p style="text-align:center;">Last modified 29 July 2013</p>
 
 <!--#include virtual="footer.txt"-->
