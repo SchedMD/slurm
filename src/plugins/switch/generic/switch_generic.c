@@ -53,6 +53,20 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
+#include "src/common/xmalloc.h"
+
+#define SW_GEN_NODE_INFO_MAGIC 0x3b38ac0c
+
+typedef struct sw_gen_ifa {
+	char *ifa_name;		/* "eth0", "ib1", etc. */
+	char *ifa_family;	/* "AF_INET" or "AF_INET6" */
+	char *ifa_addr;		/* output from inet_ntop */
+} sw_gen_ifa_t;
+typedef struct sw_gen_node_info {
+	uint32_t magic;
+	uint16_t ifa_cnt;
+	sw_gen_ifa_t **ifa_array;
+} sw_gen_node_info_t;
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -355,19 +369,30 @@ extern int switch_p_clear_node_state(void)
 
 extern int switch_p_alloc_node_info(switch_node_info_t **switch_node)
 {
+	sw_gen_node_info_t *gen_node_info;
+
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_alloc_node_inf0() starting");
+	xassert(switch_node);
+	gen_node_info = xmalloc(sizeof(sw_gen_node_info_t));
+	gen_node_info->magic = SW_GEN_NODE_INFO_MAGIC;
+	*switch_node = (switch_node_info_t *) gen_node_info;
+
 	return SLURM_SUCCESS;
 }
 
 extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 {
+	sw_gen_node_info_t *gen_node_info = (sw_gen_node_info_t *) switch_node;
 	struct ifaddrs *if_array = NULL, *if_rec;
+	sw_gen_ifa_t *ifa_ptr;
 	void *addr_ptr = NULL;
-	char addr_str[INET6_ADDRSTRLEN], *ip_vers;
+	char addr_str[INET6_ADDRSTRLEN], *ip_family;
 
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_build_node_info() starting");
+	xassert(gen_node_info);
+	xassert(gen_node_info->magic == SW_GEN_NODE_INFO_MAGIC);
 	if (getifaddrs(&if_array) == 0) {
 		for (if_rec = if_array; if_rec; if_rec = if_rec->ifa_next) {
 			if (!if_rec->ifa_addr->sa_data)
@@ -377,21 +402,30 @@ extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 			if (if_rec->ifa_addr->sa_family == AF_INET) {
 				addr_ptr = &((struct sockaddr_in *)
 						if_rec->ifa_addr)->sin_addr;
-				ip_vers = "IP_V4";
+				ip_family = "IP_V4";
 			} else if (if_rec->ifa_addr->sa_family == AF_INET6) {
 				addr_ptr = &((struct sockaddr_in6 *)
 						if_rec->ifa_addr)->sin6_addr;
-				ip_vers = "IP_V6";
+				ip_family = "IP_V6";
 			} else {
 				/* AF_PACKET (statistics) and others ignored */
 				continue;
 			}
 			(void) inet_ntop(if_rec->ifa_addr->sa_family,
 					 addr_ptr, addr_str, sizeof(addr_str));
+			xrealloc(gen_node_info->ifa_array,
+				 sizeof(sw_gen_ifa_t *) *
+				        (gen_node_info->ifa_cnt + 1));
+			ifa_ptr = xmalloc(sizeof(sw_gen_ifa_t));
+			ifa_ptr->ifa_addr   = xstrdup(addr_str);
+			ifa_ptr->ifa_family = xstrdup(ip_family);
+			ifa_ptr->ifa_name   = xstrdup(if_rec->ifa_name);
+			gen_node_info->ifa_array[gen_node_info->ifa_cnt++] =
+				ifa_ptr;
 			if (debug_flags & DEBUG_FLAG_SWITCH) {
-				info("%s name=%s ip_version=%s address=%s",
-				       plugin_type, if_rec->ifa_name, ip_vers,
-				       addr_str);
+				info("%s name=%s ip_family=%s address=%s",
+				     plugin_type, if_rec->ifa_name, ip_family,
+				     addr_str);
 			}
 		}
 	}
@@ -403,23 +437,84 @@ extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 extern int switch_p_pack_node_info(switch_node_info_t *switch_node,
 				   Buf buffer)
 {
+	sw_gen_node_info_t *gen_node_info = (sw_gen_node_info_t *) switch_node;
+	sw_gen_ifa_t *ifa_ptr;
+	int i;
+
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_pack_node_info() starting");
-	return 0;
+	xassert(gen_node_info);
+	xassert(gen_node_info->magic == SW_GEN_NODE_INFO_MAGIC);
+	pack16(gen_node_info->ifa_cnt, buffer);
+	for (i = 0; i < gen_node_info->ifa_cnt; i++) {
+		ifa_ptr = gen_node_info->ifa_array[i];
+		packstr(ifa_ptr->ifa_addr,   buffer);
+		packstr(ifa_ptr->ifa_family, buffer);
+		packstr(ifa_ptr->ifa_name,   buffer);
+	}
+
+	return SLURM_SUCCESS;
 }
 
 extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
 				     Buf buffer)
 {
+	sw_gen_node_info_t *gen_node_info = (sw_gen_node_info_t *) switch_node;
+	sw_gen_ifa_t *ifa_ptr;
+	uint32_t uint32_tmp;
+	int i;
+
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_unpack_node_info() starting");
+	safe_unpack16(&gen_node_info->ifa_cnt, buffer);
+	gen_node_info->ifa_array = xmalloc(sizeof(sw_gen_ifa_t *) *
+					   gen_node_info->ifa_cnt);
+	for (i = 0; i < gen_node_info->ifa_cnt; i++) {
+		ifa_ptr = xmalloc(sizeof(sw_gen_ifa_t));
+		gen_node_info->ifa_array[i] = ifa_ptr;
+		safe_unpackstr_xmalloc(&ifa_ptr->ifa_addr, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&ifa_ptr->ifa_family, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&ifa_ptr->ifa_name, &uint32_tmp, buffer);
+		if (debug_flags & DEBUG_FLAG_SWITCH) {
+			info("%s name=%s ip_family=%s address=%s",
+			     plugin_type, ifa_ptr->ifa_name,
+			     ifa_ptr->ifa_family, ifa_ptr->ifa_addr);
+		}
+	}
+
 	return SLURM_SUCCESS;
+
+unpack_error:
+	for (i = 0; i < gen_node_info->ifa_cnt; i++) {
+		xfree(gen_node_info->ifa_array[i]->ifa_addr);
+		xfree(gen_node_info->ifa_array[i]->ifa_family);
+		xfree(gen_node_info->ifa_array[i]->ifa_name);
+		xfree(gen_node_info->ifa_array[i]);
+	}
+	xfree(gen_node_info->ifa_array);
+	gen_node_info->ifa_cnt = 0;
+	return SLURM_ERROR;
 }
 
 extern int switch_p_free_node_info(switch_node_info_t **switch_node)
 {
+	sw_gen_node_info_t *gen_node_info = (sw_gen_node_info_t *) *switch_node;
+	int i;
+
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_free_node_info() starting");
+	xassert(gen_node_info);
+	xassert(gen_node_info->magic == SW_GEN_NODE_INFO_MAGIC);
+	for (i = 0; i < gen_node_info->ifa_cnt; i++) {
+		xfree(gen_node_info->ifa_array[i]->ifa_addr);
+		xfree(gen_node_info->ifa_array[i]->ifa_family);
+		xfree(gen_node_info->ifa_array[i]->ifa_name);
+		xfree(gen_node_info->ifa_array[i]);
+	}
+	xfree(gen_node_info->ifa_array);
+	xfree(gen_node_info);
+
 	return SLURM_SUCCESS;
 }
 
