@@ -233,7 +233,7 @@ Configurable values at present are:
 No filesystem data are collected.
 .TP
 \fBacct_gather_filesystem/lustre\fR
-Lustre filesystem traffic data are collected from the counters found in 
+Lustre filesystem traffic data are collected from the counters found in
 /proc/fs/lustre/.
 .RE
 
@@ -253,12 +253,10 @@ Configurable values at present are:
 \fBacct_gather_profile/none\fR
 No profile data is collected.
 .TP
-\fBacct_gather_profile/io_energy\fR
-Lustre I/O counts and I/O counts from infiniband network adaptors are
-collected at the node level. Local disk I/O counts and memory usage are sampled
-for tasks at jobacct_gather frequency. Energy consumption at the node level
-is gathered at jobacct_gather_frequency. Data from all the steps on all
-nodes use for the job are consolidated into and HDF5 structured file.
+\fBacct_gather_profile/hdf5\fR
+This enables the HDF5 plugin. The directory where the profile files
+are stored and which values are collected are configured in the
+acct_gather.conf file.
 .RE
 
 .TP
