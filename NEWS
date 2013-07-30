@@ -39,7 +39,9 @@ documents those changes that are of interest to users and admins.
     fields were empty if the job was not started immediately.
  -- Fix sbatch and srun task count logic when --ntasks-per-node specified,
     but no explicit task count.
- -- Corrected the hdf5 profile user guide and the acct_gather.conf documentation.
+ -- Corrected the hdf5 profile user guide and the acct_gather.conf
+    documentation.
+ -- IPMI - Fix Math bug getting new wattage.
 
 * Changes in Slurm 2.6.0
 ========================
