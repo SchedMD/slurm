@@ -348,7 +348,7 @@ int switch_p_libstate_save(char * dir_name)
 	return SLURM_SUCCESS;
 }
 
-int switch_p_libstate_restore(char * dir_name, bool recover )
+int switch_p_libstate_restore(char * dir_name, bool recover)
 {
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_libstate_restore() starting");
@@ -479,6 +479,13 @@ int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
 		info("switch_p_pack_jobinfo() starting");
 	xassert(gen_step_info);
 	xassert(gen_step_info->magic == SW_GEN_STEP_INFO_MAGIC);
+	if (!libstate) {
+		/* The function is being called from srun or slurmd.
+		 * There is no more need for moving this data. */
+		pack32((uint32_t) 0, buffer);
+		return SLURM_SUCCESS;
+	}
+
 	pack32(gen_step_info->node_cnt, buffer);
 	for (i = 0; i < gen_step_info->node_cnt; i++) {
 		node_ptr = gen_step_info->node_array[i];
@@ -492,7 +499,7 @@ int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
 		}
 	}
 
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
