@@ -56,6 +56,7 @@
 #include "src/common/xmalloc.h"
 
 #define SW_GEN_NODE_INFO_MAGIC 0x3b38ac0c
+#define SW_GEN_STEP_INFO_MAGIC 0x58ae93cb
 
 typedef struct sw_gen_ifa {
 	char *ifa_name;		/* "eth0", "ib1", etc. */
@@ -67,6 +68,17 @@ typedef struct sw_gen_node_info {
 	uint16_t ifa_cnt;
 	sw_gen_ifa_t **ifa_array;
 } sw_gen_node_info_t;
+
+typedef struct sw_gen_node {
+	char *node_name;
+	uint16_t ifa_cnt;
+	sw_gen_ifa_t **ifa_array;
+} sw_gen_node_t;
+typedef struct sw_gen_step_info {
+	uint32_t magic;
+	uint32_t node_cnt;
+	sw_gen_node_t **node_array;
+} sw_gen_step_info_t;
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -151,18 +163,51 @@ int switch_p_libstate_clear(void)
  * switch functions for job step specific credential
  */
 int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job,
-			   uint32_t job_id, uint32_t step_id )
+			   uint32_t job_id, uint32_t step_id)
 {
+	sw_gen_step_info_t *gen_step_info;
+
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_alloc_jobinfo() starting");
+	xassert(switch_job);
+	gen_step_info = xmalloc(sizeof(sw_gen_step_info_t));
+	gen_step_info->magic = SW_GEN_STEP_INFO_MAGIC;
+	*switch_job = (switch_jobinfo_t *) gen_step_info;
+
 	return SLURM_SUCCESS;
 }
 
 int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 			   slurm_step_layout_t *step_layout, char *network)
 {
+	sw_gen_step_info_t *gen_step_info = (sw_gen_step_info_t *) switch_job;
+	sw_gen_node_t *node_ptr;
+	hostlist_t hl = NULL;
+	hostlist_iterator_t hi;
+	char *host = NULL;
+	int i;
+
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_build_jobinfo() starting");
+	xassert(gen_step_info);
+	xassert(gen_step_info->magic == SW_GEN_STEP_INFO_MAGIC);
+	hl = hostlist_create(step_layout->node_list);
+	if (!hl)
+		fatal("hostlist_create(%s): %m", step_layout->node_list);
+	gen_step_info->node_cnt = hostlist_count(hl);
+	gen_step_info->node_array = xmalloc(sizeof(sw_gen_node_t *) *
+					    gen_step_info->node_cnt);
+	hi = hostlist_iterator_create(hl);
+	for (i = 0; (host = hostlist_next(hi)); i++) {
+		node_ptr = xmalloc(sizeof(sw_gen_node_t));
+		gen_step_info->node_array[i] = node_ptr;
+		node_ptr->node_name = xstrdup(host);
+/* FIXME: Find job's interface info and flesh out data structures */
+		free(host);
+	}
+	hostlist_iterator_destroy(hi);
+	hostlist_destroy(hl);
+
 	return SLURM_SUCCESS;
 }
 
@@ -175,23 +220,110 @@ switch_jobinfo_t *switch_p_copy_jobinfo(switch_jobinfo_t *switch_job)
 
 void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 {
+	sw_gen_step_info_t *gen_step_info = (sw_gen_step_info_t *) switch_job;
+	sw_gen_node_t *node_ptr;
+	int i, j;
+
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_free_jobinfo() starting");
+	xassert(gen_step_info);
+	xassert(gen_step_info->magic == SW_GEN_STEP_INFO_MAGIC);
+	for (i = 0; i < gen_step_info->node_cnt; i++) {
+		node_ptr = gen_step_info->node_array[i];
+		xfree(node_ptr->node_name);
+		for (j = 0; j < node_ptr->ifa_cnt; j++) {
+			xfree(node_ptr->ifa_array[j]->ifa_addr);
+			xfree(node_ptr->ifa_array[j]->ifa_family);
+			xfree(node_ptr->ifa_array[j]->ifa_name);
+			xfree(node_ptr->ifa_array[j]);
+		}
+		xfree(gen_step_info->node_array);
+	}
+	xfree(gen_step_info->node_array);
+	xfree(gen_step_info);
+
 	return;
 }
 
 int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
 {
+	sw_gen_step_info_t *gen_step_info = (sw_gen_step_info_t *) switch_job;
+	sw_gen_node_t *node_ptr;
+	sw_gen_ifa_t *ifa_ptr;
+	int i, j;
+
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_pack_jobinfo() starting");
+	xassert(gen_step_info);
+	xassert(gen_step_info->magic == SW_GEN_STEP_INFO_MAGIC);
+	pack32(gen_step_info->node_cnt, buffer);
+	for (i = 0; i < gen_step_info->node_cnt; i++) {
+		node_ptr = gen_step_info->node_array[i];
+		packstr(node_ptr->node_name, buffer);
+		pack16(node_ptr->ifa_cnt, buffer);
+		for (j = 0; j < node_ptr->ifa_cnt; j++) {
+			ifa_ptr = node_ptr->ifa_array[j];
+			packstr(ifa_ptr->ifa_addr, buffer);
+			packstr(ifa_ptr->ifa_family, buffer);
+			packstr(ifa_ptr->ifa_name, buffer);
+		}
+	}
+
 	return 0;
 }
 
 int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
 {
+	sw_gen_step_info_t *gen_step_info = (sw_gen_step_info_t *) switch_job;
+	sw_gen_node_t *node_ptr;
+	sw_gen_ifa_t *ifa_ptr;
+	uint32_t uint32_tmp;
+	int i, j;
+
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_unpack_jobinfo() starting");
+	safe_unpack32(&gen_step_info->node_cnt, buffer);
+	gen_step_info->node_array = xmalloc(sizeof(sw_gen_node_t *) *
+					    gen_step_info->node_cnt);
+	for (i = 0; i < gen_step_info->node_cnt; i++) {
+		node_ptr = xmalloc(sizeof(sw_gen_node_t));
+		gen_step_info->node_array[i] = node_ptr;
+		safe_unpackstr_xmalloc(&node_ptr->node_name, &uint32_tmp,
+				       buffer);
+		safe_unpack16(&node_ptr->ifa_cnt, buffer);
+		node_ptr->ifa_array = xmalloc(sizeof(sw_gen_ifa_t *) *
+					      node_ptr->ifa_cnt);
+		for (j = 0; j < node_ptr->ifa_cnt; j++) {
+			ifa_ptr = xmalloc(sizeof(sw_gen_ifa_t));
+			node_ptr->ifa_array[j] = ifa_ptr;
+			safe_unpackstr_xmalloc(&ifa_ptr->ifa_addr, &uint32_tmp,
+					       buffer);
+			safe_unpackstr_xmalloc(&ifa_ptr->ifa_family,
+					       &uint32_tmp, buffer);
+			safe_unpackstr_xmalloc(&ifa_ptr->ifa_name, &uint32_tmp,
+					       buffer);
+		}
+	}
+
 	return SLURM_SUCCESS;
+
+unpack_error:
+	for (i = 0; i < gen_step_info->node_cnt; i++) {
+		node_ptr = gen_step_info->node_array[i];
+		for (j = 0; j < node_ptr->ifa_cnt; j++) {
+			ifa_ptr = node_ptr->ifa_array[j];
+			xfree(ifa_ptr->ifa_addr);
+			xfree(ifa_ptr->ifa_family);
+			xfree(ifa_ptr->ifa_name);
+			xfree(ifa_ptr);
+		}
+		xfree(node_ptr->ifa_array);
+		xfree(node_ptr->node_name);
+		xfree(node_ptr);
+	}
+	gen_step_info->node_cnt = 0;
+	xfree(gen_step_info->node_array);
+	return SLURM_ERROR;
 }
 
 void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
@@ -210,7 +342,6 @@ char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo, char *buf,
 		buf[0] = '\0';
 		return buf;
 	}
-
 	return NULL;
 }
 
@@ -423,7 +554,7 @@ extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 			gen_node_info->ifa_array[gen_node_info->ifa_cnt++] =
 				ifa_ptr;
 			if (debug_flags & DEBUG_FLAG_SWITCH) {
-				info("%s name=%s ip_family=%s address=%s",
+				info("%s: name=%s ip_family=%s address=%s",
 				     plugin_type, if_rec->ifa_name, ip_family,
 				     addr_str);
 			}
@@ -477,7 +608,7 @@ extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
 				       buffer);
 		safe_unpackstr_xmalloc(&ifa_ptr->ifa_name, &uint32_tmp, buffer);
 		if (debug_flags & DEBUG_FLAG_SWITCH) {
-			info("%s name=%s ip_family=%s address=%s",
+			info("%s: name=%s ip_family=%s address=%s",
 			     plugin_type, ifa_ptr->ifa_name,
 			     ifa_ptr->ifa_family, ifa_ptr->ifa_addr);
 		}
@@ -523,10 +654,12 @@ extern char *switch_p_sprintf_node_info(switch_node_info_t *switch_node,
 {
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_sprintf_node_info() starting");
+
 	if ((buf != NULL) && size) {
 		buf[0] = '\0';
 		return buf;
 	}
+	/* Incomplete */
 
 	return NULL;
 }
