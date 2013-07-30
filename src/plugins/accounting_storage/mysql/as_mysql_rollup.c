@@ -727,7 +727,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			time_t row_end = slurm_atoul(row[JOB_REQ_END]);
 			uint32_t row_acpu = slurm_atoul(row[JOB_REQ_ACPU]);
 			uint32_t row_rcpu = slurm_atoul(row[JOB_REQ_RCPU]);
-			uint32_t row_energy = slurm_atoul(row[JOB_REQ_ENERGY]);
+			uint64_t row_energy = slurm_atoull(row[JOB_REQ_ENERGY]);
 			int loc_seconds = 0;
 			seconds = 0;
 
