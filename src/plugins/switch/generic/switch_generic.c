@@ -461,7 +461,6 @@ void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 			xfree(node_ptr->ifa_array[j]->ifa_name);
 			xfree(node_ptr->ifa_array[j]);
 		}
-		xfree(gen_step_info->node_array);
 	}
 	xfree(gen_step_info->node_array);
 	xfree(gen_step_info);
