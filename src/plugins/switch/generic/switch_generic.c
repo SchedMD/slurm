@@ -273,6 +273,7 @@ _hash_add_nodeinfo(sw_gen_node_info_t *new_node_info)
 	index = _hash_index(new_node_info->node_name);
 	new_node_info->next = libstate->hash_table[index];
 	libstate->hash_table[index] = new_node_info;
+	libstate->node_count++;
 }
 
 /* Add the new node information to our libstate cache, making a copy if
@@ -284,7 +285,6 @@ static void _cache_node_info(sw_gen_node_info_t *new_node_info)
 	uint16_t ifa_cnt;
 	sw_gen_ifa_t **ifa_array;
 	struct sw_gen_node_info *next;
-	char *node_name;
 	bool new_alloc;      /* True if this is new node to be added to cache */
 
 	_lock();
@@ -293,25 +293,22 @@ static void _cache_node_info(sw_gen_node_info_t *new_node_info)
 	if (new_alloc) {
 		(void) switch_p_alloc_node_info((switch_node_info_t **)
 						&old_node_info);
+		old_node_info->node_name = xstrdup(new_node_info->node_name);
 	}
 
 	/* Swap contents */
 	ifa_cnt   = old_node_info->ifa_cnt;
 	ifa_array = old_node_info->ifa_array;
 	next      = old_node_info->next;
-	node_name = old_node_info->node_name;
 	old_node_info->ifa_cnt   = new_node_info->ifa_cnt;
 	old_node_info->ifa_array = new_node_info->ifa_array;
 	old_node_info->next      = new_node_info->next;
-	old_node_info->node_name = new_node_info->node_name;
 	new_node_info->ifa_cnt   = ifa_cnt;
 	new_node_info->ifa_array = ifa_array;
 	new_node_info->next      = next;
-	new_node_info->node_name = node_name;
 
 	if (new_alloc)
-		_hash_add_nodeinfo(new_node_info);
-
+		_hash_add_nodeinfo(old_node_info);
 	_unlock();
 }
 
@@ -392,11 +389,12 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 			   slurm_step_layout_t *step_layout, char *network)
 {
 	sw_gen_step_info_t *gen_step_info = (sw_gen_step_info_t *) switch_job;
+	sw_gen_node_info_t *gen_node_info;
 	sw_gen_node_t *node_ptr;
 	hostlist_t hl = NULL;
 	hostlist_iterator_t hi;
 	char *host = NULL;
-	int i;
+	int i, j;
 
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_build_jobinfo() starting");
@@ -413,7 +411,22 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 		node_ptr = xmalloc(sizeof(sw_gen_node_t));
 		gen_step_info->node_array[i] = node_ptr;
 		node_ptr->node_name = xstrdup(host);
-/* FIXME: Find job's interface info and flesh out data structures */
+		gen_node_info = _find_node(host);
+		if (gen_node_info) {	/* Copy node info to this step */
+			node_ptr->ifa_cnt = gen_node_info->ifa_cnt;
+			node_ptr->ifa_array = xmalloc(sizeof(sw_gen_node_t *) *
+						      node_ptr->ifa_cnt);
+			for (j = 0; j < node_ptr->ifa_cnt; j++) {
+				node_ptr->ifa_array[j] =
+					xmalloc(sizeof(sw_gen_node_t));
+				node_ptr->ifa_array[j]->ifa_addr = xstrdup(
+					gen_node_info->ifa_array[j]->ifa_addr);
+				node_ptr->ifa_array[j]->ifa_family = xstrdup(
+					gen_node_info->ifa_array[j]->ifa_family);
+				node_ptr->ifa_array[j]->ifa_name = xstrdup(
+					gen_node_info->ifa_array[j]->ifa_name);
+			}
+		}
 		free(host);
 	}
 	hostlist_iterator_destroy(hi);
@@ -513,6 +526,11 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
 					       &uint32_tmp, buffer);
 			safe_unpackstr_xmalloc(&ifa_ptr->ifa_name, &uint32_tmp,
 					       buffer);
+			if (debug_flags & DEBUG_FLAG_SWITCH) {
+				info("node=%s name=%s family=%s addr=%s",
+				     node_ptr->node_name, ifa_ptr->ifa_name,
+				     ifa_ptr->ifa_family, ifa_ptr->ifa_addr);
+			}
 		}
 	}
 
