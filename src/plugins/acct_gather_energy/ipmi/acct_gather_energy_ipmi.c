@@ -484,26 +484,25 @@ static int _thread_update_node_energy(void)
 	rc = _read_ipmi_values();
 
 	if (rc == SLURM_SUCCESS) {
-		uint32_t additional_consumption;
-		if (previous_update_time == 0) {
-			additional_consumption = 0;
-			previous_update_time = last_update_time;
-		} else {
-			additional_consumption =
-				_get_additional_consumption(
-					previous_update_time, last_update_time,
-					local_energy->base_watts,
-					local_energy->current_watts);
-		}
 		if (local_energy->current_watts != 0) {
 			local_energy->base_watts = local_energy->current_watts;
 			local_energy->current_watts = last_update_watt;
+			if (previous_update_time == 0)
+				local_energy->base_consumed_energy = 0;
+			else
+				local_energy->base_consumed_energy =
+					_get_additional_consumption(
+						previous_update_time,
+						last_update_time,
+						local_energy->base_watts,
+						local_energy->current_watts);
 			local_energy->previous_consumed_energy =
 				local_energy->consumed_energy;
-			local_energy->consumed_energy += additional_consumption;
-			local_energy->base_consumed_energy =
-				additional_consumption;
+			local_energy->consumed_energy +=
+				local_energy->base_consumed_energy;
 		}
+		if (previous_update_time == 0)
+			previous_update_time = last_update_time;
 		if (local_energy->current_watts == 0) {
 			local_energy->consumed_energy = 0;
 			local_energy->base_watts = 0;
