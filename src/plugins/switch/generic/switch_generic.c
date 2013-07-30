@@ -55,8 +55,10 @@
 #include "src/common/slurm_xlator.h"
 #include "src/common/xmalloc.h"
 
-#define SW_GEN_NODE_INFO_MAGIC 0x3b38ac0c
-#define SW_GEN_STEP_INFO_MAGIC 0x58ae93cb
+#define SW_GEN_HASH_MAX		1000
+#define SW_GEN_LIBSTATE_MAGIC	0x3b287d0c
+#define SW_GEN_NODE_INFO_MAGIC	0x3b38ac0c
+#define SW_GEN_STEP_INFO_MAGIC	0x58ae93cb
 
 typedef struct sw_gen_ifa {
 	char *ifa_name;		/* "eth0", "ib1", etc. */
@@ -68,6 +70,7 @@ typedef struct sw_gen_node_info {
 	uint16_t ifa_cnt;
 	sw_gen_ifa_t **ifa_array;
 	char *node_name;
+	struct sw_gen_node_info *next;	/* used for hash table */
 } sw_gen_node_info_t;
 
 typedef struct sw_gen_node {
@@ -80,6 +83,13 @@ typedef struct sw_gen_step_info {
 	uint32_t node_cnt;
 	sw_gen_node_t **node_array;
 } sw_gen_step_info_t;
+
+typedef struct sw_gen_libstate {
+	uint32_t magic;
+	uint32_t node_count;
+	uint32_t hash_max;
+	sw_gen_node_info_t **hash_table;
+} sw_gen_libstate_t;
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -112,7 +122,198 @@ const char plugin_name[]        = "switch generic plugin";
 const char plugin_type[]        = "switch/generic";
 const uint32_t plugin_version   = 110;
 
-uint32_t debug_flags = 0;
+uint32_t	debug_flags = 0;
+pthread_mutex_t	global_lock = PTHREAD_MUTEX_INITIALIZER;
+sw_gen_libstate_t *libstate = NULL;
+
+extern int switch_p_free_node_info(switch_node_info_t **switch_node);
+extern int switch_p_alloc_node_info(switch_node_info_t **switch_node);
+
+/* The _lock() and _unlock() functions are used to lock/unlock a
+ * global mutex.  Used to serialize access to the global library
+ * state variable nrt_state.
+ */
+static void _lock(void)
+{
+	int err = 1;
+
+	while (err) {
+		err = pthread_mutex_lock(&global_lock);
+	}
+}
+
+static void _unlock(void)
+{
+	int err = 1;
+
+	while (err) {
+		err = pthread_mutex_unlock(&global_lock);
+	}
+}
+
+static void
+_alloc_libstate(void)
+{
+	xassert(!libstate);
+
+	libstate = xmalloc(sizeof(sw_gen_libstate_t));
+	libstate->magic = SW_GEN_LIBSTATE_MAGIC;
+	libstate->node_count = 0;
+	libstate->hash_max = SW_GEN_HASH_MAX;
+	libstate->hash_table = xmalloc(sizeof(sw_gen_node_info_t *) *
+				       libstate->hash_max);
+}
+
+static void
+_free_libstate(void)
+{
+	sw_gen_node_info_t *node_ptr, *next_node_ptr;
+	int i;
+
+	if (!libstate)
+		return;
+	xassert(libstate->magic == SW_GEN_LIBSTATE_MAGIC);
+	for (i = 0; i < libstate->hash_max; i++) {
+		node_ptr = libstate->hash_table[i];
+		while (node_ptr) {
+			next_node_ptr = node_ptr->next;
+			(void) switch_p_free_node_info((switch_node_info_t **)
+						       &node_ptr);
+			node_ptr = next_node_ptr;
+		}
+	}
+	libstate->magic = 0;
+	xfree(libstate->hash_table);
+	xfree(libstate);
+}
+
+/* The idea behind keeping the hash table was to avoid a linear
+ * search of the node list each time we want to retrieve or
+ * modify a node's data.  The _hash_index function translates
+ * a node name to an index into the hash table.
+ *
+ * Used by: slurmctld
+ */
+static int
+_hash_index(char *name)
+{
+	int index = 0;
+	int j;
+
+	assert(name);
+
+	/* Multiply each character by its numerical position in the
+	 * name string to add a bit of entropy, because host names such
+	 * as cluster[0001-1000] can cause excessive index collisions.
+	 */
+	for (j = 1; *name; name++, j++)
+		index += (int)*name * j;
+	index %= libstate->hash_max;
+
+	return index;
+}
+
+/* Tries to find a node fast using the hash table
+ *
+ * Used by: slurmctld
+ */
+static sw_gen_node_info_t *
+_find_node(char *node_name)
+{
+	int i;
+	sw_gen_node_info_t *n;
+	struct node_record *node_ptr;
+
+	if (node_name == NULL) {
+		error("%s: _find_node node name is NULL", plugin_type);
+		return NULL;
+	}
+	if (libstate->node_count == 0)
+		return NULL;
+	xassert(libstate->magic == SW_GEN_LIBSTATE_MAGIC);
+	if (libstate->hash_table) {
+		i = _hash_index(node_name);
+		n = libstate->hash_table[i];
+		while (n) {
+			xassert(n->magic == SW_GEN_NODE_INFO_MAGIC);
+			if (!strcmp(n->node_name, node_name))
+				return n;
+			n = n->next;
+		}
+	}
+
+	/* This code is only needed if NodeName and NodeHostName differ */
+	node_ptr = find_node_record(node_name);
+	if (node_ptr && libstate->hash_table) {
+		i = _hash_index(node_ptr->node_hostname);
+		n = libstate->hash_table[i];
+		while (n) {
+			xassert(n->magic == SW_GEN_NODE_INFO_MAGIC);
+			if (!strcmp(n->node_name, node_name))
+				return n;
+			n = n->next;
+		}
+	}
+
+	return NULL;
+}
+
+/* Add the hash entry for a newly created node record */
+static void
+_hash_add_nodeinfo(sw_gen_node_info_t *new_node_info)
+{
+	int index;
+
+	xassert(libstate);
+	xassert(libstate->hash_table);
+	xassert(libstate->hash_max >= libstate->node_count);
+	xassert(libstate->magic == SW_GEN_LIBSTATE_MAGIC);
+	if (!new_node_info->node_name || !new_node_info->node_name[0])
+		return;
+	index = _hash_index(new_node_info->node_name);
+	new_node_info->next = libstate->hash_table[index];
+	libstate->hash_table[index] = new_node_info;
+}
+
+/* Add the new node information to our libstate cache, making a copy if
+ * information is new. Otherwise, swap the data and return to the user old
+ * data, which is fine in this case since it is only deleted by slurmctld */
+static void _cache_node_info(sw_gen_node_info_t *new_node_info)
+{
+	sw_gen_node_info_t *old_node_info;
+	uint16_t ifa_cnt;
+	sw_gen_ifa_t **ifa_array;
+	struct sw_gen_node_info *next;
+	char *node_name;
+	bool new_alloc;      /* True if this is new node to be added to cache */
+
+	_lock();
+	old_node_info = _find_node(new_node_info->node_name);
+	new_alloc = (old_node_info == NULL);
+	if (new_alloc) {
+		(void) switch_p_alloc_node_info((switch_node_info_t **)
+						&old_node_info);
+	}
+
+	/* Swap contents */
+	ifa_cnt   = old_node_info->ifa_cnt;
+	ifa_array = old_node_info->ifa_array;
+	next      = old_node_info->next;
+	node_name = old_node_info->node_name;
+	old_node_info->ifa_cnt   = new_node_info->ifa_cnt;
+	old_node_info->ifa_array = new_node_info->ifa_array;
+	old_node_info->next      = new_node_info->next;
+	old_node_info->node_name = new_node_info->node_name;
+	new_node_info->ifa_cnt   = ifa_cnt;
+	new_node_info->ifa_array = ifa_array;
+	new_node_info->next      = next;
+	new_node_info->node_name = node_name;
+
+	if (new_alloc)
+		_hash_add_nodeinfo(new_node_info);
+
+	_unlock();
+}
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -127,6 +328,9 @@ int init(void)
 
 int fini(void)
 {
+	_lock();
+	_free_libstate();
+	_unlock();
 	return SLURM_SUCCESS;
 }
 
@@ -151,7 +355,11 @@ int switch_p_libstate_restore(char * dir_name, bool recover )
 {
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_libstate_restore() starting");
-	/* No state saved or restored for this plugin */
+	/* No state saved or restored for this plugin, just initialize */
+	_lock();
+	_alloc_libstate();
+	_unlock();
+
 	return SLURM_SUCCESS;
 }
 
@@ -506,7 +714,7 @@ extern int switch_p_alloc_node_info(switch_node_info_t **switch_node)
 	sw_gen_node_info_t *gen_node_info;
 
 	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_alloc_node_inf0() starting");
+		info("switch_p_alloc_node_info() starting");
 	xassert(switch_node);
 	gen_node_info = xmalloc(sizeof(sw_gen_node_info_t));
 	gen_node_info->magic = SW_GEN_NODE_INFO_MAGIC;
@@ -628,6 +836,8 @@ extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
 			     ifa_ptr->ifa_addr);
 		}
 	}
+
+	_cache_node_info(gen_node_info);
 
 	return SLURM_SUCCESS;
 
