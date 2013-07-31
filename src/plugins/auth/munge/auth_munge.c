@@ -640,10 +640,10 @@ _print_cred_info(munge_info_t *mi)
 	xassert(mi != NULL);
 
 	if (mi->encoded > 0)
-		info ("ENCODED: %s", ctime_r(&mi->encoded, buf));
+		info ("ENCODED: %s", slurm_ctime_r(&mi->encoded, buf));
 
 	if (mi->decoded > 0)
-		info ("DECODED: %s", ctime_r(&mi->decoded, buf));
+		info ("DECODED: %s", slurm_ctime_r(&mi->decoded, buf));
 }
 
 

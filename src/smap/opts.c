@@ -191,7 +191,7 @@ extern void print_date(void)
 	} else {
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%s",
-			  ctime(&now_time));
+			  slurm_ctime(&now_time));
 		main_ycord++;
 	}
 }

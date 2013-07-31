@@ -1236,6 +1236,13 @@ extern char *trigger_type(uint32_t trig_type);
 /* user needs to xfree after */
 extern char *reservation_flags_string(uint16_t flags);
 
+/* Return ctime like string without the newline.
+ * Not thread safe */
+extern char *slurm_ctime(const time_t *timep);
+
+/* Return ctime like string without the newline, thread safe. */
+extern char *slurm_ctime_r(const time_t *timep, char *time_str);
+
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\
 		char *ptr = (char *) buf;				\

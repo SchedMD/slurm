@@ -927,20 +927,14 @@ void parse_command_line(int argc, char **argv)
 	}
 
 	if (verbosity > 0) {
-		char *start_char =NULL, *end_char = NULL;
+		char start_char[25], end_char[25];
 
-		start_char = xstrdup(ctime(&job_cond->usage_start));
-		/* remove the new line */
-		start_char[strlen(start_char)-1] = '\0';
-		if (job_cond->usage_end) {
-			end_char = xstrdup(ctime(&job_cond->usage_end));
-			/* remove the new line */
-			end_char[strlen(end_char)-1] = '\0';
-		} else
-			end_char = xstrdup("Now");
+		slurm_ctime_r(&job_cond->usage_start, start_char);
+		if (job_cond->usage_end)
+			slurm_ctime_r(&job_cond->usage_end, end_char);
+		else
+			sprintf(end_char, "Now");
 		info("Jobs eligible from %s - %s", start_char, end_char);
-		xfree(start_char);
-		xfree(end_char);
 	}
 
 	debug("Options selected:\n"

@@ -240,8 +240,8 @@ static void *_cluster_rollup_usage(void *arg)
 	end_tm.tm_isdst = -1;
 	hour_end = mktime(&end_tm);
 
-/* 	info("hour start %s", ctime(&hour_start)); */
-/* 	info("hour end %s", ctime(&hour_end)); */
+/* 	info("hour start %s", slurm_ctime(&hour_start)); */
+/* 	info("hour end %s", slurm_ctime(&hour_end)); */
 /* 	info("diff is %d", hour_end-hour_start); */
 
 	slurm_mutex_lock(&rollup_lock);
@@ -265,8 +265,8 @@ static void *_cluster_rollup_usage(void *arg)
 	end_tm.tm_isdst = -1;
 	day_end = mktime(&end_tm);
 
-/* 	info("day start %s", ctime(&day_start)); */
-/* 	info("day end %s", ctime(&day_end)); */
+/* 	info("day start %s", slurm_ctime(&day_start)); */
+/* 	info("day end %s", slurm_ctime(&day_end)); */
 /* 	info("diff is %d", day_end-day_start); */
 
 	/* set up the month period */
@@ -290,8 +290,8 @@ static void *_cluster_rollup_usage(void *arg)
 	end_tm.tm_isdst = -1;
 	month_end = mktime(&end_tm);
 
-/* 	info("month start %s", ctime(&month_start)); */
-/* 	info("month end %s", ctime(&month_end)); */
+/* 	info("month start %s", slurm_ctime(&month_start)); */
+/* 	info("month end %s", slurm_ctime(&month_end)); */
 /* 	info("diff is %d", month_end-month_start); */
 
 	if ((hour_end - hour_start) > 0) {

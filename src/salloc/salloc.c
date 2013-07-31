@@ -915,7 +915,7 @@ static void _timeout_handler(srun_timeout_msg_t *msg)
 	if (msg->timeout != last_timeout) {
 		last_timeout = msg->timeout;
 		verbose("Job allocation time limit to be reached at %s",
-			ctime(&msg->timeout));
+			slurm_ctime(&msg->timeout));
 	}
 }
 

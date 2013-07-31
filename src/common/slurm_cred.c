@@ -1384,7 +1384,7 @@ slurm_cred_print(slurm_cred_t *cred)
 	info("Cred: Job_mem_limit     %u",  cred->job_mem_limit );
 	info("Cred: Step_mem_limit    %u",  cred->step_mem_limit );
 	info("Cred: Step hostlist     %s",  cred->step_hostlist );
-	info("Cred: ctime             %s",  ctime(&cred->ctime) );
+	info("Cred: ctime             %s",  slurm_ctime(&cred->ctime) );
 	info("Cred: siglen            %u",  cred->siglen        );
 #ifndef HAVE_BG
 	{
@@ -2324,6 +2324,6 @@ void  print_sbcast_cred(sbcast_cred_t *sbcast_cred)
 {
 	info("Sbcast_cred: Jobid   %u", sbcast_cred->jobid         );
 	info("Sbcast_cred: Nodes   %s", sbcast_cred->nodes         );
-	info("Sbcast_cred: ctime   %s", ctime(&sbcast_cred->ctime) );
-	info("Sbcast_cred: Expire  %s", ctime(&sbcast_cred->expiration) );
+	info("Sbcast_cred: ctime   %s", slurm_ctime(&sbcast_cred->ctime) );
+	info("Sbcast_cred: Expire  %s", slurm_ctime(&sbcast_cred->expiration) );
 }

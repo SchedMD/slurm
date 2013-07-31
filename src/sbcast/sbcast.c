@@ -104,9 +104,9 @@ int main(int argc, char *argv[])
 	verbose("modes    = %o", (unsigned int) f_stat.st_mode);
 	verbose("uid      = %d", (int) f_stat.st_uid);
 	verbose("gid      = %d", (int) f_stat.st_gid);
-	verbose("atime    = %s", ctime(&f_stat.st_atime));
-	verbose("mtime    = %s", ctime(&f_stat.st_mtime));
-	verbose("ctime    = %s", ctime(&f_stat.st_ctime));
+	verbose("atime    = %s", slurm_ctime(&f_stat.st_atime));
+	verbose("mtime    = %s", slurm_ctime(&f_stat.st_mtime));
+	verbose("ctime    = %s", slurm_ctime(&f_stat.st_ctime));
 	verbose("size     = %ld", (long) f_stat.st_size);
 	verbose("-----------------------------");
 

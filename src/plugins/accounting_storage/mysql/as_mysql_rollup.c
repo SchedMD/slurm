@@ -263,8 +263,8 @@ static int _process_cluster_usage(mysql_conn_t *mysql_conn,
 	/*      c_usage->d_cpu + c_usage->a_cpu + */
 	/*      c_usage->r_cpu + c_usage->i_cpu, */
 	/*      c_usage->total_time, */
-	/*      ctime(&c_usage->start)); */
-	/* info("to %s", ctime(&c_usage->end)); */
+	/*      slurm_ctime(&c_usage->start)); */
+	/* info("to %s", slurm_ctime(&c_usage->end)); */
 	query = xstrdup_printf("insert into \"%s_%s\" "
 			       "(creation_time, "
 			       "mod_time, time_start, "
@@ -561,8 +561,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		xstrfmtcat(resv_str, ", %s", resv_req_inx[i]);
 	}
 
-/* 	info("begin start %s", ctime(&curr_start)); */
-/* 	info("begin end %s", ctime(&curr_end)); */
+/* 	info("begin start %s", slurm_ctime(&curr_start)); */
+/* 	info("begin end %s", slurm_ctime(&curr_end)); */
 	a_itr = list_iterator_create(assoc_usage_list);
 	c_itr = list_iterator_create(cluster_down_list);
 	w_itr = list_iterator_create(wckey_usage_list);
@@ -580,8 +580,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		debug3("%s curr hour is now %ld-%ld",
 		       cluster_name, curr_start, curr_end);
-/* 		info("start %s", ctime(&curr_start)); */
-/* 		info("end %s", ctime(&curr_end)); */
+/* 		info("start %s", slurm_ctime(&curr_start)); */
+/* 		info("end %s", slurm_ctime(&curr_end)); */
 
 		c_usage = _setup_cluster_usage(mysql_conn, cluster_name,
 					       curr_start, curr_end,
@@ -1133,8 +1133,8 @@ end_it:
 	list_destroy(wckey_usage_list);
 	list_destroy(resv_usage_list);
 
-/* 	info("stop start %s", ctime(&curr_start)); */
-/* 	info("stop end %s", ctime(&curr_end)); */
+/* 	info("stop start %s", slurm_ctime(&curr_start)); */
+/* 	info("stop end %s", slurm_ctime(&curr_end)); */
 
 	/* go check to see if we archive and purge */
 
@@ -1173,8 +1173,8 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 
 	while (curr_start < end) {
 		debug3("curr day is now %ld-%ld", curr_start, curr_end);
-/* 		info("start %s", ctime(&curr_start)); */
-/* 		info("end %s", ctime(&curr_end)); */
+/* 		info("start %s", slurm_ctime(&curr_start)); */
+/* 		info("end %s", slurm_ctime(&curr_end)); */
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" (creation_time, mod_time, "
 			"id_assoc, "
@@ -1262,8 +1262,8 @@ extern int as_mysql_daily_rollup(mysql_conn_t *mysql_conn,
 		curr_end = mktime(&start_tm);
 	}
 
-/* 	info("stop start %s", ctime(&curr_start)); */
-/* 	info("stop end %s", ctime(&curr_end)); */
+/* 	info("stop start %s", slurm_ctime(&curr_start)); */
+/* 	info("stop end %s", slurm_ctime(&curr_end)); */
 
 	/* go check to see if we archive and purge */
 	rc = _process_purge(mysql_conn, cluster_name, archive_data,
@@ -1298,8 +1298,8 @@ extern int as_mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 
 	while (curr_start < end) {
 		debug3("curr month is now %ld-%ld", curr_start, curr_end);
-/* 		info("start %s", ctime(&curr_start)); */
-/* 		info("end %s", ctime(&curr_end)); */
+/* 		info("start %s", slurm_ctime(&curr_start)); */
+/* 		info("end %s", slurm_ctime(&curr_end)); */
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" (creation_time, "
 			"mod_time, id_assoc, "

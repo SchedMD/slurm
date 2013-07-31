@@ -2893,3 +2893,26 @@ extern bool valid_spank_job_env(char **spank_job_env,
 	}
 	return true;
 }
+
+/* Return ctime like string without the newline.
+ * Not thread safe */
+extern char *slurm_ctime(const time_t *timep)
+{
+	static char time_str[25];
+
+	strftime(time_str, sizeof(time_str), "%a %b %d %T %Y",
+		 localtime(timep));
+
+	return time_str;
+}
+
+/* Return ctime like string without the newline, thread safe. */
+extern char *slurm_ctime_r(const time_t *timep, char *time_str)
+{
+	struct tm newtime;
+	localtime_r(timep, &newtime);
+
+	strftime(time_str, 25, "%a %b %d %T %Y", &newtime);
+
+	return time_str;
+}

@@ -1707,7 +1707,7 @@ _exec_prog(slurm_msg_t *msg)
 	}
 	if (checkpoint) {
 		/* OpenMPI specific checkpoint support */
-		info("Checkpoint started at %s", ctime(&now));
+		info("Checkpoint started at %s", slurm_ctime(&now));
 		for (i=0; (exec_msg->argv[i] && (i<2)); i++) {
 			argv[i] = exec_msg->argv[i];
 		}
@@ -1754,10 +1754,10 @@ fini:	if (checkpoint) {
 		now = time(NULL);
 		if (exit_code) {
 			info("Checkpoint completion code %d at %s",
-				exit_code, ctime(&now));
+			     exit_code, slurm_ctime(&now));
 		} else {
 			info("Checkpoint completed successfully at %s",
-				ctime(&now));
+			     slurm_ctime(&now));
 		}
 		if (buf[0])
 			info("Checkpoint location: %s", buf);

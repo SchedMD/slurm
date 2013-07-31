@@ -371,7 +371,8 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 	put_string_attribute(gid_node, ATTR_NODENAME, g_job->node_name);
 	put_int_attribute(gid_node, ATTR_NTASKS, g_job->node_tasks);
 	start_time = time(NULL);
-	put_string_attribute(gid_node, ATTR_STARTTIME, ctime(&start_time));
+	put_string_attribute(gid_node, ATTR_STARTTIME,
+			     slurm_ctime(&start_time));
 
 	return rc;
 }
