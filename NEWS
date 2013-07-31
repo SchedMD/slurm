@@ -48,6 +48,8 @@ documents those changes that are of interest to users and admins.
  -- Corrected the sh5util program to print the header in the csv file 
     only once, set the debug messages at debug() level, make the argument 
     check case insensitive and avoid printing duplicate \n.
+ -- If cannot collect energy values send message to the controller
+    to drain the node and log error slurmd log file.
 
 * Changes in Slurm 2.6.0
 ========================

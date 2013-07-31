@@ -137,7 +137,7 @@ static uint32_t debug_flags = 0;
 /* one cpu in the package */
 static int pkg2cpu[MAX_PKGS] = {[0 ... MAX_PKGS-1] -1};
 static int pkg_fd[MAX_PKGS] = {[0 ... MAX_PKGS-1] -1};
-
+static char hostname[MAXHOSTNAMELEN];
 
 static int nb_pkg = 0;
 
@@ -280,6 +280,31 @@ static bool _run_in_daemon(void)
 	return run;
 }
 
+/* _send_drain_request()
+ */
+static void
+_send_drain_request(void)
+{
+	update_node_msg_t node_msg;
+	static char drain_request_sent;
+
+	if (drain_request_sent)
+		return;
+
+	slurm_init_update_node_msg(&node_msg);
+	node_msg.node_names = hostname;
+	node_msg.reason = "Cannot collect energy data.";
+	node_msg.node_state = NODE_STATE_DRAIN;
+
+	drain_request_sent = 1;
+	debug("%s: sending NODE_STATE_DRAIN to controller", __func__);
+
+	if (slurm_update_node(&node_msg) != SLURM_SUCCESS) {
+		error("%s: Unable to drain node %s: %m", __func__, hostname);
+		drain_request_sent = 0;
+	}
+}
+
 static void _get_joules_task(acct_gather_energy_t *energy)
 {
 	int i;
@@ -287,7 +312,12 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	uint64_t result;
 	double ret;
 
-	xassert(pkg_fd[0] != -1);
+	if (pkg_fd[0] < 0) {
+		error("%s: device /dev/cpu/#msr not opened "
+		      "energy data cannot be collected.", __func__);
+		_send_drain_request();
+		return;
+	}
 
 	/* MSR_RAPL_POWER_UNIT
 	 * Power Units - bits 3:0
@@ -405,6 +435,8 @@ extern int acct_gather_energy_p_update_node_energy(void)
 extern int init(void)
 {
 	debug_flags = slurm_get_debug_flags();
+
+	gethostname(hostname, MAXHOSTNAMELEN);
 
 	/* put anything that requires the .conf being read in
 	   acct_gather_energy_p_conf_parse
