@@ -931,13 +931,17 @@ void set_slurmd_addr (void)
 			continue;
 		if (node_ptr->port == 0)
 			node_ptr->port = slurmctld_conf.slurmd_port;
-		slurm_set_addr (&node_ptr->slurm_addr,
-				node_ptr->port,
-				node_ptr->comm_name);
+		slurm_set_addr(&node_ptr->slurm_addr, node_ptr->port,
+			       node_ptr->comm_name);
 		if (node_ptr->slurm_addr.sin_port)
 			continue;
-		fatal ("slurm_set_addr failure on %s",
-		       node_ptr->comm_name);
+		error("slurm_set_addr failure on %s", node_ptr->comm_name);
+		node_ptr->node_state = NODE_STATE_FUTURE;
+		node_ptr->port = 0;
+		xfree(node_ptr->reason);
+		node_ptr->reason = xstrdup("NO NETWORK ADDRESS FOUND");
+		node_ptr->reason_time = time(NULL);
+		node_ptr->reason_uid = getuid();
 	}
 
 	END_TIMER2("set_slurmd_addr");
