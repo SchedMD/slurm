@@ -1074,6 +1074,7 @@ static void _extract_data()
 		return;
 	}
 	nsteps = get_int_attribute(jgid_root, ATTR_NSTEPS);
+	header = true;
 	for (stepx=0; stepx<nsteps; stepx++) {
 		if ((params.step_id != -1) && (stepx != params.step_id))
 			continue;
@@ -1119,13 +1120,14 @@ static void _extract_data()
 			H5Gclose(jgid_node);
 			if (!params.series || !strcmp(params.series, "*")) {
 				for (isx=0; isx<num_series; isx++) {
-					_extract_node_level(
-						fp, stepx, jgid_nodes,
-						nnodes, true,
-						series_names[isx]);
+					_extract_node_level(fp, stepx, jgid_nodes,
+					                    nnodes, header,
+					                    series_names[isx]);
+					header = false;
+
 				}
-			} else if (!strcmp(params.series, GRP_TASKS)) {
-				header = true;
+			} else if (strcasecmp(params.series, GRP_TASKS) == 0
+			           || strcasecmp(params.series, GRP_TASK) == 0) {
 				for (isx=0; isx<num_series; isx++) {
 					if (strstr(series_names[isx],
 						   GRP_TASK)) {
@@ -1138,8 +1140,9 @@ static void _extract_data()
 				}
 			} else {
 				_extract_node_level(fp, stepx, jgid_nodes,
-						    nnodes, true,
-						    params.series);
+				                    nnodes, header,
+				                    params.series);
+				header = false;
 			}
 			_delete_string_list(series_names, num_series);
 			series_names = NULL;
@@ -1168,13 +1171,13 @@ int main (int argc, char **argv)
 	profile_init();
 	switch (params.mode) {
 	case SH5UTIL_MODE_MERGE:
-		info("Merging node-step files into %s",
-		     params.output);
+		debug("Merging node-step files into %s",
+		      params.output);
 		_merge_step_files();
 		break;
 	case SH5UTIL_MODE_EXTRACT:
-		info("Extracting job data from %s into %s\n",
-		     params.input, params.output);
+		debug("Extracting job data from %s into %s",
+		      params.input, params.output);
 		_extract_data();
 		break;
 	default:

@@ -42,6 +42,10 @@ documents those changes that are of interest to users and admins.
  -- Corrected the hdf5 profile user guide and the acct_gather.conf
     documentation.
  -- IPMI - Fix Math bug getting new wattage.
+ -- Corrected the AcctGatherProfileType documentation in slurm.conf
+ -- Corrected the sh5util program to print the header in the csv file 
+    only once, set the debug messages at debug() level, make the argument 
+    check case insensitive and avoid printing duplicate \n.
 
 * Changes in Slurm 2.6.0
 ========================
