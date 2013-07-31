@@ -79,16 +79,6 @@ AC_DEFUN([X_AC_CRAY],
       CRAY_CPPFLAGS="-I$_test_dir/include"
       CRAY_LDFLAGS="-L$_test_dir/lib64 -ljob"
 
-      _test_dir="$d/$_x_ac_cray_alps_dir"
-      test -d "$_test_dir" || continue
-      test -d "$_test_dir/include" || continue
-      test -f "$_test_dir/include/alps/libalpslli.h" || continue
-      test -d "$_test_dir/lib64" || continue
-      test -f "$_test_dir/lib64/libalpslli.so" || continue
-
-      CRAY_SWITCH_CPPFLAGS="-I$_test_dir/include"
-      CRAY_SWITCH_LDFLAGS="-L$_test_dir/lib64 -lalpslli"
-
       _test_dir="$d/$_x_ac_cray_alpscomm_dir"
       test -d "$_test_dir" || continue
       test -d "$_test_dir/include" || continue
@@ -112,11 +102,9 @@ AC_DEFUN([X_AC_CRAY],
       AC_LINK_IFELSE(
         [AC_LANG_PROGRAM(
 	   [[#include <job.h>
-             #include <alps/libalpslli.h>
              #include <alpscomm_sn.h>
 	   ]],
 	   [[ job_getjidcnt();
-	      alps_app_lli_init();
 	      alpsc_release_cookies("", 0, 0);
 	   ]]
 	)],
