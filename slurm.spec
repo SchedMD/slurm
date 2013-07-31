@@ -156,6 +156,13 @@ BuildRequires: cray-MySQL-devel-enterprise
 Requires: cray-MySQL-devel-enterprise
 %endif
 
+%if %{slurm_with cray}
+BuildRequires: cray-MySQL-devel-enterprise
+BuildRequires: cray-libalpscomm_cn-devel
+BuildRequires: cray-libalpscomm_sn-devel
+BuildRequires: cray-libjob-devel
+%endif
+
 %ifnos aix5.3
 # FIXME: AIX can't seem to find this even though this is in existance there.
 # We should probably figure out a better way of doing this, but for now we
