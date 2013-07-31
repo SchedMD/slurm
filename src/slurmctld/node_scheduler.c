@@ -1572,6 +1572,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		} else if (error_code == ESLURM_RESERVATION_NOT_USABLE) {
 			job_ptr->state_reason = WAIT_RESERVATION;
 			xfree(job_ptr->state_desc);
+		} else if ((job_ptr->state_reason == WAIT_BLOCK_MAX_ERR) ||
+			   (job_ptr->state_reason == WAIT_BLOCK_D_ACTION)) {
+			/* state_reason was already setup */
 		} else {
 			job_ptr->state_reason = WAIT_RESOURCES;
 			xfree(job_ptr->state_desc);

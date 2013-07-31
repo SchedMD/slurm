@@ -1005,6 +1005,10 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "QOSResourceLimit";
 	case WAIT_QOS_TIME_LIMIT:
 		return "QOSTimeLimit";
+	case WAIT_BLOCK_MAX_ERR:
+		return "BlockMaxError";
+	case WAIT_BLOCK_D_ACTION:
+		return "BlockFreeAction";
 	default:
 		return "?";
 	}

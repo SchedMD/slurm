@@ -2027,6 +2027,32 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			set_select_jobinfo(jobinfo,
 					   SELECT_JOBDATA_BLOCK_PTR,
 					   NULL);
+
+			/* If using SubBlocks set the state to waiting
+			   for block instead of the generic
+			   "Resources" reason.
+			*/
+			if (bg_conf->sub_blocks
+			    && (job_ptr->details->max_cpus
+				< bg_conf->cpus_per_mp)) {
+				bg_record_t *found_record;
+				if ((found_record = block_exist_in_list(
+					     block_list, bg_record))) {
+					if ((found_record->action
+					     == BG_BLOCK_ACTION_FREE)
+					    && (found_record->state
+						== BG_BLOCK_INITED)) {
+						job_ptr->state_reason =
+							WAIT_BLOCK_D_ACTION;
+						xfree(job_ptr->state_desc);
+					} else if (found_record->err_ratio
+						   >= bg_conf->max_block_err) {
+						job_ptr->state_reason =
+							WAIT_BLOCK_MAX_ERR;
+						xfree(job_ptr->state_desc);
+					}
+				}
+			}
 		} else {
 			if (job_ptr->part_ptr
 			    && job_ptr->part_ptr->max_share <= 1) {

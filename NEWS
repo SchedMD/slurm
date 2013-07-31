@@ -14,10 +14,12 @@ documents those changes that are of interest to users and admins.
  -- The rpmbuild option for a cray system with ALPS has changed from
     %_with_cray to %_with_cray_alps.
  -- The log file timestamp format can now be selected at runtime via the
-    LogTimeFormat configuration option. See the slurm.conf and slurmdbd.conf 
+    LogTimeFormat configuration option. See the slurm.conf and slurmdbd.conf
     man pages for details.
  -- Added switch/generic plugin to a job's convey network topology (just a
     set of empty functions now).
+ -- BLUEGENE - If block is in 'D' state or has more cnodes in error than
+    MaxBlockInError set the job wait reason appropriately.
 
 * Changes in Slurm 2.6.1
 ========================
