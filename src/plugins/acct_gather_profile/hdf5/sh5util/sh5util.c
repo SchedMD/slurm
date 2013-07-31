@@ -1171,13 +1171,13 @@ int main (int argc, char **argv)
 	profile_init();
 	switch (params.mode) {
 	case SH5UTIL_MODE_MERGE:
-		debug("Merging node-step files into %s",
-		      params.output);
+		info("Merging node-step files into %s",
+		     params.output);
 		_merge_step_files();
 		break;
 	case SH5UTIL_MODE_EXTRACT:
-		debug("Extracting job data from %s into %s",
-		      params.input, params.output);
+		info("Extracting job data from %s into %s",
+		     params.input, params.output);
 		_extract_data();
 		break;
 	default:
