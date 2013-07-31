@@ -662,8 +662,8 @@ void log_set_timefmt(unsigned fmtflag)
 		log->fmt = fmtflag;
 		slurm_mutex_unlock(&log_lock);
 	} else {
-		fprintf(stderr, "\
-%s:%d: %s Slurm log not initialized\n", __FILE__, __LINE__, __func__);
+		fprintf(stderr, "%s:%d: %s Slurm log not initialized\n",
+			__FILE__, __LINE__, __func__);
 	}
 }
 
@@ -678,8 +678,7 @@ set_idbuf(char *idbuf)
 
 	gettimeofday(&now, NULL);
 
-	sprintf(idbuf, "\
-%.15s.%-6d %5d %p", ctime(&now.tv_sec) + 4,
+	sprintf(idbuf, "%.15s.%-6d %5d %p", ctime(&now.tv_sec) + 4,
 	        (int)now.tv_usec, (int)getpid(), (void *)pthread_self());
 
 }
