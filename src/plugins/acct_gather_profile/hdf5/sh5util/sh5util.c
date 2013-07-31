@@ -1140,8 +1140,9 @@ static void _extract_data()
 				}
 			} else {
 				_extract_node_level(fp, stepx, jgid_nodes,
-				                    nnodes, true,
+				                    nnodes, header,
 				                    params.series);
+				header = false;
 			}
 			_delete_string_list(series_names, num_series);
 			series_names = NULL;
