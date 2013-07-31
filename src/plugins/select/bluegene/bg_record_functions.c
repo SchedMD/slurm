@@ -554,7 +554,7 @@ extern int bg_record_sort_aval_inc(void *r1, void *r2)
 	/* 		return -1; */
 	/* } */
 
-	return bg_record_cmpf_inc(rec_a, rec_b);
+	return bg_record_cmpf_inc(&rec_a, &rec_b);
 }
 
 /* set up structures needed for sub block jobs. */
