@@ -62,9 +62,11 @@ static int _nodes_in_list(char *node_list)
 	return count;
 }
 
-static int _sort_pids_by_name(job_step_pids_t *rec_a, job_step_pids_t *rec_b)
+static int _sort_pids_by_name(void *x, void *y)
 {
 	int diff = 0;
+	job_step_pids_t *rec_a = *(job_step_pids_t **)x;
+	job_step_pids_t *rec_b = *(job_step_pids_t **)y;
 
 	if (!rec_a->node_name || !rec_b->node_name)
 		return 0;
@@ -78,12 +80,15 @@ static int _sort_pids_by_name(job_step_pids_t *rec_a, job_step_pids_t *rec_b)
 	return 0;
 }
 
-static int _sort_stats_by_name(job_step_stat_t *rec_a, job_step_stat_t *rec_b)
+static int _sort_stats_by_name(void *x, void *y)
 {
+	job_step_stat_t *rec_a = *(job_step_stat_t **)x;
+	job_step_stat_t *rec_b = *(job_step_stat_t **)y;
+
 	if (!rec_a->step_pids || !rec_b->step_pids)
 		return 0;
 
-	return _sort_pids_by_name(rec_a->step_pids, rec_b->step_pids);
+	return _sort_pids_by_name((void *)&rec_a->step_pids, (void *)&rec_b->step_pids);
 }
 
 /*
@@ -248,10 +253,10 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 
 	/****** Line 5 ******/
 	if (job_step_ptr->cpu_freq == NO_VAL) {
-		snprintf(tmp_line, sizeof(tmp_line), 
+		snprintf(tmp_line, sizeof(tmp_line),
 			 "CPUFreqReq=Default\n\n");
 	} else if (job_step_ptr->cpu_freq & CPU_FREQ_RANGE_FLAG) {
-		switch (job_step_ptr->cpu_freq) 
+		switch (job_step_ptr->cpu_freq)
 		{
 		case CPU_FREQ_LOW :
 			snprintf(tmp_line, sizeof(tmp_line),
