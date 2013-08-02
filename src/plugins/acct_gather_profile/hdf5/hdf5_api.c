@@ -1530,7 +1530,7 @@ extern void profile_init(void)
 extern void profile_fini(void)
 {
 	H5Tclose(typTOD);
-	H5close(); // make sure all H5 Objects are closed
+	H5close(); /* make sure all H5 Objects are closed */
 
 	return;
 }
