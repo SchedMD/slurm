@@ -89,18 +89,17 @@ if {$error_match != 2} {
 }
 
 # Run script with srun
+# Note the "Segmentation fault" and "exit_code" messages can come in any order
+# Expect seems to have some trouble exiting if the "exit_code" comes first
 set error_match 0
 set timeout $max_job_delay
 spawn $srun -n1 ./$script
 expect {
-	-re "Segmentation fault" {
-		send_user "\nThis error is expected\n"
+	-re "(Segmentation|exit_code = $err_num_c)" {
 		incr error_match
-		exp_continue
-	}
-	-re "exit_code = ($number)" {
-		set err_num_srun $expect_out(1,string)
-		incr error_match
+		if {$error_match != 2} {
+			exp_continue
+		}
 	}
 	timeout {
 		send_user "\nFAILURE: srun is not responding\n"
@@ -114,12 +113,8 @@ expect {
 if {$error_match != 2} {
 	send_user "\nFAILURE: srun did not have a segmentation error when runnning the program ($error_match != 2)\n"
 	set exit_code 1
-}
-
-# Match exit codes from both programs
-if {$err_num_c != $err_num_srun} {
-	send_user "\nFAILURE: exit codes do not match ($err_num_c != $err_num_srun)\n"
-	set exit_code
+} else {
+	send_user "\nThis error is expected\n"
 }
 
 if {$exit_code == 0} {
