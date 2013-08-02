@@ -504,6 +504,11 @@ extern void accounts_list_build(char *accounts, char ***accounts_array)
 	char *tmp_accts, *one_acct_name, *name_ptr = NULL, **tmp_array = NULL;
 	int array_len = 0, array_used = 0;
 
+	if (!accounts) {
+		*accounts_array = NULL;
+		return;
+	}
+
 	tmp_accts = xstrdup(accounts);
 	one_acct_name = strtok_r(tmp_accts, ",", &name_ptr);
 	while (one_acct_name) {
@@ -536,6 +541,11 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
 	char *tmp_qos, *one_qos_name, *name_ptr = NULL;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr = NULL;
 	bitstr_t *tmp_qos_bitstr;
+
+	if (!qos) {
+		*qos_bits = NULL;
+		return;
+	}
 
 	tmp_qos_bitstr = bit_alloc(g_qos_count);
 	tmp_qos = xstrdup(qos);

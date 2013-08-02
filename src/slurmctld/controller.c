@@ -247,6 +247,7 @@ int main(int argc, char *argv[])
 	 * Establish initial configuration
 	 */
 	_init_config();
+	slurm_conf_init(NULL);
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
 	sched_log_init(argv[0], sched_log_opts, LOG_DAEMON, NULL);
 	slurmctld_pid = getpid();
