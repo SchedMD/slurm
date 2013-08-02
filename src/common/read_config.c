@@ -108,7 +108,7 @@ static s_p_hashtbl_t *default_nodename_tbl;
 static s_p_hashtbl_t *default_partition_tbl;
 
 inline static void _normalize_debug_level(uint16_t *level);
-static void _init_slurm_conf(const char *file_name);
+static int _init_slurm_conf(const char *file_name);
 
 #define NAME_HASH_LEN 512
 typedef struct names_ll_s {
@@ -1650,7 +1650,8 @@ static void _init_slurmd_nodehash(void)
 		nodehash_initialized = true;
 
 	if (!conf_initialized) {
-		_init_slurm_conf(NULL);
+		if (_init_slurm_conf(NULL) != SLURM_SUCCESS)
+			fatal("Unable to process slurm.conf file");
 		conf_initialized = true;
 	}
 
@@ -2402,7 +2403,7 @@ end:
 }
 
 /* caller must lock conf_lock */
-static void _init_slurm_conf(const char *file_name)
+static int _init_slurm_conf(const char *file_name)
 {
 	char *name = (char *)file_name;
 	/* conf_ptr = (slurm_ctl_conf_t *)xmalloc(sizeof(slurm_ctl_conf_t)); */
@@ -2423,17 +2424,15 @@ static void _init_slurm_conf(const char *file_name)
 	if ((_config_is_storage(conf_hashtbl, name) < 0) &&
 	    (s_p_parse_file(conf_hashtbl, &conf_ptr->hash_val, name, false)
 	     == SLURM_ERROR)) {
-		fatal("Unable to read or parse slurm.conf file");
-		return;
+		return SLURM_ERROR;
 	}
 	/* s_p_dump_values(conf_hashtbl, slurm_conf_options); */
 
-	if (_validate_and_set_defaults(conf_ptr, conf_hashtbl) == SLURM_ERROR) {
-		fatal("Invalid slurm.conf file contents");
-		return;
-	}
+	if (_validate_and_set_defaults(conf_ptr, conf_hashtbl) == SLURM_ERROR)
+		return SLURM_ERROR;
 
 	conf_ptr->slurm_conf = xstrdup(name);
+	return SLURM_SUCCESS;
 }
 
 /* caller must lock conf_lock */
@@ -2482,7 +2481,8 @@ slurm_conf_init(const char *file_name)
 	}
 
 	init_slurm_conf(conf_ptr);
-	_init_slurm_conf(file_name);
+	if (_init_slurm_conf(file_name) != SLURM_SUCCESS)
+		fatal("Unable to process configuration file");
 	conf_initialized = true;
 
 	pthread_mutex_unlock(&conf_lock);
@@ -2492,6 +2492,7 @@ slurm_conf_init(const char *file_name)
 static int _internal_reinit(const char *file_name)
 {
 	char *name = (char *)file_name;
+	int rc = SLURM_SUCCESS;
 
 	if (name == NULL) {
 		name = getenv("SLURM_CONF");
@@ -2504,11 +2505,12 @@ static int _internal_reinit(const char *file_name)
 		_destroy_slurm_conf();
 	}
 
-	_init_slurm_conf(name);
-
+	if (_init_slurm_conf(name) != SLURM_SUCCESS)
+		fatal("Unable to process configuration file");
 	conf_initialized = true;
 
-	return SLURM_SUCCESS;
+
+	return rc;
 }
 
 /*
@@ -2571,7 +2573,15 @@ slurm_conf_lock(void)
 	pthread_mutex_lock(&conf_lock);
 
 	if (!conf_initialized) {
-		_init_slurm_conf(NULL);
+		if (_init_slurm_conf(NULL) != SLURM_SUCCESS) {
+			/* Clearing backup_addr and control_addr results in
+			 * error for most APIs without generating a fatal
+			 * error and exiting. Slurm commands and daemons
+			 * should call slurm_conf_init() to get a fatal
+			 * error instead. */
+			xfree(conf_ptr->backup_addr);
+			xfree(conf_ptr->control_addr);
+		}
 		conf_initialized = true;
 	}
 

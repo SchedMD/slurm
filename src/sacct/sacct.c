@@ -129,6 +129,7 @@ int main(int argc, char **argv)
 	} op;
 	int rc = 0;
 
+	slurm_conf_init(NULL);
 	sacct_init();
 	parse_command_line(argc, argv);
 

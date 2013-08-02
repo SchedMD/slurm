@@ -93,6 +93,7 @@ main (int argc, char *argv[])
 	quiet_flag        = 0;
 	verbosity         = 0;
 	memset(&req_msg, 0, sizeof(shares_request_msg_t));
+	slurm_conf_init(NULL);
 	log_init("sshare", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	while((opt_char = getopt_long(argc, argv, "aA:hlM:npPqu:t:vV",

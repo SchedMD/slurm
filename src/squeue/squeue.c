@@ -49,6 +49,7 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 
+#include "src/common/read_config.h"
 #include "src/common/xstring.h"
 #include "src/squeue/squeue.h"
 
@@ -74,6 +75,7 @@ main (int argc, char *argv[])
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	int error_code = SLURM_SUCCESS;
 
+	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_USER, NULL);
 	parse_command_line( argc, argv );
 	if (params.verbose) {

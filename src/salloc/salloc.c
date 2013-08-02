@@ -176,6 +176,7 @@ int main(int argc, char *argv[])
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	slurm_allocation_callbacks_t callbacks;
 
+	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
 

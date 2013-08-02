@@ -56,6 +56,7 @@
 #include "slurm/slurm_errno.h"
 #include "slurm/slurm.h"
 
+#include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/strigger/strigger.h"
@@ -73,6 +74,7 @@ int main(int argc, char *argv[])
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	log_init("strigger", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
+	slurm_conf_init(NULL);
 	parse_command_line(argc, argv);
 	if (params.verbose) {
 		opts.stderr_level += params.verbose;

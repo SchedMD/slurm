@@ -54,6 +54,7 @@
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
@@ -84,6 +85,7 @@ int main(int argc, char *argv[])
 	error("The sbcast command is not supported on IBM BlueGene systems");
 	return 1;
 #endif
+	slurm_conf_init(NULL);
 	parse_command_line(argc, argv);
 	if (params.verbose) {
 		opts.stderr_level += params.verbose;

@@ -92,6 +92,7 @@ int main(int argc, char *argv[])
 	int i;
 	int rc;
 
+	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
 	if (params.verbose) {

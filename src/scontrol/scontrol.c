@@ -115,6 +115,7 @@ main (int argc, char *argv[])
 	input_field_count = 0;
 	quiet_flag        = 0;
 	verbosity         = 0;
+	slurm_conf_init(NULL);
 	log_init("scontrol", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	if (getenv ("SCONTROL_ALL"))

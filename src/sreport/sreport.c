@@ -101,6 +101,7 @@ main (int argc, char *argv[])
 	exit_flag         = 0;
 	input_field_count = 0;
 	quiet_flag        = 0;
+	slurm_conf_init(NULL);
 	log_init("sreport", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	/* Check to see if we are running a supported accounting plugin */

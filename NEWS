@@ -20,6 +20,9 @@ documents those changes that are of interest to users and admins.
     set of empty functions now).
  -- BLUEGENE - If block is in 'D' state or has more cnodes in error than
     MaxBlockInError set the job wait reason appropriately.
+ -- API use: Generate an error return rather than fatal error and exit if the
+    configuraiton file is absent or invalid. This will permit Slurm APIs to be
+    more reliably used by other programs.
 
 * Changes in Slurm 2.6.1
 ========================

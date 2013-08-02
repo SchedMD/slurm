@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
 	int script_size = 0;
 	int retries = 0;
 
+	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 
 	_set_exit_code();

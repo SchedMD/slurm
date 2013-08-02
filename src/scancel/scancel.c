@@ -59,12 +59,13 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
-#include "src/common/hostlist.h"
 #include "src/scancel/scancel.h"
 
 #define MAX_CANCEL_RETRY 10
@@ -107,6 +108,7 @@ main (int argc, char *argv[])
 	log_options_t log_opts = LOG_OPTS_STDERR_ONLY ;
 	int rc = 0;
 
+	slurm_conf_init(NULL);
 	log_init (xbasename(argv[0]), log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	initialize_and_process_args(argc, argv);
 	if (opt.verbose) {

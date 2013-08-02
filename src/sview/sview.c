@@ -1682,6 +1682,7 @@ int main(int argc, char *argv[])
 	int i=0;
 	log_options_t lopts = LOG_OPTS_STDERR_ONLY;
 
+	slurm_conf_init(NULL);
 	log_init(argv[0], lopts, SYSLOG_FACILITY_USER, NULL);
 	load_defaults();
 	cluster_flags = slurmdb_setup_cluster_flags();

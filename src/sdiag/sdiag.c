@@ -44,8 +44,9 @@
 
 #include <slurm.h>
 #include "src/common/macros.h"
-#include "src/common/xstring.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/xstring.h"
 
 /********************
  * Global Variables *
@@ -65,6 +66,7 @@ int main(int argc, char *argv[])
 {
 	int rc = 0;
 
+	slurm_conf_init(NULL);
 	parse_command_line(argc, argv);
 
 	if (sdiag_param == STAT_COMMAND_RESET) {
