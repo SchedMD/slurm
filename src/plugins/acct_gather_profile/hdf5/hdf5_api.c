@@ -225,10 +225,10 @@ static hid_t _energy_create_memory_datatype(void)
 		debug3("PROFILE: failed to create Energy memory datatype");
 		return -1;
 	}
-	MEM_ADD_DATE_TIME(mtyp_energy, "Date Time", profile_energy_t, tod);
+	MEM_ADD_DATE_TIME(mtyp_energy, "Date_Time", profile_energy_t, tod);
 	MEM_ADD_UINT64(mtyp_energy, "Time", profile_energy_t, time);
 	MEM_ADD_UINT64(mtyp_energy, "Power", profile_energy_t, power);
-	MEM_ADD_UINT64(mtyp_energy, "CPU Frequency",
+	MEM_ADD_UINT64(mtyp_energy, "CPU_Frequency",
 		       profile_energy_t, cpu_freq);
 
 	return mtyp_energy;
@@ -242,10 +242,10 @@ static hid_t _energy_create_file_datatype(void)
 		return -1;
 	}
 	moffset = TOD_LEN;
-	FILE_ADD_DATE_TIME(ftyp_energy, "Date Time", 0);
+	FILE_ADD_DATE_TIME(ftyp_energy, "Date_Time", 0);
 	FILE_ADD_UINT64(ftyp_energy, "Time");
 	FILE_ADD_UINT64(ftyp_energy, "Power");
-	FILE_ADD_UINT64(ftyp_energy, "CPU Frequency");
+	FILE_ADD_UINT64(ftyp_energy, "CPU_Frequency");
 
 	return ftyp_energy;
 }
@@ -311,6 +311,56 @@ static void *_energy_init_job_series(int n_samples)
 		return NULL;
 	}
 	return (void*) energy_data;
+}
+
+static char** _energy_get_series_tod(void* data, int nsmp)
+{
+	int ix;
+	char      **tod_values = NULL;
+	profile_energy_t* energy_series = (profile_energy_t*) data;
+	tod_values = (char**) xmalloc(nsmp*sizeof(char*));
+	if (tod_values == NULL) {
+		info("Failed to get memory for energy tod");
+		return NULL;
+	}
+	for (ix=0; ix < nsmp; ix++) {
+		tod_values[ix] = xstrdup(energy_series[ix].tod);
+	}
+	return tod_values;
+}
+
+static double* _energy_get_series_values(char* data_name, void* data, int nsmp)
+{
+	int ix;
+	profile_energy_t* energy_series = (profile_energy_t*) data;
+	double  *energy_values = NULL;
+	energy_values = xmalloc(nsmp*sizeof(double));
+	if (energy_values == NULL) {
+		info("PROFILE: Failed to get memory for energy data");
+		return NULL;
+	}
+	if (strcasecmp(data_name,"Time") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			energy_values[ix] = (double) energy_series[ix].time;
+
+		}
+		return energy_values;
+	} else if (strcasecmp(data_name,"Power") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			energy_values[ix] = (double) energy_series[ix].power;
+
+		}
+		return energy_values;
+	} else if (strcasecmp(data_name,"CPU_Frequency") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			energy_values[ix] = (double) energy_series[ix].cpu_freq;
+
+		}
+		return energy_values;
+	}
+	xfree(energy_values);
+	info("PROFILE: %s is invalid data item for energy data", data_name);
+	return NULL;
 }
 
 static void _energy_merge_step_series(
@@ -402,6 +452,8 @@ static hdf5_api_ops_t* _energy_profile_factory(void)
 	ops->create_s_memory_datatype = &_energy_s_create_memory_datatype;
 	ops->create_s_file_datatype = &_energy_s_create_file_datatype;
 	ops->init_job_series = &_energy_init_job_series;
+	ops->get_series_tod = &_energy_get_series_tod;
+	ops->get_series_values = &_energy_get_series_values;
 	ops->merge_step_series = &_energy_merge_step_series;
 	ops->series_total = &_energy_series_total;
 	ops->extract_series = &_energy_extract_series;
@@ -428,12 +480,12 @@ static hid_t _io_create_memory_datatype(void)
 		debug3("PROFILE: failed to create IO memory datatype");
 		return -1;
 	}
-	MEM_ADD_DATE_TIME(mtyp_io, "Date Time", profile_io_t, tod);
+	MEM_ADD_DATE_TIME(mtyp_io, "Date_Time", profile_io_t, tod);
 	MEM_ADD_UINT64(mtyp_io, "Time", profile_io_t, time);
 	MEM_ADD_UINT64(mtyp_io, "Reads", profile_io_t, reads);
-	MEM_ADD_DBL(mtyp_io, "Megabytes Read", profile_io_t, read_size);
+	MEM_ADD_DBL(mtyp_io, "Megabytes_Read", profile_io_t, read_size);
 	MEM_ADD_UINT64(mtyp_io, "Writes", profile_io_t, writes);
-	MEM_ADD_DBL(mtyp_io, "Megabytes Write", profile_io_t, write_size);
+	MEM_ADD_DBL(mtyp_io, "Megabytes_Write", profile_io_t, write_size);
 	return mtyp_io;
 }
 
@@ -447,12 +499,12 @@ static hid_t _io_create_file_datatype(void)
 		return -1;
 	}
 	moffset = TOD_LEN;
-	FILE_ADD_DATE_TIME(ftyp_io, "Date Time", 0);
+	FILE_ADD_DATE_TIME(ftyp_io, "Date_Time", 0);
 	FILE_ADD_UINT64(ftyp_io, "Time");
 	FILE_ADD_UINT64(ftyp_io, "Reads");
-	FILE_ADD_DBL(ftyp_io, "Megabytes Read");
+	FILE_ADD_DBL(ftyp_io, "Megabytes_Read");
 	FILE_ADD_UINT64(ftyp_io, "Writes");
-	FILE_ADD_DBL(ftyp_io, "Megabytes Write");
+	FILE_ADD_DBL(ftyp_io, "Megabytes_Write");
 
 	return ftyp_io;
 }
@@ -537,6 +589,68 @@ static void *_io_init_job_series(int n_samples)
 		return NULL;
 	}
 	return (void*) io_data;
+}
+
+static char** _io_get_series_tod(void* data, int nsmp)
+{
+	int ix;
+	char      **tod_values = NULL;
+	profile_io_t* io_series = (profile_io_t*) data;
+	tod_values = (char**) xmalloc(nsmp*sizeof(char*));
+	if (tod_values == NULL) {
+		info("Failed to get memory for io tod");
+		return NULL;
+	}
+	for (ix=0; ix < nsmp; ix++) {
+		tod_values[ix] = xstrdup(io_series[ix].tod);
+	}
+	return tod_values;
+}
+
+static double* _io_get_series_values(char* data_name, void* data, int nsmp)
+{
+	int ix;
+	profile_io_t* io_series = (profile_io_t*) data;
+	double  *io_values = NULL;
+	io_values = xmalloc(nsmp*sizeof(double));
+	if (io_values == NULL) {
+		info("PROFILE: Failed to get memory for io data");
+		return NULL;
+	}
+	if (strcasecmp(data_name,"Time") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			io_values[ix] = (double) io_series[ix].time;
+
+		}
+		return io_values;
+	} else if (strcasecmp(data_name,"Reads") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			io_values[ix] = (double) io_series[ix].reads;
+
+		}
+		return io_values;
+	} else if (strcasecmp(data_name,"Megabytes_Read") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			io_values[ix] = io_series[ix].read_size;
+
+		}
+		return io_values;
+	} else if (strcasecmp(data_name,"Writes") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			io_values[ix] = (double) io_series[ix].writes;
+
+		}
+		return io_values;
+	} else if (strcasecmp(data_name,"Megabytes_Write") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			io_values[ix] = io_series[ix].write_size;
+
+		}
+		return io_values;
+	}
+	xfree(io_values);
+	info("PROFILE: %s is invalid data item for io data", data_name);
+	return NULL;
 }
 
 static void _io_merge_step_series(
@@ -650,6 +764,8 @@ static hdf5_api_ops_t* _io_profile_factory(void)
 	ops->create_s_memory_datatype = &_io_s_create_memory_datatype;
 	ops->create_s_file_datatype = &_io_s_create_file_datatype;
 	ops->init_job_series = &_io_init_job_series;
+	ops->get_series_tod = &_io_get_series_tod;
+	ops->get_series_values = &_io_get_series_values;
 	ops->merge_step_series = &_io_merge_step_series;
 	ops->series_total = &_io_series_total;
 	ops->extract_series = &_io_extract_series;
@@ -675,14 +791,14 @@ static hid_t _network_create_memory_datatype(void)
 		debug3("PROFILE: failed to create Network memory datatype");
 		return -1;
 	}
-	MEM_ADD_DATE_TIME(mtyp_network, "Date Time", profile_network_t, tod);
+	MEM_ADD_DATE_TIME(mtyp_network, "Date_Time", profile_network_t, tod);
 	MEM_ADD_UINT64(mtyp_network, "Time", profile_network_t, time);
-	MEM_ADD_UINT64(mtyp_network, "Packets In",
+	MEM_ADD_UINT64(mtyp_network, "Packets_In",
 		       profile_network_t, packets_in);
-	MEM_ADD_DBL(mtyp_network, "Megabytes In", profile_network_t, size_in);
-	MEM_ADD_UINT64(mtyp_network, "Packets Out",
+	MEM_ADD_DBL(mtyp_network, "Megabytes_In", profile_network_t, size_in);
+	MEM_ADD_UINT64(mtyp_network, "Packets_Out",
 		       profile_network_t, packets_out);
-	MEM_ADD_DBL(mtyp_network, "Megabytes Out", profile_network_t, size_out);
+	MEM_ADD_DBL(mtyp_network, "Megabytes_Out", profile_network_t, size_out);
 
 	return mtyp_network;
 }
@@ -695,12 +811,12 @@ static hid_t _network_create_file_datatype(void)
 		return -1;
 	}
 	moffset = TOD_LEN;
-	FILE_ADD_DATE_TIME(ftyp_network, "Date Time", 0);
+	FILE_ADD_DATE_TIME(ftyp_network, "Date_Time", 0);
 	FILE_ADD_UINT64(ftyp_network, "Time");
-	FILE_ADD_UINT64(ftyp_network, "Packets In");
-	FILE_ADD_DBL(ftyp_network, "Megabytes In");
-	FILE_ADD_UINT64(ftyp_network, "Packets Out");
-	FILE_ADD_DBL(ftyp_network, "Megabytes Out");
+	FILE_ADD_UINT64(ftyp_network, "Packets_In");
+	FILE_ADD_DBL(ftyp_network, "Megabytes_In");
+	FILE_ADD_UINT64(ftyp_network, "Packets_Out");
+	FILE_ADD_DBL(ftyp_network, "Megabytes_Out");
 
 	return ftyp_network;
 }
@@ -796,6 +912,70 @@ static void *_network_init_job_series(int n_samples)
 	return (void*) network_data;
 }
 
+static char** _network_get_series_tod(void* data, int nsmp)
+{
+	int ix;
+	char      **tod_values = NULL;
+	profile_network_t* network_series = (profile_network_t*) data;
+	tod_values = (char**) xmalloc(nsmp*sizeof(char*));
+	if (tod_values == NULL) {
+		info("Failed to get memory for network tod");
+		return NULL;
+	}
+	for (ix=0; ix < nsmp; ix++) {
+		tod_values[ix] = xstrdup(network_series[ix].tod);
+	}
+	return tod_values;
+}
+
+static double* _network_get_series_values(char* data_name, void* data, int nsmp)
+{
+	int ix;
+	profile_network_t* network_series = (profile_network_t*) data;
+	double  *network_values = NULL;
+	network_values = xmalloc(nsmp*sizeof(double));
+	if (network_values == NULL) {
+		info("PROFILE: Failed to get memory for network data");
+		return NULL;
+	}
+	if (strcasecmp(data_name,"Time") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			network_values[ix] = (double) network_series[ix].time;
+
+		}
+		return network_values;
+	} else if (strcasecmp(data_name,"Packets_In") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			network_values[ix] =
+					(double) network_series[ix].packets_in;
+
+		}
+		return network_values;
+	} else if (strcasecmp(data_name,"Megabytes_In") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			network_values[ix] = network_series[ix].size_in;
+
+		}
+		return network_values;
+	} else if (strcasecmp(data_name,"Packets_Out") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			network_values[ix] =
+					(double) network_series[ix].packets_out;
+
+		}
+		return network_values;
+	} else if (strcasecmp(data_name,"Megabytes_Out") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			network_values[ix] = network_series[ix].size_out;
+
+		}
+		return network_values;
+	}
+	xfree(network_values);
+	info("PROFILE: %s is invalid data item for network data", data_name);
+	return NULL;
+}
+
 static void _network_merge_step_series(
 	hid_t group, void *prior, void *cur, void *buf)
 {
@@ -827,7 +1007,7 @@ static void *_network_series_total(int n_samples, void *data)
 	network_data = (profile_network_t*) data;
 	total = xmalloc(sizeof(profile_network_s_t));
 	if (total == NULL) {
-		error("PROFILE: Out of memory getting energy total");
+		error("PROFILE: Out of memory getting network total");
 		return NULL;
 	}
 	// Assuming network series are a running total, and the first
@@ -899,6 +1079,8 @@ static hdf5_api_ops_t *_network_profile_factory(void)
 	ops->create_s_memory_datatype = &_network_s_create_memory_datatype;
 	ops->create_s_file_datatype = &_network_s_create_file_datatype;
 	ops->init_job_series = &_network_init_job_series;
+	ops->get_series_tod = &_network_get_series_tod;
+	ops->get_series_values = &_network_get_series_values;
 	ops->merge_step_series = &_network_merge_step_series;
 	ops->series_total = &_network_series_total;
 	ops->extract_series = &_network_extract_series;
@@ -922,17 +1104,17 @@ static hid_t _task_create_memory_datatype(void)
 		debug3("PROFILE: failed to create Task memory datatype");
 		return -1;
 	}
-	MEM_ADD_DATE_TIME(mtyp_task, "Date Time", profile_task_t, tod);
+	MEM_ADD_DATE_TIME(mtyp_task, "Date_Time", profile_task_t, tod);
 	MEM_ADD_UINT64(mtyp_task, "Time", profile_task_t, time);
-	MEM_ADD_UINT64(mtyp_task, "CPU Frequency", profile_task_t, cpu_freq);
-	MEM_ADD_UINT64(mtyp_task, "CPU Time", profile_task_t, cpu_time);
-	MEM_ADD_DBL(mtyp_task, "CPU Utilization",
+	MEM_ADD_UINT64(mtyp_task, "CPU_Frequency", profile_task_t, cpu_freq);
+	MEM_ADD_UINT64(mtyp_task, "CPU_Time", profile_task_t, cpu_time);
+	MEM_ADD_DBL(mtyp_task, "CPU_Utilization",
 		    profile_task_t, cpu_utilization);
 	MEM_ADD_UINT64(mtyp_task, "RSS", profile_task_t, rss);
-	MEM_ADD_UINT64(mtyp_task, "VM Size", profile_task_t, vm_size);
+	MEM_ADD_UINT64(mtyp_task, "VM_Size", profile_task_t, vm_size);
 	MEM_ADD_UINT64(mtyp_task, "Pages", profile_task_t, pages);
-	MEM_ADD_DBL(mtyp_task, "Read Megabytes", profile_task_t, read_size);
-	MEM_ADD_DBL(mtyp_task, "Write Megabytes", profile_task_t, write_size);
+	MEM_ADD_DBL(mtyp_task, "Read_Megabytes", profile_task_t, read_size);
+	MEM_ADD_DBL(mtyp_task, "Write_Megabytes", profile_task_t, write_size);
 
 	return mtyp_task;
 }
@@ -945,16 +1127,16 @@ static hid_t _task_create_file_datatype(void)
 		return -1;
 	}
 	moffset = TOD_LEN;
-	FILE_ADD_DATE_TIME(ftyp_task, "Date Time", 0);
+	FILE_ADD_DATE_TIME(ftyp_task, "Date_Time", 0);
 	FILE_ADD_UINT64(ftyp_task, "Time");
-	FILE_ADD_UINT64(ftyp_task, "CPU Frequency");
-	FILE_ADD_UINT64(ftyp_task, "CPU Time");
-	FILE_ADD_DBL(ftyp_task, "CPU Utilization");
+	FILE_ADD_UINT64(ftyp_task, "CPU_Frequency");
+	FILE_ADD_UINT64(ftyp_task, "CPU_Time");
+	FILE_ADD_DBL(ftyp_task, "CPU_Utilization");
 	FILE_ADD_UINT64(ftyp_task, "RSS");
-	FILE_ADD_UINT64(ftyp_task, "VM Size");
+	FILE_ADD_UINT64(ftyp_task, "VM_Size");
 	FILE_ADD_UINT64(ftyp_task, "Pages");
-	FILE_ADD_DBL(ftyp_task, "Read Megabytes");
-	FILE_ADD_DBL(ftyp_task, "Write Megabytes");
+	FILE_ADD_DBL(ftyp_task, "Read_Megabytes");
+	FILE_ADD_DBL(ftyp_task, "Write_Megabytes");
 
 	return ftyp_task;
 }
@@ -1082,6 +1264,92 @@ static void *_task_init_job_series(int n_samples)
 		return NULL;
 	}
 	return (void*) task_data;
+}
+
+static char** _task_get_series_tod(void* data, int nsmp)
+{
+	int ix;
+	char      **tod_values = NULL;
+	profile_task_t* task_series = (profile_task_t*) data;
+	tod_values = (char**) xmalloc(nsmp*sizeof(char*));
+	if (tod_values == NULL) {
+		info("Failed to get memory for task tod");
+		return NULL;
+	}
+	for (ix=0; ix < nsmp; ix++) {
+		tod_values[ix] = xstrdup(task_series[ix].tod);
+	}
+	return tod_values;
+}
+
+static double* _task_get_series_values(char* data_name, void* data, int nsmp)
+{
+	int ix;
+	profile_task_t* task_series = (profile_task_t*) data;
+	double  *task_values = NULL;
+	task_values = xmalloc(nsmp*sizeof(double));
+	if (task_values == NULL) {
+		info("PROFILE: Failed to get memory for task data");
+		return NULL;
+	}
+	if (strcasecmp(data_name,"Time") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			task_values[ix] = (double) task_series[ix].time;
+
+		}
+		return task_values;
+	} else if (strcasecmp(data_name,"CPU_Frequency") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			task_values[ix] = (double) task_series[ix].cpu_freq;
+
+		}
+		return task_values;
+	} else if (strcasecmp(data_name,"CPU_Time") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			task_values[ix] = (double) task_series[ix].cpu_time;
+
+		}
+		return task_values;
+	} else if (strcasecmp(data_name,"CPU_Utilization") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			task_values[ix] = task_series[ix].cpu_utilization;
+
+		}
+		return task_values;
+	} else if (strcasecmp(data_name,"RSS") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			task_values[ix] = (double) task_series[ix].rss;
+
+		}
+		return task_values;
+	} else if (strcasecmp(data_name,"VM_Size") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			task_values[ix] = (double) task_series[ix].vm_size;
+
+		}
+		return task_values;
+	} else if (strcasecmp(data_name,"Pages") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			task_values[ix] = (double) task_series[ix].pages;
+
+		}
+		return task_values;
+	} else if (strcasecmp(data_name,"Read_Megabytes") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			task_values[ix] = task_series[ix].read_size;
+
+		}
+		return task_values;
+	} else if (strcasecmp(data_name,"Write_Megabytes") == 0) {
+		for (ix=0; ix < nsmp; ix++) {
+			task_values[ix] = task_series[ix].write_size;
+
+		}
+		return task_values;
+	}
+	xfree(task_values);
+	info("PROFILE: %s is invalid data item for task data", data_name);
+	return NULL;
 }
 
 static void _task_merge_step_series(
@@ -1216,6 +1484,8 @@ static hdf5_api_ops_t *_task_profile_factory(void)
 	ops->create_s_memory_datatype = &_task_s_create_memory_datatype;
 	ops->create_s_file_datatype = &_task_s_create_file_datatype;
 	ops->init_job_series = &_task_init_job_series;
+	ops->get_series_tod = &_task_get_series_tod;
+	ops->get_series_values = &_task_get_series_values;
 	ops->merge_step_series = &_task_merge_step_series;
 	ops->series_total = &_task_series_total;
 	ops->extract_series = &_task_extract_series;

@@ -223,6 +223,9 @@ typedef struct profile_task_s {
  *		to the summary datatype structure.
  *	init_job_series -- allocates a buffer for a complete time series
  *		(in job merge) and initializes each member
+ *      get_series_tod -- get the date/time value of each sample in the series
+ *      get_series_values -- gets a specific data item from each sample in the
+ *		series
  *	merge_step_series -- merges all the individual time samples into a
  *		single data set with one item per sample.
  *		Data items can be scaled (e.g. subtracting beginning time)
@@ -245,6 +248,8 @@ typedef struct hdf5_api_ops {
 	hid_t (*create_s_memory_datatype) (void);
 	hid_t (*create_s_file_datatype) (void);
 	void* (*init_job_series) (int);
+	char** (*get_series_tod) (void*, int);
+	double* (*get_series_values) (char*, void*, int);
 	void  (*merge_step_series) (hid_t, void*, void*, void*);
 	void* (*series_total) (int, void*);
 	void  (*extract_series) (FILE*, bool, int, int, char*, char*, void*,
