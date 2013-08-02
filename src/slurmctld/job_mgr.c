@@ -3731,7 +3731,7 @@ _valid_job_part_acct(job_desc_msg_t *job_desc, struct part_record *part_ptr)
 {
 	int i;
 
-	if (part_ptr->allow_account_array) {
+	if (part_ptr->allow_account_array && part_ptr->allow_account_array[0]) {
 		int match = 0;
 		for (i = 0; part_ptr->allow_account_array[i]; i++) {
 			if (strcmp(part_ptr->allow_account_array[i],
@@ -3747,7 +3747,8 @@ _valid_job_part_acct(job_desc_msg_t *job_desc, struct part_record *part_ptr)
 			     job_desc->account);
 			return ESLURM_INVALID_ACCOUNT;
 		}
-	} else if (part_ptr->deny_account_array) {
+	} else if (part_ptr->deny_account_array &&
+		   part_ptr->deny_account_array[0]) {
 		int match = 0;
 		for (i = 0; part_ptr->deny_account_array[i]; i++) {
 			if (strcmp(part_ptr->deny_account_array[i],

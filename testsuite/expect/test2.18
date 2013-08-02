@@ -1,0 +1,337 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate that Allow/Deny accounts are enforced.
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2013 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id        "test2.18"
+set user_name      ""
+set node_name      ""
+set host_name      ""
+set acct_g         "acct_good"
+set acct_b         "acct_bad"
+set part_name      "$test_id\_part"
+set exit_code      0
+
+print_header $test_id
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME set admin=admin.\n"
+	exit 0
+}
+
+proc set_part_val {part_type part_val} {
+
+	global scontrol part_name exit_code
+
+	spawn $scontrol update partitionname=$part_name $part_type=$part_val
+	expect {
+		-re "Error" {
+			send_user "\nFAILURE: $part_type was not set\n"
+			set exit_code 1
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+proc delete_part { } {
+
+	global scontrol sacctmgr part_name acct_g acct_b exit_code
+
+	set del_part 0
+	spawn $sacctmgr -i delete account $acct_g $acct_b
+	expect {
+		-re "Deleting accounts" {
+			set del_part 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	spawn $scontrol delete partition=$part_name
+	expect {
+		-re "error" {
+			send_user "\nFAILURE: scontrol did not remove "
+			"partition\n"
+			set exit_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "FAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$del_part != 1} {
+		send_user "\nFAILURE: Account was not deleted\n"
+		set exit_code 1
+	}
+
+}
+
+proc create_acct { acct } {
+
+	global sacctmgr exit_code user_name
+
+	set create_acct 0
+	spawn $sacctmgr -i create account $acct
+	expect {
+		-re "Adding Account" {
+			set create_acct 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	spawn $sacctmgr -i create user $user_name account=$acct
+	expect {
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$create_acct !=1 } {
+		send_user "\nFAILURE: Account was not added\n"
+		set exit_code 1
+	}
+
+
+}
+
+proc test_part { acct part acct_con } {
+
+	global srun host_name exit_code
+
+
+	set sub_job 0
+	spawn $srun -A $acct -p $part hostname
+	expect {
+		-re "$host_name" {
+			set sub_job 1
+			exp_continue
+		}
+		-re "error" {
+			set sub_job 2
+			if { $acct_con == 1 && $sub_job == 2} {
+				send_user "\nThis error is expected\n"
+			} else {
+				send_user "\nFAILURE: This error should not have occured\n"
+				set exit_code 1
+			}
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+
+}
+
+
+spawn $bin_id -un
+expect {
+	-re "($alpha_numeric_under)" {
+		set user_name $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: id is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn hostname
+expect {
+
+	-re "($alpha_numeric_under)" {
+		set host_name $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: hostname is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+
+spawn $scontrol show node
+expect {
+	-re "NodeName=($alpha_numeric_under)" {
+		set node_name $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Create partition
+spawn $scontrol create partition=$part_name
+expect {
+	-re "error" {
+		send_user "\nFAILURE: partition was not created\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not reponding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Add nodes to partition
+spawn $scontrol update partition=$part_name nodes=$node_name
+expect {
+	-re "error" {
+		send_user "\nFAILURE: partition was not created\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not reponding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# NOTE: acct_g (good account) should always work and
+# acct_b (bad account) should always cause an error
+
+#
+# Create good account
+#
+create_acct $acct_g
+
+#
+# Create bad account
+#
+create_acct $acct_b
+
+#
+# Set Allow Account to good values
+#
+set_part_val allowaccount $acct_g
+
+######Testing AllowAccount#####
+send_user "\nTesting AllowAccount\n"
+
+#
+# Test partition with good values
+# 0 = good test / 1 = bad test
+#
+test_part $acct_g $part_name 0
+
+#
+# Test partition with bad values
+# 0 = good test / 1 = bad test
+#
+test_part $acct_b $part_name 1
+
+#
+# Set Allow Accounts to all and
+# set Deny Account to bad value
+#
+set_part_val allowaccount ALL
+set_part_val denyaccount $acct_b
+
+
+######Testing DenyAccount#####
+send_user "\nTesting DenyAccount\n"
+
+#
+# Test partition with good values
+# 0 = good test / 1 = bad test
+#
+test_part $acct_g $part_name 0
+
+#
+# Test partition with bad values
+# 0 = good test / 1 = bad test
+#
+test_part $acct_b $part_name 1
+
+
+sleep 2
+delete_part
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
