@@ -98,8 +98,12 @@ extern int acct_gather_conf_init(void)
 		tbl = s_p_hashtbl_create(full_options);
 		if (s_p_parse_file(tbl, NULL, conf_path, false) ==
 		    SLURM_ERROR) {
-			fatal("Could not open/read/parse "
-			      "acct_gather.conf file %s",
+			fatal("Could not open/read/parse acct_gather.conf file "
+			      "%s.  Many times this is because you have "
+			      "defined options for plugins that are not "
+			      "loaded.  Please check your slurm.conf file "
+			      "and make sure the plugins for the options "
+			      "listed are loaded.",
 			      conf_path);
 		}
 	}
