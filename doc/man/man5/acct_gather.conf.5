@@ -24,6 +24,13 @@ of the command "scontrol reconfigure" unless otherwise noted.
 The following acct_gather.conf parameters are defined to control the general
 behavior of various plugins in SLURM.
 
+.LP
+The acct_gather.conf file is different than other Slurm .conf files.  Each
+plugin defines which options are available.  So if you do not load the
+respective plugin for an option that option will appear to be unknown by Slurm
+and could cause Slurm not to load.  If you decide to change plugin types you
+might also have to change the related options as well.
+
 .TP
 \fBEnergyIPMI\fR
 Options used for AcctGatherEnergyType/ipmi are as follows:
