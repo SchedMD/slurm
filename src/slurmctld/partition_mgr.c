@@ -595,7 +595,8 @@ int load_all_part_state(void)
 			    (flags & PART_FLAG_HIDDEN_CLR)  ||
 			    (flags & PART_FLAG_NO_ROOT_CLR) ||
 			    (flags & PART_FLAG_ROOT_ONLY_CLR) ||
-			    (flags & PART_FLAG_REQ_RESV_CLR)) {
+			    (flags & PART_FLAG_REQ_RESV_CLR) ||
+			    (flags & PART_FLAG_LLN_CLR)) {
 				error("Invalid data for partition %s: flags=%u",
 				      part_name, flags);
 				error_code = EINVAL;
@@ -1318,6 +1319,16 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		xfree(default_part_name);
 		default_part_loc = NULL;
 		part_ptr->flags &= (~PART_FLAG_DEFAULT);
+	}
+
+	if (part_desc->flags & PART_FLAG_LLN) {
+		info("update_part: setting LLN for partition %s",
+		     part_desc->name);
+		part_ptr->flags |= PART_FLAG_LLN;
+	} else if (part_desc->flags & PART_FLAG_LLN_CLR) {
+		info("update_part: clearing LLN for partition %s",
+		     part_desc->name);
+		part_ptr->flags &= (~PART_FLAG_LLN);
 	}
 
 	if (part_desc->state_up != (uint16_t) NO_VAL) {

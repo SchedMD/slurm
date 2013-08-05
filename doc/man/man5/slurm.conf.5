@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "July 2013" "slurm.conf 13.12" "Slurm configuration file"
+.TH "slurm.conf" "5" "August 2013" "slurm.conf 13.12" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1979,6 +1979,14 @@ This default behavior can be overridden specifying a particular
 "\-m" parameter with srun/salloc/sbatch.
 Without this option, cores will be allocated cyclicly across the sockets.
 .TP
+\fBCR_LLN\fR
+Schedule resources to jobs on the least loaded nodes (based upon the number
+of idle CPUs). This is generally only recommended for an environment with
+serial jobs as idle resources will tend to be highly fragmented, resulting
+in parallel jobs being distributed across many nodes.
+Also see the partition configuration parameter \fBLLN\fR
+use the least loaded nodes in selected partitions.
+.TP
 \fBCR_Socket\fR
 Sockets are consumable resources.
 On nodes with multiple cores, each core or thread is counted as a CPU
@@ -3192,6 +3200,15 @@ Possible values are "YES" and "NO".
 The default value is "NO".
 Note that partitions that a user lacks access to by virtue of the
 \fBAllowGroups\fR parameter will also be hidden by default.
+
+.TP
+\fBLLN\fR
+Schedule resources to jobs on the least loaded nodes (based upon the number
+of idle CPUs). This is generally only recommended for an environment with
+serial jobs as idle resources will tend to be highly fragmented, resulting
+in parallel jobs being distributed across many nodes.
+Also see the \fBSelectParameters\fR configuration parameter \fBCR_LLN\fR to
+use the least loaded nodes in every partition.
 
 .TP
 \fBMaxCPUsPerNode\fR

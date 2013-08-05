@@ -25,6 +25,10 @@ SLURM will result in loss of state information.
 
 HIGHLIGHTS
 ==========
+ -- Added partition configuration parameters AllowAccounts, AllowQOS,
+    DenyAccounts and DenyQOS to provide greater control over use.
+ -- Added the ability to perform load based scheduling. Allocating resources to
+    jobs on the nodes with the largest number if idle CPUs.
 
 RPMBUILD OPTION CHANGES
 =======================
@@ -36,9 +40,10 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 =============================================================
  -- Added JobContainerPlugin configuration parameter and plugin infrastructure.
  -- Added partition configuration parameters AllowAccounts, AllowQOS,
-    DenyAccounts and DenyQOS.
+    DenyAccounts and DenyQOS to provide greater control over use.
  -- SelectType: select/cray has been renamed select/alps.
-
+ -- Added SchedulingParameters paramter of "CR_LLN" and partition parameter of
+    "LLN=yes|no" to enable loadbased scheduling.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

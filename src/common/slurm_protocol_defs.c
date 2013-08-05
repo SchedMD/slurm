@@ -1226,7 +1226,11 @@ extern char *sched_param_type_string(uint16_t select_type_param)
 			strcat(select_str, ",");
 		strcat(select_str, "CR_ALLOCATE_FULL_SOCKET");
 	}
-
+	if (select_type_param & CR_LLN) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "CR_LLN");
+	}
 	if (select_str[0] == '\0')
 		strcat(select_str, "NONE");
 

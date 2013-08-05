@@ -372,7 +372,7 @@ static int _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 			   uint16_t cr_type, uint16_t **cpu_cnt_ptr, 
 			   bool test_only)
 {
-	uint16_t *cpu_cnt;
+	uint16_t *cpu_cnt, max_cpu_cnt = 0, part_lln_flag = 0;
 	uint32_t n;
 	int i_first, i_last;
 	int node_inx = -1;
@@ -381,6 +381,9 @@ static int _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 		error("select/serial: node count inconsistent with slurmctld");
 		return SLURM_ERROR;
 	}
+	if (job_ptr && job_ptr->part_ptr &&
+	    (job_ptr->part_ptr->flags & PART_FLAG_LLN))
+		part_lln_flag = 1;
 	if (job_ptr->details && job_ptr->details->req_node_bitmap)
 		bit_and(node_map, job_ptr->details->req_node_bitmap);
 	cpu_cnt = xmalloc(cr_node_cnt * sizeof(uint16_t));
@@ -395,13 +398,28 @@ static int _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 		cpu_cnt[n] = _can_job_run_on_node(job_ptr, core_map, n,
 						  node_usage, cr_type,
 						  test_only);
-		if (cpu_cnt[n]) {
+		if (!(cr_type & CR_LLN) && !part_lln_flag && cpu_cnt[n]) {
 			bit_nclear(node_map, 0, (node_record_count - 1));
 			bit_set(node_map, n);
 			node_inx = n;
 			break;	/* select/serial: only need one node */
 		}
 	}
+
+	if ((cr_type & CR_LLN) || part_lln_flag) {
+		for (n = i_first; n <= i_last; n++) {
+			if (cpu_cnt[n] > max_cpu_cnt) {
+				max_cpu_cnt = cpu_cnt[n];
+				node_inx = n;
+			}
+		}
+
+		if (node_inx >= 0) {
+ 			bit_nclear(node_map, 0, (node_record_count - 1));
+			bit_set(node_map, node_inx);
+ 		}
+ 	}
+
 	*cpu_cnt_ptr = cpu_cnt;
 	return node_inx;
 }

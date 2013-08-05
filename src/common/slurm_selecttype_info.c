@@ -92,6 +92,8 @@ int parse_select_type_param(char *select_type_parameters, uint16_t *param)
 		} else if (!strcasecmp(str_parameters,
 				       "CR_CORE_DEFAULT_DIST_BLOCK")) {
 			*param |= CR_CORE_DEFAULT_DIST_BLOCK;
+		} else if (!strcasecmp(str_parameters, "CR_LLN")) {
+			*param |= CR_LLN;
 		} else {
 			error("Bad SelectTypeParameter: %s", str_parameters);
 			rc = SLURM_ERROR;

@@ -171,6 +171,20 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
+		else if (strncasecmp(tag, "LLN", MAX(taglen, 1)) == 0) {
+			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
+				part_msg_ptr->flags |= PART_FLAG_LLN_CLR;
+			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
+				part_msg_ptr->flags |= PART_FLAG_LLN;
+			else {
+				exit_code = 1;
+				error("Invalid input: %s", argv[i]);
+				error("Acceptable LLN values "
+					"are YES and NO");
+				return -1;
+			}
+			(*update_cnt_ptr)++;
+		}
 		else if (strncasecmp(tag, "RootOnly", MAX(taglen, 3)) == 0) {
 			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_ROOT_ONLY_CLR;

@@ -23,6 +23,9 @@ documents those changes that are of interest to users and admins.
  -- API use: Generate an error return rather than fatal error and exit if the
     configuraiton file is absent or invalid. This will permit Slurm APIs to be
     more reliably used by other programs.
+ -- Add support for load-based scheduling, allocate jobs to nodes with the
+    largest number of available CPUs. Added SchedulingParameters paramter of
+    "CR_LLN" and partition parameter of "LLN=yes|no".
 
 * Changes in Slurm 2.6.1
 ========================

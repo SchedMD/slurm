@@ -266,6 +266,11 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		snprintf(tmp1, sizeof(tmp1), "%u", part_ptr->min_nodes);
 	sprintf(tmp_line, " MinNodes=%s", tmp1);
 	xstrcat(out, tmp_line);
+	if (part_ptr->flags & PART_FLAG_LLN)
+		sprintf(tmp_line, " LLN=YES");
+	else
+		sprintf(tmp_line, " LLN=NO");
+	xstrcat(out, tmp_line);
 	if (part_ptr->max_cpus_per_node == INFINITE)
 		sprintf(tmp_line, " MaxCPUsPerNode=UNLIMITED");
 	else {

@@ -931,6 +931,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"DisableRootJobs", S_P_BOOLEAN}, /* YES or NO */
 		{"GraceTime", S_P_UINT32},
 		{"Hidden", S_P_BOOLEAN}, /* YES or NO */
+		{"LLN", S_P_BOOLEAN}, /* YES or NO */
 		{"MaxCPUsPerNode", S_P_UINT32},
 		{"MaxMemPerCPU", S_P_UINT32},
 		{"MaxMemPerNode", S_P_UINT32},
@@ -1122,6 +1123,10 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_boolean(&p->req_resv_flag, "ReqResv", tbl)
 		    && !s_p_get_boolean(&p->req_resv_flag, "ReqResv", dflt))
 			p->req_resv_flag = false;
+
+		if (!s_p_get_boolean(&p->lln_flag, "LLN", tbl) &&
+		    !s_p_get_boolean(&p->lln_flag, "LLN", dflt))
+			p->lln_flag = false;
 
 		if (s_p_get_string(&tmp, "PreemptMode", tbl) ||
 		    s_p_get_string(&tmp, "PreemptMode", dflt)) {

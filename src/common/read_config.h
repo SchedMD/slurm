@@ -236,6 +236,7 @@ typedef struct slurm_conf_partition {
 				     * default */
 	uint32_t grace_time;	/* default grace time for partition */
 	bool     hidden_flag;	/* 1 if hidden by default */
+	bool     lln_flag;	/* 1 if nodes are selected in LLN order */
 	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
 	uint16_t max_share;	/* number of jobs to gang schedule */
 	uint32_t max_time;	/* minutes or INFINITE */
