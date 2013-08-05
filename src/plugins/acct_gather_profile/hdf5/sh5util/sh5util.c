@@ -892,10 +892,10 @@ static void _merge_node_step_data(hid_t fid_job, char* file_name, int nodeIndex,
 
 static int _merge_step_files(void)
 {
-	hid_t fid_job;
+	hid_t fid_job = 0;
 	hid_t jgid_step;
-	hid_t jgid_nodes;
-	hid_t jgid_tasks;
+	hid_t jgid_nodes = 0;
+	hid_t jgid_tasks = 0;
 	DIR *dir;
 	struct  dirent *de;
 	char file_name[MAX_PROFILE_PATH+1];
@@ -1600,7 +1600,7 @@ static void _get_all_node_series(FILE *fp, bool hd, hid_t jgid_step, int stepx)
 static void _get_all_task_series(FILE *fp, bool hd, hid_t jgid_step, int stepx)
 {
 
-	hid_t	jgid_tasks, jgid_task, jgid_nodes, jgid_node;
+	hid_t	jgid_tasks, jgid_task = 0, jgid_nodes, jgid_node;
 	H5G_info_t group_info;
 	int	ntasks,itx, tid;
 	uint64_t *task_id;
