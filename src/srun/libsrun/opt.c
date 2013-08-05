@@ -2501,7 +2501,7 @@ static void _help(void)
 "      --prolog=program        run \"program\" before launching job step\n"
 "      --profile=value         enable acct_gather_profile for detailed data\n"
 "                              value is all or none or any combination of\n"
-"                              energy, lustrenetwork or task\n"
+"                              energy, lustre, network or task\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 #ifdef HAVE_PTY_H
 "      --pty                   run task zero in pseudo terminal\n"
