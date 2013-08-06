@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
     plugin specific fields from the job's or step's GRES data structure.
  -- Added sbatch --signal option of "B:" to signal the batch shell rather than
     only the spawned job steps.
+ -- Added sinfo and squeue format option of "%all" to print all fields available
+    for the data type with a vertical bar separating each field.
 
 * Changes in Slurm 2.6.1
 ========================

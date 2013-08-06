@@ -484,9 +484,11 @@ _parse_format( char* format )
 {
 	int field_size;
 	bool right_justify;
-	char *prefix = NULL, *suffix = NULL, *token = NULL,
-		*tmp_char = NULL, *tmp_format = NULL;
+	char *prefix = NULL, *suffix = NULL, *token = NULL;
+	char *tmp_char = NULL, *tmp_format = NULL;
 	char field[1];
+	bool format_all = false;
+	int i;
 
 	if (format == NULL) {
 		fprintf( stderr, "Format option lacks specification\n" );
@@ -497,7 +499,16 @@ _parse_format( char* format )
 	if ((prefix = _get_prefix(format)))
 		format_add_prefix( params.format_list, 0, 0, prefix);
 
-	tmp_format = xstrdup( format );
+	if (!strcasecmp(format, "%all")) {
+		xstrfmtcat(tmp_format, "%c%c", '%', 'a');
+		for (i = 'b'; i <= 'z'; i++)
+			xstrfmtcat(tmp_format, "|%c%c", '%', (char) i);
+		for (i = 'A'; i <= 'Z'; i++)
+			xstrfmtcat(tmp_format, "|%c%c ", '%', (char) i);
+		format_all = true;
+	} else {
+		tmp_format = xstrdup(format);
+	}
 	token = strtok_r( tmp_format, "%", &tmp_char);
 	if (token && (format[0] != '%'))	/* toss header */
 		token = strtok_r( NULL, "%", &tmp_char );
@@ -721,6 +732,8 @@ _parse_format( char* format )
 					field_size,
 					right_justify,
 					suffix );
+		} else if (format_all) {
+			;	/* ignore */
 		} else {
 			prefix = xstrdup("%");
 			xstrcat(prefix, token);

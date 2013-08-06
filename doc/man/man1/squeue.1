@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "January 2013" "squeue 2.6" "Slurm components"
+.TH SQUEUE "1" "August 2013" "squeue 13.12" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -116,7 +116,11 @@ only for jobs while others are valid only for job steps.
 Valid \fItype\fR specifications include:
 
 .RS
-.TP 4
+.TP 6
+\fB%all\fR
+Print all fields available for this data type with a vertical bar separating
+each field.
+.TP
 \fB%a\fR
 Account associated with the job.
 (Valid for jobs only)

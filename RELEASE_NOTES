@@ -53,6 +53,8 @@ COMMAND CHANGES (see man pages for details)
 ===========================================
  -- Added sbatch --signal option of "B:" to signal the batch shell rather than
     only the spawned job steps.
+ -- Added sinfo and squeue format option of "%all" to print all fields available
+    for the data type with a vertical bar separating each field.
 
 OTHER CHANGES
 =============
