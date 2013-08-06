@@ -1762,7 +1762,7 @@ extern List priority_p_get_priority_factors_list(
 extern void priority_p_job_end(struct job_record *job_ptr)
 {
 	if (priority_debug)
-		info("priority_p_job_end: called");
+		info("priority_p_job_end: called for job %u", job_ptr->job_id);
 
 	slurm_mutex_lock(&decay_lock);
 	_apply_new_usage(job_ptr, g_last_ran, time(NULL));
