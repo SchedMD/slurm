@@ -95,6 +95,14 @@ typedef struct slurm_gres_ops {
 						  void *gres_ptr );
 	void		(*send_stepd)		( int fd );
 	void		(*recv_stepd)		( int fd );
+	int		(*job_info)		( gres_job_state_t *job_gres_data,
+						  uint32_t node_inx,
+						  enum gres_job_data_type data_type,
+						  void *data);
+	int		(*step_info)		( gres_step_state_t *step_gres_data,
+						  uint32_t node_inx,
+						  enum gres_job_data_type data_type,
+						  void *data);
 } slurm_gres_ops_t;
 
 /* Gres plugin context, one for each gres type */
@@ -245,6 +253,8 @@ static int _load_gres_plugin(char *plugin_name,
 		"step_set_env",
 		"send_stepd",
 		"recv_stepd",
+		"job_info",
+		"step_info",
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
 
@@ -4716,4 +4726,159 @@ extern void gres_plugin_recv_stepd(int fd)
 		break;
 	}
 	slurm_mutex_unlock(&gres_context_lock);
+}
+
+/* Get generic GRES data types here. Call the plugin for others */
+static int _get_job_info(int gres_inx, gres_job_state_t *job_gres_data,
+			 uint32_t node_inx, enum gres_job_data_type data_type,
+			 void *data)
+{
+	uint32_t *u32_data = (uint32_t *) data;
+	bitstr_t **bit_data = (bitstr_t **) data;
+	int rc = SLURM_SUCCESS;
+
+	if (!job_gres_data || !data)
+		return EINVAL;
+	if (node_inx >= job_gres_data->node_cnt)
+		return ESLURM_INVALID_NODE_COUNT;
+	if (data_type == GRES_JOB_DATA_COUNT) {
+		*u32_data = job_gres_data->gres_cnt_alloc;
+	} else if (data_type == GRES_JOB_DATA_BITMAP) {
+		if (job_gres_data->gres_bit_alloc)
+			*bit_data = job_gres_data->gres_bit_alloc[node_inx];
+		else
+			*bit_data = NULL;
+	} else {
+		/* Support here for plugin-specific data types */
+		rc = (*(gres_context[gres_inx].ops.job_info))
+			(job_gres_data, node_inx, data_type, data);
+	}
+
+	return rc;
+}
+
+/*
+ * get data from a job's GRES data structure
+ * IN job_gres_list  - job's GRES data structure
+ * IN gres_name - name of a GRES type
+ * IN node_inx - zero-origin index of the node within the job's allocation
+ *	for which data is desired
+ * IN data_type - type of data to get from the job's data
+ * OUT data - pointer to the data from job's GRES data structure
+ *            DO NOT FREE: This is a pointer into the job's data structure
+ * RET - SLURM_SUCCESS or error code
+ */
+extern int gres_get_job_info(List job_gres_list, char *gres_name,
+			     uint32_t node_inx,
+			     enum gres_job_data_type data_type, void *data)
+{
+	int i, rc = ESLURM_INVALID_GRES;
+	uint32_t plugin_id;
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	gres_job_state_t *job_gres_data;
+
+	if (data == NULL)
+		return EINVAL;
+	if (job_gres_list == NULL)	/* No GRES allocated */
+		return ESLURM_INVALID_GRES;
+
+	(void) gres_plugin_init();
+	plugin_id = _build_id(gres_name);
+
+	slurm_mutex_lock(&gres_context_lock);
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		for (i = 0; i < gres_context_cnt; i++) {
+			if (job_gres_ptr->plugin_id != plugin_id)
+				continue;
+			job_gres_data = (gres_job_state_t *)
+					job_gres_ptr->gres_data;
+			rc = _get_job_info(i, job_gres_data, node_inx,
+					   data_type, data);
+			break;
+		}
+	}
+	list_iterator_destroy(job_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
+}
+
+/* Get generic GRES data types here. Call the plugin for others */
+static int _get_step_info(int gres_inx, gres_step_state_t *step_gres_data,
+			  uint32_t node_inx, enum gres_step_data_type data_type,
+			  void *data)
+{
+	uint32_t *u32_data = (uint32_t *) data;
+	bitstr_t **bit_data = (bitstr_t **) data;
+	int rc = SLURM_SUCCESS;
+
+	if (!step_gres_data || !data)
+		return EINVAL;
+	if (node_inx >= step_gres_data->node_cnt)
+		return ESLURM_INVALID_NODE_COUNT;
+	if (data_type == GRES_STEP_DATA_COUNT) {
+		*u32_data = step_gres_data->gres_cnt_alloc;
+	} else if (data_type == GRES_STEP_DATA_BITMAP) {
+		if (step_gres_data->gres_bit_alloc)
+			*bit_data = step_gres_data->gres_bit_alloc[node_inx];
+		else
+			*bit_data = NULL;
+	} else {
+		/* Support here for plugin-specific data types */
+		rc = (*(gres_context[gres_inx].ops.step_info))
+			(step_gres_data, node_inx, data_type, data);
+	}
+
+	return rc;
+}
+
+/*
+ * get data from a step's GRES data structure
+ * IN step_gres_list  - step's GRES data structure
+ * IN gres_name - name of a GRES type
+ * IN node_inx - zero-origin index of the node within the job's allocation
+ *	for which data is desired. Note this can differ from the step's
+ *	node allocation index.
+ * IN data_type - type of data to get from the step's data
+ * OUT data - pointer to the data from step's GRES data structure
+ *            DO NOT FREE: This is a pointer into the step's data structure
+ * RET - SLURM_SUCCESS or error code
+ */
+extern int gres_get_step_info(List step_gres_list, char *gres_name,
+			      uint32_t node_inx,
+			      enum gres_step_data_type data_type, void *data)
+{
+	int i, rc = ESLURM_INVALID_GRES;
+	uint32_t plugin_id;
+	ListIterator step_gres_iter;
+	gres_state_t *step_gres_ptr;
+	gres_step_state_t *step_gres_data;
+
+	if (data == NULL)
+		return EINVAL;
+	if (step_gres_list == NULL)	/* No GRES allocated */
+		return ESLURM_INVALID_GRES;
+
+	(void) gres_plugin_init();
+	plugin_id = _build_id(gres_name);
+
+	slurm_mutex_lock(&gres_context_lock);
+	step_gres_iter = list_iterator_create(step_gres_list);
+	while ((step_gres_ptr = (gres_state_t *) list_next(step_gres_iter))) {
+		for (i = 0; i < gres_context_cnt; i++) {
+			if (step_gres_ptr->plugin_id != plugin_id)
+				continue;
+			step_gres_data = (gres_step_state_t *)
+					 step_gres_ptr->gres_data;
+			rc = _get_step_info(i, step_gres_data, node_inx,
+					    data_type, data);
+			break;
+		}
+	}
+	list_iterator_destroy(step_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
 }

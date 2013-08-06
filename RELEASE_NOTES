@@ -55,7 +55,8 @@ COMMAND CHANGES (see man pages for details)
 
 OTHER CHANGES
 =============
-
+ -- Added job_info() and step_info() functions to the gres plugins to extract
+    plugin specific fields from the job's or step's GRES data structure.
 
 API CHANGES
 ===========

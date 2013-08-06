@@ -5,8 +5,7 @@
 <h2> Overview</h2>
 <p> This document describes SLURM generic resource plugins and the API that
 defines them. It is intended as a resource to programmers wishing to write
-their own SLURM job submit plugins. This is version 110 of the API.
-
+their own SLURM job submit plugins.
 <p>SLURM generic resource plugins must conform to the
 SLURM Plugin API with the following specifications:
 
@@ -31,7 +30,7 @@ for the type of accounting package.</p>
 <p><span class="commandline">const uint32_t
 plugin_version="<i>version_number</i>"</span><br>
 <p style="margin-left:.2in">
-The version number should be 110.</p>
+The version number should be 120.</p>
 
 <p>We include samples in the SLURM distribution for
 <ul>
@@ -104,11 +103,58 @@ needed information from the <i>slurmd</i> daemon.
 <span class="commandline">fd</span>
 (input) file descriptor to read information from.<br>
 
+<p class="commandline">
+extern int job_info(gres_job_state_t *job_gres_data, uint32_t node_inx,
+enum gres_job_data_type data_type, void *data)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is used to extract plugin specific data from the job's GRES
+data structure. Note that data types GRES_JOB_DATA_COUNT and
+GRES_JOB_DATA_BITMAP are processed in common code rather than within the
+plugin and return data types of uint32_t* and bitstr_t** respectively.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">job_gres_data</span>
+(input) Information about the job's GRES resources.<br>
+(input) Zero origin index within the job's resource allocation for which
+data is desired.<br>
+<span class="commandline">gres_job_data_type data_type</span>
+(input) Type of information to be gathered from the data structure.<br>
+<span class="commandline">data</span>
+(output) Pointer to data within job_gres_data.
+No data is copied or needs to be freed.
+Data type depends upon the value of gres_job_data_type data_type.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline">
+extern int step_info(gres_step_state_t *step_gres_data, uint32_t node_inx,
+enum gres_step_data_type data_type, void *data)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is used to extract plugin specific data from the step's GRES
+data structure. Note that data types GRES_STEP_DATA_COUNT and
+GRES_STEP_DATA_BITMAP are processed in common code rather than within the
+plugin and return data types of uint32_t* and bitstr_t** respectively.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">step_gres_data</span>
+(input) Information about the step's GRES resources.<br>
+<span class="commandline">node_inx</span>
+(input) Zero origin index within the job's resource allocation for which
+data is desired.<br>
+<span class="commandline">gres_step_data_type data_type</span>
+(input) Type of information to be gathered from the data structure.<br>
+<span class="commandline">data</span>
+(output) Pointer to data within step_gres_data.
+No data is copied or needs to be freed.
+Data type depends upon the value of gres_step_data_type data_type.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure.
+
 <h2>Versioning</h2>
-<p> This document describes version 110 of the SLURM Generic Resource API.
+<p> This document describes version 120 of the SLURM Generic Resource API.
 Future releases of SLURM may revise this API.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 1 February 2012</p>
+<p style="text-align:center;">Last modified 6 August 2013</p>
 
 <!--#include virtual="footer.txt"-->

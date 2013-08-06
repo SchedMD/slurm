@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
  -- Add support for load-based scheduling, allocate jobs to nodes with the
     largest number of available CPUs. Added SchedulingParameters paramter of
     "CR_LLN" and partition parameter of "LLN=yes|no".
+ -- Added job_info() and step_info() functions to the gres plugins to extract
+    plugin specific fields from the job's or step's GRES data structure.
 
 * Changes in Slurm 2.6.1
 ========================
