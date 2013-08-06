@@ -159,12 +159,12 @@ extern uint16_t part_max_priority;
 
 /*
  * apply decay factor to all associations usage_raw
- * IN: decay_factor - decay to be applied to each associations' used
+ * IN: real_decay - decay to be applied to each associations' used
  * shares.  This should already be modified with the amount of delta
  * time from last application..
  * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
  */
-static int _apply_decay(double decay_factor)
+static int _apply_decay(double real_decay)
 {
 	ListIterator itr = NULL;
 	slurmdb_association_rec_t *assoc = NULL;
@@ -172,12 +172,12 @@ static int _apply_decay(double decay_factor)
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
 
-	/* continue if decay_factor is 0 or 1 since that doesn't help
+	/* continue if real_decay is 0 or 1 since that doesn't help
 	   us at all. 1 means no decay and 0 will just zero
 	   everything out so don't waste time doing it */
-	if (!decay_factor)
+	if (!real_decay)
 		return SLURM_ERROR;
-	else if (!calc_fairshare || (decay_factor == 1))
+	else if (!calc_fairshare || (real_decay == 1))
 		return SLURM_SUCCESS;
 
 	assoc_mgr_lock(&locks);
@@ -190,15 +190,15 @@ static int _apply_decay(double decay_factor)
 	   root.  All usage_raws are calculated from the bottom up.
 	*/
 	while ((assoc = list_next(itr))) {
-		assoc->usage->usage_raw *= decay_factor;
-		assoc->usage->grp_used_wall *= decay_factor;
+		assoc->usage->usage_raw *= real_decay;
+		assoc->usage->grp_used_wall *= real_decay;
 	}
 	list_iterator_destroy(itr);
 
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while ((qos = list_next(itr))) {
-		qos->usage->usage_raw *= decay_factor;
-		qos->usage->grp_used_wall *= decay_factor;
+		qos->usage->usage_raw *= real_decay;
+		qos->usage->grp_used_wall *= real_decay;
 	}
 	list_iterator_destroy(itr);
 	assoc_mgr_unlock(&locks);
