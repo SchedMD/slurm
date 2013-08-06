@@ -48,6 +48,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/acct_policy.h"
 #include "src/common/node_select.h"
+#include "src/common/slurm_priority.h"
 
 #define _DEBUG 0
 
@@ -75,21 +76,6 @@ static slurmdb_used_limits_t *_get_used_limits_for_user(
 	list_iterator_destroy(itr);
 
 	return used_limits;
-}
-
-static uint64_t _get_unused_cpu_run_secs(struct job_record *job_ptr)
-{
-	uint64_t unused_cpu_run_secs = 0;
-	uint64_t time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
-
-	/* No unused cpu_run_secs if job ran past its time limit */
-	if (job_ptr->end_time >= job_ptr->start_time + time_limit_secs) {
-		return 0;
-	}
-
-	unused_cpu_run_secs = job_ptr->total_cpus *
-		(job_ptr->start_time + time_limit_secs - job_ptr->end_time);
-	return unused_cpu_run_secs;
 }
 
 static bool _valid_job_assoc(struct job_record *job_ptr)
@@ -129,7 +115,6 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 	slurmdb_association_rec_t *assoc_ptr = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
-	uint64_t unused_cpu_run_secs = 0;
 	uint64_t used_cpu_run_secs = 0;
 	uint32_t job_memory = 0;
 	uint32_t node_cnt;
@@ -151,7 +136,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 #endif
 
 	if (type == ACCT_POLICY_JOB_FINI)
-		unused_cpu_run_secs = _get_unused_cpu_run_secs(job_ptr);
+		priority_g_job_end(job_ptr);
 	else if (type == ACCT_POLICY_JOB_BEGIN)
 		used_cpu_run_secs = (uint64_t)job_ptr->total_cpus
 			* (uint64_t)job_ptr->time_limit * 60;
@@ -253,18 +238,6 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 				       "underflow for qos %s", qos_ptr->name);
 			}
 
-			/* If the job finished early remove the extra
-			   time now. */
-			if (unused_cpu_run_secs >
-			    qos_ptr->usage->grp_used_cpu_run_secs) {
-				qos_ptr->usage->grp_used_cpu_run_secs = 0;
-				debug2("acct_policy_job_fini: "
-				       "grp_used_cpu_run_secs "
-				       "underflow for qos %s", qos_ptr->name);
-			} else
-				qos_ptr->usage->grp_used_cpu_run_secs -=
-					unused_cpu_run_secs;
-
 			used_limits->cpus -= job_ptr->total_cpus;
 			if ((int32_t)used_limits->cpus < 0) {
 				used_limits->cpus = 0;
@@ -355,27 +328,6 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 				debug2("acct_policy_job_fini: grp_used_nodes "
 				       "underflow for account %s",
 				       assoc_ptr->acct);
-			}
-
-			/* If the job finished early remove the extra
-			   time now. */
-			if (unused_cpu_run_secs >
-			    assoc_ptr->usage->grp_used_cpu_run_secs) {
-				assoc_ptr->usage->grp_used_cpu_run_secs = 0;
-				debug2("acct_policy_job_fini: "
-				       "grp_used_cpu_run_secs "
-				       "underflow for account %s",
-				       assoc_ptr->acct);
-			} else {
-				assoc_ptr->usage->grp_used_cpu_run_secs -=
-					unused_cpu_run_secs;
-				debug4("acct_policy_job_fini: job %u. "
-				       "Removed %"PRIu64" unused seconds "
-				       "from assoc %s "
-				       "grp_used_cpu_run_secs = %"PRIu64"",
-				       job_ptr->job_id, unused_cpu_run_secs,
-				       assoc_ptr->acct,
-				       assoc_ptr->usage->grp_used_cpu_run_secs);
 			}
 
 			break;

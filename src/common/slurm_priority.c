@@ -50,6 +50,7 @@ typedef struct slurm_priority_ops {
 				    long double shares_norm);
 	List	 (*get_priority_factors)
 	(priority_factors_request_msg_t *req_msg, uid_t uid);
+	void     (*job_end)        (struct job_record *job_ptr);
 } slurm_priority_ops_t;
 
 /*
@@ -61,6 +62,7 @@ static const char *syms[] = {
 	"priority_p_set_assoc_usage",
 	"priority_p_calc_fs_factor",
 	"priority_p_get_priority_factors_list",
+	"priority_p_job_end",
 };
 
 static slurm_priority_ops_t ops;
@@ -160,5 +162,13 @@ extern List priority_g_get_priority_factors_list(
 		return NULL;
 
 	return (*(ops.get_priority_factors))(req_msg, uid);
+}
+
+extern void priority_g_job_end(struct job_record *job_ptr)
+{
+	if (slurm_priority_init() < 0)
+		return;
+
+	(*(ops.job_end))(job_ptr);
 }
 

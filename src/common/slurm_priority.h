@@ -67,4 +67,7 @@ extern double priority_g_calc_fs_factor(long double usage_efctv,
 extern List priority_g_get_priority_factors_list(
 	priority_factors_request_msg_t *req_msg, uid_t uid);
 
+/* Call at end of job to remove decayable limits at the end of the job */
+extern void priority_g_job_end(struct job_record *job_ptr);
+
 #endif /*_SLURM_PRIORIY_H */

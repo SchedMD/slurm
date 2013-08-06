@@ -132,7 +132,7 @@ slurm_ctl_conf_t slurmctld_conf;
  */
 const char plugin_name[]	= "Priority MULTIFACTOR plugin";
 const char plugin_type[]	= "priority/multifactor";
-const uint32_t plugin_version	= 100;
+const uint32_t plugin_version	= 101;
 
 static pthread_t decay_handler_thread;
 static pthread_t cleanup_handler_thread;
@@ -150,6 +150,8 @@ static uint32_t weight_qos;  /* weight for QOS factor */
 static uint32_t flags;       /* Priority Flags */
 static uint32_t max_tickets; /* Maximum number of tickets given to a
 			      * user. Protected by assoc_mgr lock. */
+static time_t g_last_ran = 0; /* when the last poll ran */
+static double decay_factor = 1; /* The decay factor when decaying time. */
 
 extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc);
 extern double priority_p_calc_fs_factor(long double usage_efctv,
@@ -965,7 +967,7 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
  * Return 0 if we don't need to process the job any further, 1 if
  * futher processing is needed.
  */
-static int _apply_new_usage(struct job_record *job_ptr, double decay_factor,
+static int _apply_new_usage(struct job_record *job_ptr,
 			    time_t start_period, time_t end_period)
 {
 	slurmdb_qos_rec_t *qos;
@@ -1015,12 +1017,12 @@ static int _apply_new_usage(struct job_record *job_ptr, double decay_factor,
 		(uint64_t)job_ptr->start_time +
 		(uint64_t)job_ptr->time_limit * 60;
 
-	if ((uint64_t)start_period  >= job_time_limit_ends)
+	if ((uint64_t)start_period >= job_time_limit_ends)
 		cpu_run_delta = 0;
-	else if (end_period > job_time_limit_ends)
+	else if (IS_JOB_FINISHED(job_ptr)) {
 		cpu_run_delta = job_ptr->total_cpus *
 			(job_time_limit_ends - (uint64_t)start_period);
-	else
+	} else
 		cpu_run_delta = job_ptr->total_cpus * run_delta;
 
 	if (priority_debug)
@@ -1051,8 +1053,9 @@ static int _apply_new_usage(struct job_record *job_ptr, double decay_factor,
 		qos->usage->usage_raw += (long double)real_decay;
 		if (qos->usage->grp_used_cpu_run_secs >= cpu_run_delta) {
 			if (priority_debug)
-				info("grp_used_cpu_run_secs is %"PRIu64", "
-				     "will subtract %"PRIu64"",
+				info("QOS %s has grp_used_cpu_run_secs "
+				     "of %"PRIu64", will subtract %"PRIu64"",
+				     qos->name,
 				     qos->usage->grp_used_cpu_run_secs,
 				     cpu_run_delta);
 			qos->usage->grp_used_cpu_run_secs -= cpu_run_delta;
@@ -1076,8 +1079,10 @@ static int _apply_new_usage(struct job_record *job_ptr, double decay_factor,
 	while (assoc) {
 		if (assoc->usage->grp_used_cpu_run_secs >= cpu_run_delta) {
 			if (priority_debug)
-				info("grp_used_cpu_run_secs is %"PRIu64", "
-				     "will subtract %"PRIu64"",
+				info("assoc %u (user='%s' "
+				     "acct='%s') has grp_used_cpu_run_secs "
+				     "of %"PRIu64", will subtract %"PRIu64"",
+				     assoc->id, assoc->user, assoc->acct,
 				     assoc->usage->grp_used_cpu_run_secs,
 				     cpu_run_delta);
 			assoc->usage->grp_used_cpu_run_secs -= cpu_run_delta;
@@ -1116,11 +1121,9 @@ static void *_decay_thread(void *no_data)
 	struct job_record *job_ptr = NULL;
 	ListIterator itr;
 	time_t start_time = time(NULL);
-	time_t last_ran = 0;
 	time_t last_reset = 0, next_reset = 0;
 	uint32_t calc_period = slurm_get_priority_calc_period();
 	double decay_hl = (double)slurm_get_priority_decay_hl();
-	double decay_factor = 1;
 	uint16_t reset_period = slurm_get_priority_reset_period();
 
 	/* Write lock on jobs, read lock on nodes and partitions */
@@ -1168,11 +1171,11 @@ static void *_decay_thread(void *no_data)
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	_read_last_decay_ran(&last_ran, &last_reset);
+	_read_last_decay_ran(&g_last_ran, &last_reset);
 	if (last_reset == 0)
 		last_reset = start_time;
 
-	_init_grp_used_cpu_run_secs(last_ran);
+	_init_grp_used_cpu_run_secs(g_last_ran);
 
 	while (1) {
 		time_t now = start_time;
@@ -1235,10 +1238,10 @@ static void *_decay_thread(void *no_data)
 			assoc_mgr_root_assoc->usage->childern_list);
 		assoc_mgr_unlock(&locks);
 
-		if (!last_ran)
+		if (!g_last_ran)
 			goto get_usage;
 		else
-			run_delta = difftime(start_time, last_ran);
+			run_delta = difftime(start_time, g_last_ran);
 
 		if (run_delta <= 0)
 			goto get_usage;
@@ -1264,12 +1267,15 @@ static void *_decay_thread(void *no_data)
 			lock_slurmctld(job_write_lock);
 			itr = list_iterator_create(job_list);
 			while ((job_ptr = list_next(itr))) {
+				/* Don't need to handle finished jobs. */
+				if (IS_JOB_FINISHED(job_ptr))
+					continue;
 				/* apply new usage */
 				if (!IS_JOB_PENDING(job_ptr) &&
 				    job_ptr->start_time && job_ptr->assoc_ptr) {
 					if (!_apply_new_usage(
-						    job_ptr, decay_factor,
-						    last_ran, start_time))
+						    job_ptr,
+						    g_last_ran, start_time))
 						continue;
 				}
 
@@ -1316,12 +1322,16 @@ static void *_decay_thread(void *no_data)
 			assoc_mgr_unlock(&locks);
 			itr = list_iterator_create(job_list);
 			while ((job_ptr = list_next(itr))) {
+				/* Don't need to handle finished jobs. */
+				if (IS_JOB_FINISHED(job_ptr))
+					continue;
 				/* apply new usage */
 				if (!IS_JOB_PENDING(job_ptr) &&
 				    job_ptr->start_time && job_ptr->assoc_ptr
-				    && last_ran)
-					_apply_new_usage(job_ptr, decay_factor,
-							 last_ran, start_time);
+				    && g_last_ran)
+					_apply_new_usage(job_ptr,
+							 g_last_ran,
+							 start_time);
 
 				if (IS_JOB_PENDING(job_ptr)
 				    && job_ptr->assoc_ptr) {
@@ -1375,9 +1385,9 @@ static void *_decay_thread(void *no_data)
 
 		}
 
-		last_ran = start_time;
+		g_last_ran = start_time;
 
-		_write_last_decay_ran(last_ran, last_reset);
+		_write_last_decay_ran(g_last_ran, last_reset);
 
 		running_decay = 0;
 		slurm_mutex_unlock(&decay_lock);
@@ -1753,4 +1763,14 @@ extern List priority_p_get_priority_factors_list(
 	unlock_slurmctld(job_read_lock);
 
 	return ret_list;
+}
+
+extern void priority_p_job_end(struct job_record *job_ptr)
+{
+	if (priority_debug)
+		info("priority_p_job_end: called");
+
+	slurm_mutex_lock(&decay_lock);
+	_apply_new_usage(job_ptr, g_last_ran, time(NULL));
+	slurm_mutex_unlock(&decay_lock);
 }
