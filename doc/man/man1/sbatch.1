@@ -1142,7 +1142,7 @@ option was not set and allow higher system utilization, but application
 performance will likely suffer due to competition for resources within a node.
 
 .TP
-\fB\-\-signal\fR=<\fIsig_num\fR>[@<\fIsig_time\fR>]
+\fB\-\-signal\fR=[B:]<\fIsig_num\fR>[@<\fIsig_time\fR>]
 When a job is within \fIsig_time\fR seconds of its end time,
 send it the signal \fIsig_num\fR.
 Due to the resolution of event handling by SLURM, the signal may
@@ -1152,6 +1152,8 @@ be sent up to 60 seconds earlier than specified.
 By default, no signal is sent before the job's end time.
 If a \fIsig_num\fR is specified without any \fIsig_time\fR,
 the default time will be 60 seconds.
+Use the "B:" option to signal the batch shell.
+By default all job steps will be signalled, but not the batch shell itself.
 
 .TP
 \fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>

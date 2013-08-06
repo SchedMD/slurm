@@ -108,8 +108,9 @@ typedef struct salloc_options {
 	char *comment;		/* --comment			*/
 	char *qos;		/* --qos			*/
 	int immediate;		/* -I, --immediate      	*/
-	uint16_t warn_signal;	/* --signal=<int>@<time>	*/
-	uint16_t warn_time;	/* --signal=<int>@<time>	*/
+	uint16_t warn_flags;	/* --signal=flags:<int>@<time>	*/
+	uint16_t warn_signal;	/* --signal=flags:<int>@<time>	*/
+	uint16_t warn_time;	/* --signal=flags:<int>@<time>	*/
 
 	bool hold;		/* --hold, -H			*/
 	bool no_kill;		/* --no-kill, -k		*/

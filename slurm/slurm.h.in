@@ -1088,8 +1088,10 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t wait_all_nodes;/* 0 to start job immediately after allocation
 				 * 1 to start job after all nodes booted
 				 * or NO_VAL to use system default */
-	uint16_t warn_signal;	/* signal to send when approaching end time */
-	uint16_t warn_time;	/* time before end to send signal (seconds) */
+	uint16_t warn_flags;	/* flags  related to job signals
+				 * (eg. KILL_JOB_BATCH) */
+	uint16_t warn_signal;	/* signal to send when approaching end time *///
+	uint16_t warn_time;	/* time before end to send signal (seconds) *///
 	char *work_dir;		/* pathname of working directory */
 
 	/* job constraints: */

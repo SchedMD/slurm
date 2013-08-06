@@ -51,7 +51,8 @@ DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
-
+ -- Added sbatch --signal option of "B:" to signal the batch shell rather than
+    only the spawned job steps.
 
 OTHER CHANGES
 =============

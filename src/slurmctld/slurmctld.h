@@ -639,6 +639,7 @@ struct job_record {
 	uint32_t user_id;		/* user the job runs as */
 	uint16_t wait_all_nodes;	/* if set, wait for all nodes to boot
 					 * before starting the job */
+	uint16_t warn_flags;		/* flags for signal to send */
 	uint16_t warn_signal;		/* signal to send before end_time */
 	uint16_t warn_time;		/* when to send signal before
 					 * end_time (secs) */

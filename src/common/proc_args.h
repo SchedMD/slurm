@@ -143,7 +143,8 @@ char *print_geometry(const uint16_t *geometry);
 /* Translate a signal option string "--signal=<int>[@<time>]" into
  * it's warn_signal and warn_time components.
  * RET 0 on success, -1 on failure */
-int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time);
+int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time,
+		    uint16_t *warn_flags);
 
 /* Convert a signal name to it's numeric equivalent.
  * Return 0 on failure */

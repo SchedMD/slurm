@@ -329,6 +329,7 @@ static void _opt_default()
 
 	opt.quiet = 0;
 	opt.verbose = 0;
+	opt.warn_flags  = 0;
 	opt.warn_signal = 0;
 	opt.warn_time   = 0;
 
@@ -550,7 +551,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 	case OPT_SIGNAL:
 		if (get_signal_opts((char *)val, &opt.warn_signal,
-				    &opt.warn_time)) {
+				    &opt.warn_time, &opt.warn_flags)) {
 			error("Invalid signal specification: %s", val);
 			exit(error_exit);
 		}
@@ -1140,7 +1141,7 @@ void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_SIGNAL:
 			if (get_signal_opts(optarg, &opt.warn_signal,
-					    &opt.warn_time)) {
+					    &opt.warn_time, &opt.warn_flags)) {
 				error("Invalid signal specification: %s",
 				      optarg);
 				exit(error_exit);

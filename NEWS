@@ -28,6 +28,8 @@ documents those changes that are of interest to users and admins.
     "CR_LLN" and partition parameter of "LLN=yes|no".
  -- Added job_info() and step_info() functions to the gres plugins to extract
     plugin specific fields from the job's or step's GRES data structure.
+ -- Added sbatch --signal option of "B:" to signal the batch shell rather than
+    only the spawned job steps.
 
 * Changes in Slurm 2.6.1
 ========================
