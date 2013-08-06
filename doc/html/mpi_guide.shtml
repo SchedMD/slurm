@@ -4,7 +4,7 @@
 
 <p>MPI use depends upon the type of MPI being used.
 There are three fundamentally different modes of operation used
-by these various MPI implementations.
+by these various MPI implementations.</p>
 <ol>
 <li>SLURM directly launches the tasks and performs initialization
 of communications (UPC, Quadrics MPI, MPICH2, MPICH-GM, MPICH-MX,
@@ -17,7 +17,11 @@ such as SSH or RSH (BlueGene MPI and some MPICH1 modes).
 These tasks initiated outside of SLURM's monitoring
 or control. SLURM's epilog should be configured to purge
 these tasks when the job's allocation is relinquished. </li>
-</ol></p>
+</ol>
+<p><b>Note</b>: Slurm is not directly launching the user application in case 3,
+which may prevent the desired behavior of binding tasks to CPUs and/or
+accounting. Some versions of some MPI implementations work, so testing your
+particular installation may be required to determie the actual behavior.</p>
 
 <p>Two SLURM parameters control which MPI implementation will be
 supported. Proper configuration is essential for SLURM to establish the
@@ -500,6 +504,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 1 April 2013</p>
+<p style="text-align:center;">Last modified 6 August 2013</p>
 
 <!--#include virtual="footer.txt"-->
