@@ -992,10 +992,12 @@ static int _apply_new_usage(struct job_record *job_ptr,
 
 	run_delta = difftime(end_period, start_period);
 
-	/* job already has been accounted for
-	   go to next */
-	if (run_delta < 1)
-		return 0;
+	/* Even if run_delta is 0 we need to
+	 * handle other non-usage variables here
+	 * (grp_used_cpu_run_secs), so don't return.
+	 */
+	if (run_delta < 0)
+		run_delta = 0;
 
 	/* cpu_run_delta will is used to
 	 * decrease qos and assocs
