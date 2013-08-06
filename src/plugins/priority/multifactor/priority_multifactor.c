@@ -977,19 +977,11 @@ static int _apply_new_usage(struct job_record *job_ptr,
 	uint64_t job_time_limit_ends = 0;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK,
 				   WRITE_LOCK, NO_LOCK, NO_LOCK };
-	assoc_mgr_lock_t qos_read_lock = { NO_LOCK, NO_LOCK,
-					   READ_LOCK, NO_LOCK, NO_LOCK };
 
-	/* If usage_factor is 0 just skip this
-	   since we don't add the usage.
-	*/
-	assoc_mgr_lock(&qos_read_lock);
-	qos = (slurmdb_qos_rec_t *)job_ptr->qos_ptr;
-	if (qos && !qos->usage_factor) {
-		assoc_mgr_unlock(&qos_read_lock);
-		return 0;
-	}
-	assoc_mgr_unlock(&qos_read_lock);
+	/* Even if job_ptr->qos_ptr->usage_factor is 0 we need to
+	 * handle other non-usage variables here
+	 * (grp_used_cpu_run_secs), so don't return.
+	 */
 
 	if (job_ptr->start_time > start_period)
 		start_period = job_ptr->start_time;
