@@ -49,7 +49,7 @@
 static int _set_block_nodes_accounting(bg_record_t *bg_record, char *reason);
 static void _addto_mp_list(bg_record_t *bg_record,
 			   uint16_t *start, uint16_t *end);
-static int _ba_mp_cmpf_inc(ba_mp_t *node_a, ba_mp_t *node_b);
+static int _ba_mp_cmpf_inc(void *r1, void *r2);
 static void _set_block_avail(bg_record_t *bg_record);
 
 extern void print_bg_record(bg_record_t* bg_record)
@@ -1890,8 +1890,11 @@ static int _coord_cmpf_inc(uint16_t *coord_a, uint16_t *coord_b, int dim)
 
 }
 
-static int _ba_mp_cmpf_inc(ba_mp_t *mp_a, ba_mp_t *mp_b)
+static int _ba_mp_cmpf_inc(void *r1, void *r2)
 {
+	ba_mp_t *mp_a = *(ba_mp_t **)r1;
+	ba_mp_t *mp_b = *(ba_mp_t **)r2;
+
 	int rc = _coord_cmpf_inc(mp_a->coord, mp_b->coord, 0);
 
 	if (!rc) {
