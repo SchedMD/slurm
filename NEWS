@@ -62,6 +62,9 @@ documents those changes that are of interest to users and admins.
     check case insensitive and avoid printing duplicate \n.
  -- If cannot collect energy values send message to the controller
     to drain the node and log error slurmd log file.
+ -- Handle complete removal of CPURunMins time at the end of the job instead
+    of at multifactor poll.
+ -- sview - Add missing debug_flag options.
 
 * Changes in Slurm 2.6.0
 ========================
