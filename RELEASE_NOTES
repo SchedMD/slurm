@@ -58,6 +58,8 @@ COMMAND CHANGES (see man pages for details)
     only the spawned job steps.
  -- Added sinfo and squeue format option of "%all" to print all fields available
     for the data type with a vertical bar separating each field.
+ -- Add StdIn, StdOut, and StdErr paths to job information dumped with
+    "scontrol show job".
 
 OTHER CHANGES
 =============
@@ -75,7 +77,7 @@ Changed members of the following structs
 
 Added the following struct definitions
 ======================================
-
+ -- struct job_info: added std_err, std_in and std_out.
 
 Changed the following enums and #defines
 ========================================

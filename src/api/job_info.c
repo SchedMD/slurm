@@ -849,6 +849,48 @@ line15:
 	}
 
 	/****** Line 27 (optional) ******/
+	if (job_ptr->batch_flag) {
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+		if (job_ptr->std_err)
+			xstrfmtcat(out, "StdErr=%s", job_ptr->std_err);
+		else if (job_ptr->std_out)
+			xstrfmtcat(out, "StdErr=%s", job_ptr->std_out);
+		else {
+			xstrfmtcat(out, "StdErr=%s/slurm-%u.out",
+				   job_ptr->work_dir, job_ptr->job_id);
+		}
+	}
+
+	/****** Line 28 (optional) ******/
+	if (job_ptr->batch_flag) {
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+		if (job_ptr->std_in)
+			xstrfmtcat(out, "StdIn=%s", job_ptr->std_in);
+		else
+			xstrfmtcat(out, "StdIn=/dev/null");
+	}
+
+	/****** Line 29 (optional) ******/
+	if (job_ptr->batch_flag) {
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+		if (job_ptr->std_out)
+			xstrfmtcat(out, "StdOut=%s", job_ptr->std_out);
+		else {
+			xstrfmtcat(out, "StdOut=%s/slurm-%u.out",
+				   job_ptr->work_dir, job_ptr->job_id);
+		}
+	}
+
+	/****** Line 30 (optional) ******/
 	if (job_ptr->batch_script) {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -858,7 +900,7 @@ line15:
 		xstrcat(out, job_ptr->batch_script);
 	}
 
-	/****** Line 28 (optional) ******/
+	/****** Line 31 (optional) ******/
 	if (job_ptr->req_switch) {
 		char time_buf[32];
 		if (one_liner)
@@ -872,7 +914,7 @@ line15:
 		xstrcat(out, tmp_line);
 	}
 
-	/****** Line 29 (optional) ******/
+	/****** Line 32 (optional) ******/
 	if (one_liner)
 		xstrcat(out, "\n");
 	else

@@ -517,6 +517,9 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		job->select_jobinfo = NULL;
 		free_job_resources(&job->job_resrcs);
 		xfree(job->state_desc);
+		xfree(job->std_err);
+		xfree(job->std_in);
+		xfree(job->std_out);
 		xfree(job->wckey);
 		xfree(job->work_dir);
 	}

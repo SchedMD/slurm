@@ -35,6 +35,8 @@ documents those changes that are of interest to users and admins.
  -- Add mechanism for job_submit plugin to generate error message for srun,
     salloc or sbatch to log. New argument added to job_submit function in
     the plugin.
+ -- Add StdIn, StdOut, and StdErr paths to job information dumped with
+    "scontrol show job".
 
 * Changes in Slurm 2.6.1
 ========================
