@@ -103,7 +103,8 @@ static bool debug_inited = 0;
 static char *orig_cluster_name = NULL;
 static int g_menu_id = 0;
 static GtkUIManager *g_ui_manager = NULL;
-
+static GtkToggleActionEntry *debug_actions = NULL;
+static int debug_action_entries = 0;
 /*
   popup_positioner_t main_popup_positioner[] = {
   {0,"Sview Defaults", 150, 700 },
@@ -509,161 +510,21 @@ static void _get_current_debug_flags(GtkToggleAction *action)
 	GtkAction *debug_action = NULL;
 	GtkToggleAction *toggle_action;
 	gboolean orig_state, new_state;
+	int i;
 
 	if (err_code != SLURM_ERROR)
 		debug_flags = slurm_ctl_conf_ptr->debug_flags;
 
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_backfill");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_BACKFILL;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_bg_algo");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_BG_ALGO;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_bg_algo_deep");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_BG_ALGO_DEEP;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_bg_pick");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_BG_PICK;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_bg_wires");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_BG_WIRES;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_cpu_bind");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_CPU_BIND;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_energy");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_ENERGY;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_front_end");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_FRONT_END;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_gang");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_GANG;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_gres");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_GRES;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_no_conf_hash");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_NO_CONF_HASH;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_no_real_time");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_NO_REALTIME;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_prio");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_PRIO;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_reservation");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_RESERVATION;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_select_type");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_SELECT_TYPE;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_steps");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_STEPS;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_switch");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_SWITCH;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_triggers");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_TRIGGERS;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
-
-	debug_action = gtk_action_group_get_action(menu_action_group,
-						  "flags_wiki");
-	toggle_action = GTK_TOGGLE_ACTION(debug_action);
-	orig_state = gtk_toggle_action_get_active(toggle_action);
-	new_state = debug_flags & DEBUG_FLAG_WIKI;
-	if (orig_state != new_state)
-		gtk_toggle_action_set_active(toggle_action, new_state);
+	for (i = 0; i < debug_action_entries; i++)  {
+		debug_action = gtk_action_group_get_action(
+			menu_action_group, debug_actions[i].name);
+		toggle_action = GTK_TOGGLE_ACTION(debug_action);
+		orig_state = gtk_toggle_action_get_active(toggle_action);
+		new_state = debug_flags
+			& debug_str2flags((char *)debug_actions[i].name);
+		if (orig_state != new_state)
+			gtk_toggle_action_set_active(toggle_action, new_state);
+	}
 }
 
 static void _set_debug(GtkRadioAction *action,
@@ -691,10 +552,21 @@ static void _set_debug(GtkRadioAction *action,
 	g_free(temp);
 }
 
-static void _set_flags(GtkToggleAction *action, uint32_t flag)
+static void _set_flags(GtkToggleAction *action)
 {
 	char *temp = NULL;
 	uint32_t debug_flags_plus = 0, debug_flags_minus = 0;
+	uint32_t flag = NO_VAL;
+	const char *name;
+
+	if (!action)
+		return;
+
+	name = gtk_action_get_name(GTK_ACTION(action));
+	if (!name)
+		return;
+
+	flag = debug_str2flags((char *)name);
 
 	if (action && gtk_toggle_action_get_active(action))
 		debug_flags_plus  |= flag;
@@ -707,83 +579,6 @@ static void _set_flags(GtkToggleAction *action, uint32_t flag)
 		temp = g_strdup_printf("Problem with set DebugFlags request");
 	display_edit_note(temp);
 	g_free(temp);
-}
-
-static void _set_flags_backfill(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_BACKFILL);
-}
-static void _set_flags_bg_algo(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_BG_ALGO);
-}
-static void _set_flags_bg_algo_deep(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_BG_ALGO_DEEP);
-}
-static void _set_flags_bg_pick(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_BG_PICK);
-}
-static void _set_flags_bg_wires(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_BG_WIRES);
-}
-static void _set_flags_cpu_bind(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_CPU_BIND);
-}
-static void _set_flags_energy(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_ENERGY);
-}
-static void _set_flags_front_end(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_FRONT_END);
-}
-static void _set_flags_gang(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_GANG);
-}
-static void _set_flags_gres(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_GRES);
-}
-static void _set_flags_no_conf_hash(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_NO_CONF_HASH);
-}
-static void _set_flags_no_real_time(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_NO_REALTIME);
-}
-static void _set_flags_prio(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_PRIO);
-}
-static void _set_flags_reservation(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_RESERVATION);
-}
-static void _set_flags_select_type(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_SELECT_TYPE);
-}
-static void _set_flags_steps(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_STEPS);
-}
-static void _set_flags_switch(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_SWITCH);
-}
-static void _set_flags_triggers(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_TRIGGERS);
-}
-static void _set_flags_wiki(GtkToggleAction *action)
-{
-	_set_flags(action, DEBUG_FLAG_WIKI);
 }
 
 static void _tab_pos(GtkRadioAction *action,
@@ -823,6 +618,8 @@ static gboolean _delete(GtkWidget *widget,
 			GtkWidget *event,
 			gpointer data)
 {
+	int i;
+
 	_persist_dynamics();
 	fini = 1;
 	gtk_main_quit();
@@ -842,6 +639,11 @@ static gboolean _delete(GtkWidget *widget,
 		list_destroy(cluster_list);
 	xfree(orig_cluster_name);
 #endif
+	for (i = 0; i<debug_action_entries; i++) {
+		xfree(debug_actions[i].name);
+	}
+	xfree(debug_actions);
+
 	return FALSE;
 }
 
@@ -849,6 +651,7 @@ static char *_get_ui_description()
 {
 	/* Our menu*/
 	char *ui_description = NULL;
+	int i;
 
 	xstrcat(ui_description,
 		"<ui>"
@@ -901,27 +704,14 @@ static char *_get_ui_description()
 		"        <menuitem action='debug_debug4'/>"
 		"        <menuitem action='debug_debug5'/>"
 		"      </menu>"
-		"      <menu action='debugflags'>"
-		"        <menuitem action='flags_backfill'/>"
-		"        <menuitem action='flags_bg_algo'/>"
-		"        <menuitem action='flags_bg_algo_deep'/>"
-		"        <menuitem action='flags_bg_pick'/>"
-		"        <menuitem action='flags_bg_wires'/>"
-		"        <menuitem action='flags_cpu_bind'/>"
-		"        <menuitem action='flags_energy'/>"
-		"        <menuitem action='flags_front_end'/>"
-		"        <menuitem action='flags_gang'/>"
-		"        <menuitem action='flags_gres'/>"
-		"        <menuitem action='flags_no_conf_hash'/>"
-		"        <menuitem action='flags_no_real_time'/>"
-		"        <menuitem action='flags_prio'/>"
-		"        <menuitem action='flags_reservation'/>"
-		"        <menuitem action='flags_select_type'/>"
-		"        <menuitem action='flags_steps'/>"
-		"        <menuitem action='flags_switch'/>"
-		"        <menuitem action='flags_triggers'/>"
-		"        <menuitem action='flags_wiki'/>"
-		"      </menu>"
+		"      <menu action='debugflags'>");
+	for (i = 0; i < debug_action_entries; i++)  {
+		xstrfmtcat(ui_description,
+			   "        <menuitem action='%s'/>",
+			   debug_actions[i].name);
+	}
+	xstrcat(ui_description,
+			"      </menu>"
 		"      <separator/>"
 		"      <menuitem action='exit'/>"
 		"    </menu>"
@@ -971,7 +761,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 {
 	GtkAccelGroup *accel_group = NULL;
 	GError *error = NULL;
-	char *ui_description = _get_ui_description();
+	char *ui_description;
 
 	GtkActionEntry entries[] = {
 		{"actions", NULL, "_Actions", "<alt>a"},
@@ -1131,46 +921,27 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"debug_debug5", NULL, "debug5(9)", "", "Debug5 level", 9},
 	};
 
-	GtkToggleActionEntry debug_flags[] = {
-		{"flags_backfill", NULL, "Backfill", NULL,
-		 "Backfill", G_CALLBACK(_set_flags_backfill), FALSE},
-		{"flags_bg_algo", NULL, "BgBlockAlgo", NULL,
-		 "BgBlockAlgo", G_CALLBACK(_set_flags_bg_algo), FALSE},
-		{"flags_bg_algo_deep", NULL, "BgBlockAlgoDeep", NULL,
-		 "BgBlockAlgoDeep", G_CALLBACK(_set_flags_bg_algo_deep),FALSE},
-		{"flags_bg_pick", NULL, "BgBlockPick", NULL,
-		 "BgBlockPick", G_CALLBACK(_set_flags_bg_pick), FALSE},
-		{"flags_bg_wires", NULL, "BgBlockWires", NULL,
-		 "BgBlockWires", G_CALLBACK(_set_flags_bg_wires), FALSE},
-		{"flags_cpu_bind", NULL, "CPU Bind", NULL,
-		 "CPU_Bind", G_CALLBACK(_set_flags_cpu_bind), FALSE},
-		{"flags_energy", NULL, "Energy", NULL,
-		 "Energy", G_CALLBACK(_set_flags_energy), FALSE},
-		{"flags_front_end", NULL, "FrontEnd", NULL,
-		 "FrontEnd", G_CALLBACK(_set_flags_front_end), FALSE},
-		{"flags_gang", NULL, "Gang", NULL,
-		 "Gang", G_CALLBACK(_set_flags_gang), FALSE},
-		{"flags_gres", NULL, "Gres", NULL,
-		 "Gres", G_CALLBACK(_set_flags_gres), FALSE},
-		{"flags_no_conf_hash", NULL, "NO CONF HASH", NULL,
-		 "NO_CONF_HASH", G_CALLBACK(_set_flags_no_conf_hash), FALSE},
-		{"flags_no_real_time", NULL, "NoRealTime", NULL,
-		 "NoRealTime", G_CALLBACK(_set_flags_no_real_time), FALSE},
-		{"flags_prio", NULL, "Priority", NULL,
-		 "Priority", G_CALLBACK(_set_flags_prio), FALSE},
-		{"flags_reservation", NULL, "Reservation", NULL,
-		 "Reservation", G_CALLBACK(_set_flags_reservation), FALSE},
-		{"flags_select_type", NULL, "SelectType", NULL,
-		 "SelectType", G_CALLBACK(_set_flags_select_type), FALSE},
-		{"flags_steps", NULL, "Steps", NULL,
-		 "Steps", G_CALLBACK(_set_flags_steps), FALSE},
-		{"flags_switch", NULL, "Switch", NULL,
-		 "Switch", G_CALLBACK(_set_flags_switch), FALSE},
-		{"flags_triggers", NULL, "Triggers", NULL,
-		 "Triggers", G_CALLBACK(_set_flags_triggers), FALSE},
-		{"flags_wiki", NULL, "Wiki", NULL,
-		 "Wiki", G_CALLBACK(_set_flags_wiki), FALSE},
-	};
+	char *all_debug_flags = debug_flags2str(0xFFFFFFFF);
+	char *last = NULL;
+	char *tok = strtok_r(all_debug_flags, ",", &last);
+
+	/* set up the global debug_actions */
+	debug_actions = xmalloc(sizeof(GtkToggleActionEntry));
+
+	while (tok) {
+		xrealloc(debug_actions,
+			 (debug_action_entries + 1)
+			 * sizeof(GtkToggleActionEntry));
+		debug_actions[debug_action_entries].name =
+			debug_actions[debug_action_entries].label =
+			debug_actions[debug_action_entries].tooltip =
+			xstrdup(tok);
+		debug_actions[debug_action_entries].callback =
+			G_CALLBACK(_set_flags);
+		debug_action_entries++;
+		tok = strtok_r(NULL, ",", &last);
+	}
+	xfree(all_debug_flags);
 
 	/* Make an accelerator group (shortcut keys) */
 	menu_action_group = gtk_action_group_new ("MenuActions");
@@ -1187,8 +958,8 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 					   G_N_ELEMENTS(radio_entries),
 					   working_sview_config.tab_pos,
 					   G_CALLBACK(_tab_pos), notebook);
-	gtk_action_group_add_toggle_actions(menu_action_group, debug_flags,
-					    G_N_ELEMENTS(debug_flags), NULL);
+	gtk_action_group_add_toggle_actions(menu_action_group, debug_actions,
+					    debug_action_entries, NULL);
 	gtk_action_group_add_radio_actions(menu_action_group, debug_entries,
 					   G_N_ELEMENTS(debug_entries),
 					   -1, G_CALLBACK(_set_debug),
@@ -1209,7 +980,7 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 
 	accel_group = gtk_ui_manager_get_accel_group(g_ui_manager);
 	gtk_window_add_accel_group(GTK_WINDOW(window), accel_group);
-
+	ui_description = _get_ui_description();
 	if (!(g_menu_id = gtk_ui_manager_add_ui_from_string(
 		      g_ui_manager, ui_description, -1, &error))) {
 		xfree(ui_description);
