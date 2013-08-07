@@ -1056,6 +1056,15 @@ extern int slurm_unpack_slurm_addr_array(slurm_addr_t ** slurm_address,
  */
 int slurm_send_rc_msg(slurm_msg_t * request_msg, int rc);
 
+/* slurm_send_rc_err_msg
+ * given the original request message this function sends a
+ *	slurm_return_code message back to the client that made the request
+ * IN request_msg	- slurm_msg the request msg
+ * IN rc		- the return_code to send back to the client
+ * IN err_msg		- message for user
+ */
+int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg);
+
 /* slurm_send_recv_controller_msg
  * opens a connection to the controller, sends the controller a message,
  * listens for the response, then closes the connection

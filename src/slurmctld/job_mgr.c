@@ -152,7 +152,8 @@ static int  _find_batch_dir(void *x, void *key);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static void _job_timed_out(struct job_record *job_ptr);
 static int  _job_create(job_desc_msg_t * job_specs, int allocate, int will_run,
-			struct job_record **job_rec_ptr, uid_t submit_uid);
+			struct job_record **job_rec_ptr, uid_t submit_uid,
+			char **err_msg);
 static void _list_delete_job(void *job_entry);
 static int  _list_find_job_id(void *job_entry, void *key);
 static int  _list_find_job_old(void *job_entry, void *key);
@@ -3013,6 +3014,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
  * IN allocate - resource allocation request only if set, batch job if zero
  * IN submit_uid -uid of user issuing the request
  * OUT job_pptr - set to pointer to job record
+ * OUT err_msg - Custom error message to the user, caller to xfree results
  * RET 0 or an error code. If the job would only be able to execute with
  *	some change in partition configuration then
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
@@ -3024,7 +3026,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			int will_run, will_run_response_msg_t **resp,
 			int allocate, uid_t submit_uid,
-			struct job_record **job_pptr)
+			struct job_record **job_pptr, char **err_msg)
 {
 	static int defer_sched = -1;
 	int error_code;
@@ -3033,7 +3035,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	time_t now = time(NULL);
 
 	error_code = _job_create(job_specs, allocate, will_run,
-				 &job_ptr, submit_uid);
+				 &job_ptr, submit_uid, err_msg);
 	*job_pptr = job_ptr;
 
 	if (error_code) {
@@ -4084,13 +4086,15 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
  * IN allocate - resource allocation request if set rather than job submit
  * IN will_run - job is not to be created, test of validity only
  * OUT job_pptr - pointer to the job (NULL on error)
+ * OUT err_msg - Error message for user
  * RET 0 on success, otherwise ESLURM error code. If the job would only be
  *	able to execute with some change in partition configuration then
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
  */
 
 static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
-		       struct job_record **job_pptr, uid_t submit_uid)
+		       struct job_record **job_pptr, uid_t submit_uid,
+		       char **err_msg)
 {
 	static int launch_type_poe = -1;
 	int error_code = SLURM_SUCCESS, i, qos_error;
@@ -4138,7 +4142,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 	user_submit_priority = job_desc->priority;
 
-	error_code = job_submit_plugin_submit(job_desc, (uint32_t) submit_uid);
+	error_code = job_submit_plugin_submit(job_desc, (uint32_t) submit_uid,
+					      err_msg);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
@@ -10850,7 +10855,7 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd_t conn_fd
 			  NULL, 	/* resp */
 			  0,		/* allocate */
 			  0,		/* submit_uid. set to 0 to set job_id */
-			  &job_ptr);
+			  &job_ptr, NULL);
 
 	/* set restart directory */
 	if (job_ptr) {

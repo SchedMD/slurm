@@ -97,7 +97,7 @@
  */
 const char plugin_name[]       	= "Job submit logging plugin";
 const char plugin_type[]       	= "job_submit/logging";
-const uint32_t plugin_version   = 100;
+const uint32_t plugin_version   = 110;
 const uint32_t min_plug_version = 100;
 
 /*****************************************************************************\
@@ -106,7 +106,8 @@ const uint32_t min_plug_version = 100;
  * please post it to slurm-dev@schedmd.com  Thanks!
 \*****************************************************************************/
 
-extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
+extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
+		      char **err_msg)
 {
 	/* Log select fields from a job submit request. See slurm/slurm.h
 	 * for information about additional fields in struct job_descriptor.

@@ -575,7 +575,7 @@ int allocate_node(uint32_t np, uint32_t request_node_num,
 				  false, //will run
 				  NULL, // will_run_response_msg_t
 				  true, //allocate
-				  job_desc_msg.user_id, &job_ptr);
+				  job_desc_msg.user_id, &job_ptr, NULL);
 	unlock_slurmctld(job_write_lock);
 
 	/* cleanup */

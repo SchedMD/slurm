@@ -29,6 +29,9 @@ HIGHLIGHTS
     DenyAccounts and DenyQOS to provide greater control over use.
  -- Added the ability to perform load based scheduling. Allocating resources to
     jobs on the nodes with the largest number if idle CPUs.
+ -- Add mechanism for job_submit plugin to generate error message for srun,
+    salloc or sbatch to log. New argument added to job_submit function in
+    the plugin.
 
 RPMBUILD OPTION CHANGES
 =======================

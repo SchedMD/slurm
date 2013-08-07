@@ -96,7 +96,7 @@
  */
 const char plugin_name[]       	= "Job submit partition plugin";
 const char plugin_type[]       	= "job_submit/partition";
-const uint32_t plugin_version   = 100;
+const uint32_t plugin_version   = 110;
 const uint32_t min_plug_version = 100;
 
 /*****************************************************************************\
@@ -134,7 +134,8 @@ static bool _user_access(uid_t run_uid, uint32_t submit_uid,
 /* This example code will set a job's default partition to the highest
  * priority partition that is available to this user. This is only an
  * example and tremendous flexibility is available. */
-extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
+extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
+		      char **err_msg)
 {
 	ListIterator part_iterator;
 	struct part_record *part_ptr;

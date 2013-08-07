@@ -328,6 +328,10 @@ static void _pack_return_code_msg(return_code_msg_t * msg, Buf buffer,
 				  uint16_t protocol_version);
 static int _unpack_return_code_msg(return_code_msg_t ** msg, Buf buffer,
 				   uint16_t protocol_version);
+static void _pack_return_code2_msg(return_code2_msg_t * msg, Buf buffer,
+				   uint16_t protocol_version);
+static int _unpack_return_code2_msg(return_code_msg_t ** msg, Buf buffer,
+				    uint16_t protocol_version);
 
 static void _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr,
 				     Buf buffer, uint16_t protocol_version);
@@ -1031,6 +1035,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				      buffer,
 				      msg->protocol_version);
 		break;
+	case RESPONSE_SLURM_RC_MSG:
+		_pack_return_code2_msg((return_code2_msg_t *) msg->data,
+				       buffer,
+				       msg->protocol_version);
+		break;
 	case RESPONSE_JOB_STEP_CREATE:
 		pack_job_step_create_response_msg(
 			(job_step_create_response_msg_t *)
@@ -1608,6 +1617,13 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_return_code_msg((return_code_msg_t **)
 					     & (msg->data), buffer,
 					     msg->protocol_version);
+		break;
+	case RESPONSE_SLURM_RC_MSG:
+		/* Log error message, otherwise replicate RESPONSE_SLURM_RC */
+		msg->msg_type = RESPONSE_SLURM_RC;
+		rc = _unpack_return_code2_msg((return_code_msg_t **)
+					      & (msg->data), buffer,
+					      msg->protocol_version);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
 		rc = unpack_job_step_create_response_msg(
@@ -6998,7 +7014,7 @@ _pack_return_code_msg(return_code_msg_t * msg, Buf buffer,
 		      uint16_t protocol_version)
 {
 	xassert(msg != NULL);
-	pack32((uint32_t)msg->return_code, buffer);
+	pack32(msg->return_code, buffer);
 }
 
 static int
@@ -7012,6 +7028,42 @@ _unpack_return_code_msg(return_code_msg_t ** msg, Buf buffer,
 	*msg = return_code_msg;
 
 	safe_unpack32(&return_code_msg->return_code, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_return_code_msg(return_code_msg);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_return_code2_msg(return_code2_msg_t * msg, Buf buffer,
+		       uint16_t protocol_version)
+{
+	xassert(msg != NULL);
+	pack32(msg->return_code, buffer);
+	packstr(msg->err_msg,    buffer);
+}
+
+/* Log error message, otherwise replicate _unpack_return_code_msg() */
+static int
+_unpack_return_code2_msg(return_code_msg_t ** msg, Buf buffer,
+			uint16_t protocol_version)
+{
+	return_code_msg_t *return_code_msg;
+	uint32_t uint32_tmp = 0;
+	char *err_msg = NULL;
+
+	xassert(msg != NULL);
+	return_code_msg = xmalloc(sizeof(return_code_msg_t));
+	*msg = return_code_msg;
+
+	safe_unpack32(&return_code_msg->return_code, buffer);
+	safe_unpackstr_xmalloc(&err_msg, &uint32_tmp, buffer);
+	if (err_msg) {
+		error("%s", err_msg);
+		xfree(err_msg);
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:

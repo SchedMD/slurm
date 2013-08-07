@@ -106,7 +106,7 @@
  */
 const char plugin_name[]       	= "Job submit cnode plugin";
 const char plugin_type[]       	= "job_submit/cnode";
-const uint32_t plugin_version   = 100;
+const uint32_t plugin_version   = 110;
 const uint32_t min_plug_version = 100;
 
 static void _rebuild_licenses(char **license_ptr, uint32_t cnode_cnt)
@@ -151,7 +151,8 @@ static void _rebuild_licenses(char **license_ptr, uint32_t cnode_cnt)
 }
 
 /* Set the job's license specification to include its cnodes requirement */
-extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
+extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
+		      char **err_msg)
 {
 	uint32_t cnode_cnt = job_desc->min_nodes;
 

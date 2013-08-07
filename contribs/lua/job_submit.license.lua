@@ -80,6 +80,7 @@ log_info = slurm.log_info
 log_verbose = slurm.log_verbose
 log_debug = slurm.log_debug
 log_err = slurm.error
+log_user = slurm.log_user
 
 job_rec_meta = {
 	__index = function (table, key)

@@ -96,11 +96,12 @@
  */
 const char plugin_name[]       	= "Job submit all_partitions plugin";
 const char plugin_type[]       	= "job_submit/all_partitions";
-const uint32_t plugin_version   = 100;
+const uint32_t plugin_version   = 110;
 const uint32_t min_plug_version = 100;
 
 /* Set a job's default partition to all partitions in the cluster */
-extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
+extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
+		      char **err_msg)
 {
 	ListIterator part_iterator;
 	struct part_record *part_ptr;

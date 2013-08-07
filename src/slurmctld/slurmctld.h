@@ -1027,6 +1027,7 @@ extern int job_alloc_info(uint32_t uid, uint32_t job_id,
  * IN allocate - resource allocation request only if set, batch job if zero
  * IN submit_uid -uid of user issuing the request
  * OUT job_pptr - set to pointer to job record
+ * OUT err_msg - Custom error message to the user, caller to xfree results
  * RET 0 or an error code. If the job would only be able to execute with
  *	some change in partition configuration then
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
@@ -1040,7 +1041,8 @@ extern int job_alloc_info(uint32_t uid, uint32_t job_id,
  */
 extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		int will_run, will_run_response_msg_t **resp,
-		int allocate, uid_t submit_uid, struct job_record **job_pptr);
+		int allocate, uid_t submit_uid, struct job_record **job_pptr,
+		char **err_msg);
 
 /*
  * job_hold_by_assoc_id - Hold all pending jobs with a given

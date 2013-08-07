@@ -3324,6 +3324,40 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
 }
 
+/* slurm_send_rc_err_msg
+ * given the original request message this function sends a
+ *	slurm_return_code message back to the client that made the request
+ * IN request_msg	- slurm_msg the request msg
+ * IN rc		- the return_code to send back to the client
+ * IN err_msg           - message for user
+ */
+int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
+{
+	slurm_msg_t resp_msg;
+	return_code2_msg_t rc_msg;
+
+	if (msg->conn_fd < 0) {
+		slurm_seterrno(ENOTCONN);
+		return SLURM_ERROR;
+	}
+	rc_msg.return_code = rc;
+	rc_msg.err_msg     = err_msg;
+
+	slurm_msg_t_init(&resp_msg);
+	resp_msg.protocol_version = msg->protocol_version;
+	resp_msg.address  = msg->address;
+	resp_msg.msg_type = RESPONSE_SLURM_RC_MSG;
+	resp_msg.data     = &rc_msg;
+	resp_msg.flags = msg->flags;
+	resp_msg.forward = msg->forward;
+	resp_msg.forward_struct = msg->forward_struct;
+	resp_msg.ret_list = msg->ret_list;
+	resp_msg.orig_addr = msg->orig_addr;
+
+	/* send message */
+	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
+}
+
 /*
  * Send and recv a slurm request and response on the open slurm descriptor
  * IN fd	- file descriptor to receive msg on

@@ -40,10 +40,11 @@
 
 const char plugin_name[]="Require time limit jobsubmit plugin";
 const char plugin_type[]="job_submit/require_timelimit";
-const uint32_t plugin_version   = 100;
+const uint32_t plugin_version   = 110;
 const uint32_t min_plug_version = 100;
 
-int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
+extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
+		      char **err_msg)
 {
 	// NOTE: no job id actually exists yet (=NO_VAL)
 

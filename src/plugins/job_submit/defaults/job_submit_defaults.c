@@ -97,7 +97,7 @@
  */
 const char plugin_name[]       	= "Job submit defaults plugin";
 const char plugin_type[]       	= "job_submit/defaults";
-const uint32_t plugin_version   = 100;
+const uint32_t plugin_version   = 110;
 const uint32_t min_plug_version = 100;
 
 /*****************************************************************************\
@@ -105,7 +105,8 @@ const uint32_t min_plug_version = 100;
  * plugin. If you develop another plugin that may be of interest to others
  * please post it to slurm-dev@schedmd.com  Thanks!
 \*****************************************************************************/
-extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
+extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
+		      char **err_msg)
 {
 #if 0
 	uint16_t acctg_freq = 0;
@@ -121,6 +122,8 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 		     acctg_freq, MIN_ACCTG_FREQUENCY);
 		job_desc->acctg_freq = xstrdup_printf(
 			"%d", MIN_ACCTG_FREQUENCY);
+		if (err_msg)
+			*err_msg = xstrdup("Changed job frequency");
 	}
 
 	if (job_desc->qos) {

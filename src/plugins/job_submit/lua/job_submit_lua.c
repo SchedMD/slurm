@@ -98,11 +98,12 @@
  */
 const char plugin_name[]       	= "Job submit lua plugin";
 const char plugin_type[]       	= "job_submit/lua";
-const uint32_t plugin_version   = 100;
+const uint32_t plugin_version   = 110;
 const uint32_t min_plug_version = 100;
 
 static const char lua_script_path[] = DEFAULT_SCRIPT_DIR "/job_submit.lua";
 static lua_State *L = NULL;
+static char *user_msg;
 
 /*
  *  Mutex for protecting multi-threaded access to this plugin.
@@ -199,10 +200,20 @@ static int _log_lua_error (lua_State *L)
 	return (0);
 }
 
+static int _log_lua_user_msg (lua_State *L)
+{
+	const char *msg = lua_tostring(L, -1);
+
+	xfree(user_msg);
+	user_msg = xstrdup(msg);
+	return (0);
+}
+
 static const struct luaL_Reg slurm_functions [] = {
-	{ "log",   _log_lua_msg   },
-	{ "error", _log_lua_error },
-	{ NULL,    NULL        }
+	{ "log",	_log_lua_msg   },
+	{ "error",	_log_lua_error },
+	{ "user_msg",	_log_lua_user_msg },
+	{ NULL,		NULL        }
 };
 
 static void _register_lua_slurm_output_functions (void)
@@ -230,6 +241,8 @@ static void _register_lua_slurm_output_functions (void)
 	lua_setfield (L, -2, "log_debug3");
 	luaL_loadstring (L, "slurm.log (5, string.format(unpack({...})))");
 	lua_setfield (L, -2, "log_debug4");
+	luaL_loadstring (L, "slurm.user_msg (string.format(unpack({...})))");
+	lua_setfield (L, -2, "log_user");
 
 	/*
 	 * slurm.SUCCESS, slurm.FAILURE and slurm.ERROR
@@ -699,7 +712,7 @@ static int _check_lua_script_function(const char *name)
 /*
  *   Verify all required functions are defined in the job_submit/lua script
  */
-static int _check_lua_script_functions()
+static int _check_lua_script_functions(void)
 {
 	int rc = 0;
 	int i;
@@ -845,7 +858,8 @@ int fini (void)
 
 
 /* Lua script hook called for "submit job" event. */
-extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
+extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
+		      char **err_msg)
 {
 	int rc = SLURM_ERROR;
 	slurm_mutex_lock (&lua_lock);
@@ -876,6 +890,12 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 		lua_pop(L, 1);
 	}
 	_stack_dump("job_submit, after lua_pcall", L);
+	if (user_msg) {
+		if (err_msg)
+			*err_msg = user_msg;
+		else
+			xfree(user_msg);
+	}
 
 out:	slurm_mutex_unlock (&lua_lock);
 	return rc;

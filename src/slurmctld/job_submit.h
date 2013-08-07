@@ -70,9 +70,12 @@ extern int job_submit_plugin_reconfig(void);
  * Execute the job_submit() function in each job submit plugin.
  * If any plugin function returns anything other than SLURM_SUCCESS
  * then stop and forward it's return value.
+ * IN job_desc - Job request specification
+ * IN submit_uid - User issuing job submit request
+ * OUT err_msg - Custom error message to the user, caller to xfree results
  */
 extern int job_submit_plugin_submit(struct job_descriptor *job_desc,
-				    uint32_t submit_uid);
+				    uint32_t submit_uid, char **err_msg);
 
 /*
  * Execute the job_modify() function in each job submit plugin.
