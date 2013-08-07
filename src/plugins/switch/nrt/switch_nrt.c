@@ -420,20 +420,22 @@ extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 	return rc;
 }
 
-extern int switch_p_pack_node_info(switch_node_info_t *switch_node, Buf buffer)
+extern int switch_p_pack_node_info(switch_node_info_t *switch_node, Buf buffer,
+				   uint16_t protocol_version)
 {
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_pack_node_info() starting");
-	return nrt_pack_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node, buffer);
+	return nrt_pack_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node, buffer,
+				 protocol_version);
 }
 
 extern int switch_p_unpack_node_info(switch_node_info_t *switch_node,
-				     Buf buffer)
+				     Buf buffer, uint16_t protocol_version)
 {
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_unpack_node_info()");
 	return nrt_unpack_nodeinfo((slurm_nrt_nodeinfo_t *)switch_node,
-				   buffer);
+				   buffer, protocol_version);
 }
 
 extern void switch_p_free_node_info(switch_node_info_t **switch_node)
@@ -688,20 +690,24 @@ extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 	return nrt_free_jobinfo((slurm_nrt_jobinfo_t *)switch_job);
 }
 
-extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
+extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
+				 uint16_t protocol_version)
 {
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_pack_jobinfo()");
 
-	return nrt_pack_jobinfo((slurm_nrt_jobinfo_t *)switch_job, buffer);
+	return nrt_pack_jobinfo((slurm_nrt_jobinfo_t *)switch_job, buffer,
+				protocol_version);
 }
 
-extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer)
+extern int switch_p_unpack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
+				   uint16_t protocol_version)
 {
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_unpack_jobinfo()");
 
-	return nrt_unpack_jobinfo((slurm_nrt_jobinfo_t *)switch_job, buffer);
+	return nrt_unpack_jobinfo((slurm_nrt_jobinfo_t *)switch_job, buffer,
+				  protocol_version);
 }
 
 extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job, int key,
@@ -869,21 +875,24 @@ extern void switch_p_job_suspend_info_get(switch_jobinfo_t *jobinfo,
 	return;
 }
 
-extern void switch_p_job_suspend_info_pack(void *suspend_info, Buf buffer)
+extern void switch_p_job_suspend_info_pack(void *suspend_info, Buf buffer,
+					   uint16_t protocol_version)
 {
 	if ( switch_init() < 0 )
 		return;
 
-	nrt_suspend_job_info_pack(suspend_info, buffer);
+	nrt_suspend_job_info_pack(suspend_info, buffer, protocol_version);
 	return;
 }
 
-extern int switch_p_job_suspend_info_unpack(void **suspend_info, Buf buffer)
+extern int switch_p_job_suspend_info_unpack(void **suspend_info, Buf buffer,
+					    uint16_t protocol_version)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return nrt_suspend_job_info_unpack(suspend_info, buffer);
+	return nrt_suspend_job_info_unpack(suspend_info, buffer,
+					   protocol_version);
 }
 
 extern void switch_p_job_suspend_info_free(void *suspend_info)

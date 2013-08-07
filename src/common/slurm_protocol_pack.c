@@ -2514,7 +2514,8 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		}
 		pack16(msg->startup, buffer);
 		if (msg->startup)
-			switch_g_pack_node_info(msg->switch_nodeinfo, buffer);
+			switch_g_pack_node_info(msg->switch_nodeinfo, buffer,
+						protocol_version);
 		if (msg->gres_info)
 			gres_info_size = get_buf_offset(msg->gres_info);
 		pack32(gres_info_size, buffer);
@@ -2583,7 +2584,8 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		    &&  (switch_g_alloc_node_info(
 				 &node_reg_ptr->switch_nodeinfo)
 			 ||   switch_g_unpack_node_info(
-				 node_reg_ptr->switch_nodeinfo, buffer)))
+				 node_reg_ptr->switch_nodeinfo, buffer,
+				 protocol_version)))
 			goto unpack_error;
 
 		safe_unpack32(&gres_info_size, buffer);
@@ -3653,7 +3655,7 @@ _pack_epilog_comp_msg(epilog_complete_msg_t * msg, Buf buffer,
 	pack32((uint32_t)msg->job_id, buffer);
 	pack32((uint32_t)msg->return_code, buffer);
 	packstr(msg->node_name, buffer);
-	switch_g_pack_node_info(msg->switch_nodeinfo, buffer);
+	switch_g_pack_node_info(msg->switch_nodeinfo, buffer, protocol_version);
 }
 
 static int
@@ -3672,7 +3674,8 @@ _unpack_epilog_comp_msg(epilog_complete_msg_t ** msg, Buf buffer,
 	safe_unpack32(&(tmp_ptr->return_code), buffer);
 	safe_unpackstr_xmalloc(& (tmp_ptr->node_name), &uint32_tmp, buffer);
 	if (switch_g_alloc_node_info(&tmp_ptr->switch_nodeinfo)
-	    ||  switch_g_unpack_node_info(tmp_ptr->switch_nodeinfo, buffer))
+	    ||  switch_g_unpack_node_info(tmp_ptr->switch_nodeinfo, buffer,
+					  protocol_version))
 		goto unpack_error;
 
 	return SLURM_SUCCESS;
@@ -3739,7 +3742,8 @@ pack_job_step_create_response_msg(job_step_create_response_msg_t * msg,
 		slurm_cred_pack(msg->cred, buffer);
 		select_g_select_jobinfo_pack(
 			msg->select_jobinfo, buffer, protocol_version);
-		switch_g_pack_jobinfo(msg->switch_job, buffer);
+		switch_g_pack_jobinfo(msg->switch_job, buffer,
+				      protocol_version);
 	} else {
 		error("pack_job_step_create_response_msg: protocol_version "
 		      "%hu not supported", protocol_version);
@@ -3775,7 +3779,8 @@ unpack_job_step_create_response_msg(job_step_create_response_msg_t ** msg,
 			goto unpack_error;
 		switch_g_alloc_jobinfo(&tmp_ptr->switch_job, NO_VAL,
 				       tmp_ptr->job_step_id);
-		if (switch_g_unpack_jobinfo(tmp_ptr->switch_job, buffer)) {
+		if (switch_g_unpack_jobinfo(tmp_ptr->switch_job, buffer,
+					    protocol_version)) {
 			error("switch_g_unpack_jobinfo: %m");
 			switch_g_free_jobinfo(tmp_ptr->switch_job);
 			goto unpack_error;
@@ -7325,7 +7330,8 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		packstr(msg->task_prolog, buffer);
 		packstr(msg->task_epilog, buffer);
 		pack16(msg->slurmd_debug, buffer);
-		switch_g_pack_jobinfo(msg->switch_job, buffer);
+		switch_g_pack_jobinfo(msg->switch_job, buffer,
+				      protocol_version);
 		job_options_pack(msg->options, buffer);
 		packstr(msg->alias_list, buffer);
 		packstr(msg->complete_nodelist, buffer);
@@ -7397,7 +7403,8 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer,
 		packstr(msg->task_prolog, buffer);
 		packstr(msg->task_epilog, buffer);
 		pack16(msg->slurmd_debug, buffer);
-		switch_g_pack_jobinfo(msg->switch_job, buffer);
+		switch_g_pack_jobinfo(msg->switch_job, buffer,
+				      protocol_version);
 		job_options_pack(msg->options, buffer);
 		packstr(msg->alias_list, buffer);
 		packstr(msg->complete_nodelist, buffer);
@@ -7515,7 +7522,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 
 		switch_g_alloc_jobinfo(&msg->switch_job,
 				       msg->job_id, msg->job_step_id);
-		if (switch_g_unpack_jobinfo(msg->switch_job, buffer) < 0) {
+		if (switch_g_unpack_jobinfo(msg->switch_job, buffer,
+					    protocol_version) < 0) {
 			error("switch_g_unpack_jobinfo: %m");
 			switch_g_free_jobinfo(msg->switch_job);
 			goto unpack_error;
@@ -7612,7 +7620,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 
 		switch_g_alloc_jobinfo(&msg->switch_job,
 				       msg->job_id, msg->job_step_id);
-		if (switch_g_unpack_jobinfo(msg->switch_job, buffer) < 0) {
+		if (switch_g_unpack_jobinfo(msg->switch_job, buffer,
+					    protocol_version) < 0) {
 			error("switch_g_unpack_jobinfo: %m");
 			switch_g_free_jobinfo(msg->switch_job);
 			goto unpack_error;
@@ -9473,7 +9482,8 @@ static void _pack_suspend_int_msg(suspend_int_msg_t *msg, Buf buffer,
 	pack16(msg->op, buffer);
 	pack32(msg->job_id,  buffer);
 	pack8(msg->indf_susp, buffer);
-	switch_g_job_suspend_info_pack(msg->switch_info, buffer);
+	switch_g_job_suspend_info_pack(msg->switch_info, buffer,
+				       protocol_version);
 }
 
 static int  _unpack_suspend_int_msg(suspend_int_msg_t **msg_ptr, Buf buffer,
@@ -9488,7 +9498,8 @@ static int  _unpack_suspend_int_msg(suspend_int_msg_t **msg_ptr, Buf buffer,
 	safe_unpack16(&msg->op,     buffer);
 	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack8(&msg->indf_susp, buffer);
-	if (switch_g_job_suspend_info_unpack(&msg->switch_info, buffer))
+	if (switch_g_job_suspend_info_unpack(&msg->switch_info, buffer,
+					     protocol_version))
 		goto unpack_error;
 	return SLURM_SUCCESS;
 

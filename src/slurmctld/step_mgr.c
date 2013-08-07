@@ -3220,7 +3220,8 @@ extern void dump_job_step_state(struct job_record *job_ptr,
 	if (!step_ptr->batch_step) {
 		pack_slurm_step_layout(step_ptr->step_layout, buffer,
 				       SLURM_PROTOCOL_VERSION);
-		switch_g_pack_jobinfo(step_ptr->switch_job, buffer);
+		switch_g_pack_jobinfo(step_ptr->switch_job, buffer,
+				      SLURM_PROTOCOL_VERSION);
 	}
 	checkpoint_pack_jobinfo(step_ptr->check_job, buffer,
 				SLURM_PROTOCOL_VERSION);
@@ -3303,7 +3304,8 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 				goto unpack_error;
 			switch_g_alloc_jobinfo(&switch_tmp,
 					       job_ptr->job_id, step_id);
-			if (switch_g_unpack_jobinfo(switch_tmp, buffer))
+			if (switch_g_unpack_jobinfo(switch_tmp, buffer,
+						    protocol_version))
 				goto unpack_error;
 		}
 		checkpoint_alloc_jobinfo(&check_tmp);
@@ -3361,7 +3363,8 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 				goto unpack_error;
 			switch_g_alloc_jobinfo(&switch_tmp,
 					       job_ptr->job_id, step_id);
-			if (switch_g_unpack_jobinfo(switch_tmp, buffer))
+			if (switch_g_unpack_jobinfo(switch_tmp, buffer,
+						    protocol_version))
 				goto unpack_error;
 		}
 		checkpoint_alloc_jobinfo(&check_tmp);

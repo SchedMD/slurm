@@ -147,17 +147,21 @@ extern void switch_g_free_jobinfo  (switch_jobinfo_t *jobinfo);
 /* pack a switch job credential into a buffer in machine independent form
  * IN jobinfo  - the switch job credential to be saved
  * OUT buffer  - buffer with switch credential appended
+ * IN protocol_version - version of Slurm we are talking to.
  * RET         - slurm error code
  */
-extern int  switch_g_pack_jobinfo  (switch_jobinfo_t *jobinfo, Buf buffer);
+extern int  switch_g_pack_jobinfo  (switch_jobinfo_t *jobinfo, Buf buffer,
+				    uint16_t protocol_version);
 
 /* unpack a switch job credential from a buffer
  * OUT jobinfo - the switch job credential read
  * IN  buffer  - buffer with switch credential read from current pointer loc
+ * IN  protocol_version - version of Slurm we are talking to.
  * RET         - slurm error code
  * NOTE: returned value must be freed using g_switch_g_free_jobinfo
  */
-extern int  switch_g_unpack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer);
+extern int  switch_g_unpack_jobinfo(switch_jobinfo_t *jobinfo, Buf buffer,
+				    uint16_t protocol_version);
 
 /* get some field from a switch job credential
  * IN jobinfo - the switch job credential
@@ -301,17 +305,21 @@ extern void switch_g_job_suspend_info_get(switch_jobinfo_t *jobinfo,
  *
  * IN suspend_info - data to be sent with job suspend/resume RPC
  * IN/OUT buffer to hold the data
+ * IN protocol_version - version of Slurm we are talking to.
  */
-extern void switch_g_job_suspend_info_pack(void *suspend_info, Buf buffer);
+extern void switch_g_job_suspend_info_pack(void *suspend_info, Buf buffer,
+					   uint16_t protocol_version);
 /*
  * Unpack data structure containing information needed to suspend or resume
  * a job
  *
  * IN suspend_info - data to be sent with job suspend/resume RPC
  * IN/OUT buffer that holds the data
+ * IN protocol_version - version of Slurm we are talking to.
  * RET SLURM_SUCCESS or error code
  */
-extern int switch_g_job_suspend_info_unpack(void **suspend_info, Buf buffer);
+extern int switch_g_job_suspend_info_unpack(void **suspend_info, Buf buffer,
+					    uint16_t protocol_version);
 /*
  * Free data structure containing information needed to suspend or resume
  * a job
@@ -391,14 +399,14 @@ extern int switch_g_build_node_info(switch_node_info_t *switch_node);
  * for network transmission.
  */
 extern int switch_g_pack_node_info(switch_node_info_t *switch_node,
-	Buf buffer);
+				   Buf buffer, uint16_t protocol_version);
 
 /*
  * Unpack the data associated with a node's switch state record
  * from a buffer.
  */
 extern int switch_g_unpack_node_info(switch_node_info_t *switch_node,
-	Buf buffer);
+				     Buf buffer, uint16_t protocol_version);
 
 /*
  * Release the storage associated with a node's switch state record.

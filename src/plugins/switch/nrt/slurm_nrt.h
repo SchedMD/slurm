@@ -93,8 +93,10 @@ extern int nrt_alloc_nodeinfo(slurm_nrt_nodeinfo_t **nh);
 extern int nrt_build_nodeinfo(slurm_nrt_nodeinfo_t *np, char *hostname);
 /* extern char *nrt_print_nodeinfo(slurm_nrt_nodeinfo_t *np, char *buf,
 				size_t size);	* Incomplete */
-extern int nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *np, Buf buf);
-extern int nrt_unpack_nodeinfo(slurm_nrt_nodeinfo_t *np, Buf buf);
+extern int nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *np, Buf buf,
+			     uint16_t protocol_version);
+extern int nrt_unpack_nodeinfo(slurm_nrt_nodeinfo_t *np, Buf buf,
+			       uint16_t protocol_version);
 extern void nrt_free_nodeinfo(slurm_nrt_nodeinfo_t *np, bool ptr_into_array);
 extern int nrt_alloc_jobinfo(slurm_nrt_jobinfo_t **jh);
 extern int nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
@@ -104,8 +106,10 @@ extern int nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 			     bool bulk_xfer, uint32_t bulk_xfer_resources,
 			     bool ip_v4, bool user_space, char *protocol,
 			     int instances, int cau, int immed);
-extern int nrt_pack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf);
-extern int nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf);
+extern int nrt_pack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf,
+			    uint16_t protocol_version);
+extern int nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *jp, Buf buf,
+			      uint16_t protocol_version);
 extern slurm_nrt_jobinfo_t *nrt_copy_jobinfo(slurm_nrt_jobinfo_t *jp);
 extern void nrt_free_jobinfo(slurm_nrt_jobinfo_t *jp);
 extern int nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid,
@@ -113,7 +117,6 @@ extern int nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid,
 extern int nrt_init(void);
 extern int nrt_fini(void);
 extern int nrt_unload_table(slurm_nrt_jobinfo_t *jp);
-extern int nrt_unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 extern int nrt_get_jobinfo(slurm_nrt_jobinfo_t *jp, int key, void *data);
 extern void nrt_libstate_save(Buf buffer, bool free_flag);
 extern int nrt_libstate_restore(Buf buffer);
@@ -128,8 +131,10 @@ extern int nrt_preempt_job(void *suspend_info, int max_wait_secs);
 extern int nrt_resume_job(void *suspend_info, int max_wait_secs);
 extern void nrt_suspend_job_info_get(slurm_nrt_jobinfo_t *jp,
 				     void **suspend_info);
-extern void nrt_suspend_job_info_pack(void *suspend_info, Buf buffer);
-extern int nrt_suspend_job_info_unpack(void **suspend_info, Buf buffer);
+extern void nrt_suspend_job_info_pack(void *suspend_info, Buf buffer,
+				      uint16_t protocol_version);
+extern int nrt_suspend_job_info_unpack(void **suspend_info, Buf buffer,
+				       uint16_t protocol_version);
 extern void nrt_suspend_job_info_free(void *suspend_info);
 
 #endif /* _SLURM_NRT_INCLUDED */

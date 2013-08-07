@@ -275,7 +275,8 @@ static slurm_nrt_libstate_t *_alloc_libstate(void);
 static slurm_nrt_nodeinfo_t *_alloc_node(slurm_nrt_libstate_t *lp, char *name);
 static int	_copy_node(slurm_nrt_nodeinfo_t *dest,
 			   slurm_nrt_nodeinfo_t *src);
-static int	_fake_unpack_adapters(Buf buf, slurm_nrt_nodeinfo_t *n);
+static int	_fake_unpack_adapters(Buf buf, slurm_nrt_nodeinfo_t *n,
+				      uint16_t protocol_version);
 static int	_fill_in_adapter_cache(void);
 static slurm_nrt_nodeinfo_t *
 		_find_node(slurm_nrt_libstate_t *lp, char *name);
@@ -299,9 +300,11 @@ static int	_job_step_window_state(slurm_nrt_jobinfo_t *jp,
 static void	_load_dynamic_window_cnt(void);
 static void	_lock(void);
 static nrt_job_key_t _next_key(void);
-static int	_pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
+static int	_pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer,
+			       uint16_t protocol_version);
 static void	_pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf,
-				slurm_nrt_jobinfo_t *jp);
+				slurm_nrt_jobinfo_t *jp,
+				uint16_t protocol_version);
 static char *	_state_str(win_state_t state);
 static int	_unload_window(char *adapter_name, nrt_adapter_t adapter_type,
 			       nrt_job_key_t job_key,
@@ -312,9 +315,11 @@ static int	_unload_window_all_jobs(char *adapter_name,
 static void	_unlock(void);
 static int	_unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer);
 static int	_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf,
-				 bool believe_window_status);
+				 bool believe_window_status,
+				 uint16_t protocol_version);
 static int	_unpack_tableinfo(nrt_tableinfo_t *tableinfo,
-				  Buf buf, slurm_nrt_jobinfo_t *jp);
+				  Buf buf, slurm_nrt_jobinfo_t *jp,
+				  uint16_t protocol_version);
 static int	_wait_for_all_windows(nrt_tableinfo_t *tableinfo);
 static int	_wait_for_window_unloaded(char *adapter_name,
 					  nrt_adapter_t adapter_type,
@@ -2342,7 +2347,8 @@ nrt_build_nodeinfo(slurm_nrt_nodeinfo_t *n, char *name)
 
 /* Used by: all */
 extern int
-nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
+nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf,
+		  uint16_t protocol_version)
 {
 	slurm_nrt_adapter_t *a;
 	uint16_t dummy16;
@@ -2457,7 +2463,8 @@ _cmp_ipv6(struct in6_addr *addr1, struct in6_addr *addr2)
  * Used by: _unpack_nodeinfo
  */
 static int
-_fake_unpack_adapters(Buf buf, slurm_nrt_nodeinfo_t *n)
+_fake_unpack_adapters(Buf buf, slurm_nrt_nodeinfo_t *n,
+		      uint16_t protocol_version)
 {
 	slurm_nrt_adapter_t *tmp_a = NULL;
 	slurm_nrt_window_t *tmp_w = NULL;
@@ -2617,7 +2624,8 @@ unpack_error:
  * Used by: slurmctld
  */
 static int
-_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
+_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status,
+		 uint16_t protocol_version)
 {
 	int i, j, rc = SLURM_SUCCESS;
 	slurm_nrt_adapter_t *tmp_a = NULL;
@@ -2655,7 +2663,8 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	 * So, here we just do a fake unpack to advance the buffer pointer.
 	 */
 	if (nrt_state == NULL) {
-		if (_fake_unpack_adapters(buf, NULL) != SLURM_SUCCESS) {
+		if (_fake_unpack_adapters(buf, NULL, protocol_version)
+		    != SLURM_SUCCESS) {
 			slurm_seterrno_ret(EUNPACK);
 		} else {
 			return SLURM_SUCCESS;
@@ -2671,8 +2680,8 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status)
 		tmp_n = _find_node(nrt_state, name);
 		if (tmp_n != NULL) {
 			tmp_n->node_number = node_number;
-			if (_fake_unpack_adapters(buf, tmp_n) !=
-			    SLURM_SUCCESS) {
+			if (_fake_unpack_adapters(buf, tmp_n, protocol_version)
+			    != SLURM_SUCCESS) {
 				slurm_seterrno_ret(EUNPACK);
 			} else {
 				goto copy_node;
@@ -2751,12 +2760,12 @@ unpack_error:
  * Used by: slurmctld
  */
 extern int
-nrt_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf)
+nrt_unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, uint16_t protocol_version)
 {
 	int rc;
 
 	_lock();
-	rc = _unpack_nodeinfo(n, buf, false);
+	rc = _unpack_nodeinfo(n, buf, false, protocol_version);
 	_unlock();
 	return rc;
 }
@@ -3179,7 +3188,8 @@ fail:
 }
 
 static void
-_pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp)
+_pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp,
+		uint16_t protocol_version)
 {
 	uint32_t adapter_type;
 	bool ip_v4;
@@ -3267,7 +3277,7 @@ _pack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp)
 
 /* Used by: all */
 extern int
-nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
+nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf, uint16_t protocol_version)
 {
 	int i;
 
@@ -3292,14 +3302,15 @@ nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	pack32(j->num_tasks, buf);
 
 	for (i = 0; i < j->tables_per_task; i++)
-		_pack_tableinfo(&j->tableinfo[i], buf, j);
+		_pack_tableinfo(&j->tableinfo[i], buf, j, protocol_version);
 
 	return SLURM_SUCCESS;
 }
 
 /* return 0 on success, -1 on failure */
 static int
-_unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp)
+_unpack_tableinfo(nrt_tableinfo_t *tableinfo, Buf buf, slurm_nrt_jobinfo_t *jp,
+		  uint16_t protocol_version)
 {
 	uint32_t tmp_32, adapter_type;
 	uint16_t tmp_16;
@@ -3418,7 +3429,8 @@ unpack_error: /* safe_unpackXX are macros which jump to unpack_error */
 
 /* Used by: all */
 extern int
-nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
+nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf,
+		   uint16_t protocol_version)
 {
 	int i;
 
@@ -3441,7 +3453,8 @@ nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf)
 	j->tableinfo = (nrt_tableinfo_t *) xmalloc(j->tables_per_task *
 						   sizeof(nrt_tableinfo_t));
 	for (i = 0; i < j->tables_per_task; i++) {
-		if (_unpack_tableinfo(&j->tableinfo[i], buf, j))
+		if (_unpack_tableinfo(&j->tableinfo[i], buf, j,
+				      protocol_version))
 			goto unpack_error;
 	}
 
@@ -4059,7 +4072,7 @@ _free_libstate(slurm_nrt_libstate_t *lp)
 
 /* Used by: slurmctld */
 static int
-_pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
+_pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer, uint16_t protocol_version)
 {
 	int offset;
 	int i;
@@ -4077,7 +4090,8 @@ _pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
 	pack32(lp->magic, buffer);
 	pack32(lp->node_count, buffer);
 	for (i = 0; i < lp->node_count; i++)
-		(void)nrt_pack_nodeinfo(&lp->node_list[i], buffer);
+		(void)nrt_pack_nodeinfo(&lp->node_list[i], buffer,
+					protocol_version);
 	/* don't pack hash_table, we'll just rebuild on restore */
 	pack32(lp->key_index, buffer);
 
@@ -4091,7 +4105,7 @@ nrt_libstate_save(Buf buffer, bool free_flag)
 	_lock();
 
 	if (nrt_state != NULL)
-		_pack_libstate(nrt_state, buffer);
+		_pack_libstate(nrt_state, buffer, SLURM_PROTOCOL_VERSION);
 
 	/* Clean up nrt_state since backup slurmctld can repeatedly
 	 * save and restore state */
@@ -4132,7 +4146,8 @@ _unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
 	safe_unpack32(&lp->magic, buffer);
 	safe_unpack32(&node_count, buffer);
 	for (i = 0; i < node_count; i++) {
-		if (_unpack_nodeinfo(NULL, buffer, false) != SLURM_SUCCESS)
+		if (_unpack_nodeinfo(NULL, buffer, false,
+				     protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 	}
 	if (lp->node_count != node_count) {
@@ -4680,7 +4695,8 @@ extern void nrt_suspend_job_info_get(slurm_nrt_jobinfo_t *jp,
 	susp_info_ptr->job_key[susp_info_ptr->job_key_count++] = jp->job_key;
 }
 
-extern void nrt_suspend_job_info_pack(void *suspend_info, Buf buffer)
+extern void nrt_suspend_job_info_pack(void *suspend_info, Buf buffer,
+				      uint16_t protocol_version)
 {
 	slurm_nrt_suspend_info_t *susp_info_ptr;
 
@@ -4702,7 +4718,8 @@ extern void nrt_suspend_job_info_pack(void *suspend_info, Buf buffer)
 	}
 }
 
-extern int nrt_suspend_job_info_unpack(void **suspend_info, Buf buffer)
+extern int nrt_suspend_job_info_unpack(void **suspend_info, Buf buffer,
+				       uint16_t protocol_version)
 {
 	slurm_nrt_suspend_info_t *susp_info_ptr = NULL;
 	uint32_t tmp_32;
