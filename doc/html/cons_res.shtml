@@ -96,7 +96,7 @@ SelectType=select/cons_res
 #      - CR_Socket_Memory (5) - Socket and Memory as consumable
 #                               resources.
 #      - CR_Core_Memory (6)   - Core and Memory as consumable
-#                               resources. (Not yet implemented)
+#                               resources.
 #      - CR_CPU_Memory (7)    - CPU and Memory as consumable
 #                               resources.
 #
