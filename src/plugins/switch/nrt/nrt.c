@@ -448,7 +448,7 @@ _hash_index(char *name)
 	int index = 0;
 	int j;
 
-	assert(name);
+	xassert(name);
 
 	/* Multiply each character by its numerical position in the
 	 * name string to add a bit of entropy, because host names such
@@ -472,8 +472,8 @@ _find_node(slurm_nrt_libstate_t *lp, char *name)
 	slurm_nrt_nodeinfo_t *n;
 	struct node_record *node_ptr;
 
-	assert(name);
-	assert(lp);
+	xassert(name);
+	xassert(lp);
 
 	if (lp->node_count == 0)
 		return NULL;
@@ -482,7 +482,7 @@ _find_node(slurm_nrt_libstate_t *lp, char *name)
 		i = _hash_index(name);
 		n = lp->hash_table[i];
 		while (n) {
-			assert(n->magic == NRT_NODEINFO_MAGIC);
+			xassert(n->magic == NRT_NODEINFO_MAGIC);
 			if (!strncmp(n->name, name, NRT_HOSTLEN))
 				return n;
 			n = n->next;
@@ -495,7 +495,7 @@ _find_node(slurm_nrt_libstate_t *lp, char *name)
 		i = _hash_index(node_ptr->node_hostname);
 		n = lp->hash_table[i];
 		while (n) {
-			assert(n->magic == NRT_NODEINFO_MAGIC);
+			xassert(n->magic == NRT_NODEINFO_MAGIC);
 			if (!strncmp(n->name, node_ptr->node_hostname,
 				     NRT_HOSTLEN))
 				return n;
@@ -513,9 +513,9 @@ _hash_add_nodeinfo(slurm_nrt_libstate_t *state, slurm_nrt_nodeinfo_t *node)
 {
 	int index;
 
-	assert(state);
-	assert(state->hash_table);
-	assert(state->hash_max >= state->node_count);
+	xassert(state);
+	xassert(state->hash_table);
+	xassert(state->hash_max >= state->node_count);
 	if (!node->name[0])
 		return;
 	index = _hash_index(node->name);
@@ -532,7 +532,7 @@ _hash_rebuild(slurm_nrt_libstate_t *state)
 {
 	int i;
 
-	assert(state);
+	xassert(state);
 
 	if (state->hash_table)
 		xfree(state->hash_table);
@@ -697,8 +697,8 @@ _window_state_set(slurm_nrt_jobinfo_t *jp, char *hostname, win_state_t state)
 	nrt_tableinfo_t *tableinfo = jp->tableinfo;
 	nrt_task_id_t task_id;
 
-	assert(tableinfo);
-	assert(hostname);
+	xassert(tableinfo);
+	xassert(hostname);
 
 	node = _find_node(nrt_state, hostname);
 	if (node == NULL) {
@@ -843,7 +843,7 @@ _alloc_node(slurm_nrt_libstate_t *lp, char *name)
 	int new_bufsize;
 	bool need_hash_rebuild = false;
 
-	assert(lp);
+	xassert(lp);
 
 	if (name != NULL) {
 		n = _find_node(lp, name);
@@ -1130,8 +1130,8 @@ _allocate_windows_all(slurm_nrt_jobinfo_t *jp, char *hostname,
 	nrt_table_id_t table_id;
 	int i, j, table_inx;
 
-	assert(tableinfo);
-	assert(hostname);
+	xassert(tableinfo);
+	xassert(hostname);
 
 	debug("in _allocate_windows_all");
 	node = _find_node(nrt_state, hostname);
@@ -1310,8 +1310,8 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 	nrt_context_id_t context_id;
 	nrt_table_id_t table_id;
 
-	assert(tableinfo);
-	assert(hostname);
+	xassert(tableinfo);
+	xassert(hostname);
 
 	node = _find_node(nrt_state, hostname);
 	if (node == NULL) {
@@ -1625,8 +1625,8 @@ _print_nodeinfo(slurm_nrt_nodeinfo_t *n)
 	char window_str[128];
 	hostset_t hs;
 
-	assert(n);
-	assert(n->magic == NRT_NODEINFO_MAGIC);
+	xassert(n);
+	xassert(n->magic == NRT_NODEINFO_MAGIC);
 
 	info("--Begin Node Info--");
 	info("  node: %s", n->name);
@@ -1705,8 +1705,8 @@ _print_libstate(const slurm_nrt_libstate_t *l)
 {
 	int i;
 
-	assert(l);
-	assert(l->magic == NRT_LIBSTATE_MAGIC);
+	xassert(l);
+	xassert(l->magic == NRT_LIBSTATE_MAGIC);
 
 	info("--Begin libstate--");
 	info("  node_count = %u", l->node_count);
@@ -1725,8 +1725,8 @@ _print_table(void *table, int size, nrt_adapter_t adapter_type, bool ip_v4)
 	char addr_str[128];
 	int i;
 
-	assert(table);
-	assert(size > 0);
+	xassert(table);
+	xassert(size > 0);
 
 	info("--Begin NRT table--");
 	for (i = 0; i < size; i++) {
@@ -1801,8 +1801,8 @@ _print_jobinfo(slurm_nrt_jobinfo_t *j)
 	char buf[128];
 	nrt_adapter_t adapter_type;
 
-	assert(j);
-	assert(j->magic == NRT_JOBINFO_MAGIC);
+	xassert(j);
+	xassert(j->magic == NRT_JOBINFO_MAGIC);
 
 	info("--Begin Jobinfo--");
 	info("  job_key: %u", j->job_key);
@@ -1904,7 +1904,7 @@ nrt_init(void)
 
 	tmp = _alloc_libstate();
 	_lock();
-	assert(!nrt_state);
+	xassert(!nrt_state);
 	nrt_state = tmp;
 	_unlock();
 
@@ -1951,7 +1951,7 @@ nrt_alloc_jobinfo(slurm_nrt_jobinfo_t **j)
 {
 	slurm_nrt_jobinfo_t *new;
 
-	assert(j != NULL);
+	xassert(j != NULL);
 	new = (slurm_nrt_jobinfo_t *) xmalloc(sizeof(slurm_nrt_jobinfo_t));
 	new->magic = NRT_JOBINFO_MAGIC;
 	new->job_key = (nrt_job_key_t) -1;
@@ -1966,7 +1966,7 @@ nrt_alloc_nodeinfo(slurm_nrt_nodeinfo_t **n)
 {
 	slurm_nrt_nodeinfo_t *new;
 
- 	assert(n);
+	xassert(n);
 
 	new = (slurm_nrt_nodeinfo_t *) xmalloc(sizeof(slurm_nrt_nodeinfo_t));
 	new->adapter_list = (slurm_nrt_adapter_t *)
@@ -2332,9 +2332,9 @@ nrt_build_nodeinfo(slurm_nrt_nodeinfo_t *n, char *name)
 {
 	int err;
 
-	assert(n);
-	assert(n->magic == NRT_NODEINFO_MAGIC);
-	assert(name);
+	xassert(n);
+	xassert(n->magic == NRT_NODEINFO_MAGIC);
+	xassert(name);
 
 	strncpy(n->name, name, NRT_HOSTLEN);
 	_lock();
@@ -2354,9 +2354,9 @@ nrt_pack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf,
 	uint16_t dummy16;
 	int i, j, offset;
 
-	assert(n);
-	assert(n->magic == NRT_NODEINFO_MAGIC);
-	assert(buf);
+	xassert(n);
+	xassert(n->magic == NRT_NODEINFO_MAGIC);
+	xassert(buf);
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		info("nrt_pack_nodeinfo():");
 		_print_nodeinfo(n);
@@ -2401,10 +2401,10 @@ _copy_node(slurm_nrt_nodeinfo_t *dest, slurm_nrt_nodeinfo_t *src)
 	slurm_nrt_adapter_t *sa = NULL;
 	slurm_nrt_adapter_t *da = NULL;
 
-	assert(dest);
-	assert(src);
-	assert(dest->magic == NRT_NODEINFO_MAGIC);
-	assert(src->magic == NRT_NODEINFO_MAGIC);
+	xassert(dest);
+	xassert(src);
+	xassert(dest->magic == NRT_NODEINFO_MAGIC);
+	xassert(src->magic == NRT_NODEINFO_MAGIC);
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		info("_copy_node():");
@@ -2640,7 +2640,7 @@ _unpack_nodeinfo(slurm_nrt_nodeinfo_t *n, Buf buf, bool believe_window_status,
 	/* NOTE!  We don't care at this point whether n is valid.
 	 * If it's NULL, we will just forego the copy at the end.
 	 */
-	assert(buf);
+	xassert(buf);
 
 	/* Extract node name from buffer */
 	safe_unpack32(&magic, buf);
@@ -2780,7 +2780,7 @@ nrt_free_nodeinfo(slurm_nrt_nodeinfo_t *n, bool ptr_into_array)
 	if (!n)
 		return;
 
-	assert(n->magic == NRT_NODEINFO_MAGIC);
+	xassert(n->magic == NRT_NODEINFO_MAGIC);
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		info("nrt_free_nodeinfo");
@@ -2888,7 +2888,7 @@ _next_key(void)
 {
 	nrt_job_key_t key;
 
-	assert(nrt_state);
+	xassert(nrt_state);
 
 	_lock();
 	key = nrt_state->key_index;
@@ -2978,9 +2978,9 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	int def_adapter_count = 0;
 	int def_adapter_inx   = -1;
 
-	assert(jp);
-	assert(jp->magic == NRT_JOBINFO_MAGIC);
-	assert(tasks_per_node);
+	xassert(jp);
+	xassert(jp->magic == NRT_JOBINFO_MAGIC);
+	xassert(tasks_per_node);
 
 	if (dev_type != NRT_MAX_ADAPTER_TYPES)
 		adapter_type = dev_type;
@@ -3281,9 +3281,9 @@ nrt_pack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf, uint16_t protocol_version)
 {
 	int i;
 
-	assert(j);
-	assert(j->magic == NRT_JOBINFO_MAGIC);
-	assert(buf);
+	xassert(j);
+	xassert(j->magic == NRT_JOBINFO_MAGIC);
+	xassert(buf);
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		info("nrt_pack_jobinfo:");
@@ -3434,12 +3434,12 @@ nrt_unpack_jobinfo(slurm_nrt_jobinfo_t *j, Buf buf,
 {
 	int i;
 
-	assert(j);
-	assert(j->magic == NRT_JOBINFO_MAGIC);
-	assert(buf);
+	xassert(j);
+	xassert(j->magic == NRT_JOBINFO_MAGIC);
+	xassert(buf);
 
 	safe_unpack32(&j->magic, buf);
-	assert(j->magic == NRT_JOBINFO_MAGIC);
+	xassert(j->magic == NRT_JOBINFO_MAGIC);
 	safe_unpack32(&j->job_key, buf);
 	safe_unpack8(&j->bulk_xfer, buf);
 	safe_unpack32(&j->bulk_xfer_resources, buf);
@@ -3484,8 +3484,8 @@ nrt_copy_jobinfo(slurm_nrt_jobinfo_t *job)
 	int i;
 	int base_size = 0, table_size;
 
-	assert(job);
-	assert(job->magic == NRT_JOBINFO_MAGIC);
+	xassert(job);
+	xassert(job->magic == NRT_JOBINFO_MAGIC);
 
 	if (nrt_alloc_jobinfo(&new)) {
 		error("Allocating new jobinfo");
@@ -3565,8 +3565,8 @@ nrt_get_jobinfo(slurm_nrt_jobinfo_t *jp, int key, void *data)
 	int *tables_per = (int *) data;
 	int *job_key = (int *) data;
 
-	assert(jp);
-	assert(jp->magic == NRT_JOBINFO_MAGIC);
+	xassert(jp);
+	xassert(jp->magic == NRT_JOBINFO_MAGIC);
 
 	switch (key) {
 		case NRT_JOBINFO_TABLEINFO:
@@ -3753,8 +3753,8 @@ nrt_load_table(slurm_nrt_jobinfo_t *jp, int uid, int pid, char *job_name)
 	nrt_cmd_load_table_t load_table;
 	nrt_table_info_t table_info;
 
-	assert(jp);
-	assert(jp->magic == NRT_JOBINFO_MAGIC);
+	xassert(jp);
+	xassert(jp->magic == NRT_JOBINFO_MAGIC);
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		info("nrt_load_table");
@@ -4032,8 +4032,8 @@ nrt_unload_table(slurm_nrt_jobinfo_t *jp)
 {
 	int rc = SLURM_SUCCESS;
 
-	assert(jp);
-	assert(jp->magic == NRT_JOBINFO_MAGIC);
+	xassert(jp);
+	xassert(jp->magic == NRT_JOBINFO_MAGIC);
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		info("nrt_unload_table");
@@ -4077,8 +4077,8 @@ _pack_libstate(slurm_nrt_libstate_t *lp, Buf buffer, uint16_t protocol_version)
 	int offset;
 	int i;
 
-	assert(lp);
-	assert(lp->magic == NRT_LIBSTATE_MAGIC);
+	xassert(lp);
+	xassert(lp->magic == NRT_LIBSTATE_MAGIC);
 
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
  		info("_pack_libstate");
@@ -4142,7 +4142,7 @@ _unpack_libstate(slurm_nrt_libstate_t *lp, Buf buffer)
 	}
 	xfree(ver_str);
 
-	assert(lp->magic == NRT_LIBSTATE_MAGIC);
+	xassert(lp->magic == NRT_LIBSTATE_MAGIC);
 	safe_unpack32(&lp->magic, buffer);
 	safe_unpack32(&node_count, buffer);
 	for (i = 0; i < node_count; i++) {
@@ -4177,7 +4177,7 @@ nrt_libstate_restore(Buf buffer)
 	int rc;
 
 	_lock();
-	assert(!nrt_state);
+	xassert(!nrt_state);
 
 	nrt_state = _alloc_libstate();
 	if (!nrt_state) {
