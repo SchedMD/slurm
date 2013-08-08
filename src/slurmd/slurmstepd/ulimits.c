@@ -88,7 +88,9 @@ int set_user_limits(stepd_step_rec_t *job)
 	slurm_rlimits_info_t *rli;
 	struct rlimit r;
 	rlim_t task_mem_bytes;
+#ifdef RLIMIT_AS
 	uint16_t vsize_factor;
+#endif
 
 	if (getrlimit(RLIMIT_CPU, &r) == 0) {
 		if (r.rlim_max != RLIM_INFINITY) {
