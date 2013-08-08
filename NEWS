@@ -37,6 +37,7 @@ documents those changes that are of interest to users and admins.
     the plugin.
  -- Add StdIn, StdOut, and StdErr paths to job information dumped with
     "scontrol show job".
+ -- Permit Slurm administrator to submit a batch job as any user.
 
 * Changes in Slurm 2.6.1
 ========================

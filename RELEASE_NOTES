@@ -60,6 +60,7 @@ COMMAND CHANGES (see man pages for details)
     for the data type with a vertical bar separating each field.
  -- Add StdIn, StdOut, and StdErr paths to job information dumped with
     "scontrol show job".
+ -- Permit Slurm administrator to submit a batch job as any user.
 
 OTHER CHANGES
 =============
