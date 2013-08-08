@@ -60,6 +60,9 @@
 #define SW_GEN_NODE_INFO_MAGIC	0x3b38ac0c
 #define SW_GEN_STEP_INFO_MAGIC	0x58ae93cb
 
+/* Change GEN_STATE_VERSION value when changing the state save format */
+#define GEN_STATE_VERSION      "NRT001"
+
 typedef struct sw_gen_ifa {
 	char *ifa_name;		/* "eth0", "ib1", etc. */
 	char *ifa_family;	/* "AF_INET" or "AF_INET6" */

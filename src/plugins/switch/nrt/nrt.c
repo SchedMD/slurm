@@ -129,8 +129,9 @@ extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid );
 #define NRT_MAX_ADAPTERS (NRT_MAX_ADAPTERS_PER_TYPE * NRT_MAX_ADAPTER_TYPES)
 #define NRT_MAX_PROTO_CNT	20
 
-/* Change NRT_STATE_VERSION value when changing the state save format */
-#define NRT_STATE_VERSION      "VER001"
+/* Change NRT_STATE_VERSION value when changing the state save format. The
+ *"NRT" prefix distinguishes this from other possible switch state files */
+#define NRT_STATE_VERSION      "NRT001"
 
 pthread_mutex_t		global_lock = PTHREAD_MUTEX_INITIALIZER;
 extern bool		nrt_need_state_save;
