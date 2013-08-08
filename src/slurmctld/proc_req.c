@@ -2096,7 +2096,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 		if (job_desc_msg->job_id == NO_VAL)
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
-	xfree(msg);
+	xfree(err_msg);
 }
 
 /* _slurm_rpc_node_registration - process RPC to determine if a node's
