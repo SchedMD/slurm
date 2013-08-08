@@ -138,7 +138,7 @@ int set_user_limits(stepd_step_rec_t *job)
 			debug2("Set task_as(%u MB)", job->step_mem);
 #if 0
 		getrlimit(RLIMIT_AS, &r);
-		info("task AS limits: %u %u", r.rlim_cur, r.rlim_max);
+		info("task AS limits:   %u %u", r.rlim_cur, r.rlim_max);
 #endif
 	}
 

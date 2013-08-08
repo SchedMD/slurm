@@ -530,24 +530,26 @@ extern void jobacct_gather_handle_mem_limit(
 	if (jobacct_job_id && jobacct_mem_limit &&
 	    (total_job_mem > jobacct_mem_limit)) {
 		if (jobacct_step_id == NO_VAL) {
-			error("Job %u exceeded %u KB memory limit, being "
-			      "killed", jobacct_job_id, jobacct_mem_limit);
-		} else {
-			error("Step %u.%u exceeded %u KB memory limit, being "
-			      "killed", jobacct_job_id, jobacct_step_id,
+			error("Job %u exceeded memory limit (%u > %u), being "
+			      "killed", jobacct_job_id, total_job_mem,
 			      jobacct_mem_limit);
+		} else {
+			error("Step %u.%u exceeded memory limit (%u > %u), "
+			      "being killed", jobacct_job_id, jobacct_step_id,
+			      total_job_mem, jobacct_mem_limit);
 		}
 		_acct_kill_step();
 	} else if (jobacct_job_id && jobacct_vmem_limit &&
 		   (total_job_vsize > jobacct_vmem_limit)) {
 		if (jobacct_step_id == NO_VAL) {
-			error("Job %u exceeded %u KB virtual memory limit, "
-			      "being killed", jobacct_job_id,
-			      jobacct_vmem_limit);
+			error("Job %u exceeded virtual memory limit "
+			      "(%u > %u), being killed", jobacct_job_id,
+			      total_job_vsize, jobacct_vmem_limit);
 		} else {
-			error("Step %u.%u exceeded %u KB virtual memory "
-			      "limit, being killed", jobacct_job_id,
-			      jobacct_step_id, jobacct_vmem_limit);
+			error("Step %u.%u exceeded virtual memory limit "
+			      "(%u > %u), being killed", jobacct_job_id,
+			      jobacct_step_id, total_job_vsize,
+			      jobacct_vmem_limit);
 		}
 		_acct_kill_step();
 	}
