@@ -38,6 +38,8 @@ documents those changes that are of interest to users and admins.
  -- Add StdIn, StdOut, and StdErr paths to job information dumped with
     "scontrol show job".
  -- Permit Slurm administrator to submit a batch job as any user.
+ -- Set a job's RLIMIT_AS limit based upon it's memory limit and VsizeFactor
+    configuration value.
 
 * Changes in Slurm 2.6.1
 ========================

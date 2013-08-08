@@ -88,6 +88,7 @@ int set_user_limits(stepd_step_rec_t *job)
 	slurm_rlimits_info_t *rli;
 	struct rlimit r;
 	rlim_t task_mem_bytes;
+	uint16_t vsize_factor;
 
 	if (getrlimit(RLIMIT_CPU, &r) == 0) {
 		if (r.rlim_max != RLIM_INFINITY) {
@@ -118,6 +119,27 @@ int set_user_limits(stepd_step_rec_t *job)
 		info("task DATA limits: %u %u", r.rlim_cur, r.rlim_max);
 #endif
 	}
+#endif
+
+#ifdef RLIMIT_AS
+	if ((task_mem_bytes) &&
+	    ((vsize_factor = slurm_get_vsize_factor()) != 0) &&
+	    (getrlimit(RLIMIT_AS, &r) == 0) &&
+	    (r.rlim_max > task_mem_bytes)) {
+		r.rlim_max = task_mem_bytes * (vsize_factor / 100.0);
+		r.rlim_cur = r.rlim_max;
+		if (setrlimit(RLIMIT_AS, &r)) {
+			/* Indicates that limit has already been exceeded */
+			fatal("setrlimit(RLIMIT_AS, %u MB): %m",
+			      job->step_mem);
+		} else
+			debug2("Set task_as(%u MB)", job->step_mem);
+#if 0
+		getrlimit(RLIMIT_AS, &r);
+		info("task AS limits: %u %u", r.rlim_cur, r.rlim_max);
+#endif
+	}
+
 #endif
 	return SLURM_SUCCESS;
 }
