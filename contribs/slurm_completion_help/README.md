@@ -30,6 +30,10 @@ __Known issues__
 
 * Some regex needed to validate options or parameter values are not exactly correct, but should work in most cases.
 * Any new option unknown to the syntax file will be spotted as an error.
+* On a Debian system (Ubuntu) you may see messages like...
+  _get_comp_words_by_ref: command not found
+  after a tab.
+  Based on http://askubuntu.com/questions/33440/tab-completion-doesnt-work-for-commands you need to alter your /etc/bash.bashrc to make this work correctly.
 
 Bash completion
 ---------------
