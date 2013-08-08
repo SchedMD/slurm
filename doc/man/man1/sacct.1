@@ -54,10 +54,9 @@ gather and report incomplete information for these calls;
 \f2getrusage (3)\fP man page for information about which data are
 actually available on your system.
 .IP
-Elapsed time fields are presented as 2 fields, integral seconds and integral microseconds
-.IP
 Elapsed time fields are presented as
-[[days-]hours:]minutes:seconds.hundredths.
+[days-]hours:minutes:seconds[.microseconds].  Only 'CPU' fields will
+ever have microseconds.
 .IP
 The default input file is the file named in the
 \f3AccountingStorageLoc\fP parameter in slurm.conf.
