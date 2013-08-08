@@ -4341,9 +4341,7 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 	START_TIMER;
 	debug2("Processing RPC: ACCOUNTING_UPDATE_MSG from uid=%d", uid);
 
-	if (!validate_slurm_user(uid)
-	    && (assoc_mgr_get_admin_level(acct_db_conn, uid)
-		< SLURMDB_ADMIN_SUPER_USER)) {
+	if (!validate_super_user(uid)) {
 		error("Update Association request from non-super user uid=%d",
 		      uid);
 		slurm_send_rc_msg(msg, EACCES);
@@ -4428,9 +4426,7 @@ inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg)
 
 	START_TIMER;
 	debug2("Processing RPC: ACCOUNTING_FIRST_REG from uid=%d", uid);
-	if (!validate_slurm_user(uid)
-	    && (assoc_mgr_get_admin_level(acct_db_conn, uid)
-		< SLURMDB_ADMIN_SUPER_USER)) {
+	if (!validate_super_user(uid)) {
 		error("First Registration request from non-super user uid=%d",
 		      uid);
 		return;
@@ -4449,9 +4445,7 @@ inline static void  _slurm_rpc_accounting_register_ctld(slurm_msg_t *msg)
 
 	START_TIMER;
 	debug2("Processing RPC: ACCOUNTING_REGISTER_CTLD from uid=%d", uid);
-	if (!validate_slurm_user(uid)
-	    && (assoc_mgr_get_admin_level(acct_db_conn, uid)
-		< SLURMDB_ADMIN_SUPER_USER)) {
+	if (!validate_super_user(uid)) {
 		error("Registration request from non-super user uid=%d",
 		      uid);
 		return;
