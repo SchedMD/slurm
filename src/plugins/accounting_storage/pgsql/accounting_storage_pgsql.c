@@ -178,7 +178,9 @@ extern int init ( void )
 			      plugin_name);
 		xfree(cluster_name);
 	}
-
+	error("account_storage/pgsql will be removed in the next version of "
+	      "Slurm.  Please make plans to switch to a different method of "
+	      "storing data.  We would suggest using The SlurmDBD over MySQL.");
 	pgsql_db_info = _pgsql_acct_create_db_info();
 /* 	pgsql_db_info = acct_create_db_info(DEFAULT_PGSQL_PORT); */
 	pgsql_db_name = acct_get_db_name();

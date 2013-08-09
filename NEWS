@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
  -- Handle complete removal of CPURunMins time at the end of the job instead
     of at multifactor poll.
  -- sview - Add missing debug_flag options.
+ -- PGSQL - Notes about Postgres functionality being removed in the next
+    version of Slurm.
 
 * Changes in Slurm 2.6.0
 ========================

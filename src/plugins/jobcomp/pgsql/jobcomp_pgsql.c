@@ -243,6 +243,9 @@ extern int init ( void )
 		/* since this can be loaded from many different places
 		   only tell us once. */
 		verbose("%s loaded", plugin_name);
+		error("jobcomp/pgsql will be removed in the next version of "
+		      "Slurm.  Please make plans to switch to a different "
+		      "method of storing data.");
 		first = 0;
 	} else {
 		debug4("%s loaded", plugin_name);
