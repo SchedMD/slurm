@@ -223,7 +223,8 @@ struct job_record *create_job_record(int *error_code)
 	struct job_details *detail_ptr;
 
 	if (job_count >= slurmctld_conf.max_job_cnt) {
-		error("create_job_record: job_count exceeds limit");
+		error("create_job_record: job_count exceeds MaxJobCount limit "
+		      "configured");
 		*error_code = EAGAIN;
 		return NULL;
 	}
@@ -4645,8 +4646,8 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc)
 	if (job_desc->array_bitmap) {
 		int i = bit_set_count(job_desc->array_bitmap);
 		if ((job_count + i) >= slurmctld_conf.max_job_cnt) {
-			error("create_job_record: job_count exceeds limit "
-			      "(%d + %d >= %u)",
+			error("create_job_record: job_count exceeds "
+			      "MaxJobCount limit configured (%d + %d >= %u)",
 			      job_count, i, slurmctld_conf.max_job_cnt);
 			return EAGAIN;
 		}
