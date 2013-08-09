@@ -475,7 +475,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/accounting_storage/common/Makefile
 		 src/plugins/accounting_storage/filetxt/Makefile
 		 src/plugins/accounting_storage/mysql/Makefile
-		 src/plugins/accounting_storage/pgsql/Makefile
 		 src/plugins/accounting_storage/none/Makefile
 		 src/plugins/accounting_storage/slurmdbd/Makefile
 		 src/plugins/auth/Makefile
@@ -524,7 +523,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobcomp/none/Makefile
 		 src/plugins/jobcomp/script/Makefile
 		 src/plugins/jobcomp/mysql/Makefile
-		 src/plugins/jobcomp/pgsql/Makefile
 		 src/plugins/job_container/Makefile
 		 src/plugins/job_container/cncu/Makefile
 		 src/plugins/job_container/none/Makefile

@@ -2901,8 +2901,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl)) {
 		if (default_storage_loc)
 			conf->job_comp_loc = xstrdup(default_storage_loc);
-		else if (!strcmp(conf->job_comp_type, "job_comp/mysql")
-			|| !strcmp(conf->job_comp_type, "job_comp/pgsql"))
+		else if (!strcmp(conf->job_comp_type, "job_comp/mysql"))
 			conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_DB);
 		else
 			conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_LOC);
@@ -2933,8 +2932,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->job_comp_port = default_storage_port;
 		else if (!strcmp(conf->job_comp_type, "job_comp/mysql"))
 			conf->job_comp_port = DEFAULT_MYSQL_PORT;
-		else if (!strcmp(conf->job_comp_type, "job_comp/pgsql"))
-			conf->job_comp_port = DEFAULT_PGSQL_PORT;
 		else
 			conf->job_comp_port = DEFAULT_STORAGE_PORT;
 	}
@@ -3168,9 +3165,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->accounting_storage_loc =
 				xstrdup(default_storage_loc);
 		else if (!strcmp(conf->accounting_storage_type,
-				 "accounting_storage/mysql") ||
-			 !strcmp(conf->accounting_storage_type,
-				 "accounting_storage/pgsql"))
+				 "accounting_storage/mysql"))
 			conf->accounting_storage_loc =
 				xstrdup(DEFAULT_ACCOUNTING_DB);
 		else
@@ -3208,9 +3203,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		else if (!strcmp(conf->accounting_storage_type,
 			  "accounting_storage/mysql"))
 			conf->accounting_storage_port = DEFAULT_MYSQL_PORT;
-		else if (!strcmp(conf->accounting_storage_type,
-			  "accounting_storage/pgsql"))
-			conf->accounting_storage_port = DEFAULT_PGSQL_PORT;
 		else
 			conf->accounting_storage_port = DEFAULT_STORAGE_PORT;
 	}

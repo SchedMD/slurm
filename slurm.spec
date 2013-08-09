@@ -635,12 +635,8 @@ LIST=./sql.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_mysql.so &&
    echo %{_libdir}/slurm/accounting_storage_mysql.so >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_pgsql.so &&
-   echo %{_libdir}/slurm/accounting_storage_pgsql.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_mysql.so            &&
    echo %{_libdir}/slurm/jobcomp_mysql.so            >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_pgsql.so            &&
-   echo %{_libdir}/slurm/jobcomp_pgsql.so            >> $LIST
 
 LIST=./perlapi.files
 touch $LIST

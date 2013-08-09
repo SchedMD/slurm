@@ -15,15 +15,4 @@ MYSQL_LIB =
 EXTRA_libslurm_mysql_la_SOURCES = mysql_common.c mysql_common.h
 endif
 
-if WITH_PGSQL
-PGSQL_LIB = libslurm_pgsql.la
-libslurm_pgsql_la_SOURCES = pgsql_common.c pgsql_common.h
-libslurm_pgsql_la_LIBADD   = $(PGSQL_LIBS)
-libslurm_pgsql_la_LDFLAGS  = $(LIB_LDFLAGS)
-libslurm_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
-else
-PGSQL_LIB =
-EXTRA_libslurm_pgsql_la_SOURCES = pgsql_common.c pgsql_common.h
-endif
-
-noinst_LTLIBRARIES = $(MYSQL_LIB) $(PGSQL_LIB)
+noinst_LTLIBRARIES = $(MYSQL_LIB)

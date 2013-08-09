@@ -40,6 +40,7 @@ documents those changes that are of interest to users and admins.
  -- Permit Slurm administrator to submit a batch job as any user.
  -- Set a job's RLIMIT_AS limit based upon it's memory limit and VsizeFactor
     configuration value.
+ -- Remove Postgres plugins
 
 * Changes in Slurm 2.6.1
 ========================

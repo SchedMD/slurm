@@ -474,13 +474,6 @@ extern int read_slurmdbd_conf(void)
 		if (!slurmdbd_conf->storage_loc)
 			slurmdbd_conf->storage_loc =
 				xstrdup(DEFAULT_ACCOUNTING_DB);
-	} else if (!strcmp(slurmdbd_conf->storage_type,
-			   "accounting_storage/pgsql")) {
-		if (!slurmdbd_conf->storage_port)
-			slurmdbd_conf->storage_port = DEFAULT_PGSQL_PORT;
-		if (!slurmdbd_conf->storage_loc)
-			slurmdbd_conf->storage_loc =
-				xstrdup(DEFAULT_ACCOUNTING_DB);
 	} else {
 		if (!slurmdbd_conf->storage_port)
 			slurmdbd_conf->storage_port = DEFAULT_STORAGE_PORT;

@@ -218,9 +218,6 @@
 /* define if you have permapi_h */
 #undef HAVE_PERMAPI_H
 
-/* Define to 1 if using PostgreSQL libaries */
-#undef HAVE_PGSQL
-
 /* Define if you have Posix semaphores. */
 #undef HAVE_POSIX_SEMS
 

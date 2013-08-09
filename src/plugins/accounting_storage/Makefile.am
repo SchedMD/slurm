@@ -1,3 +1,3 @@
 # Makefile for storage plugins
 
-SUBDIRS = common filetxt mysql pgsql none slurmdbd
+SUBDIRS = common filetxt mysql none slurmdbd
