@@ -35,6 +35,8 @@ documents those changes that are of interest to users and admins.
  -- sview - Add missing debug_flag options.
  -- PGSQL - Notes about Postgres functionality being removed in the next
     version of Slurm.
+ -- MYSQL - fix issue when rolling up usage and events happened when a cluster
+    was down (slurmctld not running) during that time period.
 
 * Changes in Slurm 2.6.0
 ========================
