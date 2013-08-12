@@ -11,7 +11,6 @@ AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
 		as_mysql_archive.c as_mysql_archive.h \
 		as_mysql_assoc.c as_mysql_assoc.h \
 		as_mysql_cluster.c as_mysql_cluster.h \
-		as_mysql_convert.c as_mysql_convert.h \
 		as_mysql_job.c as_mysql_job.h \
 		as_mysql_jobacct_process.c as_mysql_jobacct_process.h \
 		as_mysql_problems.c as_mysql_problems.h \
