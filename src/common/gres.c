@@ -3391,7 +3391,7 @@ static void _job_state_log(void *gres_data, uint32_t job_id, char *gres_name)
 
 /*
  * Extract from the job record's gres_list the count of allocated resources of
- * 	the named gres gres typee.
+ * 	the named gres type.
  * IN job_gres_list  - job record's gres_list.
  * IN gres_name_type - the name of the gres type to retrieve the associated
  *	value from.
@@ -4694,7 +4694,7 @@ extern void gres_plugin_step_state_file(List gres_list, int *gres_bit_alloc,
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
-/* Send GRES information to slurmstepd on the specified file descriptor*/
+/* Send GRES information to slurmstepd on the specified file descriptor */
 extern void gres_plugin_send_stepd(int fd)
 {
 	int i;
@@ -4711,7 +4711,7 @@ extern void gres_plugin_send_stepd(int fd)
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
-/* Receive GRES information from slurmd on the specified file descriptor*/
+/* Receive GRES information from slurmd on the specified file descriptor */
 extern void gres_plugin_recv_stepd(int fd)
 {
 	int i;
