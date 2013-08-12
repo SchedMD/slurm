@@ -210,7 +210,8 @@ $command .= " -C $additional_attributes" if $additional_attributes;
 
 $command .= " $script";
 
-system($command);
+my $ret = system($command);
+exit ($ret >> 8);
 
 
 sub parse_resource_list {
