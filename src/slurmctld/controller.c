@@ -1094,36 +1094,16 @@ static void _free_server_thread(void)
 
 static int _accounting_cluster_ready()
 {
-	struct node_record *node_ptr;
-	int i;
 	int rc = SLURM_ERROR;
 	time_t event_time = time(NULL);
-	uint32_t cpus = 0;
 	bitstr_t *total_node_bitmap = NULL;
 	char *cluster_nodes = NULL;
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
 	lock_slurmctld(node_read_lock);
-	node_ptr = node_record_table_ptr;
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if (node_ptr->name == '\0')
-			continue;
-#ifdef SLURM_NODE_ACCT_REGISTER
-		if (slurmctld_conf.fast_schedule)
-			cpus += node_ptr->config_ptr->cpus;
-		else
-			cpus += node_ptr->cpus;
-#else
-		cpus += node_ptr->config_ptr->cpus;
-#endif
-	}
 
-	/* Since cluster_cpus is used else where we need to keep a
-	   local var here to avoid race conditions on cluster_cpus
-	   not being correct.
-	*/
-	cluster_cpus = cpus;
+	set_cluster_cpus();
 
 	/* Now get the names of all the nodes on the cluster at this
 	   time and send it also.
@@ -1689,6 +1669,35 @@ extern void send_all_to_accounting(time_t event_time)
 	send_jobs_to_accounting();
 	send_nodes_to_accounting(event_time);
 	send_resvs_to_accounting();
+}
+
+/* A slurmctld lock needs to at least have a node read lock set before
+ * this is called */
+extern void set_cluster_cpus(void)
+{
+	uint32_t cpus = 0;
+	struct node_record *node_ptr;
+	int i;
+
+	node_ptr = node_record_table_ptr;
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if (node_ptr->name == '\0')
+			continue;
+#ifdef SLURM_NODE_ACCT_REGISTER
+		if (slurmctld_conf.fast_schedule)
+			cpus += node_ptr->config_ptr->cpus;
+		else
+			cpus += node_ptr->cpus;
+#else
+		cpus += node_ptr->config_ptr->cpus;
+#endif
+	}
+
+	/* Since cluster_cpus is used else where we need to keep a
+	   local var here to avoid race conditions on cluster_cpus
+	   not being correct.
+	*/
+	cluster_cpus = cpus;
 }
 
 /*
