@@ -330,6 +330,13 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 
 	snprintf(tmp, sizeof(tmp), ":STATE=%s;", _get_node_state(node_ptr));
 	xstrcat(buf, tmp);
+
+	if (node_ptr->cpu_load != NO_VAL) {
+		snprintf(tmp, sizeof(tmp), "CPULOAD=%f;",
+			 (node_ptr->cpu_load / 100.0));
+		xstrcat(buf, tmp);
+	}
+
 	if (node_ptr->reason) {
 		/* Strip out any quotes, they confuse Moab */
 		char *reason, *bad_char;
@@ -363,12 +370,6 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 	}
 	if (i > 0)
 		xstrcat(buf, ";");
-
-	if (node_ptr->cpu_load != NO_VAL) {
-		snprintf(tmp, sizeof(tmp), "CPULOAD=%f;",
-			 (node_ptr->cpu_load / 100.0));
-		xstrcat(buf, tmp);
-	}
 
 	if (node_ptr->arch) {
 		snprintf(tmp, sizeof(tmp), "ARCH=%s;", node_ptr->arch);
