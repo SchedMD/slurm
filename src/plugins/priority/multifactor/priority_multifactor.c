@@ -132,7 +132,7 @@ slurm_ctl_conf_t slurmctld_conf;
  */
 const char plugin_name[]	= "Priority MULTIFACTOR plugin";
 const char plugin_type[]	= "priority/multifactor";
-const uint32_t plugin_version	= 101;
+const uint32_t plugin_version	= 100;
 
 static pthread_t decay_handler_thread;
 static pthread_t cleanup_handler_thread;
