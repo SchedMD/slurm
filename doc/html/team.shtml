@@ -73,6 +73,7 @@ Lead Slurm developers are:
 <li>Mark Grondona (Lawrence Livermore National Laboratory)</li>
 <li>Dmitri Gribenko</li>
 <li>Andriy Grytsenko (Massive Solutions Limited, Ukraine)</li>
+<li>Michael Gutteridge (Fred Hutchinson Cancer Research Center)</li>
 <br>
 <li>Chris Harwell (D. E. Shaw Research)</li>
 <li>Takao Hatazaki (HP)</li>
@@ -164,6 +165,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 29 July 2013</p>
+<p style="text-align:center;">Last modified 13 August 2013</p>
 
 <!--#include virtual="footer.txt"-->
