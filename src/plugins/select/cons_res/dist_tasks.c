@@ -134,6 +134,8 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	uint32_t n, i, tid, maxtasks, l;
 	uint16_t *avail_cpus;
 	job_resources_t *job_res = job_ptr->job_resrcs;
+	bool log_over_subscribe = true;
+
 	if (!job_res || !job_res->cpus) {
 		error("cons_res: _compute_c_b_task_dist given NULL job_ptr");
 		return SLURM_ERROR;
@@ -146,10 +148,12 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	/* ncpus is already set the number of tasks if overcommit is used */
 	if (!job_ptr->details->overcommit &&
 	    (job_ptr->details->cpus_per_task > 1)) {
-		if (job_ptr->details->ntasks_per_node == 0)
+		if (job_ptr->details->ntasks_per_node == 0) {
 			maxtasks = maxtasks / job_ptr->details->cpus_per_task;
-		else
-			maxtasks = job_ptr->details->ntasks_per_node * job_res->nhosts;
+		} else {
+			maxtasks = job_ptr->details->ntasks_per_node *
+				   job_res->nhosts;
+		}
 	}
 
 	/* Safe guard if the user didn't specified a lower number of
@@ -161,16 +165,20 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	}
 	if (job_ptr->details->cpus_per_task == 0)
 		job_ptr->details->cpus_per_task = 1;
+	if (job_ptr->details->overcommit)
+		log_over_subscribe = false;
 	for (tid = 0, i = job_ptr->details->cpus_per_task ; (tid < maxtasks);
 	     i += job_ptr->details->cpus_per_task ) { /* cycle counter */
 		bool space_remaining = false;
-		if (over_subscribe) {
+		if (over_subscribe && log_over_subscribe) {
 			/* 'over_subscribe' is a relief valve that guards
 			 * against an infinite loop, and it *should* never
 			 * come into play because maxtasks should never be
 			 * greater than the total number of available cpus
 			 */
-			error("cons_res: _compute_c_b_task_dist oversubscribe");
+			error("cons_res: _compute_c_b_task_dist "
+			      "oversubscribe for job %u", job_ptr->job_id);
+			log_over_subscribe = false	/* Log once per job */;
 		}
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
 			if ((i <= avail_cpus[n]) || over_subscribe) {
@@ -200,6 +208,8 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 	uint32_t n, i, p, tid, maxtasks, l;
 	uint16_t *avail_cpus, plane_size = 1;
 	job_resources_t *job_res = job_ptr->job_resrcs;
+	bool log_over_subscribe = true;
+
 	if (!job_res || !job_res->cpus) {
 		error("cons_res: _compute_plane_dist given NULL job_res");
 		return SLURM_ERROR;
@@ -220,16 +230,19 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 		return SLURM_ERROR;
 	}
 	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
-
+	if (job_ptr->details->overcommit)
+		log_over_subscribe = false;
 	for (tid = 0, i = 0; (tid < maxtasks); i++) { /* cycle counter */
 		bool space_remaining = false;
-		if (over_subscribe) {
+		if (over_subscribe && log_over_subscribe) {
 			/* 'over_subscribe' is a relief valve that guards
 			 * against an infinite loop, and it *should* never
 			 * come into play because maxtasks should never be
 			 * greater than the total number of available cpus
 			 */
-			error("cons_res: _compute_plane_dist oversubscribe");
+			error("cons_res: _compute_plane_dist oversubscribe "
+			      "for job %u", job_ptr->job_id);
+			log_over_subscribe = false	/* Log once per job */;
 		}
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
 			for (p = 0; p < plane_size && (tid < maxtasks); p++) {

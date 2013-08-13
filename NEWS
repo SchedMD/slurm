@@ -207,6 +207,7 @@ documents those changes that are of interest to users and admins.
  -- Select/cons_res - Correct total CPU count allocated to a job with
     --exclusive and --cpus-per-task options
  -- switch/nrt - Don't allocate network resources unless job step has 2+ nodes.
+ -- select/cons_res - Avoid extraneous "oversubscribe" error messages.
 
 * Changes in Slurm 2.5.7
 ========================
