@@ -132,7 +132,8 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-jobacct_gather_cgroup_la_LIBADD =
+jobacct_gather_cgroup_la_DEPENDENCIES =  \
+	../common/libjobacct_gather_common.la
 am_jobacct_gather_cgroup_la_OBJECTS = jobacct_gather_cgroup.lo \
 	jobacct_gather_cgroup_cpuacct.lo \
 	jobacct_gather_cgroup_memory.lo
@@ -406,6 +407,7 @@ jobacct_gather_cgroup_la_SOURCES = jobacct_gather_cgroup.c \
                                    jobacct_gather_cgroup.h
 
 jobacct_gather_cgroup_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobacct_gather_cgroup_la_LIBADD = ../common/libjobacct_gather_common.la
 all: all-am
 
 .SUFFIXES:
@@ -718,6 +720,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-pkglibLTLIBRARIES
 
+
+force:
+$(jobacct_gather_cgroup_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

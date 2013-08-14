@@ -336,9 +336,10 @@ extern int jobacct_gather_endpoll(void)
 	if (task_list)
 		list_destroy(task_list);
 	task_list = NULL;
-	slurm_mutex_unlock(&task_list_lock);
 
 	retval = (*(ops.endpoll))();
+
+	slurm_mutex_unlock(&task_list_lock);
 
 	return retval;
 }
