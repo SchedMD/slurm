@@ -41,6 +41,10 @@ documents those changes that are of interest to users and admins.
  -- Prevent infinite loop in parsing configuration if including file containing
     one blank line.
  -- Fix pack and unpack between 2.6 and 2.5.
+ -- Fix job state recovery logic in which a job's accounting frequency was
+    not set. This would result in a value of 65534 seconds being used (the
+    equivalent of NO_VAL in uint16_t), which could result in the job being
+    requeued or aborted.
 
 * Changes in Slurm 2.6.0
 ========================
