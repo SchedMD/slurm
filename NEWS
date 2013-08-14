@@ -43,6 +43,7 @@ documents those changes that are of interest to users and admins.
  -- Remove Postgres plugins
  -- Make jobacct_gather/cgroup work correctly and also make all jobacct_gather
     plugins more maintainable.
+ -- Proctrack/pgid - Add support for proctrack_p_plugin_get_pids() function.
 
 * Changes in Slurm 2.6.1
 ========================

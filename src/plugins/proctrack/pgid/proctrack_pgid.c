@@ -52,9 +52,14 @@
 #endif
 #include <unistd.h>
 
-#include <sys/types.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <limits.h>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -190,7 +195,59 @@ proctrack_p_plugin_wait(uint64_t cont_id)
 extern int
 proctrack_p_plugin_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
-	error("proctrack/pgid does not implement "
-	      "proctrack_p_plugin_get_pids");
-	return SLURM_ERROR;
+	DIR *dir;
+	struct dirent *de;
+	char path[PATH_MAX], *endptr, *num, rbuf[1024];
+	char cmd[1024];
+	char state;
+	int fd, rc = SLURM_SUCCESS;
+	long pid, ppid, pgid, ret_l;
+	pid_t *pid_array = NULL;
+	int pid_count = 0;
+
+	if ((dir = opendir("/proc")) == NULL) {
+		error("opendir(/proc): %m");
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+	while ((de = readdir(dir)) != NULL) {
+		num = de->d_name;
+		if ((num[0] < '0') || (num[0] > '9'))
+			continue;
+		ret_l = strtol(num, &endptr, 10);
+		if ((ret_l == LONG_MIN) || (ret_l == LONG_MAX) ||
+		    (errno == ERANGE)) {
+			error("couldn't do a strtol on str %s(%ld): %m",
+			      num, ret_l);
+			continue;
+		}
+		sprintf(path, "/proc/%s/stat", num);
+		if ((fd = open(path, O_RDONLY)) < 0) {
+			continue;
+		}
+		if (read(fd, rbuf, 1024) <= 0) {
+			close(fd);
+			continue;
+		}
+		close(fd);
+		if (sscanf(rbuf, "%ld %s %c %ld %ld",
+			   &pid, cmd, &state, &ppid, &pgid) != 5) {
+			continue;
+		}
+		if (pgid != (long) cont_id)
+			continue;
+		if (state == 'Z') {
+			debug3("Defunct process skipped: command=%s state=%c "
+			       "pid=%ld ppid=%ld pgid=%ld",
+			       cmd, state, pid, ppid, pgid);
+			continue;	/* Defunct, don't try to kill */
+		}
+		xrealloc(pid_array, sizeof(pid_t) * (pid_count + 1));
+		pid_array[pid_count++] = pid;
+	}
+	closedir(dir);
+
+fini:	*pids  = pid_array;
+	*npids = pid_count;
+	return rc;
 }
