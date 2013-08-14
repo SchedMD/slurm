@@ -40,6 +40,7 @@ documents those changes that are of interest to users and admins.
  -- sched/wiki2 - Insure that Moab gets current CPU load information.
  -- Prevent infinite loop in parsing configuration if including file containing
     one blank line.
+ -- Fix pack and unpack between 2.6 and 2.5.
 
 * Changes in Slurm 2.6.0
 ========================
