@@ -136,8 +136,9 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bool log_over_subscribe = true;
 
-	if (!job_res || !job_res->cpus) {
-		error("cons_res: _compute_c_b_task_dist given NULL job_ptr");
+	if (!job_res || !job_res->cpus || !job_res->nhosts) {
+		error("cons_res: _compute_c_b_task_dist invalid allocation "
+		      "for job %u", job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 
@@ -210,8 +211,9 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bool log_over_subscribe = true;
 
-	if (!job_res || !job_res->cpus) {
-		error("cons_res: _compute_plane_dist given NULL job_res");
+	if (!job_res || !job_res->cpus || !job_res->nhosts) {
+		error("cons_res: _compute_c_b_task_dist invalid allocation "
+		      "for job %u", job_ptr->job_id);
 		return SLURM_ERROR;
 	}
 
