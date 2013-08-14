@@ -45,6 +45,8 @@ documents those changes that are of interest to users and admins.
     not set. This would result in a value of 65534 seconds being used (the
     equivalent of NO_VAL in uint16_t), which could result in the job being
     requeued or aborted.
+ -- Validate a job's accounting frequency at submission time rather than
+    waiting for it's initiation to possibly fail.
 
 * Changes in Slurm 2.6.0
 ========================
