@@ -223,7 +223,6 @@ extern int acct_gather_energy_unpack(acct_gather_energy_t **energy, Buf buffer,
 		safe_unpack32(&energy_ptr->current_watts, buffer);
 
 	}
-	info("hey I made it here");
 	return SLURM_SUCCESS;
 
 unpack_error:
