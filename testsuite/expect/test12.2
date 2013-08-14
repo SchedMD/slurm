@@ -69,14 +69,14 @@ if {[test_launch_poe]} {
 }
 
 proc _get_mem {prog} {
-	global sstat float number mem_size job_id step_id max_mem_error
+	global float number mem_size job_id step_id max_mem_error
 
 	set mem_used -1
 	set mem_task -1
 	set ave_used -1
 	set exit_code 0
 
-	spawn $prog --noheader -p --job=$job_id.$step_id --format maxvmsize,maxvmsizetask,avevmsize
+	spawn $prog --noheader -p --job=$job_id.$step_id --format maxrss,maxrsstask,averss
 	expect {
 		-re "($float)(\[KMG\]*).($number).($float)(\[KMG\]*)" {
 			set mem_used  $expect_out(1,string)
@@ -91,7 +91,7 @@ proc _get_mem {prog} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: sstat not responding\n"
+			send_user "\nFAILURE: $prog not responding\n"
 			set exit_code 1
 		}
 		eof {
@@ -104,31 +104,31 @@ proc _get_mem {prog} {
 	}
 
 	if { $mem_used == -1 } {
-		send_user "\nFAILURE: sstat stat memory not found\n"
+		send_user "\nFAILURE: $prog stat memory not found\n"
 		return 1
 	} elseif { $mem_task == -1 } {
-		send_user "\nFAILURE: sstat stat memory task not found\n"
+		send_user "\nFAILURE: $prog stat memory task not found\n"
 		return 1
 	} elseif { $ave_used != $mem_used } {
-		send_user "\nFAILURE: sstat stat memory task not equal to ave memory\n"
+		send_user "\nFAILURE: $prog stat memory task not equal to ave memory\n"
 		return 1
 	}
 	# Compute error in KB
 	set diff_mem [expr $mem_used - $mem_size]
 	set error_mem [expr abs($diff_mem)]
 	if {($mem_used < $mem_size) || ($error_mem > $max_mem_error)} {
-		send_user "\nFAILURE: sstat memory use discrepancy of $error_mem KB\n"
+		send_user "\nFAILURE: $prog memory use discrepancy of $error_mem KB\n"
 		send_user "  Wanted $mem_size KB, got $mem_used KB\n"
 		return 1
 	} else {
-		send_user "\nSUCCESS: sstat memory use discrepancy of $error_mem KB\n"
+		send_user "\nSUCCESS: $prog memory use discrepancy of $error_mem KB\n"
 	}
 	return 0
 }
 
 # Check the job written and read file size.
 proc _get_file_size {prog} {
-	global sstat number float job_id step_id file_size
+	global number float job_id step_id file_size
 
 	set max_disk_write  -1
 	set ave_disk_write  -1
@@ -196,7 +196,7 @@ proc _get_file_size {prog} {
 		return 1
 	}
 
-	send_user "\SUCCESS: $prog reported correct written and read file size "
+	send_user "\SUCCESS: $prog reported correct written and read file size\n"
 	send_user "file_size:$mb_file_size MB max_disk_write:$max_disk_write MB "
 	send_user "max_disk_read:$max_disk_read MB\n"
 
@@ -216,6 +216,10 @@ expect {
 		exp_continue
 	}
 	-re "JobAcctGatherType *= jobacct_gather/linux" {
+		set supported_gather 1
+		exp_continue
+	}
+	-re "JobAcctGatherType *= jobacct_gather/cgroup" {
 		set supported_gather 1
 		exp_continue
 	}
