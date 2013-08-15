@@ -219,19 +219,19 @@ const struct element_handler basil_5_1_elements[] = {
 	},
 	[BT_ACCELARRAY]	= {
 			.tag	= "AcceleratorArray",
-			.depth	= 7,
+			.depth	= 5,
 			.uniq	= true,
 			.hnd	= NULL
 	},
 	[BT_ACCEL]	= {
 			.tag	= "Accelerator",
-			.depth	= 8,
+			.depth	= 6,
 			.uniq	= false,
 			.hnd	= eh_accel
 	},
 	[BT_ACCELALLOC]	= {
 			.tag	= "AcceleratorAllocation",
-			.depth	= 7,
+			.depth	= 5,
 			.uniq	= false,
 			.hnd	= eh_accel_alloc
 	},
