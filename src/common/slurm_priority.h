@@ -67,7 +67,10 @@ extern double priority_g_calc_fs_factor(long double usage_efctv,
 extern List priority_g_get_priority_factors_list(
 	priority_factors_request_msg_t *req_msg, uid_t uid);
 
-/* Call at end of job to remove decayable limits at the end of the job */
+/* Call at end of job to remove decayable limits at the end of the job
+ * at least slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
+ * READ_LOCK, READ_LOCK }; should be locked before calling this
+ */
 extern void priority_g_job_end(struct job_record *job_ptr);
 
 #endif /*_SLURM_PRIORIY_H */
