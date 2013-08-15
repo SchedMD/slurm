@@ -2215,7 +2215,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		val2  = resv_ptr->users;
 	} else
 		name2 = val2 = "";
-	info("sched: Updated reservation %s%s%s%s%s nodes=%s licenses=%s "
+	info("sched: Updated reservation=%s%s%s%s%s nodes=%s licenses=%s "
 	     "start=%s end=%s",
 	     resv_ptr->name, name1, val1, name2, val2,
 	     resv_ptr->node_list, resv_ptr->licenses, start_time, end_time);
