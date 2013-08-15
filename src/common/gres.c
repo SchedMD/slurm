@@ -940,8 +940,6 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char* node_name)
 	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
 
 	safe_unpack16(&version, buffer);
-	if (version != SLURM_PROTOCOL_VERSION)
-		return SLURM_ERROR;
 
 	safe_unpack16(&rec_cnt, buffer);
 	if (rec_cnt == 0)
@@ -3250,11 +3248,11 @@ step2:	if (!from_job_gres_list)
 			gres_job_ptr2->gres_cnt_alloc = gres_job_ptr->
 							gres_cnt_alloc;
 			gres_job_ptr2->node_cnt = new_node_cnt;
-			gres_job_ptr2->gres_bit_alloc = 
+			gres_job_ptr2->gres_bit_alloc =
 				xmalloc(sizeof(bitstr_t *) * new_node_cnt);
-			gres_job_ptr2->gres_bit_step_alloc = 
+			gres_job_ptr2->gres_bit_step_alloc =
 				xmalloc(sizeof(bitstr_t *) * new_node_cnt);
-			gres_job_ptr2->gres_cnt_step_alloc = 
+			gres_job_ptr2->gres_cnt_step_alloc =
 				xmalloc(sizeof(uint32_t) * new_node_cnt);
 			list_append(to_job_gres_list, gres_ptr2);
 		}
@@ -3469,7 +3467,7 @@ extern void gres_plugin_job_state_file(List gres_list, int *gres_bit_alloc,
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
-	
+
 	for (j=0; j<gres_context_cnt; j++) {
 		found = 0;
 		list_iterator_reset(gres_iter);
@@ -4641,7 +4639,7 @@ extern int gres_num_gres_alloced_all(List gres_list, int arrlen,
 	return rc;
 }
 
-extern void gres_plugin_step_state_file(List gres_list, int *gres_bit_alloc, 
+extern void gres_plugin_step_state_file(List gres_list, int *gres_bit_alloc,
 					int *gres_count)
 {
 	int i, j, p, gres_cnt = 0, len, found;

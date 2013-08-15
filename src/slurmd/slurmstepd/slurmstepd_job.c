@@ -89,7 +89,7 @@ static int _check_acct_freq_task(uint32_t job_mem_lim, char *acctg_freq)
 		return 0;
 
 	if ((task_freq == 0) || (task_freq > conf->acct_freq_task)) {
-		error("Can't set frequency to %u, it is higher than %u.  "
+		error("Can't set frequency to %d, it is higher than %u.  "
 		      "We need it to be at least at this level to "
 		      "monitor memory usage.",
 		      task_freq, conf->acct_freq_task);

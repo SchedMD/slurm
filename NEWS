@@ -77,6 +77,23 @@ documents those changes that are of interest to users and admins.
  -- Handle complete removal of CPURunMins time at the end of the job instead
     of at multifactor poll.
  -- sview - Add missing debug_flag options.
+ -- PGSQL - Notes about Postgres functionality being removed in the next
+    version of Slurm.
+ -- MYSQL - fix issue when rolling up usage and events happened when a cluster
+    was down (slurmctld not running) during that time period.
+ -- sched/wiki2 - Insure that Moab gets current CPU load information.
+ -- Prevent infinite loop in parsing configuration if including file containing
+    one blank line.
+ -- Fix pack and unpack between 2.6 and 2.5.
+ -- Fix job state recovery logic in which a job's accounting frequency was
+    not set. This would result in a value of 65534 seconds being used (the
+    equivalent of NO_VAL in uint16_t), which could result in the job being
+    requeued or aborted.
+ -- Validate a job's accounting frequency at submission time rather than
+    waiting for it's initiation to possibly fail.
+ -- Fix CPURunMins if a job is requeued from a failed launch.
+ -- Fix in accounting_storage/filetxt to correct start times which sometimes
+    could end up before the job started.
 
 * Changes in Slurm 2.6.0
 ========================
@@ -247,6 +264,7 @@ documents those changes that are of interest to users and admins.
  -- Select/cons_res - Correct total CPU count allocated to a job with
     --exclusive and --cpus-per-task options
  -- switch/nrt - Don't allocate network resources unless job step has 2+ nodes.
+ -- select/cons_res - Avoid extraneous "oversubscribe" error messages.
 
 * Changes in Slurm 2.5.7
 ========================

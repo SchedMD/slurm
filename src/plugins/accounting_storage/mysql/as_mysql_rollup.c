@@ -1004,15 +1004,18 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		}
 
 		/* now apply the down time from the slurmctld disconnects */
-		list_iterator_reset(c_itr);
-		while ((loc_c_usage = list_next(c_itr)))
-			c_usage->d_cpu += loc_c_usage->total_time;
+		if (c_usage) {
+			list_iterator_reset(c_itr);
+			while ((loc_c_usage = list_next(c_itr)))
+				c_usage->d_cpu += loc_c_usage->total_time;
 
-		if ((rc = _process_cluster_usage(
-			     mysql_conn, cluster_name, curr_start,
-			     curr_end, now, c_usage)) != SLURM_SUCCESS) {
-			_destroy_local_cluster_usage(c_usage);
-			goto end_it;
+			if ((rc = _process_cluster_usage(
+				     mysql_conn, cluster_name, curr_start,
+				     curr_end, now, c_usage))
+			    != SLURM_SUCCESS) {
+				_destroy_local_cluster_usage(c_usage);
+				goto end_it;
+			}
 		}
 
 		list_iterator_reset(a_itr);

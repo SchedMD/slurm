@@ -132,7 +132,7 @@ slurm_ctl_conf_t slurmctld_conf;
  */
 const char plugin_name[]	= "Priority MULTIFACTOR plugin";
 const char plugin_type[]	= "priority/multifactor";
-const uint32_t plugin_version	= 101;
+const uint32_t plugin_version	= 100;
 
 static pthread_t decay_handler_thread;
 static pthread_t cleanup_handler_thread;
@@ -1013,7 +1013,11 @@ static int _apply_new_usage(struct job_record *job_ptr,
 
 	if ((uint64_t)start_period >= job_time_limit_ends)
 		cpu_run_delta = 0;
-	else if (IS_JOB_FINISHED(job_ptr)) {
+	else if (IS_JOB_FINISHED(job_ptr) || IS_JOB_COMPLETING(job_ptr)) {
+		/* If a job is being requeued sometimes the state will
+		   be pending + completing so handle that the same as
+		   finished so we don't leave time in the mix.
+		*/
 		cpu_run_delta = job_ptr->total_cpus *
 			(job_time_limit_ends - (uint64_t)start_period);
 	} else
@@ -1262,7 +1266,8 @@ static void *_decay_thread(void *no_data)
 			itr = list_iterator_create(job_list);
 			while ((job_ptr = list_next(itr))) {
 				/* Don't need to handle finished jobs. */
-				if (IS_JOB_FINISHED(job_ptr))
+				if (IS_JOB_FINISHED(job_ptr)
+				    || IS_JOB_COMPLETING(job_ptr))
 					continue;
 				/* apply new usage */
 				if (!IS_JOB_PENDING(job_ptr) &&
@@ -1317,7 +1322,8 @@ static void *_decay_thread(void *no_data)
 			itr = list_iterator_create(job_list);
 			while ((job_ptr = list_next(itr))) {
 				/* Don't need to handle finished jobs. */
-				if (IS_JOB_FINISHED(job_ptr))
+				if (IS_JOB_FINISHED(job_ptr)
+				    || IS_JOB_COMPLETING(job_ptr))
 					continue;
 				/* apply new usage */
 				if (!IS_JOB_PENDING(job_ptr) &&
@@ -1759,12 +1765,12 @@ extern List priority_p_get_priority_factors_list(
 	return ret_list;
 }
 
+/* at least slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
+ * READ_LOCK, READ_LOCK }; should be locked before calling this */
 extern void priority_p_job_end(struct job_record *job_ptr)
 {
 	if (priority_debug)
 		info("priority_p_job_end: called for job %u", job_ptr->job_id);
 
-	slurm_mutex_lock(&decay_lock);
 	_apply_new_usage(job_ptr, g_last_ran, time(NULL));
-	slurm_mutex_unlock(&decay_lock);
 }

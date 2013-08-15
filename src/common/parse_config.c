@@ -289,17 +289,20 @@ static int _strip_continuation(char *buf, int len)
 	char *ptr;
 	int bs = 0;
 
+	if (len == 0)
+		return len;	/* Empty line */
+
 	for (ptr = buf+len-1; ptr >= buf; ptr--) {
 		if (*ptr == '\\')
 			bs++;
-		else if (isspace((int)*ptr) && bs == 0)
+		else if (isspace((int)*ptr) && (bs == 0))
 			continue;
 		else
 			break;
 	}
 	/* Check for an odd number of contiguous backslashes at
-	   the end of the line */
-	if (bs % 2 == 1) {
+	 * the end of the line */
+	if ((bs % 2) == 1) {
 		ptr = ptr + bs;
 		*ptr = '\0';
 		return (ptr - buf);
@@ -898,10 +901,11 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 		return SLURM_ERROR;
 	}
 
-	line = xmalloc(sizeof(char) * stat_buf.st_size);
+	/* Buffer needs one extra byte for trailing '\0' */
+	line = xmalloc(sizeof(char) * stat_buf.st_size + 1);
 	line_number = 1;
 	while ((merged_lines = _get_next_line(
-			line, stat_buf.st_size, hash_val, f)) > 0) {
+			line, stat_buf.st_size + 1, hash_val, f)) > 0) {
 		/* skip empty lines */
 		if (line[0] == '\0') {
 			line_number += merged_lines;

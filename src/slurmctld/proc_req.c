@@ -1742,11 +1742,12 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 			comp_msg->job_id, slurm_strerror(comp_msg->slurm_rc));
 		dump_job = job_requeue = true;
 #endif
-	/* Handle non-fatal errors here */
+	/* Handle non-fatal errors here. All others drain the node. */
 	} else if ((comp_msg->slurm_rc == SLURM_COMMUNICATIONS_SEND_ERROR) ||
 	           (comp_msg->slurm_rc == ESLURM_USER_ID_MISSING) ||
-		   (comp_msg->slurm_rc == ESLURMD_UID_NOT_FOUND) ||
-		   (comp_msg->slurm_rc == ESLURMD_GID_NOT_FOUND)) {
+		   (comp_msg->slurm_rc == ESLURMD_UID_NOT_FOUND)  ||
+		   (comp_msg->slurm_rc == ESLURMD_GID_NOT_FOUND)  ||
+		   (comp_msg->slurm_rc == ESLURMD_INVALID_ACCT_FREQ)) {
 		error("Slurmd error running JobId=%u on %s=%s: %s",
 		      comp_msg->job_id, msg_title, nodes,
 		      slurm_strerror(comp_msg->slurm_rc));

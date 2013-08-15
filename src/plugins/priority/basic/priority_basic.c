@@ -86,7 +86,7 @@
  */
 const char plugin_name[]       	= "Priority BASIC plugin";
 const char plugin_type[]       	= "priority/basic";
-const uint32_t plugin_version	= 101;
+const uint32_t plugin_version	= 100;
 
 /*
  * init() is called when the plugin is loaded, before any other functions

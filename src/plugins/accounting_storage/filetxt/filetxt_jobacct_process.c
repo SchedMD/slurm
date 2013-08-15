@@ -255,7 +255,7 @@ static slurmdb_step_rec_t *_slurmdb_create_step_rec(
 	slurmdb_step_rec_t *slurmdb_step = slurmdb_create_step_rec();
 
 	slurmdb_step->elapsed = filetxt_step->elapsed;
-	slurmdb_step->end = filetxt_step->header.timestamp;
+	slurmdb_step->end = filetxt_step->end;
 	slurmdb_step->exitcode = filetxt_step->exitcode;
 	slurmdb_step->ncpus = filetxt_step->ncpus;
 	if (filetxt_step->nodes) {
@@ -267,8 +267,7 @@ static slurmdb_step_rec_t *_slurmdb_create_step_rec(
 	slurmdb_step->requid = filetxt_step->requid;
 	memcpy(&slurmdb_step->stats, &filetxt_step->stats,
 	       sizeof(slurmdb_stats_t));
-	slurmdb_step->start = filetxt_step->header.timestamp -
-		slurmdb_step->elapsed;
+	slurmdb_step->start = slurmdb_step->end - slurmdb_step->elapsed;
 	slurmdb_step->state = filetxt_step->status;
 	slurmdb_step->stepid = filetxt_step->stepnum;
 	slurmdb_step->stepname = xstrdup(filetxt_step->stepname);
@@ -316,7 +315,7 @@ no_cond:
 	slurmdb_job->cluster = NULL;
 	slurmdb_job->elapsed = filetxt_job->elapsed;
 	slurmdb_job->eligible = filetxt_job->header.job_submit;
-	slurmdb_job->end = filetxt_job->header.timestamp;
+	slurmdb_job->end = filetxt_job->end;
 	slurmdb_job->exitcode = filetxt_job->exitcode;
 	slurmdb_job->gid = filetxt_job->header.gid;
 	slurmdb_job->jobid = filetxt_job->header.jobnum;
@@ -335,8 +334,7 @@ no_cond:
 	memcpy(&slurmdb_job->stats, &filetxt_job->stats,
 	       sizeof(slurmdb_stats_t));
 	slurmdb_job->show_full = filetxt_job->show_full;
-	slurmdb_job->start = filetxt_job->header.timestamp -
-		slurmdb_job->elapsed;
+	slurmdb_job->start = slurmdb_job->end - slurmdb_job->elapsed;
 	slurmdb_job->state = filetxt_job->status;
 
 	slurmdb_job->steps = list_create(slurmdb_destroy_step_rec);

@@ -3889,6 +3889,15 @@ extern char * debug_flags2str(uint32_t debug_flags)
 {
 	char *rc = NULL;
 
+	/* When adding to this please attempt to keep flags in
+	 * alphabetical order.
+	 */
+
+	if (debug_flags & DEBUG_FLAG_BACKFILL) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Backfill");
+	}
 	if (debug_flags & DEBUG_FLAG_BG_ALGO) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -3898,11 +3907,6 @@ extern char * debug_flags2str(uint32_t debug_flags)
 		if (rc)
 			xstrcat(rc, ",");
 		xstrcat(rc, "BGBlockAlgoDeep");
-	}
-	if (debug_flags & DEBUG_FLAG_BACKFILL) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "Backfill");
 	}
 	if (debug_flags & DEBUG_FLAG_BG_PICK) {
 		if (rc)
@@ -3929,6 +3933,11 @@ extern char * debug_flags2str(uint32_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "ExtSensors");
 	}
+	if (debug_flags & DEBUG_FLAG_FILESYSTEM) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Filesystem");
+	}
 	if (debug_flags & DEBUG_FLAG_FRONT_END) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -3948,11 +3957,6 @@ extern char * debug_flags2str(uint32_t debug_flags)
 		if (rc)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Infiniband");
-	}
-	if (debug_flags & DEBUG_FLAG_FILESYSTEM) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "Filesystem");
 	}
 	if (debug_flags & DEBUG_FLAG_JOB_CONT) {
 		if (rc)
@@ -3998,6 +4002,11 @@ extern char * debug_flags2str(uint32_t debug_flags)
 		if (rc)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Switch");
+	}
+	if (debug_flags & DEBUG_FLAG_THREADID) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "ThreadID");
 	}
 	if (debug_flags & DEBUG_FLAG_TRIGGERS) {
 		if (rc)

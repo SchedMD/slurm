@@ -1681,6 +1681,13 @@ static int _sync_nodes_to_comp_job(void)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((job_ptr->node_bitmap) && IS_JOB_COMPLETING(job_ptr)) {
 			update_cnt++;
+			/* This needs to be set up for the priority
+			   plugin and this happens before it is
+			   normally set up so do it now.
+			*/
+			if (!cluster_cpus)
+				set_cluster_cpus();
+
 			info("Job %u in completing state", job_ptr->job_id);
 			if (!job_ptr->node_bitmap_cg)
 				build_cg_bitmap(job_ptr);

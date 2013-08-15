@@ -2,7 +2,7 @@
 
 <h1>Topology Guide</h1>
 
-<p>SLURM version 2.0 can be configured to support topology-aware resource
+<p>SLURM can be configured to support topology-aware resource
 allocation to optimize job performance.
 There are two primary modes of operation, one to optimize performance on
 systems with a three-dimensional torus interconnect and another for
@@ -19,12 +19,12 @@ allocated to the job.</p>
 <p>Some larger computers rely upon a three-dimensional torus interconnect.
 The IBM BlueGene computers is one example of this which has highly
 constrained resource allocation scheme, essentially requiring that
-jobs be allocated a set of nodes logically having a rectangular shape.
+jobs be allocated a set of nodes logically having a rectangular prism shape.
 SLURM has a plugin specifically written for BlueGene to select appropriate
 nodes for jobs, change network switch routing, boot nodes, etc as described
 in the <a href="bluegene.html">BlueGene User and Administrator Guide</a>.</p>
 
-<p>The Sun Constellation and Cray XT systems also have three-dimensional
+<p>The Sun Constellation and Cray systems also have three-dimensional
 torus interconnects, but do not require that jobs execute in adjacent nodes.
 On those systems, SLURM only needs to allocate resources to a job which
 are nearby on the network.
@@ -36,7 +36,7 @@ SLURM's native best-fit algorithm is thus able to achieve a high degree
 of locality for jobs.
 For more information, see SLURM's documentation for
 <a href="sun_const.html">Sun Constellation</a> and
-<a href="cray.html">Cray XT</a> systems.</p>
+<a href="cray.html">Cray</a> systems.</p>
 
 <h2>Hierarchical Networks</h2>
 
@@ -132,6 +132,16 @@ SwitchName=s3 Nodes=tux[12-15]
 SwitchName=s4 Switches=s[0-3]
 </pre>
 
-<p style="text-align:center;">Last modified 27 March 2012</p>
+<h2>User Options</h2>
+
+<p>For use with the topology/tree plugin, user can also specify the maximum
+number of leaf switches to be used for their job with the maximum time the
+job should wait for this optimized configuration. The syntax for this option
+is "--switches=count[@time]".
+The system administrator can limit the maximum time that any job can
+wait for this optimized configuration using the <i>SchedulerParameters</i>
+configuration parameter with the <i>max_switch_wait</i> option.</p>
+
+<p style="text-align:center;">Last modified 13 August 2013</p>
 
 <!--#include virtual="footer.txt"-->
