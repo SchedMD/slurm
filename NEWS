@@ -48,6 +48,8 @@ documents those changes that are of interest to users and admins.
  -- Validate a job's accounting frequency at submission time rather than
     waiting for it's initiation to possibly fail.
  -- Fix CPURunMins if a job is requeued from a failed launch.
+ -- Fix in accounting_storage/filetxt to correct start times which sometimes
+    could end up before the job started.
 
 * Changes in Slurm 2.6.0
 ========================
