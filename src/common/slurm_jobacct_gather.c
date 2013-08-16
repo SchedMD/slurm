@@ -167,6 +167,33 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _write_jobacct_id(int fd, jobacct_id_t *jobacct_id,
+			      uint16_t rpc_version)
+{
+	if (jobacct_id) {
+		safe_write(fd, &jobacct_id->nodeid, sizeof(uint32_t));
+		safe_write(fd, &jobacct_id->taskid, sizeof(uint16_t));
+	} else {
+		uint32_t no32 = NO_VAL;
+		uint16_t no16 = (uint16_t)NO_VAL;
+		safe_write(fd, &no32, sizeof(uint32_t));
+		safe_write(fd, &no16, sizeof(uint16_t));
+	}
+rwfail:
+	return;
+}
+
+static int _read_jobacct_id(int fd, jobacct_id_t *jobacct_id,
+			    uint16_t rpc_version)
+{
+	safe_read(fd, &jobacct_id->nodeid, sizeof(uint32_t));
+	safe_read(fd, &jobacct_id->taskid, sizeof(uint16_t));
+
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_ERROR;
+}
+
 static void _poll_data(void)
 {
 	/* Update the data */
@@ -590,7 +617,7 @@ extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 	jobacct->tot_cpu = 0;
 	jobacct->act_cpufreq = 0;
 	memset(&jobacct->energy, 0, sizeof(acct_gather_energy_t));
-	jobacct-> max_disk_read = 0;
+	jobacct->max_disk_read = 0;
 	memcpy(&jobacct->max_disk_read_id, jobacct_id, sizeof(jobacct_id_t));
 	jobacct->tot_disk_read = 0;
 	jobacct->max_disk_write = 0;
@@ -607,7 +634,8 @@ extern void jobacctinfo_destroy(void *object)
 }
 
 extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
-			       enum jobacct_data_type type, void *data)
+			       enum jobacct_data_type type, void *data,
+			       uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
 	int *fd = (int *)data;
@@ -625,7 +653,81 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 		memcpy(jobacct, send, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_PIPE:
-		safe_write(*fd, jobacct, sizeof(struct jobacctinfo));
+		if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+			safe_write(*fd, &jobacct->user_cpu_sec,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->user_cpu_usec,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->sys_cpu_sec,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->sys_cpu_usec,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->max_vsize, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->tot_vsize, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->max_rss, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->tot_rss, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->max_pages, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->tot_pages, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->min_cpu, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->tot_cpu, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->act_cpufreq,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->energy.consumed_energy,
+				   sizeof(uint32_t));
+
+			safe_write(*fd, &jobacct->max_disk_read,
+				   sizeof(double));
+			safe_write(*fd, &jobacct->tot_disk_read,
+				   sizeof(double));
+			safe_write(*fd, &jobacct->max_disk_write,
+				   sizeof(double));
+			safe_write(*fd, &jobacct->tot_disk_write,
+				   sizeof(double));
+
+			_write_jobacct_id(*fd, &jobacct->max_vsize_id,
+					  protocol_version);
+			_write_jobacct_id(*fd, &jobacct->max_rss_id,
+					  protocol_version);
+			_write_jobacct_id(*fd, &jobacct->max_pages_id,
+					  protocol_version);
+			_write_jobacct_id(*fd, &jobacct->min_cpu_id,
+					  protocol_version);
+			_write_jobacct_id(*fd, &jobacct->max_disk_read_id,
+					  protocol_version);
+			_write_jobacct_id(*fd, &jobacct->max_disk_write_id,
+					  protocol_version);
+		} else {
+			safe_write(*fd, &jobacct->user_cpu_sec,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->user_cpu_usec,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->sys_cpu_sec,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->sys_cpu_usec,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->max_vsize, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->tot_vsize, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->max_rss, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->tot_rss, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->max_pages, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->tot_pages, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->min_cpu, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->tot_cpu, sizeof(uint32_t));
+			safe_write(*fd, &jobacct->act_cpufreq,
+				   sizeof(uint32_t));
+			safe_write(*fd, &jobacct->energy.consumed_energy,
+				   sizeof(uint32_t));
+
+			_write_jobacct_id(*fd, &jobacct->max_vsize_id,
+					  protocol_version);
+			_write_jobacct_id(*fd, &jobacct->max_rss_id,
+					  protocol_version);
+			_write_jobacct_id(*fd, &jobacct->max_pages_id,
+					  protocol_version);
+			_write_jobacct_id(*fd, &jobacct->min_cpu_id,
+					  protocol_version);
+		}
+
 		break;
 	case JOBACCT_DATA_RUSAGE:
 		jobacct->user_cpu_sec = rusage->ru_utime.tv_sec;
@@ -703,7 +805,8 @@ rwfail:
 }
 
 extern int jobacctinfo_getinfo(
-	jobacctinfo_t *jobacct, enum jobacct_data_type type, void *data)
+	jobacctinfo_t *jobacct, enum jobacct_data_type type, void *data,
+	uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
 	int *fd = (int *)data;
@@ -721,7 +824,75 @@ extern int jobacctinfo_getinfo(
 		memcpy(send, jobacct, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_PIPE:
-		safe_read(*fd, jobacct, sizeof(struct jobacctinfo));
+		if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+			safe_read(*fd, &jobacct->user_cpu_sec,
+				  sizeof(uint32_t));
+			safe_read(*fd, &jobacct->user_cpu_usec,
+				  sizeof(uint32_t));
+			safe_read(*fd, &jobacct->sys_cpu_sec, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->sys_cpu_usec,
+				  sizeof(uint32_t));
+			safe_read(*fd, &jobacct->max_vsize, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->tot_vsize, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->max_rss, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->tot_rss, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->max_pages, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->tot_pages, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->min_cpu, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->tot_cpu, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->act_cpufreq, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->energy.consumed_energy,
+				  sizeof(uint32_t));
+
+			safe_read(*fd, &jobacct->max_disk_read, sizeof(double));
+			safe_read(*fd, &jobacct->tot_disk_read, sizeof(double));
+			safe_read(*fd, &jobacct->max_disk_write,
+				  sizeof(double));
+			safe_read(*fd, &jobacct->tot_disk_write,
+				  sizeof(double));
+
+			_read_jobacct_id(*fd, &jobacct->max_vsize_id,
+					 protocol_version);
+			_read_jobacct_id(*fd, &jobacct->max_rss_id,
+					 protocol_version);
+			_read_jobacct_id(*fd, &jobacct->max_pages_id,
+					 protocol_version);
+			_read_jobacct_id(*fd, &jobacct->min_cpu_id,
+					 protocol_version);
+			_read_jobacct_id(*fd, &jobacct->max_disk_read_id,
+					 protocol_version);
+			_read_jobacct_id(*fd, &jobacct->max_disk_write_id,
+					 protocol_version);
+		} else {
+			safe_read(*fd, &jobacct->user_cpu_sec,
+				  sizeof(uint32_t));
+			safe_read(*fd, &jobacct->user_cpu_usec,
+				  sizeof(uint32_t));
+			safe_read(*fd, &jobacct->sys_cpu_sec, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->sys_cpu_usec,
+				  sizeof(uint32_t));
+			safe_read(*fd, &jobacct->max_vsize, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->tot_vsize, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->max_rss, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->tot_rss, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->max_pages, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->tot_pages, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->min_cpu, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->tot_cpu, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->act_cpufreq, sizeof(uint32_t));
+			safe_read(*fd, &jobacct->energy.consumed_energy,
+				  sizeof(uint32_t));
+
+			_read_jobacct_id(*fd, &jobacct->max_vsize_id,
+					 protocol_version);
+			_read_jobacct_id(*fd, &jobacct->max_rss_id,
+					 protocol_version);
+			_read_jobacct_id(*fd, &jobacct->max_pages_id,
+					 protocol_version);
+			_read_jobacct_id(*fd, &jobacct->min_cpu_id,
+					 protocol_version);
+		}
+
 		break;
 	case JOBACCT_DATA_RUSAGE:
 		memset(rusage, 0, sizeof(struct rusage));

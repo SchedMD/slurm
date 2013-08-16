@@ -726,7 +726,8 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	if (!acct_sent) {
 		jobacctinfo_aggregate(step_complete.jobacct, job->jobacct);
 		jobacctinfo_getinfo(step_complete.jobacct,
-				    JOBACCT_DATA_TOTAL, msg.jobacct);
+				    JOBACCT_DATA_TOTAL, msg.jobacct,
+				    SLURM_PROTOCOL_VERSION);
 		acct_sent = true;
 	}
 	/*********************************************/
@@ -1696,7 +1697,8 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 		jobacct = jobacct_gather_remove_task(pid);
 		if (jobacct) {
 			jobacctinfo_setinfo(jobacct,
-					    JOBACCT_DATA_RUSAGE, &rusage);
+					    JOBACCT_DATA_RUSAGE, &rusage,
+					    SLURM_PROTOCOL_VERSION);
 			/* Since we currently don't track energy
 			   usage per task (only per step).  We take
 			   into account only the last poll of the last task.

@@ -52,6 +52,7 @@ documents those changes that are of interest to users and admins.
     could end up before the job started.
  -- Fix issue with potentially referencing past an array in parse_time()
  -- CRAY - fix issue with accelerators on a cray when parsing BASIL 1.3 XML.
+ -- Fix issue with a 2.5 slurmstepd locking up when talking to a 2.6 slurmd.
 
 * Changes in Slurm 2.6.0
 ========================

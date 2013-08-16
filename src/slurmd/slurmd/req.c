@@ -190,6 +190,7 @@ static bool _steps_completed_now(uint32_t jobid);
 static int  _valid_sbcast_cred(file_bcast_msg_t *req, uid_t req_uid,
 			       uint16_t block_no);
 static void _wait_state_completed(uint32_t jobid, int max_delay);
+static slurmstepd_info_t *_get_job_step_info(uint32_t jobid);
 static long _get_job_uid(uint32_t jobid);
 
 static gids_t *_gids_cache_lookup(char *user, gid_t gid);
@@ -1861,17 +1862,23 @@ _enforce_job_mem_limit(void)
 		acct_req.job_id  = stepd->jobid;
 		acct_req.step_id = stepd->stepid;
 		resp = xmalloc(sizeof(job_step_stat_t));
-		if ((!stepd_stat_jobacct(fd, &acct_req, resp)) &&
+		if ((!stepd_stat_jobacct(
+			     fd, &acct_req, resp,
+			     stepd->stepd_info->protocol_version)) &&
 		    (resp->jobacct)) {
 			/* resp->jobacct is NULL if account is disabled */
 			jobacctinfo_getinfo((struct jobacctinfo *)
 					    resp->jobacct,
 					    JOBACCT_DATA_TOT_RSS,
-					    &step_rss);
+					    &step_rss,
+					    stepd->stepd_info->
+					    protocol_version);
 			jobacctinfo_getinfo((struct jobacctinfo *)
 					    resp->jobacct,
 					    JOBACCT_DATA_TOT_VSIZE,
-					    &step_vsize);
+					    &step_vsize,
+					    stepd->stepd_info->
+					    protocol_version);
 #if _LIMIT_INFO
 			info("Step:%u.%u RSS:%u KB VSIZE:%u KB",
 			     stepd->jobid, stepd->stepid,
@@ -2407,13 +2414,19 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 	int fd;
 	uid_t req_uid;
 	long job_uid;
+	slurmstepd_info_t *stepd_info = NULL;
+	uint16_t protocol_version;
 
 	debug3("Entering _rpc_stat_jobacct");
 	/* step completion messages are only allowed from other slurmstepd,
 	   so only root or SlurmUser is allowed here */
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
-	job_uid = _get_job_uid(req->job_id);
+	stepd_info = _get_job_step_info(req->job_id);
+	protocol_version = stepd_info->protocol_version;
+	job_uid = stepd_info->uid;
+	xfree(stepd_info);
+
 	if (job_uid < 0) {
 		error("stat_jobacct for invalid job_id: %u",
 		      req->job_id);
@@ -2452,7 +2465,8 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 
 	}
 
-	if (stepd_stat_jobacct(fd, req, resp) == SLURM_ERROR) {
+	if (stepd_stat_jobacct(fd, req, resp, protocol_version)
+	    == SLURM_ERROR) {
 		debug("accounting for nonexistent job %u.%u requested",
 		      req->job_id, req->step_id);
 	}
@@ -2491,7 +2505,8 @@ _rpc_list_pids(slurm_msg_t *msg)
            so only root or SlurmUser is allowed here */
         req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
-        job_uid = _get_job_uid(req->job_id);
+	job_uid = _get_job_uid(req->job_id);
+
         if (job_uid < 0) {
                 error("stat_pid for invalid job_id: %u",
 		      req->job_id);
@@ -2503,7 +2518,8 @@ _rpc_list_pids(slurm_msg_t *msg)
         /*
          * check that requesting user ID is the SLURM UID or root
          */
-        if ((req_uid != job_uid) && (!_slurm_authorized_user(req_uid))) {
+        if ((req_uid != job_uid)
+	    && (!_slurm_authorized_user(req_uid))) {
                 error("stat_pid from uid %ld for job %u "
                       "owned by uid %ld",
                       (long) req_uid, req->job_id, job_uid);
@@ -2957,15 +2973,13 @@ done:
 	slurm_free_reattach_tasks_response_msg(resp);
 }
 
-static long
-_get_job_uid(uint32_t jobid)
+static slurmstepd_info_t *_get_job_step_info(uint32_t jobid)
 {
 	List steps;
 	ListIterator i;
 	step_loc_t *stepd;
 	slurmstepd_info_t *info = NULL;
 	int fd;
-	long uid = -1;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
@@ -2989,13 +3003,25 @@ _get_job_uid(uint32_t jobid)
 			      stepd->jobid, stepd->stepid);
 			continue;
 		}
-		uid = (long)info->uid;
 		break;
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
 
-	xfree(info);
+	return info;
+}
+
+static long
+_get_job_uid(uint32_t jobid)
+{
+	slurmstepd_info_t *info = NULL;
+	long uid = -1;
+
+	if ((info = _get_job_step_info(jobid))) {
+		uid = (long)info->uid;
+		xfree(info);
+	}
+
 	return uid;
 }
 

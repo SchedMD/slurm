@@ -1418,7 +1418,8 @@ _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid)
 		      "owned by uid %ld",
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
 		/* Send NULL */
-		jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
+		jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd,
+				    SLURM_PROTOCOL_VERSION);
 		return SLURM_ERROR;
 	}
 
@@ -1433,7 +1434,8 @@ _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid)
 			num_tasks++;
 		}
 	}
-	jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
+	jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd,
+			    SLURM_PROTOCOL_VERSION);
 	safe_write(fd, &num_tasks, sizeof(int));
 	jobacctinfo_destroy(jobacct);
 	return SLURM_SUCCESS;
