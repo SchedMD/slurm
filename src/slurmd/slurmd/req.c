@@ -2427,6 +2427,14 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	stepd_info = _get_job_step_info(req->job_id);
+	if (!stepd_info) {
+		error("stat_jobacct For invalid job_id: %u",
+		      req->job_id);
+		if (msg->conn_fd >= 0)
+			slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+		return  ESLURM_INVALID_JOB_ID;
+	}
+
 	protocol_version = stepd_info->protocol_version;
 	job_uid = stepd_info->uid;
 	xfree(stepd_info);
