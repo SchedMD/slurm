@@ -170,7 +170,7 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 			     uint16_t protocol_type, Buf buffer);
 extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 			      uint16_t rpc_version,
-			      uint16_t protocol_type, Buf buffer);
+			      uint16_t protocol_type, Buf buffer, bool alloc);
 
 extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from);
 

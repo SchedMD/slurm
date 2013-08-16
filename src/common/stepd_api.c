@@ -931,6 +931,7 @@ stepd_stat_jobacct(int fd, job_step_id_msg_t *sent, job_step_stat_t *resp,
 	 * possible deadlock. */
 	if (wait_fd_readable(fd, 300))
 		goto rwfail;
+
 	rc = jobacctinfo_getinfo(resp->jobacct, JOBACCT_DATA_PIPE, &fd,
 				 protocol_version);
 

@@ -8038,7 +8038,7 @@ _unpack_update_job_step_msg(step_update_request_msg_t ** msg_ptr, Buf buffer,
 		safe_unpack8(&with_jobacct, buffer);
 		if (with_jobacct)
 			if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
-					       PROTOCOL_TYPE_SLURM, buffer)
+					       PROTOCOL_TYPE_SLURM, buffer, 1)
 			    != SLURM_SUCCESS)
 				goto unpack_error;
 		safe_unpackstr_xmalloc(&msg->name, &uint32_tmp, buffer);
@@ -8119,7 +8119,7 @@ _unpack_complete_batch_script_msg(
 
 	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
 		if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
-				       PROTOCOL_TYPE_SLURM, buffer)
+				       PROTOCOL_TYPE_SLURM, buffer, 1)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&msg->job_id, buffer);
@@ -8165,7 +8165,7 @@ _unpack_job_step_stat(job_step_stat_t ** msg_ptr, Buf buffer,
 	safe_unpack32(&msg->return_code, buffer);
 	safe_unpack32(&msg->num_tasks, buffer);
 	if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
-			       PROTOCOL_TYPE_SLURM, buffer)
+			       PROTOCOL_TYPE_SLURM, buffer, 1)
 	    != SLURM_SUCCESS)
 		goto unpack_error;
 	rc = _unpack_job_step_pids(&msg->step_pids, buffer, protocol_version);
@@ -8269,7 +8269,7 @@ _unpack_step_complete_msg(step_complete_msg_t ** msg_ptr, Buf buffer,
 	safe_unpack32(&msg->range_last, buffer);
 	safe_unpack32(&msg->step_rc, buffer);
 	if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
-			       PROTOCOL_TYPE_SLURM, buffer)
+			       PROTOCOL_TYPE_SLURM, buffer, 1)
 	    != SLURM_SUCCESS)
 		goto unpack_error;
 

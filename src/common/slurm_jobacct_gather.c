@@ -55,6 +55,7 @@
 #include <string.h>
 
 #include "src/common/macros.h"
+#include "src/common/pack.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
@@ -656,7 +657,16 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 		memcpy(jobacct, send, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_PIPE:
-		if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+			int len;
+			Buf buffer = init_buf(0);
+			jobacctinfo_pack(jobacct, protocol_version,
+					 PROTOCOL_TYPE_SLURM, buffer);
+			len = get_buf_offset(buffer);
+			safe_write(*fd, &len, sizeof(int));
+			safe_write(*fd, get_buf_data(buffer), len);
+			free_buf(buffer);
+		} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 			safe_write(*fd, &jobacct->user_cpu_sec,
 				   sizeof(uint32_t));
 			safe_write(*fd, &jobacct->user_cpu_usec,
@@ -822,12 +832,27 @@ extern int jobacctinfo_getinfo(
 	if (!plugin_polling)
 		return SLURM_SUCCESS;
 
+	/* jobacct needs to be allocated before this is called.	*/
+	xassert(jobacct);
+
 	switch (type) {
 	case JOBACCT_DATA_TOTAL:
 		memcpy(send, jobacct, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_PIPE:
-		if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+			char* buf;
+			int len;
+			Buf buffer;
+
+			safe_read(*fd, &len, sizeof(int));
+			buf = xmalloc(len);
+			safe_read(*fd, buf, len);
+			buffer = create_buf(buf, len);
+			jobacctinfo_unpack(&jobacct, protocol_version,
+					   PROTOCOL_TYPE_SLURM, buffer, 0);
+			free_buf(buffer);
+		} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 			safe_read(*fd, &jobacct->user_cpu_sec,
 				  sizeof(uint32_t));
 			safe_read(*fd, &jobacct->user_cpu_usec,
@@ -1093,7 +1118,7 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 
 extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 			      uint16_t rpc_version, uint16_t protocol_type,
-			      Buf buffer)
+			      Buf buffer, bool alloc)
 {
 	uint32_t uint32_tmp;
 
@@ -1113,8 +1138,10 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 	if (protocol_type == PROTOCOL_TYPE_DBD)
 		rpc_version = slurmdbd_translate_rpc(rpc_version);
 
-	if (rpc_version >= SLURM_2_6_PROTOCOL_VERSION) {
+	if (alloc)
 		*jobacct = xmalloc(sizeof(struct jobacctinfo));
+
+	if (rpc_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->user_cpu_sec = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
@@ -1158,7 +1185,6 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 			rpc_version, buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 	} else if (rpc_version >= SLURM_2_5_PROTOCOL_VERSION) {
-		*jobacct = xmalloc(sizeof(struct jobacctinfo));
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->user_cpu_sec = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
@@ -1191,7 +1217,6 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 			buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 	} else {
-		*jobacct = xmalloc(sizeof(struct jobacctinfo));
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->user_cpu_sec = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
@@ -1229,7 +1254,8 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 unpack_error:
 	debug2("jobacctinfo_unpack: unpack_error: size_buf(buffer) %u",
 	       size_buf(buffer));
-	xfree(*jobacct);
+	if (alloc)
+		xfree(*jobacct);
        	return SLURM_ERROR;
 }
 

@@ -62,6 +62,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/checkpoint.h"
+#include "src/common/timers.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
@@ -1263,7 +1264,7 @@ _handle_completion(int fd, stepd_step_rec_t *job, uid_t uid)
 	safe_read(fd, buf, len);
 	buffer = create_buf(buf, len);
 	jobacctinfo_unpack(&jobacct, SLURM_PROTOCOL_VERSION,
-			   PROTOCOL_TYPE_SLURM, buffer);
+			   PROTOCOL_TYPE_SLURM, buffer, 1);
 	free_buf(buffer);
 
 	/*
@@ -1355,10 +1356,13 @@ _handle_stat_jobacct(int fd, stepd_step_rec_t *job, uid_t uid)
 			num_tasks++;
 		}
 	}
+
 	jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd,
 			    SLURM_PROTOCOL_VERSION);
 	safe_write(fd, &num_tasks, sizeof(int));
+
 	jobacctinfo_destroy(jobacct);
+
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_ERROR;
