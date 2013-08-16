@@ -83,7 +83,8 @@ int check_header_version(header_t * header)
 		if ((header->version != SLURM_PROTOCOL_VERSION)     &&
 		    (header->version != SLURM_2_5_PROTOCOL_VERSION) &&
 		    (header->version != SLURM_2_4_PROTOCOL_VERSION)) {
-			debug("unsupported RPC version %hu", header->version);
+			debug("unsupported RPC version %hu msg type %u",
+			      header->version, header->msg_type);
 			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
 		}
 	} else if (header->version != check_version) {
@@ -103,8 +104,8 @@ int check_header_version(header_t * header)
 			if ((header->version != SLURM_PROTOCOL_VERSION)     &&
 			    (header->version != SLURM_2_5_PROTOCOL_VERSION) &&
 			    (header->version != SLURM_2_4_PROTOCOL_VERSION)) {
-				debug("unsupported RPC version %hu",
-				      header->version);
+				debug("Unsupported RPC version %hu msg type %u",
+				      header->version, header->msg_type);
 				slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
 			}
 			break;
