@@ -1862,6 +1862,10 @@ _enforce_job_mem_limit(void)
 		acct_req.job_id  = stepd->jobid;
 		acct_req.step_id = stepd->stepid;
 		resp = xmalloc(sizeof(job_step_stat_t));
+
+		if (!stepd->stepd_info)
+			stepd->stepd_info = stepd_get_info(fd);
+
 		if ((!stepd_stat_jobacct(
 			     fd, &acct_req, resp,
 			     stepd->stepd_info->protocol_version)) &&
