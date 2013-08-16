@@ -21,6 +21,6 @@
 #  and _get_slurm_version()
 #  need to be updated also when changes are added also.
 ##
-  API_CURRENT:	27
+  API_CURRENT:	1312
   API_AGE:	0
   API_REVISION:	0
