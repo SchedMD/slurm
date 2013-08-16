@@ -46,6 +46,9 @@ documents those changes that are of interest to users and admins.
  -- Proctrack/pgid - Add support for proctrack_p_plugin_get_pids() function.
  -- Sched/backfill - Change default max_job_bf parameter from 50 to 100.
 
+* Changes in Slurm 2.6.2
+========================
+
 * Changes in Slurm 2.6.1
 ========================
  -- slurmdbd - Allow job derived ec and comments to be modified by non-root
