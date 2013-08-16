@@ -1,6 +1,12 @@
 <!--#include virtual="header.txt"-->
 
 <h1><a name="top">Frequently Asked Questions</a></h1>
+
+<h2>For Management</h2>
+<ol>
+<li><a href="#foss">Why should I use Slurm or other Free Open Source Software (FOSS)</a></li>
+</ol>
+
 <h2>For Users</h2>
 <ol>
 <li><a href="#comp">Why is my job/node in COMPLETING state?</a></li>
@@ -153,6 +159,20 @@ script for Slurm?</a></li>
 launch a shell on a node in the job's allocation?</a></li>
 </ol>
 
+<h2>For Management</h2>
+<p><a name="foss"><b>1. Why should I use Slurm or other Free Open Source Software (FOSS)?</b></a><br>
+Free Open Source Software (FOSS) does not mean that it is without cost.
+It does mean that the you have access to the code so that you are free to
+use it, study it, and/or enhance it.
+If the software is large and complex, like Slurm or the Linux kernel,
+then its use is not without cost.
+If your work is important, you'll want the leading Slurm experts at your
+disposal to keep your systems operating at peak efficiency.
+While Slurm has a global development community incorporating leading edge
+technology, <a href="http://www.schedmd.com">SchedMD</a> personnel have developed
+most of the code and can provide competitively priced commercial support.
+Customers switching from commercial workload mangers to Slurm typically
+report higher scalability, better performance and lower costs.</p>
 
 <h2>For Users</h2>
 <p><a name="comp"><b>1. Why is my job/node in COMPLETING state?</b></a><br>
@@ -1665,6 +1685,6 @@ SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --mpi=no
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 June 2013</p>
+<p style="text-align:center;">Last modified 16 August 2013</p>
 
 <!--#include virtual="footer.txt"-->
