@@ -160,9 +160,11 @@ extern void jobacct_gather_handle_mem_limit(
 extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id);
 extern void jobacctinfo_destroy(void *object);
 extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
-			       enum jobacct_data_type type, void *data);
+			       enum jobacct_data_type type, void *data,
+			       uint16_t protocol_version);
 extern int jobacctinfo_getinfo(jobacctinfo_t *jobacct,
-			       enum jobacct_data_type type, void *data);
+			       enum jobacct_data_type type, void *data,
+			       uint16_t protocol_version);
 extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 			     uint16_t rpc_version,
 			     uint16_t protocol_type, Buf buffer);

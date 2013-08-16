@@ -48,13 +48,6 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/io_hdr.h"
 
-typedef struct step_location {
-	uint32_t jobid;
-	uint32_t stepid;
-	char *nodename;
-	char *directory;
-} step_loc_t;
-
 typedef enum {
 	REQUEST_CONNECT = 0,
 	REQUEST_SIGNAL_PROCESS_GROUP, /* Defunct, See REQUEST_SIGNAL_CONTAINER */
@@ -89,6 +82,7 @@ typedef struct {
 	uint32_t jobid;
 	uint32_t stepid;
 	uint32_t nodeid;
+	uint16_t protocol_version;
 	uint32_t job_mem_limit;		/* job's memory limit, MB */
 	uint32_t step_mem_limit;	/* step's memory limit, MB */
 } slurmstepd_info_t;
@@ -100,6 +94,15 @@ typedef struct {
 	bool            exited;     /* true if task has exited */
 	int             estatus;    /* exit status if exited is true*/
 } slurmstepd_task_info_t;
+
+typedef struct step_location {
+	uint32_t jobid;
+	uint32_t stepid;
+	char *nodename;
+	char *directory;
+	slurmstepd_info_t *stepd_info;
+} step_loc_t;
+
 
 /*
  * Cleanup stale stepd domain sockets.
@@ -237,7 +240,7 @@ int stepd_completion(int fd, step_complete_msg_t *sent);
  * resp receives a jobacctinfo_t which must be freed if SUCCESS.
  */
 int stepd_stat_jobacct(int fd, job_step_id_msg_t *sent,
-		       job_step_stat_t *resp);
+		       job_step_stat_t *resp, uint16_t protocol_version);
 
 
 int stepd_task_info(int fd, slurmstepd_task_info_t **task_info,
