@@ -51,6 +51,7 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
  -- SelectType: select/cray has been renamed select/alps.
  -- Added SchedulingParameters paramter of "CR_LLN" and partition parameter of
     "LLN=yes|no" to enable loadbased scheduling.
+ -- In "SchedulerParameters", change default max_job_bf value from 50 to 100.
 
 DBD CONFIGURATION FILE CHANGES (see "man slurmdbd.conf" for details)
 ====================================================================

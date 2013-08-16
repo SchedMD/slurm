@@ -1734,7 +1734,7 @@ Multiple options may be comma separated.
 The default number of jobs to attempt scheduling (i.e. the queue depth) when a
 running job completes or other routine actions occur. The full queue will be
 tested on a less frequent basis. The default value is 100.
-In the case of large clusters (more than 1000 nodes), configuring a relatively
+In the case of large clusters, configuring a relatively
 small value may be desirable.
 .TP
 \fBdefer\fR
@@ -1790,9 +1790,8 @@ The maximum number of jobs to attempt backfill scheduling for
 Higher values result in more overhead and less responsiveness.
 Until an attempt is made to backfill schedule a job, its expected
 initiation time value will not be set.
-The default value is 50.
-In the case of large clusters (more than 1000 nodes) configured with
-\fBSelectType=select/cons_res\fR, configuring a relatively small value may be
+The default value is 100.
+In the case of large clusters, configuring a relatively small value may be
 desirable.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP

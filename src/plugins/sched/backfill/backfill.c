@@ -124,7 +124,7 @@ static uint32_t debug_flags = 0;
 static int backfill_interval = BACKFILL_INTERVAL;
 static int backfill_resolution = BACKFILL_RESOLUTION;
 static int backfill_window = BACKFILL_WINDOW;
-static int max_backfill_job_cnt = 50;
+static int max_backfill_job_cnt = 100;
 static int max_backfill_job_per_user = 0;
 static bool backfill_continue = false;
 
