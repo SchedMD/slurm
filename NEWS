@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in Slurm 13.12.0pre2
+==============================
+
 * Changes in Slurm 13.12.0pre1
 ==============================
  -- sview - improve scalability
@@ -16,8 +19,7 @@ documents those changes that are of interest to users and admins.
  -- The log file timestamp format can now be selected at runtime via the
     LogTimeFormat configuration option. See the slurm.conf and slurmdbd.conf
     man pages for details.
- -- Added switch/generic plugin to a job's convey network topology (just a
-    set of empty functions now).
+ -- Added switch/generic plugin to a job's convey network topology.
  -- BLUEGENE - If block is in 'D' state or has more cnodes in error than
     MaxBlockInError set the job wait reason appropriately.
  -- API use: Generate an error return rather than fatal error and exit if the
