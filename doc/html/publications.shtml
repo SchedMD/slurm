@@ -283,7 +283,7 @@ Morris Jette, Lawrence Livermore National Laboratory
 
 <ul>
 
-<li>GreenSpot: Scheduling Energy Consumption in Green Datacenters,
+<li>GreenSlot: Scheduling Energy Consumption in Green Datacenters,
 Inigo Goiri, et. al.
 (SuperComputing 2011, November 2011)</li>
 
@@ -331,6 +331,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 4 February 2013</p>
+<p style="text-align:center;">Last modified 16 August 2013</p>
 
 <!--#include virtual="footer.txt"-->
