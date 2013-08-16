@@ -159,7 +159,7 @@ proc inc3_11_9 {} {
 
 
 	send_user "\n\nLet's check overlapping reservations\n\n";
-	
+
 	set core_res_num   [ expr $cores_per_node / 2 ]
 	set total_core_res   [ expr $core_res_num * $node_count ]
 	# Make a reservation for all nodes using just half the processor in each node
@@ -200,7 +200,7 @@ proc inc3_11_9 {} {
 
 	send_user "\n\033\[32mSUCCESS: reservation was created as expected\033\[m\n"
 
-	# Submit a batch job: a job using cores availbale in first 5 nodes 
+	# Submit a batch job: a job using cores available in first 5 nodes
 	set core_res_num   [ expr $cores_per_node / 2 ]
 	set core_res_num   [ expr $core_res_num - 1 ]
 	set sbatch_pid [spawn $sbatch --ntasks-per-node=$core_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --output=/dev/null $file_in]
@@ -258,7 +258,7 @@ proc inc3_11_9 {} {
 
 	cancel_job $job_id
 
-	# Submit a batch job: a job using more cores than availbale in first 5 nodes 
+	# Submit a batch job: a job using more cores than available in first 5 nodes
 	set core_res_num   [ expr $cores_per_node / 2 ]
 	set sbatch_pid [spawn $sbatch --ntasks-per-node=$core_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --output=/dev/null $file_in]
 	expect {
