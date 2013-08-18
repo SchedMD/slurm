@@ -633,7 +633,7 @@ or the full test suite may be executed with the single command
 <i>regression</i>.
 See <i>testsuite/expect/README</i> for more information.</p>
 
-<h2>Upgrades</h2>
+<a name="upgrade"><h2>Upgrades</h2></a>
 
 <p>Background: The Slurm version numbers contain three digits, which represent
 the major, minor and micro release numbers in that order (e.g. 2.5.3 is
