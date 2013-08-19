@@ -63,6 +63,45 @@
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 
+/* Given a job record pointer, return its stderr path in buf */
+extern void slurm_get_job_stderr(char *buf, int buf_size, job_info_t * job_ptr)
+{
+	if (job_ptr == NULL)
+		snprintf(buf, buf_size, "%s", "job pointer is NULL");
+	else if (job_ptr->std_err)
+		snprintf(buf, buf_size, "%s", job_ptr->std_err);
+	else if (job_ptr->std_out)
+		snprintf(buf, buf_size, "%s", job_ptr->std_out);
+	else {
+		snprintf(buf, buf_size, "%s/slurm-%u.out",
+			 job_ptr->work_dir, job_ptr->job_id);
+	}
+}
+
+/* Given a job record pointer, return its stdin path in buf */
+extern void slurm_get_job_stdin(char *buf, int buf_size, job_info_t * job_ptr)
+{
+	if (job_ptr == NULL)
+		snprintf(buf, buf_size, "%s", "job pointer is NULL");
+	else if (job_ptr->std_in)
+		snprintf(buf, buf_size, "%s", job_ptr->std_in);
+	else
+		snprintf(buf, buf_size, "%s", "StdIn=/dev/null");
+}
+
+/* Given a job record pointer, return its stdout path in buf */
+extern void slurm_get_job_stdout(char *buf, int buf_size, job_info_t * job_ptr)
+{
+	if (job_ptr == NULL)
+		snprintf(buf, buf_size, "%s", "job pointer is NULL");
+	else if (job_ptr->std_out)
+		snprintf(buf, buf_size, "%s", job_ptr->std_out);
+	else {
+		snprintf(buf, buf_size, "%s/slurm-%u.out",
+			 job_ptr->work_dir, job_ptr->job_id);
+	}
+}
+
 /*
  * slurm_xlate_job_id - Translate a Slurm job ID string into a slurm job ID
  *	number. If this job ID contains an array index, map this to the
@@ -854,14 +893,8 @@ line15:
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
-		if (job_ptr->std_err)
-			xstrfmtcat(out, "StdErr=%s", job_ptr->std_err);
-		else if (job_ptr->std_out)
-			xstrfmtcat(out, "StdErr=%s", job_ptr->std_out);
-		else {
-			xstrfmtcat(out, "StdErr=%s/slurm-%u.out",
-				   job_ptr->work_dir, job_ptr->job_id);
-		}
+		slurm_get_job_stderr(tmp1, sizeof(tmp1), job_ptr);
+		xstrfmtcat(out, "StdErr=%s", tmp1);
 	}
 
 	/****** Line 28 (optional) ******/
@@ -870,10 +903,8 @@ line15:
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
-		if (job_ptr->std_in)
-			xstrfmtcat(out, "StdIn=%s", job_ptr->std_in);
-		else
-			xstrfmtcat(out, "StdIn=/dev/null");
+		slurm_get_job_stdin(tmp1, sizeof(tmp1), job_ptr);
+		xstrfmtcat(out, "StdIn=%s", tmp1);
 	}
 
 	/****** Line 29 (optional) ******/
@@ -882,12 +913,8 @@ line15:
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
-		if (job_ptr->std_out)
-			xstrfmtcat(out, "StdOut=%s", job_ptr->std_out);
-		else {
-			xstrfmtcat(out, "StdOut=%s/slurm-%u.out",
-				   job_ptr->work_dir, job_ptr->job_id);
-		}
+		slurm_get_job_stdout(tmp1, sizeof(tmp1), job_ptr);
+		xstrfmtcat(out, "StdOut=%s", tmp1);
 	}
 
 	/****** Line 30 (optional) ******/
