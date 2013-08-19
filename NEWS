@@ -35,7 +35,7 @@ documents those changes that are of interest to users and admins.
  -- Added sinfo and squeue format option of "%all" to print all fields available
     for the data type with a vertical bar separating each field.
  -- Add mechanism for job_submit plugin to generate error message for srun,
-    salloc or sbatch to log. New argument added to job_submit function in
+    salloc or sbatch to stderr. New argument added to job_submit function in
     the plugin.
  -- Add StdIn, StdOut, and StdErr paths to job information dumped with
     "scontrol show job".
