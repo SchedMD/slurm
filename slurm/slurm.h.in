@@ -2043,6 +2043,7 @@ typedef struct slurm_ctl_conf {
 	char *job_acct_gather_freq; /* poll frequency for job accounting
 					* gather plugins */
 	char *job_acct_gather_type; /* job accounting gather type */
+	char *job_acct_gather_params; /* job accounting gather parameters */
 	char *job_ckpt_dir;	/* directory saving job record checkpoint */
 	char *job_comp_host;	/* job completion logging host */
 	char *job_comp_loc;	/* job completion logging location */

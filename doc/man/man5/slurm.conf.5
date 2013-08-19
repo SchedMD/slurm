@@ -807,6 +807,16 @@ Users can override this value on a per job basis using the \fB\-\-acctg\-freq\fR
 option when submitting the job.
 
 .TP
+\fBJobAcctGatherParams\fR
+Arbitrary parameters for the job account gather plugin
+Acceptable values at present include:
+.RS
+.TP 20
+fB\NoShared\fR
+Exclude shared memory from accounting.
+.RE
+
+.TP
 \fBJobCheckpointDir\fR
 Specifies the default directory for storing or reading job checkpoint
 information. The data stored here is only a few thousand bytes per job

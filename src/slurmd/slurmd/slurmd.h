@@ -137,6 +137,7 @@ typedef struct slurmd_config {
 	uint16_t        acct_freq_task;
 	char           *job_acct_gather_freq;
 	char           *job_acct_gather_type; /* job accounting gather type */
+	char           *job_acct_gather_params; /* job accounting gather params */
 	char           *acct_gather_energy_type; /*  */
 	char           *acct_gather_filesystem_type; /*  */
 	char           *acct_gather_infiniband_type; /*  */

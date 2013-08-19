@@ -474,6 +474,12 @@ uint16_t slurm_get_preempt_mode(void);
  */
 char *slurm_get_jobacct_gather_type(void);
 
+/* slurm_get_jobacct_gather_params
+ * returns the job accounting params from the slurmctld_conf object
+ * RET char *    - job accounting params,  MUST be xfreed by caller
+ */
+char *slurm_get_jobacct_gather_params(void);
+
 /* slurm_get_jobacct_gather_freq
  * returns the job accounting poll frequency from the slurmctld_conf object
  * RET int    - job accounting frequency
