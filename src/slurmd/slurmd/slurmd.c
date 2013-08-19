@@ -908,8 +908,6 @@ _read_config(void)
 
 	_free_and_set(&conf->acct_gather_energy_type,
 		      xstrdup(cf->acct_gather_energy_type));
-	_free_and_set(&conf->job_acct_gather_params,
-		      xstrdup(cf->job_acct_gather_params));
 	_free_and_set(&conf->acct_gather_filesystem_type,
 		      xstrdup(cf->acct_gather_filesystem_type));
 	_free_and_set(&conf->acct_gather_infiniband_type,
@@ -1143,7 +1141,6 @@ _destroy_conf(void)
 		xfree(conf->hostname);
 		xfree(conf->job_acct_gather_freq);
 		xfree(conf->job_acct_gather_type);
-		xfree(conf->job_acct_gather_params);
 		xfree(conf->logfile);
 		xfree(conf->node_name);
 		xfree(conf->node_addr);
