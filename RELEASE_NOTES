@@ -66,6 +66,7 @@ COMMAND CHANGES (see man pages for details)
  -- Add StdIn, StdOut, and StdErr paths to job information dumped with
     "scontrol show job".
  -- Permit Slurm administrator to submit a batch job as any user.
+ -- Added -I|--item-extract option to sh5util to extract data item from series.
 
 OTHER CHANGES
 =============
