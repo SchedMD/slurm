@@ -661,21 +661,21 @@ Also see the note above about reverse compatability.</p>
 
 <p>Pretty much each new major and/or minor release of Slurm (e.g. 2.4.x to 2.5.x)
 involves changes to the state files with new data structures, new options, etc.
-Slurm permits upgrades of up to two major or minor updates (e.g. 2.4.x or 2.5.x 
-to 2.6.x) without loss of jobs or other state information, but the state 
+Slurm permits upgrades of up to two major or minor updates (e.g. 2.4.x or 2.5.x
+to 2.6.x) without loss of jobs or other state information, but the state
 information from older state files versions will not be recognized and will be
 discarded, resulting in loss of all running and pending jobs.
 State files are not recognized when downgrading (e.g. from 2.5.x to 2.4.x)
 and will be discarded, resulting in loss of all running and pending jobs.
 Therefore when upgrading Slurm (more precisely, the slurmctld daemon),
 saving the <i>StateSaveLocation</i> (as defined in <i>slurm.conf</i>)
-directory contents with all state information is recommended. 
+directory contents with all state information is recommended.
 If you need to downgrade, restoring that directory's contents will let you
-recover the jobs. 
-Jobs submitted under the new version will not be in those state files, 
+recover the jobs.
+Jobs submitted under the new version will not be in those state files,
 but it can let you recover most jobs.
 An exception to this is that jobs may be lost when installing new pre-release
-versions (e.g. 2.5.0-pre1 to 2.5.0-pre2). 
+versions (e.g. 2.5.0-pre1 to 2.5.0-pre2).
 We'll try to note these cases in the NEWS file.
 Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
