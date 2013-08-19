@@ -261,6 +261,65 @@ static int _get_process_data_line(int in, jag_prec_t *prec) {
 	return 1;
 }
 
+/* _get_process_memory_line() - get line of data from /proc/<pid>/statm
+ *
+ * IN:	in - input file descriptor
+ * OUT:	prec - the destination for the data
+ *
+ * RETVAL:	==0 - no valid data
+ * 		!=0 - data are valid
+ *
+ * The *prec will mostly be filled in. We need to simply subtract the 
+ * amount of shared memory used by the process (in KB) from *prec->rss
+ * and return the updated struct.
+ *
+ */
+static int _get_process_memory_line(int in, jag_prec_t *prec)
+{
+	char sbuf[256];
+	int num_read, nvals;
+	long int size, rss, share, text, lib, data, dt;
+
+	num_read = read(in, sbuf, (sizeof(sbuf) - 1));
+	if (num_read <= 0)
+		return 0;
+	sbuf[num_read] = '\0';
+
+	nvals = sscanf(sbuf,
+		       "%ld %ld %ld %ld %ld %ld %ld",
+		       &size, &rss, &share, &text, &lib, &data, &dt);
+	/* There are some additional fields, which we do not scan or use */
+	if (nvals != 7)
+		return 0;
+
+	/* If shared > rss then there is a problem, give up... */
+	if (share > rss) {
+		debug("jobacct_gather_linux: share > rss - bail!");
+		return 0;
+	}
+
+	/* Copy the values that slurm records into our data structure */
+	prec->rss = (rss - share) * my_pagesize; /* convert from pages to KB */
+	return 1;
+}
+
+static int _remove_share_data(char *proc_stat_file, jag_prec_t *prec)
+{
+	FILE *statm_fp = NULL;
+	char proc_statm_file[256];	/* Allow ~20x extra length */
+	int rc = 0, fd;
+
+	snprintf(proc_statm_file, sizeof(proc_statm_file), "%sm",
+		 proc_stat_file);
+	if (!(statm_fp = fopen(proc_statm_file, "r")))
+		return rc;  /* Assume the process went away */
+	fd = fileno(statm_fp);
+	fcntl(fd, F_SETFD, FD_CLOEXEC);
+	rc = _get_process_memory_line(fd, prec);
+	fclose(statm_fp);
+	return rc;
+}
+
 /* _get_process_io_data_line() - get line of data from /proc/<pid>/io
  *
  * IN:	in - input file descriptor
@@ -300,14 +359,23 @@ static int _get_process_io_data_line(int in, jag_prec_t *prec) {
 	return 1;
 }
 
-static void _handle_stats(
-	List prec_list, char *proc_stat_file, char *proc_io_file,
-	jag_callbacks_t *callbacks)
+static void _handle_stats(List prec_list, char *proc_stat_file,
+			  char *proc_io_file, jag_callbacks_t *callbacks)
 {
+	static int no_share_data = -1;
 	FILE *stat_fp = NULL;
 	FILE *io_fp = NULL;
 	int fd, fd2;
 	jag_prec_t *prec = NULL;
+
+	if (no_share_data == -1) {
+		char *acct_params = slurm_get_jobacct_gather_params();
+		if (acct_params && strstr(acct_params, "NoShare"))
+			no_share_data = 1;
+		else
+			no_share_data = 0;
+		xfree(acct_params);
+	}
 
 	if (!(stat_fp = fopen(proc_stat_file, "r")))
 		return;  /* Assume the process went away */
@@ -326,6 +394,8 @@ static void _handle_stats(
 
 	prec = xmalloc(sizeof(jag_prec_t));
 	if (_get_process_data_line(fd, prec)) {
+		if (no_share_data)
+			_remove_share_data(proc_stat_file, prec);
 		list_append(prec_list, prec);
 		if ((io_fp = fopen(proc_io_file, "r"))) {
 			fd2 = fileno(io_fp);
@@ -423,6 +493,7 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 				*optr++ = *iptr++;
 			} while (*iptr);
 			*optr = 0;
+
 			optr2 = proc_io_file + sizeof("/proc");
 			iptr = slash_proc_entry->d_name;
 			i = 0;
