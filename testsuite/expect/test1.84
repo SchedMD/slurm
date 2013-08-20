@@ -84,6 +84,7 @@ set def_part [default_partition]
 log_user 0
 set def_hostlist ""
 set part_exclusive 0
+set part_share_force 0
 spawn $scontrol show part $def_part
 expect {
 	-re " Nodes=($alpha_numeric_nodelist)"  {
@@ -98,6 +99,10 @@ expect {
 		set part_exclusive 1
 		exp_continue
 	}
+	-re " Shared=FORCE" {
+		set part_share_force 1
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1
@@ -106,6 +111,11 @@ expect {
 		wait
 	}
 }
+if {$part_share_force != 0} {
+	send_user "\nWARNING: This test is incompatible with forced sharing of nodes\n"
+	exit 0
+}
+
 set fd [open "|$scontrol --oneliner show node $def_hostlist"]
 exp_internal 1
 while {[gets $fd line] != -1} {
