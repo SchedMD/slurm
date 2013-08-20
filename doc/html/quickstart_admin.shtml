@@ -633,38 +633,54 @@ or the full test suite may be executed with the single command
 <i>regression</i>.
 See <i>testsuite/expect/README</i> for more information.</p>
 
-<h2>Upgrades</h2>
+<a name="upgrade"><h2>Upgrades</h2></a>
 
-<p>Background: The SLURM version numbers contain three digits, which represent
-the major, minor and micro release numbers in that order (e.g. 2.1.3 is
-major=2, minor=1, micro=3).
-Changes in the RPCs (remote procedure calls) will only be made if the major
-and/or minor release number changes.
+<p>Background: The Slurm version numbers contain three digits, which represent
+the major, minor and micro release numbers in that order (e.g. 2.5.3 is
+major=2, minor=5, micro=3).
+Changes in the RPCs (remote procedure calls) and state files will only be made
+if the major and/or minor release number changes.
+Slurm daemons will support RPCs and state files from the two previous minor or
+releases (e.g. a version 2.6.x SlurmDBD will support slurmctld daemons and
+commands with a version of 2.4.x or 2.5.x).
+This means that upgrading at least ones each year is strongly recommended.
+Otherwise, intermediate upgrades will be required to preserve state information.
 Changes in the micro release number generally represent only bug fixes,
-but may also include minor enhancements.</p>
+but may also include very minor enhancements.</p>
 
 <p>If the SlurmDBD daemon is used, it must be at the same or higher minor
 release number as the Slurmctld daemons.
 In other words, when changing the version to a higher release number (e.g
-from 2.0 to 2.1) <b>always upgrade the SlurmDBD daemon first</b>.</p>
+from 2.4 to 2.5) <b>always upgrade the SlurmDBD daemon first</b>.
+The slurmctld daemon must also be upgraded before or at the same time as
+the slurmd daemons on the compute nodes.
+Generally upgrading Slurm on all of the login and compute nodes is recommended,
+although rolling upgrades are also possible (i.e. upgrading the head node(s)
+first then upgrading the compute and login nodes later at various times).
+Also see the note above about reverse compatability.</p>
 
-<p>When upgrading to a new major or minor release of SLURM <u>prior to version
-2.2</u> (e.g. 2.0.x to 2.1.x) all running and pending jobs will be purged due to
-changes in state save information.
-When upgrading to a new micro release of SLURM (e.g. 2.1.1 to 2.1.2) all
-running and pending jobs will be preserved. Just install a new version of
-SLURM and restart the daemons.
-When going from version 2.1.x to version 2.2.x and higher version numbers,
-we do not expect that any running or pending jobs will be lost although a
-limited number of prior releases may be supported (e.g. 2.1.0 to 2.2.0 will
-work fine, but 2.1.0 to 2.9.0 may not).
+<p>Pretty much each new major and/or minor release of Slurm (e.g. 2.4.x to 2.5.x)
+involves changes to the state files with new data structures, new options, etc.
+Slurm permits upgrades of up to two major or minor updates (e.g. 2.4.x or 2.5.x
+to 2.6.x) without loss of jobs or other state information, but the state
+information from older state files versions will not be recognized and will be
+discarded, resulting in loss of all running and pending jobs.
+State files are not recognized when downgrading (e.g. from 2.5.x to 2.4.x)
+and will be discarded, resulting in loss of all running and pending jobs.
+Therefore when upgrading Slurm (more precisely, the slurmctld daemon),
+saving the <i>StateSaveLocation</i> (as defined in <i>slurm.conf</i>)
+directory contents with all state information is recommended.
+If you need to downgrade, restoring that directory's contents will let you
+recover the jobs.
+Jobs submitted under the new version will not be in those state files,
+but it can let you recover most jobs.
 An exception to this is that jobs may be lost when installing new pre-release
-versions (e.g. 2.3.0-pre1 to 2.3.0-pre2). We'll try to note these cases
-in the NEWS file.
+versions (e.g. 2.5.0-pre1 to 2.5.0-pre2).
+We'll try to note these cases in the NEWS file.
 Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 26 July 2012</p>
+<p style="text-align:center;">Last modified 18 August 2013</p>
 
 <!--#include virtual="footer.txt"-->

@@ -157,6 +157,7 @@ script for Slurm?</a></li>
 <li><a href="#licenses">Can Slurm be configured to manage licenses?</a></li>
 <li><a href="#salloc_default_command">Can the salloc command be configured to
 launch a shell on a node in the job's allocation?</a></li>
+<li><a href="#upgrade">What should I be aware of when upgrading Slurm?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -1682,6 +1683,10 @@ slurm.conf file as shown below.</p>
 <pre>
 SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --mpi=none $SHELL
 </pre>
+
+<p><a name="upgrade"><b>51. What should I be aware of when upgrading Slurm?</b></a></br>
+See the Quick Start Administrator Guide <a href="quickstart_admin.html#upgrade">Upgrade</a>
+section for details.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 

@@ -2526,11 +2526,6 @@ extern void excise_node_from_job(struct job_record *job_ptr,
 {
 	int i, orig_pos = -1, new_pos = -1;
 	bitstr_t *orig_bitmap;
-	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
-
-	xassert(job_resrcs_ptr);
-	xassert(job_resrcs_ptr->cpus);
-	xassert(job_resrcs_ptr->cpus_used);
 
 	orig_bitmap = bit_copy(job_ptr->node_bitmap);
 	make_node_idle(node_ptr, job_ptr); /* updates bitmap */
