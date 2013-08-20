@@ -92,6 +92,12 @@ functions such as intersection and difference. Download the code from:<br>
 <a href="http://www.nsc.liu.se/~kent/python-hostlist">
 http://www.nsc.liu.se/~kent/python-hostlist</a></li><br>
 
+<li><b>Interactive Script</b><br>
+A wrapper script that makes it very simple to get an interactive shell on a
+cluster. Download the code from:<br>
+<a href="https://github.com/alanorth/hpc_infrastructure_scripts/blob/master/slurm/interactive">
+https://github.com/alanorth/hpc_infrastructure_scripts/blob/master/slurm/interactive</a></li><br>
+
 <li><b>Interconnect</b> plugins (Switch plugin)</li>
 <ul>
 <li><b>Infiniband</b><br>
@@ -222,6 +228,6 @@ For more information, see
 
 </ul>
 
-<p style="text-align:center;">Last modified 13 June 2013</p>
+<p style="text-align:center;">Last modified 19 August 2013</p>
 
 <!--#include virtual="footer.txt"-->
