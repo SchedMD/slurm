@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 2.6.2
 ========================
+ -- Fix issue with reconfig and GrpCPURunMins
 
 * Changes in Slurm 2.6.1
 ========================
