@@ -105,7 +105,7 @@ AC_DEFUN([X_AC_CRAY],
              #include <alpscomm_sn.h>
 	   ]],
 	   [[ job_getjidcnt();
-	      alpsc_release_cookies(char **)0, 0, 0);
+	      alpsc_release_cookies((char **)0, 0, 0);
 	   ]]
 	)],
         [have_cray_files="yes"],
