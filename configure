@@ -21727,7 +21727,7 @@ int
 main ()
 {
  job_getjidcnt();
-	      alpsc_release_cookies("", 0, 0);
+	      alpsc_release_cookies(char **)0, 0, 0);
 
 
   ;
