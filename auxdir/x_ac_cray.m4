@@ -125,8 +125,6 @@ AC_DEFUN([X_AC_CRAY],
     ac_have_real_cray="yes"
     ac_have_native_cray="yes"
     AC_DEFINE(HAVE_NATIVE_CRAY, 1, [Define to 1 for running on a Cray in native mode without ALPS])
-    # FIXME: currently there is a problem with a native Cray handling
-    # SYSTEM_DIMENSIONS of 3.  We have to figure it out.
     AC_DEFINE(HAVE_3D,           1, [Define to 1 if 3-dimensional architecture])
     AC_DEFINE(SYSTEM_DIMENSIONS, 3, [3-dimensional architecture])
     AC_DEFINE(HAVE_NATIVE_CRAY,  1, [Define to 1 for Native Cray systems])

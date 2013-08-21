@@ -922,7 +922,7 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	/* On a Cray System when dealing with hostlists as we are here
 	   this always needs to be 1.
 	*/
-	if (slurm_atoul(row[1]) & CLUSTER_FLAG_CRAYXT)
+	if (slurm_atoul(row[1]) & CLUSTER_FLAG_CRAY_A)
 		dims = 1;
 	else
 		dims = atoi(row[0]);

@@ -123,7 +123,7 @@ slurm_step_layout_t *slurm_step_layout_create(
 		 * but can fake it by just allocating all tasks to
 		 * one of the allocated nodes. */
 		if ((cluster_flags & CLUSTER_FLAG_BG)
-		    || (cluster_flags & CLUSTER_FLAG_CRAYXT))
+		    || (cluster_flags & CLUSTER_FLAG_CRAY_A))
 			step_layout->node_cnt  = num_hosts;
 		else
 			step_layout->node_cnt  = 1;

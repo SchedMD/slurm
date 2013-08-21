@@ -217,7 +217,7 @@ static void _print_header_job(void)
 				  main_xcord, "BG_BLOCK");
 			main_xcord += 18;
 		}
-		if (params.cluster_flags & CLUSTER_FLAG_CRAYXT) {
+		if (params.cluster_flags & CLUSTER_FLAG_CRAY_A) {
 			mvwprintw(text_win, main_ycord,
 				  main_xcord, "RESV_ID");
 			main_xcord += 18;
@@ -336,7 +336,7 @@ static int _print_text_job(job_info_t * job_ptr)
 					  SELECT_PRINT_BG_ID));
 			main_xcord += 18;
 		}
-		if (params.cluster_flags & CLUSTER_FLAG_CRAYXT) {
+		if (params.cluster_flags & CLUSTER_FLAG_CRAY_A) {
 			mvwprintw(text_win, main_ycord,
 				  main_xcord, "%.16s",
 				  select_g_select_jobinfo_sprint(
@@ -417,7 +417,7 @@ static int _print_text_job(job_info_t * job_ptr)
 				       job_ptr->select_jobinfo,
 				       time_buf, sizeof(time_buf),
 				       SELECT_PRINT_BG_ID));
-		if (params.cluster_flags & CLUSTER_FLAG_CRAYXT)
+		if (params.cluster_flags & CLUSTER_FLAG_CRAY_A)
 			printf("%16.16s ",
 			       select_g_select_jobinfo_sprint(
 				       job_ptr->select_jobinfo,

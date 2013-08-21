@@ -1340,7 +1340,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_ALLOC_NODE),
 				   tmp_char);
 
-	if (cluster_flags & CLUSTER_FLAG_CRAYXT)
+	if (cluster_flags & CLUSTER_FLAG_CRAY_A)
 		add_display_treestore_line(update, treestore, &iter,
 					   find_col_name(display_data_job,
 							 SORTID_ALPS_RESV_ID),
@@ -2211,7 +2211,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   -1);
 	}
 
-	if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
+	if (cluster_flags & CLUSTER_FLAG_CRAY_A) {
 		char tmp_resv_id[40];
 
 		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
@@ -4302,7 +4302,7 @@ extern void cluster_change_job(void)
 			}
 		}
 
-		if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
+		if (cluster_flags & CLUSTER_FLAG_CRAY_A) {
 			switch(display_data->id) {
 			case SORTID_ALPS_RESV_ID:
 				display_data->name = "ALPS";

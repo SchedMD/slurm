@@ -246,7 +246,7 @@ static int _check_cluster_specific_settings(job_desc_msg_t *req)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (is_cray_system()) {
+	if (is_alps_cray_system()) {
 		/*
 		 * Fix options and inform user, but do not abort submission.
 		 */

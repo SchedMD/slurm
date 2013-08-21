@@ -394,7 +394,6 @@ static int _defunct_option(void **dest, slurm_parser_enum_t type,
 	return 0;
 }
 
-#if (SYSTEM_DIMENSIONS > 1)
 /* Used to get the general name of the machine, used primarily
  * for bluegene systems.  Not in general use because some systems
  * have multiple prefix's such as foo[1-1000],bar[1-1000].
@@ -431,7 +430,6 @@ static void _set_node_prefix(const char *nodenames)
 	}
 	debug3("Prefix is %s %s %d", conf_ptr->node_prefix, nodenames, i);
 }
-#endif /* SYSTEM_DIMENSIONS > 1 */
 
 static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
@@ -597,10 +595,9 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		dflt = default_nodename_tbl;
 
 		n->nodenames = xstrdup(value);
-#if (SYSTEM_DIMENSIONS > 1)
-		if (conf_ptr->node_prefix == NULL)
+		if ((slurmdb_setup_cluster_name_dims() > 1)
+		    && conf_ptr->node_prefix == NULL)
 			_set_node_prefix(n->nodenames);
-#endif
 
 		if (!s_p_get_string(&n->hostnames, "NodeHostname", tbl))
 			n->hostnames = xstrdup(n->nodenames);
@@ -1103,7 +1100,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 #ifndef HAVE_ALPS_CRAY
 		if (!p->min_nodes)
 			fatal("Partition '%s' has invalid MinNodes=0, this is "
-			      "currently valid only on a Cray system.",
+			      "currently valid only on a ALPS Cray system.",
 			      p->name);
 #endif
 		if (!s_p_get_string(&p->nodes, "Nodes", tbl)
@@ -1498,10 +1495,9 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 		goto cleanup;
 	}
 
-#if (SYSTEM_DIMENSIONS > 1)
-	if (conf_ptr->node_prefix == NULL)
+	if ((slurmdb_setup_cluster_name_dims() > 1)
+	    && conf_ptr->node_prefix == NULL)
 		_set_node_prefix(node_ptr->nodenames);
-#endif
 
 	/* some sanity checks */
 	address_count  = hostlist_count(address_list);
@@ -3490,7 +3486,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->ret2service = DEFAULT_RETURN_TO_SERVICE;
 #ifdef HAVE_ALPS_CRAY
 	if (conf->ret2service > 1) {
-		error("ReturnToService > 1 is not supported on Cray");
+		error("ReturnToService > 1 is not supported on ALPS Cray");
 		return SLURM_ERROR;
 	}
 #endif

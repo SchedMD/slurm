@@ -21859,8 +21859,6 @@ $as_echo "$as_me: Running on a Cray system in native mode without ALPS" >&6;}
 
 $as_echo "#define HAVE_NATIVE_CRAY 1" >>confdefs.h
 
-    # FIXME: currently there is a problem with a native Cray handling
-    # SYSTEM_DIMENSIONS of 3.  We have to figure it out.
 
 $as_echo "#define HAVE_3D 1" >>confdefs.h
 

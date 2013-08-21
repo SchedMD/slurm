@@ -139,7 +139,7 @@ static int _setup_particulars(uint32_t cluster_flags,
 			error("Can't set MPIRUN_PARTITION "
 			      "environment variable");
 		}
-	} else if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
+	} else if (cluster_flags & CLUSTER_FLAG_CRAY_A) {
 		uint32_t resv_id = 0;
 
 		select_g_select_jobinfo_get(select_jobinfo,

@@ -1722,7 +1722,7 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("step_alloc_lps: node index bad");
 #ifdef HAVE_ALPS_CRAY
-		/* Since on a cray you can only run 1 job per node
+		/* Since with alps cray you can only run 1 job per node
 		   return all CPUs as being allocated.
 		*/
 		cpus_alloc = _get_node_cpus(step_node_inx);
@@ -1846,7 +1846,7 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("_step_dealloc_lps: node index bad");
 #ifdef HAVE_ALPS_CRAY
-		/* Since on a cray you can only run 1 job per node
+		/* Since with alps cray you can only run 1 job per node
 		   return all CPUs as being allocated.
 		*/
 		cpus_alloc = _get_node_cpus(step_node_inx);

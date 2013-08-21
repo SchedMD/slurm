@@ -170,8 +170,11 @@ typedef enum {
 #define CLUSTER_FLAG_XCPU   0x00000020 /* This has xcpu */
 #define CLUSTER_FLAG_AIX    0x00000040 /* This is an aix cluster */
 #define CLUSTER_FLAG_MULTSD 0x00000080 /* This cluster is multiple slurmd */
-#define CLUSTER_FLAG_CRAYXT 0x00000100 /* This cluster is a cray XT */
+#define CLUSTER_FLAG_CRAYXT 0x00000100 /* This cluster is a ALPS cray
+					* (deprecated) Same as CRAY_A */
+#define CLUSTER_FLAG_CRAY_A 0x00000100 /* This cluster is a ALPS cray */
 #define CLUSTER_FLAG_FE     0x00000200 /* This cluster is a front end system */
+#define CLUSTER_FLAG_CRAY_N 0x00000400 /* This cluster is a Native cray */
 
 /* Define assoc_mgr_association_usage_t below to avoid including
  * extraneous slurmdb headers */

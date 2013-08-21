@@ -2644,9 +2644,8 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
 	int m, len = 0;
 	int bracket_needed = _is_bracket_needed(hl, i);
 	int zeropad = 0;
-	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
-	if (cluster_flags & CLUSTER_FLAG_CRAYXT) {
+	if (is_cray_system()) {
 		/*
 		 * Find minimum common zero-padding prefix. Cray has nid%05u
 		 * syntax, factoring this out makes host strings much shorter.
