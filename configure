@@ -754,6 +754,7 @@ OFED_LIBS
 PTHREAD_CFLAGS
 PTHREAD_LIBS
 PTHREAD_CC
+ax_pthread_config
 HAVE_UNSETENV_FALSE
 HAVE_UNSETENV_TRUE
 LIBOBJS
@@ -19326,14 +19327,13 @@ fi
 
 
 
-
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
-acx_pthread_ok=no
+ax_pthread_ok=no
 
 # We used to check for pthread.h first, but this fails if pthread.h
 # requires special compiler flags (e.g. on True64 or Sequent).
@@ -19368,13 +19368,13 @@ return pthread_join ();
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  acx_pthread_ok=yes
+  ax_pthread_ok=yes
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $acx_pthread_ok" >&5
-$as_echo "$acx_pthread_ok" >&6; }
-        if test x"$acx_pthread_ok" = xno; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_pthread_ok" >&5
+$as_echo "$ax_pthread_ok" >&6; }
+        if test x"$ax_pthread_ok" = xno; then
                 PTHREAD_LIBS=""
                 PTHREAD_CFLAGS=""
         fi
@@ -19389,9 +19389,10 @@ fi
 
 # Create a list of thread flags to try.  Items starting with a "-" are
 # C compiler flags, and other items are library names, except for "none"
-# which indicates that we try without any flags at all.
+# which indicates that we try without any flags at all, and "pthread-config"
+# which is a program returning the flags for the Pth emulation library.
 
-acx_pthread_flags="pthreads none -Kthread -kthread lthread -pthread -pthreads -mthreads pthread --thread-safe -mt"
+ax_pthread_flags="pthreads none -Kthread -kthread lthread -pthread -pthreads -mthreads pthread --thread-safe -mt pthread-config"
 
 # The ordering *is* (sometimes) important.  Some notes on the
 # individual items follow:
@@ -19408,26 +19409,32 @@ acx_pthread_flags="pthreads none -Kthread -kthread lthread -pthread -pthreads -m
 # -mt: Sun Workshop C (may only link SunOS threads [-lthread], but it
 #      doesn't hurt to check since this sometimes defines pthreads too;
 #      also defines -D_REENTRANT)
+#      ... -mt is also the pthreads flag for HP/aCC
 # pthread: Linux, etcetera
 # --thread-safe: KAI C++
+# pthread-config: use pthread-config program (for GNU Pth library)
 
-case "${host_cpu}-${host_os}" in
-        *solaris*)
+case ${host_os} in
+        solaris*)
 
         # On Solaris (at least, for some versions), libc contains stubbed
         # (non-functional) versions of the pthreads routines, so link-based
-        # tests will erroneously succeed.  (We need to link with -pthread or
+        # tests will erroneously succeed.  (We need to link with -pthreads/-mt/
         # -lpthread.)  (The stubs are missing pthread_cleanup_push, or rather
         # a function called by this macro, so we could check for that, but
         # who knows whether they'll stub that too in a future libc.)  So,
         # we'll just look for -pthreads and -lpthread first:
 
-        acx_pthread_flags="-pthreads -pthread pthread -mt $acx_pthread_flags"
+        ax_pthread_flags="-pthreads pthread -mt -pthread $ax_pthread_flags"
+        ;;
+
+        darwin*)
+        ax_pthread_flags="-pthread $ax_pthread_flags"
         ;;
 esac
 
-if test x"$acx_pthread_ok" = xno; then
-for flag in $acx_pthread_flags; do
+if test x"$ax_pthread_ok" = xno; then
+for flag in $ax_pthread_flags; do
 
         case $flag in
                 none)
@@ -19439,6 +19446,50 @@ $as_echo_n "checking whether pthreads work without any flags... " >&6; }
                 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether pthreads work with $flag" >&5
 $as_echo_n "checking whether pthreads work with $flag... " >&6; }
                 PTHREAD_CFLAGS="$flag"
+                ;;
+
+                pthread-config)
+                # Extract the first word of "pthread-config", so it can be a program name with args.
+set dummy pthread-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ax_pthread_config+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ax_pthread_config"; then
+  ac_cv_prog_ax_pthread_config="$ax_pthread_config" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ax_pthread_config="yes"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_prog_ax_pthread_config" && ac_cv_prog_ax_pthread_config="no"
+fi
+fi
+ax_pthread_config=$ac_cv_prog_ax_pthread_config
+if test -n "$ax_pthread_config"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_pthread_config" >&5
+$as_echo "$ax_pthread_config" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+                if test x"$ax_pthread_config" = xno; then continue; fi
+                PTHREAD_CFLAGS="`pthread-config --cflags`"
+                PTHREAD_LIBS="`pthread-config --ldflags` `pthread-config --libs`"
                 ;;
 
                 *)
@@ -19465,18 +19516,23 @@ $as_echo_n "checking for the pthreads library -l$flag... " >&6; }
         cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <pthread.h>
+                        static void routine(void *a) { a = 0; }
+                        static void *start_routine(void *a) { return a; }
 int
 main ()
 {
-pthread_t th; pthread_join(th, 0);
-                     pthread_attr_init(0); pthread_cleanup_push(0, 0); pthread_atfork(NULL, NULL, NULL);
-                     pthread_create(0,0,0,0); pthread_cleanup_pop(0);
+pthread_t th; pthread_attr_t attr;
+                        pthread_create(&th, 0, start_routine, 0);
+                        pthread_join(th, 0);
+                        pthread_attr_init(&attr);
+                        pthread_cleanup_push(routine, 0);
+                        pthread_cleanup_pop(0) /* ; */
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  acx_pthread_ok=yes
+  ax_pthread_ok=yes
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
@@ -19484,9 +19540,9 @@ rm -f core conftest.err conftest.$ac_objext \
         LIBS="$save_LIBS"
         CFLAGS="$save_CFLAGS"
 
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $acx_pthread_ok" >&5
-$as_echo "$acx_pthread_ok" >&6; }
-        if test "x$acx_pthread_ok" = xyes; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_pthread_ok" >&5
+$as_echo "$ax_pthread_ok" >&6; }
+        if test "x$ax_pthread_ok" = xyes; then
                 break;
         fi
 
@@ -19496,85 +19552,119 @@ done
 fi
 
 # Various other checks:
-if test "x$acx_pthread_ok" = xyes; then
+if test "x$ax_pthread_ok" = xyes; then
         save_LIBS="$LIBS"
         LIBS="$PTHREAD_LIBS $LIBS"
         save_CFLAGS="$CFLAGS"
         CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 
-        # Detect AIX lossage: threads are created detached by default
-        # and the JOINABLE attribute has a nonstandard name (UNDETACHED).
+        # Detect AIX lossage: JOINABLE attribute is called UNDETACHED.
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking for joinable pthread attribute" >&5
 $as_echo_n "checking for joinable pthread attribute... " >&6; }
-        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+        attr_name=unknown
+        for attr in PTHREAD_CREATE_JOINABLE PTHREAD_CREATE_UNDETACHED; do
+            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <pthread.h>
 int
 main ()
 {
-int attr=PTHREAD_CREATE_JOINABLE;
+int attr = $attr; return attr /* ; */
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ok=PTHREAD_CREATE_JOINABLE
-else
-  ok=unknown
+  attr_name=$attr; break
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-        if test x"$ok" = xunknown; then
-                cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <pthread.h>
-int
-main ()
-{
-int attr=PTHREAD_CREATE_UNDETACHED;
-  ;
-  return 0;
-}
+        done
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $attr_name" >&5
+$as_echo "$attr_name" >&6; }
+        if test "$attr_name" != PTHREAD_CREATE_JOINABLE; then
+
+cat >>confdefs.h <<_ACEOF
+#define PTHREAD_CREATE_JOINABLE $attr_name
 _ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ok=PTHREAD_CREATE_UNDETACHED
-else
-  ok=unknown
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-        fi
-        if test x"$ok" != xPTHREAD_CREATE_JOINABLE; then
 
-$as_echo "#define PTHREAD_CREATE_JOINABLE \$ok" >>confdefs.h
-
-        fi
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${ok}" >&5
-$as_echo "${ok}" >&6; }
-        if test x"$ok" = xunknown; then
-                { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: we do not know how to create joinable pthreads" >&5
-$as_echo "$as_me: WARNING: we do not know how to create joinable pthreads" >&2;}
         fi
 
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking if more special flags are required for pthreads" >&5
 $as_echo_n "checking if more special flags are required for pthreads... " >&6; }
         flag=no
-        case "${host_cpu}-${host_os}" in
-                *-aix* | *-freebsd*)     flag="-D_THREAD_SAFE";;
-                *solaris* | alpha*-osf*) flag="-D_REENTRANT";;
+        case ${host_os} in
+            aix* | freebsd* | darwin*) flag="-D_THREAD_SAFE";;
+            osf* | hpux*) flag="-D_REENTRANT";;
+            solaris*)
+            if test "$GCC" = "yes"; then
+                flag="-D_REENTRANT"
+            else
+                flag="-mt -D_REENTRANT"
+            fi
+            ;;
         esac
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${flag}" >&5
 $as_echo "${flag}" >&6; }
         if test "x$flag" != xno; then
-                PTHREAD_CFLAGS="$flag $PTHREAD_CFLAGS"
+            PTHREAD_CFLAGS="$flag $PTHREAD_CFLAGS"
         fi
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for PTHREAD_PRIO_INHERIT" >&5
+$as_echo_n "checking for PTHREAD_PRIO_INHERIT... " >&6; }
+if ${ax_cv_PTHREAD_PRIO_INHERIT+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+                cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+                    #include <pthread.h>
+int
+main ()
+{
+int i = PTHREAD_PRIO_INHERIT;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ax_cv_PTHREAD_PRIO_INHERIT=yes
+else
+  ax_cv_PTHREAD_PRIO_INHERIT=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_PTHREAD_PRIO_INHERIT" >&5
+$as_echo "$ax_cv_PTHREAD_PRIO_INHERIT" >&6; }
+        if test "x$ax_cv_PTHREAD_PRIO_INHERIT" = "xyes"; then :
+
+$as_echo "#define HAVE_PTHREAD_PRIO_INHERIT 1" >>confdefs.h
+
+fi
 
         LIBS="$save_LIBS"
         CFLAGS="$save_CFLAGS"
 
-        # More AIX lossage: must compile with cc_r
-        # Extract the first word of "cc_r", so it can be a program name with args.
-set dummy cc_r; ac_word=$2
+        # More AIX lossage: compile with *_r variant
+        if test "x$GCC" != xyes; then
+            case $host_os in
+                aix*)
+                case "x/$CC" in #(
+  x*/c89|x*/c89_128|x*/c99|x*/c99_128|x*/cc|x*/cc128|x*/xlc|x*/xlc_v6|x*/xlc128|x*/xlc128_v6) :
+    #handle absolute path differently from PATH based program lookup
+                   case "x$CC" in #(
+  x/*) :
+    if as_fn_executable_p ${CC}_r; then :
+  PTHREAD_CC="${CC}_r"
+fi ;; #(
+  *) :
+    for ac_prog in ${CC}_r
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_prog_PTHREAD_CC+:} false; then :
@@ -19590,7 +19680,7 @@ do
   test -z "$as_dir" && as_dir=.
     for ac_exec_ext in '' $ac_executable_extensions; do
   if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_PTHREAD_CC="cc_r"
+    ac_cv_prog_PTHREAD_CC="$ac_prog"
     $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -19598,7 +19688,6 @@ done
   done
 IFS=$as_save_IFS
 
-  test -z "$ac_cv_prog_PTHREAD_CC" && ac_cv_prog_PTHREAD_CC="${CC}"
 fi
 fi
 PTHREAD_CC=$ac_cv_prog_PTHREAD_CC
@@ -19611,22 +19700,33 @@ $as_echo "no" >&6; }
 fi
 
 
-else
-        PTHREAD_CC="$CC"
+  test -n "$PTHREAD_CC" && break
+done
+test -n "$PTHREAD_CC" || PTHREAD_CC="$CC"
+ ;;
+esac ;; #(
+  *) :
+     ;;
+esac
+                ;;
+            esac
+        fi
 fi
+
+test -n "$PTHREAD_CC" || PTHREAD_CC="$CC"
 
 
 
 
 
 # Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
-if test x"$acx_pthread_ok" = xyes; then
+if test x"$ax_pthread_ok" = xyes; then
 
 $as_echo "#define HAVE_PTHREAD 1" >>confdefs.h
 
         :
 else
-        acx_pthread_ok=no
+        ax_pthread_ok=no
         as_fn_error $? "Error: Cannot figure out how to use pthreads!" "$LINENO" 5
 fi
 ac_ext=c
@@ -22673,7 +22773,7 @@ else
 
 	#include <stdio.h>
 	#include <stdlib.h>
-	int main() { char tmp[8]; snprintf(tmp,8,"%s",NULL); exit(0); }
+	int main() { char tmp[8]; char *n=NULL; snprintf(tmp,8,"%s",n); exit(0); }
 _ACEOF
 if ac_fn_c_try_run "$LINENO"; then :
   printf_null_ok=yes
@@ -22737,7 +22837,7 @@ int
 main ()
 {
 
-	char *line = readline("in:");
+	readline("in:");
   ;
   return 0;
 }

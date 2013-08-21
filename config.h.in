@@ -233,6 +233,9 @@
 /* Define to 1 if you have the <pthread.h> header file. */
 #undef HAVE_PTHREAD_H
 
+/* Have PTHREAD_PRIO_INHERIT. */
+#undef HAVE_PTHREAD_PRIO_INHERIT
+
 /* Define to 1 if you have the `ptrace64' function. */
 #undef HAVE_PTRACE64
 
@@ -421,7 +424,7 @@
 /* Define the project's name. */
 #undef PROJECT
 
-/* Define to the necessary symbol if this constant uses a non-standard name on
+/* Define to necessary symbol if this constant uses a non-standard name on
    your system. */
 #undef PTHREAD_CREATE_JOINABLE
 

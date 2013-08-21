@@ -59,8 +59,8 @@ sbin_PROGRAMS = slurmctld$(EXEEXT)
 subdir = src/slurmctld
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
-	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
+	$(top_srcdir)/auxdir/ax_pthread.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
 	$(top_srcdir)/auxdir/ltoptions.m4 \
 	$(top_srcdir)/auxdir/ltsugar.m4 \
@@ -333,6 +333,7 @@ am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
 am__tar = @am__tar@
 am__untar = @am__untar@
+ax_pthread_config = @ax_pthread_config@
 bindir = @bindir@
 build = @build@
 build_alias = @build_alias@
