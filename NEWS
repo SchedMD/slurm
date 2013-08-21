@@ -58,6 +58,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fix issue with reconfig and GrpCPURunMins
  -- Fix of wrong node/job state problem after reconfig
+ -- Allow users who are coordinators update their own limits in the accounts
+    they are coordinators over.
 
 * Changes in Slurm 2.6.1
 ========================

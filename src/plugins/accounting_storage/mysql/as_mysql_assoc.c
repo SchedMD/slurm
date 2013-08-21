@@ -3024,8 +3024,10 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (!(is_admin = is_user_min_admin_level(
 		      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
-		if (assoc_cond->user_list
-		    && (list_count(assoc_cond->user_list) == 1)) {
+		if (is_user_any_coord(mysql_conn, &user)) {
+			goto is_same_user;
+		} else if (assoc_cond->user_list
+			   && (list_count(assoc_cond->user_list) == 1)) {
 			uid_t pw_uid;
 			char *name;
 			name = list_peek(assoc_cond->user_list);
@@ -3049,12 +3051,9 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			}
 		}
 
-		if (!is_user_any_coord(mysql_conn, &user)) {
-			error("Only admins/coordinators can "
-			      "modify associations");
-			errno = ESLURM_ACCESS_DENIED;
-			return NULL;
-		}
+		error("Only admins/coordinators can modify associations");
+		errno = ESLURM_ACCESS_DENIED;
+		return NULL;
 	}
 is_same_user:
 
@@ -3147,6 +3146,7 @@ is_same_user:
 
 	if (!ret_list) {
 		reset_mysql_conn(mysql_conn);
+		errno = rc;
 		return NULL;
 	} else if (!list_count(ret_list)) {
 		reset_mysql_conn(mysql_conn);
