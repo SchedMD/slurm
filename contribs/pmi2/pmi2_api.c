@@ -1488,7 +1488,8 @@ int PMIi_WriteSimpleCommand( int fd, PMI2_Command *resp, const char cmd[], PMI2_
 
     PMI2U_ERR_CHKANDJUMP(strlen(cmd) > PMI2_MAX_VALLEN, pmi2_errno, PMI2_ERR_OTHER, "**cmd_too_long");
 
-    ret = snprintf(c, remaining_len, "cmd=%s;", cmd);
+    ret = sprintf(c, "cmd=%s;", cmd);
+
     PMI2U_ERR_CHKANDJUMP(ret >= remaining_len, pmi2_errno, PMI2_ERR_OTHER, "**intern %s", "Ran out of room for command");
     c += ret;
     remaining_len -= ret;
