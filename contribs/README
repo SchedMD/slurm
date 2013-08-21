@@ -132,3 +132,4 @@ of the SLURM contribs distribution follows:
   torque/            [ Wrapper Scripts for Torque migration to SLURM ]
      Helpful scripts to make transition to SLURM easier from PBS or Torque.
      These scripts are easily updatable if there is functionality missing.
+     NOTE: For the showq command, see https://github.com/pedmon/slurm_showq
