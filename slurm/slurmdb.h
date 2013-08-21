@@ -176,6 +176,11 @@ typedef enum {
 #define CLUSTER_FLAG_FE     0x00000200 /* This cluster is a front end system */
 #define CLUSTER_FLAG_CRAY_N 0x00000400 /* This cluster is a Native cray */
 
+
+/* Cluster Combo flags */
+#define CLUSTER_FLAG_CRAY   0x00000500 /* This cluster is a cray.
+					  Combo of CRAY_A | CRAY_N */
+
 /* Define assoc_mgr_association_usage_t below to avoid including
  * extraneous slurmdb headers */
 #ifndef __assoc_mgr_association_usage_t_defined

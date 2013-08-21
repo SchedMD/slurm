@@ -65,8 +65,7 @@ extern int *get_cluster_dims(node_info_msg_t *node_info_ptr)
 {
 	int *dim_size = slurmdb_setup_cluster_dim_size();
 
-	if ((params.cluster_flags & (CLUSTER_FLAG_CRAY_A | CLUSTER_FLAG_CRAY_N))
-	    && dim_size) {
+	if ((params.cluster_flags & CLUSTER_FLAG_CRAY) && dim_size) {
 		static int cray_dim_size[3] = {-1, -1, -1};
 		/* For now, assume one node per coordinate all
 		 * May need to refine. */
@@ -214,9 +213,7 @@ extern void init_grid(node_info_msg_t *node_info_ptr, int cols)
 						node_ptr->name[j] - '0';
 					j++;
 				}
-			} else if (params.cluster_flags
-				   & (CLUSTER_FLAG_CRAY_A |
-				      CLUSTER_FLAG_CRAY_N)) {
+			} else if (params.cluster_flags & CLUSTER_FLAG_CRAY) {
 				int len_a, len_h;
 				len_a = strlen(node_ptr->node_addr);
 				len_h = strlen(node_ptr->node_hostname);

@@ -72,8 +72,7 @@ extern int *slurmdb_setup_cluster_dim_size(void)
 extern bool is_cray_system(void)
 {
 	if (working_cluster_rec)
-		return working_cluster_rec->flags &
-			(CLUSTER_FLAG_CRAY_A | CLUSTER_FLAG_CRAY_N);
+		return working_cluster_rec->flags & CLUSTER_FLAG_CRAY;
 #if defined HAVE_ALPS_CRAY || defined HAVE_NATIVE_CRAY
 	return true;
 #endif
