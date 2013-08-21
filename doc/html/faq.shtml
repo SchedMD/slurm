@@ -159,6 +159,7 @@ script for Slurm?</a></li>
 launch a shell on a node in the job's allocation?</a></li>
 <li><a href="#upgrade">What should I be aware of when upgrading Slurm?</a></li>
 <li><a href="#torque">How easy is it to switch from PBS or Torque to Slurm?</a></li>
+<li><a href="#sssd">I am having trouble using SSSD with Slurm.</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -1700,6 +1701,17 @@ https://github.com/pedmon/slurm_showq</a>.
 Slurm recognizes and translates the "#PBS" options in batch scripts.
 Most, but not all options are supported.
 Please share any enhancements that you make.</p>
+
+<p><a name="sssd"><b>53. I am having trouble using SSSD with Slurm.</b></a></br>
+SSSD or System Security Services Deamon does not allow enumeration of group
+members by default.
+SSSD is also case sensitive, which could possible raise other issues.
+Add the following lines to <i>/etc/ssd/ssd.conf</i> on your head node to
+address these issues:</p>
+<pre>
+enumerate = True
+case_sensitive = False
+</pre>
 
 <p class="footer"><a href="#top">top</a></p>
 
