@@ -158,6 +158,7 @@ script for Slurm?</a></li>
 <li><a href="#salloc_default_command">Can the salloc command be configured to
 launch a shell on a node in the job's allocation?</a></li>
 <li><a href="#upgrade">What should I be aware of when upgrading Slurm?</a></li>
+<li><a href="#torque">How easy is it to switch from PBS or Torque to Slurm?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -1688,8 +1689,20 @@ SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --mpi=no
 See the Quick Start Administrator Guide <a href="quickstart_admin.html#upgrade">Upgrade</a>
 section for details.</p>
 
+<p><a name="torque"><b>52. How easy is it to switch from PBS or Torque to Slurm?</b></a></br>
+A lot of users don't even notice the difference.
+Slurm has wrappers available for the mpiexec, pbsnodes, qdel, qhold, qrls,
+qstat, and qsub commands (see contribs/torque in the distribution and the
+"slurm-torque" RPM).
+There is also a wrapper for the showq command at
+<a href="https://github.com/pedmon/slurm_showq">
+https://github.com/pedmon/slurm_showq</a>.
+Slurm recognizes and translates the "#PBS" options in batch scripts.
+Most, but not all options are supported.
+Please share any enhancements that you make.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 16 August 2013</p>
+<p style="text-align:center;">Last modified 21 August 2013</p>
 
 <!--#include virtual="footer.txt"-->

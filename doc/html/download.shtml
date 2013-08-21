@@ -104,6 +104,7 @@ https://github.com/alanorth/hpc_infrastructure_scripts/blob/master/slurm/interac
 The <b>topology.conf</b> file for an Infiniband switch can be automatically
 generated using the <b>ib2slurm</b> tool found here:
 <a href="https://github.com/fintler/ib2slurm">https://github.com/fintler/ib2slurm</a>.
+</ul>
 
 <li><b>I/O Watchdog</b><br>
 A facility for monitoring user applications, most notably parallel jobs,
@@ -159,6 +160,11 @@ Maui Scheduler</a></li>
 <li><a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
 Moab Cluster Suite</a></li>
 </ul><br>
+
+<li><b>Command wrappers</b><br>
+There is a wrapper for Maui/Moab's showq command at
+<a href="https://github.com/pedmon/slurm_showq">
+https://github.com/pedmon/slurm_showq</a>.
 
 <li><b>Scripting interfaces</b>
 <ul>
@@ -228,6 +234,6 @@ For more information, see
 
 </ul>
 
-<p style="text-align:center;">Last modified 19 August 2013</p>
+<p style="text-align:center;">Last modified 21 August 2013</p>
 
 <!--#include virtual="footer.txt"-->
