@@ -1546,9 +1546,15 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 	uint16_t node_flags;
 	struct node_record *node_ptr = node_record_table_ptr;
 
-	job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap);
+	if (job_ptr->node_bitmap_cg) /* job completing */
+		job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap_cg);
+	else
+		job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap);
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
+		if (job_ptr->node_bitmap_cg) { /* job completing */
+			if (bit_test(job_ptr->node_bitmap_cg, i) == 0)
+				continue;
+		} else if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 
 		node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
