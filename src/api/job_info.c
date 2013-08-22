@@ -134,7 +134,7 @@ extern uint32_t slurm_xlate_job_id(char *job_id_str)
 		if (job_ptr->array_task_id == array_id) {
 			job_id = job_ptr->job_id;
 			break;
-		}	
+		}
 	}
 	slurm_free_job_info_msg(resp);
 	return job_id;
@@ -250,7 +250,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	snprintf(tmp_line, sizeof(tmp_line), "JobId=%u ", job_ptr->job_id);
 	out = xstrdup(tmp_line);
 	if (job_ptr->array_job_id) {
-		snprintf(tmp_line, sizeof(tmp_line), 
+		snprintf(tmp_line, sizeof(tmp_line),
 			 "ArrayJobId=%u ArrayTaskId=%u ",
 			 job_ptr->array_job_id, job_ptr->array_task_id);
 		xstrcat(out, tmp_line);
@@ -700,7 +700,7 @@ line6:
 			     (last_mem_alloc !=
 			      job_resrcs->memory_allocated[rel_node_inx]))) {
 				if (hostlist_count(hl_last)) {
-					last_hosts = 
+					last_hosts =
 						hostlist_ranged_string_xmalloc(
 						hl_last);
 					snprintf(tmp_line, sizeof(tmp_line),
@@ -1194,7 +1194,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 		slurm_free_job_id_response_msg(resp_msg.data);
 		break;
 	case RESPONSE_SLURM_RC:
-	        rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 		slurm_free_return_code_msg(resp_msg.data);
 		if (rc)
 			slurm_seterrno_ret(rc);
@@ -1419,4 +1419,3 @@ extern int slurm_job_cpus_allocated_on_node(job_resources_t *job_resrcs_ptr,
 
 	return slurm_job_cpus_allocated_on_node_id(job_resrcs_ptr, node_id);
 }
-
