@@ -1678,7 +1678,7 @@ extern void resume_job_step(struct job_record *job_ptr);
 
 /* run_backup - this is the backup controller, it should run in standby
  *	mode, assuming control when the primary controller stops responding */
-extern void run_backup(void);
+extern void run_backup(slurm_trigger_callbacks_t *callbacks);
 
 /* Spawn health check function for every node that is not DOWN */
 extern void run_health_check(void);

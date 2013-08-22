@@ -63,6 +63,8 @@ documents those changes that are of interest to users and admins.
  -- Fix of wrong node/job state problem after reconfig
  -- Allow users who are coordinators update their own limits in the accounts
     they are coordinators over.
+ -- BackupController - Make sure we have a connection to the DBD first thing
+    to avoid it thinking we don't have a cluster name.
 
 * Changes in Slurm 2.6.1
 ========================

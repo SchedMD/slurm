@@ -1491,6 +1491,10 @@ static int _send_init_msg()
 
 	buffer = init_buf(1024);
 	pack16((uint16_t) DBD_INIT, buffer);
+	if (!slurmdbd_cluster) {
+		debug("No ClusterName set.");
+		slurmdbd_cluster = slurm_get_cluster_name();
+	}
 	req.cluster_name = slurmdbd_cluster;
 	req.rollback = rollback_started;
 	req.version  = SLURMDBD_VERSION;

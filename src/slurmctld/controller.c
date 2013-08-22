@@ -462,7 +462,7 @@ int main(int argc, char *argv[])
 			    slurmctld_conf.backup_controller) == 0)) {
 			slurm_sched_fini();	/* make sure shutdown */
 			primary = 0;
-			run_backup();
+			run_backup(&callbacks);
 		} else if (_valid_controller()) {
 			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
 			trigger_primary_ctld_res_ctrl();

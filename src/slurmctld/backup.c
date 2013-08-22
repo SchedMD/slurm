@@ -60,6 +60,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/switch.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -105,7 +106,7 @@ static int backup_sigarray[] = {
 
 /* run_backup - this is the backup controller, it should run in standby
  *	mode, assuming control when the primary controller stops responding */
-void run_backup(void)
+void run_backup(slurm_trigger_callbacks_t *callbacks)
 {
 	int i;
 	uint32_t trigger_type;
@@ -215,6 +216,15 @@ void run_backup(void)
 	pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
 	pthread_join(slurmctld_config.thread_id_sig, NULL);
 	pthread_join(slurmctld_config.thread_id_rpc, NULL);
+
+	if (!acct_db_conn) {
+		/* Make sure we get a connection right away to avoid
+		   race condition on this happening too late.
+		*/
+		acct_db_conn = acct_storage_g_get_connection(
+			callbacks, 0, false,
+			slurmctld_cluster_name);
+	}
 
 	/* clear old state and read new state */
 	lock_slurmctld(config_write_lock);
