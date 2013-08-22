@@ -72,6 +72,8 @@ COMMAND CHANGES (see man pages for details)
     "scontrol show job".
  -- Permit Slurm administrator to submit a batch job as any user.
  -- Added -I|--item-extract option to sh5util to extract data item from series.
+ -- Add squeue output format options for job command and working directory
+    (%o and %Z respectively).
 
 OTHER CHANGES
 =============

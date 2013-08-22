@@ -183,8 +183,13 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_comment)
 #define job_format_add_reservation(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_reservation)
+#define job_format_add_command(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_command)
+#define job_format_add_work_dir(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_work_dir)
 #define job_format_add_invalid(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,(void*)_print_com_invalid)
+
 
 /*****************************************************************************
  * Job Line Print Functions
@@ -287,6 +292,10 @@ int _print_job_select_jobinfo(job_info_t * job, int width, bool right_justify,
 int _print_job_comment(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_reservation(job_info_t * job, int width, bool right_justify,
+			char* suffix);
+int _print_job_command(job_info_t * job, int width, bool right_justify,
+		        char* suffix);
+int _print_job_work_dir(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 
 /*****************************************************************************

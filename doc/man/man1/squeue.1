@@ -275,6 +275,9 @@ List of nodes allocated to the job or job step. In the case of a
 nodes that have not yet been returned to service.
 (Valid for jobs and job steps)
 .TP
+\fB%o\fR
+The command to be executed.
+.TP
 \fB%O\fR
 Are contiguous nodes requested by the job.
 (Valid for jobs only)
@@ -366,6 +369,9 @@ List of node names explicitly excluded by the job.
 Number of requested sockets, cores, and threads (S:C:T) per node for the job.
 When (S:C:T) has not been set, "*" is displayed.
 (Valid for jobs only)
+.TP
+\fB%Z\fR
+The job's working directory.
 .RE
 
 .TP

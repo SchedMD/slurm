@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Added fields to "scontrol show job" output: boards_per_node,
     sockets_per_board, ntasks_per_node, ntasks_per_board, ntasks_per_socket,
     ntasks_per_core, and nice.
+ -- Add squeue output format options for job command and working directory
+    (%o and %Z respectively).
 
 * Changes in Slurm 13.12.0pre1
 ==============================

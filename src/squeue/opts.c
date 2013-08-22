@@ -153,7 +153,7 @@ parse_command_line( int argc, char* argv[] )
 		case (int) 'A':
 		case (int) 'U':	/* backwards compatibility */
 			xfree(params.accounts);
-		        params.accounts = xstrdup(optarg);
+			params.accounts = xstrdup(optarg);
 			params.account_list =
 				_build_str_list( params.accounts );
 		break;
@@ -585,7 +585,7 @@ extern int parse_format( char* format )
 				xstrcat(prefix, token);
 				xfree(suffix);
 				suffix = prefix;
-				
+
 				step_format_add_invalid( params.format_list,
 							   field_size,
 							   right_justify,
@@ -734,6 +734,10 @@ extern int parse_format( char* format )
 				job_format_add_nodes( params.format_list,
 						      field_size,
 						      right_justify, suffix );
+			else if (field[0] == 'o')
+				job_format_add_command( params.format_list,
+							field_size,
+							right_justify, suffix);
 			else if (field[0] == 'O')
 				job_format_add_contiguous( params.format_list,
 							   field_size,
@@ -826,6 +830,11 @@ extern int parse_format( char* format )
 							   field_size,
 							   right_justify,
 							   suffix );
+			else if (field[0] == 'Z')
+				job_format_add_work_dir( params.format_list,
+							 field_size,
+							 right_justify,
+							 suffix );
 			else if (format_all)
 				;	/* ignore */
 			else {
@@ -833,7 +842,7 @@ extern int parse_format( char* format )
 				xstrcat(prefix, token);
 				xfree(suffix);
 				suffix = prefix;
-				
+
 				job_format_add_invalid( params.format_list,
 							   field_size,
 							   right_justify,

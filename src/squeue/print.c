@@ -1258,6 +1258,31 @@ int _print_job_reservation(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_command(job_info_t * job, int width, bool right_justify,
+			char* suffix)
+{
+	if (job == NULL)
+		_print_str("COMMAND", width, right_justify, true);
+	else
+		_print_str(job->command, width, right_justify, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_work_dir(job_info_t * job, int width, bool right_justify,
+			char* suffix)
+{
+	if (job == NULL)
+		_print_str("WORK_DIR", width, right_justify, true);
+	else
+		_print_str(job->work_dir, width, right_justify, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+
 /*****************************************************************************
  * Job Step Print Functions
  *****************************************************************************/
