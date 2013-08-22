@@ -74,6 +74,7 @@ generated_html = \
 	reservations.html \
 	resource_limits.html \
 	rosetta.html \
+	rpc.html \
 	schedplugins.html \
 	select_design.html \
 	selectplugins.html \

@@ -1,0 +1,102 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Remote Procedure Call (RPC) Update Guide</h1>
+
+<h2>Overview</h2>
+
+<p>Slurm uses RPCs (Remote Procedure Calls) to communticate between
+daemons and commands. 
+The format of many RPCs change between major and/or minor Slurm releases
+(the release numbers are major.minor.micro and changes in the micro number
+indicate bug fixes since the previous release, while changes in the
+major or minor numbers indicate fundamental changes in logic).
+The reason for format changes is typically new fields being added for new
+Slurm capabilities.
+Slurm communicatins support the most current release plus the two previous
+release major and/or minor releases.
+For example, Slurm version 2.6.x daemons can communicate with Slurm commands
+from version 2.4.x, 2.5.x and 2.6.x.
+The same is true for state save files.
+Slurm can be upgraded through two major or minor releases without loss of data
+since the older state files are still recognized.
+Slurm commands initiated under one version of Slurm can also continue to
+execute and communicate with the Slurm daemons through two release upgrades
+of the daemons.
+Upgrades beyond two releases will result in unrecognized state information,
+but intermediate upgrades can be performed to reformat the state information
+and prevent its loss.
+As new versions of Slurm are relased, support for the oldest communication
+protocols is removed from the code.</p>
+
+<h2>Code Changes</h2>
+
+<p>The code used for packing and unpacking RPCs can be mostly found in
+<b>src/common</b>, although additional logic can also be found in each of
+of the Slurm daemons (slurmctld, slurmd, and slurmdbd) plus some of the
+plugins.</p>
+
+<p>All RPCs and state save files contain Slurm version information.
+This version information permits the server to recognize its format and
+respond using a message format understood by the client.
+When fields are added to or removed from existing RPCs, it is essential
+that only the format of RPCs for the newest release of Slurm (which is still
+under development) altered to avoid breaking pre-existing communication
+protocols.
+It may be necessary to add a new protocol version number to the code and
+support for releases beyond two previous releases may be removed.
+In the new code, copy the pack and unpack logic from the previous version of
+the code and add new fields as needed.
+Be sure to pack and unpack data in the identical order.
+It is also important to keep in mind that when adding support for new fields
+in an RPC protocol, that logic may need to be added to the older protocols
+setting the new field values to a reasonable default value (e.g. NULL, 0).
+For example, if a job is submitted using an old version of sbatch to a newer
+slurmctld daemon, job specifications that are unknown to the old sbatch
+should be set by the slurmctld daemon to reasonable values.
+An example of the changes required are shown below.
+In this trivial example, we want to add a new "max_nodes" filed to the
+message for Slurm vestion 2.6.x.</p>
+
+<pre>
+/*
+ * Original code in Slurm v2.5.x
+ */
+if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	pack32(msg->job_id, buffer);
+	pack32(msg->user_id, buffer);
+	pack32(msg->min_nodes, buffer);
+} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+	pack32(msg->job_id, buffer);
+	pack32(msg->user_id, buffer);
+} else if (protocol_version >= SLURM_2_3_PROTOCOL_VERSION) {
+	pack32(msg->job_id, buffer);
+} else {
+	error("pack_whatever_msg: protocol_version "
+	      "%hu not supported", protocol_version);
+}
+</pre>
+<pre>
+/*
+ * New code in Slurm v2.6.x
+ */
+if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
+	pack32(msg->job_id, buffer);
+	pack32(msg->user_id, buffer);
+	pack32(msg->min_nodes, buffer);
+	pack32(msg->max_nodes, buffer);
+} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+	pack32(msg->job_id, buffer);
+	pack32(msg->user_id, buffer);
+	pack32(msg->min_nodes, buffer);
+} else if (protocol_version >= SLURM_2_4_PROTOCOL_VERSION) {
+	pack32(msg->job_id, buffer);
+	pack32(msg->user_id, buffer);
+} else {
+	error("pack_whatever_msg: protocol_version "
+	      "%hu not supported", protocol_version);
+}
+</pre>
+
+<p style="text-align:center;">Last modified 22 August 2013</p>
+
+<!--#include virtual="footer.txt"-->
