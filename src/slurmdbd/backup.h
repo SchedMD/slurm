@@ -47,9 +47,9 @@ extern bool primary_resumed;
 extern bool backup;
 extern bool have_control;
 
-/* run_backup - this is the backup dbd, it should run in standby
+/* run_dbd_backup - this is the backup dbd, it should run in standby
  *	mode, assuming control when the primary dbd stops responding */
-extern void run_backup(void);
+extern void run_dbd_backup(void);
 
 
 #endif
