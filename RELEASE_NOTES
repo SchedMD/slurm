@@ -74,6 +74,7 @@ COMMAND CHANGES (see man pages for details)
  -- Added -I|--item-extract option to sh5util to extract data item from series.
  -- Add squeue output format options for job command and working directory
     (%o and %Z respectively).
+ -- Add stdin/out/err to sview job output.
 
 OTHER CHANGES
 =============

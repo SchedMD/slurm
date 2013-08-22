@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
     ntasks_per_core, and nice.
  -- Add squeue output format options for job command and working directory
     (%o and %Z respectively).
+ -- Add stdin/out/err to sview job output.
 
 * Changes in Slurm 13.12.0pre1
 ==============================

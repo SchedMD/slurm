@@ -171,6 +171,9 @@ enum {
 /* 	SORTID_SOCKETS_MIN, */
 	SORTID_STATE,
 	SORTID_STATE_NUM,
+	SORTID_STD_ERR,
+	SORTID_STD_IN,
+	SORTID_STD_OUT,
 	SORTID_SWITCHES,
 	SORTID_TASKS,
 /* 	SORTID_THREADS_MAX, */
@@ -342,6 +345,12 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_SHARED, "Shared", FALSE,
 	 EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_STD_ERR, "Standard Error",
+	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_STD_IN, "Standard In",
+	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_STD_OUT, "Standard Out",
+	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPUS_PER_TASK, "CPUs per Task",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_RESV_NAME, "Reservation Name",
@@ -1288,6 +1297,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	char *nodes = NULL, *reason = NULL, *uname = NULL;
 	char tmp_char[50];
 	char time_buf[32];
+	char tmp1[128];
 	char running_char[50];
 	time_t now_time = time(NULL);
 	int suspend_secs = 0;
@@ -1760,6 +1770,24 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_STATE),
 				   job_state_string(job_ptr->job_state));
 
+	slurm_get_job_stderr(tmp1, sizeof(tmp1), job_ptr);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_STD_ERR),
+				   tmp1);
+
+	slurm_get_job_stdin(tmp1, sizeof(tmp1), job_ptr);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_STD_IN),
+				   tmp1);
+
+	slurm_get_job_stdout(tmp1, sizeof(tmp1), job_ptr);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_STD_OUT),
+				   tmp1);
+
 	secs2time_str((time_t) job_ptr->wait4switch, time_buf,
 			sizeof(time_buf));
 	snprintf(tmp_char, sizeof(tmp_char), "%u@%s",
@@ -1856,6 +1884,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_WORKDIR),
 				   job_ptr->work_dir);
+
 }
 
 static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
@@ -1871,6 +1900,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_nodes_min[40], tmp_nodes_max[40],   tmp_cpus_per_task[40];
 	char tmp_prio[40],      tmp_nice[40],        tmp_preempt_time[40];
 	char tmp_rqswitch[40];
+	char tmp_std_err[128], tmp_std_in[128], tmp_std_out[128];
 	char *tmp_batch,  *tmp_cont, *tmp_shared, *tmp_requeue, *tmp_uname;
 	char *tmp_reason, *tmp_nodes;
 	char time_buf[32];
@@ -2063,6 +2093,12 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	slurm_make_time_str((time_t *)&job_ptr->submit_time, tmp_time_submit,
 			    sizeof(tmp_time_submit));
 
+	slurm_get_job_stderr(tmp_std_err, sizeof(tmp_std_err), job_ptr);
+
+	slurm_get_job_stdin(tmp_std_in, sizeof(tmp_std_in), job_ptr);
+
+	slurm_get_job_stdout(tmp_std_out, sizeof(tmp_std_out), job_ptr);
+
 	secs2time_str(suspend_secs, tmp_time_sus, sizeof(tmp_time_sus));
 
 	if (job_ptr->req_switch != NO_VAL) {
@@ -2131,6 +2167,9 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   SORTID_STATE,
 				job_state_string(job_ptr->job_state),
 			   SORTID_STATE_NUM,    job_ptr->job_state,
+			   SORTID_STD_ERR,      tmp_std_err,
+			   SORTID_STD_IN,       tmp_std_in,
+			   SORTID_STD_OUT,      tmp_std_out,
 			   SORTID_SWITCHES,     tmp_rqswitch,
 			   SORTID_TIME_ELIGIBLE,tmp_time_elig,
 			   SORTID_TIME_END,     tmp_time_end,
