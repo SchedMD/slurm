@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
 			info("slurmdbd running in background mode");
 			have_control = false;
 			backup = true;
-			run_backup();
+			run_dbd_backup();
 			if (!shutdown_time)
 				assoc_mgr_refresh_lists(db_conn, NULL);
 		} else if (slurmdbd_conf->dbd_host &&
@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
 			info("slurmdbd version %s started",
 			     SLURM_VERSION_STRING);
 			if (backup)
-				run_backup();
+				run_dbd_backup();
 		}
 
 		_request_registrations(db_conn);

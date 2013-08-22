@@ -82,9 +82,9 @@ static void _reopen_slurmdbd_fd(slurm_addr_t dbd_addr)
 	_open_slurmdbd_fd(dbd_addr);
 }
 
-/* run_backup - this is the backup controller, it should run in standby
+/* run_dbd_backup - this is the backup controller, it should run in standby
  *	mode, assuming control when the primary controller stops responding */
-extern void run_backup(void)
+extern void run_dbd_backup(void)
 {
 	slurm_addr_t dbd_addr;
 
