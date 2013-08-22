@@ -107,6 +107,7 @@ static int backup_sigarray[] = {
  *	mode, assuming control when the primary controller stops responding */
 void run_backup(void)
 {
+	int i;
 	uint32_t trigger_type;
 	time_t last_ping = 0;
 	pthread_attr_t thread_attr_sig, thread_attr_rpc;
@@ -149,7 +150,10 @@ void run_backup(void)
 	trigger_type = TRIGGER_TYPE_BU_CTLD_RES_OP;
 	_trigger_slurmctld_event(trigger_type);
 
-	sleep(5);       /* Give the primary slurmctld set-up time */
+	for (i = 0; ((i < 5) && (slurmctld_config.shutdown_time == 0)); i++) {
+		sleep(1);       /* Give the primary slurmctld set-up time */
+	}
+
 	/* repeatedly ping ControlMachine */
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
