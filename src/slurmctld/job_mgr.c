@@ -6150,15 +6150,41 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 	}
 }
 
+static int _find_node_max_cpu_cnt(void)
+{
+	int i, max_cpu_cnt = 1;
+	struct node_record *node_ptr = node_record_table_ptr;
+
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+#ifndef HAVE_BG
+		if (slurmctld_conf.fast_schedule) {
+			/* Only data from config_record used for scheduling */
+			max_cpu_cnt = MAX(max_cpu_cnt,
+					  node_ptr->config_ptr->cpus);
+		} else {
+#endif
+			/* Individual node data used for scheduling */
+			max_cpu_cnt = MAX(max_cpu_cnt, node_ptr->cpus);
+#ifndef HAVE_BG
+		}
+#endif
+	}
+	return max_cpu_cnt;
+}
+
 /* pack default job details for "get_job_info" RPC */
 static void _pack_default_job_details(struct job_record *job_ptr,
 				      Buf buffer, uint16_t protocol_version)
 {
+	static int max_cpu_cnt = -1;
 	int i;
 	struct job_details *detail_ptr = job_ptr->details;
 	char *cmd_line = NULL;
 	char *tmp = NULL;
 	uint32_t len = 0;
+
+	if (max_cpu_cnt == -1)
+		max_cpu_cnt = _find_node_max_cpu_cnt();
 
 	if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		if (detail_ptr) {
@@ -6210,7 +6236,14 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 				pack32(job_ptr->total_nodes, buffer);
 				pack32((uint32_t) 0, buffer);
 			} else {
-				pack32(detail_ptr->min_nodes, buffer);
+				/* Use task count to help estimate min_nodes */
+				uint32_t min_nodes;
+				min_nodes = detail_ptr->num_tasks +
+					    max_cpu_cnt - 1;
+				min_nodes /= max_cpu_cnt;
+				min_nodes = MAX(min_nodes,
+						detail_ptr->min_nodes);
+				pack32(min_nodes, buffer);
 				pack32(detail_ptr->max_nodes, buffer);
 			}
 			pack16(detail_ptr->requeue,   buffer);
