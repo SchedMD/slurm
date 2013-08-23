@@ -860,6 +860,12 @@ extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
 			error("select/cray jobinfo_sprint: jobinfo bad");
 			return NULL;
 		}
+		/* FIXME: in the future print out the header here (if needed)
+		 * You will need to return buf instead of NULL as well.
+		 */
+		/* snprintf(buf, size, "%s", header); */
+
+		return NULL;
 	}
 
 	switch (mode) {
@@ -888,6 +894,12 @@ extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 			error("select/cray jobinfo_xstrdup: jobinfo bad");
 			return NULL;
 		}
+		/* FIXME: in the future copy the header here (if needed)
+		 * You will need to return buf instead of NULL as well.
+		 */
+		/* xstrcat(buf, header); */
+
+		return NULL;
 	}
 
 	switch (mode) {
