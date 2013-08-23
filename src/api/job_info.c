@@ -63,6 +63,55 @@
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 
+/* Perform file name substitutions
+ * %A - Job array's master job allocation number.
+ * %a - Job array ID (index) number.
+ * %j - Job ID
+ * %u - User name
+ */
+static void _fname_format(char *buf, int buf_size, job_info_t * job_ptr,
+			  char *fname)
+{
+	char *ptr, *tmp, *tmp2 = NULL, *user;
+
+	tmp = xstrdup(fname);
+	while ((ptr = strstr(tmp, "%A"))) {
+		ptr[0] = '\0';
+		xstrfmtcat(tmp2, "%s%u%s", tmp, job_ptr->array_job_id, ptr+2);
+		xfree(tmp);	/* transfer the results */
+		tmp = tmp2;
+		tmp2 = NULL;
+	}
+	while ((ptr = strstr(tmp, "%a"))) {
+		ptr[0] = '\0';
+		xstrfmtcat(tmp2, "%s%u%s", tmp, job_ptr->array_task_id, ptr+2);
+		xfree(tmp);	/* transfer the results */
+		tmp = tmp2;
+		tmp2 = NULL;
+	}
+	while ((ptr = strstr(tmp, "%j"))) {
+		ptr[0] = '\0';
+		xstrfmtcat(tmp2, "%s%u%s", tmp, job_ptr->job_id, ptr+2);
+		xfree(tmp);	/* transfer the results */
+		tmp = tmp2;
+		tmp2 = NULL;
+	}
+	while ((ptr = strstr(tmp, "%u"))) {
+		ptr[0] = '\0';
+		user = uid_to_string((uid_t) job_ptr->user_id);
+		xstrfmtcat(tmp2, "%s%s%s", tmp, user, ptr+2);
+		xfree(user);
+		xfree(tmp);	/* transfer the results */
+		tmp = tmp2;
+		tmp2 = NULL;
+	}
+	if (tmp[0] == '/')
+		snprintf(buf, buf_size, "%s", tmp);
+	else
+		snprintf(buf, buf_size, "%s/%s", job_ptr->work_dir, tmp);
+	xfree(tmp);
+}
+
 /* Given a job record pointer, return its stderr path in buf */
 extern void slurm_get_job_stderr(char *buf, int buf_size, job_info_t * job_ptr)
 {
@@ -70,9 +119,15 @@ extern void slurm_get_job_stderr(char *buf, int buf_size, job_info_t * job_ptr)
 		snprintf(buf, buf_size, "%s", "job pointer is NULL");
 	else if (job_ptr->std_err)
 		snprintf(buf, buf_size, "%s", job_ptr->std_err);
+	else if (job_ptr->batch_flag == 0)
+		snprintf(buf, buf_size, "%s", "");
 	else if (job_ptr->std_out)
-		snprintf(buf, buf_size, "%s", job_ptr->std_out);
-	else {
+		_fname_format(buf, buf_size, job_ptr, job_ptr->std_out);
+	else if (job_ptr->array_job_id) {
+		snprintf(buf, buf_size, "%s/slurm-%u_%u.out",
+			 job_ptr->work_dir,
+			 job_ptr->array_job_id, job_ptr->array_task_id);
+	} else {
 		snprintf(buf, buf_size, "%s/slurm-%u.out",
 			 job_ptr->work_dir, job_ptr->job_id);
 	}
@@ -84,7 +139,9 @@ extern void slurm_get_job_stdin(char *buf, int buf_size, job_info_t * job_ptr)
 	if (job_ptr == NULL)
 		snprintf(buf, buf_size, "%s", "job pointer is NULL");
 	else if (job_ptr->std_in)
-		snprintf(buf, buf_size, "%s", job_ptr->std_in);
+		_fname_format(buf, buf_size, job_ptr, job_ptr->std_in);
+	else if (job_ptr->batch_flag == 0)
+		snprintf(buf, buf_size, "%s", "");
 	else
 		snprintf(buf, buf_size, "%s", "StdIn=/dev/null");
 }
@@ -95,8 +152,14 @@ extern void slurm_get_job_stdout(char *buf, int buf_size, job_info_t * job_ptr)
 	if (job_ptr == NULL)
 		snprintf(buf, buf_size, "%s", "job pointer is NULL");
 	else if (job_ptr->std_out)
-		snprintf(buf, buf_size, "%s", job_ptr->std_out);
-	else {
+		_fname_format(buf, buf_size, job_ptr, job_ptr->std_out);
+	else if (job_ptr->batch_flag == 0)
+		snprintf(buf, buf_size, "%s", "");
+	else if (job_ptr->array_job_id) {
+		snprintf(buf, buf_size, "%s/slurm-%u_%u.out",
+			 job_ptr->work_dir,
+			 job_ptr->array_job_id, job_ptr->array_task_id);
+	} else {
 		snprintf(buf, buf_size, "%s/slurm-%u.out",
 			 job_ptr->work_dir, job_ptr->job_id);
 	}
