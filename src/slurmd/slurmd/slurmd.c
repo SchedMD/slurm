@@ -295,6 +295,8 @@ main (int argc, char *argv[])
 	if (!conf->cleanstart && (_restore_cred_state(conf->vctx) < 0))
 		return SLURM_FAILURE;
 
+	if (jobacct_gather_init() != SLURM_SUCCESS)
+		fatal("Unable to initialize jobacct_gather");
 	if (job_container_init() < 0)
 		fatal("Unable to initialize job_container plugin.");
 	if (container_g_restore(conf->spooldir, !conf->cleanstart))
@@ -337,6 +339,7 @@ main (int argc, char *argv[])
 	_wait_for_all_threads();
 
 	switch_g_node_fini();
+	jobacct_gather_fini();
 
 	_slurmd_fini();
 	_destroy_conf();
