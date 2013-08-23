@@ -167,6 +167,11 @@ static int _run_nhc(uint64_t id, char *nodelist, bool step)
 		info("Calling NHC for id %"PRIu64" on nodes %s(%s)",
 		     id, nodelist, argv[3]);
 
+	if (!nodelist || !argv[3]) {
+		/* already done */
+		goto fini;
+	}
+
 	if ((cpid = fork()) < 0) {
 		error("_run_nhc fork error: %m");
 		goto fini;
