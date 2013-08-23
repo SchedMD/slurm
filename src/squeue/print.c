@@ -882,10 +882,6 @@ static int _get_node_cnt(job_info_t * job)
 				node_cnt = num_tasks;
 			else if (!node_cnt)
 				node_cnt = 1;
-		} else {
-			int round = job->num_cpus + params.max_cpus - 1;
-			round /= params.max_cpus;	/* round up */
-			node_cnt = MAX(node_cnt, round);
 		}
 	} else
 		node_cnt = _nodes_in_list(job->nodes);

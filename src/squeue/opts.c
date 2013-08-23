@@ -79,7 +79,6 @@ static List  _build_step_list( char* str );
 static List  _build_user_list( char* str );
 static char *_get_prefix(char *token);
 static void  _help( void );
-static int   _max_cpus_per_node(void);
 static int   _parse_state( char* str, uint16_t* states );
 static void  _parse_token( char *token, char *field, int *field_size,
 			   bool *right_justify, char **suffix);
@@ -408,40 +407,9 @@ parse_command_line( int argc, char* argv[] )
 		}
 		list_iterator_destroy(iterator);
 	}
-	if (params.job_id || params.user_id)
-		params.max_cpus = 1;	/* To minimize overhead */
-	else
-		params.max_cpus = _max_cpus_per_node();
 
 	if ( params.verbose )
 		_print_options();
-}
-
-/* Return the maximum number of processors for any node in the cluster. */
-static int   _max_cpus_per_node(void)
-{
-	int error_code, max_cpus = 1;
-	node_info_msg_t *node_info_ptr = NULL;
-
-	/* Since slurm_load_node() is a high-overhead function call, use
-	 * slurm_load_node_single() instead and assume a homogeneous cluster */
-#if 0
-	error_code = slurm_load_node ((time_t) NULL, &node_info_ptr,
-				      params.all_flag);
-#else
-	error_code = slurm_load_node_single(&node_info_ptr, NULL,
-					    params.all_flag);
-#endif
-	if (error_code == SLURM_SUCCESS) {
-		int i;
-		node_info_t *node_ptr = node_info_ptr->node_array;
-		for (i=0; i<node_info_ptr->record_count; i++) {
-			max_cpus = MAX(max_cpus, node_ptr[i].cpus);
-		}
-		slurm_free_node_info_msg (node_info_ptr);
-	}
-
-	return max_cpus;
 }
 
 /*
@@ -938,7 +906,6 @@ _print_options(void)
 	printf( "iterate     = %d\n", params.iterate );
 	printf( "job_flag    = %d\n", params.job_flag );
 	printf( "jobs        = %s\n", params.jobs );
-	printf( "max_cpus    = %d\n", params.max_cpus ) ;
 	printf( "names       = %s\n", params.names );
 	printf( "nodes       = %s\n", hostlist ) ;
 	printf( "partitions  = %s\n", params.partitions ) ;

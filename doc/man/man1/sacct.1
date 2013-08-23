@@ -1,4 +1,4 @@
-.TH SACCT "1" "March 2010" "sacct 2.2" "Slurm components"
+.TH SACCT "1" "August 2013" "sacct 2.6" "Slurm components"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -408,7 +408,7 @@ Print all fields listed below.
 
 .TP
 \f3AllocCPUs\fP
-Count of allocated processors.
+Count of allocated CPUs. Equivalant to \f3NCPUs\fP.
 
 .TP
 \f3account\fP
@@ -654,6 +654,8 @@ The task ID where the mincpu occurred.
 
 .TP
 \f3ncpus\fP
+Count of allocated CPUs. Equivalant to \f3AllocCPUs\fP
+
 Total number of CPUs allocated to the job.
 
 .TP
