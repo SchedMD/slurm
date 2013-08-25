@@ -1436,8 +1436,9 @@ static uint16_t _get_job_node_req(struct job_record *job_ptr)
 		/* user has requested exclusive nodes */
 		return NODE_CR_RESERVED;
 
-	if ((max_share > 1) && (job_ptr->details->shared == 1))
-		/* part allows sharing, and the user has requested it */
+	if (max_share > 1)
+		/* part allows sharing, the user may have requested it
+		 * but otherwise is assumed default option */
 		return NODE_CR_AVAILABLE;
 
 	return NODE_CR_ONE_ROW;
