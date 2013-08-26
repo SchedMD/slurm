@@ -3195,9 +3195,10 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 /*
  * job_fail - terminate a job due to initiation failure
  * IN job_id - id of the job to be killed
+ * IN job_state - desired job state (JOB_BOOT_FAIL, JOB_NODE_FAIL, etc.)
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_fail(uint32_t job_id)
+extern int job_fail(uint32_t job_id, uint16_t job_state)
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
@@ -3232,7 +3233,7 @@ extern int job_fail(uint32_t job_id)
 		} else
 			job_ptr->end_time       = now;
 		last_job_update                 = now;
-		job_ptr->job_state = JOB_FAILED | JOB_COMPLETING;
+		job_ptr->job_state = job_state | JOB_COMPLETING;
 		job_ptr->exit_code = 1;
 		job_ptr->state_reason = FAIL_LAUNCH;
 		xfree(job_ptr->state_desc);

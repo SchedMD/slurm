@@ -168,7 +168,7 @@ static void _sync_agent(bg_action_t *bg_action_ptr, bg_record_t *bg_record)
 
 		if (sync_user_rc == SLURM_ERROR) {
 			slurm_mutex_unlock(&block_state_mutex);
-			(void) slurm_fail_job(job_ptr->job_id);
+			(void) slurm_fail_job(job_ptr->job_id, JOB_BOOT_FAIL);
 			slurm_mutex_lock(&block_state_mutex);
 		}
 		_destroy_bg_action(bg_action_ptr);
@@ -580,7 +580,7 @@ no_reboot:
 		   is a no-op if issued prior
 		   to the script initiation do clean up just
 		   incase the fail job isn't ran */
-		(void) slurm_fail_job(req_job_id);
+		(void) slurm_fail_job(req_job_id, JOB_BOOT_FAIL);
 	}
 }
 
@@ -874,7 +874,7 @@ extern int sync_jobs(List job_list)
 			/* Don't use slurm_fail_job, locks are already
 			   in place.
 			*/
-			job_fail(job_ptr->job_id);
+			job_fail(job_ptr->job_id, JOB_NODE_FAIL);
 			_destroy_bg_action(bg_action_ptr);
 			continue;
 		}

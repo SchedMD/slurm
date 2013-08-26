@@ -3023,11 +3023,12 @@ extern int slurm_drain_nodes(char *node_list, char *reason, uint32_t reason_uid)
  * slurm_fail_job - terminate a job due to a launch failure
  *      no-op for jobs already terminated
  * job_id IN - slurm job id
+ * IN job_state - desired job state (JOB_BOOT_FAIL, JOB_NODE_FAIL, etc.)
  * RET SLURM_SUCCESS or error code
  * NOTE: This is utilzed by plugins and not via RPC and it sets its
  *      own locks.
  */
-extern int slurm_fail_job(uint32_t job_id)
+extern int slurm_fail_job(uint32_t job_id, uint16_t job_state)
 {
 	int error_code;
 	DEF_TIMERS;
@@ -3037,7 +3038,7 @@ extern int slurm_fail_job(uint32_t job_id)
 
 	START_TIMER;
 	lock_slurmctld(job_write_lock);
-	error_code = job_fail(job_id);
+	error_code = job_fail(job_id, job_state);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("slurm_fail_job");
 

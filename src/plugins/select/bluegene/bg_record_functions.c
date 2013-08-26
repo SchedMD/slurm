@@ -1102,13 +1102,13 @@ extern int down_nodecard(char *mp_name, bitoff_t io_start,
 			continue;
 
 		if (bg_record->job_running > NO_JOB_RUNNING) {
-			job_fail(bg_record->job_running);
+			job_fail(bg_record->job_running, JOB_NODE_FAIL);
 		} else if (bg_record->job_list) {
 			ListIterator job_itr = list_iterator_create(
 				bg_record->job_list);
 			struct job_record *job_ptr;
 			while ((job_ptr = list_next(job_itr))) {
-				job_fail(job_ptr->job_id);
+				job_fail(job_ptr->job_id, JOB_NODE_FAIL);
 			}
 			list_iterator_destroy(job_itr);
 		}

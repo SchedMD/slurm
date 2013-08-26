@@ -1,4 +1,4 @@
-.TH SMAP "1" "Mar 2010" "smap 2.2" "Slurm components"
+.TH SMAP "1" "August 2013" "smap 13.12" "Slurm components"
 
 .SH "NAME"
 smap \- graphically view information about SLURM jobs, partitions, and set
@@ -451,6 +451,10 @@ The typical states are \fBPENDING\fR, \fBRUNNING\fR, \fBSUSPENDED\fR,
 \fBCOMPLETING\fR, and \fBCOMPLETED\fR.
 An explanation of each state follows.
 .TP 20
+\fBBF  BOOT_FAIL\fR
+Job terminated due to launch failure, typically due to a hardware failure
+(e.g. unable to boot the node or block and the job can not be requeued).
+.TP
 \fBCA  CANCELLED\fR
 Job was explicitly cancelled by the user or system administrator.
 The job may or may not have been initiated.

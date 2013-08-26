@@ -1270,6 +1270,8 @@ extern char *job_state_string(uint16_t inx)
 		return "NODE_FAIL";
 	case JOB_PREEMPTED:
 		return "PREEMPTED";
+	case JOB_BOOT_FAIL:
+		return "BOOT_FAIL";
 	default:
 		return "?";
 	}
@@ -1305,6 +1307,8 @@ extern char *job_state_string_compact(uint16_t inx)
 		return "NF";
 	case JOB_PREEMPTED:
 		return "PR";
+	case JOB_BOOT_FAIL:
+		return "BF";
 	default:
 		return "?";
 	}

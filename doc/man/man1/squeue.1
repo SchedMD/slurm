@@ -434,8 +434,9 @@ reported. If no state is specified then pending, running, and completing
 jobs are reported. Valid states (in both extended and compact form) include:
 PENDING (PD), RUNNING (R), SUSPENDED (S),
 COMPLETING (CG), COMPLETED (CD), CONFIGURING (CF), CANCELLED (CA),
-FAILED (F), TIMEOUT (TO), PREEMPTED (PR) and NODE_FAIL (NF). Note the
-\fB<state_list>\fR supplied is case insensitive ("pd" and "PD" work the same).
+FAILED (F), TIMEOUT (TO), PREEMPTED (PR), BOOT_FAIL (BF) and NODE_FAIL (NF).
+Note the \fB<state_list>\fR supplied is case insensitive ("pd" and "PD" are
+equivalent).
 See the \fBJOB STATE CODES\fR section below for more information.
 
 .TP
@@ -520,6 +521,10 @@ execution.
 The typical states are PENDING, RUNNING, SUSPENDED, COMPLETING, and COMPLETED.
 An explanation of each state follows.
 .TP 20
+\fBBF  BOOT_FAIL\fR
+Job terminated due to launch failure, typically due to a hardware failure
+(e.g. unable to boot the node or block and the job can not be requeued).
+.TP
 \fBCA  CANCELLED\fR
 Job was explicitly cancelled by the user or system administrator.
 The job may or may not have been initiated.

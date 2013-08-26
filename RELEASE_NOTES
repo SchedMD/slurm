@@ -96,7 +96,8 @@ Added the following struct definitions
 
 Changed the following enums and #defines
 ========================================
-
+ -- Add new job_state of JOB_BOOT_FAIL for job terminations due to failure to
+    boot it's allocated nodes or BlueGene block.
 
 Added the following API's
 =========================

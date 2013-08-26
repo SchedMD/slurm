@@ -294,6 +294,10 @@ the state name may be used (e.g. \f3CA\fP or \f3CANCELLED\fP) and the
 the the name is case insensitive (e.g. \f3ca\fP and \f3CA\fP both work).
 .RS
 .TP "20"
+\fBBF  BOOT_FAIL\fR
+Job terminated due to launch failure, typically due to a hardware failure
+(e.g. unable to boot the node or block and the job can not be requeued).
+.TP
 \f3CA  CANCELLED\fP
 Job was explicitly cancelled by the user or system administrator.
 The job may or may not have been initiated.
@@ -724,7 +728,8 @@ Initiation time of the job in the same format as \f3end\fP.
 Displays the job status, or state.
 
 Output can be RUNNING, RESIZING, SUSPENDED, COMPLETED, CANCELLED, FAILED,
-TIMEOUT, PREEMPTED or NODE_FAIL. If more information is available on the job state
+TIMEOUT, PREEMPTED, BOOT_FAIL or NODE_FAIL.
+If more information is available on the job state
 than will fit into the current field width (for example, the uid that CANCELLED
 a job) the state will be followed by a "+".  You can increase the size of
 the displayed state using the "%NUMBER" format modifier described earlier.
