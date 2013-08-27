@@ -193,6 +193,7 @@ enum {
 	ESLURM_INTERCONNECT_BUSY,
 	ESLURM_RESERVATION_EMPTY,
 	ESLURM_INVALID_ARRAY,
+	ESLURM_RESERVATION_NAME_DUP,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

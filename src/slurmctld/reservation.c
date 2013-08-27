@@ -1800,7 +1800,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (resv_ptr) {
 			info("Reservation request name duplication (%s)",
 			     resv_desc_ptr->name);
-			rc = ESLURM_RESERVATION_INVALID;
+			rc = ESLURM_RESERVATION_NAME_DUP;
 			goto bad_parse;
 		}
 	} else {
