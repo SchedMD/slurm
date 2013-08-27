@@ -74,6 +74,7 @@ documents those changes that are of interest to users and admins.
  -- Correct value of min_nodes returned by loading job information to consider
     the job's task count and maximum CPUs per node.
  -- If running jobacct_gather/none fix issue on unpacking step completion.
+ -- Reservation with CoreCnt: Avoid possible invalid memory reference.
 
 * Changes in Slurm 2.6.1
 ========================

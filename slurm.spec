@@ -5,6 +5,7 @@
 #
 # build options      .rpmmacros options      change to default action
 # ===============    ====================    ========================
+# --enable-multiple-slurmd %_with_multiple_slurmd 1 build with the multiple slurmd option.  Typically used to simulate a larger system than one has access to.
 # --enable-salloc-background %_with_salloc_background 1 on a cray system alloc salloc to execute as a background process.
 # --prefix           %_prefix        path    install path for commands, libraries, etc.
 # --with aix         %_with_aix         1    build aix RPM
@@ -46,6 +47,7 @@
 %slurm_without_opt debug
 %slurm_without_opt sun_const
 %slurm_without_opt salloc_background
+%slurm_without_opt multiple_slurmd
 
 # These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
@@ -436,6 +438,7 @@ Gives the ability for SLURM to use Berkeley Lab Checkpoint/Restart
 	%{?slurm_with_cray:--enable-native-cray}      \
 	%{?slurm_with_salloc_background:--enable-salloc-background} \
 	%{!?slurm_with_readline:--without-readline} \
+	%{?slurm_with_multiple_slurmd:--enable-multiple-slurmd} \
 	%{?with_cflags}
 
 make %{?_smp_mflags}
