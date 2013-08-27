@@ -1699,7 +1699,7 @@ static void _opt_args(int argc, char **argv)
 	xassert((command_pos + command_args) <= opt.argc);
 
 	for (i = command_pos; i < opt.argc; i++) {
-		if (!rest[i-command_pos])
+		if (!rest || !rest[i-command_pos])
 			break;
 		opt.argv[i] = xstrdup(rest[i-command_pos]);
 	}

@@ -478,10 +478,11 @@ allocate_nodes(bool handle_signals)
 	return resp;
 
 relinquish:
-
-	slurm_free_resource_allocation_response_msg(resp);
-	if (!destroy_job)
-		slurm_complete_job(resp->job_id, 1);
+	if (resp) {
+		if (!destroy_job)
+			slurm_complete_job(resp->job_id, 1);
+		slurm_free_resource_allocation_response_msg(resp);
+	}
 	exit(error_exit);
 	return NULL;
 }

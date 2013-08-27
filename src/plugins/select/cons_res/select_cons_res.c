@@ -2002,7 +2002,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 {
 	int rc = EINVAL;
 	uint16_t job_node_req;
-	bool debug_cpu_bind = false, debug_check = false;
+	static bool debug_cpu_bind = false, debug_check = false;
 
 	xassert(bitmap);
 
@@ -2781,7 +2781,7 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 	bitstr_t  *avail_nodes_bitmap = NULL;	/* nodes on any switch */
 	bitstr_t *sp_avail_bitmap;
-	int rem_nodes, rem_cores;		/* remaining resources desired */
+	int rem_nodes, rem_cores = 0;		/* remaining resources desired */
 	int i, j;
 	int best_fit_inx, first, last;
 	int best_fit_nodes;
@@ -2805,12 +2805,12 @@ extern bitstr_t * select_p_resv_test(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		*core_bitmap = _make_core_bitmap_filtered(avail_bitmap, 0);
 	
 	rem_nodes = node_cnt;
-	rem_cores = core_cnt[0];
 
 	/* Assuming symmetric cluster */
-	if (core_cnt)
+	if (core_cnt) {
+		rem_cores = core_cnt[0];
 		cores_per_node = core_cnt[0] / MAX(node_cnt, 1);
-	else if (cr_node_num_cores)
+	} else if (cr_node_num_cores)
 		cores_per_node = cr_node_num_cores[0];
 	else
 		cores_per_node = 1;
