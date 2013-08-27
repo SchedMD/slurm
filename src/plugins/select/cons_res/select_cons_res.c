@@ -2587,7 +2587,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	/* We have these cases here:
 	 *	1) Reservation requests using just number of nodes
 	 *		- core_cnt is null
-	 *	2) Reservations request using  number of nodes + number of cores
+	 *	2) Reservations request using number of nodes + number of cores
 	 *	3) Reservations request using node list
 	 *		- node_cnt is 0
 	 *		- core_cnt is null
@@ -2606,7 +2606,7 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		int i;
 		bit_fmt(str, (sizeof(str) - 1), avail_bitmap);
 		debug2("Reserving cores from nodes: %s", str);
-		for (i=0; i < num_nodes; i++)
+		for (i = 0; (i < num_nodes) && core_cnt[i]; i++)
 			total_core_cnt += core_cnt[i];
 	}
 
@@ -2640,16 +2640,15 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			int cores_in_node;
 			int local_cores;
 
-			if (node_cnt == 0)
+			if (node_cnt == 0) {
 				cores_per_node = core_cnt[node_list_inx];
+				if (cores_per_node == 0)
+					break;
+			}
 
 			inx = bit_ffs(avail_bitmap);
-			if (inx < 0) {
-				info("reservation request can not be satisfied");
-				FREE_NULL_BITMAP(sp_avail_bitmap);
-				FREE_NULL_BITMAP(tmpcore);
-				return NULL;
-			}
+			if (inx < 0)
+				break;
 			debug2("Using node %d", inx);
 
 			coff = cr_get_coremap_offset(inx);
@@ -2696,18 +2695,17 @@ bitstr_t *sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 				debug2("Reservation NOT using node %d", inx);
 			}
 			node_list_inx++;
-
 		}
 		FREE_NULL_BITMAP(tmpcore);
-
-		bit_fmt(str, (sizeof(str) - 1), *core_bitmap);
-		info("sequential pick using coremap: %s", str);
 
 		if (total_core_cnt) {
 			info("reservation request can not be satisfied");
 			FREE_NULL_BITMAP(sp_avail_bitmap);
 			return NULL;
 		}
+
+		bit_fmt(str, (sizeof(str) - 1), *core_bitmap);
+		info("sequential pick using coremap: %s", str);
 
 	} else { /* Reservation is using full nodes */
 
