@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- Add stdin/out/err to sview job output.
  -- Add new job_state of JOB_BOOT_FAIL for job terminations due to failure to
     boot it's allocated nodes or BlueGene block.
+ -- CRAY - Add SelectTypeParameters NHC_NO_STEPS and NHC_NO which will disable
+    the node health check script for steps and allocations respectfully.
 
 * Changes in Slurm 13.12.0pre1
 ==============================

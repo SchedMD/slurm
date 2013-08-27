@@ -638,6 +638,13 @@ enum ctx_keys {
 #define CR_OTHER_CONS_RES    0x0020 /* if layering select plugins use
 				     * cons_res instead of linear (default)
 				     */
+#define CR_NHC_STEP_NO 0x0040 /* On a Native Cray System don't run the
+			       * node health check after each step.
+			       */
+#define CR_NHC_NO 0x0060 /* On a Native Cray System don't run the
+			  * node health check at all.
+			  */
+
 #define CR_ONE_TASK_PER_CORE 0x0100
 /* By default, schedule only one task per core.
  * Without this option, tasks would be

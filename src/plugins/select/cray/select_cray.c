@@ -413,7 +413,8 @@ extern int select_p_state_restore(char *dir_name)
 
 extern int select_p_job_init(List job_list)
 {
-	if (job_list && list_count(job_list)) {
+	if (!(slurmctld_conf.select_type_param & CR_NHC_NO)
+	    && job_list && list_count(job_list)) {
 		ListIterator itr = list_iterator_create(job_list);
 		struct job_record *job_ptr;
 
@@ -424,7 +425,8 @@ extern int select_p_job_init(List job_list)
 			select_jobinfo_t *jobinfo =
 				job_ptr->select_jobinfo->data;
 
-			if (!jobinfo->cleaning && job_ptr->step_list
+			if (!(slurmctld_conf.select_type_param & CR_NHC_STEP_NO)
+			    && !jobinfo->cleaning && job_ptr->step_list
 			    && list_count(job_ptr->step_list)) {
 				ListIterator itr_step = list_iterator_create(
 					job_ptr->step_list);
@@ -553,6 +555,12 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
 
+	if (slurmctld_conf.select_type_param & CR_NHC_NO) {
+		debug3("NHC_No set, not running NHC after allocations");
+		other_job_fini(job_ptr);
+		return SLURM_SUCCESS;
+	}
+
 	jobinfo->cleaning = 1;
 
 	_spawn_cleanup_thread(job_ptr, _job_fini);
@@ -581,7 +589,13 @@ extern int select_p_step_finish(struct step_record *step_ptr)
 {
 	select_jobinfo_t *jobinfo = step_ptr->select_jobinfo->data;
 
-	if (IS_JOB_COMPLETING(step_ptr->job_ptr)) {
+	if (slurmctld_conf.select_type_param & CR_NHC_STEP_NO) {
+		debug3("NHC_No_Steps set not running NHC on steps.");
+		other_step_finish(step_ptr);
+		/* free resources on the job */
+		post_job_step(step_ptr);
+		return SLURM_SUCCESS;
+	} else if (IS_JOB_COMPLETING(step_ptr->job_ptr)) {
 		debug3("step completion %u.%u was received after job "
 		      "allocation is already completing, no extra NHC needed.",
 		      step_ptr->job_ptr->job_id, step_ptr->step_id);
