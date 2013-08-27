@@ -573,6 +573,7 @@ int load_all_part_state(void)
 
 			if (priority > part_max_priority)
 				part_max_priority = priority;
+			cr_type = 0;	/* Default value */
 
 			safe_unpack16(&state_up, buffer);
 			safe_unpackstr_xmalloc(&allow_groups,
