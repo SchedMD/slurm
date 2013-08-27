@@ -391,7 +391,7 @@ extern void print_fields_char_list(print_field_t *field, List value, int last)
 		printf("%s", print_this);
 	else if (print_fields_parsable_print)
 		printf("%s|", print_this);
-	else {
+	else if (print_this) {
 		if (strlen(print_this) > abs_len)
 			print_this[abs_len-1] = '+';
 

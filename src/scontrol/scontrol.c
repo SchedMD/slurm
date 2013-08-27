@@ -1703,11 +1703,14 @@ _update_bluegene_subbp (int argc, char *argv[])
  */
 static int _update_slurmctld_debug(char *val)
 {
-	char *endptr;
+	char *endptr = NULL;
 	int error_code = SLURM_SUCCESS;
-	uint32_t level = (uint32_t)strtoul(val, &endptr, 10);
+	uint32_t level;
 
-	if (*endptr != '\0' || level > 9) {
+	if (val)
+		level = (uint32_t)strtoul(val, &endptr, 10);
+
+	if ((val == NULL) || (*endptr != '\0') || (level > 9)) {
 		error_code = 1;
 		if (quiet_flag != 1)
 			fprintf(stderr, "invalid debug level: %s\n",

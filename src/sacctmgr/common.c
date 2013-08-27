@@ -1263,7 +1263,7 @@ extern void sacctmgr_print_coord_list(
 		printf("%s", print_this);
 	else if (print_fields_parsable_print)
 		printf("%s|", print_this);
-	else {
+	else if (print_this) {
 		if (strlen(print_this) > abs_len)
 			print_this[abs_len-1] = '+';
 

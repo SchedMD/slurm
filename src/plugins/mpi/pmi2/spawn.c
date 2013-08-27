@@ -557,8 +557,10 @@ _exec_srun_multiple(spawn_req_t *req, char **env)
 		xstrcat(buf, "\n");
 		ntasks += subcmd->max_procs;
 	}
-	safe_write(fd, buf, strlen(buf));
-	xfree(buf);
+	if (buf) {
+		safe_write(fd, buf, strlen(buf));
+		xfree(buf);
+	}
 	close(fd);
 
 	argc = 7;
