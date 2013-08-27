@@ -641,7 +641,7 @@ enum ctx_keys {
 #define CR_NHC_STEP_NO 0x0040 /* On a Native Cray System don't run the
 			       * node health check after each step.
 			       */
-#define CR_NHC_NO 0x0060 /* On a Native Cray System don't run the
+#define CR_NHC_NO 0x0080 /* On a Native Cray System don't run the
 			  * node health check at all.
 			  */
 

@@ -94,11 +94,11 @@ int parse_select_type_param(char *select_type_parameters, uint16_t *param)
 			*param |= CR_CORE_DEFAULT_DIST_BLOCK;
 		} else if (!strcasecmp(str_parameters, "CR_LLN")) {
 			*param |= CR_LLN;
-		} else if (!strcasecmp(str_parameters, "NHC_No_Steps")) {
-			*param |= CR_NHC_STEP_NO;
 		} else if (!strcasecmp(str_parameters, "NHC_No")) {
 			*param |= CR_NHC_STEP_NO;
 			*param |= CR_NHC_NO;
+		} else if (!strcasecmp(str_parameters, "NHC_No_Steps")) {
+			*param |= CR_NHC_STEP_NO;
 		} else {
 			error("Bad SelectTypeParameter: %s", str_parameters);
 			rc = SLURM_ERROR;
