@@ -1,0 +1,400 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validates that the epilog\prolog behaves the correct
+#          way when starting a child process in either the
+#          prolog or epilog.
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2013 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id          "test31.1"
+set config_dir       ""
+set conf_path        "$config_dir/slurm.conf"
+set inc_slurm        "pro_epi_$test_id"
+set pro_epi_prog     "$test_id\_prog"
+set proc             ""
+set hostname         ""
+set sys_check        1
+set exit_code        0
+
+print_header $test_id
+
+if {[test_alps]} {
+	set sys_check 1
+}
+
+proc change_pro_epi { arg program_name conf_change task_pro } {
+
+	global inc_slurm bin_chmod config_dir pro_epi_prog bin_echo test_id bin_pwd alpha_numeric_under sys_check bin_bash exit_code
+
+	if {$conf_change == 0} {
+		exec $bin_echo $arg=$config_dir/$pro_epi_prog > $config_dir/$inc_slurm
+	}
+
+	set make_ln 0
+	spawn $bin_bash -c "ln -sv /bin/sleep /tmp/$program_name"
+	expect {
+		-re "$program_name" {
+			set make_ln 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: There was a problem creating the link\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$make_ln != 1} {
+		send_user "\nFAILURE: link was not created\n"
+		set exit_code 1
+	}
+
+	if {$sys_check == 1 && $task_pro == 1} {
+		exec $bin_echo "#!/bin/bash
+touch /tmp/$arg.$test_id.txt
+exit 0" > $config_dir/$pro_epi_prog
+	} elseif {$sys_check == 1} {
+		exec $bin_echo "#!/bin/bash
+/tmp/$program_name 1000&
+touch /tmp/$arg.$test_id.txt
+exit 0" > $config_dir/$pro_epi_prog
+	} else {
+		exec $bin_echo "#!/bin/bash
+/tmp/$program_name 1000&
+exit 0" > $config_dir/$pro_epi_prog
+	}
+
+	exec $bin_chmod 700 $config_dir/$pro_epi_prog
+}
+
+proc check_file { arg } {
+
+	global test_id exit_code
+
+	set found 0
+	spawn find /tmp -name $arg.$test_id.txt
+	expect {
+		-re "/tmp/$arg.$test_id.txt" {
+			set found 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: find is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$found == 1} {
+		send_user "\nFAILURE: The file $arg.$test_id.txt should have been removed\n"
+		set exit_code 1
+	}
+
+}
+
+proc check_proc { program_name} {
+
+	global bin_ps bin_bash bin_grep exit_code
+
+	set proc_exist 0
+	spawn $bin_bash -c "exec $bin_ps -ef | $bin_grep $program_name"
+	expect {
+		-re "$program_name 1000" {
+			set proc_exist 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: timed out while looking for process\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$proc_exist == 1} {
+		send_user "\nFAILURE: $program_name should have been killed\n"
+		exec killall -9 $program_name
+		set exit_code 1
+	}
+
+}
+
+proc run_job { file_type program_name conf_change task_pro} {
+
+	global srun hostname sys_check exit_code
+
+	# Change the included file to epilog in the slurm.conf
+	change_pro_epi $file_type $program_name $conf_change $task_pro
+
+	# Update config file
+	update_conf
+
+	set sub_job 0
+	spawn $srun hostname
+	expect {
+		-re "$hostname" {
+			set sub_job 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$sub_job != 1} {
+		send_user "\nFAILURE: srun did not start job\n"
+		set exit_code 1
+	}
+
+	sleep 1
+	if {$sys_check == 1} {
+		# Check to see that the epilog or prolog file has been removed
+		check_file $file_type
+	}
+
+	if {$task_pro != 1} {
+		# Check to see if the child process still exist
+		check_proc $program_name
+	}
+
+	# Remove link
+	exec rm -rf /tmp/$program_name
+}
+
+
+proc update_conf { } {
+
+	global scontrol exit_code
+
+	spawn $scontrol reconfig
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+}
+log_user 0
+
+set got_config 0
+spawn $scontrol show config
+expect {
+	-re "SLURM_CONF.*= (/.*)/($alpha).*SLURM_VERSION" {
+		set config_dir $expect_out(1,string)
+		set got_config 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+set get_name 0
+spawn hostname
+expect {
+	-re "($alpha_numeric_under)" {
+		set hostname $expect_out(1,string)
+		set get_name 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: Did not get hostname\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$get_name != 1} {
+	send_user "\nFAILURE: Did not get hostname\n"
+	set exit_code 1
+}
+
+log_user 1
+
+#
+# Copy slurm.conf file
+#
+spawn $bin_cp -v $config_dir/slurm.conf /tmp
+expect {
+	timeout {
+		send_user "\nFAILURE: slurm.conf was not copied\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Test srun --task-epilog
+#
+change_pro_epi srun-task-epilog srun--task-epilog_$test_id 1 0
+
+update_conf
+
+set sub_job 0
+spawn $srun --task-epilog=$config_dir/$pro_epi_prog hostname
+expect {
+	-re "$hostname" {
+		set sub_job 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$sub_job != 1} {
+	send_user "\nFAILURE: srun did not submit job\n"
+	set exit_code 1
+}
+
+if {$sys_check == 1} {
+	check_file srun-task-epilog
+}
+
+
+# Check to see if the child process still exist
+check_proc srun--task-epilog_$test_id
+
+# Remove link
+exec rm -rf /tmp/srun--task-epilog_$test_id
+
+#
+# Task Prolog Test
+#
+# NOTE: This checks to see if this test is running on a Cray system. When it is
+# on a Cray system it will run the user invoked srun --task-prolog and the
+# slurm.conf taskprolog. Both these prologs waits for the child process to
+# finish before finishing the job. In order to test the task prologs we leave
+# out the child process and only check for the created file.
+#
+
+if {$sys_check == 1} {
+
+	# Test srun --task-prolog
+	change_pro_epi srun-task-prolog srun--task-prolog_$test_id 1 1
+
+	update_conf
+
+	set sub_job 0
+	spawn $srun --task-prolog=$config_dir/$pro_epi_prog hostname
+	expect {
+		-re "$hostname" {
+			set sub_job 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$sub_job != 1} {
+		send_user "\nFAILURE: srun did not submit job\n"
+		set exit_code 1
+	}
+
+	sleep 1
+	if {$sys_check == 1} {
+		check_file srun-task-prolog
+	}
+
+	# Remove link
+	exec rm -rf /tmp/srun--task-prolog_$test_id
+
+	# Add a line in the slurm.conf file to include the epilogs and prologs
+	exec $bin_echo include $config_dir/$inc_slurm >> $config_dir/slurm.conf
+
+	#
+	# Test TaskProlog
+	#
+	run_job taskprolog taskprolog_$test_id 0 1
+
+} else {
+
+	# Add a line in the slurm.conf file to include the epilogs and prologs
+	exec $bin_echo include $config_dir/$inc_slurm >> $config_dir/slurm.conf
+}
+
+###############Epilog Test###############
+
+#
+# Test Epilog param
+#
+run_job epilog epilog_$test_id 0 0
+
+#
+# Test TaskEpilog param
+#
+run_job taskepilog taskepilog_$test_id 0 0
+
+###############Prolog Test###############
+
+#
+# Test Prolog param
+#
+run_job prolog prolog_$test_id 0 0
+
+# Clean up vestigial files and restore original slurm.conf file
+exec $bin_mv /tmp/slurm.conf $config_dir/slurm.conf
+exec $bin_rm -fr /tmp/slurm.conf $config_dir/$inc_slurm
+exec $bin_rm -fr $config_dir/$pro_epi_prog
+update_conf
+
+if {$exit_code == 0} {
+	send_user "\nSUCCCESS\n"
+}
+exit $exit_code
