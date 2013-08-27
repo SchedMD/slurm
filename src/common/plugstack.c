@@ -1683,11 +1683,11 @@ static int tasks_execd (spank_t spank)
 }
 
 static spank_err_t
-global_to_local_id (slurmd_job_t *job, uint32_t gid, uint32_t *p2uint32)
+_global_to_local_id(slurmd_job_t *job, uint32_t gid, uint32_t *p2uint32)
 {
 	int i;
 	*p2uint32 = (uint32_t) -1;
-	if (gid >= job->ntasks)
+	if ((job == NULL) || (gid >= job->ntasks))
 		return (ESPANK_BAD_ARG);
 	for (i = 0; i < job->node_tasks; i++) {
 		if (job->task[i]->gtid == gid) {
@@ -1926,8 +1926,13 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	case S_JOB_SUPPLEMENTARY_GIDS:
 		p2gids = va_arg(vargs, gid_t **);
 		p2int = va_arg(vargs, int *);
-		*p2gids = slurmd_job->gids;
-		*p2int = slurmd_job->ngids;
+		if (slurmd_job) {
+			*p2gids = slurmd_job->gids;
+			*p2int = slurmd_job->ngids;
+		} else {
+			*p2gids = NULL;
+			*p2int = 0;
+		}
 		break;
 	case S_JOB_ID:
 		p2uint32 = va_arg(vargs, uint32_t *);
@@ -1942,8 +1947,10 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		p2uint32 = va_arg(vargs, uint32_t *);
 		if (spank->stack->type == S_TYPE_LOCAL)
 			*p2uint32 = launcher_job->stepid;
-		else
+		else if (slurmd_job)
 			*p2uint32 = slurmd_job->stepid;
+		else
+			*p2uint32 = 0;
 		break;
 	case S_JOB_NNODES:
 		p2uint32 = va_arg(vargs, uint32_t *);
@@ -1955,16 +1962,24 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 				*p2uint32 = 0;
 				rc = ESPANK_ENV_NOEXIST;
 			}
-		} else
+		} else if (slurmd_job)
 			*p2uint32 = slurmd_job->nnodes;
+		else
+			*p2uint32 = 0;
 		break;
 	case S_JOB_NODEID:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		*p2uint32 = slurmd_job->nodeid;
+		if (slurmd_job)
+			*p2uint32 = slurmd_job->nodeid;
+		else
+			*p2uint32 = 0;
 		break;
 	case S_JOB_LOCAL_TASK_COUNT:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		*p2uint32 = slurmd_job->node_tasks;
+		if (slurmd_job)
+			*p2uint32 = slurmd_job->node_tasks;
+		else
+			*p2uint32 = 0;
 		break;
 	case S_JOB_TOTAL_TASK_COUNT:
 		p2uint32 = va_arg(vargs, uint32_t *);
@@ -1976,16 +1991,24 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 				*p2uint32 = 0;
 				rc = ESPANK_ENV_NOEXIST;
 			}
-		} else
+		} else if (slurmd_job)
 			*p2uint32 = slurmd_job->ntasks;
+		else
+			*p2uint32 = 0;
 		break;
 	case S_JOB_NCPUS:
 		p2uint16 = va_arg(vargs, uint16_t *);
-		*p2uint16 = slurmd_job->cpus;
+		if (slurmd_job)
+			*p2uint16 = slurmd_job->cpus;
+		else
+			*p2uint16 = 0;
 		break;
 	case S_STEP_CPUS_PER_TASK:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		*p2uint32 = slurmd_job->cpus_per_task;
+		if (slurmd_job)
+			*p2uint32 = slurmd_job->cpus_per_task;
+		else
+			*p2uint32 = 0;
 		break;
 	case S_JOB_ARGV:
 		p2int = va_arg(vargs, int *);
@@ -1993,14 +2016,20 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		if (spank->stack->type == S_TYPE_LOCAL) {
 			*p2int = launcher_job->argc;
 			*p2argv = launcher_job->argv;
-		} else {
+		} else if (slurmd_job) {
 			*p2int = slurmd_job->argc;
 			*p2argv = slurmd_job->argv;
+		} else {
+			*p2int = 0;
+			*p2argv = NULL;
 		}
 		break;
 	case S_JOB_ENV:
 		p2argv = va_arg(vargs, char ***);
-		*p2argv = slurmd_job->env;
+		if (slurmd_job)
+			*p2argv = slurmd_job->env;
+		else
+			*p2argv = NULL;
 		break;
 	case S_TASK_ID:
 		p2int = va_arg(vargs, int *);
@@ -2065,7 +2094,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		p2uint32 = va_arg(vargs, uint32_t *);
 		*p2uint32 = (uint32_t) -1;
 
-		if ((uint32 <= slurmd_job->node_tasks) &&
+		if (slurmd_job && (uint32 <= slurmd_job->node_tasks) &&
 		    slurmd_job->task && slurmd_job->task[uint32]) {
 			*p2uint32 = slurmd_job->task[uint32]->gtid;
 		} else
@@ -2074,23 +2103,35 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	case S_JOB_GLOBAL_TO_LOCAL_ID:
 		uint32 = va_arg(vargs, uint32_t);
 		p2uint32 = va_arg(vargs, uint32_t *);
-		rc = global_to_local_id (slurmd_job, uint32, p2uint32);
+		rc = _global_to_local_id (slurmd_job, uint32, p2uint32);
 		break;
 	case S_JOB_ALLOC_CORES:
 		p2str = va_arg(vargs, char **);
-		*p2str = slurmd_job->job_alloc_cores;
+		if (slurmd_job)
+			*p2str = slurmd_job->job_alloc_cores;
+		else
+			*p2str = NULL;
 		break;
 	case S_JOB_ALLOC_MEM:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		*p2uint32 = slurmd_job->job_mem;
+		if (slurmd_job)
+			*p2uint32 = slurmd_job->job_mem;
+		else
+			*p2uint32 = 0;
 		break;
 	case S_STEP_ALLOC_CORES:
 		p2str = va_arg(vargs, char **);
-		*p2str = slurmd_job->step_alloc_cores;
+		if (slurmd_job)
+			*p2str = slurmd_job->step_alloc_cores;
+		else
+			*p2str = NULL;
 		break;
 	case S_STEP_ALLOC_MEM:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		*p2uint32 = slurmd_job->step_mem;
+		if (slurmd_job)
+			*p2uint32 = slurmd_job->step_mem;
+		else
+			*p2uint32 = 0;
 		break;
 	case S_SLURM_VERSION:
 		p2vers = va_arg(vargs, char  **);
