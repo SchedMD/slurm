@@ -1572,7 +1572,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	List license_list = (List) NULL;
 	char *name1, *name2, *val1, *val2;
 	uint32_t total_node_cnt = NO_VAL;
-	bool account_not, user_not;
+	bool account_not = false, user_not = false;
 
 	if (!resv_list)
 		resv_list = list_create(_del_resv_rec);
