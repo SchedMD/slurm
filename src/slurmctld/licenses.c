@@ -309,17 +309,19 @@ extern List license_validate(char *licenses, bool *valid)
 	while ((license_entry = (licenses_t *) list_next(iter))) {
 		if (license_list) {
 			match = list_find_first(license_list,
-				_license_find_rec, license_entry->name);
+						_license_find_rec,
+						license_entry->name);
 		} else
 			match = NULL;
 		if (!match) {
-			debug("could not find license %s for job",
+			debug("License name requested (%s) does not exist",
 			      license_entry->name);
 			*valid = false;
 			break;
 		} else if (license_entry->total > match->total) {
-			debug("job wants more %s licenses than configured",
-			      match->name);
+			debug("Licenses count requested higher than configured "
+			      "(%s: %u > %u)",
+			      match->name, license_entry->total, match->total);
 			*valid = false;
 			break;
 		}
@@ -491,7 +493,7 @@ extern int license_job_return(struct job_record *job_ptr)
 			license_entry->used = 0;
 		} else {
 			/* This can happen after a reconfiguration */
-			error("job returning unknown license %s",
+			error("job returning unknown license name %s",
 			      license_entry->name);
 		}
 	}
