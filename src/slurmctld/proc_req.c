@@ -837,7 +837,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	int immediate = job_desc_msg->immediate;
 	bool do_unlock = false;
 	bool job_waiting = false;
-	struct job_record *job_ptr;
+	struct job_record *job_ptr = NULL;
 	uint16_t port;	/* dummy value */
 	slurm_addr_t resp_addr;
 
