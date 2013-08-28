@@ -1817,9 +1817,10 @@ static int _decr_node_job_cnt(int node_inx, struct job_record *job_ptr,
 {
 	struct node_record *node_ptr = node_record_table_ptr + node_inx;
 	struct part_cr_record *part_cr_ptr;
-	bool exclusive, is_job_running;
+	bool exclusive = false, is_job_running;
 
-	exclusive = (job_ptr->details->shared == 0);
+	if (job_ptr->details)
+		exclusive = (job_ptr->details->shared == 0);
 	if (exclusive) {
 		if (cr_ptr->nodes[node_inx].exclusive_cnt)
 			cr_ptr->nodes[node_inx].exclusive_cnt--;
@@ -2261,7 +2262,10 @@ static void _init_node_cr(void)
 		if (job_resrcs_ptr->node_bitmap == NULL)
 			continue;
 
-		exclusive = (job_ptr->details->shared == 0);
+		if (job_ptr->details)
+			exclusive = (job_ptr->details->shared == 0);
+		else
+			exclusive = 0;
 		node_offset = -1;
 		i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
 		i_last  = bit_fls(job_resrcs_ptr->node_bitmap);

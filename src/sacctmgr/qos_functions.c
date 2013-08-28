@@ -257,6 +257,8 @@ static int _set_rec(int *start, int argc, char *argv[],
 				slurm_addto_char_list(name_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Description",
 					 MAX(command_len, 1))) {
+			if (!qos)
+				continue;
 			if (!qos->description)
 				qos->description =
 					strip_quotes(argv[i]+end, NULL, 1);
