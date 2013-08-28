@@ -40,12 +40,12 @@ set inc_slurm        "pro_epi_$test_id"
 set pro_epi_prog     "$test_id\_prog"
 set proc             ""
 set hostname         ""
-set sys_check        1
+set sys_check        0
 set exit_code        0
 
 print_header $test_id
 
-if {[test_alps]} {
+if {[test_cray]} {
 	set sys_check 1
 }
 
@@ -118,6 +118,8 @@ proc check_file { arg } {
 
 	if {$found == 1} {
 		send_user "\nFAILURE: The file $arg.$test_id.txt should have been removed\n"
+		# Root may of created this file so we can't remove it
+		# exec $bin_rm -f /tmp/$arg.$test_id.txt
 		set exit_code 1
 	}
 
@@ -152,7 +154,7 @@ proc check_proc { program_name} {
 
 proc run_job { file_type program_name conf_change task_pro} {
 
-	global srun hostname sys_check exit_code
+	global srun hostname sys_check exit_code bin_rm
 
 	# Change the included file to epilog in the slurm.conf
 	change_pro_epi $file_type $program_name $conf_change $task_pro
@@ -181,6 +183,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 		set exit_code 1
 	}
 
+	# wait for file
 	sleep 1
 	if {$sys_check == 1} {
 		# Check to see that the epilog or prolog file has been removed
@@ -193,7 +196,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 	}
 
 	# Remove link
-	exec rm -rf /tmp/$program_name
+	exec $bin_rm -rf /tmp/$program_name
 }
 
 
@@ -307,7 +310,7 @@ if {$sys_check == 1} {
 check_proc srun--task-epilog_$test_id
 
 # Remove link
-exec rm -rf /tmp/srun--task-epilog_$test_id
+exec $bin_rm -rf /tmp/srun--task-epilog_$test_id
 
 #
 # Task Prolog Test
@@ -353,7 +356,7 @@ if {$sys_check == 1} {
 	}
 
 	# Remove link
-	exec rm -rf /tmp/srun--task-prolog_$test_id
+	exec $bin_rm -rf /tmp/srun--task-prolog_$test_id
 
 	# Add a line in the slurm.conf file to include the epilogs and prologs
 	exec $bin_echo include $config_dir/$inc_slurm >> $config_dir/slurm.conf
