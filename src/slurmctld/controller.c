@@ -663,6 +663,7 @@ int main(int argc, char *argv[])
 
 	/* Some plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
+	ext_sensors_fini();
 	gres_plugin_fini();
 	job_submit_plugin_fini();
 	slurm_preempt_fini();
