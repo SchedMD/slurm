@@ -385,6 +385,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 
 	if (msg) {
 		xfree(msg->account);
+		xfree(msg->acctg_freq);
 		xfree(msg->alloc_node);
 		if (msg->argv) {
 			for (i = 0; i < msg->argc; i++)
