@@ -18361,7 +18361,8 @@ $as_echo_n "checking for program_invocation_name... " >&6; }
 
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-#include <stdio.h> extern char *program_invocation_name;
+#include <stdio.h>
+extern char *program_invocation_name;
 int
 main ()
 {
