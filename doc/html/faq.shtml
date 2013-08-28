@@ -160,6 +160,8 @@ launch a shell on a node in the job's allocation?</a></li>
 <li><a href="#upgrade">What should I be aware of when upgrading Slurm?</a></li>
 <li><a href="#torque">How easy is it to switch from PBS or Torque to Slurm?</a></li>
 <li><a href="#sssd">I am having trouble using SSSD with Slurm.</a></li>
+<li><a href="#ha_db>">How critical is configuring high availability for my
+  database?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -1713,8 +1715,27 @@ enumerate = True
 case_sensitive = False
 </pre>
 
+<p><a name="ha_db>"><b>54. How critical is configuring high availability for my
+database?</b></a></br>
+<ul>
+<li>Consider if you really need mysql failover. Short outage of slurdbd is not
+a problem, because slurmctld will store all data in memory and send it to
+slurmdbd when it's back operating. The slurmctld daemon will also cache all
+user limits and fair share information.</li>
+<li>You cannot use ndb, since slurmdbd/mysql uses a keys on BLOB values (and
+maybe something more from the incompatibility list).</li>
+<li>You can set up "classical" Linux HA, with heartbeat/corosync to migrate
+IP between master/backup mysql servers and:</li>
+<ul>
+  <li>Configure one way replication of mysql, and change master/backup roles on
+    failure</li>
+  <li>Use shared storage for master/slave mysql servers database, and start
+    backup on master mysql failure.</li>
+</ul>
+</ul>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 21 August 2013</p>
+<p style="text-align:center;">Last modified 28 August 2013</p>
 
 <!--#include virtual="footer.txt"-->
