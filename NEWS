@@ -75,6 +75,11 @@ documents those changes that are of interest to users and admins.
     the job's task count and maximum CPUs per node.
  -- If running jobacct_gather/none fix issue on unpacking step completion.
  -- Reservation with CoreCnt: Avoid possible invalid memory reference.
+ -- sjstat - Add man page when generating rpms.
+ -- Make sure GrpCPURunMins is added when creating a user, account or QOS with
+    sacctmgr.
+ -- Fix for invalid memory reference due to multiple free calls caused by
+    job arrays submitted to multiple partitions.
 
 * Changes in Slurm 2.6.1
 ========================

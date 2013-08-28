@@ -339,7 +339,6 @@ void slurm_cred_print(slurm_cred_t *cred);
 sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
 				  uint32_t job_id, char *nodes,
 				  time_t expiration);
-sbcast_cred_t *copy_sbcast_cred(sbcast_cred_t *sbcast_cred);
 void          delete_sbcast_cred(sbcast_cred_t *sbcast_cred);
 int           extract_sbcast_cred(slurm_cred_ctx_t ctx,
 				  sbcast_cred_t *sbcast_cred, uint16_t block_no,

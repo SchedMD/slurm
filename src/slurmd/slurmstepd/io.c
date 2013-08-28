@@ -555,7 +555,7 @@ _local_file_write(eio_obj_t *obj, List objs)
 	if (!header_tmp_buf)
 		fatal("Failure to allocate memory for a message header");
 	io_hdr_unpack(&header, header_tmp_buf);
-	header_tmp_buf->head = NULL;
+	header_tmp_buf->head = NULL;	/* CLANG false positive bug here */
 	free_buf(header_tmp_buf);
 
 	/* A zero-length message indicates the end of a stream from one
@@ -1269,7 +1269,7 @@ _build_connection_okay_message(stepd_step_rec_t *job)
 	msg->ref_count = 0; /* make certain it is initialized */
 
 	/* free the Buf packbuf, but not the memory to which it points */
-	packbuf->head = NULL;
+	packbuf->head = NULL;	/* CLANG false positive bug here */
 	free_buf(packbuf);
 
 	return msg;
@@ -1753,7 +1753,7 @@ _send_eof_msg(struct task_read_info *out)
 	msg->ref_count = 0; /* make certain it is initialized */
 
 	/* free the Buf packbuf, but not the memory to which it points */
-	packbuf->head = NULL;
+	packbuf->head = NULL;	/* CLANG false positive bug here */
 	free_buf(packbuf);
 
 	/* Add eof message to the msg_queue of all clients */
@@ -1846,7 +1846,7 @@ _task_build_message(struct task_read_info *out, stepd_step_rec_t *job, cbuf_t cb
 	msg->ref_count = 0; /* make certain it is initialized */
 
 	/* free the Buf packbuf, but not the memory to which it points */
-	packbuf->head = NULL;
+	packbuf->head = NULL;	/* CLANG false positive bug here */
 	free_buf(packbuf);
 
 	debug4("Leaving  _task_build_message");

@@ -215,7 +215,7 @@ static char *	_dump_node(struct node_record *node_ptr, time_t update_time)
 	if (update_time > 0)
 		return buf;
 
-	if (slurmctld_conf.fast_schedule) {
+	if (slurmctld_conf.fast_schedule && node_ptr->config_ptr) {
 		/* config from slurm.conf */
 		snprintf(tmp, sizeof(tmp),
 			"CMEMORY=%u;CDISK=%u;CPROC=%u;",

@@ -563,6 +563,8 @@ rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/switch_nrt.so
 # Build man pages that are generated directly by the tools
 rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
 ${RPM_BUILD_ROOT}%{_bindir}/sjobexitmod --roff > $RPM_BUILD_ROOT/%{_mandir}/man1/sjobexitmod.1
+rm -f $RPM_BUILD_ROOT/%{_mandir}/man1/sjstat.1
+${RPM_BUILD_ROOT}%{_bindir}/sjstat --roff > $RPM_BUILD_ROOT/%{_mandir}/man1/sjstat.1
 
 # Build conditional file list for main package
 LIST=./slurm.files
@@ -747,6 +749,7 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/cgroup/release_memory
 %config %{_sysconfdir}/slurm.epilog.clean
 %exclude %{_mandir}/man1/sjobexit*
+%exclude %{_mandir}/man1/sjstat*
 %if %{slurm_with blcr}
 %exclude %{_mandir}/man1/srun_cr*
 %exclude %{_bindir}/srun_cr
@@ -950,6 +953,7 @@ rm -rf $RPM_BUILD_ROOT
 %files sjstat
 %defattr(-,root,root)
 %{_bindir}/sjstat
+%{_mandir}/man1/sjstat*
 #############################################################################
 
 %if %{slurm_with pam}

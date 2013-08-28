@@ -747,7 +747,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap, int mode,
 	 * avail_cores = static core_bitmap of all available cores
 	 */
 
-	if (jp_ptr->row == NULL) {
+	if (!jp_ptr || !jp_ptr->row) {
 		/* there's no existing jobs in this partition, so place
 		 * the job in avail_cores. FIXME: still need a good
 		 * placement algorithm here that optimizes "job overlap"
