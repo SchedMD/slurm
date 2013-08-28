@@ -1312,7 +1312,7 @@ proc test_bluegene { } {
 #
 # Proc: test_alps
 #
-# Purpose: Determine if the system is a cray system
+# Purpose: Determine if the system is a alps cray system
 #
 # Returns 1 if the system is a cray, 0 otherwise
 #
@@ -1326,6 +1326,36 @@ proc test_alps { } {
 	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectType"
 	expect {
 		"select/alps" {
+			set cray 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $cray
+}
+
+################################################################
+#
+# Proc: test_cray
+#
+# Purpose: Determine if the system is a native cray system
+#
+# Returns 1 if the system is a cray, 0 otherwise
+#
+################################################################
+
+proc test_cray { } {
+	global scontrol bin_bash bin_grep
+
+	log_user 0
+	set cray 0
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectType"
+	expect {
+		"select/cray" {
 			set cray 1
 			exp_continue
 		}
