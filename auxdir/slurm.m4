@@ -111,7 +111,7 @@ AC_DEFUN([X_AC_SLURM_PROGRAM_INVOCATION_NAME],
 [
   AC_MSG_CHECKING([for program_invocation_name])
 
-  AC_LINK_IFELSE([AC_LANG_PROGRAM([[extern char *program_invocation_name;]], [[char *p; p = program_invocation_name; printf("%s\n", p);]])],[got_program_invocation_name=yes],[
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <stdio.h> extern char *program_invocation_name;]], [[char *p; p = program_invocation_name; printf("%s\n", p);]])],[got_program_invocation_name=yes],[
   ])
 
   AC_MSG_RESULT(${got_program_invocation_name=no})
