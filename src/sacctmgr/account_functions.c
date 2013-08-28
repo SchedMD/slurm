@@ -600,6 +600,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			assoc->shares_raw = start_assoc->shares_raw;
 
 			assoc->grp_cpu_mins = start_assoc->grp_cpu_mins;
+			assoc->grp_cpu_run_mins = start_assoc->grp_cpu_run_mins;
 			assoc->grp_cpus = start_assoc->grp_cpus;
 			assoc->grp_jobs = start_assoc->grp_jobs;
 			assoc->grp_mem = start_assoc->grp_mem;

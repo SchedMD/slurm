@@ -629,6 +629,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 			qos->flags = start_qos->flags;
 			qos->grace_time = start_qos->grace_time;
 			qos->grp_cpu_mins = start_qos->grp_cpu_mins;
+			qos->grp_cpu_run_mins = start_qos->grp_cpu_run_mins;
 			qos->grp_cpus = start_qos->grp_cpus;
 			qos->grp_jobs = start_qos->grp_jobs;
 			qos->grp_mem = start_qos->grp_mem;
