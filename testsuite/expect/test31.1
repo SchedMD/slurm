@@ -78,20 +78,16 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 		set exit_code 1
 	}
 
-	if {$sys_check == 1 && $task_pro == 1} {
-		exec $bin_echo "#!/bin/bash
-touch /tmp/$arg.$test_id.txt
-exit 0" > $config_dir/$pro_epi_prog
-	} elseif {$sys_check == 1} {
-		exec $bin_echo "#!/bin/bash
-/tmp/$program_name 1000&
-touch /tmp/$arg.$test_id.txt
-exit 0" > $config_dir/$pro_epi_prog
-	} else {
-		exec $bin_echo "#!/bin/bash
-/tmp/$program_name 1000&
-exit 0" > $config_dir/$pro_epi_prog
+	exec $bin_echo "#!/bin/bash\n" > $config_dir/$pro_epi_prog
+	if {$sys_check == 1} {
+		exec $bin_echo "touch /tmp/$arg.$test_id.txt" >> $config_dir/$pro_epi_prog
 	}
+
+	# task prologs are ran with fork_wait so don't do the sleep
+	if {!$task_pro} {
+		exec $bin_echo "/tmp/$program_name 1000&" >> $config_dir/$pro_epi_prog
+	}
+	exec $bin_echo "exit 0" >> $config_dir/$pro_epi_prog
 
 	exec $bin_chmod 700 $config_dir/$pro_epi_prog
 }
