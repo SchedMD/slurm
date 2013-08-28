@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
     the node health check script for steps and allocations respectfully.
  -- Reservation with CoreCnt: Avoid possible invalid memory reference.
  -- Add new error code for attempt to create a reservation with duplicate name.
+ -- Validate that a hostlist file contains text (i.e. not a binary).
 
 * Changes in Slurm 13.12.0pre1
 ==============================
