@@ -39,26 +39,26 @@ set conf_path        "$config_dir/slurm.conf"
 set inc_slurm        "pro_epi_$test_id"
 set pro_epi_prog     "$test_id\_prog"
 set proc             ""
-set hostname         ""
-set sys_check        0
+set run_host         ""
+set make_file        0
 set exit_code        0
 
 print_header $test_id
 
 if {[test_cray]} {
-	set sys_check 1
+	set make_file 1
 }
 
 proc change_pro_epi { arg program_name conf_change task_pro } {
 
-	global inc_slurm bin_chmod config_dir pro_epi_prog bin_echo test_id bin_pwd alpha_numeric_under sys_check bin_bash exit_code
+	global inc_slurm bin_chmod config_dir pro_epi_prog bin_echo test_id bin_pwd alpha_numeric_under make_file bin_bash exit_code cwd bin_ln
 
 	if {$conf_change == 0} {
 		exec $bin_echo $arg=$config_dir/$pro_epi_prog > $config_dir/$inc_slurm
 	}
 
 	set make_ln 0
-	spawn $bin_bash -c "ln -sv /bin/sleep /tmp/$program_name"
+	spawn $bin_bash -c "$bin_ln -sv /bin/sleep $cwd/$program_name"
 	expect {
 		-re "$program_name" {
 			set make_ln 1
@@ -79,13 +79,13 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 	}
 
 	exec $bin_echo "#!/bin/bash\n" > $config_dir/$pro_epi_prog
-	if {$sys_check == 1} {
-		exec $bin_echo "touch /tmp/$arg.$test_id.txt" >> $config_dir/$pro_epi_prog
+	if {$make_file == 1} {
+		exec $bin_echo "touch $cwd/$arg.$test_id.txt" >> $config_dir/$pro_epi_prog
 	}
 
 	# task prologs are ran with fork_wait so don't do the sleep
 	if {!$task_pro} {
-		exec $bin_echo "/tmp/$program_name 1000&" >> $config_dir/$pro_epi_prog
+		exec $bin_echo "$cwd/$program_name 1000&" >> $config_dir/$pro_epi_prog
 	}
 	exec $bin_echo "exit 0" >> $config_dir/$pro_epi_prog
 
@@ -94,12 +94,12 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 
 proc check_file { arg } {
 
-	global test_id exit_code
+	global test_id exit_code cwd
 
 	set found 0
-	spawn find /tmp -name $arg.$test_id.txt
+	spawn find $cwd -name $arg.$test_id.txt
 	expect {
-		-re "/tmp/$arg.$test_id.txt" {
+		-re "$cwd/$arg.$test_id.txt" {
 			set found 1
 			exp_continue
 		}
@@ -115,7 +115,7 @@ proc check_file { arg } {
 	if {$found == 1} {
 		send_user "\nFAILURE: The file $arg.$test_id.txt should have been removed\n"
 		# Root may of created this file so we can't remove it
-		# exec $bin_rm -f /tmp/$arg.$test_id.txt
+		# exec $bin_rm -f $cwd/$arg.$test_id.txt
 		set exit_code 1
 	}
 
@@ -150,7 +150,7 @@ proc check_proc { program_name} {
 
 proc run_job { file_type program_name conf_change task_pro} {
 
-	global srun hostname sys_check exit_code bin_rm
+	global srun run_host make_file exit_code bin_rm bin_printenv cwd
 
 	# Change the included file to epilog in the slurm.conf
 	change_pro_epi $file_type $program_name $conf_change $task_pro
@@ -159,9 +159,9 @@ proc run_job { file_type program_name conf_change task_pro} {
 	update_conf
 
 	set sub_job 0
-	spawn $srun hostname
+	spawn $srun -w$run_host $bin_printenv SLURMD_NODENAME
 	expect {
-		-re "$hostname" {
+		-re "$run_host" {
 			set sub_job 1
 			exp_continue
 		}
@@ -181,7 +181,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 
 	# wait for file
 	sleep 1
-	if {$sys_check == 1} {
+	if {$make_file == 1} {
 		# Check to see that the epilog or prolog file has been removed
 		check_file $file_type
 	}
@@ -192,7 +192,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 	}
 
 	# Remove link
-	exec $bin_rm -rf /tmp/$program_name
+	exec $bin_rm -rf $cwd/$program_name
 }
 
 
@@ -232,15 +232,15 @@ expect {
 }
 
 set get_name 0
-spawn hostname
+spawn $srun $bin_printenv SLURMD_NODENAME
 expect {
 	-re "($alpha_numeric_under)" {
-		set hostname $expect_out(1,string)
+		set run_host $expect_out(1,string)
 		set get_name 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: Did not get hostname\n"
+		send_user "\nFAILURE: Did not get run_host\n"
 		set exit_code 1
 	}
 	eof {
@@ -248,8 +248,10 @@ expect {
 	}
 }
 
+set cwd "[$bin_pwd]"
+
 if {$get_name != 1} {
-	send_user "\nFAILURE: Did not get hostname\n"
+	send_user "\nFAILURE: Did not get run_host\n"
 	set exit_code 1
 }
 
@@ -258,7 +260,7 @@ log_user 1
 #
 # Copy slurm.conf file
 #
-spawn $bin_cp -v $config_dir/slurm.conf /tmp
+spawn $bin_cp -v $config_dir/slurm.conf $cwd/slurm.conf.orig
 expect {
 	timeout {
 		send_user "\nFAILURE: slurm.conf was not copied\n"
@@ -277,9 +279,9 @@ change_pro_epi srun-task-epilog srun--task-epilog_$test_id 1 0
 update_conf
 
 set sub_job 0
-spawn $srun --task-epilog=$config_dir/$pro_epi_prog hostname
+spawn $srun -w$run_host --task-epilog=$config_dir/$pro_epi_prog $bin_printenv SLURMD_NODENAME
 expect {
-	-re "$hostname" {
+	-re "$run_host" {
 		set sub_job 1
 		exp_continue
 	}
@@ -297,7 +299,7 @@ if {$sub_job != 1} {
 	set exit_code 1
 }
 
-if {$sys_check == 1} {
+if {$make_file == 1} {
 	check_file srun-task-epilog
 }
 
@@ -306,7 +308,7 @@ if {$sys_check == 1} {
 check_proc srun--task-epilog_$test_id
 
 # Remove link
-exec $bin_rm -rf /tmp/srun--task-epilog_$test_id
+exec $bin_rm -rf $cwd/srun--task-epilog_$test_id
 
 #
 # Task Prolog Test
@@ -318,7 +320,7 @@ exec $bin_rm -rf /tmp/srun--task-epilog_$test_id
 # out the child process and only check for the created file.
 #
 
-if {$sys_check == 1} {
+if {$make_file == 1} {
 
 	# Test srun --task-prolog
 	change_pro_epi srun-task-prolog srun--task-prolog_$test_id 1 1
@@ -326,9 +328,9 @@ if {$sys_check == 1} {
 	update_conf
 
 	set sub_job 0
-	spawn $srun --task-prolog=$config_dir/$pro_epi_prog hostname
+	spawn $srun -w$run_host --task-prolog=$config_dir/$pro_epi_prog $bin_printenv SLURMD_NODENAME
 	expect {
-		-re "$hostname" {
+		-re "$run_host" {
 			set sub_job 1
 			exp_continue
 		}
@@ -347,12 +349,12 @@ if {$sys_check == 1} {
 	}
 
 	sleep 1
-	if {$sys_check == 1} {
+	if {$make_file == 1} {
 		check_file srun-task-prolog
 	}
 
 	# Remove link
-	exec $bin_rm -rf /tmp/srun--task-prolog_$test_id
+	exec $bin_rm -rf $cwd/srun--task-prolog_$test_id
 
 	# Add a line in the slurm.conf file to include the epilogs and prologs
 	exec $bin_echo include $config_dir/$inc_slurm >> $config_dir/slurm.conf
@@ -388,9 +390,8 @@ run_job taskepilog taskepilog_$test_id 0 0
 run_job prolog prolog_$test_id 0 0
 
 # Clean up vestigial files and restore original slurm.conf file
-exec $bin_mv /tmp/slurm.conf $config_dir/slurm.conf
-exec $bin_rm -fr /tmp/slurm.conf $config_dir/$inc_slurm
-exec $bin_rm -fr $config_dir/$pro_epi_prog
+exec $bin_mv $cwd/slurm.conf.orig $config_dir/slurm.conf
+exec $bin_rm -fr $config_dir/$inc_slurm $config_dir/$pro_epi_prog
 update_conf
 
 if {$exit_code == 0} {
