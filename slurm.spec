@@ -463,8 +463,7 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
 # Do not package Slurm's version of libpmi on Cray systems.
 # Cray's version of libpmi should be used.
 %if %{slurm_with cray} || %{slurm_with cray_alps}
-   rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi.la
-   rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi2.la
+   rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi*
    if [ -d /opt/modulefiles ]; then
       install -D -m644 contribs/cray/opt_modulefiles_slurm $RPM_BUILD_ROOT/opt/modulefiles/slurm/opt_modulefiles_slurm
    fi
