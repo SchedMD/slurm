@@ -70,6 +70,7 @@ Lead Slurm developers are:
 <li>Didier Gazen (Laboratoire d'Aerologie, France)</li>
 <li>Raphael Geissert (Debian)</li>
 <li>Yiannis Georgiou (Bull)</li>
+<li>Armin Gr&ouml;&szlig;linger (University Passau, Germany)</li>
 <li>Mark Grondona (Lawrence Livermore National Laboratory)</li>
 <li>Dmitri Gribenko</li>
 <li>Andriy Grytsenko (Massive Solutions Limited, Ukraine)</li>
@@ -167,6 +168,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 28 August 2013</p>
+<p style="text-align:center;">Last modified 29 August 2013</p>
 
 <!--#include virtual="footer.txt"-->
