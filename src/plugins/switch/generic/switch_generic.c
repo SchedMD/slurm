@@ -440,8 +440,40 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 
 switch_jobinfo_t *switch_p_copy_jobinfo(switch_jobinfo_t *switch_job)
 {
+	sw_gen_step_info_t *old_step_info = (sw_gen_step_info_t *) switch_job;
+	sw_gen_step_info_t *new_step_info;
+	sw_gen_node_t *old_node_ptr, *new_node_ptr;
+	sw_gen_ifa_t *old_ifa_ptr, *new_ifa_ptr;
+	int i, j;
+
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_copy_jobinfo() starting");
+	xassert(old_step_info);
+	xassert(old_step_info->magic == SW_GEN_STEP_INFO_MAGIC);
+	new_step_info = xmalloc(sizeof(sw_gen_step_info_t));
+	new_step_info->magic = SW_GEN_STEP_INFO_MAGIC;
+	new_step_info->node_cnt = old_step_info->node_cnt;
+	new_step_info->node_array = xmalloc(sizeof(sw_gen_node_t *) *
+					    new_step_info->node_cnt);
+	for (i = 0; i < old_step_info->node_cnt; i++) {
+		old_node_ptr = old_step_info->node_array[i];
+		new_node_ptr = xmalloc(sizeof(sw_gen_node_t));
+		new_step_info->node_array[i] = new_node_ptr;
+		new_node_ptr->node_name = xstrdup(old_node_ptr->node_name);
+		new_node_ptr->ifa_cnt = old_node_ptr->ifa_cnt;
+		new_node_ptr->ifa_array = xmalloc(sizeof(sw_gen_node_t *) *
+						  new_node_ptr->ifa_cnt);
+		for (j = 0; j < old_node_ptr->ifa_cnt; j++) {
+			old_ifa_ptr = old_node_ptr->ifa_array[j];
+			new_ifa_ptr = xmalloc(sizeof(sw_gen_node_t));
+			new_node_ptr->ifa_array[j] = new_ifa_ptr;
+			new_ifa_ptr->ifa_addr = xstrdup(old_ifa_ptr->ifa_addr);
+			new_ifa_ptr->ifa_family = xstrdup(old_ifa_ptr->
+							  ifa_family);
+			new_ifa_ptr->ifa_name = xstrdup(old_ifa_ptr->ifa_name);
+		}
+	}
+
 	return NULL;
 }
 
@@ -449,6 +481,7 @@ void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 {
 	sw_gen_step_info_t *gen_step_info = (sw_gen_step_info_t *) switch_job;
 	sw_gen_node_t *node_ptr;
+	sw_gen_ifa_t *ifa_ptr;
 	int i, j;
 
 	if (debug_flags & DEBUG_FLAG_SWITCH)
@@ -459,10 +492,11 @@ void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 		node_ptr = gen_step_info->node_array[i];
 		xfree(node_ptr->node_name);
 		for (j = 0; j < node_ptr->ifa_cnt; j++) {
-			xfree(node_ptr->ifa_array[j]->ifa_addr);
-			xfree(node_ptr->ifa_array[j]->ifa_family);
-			xfree(node_ptr->ifa_array[j]->ifa_name);
-			xfree(node_ptr->ifa_array[j]);
+			ifa_ptr = node_ptr->ifa_array[j];
+			xfree(ifa_ptr->ifa_addr);
+			xfree(ifa_ptr->ifa_family);
+			xfree(ifa_ptr->ifa_name);
+			xfree(ifa_ptr);
 		}
 	}
 	xfree(gen_step_info->node_array);
@@ -483,12 +517,6 @@ int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		info("switch_p_pack_jobinfo() starting");
 	xassert(gen_step_info);
 	xassert(gen_step_info->magic == SW_GEN_STEP_INFO_MAGIC);
-	if (!libstate) {
-		/* The function is being called from srun or slurmd.
-		 * There is no more need for moving this data. */
-		pack32((uint32_t) 0, buffer);
-		return SLURM_SUCCESS;
-	}
 
 	pack32(gen_step_info->node_cnt, buffer);
 	for (i = 0; i < gen_step_info->node_cnt; i++) {
@@ -497,6 +525,11 @@ int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 		pack16(node_ptr->ifa_cnt, buffer);
 		for (j = 0; j < node_ptr->ifa_cnt; j++) {
 			ifa_ptr = node_ptr->ifa_array[j];
+			if (debug_flags & DEBUG_FLAG_SWITCH) {
+				info("node=%s name=%s family=%s addr=%s",
+				     node_ptr->node_name, ifa_ptr->ifa_name,
+				     ifa_ptr->ifa_family, ifa_ptr->ifa_addr);
+			}
 			packstr(ifa_ptr->ifa_addr, buffer);
 			packstr(ifa_ptr->ifa_family, buffer);
 			packstr(ifa_ptr->ifa_name, buffer);
@@ -602,10 +635,27 @@ int switch_p_node_fini(void)
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_preinit(switch_jobinfo_t *jobinfo)
+int switch_p_job_preinit(switch_jobinfo_t *switch_job)
 {
-	if (debug_flags & DEBUG_FLAG_SWITCH)
+	sw_gen_step_info_t *gen_step_info = (sw_gen_step_info_t *) switch_job;
+	sw_gen_node_t *node_ptr;
+	sw_gen_ifa_t *ifa_ptr;
+	int i, j;
+
+	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		info("switch_p_job_preinit() starting");
+
+		for (i = 0; i < gen_step_info->node_cnt; i++) {
+			node_ptr = gen_step_info->node_array[i];
+			for (j = 0; j < node_ptr->ifa_cnt; j++) {
+				ifa_ptr = node_ptr->ifa_array[j];
+				info("node=%s name=%s family=%s addr=%s",
+				     node_ptr->node_name, ifa_ptr->ifa_name,
+				     ifa_ptr->ifa_family, ifa_ptr->ifa_addr);
+			}
+		}
+	}
+
 	return SLURM_SUCCESS;
 }
 

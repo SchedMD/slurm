@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
  -- Reservation with CoreCnt: Avoid possible invalid memory reference.
  -- Add new error code for attempt to create a reservation with duplicate name.
  -- Validate that a hostlist file contains text (i.e. not a binary).
+ -- switch/generic - propagate switch information from srun down to slurmd and
+    slurmstepd.
 
 * Changes in Slurm 13.12.0pre1
 ==============================
