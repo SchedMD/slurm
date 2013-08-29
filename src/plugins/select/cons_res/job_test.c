@@ -339,7 +339,7 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 	 *          allocating cores
 	 */
 	cps = num_tasks;
-	if (ntasks_per_socket > 1) {
+	if (ntasks_per_socket >= 1) {
 		cps = ntasks_per_socket;
 		if (cpus_per_task > 1)
 			cps = ntasks_per_socket * cpus_per_task;
