@@ -460,7 +460,11 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
    fi
 %endif
 
+# Do not package Slurm's version of libpmi on Cray systems.
+# Cray's version of libpmi should be used.
 %if %{slurm_with cray} || %{slurm_with cray_alps}
+   rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi.la
+   rm -f $RPM_BUILD_ROOT/%{_libdir}/libpmi2.la
    if [ -d /opt/modulefiles ]; then
       install -D -m644 contribs/cray/opt_modulefiles_slurm $RPM_BUILD_ROOT/opt/modulefiles/slurm/opt_modulefiles_slurm
    fi
@@ -617,6 +621,13 @@ touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_aix.so      &&
   echo %{_libdir}/slurm/proctrack_aix.so               >> $LIST
 
+LIST=./devel.files
+touch $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/libpmi.la			&&
+  echo %{_libdir}/libpmi.la				>> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/libpmi2.la			&&
+  echo %{_libdir}/libpmi2.la				>> $LIST
+
 LIST=./percs.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_poe.so	&&
@@ -756,13 +767,11 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 #############################################################################
 
-%files devel
+%files -f devel.files devel
 %defattr(-,root,root)
 %dir %attr(0755,root,root)
 %dir %{_prefix}/include/slurm
 %{_prefix}/include/slurm/*
-%{_libdir}/libpmi.la
-%{_libdir}/libpmi2.la
 %{_libdir}/libslurm.la
 %{_libdir}/libslurmdb.la
 %{_mandir}/man3/slurm_*

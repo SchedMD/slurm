@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 13.12
-12 July 2013
+29 August 2013
 
 
 IMPORTANT NOTE:
@@ -37,10 +37,12 @@ HIGHLIGHTS
     use it the code still exists in <= 2.6, but will not be included in
     this and future versions of the code.
 
-RPMBUILD OPTION CHANGES
-=======================
+RPMBUILD CHANGES
+================
  -- The rpmbuild option for a Cray system with ALPS has changed from
     %_with_cray to %_with_cray_alps.
+ -- CRAY - Do not package Slurm's libpmi or libpmi2 libraries. The Cray version
+    of those libraries must be used.
 
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
