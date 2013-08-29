@@ -111,6 +111,7 @@ static int  _restore_node_state(int recover,
 				int old_node_record_count);
 static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				uint16_t flags);
+static void _stat_slurm_dirs(void);
 static int  _strcmp(const char *s1, const char *s2);
 static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(void);
@@ -121,6 +122,38 @@ static int  _update_preempt(uint16_t old_enable_preempt);
 #ifdef 	HAVE_ELAN
 static void _validate_node_proc_count(void);
 #endif
+
+/* Verify that Slurm directories are secure, not world writable */
+static void _stat_slurm_dirs(void)
+{
+	struct stat stat_buf;
+	char *problem_dir = NULL;
+
+	if ((stat(slurmctld_conf.plugindir, &stat_buf) == 0) &&
+	    (stat_buf.st_mode & S_IWOTH)) {
+		problem_dir = "PluginDir";
+	}
+	if ((stat(slurmctld_conf.plugstack, &stat_buf) == 0) &&
+	    (stat_buf.st_mode & S_IWOTH)) {
+		problem_dir = "PlugStack";
+	}
+	if ((stat(slurmctld_conf.slurmd_spooldir, &stat_buf) == 0) &&
+	    (stat_buf.st_mode & S_IWOTH)) {
+		problem_dir = "SlurmdSpoolDir";
+	}
+	if ((stat(slurmctld_conf.state_save_location, &stat_buf) == 0) &&
+	    (stat_buf.st_mode & S_IWOTH)) {
+		problem_dir = "StateSaveLocation";
+	}
+
+	if (problem_dir) {
+		error("################################################");
+		error("###       SEVERE SECURITY VULERABILTY        ###");
+		error("### %s DIRECTORY IS WORLD WRITABLE ###", problem_dir);
+		error("###         CORRECT FILE PERMISSIONS         ###");
+		error("################################################");
+	}
+}
 
 /*
  * _reorder_nodes_by_name - order node table in ascending order of name
@@ -804,6 +837,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	rehash_jobs();
 	set_slurmd_addr();
 
+	_stat_slurm_dirs();
 	if (reconfig) {		/* Preserve state from memory */
 		if (old_node_table_ptr) {
 			info("restoring original state of nodes");
