@@ -205,6 +205,11 @@ extern bool switch_g_part_comp(void);
 extern int switch_g_job_step_allocated(switch_jobinfo_t *jobinfo,
 	char *nodelist);
 
+/*
+ * Initialize the switch plugin on the slurmctld.
+ */
+extern int switch_g_slurmctld_init(void);
+
 /* write job credential string representation to a file
  * IN fp      - an open file pointer
  * IN jobinfo - a switch job credential
