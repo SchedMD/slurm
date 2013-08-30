@@ -5761,7 +5761,6 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->resp_host);
 	xfree(job_ptr->resv_name);
 	free_job_resources(&job_ptr->job_resrcs);
-	select_g_select_jobinfo_free(job_ptr->select_jobinfo);
 	for (i=0; i<job_ptr->spank_job_env_size; i++)
 		xfree(job_ptr->spank_job_env[i]);
 	xfree(job_ptr->spank_job_env);
@@ -5770,6 +5769,9 @@ static void _list_delete_job(void *job_entry)
 		delete_step_records(job_ptr);
 		list_destroy(job_ptr->step_list);
 	}
+	/* select_jobinfo is used in delete_step_records so free it
+	   afterwards */
+	select_g_select_jobinfo_free(job_ptr->select_jobinfo);
 	xfree(job_ptr->wckey);
 	job_count--;
 	xfree(job_ptr);
