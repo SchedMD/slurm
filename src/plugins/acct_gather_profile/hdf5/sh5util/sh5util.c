@@ -893,7 +893,7 @@ static void _merge_node_step_data(hid_t fid_job, char* file_name, int nodeIndex,
 static int _merge_step_files(void)
 {
 	hid_t fid_job = -1;
-	hid_t jgid_step;
+	hid_t jgid_step = -1;
 	hid_t jgid_nodes = -1;
 	hid_t jgid_tasks = -1;
 	DIR *dir;
