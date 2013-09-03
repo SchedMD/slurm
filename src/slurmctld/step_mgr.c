@@ -1618,7 +1618,9 @@ static void _pick_step_cores(struct step_record *step_ptr,
 				return;
 		}
 	}
-	if (use_all_cores)
+	/* The test for cores==0 is just to avoid CLANG errors.
+	 * It should never happen */
+	if (use_all_cores || (cores == 0))
 		return;
 
 	/* We need to over-subscribe one or more cores.

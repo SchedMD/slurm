@@ -86,6 +86,8 @@ documents those changes that are of interest to users and admins.
  -- Fix for invalid memory reference due to multiple free calls caused by
     job arrays submitted to multiple partitions.
  -- Enforce --ntasks-per-socket=1 job option when allocating by socket.
+ -- Validate permissions of key directories at slurmctld startup. Report
+    anything that is world writable.
 
 * Changes in Slurm 2.6.1
 ========================

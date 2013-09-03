@@ -28,7 +28,13 @@ and must exist on all nodes of the cluster.<br>
 NOTE: The parent directories for SLURM's log files, process ID files,
 state save directories, etc. are not created by SLURM.
 They must be created and made writable by <i>SlurmUser</i> as needed prior to
-starting SLURM daemons.</li>
+starting SLURM daemons.<br>
+NOTE: If any parent directories are created during the installation process
+(for the executable files, libraries, etc.),
+those directories will have access rights equal to read/write/execute for
+everyone minus the umask value (e.g. umask=0022 generates directories with
+permissions of "drwxr-r-x" and mask=0000 generates directories with
+permissions of "drwxrwrwx" which is a security problem).</li>
 <li>Install the configuration file in <i>&lt;sysconfdir&gt;/slurm.conf</i>.<br>
 NOTE: You will need to install this configuration file on all nodes of the cluster.</li>
 <li>Start the <i>slurmctld</i> and <i>slurmd</i> daemons.</li>
@@ -681,6 +687,6 @@ Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 18 August 2013</p>
+<p style="text-align:center;">Last modified 29 August 2013</p>
 
 <!--#include virtual="footer.txt"-->
