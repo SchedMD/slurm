@@ -92,7 +92,6 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 	filetxt_jobcomp_info_t *jobcomp_info = NULL;
 	jobcomp_job_rec_t *job = xmalloc(sizeof(jobcomp_job_rec_t));
 	char *temp = NULL;
-	char *temp2 = NULL;
 
 	itr = list_iterator_create(job_info_list);
 	while((jobcomp_info = list_next(itr))) {
@@ -111,11 +110,7 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 				error("problem getting correct uid from %s",
 				      jobcomp_info->val);
 			} else {
-				*temp++ = 0;
-				temp2 = temp;
-				temp = strstr(temp, ")");
-				*temp = 0;
-				job->uid = atoi(temp2);
+				job->uid = atoi(temp + 1);
 				job->uid_name = xstrdup(jobcomp_info->val);
 			}
 		} else if (!strcasecmp("GroupId", jobcomp_info->name)) {
@@ -125,11 +120,7 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 				error("problem getting correct gid from %s",
 				      jobcomp_info->val);
 			} else {
-				*temp++ = 0;
-				temp2 = temp;
-				temp = strstr(temp, ")");
-				*temp = 0;
-				job->gid = atoi(temp2);
+				job->gid = atoi(temp + 1);
 				job->gid_name = xstrdup(jobcomp_info->val);
 			}
 		} else if (!strcasecmp("Name", jobcomp_info->name)) {
