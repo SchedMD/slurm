@@ -46,4 +46,8 @@
 
 int parse_select_type_param(char *select_type_parameters, uint16_t *param);
 
+/* Convert SelectTypeParameter to equivalent string
+ * NOTE: Not reentrant */
+extern char *select_type_param_string(uint16_t select_type_param);
+
 #endif /*__SLURM_SELECTTYPE_INFO_H__*/

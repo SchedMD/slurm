@@ -53,6 +53,7 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/slurm_selecttype_info.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/list.h"
@@ -936,8 +937,8 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 		key_pair = xmalloc(sizeof(config_key_pair_t));
 		key_pair->name = xstrdup("SelectTypeParameters");
 		key_pair->value = xstrdup(
-			sched_param_type_string(slurm_ctl_conf_ptr->
-						select_type_param));
+			select_type_param_string(slurm_ctl_conf_ptr->
+						 select_type_param));
 		list_append(ret_list, key_pair);
 	}
 
