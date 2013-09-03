@@ -143,8 +143,9 @@ plus dinner on Wednesday evening.<br><br>
 </tr>
 
 <tr>
-  <td width="15%" bgcolor="#F0F1C9">19:00 - </td>
-  <td width="85%" colspan="3" bgcolor="#F0F1C9">&nbsp;Dinner</td>
+  <td width="15%" bgcolor="#F0F1C9">18:00 - </td>
+  <td width="15%" bgcolor="#F0F1C9">&nbsp;Dinner</td>
+  <td width="70%" colspan="2" bgcolor="#F0F1C9">&nbsp;Lungomare, 1 Broadway Ave.</td>
 </tr>
 </table>
 
@@ -219,7 +220,7 @@ plus dinner on Wednesday evening.<br><br>
 <tr>
   <td width="15%">13:00 - 13:20</td>
   <td width="15%">&nbsp;Site Report</td>
-  <td width="25%">&nbsp;Francois Daikhate, Francis Belot, Matthieu Hautreux (CEA)</td>
+  <td width="25%">&nbsp;Francois Diakhate, Francis Belot, Matthieu Hautreux (CEA)</td>
   <td width="45%">&nbsp;CEA Site Report</td>
 </tr>
 <tr>
@@ -586,6 +587,6 @@ computing. These requirements include not only scalability issues,
 but a new focus on power management, fault tolerance, topology
 optimized scheduling, and heterogeneous computing.</p>
 
-<p style="text-align:center;">Last modified 5 August 2013</p>
+<p style="text-align:center;">Last modified 3 September 2013</p>
 
 <!--#include virtual="footer.txt"-->
