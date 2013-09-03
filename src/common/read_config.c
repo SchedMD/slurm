@@ -3564,12 +3564,13 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		}
 		conf->select_type_param = type_param;
 		xfree(temp_str);
-	} else {
-		if (strcmp(conf->select_type,"select/cons_res") == 0)
-			conf->select_type_param = CR_CPU;
-		else
-			conf->select_type_param = 0;
-	}
+	} else
+		conf->select_type_param = 0;
+
+	/* If not running linear default to be CR_CPU */
+	if (!(slurmctld_conf.select_type_param & (CR_CPU | CR_SOCKET | CR_CORE))
+	    && strcmp(conf->select_type, "select/linear"))
+		slurmctld_conf.select_type_param |= CR_CPU;
 
 	if (!s_p_get_string( &conf->slurm_user_name, "SlurmUser", hashtbl)) {
 		conf->slurm_user_name = xstrdup("root");
