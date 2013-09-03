@@ -21632,12 +21632,9 @@ int
 main ()
 {
 
-					int main()
-					{
 						MYSQL mysql;
 						(void) mysql_init(&mysql);
 						(void) mysql_close(&mysql);
-					}
 
   ;
   return 0;
@@ -21674,12 +21671,9 @@ int
 main ()
 {
 
-						int main()
-						{
 							MYSQL mysql;
 							(void) mysql_init(&mysql);
 							(void) mysql_close(&mysql);
-						}
 
   ;
   return 0;
