@@ -44,8 +44,8 @@
 #include <ctype.h>
 #include <sys/stat.h>
 
-#include "src/common/xmalloc.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/xmalloc.h"
 #include "filetxt_jobcomp_process.h"
 
 #define BUFFER_SIZE 4096
@@ -106,30 +106,28 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 			job->end_time = xstrdup(jobcomp_info->val);
 		} else if (!strcasecmp("Userid", jobcomp_info->name)) {
 			temp = strstr(jobcomp_info->val, "(");
-			if (!temp)
-				job->uid = atoi(jobcomp_info->val);
-			*temp++ = 0;
-			temp2 = temp;
-			temp = strstr(temp, ")");
 			if (!temp) {
+				job->uid = atoi(jobcomp_info->val);
 				error("problem getting correct uid from %s",
 				      jobcomp_info->val);
 			} else {
+				*temp++ = 0;
+				temp2 = temp;
+				temp = strstr(temp, ")");
 				*temp = 0;
 				job->uid = atoi(temp2);
 				job->uid_name = xstrdup(jobcomp_info->val);
 			}
 		} else if (!strcasecmp("GroupId", jobcomp_info->name)) {
 			temp = strstr(jobcomp_info->val, "(");
-			if (!temp)
-				job->gid = atoi(jobcomp_info->val);
-			*temp++ = 0;
-			temp2 = temp;
-			temp = strstr(temp, ")");
 			if (!temp) {
+				job->gid = atoi(jobcomp_info->val);
 				error("problem getting correct gid from %s",
 				      jobcomp_info->val);
 			} else {
+				*temp++ = 0;
+				temp2 = temp;
+				temp = strstr(temp, ")");
 				*temp = 0;
 				job->gid = atoi(temp2);
 				job->gid_name = xstrdup(jobcomp_info->val);

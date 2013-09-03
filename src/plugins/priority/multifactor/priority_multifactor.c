@@ -617,7 +617,7 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr)
 	}
 
 	if (weight_js) {
-		uint32_t cpu_cnt = 0;
+		uint32_t cpu_cnt = 0, min_nodes = 1;
 		/* On the initial run of this we don't have total_cpus
 		   so go off the requesting.  After the first shot
 		   total_cpus should be filled in.
@@ -629,6 +629,8 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr)
 			cpu_cnt = job_ptr->details->max_cpus;
 		else if (job_ptr->details && job_ptr->details->min_cpus)
 			cpu_cnt = job_ptr->details->min_cpus;
+		if (job_ptr->details)
+			min_nodes = job_ptr->details->min_nodes;
 
 		if (flags & PRIORITY_FLAGS_SIZE_RELATIVE) {
 			uint32_t time_limit = 1;
@@ -656,8 +658,7 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr)
 			}
 		} else if (favor_small) {
 			job_ptr->prio_factors->priority_js =
-				(double)(node_record_count
-					 - job_ptr->details->min_nodes)
+				(double)(node_record_count - min_nodes)
 				/ (double)node_record_count;
 			if (cpu_cnt) {
 				job_ptr->prio_factors->priority_js +=
@@ -667,8 +668,7 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr)
 			}
 		} else {	/* favor large */
 			job_ptr->prio_factors->priority_js =
-				(double)job_ptr->details->min_nodes
-				/ (double)node_record_count;
+				(double)min_nodes / (double)node_record_count;
 			if (cpu_cnt) {
 				job_ptr->prio_factors->priority_js +=
 					(double)cpu_cnt / (double)cluster_cpus;
@@ -691,7 +691,10 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr)
 			qos_ptr->usage->norm_priority;
 	}
 
-	job_ptr->prio_factors->nice = job_ptr->details->nice;
+	if (job_ptr->details)
+		job_ptr->prio_factors->nice = job_ptr->details->nice;
+	else
+		job_ptr->prio_factors->nice = NICE_OFFSET;
 }
 
 static uint32_t _get_priority_internal(time_t start_time,
