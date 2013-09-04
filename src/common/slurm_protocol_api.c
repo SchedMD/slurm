@@ -3365,6 +3365,7 @@ _send_and_recv_msgs(slurm_fd_t fd, slurm_msg_t *req, int timeout)
 	int retry = 0;
 	List ret_list = NULL;
 	int steps = 0;
+	int width;
 
 	if (!req->forward.timeout) {
 		if (!timeout)
@@ -3380,8 +3381,11 @@ _send_and_recv_msgs(slurm_fd_t fd, slurm_msg_t *req, int timeout)
 			 * to let the child timeout */
 			if (message_timeout < 0)
 				message_timeout = slurm_get_msg_timeout() * 1000;
-			steps = (req->forward.cnt+1)/slurm_get_tree_width();
-			timeout = (message_timeout*steps);
+			steps = req->forward.cnt + 1;
+			width = slurm_get_tree_width();
+			if (width)
+				steps /= width;
+			timeout = (message_timeout * steps);
 			steps++;
 
 			timeout += (req->forward.timeout*steps);
