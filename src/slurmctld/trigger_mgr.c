@@ -994,7 +994,7 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 		trig_in->trig_time = now + (trig_in->trig_time - 0x8000);
 		if (slurm_get_debug_flags() & DEBUG_FLAG_TRIGGERS) {
 			info("trigger[%u] event for job %u fini",
-			     trig_in->trig_id, trig_in->job_ptr->job_id);
+			     trig_in->trig_id, trig_in->job_id);
 		}
 		return;
 	}
