@@ -118,4 +118,15 @@ extern List license_validate(char *licenses, bool *valid);
  */
 extern bool license_list_overlap(List list_1, List list_2);
 
+/* pack_all_licenses()
+ *
+ * Get the licenses and the usage counters in the io buffer
+ * to be sent out to the library
+ */
+extern void
+get_all_license_info(char **buffer_ptr,
+                     int *buffer_size,
+                     uid_t uid,
+                     uint16_t protocol_version);
+
 #endif /* !_LICENSES_H */

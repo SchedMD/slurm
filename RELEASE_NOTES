@@ -77,6 +77,8 @@ COMMAND CHANGES (see man pages for details)
  -- Add squeue output format options for job command and working directory
     (%o and %Z respectively).
  -- Add stdin/out/err to sview job output.
+ -- Added a new option to the scontrol command to view licenses that are configured
+    in use and avalable. 'scontrol show licenses'.
 
 OTHER CHANGES
 =============
@@ -104,8 +106,12 @@ Changed the following enums and #defines
 Added the following API's
 =========================
 
+-- API for retrieving license information.
 
-Changed the following API's
+extern int slurm_load_licenses PARAMS((license_info_msg_t **));
+extern void slurm_free_license_info_msg PARAMS((license_info_msg_t *));
+
+Change the following API's
 ===========================
  -- Add task pointer to the task_post_term() function in task plugins. The
     terminating task's PID is available in task->pid.

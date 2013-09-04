@@ -106,8 +106,8 @@ slurmapi_src =           \
 	topo_info.c      \
 	triggers.c       \
 	reconfigure.c    \
-	update_config.c
-
+	update_config.c  \
+	license_info.c
 
 common_dir = $(top_builddir)/src/common
 

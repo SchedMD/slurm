@@ -160,5 +160,5 @@ extern int	scontrol_update_node (int argc, char *argv[]);
 extern int	scontrol_update_part (int argc, char *argv[]);
 extern int	scontrol_update_res (int argc, char *argv[]);
 extern int	scontrol_update_step (int argc, char *argv[]);
-
+extern void	scontrol_print_licenses(const char *feature);
 #endif

@@ -1207,15 +1207,13 @@ _process_command (int argc, char *argv[])
 			exit_code = 1;
 			slurm_perror("job notify failure");
 		}
-	}
-	else {
+	}	else {
 		exit_code = 1;
 		fprintf (stderr, "invalid keyword: %s\n", tag);
 	}
 
 	return 0;
 }
-
 
 /*
  * _create_it - create a slurm configuration per the supplied arguments
@@ -1424,6 +1422,8 @@ _show_it (int argc, char *argv[])
 		scontrol_print_step (val);
 	} else if (strncasecmp (tag, "topology", MAX(tag_len, 1)) == 0) {
 		scontrol_print_topo (val);
+	} else if (strncasecmp(tag, "licenses", MAX(tag_len, 2)) == 0) {
+		scontrol_print_licenses(val);
 	} else {
 		exit_code = 1;
 		if (quiet_flag != 1)

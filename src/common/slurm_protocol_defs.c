@@ -2877,3 +2877,27 @@ extern char *slurm_ctime_r(const time_t *timep, char *time_str)
 
 	return time_str;
 }
+
+/* slurm_free_license_info()
+ *
+ * Free the license info returned previously
+ * from the controller.
+ */
+extern void
+slurm_free_license_info_msg(license_info_msg_t *msg)
+{
+	int cc;
+
+	if (msg == NULL)
+		return;
+
+	for (cc = 0; cc < msg->num_features; cc++) {
+		xfree(msg->lic_array[cc].feature);
+	}
+	xfree(msg->lic_array);
+	xfree(msg);
+}
+extern void slurm_free_license_info_request_msg(license_info_request_msg_t *msg)
+{
+	xfree(msg);
+}

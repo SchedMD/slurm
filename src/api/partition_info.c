@@ -439,10 +439,10 @@ extern int slurm_load_partitions (time_t update_time,
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
-        req.last_update  = update_time;
+	req.last_update  = update_time;
 	req.show_flags   = show_flags;
-        req_msg.msg_type = REQUEST_PARTITION_INFO;
-        req_msg.data     = &req;
+	req_msg.msg_type = REQUEST_PARTITION_INFO;
+	req_msg.data     = &req;
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;

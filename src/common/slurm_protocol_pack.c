@@ -645,6 +645,16 @@ static void _pack_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg,
 static int _unpack_ping_slurmd_resp(ping_slurmd_resp_msg_t **msg_ptr,
 				    Buf buffer, uint16_t protocol_version);
 
+static void _pack_license_info_request_msg(license_info_request_msg_t *msg,
+                                           Buf buffer,
+                                           uint16_t protocol_version);
+static int _unpack_license_info_request_msg(license_info_request_msg_t **msg,
+                                            Buf buffer,
+                                            uint16_t protocol_version);
+static inline void _pack_license_info_msg(slurm_msg_t *msg, Buf buffer);
+static int _unpack_license_info_msg(license_info_msg_t **msg,
+                                    Buf buffer,
+                                    uint16_t protocol_version);
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
  * IN header - the header structure to pack
@@ -1261,7 +1271,15 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_ping_slurmd_resp((ping_slurmd_resp_msg_t *)msg->data,
 				       buffer, msg->protocol_version);
 		break;
-
+	case REQUEST_LICENSE_INFO:
+		 _pack_license_info_request_msg((license_info_request_msg_t *)
+		                                msg->data,
+		                                buffer,
+		                                msg->protocol_version);
+			break;
+	case RESPONSE_LICENSE_INFO:
+		_pack_license_info_msg((slurm_msg_t *) msg, buffer);
+		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -1869,7 +1887,17 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					      &msg->data, buffer,
 					      msg->protocol_version);
 		break;
-
+	case RESPONSE_LICENSE_INFO:
+		rc = _unpack_license_info_msg((license_info_msg_t **)&(msg->data),
+		                              buffer,
+		                              msg->protocol_version);
+		break;
+	case REQUEST_LICENSE_INFO:
+		rc = _unpack_license_info_request_msg((license_info_request_msg_t **)
+		                                      &(msg->data),
+		                                      buffer,
+		                                      msg->protocol_version);
+		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -10703,6 +10731,100 @@ unpack_error:
 	slurm_free_stats_response_msg(msg);
 	return SLURM_ERROR;
 }
+
+/* _pack_license_info_request_msg()
+ */
+static void
+_pack_license_info_request_msg(license_info_request_msg_t *msg,
+                               Buf buffer,
+                               uint16_t protocol_version)
+{
+	pack_time(msg->last_update, buffer);
+	pack16((uint16_t)msg->show_flags, buffer);
+}
+
+/* _unpack_license_info_request_msg()
+ */
+static int
+_unpack_license_info_request_msg(license_info_request_msg_t **msg,
+                                 Buf buffer,
+                                 uint16_t protocol_version)
+{
+	*msg = xmalloc(sizeof(license_info_msg_t));
+
+	safe_unpack_time(&(*msg)->last_update, buffer);
+	safe_unpack16(&(*msg)->show_flags, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_license_info_request_msg(*msg);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+/* _pack_license_info_msg()
+ */
+static inline void
+_pack_license_info_msg(slurm_msg_t *msg, Buf buffer)
+{
+	_pack_buffer_msg(msg, buffer);
+}
+
+/* _unpack_license_info_msg()
+ *
+ * Decode the array of license as it comes from the
+ * controller and build the API licenses structures
+ * as defined in slurm.h
+ *
+ */
+static int
+_unpack_license_info_msg(license_info_msg_t **msg,
+                         Buf buffer,
+                         uint16_t protocol_version)
+{
+	int i;
+	uint32_t zz;
+
+	xassert(msg != NULL);
+	*msg = xmalloc(sizeof(license_info_msg_t));
+
+	/* load buffer's header (data structure version and time)
+	 */
+	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+
+		safe_unpack32(&((*msg)->num_features), buffer);
+		safe_unpack_time(&((*msg)->last_update), buffer);
+
+		(*msg)->lic_array = xmalloc(sizeof(slurm_license_info_t)
+		                            * (*msg)->num_features);
+
+		/* Decode individual license data.
+		 */
+		for (i = 0; i < (*msg)->num_features; i++) {
+
+			safe_unpackstr_xmalloc(&((*msg)->lic_array[i]).feature, &zz, buffer);
+			safe_unpack32(&((*msg)->lic_array[i]).total, buffer);
+			safe_unpack32(&((*msg)->lic_array[i]).in_use, buffer);
+			(*msg)->lic_array[i].available
+				= (*msg)->lic_array[i].total - (*msg)->lic_array[i].in_use;
+			xassert((*msg)->lic_array[i].available >= 0);
+		}
+
+	} else {
+		error("_unpack_partition_info_msg: protocol_version "
+		      "%hu not supported", protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_license_info_msg(*msg);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
 
 /* template
    void pack_ ( * msg , Buf buffer )

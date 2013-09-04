@@ -196,6 +196,8 @@ typedef enum {
 	RESPONSE_ACCT_GATHER_UPDATE,
 	REQUEST_ACCT_GATHER_ENERGY,
 	RESPONSE_ACCT_GATHER_ENERGY,
+	REQUEST_LICENSE_INFO,
+	RESPONSE_LICENSE_INFO,
 
 	REQUEST_BUILD_INFO = 2001,
 	RESPONSE_BUILD_INFO,
@@ -971,6 +973,11 @@ typedef struct ping_slurmd_resp_msg {
 	uint32_t cpu_load;	/* CPU load * 100 */
 } ping_slurmd_resp_msg_t;
 
+typedef struct license_info_request_msg {
+	time_t last_update;
+	uint16_t show_flags;
+} license_info_request_msg_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -1194,6 +1201,8 @@ extern void slurm_free_spank_env_request_msg(spank_env_request_msg_t *msg);
 extern void slurm_free_spank_env_responce_msg(spank_env_responce_msg_t *msg);
 
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);
+extern void slurm_free_license_info_request_msg(license_info_request_msg_t *msg);
+
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 
 extern char *preempt_mode_string(uint16_t preempt_mode);

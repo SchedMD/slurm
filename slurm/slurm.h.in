@@ -2352,6 +2352,24 @@ typedef struct trigger_info_msg {
 	trigger_info_t *trigger_array;	/* the trigger records */
 } trigger_info_msg_t;
 
+
+/* Individual license information
+ */
+typedef struct slurm_license_info {
+	char *feature;       /* feature name */
+	uint32_t total;      /* total number of available licenses */
+	uint32_t in_use;     /* number of license in use */
+	uint32_t available;  /* number of available license */
+} slurm_license_info_t;
+
+/* License information array as returned by the controller.
+ */
+typedef struct license_info_msg {
+	time_t last_update;
+	uint32_t num_features;
+	slurm_license_info_t *lic_array;
+} license_info_msg_t;
+
 /*****************************************************************************\
  *	RESOURCE ALLOCATION FUNCTIONS
 \*****************************************************************************/
@@ -2517,6 +2535,16 @@ extern int slurm_sbcast_lookup PARAMS((uint32_t jobid,
 				       job_sbcast_cred_msg_t **info));
 
 extern void slurm_free_sbcast_cred_msg PARAMS((job_sbcast_cred_msg_t * msg));
+
+/* slurm_load_licenses()
+ *
+ * Retrieve license information from the controller.
+ * IN feature - feature name or NULL
+ * OUT
+ *
+ */
+extern int slurm_load_licenses PARAMS((license_info_msg_t **));
+extern void slurm_free_license_info_msg PARAMS((license_info_msg_t *));
 
 /*****************************************************************************\
  *	JOB/STEP SIGNALING FUNCTIONS

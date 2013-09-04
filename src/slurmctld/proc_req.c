@@ -168,6 +168,7 @@ inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_block(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_spank(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_stats(slurm_msg_t * msg);
+inline static void  _slurm_rpc_dump_licenses(slurm_msg_t * msg);
 
 inline static void  _update_cred_key(void);
 
@@ -454,6 +455,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_STATS_INFO:
 		_slurm_rpc_dump_stats(msg);
 		slurm_free_stats_info_request_msg(msg->data);
+		break;
+	 case REQUEST_LICENSE_INFO:
+		 _slurm_rpc_dump_licenses(msg);
+		 slurm_free_license_info_request_msg(msg->data);
 		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
@@ -4517,7 +4522,7 @@ inline static void _slurm_rpc_dump_spank(slurm_msg_t * msg)
 
 
 /* _slurm_rpc_dump_stats - process RPC for statistics information */
-static void _slurm_rpc_dump_stats(slurm_msg_t * msg)
+inline static void _slurm_rpc_dump_stats(slurm_msg_t * msg)
 {
 	char *dump;
 	int dump_size;
@@ -4559,3 +4564,44 @@ static void _slurm_rpc_dump_stats(slurm_msg_t * msg)
 	xfree(dump);
 }
 
+/* _slurm_rpc_dump_licenses()
+ *
+ * Pack the io buffer and send it back to the library.
+ */
+inline static void
+_slurm_rpc_dump_licenses(slurm_msg_t * msg)
+{
+	DEF_TIMERS;
+	char *dump;
+	int dump_size;
+	slurm_msg_t response_msg;
+	license_info_request_msg_t  *lic_req_msg;
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	START_TIMER;
+	debug2("%s: Processing RPC: REQUEST_LICENSE_INFO uid=%d", __func__, uid);
+	lic_req_msg = (license_info_request_msg_t *)msg->data;
+
+	get_all_license_info(&dump, &dump_size, uid, msg->protocol_version);
+
+	END_TIMER2("_slurm_rpc_dump_licenses");
+	debug2("%s: size=%d %s", __func__, dump_size, TIME_STR);
+
+	/* init response_msg structure
+	 */
+	slurm_msg_t_init(&response_msg);
+
+	response_msg.flags = msg->flags;
+	response_msg.protocol_version = msg->protocol_version;
+	response_msg.address = msg->address;
+	response_msg.msg_type = RESPONSE_LICENSE_INFO;
+	response_msg.data = dump;
+	response_msg.data_size = dump_size;
+
+	/* send message
+	 */
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+	xfree(dump);
+	/* Ciao!
+	 */
+}
