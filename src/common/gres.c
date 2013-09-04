@@ -2755,7 +2755,7 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 	if (job_gres_list == NULL)
 		return NO_VAL;
 	if (node_gres_list == NULL)
-		return NO_VAL;
+		return 0;
 
 	cpu_cnt = NO_VAL;
 	(void) gres_plugin_init();
