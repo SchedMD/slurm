@@ -74,7 +74,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: salloc not responding\n"
-		slow_kill $salloc_pid
+		slow_kill $salloc_id
 		exit 1
 	}
 }
