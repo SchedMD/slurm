@@ -335,3 +335,8 @@ extern void acct_gather_filesystem_p_conf_options(s_p_options_t **full_options,
 
 	return;
 }
+
+extern void acct_gather_filesystem_p_conf_values(List *data)
+{
+	return;
+}

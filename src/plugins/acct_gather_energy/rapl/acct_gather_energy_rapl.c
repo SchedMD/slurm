@@ -548,7 +548,7 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 	return;
 }
 
-extern int acct_gather_energy_p_config(void)
+extern void acct_gather_energy_p_conf_values(List *data)
 {
-	return SLURM_SUCCESS;
+	return;
 }

@@ -91,6 +91,11 @@ extern int acct_gather_energy_startpoll(uint32_t frequency);
 extern void acct_gather_energy_g_conf_options(s_p_options_t **full_options,
 					      int *full_options_cnt);
 extern void acct_gather_energy_g_conf_set(s_p_hashtbl_t *tbl);
-extern int acct_gather_energy_g_get_config(void *data);
+
+/* Get the values from the plugin that are setup in the .conf
+ * file. This function should most likely only be called from
+ * src/common/slurm_acct_gather.c (acct_gather_get_values())
+ */
+extern void acct_gather_energy_g_conf_values(void *data);
 
 #endif /*__SLURM_ACCT_GATHER_ENERGY_H__*/

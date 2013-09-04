@@ -54,7 +54,7 @@ typedef struct slurm_acct_gather_infiniband_ops {
 	void (*conf_options)	(s_p_options_t **full_options,
 				 int *full_options_cnt);
 	void (*conf_set)	(s_p_hashtbl_t *tbl);
-	List (*get_config)      (void);
+	void (*conf_values)      (List *data);
 } slurm_acct_gather_infiniband_ops_t;
 /*
  * These strings must be kept in the same order as the fields
@@ -64,7 +64,7 @@ static const char *syms[] = {
 	"acct_gather_infiniband_p_node_update",
 	"acct_gather_infiniband_p_conf_options",
 	"acct_gather_infiniband_p_conf_set",
-	"acct_gather_infiniband_p_get_config",
+	"acct_gather_infiniband_p_conf_values",
 };
 
 static slurm_acct_gather_infiniband_ops_t ops;
@@ -198,15 +198,10 @@ extern void acct_gather_infiniband_g_conf_set(s_p_hashtbl_t *tbl)
 	(*(ops.conf_set))(tbl);
 }
 
-extern int acct_gather_infiniband_g_get_config(void *data)
+extern void acct_gather_infiniband_g_conf_values(void *data)
 {
-	List *tmp_list = (List *) data;
-
 	if (acct_gather_infiniband_init() < 0)
-		return SLURM_ERROR;
+		return;
 
-	 *tmp_list = (*(ops.get_config))();
-
-	return SLURM_SUCCESS;
-
+	(*(ops.conf_values))(data);
 }

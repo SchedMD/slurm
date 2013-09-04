@@ -691,8 +691,7 @@ extern List ext_sensors_p_get_config(void)
 	List ext_list = list_create(destroy_config_key_pair);
 
 	char *sep = ", ";
-	bool first = 1;
-	char *tmp_val;
+	char *tmp_val = NULL;
 
 	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_JOB_ENERGY) {
 		key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -701,38 +700,34 @@ extern List ext_sensors_p_get_config(void)
 		list_append(ext_list, key_pair);
 	}
 
-	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_NODE_ENERGY) {
+	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_NODE_ENERGY)
 		tmp_val = xstrdup("energy");
-		first = 0;
-	}
+
 	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_NODE_TEMP) {
-		if (!first) {
+		if (tmp_val)
 			xstrcat(tmp_val, sep);
-		}
 		xstrcat(tmp_val, "temp");
 	}
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("NodeData");
-	key_pair->value = xstrdup(tmp_val);
+	key_pair->value = tmp_val;
 	list_append(ext_list, key_pair);
-	xfree(tmp_val);
+	tmp_val = NULL;
 
-/* Reset first value */
-	first = 1;
-	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_SWITCH_ENERGY) {
+	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_SWITCH_ENERGY)
 		tmp_val = xstrdup("energy");
-		first = 0;
-	}
+
 	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_SWITCH_TEMP) {
-		if (!first) {
+		if (tmp_val)
 			xstrcat(tmp_val, sep);
-		}
+
 		xstrcat(tmp_val, "temp");
 	}
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SwitchData");
-	key_pair->value = xstrdup(tmp_val);
+	key_pair->value = tmp_val;
 	list_append(ext_list, key_pair);
+	tmp_val = NULL;
 
 	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_COLDDOOR_TEMP) {
 		key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -743,22 +738,22 @@ extern List ext_sensors_p_get_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MinWatt");
-	key_pair->value = xstrdup(ext_sensors_cnf->min_watt);
+	key_pair->value = xstrdup_printf("%u", ext_sensors_cnf->min_watt);
 	list_append(ext_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MaxWatt");
-	key_pair->value = xstrdup(ext_sensors_cnf->max_watt);
+	key_pair->value = xstrdup_printf("%u", ext_sensors_cnf->max_watt);
 	list_append(ext_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MinTemp");
-	key_pair->value = xstrdup(ext_sensors_cnf->min_temp);
+	key_pair->value = xstrdup_printf("%u", ext_sensors_cnf->min_temp);
 	list_append(ext_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MaxTemp");
-	key_pair->value = xstrdup(ext_sensors_cnf->max_temp);
+	key_pair->value = xstrdup_printf("%u", ext_sensors_cnf->max_temp);
 	list_append(ext_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -780,6 +775,8 @@ extern List ext_sensors_p_get_config(void)
 	key_pair->name = xstrdup("TempPathRRD");
 	key_pair->value = xstrdup(ext_sensors_cnf->temp_rrd_file);
 	list_append(ext_list, key_pair);
+
+	list_sort(ext_list, (ListCmpF) sort_key_pairs);
 
 	return ext_list;
 }

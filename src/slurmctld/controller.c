@@ -442,6 +442,8 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize preempt plugin" );
 	if (checkpoint_init(slurmctld_conf.checkpoint_type) != SLURM_SUCCESS )
 		fatal( "failed to initialize checkpoint plugin" );
+	if (acct_gather_conf_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize acct_gather plugins" );
 	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
 		fatal( "failed to initialize accounting_storage plugin");
 	if (jobacct_gather_init() != SLURM_SUCCESS )
@@ -673,6 +675,7 @@ int main(int argc, char *argv[])
 	slurm_preempt_fini();
 	g_slurm_jobcomp_fini();
 	jobacct_gather_fini();
+	acct_gather_conf_fini();
 	slurm_select_fini();
 	slurm_topo_fini();
 	checkpoint_fini();

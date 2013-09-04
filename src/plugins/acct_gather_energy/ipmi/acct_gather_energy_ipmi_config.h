@@ -44,62 +44,13 @@
 #define DEFAULT_IPMI_VARIABLE IPMI_MONITORING_SENSOR_UNITS_WATTS
 
 typedef struct slurm_ipmi_conf {
-	/* Options for SLURM IPMI plugin*/
-	/* sensor num (only for power) */
-	uint32_t power_sensor_num;
-	/* frequency for ipmi call*/
-	uint32_t freq;
 	/* Adjust/approach the consumption
 	 * in function of time between ipmi update and read call */
 	bool adjustment;
-	/*Timeout for the ipmi thread*/
-	uint32_t timeout;
-	/* Options for IPMI configuration*/
-	/* Use a specific in-band driver.
-	 *   IPMI_MONITORING_DRIVER_TYPE_KCS      = 0x00,
-	 *   IPMI_MONITORING_DRIVER_TYPE_SSIF     = 0x01,
-	 *   IPMI_MONITORING_DRIVER_TYPE_OPENIPMI = 0x02,
-	 *   IPMI_MONITORING_DRIVER_TYPE_SUNBMC   = 0x03,
-	 *    Pass < 0 for default of IPMI_MONITORING_DRIVER_TYPE_KCS.*/
-	uint32_t driver_type;
-	/* Flag informs the library if in-band driver information should be
-	 * probed or not.*/
-	uint32_t disable_auto_probe;
-	/* Use this specified driver address instead of a probed one.*/
-	uint32_t driver_address;
-	/* Use this register space instead of the probed one.*/
-	uint32_t register_spacing;
-	/* Use this driver device for the IPMI driver.*/
-	char *driver_device;
-	/* Out-of-band Communication Configuration */
-	/* Indicate the IPMI protocol version to use
-	 * IPMI_MONITORING_PROTOCOL_VERSION_1_5 = 0x00,
-	 * IPMI_MONITORING_PROTOCOL_VERSION_2_0 = 0x01,
-	 * Pass < 0 for default of IPMI_MONITORING_VERSION_1_5.*/
-	uint32_t protocol_version;
-	/*   BMC username. Pass NULL ptr for default username.  Standard
-	 *   default is the null (e.g. empty) username.  Maximum length of 16
-	 *   bytes.*/
-	char *username;
-	/* BMC password. Pass NULL ptr for default password.  Standard
-	 * default is the null (e.g. empty) password.  Maximum length of 20
-	 * bytes.*/
-	char *password;
-	/* BMC Key for 2-key authentication.  Pass NULL ptr to use the
-	 * default.  Standard default is the null (e.g. empty) k_g,
-	 * which will use the password as the BMC key.  The k_g key need not
-	 * be an ascii string.*/
-	unsigned char *k_g;
-	/* Length of k_g.  Necessary b/c k_g may contain null values in its
-	 * key.  Maximum length of 20 bytes.*/
-	uint32_t k_g_len;
-	/* privilege level to authenticate with.
-	 * Supported privilege levels:
-	 *   0 = IPMICONSOLE_PRIVILEGE_USER
-	 *   1 = IPMICONSOLE_PRIVILEGE_OPERATOR
-	 *   2 = IPMICONSOLE_PRIVILEGE_ADMIN
-	 * Pass < 0 for default of IPMICONSOLE_PRIVILEGE_ADMIN.*/
-	uint32_t privilege_level;
+	/* Assume the BMC is the sensor owner no matter what.  This option
+	 * works around motherboards that incorrectly indicate a non-BMC
+	 * sensor owner (e.g. usually bridging is required).*/
+	bool assume_bmc_owner;
 	/* authentication type to use
 	 *   IPMI_MONITORING_AUTHENTICATION_TYPE_NONE                  = 0x00,
 	 *   IPMI_MONITORING_AUTHENTICATION_TYPE_STRAIGHT_PASSWORD_KEY = 0x01,
@@ -107,6 +58,8 @@ typedef struct slurm_ipmi_conf {
 	 *   IPMI_MONITORING_AUTHENTICATION_TYPE_MD5                   = 0x03,
 	 * Pass < 0 for default of IPMI_MONITORING_AUTHENTICATION_TYPE_MD5*/
 	uint32_t authentication_type;
+	/* Attempt to bridge sensors not owned by the BMC*/
+	bool bridge_sensors;
 	/* Cipher suite identifier to determine authentication, integrity,
 	 * and confidentiality algorithms to use.
 	 * Supported Cipher Suite IDs
@@ -127,45 +80,92 @@ typedef struct slurm_ipmi_conf {
 	 *   17 - A = HMAC-SHA256; I = HMAC-SHA256-128; C = AES-CBC-128
 	 * Pass < 0 for default.of 3.*/
 	uint32_t cipher_suite_id;
-	/* Specifies the session timeout length in milliseconds.  Pass <= 0
-	 * to default 60000 (60 seconds).*/
-	uint32_t session_timeout;
-	/* Specifies the packet retransmission timeout length in
-	 * milliseconds.  Pass <= 0 to default 500 (0.5 seconds).*/
-	uint32_t retransmission_timeout;
-	/* Bitwise OR of flags indicating IPMI implementation changes.  Some
-	 * BMCs which are non-compliant and may require a workaround flag
-	 * for correct operation. Pass IPMICONSOLE_WORKAROUND_DEFAULT for
-	 * default.  Standard default is 0, no modifications to the IPMI
-	 * protocol.*/
-	uint32_t workaround_flags;
-	/* Re-read the SDR cache*/
-	bool reread_sdr_cache;
-	/* Do not read sensors that cannot be interpreted.*/
-	bool ignore_non_interpretable_sensors;
-	/* Attempt to bridge sensors not owned by the BMC*/
-	bool bridge_sensors;
-	/* Attempt to interpret OEM data if read.*/
-	bool interpret_oem_data;
-	/* Iterate through shared sensors if found*/
-	bool shared_sensors;
 	/* Allow sensor readings to be read even if the event/reading type
 	 * code for the sensor is not valid.  This option works around
 	 * poorly defined (and arguably illegal) SDR records that list
 	 * non-discrete sensor expectations along with discrete state
 	 * conditions.*/
 	bool discrete_reading;
+	/* Use this driver device for the IPMI driver.*/
+	char *driver_device;
+	/* Options for IPMI configuration*/
+	/* Use a specific in-band driver.
+	 *   IPMI_MONITORING_DRIVER_TYPE_KCS      = 0x00,
+	 *   IPMI_MONITORING_DRIVER_TYPE_SSIF     = 0x01,
+	 *   IPMI_MONITORING_DRIVER_TYPE_OPENIPMI = 0x02,
+	 *   IPMI_MONITORING_DRIVER_TYPE_SUNBMC   = 0x03,
+	 *    Pass < 0 for default of IPMI_MONITORING_DRIVER_TYPE_KCS.*/
+	uint32_t driver_type;
+	/* Flag informs the library if in-band driver information should be
+	 * probed or not.*/
+	uint32_t disable_auto_probe;
+	/* Use this specified driver address instead of a probed one.*/
+	uint32_t driver_address;
+	/* Return sensor names with appropriate entity
+	 * id and instance prefixed when appropriate.*/
+	bool entity_sensor_names;
+	/* frequency for ipmi call*/
+	uint32_t freq;
+	/* Do not read sensors that cannot be interpreted.*/
+	bool ignore_non_interpretable_sensors;
 	/* Ignore the scanning bit and read sensors no matter
 	 * what.  This option works around motherboards
 	 * that incorrectly indicate sensors as disabled.*/
 	bool ignore_scanning_disabled;
-	/* Assume the BMC is the sensor owner no matter what.  This option
-	 * works around motherboards that incorrectly indicate a non-BMC
-	 * sensor owner (e.g. usually bridging is required).*/
-	bool assume_bmc_owner;
-	/* Return sensor names with appropriate entity
-	 * id and instance prefixed when appropriate.*/
-	bool entity_sensor_names;
+	/* Attempt to interpret OEM data if read.*/
+	bool interpret_oem_data;
+	/* BMC Key for 2-key authentication.  Pass NULL ptr to use the
+	 * default.  Standard default is the null (e.g. empty) k_g,
+	 * which will use the password as the BMC key.  The k_g key need not
+	 * be an ascii string.*/
+	unsigned char *k_g;
+	/* Length of k_g.  Necessary b/c k_g may contain null values in its
+	 * key.  Maximum length of 20 bytes.*/
+	uint32_t k_g_len;
+	/* BMC password. Pass NULL ptr for default password.  Standard
+	 * default is the null (e.g. empty) password.  Maximum length of 20
+	 * bytes.*/
+	char *password;
+	/* privilege level to authenticate with.
+	 * Supported privilege levels:
+	 *   0 = IPMICONSOLE_PRIVILEGE_USER
+	 *   1 = IPMICONSOLE_PRIVILEGE_OPERATOR
+	 *   2 = IPMICONSOLE_PRIVILEGE_ADMIN
+	 * Pass < 0 for default of IPMICONSOLE_PRIVILEGE_ADMIN.*/
+	uint32_t privilege_level;
+	/* Options for SLURM IPMI plugin*/
+	/* sensor num (only for power) */
+	uint32_t power_sensor_num;
+	/* Out-of-band Communication Configuration */
+	/* Indicate the IPMI protocol version to use
+	 * IPMI_MONITORING_PROTOCOL_VERSION_1_5 = 0x00,
+	 * IPMI_MONITORING_PROTOCOL_VERSION_2_0 = 0x01,
+	 * Pass < 0 for default of IPMI_MONITORING_VERSION_1_5.*/
+	uint32_t protocol_version;
+	/* Use this register space instead of the probed one.*/
+	uint32_t register_spacing;
+	/* Re-read the SDR cache*/
+	bool reread_sdr_cache;
+	/* Specifies the packet retransmission timeout length in
+	 * milliseconds.  Pass <= 0 to default 500 (0.5 seconds).*/
+	uint32_t retransmission_timeout;
+	/* Specifies the session timeout length in milliseconds.  Pass <= 0
+	 * to default 60000 (60 seconds).*/
+	uint32_t session_timeout;
+	/* Iterate through shared sensors if found*/
+	bool shared_sensors;
+	/* Timeout for the ipmi thread*/
+	uint32_t timeout;
+	/* BMC username. Pass NULL ptr for default username.  Standard
+	 * default is the null (e.g. empty) username.  Maximum length of 16
+	 * bytes.*/
+	char *username;
+	/* Bitwise OR of flags indicating IPMI implementation changes.  Some
+	 * BMCs which are non-compliant and may require a workaround flag
+	 * for correct operation. Pass IPMICONSOLE_WORKAROUND_DEFAULT for
+	 * default.  Standard default is 0, no modifications to the IPMI
+	 * protocol.*/
+	uint32_t workaround_flags;
 	uint32_t variable;
 } slurm_ipmi_conf_t;
 

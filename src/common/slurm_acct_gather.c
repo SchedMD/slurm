@@ -134,6 +134,23 @@ extern int acct_gather_conf_destroy(void)
 	return SLURM_SUCCESS;
 }
 
+extern List acct_gather_conf_values(void)
+{
+	List acct_list = list_create(destroy_config_key_pair);
+
+	/* get acct_gather.conf in each plugin */
+	acct_gather_profile_g_conf_values(&acct_list);
+	acct_gather_infiniband_g_conf_values(&acct_list);
+	acct_gather_energy_g_conf_values(&acct_list);
+	acct_gather_filesystem_g_conf_values(&acct_list);
+	/* ADD MORE HERE */
+	/******************************************/
+
+	list_sort(acct_list, (ListCmpF) sort_key_pairs);
+
+	return acct_list;
+}
+
 extern int acct_gather_parse_freq(int type, char *freq)
 {
 	int freq_int = -1;

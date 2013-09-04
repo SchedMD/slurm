@@ -61,6 +61,9 @@ extern bool acct_gather_suspended;
 
 extern int acct_gather_conf_init(void);
 extern int acct_gather_conf_destroy(void);
+
+/* don't forget to free this */
+extern List acct_gather_conf_values(void);
 extern int acct_gather_parse_freq(int type, char *freq);
 extern void acct_gather_suspend_poll(void);
 extern void acct_gather_resume_poll(void);

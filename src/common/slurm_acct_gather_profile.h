@@ -194,6 +194,10 @@ extern int acct_gather_profile_g_task_end(pid_t taskpid);
  */
 extern int acct_gather_profile_g_add_sample_data(uint32_t type, void *data);
 
-extern int acct_gather_profile_g_get_config(void *data);
+/* Get the values from the plugin that are setup in the .conf
+ * file. This function should most likely only be called from
+ * src/common/slurm_acct_gather.c (acct_gather_get_values())
+ */
+extern void acct_gather_profile_g_conf_values(void *data);
 
 #endif /*__SLURM_ACCT_GATHER_PROFILE_H__*/

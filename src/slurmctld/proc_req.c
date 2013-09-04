@@ -73,9 +73,7 @@
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_ext_sensors.h"
-#include "src/common/slurm_acct_gather_energy.h"
-#include "src/common/slurm_acct_gather_profile.h"
-#include "src/common/slurm_acct_gather_infiniband.h"
+#include "src/common/slurm_acct_gather.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/front_end.h"
@@ -521,6 +519,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->accounting_storage_port = conf->accounting_storage_port;
 	conf_ptr->acctng_store_job_comment = conf->acctng_store_job_comment;
 
+	conf_ptr->acct_gather_conf = acct_gather_conf_values();
 	conf_ptr->acct_gather_energy_type =
 		xstrdup(conf->acct_gather_energy_type);
 	conf_ptr->acct_gather_filesystem_type =
@@ -554,6 +553,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->epilog              = xstrdup(conf->epilog);
 	conf_ptr->epilog_msg_time     = conf->epilog_msg_time;
 	conf_ptr->epilog_slurmctld    = xstrdup(conf->epilog_slurmctld);
+	ext_sensors_g_get_config(&conf_ptr->ext_sensors_conf);
 	conf_ptr->ext_sensors_type    = xstrdup(conf->ext_sensors_type);
 	conf_ptr->ext_sensors_freq    = conf->ext_sensors_freq;
 
@@ -671,10 +671,6 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->select_type         = xstrdup(conf->select_type);
 	select_g_get_info_from_plugin(SELECT_CONFIG_INFO, NULL,
 				      &conf_ptr->select_conf_key_pairs);
-	acct_gather_profile_g_get_config(&conf_ptr->acct_gather_conf);
-	ext_sensors_g_get_config(&conf_ptr->ext_sensors_conf);
-	acct_gather_infiniband_g_get_config(&conf_ptr->acct_gather_conf);
-	acct_gather_energy_g_get_config(&conf_ptr->acct_gather_conf);
 	conf_ptr->select_type_param   = conf->select_type_param;
 	conf_ptr->slurm_user_id       = conf->slurm_user_id;
 	conf_ptr->slurm_user_name     = xstrdup(conf->slurm_user_name);

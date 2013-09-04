@@ -616,21 +616,22 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void *data)
 	return SLURM_SUCCESS;
 }
 
-extern List acct_gather_profile_p_get_config(void)
+extern void acct_gather_profile_p_conf_values(List *data)
 {
 	config_key_pair_t *key_pair;
-	List profile_list = list_create(destroy_config_key_pair);
+
+	xassert(*data);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ProfileHDF5Dir");
-	key_pair->value = xstrdup(&hdf5_conf.dir);
-	list_append(profile_list, key_pair);
+	key_pair->value = xstrdup(hdf5_conf.dir);
+	list_append(*data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ProfileHDF5Default");
-	key_pair->value = xstrdup(&hdf5_conf.def);
-	list_append(profile_list, key_pair);
+	key_pair->value = xstrdup(acct_gather_profile_to_string(hdf5_conf.def));
+	list_append(*data, key_pair);
 
-	return profile_list;
+	return;
 
 }
