@@ -1669,7 +1669,7 @@ static int
 _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 {
 	slurmd_task_info_t *t = NULL;
-	int status;
+	int status = 0;
 	pid_t pid;
 	int completed = 0;
 	jobacctinfo_t *jobacct = NULL;
