@@ -883,9 +883,9 @@ static int _open_resv_state_file(char **state_file)
 	return state_fd;
 }
 
-extern int trigger_state_restore(void)
+extern void trigger_state_restore(void)
 {
-	int data_allocated, data_read = 0, error_code = 0;
+	int data_allocated, data_read = 0;
 	uint32_t data_size = 0;
 	uint16_t protocol_version = (uint16_t) NO_VAL;
 	int state_fd, trigger_cnt = 0;
@@ -900,7 +900,6 @@ extern int trigger_state_restore(void)
 	state_fd = _open_resv_state_file(&state_file);
 	if (state_fd < 0) {
 		info("No trigger state file (%s) to recover", state_file);
-		error_code = ENOENT;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -940,7 +939,7 @@ extern int trigger_state_restore(void)
 		      "incompatible");
 		xfree(ver_str);
 		free_buf(buffer);
-		return EFAULT;
+		return;
 	}
 	xfree(ver_str);
 
@@ -948,8 +947,8 @@ extern int trigger_state_restore(void)
 	if (trigger_list)
 		list_delete_all (trigger_list, _match_all_triggers, NULL);
 	while (remaining_buf(buffer) > 0) {
-		error_code = _load_trigger_state(buffer, protocol_version);
-		if (error_code != SLURM_SUCCESS)
+		if (_load_trigger_state(buffer, protocol_version) !=
+		    SLURM_SUCCESS)
 			goto unpack_error;
 		trigger_cnt++;
 	}
@@ -959,7 +958,6 @@ unpack_error:
 	error("Incomplete trigger data checkpoint file");
 fini:	verbose("State of %d triggers recovered", trigger_cnt);
 	free_buf(buffer);
-	return SLURM_FAILURE;
 }
 
 static bool _front_end_job_test(bitstr_t *front_end_bitmap,
@@ -987,7 +985,7 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 	if ((trig_in->job_ptr == NULL) ||
 	    (trig_in->job_ptr->magic != JOB_MAGIC) ||
 	    (trig_in->job_ptr->job_id != trig_in->job_id))
-		trig_in->job_ptr = find_job_record(trig_in->job_ptr->job_id);
+		trig_in->job_ptr = find_job_record(trig_in->job_id);
 
 	if ((trig_in->trig_type & TRIGGER_TYPE_FINI) &&
 	    ((trig_in->job_ptr == NULL) ||
@@ -996,7 +994,7 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 		trig_in->trig_time = now + (trig_in->trig_time - 0x8000);
 		if (slurm_get_debug_flags() & DEBUG_FLAG_TRIGGERS) {
 			info("trigger[%u] event for job %u fini",
-			     trig_in->trig_id, trig_in->job_id);
+			     trig_in->trig_id, trig_in->job_ptr->job_id);
 		}
 		return;
 	}
