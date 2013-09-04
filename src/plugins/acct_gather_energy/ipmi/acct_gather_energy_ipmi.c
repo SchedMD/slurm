@@ -951,7 +951,7 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 			       "EnergyIPMISessionTimeout", tbl);
 		s_p_get_uint32(&slurm_ipmi_conf.retransmission_timeout,
 			       "EnergyIPMIRetransmissionTimeout", tbl);
-		s_p_get_uint32(&slurm_ipmi_conf. workaround_flags,
+		s_p_get_uint32(&slurm_ipmi_conf.workaround_flags,
 			       "EnergyIPMIWorkaroundFlags", tbl);
 
 		if (!s_p_get_boolean(&slurm_ipmi_conf.reread_sdr_cache,
@@ -1036,4 +1036,155 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 	}
 
 	verbose("%s loaded", plugin_name);
+}
+
+extern List acct_gather_energy_p_get_config(void)
+{
+	config_key_pair_t *key_pair;
+	List acct_list = list_create(destroy_config_key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnergyIPMIDriverType");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.driver_type);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIDisableAutoProbe");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.disbable_auto_probe);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIDriverAddress");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.driver_address);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIRegisterSpacing");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.register_spacing);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIDriverDevice");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.driver_device);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIProtocolVersion");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.protocool_version);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIUsername");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.username);
+	list_append(acct_list, key_pair);
+
+	/* Don't give out the password */
+	/* key_pair = xmalloc(sizeof(config_key_pair_t)); */
+	/* key_pair->name =xstrdup("EnergyIPMIPassword"); */
+	/* key_pair->value = xstrdup(&slurm_ipmi_conf.password); */
+	/* list_append(acct_list, key_pair); */
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIPrivilegeLevel");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.privilege_level);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIAuthenticationType");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.authentication_type);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMICipherSuiteId");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.cipher_suite_id);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMISessionTimeout");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.session_timeout);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIRetransmissionTimeout");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.retransmission_timeout);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIWorkaroundFlags");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.workaround_flags);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIRereadSdrCache");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.reread_sdr_cache);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIIgnoreNonInterpretableSensors");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.
+				  ignore_non_interpretable_sensors);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIBridgeSensors");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.bridge_sensors);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIInterpretOemData");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.interpret_oem_data);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMISharedSensors");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.shared_sensors);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIDiscreteReading");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.discrete_reading);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIIgnoreScanningDisabled");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.ignore_scanning_disabled);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIAssumeBmcOwner");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.assume_bmc_owner);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIEntitySensorNames");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.entity_sensor_names);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIFrequency");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.freq);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMICalcAdjustment");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.adjustment);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIPowerSensor");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.power_sensor_num);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMITimeout");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.timeout);
+	list_append(acct_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name =xstrdup("EnergyIPMIVariable");
+	key_pair->value = xstrdup(&slurm_ipmi_conf.variable);
+	list_append(acct_list, key_pair);
+
+	return acct_list;
+
 }

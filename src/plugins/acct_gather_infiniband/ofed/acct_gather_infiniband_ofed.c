@@ -380,3 +380,16 @@ extern void acct_gather_infiniband_p_conf_options(s_p_options_t **full_options,
 
 	return;
 }
+
+extern List acct_gather_infiniband_p_get_config(void)
+{
+	config_key_pair_t *key_pair;
+	List infini_list = list_create(destroy_config_key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("InfinibandOFEDPort");
+	key_pair->value = xstrdup(&ofed_conf.port);
+	list_append(infini_list, key_pair);
+
+	return infini_list;
+}

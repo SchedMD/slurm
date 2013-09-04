@@ -2005,6 +2005,7 @@ typedef struct slurm_ctl_conf {
 	char *accounting_storage_type; /* accounting storage type */
 	char *accounting_storage_user; /* accounting storage user */
 	uint16_t acctng_store_job_comment; /* send job comment to accounting */
+	void *acct_gather_conf; /* account gather config */
 	char *acct_gather_energy_type; /* energy accounting type */
 	char *acct_gather_profile_type; /* profile accounting type */
 	char *acct_gather_infiniband_type; /* infiniband accounting type */
@@ -2034,6 +2035,7 @@ typedef struct slurm_ctl_conf {
 	char *epilog_slurmctld;	/* pathname of job epilog run by slurmctld */
 	char *ext_sensors_type; /* external sensors plugin type */
 	uint16_t ext_sensors_freq; /* secs between ext sensors sampling */
+	void *ext_sensors_conf; /* external sensors config file*/
 	uint16_t fast_schedule;	/* 1 to *not* check configurations by node
 				 * (only check configuration file, faster) */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */

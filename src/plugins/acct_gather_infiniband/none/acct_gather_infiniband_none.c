@@ -119,3 +119,7 @@ extern void acct_gather_infiniband_p_conf_options(s_p_options_t **full_options,
 	return;
 }
 
+extern int acct_gather_infiniband_p_get_config(void)
+{
+	return SLURM_SUCCESS;
+}

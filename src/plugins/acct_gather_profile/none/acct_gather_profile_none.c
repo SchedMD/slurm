@@ -154,3 +154,8 @@ extern int acct_gather_profile_p_add_sample_data(uint32_t type, void* data)
 {
 	return SLURM_SUCCESS;
 }
+
+extern int acct_gather_profile_p_get_config(void)
+{
+	return SLURM_SUCCESS;
+}

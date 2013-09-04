@@ -133,3 +133,8 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 {
 	return;
 }
+
+extern List acct_gather_energy_p_get_config(void)
+{
+	return SLURM_SUCCESS;
+}

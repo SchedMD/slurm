@@ -73,6 +73,9 @@
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_ext_sensors.h"
+#include "src/common/slurm_acct_gather_energy.h"
+#include "src/common/slurm_acct_gather_profile.h"
+#include "src/common/slurm_acct_gather_infiniband.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/front_end.h"
@@ -668,7 +671,10 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->select_type         = xstrdup(conf->select_type);
 	select_g_get_info_from_plugin(SELECT_CONFIG_INFO, NULL,
 				      &conf_ptr->select_conf_key_pairs);
-
+	acct_gather_profile_g_get_config(&conf_ptr->acct_gather_conf);
+	ext_sensors_g_get_config(&conf_ptr->ext_sensors_conf);
+	acct_gather_infiniband_g_get_config(&conf_ptr->acct_gather_conf);
+	acct_gather_energy_g_get_config(&conf_ptr->acct_gather_conf);
 	conf_ptr->select_type_param   = conf->select_type_param;
 	conf_ptr->slurm_user_id       = conf->slurm_user_id;
 	conf_ptr->slurm_user_name     = xstrdup(conf->slurm_user_name);
@@ -1750,7 +1756,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 #endif
 	/* Handle non-fatal errors here. All others drain the node. */
 	} else if ((comp_msg->slurm_rc == SLURM_COMMUNICATIONS_SEND_ERROR) ||
-	           (comp_msg->slurm_rc == ESLURM_USER_ID_MISSING) ||
+		   (comp_msg->slurm_rc == ESLURM_USER_ID_MISSING) ||
 		   (comp_msg->slurm_rc == ESLURMD_UID_NOT_FOUND)  ||
 		   (comp_msg->slurm_rc == ESLURMD_GID_NOT_FOUND)  ||
 		   (comp_msg->slurm_rc == ESLURMD_INVALID_ACCT_FREQ)) {
@@ -4579,7 +4585,8 @@ _slurm_rpc_dump_licenses(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
-	debug2("%s: Processing RPC: REQUEST_LICENSE_INFO uid=%d", __func__, uid);
+	debug2("%s: Processing RPC: REQUEST_LICENSE_INFO uid=%d",
+	       __func__, uid);
 	lic_req_msg = (license_info_request_msg_t *)msg->data;
 
 	get_all_license_info(&dump, &dump_size, uid, msg->protocol_version);

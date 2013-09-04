@@ -77,4 +77,5 @@ extern int ext_sensors_data_unpack(ext_sensors_data_t **ext_sensors, Buf buffer,
 extern int ext_sensors_g_update_component_data(void);
 extern int ext_sensors_g_get_stepstartdata(struct step_record *step_rec);
 extern int ext_sensors_g_get_stependdata(struct step_record *step_rec);
+extern int ext_sensors_g_get_config(void *data);
 #endif /*__SLURM_EXT_SENSORS_H__*/

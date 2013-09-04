@@ -70,6 +70,8 @@ typedef struct slurm_acct_gather_profile_ops {
 	int (*task_start)       (uint32_t);
 	int (*task_end)         (pid_t);
 	int (*add_sample_data)  (uint32_t, void*);
+	List (*get_config)      (void);
+
 } slurm_acct_gather_profile_ops_t;
 
 /*
@@ -85,6 +87,7 @@ static const char *syms[] = {
 	"acct_gather_profile_p_task_start",
 	"acct_gather_profile_p_task_end",
 	"acct_gather_profile_p_add_sample_data",
+	"acct_gather_profile_p_get_config",
 };
 
 acct_gather_profile_timer_t acct_gather_profile_timer[PROFILE_CNT];
@@ -547,4 +550,19 @@ extern int acct_gather_profile_g_add_sample_data(uint32_t type, void* data)
 	retval = (*(ops.add_sample_data))(type, data);
 	slurm_mutex_unlock(&profile_mutex);
 	return retval;
+}
+
+extern int acct_gather_profile_g_get_config(void *data)
+{
+	List *tmp_list = (List *) data;
+
+	if (acct_gather_profile_init() < 0)
+		return SLURM_ERROR;
+
+	*tmp_list = (*(ops.get_config))();
+
+	return SLURM_SUCCESS;
+
+
+
 }

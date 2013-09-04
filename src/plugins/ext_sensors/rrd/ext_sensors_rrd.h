@@ -76,6 +76,9 @@ extern int ext_sensors_p_get_stepstartdata(struct step_record *step_rec);
 /* get external sensors data at end of jobstep */
 extern int ext_sensors_p_get_stependdata(struct step_record *step_rec);
 
+/* get external sensor config file */
+extern List ext_sensors_p_get_config(void);
+
 /* consolidate RRD data */
 extern uint32_t RRD_consolidate(time_t step_starttime, time_t step_endtime,
 				bitstr_t* bitmap_of_nodes);

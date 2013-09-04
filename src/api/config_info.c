@@ -130,6 +130,12 @@ void slurm_print_ctl_conf ( FILE* out,
 
 	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->select_conf_key_pairs,
 			      select_title);
+
+	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->ext_sensors_conf,
+			      "\nExternal Sensors\n");
+
+	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->acct_gather_conf,
+			      "\nAccount Gather\n");
 }
 
 extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)

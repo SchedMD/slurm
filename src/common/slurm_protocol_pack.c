@@ -4649,6 +4649,23 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->accounting_storage_type, buffer);
 		packstr(build_ptr->accounting_storage_user, buffer);
 		pack16(build_ptr->acctng_store_job_comment, buffer);
+
+		if (build_ptr->acct_gather_conf)
+			count = list_count(build_ptr->acct_gather_conf);
+
+		pack32(count, buffer);
+		if (count && count != NO_VAL) {
+			ListIterator itr = list_iterator_create(
+				(List)build_ptr->acct_gather_conf);
+			config_key_pair_t *key_pair = NULL;
+			while ((key_pair = list_next(itr))) {
+				pack_config_key_pair(key_pair,
+						     protocol_version, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
 		packstr(build_ptr->acct_gather_energy_type, buffer);
 		packstr(build_ptr->acct_gather_filesystem_type, buffer);
 		packstr(build_ptr->acct_gather_infiniband_type, buffer);
@@ -4678,6 +4695,23 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->epilog, buffer);
 		pack32(build_ptr->epilog_msg_time, buffer);
 		packstr(build_ptr->epilog_slurmctld, buffer);
+
+		if (build_ptr->ext_sensors_conf)
+			count = list_count(build_ptr->ext_sensors_conf);
+
+		pack32(count, buffer);
+		if (count && count != NO_VAL) {
+			ListIterator itr = list_iterator_create(
+				(List)build_ptr->ext_sensors_conf);
+			config_key_pair_t *key_pair = NULL;
+			while ((key_pair = list_next(itr))) {
+				pack_config_key_pair(key_pair,
+						     protocol_version, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
 		packstr(build_ptr->ext_sensors_type, buffer);
 		pack16(build_ptr->ext_sensors_freq, buffer);
 
@@ -5316,6 +5350,23 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_user,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->acctng_store_job_comment, buffer);
+
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			List tmp_list = list_create(destroy_config_key_pair);
+			config_key_pair_t *object = NULL;
+			int i;
+			for (i=0; i<count; i++) {
+				if (unpack_config_key_pair(
+					    (void *)&object, protocol_version,
+					    buffer)
+				    == SLURM_ERROR)
+					goto unpack_error;
+				list_append(tmp_list, object);
+			}
+			build_ptr->acct_gather_conf = (void *)tmp_list;
+		}
+
 		safe_unpackstr_xmalloc(&build_ptr->acct_gather_energy_type,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->acct_gather_filesystem_type,
@@ -5359,6 +5410,23 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack32(&build_ptr->epilog_msg_time, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->epilog_slurmctld,
 				       &uint32_tmp, buffer);
+
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			List tmp_list = list_create(destroy_config_key_pair);
+			config_key_pair_t *object = NULL;
+			int i;
+			for (i=0; i<count; i++) {
+				if (unpack_config_key_pair(
+					    (void *)&object, protocol_version,
+					    buffer)
+				    == SLURM_ERROR)
+					goto unpack_error;
+				list_append(tmp_list, object);
+			}
+			build_ptr->ext_sensors_conf = (void *)tmp_list;
+		}
+
 		safe_unpackstr_xmalloc(&build_ptr->ext_sensors_type,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->ext_sensors_freq, buffer);

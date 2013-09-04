@@ -2093,6 +2093,12 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->accounting_storage_pass);
 	xfree (ctl_conf_ptr->accounting_storage_type);
 	xfree (ctl_conf_ptr->accounting_storage_user);
+	if (ctl_conf_ptr->acct_gather_conf)
+		list_destroy((List)ctl_conf_ptr->acct_gather_conf);
+	xfree (ctl_conf_ptr->acct_gather_energy_type);
+	xfree (ctl_conf_ptr->acct_gather_profile_type);
+	xfree (ctl_conf_ptr->acct_gather_infiniband_type);
+	xfree (ctl_conf_ptr->acct_gather_filesystem_type);
 	xfree (ctl_conf_ptr->authtype);
 	xfree (ctl_conf_ptr->backup_addr);
 	xfree (ctl_conf_ptr->backup_controller);
@@ -2101,12 +2107,10 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->crypto_type);
-	xfree (ctl_conf_ptr->acct_gather_energy_type);
-	xfree (ctl_conf_ptr->acct_gather_profile_type);
-	xfree (ctl_conf_ptr->acct_gather_infiniband_type);
-	xfree (ctl_conf_ptr->acct_gather_filesystem_type);
 	xfree (ctl_conf_ptr->epilog);
 	xfree (ctl_conf_ptr->epilog_slurmctld);
+	if (ctl_conf_ptr->ext_sensors_conf)
+		list_destroy((List)ctl_conf_ptr->ext_sensors_conf);
 	xfree (ctl_conf_ptr->ext_sensors_type);
 	xfree (ctl_conf_ptr->gres_plugins);
 	xfree (ctl_conf_ptr->health_check_program);
