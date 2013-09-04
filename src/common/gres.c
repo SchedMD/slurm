@@ -145,6 +145,10 @@ extern int	_job_alloc(void *job_gres_data, void *node_gres_data,
 			   bitstr_t *core_bitmap);
 static int	_job_config_validate(char *config, uint32_t *gres_cnt,
 				     slurm_gres_context_t *context_ptr);
+static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
+				 bool use_total_gres, bitstr_t *cpu_bitmap,
+				 int cpu_start_bit, int cpu_end_bit,
+				 char *gres_name);
 static int	_job_dealloc(void *job_gres_data, void *node_gres_data,
 			     int node_offset, char *gres_name, uint32_t job_id,
 			     char *node_name);
@@ -2456,6 +2460,41 @@ static void _validate_gres_node_cpus(gres_node_state_t *node_gres_ptr,
 	}
 }
 
+static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
+				 bool use_total_gres, bitstr_t *cpu_bitmap,
+				 int cpu_start_bit, int cpu_end_bit,
+				 char *gres_name)
+{
+	int i, j, cpus_ctld;
+	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
+	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
+	bitstr_t *avail_cpu_bitmap = NULL;
+
+	if (!node_gres_ptr->topo_cnt || !cpu_bitmap ||	/* No topology info */
+	    !job_gres_ptr->gres_cnt_alloc)		/* No job GRES */
+		return;
+
+	/* Determine which specific CPUs can be used */
+	avail_cpu_bitmap = bit_copy(cpu_bitmap);
+	bit_nclear(avail_cpu_bitmap, cpu_start_bit, cpu_end_bit);
+	for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
+		if (node_gres_ptr->topo_gres_cnt_avail[i] == 0)
+			continue;
+		if (!use_total_gres &&
+		    (node_gres_ptr->topo_gres_cnt_alloc[i] >=
+		     node_gres_ptr->topo_gres_cnt_avail[i]))
+			continue;
+		cpus_ctld = bit_size(node_gres_ptr->topo_cpus_bitmap[i]);
+		for (j = 0; j < cpus_ctld; j++) {
+			if (bit_test(node_gres_ptr->topo_cpus_bitmap[i], j)) {
+				bit_set(avail_cpu_bitmap, cpu_start_bit + j);
+			}
+		}
+	}
+	bit_and(cpu_bitmap, avail_cpu_bitmap);
+	FREE_NULL_BITMAP(avail_cpu_bitmap);
+}
+
 extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  bool use_total_gres, bitstr_t *cpu_bitmap,
 			  int cpu_start_bit, int cpu_end_bit, bool *topo_set,
@@ -2622,6 +2661,70 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			return (uint32_t) 0;	/* insufficient, gres to use */
 		return NO_VAL;
 	}
+}
+
+/*
+ * Clear the cpu_bitmap for CPUs which are not usable by this job (i.e. for
+ *	CPUs which are already bound to other jobs or lack GRES)
+ * IN job_gres_list  - job's gres_list built by gres_plugin_job_state_validate()
+ * IN node_gres_list - node's gres_list built by
+ *                     gres_plugin_node_config_validate()
+ * IN use_total_gres - if set then consider all gres resources as available,
+ *		       and none are commited to running jobs
+ * IN/OUT cpu_bitmap - Identification of available CPUs (NULL if no restriction)
+ * IN cpu_start_bit  - index into cpu_bitmap for this node's first CPU
+ * IN cpu_end_bit    - index into cpu_bitmap for this node's last CPU
+ */
+extern void gres_plugin_job_core_filter(List job_gres_list, List node_gres_list,
+					bool use_total_gres,
+					bitstr_t *cpu_bitmap,
+					int cpu_start_bit, int cpu_end_bit)
+{
+	int i;
+	ListIterator  job_gres_iter, node_gres_iter;
+	gres_state_t *job_gres_ptr, *node_gres_ptr;
+
+	if ((job_gres_list == NULL) || (cpu_bitmap == NULL))
+		return;
+	if (node_gres_list == NULL) {
+		bit_nclear(cpu_bitmap, cpu_start_bit, cpu_end_bit);
+		return;
+	}
+
+	(void) gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		node_gres_iter = list_iterator_create(node_gres_list);
+		while ((node_gres_ptr = (gres_state_t *)
+				list_next(node_gres_iter))) {
+			if (job_gres_ptr->plugin_id == node_gres_ptr->plugin_id)
+				break;
+		}
+		list_iterator_destroy(node_gres_iter);
+		if (node_gres_ptr == NULL) {
+			/* node lack resources required by the job */
+			bit_nclear(cpu_bitmap, cpu_start_bit, cpu_end_bit);
+			break;
+		}
+
+		for (i = 0; i < gres_context_cnt; i++) {
+			if (job_gres_ptr->plugin_id !=
+			    gres_context[i].plugin_id)
+				continue;
+			_job_core_filter(job_gres_ptr->gres_data,
+					 node_gres_ptr->gres_data,
+					 use_total_gres, cpu_bitmap,
+					 cpu_start_bit, cpu_end_bit,
+					 gres_context[i].gres_name);
+			break;
+		}
+	}
+	list_iterator_destroy(job_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return;
 }
 
 /*

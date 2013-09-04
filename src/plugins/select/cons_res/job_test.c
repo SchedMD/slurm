@@ -649,6 +649,19 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		return cpus;
 	}
 
+	core_start_bit = cr_get_coremap_offset(node_i);
+	core_end_bit   = cr_get_coremap_offset(node_i+1) - 1;
+	cpus_per_core  = select_node_record[node_i].cpus /
+			 (core_end_bit - core_start_bit + 1);
+	node_ptr = select_node_record[node_i].node_ptr;
+	if (node_usage[node_i].gres_list)
+		gres_list = node_usage[node_i].gres_list;
+	else
+		gres_list = node_ptr->gres_list;
+
+	gres_plugin_job_core_filter(job_ptr->gres_list, gres_list, test_only,
+				    core_map, core_start_bit, core_end_bit);
+
 	if (cr_type & CR_CORE) {
 		cpus = _allocate_cores(job_ptr, core_map, part_core_map,
 				       node_i, false);
@@ -665,12 +678,6 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 				       node_i, true);
 		cpu_alloc_size = 1;
 	}
-
-	core_start_bit = cr_get_coremap_offset(node_i);
-	core_end_bit   = cr_get_coremap_offset(node_i+1) - 1;
-	cpus_per_core  = select_node_record[node_i].cpus /
-			 (core_end_bit - core_start_bit + 1);
-	node_ptr = select_node_record[node_i].node_ptr;
 
 	if (cr_type & CR_MEMORY) {
 		/* Memory Check: check pn_min_memory to see if:
@@ -697,13 +704,9 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		}
 	}
 
-	if (node_usage[node_i].gres_list)
-		gres_list = node_usage[node_i].gres_list;
-	else
-		gres_list = node_ptr->gres_list;
 	gres_cores = gres_plugin_job_test(job_ptr->gres_list,
 					  gres_list, test_only,
-					  core_map, core_start_bit,
+					  NULL, core_start_bit,
 					  core_end_bit, job_ptr->job_id,
 					  node_ptr->name);
 	gres_cpus = gres_cores;
