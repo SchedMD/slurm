@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 	assoc_init_args_t assoc_init_arg;
-	pthread_t assoc_cache_thread;
+	pthread_t assoc_cache_thread = (pthread_t) 0;
 	slurm_trigger_callbacks_t callbacks;
 	char *dir_name;
 
@@ -918,6 +918,8 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	/* initialize ports for RPCs */
 	lock_slurmctld(config_read_lock);
 	nports = slurmctld_conf.slurmctld_port_count;
+	if (nports == 0)
+		fatal("slurmctld port count is zero");
 	sockfd = xmalloc(sizeof(slurm_fd_t) * nports);
 	for (i=0; i<nports; i++) {
 		sockfd[i] = slurm_init_msg_engine_addrname_port(

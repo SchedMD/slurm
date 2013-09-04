@@ -1023,7 +1023,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	} else {
 		load_all_resv_state(recover);
 		if (recover >= 1) {
-			(void) trigger_state_restore();
+			trigger_state_restore();
 			(void) slurm_sched_reconfig();
 		}
 	}

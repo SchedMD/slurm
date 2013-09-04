@@ -607,7 +607,8 @@ next_part:		part_ptr = (struct part_record *)
 		bit_not(job_ptr->details->exc_node_bitmap);
 		error_code = select_nodes(job_ptr, false, NULL);
 		bit_free(job_ptr->details->exc_node_bitmap);
-		job_ptr->details->exc_node_bitmap = orig_exc_bitmap;
+		if (have_node_bitmaps)
+			job_ptr->details->exc_node_bitmap = orig_exc_bitmap;
 		if (error_code == SLURM_SUCCESS) {
 			last_job_update = now;
 			info("sched: Allocate JobId=%u NodeList=%s #CPUs=%u",
@@ -1520,7 +1521,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	int rc = SLURM_SUCCESS;
 	uint16_t depend_type = 0;
 	uint32_t job_id = 0;
-	char *tok = new_depend, *sep_ptr, *sep_ptr2;
+	char *tok = new_depend, *sep_ptr, *sep_ptr2 = NULL;
 	List new_depend_list = NULL;
 	struct depend_spec *dep_ptr;
 	struct job_record *dep_job_ptr;
@@ -1653,7 +1654,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				break;
 			sep_ptr = sep_ptr2 + 1;	/* skip over ":" */
 		}
-		if (sep_ptr2[0] == ',')
+		if (sep_ptr2 && (sep_ptr2[0] == ','))
 			tok = sep_ptr2 + 1;
 		else
 			break;

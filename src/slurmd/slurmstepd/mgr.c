@@ -1675,7 +1675,7 @@ static int
 _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 {
 	stepd_step_task_info_t *t = NULL;
-	int status;
+	int status = 0;
 	pid_t pid;
 	int completed = 0;
 	jobacctinfo_t *jobacct = NULL;

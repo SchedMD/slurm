@@ -568,10 +568,12 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			if ( best_fit_cpus == 0 )
 				break;
 
+			j = best_fit_location;
+			if (sock_per_brd)
+				j /= sock_per_brd;
 			debug3("cons_res: best_fit: using node[%u]: "
 			       "board[%u]: socket[%u]: %u cores available",
-			       n, best_fit_location/sock_per_brd,
-			       best_fit_location,
+			       n, j, best_fit_location,
 			       sockets_cpu_cnt[best_fit_location]);
 
 			/* select socket cores from last to first */

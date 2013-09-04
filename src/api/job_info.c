@@ -1278,7 +1278,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 extern long slurm_get_rem_time(uint32_t jobid)
 {
 	time_t now = time(NULL);
-	time_t end_time;
+	time_t end_time = 0;
 	long rc;
 
 	if (slurm_get_end_time(jobid, &end_time) != SLURM_SUCCESS)
@@ -1294,7 +1294,7 @@ extern long slurm_get_rem_time(uint32_t jobid)
 extern int32_t islurm_get_rem_time__(uint32_t *jobid)
 {
 	time_t now = time(NULL);
-	time_t end_time;
+	time_t end_time = 0;
 	int32_t rc;
 
 	if ((jobid == NULL)

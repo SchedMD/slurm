@@ -193,13 +193,13 @@ int main (int argc, char *argv[])
 	/* create the format list from the format */
 	parse_format(params.format);
 
-	if (params.jobs && (!resp_msg->priority_factors_list ||
-			    !list_count(resp_msg->priority_factors_list)))
+	if (params.jobs && (!resp_msg || !resp_msg->priority_factors_list ||
+			    !list_count(resp_msg->priority_factors_list))) {
 		printf("Unable to find jobs matching user/id(s) specified\n");
-	else
+	} else if (resp_msg) {
 		print_jobs_array(resp_msg->priority_factors_list,
 				 params.format_list);
-
+	}
 #if 0
 	/* Free storage here if we want to verify that logic.
 	 * Since we exit next, this is not important */

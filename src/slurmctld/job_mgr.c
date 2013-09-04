@@ -4011,6 +4011,10 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	part_ptr = job_ptr->part_ptr;
 	qos_ptr = job_ptr->qos_ptr;
 	assoc_ptr = job_ptr->assoc_ptr;
+	if (!detail_ptr) {	/* To prevent CLANG error */
+		fatal("job %u has NULL details_ptr", job_ptr->job_id);
+		return WAIT_NO_REASON;
+	}
 
 #ifdef HAVE_BG
 	job_min_nodes = detail_ptr->min_cpus / cpus_per_node;

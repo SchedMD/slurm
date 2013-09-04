@@ -75,7 +75,7 @@ extern void trigger_primary_db_res_op(void);
 
 /* Save and restore state for slurmctld fail-over or restart */
 extern int  trigger_state_save(void);
-extern int  trigger_state_restore(void);
+extern void trigger_state_restore(void);
 
 /* Free all allocated memory */
 extern void trigger_fini(void);
