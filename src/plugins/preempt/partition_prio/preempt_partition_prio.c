@@ -153,11 +153,8 @@ static int _sort_by_prio (void *x, void *y)
 {
 	int rc;
 	uint32_t job_prio1, job_prio2;
-	struct job_record *j1;
-	struct job_record *j2;
-
-	j1 = *(struct job_record **)x;
-	j2 = *(struct job_record **)y;
+	struct job_record *j1 = *(struct job_record **)x;
+	struct job_record *j2 = *(struct job_record **)y;
 
 	job_prio1 = _gen_job_prio(j1);
 	job_prio2 = _gen_job_prio(j2);

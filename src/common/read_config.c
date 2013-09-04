@@ -4196,8 +4196,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern int sort_key_pairs(config_key_pair_t *key_a, config_key_pair_t *key_b)
+extern int sort_key_pairs(void *v1, void *v2)
 {
+	config_key_pair_t *key_a = *(config_key_pair_t **)v1;
+	config_key_pair_t *key_b = *(config_key_pair_t **)v2;
+
 	int size_a = strcmp(key_a->name, key_b->name);
 
 	if (size_a < 0)

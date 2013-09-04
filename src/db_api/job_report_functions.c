@@ -51,16 +51,10 @@
 
 static int _sort_group_asc(void *v1, void *v2)
 {
-	char *group_a;
-	char *group_b;
-	int size_a;
-	int size_b;
-
-	group_a = *(char **)v1;
-	group_b = *(char **)v2;
-
-	size_a = atoi(group_a);
-	size_b = atoi(group_b);
+	char *group_a = *(char **)v1;
+	char *group_b = *(char **)v2;
+	int size_a = atoi(group_a);
+	int size_b = atoi(group_b);
 
 	if (size_a < size_b)
 		return -1;

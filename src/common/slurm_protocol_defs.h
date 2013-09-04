@@ -1054,7 +1054,7 @@ extern void slurm_destroy_uint32_ptr(void *object);
 extern char *slurm_add_slash_to_quotes(char *str);
 extern int slurm_addto_char_list(List char_list, char *names);
 extern int slurm_sort_char_list_asc(void *, void *);
-extern int slurm_sort_char_list_desc(char *name_a, char *name_b);
+extern int slurm_sort_char_list_desc(void *, void *);
 
 /* free message functions */
 extern void slurm_free_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg);

@@ -38,28 +38,10 @@
 \*****************************************************************************/
 #include "src/common/print_fields.h"
 #include "src/common/parse_time.h"
+#include "src/common/read_config.h"
 
 int print_fields_parsable_print = 0;
 int print_fields_have_header = 1;
-
-static int _sort_char_list(void *v1, void *v2)
-{
-	int diff;
-	char *name_a;
-	char *name_b;
-
-	name_a = *(char **)v1;
-	name_b = *(char **)v2;
-
-	diff = strcmp(name_a, name_b);
-
-	if (diff < 0)
-		return -1;
-	else if (diff > 0)
-		return 1;
-
-	return 0;
-}
 
 extern void destroy_print_field(void *object)
 {
@@ -375,7 +357,7 @@ extern void print_fields_char_list(print_field_t *field, List value, int last)
 		else
 			print_this = xstrdup(" ");
 	} else {
-		list_sort(value, (ListCmpF)_sort_char_list);
+		list_sort(value, (ListCmpF)slurm_sort_char_list_asc);
 		itr = list_iterator_create(value);
 		while ((object = list_next(itr))) {
 			if (print_this)

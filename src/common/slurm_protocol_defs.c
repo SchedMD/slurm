@@ -258,13 +258,9 @@ endit:
 
 extern int slurm_sort_char_list_asc(void *v1, void *v2)
 {
-	int diff;
-	char *name_a;
-	char *name_b;
-
-	name_a = *(char **)v1;
-	name_b = *(char **)v2;
-	diff = strcmp(name_a, name_b);
+	char *name_a = *(char **)v1;
+	char *name_b = *(char **)v2;
+	int diff = strcmp(name_a, name_b);
 
 	if (diff < 0)
 		return -1;
@@ -274,8 +270,10 @@ extern int slurm_sort_char_list_asc(void *v1, void *v2)
 	return 0;
 }
 
-extern int slurm_sort_char_list_desc(char *name_a, char *name_b)
+extern int slurm_sort_char_list_desc(void *v1, void *v2)
 {
+	char *name_a = *(char **)v1;
+	char *name_b = *(char **)v2;
 	int diff = strcmp(name_a, name_b);
 
 	if (diff > 0)
