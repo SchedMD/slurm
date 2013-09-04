@@ -1174,10 +1174,10 @@ extern int agent_retry (int min_wait, bool mail_too)
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list) {
 		static time_t last_msg_time = (time_t) 0;
-		uint32_t msg_type[5], i = 0;
+		uint32_t msg_type[5] = {0, 0, 0, 0, 0}, i = 0;
 		list_size = list_count(retry_list);
-		if ((list_size > MAX_AGENT_CNT)
-		&&  (difftime(now, last_msg_time) > 300)) {
+		if ((list_size > MAX_AGENT_CNT) &&
+		    (difftime(now, last_msg_time) > 300)) {
 			/* Note sizable backlog of work */
 			info("WARNING: agent retry_list size is %d",
 				list_size);
