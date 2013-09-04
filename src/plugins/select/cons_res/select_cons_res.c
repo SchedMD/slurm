@@ -2048,8 +2048,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		if (job_ptr->job_resrcs)
 			log_job_resources(job_ptr->job_id, job_ptr->job_resrcs);
 		else {
-			info("no job_resources info for job %u",
-			     job_ptr->job_id);
+			info("no job_resources info for job %u rc=%d",
+			     job_ptr->job_id, rc);
 		}
 	} else if (debug_cpu_bind && job_ptr->job_resrcs) {
 		log_job_resources(job_ptr->job_id, job_ptr->job_resrcs);
