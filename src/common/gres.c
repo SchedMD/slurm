@@ -148,7 +148,7 @@ static int	_job_config_validate(char *config, uint32_t *gres_cnt,
 static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
 				 bool use_total_gres, bitstr_t *cpu_bitmap,
 				 int cpu_start_bit, int cpu_end_bit,
-				 char *gres_name);
+				 char *gres_name, char *node_name);
 static int	_job_dealloc(void *job_gres_data, void *node_gres_data,
 			     int node_offset, char *gres_name, uint32_t job_id,
 			     char *node_name);
@@ -2463,7 +2463,7 @@ static void _validate_gres_node_cpus(gres_node_state_t *node_gres_ptr,
 static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
 				 bool use_total_gres, bitstr_t *cpu_bitmap,
 				 int cpu_start_bit, int cpu_end_bit,
-				 char *gres_name)
+				 char *gres_name, char *node_name)
 {
 	int i, j, cpus_ctld;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
@@ -2484,6 +2484,8 @@ static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
 		    (node_gres_ptr->topo_gres_cnt_alloc[i] >=
 		     node_gres_ptr->topo_gres_cnt_avail[i]))
 			continue;
+		cpus_ctld = cpu_end_bit - cpu_start_bit + 1;
+		_validate_gres_node_cpus(node_gres_ptr, cpus_ctld, node_name);
 		cpus_ctld = bit_size(node_gres_ptr->topo_cpus_bitmap[i]);
 		for (j = 0; j < cpus_ctld; j++) {
 			if (bit_test(node_gres_ptr->topo_cpus_bitmap[i], j)) {
@@ -2678,7 +2680,8 @@ extern uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 extern void gres_plugin_job_core_filter(List job_gres_list, List node_gres_list,
 					bool use_total_gres,
 					bitstr_t *cpu_bitmap,
-					int cpu_start_bit, int cpu_end_bit)
+					int cpu_start_bit, int cpu_end_bit,
+					char *node_name)
 {
 	int i;
 	ListIterator  job_gres_iter, node_gres_iter;
@@ -2717,7 +2720,7 @@ extern void gres_plugin_job_core_filter(List job_gres_list, List node_gres_list,
 					 node_gres_ptr->gres_data,
 					 use_total_gres, cpu_bitmap,
 					 cpu_start_bit, cpu_end_bit,
-					 gres_context[i].gres_name);
+					 gres_context[i].gres_name, node_name);
 			break;
 		}
 	}

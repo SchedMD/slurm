@@ -373,11 +373,13 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
  * IN/OUT cpu_bitmap - Identification of available CPUs (NULL if no restriction)
  * IN cpu_start_bit  - index into cpu_bitmap for this node's first CPU
  * IN cpu_end_bit    - index into cpu_bitmap for this node's last CPU
+ * IN node_name      - name of the node (for logging)
  */
 extern void gres_plugin_job_core_filter(List job_gres_list, List node_gres_list,
 					bool use_total_gres,
 					bitstr_t *cpu_bitmap,
-					int cpu_start_bit, int cpu_end_bit);
+					int cpu_start_bit, int cpu_end_bit,
+					char *node_name);
 
 /*
  * Determine how many CPUs on the node can be used by this job

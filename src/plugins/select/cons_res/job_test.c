@@ -660,7 +660,8 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		gres_list = node_ptr->gres_list;
 
 	gres_plugin_job_core_filter(job_ptr->gres_list, gres_list, test_only,
-				    core_map, core_start_bit, core_end_bit);
+				    core_map, core_start_bit, core_end_bit,
+				    node_ptr->name);
 
 	if (cr_type & CR_CORE) {
 		cpus = _allocate_cores(job_ptr, core_map, part_core_map,
