@@ -59,7 +59,6 @@ AC_DEFUN([X_AC_CRAY],
     AC_DEFINE(HAVE_ALPS_CRAY_EMULATION, 1, [Define to 1 for emulating a Cray XT/XE system using ALPS])
   elif test "$ac_have_native_cray" = "yes"; then
     _x_ac_cray_job_dir="job/default"
-    _x_ac_cray_alps_dir="alps/default"
     _x_ac_cray_alpscomm_dir="alpscomm/default"
 
     _x_ac_cray_dirs="/opt/cray"
@@ -94,10 +93,11 @@ AC_DEFUN([X_AC_CRAY],
       CPPFLAGS="$CRAY_CPPFLAGS $CRAY_SWITCH_CPPFLAGS $saved_CPPFLAGS"
       LIBS="$CRAY_LDFLAGS $CRAY_SWITCH_LDFLAGS $saved_LIBS"
 
-# FIXME: alpscomm_cn.h appeared to not work correctly here.  Needs further
-# looking into
+# FIXME: alpscomm_cn.h appeared to not work correctly here.
+# Missing #include <netinet/in.h>.  Cray needs to add it for things to
+# work correctly.
 # #include <alpscomm_cn.h>
-# alpsc_flush_lustre("");
+# alpsc_flush_lustre((char **)0);
 
       AC_LINK_IFELSE(
         [AC_LANG_PROGRAM(
