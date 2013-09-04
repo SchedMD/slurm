@@ -49,6 +49,7 @@ typedef struct licenses {
 } licenses_t;
 
 extern List license_list;
+extern time_t last_license_update;
 
 /* Get string of used license information. Caller must xfree return value */
 extern char *get_licenses_used(void);

@@ -4585,6 +4585,15 @@ _slurm_rpc_dump_licenses(slurm_msg_t * msg)
 	       __func__, uid);
 	lic_req_msg = (license_info_request_msg_t *)msg->data;
 
+	if ((lic_req_msg->last_update - 1) >= last_license_update) {
+		/* Dont send unnecessary data
+		 */
+		debug2("%s: no change", __func__);
+		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
+
+		return;
+	}
+
 	get_all_license_info(&dump, &dump_size, uid, msg->protocol_version);
 
 	END_TIMER2("_slurm_rpc_dump_licenses");

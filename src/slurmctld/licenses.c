@@ -54,6 +54,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 List license_list = (List) NULL;
+time_t last_license_update;
 static pthread_mutex_t license_mutex = PTHREAD_MUTEX_INITIALIZER;
 static void _pack_license(struct licenses *lic, Buf buffer, uint16_t protocol_version);
 
@@ -217,6 +218,8 @@ extern char *get_licenses_used(void)
 extern int license_init(char *licenses)
 {
 	bool valid;
+
+	last_license_update = time(NULL);
 
 	slurm_mutex_lock(&license_mutex);
 	if (license_list)
@@ -443,6 +446,8 @@ extern int license_job_get(struct job_record *job_ptr)
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return rc;
 
+	last_license_update = time(NULL);
+
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
 	while ((license_entry = (licenses_t *) list_next(iter))) {
@@ -476,6 +481,8 @@ extern int license_job_return(struct job_record *job_ptr)
 
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return rc;
+
+	last_license_update = time(NULL);
 
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
