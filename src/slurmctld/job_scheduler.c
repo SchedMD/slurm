@@ -607,8 +607,7 @@ next_part:		part_ptr = (struct part_record *)
 		bit_not(job_ptr->details->exc_node_bitmap);
 		error_code = select_nodes(job_ptr, false, NULL);
 		bit_free(job_ptr->details->exc_node_bitmap);
-		if (have_node_bitmaps)
-			job_ptr->details->exc_node_bitmap = orig_exc_bitmap;
+		job_ptr->details->exc_node_bitmap = orig_exc_bitmap;
 		if (error_code == SLURM_SUCCESS) {
 			last_job_update = now;
 			info("sched: Allocate JobId=%u NodeList=%s #CPUs=%u",
