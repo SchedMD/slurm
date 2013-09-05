@@ -56,7 +56,7 @@ extern int process(shares_response_msg_t *resp)
 
 	print_field_t *field = NULL;
 
-	List format_list = list_create(slurm_destroy_char);
+	List format_list;
 	List print_fields_list; /* types are of print_field_t */
 
 	enum {
