@@ -254,13 +254,19 @@ plus dinner on Wednesday evening.<br><br>
 </tr>
 
 <tr>
-  <td width="15%">15:10 - 15:40</td>
+  <td width="15%">15:10 - 15:30</td>
+  <td width="15%">&nbsp;Technical</td>
+  <td width="25%">&nbsp;Francois Daikhate, Matthieu Hautreux (CEA)</td>
+  <td width="45%">&nbsp;Depth Oblivious Hierarchical Fairshare Priority Factor</td>
+</tr>
+<tr>
+  <td width="15%">15:30 - 16:00</td>
   <td width="15%">&nbsp;Technical</td>
   <td width="25%">&nbsp;Morris Jette (SchedMD), Yiannis Georgiou (Bull)</td>
   <td width="45%">&nbsp;Slurm Roadmap</td>
 </tr>
 <tr>
-  <td width="15%">15:40 - 16:30</td>
+  <td width="15%">16:00 - 17:00</td>
   <td width="15%">&nbsp;Discussion</td>
   <td width="25%">&nbsp;Everyone</td>
   <td width="45%">&nbsp;Open Discussion</td>
@@ -577,6 +583,17 @@ GPUs to specific CPUs.</p>
 <p>This site report will detail the recent introduction of Slurm on a new
 computer at Technische Universitat Dresden.</p>
 
+<h3>Depth Oblivious Hierarchical Fairshare Priority Factor</h3>
+<p>Francois Daikhate, Matthieu Hautreux (CEA)</p>
+<p>As High Performance Computing use becomes prevalent in increasingly varied
+scientific and industrial fields, clusters often need to be shared by a growing
+number of user communities. One aspect of managing these heterogenous groups
+involves being able to schedule their jobs fairly according to their respective
+machine shares. In this talk we look at how slurm hierarchical fairshare
+algorithms handle this task when user groups form complex hierarchies. We
+propose an alternative formula to compute job priorities which improves
+fairness in this situation.</p>
+
 <h3>Slurm Roadmap</h3>
 <p>Morris Jette (SchedMD), Yiannis Georgiou (Bull)</p>
 <p>Slurm continues to evolve rapidly, with two major releases per
@@ -587,6 +604,6 @@ computing. These requirements include not only scalability issues,
 but a new focus on power management, fault tolerance, topology
 optimized scheduling, and heterogeneous computing.</p>
 
-<p style="text-align:center;">Last modified 3 September 2013</p>
+<p style="text-align:center;">Last modified 5 September 2013</p>
 
 <!--#include virtual="footer.txt"-->
