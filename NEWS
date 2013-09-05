@@ -94,6 +94,8 @@ documents those changes that are of interest to users and admins.
     reject jobs that can not match GRES to the allocated CPUs. New logic first
     filters out CPUs that can not use the GRES, next picks CPUs for the job,
     and finally picks the GRES that best match those CPUs.
+ -- Switch/nrt - Prevent invalid memory reference when allocating single adapter
+    per node of specific adapter type
 
 * Changes in Slurm 2.6.1
 ========================
