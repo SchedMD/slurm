@@ -729,7 +729,7 @@ extern void slurmdb_pack_cluster_accounting_rec(void *in, uint16_t rpc_version,
 	slurmdb_cluster_accounting_rec_t *object =
 		(slurmdb_cluster_accounting_rec_t *)in;
 
-	if (rpc_version >= SLURMDBD_13_12_VERSION) {
+	if (rpc_version >= SLURM_13_12_PROTOCOL_VERSION) {
 		if (!object) {
 			pack64(0, buffer);
 			pack64(0, buffer);
@@ -785,7 +785,7 @@ extern int slurmdb_unpack_cluster_accounting_rec(void **object,
 
 	*object = object_ptr;
 
-	if (rpc_version >= SLURMDBD_13_12_VERSION) {
+	if (rpc_version >= SLURM_13_12_PROTOCOL_VERSION) {
 		safe_unpack64(&object_ptr->alloc_secs, buffer);
 		safe_unpack64(&object_ptr->consumed_energy, buffer);
 		safe_unpack32(&object_ptr->cpu_count, buffer);
@@ -1014,7 +1014,7 @@ extern void slurmdb_pack_accounting_rec(void *in, uint16_t rpc_version,
 {
 	slurmdb_accounting_rec_t *object = (slurmdb_accounting_rec_t *)in;
 
-	if (rpc_version >= SLURMDBD_13_12_VERSION) {
+	if (rpc_version >= SLURM_13_12_PROTOCOL_VERSION) {
 		if (!object) {
 			pack64(0, buffer);
 			pack64(0, buffer);
@@ -1049,7 +1049,7 @@ extern int slurmdb_unpack_accounting_rec(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if (rpc_version >= SLURMDBD_13_12_VERSION) {
+	if (rpc_version >= SLURM_13_12_PROTOCOL_VERSION) {
 		safe_unpack64(&object_ptr->alloc_secs, buffer);
 		safe_unpack64(&object_ptr->consumed_energy, buffer);
 		safe_unpack32(&object_ptr->id, buffer);

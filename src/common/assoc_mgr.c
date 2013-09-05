@@ -3338,7 +3338,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 
 	START_TIMER;
 	/* write header: version, time */
-	pack16(SLURMDBD_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 
 	assoc_mgr_lock(&locks);
@@ -3347,7 +3347,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		msg.my_list = assoc_mgr_user_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_USERS, buffer);
-		slurmdbd_pack_list_msg(&msg, SLURMDBD_VERSION,
+		slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
 				       DBD_ADD_USERS, buffer);
 	}
 
@@ -3356,7 +3356,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		msg.my_list = assoc_mgr_qos_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_QOS, buffer);
-		slurmdbd_pack_list_msg(&msg, SLURMDBD_VERSION,
+		slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
 				       DBD_ADD_QOS, buffer);
 	}
 
@@ -3365,7 +3365,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		msg.my_list = assoc_mgr_wckey_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_WCKEYS, buffer);
-		slurmdbd_pack_list_msg(&msg, SLURMDBD_VERSION,
+		slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
 				       DBD_ADD_WCKEYS, buffer);
 	}
 	/* this needs to be done last so qos is set up
@@ -3375,7 +3375,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		msg.my_list = assoc_mgr_association_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_ASSOCS, buffer);
-		slurmdbd_pack_list_msg(&msg, SLURMDBD_VERSION,
+		slurmdbd_pack_list_msg(&msg, SLURM_PROTOCOL_VERSION,
 				       DBD_ADD_ASSOCS, buffer);
 	}
 
@@ -3821,11 +3821,11 @@ extern int load_assoc_mgr_state(char *state_save_location)
 
 	safe_unpack16(&ver, buffer);
 	debug3("Version in assoc_mgr_state header is %u", ver);
-	if (ver > SLURMDBD_VERSION || ver < SLURMDBD_VERSION_MIN) {
+	if (ver > SLURM_PROTOCOL_VERSION || ver < SLURMDBD_VERSION_MIN) {
 		error("***********************************************");
 		error("Can not recover assoc_mgr state, incompatible version, "
 		      "got %u need > %u <= %u", ver,
-		      SLURMDBD_VERSION_MIN, SLURMDBD_VERSION);
+		      SLURMDBD_VERSION_MIN, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
 		assoc_mgr_unlock(&locks);

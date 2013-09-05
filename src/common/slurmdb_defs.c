@@ -2205,8 +2205,8 @@ extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 	int i, rc;
 
 	// Set highest version that we can use
-	if (rpc_version > SLURMDBD_VERSION) {
-		rpc_version = SLURMDBD_VERSION;
+	if (rpc_version > SLURM_PROTOCOL_VERSION) {
+		rpc_version = SLURM_PROTOCOL_VERSION;
 	}
 	memset(&msg, 0, sizeof(accounting_update_msg_t));
 	msg.rpc_version = rpc_version;

@@ -145,7 +145,7 @@ static int    _tot_wait (struct timeval *start_time);
  */
 extern uint16_t slurmdbd_translate_rpc(uint16_t rpc_version)
 {
-	if (rpc_version >= SLURMDBD_13_12_VERSION)
+	if (rpc_version >= SLURM_13_12_PROTOCOL_VERSION)
 		return SLURM_13_12_PROTOCOL_VERSION;
 	else if (rpc_version >= SLURMDBD_2_6_VERSION)
 		return SLURM_2_6_PROTOCOL_VERSION;
@@ -1497,8 +1497,8 @@ static int _send_init_msg()
 	}
 	req.cluster_name = slurmdbd_cluster;
 	req.rollback = rollback_started;
-	req.version  = SLURMDBD_VERSION;
-	slurmdbd_pack_init_msg(&req, SLURMDBD_VERSION, buffer,
+	req.version  = SLURM_PROTOCOL_VERSION;
+	slurmdbd_pack_init_msg(&req, SLURM_PROTOCOL_VERSION, buffer,
 			       slurmdbd_auth_info);
 	/* if we have an issue with the pack we want to log the errno,
 	   but send anyway so we get it logged on the slurmdbd also */
@@ -1512,7 +1512,7 @@ static int _send_init_msg()
 	}
 
 	read_timeout = slurm_get_msg_timeout() * 1000;
-	rc = _get_return_code(SLURMDBD_VERSION, read_timeout);
+	rc = _get_return_code(SLURM_PROTOCOL_VERSION, read_timeout);
 	if (tmp_errno)
 		errno = tmp_errno;
 	else if (rc != SLURM_SUCCESS)
@@ -1534,7 +1534,7 @@ static int _send_fini_msg(void)
 	pack16((uint16_t) DBD_FINI, buffer);
 	req.commit  = 0;
 	req.close_conn   = 1;
-	slurmdbd_pack_fini_msg(&req, SLURMDBD_VERSION, buffer);
+	slurmdbd_pack_fini_msg(&req, SLURM_PROTOCOL_VERSION, buffer);
 
 	_send_msg(buffer);
 	free_buf(buffer);
@@ -2072,11 +2072,11 @@ static void *_agent(void *x)
 				}
 				list_iterator_destroy(agent_itr);
 				buffer = pack_slurmdbd_msg(&list_req,
-							   SLURMDBD_VERSION);
+							   SLURM_PROTOCOL_VERSION);
 			} else if (cnt > 1) {
 				list_msg.my_list = agent_list;
 				buffer = pack_slurmdbd_msg(&list_req,
-							   SLURMDBD_VERSION);
+							   SLURM_PROTOCOL_VERSION);
 			} else
 				buffer = (Buf) list_peek(agent_list);
 		} else
@@ -2104,10 +2104,10 @@ static void *_agent(void *x)
 			}
 			error("slurmdbd: Failure sending message: %d: %m", rc);
 		} else if (list_msg.my_list) {
-			rc = _handle_mult_rc_ret(SLURMDBD_VERSION,
+			rc = _handle_mult_rc_ret(SLURM_PROTOCOL_VERSION,
 						 read_timeout);
 		} else {
-			rc = _get_return_code(SLURMDBD_VERSION, read_timeout);
+			rc = _get_return_code(SLURM_PROTOCOL_VERSION, read_timeout);
 			if (rc == EAGAIN) {
 				if (agent_shutdown) {
 					slurm_mutex_unlock(&slurmdbd_lock);
@@ -2193,7 +2193,7 @@ static void _save_dbd_state(void)
 	} else if (agent_list && list_count(agent_list)) {
 		char curr_ver_str[10];
 		snprintf(curr_ver_str, sizeof(curr_ver_str),
-			 "VER%d", SLURMDBD_VERSION);
+			 "VER%d", SLURM_PROTOCOL_VERSION);
 		buffer = init_buf(strlen(curr_ver_str));
 		packstr(curr_ver_str, buffer);
 		rc = _save_dbd_rec(fd, buffer);
@@ -2275,9 +2275,9 @@ static void _load_dbd_state(void)
 		if (ver_str) {
 			char curr_ver_str[10];
 			snprintf(curr_ver_str, sizeof(curr_ver_str),
-				 "VER%d", SLURMDBD_VERSION);
+				 "VER%d", SLURM_PROTOCOL_VERSION);
 			if (!strcmp(ver_str, curr_ver_str))
-				rpc_version = SLURMDBD_VERSION;
+				rpc_version = SLURM_PROTOCOL_VERSION;
 		}
 
 		xfree(ver_str);
@@ -2290,7 +2290,7 @@ static void _load_dbd_state(void)
 				buffer = _load_dbd_rec(fd);
 			if (buffer == NULL)
 				break;
-			if (rpc_version != SLURMDBD_VERSION) {
+			if (rpc_version != SLURM_PROTOCOL_VERSION) {
 				slurmdbd_msg_t msg;
 				int rc;
 				set_buf_offset(buffer, 0);
@@ -2301,7 +2301,7 @@ static void _load_dbd_state(void)
 					   keep it add more to it.
 					*/
 					rc = unpack_slurmdbd_msg(
-						&msg, SLURMDBD_VERSION, buffer);
+						&msg, SLURM_PROTOCOL_VERSION, buffer);
 					if ((rc == SLURM_SUCCESS)
 					    && !remaining_buf(buffer))
 						goto got_it;
@@ -2321,7 +2321,7 @@ static void _load_dbd_state(void)
 				free_buf(buffer);
 				if (rc == SLURM_SUCCESS)
 					buffer = pack_slurmdbd_msg(
-						&msg, SLURMDBD_VERSION);
+						&msg, SLURM_PROTOCOL_VERSION);
 				else
 					buffer = NULL;
 			}

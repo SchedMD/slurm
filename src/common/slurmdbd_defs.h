@@ -59,10 +59,9 @@
 #include "src/common/slurm_accounting_storage.h"
 
 /*
- * SLURMDBD_VERSION is the version of the slurmdbd protocol currently
- *	being used (i.e. this code). Increment this value whenever an
- *	RPC is modified. When modifing an existing RPC copy the old
- *	version and the create a new pack/unpack for the new rpc_version.
+ * SLURMDBD_VERSION in 13.12 this was changed to be the same as
+ * SLURM_PROTOCOL_VERSION in 14.12 we can remove all instances of
+ * SLURMDBD_*VERSION* SLURMDBD_VERSION was already replaced.
  *
  * SLURMDBD_VERSION_MIN is the minimum protocol version which slurmdbd
  *	will accept. Messages being sent to the slurmdbd from commands
@@ -74,10 +73,8 @@
  *
  * The slurmdbd should be at least as current as any Slurm cluster
  *	communicating with it (e.g. it will not accept messages with a
- *	version higher than SLURMDBD_VERSION).
+ *	version higher than SLURM_VERSION).
  */
-#define SLURMDBD_VERSION       27	/* match API_CURRENT in META file */
-#define SLURMDBD_13_12_VERSION 27	/* slurm version 13.12 */
 #define SLURMDBD_2_6_VERSION   12	/* slurm version 2.6 */
 #define SLURMDBD_2_5_VERSION   11	/* slurm version 2.5 */
 #define SLURMDBD_VERSION_MIN   11

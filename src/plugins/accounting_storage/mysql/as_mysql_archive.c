@@ -1421,7 +1421,7 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 	}
 
 	buffer = init_buf(high_buffer_size);
-	pack16(SLURMDBD_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 	pack16(DBD_GOT_EVENTS, buffer);
 	packstr(cluster_name, buffer);
@@ -1442,7 +1442,7 @@ static uint32_t _archive_events(mysql_conn_t *mysql_conn, char *cluster_name,
 		event.reason_uid = row[EVENT_REQ_REASON_UID];
 		event.state = row[EVENT_REQ_STATE];
 
-		_pack_local_event(&event, SLURMDBD_VERSION, buffer);
+		_pack_local_event(&event, SLURM_PROTOCOL_VERSION, buffer);
 	}
 	mysql_free_result(result);
 
@@ -1550,7 +1550,7 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 	}
 
 	buffer = init_buf(high_buffer_size);
-	pack16(SLURMDBD_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 	pack16(DBD_GOT_JOBS, buffer);
 	packstr(cluster_name, buffer);
@@ -1595,7 +1595,7 @@ static uint32_t _archive_jobs(mysql_conn_t *mysql_conn, char *cluster_name,
 		job.wckey = row[JOB_REQ_WCKEY];
 		job.wckey_id = row[JOB_REQ_WCKEYID];
 
-		_pack_local_job(&job, SLURMDBD_VERSION, buffer);
+		_pack_local_job(&job, SLURM_PROTOCOL_VERSION, buffer);
 	}
 	mysql_free_result(result);
 
@@ -1726,7 +1726,7 @@ static uint32_t _archive_resvs(mysql_conn_t *mysql_conn, char *cluster_name,
 	}
 
 	buffer = init_buf(high_buffer_size);
-	pack16(SLURMDBD_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 	pack16(DBD_GOT_RESVS, buffer);
 	packstr(cluster_name, buffer);
@@ -1748,7 +1748,7 @@ static uint32_t _archive_resvs(mysql_conn_t *mysql_conn, char *cluster_name,
 		resv.time_end = row[RESV_REQ_END];
 		resv.time_start = row[RESV_REQ_START];
 
-		_pack_local_resv(&resv, SLURMDBD_VERSION, buffer);
+		_pack_local_resv(&resv, SLURM_PROTOCOL_VERSION, buffer);
 	}
 	mysql_free_result(result);
 
@@ -1855,7 +1855,7 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 	}
 
 	buffer = init_buf(high_buffer_size);
-	pack16(SLURMDBD_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 	pack16(DBD_STEP_START, buffer);
 	packstr(cluster_name, buffer);
@@ -1914,7 +1914,7 @@ static uint32_t _archive_steps(mysql_conn_t *mysql_conn, char *cluster_name,
 		step.user_sec = row[STEP_REQ_USER_SEC];
 		step.user_usec = row[STEP_REQ_USER_USEC];
 
-		_pack_local_step(&step, SLURMDBD_VERSION, buffer);
+		_pack_local_step(&step, SLURM_PROTOCOL_VERSION, buffer);
 	}
 	mysql_free_result(result);
 
@@ -2059,7 +2059,7 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 	}
 
 	buffer = init_buf(high_buffer_size);
-	pack16(SLURMDBD_VERSION, buffer);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 	pack16(DBD_JOB_SUSPEND, buffer);
 	packstr(cluster_name, buffer);
@@ -2076,7 +2076,7 @@ static uint32_t _archive_suspend(mysql_conn_t *mysql_conn, char *cluster_name,
 		suspend.period_start = row[SUSPEND_REQ_START];
 		suspend.period_end = row[SUSPEND_REQ_END];
 
-		_pack_local_suspend(&suspend, SLURMDBD_VERSION, buffer);
+		_pack_local_suspend(&suspend, SLURM_PROTOCOL_VERSION, buffer);
 	}
 	mysql_free_result(result);
 
@@ -2452,11 +2452,11 @@ extern int as_mysql_jobacct_process_archive_load(
 
 	safe_unpack16(&ver, buffer);
 	debug3("Version in assoc_mgr_state header is %u", ver);
-	if (ver <= SLURMDBD_VERSION || ver < SLURMDBD_VERSION_MIN) {
+	if (ver <= SLURM_PROTOCOL_VERSION || ver < SLURMDBD_VERSION_MIN) {
 		error("***********************************************");
 		error("Can not recover archive file, incompatible version, "
 		      "got %u need > %u <= %u", ver,
-		      SLURMDBD_VERSION_MIN, SLURMDBD_VERSION);
+		      SLURMDBD_VERSION_MIN, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
 		return EFAULT;
