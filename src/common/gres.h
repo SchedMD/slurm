@@ -405,7 +405,7 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
  * Allocate resource to a job and update node and job gres information
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by
- *		gres_plugin_node_config_validate()
+ *		       gres_plugin_node_config_validate()
  * IN node_cnt    - total number of nodes originally allocated to the job
  * IN node_offset - zero-origin index to the node of interest
  * IN cpu_cnt     - number of CPUs allocated to this job on this node
