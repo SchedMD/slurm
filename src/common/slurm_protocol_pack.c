@@ -10575,7 +10575,7 @@ static int _unpack_accounting_update_msg(accounting_update_msg_t **msg,
 			slurmdb_destroy_update_object);
 		for (i=0; i<count; i++) {
 			if ((slurmdb_unpack_update_object(
-				    &rec, msg_ptr->rpc_version, buffer))
+				    &rec, protocol_version, buffer))
 			   == SLURM_ERROR)
 				goto unpack_error;
 			list_append(msg_ptr->update_list, rec);
