@@ -2545,7 +2545,7 @@ extern void slurm_free_sbcast_cred_msg PARAMS((job_sbcast_cred_msg_t * msg));
  * OUT
  *
  */
-extern int slurm_load_licenses PARAMS((license_info_msg_t **));
+extern int slurm_load_licenses PARAMS((time_t, license_info_msg_t **, uint16_t));
 extern void slurm_free_license_info_msg PARAMS((license_info_msg_t *));
 
 /*****************************************************************************\

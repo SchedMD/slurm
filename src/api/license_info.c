@@ -70,7 +70,9 @@
  *
  */
 extern int
-slurm_load_licenses(license_info_msg_t **lic_info)
+slurm_load_licenses(time_t t,
+                    license_info_msg_t **lic_info,
+                    uint16_t show_flags)
 {
 	int cc;
 	slurm_msg_t msg_request;
@@ -82,6 +84,8 @@ slurm_load_licenses(license_info_msg_t **lic_info)
 	slurm_msg_t_init(&msg_reply);
 
 	msg_request.msg_type = REQUEST_LICENSE_INFO;
+	req.last_update = t;
+	req.show_flags = show_flags;
 	msg_request.data = &req;
 
 	cc = slurm_send_recv_controller_msg(&msg_request, &msg_reply);
@@ -92,6 +96,13 @@ slurm_load_licenses(license_info_msg_t **lic_info)
 		case RESPONSE_LICENSE_INFO:
 			*lic_info = msg_reply.data;
 			break;
+		case RESPONSE_SLURM_RC:
+			cc = ((return_code_msg_t *)msg_reply.data)->return_code;
+			slurm_free_return_code_msg(msg_reply.data);
+			if (cc) /* slurm_seterrno_ret() is a macro ... sigh */
+				slurm_seterrno(cc);
+			*lic_info = NULL;
+			return -1;
 		default:
 			slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 		break;

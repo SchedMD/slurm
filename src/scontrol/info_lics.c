@@ -54,19 +54,23 @@ scontrol_print_licenses(const char *feature)
 {
 	int cc;
 	struct license_info_msg *msg;
+	uint16_t show_flags;
+	static time_t last_update;
 
+	show_flags = 0;
 	/* call the controller to get the meat
 	 */
-	cc = slurm_load_licenses(&msg);
+	cc = slurm_load_licenses(last_update, &msg, show_flags);
 	if (cc != SLURM_PROTOCOL_SUCCESS) {
 		/* Hosed, crap out.
 		 */
 		exit_code = 1;
 		if (quiet_flag != 1)
-			slurm_perror ("slurm_load_jobs error");
+			slurm_perror ("slurm_load_license error");
 		return;
 	}
 
+	last_update = time(NULL);
 	/* print the info
 	 */
 	print_license_info(feature, msg);
