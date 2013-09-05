@@ -310,7 +310,6 @@ scontrol_print_job (char * job_id_str)
 			time_str, job_buffer_ptr->record_count);
 	}
 
-	job_ptr = job_buffer_ptr->job_array ;
 	for (i = 0, job_ptr = job_buffer_ptr->job_array;
 	     i < job_buffer_ptr->record_count; i++, job_ptr++) {
 		if ((array_id != (uint16_t) NO_VAL) &&
@@ -414,7 +413,6 @@ scontrol_print_step (char *job_step_id_str)
 			time_str, job_step_info_ptr->job_step_count);
 	}
 
-	job_step_ptr = job_step_info_ptr->job_steps ;
 	for (i = 0, job_step_ptr = job_step_info_ptr->job_steps;
 	     i < job_step_info_ptr->job_step_count; i++, job_step_ptr++) {
 		if ((array_id != (uint16_t) NO_VAL) &&
