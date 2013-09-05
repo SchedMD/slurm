@@ -212,16 +212,36 @@ static GtkTreeStore *_local_create_treestore_2cols(GtkWidget *popup,
 	return treestore;
 }
 
+static void _gtk_print_key_pairs(List config_list, char *title, bool first,
+				 GtkTreeStore *treestore, GtkTreeIter *iter)
+{
+	ListIterator itr = NULL;
+	config_key_pair_t *key_pair;
+	int update = 0;
+
+	if (!config_list || !list_count(config_list))
+		return;
+
+	if (!first)
+		add_display_treestore_line(update, treestore, iter, "", NULL);
+
+	add_display_treestore_line_with_font(update, treestore, iter,
+					     title, NULL, "bold");
+
+	itr = list_iterator_create(config_list);
+	while ((key_pair = list_next(itr)))
+		add_display_treestore_line(update, treestore, iter,
+					   key_pair->name, key_pair->value);
+	list_iterator_destroy(itr);
+}
+
 static void _layout_conf_ctl(GtkTreeStore *treestore,
 			     slurm_ctl_conf_info_msg_t *slurm_ctl_conf_ptr)
 {
-	char temp_str[128];
-	int update = 0;
+	char time_str[32], tmp_str[128];
 	GtkTreeIter iter;
-	ListIterator itr = NULL;
-	config_key_pair_t *key_pair;
 	List ret_list = NULL;
-	char *select_title = "";
+	char *select_title = "Select Plugin Configuration";
 
 	if (cluster_flags & CLUSTER_FLAG_BGL)
 		select_title = "Bluegene/L configuration";
@@ -229,42 +249,30 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 		select_title = "Bluegene/P configuration";
 	else if (cluster_flags & CLUSTER_FLAG_BGQ)
 		select_title = "Bluegene/Q configuration";
+	else if (cluster_flags & CLUSTER_FLAG_CRAY)
+		select_title = "\nCray configuration\n";
 
 	if (!slurm_ctl_conf_ptr)
 		return;
 
 	slurm_make_time_str((time_t *)&slurm_ctl_conf_ptr->last_update,
-			    temp_str, sizeof(temp_str));
-	add_display_treestore_line_with_font(
-		update, treestore, &iter,
-		"Configuration data as of", temp_str, "bold");
+			    time_str, sizeof(time_str));
+	snprintf(tmp_str, sizeof(tmp_str), "Configuration data as of %s",
+		 time_str);
 
 	ret_list = slurm_ctl_conf_2_key_pairs(slurm_ctl_conf_ptr);
-	if (ret_list) {
-		itr = list_iterator_create(ret_list);
-		while ((key_pair = list_next(itr))) {
-			add_display_treestore_line(update, treestore, &iter,
-						   key_pair->name,
-						   key_pair->value);
-		}
-		list_iterator_destroy(itr);
+	_gtk_print_key_pairs(ret_list, tmp_str, 1, treestore, &iter);
+	if (ret_list)
 		list_destroy(ret_list);
-	}
 
-	if (!slurm_ctl_conf_ptr->select_conf_key_pairs)
-		return;
+	_gtk_print_key_pairs(slurm_ctl_conf_ptr->acct_gather_conf,
+			     "Account Gather", 0, treestore, &iter);
 
-	add_display_treestore_line(update, treestore, &iter,
-				   "", NULL);
-	add_display_treestore_line_with_font(update, treestore, &iter,
-					     select_title, NULL, "bold");
-	itr = list_iterator_create(
-		(List)slurm_ctl_conf_ptr->select_conf_key_pairs);
-	while ((key_pair = list_next(itr))) {
-		add_display_treestore_line(update, treestore, &iter,
-					   key_pair->name, key_pair->value);
-	}
-	list_iterator_destroy(itr);
+	_gtk_print_key_pairs(slurm_ctl_conf_ptr->ext_sensors_conf,
+			     "External Sensors", 0, treestore, &iter);
+
+	_gtk_print_key_pairs(slurm_ctl_conf_ptr->select_conf_key_pairs,
+			     select_title, 0, treestore, &iter);
 }
 
 static void _layout_conf_dbd(GtkTreeStore *treestore)
