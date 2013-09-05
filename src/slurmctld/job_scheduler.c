@@ -468,6 +468,7 @@ extern bool replace_batch_job(slurm_msg_t * msg, void *fini_job)
 
 		if ((job_ptr == fini_job_ptr) ||
 		    (job_ptr->priority == 0)  ||
+		    (job_ptr->details == NULL) ||
 		    !avail_front_end(job_ptr))
 			continue;
 

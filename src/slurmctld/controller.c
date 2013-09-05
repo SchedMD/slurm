@@ -948,7 +948,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		int max_fd = -1;
 		FD_ZERO(&rfds);
 		for (i=0; i<nports; i++) {
-			FD_SET(sockfd[i], &rfds);
+			FD_SET(sockfd[i], &rfds);   /* CLANG false positive */
 			max_fd = MAX(sockfd[i], max_fd);
 		}
 		if (select(max_fd+1, &rfds, NULL, NULL, NULL) == -1) {

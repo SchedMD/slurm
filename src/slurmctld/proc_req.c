@@ -516,7 +516,6 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 		xstrdup(conf->accounting_storage_type);
 	conf_ptr->accounting_storage_user =
 		xstrdup(conf->accounting_storage_user);
-	conf_ptr->accounting_storage_port = conf->accounting_storage_port;
 	conf_ptr->acctng_store_job_comment = conf->acctng_store_job_comment;
 
 	conf_ptr->acct_gather_conf = acct_gather_conf_values();
@@ -2932,6 +2931,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 			slurm_send_rc_err_msg(msg, error_code, err_msg);
 		else
 			slurm_send_rc_msg(msg, error_code);
+	} else if (!job_ptr) {	/* Mostly to avoid CLANG error */
+		fatal("job_allocate failed to allocate job, rc=%d",error_code);
 	} else {
 		if (job_ptr->part_ptr_list)
 			schedule_cnt *= list_count(job_ptr->part_ptr_list);

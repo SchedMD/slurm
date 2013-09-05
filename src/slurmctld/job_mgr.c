@@ -5734,7 +5734,7 @@ static void _list_delete_job(void *job_entry)
 	}
 	if (job_pptr == NULL)
 		fatal("job hash error");
-	*job_pptr = job_ptr->job_next;
+	*job_pptr = job_ptr->job_next;	/* CLANG false positive here */
 
 	delete_job_details(job_ptr);
 	xfree(job_ptr->account);
@@ -7977,7 +7977,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	if (job_specs->requeue != (uint16_t) NO_VAL) {
+	if ((job_specs->requeue != (uint16_t) NO_VAL) && detail_ptr) {
 		detail_ptr->requeue = job_specs->requeue;
 		info("sched: update_job: setting requeue to %u for job_id %u",
 		     job_specs->requeue, job_specs->job_id);
@@ -8047,7 +8047,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		goto fini;
 
 	if (job_specs->nice != (uint16_t) NO_VAL) {
-		if (IS_JOB_FINISHED(job_ptr))
+		if (IS_JOB_FINISHED(job_ptr) || (job_ptr->details == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (authorized || (job_specs->nice >= NICE_OFFSET)) {
 			int64_t new_prio = job_ptr->priority;
