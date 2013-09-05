@@ -103,7 +103,7 @@ void slurm_print_ctl_conf ( FILE* out,
 {
 	char time_str[32], tmp_str[128];
 	void *ret_list = NULL;
-	char *select_title = "";
+	char *select_title = "Select Plugin Configuration";
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (cluster_flags & CLUSTER_FLAG_BGL)
@@ -112,6 +112,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		select_title = "\nBluegene/P configuration\n";
 	else if (cluster_flags & CLUSTER_FLAG_BGQ)
 		select_title = "\nBluegene/Q configuration\n";
+	else if (cluster_flags & CLUSTER_FLAG_CRAY)
+		select_title = "\nCray configuration\n";
 
 	if ( slurm_ctl_conf_ptr == NULL )
 		return ;
@@ -128,14 +130,15 @@ void slurm_print_ctl_conf ( FILE* out,
 		list_destroy((List)ret_list);
 	}
 
-	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->select_conf_key_pairs,
-			      select_title);
+	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->acct_gather_conf,
+			      "\nAccount Gather\n");
 
 	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->ext_sensors_conf,
 			      "\nExternal Sensors\n");
 
-	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->acct_gather_conf,
-			      "\nAccount Gather\n");
+	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->select_conf_key_pairs,
+			      select_title);
+
 }
 
 extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
@@ -1391,7 +1394,7 @@ extern void slurm_print_key_pairs(FILE* out, void *key_pairs, char *title)
 	ListIterator iter = NULL;
 	config_key_pair_t *key_pair;
 
-	if (!config_list)
+	if (!config_list || !list_count(config_list))
 		return;
 
 	fprintf(out, "%s", title);
