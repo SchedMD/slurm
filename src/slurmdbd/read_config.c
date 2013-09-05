@@ -634,16 +634,16 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveEvents");
-	key_pair->value = xmalloc(16);
-	snprintf(key_pair->value, 16, "%u",
-		 SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_event) ? 1 : 0);
+	key_pair->value = xstrdup_printf(
+		"%u",
+		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_event) ? 1 : 0);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveJobs");
-	key_pair->value = xmalloc(16);
-	snprintf(key_pair->value, 16, "%u",
-		 SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_job) ? 1 : 0);
+	key_pair->value = xstrdup_printf(
+		"%u",
+		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_job) ? 1 : 0);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -653,16 +653,16 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveSteps");
-	key_pair->value = xmalloc(16);
-	snprintf(key_pair->value, 16, "%u",
-		 SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_step) ? 1 : 0);
+	key_pair->value = xstrdup_printf(
+		"%u",
+		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_step) ? 1 : 0);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveSupend");
-	key_pair->value = xmalloc(16);
-	snprintf(key_pair->value, 16, "%u", SLURMDB_PURGE_ARCHIVE_SET(
-			 slurmdbd_conf->purge_suspend) ? 1 : 0);
+	key_pair->value = xstrdup_printf(
+		"%u", SLURMDB_PURGE_ARCHIVE_SET(
+			slurmdbd_conf->purge_suspend) ? 1 : 0);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -698,14 +698,12 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("DbdPort");
-	key_pair->value = xmalloc(32);
-	snprintf(key_pair->value, 32, "%u", slurmdbd_conf->dbd_port);
+	key_pair->value = xstrdup_printf("%u", slurmdbd_conf->dbd_port);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("DebugLevel");
-	key_pair->value = xmalloc(32);
-	snprintf(key_pair->value, 32, "%s",
+	key_pair->value = xstrdup_printf("%s",
 		 log_num2string(slurmdbd_conf->debug_level));
 	list_append(my_list, key_pair);
 
@@ -721,8 +719,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MessageTimeout");
-	key_pair->value = xmalloc(32);
-	snprintf(key_pair->value, 32, "%u secs", slurmdbd_conf->msg_timeout);
+	key_pair->value = xstrdup_printf("%u secs", slurmdbd_conf->msg_timeout);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -804,9 +801,9 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SlurmUser");
-	key_pair->value = xmalloc(128);
-	snprintf(key_pair->value, 128, "%s(%u)",
-		 slurmdbd_conf->slurm_user_name, slurmdbd_conf->slurm_user_id);
+	key_pair->value = xstrdup_printf("%s(%u)",
+					 slurmdbd_conf->slurm_user_name,
+					 slurmdbd_conf->slurm_user_id);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -828,8 +825,7 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("StoragePort");
-	key_pair->value = xmalloc(32);
-	snprintf(key_pair->value, 32, "%u", slurmdbd_conf->storage_port);
+	key_pair->value = xstrdup_printf("%u", slurmdbd_conf->storage_port);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -844,14 +840,12 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("TrackWCKey");
-	key_pair->value = xmalloc(32);
-	snprintf(key_pair->value, 32, "%u", slurmdbd_conf->track_wckey);
+	key_pair->value = xstrdup(slurmdbd_conf->track_wckey ? "Yes" : "No");
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("TrackSlurmctldDown");
-	key_pair->value = xmalloc(32);
-	snprintf(key_pair->value, 32, "%u", slurmdbd_conf->track_ctld);
+	key_pair->value = xstrdup_printf("%u", slurmdbd_conf->track_ctld);
 	list_append(my_list, key_pair);
 
 	return my_list;
