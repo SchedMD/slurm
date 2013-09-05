@@ -10519,21 +10519,41 @@ static void _pack_accounting_update_msg(accounting_update_msg_t *msg,
 
 	/* We need to work off the version sent in the message since
 	   we might not know what the protocol_version is at this
-	   moment (we might not of been updated before other parts of SLURM).
+	   moment (we might not of been updated before other parts of
+	   SLURM).
+
+	   IN 14.12 we can remove rpc_version from the mix and just
+	   use protocol_version since we standarized them in 13.12.
 	*/
-	pack16(msg->rpc_version, buffer);
-	if (msg->update_list)
-		count = list_count(msg->update_list);
+	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+		if (msg->update_list)
+			count = list_count(msg->update_list);
 
-	pack32(count, buffer);
+		pack32(count, buffer);
 
-	if (count) {
-		itr = list_iterator_create(msg->update_list);
-		while ((rec = list_next(itr))) {
-			slurmdb_pack_update_object(
-				rec, msg->rpc_version, buffer);
+		if (count) {
+			itr = list_iterator_create(msg->update_list);
+			while ((rec = list_next(itr))) {
+				slurmdb_pack_update_object(
+					rec, protocol_version, buffer);
+			}
+			list_iterator_destroy(itr);
 		}
-		list_iterator_destroy(itr);
+	} else {
+		pack16(msg->rpc_version, buffer);
+		if (msg->update_list)
+			count = list_count(msg->update_list);
+
+		pack32(count, buffer);
+
+		if (count) {
+			itr = list_iterator_create(msg->update_list);
+			while ((rec = list_next(itr))) {
+				slurmdb_pack_update_object(
+					rec, msg->rpc_version, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
 	}
 }
 
@@ -10549,14 +10569,31 @@ static int _unpack_accounting_update_msg(accounting_update_msg_t **msg,
 
 	*msg = msg_ptr;
 
-	if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
-		safe_unpack16(&msg_ptr->rpc_version, buffer);
+	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		msg_ptr->update_list = list_create(
 			slurmdb_destroy_update_object);
 		for (i=0; i<count; i++) {
 			if ((slurmdb_unpack_update_object(
 				    &rec, msg_ptr->rpc_version, buffer))
+			   == SLURM_ERROR)
+				goto unpack_error;
+			list_append(msg_ptr->update_list, rec);
+		}
+	} else if (protocol_version >= SLURM_2_5_PROTOCOL_VERSION) {
+		/* We need to work off the version sent in the message since
+		   we might not know what the protocol_version is at this
+		   moment (we might not of been updated before other parts of
+		   SLURM).
+		*/
+		uint16_t rpc_version;
+		safe_unpack16(&rpc_version, buffer);
+		safe_unpack32(&count, buffer);
+		msg_ptr->update_list = list_create(
+			slurmdb_destroy_update_object);
+		for (i=0; i<count; i++) {
+			if ((slurmdb_unpack_update_object(
+				    &rec, rpc_version, buffer))
 			   == SLURM_ERROR)
 				goto unpack_error;
 			list_append(msg_ptr->update_list, rec);

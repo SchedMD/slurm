@@ -2217,6 +2217,7 @@ extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 
 	slurm_msg_t_init(&req);
 	slurm_set_addr_char(&req.address, port, host);
+	req.protocol_version = rpc_version;
 	req.msg_type = ACCOUNTING_UPDATE_MSG;
 	if (slurmdbd_conf)
 		req.flags = SLURM_GLOBAL_AUTH_KEY;
