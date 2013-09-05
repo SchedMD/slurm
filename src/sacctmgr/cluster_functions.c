@@ -187,6 +187,12 @@ static int _set_rec(int *start, int argc, char *argv[],
 				if (*classification)
 					set = 1;
 			}
+		} else if (!strncasecmp(argv[i], "GrpCPURunMins",
+					 MAX(command_len, 7))) {
+			exit_code=1;
+			fprintf(stderr, "GrpCPURunMins is not a valid option "
+				"for the root association of a cluster.\n");
+			break;
 		} else if (!strncasecmp(argv[i], "GrpCPUMins",
 					 MAX(command_len, 7))) {
 			exit_code=1;
