@@ -10517,52 +10517,23 @@ static void _pack_accounting_update_msg(accounting_update_msg_t *msg,
 	ListIterator itr = NULL;
 	slurmdb_update_object_t *rec = NULL;
 
-	/* We need to work off the SLURMDBD_VERSION here to be able to
-	   pack correctly.  Below we need to work off the
-	   SLURM_VERSION instead since we don't always know which
-	   SLURMDBD_VERSION is being sent yet.
+	/* We need to work off the version sent in the message since
+	   we might not know what the protocol_version is at this
+	   moment (we might not of been updated before other parts of SLURM).
 	*/
-	if (msg->rpc_version >= 8) {
-		pack16(msg->rpc_version, buffer);
-		if (msg->update_list)
-			count = list_count(msg->update_list);
+	pack16(msg->rpc_version, buffer);
+	if (msg->update_list)
+		count = list_count(msg->update_list);
 
-		pack32(count, buffer);
+	pack32(count, buffer);
 
-		if (count) {
-			itr = list_iterator_create(msg->update_list);
-			while ((rec = list_next(itr))) {
-				slurmdb_pack_update_object(
-					rec, msg->rpc_version, buffer);
-			}
-			list_iterator_destroy(itr);
+	if (count) {
+		itr = list_iterator_create(msg->update_list);
+		while ((rec = list_next(itr))) {
+			slurmdb_pack_update_object(
+				rec, msg->rpc_version, buffer);
 		}
-	} else {
-		/* Since there are some new objects that can't be sent to
-		   older versions we need to take them out of the
-		   update since we will get errors if we send them.
-		*/
-		if (msg->update_list) {
-			itr = list_iterator_create(msg->update_list);
-			while ((rec = list_next(itr))) {
-				if (rec->type > SLURMDB_MODIFY_WCKEY)
-					list_remove(itr);
-			}
-			count = list_count(msg->update_list);
-		}
-
-		pack32(count, buffer);
-
-		if (count) {
-			list_iterator_reset(itr);
-			itr = list_iterator_create(msg->update_list);
-			while ((rec = list_next(itr))) {
-				slurmdb_pack_update_object(
-					rec, msg->rpc_version, buffer);
-			}
-		}
-		if (itr)
-			list_iterator_destroy(itr);
+		list_iterator_destroy(itr);
 	}
 }
 
