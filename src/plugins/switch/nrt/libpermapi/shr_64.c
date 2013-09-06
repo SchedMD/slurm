@@ -1042,7 +1042,11 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	ii = 0;
 	for (i=orig_task_num; i<fd_cnt; i++)
 		rm_sockfds[ii++] = ctx_sockfds[i];
-
+	/* Since opt is a global variable we need to remove the
+	   dangling reference set here.  This shouldn't matter, but
+	   Clang reported it so we are making things quite here.
+	*/
+	opt.argv = NULL;
 	return 0;
 }
 
