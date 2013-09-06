@@ -945,9 +945,9 @@ extern int switch_p_job_fini (switch_jobinfo_t *jobinfo)
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
-				 uint32_t job_id, uint32_t step_id)
+extern int switch_p_job_postfini(stepd_step_rec_t *job)
 {
+	uid_t pgid = job->jmgr_pid;
 	DEF_TIMERS;
 	int err;
 
@@ -963,9 +963,9 @@ extern int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 			(unsigned long) pgid);
 		kill(-pgid, SIGKILL);
 	} else
-		debug("Job %u.%u: pgid value is zero", job_id, step_id);
+		debug("Job %u.%u: pgid value is zero", job->jobid, job->stepid);
 
-	err = nrt_unload_table((slurm_nrt_jobinfo_t *)jobinfo);
+	err = nrt_unload_table((slurm_nrt_jobinfo_t *)job->switch_job);
 	if (debug_flags & DEBUG_FLAG_SWITCH) {
 		END_TIMER;
 		info("switch_p_job_postfini() ending %s", TIME_STR);

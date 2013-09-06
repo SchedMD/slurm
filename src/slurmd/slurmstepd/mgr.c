@@ -1063,8 +1063,7 @@ fail2:
 	}
 	step_terminate_monitor_stop();
 	if (!job->batch) {
-		if (switch_g_job_postfini(job->switch_job, job->jmgr_pid,
-					  job->jobid, job->stepid) < 0)
+		if (switch_g_job_postfini(job) < 0)
 			error("switch_g_job_postfini: %m");
 	}
 

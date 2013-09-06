@@ -234,9 +234,9 @@ int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
-			   uint32_t job_id, uint32_t step_id)
+int switch_p_job_postfini(stepd_step_rec_t *job)
 {
+	uid_t pgid = job->jmgr_pid;
 	/*
 	 *  Kill all processes in the job's session
 	 */
@@ -245,8 +245,8 @@ int switch_p_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
 		       (unsigned long) pgid);
 		kill(-pgid, SIGKILL);
 	} else
-		debug("Job %u.%u: Bad pid valud %lu", job_id,
-		      step_id, (unsigned long) pgid);
+		debug("Job %u.%u: Bad pid valud %lu", job->jobid,
+		      job->stepid, (unsigned long) pgid);
 
 	return SLURM_SUCCESS;
 }

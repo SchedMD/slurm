@@ -98,10 +98,7 @@ typedef struct slurm_switch_ops {
 	int          (*job_resume)        ( void *suspend_info,
 					    int max_wait );
 	int          (*job_fini)          ( switch_jobinfo_t *jobinfo );
-	int          (*job_postfini)      ( switch_jobinfo_t *jobinfo,
-					    uid_t pgid,
-					    uint32_t job_id,
-					    uint32_t step_id );
+	int          (*job_postfini)      ( stepd_step_rec_t *job);
 	int          (*job_attach)        ( switch_jobinfo_t *jobinfo,
 					    char ***env, uint32_t nodeid,
 					    uint32_t procid, uint32_t nnodes,
@@ -443,14 +440,12 @@ extern int switch_g_job_fini(switch_jobinfo_t *jobinfo)
 	return (*(ops.job_fini)) (jobinfo);
 }
 
-extern int switch_g_job_postfini(switch_jobinfo_t *jobinfo, uid_t pgid,
-				 uint32_t job_id, uint32_t step_id )
+extern int switch_g_job_postfini(stepd_step_rec_t *job)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(ops.job_postfini)) (jobinfo, pgid,
-				      job_id, step_id);
+	return (*(ops.job_postfini)) (job);
 }
 
 extern int switch_g_job_attach(switch_jobinfo_t *jobinfo, char ***env,
