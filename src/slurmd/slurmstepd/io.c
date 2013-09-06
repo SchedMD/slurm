@@ -552,8 +552,10 @@ _local_file_write(eio_obj_t *obj, List objs)
 	   it is just used to read the header to get the global task id. */
 	header_tmp_buf = create_buf(client->out_msg->data,
 				    client->out_msg->length);
-	if (!header_tmp_buf)
+	if (!header_tmp_buf) {
 		fatal("Failure to allocate memory for a message header");
+		return SLURM_ERROR;	/* Fix CLANG false positive error */
+	}
 	io_hdr_unpack(&header, header_tmp_buf);
 	header_tmp_buf->head = NULL;	/* CLANG false positive bug here */
 	free_buf(header_tmp_buf);
@@ -1262,8 +1264,10 @@ _build_connection_okay_message(stepd_step_rec_t *job)
 	header.length = 0;
 
 	packbuf = create_buf(msg->data, io_hdr_packed_size());
-	if (!packbuf)
+	if (!packbuf) {
 		fatal("Failure to allocate memory for a message header");
+		return msg;	/* Fix for CLANG false positive error */
+	}
 	io_hdr_pack(&header, packbuf);
 	msg->length = io_hdr_packed_size();
 	msg->ref_count = 0; /* make certain it is initialized */
@@ -1745,8 +1749,10 @@ _send_eof_msg(struct task_read_info *out)
 	header.length = 0; /* eof */
 
 	packbuf = create_buf(msg->data, io_hdr_packed_size());
-	if (!packbuf)
+	if (!packbuf) {
 		fatal("Failure to allocate memory for a message header");
+		return;	/* Fix for CLANG false positive error */
+	}
 
 	io_hdr_pack(&header, packbuf);
 	msg->length = io_hdr_packed_size() + header.length;
@@ -1839,8 +1845,10 @@ _task_build_message(struct task_read_info *out, stepd_step_rec_t *job, cbuf_t cb
 
 	debug5("  header.length = %d", n);
 	packbuf = create_buf(msg->data, io_hdr_packed_size());
-	if (!packbuf)
+	if (!packbuf) {
 		fatal("Failure to allocate memory for a message header");
+		return msg;	/* Fix for CLANG false positive error */
+	}
 	io_hdr_pack(&header, packbuf);
 	msg->length = io_hdr_packed_size() + header.length;
 	msg->ref_count = 0; /* make certain it is initialized */

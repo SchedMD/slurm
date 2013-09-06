@@ -3720,7 +3720,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 {
 	int rc = SLURM_SUCCESS;
 	bool rebuild_name_list = false;
-	struct part_record *part_ptr, *part_ptr_tmp, *part_ptr_new;
+	struct part_record *part_ptr = NULL, *part_ptr_tmp, *part_ptr_new;
 	List part_ptr_list = NULL;
 	ListIterator iter;
 	uint32_t min_nodes_orig = INFINITE, max_nodes_orig = 1;
@@ -3816,6 +3816,13 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 			xstrcat(job_desc->partition, part_ptr_tmp->name);
 		}
 		list_iterator_destroy(iter);
+	}
+
+	if (part_ptr == NULL) {	/* Eliminates CLANG error */
+		info("_valid_job_part: invalid partition specified: %s",
+		     job_desc->partition);
+		rc = ESLURM_INVALID_PARTITION_NAME;
+		goto fini;
 	}
 
 	/* Validate job limits against partition limits */
@@ -5732,9 +5739,11 @@ static void _list_delete_job(void *job_entry)
 	       ((job_ptr = *job_pptr) != (struct job_record *) job_entry)) {
 		job_pptr = &job_ptr->job_next;
 	}
-	if (job_pptr == NULL)
+	if (job_pptr == NULL) {
 		fatal("job hash error");
-	*job_pptr = job_ptr->job_next;	/* CLANG false positive here */
+		return;	/* Fix CLANG false positive error */
+	}
+	*job_pptr = job_ptr->job_next;
 
 	delete_job_details(job_ptr);
 	xfree(job_ptr->account);
