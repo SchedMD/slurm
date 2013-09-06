@@ -42,6 +42,7 @@ set file_in          "test$test_id.input"
 set file_out         "test$test_id.output"
 set file_prog_get    "test$test_id.prog"
 set job_id           0
+set launch_poe       0
 set limit_core       943
 set limit_fsize      674515
 set limit_nofile     1016
@@ -54,6 +55,9 @@ print_header $test_id
 if {[test_front_end] != 0 && [test_super_user] == 0} {
 	send_user "\nWARNING: This test is incompatible with front-end systems\n"
 	exit $exit_code
+}
+if {[test_launch_poe]} {
+	set launch_poe 1
 }
 
 #
@@ -114,7 +118,7 @@ if {$cur_nofile != -1} {
 	set limit_nofile [expr $cur_nofile - 2]
 }
 if {$cur_nproc != -1} {
-	set limit_nproc [expr $cur_nproc - 2]
+	set limit_nproc [expr $cur_nproc - 200]
 }
 if {$cur_stack != -1} {
 	set limit_stack [expr ($cur_stack / 1024) - 2]
@@ -194,7 +198,10 @@ expect {
 			incr matches
 		} else {
 			send_user "\nNOFILE value bad ($expect_out(1,string) != $limit_nofile)\n"
-			send_user "This is expected on POE systems\n"
+			if {$launch_poe} {
+				send_user "This is expected on POE systems\n"
+				incr matches
+			}
 		}
 		exp_continue
 	}
@@ -232,11 +239,7 @@ expect {
 	}
 }
 
-if {[test_launch_poe]} {
-	set target 4
-} else {
-	set target 5
-}
+set target 5
 if {$matches != $target} {
 	send_user "\nFAILURE: User limits not propagated got $matches of $target matches\n"
 	send_user "Check PropagateResourceLimits configuration parameter\n"

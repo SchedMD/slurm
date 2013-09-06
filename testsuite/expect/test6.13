@@ -262,6 +262,8 @@ if {[wait_for_file $file_out] == 0} {
 if {$exit_code == 0} {
 	exec rm -f $file_in $file_out $file_prog
 	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE: launch/poe and proctrack/pgid are incompatible.\n"
 }
 exit $exit_code
 

@@ -51,6 +51,10 @@ set matches          0
 
 print_header $test_id
 
+if {[test_launch_poe]} {
+	set launch_poe 1
+}
+
 #
 # Delete left-over programs and rebuild them.
 # We use our own program to get ulimit values since the output
@@ -108,7 +112,7 @@ if {$cur_nofile != -1} {
 	set limit_nofile [expr $cur_nofile - 2]
 }
 if {$cur_nproc != -1} {
-	set limit_nproc [expr $cur_nproc - 2]
+	set limit_nproc [expr $cur_nproc - 200]
 }
 if {$cur_stack != -1} {
 	set limit_stack [expr ($cur_stack / 1024) - 2]
@@ -159,26 +163,40 @@ if {[wait_for_file $file_out] != 0} {
 spawn $bin_sort $file_out
 expect {
 	-re "USER_CORE=($number)" {
-		if {$expect_out(1,string) == [expr $limit_core * 1024]} {
+		set target [expr $limit_core * 1024]
+		if {$expect_out(1,string) == $target} {
 			incr matches
+		} else {
+			send_user "\nCORE value bad ($expect_out(1,string) != $target)\n"
 		}
 		exp_continue
 	}
 	-re "USER_FSIZE=($number)" {
-		if {$expect_out(1,string) == [expr $limit_fsize * 1024]} {
+		set target [expr $limit_fsize * 1024]
+		if {$expect_out(1,string) == $target} {
 			incr matches
+		} else {
+			send_user "\nFSIZE value bad ($expect_out(1,string) != $target)\n"
 		}
 		exp_continue
 	}
 	-re "USER_NOFILE=($number)" {
 		if {$expect_out(1,string) == $limit_nofile} {
 			incr matches
+		} else {
+			send_user "\nNOFILE value bad ($expect_out(1,string) != $limit_nofile)\n"
+			if {$launch_poe} {
+				send_user "This is expected on POE systems\n"
+				incr matches
+			}
 		}
 		exp_continue
 	}
 	-re "USER_NPROC=($number)" {
 		if {$expect_out(1,string) == $limit_nproc} {
 			incr matches
+		} else {
+			send_user "\nNPROC value bad ($expect_out(1,string) != $limit_nproc)\n"
 		}
 		exp_continue
 	}
@@ -187,8 +205,11 @@ expect {
 		exp_continue
 	}
 	-re "USER_STACK=($number)" {
+		set target [expr $limit_stack * 1024]
 		if {$expect_out(1,string) == [expr $limit_stack * 1024]} {
 			incr matches
+		} else {
+			send_user "\nSTACK value bad ($expect_out(1,string) != $target)\n"
 		}
 		exp_continue
 	}
@@ -205,8 +226,13 @@ expect {
 	}
 }
 
-if {$matches != 5} {
-	send_user "\nFAILURE: User limits not propagated\n"
+set target 5
+if {$matches != $target} {
+	send_user "\nFAILURE: User limits not propagated got $matches of $target matches\n"
+	send_user "Check PropagateResourceLimits configuration parameter\n"
+	send_user "Check $file_err for errors\n"
+	send_user "A long running slurmd could cause a file size limit error\n"
+	send_user "slurmd could have been started with limits lower than user launching the task\n"
 	set exit_code 1
 }
 
