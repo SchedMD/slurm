@@ -476,7 +476,7 @@ static print_field_t *_get_print_field(char *object)
 	} else if (!strncasecmp("RPC", object, MAX(command_len, 1))) {
 		field->type = PRINT_RPC_VERSION;
 		field->name = xstrdup("RPC");
-		field->len = 3;
+		field->len = 5;
 		field->print_routine = print_fields_uint;
 	} else if (!strncasecmp("Share", object, MAX(command_len, 1))
 		   || !strncasecmp("FairShare", object, MAX(command_len, 2))) {
