@@ -918,8 +918,10 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	/* initialize ports for RPCs */
 	lock_slurmctld(config_read_lock);
 	nports = slurmctld_conf.slurmctld_port_count;
-	if (nports == 0)
+	if (nports == 0) {
 		fatal("slurmctld port count is zero");
+		return NULL;	/* Fix CLANG false positive */
+	}
 	sockfd = xmalloc(sizeof(slurm_fd_t) * nports);
 	for (i=0; i<nports; i++) {
 		sockfd[i] = slurm_init_msg_engine_addrname_port(

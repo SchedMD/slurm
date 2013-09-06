@@ -552,7 +552,7 @@ next_part:		part_ptr = (struct part_record *)
 			job_ptr->state_reason = WAIT_NO_REASON;
 
 		if ((job_ptr->state_reason == WAIT_NODE_NOT_AVAIL) &&
-		    job_ptr->details && job_ptr->details->req_node_bitmap &&
+		    job_ptr->details->req_node_bitmap &&
 		    !bit_super_set(job_ptr->details->req_node_bitmap,
 				   avail_node_bitmap)) {
 			continue;
@@ -585,7 +585,7 @@ next_part:		part_ptr = (struct part_record *)
 			continue;
 		}
 
-		if (job_ptr->details && job_ptr->details->exc_node_bitmap)
+		if (job_ptr->details->exc_node_bitmap)
 			have_node_bitmaps = true;
 		else
 			have_node_bitmaps = false;

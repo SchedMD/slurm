@@ -386,8 +386,12 @@ static int _get_res_usage(struct job_record *job_ptr, bitstr_t *node_map,
 		error("select/serial: node count inconsistent with slurmctld");
 		return SLURM_ERROR;
 	}
-	if (job_ptr && job_ptr->part_ptr &&
-	    (job_ptr->part_ptr->flags & PART_FLAG_LLN))
+	if (!job_ptr) {
+		error("select/serial: NULL job pointer");
+		return SLURM_ERROR;
+	}
+
+	if (job_ptr->part_ptr && (job_ptr->part_ptr->flags & PART_FLAG_LLN))
 		part_lln_flag = 1;
 	if (job_ptr->details && job_ptr->details->req_node_bitmap)
 		bit_and(node_map, job_ptr->details->req_node_bitmap);
@@ -668,7 +672,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap, int mode,
 	}
 	if (!jp_ptr) {
 		fatal("select/serial: could not find partition for job %u",
-			job_ptr->job_id);
+		      job_ptr->job_id);
+		return SLURM_ERROR;	/* Fix CLANG false positive */
 	}
 
 	/* remove existing allocations (jobs) from higher-priority partitions

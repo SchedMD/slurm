@@ -500,8 +500,10 @@ extern void restore_front_end_state(int recover)
 	iter = list_iterator_create(front_end_list);
 	while ((slurm_conf_fe_ptr = (slurm_conf_frontend_t *)
 				    list_next(iter))) {
-		if (slurm_conf_fe_ptr->frontends == NULL)
+		if (slurm_conf_fe_ptr->frontends == NULL) {
 			fatal("FrontendName is NULL");
+			return;	/* Prevent CLANG false positive */
+		}
 		for (i = 0; i < front_end_node_cnt; i++) {
 			if (strcmp(front_end_nodes[i].name,
 				   slurm_conf_fe_ptr->frontends) == 0)

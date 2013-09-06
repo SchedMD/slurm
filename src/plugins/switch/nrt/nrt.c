@@ -1320,6 +1320,8 @@ _allocate_window_single(char *adapter_name, slurm_nrt_jobinfo_t *jp,
 		      hostname);
 		return SLURM_ERROR;
 	}
+	if (!adapter_name)	/* Fix CLANG false positive */
+		return SLURM_ERROR;
 
 	/* From Bill LePera, IBM, 4/18/2012:
 	 * The node_number field is normally set to the 32-bit IPv4 address

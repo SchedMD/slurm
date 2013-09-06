@@ -773,8 +773,13 @@ static bool _multi_prog_parse(char *line, int length, int step_id, int task_id)
 
 		_parse_prog_line(total_tasks, line, cmd, args, protocol);
 		return true;
+	}
 
-	} else if (task_id >= total_tasks) {
+	xassert(args);
+	xassert(cmd);
+	xassert(protocol);
+
+	if (task_id >= total_tasks) {
 		for (i = 0; i < total_tasks; i++) {
 			xfree(args[i]);
 			xfree(cmd[i]);
@@ -784,7 +789,9 @@ static bool _multi_prog_parse(char *line, int length, int step_id, int task_id)
 		xfree(protocol);
 		total_tasks = 0;
 		return false;
-	} else if (!cmd[task_id]) {
+	}
+
+	if (!cmd[task_id]) {
 		error("Configuration file invalid, no record for task id %d",
 		      task_id);
 		return true;
