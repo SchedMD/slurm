@@ -48,10 +48,9 @@ print_header $test_id
 if {[test_cray]} {
 	set make_file 1
 }
-if {[test_launch_poe]} {
-	set node_name_env MP_I_UPMD_HOSTNAME
-} else {
-	set node_name_env SLURMD_NODENAME
+if { [string compare [test_launch_type] "slurm"] } {
+	send_user "\nWARNING: This test is only compatible with systems using launch/slurm\n"
+	exit $exit_code
 }
 
 proc change_pro_epi { arg program_name conf_change task_pro } {
@@ -155,7 +154,7 @@ proc check_proc { program_name} {
 
 proc run_job { file_type program_name conf_change task_pro} {
 
-	global srun run_host make_file exit_code bin_rm bin_printenv bin_sleep cwd node_name_env
+	global srun run_host make_file exit_code bin_rm bin_printenv bin_sleep cwd
 
 	# Change the included file to epilog in the slurm.conf
 	change_pro_epi $file_type $program_name $conf_change $task_pro
@@ -167,7 +166,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 	update_conf
 
 	set sub_job 0
-	spawn $srun -w$run_host $bin_printenv $node_name_env
+	spawn $srun -w$run_host $bin_printenv SLURMD_NODENAME
 	expect {
 		-re "$run_host" {
 			set sub_job 1
@@ -240,7 +239,7 @@ expect {
 log_user 1
 
 set get_name 0
-spawn $srun -l $bin_printenv $node_name_env
+spawn $srun -l $bin_printenv SLURMD_NODENAME
 expect {
 	-re "0: *($alpha_numeric_under)" {
 		set run_host $expect_out(1,string)
@@ -283,7 +282,7 @@ change_pro_epi srun-task-epilog srun--task-epilog_$test_id 1 0
 update_conf
 
 set sub_job 0
-spawn $srun -w$run_host --task-epilog=$config_dir/$pro_epi_prog $bin_printenv $node_name_env
+spawn $srun -w$run_host --task-epilog=$config_dir/$pro_epi_prog $bin_printenv SLURMD_NODENAME
 expect {
 	-re "$run_host" {
 		set sub_job 1
@@ -332,7 +331,7 @@ if {$make_file == 1} {
 	update_conf
 
 	set sub_job 0
-	spawn $srun -t1 -w$run_host --task-prolog=$config_dir/$pro_epi_prog $bin_printenv $node_name_env
+	spawn $srun -t1 -w$run_host --task-prolog=$config_dir/$pro_epi_prog $bin_printenv SLURMD_NODENAME
 	expect {
 		-re "$run_host" {
 			set sub_job 1
