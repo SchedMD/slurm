@@ -1452,7 +1452,7 @@ proc test_launch_poe { } {
 #
 # Purpose: Determine launch type plugin.
 #
-# Returns 1 if the system is running launch/poe, 0 otherwise
+# Returns the launch plugin type
 #
 ################################################################
 
