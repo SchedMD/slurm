@@ -444,20 +444,13 @@ step's switch credential.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int switch_p_job_postfini ( switch_jobinfo_t switch_job,
-uid_t pgid, uint32_t job_id, uint32_t step_id );</p>
+<p class="commandline">int switch_p_job_postfini ( stepd_step_rec_t *job );</p>
 <p style="margin-left:.2in"><b>Description</b>: This function is run from the initial slurmd
 process (same process as switch_p_job_preinit()), and is run as root. Any cleanup routines
 that need to be run with root privileges should be run from this function.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job
-step's switch credential.<br>
-<span class="commandline"> pgid</span>&nbsp; &nbsp;&nbsp;(input) The process
-group id associated with this task.<br>
-<span class="commandline"> job_id</span>&nbsp; &nbsp;&nbsp;(input) the
-associated SLURM job id.<br>
-<span class="commandline"> step_id</span>&nbsp; &nbsp;&nbsp;(input) the
-associated SLURM job step id.</p>
+<span class="commandline"> job</span>&nbsp; &nbsp;&nbsp;(input)
+structure representing the slurmstepd's view of the job step.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
