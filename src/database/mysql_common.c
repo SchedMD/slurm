@@ -216,10 +216,10 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 		list_iterator_reset(itr);
 		while ((col = list_next(itr))) {
 			if (!strcmp(col, fields[i].name)) {
-				xstrfmtcat(query, " modify %s %s,",
+				xstrfmtcat(query, " modify `%s` %s,",
 					   fields[i].name,
 					   fields[i].options);
-				xstrfmtcat(correct_query, " modify %s %s,",
+				xstrfmtcat(correct_query, " modify `%s` %s,",
 					   fields[i].name,
 					   fields[i].options);
 				list_delete_item(itr);
@@ -233,11 +233,11 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 				     fields[i].name,
 				     fields[i-1].name,
 				     table_name);
-				xstrfmtcat(query, " add %s %s after %s,",
+				xstrfmtcat(query, " add `%s` %s after %s,",
 					   fields[i].name,
 					   fields[i].options,
 					   fields[i-1].name);
-				xstrfmtcat(correct_query, " modify %s %s,",
+				xstrfmtcat(correct_query, " modify `%s` %s,",
 					   fields[i].name,
 					   fields[i].options);
 			} else {
@@ -245,10 +245,10 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 				     "of table %s",
 				     fields[i].name,
 				     table_name);
-				xstrfmtcat(query, " add %s %s first,",
+				xstrfmtcat(query, " add `%s` %s first,",
 					   fields[i].name,
 					   fields[i].options);
-				xstrfmtcat(correct_query, " modify %s %s,",
+				xstrfmtcat(correct_query, " modify `%s` %s,",
 					   fields[i].name,
 					   fields[i].options);
 			}
@@ -775,13 +775,13 @@ extern int mysql_db_create_table(mysql_conn_t *mysql_conn, char *table_name,
 	}
 	xfree(query);
 
-	query = xstrdup_printf("create table if not exists %s (%s %s",
+	query = xstrdup_printf("create table if not exists %s (`%s` %s",
 			       table_name, fields->name, fields->options);
 	i = 1;
 	fields++;
 
 	while (fields && fields->name) {
-		xstrfmtcat(query, ", %s %s", fields->name, fields->options);
+		xstrfmtcat(query, ", `%s` %s", fields->name, fields->options);
 		fields++;
 		i++;
 	}

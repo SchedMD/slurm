@@ -1063,7 +1063,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  assoc_table_fields,
 				  ", primary key (id_assoc), "
 				  " unique index (user(20), acct(20), "
-				  "partition(20)))")
+				  "`partition`(20)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 

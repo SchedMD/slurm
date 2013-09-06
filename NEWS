@@ -22,8 +22,9 @@ documents those changes that are of interest to users and admins.
     slurmstepd.
  -- CRAY - Do not package Slurm's libpmi or libpmi2 libraries. The Cray version
     of those libraries must be used.
- -- Added a new option to the scontrol command to view licenses that are configured
-    in use and avalable. 'scontrol show licenses'.
+ -- Added a new option to the scontrol command to view licenses that are
+    configured in use and avalable. 'scontrol show licenses'.
+ -- MySQL - Made Slurm compatible with 5.6
 
 * Changes in Slurm 13.12.0pre1
 ==============================

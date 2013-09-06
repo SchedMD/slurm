@@ -432,7 +432,7 @@ no_rollup_change:
 		if (job_ptr->account)
 			xstrcat(query, ", account");
 		if (partition)
-			xstrcat(query, ", partition");
+			xstrcat(query, ", `partition`");
 		if (block_id)
 			xstrcat(query, ", id_block");
 		if (job_ptr->wckey)
@@ -493,7 +493,7 @@ no_rollup_change:
 		if (job_ptr->account)
 			xstrfmtcat(query, ", account='%s'", job_ptr->account);
 		if (partition)
-			xstrfmtcat(query, ", partition='%s'", partition);
+			xstrfmtcat(query, ", `partition`='%s'", partition);
 		if (block_id)
 			xstrfmtcat(query, ", id_block='%s'", block_id);
 		if (job_ptr->wckey)
@@ -530,7 +530,7 @@ no_rollup_change:
 		if (job_ptr->account)
 			xstrfmtcat(query, "account='%s', ", job_ptr->account);
 		if (partition)
-			xstrfmtcat(query, "partition='%s', ", partition);
+			xstrfmtcat(query, "`partition`='%s', ", partition);
 		if (block_id)
 			xstrfmtcat(query, "id_block='%s', ", block_id);
 		if (job_ptr->wckey)

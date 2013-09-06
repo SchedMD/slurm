@@ -47,7 +47,7 @@ char *assoc_req_inx[] = {
 	"rgt",
 	"user",
 	"acct",
-	"partition",
+	"`partition`",
 	"shares",
 	"grp_cpu_mins",
 	"grp_cpu_run_mins",
@@ -142,7 +142,7 @@ static char *massoc_req_inx[] = {
 	"acct",
 	"parent_acct",
 	"user",
-	"partition",
+	"`partition`",
 	"lft",
 	"rgt",
 	"qos",
@@ -168,7 +168,7 @@ static char *rassoc_req_inx[] = {
 	"acct",
 	"parent_acct",
 	"user",
-	"partition"
+	"`partition`"
 };
 
 enum {
@@ -732,7 +732,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		"id_assoc",
 		"user",
 		"acct",
-		"partition",
+		"`partition`",
 		"max_jobs",
 		"max_submit_jobs",
 		"max_nodes_pj",
@@ -2496,10 +2496,10 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			 */
 			if (!part)
 				part = "";
-			xstrcat(cols, ", partition");
+			xstrcat(cols, ", `partition`");
 			xstrfmtcat(vals, ", '%s'", part);
-			xstrfmtcat(update, " && partition='%s'", part);
-			xstrfmtcat(extra, ", partition='%s'", part);
+			xstrfmtcat(update, " && `partition`='%s'", part);
+			xstrfmtcat(extra, ", `partition`='%s'", part);
 			if (!added_user_list)
 				added_user_list = list_create(NULL);
 			list_append(added_user_list, object->user);

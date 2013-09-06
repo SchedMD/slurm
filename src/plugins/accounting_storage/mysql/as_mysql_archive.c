@@ -206,7 +206,7 @@ static char *job_req_inx[] = {
 	"job_name",
 	"nodelist",
 	"node_inx",
-	"partition",
+	"`partition`",
 	"priority",
 	"id_qos",
 	"cpus_req",

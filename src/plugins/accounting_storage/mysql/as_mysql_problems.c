@@ -94,7 +94,7 @@ static int _setup_association_cond_limits(
 		while ((object = list_next(itr))) {
 			if (set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "partition='%s'", object);
+			xstrfmtcat(*extra, "`partition`='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -221,7 +221,7 @@ extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
 		"id_assoc",
 		"user",
 		"acct",
-		"partition",
+		"`partition`",
 		"parent_acct",
 	};
 	enum {
