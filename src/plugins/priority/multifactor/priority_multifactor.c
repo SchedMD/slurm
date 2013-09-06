@@ -636,7 +636,7 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr)
 			uint32_t time_limit = 1;
 			/* Job size in CPUs (based upon average CPUs/Node */
 			job_ptr->prio_factors->priority_js =
-				(double)job_ptr->details->min_nodes *
+				(double)min_nodes *
 				(double)cluster_cpus /
 				(double)node_record_count;
 			if (cpu_cnt > job_ptr->prio_factors->priority_js) {
