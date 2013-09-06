@@ -1059,7 +1059,7 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 	GtkWidget *event_box = gtk_event_box_new();
 	GtkWidget *label = gtk_label_new(display_data->name);
 	GtkWidget *close_button = gtk_event_box_new();
-	GtkWidget *table = gtk_table_new(1, 3, FALSE);
+	GtkWidget *table;
 	GtkWidget *image = NULL;
 	int err;
 

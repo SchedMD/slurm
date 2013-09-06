@@ -523,7 +523,7 @@ extern int unpack_select_jobinfo(select_jobinfo_t **jobinfo_pptr, Buf buffer,
 	int i;
 	uint32_t uint32_tmp;
 	uint16_t mp_cnode_cnt;
-	int dims = slurmdb_setup_cluster_dims();
+	int dims;
 	select_jobinfo_t *jobinfo = xmalloc(sizeof(struct select_jobinfo));
 	char *bit_char = NULL;
 	*jobinfo_pptr = jobinfo;

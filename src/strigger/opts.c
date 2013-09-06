@@ -91,7 +91,6 @@ struct strigger_parameters params;
  */
 extern void parse_command_line(int argc, char *argv[])
 {
-	int first = 1;
 	int opt_char;
 	int option_index;
 	uid_t some_uid;
@@ -146,11 +145,8 @@ extern void parse_command_line(int argc, char *argv[])
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
-			if (first) {
-				first = 0;
-				fprintf(stderr, "Try \"strigger --help\" for "
-					"more information\n");
-			}
+			fprintf(stderr, "Try \"strigger --help\" for "
+				"more information\n");
 			exit(1);
 			break;
 		case (int)'a':

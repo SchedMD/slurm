@@ -247,7 +247,7 @@ int slurm_xsize(void *item, const char *file, int line, const char *func)
 {
 	int *p = (int *)item - 2;
 	xmalloc_assert(item != NULL);
-	xmalloc_assert(p[0] == XMALLOC_MAGIC);
+	xmalloc_assert(p[0] == XMALLOC_MAGIC); /* CLANG false positive here */
 	return p[1];
 }
 

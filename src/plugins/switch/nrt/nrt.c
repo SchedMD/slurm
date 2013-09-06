@@ -3628,8 +3628,9 @@ _wait_for_window_unloaded(char *adapter_name, nrt_adapter_t adapter_type,
 			info("_wait_for_window_unloaded");
 			_print_adapter_status(&status_adapter);
 		}
+		if (!status_array)	/* Fix for CLANG false positive */
+			break;
 		for (j = 0; j < window_count; j++) {
-			/* CLANG false positive here */
 			if (status_array[j].window_id == window_id)
 				break;
 		}

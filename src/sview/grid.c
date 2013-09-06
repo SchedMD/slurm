@@ -504,7 +504,7 @@ static int _block_in_node(int *mp_inx, int inx)
 static void _build_empty_node(int coord_x, int coord_y,
 			      button_processor_t *button_processor)
 {
-	grid_button_t *grid_button = button_processor->grid_button;
+	grid_button_t *grid_button;
 
 	(*button_processor->coord_x) = coord_x;
 	(*button_processor->coord_y) = coord_y;
