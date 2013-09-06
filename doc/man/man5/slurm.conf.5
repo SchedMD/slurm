@@ -1957,18 +1957,22 @@ Must be used with \fBCR_Socket\fR or \fBCR_Socket_Memory\fR option.
 CPUs are consumable resources.
 Configure the number of \fBCPUs\fR on each node, which may be equal to the
 count of cores or hyper\-threads on the node depending upon the desired minimum
-resource allocation. The node's \fBSockets\fR, \fBCoresPerSocket\fR and
-\fBThreadsPerCore\fR may also be configured if desired and may result in job
-allocations which have improved locality.
+resource allocation.
+The node's \fBBoards\fR, \fBSockets\fR, \fBCoresPerSocket\fR and
+\fBThreadsPerCore\fR may optionally be configured and result in job
+allocations which have improved locality; however doing so will prevent
+more than one job being from being allocated on each core.
 
 .TP
 \fBCR_CPU_Memory\fR
 CPUs and memory are consumable resources.
 Configure the number of \fBCPUs\fR on each node, which may be equal to the
 count of cores or hyper\-threads on the node depending upon the desired minimum
-resource allocation. The node's \fBSockets\fR, \fBCoresPerSocket\fR and
-\fBThreadsPerCore\fR may also be configured if desired and may result in job
-allocations which have improved locality.
+resource allocation.
+The node's \fBBoards\fR, \fBSockets\fR, \fBCoresPerSocket\fR and
+\fBThreadsPerCore\fR may optionally be configured and result in job
+allocations which have improved locality; however doing so will prevent
+more than one job being from being allocated on each core.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Core\fR
