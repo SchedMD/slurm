@@ -48,16 +48,22 @@ print_header $test_id
 if {[test_cray]} {
 	set make_file 1
 }
+if {[test_launch_poe]} {
+	set node_name_env MP_I_UPMD_HOSTNAME
+} else {
+	set node_name_env SLURMD_NODENAME
+}
 
 proc change_pro_epi { arg program_name conf_change task_pro } {
 
-	global inc_slurm bin_chmod config_dir pro_epi_prog bin_echo test_id bin_pwd alpha_numeric_under make_file bin_bash exit_code cwd bin_ln
+	global inc_slurm bin_chmod bin_rm config_dir pro_epi_prog bin_echo test_id bin_pwd alpha_numeric_under make_file bin_bash exit_code cwd bin_ln
 
 	if {$conf_change == 0} {
 		exec $bin_echo $arg=$config_dir/$pro_epi_prog > $config_dir/$inc_slurm
 	}
 
 	set make_ln 0
+	exec $bin_rm -f $cwd/$program_name
 	spawn $bin_bash -c "$bin_ln -sv /bin/sleep $cwd/$program_name"
 	expect {
 		-re "$program_name" {
@@ -145,21 +151,23 @@ proc check_proc { program_name} {
 		exec killall -9 $program_name
 		set exit_code 1
 	}
-
 }
 
 proc run_job { file_type program_name conf_change task_pro} {
 
-	global srun run_host make_file exit_code bin_rm bin_printenv cwd
+	global srun run_host make_file exit_code bin_rm bin_printenv bin_sleep cwd node_name_env
 
 	# Change the included file to epilog in the slurm.conf
 	change_pro_epi $file_type $program_name $conf_change $task_pro
+
+	# Wait for NFS file propagation as needed
+	$bin_sleep 10
 
 	# Update config file
 	update_conf
 
 	set sub_job 0
-	spawn $srun -w$run_host $bin_printenv SLURMD_NODENAME
+	spawn $srun -w$run_host $bin_printenv $node_name_env
 	expect {
 		-re "$run_host" {
 			set sub_job 1
@@ -197,7 +205,6 @@ proc run_job { file_type program_name conf_change task_pro} {
 
 
 proc update_conf { } {
-
 	global scontrol exit_code
 
 	spawn $scontrol reconfig
@@ -212,9 +219,9 @@ proc update_conf { } {
 	}
 
 }
-log_user 0
 
 set got_config 0
+log_user 0
 spawn $scontrol show config
 expect {
 	-re "SLURM_CONF.*= (/.*)/($alpha).*SLURM_VERSION" {
@@ -230,11 +237,12 @@ expect {
 		wait
 	}
 }
+log_user 1
 
 set get_name 0
-spawn $srun $bin_printenv SLURMD_NODENAME
+spawn $srun -l $bin_printenv $node_name_env
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "0: *($alpha_numeric_under)" {
 		set run_host $expect_out(1,string)
 		set get_name 1
 		exp_continue
@@ -247,15 +255,11 @@ expect {
 		wait
 	}
 }
-
 set cwd "[$bin_pwd]"
-
 if {$get_name != 1} {
 	send_user "\nFAILURE: Did not get run_host\n"
-	set exit_code 1
+	exit 1
 }
-
-log_user 1
 
 #
 # Copy slurm.conf file
@@ -279,7 +283,7 @@ change_pro_epi srun-task-epilog srun--task-epilog_$test_id 1 0
 update_conf
 
 set sub_job 0
-spawn $srun -w$run_host --task-epilog=$config_dir/$pro_epi_prog $bin_printenv SLURMD_NODENAME
+spawn $srun -w$run_host --task-epilog=$config_dir/$pro_epi_prog $bin_printenv $node_name_env
 expect {
 	-re "$run_host" {
 		set sub_job 1
@@ -328,7 +332,7 @@ if {$make_file == 1} {
 	update_conf
 
 	set sub_job 0
-	spawn $srun -w$run_host --task-prolog=$config_dir/$pro_epi_prog $bin_printenv SLURMD_NODENAME
+	spawn $srun -t1 -w$run_host --task-prolog=$config_dir/$pro_epi_prog $bin_printenv $node_name_env
 	expect {
 		-re "$run_host" {
 			set sub_job 1
