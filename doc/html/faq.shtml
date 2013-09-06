@@ -162,6 +162,7 @@ launch a shell on a node in the job's allocation?</a></li>
 <li><a href="#sssd">I am having trouble using SSSD with Slurm.</a></li>
 <li><a href="#ha_db>">How critical is configuring high availability for my
   database?</a></li>
+<li><a href="#sql>">How can I use double quotes in MySQL queries?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -1734,8 +1735,18 @@ IP between master/backup mysql servers and:</li>
 </ul>
 </ul>
 
+<p><a name="sql>"><b>55.How can I use double quotes in MySQL queries?</b></a></br>
+Execute:
+<pre>
+SET session sql_mode='ANSI_QUOTES';
+</pre>
+<p>This will allow double quotes in querries like this:</p>
+<pre>
+show columns from "tux_assoc_table" where Field='is_def';
+</pre>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 28 August 2013</p>
+<p style="text-align:center;">Last modified 6 September 2013</p>
 
 <!--#include virtual="footer.txt"-->
