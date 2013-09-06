@@ -1800,12 +1800,13 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 	jobinfo = job_ptr->select_jobinfo->data;
 	bg_record = jobinfo->bg_record;
 
-	if (!bg_record)
+	if (!bg_record) {
 		fatal("This job %u does not have a bg block "
 		      "assigned to it, but for some reason we are "
 		      "trying to start a step on it?",
 		      job_ptr->job_id);
-	else if (bg_record->magic != BLOCK_MAGIC) {
+		return NULL;	/* Fix CLANG false positive */
+	} else if (bg_record->magic != BLOCK_MAGIC) {
 		bg_record = find_bg_record_in_list(
 			bg_lists->main, jobinfo->bg_block_id);
 		if (!bg_record || (bg_record->magic != BLOCK_MAGIC)) {
