@@ -68,11 +68,11 @@ The default value is "no".
 .TP
 \fBAllowedRAMSpace\fR=<number>
 Constrain the job cgroup RAM to this percentage of the allocated memory.
-The default value is 100. If SLURM is not allocating memory to jobs,
 The percentage supplied may be expressed as floating point
 number, e.g. 98.5. If the \fBAllowedRAMSpace\fR limit is exceeded, the
 job steps will be killed and a warning message will be written to standard
 error.  Also see \fBConstrainRAMSpace\fR.
+The default value is 100.
 
 .TP
 \fBAllowedSwapSpace\fR=<number>
