@@ -2844,7 +2844,10 @@ struct job_record *_job_rec_copy(struct job_record *job_ptr)
 	job_ptr_new->nodes_completing = xstrdup(job_ptr->nodes_completing);
 	job_ptr_new->partition = xstrdup(job_ptr->partition);
 	job_ptr_new->part_ptr_list = part_list_copy(job_ptr->part_ptr_list);
-	if (job_ptr->part_ptr_list) {
+	/* On jobs that are held the priority_array isn't set up yet,
+	   so check to see if it exists before copying.
+	*/
+	if (job_ptr->part_ptr_list && job_ptr->priority_array) {
 		i = list_count(job_ptr->part_ptr_list) * sizeof(uint32_t);
 		job_ptr_new->priority_array = xmalloc(i);
 		memcpy(job_ptr_new->priority_array, job_ptr->priority_array, i);
