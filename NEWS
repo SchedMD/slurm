@@ -98,6 +98,7 @@ documents those changes that are of interest to users and admins.
  -- Switch/nrt - Prevent invalid memory reference when allocating single adapter
     per node of specific adapter type
  -- CRAY - Make Slurm work with CLE 5.1.1
+ -- Fix segfault if submitting to multiple partitions and holding the job.
 
 * Changes in Slurm 2.6.1
 ========================
