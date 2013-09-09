@@ -514,7 +514,6 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 
 	if (!strcmp(name, "batch_job")) {
 		sview_search_info.search_type = CREATE_BATCH_JOB;
-		entry = create_entry();
 		label = gtk_label_new(
 			"Batch job submission specifications\n\n"
 			"Specify size (task and/or node count) plus the\n"
@@ -530,7 +529,6 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 		entry = create_job_entry(job_msg, model, &iter);
 	} else if (!strcmp(name, "partition")) {
 		sview_search_info.search_type = CREATE_PARTITION;
-		entry = create_entry();
 		label = gtk_label_new(
 			"Partition creation specifications\n\n"
 			"Specify Name. All other fields are optional.");
