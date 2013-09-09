@@ -667,7 +667,7 @@ empty:
 
 	acct_list = list_create(slurmdb_destroy_account_rec);
 
-	if (acct_cond && acct_cond->with_assocs) {
+	if (acct_cond && acct_cond->with_assocs && acct_cond->assoc_cond) {
 		/* We are going to be freeing the inners of
 		   this list in the acct->name so we don't
 		   free it here
