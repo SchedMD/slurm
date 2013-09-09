@@ -63,9 +63,10 @@ static int _find_node_inx (char *name)
 
 
 	for (i = 0; i < g_node_info_ptr->record_count; i++) {
-		if (!strcmp (name, g_node_info_ptr->node_array[i].name)) {
+		if (g_node_info_ptr->node_array[i].name == NULL)
+			continue;	/* Future node or other anomaly */
+		if (!strcmp(name, g_node_info_ptr->node_array[i].name))
 			return i;
-		}
 	}
 
 	return -1;
