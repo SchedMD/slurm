@@ -203,7 +203,9 @@ proc inc3_11_9 {} {
 	# Submit a batch job: a job using cores available in first 5 nodes
 	set core_res_num   [ expr $cores_per_node / 2 ]
 	set core_res_num   [ expr $core_res_num - 1 ]
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=$core_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --output=/dev/null $file_in]
+	set thread_res_num [ expr $core_res_num * $res_thread_cnt ]
+
+	set sbatch_pid [spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -260,7 +262,8 @@ proc inc3_11_9 {} {
 
 	# Submit a batch job: a job using more cores than available in first 5 nodes
 	set core_res_num   [ expr $cores_per_node / 2 ]
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=$core_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --output=/dev/null $file_in]
+	set thread_res_num [ expr $core_res_num * $res_thread_cnt ]
+	set sbatch_pid [spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -318,7 +321,8 @@ proc inc3_11_9 {} {
 
 	# Submit a batch job: a job using cores reserved in first reservation
 	set core_res_num   [ expr $cores_per_node / 2 ]
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=$core_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name1 --output=/dev/null $file_in]
+	set thread_res_num [ expr $core_res_num * $res_thread_cnt ]
+	set sbatch_pid [spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name1 --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -378,7 +382,8 @@ proc inc3_11_9 {} {
 	set core_res_num   [ expr $cores_per_node / 2 ]
 	set core_res_num   [ expr $core_res_num * 5 ]
 	set core_res_num   [ expr $core_res_num + 1 ]
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=$core_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name1 --output=/dev/null $file_in]
+	set thread_res_num [ expr $core_res_num * $res_thread_cnt ]
+	set sbatch_pid [spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name1 --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -435,7 +440,8 @@ proc inc3_11_9 {} {
 	cancel_job $job_id
 
 	# Submit a batch job: a job using cores reserved in second reservation
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=1 --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name --output=/dev/null $file_in]
+	set thread_res_num [ expr 1 * $res_thread_cnt ]
+	set sbatch_pid [spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -492,7 +498,8 @@ proc inc3_11_9 {} {
 	cancel_job $job_id
 
 	# Submit a batch job: a job using more cores than reserved in second reservation
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=2 --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name --output=/dev/null $file_in]
+	set thread_res_num [ expr 2 * $res_thread_cnt ]
+	set sbatch_pid [spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
