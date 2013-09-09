@@ -2734,7 +2734,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       job_specs->mem_bind_type, job_specs->mem_bind,
 	       job_specs->plane_size);
 	debug3("   array_inx=%s", job_specs->array_inx);
-		
+
 	select_g_select_jobinfo_sprint(job_specs->select_jobinfo,
 				       buf, sizeof(buf), SELECT_PRINT_MIXED);
 	if (buf[0] != '\0')
@@ -4617,7 +4617,7 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 		hostset_destroy(hs);
 		return false;
 	}
-	
+
 	job_desc->array_bitmap = bit_alloc(max_array_size);
 	while (array_str) {
 		array_id = strtol(array_str, &end_ptr, 10);
