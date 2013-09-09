@@ -2770,7 +2770,7 @@ extern void rehash_jobs(void)
 	}
 }
 
-/* Create an exact copy of an existing job record.
+/* Create an exact copy of an existing job record for a job array.
  * Assumes the job has no resource allocaiton */
 struct job_record *_job_rec_copy(struct job_record *job_ptr)
 {
@@ -5645,6 +5645,10 @@ static void _list_delete_job(void *job_entry)
 		fatal("job hash error");
 	*job_pptr = job_ptr->job_next;
 
+/*
+ * NOTE: Anything you free here also needs to be allocated memory copied
+ * when a job array is created in _job_rec_copy() above
+ */
 	delete_job_details(job_ptr);
 	xfree(job_ptr->account);
 	xfree(job_ptr->alias_list);
