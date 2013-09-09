@@ -97,6 +97,7 @@ documents those changes that are of interest to users and admins.
     and finally picks the GRES that best match those CPUs.
  -- Switch/nrt - Prevent invalid memory reference when allocating single adapter
     per node of specific adapter type
+ -- CRAY - Make Slurm work with CLE 5.1.1
 
 * Changes in Slurm 2.6.1
 ========================
