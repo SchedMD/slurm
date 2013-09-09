@@ -372,7 +372,7 @@ extern void bg_status_process_kill_job_list(List kill_job_list,
 	/* kill all the jobs from unexpectedly freed blocks */
 	while ((freeit = list_pop(kill_job_list))) {
 		debug2("Trying to requeue job %u", freeit->jobid);
-		bg_requeue_job(freeit->jobid, 0, slurmctld_locked);
+		bg_requeue_job(freeit->jobid, 0, slurmctld_locked, JOB_FAILED);
 		_destroy_kill_struct(freeit);
 	}
 }
