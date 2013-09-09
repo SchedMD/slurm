@@ -758,7 +758,6 @@ static int _print_text_part(partition_info_t *part_ptr,
 						      sizeof(time_buf));
 				}
 
-				width = strlen(time_buf);
 				printf("%9.9s ", time_buf);
 			}
 		}
