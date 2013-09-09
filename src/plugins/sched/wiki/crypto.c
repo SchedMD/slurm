@@ -48,9 +48,6 @@ static void des( uint32_t *lword, uint32_t *irword )
 		0x15a2ca46
 	};
 
-	itmph = 0;
-	itmpl = 0;
-
 	for ( idx = 0; idx < MAX_ITERATION; ++idx ) {
 		iswap = *irword;
 		ia = iswap ^ c1[ idx ];
