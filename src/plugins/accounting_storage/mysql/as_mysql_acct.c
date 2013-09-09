@@ -703,7 +703,7 @@ empty:
 	}
 	mysql_free_result(result);
 
-	if (acct_cond && acct_cond->with_assocs
+	if (acct_cond && acct_cond->with_assocs && acct_cond->assoc_cond
 	    && list_count(acct_cond->assoc_cond->acct_list)) {
 		ListIterator assoc_itr = NULL;
 		slurmdb_account_rec_t *acct = NULL;

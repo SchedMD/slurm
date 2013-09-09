@@ -927,8 +927,10 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		sockfd[i] = slurm_init_msg_engine_addrname_port(
 					node_addr,
 					slurmctld_conf.slurmctld_port+i);
-		if (sockfd[i] == SLURM_SOCKET_ERROR)
+		if (sockfd[i] == SLURM_SOCKET_ERROR) {
 			fatal("slurm_init_msg_engine_addrname_port error %m");
+			return NULL;	/* Fix CLANG false positive */
+		}
 		slurm_get_stream_addr(sockfd[i], &srv_addr);
 		slurm_get_ip_str(&srv_addr, &port, ip, sizeof(ip));
 		debug2("slurmctld listening on %s:%d", ip, ntohs(port));
@@ -950,7 +952,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		int max_fd = -1;
 		FD_ZERO(&rfds);
 		for (i=0; i<nports; i++) {
-			FD_SET(sockfd[i], &rfds);   /* CLANG false positive */
+			FD_SET(sockfd[i], &rfds);
 			max_fd = MAX(sockfd[i], max_fd);
 		}
 		if (select(max_fd+1, &rfds, NULL, NULL, NULL) == -1) {
