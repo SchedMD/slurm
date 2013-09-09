@@ -121,7 +121,6 @@ exec $bin_cc -I$build_dir $file_prog.c -lm -o $file_prog
 exec $bin_chmod 700 $file_prog
 
 set timeout [expr $max_job_delay + 200]
-log_user 0
 # Override task polling supplied by slurm.conv
 set task_freq [expr $task_freq + 5]
 set srun_pid [spawn $srun --acctg-freq=$task_freq --profile=task -t5 ./$file_prog]
@@ -129,6 +128,10 @@ expect {
 	-re "SLURM_JobId=($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
+	}
+	-re "error:" {
+		send_user "\nFAILURE: something happened on start of job\n"
+		exit 1
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -154,7 +157,6 @@ expect {
 }
 
 set hdf5_file "job_$job_id.h5"
-log_user 0
 set srun_pid [spawn $sh5util -j $job_id -l Node:TimeSeries -s Tasks -o $file_out]
 expect {
 	timeout {
