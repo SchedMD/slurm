@@ -755,7 +755,6 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
 		req->cpus_per_task = i;
 	}
 
-	size = bit_size(avail_map);
 	i = 0;
 	while (taskcount < max_tasks) {
 		if (taskcount == last_taskcount)
@@ -854,7 +853,6 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 		req->cpus_per_task = i;
 	}
 
-	size = bit_size(avail_map);
 	i = 0;
 	while (taskcount < max_tasks) {
 		if (taskcount == last_taskcount)
