@@ -7,8 +7,8 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-#  Copyright (C) 2013 Bull S. A. S. 
-#		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois. 
+#  Copyright (C) 2013 Bull S. A. S.
+#		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
 #
 #  Written by Rod Schultz <rod.schultz@bull.com>
 #
@@ -46,9 +46,9 @@ proc get_jobacct_freq {} {
 	spawn $scontrol show config
 	expect {
 		timeout {
-			send_user "\nCan't find JobAcctGatherFrequency in slurm.conf. Using $task_freq" 
-			return $task_freq 
-		}   
+			send_user "\nCan't find JobAcctGatherFrequency in slurm.conf. Using $task_freq"
+			return $task_freq
+		}
 	}
 	wait
 	log_user 1
@@ -65,15 +65,15 @@ proc get_jobacct_freq {} {
 		}
 	}
 	if {$opt == ""} {
-		send_user "\nJobAcctGatherFrequency in slurm.conf. Using $task_freq" 
+		send_user "\nJobAcctGatherFrequency in slurm.conf. Using $task_freq"
 	}
-	
+
 	set tokens [split $opt ","]
 	set nt [llength $tokens]
 	if {$nt == 1} {
 		if {[string first "task=" $opt] == -1} {
 			return $opt
-		} 
+		}
 	}
 	for {set tx 0} {$tx < $nt} {incr tx} {
 		set opt [lindex $tokens $tx]
@@ -87,8 +87,8 @@ proc get_jobacct_freq {} {
 print_header $test_id
 
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit $exit_code
+	send_user "\nWARNING: This test is incompatible with front-end systems\n"
+	exit $exit_code
 }
 
 # Check if acct_gather_profile/hdf5 is installed
@@ -197,7 +197,7 @@ while {$fd > 0 && [gets $fd line] != -1} {
 		set cputil [lindex $tokens 8]
 		# The range on cpu utilization is pretty wide
 		# Linux accounting resolution is only to one second, so in a
-		# typical 30 interval an extra second is 3%. The burn loop 
+		# typical 30 interval an extra second is 3%. The burn loop
 		# consumes a bit more that asked for. There is additional type
 		# managing the I/O portion. Slurm and linux also consume some
 		# cpu.
