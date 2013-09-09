@@ -4591,8 +4591,10 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 	conf = slurm_conf_lock();
 	max_array_size = conf->max_array_sz;
 	slurm_conf_unlock();
-	if (max_array_size == 0)
+	if (max_array_size == 0) {
+		verbose("Job arrays disabled, MaxArraySize=0");
 		return false;
+	}
 
 	/* We have a job array request */
 	job_desc->immediate = 0;	/* Disable immediate option */
@@ -4610,11 +4612,14 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 	}
 	hs = hostset_create(array_str);
 	xfree(array_str);
-	if (!hs)
+	if (!hs) {
+		verbose("Invalid job array string (%s)", array_str);
 		return false;
+	}
 	array_str = hostset_shift(hs);
 	if (!array_str) {
 		hostset_destroy(hs);
+		verbose("Invalid job array string (%s)", array_str);
 		return false;
 	}
 
@@ -4624,6 +4629,8 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 		if ((array_str[0] == '\0') || (end_ptr[0] != '\0') ||
 		    (array_id < 0) || (array_id >= max_array_size)) {
 			valid = false;
+			verbose("Invalid job array element value (%d)",
+				array_id);
 		}
 		free(array_str);
 		if (!valid)
@@ -4632,8 +4639,10 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 		array_str = hostset_shift(hs);
 	}
 	hostset_destroy(hs);
-	if (valid && (bit_set_count(job_desc->array_bitmap) == 0))
+	if (valid && (bit_set_count(job_desc->array_bitmap) == 0)) {
 		valid = false;
+		verbose("Job array has no elements");
+	}
 
 	if (valid && (step > 1)) {
 		int i, j = 0;
