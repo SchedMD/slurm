@@ -799,7 +799,6 @@ static int _no_gres_conf(uint32_t cpu_cnt)
 	slurm_mutex_lock(&gres_context_lock);
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
-	p = xmalloc(sizeof(gres_slurmd_conf_t *) * gres_context_cnt);
 	for (i = 0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		p = xmalloc(sizeof(gres_slurmd_conf_t));
 		p->cpu_cnt	= cpu_cnt;
