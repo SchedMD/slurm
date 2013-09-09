@@ -874,7 +874,7 @@ extern int sync_jobs(List job_list)
 			/* Don't use slurm_fail_job, locks are already
 			   in place.
 			*/
-			job_fail(job_ptr->job_id, JOB_NODE_FAIL);
+			job_fail(job_ptr->job_id, JOB_BOOT_FAIL);
 			_destroy_bg_action(bg_action_ptr);
 			continue;
 		}
