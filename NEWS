@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in Slurm 2.6.3
+========================
+
 * Changes in Slurm 2.6.2
 ========================
  -- Fix issue with reconfig and GrpCPURunMins
