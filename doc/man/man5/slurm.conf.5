@@ -2635,10 +2635,12 @@ used for scheduling purposes (depending upon the value of
 \fBFastSchedule\fR in the configuration file.
 .LP
 Default values can be specified with a record in which
-"NodeName" is "DEFAULT".
+\fBNodeName\fR is "DEFAULT".
 The default entry values will apply only to lines following it in the
 configuration file and the default values can be reset multiple times
 in the configuration file with multiple entries where "NodeName=DEFAULT".
+Each line where \fBNodeName\fR is "DEFAULT" will replace or add to previous
+default values and not a reinitialize the default values.
 The "NodeName=" specification must be placed on every line
 describing the configuration of nodes.
 A single node name can not appear as a NodeName value in more than one line
@@ -2700,6 +2702,8 @@ If the \fBNodeName\fR is "DEFAULT", the values specified
 with that record will apply to subsequent node specifications
 unless explicitly set to other values in that node record or
 replaced with a different set of default values.
+Each line where \fBNodeName\fR is "DEFAULT" will replace or add to previous
+default values and not a reinitialize the default values.
 For architectures in which the node order is significant,
 nodes will be considered consecutive in the order defined.
 For example, if the configuration for "NodeName=charlie" immediately
@@ -3008,6 +3012,8 @@ If the \fBFrontendName\fR is "DEFAULT", the values specified
 with that record will apply to subsequent node specifications
 unless explicitly set to other values in that frontend node record or
 replaced with a different set of default values.
+Each line where \fBFrontendName\fR is "DEFAULT" will replace or add to previous
+default values and not a reinitialize the default values.
 Note that since the naming of front end nodes would typically not follow that
 of the compute nodes (e.g. lacking X, Y and Z coordinates found in the compute
 node naming scheme), each front end node name should be listed separately and
@@ -3072,12 +3078,14 @@ partitions, each with different constraints (time limit, job sizes,
 groups allowed to use the partition, etc.).
 Jobs are allocated resources within a single partition.
 Default values can be specified with a record in which
-"PartitionName" is "DEFAULT".
+\fBPartitionName\fR is "DEFAULT".
 The default entry values will apply only to lines following it in the
 configuration file and the default values can be reset multiple times
 in the configuration file with multiple entries where "PartitionName=DEFAULT".
 The "PartitionName=" specification must be placed on every line
 describing the configuration of partitions.
+Each line where \fBPartitionName\fR is "DEFAULT" will replace or add to previous
+default values and not a reinitialize the default values.
 A single partition name can not appear as a PartitionName value in more than
 one line (duplicate partition name records will be ignored).
 If a partition that is in use is deleted from the configuration and slurm
@@ -3305,6 +3313,8 @@ If the \fBPartitionName\fR is "DEFAULT", the values specified
 with that record will apply to subsequent partition specifications
 unless explicitly set to other values in that partition record or
 replaced with a different set of default values.
+Each line where \fBPartitionName\fR is "DEFAULT" will replace or add to previous
+default values and not a reinitialize the default values.
 
 .TP
 \fBPreemptMode\fR

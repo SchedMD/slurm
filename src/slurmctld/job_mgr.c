@@ -56,6 +56,7 @@
 #include <strings.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/param.h>
 #include <unistd.h>
 
 #include "slurm/slurm_errno.h"
@@ -206,7 +207,6 @@ static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
 				      uint32_t size);
 static void _xmit_new_end_time(struct job_record *job_ptr);
-
 
 /*
  * create_job_record - create an empty job_record including job_details.
@@ -3557,8 +3557,12 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			job_ptr->exit_code = job_return_code;
 			job_ptr->state_reason = FAIL_EXIT_CODE;
 			xfree(job_ptr->state_desc);
-		} else if (job_comp_flag &&		/* job was running */
-			   (job_ptr->end_time < now)) {	/* over time limit */
+		} else if (job_comp_flag
+		           && ((job_ptr->end_time
+		                + slurmctld_conf.over_time_limit * 60) < now)) {
+			/* Test if the job has finished before its allowed
+			 * over time has expired.
+			 */
 			job_ptr->job_state = JOB_TIMEOUT  | job_comp_flag;
 			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			job_ptr->state_reason = FAIL_TIMEOUT;
@@ -4688,11 +4692,11 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->req_nodes, "req_nodes", 1024*64)	||
 	    _test_strlen(job_desc->reservation, "reservation", 1024)	||
 	    _test_strlen(job_desc->script, "script", 1024 * 1024 * 4)	||
-	    _test_strlen(job_desc->std_err, "std_err", 1024)		||
-	    _test_strlen(job_desc->std_in, "std_in", 1024)		||
-	    _test_strlen(job_desc->std_out, "std_out", 1024)		||
+	    _test_strlen(job_desc->std_err, "std_err", MAXPATHLEN)		||
+	    _test_strlen(job_desc->std_in, "std_in", MAXPATHLEN)		||
+	    _test_strlen(job_desc->std_out, "std_out", MAXPATHLEN)		||
 	    _test_strlen(job_desc->wckey, "wckey", 1024)		||
-	    _test_strlen(job_desc->work_dir, "work_dir", 1024))
+	    _test_strlen(job_desc->work_dir, "work_dir", MAXPATHLEN))
 		return ESLURM_PATHNAME_TOO_LONG;
 
 	if (!_valid_array_inx(job_desc))
