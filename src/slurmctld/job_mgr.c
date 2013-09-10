@@ -201,6 +201,7 @@ static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
 				      uint32_t size);
 static void _xmit_new_end_time(struct job_record *job_ptr);
+static inline bool over_time_limit_configured(void);
 
 
 /*
@@ -2722,7 +2723,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       job_specs->mem_bind_type, job_specs->mem_bind,
 	       job_specs->plane_size);
 	debug3("   array_inx=%s", job_specs->array_inx);
-		
+
 	select_g_select_jobinfo_sprint(job_specs->select_jobinfo,
 				       buf, sizeof(buf), SELECT_PRINT_MIXED);
 	if (buf[0] != '\0')
@@ -3543,8 +3544,12 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			job_ptr->exit_code = job_return_code;
 			job_ptr->state_reason = FAIL_EXIT_CODE;
 			xfree(job_ptr->state_desc);
-		} else if (job_comp_flag &&		/* job was running */
-			   (job_ptr->end_time < now)) {	/* over time limit */
+		} else if (job_comp_flag
+		           && ((job_ptr->end_time
+		                + slurmctld_conf.over_time_limit * 60) < now)) {
+			/* Test if the job has finished before its allowed
+			 * over time has expired.
+			 */
 			job_ptr->job_state = JOB_TIMEOUT  | job_comp_flag;
 			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			job_ptr->state_reason = FAIL_TIMEOUT;
@@ -4515,7 +4520,7 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 		verbose("Invalid job array string (%s)", array_str);
 		return false;
 	}
-	
+
 	job_desc->array_bitmap = bit_alloc(max_array_size);
 	while (array_str) {
 		array_id = strtol(array_str, &end_ptr, 10);
@@ -10929,4 +10934,19 @@ extern void build_cg_bitmap(struct job_record *job_ptr)
 		job_ptr->node_bitmap_cg = bit_alloc(node_record_count);
 		job_ptr->job_state &= (~JOB_COMPLETING);
 	}
+}
+
+static inline bool
+over_time_limit_configured(void)
+{
+	slurm_ctl_conf_t *conf = slurm_conf_lock();
+	bool cc;
+
+	cc = false;
+	if (conf->over_time_limit > 0) {
+		cc = true;
+	}
+	slurm_conf_unlock();
+
+	return cc;
 }
