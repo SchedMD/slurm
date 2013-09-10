@@ -201,8 +201,6 @@ static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
 				      uint32_t size);
 static void _xmit_new_end_time(struct job_record *job_ptr);
-static inline bool over_time_limit_configured(void);
-
 
 /*
  * create_job_record - create an empty job_record including job_details.
@@ -10934,19 +10932,4 @@ extern void build_cg_bitmap(struct job_record *job_ptr)
 		job_ptr->node_bitmap_cg = bit_alloc(node_record_count);
 		job_ptr->job_state &= (~JOB_COMPLETING);
 	}
-}
-
-static inline bool
-over_time_limit_configured(void)
-{
-	slurm_ctl_conf_t *conf = slurm_conf_lock();
-	bool cc;
-
-	cc = false;
-	if (conf->over_time_limit > 0) {
-		cc = true;
-	}
-	slurm_conf_unlock();
-
-	return cc;
 }
