@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "August 2013" "slurm.conf 13.12" "Slurm configuration file"
+.TH "slurm.conf" "5" "September 2013" "slurm.conf 13.12" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -121,28 +121,21 @@ Also see \fBDefaultStoragePort\fR.
 \fBAccountingStorageType\fR
 The accounting storage mechanism type.  Acceptable values at
 present include "accounting_storage/filetxt",
-"accounting_storage/mysql", "accounting_storage/none",
-"accounting_storage/pgsql", and "accounting_storage/slurmdbd".  The
+"accounting_storage/mysql", "accounting_storage/none"
+and "accounting_storage/slurmdbd".  The
 "accounting_storage/filetxt" value indicates that accounting records
 will be written to the file specified by the
 \fBAccountingStorageLoc\fR parameter.  The "accounting_storage/mysql"
-value indicates that accounting records will be written to a MySQL
-database specified by the \fBAccountingStorageLoc\fR parameter.  The
-"accounting_storage/pgsql" value indicates that accounting records
-will be written to a PostgreSQL database specified by the
-\fBAccountingStorageLoc\fR parameter.  The
-"accounting_storage/slurmdbd" value indicates that accounting records
-will be written to the SLURM DBD, which manages an underlying MySQL or
-PostgreSQL database. See "man slurmdbd" for more information.  The
+value indicates that accounting records will be written to a MySQL or
+MariaDB database specified by the \fBAccountingStorageLoc\fR parameter.
+The "accounting_storage/slurmdbd" value indicates that accounting records
+will be written to the SLURM DBD, which manages an underlying MySQL
+database. See "man slurmdbd" for more information.  The
 default value is "accounting_storage/none" and indicates that account
 records are not maintained.
 Note: The filetxt plugin records only a limited subset of accounting
 information and will prevent some sacct options from proper operation.
-Note: The PostgreSQL plugin is not
-complete and should not be used if wanting to use associations.  It
-will however work with basic accounting of jobs and job steps.  If
-interested in completing, please email slurm-dev@schedmd.com.  Also
-see \fBDefaultStorageType\fR.
+Also see \fBDefaultStorageType\fR.
 
 .TP
 \fBAccountingStorageUser\fR
@@ -535,13 +528,12 @@ Also see \fBAccountingStoragePort\fR and \fBJobCompPort\fR.
 .TP
 \fBDefaultStorageType\fR
 The accounting and job completion storage mechanism type.  Acceptable
-values at present include "filetxt", "mysql", "none", "pgsql", and
+values at present include "filetxt", "mysql", "none", and
 "slurmdbd".  The value "filetxt" indicates that records will be
 written to a file.  The value "mysql" indicates that accounting
-records will be written to a mysql database.  The default value is
-"none", which means that records are not maintained.  The value
-"pgsql" indicates that records will be written to a PostgreSQL
-database.  The value "slurmdbd" indicates that records will be written
+records will be written to a MySQL or MariaDB database. The default value is
+"none", which means that records are not maintained.
+The value "slurmdbd" indicates that records will be written
 to the SLURM DBD, which maintains its own database. See "man slurmdbd"
 for more information.
 Also see \fBAccountingStorageType\fR and \fBJobCompType\fR.
@@ -857,7 +849,7 @@ Also see \fBDefaultStoragePort\fR.
 \fBJobCompType\fR
 The job completion logging mechanism type.
 Acceptable values at present include "jobcomp/none", "jobcomp/filetxt",
-"jobcomp/mysql", "jobcomp/pgsql", and "jobcomp/script"".
+"jobcomp/mysql", and "jobcomp/script"".
 The default value is "jobcomp/none", which means that upon job completion
 the record of the job is purged from the system.  If using the accounting
 infrastructure this plugin may not be of interest since the information
@@ -865,9 +857,8 @@ here is redundant.
 The value "jobcomp/filetxt" indicates that a record of the job should be
 written to a text file specified by the \fBJobCompLoc\fR parameter.
 The value "jobcomp/mysql" indicates that a record of the job should be
-written to a mysql database specified by the \fBJobCompLoc\fR parameter.
-The value "jobcomp/pgsql" indicates that a record of the job should be
-written to a PostgreSQL database specified by the \fBJobCompLoc\fR parameter.
+written to a MySQL or MariaDB database specified by the \fBJobCompLoc\fR
+parameter.
 The value "jobcomp/script" indicates that a script specified by the
 \fBJobCompLoc\fR parameter is to be executed with environment variables
 indicating the job information.

@@ -286,7 +286,7 @@ is operational. </p>
 
 <h3>Accounting</h3>
 <p>SLURM supports accounting records being written to a simple text file,
-directly to a database (MySQL or PostgreSQL), or to a daemon securely
+directly to a database (MySQL or MariaDB), or to a daemon securely
 managing accounting data for multiple clusters. For more information
 see <a href="accounting.html">Accounting</a>. </p>
 
@@ -687,6 +687,6 @@ Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 29 August 2013</p>
+<p style="text-align: center;">Last modified 10 September 2013</p>
 
 <!--#include virtual="footer.txt"-->

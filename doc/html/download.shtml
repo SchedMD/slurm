@@ -52,8 +52,8 @@ for the application to manage Kerberos V credentials.</li>
 <li><b>Databases</b> can be used to store accounting information.
 See our <a href="accounting.html">Accounting</a> web page for more information.</li>
 <ul>
-<li><a href="http://www.mysql.com/">MySQL</a> (recommended)</li>
-<li><a href="http://www.postgresql.org/">PostgreSQL</a> (Not fully functional)</li>
+<li><a href="http://www.mysql.com/">MySQL</a></li>
+<li><a href="https://mariadb.org/">MariaDB</a></li>
 </ul><br>
 
 <li><b>Debuggers</b> and debugging tools</li>
@@ -234,6 +234,6 @@ For more information, see
 
 </ul>
 
-<p style="text-align:center;">Last modified 21 August 2013</p>
+<p style="text-align: center;">Last modified 10 September 2013</p>
 
 <!--#include virtual="footer.txt"-->

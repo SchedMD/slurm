@@ -14,8 +14,8 @@ but should use their own resource limits mechanisms.</p>
 <p>Scheduling policy information must be stored in a database
 as specified by the <b>AccountingStorageType</b> configuration parameter
 in the <b>slurm.conf</b> configuration file.
-Information can be recorded in either <a href="http://www.mysql.com/">MySQL</a>
-or <a href="http://www.postgresql.org/">PostgreSQL</a>.
+Information can be recorded in a <a href="http://www.mysql.com/">MySQL</a> or
+<a href="https://mariadb.org/">MariaDB</a></li> database.
 For security and performance reasons, the use of
 SlurmDBD (SLURM Database Daemon) as a front-end to the
 database is strongly recommended.
@@ -210,6 +210,6 @@ data maintained in the SLURM database.  More information can be found
 in the <a href="priority_multifactor.html">priority/multifactor</a>
 plugin description.</p>
 
-<p style="text-align: center;">Last modified 12 August 2013</p>
+<p style="text-align: center;">Last modified 10 September 2013</p>
 
 </ul></body></html>

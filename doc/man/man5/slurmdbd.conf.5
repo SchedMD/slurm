@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "28" "Feb 2013" "slurmdbd.conf 2.6" "Slurm configuration file"
+.TH "slurmdbd.conf" "5" "September 2013" "slurmdbd.conf 13.12" "Slurm configuration file"
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
 
@@ -363,14 +363,8 @@ Acceptable values at present include
 "accounting_storage/mysql", and
 "accounting_storage/pgsql".
 The value "accounting_storage/mysql" indicates that accounting records
-should be written to a MySQL database specified by the
+should be written to a MySQL or MariaDB database specified by the
 \fBStorageLoc\fR parameter.
-The value "accounting_storage/pgsql" indicates that accounting records
-should be written to a PostgreSQL database specified by the
-\fBStorageLoc\fR parameter.  This plugin is not complete and has been
-depricated.  In future versions of Slurm this plugin may be removed.
-It should not be used if wanting to use associations.  It will however work
-with basic accounting of jobs and job steps.
 This value must be specified.
 
 .TP
