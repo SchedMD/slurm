@@ -29,6 +29,7 @@ documents those changes that are of interest to users and admins.
     per node of specific adapter type
  -- CRAY - Make Slurm work with CLE 5.1.1
  -- Fix segfault if submitting to multiple partitions and holding the job.
+ -- Use MAXPATHLEN instead of the hardcoded value 1024.
 
 * Changes in Slurm 2.6.1
 ========================
