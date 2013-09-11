@@ -1805,7 +1805,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	struct stat buf;
 
 	if (geteuid() != (uid_t)0) {
-		fatal("WARNING: you must be root to use --get-user-env");
+		error("SlurmdUser must be root to use --get-user-env");
 		return NULL;
 	}
 
