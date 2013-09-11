@@ -170,11 +170,9 @@ if($resource_list) {
 	}
 }
 
-# FIXME: This logic does not support commas embedded within an environment's
-# variable, which requires adding support for quoted variable lists (e.g.
-# -v "FOO='b,a,r'" or -v 'FOO="b,a,r"' )
 if($variable_list) {
-	my @parts = split(/,/, $variable_list);
+	$variable_list =~ s/\'/\"/g;
+	my @parts = $variable_list =~ m/(?:(?<=")[^"]*(?=(?:\s*"\s*,|\s*"\s*$)))|(?<=,)(?:[^",]*(?=(?:\s*,|\s*$)))|(?<=^)(?:[^",]+(?=(?:\s*,|\s*$)))|(?<=^)(?:[^",]*(?=(?:\s*,)))/g;
 	foreach my $part (@parts) {
 		my ($key, $value) = $part =~ /(.*)=(.*)/;
 		if ($key && $value) {
@@ -446,8 +444,9 @@ It is not necessary (currently also not possible) since stderr/stdout are always
 
 =item B<-v> [variable_list]
 
-Exporting single variables via -v is not supported, since the entire login environment
-is exported by the default.
+Exporting single variables via -v is generally not required, since the entire
+login environment is exported by the default. However this option can be used
+to add newly defined environment variables to specific jobs.
 
 =item B<-V>
 
