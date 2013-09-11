@@ -68,7 +68,7 @@ my ($start_time,
 #    $rerunable,
 #    $script_path,
 #    $running_user_list,
-#    $variable_list,
+     $variable_list,
 #    $all_env,
     $additional_attributes,
 #    $no_std,
@@ -99,13 +99,11 @@ GetOptions('a=s'      => \$start_time,
 #	   'r=s'      => \$rerunable,
 #	   'S=s'      => \$script_path,
 #	   'u=s'      => \$running_user_list,
-	   'v=s'      => sub { warn "option -v is not supported, " .
-				    "since the current environment " .
-				    "is exported by default\n" },
+	   'v=s'      => \$variable_list,
 	   'V'        => sub { warn "option -V is not necessary, " .
 				    "since the current environment " .
 				    "is exported by default\n" },
-	   'W'        => \$additional_attributes,
+	   'W=s'      => \$additional_attributes,
 #	   'z'        => \$no_std,
 	   'help|?'   => \$help,
 	   'man'      => \$man,
@@ -141,6 +139,14 @@ if ($ARGV[0]) {
 my %res_opts;
 my %node_opts;
 
+if($additional_attributes) {
+	my ($umask, $value) = $additional_attributes =~ /(umask=)([0-9]+)/i;
+	if ($umask) {
+		$ENV{SLURM_UMASK} = $value;
+		$additional_attributes =~ s/(umask=)([0-9]+)//;
+	}
+}
+
 if($resource_list) {
 	%res_opts = %{parse_resource_list($resource_list)};
 
@@ -155,6 +161,25 @@ if($resource_list) {
 
 	if($res_opts{nodes}) {
 		%node_opts =  %{parse_node_opts($res_opts{nodes})};
+	}
+	if ($res_opts{select} && (!$node_opts{node_cnt} || ($res_opts{select} > $node_opts{node_cnt}))) {
+		$node_opts{node_cnt} = $res_opts{select};
+	}
+	if ($res_opts{ncpus} && (!$node_opts{task_cnt} || ($res_opts{ncpus} > $node_opts{task_cnt}))) {
+		$node_opts{task_cnt} = $res_opts{ncpus};
+	}
+}
+
+# FIXME: This logic does not support commas embedded within an environment's
+# variable, which requires adding support for quoted variable lists (e.g.
+# -v "FOO='b,a,r'" or -v 'FOO="b,a,r"' )
+if($variable_list) {
+	my @parts = split(/,/, $variable_list);
+	foreach my $part (@parts) {
+		my ($key, $value) = $part =~ /(.*)=(.*)/;
+		if ($key && $value) {
+			$ENV{$key} = $value;
+		}
 	}
 }
 
@@ -186,6 +211,9 @@ if($res_opts{walltime}) {
 $command .= " --tmp=$res_opts{file}" if $res_opts{file};
 $command .= " --mem=$res_opts{mem}" if $res_opts{mem};
 $command .= " --nice=$res_opts{nice}" if $res_opts{nice};
+
+$command .= " --gres=gpu:$res_opts{naccelerators}"  if $res_opts{naccelerators};
+
 # Cray-specific options
 $command .= " -n$res_opts{mppwidth}"		    if $res_opts{mppwidth};
 $command .= " -w$res_opts{mppnodes}"		    if $res_opts{mppnodes};
@@ -215,27 +243,32 @@ exit ($ret >> 8);
 
 sub parse_resource_list {
 	my ($rl) = @_;
-	my %opt = ('arch' => "",
+	my %opt = ('accelerator' => "",
+		   'arch' => "",
 		   'cput' => "",
 		   'file' => "",
 		   'host' => "",
 		   'mem' => "",
+		   'mpiprocs' => "",
+		   'ncpus' => "",
 		   'nice' => "",
 		   'nodes' => "",
+		   'naccelerators' => "",
 		   'opsys' => "",
 		   'other' => "",
 		   'pcput' => "",
 		   'pmem' => "",
 		   'pvmem' => "",
+		   'select' => "",
 		   'software' => "",
 		   'vmem' => "",
+		   'walltime' => "",
 		   # Cray-specific resources
 		   'mppwidth' => "",
 		   'mppdepth' => "",
 		   'mppnppn' => "",
 		   'mppmem' => "",
-		   'mppnodes' => "",
-		   'walltime' => ""
+		   'mppnodes' => ""
 		   );
 	my @keys = keys(%opt);
 
@@ -244,8 +277,17 @@ sub parse_resource_list {
 		($opt{$key}) = $rl =~ m/$key=([\w:\+=+]+)/;
 
 	}
+
+	if($opt{accelerator} && $opt{accelerator} =~ /^[Tt]/ && !$opt{naccelerators}) {
+		$opt{naccelerators} = 1;
+	}
+
 	if($opt{cput}) {
 		$opt{cput} = get_minutes($opt{cput});
+	}
+
+	if ($opt{mpiprocs} && (!$opt{mppnppn} || ($opt{mpiprocs} > $opt{mppnppn}))) {
+		$opt{mppnppn} = $opt{mpiprocs};
 	}
 
 	if($opt{mppmem}) {
