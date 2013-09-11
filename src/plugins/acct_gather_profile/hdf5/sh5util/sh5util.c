@@ -1589,7 +1589,6 @@ static void _get_all_node_series(FILE *fp, bool hd, hid_t jgid_step, int stepx)
 			continue;
 		}
 		node_name[ndx] = xstrdup(jgrp_node_name);
-		printf("RBS: ndx=%d node=%s\n",ndx,node_name[ndx]);
 		jgid_node = get_group(jgid_nodes, jgrp_node_name);
 		if (jgid_node < 0) {
 			debug("Failed to open group %s", jgrp_node_name);
