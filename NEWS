@@ -76,6 +76,14 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 2.6.3
 ========================
+ -- Add support for some new #PBS options in sbatch scripts and qsub wrapper:
+    -l accelerator=true|false	(GPU use)
+    -l mpiprocs=#	(processors per node)
+    -l naccelerators=#	(GPU count)
+    -l select=#		(node count)
+    -l ncpus=#		(task count)
+    -v key=value	(environment variable)
+    -W umask=#		(set job's umask)
 
 * Changes in Slurm 2.6.2
 ========================
@@ -105,7 +113,8 @@ documents those changes that are of interest to users and admins.
     per node of specific adapter type
  -- CRAY - Make Slurm work with CLE 5.1.1
  -- Fix segfault if submitting to multiple partitions and holding the job.
- -- Use MAXPATHLEN instead of the hardcoded value 1024.
+ -- Use MAXPATHLEN instead of the hardcoded value 1024 for maximum file path
+    lengths.
  -- If OverTimeLimit is defined do not declare failed those jobs that ended
     in the OverTimeLimit interval.
 

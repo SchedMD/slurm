@@ -160,9 +160,9 @@ launch a shell on a node in the job's allocation?</a></li>
 <li><a href="#upgrade">What should I be aware of when upgrading Slurm?</a></li>
 <li><a href="#torque">How easy is it to switch from PBS or Torque to Slurm?</a></li>
 <li><a href="#sssd">I am having trouble using SSSD with Slurm.</a></li>
-<li><a href="#ha_db>">How critical is configuring high availability for my
+<li><a href="#ha_db">How critical is configuring high availability for my
   database?</a></li>
-<li><a href="#sql>">How can I use double quotes in MySQL queries?</a></li>
+<li><a href="#sql">How can I use double quotes in MySQL queries?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -1716,7 +1716,7 @@ enumerate = True
 case_sensitive = False
 </pre>
 
-<p><a name="ha_db>"><b>54. How critical is configuring high availability for my
+<p><a name="ha_db"><b>54. How critical is configuring high availability for my
 database?</b></a></br>
 <ul>
 <li>Consider if you really need mysql failover. Short outage of slurdbd is not
@@ -1735,7 +1735,7 @@ IP between master/backup mysql servers and:</li>
 </ul>
 </ul>
 
-<p><a name="sql>"><b>55.How can I use double quotes in MySQL queries?</b></a></br>
+<p><a name="sql"><b>55.How can I use double quotes in MySQL queries?</b></a></br>
 Execute:
 <pre>
 SET session sql_mode='ANSI_QUOTES';

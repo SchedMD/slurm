@@ -178,6 +178,7 @@ typedef struct sbatch_options {
 	char **spank_job_env;	/* SPANK controlled environment for job
 				 * Prolog and Epilog		*/
 	int spank_job_env_size;	/* size of spank_job_env	*/
+	int umask;		/* job umask for PBS		*/
 } opt_t;
 
 extern opt_t opt;

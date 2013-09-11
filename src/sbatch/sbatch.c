@@ -202,6 +202,52 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+static char *_find_quote_token(char *tmp, char *sep, char **last)
+{
+	char *start, *quote_single = 0, *quote_double = 0;
+	int i;
+
+	xassert(last);
+	if (*last)
+		start = *last;
+	else
+		start = tmp;
+	if (start[0] == '\0')
+		return NULL;
+	for (i = 0; ; i++) {
+		if (start[i] == '\'') {
+			if (quote_single)
+				quote_single--;
+			else
+				quote_single++;
+		} else if (start[i] == '\"') {
+			if (quote_double)
+				quote_double--;
+			else
+				quote_double++;
+		} else if (((start[i] == sep[0]) || (start[i] == '\0')) &&
+			   (quote_single == 0) && (quote_double == 0)) {
+			if (((start[0] == '\'') && (start[i-1] == '\'')) ||
+			    ((start[0] == '\"') && (start[i-1] == '\"'))) {
+				start++;
+				i -= 2;
+			}
+			if (start[i] == '\0')
+				*last = &start[i];
+			else
+				*last = &start[i] + 1;
+			start[i] = '\0';
+			return start;
+		} else if (start[i] == '\0') {
+			error("Improperly formed environment variable (%s)",
+			      start);
+			*last = &start[i];
+			return start;
+		}
+		
+	}
+}
+
 /* Propagate select user environment variables to the job */
 static void _env_merge_filter(job_desc_msg_t *desc)
 {
@@ -210,7 +256,7 @@ static void _env_merge_filter(job_desc_msg_t *desc)
 	char *save_env[2] = { NULL, NULL }, *tmp, *tok, *last = NULL;
 
 	tmp = xstrdup(opt.export_env);
-	tok = strtok_r(tmp, ",", &last);
+	tok = _find_quote_token(tmp, ",", &last);
 	while (tok) {
 		if (strchr(tok, '=')) {
 			save_env[0] = tok;
@@ -228,7 +274,7 @@ static void _env_merge_filter(job_desc_msg_t *desc)
 				break;
 			}
 		}
-		tok = strtok_r(NULL, ",", &last);
+		tok = _find_quote_token(NULL, ",", &last);
 	}
 	xfree(tmp);
 
@@ -521,8 +567,12 @@ static int _set_umask_env(void)
 	if (getenv("SLURM_UMASK"))	/* use this value */
 		return SLURM_SUCCESS;
 
-	mask = (int)umask(0);
-	umask(mask);
+	if (opt.umask >= 0) {
+		mask = opt.umask;
+	} else {
+		mask = (int)umask(0);
+		umask(mask);
+	}
 
 	sprintf(mask_char, "0%d%d%d",
 		((mask>>6)&07), ((mask>>3)&07), mask&07);

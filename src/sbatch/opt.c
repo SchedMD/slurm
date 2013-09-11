@@ -380,9 +380,10 @@ static void _opt_default()
 	opt.get_user_env_mode = -1;
 	opt.acctg_freq        = NULL;
 	opt.reservation       = NULL;
-	opt.wckey             = NULL;
 	opt.req_switch        = -1;
+	opt.umask             = -1;
 	opt.wait4switch       = -1;
+	opt.wckey             = NULL;
 
 	opt.ckpt_interval = 0;
 	opt.ckpt_interval_str = NULL;
@@ -1688,8 +1689,8 @@ static void _proc_get_user_env(char *optarg)
 static void _set_pbs_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
-
-	char *pbs_opt_string = "+a:A:c:C:e:hIj:k:l:m:M:N:o:p:q:r:S:u:v:VWz";
+	char *sep;
+	char *pbs_opt_string = "+a:A:c:C:e:hIj:k:l:m:M:N:o:p:q:r:S:u:v:VW:z";
 
 	struct option pbs_long_options[] = {
 		{"start_time", required_argument, 0, 'a'},
@@ -1713,7 +1714,7 @@ static void _set_pbs_options(int argc, char **argv)
 		{"running_user", required_argument, 0, 'u'},
 		{"variable_list", required_argument, 0, 'v'},
 		{"all_env", no_argument, 0, 'V'},
-		{"attributes", no_argument, 0, 'W'},
+		{"attributes", required_argument, 0, 'W'},
 		{"no_std", no_argument, 0, 'z'},
 		{NULL, 0, 0, 0}
 	};
@@ -1809,12 +1810,23 @@ static void _set_pbs_options(int argc, char **argv)
 		case 'u':
 			break;
 		case 'v':
+			if (opt.export_env)
+				sep = ",";
+			xstrfmtcat(opt.export_env, "%s%s", sep, optarg);
 			break;
 		case 'V':
 			break;
 		case 'W':
-			xfree(opt.constraints);
-			opt.constraints = xstrdup(optarg);
+			if (!strncasecmp(optarg, "umask=", 6)) {
+				opt.umask = strtol(optarg+6, NULL, 0);
+				if ((opt.umask < 0) || (opt.umask > 0777)) {
+					error("Invalid umask ignored");
+					opt.umask = -1;
+				}
+			} else {
+				xfree(opt.constraints);
+				opt.constraints = xstrdup(optarg);
+			}
 			break;
 		case 'z':
 			break;
@@ -1925,7 +1937,7 @@ static char *_get_pbs_option_value(char *pbs_options, int *i)
 	int start = (*i);
 	char *value = NULL;
 
-	while(pbs_options[*i] && pbs_options[*i] != ',')
+	while (pbs_options[*i] && pbs_options[*i] != ',')
 		(*i)++;
 	value = xmalloc((*i)-start+1);
 	memcpy(value, pbs_options+start, (*i)-start);
@@ -1939,10 +1951,16 @@ static char *_get_pbs_option_value(char *pbs_options, int *i)
 static void _parse_pbs_resource_list(char *rl)
 {
 	int i = 0;
+	int gpus = 0;
 	char *temp = NULL;
 
-	while(rl[i]) {
-		if (!strncmp(rl+i, "arch=", 5)) {
+	while (rl[i]) {
+		if (!strncasecmp(rl+i, "accelerator=", 12)) {
+			i += 12;
+			if (!strncasecmp(rl+i, "true", 4) && (gpus < 1))
+				gpus = 1;
+			/* Also see "naccelerators=" below */
+		} else if (!strncmp(rl+i, "arch=", 5)) {
 			i+=5;
 			_get_next_pbs_option(rl, &i);
 		} else if (!strncmp(rl+i, "cput=", 5)) {
@@ -2005,6 +2023,13 @@ static void _parse_pbs_resource_list(char *rl)
 			}
 
 			xfree(temp);
+		} else if (!strncasecmp(rl+i, "mpiproc=", 8)) {
+			i += 8;
+			temp = _get_pbs_option_value(rl, &i);
+			if (temp) {
+				opt.ntasks_per_node = _get_int(temp, "mpiproc");
+				xfree(temp);
+			}
 #ifdef HAVE_ALPS_CRAY
 		/*
 		 * NB: no "mppmem" here since it specifies per-PE memory units,
@@ -2046,6 +2071,21 @@ static void _parse_pbs_resource_list(char *rl)
 			}
 			xfree(temp);
 #endif	/* HAVE_ALPS_CRAY */
+		} else if (!strncasecmp(rl+i, "naccelerators=", 14)) {
+			i += 14;
+			temp = _get_pbs_option_value(rl, &i);
+			if (temp) {
+				gpus = _get_int(temp, "naccelerators");
+				xfree(temp);
+			}
+		} else if (!strncasecmp(rl+i, "ncpus=", 6)) {
+			i += 6;
+			temp = _get_pbs_option_value(rl, &i);
+			if (temp) {
+				opt.ntasks = _get_int(temp, "ncpus");
+				opt.ntasks_set = true;
+				xfree(temp);
+			}
 		} else if (!strncmp(rl+i, "nice=", 5)) {
 			i+=5;
 			temp = _get_pbs_option_value(rl, &i);
@@ -2099,6 +2139,15 @@ static void _parse_pbs_resource_list(char *rl)
 		} else if (!strncmp(rl+i, "pvmem=", 6)) {
 			i+=6;
 			_get_next_pbs_option(rl, &i);
+		} else if (!strncasecmp(rl+i, "select=", 7)) {
+			i += 7;
+			temp = _get_pbs_option_value(rl, &i);
+			if (temp) {
+				opt.min_nodes = _get_int(temp, "select");
+				opt.max_nodes = opt.min_nodes;
+				opt.nodes_set = true;
+				xfree(temp);
+			}
 		} else if (!strncmp(rl+i, "software=", 9)) {
 			i+=9;
 			_get_next_pbs_option(rl, &i);
@@ -2117,6 +2166,13 @@ static void _parse_pbs_resource_list(char *rl)
 			xfree(temp);
 		} else
 			i++;
+	}
+
+	if (gpus > 0) {
+		char *sep = "";
+		if (opt.gres)
+			sep = ",";
+		xstrfmtcat(opt.gres, "%sgpu:%d", sep, gpus);
 	}
 }
 
