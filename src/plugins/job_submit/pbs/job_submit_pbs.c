@@ -131,10 +131,15 @@ static void _xlate_dependency(struct job_descriptor *job_desc)
 
 	tok = strtok_r(job_desc->dependency, ",", &last_ptr);
 	while (tok) {
-		if (!strncmp(tok, "after", 5)) {
+		if (!strncmp(tok, "after", 5)  ||
+		    !strncmp(tok, "expand", 6) ||
+		    !strncmp(tok, "singleton", 9)) {
 			if (result)
 				xstrcat(result, ",");
 			xstrcat(result, tok);
+		} else {
+			info("%s: discarding job dependency option %s",
+			     plugin_type, tok);
 		}
 		tok = strtok_r(NULL, ",", &last_ptr);
 	}
