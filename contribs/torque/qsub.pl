@@ -165,8 +165,11 @@ if($resource_list) {
 	if ($res_opts{select} && (!$node_opts{node_cnt} || ($res_opts{select} > $node_opts{node_cnt}))) {
 		$node_opts{node_cnt} = $res_opts{select};
 	}
-	if ($res_opts{ncpus} && (!$node_opts{task_cnt} || ($res_opts{ncpus} > $node_opts{task_cnt}))) {
-		$node_opts{task_cnt} = $res_opts{ncpus};
+	if ($res_opts{select} && $res_opts{ncpus} && $res_opts{mpiprocs}) {
+		my $cpus_per_task = int ($res_opts{ncpus} / $res_opts{mppnppn});
+		if (!$res_opts{mppdepth} || ($cpus_per_task > $res_opts{mppdepth})) {
+			$res_opts{mppdepth} = $cpus_per_task;
+		}
 	}
 }
 
@@ -198,6 +201,9 @@ $command .= " -N$node_opts{node_cnt}" if $node_opts{node_cnt};
 $command .= " -n$node_opts{task_cnt}" if $node_opts{task_cnt};
 $command .= " -w$node_opts{hostlist}" if $node_opts{hostlist};
 
+$command .= " --mincpus=$res_opts{ncpus}"            if $res_opts{ncpus};
+$command .= " --ntasks-per-node=$res_opts{mppnppn}"  if $res_opts{mppnppn};
+
 if($res_opts{walltime}) {
 	$command .= " -t$res_opts{walltime}";
 } elsif($res_opts{cput}) {
@@ -216,7 +222,6 @@ $command .= " --gres=gpu:$res_opts{naccelerators}"  if $res_opts{naccelerators};
 $command .= " -n$res_opts{mppwidth}"		    if $res_opts{mppwidth};
 $command .= " -w$res_opts{mppnodes}"		    if $res_opts{mppnodes};
 $command .= " --cpus-per-task=$res_opts{mppdepth}"  if $res_opts{mppdepth};
-$command .= " --ntasks-per-node=$res_opts{mppnppn}" if $res_opts{mppnppn};
 
 $command .= " --begin=$start_time" if $start_time;
 $command .= " --account=$account" if $account;
@@ -233,9 +238,9 @@ $command .= " --nice=$priority" if $priority;
 $command .= " -p $destination" if $destination;
 $command .= " -C $additional_attributes" if $additional_attributes;
 
-
 $command .= " $script";
 
+# print "$command\n";
 my $ret = system($command);
 exit ($ret >> 8);
 
@@ -270,6 +275,9 @@ sub parse_resource_list {
 		   );
 	my @keys = keys(%opt);
 
+#	The select option uses a ":" separator rather than ","
+#	This wrapper currently does not support multiple select options
+	$rl =~ s/:/,/g;
 	foreach my $key (@keys) {
 		#print "$rl\n";
 		($opt{$key}) = $rl =~ m/$key=([\w:\+=+]+)/;
