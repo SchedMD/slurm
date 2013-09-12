@@ -1256,7 +1256,6 @@ static int _extract_data(void)
 	int len;
 	char jgrp_step_name[MAX_GROUP_NAME+1];
 	char jgrp_node_name[MAX_GROUP_NAME+1];
-	bool header;
 	FILE *fp;
 
 	fp = fopen(params.output, "w");
@@ -1279,7 +1278,6 @@ static int _extract_data(void)
 	}
 
 	nsteps = get_int_attribute(jgid_root, ATTR_NSTEPS);
-	header = true;
 	for (stepx = 0; stepx < nsteps; stepx++) {
 
 		if ((params.step_id != -1) && (stepx != params.step_id))
@@ -1342,7 +1340,6 @@ static int _extract_data(void)
 					_extract_node_level(fp, stepx, jgid_nodes,
 					                    nnodes,
 					                    series_names[isx]);
-					header = false;
 					// Now handle all tasks.
 				}
 			} else if (strcasecmp(params.series, GRP_TASKS) == 0
@@ -1353,14 +1350,12 @@ static int _extract_data(void)
 						_extract_node_level(fp, stepx, jgid_nodes,
 						                    nnodes,
 						                    series_names[isx]);
-						header = false;
 					}
 				}
 			} else {
 				_extract_node_level(fp, stepx, jgid_nodes,
 				                    nnodes,
 				                    params.series);
-				header = false;
 			}
 
 			_delete_string_list(series_names, num_series);
