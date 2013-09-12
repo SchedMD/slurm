@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     -l ncpus=#		(task count)
     -v key=value	(environment variable)
     -W umask=#		(set job's umask)
+ -- Add job_submit/pbs plugin to translate PBS job dependency options to the
+    extend possible (no support for PBS "before" options).
 
 * Changes in Slurm 2.6.2
 ========================

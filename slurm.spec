@@ -777,6 +777,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/job_submit_defaults.so
 %{_libdir}/slurm/job_submit_logging.so
 %{_libdir}/slurm/job_submit_partition.so
+%{_libdir}/slurm/job_submit_pbs.so
 %{_libdir}/slurm/job_submit_require_timelimit.so
 %{_libdir}/slurm/jobacct_gather_aix.so
 %{_libdir}/slurm/jobacct_gather_cgroup.so
