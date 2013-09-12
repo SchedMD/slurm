@@ -36,7 +36,6 @@ source ./globals
 
 set test_id     "1.22"
 set exit_code   0
-set task_num    32
 
 print_header $test_id
 
@@ -67,6 +66,7 @@ if {[test_launch_poe]} {
 } else {
 	set node_name_env SLURMD_NODENAME
 }
+set task_num [get_max_tasks]
 
 set srun_pid [spawn $srun -N$node_cnt -l --threads=1 -t1 $bin_printenv $node_name_env]
 expect {

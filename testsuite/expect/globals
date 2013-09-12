@@ -2564,22 +2564,51 @@ proc change_subbp_state { node ionodes state } {
 ################################################################
 
 proc get_array_config { } {
-     global scontrol number
+	global scontrol number
 
-     	  log_user 0
-     	  set array_size 1
-	  spawn $scontrol show config
-	  expect {
-		  -re "MaxArraySize *= ($number)" {
-		    	   set array_size $expect_out(1,string)
-			   exp_continue
-		  }
-		  eof {
-		  	   wait
-		  }
-	   }
-	   log_user 1
-	   return $array_size
+	log_user 0
+	set array_size 1
+	spawn $scontrol show config
+	expect {
+		-re "MaxArraySize *= ($number)" {
+			set array_size $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $array_size
+}
+
+################################################################
+#
+# Proc: get_max_tasks
+#
+# Purpose: Use scontrol to determine the MaxTasksPerNode
+#
+# Returns: MaxTasksPerNode value
+#
+################################################################
+
+proc get_max_tasks { } {
+	global scontrol number
+
+	log_user 0
+	set max_tasks 1
+	spawn $scontrol show config
+	expect {
+		-re "MaxTasksPerNode *= ($number)" {
+			set max_tasks $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $max_tasks
 }
 
 #################################################
