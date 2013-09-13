@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
  -- Add job_submit/pbs plugin to translate PBS job dependency options to the
     extend possible (no support for PBS "before" options) and set some PBS
     environment variables.
+ -- Add spank/pbs plugin to set a bunch of PBS environment variables.
 
 * Changes in Slurm 2.6.2
 ========================

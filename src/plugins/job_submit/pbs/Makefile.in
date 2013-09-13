@@ -15,7 +15,7 @@
 
 @SET_MAKE@
 
-# Makefile for job_submit/pbs plugin
+# Makefile for job_submit/pbs and spank/pbs plugins
 
 VPATH = @srcdir@
 am__make_dryrun = \
@@ -139,6 +139,12 @@ job_submit_pbs_la_OBJECTS = $(am_job_submit_pbs_la_OBJECTS)
 job_submit_pbs_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(job_submit_pbs_la_LDFLAGS) $(LDFLAGS) -o $@
+spank_pbs_la_LIBADD =
+am_spank_pbs_la_OBJECTS = spank_pbs.lo
+spank_pbs_la_OBJECTS = $(am_spank_pbs_la_OBJECTS)
+spank_pbs_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(spank_pbs_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -152,8 +158,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(job_submit_pbs_la_SOURCES)
-DIST_SOURCES = $(job_submit_pbs_la_SOURCES)
+SOURCES = $(job_submit_pbs_la_SOURCES) $(spank_pbs_la_SOURCES)
+DIST_SOURCES = $(job_submit_pbs_la_SOURCES) $(spank_pbs_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -396,10 +402,14 @@ AM_CPPFLAGS = -DDEFAULT_SCRIPT_DIR=\"$(sysconfdir)\"
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
-# Job submit pbs plugin.
-pkglib_LTLIBRARIES = job_submit_pbs.la
+# Job submit PBS plugin.
+pkglib_LTLIBRARIES = job_submit_pbs.la spank_pbs.la
 job_submit_pbs_la_SOURCES = job_submit_pbs.c
 job_submit_pbs_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+
+# SPANK PBS plugin.
+spank_pbs_la_SOURCES = spank_pbs.c
+spank_pbs_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -468,6 +478,8 @@ clean-pkglibLTLIBRARIES:
 	done
 job_submit_pbs.la: $(job_submit_pbs_la_OBJECTS) $(job_submit_pbs_la_DEPENDENCIES) $(EXTRA_job_submit_pbs_la_DEPENDENCIES) 
 	$(job_submit_pbs_la_LINK) -rpath $(pkglibdir) $(job_submit_pbs_la_OBJECTS) $(job_submit_pbs_la_LIBADD) $(LIBS)
+spank_pbs.la: $(spank_pbs_la_OBJECTS) $(spank_pbs_la_DEPENDENCIES) $(EXTRA_spank_pbs_la_DEPENDENCIES) 
+	$(spank_pbs_la_LINK) -rpath $(pkglibdir) $(spank_pbs_la_OBJECTS) $(spank_pbs_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -476,6 +488,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_submit_pbs.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spank_pbs.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
