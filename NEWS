@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     extend possible (no support for PBS "before" options) and set some PBS
     environment variables.
  -- Add spank/pbs plugin to set a bunch of PBS environment variables.
+ -- Backported sh5util from master to 2.6 as there are some important
+    bugfixes and the new item extraction feature.
 
 * Changes in Slurm 2.6.2
 ========================

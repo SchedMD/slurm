@@ -14,10 +14,19 @@ sh5util merges HDF5 files produced on each node for each step of a job into
 one HDF5 file for the job. The resulting file can be viewed and manipulated
 by common HDF5 tools such as HDF5View, h5dump, h5edit, or h5ls.
 .LP
-sh5util also has an extract mode that writes a limited set of
+sh5util also has two extract modes. The first, writes a limited set of
 data for specific nodes, steps, and data series in
 "comma separated value" form to a file which can be imported into other
 analysis tools such as spreadsheets.
+.LP
+The second, (Item-Extract) extracts one data time from one time series for all
+the samples on all the nodes from a jobs HDF5 profile.
+.TP
+\- Finds sample with maximum value of the item.
+.TP
+\- Write CSV file with min, ave, max, and item totals for each node for each
+sample
+
 
 .SH "OPTIONS"
 .LP
@@ -25,12 +34,11 @@ analysis tools such as spreadsheets.
 .TP
 \fB\-E\fR, \fB\-\-extract\fR
 
-Instead of merging node-step files into a job file (default operation)
-extract data series from a job file.
+Extract data series from a merged job file.
 
 .RS
 .TP 10
-Extract mode options (all imply --extract)
+Extract mode options
 
 .TP
 \fB\-i\fR, \fB\-\-input\fR=\fIpath\fR
@@ -45,8 +53,27 @@ Node name to extract (default is all)
 Level to which series is attached. (default Node:Totals)
 
 .TP
-\fB\-s\fR, \fB\-\-series\fR=\fI[Name|Tasks]\fR
-Name=Specific Name, Tasks=all tasks, (default is everything)
+\fB\-s\fR, \fB\-\-series\fR=\fI[Energy | Lustre | Network | Tasks | Task_#]\fR
+\fBTasks\fR is all tasks, \fBTask_#\fR (# is a task id) (default is everything)
+
+.RE
+
+.TP
+\fB\-I\fR, \fB\-\-item\-extract\fR
+
+Extract one data item from all samples of one data series from all nodes in a merged job file.
+
+.RS
+.TP 10
+Item-Extract mode options
+
+.TP
+\fB\-s\fR, \fB\-\-series\fR=[Energy | Lustre | Network | Task]\fR
+
+.TP
+\fB\-d\fR, \fB\-\-data\fR
+Name of data item in series (See note below).
+
 .RE
 
 .TP
@@ -85,6 +112,62 @@ User who profiled job.
 .TP
 \fB\-\-usage\fR
 Display brief usage message.
+
+.SH "Data Items per Series"
+
+.TP
+\fBEnergy\fR
+.nf
+Power
+CPU_Frequency
+.fi
+
+.TP
+\fBLustre\fR
+.nf
+Reads
+Megabytes_Read
+Writes
+Megabytes_Write
+.fi
+
+.TP
+\fBNetwork\fR
+.nf
+Packets_In
+Megabytes_In
+Packets_Out
+Megabytes_Out
+.fi
+
+.TP
+\fBTask\fR
+.nf
+CPU_Frequency
+CPU_Time
+CPU_Utilization
+RSS
+VM_Size
+Pages
+Read_Megabytes
+Write_Megabytes
+.fi
+
+.SH "Examples"
+
+.TP
+Merge node-step files (as part of a sbatch script)
+.LP
+sbatch -n1 -d$SLURM_JOB_ID --wrap="sh5util --savefiles -j $SLURM_JOB_ID"
+
+.TP
+Extract all task data from a node
+.LP
+sh5util -j 42 -N snowflake01 --level=Node:TimeSeries --series=Tasks
+
+.TP
+Extract all energy data
+sh5util -j 42 --series=Energy --data=power
 
 .SH "COPYING"
 Copyright (C) 2013 Bull.
