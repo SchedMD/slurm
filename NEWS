@@ -10,7 +10,7 @@ documents those changes that are of interest to users and admins.
     -l select=#		(node count)
     -l ncpus=#		(task count)
     -v key=value	(environment variable)
-    -W depend=opts	(job dependencies)
+    -W depend=opts	(job dependencies, including "on" and "before" options)
     -W umask=#		(set job's umask)
  -- Add job_submit/pbs plugin to translate PBS job dependency options to the
     extend possible (no support for PBS "before" options) and set some PBS

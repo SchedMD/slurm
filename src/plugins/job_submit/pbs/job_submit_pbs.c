@@ -60,6 +60,8 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_xlator.h"
+#include "src/slurmctld/job_scheduler.h"
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define _DEBUG 0
@@ -131,6 +133,109 @@ static void _add_env2(struct job_descriptor *job_desc, char *key, char *val)
 	xfree(new_env);
 }
 
+static void _decr_depend_cnt(struct job_record *job_ptr)
+{
+	int cnt;
+
+	if (!job_ptr->comment || strncmp(job_ptr->comment, "on:", 3)) {
+		info("%s: invalid job depend before option on job %u",
+		     plugin_type, job_ptr->job_id);
+		return;
+	}
+
+	cnt = atoi(job_ptr->comment + 3);
+	if (cnt > 0)
+		cnt--;
+	xfree(job_ptr->comment);
+	xstrfmtcat(job_ptr->comment, "on:%d", cnt);		
+}
+
+/* We can not invoke update_job_dependency() until the new job record has
+ * been created, hence this sleeping thread modifies the dependent job
+ * later. */
+static void *_dep_agent(void *args)
+{
+	struct job_record *job_ptr = (struct job_record *) args;
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK};
+
+	usleep(100000);
+	lock_slurmctld(job_write_lock);
+	if (job_ptr && job_ptr->details && (job_ptr->magic == JOB_MAGIC) &&
+	    job_ptr->comment && !strncmp(job_ptr->comment, "on:", 3)) {
+		update_job_dependency(job_ptr, job_ptr->details->dependency);
+		if (!strcmp(job_ptr->comment, "on:0")) {
+			xfree(job_ptr->comment);
+			set_job_prio(job_ptr);
+		}
+	}
+	unlock_slurmctld(job_write_lock);
+	return NULL;
+}
+
+static void _xlate_before(char *depend, uint32_t submit_uid)
+{
+	uint32_t job_id;
+	char *last_ptr = NULL, *new_dep = NULL, *tok, *type;
+	struct job_record *job_ptr;
+        pthread_attr_t attr;
+	pthread_t dep_thread;
+
+
+	tok = strtok_r(depend, ":", &last_ptr);
+	if (!strcmp(tok, "before"))
+		type = "after";
+	else if (!strcmp(tok, "beforeany"))
+		type = "afterany";
+	else if (!strcmp(tok, "beforenotok"))
+		type = "afternotok";
+	else if (!strcmp(tok, "beforeok"))
+		type = "afterok";
+	else {
+		info("%s: discarding invalid job dependency option %s",
+		     plugin_type, tok);
+		return;
+	}
+
+	tok = strtok_r(NULL, ":", &last_ptr);
+	while (tok) {
+		job_id = atoi(tok);
+		job_ptr = find_job_record(job_id);
+		if (!job_ptr) {
+			info("%s: discarding invalid job dependency before %s",
+			     plugin_type, tok);
+		} else if ((submit_uid != job_ptr->user_id) &&
+			   !validate_super_user(submit_uid)) {
+			error("%s: Security violation: uid %u trying to alter "
+			      "job %u belonging to uid %u", 
+			      plugin_type, submit_uid, job_ptr->job_id,
+			      job_ptr->user_id);
+		} else if ((!IS_JOB_PENDING(job_ptr)) ||
+			   (job_ptr->details == NULL)) {
+			info("%s: discarding job before dependency on "
+			     "non-pending job %u",
+			     plugin_type, job_ptr->job_id);
+		} else {
+			if (job_ptr->details->dependency) {
+				xstrcat(new_dep, job_ptr->details->dependency);
+				xstrcat(new_dep, ",");
+			}
+			xstrfmtcat(new_dep, "%s:%u", type, get_next_job_id());
+			xfree(job_ptr->details->dependency);
+			job_ptr->details->dependency = new_dep;
+			new_dep = NULL;
+			_decr_depend_cnt(job_ptr);
+
+			slurm_attr_init(&attr);
+			pthread_attr_setdetachstate(&attr,
+						    PTHREAD_CREATE_DETACHED);
+			pthread_create(&dep_thread, &attr, _dep_agent, job_ptr);
+			slurm_attr_destroy(&attr);
+		}
+		tok = strtok_r(NULL, ":", &last_ptr);
+	}
+}
+
 /* Translate PBS job dependencies to Slurm equivalents to the exptned possible
  *
  * PBS option		Slurm nearest equivalent
@@ -139,15 +244,16 @@ static void _add_env2(struct job_descriptor *job_desc, char *key, char *val)
  * afterok		afterok
  * afternotok		afternotok
  * afterany		after
- * before		N/A
- * beforeok		N/A
- * beforenotok		N/A
- * beforeany		N/A
+ * before		(set after      in referenced job and release as needed)
+ * beforeok		(set afterok    in referenced job and release as needed)
+ * beforenotok		(set afternotok in referenced job and release as needed)
+ * beforeany		(set afterany   in referenced job and release as needed)
  * N/A			expand
- * on			N/A
+ * on			(store value in job comment and hold it)
  * N/A			singleton
  */
-static void _xlate_dependency(struct job_descriptor *job_desc)
+static void _xlate_dependency(struct job_descriptor *job_desc,
+			      uint32_t submit_uid)
 {
 	char *result = NULL;
 	char *last_ptr = NULL, *tok;
@@ -167,8 +273,14 @@ static void _xlate_dependency(struct job_descriptor *job_desc)
 			if (result)
 				xstrcat(result, ",");
 			xstrcat(result, tok);
+		} else if (!strncmp(tok, "on:", 3)) {
+			job_desc->priority = 0;	/* Job is held */
+			xfree(job_desc->comment);
+			xstrcat(job_desc->comment, tok);
+		} else if (!strncmp(tok, "before", 6)) {
+			_xlate_before(tok, submit_uid);
 		} else {
-			info("%s: discarding job dependency option %s",
+			info("%s: discarding unknown job dependency option %s",
 			     plugin_type, tok);
 		}
 		tok = strtok_r(NULL, ",", &last_ptr);
@@ -182,7 +294,7 @@ static void _xlate_dependency(struct job_descriptor *job_desc)
 
 extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 {
-	_xlate_dependency(job_desc);
+	_xlate_dependency(job_desc, submit_uid);
 
 	if (job_desc->account)
 		_add_env2(job_desc, "PBS_ACCOUNT", job_desc->account);
@@ -205,6 +317,6 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 extern int job_modify(struct job_descriptor *job_desc,
 		      struct job_record *job_ptr, uint32_t submit_uid)
 {
-	_xlate_dependency(job_desc);
+	_xlate_dependency(job_desc, submit_uid);
 	return SLURM_SUCCESS;
 }
