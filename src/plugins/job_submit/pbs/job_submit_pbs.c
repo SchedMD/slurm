@@ -105,6 +105,32 @@ int fini (void)
 	return SLURM_SUCCESS;
 }
 
+static void _add_env(struct job_descriptor *job_desc, char *new_env)
+{
+	if (!job_desc->environment || !new_env)
+		return;	/* Nothing we can do for interactive jobs */
+
+	xrealloc(job_desc->environment,
+		 sizeof(char *) * (job_desc->env_size + 2));
+	job_desc->environment[job_desc->env_size] = xstrdup(new_env);
+	job_desc->env_size++;
+}
+
+static void _add_env2(struct job_descriptor *job_desc, char *key, char *val)
+{
+	int len;
+	char *new_env;
+
+	if (!job_desc->environment || !key || !val)
+		return;	/* Nothing we can do for interactive jobs */
+
+	len = sizeof(key) + sizeof(val) + 2;
+	new_env = xmalloc(sizeof(len));
+	snprintf(new_env, len, "%s=%s", key, val);
+	_add_env(job_desc, new_env);
+	xfree(new_env);
+}
+
 /* Translate PBS job dependencies to Slurm equivalents to the exptned possible
  *
  * PBS option		Slurm nearest equivalent
@@ -157,6 +183,21 @@ static void _xlate_dependency(struct job_descriptor *job_desc)
 extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 {
 	_xlate_dependency(job_desc);
+
+	if (job_desc->account)
+		_add_env2(job_desc, "PBS_ACCOUNT", job_desc->account);
+
+	if (job_desc->script) {
+		_add_env(job_desc, "PBS_ENVIRONMENT=PBS_BATCH");
+	} else {
+		/* Interactive jobs lack an environment in the job submit
+		 * RPC, so it needs to be handled by a SPANK plugin */
+		/* _add_env(job_desc, "PBS_ENVIRONMENT=PBS_INTERACTIVE"); */
+	}
+
+	if (job_desc->partition)
+		_add_env2(job_desc, "PBS_QUEUE", job_desc->partition);
+
 	return SLURM_SUCCESS;
 }
 

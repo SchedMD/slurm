@@ -13,7 +13,8 @@ documents those changes that are of interest to users and admins.
     -W depend=opts	(job dependencies)
     -W umask=#		(set job's umask)
  -- Add job_submit/pbs plugin to translate PBS job dependency options to the
-    extend possible (no support for PBS "before" options).
+    extend possible (no support for PBS "before" options) and set some PBS
+    environment variables.
 
 * Changes in Slurm 2.6.2
 ========================
