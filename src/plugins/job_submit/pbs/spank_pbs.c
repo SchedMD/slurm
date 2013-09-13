@@ -50,12 +50,16 @@ int slurm_spank_task_init(spank_t sp, int ac, char **av)
 	/* PBS_ACCOUNT is set in the job_submit/pbs plugin, but only for
 	 * batch jobs that specify the job's account at job submit time. */
 
+	/* Setting PBS_ENVIRONMENT causes Intel MPI to believe that
+	 * it is running on a PBS system, which isn't the case here. */
+#if 0
 	/* PBS_ENVIRONMENT is set to PBS_BATCH in the job_submit/pbs plugin.
 	 * Interactive jobs get PBS_ENVIRONMENT set here since it's environment
 	 * never passes through the slurmctld daemon. */
 	if (spank_getenv(sp, "PBS_ENVIRONMENT", val, sizeof(val)) !=
 	    ESPANK_SUCCESS)
 		spank_setenv(sp, "PBS_ENVIRONMENT", "PBS_INTERACTIVE", 1);
+#endif
 
 	if (getcwd(val, sizeof(val)))
 		spank_setenv(sp, "PBS_JOBDIR", val, 1);

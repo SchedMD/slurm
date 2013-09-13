@@ -300,7 +300,9 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 		_add_env2(job_desc, "PBS_ACCOUNT", job_desc->account);
 
 	if (job_desc->script) {
-		_add_env(job_desc, "PBS_ENVIRONMENT=PBS_BATCH");
+		/* Setting PBS_ENVIRONMENT causes Intel MPI to believe that
+		 * it is running on a PBS system, which isn't the case here. */
+		/* _add_env(job_desc, "PBS_ENVIRONMENT=PBS_BATCH"); */
 	} else {
 		/* Interactive jobs lack an environment in the job submit
 		 * RPC, so it needs to be handled by a SPANK plugin */
