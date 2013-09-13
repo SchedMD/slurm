@@ -129,6 +129,10 @@ static void _xlate_dependency(struct job_descriptor *job_desc)
 	if (!job_desc->dependency)
 		return;
 
+#if _DEBUG
+	info("dependency  in:%s", job_desc->dependency);
+#endif
+
 	tok = strtok_r(job_desc->dependency, ",", &last_ptr);
 	while (tok) {
 		if (!strncmp(tok, "after", 5)  ||
@@ -143,6 +147,9 @@ static void _xlate_dependency(struct job_descriptor *job_desc)
 		}
 		tok = strtok_r(NULL, ",", &last_ptr);
 	}
+#if _DEBUG
+	info("dependency out:%s", result);
+#endif
 	xfree(job_desc->dependency);
 	job_desc->dependency = result;
 }
