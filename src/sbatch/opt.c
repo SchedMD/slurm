@@ -1718,10 +1718,9 @@ static void _set_pbs_options(int argc, char **argv)
 		{NULL, 0, 0, 0}
 	};
 
-
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, pbs_opt_string,
-				      pbs_long_options, &option_index))
+	while ((opt_char = getopt_long(argc, argv, pbs_opt_string,
+				       pbs_long_options, &option_index))
 	      != -1) {
 		switch (opt_char) {
 		case 'a':
@@ -1822,9 +1821,11 @@ static void _set_pbs_options(int argc, char **argv)
 					error("Invalid umask ignored");
 					opt.umask = -1;
 				}
+			} else if (!strncasecmp(optarg, "depend=", 7)) {
+				xfree(opt.dependency);
+				opt.dependency = xstrdup(optarg+7);
 			} else {
-				xfree(opt.constraints);
-				opt.constraints = xstrdup(optarg);
+				verbose("Ignored PBS attributes: %s", optarg);
 			}
 			break;
 		case 'z':

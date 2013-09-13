@@ -136,6 +136,7 @@ if ($ARGV[0]) {
 } else {
         pod2usage(2);
 }
+my $depend;
 my %res_opts;
 my %node_opts;
 
@@ -144,6 +145,12 @@ if($additional_attributes) {
 	if ($umask) {
 		$ENV{SLURM_UMASK} = $value;
 		$additional_attributes =~ s/(umask=)([0-9]+)//;
+	}
+
+	($depend, $value) = $additional_attributes =~ /(depend=)(\S+)/i;
+	if ($depend) {
+		$depend = $value;
+		$additional_attributes =~ s/(depend=)(\S+)//;
 	}
 }
 
@@ -212,8 +219,9 @@ if($res_opts{walltime}) {
 	$command .= " -t$res_opts{pcput}";
 }
 
-$command .= " --tmp=$res_opts{file}" if $res_opts{file};
-$command .= " --mem=$res_opts{mem}" if $res_opts{mem};
+$command .= " --dependency=$depend"   if $depend;
+$command .= " --tmp=$res_opts{file}"  if $res_opts{file};
+$command .= " --mem=$res_opts{mem}"   if $res_opts{mem};
 $command .= " --nice=$res_opts{nice}" if $res_opts{nice};
 
 $command .= " --gres=gpu:$res_opts{naccelerators}"  if $res_opts{naccelerators};
@@ -236,7 +244,6 @@ $command .= " --mail-user=$mail_user_list" if $mail_user_list;
 $command .= " -J $job_name" if $job_name;
 $command .= " --nice=$priority" if $priority;
 $command .= " -p $destination" if $destination;
-$command .= " -C $additional_attributes" if $additional_attributes;
 
 $command .= " $script";
 
