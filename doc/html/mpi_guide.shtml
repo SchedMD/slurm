@@ -63,6 +63,9 @@ in the <i>slurm.conf</i> file using the <i>MpiParams</i> parameter.
 For example: <br>
 <i>MpiParams=ports=12000-12999</i></p>
 
+<p>OpenMPI just also be configured with <i>--with-pmi</i> to support the port
+reservation method.</p>
+
 <p>Launch tasks using the <span class="commandline">srun</span> command
 plus the option <i>--resv-ports</i>. Alternately define the environment
 variable <i>SLURM_RESV_PORT</i>, which is equivalent to always including
@@ -504,6 +507,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 6 August 2013</p>
+<p style="text-align:center;">Last modified 13 September 2013</p>
 
 <!--#include virtual="footer.txt"-->
