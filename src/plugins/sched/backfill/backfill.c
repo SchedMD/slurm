@@ -678,11 +678,13 @@ static int _attempt_backfill(void)
 				}
 			}
 			if (j == nuser) { /* user not found */
+				static bool bf_max_user_msg = true;
 				if (nuser < BF_MAX_USERS) {
 					uid[j] = job_ptr->user_id;
 					njobs[j] = 1;
 					nuser++;
-				} else {
+				} else if (bf_max_user_msg) {
+					bf_max_user_msg = false;
 					error("backfill: too many users in "
 					      "queue. Consider increasing "
 					      "BF_MAX_USERS");

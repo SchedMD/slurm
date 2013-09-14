@@ -136,6 +136,7 @@ if ($ARGV[0]) {
 } else {
         pod2usage(2);
 }
+my $depend;
 my %res_opts;
 my %node_opts;
 
@@ -144,6 +145,12 @@ if($additional_attributes) {
 	if ($umask) {
 		$ENV{SLURM_UMASK} = $value;
 		$additional_attributes =~ s/(umask=)([0-9]+)//;
+	}
+
+	($depend, $value) = $additional_attributes =~ /(depend=)(\S+)/i;
+	if ($depend) {
+		$depend = $value;
+		$additional_attributes =~ s/(depend=)(\S+)//;
 	}
 }
 
@@ -165,16 +172,17 @@ if($resource_list) {
 	if ($res_opts{select} && (!$node_opts{node_cnt} || ($res_opts{select} > $node_opts{node_cnt}))) {
 		$node_opts{node_cnt} = $res_opts{select};
 	}
-	if ($res_opts{ncpus} && (!$node_opts{task_cnt} || ($res_opts{ncpus} > $node_opts{task_cnt}))) {
-		$node_opts{task_cnt} = $res_opts{ncpus};
+	if ($res_opts{select} && $res_opts{ncpus} && $res_opts{mpiprocs}) {
+		my $cpus_per_task = int ($res_opts{ncpus} / $res_opts{mppnppn});
+		if (!$res_opts{mppdepth} || ($cpus_per_task > $res_opts{mppdepth})) {
+			$res_opts{mppdepth} = $cpus_per_task;
+		}
 	}
 }
 
-# FIXME: This logic does not support commas embedded within an environment's
-# variable, which requires adding support for quoted variable lists (e.g.
-# -v "FOO='b,a,r'" or -v 'FOO="b,a,r"' )
 if($variable_list) {
-	my @parts = split(/,/, $variable_list);
+	$variable_list =~ s/\'/\"/g;
+	my @parts = $variable_list =~ m/(?:(?<=")[^"]*(?=(?:\s*"\s*,|\s*"\s*$)))|(?<=,)(?:[^",]*(?=(?:\s*,|\s*$)))|(?<=^)(?:[^",]+(?=(?:\s*,|\s*$)))|(?<=^)(?:[^",]*(?=(?:\s*,)))/g;
 	foreach my $part (@parts) {
 		my ($key, $value) = $part =~ /(.*)=(.*)/;
 		if ($key && $value) {
@@ -196,9 +204,15 @@ if($interactive) {
 	$command .= " -o $out_path" if $out_path;
 }
 
+if (!$node_opts{node_cnt} && !$node_opts{task_cnt} && !$node_opts{hostlist}) {
+	$node_opts{task_cnt} = 1;
+}
 $command .= " -N$node_opts{node_cnt}" if $node_opts{node_cnt};
 $command .= " -n$node_opts{task_cnt}" if $node_opts{task_cnt};
 $command .= " -w$node_opts{hostlist}" if $node_opts{hostlist};
+
+$command .= " --mincpus=$res_opts{ncpus}"            if $res_opts{ncpus};
+$command .= " --ntasks-per-node=$res_opts{mppnppn}"  if $res_opts{mppnppn};
 
 if($res_opts{walltime}) {
 	$command .= " -t$res_opts{walltime}";
@@ -208,8 +222,9 @@ if($res_opts{walltime}) {
 	$command .= " -t$res_opts{pcput}";
 }
 
-$command .= " --tmp=$res_opts{file}" if $res_opts{file};
-$command .= " --mem=$res_opts{mem}" if $res_opts{mem};
+$command .= " --dependency=$depend"   if $depend;
+$command .= " --tmp=$res_opts{file}"  if $res_opts{file};
+$command .= " --mem=$res_opts{mem}"   if $res_opts{mem};
 $command .= " --nice=$res_opts{nice}" if $res_opts{nice};
 
 $command .= " --gres=gpu:$res_opts{naccelerators}"  if $res_opts{naccelerators};
@@ -218,7 +233,6 @@ $command .= " --gres=gpu:$res_opts{naccelerators}"  if $res_opts{naccelerators};
 $command .= " -n$res_opts{mppwidth}"		    if $res_opts{mppwidth};
 $command .= " -w$res_opts{mppnodes}"		    if $res_opts{mppnodes};
 $command .= " --cpus-per-task=$res_opts{mppdepth}"  if $res_opts{mppdepth};
-$command .= " --ntasks-per-node=$res_opts{mppnppn}" if $res_opts{mppnppn};
 
 $command .= " --begin=$start_time" if $start_time;
 $command .= " --account=$account" if $account;
@@ -233,11 +247,10 @@ $command .= " --mail-user=$mail_user_list" if $mail_user_list;
 $command .= " -J $job_name" if $job_name;
 $command .= " --nice=$priority" if $priority;
 $command .= " -p $destination" if $destination;
-$command .= " -C $additional_attributes" if $additional_attributes;
-
 
 $command .= " $script";
 
+# print "$command\n";
 my $ret = system($command);
 exit ($ret >> 8);
 
@@ -272,6 +285,9 @@ sub parse_resource_list {
 		   );
 	my @keys = keys(%opt);
 
+#	The select option uses a ":" separator rather than ","
+#	This wrapper currently does not support multiple select options
+	$rl =~ s/:/,/g;
 	foreach my $key (@keys) {
 		#print "$rl\n";
 		($opt{$key}) = $rl =~ m/$key=([\w:\+=+]+)/;
@@ -446,8 +462,9 @@ It is not necessary (currently also not possible) since stderr/stdout are always
 
 =item B<-v> [variable_list]
 
-Exporting single variables via -v is not supported, since the entire login environment
-is exported by the default.
+Exporting single variables via -v is generally not required, since the entire
+login environment is exported by the default. However this option can be used
+to add newly defined environment variables to specific jobs.
 
 =item B<-V>
 

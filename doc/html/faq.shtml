@@ -1686,7 +1686,7 @@ launch a shell on a node in the job's allocation?</b></a></br>
 Yes, just use the SallocDefaultCommand configuration parameter in your
 slurm.conf file as shown below.</p>
 <pre>
-SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --mpi=none $SHELL
+SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --mpi=none $SHELL"
 </pre>
 
 <p><a name="upgrade"><b>51. What should I be aware of when upgrading Slurm?</b></a></br>
@@ -1747,6 +1747,6 @@ show columns from "tux_assoc_table" where Field='is_def';
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 September 2013</p>
+<p style="text-align:center;">Last modified 13 September 2013</p>
 
 <!--#include virtual="footer.txt"-->

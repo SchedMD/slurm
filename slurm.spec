@@ -915,6 +915,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/qsub
 %{_bindir}/mpiexec
 %{_bindir}/generate_pbs_nodefile
+%{_libdir}/slurm/job_submit_pbs.so
+%{_libdir}/slurm/spank_pbs.so
 #############################################################################
 
 %files sjobexit
