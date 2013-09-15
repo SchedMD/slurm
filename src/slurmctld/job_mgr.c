@@ -8009,7 +8009,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		goto fini;
 
 	if (job_specs->name) {
-		if (!IS_JOB_PENDING(job_ptr)) {
+		if (IS_JOB_FINISHED(job_ptr)) {
 			error_code = ESLURM_DISABLED;
 			goto fini;
 		} else {
