@@ -268,7 +268,7 @@ $command .= " -p $destination" if $destination;
 
 $command .= " $script" if $script;
 
-print "$command\n";
+# print "$command\n";
 my $ret = system($command);
 exit ($ret >> 8);
 
