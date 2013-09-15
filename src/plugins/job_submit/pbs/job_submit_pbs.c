@@ -126,8 +126,8 @@ static void _add_env2(struct job_descriptor *job_desc, char *key, char *val)
 	if (!job_desc->environment || !key || !val)
 		return;	/* Nothing we can do for interactive jobs */
 
-	len = sizeof(key) + sizeof(val) + 2;
-	new_env = xmalloc(sizeof(len));
+	len = strlen(key) + strlen(val) + 2;
+	new_env = xmalloc(len);
 	snprintf(new_env, len, "%s=%s", key, val);
 	_add_env(job_desc, new_env);
 	xfree(new_env);
