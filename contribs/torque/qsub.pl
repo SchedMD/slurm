@@ -204,6 +204,10 @@ if($interactive) {
 	if ($node_opts{task_cnt}) {
 		$node_opts{task_cnt} *= $node_opts{node_cnt};
 	}
+
+	if (!$node_opts{node_cnt} && !$node_opts{task_cnt} && !$node_opts{hostlist}) {
+		$node_opts{task_cnt} = 1;
+	}
 } else {
 	if (!$script) {
 		pod2usage(2);
@@ -222,9 +226,6 @@ if($interactive) {
 	}
 }
 
-if (!$node_opts{node_cnt} && !$node_opts{task_cnt} && !$node_opts{hostlist}) {
-	$node_opts{task_cnt} = 1;
-}
 $command .= " -N$node_opts{node_cnt}" if $node_opts{node_cnt};
 $command .= " -n$node_opts{task_cnt}" if $node_opts{task_cnt};
 $command .= " -w$node_opts{hostlist}" if $node_opts{hostlist};
