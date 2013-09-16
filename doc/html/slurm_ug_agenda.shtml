@@ -201,8 +201,8 @@ plus dinner on Wednesday evening.<br><br>
 <tr>
   <td width="15%">11:00 - 11:30</td>
   <td width="15%">&nbsp;Technical</td>
-  <td width="25%">&nbsp;Stephen Trofinoff, Colin McMurtrie (CSCS)</td>
-  <td width="45%">&nbsp;Preparing Slurm for use on the Cray XC30</td>
+  <td width="25%">&nbsp;Francois Daikhate, Matthieu Hautreux (CEA)</td>
+  <td width="45%">&nbsp;Depth Oblivious Hierarchical Fairshare Priority Factor</td>
 </tr>
 
 <tr>
@@ -254,19 +254,13 @@ plus dinner on Wednesday evening.<br><br>
 </tr>
 
 <tr>
-  <td width="15%">15:10 - 15:30</td>
-  <td width="15%">&nbsp;Technical</td>
-  <td width="25%">&nbsp;Francois Daikhate, Matthieu Hautreux (CEA)</td>
-  <td width="45%">&nbsp;Depth Oblivious Hierarchical Fairshare Priority Factor</td>
-</tr>
-<tr>
-  <td width="15%">15:30 - 16:00</td>
+  <td width="15%">15:00 - 15:30</td>
   <td width="15%">&nbsp;Technical</td>
   <td width="25%">&nbsp;Morris Jette (SchedMD), Yiannis Georgiou (Bull)</td>
   <td width="45%">&nbsp;Slurm Roadmap</td>
 </tr>
 <tr>
-  <td width="15%">16:00 - 17:00</td>
+  <td width="15%">15:30 - 16:30</td>
   <td width="15%">&nbsp;Discussion</td>
   <td width="25%">&nbsp;Everyone</td>
   <td width="45%">&nbsp;Open Discussion</td>

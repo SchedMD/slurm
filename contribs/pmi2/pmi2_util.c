@@ -146,7 +146,8 @@ int PMI2U_parse_keyvals(char *st) {
             p++;
         /* got non-blank */
         if (*p == '=') {
-            PMI2U_printf("PMI2U_parse_keyvals:  unexpected = at character %ld in %s", p - st, st);
+            PMI2U_printf("PMI2U_parse_keyvals:  unexpected = at character %ld in %s",
+			 (long int) (p - st), st);
             return (-1);
         }
         if (*p == '\n' || *p == '\0')
@@ -156,7 +157,8 @@ int PMI2U_parse_keyvals(char *st) {
         while (*p != ' ' && *p != '=' && *p != '\n' && *p != '\0')
             p++;
         if (*p == ' ' || *p == '\n' || *p == '\0') {
-            PMI2U_printf("PMI2U_parse_keyvals: unexpected key delimiter at character %ld in %s", p - st, st);
+            PMI2U_printf("PMI2U_parse_keyvals: unexpected key delimiter at character %ld in %s",
+			 (long int) (p - st), st);
             return (-1);
         }
         /* Null terminate the key */
