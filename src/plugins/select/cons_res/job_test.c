@@ -238,9 +238,9 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 			used_cores[i] += free_cores[i];
 			free_cores[i] = 0;
 		}
-		free_cpu_count = free_cores[i] * threads_per_core;
+		free_cpu_count += free_cores[i] * threads_per_core;
 		if (used_cpu_array[i])
-			used_cpu_count = cores_per_socket * threads_per_core;
+			used_cpu_count = used_cores[i] * threads_per_core;
 	}
 	xfree(used_cores);
 	xfree(used_cpu_array);
