@@ -133,8 +133,6 @@ if ($ARGV[0]) {
 	foreach (@ARGV) {
 	        $script .= "$_ ";
 	}
-} else {
-        pod2usage(2);
 }
 my $depend;
 my %res_opts;
@@ -196,17 +194,38 @@ my $command;
 if($interactive) {
 	$command = "$salloc";
 
+#	Always want at least one node in the allocation
+	if (!$node_opts{node_cnt}) {
+		$node_opts{node_cnt} = 1;
+	}
+
+#	Calculate the task count based of the node cnt and the amount
+#	of ppn's in the request
+	if ($node_opts{task_cnt}) {
+		$node_opts{task_cnt} *= $node_opts{node_cnt};
+	}
+
+	if (!$node_opts{node_cnt} && !$node_opts{task_cnt} && !$node_opts{hostlist}) {
+		$node_opts{task_cnt} = 1;
+	}
 } else {
+	if (!$script) {
+		pod2usage(2);
+	}
+
 	$command = "$sbatch";
 
 	$command .= " -D $directive_prefix" if $directive_prefix;
 	$command .= " -e $err_path" if $err_path;
 	$command .= " -o $out_path" if $out_path;
+
+#	The job size specification may be within the batch script,
+#	Reset task count if node count also specified
+	if ($node_opts{task_cnt} && $node_opts{node_cnt}) {
+		$node_opts{task_cnt} *= $node_opts{node_cnt};
+	}
 }
 
-if (!$node_opts{node_cnt} && !$node_opts{task_cnt} && !$node_opts{hostlist}) {
-	$node_opts{task_cnt} = 1;
-}
 $command .= " -N$node_opts{node_cnt}" if $node_opts{node_cnt};
 $command .= " -n$node_opts{task_cnt}" if $node_opts{task_cnt};
 $command .= " -w$node_opts{hostlist}" if $node_opts{hostlist};
@@ -248,7 +267,7 @@ $command .= " -J $job_name" if $job_name;
 $command .= " --nice=$priority" if $priority;
 $command .= " -p $destination" if $destination;
 
-$command .= " $script";
+$command .= " $script" if $script;
 
 # print "$command\n";
 my $ret = system($command);
@@ -351,18 +370,6 @@ sub parse_node_opts {
 
 	my $hl_cnt = Slurm::Hostlist::count($hl);
 	$opt{node_cnt} = $hl_cnt if $hl_cnt > $opt{node_cnt};
-
-	# we always want at least one here
-	if(!$opt{node_cnt}) {
-
-		$opt{node_cnt} = 1;
-	}
-
-	# figure out the amount of tasks based of the node cnt and the amount
-	# of ppn's in the request
-	if($opt{task_cnt}) {
-		$opt{task_cnt} *= $opt{node_cnt};
-	}
 
 	return \%opt;
 }
