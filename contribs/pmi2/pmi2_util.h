@@ -72,7 +72,7 @@
 
 #define PMI2U_CHKMEM_SETERR(rc_, nbytes_, name_) do { \
     PMI2U_printf("ERROR: memory allocation of %lu bytes failed for %s", \
-            (size_t)nbytes_, name_); \
+            (long unsigned int) nbytes_, name_); \
     rc_ = PMI2_ERR_NOMEM; \
     goto fn_exit; \
 } while(0)
