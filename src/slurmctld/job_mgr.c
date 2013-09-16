@@ -8256,6 +8256,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_QOS_THRES;
 		else if ((fail_reason == WAIT_PART_TIME_LIMIT) ||
 			 (fail_reason == WAIT_PART_NODE_LIMIT) ||
+			 (fail_reason == WAIT_PART_DOWN) ||
 			 (fail_reason == WAIT_HELD))
 			error_code = SLURM_SUCCESS;
 		else
