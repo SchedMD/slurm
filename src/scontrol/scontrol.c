@@ -130,8 +130,8 @@ main (int argc, char *argv[])
 	while (1) {
 		if (!strncasecmp(argv[optind], "setdebugflags", 8))
 			break;	/* avoid parsing "-<flagname>" as option */
-		if (opt_char = getopt_long(argc, argv, "adhM:oQvV",
-					   long_options, &option_index) == -1)
+		if ((opt_char = getopt_long(argc, argv, "adhM:oQvV",
+					    long_options, &option_index)) == -1)
 			break;
 		switch (opt_char) {
 		case (int)'?':
