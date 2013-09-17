@@ -10,22 +10,22 @@
 <li><b>Presentations from SLURM User Group Meeting, September 2013</b></li>
 <ul>
 
-<li>Keynote: <a href="SUG13/tbd.pdf">TBD</a>
+<li>Welcome: <a href="SUG13/welcome.pdf">TBD</a>
+Morris Jette (SchedMD)</li>
+
+<li>Keynote: <a href="SUG13/keynote.pdf">Future Outlook for Advanced Computing</a>
 Dona Crawford (LLNL)</li>
+
+<li>Technical: <a href="SUG13/version_26.pdf">Overview of Slurm version 2.6</a>,
+Morris Jette and Danny Auble (SchedMD), Yiannis Georgiou (Bull) </li>
 
 <li>Tutorial: <a href="SUG13/tbd.pdf">Energy Accounting and External Sensor Plugins</a>,
 Yiannis Georgiou, Martin Perry, Thomas Cadeau (Bull), Danny Auble (SchedMD)</li>
 
-<li>Tutorial: <a href="SUG13/tbd.pdf">Usage of new profiling functionalities</a>,
- Rod Schultz, Yiannis Georgiou (Bull) Danny Auble (SchedMD)</li>
-
-<li>Technical: <a href="SUG13/tbd.pdf">Overview of Slurm version 2.6</a>,
-Morris Jette and Danny Auble (SchedMD), Yiannis Georgiou (Bull) </li>
-
 <li>Technical: <a href="SUG13/tbd.pdf">Evaluation of Monitoring and Control Features for Power Management</a>,
 Yiannis Georgiou , Thomas Cadeau (Bull), Danny Auble, Moe Jette (SchedMD) Matthieu Hautreux (CEA)</li>
 
-<li>Technical: <a href="SUG13/tbd.pdf">Debugging Large Machines</a>,
+<li>Technical: <a href="SUG13/debugging-slurm-0.4.pdf">Debugging Large Machines</a>,
 Matthieu Hautreux (CEA)</li>
 
 <li>Technical: <a href="SUG13/tbd.pdf">Creating easy to use HPC portals with NICE EnginFrame and Slurm</a>,
@@ -33,6 +33,9 @@ Alberto Falzone, Paolo Maggi (Nice Software)</li>
 
 <li>Technical: <a href="SUG13/tbd.pdf">Slurm evaluation using emulation and replay of real workload traces</a>,
 David Glesser, Yiannis Georgiou, Joseph Emeras, Olivier Richard (Bull)</li>
+
+<li>Tutorial: <a href="SUG13/tbd.pdf">Usage of new profiling functionalities</a>,
+ Rod Schultz, Yiannis Georgiou (Bull) Danny Auble (SchedMD)</li>
 
 <!-- day 2 -->
 
@@ -48,19 +51,18 @@ Bill Brophy (Bull)</li>
 <li>Technical: <a href="SUG13/tbd.pdf">Multi-Cluster Management</a>,
 Juan Pancorbo Armada (IRZ)</li>
 
+<-- CANCELLED
 <li>Technical: <a href="SUG13/tbd.pdf">Preparing Slurm for use on the Cray XC30</a>,
-Stephen Trofinoff, Colin McMurtrie (CSCS)</li>
+Stephen Trofinoff, Colin McMurtrie (CSCS)</li> -->
+
+<li>Technical: <a href="SUG13/fairshare-improvement-0.4.pdf">
+Depth Oblivious Hierarchical Fairshare Priority Factor</a>,
+Francois Daikhate, Matthieu Hautreux (CEA)</li>
 
 <li>Technical: <a href="SUG13/tbd.pdf">Refactoring ALPS</a>,
 Dave Wallace (Cray)</li>
 
-<li>Technical: <a href="SUG13/tbd.pdf">Depth Oblivious Hierarchical Fairshare Priority Factor</a>,
-Francois Daikhate, Matthieu Hautreux (CEA)</li>
-
-<li>Technical: <a href="SUG13/tbd.pdf">Slurm Roadmap</a>,
-Morris Jette (SchedMD), Yiannis Georgiou (Bull)</li>
-
-<li>Site Report: <a href="SUG13/tbd.pdf">CEA</a>,
+<li>Site Report: <a href="SUG13/cea-site-report-0.6.pdf">CEA</a>,
 Francois Diakhate, Francis Belot, Matthieu Hautreux, CEA</li>
 
 <li>Site Report: <a href="SUG13/tbd.pdf">George Washington University</a>,
@@ -75,6 +77,9 @@ Doug Hughes, Chris Harwell, Eric Radman, Goran Pocina, Michael Fenn
 
 <li>Site Report: <a href="SUG13/tbd.pdf">Technische Universitat Dresden</a>,
 Dr. Ulf Markwardt (Technische Universitat Dresden)</li>
+
+<li>Technical: <a href="SUG13/roadmap.pdf">Slurm Roadmap</a>,
+Morris Jette, Danny Auble (SchedMD), Yiannis Georgiou (Bull)</li>
 
 </ul>
 
