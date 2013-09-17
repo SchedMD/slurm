@@ -4010,11 +4010,6 @@ extern char * debug_flags2str(uint32_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Switch");
 	}
-	if (debug_flags & DEBUG_FLAG_THREADID) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "ThreadID");
-	}
 	if (debug_flags & DEBUG_FLAG_TRIGGERS) {
 		if (rc)
 			xstrcat(rc, ",");
