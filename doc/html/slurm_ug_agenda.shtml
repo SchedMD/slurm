@@ -78,7 +78,7 @@ plus dinner on Wednesday evening.<br><br>
   <td width="15%">09:15 - 10:00</td>
   <td width="15%">&nbsp;Keynote</td>
   <td width="25%">&nbsp;Dona Crawford (LLNL)</td>
-  <td width="45%">&nbsp;TBD</td>
+  <td width="45%">&nbsp;Future Outlook for Advanced Computing</td>
 </tr>
 
 <tr>
@@ -598,6 +598,6 @@ computing. These requirements include not only scalability issues,
 but a new focus on power management, fault tolerance, topology
 optimized scheduling, and heterogeneous computing.</p>
 
-<p style="text-align:center;">Last modified 5 September 2013</p>
+<p style="text-align:center;">Last modified 16 September 2013</p>
 
 <!--#include virtual="footer.txt"-->

@@ -92,6 +92,8 @@ documents those changes that are of interest to users and admins.
  -- Backported sh5util from master to 2.6 as there are some important
     bugfixes and the new item extraction feature.
  -- select/cons_res - Corect MacCPUsPerNode partition constraint for CR_Socket.
+ -- scontrol - for setdebugflags command, avoid parsing "-flagname" as an
+    scontrol command line option.
 
 * Changes in Slurm 2.6.2
 ========================
