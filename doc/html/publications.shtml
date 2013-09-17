@@ -39,7 +39,7 @@ David Glesser, Yiannis Georgiou, Joseph Emeras, Olivier Richard (Bull)</li>
 
 <!-- day 2 -->
 
-<li>Technical: <a href="SUG13/tbd.pdf">Fault Tolerant Workload Management</a>,
+<li>Technical: <a href="SUG13/nonstop.pdf">Fault Tolerant Workload Management</a>,
 David Bigagli, Morris Jette (SchedMD)</li>
 
 <li>Technical: <a href="SUG13/tbd.pdf">Slurm Layouts Framework</a>,
