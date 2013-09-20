@@ -38,11 +38,55 @@
 \*****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include "slurm/spank.h"
 
 SPANK_PLUGIN(pbs, 1);
 
+/* Set a few environment variables for use by the Epilog script
+ * SPANK_NCCS_STDOUT_FILE  will be set to the job's NCCS_STDOUT_FILE env
+ * SPANK_SLURM_STDOUT_FILE will be set to the job's stdout file
+ *
+ * NOTE: the ac and av represent the argc and argv arguments to the SPANK
+ * plugin, not those of the user command
+ */
+int slurm_spank_init_post_opt(spank_t sp, int ac, char **av)
+{
+	char *nccs_stdout, *sbatch_stdout, *sbatch_dir;
+	char *cwd = NULL;
+	int i = 4096;
+
+	if ((nccs_stdout = getenv("NCCS_STDOUT_FILE")))
+		spank_job_control_setenv(sp, "NCCS_STDOUT_FILE", nccs_stdout,1);
+
+	sbatch_stdout = getenv("SBATCH_STDOUT");
+	if (!sbatch_stdout)
+		sbatch_stdout = "slurm-%J.out";
+	sbatch_dir = getenv("SBATCH_WORK_DIR");
+	while (!sbatch_dir) {
+		cwd = realloc(cwd, i);
+		sbatch_dir = getcwd(cwd, i);
+		i *= 16;
+	}
+	if (sbatch_stdout[0] == '/') {
+		spank_job_control_setenv(sp, "SLURM_STDOUT_FILE",
+					 sbatch_stdout, 1);
+	} else {
+		i = strlen(sbatch_dir) + strlen(sbatch_stdout) + 2;
+		char *tmp = malloc(i);
+		snprintf(tmp, i, "%s/%s", sbatch_dir, sbatch_stdout);
+		spank_job_control_setenv(sp, "SLURM_STDOUT_FILE", tmp, 1);
+		free(tmp);
+	}
+	if (cwd)
+		free(cwd);
+
+	return ESPANK_SUCCESS;
+}
+
+/* Configure a bunch of PBS_* environment variables based upon the SLURM_*
+ * environment variables that are set by Slurm. */
 int slurm_spank_task_init(spank_t sp, int ac, char **av)
 {
 	char val[30000];
@@ -119,5 +163,5 @@ int slurm_spank_task_init(spank_t sp, int ac, char **av)
 		spank_setenv(sp, "PBS_TASKNUM", val, 1);
 	}
 
-	return 0;
+	return ESPANK_SUCCESS;
 }
