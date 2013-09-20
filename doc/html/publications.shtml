@@ -28,11 +28,12 @@ Yiannis Georgiou , Thomas Cadeau (Bull), Danny Auble, Moe Jette (SchedMD) Matthi
 <li>Technical: <a href="SUG13/debugging-slurm-0.4.pdf">Debugging Large Machines</a>,
 Matthieu Hautreux (CEA)</li>
 
-<li>Technical: <a href="SUG13/tbd.pdf">Creating easy to use HPC portals with NICE EnginFrame and Slurm</a>,
+<li>Technical: <a href="SUG13/nice_ef.pdf">Creating easy to use HPC portals with NICE EnginFrame and Slurm</a>,
 Alberto Falzone, Paolo Maggi (Nice Software)</li>
 
+<!-- DO NOT POST
 <li>Technical: <a href="SUG13/tbd.pdf">Slurm evaluation using emulation and replay of real workload traces</a>,
-David Glesser, Yiannis Georgiou, Joseph Emeras, Olivier Richard (Bull)</li>
+David Glesser, Yiannis Georgiou, Joseph Emeras, Olivier Richard (Bull)</li> -->
 
 <li>Tutorial: <a href="SUG13/profile_hdf5.pdf">Usage of new profiling functionalities</a>,
  Rod Schultz, Yiannis Georgiou (Bull) Danny Auble (SchedMD)</li>
@@ -42,41 +43,43 @@ David Glesser, Yiannis Georgiou, Joseph Emeras, Olivier Richard (Bull)</li>
 <li>Technical: <a href="SUG13/nonstop.pdf">Fault Tolerant Workload Management</a>,
 David Bigagli, Morris Jette (SchedMD)</li>
 
-<li>Technical: <a href="SUG13/tbd.pdf">Slurm Layouts Framework</a>,
+<li>Technical: <a href="SUG13/layouts_framework.pdf">Slurm Layouts Framework</a>,
 Yiannis Georgiou (Bull) Matthieu Hautreux (CEA)</li>
 
 <li>Technical: <a href="SUG13/license_management.pdf">License Management</a>,
 Bill Brophy (Bull)</li>
 
-<li>Technical: <a href="SUG13/tbd.pdf">Multi-Cluster Management</a>,
+<li>Technical: <a href="SUG13/Mslurm.pdf">Multi-Cluster Management</a>,
 Juan Pancorbo Armada (IRZ)</li>
 
 <!-- CANCELLED
-<li>Technical: <a href="SUG13/tbd.pdf">Preparing Slurm for use on the Cray XC30</a>,
+<li>Technical: <a href="SUG13/cray_xc30.pdf">Preparing Slurm for use on the Cray XC30</a>,
 Stephen Trofinoff, Colin McMurtrie (CSCS)</li> -->
 
 <li>Technical: <a href="SUG13/fairshare-improvement-0.4.pdf">
 Depth Oblivious Hierarchical Fairshare Priority Factor</a>,
 Francois Daikhate, Matthieu Hautreux (CEA)</li>
 
-<li>Technical: <a href="SUG13/tbd.pdf">Refactoring ALPS</a>,
+<li>Technical: <a href="SUG13/Refactor_ALPS.pdf">Refactoring ALPS</a>,
 Dave Wallace (Cray)</li>
 
 <li>Site Report: <a href="SUG13/cea-site-report-0.6.pdf">CEA</a>,
-Francois Diakhate, Francis Belot, Matthieu Hautreux, CEA</li>
+Francois Diakhate, Francis Belot, Matthieu Hautreux (CEA)</li>
 
-<li>Site Report: <a href="SUG13/tbd.pdf">George Washington University</a>,
+<li>Site Report: <a href="SUG13/GWU_site.pdf">George Washington University</a>,
 Tim Wickberg (George Washington University)</li>
 
-<li>Site Report: <a href="SUG13/tbd.pdf">Brigham Young University</a>,
+<li>Site Report: <a href="SUG13/BYU_site.pdf">Brigham Young University</a>,
 Ryan Cox (BYU)</li>
 
-<li>Site Report: <a href="SUG13/tbd.pdf">D.E. Shaw Research</a>,
+<!-- DO NOT POST
+<li>Site Report: <a href="SUG13/desres-site.pdf">D.E. Shaw Research</a>,
 Doug Hughes, Chris Harwell, Eric Radman, Goran Pocina, Michael Fenn
-    (D.E. Shaw Research)</li>
+    (D.E. Shaw Research)</li>  -->
 
-<li>Site Report: <a href="SUG13/tbd.pdf">Technische Universitat Dresden</a>,
-Dr. Ulf Markwardt (Technische Universitat Dresden)</li>
+<!-- NOT AVAILBLE YET
+<li>Site Report: <a href="SUG13/dresden-site.pdf">Technische Universitat Dresden</a>,
+Dr. Ulf Markwardt (Technische Universitat Dresden)</li>  -->
 
 <li>Technical: <a href="SUG13/roadmap.pdf">Slurm Roadmap</a>,
 Morris Jette, Danny Auble (SchedMD), Yiannis Georgiou (Bull)</li>
@@ -407,6 +410,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 16 September 2013</p>
+<p style="text-align:center;">Last modified 20 September 2013</p>
 
 <!--#include virtual="footer.txt"-->
