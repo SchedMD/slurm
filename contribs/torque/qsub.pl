@@ -215,15 +215,9 @@ if($interactive) {
 
 	$command = "$sbatch";
 
-	if ($directive_prefix) {
-		$command .= " -D $directive_prefix";
-		$ENV{SBATCH_WORK_DIR} = $directive_prefix;
-	}
+	$command .= " -D $directive_prefix" if $directive_prefix;
 	$command .= " -e $err_path" if $err_path;
-	if ($out_path) {
-		$command .= " -o $out_path";
-		$ENV{SBATCH_STDOUT} = $out_path;
-	}
+	$command .= " -o $out_path" if $out_path;
 
 #	The job size specification may be within the batch script,
 #	Reset task count if node count also specified
