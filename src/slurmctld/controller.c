@@ -243,6 +243,13 @@ int main(int argc, char *argv[])
 	slurm_trigger_callbacks_t callbacks;
 	char *dir_name;
 
+        /*
+         * Make sure we have no extra open files which
+         * would be propagated to spawned tasks.
+         */
+        for (i=3; i<256; i++)
+                (void) close(i);
+
 	/*
 	 * Establish initial configuration
 	 */
@@ -920,6 +927,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 					slurmctld_conf.slurmctld_port+i);
 		if (sockfd[i] == SLURM_SOCKET_ERROR)
 			fatal("slurm_init_msg_engine_addrname_port error %m");
+		fd_set_close_on_exec(sockfd[i]);
 		slurm_get_stream_addr(sockfd[i], &srv_addr);
 		slurm_get_ip_str(&srv_addr, &port, ip, sizeof(ip));
 		debug2("slurmctld listening on %s:%d", ip, ntohs(port));
@@ -971,6 +979,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 			_free_server_thread();
 			continue;
 		}
+		fd_set_close_on_exec(newsockfd);
 		conn_arg = xmalloc(sizeof(connection_arg_t));
 		conn_arg->newsockfd = newsockfd;
 		if (slurmctld_config.shutdown_time)
@@ -2057,15 +2066,18 @@ static void _kill_old_slurmctld(void)
 /* NOTE: No need to lock the config data since we are still single-threaded */
 static void _init_pidfile(void)
 {
+	int pid_fd;
+
 	if (strcmp(slurmctld_conf.slurmctld_pidfile,
 		   slurmctld_conf.slurmd_pidfile) == 0)
 		error("SlurmctldPid == SlurmdPid, use different names");
 
 	/* Don't close the fd returned here since we need to keep the
-	   fd open to maintain the write lock.
-	*/
-	create_pidfile(slurmctld_conf.slurmctld_pidfile,
-		       slurmctld_conf.slurm_user_id);
+	 * fd open to maintain the write lock */
+	pid_fd = create_pidfile(slurmctld_conf.slurmctld_pidfile,
+				slurmctld_conf.slurm_user_id);
+	if (pid_fd >= 0)
+		fd_set_close_on_exec(pid_fd);
 }
 
 /*
