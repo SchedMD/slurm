@@ -135,19 +135,23 @@ static void _add_env2(struct job_descriptor *job_desc, char *key, char *val)
 
 static void _decr_depend_cnt(struct job_record *job_ptr)
 {
-	int cnt;
+	char buf[16], *end_ptr = NULL, *tok = NULL;
+	int cnt, width;
 
-	if (!job_ptr->comment || strncmp(job_ptr->comment, "on:", 3)) {
+	if (job_ptr->comment)
+		tok = strstr(job_ptr->comment, "on:");
+	if (!tok) {
 		info("%s: invalid job depend before option on job %u",
 		     plugin_type, job_ptr->job_id);
 		return;
 	}
 
-	cnt = atoi(job_ptr->comment + 3);
+	cnt = strtol(tok + 3, &end_ptr, 10);
 	if (cnt > 0)
 		cnt--;
-	xfree(job_ptr->comment);
-	xstrfmtcat(job_ptr->comment, "on:%d", cnt);		
+	width = MIN(sizeof(buf) - 1, (end_ptr - tok - 3));
+	sprintf(buf, "%*d", width, cnt);
+	memcpy(tok + 3, buf, width);
 }
 
 /* We can not invoke update_job_dependency() until the new job record has
@@ -158,17 +162,19 @@ static void *_dep_agent(void *args)
 	struct job_record *job_ptr = (struct job_record *) args;
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK};
+	char *end_ptr = NULL, *tok;
+	int cnt = 0;
 
 	usleep(100000);
 	lock_slurmctld(job_write_lock);
 	if (job_ptr && job_ptr->details && (job_ptr->magic == JOB_MAGIC) &&
-	    job_ptr->comment && !strncmp(job_ptr->comment, "on:", 3)) {
+	    job_ptr->comment && strstr(job_ptr->comment, "on:")) {
 		update_job_dependency(job_ptr, job_ptr->details->dependency);
-		if (!strcmp(job_ptr->comment, "on:0")) {
-			xfree(job_ptr->comment);
-			set_job_prio(job_ptr);
-		}
+		tok = strstr(job_ptr->comment, "on:");
+		cnt = strtol(tok + 3, &end_ptr, 10);
 	}
+	if (cnt == 0)
+		set_job_prio(job_ptr);
 	unlock_slurmctld(job_write_lock);
 	return NULL;
 }
@@ -275,7 +281,8 @@ static void _xlate_dependency(struct job_descriptor *job_desc,
 			xstrcat(result, tok);
 		} else if (!strncmp(tok, "on:", 3)) {
 			job_desc->priority = 0;	/* Job is held */
-			xfree(job_desc->comment);
+			if (job_desc->comment)
+				xstrcat(job_desc->comment, ",");
 			xstrcat(job_desc->comment, tok);
 		} else if (!strncmp(tok, "before", 6)) {
 			_xlate_before(tok, submit_uid);
