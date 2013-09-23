@@ -278,6 +278,7 @@ documents those changes that are of interest to users and admins.
     --exclusive and --cpus-per-task options
  -- switch/nrt - Don't allocate network resources unless job step has 2+ nodes.
  -- select/cons_res - Avoid extraneous "oversubscribe" error messages.
+ -- Reorder get config logic to avoid deadlock.
 
 * Changes in Slurm 2.5.7
 ========================
