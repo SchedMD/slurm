@@ -169,7 +169,10 @@ static void *_dep_agent(void *args)
 	lock_slurmctld(job_write_lock);
 	if (job_ptr && job_ptr->details && (job_ptr->magic == JOB_MAGIC) &&
 	    job_ptr->comment && strstr(job_ptr->comment, "on:")) {
-		update_job_dependency(job_ptr, job_ptr->details->dependency);
+		char *new_depend = job_ptr->details->dependency;
+		job_ptr->details->dependency = NULL;
+		update_job_dependency(job_ptr, new_depend);
+		xfree(new_depend);
 		tok = strstr(job_ptr->comment, "on:");
 		cnt = strtol(tok + 3, &end_ptr, 10);
 	}
@@ -179,7 +182,7 @@ static void *_dep_agent(void *args)
 	return NULL;
 }
 
-static void _xlate_before(char *depend, uint32_t submit_uid)
+static void _xlate_before(char *depend, uint32_t submit_uid, uint32_t my_job_id)
 {
 	uint32_t job_id;
 	char *last_ptr = NULL, *new_dep = NULL, *tok, *type;
@@ -226,7 +229,7 @@ static void _xlate_before(char *depend, uint32_t submit_uid)
 				xstrcat(new_dep, job_ptr->details->dependency);
 				xstrcat(new_dep, ",");
 			}
-			xstrfmtcat(new_dep, "%s:%u", type, get_next_job_id());
+			xstrfmtcat(new_dep, "%s:%u", type, my_job_id);
 			xfree(job_ptr->details->dependency);
 			job_ptr->details->dependency = new_dep;
 			new_dep = NULL;
@@ -259,7 +262,7 @@ static void _xlate_before(char *depend, uint32_t submit_uid)
  * N/A			singleton
  */
 static void _xlate_dependency(struct job_descriptor *job_desc,
-			      uint32_t submit_uid)
+			      uint32_t submit_uid, uint32_t my_job_id)
 {
 	char *result = NULL;
 	char *last_ptr = NULL, *tok;
@@ -285,7 +288,7 @@ static void _xlate_dependency(struct job_descriptor *job_desc,
 				xstrcat(job_desc->comment, ",");
 			xstrcat(job_desc->comment, tok);
 		} else if (!strncmp(tok, "before", 6)) {
-			_xlate_before(tok, submit_uid);
+			_xlate_before(tok, submit_uid, my_job_id);
 		} else {
 			info("%s: discarding unknown job dependency option %s",
 			     plugin_type, tok);
@@ -301,7 +304,10 @@ static void _xlate_dependency(struct job_descriptor *job_desc,
 
 extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 {
-	_xlate_dependency(job_desc, submit_uid);
+	char *std_out, *tok;
+	uint32_t my_job_id = get_next_job_id();
+
+	_xlate_dependency(job_desc, submit_uid, my_job_id);
 
 	if (job_desc->account)
 		_add_env2(job_desc, "PBS_ACCOUNT", job_desc->account);
@@ -319,6 +325,32 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 	if (job_desc->partition)
 		_add_env2(job_desc, "PBS_QUEUE", job_desc->partition);
 
+	if (job_desc->std_out)
+		std_out = job_desc->std_out;
+	else
+		std_out = "slurm-%J.out";
+	if (job_desc->comment)
+		xstrcat(job_desc->comment, ",");
+	xstrcat(job_desc->comment, "stdout=");
+	if (std_out && job_desc->work_dir) {
+		xstrcat(job_desc->comment, job_desc->work_dir);
+		xstrcat(job_desc->comment, "/");
+	}
+	tok = strstr(std_out, "%J");
+	if (tok) {
+		char buf[16], *tok2;
+		char *tmp = xstrdup(std_out);
+		tok2 = strstr(tmp, "%J");
+		tok2[0] = '\0';
+		snprintf(buf, sizeof(buf), "%u", my_job_id);
+		xstrcat(tmp, buf);
+		xstrcat(tmp, tok + 2);
+		xstrcat(job_desc->comment, tmp);
+		xfree(tmp);
+	} else {
+		xstrcat(job_desc->comment, std_out);
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -326,6 +358,16 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 extern int job_modify(struct job_descriptor *job_desc,
 		      struct job_record *job_ptr, uint32_t submit_uid)
 {
-	_xlate_dependency(job_desc, submit_uid);
+	xassert(job_ptr);
+
+	_xlate_dependency(job_desc, submit_uid, job_ptr->job_id);
+
+	if (job_desc->comment) {
+		if (job_ptr->comment)
+			xstrcat(job_ptr->comment, ",");
+		xstrcat(job_ptr->comment, job_desc->comment);
+		xfree(job_desc->comment);
+	}
+
 	return SLURM_SUCCESS;
 }
