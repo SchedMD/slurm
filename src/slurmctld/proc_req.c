@@ -453,6 +453,7 @@ void slurmctld_req (slurm_msg_t * msg)
  */
 void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 {
+	char *licenses_used = get_licenses_used();  /* Do before config lock */
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 
 	memset(conf_ptr, 0, sizeof(slurm_ctl_conf_t));
@@ -536,7 +537,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	conf_ptr->launch_type         = xstrdup(conf->launch_type);
 	conf_ptr->licenses            = xstrdup(conf->licenses);
-	conf_ptr->licenses_used       = get_licenses_used();
+	conf_ptr->licenses_used       = licenses_used;
 
 	conf_ptr->mail_prog           = xstrdup(conf->mail_prog);
 	conf_ptr->max_job_cnt         = conf->max_job_cnt;
