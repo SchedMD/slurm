@@ -21,6 +21,7 @@ documents those changes that are of interest to users and admins.
  -- select/cons_res - Corect MacCPUsPerNode partition constraint for CR_Socket.
  -- scontrol - for setdebugflags command, avoid parsing "-flagname" as an
     scontrol command line option.
+ -- Fix issue with step accounting if a job is requeued.
 
 * Changes in Slurm 2.6.2
 ========================
