@@ -412,7 +412,7 @@ sub get_exec_host
 	my ($job) = @_;
 
 	my $execHost = "--";
-	if ($job->{'nodes'}) {
+	if ($job->{'nodes'} && $job->{'job_resrcs'}) {
 		my @allocNodes = ();
 		my $hl = Slurm::Hostlist::create($job->{'nodes'});
 		my $inx = 0;
