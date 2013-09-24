@@ -314,8 +314,6 @@ main (int argc, char *argv[])
 	   so we keep the write lock of the pidfile.
 	*/
 	pidfd = create_pidfile(conf->pidfile, 0);
-	if (pidfd >= 0)
-		fd_set_close_on_exec(pidfd);
 
 	rfc2822_timestamp(time_stamp, sizeof(time_stamp));
 	info("%s started on %s", slurm_prog_name, time_stamp);
@@ -1506,11 +1504,10 @@ _slurmd_init(void)
 		init_gids_cache(0);
 	slurm_conf_unlock();
 
-	if ((devnull = open("/dev/null", O_RDWR)) < 0) {
+	if ((devnull = open_cloexec("/dev/null", O_RDWR)) < 0) {
 		error("Unable to open /dev/null: %m");
 		return SLURM_FAILURE;
 	}
-	fd_set_close_on_exec(devnull);
 
 	/* make sure we have slurmstepd installed */
 	if (stat(conf->stepd_loc, &stat_buf))

@@ -159,17 +159,19 @@ int
 create_pidfile(const char *pidfile, uid_t uid)
 {
 	FILE *fp;
-	int fd = -1;
+	int fd;
 
 	xassert(pidfile != NULL);
 	xassert(pidfile[0] == '/');
 
-	if (!(fp = fopen(pidfile, "w"))) {
+	fd = creat_cloexec(pidfile, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP
+			   | S_IROTH | S_IWOTH);
+	if (fd < 0) {
 		error("Unable to open pidfile `%s': %m", pidfile);
 		return -1;
 	}
 
-	fd = fileno(fp);
+	fp = fdopen(fd, "w");
 
 	if (fd_get_write_lock(fd) < 0) {
 		error ("Unable to lock pidfile `%s': %m", pidfile);
