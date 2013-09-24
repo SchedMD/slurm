@@ -77,9 +77,8 @@ Ryan Cox (BYU)</li>
 Doug Hughes, Chris Harwell, Eric Radman, Goran Pocina, Michael Fenn
     (D.E. Shaw Research)</li>  -->
 
-<!-- NOT AVAILBLE YET
-<li>Site Report: <a href="SUG13/dresden-site.pdf">Technische Universitat Dresden</a>,
-Dr. Ulf Markwardt (Technische Universitat Dresden)</li>  -->
+<li>Site Report: <a href="SUG13/dresden_site.pdf">Technische Universitat Dresden</a>,
+Dr. Ulf Markwardt (Technische Universitat Dresden)</li>
 
 <li>Technical: <a href="SUG13/roadmap.pdf">Slurm Roadmap</a>,
 Morris Jette, Danny Auble (SchedMD), Yiannis Georgiou (Bull)</li>
@@ -410,6 +409,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 20 September 2013</p>
+<p style="text-align:center;">Last modified 23 September 2013</p>
 
 <!--#include virtual="footer.txt"-->

@@ -95,6 +95,9 @@ documents those changes that are of interest to users and admins.
  -- scontrol - for setdebugflags command, avoid parsing "-flagname" as an
     scontrol command line option.
  -- Fix issue with step accounting if a job is requeued.
+ -- Close file descriptors on exec of prolog, epilog, etc.
+ -- Fix issue when a user has held a job and then sets the begin time
+    into the future.
 
 * Changes in Slurm 2.6.2
 ========================
