@@ -451,6 +451,26 @@ allocate_nodes(bool handle_signals)
 		 * Allocation granted!
 		 */
 		pending_job_id = resp->job_id;
+
+		/*
+		 * These values could be changed while the job was
+		 * pending so overwrite the request with what was
+		 * allocated so we don't have issues when we use them
+		 * in the step creation.
+		 */
+		if (opt.pn_min_memory != NO_VAL)
+			opt.pn_min_memory = (resp->pn_min_memory &
+					     (~MEM_PER_CPU));
+		else if (opt.mem_per_cpu != NO_VAL)
+			opt.mem_per_cpu = (resp->pn_min_memory &
+					   (~MEM_PER_CPU));
+		opt.min_nodes = resp->node_cnt;
+		opt.max_nodes = resp->node_cnt;
+		/*
+		 * FIXME: timelimit should probably also be updated
+		 * here since it could also change.
+		 */
+
 #ifdef HAVE_BG
 		if (!_wait_bluegene_block_ready(resp)) {
 			if (!destroy_job)
