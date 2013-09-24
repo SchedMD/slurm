@@ -1648,7 +1648,7 @@ int slurm_set_jobcomp_port(uint32_t port)
 
 /* slurm_get_keep_alive_time
  * returns keep_alive_time slurmctld_conf object
- * RET uint16_t        - keep_alive_time
+ * RET uint16_t	- keep_alive_time
  */
 uint16_t slurm_get_keep_alive_time(void)
 {
@@ -2163,7 +2163,10 @@ int slurm_shutdown_msg_conn(slurm_fd_t fd)
  */
 slurm_fd_t slurm_open_msg_conn(slurm_addr_t * slurm_address)
 {
-	return _slurm_open_msg_conn(slurm_address);
+	slurm_fd_t fd = _slurm_open_msg_conn(slurm_address);
+	if (fd >= 0)
+		fd_set_close_on_exec(fd);
+	return fd;
 }
 
 /* Calls connect to make a connection-less datagram connection to the
@@ -3702,10 +3705,8 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 	req->ret_list = NULL;
 	req->forward_struct = NULL;
 
-	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
+	if ((fd = slurm_open_msg_conn(&req->address)) < 0)
 		return -1;
-	}
-
 	if (!_send_and_recv_msg(fd, req, &resp, timeout)) {
 		if (resp.auth_cred)
 			g_slurm_auth_destroy(resp.auth_cred);

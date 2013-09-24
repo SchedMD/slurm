@@ -462,6 +462,7 @@ again:
 		} else {
 			int rc;
 			fd_set_nonblocking(slurmdbd_fd);
+			fd_set_close_on_exec(slurmdbd_fd);
 			rc = _send_init_msg();
 			if (rc == SLURM_SUCCESS) {
 				if (from_ctld)
