@@ -74,7 +74,6 @@ typedef struct header {
 	time_t 	timestamp;
 	uint32_t uid;
 	uint32_t gid;
-	uint16_t rec_type;
 } filetxt_header_t;
 
 typedef struct {

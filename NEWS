@@ -99,6 +99,10 @@ documents those changes that are of interest to users and admins.
  -- Fix issue when a user has held a job and then sets the begin time
     into the future.
  -- Scontrol - Enable changing a job's stdout file.
+ -- Fix issues where memory or node count of a srun job is altered while the
+    srun is pending.  The step creation would use the old values and possibly
+    hang srun since the step wouldn't be able to be created in the modified
+    allocation.
 
 * Changes in Slurm 2.6.2
 ========================
