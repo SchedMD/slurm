@@ -179,6 +179,7 @@ main (int argc, char *argv[])
 {
 	int i, pidfd;
 	int blocked_signals[] = {SIGPIPE, 0};
+	int cc;
 	char *oom_value;
 	uint32_t slurmd_uid = 0;
 	uint32_t curr_uid = 0;
@@ -192,8 +193,9 @@ main (int argc, char *argv[])
 	 * Make sure we have no extra open files which
 	 * would be propagated to spawned tasks.
 	 */
-	for (i=3; i<256; i++)
-		(void) close(i);
+	cc = sysconf(_SC_OPEN_MAX);
+	for (i = 3; i < cc; i++)
+		close(i);
 
 	/*
 	 * Drop supplementary groups.

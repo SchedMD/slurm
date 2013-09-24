@@ -243,12 +243,13 @@ int main(int argc, char *argv[])
 	slurm_trigger_callbacks_t callbacks;
 	char *dir_name;
 
-        /*
-         * Make sure we have no extra open files which
-         * would be propagated to spawned tasks.
-         */
-        for (i=3; i<256; i++)
-                (void) close(i);
+	/*
+	 * Make sure we have no extra open files which
+	 * would be propagated to spawned tasks.
+	 */
+	cnt = sysconf(_SC_OPEN_MAX);
+	for (i = 3; i < cnt; i++)
+		close(i);
 
 	/*
 	 * Establish initial configuration
@@ -266,7 +267,7 @@ int main(int argc, char *argv[])
 	_update_nice();
 	_kill_old_slurmctld();
 
-        for (i=0; i<3; i++)
+	for (i = 0; i < 3; i++)
 		fd_set_close_on_exec(i);
 
 	if (daemonize) {
@@ -1611,7 +1612,7 @@ static void *_slurmctld_background(void *no_data)
 			last_node_acct = now;
 			_accounting_cluster_ready();
 		}
- 
+
 
 		if (last_proc_req_start == 0) {
 			/* Stats will reset at midnight (aprox).
