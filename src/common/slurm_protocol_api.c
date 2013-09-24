@@ -58,6 +58,7 @@
 #include <ctype.h>
 
 /* PROJECT INCLUDES */
+#include "src/common/fd.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/parse_spec.h"
