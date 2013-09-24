@@ -82,6 +82,33 @@ void fd_set_noclose_on_exec(int fd)
 	return;
 }
 
+
+int open_cloexec(const char *pathname, int flags)
+{
+#ifdef O_CLOEXEC
+	return open(pathname, flags | O_CLOEXEC);
+#else
+	int fd = open(pathname, flags);
+	if (fd >= 0)
+		fd_set_close_on_exec(fd);
+	return fd;
+#endif
+}
+
+
+int creat_cloexec(const char *pathname, mode_t mode)
+{
+#ifdef O_CLOEXEC
+	return open(pathname, O_CREAT|O_WRONLY|O_TRUNC|O_CLOEXEC, mode);
+#else
+	int fd = creat(pathname, mode);
+	if (fd >= 0)
+		fd_set_close_on_exec(fd);
+	return fd;
+#endif
+}
+
+
 int fd_is_blocking(int fd)
 {
 	int val = 0;

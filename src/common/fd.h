@@ -58,6 +58,15 @@ static inline void closeall(int fd)
 		close(fd++);
 }
 
+/* Open a fd with close-on-exec (POSIX 2008, Linux 2.6.23+), emulating
+ * it on systems that lack it.  */
+int open_cloexec(const char *pathname, int flags);
+
+/* Create a fd with close-on-exec (POSIX 2008, Linux 2.6.23+),
+ * emulating it on systems that lack it.  */
+int creat_cloexec(const char *pathname, mode_t mode);
+
+
 void fd_set_close_on_exec(int fd);
 /*
  *  Sets the file descriptor (fd) to be closed on exec().

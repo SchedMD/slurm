@@ -2079,8 +2079,6 @@ static void _init_pidfile(void)
 	 * fd open to maintain the write lock */
 	pid_fd = create_pidfile(slurmctld_conf.slurmctld_pidfile,
 				slurmctld_conf.slurm_user_id);
-	if (pid_fd >= 0)
-		fd_set_close_on_exec(pid_fd);
 }
 
 /*
