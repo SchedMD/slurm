@@ -350,7 +350,7 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_STD_IN, "Standard In",
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_STD_OUT, "Standard Out",
-	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_CPUS_PER_TASK, "CPUs per Task",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_RESV_NAME, "Reservation Name",
@@ -1097,6 +1097,10 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		if (job_msg->begin_time < time(NULL))
 			job_msg->begin_time = time(NULL);
 		break;
+	case SORTID_STD_OUT:
+		type = "StdOut";
+		job_msg->std_out = xstrdup(new_text);
+		break;
 	case SORTID_SWITCHES:
 		type = "switches";
 		job_msg->req_switch =
@@ -1104,7 +1108,6 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		if (sep_char && sep_char[0] == '@') {
 			job_msg->wait4switch = time_str2mins(sep_char+1) * 60;
 		}
-
 		break;
 	default:
 		type = "unknown";
