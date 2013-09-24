@@ -98,6 +98,7 @@ documents those changes that are of interest to users and admins.
  -- Close file descriptors on exec of prolog, epilog, etc.
  -- Fix issue when a user has held a job and then sets the begin time
     into the future.
+ -- Scontrol - Enable changing a job's stdout file.
 
 * Changes in Slurm 2.6.2
 ========================

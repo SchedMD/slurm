@@ -266,6 +266,9 @@ int main(int argc, char *argv[])
 	_update_nice();
 	_kill_old_slurmctld();
 
+        for (i=0; i<3; i++)
+		fd_set_close_on_exec(i);
+
 	if (daemonize) {
 		slurmctld_config.daemonize = 1;
 		if (daemon(1, 1))

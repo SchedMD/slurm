@@ -626,6 +626,10 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.wckey = val;
 			update_cnt++;
 		}
+		else if (strncasecmp(tag, "StdOut", MAX(taglen, 6)) == 0) {
+			job_msg.std_out = val;
+			update_cnt++;
+		}
 		else if (strncasecmp(tag, "Switches", MAX(taglen, 5)) == 0) {
 			char *sep_char;
 			job_msg.req_switch =
