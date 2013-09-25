@@ -106,7 +106,8 @@ int slurm_spank_task_init(spank_t sp, int ac, char **av)
 	if (spank_getenv(sp, "SYSTEM", val, sizeof(val)) == ESPANK_SUCCESS)
 		spank_setenv(sp, "PBS_O_SYSTEM", val, 1);
 
-	if (spank_getenv(sp, "WORKDIR", val, sizeof(val)) == ESPANK_SUCCESS)
+	if (spank_getenv(sp, "SLURM_SUBMIT_DIR", val, sizeof(val)) ==
+	    ESPANK_SUCCESS)
 		spank_setenv(sp, "PBS_O_WORKDIR", val, 1);
 
 	/* PBS_QUEUE is set in the job_submit/pbs plugin, but only for
