@@ -44,6 +44,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/resource.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
@@ -164,8 +166,7 @@ create_pidfile(const char *pidfile, uid_t uid)
 	xassert(pidfile != NULL);
 	xassert(pidfile[0] == '/');
 
-	fd = creat_cloexec(pidfile, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP
-			   | S_IROTH | S_IWOTH);
+	fd = creat_cloexec(pidfile, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if (fd < 0) {
 		error("Unable to open pidfile `%s': %m", pidfile);
 		return -1;
