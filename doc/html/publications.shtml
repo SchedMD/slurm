@@ -22,8 +22,9 @@ Morris Jette and Danny Auble (SchedMD), Yiannis Georgiou (Bull) </li>
 <li>Tutorial: <a href="SUG13/energy_sensors.pdf">Energy Accounting and External Sensor Plugins</a>,
 Yiannis Georgiou, Martin Perry, Thomas Cadeau (Bull), Danny Auble (SchedMD)</li>
 
+<!-- DO NOT POST
 <li>Technical: <a href="SUG13/tbd.pdf">Evaluation of Monitoring and Control Features for Power Management</a>,
-Yiannis Georgiou , Thomas Cadeau (Bull), Danny Auble, Moe Jette (SchedMD) Matthieu Hautreux (CEA)</li>
+Yiannis Georgiou , Thomas Cadeau (Bull), Danny Auble, Moe Jette (SchedMD) Matthieu Hautreux (CEA)</li> -->
 
 <li>Technical: <a href="SUG13/debugging-slurm-0.4.pdf">Debugging Large Machines</a>,
 Matthieu Hautreux (CEA)</li>
@@ -409,6 +410,6 @@ Danny Auble of LLNL about SLURM.</p>
 Learning Chef: Compute Cluter with SLURM</a>
 A SLURM Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 23 September 2013</p>
+<p style="text-align:center;">Last modified 25 September 2013</p>
 
 <!--#include virtual="footer.txt"-->
