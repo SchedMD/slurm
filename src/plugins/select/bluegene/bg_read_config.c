@@ -875,7 +875,6 @@ no_calc:
 
 #ifdef HAVE_BGQ
 	if (s_p_get_string(&tmp_char, "RebootQOSList", tbl)) {
-		ListIterator itr;
 		bool valid;
 		char *token, *last = NULL;
 		slurmdb_qos_rec_t *qos = NULL;
