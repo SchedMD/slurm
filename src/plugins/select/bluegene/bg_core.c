@@ -322,7 +322,8 @@ extern bool block_mp_passthrough(bg_record_t *bg_record, int mp_bit)
 
 /* block_state_mutex must be unlocked before calling this. */
 extern void bg_requeue_job(uint32_t job_id, bool wait_for_start,
-			   bool slurmctld_locked, uint16_t job_state)
+			   bool slurmctld_locked, uint16_t job_state,
+			   bool preempted)
 {
 	int rc;
 	slurmctld_lock_t job_write_lock = {
@@ -336,7 +337,7 @@ extern void bg_requeue_job(uint32_t job_id, bool wait_for_start,
 
 	if (!slurmctld_locked)
 		lock_slurmctld(job_write_lock);
-	if ((rc = job_requeue(0, job_id, -1, (uint16_t)NO_VAL, false))) {
+	if ((rc = job_requeue(0, job_id, -1, (uint16_t)NO_VAL, preempted))) {
 		error("Couldn't requeue job %u, failing it: %s",
 		      job_id, slurm_strerror(rc));
 		job_fail(job_id, job_state);

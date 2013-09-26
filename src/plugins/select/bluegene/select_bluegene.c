@@ -1918,7 +1918,8 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 			      "and ending job.",
 			      job_ptr->job_id, jobinfo->bg_block_id);
 			slurm_mutex_unlock(&block_state_mutex);
-			bg_requeue_job(job_ptr->job_id, 0, 1, JOB_NODE_FAIL);
+			bg_requeue_job(job_ptr->job_id, 0, 1, JOB_NODE_FAIL,
+				       false);
 			return NULL;
 		}
 		error("select_p_step_pick_nodes: Whoa, some how we got a "
@@ -1937,7 +1938,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 		     "it has an action item of 'D' on it, ending job %u.",
 		     bg_record->bg_block_id, job_ptr->job_id);
 		slurm_mutex_unlock(&block_state_mutex);
-		bg_requeue_job(job_ptr->job_id, 0, 1, JOB_NODE_FAIL);
+		bg_requeue_job(job_ptr->job_id, 0, 1, JOB_NODE_FAIL, false);
 		return NULL;
 	}
 
@@ -2982,7 +2983,8 @@ extern int select_p_fail_cnode(struct step_record *step_ptr)
 	slurm_mutex_unlock(&ba_system_mutex);
 	slurm_mutex_unlock(&block_state_mutex);
 	if (step_ptr->job_ptr->kill_on_node_fail)
-		bg_requeue_job(step_ptr->job_ptr->job_id, 0, 1, JOB_NODE_FAIL);
+		bg_requeue_job(step_ptr->job_ptr->job_id, 0, 1, JOB_NODE_FAIL,
+			       false);
 
 #endif
 	return SLURM_SUCCESS;
