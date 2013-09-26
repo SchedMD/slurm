@@ -402,6 +402,7 @@ static void _remove_jobs_on_block_and_reset(char *block_id,
 			select_jobinfo_t *jobinfo = (select_jobinfo_t *)
 				job_ptr->select_jobinfo->data;
 			jobinfo->bg_record = NULL;
+			jobinfo->cleaning = 0;
 		}
 		unlock_slurmctld(job_read_lock);
 	}

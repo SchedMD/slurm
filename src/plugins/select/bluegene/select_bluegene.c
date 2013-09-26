@@ -1771,6 +1771,10 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	int	rc = SLURM_ERROR;
 
 #ifdef HAVE_BG
+	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
+
+	jobinfo->cleaning = 1;
+
 	rc = term_job(job_ptr);
 	if (rc != SLURM_SUCCESS) {
 		error("select_p_job_fini: failed to terminate job %u",
