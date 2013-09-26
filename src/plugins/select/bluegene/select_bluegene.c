@@ -1786,93 +1786,109 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	 * are other jobs still running that have a preemptable qos
 	 * that is in the RebootQOSList */
 	if (bg_conf->sub_blocks && bg_conf->reboot_qos_bitmap &&
-	    bit_set_count(bg_conf->reboot_qos_bitmap)) {
-		List	kill_list = list_create(NULL);
+	    (bit_ffs(bg_conf->reboot_qos_bitmap) != -1)) {
+		List	kill_list = NULL;
 		ListIterator itr = NULL;
 		bg_record_t  *bg_record = NULL;
-		bool	kill_jobs = false;
-		char	*reason = NULL;
-		int	count = 0;
 		slurmdb_qos_rec_t *qos_ptr = NULL;
 		struct job_record *found_job_ptr;
 
-		rc = get_select_jobinfo(job_ptr->select_jobinfo->data,
-					SELECT_JOBDATA_BLOCK_PTR, &bg_record);
-		if (rc != SLURM_SUCCESS) {
-			error("select_p_job_fini: "
-			      "failed to retrieve block pointer for job %u",
-			      job_ptr->job_id);
-			return rc;
-		}
-
-		if (bg_record->mp_count > 1)
+		if (jobinfo->cnode_cnt > bg_conf->mp_cnode_cnt)
 			return rc;
 
 		slurm_mutex_lock(&block_state_mutex);
 
-		if  ((bg_record->job_running == BLOCK_ERROR_STATE) ||
-		     (bg_record->state & BG_BLOCK_ERROR_FLAG))
-			reason = "block error";
-		if (bg_record->err_ratio >= bg_conf->max_block_err)
-			reason = "excessive node errors";
+		bg_record = jobinfo->bg_record;
+
+		if (!bg_record) {
+			error("select_p_job_fini: "
+			      "failed to retrieve block pointer for job %u",
+			      job_ptr->job_id);
+			slurm_mutex_unlock(&block_state_mutex);
+			return rc;
+		}
+
+		/* Any block in this state can be ignored */
+		if (bg_record->free_cnt
+		    || !bg_record->err_ratio
+		    || (bg_record->err_ratio < bg_conf->max_block_err)
+		    || !bg_record->job_list
+		    || (list_count(bg_record->job_list) <= 1)) {
+			slurm_mutex_unlock(&block_state_mutex);
+			return rc;
+		}
 
 		/* Make sure all jobs still running in this bad block
 		 * all have a preemptable qos */
-		if (reason && bg_record->job_list &&
-		    (list_count(bg_record->job_list) > 1)) {
-			itr = list_iterator_create(bg_record->job_list);
-			while ((found_job_ptr = list_next(itr))) {
-				if (found_job_ptr == job_ptr)
-					continue;
-
-				qos_ptr = (slurmdb_qos_rec_t*)found_job_ptr->
-					qos_ptr;
-				if (qos_ptr) {
-					if (bit_test(bg_conf->reboot_qos_bitmap,
-						     qos_ptr->id)) {
-						list_append(kill_list,
-							    found_job_ptr);
-						count++;
-					}
-				}
+		itr = list_iterator_create(bg_record->job_list);
+		while ((found_job_ptr = list_next(itr))) {
+			if (found_job_ptr->magic != JOB_MAGIC) {
+				error("select_p_job_fini: "
+				      "bad magic found when "
+				      "looking at job %u",
+				      job_ptr->job_id);
+				list_delete_item(itr);
+				continue;
 			}
-			list_iterator_destroy(itr);
-		}
-		if (count && (count == (list_count(bg_record->job_list) - 1)))
-			kill_jobs = true;
 
+			jobinfo = found_job_ptr->select_jobinfo->data;
+
+			if ((found_job_ptr == job_ptr) || jobinfo->cleaning
+			    || !IS_JOB_RUNNING(found_job_ptr))
+				continue;
+
+			qos_ptr = (slurmdb_qos_rec_t *)found_job_ptr->qos_ptr;
+			if (qos_ptr) {
+				/* If we ever get one that
+				   isn't set correctly then we
+				   just exit.
+				*/
+				if (!bit_test(bg_conf->reboot_qos_bitmap,
+					      qos_ptr->id)) {
+					if (kill_list) {
+						list_destroy(kill_list);
+						kill_list = NULL;
+					}
+					break;
+				}
+				if (!kill_list)
+					kill_list = list_create(NULL);
+				list_append(kill_list, found_job_ptr);
+			}
+		}
+		list_iterator_destroy(itr);
 		slurm_mutex_unlock(&block_state_mutex);
 
-		if (kill_jobs) {
+		if (kill_list) {
 			/* The necessary conditions have been met.
 			 * Now, kill or requeue the preemptable
 			 * jobs */
 			itr = list_iterator_create(kill_list);
+			/* Setting cleaning needs to be done before
+			   bg_requeue_job is called or we could have
+			   an issue where the jobs are requeued over and
+			   over again.
+			*/
 			while ((found_job_ptr = list_next(itr))) {
+				jobinfo = found_job_ptr->select_jobinfo->data;
+				jobinfo->cleaning = 1;
+			}
+			list_iterator_reset(itr);
+			while ((found_job_ptr = list_next(itr))) {
+				jobinfo = found_job_ptr->select_jobinfo->data;
 				qos_ptr = (slurmdb_qos_rec_t*)found_job_ptr->
 					qos_ptr;
 
-				if (found_job_ptr->details->requeue > 0) {
-					debug("requeueing %s job %u due to %s",
-					      qos_ptr->name, found_job_ptr->
-					      job_id, reason);
-					rc = job_requeue(0, found_job_ptr->
-							 job_id, -1,
-							 (uint16_t) NO_VAL,
-							 true);
-				} else {
-					debug("preempting %s job %u due to %s",
-					      qos_ptr->name, found_job_ptr->
-					      job_id, reason);
-					rc = job_signal(found_job_ptr->job_id,
-							SIGKILL, 0, 0, true);
-				}
-				if (rc != SLURM_SUCCESS)
-					break;
+				debug("Attempting to requeue %s job %u due "
+				      "to excessive node errors",
+				      qos_ptr->name, found_job_ptr->job_id);
+				bg_requeue_job(found_job_ptr->job_id, 0, 1,
+					       JOB_NODE_FAIL, 1);
 			}
 			list_iterator_destroy(itr);
+			list_destroy(kill_list);
+			kill_list = NULL;
 		}
-		list_destroy(kill_list);
 	}
 #endif
 	return rc;
