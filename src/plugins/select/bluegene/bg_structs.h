@@ -77,6 +77,7 @@ typedef struct {
 	uint16_t quarter_cnode_cnt;
 	uint16_t quarter_ionode_cnt;
 	List ramdisk_list;
+	bitstr_t *reboot_qos_bitmap;
 	uint32_t slurm_debug_flags;
 	uint32_t slurm_debug_level;
 	char *slurm_node_prefix;

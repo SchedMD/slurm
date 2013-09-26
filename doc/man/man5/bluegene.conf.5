@@ -113,6 +113,12 @@ NOTE - In the current IBM API it does not allow wrapping inside a midplane.
 Meaning you can not create a sub-block of 2 with nodes in the 0 and 3 position.
 SLURM will support this in the future when the underlying system allows it.
 
+.TP
+\fBRebootQOSList\fR
+A comma separated list of QOS's.  Jobs with these QOS's are subject to
+being preempted when they are the only jobs running on a block that
+has either compute nodes in software error or an action item set.
+
 .SH "All options below are common on all BlueGene systems:"
 .TP
 \fBAltMloaderImage\fR

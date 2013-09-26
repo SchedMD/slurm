@@ -43,6 +43,7 @@
 #include "src/common/xstring.h"
 #include "src/common/uid.h"
 #include "src/common/proc_args.h"
+#include "src/common/assoc_mgr.h"
 
 #include <stdlib.h>
 
@@ -81,6 +82,7 @@ static s_p_options_t bg_conf_file_options[] = {
 	   freed later don't free them after reading them */
 	{"AltMloaderImage", S_P_ARRAY, parse_image, NULL},
 	{"SubMidplaneSystem", S_P_BOOLEAN},
+	{"RebootQOSList", S_P_STRING},
 	{NULL}
 };
 
@@ -870,6 +872,37 @@ no_calc:
 		/* we can't do dynamic here on a sub-midplane system */
 		fatal("On a sub-midplane system we can only do OVERLAP or "
 		      "STATIC LayoutMode.  Please update your bluegene.conf.");
+
+#ifdef HAVE_BGQ
+	if (s_p_get_string(&tmp_char, "RebootQOSList", tbl)) {
+		ListIterator itr;
+		bool valid;
+		char *token, *last = NULL;
+		slurmdb_qos_rec_t *qos = NULL;
+
+		bg_conf->reboot_qos_bitmap = bit_alloc(g_qos_count);
+		itr = list_iterator_create(assoc_mgr_qos_list);
+
+		token = strtok_r(tmp_char, ",", &last);
+		while (token) {
+			valid = false;
+			while((qos = list_next(itr))) {
+				if (!strcasecmp(token, qos->name)) {
+					bit_set(bg_conf->reboot_qos_bitmap,
+						qos->id);
+					valid = true;
+					break;
+				}
+			}
+			if (!valid)
+				error("Invalid RebootQOSList value: %s", token);
+			list_iterator_reset(itr);
+			token = strtok_r(NULL, ",", &last);
+		}
+		list_iterator_destroy(itr);
+		xfree(tmp_char);
+	}
+#endif
 
 	s_p_hashtbl_destroy(tbl);
 
