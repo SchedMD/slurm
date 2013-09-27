@@ -834,8 +834,8 @@ char *print_geometry(const uint16_t *geometry)
 	char buf[32], *rc = NULL;
 	int dims = slurmdb_setup_cluster_dims();
 
-	if ((dims == 0)
-	||  (geometry[0] == (uint16_t)NO_VAL))
+	if ((dims == 0) || !geometry[0]
+	    ||  (geometry[0] == (uint16_t)NO_VAL))
 		return NULL;
 
 	for (i=0; i<dims; i++) {
