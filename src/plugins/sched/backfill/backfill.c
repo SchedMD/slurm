@@ -701,7 +701,7 @@ static int _attempt_backfill(void)
 			}
 			if (skip_job) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL)
-					info("backfill: have already "
+					debug("backfill: have already "
 					      "checked %u jobs for "
 					      "partition %s; skipping "
 					      "job %u",
