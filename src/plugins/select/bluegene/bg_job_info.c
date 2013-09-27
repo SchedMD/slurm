@@ -143,12 +143,17 @@ extern int set_select_jobinfo(select_jobinfo_t *jobinfo,
 	case SELECT_JOBDATA_GEOMETRY:
 		new_size = 1;
 		for (i=0; i<jobinfo->dim_cnt; i++) {
+			/* If geo[i] is NO_VAL then we know this
+			   doesn't need to be reset.
+			*/
+			if (jobinfo->geometry[i] != (uint16_t) NO_VAL) {
+				/* Make sure the conn type is correct with the
+				 * new count (if Geometry is requested it
+				 * can't be small) */
+				jobinfo->conn_type[i] =	SELECT_NAV;
+			}
 			jobinfo->geometry[i] = uint16[i];
 			new_size *= uint16[i];
-			/* Make sure the conn type is correct with the
-			 * new count (if Geometry is requested it
-			 * can't be small) */
-			jobinfo->conn_type[i] =	SELECT_NAV;
 		}
 
 		break;

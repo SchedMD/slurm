@@ -33,6 +33,7 @@ documents those changes that are of interest to users and admins.
  -- Add support for new SchedulerParameters value of "bf_max_job_part", the
     maximum depth the backfill scheduler should go in any single partition.
  -- acct_gather/infiniband plugin - Correct packets_in/out values.
+ -- BLUEGENE - Don't ignore a conn-type request from the user.
 
 * Changes in Slurm 2.6.2
 ========================
