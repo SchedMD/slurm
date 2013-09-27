@@ -125,6 +125,7 @@ static int backfill_interval = BACKFILL_INTERVAL;
 static int backfill_resolution = BACKFILL_RESOLUTION;
 static int backfill_window = BACKFILL_WINDOW;
 static int max_backfill_job_cnt = 50;
+static int max_backfill_job_per_part = 0;
 static int max_backfill_job_per_user = 0;
 static bool backfill_continue = false;
 
@@ -417,6 +418,14 @@ static void _load_config(void)
 		fatal("Invalid backfill scheduler resolution: %d",
 		      backfill_resolution);
 	}
+
+	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_part=")))
+		max_backfill_job_per_part = atoi(tmp_ptr + 16);
+	if (max_backfill_job_per_part < 0) {
+		fatal("Invalid backfill scheduler bf_max_job_part: %d",
+		      max_backfill_job_per_part);
+	}
+
 	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_user=")))
 		max_backfill_job_per_user = atoi(tmp_ptr + 16);
 	if (max_backfill_job_per_user < 0) {
@@ -537,7 +546,7 @@ static int _attempt_backfill(void)
 	slurmdb_qos_rec_t *qos_ptr = NULL;
 	int i, j, node_space_recs;
 	struct job_record *job_ptr;
-	struct part_record *part_ptr;
+	struct part_record *part_ptr, **bf_part_ptr = NULL;
 	uint32_t end_time, end_reserve;
 	uint32_t time_limit, comp_time_limit, orig_time_limit, part_time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
@@ -549,7 +558,7 @@ static int _attempt_backfill(void)
 	int sched_timeout = 2, yield_sleep = 1;
 	int rc = 0;
 	int job_test_count = 0;
-	uint32_t *uid = NULL, nuser = 0;
+	uint32_t *uid = NULL, nuser = 0, bf_parts = 0, *bf_part_jobs = NULL;
 	uint16_t *njobs = NULL;
 	bool already_counted;
 	uint32_t reject_array_job_id = 0;
@@ -610,6 +619,20 @@ static int _attempt_backfill(void)
 	if (debug_flags & DEBUG_FLAG_BACKFILL)
 		_dump_node_space_table(node_space);
 
+	if (max_backfill_job_per_part) {
+		ListIterator part_iterator;
+		struct part_record *part_ptr;
+		bf_parts = list_count(part_list);
+		bf_part_ptr  = xmalloc(sizeof(struct part_record *) * bf_parts);
+		bf_part_jobs = xmalloc(sizeof(int) * bf_parts);
+		part_iterator = list_iterator_create(part_list);
+		i = 0;
+		while ((part_ptr = (struct part_record *)
+				   list_next(part_iterator))) {
+			bf_part_ptr[i++] = part_ptr;
+		}
+		list_iterator_destroy(part_iterator);
+	}
 	if (max_backfill_job_per_user) {
 		uid = xmalloc(BF_MAX_USERS * sizeof(uint32_t));
 		njobs = xmalloc(BF_MAX_USERS * sizeof(uint16_t));
@@ -666,6 +689,28 @@ static int _attempt_backfill(void)
 		slurmctld_diag_stats.bf_last_depth++;
 		already_counted = false;
 
+		if (max_backfill_job_per_part) {
+			bool skip_job = false;
+			for (j = 0; j < bf_parts; j++) {
+				if (bf_part_ptr[j] != job_ptr->part_ptr)
+					continue;
+				if (bf_part_jobs[j]++ >=
+				    max_backfill_job_per_part)
+					skip_job = true;
+				break;
+			}
+			if (skip_job) {
+				if (debug_flags & DEBUG_FLAG_BACKFILL)
+					info("backfill: have already "
+					      "checked %u jobs for "
+					      "partition %s; skipping "
+					      "job %u",
+					      max_backfill_job_per_part,
+					      job_ptr->part_ptr->name,
+					      job_ptr->job_id);
+				continue;
+			}
+		}
 		if (max_backfill_job_per_user) {
 			for (j = 0; j < nuser; j++) {
 				if (job_ptr->user_id == uid[j]) {
@@ -961,6 +1006,8 @@ static int _attempt_backfill(void)
 		if (debug_flags & DEBUG_FLAG_BACKFILL)
 			_dump_node_space_table(node_space);
 	}
+	xfree(bf_part_jobs);
+	xfree(bf_part_ptr);
 	xfree(uid);
 	xfree(njobs);
 	FREE_NULL_BITMAP(avail_bitmap);
