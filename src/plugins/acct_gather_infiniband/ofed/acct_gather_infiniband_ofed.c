@@ -244,9 +244,9 @@ static int _read_ofed_values(void)
 	ofed_sens.total_xmtdata += ofed_sens.xmtdata;
 	ofed_sens.rcvdata = (recv_val - last_update_rcvdata) * 4;
 	ofed_sens.total_rcvdata += ofed_sens.rcvdata;
-	ofed_sens.xmtpkts += send_pkts - last_update_xmtpkts;
+	ofed_sens.xmtpkts = send_pkts - last_update_xmtpkts;
 	ofed_sens.total_xmtpkts += ofed_sens.xmtpkts;
-	ofed_sens.rcvpkts += recv_pkts - last_update_rcvpkts;
+	ofed_sens.rcvpkts = recv_pkts - last_update_rcvpkts;
 	ofed_sens.total_rcvpkts += ofed_sens.rcvpkts;
 
 	last_update_xmtdata = send_val;
