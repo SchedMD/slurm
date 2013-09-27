@@ -1763,6 +1763,14 @@ Higher values result in less overhead and better responsiveness.
 The default value is 30 seconds.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP
+\fBbf_max_job_part=#\fR
+The maximum number of jobs per partition to attempt backfill scheduling for,
+not counting jobs which cannot be started due to an association resource
+limit. This can be especially helpful for systems with large numbers of
+partitions and jobs.
+The default value is 0, which means no limit.
+This option applies only to \fBSchedulerType=sched/backfill\fR.
+.TP
 \fBbf_max_job_user=#\fR
 The maximum number of jobs per user to attempt backfill scheduling for,
 not counting jobs which cannot be started due to an association resource

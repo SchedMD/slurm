@@ -103,6 +103,8 @@ documents those changes that are of interest to users and admins.
     srun is pending.  The step creation would use the old values and possibly
     hang srun since the step wouldn't be able to be created in the modified
     allocation.
+ -- Add support for new SchedulerParameters value of "bf_max_job_part", the
+    maximum depth the backfill scheduler should go in any single partition.
 
 * Changes in Slurm 2.6.2
 ========================

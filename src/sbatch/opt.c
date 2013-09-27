@@ -1734,8 +1734,6 @@ static void _set_pbs_options(int argc, char **argv)
 		case 'c':
 			break;
 		case 'C':
-			xfree(opt.cwd);
-			opt.cwd = xstrdup(optarg);
 			break;
 		case 'e':
 			xfree(opt.efname);
@@ -2138,6 +2136,14 @@ static void _parse_pbs_resource_list(char *rl)
 			xfree(temp);
 		} else if (!strncmp(rl+i, "pmem=", 5)) {
 			i+=5;
+			_get_next_pbs_option(rl, &i);
+		} else if (!strncmp(rl+i, "proc=", 5)) {
+			i += 5;
+			if (opt.constraints)
+				xstrcat(opt.constraints, ",");
+			temp = _get_pbs_option_value(rl, &i, ',');
+			xstrcat(opt.constraints, temp);
+			xfree(temp);
 			_get_next_pbs_option(rl, &i);
 		} else if (!strncmp(rl+i, "pvmem=", 6)) {
 			i+=6;
