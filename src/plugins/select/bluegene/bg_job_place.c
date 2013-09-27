@@ -606,8 +606,8 @@ static bg_record_t *_find_matching_block(List block_list,
 				else if ((bg_record->geo[dim] == 1)
 					 && (request->conn_type[dim]
 					     == SELECT_MESH)) {
-					/* On a BGQ system 1 one dim
-					   block must be a TORUS, so
+					/* On a BGQ system a dim only
+					   1 long must be a TORUS, so
 					   ignore a requested MESH.
 					*/
 					goto good_conn_type;
