@@ -684,11 +684,13 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
-	if (env->nodeid >= 0
+#ifndef HAVE_FRONT_END
+	if ((env->nodeid >= 0)
 	    && setenvf(&env->env, "SLURM_NODEID", "%d", env->nodeid)) {
 		error("Unable to set SLURM_NODEID environment");
 		rc = SLURM_FAILURE;
 	}
+#endif
 
 	if (env->procid >= 0
 	    && setenvf(&env->env, "SLURM_PROCID", "%d", env->procid)) {
