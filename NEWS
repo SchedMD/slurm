@@ -44,6 +44,8 @@ documents those changes that are of interest to users and admins.
  -- CRAY - fix AcceleratorAllocation depth correctly for basil 1.3
  -- Created the environment variable SLURM_JOB_NUM_NODES for srun jobs and
     updated the srun man page.
+ -- BLUEGENE/CRAY - Don't set env variables that pertain to a node when Slurm
+    isn't doing the launching.
 
 * Changes in Slurm 2.6.2
 ========================
