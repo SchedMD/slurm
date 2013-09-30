@@ -678,8 +678,8 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
-	if ((cluster_flags & CLUSTER_FLAG_BG)
-	    || (cluster_flags & CLUSTER_FLAG_CRAYXT)) {
+	if (!(cluster_flags & CLUSTER_FLAG_BG)
+	    && !(cluster_flags & CLUSTER_FLAG_CRAYXT)) {
 		/* These aren't relavant to a system not using Slurm
 		   as the launcher.  Since there isn't a flag for that
 		   we check for the flags we do have.
