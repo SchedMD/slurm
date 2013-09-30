@@ -140,6 +140,7 @@ static void _job_queue_append(List job_queue, struct job_record *job_ptr,
 	job_queue_rec_t *job_queue_rec;
 
 	job_queue_rec = xmalloc(sizeof(job_queue_rec_t));
+	job_queue_rec->job_id   = job_ptr->job_id;
 	job_queue_rec->job_ptr  = job_ptr;
 	job_queue_rec->part_ptr = part_ptr;
 	job_queue_rec->priority = prio;
