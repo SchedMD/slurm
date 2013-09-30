@@ -623,7 +623,7 @@ int setup_env(env_t *env, bool preserve_env)
 		char *str;
 
 		if (env->cpu_freq & CPU_FREQ_RANGE_FLAG) {
-			switch (env->cpu_freq) 
+			switch (env->cpu_freq)
 			{
 			case CPU_FREQ_LOW :
 				str="low";
@@ -677,7 +677,7 @@ int setup_env(env_t *env, bool preserve_env)
 			error("Unable to set SLURM_JOB_ID environment");
 			rc = SLURM_FAILURE;
 		}
-		/* and for backwards compatability... */
+		/* and for backwards compatibility... */
 		if (setenvf(&env->env, "SLURM_JOBID", "%d", env->jobid)) {
 			error("Unable to set SLURM_JOBID environment");
 			rc = SLURM_FAILURE;
@@ -717,6 +717,12 @@ int setup_env(env_t *env, bool preserve_env)
 	if (!preserve_env && env->nhosts
 	    && setenvf(&env->env, "SLURM_NNODES", "%d", env->nhosts)) {
 		error("Unable to set SLURM_NNODES environment var");
+		rc = SLURM_FAILURE;
+	}
+
+	if (env->nhosts
+	    && setenvf(&env->env, "SLURM_JOB_NUM_NODES", "%d", env->nhosts)) {
+		error("Unable to set SLURM_JOB_NUM_NODES environment var");
 		rc = SLURM_FAILURE;
 	}
 
