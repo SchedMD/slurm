@@ -677,6 +677,7 @@ int setup_env(env_t *env, bool preserve_env)
 			rc = SLURM_FAILURE;
 		}
 	}
+
 	if ((cluster_flags & CLUSTER_FLAG_BG)
 	    || (cluster_flags & CLUSTER_FLAG_CRAYXT)) {
 		/* These aren't relavant to a system not using Slurm
