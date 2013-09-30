@@ -602,6 +602,17 @@ static bg_record_t *_find_matching_block(List block_list,
 					*/
 					goto good_conn_type;
 				}
+#ifndef HAVE_BG_L_P
+				else if ((bg_record->geo[dim] == 1)
+					 && (request->conn_type[dim]
+					     == SELECT_MESH)) {
+					/* On a BGQ system a dim only
+					   1 long must be a TORUS, so
+					   ignore a requested MESH.
+					*/
+					goto good_conn_type;
+				}
+#endif
 
 				if (bg_conf->slurm_debug_flags
 				    & DEBUG_FLAG_BG_PICK) {

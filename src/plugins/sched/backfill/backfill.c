@@ -639,12 +639,7 @@ static int _attempt_backfill(void)
 	}
 	while ((job_queue_rec = (job_queue_rec_t *)
 				list_pop_bottom(job_queue, sort_job_queue2))) {
-		job_ptr  = job_queue_rec->job_ptr;
-		orig_time_limit = job_ptr->time_limit;
-
 		if ((time(NULL) - sched_start) >= sched_timeout) {
-			uint32_t save_time_limit = job_ptr->time_limit;
-			job_ptr->time_limit = orig_time_limit;
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
 				info("backfill: completed yielding locks "
@@ -660,13 +655,19 @@ static int _attempt_backfill(void)
 				rc = 1;
 				break;
 			}
-			job_ptr->time_limit = save_time_limit;
 			/* Reset backfill scheduling timers, resume testing */
 			sched_start = time(NULL);
 			job_test_count = 0;
 			START_TIMER;
 		}
 
+		job_ptr  = job_queue_rec->job_ptr;
+		/* With bf_continue configured, the original job could have
+		 * been cancelled and purged. Validate pointer here. */
+		if ((job_ptr->magic  != JOB_MAGIC) ||
+		    (job_ptr->job_id != job_queue_rec->job_id))
+			continue;
+		orig_time_limit = job_ptr->time_limit;
 		part_ptr = job_queue_rec->part_ptr;
 		job_test_count++;
 
