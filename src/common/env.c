@@ -720,6 +720,12 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_FAILURE;
 	}
 
+	if (env->nhosts
+	    && setenvf(&env->env, "SLURM_JOB_NUM_NODES", "%d", env->nhosts)) {
+		error("Unable to set SLURM_JOB_NUM_NODES environment var");
+		rc = SLURM_FAILURE;
+	}
+
 	if (env->nodelist
 	    && setenvf(&env->env, "SLURM_NODELIST", "%s", env->nodelist)) {
 		error("Unable to set SLURM_NODELIST environment var.");
