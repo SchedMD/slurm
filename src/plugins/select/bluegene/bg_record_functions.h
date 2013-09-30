@@ -85,5 +85,8 @@ extern int up_nodecard(char *bp_name, bitstr_t *ionode_bitmap);
 extern int put_block_in_error_state(bg_record_t *bg_record, char *reason);
 extern int resume_block(bg_record_t *bg_record);
 extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr);
+extern void bg_record_hw_failure(bg_record_t *bg_record, List *ret_kill_list);
+extern void bg_record_post_hw_failure(
+	List *kill_list, bool slurmctld_locked);
 
 #endif /* _BLUEGENE_BG_RECORD_FUNCTIONS_H_ */

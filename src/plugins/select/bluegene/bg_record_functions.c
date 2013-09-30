@@ -1707,6 +1707,144 @@ extern int bg_reset_block(bg_record_t *bg_record, struct job_record *job_ptr)
 	return rc;
 }
 
+/* block_state_mutex must be locked when coming in */
+extern void bg_record_hw_failure(bg_record_t *bg_record, List *ret_kill_list)
+{
+	List	kill_list = NULL;
+	ListIterator itr = NULL;
+	slurmdb_qos_rec_t *qos_ptr = NULL;
+	struct job_record *found_job_ptr;
+	select_jobinfo_t *jobinfo;
+
+	xassert(ret_kill_list);
+
+	if (!bg_record) {
+		error("bg_record_hw_failure: no block pointer");
+		return;
+	}
+
+	/* Don't wait to reboot a bad, single midplane block if there
+	 * are other jobs still running that have a preemptable qos
+	 * that is in the RebootQOSList */
+	if (!bg_conf->sub_blocks || !bg_conf->reboot_qos_bitmap
+	    || (bit_ffs(bg_conf->reboot_qos_bitmap) == -1)
+	    || (bg_record->mp_count > 1)) {
+		info("ignore this block %d %p %d %d", bg_conf->sub_blocks, bg_conf->reboot_qos_bitmap, bit_ffs(bg_conf->reboot_qos_bitmap), bg_record->mp_count);
+		return;
+	}
+
+	/* Any block in these states can be ignored */
+	if (bg_record->free_cnt
+	    || ((!bg_record->err_ratio
+		|| (bg_record->err_ratio < bg_conf->max_block_err))
+		&& bg_record->action != BG_BLOCK_ACTION_FREE)
+	    || !bg_record->job_list
+	    || (list_count(bg_record->job_list) <= 1)) {
+		info("ignore this block");
+		return;
+	}
+
+	/* Make sure all jobs still running in this bad block
+	 * all have a preemptable qos */
+	itr = list_iterator_create(bg_record->job_list);
+	while ((found_job_ptr = list_next(itr))) {
+		if (found_job_ptr->magic != JOB_MAGIC) {
+			error("select_p_job_fini: "
+			      "bad magic found when "
+			      "looking at block %s",
+			      bg_record->bg_block_id);
+			list_delete_item(itr);
+			continue;
+		}
+
+		jobinfo = found_job_ptr->select_jobinfo->data;
+
+		if (jobinfo->cleaning || !IS_JOB_RUNNING(found_job_ptr))
+			continue;
+
+		qos_ptr = (slurmdb_qos_rec_t *)found_job_ptr->qos_ptr;
+		if (qos_ptr) {
+			/* If we ever get one that
+			   isn't set correctly then we
+			   just exit.
+			*/
+			if (!bit_test(bg_conf->reboot_qos_bitmap,
+				      qos_ptr->id)) {
+				if (kill_list) {
+					list_destroy(kill_list);
+					kill_list = NULL;
+				}
+				break;
+			}
+			if (!kill_list)
+				kill_list = list_create(NULL);
+			list_append(kill_list, found_job_ptr);
+		}
+	}
+	list_iterator_destroy(itr);
+
+	if (kill_list) {
+		if (!*ret_kill_list) {
+			*ret_kill_list = kill_list;
+		} else {
+			list_transfer(*ret_kill_list, kill_list);
+			list_destroy(kill_list);
+		}
+		kill_list = NULL;
+	}
+	return;
+}
+
+/* block_state_mutex must be unlocked when coming in */
+extern void bg_record_post_hw_failure(
+	List *kill_list, bool slurmctld_locked)
+{
+	slurmdb_qos_rec_t *qos_ptr = NULL;
+	struct job_record *found_job_ptr;
+	select_jobinfo_t *jobinfo;
+	ListIterator itr;
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+
+	if (!*kill_list)
+		return;
+
+	if (!slurmctld_locked)
+		lock_slurmctld(job_write_lock);
+
+	/* The necessary conditions have been met.
+	 * Now, kill or requeue the preemptable
+	 * jobs */
+	itr = list_iterator_create(*kill_list);
+	/* Setting cleaning needs to be done before
+	   bg_requeue_job is called or we could have
+	   an issue where the jobs are requeued over and
+	   over again.
+	*/
+	while ((found_job_ptr = list_next(itr))) {
+		jobinfo = found_job_ptr->select_jobinfo->data;
+		jobinfo->cleaning = 1;
+	}
+	list_iterator_reset(itr);
+	while ((found_job_ptr = list_next(itr))) {
+		jobinfo = found_job_ptr->select_jobinfo->data;
+		qos_ptr = (slurmdb_qos_rec_t*)found_job_ptr->qos_ptr;
+
+		debug("Attempting to requeue %s job %u due "
+		      "to excessive node errors",
+		      qos_ptr->name, found_job_ptr->job_id);
+		bg_requeue_job(found_job_ptr->job_id, 0, 1,
+			       JOB_NODE_FAIL, 1);
+	}
+	list_iterator_destroy(itr);
+	list_destroy(*kill_list);
+	*kill_list = NULL;
+	if (!slurmctld_locked)
+		unlock_slurmctld(job_write_lock);
+}
+
+
+
 /************************* local functions ***************************/
 
 /* block_state_mutex should be locked before calling */
