@@ -858,6 +858,7 @@ static void _do_block_action_poll(void)
 	BlockFilter filter;
 	BlockFilter::Statuses statuses;
 	Block::Ptrs vec;
+	List kill_list = NULL;
 
 	if (!bg_lists->main)
 		return;
@@ -894,6 +895,7 @@ static void _do_block_action_poll(void)
 				bg_record->reason = xstrdup(
 					"Block can't be used, it has an "
 					"action item of 'D' on it.");
+				bg_record_hw_failure(bg_record, &kill_list);
 				last_bg_update = time(NULL);
 			} else if (bg_record->reason
 				   && (bg_record->action
@@ -912,6 +914,8 @@ static void _do_block_action_poll(void)
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&block_state_mutex);
+	/* kill any jobs that need be killed */
+	bg_record_post_hw_failure(&kill_list, 0);
 }
 
 static void *_block_action_poll(void *no_data)
