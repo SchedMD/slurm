@@ -36,6 +36,8 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Don't ignore a conn-type request from the user.
  -- BGQ - Force a request on a Q for a MESH to be a TORUS in a dimension that
     can only be a TORUS (1).
+ -- Change max message length from 100MB to 1GB before generating "Insane
+    message length" error.
 
 * Changes in Slurm 2.6.2
 ========================
