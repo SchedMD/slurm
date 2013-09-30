@@ -231,7 +231,7 @@ const struct element_handler basil_5_1_elements[] = {
 	},
 	[BT_ACCELALLOC]	= {
 			.tag	= "AcceleratorAllocation",
-			.depth	= 5,
+			.depth	= 7,
 			.uniq	= false,
 			.hnd	= eh_accel_alloc
 	},

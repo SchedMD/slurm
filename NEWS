@@ -41,6 +41,7 @@ documents those changes that are of interest to users and admins.
  -- sched/backfill - Prevent possible memory corruption due to use of
     bf_continue option and long running scheduling cycle (pending jobs could
     have been cancelled and purged).
+ -- CRAY - fix AcceleratorAllocation depth correctly for basil 1.3
 
 * Changes in Slurm 2.6.2
 ========================
