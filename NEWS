@@ -12,7 +12,8 @@ documents those changes that are of interest to users and admins.
     -v key=value	(environment variable)
     -W depend=opts	(job dependencies, including "on" and "before" options)
     -W umask=#		(set job's umask)
- -- Added qalster and qrerun commands to torque package.
+ -- Added qalter and qrerun commands to torque package.
+ -- Corrections to qstat logic: job CPU count and partition time format.
  -- Add job_submit/pbs plugin to translate PBS job dependency options to the
     extend possible (no support for PBS "before" options) and set some PBS
     environment variables.
