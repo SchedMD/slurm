@@ -293,10 +293,10 @@ if ($interactive) {
 	# it to stdout, as done in the PBS version of qsub.
 	if ($command_exit_status == 0) {
 #		This prints "Submitted batch job #"
-		print "$command_output\n";
+#		print "$command_output\n";
 #		This only prints the job ID number, e.g. "#"
-#		my($job_ID) = $command_output =~ /^.* (\d+)$/;
-#		print "$job_ID\n";
+		my($job_ID) = $command_output =~ /^.* (\d+)$/;
+		print "$job_ID\n";
 	} else {
 		print("There was an error running the SLURM sbatch command.\n" .
 		      "The command was:\n" .

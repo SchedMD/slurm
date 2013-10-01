@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     - block_info_t: Changed ionode_inx and mp_inx from type int to type int32_t
     - Struct reserve_info / reserve_info_t: Changed node_inx from type int to
       type int32_t
+ -- Modify qsub wrapper output to match torque command output, just print the
+    job ID rather than "Submitted batch job #"
 
 * Changes in Slurm 13.12.0pre2
 ==============================
