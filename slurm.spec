@@ -826,6 +826,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/pbsnodes
 %{_bindir}/qdel
 %{_bindir}/qhold
+%{_bindir}/qrerun
 %{_bindir}/qrls
 %{_bindir}/qstat
 %{_bindir}/qsub
