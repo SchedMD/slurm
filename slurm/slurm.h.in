@@ -1178,7 +1178,7 @@ typedef struct job_info {
 	time_t eligible_time;	/* time job is eligible for running */
 	time_t end_time;	/* time of termination, actual or expected */
 	char *exc_nodes;	/* comma separated list of excluded nodes */
-	int *exc_node_inx;	/* excluded list index pairs into node_table:
+	int32_t *exc_node_inx;	/* excluded list index pairs into node_table:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	uint32_t exit_code;	/* exit code for job (status from wait call) */
@@ -1199,7 +1199,7 @@ typedef struct job_info {
 	char *network;		/* network specification */
 	char *nodes;		/* list of nodes allocated to job */
 	uint16_t nice;	  	/* requested priority change */
-	int *node_inx;		/* list index pairs into node_table for *nodes:
+	int32_t *node_inx;		/* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	uint16_t ntasks_per_core;/* number of tasks to invoke on each core */
@@ -1219,7 +1219,7 @@ typedef struct job_info {
 	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *qos;		/* Quality of Service */
 	char *req_nodes;	/* comma separated list of required nodes */
-	int *req_node_inx;	/* required list index pairs into node_table:
+	int32_t *req_node_inx;	/* required list index pairs into node_table:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	uint32_t req_switch;    /* Minimum number of switches */
@@ -1497,7 +1497,7 @@ typedef struct {
 	char *name;		/* name of job step */
 	char *network;		/* network specs for job step */
 	char *nodes;		/* list of nodes allocated to job_step */
-	int *node_inx;		/* list index pairs into node_table for *nodes:
+	int32_t *node_inx;	/* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	uint32_t num_cpus;	/* how many cpus are being used by step */
@@ -1689,7 +1689,7 @@ typedef struct partition_info {
 	uint32_t max_time;	/* minutes or INFINITE */
 	uint32_t min_nodes;	/* per job */
 	char *name;		/* name of the partition */
-	int *node_inx;		/* list index pairs into node_table:
+	int32_t *node_inx;	/* list index pairs into node_table:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	char *nodes;		/* list names of nodes in partition */
@@ -1748,7 +1748,7 @@ typedef struct partition_info_msg {
 
 typedef struct {
 	char *cnodes;           /* used for sub-block jobs */
-	int *cnode_inx;         /* list index pairs for cnodes in the
+	int32_t *cnode_inx;	/* list index pairs for cnodes in the
 				 * node listed for *cnodes:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  used for
@@ -1765,7 +1765,7 @@ typedef struct {
 	uint16_t conn_type[HIGHEST_DIMENSIONS];
 	uint32_t cnode_cnt;
 	uint32_t cnode_err_cnt;
-	int *ionode_inx;        /* list index pairs for ionodes in the
+	int32_t *ionode_inx;	/* list index pairs for ionodes in the
 				 * node listed for *ionode_str:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
@@ -1773,7 +1773,7 @@ typedef struct {
 	List job_list;          /* List of running jobs on each block */
 	char *linuximage;       /* LinuxImage for this block */
 	char *mloaderimage;     /* mloaderImage for this block */
-	int *mp_inx;            /* list index pairs into node_table for *mp_str:
+	int32_t *mp_inx;	/* list index pairs into node_table for *mp_str:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	char *mp_str;
@@ -1882,7 +1882,7 @@ typedef struct reserve_info {
 	char *name;		/* name of reservation */
 	uint32_t node_cnt;	/* count of nodes required */
 	uint32_t core_cnt;	/* count of cores required */
-	int *node_inx;		/* list index pairs into node_table for *nodes:
+	int32_t *node_inx;	/* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	char *node_list;	/* list of reserved nodes or ALL */

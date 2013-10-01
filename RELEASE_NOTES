@@ -92,6 +92,15 @@ Changed members of the following structs
 ========================================
  -- partition_info, added: allow_accounts, allow_qos, deny_accounts,
     deny_groups and deny_qos.
+ -- Struct job_info / slurm_job_info_t: Changed exc_node_inx, node_inx, and
+    req_node_inx from type int to type int32_t
+ -- job_step_info_t: Changed node_inx from type int to type int32_t
+ -- Struct partition_info / partition_info_t: Changed node_inx from type int
+    to type int32_t
+ -- block_job_info_t: Changed cnode_inx from type int to type int32_t
+ -- block_info_t: Changed ionode_inx and mp_inx from type int to type int32_t
+ -- Struct reserve_info / reserve_info_t: Changed node_inx from type int to
+    type int32_t
 
 
 Added the following struct definitions

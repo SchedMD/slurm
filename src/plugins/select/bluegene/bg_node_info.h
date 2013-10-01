@@ -47,7 +47,7 @@
 typedef struct {
 	bitstr_t *bitmap;
 	uint16_t cnode_cnt;
-	int *inx;
+	int32_t *inx;
 	enum node_states state;
 	char *str;
 } node_subgrp_t;

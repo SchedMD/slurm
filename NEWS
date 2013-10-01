@@ -4,6 +4,19 @@ documents those changes that are of interest to users and admins.
 * Changes in Slurm 13.12.0pre3
 ==============================
  -- Do not set SLURM_NODEID environment variable on front-end systems.
+ -- Convert bitmap functions to use int32_t instead of int in data structures
+    and function arguments. This is to reliably enable use of bitmaps containing
+    up to 4 billion elements. Several data structures containing index values
+    were also changed from data type int to int32_t:
+    - Struct job_info / slurm_job_info_t: Changed exc_node_inx, node_inx, and
+      req_node_inx from type int to type int32_t
+    - job_step_info_t: Changed node_inx from type int to type int32_t
+    - Struct partition_info / partition_info_t: Changed node_inx from type int
+      to type int32_t
+    - block_job_info_t: Changed cnode_inx from type int to type int32_t
+    - block_info_t: Changed ionode_inx and mp_inx from type int to type int32_t
+    - Struct reserve_info / reserve_info_t: Changed node_inx from type int to
+      type int32_t
 
 * Changes in Slurm 13.12.0pre2
 ==============================

@@ -162,31 +162,30 @@ bitoff_t bit_ffc(bitstr_t *b);
 bitoff_t bit_ffs(bitstr_t *b);
 
 /* new */
-bitoff_t bit_nffs(bitstr_t *b, int n);
-bitoff_t bit_nffc(bitstr_t *b, int n);
-bitoff_t bit_noc(bitstr_t *b, int n, int seed);
+bitoff_t bit_nffs(bitstr_t *b, int32_t n);
+bitoff_t bit_nffc(bitstr_t *b, int32_t n);
+bitoff_t bit_noc(bitstr_t *b, int32_t n, int32_t seed);
 void	bit_free(bitstr_t *b);
 bitstr_t *bit_realloc(bitstr_t *b, bitoff_t nbits);
 bitoff_t bit_size(bitstr_t *b);
 void	bit_and(bitstr_t *b1, bitstr_t *b2);
 void	bit_not(bitstr_t *b);
 void	bit_or(bitstr_t *b1, bitstr_t *b2);
-int	bit_set_count(bitstr_t *b);
-int bit_set_count_range(bitstr_t *b, int start, int end);
-int	bit_clear_count(bitstr_t *b);
-int	bit_nset_max_count(bitstr_t *b);
-int	int_and_set_count(int *i1, int ilen, bitstr_t *b2);
-bitstr_t *bit_rotate_copy(bitstr_t *b1, int n, bitoff_t nbits);
-void	bit_rotate(bitstr_t *b1, int n);
-char	*bit_fmt(char *str, int len, bitstr_t *b);
-int 	bit_unfmt(bitstr_t *b, char *str);
-int 	*bitfmt2int (char *bit_str_ptr);
-char *  inx2bitfmt (int *inx);
-int     inx2bitstr(bitstr_t *b, int *inx);
+int32_t	bit_set_count(bitstr_t *b);
+int32_t	bit_set_count_range(bitstr_t *b, int32_t start, int32_t end);
+int32_t	bit_clear_count(bitstr_t *b);
+int32_t	bit_nset_max_count(bitstr_t *b);
+bitstr_t *bit_rotate_copy(bitstr_t *b1, int32_t n, bitoff_t nbits);
+void	bit_rotate(bitstr_t *b1, int32_t n);
+char	*bit_fmt(char *str, int32_t len, bitstr_t *b);
+int	bit_unfmt(bitstr_t *b, char *str);
+int32_t	*bitfmt2int (char *bit_str_ptr);
+char *  inx2bitfmt (int32_t *inx);
+int     inx2bitstr(bitstr_t *b, int32_t *inx);
 char	*bit_fmt_hexmask(bitstr_t *b);
 int 	bit_unfmt_hexmask(bitstr_t *b, const char *str);
 char	*bit_fmt_binmask(bitstr_t *b);
-int 	bit_unfmt_binmask(bitstr_t *b, const char *str);
+void 	bit_unfmt_binmask(bitstr_t *b, const char *str);
 bitoff_t bit_fls(bitstr_t *b);
 void	bit_fill_gaps(bitstr_t *b);
 int	bit_super_set(bitstr_t *b1, bitstr_t *b2);
@@ -195,8 +194,8 @@ int     bit_equal(bitstr_t *b1, bitstr_t *b2);
 void    bit_copybits(bitstr_t *dest, bitstr_t *src);
 bitstr_t *bit_copy(bitstr_t *b);
 bitstr_t *bit_pick_cnt(bitstr_t *b, bitoff_t nbits);
-bitoff_t bit_get_bit_num(bitstr_t *b, int pos);
-int      bit_get_pos_num(bitstr_t *b, bitoff_t pos);
+bitoff_t bit_get_bit_num(bitstr_t *b, int32_t pos);
+int32_t	bit_get_pos_num(bitstr_t *b, bitoff_t pos);
 
 #define FREE_NULL_BITMAP(_X)		\
 	do {				\
