@@ -3,9 +3,10 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-bin_SCRIPTS = pbsnodes qdel qhold qrerun qrls qstat qsub mpiexec generate_pbs_nodefile
+bin_SCRIPTS = pbsnodes qalter qdel qhold qrerun qrls qstat qsub mpiexec generate_pbs_nodefile
 
 pbsnodes:
+qalter:
 qdel:
 qhold:
 qrerun:
