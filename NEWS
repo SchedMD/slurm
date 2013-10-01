@@ -99,6 +99,8 @@ documents those changes that are of interest to users and admins.
     -v key=value	(environment variable)
     -W depend=opts	(job dependencies, including "on" and "before" options)
     -W umask=#		(set job's umask)
+ -- Added qalter and qrerun commands to torque package.
+ -- Corrections to qstat logic: job CPU count and partition time format.
  -- Add job_submit/pbs plugin to translate PBS job dependency options to the
     extend possible (no support for PBS "before" options) and set some PBS
     environment variables.
@@ -129,6 +131,10 @@ documents those changes that are of interest to users and admins.
     bf_continue option and long running scheduling cycle (pending jobs could
     have been cancelled and purged).
  -- CRAY - fix AcceleratorAllocation depth correctly for basil 1.3
+ -- Created the environment variable SLURM_JOB_NUM_NODES for srun jobs and
+    updated the srun man page.
+ -- BLUEGENE/CRAY - Don't set env variables that pertain to a node when Slurm
+    isn't doing the launching.
 
 * Changes in Slurm 2.6.2
 ========================
