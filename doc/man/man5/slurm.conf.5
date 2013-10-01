@@ -528,14 +528,11 @@ Also see \fBAccountingStoragePort\fR and \fBJobCompPort\fR.
 .TP
 \fBDefaultStorageType\fR
 The accounting and job completion storage mechanism type.  Acceptable
-values at present include "filetxt", "mysql", "none", and
-"slurmdbd".  The value "filetxt" indicates that records will be
-written to a file.  The value "mysql" indicates that accounting
-records will be written to a MySQL or MariaDB database. The default value is
-"none", which means that records are not maintained.
-The value "slurmdbd" indicates that records will be written
-to the SLURM DBD, which maintains its own database. See "man slurmdbd"
-for more information.
+values at present include "filetxt", "mysql" and "none".
+The value "filetxt" indicates that records will be written to a file.
+The value "mysql" indicates that accounting records will be written to a MySQL
+or MariaDB database.
+The default value is "none", which means that records are not maintained.
 Also see \fBAccountingStorageType\fR and \fBJobCompType\fR.
 
 .TP
