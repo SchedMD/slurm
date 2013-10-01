@@ -47,7 +47,7 @@ use Switch;
 # Parse Command Line Arguments
 my (
 	$help, $man,
-	$err, $rc, $pid, $resp
+	$err, $pid, $resp
 );
 
 GetOptions(
@@ -80,21 +80,16 @@ my $job_id = $ARGV[$#ARGV];
 
 if (@ARGV < 1) {
 	pod2usage(-message=>"Invalid Argument", -verbose=>1); 
-	exit 1;
+	exit(1);
 }
 
-$rc = 0;
-$resp = Slurm->requeue($job_id);
-$err = Slurm->get_errno();
-if ($resp != SLURM_SUCCESS) {
-	$rc++;
-	if ($err == ESLURM_INVALID_JOB_ID) {
-		pod2usage(-message=>"Job id $job_id is not valid!", -verbose=>0);
-	} else {
-		pod2usage(-message=>"Job id $job_id rerun not permitted!", -verbose=>0);
-	}
+if (Slurm->requeue($job_id)) {
+	$err = Slurm->get_errno();
+	$resp = Slurm->strerror($err);
+	pod2usage(-message=>"Job id $job_id rerun error: $resp", -verbose=>0);
+	exit(1);
 }
-exit $rc;
+exit(0);
 
 __END__
 
