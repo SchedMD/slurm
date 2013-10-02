@@ -395,6 +395,8 @@ documents those changes that are of interest to users and admins.
  -- switch/nrt - Don't allocate network resources unless job step has 2+ nodes.
  -- select/cons_res - Avoid extraneous "oversubscribe" error messages.
  -- Reorder get config logic to avoid deadlock.
+ -- Enforce QOS MaxCPUsMin limit when job submission contains no user-specified
+    time limit.
 
 * Changes in Slurm 2.5.7
 ========================
