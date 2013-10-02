@@ -169,7 +169,7 @@ static void      _term_handler(int);
 static void      _update_logging(void);
 static void      _update_nice(void);
 static void      _usage(void);
-static void      _wait_for_all_threads(void);
+static void      _wait_for_all_threads(int secs);
 
 
 int
@@ -328,11 +328,7 @@ main (int argc, char *argv[])
 	if (unlink(conf->pidfile) < 0)
 		error("Unable to remove pidfile `%s': %m", conf->pidfile);
 
-	_wait_for_all_threads();
-
-	interconnect_node_fini();
-	jobacct_gather_fini();
-
+	_wait_for_all_threads(120);
 	_slurmd_fini();
 	_destroy_conf();
 	slurm_crypto_fini();	/* must be after _destroy_conf() */
@@ -404,6 +400,7 @@ _msg_engine(void)
 	while (!_shutdown) {
 		if (_reconfig) {
 			verbose("got reconfigure request");
+			_wait_for_all_threads(5); /* Wait for RPCs to finish */
 			_reconfigure();
 		}
 
@@ -453,15 +450,16 @@ _increment_thd_count(void)
 	slurm_mutex_unlock(&active_mutex);
 }
 
+/* secs IN - wait up to this number of seconds for all threads to complete */
 static void
-_wait_for_all_threads(void)
+_wait_for_all_threads(int secs)
 {
 	struct timespec ts;
 	int rc;
 
 	ts.tv_sec  = time(NULL);
 	ts.tv_nsec = 0;
-	ts.tv_sec += 120;       /* 2 minutes allowed for shutdown */
+	ts.tv_sec += secs;
 
 	slurm_mutex_lock(&active_mutex);
 	while (active_threads > 0) {
@@ -789,8 +787,6 @@ _read_config(void)
 	/* store hardware properties in slurmd_config */
 	xfree(conf->block_map);
 	xfree(conf->block_map_inv);
-
-	conf->block_map_size = 0;
 
 	_update_logging();
 	_update_nice();
@@ -1564,6 +1560,9 @@ cleanup:
 static int
 _slurmd_fini(void)
 {
+	interconnect_node_fini();
+	jobacct_gather_fini();
+	acct_gather_profile_fini();
 	save_cred_state(conf->vctx);
 	switch_fini();
 	slurmd_task_fini();
