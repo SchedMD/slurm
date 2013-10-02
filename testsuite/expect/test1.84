@@ -106,6 +106,9 @@ expect {
 		wait
 	}
 }
+
+# Add sleep for any epilog clean up of previous jobs
+sleep 2
 set fd [open "|$scontrol --oneliner show node $def_hostlist"]
 exp_internal 1
 while {[gets $fd line] != -1} {
