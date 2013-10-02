@@ -48,6 +48,8 @@ documents those changes that are of interest to users and admins.
     updated the srun man page.
  -- BLUEGENE/CRAY - Don't set env variables that pertain to a node when Slurm
     isn't doing the launching.
+ -- gres/gpu and gres/mic - Do not treat the existence of an empty gres.conf
+    file as a fatal error.
 
 * Changes in Slurm 2.6.2
 ========================
