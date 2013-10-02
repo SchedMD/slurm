@@ -689,7 +689,7 @@ extern int time_str2secs(const char *string)
 			break;
 	}
 
-	if ((days != -1) && (hr == -1) && (min != 0)) {
+	if ((days != -1) && (hr == -1) && (min != -1)) {
 		/* format was "days-hr" or "days-hr:min" */
 		hr = min;
 		min = sec;

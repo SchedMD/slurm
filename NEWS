@@ -50,6 +50,8 @@ documents those changes that are of interest to users and admins.
     isn't doing the launching.
  -- gres/gpu and gres/mic - Do not treat the existence of an empty gres.conf
     file as a fatal error.
+ -- Fixed for if hours are specified as 0 the time days-0:min specification
+    is not parsed correctly.
 
 * Changes in Slurm 2.6.2
 ========================
