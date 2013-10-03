@@ -118,8 +118,9 @@ extern int acct_gather_conf_init(void)
 	acct_gather_profile_g_conf_set(tbl);
 	acct_gather_infiniband_g_conf_set(tbl);
 	acct_gather_filesystem_g_conf_set(tbl);
-	/* ADD MORE HERE */
-	/******************************************/
+	/*********************************************************************/
+	/* ADD MORE HERE AND FREE MEMORY IN acct_gather_conf_destroy() BELOW */
+	/*********************************************************************/
 
 	s_p_hashtbl_destroy(tbl);
 
@@ -128,10 +129,16 @@ extern int acct_gather_conf_init(void)
 
 extern int acct_gather_conf_destroy(void)
 {
+	int rc;
+
 	if (!inited)
 		return SLURM_SUCCESS;
 
-	return SLURM_SUCCESS;
+	rc = acct_gather_energy_fini();
+	rc = MAX(rc, acct_gather_filesystem_fini());
+	rc = MAX(rc, acct_gather_infiniband_fini());
+	rc = MAX(rc, acct_gather_profile_fini());
+	return rc;
 }
 
 extern List acct_gather_conf_values(void)

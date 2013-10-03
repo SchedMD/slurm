@@ -90,6 +90,9 @@ documents those changes that are of interest to users and admins.
  -- Sched/backfill - Change default max_job_bf parameter from 50 to 100.
  -- Added -I|--item-extract option to sh5util to extract data item from series.
 
+* Changes in Slurm 2.6.4
+========================
+
 * Changes in Slurm 2.6.3
 ========================
  -- Add support for some new #PBS options in sbatch scripts and qsub wrapper:
@@ -137,6 +140,10 @@ documents those changes that are of interest to users and admins.
     updated the srun man page.
  -- BLUEGENE/CRAY - Don't set env variables that pertain to a node when Slurm
     isn't doing the launching.
+ -- gres/gpu and gres/mic - Do not treat the existence of an empty gres.conf
+    file as a fatal error.
+ -- Fixed for if hours are specified as 0 the time days-0:min specification
+    is not parsed correctly.
 
 * Changes in Slurm 2.6.2
 ========================

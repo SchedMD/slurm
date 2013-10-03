@@ -154,6 +154,7 @@ static const size_t ps_buffer_size = sizeof(ps_buffer);
 #else
 static char *ps_buffer;			/* will point to argv area */
 static size_t ps_buffer_size;		/* space determined at run time */
+static char **new_environ = (char **) NULL;
 #endif
 
 /* save the original argv[] location here */
@@ -261,7 +262,6 @@ init_setproctitle(int argc, char *argv[])
 {
 #if SETPROCTITLE_STRATEGY == PS_USE_CLOBBER_ARGV
 	char *end_of_area = NULL;
-	char **new_environ;
 	int i;
 #endif
 
@@ -318,10 +318,7 @@ init_setproctitle(int argc, char *argv[])
 	}
 	for (i = 0; environ[i] != NULL; i++) {
 		new_environ[i] = strdup(environ[i]);
-		//free(environ[i]);
 	}
-	/* if (environ) */
-/* 		free(environ); */
 	new_environ[i] = NULL;
 	environ = new_environ;
 #endif /* PS_USE_CLOBBER_ARGV */
@@ -334,11 +331,15 @@ void fini_setproctitle(void)
 #if SETPROCTITLE_STRATEGY == PS_USE_CLOBBER_ARGV
 	int i;
 
-	for (i = 0; environ[i] != NULL; i++) {
-		free(environ[i]);
+	if (!new_environ)
+		return;
+
+	for (i = 0; new_environ[i] != NULL; i++) {
+		free(new_environ[i]);
 	}
-	free(environ);
-	environ = (char **) NULL;
+	free(new_environ);
+	new_environ = (char **) NULL;
+	environ = new_environ;
 #endif /* PS_USE_CLOBBER_ARGV */
 }
 
