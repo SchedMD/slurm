@@ -399,7 +399,7 @@ static slurm_errtab_t slurm_errtab[] = {
 
 	/* plugin and custom errors */
 	{ ESLURM_MISSING_TIME_LIMIT,
-	  "Missing time limit"   }
+	  "Time limit specification required, but not provided"  }
 };
 
 /*

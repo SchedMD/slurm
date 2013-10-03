@@ -19,6 +19,9 @@ documents those changes that are of interest to users and admins.
       type int32_t
  -- Modify qsub wrapper output to match torque command output, just print the
     job ID rather than "Submitted batch job #"
+ -- Change Slurm error string for ESLURM_MISSING_TIME_LIMIT from
+    "Missing time limit" to
+    "Time limit specification required, but not provided"
 
 * Changes in Slurm 13.12.0pre2
 ==============================
