@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in Slurm 2.6.4
+========================
+
 * Changes in Slurm 2.6.3
 ========================
  -- Add support for some new #PBS options in sbatch scripts and qsub wrapper:
