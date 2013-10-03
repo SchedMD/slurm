@@ -289,7 +289,7 @@ static int _set_options(const int argc, char **argv)
 		{"profiledir", required_argument, 0, 'p'},
 		{"series", required_argument, 0, 's'},
 		{"savefiles", no_argument, 0, 'S'},
-		{"usage", 0, &params.help, 3},
+		{"usage", no_argument, 0, 'U'},
 		{"user", required_argument, 0, 'u'},
 		{"verbose", no_argument, 0, 'v'},
 		{"version", no_argument, 0, 'V'},
@@ -299,7 +299,7 @@ static int _set_options(const int argc, char **argv)
 
 	_init_opts();
 
-	while ((cc = getopt_long(argc, argv, "d:Ehi:Ij:l:N:o:p:s:Su:vV",
+	while ((cc = getopt_long(argc, argv, "d:Ehi:Ij:l:N:o:p:s:S:uUvV",
 	                         long_options, &option_index)) != EOF) {
 		switch (cc) {
 			case 'd':
@@ -356,6 +356,10 @@ static int _set_options(const int argc, char **argv)
 					error("No such user --uid=\"%s\"", optarg);
 					return -1;
 				}
+				break;
+			case 'U':
+				_help_msg();
+				return -1;
 				break;
 			case 'v':
 				params.verbose++;
