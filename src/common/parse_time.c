@@ -121,6 +121,64 @@ get_num_colon(char *s)
 	return cc;
 }
 
+/* is_valid_timespec()
+ *
+ * Validate that time format follows
+ * is supported.
+ */
+static bool
+is_valid_timespec(const char *s)
+{
+	int digit;
+	int dash;
+	int colon;
+
+	digit = dash = colon = 0;
+
+	while (*s) {
+		if (*s >= '0' && *s <= '9') {
+			++digit;
+		} else if (*s == '-') {
+			++dash;
+			if (colon)
+				return false;
+		} else if (*s == ':') {
+			++colon;
+		} else {
+			return false;
+		}
+		++s;
+	}
+
+	if (!digit)
+		return false;
+
+	if (dash > 1
+	    || colon > 2)
+		return false;
+
+	if (dash) {
+		if (!colon
+		    && digit < 2)
+			return false;
+		if (colon == 1
+		    && digit < 3)
+			return false;
+		if (colon == 2
+		    && digit < 4)
+			return false;
+	} else {
+		if (colon == 1
+		    && digit < 2)
+			return false;
+		if (colon == 2
+		    && digit < 3)
+			return false;
+	}
+
+	return true;
+}
+
 /* convert time differential string into a number of seconds
  * time_str (in): string to parse
  * pos (in/out): position of parse start/end
@@ -718,6 +776,9 @@ extern int time_str2secs(const char *string)
 	    || (!strcasecmp(string, "UNLIMITED"))) {
 		return INFINITE;
 	}
+
+	if (! is_valid_timespec(string))
+		return NO_VAL;
 
 	timestr = p = strdup(string);
 	if (timestr == NULL)
