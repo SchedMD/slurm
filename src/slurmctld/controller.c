@@ -686,7 +686,7 @@ int main(int argc, char *argv[])
 	slurm_preempt_fini();
 	g_slurm_jobcomp_fini();
 	jobacct_gather_fini();
-	acct_gather_conf_fini();
+	acct_gather_conf_destroy();
 	slurm_select_fini();
 	slurm_topo_fini();
 	checkpoint_fini();
