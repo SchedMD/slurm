@@ -22,6 +22,9 @@ documents those changes that are of interest to users and admins.
  -- Change Slurm error string for ESLURM_MISSING_TIME_LIMIT from
     "Missing time limit" to
     "Time limit specification required, but not provided"
+ -- Change salloc job_allocate error message header from
+    "Failed to allocate resources" to
+    "Job submit/allocate failed"
 
 * Changes in Slurm 13.12.0pre2
 ==============================
