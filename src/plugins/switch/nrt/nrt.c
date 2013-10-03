@@ -3544,8 +3544,8 @@ nrt_free_jobinfo(slurm_nrt_jobinfo_t *jp)
 			tableinfo = &jp->tableinfo[i];
 			xfree(tableinfo->table);
 		}
-		xfree(jp->tableinfo);
 	}
+	xfree(jp->tableinfo);
 	if (jp->nodenames)
 		hostlist_destroy(jp->nodenames);
 

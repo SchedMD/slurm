@@ -144,6 +144,7 @@ documents those changes that are of interest to users and admins.
     file as a fatal error.
  -- Fixed for if hours are specified as 0 the time days-0:min specification
     is not parsed correctly.
+ -- switch/nrt - Fix for memory leak.
 
 * Changes in Slurm 2.6.2
 ========================
