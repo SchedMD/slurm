@@ -54,7 +54,7 @@ for {set inx 1} {$inx < 4} {set inx [expr $inx * 2]} {
 			send "exit\r"
 			exp_continue
 		}
-		-re "Failed to allocate.*" {
+		-re "allocate failed" {
 			send_user "\nThis error is not unexpected, no worries\n"
 			set tasks_get $tasks_set
 		}

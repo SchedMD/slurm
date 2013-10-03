@@ -344,7 +344,7 @@ int main(int argc, char *argv[])
 			error("Unable to allocate resources: %m");
 			error_exit = immediate_exit;
 		} else {
-			error("Failed to allocate resources: %m");
+			error("Job submit/allocate failed: %m");
 		}
 		slurm_allocation_msg_thr_destroy(msg_thr);
 		exit(error_exit);
