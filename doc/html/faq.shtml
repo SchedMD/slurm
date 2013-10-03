@@ -163,6 +163,8 @@ launch a shell on a node in the job's allocation?</a></li>
 <li><a href="#ha_db">How critical is configuring high availability for my
   database?</a></li>
 <li><a href="#sql">How can I use double quotes in MySQL queries?</a></li>
+<li><a href="#reboot">Why is a compute node down with the reason set to
+"Node unexpectedly rebooted"?</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -1745,8 +1747,16 @@ SET session sql_mode='ANSI_QUOTES';
 show columns from "tux_assoc_table" where Field='is_def';
 </pre>
 
+<p><a name="reboot"><b>56. Why is a compute node down with the reason set to
+"Node unexpectedly rebooted"?</b></a></br>
+This is indicative of the slurmctld daemon running on the cluster's head node
+as well as the slurmd daemon on the compute node when the compute node reboots.
+If you which to prevent this condition from setting the node into a DOWN state
+then configure ReturnToService to 2. See the slurm.conf man page for details.
+Otherwise use the scontrol or sview to manually return the node to service.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 13 September 2013</p>
+<p style="text-align:center;">Last modified 3 October 2013</p>
 
 <!--#include virtual="footer.txt"-->
