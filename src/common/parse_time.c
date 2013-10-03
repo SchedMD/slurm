@@ -77,13 +77,13 @@ static unit_names_t un[] = {
 	{NULL,		0,	0}
 };
 
-/* get_dash()
+/* _get_dash()
  *
  * Check if the string has a - and
  * if it does replace it by a space.
  */
 static uint16_t
-get_dash(char *s)
+_get_dash(char *s)
 {
 	int cc;
 
@@ -99,13 +99,13 @@ get_dash(char *s)
 	return cc;
 }
 
-/* get_num_colon()
+/* _get_num_colon()
  *
  * Count the number of colons and
  * replace them by spaces.
  */
 static uint16_t
-get_num_colon(char *s)
+_get_num_colon(char *s)
 {
 	int cc;
 
@@ -121,13 +121,13 @@ get_num_colon(char *s)
 	return cc;
 }
 
-/* is_valid_timespec()
+/* _is_valid_timespec()
  *
  * Validate that time format follows
  * is supported.
  */
 static bool
-is_valid_timespec(const char *s)
+_is_valid_timespec(const char *s)
 {
 	int digit;
 	int dash;
@@ -158,8 +158,8 @@ is_valid_timespec(const char *s)
 		return false;
 
 	if (dash) {
-		if (!colon
-		    && digit < 2)
+		if (colon == 0
+		    && digit < 1)
 			return false;
 		if (colon == 1
 		    && digit < 3)
@@ -777,7 +777,7 @@ extern int time_str2secs(const char *string)
 		return INFINITE;
 	}
 
-	if (! is_valid_timespec(string))
+	if (! _is_valid_timespec(string))
 		return NO_VAL;
 
 	timestr = p = strdup(string);
@@ -786,10 +786,18 @@ extern int time_str2secs(const char *string)
 
 	d = h = m = s = 0;
 
-	has_dash = get_dash(timestr);
-	num_colon = get_num_colon(timestr);
+	has_dash  = _get_dash(timestr);
+	num_colon = _get_num_colon(timestr);
 
 	if (has_dash) {
+		if (num_colon == 0) {
+			/* days-
+			 */
+			sscanf(timestr, "%s", days);
+			d = atoi(days) * 86400;
+			goto bye;
+		}
+
 		/* days-hours
 		 */
 		sscanf(timestr, "%s%s%n", days, hours, &n);
