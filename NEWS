@@ -145,6 +145,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed for if hours are specified as 0 the time days-0:min specification
     is not parsed correctly.
  -- switch/nrt - Fix for memory leak.
+ -- Subtract the PMII_COMMANDLEN_SIZE in contribs/pmi2/pmi2_api.c to prevent
+    certain implementation of snprintf() to segfault.
 
 * Changes in Slurm 2.6.2
 ========================
