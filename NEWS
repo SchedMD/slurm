@@ -89,6 +89,8 @@ documents those changes that are of interest to users and admins.
     lengths.
  -- If OverTimeLimit is defined do not declare failed those jobs that ended
     in the OverTimeLimit interval.
+ -- Subtract the PMII_COMMANDLEN_SIZE in contribs/pmi2/pmi2_api.c to prevent
+    certain implementation of snprintf() to segfault.
 
 * Changes in Slurm 2.6.1
 ========================
