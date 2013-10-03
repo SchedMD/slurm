@@ -2210,7 +2210,7 @@ slurm_fd_t slurm_open_controller_conn(slurm_addr_t *addr)
 	slurm_fd_t fd = -1;
 	slurm_ctl_conf_t *conf;
 	slurm_protocol_config_t *myproto = NULL;
-	int retry, have_backup = 0;
+	int retry, max_retry_period, have_backup = 0;
 
 	if (!working_cluster_rec) {
 		/* This means the addr wasn't set up already.
@@ -2227,7 +2227,12 @@ slurm_fd_t slurm_open_controller_conn(slurm_addr_t *addr)
 				myproto->primary_controller.sin_port;
 	}
 
-	for (retry=0; retry<slurm_get_msg_timeout(); retry++) {
+#ifdef HAVE_NATIVE_CRAY
+	max_retry_period = 180;
+#else
+	max_retry_period = slurm_get_msg_timeout();
+#endif
+	for (retry = 0; retry < max_retry_period; retry++) {
 		if (retry)
 			sleep(1);
 		if (working_cluster_rec) {

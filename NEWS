@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
  -- Change salloc job_allocate error message header from
     "Failed to allocate resources" to
     "Job submit/allocate failed"
+ -- Modify slurmctld message retry logic to support Cray cold-standby SDB.
 
 * Changes in Slurm 13.12.0pre2
 ==============================
