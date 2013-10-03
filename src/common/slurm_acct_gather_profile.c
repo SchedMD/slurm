@@ -199,7 +199,7 @@ extern int acct_gather_profile_fini(void)
 
 	slurm_mutex_lock(&g_context_lock);
 
-	if (g_context)
+	if (!g_context)
 		goto done;
 
 	init_run = false;
