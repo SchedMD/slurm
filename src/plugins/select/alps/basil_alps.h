@@ -617,11 +617,23 @@ extern int basil_request(struct basil_parse_data *bp);
 extern struct basil_inventory *get_full_inventory(enum basil_version version);
 extern void   free_inv(struct basil_inventory *inv);
 
+/*
+ * user IN	- Reservation owner
+ * batch_id IN	- Slurm job ID (in string form)
+ * width IN	- Total CPU count in the reservation
+ * depth IN	- Always 1
+ * nppn IN	- smallest number of CPUs on any allocated node
+ * mem_mb IN	- Memory per node
+ * nppcu IN	- Tasks per core
+ * ns_head IN	- List of allocated nodes
+ * accel_head IN - List of accellerator (GPU) information
+ */
 extern long basil_reserve(const char *user, const char *batch_id,
 			  uint32_t width, uint32_t depth, uint32_t nppn,
 			  uint32_t mem_mb, uint32_t nppcu,
 			  struct nodespec *ns_head,
 			  struct basil_accel_param *accel_head);
+
 extern int basil_confirm(uint32_t rsvn_id, int job_id, uint64_t pagg_id);
 extern const struct basil_rsvn *basil_rsvn_by_id(const struct basil_inventory *inv,
 						 uint32_t resvn_id);
