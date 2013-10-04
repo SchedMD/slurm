@@ -962,11 +962,11 @@ int read_slurm_conf(int recover, bool reconfig)
 		}
 		load_last_job_id();
 		reset_first_job_id();
-		(void) slurm_sched_reconfig();
+		(void) slurm_sched_g_reconfig();
 	} else if (recover == 0) {	/* Build everything from slurm.conf */
 		load_last_job_id();
 		reset_first_job_id();
-		(void) slurm_sched_reconfig();
+		(void) slurm_sched_g_reconfig();
 	} else if (recover == 1) {	/* Load job & node state files */
 		(void) load_all_node_state(true);
 		(void) load_all_front_end_state(true);
@@ -1024,7 +1024,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		load_all_resv_state(recover);
 		if (recover >= 1) {
 			trigger_state_restore();
-			(void) slurm_sched_reconfig();
+			(void) slurm_sched_g_reconfig();
 		}
 	}
 

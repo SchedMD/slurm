@@ -5,7 +5,7 @@
 <h2> Overview</h2>
 <p> This document describes SLURM scheduler plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own SLURM
-scheduler plugins. This is version 100 of the API.</p>
+scheduler plugins. This describes version 110 of the API.</p>
 
 <p>It is noteworthy that two different models are used for job scheduling.
 The <b>backfill</b> scheduler lets SLURM establish the initial job priority
@@ -77,7 +77,7 @@ SLURM_SUCCESS. </p>
 <p>The following functions must appear. Functions which are not implemented should
 be stubbed.</p>
 
-<p class="commandline">int slurm_sched_plugin_reconfig (void);</p>
+<p class="commandline">int slurm_sched_p_reconfig (void);</p>
 <p style="margin-left:.2in"><b>Description</b>: Reread any configuration files.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: None</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On fail
@@ -85,14 +85,14 @@ ure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_sched_plugin_schedule (void);</p>
+<p class="commandline">int slurm_sched_p_schedule (void);</p>
 <p style="margin-left:.2in"><b>Description</b>: For passive schedulers, invoke a scheduling pass.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: None</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_sched_plugin_newalloc (void);</p>
+<p class="commandline">int slurm_sched_p_newalloc (void);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the successful allocation of resources to a job.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: Pointer to the slurmctld job structure. This can be used to
 get partition, allocated resources, time limit, etc.</p>
@@ -100,7 +100,7 @@ get partition, allocated resources, time limit, etc.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_sched_plugin_freealloc (void);</p>
+<p class="commandline">int slurm_sched_p_freealloc (void);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the successful release of resources for a job.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: Pointer to the slurmctld job structure. This can be used to
 get partition, allocated resources, time limit, etc.</p>
@@ -108,7 +108,7 @@ get partition, allocated resources, time limit, etc.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">uint32_t slurm_sched_plugin_initial_priority (
+<p class="commandline">uint32_t slurm_sched_p_initial_priority (
 uint32_t last_prio, struct job_record *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Establish the initial priority of a new job.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -124,19 +124,19 @@ Pointer to the slurmctld job structure. This can be used to get partition,
 resource requirements, time limit, etc.</p>
 <p style="margin-left:.2in"><b>Returns</b>: The priority to be assigned to this job.</p>
 
-<p class="commandline">void slurm_sched_plugin_job_is_pending (void);</p>
+<p class="commandline">void slurm_sched_p_job_is_pending (void);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note that some job is pending execution.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: None</p>
 <p style="margin-left:.2in"><b>Returns</b>: Nothing.</p>
 
-<p class="commandline">void slurm_sched_plugin_partition_change (void);</p>
+<p class="commandline">void slurm_sched_p_partition_change (void);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note that some partition state change
 happened such as time or size limits.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: None</p>
 <p style="margin-left:.2in"><b>Returns</b>: Nothing.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p class="commandline">char *slurm_sched_get_conf (void);</p></a>
+<p class="commandline">char *slurm_sched_p_get_conf (void);</p></a>
 <p style="margin-left:.2in"><b>Description</b>: Return scheduler specific
 configuration information to be reported for the <i>scontrol show configuration</i>
 command.</p>
@@ -144,13 +144,13 @@ command.</p>
 <p style="margin-left:.2in"><b>Returns</b>: A string containing configuration
 information. The return value is released using the <i>xfree()</i> function.</p>
 
-<a name="get_errno"><p class="commandline">int slurm_sched_get_errno (void);</p></a>
+<a name="get_errno"><p class="commandline">int slurm_sched_p_get_errno (void);</p></a>
 <p style="margin-left:.2in"><b>Description</b>: Return the number of a scheduler
 specific error.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: None</p>
 <p style="margin-left:.2in"><b>Returns</b>: Error number for the last failure encountered by the scheduler plugin.</p>
 
-<p class="commandline"><a name="strerror">const char *slurm_sched_strerror(int errnum);</a></p>
+<p class="commandline"><a name="strerror">const char *slurm_sched_p_strerror(int errnum);</a></p>
 <p style="margin-left:.2in"><b>Description</b>: Return a string description of a scheduler
 specific error code.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -161,11 +161,11 @@ or NULL if no description found in this plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Versioning</h2>
-<p> This document describes version 100 of the SLURM Scheduler API. Future
+<p> This document describes version 110 of the SLURM Scheduler API. Future
 releases of SLURM may revise this API. A scheduler plugin conveys its ability
 to implement a particular API version using the mechanism outlined for SLURM plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 November 2007</p>
+<p style="text-align:center;">Last modified 4 October 2013</p>
 
 <!--#include virtual="footer.txt"-->

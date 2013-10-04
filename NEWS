@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ==============================
  -- Remove the ThreadID documentation from slurm.conf. This functionality has
     been obsoleted by the LogTimeFormat.
+ -- Sched plugins - rename global and plugin functions names for consistency
+    with other plugin types.
 
 * Changes in Slurm 13.12.0pre3
 ==============================

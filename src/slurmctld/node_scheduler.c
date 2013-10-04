@@ -396,7 +396,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 
 	license_job_return(job_ptr);
 	acct_policy_job_fini(job_ptr);
-	if (slurm_sched_freealloc(job_ptr) != SLURM_SUCCESS)
+	if (slurm_sched_g_freealloc(job_ptr) != SLURM_SUCCESS)
 		error("slurm_sched_freealloc(%u): %m", job_ptr->job_id);
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)
 		error("select_g_job_fini(%u): %m", job_ptr->job_id);
@@ -512,7 +512,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	if ((agent_args->node_count - down_node_cnt) == 0) {
 		job_ptr->job_state &= (~JOB_COMPLETING);
 		delete_step_records(job_ptr);
-		slurm_sched_schedule();
+		slurm_sched_g_schedule();
 	}
 
 	if (agent_args->node_count == 0) {
@@ -1579,12 +1579,12 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			job_ptr->state_reason = WAIT_RESOURCES;
 			xfree(job_ptr->state_desc);
 			if (error_code == ESLURM_NODES_BUSY)
-				slurm_sched_job_is_pending();
+				slurm_sched_g_job_is_pending();
 		}
 		goto cleanup;
 	}
 	if (test_only) {	/* set if job not highest priority */
-		slurm_sched_job_is_pending();
+		slurm_sched_g_job_is_pending();
 		error_code = SLURM_SUCCESS;
 		goto cleanup;
 	}
@@ -1682,7 +1682,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	prolog_slurmctld(job_ptr);
-	slurm_sched_newalloc(job_ptr);
+	slurm_sched_g_newalloc(job_ptr);
 
       cleanup:
 	if (preemptee_job_list)
@@ -2514,7 +2514,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 					last_node_update = time(NULL);
 					job_ptr->job_state &= (~JOB_COMPLETING);
 					delete_step_records(job_ptr);
-					slurm_sched_schedule();
+					slurm_sched_g_schedule();
 				}
 			}
 		} else if (!IS_NODE_NO_RESPOND(front_end_ptr)) {
@@ -2541,7 +2541,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 			    ((--job_ptr->node_cnt) == 0)) {
 				job_ptr->job_state &= (~JOB_COMPLETING);
 				delete_step_records(job_ptr);
-				slurm_sched_schedule();
+				slurm_sched_g_schedule();
 				last_node_update = time(NULL);
 			}
 		} else if (!IS_NODE_NO_RESPOND(node_ptr)) {

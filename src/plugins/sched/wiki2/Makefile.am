@@ -29,7 +29,7 @@ sched_wiki2_la_SOURCES = \
 	msg.c		\
 	msg.h		\
 	resume_job.c	\
-	sched_wiki.c	\
+	sched_wiki2.c	\
 	start_job.c	\
 	suspend_job.c
 sched_wiki2_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)

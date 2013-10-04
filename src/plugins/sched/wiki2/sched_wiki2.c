@@ -46,7 +46,7 @@
 
 const char		plugin_name[]	= "Wiki (Maui and Moab) Scheduler plugin";
 const char		plugin_type[]	= "sched/wiki2";
-const uint32_t		plugin_version	= 100;
+const uint32_t		plugin_version	= 110;
 
 /* A plugin-global errno. */
 static int plugin_errno = SLURM_SUCCESS;
@@ -70,36 +70,36 @@ extern void fini( void )
 
 
 /***************************************************************************/
-/*  TAG(                   slurm_sched_plugin_schedule                   ) */
+/*  TAG(                   slurm_sched_p_schedule                        ) */
 /***************************************************************************/
-extern int slurm_sched_plugin_schedule( void )
+extern int slurm_sched_p_schedule( void )
 {
 	(void) event_notify(1234, "Requested by Slurm");
 	return SLURM_SUCCESS;
 }
 
 /***************************************************************************/
-/*  TAG(                   slurm_sched_plugin_newalloc                   ) */
+/*  TAG(                   slurm_sched_p_newalloc                        ) */
 /***************************************************************************/
-extern int slurm_sched_plugin_newalloc( struct job_record *job_ptr )
+extern int slurm_sched_p_newalloc( struct job_record *job_ptr )
 {
 	return SLURM_SUCCESS;
 }
 
 /***************************************************************************/
-/*  TAG(                   slurm_sched_plugin_freealloc                  ) */
+/*  TAG(                   slurm_sched_p_freealloc                       ) */
 /***************************************************************************/
-extern int slurm_sched_plugin_freealloc( struct job_record *job_ptr )
+extern int slurm_sched_p_freealloc( struct job_record *job_ptr )
 {
 	return SLURM_SUCCESS;
 }
 
 
 /**************************************************************************/
-/* TAG(                   slurm_sched_plugin_initial_priority           ) */
+/* TAG(                   slurm_sched_p_initial_priority                ) */
 /**************************************************************************/
 extern uint32_t
-slurm_sched_plugin_initial_priority( uint32_t last_prio,
+slurm_sched_p_initial_priority( uint32_t last_prio,
 				     struct job_record *job_ptr )
 {
 	(void) event_notify(1234, "Job submit");
@@ -128,17 +128,17 @@ slurm_sched_plugin_initial_priority( uint32_t last_prio,
 }
 
 /**************************************************************************/
-/* TAG(              slurm_sched_plugin_job_is_pending                  ) */
+/* TAG(              slurm_sched_p_job_is_pending                       ) */
 /**************************************************************************/
-void slurm_sched_plugin_job_is_pending( void )
+void slurm_sched_p_job_is_pending( void )
 {
 	/* No action required */
 }
 
 /**************************************************************************/
-/* TAG(              slurm_sched_plugin_reconfig                        ) */
+/* TAG(              slurm_sched_p_reconfig                             ) */
 /**************************************************************************/
-int slurm_sched_plugin_reconfig( void )
+int slurm_sched_p_reconfig( void )
 {
 	int rc = parse_wiki_config();
 	(void) event_notify(1235, "Partition change");
@@ -146,41 +146,41 @@ int slurm_sched_plugin_reconfig( void )
 }
 
 /**************************************************************************/
-/* TAG(              slurm_sched_plugin_partition_change                ) */
+/* TAG(              slurm_sched_p_partition_change                     ) */
 /**************************************************************************/
-void slurm_sched_plugin_partition_change( void )
+void slurm_sched_p_partition_change( void )
 {
 	(void) event_notify(1235, "Partition change");
 }
 
 /**************************************************************************/
-/* TAG(              slurm_sched_get_errno                              ) */
+/* TAG(              slurm_sched_p_get_errno                            ) */
 /**************************************************************************/
-int slurm_sched_get_errno( void )
+int slurm_sched_p_get_errno( void )
 {
 	return plugin_errno;
 }
 
 /**************************************************************************/
-/* TAG(              slurm_sched_strerror                               ) */
+/* TAG(              slurm_sched_p_strerror                             ) */
 /**************************************************************************/
-char *slurm_sched_strerror( int errnum )
+char *slurm_sched_p_strerror( int errnum )
 {
 	return NULL;
 }
 
 /**************************************************************************/
-/* TAG(              slurm_sched_plugin_requeue                         ) */
+/* TAG(              slurm_sched_p_requeue                              ) */
 /**************************************************************************/
-void slurm_sched_plugin_requeue( struct job_record *job_ptr, char *reason )
+void slurm_sched_p_requeue( struct job_record *job_ptr, char *reason )
 {
  	wiki_job_requeue(job_ptr, reason);
 }
 
 /**************************************************************************/
-/* TAG(              slurm_sched_get_conf                               ) */
+/* TAG(              slurm_sched_p_get_conf                             ) */
 /**************************************************************************/
-char *slurm_sched_get_conf( void )
+char *slurm_sched_p_get_conf( void )
 {
 	return get_wiki_conf();
 }
