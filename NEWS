@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in Slurm 2.6.4
 ========================
  -- Fixed sh5util to print its usage.
+ -- Corrected commit f9a3c7e4e8ec.
 
 * Changes in Slurm 2.6.3
 ========================

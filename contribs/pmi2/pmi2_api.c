@@ -1488,10 +1488,6 @@ int PMIi_WriteSimpleCommand( int fd, PMI2_Command *resp, const char cmd[], PMI2_
 
     PMI2U_ERR_CHKANDJUMP(strlen(cmd) > PMI2_MAX_VALLEN, pmi2_errno, PMI2_ERR_OTHER, "**cmd_too_long");
 
-    ret = snprintf(c, remaining_len, "cmd=%s;", cmd);
-    PMI2U_ERR_CHKANDJUMP(ret >= remaining_len, pmi2_errno, PMI2_ERR_OTHER, "**intern %s", "Ran out of room for command");
-    c += ret;
-    remaining_len -= ret;
     /* Subtract the PMII_COMMANDLEN_SIZE to prevent
      * certain implementation of snprintf() to
      * segfault when zero out the buffer.
@@ -1500,6 +1496,11 @@ int PMIi_WriteSimpleCommand( int fd, PMI2_Command *resp, const char cmd[], PMI2_
      * message size.
      */
     remaining_len -= PMII_COMMANDLEN_SIZE;
+
+    ret = snprintf(c, remaining_len, "cmd=%s;", cmd);
+    PMI2U_ERR_CHKANDJUMP(ret >= remaining_len, pmi2_errno, PMI2_ERR_OTHER, "**intern %s", "Ran out of room for command");
+    c += ret;
+    remaining_len -= ret;
 
 #ifdef MPICH_IS_THREADED
     MPIU_THREAD_CHECK_BEGIN;
