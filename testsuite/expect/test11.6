@@ -43,7 +43,7 @@ if { ![test_launch_poe] } {
 	send_user "\nWARNING: This test is only compatable with launch/poe systems\n"
 	exit $exit_code
 }
-if { ![test_super_user] != 0 } {
+if { [test_super_user] == 0 } {
 	send_user "WARNING: Test can only be run as SlurmUser\n"
 	exit $exit_code
 }
