@@ -84,6 +84,12 @@
 #define _DEBUG 0
 #define MAX_RETRIES 10
 
+typedef struct epilog_arg {
+	char *epilog_slurmctld;
+	uint32_t job_id;
+	char **my_env;
+} epilog_arg_t;
+
 static char **	_build_env(struct job_record *job_ptr);
 static void	_depend_list_del(void *dep_ptr);
 static void	_feature_list_delete(void *x);
@@ -1966,6 +1972,7 @@ extern int epilog_slurmctld(struct job_record *job_ptr)
 	int rc;
 	pthread_t thread_id_epilog;
 	pthread_attr_t thread_attr_epilog;
+	epilog_arg_t *epilog_arg;
 
 	if ((slurmctld_conf.epilog_slurmctld == NULL) ||
 	    (slurmctld_conf.epilog_slurmctld[0] == '\0'))
@@ -1976,13 +1983,18 @@ extern int epilog_slurmctld(struct job_record *job_ptr)
 		return errno;
 	}
 
+	epilog_arg = xmalloc(sizeof(epilog_arg_t));
+	epilog_arg->job_id = job_ptr->job_id;
+	epilog_arg->epilog_slurmctld = xstrdup(slurmctld_conf.epilog_slurmctld);
+	epilog_arg->my_env = _build_env(job_ptr);
+	
 	slurm_attr_init(&thread_attr_epilog);
 	pthread_attr_setdetachstate(&thread_attr_epilog,
 				    PTHREAD_CREATE_DETACHED);
 	while (1) {
 		rc = pthread_create(&thread_id_epilog,
 				    &thread_attr_epilog,
-				    _run_epilog, (void *) job_ptr);
+				    _run_epilog, (void *) epilog_arg);
 		if (rc == 0) {
 			slurm_attr_destroy(&thread_attr_epilog);
 			return SLURM_SUCCESS;
@@ -2060,21 +2072,13 @@ static char **_build_env(struct job_record *job_ptr)
 
 static void *_run_epilog(void *arg)
 {
-	struct job_record *job_ptr = (struct job_record *) arg;
-	uint32_t job_id;
+	epilog_arg_t *epilog_arg = (epilog_arg_t *) arg;
 	pid_t cpid;
 	int i, status, wait_rc;
-	char *argv[2], **my_env;
-	/* Locks: Read config, job */
-	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+	char *argv[2];
 
-	lock_slurmctld(config_read_lock);
-	argv[0] = xstrdup(slurmctld_conf.epilog_slurmctld);
+	argv[0] = epilog_arg->epilog_slurmctld;
 	argv[1] = NULL;
-	my_env = _build_env(job_ptr);
-	job_id = job_ptr->job_id;
-	unlock_slurmctld(config_read_lock);
 
 	if ((cpid = fork()) < 0) {
 		error("epilog_slurmctld fork error: %m");
@@ -2086,7 +2090,7 @@ static void *_run_epilog(void *arg)
 #else
 		setpgrp();
 #endif
-		execve(argv[0], argv, my_env);
+		execve(argv[0], argv, epilog_arg->my_env);
 		exit(127);
 	}
 
@@ -2104,14 +2108,18 @@ static void *_run_epilog(void *arg)
 	}
 	if (status != 0) {
 		error("epilog_slurmctld job %u epilog exit status %u:%u",
-		      job_id, WEXITSTATUS(status), WTERMSIG(status));
-	} else
-		debug2("epilog_slurmctld job %u epilog completed", job_id);
+		      epilog_arg->job_id, WEXITSTATUS(status),
+		      WTERMSIG(status));
+	} else {
+		debug2("epilog_slurmctld job %u epilog completed",
+		       epilog_arg->job_id);
+	}
 
- fini:	xfree(argv[0]);
-	for (i=0; my_env[i]; i++)
-		xfree(my_env[i]);
-	xfree(my_env);
+ fini:	xfree(epilog_arg->epilog_slurmctld);
+	for (i=0; epilog_arg->my_env[i]; i++)
+		xfree(epilog_arg->my_env[i]);
+	xfree(epilog_arg->my_env);
+	xfree(epilog_arg);
 	return NULL;
 }
 
