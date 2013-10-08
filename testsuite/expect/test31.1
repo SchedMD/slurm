@@ -340,7 +340,7 @@ if {$make_file == 1} {
 	spawn $salloc -t1 -w$run_host $bin_bash
 	expect {
 		-re "Granted job allocation ($number)" {
-			send "$sbcast --force $sbcast $sbcast_file\n"
+			send "$sbcast --force $sbcast_file\n"
 			send "$srun --task-prolog=$config_dir/$pro_epi_prog $bin_printenv SLURMD_NODENAME\n"
 			send "exit\n"
 			exp_continue
