@@ -20,6 +20,9 @@ documents those changes that are of interest to users and admins.
  -- Reorder get config logic to avoid deadlock.
  -- Enforce QOS MaxCPUsMin limit when job submission contains no user-specified
     time limit.
+ -- EpilogSlurmctld pthread is passed required arguments rather than a pointer
+    to the job record, which under some conditions could be purged and result
+    in an invalid memory reference.
 
 * Changes in Slurm 2.5.7
 ========================
