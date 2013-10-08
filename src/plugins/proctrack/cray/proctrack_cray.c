@@ -93,12 +93,12 @@ static void *_create_container_thread(void *args)
 	slurm_mutex_unlock(&start_mutex);
 
 	pthread_cond_signal(&notify);
-	slurm_mutex_unlock(&notify_mutex);
+	/* Don't unlock the notify_mutex here, wait, it is not needed
+	 * and can cause deadlock if done. */
 
 	/* Wait around for something else to be added and then exit
 	   when that takes place.
 	*/
-	slurm_mutex_lock(&notify_mutex);
 	pthread_cond_wait(&notify, &notify_mutex);
 	slurm_mutex_unlock(&notify_mutex);
 
