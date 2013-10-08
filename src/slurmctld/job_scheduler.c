@@ -1987,7 +1987,7 @@ extern int epilog_slurmctld(struct job_record *job_ptr)
 	epilog_arg->job_id = job_ptr->job_id;
 	epilog_arg->epilog_slurmctld = xstrdup(slurmctld_conf.epilog_slurmctld);
 	epilog_arg->my_env = _build_env(job_ptr);
-	
+
 	slurm_attr_init(&thread_attr_epilog);
 	pthread_attr_setdetachstate(&thread_attr_epilog,
 				    PTHREAD_CREATE_DETACHED);
