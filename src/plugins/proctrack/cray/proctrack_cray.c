@@ -74,7 +74,6 @@ static pthread_t threadid = 0;
 static pthread_cond_t notify = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t notify_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t start_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void *_create_container_thread(void *args)
 {
@@ -86,12 +85,8 @@ static void *_create_container_thread(void *args)
 		return NULL;
 	}
 
-	/* Make sure we are waiting for this signal */
-	slurm_mutex_lock(&start_mutex);
 	/* Signal the container_create we are done */
 	slurm_mutex_lock(&notify_mutex);
-	slurm_mutex_unlock(&start_mutex);
-
 	pthread_cond_signal(&notify);
 	/* Don't unlock the notify_mutex here, wait, it is not needed
 	 * and can cause deadlock if done. */
@@ -171,20 +166,14 @@ extern int proctrack_p_plugin_create(stepd_step_rec_t *job)
 			slurm_mutex_unlock(&notify_mutex);
 			debug("Last thread done 0x%08lx", threadid);
 		}
-		/* We have to protect the notify_mutex here since the
+		/* We have to lock the notify_mutex here since the
 		   thread could possibly signal things before we
-		   started waiting for it, so we control that with the
-		   start mutex.
+		   started waiting for it.
 
 		*/
-		slurm_mutex_lock(&start_mutex);
+		slurm_mutex_lock(&notify_mutex);
 		pthread_attr_init(&attr);
 		pthread_create(&threadid, &attr, _create_container_thread, job);
-		/* Locking notify_mutex here and unlocking start_mutex
-		   after will remove the race we have on the
-		   wait the _create_container_thread is signalling */
-		slurm_mutex_lock(&notify_mutex);
-		slurm_mutex_unlock(&start_mutex);
 		pthread_cond_wait(&notify, &notify_mutex);
 		slurm_mutex_unlock(&notify_mutex);
 		slurm_mutex_unlock(&thread_mutex);
