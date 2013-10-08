@@ -218,6 +218,11 @@ proc update_conf { } {
 
 }
 
+if { [test_super_user] == 0 } {
+	send_user "WARNING: Test can only be run as SlurmUser\n"
+	exit $exit_code
+}
+
 set got_config 0
 log_user 0
 spawn $scontrol show config
