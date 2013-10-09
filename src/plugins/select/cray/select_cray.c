@@ -148,20 +148,24 @@ extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo);
 static int _run_nhc(uint64_t id, char *nodelist, bool step)
 {
 #ifdef HAVE_NATIVE_CRAY
-	int argc = 5, status = 1, wait_rc;
+	int argc = 7, status = 1, wait_rc;
 	char *argv[argc];
 	pid_t cpid;
 	DEF_TIMERS;
 
 	START_TIMER;
 	argv[0] = "/opt/cray/nodehealth/default/bin/xtcleanup_after";
-	if (step)
-		argv[1] = "-a";
-	else
-		argv[1] = "-r";
-	argv[2] = xstrdup_printf("%"PRIu64"", id);
-	argv[3] = cray_nodelist2nids(NULL, nodelist);
-	argv[4] = NULL;
+	argv[1] = "-m";
+	if (step) {
+		argv[2] = "application";
+		argv[3] = "-a";
+	} else {
+		argv[2] = "reservation";
+		argv[3] = "-r";
+	}
+	argv[4] = xstrdup_printf("%"PRIu64"", id);
+	argv[5] = cray_nodelist2nids(NULL, nodelist);
+	argv[6] = NULL;
 
 	if (debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("Calling NHC for id %"PRIu64" on nodes %s(%s)",
