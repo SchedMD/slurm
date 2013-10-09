@@ -790,18 +790,62 @@ or "jobacct_gather/cgroup" must be configured.
 
 .TP
 \fBJobAcctGatherFrequency\fR
-The job accounting sampling interval.
-For jobacct_gather/none this parameter is ignored.
-For  jobacct_gather/aix and jobacct_gather/linux the parameter is a number is
-seconds between sampling job state.
-The default value is 30 seconds.
-A value of zero disables real the periodic job sampling and provides accounting
-information only on job termination (reducing SLURM interference with the job).
-Smaller (non\-zero) values have a greater impact upon job performance, but
-a value of 30 seconds is not likely to be noticeable for applications having
-less than 10,000 tasks.
-Users can override this value on a per job basis using the \fB\-\-acctg\-freq\fR
-option when submitting the job.
+The job accounting and profiling sampling intervals.
+Two formats are supported, as follows:
+.RS
+.TP 12
+\fBJobAcctGatherFrequency=\fI<interval>\fR
+where \fI<interval>\fR is the task sampling interval in seconds
+for the jobacct_gather plugin and for task 
+profiling by the acct_gather_profile plugin.
+.TP
+\fBJobAcctGatherFrequency=\fR\fI<datatype>\fR\fB=\fR\fI<interval>\fR
+where \fI<datatype>\fR=\fI<interval>\fR specifies the task sampling 
+interval for the jobacct_gather plugin or a 
+sampling interval for a profiling type by the 
+acct_gather_profile plugin. Multiple, 
+comma-separated \fI<datatype>\fR=\fI<interval>\fR intervals
+may be specified. Supported datatypes are as follows:
+.RS
+.TP
+\fBtask=\fI<interval>\fR
+where \fI<interval>\fR is the task sampling interval in seconds
+for the jobacct_gather plugins and for task 
+profiling by the acct_gather_profile plugin.
+.TP
+\fBenergy=\fI<interval>\fR
+where \fI<interval>\fR is the sampling interval in seconds
+for energy profiling using the acct_gather_energy plugin
+.TP
+\fBnetwork=\fI<interval>\fR
+where \fI<interval>\fR is the sampling interval in seconds
+for infiniband profiling using the acct_gather_infiniband 
+plugin.
+.TP
+\fBfilesystem=\fI<interval>\fR
+where \fI<interval>\fR is the sampling interval in seconds
+for filesystem profiling using the acct_gather_filesystem
+plugin.
+.TP
+.RE
+.RE
+.br
+The default value for the task sampling interval is 30.
+The default value for all other intervals is 0.
+An interval of 0 disables sampling of the specified type. 
+If the task sampling interval is 0, accounting 
+information is collected only at job termination (reducing SLURM 
+interference with the job).
+.br
+.br
+Smaller (non\-zero) values have a greater impact upon job performance, 
+but a value of 30 seconds is not likely to be noticeable for 
+applications having less than 10,000 tasks.
+.br
+.br
+Users can independently override each interval on a per job basis using the 
+\fB\-\-acctg\-freq\fR option when submitting the job.
+.RE
 
 .TP
 \fBJobCheckpointDir\fR
