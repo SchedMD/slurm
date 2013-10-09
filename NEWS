@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fixed sh5util to print its usage.
  -- Corrected commit f9a3c7e4e8ec.
+ -- Honor ntasks-per-node option with exclusive node allocations.
 
 * Changes in Slurm 2.6.3
 ========================
