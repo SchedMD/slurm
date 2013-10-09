@@ -3680,10 +3680,21 @@ _pack_epilog_comp_msg(epilog_complete_msg_t * msg, Buf buffer,
 {
 	xassert(msg != NULL);
 
-	pack32((uint32_t)msg->job_id, buffer);
-	pack32((uint32_t)msg->return_code, buffer);
-	packstr(msg->node_name, buffer);
-	switch_g_pack_node_info(msg->switch_nodeinfo, buffer, protocol_version);
+	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+		pack32((uint32_t)msg->job_id, buffer);
+		pack32((uint32_t)msg->return_code, buffer);
+		packstr(msg->node_name, buffer);
+	} else {
+		switch_node_info_t *switch_nodeinfo = NULL;
+
+		pack32((uint32_t)msg->job_id, buffer);
+		pack32((uint32_t)msg->return_code, buffer);
+		packstr(msg->node_name, buffer);
+		switch_g_alloc_node_info(&switch_nodeinfo);
+		switch_g_pack_node_info(switch_nodeinfo, buffer,
+					protocol_version);
+		switch_g_free_node_info(&switch_nodeinfo);
+	}
 }
 
 static int
@@ -3698,13 +3709,25 @@ _unpack_epilog_comp_msg(epilog_complete_msg_t ** msg, Buf buffer,
 	tmp_ptr = xmalloc(sizeof(epilog_complete_msg_t));
 	*msg = tmp_ptr;
 
-	safe_unpack32(&(tmp_ptr->job_id), buffer);
-	safe_unpack32(&(tmp_ptr->return_code), buffer);
-	safe_unpackstr_xmalloc(& (tmp_ptr->node_name), &uint32_tmp, buffer);
-	if (switch_g_alloc_node_info(&tmp_ptr->switch_nodeinfo)
-	    ||  switch_g_unpack_node_info(tmp_ptr->switch_nodeinfo, buffer,
-					  protocol_version))
-		goto unpack_error;
+	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+		safe_unpack32(&(tmp_ptr->job_id), buffer);
+		safe_unpack32(&(tmp_ptr->return_code), buffer);
+		safe_unpackstr_xmalloc(&(tmp_ptr->node_name),
+				       &uint32_tmp, buffer);
+	} else {
+		switch_node_info_t *switch_nodeinfo = NULL;
+		safe_unpack32(&(tmp_ptr->job_id), buffer);
+		safe_unpack32(&(tmp_ptr->return_code), buffer);
+		safe_unpackstr_xmalloc(&(tmp_ptr->node_name),
+				       &uint32_tmp, buffer);
+		if (switch_g_alloc_node_info(&switch_nodeinfo)
+		    || switch_g_unpack_node_info(switch_nodeinfo, buffer,
+						 protocol_version)) {
+			switch_g_free_node_info(&switch_nodeinfo);
+			goto unpack_error;
+		}
+		switch_g_free_node_info(&switch_nodeinfo);
+	}
 
 	return SLURM_SUCCESS;
 
