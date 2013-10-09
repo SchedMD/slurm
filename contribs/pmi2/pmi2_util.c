@@ -18,7 +18,6 @@
 #include <string.h>
 #include <errno.h>
 
-/* #include "orte/mca/errmgr/errmgr.h" */
 #include "pmi2_util.h"
 
 #define MAXVALLEN 1024
@@ -119,7 +118,6 @@ int PMI2U_writeline(int fd, char *buf) {
 
         if (n < 0) {
             PMI2U_printf("write_line error; fd=%d buf=:%s:", fd, buf);
-            ORTE_PMI_ERROR(-1, "system msg for write_line failure");
             return (-1);
         }
         if (n < size)

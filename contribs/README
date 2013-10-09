@@ -87,6 +87,10 @@ of the SLURM contribs distribution follows:
      API to SLURM using php.  Not a complete API, but offers quite a few
      interfaces to existing SLURM proper APIs.
 
+  pmi2               [ PMI2 client library ]
+     User applications can link with this library to use Slurm's mpi/pmi2
+     plugin.
+
   ptrace.patch       [ Linux Kernel patch required to for TotalView use ]
      0. This has been fixed on most recent Linux kernels. Older versions of
      Linux may need this patch support TotalView.

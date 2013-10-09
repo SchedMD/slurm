@@ -7,16 +7,8 @@
 #ifndef PMI2UTIL_H_INCLUDED
 #define PMI2UTIL_H_INCLUDED
 
-/* #include "orte/mca/errmgr/errmgr.h" */
 #include <stdio.h>
 #include <stdlib.h>
-
-#ifdef DEBUG
-#define opal_output(level, x...) do{printf(x);}while(0)
-#else
-#define opal_output(level, x...)
-#endif
-#define ORTE_PMI_ERROR(err, msg) do{printf(msg); exit(err);}while(0)
 
 /* maximum sizes for arrays */
 #define PMI2_MAXLINE 1024
@@ -36,12 +28,16 @@
 #endif
 
 #if (1)
-    #define PMI2U_printf(x...) do { \
-        char logstr[1024]; \
-        snprintf(logstr, 1024, x); \
-        opal_output(0, "[%s (%d): %s] %s\n", \
-            __FILE__, __LINE__, __FUNCTION__, logstr); \
-} while (0)
+    #define PMI2U_printf(x...) do {				\
+	char logstr[1024];					\
+	if (NULL == x) {					\
+		snprintf(logstr, 1024, "N/A");			\
+	} else {						\
+		snprintf(logstr, 1024, x);			\
+	}							\
+	fprintf(stderr, "[%s (%d): %s] %s\n",			\
+		__FILE__, __LINE__, __FUNCTION__, logstr);	\
+    } while (0)
 #else
     #define PMI2U_printf(x...)
 #endif
