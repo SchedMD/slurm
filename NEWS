@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
  -- Corrections to calculation of a pending job's expected start time.
  -- Remove some vestigial logic treating job priority of 1 as a special case.
  -- Memory freeing up to avoid minor memory leaks at close of daemons
+ -- Updated documentation to give correct units being displayed.
 
 * Changes in Slurm 2.6.3
 ========================
