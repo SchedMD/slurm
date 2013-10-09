@@ -136,7 +136,7 @@ static int _print_info(void)
 
 	if (buf->bf_active) {
 		printf("\nBackfilling stats (WARNING: data obtained"
-		       " in the middle of backfilling execution\n");
+		       " in the middle of backfilling execution.)\n");
 	} else
 		printf("\nBackfilling stats\n");
 
