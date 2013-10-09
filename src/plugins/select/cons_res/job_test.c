@@ -1961,7 +1961,8 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 	uint16_t *cpu_cnt, *cpus = NULL;
 	uint32_t start, n, a;
 	//char str[100];
-	bitstr_t *req_map = job_ptr->details->req_node_bitmap;
+	struct job_details *details_ptr = job_ptr->details;
+	bitstr_t *req_map = details_ptr->req_node_bitmap;
 
 	if (bit_set_count(node_map) < min_nodes)
 		return NULL;
