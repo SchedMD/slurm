@@ -163,6 +163,7 @@ main (int argc, char *argv[])
 
 ending:
 #ifdef MEMORY_LEAK_DEBUG
+	acct_gather_conf_destroy();
 	_step_cleanup(job, msg, rc);
 
 	fini_setproctitle();

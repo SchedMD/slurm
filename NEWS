@@ -19,6 +19,7 @@ documents those changes that are of interest to users and admins.
  -- Purged expired reservation even if it has pending jobs.
  -- Corrections to calculation of a pending job's expected start time.
  -- Remove some vestigial logic treating job priority of 1 as a special case.
+ -- Memory freeing up to avoid minor memory leaks at close of daemons
 
 * Changes in Slurm 2.6.3
 ========================
