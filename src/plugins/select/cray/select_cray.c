@@ -179,7 +179,7 @@ static int _run_nhc(uint32_t jobid, uint64_t apid, char *nodelist, bool step)
 		     "on nodes %s(%s)",
 		     jobid, apid, nodelist, nodelist_nids);
 
-	if (!nodelist || !nodelist_nids]) {
+	if (!nodelist || !nodelist_nids) {
 		/* already done */
 		goto fini;
 	}
