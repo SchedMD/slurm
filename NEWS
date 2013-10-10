@@ -7,7 +7,8 @@ documents those changes that are of interest to users and admins.
  -- Corrected commit f9a3c7e4e8ec.
  -- Honor ntasks-per-node option with exclusive node allocations.
  -- sched/backfill - Prevent invalid memory reference if bf_continue option is
-    configured and slurm is reconfigured during one of the sleep cycles.
+    configured and slurm is reconfigured during one of the sleep cycles or if
+    there are any changes to the partition configuration.
  -- Update man pages information about acct-freq and JobAcctGatherFrequency
     to reflect only the latest supported format.
 

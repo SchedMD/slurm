@@ -564,6 +564,7 @@ static int _attempt_backfill(void)
 	bool already_counted;
 	uint32_t reject_array_job_id = 0;
 	time_t config_update = slurmctld_conf.last_update;
+	time_t part_update = last_part_update;
 
 	bf_last_yields = 0;
 #ifdef HAVE_CRAY
@@ -649,7 +650,8 @@ static int _attempt_backfill(void)
 				     job_test_count, TIME_STR);
 			}
 			if ((_yield_locks(yield_sleep) && !backfill_continue) ||
-			    (slurmctld_conf.last_update != config_update)) {
+			    (slurmctld_conf.last_update != config_update) ||
+			    (last_part_update != part_update)) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
 					info("backfill: system state changed, "
 					     "breaking out after testing %d "
@@ -821,7 +823,8 @@ static int _attempt_backfill(void)
 				     job_test_count, TIME_STR);
 			}
 			if ((_yield_locks(yield_sleep) && !backfill_continue) ||
-			    (slurmctld_conf.last_update != config_update)) {
+			    (slurmctld_conf.last_update != config_update) ||
+			    (last_part_update != part_update)) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
 					info("backfill: system state changed, "
 					     "breaking out after testing %d "
