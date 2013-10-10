@@ -97,13 +97,13 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 	exec $bin_chmod 700 $config_dir/$pro_epi_prog
 }
 
-proc check_file { arg } {
+proc check_file { file_name } {
 	global test_id exit_code file_dir run_host
 
 	set found 0
-	spawn /opt/cray/nodehealth/default/bin/pcmd -n $run_host "find $file_dir -name $arg.$test_id.txt"
+	spawn /opt/cray/nodehealth/default/bin/pcmd -n $run_host "find $file_dir -name $file_name"
 	expect {
-		-re "$file_dir/$arg.$test_id.txt" {
+		-re "$file_dir/$file_name" {
 			set found 1
 			exp_continue
 		}
@@ -117,9 +117,9 @@ proc check_file { arg } {
 	}
 
 	if {$found == 1} {
-		send_user "\nFAILURE: The file $arg.$test_id.txt should have been removed\n"
+		send_user "\nFAILURE: The file $file_name should have been removed\n"
 		# Root may of created this file so we can't remove it
-		# exec $bin_rm -f $file_dir/$arg.$test_id.txt
+		# exec $bin_rm -f $file_dir/$file_name
 		set exit_code 1
 	}
 }
@@ -188,7 +188,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 	sleep 1
 	if {$make_file == 1} {
 		# Check to see that the epilog or prolog file has been removed
-		check_file $file_type
+		check_file $file_type.$test_id.txt
 	}
 
 	if {$task_pro != 1} {
@@ -308,7 +308,8 @@ if {$sub_job != 1} {
 }
 
 if {$make_file == 1} {
-	check_file srun-task-epilog
+	sleep 1
+	check_file srun-task-epilog.$test_id.txt
 }
 
 
@@ -364,26 +365,9 @@ if {$make_file == 1} {
 	}
 
 	sleep 1
-	set rm_success 0
-	spawn $srun -t1 -w$run_host $bin_rm $sbcast_file
-	expect {
-		-re "No such file" {
-			set rm_success 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: srun is not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$rm_success != 1} {
-		send_user "\nFAILURE: sbcast file not removed\n"
-		set exit_code 1
-	}
-	check_file srun-task-prolog
+	check_file $sbcast_file
+
+	check_file srun-task-prolog.$test_id.txt
 
 	# Remove link
 	exec $bin_rm -rf $cwd/srun--task-prolog_$test_id
