@@ -100,6 +100,8 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 proc check_file { file_name } {
 	global test_id exit_code file_dir run_host
 
+	sleep 1
+
 	set found 0
 	spawn /opt/cray/nodehealth/default/bin/pcmd -n $run_host "find $file_dir -name $file_name"
 	expect {
@@ -185,7 +187,6 @@ proc run_job { file_type program_name conf_change task_pro} {
 	}
 
 	# wait for file
-	sleep 1
 	if {$make_file == 1} {
 		# Check to see that the epilog or prolog file has been removed
 		check_file $file_type.$test_id.txt
@@ -308,7 +309,6 @@ if {$sub_job != 1} {
 }
 
 if {$make_file == 1} {
-	sleep 1
 	check_file srun-task-epilog.$test_id.txt
 }
 
@@ -364,7 +364,6 @@ if {$make_file == 1} {
 		set exit_code 1
 	}
 
-	sleep 1
 	check_file $sbcast_file
 
 	check_file srun-task-prolog.$test_id.txt
