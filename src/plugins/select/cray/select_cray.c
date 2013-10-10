@@ -145,33 +145,41 @@ const uint32_t plugin_version	= 100;
 
 extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo);
 
-static int _run_nhc(uint64_t id, char *nodelist, bool step)
+static int _run_nhc(uint32_t jobid, uint64_t apid, char *nodelist, bool step)
 {
 #ifdef HAVE_NATIVE_CRAY
-	int argc = 7, status = 1, wait_rc;
+	int argc = 10, status = 1, wait_rc;
 	char *argv[argc];
 	pid_t cpid;
+	char *jobid_char = NULL, *apid_char = NULL, *nodelist_nids = NULL;
 	DEF_TIMERS;
 
 	START_TIMER;
-	argv[0] = "/opt/cray/nodehealth/default/bin/xtcleanup_after";
-	argv[1] = "-m";
+
+	jobid_char = xstrdup_printf("%u", jobid);
+	apid_char = xstrdup_printf("%"PRIu64"", apid);
+	nodelist_nids = cray_nodelist2nids(NULL, nodelist);
+
+	argv[1] = "/opt/cray/nodehealth/default/bin/xtcleanup_after";
+	argv[2] = "-r";
+	argv[3] = jobid_char;
+	argv[4] = "-a";
+	argv[5] = apid_char;
+	argv[6] = "-m";
 	if (step) {
-		argv[2] = "application";
-		argv[3] = "-a";
+		argv[7] = "application";
 	} else {
-		argv[2] = "reservation";
-		argv[3] = "-r";
+		argv[7] = "reservation";
 	}
-	argv[4] = xstrdup_printf("%"PRIu64"", id);
-	argv[5] = cray_nodelist2nids(NULL, nodelist);
-	argv[6] = NULL;
+	argv[8] = nodelist_nids;
+	argv[9] = NULL;
 
 	if (debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		info("Calling NHC for id %"PRIu64" on nodes %s(%s)",
-		     id, nodelist, argv[3]);
+		info("Calling NHC for jobid %u and apid %"PRIu64" "
+		     "on nodes %s(%s)",
+		     jobid, apid, nodelist, nodelist_nids);
 
-	if (!nodelist || !argv[3]) {
+	if (!nodelist || !nodelist_nids]) {
 		/* already done */
 		goto fini;
 	}
@@ -204,21 +212,25 @@ static int _run_nhc(uint64_t id, char *nodelist, bool step)
 	}
 	END_TIMER;
 	if (status != 0) {
-		error("_run_nhc %s %"PRIu64" exit status %u:%u took: %s",
-		      step ? "step" : "job", step ? id : id,
-		      WEXITSTATUS(status), WTERMSIG(status), TIME_STR);
+		error("_run_nhc jobid %u and apid %"PRIu64" exit "
+		      "status %u:%u took: %s",
+		      jobid, apid, WEXITSTATUS(status),
+		      WTERMSIG(status), TIME_STR);
 	} else if (debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		info("_run_nhc %s %"PRIu64" completed took: %s",
-		     step ? "step" : "job", step ? id : id, TIME_STR);
+		info("_run_nhc jobid %u and apid %"PRIu64" completed took: %s",
+		     jobid, apid, TIME_STR);
 
  fini:
-	xfree(argv[2]);
-	xfree(argv[3]);
+	xfree(jobid_char);
+	xfree(apid_char);
+	xfree(nodelist_nids);
+
 	return status;
 #else
 	if (debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		info("simluating calling NHC for id %"PRIu64" on nodes %s",
-		     id, nodelist);
+		info("simluating calling NHC for jobid %u "
+		     "and apid %"PRIu64" on nodes %s",
+		     jobid, apid, nodelist);
 
 	/* simulate sleeping */
 	sleep(2);
@@ -251,7 +263,7 @@ static void *_job_fini(void *args)
 	unlock_slurmctld(job_read_lock);
 
 	/* run NHC */
-	_run_nhc(job_id, node_list, 0);
+	_run_nhc(job_id, 0, node_list, 0);
 	/***********/
 	xfree(node_list);
 
@@ -276,6 +288,7 @@ static void *_step_fini(void *args)
 	struct step_record *step_ptr = (struct step_record *)args;
 	select_jobinfo_t *jobinfo = NULL;
 	uint64_t apid = 0;
+	uint32_t jobid = 0;
 	char *node_list = NULL;
 
 	/* Locks: Write job, write node */
@@ -293,6 +306,7 @@ static void *_step_fini(void *args)
 	}
 
 	lock_slurmctld(job_read_lock);
+	jobid = step_ptr->job_ptr->job_id;
 	apid = SLURM_ID_HASH(step_ptr->job_ptr->job_id, step_ptr->step_id);
 
 	if (!step_ptr->step_layout || !step_ptr->step_layout->node_list) {
@@ -303,7 +317,7 @@ static void *_step_fini(void *args)
 	unlock_slurmctld(job_read_lock);
 
 	/* run NHC */
-	_run_nhc(apid, node_list, 0);
+	_run_nhc(jobid, apid, node_list, 1);
 	/***********/
 
 	xfree(node_list);
