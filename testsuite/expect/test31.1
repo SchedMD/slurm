@@ -152,7 +152,7 @@ proc check_proc {program_name} {
 
 proc run_job { file_type program_name conf_change task_pro} {
 
-	global srun run_host make_file exit_code bin_rm bin_printenv bin_sleep cwd
+	global srun run_host make_file exit_code bin_rm bin_printenv bin_sleep cwd test_id
 
 	# Change the included file to epilog in the slurm.conf
 	change_pro_epi $file_type $program_name $conf_change $task_pro
