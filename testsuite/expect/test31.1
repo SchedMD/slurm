@@ -337,7 +337,7 @@ if {$make_file == 1} {
 	update_conf
 
 	set sub_job 0
-	set sbcast_file      "$file_dir/${test_id}_sbcast"
+	set sbcast_file      "$file_dir/$test_id_sbcast"
 
 	spawn $salloc -t1 -w$run_host $bin_bash
 	expect {
@@ -364,7 +364,7 @@ if {$make_file == 1} {
 		set exit_code 1
 	}
 
-	check_file $sbcast_file
+	check_file $test_id_sbcast
 
 	check_file srun-task-prolog.$test_id.txt
 
