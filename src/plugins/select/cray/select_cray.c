@@ -148,7 +148,7 @@ extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo);
 static int _run_nhc(uint32_t jobid, uint64_t apid, char *nodelist, bool step)
 {
 #ifdef HAVE_NATIVE_CRAY
-	int argc = 10, status = 1, wait_rc;
+	int argc = 9, status = 1, wait_rc;
 	char *argv[argc];
 	pid_t cpid;
 	char *jobid_char = NULL, *apid_char = NULL, *nodelist_nids = NULL;
@@ -160,24 +160,25 @@ static int _run_nhc(uint32_t jobid, uint64_t apid, char *nodelist, bool step)
 	apid_char = xstrdup_printf("%"PRIu64"", apid);
 	nodelist_nids = cray_nodelist2nids(NULL, nodelist);
 
-	argv[1] = "/opt/cray/nodehealth/default/bin/xtcleanup_after";
-	argv[2] = "-r";
-	argv[3] = jobid_char;
-	argv[4] = "-a";
-	argv[5] = apid_char;
-	argv[6] = "-m";
+	argv[0] = "/opt/cray/nodehealth/default/bin/xtcleanup_after";
+	argv[1] = "-r";
+	argv[2] = jobid_char;
+	argv[3] = "-a";
+	argv[4] = apid_char;
+	argv[5] = "-m";
 	if (step) {
-		argv[7] = "application";
+		argv[6] = "application";
 	} else {
-		argv[7] = "reservation";
+		argv[6] = "reservation";
 	}
-	argv[8] = nodelist_nids;
-	argv[9] = NULL;
+	argv[7] = nodelist_nids;
+	argv[8] = NULL;
 
-	if (debug_flags & DEBUG_FLAG_SELECT_TYPE)
+	if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("Calling NHC for jobid %u and apid %"PRIu64" "
 		     "on nodes %s(%s)",
 		     jobid, apid, nodelist, nodelist_nids);
+	}
 
 	if (!nodelist || !nodelist_nids) {
 		/* already done */
