@@ -64,6 +64,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
@@ -562,6 +563,7 @@ static int _attempt_backfill(void)
 	uint16_t *njobs = NULL;
 	bool already_counted;
 	uint32_t reject_array_job_id = 0;
+	time_t config_update = slurmctld_conf.last_update;
 
 	bf_last_yields = 0;
 #ifdef HAVE_ALPS_CRAY
@@ -646,7 +648,8 @@ static int _attempt_backfill(void)
 				     "after testing %d jobs, %s",
 				     job_test_count, TIME_STR);
 			}
-			if (_yield_locks(yield_sleep) && !backfill_continue) {
+			if ((_yield_locks(yield_sleep) && !backfill_continue) ||
+			    (slurmctld_conf.last_update != config_update)) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
 					info("backfill: system state changed, "
 					     "breaking out after testing %d "
@@ -817,7 +820,8 @@ static int _attempt_backfill(void)
 				     "after testing %d jobs, %s",
 				     job_test_count, TIME_STR);
 			}
-			if (_yield_locks(yield_sleep) && !backfill_continue) {
+			if ((_yield_locks(yield_sleep) && !backfill_continue) ||
+			    (slurmctld_conf.last_update != config_update)) {
 				if (debug_flags & DEBUG_FLAG_BACKFILL) {
 					info("backfill: system state changed, "
 					     "breaking out after testing %d "

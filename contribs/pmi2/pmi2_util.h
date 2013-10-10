@@ -27,14 +27,10 @@
 #define PMI2U_FUNC __FILE__
 #endif
 
-#if (1)
+#ifdef DEBUG
     #define PMI2U_printf(x...) do {				\
 	char logstr[1024];					\
-	if (NULL == x) {					\
-		snprintf(logstr, 1024, "N/A");			\
-	} else {						\
-		snprintf(logstr, 1024, x);			\
-	}							\
+	snprintf(logstr, 1024, x);      			\
 	fprintf(stderr, "[%s (%d): %s] %s\n",			\
 		__FILE__, __LINE__, __FUNCTION__, logstr);	\
     } while (0)
