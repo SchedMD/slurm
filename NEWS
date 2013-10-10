@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     there are any changes to the partition configuration.
  -- Update man pages information about acct-freq and JobAcctGatherFrequency
     to reflect only the latest supported format.
+ -- Minor document update to include note about PrivateData=Usage for the
+    slurm.conf when using the DBD.
 
 * Changes in Slurm 2.6.3
 ========================
