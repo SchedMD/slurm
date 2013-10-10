@@ -27,7 +27,7 @@
 #define PMI2U_FUNC __FILE__
 #endif
 
-#if (1)
+#ifdef DEBUG
     #define PMI2U_printf(x...) do {				\
 	char logstr[1024];					\
 	snprintf(logstr, 1024, x);      			\
