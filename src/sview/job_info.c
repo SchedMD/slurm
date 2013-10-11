@@ -3953,7 +3953,7 @@ static void process_foreach_list (jobs_foreach_common_t *jobs_foreach_common)
 							stepid, signal);
 			break;
 		case EDIT_REQUEUE:
-			response = slurm_requeue(jobid);
+			response = slurm_requeue(jobid, 0);
 
 			if (response) {
 				/* stop rest of jobs */

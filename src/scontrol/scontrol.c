@@ -847,7 +847,7 @@ _process_command (int argc, char *argv[])
 		}
 	}
 	else if (strncasecmp (tag, "requeue", MAX(tag_len, 3)) == 0) {
-		if (argc > 2) {
+		if (argc > 3) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf(stderr,
@@ -860,7 +860,30 @@ _process_command (int argc, char *argv[])
 					"too few arguments for keyword:%s\n",
 					tag);
 		} else {
-			error_code = scontrol_requeue(argv[1]);
+			error_code = scontrol_requeue((argc - 1), &argv[1]);
+			if (error_code) {
+				exit_code = 1;
+				if (quiet_flag != 1)
+					slurm_perror ("slurm_requeue error");
+			}
+		}
+
+	}
+	else if (strncasecmp(tag, "requeuehold", 11) == 0) {
+		if (argc > 3) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too many arguments for keyword:%s\n",
+					tag);
+		} else if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"too few arguments for keyword:%s\n",
+					tag);
+		} else {
+			error_code = scontrol_requeue_hold((argc - 1), &argv[1]);
 			if (error_code) {
 				exit_code = 1;
 				if (quiet_flag != 1)

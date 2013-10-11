@@ -2198,6 +2198,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 				}
 				if (job_ptr->node_cnt == 0) {
 					job_ptr->job_state &= (~JOB_COMPLETING);
+					job_hold_requeue(job_ptr);
 					delete_step_records(job_ptr);
 					slurm_sched_g_schedule();
 				}
@@ -2423,6 +2424,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 			}
 			if (job_ptr->node_cnt == 0) {
 				job_ptr->job_state &= (~JOB_COMPLETING);
+				job_hold_requeue(job_ptr);
 				delete_step_records(job_ptr);
 				slurm_sched_g_schedule();
 			}
@@ -3478,7 +3480,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	uint32_t job_comp_flag = 0;
 	bool suspended = false;
 
-	info("completing job %u", job_id);
+	info("completing job %u status %d", job_id, job_return_code);
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
 		info("job_complete: invalid JobId=%u", job_id);
@@ -8079,6 +8081,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("sched: update_job: releasing user hold "
 			     "for job_id %u", job_specs->job_id);
 			job_ptr->state_reason = WAIT_NO_REASON;
+			job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
 			xfree(job_ptr->state_desc);
 		} else if (authorized ||
 			 (job_ptr->priority > job_specs->priority)) {
@@ -8106,6 +8109,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			} else if ((job_ptr->state_reason == WAIT_HELD) ||
 				   (job_ptr->state_reason == WAIT_HELD_USER)) {
 				job_ptr->state_reason = WAIT_NO_REASON;
+				job_ptr->job_state &= ~JOB_SPECIAL_EXIT;
 				xfree(job_ptr->state_desc);
 			}
 		} else {
@@ -10232,8 +10236,11 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
-			uint16_t protocol_version, bool preempt)
+extern int job_requeue(uid_t uid,
+                       uint32_t job_id,
+                       slurm_fd_t conn_fd,
+                       uint16_t protocol_version,
+                       bool preempt)
 {
 	int rc = SLURM_SUCCESS;
 	struct job_record *job_ptr = NULL;
@@ -10241,9 +10248,10 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 	time_t now = time(NULL);
+	bool is_running;
 
 	/* find the job */
-	job_ptr = find_job_record (job_id);
+	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
@@ -10256,14 +10264,12 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
 		rc = ESLURM_ACCESS_DENIED;
 		goto reply;
 	}
-	if (IS_JOB_FINISHED(job_ptr)) {
-		rc = ESLURM_ALREADY_DONE;
-		goto reply;
-	}
+
 	if ((job_ptr->details == NULL) || (job_ptr->details->requeue == 0)) {
 		rc = ESLURM_DISABLED;
 		goto reply;
 	}
+
 	if (IS_JOB_COMPLETING(job_ptr)) {
 		if (IS_JOB_PENDING(job_ptr))
 			goto reply;	/* already requeued */
@@ -10278,13 +10284,6 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
 	if (job_ptr->batch_flag == 0) {
 		debug("Job-requeue can only be done for batch jobs");
 		rc = ESLURM_BATCH_ONLY;
-		goto reply;
-	}
-
-	if (!IS_JOB_SUSPENDED(job_ptr) && !IS_JOB_RUNNING(job_ptr)) {
-		error("job_requeue job %u state is bad %s", job_id,
-			job_state_string(job_ptr->job_state));
-		rc = EINVAL;
 		goto reply;
 	}
 
@@ -10308,13 +10307,28 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
 	else
 		job_ptr->end_time = now;
 
+	/* Save the state of the job so that
+	 * we deallocate the nodes if is in
+	 * running state.
+	 */
+	is_running = false;
+	if (IS_JOB_SUSPENDED(job_ptr)
+	    || IS_JOB_RUNNING(job_ptr))
+		is_running = true;
+
 	/* We want this job to look like it was cancelled in the
 	 * accounting logs. Set a new submit time so the restarted
 	 * job looks like a new job. */
 	job_ptr->job_state  = JOB_CANCELLED;
 	build_cg_bitmap(job_ptr);
 	job_completion_logger(job_ptr, true);
-	deallocate_nodes(job_ptr, false, suspended, preempt);
+
+	/* Deallocate resources only if the job
+	 * has some.
+	 */
+	if (is_running)
+		deallocate_nodes(job_ptr, false, suspended, preempt);
+
 	xfree(job_ptr->details->req_node_layout);
 
 	/* do this after the epilog complete, setting it here is too early */
@@ -10334,7 +10348,7 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd_t conn_fd,
 	 * to add it again. */
 	acct_policy_add_job_submit(job_ptr);
 
-    reply:
+reply:
 	if (conn_fd >= 0) {
 		slurm_msg_t_init(&resp_msg);
 		resp_msg.protocol_version = protocol_version;
@@ -11285,9 +11299,71 @@ extern void build_cg_bitmap(struct job_record *job_ptr)
 		job_ptr->node_bitmap_cg = bit_copy(job_ptr->node_bitmap);
 		if (bit_set_count(job_ptr->node_bitmap_cg) == 0)
 			job_ptr->job_state &= (~JOB_COMPLETING);
+		info("%s: JOB_COMPLETING cleaned state 0x%x", __func__, job_ptr->job_state);
 	} else {
 		error("build_cg_bitmap: node_bitmap is NULL");
 		job_ptr->node_bitmap_cg = bit_alloc(node_record_count);
 		job_ptr->job_state &= (~JOB_COMPLETING);
 	}
+	job_hold_requeue(job_ptr);
+}
+
+/* job_hold_requeue()
+ *
+ * Requeue the job either in JOB_SPECIAL_EXIT state
+ * in which is put on hold or if JOB_REQUEUE_HOLD is
+ * specified don't change its state. The requeue
+ * can happen directly from job_requeue() or from
+ * job_epilog_complete() after the last component
+ * has finished.
+ */
+void
+job_hold_requeue(struct job_record *job_ptr)
+{
+	uint32_t state;
+
+	xassert(job_ptr);
+
+	state = job_ptr->job_state;
+
+	if (! (state & JOB_SPECIAL_EXIT)
+	    && ! (state & JOB_REQUEUE_HOLD)
+	    && ! (state & JOB_REQUEUE))
+		return;
+
+	debug("%s: job %u state 0x%x", __func__, job_ptr->job_id, state);
+
+	/* We have to set the state here in case
+	 * we are not requeueing the job from
+	 * job_requeue() but from job_epilog_complete().
+	 */
+	job_ptr->job_state = JOB_PENDING;
+
+	/* Test if user wants to requeue the job
+	 * in hold or with a special exit value.
+	 */
+	if (state & JOB_SPECIAL_EXIT) {
+		/* JOB_SPECIAL_EXIT means requeue the
+		 * the job, put it on hold and display
+		 * it as JOB_SPECIAL_EXIT.
+		 */
+		job_ptr->job_state |= JOB_SPECIAL_EXIT;
+		job_ptr->state_reason = WAIT_HELD_USER;
+		job_ptr->priority = 0;
+	}
+
+	if (state & JOB_REQUEUE_HOLD) {
+		/* The job will be requeued in status
+		 * PENDING and held
+		 */
+		job_ptr->state_reason = WAIT_HELD_USER;
+		job_ptr->priority = 0;
+	}
+
+	job_ptr->job_state &= ~JOB_REQUEUE_HOLD;
+	job_ptr->job_state &= ~JOB_REQUEUE;
+
+	debug("%s: job %u state 0x%x reason %u priority %d", __func__,
+	      job_ptr->job_id, job_ptr->job_state,
+	      job_ptr->state_reason, job_ptr->priority);
 }

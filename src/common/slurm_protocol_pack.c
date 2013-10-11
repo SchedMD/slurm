@@ -655,6 +655,15 @@ static inline void _pack_license_info_msg(slurm_msg_t *msg, Buf buffer);
 static int _unpack_license_info_msg(license_info_msg_t **msg,
                                     Buf buffer,
                                     uint16_t protocol_version);
+static void
+_pack_job_requeue_msg(requeue_msg_t *msg,
+                      Buf buf,
+                      uint16_t protocol_version);
+static int
+_unpack_job_requeue_msg(requeue_msg_t **msg,
+                        Buf buf,
+                        uint16_t protocol_version);
+
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
  * IN header - the header structure to pack
@@ -1133,10 +1142,15 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 
 	case REQUEST_JOB_READY:
-	case REQUEST_JOB_REQUEUE:
 	case REQUEST_JOB_INFO_SINGLE:
 		_pack_job_ready_msg((job_id_msg_t *)msg->data, buffer,
 				    msg->protocol_version);
+		break;
+
+	case REQUEST_JOB_REQUEUE:
+		_pack_job_requeue_msg((requeue_msg_t *)msg->data,
+		                      buffer,
+		                      msg->protocol_version);
 		break;
 
 	case REQUEST_JOB_USER_INFO:
@@ -1731,11 +1745,16 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 
 	case REQUEST_JOB_READY:
-	case REQUEST_JOB_REQUEUE:
 	case REQUEST_JOB_INFO_SINGLE:
 		rc = _unpack_job_ready_msg((job_id_msg_t **)
-					   & msg->data, buffer,
-					   msg->protocol_version);
+		                           & msg->data, buffer,
+		                           msg->protocol_version);
+		break;
+
+	case REQUEST_JOB_REQUEUE:
+		rc = _unpack_job_requeue_msg((requeue_msg_t **)&msg->data,
+		                             buffer,
+		                             msg->protocol_version);
 		break;
 
 	case REQUEST_JOB_USER_INFO:
@@ -9594,6 +9613,50 @@ _unpack_job_ready_msg(job_id_msg_t ** msg_ptr, Buf buffer,
 unpack_error:
 	*msg_ptr = NULL;
 	slurm_free_job_id_msg(msg);
+	return SLURM_ERROR;
+}
+
+static void
+_pack_job_requeue_msg(requeue_msg_t *msg, Buf buf, uint16_t protocol_version)
+{
+	uint16_t cc;
+
+	xassert(msg != NULL);
+	cc = 0;
+
+	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buf);
+		pack32(msg->state, buf);
+	} else {
+		/* For backward compatibility we emulate _pack_job_ready_msg()
+		 */
+		pack32(msg->job_id, buf);
+		pack16(cc, buf);
+	}
+}
+
+static int
+_unpack_job_requeue_msg(requeue_msg_t **msg, Buf buf, uint16_t protocol_version)
+{
+	uint16_t cc;
+
+	*msg = xmalloc(sizeof(requeue_msg_t));
+
+	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
+		safe_unpack32(&(*msg)->job_id, buf);
+		safe_unpack32(&(*msg)->state, buf);
+	} else {
+		/* Translate job_id_msg_t into requeue_msg_t
+		 */
+		safe_unpack32(&(*msg)->job_id, buf) ;
+		safe_unpack16(&cc, buf);
+		(*msg)->state = cc;
+	}
+
+	return SLURM_SUCCESS;
+unpack_error:
+	slurm_free_requeue_msg(*msg);
+	*msg = NULL;
 	return SLURM_ERROR;
 }
 

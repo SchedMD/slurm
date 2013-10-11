@@ -511,6 +511,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 
 	if ((agent_args->node_count - down_node_cnt) == 0) {
 		job_ptr->job_state &= (~JOB_COMPLETING);
+		job_hold_requeue(job_ptr);
 		delete_step_records(job_ptr);
 		slurm_sched_g_schedule();
 	}
@@ -1369,7 +1370,7 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			if (!kill_pending)
 				continue;
 			rc = job_requeue(0, job_ptr->job_id, -1,
-					 (uint16_t)NO_VAL, true);
+			                 (uint16_t)NO_VAL, true);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted job %u has been requeued",
 				     job_ptr->job_id);
@@ -2513,6 +2514,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 				    ((--job_ptr->node_cnt) == 0)) {
 					last_node_update = time(NULL);
 					job_ptr->job_state &= (~JOB_COMPLETING);
+					job_hold_requeue(job_ptr);
 					delete_step_records(job_ptr);
 					slurm_sched_g_schedule();
 				}
@@ -2540,6 +2542,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 			if ((job_ptr->node_cnt > 0) &&
 			    ((--job_ptr->node_cnt) == 0)) {
 				job_ptr->job_state &= (~JOB_COMPLETING);
+				job_hold_requeue(job_ptr);
 				delete_step_records(job_ptr);
 				slurm_sched_g_schedule();
 				last_node_update = time(NULL);

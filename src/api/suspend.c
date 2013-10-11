@@ -97,14 +97,17 @@ extern int slurm_resume (uint32_t job_id)
  * IN job_id  - job on which to perform operation
  * RET 0 or a slurm error code
  */
-extern int slurm_requeue (uint32_t job_id)
+extern int slurm_requeue(uint32_t job_id,
+                         uint32_t state)
 {
 	int rc;
-	job_id_msg_t requeue_req;
+	requeue_msg_t requeue_req;
 	slurm_msg_t req_msg;
 
 	slurm_msg_t_init(&req_msg);
+
 	requeue_req.job_id	= job_id;
+	requeue_req.state = state;
 	req_msg.msg_type	= REQUEST_JOB_REQUEUE;
 	req_msg.data		= &requeue_req;
 
@@ -114,4 +117,3 @@ extern int slurm_requeue (uint32_t job_id)
 	slurm_seterrno(rc);
 	return rc;
 }
-

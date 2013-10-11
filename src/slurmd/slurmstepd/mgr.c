@@ -621,7 +621,7 @@ _send_exit_msg(stepd_step_rec_t *job, uint32_t *tid, int n, int status)
 	ListIterator    i       = NULL;
 	srun_info_t    *srun    = NULL;
 
-	debug3("sending task exit msg for %d tasks", n);
+	debug3("sending task exit msg for %d tasks status %d", n, status);
 
 	msg.task_id_list	= tid;
 	msg.num_tasks		= n;
@@ -2087,7 +2087,8 @@ _send_complete_batch_script_msg(stepd_step_rec_t *job, int err, int status)
 	req_msg.msg_type= REQUEST_COMPLETE_BATCH_SCRIPT;
 	req_msg.data	= &req;
 
-	info("sending REQUEST_COMPLETE_BATCH_SCRIPT, error:%u", err);
+	info("sending REQUEST_COMPLETE_BATCH_SCRIPT, error:%u status %d",
+	     err, status);
 
 	/* Note: these log messages don't go to slurmd.log from here */
 	for (i = 0; i <= MAX_RETRY; i++) {

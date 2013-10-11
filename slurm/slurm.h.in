@@ -273,6 +273,9 @@ enum job_states {
 #define	JOB_RESIZING	0x2000	/* Size of job about to change, flag set
 				 * before calling accounting functions
 				 * immediately before job changes size */
+#define JOB_SPECIAL_EXIT  0x1000 /* Requeue an exit job in hold */
+#define JOB_REQUEUE_HOLD  0x800  /* Requeue any job in hold */
+#define JOB_REQUEUE       0x400  /* Requeue job in completign state */
 
 #define READY_JOB_FATAL	   -2	/* fatal error */
 #define READY_JOB_ERROR    -1	/* ordinary error */
@@ -1371,6 +1374,11 @@ typedef struct suspend_msg {
 	uint16_t op;            /* suspend operation, see enum suspend_opts */
 	uint32_t job_id;        /* slurm job_id */
 } suspend_msg_t;
+
+typedef struct requeue_msg {
+	uint32_t job_id;       /* slurm job_id */
+	uint32_t state;        /* JobExitRequeue | Hold */
+} requeue_msg_t;
 
 typedef struct {
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
@@ -3683,7 +3691,7 @@ extern int slurm_resume PARAMS((uint32_t job_id));
  * IN job_id  - job on which to perform operation
  * RET 0 or a slurm error code
  */
-extern int slurm_requeue PARAMS((uint32_t job_id));
+extern int slurm_requeue PARAMS((uint32_t job_id, uint32_t state));
 
 /*****************************************************************************\
  *      SLURM JOB CHECKPOINT FUNCTIONS

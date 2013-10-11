@@ -910,6 +910,12 @@ extern void slurm_free_suspend_msg(suspend_msg_t *msg)
 	xfree(msg);
 }
 
+extern void
+slurm_free_requeue_msg(requeue_msg_t *msg)
+{
+	xfree(msg);
+}
+
 extern void slurm_free_suspend_int_msg(suspend_int_msg_t *msg)
 {
 	if (msg) {
@@ -1196,6 +1202,8 @@ extern char *job_state_string(uint16_t inx)
 		return "CONFIGURING";
 	if (inx & JOB_RESIZING)
 		return "RESIZING";
+	if (inx & JOB_SPECIAL_EXIT)
+		return "SPECIAL_EXIT";
 
 	/* Process JOB_STATE_BASE */
 	switch (inx & JOB_STATE_BASE) {
@@ -1233,6 +1241,8 @@ extern char *job_state_string_compact(uint16_t inx)
 		return "CF";
 	if (inx & JOB_RESIZING)
 		return "RS";
+	if (inx & JOB_SPECIAL_EXIT)
+		return "SE";
 
 	/* Process JOB_STATE_BASE */
 	switch (inx & JOB_STATE_BASE) {

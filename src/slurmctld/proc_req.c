@@ -3642,30 +3642,68 @@ inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
-	job_id_msg_t *requeue_ptr = (job_id_msg_t *) msg->data;
+	requeue_msg_t *req_ptr = (requeue_msg_t *)msg->data;
 	/* Locks: write job and node */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	struct job_record *job_ptr;
 
 	START_TIMER;
-	info("Processing RPC: REQUEST_REQUEUE from uid=%d", uid);
+	info("%s: Processing RPC: REQUEST_REQUEUE from uid=%d", __func__, uid);
+
+	job_ptr = find_job_record(req_ptr->job_id);
+	if (job_ptr == NULL) {
+		info("%s: %u: %s", __func__, req_ptr->job_id,
+		     slurm_strerror(ESLURM_INVALID_JOB_ID));
+		return;
+	}
 
 	lock_slurmctld(job_write_lock);
-	error_code = job_requeue(uid, requeue_ptr->job_id,
-				 msg->conn_fd, msg->protocol_version, false);
+	error_code = job_requeue(uid,
+	                         req_ptr->job_id,
+	                         msg->conn_fd,
+	                         msg->protocol_version,
+	                         false);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("_slurm_rpc_requeue");
 
 	if (error_code) {
-		info("_slurm_rpc_requeue %u: %s", requeue_ptr->job_id,
-		     slurm_strerror(error_code));
-	} else {
-		info("_slurm_rpc_requeue %u: %s", requeue_ptr->job_id,
-		     TIME_STR);
-		/* Functions below provide their own locking */
-		schedule_job_save();
+
+		if (error_code == ESLURM_TRANSITION_STATE_NO_UPDATE) {
+			/* The job is in state JOB_COMPLETING save the
+			 * requested operation and carry on. The requeue
+			 * will be done after the last job epilog completes.
+			 */
+			if (req_ptr->state & JOB_SPECIAL_EXIT)
+				job_ptr->job_state |= JOB_SPECIAL_EXIT;
+			if (req_ptr->state & JOB_REQUEUE_HOLD)
+				job_ptr->job_state |= JOB_REQUEUE_HOLD;
+			job_ptr->job_state |= JOB_REQUEUE;
+
+		} else {
+			info("%s: %u: %s", __func__, req_ptr->job_id,
+			     slurm_strerror(error_code));
+		}
+
+		return;
 	}
+
+	/* Requeue operation went all right, see if the user
+	 * wants to mark the job as special case or hold it.
+	 */
+	if (req_ptr->state & JOB_SPECIAL_EXIT)
+		job_ptr->job_state |= JOB_SPECIAL_EXIT;
+	if (req_ptr->state & JOB_REQUEUE_HOLD)
+		job_ptr->job_state |= JOB_REQUEUE_HOLD;
+
+	job_hold_requeue(job_ptr);
+
+	info("%s: %u: %s", __func__, req_ptr->job_id, TIME_STR);
+
+	/* Functions below provide their own locking
+	 */
+	schedule_job_save();
 }
 
 /* Assorted checkpoint operations */

@@ -79,6 +79,11 @@ COMMAND CHANGES (see man pages for details)
  -- Add stdin/out/err to sview job output.
  -- Added a new option to the scontrol command to view licenses that are configured
     in use and avalable. 'scontrol show licenses'.
+ -- Permit jobs in finished state to be requeued.
+ -- Added a new option to scontrol to put a requeued job on hold. A requeued
+    job can be put in a new special state called SPECIAL_EXIT indicating
+    the job has exited with a special value.
+    "scontrol requeuehold state=SpecialExit 123".
 
 OTHER CHANGES
 =============

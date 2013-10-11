@@ -46,6 +46,7 @@ static int _parse_checkpoint_args(int argc, char **argv,
 static int _parse_restart_args(int argc, char **argv,
 			       uint16_t *stick, char **image_dir);
 static void _update_job_size(uint32_t job_id);
+static int _parse_requeue_flags(char *, uint32_t *state_flags);
 
 /*
  * scontrol_checkpoint - perform some checkpoint/resume operation
@@ -338,26 +339,67 @@ scontrol_suspend(char *op, char *job_id_str)
  *              error message and returns 0
  */
 extern int
-scontrol_requeue(char *job_id_str)
+scontrol_requeue(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t job_id = 0;
 	char *next_str;
 
-	if (job_id_str) {
-		job_id = (uint32_t) strtol (job_id_str, &next_str, 10);
-		if (next_str[0] != '\0') {
-			fprintf(stderr, "Invalid job id specified\n");
-			exit_code = 1;
-			return 0;
-		}
-	} else {
+	if (! argv[0]) {
+		exit_code = 1;
+		return 0;
+	}
+
+	job_id = (uint32_t)strtol(argv[0], &next_str, 10);
+	if (next_str[0] != '\0') {
 		fprintf(stderr, "Invalid job id specified\n");
 		exit_code = 1;
 		return 0;
 	}
 
-	rc = slurm_requeue (job_id);
+	rc = slurm_requeue(job_id, 0);
+
+	return rc;
+}
+
+extern int
+scontrol_requeue_hold(int argc, char **argv)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t job_id = 0;
+	char *next_str;
+	char *job_id_str;
+	uint32_t state_flag;
+
+	state_flag = 0;
+
+	if (argc == 1)
+		job_id_str = argv[0];
+	else
+		job_id_str = argv[1];
+
+	job_id = (uint32_t)strtol(job_id_str, &next_str, 10);
+	if (next_str[0] != '\0') {
+		fprintf(stderr, "Invalid job id specified\n");
+		exit_code = 1;
+		return 0;
+	}
+
+	if (argc == 2) {
+		rc = _parse_requeue_flags(argv[0], &state_flag);
+		if (rc < 0) {
+			error("Invalid state specification %s", argv[0]);
+			exit_code = 1;
+			return 0;
+		}
+	}
+	state_flag |= JOB_REQUEUE_HOLD;
+
+	/* Go and requeue the state either in
+	 * JOB_SPECIAL_EXIT or HELD state.
+	 */
+	rc = slurm_requeue(job_id, state_flag);
+
 	return rc;
 }
 
@@ -856,12 +898,12 @@ static void _update_job_size(uint32_t job_id)
 	(void) unlink(fname_csh);
 	(void) unlink(fname_sh);
  	if (!(resize_csh = fopen(fname_csh, "w"))) {
-		fprintf(stderr, "Could not create file %s: %s\n", fname_csh, 
+		fprintf(stderr, "Could not create file %s: %s\n", fname_csh,
 			strerror(errno));
 		goto fini;
 	}
  	if (!(resize_sh = fopen(fname_sh, "w"))) {
-		fprintf(stderr, "Could not create file %s: %s\n", fname_sh, 
+		fprintf(stderr, "Could not create file %s: %s\n", fname_sh,
 			strerror(errno));
 		goto fini;
 	}
@@ -875,9 +917,9 @@ static void _update_job_size(uint32_t job_id)
 			alloc_info->node_list);
 	}
 	if (getenv("SLURM_JOB_NODELIST")) {
-		fprintf(resize_sh, "export SLURM_JOB_NODELIST=\"%s\"\n", 
+		fprintf(resize_sh, "export SLURM_JOB_NODELIST=\"%s\"\n",
 			alloc_info->node_list);
-		fprintf(resize_csh, "setenv SLURM_JOB_NODELIST \"%s\"\n", 
+		fprintf(resize_csh, "setenv SLURM_JOB_NODELIST \"%s\"\n",
 			alloc_info->node_list);
 	}
 	if (getenv("SLURM_NNODES")) {
@@ -920,4 +962,41 @@ fini:	slurm_free_resource_allocation_response_msg(alloc_info);
 		fclose(resize_csh);
 	if (resize_sh)
 		fclose(resize_sh);
+}
+
+/* _parse_requeue_args()
+ */
+static int
+_parse_requeue_flags(char *s, uint32_t *state)
+{
+	char *p;
+	char *p0;
+	char *z;
+
+	p0 = p = xstrdup(s);
+	/* search for =
+	 */
+	z = strchr(p, '=');
+	if (!z) {
+		return -1;
+	}
+	*z = 0;
+
+	/* validate flags keyword
+	 */
+	if (strncasecmp(p, "state", 5) != 0) {
+		return -1;
+	}
+	++z;
+
+	p = z;
+	if (strncasecmp(p, "specialexit", 11) == 0
+	    || strncasecmp(p, "se", 2) == 0) {
+		*state = JOB_SPECIAL_EXIT;
+		xfree(p0);
+		return 0;
+	}
+
+	xfree(p0);
+	return -1;
 }

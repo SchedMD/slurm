@@ -585,7 +585,7 @@ Fully qualified pathname of a program for the slurmctld to execute
 upon termination of a job allocation (e.g.
 "/usr/local/slurm/epilog_controller").
 The program executes as SlurmUser, which gives it permission to drain
-nodes and requeue the job if a failure occurs or cancel the job if appropriate.
+nodes and requeue the job if a failure occurs (See scontrol(1)).
 Exactly what the program does and how it accomplishes this is completely at
 the discretion of the system administrator.
 Information about the job being initiated, it's allocated nodes, etc. are
@@ -3564,9 +3564,18 @@ The highest exit code of all of the job steps.
 Available in \fBEpilogSlurmctld\fR only.
 .TP
 \fBSLURM_JOB_EXIT_CODE\fR
-The exit code of the job script (or salloc).
+The exit code of the job script (or salloc). The value is the status
+as returned by the wait() system call (See wait(2))
 Available in \fBEpilogSlurmctld\fR only.
 .TP
+\fBSLURM_JOB_EXIT_CODE2\fR
+The exit code of the job script (or salloc). The value has the format
+<exit>:<sig>. The first number is the exit code, typically as set by the
+exit() function. The second number of the signal that caused the process to
+terminante if it was terminated by a signal.
+Available in \fBEpilogSlurmctld\fR only.
+.TP
+
 \fBSLURM_JOB_GID\fR
 Group ID of the job's owner.
 Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.

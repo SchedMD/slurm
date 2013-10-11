@@ -2010,6 +2010,9 @@ extern int epilog_slurmctld(struct job_record *job_ptr)
 static char **_build_env(struct job_record *job_ptr)
 {
 	char **my_env, *name;
+	char buf[32];
+	int exit_code;
+	int signal;
 
 	my_env = xmalloc(sizeof(char *));
 	my_env[0] = NULL;
@@ -2052,6 +2055,17 @@ static char **_build_env(struct job_record *job_ptr)
 	}
 	setenvf(&my_env, "SLURM_JOB_DERIVED_EC", "%u",
 		job_ptr->derived_ec);
+
+	exit_code = signal = 0;
+	if (WIFEXITED(job_ptr->exit_code)) {
+		exit_code = WEXITSTATUS(job_ptr->exit_code);
+	}
+	if (WIFSIGNALED(job_ptr->exit_code)) {
+		signal = WTERMSIG(job_ptr->exit_code);
+	}
+	sprintf(buf, "%d:%d", exit_code, signal);
+	setenvf(&my_env, "SLURM_JOB_EXIT_CODE2", "%s", buf);
+
 	setenvf(&my_env, "SLURM_JOB_EXIT_CODE", "%u", job_ptr->exit_code);
 	setenvf(&my_env, "SLURM_JOB_GID", "%u", job_ptr->group_id);
 	name = gid_to_string((uid_t) job_ptr->group_id);
