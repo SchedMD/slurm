@@ -550,6 +550,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(buffer), len);
 	free_buf(buffer);
+	buffer = NULL;
 
 	/* send self address over to slurmstepd */
 	if (self) {
@@ -559,6 +560,8 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		safe_write(fd, &len, sizeof(int));
 		safe_write(fd, get_buf_data(buffer), len);
 		free_buf(buffer);
+		buffer = NULL;
+
 	} else {
 		len = 0;
 		safe_write(fd, &len, sizeof(int));
@@ -597,6 +600,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(buffer), len);
 	free_buf(buffer);
+	buffer = NULL;
 
 	/* send cached group ids array for the relevant uid */
 	debug3("_send_slurmstepd_init: call to getpwuid_r");
