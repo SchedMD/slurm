@@ -2221,7 +2221,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 
 	_post_resv_update(resv_ptr, resv_backup);
 	_del_resv_rec(resv_backup);
-	set_node_maint_mode(true);
+	(void) set_node_maint_mode(true);
 	last_resv_update = now;
 	schedule_resv_save();
 	return error_code;
@@ -4040,16 +4040,21 @@ extern int send_resvs_to_accounting(void)
 	return SLURM_SUCCESS;
 }
 
-
-/* Set or clear NODE_STATE_MAINT for node_state as needed */
-extern void set_node_maint_mode(bool reset_all)
+/* Set or clear NODE_STATE_MAINT for node_state as needed
+ * IN reset_all - if true, then re-initialize all node information for all
+ *	reservations, but do not run any prologs or epilogs or count started
+ *	reservations
+ * RET count of newly started reservations
+ */
+extern int set_node_maint_mode(bool reset_all)
 {
+	int res_start_cnt = 0;
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
 	time_t now = time(NULL);
 
 	if (!resv_list)
-		return;
+		return res_start_cnt;
 
 	if (reset_all) {
 		int i;
@@ -4062,7 +4067,27 @@ extern void set_node_maint_mode(bool reset_all)
 	}
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if (reset_all)
+			resv_ptr->maint_set_node = false;
+		if (resv_ptr->flags & RESERVE_FLAG_MAINT) {
+			if ((now >= resv_ptr->start_time) &&
+			    (now <  resv_ptr->end_time  )) {
+				if (!resv_ptr->maint_set_node) {
+					resv_ptr->maint_set_node = true;
+					_set_nodes_maint(resv_ptr, now);
+					last_node_update = now;
+				}
+			} else if (resv_ptr->maint_set_node) {
+				resv_ptr->maint_set_node = false;
+				_set_nodes_maint(resv_ptr, now);
+				last_node_update = now;
+			}
+		}
+
+		if (reset_all)	/* Defer reservation prolog/epilog */
+			continue;
 		if ((resv_ptr->start_time <= now) && !resv_ptr->run_prolog) {
+			res_start_cnt++;
 			resv_ptr->run_prolog = true;
 			_run_script(slurmctld_conf.resv_prolog, resv_ptr);
 		}
@@ -4070,24 +4095,10 @@ extern void set_node_maint_mode(bool reset_all)
 			resv_ptr->run_epilog = true;
 			_run_script(slurmctld_conf.resv_epilog, resv_ptr);
 		}
-		if (reset_all)
-			resv_ptr->maint_set_node = false;
-		if ((resv_ptr->flags & RESERVE_FLAG_MAINT) == 0)
-			continue;
-		if ((now >= resv_ptr->start_time) &&
-		    (now <  resv_ptr->end_time  )) {
-			if (!resv_ptr->maint_set_node) {
-				resv_ptr->maint_set_node = true;
-				_set_nodes_maint(resv_ptr, now);
-				last_node_update = now;
-			}
-		} else if (resv_ptr->maint_set_node) {
-			resv_ptr->maint_set_node = false;
-			_set_nodes_maint(resv_ptr, now);
-			last_node_update = now;
-		}
 	}
 	list_iterator_destroy(iter);
+
+	return res_start_cnt;
 }
 
 /* checks if node within node_record_table_ptr is in maint reservation */

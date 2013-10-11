@@ -1341,6 +1341,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_uid_update;
 	static time_t last_reboot_msg_time;
 	static bool ping_msg_sent = false;
+	static bool run_job_scheduler = false;
 	time_t now;
 	int no_resp_msg_interval, ping_interval, purge_job_interval;
 	int group_time, group_force;
@@ -1439,7 +1440,8 @@ static void *_slurmctld_background(void *no_data)
 			now = time(NULL);
 			last_resv_time = now;
 			lock_slurmctld(node_write_lock);
-			set_node_maint_mode(false);
+			if (set_node_maint_mode(false) > 0)
+				run_job_scheduler = true;
 			unlock_slurmctld(node_write_lock);
 		}
 
@@ -1561,9 +1563,11 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(job_write_lock);
 		}
 
-		if (difftime(now, last_sched_time) >= PERIODIC_SCHEDULE) {
+		if ((difftime(now, last_sched_time) >= PERIODIC_SCHEDULE) ||
+		    run_job_scheduler) {
 			now = time(NULL);
 			last_sched_time = now;
+			run_job_scheduler = false;
 			if (schedule(INFINITE))
 				last_checkpoint_time = 0; /* force state save */
 			set_job_elig_time();
