@@ -120,6 +120,8 @@ documents those changes that are of interest to users and admins.
  -- Minor document update to include note about PrivateData=Usage for the
     slurm.conf when using the DBD.
  -- Expand information reported with DebugFlags=backfill.
+ -- Initiate jobs pending to run in a reservation as soon as the reservation
+    becomes active.
 
 * Changes in Slurm 2.6.3
 ========================
