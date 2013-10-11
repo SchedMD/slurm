@@ -9619,10 +9619,7 @@ unpack_error:
 static void
 _pack_job_requeue_msg(requeue_msg_t *msg, Buf buf, uint16_t protocol_version)
 {
-	uint16_t cc;
-
 	xassert(msg != NULL);
-	cc = 0;
 
 	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buf);
@@ -9630,6 +9627,8 @@ _pack_job_requeue_msg(requeue_msg_t *msg, Buf buf, uint16_t protocol_version)
 	} else {
 		/* For backward compatibility we emulate _pack_job_ready_msg()
 		 */
+		uint16_t cc;
+		cc = 0;
 		pack32(msg->job_id, buf);
 		pack16(cc, buf);
 	}
@@ -9638,8 +9637,6 @@ _pack_job_requeue_msg(requeue_msg_t *msg, Buf buf, uint16_t protocol_version)
 static int
 _unpack_job_requeue_msg(requeue_msg_t **msg, Buf buf, uint16_t protocol_version)
 {
-	uint16_t cc;
-
 	*msg = xmalloc(sizeof(requeue_msg_t));
 
 	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
@@ -9648,9 +9645,13 @@ _unpack_job_requeue_msg(requeue_msg_t **msg, Buf buf, uint16_t protocol_version)
 	} else {
 		/* Translate job_id_msg_t into requeue_msg_t
 		 */
+		uint16_t cc;
 		safe_unpack32(&(*msg)->job_id, buf) ;
 		safe_unpack16(&cc, buf);
-		(*msg)->state = cc;
+		/* Arghh.. versions < 1312 pack random bytes
+		 * in the unused show_flag member.
+		 */
+		(*msg)->state = 0;
 	}
 
 	return SLURM_SUCCESS;
