@@ -275,7 +275,6 @@ extern int container_p_create(uint32_t job_id)
 	int rc;
 #endif
 	int i, empty = -1, found = -1;
-	bool job_id_change = false;
 
 	if (enable_debug)
 		info("%s: creating(%u)", plugin_type, job_id);
@@ -296,12 +295,8 @@ extern int container_p_create(uint32_t job_id)
 						sizeof(uint32_t)*job_id_count);
 		}
 		job_id_array[empty] = job_id;
-		job_id_change = true;
-	} else {
-		info("%s: duplicate create job(%u)", plugin_type, job_id);
-	}
-	if (job_id_change)
 		_save_state(state_dir);
+	}
 	slurm_mutex_unlock(&context_lock);
 
 #ifdef HAVE_NATIVE_CRAY
