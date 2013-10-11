@@ -182,12 +182,10 @@ extern int container_g_create(uint32_t job_id)
 	if (job_container_init())
 		return SLURM_ERROR;
 
-	slurm_mutex_lock(&g_container_context_lock);
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
 		rc = (*(ops[i].container_p_create))(job_id);
 	}
-	slurm_mutex_unlock(&g_container_context_lock);
 
 	return rc;
 }
@@ -202,12 +200,10 @@ extern int container_g_add_pid(uint32_t job_id, pid_t pid, uid_t uid)
 	if (job_container_init())
 		return SLURM_ERROR;
 
-	slurm_mutex_lock(&g_container_context_lock);
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
 		rc = (*(ops[i].container_p_add_pid))(job_id, pid, uid);
 	}
-	slurm_mutex_unlock(&g_container_context_lock);
 
 	return rc;
 }
@@ -221,12 +217,10 @@ extern int container_g_add_cont(uint32_t job_id, uint64_t cont_id)
 	if (job_container_init())
 		return SLURM_ERROR;
 
-	slurm_mutex_lock(&g_container_context_lock);
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
 		rc = (*(ops[i].container_p_add_cont))(job_id, cont_id);
 	}
-	slurm_mutex_unlock(&g_container_context_lock);
 
 	return rc;
 }
@@ -239,12 +233,10 @@ extern int container_g_delete(uint32_t job_id)
 	if (job_container_init())
 		return SLURM_ERROR;
 
-	slurm_mutex_lock(&g_container_context_lock);
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
 		rc = (*(ops[i].container_p_delete))(job_id);
 	}
-	slurm_mutex_unlock(&g_container_context_lock);
 
 	return rc;
 }
@@ -257,12 +249,10 @@ extern int container_g_restore(char * dir_name, bool recover)
 	if (job_container_init())
 		return SLURM_ERROR;
 
-	slurm_mutex_lock(&g_container_context_lock);
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
 		rc = (*(ops[i].container_p_restore))(dir_name, recover);
 	}
-	slurm_mutex_unlock(&g_container_context_lock);
 
 	return rc;
 }
@@ -274,11 +264,9 @@ extern void container_g_reconfig(void)
 
 	(void) job_container_init();
 
-	slurm_mutex_lock(&g_container_context_lock);
 	for (i = 0; i < g_container_context_num;i++) {
 		(*(ops[i].container_p_reconfig))();
 	}
-	slurm_mutex_unlock(&g_container_context_lock);
 
 	return;
 }
