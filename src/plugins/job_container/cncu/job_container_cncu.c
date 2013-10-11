@@ -302,7 +302,7 @@ extern int container_p_create(uint32_t job_id)
 #ifdef HAVE_NATIVE_CRAY
 	rc = job_create_reservation(resv_id, CREATE_FLAGS);
 	if ((rc == 0) || (errno == EEXIST)) {
-		if ((rc != 0) && (errno == EEXIST)) {
+		if ((found == -1) && (rc != 0) && (errno == EEXIST)) {
 			error("%s: create(%u): Reservation already exists",
 			      plugin_type, job_id);
 		}
