@@ -780,7 +780,7 @@ extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
 	select_jobinfo_t **select_jobinfo = (select_jobinfo_t **) data;
 
 	if (jobinfo == NULL) {
-		error("select/cray jobinfo_get: jobinfo not set");
+		debug("select/cray jobinfo_get: jobinfo not set");
 		return SLURM_ERROR;
 	}
 	if (jobinfo->magic != JOBINFO_MAGIC) {
