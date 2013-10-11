@@ -14,7 +14,6 @@ documents those changes that are of interest to users and admins.
  -- Minor document update to include note about PrivateData=Usage for the
     slurm.conf when using the DBD.
  -- Expand information reported with DebugFlags=backfill.
- -- Expand maximum hostlist ranges from 12k to 64k elements.
 
 * Changes in Slurm 2.6.3
 ========================
