@@ -2428,6 +2428,17 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 		struct priv_state sprivs;
 		char *argv[2];
 
+		/* container_g_add_pid needs to be called in the
+		   forked process part of the fork to avoid a race
+		   condition where if this process makes a file or
+		   detacts itself from a child before we add the pid
+		   to the container in the parent of the fork.
+		*/
+		if ((job->jobid != 0) &&	/* Ignore system processes */
+		    (container_g_add_pid(job->jobid, getpid(), job->uid)
+		     != SLURM_SUCCESS))
+			error("container_g_add_pid(%u): %m", job->jobid);
+
 		argv[0] = (char *)xstrdup(path);
 		argv[1] = NULL;
 
@@ -2460,10 +2471,6 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 		error("execve(): %m");
 		exit(127);
 	}
-
-	if ((job->jobid != 0) &&	/* Ignore system processes */
-	    (container_g_add_pid(job->jobid, cpid, job->uid) != SLURM_SUCCESS))
-		error("container_g_add_pid: %m");
 
 	if (exec_wait_signal_child (ei) < 0)
 		error ("run_script_as_user: Failed to wakeup %s", name);

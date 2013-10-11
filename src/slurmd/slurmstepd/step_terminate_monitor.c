@@ -181,6 +181,16 @@ static int _call_external_program(void)
 		char *argv[2];
 		char buf[16];
 
+		/* container_g_add_pid needs to be called in the
+		   forked process part of the fork to avoid a race
+		   condition where if this process makes a file or
+		   detacts itself from a child before we add the pid
+		   to the container in the parent of the fork.
+		*/
+		if (container_g_add_pid(recorded_jobid, getpid(), getuid())
+		    != SLURM_SUCCESS)
+			error("container_g_add_pid(%u): %m", recorded_jobid);
+
 		snprintf(buf, 16, "%u", recorded_jobid);
 		setenv("SLURM_JOBID", buf, 1);
 		setenv("SLURM_JOB_ID", buf, 1);
@@ -200,9 +210,6 @@ static int _call_external_program(void)
 		error("step_terminate_monitor execv(): %m");
 		exit(127);
 	}
-
-	if (container_g_add_pid(recorded_jobid,cpid,getuid()) != SLURM_SUCCESS)
-		error("container_g_add_pid(%u): %m", recorded_jobid);
 
 	opt = WNOHANG;
 	time_remaining = max_wait;

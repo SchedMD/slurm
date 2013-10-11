@@ -2804,13 +2804,19 @@ _rpc_file_bcast(slurm_msg_t *msg)
 		error("sbcast: fork failure");
 		return errno;
 	} else if (child > 0) {
-		if (container_g_add_pid(job_id, child, req_uid) !=
-		    SLURM_SUCCESS)
-			error("container_g_add_pid(%u): %m", job_id);
 		waitpid(child, &rc, 0);
 		xfree(groups);
 		return WEXITSTATUS(rc);
 	}
+
+	/* container_g_add_pid needs to be called in the
+	   forked process part of the fork to avoid a race
+	   condition where if this process makes a file or
+	   detacts itself from a child before we add the pid
+	   to the container in the parent of the fork.
+	*/
+	if (container_g_add_pid(job_id, getpid(), req_uid) != SLURM_SUCCESS)
+		error("container_g_add_pid(%u): %m", job_id);
 
 	/* The child actually performs the I/O and exits with
 	 * a return code, do not return! */
@@ -2825,6 +2831,7 @@ _rpc_file_bcast(slurm_msg_t *msg)
 	 * atfork_install_handlers() as defined in src/common/log.c.
 	 * Change the code below with caution.
 	\*********************************************************************/
+
         if (setgroups(ngroups, groups) < 0) {
 	        error("sbcast: uid: %u setgroups: %s", req_uid,
 		      strerror(errno));
@@ -4321,6 +4328,16 @@ _run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
 			(char *) mode,
 			NULL };
 
+		/* container_g_add_pid needs to be called in the
+		   forked process part of the fork to avoid a race
+		   condition where if this process makes a file or
+		   detacts itself from a child before we add the pid
+		   to the container in the parent of the fork.
+		*/
+		if (container_g_add_pid(job_id, getpid(), getuid())
+		    != SLURM_SUCCESS)
+			error("container_g_add_pid(%u): %m", job_id);
+
 		if (dup2 (pfds[0], STDIN_FILENO) < 0)
 			fatal ("dup2: %m");
 #ifdef SETPGRP_TWO_ARGS
@@ -4333,8 +4350,6 @@ _run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
 		exit (127);
 	}
 
-	if (container_g_add_pid(job_id, cpid, getuid()) != SLURM_SUCCESS)
-		error("container_g_add_pid(%u): %m", job_id);
 	close (pfds[0]);
 
 	if (_send_slurmd_conf_lite (pfds[1], conf) < 0)

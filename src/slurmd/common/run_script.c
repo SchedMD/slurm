@@ -144,6 +144,16 @@ _run_one_script(const char *name, const char *path, uint32_t job_id,
 	if (cpid == 0) {
 		char *argv[2];
 
+		/* container_g_add_pid needs to be called in the
+		   forked process part of the fork to avoid a race
+		   condition where if this process makes a file or
+		   detacts itself from a child before we add the pid
+		   to the container in the parent of the fork.
+		*/
+		if (container_g_add_pid(job_id, getpid(), getuid())
+		    != SLURM_SUCCESS)
+			error("container_g_add_pid(%u): %m", job_id);
+
 		argv[0] = (char *)xstrdup(path);
 		argv[1] = NULL;
 
@@ -156,9 +166,6 @@ _run_one_script(const char *name, const char *path, uint32_t job_id,
 		error("execve(): %m");
 		exit(127);
 	}
-
-	if (container_g_add_pid(job_id, cpid, getuid()) != SLURM_SUCCESS)
-		error("container_g_add_pid(%u): %m", job_id);
 
 	if (waitpid_timeout(name, cpid, &status, max_wait) < 0)
 		return (-1);
