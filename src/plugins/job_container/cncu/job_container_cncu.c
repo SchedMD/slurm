@@ -334,8 +334,11 @@ extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 #ifdef HAVE_NATIVE_CRAY
 	rc = job_attach_reservation(cjob_id, resv_id, ADD_FLAGS);
 	if ((rc != 0) && (errno == ENOENT)) {	/* Log and retry */
-		error("%s: add(%u.%"PRIu64"): No reservation found",
-		      plugin_type, job_id, cont_id);
+		if (enable_debug)
+			info("%s: add(%u.%"PRIu64"): No reservation found, "
+			     "no big deal, this is probably the first time "
+			     "this was called.  We will just create a new one.",
+			     plugin_type, job_id, cont_id);
 		rc = job_create_reservation(resv_id, CREATE_FLAGS);
 		rc = job_attach_reservation(cjob_id, resv_id, ADD_FLAGS);
 	}
