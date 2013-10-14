@@ -54,7 +54,7 @@ proc hold_job {job} {
 	expect {
 		timeout {
 			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code 0
+			set exit_code 1
 		}
 		eof {
 			wait
@@ -70,7 +70,7 @@ proc release_job {job} {
 	expect {
 		timeout {
 			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code 0
+			set exit_code 1
 		}
 		eof {
 			wait
