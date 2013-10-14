@@ -1772,8 +1772,8 @@ static void _delayed_job_start_time(struct job_record *job_ptr)
 		return;
 	part_node_cnt = job_ptr->part_ptr->total_nodes;
 	part_cpu_cnt  = job_ptr->part_ptr->total_cpus;
-	if (part_node_cnt > part_cpu_cnt)
-		part_cpus_per_node = part_node_cnt / part_cpu_cnt;
+	if (part_cpu_cnt > part_node_cnt)
+		part_cpus_per_node = part_cpu_cnt / part_node_cnt;
 	else
 		part_cpus_per_node = 1;
 
@@ -1794,7 +1794,7 @@ static void _delayed_job_start_time(struct job_record *job_ptr)
 			job_size_cpus = job_q_ptr->details->min_nodes;
 		job_size_cpus = MAX(job_size_cpus,
 				    (job_size_nodes * part_cpus_per_node));
-		if (job_ptr->time_limit == NO_VAL)
+		if (job_q_ptr->time_limit == NO_VAL)
 			job_time = job_q_ptr->part_ptr->max_time;
 		else
 			job_time = job_q_ptr->time_limit;
