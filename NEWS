@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     reboot of a block if only jobs in the list are running on it when cnodes
     go into a failure state.
  -- Correct task count of pending job steps.
+ -- Improve limit enforcement for jobs, set RLIMIT_RSS, RLIMIT_AS and/or
+    RLIMIT_DATA to enforce memory limit.
 
 * Changes in Slurm 13.12.0pre3
 ==============================
