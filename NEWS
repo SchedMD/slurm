@@ -126,6 +126,8 @@ documents those changes that are of interest to users and admins.
  -- Initiate jobs pending to run in a reservation as soon as the reservation
     becomes active.
  -- Purged expired reservation even if it has pending jobs.
+ -- Corrections to calculation of a pending job's expected start time.
+ -- Remove some vestigial logic treating job priority of 1 as a special case.
 
 * Changes in Slurm 2.6.3
 ========================

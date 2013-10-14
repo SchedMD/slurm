@@ -143,6 +143,7 @@ Lead Slurm developers are:
 <li>Federico Sacerdoti (D. E. Shaw Research)</li>
 <li>Aleksej Saushev</li>
 <li>Rod Schultz (Bull)</li>
+<li>Filip Skalski (University of Warsaw, Poland)</li>
 <li>Jason Sollom (Cray)</li>
 <li>Eric Soyez (Science+Computing)</li>
 <li>Marcin Stolarek</li>
@@ -172,6 +173,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 9 October 2013</p>
+<p style="text-align:center;">Last modified 14 October 2013</p>
 
 <!--#include virtual="footer.txt"-->
