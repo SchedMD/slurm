@@ -783,6 +783,7 @@ EXTRA_DIST = \
 	test28.3                        \
 	test28.4                        \
 	test28.5                        \
+	test28.6                        \
 	test30.1			\
 	test31.1			\
 	usleep
