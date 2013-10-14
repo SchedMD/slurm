@@ -4003,19 +4003,23 @@ extern void fini_job_resv_check(void)
 			continue;
 		}
 		_advance_resv_time(resv_ptr);
-		if ((resv_ptr->job_pend_cnt   == 0) &&
-		    (resv_ptr->job_run_cnt    == 0) &&
+		if ((resv_ptr->job_run_cnt    == 0) &&
 		    (resv_ptr->maint_set_node == 0) &&
 		    ((resv_ptr->flags & RESERVE_FLAG_DAILY ) == 0) &&
 		    ((resv_ptr->flags & RESERVE_FLAG_WEEKLY) == 0)) {
-			debug("Purging vestigial reservation record %s",
-			      resv_ptr->name);
+			if (resv_ptr->job_pend_cnt) {
+				info("Purging vestigial reservation %s "
+				     "with %u pending jobs",
+				     resv_ptr->name, resv_ptr->job_pend_cnt);
+			} else {
+				debug("Purging vestigial reservation %s",
+				      resv_ptr->name);
+			}
 			_clear_job_resv(resv_ptr);
 			list_delete_item(iter);
 			last_resv_update = now;
 			schedule_resv_save();
 		}
-
 	}
 	list_iterator_destroy(iter);
 }

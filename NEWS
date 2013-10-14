@@ -16,6 +16,7 @@ documents those changes that are of interest to users and admins.
  -- Expand information reported with DebugFlags=backfill.
  -- Initiate jobs pending to run in a reservation as soon as the reservation
     becomes active.
+ -- Purged expired reservation even if it has pending jobs.
 
 * Changes in Slurm 2.6.3
 ========================
