@@ -1,0 +1,183 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#		  test that when a job array is submitted to multiple
+#		  partitions that the jobs run on all the assigned partitions
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#		  "FAILURE: ..." otherwise with an explanation of the failure, OR
+#		  anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2011-2013 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id	 "test28.6"
+set job_id	 0
+set def_part	 ""
+set test_part	 "$test_id\_part"
+set script	 "$test_id\_script"
+set array_size	 2
+set exit_code	 0
+
+print_header $test_id
+
+if {[get_array_config] < [expr $array_size + 1]} {
+	send_user "\nWARNING: MaxArraySize is to small for this test\n"
+	exit 0
+}
+
+make_bash_script $script "
+sleep 100
+"
+
+proc check_job { job_id } {
+	global scontrol array_size number exit_code
+
+	for {set index 0} {$index<$array_size} {incr index} {
+
+		set matches 0
+		spawn $scontrol show job $job_id\_$index
+		expect {
+			-re "JobState=RUNNING" {
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE scontrol is not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+		if {$matches != 1} {
+			send_user "\nFAILURE: job $job_id\_$index was not found\n"
+			set exit_code 1
+		}
+	}
+}
+
+#
+# Get the default partition 
+#
+set def_part [default_partition]
+if {[string compare $def_part ""] == 0} {
+	send_user "\nFAILURE: default partition was not found\n"
+	set exit_code 1
+}
+
+#
+# Get the available nodes from the partition
+#
+set node_list ""
+spawn $sinfo -h -o "%N" -p $def_part
+expect {
+	-re "($alpha_numeric_nodelist)" {
+		set node_list $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sinfo is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {[string compare $node_list ""] == 0} {
+	send_user "\nFAILURE: node list was not found\n"
+	set exit_code 1
+}
+
+#
+# Create partition
+#
+spawn $scontrol create PartitionName=$test_part Nodes=$node_list
+expect {
+	-re "error" {
+		send_user"\nFAILURE: scontrol did not create partition\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+	
+#
+# Submit array job on default partition
+#
+spawn $sbatch -N1 -t1 -o /dev/null -e /dev/null --array=0-[expr $array_size -1] --partition=$def_part,$test_part $script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch did not submit job\n"
+	set exit_code 1
+}
+
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: Job never started\n"
+	set exit_code 1
+}
+cancel_job $job_id
+
+#
+# Delete the new partition
+#
+spawn $scontrol delete partition=$test_part
+expect {
+	-re "error" {
+		send_user "\nFAILURE: partition was not deleted\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $script 
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

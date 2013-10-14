@@ -440,6 +440,7 @@ EXTRA_DIST = \
 	test28.3                        \
 	test28.4                        \
 	test28.5                        \
+	test28.6                        \
 	usleep
 
 distclean-local:

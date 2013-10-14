@@ -645,3 +645,5 @@ test28.4   Validates scontrol update command for a job array with
 	   a job array index and the whole job array.
 test28.5   Validates that scontrol can hold and release a whole job
 	   array or an individual jobid index.
+test28.6   Validates that when a job array is submitted to multiple
+	   partitions that the jobs run on them.
