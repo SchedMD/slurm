@@ -166,7 +166,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 	update_conf
 
 	set sub_job 0
-	spawn $srun -w$run_host $bin_printenv SLURMD_NODENAME
+	spawn $srun -t1 -w$run_host $bin_printenv SLURMD_NODENAME
 	expect {
 		-re "$run_host" {
 			set sub_job 1
@@ -243,7 +243,7 @@ expect {
 log_user 1
 
 set get_name 0
-spawn $srun -l $bin_printenv SLURMD_NODENAME
+spawn $srun -t1 -l $bin_printenv SLURMD_NODENAME
 expect {
 	-re "0: *($alpha_numeric_under)" {
 		set run_host $expect_out(1,string)
@@ -288,7 +288,7 @@ change_pro_epi srun-task-epilog srun--task-epilog_$test_id 1 0
 update_conf
 
 set sub_job 0
-spawn $srun -w$run_host --task-epilog=$config_dir/$pro_epi_prog $bin_printenv SLURMD_NODENAME
+spawn $srun -t1 -w$run_host --task-epilog=$config_dir/$pro_epi_prog $bin_printenv SLURMD_NODENAME
 expect {
 	-re "$run_host" {
 		set sub_job 1
@@ -343,7 +343,7 @@ if {$make_file == 1} {
 	expect {
 		-re "Granted job allocation ($number)" {
 			send "$sbcast --force $config_dir/$pro_epi_prog $sbcast_file\n"
-			send "$srun --task-prolog=$config_dir/$pro_epi_prog $bin_printenv SLURMD_NODENAME\n"
+			send "$srun -t1 --task-prolog=$config_dir/$pro_epi_prog $bin_printenv SLURMD_NODENAME\n"
 			send "exit\n"
 			exp_continue
 		}
