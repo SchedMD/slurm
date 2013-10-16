@@ -205,7 +205,7 @@ static void _build_pending_step(struct job_record *job_ptr,
 	step_ptr->state     = JOB_PENDING;
 	step_ptr->cpu_count = step_specs->num_tasks;
 	step_ptr->time_last_active = time(NULL);
-	step_ptr->step_id = NO_VAL;
+	step_ptr->step_id   = INFINITE;
 }
 
 static void _internal_step_complete(

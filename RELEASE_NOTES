@@ -84,6 +84,8 @@ COMMAND CHANGES (see man pages for details)
     job can be put in a new special state called SPECIAL_EXIT indicating
     the job has exited with a special value.
     "scontrol requeuehold state=SpecialExit 123".
+ -- Pending job steps will have step_id of INFINITE rather than NO_VAL and
+    will be reported as "TBD" by scontrol and squeue commands.
 
 OTHER CHANGES
 =============

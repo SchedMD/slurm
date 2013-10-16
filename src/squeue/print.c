@@ -1339,13 +1339,23 @@ int _print_step_id(job_step_info_t * step, int width, bool right, char* suffix)
 	if (step == NULL) {	/* Print the Header instead */
 		_print_str("STEPID", width, right, true);
 	} else if (step->array_job_id) {
-		snprintf(id, FORMAT_STRING_SIZE, "%u_%u.%u",
-			 step->array_job_id, step->array_task_id,
-			 step->step_id);
+		if (step->step_id == INFINITE) {	/* Pending */
+			snprintf(id, FORMAT_STRING_SIZE, "%u_%u.TBD",
+				 step->array_job_id, step->array_task_id);
+		} else {
+			snprintf(id, FORMAT_STRING_SIZE, "%u_%u.%u",
+				 step->array_job_id, step->array_task_id,
+				 step->step_id);
+		}
 		_print_str(id, width, right, true);
 	} else {
-		snprintf(id, FORMAT_STRING_SIZE, "%u.%u", step->job_id,
-			 step->step_id);
+		if (step->step_id == INFINITE) {	/* Pending */
+			snprintf(id, FORMAT_STRING_SIZE, "%u.TBD", step->job_id);
+		} else {
+			snprintf(id, FORMAT_STRING_SIZE, "%u_%u.%u",
+				 step->array_job_id, step->array_task_id,
+				 step->step_id);
+		}
 		_print_str(id, width, right, true);
 	}
 	if (suffix)

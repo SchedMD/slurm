@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- Correct task count of pending job steps.
  -- Improve limit enforcement for jobs, set RLIMIT_RSS, RLIMIT_AS and/or
     RLIMIT_DATA to enforce memory limit.
+ -- Pending job steps will have step_id of INFINITE rather than NO_VAL and
+    will be reported as "TBD" by scontrol and squeue commands.
 
 * Changes in Slurm 13.12.0pre3
 ==============================
