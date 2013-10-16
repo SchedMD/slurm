@@ -4,6 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2013      Intel, Inc.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -101,6 +102,8 @@ typedef struct {
 	eio_obj_t      *out;        /* standard output event IO object      */
 	eio_obj_t      *err;        /* standard error event IO object       */
 
+	bool            killed_by_cmd; /* true if task killed by our signal */
+	bool            aborted;    /* true if task called abort            */
 	bool            esent;      /* true if exit status has been sent    */
 	bool            exited;     /* true if task has exited              */
 	int             estatus;    /* this task's exit status              */

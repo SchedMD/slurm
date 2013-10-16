@@ -4,6 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2013      Intel, Inc.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -709,10 +710,14 @@ task_info_create(int taskid, int gtaskid,
 	t->from_stdout = -1;
 	t->stderr_fd   = -1;
 	t->from_stderr = -1;
-	t->estatus     = -1;
 	t->in          = NULL;
 	t->out         = NULL;
 	t->err         = NULL;
+	t->killed_by_cmd = false;
+	t->aborted     = false;
+	t->esent       = false;
+	t->exited      = false;
+	t->estatus     = -1;
 	t->argc	       = 0;
 	t->argv	       = NULL;
 	slurm_mutex_unlock(&t->mutex);

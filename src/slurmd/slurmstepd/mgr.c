@@ -4,6 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2013      Intel, Inc.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -255,17 +256,40 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
  */
 static uint32_t _get_exit_code(stepd_step_rec_t *job)
 {
-	int i;
+	uint32_t i;
 	uint32_t step_rc = NO_VAL;
 
-	for (i = 0; i < job->node_tasks; i++) {
-		/* If signalled we only need to check one and then
-		 * break out of the loop */
-		if (WIFSIGNALED(job->task[i]->estatus)) {
-			step_rc = job->task[i]->estatus;
+	for (i = 0; i < job->ntasks; i++) {
+		if (NULL == job->task[i]) {
+			debug("get_exit_code task %u is NULL", i);
+			continue;
+		}
+		/* if this task was killed by cmd, ignore its
+		 * return status as it only reflects the fact
+		 * that we killed it
+		 */
+		if (job->task[i]->killed_by_cmd) {
+			debug("get_exit_code task %u killed by cmd", i);
+			continue;
+		}
+		/* if this task called PMI_Abort or PMI2_Abort,
+		 * then we let it define the exit status
+		 */
+		if (job->task[i]->aborted) {
+			step_rc = WEXITSTATUS(job->task[i]->estatus);
+			debug("get_exit_code task %u called abort", i);
 			break;
 		}
-		step_rc = MAX(step_complete.step_rc, job->task[i]->estatus);
+		/* If signalled we need to cycle thru all the
+		 * tasks in case one of them called abort
+		 */
+		if (WIFSIGNALED(job->task[i]->estatus)) {
+			step_rc = WTERMSIG(job->task[i]->estatus) + 128;
+			debug("get_exit_code task %u died by signal", i);
+		} else {
+			step_rc = WEXITSTATUS(job->task[i]->estatus);
+		}
+		step_rc = MAX(step_complete.step_rc, step_rc);
 	}
 	return step_rc;
 }
@@ -1642,10 +1666,10 @@ _log_task_exit(unsigned long taskid, unsigned long pid, int status)
 	 *   that code, but it is better than dropping a potentially useful
 	 *   exit status.
 	 */
-	if (WIFEXITED(status))
+	if (WIFEXITED(status)) {
 		verbose("task %lu (%lu) exited with exit code %d.",
 			taskid, pid, WEXITSTATUS(status));
-	else if (WIFSIGNALED(status))
+	} else if (WIFSIGNALED(status)) {
 		/* WCOREDUMP isn't available on AIX */
 		verbose("task %lu (%lu) exited. Killed by signal %d%s.",
 			taskid, pid, WTERMSIG(status),
@@ -1655,9 +1679,10 @@ _log_task_exit(unsigned long taskid, unsigned long pid, int status)
 			""
 #endif
 			);
-	else
+	} else {
 		verbose("task %lu (%lu) exited with status 0x%04x.",
 			taskid, pid, status);
+	}
 }
 
 /*
@@ -1725,7 +1750,6 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 		if ((t = job_task_info_by_pid(job, pid))) {
 			completed++;
 			_log_task_exit(t->gtid, pid, status);
-
 			t->exited  = true;
 			t->estatus = status;
 			job->envtp->env = job->env;

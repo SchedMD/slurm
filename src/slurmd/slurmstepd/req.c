@@ -667,6 +667,8 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 	static int msg_sent = 0;
 	char *ptr = NULL;
 	int target_node_id = 0;
+	stepd_step_task_info_t *task;
+	uint32_t i;
 
 	safe_read(fd, &sig, sizeof(int));
 	debug("_handle_signal_container for step=%u.%u uid=%d signal=%d",
@@ -689,6 +691,26 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 		rc = -1;
 		errnum = ESLURMD_JOB_NOTRUNNING;
 		goto done;
+	}
+
+	if ((sig == SIGTERM) || (sig == SIGKILL)) {
+		/* cycle thru the tasks and mark those that have not
+		 * called abort and/or terminated as killed_by_cmd
+		 */
+		for (i = 0; i < job->ntasks; i++) {
+			if (NULL == (task = job->task[i])) {
+				continue;
+			}
+			if (task->aborted || task->exited) {
+				continue;
+			}
+			/* mark that this task is going to be killed by
+			 * cmd so we ignore its exit status - otherwise,
+			 * we will probably report the final exit status
+			 * as SIGKILL
+			 */
+			task->killed_by_cmd = true;
+		}
 	}
 
 	ptr = getenvp(job->env, "SLURM_STEP_KILLED_MSG_NODE_ID");
@@ -901,6 +923,8 @@ _handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
+	stepd_step_task_info_t *task;
+	uint32_t i;
 
 	debug("_handle_terminate for step=%u.%u uid=%d",
 	      job->jobid, job->stepid, uid);
@@ -924,6 +948,24 @@ _handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid)
 		rc = -1;
 		errnum = ESLURMD_JOB_NOTRUNNING;
 		goto done;
+	}
+
+	/* cycle thru the tasks and mark those that have not
+	 * called abort and/or terminated as killed_by_cmd
+	 */
+	for (i = 0; i < job->ntasks; i++) {
+		if (NULL == (task = job->task[i])) {
+			continue;
+		}
+		if (task->aborted || task->exited) {
+			continue;
+		}
+		/* mark that this task is going to be killed by
+		 * cmd so we ignore its exit status - otherwise,
+		 * we will probably report the final exit status
+		 * as SIGKILL
+		 */
+		task->killed_by_cmd = true;
 	}
 
 	/*
