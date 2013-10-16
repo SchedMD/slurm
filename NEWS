@@ -22,6 +22,7 @@ documents those changes that are of interest to users and admins.
  -- Memory freeing up to avoid minor memory leaks at close of daemons
  -- Updated documentation to give correct units being displayed.
  -- Report AccountingStorageBackupHost with "scontrol show config".
+ -- init scripts ignore quotes around Pid file name specifications.
 
 * Changes in Slurm 2.6.3
 ========================
