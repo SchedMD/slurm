@@ -1649,19 +1649,12 @@ static void *_slurmctld_background(void *no_data)
 			_accounting_cluster_ready();
 		}
 
+		/* Stats will reset at midnight (approx) local time. */
 		if (last_proc_req_start == 0) {
-			/* Stats will reset at midnight (aprox).
-			 * Uhmmm... UTC time?... It is  not so important.
-			 * Just resetting during the night */
 			last_proc_req_start = now;
-			next_stats_reset = last_proc_req_start -
-					   (last_proc_req_start % 86400) +
-					   86400;
+			next_stats_reset = now - (now % 86400) + 86400;
 		}
-
-		if ((next_stats_reset > 0) && (now > next_stats_reset)) {
-			/* Resetting stats values */
-			last_proc_req_start = now;
+		if (now >= next_stats_reset) {
 			next_stats_reset = now - (now % 86400) + 86400;
 			reset_stats(0);
 		}
