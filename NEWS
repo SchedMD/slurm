@@ -23,6 +23,7 @@ documents those changes that are of interest to users and admins.
  -- Updated documentation to give correct units being displayed.
  -- Report AccountingStorageBackupHost with "scontrol show config".
  -- init scripts ignore quotes around Pid file name specifications.
+ -- Fixed typo about command case in quickstart.html.
 
 * Changes in Slurm 2.6.3
 ========================
