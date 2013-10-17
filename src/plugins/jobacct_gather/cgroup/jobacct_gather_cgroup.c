@@ -107,8 +107,8 @@ static void _prec_extra(jag_prec_t *prec, int pagesize)
 	int utime, stime, total_rss, total_pgpgin;
 	char *cpu_time, *memory_stat, *ptr;
 	size_t cpu_time_size, memory_stat_size;
-	DEF_TIMERS;
-	START_TIMER;
+	//DEF_TIMERS;
+	//START_TIMER;
 	/* info("before"); */
 	/* print_jag_prec(prec); */
 	xcgroup_get_param(&task_cpuacct_cg, "cpuacct.stat",
@@ -135,8 +135,8 @@ static void _prec_extra(jag_prec_t *prec, int pagesize)
 	prec->pages = total_pgpgin;
 	/* info("after %d %d", total_rss, pagesize); */
 	/* print_jag_prec(prec); */
-	END_TIMER;
-	info("took %s", TIME_STR);
+	//END_TIMER;
+	//info("took %s", TIME_STR);
 	return;
 
 }
