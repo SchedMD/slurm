@@ -276,20 +276,16 @@ static uint32_t _get_exit_code(stepd_step_rec_t *job)
 		 * then we let it define the exit status
 		 */
 		if (job->task[i]->aborted) {
-			step_rc = WEXITSTATUS(job->task[i]->estatus);
+			step_rc = job->task[i]->estatus;
 			debug("get_exit_code task %u called abort", i);
 			break;
 		}
 		/* If signalled we need to cycle thru all the
 		 * tasks in case one of them called abort
 		 */
-		if (WIFSIGNALED(job->task[i]->estatus)) {
-			step_rc = WTERMSIG(job->task[i]->estatus) + 128;
+		if (WIFSIGNALED(job->task[i]->estatus))
 			debug("get_exit_code task %u died by signal", i);
-		} else {
-			step_rc = WEXITSTATUS(job->task[i]->estatus);
-		}
-		step_rc = MAX(step_complete.step_rc, step_rc);
+		step_rc = MAX(step_complete.step_rc, job->task[i]->estatus);
 	}
 	return step_rc;
 }
