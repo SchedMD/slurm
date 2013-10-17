@@ -54,6 +54,7 @@ set res_thread_cnt	0
 set user_name		""
 set def_partition 	""
 set def_node		""
+set def_share_force     0
 set def_node_name	""
 set def_node_inx_min	-1
 set def_node_inx_max	-1
@@ -276,11 +277,22 @@ if {[string compare $def_partition ""] == 0} {
 	send_user "\nFAILURE: failed to find default partition\n"
 	exit 1
 }
+
+spawn $scontrol show partition $def_partition
+expect {
+	-re " Shared=FORCE" {
+		set def_share_force 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
 spawn $sinfo -h -o "=%N=" -p $def_partition
 expect {
 	-re "=(.+)=" {
 		set def_node $expect_out(1,string)
-		send_user "\nDefault node $def_node\n";
+		exp_continue
 	}
 	eof {
 		wait
@@ -345,22 +357,22 @@ expect {
 	}
 }
 
-log_user 0
 set cons_res_actived 0
-spawn $scontrol show config
-expect {
-	-re "select/cons_res" {
-		set cons_res_actived 1
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
+if {$def_share_force == 0} {
+	spawn $scontrol show config
+	expect {
+		-re "select/cons_res" {
+			set cons_res_actived 1
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
 }
-log_user 1
 
 inc3_11_1
 inc3_11_2

@@ -119,6 +119,7 @@ Lead Slurm developers are:
 <li>Gennaro Oliva (Institute of High Performance Computing and Networking, Italy)</li>
 <li>Alan Orth (International Livestock Research Institute, Kenya)</li>
 <br>
+<li>Chrysovalantis Paschoulas (Juelich Supercomputing Centre, Germany)</li>
 <li>R&eacute;mi Palancher</li>
 <li>Alejandro Lucero Palau (Barcelona Supercomputing Center, Spain)</li>
 <li>Daniel Palermo (HP)</li>
@@ -173,6 +174,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 14 October 2013</p>
+<p style="text-align:center;">Last modified 16 October 2013</p>
 
 <!--#include virtual="footer.txt"-->

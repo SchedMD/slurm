@@ -139,6 +139,7 @@ slurmstatus() {
     if [ $? = 0 ]; then
 	pidfile=${pidfile##*=}
 	pidfile=${pidfile%#*}
+	pidfile=${pidfile//\"/}
     else
 	pidfile=/var/run/${base}.pid
     fi

@@ -61,6 +61,9 @@
 #include <hwloc.h>
 #include <hwloc/glibc-sched.h>
 
+static bool cpuset_prefix_set = false;
+static char *cpuset_prefix = "";
+
 # if HWLOC_API_VERSION <= 0x00010000
 /* After this version the cpuset structure and all it's functions
  * changed to bitmaps.  So to work with old hwloc's we just to the
@@ -181,10 +184,10 @@ static int _xcgroup_cpuset_init(xcgroup_t* cg)
 	int fstatus,i;
 
 	char* cpuset_metafiles[] = {
-		"cpuset.cpus",
-		"cpuset.mems"
+		"cpus",
+		"mems"
 	};
-	char* cpuset_meta;
+	char cpuset_meta[PATH_MAX];
 	char* cpuset_conf;
 	size_t csize;
 
@@ -211,11 +214,19 @@ static int _xcgroup_cpuset_init(xcgroup_t* cg)
 
 	/* inherits ancestor params */
 	for (i = 0 ; i < 2 ; i++) {
-		cpuset_meta = cpuset_metafiles[i];
+	again:
+		snprintf(cpuset_meta, sizeof(cpuset_meta), "%s%s",
+			 cpuset_prefix, cpuset_metafiles[i]);
 		if (xcgroup_get_param(&acg,cpuset_meta,
 				      &cpuset_conf,&csize)
 		    != XCGROUP_SUCCESS) {
-			debug2("task/cgroup: assuming no cpuset cg "
+			if (!cpuset_prefix_set) {
+				cpuset_prefix_set = 1;
+				cpuset_prefix = "cpuset.";
+				goto again;
+			}
+
+			debug("task/cgroup: assuming no cpuset cg "
 			       "support for '%s'",acg.path);
 			xcgroup_destroy(&acg);
 			return fstatus;
@@ -224,7 +235,7 @@ static int _xcgroup_cpuset_init(xcgroup_t* cg)
 			cpuset_conf[csize-1]='\0';
 		if (xcgroup_set_param(cg,cpuset_meta,cpuset_conf)
 		    != XCGROUP_SUCCESS) {
-			debug2("task/cgroup: unable to write %s configuration "
+			debug("task/cgroup: unable to write %s configuration "
 			       "(%s) for cpuset cg '%s'",cpuset_meta,
 			       cpuset_conf,cg->path);
 			xcgroup_destroy(&acg);
@@ -439,6 +450,7 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 	char* user_alloc_cores = NULL;
 	char* job_alloc_cores = NULL;
 	char* step_alloc_cores = NULL;
+	char cpuset_meta[PATH_MAX];
 
 	char* cpus = NULL;
 	size_t cpus_size;
@@ -459,8 +471,16 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 		xfree(slurm_cgpath);
 		return SLURM_ERROR;
 	}
-	rc = xcgroup_get_param(&slurm_cg,"cpuset.cpus",&cpus,&cpus_size);
+again:
+	snprintf(cpuset_meta, sizeof(cpuset_meta), "%scpus", cpuset_prefix);
+	rc = xcgroup_get_param(&slurm_cg, cpuset_meta, &cpus,&cpus_size);
 	if (rc != XCGROUP_SUCCESS || cpus_size == 1) {
+		if (!cpuset_prefix_set && (rc != XCGROUP_SUCCESS)) {
+			cpuset_prefix_set = 1;
+			cpuset_prefix = "cpuset.";
+			goto again;
+		}
+
 		/* initialize the cpusets as it was inexistant */
 		if (_xcgroup_cpuset_init(&slurm_cg) !=
 		    XCGROUP_SUCCESS) {
@@ -576,7 +596,7 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 	/*
 	 * check that user's cpuset cgroup is consistant and add the job cores
 	 */
-	rc = xcgroup_get_param(&user_cpuset_cg,"cpuset.cpus",&cpus,&cpus_size);
+	rc = xcgroup_get_param(&user_cpuset_cg, cpuset_meta, &cpus,&cpus_size);
 	if (rc != XCGROUP_SUCCESS || cpus_size == 1) {
 		/* initialize the cpusets as it was inexistant */
 		if (_xcgroup_cpuset_init(&user_cpuset_cg) !=
@@ -592,7 +612,7 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 		xstrcat(user_alloc_cores,",");
 		xstrcat(user_alloc_cores,cpus);
 	}
-	xcgroup_set_param(&user_cpuset_cg,"cpuset.cpus",user_alloc_cores);
+	xcgroup_set_param(&user_cpuset_cg, cpuset_meta, user_alloc_cores);
 	xfree(cpus);
 
 	/*
@@ -614,7 +634,7 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 		xcgroup_destroy(&job_cpuset_cg);
 		goto error;
 	}
-	xcgroup_set_param(&job_cpuset_cg,"cpuset.cpus",job_alloc_cores);
+	xcgroup_set_param(&job_cpuset_cg, cpuset_meta, job_alloc_cores);
 
 	/*
 	 * create step cgroup in the cpuset ns (it should not exists)
@@ -643,7 +663,7 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 		xcgroup_destroy(&step_cpuset_cg);
 		goto error;
 	}
-	xcgroup_set_param(&step_cpuset_cg,"cpuset.cpus",step_alloc_cores);
+	xcgroup_set_param(&step_cpuset_cg, cpuset_meta, step_alloc_cores);
 
 	/* attach the slurmstepd to the step cpuset cgroup */
 	pid_t pid = getpid();

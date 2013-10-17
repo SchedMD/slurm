@@ -52,7 +52,7 @@ make_bash_script $file_in "$bin_id"
 set part_cnt 0
 set fd [open "|$scontrol --all --oneliner show partition"]
 while {[gets $fd line] != -1} {
-	if {[regexp {^PartitionName=(\w+).*State=UP} $line frag part($part_cnt)] == 1} {
+	if {[regexp {^PartitionName=([^ ]*).*State=UP} $line frag part($part_cnt)] == 1} {
 		incr part_cnt
 	}
 }

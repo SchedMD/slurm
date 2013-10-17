@@ -1589,13 +1589,13 @@ _slurmd_fini(void)
 	node_fini2();
 	gres_plugin_fini();
 	slurm_topo_fini();
-	acct_gather_energy_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	fini_setproctitle();
 	slurm_select_fini();
 	spank_slurmd_exit();
 	cpu_freq_fini();
 	job_container_fini();
+	acct_gather_conf_destroy();
 
 	return SLURM_SUCCESS;
 }
