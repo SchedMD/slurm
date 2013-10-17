@@ -87,7 +87,7 @@ expect {
 	}
 }
 if {$time_set != $time_get} {
-	send_user "\nFAILURE: sbatch failed to set time limit\n"
+	send_user "\nFAILURE: sbatch failed to set time limit ($time_set != $time_get)\n"
 	set exit_code 1
 }
 cancel_job $job_id
@@ -135,7 +135,7 @@ expect {
 	}
 }
 if {$time_get != 121} {
-	send_user "\nFAILURE: sbatch failed to set time limit\n"
+	send_user "\nFAILURE: sbatch failed to set time limit ($time_get != 121)\n"
 	set exit_code 1
 }
 cancel_job $job_id
@@ -179,7 +179,7 @@ expect {
 	}
 }
 if {$time_get != 1500} {
-	send_user "\nFAILURE: sbatch failed to set time limit\n"
+	send_user "\nFAILURE: sbatch failed to set time limit ($time_get != 1500)\n"
 	set exit_code 1
 }
 cancel_job $job_id
