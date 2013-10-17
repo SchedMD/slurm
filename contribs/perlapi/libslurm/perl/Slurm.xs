@@ -2378,7 +2378,7 @@ slurm_resume(slurm_t self, uint32_t job_id)
 		job_id
 
 int
-slurm_requeue(slurm_t self, uint32_t job_id)
+slurm_requeue(slurm_t self, uint32_t job_id, uint32_t state)
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
@@ -2386,7 +2386,7 @@ slurm_requeue(slurm_t self, uint32_t job_id)
 			      only Slurm::
 			    */
 	C_ARGS:
-		job_id
+		job_id, state
 
 
 ######################################################################
