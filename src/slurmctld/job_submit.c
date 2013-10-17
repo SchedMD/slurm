@@ -235,13 +235,18 @@ extern int job_submit_plugin_reconfig(void)
 extern int job_submit_plugin_submit(struct job_descriptor *job_desc,
 				    uint32_t submit_uid, char **err_msg)
 {
+	DEF_TIMERS;
 	int i, rc;
 
+	START_TIMER;
 	rc = job_submit_plugin_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i=0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].submit))(job_desc, submit_uid, err_msg);
 	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER;
+	debug("job_submit_plugin_submit: %s", TIME_STR);
+
 	return rc;
 }
 
@@ -254,12 +259,17 @@ extern int job_submit_plugin_modify(struct job_descriptor *job_desc,
 				    struct job_record *job_ptr,
 				    uint32_t submit_uid)
 {
+	DEF_TIMERS;
 	int i, rc;
 
+	START_TIMER;
 	rc = job_submit_plugin_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i=0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].modify))(job_desc, job_ptr, submit_uid);
 	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER;
+	debug("job_submit_plugin_modify: %s", TIME_STR);
+
 	return rc;
 }
