@@ -22,7 +22,8 @@ int \fBslurm_resume\fR (
 .LP
 int \fBslurm_requeue\fR (
 .br
-        uint32_t \fIjob_id\fP
+        uint32_t \fIjob_id\fP,
+        uint32_t \fIstate\fP
 .br
 );
 
@@ -31,6 +32,19 @@ int \fBslurm_requeue\fR (
 .TP
 \fIjob_id\fP
 SLURM job ID to perform the operation upon.
+.TP
+\fIstate\fP
+The state in which the job should be requeued valid values are:
+.TP
+\fI"0"\fP
+If the job has to be requeued in JOB_PENDING state.
+.TP
+\fI"JOB_SPECIAL_EXIT"\fP
+If the job has to be requeued in the special exit state and be held.
+.TP
+\fI"JOB_REQUEUE_HOLD"\fP
+If the job has to be requeued in "JOB_PENDING" and held state.
+.LP
 
 .SH "DESCRIPTION"
 .LP
