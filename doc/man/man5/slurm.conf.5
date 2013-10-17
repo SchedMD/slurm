@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "September 2013" "slurm.conf 13.12" "Slurm configuration file"
+.TH "slurm.conf" "5" "October 2013" "slurm.conf 13.12" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2230,6 +2230,12 @@ Any "%h" within the name is replaced with the hostname on which the
 Any "%n" within the name is replaced with the SLURM node name on which the
 \fBslurmd\fR is running.
 The default value is "/var/run/slurmd.pid".
+
+.TP
+\fBSlurmdPlugstack\fR
+A comma delimited list of SLURM compute node plugins to be started when the
+daemon begins and terminated when it ends.
+Only the plugin's init and fini functions are called.
 
 .TP
 \fBSlurmdPort\fR

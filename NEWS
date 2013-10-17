@@ -16,6 +16,7 @@ documents those changes that are of interest to users and admins.
  -- Pending job steps will have step_id of INFINITE rather than NO_VAL and
     will be reported as "TBD" by scontrol and squeue commands.
  -- Add logic so PMI_Abort or PMI2_Abort can propagate an exit code.
+ -- Added SlurmdPlugstack configuration parameter.
 
 * Changes in Slurm 13.12.0pre3
 ==============================
