@@ -579,6 +579,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/serial/Makefile
 		 src/plugins/slurmctld/Makefile
 		 src/plugins/slurmctld/dynalloc/Makefile
+		 src/plugins/slurmd/Makefile
 		 src/plugins/switch/Makefile
 		 src/plugins/switch/cray/Makefile
 		 src/plugins/switch/generic/Makefile

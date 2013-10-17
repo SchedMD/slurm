@@ -20,7 +20,8 @@ SLURMD_SOURCES = \
 	get_mach_stat.c get_mach_stat.h	\
 	read_proc.c 	        	\
 	reverse_tree_math.c reverse_tree_math.h \
-	xcpu.c xcpu.h
+	xcpu.c xcpu.h \
+	slurmd_plugstack.c slurmd_plugstack.h
 
 slurmd_SOURCES = $(SLURMD_SOURCES)
 

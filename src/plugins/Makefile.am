@@ -19,8 +19,9 @@ SUBDIRS = \
 	priority		\
 	proctrack		\
 	sched			\
-	slurmctld		\
 	select			\
+	slurmctld		\
+	slurmd		\
 	switch			\
 	task			\
 	topology

@@ -4,6 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2013      Intel, Inc.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -226,6 +227,13 @@ char *slurm_get_job_submit_plugins(void);
  * RET char *   - slurmctld_plugstack, MUST be xfreed by caller
  */
 char *slurm_get_slurmctld_plugstack(void);
+
+/* slurm_get_slurmd_plugstack
+ * get slurmd_plugstack from slurmctld_conf object from
+ * slurmd_conf object
+ * RET char *   - slurmd_plugstack, MUST be xfreed by caller
+ */
+char *slurm_get_slurmd_plugstack(void);
 
 /* slurm_get_plugin_dir
  * get plugin directory from slurmctld_conf object from slurmctld_conf object

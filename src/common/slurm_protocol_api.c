@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2013      Intel, Inc.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -1035,6 +1036,25 @@ char *slurm_get_slurmctld_plugstack(void)
 		slurm_conf_unlock();
 	}
 	return slurmctld_plugstack;
+}
+
+/* slurm_get_slurmd_plugstack
+ * get slurmd_plugstack from slurmd_conf object from
+ * slurmd_conf object
+ * RET char *   - slurmd_plugstack, MUST be xfreed by caller
+ */
+char *slurm_get_slurmd_plugstack(void)
+{
+	char *slurmd_plugstack = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		slurmd_plugstack = xstrdup(conf->slurmd_plugstack);
+		slurm_conf_unlock();
+	}
+	return slurmd_plugstack;
 }
 
 /* slurm_get_accounting_storage_type
