@@ -1352,9 +1352,8 @@ int _print_step_id(job_step_info_t * step, int width, bool right, char* suffix)
 		if (step->step_id == INFINITE) {	/* Pending */
 			snprintf(id, FORMAT_STRING_SIZE, "%u.TBD", step->job_id);
 		} else {
-			snprintf(id, FORMAT_STRING_SIZE, "%u_%u.%u",
-				 step->array_job_id, step->array_task_id,
-				 step->step_id);
+			snprintf(id, FORMAT_STRING_SIZE, "%u.%u",
+				 step->job_id, step->step_id);
 		}
 		_print_str(id, width, right, true);
 	}
