@@ -525,17 +525,17 @@ static int
 _exec_srun_multiple(spawn_req_t *req, char **env)
 {
 	int argc, ntasks, i, j, spawn_cnt, fd;
-	char **argv = NULL, *multi_prog = NULL, *buf = NULL;
+	char **argv = NULL, *buf = NULL;
 	spawn_subcmd_t *subcmd = NULL;
+	char fbuf[128];
 
 	debug3("mpi/pmi2: in _exec_srun_multiple");
 	/* create a tmp multi_prog file */
 	/* TODO: how to delete the file? */
-	multi_prog = tempnam(NULL, NULL);
-	fd = open(multi_prog, O_WRONLY | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+	sprintf(fbuf, "/tmp/%d.XXXXXX", getpid());
+	fd = mkstemp(fbuf);
 	if (fd < 0) {
-		error("mpi/pmi2: failed to open multi-prog file %s: %m",
-		      multi_prog);
+		error("mpi/pmi2: failed to open multi-prog file %s: %m", fbuf);
 		return SLURM_ERROR;
 	}
 	ntasks = 0;
@@ -576,7 +576,7 @@ _exec_srun_multiple(spawn_req_t *req, char **env)
 			   job_info.srun_opt->nodelist);
 	}
 	argv[j ++] = "--multi-prog";
-	argv[j ++] = multi_prog;
+	argv[j ++] = fbuf;
 	argv[j ++] = NULL;
 
 	debug3("mpi/mpi2: to execve");
