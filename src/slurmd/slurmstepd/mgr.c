@@ -259,11 +259,7 @@ static uint32_t _get_exit_code(stepd_step_rec_t *job)
 	uint32_t i;
 	uint32_t step_rc = NO_VAL;
 
-	for (i = 0; i < job->ntasks; i++) {
-		if (NULL == job->task[i]) {
-			debug("get_exit_code task %u is NULL", i);
-			continue;
-		}
+	for (i = 0; i < job->node_tasks; i++) {
 		/* if this task was killed by cmd, ignore its
 		 * return status as it only reflects the fact
 		 * that we killed it
@@ -283,8 +279,11 @@ static uint32_t _get_exit_code(stepd_step_rec_t *job)
 		/* If signalled we need to cycle thru all the
 		 * tasks in case one of them called abort
 		 */
-		if (WIFSIGNALED(job->task[i]->estatus))
-			debug("get_exit_code task %u died by signal", i);
+		if (WIFSIGNALED(job->task[i]->estatus)) {
+			error("get_exit_code task %u died by signal", i);
+			step_rc = job->task[i]->estatus;
+			break;
+		}
 		step_rc = MAX(step_complete.step_rc, job->task[i]->estatus);
 	}
 	return step_rc;
