@@ -3323,6 +3323,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->priority_flags |= PRIORITY_FLAGS_SIZE_RELATIVE;
 		if (slurm_strcasestr(temp_str, "TICKET_BASED"))
 			conf->priority_flags |= PRIORITY_FLAGS_TICKET_BASED;
+		else if (slurm_strcasestr(temp_str, "DEPTH_OBLIVIOUS"))
+			conf->priority_flags |= PRIORITY_FLAGS_DEPTH_OBLIVIOUS;
 		xfree(temp_str);
 	}
 	if (s_p_get_string(&temp_str, "PriorityMaxAge", hashtbl)) {

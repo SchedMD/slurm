@@ -692,6 +692,9 @@ enum ctx_keys {
 						*/
 #define PRIORITY_FLAGS_SIZE_RELATIVE	0x0004	/* Enable job size measurement
 						 * relative to its time limit */
+#define PRIORITY_FLAGS_DEPTH_OBLIVIOUS	0x0008	/* Flag to use depth oblivious
+						 * formula for computing
+						 * hierarchical fairshare */
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
 \*****************************************************************************/

@@ -1652,13 +1652,99 @@ extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 			     assoc->usage->parent_assoc_ptr->acct,
 			     assoc->usage->usage_efctv);
 		}
+	} else if (assoc->shares_raw == SLURMDB_FS_USE_PARENT) {
+		slurmdb_association_rec_t *parent_assoc =
+			assoc->usage->parent_assoc_ptr;
+
+		assoc->usage->usage_efctv =
+			parent_assoc->usage->usage_efctv;
+		if (priority_debug) {
+			info("Effective usage for %s %s off %s %Lf",
+			     child, child_str,
+			     parent_assoc->acct,
+			     parent_assoc->usage->usage_efctv);
+		}
+	} else if (flags & PRIORITY_FLAGS_DEPTH_OBLIVIOUS) {
+		long double rp, rl, k, f, rs;
+		slurmdb_association_rec_t *parent_assoc = NULL;
+		ListIterator sib_itr = NULL;
+		slurmdb_association_rec_t *sibling = NULL;
+
+		/* We want priority_fs = pow(2.0, -R); where
+		   R = rp * rl^k */
+
+		/* rp is R for our parent */
+
+		/* rl is our usage ratio r divided by rs, the usage ratio of
+		 * our siblings (including ourselves). In the standard case
+		 * where everything is consumed at the leaf accounts rs=rp */
+
+		/* k is a factor which tends towards 0 when rp diverges from 1
+		   and rl would bring back R towards 1*/
+
+		/* Effective usage is now computed to be R*shares_norm
+		   so that the general formula of
+		   priority_fs = pow(2.0, -(usage_efctv / shares_norm))
+		   gives what we want: priority_fs = pow(2.0, -R); */
+
+		f = 5.0; /* FIXME: This could be a tunable parameter
+			    (higher f means more impact when parent consumption
+			    is inadequate) */
+		parent_assoc =  assoc->usage->parent_assoc_ptr;
+
+		if (assoc->usage->shares_norm &&
+		    parent_assoc->usage->shares_norm &&
+		    parent_assoc->usage->usage_efctv &&
+		    assoc->usage->usage_norm) {
+			rp = (parent_assoc->usage->usage_efctv /
+			      parent_assoc->usage->shares_norm);
+
+			rs = 0;
+			sib_itr = list_iterator_create(
+				parent_assoc->usage->children_list);
+			while ((sibling = list_next(sib_itr))) {
+				if(sibling->shares_raw != SLURMDB_FS_USE_PARENT)
+					rs += sibling->usage->usage_norm;
+			}
+			list_iterator_destroy(sib_itr);
+			rs /= parent_assoc->usage->shares_norm;
+
+			rl = (assoc->usage->usage_norm /
+			      assoc->usage->shares_norm) / rs;
+
+			if (rp == 0 || rl ==0 || logl(rp)*logl(rl) >= 0) {
+				k = 1;
+			} else {
+				k = 1 / (1 + powl(f * logl(rp), 2));
+			}
+
+			assoc->usage->usage_efctv = rp * powl(rl, k) *
+				assoc->usage->shares_norm ;
+
+			if (priority_debug) {
+				info("Effective usage for %s %s off %s "
+				     "(%Lf * %Lf ^ %Lf) * %f  = %Lf",
+				     child, child_str,
+				     assoc->usage->parent_assoc_ptr->acct,
+				     rp, rl, k,
+				     assoc->usage->shares_norm,
+				     assoc->usage->usage_efctv);
+			}
+		} else {
+			assoc->usage->usage_efctv = assoc->usage->usage_norm;
+			if (priority_debug) {
+				info("Effective usage for %s %s off %s %Lf",
+				     child, child_str,
+				     assoc->usage->parent_assoc_ptr->acct,
+				     assoc->usage->usage_efctv);
+			}
+		}
 	} else {
 		assoc->usage->usage_efctv = assoc->usage->usage_norm +
 			((assoc->usage->parent_assoc_ptr->usage->usage_efctv -
 			  assoc->usage->usage_norm) *
-			 (assoc->shares_raw == SLURMDB_FS_USE_PARENT ?
-			  0 : (assoc->shares_raw /
-			       (long double)assoc->usage->level_shares)));
+			 (assoc->shares_raw /
+			  (long double)assoc->usage->level_shares));
 		if (priority_debug) {
 			info("Effective usage for %s %s off %s "
 			     "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
@@ -1667,8 +1753,7 @@ extern void priority_p_set_assoc_usage(slurmdb_association_rec_t *assoc)
 			     assoc->usage->usage_norm,
 			     assoc->usage->parent_assoc_ptr->usage->usage_efctv,
 			     assoc->usage->usage_norm,
-			     (assoc->shares_raw == SLURMDB_FS_USE_PARENT ?
-			      0 : assoc->shares_raw),
+			     assoc->shares_raw,
 			     assoc->usage->level_shares,
 			     assoc->usage->usage_efctv);
 		}
