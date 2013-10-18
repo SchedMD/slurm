@@ -61,9 +61,6 @@
 #include <hwloc.h>
 #include <hwloc/glibc-sched.h>
 
-static bool cpuset_prefix_set = false;
-static char *cpuset_prefix = "";
-
 # if HWLOC_API_VERSION <= 0x00010000
 /* After this version the cpuset structure and all it's functions
  * changed to bitmaps.  So to work with old hwloc's we just to the
@@ -100,6 +97,9 @@ static inline int hwloc_bitmap_asprintf(char **str, hwloc_bitmap_t bitmap)
 #ifndef PATH_MAX
 #define PATH_MAX 256
 #endif
+
+static bool cpuset_prefix_set = false;
+static char *cpuset_prefix = "";
 
 static char user_cgroup_path[PATH_MAX];
 static char job_cgroup_path[PATH_MAX];

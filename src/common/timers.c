@@ -63,13 +63,13 @@ extern void slurm_diff_tv_str(struct timeval *tv1, struct timeval *tv2,
 		if (!limit)
 			limit = 1000000;
 		if (*delta_t > limit) {
-			if (!localtime_r(&tv2->tv_sec, &tm))
+			if (!localtime_r(&tv1->tv_sec, &tm))
 				fprintf(stderr, "localtime_r() failed\n");
 			if (strftime(p, sizeof(p), "%T", &tm) == 0)
 				fprintf(stderr, "strftime() returned 0\n");
 			verbose("Warning: Note very large processing "
 				"time from %s: %s began=%s.%3.3d",
-				from, tv_str, p, (int)(tv2->tv_usec / 1000));
+				from, tv_str, p, (int)(tv1->tv_usec / 1000));
 		}
 	}
 }
