@@ -790,15 +790,7 @@ extern int time_str2secs(const char *string)
 	num_colon = _get_num_colon(timestr);
 
 	if (has_dash) {
-		if (num_colon == 0) {
-			/* days-
-			 */
-			sscanf(timestr, "%s", days);
-			d = atoi(days) * 86400;
-			goto bye;
-		}
-
-		/* days-hours
+		/* days- OR days-hours
 		 */
 		sscanf(timestr, "%s%s%n", days, hours, &n);
 		timestr = timestr + n;
