@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed typo about command case in quickstart.html.
  -- task/cgroup - handle new cpuset files, similar to commit c4223940.
  -- Replace the tempname() function call with mkstemp().
+ -- Fix for --cpu_bind=map_cpu/mask_cpu/map_ldom/mask_ldom plus
+    --mem_bind=map_mem/mask_mem options, broken in 2.6.2.
 
 * Changes in Slurm 2.6.3
 ========================
