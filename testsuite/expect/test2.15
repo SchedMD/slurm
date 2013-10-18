@@ -66,8 +66,9 @@ if {$available < $node_cnt} {
 	exit $exit_code
 }
 
-# NOTE: The second sleep command in task 1 is to deal with a possible race condition in which
-# the first sleep command is killed and the shell starts the second command before it is killed
+# NOTE: The second sleep command in task 1 is to deal with a possible race
+# condition in which the first sleep command is killed and the shell starts the
+# second command before the shell itself is killed
 make_bash_script $file_in "
 if \[ \$SLURM_PROCID = 0 \]; then
 	$bin_echo JOBID=\$SLURM_JOB_ID
