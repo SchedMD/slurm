@@ -137,6 +137,19 @@ expect {
 }
 
 #
+# Reading a second prompt is required by some versions of Expect
+#
+set timeout 1
+expect {
+	-re $prompt {
+		exp_continue
+	}
+	timeout {
+	}
+}
+set timeout 30
+
+#
 # Run a job step to get allocated processor count and affinity
 #
 set full_mask -1
