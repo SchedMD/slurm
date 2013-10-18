@@ -1772,6 +1772,7 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 
 #ifdef HAVE_BG
 	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
+	List kill_list = NULL;
 
 	jobinfo->cleaning = 1;
 
@@ -1781,6 +1782,18 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 		      job_ptr->job_id);
 		return rc;
 	}
+
+	/* Make sure this job wasn't blocking something that failed
+	   earlier */
+	slurm_mutex_lock(&block_state_mutex);
+
+	bg_record_hw_failure(jobinfo->bg_record, &kill_list);
+
+	slurm_mutex_unlock(&block_state_mutex);
+
+	if (kill_list)
+		bg_record_post_hw_failure(&kill_list, 1);
+
 #endif
 	return rc;
 }
