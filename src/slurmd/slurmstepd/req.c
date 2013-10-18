@@ -697,7 +697,7 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 		/* cycle thru the tasks and mark those that have not
 		 * called abort and/or terminated as killed_by_cmd
 		 */
-		for (i = 0; i < job->ntasks; i++) {
+		for (i = 0; i < job->node_tasks; i++) {
 			if (NULL == (task = job->task[i])) {
 				continue;
 			}
@@ -953,7 +953,7 @@ _handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid)
 	/* cycle thru the tasks and mark those that have not
 	 * called abort and/or terminated as killed_by_cmd
 	 */
-	for (i = 0; i < job->ntasks; i++) {
+	for (i = 0; i < job->node_tasks; i++) {
 		if (NULL == (task = job->task[i])) {
 			continue;
 		}
