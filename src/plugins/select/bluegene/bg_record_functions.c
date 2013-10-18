@@ -1728,10 +1728,8 @@ extern void bg_record_hw_failure(bg_record_t *bg_record, List *ret_kill_list)
 	 * that is in the RebootQOSList */
 	if (!bg_conf->sub_blocks || !bg_conf->reboot_qos_bitmap
 	    || (bit_ffs(bg_conf->reboot_qos_bitmap) == -1)
-	    || (bg_record->mp_count > 1)) {
-		info("ignore this block %d %p %d %d", bg_conf->sub_blocks, bg_conf->reboot_qos_bitmap, bit_ffs(bg_conf->reboot_qos_bitmap), bg_record->mp_count);
+	    || (bg_record->mp_count > 1))
 		return;
-	}
 
 	/* Any block in these states can be ignored */
 	if (bg_record->free_cnt
@@ -1739,10 +1737,8 @@ extern void bg_record_hw_failure(bg_record_t *bg_record, List *ret_kill_list)
 		|| (bg_record->err_ratio < bg_conf->max_block_err))
 		&& bg_record->action != BG_BLOCK_ACTION_FREE)
 	    || !bg_record->job_list
-	    || (list_count(bg_record->job_list) <= 1)) {
-		info("ignore this block");
+	    || (list_count(bg_record->job_list) <= 1))
 		return;
-	}
 
 	/* Make sure all jobs still running in this bad block
 	 * all have a preemptable qos */
