@@ -145,6 +145,9 @@ documents those changes that are of interest to users and admins.
  -- Replace the tempname() function call with mkstemp().
  -- Fix for --cpu_bind=map_cpu/mask_cpu/map_ldom/mask_ldom plus
     --mem_bind=map_mem/mask_mem options, broken in 2.6.2.
+ -- Restore default behavior of allocating cores to jobs on a cyclic basis
+    across the sockets unless SelectTypeParameters=CR_CORE_DEFAULT_DIST_BLOCK
+    or user specifies other distribution options.
 
 * Changes in Slurm 2.6.3
 ========================
