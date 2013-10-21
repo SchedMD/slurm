@@ -305,6 +305,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		           (strncasecmp(tok, "mapcpu", 6) == 0)) {
 			char *list;
 			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
 			_clear_then_set((int *)flags, bind_bits, CPU_BIND_MAP);
 			xfree(*cpu_bind);
 			if (list && *list) {
@@ -319,6 +320,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		           (strncasecmp(tok, "maskcpu", 7) == 0)) {
 			char *list;
 			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
 			_clear_then_set((int *)flags, bind_bits, CPU_BIND_MASK);
 			xfree(*cpu_bind);
 			if (list && *list) {
@@ -337,6 +339,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		           (strncasecmp(tok, "mapldom", 7) == 0)) {
 			char *list;
 			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
 			_clear_then_set((int *)flags, bind_bits,
 					CPU_BIND_LDMAP);
 			xfree(*cpu_bind);
@@ -352,6 +355,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		           (strncasecmp(tok, "maskldom", 8) == 0)) {
 			char *list;
 			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
 			_clear_then_set((int *)flags, bind_bits,
 					CPU_BIND_LDMASK);
 			xfree(*cpu_bind);
@@ -498,6 +502,7 @@ int slurm_verify_mem_bind(const char *arg, char **mem_bind,
 		           (strncasecmp(tok, "mapmem", 6) == 0)) {
 			char *list;
 			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
 			_clear_then_set((int *)flags, bind_bits, MEM_BIND_MAP);
 			xfree(*mem_bind);
 			if (list && *list) {
@@ -511,6 +516,7 @@ int slurm_verify_mem_bind(const char *arg, char **mem_bind,
 		           (strncasecmp(tok, "maskmem", 7) == 0)) {
 			char *list;
 			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");  /* THIS IS NOT REDUNDANT */
 			_clear_then_set((int *)flags, bind_bits, MEM_BIND_MASK);
 			xfree(*mem_bind);
 			if (list && *list) {

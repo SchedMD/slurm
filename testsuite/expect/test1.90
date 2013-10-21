@@ -142,6 +142,7 @@ expect {
 set timeout 1
 expect {
 	-re $prompt {
+		exp_continue
 	}
 	timeout {
 	}

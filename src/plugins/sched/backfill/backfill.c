@@ -843,6 +843,7 @@ static int _attempt_backfill(void)
 		later_start = now;
  TRY_LATER:
 		if ((time(NULL) - sched_start) >= sched_timeout) {
+			uint32_t save_job_id = job_ptr->job_id;
 			uint32_t save_time_limit = job_ptr->time_limit;
 			job_ptr->time_limit = orig_time_limit;
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
@@ -862,6 +863,18 @@ static int _attempt_backfill(void)
 				rc = 1;
 				break;
 			}
+
+			/* With bf_continue configured, the original job could
+			 * have been scheduled or cancelled and purged.
+			 * Revalidate job the record here. */
+			if ((job_ptr->magic  != JOB_MAGIC) ||
+			    (job_ptr->job_id != save_job_id))
+				continue;
+			if (!IS_JOB_PENDING(job_ptr))
+				continue;
+			if (!avail_front_end(job_ptr))
+				continue;	/* No available frontend */
+
 			job_ptr->time_limit = save_time_limit;
 			/* Reset backfill scheduling timers, resume testing */
 			sched_start = time(NULL);
