@@ -81,9 +81,9 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 	cancel_job $job_id
 	exit 1
 }
-# Allow time for the step to start
+# Allow time for poe to start the step
 # This could take a while with launch/poe
-sleep 20
+sleep 30
 
 #
 # Test verbose scancel
@@ -263,7 +263,7 @@ if {$exit_code == 0} {
 	exec rm -f $file_in $file_out $file_prog
 	send_user "\nSUCCESS\n"
 } else {
-	send_user "\nFAILURE: launch/poe and proctrack/pgid are incompatible.\n"
+	send_user "\nFAILURE: Note: launch/poe and proctrack/pgid are incompatible.\n"
 }
 exit $exit_code
 
