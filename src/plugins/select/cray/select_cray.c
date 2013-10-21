@@ -432,6 +432,15 @@ extern int select_p_state_restore(char *dir_name)
 
 extern int select_p_job_init(List job_list)
 {
+	static bool run_already = false;
+
+	/* Execute only on initial startup. We don't support bgblock
+	 * creation on demand today, so there is no need to re-sync data. */
+	if (run_already)
+		return other_job_init(job_list);
+
+	run_already = true;
+
 	if (!(slurmctld_conf.select_type_param & CR_NHC_NO)
 	    && job_list && list_count(job_list)) {
 		ListIterator itr = list_iterator_create(job_list);
