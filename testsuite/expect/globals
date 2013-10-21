@@ -188,7 +188,7 @@ cset max_job_delay 120
 # Files must be propogated between nodes within this number of seconds.
 # The delay may be due to NFS.
 #
-cset max_file_delay 60
+cset max_file_delay 90
 
 #
 # Desired job state must be reached within this number of seconds.
