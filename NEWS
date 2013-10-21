@@ -33,6 +33,8 @@ documents those changes that are of interest to users and admins.
  -- Restore default behavior of allocating cores to jobs on a cyclic basis
     across the sockets unless SelectTypeParameters=CR_CORE_DEFAULT_DIST_BLOCK
     or user specifies other distribution options.
+ -- Enforce JobRequeue configuration parameter on node failure. Previously
+    always requeued the job.
 
 * Changes in Slurm 2.6.3
 ========================
