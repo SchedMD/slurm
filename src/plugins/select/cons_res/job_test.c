@@ -717,8 +717,20 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	    ((job_ptr->details->cpus_per_task > 1) &&
 	     (gres_cpus < job_ptr->details->cpus_per_task)))
 		gres_cpus = 0;
+
 	while (gres_cpus < cpus)
 		cpus -= cpu_alloc_size;
+
+	while (gres_cpus < cpus) {
+		if ((int) cpus < cpu_alloc_size) {
+			debug3("cons_res: cpu_alloc_size > cpus, cannot "
+			       "continue (node: %s)", node_ptr->name);
+			cpus = 0;
+			break;
+		} else {
+			cpus -= cpu_alloc_size;
+		}
+	}
 
 	if (cpus == 0)
 		bit_nclear(core_map, core_start_bit, core_end_bit);

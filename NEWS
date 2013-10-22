@@ -25,6 +25,8 @@ documents those changes that are of interest to users and admins.
  -- init scripts ignore quotes around Pid file name specifications.
  -- Fixed typo about command case in quickstart.html.
  -- task/cgroup - handle new cpuset files, similar to commit c4223940.
+ -- select/cons_res with GRES and multiple threads per core, fix possible
+    infinite loop.
 
 * Changes in Slurm 2.6.3
 ========================
