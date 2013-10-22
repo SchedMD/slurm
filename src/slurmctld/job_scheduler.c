@@ -1458,9 +1458,11 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			} else
 				depends = true;
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK) {
-			if (!IS_JOB_FINISHED(dep_ptr->job_ptr))
+			if (dep_ptr->job_ptr->job_state & JOB_SPECIAL_EXIT) {
+				clear_dep = true;
+			} else if (!IS_JOB_FINISHED(dep_ptr->job_ptr)) {
 				depends = true;
-			else if (!IS_JOB_COMPLETE(dep_ptr->job_ptr)) {
+			} else if (!IS_JOB_COMPLETE(dep_ptr->job_ptr)) {
 				clear_dep = true;
 			} else {
 				failure = true;
