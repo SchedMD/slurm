@@ -153,6 +153,9 @@ documents those changes that are of interest to users and admins.
  -- acct_gather_energy/ipmi - Add delay before retry on read error.
  -- select/cons_res with GRES and multiple threads per core, fix possible
     infinite loop.
+ -- proctrack/cgroup - Add cgroup create retry logic in case one step is
+    starting at the same time as another step is ending and the logic to create
+    and delete cgroups overlaps.
 
 * Changes in Slurm 2.6.3
 ========================
