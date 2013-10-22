@@ -297,7 +297,7 @@ static struct part_row_data *_dup_row_data(struct part_row_data *orig_row,
 					   uint16_t num_rows)
 {
 	struct part_row_data *new_row;
-	int i, j;
+	int i;
 
 	if (num_rows == 0 || !orig_row)
 		return NULL;
@@ -307,16 +307,15 @@ static struct part_row_data *_dup_row_data(struct part_row_data *orig_row,
 		new_row[i].num_jobs = orig_row[i].num_jobs;
 		new_row[i].job_list_size = orig_row[i].job_list_size;
 		if (orig_row[i].row_bitmap)
-			new_row[i].row_bitmap= bit_copy(orig_row[i].
-							row_bitmap);
+			new_row[i].row_bitmap = bit_copy(orig_row[i].
+							 row_bitmap);
 		if (new_row[i].job_list_size == 0)
 			continue;
 		/* copy the job list */
 		new_row[i].job_list = xmalloc(new_row[i].job_list_size *
-					      sizeof(bitstr_t *));
-		for (j = 0; j < new_row[i].num_jobs; j++) {
-			new_row[i].job_list[j] = orig_row[i].job_list[j];
-		}
+					      sizeof(struct job_resources *));
+		memcpy(new_row[i].job_list, orig_row[i].job_list,
+		       (sizeof(struct job_resources *) * new_row[i].num_jobs));
 	}
 	return new_row;
 }
@@ -378,12 +377,7 @@ static void _destroy_row_data(struct part_row_data *row, uint16_t num_rows) {
 	uint16_t i;
 	for (i = 0; i < num_rows; i++) {
 		FREE_NULL_BITMAP(row[i].row_bitmap);
-		if (row[i].job_list) {
-			uint32_t j;
-			for (j = 0; j < row[i].num_jobs; j++)
-				row[i].job_list[j] = NULL;
-			xfree(row[i].job_list);
-		}
+		xfree(row[i].job_list);
 	}
 	xfree(row);
 }
