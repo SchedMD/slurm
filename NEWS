@@ -151,6 +151,8 @@ documents those changes that are of interest to users and admins.
  -- Enforce JobRequeue configuration parameter on node failure. Previously
     always requeued the job.
  -- acct_gather_energy/ipmi - Add delay before retry on read error.
+ -- select/cons_res with GRES and multiple threads per core, fix possible
+    infinite loop.
 
 * Changes in Slurm 2.6.3
 ========================
