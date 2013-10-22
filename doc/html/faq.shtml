@@ -1611,6 +1611,24 @@ SLURM?</b></a></br>
 <p>The following lines should also be added to the global <i>.tvdrc</i> file
 for TotalView to operate with SLURM:
 <pre>
+# Enable debug server bulk launch: Checked
+dset -set_as_default TV::bulk_launch_enabled true
+
+# Command:
+# Beginning with TV 7X.1, TV supports SLURM and %J.
+# Specify --mem-per-cpu=0 in case Slurm configured with default memory
+# value and we want TotalView to share the job's memory limit without
+# consuming any of the job's memory so as to block other job steps.
+dset -set_as_default TV::bulk_launch_string {srun --mem-per-cpu=0 -N%N -n%N -w`awk -F. 'BEGIN {ORS=","} {if (NR==%N) ORS=""; print $1}' %t1` -l --input=none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}
+
+# Temp File 1 Prototype:
+# Host Lines:
+# SLURM NodeNames need to be unadorned hostnames. In case %R returns
+# fully qualified hostnames, list the hostnames in %t1 here, and use
+# awk in the launch string above to strip away domain name suffixes.
+dset -set_as_default TV::bulk_launch_tmpfile1_host_lines {%R}
+</pre></p>
+<!-- OLD FORMAT
 dset TV::parallel_configs {
 	name: SLURM;
 	description: SLURM;
@@ -1621,7 +1639,7 @@ dset TV::parallel_configs {
 	env: ;
 	force_env: false;
 }
-</pre></p>
+!-->
 
 <p><a name="git_patch"><b>44. How can a patch file be generated from a SLURM
 commit in github?</b></a></br>
