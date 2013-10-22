@@ -8,7 +8,9 @@ documents those changes that are of interest to users and admins.
  -- Honor ntasks-per-node option with exclusive node allocations.
  -- sched/backfill - Prevent invalid memory reference if bf_continue option is
     configured and slurm is reconfigured during one of the sleep cycles or if
-    there are any changes to the partition configuration.
+    there are any changes to the partition configuration or if the normal
+    scheduler runs and starts a job that the backfill scheduler is actively
+    working on.
  -- Update man pages information about acct-freq and JobAcctGatherFrequency
     to reflect only the latest supported format.
  -- Minor document update to include note about PrivateData=Usage for the
@@ -25,6 +27,15 @@ documents those changes that are of interest to users and admins.
  -- init scripts ignore quotes around Pid file name specifications.
  -- Fixed typo about command case in quickstart.html.
  -- task/cgroup - handle new cpuset files, similar to commit c4223940.
+ -- Replace the tempname() function call with mkstemp().
+ -- Fix for --cpu_bind=map_cpu/mask_cpu/map_ldom/mask_ldom plus
+    --mem_bind=map_mem/mask_mem options, broken in 2.6.2.
+ -- Restore default behavior of allocating cores to jobs on a cyclic basis
+    across the sockets unless SelectTypeParameters=CR_CORE_DEFAULT_DIST_BLOCK
+    or user specifies other distribution options.
+ -- Enforce JobRequeue configuration parameter on node failure. Previously
+    always requeued the job.
+ -- acct_gather_energy/ipmi - Add delay before retry on read error.
  -- select/cons_res with GRES and multiple threads per core, fix possible
     infinite loop.
 

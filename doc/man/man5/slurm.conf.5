@@ -1258,6 +1258,8 @@ Supported values are "YES" and "NO".  The default value is "NO".
 \fBPriorityFlags\fR
 Flags to modify priority behavior
 Applicable only if PriorityType=priority/multifactor.
+The keywords below have no associated value
+(e.g. "PriorityFlags=ACCRUE_ALWAYS,SMALL_RELATIVE_TO_TIME").
 .RS
 .TP 17
 \fBACCRUE_ALWAYS\fR
@@ -1746,10 +1748,17 @@ Multiple options may be comma separated.
 .TP
 \fBdefault_queue_depth=#\fR
 The default number of jobs to attempt scheduling (i.e. the queue depth) when a
-running job completes or other routine actions occur. The full queue will be
-tested on a less frequent basis. The default value is 100.
+running job completes or other routine actions occur.
+The full queue will be tested on a less frequent basis.
+The default value is 100.
 In the case of large clusters (more than 1000 nodes), configuring a relatively
 small value may be desirable.
+Specifying a large value (say 1000 or higher) can be expected to result in
+poor system responsiveness since this scheduling logic will not release
+locks for other events to occur.
+It would be better to let the backfill scheduler process a larger number of jobs
+(see \fBmax_job_bf\fR, \fBbf_continue\fR  and other options here for more
+information).
 .TP
 \fBdefer\fR
 Setting this option will avoid attempting to schedule each job
@@ -1804,6 +1813,12 @@ This option applies only to \fBSchedulerType=sched/backfill\fR.
 The number of minutes into the future to look when considering jobs to schedule.
 Higher values result in more overhead and less responsiveness.
 The default value is 1440 minutes (one day).
+A value at least as long as the highest allowed time limit is generally
+advisable to prevent job starvation.
+In order limit the amount of data managed by the backfill scheduler,
+if the value of \fBbf_window\fR is increased, then it is generally advisable
+to also increase \fBbf_resolution\fR.
+if 
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP
 \fBmax_job_bf=#\fR
@@ -1813,9 +1828,6 @@ Higher values result in more overhead and less responsiveness.
 Until an attempt is made to backfill schedule a job, its expected
 initiation time value will not be set.
 The default value is 50.
-In the case of large clusters (more than 1000 nodes) configured with
-\fBSelectType=select/cons_res\fR, configuring a relatively small value may be
-desirable.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 .TP
 \fBmax_depend_depth=#\fR

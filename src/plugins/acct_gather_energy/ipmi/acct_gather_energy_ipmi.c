@@ -528,10 +528,11 @@ static int _thread_update_node_energy(void)
 static int _thread_init(void)
 {
 	static bool first = true;
+	static bool first_init = SLURM_FAILURE;
 	int rc = SLURM_SUCCESS;
 
 	if (!first)
-		return rc;
+		return first_init;
 	first = false;
 
 	if (_init_ipmi_config() != SLURM_SUCCESS) {
@@ -561,6 +562,9 @@ static int _thread_init(void)
 
 	if (debug_flags & DEBUG_FLAG_ENERGY)
 		info("%s thread init", plugin_name);
+
+	first_init = SLURM_SUCCESS;
+
 	return rc;
 }
 
@@ -617,7 +621,10 @@ static void *_thread_ipmi_run(void *no_data)
 	//loop until slurm stop
 	while (!flag_energy_accounting_shutdown) {
 		time_lost = (int)(time(NULL) - last_update_time);
-		_task_sleep(slurm_ipmi_conf.freq - time_lost);
+		if (time_lost <= slurm_ipmi_conf.freq)
+			_task_sleep(slurm_ipmi_conf.freq - time_lost);
+		else
+			_task_sleep(1);
 		slurm_mutex_lock(&ipmi_mutex);
 		_thread_update_node_energy();
 		slurm_mutex_unlock(&ipmi_mutex);
@@ -806,8 +813,8 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	case ENERGY_DATA_JOULES_TASK:
 		slurm_mutex_lock(&ipmi_mutex);
 		if (_is_thread_launcher()) {
-			_thread_init();
-			_thread_update_node_energy();
+			if (_thread_init() == SLURM_SUCCESS)
+				_thread_update_node_energy();
 		} else
 			_get_joules_task(10); /* Since we don't have
 						 access to the

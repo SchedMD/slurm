@@ -125,7 +125,7 @@ int check_header_version(header_t * header)
  */
 void init_header(header_t *header, slurm_msg_t *msg, uint16_t flags)
 {
-	memset(header, 0, sizeof(header));
+	memset(header, 0, sizeof(header_t));
 	/* Since the slurmdbd could talk to a host of different
 	   versions of slurm this needs to be kept current when the
 	   protocol version changes. */
