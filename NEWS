@@ -150,6 +150,7 @@ documents those changes that are of interest to users and admins.
     or user specifies other distribution options.
  -- Enforce JobRequeue configuration parameter on node failure. Previously
     always requeued the job.
+ -- acct_gather_energy/ipmi - Add delay before retry on read error.
 
 * Changes in Slurm 2.6.3
 ========================
