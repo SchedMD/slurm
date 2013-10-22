@@ -126,6 +126,7 @@ Lead Slurm developers are:
 <li>Martin Perry (Bull)</li>
 <li>Dan Phung (Lawrence Livermore National Laboratory/Columbia University)</li>
 <li>Ashley Pittman (Quadrics, UK)</li>
+<li>Ludovic Prevost (NEC, France)</li>
 <br>
 <li>Vijay Ramasubramanian (University of Maryland)</li>
 <li>Krishnakumar Ravi[KK] (HP)</li>
@@ -174,6 +175,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 16 October 2013</p>
+<p style="text-align:center;">Last modified 22 October 2013</p>
 
 <!--#include virtual="footer.txt"-->
