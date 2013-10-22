@@ -109,6 +109,14 @@ const uint32_t plugin_version = 91;
 #define PATH_MAX 256
 #endif
 
+/* One slurmstepd could be in the process of creating cgroups while another
+ * slurmstepd is simultaneoulsy deleting cgroups for another step for that
+ * same user. MAX_CGROUP_RETRY defines how many times that we retry creating
+ * the user and job cgroup on an error of ENOENT. */
+#ifndef MAX_CGROUP_RETRY
+#define MAX_CGROUP_RETRY 8
+#endif
+
 static slurm_cgroup_conf_t slurm_cgroup_conf;
 
 static char user_cgroup_path[PATH_MAX];
@@ -143,6 +151,7 @@ int _slurm_cgroup_create(slurmd_job_t *job, uint64_t id, uid_t uid, gid_t gid)
 {
 	/* we do it here as we do not have access to the conf structure */
 	/* in libslurm (src/common/xcgroup.c) */
+	int retry_count = 0;	/* See MAX_CGROUP_RETRY description above */
 	xcgroup_t slurm_cg;
 	char* pre = (char*) xstrdup(slurm_cgroup_conf.cgroup_prepend);
 #ifdef MULTIPLE_SLURMD
@@ -216,22 +225,12 @@ int _slurm_cgroup_create(slurmd_job_t *job, uint64_t id, uid_t uid, gid_t gid)
 			    getuid(), getgid()) != XCGROUP_SUCCESS) {
 		return SLURM_ERROR;
 	}
-	if (xcgroup_instanciate(&user_freezer_cg) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&user_freezer_cg);
-
-		return SLURM_ERROR;
-	}
 
 	/* create job cgroup in the freezer ns (it could already exist) */
 	if (xcgroup_create(&freezer_ns, &job_freezer_cg,
 			    job_cgroup_path,
 			    getuid(), getgid()) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_freezer_cg);
-		return SLURM_ERROR;
-	}
-	if (xcgroup_instanciate(&job_freezer_cg) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&user_freezer_cg);
-		xcgroup_destroy(&job_freezer_cg);
 		return SLURM_ERROR;
 	}
 
@@ -243,7 +242,12 @@ int _slurm_cgroup_create(slurmd_job_t *job, uint64_t id, uid_t uid, gid_t gid)
 		xcgroup_destroy(&job_freezer_cg);
 		return SLURM_ERROR;
 	}
-	if (xcgroup_instanciate(&step_freezer_cg) != XCGROUP_SUCCESS) {
+
+retry:	if ((xcgroup_instanciate(&user_freezer_cg) != XCGROUP_SUCCESS) ||
+	    (xcgroup_instanciate(&job_freezer_cg)  != XCGROUP_SUCCESS) ||
+	    (xcgroup_instanciate(&step_freezer_cg) != XCGROUP_SUCCESS)) {
+		if ((errno == ENOENT) && (++retry_count <= MAX_CGROUP_RETRY))
+			goto retry;
 		xcgroup_destroy(&user_freezer_cg);
 		xcgroup_destroy(&job_freezer_cg);
 		xcgroup_destroy(&step_freezer_cg);
