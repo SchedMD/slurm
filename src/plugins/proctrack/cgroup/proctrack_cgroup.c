@@ -109,14 +109,6 @@ const uint32_t plugin_version = 91;
 #define PATH_MAX 256
 #endif
 
-/* One slurmstepd could be in the process of creating cgroups while another
- * slurmstepd is simultaneoulsy deleting cgroups for another step for that
- * same user. MAX_CGROUP_RETRY defines how many times that we retry creating
- * the user and job cgroup on an error of ENOENT. */
-#ifndef MAX_CGROUP_RETRY
-#define MAX_CGROUP_RETRY 8
-#endif
-
 static slurm_cgroup_conf_t slurm_cgroup_conf;
 
 static char user_cgroup_path[PATH_MAX];
@@ -125,6 +117,8 @@ static char jobstep_cgroup_path[PATH_MAX];
 
 static xcgroup_ns_t freezer_ns;
 
+static bool slurm_freezer_init = false;
+static xcgroup_t slurm_freezer_cg;
 static xcgroup_t user_freezer_cg;
 static xcgroup_t job_freezer_cg;
 static xcgroup_t step_freezer_cg;
@@ -151,8 +145,6 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 {
 	/* we do it here as we do not have access to the conf structure */
 	/* in libslurm (src/common/xcgroup.c) */
-	int retry_count = 0;	/* See MAX_CGROUP_RETRY description above */
-	xcgroup_t slurm_cg;
 	char* pre = (char*) xstrdup(slurm_cgroup_conf.cgroup_prepend);
 #ifdef MULTIPLE_SLURMD
 	if ( conf->node_name != NULL )
@@ -164,16 +156,14 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 #endif
 
 	/* create slurm cgroup in the freezer ns (it could already exist) */
-	if (xcgroup_create(&freezer_ns, &slurm_cg,pre,
+	if (xcgroup_create(&freezer_ns, &slurm_freezer_cg, pre,
 			   getuid(), getgid()) != XCGROUP_SUCCESS) {
 		return SLURM_ERROR;
 	}
-	if (xcgroup_instanciate(&slurm_cg) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&slurm_cg);
+	if (xcgroup_instanciate(&slurm_freezer_cg) != XCGROUP_SUCCESS) {
+		xcgroup_destroy(&slurm_freezer_cg);
 		return SLURM_ERROR;
 	}
-	else
-		xcgroup_destroy(&slurm_cg);
 
 	/* build user cgroup relative path if not set (should not be) */
 	if (*user_cgroup_path == '\0') {
@@ -182,6 +172,7 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 			error("unable to build uid %u cgroup relative "
 			      "path : %m", uid);
 			xfree(pre);
+			xcgroup_destroy(&slurm_freezer_cg);
 			return SLURM_ERROR;
 		}
 	}
@@ -193,6 +184,7 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 			     user_cgroup_path, job->jobid) >= PATH_MAX) {
 			error("unable to build job %u cgroup relative "
 			      "path : %m", job->jobid);
+			xcgroup_destroy(&slurm_freezer_cg);
 			return SLURM_ERROR;
 		}
 	}
@@ -206,6 +198,7 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 				error("proctrack/cgroup unable to build job step"
 				      " %u.batch freezer cg relative path: %m",
 				      job->jobid);
+				xcgroup_destroy(&slurm_freezer_cg);
 				return SLURM_ERROR;
 			}
 		} else {
@@ -214,6 +207,7 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 				error("proctrack/cgroup unable to build job step"
 				      " %u.%u freezer cg relative path: %m",
 				      job->jobid, job->stepid);
+				xcgroup_destroy(&slurm_freezer_cg);
 				return SLURM_ERROR;
 			}
 		}
@@ -223,6 +217,7 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 	if (xcgroup_create(&freezer_ns, &user_freezer_cg,
 			   user_cgroup_path,
 			   getuid(), getgid()) != XCGROUP_SUCCESS) {
+		xcgroup_destroy(&slurm_freezer_cg);
 		return SLURM_ERROR;
 	}
 
@@ -230,6 +225,7 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 	if (xcgroup_create(&freezer_ns, &job_freezer_cg,
 			   job_cgroup_path,
 			   getuid(), getgid()) != XCGROUP_SUCCESS) {
+		xcgroup_destroy(&slurm_freezer_cg);
 		xcgroup_destroy(&user_freezer_cg);
 		return SLURM_ERROR;
 	}
@@ -238,21 +234,25 @@ int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gi
 	if (xcgroup_create(&freezer_ns, &step_freezer_cg,
 			   jobstep_cgroup_path,
 			   getuid(), getgid()) != XCGROUP_SUCCESS) {
+		xcgroup_destroy(&slurm_freezer_cg);
 		xcgroup_destroy(&user_freezer_cg);
 		xcgroup_destroy(&job_freezer_cg);
 		return SLURM_ERROR;
 	}
 
-retry:	if ((xcgroup_instanciate(&user_freezer_cg) != XCGROUP_SUCCESS) ||
+	xcgroup_lock(&slurm_freezer_cg);
+	if ((xcgroup_instanciate(&user_freezer_cg) != XCGROUP_SUCCESS) ||
 	    (xcgroup_instanciate(&job_freezer_cg)  != XCGROUP_SUCCESS) ||
 	    (xcgroup_instanciate(&step_freezer_cg) != XCGROUP_SUCCESS)) {
-		if ((errno == ENOENT) && (++retry_count <= MAX_CGROUP_RETRY))
-			goto retry;
+		xcgroup_unlock(&slurm_freezer_cg);
+		xcgroup_destroy(&slurm_freezer_cg);
 		xcgroup_destroy(&user_freezer_cg);
 		xcgroup_destroy(&job_freezer_cg);
 		xcgroup_destroy(&step_freezer_cg);
 		return SLURM_ERROR;
 	}
+	xcgroup_unlock(&slurm_freezer_cg);
+	slurm_freezer_init = true;
 
 	/* inhibit release agent for the step cgroup thus letting 
 	 * slurmstepd being able to add new pids to the container 
@@ -264,6 +264,9 @@ retry:	if ((xcgroup_instanciate(&user_freezer_cg) != XCGROUP_SUCCESS) ||
 
 int _slurm_cgroup_destroy(void)
 {
+	if (slurm_freezer_init)
+		xcgroup_lock(&slurm_freezer_cg);
+
 	if (jobstep_cgroup_path[0] != '\0') {
 		if ( xcgroup_delete(&step_freezer_cg) != XCGROUP_SUCCESS )
 			return SLURM_ERROR;
@@ -278,6 +281,11 @@ int _slurm_cgroup_destroy(void)
 	if (user_cgroup_path[0] != '\0') {
 		xcgroup_delete(&user_freezer_cg);
 		xcgroup_destroy(&user_freezer_cg);
+	}
+
+	if (slurm_freezer_init) {
+		xcgroup_unlock(&slurm_freezer_cg);
+		xcgroup_destroy(&slurm_freezer_cg);
 	}
 
 	xcgroup_ns_destroy(&freezer_ns);
