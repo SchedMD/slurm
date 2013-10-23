@@ -56,6 +56,7 @@ SLURM? Why does the DAKOTA program not run with SLURM?</a></li>
 jobid") sometimes not display a job's estimated start time?</a></li>
 <li><a href="#ansys">How can I run an Ansys program with Slurm?</a></li>
 <li><a href="#mic">How can I run programs with on an Intel Phi (MIC) processor?</a></li>
+<li><a href="#req">How to requeue a job in complete or failed state?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
@@ -165,6 +166,7 @@ launch a shell on a node in the job's allocation?</a></li>
 <li><a href="#sql">How can I use double quotes in MySQL queries?</a></li>
 <li><a href="#reboot">Why is a compute node down with the reason set to
 "Node unexpectedly rebooted"?</a></li>
+<li><a href="#reqspec">How to requeue a job which has exited with a specific exit code.</a></li>
 </ol>
 
 <h2>For Management</h2>
@@ -938,6 +940,57 @@ $ icc -mmic -openmp hello.c -o hello.mic
 $ srun -p mic ./hello.mic
 </pre>
 
+<p><a name="req"><b>29. How to requeue a job in complete or failed state?</b></a>
+<br>
+<p>
+Slurm supports requeue jobs in done or failed state. Use the
+command:
+<p align=left><b>scontrol requeue job_id</b></p>
+</head>
+</p>
+The job will be requeued back in PENDING state and scheduled again.
+See man(1) scontrol.
+</p>
+<p>Consider a simple job like this:</p>
+<pre>
+$cat zoppo
+#!/bin/sh
+echo "hello, world"
+exit 10
+
+$sbatch -o here ./zoppo
+Submitted batch job 10
+</pre>
+<p>
+The job finishes in FAILED state because it exits with
+a non zero value. We can requeue the job back to
+the PENDING state and the job will be dispatched again.
+</p>
+<pre>
+$->scontrol requeue 10
+$->squeue
+     JOBID PARTITION  NAME     USER   ST   TIME  NODES NODELIST(REASON)
+      10      mira    zoppo    david  PD   0:00    1   (NonZeroExitCode)
+$->squeue
+    JOBID PARTITION   NAME     USER ST     TIME  NODES NODELIST(REASON)
+      10      mira    zoppo    david  R    0:03    1      alanz1
+</pre>
+<p>
+Slurm supports requeuing jobs in hold state with the command:
+<p align=left><b>'scontrol requeuehold job_id'</b></p>
+The job can be in state RUNNING, SUSPENDED, COMPLETED or FAILED
+before being requeued.
+</p>
+<pre>
+$->scontrol requeuehold 10
+$->squeue
+    JOBID PARTITION  NAME     USER ST       TIME  NODES NODELIST(REASON)
+    10      mira    zoppo    david PD       0:00      1 (JobHeldUser)
+</pre>
+
+</p>
+
+
 <p class="footer"><a href="#top">top</a></p>
 
 
@@ -1670,7 +1723,7 @@ $ scontrol release &lt;jobid&gt;
 health check script for Slurm?</b></a></br>
 Probably the most comprehensive and lightweight health check tool out
 there is
-<a href="http://warewulf.lbl.gov/trac/wiki/Node%20Health%20Check">Node Health Check</a>.  
+<a href="http://warewulf.lbl.gov/trac/wiki/Node%20Health%20Check">Node Health Check</a>.
 It has integration with Slurm as well as Torque resource managers.</p>
 
 <p><a name="add_nodes"><b>48. What process should I follow to add nodes to Slurm?</b></a></br>
@@ -1772,6 +1825,86 @@ as well as the slurmd daemon on the compute node when the compute node reboots.
 If you which to prevent this condition from setting the node into a DOWN state
 then configure ReturnToService to 2. See the slurm.conf man page for details.
 Otherwise use the scontrol or sview to manually return the node to service.</p>
+
+<p><a name="reqspec"><b>57.How to requeue a job which has exited with a specific exit code.
+</b></a>
+<p>
+Slurm supports requeue in hold with a <b>SPECIAL_EXIT</b> state using the
+command:
+<p>
+<b>scontrol requeuehold State=SpecialExit job_id</b>.
+</p>
+See man scontrol(1).
+This is useful when users want to requeue and flag a job which has exited with a
+specific error case.
+</p>
+<pre>
+$->scontrol requeuehold State=SpecialExit 10
+$->squeue
+   JOBID PARTITION  NAME     USER  ST       TIME  NODES NODELIST(REASON)
+    10      mira    zoppo    david SE       0:00      1 (JobHeldUser)
+</pre>
+<p>
+The job can be later released and ran again.
+</p>
+<p>
+The requeueing of jobs which exit with a specific exit code can be
+automated using an <b>EpilogSlurmctld</b>, see man(5) slurm.conf.
+This is an example of a script which exit code depends on the existence
+of a file.
+</p>
+
+<pre>
+$->cat exitme
+#!/bin/sh
+#
+echo "hi! `date`"
+if [ ! -e "/tmp/myfile" ]; then
+  echo "going out with 8"
+  exit 8
+fi
+rm /tmp/myfile
+echo "going out with 0"
+exit 0
+</pre>
+<p>
+
+This is an example of an EpilogSlurmctld that checks the job exit value
+looking at the <b>SLURM_JOB_EXIT2</b> environment variable and requeues a job if
+it exited with value 8. The SLURM_JOB_EXIT2 has the format exit:sig, the first
+number is the exit code, typically as set by the exit() function.
+The second number of the signal that caused the process to terminate if
+it was terminated by a signal.
+</p>
+
+<pre>
+$->cat slurmctldepilog
+#!/bin/sh
+
+export PATH=/bin:/home/slurm/linux/bin
+LOG=/home/slurm/linux/log/logslurmepilog
+
+echo "Start `date`" >> $LOG 2>&1
+echo "Job $SLURM_JOBID exitcode $SLURM_JOB_EXIT_CODE2" >> $LOG 2>&1
+exitcode=`echo $SLURM_JOB_EXIT_CODE2|awk '{split($0, a, ":"); print a[1]}'` >> $LOG 2>&1
+if [ "$exitcode" == "8" ]; then
+   echo "Found REQUEUE_EXIT_CODE: $REQUEUE_EXIT_CODE" >> $LOG 2>&1
+   scontrol requeuehold state=SpecialExit $SLURM_JOBID >> $LOG 2>&1
+   echo $? >> $LOG 2>&1
+else
+   echo "Job $SLURM_JOBID exit all right" >> $LOG 2>&1
+fi
+echo "Done `date`" >> $LOG 2>&1
+
+exit 0
+</pre>
+<p>
+Using the exitme script as an example we have it to exit with value 8 at
+the first run, then when it gets requeued in hold with SpecialExit state
+we touch the file /tmp/myfile, then release the job which will finish
+in COMPLETE state.
+</p>
+</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
