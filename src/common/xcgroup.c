@@ -405,6 +405,9 @@ int xcgroup_lock(xcgroup_t* cg)
 {
 	int fstatus = XCGROUP_ERROR;
 
+	if (cg->path == NULL)
+		return fstatus;
+
 	if ((cg->fd = open(cg->path, O_RDONLY)) < 0) {
 		debug2("xcgroup_lock: error from open of cgroup '%s' : %m",
 		       cg->path);
