@@ -41,6 +41,7 @@ documents those changes that are of interest to users and admins.
  -- proctrack/cgroup - Add cgroup create retry logic in case one step is
     starting at the same time as another step is ending and the logic to create
     and delete cgroups overlaps.
+ -- Improve setting of job wait "Reason" field.
 
 * Changes in Slurm 2.6.3
 ========================

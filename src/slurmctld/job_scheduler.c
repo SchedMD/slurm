@@ -214,9 +214,9 @@ static bool _job_runnable_test2(struct job_record *job_ptr, bool check_min_time)
 	int reason;
 
 	reason = job_limits_check(&job_ptr, check_min_time);
-	if ((reason != WAIT_NO_REASON) &&
-	    (reason != job_ptr->state_reason) &&
-	    (part_policy_job_runnable_state(job_ptr))) {
+	if ((reason != job_ptr->state_reason) &&
+	    ((reason != WAIT_NO_REASON) ||
+	     (!part_policy_job_runnable_state(job_ptr)))) {
 		job_ptr->state_reason = reason;
 		xfree(job_ptr->state_desc);
 	}
