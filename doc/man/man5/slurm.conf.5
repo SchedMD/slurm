@@ -25,7 +25,8 @@ of the command "scontrol reconfigure" unless otherwise noted.
 .LP
 If a line begins with the word "Include" followed by whitespace
 and then a file name, that file will be included inline with the current
-configuration file.
+configuration file. For large or complex systems, multiple configuration files
+may prove easier to manage and enable reuse of some files.
 .LP
 Note on file permissions:
 .LP
@@ -400,6 +401,8 @@ The default value is "crypto/munge".
 \fBDebugFlags\fR
 Defines specific subsystems which should provide more detailed event logging.
 Multiple subsystems can be specified with comma separators.
+Most DebugFlags will result in verbose logging for the identified subsystems
+and could impact performance.
 Valid subsystems available today (with more to come) include:
 .RS
 .TP 17
