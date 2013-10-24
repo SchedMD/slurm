@@ -1572,8 +1572,8 @@ extern bool misc_policy_job_runnable_state(struct job_record *job_ptr)
 
 /*
  * Determine of the specified job can execute right now or is currently
- * blocked by a partition state or limit. Execute job_limits_check() to
- * re-validate job state.
+ * blocked by a partition state or limit. These job states should match the
+ * reason values returned by job_limits_check().
  */
 extern bool part_policy_job_runnable_state(struct job_record *job_ptr)
 {
