@@ -210,6 +210,13 @@ checking for mysql_config... /usr/bin/mysql_config
 MySQL test program built properly.
 </pre>
 
+<p>Note that at least the first time running the slurmdbd with MySQL you need
+to make sure your my.cnf file has innodb_buffer_pool_size equal to at least 64
+megabytes. You can accomplish this by adding the line:<br>
+<i>innodb_buffer_pool_size=64M</i><br>
+under the [mysqld] reference in the my.cnf file and restarting the mysqld.
+This is needed when converting large tables over to the new database schema.</p>
+
 <h2>SLURM Accounting Configuration After Build</h2>
 
 <p>For simplicity sake we are going to reference everything as if you
