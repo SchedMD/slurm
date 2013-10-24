@@ -11300,7 +11300,6 @@ extern void build_cg_bitmap(struct job_record *job_ptr)
 		job_ptr->node_bitmap_cg = bit_copy(job_ptr->node_bitmap);
 		if (bit_set_count(job_ptr->node_bitmap_cg) == 0)
 			job_ptr->job_state &= (~JOB_COMPLETING);
-		info("%s: JOB_COMPLETING cleaned state 0x%x", __func__, job_ptr->job_state);
 	} else {
 		error("build_cg_bitmap: node_bitmap is NULL");
 		job_ptr->node_bitmap_cg = bit_alloc(node_record_count);
