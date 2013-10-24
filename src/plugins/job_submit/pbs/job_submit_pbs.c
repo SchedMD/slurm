@@ -328,7 +328,7 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 	if (job_desc->std_out)
 		std_out = job_desc->std_out;
 	else
-		std_out = "slurm-%J.out";
+		std_out = "slurm-%j.out";
 	if (job_desc->comment)
 		xstrcat(job_desc->comment, ",");
 	xstrcat(job_desc->comment, "stdout=");
@@ -336,11 +336,11 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 		xstrcat(job_desc->comment, job_desc->work_dir);
 		xstrcat(job_desc->comment, "/");
 	}
-	tok = strstr(std_out, "%J");
+	tok = strstr(std_out, "%j");
 	if (tok) {
 		char buf[16], *tok2;
 		char *tmp = xstrdup(std_out);
-		tok2 = strstr(tmp, "%J");
+		tok2 = strstr(tmp, "%j");
 		tok2[0] = '\0';
 		snprintf(buf, sizeof(buf), "%u", my_job_id);
 		xstrcat(tmp, buf);
@@ -373,11 +373,11 @@ extern int job_modify(struct job_descriptor *job_desc,
 			xstrcat(job_ptr->comment, job_ptr->details->work_dir);
 			xstrcat(job_ptr->comment, "/");
 		}
-		tok = strstr(job_desc->std_out, "%J");
+		tok = strstr(job_desc->std_out, "%j");
 		if (tok) {
 			char buf[16], *tok2;
 			char *tmp = xstrdup(job_desc->std_out);
-			tok2 = strstr(tmp, "%J");
+			tok2 = strstr(tmp, "%j");
 			tok2[0] = '\0';
 			snprintf(buf, sizeof(buf), "%u", job_ptr->job_id);
 			xstrcat(tmp, buf);

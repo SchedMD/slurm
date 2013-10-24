@@ -157,6 +157,8 @@ documents those changes that are of interest to users and admins.
     starting at the same time as another step is ending and the logic to create
     and delete cgroups overlaps.
  -- Improve setting of job wait "Reason" field.
+ -- Correct sbatch documentation and job_submit/pbs plugin "%j" is job ID,
+    not "%J" (which is job_id.step_id).
 
 * Changes in Slurm 2.6.3
 ========================
