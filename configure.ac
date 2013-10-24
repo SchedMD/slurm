@@ -3,7 +3,8 @@
 
 dnl Prologue
 dnl
-AC_INIT
+
+AC_INIT(slurm, m4_esyscmd_s([perl -ne 'print,exit if s/^\s*VERSION:\s*(\S*).*/\1/i' ./META]), [slurm-dev@schedmd.com], [], [http://slurm.schedmd.com])
 AC_PREREQ(2.59)
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_AUX_DIR([auxdir])
@@ -14,15 +15,13 @@ AM_CONDITIONAL(DONT_BUILD, test "1" = "0")
 
 X_AC_GPL_LICENSED
 
-#
 # Determine project/version from META file.
 # Sets PACKAGE, VERSION, SLURM_VERSION
 X_AC_SLURM_VERSION
 
-
 dnl Initialize Automake
 dnl
-AM_INIT_AUTOMAKE(slurm, $VERSION)
+AM_INIT_AUTOMAKE(no-define)
 AM_MAINTAINER_MODE
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_HEADERS([slurm/slurm.h])

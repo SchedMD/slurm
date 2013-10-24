@@ -85,7 +85,7 @@
 /* print this version of SLURM */
 void print_slurm_version(void)
 {
-	printf("%s %s\n", PACKAGE, SLURM_VERSION_STRING);
+	printf("%s\n", PACKAGE_STRING);
 }
 
 /* print the available gres options */

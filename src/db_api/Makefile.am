@@ -83,7 +83,7 @@ libslurmdb_o_SOURCES =
 
 libslurmdb_o_LDADD = $(top_builddir)/src/api/libslurm.o
 
-libslurmdb.o: $(libslurmdb_la_OBJECTS) $(libslurmdb_o_LDADD)
+libslurmdb.o$(EXEEXT): $(libslurmdb_la_OBJECTS) $(libslurmdb_o_LDADD)
 	$(LINK) $(libslurmdb_la_OBJECTS) $(libslurmdb_o_LDADD)
 
 force:
