@@ -1425,8 +1425,8 @@ extern void make_node_idle(struct node_record *node_ptr,
 
 /*
  * Determine of the specified job can execute right now or is currently
- * blocked by a miscellaneous limit. This does not re-validate job state,
- * but relies upon schedule() in src/slurmctld/job_scheduler.c to do so.
+ * blocked by a partition state or limit. These job states should match the
+ * reason values returned by job_limits_check().
  */
 extern bool misc_policy_job_runnable_state(struct job_record *job_ptr);
 
