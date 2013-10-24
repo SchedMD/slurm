@@ -139,8 +139,8 @@ fname_create(slurmd_job_t *job, const char *format, int taskid)
 				xfree(uname);
 				q = ++p;
 				break;
-			case 'J':
-			case 'j':
+			case 'J':  /* '%J' => jobid.stepid */
+			case 'j':  /* '%j' => jobid        */
 				xmemcat(name, q, p - 1);
 				xstrfmtcat(name, "%0*d", wid, job->jobid);
 
