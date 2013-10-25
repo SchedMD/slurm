@@ -116,7 +116,6 @@ static void _prec_extra(jag_prec_t *prec, int pagesize)
 	sscanf(cpu_time, "%*s %d %*s %d", &utime, &stime);
 	prec->usec = utime;
 	prec->ssec = stime;
-
 	xcgroup_get_param(&task_memory_cg, "memory.stat",
 			  &memory_stat, &memory_stat_size);
 	/* This number represents the amount of "dirty" private memory
@@ -202,6 +201,7 @@ extern int fini (void)
 	if (_run_in_daemon()) {
 		jobacct_gather_cgroup_cpuacct_fini(&slurm_cgroup_conf);
 		jobacct_gather_cgroup_memory_fini(&slurm_cgroup_conf);
+		jobacct_gather_cgroup_blkio_fini(&slurm_cgroup_conf);
 		acct_gather_energy_fini();
 
 		/* unload configuration */
@@ -258,6 +258,10 @@ extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 		return SLURM_ERROR;
 
 	if (jobacct_gather_cgroup_memory_attach_task(pid, jobacct_id) !=
+	    SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	if (jobacct_gather_cgroup_blkio_attach_task(pid, jobacct_id) !=
 	    SLURM_SUCCESS)
 		return SLURM_ERROR;
 

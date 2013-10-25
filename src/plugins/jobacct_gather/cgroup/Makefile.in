@@ -164,7 +164,7 @@ jobacct_gather_cgroup_la_DEPENDENCIES =  \
 	../common/libjobacct_gather_common.la
 am_jobacct_gather_cgroup_la_OBJECTS = jobacct_gather_cgroup.lo \
 	jobacct_gather_cgroup_cpuacct.lo \
-	jobacct_gather_cgroup_memory.lo
+	jobacct_gather_cgroup_memory.lo jobacct_gather_cgroup_blkio.lo
 jobacct_gather_cgroup_la_OBJECTS =  \
 	$(am_jobacct_gather_cgroup_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -477,6 +477,7 @@ pkglib_LTLIBRARIES = jobacct_gather_cgroup.la
 jobacct_gather_cgroup_la_SOURCES = jobacct_gather_cgroup.c \
                                    jobacct_gather_cgroup_cpuacct.c \
                                    jobacct_gather_cgroup_memory.c \
+                                   jobacct_gather_cgroup_blkio.c \
                                    jobacct_gather_cgroup.h
 
 jobacct_gather_cgroup_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
@@ -561,6 +562,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gather_cgroup.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gather_cgroup_blkio.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gather_cgroup_cpuacct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gather_cgroup_memory.Plo@am__quote@
 
