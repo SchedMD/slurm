@@ -19,6 +19,7 @@ documents those changes that are of interest to users and admins.
  -- Added SlurmdPlugstack configuration parameter.
  -- Added PriorityFlag DEPTH_OBLIVIOUS to have the depth of an association
     not effect it's priorty.
+ -- Multi-thread the sinfo command (one thread per partition).
 
 * Changes in Slurm 13.12.0pre3
 ==============================

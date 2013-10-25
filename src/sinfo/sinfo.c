@@ -51,14 +51,26 @@
 /********************
  * Global Variables *
  ********************/
+typedef struct build_part_info {
+	node_info_msg_t *node_msg;
+	uint16_t part_num;
+	partition_info_t *part_ptr;
+	List sinfo_list;
+} build_part_info_t;
+
 struct sinfo_parameters params;
 
 static int g_node_scaling = 1;
+
+static int sinfo_cnt;	/* thread count */
+static pthread_mutex_t sinfo_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  sinfo_cnt_cond  = PTHREAD_COND_INITIALIZER;
 
 /************
  * Funtions *
  ************/
 static int  _bg_report(block_info_msg_t *block_ptr);
+void *      _build_part_info(void *args);
 static int  _build_sinfo_data(List sinfo_list,
 			      partition_info_msg_t *partition_msg,
 			      node_info_msg_t *node_msg);
@@ -361,6 +373,66 @@ _query_server(partition_info_msg_t ** part_pptr,
 	return SLURM_SUCCESS;
 }
 
+/* Build information about a partition using one pthread per partition */
+void *_build_part_info(void *args)
+{
+	build_part_info_t *build_struct_ptr;
+	List sinfo_list;
+	partition_info_t *part_ptr;
+	node_info_msg_t *node_msg;
+	node_info_t *node_ptr = NULL;
+	uint16_t part_num;
+	int j = 0;
+
+	build_struct_ptr = (build_part_info_t *) args;
+	sinfo_list = build_struct_ptr->sinfo_list;
+	part_num = build_struct_ptr->part_num;
+	part_ptr = build_struct_ptr->part_ptr;
+	node_msg = build_struct_ptr->node_msg;
+
+	while (part_ptr->node_inx[j] >= 0) {
+		int i = 0;
+		uint16_t subgrp_size = 0;
+		for (i = part_ptr->node_inx[j];
+		     i <= part_ptr->node_inx[j+1]; i++) {
+			if (i >= node_msg->record_count) {
+				/* If info for single node name is loaded */
+				break;
+			}
+			node_ptr = &(node_msg->node_array[i]);
+			if (node_ptr->name == NULL)
+				continue;
+
+			if (select_g_select_nodeinfo_get(
+				   node_ptr->select_nodeinfo,
+				   SELECT_NODEDATA_SUBGRP_SIZE, 0,
+				   &subgrp_size) == SLURM_SUCCESS
+			    && subgrp_size) {
+				_handle_subgrps(sinfo_list, part_num,
+						part_ptr, node_ptr,
+						node_msg->node_scaling);
+			} else {
+				_insert_node_ptr(sinfo_list, part_num,
+						 part_ptr, node_ptr,
+						 node_msg->node_scaling);
+			}
+		}
+		j += 2;
+	}
+
+	xfree(args);
+	slurm_mutex_lock(&sinfo_cnt_mutex);
+	if (sinfo_cnt > 0) {
+		sinfo_cnt--;
+	} else {
+		error("sinfo_cnt underflow");
+		sinfo_cnt = 0;
+	}
+	pthread_cond_broadcast(&sinfo_cnt_cond);
+	slurm_mutex_unlock(&sinfo_cnt_mutex);
+	return NULL;
+}
+
 /*
  * _build_sinfo_data - make a sinfo_data entry for each unique node
  *	configuration and add it to the sinfo_list for later printing.
@@ -373,9 +445,12 @@ static int _build_sinfo_data(List sinfo_list,
 			     partition_info_msg_t *partition_msg,
 			     node_info_msg_t *node_msg)
 {
+	pthread_attr_t attr_sinfo;
+	pthread_t thread_sinfo;
+	build_part_info_t *build_struct_ptr;
 	node_info_t *node_ptr = NULL;
 	partition_info_t *part_ptr = NULL;
-	int j, j2;
+	int j;
 
 	g_node_scaling = node_msg->node_scaling;
 
@@ -393,6 +468,14 @@ static int _build_sinfo_data(List sinfo_list,
 		}
 	}
 
+	if (params.filtering) {
+		for (j = 0; j < node_msg->record_count; j++) {
+			node_ptr = &(node_msg->node_array[j]);
+		        if (node_ptr->name && _filter_out(node_ptr))
+				xfree(node_ptr->name);
+		}
+	}
+
 	/* make sinfo_list entries for every node in every partition */
 	for (j=0; j<partition_msg->record_count; j++, part_ptr++) {
 		part_ptr = &(partition_msg->partition_array[j]);
@@ -400,6 +483,7 @@ static int _build_sinfo_data(List sinfo_list,
 		if (params.filtering && params.partition &&
 		    _strcmp(part_ptr->name, params.partition))
 			continue;
+
                 if (node_msg->record_count == 1) { /* node_name_single */
                         int pos = -1;
                         uint16_t subgrp_size = 0;
@@ -407,9 +491,7 @@ static int _build_sinfo_data(List sinfo_list,
 
                         node_ptr = &(node_msg->node_array[0]);
                         if ((node_ptr->name == NULL) ||
-			    (part_ptr->nodes == NULL) ||
-                            (params.filtering &&
-                             _filter_out(node_ptr)))
+			    (part_ptr->nodes == NULL))
                                 continue;
                         hl = hostlist_create(part_ptr->nodes);
                         pos = hostlist_find(hl, node_msg->node_array[0].name);
@@ -439,49 +521,36 @@ static int _build_sinfo_data(List sinfo_list,
                         continue;
                 }
 
-		j2 = 0;
-		while (part_ptr->node_inx[j2] >= 0) {
-			int i2 = 0;
-			uint16_t subgrp_size = 0;
-			for (i2 = part_ptr->node_inx[j2];
-			     i2 <= part_ptr->node_inx[j2+1];
-			     i2++) {
-				if (i2 >= node_msg->record_count) {
-					/* This can happen if info for single
-					 * node name is loaded */
-					break;
-				}
-				node_ptr = &(node_msg->node_array[i2]);
+		/* Process each partition using a separate thread */
+		build_struct_ptr = xmalloc(sizeof(build_part_info_t));
+		build_struct_ptr->node_msg   = node_msg;
+		build_struct_ptr->part_num   = (uint16_t) j;
+		build_struct_ptr->part_ptr   = part_ptr;
+		build_struct_ptr->sinfo_list = sinfo_list;
 
-				if ((node_ptr->name == NULL) ||
-				    (params.filtering &&
-				     _filter_out(node_ptr)))
-					continue;
+		slurm_mutex_lock(&sinfo_cnt_mutex);
+		sinfo_cnt++;
+		slurm_mutex_unlock(&sinfo_cnt_mutex);
 
-				if (select_g_select_nodeinfo_get(
-					   node_ptr->select_nodeinfo,
-					   SELECT_NODEDATA_SUBGRP_SIZE,
-					   0,
-					   &subgrp_size) == SLURM_SUCCESS
-				    && subgrp_size) {
-					_handle_subgrps(sinfo_list,
-							(uint16_t) j,
-							part_ptr,
-							node_ptr,
-							node_msg->
-							node_scaling);
-				} else {
-					_insert_node_ptr(sinfo_list,
-							 (uint16_t) j,
-							 part_ptr,
-							 node_ptr,
-							 node_msg->
-							 node_scaling);
-				}
-			}
-			j2 += 2;
+		slurm_attr_init(&attr_sinfo);
+		if (pthread_attr_setdetachstate
+		    (&attr_sinfo, PTHREAD_CREATE_DETACHED))
+			error("pthread_attr_setdetachstate error %m");
+		while (pthread_create(&thread_sinfo, &attr_sinfo,
+				      _build_part_info,
+				      (void *) build_struct_ptr)) {
+			error("pthread_create error %m");
+			usleep(10000);	/* sleep and retry */
 		}
+		slurm_attr_destroy(&attr_sinfo);
 	}
+
+	slurm_mutex_lock(&sinfo_cnt_mutex);
+	while (sinfo_cnt) {
+		pthread_cond_wait(&sinfo_cnt_cond, &sinfo_cnt_mutex);
+	}
+	slurm_mutex_unlock(&sinfo_cnt_mutex);
+
 	_sort_hostlist(sinfo_list);
 	return SLURM_SUCCESS;
 }
