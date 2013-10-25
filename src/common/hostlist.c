@@ -1090,8 +1090,8 @@ static hostrange_t hostrange_intersect(hostrange_t h1, hostrange_t h2)
 
 	assert(hostrange_cmp(h1, h2) <= 0);
 
-	if ((hostrange_prefix_cmp(h1, h2) == 0)
-	    && (h1->hi > h2->lo)
+	if ((h1->hi > h2->lo)
+	    && (hostrange_prefix_cmp(h1, h2) == 0)
 	    && (hostrange_width_combine(h1, h2))) {
 
 		if (!(new = hostrange_copy(h1)))
@@ -1408,8 +1408,8 @@ static int hostlist_push_range(hostlist_t hl, hostrange_t hr)
 		goto error;
 
 	if (hl->nranges > 0
-	    && hostrange_prefix_cmp(tail, hr) == 0
 	    && tail->hi == hr->lo - 1
+	    && hostrange_prefix_cmp(tail, hr) == 0
 	    && hostrange_width_combine(tail, hr)) {
 		tail->hi = hr->hi;
 	} else {
@@ -2448,8 +2448,8 @@ static void hostlist_collapse(hostlist_t hl)
 		hostrange_t hprev = hl->hr[i - 1];
 		hostrange_t hnext = hl->hr[i];
 
-		if (hostrange_prefix_cmp(hprev, hnext) == 0 &&
-		    hprev->hi == hnext->lo - 1 &&
+		if (hprev->hi == hnext->lo - 1 &&
+		    hostrange_prefix_cmp(hprev, hnext) == 0 &&
 		    hostrange_width_combine(hprev, hnext)) {
 			hprev->hi = hnext->hi;
 			hostlist_delete_range(hl, i);
