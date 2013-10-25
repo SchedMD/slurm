@@ -44,6 +44,8 @@ documents those changes that are of interest to users and admins.
  -- Improve setting of job wait "Reason" field.
  -- Correct sbatch documentation and job_submit/pbs plugin "%j" is job ID,
     not "%J" (which is job_id.step_id).
+ -- Improvements to sinfo performance, especially for large numbers of
+    partitions.
 
 * Changes in Slurm 2.6.3
 ========================

@@ -437,7 +437,7 @@ static int _build_sinfo_data(List sinfo_list,
                         }
                         continue;
                 }
-		
+
 		j2 = 0;
 		while (part_ptr->node_inx[j2] >= 0) {
 			int i2 = 0;
@@ -825,9 +825,11 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr,
 			sinfo_ptr->max_cpu_load = node_ptr->cpu_load;
 	}
 
-	hostlist_push(sinfo_ptr->nodes,     node_ptr->name);
-	hostlist_push(sinfo_ptr->node_addr, node_ptr->node_addr);
-	hostlist_push(sinfo_ptr->hostnames, node_ptr->node_hostname);
+	hostlist_push(sinfo_ptr->nodes, node_ptr->name);
+	if (params.match_flags.node_addr_flag)
+		hostlist_push(sinfo_ptr->node_addr, node_ptr->node_addr);
+	if (params.match_flags.hostnames_flag)
+		hostlist_push(sinfo_ptr->hostnames, node_ptr->node_hostname);
 
 	total_cpus = node_ptr->cpus;
 	total_nodes = node_scaling;
