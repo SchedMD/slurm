@@ -1241,6 +1241,7 @@ _process_cmdline(int ac, char **av)
 			break;
 		case 'v':
 			conf->debug_level++;
+			conf->debug_level_set = 1;
 			break;
 		case 'V':
 			print_slurm_version();
@@ -1757,12 +1758,9 @@ static void _update_logging(void)
 	log_options_t *o = &conf->log_opts;
 	slurm_ctl_conf_t *cf;
 
-	/*
-	 * Initialize debug level if not already set
-	 */
+	/* Preserve execute line verbose arguments (if any) */
 	cf = slurm_conf_lock();
-	if ( (conf->debug_level == LOG_LEVEL_INFO)
-	     && (cf->slurmd_debug != (uint16_t) NO_VAL) )
+	if (!conf->debug_level_set && (cf->slurmd_debug != (uint16_t) NO_VAL))
 		conf->debug_level = cf->slurmd_debug;
 	slurm_conf_unlock();
 

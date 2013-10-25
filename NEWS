@@ -46,6 +46,7 @@ documents those changes that are of interest to users and admins.
     not "%J" (which is job_id.step_id).
  -- Improvements to sinfo performance, especially for large numbers of
     partitions.
+ -- SlurmdDebug - Permit changes to slurmd debug level with "scontrol reconfig"
 
 * Changes in Slurm 2.6.3
 ========================
