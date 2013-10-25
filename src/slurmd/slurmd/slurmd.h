@@ -124,6 +124,7 @@ typedef struct slurmd_config {
 	log_options_t log_opts;         /* current logging options         */
 	uint16_t      log_fmt;          /* Log file timestamp format flag  */
 	int           debug_level;	/* logging detail level            */
+	uint16_t      debug_level_set;	/* debug_level set on command line */
 	uint32_t      debug_flags;	/* DebugFlags configured           */
 	int           daemonize:1;	/* daemonize flag		   */
 	int	      cleanstart:1;     /* clean start requested (-c)      */
