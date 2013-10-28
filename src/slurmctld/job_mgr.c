@@ -1991,11 +1991,35 @@ void _add_job_hash(struct job_record *job_ptr)
 }
 
 /*
+ * find_job_array_rec - return a pointer to the job record with the given
+ *	array_job_id/array_task_id
+ * IN job_id - requested job's id
+ * IN array_task_id - requested job's task id (NO_VAL if none specified)
+ * RET pointer to the job's record, NULL on error
+ */
+extern struct job_record *find_job_array_rec(uint32_t array_job_id,
+					     uint16_t array_task_id)
+{
+	ListIterator job_iterator;
+	struct job_record  *job_ptr;
+
+	if (array_task_id == (uint16_t) NO_VAL)
+		return find_job_record(array_job_id);
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if ((job_ptr->array_job_id  == array_job_id) &&
+		    (job_ptr->array_task_id == array_task_id))
+			break;
+	}
+	list_iterator_destroy(job_iterator);
+	return job_ptr;
+}
+
+/*
  * find_job_record - return a pointer to the job record with the given job_id
  * IN job_id - requested job's id
  * RET pointer to the job's record, NULL on error
- * global: job_list - global job list pointer
- *	job_hash - hash table into job records
  */
 struct job_record *find_job_record(uint32_t job_id)
 {

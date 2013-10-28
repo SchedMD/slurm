@@ -202,6 +202,13 @@ $ scontrol release 13_2
 
 <h2>Other Command Use</h2>
 
+<p>Job dependencies for individual job array elements are supported in Slurm
+version 2.6.4 and later. Examples of use follow:</p>
+<pre>
+sbatch --depend=after:123_4 my.job
+sbatch --depend=afterok:123_4:123_8 my.job2
+</pre>
+
 <p>The following Slurm commands do not currently recognize job arrays and their
 use requires the use of Slurm job IDs, which are unique for each array element:
 sacct, sbcast, smap, sreport, sshare, sstat, strigger, and sview.
@@ -245,6 +252,6 @@ array data structure is added rather than the current logic that only
 adds a new field to the existing job data structure.
 It is not certain when that work will occur.</p>
 
-<p style="text-align:center;">Last modified 17 September 2013</p>
+<p style="text-align:center;">Last modified 28 October 2013</p>
 
 <!--#include virtual="footer.txt"-->

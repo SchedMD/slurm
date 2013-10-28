@@ -893,13 +893,21 @@ extern void excise_node_from_job(struct job_record *job_ptr,
 extern List feature_list_copy(List feature_list_src);
 
 /*
+ * find_job_array_rec - return a pointer to the job record with the given
+ *	array_job_id/array_task_id
+ * IN job_id - requested job's id
+ * IN array_task_id - requested job's task id (NO_VAL if none specified)
+ * RET pointer to the job's record, NULL on error
+ */
+extern struct job_record *find_job_array_rec(uint32_t array_job_id,
+					     uint16_t array_task_id);
+
+/*
  * find_job_record - return a pointer to the job record with the given job_id
  * IN job_id - requested job's id
  * RET pointer to the job's record, NULL on error
- * global: job_list - global job list pointer
- *	job_hash - hash table into job records
  */
-extern struct job_record *find_job_record (uint32_t job_id);
+struct job_record *find_job_record(uint32_t job_id);
 
 /*
  * find_first_node_record - find a record for first node in the bitmap
