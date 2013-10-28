@@ -255,12 +255,18 @@ mod_qos -1 $grcpu_num -1 -1 -1 -1 -1 -1
 sleep 5
 #test GrpCpus
 inc21_30_2
+if {$exit_code != 0} {
+	endit
+}
 
 mod_qos -1 -1 $grjobs_num -1 -1 -1 -1 -1
 
 sleep 5
 # test GrpJob limits
 inc21_30_3
+if {$exit_code != 0} {
+	endit
+}
 
 
 mod_qos -1 -1 -1 $grsub_num -1 -1 -1 -1
@@ -268,6 +274,9 @@ mod_qos -1 -1 -1 $grsub_num -1 -1 -1 -1
 sleep 5
 # test GrpSubmit
 inc21_30_4
+if {$exit_code != 0} {
+	endit
+}
 
 
 mod_qos -1 -1 -1 -1 $maxcpu_num -1 -1 -1
@@ -275,23 +284,35 @@ mod_qos -1 -1 -1 -1 $maxcpu_num -1 -1 -1
 sleep 5
 #test MaxCpus limits
 inc21_30_5
+if {$exit_code != 0} {
+	endit
+}
 
 mod_qos -1 -1 -1 -1 -1 $maxnode_num -1 -1
 
 sleep 5
 #test MaxNode limit
 inc21_30_6
+if {$exit_code != 0} {
+	endit
+}
 
 mod_qos -1 -1 -1 -1 -1 -1 $maxjobs_num -1
 
 sleep 5
 #test MaxJobs limit
 inc21_30_7
+if {$exit_code != 0} {
+	endit
+}
 
 mod_qos -1 -1 -1 -1 -1 -1 -1 $maxjobsub_num
 
 sleep 5
 #test MaxJobsSubmits limit
 inc21_30_8
+if {$exit_code != 0} {
+	endit
+}
 
 endit
