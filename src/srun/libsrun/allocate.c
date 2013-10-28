@@ -464,14 +464,21 @@ allocate_nodes(bool handle_signals)
 		else if (opt.mem_per_cpu != NO_VAL)
 			opt.mem_per_cpu = (resp->pn_min_memory &
 					   (~MEM_PER_CPU));
-		opt.min_nodes = resp->node_cnt;
-		opt.max_nodes = resp->node_cnt;
 		/*
 		 * FIXME: timelimit should probably also be updated
 		 * here since it could also change.
 		 */
 
 #ifdef HAVE_BG
+		uint32_t node_cnt = 0;
+		select_g_select_jobinfo_get(resp->select_jobinfo,
+					    SELECT_JOBDATA_NODE_CNT,
+					    &node_cnt);
+		if ((node_cnt == 0) || (node_cnt == NO_VAL)) {
+			opt.min_nodes = node_cnt;
+			opt.max_nodes = node_cnt;
+		} /* else we just use the original request */
+
 		if (!_wait_bluegene_block_ready(resp)) {
 			if (!destroy_job)
 				error("Something is wrong with the "
@@ -479,6 +486,9 @@ allocate_nodes(bool handle_signals)
 			goto relinquish;
 		}
 #else
+		opt.min_nodes = resp->node_cnt;
+		opt.max_nodes = resp->node_cnt;
+
 		if (!_wait_nodes_ready(resp)) {
 			if (!destroy_job)
 				error("Something is wrong with the "
