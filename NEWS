@@ -49,6 +49,8 @@ documents those changes that are of interest to users and admins.
  -- SlurmdDebug - Permit changes to slurmd debug level with "scontrol reconfig"
  -- smap - Avoid invalid memory reference with hidden nodes.
  -- Fix sacctmgr modify qos set preempt+/-=.
+ -- BLUEGENE - fix issue where node count wasn't set up correctly when srun
+    preforms the allocation, regression in 2.6.3.
 
 * Changes in Slurm 2.6.3
 ========================
