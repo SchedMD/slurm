@@ -31,16 +31,40 @@ proc inc21_30_5 {} {
 
 #test MaxCpus limits
 
-	global salloc acct number srun job_id1 bin_sleep
+	global salloc acct number srun bin_sleep maxcpu_num
 
-	spawn $salloc --account=$acct -n11 $srun $bin_sleep 2
+	send_user "\nStarting MaxCPUs limit test\n\n"
+	set job_id1 0
+
+	spawn $salloc --account=$acct -n$maxcpu_num $srun $bin_sleep 2
 	expect {
 		-re "job ($number)" {
 			set job_id1 $expect_out(1,string)
 			send_user "\nThis is expected do not worry\n"
+
 		}
 		-re "Granted job allocation ($number)" {
-			send_user "\nFAILURE: This should have failed but did not\n"
+		}
+		timeout {
+			send_user "\nFAILURE: salloc not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	# cancels remaining jobs
+	cancel_job $job_id1
+
+	spawn $salloc --account=$acct -n[expr $maxcpu_num + 1] $srun $bin_sleep 2
+	expect {
+		-re "Pending job allocation ($number)" {
+			set job_id1 $expect_out(1,string)
+			send_user "\nThis is expected do not worry\n"
+		}
+		-re "Granted job allocation ($number)" {
+			send_user "\nFAILURE: This should have pended but did not\n"
 			set exit_code 1
 		}
 		timeout {
