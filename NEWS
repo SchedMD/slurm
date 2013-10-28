@@ -51,6 +51,8 @@ documents those changes that are of interest to users and admins.
  -- Fix sacctmgr modify qos set preempt+/-=.
  -- BLUEGENE - fix issue where node count wasn't set up correctly when srun
     preforms the allocation, regression in 2.6.3.
+ -- Add support for dependencies of job array elements (e.g. 
+    "sbatch --depend=afterok:123_4 ...")
 
 * Changes in Slurm 2.6.3
 ========================
