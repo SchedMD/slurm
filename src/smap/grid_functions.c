@@ -124,6 +124,8 @@ extern void set_grid_inx(int start, int end, int count)
 		return;
 
 	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
+		if (!smap_system_ptr->grid[i])		/* Null node name */
+			continue;
 		if ((smap_system_ptr->grid[i]->index < start) ||
 		    (smap_system_ptr->grid[i]->index > end))
 			continue;
@@ -145,6 +147,8 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 		return 0;
 
 	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
+		if (!smap_system_ptr->grid[i])		/* Null node name */
+			continue;
 		for (j = 0; j < params.cluster_dims; j++) {
 			if ((smap_system_ptr->grid[i]->coord[j] < start[j]) ||
 			    (smap_system_ptr->grid[i]->coord[j] > end[j]))
@@ -269,6 +273,8 @@ extern void init_grid(node_info_msg_t *node_info_ptr, int cols)
 		cols = 80;
 	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
 		smap_node = smap_system_ptr->grid[i];
+		if (!smap_node)		/* Null node name */
+			continue;
 		if (params.cluster_dims == 1) {
 			smap_node->grid_xcord = (i % cols) + 1;
 			smap_node->grid_ycord = (i / cols) + 1;
@@ -322,6 +328,8 @@ extern void clear_grid(void)
 
 	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
 		smap_node = smap_system_ptr->grid[i];
+		if (!smap_node)		/* Null node name */
+			continue;
 		if ((smap_node->state == NODE_STATE_DOWN)
 		    || (smap_node->state & NODE_STATE_DRAIN)) {
 			smap_node->color = COLOR_BLACK;
@@ -343,6 +351,8 @@ extern void free_grid(void)
 	if (smap_system_ptr->grid) {
 		for (i = 0; i < smap_system_ptr->node_cnt; i++) {
 			smap_node_t *smap_node = smap_system_ptr->grid[i];
+			if (!smap_node)		/* Null node name */
+				continue;
 			xfree(smap_node->coord);
 			xfree(smap_node);
 		}
@@ -361,6 +371,8 @@ extern void print_grid(void)
 		return;
 
 	for (i = 0; i < smap_system_ptr->node_cnt; i++) {
+		if (!smap_system_ptr->grid[i])		/* Null node name */
+			continue;
 		if (smap_system_ptr->grid[i]->color)
 			init_pair(smap_system_ptr->grid[i]->color,
 				  smap_system_ptr->grid[i]->color, COLOR_BLACK);
