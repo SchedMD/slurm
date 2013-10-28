@@ -47,6 +47,7 @@ documents those changes that are of interest to users and admins.
  -- Improvements to sinfo performance, especially for large numbers of
     partitions.
  -- SlurmdDebug - Permit changes to slurmd debug level with "scontrol reconfig"
+ -- smap - Avoid invalid memory reference with hidden nodes.
 
 * Changes in Slurm 2.6.3
 ========================
