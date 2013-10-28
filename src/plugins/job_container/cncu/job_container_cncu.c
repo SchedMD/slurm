@@ -275,7 +275,9 @@ extern int container_p_create(uint32_t job_id)
 	int rc;
 #endif
 	int i, empty = -1, found = -1;
+	DEF_TIMERS;
 
+	START_TIMER;
 	if (enable_debug)
 		info("%s: creating(%u)", plugin_type, job_id);
 	slurm_mutex_lock(&context_lock);
@@ -298,9 +300,11 @@ extern int container_p_create(uint32_t job_id)
 		_save_state(state_dir);
 	}
 	slurm_mutex_unlock(&context_lock);
-
+	END_TIMER3("container_p_create: saving state took", 3000000);
 #ifdef HAVE_NATIVE_CRAY
+	START_TIMER;
 	rc = job_create_reservation(resv_id, CREATE_FLAGS);
+	END_TIMER3("container_p_create: job_create_reservation took", 3000000);
 	if ((rc == 0) || (errno == EEXIST)) {
 		if ((found == -1) && (rc != 0) && (errno == EEXIST)) {
 			error("%s: create(%u): Reservation already exists",
@@ -324,6 +328,7 @@ extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 	jid_t cjob_id = cont_id;
 	rid_t resv_id = job_id;
 	int rc;
+	DEF_TIMERS;
 #endif
 
 	if (enable_debug) {
@@ -332,15 +337,22 @@ extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 	}
 
 #ifdef HAVE_NATIVE_CRAY
+	START_TIMER;
 	rc = job_attach_reservation(cjob_id, resv_id, ADD_FLAGS);
+	END_TIMER3("container_p_add_cont: job_attach_reservation took",
+		   3000000);
 	if ((rc != 0) && (errno == ENOENT)) {	/* Log and retry */
 		if (enable_debug)
 			info("%s: add(%u.%"PRIu64"): No reservation found, "
 			     "no big deal, this is probably the first time "
 			     "this was called.  We will just create a new one.",
 			     plugin_type, job_id, cont_id);
+		START_TIMER;
 		rc = job_create_reservation(resv_id, CREATE_FLAGS);
 		rc = job_attach_reservation(cjob_id, resv_id, ADD_FLAGS);
+		END_TIMER3("container_p_add_cont: "
+			   "job_(create&attach)_reservation took",
+			   3000000);
 	}
 
 	if ((rc == 0) || (errno == EBUSY)) {
@@ -386,6 +398,7 @@ extern int container_p_delete(uint32_t job_id)
 {
 #ifdef HAVE_NATIVE_CRAY
 	rid_t resv_id = job_id;
+	DEF_TIMERS;
 #endif
 	int rc = 0;
 	int i, found = -1;
@@ -407,7 +420,10 @@ extern int container_p_delete(uint32_t job_id)
 		_save_state(state_dir);
 	slurm_mutex_unlock(&context_lock);
 #ifdef HAVE_NATIVE_CRAY
+	START_TIMER;
 	rc = job_end_reservation(resv_id, DELETE_FLAGS);
+	END_TIMER3("container_p_delete: job_end_reservation took",
+		   3000000);
 #endif
 	if (rc == 0)
 		return SLURM_SUCCESS;
