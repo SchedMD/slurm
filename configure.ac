@@ -4,6 +4,12 @@
 dnl Prologue
 dnl
 
+m4_define([m4_chomp_all],
+[m4_format([[%.*s]], m4_bregexp(m4_translit([[$1]], [
+/], [/ ]), [/*$]), [$1])])  
+
+m4_define([m4_esyscmd_s], [m4_chomp_all(m4_esyscmd([$1]))])     
+
 AC_INIT(slurm, m4_esyscmd_s([perl -ne 'print,exit if s/^\s*VERSION:\s*(\S*).*/\1/i' ./META]), [slurm-dev@schedmd.com], [], [http://slurm.schedmd.com])
 AC_PREREQ(2.59)
 AC_CONFIG_SRCDIR([configure.ac])
