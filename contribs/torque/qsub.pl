@@ -52,12 +52,9 @@ use English;
 
 my ($start_time,
     $account,
- #   $checkpoint_interval,
     $err_path,
     $interactive,
     $hold,
-#    $join,
-#    $keep,
     $resource_list,
     $mail_options,
     $mail_user_list,
@@ -65,14 +62,10 @@ my ($start_time,
     $out_path,
     $priority,
     $destination,
-#    $rerunable,
-#    $script_path,
-#    $running_user_list,
-     $variable_list,
-#    $all_env,
+    $variable_list,
     @additional_attributes,
-#    $no_std,
     $help,
+    $resp,
     $man);
 
 my $sbatch = "${FindBin::Bin}/sbatch";
@@ -81,13 +74,11 @@ my $srun = "${FindBin::Bin}/srun";
 
 GetOptions('a=s'      => \$start_time,
 	   'A=s'      => \$account,
-#	   'c=i'      => \$checkpoint_interval,
 	   'e=s'      => \$err_path,
 	   'h'        => \$hold,
 	   'I'        => \$interactive,
 	   'j:s'      => sub { warn "option -j is the default, " .
 				    "stdout/stderr go into the same file\n" },
-#	   'k=s'      => \$keep,
 	   'l=s'      => \$resource_list,
 	   'm=s'      => \$mail_options,
 	   'M=s'      => \$mail_user_list,
@@ -95,16 +86,13 @@ GetOptions('a=s'      => \$start_time,
 	   'o=s'      => \$out_path,
 	   'p=i'      => \$priority,
 	   'q=s'      => \$destination,
-#	   'r=s'      => \$rerunable,
 	   'S=s'      => sub { warn "option -S is ignored, " .
 				    "specify shell via #!<shell> in the job script\n" },
-#	   'u=s'      => \$running_user_list,
 	   'v=s'      => \$variable_list,
 	   'V'        => sub { warn "option -V is not necessary, " .
 				    "since the current environment " .
 				    "is exported by default\n" },
 	   'W=s'      => \@additional_attributes,
-#	   'z'        => \$no_std,
 	   'help|?'   => \$help,
 	   'man'      => \$man,
 	   )
@@ -134,10 +122,17 @@ if ($ARGV[0]) {
 	        $script .= "$_ ";
 	}
 }
+my $block="false";
 my $depend;
 my $group_list;
+my $job_id;
 my %res_opts;
 my %node_opts;
+
+# remove PBS_NODEFILE environment as passed in to qsub.
+if ($ENV{PBS_NODEFILE}) {
+	delete $ENV{PBS_NODEFILE};
+}
 
 # Process options provided with the -W name=value syntax.
 my $W;
@@ -149,13 +144,17 @@ foreach $W (@additional_attributes) {
 		$depend = $value;
 	} elsif ($name eq 'group_list') {
 		$group_list = $value;
+	} elsif (lc($name) eq 'block') {
+		if (defined $value) {
+			$block = $value;
+		}
 #	} else {
 #		print("Invalid attribute: $W!");
 #		exit(1);
 	}
 }
 
-if($resource_list) {
+if ($resource_list) {
 	%res_opts = %{parse_resource_list($resource_list)};
 
 # 	while((my $key, my $val) = each(%res_opts)) {
@@ -243,6 +242,7 @@ if($res_opts{walltime}) {
 	$command .= " -t$res_opts{pcput}";
 }
 
+$command .= " --account='$group_list'" if $group_list;
 $command .= " --constraint='$res_opts{proc}'" if $res_opts{proc};
 $command .= " --dependency=$depend"   if $depend;
 $command .= " --tmp=$res_opts{file}"  if $res_opts{file};
@@ -284,8 +284,7 @@ if ($interactive) {
 	$command .= ' 2>&1';
 
 	# Execute the command and capture the combined stdout and stderr.
-	my $command_output = `$command 2>&1`;
-	chomp($command_output);
+	my @command_output = `$command 2>&1`;
 
 	# Save the command exit status.
 	my $command_exit_status = $CHILD_ERROR;
@@ -293,17 +292,29 @@ if ($interactive) {
 	# If available, extract the job ID from the command output and print
 	# it to stdout, as done in the PBS version of qsub.
 	if ($command_exit_status == 0) {
-#		This prints "Submitted batch job #"
-#		print "$command_output\n";
-#		This only prints the job ID number, e.g. "#"
-		my($job_ID) = $command_output =~ /^.* (\d+)$/;
-		print "$job_ID\n";
+		my @spcommand_output=split(" ", $command_output[$#command_output]);
+		$job_id= $spcommand_output[$#spcommand_output];
+		print "$job_id\n";
 	} else {
 		print("There was an error running the SLURM sbatch command.\n" .
 		      "The command was:\n" .
 		      "'$command'\n" .
 		      "and the output was:\n" .
-		      "'$command_output'\n");
+		      "'@command_output'\n");
+	}
+
+	# If block is true wait for the job to finish
+	my($resp, $count);
+	my $slurm = Slurm::new();
+	if ( (lc($block) eq "true" ) and ($command_exit_status == 0) ) {
+		sleep 2;
+		my($job) = $slurm->load_job($job_id);
+		$resp = $$job{'job_array'}[0]->{job_state};
+		while ( $resp < JOB_COMPLETE ) {
+			$job = $slurm->load_job($job_id);
+			$resp = $$job{'job_array'}[0]->{job_state};
+			sleep 1;
+		}
 	}
 
 	# Exit with the command return code.
@@ -314,6 +325,7 @@ sub parse_resource_list {
 	my ($rl) = @_;
 	my %opt = ('accelerator' => "",
 		   'arch' => "",
+		   'block' => "",
 		   'cput' => "",
 		   'file' => "",
 		   'host' => "",
@@ -481,17 +493,17 @@ B<qsub> - submit a batch job in a familiar pbs format
 
 =head1 SYNOPSIS
 
-qsub  [-a date_time]
-      [-A account_string]
-      [-b secs]
-      [-e path]
+qsub  [-a start_time]
+      [-A account]
+      [-e err_path]
       [-I]
       [-l resource_list]
-      [-m mail_options] [-M  user_list]
-      [-N name]
-      [-o path]
+      [-m mail_options] [-M user_list]
+      [-N job_name]
+      [-o out_path]
       [-p priority]
       [-q destination]
+      [-v variable_list]
       [-W additional_attributes]
       [-h]
       [script]
@@ -506,15 +518,47 @@ The B<qsub> submits batch jobs. It is aimed to be feature-compatible with PBS' q
 
 =item B<-a>
 
-Display information for all nodes. This is the default if no node name is specified.
+Earliest start time of job. Format: [HH:MM][MM/DD/YY]
+
+=item B<-A account>
+
+Specify the account to which the job should be charged.
+
+=item B<-e err_path>
+
+Specify a new path to receive the standard error output for the job.
 
 =item B<-I>
 
 Interactive execution.
 
-=item B<-j> join
+=item B<-l resource_list>
 
-It is not necessary (currently also not possible) since stderr/stdout are always joined.
+Specify an additional list of resources to request for the job.
+
+=item B<-m mail_options>
+
+Specify a list of events on which email is to be generated.
+
+=item B<-M user_list>
+
+Specify a list of email addresses to receive messages on specified events.
+
+=item B<-N job_name>
+
+Specify a name for the job.
+
+=item B<-o out_path>
+
+Specify the path to a file to hold the standard output from the job.
+
+=item B<-p priority>
+
+Specify the priority under which the job should run.
+
+=item B<-p priority>
+
+Specify the priority under which the job should run.
 
 =item B<-v> [variable_list]
 
@@ -524,7 +568,8 @@ to add newly defined environment variables to specific jobs.
 
 =item B<-V>
 
-The -V option to export the current environment is not required since it is done by default.
+The -V option to export the current environment is not required since it is
+done by default.
 
 =item B<-?> | B<--help>
 
