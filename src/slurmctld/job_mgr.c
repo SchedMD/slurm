@@ -1988,19 +1988,27 @@ extern struct job_record *find_job_array_rec(uint32_t array_job_id,
 					     uint16_t array_task_id)
 {
 	ListIterator job_iterator;
-	struct job_record  *job_ptr;
+	struct job_record *job_ptr, *match_job_ptr = NULL;
 
 	if (array_task_id == (uint16_t) NO_VAL)
 		return find_job_record(array_job_id);
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_ptr->array_job_id  == array_job_id) &&
-		    (job_ptr->array_task_id == array_task_id))
+		if (job_ptr->array_job_id != array_job_id)
+			continue;
+
+		if (array_task_id == (uint16_t) INFINITE) {
+			match_job_ptr = job_ptr;
+			if (!IS_JOB_FINISHED(job_ptr))
+				break;
+		} else if (job_ptr->array_task_id == array_task_id) {
+			match_job_ptr = job_ptr;
 			break;
+		}
 	}
 	list_iterator_destroy(job_iterator);
-	return job_ptr;
+	return match_job_ptr;
 }
 
 /*

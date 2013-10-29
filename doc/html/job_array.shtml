@@ -203,10 +203,19 @@ $ scontrol release 13_2
 <h2>Other Command Use</h2>
 
 <p>Job dependencies for individual job array elements are supported in Slurm
-version 2.6.4 and later. Examples of use follow:</p>
+version 2.6.4 and later.
+A job which is to be dependent upon an entire job array, should specify
+itself dependent upon the ArrayJobID. Since each array element can have a
+different exit code, the interpretation of the afterok and afternotok clauses
+will be based upon the last element of the job array to exit.
+Examples of use follow:</p>
 <pre>
+# Wait for specific job array elements
 sbatch --depend=after:123_4 my.job
 sbatch --depend=afterok:123_4:123_8 my.job2
+
+# Wait for entire job array to complette
+sbatch --depend=after:123 my.job
 </pre>
 
 <p>The following Slurm commands do not currently recognize job arrays and their
