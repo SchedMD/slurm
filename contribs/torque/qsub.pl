@@ -96,7 +96,8 @@ GetOptions('a=s'      => \$start_time,
 	   'p=i'      => \$priority,
 	   'q=s'      => \$destination,
 #	   'r=s'      => \$rerunable,
-#	   'S=s'      => \$script_path,
+	   'S=s'      => sub { warn "option -S is ignored, " .
+				    "specify shell via #!<shell> in the job script\n" },
 #	   'u=s'      => \$running_user_list,
 	   'v=s'      => \$variable_list,
 	   'V'        => sub { warn "option -V is not necessary, " .
