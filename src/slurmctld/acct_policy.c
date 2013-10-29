@@ -700,7 +700,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 			if ((!used_limits &&
 			     qos_ptr->max_submit_jobs_pu == 0) ||
 			    (used_limits &&
-			     ((used_limits->submit_jobs + job_cnt) >=
+			     ((used_limits->submit_jobs + job_cnt) >
 			      qos_ptr->max_submit_jobs_pu))) {
 				debug2("job submit for user %s(%u): "
 				       "qos max submit job limit exceeded %u",
