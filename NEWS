@@ -175,6 +175,8 @@ documents those changes that are of interest to users and admins.
  -- Add support for new options in sbatch qsub wrapper:
     -W block=true	(wait for job completion)
     Clear PBS_NODEFILE environment variable
+ -- Fixed the MaxSubmitJobsPerUser limit in QOS which limited submissions
+    a job too early.
 
 * Changes in Slurm 2.6.3
 ========================
