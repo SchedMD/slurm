@@ -882,6 +882,20 @@ next_part:			part_ptr = (struct part_record *)
 
 		slurmctld_diag_stats.schedule_cycle_depth++;
 
+		if ((job_ptr->resv_name == NULL) &&
+		    _failed_partition(job_ptr->part_ptr, failed_parts,
+				      failed_part_cnt)) {
+			if (job_ptr->state_reason == WAIT_NO_REASON) {
+				job_ptr->state_reason = WAIT_PRIORITY;
+				xfree(job_ptr->state_desc);
+			}
+			debug3("sched: JobId=%u. State=PENDING. "
+			       "Reason=Priority. Priority=%u. Partition=%s.",
+			       job_ptr->job_id, job_ptr->priority,
+			       job_ptr->partition);
+			continue;
+		}
+
 		/* Test for valid account, QOS and required nodes on each pass */
 		if (job_ptr->state_reason == FAIL_ACCOUNT) {
 			slurmdb_association_rec_t assoc_rec;
@@ -930,22 +944,6 @@ next_part:			part_ptr = (struct part_record *)
 			continue;
 		}
 
-		if ((job_ptr->resv_name == NULL) &&
-		    _failed_partition(job_ptr->part_ptr, failed_parts,
-				      failed_part_cnt)) {
-			if (job_ptr->state_reason == WAIT_NO_REASON) {
-				job_ptr->state_reason = WAIT_PRIORITY;
-				xfree(job_ptr->state_desc);
-			}
-			debug3("sched: JobId=%u. State=%s. Reason=%s. "
-			       "Priority=%u. Partition=%s.",
-			       job_ptr->job_id,
-			       job_state_string(job_ptr->job_state),
-			       job_reason_string(job_ptr->state_reason),
-			       job_ptr->priority,
-			       job_ptr->partition);
-			continue;
-		}
 		i = bit_overlap(avail_node_bitmap,
 				job_ptr->part_ptr->node_bitmap);
 		if ((job_ptr->details &&
