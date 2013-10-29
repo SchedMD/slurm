@@ -38,12 +38,9 @@ proc inc21_30_5 {} {
 
 	spawn $salloc --account=$acct -n$maxcpu_num $srun $bin_sleep 2
 	expect {
-		-re "job ($number)" {
-			set job_id1 $expect_out(1,string)
-			send_user "\nThis is expected do not worry\n"
-
-		}
 		-re "Granted job allocation ($number)" {
+			set job_id1 $expect_out(1,string)
+			send_user "\njob $job_id1 has been submitted\n"
 		}
 		timeout {
 			send_user "\nFAILURE: salloc not responding\n"
@@ -61,7 +58,7 @@ proc inc21_30_5 {} {
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nThis is expected do not worry\n"
+			send_user "\nJob $job_id1 is waiting for resources. This is expected.\n"
 		}
 		-re "Granted job allocation ($number)" {
 			send_user "\nFAILURE: This should have pended but did not\n"

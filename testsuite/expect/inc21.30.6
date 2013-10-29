@@ -40,6 +40,7 @@ proc inc21_30_6 {} {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
+			send_user "\njob $job_id1 has been submitted\n"
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
@@ -60,9 +61,9 @@ proc inc21_30_6 {} {
 
 	spawn $salloc --account=$acct -N[expr $maxnode_num + 1] --exclusive -t1 $srun $bin_sleep 2
 	expect {
-		-re "Pending job allocation ($number)" {
+		-re "job ($number) queued and waiting for resources" {
 			set job_id1 $expect_out(1,string)
-			send_user "\nThis is expected do not worry\n"
+			send_user "\nJob $job_id1 is waiting for resources. This is expected.\n"
 		}
 		-re "Granted job allocation ($number)" {
 			send_user "\nFAILURE: This should have pended but did not\n"
