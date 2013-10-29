@@ -54,6 +54,9 @@ documents those changes that are of interest to users and admins.
  -- Add support for dependencies of job array elements (e.g. 
     "sbatch --depend=afterok:123_4 ...") or all elements of a job array (e.g.
     "sbatch --depend=afterok:123 ...").
+ -- Add support for new options in sbatch qsub wrapper:
+    -W block=true	(wait for job completion)
+    Clear PBS_NODEFILE environment variable
 
 * Changes in Slurm 2.6.3
 ========================
