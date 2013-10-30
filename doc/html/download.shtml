@@ -232,8 +232,19 @@ For more information, see
 <a href="http://ubmod.sourceforge.net/resource-manager-slurm.html">UDMod home page</a> and
 <a href="https://github.com/ubccr/ubmod">source code</a>.</li><br>
 
+<li><b>MSlurm</b><br>
+Such a superstructure for the management of multiple Slurm environments is done
+with MSlurm. Thereby several Slurm clusters - even across multiple Slurm
+databases - can run parallel on a Slurm master and can be administered in an
+easy and elegantly manner.
+<ul>
+<li><a href="mslurm/mslurm_overview.pdf">Overview</a></li>
+<li><a href="mslurm/mslurm_install_instructions.pdf">Installation Instructions</a></li>
+<li><a href="mslurm/mslurm.tgz">Code</a></li>
+<ul>
+
 </ul>
 
-<p style="text-align:center;">Last modified 21 August 2013</p>
+<p style="text-align:center;">Last modified 30 October 2013</p>
 
 <!--#include virtual="footer.txt"-->
