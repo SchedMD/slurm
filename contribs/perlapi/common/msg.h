@@ -294,9 +294,14 @@ inline static int hv_store_ptr(HV* hv, const char *key, void* ptr, const char *c
 #define SV2time_t(sv)   SvUV(sv)
 #define SV2charp(sv)    SvPV_nolen(sv)
 #define SV2bool(sv)     SvTRUE(sv)
-#define SV2ptr(sv)      SvIV(SvRV(sv))
 
-
+//#define SV2ptr(sv)      SvIV(SvRV(sv))    /* Error on some 32-bit systems */
+static inline int SV2ptr(SV *sv)
+{
+	int ptr = SvIV(SvRV(sv));
+	return ptr;
+}
+		
 #define FETCH_FIELD(hv, ptr, field, type, required) \
 	do { \
 		SV** svp; \
