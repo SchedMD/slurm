@@ -5929,6 +5929,11 @@ static int _list_find_job_old(void *job_entry, void *key)
 	if (!(IS_JOB_FINISHED(job_ptr)))
 		return 0;	/* Job still active */
 
+	if (job_ptr->step_list && list_count(job_ptr->step_list)) {
+		debug("Job %u still has %d active steps",
+		      job_ptr->job_id, list_count(job_ptr->step_list));
+		return 0; /* steps are still active */
+	}
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_CLEANING,
 				    &cleaning);
