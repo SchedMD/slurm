@@ -268,8 +268,11 @@ int _slurm_cgroup_destroy(void)
 		xcgroup_lock(&slurm_freezer_cg);
 
 	if (jobstep_cgroup_path[0] != '\0') {
-		if ( xcgroup_delete(&step_freezer_cg) != XCGROUP_SUCCESS )
+		if ( xcgroup_delete(&step_freezer_cg) != XCGROUP_SUCCESS ) {
+			if (slurm_freezer_init)
+				xcgroup_unlock(&slurm_freezer_cg);
 			return SLURM_ERROR;
+		}
 		xcgroup_destroy(&step_freezer_cg);
 	}
 
