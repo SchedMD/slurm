@@ -247,7 +247,7 @@ extern void delete_step_records (struct job_record *job_ptr)
 	last_job_update = time(NULL);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		uint16_t cleaning = 0;
-		select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+		select_g_select_jobinfo_get(step_ptr->select_jobinfo,
 					    SELECT_JOBDATA_CLEANING,
 					    &cleaning);
 		if (cleaning)
