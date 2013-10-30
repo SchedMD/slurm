@@ -1,0 +1,325 @@
+#!/bin/bash
+#
+# sgather - a counterpart of "sbcast"
+#
+# Copyright (c) 2013, ZIH, TU Dresden, Federal Republic of Germany
+#
+# Author: Matthias Jurenz
+# Version 1.0
+#
+# Change history:
+#   version       date author comment
+#       1.0 2013-10-29 jurenz released initial version
+#           2013-10-28 jurenz do not perform a remote copy if the destination
+#                             file is node-global (i.e. /scratch/* or /home/*)
+#
+
+#
+# "global" variables
+#
+SCONTROL="scontrol"
+SRUN="srun"
+SCP="scp"
+RM="rm"
+VERSION="1.0"
+
+#
+# show_help - display help message
+#
+function show_help
+{
+  cat << EOF
+Usage: sgather [OPTIONS] SOURCE DEST
+  -C, --compress         compress the file being transmitted
+  -f, --force            ignore nonexistent source file
+  -F, --fanout=num       specify message fanout
+  -k, --keep             do not remove source file after transmission
+  -p, --preserve         preserve modes and times of source file
+  -r, --recursive        copy directories recursively
+  -t, --timeout=secs     specify message timeout (seconds)
+  -v, --verbose          provide detailed event logging
+  -V, --version          print version information and exit
+
+Help options:
+  --help                show this help message
+  --usage               display brief usage message
+EOF
+}
+
+#
+# show_usage - display brief usage message
+#
+function show_usage
+{
+  echo "Usage: sgather [-CfFkprtvV] SOURCE DEST"
+}
+
+#
+# verbose - print a verbose message to stdout
+#
+function verbose
+{
+  if [ $_SGATHER_VERBOSE -ge $1 ]; then
+    if [ -z "$_SGATHER_SPAWNED" ]; then
+      prefix="sgather:"
+    else
+      prefix="sgather($(hostname)):"
+    fi
+    echo "$prefix $2" 
+  fi
+}
+
+#
+# "main"
+#
+
+if [ -z "$_SGATHER_SPAWNED" ]; then
+
+  if [ ! -z ${SGATHER_COMPRESS+x} ];  then _SGATHER_COMPRESS=true;            else _SGATHER_COMPRESS=false;  fi
+  if [ ! -z ${SGATHER_FORCE+x} ];     then _SGATHER_FORCE=true;               else _SGATHER_FORCE=false;     fi
+  if [ ! -z ${SGATHER_FANOUT+x} ];    then _SGATHER_FANOUT=$SGATHER_FANOUT;   else _SGATHER_FANOUT=8;        fi
+  if [ ! -z ${SGATHER_KEEP+x} ];      then _SGATHER_KEEP=true;                else _SGATHER_KEEP=false;      fi
+  if [ ! -z ${SGATHER_PRESERVE+x} ];  then _SGATHER_PRESERVE=true;            else _SGATHER_PRESERVE=false;  fi
+  if [ ! -z ${SGATHER_RECURSIVE+x} ]; then _SGATHER_RECURSIVE=true;           else _SGATHER_RECURSIVE=false; fi
+  if [ ! -z ${SGATHER_TIMEOUT+x} ];   then _SGATHER_TIMEOUT=$SGATHER_TIMEOUT; else _SGATHER_TIMEOUT=60;      fi
+  _SGATHER_VERBOSE=0
+  _SGATHER_SOURCE=
+  _SGATHER_DEST=
+
+  _SGATHER_REMOTE_COPY=true
+  _SGATHER_BATCHHOST=
+
+  # parse command line options
+  #
+  opt_error=0
+  opts=$(getopt -n "$0" --options "CfF:hkprt:vV" --long "compress,force,fanout:,help,keep,preserve,recursive,timeout,usage,verbose,version" -- "$@") || opt_error=$?
+  eval set -- "$opts"
+  while [ $opt_error -eq 0 -a $# -gt 0 ]; do
+    case "$1" in
+      -C|--compress)
+        _SGATHER_COMPRESS=true
+        shift
+        ;;
+      -f|--force)
+        _SGATHER_FORCE=true
+        shift
+        ;;
+      -F|--fanout)
+        _SGATHER_FANOUT=$2
+        shift 2
+        ;;
+      -h|--help)
+        show_help
+        exit 0
+        ;;
+      -k|--keep)
+        _SGATHER_KEEP=true
+        shift
+        ;;
+      -p|--preserve)
+        _SGATHER_PRESERVE=true
+        shift
+        ;;
+      -r|--recursive)
+        _SGATHER_RECURSIVE=true
+        shift
+        ;;
+      -t|--timeout)
+        _SGATHER_TIMEOUT=$2
+        shift 2
+        ;;
+      --usage)
+        show_usage
+        exit 0
+        ;;
+      -v|--verbose)
+        _SGATHER_VERBOSE=$(( $_SGATHER_VERBOSE + 1 ))
+        shift
+        ;;
+      -V|--version)
+        echo "sgather $VERSION ($($SRUN --version))"
+        exit $?
+        ;;
+      --)
+        shift
+        if [ $# -ne 2 ]; then
+          echo "Need two file names, have $# names" >&2
+          opt_error=1
+        else
+           _SGATHER_SOURCE="$1"
+           # convert relative to absolute destination path, if necessary
+           case $2 in
+             /*) _SGATHER_DEST="$2" ;;
+              *) _SGATHER_DEST="$PWD/$2" ;;
+           esac
+        fi
+        break
+        ;;
+    esac
+  done
+  # verify given fanout
+  #
+  if [ $opt_error -eq 0 ] && ! [ $opt_error -eq 0 -a $_SGATHER_FANOUT -eq $_SGATHER_FANOUT -a $_SGATHER_FANOUT -gt 0 -a $_SGATHER_FANOUT -le 8 ] 2>/dev/null; then
+    echo "$0: invalid fanout -- '$_SGATHER_FANOUT'" >&2
+    opt_error=1
+  fi
+  # verify given timeout
+  #
+  if [ $opt_error -eq 0 ] && ! [ $opt_error -eq 0 -a $_SGATHER_TIMEOUT -eq $_SGATHER_TIMEOUT -a $_SGATHER_TIMEOUT -gt 0 ] 2>/dev/null; then
+    echo "$0: invalid timeout -- '$_SGATHER_TIMEOUT'" >&2
+    opt_error=1
+  fi
+  if [ $opt_error -ne 0 ]; then
+    echo "Try \"sgather --help\" for more information" >&2
+    exit $opt_error
+  fi
+
+  verbose 1 "-----------------------------"
+  verbose 1 "compress    = $_SGATHER_COMPRESS"
+  verbose 1 "force       = $_SGATHER_FORCE"
+  verbose 1 "fanout      = $_SGATHER_FANOUT"
+  verbose 1 "keep source = $_SGATHER_KEEP"
+  verbose 1 "preserve    = $_SGATHER_PRESERVE"
+  verbose 1 "recursive   = $_SGATHER_RECURSIVE"
+  verbose 1 "timeout     = $_SGATHER_TIMEOUT"
+  verbose 1 "verbose     = $_SGATHER_VERBOSE"
+  verbose 1 "source      = $_SGATHER_SOURCE"
+  verbose 1 "dest        = $_SGATHER_DEST"
+  verbose 1 "-----------------------------"
+
+  # check whether we're within a SLURM job
+  #
+  if [ -z $SLURM_JOBID ]; then
+    echo "$0: error: Command only valid from within SLURM job" >&2
+    exit 1
+  fi
+
+  verbose 1 "jobid       = $SLURM_JOBID"
+  verbose 1 "node_cnt    = $SLURM_NNODES"
+  verbose 1 "node_list   = $SLURM_NODELIST"
+
+  # check whether the destination file is node-global
+  # (->no remote copying is necessary)
+  #
+  case $_SGATHER_DEST in
+    /scratch/* | /home/*)
+      _SGATHER_REMOTE_COPY=false
+      ;;
+  esac
+
+  verbose 1 "remote copy = $_SGATHER_REMOTE_COPY"
+
+  # determine the batch host node via scontrol
+  #
+  tmp=$($SCONTROL show job $SLURM_JOBID | grep BatchHost) || exit $?
+  _SGATHER_BATCHHOST=$(echo $tmp | cut -d '=' -f 2)
+
+  # export control environment variables for subsequent call to itself
+  #
+  export _SGATHER_COMPRESS
+  export _SGATHER_FORCE
+  export _SGATHER_FANOUT
+  export _SGATHER_KEEP
+  export _SGATHER_PRESERVE
+  export _SGATHER_RECURSIVE
+  export _SGATHER_TIMEOUT
+  export _SGATHER_VERBOSE
+  export _SGATHER_SOURCE
+  export _SGATHER_DEST
+  export _SGATHER_REMOTE_COPY
+  export _SGATHER_BATCHHOST
+  export _SGATHER_SPAWNED=1
+
+  # spawn this script to all job nodes
+  #
+
+  # either in one step, if the destination file is node-global (remote copying
+  # isn't necessary) ...
+  #
+  if ! $_SGATHER_REMOTE_COPY; then
+    $SRUN --ntasks=$SLURM_NNODES --ntasks-per-node=1 $0 || exit $?
+  # ... or in multiple steps with regard to $_SGATHER_FANOUT
+  #
+  else
+    nodelist=$($SRUN --ntasks=$SLURM_NNODES --ntasks-per-node=1 -l hostname) || exit $?
+    nodelist=$(echo "$nodelist" | cut -d ' ' -f 2 | sort)
+    set $nodelist
+    nodesublist=""
+    nodesubcnt=0
+    while [ $# -gt 0 ]; do
+      if [ -z $nodesublist ]; then
+        nodesublist=$1
+      else
+        nodesublist="$nodesublist,$1"
+      fi
+      nodesubcnt=$(( $nodesubcnt + 1 ))
+      shift
+      if [ $# -eq 0 -o $nodesubcnt -eq $_SGATHER_FANOUT ]; then
+        $SRUN --nodelist="$nodesublist" --ntasks=$nodesubcnt --ntasks-per-node=1 $0 || exit $?
+        nodesublist=""
+        nodesubcnt=0
+      fi
+    done
+  fi
+
+else #_SGATHER_SPAWNED
+
+  # check whether the source file exist
+  #
+  if [ ! -e $_SGATHER_SOURCE  ]; then
+    verbose 0 "error: Can't open $_SGATHER_SOURCE" >&2
+    if $_SGATHER_FORCE; then
+      verbose 0 "$_SGATHER_SOURCE ignored" >&2
+      exit 0
+    else
+      exit 1
+    fi
+  fi
+
+  # compose scp command
+  #
+
+  # prepend destination node name to destination file, if remote copying
+  # is necessary
+  #
+  if $_SGATHER_REMOTE_COPY && [ $(hostname) != $_SGATHER_BATCHHOST ]; then
+    _SGATHER_DEST="$_SGATHER_BATCHHOST:$_SGATHER_DEST"
+  fi
+  # append source node name to destination file
+  _SGATHER_DEST="$_SGATHER_DEST.$(hostname)"
+
+  scp_cmd="$SCP"
+  if [ $_SGATHER_VERBOSE -eq 0 ]; then
+    scp_cmd="$SCP -q"
+  elif [ $_SGATHER_VERBOSE -ge 2 ]; then
+    scp_cmd="$SCP -v"
+  fi
+  if $_SGATHER_RECURSIVE; then
+    scp_cmd="$scp_cmd -r"
+  fi
+  if $_SGATHER_COMPRESS; then
+    scp_cmd="$scp_cmd -C"
+  fi
+  if [ $_SGATHER_TIMEOUT -ne 0 ]; then
+    scp_cmd="$scp_cmd -o ConnectTimeout=$_SGATHER_TIMEOUT"
+  fi
+  if $_SGATHER_PRESERVE; then
+    scp_cmd="$scp_cmd -p"
+  fi
+  scp_cmd="$scp_cmd $_SGATHER_SOURCE $_SGATHER_DEST"
+
+  # run scp
+  #
+  verbose 1 "executing \"$scp_cmd\""
+  $scp_cmd || exit $?
+
+  # remove source file, if desired
+  #
+  if ! $_SGATHER_KEEP; then
+    verbose 1 "removing $_SGATHER_SOURCE"
+    $RM -r $_SGATHER_SOURCE || exit $?
+  fi
+fi
+
+exit 0
+

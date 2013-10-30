@@ -99,6 +99,10 @@ of the SLURM contribs distribution follows:
      2. It is not possible to use PTRACE_DETACH to leave a process stopped,
      because ptrace ignores SIGSTOPs sent by the tracing process.
 
+  sgather            [ shell script ]
+     Gather remote files from a job into a central location. Reverse of of
+     sbcast command.
+
   sjobexit/          [ Perl programs ]
      Tools for managing job exit code records
 

@@ -423,6 +423,7 @@ AC_CONFIG_FILES([Makefile
 		 contribs/torque/Makefile
 		 contribs/phpext/Makefile
 		 contribs/phpext/slurm_php/config.m4
+		 contribs/sgather/Makefile
 		 contribs/sjobexit/Makefile
 		 contribs/slurmdb-direct/Makefile
 		 contribs/pmi2/Makefile
