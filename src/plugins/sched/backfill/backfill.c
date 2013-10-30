@@ -619,6 +619,8 @@ static int _attempt_backfill(void)
 	START_TIMER;
 	if (debug_flags & DEBUG_FLAG_BACKFILL)
 		info("backfill: beginning");
+	else
+		debug("backfill: beginning");
 	sched_start = now = time(NULL);
 
 	if (slurm_get_root_filter())
