@@ -6,6 +6,7 @@
 #define _MSG_H
 
 #include <EXTERN.h>
+#include <stdint.h>
 #include <perl.h>
 #include <XSUB.h>
 #include <slurm/slurm.h>
@@ -295,13 +296,13 @@ inline static int hv_store_ptr(HV* hv, const char *key, void* ptr, const char *c
 #define SV2charp(sv)    SvPV_nolen(sv)
 #define SV2bool(sv)     SvTRUE(sv)
 
-#if 1
+#if 0
 /* Error on some 32-bit systems */
 #define SV2ptr(sv)      SvIV(SvRV(sv))
 #else
-static inline int SV2ptr(SV *sv)
+static inline void * SV2ptr(SV *sv)
 {
-	int ptr = SvIV(SvRV(sv));
+	void * ptr = (void *) ((intptr_t) SvIV(SvRV(sv)));
 	return ptr;
 }
 #endif
