@@ -44,6 +44,12 @@ set exit_code       0
 
 print_header $test_id
 
+# POE launch is so slow that this test is impractical
+if {[test_launch_poe]} {
+	send_user "\nWARNING: This test is incompatible with launch/poe systems\n"
+	exit 0
+}
+
 #
 # Slurm time limit enforcement is performed within one minute of the actucal
 # job time limit, so a one minute limit job will be killed 60 to 120 seconds

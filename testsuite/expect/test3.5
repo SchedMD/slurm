@@ -220,11 +220,7 @@ set sleep_time 300
 set timeout [expr $max_job_delay + $sleep_time]
 set srun_pid [spawn $srun -t1 -p $part_name $bin_sleep $sleep_time]
 expect {
-	-re "time limit exceeded" {
-		set timed_out 1
-		exp_continue
-	}
-	-re "Terminated" {
+	-re "(time limit|TIME LIMIT|TERMINATED)" {
 		set timed_out 1
 		exp_continue
 	}
