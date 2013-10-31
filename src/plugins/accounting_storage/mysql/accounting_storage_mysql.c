@@ -1132,7 +1132,10 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name, job_table_fields,
 				  ", primary key (job_db_inx), "
 				  "unique index (id_job, "
-				  "id_assoc, time_submit))")
+				  "id_assoc, time_submit), "
+				  "key rollup (time_eligible, time_end), "
+				  "key sacct_def (id_user, time_start, "
+				  "time_end))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1164,7 +1167,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		 cluster_name, suspend_table);
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  suspend_table_fields,
-				  ")") == SLURM_ERROR)
+				  ", key job_db_inx_times (job_db_inx, "
+				  "time_start, time_end))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",

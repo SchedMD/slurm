@@ -48,6 +48,22 @@
 
 static char *table_defs_table = "table_defs_table";
 
+typedef struct {
+	char *name;
+	char *columns;
+} db_key_t;
+
+static void _destroy_db_key(void *arg)
+{
+	db_key_t *db_key = (db_key_t *)arg;
+
+	if (db_key) {
+		xfree(db_key->name);
+		xfree(db_key->columns);
+		xfree(db_key);
+	}
+}
+
 /* NOTE: Insure that mysql_conn->lock is set on function entry */
 static int _clear_results(MYSQL *db_conn)
 {
@@ -170,12 +186,15 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	char *unique_index = NULL;
 	int old_primary = 0;
 	char *old_index = NULL;
-	char *temp = NULL;
+	char *temp = NULL, *temp2 = NULL;
+	List keys_list = NULL;
+	db_key_t *db_key = NULL;
 
 	DEF_TIMERS;
 
-	/* figure out the keys in the table */
-	query = xstrdup_printf("show index from %s", table_name);
+	/* figure out the unique keys in the table */
+	query = xstrdup_printf("show index from %s where non_unique=0",
+			       table_name);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -189,6 +208,43 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 			old_index = xstrdup(row[2]);
 	}
 	mysql_free_result(result);
+
+	/* figure out the non-unique keys in the table */
+	query = xstrdup_printf("show index from %s where non_unique=1",
+			       table_name);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	itr = NULL;
+	keys_list = list_create(_destroy_db_key);
+	while ((row = mysql_fetch_row(result))) {
+		if (!itr)
+			itr = list_iterator_create(keys_list);
+		else
+			list_iterator_reset(itr);
+		while ((db_key = list_next(itr))) {
+			if (!strcmp(db_key->name, row[2]))
+				break;
+		}
+
+		if (db_key) {
+			xstrfmtcat(db_key->columns, ", %s", row[4]);
+		} else {
+			db_key = xmalloc(sizeof(db_key_t));
+			db_key->name = xstrdup(row[2]); // name
+			db_key->columns = xstrdup(row[4]); // column name
+			list_append(keys_list, db_key); // don't use list_push
+		}
+	}
+	mysql_free_result(result);
+
+	if (itr) {
+		list_iterator_destroy(itr);
+		itr = NULL;
+	}
 
 	/* figure out the existing columns in the table */
 	query = xstrdup_printf("show columns from %s", table_name);
@@ -323,6 +379,66 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 		}
 	}
 	xfree(old_index);
+
+	temp2 = ending;
+	itr = list_iterator_create(keys_list);
+	while ((temp = strstr(temp2, ", key "))) {
+		int open = 0, close = 0, name_end = 0;
+		int end = 5;
+		char *new_key_name = NULL, *new_key = NULL;
+		while (temp[end++]) {
+			if (!name_end && (temp[end] == ' ')) {
+				name_end = end;
+				continue;
+			} else if (temp[end] == '(') {
+				open++;
+				if (!name_end)
+					name_end = end;
+			} else if (temp[end] == ')')
+				close++;
+			else
+				continue;
+			if (open == close)
+				break;
+		}
+		if (temp[end]) {
+			end++;
+			new_key_name = xstrndup(temp+6, name_end-6);
+			new_key = xstrndup(temp+2, end-2); // skip ', '
+			while ((db_key = list_next(itr))) {
+				if (!strcmp(db_key->name, new_key_name)) {
+					list_remove(itr);
+					break;
+				}
+			}
+			list_iterator_reset(itr);
+			if (db_key) {
+				xstrfmtcat(query,
+					   " drop key %s,", db_key->name);
+				xstrfmtcat(correct_query,
+					   " drop key %s,", db_key->name);
+				_destroy_db_key(db_key);
+			} else
+				info("adding %s to table %s",
+				     new_key, table_name);
+
+			xstrfmtcat(query, " add %s,",  new_key);
+			xstrfmtcat(correct_query, " add %s,",  new_key);
+
+			xfree(new_key);
+			xfree(new_key_name);
+		}
+		temp2 = temp + end;
+	}
+
+	/* flush extra (old) keys */
+	while ((db_key = list_next(itr))) {
+		info("dropping key %s from table %s", db_key->name, table_name);
+		xstrfmtcat(query, " drop key %s,", db_key->name);
+	}
+	list_iterator_destroy(itr);
+
+	list_destroy(keys_list);
 
 	query[strlen(query)-1] = ';';
 	correct_query[strlen(correct_query)-1] = ';';
