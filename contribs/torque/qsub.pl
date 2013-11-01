@@ -291,9 +291,15 @@ if ($interactive) {
 
 	# If available, extract the job ID from the command output and print
 	# it to stdout, as done in the PBS version of qsub.
+	# The "Submitted batch job" header is for backward compatability
+	# with earlier versions of Slurm's qsub wrapper
 	if ($command_exit_status == 0) {
 		my @spcommand_output=split(" ", $command_output[$#command_output]);
 		$job_id= $spcommand_output[$#spcommand_output];
+<<<<<<< HEAD
+=======
+		print "Submitted batch job ";
+>>>>>>> slurm-2.6
 		print "$job_id\n";
 	} else {
 		print("There was an error running the SLURM sbatch command.\n" .
