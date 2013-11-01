@@ -1594,17 +1594,19 @@ extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
 	return priority;
 }
 
-extern void priority_p_reconfig(void)
+extern void priority_p_reconfig(bool assoc_clear)
 {
 	reconfig = 1;
 	_internal_setup();
-	/* Since the used_cpu_run_secs has been reset by the reconfig
-	   we need to remove the time that has past since the last
-	   poll.  We can't just do the correct calculation in the
-	   first place because it will mess up everything in the poll
-	   since it is based off the g_last_ran time.
-	*/
-	_init_grp_used_cpu_run_secs(g_last_ran);
+
+	/* Since the used_cpu_run_secs has been reset by the reconfig,
+	 * we need to remove the time that has past since the last
+	 * poll.  We can't just do the correct calculation in the
+	 * first place because it will mess up everything in the poll
+	 * since it is based off the g_last_ran time.
+	 */
+	if (assoc_clear)
+		_init_grp_used_cpu_run_secs(g_last_ran);
 	debug2("%s reconfigured", plugin_name);
 
 	return;
