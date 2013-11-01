@@ -1,0 +1,155 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Depth-Oblivious Fair-share Factor</h1>
+
+<h2>Contents</h2>
+<ul>
+<li><a href=#intro>Introduction</a></li>
+<li><a href=#fairshare>Depth-Oblivous Fair-Share Formula</a></li>
+<li><a href=#ratio>The Effective Usage Ratio Under an Account Hierarchy</a></li>
+<li><a href=#config>Configuration</a></li>
+</ul>
+
+<!-------------------------------------------------------------------------->
+<a name=intro>
+<h2>Introduction</h2></a>
+
+<p>The depth-oblivious fair-share factor is a variant of the default
+fair-share factor which increases usable priority ranges and improves
+fairness between accounts in deep and/or irregular hierarchies. The
+reader is assumed to be familiar with the priority/multifactor plugin
+and only the specifics of the depth-oblivious factor are documented
+here</p>
+
+<!-------------------------------------------------------------------------->
+<a name=fairshare>
+<h2>Depth-Oblivous Fair-Share Formula</h2></a>
+
+
+<P> The main formula for calculating the fair-share factor of an account is:</P>
+
+<PRE>
+	F = 2^(-R)
+</PRE>
+
+<P>where:</P>
+
+<DL compact>
+<DT> F
+<DD> is the fair-share factor
+<DT> R
+<DD> is the effective usage ratio of the account
+</DL>
+
+<P> This formula resembles the original fair-share formula, and
+produces the same result for an account at the first level of the tree
+(under root). Indeed, for first-level accounts, the effective usage
+ratio R is equal to the usage ratio r defined as: </P>
+
+<PRE>
+	r = U/S
+</PRE>
+
+<P>where:</P>
+
+<DL compact>
+<DT> S
+<DD> is the normalized shares
+<DT> U
+<DD> is the normalized usage factoring in half-life decay
+</DL>
+
+<P> which is the same as the orginal formula. </P>
+
+<a name=ratio>
+<h2>The Effective Usage Ratio Under an Account Hierarchy</h2></a>
+
+<P> The generalized formula for R is a bit more complex. It involves a
+local usage ratio r<sub>l</sub>:</P>
+
+<PRE>
+	r<sub>l</sub> = r / (U<sub>all_siblings</sub>/S<sub>all_siblings</sub>)
+</PRE>
+
+<P> which is the ratio between the usage ratio of an account, and the
+total usage ratio of all the siblings at his level including
+itself. For example, assuming that all the children of an account have
+used in total two times their combined shares (which equal the shares
+of the parent account), but that one of the child has used only two
+thirds of his shares, the local usage ratio of that child will be of
+one third. </P>
+
+<P> The general formula for R is then defined by: </P>
+
+<PRE>
+	R = R<sub>parent</sub> * r<sub>l</sub>^k
+</PRE>
+
+<P>where:</P>
+
+<DL compact>
+<DT> k
+<DD> varies between 0 and 1 and determines how much the effective usage
+ratio of an account is determined by the usage ratio of its ancestors.
+</DL>
+
+<P> To understand the formula for k, it is useful to first make a few
+observations about the formula for R. On the one hand, if k equals 1,
+the above formula gives R = R<sub>parent</sub> * r<sub>l</sub>. For a
+second-level account, by plugging in the formula for r<sub>l</sub>,
+this leads to R = r *
+U<sub>parent</sub>/U<sub>all_siblings</sub>. Assuming jobs are
+submitted at leaf accounts, U<sub>parent</sub> =
+U<sub>all_siblings</sub> which gives R = r. This means that if k
+equals 1, the fair-share factor of an account is only based on its own
+usage ratio. On the other hand, if k equals 0, R = R<sub>parent</sub>
+which means the fair-share factor of an account is only based on the
+usage ratio of its ancestors. </P>
+
+<P> The formula for k is: <P>
+
+<PRE>
+	k = (1/(1+(5*ln(R<sub>parent</sub>))^2)) if ln(R<sub>parent</sub>)*ln(r<sub>l</sub>) <= 0
+	k = 1 if ln(R<sub>parent</sub>)*ln(r<sub>l</sub>) >= 0
+</PRE>
+
+<P> This formula is chosen to ensure that, if the usage of the
+ancestors of an account is on target, the fair-share factor of the
+account mainly depends on its own usage. Therefore k tends towards 1
+when R<sub>parent</sub> tends towards 1. On the contrary, the more the
+ancestors of an account have underused/overused their shares, the more
+the fair-share factor of the account should get a bonus/malus by
+moving towards the fair-share factor of its parent. Therefore, k tends
+towards 0 when R<sub>parent</sub> diverges from 1. However, if the
+account usage imbalance is greater than its ancestors' in the same
+direction, (for exemple, the ancestors have consumed two times their
+shares, and the child has consumed 3 times its shares), moving the
+fair-share factor back towards the one of the parent is not
+helpful. As a result, k is kept to 1 in that case.</P>
+
+<div class="figure">
+  <img src=k_function.gif width=565><BR>
+  Figure 1. Plot of k as a function of R<sub>parent</sub>
+</div>
+
+<!-------------------------------------------------------------------------->
+<a name=config>
+<h2>Configuration</h2></a>
+
+<p> The following slurm.conf (SLURM_CONFIG_FILE) parameters are used
+to enable the depth-oblivious flavor of the fair-share factor.  See
+slurm.conf(5) man page for more details.</p>
+
+<dl>
+<dt>PriorityFlags
+<dd>Set to "DEPTH_OBLIVIOUS".
+<dt>PriorityType
+<dd>Set this value to "priority/multifactor".
+The default value for this variable is "priority/basic"
+which enables simple FIFO scheduling.
+</dl>
+
+<!-------------------------------------------------------------------------->
+<p style="text-align:center;">Last modified 30 October 2013</p>
+
+<!--#include virtual="footer.txt"-->

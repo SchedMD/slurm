@@ -42,6 +42,12 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="power_save.html">Power Saving Guide</a></li>
 <li><a href="prolog_epilog.html">Prolog and Epilog Guide</a></li>
 <li><a href="troubleshoot.html">Troubleshooting Guide</a></li>
+<li>Workload Prioritization</li>
+<ul>
+<li><a href="priority_multifactor.html">Multifactor Job Priority</a></li>
+<li><a href="priority_multifactor2.html">Ticket-Based Multifactor Job Priority</a></li>
+<li><a href="priority_multifactor3.html">Depth-Oblivious Fair-share Factor</a></li>
+</ul>
 <li>SLURM Scheduling</li>
 <ul>
 <li><a href="cons_res.html">Consumable Resources Guide</a></li>
@@ -50,8 +56,6 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li><a href="gang_scheduling.html">Gang Scheduling</a></li>
 <li><a href="gres.html">Generic Resource (GRES) Scheduling</a></li>
 <li><a href="high_throughput.html">High Throughput Computing Guide</a></li>
-<li><a href="priority_multifactor.html">Multifactor Job Priority</a></li>
-<li><a href="priority_multifactor2.html">Ticket-Based Multifactor Job Priority</a></li>
 <li><a href="preempt.html">Preemption</a></li>
 <li><a href="qos.html">Quality of Service (QOS)</a></li>
 <li><a href="resource_limits.html">Resource Limits</a></li>
@@ -117,6 +121,6 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 8 July 2013</p>
+<p style="text-align:center;">Last modified 1 November 2013</p>
 
 <!--#include virtual="footer.txt"-->
