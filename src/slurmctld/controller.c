@@ -813,7 +813,7 @@ static int _reconfigure_slurm(void)
 	assoc_mgr_set_missing_uids();
 	start_power_mgr(&slurmctld_config.thread_id_power);
 	trigger_reconfig();
-	priority_g_reconfig();          /* notify priority plugin too */
+	priority_g_reconfig(true);	/* notify priority plugin too */
 	schedule(0);			/* has its own locks */
 	save_all_state();
 
