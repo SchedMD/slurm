@@ -2696,3 +2696,37 @@ proc check_node_mem { } {
 	log_user 1
 
 }
+
+################################################################
+#
+# Proc: get_fs_damping_factor
+#
+# Purpose: get FairShareDampeningFactor configuration parameter
+#
+# Returns FairShareDampeningFactor
+#
+################################################################
+proc get_fs_damping_factor { } {
+	global scontrol number
+
+	log_user 0
+	set damp 1
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "FairShareDampeningFactor *= ($number)" {
+			set damp $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $damp
+}

@@ -39,7 +39,14 @@ set test_id     "24.1"
 set exit_code   0
 set test_prog   "test$test_id.prog"
 set matches     0
+
 print_header $test_id
+
+set damp [get_fs_damping_factor]
+if {$damp != 1} {
+	send_user "Unable to run with FairShareDampeningFactor=$damp (must be 1)\n"
+	exit 0
+}
 
 #
 # Delete left-over programs and rebuild them
