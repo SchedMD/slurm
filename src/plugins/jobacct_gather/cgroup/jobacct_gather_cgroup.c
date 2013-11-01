@@ -190,6 +190,15 @@ extern int init (void)
 			free_slurm_cgroup_conf(&slurm_cgroup_conf);
 			return SLURM_ERROR;
 		}
+
+		/* Enable blkio subsystem.
+		 */
+		if (jobacct_gather_cgroup_blkio_init(&slurm_cgroup_conf)
+		    != SLURM_SUCCESS) {
+			xcpuinfo_fini();
+			free_slurm_cgroup_conf(&slurm_cgroup_conf);
+			return SLURM_ERROR;
+		}
 	}
 
 	verbose("%s loaded", plugin_name);
