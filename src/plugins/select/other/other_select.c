@@ -81,6 +81,7 @@ const char *node_select_syms[] = {
 	"select_p_job_suspend",
 	"select_p_job_resume",
 	"select_p_step_pick_nodes",
+	"select_p_step_start",
 	"select_p_step_finish",
 	"select_p_pack_select_info",
 	"select_p_select_nodeinfo_pack",
@@ -412,6 +413,15 @@ extern bitstr_t *other_step_pick_nodes(struct job_record *job_ptr,
 		return NULL;
 
 	return (*(ops.step_pick_nodes))(job_ptr, jobinfo, node_count);
+}
+
+extern int other_step_start(struct step_record *step_ptr)
+{
+	if (other_select_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(ops.step_start))
+		(step_ptr);
 }
 
 /*

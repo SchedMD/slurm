@@ -2304,6 +2304,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (!with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
+	select_g_step_start(step_ptr);
+
 	jobacct_storage_g_step_start(acct_db_conn, step_ptr);
 	return SLURM_SUCCESS;
 }

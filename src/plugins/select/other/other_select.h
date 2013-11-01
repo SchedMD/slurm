@@ -250,6 +250,8 @@ extern bitstr_t * other_step_pick_nodes(struct job_record *job_ptr,
 					select_jobinfo_t *jobinfo,
 					uint32_t node_count);
 
+extern int other_step_start(struct step_record *step_ptr);
+
 /*
  * clear what happened in select_g_step_pick_nodes
  * IN/OUT step_ptr - Flush the resources from the job and step.

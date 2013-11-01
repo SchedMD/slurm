@@ -613,6 +613,12 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 	return other_step_pick_nodes(job_ptr, jobinfo, node_count);
 }
 
+extern int select_p_step_start(struct step_record *step_ptr)
+{
+	return other_step_finish(step_ptr);
+}
+
+
 extern int select_p_step_finish(struct step_record *step_ptr)
 {
 	select_jobinfo_t *jobinfo = step_ptr->select_jobinfo->data;

@@ -83,6 +83,7 @@ const char *node_select_syms[] = {
 	"select_p_job_suspend",
 	"select_p_job_resume",
 	"select_p_step_pick_nodes",
+	"select_p_step_start",
 	"select_p_step_finish",
 	"select_p_pack_select_info",
 	"select_p_select_nodeinfo_pack",
@@ -723,6 +724,19 @@ extern bitstr_t *select_g_step_pick_nodes(struct job_record *job_ptr,
 
 	return (*(ops[select_context_default].step_pick_nodes))
 		(job_ptr, step_jobinfo->data, node_count);
+}
+
+/*
+ * Post pick_nodes operations for the step.
+ * IN/OUT step_ptr - step pointer to operate on.
+ */
+extern int select_g_step_start(struct step_record *step_ptr)
+{
+	if (slurm_select_init(0) < 0)
+		return SLURM_ERROR;
+
+	return (*(ops[select_context_default].step_start))
+		(step_ptr);
 }
 
 /*
