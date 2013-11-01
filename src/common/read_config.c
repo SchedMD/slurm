@@ -197,6 +197,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"EpilogSlurmctld", S_P_STRING},
 	{"ExtSensorsType", S_P_STRING},
 	{"ExtSensorsFreq", S_P_UINT16},
+	{"FairShareDampeningFactor", S_P_UINT16},
 	{"FastSchedule", S_P_UINT16},
 	{"FirstJobId", S_P_UINT32},
 	{"GetEnvTimeout", S_P_UINT16},
@@ -2850,6 +2851,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->ext_sensors_freq,
 			    "ExtSensorsFreq", hashtbl))
 		conf->ext_sensors_freq = 0;
+
+	if (!s_p_get_uint16(&conf->fs_dampening_factor,
+			    "FairShareDampeningFactor", hashtbl))
+		conf->fs_dampening_factor = 1;
 
 	if (!s_p_get_uint16(&conf->fast_schedule, "FastSchedule", hashtbl))
 		conf->fast_schedule = DEFAULT_FAST_SCHEDULE;

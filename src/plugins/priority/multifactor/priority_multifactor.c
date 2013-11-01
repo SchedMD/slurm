@@ -140,6 +140,7 @@ static pthread_mutex_t decay_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool running_decay = 0, reconfig = 0,
 	calc_fairshare = 1, priority_debug = 0;
 static bool favor_small; /* favor small jobs over large */
+static uint16_t damp_factor;  /* weight for age factor */
 static uint32_t max_age; /* time when not to add any more
 			  * priority to a job if reached */
 static uint32_t weight_age;  /* weight for age factor */
@@ -1481,6 +1482,7 @@ static void _internal_setup(void)
 
 	favor_small = slurm_get_priority_favor_small();
 
+	damp_factor = (long double)slurm_get_fs_dampening_factor();
 	max_age = slurm_get_priority_max_age();
 	weight_age = slurm_get_priority_weight_age();
 	weight_fs = slurm_get_priority_weight_fairshare();
@@ -1490,6 +1492,7 @@ static void _internal_setup(void)
 	flags = slurmctld_conf.priority_flags;
 
 	if (priority_debug) {
+		info("priority: Damp Factor is %u", damp_factor);
 		info("priority: Max Age is %u", max_age);
 		info("priority: Weight Age is %u", weight_age);
 		info("priority: Weight Fairshare is %u", weight_fs);
@@ -1801,7 +1804,7 @@ extern double priority_p_calc_fs_factor(long double usage_efctv,
 			usage_efctv = MIN_USAGE_FACTOR * shares_norm;
 		priority_fs = shares_norm / usage_efctv;
 	} else {
-		priority_fs = pow(2.0, -(usage_efctv / shares_norm));
+		priority_fs = pow(2.0,-((usage_efctv/shares_norm)/damp_factor));
 	}
 
 	return priority_fs;

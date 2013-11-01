@@ -274,7 +274,7 @@ Where:
 <P> The simplified formula for calculating the fair-share factor for usage that spans multiple time periods and subject to a half-life decay is:</P>
 
 <PRE>
-	F = 2**(-U/S)
+	F = 2**(-U/S/d)
 </PRE>
 
 Where:
@@ -286,6 +286,8 @@ Where:
 <DD> is the normalized shares
 <DT> U
 <DD> is the normalized usage factoring in half-life decay
+<DT> d
+<DD> is the FairShareDampeningFactor (a configuration parameter, default value of 1)
 </DL>
 
 <P> The fair-share factor will therefore range from zero to one, where one represents the highest priority for a job.  A fair-share factor of 0.5 indicates that the user's jobs have used exactly the portion of the machine that they have been allocated.  A fair-share factor of above 0.5 indicates that the user's jobs have consumed less than their allocated share while a fair-share factor below 0.5 indicates that the user's jobs have consumed more than their allocated share of the computing resources.</P>
@@ -575,6 +577,6 @@ PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 26 July 2012</p>
+<p style="text-align:center;">Last modified 1 November 2013</p>
 
 <!--#include virtual="footer.txt"-->

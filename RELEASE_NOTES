@@ -56,6 +56,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
  -- In "SchedulerParameters", change default max_job_bf value from 50 to 100.
  -- Added "JobAcctGatherParams" configuration parameter. Value of "NoShare"
     disables accounting for shared memory.
+ -- Added FairShareDampeningFactor configuration parameter to offer a greater
+    priority range based upon utilization.
  -- Added fields to "scontrol show job" output: boards_per_node,
     sockets_per_board, ntasks_per_node, ntasks_per_board, ntasks_per_socket,
     ntasks_per_core, and nice.

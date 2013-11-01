@@ -21,7 +21,9 @@ documents those changes that are of interest to users and admins.
     not effect it's priorty.
  -- Multi-thread the sinfo command (one thread per partition).
  -- Added sgather tool to gather files from a job's compute nodes into a
-    central location. 
+    central location.
+ -- Added configuration parameter FairShareDampeningFactor to offer a greater
+    priority range based upon utilization.
 
 * Changes in Slurm 13.12.0pre3
 ==============================

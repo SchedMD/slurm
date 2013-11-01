@@ -624,6 +624,15 @@ External sensors data is collected from the RRD database.
 .RE
 
 .TP
+\fBFairShareDampeningFactor\fR
+Dampen the effect of exceeding a user or group's fair share of allocated
+resources. Higher values will provides greater ability to differentiate
+between exceeding the fair share at high levels (e.g. a value of 1 results
+in almost no difference between overconsumption by a factor of 10 and 100,
+while a value of 5 will result in a significant difference in priority).
+The default value is 1.
+
+.TP
 \fBFastSchedule\fR
 Controls how a node's configuration specifications in slurm.conf are used.
 If the number of node configuration entries in the configuration file

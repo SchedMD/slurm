@@ -627,6 +627,24 @@ uint32_t slurm_get_priority_weight_fairshare(void)
 	return factor;
 }
 
+/* slurm_get_fs_dampening_factor
+ * returns the dampening factor for fairshare from slurmctld_conf object
+ * RET uint32_t - factor.
+ */
+uint16_t slurm_get_fs_dampening_factor(void)
+{
+        uint16_t factor = 1;
+        slurm_ctl_conf_t *conf;
+
+        if (slurmdbd_conf) {
+        } else {
+                conf = slurm_conf_lock();
+                factor = conf->fs_dampening_factor;
+                slurm_conf_unlock();
+        }
+
+        return factor;
+}
 
 /* slurm_get_priority_weight_job_size
  * returns the priority weight for job size from slurmctld_conf object
