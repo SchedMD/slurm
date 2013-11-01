@@ -935,19 +935,27 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 		assoc = (slurmdb_association_rec_t *) job_ptr->assoc_ptr;
 
 		if (qos) {
-			if (priority_debug)
+			if (priority_debug) {
 				info("Subtracting %"PRIu64" from qos "
-				     "%u grp_used_cpu_run_secs "
+				     "%s grp_used_cpu_run_secs "
 				     "%"PRIu64" = %"PRIu64"",
 				     delta,
-				     qos->id,
+				     qos->name,
 				     qos->usage->grp_used_cpu_run_secs,
 				     qos->usage->grp_used_cpu_run_secs -
 				     delta);
-			qos->usage->grp_used_cpu_run_secs -= delta;
+			}
+			if (qos->usage->grp_used_cpu_run_secs >= delta) {
+				qos->usage->grp_used_cpu_run_secs -= delta;
+			} else {
+				error("qos %s grp_used_cpu_run_secs underflow",
+				      qos->name);
+				qos->usage->grp_used_cpu_run_secs = 0;
+			}
 		}
+
 		while (assoc) {
-			if (priority_debug)
+			if (priority_debug) {
 				info("Subtracting %"PRIu64" from assoc %u "
 				     "grp_used_cpu_run_secs "
 				     "%"PRIu64" = %"PRIu64"",
@@ -956,7 +964,14 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 				     assoc->usage->grp_used_cpu_run_secs,
 				     assoc->usage->grp_used_cpu_run_secs -
 				     delta);
-			assoc->usage->grp_used_cpu_run_secs -= delta;
+			}
+			if (assoc->usage->grp_used_cpu_run_secs >= delta) {
+				assoc->usage->grp_used_cpu_run_secs -= delta;
+			} else {
+				error("assoc %u grp_used_cpu_run_secs "
+				      "underflow", assoc->id);
+				assoc->usage->grp_used_cpu_run_secs = 0;
+			}
 			assoc = assoc->usage->parent_assoc_ptr;
 		}
 	}
