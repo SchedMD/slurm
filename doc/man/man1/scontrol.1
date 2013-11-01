@@ -243,6 +243,8 @@ rebooted. You can explicitly drain the nodes in order to reboot nodes as soon
 as possible, but the nodes must also explicitly be returned to service after
 being rebooted. You can alternately create an advanced reservation to
 prevent additional jobs from being initiated on nodes to be rebooted.
+NOTE: Nodes will be placed in a state of "MAINT" until rebooted and returned
+to service with a normal state.
 
 .TP
 \fBreconfigure\fP
