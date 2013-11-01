@@ -1745,6 +1745,11 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 	return NULL;
 }
 
+extern int select_p_step_start(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int select_p_step_finish(struct step_record *step_ptr)
 {
 	return SLURM_SUCCESS;
