@@ -1385,7 +1385,7 @@ extern void print_job_dependency(struct job_record *job_ptr)
 			dep_str = "expand";
 		else
 			dep_str = "unknown";
-		if (dep_ptr->array_task_id == (uint16_t) INFINITE)
+		if (dep_ptr->array_task_id == INFINITE)
 			array_task_id = "_*";
 		else
 			array_task_id = "";
@@ -1419,7 +1419,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	while ((dep_ptr = list_next(depend_iter))) {
 		bool clear_dep = false;
 		count--;
-		if (dep_ptr->array_task_id == (uint16_t) INFINITE) {
+		if (dep_ptr->array_task_id == INFINITE) {
 			/* Advance to latest element of this job array */
 			dep_ptr->job_ptr = find_job_array_rec(dep_ptr->job_id,
 							dep_ptr->array_task_id);
@@ -1509,10 +1509,10 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			failure = true;
 		if (clear_dep) {
 			char *rmv_dep;
-			if (dep_ptr->array_task_id == (uint16_t) INFINITE) {
+			if (dep_ptr->array_task_id == INFINITE) {
 				rmv_dep = xstrdup_printf(":%u_*",
 							 dep_ptr->job_id);
-			} else if (dep_ptr->array_task_id != (uint16_t)NO_VAL) {
+			} else if (dep_ptr->array_task_id != NO_VAL) {
 				rmv_dep = xstrdup_printf(":%u_%u",
 							dep_ptr->job_id,
 							dep_ptr->array_task_id);
@@ -1550,7 +1550,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	int rc = SLURM_SUCCESS;
 	uint16_t depend_type = 0;
 	uint32_t job_id = 0;
-	uint16_t array_task_id;
+	uint32_t array_task_id;
 	char *tok = new_depend, *sep_ptr, *sep_ptr2 = NULL;
 	List new_depend_list = NULL;
 	struct depend_spec *dep_ptr;
@@ -1600,27 +1600,26 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			job_id = strtol(tok, &sep_ptr, 10);
 			if ((sep_ptr != NULL) && (sep_ptr[0] == '_')) {
 				if (sep_ptr[1] == '*') {
-					array_task_id = (uint16_t) INFINITE;
+					array_task_id = INFINITE;
 					sep_ptr++;
 				} else {
 					array_task_id = strtol(sep_ptr+1,
 							       &sep_ptr, 10);
 				}
 			} else
-				array_task_id = (uint16_t) NO_VAL;
+				array_task_id = NO_VAL;
 			if ((sep_ptr == NULL) || (sep_ptr[0] != '\0') ||
 			    (job_id == 0) || (job_id == job_ptr->job_id)) {
 				rc = ESLURM_DEPENDENCY;
 				break;
 			}
 			/* old format, just a single job_id */
-			if (array_task_id == (uint16_t) NO_VAL) {
+			if (array_task_id == NO_VAL) {
 				dep_job_ptr = find_job_record(job_id);
 				if (dep_job_ptr &&
 				    (dep_job_ptr->array_job_id == job_id) &&
-				    (dep_job_ptr->array_task_id !=
-				     (uint16_t) NO_VAL)) {
-					array_task_id = (uint16_t) INFINITE;
+				    (dep_job_ptr->array_task_id != NO_VAL)) {
+					array_task_id = INFINITE;
 					snprintf(dep_buf, sizeof(dep_buf),
 						 "afterany:%u_*", job_id);
 				} else {
@@ -1640,7 +1639,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			dep_ptr = xmalloc(sizeof(struct depend_spec));
 			dep_ptr->array_task_id = array_task_id;
 			dep_ptr->depend_type = SLURM_DEPEND_AFTER_ANY;
-			if (array_task_id == (uint16_t) NO_VAL)
+			if (array_task_id == NO_VAL)
 				dep_ptr->job_id = dep_job_ptr->job_id;
 			else
 				dep_ptr->job_id = dep_job_ptr->array_job_id;
@@ -1675,14 +1674,14 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			job_id = strtol(sep_ptr, &sep_ptr2, 10);
 			if ((sep_ptr2 != NULL) && (sep_ptr2[0] == '_')) {
 				if (sep_ptr2[1] == '*') {
-					array_task_id = (uint16_t) INFINITE;
+					array_task_id = INFINITE;
 					sep_ptr++;
 				} else {
 					array_task_id = strtol(sep_ptr2+1,
 							       &sep_ptr2, 10);
 				}
 			} else
-				array_task_id = (uint16_t) NO_VAL;
+				array_task_id = NO_VAL;
 			if ((sep_ptr2 == NULL) ||
 			    (job_id == 0) || (job_id == job_ptr->job_id) ||
 			    ((sep_ptr2[0] != '\0') && (sep_ptr2[0] != ',') &&
@@ -1690,13 +1689,12 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				rc = ESLURM_DEPENDENCY;
 				break;
 			}
-			if (array_task_id == (uint16_t) NO_VAL) {
+			if (array_task_id == NO_VAL) {
 				dep_job_ptr = find_job_record(job_id);
 				if (dep_job_ptr &&
 				    (dep_job_ptr->array_job_id == job_id) &&
-				    (dep_job_ptr->array_task_id !=
-				     (uint16_t) NO_VAL)) {
-					array_task_id = (uint16_t) INFINITE;
+				    (dep_job_ptr->array_task_id != NO_VAL)) {
+					array_task_id = INFINITE;
 				}
 			} else
 				dep_job_ptr = find_job_array_rec(job_id,

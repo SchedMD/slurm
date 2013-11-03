@@ -231,7 +231,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"Licenses", S_P_STRING},
 	{"LogTimeFormat", S_P_STRING},
 	{"MailProg", S_P_STRING},
-	{"MaxArraySize", S_P_UINT16},
+	{"MaxArraySize", S_P_UINT32},
 	{"MaxJobCount", S_P_UINT32},
 	{"MaxJobId", S_P_UINT32},
 	{"MaxMemPerCPU", S_P_UINT32},
@@ -2259,7 +2259,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->launch_type);
 	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_prog);
-	ctl_conf_ptr->max_array_sz		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->max_array_sz		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->max_job_cnt		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->max_job_id		= NO_VAL;
 	ctl_conf_ptr->max_mem_per_cpu           = 0;
@@ -3021,8 +3021,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->mail_prog = xstrdup(DEFAULT_MAIL_PROG);
 
 
-	if (!s_p_get_uint16(&conf->max_array_sz, "MaxArraySize", hashtbl))
+	if (!s_p_get_uint32(&conf->max_array_sz, "MaxArraySize", hashtbl))
 		conf->max_array_sz = DEFAULT_MAX_ARRAY_SIZE;
+	else if (conf->max_array_sz > 65533) {
+		/* Slurm really can not handle more job array elements
+		 * without adding a new job array data structure */
+		error("MaxArraySize value (%u) is greater than 65535",
+		      conf->max_array_sz);
+	}
 
 	if (!s_p_get_uint32(&conf->max_job_cnt, "MaxJobCount", hashtbl))
 		conf->max_job_cnt = DEFAULT_MAX_JOB_COUNT;

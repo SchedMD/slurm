@@ -239,16 +239,16 @@ scontrol_hold(char *op, char *job_id_str)
 	char *next_str;
 	job_desc_msg_t job_msg;
 	uint32_t job_id;
-	uint16_t array_id;
+	uint32_t array_id;
 	job_info_msg_t *resp;
 	slurm_job_info_t *job_ptr;
 
 	if (job_id_str) {
 		job_id = (uint32_t) strtol(job_id_str, &next_str, 10);
 		if (next_str[0] == '_')
-			array_id = (uint16_t) strtol(next_str+1, &next_str, 10);
+			array_id = strtol(next_str+1, &next_str, 10);
 		else
-			array_id = (uint16_t) NO_VAL;
+			array_id = NO_VAL;
 		if ((job_id == 0) || (next_str[0] != '\0')) {
 			fprintf(stderr, "Invalid job id specified\n");
 			return 1;
@@ -279,13 +279,13 @@ scontrol_hold(char *op, char *job_id_str)
 		job_msg.priority = INFINITE;
 	for (i = 0, job_ptr = resp->job_array; i < resp->record_count;
 	     i++, job_ptr++) {
-		if ((array_id != (uint16_t) NO_VAL) &&
+		if ((array_id != NO_VAL) &&
 		    (job_ptr->array_task_id != array_id))
 			continue;
 
 		if (!IS_JOB_PENDING(job_ptr)) {
-			if ((array_id == (uint16_t) NO_VAL) &&
-			    (job_ptr->array_task_id != (uint16_t) NO_VAL))
+			if ((array_id == NO_VAL) &&
+			    (job_ptr->array_task_id != NO_VAL))
 				continue;
 			slurm_seterrno(ESLURM_JOB_NOT_PENDING);
 			return ESLURM_JOB_NOT_PENDING;

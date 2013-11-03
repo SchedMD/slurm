@@ -447,7 +447,7 @@ _xlate_job_step_ids(char **rest)
 
 	buf_size   = 0xffff;
 	buf_offset = 0;
-	opt.array_id = xmalloc(buf_size * sizeof(uint16_t));
+	opt.array_id = xmalloc(buf_size * sizeof(uint32_t));
 	opt.job_id   = xmalloc(buf_size * sizeof(uint32_t));
 	opt.step_id  = xmalloc(buf_size * sizeof(uint32_t));
 
@@ -480,9 +480,9 @@ _xlate_job_step_ids(char **rest)
 					error ("Invalid job id %s", rest[i]);
 					exit (1);
 				}
-				opt.job_id[buf_offset] = job_id;
+				opt.job_id[buf_offset]   = job_id;
 				opt.array_id[buf_offset] = tmp_l;
-				opt.step_id[buf_offset] = SLURM_BATCH_SCRIPT;
+				opt.step_id[buf_offset]  = SLURM_BATCH_SCRIPT;
 				free(next_elem);
 				if (++buf_offset >= buf_size)
 					break;
@@ -499,7 +499,7 @@ _xlate_job_step_ids(char **rest)
 			}
 			opt.array_id[buf_offset] = tmp_l;
 		} else {
-			opt.array_id[buf_offset] = (uint16_t) NO_VAL;
+			opt.array_id[buf_offset] = NO_VAL;
 		}
 
 

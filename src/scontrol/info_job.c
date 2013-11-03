@@ -284,7 +284,7 @@ scontrol_print_job (char * job_id_str)
 {
 	int error_code = SLURM_SUCCESS, i, print_cnt = 0;
 	uint32_t job_id = 0;
-	uint16_t array_id = (uint16_t) NO_VAL;
+	uint32_t array_id = NO_VAL;
 	job_info_msg_t * job_buffer_ptr = NULL;
 	job_info_t *job_ptr = NULL;
 	char *end_ptr = NULL;
@@ -312,7 +312,7 @@ scontrol_print_job (char * job_id_str)
 
 	for (i = 0, job_ptr = job_buffer_ptr->job_array;
 	     i < job_buffer_ptr->record_count; i++, job_ptr++) {
-		if ((array_id != (uint16_t) NO_VAL) &&
+		if ((array_id != NO_VAL) &&
 		    (array_id != job_ptr->array_task_id))
 			continue;
 		slurm_print_job_info(stdout, job_ptr, one_liner);
@@ -345,7 +345,7 @@ scontrol_print_step (char *job_step_id_str)
 {
 	int error_code, i, print_cnt = 0;
 	uint32_t job_id = NO_VAL, step_id = NO_VAL;
-	uint16_t array_id = (uint16_t) NO_VAL;
+	uint32_t array_id = NO_VAL;
 	char *next_str;
 	job_step_info_response_msg_t *job_step_info_ptr;
 	job_step_info_t * job_step_ptr;
@@ -415,7 +415,7 @@ scontrol_print_step (char *job_step_id_str)
 
 	for (i = 0, job_step_ptr = job_step_info_ptr->job_steps;
 	     i < job_step_info_ptr->job_step_count; i++, job_step_ptr++) {
-		if ((array_id != (uint16_t) NO_VAL) &&
+		if ((array_id != NO_VAL) &&
 		    (array_id != job_step_ptr->array_task_id))
 			continue;
 		slurm_print_job_step_info(stdout, job_step_ptr, one_liner);

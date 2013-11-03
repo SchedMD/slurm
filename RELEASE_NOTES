@@ -58,6 +58,7 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
     disables accounting for shared memory.
  -- Added FairShareDampeningFactor configuration parameter to offer a greater
     priority range based upon utilization.
+ -- Change MaxArraySize from 16-bit to 32-bit field.
  -- Added fields to "scontrol show job" output: boards_per_node,
     sockets_per_board, ntasks_per_node, ntasks_per_board, ntasks_per_socket,
     ntasks_per_core, and nice.
@@ -105,6 +106,8 @@ Changed members of the following structs
     deny_groups and deny_qos.
  -- Struct job_info / slurm_job_info_t: Changed exc_node_inx, node_inx, and
     req_node_inx from type int to type int32_t
+ -- Struct job_info / slurm_job_info_t: Changed array_task_id from type
+    uint16_t to type uint32_t
  -- job_step_info_t: Changed node_inx from type int to type int32_t
  -- Struct partition_info / partition_info_t: Changed node_inx from type int
     to type int32_t

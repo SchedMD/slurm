@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2013 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -152,7 +153,7 @@ static bool _merge_job_array(List l, job_info_t * job_ptr)
 
 	if (params.array_flag)
 		return merge;
-	if (job_ptr->array_task_id == (uint16_t) NO_VAL)
+	if (job_ptr->array_task_id == NO_VAL)
 		return merge;
 	if (!IS_JOB_PENDING(job_ptr))
 		return merge;
@@ -162,14 +163,14 @@ static bool _merge_job_array(List l, job_info_t * job_ptr)
 
 	iter = list_iterator_create(l);
 	while ((list_job_ptr = list_next(iter))) {
-		if ((list_job_ptr->array_task_id == (uint16_t) NO_VAL) ||
+		if ((list_job_ptr->array_task_id ==  NO_VAL) ||
 		    (job_ptr->array_job_id != list_job_ptr->array_job_id) ||
 		    (!IS_JOB_PENDING(list_job_ptr)))
 			continue;
 		/* We re-purpose the job's node_inx array to store the
 		 * array_task_id values */
 		if (!list_job_ptr->node_inx) {
-			list_job_ptr->node_inx = xmalloc(sizeof(int) * 0xffff);
+			list_job_ptr->node_inx = xmalloc(sizeof(int32_t) * 0xffff);
 			list_job_ptr->node_inx[0] = 1;		/* offset */
 			list_job_ptr->node_inx[1] =
 				list_job_ptr->array_task_id;
@@ -336,7 +337,7 @@ int _print_job_array_job_id(job_info_t * job, int width, bool right,
 {
 	if (job == NULL) {	/* Print the Header instead */
 		_print_str("ARRAY_JOB_ID", width, right, true);
-	} else if (job->array_task_id != (uint16_t) NO_VAL) {
+	} else if (job->array_task_id != NO_VAL) {
 		char id[FORMAT_STRING_SIZE];
 		snprintf(id, FORMAT_STRING_SIZE, "%u", job->array_job_id);
 		_print_str(id, width, right, true);
@@ -353,7 +354,7 @@ int _print_job_array_task_id(job_info_t * job, int width, bool right,
 {
 	if (job == NULL) {	/* Print the Header instead */
 		_print_str("ARRAY_TASK_ID", width, right, true);
-	} else if (job->array_task_id != (uint16_t) NO_VAL) {
+	} else if (job->array_task_id != NO_VAL) {
 		char id[FORMAT_STRING_SIZE];
 		snprintf(id, FORMAT_STRING_SIZE, "%u", job->array_task_id);
 		_print_str(id, width, right, true);
@@ -385,12 +386,15 @@ int _print_job_job_id(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL) {	/* Print the Header instead */
 		_print_str("JOBID", width, right, true);
-	} else if ((job->array_task_id != (uint16_t) NO_VAL) &&
+	} else if ((job->array_task_id != NO_VAL) &&
 		   !params.array_flag && IS_JOB_PENDING(job)  &&
 		   job->node_inx) {
-		int i;
+		uint32_t i, max_task_id = 0;
 		char id[FORMAT_STRING_SIZE], task_str[FORMAT_STRING_SIZE];
-		bitstr_t *task_bits = bit_alloc(0xffff);
+		bitstr_t *task_bits;
+		for (i = 1; i <= job->node_inx[0]; i++)
+			max_task_id = MAX(max_task_id, job->node_inx[i]);
+		task_bits = bit_alloc(max_task_id + 1);
 		for (i = 1; i <= job->node_inx[0]; i++)
 			bit_set(task_bits, job->node_inx[i]);
 		bit_fmt(task_str, sizeof(task_str), task_bits);
@@ -398,7 +402,7 @@ int _print_job_job_id(job_info_t * job, int width, bool right, char* suffix)
 			 job->array_job_id, task_str);
 		_print_str(id, width, right, true);
 		bit_free(task_bits);
-	} else if (job->array_task_id != (uint16_t) NO_VAL) {
+	} else if (job->array_task_id != NO_VAL) {
 		char id[FORMAT_STRING_SIZE];
 		snprintf(id, FORMAT_STRING_SIZE, "%u_%u",
 			 job->array_job_id, job->array_task_id);

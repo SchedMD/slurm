@@ -24,6 +24,7 @@ documents those changes that are of interest to users and admins.
     central location.
  -- Added configuration parameter FairShareDampeningFactor to offer a greater
     priority range based upon utilization.
+ -- Change MaxArraySize and job's array_task_id from 16-bit to 32-bit field.
 
 * Changes in Slurm 13.12.0pre3
 ==============================

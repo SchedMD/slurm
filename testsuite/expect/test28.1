@@ -39,13 +39,18 @@ set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set array_id    ""
 set job_id      ""
-set array_size  4
+set min_task_id 5
+set max_task_id 8
 
 print_header $test_id
 
-if {[get_array_config] < [expr $array_size + 1]} {
+set array_size  [get_array_config]
+if {$array_size < $min_task_id} {
 	send_user "\nWARNING: MaxArraySize is too small\n"
 	exit 0
+}
+if {$array_size > $max_task_id} {
+	set array_size $max_task_id
 }
 
 proc scontrol_check { job_id } {

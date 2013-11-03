@@ -1363,7 +1363,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 						   sizeof(tmp_char),
 						   SELECT_PRINT_DATA));
 
-	if (job_ptr->array_task_id != (uint16_t) NO_VAL) {
+	if (job_ptr->array_task_id != NO_VAL) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u",
 			 job_ptr->array_job_id);
 	} else {
@@ -1374,7 +1374,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_ARRAY_JOB_ID),
 				   tmp_char);
 
-	if (job_ptr->array_task_id != (uint16_t) NO_VAL) {
+	if (job_ptr->array_task_id != NO_VAL) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u",
 			 job_ptr->array_task_id);
 	} else {
@@ -1918,7 +1918,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	snprintf(tmp_alloc_node, sizeof(tmp_alloc_node), "%s:%u",
 		 job_ptr->alloc_node, job_ptr->alloc_sid);
 
-	if (job_ptr->array_task_id != (uint16_t) NO_VAL) {
+	if (job_ptr->array_task_id != NO_VAL) {
 		snprintf(tmp_array_job_id,  sizeof(tmp_array_job_id),  "%u",
 			 job_ptr->array_job_id);
 		snprintf(tmp_array_task_id, sizeof(tmp_array_task_id), "%u",

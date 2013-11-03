@@ -5,7 +5,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
- *  Portions Copyright (C) 2010 SchedMD <http://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2013 SchedMD <http://www.schedmd.com>.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -243,7 +243,7 @@ struct job_record *create_job_record(int *error_code)
 	detail_ptr = (struct job_details *)xmalloc(sizeof(struct job_details));
 
 	job_ptr->magic = JOB_MAGIC;
-	job_ptr->array_task_id = (uint16_t) NO_VAL;
+	job_ptr->array_task_id = NO_VAL;
 	job_ptr->details = detail_ptr;
 	job_ptr->prio_factors = xmalloc(sizeof(priority_factors_object_t));
 	job_ptr->step_list = list_create(NULL);
@@ -788,7 +788,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 
 	/* Dump basic job info */
 	pack32(dump_job_ptr->array_job_id, buffer);
-	pack16(dump_job_ptr->array_task_id, buffer);
+	pack32(dump_job_ptr->array_task_id, buffer);
 	pack32(dump_job_ptr->assoc_id, buffer);
 	pack32(dump_job_ptr->job_id, buffer);
 	pack32(dump_job_ptr->user_id, buffer);
@@ -917,7 +917,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t preempt_time = 0;
 	time_t resize_time = 0, now = time(NULL);
-	uint16_t array_task_id = (uint16_t) NO_VAL;
+	uint32_t array_task_id = NO_VAL;
 	uint16_t job_state, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, direct_set_prio;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
@@ -927,6 +927,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint16_t limit_set_min_cpus = 0, limit_set_min_nodes = 0;
 	uint16_t limit_set_pn_min_memory = 0;
 	uint16_t limit_set_time = 0, limit_set_qos = 0;
+	uint16_t uint16_tmp;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
@@ -947,7 +948,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 
 	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
-		safe_unpack16(&array_task_id, buffer);
+		safe_unpack32(&array_task_id, buffer);
 		safe_unpack32(&assoc_id, buffer);
 		safe_unpack32(&job_id, buffer);
 
@@ -1107,7 +1108,11 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		}
 	} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
-		safe_unpack16(&array_task_id, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		if (uint16_tmp == (uint16_t) NO_VAL)
+			array_task_id = NO_VAL;
+		else
+			array_task_id = (uint32_t) uint16_tmp;
 		safe_unpack32(&assoc_id, buffer);
 		safe_unpack32(&job_id, buffer);
 
@@ -1998,12 +2003,12 @@ void _add_job_hash(struct job_record *job_ptr)
  * RET pointer to the job's record, NULL on error
  */
 extern struct job_record *find_job_array_rec(uint32_t array_job_id,
-					     uint16_t array_task_id)
+					     uint32_t array_task_id)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr, *match_job_ptr = NULL;
 
-	if (array_task_id == (uint16_t) NO_VAL)
+	if (array_task_id == NO_VAL)
 		return find_job_record(array_job_id);
 
 	job_iterator = list_iterator_create(job_list);
@@ -2011,7 +2016,7 @@ extern struct job_record *find_job_array_rec(uint32_t array_job_id,
 		if (job_ptr->array_job_id != array_job_id)
 			continue;
 
-		if (array_task_id == (uint16_t) INFINITE) {
+		if (array_task_id == INFINITE) {
 			match_job_ptr = job_ptr;
 			if (!IS_JOB_FINISHED(job_ptr))
 				break;
@@ -3003,7 +3008,7 @@ static void _create_job_array(struct job_record *job_ptr,
 			      job_desc_msg_t *job_specs)
 {
 	struct job_record *job_ptr_new;
-	int i, i_first, i_last;
+	uint32_t i, i_first, i_last;
 
 	if (!job_specs->array_bitmap)
 		return;
@@ -3346,8 +3351,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 
 	job_ptr = find_job_record(job_id);
 	if ((flags & KILL_JOB_ARRAY) &&		/* signal entire job array */
-	    ((job_ptr == NULL) ||
-	     (job_ptr->array_task_id != (uint16_t) NO_VAL))) {
+	    ((job_ptr == NULL) || (job_ptr->array_task_id != NO_VAL))) {
 		int rc = SLURM_SUCCESS, rc1;
 		ListIterator job_iter;
 
@@ -3355,7 +3359,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 		job_iter = list_iterator_create(job_list);
 		while ((job_ptr = (struct job_record *) list_next(job_iter))) {
 			if ((job_ptr->array_job_id != job_id) ||
-			    (job_ptr->array_task_id == (uint16_t)NO_VAL))
+			    (job_ptr->array_task_id == NO_VAL))
 				continue;
 			if (IS_JOB_FINISHED(job_ptr))
 				continue;
@@ -4634,7 +4638,7 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 {
 	slurm_ctl_conf_t *conf;
 	char *array_str = NULL, *end_ptr = NULL, *sep;
-	int array_id, max_array_size, step = 1;
+	uint32_t array_id, max_array_size, step = 1;
 	bool valid = true;
 	hostset_t hs;
 
@@ -4658,7 +4662,7 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 	if (sep) {
 		step = strtol(sep+1, &end_ptr, 10);
 		if ((sep[1] == '\0') || (end_ptr[0] != '\0') ||
-		    (step <= 0) || (step >= max_array_size))
+		    (step == 0) || (step >= max_array_size))
 			return false;
 		sep[0] = '\0';
 		xstrfmtcat(array_str, "[%s]", job_desc->array_inx);
@@ -6068,7 +6072,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((job_ptr->job_id != job_id) &&
-		    ((job_ptr->array_task_id == (uint16_t) NO_VAL) ||
+		    ((job_ptr->array_task_id == NO_VAL) ||
 		     (job_ptr->array_job_id  != job_id)))
 			continue;
 
@@ -6123,7 +6127,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
 		detail_ptr = dump_job_ptr->details;
 		pack32(dump_job_ptr->array_job_id, buffer);
-		pack16(dump_job_ptr->array_task_id, buffer);
+		pack32(dump_job_ptr->array_task_id, buffer);
 		pack32(dump_job_ptr->assoc_id, buffer);
 		pack32(dump_job_ptr->job_id, buffer);
 		pack32(dump_job_ptr->user_id, buffer);
@@ -6250,7 +6254,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 						  protocol_version);
 	} else if (protocol_version >= SLURM_2_6_PROTOCOL_VERSION) {
 		pack32(dump_job_ptr->array_job_id, buffer);
-		pack16(dump_job_ptr->array_task_id, buffer);
+		pack16((uint16_t) dump_job_ptr->array_task_id, buffer);
 		pack32(dump_job_ptr->assoc_id, buffer);
 		pack32(dump_job_ptr->job_id, buffer);
 		pack32(dump_job_ptr->user_id, buffer);
