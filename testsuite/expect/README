@@ -563,6 +563,13 @@ test20.1   qsub command tests
 test20.2   qstat command tests
 test20.3   qdel command tests
 test20.4   pbsnodes command tests
+test20.5   Test the qalter --help option
+test20.6   Test the qalter -r option of altering a job's rerunnable flag
+test20.7   Test qalter's -o option for changing the stdout path of a job
+test20.8   Test the qalter -N option for changing the name of a job.
+test20.9   Test for the qalter --man option
+test20.10  Test for the qrerun --help option
+test20.11  Test for the qrerun --man option
 
 
 test21.#   Testing of sacctmgr commands and options.

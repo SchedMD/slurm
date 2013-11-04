@@ -50,9 +50,9 @@ if {[file executable $qdel] == 0} {
 
 set job_id 0
 make_bash_script $file_in "sleep 60"
-spawn $qsub -o $file_out $file_in
+spawn $qsub -l walltime=1:00 -o $file_out $file_in
 expect {
-	-re "Submitted batch job ($number)" {
+	-re "($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}

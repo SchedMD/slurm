@@ -1,16 +1,14 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          qsub command tests
+#          Test the qalter -N option for changing the name of a job.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2007 The Regents of the University of California.
-# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Morris Jette <jette1@llnl.gov>
-# CODE-OCEC-09-009. All rights reserved.
+# Copyright (C) 2013 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
 # For details, see <http://slurm.schedmd.com/>.
@@ -28,34 +26,65 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
-# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
 
-set test_id     "20.1"
+set test_id     "test20.8"
+set file_in     "$test_id\.script"
+set job_name    "$test_id\.newname"
+set job_id      0
 set exit_code   0
-set file_err	"test$test_id.error"
-set file_in	"test$test_id.input"
-set file_out	"test$test_id.output"
 
 print_header $test_id
 
-if {[file executable $qsub] == 0} {
-	send_user "\nWARNING: $qsub not found\n"
+if {[file executable $qalter] == 0} {
+	send_user "\nWARNING: $qalter does not exist\n"
 	exit 0
 }
 
-set job_id 0
-exec rm -f $file_out $file_err
-make_bash_script $file_in "$bin_echo HELLO; $bin_cat /dummy_file"
-spawn $qsub -l walltime=1:00 -e $file_err -o $file_out $file_in
+if {[file executable $qsub] == 0} {
+	send_user "\nWARNING: $qalter does not exist\n"
+	exit 0
+}
+
+# Clean up any vestigial files
+exec $bin_rm -f $file_in
+
+make_bash_script $file_in "sleep 200"
+
+proc check_name { job_id name } {
+	global scontrol exit_code
+
+	set check_out 0
+	spawn $scontrol show job $job_id
+	expect {
+		-re "Name=$name" {
+			set check_out 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$check_out != 1} {
+		send_user "\nFAILURE: job name for job $job_id was not changed\n"
+		set exi_code 1
+	}
+}
+
+spawn $qsub -l walltime=1:00 -o /dev/null $file_in
 expect {
 	-re "($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		send_user "\nFAILURE: qsub is not responding\n"
 		set exit_code 1
 	}
 	eof {
@@ -63,55 +92,25 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: qsub failed to submit job\n"
-	exit 1
+	send_user "\nFAILURE: qsub did not submit job\n"
+	set exit_code 1
 }
 
-if {[wait_for_file $file_out] != 0} {
-	send_user "\nFAILURE: qsub output file not found\n"
-	catch {exec $qdel $job_id}
-	exit 1
-}
-set matches 0
-spawn $bin_cat $file_out
+spawn $qalter -N $job_name $job_id
 expect {
-	-re "HELLO" {
-		incr matches
-		exp_continue
+	timeout {
+		send_user "\nFAILURE: qalter is not responding\n"
+		set exit_code 1
 	}
 	eof {
 		wait
 	}
 }
-if {$matches != 1} {
-	send_user "\nFAILURE: unexpected qsub output file contents\n"
-	set exit_code 1
-}
 
-if {[wait_for_file $file_err] != 0} {
-	send_user "\nFAILURE: qsub error file not found\n"
-	catch {exec $qdel $job_id}
-	exit 1
-}
-set matches 0
-spawn $bin_cat $file_err
-expect {
-	-re "No such file" {
-		send_user "message from cat expected, no worries.\n"
-		incr matches
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	send_user "\nFAILURE: unexpected qsub error file contents\n"
-	set exit_code 1
-}
+check_name $job_id $job_name
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_err
+	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

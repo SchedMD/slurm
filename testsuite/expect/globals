@@ -104,6 +104,8 @@ cset pbsnodes    "${slurm_dir}/bin/pbsnodes"
 cset qdel        "${slurm_dir}/bin/qdel"
 cset qstat       "${slurm_dir}/bin/qstat"
 cset qsub        "${slurm_dir}/bin/qsub"
+cset qalter      "${slurm_dir}/bin/qalter"
+cset qrerun      "${slurm_dir}/bin/qrerun"
 
 # If length of string partition is zero, use output of function
 #	default_partition, otherwise use the partition explicitly

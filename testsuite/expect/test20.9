@@ -1,16 +1,14 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          qstat command tests
+#          Test for the qalter --man option
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2007 The Regents of the University of California.
-# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Morris Jette <jette1@llnl.gov>
-# CODE-OCEC-09-009. All rights reserved.
+# Copyright (C) 2013 SchedMD LLC
+# Written by Nathan Yee <nyee32@schedmd.com>
 #
 # This file is part of SLURM, a resource management program.
 # For details, see <http://slurm.schedmd.com/>.
@@ -28,75 +26,45 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
-# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
 
-set test_id     "20.2"
+set test_id     "test20.9"
 set exit_code   0
-set file_in	"test$test_id.input"
-set file_out	"test$test_id.output"
-set job_name	"test$test_id"
 
 print_header $test_id
 
-if {[file executable $qsub] == 0} {
-	send_user "\nWARNING: $qsub does not exists\n"
-	exit 0
-}
-if {[file executable $qstat] == 0} {
-	send_user "\nWARNING: $qstat does not exists\n"
-	exit 0
-}
-if {[file executable $qdel] == 0} {
-	send_user "\nWARNING: $qdel does not exists\n"
+if {[file executable $qalter] == 0} {
+	send_user "\nWARNING: $qalter does not exist\n"
 	exit 0
 }
 
-set job_id 0
-make_bash_script $file_in "sleep 60"
-spawn $qsub -l walltime=1:00 -o $file_out -N $job_name $file_in
+set check 0
+spawn $qalter --man
 expect {
-	-re "($number)" {
-		set job_id $expect_out(1,string)
+	-re "SYNOPSIS" {
+		# Wait for output then quit from man page
+		sleep 2
+		send "q\r"
+		set check 1
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: qsub not responding\n"
+		send_user "\nFAILURE: qalter is not responding\n"
 		set exit_code 1
 	}
 	eof {
 		wait
 	}
 }
-if {$job_id == 0} {
-	send_user "\nFAILURE: qsub failed to submit job\n"
-	exit 1
-}
 
-set matches 0
-spawn $qstat $job_id
-expect {
-	-re "$job_name" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: qstat not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	send_user "\nFAILURE: qstat failed to report job\n"
+if {$check != 1} {
+	send_user "\nFAILURE: qalter did not return the man pages\n"
 	set exit_code 1
 }
-catch {exec $qdel $job_id}
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
