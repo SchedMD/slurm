@@ -652,8 +652,8 @@ line6:
 	else
 		snprintf(tmp5, sizeof(tmp5), "%u", job_ptr->ntasks_per_core);
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "Socks/Node=%s NtasksPerN:B:S:C=%s:%s:%s:%s",
-		 tmp1, tmp2, tmp3, tmp4, tmp5);
+		 "Socks/Node=%s NtasksPerN:B:S:C=%s:%s:%s:%s CoreSpec=%u",
+		 tmp1, tmp2, tmp3, tmp4, tmp5, job_ptr->core_spec);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

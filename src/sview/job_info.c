@@ -109,6 +109,7 @@ enum {
 	SORTID_COMMENT,
 	SORTID_CONNECTION,
 	SORTID_CONTIGUOUS,
+	SORTID_CORE_SPEC,
 /* 	SORTID_CORES_MAX, */
 /* 	SORTID_CORES_MIN, */
 	SORTID_CPUS,
@@ -321,6 +322,8 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 #endif
 	{G_TYPE_STRING, SORTID_CONTIGUOUS, "Contiguous", FALSE, EDIT_MODEL,
+	 refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_CORE_SPEC, "CoreSpec", FALSE, EDIT_TEXTBOX,
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_REQUEUE, "Requeue", FALSE, EDIT_MODEL,
 	 refresh_job, create_model_job, admin_edit_job},
@@ -914,6 +917,14 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 
 		type = "contiguous";
 		break;
+	case SORTID_CORE_SPEC:
+		temp_int = strtol(new_text, (char **)NULL, 10);
+
+		type = "specialized cores";
+		if (temp_int <= 0)
+			goto return_error;
+		job_msg->core_spec = (uint16_t)temp_int;
+		break;
 	case SORTID_REQUEUE:
 		if (!strcasecmp(new_text, "yes"))
 			job_msg->requeue = 1;
@@ -1447,6 +1458,12 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_CONTIGUOUS),
 				   tmp_char);
 
+	sprintf(tmp_char, "%u", job_ptr->core_spec);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_CORE_SPEC),
+				   tmp_char);
+
 	if (cluster_flags & CLUSTER_FLAG_BG)
 		convert_num_unit((float)job_ptr->num_cpus,
 				 tmp_char, sizeof(tmp_char),
@@ -1902,7 +1919,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_cpus_max[40],  tmp_mem_min[40],     tmp_cpu_req[40];
 	char tmp_nodes_min[40], tmp_nodes_max[40],   tmp_cpus_per_task[40];
 	char tmp_prio[40],      tmp_nice[40],        tmp_preempt_time[40];
-	char tmp_rqswitch[40];
+	char tmp_rqswitch[40],  tmp_core_spec[40];
 	char tmp_std_err[128], tmp_std_in[128], tmp_std_out[128];
 	char *tmp_batch,  *tmp_cont, *tmp_shared, *tmp_requeue, *tmp_uname;
 	char *tmp_reason, *tmp_nodes;
@@ -1937,6 +1954,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		tmp_cont = "yes";
 	else
 		tmp_cont = "no";
+
+	sprintf(tmp_core_spec, "%u", job_ptr->core_spec);
 
 	if (job_ptr->cpus_per_task > 0)
 		sprintf(tmp_cpus_per_task, "%u", job_ptr->cpus_per_task);
@@ -2135,6 +2154,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   SORTID_COMMAND,      job_ptr->command,
 			   SORTID_COMMENT,      job_ptr->comment,
 			   SORTID_CONTIGUOUS,   tmp_cont,
+			   SORTID_CORE_SPEC,    tmp_core_spec,
 			   SORTID_CPUS,         tmp_cpu_cnt,
 			   SORTID_CPU_MAX,      tmp_cpus_max,
 			   SORTID_CPU_MIN,      tmp_cpu_cnt,

@@ -302,6 +302,7 @@ static void _opt_default()
 	opt.cpu_bind = NULL;
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
+	opt.core_spec = 0;
 	opt.time_limit = NO_VAL;
 	opt.time_limit_str = NULL;
 	opt.time_min = NO_VAL;
@@ -632,6 +633,7 @@ void set_options(const int argc, char **argv)
 		{"quiet",         no_argument,       0, 'Q'},
 		{"no-rotate",     no_argument,       0, 'R'},
 		{"share",         no_argument,       0, 's'},
+		{"core-spec",     required_argument, 0, 'S'},
 		{"time",          required_argument, 0, 't'},
 		{"usage",         no_argument,       0, 'u'},
 		{"verbose",       no_argument,       0, 'v'},
@@ -692,7 +694,7 @@ void set_options(const int argc, char **argv)
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
-		"+A:B:c:C:d:D:F:g:hHIJ:kK::L:m:n:N:Op:P:QRst:uU:vVw:W:x:";
+		"+A:B:c:C:d:D:F:g:hHIJ:kK::L:m:n:N:Op:P:QRsS:t:uU:vVw:W:x:";
 	char *pos_delimit;
 
 	struct option *optz = spank_option_table_create(long_options);
@@ -840,6 +842,9 @@ void set_options(const int argc, char **argv)
 			break;
 		case 's':
 			opt.shared = 1;
+			break;
+		case 'S':
+			opt.core_spec = _get_int(optarg, "core_spec");
 			break;
 		case 't':
 			xfree(opt.time_limit_str);
@@ -1829,6 +1834,7 @@ static void _opt_list(void)
 	info("user command   : `%s'", str);
 	info("switches          : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
+	info("core-spec         : %d", opt.core_spec);
 	xfree(str);
 
 }
@@ -1865,6 +1871,7 @@ static void _usage(void)
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
 "              [--time-min=minutes] [--gres=list] [--profile=...]\n"
 "              [--switches=max-switches[@max-time-to-wait]]\n"
+"              [--core-spec=cores]\n"
 "              [executable [args...]]\n");
 }
 
@@ -1911,6 +1918,7 @@ static void _help(void)
 "      --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "  -s, --share                 share nodes with other jobs\n"
+"  -S, --core-spec=cores       count of reserved cores\n"
 "  -t, --time=minutes          time limit\n"
 "      --time-min=minutes      minimum time limit (if distinct)\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
@@ -1923,7 +1931,8 @@ static void _help(void)
 "  -C, --constraint=list       specify a list of constraints\n"
 "  -F, --nodefile=filename     request a specific list of hosts\n"
 "      --mem=MB                minimum amount of real memory\n"
-"      --mincpus=n             minimum number of logical processors (threads)\n""                              per node\n"
+"      --mincpus=n             minimum number of logical processors (threads)\n"
+"                              per node\n"
 "      --reservation=name      allocate resources from named reservation\n"
 "      --tmp=MB                minimum amount of temporary disk\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"

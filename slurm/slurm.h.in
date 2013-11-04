@@ -1034,6 +1034,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes,
 				 * 0 otherwise,default=0 */
+	uint16_t core_spec;	/* specialized core count */
 	char *cpu_bind;		/* binding map for map/mask_cpu */
 	uint16_t cpu_bind_type;	/* see cpu_bind_type_t */
 	char *dependency;	/* synchronize job execution with other jobs */
@@ -1177,6 +1178,7 @@ typedef struct job_info {
 				 * job's argv and NULL for salloc command */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
+	uint16_t core_spec;	/* specialized core count */
 	uint16_t cpus_per_task;	/* number of processors required for
 				 * each task */
 	char *dependency;	/* synchronize job execution with other jobs */

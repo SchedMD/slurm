@@ -91,6 +91,8 @@ COMMAND CHANGES (see man pages for details)
     will be reported as "TBD" by scontrol and squeue commands.
  -- Added sgather tool to gather files from a job's compute nodes into a
     central location.
+ -- Added -S/--core-spec option to salloc, sbatch and srun commands to reserve
+    specialized cores for system use.
 
 OTHER CHANGES
 =============
@@ -119,7 +121,9 @@ Changed members of the following structs
 
 Added the following struct definitions
 ======================================
- -- struct job_info: added std_err, std_in and std_out.
+ -- struct job_info / slurm_job_info_t: Added std_err, std_in and std_out.
+ -- Struct job_info / slurm_job_info_t: Added core_spec
+ -- struct job_descriptorjob_desc_msg_t: Added core_spec
 
 Changed the following enums and #defines
 ========================================

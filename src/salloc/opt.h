@@ -163,6 +163,7 @@ typedef struct salloc_options {
 	char **spank_job_env;	/* SPANK controlled environment for job
 				 * Prolog and Epilog		*/
 	int spank_job_env_size;	/* size of spank_job_env	*/
+	int core_spec;		/* --core-spec=n,      -S n	*/
 } opt_t;
 
 extern opt_t opt;

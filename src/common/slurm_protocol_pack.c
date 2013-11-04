@@ -4426,6 +4426,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		/*** unpack pending job details ***/
 		safe_unpack16(&job->shared,        buffer);
 		safe_unpack16(&job->contiguous,    buffer);
+		safe_unpack16(&job->core_spec,     buffer);
 		safe_unpack16(&job->cpus_per_task, buffer);
 		safe_unpack16(&job->pn_min_cpus, buffer);
 
@@ -6379,6 +6380,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 	/* load the data values */
 	if (protocol_version >= SLURM_13_12_PROTOCOL_VERSION) {
 		pack16(job_desc_ptr->contiguous, buffer);
+		pack16(job_desc_ptr->core_spec, buffer);
 		pack16(job_desc_ptr->task_dist, buffer);
 		pack16(job_desc_ptr->kill_on_node_fail, buffer);
 		packstr(job_desc_ptr->features, buffer);
@@ -6849,6 +6851,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 
 		/* load the data values */
 		safe_unpack16(&job_desc_ptr->contiguous, buffer);
+		safe_unpack16(&job_desc_ptr->core_spec, buffer);
 		safe_unpack16(&job_desc_ptr->task_dist, buffer);
 		safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->features,

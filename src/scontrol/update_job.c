@@ -715,6 +715,14 @@ scontrol_update_job (int argc, char *argv[])
 			}
 			update_cnt++;
 		}
+		else if (strncasecmp(tag, "CoreSpec", MAX(taglen, 4)) == 0) {
+			if (parse_uint16(val, &job_msg.core_spec)) {
+				error ("Invalid CoreSpec value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
+			update_cnt++;
+		}
 		else if (strncasecmp(tag, "ExcNodeList", MAX(taglen, 3)) == 0){
 			job_msg.exc_nodes = val;
 			update_cnt++;

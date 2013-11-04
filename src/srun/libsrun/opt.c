@@ -401,6 +401,7 @@ static void _opt_default()
 	opt.cpu_bind = NULL;
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
+	opt.core_spec = 0;
 	opt.time_limit = NO_VAL;
 	opt.time_limit_str = NULL;
 	opt.time_min = NO_VAL;
@@ -836,6 +837,7 @@ static void _set_options(const int argc, char **argv)
 		{"relative",      required_argument, 0, 'r'},
 		{"no-rotate",     no_argument,       0, 'R'},
 		{"share",         no_argument,       0, 's'},
+		{"core-spec",     required_argument, 0, 'S'},
 		{"time",          required_argument, 0, 't'},
 		{"threads",       required_argument, 0, 'T'},
 		{"unbuffered",    no_argument,       0, 'u'},
@@ -921,7 +923,7 @@ static void _set_options(const int argc, char **argv)
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+A:B:c:C:d:D:e:Eg:hHi:I::jJ:kK::lL:m:n:N:"
-		"o:Op:P:qQr:Rst:T:uU:vVw:W:x:XZ";
+		"o:Op:P:qQr:RsS:t:T:uU:vVw:W:x:XZ";
 	char *pos_delimit;
 #ifdef HAVE_PTY_H
 	char *tmp_str;
@@ -1120,6 +1122,9 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case (int)'s':
 			opt.shared = 1;
+			break;
+		case (int)'S':
+			opt.core_spec = _get_int(optarg, "core_spec", true);
 			break;
 		case (int)'t':
 			xfree(opt.time_limit_str);
@@ -2392,6 +2397,7 @@ static void _opt_list(void)
 	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
 	info("ntasks-per-core   : %d", opt.ntasks_per_core);
 	info("plane_size        : %u", opt.plane_size);
+	info("core-spec         : %d", opt.core_spec);
 	if (opt.resv_port_cnt != NO_VAL)
 		info("resv_port_cnt     : %d", opt.resv_port_cnt);
 	str = print_commandline(opt.argc, opt.argv);
@@ -2452,6 +2458,7 @@ static void _usage(void)
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
 "            [--switches=max-switches{@max-time-to-wait}]\n"
+"            [--core-spec=cores]\n"
 "            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -2521,6 +2528,7 @@ static void _help(void)
 "      --restart-dir=dir       directory of checkpoint image files to restart\n"
 "                              from\n"
 "  -s, --share                 share nodes with other jobs\n"
+"  -S, --core-spec=cores       count of reserved cores\n"
 "      --slurmd-debug=level    slurmd debug level\n"
 "      --task-epilog=program   run \"program\" after launching task\n"
 "      --task-prolog=program   run \"program\" before launching task\n"

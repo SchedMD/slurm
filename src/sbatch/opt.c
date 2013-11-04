@@ -315,6 +315,7 @@ static void _opt_default()
 	opt.cpu_bind = NULL;
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
+	opt.core_spec = 0;
 	opt.time_limit = NO_VAL;
 	opt.time_min = NO_VAL;
 	opt.partition = NULL;
@@ -668,6 +669,7 @@ static struct option long_options[] = {
 	{"quiet",         no_argument,       0, 'Q'},
 	{"no-rotate",     no_argument,       0, 'R'},
 	{"share",         no_argument,       0, 's'},
+	{"core-spec",     required_argument, 0, 'S'},
 	{"time",          required_argument, 0, 't'},
 	{"usage",         no_argument,       0, 'u'},
 	{"verbose",       no_argument,       0, 'v'},
@@ -735,7 +737,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+ba:A:B:c:C:d:D:e:F:g:hHi:IJ:kL:m:M:n:N:o:Op:P:QRst:uU:vVw:x:";
+	"+ba:A:B:c:C:d:D:e:F:g:hHi:IJ:kL:m:M:n:N:o:Op:P:QRsS:t:uU:vVw:x:";
 char *pos_delimit;
 
 
@@ -1280,6 +1282,9 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 's':
 			opt.shared = 1;
+			break;
+		case 'S':
+			opt.core_spec = _get_int(optarg, "core_spec");
 			break;
 		case 't':
 			xfree(opt.time_limit_str);
@@ -2861,6 +2866,7 @@ static void _opt_list(void)
 	info("switches          : %d", opt.req_switch);
 	info("wait-for-switches : %d", opt.wait4switch);
 	str = print_commandline(opt.script_argc, opt.script_argv);
+	info("core-spec         : %d", opt.core_spec);
 	info("remote command    : `%s'", str);
 	xfree(str);
 
@@ -2899,6 +2905,7 @@ static void _usage(void)
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
 "              [--switches=max-switches{@max-time-to-wait}]\n"
+"              [--core-spec=cores]\n"
 "              [--array=index_values] [--profile=...] [--ignore-pbs]\n"
 "              [--export[=names]] [--export-file=file|fd] executable [args...]\n");
 }
@@ -2958,6 +2965,7 @@ static void _help(void)
 "  -t, --time=minutes          time limit\n"
 "      --time-min=minutes      minimum time limit (if distinct)\n"
 "  -s, --share                 share nodes with other jobs\n"
+"  -S, --core-spec=cores       count of reserved cores\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "      --wrap[=command string] wrap commmand string in a sh script and submit\n"

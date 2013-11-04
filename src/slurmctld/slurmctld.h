@@ -426,6 +426,7 @@ struct job_details {
 	char *ckpt_dir;			/* directory to store checkpoint
 					 * images */
 	uint16_t contiguous;		/* set if requires contiguous nodes */
+	uint16_t core_spec;		/* specialized core count */
 	char *cpu_bind;			/* binding map for map/mask_cpu */
 	uint16_t cpu_bind_type;		/* see cpu_bind_type_t */
 	uint16_t cpus_per_task;		/* number of processors required for
