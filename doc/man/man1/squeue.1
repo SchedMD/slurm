@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "August 2013" "squeue 13.12" "Slurm components"
+.TH SQUEUE "1" "November 2013" "squeue 13.12" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -363,6 +363,10 @@ Licenses reserved for the job.
 .TP
 \fB%x\fR
 List of node names explicitly excluded by the job.
+(Valid for jobs only)
+.TP
+\fB%X\fR
+Count of cores reserved on each node for system use (core specialization).
 (Valid for jobs only)
 .TP
 \fB%z\fR

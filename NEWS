@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in Slurm 13.12.0pre5
 ==============================
+ -- Added squeue format option of "%X" (core specialization count).
 
 * Changes in Slurm 13.12.0pre4
 ==============================

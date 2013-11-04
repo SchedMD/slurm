@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) 2010-2013 SchedMD LLC.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -790,6 +791,11 @@ extern int parse_format( char* format )
 						     right_justify, suffix );
 			else if (field[0] == 'x')
 				job_format_add_exc_nodes( params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix );
+			else if (field[0] == 'X')
+				job_format_add_core_spec( params.format_list,
 							  field_size,
 							  right_justify,
 							  suffix );
