@@ -127,6 +127,9 @@ documents those changes that are of interest to users and admins.
  -- Sched/backfill - Change default max_job_bf parameter from 50 to 100.
  -- Added -I|--item-extract option to sh5util to extract data item from series.
 
+* Changes in Slurm 2.6.5
+========================
+
 * Changes in Slurm 2.6.4
 ========================
  -- Fixed sh5util to print its usage.
