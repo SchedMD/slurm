@@ -51,6 +51,7 @@ Documenation for other versions of Slurm is distributed with the code</b></p>
 <li>SLURM Scheduling</li>
 <ul>
 <li><a href="cons_res.html">Consumable Resources Guide</a></li>
+<li><a href="core_spec.html">Core Specializatoin</a></li>
 <li><a href="dynalloc.html">Dynamic Resources Allocation (dynalloc)</a></li>
 <li><a href="elastic_computing.html">Elastic Computing</a></li>
 <li><a href="gang_scheduling.html">Gang Scheduling</a></li>

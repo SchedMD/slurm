@@ -1,0 +1,24 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Core Specialization</h1>
+<p>Core Specialization is a feature designed to isolate system overhead
+(system interrupts, etc.) to designated cores on a compute node.
+This can reduce applications interrupts ranks to improve completion time.
+The job will be charged for all allocated cores, but will not be able to
+directly use the specialized cores.</p>
+
+<h2>Command Options</h2>
+<p>All job allocation commands (<i>salloc</i>, <i>sbatch</i> and <i>srun</i>)
+accept the <i>-S</i> or <i>--core-spec</i> option with a core count value
+(e.g. "-S 1" or "--core-spec=2"). The count identifies the number of cores
+to be reserved for system overhead on each allocated compute node.
+The core specialization count can be viewed using the <i>scontrol</i>,
+<i>sview</i> and <i>squeue</i> commands.
+Use the <i>squeue</i> command with the "%X" format option to see the count
+(it is not reported in the default output format).
+The <i>scontrol</i> and <i>sview</i> commands can also be used to modify
+the count for pending jobs.</p>
+
+<p style="text-align:center;">Last modified 4 November 2013</p>
+
+<!--#include virtual="footer.txt"-->
