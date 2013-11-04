@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in Slurm 13.12.0pre5
+==============================
+
 * Changes in Slurm 13.12.0pre4
 ==============================
  -- Remove the ThreadID documentation from slurm.conf. This functionality has
