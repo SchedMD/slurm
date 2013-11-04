@@ -30,7 +30,9 @@
 ############################################################################
 source ./globals
 
-set test_id     "test20.9"
+set test_id     "20.9"
+set file_in     "test$test_id.input"
+set file_out    "test$test_id.output"
 set exit_code   0
 
 print_header $test_id
@@ -40,31 +42,27 @@ if {[file executable $qalter] == 0} {
 	exit 0
 }
 
-set check 0
-spawn $qalter --man
+exec $bin_rm -f $file_in $file_out
+make_bash_script $file_in "$qalter --man >$file_out"
+exec ./$file_in
+set matches 0
+spawn $bin_cat $file_out
 expect {
-	-re "SYNOPSIS" {
-		# Wait for output then quit from man page
-		sleep 2
-		send "q\r"
-		set check 1
+	-re "alter a job name" {
+		incr matches
 		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: qalter is not responding\n"
-		set exit_code 1
 	}
 	eof {
 		wait
 	}
 }
-
-if {$check != 1} {
-	send_user "\nFAILURE: qalter did not return the man pages\n"
+if {$matches != 1} {
+	send_user "\nFAILURE: qalter did not return the man pages ($matches != 1)\n"
 	set exit_code 1
 }
 
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in $file_out
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

@@ -30,7 +30,9 @@
 ############################################################################
 source ./globals
 
-set test_id    "test20.11"
+set test_id    "20.11"
+set file_in    "test$test_id.input"
+set file_out   "test$test_id.output"
 set exit_code  0
 
 print_header $test_id
@@ -40,30 +42,27 @@ if {[file executable $qrerun] == 0} {
 	exit 0
 }
 
-set found 0
-spawn $qrerun --man
+exec $bin_rm -f $file_in $file_out
+make_bash_script $file_in "$qrerun --man >$file_out"
+exec ./$file_in
+set matches 0
+spawn $bin_cat $file_out
 expect {
-	-re "SYNOPSIS" {
-		# Wait for output then quit from man page
-		sleep 2
-		send "q\r"
-		set found 1
+	-re "To rerun a job" {
+		incr matches
 		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: qrerun is not responding\n"
-		set exit_code 1
 	}
 	eof {
 		wait
 	}
 }
-if {$found != 1} {
-	send_user "\nFAILURE: qrerun --man command failed\n"
+if {$matches != 1} {
+	send_user "\nFAILURE: qrerun did not return the man pages ($matches != 1)\n"
 	set exit_code 1
 }
 
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in $file_out
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
