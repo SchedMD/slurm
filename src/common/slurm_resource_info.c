@@ -123,6 +123,8 @@ void slurm_sprint_cpu_bind_type(char *str, cpu_bind_type_t cpu_bind_type)
 		strcat(str, "sockets,");
 	if (cpu_bind_type & CPU_BIND_TO_LDOMS)
 		strcat(str, "ldoms,");
+	if (cpu_bind_type & CPU_BIND_TO_BOARDS)
+		strcat(str, "boards,");
 	if (cpu_bind_type & CPU_BIND_NONE)
 		strcat(str, "none,");
 	if (cpu_bind_type & CPU_BIND_RANK)
@@ -206,6 +208,7 @@ void slurm_print_cpu_bind_help(void)
 "        cores           auto-generated masks bind to cores\n"
 "        threads         auto-generated masks bind to threads\n"
 "        ldoms           auto-generated masks bind to NUMA locality domains\n"
+"        boards          auto-generated masks bind to boards\n"
 "        help            show this help message\n");
 	}
 }
@@ -239,7 +242,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 	bool log_binding = true;
 
 	bind_bits    |= CPU_BIND_LDRANK|CPU_BIND_LDMAP|CPU_BIND_LDMASK;
-	bind_to_bits |= CPU_BIND_TO_LDOMS;
+	bind_to_bits |= CPU_BIND_TO_LDOMS|CPU_BIND_TO_BOARDS;
 
 	if (arg == NULL) {
 		if ((*flags != 0) || 		/* already set values */
@@ -258,6 +261,8 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			*flags |= CPU_BIND_TO_THREADS;
 		else if (task_plugin_param & CPU_BIND_TO_LDOMS)
 			*flags |= CPU_BIND_TO_LDOMS;
+		else if (task_plugin_param & CPU_BIND_TO_BOARDS)
+			*flags |= CPU_BIND_TO_BOARDS;
 		if (task_plugin_param & CPU_BIND_VERBOSE)
 			*flags |= CPU_BIND_VERBOSE;
 	    	return 0;
@@ -371,7 +376,8 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		           (strcasecmp(tok, "sockets") == 0)) {
 			if (task_plugin_param &
 			    (CPU_BIND_NONE | CPU_BIND_TO_CORES |
-			     CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS)) {
+			     CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS |
+			     CPU_BIND_TO_BOARDS)) {
 				error("--cpu_bind=sockets incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
@@ -383,7 +389,8 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		           (strcasecmp(tok, "cores") == 0)) {
 			if (task_plugin_param &
 			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS |
-			     CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS)) {
+			     CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS |
+			     CPU_BIND_TO_BOARDS)) {
 				error("--cpu_bind=cores incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
@@ -395,7 +402,8 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		           (strcasecmp(tok, "threads") == 0)) {
 			if (task_plugin_param &
 			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS |
-			     CPU_BIND_TO_CORES | CPU_BIND_TO_LDOMS)) {
+			     CPU_BIND_TO_CORES | CPU_BIND_TO_LDOMS |
+			     CPU_BIND_TO_BOARDS)) {
 				error("--cpu_bind=threads incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
@@ -407,7 +415,8 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		           (strcasecmp(tok, "ldoms") == 0)) {
 			if (task_plugin_param &
 			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS |
-			     CPU_BIND_TO_CORES | CPU_BIND_TO_THREADS)) {
+			     CPU_BIND_TO_CORES | CPU_BIND_TO_THREADS |
+			     CPU_BIND_TO_BOARDS)) {
 				error("--cpu_bind=threads incompatible with "
 				      "TaskPluginParam configuration "
 				      "parameter");
@@ -415,6 +424,19 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			}
 			_clear_then_set((int *)flags, bind_to_bits,
 				       CPU_BIND_TO_LDOMS);
+		} else if ((strcasecmp(tok, "board") == 0) ||
+		           (strcasecmp(tok, "boards") == 0)) {
+			if (task_plugin_param &
+			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS |
+			     CPU_BIND_TO_CORES | CPU_BIND_TO_THREADS |
+			     CPU_BIND_TO_LDOMS)) {
+				error("--cpu_bind=threads incompatible with "
+				      "TaskPluginParam configuration "
+				      "parameter");
+				return -1;
+			}
+			_clear_then_set((int *)flags, bind_to_bits,
+				       CPU_BIND_TO_BOARDS);
 		} else {
 			error("unrecognized --cpu_bind argument \"%s\"", tok);
 			xfree(buf);

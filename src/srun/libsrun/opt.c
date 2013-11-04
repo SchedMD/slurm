@@ -1922,7 +1922,8 @@ static bool _opt_verify(void)
 		if (!(opt.cpu_bind_type & (CPU_BIND_TO_SOCKETS |
 					   CPU_BIND_TO_CORES |
 					   CPU_BIND_TO_THREADS |
-					   CPU_BIND_TO_LDOMS))) {
+					   CPU_BIND_TO_LDOMS |
+					   CPU_BIND_TO_BOARDS))) {
 			opt.cpu_bind_type |= CPU_BIND_TO_CORES;
 		}
 	}
@@ -1933,7 +1934,8 @@ static bool _opt_verify(void)
 		if (!(opt.cpu_bind_type & (CPU_BIND_TO_SOCKETS |
 					   CPU_BIND_TO_CORES |
 					   CPU_BIND_TO_THREADS |
-					   CPU_BIND_TO_LDOMS))) {
+					   CPU_BIND_TO_LDOMS |
+					   CPU_BIND_TO_BOARDS))) {
 			opt.cpu_bind_type |= CPU_BIND_TO_SOCKETS;
 		}
 	}

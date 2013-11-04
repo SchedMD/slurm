@@ -311,18 +311,17 @@ where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
 CPU IDs are interpreted as decimal values unless they are preceded
 with '0x' in which case they are interpreted as hexadecimal values.
 Not supported unless the entire node is allocated to the job.
-This option is currently only supported by the task/affinity plugin.
 .TP
 .B mask_cpu:<list>
 Bind by setting CPU masks on tasks as specified
 where <list> is <mask1>,<mask2>,...<maskN>.
 CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
-preceded with an optional '0x'.
-Not supported unless the entire node is allocated to the job.
-This option is currently only supported by the task/affinity plugin.
+preceded with an optional '0x'. Not supported unless the entire node is 
+allocated to the job.
 .TP
 .B rank_ldom
-Bind to a NUMA locality domain by rank
+Bind to a NUMA locality domain by rank. Not supported unless the entire 
+node is allocated to the job.
 .TP
 .B map_ldom:<list>
 Bind by mapping NUMA locality domain IDs to tasks as specified where
@@ -358,6 +357,12 @@ this can result in sub\-optimal binding.
 Automatically generate masks binding tasks to NUMA locality domains.
 If the number of tasks differs from the number of allocated locality domains
 this can result in sub\-optimal binding.
+.TP
+.B boards
+Automatically generate masks binding tasks to boards.
+If the number of tasks differs from the number of allocated boards
+this can result in sub\-optimal binding. This option is supported by the
+task/cgroup plugin only.
 .TP
 .B help
 Show help message for cpu_bind

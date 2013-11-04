@@ -64,6 +64,8 @@ The default value is "no".
 If configured to "yes" then set a default task affinity to bind each step
 task to a subset of the allocated cores using \fBsched_setaffinity\fP.
 The default value is "no".
+Note: This feature requires the Portable Hardware Locality (hwloc) library
+to be installed.
 
 .TP
 \fBAllowedRAMSpace\fR=<number>

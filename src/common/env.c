@@ -445,6 +445,8 @@ int setup_env(env_t *env, bool preserve_env)
 			xstrcat(str_bind_type, "sockets,");
 		} else if (env->cpu_bind_type & CPU_BIND_TO_LDOMS) {
 			xstrcat(str_bind_type, "ldoms,");
+		} else if (env->cpu_bind_type & CPU_BIND_TO_BOARDS) {
+			xstrcat(str_bind_type, "boards,");
 		}
 		if (env->cpu_bind_type & CPU_BIND_NONE) {
 			xstrcat(str_bind_type, "none");
