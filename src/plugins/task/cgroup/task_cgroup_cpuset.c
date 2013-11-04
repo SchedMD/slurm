@@ -41,6 +41,7 @@
 #endif
 
 #define _GNU_SOURCE
+#include <ctype.h>
 #include <sched.h>
 #include <sys/types.h>
 
@@ -49,7 +50,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/common/cpu_frequency.h"
-
+#include "src/common/slurm_resource_info.h"
 #include "src/common/bitstring.h"
 #include "src/common/xstring.h"
 #include "src/common/xcgroup_read_config.h"
@@ -1093,7 +1094,6 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 	return fstatus;
 
 #else
-	char *avail_mask;
 	char mstr[1 + CPU_SETSIZE / 4];
 	cpu_bind_type_t bind_type;
 	cpu_set_t ts;
@@ -1263,7 +1263,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 					job);
 			tssize = sizeof(cpu_set_t);
 			fstatus = SLURM_SUCCESS;
-			if (rc = sched_setaffinity(pid, tssize, &ts)) {
+			if ((rc = sched_setaffinity(pid, tssize, &ts))) {
 				error("task/cgroup: task[%u] unable to set "
 					"mask 0x%s", taskid,
 					cpuset_to_str(&ts, mstr));
@@ -1340,7 +1340,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 		if (hwloc_cpuset_to_glibc_sched_affinity(topology,cpuset,
 							 &ts,tssize) == 0) {
 			fstatus = SLURM_SUCCESS;
-			if (rc = sched_setaffinity(pid,tssize,&ts)) {
+			if ((rc = sched_setaffinity(pid,tssize,&ts))) {
 				error("task/cgroup: task[%u] unable to set "
 				      "taskset '%s'",taskid,str);
 				fstatus = SLURM_ERROR;
