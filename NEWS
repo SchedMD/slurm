@@ -187,6 +187,7 @@ documents those changes that are of interest to users and admins.
     a job too early.
  -- sched/wiki, sched/wiki2 - Fix to work with change logic introduced in
     version 2.6.3 preventing Maui/Moab from starting jobs.
+ -- Updated the QOS limits documentation and man page.
 
 * Changes in Slurm 2.6.3
 ========================

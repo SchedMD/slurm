@@ -143,6 +143,7 @@ static bool favor_small; /* favor small jobs over large */
 static uint16_t damp_factor;  /* weight for age factor */
 static uint32_t max_age; /* time when not to add any more
 			  * priority to a job if reached */
+static uint16_t enforce;     /* AccountingStorageEnforce */
 static uint32_t weight_age;  /* weight for age factor */
 static uint32_t weight_fs;   /* weight for Fairshare factor */
 static uint32_t weight_js;   /* weight for Job Size factor */
@@ -910,6 +911,8 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 	if (priority_debug)
 		info("Initializing grp_used_cpu_run_secs");
 
+	if (!(enforce & ACCOUNTING_ENFORCE_LIMITS))
+		return;
 	if (!(job_list && list_count(job_list)))
 		return;
 
@@ -919,7 +922,7 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 	assoc_mgr_lock(&locks);
 	while ((job_ptr = list_next(itr))) {
 		if (priority_debug)
-			debug2("job: %u",job_ptr->job_id);
+			debug2("job: %u", job_ptr->job_id);
 		qos = NULL;
 		assoc = NULL;
 		delta = 0;
@@ -1481,8 +1484,8 @@ static void _internal_setup(void)
 		priority_debug = 0;
 
 	favor_small = slurm_get_priority_favor_small();
-
 	damp_factor = (long double)slurm_get_fs_dampening_factor();
+	enforce = slurm_get_accounting_storage_enforce();
 	max_age = slurm_get_priority_max_age();
 	weight_age = slurm_get_priority_weight_age();
 	weight_fs = slurm_get_priority_weight_fairshare();
@@ -1493,6 +1496,7 @@ static void _internal_setup(void)
 
 	if (priority_debug) {
 		info("priority: Damp Factor is %u", damp_factor);
+		info("priority: AccountingStorageEnforce is %u", enforce);
 		info("priority: Max Age is %u", max_age);
 		info("priority: Weight Age is %u", weight_age);
 		info("priority: Weight Fairshare is %u", weight_fs);

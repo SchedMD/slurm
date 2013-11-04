@@ -154,8 +154,8 @@ specified then no limit will apply.</p>
 </li>
 
 <li><b>GrpWall=</b> The maximum wall clock time any job submitted to
-  this group can run for.  If this limit is reached submission requests
-  will be denied.
+  this group can run for. If this limit is reached submission requests
+  will be denied and the running jobs will be killed.
 </li>
 
 <li><b>MaxCPUsPerJob=</b> The maximum size in cpus any given job can
