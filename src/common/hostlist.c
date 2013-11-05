@@ -1829,7 +1829,7 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 	if (((p = strrchr(tmp_prefix, '[')) != NULL) &&
 	    ((q = strrchr(p, ']')) != NULL)) {
 		struct _range *prefix_range;
-		struct _range *saved_range = range, *pre_range = prefix_range;
+		struct _range *saved_range = range, *pre_range;
 		unsigned long j, prefix_cnt = 0;
 		*p++ = '\0';
 		*q++ = '\0';
@@ -1841,6 +1841,7 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 			xfree(prefix_range);
 			return -1;	/* bad numeric expression */
 		}
+		pre_range = prefix_range;
 		for (i = 0; i < nr; i++) {
 			prefix_cnt += pre_range->hi - pre_range->lo + 1;
 			if (prefix_cnt > MAX_PREFIX_CNT) {
