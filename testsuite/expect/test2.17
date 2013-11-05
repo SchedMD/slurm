@@ -31,9 +31,9 @@
 ############################################################################
 source ./globals
 
-set test_id        "test2.17"
-set qos_name       "$test_id\_qos"
-set part_name      "$test_id\_part"
+set test_id        "2.17"
+set qos_name       "test$test_id\_qos"
+set part_name      "test$test_id\_part"
 set exit_code      0
 
 print_header $test_id

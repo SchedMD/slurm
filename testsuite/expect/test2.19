@@ -31,7 +31,7 @@
 ############################################################################
 source ./globals
 
-set test_id        "test2.19"
+set test_id        "2.19"
 set user_name      ""
 set node_name      ""
 set host_name      ""
@@ -39,7 +39,7 @@ set acct1          "acct_1"
 set acct2          "acct_2"
 set qos_g          "qos_good"
 set qos_b          "qos_bad"
-set part_name      "$test_id\_part"
+set part_name      "test$test_id\_part"
 set exit_code      0
 
 print_header $test_id

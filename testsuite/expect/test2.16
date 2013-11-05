@@ -31,9 +31,9 @@
 ############################################################################
 source ./globals
 
-set test_id        "test2.16"
-set part_name      "$test_id\_part"
-set acct_name      "$test_id\_acct"
+set test_id        "2.16"
+set part_name      "test$test_id\_part"
+set acct_name      "test$test_id\_acct"
 set exit_code      0
 
 print_header $test_id
