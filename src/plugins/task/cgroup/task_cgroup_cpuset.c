@@ -99,6 +99,14 @@ static inline int hwloc_bitmap_isequal(
 
 # endif
 
+static uint16_t bind_mode = CPU_BIND_NONE   | CPU_BIND_MASK   |
+			    CPU_BIND_RANK   | CPU_BIND_MAP    |
+			    CPU_BIND_LDMASK | CPU_BIND_LDRANK |
+			    CPU_BIND_LDMAP;
+static uint16_t bind_mode_ldom =
+			    CPU_BIND_LDMASK | CPU_BIND_LDRANK |
+			    CPU_BIND_LDMAP;
+
 #endif
 
 #ifndef PATH_MAX
@@ -107,13 +115,6 @@ static inline int hwloc_bitmap_isequal(
 
 static bool cpuset_prefix_set = false;
 static char *cpuset_prefix = "";
-static uint16_t bind_mode = CPU_BIND_NONE   | CPU_BIND_MASK   |
-			    CPU_BIND_RANK   | CPU_BIND_MAP    |
-			    CPU_BIND_LDMASK | CPU_BIND_LDRANK |
-			    CPU_BIND_LDMAP;
-static uint16_t bind_mode_ldom =
-			    CPU_BIND_LDMASK | CPU_BIND_LDRANK |
-			    CPU_BIND_LDMAP;
 
 static char user_cgroup_path[PATH_MAX];
 static char job_cgroup_path[PATH_MAX];
