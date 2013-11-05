@@ -1,0 +1,111 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate scontrol show hostnames.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2013 SchedMD LLC
+# Written by Morris Jette
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "2.20"
+set exit_code   0
+
+print_header $test_id
+
+#
+# test single bracket hostnames
+#
+set matches 0
+spawn $scontrol show hostnames rack\[0-3\]
+expect {
+	-re "rack0" {
+		incr matches
+		exp_continue
+	}
+	-re "rack1" {
+		incr matches
+		exp_continue
+	}
+	-re "rack2" {
+		incr matches
+		exp_continue
+	}
+	-re "rack3" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	send_user "\nFAILURE: show hostnames failure ($matches != 4)\n"
+	set exit_code 1
+}
+
+#
+# test double bracket hostnames
+#
+set matches 0
+spawn $scontrol show hostnames rack\[0-1\]_blade\[0-1\]
+expect {
+	-re "rack0_blade0" {
+		incr matches
+		exp_continue
+	}
+	-re "rack0_blade1" {
+		incr matches
+		exp_continue
+	}
+	-re "rack1_blade0" {
+		incr matches
+		exp_continue
+	}
+	-re "rack1_blade1" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	send_user "\nFAILURE: show hostnames failure ($matches != 4)\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

@@ -235,6 +235,7 @@ test2.16   Validate scontrol displays and updates Allow/Deny accounts.
 test2.17   Validate scontrol displays and updates Allow/Deny Qos.
 test2.18   Validate that Allow/Deny accounts are enforced.
 test2.19   Validate that Allow/Deny Qos are enforced.
+test2.20   Validate scontrol show hostnames.
 
 
 test3.#    Testing of scontrol options (best run as SlurmUser or root).
