@@ -2837,6 +2837,12 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		return EINVAL;
 	}
 
+	if (job_ptr->details->core_spec) {
+		verbose("select/linear: job %u core_spec(%u) not supported",
+			job_ptr->job_id, job_ptr->details->core_spec);
+		job_ptr->details->core_spec = 0;
+	}
+
 	if (job_ptr->details->shared)
 		max_share = job_ptr->part_ptr->max_share & ~SHARED_FORCE;
 	else	/* ((shared == 0) || (shared == (uint16_t) NO_VAL)) */

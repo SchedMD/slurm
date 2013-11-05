@@ -282,9 +282,19 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     List *preemptee_job_list,
 			     bitstr_t *exc_core_bitmap)
 {
+
+	if (!job_ptr->details)
+		return EINVAL;
+
 	if (min_nodes == 0) {
 		/* Allocate resources only on a front-end node */
 		job_ptr->details->min_cpus = 0;
+	}
+
+	if (job_ptr->details->core_spec) {
+		verbose("select/alps: job %u core_spec(%u) not supported",
+			job_ptr->job_id, job_ptr->details->core_spec);
+		job_ptr->details->core_spec = 0;
 	}
 
 	return other_job_test(job_ptr, bitmap, min_nodes, max_nodes,

@@ -1755,6 +1755,16 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	int dim = 0;
 	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
 
+
+	if (!job_ptr->details)
+		return EINVAL;
+
+	if (job_ptr->details->core_spec) {
+		verbose("select/bluegene: job %u core_spec(%u) not supported",
+			job_ptr->job_id, job_ptr->details->core_spec);
+		job_ptr->details->core_spec = 0;
+	}
+
 	if (preemptee_candidates && preemptee_job_list
 	    && list_count(preemptee_candidates))
 		local_mode |= SELECT_MODE_PREEMPT_FLAG;

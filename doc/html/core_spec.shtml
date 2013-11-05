@@ -19,6 +19,11 @@ Use the <i>squeue</i> command with the "%X" format option to see the count
 The <i>scontrol</i> and <i>sview</i> commands can also be used to modify
 the count for pending jobs.</p>
 
-<p style="text-align:center;">Last modified 4 November 2013</p>
+<h2>System Configuration</h2>
+<p>Core Specialization is only supported if <i>SelectType</i> is configured
+as either <i>select/cons_res</i> or <i>select/cray</i>. A job's core
+specialization option will be silently cleared on other configurations.</p>
+
+<p style="text-align:center;">Last modified 5 November 2013</p>
 
 <!--#include virtual="footer.txt"-->
