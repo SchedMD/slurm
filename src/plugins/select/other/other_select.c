@@ -127,6 +127,7 @@ extern int other_select_init(void)
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "select";
 	char *type = NULL;
+	int n_syms;
 
 	if (init_run && g_context)
 		return retval;
@@ -141,9 +142,17 @@ extern int other_select_init(void)
 	else
 		type = "select/linear";
 
+	n_syms = sizeof(node_select_syms);
+	if (n_syms != sizeof(ops))
+		fatal("For some reason node_select_syms in "
+		      "src/plugins/select/other/other_select.c differs from "
+		      "slurm_select_ops_t found in src/common/node_select.h.  "
+		      "node_select_syms should match what is in "
+		      "src/common/node_select.c");
+
 	if (!(g_context = plugin_context_create(
 		     plugin_type, type, (void **)&ops,
-		     node_select_syms, sizeof(node_select_syms)))) {
+		     node_select_syms, n_syms))) {
 		error("cannot create %s context for %s", plugin_type, type);
 		retval = SLURM_ERROR;
 		goto done;
