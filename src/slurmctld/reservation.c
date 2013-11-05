@@ -406,7 +406,7 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 	char *node_cnt_str = NULL;
 	int duration, i;
 
-	if (!(slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION))
+	if (!(slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION))
 		return;
 
 	if (resv_ptr->start_time != (time_t) NO_VAL) {
@@ -2284,7 +2284,7 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 	int rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
 
-	if (slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION)
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION)
 		info("delete_resv: Name=%s", resv_desc_ptr->name);
 
 	iter = list_iterator_create(resv_list);
@@ -3123,7 +3123,7 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 	}
 
 	/* Need to create reservation containing multiple blocks */
-	resv_debug = slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION;
+	resv_debug = slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION;
 	for (i = 0; resv_desc_ptr->node_cnt[i]; i++) {
 		tmp_bitmap = _pick_idle_node_cnt(avail_bitmap, resv_desc_ptr,
 						 resv_desc_ptr->node_cnt[i],
@@ -3684,7 +3684,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		}
 		list_iterator_destroy(iter);
 
-		if (slurm_get_debug_flags() & DEBUG_FLAG_RESERVATION) {
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 			char *nodes = bitmap2node_name(*node_bitmap);
 			info("job_test_resv: job:%u reservation:%s nodes:%s",
 			     job_ptr->job_id, nodes, job_ptr->resv_name);

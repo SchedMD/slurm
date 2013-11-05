@@ -591,7 +591,7 @@ extern void restore_front_end_state(int recover)
 		fatal("front_end_node_cnt > tree_width (%u > %u)",
 		      front_end_node_cnt, tree_width);
 	}
-	if (slurm_get_debug_flags() & DEBUG_FLAG_FRONT_END)
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FRONT_END)
 		log_front_end_state();
 #endif
 }
@@ -997,7 +997,7 @@ extern void sync_front_end_state(void)
 		}
 	}
 
-	if (slurm_get_debug_flags() & DEBUG_FLAG_FRONT_END)
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FRONT_END)
 		log_front_end_state();
 #endif
 }

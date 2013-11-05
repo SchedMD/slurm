@@ -1161,7 +1161,7 @@ extern int gs_init(void)
 	if (gs_debug_flags & DEBUG_FLAG_GANG)
 		info("gang: entering gs_init");
 	timeslicer_seconds = slurmctld_conf.sched_time_slice;
-	gs_debug_flags = slurm_get_debug_flags();
+	gs_debug_flags = slurmctld_conf.debug_flags;
 	gs_fast_schedule = slurm_get_fast_schedule();
 	gr_type = _get_gr_type();
 	preempt_job_list = list_create(_preempt_job_list_del);
@@ -1357,7 +1357,7 @@ extern int gs_reconfig(void)
 	gs_part_list = NULL;
 
 	/* reset global data */
-	gs_debug_flags = slurm_get_debug_flags();
+	gs_debug_flags = slurmctld_conf.debug_flags;
 	gs_fast_schedule = slurm_get_fast_schedule();
 	gr_type = _get_gr_type();
 	_load_phys_res_cnt();
